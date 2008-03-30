@@ -1030,21 +1030,18 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	ir_mode  *mode;
 	int       i;
 	int       n = get_method_n_params(method_type);
-	be_abi_call_flags_t flags = {
-		{
-			0, /* store from left to right */
-			0, /* store arguments sequential */
-			1, /* try to omit the frame pointer */
-			1, /* the function can use any register as frame pointer */
-			1, /* a call can take the callee's address as an immediate */
-			0, /* IRG is a leaf function */
-			0  /* Set to one, if there is already enough room on the stack for call args. */
-		}
-	};
+	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
 	(void) self;
 
+	/* set abi flags for calls */
+	call_flags.bits.left_to_right         = 0;
+	call_flags.bits.store_args_sequential = 0;
+	/* call_flags.bits.try_omit_fp     don't change this we can handle both */
+	call_flags.bits.fp_free               = 0;
+	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
+
 	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, flags, &arm_abi_callbacks);
+	be_abi_call_set_flags(abi, call_flags, &arm_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
 		/* reg = get reg for param i;          */
