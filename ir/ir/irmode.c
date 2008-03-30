@@ -43,6 +43,7 @@
 # include "obst.h"
 # include "irhooks.h"
 # include "irtools.h"
+# include "array.h"
 
 /* * *
  * local values
@@ -54,6 +55,8 @@ static struct obstack modes;
 
 /** number of defined modes */
 static int num_modes = 0;
+
+static ir_mode **mode_list;
 
 /* * *
  * local functions
@@ -78,50 +81,19 @@ INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n) {
 	return 0;
 }
 
-/*
- * calculates the next obstack address
- */
-static void *next_obstack_adr(struct obstack *o, void *p, size_t s) {
-	PTR_INT_TYPE adr = PTR_TO_INT((char *)p);
-	int mask = obstack_alignment_mask(o);
-
-	adr += s + mask;
-
-	return INT_TO_PTR(adr & ~mask);
-}
-
 /**
  * searches the modes obstack for the given mode and returns
  * a pointer on an equal mode already in the array, NULL if
  * none found
  */
 static ir_mode *find_mode(const ir_mode *m) {
-	ir_mode *n, *nn;
-	struct _obstack_chunk	*p;
+	unsigned len = ARR_LEN(mode_list);
+	unsigned i;
 
-	p  = modes.chunk;
-	n  = (ir_mode *)p->contents;
-	nn = next_obstack_adr(&modes, n, sizeof(*n));
-	for (; (char *)nn <= modes.next_free;) {
-		assert(is_mode(n));
+	for(i = 0; i < len; ++i) {
+		ir_mode *n = mode_list[i];
 		if (modes_are_equal(n, m))
 			return n;
-
-		n  = nn;
-		nn = next_obstack_adr(&modes, n, sizeof(*n));
-	}
-
-	for (p = p->prev; p; p = p->prev) {
-		n  = (ir_mode *)p->contents;
-		nn = next_obstack_adr(&modes, n, sizeof(*n));
-		for (; (char *)nn < p->limit;) {
-			assert(is_mode(n));
-			if (modes_are_equal(n, m))
-				return n;
-
-			n  = nn;
-			nn = next_obstack_adr(&modes, n, sizeof(*n));
-		}
 	}
 
 	return NULL;
@@ -263,6 +235,7 @@ static ir_mode *register_mode(const ir_mode *new_mode) {
 
 	/* copy mode struct to modes array */
 	mode = (ir_mode *)obstack_copy(&modes, new_mode, sizeof(*mode));
+	ARR_APP1(ir_mode*, mode_list, mode);
 
 	mode->kind = k_ir_mode;
 	if (num_modes >= irm_max)  {
@@ -641,6 +614,7 @@ void init_mode(void) {
 	ir_mode newmode;
 
 	obstack_init(&modes);
+	mode_list = NEW_ARR_F(ir_mode*, 0);
 
 	num_modes  =  0;
 	/* initialize predefined modes */
@@ -922,6 +896,7 @@ int mode_wrap_around(const ir_mode *mode) {
 
 void finish_mode(void) {
 	obstack_free(&modes, 0);
+	DEL_ARR_F(mode_list);
 
 	mode_T   = NULL;
 	mode_X   = NULL;
