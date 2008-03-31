@@ -208,6 +208,10 @@ static void remove_empty_block(ir_node *block)
 			set_nodes_block(node, succ_block);
 			continue;
 		}
+		if (is_Sync(node)) {
+			set_nodes_block(node, get_nodes_block(pred));
+			continue;
+		}
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
 	}
 
