@@ -253,7 +253,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 		int i;
 
 		// Dump edges
-		for(i = -1; i < get_irn_arity(n); i++)
+		for(i = is_Block(n) ? 0 : -1; i < get_irn_arity(n); i++)
 			dump_grg_egde(n, i, dump_info, fp);
 	}
 
@@ -463,7 +463,7 @@ static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 
 		// Correlate the matched phi edges with the matched block edges
 		// Caution: Position 0 in the edge_names array is the block edge, so start at 1
-		for(i = 0; i < get_irn_arity(n) + 1; i++)
+		for(i = code == iro_Block; i < get_irn_arity(n) + 1; i++)
 		{
 			assert(edge_names[i] != NULL && "Some edges have not been dumped!");
 
