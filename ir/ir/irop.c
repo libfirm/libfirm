@@ -333,7 +333,7 @@ init_op(void)
 	op_Store     = new_ir_op(iro_Store,     "Store",     op_pin_state_exc_pinned, F|M,   oparity_any,      -1, sizeof(store_attr), NULL);
 	op_Alloc     = new_ir_op(iro_Alloc,     "Alloc",     op_pin_state_pinned, F|M,       oparity_any,      -1, sizeof(alloc_attr), NULL);
 	op_Free      = new_ir_op(iro_Free,      "Free",      op_pin_state_pinned, N|M,       oparity_any,      -1, sizeof(free_attr), NULL);
-	op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_pinned, N,       oparity_dynamic,  -1, 0, NULL);
+	op_Sync      = new_ir_op(iro_Sync,      "Sync",      op_pin_state_floats, N,       oparity_dynamic,  -1, 0, NULL);
 
 	op_Proj      = new_ir_op(iro_Proj,      "Proj",      op_pin_state_floats, N,       oparity_unary,    -1, sizeof(long), NULL);
 	op_Tuple     = new_ir_op(iro_Tuple,     "Tuple",     op_pin_state_floats, L,       oparity_variable, -1, 0, NULL);
