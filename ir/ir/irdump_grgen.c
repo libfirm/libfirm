@@ -21,7 +21,7 @@
 * @file
 * @brief   Write ir graph as a grgen construction rule
 * @author  Andreas Schoesser
-* @version $Id:$
+* @version $Id$
 */
 
 /*
@@ -157,7 +157,7 @@ static void collect_nodes(ir_node *n, void * env)
  * Starts dumping
  ************************************************************************/
 
-void dump_irg_grgen(ir_graph *irg, char *filename, int append)
+void dump_irg_grgen_file(ir_graph *irg, char *filename, int append)
 {
 	FILE *fp;
 	grgen_dumpinfo_t dump_info;
@@ -209,6 +209,18 @@ void dump_irg_grgen(ir_graph *irg, char *filename, int append)
 	obstack_finish(&(dump_info.mode_names));
 
 	deinit_irg_grgen_dumper(grgen_dumper_env);
+}
+
+
+void dump_irg_grgen(ir_graph *irg, char *suffix)
+{
+  char filename[100] = "";
+
+  strncat(filename, get_entity_name(get_irg_entity(irg)), 100);
+  strncat(filename, suffix, 100);
+  strncat(filename, ".grg", 100);
+
+  dump_irg_grgen_file(irg, filename, 0);
 }
 
 

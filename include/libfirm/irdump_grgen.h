@@ -21,15 +21,23 @@
 * @file
 * @brief   Write ir graph as a grgen construction rule
 * @author  Andreas Schoesser
-* @version $Id:$
+* @version $Id$
 */
 
 
 /**
  * Dumps a complete irg in the grgen format
  * irg:			irg to dump
- * filename:	text file to dump to
+ * filename:    	text file to dump to
  * append:		1 if the new rule should be appended to the file,
  *				otherwise the previous contents are deleted
  **/
-void dump_irg_grgen(ir_graph *irg, char *filename, int append);
+void dump_irg_grgen_file(ir_graph *irg, char *filename, int append);
+
+/**
+ * Like dump_irg_grgen_file dumps a complete irg in the grgen format
+ * irg:			irg to dump
+ * suffix:	        suffix for the output file
+ *                      (e.g. "main"+ suffix +".grg")
+ **/
+void dump_irg_grgen(ir_graph *irg, char *suffix);
