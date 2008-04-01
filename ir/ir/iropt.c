@@ -1297,45 +1297,36 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
  *   themselves.
  */
 static ir_node *equivalent_node_Sync(ir_node *n) {
-	int i, n_preds;
+	int arity = get_Sync_n_preds(n);
+	int i;
 
-	ir_node *oldn = n;
-	ir_node *first_val = NULL; /* to shutup gcc */
+	for (i = 0; i < arity;) {
+		ir_node *pred = get_Sync_pred(n, i);
+		int      j;
 
-	if (!get_opt_normalize()) return n;
+		/* Remove Bad predecessors */
+		if (is_Bad(pred)) {
+			del_Sync_n(n, i);
+			--arity;
+			continue;
+		}
 
-	n_preds = get_Sync_n_preds(n);
-
-	/* Find first non-self-referencing input */
-	for (i = 0; i < n_preds; ++i) {
-		first_val = get_Sync_pred(n, i);
-		if ((first_val != n)  /* not self pointer */ &&
-		    (! is_Bad(first_val))
-		   ) {                /* value not dead */
-			break;            /* then found first value. */
+		/* Remove duplicate predecessors */
+		for (j = 0;; ++j) {
+			if (j >= i) {
+				++i;
+				break;
+			}
+			if (get_Sync_pred(n, j) == pred) {
+				del_Sync_n(n, i);
+				--arity;
+				break;
+			}
 		}
 	}
 
-	if (i >= n_preds)
-		/* A totally Bad or self-referencing Sync (we didn't break the above loop) */
-		return new_Bad();
-
-	/* search the rest of inputs, determine if any of these
-	   are non-self-referencing */
-	while (++i < n_preds) {
-		ir_node *scnd_val = get_Sync_pred(n, i);
-		if ((scnd_val != n) &&
-		    (scnd_val != first_val) &&
-		    (! is_Bad(scnd_val))
-		   )
-			break;
-	}
-
-	if (i >= n_preds) {
-		/* Fold, if no multiple distinct non-self-referencing inputs */
-		n = first_val;
-		DBG_OPT_SYNC(oldn, n);
-	}
+	if (arity == 0) return new_Bad();
+	if (arity == 1) return get_Sync_pred(n, 0);
 	return n;
 }  /* equivalent_node_Sync */
 
@@ -4873,28 +4864,35 @@ static ir_node *transform_node_Psi(ir_node *n) {
  * of the other sync to our own inputs
  */
 static ir_node *transform_node_Sync(ir_node *n) {
-	int i, arity;
+	int arity = get_Sync_n_preds(n);
+	int i;
 
-	arity = get_irn_arity(n);
-	for(i = 0; i < get_irn_arity(n); /*empty*/) {
-		int i2, arity2;
-		ir_node *in = get_irn_n(n, i);
-		if(!is_Sync(in)) {
+	for (i = 0; i < arity;) {
+		ir_node *pred = get_Sync_pred(n, i);
+		int      pred_arity;
+		int      j;
+
+		if (!is_Sync(pred)) {
 			++i;
 			continue;
 		}
 
-		/* set sync input 0 instead of the sync */
-		set_irn_n(n, i, get_irn_n(in, 0));
-		/* so we check this input again for syncs */
+		del_Sync_n(n, i);
+		--arity;
 
-		/* append all other inputs of the sync to our sync */
-		arity2 = get_irn_arity(in);
-		for(i2 = 1; i2 < arity2; ++i2) {
-			ir_node *in_in = get_irn_n(in, i2);
-			add_irn_n(n, in_in);
-			/* increase arity so we also check the new inputs for syncs */
-			arity++;
+		pred_arity = get_Sync_n_preds(pred);
+		for (j = 0; j < pred_arity; ++j) {
+			ir_node *pred_pred = get_Sync_pred(pred, j);
+			int      k;
+
+			for (k = 0;; ++k) {
+				if (k >= arity) {
+					add_irn_n(n, pred_pred);
+					++arity;
+					break;
+				}
+				if (get_Sync_pred(n, k) == pred_pred) break;
+			}
 		}
 	}
 
