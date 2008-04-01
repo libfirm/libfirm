@@ -325,6 +325,15 @@ int add_irn_n(ir_node *node, ir_node *in) {
 	return pos;
 }
 
+void del_Sync_n(ir_node *n, int i)
+{
+	int      arity     = get_Sync_n_preds(n);
+	ir_node *last_pred = get_Sync_pred(n, arity - 1);
+	set_Sync_pred(n, i, last_pred);
+	edges_notify_edge(n, arity - 1, NULL, last_pred, get_irn_irg(n));
+	ARR_SHRINKLEN(get_irn_in(n), arity);
+}
+
 int (get_irn_deps)(const ir_node *node) {
 	return _get_irn_deps(node);
 }

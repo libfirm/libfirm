@@ -174,6 +174,8 @@ void set_irn_n(ir_node *node, int n, ir_node *in);
  * @returns   the number of the new input
  */
 int add_irn_n(ir_node *node, ir_node *in);
+/* Remove predecessor i from Sync n */
+void del_Sync_n(ir_node *n, int i);
 /* Sets the mode struct of node.  */
 void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Gets the mode struct of a node.  */
