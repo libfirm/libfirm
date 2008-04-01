@@ -1,2 +1,0 @@
-/* Dump all the function pointers to the rules to be called here in an array
-   so that the rules can be called in a row */
