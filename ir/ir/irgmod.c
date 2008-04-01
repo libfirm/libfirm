@@ -96,8 +96,6 @@ void exchange(ir_node *old, ir_node *nw) {
 		/* Else, do it the old-fashioned way. */
 		ir_node *block;
 
-		assert(get_irn_op(old)->opar != oparity_dynamic);
-
 		hook_turn_into_id(old);
 
 		block = old->in[0];
@@ -107,6 +105,10 @@ void exchange(ir_node *old, ir_node *nw) {
 			if (! block) {
 				panic("cannot find legal block for id");
 			}
+		}
+
+		if (get_irn_op(old)->opar == oparity_dynamic) {
+			DEL_ARR_F(get_irn_in(old));
 		}
 
 		old->op    = op_Id;
