@@ -43,6 +43,7 @@
 #include "irgopt.h"
 #include "irbitset.h"
 #include "irgopt.h"
+#include "irdump_grgen.h"
 #include "pdeq.h"
 #include "pset.h"
 #include "debug.h"
@@ -75,6 +76,7 @@
 #include "gen_ia32_regalloc_if.h"
 #include "gen_ia32_machine.h"
 #include "ia32_transform.h"
+#include "ia32_pbqp_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
 #include "ia32_optimize.h"
@@ -955,7 +957,18 @@ static void ia32_prepare_graph(void *self) {
 	if(cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
-	/* transform nodes into assembler instructions */
+        /* used for examination purposes only
+         * if(cg->dump)
+                dump_irg_grgen(cg->irg, "-pre_transform");
+         */
+
+        /* transform nodes into assembler instructions by PBQP magic */
+        ia32_transform_graph_by_pbqp(cg);
+
+	if(cg->dump)
+		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
+
+	/* transform remaining nodes into assembler instructions */
 	ia32_transform_graph(cg);
 
 	/* do local optimisations (mainly CSE) */
