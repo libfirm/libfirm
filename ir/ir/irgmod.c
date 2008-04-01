@@ -125,7 +125,7 @@ void exchange(ir_node *old, ir_node *nw) {
  *         all Proj nodes to there predecessors and all
  *         partBlocks to there MacroBlock header.
  */
-static void collect(ir_node *n, void *env) {
+static void collect_phiprojs_walker(ir_node *n, void *env) {
 	ir_node *pred;
 	(void) env;
 
@@ -154,7 +154,7 @@ static void collect(ir_node *n, void *env) {
 /**
  * clear all links, including the Phi list of blocks and Phi nodes.
  */
-static void clear_links(ir_node *n, void *env) {
+static void clear_node_and_phis_links(ir_node *n, void *env) {
 	(void) env;
 
 	set_irn_link(n, NULL);
@@ -165,9 +165,8 @@ static void clear_links(ir_node *n, void *env) {
 }
 
 void collect_phiprojs(ir_graph *irg) {
-	irg_walk_graph(irg, clear_links, collect, NULL);
+	irg_walk_graph(irg, clear_node_and_phis_links, collect_phiprojs_walker, NULL);
 }
-
 
 /*--------------------------------------------------------------------*/
 /*  Functionality for part_block                                      */
