@@ -1,0 +1,3 @@
+/* TODO: Dump all the nodes attributes ->
+	e.g. pointers to result nodes...
+	here */
