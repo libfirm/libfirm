@@ -3,7 +3,7 @@
 #include "stat_timing.h"
 
 /* we can only use the scheduling stuff, if that macro is defined in unistd.h */
-#if _XOPEN_REALTIME != -1
+#if defined(_XOPEN_REALTIME) && _XOPEN_REALTIME != -1
 
 timing_sched_env_t *timing_sched_get(timing_sched_env_t *env)
 {

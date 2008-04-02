@@ -227,7 +227,7 @@ static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res, const ir_timer_val_
 
 #endif /* _WIN32 */
 
-#if _XOPEN_REALTIME != -1
+#if defined(_XOPEN_REALTIME) && _XOPEN_REALTIME != -1
 
 #include <sys/types.h>
 #include <sched.h>
