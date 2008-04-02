@@ -90,8 +90,8 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
 		ptr = get_Call_ptr(call);
-		if (is_SymConst_addr_ent(ptr)) {
-			ent = get_SymConst_entity(ptr);
+		if (is_Global(ptr)) {
+			ent = get_Global_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 			if ((prop & (mtp_property_const|mtp_property_pure)) == 0)
@@ -261,8 +261,8 @@ static void collect_nothrow_calls(ir_node *node, void *env) {
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
 		ptr = get_Call_ptr(call);
-		if (is_SymConst_addr_ent(ptr)) {
-			ent = get_SymConst_entity(ptr);
+		if (is_Global(ptr)) {
+			ent = get_Global_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 			if ((prop & mtp_property_nothrow) == 0)
@@ -677,8 +677,8 @@ static int is_malloc_call_result(const ir_node *node) {
 	if (is_alloc_entity != NULL && is_Call(node)) {
 		ir_node *ptr = get_Call_ptr(node);
 
-		if (is_SymConst_addr_ent(ptr)) {
-			ir_entity *ent = get_SymConst_entity(ptr);
+		if (is_Global(ptr)) {
+			ir_entity *ent = get_Global_entity(ptr);
 			return is_alloc_entity(ent);
 		}
 	}
@@ -723,8 +723,8 @@ static int is_stored(const ir_node *n) {
 			break;
 		case iro_Call:
 			ptr = get_Call_ptr(succ);
-			if (is_SymConst_addr_ent(ptr)) {
-				ir_entity *ent = get_SymConst_entity(ptr);
+			if (is_Global(ptr)) {
+				ir_entity *ent = get_Global_entity(ptr);
 				int       i;
 
 				/* we know the called entity */
@@ -831,9 +831,9 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 					} else if (is_Call(res)) {
 						ir_node *ptr = get_Call_ptr(res);
 
-						if (is_SymConst_addr_ent(ptr)) {
+						if (is_Global(ptr)) {
 							/* a direct call */
-							ir_entity *ent    = get_SymConst_entity(ptr);
+							ir_entity *ent    = get_Global_entity(ptr);
 							ir_graph  *callee = get_entity_irg(ent);
 
 							if (callee == irg) {
@@ -887,9 +887,9 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 			if (is_Call(pred)) {
 				ir_node *ptr = get_Call_ptr(pred);
 
-				if (is_SymConst_addr_ent(ptr)) {
+				if (is_Global(ptr)) {
 					/* a direct call */
-					ir_entity *ent    = get_SymConst_entity(ptr);
+					ir_entity *ent    = get_Global_entity(ptr);
 					ir_graph  *callee = get_entity_irg(ent);
 
 					if (callee == irg) {

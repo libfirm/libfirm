@@ -52,12 +52,13 @@ static void lower_sel(ir_node *sel) {
 
 	assert(is_Sel(sel));
 
+	/* Do not lower frame type/global offset table access: must be lowered by the backend. */
+	ptr = get_Sel_ptr(sel);
+	if (ptr == get_irg_frame(current_ir_graph) || ptr == get_irg_globals(current_ir_graph))
+		return;
+
 	ent   = get_Sel_entity(sel);
 	owner = get_entity_owner(ent);
-
-	/* Do not lower frame type access: must be lowered by the backend. */
-	if (is_frame_type(owner))
-		return;
 
 	/*
 	 * Cannot handle value param entities here.
@@ -66,7 +67,6 @@ static void lower_sel(ir_node *sel) {
 	if (is_value_param_type(owner))
 		return;
 
-	ptr  = get_Sel_ptr(sel);
 	dbg  = get_irn_dbg_info(sel);
 	mode = get_irn_mode(sel);
 

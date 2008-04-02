@@ -339,13 +339,13 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 {
 	ir_entity *ent1 = NULL, *ent2 = NULL;
 
-	if (is_SymConst_addr_ent(adr1))
-		ent1 = get_SymConst_entity(adr1);
+	if (is_Global(adr1))
+		ent1 = get_Global_entity(adr1);
 	else if (is_Sel(adr1))
 		ent1 = get_Sel_entity(adr1);
 
-	if (is_SymConst_addr_ent(adr2))
-		ent2 = get_SymConst_entity(adr2);
+	if (is_Global(adr2))
+		ent2 = get_Global_entity(adr2);
 	else if (is_Sel(adr2))
 		ent2 = get_Sel_entity(adr2);
 
@@ -407,8 +407,8 @@ static int is_malloc_Result(ir_node *node) {
 	if (! is_Call(node))
 		return 0;
 	node = get_Call_ptr(node);
-	if (is_SymConst_addr_ent(node)) {
-		ir_entity *ent = get_SymConst_entity(node);
+	if (is_Global(node)) {
+		ir_entity *ent = get_Global_entity(node);
 
 		if (get_entity_additional_properties(ent) & mtp_property_malloc)
 			return 1;
@@ -416,15 +416,6 @@ static int is_malloc_Result(ir_node *node) {
 	}
 	return 0;
 }  /* is_malloc_Result */
-
-/**
- * Returns true if an address represents a global variable.
- *
- * @param irn  the node representing the address
- */
-static INLINE int is_global_var(ir_node *irn) {
-	return is_SymConst_addr_ent(irn);
-}  /* is_global_var */
 
 /**
  * classify storage locations.
@@ -453,8 +444,8 @@ typedef enum {
 static storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent)
 {
 	storage_class_class_t res = STORAGE_CLASS_POINTER;
-	if (is_SymConst_addr_ent(irn)) {
-		ir_entity *entity = get_SymConst_entity(irn);
+	if (is_Global(irn)) {
+		ir_entity *entity = get_Global_entity(irn);
 		res = STORAGE_CLASS_GLOBALVAR;
 		if (get_entity_address_taken(entity) == ir_address_not_taken)
 			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
@@ -939,13 +930,13 @@ static void init_taken_flag(ir_type * tp) {
 
 static void check_initializer_nodes(ir_initializer_t *initializer)
 {
-	switch(initializer->kind) {
+	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST: {
 		ir_node *n = initializer->consti.value;
 
 		/* let's check if it's an address */
-		if (is_SymConst_addr_ent(n)) {
-			ir_entity *ent = get_SymConst_entity(n);
+		if (is_Global(n)) {
+			ir_entity *ent = get_Global_entity(n);
 			set_entity_address_taken(ent, ir_address_taken);
 		}
 		return;
@@ -956,7 +947,7 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 	case IR_INITIALIZER_COMPOUND: {
 		size_t i;
 
-		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *sub_initializer
 				= initializer->compound.initializers[i];
 			check_initializer_nodes(sub_initializer);
@@ -988,8 +979,8 @@ static void check_initializer(ir_entity *ent) {
 	} else if (is_atomic_entity(ent)) {
 		/* let's check if it's an address */
 		n = get_atomic_ent_value(ent);
-		if (is_SymConst_addr_ent(n)) {
-			ir_entity *ent = get_SymConst_entity(n);
+		if (is_Global(n)) {
+			ir_entity *ent = get_Global_entity(n);
 			set_entity_address_taken(ent, ir_address_taken);
 		}
 	} else {
@@ -997,8 +988,8 @@ static void check_initializer(ir_entity *ent) {
 			n = get_compound_ent_value(ent, i);
 
 			/* let's check if it's an address */
-			if (is_SymConst_addr_ent(n)) {
-				ir_entity *ent = get_SymConst_entity(n);
+			if (is_Global(n)) {
+				ir_entity *ent = get_Global_entity(n);
 				set_entity_address_taken(ent, ir_address_taken);
 			}
 		}
@@ -1045,9 +1036,9 @@ static void check_global_address(ir_node *irn, void *env) {
 	ir_entity *ent;
 	ir_address_taken_state state;
 
-	if (is_SymConst_addr_ent(irn)) {
+	if (is_Global(irn)) {
 		/* A global. */
-		ent = get_SymConst_entity(irn);
+		ent = get_Global_entity(irn);
 	} else if (is_Sel(irn) && get_Sel_ptr(irn) == tls) {
 		/* A TLS variable. */
 		ent = get_Sel_entity(irn);

@@ -1417,7 +1417,7 @@ void set_Cond_jmp_pred(ir_node *cond, cond_jmp_predicate pred);
 int is_Global(const ir_node *node);
 
 /* Returns the entity of a global address. */
-ir_entity *get_Global_ent(const ir_node *node);
+ir_entity *get_Global_entity(const ir_node *node);
 
 /**
  * Access custom node data.

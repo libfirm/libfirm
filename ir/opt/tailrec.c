@@ -632,10 +632,10 @@ int opt_tail_rec_irg(ir_graph *irg) {
 		/* check if it's a recursive call */
 		call_ptr = get_Call_ptr(call);
 
-		if (! is_SymConst_addr_ent(call_ptr))
+		if (! is_Global(call_ptr))
 			continue;
 
-		ent = get_SymConst_entity(call_ptr);
+		ent = get_Global_entity(call_ptr);
 		if (!ent || get_entity_irg(ent) != irg)
 			continue;
 

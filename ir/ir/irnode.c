@@ -3098,7 +3098,7 @@ int is_Global(const ir_node *node) {
 }
 
 /* returns the entity of a global address */
-ir_entity *get_Global_ent(const ir_node *node) {
+ir_entity *get_Global_entity(const ir_node *node) {
 	if (is_SymConst(node))
 		return get_SymConst_entity(node);
 	else

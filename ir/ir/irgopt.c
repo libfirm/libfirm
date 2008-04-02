@@ -88,7 +88,7 @@ static INLINE void do_local_optimize(ir_node *n) {
 	assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
 	if (get_opt_global_cse())
-	set_irg_pinned(current_ir_graph, op_pin_state_floats);
+		set_irg_pinned(current_ir_graph, op_pin_state_floats);
 	set_irg_outs_inconsistent(current_ir_graph);
 	set_irg_doms_inconsistent(current_ir_graph);
 	set_irg_loopinfo_inconsistent(current_ir_graph);
@@ -1359,8 +1359,8 @@ static ir_graph *get_call_called_irg(ir_node *call) {
 	ir_node *addr;
 
 	addr = get_Call_ptr(call);
-	if (is_SymConst_addr_ent(addr)) {
-		ir_entity *ent = get_SymConst_entity(addr);
+	if (is_Global(addr)) {
+		ir_entity *ent = get_Global_entity(addr);
 		return get_entity_irg(ent);
 	}
 
@@ -1499,8 +1499,8 @@ static void collect_calls2(ir_node *call, void *ctx) {
 	if (env->ignore_runtime) {
 		ir_node *symc = get_Call_ptr(call);
 
-		if (is_SymConst_addr_ent(symc)) {
-			ir_entity *ent = get_SymConst_entity(symc);
+		if (is_Global(symc)) {
+			ir_entity *ent = get_Global_entity(symc);
 
 			if (get_entity_additional_properties(ent) & mtp_property_runtime)
 				return;
