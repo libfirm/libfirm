@@ -38,7 +38,7 @@
 
 
 // XXX there is no one time init for schedulers
-//#define NORMAL_DBG
+#define NORMAL_DBG
 
 
 static int must_be_scheduled(const ir_node* const irn)
@@ -138,6 +138,10 @@ static int normal_tree_cost(ir_node* irn)
 	int            n_op_res = 0;
 	int            i;
 
+	if (is_Proj(irn)) {
+		return normal_tree_cost(get_Proj_pred(irn));
+	}
+
 	if (fc == NULL) {
 		irn_cost_pair* costs;
 		int            i;
@@ -156,13 +160,15 @@ static int normal_tree_cost(ir_node* irn)
 				cost = 1;
 			} else {
 				flag_and_cost* pred_fc;
+				ir_node*       real_pred;
 
 				cost = normal_tree_cost(pred);
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
-				pred_fc = get_irn_link(pred);
+				real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
+				pred_fc = get_irn_link(real_pred);
 				pred_fc->no_root = 1;
 #if defined NORMAL_DBG
-				ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, pred);
+				ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, real_pred);
 #endif
 			}
 
