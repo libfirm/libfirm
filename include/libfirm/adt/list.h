@@ -18,6 +18,7 @@
 #include "firm_config.h"
 #include <stdlib.h>
 
+typedef struct list_head list_head;
 struct list_head {
 	struct list_head *next, *prev;
 };
