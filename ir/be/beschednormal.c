@@ -133,8 +133,6 @@ static int normal_tree_cost(ir_node* irn)
 	flag_and_cost* fc    = get_irn_link(irn);
 	ir_node*       block = get_nodes_block(irn);
 	int            arity = get_irn_arity(irn);
-	int            cost_max  = 0;
-	int            count_max = 0;
 	int            n_res;
 	int            cost;
 	int            n_op_res = 0;
@@ -170,29 +168,10 @@ static int normal_tree_cost(ir_node* irn)
 
 			costs[i].irn  = pred;
 			costs[i].cost = cost;
-
-			if (cost > cost_max) {
-				cost_max  = cost;
-				count_max = 1;
-			} else if (cost == cost_max) {
-				++count_max;
-			}
 		}
 
 		qsort(costs, arity, sizeof(*costs), cost_cmp);
 		set_irn_link(irn, fc);
-	} else {
-		irn_cost_pair* costs = fc->costs;
-		int            i;
-
-		if (arity > 0) {
-			cost_max = costs[0].cost;
-
-			for (i = 0; i < arity; ++i) {
-				if (costs[i].cost < cost_max) break;
-				++count_max;
-			}
-		}
 	}
 
 	cost = 0;
