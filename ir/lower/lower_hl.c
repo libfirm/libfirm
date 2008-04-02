@@ -590,7 +590,7 @@ static void lower_bf_access(ir_node *irn, void *env) {
  */
 void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 
-	if(lower_bitfields) {
+	if (lower_bitfields) {
 		/* First step: lower bitfield access: must be run as long as Sels still
 		 * exists. */
 		irg_walk_graph(irg, NULL, lower_bf_access, NULL);
@@ -599,11 +599,14 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 	/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 	set_irg_phase_low(irg);
-}  /* lower_highlevel */
+}  /* lower_highlevel_graph */
 
+/*
+ * does the same as lower_highlevel() for all nodes on the const code irg
+ */
 void lower_const_code(void) {
 	walk_const_code(NULL, lower_irnode, NULL);
-}
+}  /* lower_const_code */
 
 /*
  * Replaces SymConsts by a real constant if possible.
