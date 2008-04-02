@@ -215,6 +215,12 @@ int id_is_suffix (ident *suffix, ident *id);
  */
 int id_contains_char (ident *id, char c);
 
+/**
+ * helper function for creating unique idents. It contains an internal counter
+ * and replaces a "%u" inside the tag with the counter.
+ */
+ident *id_unique(const char *tag);
+
 #ifdef FIRM_ENABLE_WCHAR
 /**
  *  Store a wide character string and create an ident.

@@ -337,6 +337,16 @@ int id_contains_char(ident *id, char c)
   return strchr(get_id_str(id), c) != NULL;
 }
 
+ident *id_unique(const char *tag)
+{
+	static unsigned unique_id = 0;
+	char buf[256];
+
+	snprintf(buf, sizeof(buf), tag, unique_id);
+	unique_id++;
+	return new_id_from_str(buf);
+}
+
 #ifdef FIRM_ENABLE_WCHAR
 
 ident *new_id_from_wcs (const wchar_t *str)
