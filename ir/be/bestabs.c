@@ -578,8 +578,9 @@ static void stabs_so(dbg_handle *handle, const char *filename) {
  * Main Program
  */
 static void stabs_main_program(dbg_handle *handle) {
-	(void) handle;
 	ir_graph *irg = get_irp_main_irg();
+
+	(void) handle;
 	if (irg) {
 		be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
 		be_emit_write_line();

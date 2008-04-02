@@ -119,6 +119,8 @@ void be_gas_emit_switch_section(be_gas_section_t section) {
 void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 {
 	const char *name = get_entity_ld_name(entity);
+	const char *fill_byte = "";
+	unsigned maximum_skip;
 
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
@@ -129,13 +131,12 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 	be_emit_char('\n');
 	be_emit_write_line();
 
-	const char *fill_byte = "";
 	/* gcc fills space between function with 0x90, no idea if this is needed */
 	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
 		fill_byte = "0x90";
 	}
 
-	unsigned maximum_skip = (1 << alignment) - 1;
+	maximum_skip = (1 << alignment) - 1;
 	be_emit_cstring("\t.p2align ");
 	be_emit_irprintf("%u,%s,%u\n", alignment, fill_byte, maximum_skip);
 	be_emit_write_line();
