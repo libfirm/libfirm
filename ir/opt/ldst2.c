@@ -43,6 +43,7 @@
 #include "irdump.h"
 #include "irflag_t.h"
 
+#if +0
 #define OPTIMISE_LOAD_AFTER_LOAD
 
 
@@ -529,6 +530,7 @@ static void Detotalise(ir_graph* irg)
 	FinalisePhis(irg);
 	xfree(unfinished_phis);
 }
+#endif
 
 
 static void AddSyncPreds(ir_nodeset_t* preds, ir_node* sync)
@@ -577,6 +579,7 @@ static void NormaliseSync(ir_node* node, void* env)
 }
 
 
+#if 0
 void opt_ldst2(ir_graph* irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst2");
@@ -610,4 +613,219 @@ void opt_ldst2(ir_graph* irg)
   optimize_graph_df(irg);
 	irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 	dump_ir_block_graph(irg, "-postfluffig");
+}
+#endif
+
+
+typedef struct parallelise_info
+{
+	ir_node      *origin_block;
+	ir_node      *origin_ptr;
+	ir_mode      *origin_mode;
+	ir_nodeset_t  this_mem;
+	ir_nodeset_t  user_mem;
+} parallelise_info;
+
+
+static void parallelise_load(parallelise_info *pi, ir_node *irn)
+{
+	//ir_fprintf(stderr, "considering %+F\n", irn);
+	if (get_nodes_block(irn) == pi->origin_block) {
+		if (is_Proj(irn)) {
+			ir_node *pred = get_Proj_pred(irn);
+			if (is_Load(pred) &&
+					get_Load_volatility(pred) == volatility_non_volatile) {
+				ir_node *mem = get_Load_mem(pred);
+				//ir_nodeset_insert(&pi->this_mem, mem);
+				ir_nodeset_insert(&pi->user_mem, irn);
+				//ir_fprintf(stderr, "adding %+F to user set\n", irn);
+				parallelise_load(pi, mem);
+				return;
+			} else if (is_Store(pred) &&
+					get_Store_volatility(pred) == volatility_non_volatile) {
+				ir_mode *org_mode   = pi->origin_mode;
+				ir_node *org_ptr    = pi->origin_ptr;
+				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
+				ir_node *store_ptr  = get_Store_ptr(pred);
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == no_alias) {
+					ir_node *mem = get_Store_mem(pred);
+					ir_fprintf(stderr, "Ld after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
+					ir_nodeset_insert(&pi->user_mem, irn);
+					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
+					parallelise_load(pi, mem);
+					return;
+				}
+			}
+		} else if (is_Sync(irn)) {
+			int n = get_Sync_n_preds(irn);
+			int i;
+
+			for (i = 0; i < n; ++i) {
+				ir_node *sync_pred = get_Sync_pred(irn, i);
+				parallelise_load(pi, sync_pred);
+			}
+			return;
+		}
+	}
+	ir_nodeset_insert(&pi->this_mem, irn);
+	//ir_fprintf(stderr, "adding %+F to this set\n", irn);
+}
+
+
+static void parallelise_store(parallelise_info *pi, ir_node *irn)
+{
+	//ir_fprintf(stderr, "considering %+F\n", irn);
+	if (get_nodes_block(irn) == pi->origin_block) {
+		if (is_Proj(irn)) {
+			ir_node *pred = get_Proj_pred(irn);
+			if (is_Load(pred) &&
+					get_Load_volatility(pred) == volatility_non_volatile) {
+				ir_mode *org_mode  = pi->origin_mode;
+				ir_node *org_ptr   = pi->origin_ptr;
+				ir_mode *load_mode = get_Load_mode(pred);
+				ir_node *load_ptr  = get_Load_ptr(pred);
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, load_ptr, load_mode) == no_alias) {
+					ir_node *mem = get_Load_mem(pred);
+					ir_fprintf(stderr, "St after Ld: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, load_ptr, load_mode);
+					ir_nodeset_insert(&pi->user_mem, irn);
+					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
+					parallelise_store(pi, mem);
+					return;
+				}
+			} else if (is_Store(pred) &&
+					get_Store_volatility(pred) == volatility_non_volatile) {
+				ir_mode *org_mode   = pi->origin_mode;
+				ir_node *org_ptr    = pi->origin_ptr;
+				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
+				ir_node *store_ptr  = get_Store_ptr(pred);
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == no_alias) {
+					ir_fprintf(stderr, "St after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
+					ir_node *mem = get_Store_mem(pred);
+					ir_nodeset_insert(&pi->user_mem, irn);
+					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
+					parallelise_store(pi, mem);
+					return;
+				}
+			}
+		} else if (is_Sync(irn)) {
+			int n = get_Sync_n_preds(irn);
+			int i;
+
+			for (i = 0; i < n; ++i) {
+				ir_node *sync_pred = get_Sync_pred(irn, i);
+				parallelise_store(pi, sync_pred);
+			}
+			return;
+		}
+	}
+	ir_nodeset_insert(&pi->this_mem, irn);
+	//ir_fprintf(stderr, "adding %+F to this set\n", irn);
+}
+
+
+static void walker(ir_node *proj, void *env)
+{
+	ir_node          *mem_op;
+	ir_node          *pred;
+	ir_node          *block;
+	int               n;
+	parallelise_info  pi;
+
+	(void)env;
+
+	if (!is_Proj(proj)) return;
+	if (get_irn_mode(proj) != mode_M) return;
+
+	mem_op = get_Proj_pred(proj);
+	if (is_Load(mem_op)) {
+		if (get_Load_volatility(mem_op) != volatility_non_volatile) return;
+
+		block = get_nodes_block(mem_op);
+		pred  = get_Load_mem(mem_op);
+		//ir_fprintf(stderr, "starting parallelise at %+F for %+F\n", pred, proj);
+
+		pi.origin_block = block,
+		pi.origin_ptr   = get_Load_ptr(mem_op);
+		pi.origin_mode  = get_Load_mode(mem_op);
+		ir_nodeset_init(&pi.this_mem);
+		ir_nodeset_init(&pi.user_mem);
+
+		parallelise_load(&pi, pred);
+	} else if (is_Store(mem_op)) {
+		if (get_Store_volatility(mem_op) != volatility_non_volatile) return;
+
+		block = get_nodes_block(mem_op);
+		pred  = get_Store_mem(mem_op);
+		//ir_fprintf(stderr, "starting parallelise at %+F for %+F\n", pred, proj);
+
+		pi.origin_block = block,
+		pi.origin_ptr   = get_Store_ptr(mem_op);
+		pi.origin_mode  = get_irn_mode(get_Store_value(mem_op));
+		ir_nodeset_init(&pi.this_mem);
+		ir_nodeset_init(&pi.user_mem);
+
+		parallelise_store(&pi, pred);
+	} else {
+		return;
+	}
+
+	n = ir_nodeset_size(&pi.user_mem);
+	if (n != 0) { /* nothing happend otherwise */
+		ir_graph               *irg  = current_ir_graph;
+		ir_node                *sync;
+		ir_node               **in;
+		ir_nodeset_iterator_t   iter;
+		int                     i;
+
+		++n;
+		//ir_fprintf(stderr, "creating sync for users of %+F with %d inputs\n", proj, n);
+		NEW_ARR_A(ir_node*, in, n);
+		i = 0;
+		in[i++] = new_r_Unknown(irg, mode_M);
+		ir_nodeset_iterator_init(&iter, &pi.user_mem);
+		for (;;) {
+			ir_node* p = ir_nodeset_iterator_next(&iter);
+			if (p == NULL) break;
+			in[i++] = p;
+		}
+		assert(i == n);
+		sync = new_r_Sync(irg, block, n, in);
+		exchange(proj, sync);
+
+		assert(pn_Load_M == pn_Store_M);
+		proj = new_r_Proj(irg, block, mem_op, mode_M, pn_Load_M);
+		set_Sync_pred(sync, 0, proj);
+
+		n = ir_nodeset_size(&pi.this_mem);
+		//ir_fprintf(stderr, "creating sync for %+F with %d inputs\n", mem_op, n);
+		ir_nodeset_iterator_init(&iter, &pi.this_mem);
+		if (n == 1) {
+			sync = ir_nodeset_iterator_next(&iter);
+		} else {
+			NEW_ARR_A(ir_node*, in, n);
+			i = 0;
+			for (;;) {
+				ir_node* p = ir_nodeset_iterator_next(&iter);
+				if (p == NULL) break;
+				in[i++] = p;
+			}
+			assert(i == n);
+			sync = new_r_Sync(irg, block, n, in);
+		}
+		set_memop_mem(mem_op, sync);
+	}
+
+	ir_nodeset_destroy(&pi.this_mem);
+	ir_nodeset_destroy(&pi.user_mem);
+}
+
+
+void opt_ldst2(ir_graph *irg)
+{
+	assure_irg_address_taken_computed(irg);
+	assure_irp_globals_address_taken_computed();
+
+	irg_walk_graph(irg, NULL, walker, NULL);
+  //optimize_graph_df(irg);
+	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 }
