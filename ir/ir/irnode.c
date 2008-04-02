@@ -3084,7 +3084,26 @@ dbg_info *(get_irn_dbg_info)(const ir_node *n) {
 	return _get_irn_dbg_info(n);
 }
 
+/* checks whether a node represents a global address */
+int is_Global(const ir_node *node) {
+	ir_node *ptr;
 
+	if (is_SymConst_addr_ent(node))
+		return 1;
+	if (! is_Sel(node))
+		return 0;
+
+	ptr = get_Sel_ptr(node);
+	return is_globals_pointer(ptr) != NULL;
+}
+
+/* returns the entity of a global address */
+ir_entity *get_Global_ent(const ir_node *node) {
+	if (is_SymConst(node))
+		return get_SymConst_entity(node);
+	else
+		return get_Sel_entity(node);
+}
 
 #ifdef DEBUG_libfirm
 void dump_irn(const ir_node *n) {

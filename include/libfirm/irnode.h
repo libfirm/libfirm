@@ -1413,6 +1413,12 @@ cond_jmp_predicate get_Cond_jmp_pred(const ir_node *cond);
 /** Sets a new conditional jump prediction. */
 void set_Cond_jmp_pred(ir_node *cond, cond_jmp_predicate pred);
 
+/** Checks whether a node represents a global address. */
+int is_Global(const ir_node *node);
+
+/* Returns the entity of a global address. */
+ir_entity *get_Global_ent(const ir_node *node);
+
 /**
  * Access custom node data.
  * The data must have been registered with
