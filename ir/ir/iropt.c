@@ -3647,11 +3647,9 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		break;
 	}
 
-	/* remove Casts */
-	if (is_Cast(left))
-		left = get_Cast_op(left);
-	if (is_Cast(right))
-		right = get_Cast_op(right);
+	/* remove Casts of both sides */
+	left  = skip_Cast(left);
+	right = skip_Cast(right);
 
 	/* Remove unnecessary conversions */
 	/* TODO handle constants */
@@ -3686,7 +3684,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 		}
 	}
 
-	/* remove operation of both sides if possible */
+	/* remove operation on both sides if possible */
 	if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
 		/*
 		 * The following operations are NOT safe for floating point operations, for instance

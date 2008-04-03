@@ -190,12 +190,17 @@ int value_not_null(ir_node *n, ir_node **confirm) {
 			op = get_irn_op(n);
 		}
 	}
-	if (op == op_SymConst && get_SymConst_kind(n) == symconst_addr_ent)
+	if (is_Global(n)) {
+		/* global references are never NULL */
 		return 1;
-	if (op == op_Const) {
-		if (!is_Const_null(n))
-			return 1;
+	} else if (n == get_irg_frame(current_ir_graph)) {
+		/* local references are never NULL */
+		return 1;
+	} else if (op == op_Const) {
+		/* explicit non-NULL addresses */
+		return !is_Const_null(n);
 	} else {
+		/* check for more Confirms */
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
 			if (get_Confirm_cmp(n) != pn_Cmp_Lg) {
 				ir_node *bound = get_Confirm_bound(n);
@@ -622,8 +627,9 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
 
 		pnc = get_inversed_pnc(pnc);
 	} else if (! is_Confirm(left)) {
-		/* no Confirm on either one side, finish */
-		return tarval_bad;
+		/* nothing more found */
+		tv = tarval_bad;
+		goto check_null_case;
 	}
 
 	/* ok, here at least left is a Confirm, right might be */
@@ -756,6 +762,24 @@ tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, 
 			get_interval(&l_iv, l_bound, l_pnc),
 			get_interval_from_tv(&r_iv, tv),
 			pnc);
+	} else {
+check_null_case:
+		/* check some other cases */
+		if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) &&
+			is_Const(right) && is_Const_null(right)) {
+			/* for == 0 or != 0 we have some special tools */
+			ir_mode *mode = get_irn_mode(left);
+			ir_node *dummy;
+			if (mode_is_reference(mode)) {
+				if (value_not_null(left, &dummy)) {
+					tv = pnc == pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
+				}
+			} else {
+				if (value_not_zero(left, &dummy)) {
+					tv = pnc == pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
+				}
+			}
+		}
 	}
 
 	if (tv != tarval_bad)
