@@ -71,6 +71,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static const ia32_isa_t *isa;
 static ia32_code_gen_t  *cg;
+static int               do_pic;
+static char              pic_base_label[128];
 
 /**
  * Returns the register at in position pos.
@@ -456,7 +458,7 @@ void ia32_emit_unop(const ir_node *node, int pos) {
 	}
 }
 
-static void ia32_emit_entity(ir_entity *entity)
+static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 {
 	ident *id;
 
@@ -464,12 +466,18 @@ static void ia32_emit_entity(ir_entity *entity)
 	id = get_entity_ld_ident(entity);
 	be_emit_ident(id);
 
-	if(get_entity_owner(entity) == get_tls_type()) {
+	if (get_entity_owner(entity) == get_tls_type()) {
 		if (get_entity_visibility(entity) == visibility_external_allocated) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");
 		}
+	}
+
+	if (!no_pic_adjust && do_pic) {
+		/* TODO: only do this when necessary */
+		be_emit_char('-');
+		be_emit_string(pic_base_label);
 	}
 }
 
@@ -491,7 +499,7 @@ void ia32_emit_am(const ir_node *node) {
 	if (ent != NULL) {
 		if (is_ia32_am_sc_sign(node))
 			be_emit_char('-');
-		ia32_emit_entity(ent);
+		ia32_emit_entity(ent, 0);
 	}
 
 	if(offs != 0) {
@@ -1138,7 +1146,7 @@ static void emit_ia32_Immediate(const ir_node *node)
 	if(attr->symconst != NULL) {
 		if(attr->sc_sign)
 			be_emit_char('-');
-		ia32_emit_entity(attr->symconst);
+		ia32_emit_entity(attr->symconst, 0);
 	}
 	if(attr->symconst == NULL || attr->offset != 0) {
 		if(attr->symconst != NULL) {
@@ -1532,7 +1540,7 @@ static void emit_be_Call(const ir_node *node)
 
 	be_emit_cstring("\tcall ");
 	if (ent) {
-		ia32_emit_entity(ent);
+		ia32_emit_entity(ent, 1);
 	} else {
 		const arch_register_t *reg = get_in_reg(node, be_pos_Call_ptr);
 		be_emit_char('*');
@@ -1789,6 +1797,22 @@ zero_neg:
 	emit_sbb( node, in_hi, out_hi);
 }
 
+static void emit_ia32_GetEIP(const ir_node *node)
+{
+	be_emit_cstring("\tcall ");
+	be_emit_string(pic_base_label);
+	be_emit_finish_line_gas(node);
+
+	be_emit_string(pic_base_label);
+	be_emit_cstring(":\n");
+	be_emit_write_line();
+
+	be_emit_cstring("\tpopl ");
+	ia32_emit_dest_register(node, 0);
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
 static void emit_be_Return(const ir_node *node)
 {
 	unsigned pop;
@@ -1852,6 +1876,7 @@ static void ia32_register_emitters(void) {
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(Jcc);
+	IA32_EMIT(GetEIP);
 
 	/* benode emitter */
 	BE_EMIT(Call);
@@ -2090,8 +2115,11 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	cg       = ia32_cg;
 	isa      = (const ia32_isa_t*) cg->arch_env->isa;
 	arch_env = cg->arch_env;
+	do_pic   = cg->birg->main_env->options->pic;
 
 	ia32_register_emitters();
+
+	get_unique_label(pic_base_label, sizeof(pic_base_label), ".PIC_BASE");
 
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);

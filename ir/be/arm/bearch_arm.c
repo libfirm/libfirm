@@ -577,6 +577,7 @@ static void *arm_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
+	NULL,               /* get_pic_base */
 	arm_before_abi,     /* before abi introduce */
 	arm_prepare_graph,
 	NULL,               /* spill */

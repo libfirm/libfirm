@@ -552,6 +552,7 @@ static void *mips_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_cg_init,
+	NULL,                /* get_pic_base */
 	NULL,                /* before abi introduce */
 	mips_prepare_graph,
 	NULL,                /* spill */

@@ -67,6 +67,7 @@ struct be_options_t {
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
+	int  pic;                 /**< create position independent code */
 	int  vrfy_option;         /**< backend verify option */
 	int  scheduler;           /**< the scheduler */
 	char target_os[128];      /**< target operating system name */
@@ -83,6 +84,8 @@ struct be_main_env_t {
 	arch_code_generator_t *cg;
 	arch_irn_handler_t    *phi_handler;
 	const char            *cup_name;
+	ir_type               *pic_trampolines_type;
+	ir_type               *pic_symbols_type;
 };
 
 /**

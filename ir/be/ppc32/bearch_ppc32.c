@@ -595,6 +595,7 @@ static void *ppc32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_cg_init,
+	NULL,                 /* get_pic_base */
 	ppc32_before_abi,
 	ppc32_prepare_graph,
 	NULL,                 /* spill */

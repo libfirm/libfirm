@@ -321,6 +321,7 @@ static void *TEMPLATE_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_cg_init,
+	NULL,                    /* get_pic_base hook */
 	NULL,                    /* before abi introduce hook */
 	TEMPLATE_prepare_graph,
 	NULL,                    /* spill hook */

@@ -76,7 +76,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "gen_ia32_machine.h"
 #include "ia32_transform.h"
-#include "ia32_pbqp_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
 #include "ia32_optimize.h"
@@ -86,6 +85,10 @@
 #include "ia32_util.h"
 #include "ia32_fpu.h"
 #include "ia32_architecture.h"
+
+#ifdef FIRM_GRGEN_BE
+#include "ia32_pbqp_transform.h"
+#endif
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -957,6 +960,7 @@ static void ia32_prepare_graph(void *self) {
 	if(cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
+#ifdef FIRM_GRGEN_BE
         /* used for examination purposes only
          * if(cg->dump)
                 dump_irg_grgen(cg->irg, "-pre_transform");
@@ -964,6 +968,7 @@ static void ia32_prepare_graph(void *self) {
 
         /* transform nodes into assembler instructions by PBQP magic */
         ia32_transform_graph_by_pbqp(cg);
+#endif
 
 	if(cg->dump)
 		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
@@ -1515,10 +1520,28 @@ static void ia32_codegen(void *self) {
 	free(cg);
 }
 
+static ir_node *ia32_get_pic_base(void *self) {
+	ir_node         *block;
+	ia32_code_gen_t *cg      = self;
+	ir_node         *get_eip = cg->get_eip;
+	if(get_eip != NULL)
+		return get_eip;
+
+
+	block       = get_irg_start_block(cg->irg);
+	get_eip     = new_rd_ia32_GetEIP(NULL, cg->irg, block);
+	cg->get_eip = get_eip;
+
+	add_irn_dep(get_eip, get_irg_frame(cg->irg));
+
+	return get_eip;
+}
+
 static void *ia32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
+	ia32_get_pic_base,
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	NULL,                /* spill */

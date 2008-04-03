@@ -41,7 +41,9 @@ typedef enum section_t {
 	GAS_SECTION_TLS,    /**< thread local storage section */
 	GAS_SECTION_CTOR,   /**< ctor section for instrumentation code init */
 	GAS_SECTION_CSTRING, /**< section for constant strings */
-	GAS_SECTION_LAST = GAS_SECTION_CSTRING
+	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
+	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */
+	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS
 } be_gas_section_t;
 
 /**

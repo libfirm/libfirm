@@ -69,7 +69,9 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
+			NULL, /* no cstring section */
 			NULL,
+			NULL
 		},
 		{ /* GAS_FLAVOUR_MINGW */
 			".section\t.text",
@@ -79,6 +81,8 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
 			NULL,
+			NULL,
+			NULL
 		},
 		{ /* GAS_FLAVOUR_YASM */
 			".section\t.text",
@@ -87,6 +91,8 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
+			NULL,
+			NULL,
 			NULL
 		},
 		{ /* GAS_FLAVOUR_MACH_O */
@@ -96,7 +102,9 @@ static const char *get_section_name(be_gas_section_t section) {
 			".data",
 			NULL,             /* TLS is not supported on Mach-O */
 			".mod_init_func",
-			".cstring"
+			".cstring",
+			".section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5",
+			".section\t__IMPORT,__pointers,non_lazy_symbol_pointers"
 		}
 	};
 
@@ -1099,6 +1107,10 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 	ir_variability    variability    = get_entity_variability(ent);
 	ir_visibility     visibility     = get_entity_visibility(ent);
 
+	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
+		return;
+	}
+
 	if (section != (be_gas_section_t) -1) {
 		emit_as_common = 0;
 	} else if (variability == variability_constant) {
@@ -1136,7 +1148,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		return;
 	}
 	/* alignment */
-	if (align > 1 && !emit_as_common) {
+	if (align > 1 && !emit_as_common && section != GAS_SECTION_PIC_TRAMPOLINES
+			&& section != GAS_SECTION_PIC_SYMBOLS) {
 		emit_align(align);
 	}
 
@@ -1161,6 +1174,17 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 					get_id_str(ld_ident), get_type_size_bytes(type), align);
 				be_emit_write_line();
 				break;
+			}
+		} else if (section == GAS_SECTION_PIC_TRAMPOLINES) {
+			if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+				be_emit_cstring("\t.indirect_symbol ");
+				be_emit_ident(get_entity_ident(ent));
+				be_emit_char('\n');
+				be_emit_write_line();
+				be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
+				be_emit_write_line();
+			} else {
+				panic("PIC trampolines not yet supported in this gas mode");
 			}
 		} else {
 			be_emit_irprintf("\t.space %u\n", get_type_size_bytes(type));
@@ -1253,4 +1277,17 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 	env.section = GAS_SECTION_CTOR;
 	be_gas_dump_globals(get_constructors_type(), &env,
 	                    only_emit_marked_entities);
+	env.section = GAS_SECTION_PIC_SYMBOLS;
+	be_gas_dump_globals(main_env->pic_symbols_type, &env,
+	                    only_emit_marked_entities);
+
+	if (get_compound_n_members(main_env->pic_trampolines_type) > 0) {
+		env.section = GAS_SECTION_PIC_TRAMPOLINES;
+		be_gas_dump_globals(main_env->pic_trampolines_type, &env,
+		                    only_emit_marked_entities);
+		if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+			be_emit_cstring("\t.subsections_via_symbols\n");
+			be_emit_write_line();
+		}
+	}
 }

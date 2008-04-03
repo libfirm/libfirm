@@ -1174,6 +1174,15 @@ Const => {
 	mode      => $mode_gp,
 },
 
+GetEIP => {
+	op_flags => "c",
+	reg_req  => { out => [ "gp" ] },
+	units    => [ "GP" ],
+	latency  => 5,
+	mode     => $mode_gp,
+	modified_flags => $status_flags,
+},
+
 Unknown_GP => {
 	state     => "pinned",
 	op_flags  => "c",

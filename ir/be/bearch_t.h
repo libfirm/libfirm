@@ -318,6 +318,11 @@ struct arch_code_generator_if_t {
 	void *(*init)(be_irg_t *birg);
 
 	/**
+	 * return node used as base in pic code addresses
+	 */
+	ir_node* (*get_pic_base)(void *self);
+
+	/**
 	 * Called before abi introduce.
 	 */
 	void (*before_abi)(void *self);
@@ -387,6 +392,8 @@ do { \
 #define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
 #define arch_code_generator_spill(cg, birg)     _arch_cg_call_env(cg, birg, spill)
 #define arch_code_generator_has_spiller(cg)     ((cg)->impl->spill != NULL)
+#define arch_code_generator_get_pic_base(cg)    \
+	((cg)->impl->get_pic_base != NULL ? (cg)->impl->get_pic_base(cg) : NULL)
 
 /**
  * Code generator base class.

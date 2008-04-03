@@ -87,6 +87,7 @@ static be_options_t be_options = {
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
+	0,                                 /* create PIC code */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"linux",                           /* target OS name */
@@ -149,6 +150,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",   "omit frame pointer",                                  &be_options.omit_fp),
+	LC_OPT_ENT_BOOL     ("pic",      "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
@@ -249,6 +251,14 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
 	env->options  = &be_options;
+	env->pic_trampolines_type
+		= new_type_class(new_id_from_str("$PIC_TRAMPOLINE_TYPE"));
+	env->pic_symbols_type
+		= new_type_struct(new_id_from_str("$PIC_SYMBOLS_TYPE"));
+
+	remove_irp_type(env->pic_trampolines_type);
+	remove_irp_type(env->pic_symbols_type);
+	set_class_final(env->pic_trampolines_type, 1);
 
 	arch_env_init(env->arch_env, isa_if, file_handle, env);
 
@@ -275,6 +285,9 @@ static void be_done_env(be_main_env_t *env)
 	be_dbg_close();
 	be_phi_handler_free(env->phi_handler);
 	obstack_free(&env->obst, NULL);
+
+	free_type(env->pic_trampolines_type);
+	free_type(env->pic_symbols_type);
 }
 
 /**
@@ -443,7 +456,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		ir_graph *prof_init_irg = ir_profile_instrument(prof_filename, profile_default);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
-		set_method_img_section(get_irg_entity(prof_init_irg), section_constructors);
 	} else {
 		ir_profile_read(prof_filename);
 	}

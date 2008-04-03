@@ -115,6 +115,7 @@ static heights_t *ir_heights;
 
 /* Flag: if set, try to omit the frame pointer if called by the backend */
 static int be_omit_fp = 1;
+static int be_pic     = 0;
 
 /*
      _    ____ ___    ____      _ _ _                _
@@ -2000,6 +2001,93 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 	}
 }
 
+static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
+{
+	ir_type   *type   = get_entity_type(method);
+	ident     *old_id = get_entity_ld_ident(method);
+	ident     *id     = mangle3("L", old_id, "$stub");
+	ir_type   *parent = be->pic_trampolines_type;
+	ir_entity *ent    = new_entity(parent, old_id, type);
+	set_entity_ld_ident(ent, id);
+	set_entity_visibility(ent, visibility_local);
+	set_entity_variability(ent, variability_uninitialized);
+
+	return ent;
+}
+
+static int can_address_relative(ir_entity *entity)
+{
+	return get_entity_variability(entity) == variability_initialized
+		|| get_entity_visibility(entity) == visibility_local;
+}
+
+/** patches SymConsts to work in position independent code */
+static void fix_pic_symconsts(ir_node *node, void *data)
+{
+	ir_graph     *irg;
+	ir_node      *pic_base;
+	ir_node      *add;
+	ir_node      *block;
+	ir_node      *unknown;
+	ir_mode      *mode;
+	ir_node      *load;
+	ir_node      *load_res;
+	be_abi_irg_t *env = data;
+	int           arity, i;
+	be_main_env_t *be = env->birg->main_env;
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node   *pred = get_irn_n(node, i);
+		ir_entity *entity;
+		if (!is_SymConst(pred))
+			continue;
+
+		entity = get_SymConst_entity(pred);
+		block  = get_nodes_block(pred);
+		irg    = get_irn_irg(pred);
+
+		/* calls can jump to relative addresses, so we can directly jump to
+		   the (relatively) known call address or the trampoline */
+		if (is_Call(node) && i == 1) {
+			if(can_address_relative(entity))
+				continue;
+
+			dbg_info  *dbgi             = get_irn_dbg_info(pred);
+			ir_entity *trampoline       = create_trampoline(be, entity);
+			ir_node   *trampoline_const
+				= new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, trampoline,
+			                               NULL);
+			set_irn_n(node, i, trampoline_const);
+			continue;
+		}
+
+		/* everything else is accessed relative to EIP */
+		mode     = get_irn_mode(pred);
+		unknown  = new_r_Unknown(irg, mode);
+		pic_base = arch_code_generator_get_pic_base(env->birg->cg);
+		add      = new_r_Add(irg, block, pic_base, pred, mode);
+
+		/* make sure the walker doesn't visit this add again */
+		mark_irn_visited(add);
+
+		/* all ok now for locally constructed stuff */
+		if (can_address_relative(entity)) {
+			set_irn_n(node, i, add);
+			continue;
+		}
+
+		/* we need an extra indirection for global data outside our current
+		   module. The loads are always safe and can therefore float
+		   and need no memory input */
+		load     = new_r_Load(irg, block, new_NoMem(), add, mode);
+		load_res = new_r_Proj(irg, block, load, mode, pn_Load_res);
+		set_irn_pinned(load, op_pin_state_floats);
+
+		set_irn_n(node, i, load_res);
+	}
+}
+
 be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 {
 	be_abi_irg_t *env  = xmalloc(sizeof(env[0]));
@@ -2012,6 +2100,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	unsigned *limited_bitset;
 
 	be_omit_fp = birg->main_env->options->omit_fp;
+	be_pic     = birg->main_env->options->pic;
 
 	obstack_init(&env->obst);
 
@@ -2043,6 +2132,10 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
 	env->calls = NEW_ARR_F(ir_node*, 0);
+
+	if (be_pic) {
+		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
+	}
 
 	/* Lower all call nodes in the IRG. */
 	process_calls(env);

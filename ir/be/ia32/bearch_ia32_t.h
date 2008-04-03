@@ -75,6 +75,7 @@ struct ia32_code_gen_t {
 	ir_node                       *noreg_xmm;      /**< unique NoReg_XMM node */
 
 	ir_node                       *fpu_trunc_mode; /**< truncate fpu mode */
+	ir_node                       *get_eip;        /**< get eip node */
 
 	struct obstack                *obst;
 };
