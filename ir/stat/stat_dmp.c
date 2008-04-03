@@ -588,7 +588,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	fprintf(dmp->f, "-------------------------------\n");
 
 	for (i = 0; i < ARR_SIZE(tbl->int_bits_count); ++i) {
-		fprintf(dmp->f, "%5d %12u\n", i + 1, cnt_to_uint(&tbl->int_bits_count[i]));
+		fprintf(dmp->f, "%5u %12u\n", (unsigned) (i + 1), cnt_to_uint(&tbl->int_bits_count[i]));
 		cnt_add(&sum, &tbl->int_bits_count[i]);
 	}  /* for */
 	fprintf(dmp->f, "-------------------------------\n");
