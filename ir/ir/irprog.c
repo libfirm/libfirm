@@ -44,6 +44,8 @@
 #define GLOBAL_TYPE_NAME "GlobalType"
 /** The name of the Thread Local Storage type. */
 #define TLS_TYPE_NAME "TLS"
+/** The name of the constructors type. */
+#define CONSTRUCTORS_TYPE_NAME "Constructors"
 /** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"
 
@@ -81,13 +83,15 @@ static ir_prog *new_incomplete_ir_prog(void) {
 static ir_prog *complete_ir_prog(ir_prog *irp) {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 
-	irp->name      = IDENT(INITAL_PROG_NAME);
-	irp->glob_type = new_type_class(IDENT(GLOBAL_TYPE_NAME));
-	irp->tls_type  = new_type_struct(IDENT(TLS_TYPE_NAME));
+	irp->name              = IDENT(INITAL_PROG_NAME);
+	irp->glob_type         = new_type_class(IDENT(GLOBAL_TYPE_NAME));
+	irp->tls_type          = new_type_struct(IDENT(TLS_TYPE_NAME));
+	irp->constructors_type = new_type_struct(IDENT(CONSTRUCTORS_TYPE_NAME));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
 	remove_irp_type(irp->glob_type);
 	remove_irp_type(irp->tls_type);
+	remove_irp_type(irp->constructors_type);
 
 	/* Set these flags for debugging. */
 	irp->glob_type->flags |= tf_global_type;
@@ -129,10 +133,9 @@ ir_prog *new_ir_prog (void) {
 /* frees all memory used by irp.  Types in type list, irgs in irg
    list and entities in global type must be freed by hand before. */
 void free_ir_prog(void) {
-	if (irp->glob_type)
-		free_type(irp->glob_type);
-	if (irp->tls_type)
-		free_type(irp->tls_type);
+	free_type(irp->glob_type);
+	free_type(irp->tls_type);
+	free_type(irp->constructors_type);
 
 	/* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
 	DEL_ARR_F(irp->graphs);
@@ -166,6 +169,10 @@ ir_type *(get_glob_type)(void) {
 
 ir_type *(get_tls_type)(void) {
 	return _get_tls_type();
+}
+
+ir_type *(get_constructors_type)(void) {
+	return _get_constructors_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */

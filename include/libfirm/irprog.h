@@ -152,6 +152,13 @@ ir_type *get_glob_type(void);
  */
 ir_type *get_tls_type(void);
 
+/**
+ * returns the constructors type containing entities that should be put in
+ * the constructos section. (The constructors section contains pointers to
+ * module constructor functions)
+ */
+ir_type *get_constructors_type(void);
+
 /** Adds type to the list of types in irp. */
 void add_irp_type(ir_type *typ);
 

@@ -59,6 +59,12 @@ _get_tls_type(void) {
 	return irp->tls_type = skip_tid(irp->tls_type);
 }
 
+static INLINE ir_type *
+_get_constructors_type(void) {
+	assert(irp);
+	return irp->constructors_type = skip_tid(irp->constructors_type);
+}
+
 static INLINE int
 _get_irp_n_irgs(void) {
 	assert (irp && irp->graphs);
@@ -166,6 +172,7 @@ void init_irprog_2(void);
 #define get_const_code_irg()      _get_const_code_irg()
 #define get_glob_type()           _get_glob_type()
 #define get_tls_type()            _get_tls_type()
+#define get_constructors_type()   _get_constructors_type()
 #define get_irp_next_region_nr()  _get_irp_next_region_nr()
 #define get_irp_next_label_nr()   _get_irp_next_label_nr()
 

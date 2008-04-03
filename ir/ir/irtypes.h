@@ -526,6 +526,8 @@ struct ir_prog {
 	                                     have fields and procedures.  */
 	ir_type   *tls_type;            /**< The thread local storage type.  Must be a struct as it can
 	                                     only have fields.  */
+	ir_type   *constructors_type;   /**< contains links to module constructor
+	                                     functions. Must be a struct */
 	ir_type  **types;               /**< A list of all types in the ir. */
 	ir_mode  **modes;               /**< A list of all modes in the ir. */
 	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */

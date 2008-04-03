@@ -172,6 +172,22 @@ fix_ssa(ir_node * bb, void * data)
 	set_Load_mem(get_irn_link(get_irn_link(bb)), mem);
 }
 
+static void add_constructor(ir_entity *method)
+{
+    ir_type   *method_type  = get_entity_type(method);
+    ident     *id           = id_unique("constructor_ptrt.%u");
+    ir_type   *ptr_type     = new_type_pointer(id, method_type, mode_P_code);
+
+    ir_type   *constructors = get_constructors_type();
+    ident     *ide          = id_unique("constructor_ptr.%u");
+    ir_entity *ptr          = new_entity(constructors, ide, ptr_type);
+	ir_graph  *irg          = get_const_code_irg();
+    ir_node   *val          = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code,
+	                                                   method, NULL);
+
+    set_entity_compiler_generated(ptr, 1);
+    set_atomic_ent_value(ptr, val);
+}
 
 /**
  * Generates a new irg which calls the initializer
@@ -238,6 +254,8 @@ gen_initializer_irg(ir_entity * ent_filename, ir_entity * bblock_id, ir_entity *
 	mature_immBlock(get_irg_end_block(irg));
 
 	irg_finalize_cons(irg);
+
+	add_constructor(ent);
 
 	return irg;
 }

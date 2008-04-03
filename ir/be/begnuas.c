@@ -197,8 +197,8 @@ void be_gas_emit_function_epilog(ir_entity *entity)
  */
 typedef struct _be_gas_decl_env {
 	const be_main_env_t *main_env; /**< The main backend environment, used for it's debug handle. */
-	int                  dump_tls;
-	waitq     *worklist;           /**< A worklist we use to place not yet handled entities on. */
+	be_gas_section_t     section;
+	waitq               *worklist;           /**< A worklist we use to place not yet handled entities on. */
 } be_gas_decl_env_t;
 
 /************************************************************************/
@@ -1088,37 +1088,18 @@ static void emit_align(unsigned alignment)
  *
  * @param env           the gas output environment
  * @param ent           the entity to be dumped
- * @param emit_commons  if non-zero, emit commons (non-local uninitialized entities)
  */
-static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons)
+static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 {
 	ir_type          *type           = get_entity_type(ent);
 	ident            *ld_ident       = get_entity_ld_ident(ent);
 	unsigned          align          = get_type_alignment_bytes(type);
 	int               emit_as_common = 0;
-	be_gas_section_t  section;
-	ir_variability    variability;
-	ir_visibility     visibility;
+	be_gas_section_t  section        = env->section;
+	ir_variability    variability    = get_entity_variability(ent);
+	ir_visibility     visibility     = get_entity_visibility(ent);
 
-	if (is_Method_type(type)) {
-		if (be_gas_flavour != GAS_FLAVOUR_MACH_O
-				&& get_method_img_section(ent) == section_constructors) {
-			be_gas_emit_switch_section(GAS_SECTION_CTOR);
-			emit_align(align);
-			dump_size_type(align);
-			be_emit_ident(ld_ident);
-			be_emit_char('\n');
-			be_emit_write_line();
-		}
-
-		return;
-	}
-
-	variability = get_entity_variability(ent);
-	visibility  = get_entity_visibility(ent);
-	section     = GAS_SECTION_DATA;
-	if (env->dump_tls) {
-		section = GAS_SECTION_TLS;
+	if (section != (be_gas_section_t) -1) {
 		emit_as_common = 0;
 	} else if (variability == variability_constant) {
 		/* a constant entity, put it on the rdata */
@@ -1130,7 +1111,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
 	} else if (variability == variability_uninitialized) {
 		/* uninitialized entity put it in bss segment */
 		section = GAS_SECTION_COMMON;
-		if (emit_commons && visibility != visibility_local)
+		if (visibility != visibility_local)
 			emit_as_common = 1;
 	}
 
@@ -1215,12 +1196,11 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent, int emit_commons
  *
  * @param gt                a global like type, either the global or the TLS one
  * @param env               an environment
- * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
  * @param only_emit_marked  if non-zero, external allocated entities that do not have
  *                          its visited flag set are ignored
  */
 static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
-                              int emit_commons, int only_emit_marked)
+                                int only_emit_marked)
 {
 	int i, n = get_compound_n_members(gt);
 	waitq *worklist = new_waitq();
@@ -1247,7 +1227,7 @@ static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
 	while (!waitq_empty(worklist)) {
 		ir_entity *ent = waitq_get(worklist);
 
-		dump_global(env, ent, emit_commons);
+		dump_global(env, ent);
 	}
 
 	del_waitq(worklist);
@@ -1266,10 +1246,11 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 	env.main_env = main_env;
 
 	/* dump global type */
-	be_gas_dump_globals(get_glob_type(), &env, 1, only_emit_marked_entities);
-
-	/* dump the Thread Local Storage */
-	env.dump_tls = 1;
-	be_gas_dump_globals(get_tls_type(), &env, 0, only_emit_marked_entities);
-	env.dump_tls = 0;
+	env.section = (be_gas_section_t) -1;
+	be_gas_dump_globals(get_glob_type(), &env, only_emit_marked_entities);
+	env.section = GAS_SECTION_TLS;
+	be_gas_dump_globals(get_tls_type(), &env, only_emit_marked_entities);
+	env.section = GAS_SECTION_CTOR;
+	be_gas_dump_globals(get_constructors_type(), &env,
+	                    only_emit_marked_entities);
 }

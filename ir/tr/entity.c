@@ -170,7 +170,6 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 		res->attr.mtd_attr.param_access       = NULL;
 		res->attr.mtd_attr.param_weight       = NULL;
 		res->attr.mtd_attr.irg                = NULL;
-		res->attr.mtd_attr.section            = section_text;
 	} else if (is_compound_type(type)) {
 		res->variability = variability_uninitialized;
 		res->value       = NULL;
@@ -1330,18 +1329,6 @@ void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number) {
 	assert(is_method_entity(ent));
 	ent->attr.mtd_attr.vtable_number = vtable_number;
 }  /* set_entity_vtable_number */
-
-/* Returns the section of a method. */
-ir_img_section get_method_img_section(const ir_entity *ent) {
-	assert(is_method_entity((ir_entity *)ent));
-	return ent->attr.mtd_attr.section;
-}  /* get_method_img_section */
-
-/* Sets the section of a method. */
-void set_method_img_section(ir_entity *ent, ir_img_section section) {
-	assert(is_method_entity(ent));
-	ent->attr.mtd_attr.section = section;
-}  /* set_method_img_section */
 
 int
 (is_entity)(const void *thing) {

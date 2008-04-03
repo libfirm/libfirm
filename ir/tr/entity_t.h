@@ -107,7 +107,6 @@ typedef struct method_ent_attr {
 	ptr_access_kind *param_access; /**< the parameter access */
 	float *param_weight;           /**< The weight of method's parameters. Parameters
 	                                    with a high weight are good for procedure cloning. */
-	ir_img_section section;        /**< The code section where this method should be placed */
 } method_ent_attr;
 
 
