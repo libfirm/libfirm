@@ -80,7 +80,7 @@ ident *mangle(ident *first, ident *scnd) {
 }
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-static ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
+ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
 	char *cp;
 	int len;
 	ident *res;

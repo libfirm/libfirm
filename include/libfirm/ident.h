@@ -305,6 +305,9 @@ ident *mangle_dot (ident *first, ident* scnd);
 /** mangle: Returns a new ident that represents firstscnd. */
 ident *mangle   (ident *first, ident* scnd);
 
+/** Returns a new ident that represents 'prefixscndsuffix'. */
+ident *mangle3 (const char *prefix, ident *middle, const char *suffix);
+
 /** returns a mangled name for a Win32 function using it's calling convention */
 ident *decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
