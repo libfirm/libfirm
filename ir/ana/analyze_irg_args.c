@@ -323,7 +323,7 @@ enum args_weight {
  * @param arg  The parameter them weight muss be computed.
  */
 static unsigned calc_method_param_weight(ir_node *arg) {
-	int      i;
+	int      i, j, k;
 	ir_node  *succ, *op;
 	unsigned weight = null_weight;
 
@@ -341,11 +341,15 @@ static unsigned calc_method_param_weight(ir_node *arg) {
 		if (get_irn_mode(succ) == mode_M)
 			continue;
 
-		if (is_Call(succ) && get_Call_ptr(succ) == arg) {
-			/* the arguments is used as an pointer input for a call,
-			   we can probably change an indirect Call into a direct one. */
-			weight += indirect_call_weight;
-		} else if (is_Cmp(succ)) {
+		switch (get_irn_opcode(succ)) {
+		case iro_Call:
+			if (get_Call_ptr(succ) == arg) {
+				/* the arguments is used as an pointer input for a call,
+				   we can probably change an indirect Call into a direct one. */
+				weight += indirect_call_weight;
+			}
+			break;
+		case iro_Cmp:
 			/* We have reached a cmp and we must increase the
 			   weight with the cmp_weight. */
 			if (get_Cmp_left(succ) == arg)
@@ -357,30 +361,59 @@ static unsigned calc_method_param_weight(ir_node *arg) {
 				weight += const_cmp_weight;
 			} else
 				weight += cmp_weight;
-		} else if (is_Cond(succ)) {
+			break;
+		case iro_Cond:
 			/* the argument is used for a SwitchCond, a big win */
 			weight += const_cmp_weight * get_irn_n_outs(succ);
-		} else if (is_binop(succ)) {
-			/* We have reached a BinOp and we must increase the
-			   weight with the binop_weight. If the other operand of the
-			   BinOp is a constant we increase the weight with const_binop_weight
-			   and call the function recursive.
-			 */
-			if (get_binop_left(succ) == arg)
-				op = get_binop_right(succ);
-			else
-				op = get_binop_left(succ);
+			break;
+		case iro_Id:
+			/* when looking backward we might find Id nodes */
+			weight += calc_method_param_weight(succ);
+			break;
+		case iro_Tuple:
+			/* unoptimized tuple */
+			for (j = get_Tuple_n_preds(succ) - 1; j >= 0; --j) {
+				ir_node *pred = get_Tuple_pred(succ, j);
+				if (pred == arg) {
+					/* look for Proj(j) */
+					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+						ir_node *succ_succ = get_irn_out(succ, k);
+						if (is_Proj(succ_succ)) {
+							if (get_Proj_proj(succ_succ) == j) {
+								/* found */
+								weight += calc_method_param_weight(succ_succ);
+							}
+						} else {
+							/* this should NOT happen */
+						}
+					}
+				}
+			}
+			break;
+		default:
+			if (is_binop(succ)) {
+				/* We have reached a BinOp and we must increase the
+				   weight with the binop_weight. If the other operand of the
+				   BinOp is a constant we increase the weight with const_binop_weight
+				   and call the function recursive.
+				 */
+				if (get_binop_left(succ) == arg)
+					op = get_binop_right(succ);
+				else
+					op = get_binop_left(succ);
 
-			if (is_irn_constlike(op)) {
+				if (is_irn_constlike(op)) {
+					weight += const_binop_weight;
+					weight += calc_method_param_weight(succ);
+				} else
+					weight += binop_weight;
+			} else if (is_unop(succ)) {
+				/* We have reached a binop and we must increase the
+				   weight with the const_binop_weight and call the function recursive.*/
 				weight += const_binop_weight;
 				weight += calc_method_param_weight(succ);
-			} else
-				weight += binop_weight;
-		} else if (is_unop(succ)) {
-			/* We have reached a binop and we must increase the
-			   weight with the const_binop_weight and call the function recursive.*/
-			weight += const_binop_weight;
-			weight += calc_method_param_weight(succ);
+			}
+			break;
 		}
 	}
 	set_irn_link(arg, NULL);
@@ -422,11 +455,10 @@ static void analyze_method_params_weight(ir_entity *ent) {
 	assure_irg_outs(irg);
 
 	irg_args = get_irg_args(irg);
-
 	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
 		arg     = get_irn_out(irg_args, i);
 		proj_nr = get_Proj_proj(arg);
-		ent->attr.mtd_attr.param_weight[proj_nr]  += calc_method_param_weight(arg);
+		ent->attr.mtd_attr.param_weight[proj_nr] += calc_method_param_weight(arg);
 	}
 
 #if 0
