@@ -1693,7 +1693,7 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg) {
 	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
 		arg     = get_irn_out(irg_args, i);
 		proj_nr = get_Proj_proj(arg);
-		ent->attr.mtd_attr.param_weight[proj_nr] = calc_method_local_weight(arg);
+		env->local_weights[proj_nr] = calc_method_local_weight(arg);
 	}
 }
 
