@@ -1753,6 +1753,10 @@ void inline_functions(int inline_threshold) {
 			call   = entry->call;
 			callee = entry->callee;
 
+			/* calculate the benifice on the original call to prevent excessive inlining */
+			benefice = calc_inline_benefice(call, callee);
+			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", current_ir_graph, callee, benefice));
+
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
 				/*
@@ -1762,10 +1766,7 @@ void inline_functions(int inline_threshold) {
 				callee = e->value;
 			}
 
-			benefice = calc_inline_benefice(call, callee);
-			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", current_ir_graph, callee, benefice));
-
-			if (benefice > inline_threshold ||
+			if (benefice > -inline_threshold ||
 				(get_irg_inline_property(callee) >= irg_inline_forced)) {
 				if (current_ir_graph == callee) {
 					/*
