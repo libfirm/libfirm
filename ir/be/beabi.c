@@ -2050,14 +2050,16 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		/* calls can jump to relative addresses, so we can directly jump to
 		   the (relatively) known call address or the trampoline */
 		if (is_Call(node) && i == 1) {
-			if(can_address_relative(entity))
+			dbg_info  *dbgi;
+			ir_entity *trampoline;
+			ir_node   *trampoline_const;
+
+			if (can_address_relative(entity))
 				continue;
 
-			dbg_info  *dbgi             = get_irn_dbg_info(pred);
-			ir_entity *trampoline       = create_trampoline(be, entity);
-			ir_node   *trampoline_const
-				= new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, trampoline,
-			                               NULL);
+			dbgi             = get_irn_dbg_info(pred);
+			trampoline       = create_trampoline(be, entity);
+			trampoline_const = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, trampoline, NULL);
 			set_irn_n(node, i, trampoline_const);
 			continue;
 		}
