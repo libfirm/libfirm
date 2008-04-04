@@ -1630,9 +1630,6 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	current_ir_graph = rem;
 }
 
-static char v;
-static void *VISITED = &v;
-
 /**
  * Calculate the parameter weights for transmitting the address of a local variable.
  */
@@ -1808,14 +1805,13 @@ void inline_functions(int inline_threshold) {
 	wenv_t           wenv;
 	call_entry       *entry, *tail;
 	const call_entry *centry;
-	struct obstack   obst;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 	rem = current_ir_graph;
-	obstack_init(&obst);
+	obstack_init(&temp_obst);
 
 	/* a map for the copied graphs, used to inline recursive calls */
 	copied_graphs = pmap_create();
@@ -1982,6 +1978,6 @@ void inline_functions(int inline_threshold) {
 	}
 	pmap_destroy(copied_graphs);
 
-	obstack_free(&obst, NULL);
+	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
 }
