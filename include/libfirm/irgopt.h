@@ -41,7 +41,7 @@ void local_optimize_node(ir_node *n);
  * After applying local_optimize_graph() to a IR-graph, Bad nodes
  * only occure as predecessor of Block and Phi nodes.
  */
-void local_optimize_graph (ir_graph *irg);
+void local_optimize_graph(ir_graph *irg);
 
 /** Applies local optimizations (see iropt.h) to all nodes in the graph.
  *
