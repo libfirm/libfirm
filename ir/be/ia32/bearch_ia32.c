@@ -961,13 +961,8 @@ static void ia32_prepare_graph(void *self) {
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
 #ifdef FIRM_GRGEN_BE
-        /* used for examination purposes only
-         * if(cg->dump)
-                dump_irg_grgen(cg->irg, "-pre_transform");
-         */
-
-        /* transform nodes into assembler instructions by PBQP magic */
-        ia32_transform_graph_by_pbqp(cg);
+	/* transform nodes into assembler instructions by PBQP magic */
+	ia32_transform_graph_by_pbqp(cg);
 #endif
 
 	if (cg->dump)
