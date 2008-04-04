@@ -1258,7 +1258,8 @@ typedef struct {
 	int n_call_nodes_orig;   /**< for statistics */
 	int n_callers;           /**< Number of known graphs that call this graphs. */
 	int n_callers_orig;      /**< for statistics */
-	int got_inline;          /**< Set, if at least one call inside this graph was inlined. */
+	unsigned got_inline:1;   /**< Set, if at least one call inside this graph was inlined. */
+	unsigned local_vars:1;   /**< Set, if a inlined function gets the address of an inlined variable. */
 	unsigned *local_weights; /**< Once allocated, the beneficial weight for transmitting local addresses. */
 } inline_irg_env;
 
@@ -1277,6 +1278,7 @@ static inline_irg_env *alloc_inline_irg_env(void) {
 	env->n_callers         = 0;
 	env->n_callers_orig    = 0;
 	env->got_inline        = 0;
+	env->local_vars        = 0;
 	env->local_weights     = NULL;
 	return env;
 }
@@ -1634,7 +1636,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
  * Calculate the parameter weights for transmitting the address of a local variable.
  */
 static unsigned calc_method_local_weight(ir_node *arg) {
-	int      i, j;
+	int      i, j, k;
 	unsigned v, weight = 0;
 
 	for (i = get_irn_n_outs(arg) - 1; i >= 0; --i) {
@@ -1661,6 +1663,30 @@ static unsigned calc_method_local_weight(ir_node *arg) {
 			/* we can kill one Sel with constant indexes, this is cheap */
 			weight += v + 1;
 			break;
+		case iro_Id:
+			/* when looking backward we might find Id nodes */
+			weight += calc_method_local_weight(succ);
+			break;
+		case iro_Tuple:
+			/* unoptimized tuple */
+			for (j = get_Tuple_n_preds(succ) - 1; j >= 0; --j) {
+				ir_node *pred = get_Tuple_pred(succ, j);
+				if (pred == arg) {
+					/* look for Proj(j) */
+					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+						ir_node *succ_succ = get_irn_out(succ, k);
+						if (is_Proj(succ_succ)) {
+							if (get_Proj_proj(succ_succ) == j) {
+								/* found */
+								weight += calc_method_local_weight(succ_succ);
+							}
+						} else {
+							/* this should NOT happen */
+							return 0;
+						}
+					}
+				}
+			}
 		default:
 			/* any other node: unsupported yet or bad. */
 			return 0;
@@ -1721,13 +1747,13 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, int pos) {
 /**
  * calculate a benefice value for inlining the given call.
  */
-static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
+static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local_adr) {
 	ir_entity *ent = get_irg_entity(callee);
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
 	int       i, n_params;
-	unsigned  cc;
+	unsigned  cc, v;
 
 	inline_irg_env *curr_env, *callee_env;
 
@@ -1766,7 +1792,10 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 			 * scalar_replacement might be able to remove the local variable,
 			 * so honor this.
 			 */
-			weight += get_method_local_adress_weight(callee, i);
+			v = get_method_local_adress_weight(callee, i);
+			weight += v;
+			if (v > 0)
+				*local_adr = 1;
 		}
 	}
 
@@ -1848,12 +1877,14 @@ void inline_functions(int inline_threshold) {
 			ir_graph   *callee;
 			pmap_entry *e;
 			int        benefice;
+			unsigned   local_adr;
 
 			call   = entry->call;
 			callee = entry->callee;
 
 			/* calculate the benifice on the original call to prevent excessive inlining */
-			benefice = calc_inline_benefice(call, callee);
+			local_adr = 0;
+			benefice = calc_inline_benefice(call, callee, &local_adr);
 			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", current_ir_graph, callee, benefice));
 
 			e = pmap_find(copied_graphs, callee);
@@ -1922,6 +1953,8 @@ void inline_functions(int inline_threshold) {
 
 					/* callee was inline. Append it's call list. */
 					env->got_inline = 1;
+					if (local_adr)
+						env->local_vars = 1;
 					--env->n_call_nodes;
 					append_call_list(env, callee_env->call_head);
 					env->n_call_nodes += callee_env->n_call_nodes;
@@ -1957,6 +1990,8 @@ void inline_functions(int inline_threshold) {
 			set_irg_outs_inconsistent(irg);
 			set_irg_doms_inconsistent(irg);
 
+			if (env->local_vars)
+				scalar_replacement_opt(irg);
 			optimize_graph_df(irg);
 			optimize_cf(irg);
 		}
