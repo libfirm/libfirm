@@ -24,6 +24,7 @@
  * @date        29.09.2005
  * @version     $Id$
  */
+#include <config.h>
 
 #include "firm_config.h"
 
@@ -70,6 +71,7 @@ void be_init_loopana(void);
 void be_init_spillslots(void);
 void be_init_live(void);
 void be_init_state(void);
+void be_init_pbqp(void);
 
 void be_quit_copystat(void);
 
@@ -133,6 +135,10 @@ void be_init_modules(void)
 #if PLUGIN_IR_BE_STA
 	be_init_arch_sta();
 #endif /* PLUGIN_IR_BE_STA */
+
+#ifdef FIRM_GRGEN_BE
+	be_init_pbqp();
+#endif
 }
 
 void be_quit_modules(void)
