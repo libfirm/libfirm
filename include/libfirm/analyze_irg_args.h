@@ -57,7 +57,7 @@ void analyze_irg_args(ir_graph *irg);
  *
  * The values are calculation on demand only.
  */
-float get_method_param_weight(ir_entity *ent, int pos);
+unsigned get_method_param_weight(ir_entity *ent, int pos);
 
 /**
  * Analyze the parameters of a given ir graph.

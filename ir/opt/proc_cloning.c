@@ -53,9 +53,6 @@
 #include "array.h"
 #include "xmalloc.h"
 
-/* A macro to iterate sets.*/
-#define ITERATE_SET(set_entries, entry) for(entry = set_first(set_entries); entry; entry = set_next(set_entries))
-
 /**
  * This struct contains the information quadruple for a Call, which we need to
  * decide if this function must be cloned.
@@ -509,7 +506,7 @@ static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent) {
  */
 static float calculate_weight(const entry_t *entry) {
 	return ARR_LEN(entry->q.calls) *
-		(get_method_param_weight(entry->q.ent, entry->q.pos) + 1);
+		(float)(get_method_param_weight(entry->q.ent, entry->q.pos) + 1);
 }
 
 /**
