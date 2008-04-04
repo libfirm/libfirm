@@ -1137,6 +1137,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 /* Apply inlineing to small methods.                                */
 /********************************************************************/
 
+static struct obstack  temp_obst;
+
 /** Represents a possible inlinable call in a graph. */
 typedef struct _call_entry call_entry;
 struct _call_entry {
@@ -1256,14 +1258,15 @@ typedef struct {
 	int n_call_nodes_orig;   /**< for statistics */
 	int n_callers;           /**< Number of known graphs that call this graphs. */
 	int n_callers_orig;      /**< for statistics */
-	int got_inline;          /**< Set, if at leat one call inside this graph was inlined. */
+	int got_inline;          /**< Set, if at least one call inside this graph was inlined. */
+	unsigned *local_weights; /**< Once allocated, the beneficial weight for transmitting local addresses. */
 } inline_irg_env;
 
 /**
  * Allocate a new environment for inlining.
  */
-static inline_irg_env *alloc_inline_irg_env(struct obstack *obst) {
-	inline_irg_env *env    = obstack_alloc(obst, sizeof(*env));
+static inline_irg_env *alloc_inline_irg_env(void) {
+	inline_irg_env *env    = obstack_alloc(&temp_obst, sizeof(*env));
 	env->n_nodes           = -2; /* do not count count Start, End */
 	env->n_blocks          = -2; /* do not count count Start, End Block */
 	env->n_nodes_orig      = -2; /* do not count Start, End */
@@ -1274,11 +1277,11 @@ static inline_irg_env *alloc_inline_irg_env(struct obstack *obst) {
 	env->n_callers         = 0;
 	env->n_callers_orig    = 0;
 	env->got_inline        = 0;
+	env->local_weights     = NULL;
 	return env;
 }
 
 typedef struct walker_env {
-	struct obstack *obst; /**< the obstack for allocations. */
 	inline_irg_env *x;    /**< the inline environment */
 	char ignore_runtime;  /**< the ignore runtime flag */
 	char ignore_callers;  /**< if set, do change callers data */
@@ -1333,7 +1336,7 @@ static void collect_calls2(ir_node *call, void *ctx) {
 		}
 
 		/* link it in the list of possible inlinable entries */
-		entry = obstack_alloc(env->obst, sizeof(*entry));
+		entry = obstack_alloc(&temp_obst, sizeof(*entry));
 		entry->call   = call;
 		entry->callee = callee;
 		entry->next   = NULL;
@@ -1366,14 +1369,14 @@ INLINE static int is_smaller(ir_graph *callee, int size) {
 /**
  * Append the nodes of the list src to the nodes of the list in environment dst.
  */
-static void append_call_list(struct obstack *obst, inline_irg_env *dst, call_entry *src) {
+static void append_call_list(inline_irg_env *dst, call_entry *src) {
 	call_entry *entry, *nentry;
 
 	/* Note that the src list points to Call nodes in the inlined graph, but
 	   we need Call nodes in our graph. Luckily the inliner leaves this information
 	   in the link field. */
 	for (entry = src; entry != NULL; entry = entry->next) {
-		nentry = obstack_alloc(obst, sizeof(*nentry));
+		nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
 		nentry->call   = get_irn_link(entry->call);
 		nentry->callee = entry->callee;
 		nentry->next   = NULL;
@@ -1399,14 +1402,13 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	wenv_t           wenv;
 	call_entry       *entry, *tail;
 	const call_entry *centry;
-	struct obstack   obst;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 	rem = current_ir_graph;
-	obstack_init(&obst);
+	obstack_init(&temp_obst);
 
 	/* a map for the copied graphs, used to inline recursive calls */
 	copied_graphs = pmap_create();
@@ -1414,10 +1416,9 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	/* extend all irgs by a temporary data structure for inlining. */
 	n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i)
-		set_irg_link(get_irp_irg(i), alloc_inline_irg_env(&obst));
+		set_irg_link(get_irp_irg(i), alloc_inline_irg_env());
 
 	/* Precompute information in temporary data structure. */
-	wenv.obst           = &obst;
 	wenv.ignore_runtime = ignore_runtime;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
@@ -1535,7 +1536,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 					phiproj_computed = 0;
 
 					/* allocate new environment */
-					callee_env = alloc_inline_irg_env(&obst);
+					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
 					wenv.x              = callee_env;
@@ -1570,7 +1571,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 					/* callee was inline. Append it's call list. */
 					env->got_inline = 1;
 					--env->n_call_nodes;
-					append_call_list(&obst, env, callee_env->call_head);
+					append_call_list(env, callee_env->call_head);
 					env->n_call_nodes += callee_env->n_call_nodes;
 					env->n_nodes += callee_env->n_nodes;
 					--callee_env->n_callers;
@@ -1625,8 +1626,99 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	}
 	pmap_destroy(copied_graphs);
 
-	obstack_free(&obst, NULL);
+	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
+}
+
+static char v;
+static void *VISITED = &v;
+
+/**
+ * Calculate the parameter weights for transmitting the address of a local variable.
+ */
+static unsigned calc_method_local_weight(ir_node *arg) {
+	int      i, j;
+	unsigned v, weight = 0;
+
+	for (i = get_irn_n_outs(arg) - 1; i >= 0; --i) {
+		ir_node *succ = get_irn_out(arg, i);
+
+		switch (get_irn_opcode(succ)) {
+		case iro_Load:
+		case iro_Store:
+			/* Loads and Store can be removed */
+			weight += 3;
+			break;
+		case iro_Sel:
+			/* check if all args are constant */
+			for (j = get_Sel_n_indexs(succ) - 1; j >= 0; --j) {
+				ir_node *idx = get_Sel_index(succ, j);
+				if (! is_Const(idx))
+					return 0;
+			}
+			/* Check users on this Sel. Note: if a 0 is returned here, there was
+			   some unsupported node. */
+			v = calc_method_local_weight(succ);
+			if (v == 0)
+				return 0;
+			/* we can kill one Sel with constant indexes, this is cheap */
+			weight += v + 1;
+			break;
+		default:
+			/* any other node: unsupported yet or bad. */
+			return 0;
+		}
+	}
+	return weight;
+}
+
+/**
+ * Calculate the parameter weights for transmitting the address of a local variable.
+ */
+static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg) {
+	ir_entity *ent = get_irg_entity(irg);
+	ir_type  *mtp;
+	int      nparams, i, proj_nr;
+	ir_node  *irg_args, *arg;
+
+	mtp      = get_entity_type(ent);
+	nparams  = get_method_n_params(mtp);
+
+	/* allocate a new array. currently used as 'analysed' flag */
+	env->local_weights = NEW_ARR_D(unsigned, &temp_obst, nparams);
+
+	/* If the method haven't parameters we have nothing to do. */
+	if (nparams <= 0)
+		return;
+
+	assure_irg_outs(irg);
+	irg_args = get_irg_args(irg);
+	for (i = get_irn_n_outs(irg_args) - 1; i >= 0; --i) {
+		arg     = get_irn_out(irg_args, i);
+		proj_nr = get_Proj_proj(arg);
+		ent->attr.mtd_attr.param_weight[proj_nr] = calc_method_local_weight(arg);
+	}
+}
+
+/**
+ * Calculate the benefice for transmitting an local variable address.
+ * After inlining, the local variable might be transformed into a
+ * SSA variable by scalar_replacement().
+ */
+static unsigned get_method_local_adress_weight(ir_graph *callee, int pos) {
+	inline_irg_env *env = get_irg_link(callee);
+
+	if (env->local_weights != NULL) {
+		if (pos < ARR_LEN(env->local_weights))
+			return env->local_weights[pos];
+		return 0;
+	}
+
+	analyze_irg_local_weights(env, callee);
+
+	if (pos < ARR_LEN(env->local_weights))
+		return env->local_weights[pos];
+	return 0;
 }
 
 /**
@@ -1634,6 +1726,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
  */
 static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 	ir_entity *ent = get_irg_entity(callee);
+	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
 	int       i, n_params;
@@ -1664,15 +1757,26 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 	}
 
 	/* constant parameters improve the benefice */
+	frame_ptr = get_irg_frame(current_ir_graph);
 	for (i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
 		if (is_Const(param) || is_SymConst(param))
 			weight += get_method_param_weight(ent, i);
+		else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr) {
+			/*
+			 * An address of a local variable is transmitted. After inlining,
+			 * scalar_replacement might be able to remove the local variable,
+			 * so honor this.
+			 */
+			weight += get_method_local_adress_weight(callee, i);
+		}
 	}
 
 	callee_env = get_irg_link(callee);
-	if (callee_env->n_callers_orig == 1 && callee != current_ir_graph) {
+	if (get_entity_visibility(ent) == visibility_local &&
+	    callee_env->n_callers_orig == 1 &&
+	    callee != current_ir_graph) {
 		/* we are the only caller, give big bonus */
 		weight += 5000;
 	}
@@ -1719,10 +1823,9 @@ void inline_functions(int inline_threshold) {
 	/* extend all irgs by a temporary data structure for inlining. */
 	n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i)
-		set_irg_link(get_irp_irg(i), alloc_inline_irg_env(&obst));
+		set_irg_link(get_irp_irg(i), alloc_inline_irg_env());
 
 	/* Precompute information in temporary data structure. */
-	wenv.obst           = &obst;
 	wenv.ignore_runtime = 0;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
@@ -1789,7 +1892,7 @@ void inline_functions(int inline_threshold) {
 					phiproj_computed = 0;
 
 					/* allocate new environment */
-					callee_env = alloc_inline_irg_env(&obst);
+					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
 					wenv.x              = callee_env;
@@ -1824,7 +1927,7 @@ void inline_functions(int inline_threshold) {
 					/* callee was inline. Append it's call list. */
 					env->got_inline = 1;
 					--env->n_call_nodes;
-					append_call_list(&obst, env, callee_env->call_head);
+					append_call_list(env, callee_env->call_head);
 					env->n_call_nodes += callee_env->n_call_nodes;
 					env->n_nodes += callee_env->n_nodes;
 					--callee_env->n_callers;
