@@ -185,6 +185,14 @@ void inline_small_irgs(ir_graph *irg, int size);
  */
 void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_runtime);
 
+/**
+ * Heuristic inliner. Calculates a benefice value for every call and inlines
+ * those calls with a value higher than the threshold.
+ *
+ * @param threshold    inlining threshold
+ */
+void inline_functions(unsigned inline_threshold);
+
 /** Code Placement.
  *
  * Pins all floating nodes to a block where they

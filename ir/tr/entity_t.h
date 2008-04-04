@@ -105,8 +105,8 @@ typedef struct method_ent_attr {
 	                                    in the virtual function table. */
 
 	ptr_access_kind *param_access; /**< the parameter access */
-	float *param_weight;           /**< The weight of method's parameters. Parameters
-	                                    with a high weight are good for procedure cloning. */
+	unsigned *param_weight;        /**< The weight of method's parameters. Parameters
+	                                    with a high weight are good candidates for procedure cloning. */
 } method_ent_attr;
 
 
