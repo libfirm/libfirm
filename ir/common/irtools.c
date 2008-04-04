@@ -107,8 +107,12 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg) {
 	set_irn_link(n, nn);
 
 	/* fix the irg for blocks */
-	if (is_Block(nn))
+	if (is_Block(nn)) {
 		nn->attr.block.irg = irg;
+
+		/* we cannot allow blocks WITHOUT macroblock input */
+		set_Block_MacroBlock(nn, get_Block_MacroBlock(n));
+	}
 }
 
 /*
@@ -120,7 +124,7 @@ ir_node *exact_copy(const ir_node *n) {
 	ir_node *res, *block = NULL;
 
 	if (is_no_Block(n))
-		block = get_irn_n(n, -1);
+		block = get_nodes_block(n);
 
 	res = new_ir_node(get_irn_dbg_info(n),
 		irg,
@@ -136,9 +140,16 @@ ir_node *exact_copy(const ir_node *n) {
 	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
 	copy_node_attr(n, res);
 	new_backedge_info(res);
+
+	if (is_Block(n)) {
+		set_Block_MacroBlock(res, get_Block_MacroBlock(n));
+	}
 	return res;
 }
 
+/*
+ * Dump a pset containing Firm objects.
+ */
 void firm_pset_dump(pset *set) {
 	void *obj;
 
