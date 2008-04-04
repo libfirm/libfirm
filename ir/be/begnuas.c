@@ -1125,6 +1125,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		section = GAS_SECTION_COMMON;
 		if (visibility != visibility_local)
 			emit_as_common = 1;
+	} else {
+		section = GAS_SECTION_DATA;
 	}
 
 	if(!emit_as_common) {
