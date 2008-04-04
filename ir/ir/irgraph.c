@@ -382,10 +382,9 @@ ir_graph *new_const_code_irg(void) {
  * @param env  The copied graph.
  */
 static void copy_all_nodes(ir_node *n, void *env) {
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = env;
 	ir_op    *op  = get_irn_op(n);
 	ir_node  *nn;
-	(void) env;
 
 	nn = new_ir_node(get_irn_dbg_info(n),
 	                 irg,
