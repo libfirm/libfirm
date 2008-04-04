@@ -1663,7 +1663,7 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 		weight += 5 * n_params;
 	}
 
-	/* constant parameters improve the benefiz */
+	/* constant parameters improve the benefice */
 	for (i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
@@ -1672,7 +1672,7 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 	}
 
 	callee_env = get_irg_link(callee);
-	if (callee_env->n_callers_orig == 1) {
+	if (callee_env->n_callers_orig == 1 && callee != current_ir_graph) {
 		/* we are the only caller, give big bonus */
 		weight += 5000;
 	}
@@ -1680,9 +1680,9 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 	/* do not inline big functions */
 	weight -= callee_env->n_nodes;
 
-	/* reduce the benefiz if the current function is already big */
+	/* reduce the benefice if the current function is already big */
 	curr_env = get_irg_link(current_ir_graph);
-	weight -= curr_env->n_nodes >> 5;
+	weight -= curr_env->n_nodes / 100;
 
 	/* give a bonus for functions with one block */
 	if (callee_env->n_blocks == 1)
@@ -1763,7 +1763,7 @@ void inline_functions(int inline_threshold) {
 			}
 
 			benefice = calc_inline_benefice(call, callee);
-			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefiz %d\n", current_ir_graph, call, benefice));
+			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", current_ir_graph, callee, benefice));
 
 			if (benefice > inline_threshold ||
 				(get_irg_inline_property(callee) >= irg_inline_forced)) {
