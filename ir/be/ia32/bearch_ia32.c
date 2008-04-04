@@ -935,7 +935,7 @@ static void ia32_before_abi(void *self) {
 	ia32_code_gen_t *cg = self;
 
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
-	if(cg->dump)
+	if (cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
 }
 
@@ -957,7 +957,7 @@ static void ia32_prepare_graph(void *self) {
 	edges_activate(cg->irg);
 #endif
 
-	if(cg->dump)
+	if (cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
 #ifdef FIRM_GRGEN_BE
@@ -970,7 +970,7 @@ static void ia32_prepare_graph(void *self) {
         ia32_transform_graph_by_pbqp(cg);
 #endif
 
-	if(cg->dump)
+	if (cg->dump)
 		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
 
 	/* transform remaining nodes into assembler instructions */
@@ -1051,7 +1051,7 @@ static void turn_back_am(ir_node *node)
 	clear_ia32_am_sc_sign(node);
 
 	/* rewire mem-proj */
-	if(get_irn_mode(node) == mode_T) {
+	if (get_irn_mode(node) == mode_T) {
 		mem_proj = NULL;
 		foreach_out_edge(node, edge) {
 			ir_node *out = get_edge_src_irn(edge);
@@ -1068,7 +1068,7 @@ static void turn_back_am(ir_node *node)
 	}
 
 	set_ia32_op_type(node, ia32_Normal);
-	if(sched_is_scheduled(node))
+	if (sched_is_scheduled(node))
 		sched_add_before(node, load);
 }
 
@@ -1079,7 +1079,7 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	ir_node        *block;
 	ir_node        *copy;
 
-	if(is_Block(after)) {
+	if (is_Block(after)) {
 		block = after;
 	} else {
 		block = get_nodes_block(after);
