@@ -1692,10 +1692,10 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee) {
 }
 
 /**
- * Heuristic inliner. Calculates a benifiz value for every call and inlines
+ * Heuristic inliner. Calculates a benifice value for every call and inlines
  * those calls with a value higher than the threshold.
  */
-void inline_functions(unsigned inline_threshold) {
+void inline_functions(int inline_threshold) {
 	inline_irg_env   *env;
 	ir_graph         *irg;
 	int              i, n_irgs;

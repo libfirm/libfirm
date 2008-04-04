@@ -85,7 +85,6 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits) {
 				/* Hmm: not sure what this is, most likely a read */
 				bits |= ptr_access_read;
 			} else {
-				ir_op *op = get_irn_op(ptr);
 				ir_entity *meth_ent;
 
 				if (is_Global(ptr)) {

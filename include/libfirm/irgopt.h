@@ -191,7 +191,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
  *
  * @param threshold    inlining threshold
  */
-void inline_functions(unsigned inline_threshold);
+void inline_functions(int inline_threshold);
 
 /** Code Placement.
  *
