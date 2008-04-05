@@ -3,10 +3,11 @@
 * operator strength reduce fixed and improved
 * fixed 64bit code generation for some rary compare cases
 * better tailrecursion optimization: handles x * func() and x + func()
-* inlining can now handle recursive calls
+* improved inliner: better heuristic for inlining, can now inline recursive calls
 * lowering of CopyB nodes
 * better memory disambiguator
 * float->64bit conversion fixed for x87
+* removed old verbosity level based debugging: all modules ese the new debug facility
 
 ====== Libfirm 1.12.1 (2008-02-18) ======
 
