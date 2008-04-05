@@ -56,6 +56,7 @@
 #include "type_t.h"
 #include "entity_t.h"
 #include "opt_inline_t.h"
+#include "scalar_replace.h"
 #include "firmstat.h"
 #include "irarch.h"
 #include "reassoc_t.h"
@@ -129,6 +130,8 @@ void init_firm(const firm_parameter_t *param)
 	firm_init_funccalls();
 	/* initialize function inlining */
 	firm_init_inline();
+	/* initialize scalar replacement */
+	firm_init_scalar_replace();
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();

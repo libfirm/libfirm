@@ -44,6 +44,8 @@
 #include "irnode_t.h"
 #include "irtools.h"
 #include "xmalloc.h"
+#include "debug.h"
+#include "error.h"
 
 #define SET_VNUM(node, vnum) set_irn_link(node, INT_TO_PTR(vnum))
 #define GET_VNUM(node)       (unsigned)PTR_TO_INT(get_irn_link(node))
@@ -76,6 +78,7 @@ typedef struct _scalars_t {
 	ir_type *ent_owner;          /**< The owner of this entity. */
 } scalars_t;
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Compare two pathes.
@@ -442,16 +445,16 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 
 #ifdef DEBUG_libfirm
 			/* Debug output */
-			if (get_opt_scalar_replacement_verbose() && get_firm_verbosity() > 1) {
+			{
 				unsigned i;
-				printf("  %s", get_entity_name(key->path[0].ent));
+				DB((dbg, SET_LEVEL_2, "  %s", get_entity_name(key->path[0].ent)));
 				for (i = 1; i < key->path_len; ++i) {
 					if (is_entity(key->path[i].ent))
-						printf(".%s", get_entity_name(key->path[i].ent));
+						DB((dbg, SET_LEVEL_2, ".%s", get_entity_name(key->path[i].ent)));
 					else
-						printf("[%ld]", get_tarval_long(key->path[i].tv));
+						DB((dbg, SET_LEVEL_2, "[%ld]", get_tarval_long(key->path[i].tv)));
 				}
-				printf(" = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum]));
+				DB((dbg, SET_LEVEL_2, " = %u (%s)\n", PTR_TO_INT(get_irn_link(sel)), get_mode_name((*modes)[key->vnum])));
 			}
 #endif /* DEBUG_libfirm */
 		}
@@ -770,10 +773,7 @@ void scalar_replacement_opt(ir_graph *irg) {
 
 	/* Find possible scalar replacements */
 	if (find_possible_replacements(irg)) {
-
-		if (get_opt_scalar_replacement_verbose()) {
-			printf("Scalar Replacement: %s\n", get_entity_name(get_irg_entity(irg)));
-		}
+		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %s\n", get_entity_name(get_irg_entity(irg))));
 
 		/* Insert in set the scalar replacements. */
 		irg_frame = get_irg_frame(irg);
@@ -797,42 +797,32 @@ void scalar_replacement_opt(ir_graph *irg) {
 				key.ent_owner = get_entity_owner(ent);
 				set_insert(set_ent, &key, sizeof(key), HASH_PTR(key.ent));
 
-				if (get_opt_scalar_replacement_verbose()) {
-					if (is_Array_type(ent_type)) {
-						printf("  found array %s\n", get_entity_name(ent));
-					}
-					else if (is_Struct_type(ent_type)) {
-						printf("  found struct %s\n", get_entity_name(ent));
-					}
-					else if (is_atomic_type(ent_type))
-						printf("  found atomic value %s\n", get_entity_name(ent));
-					else {
-						assert(0 && "Neither an array nor a struct or atomic value");
-					}
+#ifdef DEBUG_libfirm
+				if (is_Array_type(ent_type)) {
+					DB((dbg, SET_LEVEL_1, "  found array %s\n", get_entity_name(ent)));
+				} else if (is_Struct_type(ent_type)) {
+					DB((dbg, SET_LEVEL_1, "  found struct %s\n", get_entity_name(ent)));
+				} else if (is_atomic_type(ent_type))
+					DB((dbg, SET_LEVEL_1, "  found atomic value %s\n", get_entity_name(ent)));
+				else {
+					panic("Neither an array nor a struct or atomic value found in scalar replace");
 				}
+#endif /* DEBUG_libfirm */
 
 				nvals = allocate_value_numbers(sels, ent, nvals, &modes);
 			}
 		}
 
-		if (get_opt_scalar_replacement_verbose()) {
-			printf("  %u values will be needed\n", nvals);
-		}
+		DB((dbg, SET_LEVEL_1, "  %u values will be needed\n", nvals));
 
 		/* If scalars were found. */
-		if (nvals) {
+		if (nvals > 0) {
 			do_scalar_replacements(sels, nvals, modes);
 
-			for (value = set_first(set_ent); value; value = set_next(set_ent)) {
+			foreach_set(set_ent, value) {
 				remove_class_member(value->ent_owner, value->ent);
 			}
-		}
 
-		del_pset(sels);
-		del_set(set_ent);
-		DEL_ARR_F(modes);
-
-		if (nvals) {
 			/*
 			 * We changed the graph, but did NOT introduce new blocks
 			 * neither changed control flow, cf-backedges should be still
@@ -841,7 +831,15 @@ void scalar_replacement_opt(ir_graph *irg) {
 			set_irg_outs_inconsistent(irg);
 			set_irg_loopinfo_inconsistent(irg);
 		}
+		del_pset(sels);
+		del_set(set_ent);
+		DEL_ARR_F(modes);
+
 	}
 
 	current_ir_graph = rem;
+}
+
+void firm_init_scalar_replace(void) {
+	FIRM_DBG_REGISTER(dbg, "firm.opt.scalar_replace");
 }
