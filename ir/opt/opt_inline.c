@@ -1230,14 +1230,22 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	irg_walk_graph(irg, NULL, collect_calls, &env);
 
 	if (env.head != NULL) {
+		int did_inline = 0;
+
 		/* There are calls to inline */
 		collect_phiprojs(irg);
 		for (entry = env.head; entry != NULL; entry = entry->next) {
 			ir_graph *callee = entry->callee;
 			if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
 			    (get_irg_inline_property(callee) >= irg_inline_forced)) {
-				inline_method(entry->call, callee);
+				did_inline |= inline_method(entry->call, callee);
 			}
+		}
+		if (did_inline != 0) {
+			/* this irg got calls inlined */
+			set_irg_outs_inconsistent(irg);
+			set_irg_doms_inconsistent(irg);
+			set_irg_loopinfo_inconsistent(irg);
 		}
 	}
 	obstack_free(&env.obst, NULL);
@@ -1603,6 +1611,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 			/* this irg got calls inlined */
 			set_irg_outs_inconsistent(irg);
 			set_irg_doms_inconsistent(irg);
+			set_irg_loopinfo_inconsistent(irg);
 
 			optimize_graph_df(irg);
 			optimize_cf(irg);
@@ -1984,6 +1993,7 @@ void inline_functions(int inline_threshold) {
 			/* this irg got calls inlined */
 			set_irg_outs_inconsistent(irg);
 			set_irg_doms_inconsistent(irg);
+			set_irg_loopinfo_inconsistent(irg);
 
 			if (env->local_vars)
 				scalar_replacement_opt(irg);
