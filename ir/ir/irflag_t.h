@@ -63,8 +63,6 @@ typedef enum {
 extern optimization_state_t libFIRM_opt, libFIRM_running, libFIRM_verb;
 extern firm_verification_t opt_do_node_verification;
 
-extern int firm_verbosity_level;
-
 /** initialises the flags */
 void firm_init_flags(void);
 
@@ -72,18 +70,12 @@ void firm_init_flags(void);
 #define E_FLAG(name, value, def)                    \
 static INLINE int _get_opt_##name(void) {           \
   return libFIRM_opt & irf_##name;                  \
-}                                                   \
-static INLINE int get_opt_##name##_verbose(void) {  \
-  return libFIRM_verb & irf_##name;                 \
 }
 
 /* generate the getter functions for internal access */
 #define I_FLAG(name, value, def)                   \
 static INLINE int get_opt_##name(void) {           \
   return libFIRM_opt & irf_##name;                 \
-}                                                  \
-static INLINE int get_opt_##name##_verbose(void) { \
-  return libFIRM_verb & irf_##name;                \
 }
 
 /* generate getter and setter functions for running flags */
@@ -102,10 +94,6 @@ static INLINE void set_##name##_running(int flag) {\
 #undef E_FLAG
 #undef R_FLAG
 
-static INLINE int _get_firm_verbosity(void) {
-	return firm_verbosity_level;
-}
-
 static INLINE int _get_optimize(void) {
 	return get_opt_optimize();
 }
@@ -117,7 +105,6 @@ get_node_verification_mode(void) {
 
 #define get_optimize()                           _get_optimize()
 #define get_opt_cse()                            _get_opt_cse()
-#define get_firm_verbosity()                     _get_firm_verbosity()
 #define get_opt_dyn_meth_dispatch()              _get_opt_dyn_meth_dispatch()
 #define get_opt_optimize_class_casts()           _get_opt_optimize_class_casts()
 #define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()

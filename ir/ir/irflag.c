@@ -60,9 +60,6 @@ optimization_state_t libFIRM_running = 0;
 /* verbose is always off on default */
 optimization_state_t libFIRM_verb = 0;
 
-/** The Firm verbosity level */
-int firm_verbosity_level;
-
 /* an external flag can be set and get from outside */
 #define E_FLAG(name, value, def)           \
 void set_opt_##name(int flag) {            \
@@ -111,14 +108,6 @@ void set_opt_control_flow(int value) {
 	set_opt_control_flow_straightening(value);
 	set_opt_control_flow_weak_simplification(value);
 	set_opt_control_flow_strong_simplification(value);
-}
-
-void set_firm_verbosity (int value) {
-	firm_verbosity_level = value;
-}
-
-int (get_firm_verbosity) (void) {
-	return _get_firm_verbosity();
 }
 
 /* Save the current optimization state. */

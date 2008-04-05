@@ -63,6 +63,7 @@
 #include "funccall_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
+#include "tropt.h"
 #include "debugger.h"
 
 /* returns the firm root */
@@ -141,6 +142,8 @@ void init_firm(const firm_parameter_t *param)
 	firm_init_entity();
 	/* allocate a hash table. */
 	init_type_identify(def_params.ti_if);
+	/* class cast optimization */
+	firm_init_class_casts_opt();
 
 	/* Init architecture dependent optimizations. */
 	arch_dep_init(arch_dep_default_factory);

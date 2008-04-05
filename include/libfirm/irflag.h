@@ -55,7 +55,7 @@ typedef unsigned optimization_state_t;
  * If optimize == 0 no optimizations are performed at all.
  * Default: optimize == 1.
  */
-void set_optimize (int value);
+void set_optimize(int value);
 int  get_optimize(void);
 
 /** Enables/Disables constant folding optimization.
@@ -66,18 +66,14 @@ int  get_optimize(void);
  *  - simplification of tests   ( !(a < b) ==> (a >= b))
  * Default: opt_constant_folding == 1.
  */
-void set_opt_constant_folding (int value);
-
-/** Enables/Disables output of information about loop unrolling.
- */
-void set_opt_loop_unrolling_verbose (int value);
+void set_opt_constant_folding(int value);
 
 /** Enables/Disables common subexpression elimination.
  *
  * If opt_cse == 1 perform common subexpression elimination.
  * Default: opt_cse == 1.
  */
-void set_opt_cse (int value);
+void set_opt_cse(int value);
 
 /** Returns constant folding optimization setting. */
 int get_opt_cse(void);
@@ -91,7 +87,7 @@ int get_opt_cse(void);
  * right after a call to local_optimize with global cse turned on.
  * Default: opt_global_cse == 0.
  */
-void set_opt_global_cse (int value);
+void set_opt_global_cse(int value);
 
 /** Enables/Disables strength reduction.
  *
@@ -100,11 +96,7 @@ void set_opt_global_cse (int value);
  *
  * Default: opt_strength_red = 1;
  */
-void set_opt_strength_red (int value);
-
-/** Enables/Disables output of information about strength reduction.
- */
-void set_opt_strength_red_verbose (int value);
+void set_opt_strength_red(int value);
 
 /** Enables/Disables unreachable code elimination.
  *
@@ -140,15 +132,14 @@ void set_opt_control_flow_strong_simplification(int value);
  * If the flag is turned on Sel nodes can be replaced by Const nodes representing
  * the address of a function.
  */
-void set_opt_dyn_meth_dispatch (int value);
-int  get_opt_dyn_meth_dispatch (void);
+void set_opt_dyn_meth_dispatch(int value);
+int  get_opt_dyn_meth_dispatch(void);
 
 /** Enable/Disable type optimization of cast nodes.
  *
  * Controls the optimizations in tropt.h.  Default: on.
  */
-void set_opt_optimize_class_casts (int value);
-void set_opt_optimize_class_casts_verbose (int value);
+void set_opt_optimize_class_casts(int value);
 
 /** Restricts the behavior of cast optimization.
  *
@@ -177,7 +168,6 @@ void set_opt_remove_confirm(int value);
  * Enable/Disable scalar replacement optimization.
  */
 void set_opt_scalar_replacement(int value);
-void set_opt_scalar_replacement_verbose(int value);
 
 /**
  * Enable/Disable Null exception in Load and Store nodes only.
@@ -234,7 +224,7 @@ void set_opt_auto_create_sync(int value);
  *
  *  @note ATTENTION: not all such transformations are guarded by a flag.
  */
-void set_opt_normalize (int value);
+void set_opt_normalize(int value);
 
 /** Enable/Disable precise exception context.
  *
