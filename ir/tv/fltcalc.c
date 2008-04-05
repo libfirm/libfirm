@@ -1064,7 +1064,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	temp = alloca(value_size);
 
 	/* CLEAR the buffer */
-	memset(result, 0, fc_get_buffer_length());
+	//memset(result, 0, fc_get_buffer_length());
 
 	result->desc.exponent_size = exp_size;
 	result->desc.mantissa_size = mant_size;

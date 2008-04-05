@@ -50,6 +50,7 @@
 #include "irouts.h"
 #include "irloop_t.h"
 #include "irbackedge_t.h"
+#include "opt_inline_t.h"
 #include "cgana.h"
 #include "trouts.h"
 #include "error.h"
@@ -60,6 +61,7 @@
 #include "irhooks.h"
 #include "irtools.h"
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /*------------------------------------------------------------------*/
 /* Routines for dead node elimination / copying garbage collection  */
@@ -1212,9 +1214,6 @@ void inline_small_irgs(ir_graph *irg, int size) {
   ir_graph *rem = current_ir_graph;
 	inline_env_t env;
 	call_entry *entry;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
-
-	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 
 	current_ir_graph = irg;
 	/* Handle graph state */
@@ -1406,9 +1405,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
-	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 	rem = current_ir_graph;
 	obstack_init(&temp_obst);
 
@@ -1836,9 +1833,7 @@ void inline_functions(int inline_threshold) {
 	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 
-	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 	rem = current_ir_graph;
 	obstack_init(&temp_obst);
 
@@ -2015,4 +2010,8 @@ void inline_functions(int inline_threshold) {
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
+}
+
+void firm_init_inline(void) {
+	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 }

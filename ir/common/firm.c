@@ -55,6 +55,7 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "entity_t.h"
+#include "opt_inline_t.h"
 #include "firmstat.h"
 #include "irarch.h"
 #include "reassoc_t.h"
@@ -126,6 +127,8 @@ void init_firm(const firm_parameter_t *param)
 	firm_init_reassociation();
 	/* initialize function call optimization */
 	firm_init_funccalls();
+	/* initialize function inlining */
+	firm_init_inline();
 	/* Builds a construct allowing to access all information to be constructed
 	   later. */
 	init_irprog_2();

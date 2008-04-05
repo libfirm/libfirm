@@ -19,12 +19,12 @@
 
 /**
  * @file
- * @brief   Internal irgopt functions.
- * @version $Id$
+ * @brief   Dead node elimination and Procedure Inlining.
+ * @version $Id: $
  */
-#ifndef FIRM_IR_IRGOPT_T_H
-#define FIRM_IR_IRGOPT_T_H
+#ifndef FIRM_OPT_INLINE_T_H
+#define FIRM_OPT_INLINE_T_H
 
-void firm_copy_node (ir_node *n, void *env);
+void firm_init_inline(void);
 
 #endif

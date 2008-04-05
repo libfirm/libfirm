@@ -115,6 +115,30 @@ static int is_method_leaving_raise(ir_node *raise)
 }
 
 /**
+ * returns an Alloc node if the node adr Select
+ * from one
+ */
+static ir_node *is_depend_alloc(ir_node *adr) {
+  ir_node *alloc;
+
+  if (get_irn_op(adr) != op_Sel)
+    return NULL;
+
+  /* should be a simple Sel */
+  if (get_Sel_n_indexs(adr) != 0)
+    return NULL;
+
+  alloc = skip_Proj(get_Sel_ptr(adr));
+  if (get_irn_op(alloc) != op_Alloc)
+    return NULL;
+
+  /* hmm, we depend on this Alloc */
+  ir_printf("depend alloc %+F\n", alloc);
+
+  return NULL;
+}
+
+/**
  * determine if a value calculated by n "escape", ie
  * is stored somewhere we could not track
  */
@@ -130,6 +154,15 @@ static int can_escape(ir_node *n) {
     switch (get_irn_opcode(succ)) {
     case iro_Store:
       if (get_Store_value(succ) == n) {
+        ir_node *adr = get_Store_ptr(succ);
+
+        /*
+         * if this Alloc depends on another one,
+         * we can enqueue it
+         */
+        if (is_depend_alloc(adr))
+          break;
+
         /*
          * We are storing n. As long as we do not further
          * evaluate things, the pointer 'escape' here
@@ -149,8 +182,7 @@ static int can_escape(ir_node *n) {
       ir_node *ptr = get_Call_ptr(succ);
       ir_entity *ent;
 
-      if (get_irn_op(ptr) == op_SymConst &&
-          get_SymConst_kind(ptr) == symconst_addr_ent) {
+      if (is_SymConst_addr_ent(ptr)) {
         ent = get_SymConst_entity(ptr);
 
         /* we know the called entity */
@@ -163,7 +195,7 @@ static int can_escape(ir_node *n) {
           }
         }
       }
-      else if (get_irn_op(ptr) == op_Sel) {
+      else if (is_Sel(ptr)) {
         /* go through all possible callees */
         for (k = get_Call_n_callees(succ) - 1; k >= 0; --k) {
           ent = get_Call_callee(succ, k);
@@ -297,7 +329,7 @@ static void find_allocation_calls(ir_node *call, void *ctx)
   if (! is_Call(call))
     return;
   adr = get_Call_ptr(call);
-  if (! is_SymConst(adr) || get_SymConst_kind(adr) != symconst_addr_ent)
+  if (! is_SymConst_addr_ent(adr))
     return;
   ent = get_SymConst_entity(adr);
   if (! env->callback(ent))
@@ -399,6 +431,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
       DBG((dbgHandle, LEVEL_DEFAULT, "%+F allocation of %+F type %+F placed on frame\n", irg, alloc, tp));
 
       snprintf(name, sizeof(name), "%s_NE_%u", get_entity_name(get_irg_entity(irg)), nr++);
+      name[sizeof(name) - 1] = '\0';
       ent = new_d_entity(ftp, new_id_from_str(name), get_Alloc_type(alloc), dbg);
 
       sel = new_rd_simpleSel(dbg, irg, get_nodes_block(alloc),
