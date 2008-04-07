@@ -604,7 +604,7 @@ static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes) {
  *
  * @param irg  The current ir graph.
  */
-void scalar_replacement_opt(ir_graph *irg) {
+int scalar_replacement_opt(ir_graph *irg) {
 	unsigned  nvals;
 	int       i;
 	scalars_t key, *value;
@@ -685,7 +685,7 @@ void scalar_replacement_opt(ir_graph *irg) {
 			set_irg_outs_inconsistent(irg);
 			set_irg_loopinfo_inconsistent(irg);
 
-			res = 1
+			res = 1;
 		}
 		del_pset(sels);
 		del_set(set_ent);
