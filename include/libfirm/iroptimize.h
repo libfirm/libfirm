@@ -417,8 +417,10 @@ void normalize_n_returns(ir_graph *irg);
  * with atomic values if possible. Does not handle classes yet.
  *
  * @param irg  the graph which should be optimized
+ *
+ * @return non-zero, if at least one entity was replaced
  */
-void scalar_replacement_opt(ir_graph *irg);
+int scalar_replacement_opt(ir_graph *irg);
 
 /** Performs strength reduction for the passed graph. */
 void reduce_strength(ir_graph *irg);
