@@ -842,6 +842,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	if (! can_inline(call, called_graph))
 		return 0;
 
+	DB((dbg, SET_LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, current_ir_graph));
+
 	/* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
 	rem_opt = get_opt_optimize();
 	set_optimize(0);
