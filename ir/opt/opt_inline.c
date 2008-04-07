@@ -1995,9 +1995,14 @@ void inline_functions(int inline_threshold) {
 			set_irg_doms_inconsistent(irg);
 			set_irg_loopinfo_inconsistent(irg);
 
-			if (env->local_vars)
-				scalar_replacement_opt(irg);
+			/* scalar replacement does not work well with Tuple nodes, so optimize them away */
 			optimize_graph_df(irg);
+
+			if (env->local_vars) {
+				if (scalar_replacement_opt(irg))
+					optimize_graph_df(irg);
+			}
+
 			optimize_cf(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
