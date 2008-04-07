@@ -514,6 +514,9 @@ static void topologic_walker(ir_node *node, void *ctx) {
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
+		block = get_nodes_block(node);
+		set_cur_block(block);
+
 		/* check, if we can replace this Load */
 		val = get_value(vnum, env->modes[vnum]);
 
@@ -529,11 +532,10 @@ static void topologic_walker(ir_node *node, void *ctx) {
 			val = new_d_Conv(get_irn_dbg_info(node), val, mode);
 
 		mem = get_Load_mem(node);
-		block = get_nodes_block(node);
 		turn_into_tuple(node, pn_Load_max);
 		set_Tuple_pred(node, pn_Load_M,         mem);
 		set_Tuple_pred(node, pn_Load_res,       val);
-		set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(current_ir_graph, block));
+		set_Tuple_pred(node, pn_Load_X_regular, new_Jmp());
 		set_Tuple_pred(node, pn_Load_X_except,  new_Bad());
 	} else if (op == op_Store) {
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
@@ -560,14 +562,15 @@ static void topologic_walker(ir_node *node, void *ctx) {
 		val = get_Store_value(node);
 		if (get_irn_mode(val) != env->modes[vnum])
 			val = new_d_Conv(get_irn_dbg_info(node), val, env->modes[vnum]);
+
+		block = get_nodes_block(node);
+		set_cur_block(block);
 		set_value(vnum, val);
 
 		mem = get_Store_mem(node);
-		block = get_nodes_block(node);
-
 		turn_into_tuple(node, pn_Store_max);
 		set_Tuple_pred(node, pn_Store_M,         mem);
-		set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(current_ir_graph, block));
+		set_Tuple_pred(node, pn_Store_X_regular, new_Jmp());
 		set_Tuple_pred(node, pn_Store_X_except,  new_Bad());
 	}
 }
