@@ -598,7 +598,6 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 
 	/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
-	set_irg_phase_low(irg);
 }  /* lower_highlevel_graph */
 
 /*
