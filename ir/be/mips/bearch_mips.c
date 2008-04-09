@@ -606,6 +606,7 @@ static mips_isa_t mips_isa_template = {
 		&mips_gp_regs[REG_SP],
 		&mips_gp_regs[REG_FP],
 		-1,		/* stack direction */
+		1,      /* stack alignment for calls */
 		NULL,	/* main environment */
 		7,      /* spill costs */
 		5,      /* reload costs */

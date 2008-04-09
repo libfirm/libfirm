@@ -377,22 +377,23 @@ static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent
 	set_ia32_frame_ent(irn, ent);
 }
 
-static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias) {
+static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias)
+{
 	const ia32_irn_ops_t *ops = self;
 
-	if (get_ia32_frame_ent(irn)) {
-		if (is_ia32_Pop(irn)) {
-			int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
-			if (omit_fp) {
-				/* Pop nodes modify the stack pointer before calculating the destination
-				 * address, so fix this here
-				 */
-				bias -= 4;
-			}
-		}
+	if (get_ia32_frame_ent(irn) == NULL)
+		return;
 
-		add_ia32_am_offs_int(irn, bias);
+	if (is_ia32_Pop(irn)) {
+		int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
+		if (omit_fp) {
+			/* Pop nodes modify the stack pointer before calculating the
+			 * destination address, so fix this here
+			 */
+			bias -= 4;
+		}
 	}
+	add_ia32_am_offs_int(irn, bias);
 }
 
 static int ia32_get_sp_bias(const void *self, const ir_node *node)
@@ -496,7 +497,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 	} else {
 		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
@@ -1632,6 +1633,7 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
 		-1,                      /* stack direction */
+		16,                      /* stack alignment */
 		NULL,                    /* main environment */
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
@@ -2127,6 +2129,8 @@ static lc_opt_enum_int_var_t gas_var = {
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
+	LC_OPT_ENT_INT("stackalign", "set stack alignment for calls",
+	               &ia32_isa_template.arch_isa.stack_alignment),
 	LC_OPT_LAST
 };
 

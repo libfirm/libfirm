@@ -409,10 +409,11 @@ struct arch_isa_t {
 	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;        /** The stack pointer register. */
 	const arch_register_t *bp;        /** The base pointer register. */
-	const int              stack_dir; /** -1 for decreasing, 1 for increasing. */
+	int                    stack_dir; /** -1 for decreasing, 1 for increasing. */
+	int                    stack_alignment; /** stack alignment */
 	const be_main_env_t   *main_env;  /** the be main environment */
-	const int              spill_cost;  /** cost for a be_Spill node */
-	const int              reload_cost; /** cost for a be_Reload node */
+	int                    spill_cost;  /** cost for a be_Spill node */
+	int                    reload_cost; /** cost for a be_Reload node */
 };
 
 #define arch_isa_stack_dir(isa)  ((isa)->stack_dir)

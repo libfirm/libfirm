@@ -31,6 +31,7 @@
 #include "debug.h"
 #include "bitset.h"
 #include "timing.h"
+#include "pmap.h"
 
 #include "be.h"
 #include "bearch.h"
@@ -84,7 +85,9 @@ struct be_main_env_t {
 	arch_code_generator_t *cg;
 	arch_irn_handler_t    *phi_handler;
 	const char            *cup_name;
+	pmap                  *ent_trampoline_map;
 	ir_type               *pic_trampolines_type;
+	pmap                  *ent_pic_symbol_map;
 	ir_type               *pic_symbols_type;
 };
 

@@ -769,6 +769,7 @@ static arm_isa_t arm_isa_template = {
 		&arm_gp_regs[REG_SP],  /* stack pointer */
 		&arm_gp_regs[REG_R11], /* base pointer */
 		-1,                    /* stack direction */
+		1,                     /* stack alignment for calls */
 		NULL,                  /* main environment */
 		7,                     /* spill costs */
 		5,                     /* reload costs */
@@ -972,7 +973,7 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 	// TODO: Activate Omit fp in epilogue
 	if (env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK);
+		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));

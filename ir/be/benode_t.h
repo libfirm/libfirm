@@ -259,7 +259,8 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int offset);
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
+                      ir_node *old_sp, int offset, int align);
 
 /** Returns the previous node that computes the stack pointer. */
 ir_node *be_get_IncSP_pred(ir_node *incsp);
@@ -277,6 +278,7 @@ void     be_set_IncSP_offset(ir_node *irn, int offset);
 
 /** Gets the offset from a IncSP node. */
 int be_get_IncSP_offset(const ir_node *irn);
+int be_get_IncSP_align(const ir_node *irn);
 
 /** Gets the call entity or NULL if this is no static call. */
 ir_entity  *be_Call_get_entity(const ir_node *call);

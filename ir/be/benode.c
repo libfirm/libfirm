@@ -73,8 +73,8 @@ typedef struct {
 
 typedef struct {
 	const arch_register_t *reg;
-	be_req_t req;
-	be_req_t in_req;
+	be_req_t               req;
+	be_req_t               in_req;
 } be_reg_data_t;
 
 /** The generic be nodes attribute type. */
@@ -92,28 +92,30 @@ typedef struct {
 /** The be_IncSP attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;   /**< base attributes of every be node. */
-	int offset;                 /**< The offset by which the stack shall be expanded/shrinked. */
+	int            offset;      /**< The offset by which the stack shall be expanded/shrinked. */
+	int            align;       /**< wether stack should be aligned after the
+								     IncSP */
 } be_incsp_attr_t;
 
 /** The be_Frame attribute type. */
 typedef struct {
-	be_node_attr_t node_attr;   /**< base attributes of every be node. */
-	ir_entity *ent;
-	int offset;
+	be_node_attr_t  node_attr;   /**< base attributes of every be node. */
+	ir_entity      *ent;
+	int             offset;
 } be_frame_attr_t;
 
 /** The be_Call attribute type. */
 typedef struct {
-	be_node_attr_t node_attr;  /**< base attributes of every be node. */
-	ir_entity *ent;            /**< The called entity if this is a static call. */
-	unsigned pop;
-	ir_type *call_tp;          /**< The call type, copied from the original Call node. */
+	be_node_attr_t  node_attr;  /**< base attributes of every be node. */
+	ir_entity      *ent;            /**< The called entity if this is a static call. */
+	unsigned        pop;
+	ir_type        *call_tp;          /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
 typedef struct {
-	be_node_attr_t node_attr;  /**< base attributes of every be node. */
-	ir_entity **in_entities;
-	ir_entity **out_entities;
+	be_node_attr_t   node_attr;  /**< base attributes of every be node. */
+	ir_entity      **in_entities;
+	ir_entity      **out_entities;
 } be_memperm_attr_t;
 
 ir_op *op_be_Spill;
@@ -722,16 +724,19 @@ int be_Return_append_node(ir_node *ret, ir_node *node)
 	return pos;
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, int offset)
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
+                      ir_node *old_sp, int offset, int align)
 {
 	be_incsp_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
 
 	in[0]     = old_sp;
-	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode, sizeof(in) / sizeof(in[0]), in);
+	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
+	                        sizeof(in) / sizeof(in[0]), in);
 	a         = init_node_attr(irn, 1);
 	a->offset = offset;
+	a->align  = align;
 
 	be_node_set_flags(irn, -1, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
@@ -1108,6 +1113,13 @@ int be_get_IncSP_offset(const ir_node *irn)
 	const be_incsp_attr_t *a = get_irn_attr_const(irn);
 	assert(be_is_IncSP(irn));
 	return a->offset;
+}
+
+int be_get_IncSP_align(const ir_node *irn)
+{
+	const be_incsp_attr_t *a = get_irn_attr_const(irn);
+	assert(be_is_IncSP(irn));
+	return a->align;
 }
 
 ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn)

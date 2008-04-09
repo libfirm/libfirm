@@ -108,7 +108,7 @@ struct _be_abi_irg_t {
 	arch_register_req_t sp_req;
 	arch_register_req_t sp_cls_req;
 
-	DEBUG_ONLY(firm_dbg_module_t    *dbg;)          /**< The debugging module. */
+	DEBUG_ONLY(firm_dbg_module_t    *dbg;)  /**< The debugging module. */
 };
 
 static heights_t *ir_heights;
@@ -271,7 +271,8 @@ static void be_abi_call_free(be_abi_call_t *call)
      and the spills.
 */
 
-static int get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent, int bias)
+static int get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
+                                   int bias)
 {
 	ir_type *t = get_entity_owner(ent);
 	int ofs    = get_entity_offset(ent);
@@ -427,6 +428,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	struct obstack *obst       = &env->obst;
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 	int n_res                  = get_method_n_ress(call_tp);
+	int do_seq                 = call->flags.bits.store_args_sequential && !no_alloc;
 
 	ir_node *res_proj  = NULL;
 	int n_reg_params   = 0;
@@ -473,10 +475,22 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 	reg_param_idxs = obstack_finish(obst);
 
+	/*
+	 * If the stack is decreasing and we do not want to store sequentially,
+	 * or someone else allocated the call frame
+	 * we allocate as much space on the stack all parameters need, by
+	 * moving the stack pointer along the stack's direction.
+	 *
+	 * Note: we also have to do this for stack_size == 0, because we may have
+	 * to adjust stack alignment for the call.
+	 */
+	if (stack_dir < 0 && !do_seq && !no_alloc) {
+		curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size, 1);
+	}
+
 	/* If there are some parameters which shall be passed on the stack. */
 	if (n_stack_params > 0) {
 		int curr_ofs      = 0;
-		int do_seq        = call->flags.bits.store_args_sequential && !no_alloc;
 
 		/*
 		 * Reverse list of stack parameters if call arguments are from left to right.
@@ -490,16 +504,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				stack_param_idx[i]     = stack_param_idx[other];
 				stack_param_idx[other] = tmp;
 			}
-		}
-
-		/*
-		 * If the stack is decreasing and we do not want to store sequentially,
-		 * or someone else allocated the call frame
-		 * we allocate as much space on the stack all parameters need, by
-		 * moving the stack pointer along the stack's direction.
-		 */
-		if (stack_dir < 0 && !do_seq && !no_alloc) {
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size);
 		}
 
 		curr_mem = get_Call_mem(irn);
@@ -523,7 +527,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 */
 			if (do_seq) {
 				curr_ofs = 0;
-				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before);
+				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before, 0);
 				add_irn_dep(curr_sp, curr_mem);
 			}
 			else {
@@ -805,11 +809,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_be_Call_M_regular);
 			keep_alive(mem_proj);
 		}
-
-		 /* Clean up the stack frame if we allocated it */
-		if (! no_alloc) {
-			curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size);
-		}
+	}
+	/* Clean up the stack frame or revert alignment fixes if we allocated it */
+	if (! no_alloc) {
+		curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size, 0);
 	}
 
 	be_abi_call_free(call);
@@ -836,6 +839,7 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
                                   ir_graph *irg, ir_node *block, dbg_info *dbg)
 {
 	if (stack_alignment > 1) {
+		assert(is_po2(stack_alignment));
 		ir_mode *mode = get_irn_mode(size);
 		tarval  *tv   = new_tarval_from_long(stack_alignment-1, mode);
 		ir_node *mask = new_r_Const(irg, block, mode, tv);
@@ -918,9 +922,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
 
-	/* FIXME: size must be here round up for the stack alignment, but
-	   this must be transmitted from the backend. */
-	stack_alignment = 4;
+	stack_alignment = env->isa->stack_alignment;
 	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
 	new_alloc       = be_new_AddSP(env->isa->sp, irg, block, curr_sp, size);
 	set_irn_dbg_info(new_alloc, dbg);
@@ -989,10 +991,8 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 		size = get_Free_size(free);
 	}
 
-	/* FIXME: size must be here round up for the stack alignment, but
-	   this must be transmitted from the backend. */
-	stack_alignment = 4;
-	size = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
+	stack_alignment = env->isa->stack_alignment;
+	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
 
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
@@ -1864,7 +1864,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND);
+	env->init_sp = be_new_IncSP(sp, irg, bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
 	create_barrier(env, bl, &mem, env->regs, 0);
@@ -2015,6 +2015,17 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 	return ent;
 }
 
+static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
+{
+	ir_entity *result = pmap_get(env->ent_trampoline_map, method);
+	if (result == NULL) {
+		result = create_trampoline(env, method);
+		pmap_insert(env->ent_trampoline_map, method, result);
+	}
+
+	return result;
+}
+
 static int can_address_relative(ir_entity *entity)
 {
 	return get_entity_variability(entity) == variability_initialized
@@ -2058,7 +2069,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 				continue;
 
 			dbgi             = get_irn_dbg_info(pred);
-			trampoline       = create_trampoline(be, entity);
+			trampoline       = get_trampoline(be, entity);
 			trampoline_const = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, trampoline, NULL);
 			set_irn_n(node, i, trampoline_const);
 			continue;
@@ -2286,11 +2297,12 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	DEL_ARR_F(walker_env.sp_nodes);
 }
 
-static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
+static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 {
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
-	int omit_fp            = env->call->flags.bits.try_omit_fp;
-	ir_node *irn;
+	int               omit_fp  = env->call->flags.bits.try_omit_fp;
+	ir_node          *irn;
+	int               wanted_bias = real_bias;
 
 	sched_foreach(bl, irn) {
 		int ofs;
@@ -2302,34 +2314,59 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
 		 */
 		ir_entity *ent = arch_get_frame_entity(arch_env, irn);
 		if(ent) {
+			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(env->frame, ent, bias);
 			arch_set_frame_offset(arch_env, irn, offset);
-			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n", ent, offset, bias));
+			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
+			     ent, offset, bias));
 		}
 
-		if(omit_fp || be_is_IncSP(irn)) {
-			/*
-			 * If the node modifies the stack pointer by a constant offset,
-			 * record that in the bias.
-			 */
-			ofs = arch_get_sp_bias(arch_env, irn);
+		/*
+		 * If the node modifies the stack pointer by a constant offset,
+		 * record that in the bias.
+		 */
+		ofs = arch_get_sp_bias(arch_env, irn);
 
-			if(be_is_IncSP(irn)) {
-				if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
-					ofs = (int)get_type_size_bytes(get_irg_frame_type(env->birg->irg));
-					be_set_IncSP_offset(irn, ofs);
-				} else if(ofs == BE_STACK_FRAME_SIZE_SHRINK) {
-					ofs = - (int)get_type_size_bytes(get_irg_frame_type(env->birg->irg));
-					be_set_IncSP_offset(irn, ofs);
+		if(be_is_IncSP(irn)) {
+			/* fill in real stack frame size */
+			if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
+				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
+				ofs = (int) get_type_size_bytes(frame_type);
+				be_set_IncSP_offset(irn, ofs);
+			} else if(ofs == BE_STACK_FRAME_SIZE_SHRINK) {
+				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
+				ofs = - (int)get_type_size_bytes(frame_type);
+				be_set_IncSP_offset(irn, ofs);
+			} else {
+				if (be_get_IncSP_align(irn)) {
+					/* patch IncSP to produce an aligned stack pointer */
+					ir_type *between_type = env->frame->between_type;
+					int      between_size = get_type_size_bytes(between_type);
+					int      alignment    = env->isa->stack_alignment;
+					int      delta        = (real_bias + ofs + between_size) % env->isa->stack_alignment;
+					assert(ofs >= 0);
+					if (delta > 0) {
+						be_set_IncSP_offset(irn, ofs + alignment - delta);
+						real_bias += alignment - delta;
+					}
+				} else {
+					/* adjust so real_bias corresponds with wanted_bias */
+					int delta = wanted_bias - real_bias;
+					assert(delta <= 0);
+					if(delta != 0) {
+						be_set_IncSP_offset(irn, ofs + delta);
+						real_bias += delta;
+					}
 				}
 			}
-
-			if(omit_fp)
-				bias += ofs;
 		}
+
+		real_bias   += ofs;
+		wanted_bias += ofs;
 	}
 
-	return bias;
+	assert(real_bias == wanted_bias);
+	return real_bias;
 }
 
 /**
@@ -2337,8 +2374,9 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int bias)
  */
 struct bias_walk {
 	be_abi_irg_t *env;     /**< The ABI irg environment. */
-	int start_block_bias;  /**< The bias at the end of the start block. */
-	ir_node *start_block;  /**< The start block of the current graph. */
+	int           start_block_bias;  /**< The bias at the end of the start block. */
+	int           between_size;
+	ir_node      *start_block;  /**< The start block of the current graph. */
 };
 
 /**
@@ -2362,6 +2400,7 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 
 	/* Determine the stack bias at the end of the start block. */
 	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
+	bw.between_size     = get_type_size_bytes(env->frame->between_type);
 
 	/* fix the bias is all other blocks */
 	bw.env = env;

@@ -251,8 +251,10 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	obstack_init(&env->obst);
 	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
 	env->options  = &be_options;
+	env->ent_trampoline_map = pmap_create();
 	env->pic_trampolines_type
 		= new_type_class(new_id_from_str("$PIC_TRAMPOLINE_TYPE"));
+	env->ent_pic_symbol_map = pmap_create();
 	env->pic_symbols_type
 		= new_type_struct(new_id_from_str("$PIC_SYMBOLS_TYPE"));
 
@@ -286,6 +288,8 @@ static void be_done_env(be_main_env_t *env)
 	be_phi_handler_free(env->phi_handler);
 	obstack_free(&env->obst, NULL);
 
+	pmap_destroy(env->ent_trampoline_map);
+	pmap_destroy(env->ent_pic_symbol_map);
 	free_type(env->pic_trampolines_type);
 	free_type(env->pic_symbols_type);
 }
