@@ -138,6 +138,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "core",       arch_core, },
 	{ "yonah",      arch_core, },
 	{ "merom",      arch_core2, },
+	{ "nocona",     arch_core2, },
 	{ "core2",      arch_core2, },
 	{ "k6",         arch_k6, },
 	{ "k6-2",       arch_k6_2, },
