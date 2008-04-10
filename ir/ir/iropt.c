@@ -722,10 +722,16 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 static ir_node *equivalent_node_Block(ir_node *n)
 {
 	ir_node *oldn = n;
-	int n_preds   = get_Block_n_cfgpreds(n);
+	int     n_preds;
 
-	/* The Block constructor does not call optimize, but mature_immBlock
-	calls the optimization. */
+	/* don't optimize dead blocks */
+	if (is_Block_dead(n))
+		return n;
+
+	n_preds = get_Block_n_cfgpreds(n);
+
+	/* The Block constructor does not call optimize, but mature_immBlock()
+	   calls the optimization. */
 	assert(get_Block_matured(n));
 
 	/* Straightening: a single entry Block following a single exit Block
