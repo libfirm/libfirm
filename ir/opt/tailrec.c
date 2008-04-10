@@ -263,10 +263,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 	 * ok, we are here, so we have build and collected all needed Phi's
 	 * now exchange all Projs into links to Phi
 	 */
-	for (p = data.proj_m; p; p = n) {
-		n = get_irn_link(p);
-		exchange(p, phis[0]);
-	}
+	exchange(data.proj_m, phis[0]);
 	for (p = data.proj_data; p; p = n) {
 		long proj = get_Proj_proj(p);
 
