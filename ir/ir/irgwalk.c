@@ -565,15 +565,12 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 
 /* Walks back from n until it finds a real cf op. */
 static ir_node *get_cf_op(ir_node *n) {
-	ir_node *pred;
-
-	n = skip_Id(n);
-	n = skip_Tuple(n);
-	pred = skip_Proj(n);
-	if (!(is_cfop(pred) || is_fragile_op(pred) || is_Bad(pred)))
-		n = get_cf_op(n);
-
-	return skip_Proj(n);
+	while (!is_cfop(n) && !is_fragile_op(n) && !is_Bad(n)) {
+		n = skip_Id(n);
+		n = skip_Tuple(n);
+		n = skip_Proj(n);
+	}
+	return n;
 }
 
 static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
