@@ -802,18 +802,19 @@ enum exc_mode {
 
 /* Inlines a method at the given call site. */
 int inline_method(ir_node *call, ir_graph *called_graph) {
-	ir_node *pre_call;
-	ir_node *post_call, *post_bl;
-	ir_node *in[pn_Start_max];
-	ir_node *end, *end_bl;
-	ir_node **res_pred;
-	ir_node **cf_pred;
-	ir_node *ret, *phi;
-	int arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity;
-	enum exc_mode exc_handling;
-	ir_type *called_frame, *curr_frame;
+	ir_node             *pre_call;
+	ir_node             *post_call, *post_bl;
+	ir_node             *in[pn_Start_max];
+	ir_node             *end, *end_bl;
+	ir_node             **res_pred;
+	ir_node             **cf_pred;
+	ir_node             *ret, *phi;
+	int                 arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity;
+	enum exc_mode       exc_handling;
+	ir_type             *called_frame, *curr_frame;
+	ir_entity           *ent;
+	ir_graph            *rem, *irg;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
-	ir_entity *ent;
 
 	if (prop == irg_inline_forbidden)
 		return 0;
@@ -827,11 +828,13 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	assert(get_method_n_params(get_entity_type(ent)) ==
 	       get_method_n_params(get_Call_type(call)));
 
+	irg = get_irn_irg(call);
+
 	/*
 	 * We cannot inline a recursive call. The graph must be copied before
 	 * the call the inline_method() using create_irg_copy().
 	 */
-	if (called_graph == current_ir_graph)
+	if (called_graph == irg)
 		return 0;
 
 	/*
@@ -842,21 +845,24 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	if (! can_inline(call, called_graph))
 		return 0;
 
-	DB((dbg, SET_LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, current_ir_graph));
+	rem = current_ir_graph;
+	current_ir_graph = irg;
+
+	DB((dbg, SET_LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
 	/* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
 	rem_opt = get_opt_optimize();
 	set_optimize(0);
 
 	/* Handle graph state */
-	assert(get_irg_phase_state(current_ir_graph) != phase_building);
-	assert(get_irg_pinned(current_ir_graph) == op_pin_state_pinned);
+	assert(get_irg_phase_state(irg) != phase_building);
+	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	set_irg_outs_inconsistent(current_ir_graph);
-	set_irg_extblk_inconsistent(current_ir_graph);
-	set_irg_doms_inconsistent(current_ir_graph);
-	set_irg_loopinfo_inconsistent(current_ir_graph);
-	set_irg_callee_info_state(current_ir_graph, irg_callee_info_inconsistent);
+	set_irg_outs_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
+	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	/* -- Check preconditions -- */
 	assert(is_Call(call));
@@ -887,13 +893,13 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	   Post_call is the old Call node and collects the results of the called
 	   graph. Both will end up being a tuple.  -- */
 	post_bl = get_nodes_block(call);
-	set_irg_current_block(current_ir_graph, post_bl);
+	set_irg_current_block(irg, post_bl);
 	/* XxMxPxPxPxT of Start + parameter of Call */
 	in[pn_Start_X_initial_exec]   = new_Jmp();
 	in[pn_Start_M]                = get_Call_mem(call);
-	in[pn_Start_P_frame_base]     = get_irg_frame(current_ir_graph);
-	in[pn_Start_P_globals]        = get_irg_globals(current_ir_graph);
-	in[pn_Start_P_tls]            = get_irg_tls(current_ir_graph);
+	in[pn_Start_P_frame_base]     = get_irg_frame(irg);
+	in[pn_Start_P_globals]        = get_irg_globals(irg);
+	in[pn_Start_P_tls]            = get_irg_tls(irg);
 	in[pn_Start_T_args]           = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
 	/* in[pn_Start_P_value_arg_base] = ??? */
 	assert(pn_Start_P_value_arg_base == pn_Start_max - 1 && "pn_Start_P_value_arg_base not supported, fix");
@@ -908,29 +914,29 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* -- Prepare state for dead node elimination -- */
 	/* Visited flags in calling irg must be >= flag in called irg.
 	   Else walker and arity computation will not work. */
-	if (get_irg_visited(current_ir_graph) <= get_irg_visited(called_graph))
-		set_irg_visited(current_ir_graph, get_irg_visited(called_graph)+1);
-	if (get_irg_block_visited(current_ir_graph)< get_irg_block_visited(called_graph))
-		set_irg_block_visited(current_ir_graph, get_irg_block_visited(called_graph));
+	if (get_irg_visited(irg) <= get_irg_visited(called_graph))
+		set_irg_visited(irg, get_irg_visited(called_graph)+1);
+	if (get_irg_block_visited(irg) < get_irg_block_visited(called_graph))
+		set_irg_block_visited(irg, get_irg_block_visited(called_graph));
 	/* Set pre_call as new Start node in link field of the start node of
 	   calling graph and pre_calls block as new block for the start block
 	   of calling graph.
 	   Further mark these nodes so that they are not visited by the
 	   copying. */
 	set_irn_link(get_irg_start(called_graph), pre_call);
-	set_irn_visited(get_irg_start(called_graph), get_irg_visited(current_ir_graph));
+	set_irn_visited(get_irg_start(called_graph), get_irg_visited(irg));
 	set_irn_link(get_irg_start_block(called_graph), get_nodes_block(pre_call));
-	set_irn_visited(get_irg_start_block(called_graph), get_irg_visited(current_ir_graph));
-	set_irn_link(get_irg_bad(called_graph), get_irg_bad(current_ir_graph));
-	set_irn_visited(get_irg_bad(called_graph), get_irg_visited(current_ir_graph));
+	set_irn_visited(get_irg_start_block(called_graph), get_irg_visited(irg));
+	set_irn_link(get_irg_bad(called_graph), get_irg_bad(irg));
+	set_irn_visited(get_irg_bad(called_graph), get_irg_visited(irg));
 
 	/* Initialize for compaction of in arrays */
-	inc_irg_block_visited(current_ir_graph);
+	inc_irg_block_visited(irg);
 
 	/* -- Replicate local entities of the called_graph -- */
 	/* copy the entities. */
 	called_frame = get_irg_frame_type(called_graph);
-	curr_frame   = get_irg_frame_type(current_ir_graph);
+	curr_frame   = get_irg_frame_type(irg);
 	for (i = 0, n = get_class_n_members(called_frame); i < n; ++i) {
 		ir_entity *new_ent, *old_ent;
 		old_ent = get_class_member(called_frame, i);
@@ -941,7 +947,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* visited is > than that of called graph.  With this trick visited will
 	   remain unchanged so that an outer walker, e.g., searching the call nodes
 	    to inline, calling this inline will not visit the inlined nodes. */
-	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
+	set_irg_visited(irg, get_irg_visited(irg)-1);
 
 	/* -- Performing dead node elimination inlines the graph -- */
 	/* Copies the nodes to the obstack of current_ir_graph. Updates links to new
@@ -950,8 +956,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	         get_irg_frame_type(called_graph));
 
 	/* Repair called_graph */
-	set_irg_visited(called_graph, get_irg_visited(current_ir_graph));
-	set_irg_block_visited(called_graph, get_irg_block_visited(current_ir_graph));
+	set_irg_visited(called_graph, get_irg_visited(irg));
+	set_irg_block_visited(called_graph, get_irg_block_visited(irg));
 	set_Block_block_visited(get_irg_start_block(called_graph), 0);
 
 	/* -- Merge the end of the inlined procedure with the call site -- */
@@ -977,14 +983,14 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	res_pred = xmalloc(n_res * sizeof(*res_pred));
 	cf_pred  = xmalloc(arity * sizeof(*res_pred));
 
-	set_irg_current_block(current_ir_graph, post_bl); /* just to make sure */
+	set_irg_current_block(irg, post_bl); /* just to make sure */
 
 	/* -- archive keepalives -- */
 	irn_arity = get_irn_arity(end);
 	for (i = 0; i < irn_arity; i++) {
 		ir_node *ka = get_End_keepalive(end, i);
 		if (! is_Bad(ka))
-			add_End_keepalive(get_irg_end(current_ir_graph), ka);
+			add_End_keepalive(get_irg_end(irg), ka);
 	}
 
 	/* The new end node will die.  We need not free as the in array is on the obstack:
@@ -996,7 +1002,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		ir_node *ret;
 		ret = get_irn_n(end_bl, i);
 		if (is_Return(ret)) {
-			cf_pred[n_ret] = new_r_Jmp(current_ir_graph, get_nodes_block(ret));
+			cf_pred[n_ret] = new_r_Jmp(irg, get_nodes_block(ret));
 			n_ret++;
 		}
 	}
@@ -1083,14 +1089,14 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 				ir_node *ret;
 				ret = skip_Proj(get_irn_n(end_bl, i));
 				if (is_Call(ret)) {
-					cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 3);
+					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 3);
 					n_exc++;
 				} else if (is_fragile_op(ret)) {
 					/* We rely that all cfops have the memory output at the same position. */
-					cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 0);
+					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 0);
 					n_exc++;
 				} else if (is_Raise(ret)) {
-					cf_pred[n_exc] = new_r_Proj(current_ir_graph, get_nodes_block(ret), ret, mode_M, 1);
+					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 1);
 					n_exc++;
 				}
 			}
@@ -1115,7 +1121,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 				n_exc++;
 			}
 		}
-		main_end_bl = get_irg_end_block(current_ir_graph);
+		main_end_bl = get_irg_end_block(irg);
 		main_end_bl_arity = get_irn_arity(main_end_bl);
 		end_preds =  xmalloc((n_exc + main_end_bl_arity) * sizeof(*end_preds));
 
@@ -1133,6 +1139,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	/* --  Turn CSE back on. -- */
 	set_optimize(rem_opt);
+	current_ir_graph = rem;
 
 	return 1;
 }
@@ -1213,7 +1220,7 @@ static void collect_calls(ir_node *call, void *env) {
  * size are inlined.
  */
 void inline_small_irgs(ir_graph *irg, int size) {
-  ir_graph *rem = current_ir_graph;
+	ir_graph *rem = current_ir_graph;
 	inline_env_t env;
 	call_entry *entry;
 
@@ -1232,22 +1239,14 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	irg_walk_graph(irg, NULL, collect_calls, &env);
 
 	if (env.head != NULL) {
-		int did_inline = 0;
-
 		/* There are calls to inline */
 		collect_phiprojs(irg);
 		for (entry = env.head; entry != NULL; entry = entry->next) {
 			ir_graph *callee = entry->callee;
 			if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
 			    (get_irg_inline_property(callee) >= irg_inline_forced)) {
-				did_inline |= inline_method(entry->call, callee);
+				inline_method(entry->call, callee);
 			}
-		}
-		if (did_inline != 0) {
-			/* this irg got calls inlined */
-			set_irg_outs_inconsistent(irg);
-			set_irg_doms_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
 		}
 	}
 	obstack_free(&env.obst, NULL);
@@ -1610,11 +1609,6 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 		env = (inline_irg_env *)get_irg_link(irg);
 
 		if (env->got_inline) {
-			/* this irg got calls inlined */
-			set_irg_outs_inconsistent(irg);
-			set_irg_doms_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
-
 			optimize_graph_df(irg);
 			optimize_cf(irg);
 		}
@@ -1835,7 +1829,6 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
  */
 void inline_functions(int inline_threshold) {
 	inline_irg_env   *env;
-	ir_graph         *irg;
 	int              i, n_irgs;
 	ir_graph         *rem;
 	int              did_inline;
@@ -1871,11 +1864,12 @@ void inline_functions(int inline_threshold) {
 
 	/* -- and now inline. -- */
 	for (i = 0; i < n_irgs; ++i) {
-		ir_node *call;
-		int phiproj_computed = 0;
+		int      phiproj_computed = 0;
+		ir_node  *call;
+		ir_graph *irg = get_irp_irg(i);
 
-		current_ir_graph = get_irp_irg(i);
-		env = get_irg_link(current_ir_graph);
+		current_ir_graph = irg;
+		env = get_irg_link(irg);
 
 		/* note that the list of possible calls is updated during the process */
 		tail = NULL;
@@ -1891,7 +1885,7 @@ void inline_functions(int inline_threshold) {
 			/* calculate the benifice on the original call to prevent excessive inlining */
 			local_adr = 0;
 			benefice = calc_inline_benefice(call, callee, &local_adr);
-			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", current_ir_graph, callee, benefice));
+			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
 
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
@@ -1985,24 +1979,17 @@ void inline_functions(int inline_threshold) {
 			tail = entry;
 		}
 		env->call_tail = tail;
-	}
-
-	for (i = 0; i < n_irgs; ++i) {
-		irg = get_irp_irg(i);
-		env = (inline_irg_env *)get_irg_link(irg);
 
 		if (env->got_inline) {
-			/* this irg got calls inlined */
-			set_irg_outs_inconsistent(irg);
-			set_irg_doms_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
+			/* this irg got calls inlined: optimize it */
 
 			/* scalar replacement does not work well with Tuple nodes, so optimize them away */
 			optimize_graph_df(irg);
 
 			if (env->local_vars) {
-				if (scalar_replacement_opt(irg))
+				if (scalar_replacement_opt(irg)) {
 					optimize_graph_df(irg);
+				}
 			}
 
 			optimize_cf(irg);
