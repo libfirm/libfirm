@@ -753,6 +753,22 @@ static void find_addr(ir_node *node, void *env) {
 			is_Start(get_Proj_pred(node)) &&
 			get_Proj_proj(node) == pn_Start_P_value_arg_base) {
 		*allow_inline = 0;
+	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
+		/* From GCC:
+		 * Refuse to inline alloca call unless user explicitly forced so as this
+		 * may change program's memory overhead drastically when the function
+		 * using alloca is called in loop.  In GCC present in SPEC2000 inlining
+		 * into schedule_block cause it to require 2GB of ram instead of 256MB.
+		 *
+		 * Sorryly this is true with our implementation also.
+		 * Moreover, we cannot differentiate between alloca() and VLA yet, so this
+		 * disables inlining of functions using VLA (with are completely save).
+		 *
+		 * 2 Solutions:
+		 * - add a flag to the Alloc node for "real" alloca() calls
+		 * - add a new Stack-Restore node at the end of a function using alloca()
+		 */
+		*allow_inline = 0;
 	}
 }
 
