@@ -60,7 +60,7 @@ enum cpu_arch_features {
  */
 enum cpu_support {
 	/* intel CPU's */
-	arch_generic     =  0,
+	arch_generic          =  0,
 
 	arch_i386        =  1,
 	arch_i486        =  2,
@@ -70,24 +70,26 @@ enum cpu_support {
 	arch_pentium_2   =  6 | arch_feature_intel | arch_feature_p6 | arch_feature_mmx,
 	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
 	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
-	arch_pentium_m   =  9 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
-	arch_core        = 10 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
-	arch_prescott    = 11 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
-	arch_core2       = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
+	arch_prescott    =  9 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
+	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
+	arch_pentium_m   = 11 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
+	arch_core        = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
+	arch_core2       = 13 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
 
 	/* AMD CPU's */
-	arch_k6          = 13 | arch_feature_amd | arch_feature_mmx,
-	arch_k6_2        = 14 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_k6_3        = 15 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_athlon      = 16 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
-	arch_athlon_xp   = 17 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
-	arch_opteron     = 18 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
+	arch_k6          = 14 | arch_feature_amd | arch_feature_mmx,
+	arch_geode       = 15 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE,
+	arch_k6_2        = 16 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
+	arch_k6_3        = 17 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
+	arch_athlon      = 18 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
+	arch_athlon_xp   = 19 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
+	arch_opteron     = 20 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
 
 	/* other */
-	arch_winchip_c6  = 19 | arch_feature_mmx,
-	arch_winchip2    = 20 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3          = 21 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3_2        = 22 | arch_feature_sse1,  /* really no 3DNow! */
+	arch_winchip_c6  = 21 | arch_feature_mmx,
+	arch_winchip2    = 22 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3          = 23 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3_2        = 24 | arch_feature_sse1,  /* really no 3DNow! */
 };
 
 /** checks for l <= x <= h */
@@ -132,8 +134,8 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "p3",         arch_pentium_3, },
 	{ "pentium4",   arch_pentium_4, },
 	{ "p4",         arch_pentium_4, },
-	{ "prescott",   arch_pentium_4, },
-	{ "nocona",     arch_pentium_4, },
+	{ "prescott",   arch_prescott, },
+	{ "nocona",     arch_nocona, },
 	{ "pentiumm",   arch_pentium_m, },
 	{ "pm",         arch_pentium_m, },
 	/*
@@ -150,12 +152,14 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "k6",         arch_k6, },
 	{ "k6-2",       arch_k6_2, },
 	{ "k6-3",       arch_k6_2, },
+	{ "geode",      arch_geode, },
 	{ "athlon",     arch_athlon, },
 	{ "athlon-xp",  arch_athlon_xp, },
 	{ "athlon-mp",  arch_athlon_xp, },
 	{ "athlon-4",   arch_athlon_xp, },
 	{ "athlon64",   arch_opteron, },
 	{ "k8",         arch_opteron, },
+	{ "k10",        arch_opteron, },
 	{ "opteron",    arch_opteron, },
 	{ "generic",    arch_generic, },
 	{ NULL,         0 }
@@ -201,84 +205,113 @@ typedef struct insn_const {
 	int cost_mul_bit;   /**< cost of multiply for every set bit */
 } insn_const;
 
+#define COSTS_INSNS(x)  (4 * (x))
+
 /* costs for the i386 */
 static const insn_const i386_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	2,   /* cost of a constant shift instruction */
-	6,   /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(2),   /* cost of a constant shift instruction */
+	COSTS_INSNS(6),   /* starting cost of a multiply instruction */
+	COSTS_INSNS(1)    /* cost of multiply for every set bit */
 };
 
 /* costs for the i486 */
 static const insn_const i486_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	2,   /* cost of a constant shift instruction */
-	12,  /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(2),   /* cost of a constant shift instruction */
+	COSTS_INSNS(12),  /* starting cost of a multiply instruction */
 	1    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium */
 static const insn_const pentium_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	11,  /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(11),  /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium Pro */
 static const insn_const pentiumpro_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	4,   /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(4),   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Geode */
+static const insn_const geode_cost = {
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(7),   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the K6 */
 static const insn_const k6_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	3,   /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(2),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Athlon */
 static const insn_const athlon_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	5,   /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(2),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(5),   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the K8 */
+static const insn_const k8_cost = {
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(2),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium 4 */
 static const insn_const pentium4_cost = {
-	1,   /* cost of an add instruction */
-	3,   /* cost of a lea instruction */
-	4,   /* cost of a constant shift instruction */
-	15,  /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(3),   /* cost of a lea instruction */
+	COSTS_INSNS(4),   /* cost of a constant shift instruction */
+	COSTS_INSNS(15),  /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
-/* costs for the Core */
-static const insn_const core_cost = {
-	1,   /* cost of an add instruction */
-	1,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	10,  /* starting cost of a multiply instruction */
+/* costs for the Pentium 4 nocona */
+static const insn_const nocona_cost = {
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1),   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(10),  /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+};
+
+/* costs for the Core2 */
+static const insn_const core2_cost = {
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1) + 1,   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the generic */
 static const insn_const generic_cost = {
-	1,   /* cost of an add instruction */
-	2,   /* cost of a lea instruction */
-	1,   /* cost of a constant shift instruction */
-	4,   /* starting cost of a multiply instruction */
+	COSTS_INSNS(1),   /* cost of an add instruction */
+	COSTS_INSNS(1) + 1,   /* cost of a lea instruction */
+	COSTS_INSNS(1),   /* cost of a constant shift instruction */
+	COSTS_INSNS(4),   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
@@ -305,21 +338,27 @@ static void set_arch_costs(void)
 	case arch_pentium_4:
 		arch_costs = &pentium4_cost;
 		break;
+	case arch_prescott:
+		arch_costs = &pentium4_cost;
+		break;
+	case arch_nocona:
+		arch_costs = &nocona_cost;
+		break;
 	case arch_pentium_m:
 		arch_costs = &pentiumpro_cost;
 		break;
 	case arch_core:
-		arch_costs = &core_cost;
-		break;
-	case arch_prescott:
-		arch_costs = &pentium4_cost;
+		arch_costs = &nocona_cost;
 		break;
 	case arch_core2:
-		arch_costs = &core_cost;
+		arch_costs = &core2_cost;
 		break;
 	case arch_k6:
 	case arch_k6_2:
 		arch_costs = &k6_cost;
+		break;
+	case arch_geode:
+		arch_costs = &geode_cost;
 		break;
 	case arch_athlon:
 	case arch_athlon_xp:
