@@ -838,8 +838,30 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ent = get_irg_entity(called_graph);
 
 	/* Do not inline variadic functions. */
-	if (get_method_variadicity(get_entity_type(ent)) == variadicity_variadic)
-		return 0;
+	if (get_method_variadicity(get_entity_type(ent)) == variadicity_variadic) {
+		/* Arg, KR functions are marked as variadic one's, so check further */
+		ir_type *mtp     = get_entity_type(ent);
+		ir_type *ctp     = get_Call_type(call);
+		int     n_params = get_method_n_params(mtp);
+		int     i;
+
+		/* This is too strong, but probably ok. Function calls with a wrong number of
+		   parameters should not be inlined. */
+		if (n_params != get_method_n_params(ctp))
+			return 0;
+
+		/* check types: for K&R calls, this was not done by the compiler. Again, this is
+		   too strong, but ok for now. */
+		for (i = n_params - 1; i >= 0; --i) {
+			ir_type *param_tp = get_method_param_type(mtp, i);
+			ir_type *arg_tp   = get_method_param_type(ctp, i);
+
+			if (param_tp != arg_tp)
+				return 0;
+		}
+		DB((dbg, LEVEL_1, "Inlining allowed for variadic function %+F\n", called_graph));
+		/* types match, fine: when the frame is access, the inliner stops at can_inline() */
+	}
 
 	assert(get_method_n_params(get_entity_type(ent)) ==
 	       get_method_n_params(get_Call_type(call)));
@@ -864,7 +886,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 
-	DB((dbg, SET_LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
+	DB((dbg, LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
 	/* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
 	rem_opt = get_opt_optimize();
@@ -1629,7 +1651,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 			optimize_cf(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
-			DB((dbg, SET_LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
+			DB((dbg, LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
 			env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
 			env->n_callers_orig, env->n_callers,
 			get_entity_name(get_irg_entity(irg))));
@@ -1901,7 +1923,7 @@ void inline_functions(int inline_threshold) {
 			/* calculate the benifice on the original call to prevent excessive inlining */
 			local_adr = 0;
 			benefice = calc_inline_benefice(call, callee, &local_adr);
-			DB((dbg, SET_LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
+			DB((dbg, LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
 
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
@@ -2011,7 +2033,7 @@ void inline_functions(int inline_threshold) {
 			optimize_cf(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
-			DB((dbg, SET_LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
+			DB((dbg, LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
 			env->n_nodes_orig, env->n_nodes, env->n_call_nodes_orig, env->n_call_nodes,
 			env->n_callers_orig, env->n_callers,
 			get_entity_name(get_irg_entity(irg))));
