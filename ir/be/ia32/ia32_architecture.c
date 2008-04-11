@@ -133,12 +133,19 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "pentium4",   arch_pentium_4, },
 	{ "p4",         arch_pentium_4, },
 	{ "prescott",   arch_pentium_4, },
+	{ "nocona",     arch_pentium_4, },
 	{ "pentiumm",   arch_pentium_m, },
 	{ "pm",         arch_pentium_m, },
+	/*
+	 * core CPUs: Yonah
+	 */
 	{ "core",       arch_core, },
 	{ "yonah",      arch_core, },
+	/*
+	 * core2 CPUs: Conroe (XE, L), Allendale, Merom (XE),
+	 * Kentsfield (XE), Yorkfield XE, Penryn, Wolfdale, Yorkfield
+	 */
 	{ "merom",      arch_core2, },
-	{ "nocona",     arch_core2, },
 	{ "core2",      arch_core2, },
 	{ "k6",         arch_k6, },
 	{ "k6-2",       arch_k6_2, },
