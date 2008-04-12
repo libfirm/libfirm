@@ -71,7 +71,7 @@ enum cpu_support {
 	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
 	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
 	arch_prescott    =  9 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
-	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 arch_feature_64bit | arch_feature_sse3,
+	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 | arch_feature_64bit | arch_feature_sse3,
 	arch_pentium_m   = 11 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
 	arch_core        = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
 	arch_core2       = 13 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
