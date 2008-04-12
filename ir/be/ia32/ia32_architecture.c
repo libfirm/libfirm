@@ -113,6 +113,9 @@ enum cpu_support {
 /** return true if the CPU has P6 features (CMOV) */
 #define IS_P6_ARCH(x)       (((x) & arch_feature_p6) != 0)
 
+/** return true if the CPU has the NetBurst architecture */
+#define IS_NETBURST_ARCH(x) (((x) & arch_feature_netburst) != 0)
+
 static cpu_support arch                 = arch_generic;
 static cpu_support opt_arch             = arch_pentium_4;
 static int         use_sse2             = 0;
@@ -147,6 +150,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	 * core2 CPUs: Conroe (XE, L), Allendale, Merom (XE),
 	 * Kentsfield (XE), Yorkfield XE, Penryn, Wolfdale, Yorkfield
 	 */
+
 	{ "merom",      arch_core2, },
 	{ "core2",      arch_core2, },
 	{ "k6",         arch_k6, },
@@ -205,113 +209,111 @@ typedef struct insn_const {
 	int cost_mul_bit;   /**< cost of multiply for every set bit */
 } insn_const;
 
-#define COSTS_INSNS(x)  (4 * (x))
-
 /* costs for the i386 */
 static const insn_const i386_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(3),   /* cost of a constant shift instruction */
-	COSTS_INSNS(9),   /* starting cost of a multiply instruction */
-	COSTS_INSNS(1)    /* cost of multiply for every set bit */
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	3,   /* cost of a constant shift instruction */
+	9,   /* starting cost of a multiply instruction */
+	1    /* cost of multiply for every set bit */
 };
 
 /* costs for the i486 */
 static const insn_const i486_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(2),   /* cost of a constant shift instruction */
-	COSTS_INSNS(12),  /* starting cost of a multiply instruction */
-	COSTS_INSNS(1)    /* cost of multiply for every set bit */
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	2,   /* cost of a constant shift instruction */
+	12,  /* starting cost of a multiply instruction */
+	1    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium */
 static const insn_const pentium_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(11),  /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	11,  /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium Pro */
 static const insn_const pentiumpro_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(4),   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
-
-/* costs for the Geode */
-static const insn_const geode_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(7),   /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	4,   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the K6 */
 static const insn_const k6_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(2),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	3,   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
+/* costs for the Geode */
+static const insn_const geode_cost = {
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	7,   /* starting cost of a multiply instruction */
+	0    /* cost of multiply for every set bit */
+ };
+
 /* costs for the Athlon */
 static const insn_const athlon_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(2),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(5),   /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	5,   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the K8 */
 static const insn_const k8_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(2),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	3,   /* starting cost of a multiply instruction */
+        0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium 4 */
 static const insn_const pentium4_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(3),   /* cost of a lea instruction */
-	COSTS_INSNS(4),   /* cost of a constant shift instruction */
-	COSTS_INSNS(15),  /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	3,   /* cost of a lea instruction */
+	4,   /* cost of a constant shift instruction */
+	15,  /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
-/* costs for the Pentium 4 nocona, Core */
+/* costs for the Nocona and Core */
 static const insn_const nocona_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(10),  /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	10,  /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Core2 */
 static const insn_const core2_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1) + 1,   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(3),   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
-};
+	1,   /* cost of an add instruction */
+	1,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	3,   /* starting cost of a multiply instruction */
+        0    /* cost of multiply for every set bit */
+ };
 
 /* costs for the generic */
 static const insn_const generic_cost = {
-	COSTS_INSNS(1),   /* cost of an add instruction */
-	COSTS_INSNS(1) + 1,   /* cost of a lea instruction */
-	COSTS_INSNS(1),   /* cost of a constant shift instruction */
-	COSTS_INSNS(4),   /* starting cost of a multiply instruction */
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	4,   /* starting cost of a multiply instruction */
 	0    /* cost of multiply for every set bit */
 };
 
@@ -398,7 +400,7 @@ int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 	case ZERO:
 		return arch_costs->add_cost;
 	default:
-		return COSTS_INSNS(1);
+		return 1;
 	}
 }
 
@@ -414,7 +416,7 @@ void ia32_setup_cg_config(void)
 	                                       || !IS_P6_ARCH(opt_arch);
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
-	ia32_cg_config.use_incdec           = !(opt_arch & arch_feature_netburst) && (opt_arch != arch_generic);
+	ia32_cg_config.use_incdec           = !IS_NETBURST_ARCH(opt_arch) && (opt_arch != arch_generic);
 	ia32_cg_config.use_sse2             = use_sse2;
 	ia32_cg_config.use_ffreep           = ARCH_ATHLON(opt_arch);
 	ia32_cg_config.use_ftst             = !IS_P6_ARCH(arch);
