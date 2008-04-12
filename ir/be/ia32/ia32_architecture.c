@@ -211,8 +211,8 @@ typedef struct insn_const {
 static const insn_const i386_cost = {
 	COSTS_INSNS(1),   /* cost of an add instruction */
 	COSTS_INSNS(1),   /* cost of a lea instruction */
-	COSTS_INSNS(2),   /* cost of a constant shift instruction */
-	COSTS_INSNS(6),   /* starting cost of a multiply instruction */
+	COSTS_INSNS(3),   /* cost of a constant shift instruction */
+	COSTS_INSNS(9),   /* starting cost of a multiply instruction */
 	COSTS_INSNS(1)    /* cost of multiply for every set bit */
 };
 
@@ -222,7 +222,7 @@ static const insn_const i486_cost = {
 	COSTS_INSNS(1),   /* cost of a lea instruction */
 	COSTS_INSNS(2),   /* cost of a constant shift instruction */
 	COSTS_INSNS(12),  /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
+	COSTS_INSNS(1)    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium */
@@ -288,7 +288,7 @@ static const insn_const pentium4_cost = {
 	0    /* cost of multiply for every set bit */
 };
 
-/* costs for the Pentium 4 nocona */
+/* costs for the Pentium 4 nocona, Core */
 static const insn_const nocona_cost = {
 	COSTS_INSNS(1),   /* cost of an add instruction */
 	COSTS_INSNS(1),   /* cost of a lea instruction */
@@ -336,17 +336,13 @@ static void set_arch_costs(void)
 		arch_costs = &pentiumpro_cost;
 		break;
 	case arch_pentium_4:
-		arch_costs = &pentium4_cost;
-		break;
 	case arch_prescott:
 		arch_costs = &pentium4_cost;
-		break;
-	case arch_nocona:
-		arch_costs = &nocona_cost;
 		break;
 	case arch_pentium_m:
 		arch_costs = &pentiumpro_cost;
 		break;
+	case arch_nocona:
 	case arch_core:
 		arch_costs = &nocona_cost;
 		break;
@@ -402,7 +398,7 @@ int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 	case ZERO:
 		return arch_costs->add_cost;
 	default:
-		return 1;
+		return COSTS_INSNS(1);
 	}
 }
 
