@@ -71,7 +71,7 @@ enum cpu_support {
 	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
 	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
 	arch_prescott    =  9 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
-	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
+	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 arch_feature_64bit | arch_feature_sse3,
 	arch_pentium_m   = 11 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
 	arch_core        = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
 	arch_core2       = 13 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
@@ -336,13 +336,13 @@ static void set_arch_costs(void)
 		arch_costs = &pentiumpro_cost;
 		break;
 	case arch_pentium_4:
-	case arch_prescott:
 		arch_costs = &pentium4_cost;
 		break;
 	case arch_pentium_m:
 		arch_costs = &pentiumpro_cost;
 		break;
 	case arch_nocona:
+	case arch_prescott:
 	case arch_core:
 		arch_costs = &nocona_cost;
 		break;
@@ -414,7 +414,7 @@ void ia32_setup_cg_config(void)
 	                                       || !IS_P6_ARCH(opt_arch);
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
-	ia32_cg_config.use_incdec           = (opt_arch != arch_pentium_4);
+	ia32_cg_config.use_incdec           = !(opt_arch & arch_feature_netburst) && (opt_arch != arch_generic);
 	ia32_cg_config.use_sse2             = use_sse2;
 	ia32_cg_config.use_ffreep           = ARCH_ATHLON(opt_arch);
 	ia32_cg_config.use_ftst             = !IS_P6_ARCH(arch);
