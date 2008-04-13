@@ -115,7 +115,6 @@ static heights_t *ir_heights;
 
 /* Flag: if set, try to omit the frame pointer if called by the backend */
 static int be_omit_fp = 1;
-static int be_pic     = 0;
 
 /*
      _    ____ ___    ____      _ _ _                _
@@ -410,7 +409,7 @@ static INLINE int is_on_stack(be_abi_call_t *call, int pos)
 static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 {
 	ir_graph *irg              = env->birg->irg;
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = &env->birg->main_env->arch_env;
 	const arch_isa_t *isa      = arch_env->isa;
 	ir_type *call_tp           = get_Call_type(irn);
 	ir_node *call_ptr          = get_Call_ptr(irn);
@@ -1202,7 +1201,7 @@ static void process_calls(be_abi_irg_t *env)
 static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type, ir_entity ***param_map)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
-	int inc  = env->birg->main_env->arch_env->isa->stack_dir * dir;
+	int inc  = env->birg->main_env->arch_env.isa->stack_dir * dir;
 	int n    = get_method_n_params(method_type);
 	int curr = inc > 0 ? 0 : n - 1;
 	int ofs  = 0;
@@ -1363,13 +1362,13 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 			be_set_constr_single_reg(irn, n, reg);
 		be_set_constr_single_reg(irn, pos, reg);
 		be_node_set_reg_class(irn, pos, reg->reg_class);
-		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+		arch_set_irn_register(&env->birg->main_env->arch_env, proj, reg);
 
 		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
-		if(arch_register_type_is(reg, ignore) || arch_irn_is(env->birg->main_env->arch_env, in[n], ignore))
+		if(arch_register_type_is(reg, ignore) || arch_irn_is(&env->birg->main_env->arch_env, in[n], ignore))
 			flags |= arch_irn_flags_ignore;
 
-		if(arch_irn_is(env->birg->main_env->arch_env, in[n], modify_sp))
+		if(arch_irn_is(&env->birg->main_env->arch_env, in[n], modify_sp))
 			flags |= arch_irn_flags_modify_sp;
 
 		be_node_set_flags(irn, pos, flags);
@@ -1397,8 +1396,8 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		ir_node *mem, int n_res)
 {
-	be_abi_call_t *call        = env->call;
-	const arch_isa_t *isa = env->birg->main_env->arch_env->isa;
+	be_abi_call_t *call   = env->call;
+	const arch_isa_t *isa = env->birg->main_env->arch_env.isa;
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = pmap_get(env->keep_map, bl);
@@ -1696,7 +1695,7 @@ static void fix_start_block(ir_node *block, void *env) {
 static void modify_irg(be_abi_irg_t *env)
 {
 	be_abi_call_t *call       = env->call;
-	const arch_isa_t *isa     = env->birg->main_env->arch_env->isa;
+	const arch_isa_t *isa     = env->birg->main_env->arch_env.isa;
 	const arch_register_t *sp = arch_isa_sp(isa);
 	ir_graph *irg             = env->birg->irg;
 	ir_node *bl               = get_irg_start_block(irg);
@@ -1837,7 +1836,7 @@ static void modify_irg(be_abi_irg_t *env)
 		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg(env->reg_params, pos, reg);
-		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+		arch_set_irn_register(&env->birg->main_env->arch_env, proj, reg);
 
 		/*
 		 * If the register is an ignore register,
@@ -1874,7 +1873,7 @@ static void modify_irg(be_abi_irg_t *env)
 	create_barrier(env, bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
+	arch_set_irn_register(&env->birg->main_env->arch_env, env->init_sp, sp);
 
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
@@ -1994,7 +1993,7 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 
 		arity = get_irn_arity(call);
 
-		/* the statereg inputs are the last n inputs of the calls */
+		/* the state reg inputs are the last n inputs of the calls */
 		for(s = 0; s < n_states; ++s) {
 			int inp = arity - n_states + s;
 			const arch_register_t *reg = stateregs[s];
@@ -2005,6 +2004,9 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 	}
 }
 
+/**
+ * Create a trampoline entity for the given method.
+ */
 static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 {
 	ir_type   *type   = get_entity_type(method);
@@ -2019,6 +2021,9 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 	return ent;
 }
 
+/**
+ * Returns the trampoline entity for the given method.
+ */
 static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 {
 	ir_entity *result = pmap_get(env->ent_trampoline_map, method);
@@ -2030,6 +2035,9 @@ static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 	return result;
 }
 
+/**
+ * Returns non-zero if a given entity can be accessed using a relative address.
+ */
 static int can_address_relative(ir_entity *entity)
 {
 	return get_entity_variability(entity) == variability_initialized
@@ -2117,11 +2125,10 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	unsigned *limited_bitset;
 
 	be_omit_fp = birg->main_env->options->omit_fp;
-	be_pic     = birg->main_env->options->pic;
 
 	obstack_init(&env->obst);
 
-	env->isa         = birg->main_env->arch_env->isa;
+	env->isa         = birg->main_env->arch_env.isa;
 	env->method_type = get_entity_type(get_irg_entity(irg));
 	env->call        = be_abi_call_new(env->isa->sp->reg_class);
 	arch_isa_get_call_abi(env->isa, env->method_type, env->call);
@@ -2150,7 +2157,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	env->calls = NEW_ARR_F(ir_node*, 0);
 
-	if (be_pic) {
+	if (birg->main_env->options->pic) {
 		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
 	}
 
@@ -2161,7 +2168,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 		Beware: init backend abi call object after processing calls,
 		otherwise some information might be not yet available.
 	*/
-	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
+	env->cb = env->call->cb->init(env->call, &birg->main_env->arch_env, irg);
 
 	/* Process the IRG */
 	modify_irg(env);
@@ -2257,7 +2264,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	arch_isa_t *isa;
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);
-	walker_env.arch_env = birg->main_env->arch_env;
+	walker_env.arch_env = &birg->main_env->arch_env;
 	isa = walker_env.arch_env->isa;
 
 	irg_walk_graph(birg->irg, collect_stack_nodes_walker, NULL, &walker_env);
@@ -2303,7 +2310,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 {
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = &env->birg->main_env->arch_env;
 	int               omit_fp  = env->call->flags.bits.try_omit_fp;
 	ir_node          *irn;
 	int               wanted_bias = real_bias;

@@ -127,7 +127,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
 
 	env.lv                  = be_liveness(birg);
 	env.irg                 = irg;
-	env.arch_env            = birg->main_env->arch_env;
+	env.arch_env            = &birg->main_env->arch_env;
 	env.cls                 = cls;
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 	env.problem_found       = 0;
@@ -351,7 +351,7 @@ int be_verify_schedule(const be_irg_t *birg)
 	env.problem_found = 0;
 	env.irg           = be_get_birg_irg(birg);
 	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
-	env.arch_env      = birg->main_env->arch_env;
+	env.arch_env      = &birg->main_env->arch_env;
 
 	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
 	/* check if all nodes are scheduled */

@@ -839,7 +839,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 
 	/* init belady env */
 	obstack_init(&obst);
-	arch_env = birg->main_env->arch_env;
+	arch_env = &birg->main_env->arch_env;
 	cls      = rcls;
 	lv       = be_get_birg_liveness(birg);
 	n_regs   = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);

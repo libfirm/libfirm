@@ -1552,13 +1552,13 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  * Initializes a IA32 code generator.
  */
 static void *ia32_cg_init(be_irg_t *birg) {
-	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env->isa;
+	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env.isa;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->arch_env  = birg->main_env->arch_env;
+	cg->arch_env  = &birg->main_env->arch_env;
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;

@@ -135,7 +135,7 @@ void be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls, co
 
 	FIRM_DBG_REGISTER(ra.dbg, "firm.be.regpressureana");
 
-	ra.arch_env = birg->main_env->arch_env;
+	ra.arch_env = &birg->main_env->arch_env;
 	ra.lv       = be_get_birg_liveness(birg);
 	ra.cls      = cls;
 	ra.stat     = stat;

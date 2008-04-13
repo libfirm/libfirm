@@ -467,7 +467,7 @@ void draw_interval_tree(const draw_chordal_opts_t *opts, const be_chordal_env_t 
 	struct block_dims  *start_dims;
 	ir_node            *start_block = get_irg_start_block(chordal_env->irg);
 
-	env.arch_env    = chordal_env->birg->main_env->arch_env;
+	env.arch_env    = &chordal_env->birg->main_env->arch_env;
 	env.opts        = opts;
 	env.block_dims  = pmap_create();
 	env.plotter     = plotter;

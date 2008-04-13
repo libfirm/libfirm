@@ -154,7 +154,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 
 spill_env_t *be_new_spill_env(be_irg_t *birg)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
+	const arch_env_t *arch_env = &birg->main_env->arch_env;
 
 	spill_env_t *env	= xmalloc(sizeof(env[0]));
 	env->spills			= new_set(cmp_spillinfo, 1024);

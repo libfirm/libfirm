@@ -610,13 +610,13 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
  * Initializes the code generator.
  */
 static void *ppc32_cg_init(be_irg_t *birg) {
-	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env->isa;
+	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env.isa;
 	ppc32_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl      = &ppc32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ppc32_cmp_irn_reg_assoc, 1024);
-	cg->arch_env  = birg->main_env->arch_env;
+	cg->arch_env  = &birg->main_env->arch_env;
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->area_size = 0;

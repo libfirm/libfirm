@@ -77,6 +77,8 @@
 #include "be_dbgout.h"
 #include "beirg_t.h"
 
+#define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
+
 #ifdef WITH_ILP
 #include "beilpsched.h"
 #endif /* WITH_ILP */
@@ -88,6 +90,7 @@ static be_options_t be_options = {
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
 	0,                                 /* create PIC code */
+	0,                                 /* create gprof compatible profiling code */
 	BE_VRFY_WARN,                      /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"linux",                           /* target OS name */
@@ -151,6 +154,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",   "omit frame pointer",                                  &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("pic",      "create PIC code",                                     &be_options.pic),
+	LC_OPT_ENT_BOOL     ("gprof",    "create gprof profiling code",                         &be_options.gprof),
 	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
@@ -158,7 +162,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("os",       "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
 #ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("filtev",   "filter for stat events (regex if support is active",  &be_options.printev, sizeof(be_options.printev)),
+	LC_OPT_ENT_STR      ("filtev",   "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
 #endif
 
 #ifdef WITH_ILP
@@ -172,7 +176,7 @@ static be_module_list_entry_t *isa_ifs = NULL;
 
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
 {
-	if(isa_if == NULL)
+	if (isa_if == NULL)
 		isa_if = isa;
 
 	be_add_module_to_list(&isa_ifs, name, (void*) isa);
@@ -222,8 +226,7 @@ static const backend_params be_params = {
 static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt) {
 	if (vrfy_opt == BE_VRFY_WARN) {
 		be_verify_schedule(birg);
-	}
-	else if (vrfy_opt == BE_VRFY_ASSERT) {
+	} else if (vrfy_opt == BE_VRFY_ASSERT) {
 		assert(be_verify_schedule(birg) && "Schedule verification failed.");
 	}
 }
@@ -248,45 +251,43 @@ const backend_params *be_init(void)
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
 	memset(env, 0, sizeof(*env));
-	obstack_init(&env->obst);
-	env->arch_env = obstack_alloc(&env->obst, sizeof(env->arch_env[0]));
-	env->options  = &be_options;
-	env->ent_trampoline_map = pmap_create();
-	env->pic_trampolines_type
-		= new_type_class(new_id_from_str("$PIC_TRAMPOLINE_TYPE"));
-	env->ent_pic_symbol_map = pmap_create();
-	env->pic_symbols_type
-		= new_type_struct(new_id_from_str("$PIC_SYMBOLS_TYPE"));
+	env->options              = &be_options;
+	env->ent_trampoline_map   = pmap_create();
+	env->pic_trampolines_type = new_type_class(NEW_ID("$PIC_TRAMPOLINE_TYPE"));
+	env->ent_pic_symbol_map   = pmap_create();
+	env->pic_symbols_type     = new_type_struct(NEW_ID("$PIC_SYMBOLS_TYPE"));
 
 	remove_irp_type(env->pic_trampolines_type);
 	remove_irp_type(env->pic_symbols_type);
 	set_class_final(env->pic_trampolines_type, 1);
 
-	arch_env_init(env->arch_env, isa_if, file_handle, env);
+	arch_env_init(&env->arch_env, isa_if, file_handle, env);
 
 	/* Register the irn handler of the architecture */
-	if (arch_isa_get_irn_handler(env->arch_env->isa))
-		arch_env_push_irn_handler(env->arch_env, arch_isa_get_irn_handler(env->arch_env->isa));
+	if (arch_isa_get_irn_handler(env->arch_env.isa))
+		arch_env_push_irn_handler(&env->arch_env, arch_isa_get_irn_handler(env->arch_env.isa));
 
 	/*
 	 * Register the node handler of the back end infrastructure.
 	 * This irn handler takes care of the platform independent
 	 * spill, reload and perm nodes.
 	 */
-	arch_env_push_irn_handler(env->arch_env, &be_node_irn_handler);
-	env->phi_handler = be_phi_handler_new(env->arch_env);
-	arch_env_push_irn_handler(env->arch_env, env->phi_handler);
+	arch_env_push_irn_handler(&env->arch_env, &be_node_irn_handler);
+	env->phi_handler = be_phi_handler_new(&env->arch_env);
+	arch_env_push_irn_handler(&env->arch_env, env->phi_handler);
 
 	be_dbg_open();
 	return env;
 }
 
+/**
+ * Called when the be_main_env_t can be destroyed.
+ */
 static void be_done_env(be_main_env_t *env)
 {
-	env->arch_env->isa->impl->done(env->arch_env->isa);
+	env->arch_env.isa->impl->done(env->arch_env.isa);
 	be_dbg_close();
 	be_phi_handler_free(env->phi_handler);
-	obstack_free(&env->obst, NULL);
 
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
@@ -324,7 +325,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
-	be_stat_init_irg(env->arch_env, irg);
+	be_stat_init_irg(&env->arch_env, irg);
 	be_do_stat_nodes(irg, "01 Begin");
 
 	/* set the current graph (this is important for several firm functions) */
@@ -396,13 +397,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	if (be_timing) {
-		t_abi        = ir_timer_register("time_beabi",    "be abi introduction");
+		t_abi        = ir_timer_register("time_beabi",       "be abi introduction");
 		t_codegen    = ir_timer_register("time_codegen",     "codegeneration");
 		t_sched      = ir_timer_register("time_sched",       "scheduling");
-		t_constr     = ir_timer_register("time_constr",   "assure constraints");
+		t_constr     = ir_timer_register("time_constr",      "assure constraints");
 		t_finish     = ir_timer_register("time_finish",      "graph finish");
 		t_emit       = ir_timer_register("time_emiter",      "code emiter");
-		t_verify     = ir_timer_register("time_verify",   "graph verification");
+		t_verify     = ir_timer_register("time_verify",      "graph verification");
 		t_other      = ir_timer_register("time_other",       "other");
 		t_heights    = ir_timer_register("time_heights",     "heights");
 		t_live       = ir_timer_register("time_liveness",    "be liveness");
@@ -424,7 +425,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_init_env(&env, file_handle);
 	env.cup_name = cup_name;
 
-	isa = arch_env_get_isa(env.arch_env);
+	isa = arch_env_get_isa(&env.arch_env);
 
 	be_dbg_so(cup_name);
 	be_dbg_types();
@@ -627,14 +628,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		//be_do_stat_reg_pressure(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, &env.arch_env, birg->exec_freq));
 #endif
 
 		/* Do register allocation */
 		be_allocate_registers(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, env.arch_env, birg->exec_freq));
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, &env.arch_env, birg->exec_freq));
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
@@ -786,7 +787,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 		buf[pos - cup_name] = '\0';
 
 		be_options.statev = 1;
-		stat_ev_begin(buf, be_options.printev);
+		stat_ev_begin(buf, be_options.filtev);
 	}
 #endif
 
@@ -821,7 +822,7 @@ unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *c
 		bitset_clear_all(bs);
 
 	assert(bitset_size(bs) == (unsigned)cls->n_regs);
-	arch_put_non_ignore_regs(birg->main_env->arch_env, cls, bs);
+	arch_put_non_ignore_regs(&birg->main_env->arch_env, cls, bs);
 	bitset_flip_all(bs);
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
 

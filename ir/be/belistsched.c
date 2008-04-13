@@ -553,7 +553,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 /* List schedule a graph. */
 void list_sched(be_irg_t *birg, be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
+	const arch_env_t *arch_env = &birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
 
 	int num_nodes;
@@ -627,7 +627,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 void list_sched_single_block(const be_irg_t *birg, ir_node *block,
                              be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
+	const arch_env_t *arch_env = &birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
 
 	int num_nodes;

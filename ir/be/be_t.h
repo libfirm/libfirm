@@ -34,7 +34,7 @@
 #include "pmap.h"
 
 #include "be.h"
-#include "bearch.h"
+#include "bearch_t.h"
 #include "beirg.h"
 
 #define DUMP_NONE       0
@@ -69,24 +69,24 @@ struct be_options_t {
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
 	int  pic;                 /**< create position independent code */
+	int  gprof;               /**< create gprof compatible profiling code */
 	int  vrfy_option;         /**< backend verify option */
 	int  scheduler;           /**< the scheduler */
 	char target_os[128];      /**< target operating system name */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
 	int  statev;              /**< enable stat event dumping */
-	char printev[128];
+	char filtev[128];         /**< filter mask for stat events (regex is supported) */
 };
 
 struct be_main_env_t {
-	struct obstack         obst;
-	arch_env_t            *arch_env;
-	be_options_t          *options;
+	arch_env_t            arch_env;
+	be_options_t          *options;              /**< backend options */
 	arch_code_generator_t *cg;
 	arch_irn_handler_t    *phi_handler;
-	const char            *cup_name;
-	pmap                  *ent_trampoline_map;
-	ir_type               *pic_trampolines_type;
+	const char            *cup_name;             /**< name of the compilation unit */
+	pmap                  *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
+	ir_type               *pic_trampolines_type; /**< Class type containing all trampolines */
 	pmap                  *ent_pic_symbol_map;
 	ir_type               *pic_symbols_type;
 };
