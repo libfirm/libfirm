@@ -839,11 +839,15 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
                                   ir_graph *irg, ir_node *block, dbg_info *dbg)
 {
 	if (stack_alignment > 1) {
-		assert(is_po2(stack_alignment));
-		ir_mode *mode = get_irn_mode(size);
-		tarval  *tv   = new_tarval_from_long(stack_alignment-1, mode);
-		ir_node *mask = new_r_Const(irg, block, mode, tv);
+		ir_mode *mode;
+		tarval  *tv;
+		ir_node *mask;
 
+		assert(is_po2(stack_alignment));
+
+		mode = get_irn_mode(size);
+		tv   = new_tarval_from_long(stack_alignment-1, mode);
+		mask = new_r_Const(irg, block, mode, tv);
 		size = new_rd_Add(dbg, irg, block, size, mask, mode);
 
 		tv   = new_tarval_from_long(-(long)stack_alignment, mode);
