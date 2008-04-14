@@ -1582,6 +1582,11 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 	cg->gprof     = (birg->main_env->options->gprof) ? 1 : 0;
 
+	if (cg->gprof) {
+		/* Linux gprof implementation needs base pointer */
+		birg->main_env->options->omit_fp = 0;
+	}
+
 	/* enter it */
 	isa->cg = cg;
 
