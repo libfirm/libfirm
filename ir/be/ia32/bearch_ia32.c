@@ -51,6 +51,7 @@
 #include "xmalloc.h"
 #include "irtools.h"
 #include "iroptimize.h"
+#include "instrument.h"
 
 #include "../beabi.h"
 #include "../beirg_t.h"
@@ -927,6 +928,10 @@ static ia32_irn_ops_t ia32_irn_ops = {
  *                       |___/
  **************************************************/
 
+static ir_entity *mcount = NULL;
+
+#define ID(s) new_id_from_chars(s, sizeof(s) - 1)
+
 static void ia32_before_abi(void *self) {
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,  /* lowered mode */
@@ -938,6 +943,16 @@ static void ia32_before_abi(void *self) {
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if (cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+	if (cg->gprof) {
+		if (mcount == NULL) {
+			ir_type *tp = new_type_method(ID("FKT.mcount"), 0, 0);
+			mcount = new_entity(get_glob_type(), ID("mcount"), tp);
+			/* FIXME: enter the right ld_ident here */
+			set_entity_ld_ident(mcount, get_entity_ident(mcount));
+			set_entity_visibility(mcount, visibility_external_allocated);
+		}
+		instrument_initcall(cg->irg, mcount);
+	}
 }
 
 /**
