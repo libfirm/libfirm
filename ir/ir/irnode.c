@@ -649,22 +649,10 @@ ir_type *is_frame_pointer(const ir_node *n) {
 	return NULL;
 }
 
-/* Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
- * from Start.  If so returns global type, else Null. */
-ir_type *is_globals_pointer(const ir_node *n) {
-	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
-		ir_node *start = get_Proj_pred(n);
-		if (is_Start(start)) {
-			return get_glob_type();
-		}
-	}
-	return NULL;
-}
-
 /* Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
  * from Start.  If so returns tls type, else Null. */
 ir_type *is_tls_pointer(const ir_node *n) {
-	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_globals)) {
+	if (is_Proj(n) && (get_Proj_proj(n) == pn_Start_P_tls)) {
 		ir_node *start = get_Proj_pred(n);
 		if (is_Start(start)) {
 			return get_tls_type();

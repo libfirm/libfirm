@@ -397,9 +397,8 @@ enum irg_anchors {
 	anchor_start,            /**< start node of this ir_graph */
 	anchor_end_reg,          /**< end node of this ir_graph */
 	anchor_end_except,       /**< end node of this ir_graph */
-	anchor_frame,            /**< method's frame */
-	anchor_globals,          /**< pointer to the data segment containing all
-	                              globals as well as global procedures. */
+	anchor_initial_exec,     /**< methods initial control flow */
+	anchor_frame,            /**< methods frame */
 	anchor_tls,              /**< pointer to the thread local storage containing all
 	                              thread local data. */
 	anchor_initial_mem,      /**< initial memory of this graph */

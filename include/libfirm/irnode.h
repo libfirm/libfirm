@@ -310,9 +310,6 @@ typedef enum {
 	pn_Start_X_initial_exec,   /**< Projection on the initial control flow. */
 	pn_Start_M,                /**< Projection on the initial memory. */
 	pn_Start_P_frame_base,     /**< Projection on the frame base pointer. */
-	pn_Start_P_globals,        /**< Projection on the pointer to the data segment
-	                                containing _all_ global entities.  Use for
-	                                position independent data/code access. */
 	pn_Start_P_tls,            /**< Projection on the pointer to the thread local store
 	                                segment containing _all_thread local variables. */
 	pn_Start_T_args,           /**< Projection on all arguments. */
@@ -326,12 +323,6 @@ typedef enum {
  * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
 ir_type *is_frame_pointer(const ir_node *n);
-
-/** Test whether arbitrary node is globals pointer.
- *
- * Test whether arbitrary node is globals pointer, i.e. Proj(pn_Start_P_globals)
- * from Start.  If so returns global type, else Null. */
-ir_type *is_globals_pointer(const ir_node *n);
 
 /** Test whether arbitrary node is the thread local storage (tls) pointer.
  *

@@ -938,6 +938,8 @@ static void ia32_before_abi(void *self) {
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if (cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+	if (cg->gprof)
+		instrument_initcall(cg->irg);
 }
 
 /**
@@ -1516,13 +1518,15 @@ static void ia32_codegen(void *self) {
 	free(cg);
 }
 
+/**
+ * Returns the node representing the PIC base.
+ */
 static ir_node *ia32_get_pic_base(void *self) {
 	ir_node         *block;
 	ia32_code_gen_t *cg      = self;
 	ir_node         *get_eip = cg->get_eip;
-	if(get_eip != NULL)
+	if (get_eip != NULL)
 		return get_eip;
-
 
 	block       = get_irg_start_block(cg->irg);
 	get_eip     = new_rd_ia32_GetEIP(NULL, cg->irg, block);
@@ -1537,7 +1541,7 @@ static void *ia32_cg_init(be_irg_t *birg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
-	ia32_get_pic_base,
+	ia32_get_pic_base,   /* return node used as base in pic code addresses */
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	NULL,                /* spill */
@@ -1563,6 +1567,7 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->gprof     = (birg->main_env->options->gprof) ? 1 : 0;
 
 	/* enter it */
 	isa->cg = cg;

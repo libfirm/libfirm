@@ -54,7 +54,7 @@ static void lower_sel(ir_node *sel) {
 
 	/* Do not lower frame type/global offset table access: must be lowered by the backend. */
 	ptr = get_Sel_ptr(sel);
-	if (ptr == get_irg_frame(current_ir_graph) || ptr == get_irg_globals(current_ir_graph))
+	if (ptr == get_irg_frame(current_ir_graph))
 		return;
 
 	ent   = get_Sel_entity(sel);

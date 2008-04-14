@@ -304,7 +304,6 @@ static int verify_node_Proj_Start(ir_node *n, ir_node *p) {
 			(proj == pn_Start_X_initial_exec && mode == mode_X) ||
 			(proj == pn_Start_M         && mode == mode_M) ||
 			(proj == pn_Start_P_frame_base && mode_is_reference(mode)) ||
-			(proj == pn_Start_P_globals && mode_is_reference(mode)) ||
 			(proj == pn_Start_P_tls     && mode_is_reference(mode)) ||
 			(proj == pn_Start_T_args    && mode == mode_T) ||
 			(proj == pn_Start_P_value_arg_base && mode_is_reference(mode)) ||

@@ -65,19 +65,20 @@ struct ia32_code_gen_t {
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
-	char                           do_x87_sim;     /**< set to 1 if x87 simulation should be enforced */
-	char                           dump;           /**< set to 1 if graphs should be dumped */
-	ir_node                       *unknown_gp;     /**< unique Unknown_GP node */
-	ir_node                       *unknown_vfp;    /**< unique Unknown_VFP node */
-	ir_node                       *unknown_xmm;    /**< unique Unknown_XMM node */
-	ir_node                       *noreg_gp;       /**< unique NoReg_GP node */
-	ir_node                       *noreg_vfp;      /**< unique NoReg_VFP node */
-	ir_node                       *noreg_xmm;      /**< unique NoReg_XMM node */
+	unsigned                       do_x87_sim:1;   /**< set to 1 if x87 simulation should be enforced */
+	unsigned                       dump:1;         /**< set to 1 if graphs should be dumped */
+	unsigned                       gprof:1;        /**< set to 1 grof profiling is in use */
+	ir_node                        *unknown_gp;     /**< unique Unknown_GP node */
+	ir_node                        *unknown_vfp;    /**< unique Unknown_VFP node */
+	ir_node                        *unknown_xmm;    /**< unique Unknown_XMM node */
+	ir_node                        *noreg_gp;       /**< unique NoReg_GP node */
+	ir_node                        *noreg_vfp;      /**< unique NoReg_VFP node */
+	ir_node                        *noreg_xmm;      /**< unique NoReg_XMM node */
 
-	ir_node                       *fpu_trunc_mode; /**< truncate fpu mode */
-	ir_node                       *get_eip;        /**< get eip node */
+	ir_node                        *fpu_trunc_mode; /**< truncate fpu mode */
+	ir_node                        *get_eip;        /**< get eip node */
 
-	struct obstack                *obst;
+	struct obstack                 *obst;
 };
 
 /**

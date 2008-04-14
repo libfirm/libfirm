@@ -424,9 +424,6 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 	/* do the main transformation */
 	transform_nodes(irg, func, cg);
 
-	/* we don't want the globals anchor anymore */
-	set_irg_globals(irg, new_r_Bad(irg));
-
 	/* free the old obstack */
 	obstack_free(old_obst, 0);
 	xfree(old_obst);

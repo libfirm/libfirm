@@ -259,8 +259,8 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 
 	/* Proj results of start node */
 	projX                   = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+	set_irg_initial_exec    (res, projX);
 	set_irg_frame           (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
-	set_irg_globals         (res, new_Proj(start, mode_P_data, pn_Start_P_globals));
 	set_irg_tls             (res, new_Proj(start, mode_P_data, pn_Start_P_tls));
 	set_irg_args            (res, new_Proj(start, mode_T,      pn_Start_T_args));
 	set_irg_value_param_base(res, new_Proj(start, mode_P_data, pn_Start_P_value_arg_base));
@@ -642,6 +642,16 @@ void
 }
 
 ir_node *
+(get_irg_initial_exec)(const ir_graph *irg) {
+	return _get_irg_initial_exec(irg);
+}
+
+void
+(set_irg_initial_exec)(ir_graph *irg, ir_node *node) {
+	_set_irg_initial_exec(irg, node);
+}
+
+ir_node *
 (get_irg_frame)(const ir_graph *irg) {
 	return _get_irg_frame(irg);
 }
@@ -649,16 +659,6 @@ ir_node *
 void
 (set_irg_frame)(ir_graph *irg, ir_node *node) {
 	_set_irg_frame(irg, node);
-}
-
-ir_node *
-(get_irg_globals)(const ir_graph *irg) {
-  return _get_irg_globals(irg);
-}
-
-void
-(set_irg_globals)(ir_graph *irg, ir_node *node) {
-	_set_irg_globals(irg, node);
 }
 
 ir_node *

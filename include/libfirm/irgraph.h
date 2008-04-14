@@ -236,15 +236,15 @@ void     set_irg_end_reg(ir_graph *irg, ir_node *node);
 ir_node *get_irg_end_except(const ir_graph *irg);
 void     set_irg_end_except(ir_graph *irg, ir_node *node);
 
+/** Returns the node that represents the initial control flow of the given IR graph. */
+ir_node *get_irg_initial_exec(const ir_graph *irg);
+/** Sets the node that represents the initial control of the given IR graph. */
+void     set_irg_initial_exec(ir_graph *irg, ir_node *node);
+
 /** Returns the node that represents the frame pointer of the given IR graph. */
 ir_node *get_irg_frame(const ir_graph *irg);
 /** Sets the node that represents the frame pointer of the given IR graph. */
 void     set_irg_frame(ir_graph *irg, ir_node *node);
-
-/** Returns the node that represents the global pointer of the given IR graph. */
-ir_node *get_irg_globals(const ir_graph *irg);
-/** Sets the node that represents the global pointer of the given IR graph. */
-void     set_irg_globals(ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the tls pointer of the given IR graph. */
 ir_node *get_irg_tls(const ir_graph *irg);

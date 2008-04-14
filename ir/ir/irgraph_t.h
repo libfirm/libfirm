@@ -169,6 +169,16 @@ _set_irg_end_except(ir_graph *irg, ir_node *node) {
 }
 
 static INLINE ir_node *
+_get_irg_initial_exec(const ir_graph *irg) {
+	return get_irn_intra_n(irg->anchor, anchor_initial_exec);
+}
+
+static INLINE void
+_set_irg_initial_exec(ir_graph *irg, ir_node *node) {
+	set_irn_n(irg->anchor, anchor_initial_exec, node);
+}
+
+static INLINE ir_node *
 _get_irg_frame(const ir_graph *irg) {
 	return get_irn_intra_n(irg->anchor, anchor_frame);
 }
@@ -176,16 +186,6 @@ _get_irg_frame(const ir_graph *irg) {
 static INLINE void
 _set_irg_frame(ir_graph *irg, ir_node *node) {
 	set_irn_n(irg->anchor, anchor_frame, node);
-}
-
-static INLINE ir_node *
-_get_irg_globals(const ir_graph *irg) {
-	return get_irn_intra_n(irg->anchor, anchor_globals);
-}
-
-static INLINE void
-_set_irg_globals(ir_graph *irg, ir_node *node) {
-	set_irn_n(irg->anchor, anchor_globals, node);
 }
 
 static INLINE ir_node *
@@ -547,10 +547,10 @@ _get_interprocedural_view(void) {
 #define set_irg_end_reg(irg, node)            _set_irg_end_reg(irg, node)
 #define get_irg_end_except(irg)               _get_irg_end_except(irg)
 #define set_irg_end_except(irg, node)         _set_irg_end_except(irg, node)
+#define get_irg_initial_exec(irg)             _get_irg_initial_exec(irg)
+#define set_irg_initial_exec(irg, node)       _set_irg_initial_exec(irg, node)
 #define get_irg_frame(irg)                    _get_irg_frame(irg)
 #define set_irg_frame(irg, node)              _set_irg_frame(irg, node)
-#define get_irg_globals(irg)                  _get_irg_globals(irg)
-#define set_irg_globals(irg, node)            _set_irg_globals(irg, node)
 #define get_irg_tls(irg)                      _get_irg_tls(irg)
 #define set_irg_tls(irg, node)                _set_irg_tls(irg, node)
 #define get_irg_initial_mem(irg)              _get_irg_initial_mem(irg)

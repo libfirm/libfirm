@@ -936,7 +936,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	in[pn_Start_X_initial_exec]   = new_Jmp();
 	in[pn_Start_M]                = get_Call_mem(call);
 	in[pn_Start_P_frame_base]     = get_irg_frame(irg);
-	in[pn_Start_P_globals]        = get_irg_globals(irg);
 	in[pn_Start_P_tls]            = get_irg_tls(irg);
 	in[pn_Start_T_args]           = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
 	/* in[pn_Start_P_value_arg_base] = ??? */

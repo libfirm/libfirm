@@ -137,9 +137,6 @@ static ir_type *find_type_for_Proj(ir_node *n) {
 		case pn_Start_P_frame_base:
 			tp = find_pointer_type_to(get_irg_frame_type(get_irn_irg(pred)));
 			break;
-		case pn_Start_P_globals:
-			tp = find_pointer_type_to(get_glob_type());
-			break;
 		case pn_Start_P_tls:
 			tp = find_pointer_type_to(get_tls_type());
 			break;

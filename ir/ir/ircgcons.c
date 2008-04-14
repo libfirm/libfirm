@@ -178,7 +178,6 @@ static void collect_phicallproj(void) {
      * auch wenn sie nicht im intraprozeduralen Graphen erreichbar
      * sind. */
     link(start, get_irg_frame(irg));
-    link(start, get_irg_globals(irg));
     /* walk */
     irg_walk_graph(irg, firm_clear_link, (irg_walk_func *) collect_phicallproj_walker, &end);
 
@@ -272,9 +271,9 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
     }
   }
   /* Globle Einträge für ersetzte Operationen korrigieren. */
-  set_irg_frame      (irg, skip_Id(get_irg_frame(irg)));
-  set_irg_globals    (irg, skip_Id(get_irg_globals(irg)));
-  set_irg_initial_mem(irg, skip_Id(get_irg_initial_mem(irg)));
+  set_irg_initial_exec(irg, skip_Id(get_irg_initial_exec(irg)));
+  set_irg_frame       (irg, skip_Id(get_irg_frame(irg)));
+  set_irg_initial_mem (irg, skip_Id(get_irg_initial_mem(irg)));
 
   /* Unbekannten Aufrufer sofort eintragen. */
   if (data->open) {
@@ -914,11 +913,11 @@ void cg_destruct(void) {
       ir_graph * irg = get_irp_irg(i);
       irg_walk_graph(irg, destruct_walker, firm_clear_link, NULL);
 
-      set_irg_frame      (irg, skip_Id(get_irg_frame(irg)));
-      set_irg_globals    (irg, skip_Id(get_irg_globals(irg)));
-      set_irg_initial_mem(irg, skip_Id(get_irg_initial_mem(irg)));
-      set_irg_end_reg    (irg, get_irg_end(irg));
-      set_irg_end_except (irg, get_irg_end(irg));
+	  set_irg_initial_exec(irg, skip_Id(get_irg_initial_exec(irg)));
+      set_irg_frame       (irg, skip_Id(get_irg_frame(irg)));
+      set_irg_initial_mem (irg, skip_Id(get_irg_initial_mem(irg)));
+      set_irg_end_reg     (irg, get_irg_end(irg));
+      set_irg_end_except  (irg, get_irg_end(irg));
 
       set_irg_callee_info_state(irg, irg_callee_info_none);
     }
