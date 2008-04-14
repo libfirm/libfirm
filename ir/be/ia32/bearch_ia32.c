@@ -938,8 +938,6 @@ static void ia32_before_abi(void *self) {
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if (cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
-	if (cg->gprof)
-		instrument_initcall(cg->irg);
 }
 
 /**
