@@ -55,6 +55,11 @@ typedef struct {
 	unsigned use_sub_esp_8:1;
 	/** use imul mem, imm32 instruction (slow on some cpu's */
 	unsigned use_imul_mem_imm32:1;
+	/** use mov reg, 0 instruction */
+	unsigned use_mov_0:1;
+	/** pad Ret that are destination of conditional jump or directly preceded
+	    by other jump instruction. */
+	unsigned use_pad_return;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

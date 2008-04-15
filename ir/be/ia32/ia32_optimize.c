@@ -297,7 +297,46 @@ static void peephole_ia32_Test(ir_node *node)
 	be_peephole_after_exchange(flags_proj);
 }
 
-// only optimize up to 48 stores behind IncSPs
+/**
+ * AMD Athlon works faster when RET is not destination of
+ * conditional jump or directly preceded by other jump instruction.
+ * Can be avoided by placing a Rep prefix before the return.
+ */
+static void peephole_ia32_Return(ir_node *node) {
+	ir_node *block, *irn, *rep;
+
+	if (!ia32_cg_config.use_pad_return)
+		return;
+
+	block = get_nodes_block(node);
+
+	/* check if this return is the first on the block */
+	sched_foreach_reverse_from(node, irn) {
+		switch (be_get_irn_opcode(irn)) {
+		case beo_Return:
+			/* the return node itself, ignore */
+			continue;
+		case beo_Barrier:
+			/* ignore the barrier, no code generated */
+			continue;
+		case beo_IncSP:
+			/* arg, IncSP 0 nodes might occur, ignore these */
+			if (be_get_IncSP_offset(irn) == 0)
+				continue;
+			return;
+		default:
+			if (is_Phi(irn))
+				continue;
+			return;
+		}
+	}
+	/* yep, return is the first real instruction in this block */
+	rep = new_rd_ia32_RepPrefix(get_irn_dbg_info(node), current_ir_graph, block);
+	keep_alive(rep);
+	sched_add_before(node, rep);
+}
+
+/* only optimize up to 48 stores behind IncSPs */
 #define MAXPUSH_OPTIMIZE	48
 
 /**
@@ -585,10 +624,12 @@ static void peephole_ia32_Const(ir_node *node)
 	ir_node                     *noreg;
 
 	/* try to transform a mov 0, reg to xor reg reg */
-	if(attr->offset != 0 || attr->symconst != NULL)
+	if (attr->offset != 0 || attr->symconst != NULL)
+		return;
+	if (ia32_cg_config.use_mov_0)
 		return;
 	/* xor destroys the flags, so no-one must be using them */
-	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+	if (be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
 		return;
 
 	reg = arch_get_irn_register(arch_env, node);
@@ -845,6 +886,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
 	register_peephole_optimisation(op_ia32_Test, peephole_ia32_Test);
 	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
+	register_peephole_optimisation(op_be_Return, peephole_ia32_Return);
 
 	be_peephole_opt(cg->birg);
 }

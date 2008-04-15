@@ -84,7 +84,7 @@ enum cpu_support {
 	arch_athlon      = 18 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
 	arch_athlon_xp   = 19 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
 	arch_opteron     = 20 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
-	arch_k10         = 21 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
+	arch_k10         = 21 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6 | arch_feature_sse3,
 
 	/* other */
 	arch_winchip_c6  = 22 | arch_feature_mmx,
@@ -101,6 +101,9 @@ enum cpu_support {
 
 /** returns true if it's AMD architecture */
 #define ARCH_AMD(x)         (((x) & arch_feature_amd) != 0)
+
+/** return true if the CPU is a K6 architecture */
+#define ARCH_K6(x)          _IN_RANGE((x), arch_k6, arch_k6_3)
 
 /** return true if it's a Athlon/Opteron */
 #define ARCH_K8(x)          _IN_RANGE((x), arch_athlon, arch_opteron)
@@ -167,9 +170,11 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "athlon-4",   arch_athlon_xp, },
 	{ "athlon64",   arch_opteron, },
 	{ "k8",         arch_opteron, },
-	{ "k10",        arch_k10, },
 	{ "opteron",    arch_opteron, },
+	{ "k10",        arch_k10, },
+	{ "barcelona",  arch_k10, },
 	{ "generic",    arch_generic, },
+	{ "generic32",  arch_generic, },
 	{ NULL,         0 }
 };
 
@@ -444,6 +449,9 @@ void ia32_setup_cg_config(void)
 	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
 	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
 	ia32_cg_config.use_imul_mem_imm32   = !(opt_arch == arch_opteron || opt_arch == arch_k10);
+	ia32_cg_config.use_mov_0            = ARCH_K6(opt_arch);
+	ia32_cg_config.use_pad_return       = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_core2) ||
+	                                      (opt_arch == arch_generic);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 
