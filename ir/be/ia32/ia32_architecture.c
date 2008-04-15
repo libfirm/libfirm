@@ -84,12 +84,13 @@ enum cpu_support {
 	arch_athlon      = 18 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
 	arch_athlon_xp   = 19 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
 	arch_opteron     = 20 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
+	arch_k10         = 21 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
 
 	/* other */
-	arch_winchip_c6  = 21 | arch_feature_mmx,
-	arch_winchip2    = 22 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3          = 23 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3_2        = 24 | arch_feature_sse1,  /* really no 3DNow! */
+	arch_winchip_c6  = 22 | arch_feature_mmx,
+	arch_winchip2    = 23 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3          = 24 | arch_feature_mmx | arch_feature_3DNow,
+	arch_c3_2        = 25 | arch_feature_sse1,  /* really no 3DNow! */
 };
 
 /** checks for l <= x <= h */
@@ -102,7 +103,10 @@ enum cpu_support {
 #define ARCH_AMD(x)         (((x) & arch_feature_amd) != 0)
 
 /** return true if it's a Athlon/Opteron */
-#define ARCH_ATHLON(x)      _IN_RANGE((x), arch_athlon, arch_opteron)
+#define ARCH_K8(x)          _IN_RANGE((x), arch_athlon, arch_opteron)
+
+/** return true if it's a Athlon or newer */
+#define ARCH_ATHLON_PLUS(x) _IN_RANGE((x), arch_athlon, arch_k10)
 
 /** return true if the CPU has MMX support */
 #define ARCH_MMX(x)         (((x) & arch_feature_mmx) != 0)
@@ -163,7 +167,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "athlon-4",   arch_athlon_xp, },
 	{ "athlon64",   arch_opteron, },
 	{ "k8",         arch_opteron, },
-	{ "k10",        arch_opteron, },
+	{ "k10",        arch_k10, },
 	{ "opteron",    arch_opteron, },
 	{ "generic",    arch_generic, },
 	{ NULL,         0 }
@@ -272,13 +276,13 @@ static const insn_const athlon_cost = {
 	0    /* cost of multiply for every set bit */
 };
 
-/* costs for the K8 */
-static const insn_const k8_cost = {
+/* costs for the Opteron/K8/K10 */
+static const insn_const opteron_cost = {
 	1,   /* cost of an add instruction */
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	3,   /* starting cost of a multiply instruction */
-        0    /* cost of multiply for every set bit */
+	0    /* cost of multiply for every set bit */
 };
 
 /* costs for the Pentium 4 */
@@ -360,8 +364,11 @@ static void set_arch_costs(void)
 		break;
 	case arch_athlon:
 	case arch_athlon_xp:
-	case arch_opteron:
 		arch_costs = &athlon_cost;
+		break;
+	case arch_opteron:
+	case arch_k10:
+		arch_costs = &opteron_cost;
 		break;
 	case arch_generic:
 	default:
@@ -404,8 +411,6 @@ int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 	}
 }
 
-
-
 void ia32_setup_cg_config(void)
 {
 	memset(&ia32_cg_config, 0, sizeof(ia32_cg_config));
@@ -418,12 +423,26 @@ void ia32_setup_cg_config(void)
 	   register which produces false dependencies */
 	ia32_cg_config.use_incdec           = !IS_NETBURST_ARCH(opt_arch) && (opt_arch != arch_generic);
 	ia32_cg_config.use_sse2             = use_sse2;
-	ia32_cg_config.use_ffreep           = ARCH_ATHLON(opt_arch);
+	ia32_cg_config.use_ffreep           = ARCH_ATHLON_PLUS(opt_arch);
 	ia32_cg_config.use_ftst             = !IS_P6_ARCH(arch);
-	ia32_cg_config.use_femms            = ARCH_ATHLON(opt_arch)
+	ia32_cg_config.use_femms            = ARCH_ATHLON_PLUS(opt_arch)
 	                                      && ARCH_MMX(arch) && ARCH_AMD(arch);
 	ia32_cg_config.use_fucomi           = IS_P6_ARCH(arch);
 	ia32_cg_config.use_cmov             = IS_P6_ARCH(arch);
+	ia32_cg_config.use_add_esp_4        = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_geode) ||
+	                                      IS_NETBURST_ARCH(opt_arch) || (opt_arch == arch_core2) ||
+	                                      (opt_arch == arch_generic);
+	ia32_cg_config.use_add_esp_8        = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_geode) ||
+	                                      IS_P6_ARCH(opt_arch) || IS_NETBURST_ARCH(opt_arch) ||
+	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
+	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
+	ia32_cg_config.use_sub_esp_4        = ARCH_ATHLON_PLUS(opt_arch) || IS_P6_ARCH(opt_arch) ||
+	                                      IS_NETBURST_ARCH(opt_arch) || (opt_arch == arch_core2) ||
+	                                      (opt_arch == arch_generic);
+	ia32_cg_config.use_sub_esp_8        = ARCH_ATHLON_PLUS(opt_arch) ||
+	                                      IS_P6_ARCH(opt_arch) || IS_NETBURST_ARCH(opt_arch) ||
+	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
+	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 

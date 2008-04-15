@@ -45,6 +45,14 @@ typedef struct {
 	unsigned use_fucomi:1;
 	/** use cmovXX instructions */
 	unsigned use_cmov:1;
+	/** use add esp, 4 instead of pop */
+	unsigned use_add_esp_4:1;
+	/** use add esp, 8 instead of 2 pop's */
+	unsigned use_add_esp_8:1;
+	/** use sub esp, 4 instead of push */
+	unsigned use_sub_esp_4:1;
+	/** use sub esp, 8 instead of 2 push's */
+	unsigned use_sub_esp_8:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**
