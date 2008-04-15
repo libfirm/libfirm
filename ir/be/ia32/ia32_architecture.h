@@ -53,6 +53,8 @@ typedef struct {
 	unsigned use_sub_esp_4:1;
 	/** use sub esp, 8 instead of 2 push's */
 	unsigned use_sub_esp_8:1;
+	/** use imul mem, imm32 instruction (slow on some cpu's */
+	unsigned use_imul_mem_imm32:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

@@ -443,6 +443,7 @@ void ia32_setup_cg_config(void)
 	                                      IS_P6_ARCH(opt_arch) || IS_NETBURST_ARCH(opt_arch) ||
 	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
 	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
+	ia32_cg_config.use_imul_mem_imm32   = !(opt_arch == arch_opteron || opt_arch == arch_k10);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 
