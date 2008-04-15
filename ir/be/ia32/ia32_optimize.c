@@ -301,7 +301,9 @@ static void peephole_ia32_Test(ir_node *node)
 #define MAXPUSH_OPTIMIZE	48
 
 /**
- * Tries to create pushs from IncSP,Store combinations
+ * Tries to create pushs from IncSP,Store combinations.
+ * The Stores are replaced by Push's, the IncSP is modified
+ * (possibly into IncSP 0, but not removed).
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
@@ -319,7 +321,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	assert(be_is_IncSP(irn));
 
 	offset = be_get_IncSP_offset(irn);
-	if(offset < 4)
+	if (offset < 4)
 		return;
 
 	/*
@@ -466,6 +468,9 @@ static void peephole_IncSP_IncSP(ir_node *node)
 	be_peephole_after_exchange(predpred);
 }
 
+/**
+ * Find a free GP register if possible, else return NULL.
+ */
 static const arch_register_t *get_free_gp_reg(void)
 {
 	int i;
@@ -491,7 +496,7 @@ static void peephole_be_IncSP(ir_node *node)
 	ir_node               *block;
 	ir_node               *keep;
 	ir_node               *val;
-	ir_node               *pop;
+	ir_node               *pop, *pop2;
 	ir_node               *noreg;
 	ir_node               *stack;
 	int                    offset;
@@ -502,40 +507,61 @@ static void peephole_be_IncSP(ir_node *node)
 	/* transform IncSP->Store combinations to Push where possible */
 	peephole_IncSP_Store_to_push(node);
 
+	if (arch_get_irn_register(arch_env, node) != esp)
+		return;
+
 	/* replace IncSP -4 by Pop freereg when possible */
 	offset = be_get_IncSP_offset(node);
-	if(offset != -4)
+	if (!(offset == -4 && !ia32_cg_config.use_add_esp_4) &&
+	    !(offset == -8 && !ia32_cg_config.use_add_esp_8) &&
+	    !(offset == +4 && !ia32_cg_config.use_sub_esp_4) &&
+	    !(offset == +8 && !ia32_cg_config.use_sub_esp_8))
 		return;
 
-	if(arch_get_irn_register(arch_env, node) != esp)
-		return;
+	if (offset < 0) {
+		/* we need a free register for pop */
+		reg = get_free_gp_reg();
+		if(reg == NULL)
+			return;
 
-	reg = get_free_gp_reg();
-	if(reg == NULL)
-		return;
+		irg   = current_ir_graph;
+		dbgi  = get_irn_dbg_info(node);
+		block = get_nodes_block(node);
+		noreg = ia32_new_NoReg_gp(cg);
+		stack = be_get_IncSP_pred(node);
+		pop   = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
 
-	irg   = current_ir_graph;
-	dbgi  = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-	noreg = ia32_new_NoReg_gp(cg);
-	stack = be_get_IncSP_pred(node);
-	pop   = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
+		stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
+		arch_set_irn_register(arch_env, stack, esp);
+		val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
+		arch_set_irn_register(arch_env, val, reg);
 
-	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
-	arch_set_irn_register(arch_env, stack, esp);
-	val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
-	arch_set_irn_register(arch_env, val, reg);
+		sched_add_before(node, pop);
 
-	sched_add_before(node, pop);
+		keep = sched_next(node);
+		if (!be_is_Keep(keep)) {
+			ir_node *in[1];
+			in[0] = val;
+			keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
+			sched_add_before(node, keep);
+		} else {
+			be_Keep_add_node(keep, &ia32_reg_classes[CLASS_ia32_gp], val);
+		}
 
-	keep  = sched_next(node);
-	if(!be_is_Keep(keep)) {
-		ir_node *in[1];
-		in[0] = val;
-		keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
-		sched_add_before(node, keep);
+		if (offset == -8) {
+			pop2  = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
+
+			stack = new_r_Proj(irg, block, pop2, mode_Iu, pn_ia32_Pop_stack);
+			arch_set_irn_register(arch_env, stack, esp);
+			val   = new_r_Proj(irg, block, pop2, mode_Iu, pn_ia32_Pop_res);
+			arch_set_irn_register(arch_env, val, reg);
+
+			sched_add_after(pop, pop2);
+			be_Keep_add_node(keep, &ia32_reg_classes[CLASS_ia32_gp], val);
+		}
 	} else {
-		be_Keep_add_node(keep, &ia32_reg_classes[CLASS_ia32_gp], val);
+		/* NIY */
+		return;
 	}
 
 	be_peephole_before_exchange(node, stack);
