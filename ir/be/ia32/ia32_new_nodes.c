@@ -263,9 +263,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				case ia32_am_Source:
 					fprintf(F, "source only (Load)");
 					break;
-				case ia32_am_Dest:
-					fprintf(F, "dest only (Load+Store)");
-					break;
 				default:
 					fprintf(F, "unknown (%d)", get_ia32_am_support(n));
 					break;

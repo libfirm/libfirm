@@ -249,12 +249,6 @@ sub ia32_custom_init_attr {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_unary);";
 		} elsif($am eq "source,binary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_binary);";
-		} elsif($am eq "dest,unary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_unary);";
-		} elsif($am eq "dest,binary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_binary);";
-		} elsif($am eq "dest,ternary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Dest, ia32_am_ternary);";
 		} elsif($am eq "source,ternary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_ternary);";
 		} elsif($am eq "none") {
