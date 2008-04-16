@@ -816,7 +816,7 @@ static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spil
 }
 
 /**
- * Check if irn can load it's operand at position i from memory (source addressmode).
+ * Check if irn can load its operand at position i from memory (source addressmode).
  * @param self   Pointer to irn ops itself
  * @param irn    The irn to be checked
  * @param i      The operands position

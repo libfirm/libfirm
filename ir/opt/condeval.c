@@ -271,7 +271,7 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 #ifdef AVOID_PHIB
 		/* we may not copy mode_b nodes, because this could produce phi with
 		 * mode_bs which can't be handled in all backends. Instead we duplicate
-		 * the node and move it to it's users */
+		 * the node and move it to its users */
 		if (mode == mode_b) {
 			const ir_edge_t *edge, *next;
 			ir_node *pred;
