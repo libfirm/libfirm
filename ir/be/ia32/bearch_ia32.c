@@ -501,8 +501,6 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 	} else {
-		const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
-		ia32_code_gen_t *cg = isa->cg;
 		ir_mode         *mode_bp = env->isa->bp->reg_class->mode;
 		ir_graph        *irg     = current_ir_graph;
 
@@ -515,7 +513,6 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 		} else {
-			ir_node *noreg = ia32_new_NoReg_gp(cg);
 			ir_node *pop;
 
 			/* the old SP is not needed anymore (kill the proj) */
@@ -528,7 +525,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 			/* pop ebp */
-			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, noreg, noreg, *mem, curr_sp);
+			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, *mem, curr_sp);
 			set_ia32_flags(pop, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(irg, bl, pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(irg, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
@@ -1277,7 +1274,7 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_rd_ia32_Pop(dbg, irg, block, frame, noreg, new_NoMem(), sp);
+	ir_node *pop = new_rd_ia32_PopMem(dbg, irg, block, frame, noreg, new_NoMem(), sp);
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);

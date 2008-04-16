@@ -214,7 +214,6 @@ $arch = "ia32";
 	unop3 => "${arch}_emit_unop(node, 3);",
 	unop4 => "${arch}_emit_unop(node, 4);",
 	unop5 => "${arch}_emit_unop(node, 5);",
-	DAM0  => "${arch}_emit_am_or_dest_register(node, 0);",
 	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
 	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
@@ -1386,11 +1385,20 @@ Push => {
 
 Pop => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "gp", "none", "none", "esp" ] },
-	emit      => '. pop%M %DAM0',
+	reg_req   => { in => [ "none", "esp" ], out => [ "gp", "none", "none", "esp" ] },
+	ins       => [ "mem", "stack" ],
 	outs      => [ "res", "M", "unused", "stack:I|S" ],
+	emit      => '. pop%M %D0',
+	latency   => 3, # Pop is more expensive than Push on Athlon
+	units     => [ "GP" ],
+},
+
+PopMem => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "none", "none", "none", "esp" ] },
 	ins       => [ "base", "index", "mem", "stack" ],
-	am        => "dest,unary",
+	outs      => [ "unused0", "M", "unused1", "stack:I|S" ],
+	emit      => '. pop%M %AM',
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
 },

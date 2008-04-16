@@ -536,7 +536,6 @@ static void peephole_be_IncSP(ir_node *node)
 	ir_node               *keep;
 	ir_node               *val;
 	ir_node               *pop, *pop2;
-	ir_node               *noreg;
 	ir_node               *stack;
 	int                    offset;
 
@@ -566,9 +565,8 @@ static void peephole_be_IncSP(ir_node *node)
 		irg   = current_ir_graph;
 		dbgi  = get_irn_dbg_info(node);
 		block = get_nodes_block(node);
-		noreg = ia32_new_NoReg_gp(cg);
 		stack = be_get_IncSP_pred(node);
-		pop   = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
+		pop   = new_rd_ia32_Pop(dbgi, irg, block, new_NoMem(), stack);
 
 		stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
 		arch_set_irn_register(arch_env, stack, esp);
@@ -588,7 +586,7 @@ static void peephole_be_IncSP(ir_node *node)
 		}
 
 		if (offset == -8) {
-			pop2  = new_rd_ia32_Pop(dbgi, irg, block, noreg, noreg, new_NoMem(), stack);
+			pop2  = new_rd_ia32_Pop(dbgi, irg, block, new_NoMem(), stack);
 
 			stack = new_r_Proj(irg, block, pop2, mode_Iu, pn_ia32_Pop_stack);
 			arch_set_irn_register(arch_env, stack, esp);
