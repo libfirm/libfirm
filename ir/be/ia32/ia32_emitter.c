@@ -424,16 +424,6 @@ void ia32_emit_x87_binop(const ir_node *node) {
 	}
 }
 
-void ia32_emit_am_or_dest_register(const ir_node *node,
-                                   int pos) {
-	if(get_ia32_op_type(node) == ia32_Normal) {
-		ia32_emit_dest_register(node, pos);
-	} else {
-		assert(get_ia32_op_type(node) == ia32_AddrModeD);
-		ia32_emit_am(node);
-	}
-}
-
 /**
  * Emits registers and/or address mode of a unary operation.
  */
