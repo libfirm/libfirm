@@ -106,7 +106,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 
 		/* generate the add */
 		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, nomem, res, in1);
-		set_ia32_am_support(res, ia32_am_Source, ia32_am_binary);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 
 		/* exchange the add and the sub */
