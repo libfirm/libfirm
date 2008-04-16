@@ -40,10 +40,9 @@ typedef enum {
 } ia32_op_type_t;
 
 typedef	enum {
-	ia32_am_None   = 0,   /**< no addrmode support */
+	ia32_am_None   = 0, /**< no addrmode support */
 	ia32_am_Dest   = 1,
-	ia32_am_Source = 2,   /**< addrmode for source only */
-	ia32_am_Full   = 3
+	ia32_am_Source = 2  /**< addrmode for source only */
 } ia32_am_type_t;
 
 typedef enum {

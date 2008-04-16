@@ -145,7 +145,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			/* generate the add */
 			res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
 			arch_set_irn_register(cg->arch_env, res, out_reg);
-			set_ia32_am_support(res, ia32_am_Full, ia32_am_binary);
 			set_ia32_commutative(res);
 
 			/* exchange the add and the sub */

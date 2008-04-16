@@ -245,11 +245,7 @@ sub ia32_custom_init_attr {
 	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
-		if($am eq "full,binary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Full, ia32_am_binary);";
-		} elsif($am eq "full,unary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Full, ia32_am_unary);";
-		} elsif($am eq "source,unary") {
+		if($am eq "source,unary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_unary);";
 		} elsif($am eq "source,binary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_binary);";
@@ -374,7 +370,7 @@ Add => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	emit      => '. add%M %binop',
-	am        => "full,binary",
+	am        => "source,binary",
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
@@ -412,7 +408,7 @@ Adc => {
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	outs      => [ "res", "flags", "M" ],
 	emit      => '. adc%M %binop',
-	am        => "full,binary",
+	am        => "source,binary",
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
@@ -499,7 +495,7 @@ And => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
 	op_modes  => "commutative | am | immediate | mode_neutral",
-	am        => "full,binary",
+	am        => "source,binary",
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
 	latency   => 1,
@@ -538,7 +534,7 @@ Or => {
 	               out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
-	am        => "full,binary",
+	am        => "source,binary",
 	emit      => '. or%M %binop',
 	units     => [ "GP" ],
 	latency   => 1,
@@ -577,7 +573,7 @@ Xor => {
 	               out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
-	am        => "full,binary",
+	am        => "source,binary",
 	emit      => '. xor%M %binop',
 	units     => [ "GP" ],
 	latency   => 1,
@@ -618,7 +614,7 @@ Sub => {
 	               out => [ "in_r4", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
-	am        => "full,binary",
+	am        => "source,binary",
 	emit      => '. sub%M %binop',
 	units     => [ "GP" ],
 	latency   => 1,
@@ -656,7 +652,7 @@ Sbb => {
 	               out => [ "in_r4 !in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right", "eflags" ],
 	outs      => [ "res", "flags", "M" ],
-	am        => "full,binary",
+	am        => "source,binary",
 	emit      => '. sbb%M %binop',
 	units     => [ "GP" ],
 	latency   => 1,
