@@ -902,8 +902,10 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           value == pred_info->projs[pn_Load_res]) {
 			/*
-			 * a Store of a value after a Load -- a write after read.
-			 * We may remove the second Store, if it does not have an exception handler.
+			 * a Store of a value just loaded from the same address
+			 * -- a write after read.
+			 * We may remove the Store, if it does not have an exception
+			 * handler.
 			 */
 			if (! info->projs[pn_Store_X_except]) {
 				DBG_OPT_WAR(store, pred);
@@ -926,6 +928,12 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
 		} else if (get_irn_op(pred) == op_Load) {
+			ir_alias_relation rel = get_alias_relation(
+				current_ir_graph, get_Load_ptr(pred), get_Load_mode(pred),
+				ptr, mode);
+			if (rel != no_alias)
+				break;
+
 			pred = skip_Proj(get_Load_mem(pred));
 		} else {
 			/* follow only Load chains */
