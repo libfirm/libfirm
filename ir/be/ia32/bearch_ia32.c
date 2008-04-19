@@ -385,7 +385,7 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias)
 	if (get_ia32_frame_ent(irn) == NULL)
 		return;
 
-	if (is_ia32_Pop(irn)) {
+	if (is_ia32_Pop(irn) || is_ia32_PopMem(irn)) {
 		int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
 		if (omit_fp) {
 			/* Pop nodes modify the stack pointer before calculating the
@@ -404,7 +404,7 @@ static int ia32_get_sp_bias(const void *self, const ir_node *node)
 	if (is_ia32_Push(node))
 		return 4;
 
-	if (is_ia32_Pop(node))
+	if (is_ia32_Pop(node) || is_ia32_PopMem(node))
 		return -4;
 
 	return 0;
