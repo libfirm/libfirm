@@ -1933,12 +1933,12 @@ static void ia32_emit_alignment(unsigned align, unsigned skip)
 static void ia32_emit_align_label(void)
 {
 	unsigned align        = ia32_cg_config.label_alignment;
-	unsigned maximum_skip = (1 << align) - 1;
+	unsigned maximum_skip = ia32_cg_config.label_alignment_max_skip;
 	ia32_emit_alignment(align, maximum_skip);
 }
 
 /**
- * Test wether a block should be aligned.
+ * Test whether a block should be aligned.
  * For cpus in the P4/Athlon class it is useful to align jump labels to
  * 16 bytes. However we should only do that if the alignment nops before the
  * label aren't executed more often than we have jumps to the label.

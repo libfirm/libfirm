@@ -41,7 +41,7 @@ ia32_code_gen_config_t  ia32_cg_config;
  * CPU architectures and features.
  */
 enum cpu_arch_features {
-	arch_generic          = 0x00000001, /**< no specific architecture */
+	arch_generic32        = 0x00000001, /**< no specific architecture */
 
 	arch_i386             = 0x00000002, /**< i386 architecture */
 	arch_i486             = 0x00000004, /**< i486 architecture */
@@ -80,7 +80,7 @@ enum cpu_arch_features {
  * CPU's.
  */
 enum cpu_support {
-	cpu_generic     = arch_generic,
+	cpu_generic     = arch_generic32,
 
 	/* intel CPU's */
 	cpu_i386        = arch_i386,
@@ -205,13 +205,14 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 };
 
 typedef struct insn_const {
-	int      add_cost;           /**< cost of an add instruction */
-	int      lea_cost;           /**< cost of a lea instruction */
-	int      const_shf_cost;     /**< cost of a constant shift instruction */
-	int      cost_mul_start;     /**< starting cost of a multiply instruction */
-	int      cost_mul_bit;       /**< cost of multiply for every set bit */
-	unsigned function_alignment; /**< logarithm for alignment of function labels */
-	unsigned label_alignment;     /**< logarithm for alignment of loops labels */
+	int      add_cost;                 /**< cost of an add instruction */
+	int      lea_cost;                 /**< cost of a lea instruction */
+	int      const_shf_cost;           /**< cost of a constant shift instruction */
+	int      cost_mul_start;           /**< starting cost of a multiply instruction */
+	int      cost_mul_bit;             /**< cost of multiply for every set bit */
+	unsigned function_alignment;       /**< logarithm for alignment of function labels */
+	unsigned label_alignment;          /**< logarithm for alignment of loops labels */
+	unsigned label_alignment_max_skip; /**< maximum skip for alignment of loops labels */
 } insn_const;
 
 /* costs for the i386 */
@@ -223,6 +224,7 @@ static const insn_const i386_cost = {
 	1,   /* cost of multiply for every set bit */
 	2,   /* logarithm for alignment of function labels */
 	2,   /* logarithm for alignment of loops labels */
+	3,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the i486 */
@@ -234,6 +236,7 @@ static const insn_const i486_cost = {
 	1,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	15,  /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Pentium */
@@ -245,6 +248,7 @@ static const insn_const pentium_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Pentium Pro */
@@ -256,6 +260,7 @@ static const insn_const pentiumpro_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	10,  /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the K6 */
@@ -267,6 +272,7 @@ static const insn_const k6_cost = {
 	0,   /* cost of multiply for every set bit */
 	5,   /* logarithm for alignment of function labels */
 	5,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Geode */
@@ -278,6 +284,7 @@ static const insn_const geode_cost = {
 	0,   /* cost of multiply for every set bit */
 	0,   /* logarithm for alignment of function labels */
 	0,   /* logarithm for alignment of loops labels */
+	0,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Athlon */
@@ -289,6 +296,7 @@ static const insn_const athlon_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Opteron/K8/K10 */
@@ -300,6 +308,7 @@ static const insn_const k8_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the K10 */
@@ -311,6 +320,7 @@ static const insn_const k10_cost = {
 	0,   /* cost of multiply for every set bit */
 	5,   /* logarithm for alignment of function labels */
 	5,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Pentium 4 */
@@ -322,6 +332,7 @@ static const insn_const netburst_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Nocona and Core */
@@ -333,6 +344,7 @@ static const insn_const nocona_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
 /* costs for the Core2 */
@@ -344,10 +356,11 @@ static const insn_const core2_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	10,  /* maximum skip for alignment of loops labels */
 };
 
-/* costs for the generic */
-static const insn_const generic_cost = {
+/* costs for the generic32 */
+static const insn_const generic32_cost = {
 	1,   /* cost of an add instruction */
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
@@ -355,9 +368,10 @@ static const insn_const generic_cost = {
 	0,   /* cost of multiply for every set bit */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
+	7,   /* maximum skip for alignment of loops labels */
 };
 
-static const insn_const *arch_costs = &generic_cost;
+static const insn_const *arch_costs = &generic32_cost;
 
 static void set_arch_costs(void)
 {
@@ -398,9 +412,9 @@ static void set_arch_costs(void)
 	case arch_k10:
 		arch_costs = &k10_cost;
 		break;
-	case 0:
+	case arch_generic32:
 	default:
-		arch_costs = &generic_cost;
+		arch_costs = &generic32_cost;
 	}
 }
 
@@ -459,24 +473,25 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
 	ia32_cg_config.use_cmov             = FLAGS(arch, arch_feature_p6_insn);
 	ia32_cg_config.use_modeD_moves      = FLAGS(opt_arch, arch_athlon_plus | arch_geode | arch_ppro |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32);
 	ia32_cg_config.use_add_esp_4        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32);
 	ia32_cg_config.use_add_esp_8        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
 	                                            arch_i386 | arch_i486 | arch_ppro | arch_netburst |
-	                                            arch_nocona | arch_core2 | arch_generic);
+	                                            arch_nocona | arch_core2 | arch_generic32);
 	ia32_cg_config.use_sub_esp_4        = FLAGS(opt_arch, arch_athlon_plus | arch_ppro |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32);
 	ia32_cg_config.use_sub_esp_8        = FLAGS(opt_arch, arch_athlon_plus | arch_i386 | arch_i486 |
-	                                            arch_ppro | arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	                                            arch_ppro | arch_netburst | arch_nocona | arch_core2 | arch_generic32);
 	ia32_cg_config.use_imul_mem_imm32   = !FLAGS(opt_arch, arch_k8 | arch_k10);
 	ia32_cg_config.use_mov_0            = FLAGS(opt_arch, arch_k6);
-	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | cpu_core2 | arch_generic);
+	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | cpu_core2 | arch_generic32);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 
-	ia32_cg_config.function_alignment = arch_costs->function_alignment;
-	ia32_cg_config.label_alignment    = arch_costs->label_alignment;
+	ia32_cg_config.function_alignment       = arch_costs->function_alignment;
+	ia32_cg_config.label_alignment          = arch_costs->label_alignment;
+	ia32_cg_config.label_alignment_max_skip = arch_costs->label_alignment_max_skip;
 
 	if (opt_arch & (arch_i386 | arch_i486)) {
 		ia32_cg_config.label_alignment_factor = 0;

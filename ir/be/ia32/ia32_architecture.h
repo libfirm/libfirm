@@ -74,6 +74,8 @@ typedef struct {
 	unsigned function_alignment;
 	/** alignment for labels (which are expected to be frequent jump targets) */
 	unsigned label_alignment;
+	/** maximum skip alignment for labels (which are expected to be frequent jump targets) */
+	unsigned label_alignment_max_skip;
 	/** if a blocks execfreq is factor higher than it's predecessor then align
 	 *  the blocks label (0 switches off label alignment) */
 	double label_alignment_factor;
