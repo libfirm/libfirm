@@ -975,10 +975,10 @@ void           set_Load_align(ir_node *node, ir_align align);
  * Projection numbers for Store: use for Proj nodes!
  */
 typedef enum {
-  pn_Store_M         = pn_Generic_M_regular, /**< Memory result. */
-  pn_Store_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
-  pn_Store_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
-  pn_Store_max       = pn_Generic_other      /**< number of projections from a Store */
+	pn_Store_M         = pn_Generic_M_regular, /**< Memory result. */
+	pn_Store_X_regular = pn_Generic_X_regular, /**< Execution result if no exception occurred. */
+	pn_Store_X_except  = pn_Generic_X_except,  /**< Execution result if exception occurred. */
+	pn_Store_max       = pn_Generic_other      /**< number of projections from a Store */
 } pn_Store;  /* Projection numbers for Store. */
 
 ir_node       *get_Store_mem(const ir_node *node);
@@ -1012,8 +1012,8 @@ void     set_Alloc_type(ir_node *node, ir_type *tp);
 
 /** The allocation place. */
 typedef enum {
-  stack_alloc,          /**< Alloc allocates the object on the stack. */
-  heap_alloc            /**< Alloc allocates the object on the heap. */
+	stack_alloc,          /**< Alloc allocates the object on the stack. */
+	heap_alloc            /**< Alloc allocates the object on the heap. */
 } ir_where_alloc;
 
 ir_where_alloc get_Alloc_where(const ir_node *node);
