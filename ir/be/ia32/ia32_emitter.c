@@ -2025,31 +2025,33 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
 		}
 	}
 
-	/* align the current block if:
-	 * a) if should be aligned due to its execution frequency
-	 * b) there is no fall-through here
-	 */
-	if (should_align_block(block, prev_block)) {
-		ia32_emit_align_label();
-	} else {
-		/* if the predecessor block has no fall-through,
-		   we can always align the label. */
-		int i;
-		ir_node *check_node = NULL;
-
-		for (i = n_cfgpreds - 1; i >= 0; --i) {
-			ir_node *cfg_pred = get_Block_cfgpred(block, i);
-
-			if (get_nodes_block(skip_Proj(cfg_pred)) == prev_block) {
-				check_node = cfg_pred;
-				break;
-			}
-		}
-		if (check_node == NULL || !is_fallthrough(check_node))
+	if (ia32_cg_config.label_alignment > 0) {
+		/* align the current block if:
+		 * a) if should be aligned due to its execution frequency
+		 * b) there is no fall-through here
+		 */
+		if (should_align_block(block, prev_block)) {
 			ia32_emit_align_label();
+		} else {
+			/* if the predecessor block has no fall-through,
+			   we can always align the label. */
+			int i;
+			ir_node *check_node = NULL;
+
+			for (i = n_cfgpreds - 1; i >= 0; --i) {
+				ir_node *cfg_pred = get_Block_cfgpred(block, i);
+
+				if (get_nodes_block(skip_Proj(cfg_pred)) == prev_block) {
+					check_node = cfg_pred;
+					break;
+				}
+			}
+			if (check_node == NULL || !is_fallthrough(check_node))
+				ia32_emit_align_label();
+		}
 	}
 
-	if(need_label) {
+	if (need_label) {
 		ia32_emit_block_name(block);
 		be_emit_char(':');
 

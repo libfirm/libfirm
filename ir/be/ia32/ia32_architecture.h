@@ -27,6 +27,8 @@
 #define FIRM_BE_IA32_ARCHITECTURE_H
 
 typedef struct {
+	/** optimize for size */
+	unsigned optimize_size:1;
 	/** use leave in function epilogue */
 	unsigned use_leave:1;
 	/** use inc, dec instead of add ,1 and add, -1 */
