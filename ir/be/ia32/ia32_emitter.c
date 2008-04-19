@@ -1981,7 +1981,10 @@ static int should_align_block(ir_node *block, ir_node *prev)
 	return jmp_freq > ia32_cg_config.label_alignment_factor;
 }
 
-static int can_omit_block_label(ir_node *cfgpred)
+/**
+ * Return non-zero, if a instruction in a fall-through.
+ */
+static int is_fallthrough(ir_node *cfgpred)
 {
 	ir_node *pred;
 
@@ -1994,7 +1997,13 @@ static int can_omit_block_label(ir_node *cfgpred)
 	return 1;
 }
 
-static void ia32_emit_block_header(ir_node *block, ir_node *prev)
+/**
+ * Emit the block header for a block.
+ *
+ * @param block       the block
+ * @param prev_block  the previous block
+ */
+static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
 {
 	ir_graph     *irg = current_ir_graph;
 	int           n_cfgpreds;
@@ -2011,13 +2020,33 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev)
 		need_label = 0;
 	} else if(n_cfgpreds == 1) {
 		ir_node *cfgpred = get_Block_cfgpred(block, 0);
-		if(get_nodes_block(cfgpred) == prev && can_omit_block_label(cfgpred)) {
+		if(get_nodes_block(cfgpred) == prev_block && is_fallthrough(cfgpred)) {
 			need_label = 0;
 		}
 	}
 
-	if (should_align_block(block, prev)) {
+	/* align the current block if:
+	 * a) if should be aligned due to its execution frequency
+	 * b) there is no fall-through here
+	 */
+	if (should_align_block(block, prev_block)) {
 		ia32_emit_align_label();
+	} else {
+		/* if the predecessor block has no fall-through,
+		   we can always align the label. */
+		int i;
+		ir_node *check_node = NULL;
+
+		for (i = n_cfgpreds - 1; i >= 0; --i) {
+			ir_node *cfg_pred = get_Block_cfgpred(block, i);
+
+			if (get_nodes_block(skip_Proj(cfg_pred)) == prev_block) {
+				check_node = cfg_pred;
+				break;
+			}
+		}
+		if (check_node == NULL || !is_fallthrough(check_node))
+			ia32_emit_align_label();
 	}
 
 	if(need_label) {
