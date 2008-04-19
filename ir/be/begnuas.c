@@ -140,15 +140,16 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 	be_emit_write_line();
 
 	/* gcc fills space between function with 0x90, no idea if this is needed */
-	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+	if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
 		fill_byte = "0x90";
 	}
 
-	maximum_skip = (1 << alignment) - 1;
-	be_emit_cstring("\t.p2align ");
-	be_emit_irprintf("%u,%s,%u\n", alignment, fill_byte, maximum_skip);
-	be_emit_write_line();
-
+	if (alignment > 0) {
+		maximum_skip = (1 << alignment) - 1;
+		be_emit_cstring("\t.p2align ");
+		be_emit_irprintf("%u,%s,%u\n", alignment, fill_byte, maximum_skip);
+		be_emit_write_line();
+	}
 	if (get_entity_visibility(entity) == visibility_external_visible) {
 		be_emit_cstring(".globl ");
 		be_emit_string(name);
