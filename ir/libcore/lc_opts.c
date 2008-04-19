@@ -911,11 +911,19 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 	strncpy(home_dir_ini_file, local_ini_file, sizeof(home_dir_ini_file));
 	home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
 #else
-	strcpy(path, getpwuid(getuid())->pw_dir);
-	strncat(path, "/", sizeof(path));
-	/* .<cmnt>rc */
-	snprintf(home_dir_ini_file, sizeof(home_dir_ini_file), ".%src", ini_name);
-	home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
+	{
+		struct passwd *entry = getpwuid(getuid());
+		if (entry != NULL) {
+			strcpy(path, entry->pw_dir);
+			strncat(path, "/", sizeof(path));
+			/* .<cmnt>rc */
+			snprintf(home_dir_ini_file, sizeof(home_dir_ini_file), ".%src", ini_name);
+			home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
+		} else {
+			/* FIXME: some error occured */
+			home_dir_ini_file[0] = '\0';'
+		}
+	}
 #endif
 
 	strncat(path, home_dir_ini_file, sizeof(path));
