@@ -8,6 +8,7 @@
 * better memory disambiguator
 * float->64bit conversion fixed for x87
 * removed old verbosity level based debugging: all modules ese the new debug facility
+* BugFixes: tail recursion, load/store optimisation
 
 ====== Libfirm 1.12.1 (2008-02-18) ======
 
