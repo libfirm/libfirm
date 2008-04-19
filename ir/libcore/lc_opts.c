@@ -921,7 +921,7 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 			home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
 		} else {
 			/* FIXME: some error occured */
-			home_dir_ini_file[0] = '\0';'
+			home_dir_ini_file[0] = '\0';
 		}
 	}
 #endif
