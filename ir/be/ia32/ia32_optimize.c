@@ -310,6 +310,20 @@ static void peephole_ia32_Return(ir_node *node) {
 
 	block = get_nodes_block(node);
 
+	if (get_Block_n_cfgpreds(block) == 1) {
+		ir_node *pred = get_Block_cfgpred(block, 0);
+
+		if (is_Jmp(pred)) {
+			/* The block of the return has only one predecessor,
+			   which jumps directly to this block.
+			   This jump will be encoded as a fall through, so we
+			   ignore it here.
+			   However, the predecessor might be empty, so it must be
+			   ensured that empty blocks are gone away ... */
+			return;
+		}
+	}
+
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_from(node, irn) {
 		switch (be_get_irn_opcode(irn)) {
