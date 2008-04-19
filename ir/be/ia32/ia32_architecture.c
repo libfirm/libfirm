@@ -38,144 +38,138 @@
 ia32_code_gen_config_t  ia32_cg_config;
 
 /**
- * CPU features.
+ * CPU architectures and features.
  */
 enum cpu_arch_features {
-	arch_feature_intel    = 0x80000000,                      /**< Intel CPU */
-	arch_feature_amd      = 0x40000000,                      /**< AMD CPU */
-	arch_feature_p6       = 0x20000000,                      /**< P6 instructions */
-	arch_feature_mmx      = 0x10000000,                      /**< MMX instructions */
-	arch_feature_sse1     = 0x08000000 | arch_feature_mmx,   /**< SSE1 instructions, include MMX */
-	arch_feature_sse2     = 0x04000000 | arch_feature_sse1,  /**< SSE2 instructions, include SSE1 */
-	arch_feature_sse3     = 0x02000000 | arch_feature_sse2,  /**< SSE3 instructions, include SSE2 */
-	arch_feature_ssse3    = 0x01000000 | arch_feature_sse3,  /**< SSSE3 instructions, include SSE3 */
-	arch_feature_3DNow    = 0x00800000,                      /**< 3DNow! instructions */
-	arch_feature_3DNowE   = 0x00400000 | arch_feature_3DNow, /**< Enhanced 3DNow! instructions */
-	arch_feature_netburst = 0x00200000 | arch_feature_intel, /**< Netburst architecture */
-	arch_feature_64bit    = 0x00100000 | arch_feature_sse2,  /**< x86_64 support, include SSE2 */
+	arch_generic          = 0x00000001, /**< no specific architecture */
+
+	arch_i386             = 0x00000002, /**< i386 architecture */
+	arch_i486             = 0x00000004, /**< i486 architecture */
+	arch_pentium          = 0x00000008, /**< Pentium architecture */
+	arch_ppro             = 0x00000010, /**< PentiumPro architecture */
+	arch_netburst         = 0x00000020, /**< Netburst architecture */
+	arch_nocona           = 0x00000040, /**< Nocona architecture */
+	arch_core2            = 0x00000080, /**< Core2 architecture */
+	arch_atom             = 0x00000100, /**< Atom architecture */
+
+	arch_k6               = 0x00000200, /**< k6 architecture */
+	arch_geode            = 0x00000400, /**< Geode architecture */
+	arch_athlon           = 0x00000800, /**< Athlon architecture */
+	arch_k8               = 0x00001000, /**< K8/Opteron architecture */
+	arch_k10              = 0x00002000, /**< K10/Barcelona architecture */
+
+	arch_mask             = 0x00003FFF,
+
+	arch_athlon_plus      = arch_athlon | arch_k8 | arch_k10,
+	arch_all_amd          = arch_k6 | arch_geode | arch_athlon_plus,
+
+	arch_feature_mmx      = 0x00004000,                      /**< MMX instructions */
+	arch_feature_p6_insn  = 0x00008000,                      /**< PentiumPro instructions */
+	arch_feature_sse1     = 0x00010000 | arch_feature_mmx,   /**< SSE1 instructions, include MMX */
+	arch_feature_sse2     = 0x00020000 | arch_feature_sse1,  /**< SSE2 instructions, include SSE1 */
+	arch_feature_sse3     = 0x00040000 | arch_feature_sse2,  /**< SSE3 instructions, include SSE2 */
+	arch_feature_ssse3    = 0x00080000 | arch_feature_sse3,  /**< SSSE3 instructions, include SSE3 */
+	arch_feature_3DNow    = 0x00100000,                      /**< 3DNow! instructions */
+	arch_feature_3DNowE   = 0x00200000 | arch_feature_3DNow, /**< Enhanced 3DNow! instructions */
+	arch_feature_64bit    = 0x00400000 | arch_feature_sse2,  /**< x86_64 support, includes SSE2 */
 };
+
+#define FLAGS(x, f) (((x) & (f)) != 0)
 
 /**
- * Architectures.
+ * CPU's.
  */
 enum cpu_support {
-	/* intel CPU's */
-	arch_generic          =  0,
+	cpu_generic     = arch_generic,
 
-	arch_i386        =  1,
-	arch_i486        =  2,
-	arch_pentium     =  3 | arch_feature_intel,
-	arch_pentium_mmx =  4 | arch_feature_intel | arch_feature_mmx,
-	arch_pentium_pro =  5 | arch_feature_intel | arch_feature_p6,
-	arch_pentium_2   =  6 | arch_feature_intel | arch_feature_p6 | arch_feature_mmx,
-	arch_pentium_3   =  7 | arch_feature_intel | arch_feature_p6 | arch_feature_sse1,
-	arch_pentium_4   =  8 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse2,
-	arch_prescott    =  9 | arch_feature_netburst | arch_feature_p6 | arch_feature_sse3,
-	arch_nocona      = 10 | arch_feature_netburst | arch_feature_p6 | arch_feature_64bit | arch_feature_sse3,
-	arch_pentium_m   = 11 | arch_feature_intel | arch_feature_p6 | arch_feature_sse2,
-	arch_core        = 12 | arch_feature_intel | arch_feature_p6 | arch_feature_sse3,
-	arch_core2       = 13 | arch_feature_intel | arch_feature_p6 | arch_feature_64bit | arch_feature_ssse3,
+	/* intel CPU's */
+	cpu_i386        = arch_i386,
+	cpu_i486        = arch_i486,
+	cpu_pentium     = arch_pentium,
+	cpu_pentium_mmx = arch_pentium | arch_feature_mmx,
+	cpu_pentium_pro = arch_ppro | arch_feature_p6_insn,
+	cpu_pentium_2   = arch_ppro | arch_feature_p6_insn | arch_feature_mmx,
+	cpu_pentium_3   = arch_ppro | arch_feature_p6_insn | arch_feature_sse1,
+	cpu_pentium_m   = arch_ppro | arch_feature_p6_insn | arch_feature_sse2,
+	cpu_pentium_4   = arch_netburst | arch_feature_p6_insn | arch_feature_sse2,
+	cpu_prescott    = arch_nocona | arch_feature_p6_insn | arch_feature_sse3,
+	cpu_nocona      = arch_nocona | arch_feature_p6_insn | arch_feature_64bit | arch_feature_sse3,
+	cpu_core2       = arch_core2 | arch_feature_p6_insn | arch_feature_64bit | arch_feature_ssse3,
 
 	/* AMD CPU's */
-	arch_k6          = 14 | arch_feature_amd | arch_feature_mmx,
-	arch_geode       = 15 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE,
-	arch_k6_2        = 16 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_k6_3        = 17 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNow,
-	arch_athlon      = 18 | arch_feature_amd | arch_feature_mmx | arch_feature_3DNowE | arch_feature_p6,
-	arch_athlon_xp   = 19 | arch_feature_amd | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6,
-	arch_opteron     = 20 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6,
-	arch_k10         = 21 | arch_feature_amd | arch_feature_64bit | arch_feature_3DNowE | arch_feature_p6 | arch_feature_sse3,
+	cpu_k6          = arch_k6 | arch_feature_mmx,
+	cpu_k6_PLUS     = arch_k6 | arch_feature_mmx | arch_feature_3DNow,
+	cpu_geode       = arch_geode | arch_feature_sse1 | arch_feature_3DNowE,
+	cpu_athlon      = arch_athlon | arch_feature_sse1 | arch_feature_3DNowE | arch_feature_p6_insn,
+	cpu_athlon64    = arch_athlon | arch_feature_sse2 | arch_feature_3DNowE | arch_feature_p6_insn | arch_feature_64bit,
+	cpu_k8          = arch_k8 | arch_feature_sse2 | arch_feature_3DNowE | arch_feature_p6_insn | arch_feature_64bit,
+	cpu_k8_sse3     = arch_k8 | arch_feature_sse3 | arch_feature_3DNowE | arch_feature_p6_insn | arch_feature_64bit,
+	cpu_k10         = arch_k10 | arch_feature_sse3 | arch_feature_3DNowE | arch_feature_p6_insn | arch_feature_64bit,
 
-	/* other */
-	arch_winchip_c6  = 22 | arch_feature_mmx,
-	arch_winchip2    = 23 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3          = 24 | arch_feature_mmx | arch_feature_3DNow,
-	arch_c3_2        = 25 | arch_feature_sse1,  /* really no 3DNow! */
+	/* other CPU's */
+	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
+	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
+	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
+	cpu_c3_2        = arch_ppro | arch_feature_sse1,  /* really no 3DNow! */
 };
 
-/** checks for l <= x <= h */
-#define _IN_RANGE(x, l, h)  ((unsigned)((x) - (l)) <= (unsigned)((h) - (l)))
-
-/** returns true if it's Intel architecture */
-#define ARCH_INTEL(x)       (((x) & arch_feature_intel) != 0)
-
-/** returns true if it's AMD architecture */
-#define ARCH_AMD(x)         (((x) & arch_feature_amd) != 0)
-
-/** return true if the CPU is a K6 architecture */
-#define ARCH_K6(x)          _IN_RANGE((x), arch_k6, arch_k6_3)
-
-/** return true if it's a Athlon/Opteron */
-#define ARCH_K8(x)          _IN_RANGE((x), arch_athlon, arch_opteron)
-
-/** return true if it's a Athlon or newer */
-#define ARCH_ATHLON_PLUS(x) _IN_RANGE((x), arch_athlon, arch_k10)
-
-/** return true if the CPU has MMX support */
-#define ARCH_MMX(x)         (((x) & arch_feature_mmx) != 0)
-
-/** return true if the CPU has 3DNow! support */
-#define ARCH_3DNow(x)       (((x) & arch_feature_3DNow) != 0)
-
-/** return true if the CPU has P6 features (CMOV) */
-#define IS_P6_ARCH(x)       (((x) & arch_feature_p6) != 0)
-
-/** return true if the CPU has the NetBurst architecture */
-#define IS_NETBURST_ARCH(x) (((x) & arch_feature_netburst) != 0)
-
-static cpu_support arch                 = arch_generic;
-static cpu_support opt_arch             = arch_pentium_4;
+static cpu_support arch                 = cpu_generic;
+static cpu_support opt_arch             = cpu_core2;
 static int         use_sse2             = 0;
 static int         opt_cc               = 1;
 static int         opt_unsafe_floatconv = 0;
 
 /* instruction set architectures. */
 static const lc_opt_enum_int_items_t arch_items[] = {
-	{ "i386",       arch_i386, },
-	{ "i486",       arch_i486, },
-	{ "pentium",    arch_pentium, },
-	{ "i586",       arch_pentium, },
-	{ "pentiumpro", arch_pentium_pro, },
-	{ "i686",       arch_pentium_pro, },
-	{ "pentiummmx", arch_pentium_mmx, },
-	{ "pentium2",   arch_pentium_2, },
-	{ "p2",         arch_pentium_2, },
-	{ "pentium3",   arch_pentium_3, },
-	{ "p3",         arch_pentium_3, },
-	{ "pentium4",   arch_pentium_4, },
-	{ "p4",         arch_pentium_4, },
-	{ "prescott",   arch_prescott, },
-	{ "nocona",     arch_nocona, },
-	{ "pentiumm",   arch_pentium_m, },
-	{ "pm",         arch_pentium_m, },
-	/*
-	 * core CPUs: Yonah
-	 */
-	{ "core",       arch_core, },
-	{ "yonah",      arch_core, },
-	/*
-	 * core2 CPUs: Conroe (XE, L), Allendale, Merom (XE),
-	 * Kentsfield (XE), Yorkfield XE, Penryn, Wolfdale, Yorkfield
-	 */
+	{ "i386",         cpu_i386 },
+	{ "i486",         cpu_i486 },
+	{ "i586",         cpu_pentium },
+	{ "pentium",      cpu_pentium },
+	{ "pentium-mmx",  cpu_pentium_mmx },
+	{ "i686",         cpu_pentium_pro },
+	{ "pentiumpro",   cpu_pentium_pro },
+	{ "pentium2",     cpu_pentium_2 },
+	{ "p2",           cpu_pentium_2 },
+	{ "pentium3",     cpu_pentium_3 },
+	{ "pentium3m",    cpu_pentium_3 },
+	{ "p3",           cpu_pentium_3 },
+	{ "pentium-m",    cpu_pentium_m },
+	{ "pm",           cpu_pentium_m },
+	{ "pentium4",     cpu_pentium_4 },
+	{ "pentium4m",    cpu_pentium_4 },
+	{ "p4",           cpu_pentium_4 },
+	{ "prescott",     cpu_prescott },
+	{ "nocona",       cpu_nocona },
+	{ "merom",        cpu_core2 },
+	{ "core2",        cpu_core2 },
 
-	{ "merom",      arch_core2, },
-	{ "core2",      arch_core2, },
-	{ "k6",         arch_k6, },
-	{ "k6-2",       arch_k6_2, },
-	{ "k6-3",       arch_k6_2, },
-	{ "geode",      arch_geode, },
-	{ "athlon",     arch_athlon, },
-	{ "athlon-xp",  arch_athlon_xp, },
-	{ "athlon-mp",  arch_athlon_xp, },
-	{ "athlon-4",   arch_athlon_xp, },
-	{ "athlon64",   arch_opteron, },
-	{ "k8",         arch_opteron, },
-	{ "opteron",    arch_opteron, },
-	{ "k10",        arch_k10, },
-	{ "barcelona",  arch_k10, },
-	{ "generic",    arch_generic, },
-	{ "generic32",  arch_generic, },
-	{ NULL,         0 }
+	{ "k6",           cpu_k6 },
+	{ "k6-2",         cpu_k6_PLUS },
+	{ "k6-3",         cpu_k6_PLUS },
+	{ "geode",        cpu_geode },
+	{ "athlon",       cpu_athlon },
+	{ "athlon-tbird", cpu_athlon },
+	{ "athlon-4",     cpu_athlon },
+	{ "athlon-xp",    cpu_athlon },
+	{ "athlon-mp",    cpu_athlon },
+	{ "athlon64",     cpu_athlon64 },
+	{ "k8",           cpu_k8 },
+	{ "opteron",      cpu_k8 },
+	{ "athlon-fx",    cpu_k8 },
+	{ "k8-sse3",      cpu_k8_sse3 },
+	{ "opteron-sse3", cpu_k8_sse3 },
+	{ "k10",          cpu_k10 },
+	{ "barcelona",    cpu_k10 },
+	{ "amdfam10",     cpu_k10 },
+
+	{ "winchip-c6",   cpu_winchip_c6, },
+	{ "winchip2",     cpu_winchip2 },
+	{ "c3",           cpu_c3 },
+	{ "c3-2",         cpu_c3_2 },
+
+	{ "generic",      cpu_generic },
+	{ "generic32",    cpu_generic },
+	{ NULL,           0 }
 };
 
 static lc_opt_enum_int_var_t arch_var = {
@@ -211,11 +205,13 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 };
 
 typedef struct insn_const {
-	int add_cost;       /**< cost of an add instruction */
-	int lea_cost;       /**< cost of a lea instruction */
-	int const_shf_cost; /**< cost of a constant shift instruction */
-	int cost_mul_start; /**< starting cost of a multiply instruction */
-	int cost_mul_bit;   /**< cost of multiply for every set bit */
+	int      add_cost;           /**< cost of an add instruction */
+	int      lea_cost;           /**< cost of a lea instruction */
+	int      const_shf_cost;     /**< cost of a constant shift instruction */
+	int      cost_mul_start;     /**< starting cost of a multiply instruction */
+	int      cost_mul_bit;       /**< cost of multiply for every set bit */
+	unsigned function_alignment; /**< logarithm for alignment of function labels */
+	unsigned label_alignment;     /**< logarithm for alignment of loops labels */
 } insn_const;
 
 /* costs for the i386 */
@@ -224,7 +220,9 @@ static const insn_const i386_cost = {
 	1,   /* cost of a lea instruction */
 	3,   /* cost of a constant shift instruction */
 	9,   /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
+	1,   /* cost of multiply for every set bit */
+	2,   /* logarithm for alignment of function labels */
+	2,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the i486 */
@@ -233,7 +231,9 @@ static const insn_const i486_cost = {
 	1,   /* cost of a lea instruction */
 	2,   /* cost of a constant shift instruction */
 	12,  /* starting cost of a multiply instruction */
-	1    /* cost of multiply for every set bit */
+	1,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Pentium */
@@ -242,7 +242,9 @@ static const insn_const pentium_cost = {
 	1,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	11,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Pentium Pro */
@@ -251,7 +253,9 @@ static const insn_const pentiumpro_cost = {
 	1,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	4,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the K6 */
@@ -260,7 +264,9 @@ static const insn_const k6_cost = {
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	3,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	5,   /* logarithm for alignment of function labels */
+	5,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Geode */
@@ -269,8 +275,10 @@ static const insn_const geode_cost = {
 	1,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	7,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
- };
+	0,   /* cost of multiply for every set bit */
+	0,   /* logarithm for alignment of function labels */
+	0,   /* logarithm for alignment of loops labels */
+};
 
 /* costs for the Athlon */
 static const insn_const athlon_cost = {
@@ -278,25 +286,42 @@ static const insn_const athlon_cost = {
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	5,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Opteron/K8/K10 */
-static const insn_const opteron_cost = {
+static const insn_const k8_cost = {
 	1,   /* cost of an add instruction */
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	3,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
+};
+
+/* costs for the K10 */
+static const insn_const k10_cost = {
+	1,   /* cost of an add instruction */
+	2,   /* cost of a lea instruction */
+	1,   /* cost of a constant shift instruction */
+	3,   /* starting cost of a multiply instruction */
+	0,   /* cost of multiply for every set bit */
+	5,   /* logarithm for alignment of function labels */
+	5,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Pentium 4 */
-static const insn_const pentium4_cost = {
+static const insn_const netburst_cost = {
 	1,   /* cost of an add instruction */
 	3,   /* cost of a lea instruction */
 	4,   /* cost of a constant shift instruction */
 	15,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Nocona and Core */
@@ -305,7 +330,9 @@ static const insn_const nocona_cost = {
 	1,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	10,  /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 /* costs for the Core2 */
@@ -314,8 +341,10 @@ static const insn_const core2_cost = {
 	1,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	3,   /* starting cost of a multiply instruction */
-        0    /* cost of multiply for every set bit */
- };
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
+};
 
 /* costs for the generic */
 static const insn_const generic_cost = {
@@ -323,14 +352,16 @@ static const insn_const generic_cost = {
 	2,   /* cost of a lea instruction */
 	1,   /* cost of a constant shift instruction */
 	4,   /* starting cost of a multiply instruction */
-	0    /* cost of multiply for every set bit */
+	0,   /* cost of multiply for every set bit */
+	4,   /* logarithm for alignment of function labels */
+	4,   /* logarithm for alignment of loops labels */
 };
 
 static const insn_const *arch_costs = &generic_cost;
 
 static void set_arch_costs(void)
 {
-	switch (opt_arch) {
+	switch (opt_arch & arch_mask) {
 	case arch_i386:
 		arch_costs = &i386_cost;
 		break;
@@ -338,44 +369,36 @@ static void set_arch_costs(void)
 		arch_costs = &i486_cost;
 		break;
 	case arch_pentium:
-	case arch_pentium_mmx:
 		arch_costs = &pentium_cost;
 		break;
-	case arch_pentium_pro:
-	case arch_pentium_2:
-	case arch_pentium_3:
+	case arch_ppro:
 		arch_costs = &pentiumpro_cost;
 		break;
-	case arch_pentium_4:
-		arch_costs = &pentium4_cost;
-		break;
-	case arch_pentium_m:
-		arch_costs = &pentiumpro_cost;
+	case arch_netburst:
+		arch_costs = &netburst_cost;
 		break;
 	case arch_nocona:
-	case arch_prescott:
-	case arch_core:
 		arch_costs = &nocona_cost;
 		break;
 	case arch_core2:
 		arch_costs = &core2_cost;
 		break;
 	case arch_k6:
-	case arch_k6_2:
 		arch_costs = &k6_cost;
 		break;
 	case arch_geode:
 		arch_costs = &geode_cost;
 		break;
 	case arch_athlon:
-	case arch_athlon_xp:
 		arch_costs = &athlon_cost;
 		break;
-	case arch_opteron:
-	case arch_k10:
-		arch_costs = &opteron_cost;
+	case arch_k8:
+		arch_costs = &k8_cost;
 		break;
-	case arch_generic:
+	case arch_k10:
+		arch_costs = &k10_cost;
+		break;
+	case 0:
 	default:
 		arch_costs = &generic_cost;
 	}
@@ -420,62 +443,48 @@ void ia32_setup_cg_config(void)
 {
 	memset(&ia32_cg_config, 0, sizeof(ia32_cg_config));
 
+	set_arch_costs();
+
 	/* on newer intel cpus mov, pop is often faster then leave although it has a
 	 * longer opcode */
-	ia32_cg_config.use_leave            = !ARCH_INTEL(opt_arch)
-	                                       || !IS_P6_ARCH(opt_arch);
+	ia32_cg_config.use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2);
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
-	ia32_cg_config.use_incdec           = !IS_NETBURST_ARCH(opt_arch) && (opt_arch != arch_generic);
+	ia32_cg_config.use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_geode);
 	ia32_cg_config.use_sse2             = use_sse2;
-	ia32_cg_config.use_ffreep           = ARCH_ATHLON_PLUS(opt_arch);
-	ia32_cg_config.use_ftst             = !IS_P6_ARCH(arch);
-	ia32_cg_config.use_femms            = ARCH_ATHLON_PLUS(opt_arch)
-	                                      && ARCH_MMX(arch) && ARCH_AMD(arch);
-	ia32_cg_config.use_fucomi           = IS_P6_ARCH(arch);
-	ia32_cg_config.use_cmov             = IS_P6_ARCH(arch);
-	ia32_cg_config.use_add_esp_4        = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_geode) ||
-	                                      IS_NETBURST_ARCH(opt_arch) || (opt_arch == arch_core2) ||
-	                                      (opt_arch == arch_generic);
-	ia32_cg_config.use_add_esp_8        = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_geode) ||
-	                                      IS_P6_ARCH(opt_arch) || IS_NETBURST_ARCH(opt_arch) ||
-	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
-	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
-	ia32_cg_config.use_sub_esp_4        = ARCH_ATHLON_PLUS(opt_arch) || IS_P6_ARCH(opt_arch) ||
-	                                      IS_NETBURST_ARCH(opt_arch) || (opt_arch == arch_core2) ||
-	                                      (opt_arch == arch_generic);
-	ia32_cg_config.use_sub_esp_8        = ARCH_ATHLON_PLUS(opt_arch) ||
-	                                      IS_P6_ARCH(opt_arch) || IS_NETBURST_ARCH(opt_arch) ||
-	                                      (opt_arch == arch_core2) || (opt_arch == arch_generic) ||
-	                                      (opt_arch == arch_i386) || (opt_arch == arch_i486);
-	ia32_cg_config.use_imul_mem_imm32   = !(opt_arch == arch_opteron || opt_arch == arch_k10);
-	ia32_cg_config.use_mov_0            = ARCH_K6(opt_arch);
-	ia32_cg_config.use_pad_return       = ARCH_ATHLON_PLUS(opt_arch) || (opt_arch == arch_core2) ||
-	                                      (opt_arch == arch_generic);
+	ia32_cg_config.use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
+	ia32_cg_config.use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
+	ia32_cg_config.use_femms            = FLAGS(opt_arch, arch_athlon_plus) &&
+	                                      FLAGS(arch, arch_feature_mmx | arch_all_amd);
+	ia32_cg_config.use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
+	ia32_cg_config.use_cmov             = FLAGS(arch, arch_feature_p6_insn);
+	ia32_cg_config.use_modeD_moves      = FLAGS(opt_arch, arch_athlon_plus | arch_geode | arch_ppro |
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	ia32_cg_config.use_add_esp_4        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	ia32_cg_config.use_add_esp_8        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
+	                                            arch_i386 | arch_i486 | arch_ppro | arch_netburst |
+	                                            arch_nocona | arch_core2 | arch_generic);
+	ia32_cg_config.use_sub_esp_4        = FLAGS(opt_arch, arch_athlon_plus | arch_ppro |
+	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	ia32_cg_config.use_sub_esp_8        = FLAGS(opt_arch, arch_athlon_plus | arch_i386 | arch_i486 |
+	                                            arch_ppro | arch_netburst | arch_nocona | arch_core2 | arch_generic);
+	ia32_cg_config.use_imul_mem_imm32   = !FLAGS(opt_arch, arch_k8 | arch_k10);
+	ia32_cg_config.use_mov_0            = FLAGS(opt_arch, arch_k6);
+	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | cpu_core2 | arch_generic);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 
-	if(opt_arch == arch_i386) {
-		ia32_cg_config.function_alignment = 2;
-	} else if(opt_arch == arch_i486) {
-		ia32_cg_config.function_alignment = 4;
-	} else if(opt_arch == arch_k6) {
-		ia32_cg_config.function_alignment = 5;
-		ia32_cg_config.label_alignment    = 5;
-	} else {
-		ia32_cg_config.function_alignment = 4;
-		ia32_cg_config.label_alignment    = 4;
-	}
+	ia32_cg_config.function_alignment = arch_costs->function_alignment;
+	ia32_cg_config.label_alignment    = arch_costs->label_alignment;
 
-	if(opt_arch == arch_i386 || opt_arch == arch_i486) {
-		ia32_cg_config.label_alignment_factor = -1;
-	} else if(ARCH_AMD(opt_arch)) {
+	if (opt_arch & (arch_i386 | arch_i486)) {
+		ia32_cg_config.label_alignment_factor = 0;
+	} else if (opt_arch & arch_all_amd) {
 		ia32_cg_config.label_alignment_factor = 3;
 	} else {
 		ia32_cg_config.label_alignment_factor = 2;
 	}
-
-	set_arch_costs();
 }
 
 void ia32_init_architecture(void)

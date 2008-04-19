@@ -45,6 +45,8 @@ typedef struct {
 	unsigned use_fucomi:1;
 	/** use cmovXX instructions */
 	unsigned use_cmov:1;
+	/** mode_D moves instead of 2 integer moves */
+	unsigned use_modeD_moves:1;
 	/** use add esp, 4 instead of pop */
 	unsigned use_add_esp_4:1;
 	/** use add esp, 8 instead of 2 pop's */
@@ -73,7 +75,7 @@ typedef struct {
 	/** alignment for labels (which are expected to be frequent jump targets) */
 	unsigned label_alignment;
 	/** if a blocks execfreq is factor higher than it's predecessor then align
-	 *  the blocks label (0 switches of label alignment) */
+	 *  the blocks label (0 switches off label alignment) */
 	double label_alignment_factor;
 } ia32_code_gen_config_t;
 
