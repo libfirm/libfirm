@@ -182,6 +182,24 @@ static ir_type *get_prim_type(pmap *types, ir_mode *mode)
 }
 
 /**
+ * Creates an immediate.
+ *
+ * @param symconst       if set, create a SymConst immediate
+ * @param symconst_sign  sign for the symconst
+ * @param val            integer value for the immediate
+ */
+static ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
+{
+	ir_graph *irg         = current_ir_graph;
+	ir_node  *start_block = get_irg_start_block(irg);
+	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block,
+	                                              symconst, symconst_sign, val);
+	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+
+	return immediate;
+}
+
+/**
  * Get an atomic entity that is initialized with a tarval
  */
 static ir_entity *create_float_const_entity(ir_node *cnst)
@@ -192,7 +210,7 @@ static ir_entity *create_float_const_entity(ir_node *cnst)
 	ir_entity *res;
 	ir_graph *rem;
 
-	if (! e) {
+	if (e == NULL) {
 		ir_mode *mode = get_irn_mode(cnst);
 		ir_type *tp = get_Const_type(cnst);
 		if (tp == firm_unknown_type)
@@ -239,7 +257,24 @@ static int is_simple_x87_Const(ir_node *node)
 {
 	tarval *tv = get_Const_tarval(node);
 
-	if(tarval_is_null(tv) || tarval_is_one(tv))
+	if (tarval_is_null(tv) || tarval_is_one(tv))
+		return 1;
+
+	/* TODO: match all the other float constants */
+	return 0;
+}
+
+/**
+ * returns true if constant can be created with a simple float command
+ */
+static int is_simple_sse_Const(ir_node *node)
+{
+	tarval *tv = get_Const_tarval(node);
+
+	if (get_tarval_mode(tv) == mode_F)
+		return 1;
+
+	if (tarval_is_null(tv) || tarval_is_one(tv))
 		return 1;
 
 	/* TODO: match all the other float constants */
@@ -266,15 +301,39 @@ static ir_node *gen_Const(ir_node *node) {
 		ir_entity *floatent;
 
 		if (ia32_cg_config.use_sse2) {
-			if (is_Const_null(node)) {
+			tarval *tv = get_Const_tarval(node);
+			if (tarval_is_null(tv)) {
 				load = new_rd_ia32_xZero(dbgi, irg, block);
 				set_ia32_ls_mode(load, mode);
 				res  = load;
+			} else if (tarval_is_one(tv)) {
+				int     cnst  = mode == mode_F ? 26 : 55;
+				ir_node *imm1 = create_Immediate(NULL, 0, cnst);
+				ir_node *imm2 = create_Immediate(NULL, 0, 2);
+				ir_node *pslld, *psrld;
+
+				load = new_rd_ia32_xAllOnes(dbgi, irg, block);
+				set_ia32_ls_mode(load, mode);
+				pslld = new_rd_ia32_xPslld(dbgi, irg, block, load, imm1);
+				set_ia32_ls_mode(pslld, mode);
+				psrld = new_rd_ia32_xPsrld(dbgi, irg, block, pslld, imm2);
+				set_ia32_ls_mode(psrld, mode);
+				res = psrld;
+			} else if (mode == mode_F) {
+				/* we can place any 32bit constant by using a movd gp, sse */
+				unsigned val = get_tarval_sub_bits(tv, 0) |
+				               (get_tarval_sub_bits(tv, 1) << 8) |
+				               (get_tarval_sub_bits(tv, 2) << 16) |
+				               (get_tarval_sub_bits(tv, 3) << 24);
+				ir_node *cnst = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, val);
+				load = new_rd_ia32_xMovd(dbgi, irg, block, cnst);
+				set_ia32_ls_mode(load, mode);
+				res = load;
 			} else {
 				floatent = create_float_const_entity(node);
 
 				load     = new_rd_ia32_xLoad(dbgi, irg, block, noreg, noreg, nomem,
-											 mode);
+				                             mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
 				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
@@ -319,8 +378,8 @@ static ir_node *gen_Const(ir_node *node) {
 
 		tv = tarval_convert_to(tv, mode_Iu);
 
-		if(tv == get_tarval_bad() || tv == get_tarval_undefined()
-				|| tv == NULL) {
+		if (tv == get_tarval_bad() || tv == get_tarval_undefined() ||
+		    tv == NULL) {
 			panic("couldn't convert constant tarval (%+F)", node);
 		}
 		val = get_tarval_long(tv);
@@ -470,10 +529,15 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	long     pn;
 
 	/* float constants are always available */
-	if(is_Const(node) && mode_is_float(mode)) {
-		if(!is_simple_x87_Const(node))
-			return 0;
-		if(get_irn_n_edges(node) > 1)
+	if (is_Const(node) && mode_is_float(mode)) {
+		if (ia32_cg_config.use_sse2) {
+			if (is_simple_sse_Const(node))
+				return 0;
+		} else {
+			if (is_simple_x87_Const(node))
+				return 0;
+		}
+		if (get_irn_n_edges(node) > 1)
 			return 0;
 		return 1;
 	}
@@ -541,7 +605,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	ir_node        *mem;
 	ir_node        *new_mem;
 
-	if(is_Const(node)) {
+	if (is_Const(node)) {
 		ir_entity *entity  = create_float_const_entity(node);
 		addr->base         = noreg_gp;
 		addr->index        = noreg_gp;
@@ -690,13 +754,13 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	assert(use_am || !(flags & match_8bit_am));
 	assert(use_am || !(flags & match_16bit_am));
 
-	if(mode_bits == 8) {
-		if (! (flags & match_8bit_am))
+	if (mode_bits == 8) {
+		if (!(flags & match_8bit_am))
 			use_am = 0;
 		/* we don't automatically add upconvs yet */
 		assert((flags & match_mode_neutral) || (flags & match_8bit));
-	} else if(mode_bits == 16) {
-		if(! (flags & match_16bit_am))
+	} else if (mode_bits == 16) {
+		if (!(flags & match_16bit_am))
 			use_am = 0;
 		/* we don't automatically add upconvs yet */
 		assert((flags & match_mode_neutral) || (flags & match_16bit));
@@ -704,9 +768,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 
 	/* we can simply skip downconvs for mode neutral nodes: the upper bits
 	 * can be random for these operations */
-	if(flags & match_mode_neutral) {
+	if (flags & match_mode_neutral) {
 		op2 = ia32_skip_downconv(op2);
-		if(op1 != NULL) {
+		if (op1 != NULL) {
 			op1 = ia32_skip_downconv(op1);
 		}
 	}
@@ -714,12 +778,12 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	/* match immediates. firm nodes are normalized: constants are always on the
 	 * op2 input */
 	new_op2 = NULL;
-	if(! (flags & match_try_am) && use_immediate) {
+	if (!(flags & match_try_am) && use_immediate) {
 		new_op2 = try_create_Immediate(op2, 0);
 	}
 
-	if(new_op2 == NULL
-	   && use_am && ia32_use_source_address_mode(block, op2, op1, other_op)) {
+	if (new_op2 == NULL &&
+	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op)) {
 		build_address(am, op2);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		if(mode_is_float(mode)) {
@@ -728,13 +792,13 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 			new_op2 = noreg_gp;
 		}
 		am->op_type = ia32_AddrModeS;
-	} else if(commutative && (new_op2 == NULL || use_am_and_immediates) &&
-		      use_am
-		      && ia32_use_source_address_mode(block, op1, op2, other_op)) {
+	} else if (commutative && (new_op2 == NULL || use_am_and_immediates) &&
+		       use_am &&
+		       ia32_use_source_address_mode(block, op1, op2, other_op)) {
 		ir_node *noreg;
 		build_address(am, op1);
 
-		if(mode_is_float(mode)) {
+		if (mode_is_float(mode)) {
 			noreg = ia32_new_NoReg_vfp(env_cg);
 		} else {
 			noreg = noreg_gp;
@@ -2323,6 +2387,9 @@ static ir_node *create_Switch(ir_node *node)
 	return new_node;
 }
 
+/**
+ * Transform a Cond node.
+ */
 static ir_node *gen_Cond(ir_node *node) {
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
@@ -2774,17 +2841,6 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 
 	new_node = new_r_Proj(irg, block, load, mode_E, pn_ia32_vfld_res);
 	return new_node;
-}
-
-static ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
-{
-	ir_graph *irg         = current_ir_graph;
-	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block,
-	                                              symconst, symconst_sign, val);
-	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
-
-	return immediate;
 }
 
 /**

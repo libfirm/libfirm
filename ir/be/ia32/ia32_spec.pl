@@ -197,6 +197,7 @@ $arch = "ia32";
 	SB1 => "${arch}_emit_8bit_source_register_or_immediate(node, 1);",
 	SB2 => "${arch}_emit_8bit_source_register_or_immediate(node, 2);",
 	SB3 => "${arch}_emit_8bit_source_register_or_immediate(node, 3);",
+	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
 	SI3 => "${arch}_emit_source_register_or_immediate(node, 3);",
 	D0 => "${arch}_emit_dest_register(node, 0);",
 	D1 => "${arch}_emit_dest_register(node, 1);",
@@ -1469,6 +1470,46 @@ xZero => {
 	latency   => 3,
 	units     => [ "SSE" ],
 	mode      => "mode_E",
+},
+
+# produces all 1 bits
+xAllOnes => {
+	irn_flags => "R",
+	reg_req   => { out => [ "xmm" ] },
+	emit      => '. pcmpeqb %D0, %D0',
+	latency   => 3,
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+},
+
+# integer shift left, dword
+xPslld => {
+	irn_flags => "R",
+	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
+	emit      => '. pslld %SI1, %D0',
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+	latency   => 1,
+},
+
+# integer shift right, dword
+xPsrld => {
+	irn_flags => "R",
+	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
+	emit      => '. psrld %SI1, %D0',
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+	latency   => 1,
+},
+
+# mov from integer to SSE register
+xMovd  => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ], out => [ "xmm" ] },
+	emit      => '. movd %S0, %D0',
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+	latency   => 1,
 },
 
 # commutative operations
