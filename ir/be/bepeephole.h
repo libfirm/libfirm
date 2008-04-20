@@ -68,7 +68,7 @@ void be_peephole_after_exchange(ir_node *new_node);
  * backward direction. The register_values variable indicates which (live)
  * values are stored in which register.
  * The generic op handler is called for each node if it exists. That's where
- * backedn specific optimisations should be performed based on the
+ * backend specific optimisations should be performed based on the
  * register-liveness information.
  */
 void be_peephole_opt(be_irg_t *birg);
