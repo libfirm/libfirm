@@ -345,9 +345,15 @@ static void peephole_ia32_Return(ir_node *node) {
 		}
 	}
 	/* yep, return is the first real instruction in this block */
+#if 0
+	/* add an rep prefix to the return */
 	rep = new_rd_ia32_RepPrefix(get_irn_dbg_info(node), current_ir_graph, block);
 	keep_alive(rep);
 	sched_add_before(node, rep);
+#else
+	/* ensure, that the 3 byte return is generated */
+	be_Return_set_emit_pop(node, 1);
+#endif
 }
 
 /* only optimize up to 48 stores behind IncSPs */
@@ -877,11 +883,67 @@ exchange:
 }
 
 /**
+ * Split a Imul mem, imm into a Load mem and Imul reg, imm if possible.
+ */
+static void peephole_ia32_Imul_split(ir_node *imul) {
+	const ir_node         *right = get_irn_n(imul, n_ia32_IMul_right);
+	const arch_register_t *reg;
+	ir_node               *load, *block, *base, *index, *mem, *res, *noreg;
+	dbg_info              *dbgi;
+	ir_graph              *irg;
+
+	if (! is_ia32_Immediate(right) || get_ia32_op_type(imul) != ia32_AddrModeS) {
+		/* no memory, imm form ignore */
+		return;
+	}
+	/* we need a free register */
+	reg = get_free_gp_reg();
+	if (reg == NULL)
+		return;
+
+	/* fine, we can rebuild it */
+	dbgi  = get_irn_dbg_info(imul);
+	block = get_nodes_block(imul);
+	irg   = current_ir_graph;
+	base  = get_irn_n(imul, n_ia32_IMul_base);
+	index = get_irn_n(imul, n_ia32_IMul_index);
+	mem   = get_irn_n(imul, n_ia32_IMul_mem);
+	load = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
+
+	/* copy all attributes */
+	set_irn_pinned(load, get_irn_pinned(imul));
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_ls_mode(load, get_ia32_ls_mode(imul));
+
+	set_ia32_am_scale(load, get_ia32_am_scale(imul));
+	set_ia32_am_sc(load, get_ia32_am_sc(imul));
+	set_ia32_am_offs_int(load, get_ia32_am_offs_int(imul));
+	if (is_ia32_am_sc_sign(imul))
+		set_ia32_am_sc_sign(load);
+	if (is_ia32_use_frame(imul))
+		set_ia32_use_frame(load);
+	set_ia32_frame_ent(load, get_ia32_frame_ent(imul));
+
+	sched_add_before(imul, load);
+
+	mem = new_rd_Proj(dbgi, irg, block, load, mode_M, pn_ia32_Load_M);
+	res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
+
+	arch_set_irn_register(arch_env, res, reg);
+	be_peephole_after_exchange(res);
+
+	set_irn_n(imul, n_ia32_IMul_mem, mem);
+	noreg = get_irn_n(imul, n_ia32_IMul_left);
+	set_irn_n(imul, n_ia32_IMul_left, res);
+	set_ia32_op_type(imul, ia32_Normal);
+}
+
+/**
  * Register a peephole optimisation function.
  */
 static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
 	assert(op->ops.generic == NULL);
-	op->ops.generic = (void*) func;
+	op->ops.generic = (op_func)func;
 }
 
 /* Perform peephole-optimizations. */
@@ -899,6 +961,8 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	register_peephole_optimisation(op_ia32_Test, peephole_ia32_Test);
 	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
 	register_peephole_optimisation(op_be_Return, peephole_ia32_Return);
+	if (! ia32_cg_config.use_imul_mem_imm32)
+		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
 
 	be_peephole_opt(cg->birg);
 }

@@ -1216,7 +1216,6 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_node *op1  = get_Mul_left(node);
 	ir_node *op2  = get_Mul_right(node);
 	ir_mode *mode = get_irn_mode(node);
-	unsigned flags;
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2)
@@ -1226,14 +1225,9 @@ static ir_node *gen_Mul(ir_node *node) {
 			return gen_binop_x87_float(node, op1, op2, new_rd_ia32_vfmul,
 			                           match_commutative | match_am);
 	}
-
-	/* for the lower 32bit of the result it doesn't matter whether we use
-	 * signed or unsigned multiplication so we use IMul as it has fewer
-	 * constraints */
-	flags = match_commutative | match_am | match_mode_neutral | match_immediate;
-	if (ia32_cg_config.use_imul_mem_imm32)
-		flags |= match_am_and_immediates;
-	return gen_binop(node, op1, op2, new_rd_ia32_IMul, flags);
+	return gen_binop(node, op1, op2, new_rd_ia32_IMul,
+	                 match_commutative | match_am | match_mode_neutral |
+	                 match_immediate | match_am_and_immediates);
 }
 
 /**

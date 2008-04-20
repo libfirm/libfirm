@@ -361,6 +361,20 @@ int be_Return_get_n_rets(const ir_node *ret);
  */
 unsigned be_Return_get_pop(const ir_node *ret);
 
+/**
+ * Return non-zero, if number of popped bytes must be always emitted.
+ *
+ * @param ret  the be_Return node
+ */
+int be_Return_get_emit_pop(const ir_node *ret);
+
+/**
+ * Set the emit_pop flag.
+ *
+ * @param ret  the be_Return node
+ */
+void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
+
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
 

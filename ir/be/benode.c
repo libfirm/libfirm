@@ -87,14 +87,15 @@ typedef struct {
 	be_node_attr_t node_attr;     /**< base attributes of every be node. */
 	int            num_ret_vals;  /**< number of return values */
 	unsigned       pop;           /**< number of bytes that should be popped */
+	int            emit_pop;      /**< if set, emit pop bytes, even if pop = 0 */
 } be_return_attr_t;
 
 /** The be_IncSP attribute type. */
 typedef struct {
 	be_node_attr_t node_attr;   /**< base attributes of every be node. */
 	int            offset;      /**< The offset by which the stack shall be expanded/shrinked. */
-	int            align;       /**< wether stack should be aligned after the
-								     IncSP */
+	int            align;       /**< whether stack should be aligned after the
+	                                 IncSP */
 } be_incsp_attr_t;
 
 /** The be_Frame attribute type. */
@@ -107,9 +108,9 @@ typedef struct {
 /** The be_Call attribute type. */
 typedef struct {
 	be_node_attr_t  node_attr;  /**< base attributes of every be node. */
-	ir_entity      *ent;            /**< The called entity if this is a static call. */
+	ir_entity      *ent;        /**< The called entity if this is a static call. */
 	unsigned        pop;
-	ir_type        *call_tp;          /**< The call type, copied from the original Call node. */
+	ir_type        *call_tp;    /**< The call type, copied from the original Call node. */
 } be_call_attr_t;
 
 typedef struct {
@@ -213,6 +214,8 @@ static int Return_cmp_attr(ir_node *a, ir_node *b) {
 	if (a_attr->num_ret_vals != b_attr->num_ret_vals)
 		return 1;
 	if (a_attr->pop != b_attr->pop)
+		return 1;
+	if (a_attr->emit_pop != b_attr->emit_pop)
 		return 1;
 
 	return _node_cmp_attr(&a_attr->node_attr, &b_attr->node_attr);
@@ -697,25 +700,36 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
 	a = get_irn_attr(res);
 	a->num_ret_vals = n_res;
 	a->pop          = pop;
+	a->emit_pop     = 0;
 
 	return res;
 }
 
 /* Returns the number of real returns values */
-int be_Return_get_n_rets(const ir_node *ret)
-{
+int be_Return_get_n_rets(const ir_node *ret) {
 	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
 	return a->num_ret_vals;
 }
 
-unsigned be_Return_get_pop(const ir_node *ret)
-{
+/* return the number of bytes that should be popped from stack when executing the Return. */
+unsigned be_Return_get_pop(const ir_node *ret) {
 	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
 	return a->pop;
 }
 
-int be_Return_append_node(ir_node *ret, ir_node *node)
-{
+/* return non-zero, if number of popped bytes must be always emitted */
+int be_Return_get_emit_pop(const ir_node *ret) {
+	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
+	return a->emit_pop;
+}
+
+/* return non-zero, if number of popped bytes must be always emitted */
+void be_Return_set_emit_pop(ir_node *ret, int emit_pop) {
+	be_return_attr_t *a = get_irn_generic_attr(ret);
+	a->emit_pop = emit_pop;
+}
+
+int be_Return_append_node(ir_node *ret, ir_node *node) {
 	int pos;
 
 	pos = add_irn_n(ret, node);
