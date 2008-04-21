@@ -1057,6 +1057,8 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	if(flags & match_mode_neutral) {
 		op1 = ia32_skip_downconv(op1);
+	} else if (get_mode_size_bits(get_irn_mode(node)) != 32) {
+		panic("right shifting of non-32bit values not supported, yet");
 	}
 	new_op1 = be_transform_node(op1);
 
