@@ -1489,7 +1489,17 @@ xPslld => {
 	emit      => '. pslld %SI1, %D0',
 	units     => [ "SSE" ],
 	mode      => "mode_E",
-	latency   => 1,
+	latency   => 3,
+},
+
+# integer shift left, qword
+xPsllq => {
+	irn_flags => "R",
+	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
+	emit      => '. psllq %SI1, %D0',
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+	latency   => 3,
 },
 
 # integer shift right, dword

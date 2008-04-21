@@ -270,12 +270,23 @@ static int is_simple_x87_Const(ir_node *node)
 static int is_simple_sse_Const(ir_node *node)
 {
 	tarval *tv = get_Const_tarval(node);
+	ir_mode *mode = get_tarval_mode(tv);
 
-	if (get_tarval_mode(tv) == mode_F)
+	if (mode == mode_F)
 		return 1;
 
 	if (tarval_is_null(tv) || tarval_is_one(tv))
 		return 1;
+
+	if (mode == mode_D) {
+		unsigned val = get_tarval_sub_bits(tv, 0) |
+			(get_tarval_sub_bits(tv, 1) << 8) |
+			(get_tarval_sub_bits(tv, 2) << 16) |
+			(get_tarval_sub_bits(tv, 3) << 24);
+		if (val == 0)
+			/* really a 32bit constant */
+			return 1;
+	}
 
 	/* TODO: match all the other float constants */
 	return 0;
@@ -330,6 +341,29 @@ static ir_node *gen_Const(ir_node *node) {
 				set_ia32_ls_mode(load, mode);
 				res = load;
 			} else {
+				if (mode == mode_D) {
+					unsigned val = get_tarval_sub_bits(tv, 0) |
+						(get_tarval_sub_bits(tv, 1) << 8) |
+						(get_tarval_sub_bits(tv, 2) << 16) |
+						(get_tarval_sub_bits(tv, 3) << 24);
+					if (val == 0) {
+						ir_node *imm32 = create_Immediate(NULL, 0, 32);
+						ir_node *cnst, *psllq;
+
+						/* fine, lower 32bit are zero, produce 32bit value */
+						val = get_tarval_sub_bits(tv, 4) |
+							(get_tarval_sub_bits(tv, 5) << 8) |
+							(get_tarval_sub_bits(tv, 6) << 16) |
+							(get_tarval_sub_bits(tv, 7) << 24);
+						cnst = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, val);
+						load = new_rd_ia32_xMovd(dbgi, irg, block, cnst);
+						set_ia32_ls_mode(load, mode);
+						psllq = new_rd_ia32_xPsllq(dbgi, irg, block, load, imm32);
+						set_ia32_ls_mode(psllq, mode);
+						res = psllq;
+						goto end;
+					}
+				}
 				floatent = create_float_const_entity(node);
 
 				load     = new_rd_ia32_xLoad(dbgi, irg, block, noreg, noreg, nomem,
@@ -357,9 +391,7 @@ static ir_node *gen_Const(ir_node *node) {
 			}
 			set_ia32_ls_mode(load, mode);
 		}
-
-		SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
-
+end:
 		/* Const Nodes before the initial IncSP are a bad idea, because
 		 * they could be spilled and we have no SP ready at that point yet.
 		 * So add a dependency to the initial frame pointer calculation to
