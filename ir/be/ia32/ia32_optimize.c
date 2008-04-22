@@ -119,7 +119,7 @@ static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
 	noreg = ia32_new_NoReg_gp(cg);
 	base  = be_get_IncSP_pred(incsp);
 	val   = get_irn_n(node, n_ia32_Store_val);
-	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem, base, val);
+	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem, val, base);
 
 	proj  = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
 
@@ -451,7 +451,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		mem = get_irn_n(store, n_ia32_mem);
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
-		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, curr_sp, val);
+		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
 
 		sched_add_before(irn, push);
 
