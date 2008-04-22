@@ -570,10 +570,10 @@ static void peephole_be_IncSP(ir_node *node)
 
 	/* replace IncSP -4 by Pop freereg when possible */
 	offset = be_get_IncSP_offset(node);
-	if (!(offset == -4 && !ia32_cg_config.use_add_esp_4) &&
-	    !(offset == -8 && !ia32_cg_config.use_add_esp_8) &&
-	    !(offset == +4 && !ia32_cg_config.use_sub_esp_4) &&
-	    !(offset == +8 && !ia32_cg_config.use_sub_esp_8))
+	if ((offset != -8 || !ia32_cg_config.use_add_esp_8) &&
+			(offset != -4 || !ia32_cg_config.use_add_esp_4) &&
+			(offset != +4 || !ia32_cg_config.use_sub_esp_4) &&
+			(offset != +8 || !ia32_cg_config.use_sub_esp_8))
 		return;
 
 	if (offset < 0) {
