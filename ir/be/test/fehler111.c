@@ -7,5 +7,5 @@ int main(int argc, char *argv[]) {
 	*p = 23;
 	y = x;
 	x = 35;
-	return y;
+	return y != 23;
 }
