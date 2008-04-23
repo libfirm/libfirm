@@ -935,12 +935,12 @@ enum {
 	n_ia32_l_binop_right,
 	n_ia32_l_binop_eflags
 };
-COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Adc_left,   n_Adc_left)
-COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Adc_right,  n_Adc_right)
-COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Adc_eflags, n_Adc_eflags)
-COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Sbb_left,   n_Sbb_left)
-COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Sbb_right,  n_Sbb_right)
-COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Sbb_eflags, n_Sbb_eflags)
+COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Adc_left,       n_Adc_left)
+COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Adc_right,      n_Adc_right)
+COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Adc_eflags,     n_Adc_eflags)
+COMPILETIME_ASSERT(n_ia32_l_binop_left   == n_ia32_l_Sbb_minuend,    n_Sbb_minuend)
+COMPILETIME_ASSERT(n_ia32_l_binop_right  == n_ia32_l_Sbb_subtrahend, n_Sbb_subtrahend)
+COMPILETIME_ASSERT(n_ia32_l_binop_eflags == n_ia32_l_Sbb_eflags,     n_Sbb_eflags)
 
 /**
  * Construct a binary operation which also consumes the eflags.
@@ -4222,8 +4222,8 @@ static ir_node *gen_ia32_l_IMul(ir_node *node) {
 }
 
 static ir_node *gen_ia32_l_Sub(ir_node *node) {
-	ir_node *left    = get_irn_n(node, n_ia32_l_Sub_left);
-	ir_node *right   = get_irn_n(node, n_ia32_l_Sub_right);
+	ir_node *left    = get_irn_n(node, n_ia32_l_Sub_minuend);
+	ir_node *right   = get_irn_n(node, n_ia32_l_Sub_subtrahend);
 	ir_node *lowered = gen_binop(node, left, right, new_rd_ia32_Sub,
 			match_am | match_immediate | match_mode_neutral);
 
