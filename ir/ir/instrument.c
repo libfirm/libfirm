@@ -22,7 +22,7 @@
  * @brief   Instrumentation of graphs.
  * @date    14.4.2008
  * @author  Michael Beck
- * @version $Id: $
+ * @version $Id$
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
