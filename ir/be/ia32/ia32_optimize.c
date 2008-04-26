@@ -303,7 +303,7 @@ static void peephole_ia32_Test(ir_node *node)
  * Can be avoided by placing a Rep prefix before the return.
  */
 static void peephole_ia32_Return(ir_node *node) {
-	ir_node *block, *irn, *rep;
+	ir_node *block, *irn;
 
 	if (!ia32_cg_config.use_pad_return)
 		return;
@@ -346,10 +346,12 @@ static void peephole_ia32_Return(ir_node *node) {
 	}
 	/* yep, return is the first real instruction in this block */
 #if 0
-	/* add an rep prefix to the return */
-	rep = new_rd_ia32_RepPrefix(get_irn_dbg_info(node), current_ir_graph, block);
-	keep_alive(rep);
-	sched_add_before(node, rep);
+	{
+		/* add an rep prefix to the return */
+		ir_node *rep = new_rd_ia32_RepPrefix(get_irn_dbg_info(node), current_ir_graph, block);
+		keep_alive(rep);
+		sched_add_before(node, rep);
+	}
 #else
 	/* ensure, that the 3 byte return is generated */
 	be_Return_set_emit_pop(node, 1);
