@@ -826,8 +826,9 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 		return pn_Cmp_False;
 
 	case irms_float_number:
-		if (no_float)
-			return pn_Cmp_False;
+		/* it should be safe to enable this even if other arithmetic is disabled */
+		/*if (no_float)
+			return pn_Cmp_False;*/
 		/*
 		 * BEWARE: we cannot compare a == b here, because
 		 * a NaN is always Unordered to any other value, even to itself!
@@ -1038,8 +1039,9 @@ tarval *tarval_neg(tarval *a) {
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if(no_float)
-			return tarval_bad;
+		/* it should be safe to enable this even if other arithmetic is disabled */
+		/*if (no_float)
+			return tarval_bad;*/
 
 		fc_neg(a->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
@@ -1072,7 +1074,7 @@ tarval *tarval_add(tarval *a, tarval *b) {
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if(no_float)
+		if (no_float)
 			return tarval_bad;
 
 		fc_add(a->value, b->value, NULL);
@@ -1105,7 +1107,7 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if(no_float)
+		if (no_float)
 			return tarval_bad;
 
 		fc_sub(a->value, b->value, NULL);
@@ -1139,7 +1141,7 @@ tarval *tarval_mul(tarval *a, tarval *b) {
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
-		if(no_float)
+		if (no_float)
 			return tarval_bad;
 
 		fc_mul(a->value, b->value, NULL);
@@ -1158,7 +1160,7 @@ tarval *tarval_quo(tarval *a, tarval *b) {
 	assert(b);
 	assert((a->mode == b->mode) && mode_is_float(a->mode));
 
-	if(no_float)
+	if (no_float)
 		return tarval_bad;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
@@ -1263,8 +1265,9 @@ tarval *tarval_abs(tarval *a) {
 		return a;
 
 	case irms_float_number:
-		if(no_float)
-			return tarval_bad;
+		/* it should be safe to enable this even if other arithmetic is disabled */
+		/*if (no_float)
+			return tarval_bad;*/
 
 		if (fc_comp(a->value, get_mode_null(a->mode)->value) == -1) {
 			fc_neg(a->value, NULL);
