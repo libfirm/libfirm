@@ -3927,7 +3927,15 @@ static ir_node *gen_Unknown(ir_node *node) {
 			ir_graph *irg   = current_ir_graph;
 			dbg_info *dbgi  = get_irn_dbg_info(node);
 			ir_node  *block = get_irg_start_block(irg);
-			return new_rd_ia32_vfldz(dbgi, irg, block);
+			ir_node  *ret   = new_rd_ia32_vfldz(dbgi, irg, block);
+
+			/* Const Nodes before the initial IncSP are a bad idea, because
+			 * they could be spilled and we have no SP ready at that point yet.
+			 * So add a dependency to the initial frame pointer calculation to
+			 * avoid that situation.
+			 */
+			add_irn_dep(ret, get_irg_frame(irg));
+			return ret;
 		}
 	} else if (mode_needs_gp_reg(mode)) {
 		return ia32_new_Unknown_gp(env_cg);
