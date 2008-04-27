@@ -147,6 +147,8 @@ long get_tarval_long(tarval *tv);
  * This validates if get_tarval_long() will return a satisfying
  * result. I.e. if tv is an int_number and between min, max
  * of long int (signed!)
+ *
+ * @param tv    the tarval
  */
 int tarval_is_long(tarval *tv);
 
@@ -185,6 +187,8 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode);
  * stored value.
  * This will overflow silently, so use only if you know what
  * you are doing! (better check with tarval_is_long...)
+ *
+ * @param tv    the tarval
  */
 long double get_tarval_double(tarval *tv);
 
@@ -192,6 +196,8 @@ long double get_tarval_double(tarval *tv);
  * This validates if tarval_to_double() will return a satisfying
  * result. I.e. if tv is an float_number and between min, max
  * of double
+ *
+ * @param tv    the tarval
  */
 int tarval_is_double(tarval *tv);
 
@@ -221,8 +227,12 @@ int tarval_is_double(tarval *tv);
  *   the struct tarval
  */
 
-/** Returns the mode of the tarval. */
-ir_mode *get_tarval_mode (const tarval *tv);
+/**
+ * Returns the mode of the tarval.
+ *
+ * @param tv    the tarval
+ */
+ir_mode *get_tarval_mode(const tarval *tv);
 
 /** Returns the contents of the 'link' field of the tarval */
 /* void *get_tarval_link (tarval*); */
@@ -232,30 +242,30 @@ ir_mode *get_tarval_mode (const tarval *tv);
 /**
  * Returns 1 if tv is negative
  *
- * @param a the tarval
+ * @param tv    the tarval
  */
-int tarval_is_negative(tarval *a);
+int tarval_is_negative(tarval *tv);
 
 /**
  * Returns 1 if tv is null
  *
- * @param a the tarval
+ * @param tv    the tarval
  */
-int tarval_is_null(tarval *a);
+int tarval_is_null(tarval *tv);
 
 /**
  * Returns 1 if tv is the "one"
  *
- * @param a the tarval
+ * @param tv    the tarval
  */
-int tarval_is_one(tarval *a);
+int tarval_is_one(tarval *tv);
 
 /**
  * Returns 1 if tv is the "minus one"
  *
- * @param a the tarval
+ * @param tv    the tarval
  */
-int tarval_is_minus_one(tarval *a);
+int tarval_is_minus_one(tarval *tv);
 
 /*
  * returns non-zero if all bits in the tarval are set
@@ -322,9 +332,9 @@ tarval *get_tarval_minus_inf(ir_mode *mode);
 /* ******************** Arithmetic operations on tarvals ******************** */
 
 typedef enum _tarval_int_overflow_mode_t {
-  TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
-  TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
-  TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */
+	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
+	TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
+	TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */
 } tarval_int_overflow_mode_t;
 
 /**
@@ -344,8 +354,8 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * between a and b.  This is either pn_Cmp_Uo, pn_Cmp_Lt, pn_Cmp_Eq, pn_Cmp_Gt,
  * or pn_Cmp_False if a or b are symbolic pointers which can not be compared at all.
  *
- * @param a   A tarval to be compared
- * @param b   A tarval to be compared
+ * @param a   the first tarval to be compared
+ * @param b   the second tarval to be compared
  *
  * @return
  *   The pn_Cmp best describing the relation between a and b is returned.
@@ -374,7 +384,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b);
  *   constructed and returned
  *
  * @note
- *    Illegal conversations will trigger an assertion
+ *    Illegal convertions will trigger a panic
  *
  * @sa
  *    FIRM documentation for conversion rules
@@ -407,10 +417,10 @@ tarval *tarval_convert_to(tarval *src, ir_mode *mode);
  *   The sort member of the struct mode defines which operations are valid
  */
 
-/** bitwise Negation of a tarval. */
+/** Bitwise Negation of a tarval. */
 tarval *tarval_not(tarval *a);
 
-/** arithmetic Negation of a tarval. */
+/** Arithmetic Negation of a tarval. */
 tarval *tarval_neg(tarval *a);
 
 /** Addition of two tarvals. */
@@ -422,10 +432,10 @@ tarval *tarval_sub(tarval *a, tarval *b);
 /** Multiplication of tarvals. */
 tarval *tarval_mul(tarval *a, tarval *b);
 
-/** 'Exact' division. */
+/** 'Exact' division of two tarvals. */
 tarval *tarval_quo(tarval *a, tarval *b);
 
-/** Integer division. */
+/** Integer division of two tarvals. */
 tarval *tarval_div(tarval *a, tarval *b);
 
 /** Remainder of integer division. */
@@ -434,7 +444,7 @@ tarval *tarval_mod(tarval *a, tarval *b);
 /** Integer division AND remainder. */
 tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
 
-/** Absolute value. */
+/** Absolute value of a tarval. */
 tarval *tarval_abs(tarval *a);
 
 /** Bitwise and. */
@@ -458,7 +468,9 @@ tarval *tarval_shrs(tarval *a, tarval *b);
 /** Rotation. */
 tarval *tarval_rot(tarval *a, tarval *b);
 
-/** Carry flag of the last operation */
+/**
+ * Returns the carry flag of the last operation.
+ */
 int tarval_carry(void);
 
 /* *********** Output of tarvals *********** */
@@ -472,13 +484,13 @@ int tarval_carry(void);
  * However, we can do this in the tarval much simpler...
  */
 typedef enum {
-  TVO_NATIVE,       /**< the default output mode, depends on the mode */
-  TVO_HEX,          /**< use hex representation, always possible */
-  TVO_DECIMAL,      /**< use decimal representation */
-  TVO_OCTAL,        /**< use octal representation */
-  TVO_BINARY,       /**< use binary representation */
-  TVO_FLOAT,        /**< use floating point representation (i.e 1.342e-2)*/
-  TVO_HEXFLOAT      /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
+	TVO_NATIVE,       /**< the default output mode, depends on the mode */
+	TVO_HEX,          /**< use hex representation, always possible */
+	TVO_DECIMAL,      /**< use decimal representation */
+	TVO_OCTAL,        /**< use octal representation */
+	TVO_BINARY,       /**< use binary representation */
+	TVO_FLOAT,        /**< use floating point representation (i.e 1.342e-2)*/
+	TVO_HEXFLOAT      /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
 /**
@@ -486,11 +498,11 @@ typedef enum {
  * of a tarval of a mode.
  */
 typedef struct tarval_mode_info {
-  tv_output_mode mode_output;  /**< if != TVO_NATIVE select a special mode */
-  const char *mode_prefix;     /**< if set, this prefix will be printed
-                                    before a value of this mode */
-  const char *mode_suffix;     /**< if set, this suffix will be printed
-                                    after a value of this mode */
+	tv_output_mode mode_output;  /**< if != TVO_NATIVE select a special mode */
+	const char *mode_prefix;     /**< if set, this prefix will be printed
+	                                  before a value of this mode */
+	const char *mode_suffix;     /**< if set, this suffix will be printed
+	                                  after a value of this mode */
 } tarval_mode_info;
 
 /**
@@ -571,30 +583,51 @@ unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 /**
  * Returns non-zero if a given (integer) tarval has only one single bit
  * set.
+ *
+ * @param tv    the tarval
  */
 int tarval_is_single_bit(tarval *tv);
 
 /**
- * Output of tarvals to a buffer.
+ * Output a tarval to a string buffer.
+ *
+ * @param buf     the output buffer
+ * @param buflen  the length of the buffer
+ * @param tv      the tarval
  */
 int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
 
 /**
- * Output of tarvals to stdio.
+ * Output a tarval to stdio.
+ *
+ * @param tv    the tarval
  */
 int tarval_printf(tarval *tv);
 
 /**
  * Returns non-zero if the mantissa of a floating point IEEE-754
  * tarval is zero (i.e. 1.0Exxx)
+ *
+ * @param tv    the tarval
  */
 int tarval_ieee754_zero_mantissa(tarval *tv);
 
 /**
  * Returns the exponent of a floating point IEEE-754
  * tarval.
+ *
+ * @param tv    the tarval
  */
 int tarval_ieee754_get_exponent(tarval *tv);
+
+/**
+ * Check if the tarval can be converted to the given mode without
+ * precision loss.
+ *
+ * @param tv    the tarval
+ * param  mode  the mode to convert to
+ */
+int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode);
 
 /**
  * Set the immediate precision for IEEE-754 results. Set this to
@@ -617,21 +650,29 @@ int tarval_enable_fp_ops(int enable);
 
 /**
  * Check if its the a floating point NaN.
+ *
+ * @param tv    the tarval
  */
 int tarval_is_NaN(tarval *tv);
 
 /**
  * Check if its the a floating point +inf.
+ *
+ * @param tv    the tarval
  */
 int tarval_is_plus_inf(tarval *tv);
 
 /**
  * Check if its the a floating point -inf.
+ *
+ * @param tv    the tarval
  */
 int tarval_is_minus_inf(tarval *tv);
 
 /**
  * Check if the tarval represents a finite value, ie neither NaN nor inf.
+ *
+ * @param tv    the tarval
  */
 int tarval_is_finite(tarval *tv);
 

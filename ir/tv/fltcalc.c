@@ -52,6 +52,9 @@
 
 #include "xmalloc.h"
 
+/** The number of extra precesion rounding bits */
+#define ROUNDING_BITS 2
+
 typedef uint32_t UINT32;
 
 #ifdef HAVE_LONG_DOUBLE
@@ -210,8 +213,8 @@ static void *pack(const fp_value *int_float, void *packed) {
 	sc_or(temp, packed, packed);
 
 	/* extract mantissa */
-	/* remove 2 rounding bits */
-	sc_val_from_ulong(2, shift_val);
+	/* remove rounding bits */
+	sc_val_from_ulong(ROUNDING_BITS, shift_val);
 	_shift_right(_mant(int_float), shift_val, temp);
 
 	/* remove leading 1 (or 0 if denormalized) */
@@ -235,8 +238,8 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	char lsb, guard, round, round_dir = 0;
 	char *temp = alloca(value_size);
 
-	/* +2: save two rounding bits at the end */
-	hsb = 2 + in_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(in_val)) - 1;
+	/* save rounding bits at the end */
+	hsb = ROUNDING_BITS + in_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(in_val)) - 1;
 
 	if (in_val != out_val)   {
 		out_val->sign = in_val->sign;
@@ -246,7 +249,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	out_val->desc.clss = NORMAL;
 
 	/* mantissa all zeros, so zero exponent (because of explicit one) */
-	if (hsb == 2 + in_val->desc.mantissa_size)   {
+	if (hsb == ROUNDING_BITS + in_val->desc.mantissa_size)   {
 		sc_val_from_ulong(0, _exp(out_val));
 		hsb = -1;
 	}
@@ -295,7 +298,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 	/* perform rounding by adding a value that clears the guard bit and the round bit
 	 * and either causes a carry to round up or not */
 	/* get the last 3 bits of the value */
-	lsb = sc_sub_bits(_mant(out_val), out_val->desc.mantissa_size + 2, 0) & 0x7;
+	lsb = sc_sub_bits(_mant(out_val), out_val->desc.mantissa_size + ROUNDING_BITS, 0) & 0x7;
 	guard = (lsb&0x2)>>1;
 	round = lsb&0x1;
 
@@ -339,7 +342,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 		out_val->desc.clss = ZERO;
 
 	/* check for rounding overflow */
-	hsb = 2 + out_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
+	hsb = ROUNDING_BITS + out_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
 	if ((out_val->desc.clss != SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
 		_shift_right(_mant(out_val), temp, _mant(out_val));
@@ -611,8 +614,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	 * point are the sum of the factors' digits after the radix point. As all
 	 * values are normalized they both have the same amount of these digits,
 	 * which has to be restored by proper shifting
-	 * +2 because of the two rounding bits */
-	sc_val_from_ulong(2 + result->desc.mantissa_size, temp);
+	 * because of the rounding bits */
+	sc_val_from_ulong(ROUNDING_BITS + result->desc.mantissa_size, temp);
 
 	_shift_right(_mant(result), temp, _mant(result));
 	sticky = sc_had_carry();
@@ -702,7 +705,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	 * fit into the integer precision, but due to the rounding bits (which
 	 * are always zero because the values are all normalized) the divisor
 	 * can be shifted right instead to achieve the same result */
-	sc_val_from_ulong(2 + result->desc.mantissa_size, temp);
+	sc_val_from_ulong(ROUNDING_BITS + result->desc.mantissa_size, temp);
 
 	_shift_left(_mant(a), temp, dividend);
 
@@ -733,7 +736,7 @@ static void _power_of_ten(int exp, descriptor_t *desc, char *result) {
 	build = alloca(value_size);
 	temp = alloca(value_size);
 
-	sc_val_from_ulong((1 << result->desc.exponent_size)/2-1, _exp(result));
+	sc_val_from_ulong((1 << (result->desc.exponent_size - 1)) - 1, _exp(result));
 
 	if (exp > 0) {
 		/* temp is value of ten now */
@@ -747,7 +750,7 @@ static void _power_of_ten(int exp, descriptor_t *desc, char *result) {
 		_save_result(build);
 
 		/* temp is amount of left shift needed to put the value left of the radix point */
-		sc_val_from_ulong(result->desc.mantissa_size + 2, temp);
+		sc_val_from_ulong(result->desc.mantissa_size + ROUNDING_BITS, temp);
 
 		_shift_left(build, temp, _mant(result));
 
@@ -991,11 +994,11 @@ done:
 	sc_val_from_str(mant_str, strlen(mant_str), _mant(result));
 
 	/* shift to put value left of radix point */
-	sc_val_from_ulong(mant_size + 2, exp_val);
+	sc_val_from_ulong(mant_size + ROUNDING_BITS, exp_val);
 
 	_shift_left(_mant(result), exp_val, _mant(result));
 
-	sc_val_from_ulong((1 << exp_size)/2-1, _exp(result));
+	sc_val_from_ulong((1 << (exp_size - 1)) - 1, _exp(result));
 
 	_normalize(result, result, 0);
 
@@ -1034,7 +1037,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	UINT32 sign, exponent, mantissa0, mantissa1;
 
 	srcval.d = l;
-	bias_res = ((1<<exp_size)/2-1);
+	bias_res = ((1 << (exp_size - 1)) - 1);
 
 #ifdef HAVE_LONG_DOUBLE
 	mant_val  = 64;
@@ -1063,8 +1066,8 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	if (result == NULL) result = calc_buffer;
 	temp = alloca(value_size);
 
-	/* CLEAR the buffer */
-	//memset(result, 0, fc_get_buffer_length());
+	/* CLEAR the buffer, else some bits might be uninitialised */
+	memset(result, 0, fc_get_buffer_length());
 
 	result->desc.exponent_size = exp_size;
 	result->desc.mantissa_size = mant_size;
@@ -1100,7 +1103,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	if (exponent != 0) {
 		/* insert the hidden bit */
 		sc_val_from_ulong(1, temp);
-		sc_val_from_ulong(mant_val + 2, NULL);
+		sc_val_from_ulong(mant_val + ROUNDING_BITS, NULL);
 		_shift_left(temp, sc_get_buffer(), NULL);
 	}
 	else
@@ -1119,7 +1122,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 
 	/* bits from the lower word */
 	sc_val_from_ulong(mantissa1, temp);
-	sc_val_from_ulong(2, NULL);
+	sc_val_from_ulong(ROUNDING_BITS, NULL);
 	_shift_left(temp, sc_get_buffer(), temp);
 	sc_or(_mant(result), temp, _mant(result));
 
@@ -1171,7 +1174,7 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	 * lead to wrong results */
 	exponent = sc_val_to_long(_exp(value)) ;
 
-	sc_val_from_ulong(2, NULL);
+	sc_val_from_ulong(ROUNDING_BITS, NULL);
 	_shift_right(_mant(value), sc_get_buffer(), _mant(value));
 
 	mantissa0 = 0;
@@ -1264,7 +1267,7 @@ fp_value *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, fp_
 	sc_val_from_ulong((1<<exponent_size) - 2, _exp(result));
 
 	sc_max_from_bits(mantissa_size + 1, 0, _mant(result));
-	sc_val_from_ulong(2, NULL);
+	sc_val_from_ulong(ROUNDING_BITS, NULL);
 	_shift_left(_mant(result), sc_get_buffer(), _mant(result));
 
 	return result;
@@ -1479,13 +1482,41 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byt
 	return sc_sub_bits(packed_value, num_bits, byte_ofs);
 }
 
+/* Returns non-zero if the mantissa is zero, i.e. 1.0Exxx */
 int fc_zero_mantissa(const fp_value *value) {
-	return sc_get_lowest_set_bit(_mant(value)) == 2 + value->desc.mantissa_size;
+	return sc_get_lowest_set_bit(_mant(value)) == ROUNDING_BITS + value->desc.mantissa_size;
 }
 
+/* Returns the exponent of a value. */
 int fc_get_exponent(const fp_value *value) {
 	int exp_bias = (1 << (value->desc.exponent_size - 1)) - 1;
 	return sc_val_to_long(_exp(value)) - exp_bias;
+}
+
+/* Return non-zero if a given value can be converted lossless into another precision */
+int fc_can_lossless_conv_to(const fp_value *value, char exp_size, char mant_size) {
+	int v;
+	int exp_bias;
+
+	/* handle some special cases first */
+	switch (value->desc.clss) {
+	case ZERO:
+	case INF:
+	case NAN:
+		return 1;
+	default:
+		break;
+	}
+
+	/* check if the exponent can be encoded: note, 0 and all ones are reserved for the exponent */
+	exp_bias = (1 << (exp_size - 1)) - 1;
+	v = fc_get_exponent(value) + exp_bias;
+	if (0 < v && v < (1 << exp_size) - 1) {
+		/* check the mantissa */
+		v = value->desc.mantissa_size + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
+		return v < mant_size;
+	}
+	return 0;
 }
 
 
@@ -1655,7 +1686,7 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		}
 
 		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
-		shift = exp_val - a->desc.mantissa_size - 2;
+		shift = exp_val - (a->desc.mantissa_size + ROUNDING_BITS);
 
 		if (shift > 0) {
 			sc_shlI(_mant(a),  shift, 64, 0, result);

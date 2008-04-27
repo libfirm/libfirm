@@ -906,7 +906,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 				res = fc_rnd(src->value, NULL);
 				break;
 			default:
-				assert(0);
+				panic("Unsupported float to int conversion mode in tarval_convert_to()");
 				break;
 			}
 			buffer = alloca(sc_get_buffer_length());
@@ -1465,6 +1465,7 @@ tarval *tarval_rot(tarval *a, tarval *b) {
  * carry flag of the last operation
  */
 int tarval_carry(void) {
+	panic("tarval_carry() requetsed: not implemented on all operations");
 	return sc_had_carry();
 }
 
@@ -1656,6 +1657,30 @@ int tarval_ieee754_zero_mantissa(tarval *tv) {
 int tarval_ieee754_get_exponent(tarval *tv) {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
 	return fc_get_exponent(tv->value);
+}
+
+/*
+ * Check if the tarval can be converted to the given mode without
+ * precision loss.
+ */
+int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode) {
+	char exp_size, mant_size;
+	switch (get_mode_size_bits(mode)) {
+	case 32:
+		exp_size = 8; mant_size = 23;
+		break;
+	case 64:
+		exp_size = 11; mant_size = 52;
+		break;
+	case 80:
+	case 96:
+		exp_size = 15; mant_size = 64;
+		break;
+	default:
+		panic("Unsupported mode in tarval_ieee754_can_conv_lossless()");
+		return 0;
+	}
+	return fc_can_lossless_conv_to(tv->value, exp_size, mant_size);
 }
 
 /* Set the immediate precision for IEEE-754 results. */

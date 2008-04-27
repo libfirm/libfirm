@@ -186,6 +186,11 @@ int fc_zero_mantissa(const fp_value *value);
  */
 int fc_get_exponent(const fp_value *value);
 
+/**
+ * Return non-zero if a given value can be converted lossless into another precision.
+ */
+int fc_can_lossless_conv_to(const fp_value *value, char exp_size, char mant_size);
+
 /** Set new rounding mode
  * This function sets the rounding mode to one of the following, returning
  * the previously set rounding mode.
