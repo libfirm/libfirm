@@ -200,20 +200,45 @@ static ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long va
 }
 
 /**
- * Get an atomic entity that is initialized with a tarval
+ * Get an atomic entity that is initialized with a tarval forming
+ * a given constant.
+ *
+ * @param cnst             the node representing the constant
  */
 static ir_entity *create_float_const_entity(ir_node *cnst)
 {
 	ia32_isa_t *isa = env_cg->isa;
-	tarval *tv      = get_Const_tarval(cnst);
-	pmap_entry *e   = pmap_find(isa->tv_ent, tv);
+	tarval *key     = get_Const_tarval(cnst);
+	pmap_entry *e   = pmap_find(isa->tv_ent, key);
 	ir_entity *res;
 	ir_graph *rem;
 
 	if (e == NULL) {
-		ir_mode *mode = get_irn_mode(cnst);
-		ir_type *tp = get_Const_type(cnst);
-		if (tp == firm_unknown_type)
+		tarval  *tv   = key;
+		ir_mode *mode = get_tarval_mode(tv);
+		ir_type *tp;
+
+		if (! ia32_cg_config.use_sse2) {
+			/* try to reduce the mode to produce smaller sized entities */
+			if (mode != mode_F) {
+				if (tarval_ieee754_can_conv_lossless(tv, mode_F)) {
+					mode = mode_F;
+					tv = tarval_convert_to(tv, mode);
+				} else if (mode != mode_D) {
+					if (tarval_ieee754_can_conv_lossless(tv, mode_D)) {
+						mode = mode_D;
+						tv = tarval_convert_to(tv, mode);
+					}
+				}
+			}
+		}
+
+		if (mode == get_irn_mode(cnst)) {
+			/* mode was not changed */
+			tp = get_Const_type(cnst);
+			if (tp == firm_unknown_type)
+				tp = get_prim_type(isa->types, mode);
+		} else
 			tp = get_prim_type(isa->types, mode);
 
 		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
@@ -230,7 +255,7 @@ static ir_entity *create_float_const_entity(ir_node *cnst)
 		set_atomic_ent_value(res, new_Const_type(tv, tp));
 		current_ir_graph = rem;
 
-		pmap_insert(isa->tv_ent, tv, res);
+		pmap_insert(isa->tv_ent, key, res);
 	} else {
 		res = e->value;
 	}
@@ -377,9 +402,11 @@ static ir_node *gen_Const(ir_node *node) {
 			if (is_Const_null(node)) {
 				load = new_rd_ia32_vfldz(dbgi, irg, block);
 				res  = load;
+				set_ia32_ls_mode(load, mode);
 			} else if (is_Const_one(node)) {
 				load = new_rd_ia32_vfld1(dbgi, irg, block);
 				res  = load;
+				set_ia32_ls_mode(load, mode);
 			} else {
 				floatent = create_float_const_entity(node);
 
@@ -388,8 +415,9 @@ static ir_node *gen_Const(ir_node *node) {
 				set_ia32_am_sc(load, floatent);
 				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
 				res = new_r_Proj(irg, block, load, mode_vfp, pn_ia32_vfld_res);
+				/* take the mode from the entity */
+				set_ia32_ls_mode(load, get_type_mode(get_entity_type(floatent)));
 			}
-			set_ia32_ls_mode(load, mode);
 		}
 end:
 		/* Const Nodes before the initial IncSP are a bad idea, because
@@ -3923,7 +3951,7 @@ static ir_node *gen_Unknown(ir_node *node) {
 		if (ia32_cg_config.use_sse2) {
 			return ia32_new_Unknown_xmm(env_cg);
 		} else {
-			/* Unknown nodes are buggy in x87 sim, use zero for now... */
+			/* Unknown nodes are buggy in x87 simulator, use zero for now... */
 			ir_graph *irg   = current_ir_graph;
 			dbg_info *dbgi  = get_irn_dbg_info(node);
 			ir_node  *block = get_irg_start_block(irg);
