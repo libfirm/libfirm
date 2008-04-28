@@ -672,7 +672,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 		addr->mem          = new_NoMem();
 		addr->symconst_ent = entity;
 		addr->use_frame    = 1;
-		am->ls_mode        = get_irn_mode(node);
+		am->ls_mode        = get_type_mode(get_entity_type(entity));
 		am->pinned         = op_pin_state_floats;
 		return;
 	}
