@@ -309,7 +309,7 @@ static int is_simple_sse_Const(ir_node *node)
 			(get_tarval_sub_bits(tv, 2) << 16) |
 			(get_tarval_sub_bits(tv, 3) << 24);
 		if (val == 0)
-			/* really a 32bit constant */
+			/* lower 32bit are zero, really a 32bit constant */
 			return 1;
 	}
 
@@ -431,7 +431,7 @@ end:
 
 		SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
 		return res;
-	} else {
+	} else { /* non-float mode */
 		ir_node *cnst;
 		tarval  *tv = get_Const_tarval(node);
 		long     val;
@@ -2303,41 +2303,120 @@ static int is_float_to_int32_conv(const ir_node *node)
 }
 
 /**
- * Transforms a Store.
+ * Transform a Store(floatConst).
  *
  * @return the created ia32 Store node
  */
-static ir_node *gen_Store(ir_node *node)
-{
+static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns) {
+	ir_mode  *mode      = get_irn_mode(cns);
+	int      size       = get_mode_size_bits(mode);
+	tarval   *tv        = get_Const_tarval(cns);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *ptr       = get_Store_ptr(node);
-	ir_node  *val       = get_Store_value(node);
 	ir_node  *mem       = get_Store_mem(node);
 	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
+	int      ofs        = 4;
+	ir_node  *new_node;
+	ia32_address_t addr;
+
+	unsigned val = get_tarval_sub_bits(tv, 0) |
+		(get_tarval_sub_bits(tv, 1) << 8) |
+		(get_tarval_sub_bits(tv, 2) << 16) |
+		(get_tarval_sub_bits(tv, 3) << 24);
+	ir_node *imm = create_Immediate(NULL, 0, val);
+
+	/* construct store address */
+	memset(&addr, 0, sizeof(addr));
+	ia32_create_address_mode(&addr, ptr, /*force=*/0);
+
+	if (addr.base == NULL) {
+		addr.base = noreg;
+	} else {
+		addr.base = be_transform_node(addr.base);
+	}
+
+	if (addr.index == NULL) {
+		addr.index = noreg;
+	} else {
+		addr.index = be_transform_node(addr.index);
+	}
+	addr.mem = be_transform_node(mem);
+
+	new_node = new_rd_ia32_Store(dbgi, irg, new_block, addr.base,
+		addr.index, addr.mem, imm);
+
+	set_irn_pinned(new_node, get_irn_pinned(node));
+	set_ia32_op_type(new_node, ia32_AddrModeD);
+	set_ia32_ls_mode(new_node, mode);
+
+	set_address(new_node, &addr);
+
+	/** add more stores if needed */
+	while (size > 32) {
+		unsigned val = get_tarval_sub_bits(tv, ofs) |
+			(get_tarval_sub_bits(tv, ofs + 1) << 8) |
+			(get_tarval_sub_bits(tv, ofs + 2) << 16) |
+			(get_tarval_sub_bits(tv, ofs + 3) << 24);
+		ir_node *imm = create_Immediate(NULL, 0, val);
+
+		addr.offset += 4;
+		addr.mem = new_node;
+
+		new_node = new_rd_ia32_Store(dbgi, irg, new_block, addr.base,
+			addr.index, addr.mem, imm);
+
+		set_irn_pinned(new_node, get_irn_pinned(node));
+		set_ia32_op_type(new_node, ia32_AddrModeD);
+		set_ia32_ls_mode(new_node, mode);
+
+		set_address(new_node, &addr);
+		size -= 32;
+		ofs  += 4;
+	}
+
+	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+	return new_node;
+}
+
+/**
+ * Transforms a normal Store.
+ *
+ * @return the created ia32 Store node
+ */
+static ir_node *gen_normal_Store(ir_node *node)
+{
+	ir_node  *val       = get_Store_value(node);
 	ir_mode  *mode      = get_irn_mode(val);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *ptr       = get_Store_ptr(node);
+	ir_node  *mem       = get_Store_mem(node);
+	ir_graph *irg       = current_ir_graph;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
 	ir_node  *new_val;
 	ir_node  *new_node;
 	ia32_address_t addr;
 
 	/* check for destination address mode */
 	new_node = try_create_dest_am(node);
-	if(new_node != NULL)
+	if (new_node != NULL)
 		return new_node;
 
 	/* construct store address */
 	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, ptr, /*force=*/0);
 
-	if(addr.base == NULL) {
+	if (addr.base == NULL) {
 		addr.base = noreg;
 	} else {
 		addr.base = be_transform_node(addr.base);
 	}
 
-	if(addr.index == NULL) {
+	if (addr.index == NULL) {
 		addr.index = noreg;
 	} else {
 		addr.index = be_transform_node(addr.index);
@@ -2347,7 +2426,7 @@ static ir_node *gen_Store(ir_node *node)
 	if (mode_is_float(mode)) {
 		/* convs (and strict-convs) before stores are unnecessary if the mode
 		   is the same */
-		while(is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
+		while (is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
 			val = get_Conv_op(val);
 		}
 		new_val = be_transform_node(val);
@@ -2358,7 +2437,7 @@ static ir_node *gen_Store(ir_node *node)
 			new_node = new_rd_ia32_vfst(dbgi, irg, new_block, addr.base,
 			                            addr.index, addr.mem, new_val, mode);
 		}
-	} else if(is_float_to_int32_conv(val)) {
+	} else if (is_float_to_int32_conv(val)) {
 		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
 		val = get_Conv_op(val);
 
@@ -2394,6 +2473,36 @@ static ir_node *gen_Store(ir_node *node)
 	return new_node;
 }
 
+/**
+ * Transforms a Store.
+ *
+ * @return the created ia32 Store node
+ */
+static ir_node *gen_Store(ir_node *node)
+{
+	ir_node  *val  = get_Store_value(node);
+	ir_mode  *mode = get_irn_mode(val);
+
+	if (mode_is_float(mode) && is_Const(val)) {
+		int transform = 1;
+
+		/* we are storing a floating point constant */
+		if (ia32_cg_config.use_sse2) {
+			transform = !is_simple_sse_Const(val);
+		} else {
+			transform = !is_simple_x87_Const(val);
+		}
+		if (transform)
+			return gen_float_const_Store(node, val);
+	}
+	return gen_normal_Store(node);
+}
+
+/**
+ * Transforms a Switch.
+ *
+ * @return the created ia32 SwitchJmp node
+ */
 static ir_node *create_Switch(ir_node *node)
 {
 	ir_graph *irg        = current_ir_graph;
@@ -2469,8 +2578,6 @@ static ir_node *gen_Cond(ir_node *node) {
 
 	return new_node;
 }
-
-
 
 /**
  * Transforms a CopyB node.
