@@ -154,7 +154,7 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
 {
 	vcg_private_t *priv = self->data;
 	ir_op *op           = stat_get_op_from_opcode(op_code);
-	ir_mode *mode       = (ir_mode *)mode_code;
+	ir_mode *mode       = stat_mode_for_index(mode_code);
 	long l              = attr ? *(long *)attr : 0;
 
 	if (priv->pattern_id > priv->max_pattern)
@@ -231,7 +231,7 @@ static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_co
 {
 	FILE *f       = self->data;
 	ir_op *op     = stat_get_op_from_opcode(op_code);
-	ir_mode *mode = (ir_mode *)mode_code;
+	ir_mode *mode = stat_mode_for_index(mode_code);
 	(void) attr;
 
 	/* if (env->options & OPT_ENC_GRAPH) */

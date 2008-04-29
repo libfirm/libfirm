@@ -420,8 +420,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env) {
 		ir_mode *mode = get_irn_mode(node);
 
 		if (mode)
-			/* FIXME: not 64bit save */
-			put_code(env->buf, (unsigned)mode);
+			put_code(env->buf, stat_find_mode_index(mode));
 		else
 			put_tag(env->buf, VLC_TAG_EMPTY);
 	}  /* if */

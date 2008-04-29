@@ -45,22 +45,14 @@
 # include "irtools.h"
 # include "array.h"
 
-/* * *
- * local values
- * * */
-
-
-/** dynamic array to hold all modes */
+/** Obstack to hold all modes. */
 static struct obstack modes;
 
-/** number of defined modes */
+/** Number of defined modes. */
 static int num_modes = 0;
 
+/** The list of all currently existing modes. */
 static ir_mode **mode_list;
-
-/* * *
- * local functions
- * * */
 
 /**
  * Compare modes that don't need to have their code field
@@ -68,7 +60,7 @@ static ir_mode **mode_list;
  *
  * TODO: Add other fields
  **/
-INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n) {
+static INLINE int modes_are_equal(const ir_mode *m, const ir_mode *n) {
 	if (m == n) return 1;
 	if (m->sort         == n->sort &&
 		m->arithmetic   == n->arithmetic &&
@@ -87,17 +79,34 @@ INLINE static int modes_are_equal(const ir_mode *m, const ir_mode *n) {
  * none found
  */
 static ir_mode *find_mode(const ir_mode *m) {
-	unsigned len = ARR_LEN(mode_list);
-	unsigned i;
-
-	for(i = 0; i < len; ++i) {
+	int i;
+	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
 		ir_mode *n = mode_list[i];
 		if (modes_are_equal(n, m))
 			return n;
 	}
-
 	return NULL;
 }
+
+#ifdef FIRM_STATISTICS
+/* return the mode index, only needed for statistics */
+int stat_find_mode_index(const ir_mode *m) {
+	int i;
+	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
+		ir_mode *n = mode_list[i];
+		if (modes_are_equal(n, m))
+			return i;
+	}
+	return -1;
+}
+
+/* return the mode for a given index, only needed for statistics */
+ir_mode *stat_mode_for_index(int idx) {
+	if (0 <= idx  && idx < ARR_LEN(mode_list))
+		return mode_list[idx];
+	return NULL;
+}
+#endif
 
 /**
  * sets special values of modes

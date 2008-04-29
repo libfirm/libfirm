@@ -88,4 +88,14 @@ pattern_dumper_t *new_text_dumper(void);
  */
 pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern);
 
+/**
+ * return the mode index, only needed for statistics
+ */
+int stat_find_mode_index(const ir_mode *m);
+
+/**
+ * return the mode for a given index, only needed for statistics
+ */
+ir_mode *stat_mode_for_index(int idx);
+
 #endif /* FIRM_STAT_PATTERN_DMP_H */
