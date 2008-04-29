@@ -2350,7 +2350,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns) {
 
 	set_irn_pinned(new_node, get_irn_pinned(node));
 	set_ia32_op_type(new_node, ia32_AddrModeD);
-	set_ia32_ls_mode(new_node, mode);
+	set_ia32_ls_mode(new_node, mode_Iu);
 
 	set_address(new_node, &addr);
 
@@ -2370,7 +2370,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns) {
 
 		set_irn_pinned(new_node, get_irn_pinned(node));
 		set_ia32_op_type(new_node, ia32_AddrModeD);
-		set_ia32_ls_mode(new_node, mode);
+		set_ia32_ls_mode(new_node, mode_Iu);
 
 		set_address(new_node, &addr);
 		size -= 32;
