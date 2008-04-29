@@ -135,7 +135,7 @@ void stat_add_distrib_tbl(distrib_tbl_t *tbl, const void *object, const counter_
  * adds a new key count into the integer distribution table
  */
 void stat_add_int_distrib_tbl(distrib_tbl_t *tbl, int key, const counter_t *cnt) {
-	stat_add_distrib_tbl(tbl, (const void *)key, cnt);
+	stat_add_distrib_tbl(tbl, INT_TO_PTR(key), cnt);
 }
 
 /*
@@ -151,7 +151,7 @@ void stat_inc_distrib_tbl(distrib_tbl_t *tbl, const void *object) {
  * increases key count by one
  */
 void stat_inc_int_distrib_tbl(distrib_tbl_t *tbl, int key) {
-	stat_inc_distrib_tbl(tbl, (const void *)key);
+	stat_inc_distrib_tbl(tbl, INT_TO_PTR(key));
 }
 
 /*
@@ -168,7 +168,7 @@ void stat_insert_distrib_tbl(distrib_tbl_t *tbl, const void *object) {
  * if key is already present, nothing happens
  */
 void stat_insert_int_distrib_tbl(distrib_tbl_t *tbl, int key) {
-	stat_insert_distrib_tbl(tbl, (const void *)key);
+	stat_insert_distrib_tbl(tbl, INT_TO_PTR(key));
 }
 
 /*
@@ -201,12 +201,12 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl) {
 			return 0.0;
 
 		min =
-		max = (int)entry->object;
+		max = PTR_TO_INT(entry->object);
 		sum = cnt_to_dbl(&entry->cnt);
 
 
 		for (entry = pset_next(tbl->hash_map); entry; entry = pset_next(tbl->hash_map)) {
-			int value = (int)entry->object;
+			int value = PTR_TO_INT(entry->object);
 
 			if (value < min)
 				min = value;
@@ -241,7 +241,7 @@ double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl) {
 			return 0.0;
 
 		foreach_pset(tbl->hash_map, entry) {
-			sum   += cnt_to_dbl(&entry->cnt) * (int)entry->object;
+			sum   += cnt_to_dbl(&entry->cnt) * PTR_TO_INT(entry->object);
 			count += cnt_to_uint(&entry->cnt);
 		}
 	} else {

@@ -298,7 +298,7 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 static void add_distrib_entry(const distrib_entry_t *entry, void *env) {
 	distrib_tbl_t *sum_tbl = env;
 
-	stat_add_int_distrib_tbl(sum_tbl, (int)(entry->object), &entry->cnt);
+	stat_add_int_distrib_tbl(sum_tbl, PTR_TO_INT(entry->object), &entry->cnt);
 }  /* add_distrib_entry */
 
 /**
