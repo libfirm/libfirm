@@ -79,7 +79,7 @@
 
 #ifndef Hash
 #define ID_HASH
-#define Hash(self,key)        ((unsigned)(key))
+#define Hash(self,key)        ((unsigned)(((char *)key) - (char *)0))
 #endif /* Hash */
 
 #ifdef DO_REHASH
