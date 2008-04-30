@@ -282,6 +282,7 @@ void init_ident(ident_if_t *id_if, int initial_n_idents)
    impl.get_id_wcslen      = set_get_id_wcslen;
 #endif /* FIRM_ENABLE_WCHAR */
 
+   /* it's ok to use memcmp here, we check only strings */
    impl.handle = new_set(memcmp, initial_n_idents);
   }
 }
