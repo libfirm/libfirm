@@ -5022,7 +5022,7 @@ static int node_cmp_attr_Free(ir_node *a, ir_node *b) {
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b) {
 	const symconst_attr *pa = get_irn_symconst_attr(a);
 	const symconst_attr *pb = get_irn_symconst_attr(b);
-	return (pa->num        != pb->num)
+	return (pa->kind       != pb->kind)
 	    || (pa->sym.type_p != pb->sym.type_p)
 	    || (pa->tp         != pb->tp);
 }  /* node_cmp_attr_SymConst */

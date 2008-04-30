@@ -1100,13 +1100,13 @@ set_Const_type(ir_node *node, ir_type *tp) {
 symconst_kind
 get_SymConst_kind(const ir_node *node) {
 	assert(node->op == op_SymConst);
-	return node->attr.symc.num;
+	return node->attr.symc.kind;
 }
 
 void
-set_SymConst_kind(ir_node *node, symconst_kind num) {
+set_SymConst_kind(ir_node *node, symconst_kind kind) {
 	assert(node->op == op_SymConst);
-	node->attr.symc.num = num;
+	node->attr.symc.kind = kind;
 }
 
 ir_type *

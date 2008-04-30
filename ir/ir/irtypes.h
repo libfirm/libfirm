@@ -164,8 +164,8 @@ typedef struct {
 /** SymConst attributes. */
 typedef struct {
 	symconst_symbol sym;  // old tori
-	symconst_kind num;
-	ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
+	symconst_kind   kind;
+	ir_type         *tp;  /**< the source type, for analyses. default: type_unknown. */
 } symconst_attr;
 
 /** Sel attributes. */
@@ -193,8 +193,8 @@ typedef struct {
 /** Alloc attributes. */
 typedef struct {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-	ir_type *type;                /**< Type of the allocated object.  */
-	ir_where_alloc where;         /**< stack, heap or other managed part of memory */
+    ir_where_alloc where;         /**< stack, heap or other managed part of memory */
+	ir_type        *type;         /**< Type of the allocated object.  */
 } alloc_attr;
 
 /** Free attributes. */
@@ -218,7 +218,7 @@ typedef struct {
 
 /** CallBegin attributes. */
 typedef struct {
-	ir_node * call;               /**< Associated Call-operation. */
+	ir_node *call;                /**< Associated Call-operation. */
 } callbegin_attr;
 
 /** Cast attributes. */
@@ -229,9 +229,9 @@ typedef struct {
 /** Load attributes. */
 typedef struct {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
+    unsigned      volatility:1;   /**< The volatility of this Load operation. */
+    unsigned      aligned:1;      /**< The align attribute of this Load operation. */
 	ir_mode       *load_mode;     /**< The mode of this Load operation. */
-	unsigned      volatility:1;   /**< The volatility of this Load operation. */
-	unsigned      aligned:1;      /**< The align attribute of this Load operation. */
 } load_attr;
 
 /** Store attributes. */
@@ -285,11 +285,11 @@ typedef struct {
 
 /** Inline Assembler support attribute. */
 typedef struct {
-	op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
 	ident             *asm_text;  /**< The inline assembler text. */
 	ir_asm_constraint *inputs;    /**< Input constraints. */
 	ir_asm_constraint *outputs;   /**< Output constraints. */
 	ident             **clobber;  /**< List of clobbered registers. */
+    op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,
@@ -337,11 +337,11 @@ typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
 struct ir_node {
 	/* ------- Basics of the representation  ------- */
 	firm_kind kind;          /**< Distinguishes this node from others. */
+    unsigned node_idx;       /**< The node index of this node in its graph. */
 	ir_op *op;               /**< The Opcode of this node. */
 	ir_mode *mode;           /**< The Mode of this node. */
 	struct ir_node **in;     /**< The array of predecessors / operands. */
 	unsigned long visited;   /**< The visited counter for walks of the graph. */
-	unsigned node_idx;       /**< The node index of this node in its graph. */
 	void *link;              /**< To attach additional information to the node, e.g.
 	                              used while construction to link Phi0 nodes and
 	                              during optimization to link to nodes that
@@ -375,14 +375,10 @@ struct ir_node {
  * Edge info to put into an irg.
  */
 typedef struct _irg_edge_info_t {
-#if 0
-	  set      *edges;         /**< a set containing all edges of a graph. */
-#else
 	ir_edgeset_t    edges;
 	struct obstack  edges_obst;
 	unsigned        allocated : 1;
-#endif
-	unsigned     activated : 1;  /**< set if edges are activated for the graph. */
+	unsigned        activated : 1;  /**< set if edges are activated for the graph. */
 } irg_edge_info_t;
 
 typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
@@ -423,6 +419,7 @@ typedef struct cg_callee_entry {
 struct ir_graph {
 	firm_kind         kind;        /**< Always set to k_ir_graph. */
 	/* --  Basics of the representation -- */
+    unsigned last_node_idx;        /**< The last IR node index for this graph. */
 	ir_entity  *ent;               /**< The entity of this procedure, i.e.,
 	                                    the type of the procedure and the
 	                                    class it belongs to. */
@@ -432,8 +429,6 @@ struct ir_graph {
 	struct obstack *obst;          /**< The obstack where all of the ir_nodes live. */
 	ir_node *current_block;        /**< Current block for newly gen_*()-erated ir_nodes. */
 	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
-
-	unsigned last_node_idx;        /**< The last IR node index for this graph. */
 
 	/* -- Fields for graph properties -- */
 	irg_inline_property inline_property;     /**< How to handle inlineing. */

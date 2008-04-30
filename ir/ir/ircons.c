@@ -617,9 +617,9 @@ new_bd_SymConst_type(dbg_info *db, ir_node *block, ir_mode *mode,
 	ir_graph *irg = current_ir_graph;
 	ir_node  *res = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
 
-	res->attr.symc.num = symkind;
-	res->attr.symc.sym = value;
-	res->attr.symc.tp  = tp;
+	res->attr.symc.kind = symkind;
+	res->attr.symc.sym  = value;
+	res->attr.symc.tp   = tp;
 
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
