@@ -33,6 +33,7 @@
 #include "bemachine.h"
 #include "beirg.h"
 #include "beabi.h"
+#include "raw_bitset.h"
 
 /**
  * A register.
@@ -138,6 +139,32 @@ struct arch_register_req_t {
 	                                         different register
 	                                         (must_be_different) */
 };
+
+static INLINE int reg_reqs_equal(const arch_register_req_t *req1,
+                                 const arch_register_req_t *req2)
+{
+	if (req1 == req2)
+		return 1;
+
+	if (req1->type != req2->type
+			|| req1->cls != req2->cls
+			|| req1->other_same != req2->other_same
+			|| req1->other_different != req2->other_different)
+		return 0;
+
+	if (req1->limited != NULL) {
+		size_t n_regs;
+
+		if (req2->limited == NULL)
+			return 0;
+
+		n_regs = arch_register_class_n_regs(req1->cls);
+		if (!rbitset_equal(req1->limited, req2->limited, n_regs))
+			return 0;
+	}
+
+	return 1;
+}
 
 /**
  * An inverse operation returned by the backend

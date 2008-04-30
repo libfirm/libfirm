@@ -167,8 +167,8 @@ static int _node_cmp_attr(const be_node_attr_t *a, const be_node_attr_t *b) {
 	len = ARR_LEN(a->reg_data);
 	for (i = 0; i < len; ++i) {
 		if (a->reg_data[i].reg != b->reg_data[i].reg ||
-				memcmp(&a->reg_data[i].in_req, &b->reg_data[i].in_req, sizeof(b->reg_data[i].in_req)) ||
-			    memcmp(&a->reg_data[i].req,    &b->reg_data[i].req,    sizeof(a->reg_data[i].req)))
+				!reg_reqs_equal(&a->reg_data[i].in_req, &b->reg_data[i].in_req) ||
+			    !reg_reqs_equal(&a->reg_data[i].req,    &b->reg_data[i].req))
 			return 1;
 	}
 
