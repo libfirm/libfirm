@@ -152,6 +152,15 @@ static const ir_op_ops be_node_op_ops;
 #define K   irop_flag_keep
 #define M   irop_flag_uses_memory
 
+static int be_reqs_equal(const be_req_t *req1, const be_req_t *req2)
+{
+	if(!reg_reqs_equal(&req1->req, &req2->req))
+		return 0;
+	if(req1->flags != req2->flags)
+		return 0;
+
+	return 1;
+}
 
 /**
  * Compare two be node attributes.
@@ -167,8 +176,8 @@ static int _node_cmp_attr(const be_node_attr_t *a, const be_node_attr_t *b) {
 	len = ARR_LEN(a->reg_data);
 	for (i = 0; i < len; ++i) {
 		if (a->reg_data[i].reg != b->reg_data[i].reg ||
-				!reg_reqs_equal(&a->reg_data[i].in_req, &b->reg_data[i].in_req) ||
-			    !reg_reqs_equal(&a->reg_data[i].req,    &b->reg_data[i].req))
+				!be_reqs_equal(&a->reg_data[i].in_req, &b->reg_data[i].in_req) ||
+			    !be_reqs_equal(&a->reg_data[i].req,    &b->reg_data[i].req))
 			return 1;
 	}
 
