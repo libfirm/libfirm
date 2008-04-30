@@ -158,6 +158,29 @@ static int hash_val(const void *value, unsigned int length) {
 	return hash;
 }
 
+static int cmp_tv(const void *p1, const void *p2, size_t n) {
+	const tarval *tv1 = p1;
+	const tarval *tv2 = p2;
+	(void) n;
+
+	assert(tv1->kind == k_tarval);
+	assert(tv2->kind == k_tarval);
+	if(tv1->mode < tv2->mode)
+		return -1;
+	if(tv1->mode > tv2->mode)
+		return 1;
+	if(tv1->length < tv2->length)
+		return -1;
+	if(tv1->length > tv2->length)
+		return 1;
+	if(tv1->value < tv2->value)
+		return -1;
+	if(tv1->value > tv2->value)
+		return 1;
+
+	return 0;
+}
+
 /** finds tarval with value/mode or creates new tarval */
 static tarval *get_tarval(const void *value, int length, ir_mode *mode) {
 	tarval tv;
@@ -1758,7 +1781,7 @@ void init_tarval_1(long null_value) {
 
 	/* initialize the sets holding the tarvals with a comparison function and
 	 * an initial size, which is the expected number of constants */
-	tarvals = new_set(memcmp, N_CONSTANTS);
+	tarvals = new_set(cmp_tv, N_CONSTANTS);
 	values  = new_set(memcmp, N_CONSTANTS);
 	/* init strcalc with precision of 68 to support floating point values with 64
 	 * bit mantissa (needs extra bits for rounding and overflow) */
