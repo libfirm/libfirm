@@ -300,6 +300,18 @@ static INLINE void rbitset_xor(unsigned *bitset1, const unsigned *bitset2,
 	}
 }
 
+static INLINE int rbitset_equal(const unsigned *bitset1,
+                                const unsigned *bitset2, size_t size)
+{
+	unsigned i, n = BITSET_SIZE_ELEMS(size);
+
+	for(i = 0; i < n; ++i) {
+		if(bitset1[i] != bitset2[i])
+			return 0;
+	}
+	return 1;
+}
+
 /**
  * Copy a raw bitset into an bitset.
  *
