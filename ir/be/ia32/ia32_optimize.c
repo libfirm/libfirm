@@ -941,6 +941,13 @@ static void peephole_ia32_Imul_split(ir_node *imul) {
 }
 
 /**
+ * Replace xorps r,r and xorpd r,r by pxor r,r
+ */
+static void peephole_ia32_xZero(ir_node *xor) {
+	set_irn_op(xor, op_ia32_xPzero);
+}
+
+/**
  * Register a peephole optimisation function.
  */
 static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
@@ -965,6 +972,8 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	register_peephole_optimisation(op_be_Return, peephole_ia32_Return);
 	if (! ia32_cg_config.use_imul_mem_imm32)
 		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
+	if (ia32_cg_config.use_pxor)
+		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
 
 	be_peephole_opt(cg->birg);
 }

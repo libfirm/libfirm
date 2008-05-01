@@ -1473,6 +1473,15 @@ xZero => {
 	mode      => "mode_E",
 },
 
+xPzero => {
+	irn_flags => "R",
+	reg_req   => { out => [ "xmm" ] },
+	emit      => '. pxor %D0, %D0',
+	latency   => 3,
+	units     => [ "SSE" ],
+	mode      => "mode_E",
+},
+
 # produces all 1 bits
 xAllOnes => {
 	irn_flags => "R",

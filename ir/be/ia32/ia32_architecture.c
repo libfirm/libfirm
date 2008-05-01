@@ -507,6 +507,7 @@ void ia32_setup_cg_config(void)
 	                                            arch_ppro | arch_netburst | arch_nocona | arch_core2 | arch_generic32) &&
 	                                      !opt_size;
 	ia32_cg_config.use_imul_mem_imm32   = !FLAGS(opt_arch, arch_k8 | arch_k10) || opt_size;
+	ia32_cg_config.use_pxor             = FLAGS(opt_arch, arch_netburst);
 	ia32_cg_config.use_mov_0            = FLAGS(opt_arch, arch_k6) && !opt_size;
 	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | cpu_core2 | arch_generic32) && !opt_size;
 	ia32_cg_config.optimize_cc          = opt_cc;
