@@ -1205,7 +1205,7 @@ Unknown_XMM => {
 	units     => [],
 	emit      => "",
 	latency   => 0,
-	mode      => "mode_E"
+	mode      => $mode_xmm
 },
 
 NoReg_GP => {
@@ -1811,7 +1811,7 @@ Conv_I2FP => {
 	am        => "source,unary",
 	latency   => 10,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm,
 },
 
 Conv_FP2I => {
@@ -1831,7 +1831,7 @@ Conv_FP2FP => {
 	am        => "source,unary",
 	latency   => 8,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm,
 },
 
 #----------------------------------------------------------#
