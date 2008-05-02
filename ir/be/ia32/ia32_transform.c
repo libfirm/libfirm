@@ -1519,19 +1519,14 @@ static ir_node *create_Div(ir_node *node)
 		add_irn_dep(produceval, get_irg_frame(irg));
 		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block, am.new_op1,
 		                                  produceval);
-
-		new_node = new_rd_ia32_IDiv(dbgi, irg, new_block, addr->base,
-		                            addr->index, new_mem, am.new_op2,
-		                            am.new_op1, sign_extension);
 	} else {
 		sign_extension = new_rd_ia32_Const(dbgi, irg, new_block, NULL, 0, 0);
 		add_irn_dep(sign_extension, get_irg_frame(irg));
 
-		new_node = new_rd_ia32_Div(dbgi, irg, new_block, addr->base,
-		                           addr->index, new_mem, am.new_op2,
-		                           am.new_op1, sign_extension);
 	}
-
+	new_node = new_rd_ia32_Div(dbgi, irg, new_block, addr->base,
+		addr->index, new_mem, am.new_op2,
+		am.new_op1, sign_extension);
 	set_irn_pinned(new_node, get_irn_pinned(node));
 
 	set_am_attributes(new_node, &am);
