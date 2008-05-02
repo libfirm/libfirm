@@ -281,7 +281,6 @@ static int is_Const_Minus_1(ir_node *node) {
 static int is_simple_x87_Const(ir_node *node)
 {
 	tarval *tv = get_Const_tarval(node);
-
 	if (tarval_is_null(tv) || tarval_is_one(tv))
 		return 1;
 
@@ -294,7 +293,7 @@ static int is_simple_x87_Const(ir_node *node)
  */
 static int is_simple_sse_Const(ir_node *node)
 {
-	tarval *tv = get_Const_tarval(node);
+	tarval  *tv   = get_Const_tarval(node);
 	ir_mode *mode = get_tarval_mode(tv);
 
 	if (mode == mode_F)
@@ -584,47 +583,49 @@ const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
 static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
                                         ir_node *other, ir_node *other2)
 {
-	ir_mode *mode = get_irn_mode(node);
 	ir_node *load;
 	long     pn;
 
 	/* float constants are always available */
-	if (is_Const(node) && mode_is_float(mode)) {
-		if (ia32_cg_config.use_sse2) {
-			if (is_simple_sse_Const(node))
+	if (is_Const(node)) {
+		ir_mode *mode = get_irn_mode(node);
+		if (mode_is_float(mode)) {
+			if (ia32_cg_config.use_sse2) {
+				if (is_simple_sse_Const(node))
+					return 0;
+			} else {
+				if (is_simple_x87_Const(node))
+					return 0;
+			}
+			if (get_irn_n_edges(node) > 1)
 				return 0;
-		} else {
-			if (is_simple_x87_Const(node))
-				return 0;
+			return 1;
 		}
-		if (get_irn_n_edges(node) > 1)
-			return 0;
-		return 1;
 	}
 
-	if(!is_Proj(node))
+	if (!is_Proj(node))
 		return 0;
 	load = get_Proj_pred(node);
 	pn   = get_Proj_proj(node);
-	if(!is_Load(load) || pn != pn_Load_res)
+	if (!is_Load(load) || pn != pn_Load_res)
 		return 0;
-	if(get_nodes_block(load) != block)
+	if (get_nodes_block(load) != block)
 		return 0;
 	/* we only use address mode if we're the only user of the load */
-	if(get_irn_n_edges(node) > 1)
+	if (get_irn_n_edges(node) > 1)
 		return 0;
 	/* in some edge cases with address mode we might reach the load normally
 	 * and through some AM sequence, if it is already materialized then we
 	 * can't create an AM node from it */
-	if(be_is_transformed(node))
+	if (be_is_transformed(node))
 		return 0;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
-	if(other != NULL && get_nodes_block(other) == block
-			&& heights_reachable_in_block(heights, other, load))
+	if (other != NULL && get_nodes_block(other) == block &&
+	    heights_reachable_in_block(heights, other, load))
 		return 0;
-	if(other2 != NULL && get_nodes_block(other2) == block
-			&& heights_reachable_in_block(heights, other2, load))
+	if (other2 != NULL && get_nodes_block(other2) == block &&
+	    heights_reachable_in_block(heights, other2, load))
 		return 0;
 
 	return 1;
@@ -645,12 +646,13 @@ struct ia32_address_mode_t {
 
 static void build_address_ptr(ia32_address_t *addr, ir_node *ptr, ir_node *mem)
 {
-	ir_node *noreg_gp = ia32_new_NoReg_gp(env_cg);
+	ir_node *noreg_gp;
 
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
 	ia32_create_address_mode(addr, ptr, /*force=*/0);
 
+	noreg_gp    = ia32_new_NoReg_gp(env_cg);
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_gp;
 	addr->mem   = be_transform_node(mem);
@@ -705,16 +707,19 @@ static void set_address(ir_node *node, const ia32_address_t *addr)
 	set_ia32_frame_ent(node, addr->frame_entity);
 }
 
+/**
+ * Apply attributes of a given address mode to a node.
+ */
 static void set_am_attributes(ir_node *node, const ia32_address_mode_t *am)
 {
 	set_address(node, &am->addr);
 
 	set_ia32_op_type(node, am->op_type);
 	set_ia32_ls_mode(node, am->ls_mode);
-	if(am->pinned == op_pin_state_pinned && get_irn_pinned(node) != op_pin_state_pinned) {
+	if (am->pinned == op_pin_state_pinned) {
 		set_irn_pinned(node, am->pinned);
 	}
-	if(am->commutative)
+	if (am->commutative)
 		set_ia32_commutative(node);
 }
 
@@ -790,16 +795,14 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
                             ir_node *op1, ir_node *op2, ir_node *other_op,
                             match_flags_t flags)
 {
-	ia32_address_t *addr     = &am->addr;
-	ir_node        *noreg_gp = ia32_new_NoReg_gp(env_cg);
-	ir_node        *new_op1;
-	ir_node        *new_op2;
-	ir_mode        *mode = get_irn_mode(op2);
+	ia32_address_t *addr      = &am->addr;
+	ir_mode        *mode      = get_irn_mode(op2);
+	int             mode_bits = get_mode_size_bits(mode);
+	ir_node        *noreg_gp, *new_op1, *new_op2;
 	int             use_am;
 	unsigned        commutative;
 	int             use_am_and_immediates;
 	int             use_immediate;
-	int             mode_bits = get_mode_size_bits(mode);
 
 	memset(am, 0, sizeof(am[0]));
 
@@ -842,11 +845,12 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		new_op2 = try_create_Immediate(op2, 0);
 	}
 
+	noreg_gp = ia32_new_NoReg_gp(env_cg);
 	if (new_op2 == NULL &&
 	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op)) {
 		build_address(am, op2);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
-		if(mode_is_float(mode)) {
+		if (mode_is_float(mode)) {
 			new_op2 = ia32_new_NoReg_vfp(env_cg);
 		} else {
 			new_op2 = noreg_gp;
@@ -864,7 +868,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 			noreg = noreg_gp;
 		}
 
-		if(new_op2 != NULL) {
+		if (new_op2 != NULL) {
 			new_op1 = noreg;
 		} else {
 			new_op1 = be_transform_node(op2);
@@ -873,7 +877,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
-		if(flags & match_try_am) {
+		if (flags & match_try_am) {
 			am->new_op1 = NULL;
 			am->new_op2 = NULL;
 			am->op_type = ia32_Normal;
@@ -881,18 +885,18 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 
 		new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
-		if(new_op2 == NULL)
+		if (new_op2 == NULL)
 			new_op2 = be_transform_node(op2);
 		am->op_type = ia32_Normal;
 		am->ls_mode = get_irn_mode(op2);
-		if(flags & match_mode_neutral)
+		if (flags & match_mode_neutral)
 			am->ls_mode = mode_Iu;
 	}
-	if(addr->base == NULL)
+	if (addr->base == NULL)
 		addr->base = noreg_gp;
-	if(addr->index == NULL)
+	if (addr->index == NULL)
 		addr->index = noreg_gp;
-	if(addr->mem == NULL)
+	if (addr->mem == NULL)
 		addr->mem = new_NoMem();
 
 	am->new_op1     = new_op1;
@@ -902,11 +906,10 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 
 static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 {
-	ir_graph *irg = current_ir_graph;
 	ir_mode  *mode;
 	ir_node  *load;
 
-	if(am->mem_proj == NULL)
+	if (am->mem_proj == NULL)
 		return node;
 
 	/* we have to create a mode_T so the old MemProj can attach to us */
@@ -916,9 +919,9 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 	mark_irn_visited(load);
 	be_set_transformed_node(load, node);
 
-	if(mode != mode_T) {
+	if (mode != mode_T) {
 		set_irn_mode(node, mode_T);
-		return new_rd_Proj(NULL, irg, get_nodes_block(node), node, mode, pn_ia32_res);
+		return new_rd_Proj(NULL, current_ir_graph, get_nodes_block(node), node, mode, pn_ia32_res);
 	} else {
 		return node;
 	}
@@ -935,21 +938,22 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
                           construct_binop_func *func, match_flags_t flags)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_node;
+	dbg_info            *dbgi;
+	ir_node             *block, *new_block, *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
+	block = get_nodes_block(node);
 	match_arguments(&am, block, op1, op2, NULL, flags);
 
-	new_node = func(dbgi, irg, new_block, addr->base, addr->index, addr->mem,
-	                am.new_op1, am.new_op2);
+	dbgi      = get_irn_dbg_info(node);
+	new_block = be_transform_node(block);
+	new_node  = func(dbgi, current_ir_graph, new_block,
+	                 addr->base, addr->index, addr->mem,
+	                 am.new_op1, am.new_op2);
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
-	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
+	if (is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
 		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
@@ -982,21 +986,21 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
                                 match_flags_t flags)
 {
 	ir_node             *src_block  = get_nodes_block(node);
-	ir_node             *block      = be_transform_node(src_block);
 	ir_node             *op1        = get_irn_n(node, n_ia32_l_binop_left);
 	ir_node             *op2        = get_irn_n(node, n_ia32_l_binop_right);
-	ir_node             *eflags     = get_irn_n(node, n_ia32_l_binop_eflags);
-	ir_node             *new_eflags = be_transform_node(eflags);
-	ir_graph            *irg        = current_ir_graph;
-	dbg_info            *dbgi       = get_irn_dbg_info(node);
-	ir_node             *new_node;
+	dbg_info            *dbgi;
+	ir_node             *block, *new_node, *eflags, *new_eflags;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr       = &am.addr;
 
 	match_arguments(&am, src_block, op1, op2, NULL, flags);
 
-	new_node = func(dbgi, irg, block, addr->base, addr->index,
-	                           addr->mem, am.new_op1, am.new_op2, new_eflags);
+	dbgi       = get_irn_dbg_info(node);
+	block      = be_transform_node(src_block);
+	eflags     = get_irn_n(node, n_ia32_l_binop_eflags);
+	new_eflags = be_transform_node(eflags);
+	new_node   = func(dbgi, current_ir_graph, block, addr->base, addr->index,
+	                addr->mem, am.new_op1, am.new_op2, new_eflags);
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
@@ -1011,7 +1015,7 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
 static ir_node *get_fpcw(void)
 {
 	ir_node *fpcw;
-	if(initial_fpcw != NULL)
+	if (initial_fpcw != NULL)
 		return initial_fpcw;
 
 	fpcw         = be_abi_get_ignore_irn(env_cg->birg->abi,
@@ -1033,23 +1037,24 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_float_func *func,
                                     match_flags_t flags)
 {
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_mode  *mode      = get_irn_mode(node);
-	ir_node  *new_node;
+	ir_mode             *mode  = get_irn_mode(node);
+	dbg_info            *dbgi;
+	ir_node             *block, *new_block, *new_node;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
-	/* cannot use addresmode with long double on x87 */
+	/* cannot use address mode with long double on x87 */
 	if (get_mode_size_bits(mode) > 64)
 		flags &= ~match_am;
 
+	block = get_nodes_block(node);
 	match_arguments(&am, block, op1, op2, NULL, flags);
 
-	new_node = func(dbgi, irg, new_block, addr->base, addr->index, addr->mem,
-	                am.new_op1, am.new_op2, get_fpcw());
+	dbgi      = get_irn_dbg_info(node);
+	new_block = be_transform_node(block);
+	new_node  = func(dbgi, current_ir_graph, new_block,
+	                 addr->base, addr->index, addr->mem,
+	                 am.new_op1, am.new_op2, get_fpcw());
 	set_am_attributes(new_node, &am);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
@@ -1071,19 +1076,14 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
                                 construct_shift_func *func,
                                 match_flags_t flags)
 {
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_graph *irg       = current_ir_graph;
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *new_op1;
-	ir_node  *new_op2;
-	ir_node  *new_node;
+	dbg_info *dbgi;
+	ir_node  *block, *new_block, *new_op1, *new_op2, *new_node;
 
 	assert(! mode_is_float(get_irn_mode(node)));
 	assert(flags & match_immediate);
 	assert((flags & ~(match_mode_neutral | match_immediate)) == 0);
 
-	if(flags & match_mode_neutral) {
+	if (flags & match_mode_neutral) {
 		op1 = ia32_skip_downconv(op1);
 	} else if (get_mode_size_bits(get_irn_mode(node)) != 32) {
 		panic("right shifting of non-32bit values not supported, yet");
@@ -1098,7 +1098,10 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	}
 	new_op2 = create_immediate_or_transform(op2, 0);
 
-	new_node = func(dbgi, irg, new_block, new_op1, new_op2);
+	dbgi      = get_irn_dbg_info(node);
+	block     = get_nodes_block(node);
+	new_block = be_transform_node(block);
+	new_node  = func(dbgi, current_ir_graph, new_block, new_op1, new_op2);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	/* lowered shift instruction may have a dependency operand, handle it here */
@@ -1122,20 +1125,19 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
                          match_flags_t flags)
 {
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *new_op;
-	ir_node  *new_node;
+	dbg_info *dbgi;
+	ir_node  *block, *new_block, *new_op, *new_node;
 
 	assert(flags == 0 || flags == match_mode_neutral);
-	if(flags & match_mode_neutral) {
+	if (flags & match_mode_neutral) {
 		op = ia32_skip_downconv(op);
 	}
 
-	new_op   = be_transform_node(op);
-	new_node = func(dbgi, irg, new_block, new_op);
+	new_op    = be_transform_node(op);
+	dbgi      = get_irn_dbg_info(node);
+	block     = get_nodes_block(node);
+	new_block = be_transform_node(block);
+	new_node  = func(dbgi, current_ir_graph, new_block, new_op);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
@@ -1145,29 +1147,32 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 static ir_node *create_lea_from_address(dbg_info *dbgi,	ir_node *block,
                                         ia32_address_t *addr)
 {
-	ir_graph *irg   = current_ir_graph;
-	ir_node  *base  = addr->base;
-	ir_node  *index = addr->index;
-	ir_node  *res;
+	ir_node *base, *index, *res;
 
-	if(base == NULL) {
+	base = addr->base;
+	if (base == NULL) {
 		base = ia32_new_NoReg_gp(env_cg);
 	} else {
 		base = be_transform_node(base);
 	}
 
-	if(index == NULL) {
+	index = addr->index;
+	if (index == NULL) {
 		index = ia32_new_NoReg_gp(env_cg);
 	} else {
 		index = be_transform_node(index);
 	}
 
-	res = new_rd_ia32_Lea(dbgi, irg, block, base, index);
+	res = new_rd_ia32_Lea(dbgi, current_ir_graph, block, base, index);
 	set_address(res, addr);
 
 	return res;
 }
 
+/**
+ * Returns non-zero if a given address mode has a symbolic or
+ * numerical offset != 0.
+ */
 static int am_has_immediates(const ia32_address_t *addr)
 {
 	return addr->offset != 0 || addr->symconst_ent != NULL
@@ -1180,15 +1185,11 @@ static int am_has_immediates(const ia32_address_t *addr)
  * @return the created ia32 Add node
  */
 static ir_node *gen_Add(ir_node *node) {
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *op1       = get_Add_left(node);
-	ir_node  *op2       = get_Add_right(node);
-	ir_mode  *mode      = get_irn_mode(node);
-	ir_node  *new_node;
-	ir_node  *add_immediate_op;
+	ir_mode  *mode = get_irn_mode(node);
+	ir_node  *op1  = get_Add_left(node);
+	ir_node  *op2  = get_Add_right(node);
+	dbg_info *dbgi;
+	ir_node  *block, *new_block, *new_node, *add_immediate_op;
 	ia32_address_t       addr;
 	ia32_address_mode_t  am;
 
@@ -1216,8 +1217,14 @@ static ir_node *gen_Add(ir_node *node) {
 	memset(&addr, 0, sizeof(addr));
 	ia32_create_address_mode(&addr, node, /*force=*/1);
 	add_immediate_op = NULL;
+
+	dbgi      = get_irn_dbg_info(node);
+	block     = get_nodes_block(node);
+	new_block = be_transform_node(block);
+
 	/* a constant? */
 	if(addr.base == NULL && addr.index == NULL) {
+		ir_graph *irg = current_ir_graph;
 		new_node = new_rd_ia32_Const(dbgi, irg, new_block, addr.symconst_ent,
 		                             addr.symconst_sign, addr.offset);
 		add_irn_dep(new_node, get_irg_frame(irg));
@@ -1251,6 +1258,7 @@ static ir_node *gen_Add(ir_node *node) {
 
 	/* construct an Add with source address mode */
 	if (am.op_type == ia32_AddrModeS) {
+		ir_graph *irg = current_ir_graph;
 		ia32_address_t *am_addr = &am.addr;
 		new_node = new_rd_ia32_Add(dbgi, irg, new_block, am_addr->base,
 		                         am_addr->index, am_addr->mem, am.new_op1,
@@ -1436,7 +1444,7 @@ static ir_node *gen_Sub(ir_node *node) {
 			                           match_am);
 	}
 
-	if(is_Const(op2)) {
+	if (is_Const(op2)) {
 		ir_fprintf(stderr, "Optimisation warning: found sub with const (%+F)\n",
 		           node);
 	}
@@ -1556,8 +1564,8 @@ static ir_node *gen_DivMod(ir_node *node) {
  */
 static ir_node *gen_Quot(ir_node *node)
 {
-	ir_node  *op1     = get_Quot_left(node);
-	ir_node  *op2     = get_Quot_right(node);
+	ir_node *op1 = get_Quot_left(node);
+	ir_node *op2 = get_Quot_right(node);
 
 	if (ia32_cg_config.use_sse2) {
 		return gen_binop(node, op1, op2, new_rd_ia32_xDiv, match_am);
@@ -4357,8 +4365,8 @@ static ir_node *gen_ia32_l_Mul(ir_node *node) {
  * @return the created ia32 IMul1OP node
  */
 static ir_node *gen_ia32_l_IMul(ir_node *node) {
-	ir_node  *left      = get_binop_left(node);
-	ir_node  *right     = get_binop_right(node);
+	ir_node  *left  = get_binop_left(node);
+	ir_node  *right = get_binop_right(node);
 
 	return gen_binop(node, left, right, new_rd_ia32_IMul1OP,
 	                 match_commutative | match_am | match_mode_neutral);
@@ -4837,6 +4845,8 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 			return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp, pn_ia32_vfdiv_res);
 		}
 		break;
+	case pn_Quot_X_regular:
+	case pn_Quot_X_except:
 	default:
 		break;
 	}
@@ -4970,17 +4980,14 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
  * Transform and potentially renumber Proj nodes.
  */
 static ir_node *gen_Proj(ir_node *node) {
-	ir_graph *irg  = current_ir_graph;
-	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);
-	long     proj  = get_Proj_proj(node);
-
 	if (is_Store(pred)) {
+		long proj = get_Proj_proj(node);
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
 			assert(0);
-			return new_r_Bad(irg);
+			return new_r_Bad(current_ir_graph);
 		}
 	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);
@@ -4999,13 +5006,15 @@ static ir_node *gen_Proj(ir_node *node) {
 	} else if (is_Cmp(pred)) {
 		return gen_Proj_Cmp(node);
 	} else if (get_irn_op(pred) == op_Start) {
+		long proj = get_Proj_proj(node);
 		if (proj == pn_Start_X_initial_exec) {
 			ir_node *block = get_nodes_block(pred);
+			dbg_info *dbgi = get_irn_dbg_info(node);
 			ir_node *jump;
 
 			/* we exchange the ProjX with a jump */
 			block = be_transform_node(block);
-			jump  = new_rd_Jmp(dbgi, irg, block);
+			jump  = new_rd_Jmp(dbgi, current_ir_graph, block);
 			return jump;
 		}
 		if (node == be_get_old_anchor(anchor_tls)) {
@@ -5018,12 +5027,12 @@ static ir_node *gen_Proj(ir_node *node) {
 #else
 	} else {
 #endif
-		ir_node *new_pred = be_transform_node(pred);
-		ir_node *block    = be_transform_node(get_nodes_block(node));
-		ir_mode *mode     = get_irn_mode(node);
+		ir_mode *mode = get_irn_mode(node);
 		if (mode_needs_gp_reg(mode)) {
-			ir_node *new_proj = new_r_Proj(irg, block, new_pred, mode_Iu,
-			                               get_Proj_proj(node));
+			ir_node *new_pred = be_transform_node(pred);
+			ir_node *block    = be_transform_node(get_nodes_block(node));
+			ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,
+			                               mode_Iu, get_Proj_proj(node));
 #ifdef DEBUG_libfirm
 			new_proj->node_nr = node->node_nr;
 #endif

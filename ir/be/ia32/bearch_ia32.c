@@ -214,11 +214,11 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
                                                        const ir_node *node,
 													   int pos)
 {
-	long node_pos = pos == -1 ? 0 : pos;
-	ir_mode *mode     = is_Block(node) ? NULL : get_irn_mode(node);
-	(void) self;
+	ir_mode *mode = get_irn_mode(node);
+	long    node_pos;
 
-	if (is_Block(node) || mode == mode_X) {
+	(void)self;
+	if (mode == mode_X || is_Block(node)) {
 		return arch_no_register_req;
 	}
 
@@ -226,11 +226,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 		return arch_no_register_req;
 	}
 
+	node_pos = pos == -1 ? 0 : pos;
 	if (is_Proj(node)) {
-		if(mode == mode_M)
-			return arch_no_register_req;
-
-		if(pos >= 0) {
+		if (mode == mode_M || pos >= 0) {
 			return arch_no_register_req;
 		}
 
@@ -240,7 +238,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 
 	if (is_ia32_irn(node)) {
 		const arch_register_req_t *req;
-		if(pos >= 0)
+		if (pos >= 0)
 			req = get_ia32_in_req(node, pos);
 		else
 			req = get_ia32_out_req(node, node_pos);
@@ -252,14 +250,13 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 
 	/* unknowns should be transformed already */
 	assert(!is_Unknown(node));
-
 	return arch_no_register_req;
 }
 
 static void ia32_set_irn_reg(const void *self, ir_node *irn,
                              const arch_register_t *reg)
 {
-	int                   pos = 0;
+	int    pos = 0;
 	(void) self;
 
 	if (get_irn_mode(irn) == mode_X) {
