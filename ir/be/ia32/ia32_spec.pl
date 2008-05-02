@@ -1470,7 +1470,7 @@ xZero => {
 	emit      => '. xorp%XSD %D0, %D0',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xPzero => {
@@ -1479,7 +1479,7 @@ xPzero => {
 	emit      => '. pxor %D0, %D0',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 # produces all 1 bits
@@ -1489,7 +1489,7 @@ xAllOnes => {
 	emit      => '. pcmpeqb %D0, %D0',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 # integer shift left, dword
@@ -1497,9 +1497,9 @@ xPslld => {
 	irn_flags => "R",
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => '. pslld %SI1, %D0',
-	units     => [ "SSE" ],
-	mode      => "mode_E",
 	latency   => 3,
+	units     => [ "SSE" ],
+	mode      => $mode_xmm
 },
 
 # integer shift left, qword
@@ -1507,9 +1507,9 @@ xPsllq => {
 	irn_flags => "R",
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => '. psllq %SI1, %D0',
-	units     => [ "SSE" ],
-	mode      => "mode_E",
 	latency   => 3,
+	units     => [ "SSE" ],
+	mode      => $mode_xmm
 },
 
 # integer shift right, dword
@@ -1517,9 +1517,9 @@ xPsrld => {
 	irn_flags => "R",
 	reg_req   => { in => [ "xmm", "xmm" ], out => [ "in_r1 !in_r2" ] },
 	emit      => '. psrld %SI1, %D0',
-	units     => [ "SSE" ],
-	mode      => "mode_E",
 	latency   => 1,
+	units     => [ "SSE" ],
+	mode      => $mode_xmm
 },
 
 # mov from integer to SSE register
@@ -1527,9 +1527,9 @@ xMovd  => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ], out => [ "xmm" ] },
 	emit      => '. movd %S0, %D0',
-	units     => [ "SSE" ],
-	mode      => "mode_E",
 	latency   => 1,
+	units     => [ "SSE" ],
+	mode      => $mode_xmm
 },
 
 # commutative operations
@@ -1543,7 +1543,7 @@ xAdd => {
 	emit      => '. add%XXM %binop',
 	latency   => 4,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xMul => {
@@ -1555,7 +1555,7 @@ xMul => {
 	emit      => '. mul%XXM %binop',
 	latency   => 4,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xMax => {
@@ -1567,7 +1567,7 @@ xMax => {
 	emit      => '. max%XXM %binop',
 	latency   => 2,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xMin => {
@@ -1579,7 +1579,7 @@ xMin => {
 	emit      => '. min%XXM %binop',
 	latency   => 2,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xAnd => {
@@ -1591,7 +1591,7 @@ xAnd => {
 	emit      => '. andp%XSD %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xOr => {
@@ -1603,7 +1603,7 @@ xOr => {
 	emit      => '. orp%XSD %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xXor => {
@@ -1615,7 +1615,7 @@ xXor => {
 	emit      => '. xorp%XSD %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 # not commutative operations
@@ -1629,7 +1629,7 @@ xAndNot => {
 	emit      => '. andnp%XSD %binop',
 	latency   => 3,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xSub => {
@@ -1641,7 +1641,7 @@ xSub => {
 	emit      => '. sub%XXM %binop',
 	latency   => 4,
 	units     => [ "SSE" ],
-	mode      => "mode_E",
+	mode      => $mode_xmm
 },
 
 xDiv => {
