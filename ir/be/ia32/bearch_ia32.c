@@ -177,7 +177,7 @@ ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg) {
 
 
 /**
- * Returns gp_noreg or fp_noreg, depending in input requirements.
+ * Returns the admissible noreg register node for input register pos of node irn.
  */
 ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
 	const arch_register_req_t *req;
@@ -828,12 +828,13 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	const ir_mode *spillmode = get_spill_mode(op);
 	(void) self;
 
-	if (! is_ia32_irn(irn)                                  ||  /* must be an ia32 irn */
+	if (
+		(i != n_ia32_binary_left && i != n_ia32_binary_right) || /* a "real" operand position must be requested */
+		! is_ia32_irn(irn)                                    ||  /* must be an ia32 irn */
 		get_ia32_am_arity(irn) != ia32_am_binary              ||  /* must be a binary operation TODO is this necessary? */
 		get_ia32_op_type(irn) != ia32_Normal                  ||  /* must not already be a addressmode irn */
 		! (get_ia32_am_support(irn) & ia32_am_Source)         ||  /* must be capable of source addressmode */
 		! ia32_is_spillmode_compatible(mode, spillmode)       ||
-		(i != n_ia32_binary_left && i != n_ia32_binary_right) || /* a "real" operand position must be requested */
 		is_ia32_use_frame(irn))                                  /* must not already use frame */
 		return 0;
 
@@ -845,7 +846,7 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 		 * (As this (currently) breaks constraint handling copies)
 		 */
 		req = get_ia32_in_req(irn, n_ia32_binary_left);
-		if(req->type & arch_register_req_type_limited) {
+		if (req->type & arch_register_req_type_limited) {
 			return 0;
 		}
 	}
@@ -857,7 +858,6 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
                                         ir_node *spill, unsigned int i)
 {
 	const ia32_irn_ops_t *ops = self;
-	ia32_code_gen_t      *cg  = ops->cg;
 
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
 
@@ -871,7 +871,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
 	set_ia32_need_stackent(irn);
 
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
-	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(cg, irn, n_ia32_binary_right));
+	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(ops->cg, irn, n_ia32_binary_right));
 	set_irn_n(irn, n_ia32_mem, spill);
 
 	/* immediates are only allowed on the right side */
@@ -1083,7 +1083,7 @@ static void turn_back_am(ir_node *node)
 static ir_node *flags_remat(ir_node *node, ir_node *after)
 {
 	/* we should turn back source address mode when rematerializing nodes */
-	ia32_op_type_t  type = get_ia32_op_type(node);
+	ia32_op_type_t type;
 	ir_node        *block;
 	ir_node        *copy;
 
@@ -1093,6 +1093,7 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 		block = get_nodes_block(after);
 	}
 
+	type = get_ia32_op_type(node);
 	switch (type) {
 		case ia32_AddrModeS: turn_back_am(node); break;
 
@@ -1158,7 +1159,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 			new_op = new_rd_ia32_vfld(dbg, irg, block, ptr, noreg, mem, spillmode);
 	}
 	else if (get_mode_size_bits(spillmode) == 128) {
-		// Reload 128 bit sse registers
+		/* Reload 128 bit SSE registers */
 		new_op = new_rd_ia32_xxLoad(dbg, irg, block, ptr, noreg, mem);
 	}
 	else
@@ -1226,7 +1227,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 		else
 			store = new_rd_ia32_vfst(dbg, irg, block, ptr, noreg, nomem, val, mode);
 	} else if (get_mode_size_bits(mode) == 128) {
-		// Spill 128 bit SSE registers
+		/* Spill 128 bit SSE registers */
 		store = new_rd_ia32_xxStore(dbg, irg, block, ptr, noreg, nomem, val);
 	} else if (get_mode_size_bits(mode) == 8) {
 		store = new_rd_ia32_Store8Bit(dbg, irg, block, ptr, noreg, nomem, val);
@@ -1301,7 +1302,7 @@ static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred,
 }
 
 /**
- * Transform memperm, currently we do this the ugly way and produce
+ * Transform MemPerm, currently we do this the ugly way and produce
  * push/pop into/from memory cascades. This is possible without using
  * any registers.
  */
@@ -1411,7 +1412,7 @@ static void ia32_after_ra_walker(ir_node *block, void *env) {
 			transform_to_Load(cg, node);
 		} else if (be_is_Spill(node)) {
 			transform_to_Store(cg, node);
-		} else if(be_is_MemPerm(node)) {
+		} else if (be_is_MemPerm(node)) {
 			transform_MemPerm(cg, node);
 		}
 	}
