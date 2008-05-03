@@ -285,11 +285,12 @@ typedef struct {
 
 /** Inline Assembler support attribute. */
 typedef struct {
+	/* BEWARE: pin state MUST be the first attribute */
+	op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
 	ident             *asm_text;  /**< The inline assembler text. */
 	ir_asm_constraint *inputs;    /**< Input constraints. */
 	ir_asm_constraint *outputs;   /**< Output constraints. */
 	ident             **clobber;  /**< List of clobbered registers. */
-    op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,
