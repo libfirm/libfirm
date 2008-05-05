@@ -138,6 +138,7 @@ static const struct {
 	{ FS_OPT_RTS_SINH,       "RTS optimization: call to sinh() replaced" },
 	{ FS_OPT_RTS_COSH,       "RTS optimization: call to cosh() replaced" },
 	{ FS_OPT_RTS_TANH,       "RTS optimization: call to tanh() replaced" },
+	{ FS_OPT_RTS_SYMMETRIC,  "RTS optimization: call to symmetric function f(-x) replaced by f(x)" },
 	{ FS_OPT_RTS_STRCMP,     "RTS optimization: call to strcmp() replaced" },
 	{ FS_OPT_RTS_STRNCMP,    "RTS optimization: call to strncmp() replaced" },
 	{ FS_OPT_RTS_MEMCPY,     "RTS optimization: call to memcpy() replaced" },
