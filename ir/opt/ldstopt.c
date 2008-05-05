@@ -887,7 +887,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 		    get_nodes_MacroBlock(pred) == mblk &&
 		    is_completely_overwritten(get_irn_mode(get_Store_value(pred)), mode)) {
 			/*
-			 * a Store after a Store in the same block -- a write after write.
+			 * a Store after a Store in the same MacroBlock -- a write after write.
 			 * We may remove the first Store, if it does not have an exception handler.
 			 *
 			 * TODO: What, if both have the same exception handler ???
@@ -981,6 +981,7 @@ static unsigned optimize_store(ir_node *store) {
 
 	/* follow the memory chain as long as there are only Loads */
 	INC_MASTER();
+
 	return follow_Mem_chain_for_Store(store, skip_Proj(mem));
 }  /* optimize_store */
 
