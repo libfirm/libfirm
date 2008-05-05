@@ -1864,7 +1864,7 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
  * Heuristic inliner. Calculates a benifice value for every call and inlines
  * those calls with a value higher than the threshold.
  */
-void inline_functions(int inline_threshold) {
+void inline_functions(int maxsize, int inline_threshold) {
 	inline_irg_env   *env;
 	int              i, n_irgs;
 	ir_graph         *rem;
@@ -1915,6 +1915,8 @@ void inline_functions(int inline_threshold) {
 			pmap_entry *e;
 			int        benefice;
 			unsigned   local_adr;
+
+			if (env->n_nodes > maxsize) break;
 
 			call   = entry->call;
 			callee = entry->callee;

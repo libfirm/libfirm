@@ -189,9 +189,12 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  *
+ *  @param maxsize     Do not inline any calls if a method has more than
+ *                     maxsize firm nodes.  It may reach this limit by
+ *                     inlineing.
  * @param threshold    inlining threshold
  */
-void inline_functions(int inline_threshold);
+void inline_functions(int maxsize, int inline_threshold);
 
 /** Code Placement.
  *
