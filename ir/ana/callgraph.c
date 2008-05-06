@@ -567,7 +567,7 @@ static INLINE void pop_scc_to_loop(ir_graph *irg) {
 		m = pop();
 		loop_node_cnt++;
 		set_irg_dfn(m, loop_node_cnt);
-		add_loop_node(current_loop, (ir_node *)m);
+		add_loop_irg(current_loop, m);
 		m->l = current_loop;
 		//m->callgraph_loop_depth = current_loop->depth;
 	} while(m != irg);

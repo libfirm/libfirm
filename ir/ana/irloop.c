@@ -51,7 +51,14 @@ void add_loop_node(ir_loop *loop, ir_node *n) {
 	loop_element ln;
 	ln.node = n;
 	assert(loop && loop->kind == k_ir_loop);
-	assert(get_kind(n) == k_ir_node || get_kind(n) == k_ir_graph);  /* used in callgraph.c */
+	ARR_APP1(loop_element, loop->children, ln);
+	loop->n_nodes++;
+}
+
+void add_loop_irg(ir_loop *loop, ir_graph *irg) {
+	loop_element ln;
+	ln.irg = irg;
+	assert(loop && loop->kind == k_ir_loop);
 	ARR_APP1(loop_element, loop->children, ln);
 	loop->n_nodes++;
 }
