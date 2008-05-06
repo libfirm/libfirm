@@ -531,14 +531,15 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 		/* dump block info */
 		fprintf(dmp->f, "\n%12s %12s %12s %12s %12s %12s %12s\n", "Block Nr", "Nodes", "intern E", "incoming E", "outgoing E", "Phi", "quot");
 		foreach_pset(entry->block_hash, b_entry) {
-			fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f\n",
+			fprintf(dmp->f, "BLK   %6ld %12u %12u %12u %12u %12u %4.8f %s\n",
 				b_entry->block_nr,
 				cnt_to_uint(&b_entry->cnt[bcnt_nodes]),
 				cnt_to_uint(&b_entry->cnt[bcnt_edges]),
 				cnt_to_uint(&b_entry->cnt[bcnt_in_edges]),
 				cnt_to_uint(&b_entry->cnt[bcnt_out_edges]),
 				cnt_to_uint(&b_entry->cnt[bcnt_phi_data]),
-				cnt_to_dbl(&b_entry->cnt[bcnt_edges]) / cnt_to_dbl(&b_entry->cnt[bcnt_nodes])
+				cnt_to_dbl(&b_entry->cnt[bcnt_edges]) / cnt_to_dbl(&b_entry->cnt[bcnt_nodes]),
+				b_entry->is_start ? "START" : (b_entry->is_end ? "END" : "")
 			);
 		}  /* foreach_pset */
 

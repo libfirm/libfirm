@@ -136,6 +136,7 @@ static int block_cmp(const void *elt, const void *key) {
 	const block_entry_t *e1 = elt;
 	const block_entry_t *e2 = key;
 
+	/* it's enough to compare the block number */
 	return e1->block_nr != e2->block_nr;
 }  /* block_cmp */
 
@@ -617,6 +618,11 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 	if (op == op_Block) {
 		arity = get_irn_arity(node);
 		b_entry = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(node), graph->block_hash);
+		/* mark start end block to allow to filter them out */
+		if (node == get_irg_start_block(graph->irg))
+			b_entry->is_start = 1;
+		else if (node == get_irg_end_block(graph->irg))
+			b_entry->is_end = 1;
 
 		/* count all incoming edges */
 		for (i = 0; i < arity; ++i) {
@@ -642,7 +648,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 	cnt_inc(&b_entry->cnt[bcnt_nodes]);
 
 	/* don't count keep-alive edges */
-	if (get_irn_op(node) == op_End)
+	if (is_End(node))
 		return;
 
 	arity = get_irn_arity(node);

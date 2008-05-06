@@ -237,8 +237,10 @@ enum block_counter_names {
  * An entry for a block or extended block in a ir-graph
  */
 typedef struct _block_entry_t {
-  counter_t       cnt[_bcnt_last];  /**< counter */
-  long            block_nr;         /**< block nr */
+	counter_t       cnt[_bcnt_last];  /**< counter */
+	long            block_nr;         /**< block nr */
+	unsigned        is_start:1;       /**< set, if it's the Start block. */
+	unsigned        is_end:1;         /**< set, if it's the End block. */
 } block_entry_t;
 
 /** An entry for an extended block in a ir-graph */
