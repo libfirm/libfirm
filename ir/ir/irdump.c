@@ -2289,25 +2289,21 @@ void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
 /**
  * dumps the VCG header
  */
-void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
+void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *orientation) {
 	int   i;
 	char *label;
 
 	init_colors();
 
-	if (edge_label) {
-		label = "yes";
-	} else {
-		label = "no";
-	}
-
+	label = edge_label ? "yes" : "no";
+	if (! layout)     layout = "Compilergraph";
 	if (!orientation) orientation = "bottom_to_top";
 
 	/* print header */
 	fprintf(F,
 		"graph: { title: \"ir graph of %s\"\n"
 		"display_edge_labels: %s\n"
-		"layoutalgorithm: mindepth\n"
+		"layoutalgorithm: mindepth //$ \"%s\"\n"
 		"manhattan_edges: yes\n"
 		"port_sharing: no\n"
 		"orientation: %s\n"
@@ -2336,10 +2332,10 @@ void dump_vcg_header(FILE *F, const char *name, const char *orientation) {
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",
-		name, label, orientation);
+		name, label, layout, orientation);
 
 	for (i = 0; i < ird_color_count; ++i) {
-		if(color_rgb[i] != NULL) {
+		if (color_rgb[i] != NULL) {
 			fprintf(F, "colorentry %s: %s\n", color_names[i], color_rgb[i]);
 		}
 	}
@@ -2486,7 +2482,7 @@ void dump_ir_graph_file(ir_graph *irg, FILE *out)
 		construct_backedges(irg);
 	}
 
-	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	/* call the dump graph hook */
 	if (dump_ir_graph_hook) {
@@ -2517,7 +2513,7 @@ void dump_ir_block_graph_file(ir_graph *irg, FILE *out)
 {
 	int i;
 
-	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	construct_block_lists(irg);
 
@@ -2552,7 +2548,7 @@ void dump_ir_extblock_graph_file(ir_graph *irg, FILE *F)
 	if (get_irg_extblk_state(irg) != extblk_valid)
 		compute_extbb(irg);
 
-	dump_vcg_header(F, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(F, get_irg_dump_name(irg), NULL, NULL);
 
 	construct_extblock_lists(irg);
 
@@ -2611,7 +2607,7 @@ void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out)
 	/* dumping types does not work with local nodes */
 	dump_const_local = 0;
 
-	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	/* dump common ir graph */
 	irg_walk(get_irg_end(irg), NULL, dump_whole_node, out);
@@ -2643,7 +2639,7 @@ void dump_ir_block_graph_w_types_file(ir_graph *irg, FILE *out)
 	/* dumping types does not work with local nodes */
 	dump_const_local = 0;
 
-	dump_vcg_header(out, get_irg_dump_name(irg), NULL);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
 	/* dump common blocked ir graph */
 	construct_block_lists(irg);
@@ -2764,7 +2760,7 @@ void dump_cfg(ir_graph *irg, const char *suffix)
 #endif
 
 		current_ir_graph = irg;
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+		dump_vcg_header(f, get_irg_dump_name(irg), NULL, NULL);
 
 #ifdef INTERPROCEDURAL_VIEW
 		if (ipv) {
@@ -2813,7 +2809,7 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix) {
 	F = vcg_open(get_irn_irg(root), suffix, buf);
 	if (F != NULL) {
 		pset *mark_set = pset_new_ptr(1);
-		dump_vcg_header(F, get_irg_dump_name(get_irn_irg(root)), NULL);
+		dump_vcg_header(F, get_irg_dump_name(get_irn_irg(root)), NULL, NULL);
 		descend_and_dump(F, root, depth, mark_set);
 		dump_vcg_footer(F);
 		fclose(F);
@@ -2910,7 +2906,7 @@ dump_type_graph(ir_graph *irg, const char *suffix)
 		ir_graph *rem = current_ir_graph;
 		current_ir_graph = irg;
 
-		dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+		dump_vcg_header(f, get_irg_dump_name(irg), "Hierarchic", NULL);
 
 		/* walk over the blocks in the graph */
 		type_walk_irg(irg, dump_type_info, NULL, f);
@@ -2931,7 +2927,7 @@ dump_all_types(const char *suffix)
 {
 	FILE *f = vcg_open_name("All_types", suffix);
 	if (f) {
-		dump_vcg_header(f, "All_types", NULL);
+		dump_vcg_header(f, "All_types", "Hierarchic", NULL);
 		type_walk(dump_type_info, NULL, f);
 		inc_irg_visited(get_const_code_irg());
 
@@ -2949,7 +2945,7 @@ dump_class_hierarchy(int entities, const char *suffix)
 		h_env_t env;
 		env.f        = f;
 		env.dump_ent = entities;
-		dump_vcg_header(f, "class_hierarchy", NULL);
+		dump_vcg_header(f, "class_hierarchy", "Hierarchic", NULL);
 		type_walk(dump_class_hierarchy_node, NULL, &env);
 
 		dump_vcg_footer(f);
@@ -2987,15 +2983,14 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
 	dump_loop_node(F, loop);
 
 	/* Dump the loop elements. */
-
-	for(i = 0; i < get_loop_n_elements(loop); i++) {
+	for (i = 0; i < get_loop_n_elements(loop); i++) {
 		le = get_loop_element(loop, i);
 		son = le.son;
 		if (get_kind(son) == k_ir_loop) {
 
 			/* We are a loop son -> Recurse */
 
-			if(loop_node_started) { /* Close the "firm-nodes" node first if we started one. */
+			if (loop_node_started) { /* Close the "firm-nodes" node first if we started one. */
 				fprintf(F, "\" }\n");
 				fprintf(F, "edge: {sourcename: \"");
 				PRINT_LOOPID(loop);
@@ -3030,7 +3025,7 @@ void dump_loops_standalone(FILE *F, ir_loop *loop) {
 			assert(get_kind(son) == k_ir_graph);
 
 			/* We are a loop node -> Collect firm graphs */
-			n = (ir_graph *)le.node;
+			n = le.irg;
 			if (!loop_node_started) {
 				/* Start a new node which contains all firm nodes of the current loop */
 				fprintf(F, "node: { title: \"");
@@ -3071,9 +3066,10 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
 		current_ir_graph = irg;
 		edge_label = 1;
 
-		dump_vcg_header(f, get_irg_dump_name(irg), "top_to_bottom");
+		dump_vcg_header(f, get_irg_dump_name(irg), "Tree", "top_to_bottom");
 
-		if (get_irg_loop(irg)) dump_loops_standalone(f, get_irg_loop(irg));
+		if (get_irg_loop(irg))
+			dump_loops_standalone(f, get_irg_loop(irg));
 
 		dump_vcg_footer(f);
 		fclose(f);
@@ -3086,7 +3082,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
 void dump_callgraph_loop_tree(const char *suffix) {
 	FILE *F;
 	F = vcg_open_name("Callgraph_looptree", suffix);
-	dump_vcg_header(F, "callgraph looptree", "top_to_bottom");
+	dump_vcg_header(F, "callgraph looptree", "Tree", "top_to_bottom");
 	dump_loops_standalone(F, irp->outermost_cg_loop);
 	dump_vcg_footer(F);
 	fclose(F);
@@ -3150,7 +3146,7 @@ void dump_loop(ir_loop *l, const char *suffix) {
 		eset *extnodes = eset_create();
 		ir_node *n, *b;
 
-		dump_vcg_header(F, name, NULL);
+		dump_vcg_header(F, name, NULL, NULL);
 
 		/* collect all nodes to dump */
 		collect_nodeloop(F, l, loopnodes);

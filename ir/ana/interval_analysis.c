@@ -499,7 +499,7 @@ void dump_interval_graph(ir_graph *irg, const char *suffix) {
     return;
 
   f = vcg_open(irg, suffix, "-intervals");
-  dump_vcg_header(f, get_irg_dump_name(irg), NULL);
+  dump_vcg_header(f, get_irg_dump_name(irg), NULL, NULL);
 
   current_ir_graph = irg;
 
