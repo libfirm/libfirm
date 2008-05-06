@@ -1,16 +1,11 @@
 #include <stdio.h>
 
-static unsigned _fak(unsigned a, unsigned b)
+static unsigned fak(unsigned n)
 {
-  if (a == 0)
-    return b;
+  if (n == 0)
+    return 1;
 
-  return _fak(a-1, a*b);
-}
-
-static fak(unsigned a)
-{
-  return _fak(a, 1);
+  return n * fak(n - 1);
 }
 
 
