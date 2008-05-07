@@ -64,13 +64,12 @@ typedef enum loop_flags {
  */
 struct ir_loop {
 	firm_kind kind;                   /**< A type tag, set to k_ir_loop. */
-
-	struct ir_loop *outer_loop;       /**< The outer loop */
-	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
 	int depth;                        /**< Nesting depth */
 	int n_sons;                       /**< Number of ir_nodes in array "children" */
 	int n_nodes;                      /**< Number of loop_nodes in array "children" */
 	unsigned flags;                   /**< a set of loop_flags_t */
+	struct ir_loop *outer_loop;       /**< The outer loop */
+	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
 	tarval  *loop_iter_start;         /**< counting loop: the start value */
 	tarval  *loop_iter_end;           /**< counting loop: the last value reached */
 	tarval  *loop_iter_increment;     /**< counting loop: the increment */
