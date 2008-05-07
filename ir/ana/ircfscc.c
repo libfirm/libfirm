@@ -339,16 +339,14 @@ static int is_head(ir_node *n, ir_node *root) {
 	assert(is_Block(n));
 
 	if (!is_outermost_StartBlock(n)) {
-		arity = get_irn_arity(n);
+		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
 			if (is_backedge(n, i)) continue;
 			if (!irn_is_in_stack(pred)) {
 				some_outof_loop = 1;
 			} else {
-				if (get_irn_uplink(pred) < get_irn_uplink(root)) {
-					assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-				}
+				assert(get_irn_uplink(pred) >= get_irn_uplink(root));
 				some_in_loop = 1;
 			}
 		}
@@ -359,7 +357,7 @@ static int is_head(ir_node *n, ir_node *root) {
 
 /**
  * Returns non-zero if n is possible loop head of an endless loop.
- * I.e., it is a Block, Phi or Filter node and has only predecessors
+ * I.e., it is a Block and has only predecessors
  * within the loop.
  *
  * @param n     the block node to check
@@ -372,18 +370,15 @@ static int is_endless_head(ir_node *n, ir_node *root) {
 	assert(is_Block(n));
 	/* Test for legal loop header: Block, Phi, ... */
 	if (!is_outermost_StartBlock(n)) {
-		arity = get_irn_arity(n);
+		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
-			assert(pred);
+			ir_node *pred = get_Block_cfgpred_block(n, i);
 			if (is_backedge(n, i))
 				continue;
 			if (!irn_is_in_stack(pred)) {
-				some_outof_loop = 1; //printf(" some out of loop ");
+				some_outof_loop = 1;
 			} else {
-				if (get_irn_uplink(pred) < get_irn_uplink(root)) {
-					assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-				}
+				assert(get_irn_uplink(pred) >= get_irn_uplink(root));
 				some_in_loop = 1;
 			}
 		}
@@ -399,9 +394,9 @@ static int smallest_dfn_pred(ir_node *n, int limit) {
 	int i, index = -2, min = -1;
 
 	if (!is_outermost_StartBlock(n)) {
-		int arity = get_irn_arity(n);
+		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
@@ -420,9 +415,9 @@ static int largest_dfn_pred(ir_node *n) {
 	int i, index = -2, max = -1;
 
 	if (!is_outermost_StartBlock(n)) {
-		int arity = get_irn_arity(n);
+		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) > max) {
@@ -494,7 +489,7 @@ static ir_node *find_tail(ir_node *n) {
 	assert(res_index > -2);
 
 	set_backedge(m, res_index);
-	return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(get_irn_n(m, res_index)));
+	return is_outermost_StartBlock(n) ? NULL : get_Block_cfgpred_block(m, res_index);
 }
 
 /**
@@ -654,6 +649,13 @@ int construct_cf_backedges(ir_graph *irg) {
 
 	current_ir_graph = rem;
 	return max_loop_depth;
+}
+
+void assure_cf_loop(ir_graph *irg) {
+	irg_loopinfo_state state = get_irg_loopinfo_state(irg);
+
+	if (state != loopinfo_cf_consistent)
+		construct_cf_backedges(irg);
 }
 
 #ifdef INTERPROCEDURAL_VIEW

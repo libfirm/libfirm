@@ -166,31 +166,43 @@ int construct_backedges(ir_graph *irg);
 int construct_ip_backedges(void);
 #endif
 
-/** Construct loop tree only for control flow.
+/**
+ * Construct Intra-procedural control flow loop tree for a IR-graph.
  *
- *  This constructs loop information resembling the program structure.
- *  It is useful for loop optimizations and analyses, as, e.g., finding
- *  iteration variables or loop invariant code motion.
+ * This constructs loop information resembling the program structure.
+ * It is useful for loop optimizations and analyses, as, e.g., finding
+ * iteration variables or loop invariant code motion.
  *
- *  This algorithm computes only back edge information for Block nodes, not
- *  for Phi nodes.
+ * This algorithm computes only back edge information for Block nodes, not
+ * for Phi nodes.
  *
- *  This algorithm destroyes the link field of block nodes.
+ * This algorithm destroyes the link field of block nodes.
+ *
+ * @param irg  the graph
  *
  * @returns Maximal depth of loop tree.
  */
 int construct_cf_backedges(ir_graph *irg);
 
-#ifdef INTERPROCEDURAL_VIEW
-/** Construct interprocedural loop tree for control flow.
+/**
+ * Computes Intra-procedural control flow loop tree on demand.
  *
- *  @see construct_cf_backedges() and construct_ip_backedges().
+ * @param irg  the graph
  */
-int construct_ip_cf_backedges (void);
+void assure_cf_loop(ir_graph *irg);
+
+#ifdef INTERPROCEDURAL_VIEW
+/**
+ * Construct Inter-procedural control flow loop tree.
+ *
+ * @see construct_cf_backedges() and construct_ip_backedges().
+ */
+int construct_ip_cf_backedges(void);
 #endif
 
-/** Removes all loop information.
- *  Resets all backedges.  Works for any construction algorithm.
+/**
+ * Removes all loop information.
+ * Resets all backedges.  Works for any construction algorithm.
  */
 void free_loop_information(ir_graph *irg);
 void free_all_loop_information (void);
