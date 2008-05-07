@@ -77,8 +77,8 @@ static const struct {
 	{ FS_OPT_SUB_MUL_A_X_A,  "algebraic simplification: a * x - a = a * (x - 1)" },
 	{ FS_OPT_SUB_SUB_X_Y_Z,  "algebraic simplification: (x - y) - z = x - (y + z)" },
 	{ FS_OPT_SUB_C_NOT_X,    "algebraic simplification: c - ~a = a + (c+1)" },
-	{ FS_OPT_SUB_TO_ADD,     "algebraic simplification: (-a) - b = -(a + b), a - (b - c) = a + (c - b), a - (b * C) -> a + (b * -C)" },
-	{ FS_OPT_MUL_MINUS,      "algebraic simplification: (-a) * (b - c) -> a * (c - b)" },
+	{ FS_OPT_SUB_TO_ADD,     "algebraic simplification: (-a) - b = -(a + b), a - (b - c) = a + (c - b), a - (b * C) = a + (b * -C)" },
+	{ FS_OPT_MUL_MINUS,      "algebraic simplification: (-a) * (b - c) = a * (c - b)" },
 	{ FS_OPT_MUL_MINUS_1,    "algebraic simplification: a * -1 = -a" },
 	{ FS_OPT_MINUS_MUL_C,    "algebraic simplification: (-a) * C = a * (-C)" },
 	{ FS_OPT_MUL_MINUS_MINUS,"algebraic simplification: (-a) * (-b) = a * b" },
@@ -87,7 +87,7 @@ static const struct {
 	{ FS_OPT_TO_EOR,         "algebraic simplification: (a|b) & ~(a&b) = a^b" },
 	{ FS_OPT_EOR_A_A,        "algebraic simplification: a ^ a = 0" },
 	{ FS_OPT_EOR_TO_NOT_BOOL,"algebraic simplification: bool ^ 1 = !bool" },
-	{ FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x, (a ^ b) & b -> ~a & b" },
+	{ FS_OPT_EOR_TO_NOT,     "algebraic simplification: x ^ 0b1..1 = ~x, (a ^ b) & b = ~a & b" },
 	{ FS_OPT_NOT_CMP,        "algebraic simplification: !(a cmp b) = a !cmp b" },
 	{ FS_OPT_OR_SHFT_TO_ROT, "algebraic simplification: (x << c) | (x >> (bits - c)) == Rot(x, c)" },
 	{ FS_OPT_REASSOC_SHIFT,  "algebraic simplification: (x SHF c1) SHF c2 = x SHF (c1+c2)" },
@@ -469,7 +469,8 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			" recursive                 : %s\n"
 			" chain call                : %s\n"
 			" calls                     : %u\n"
-			" indirect calls            : %u\n",
+			" indirect calls            : %u\n"
+			" external calls            : %u\n",
 			entry->is_deleted ? "DELETED " : "",
 			cnt_to_uint(&entry->cnt[gcnt_acc_walked]), cnt_to_uint(&entry->cnt[gcnt_acc_walked_blocks]),
 			cnt_to_uint(&entry->cnt[gcnt_acc_was_inlined]),
@@ -480,7 +481,8 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			entry->is_recursive ? "YES" : "NO",
 			entry->is_chain_call ? "YES" : "NO",
 			cnt_to_uint(&entry->cnt[gcnt_all_calls]),
-			cnt_to_uint(&entry->cnt[gcnt_indirect_calls])
+			cnt_to_uint(&entry->cnt[gcnt_indirect_calls]),
+			cnt_to_uint(&entry->cnt[gcnt_external_calls])
 		);
 
 		for (i = 0; i < IF_RESULT_LAST; ++i) {
@@ -630,6 +632,8 @@ static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph
 	fprintf(dmp->f, "-------------------------------\n");
 
 	fprintf(dmp->f, "Number of Calls           %12u\n", cnt_to_uint(&global->cnt[gcnt_all_calls]));
+	fprintf(dmp->f, "indirect calls            %12u\n", cnt_to_uint(&global->cnt[gcnt_indirect_calls]));
+	fprintf(dmp->f, "external calls            %12u\n", cnt_to_uint(&global->cnt[gcnt_external_calls]));
 	fprintf(dmp->f, "with const params         %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_cnst_arg]));
 	fprintf(dmp->f, "with all const params     %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_all_cnst_arg]));
 	fprintf(dmp->f, "with local var adr params %12u\n", cnt_to_uint(&global->cnt[gcnt_call_with_local_adr]));

@@ -804,6 +804,8 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 			/* it is recursive, if it calls at least once */
 			if (callee == graph->irg)
 				graph->is_recursive = 1;
+			if (callee == NULL)
+				cnt_inc(&graph->cnt[gcnt_external_calls]);
 		}  /* if */
 	} else {
 		/* indirect call, be could not predict */

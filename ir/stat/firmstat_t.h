@@ -133,6 +133,7 @@ enum graph_counter_names {
 	gcnt_call_with_all_cnst_arg,   /**< number of calls with all const args */
 	gcnt_call_with_local_adr,      /**< number of calls with address of local var args */
 	gcnt_indirect_calls,           /**< number of indirect calls */
+	gcnt_external_calls,           /**< number of external calls */
 	gcnt_pure_adr_ops,             /**< number of pure address operation */
 	gcnt_all_adr_ops,              /**< number of all address operation */
 	gcnt_global_adr,               /**< number of global load/store addresses. */
