@@ -260,7 +260,7 @@ static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap) {
 static void graph_clear_entry(graph_entry_t *elem, int all) {
 	int i;
 
-	/* clear accumulated / non-acumulated counter */
+	/* clear accumulated / non-accumulated counter */
 	for (i = all ? 0 : _gcnt_non_acc; i < _gcnt_last; ++i) {
 		cnt_clr(&elem->cnt[i]);
 	}  /* for */
@@ -816,7 +816,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	}  /* if */
 
 	/* check, if it's a chain-call: Then, the call-block
-	* must dominate the end block. */
+	 * must dominate the end block. */
 	{
 		ir_node *curr = get_irg_end_block(graph->irg);
 		int depth = get_Block_dom_depth(block);
@@ -1641,10 +1641,15 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic
  *
  * @param n     the IR node that will be removed
  * @param hmap  the hash map containing ir_op* -> opt_entry_t*
+ * @param kind  the optimization kind
  */
-static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap) {
+static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind kind) {
 	ir_op *op          = stat_get_irn_op(n);
 	opt_entry_t *entry = opt_get_entry(op, hmap);
+
+	/* ignore CSE for Constants */
+	if (kind == HOOK_OPT_CSE && (is_Const(n) || is_SymConst(n)))
+		return;
 
 	/* increase global value */
 	cnt_inc(&entry->count);
@@ -1692,7 +1697,7 @@ static void stat_merge_nodes(
 						xopt = HOOK_OPT_CONFIRM_C;
 				}  /* if */
 
-				removed_due_opt(old_node_array[i], graph->opt_hash[xopt]);
+				removed_due_opt(old_node_array[i], graph->opt_hash[xopt], xopt);
 			}  /* if */
 		}  /* for */
 	}
@@ -1732,7 +1737,7 @@ static void stat_lower(void *ctx, ir_node *node) {
 	{
 		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
 
-		removed_due_opt(node, graph->opt_hash[HOOK_LOWERED]);
+		removed_due_opt(node, graph->opt_hash[HOOK_LOWERED], HOOK_LOWERED);
 	}
 	STAT_LEAVE;
 }  /* stat_lower */
@@ -1797,7 +1802,7 @@ static void stat_strength_red(void *ctx, ir_graph *irg, ir_node *strong) {
 		graph_entry_t *graph = graph_get_entry(irg, status->irg_hash);
 		cnt_inc(&graph->cnt[gcnt_acc_strength_red]);
 
-		removed_due_opt(strong, graph->opt_hash[HOOK_OPT_STRENGTH_RED]);
+		removed_due_opt(strong, graph->opt_hash[HOOK_OPT_STRENGTH_RED], HOOK_OPT_STRENGTH_RED);
 	}
 	STAT_LEAVE;
 }  /* stat_strength_red */
@@ -1870,7 +1875,7 @@ static void stat_arch_dep_replace_mul_with_shifts(void *ctx, ir_node *mul) {
 	STAT_ENTER;
 	{
 		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-		removed_due_opt(mul, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
+		removed_due_opt(mul, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
 }  /* stat_arch_dep_replace_mul_with_shifts */
@@ -1889,7 +1894,7 @@ static void stat_arch_dep_replace_division_by_const(void *ctx, ir_node *node) {
 	STAT_ENTER;
 	{
 		graph_entry_t *graph = graph_get_entry(current_ir_graph, status->irg_hash);
-		removed_due_opt(node, graph->opt_hash[HOOK_OPT_ARCH_DEP]);
+		removed_due_opt(node, graph->opt_hash[HOOK_OPT_ARCH_DEP], HOOK_OPT_ARCH_DEP);
 	}
 	STAT_LEAVE;
 }  /* stat_arch_dep_replace_division_by_const */
