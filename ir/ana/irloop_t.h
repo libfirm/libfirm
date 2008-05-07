@@ -96,10 +96,10 @@ void add_loop_son(ir_loop *loop, ir_loop *son);
 void add_loop_node(ir_loop *loop, ir_node *n);
 
 /** Add an IR graph to a loop. */
-void add_loop_irg(ir_loop *loop, ir_node *n);
+void add_loop_irg(ir_loop *loop, ir_graph *irg);
 
 /** Sets the loop a node belonging to. */
-void set_irn_loop(ir_node *n, ir_graph *irg);
+void set_irn_loop(ir_node *n, ir_loop *loop);
 
 /**
  * Mature all loops by removing the flexible arrays of a loop tree
