@@ -32,6 +32,7 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "beutil.h"
+#include "height.h"
 #include "irtools.h"
 #include "irgwalk.h"
 #include "benode_t.h"
@@ -138,6 +139,9 @@ static int normal_tree_cost(ir_node* irn)
 	int            n_op_res = 0;
 	int            i;
 
+	if (be_is_Keep(irn))
+		return 0;
+
 	if (is_Proj(irn)) {
 		return normal_tree_cost(get_Proj_pred(irn));
 	}
@@ -164,12 +168,14 @@ static int normal_tree_cost(ir_node* irn)
 
 				cost = normal_tree_cost(pred);
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
-				real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
-				pred_fc = get_irn_link(real_pred);
-				pred_fc->no_root = 1;
+				if (!arch_irn_is(cur_arch_env, pred, ignore)) {
+					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
+					pred_fc = get_irn_link(real_pred);
+					pred_fc->no_root = 1;
 #if defined NORMAL_DBG
-				ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, real_pred);
+					ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, real_pred);
 #endif
+				}
 			}
 
 			costs[i].irn  = pred;
@@ -213,20 +219,20 @@ static void normal_cost_walker(ir_node* irn, void* env)
 
 static void collect_roots(ir_node* irn, void* env)
 {
-	flag_and_cost* fc;
+	int is_root;
 
 	(void)env;
 
 	if (is_Block(irn)) return;
 	if (!must_be_scheduled(irn)) return;
 
-	fc = get_irn_link(irn);
+	is_root = be_is_Keep(irn) || !((flag_and_cost*)get_irn_link(irn))->no_root;
 
 #if defined NORMAL_DBG
-	ir_fprintf(stderr, "%+F is %sroot\n", irn, fc->no_root ? "no " : "");
+	ir_fprintf(stderr, "%+F is %sroot\n", irn, is_root ? "" : "no ");
 #endif
 
-	if (!fc->no_root) {
+	if (is_root) {
 		ir_node* block = get_nodes_block(irn);
 		ir_node** roots = get_irn_link(block);
 		if (roots == NULL) {
@@ -249,7 +255,7 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 	if (irn_visited(irn)) return sched;
 	if (is_End(irn))      return sched;
 
-	if (!is_Phi(irn)) {
+	if (!is_Phi(irn) && !be_is_Keep(irn)) {
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = irns[i].irn;
 			if (get_nodes_block(pred) != block) continue;
@@ -265,15 +271,26 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 }
 
 
+static int root_cmp(const void* a, const void* b)
+{
+	const irn_cost_pair* const a1 = a;
+	const irn_cost_pair* const b1 = b;
+	int ret = b1->cost - a1->cost;
+#if defined NORMAL_DBG
+	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
+#endif
+	return ret;
+}
+
+
 static void normal_sched_block(ir_node* block, void* env)
 {
-	ir_node** roots = get_irn_link(block);
+	heights_t*     heights = env;
+	ir_node**      roots   = get_irn_link(block);
 	int            root_count;
 	irn_cost_pair* root_costs;
 	int i;
 	ir_node**      sched;
-
-	(void)env;
 
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "sched walking block %+F\n", block);
@@ -290,9 +307,12 @@ static void normal_sched_block(ir_node* block, void* env)
 	NEW_ARR_A(irn_cost_pair, root_costs, root_count);
 	for (i = 0; i < root_count; ++i) {
 		root_costs[i].irn  = roots[i];
-		root_costs[i].cost = normal_tree_cost(roots[i]);
+		root_costs[i].cost = get_irn_height(heights, roots[i]);
+#if defined NORMAL_DBG
+		ir_fprintf(stderr, "height of %+F is %u\n", roots[i], root_costs[i].cost);
+#endif
 	}
-	qsort(root_costs, root_count, sizeof(*root_costs), cost_cmp);
+	qsort(root_costs, root_count, sizeof(*root_costs), root_cmp);
 #if defined NORMAL_DBG
 	{
 		int n = root_count;
@@ -333,7 +353,8 @@ static void normal_sched_block(ir_node* block, void* env)
 static void *normal_init_graph(const list_sched_selector_t *vtab,
                                const be_irg_t *birg)
 {
-	ir_graph* irg = be_get_birg_irg(birg);
+	ir_graph  *irg = be_get_birg_irg(birg);
+	heights_t *heights;
 
 	(void)vtab;
 
@@ -341,10 +362,14 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 
 	be_clear_links(irg);
 
+	heights = heights_new(irg);
+
 	irg_walk_graph(irg, normal_cost_walker,  NULL, NULL);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
 	inc_irg_visited(irg);
-	irg_block_walk_graph(irg, normal_sched_block, NULL, NULL);
+	irg_block_walk_graph(irg, normal_sched_block, NULL, heights);
+
+	heights_free(heights);
 
 	return NULL;
 }
