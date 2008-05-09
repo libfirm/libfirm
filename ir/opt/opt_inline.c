@@ -1916,11 +1916,20 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	if (callee_env->n_blocks == 1)
 		weight = weight * 3 / 2;
 
+	/* and one for small functions: we want them to be inlined in mostly every case */
+	else if (callee_env->n_nodes < 20)
+		weight += 5000;
+
+	/* and finally for leaves: they do not increase the register pressure
+	   because of callee safe registers */
+	else if (callee_env->n_call_nodes == 0)
+		weight += 25;
+
 	return weight;
 }
 
 /**
- * Heuristic inliner. Calculates a benifice value for every call and inlines
+ * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  */
 void inline_functions(int maxsize, int inline_threshold) {
