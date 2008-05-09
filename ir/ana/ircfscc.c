@@ -341,7 +341,7 @@ static int is_head(ir_node *n, ir_node *root) {
 	if (!is_outermost_StartBlock(n)) {
 		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
+			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
 			if (is_backedge(n, i)) continue;
 			if (!irn_is_in_stack(pred)) {
 				some_outof_loop = 1;
@@ -357,7 +357,7 @@ static int is_head(ir_node *n, ir_node *root) {
 
 /**
  * Returns non-zero if n is possible loop head of an endless loop.
- * I.e., it is a Block and has only predecessors
+ * I.e., it is a Block node and has only predecessors
  * within the loop.
  *
  * @param n     the block node to check
@@ -372,7 +372,7 @@ static int is_endless_head(ir_node *n, ir_node *root) {
 	if (!is_outermost_StartBlock(n)) {
 		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
+			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
 			if (is_backedge(n, i))
 				continue;
 			if (!irn_is_in_stack(pred)) {
@@ -396,7 +396,7 @@ static int smallest_dfn_pred(ir_node *n, int limit) {
 	if (!is_outermost_StartBlock(n)) {
 		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
+			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
@@ -417,7 +417,7 @@ static int largest_dfn_pred(ir_node *n) {
 	if (!is_outermost_StartBlock(n)) {
 		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
+			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) > max) {
@@ -489,7 +489,7 @@ static ir_node *find_tail(ir_node *n) {
 	assert(res_index > -2);
 
 	set_backedge(m, res_index);
-	return is_outermost_StartBlock(n) ? NULL : get_Block_cfgpred_block(m, res_index);
+	return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(get_irn_n(m, res_index)));
 }
 
 /**
@@ -522,7 +522,7 @@ static void cfscc(ir_node *n) {
 	push(n);
 
 	if (!is_outermost_StartBlock(n)) {
-		int arity = get_irn_arity(n);
+		int arity = get_Block_n_cfgpreds(n);
 
 		for (i = 0; i < arity; i++) {
 			ir_node *m;
