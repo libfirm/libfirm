@@ -1190,10 +1190,10 @@ static struct obstack  temp_obst;
 /** Represents a possible inlinable call in a graph. */
 typedef struct _call_entry call_entry;
 struct _call_entry {
-	ir_node    *call;   /**< the Call */
-	ir_graph   *callee; /**< the callee called here */
-	call_entry *next;   /**< for linking the next one */
-	unsigned   weight;  /**< the weight of the call */
+	ir_node    *call;      /**< the Call node */
+	ir_graph   *callee;    /**< the callee IR-graph called here */
+	call_entry *next;      /**< for linking the next one */
+	int        loop_depth; /**< the loop depth of this call */
 };
 
 /**
@@ -1234,10 +1234,10 @@ static void collect_calls(ir_node *call, void *env) {
 			/* The Call node calls a locally defined method.  Remember to inline. */
 			inline_env_t *ienv  = env;
 			call_entry   *entry = obstack_alloc(&ienv->obst, sizeof(*entry));
-			entry->call   = call;
-			entry->callee = called_irg;
-			entry->next   = NULL;
-			entry->weight = 0;
+			entry->call       = call;
+			entry->callee     = called_irg;
+			entry->next       = NULL;
+			entry->loop_depth = 0;
 
 			if (ienv->tail == NULL)
 				ienv->head = entry;
@@ -1297,14 +1297,14 @@ typedef struct {
 	int n_nodes;             /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
 	int n_blocks;            /**< Number of Blocks in graph without Start and End block. */
 	int n_nodes_orig;        /**< for statistics */
-	call_entry *call_head;   /**< The head of the list of all call nodes in this graph. */
-	call_entry *call_tail;   /**< The tail of the list of all call nodes in this graph .*/
 	int n_call_nodes;        /**< Number of Call nodes in the graph. */
 	int n_call_nodes_orig;   /**< for statistics */
 	int n_callers;           /**< Number of known graphs that call this graphs. */
 	int n_callers_orig;      /**< for statistics */
 	unsigned got_inline:1;   /**< Set, if at least one call inside this graph was inlined. */
 	unsigned local_vars:1;   /**< Set, if a inlined function gets the address of an inlined variable. */
+	call_entry *call_head;   /**< The head of the list of all call nodes in this graph. */
+	call_entry *call_tail;   /**< The tail of the list of all call nodes in this graph .*/
 	unsigned *local_weights; /**< Once allocated, the beneficial weight for transmitting local addresses. */
 } inline_irg_env;
 
@@ -1329,9 +1329,10 @@ static inline_irg_env *alloc_inline_irg_env(void) {
 }
 
 typedef struct walker_env {
-	inline_irg_env *x;    /**< the inline environment */
-	char ignore_runtime;  /**< the ignore runtime flag */
-	char ignore_callers;  /**< if set, do change callers data */
+	inline_irg_env *x;     /**< the inline environment */
+	call_entry *last_call; /**< points to the last inserted call */
+	char ignore_runtime;   /**< the ignore runtime flag */
+	char ignore_callers;   /**< if set, do change callers data */
 } wenv_t;
 
 /**
@@ -1384,14 +1385,39 @@ static void collect_calls2(ir_node *call, void *ctx) {
 
 		/* link it in the list of possible inlinable entries */
 		entry = obstack_alloc(&temp_obst, sizeof(*entry));
-		entry->call   = call;
-		entry->callee = callee;
-		entry->next   = NULL;
-		if (x->call_tail == NULL)
+		entry->call       = call;
+		entry->callee     = callee;
+		entry->next       = NULL;
+		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
+
+		/* note: we use call_tail here as a pointer to the last inserted */
+		if (x->call_head == NULL) {
 			x->call_head = entry;
-		else
-			x->call_tail->next = entry;
-		x->call_tail = entry;
+		} else {
+			if (entry->loop_depth == env->last_call->loop_depth) {
+				/* same depth as the last one, enqueue after it */
+				entry->next          = env->last_call->next;
+				env->last_call->next = entry;
+			} else if (entry->loop_depth > x->call_head->loop_depth) {
+				/* put first */
+				entry->next  = x->call_head;
+				x->call_head = entry;
+			} else {
+				/* search the insertion point */
+				call_entry *p;
+
+				for (p = x->call_head; p->next != NULL; p = p->next)
+					if (entry->loop_depth > p->next->loop_depth)
+						break;
+				entry->next = p->next;
+				p->next     = entry;
+			}
+		}
+		env->last_call = entry;
+		if (entry->next == NULL) {
+			/* keep tail up to date */
+			x->call_tail = entry;
+		}
 	}
 }
 
@@ -1424,12 +1450,44 @@ static void append_call_list(inline_irg_env *dst, call_entry *src) {
 	   in the link field. */
 	for (entry = src; entry != NULL; entry = entry->next) {
 		nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
-		nentry->call   = get_irn_link(entry->call);
-		nentry->callee = entry->callee;
-		nentry->next   = NULL;
+		nentry->call         = get_irn_link(entry->call);
+		nentry->callee       = entry->callee;
+		nentry->next         = NULL;
+		nentry->loop_depth   = entry->loop_depth;
 		dst->call_tail->next = nentry;
 		dst->call_tail       = nentry;
 	}
+}
+
+/**
+ * Add the nodes of the list src in front to the nodes of the list dst.
+ */
+static call_entry *replace_entry_by_call_list(call_entry *dst, call_entry *src) {
+	call_entry *entry, *nentry, *head, *tail;
+
+	/* Note that the src list points to Call nodes in the inlined graph, but
+	   we need Call nodes in our graph. Luckily the inliner leaves this information
+	   in the link field. */
+	head = tail = NULL;
+	for (entry = src; entry != NULL; entry = entry->next) {
+		nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
+		nentry->call         = get_irn_link(entry->call);
+		nentry->callee       = entry->callee;
+		nentry->next         = NULL;
+		nentry->loop_depth   = entry->loop_depth + dst->loop_depth;
+		if (head == NULL)
+			head = nentry;
+		else
+			tail->next = nentry;
+		tail = nentry;
+	}
+	/* skip the head of dst */
+	if (head != NULL) {
+		tail->next = dst->next;
+	} else {
+		head = dst->next;
+	}
+	return head;
 }
 
 /*
@@ -1726,6 +1784,7 @@ static unsigned calc_method_local_weight(ir_node *arg) {
 					}
 				}
 			}
+			break;
 		default:
 			/* any other node: unsupported yet or bad. */
 			return 0;
@@ -1870,7 +1929,7 @@ void inline_functions(int maxsize, int inline_threshold) {
 	ir_graph         *rem;
 	int              did_inline;
 	wenv_t           wenv;
-	call_entry       *entry, *tail;
+	call_entry       *curr_call, **last_call;
 	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
@@ -1895,7 +1954,9 @@ void inline_functions(int maxsize, int inline_threshold) {
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
-		wenv.x = get_irg_link(irg);
+		wenv.x         = get_irg_link(irg);
+		wenv.last_call = NULL;
+		assure_cf_loop(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
 
@@ -1909,8 +1970,8 @@ void inline_functions(int maxsize, int inline_threshold) {
 		env = get_irg_link(irg);
 
 		/* note that the list of possible calls is updated during the process */
-		tail = NULL;
-		for (entry = env->call_head; entry != NULL; entry = entry->next) {
+		last_call = &env->call_head;
+		for (curr_call = env->call_head; curr_call != NULL;) {
 			ir_graph   *callee;
 			pmap_entry *e;
 			int        benefice;
@@ -1918,22 +1979,22 @@ void inline_functions(int maxsize, int inline_threshold) {
 
 			if (env->n_nodes > maxsize) break;
 
-			call   = entry->call;
-			callee = entry->callee;
-
-			/* calculate the benifice on the original call to prevent excessive inlining */
-			local_adr = 0;
-			benefice = calc_inline_benefice(call, callee, &local_adr);
-			DB((dbg, LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
+			call   = curr_call->call;
+			callee = curr_call->callee;
 
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
 				/*
-				 * Remap callee if we have a copy.
-				 * FIXME: Should we do this only for recursive Calls ?
-				 */
+				* Remap callee if we have a copy.
+				* FIXME: Should we do this only for recursive Calls ?
+				*/
 				callee = e->value;
 			}
+
+			/* calculate the benefice on the original call to prevent excessive inlining */
+			local_adr = 0;
+			benefice = calc_inline_benefice(call, callee, &local_adr);
+			DB((dbg, LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
 
 			if (benefice > -inline_threshold ||
 				(get_irg_inline_property(callee) >= irg_inline_forced)) {
@@ -1990,34 +2051,31 @@ void inline_functions(int maxsize, int inline_threshold) {
 					/* was inlined, must be recomputed */
 					phiproj_computed = 0;
 
-					/* callee was inline. Append it's call list. */
-					env->got_inline = 1;
-					if (local_adr)
-						env->local_vars = 1;
-					--env->n_call_nodes;
-					append_call_list(env, callee_env->call_head);
-					env->n_call_nodes += callee_env->n_call_nodes;
-					env->n_nodes += callee_env->n_nodes;
-					--callee_env->n_callers;
-
 					/* after we have inlined callee, all called methods inside callee
-					   are now called once more */
+					are now called once more */
 					for (centry = callee_env->call_head; centry != NULL; centry = centry->next) {
 						inline_irg_env *penv = get_irg_link(centry->callee);
 						++penv->n_callers;
 					}
 
-					/* remove this call from the list */
-					if (tail != NULL)
-						tail->next = entry->next;
-					else
-						env->call_head = entry->next;
+					/* callee was inline. Append it's call list. */
+					env->got_inline = 1;
+					if (local_adr)
+						env->local_vars = 1;
+					--env->n_call_nodes;
+					curr_call = replace_entry_by_call_list(curr_call, callee_env->call_head);
+					env->n_call_nodes += callee_env->n_call_nodes;
+					env->n_nodes += callee_env->n_nodes;
+					--callee_env->n_callers;
+
+					/* remove the current call entry from the list */
+					*last_call = curr_call;
 					continue;
 				}
 			}
-			tail = entry;
+			last_call = &curr_call->next;
+			curr_call = curr_call->next;
 		}
-		env->call_tail = tail;
 
 		if (env->got_inline) {
 			/* this irg got calls inlined: optimize it */
@@ -2030,7 +2088,6 @@ void inline_functions(int maxsize, int inline_threshold) {
 					optimize_graph_df(irg);
 				}
 			}
-
 			optimize_cf(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
