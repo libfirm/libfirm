@@ -63,9 +63,11 @@ typedef struct {
 	unsigned use_pxor:1;
 	/** use mov reg, 0 instruction */
 	unsigned use_mov_0:1;
-	/** pad Ret that are destination of conditional jump or directly preceded
+	/** pad Ret instructions that are destination of conditional jump or directly preceded
 	    by other jump instruction. */
-	unsigned use_pad_return;
+	unsigned use_pad_return:1;
+	/** use the bt instruction */
+	unsigned use_bt:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**
