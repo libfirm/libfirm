@@ -1453,6 +1453,17 @@ LdTls => {
 	latency   => 1,
 },
 
+Bt => {
+	irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "flags" ] },
+	ins       => [ "left", "right" ],
+	emit      => '. bt%M %S0, %S1',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_flags,
+	modified_flags => "CF"
+},
 
 #-----------------------------------------------------------------------------#
 #   _____ _____ ______    __ _             _                     _            #

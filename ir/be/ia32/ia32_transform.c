@@ -1387,7 +1387,6 @@ static ir_node *gen_And(ir_node *node) {
 			return res;
 		}
 	}
-
 	return gen_binop(node, op1, op2, new_rd_ia32_And,
 	                 match_commutative | match_mode_neutral | match_am
 					 | match_immediate);
@@ -1867,9 +1866,27 @@ static ir_node *gen_Abs(ir_node *node)
 	return new_node;
 }
 
+/**
+ * Create a bt instruction for x & (1 << n) and place it into the block of cmp.
+ */
+static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n) {
+	dbg_info *dbgi      = get_irn_dbg_info(cmp);
+	ir_node  *block     = get_nodes_block(cmp);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *op1       = be_transform_node(x);
+	ir_node  *op2       = be_transform_node(n);
+
+	return new_rd_ia32_Bt(dbgi, current_ir_graph, new_block, op1, op2);
+}
+
+/**
+ * Transform a node returning a "flag" result.
+ *
+ * @param node     the node to transform
+ * @param pnc_out  the compare mode to use
+ */
 static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 {
-	ir_graph *irg = current_ir_graph;
 	ir_node  *flags;
 	ir_node  *new_op;
 	ir_node  *noreg;
@@ -1878,11 +1895,41 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 	dbg_info *dbgi;
 
 	/* we have a Cmp as input */
-	if(is_Proj(node)) {
+	if (is_Proj(node)) {
 		ir_node *pred = get_Proj_pred(node);
-		if(is_Cmp(pred)) {
+		if (is_Cmp(pred)) {
+			pn_Cmp pnc = get_Proj_proj(node);
+			if (pnc == pn_Cmp_Lg && ia32_cg_config.use_bt) {
+				ir_node *l = get_Cmp_left(pred);
+				if (is_And(l)) {
+					ir_node *la = get_And_left(l);
+					ir_node *ra = get_And_right(l);
+					if (is_Shl(la)) {
+						ir_node *c = get_Shl_left(la);
+						if (is_Const_1(c)) {
+							/* (1 << n) & ra) */
+							ir_node *n = get_Shl_right(la);
+							flags    = gen_bt(pred, ra, n);
+							/* we must generate a Jc jump */
+							*pnc_out = ia32_pn_Cmp_unsigned|pn_Cmp_Ge;
+							return flags;
+						}
+					}
+					if (is_Shl(ra)) {
+						ir_node *c = get_Shl_left(ra);
+						if (is_Const_1(c)) {
+							/* la & (1 << n)) */
+							ir_node *n = get_Shl_right(ra);
+							flags    = gen_bt(pred, la, n);
+							/* we must generate a Jc jump */
+							*pnc_out = ia32_pn_Cmp_unsigned|pn_Cmp_Ge;
+							return flags;
+						}
+					}
+				}
+			}
 			flags    = be_transform_node(pred);
-			*pnc_out = get_Proj_proj(node);
+			*pnc_out = pnc;
 			return flags;
 		}
 	}
@@ -1893,8 +1940,8 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 	new_op    = be_transform_node(node);
 	noreg     = ia32_new_NoReg_gp(env_cg);
 	nomem     = new_NoMem();
-	flags     = new_rd_ia32_Test(dbgi, irg, new_block, noreg, noreg, nomem,
-	                             new_op, new_op, 0, 0);
+	flags     = new_rd_ia32_Test(dbgi, current_ir_graph, new_block, noreg, noreg, nomem,
+	                             new_op, new_op, /*is_permuted=*/0, /*cmp_unsigned=*/0);
 	*pnc_out  = pn_Cmp_Lg;
 	return flags;
 }
@@ -2578,7 +2625,7 @@ static ir_node *gen_Cond(ir_node *node) {
 		return create_Switch(node);
 	}
 
-	/* we get flags from a cmp */
+	/* we get flags from a Cmp */
 	flags = get_flags_node(sel, &pnc);
 
 	new_node = new_rd_ia32_Jcc(dbgi, irg, new_block, flags, pnc);
@@ -2726,6 +2773,9 @@ static int can_fold_test_and(ir_node *node)
 	return 1;
 }
 
+/**
+ * Generate code for a Cmp.
+ */
 static ir_node *gen_Cmp(ir_node *node)
 {
 	ir_graph *irg       = current_ir_graph;

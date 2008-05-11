@@ -599,11 +599,6 @@ static const struct cmp2conditon_t cmp2condition_u[] = {
 	{ NULL,              pn_Cmp_Leg },   /* always true  */
 };
 
-enum {
-	ia32_pn_Cmp_unsigned = 0x1000,
-	ia32_pn_Cmp_float    = 0x2000,
-};
-
 /**
  * walks up a tree of copies/perms/spills/reloads to find the original value
  * that is moved around

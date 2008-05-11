@@ -33,6 +33,11 @@
 #include "../bemachine.h"
 #include "irnode_t.h"
 
+enum {
+	ia32_pn_Cmp_unsigned = 0x1000,
+	ia32_pn_Cmp_float    = 0x2000,
+};
+
 typedef enum {
 	ia32_Normal,
 	ia32_AddrModeD,
