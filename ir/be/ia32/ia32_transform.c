@@ -1899,30 +1899,37 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 		ir_node *pred = get_Proj_pred(node);
 		if (is_Cmp(pred)) {
 			pn_Cmp pnc = get_Proj_proj(node);
-			if (pnc == pn_Cmp_Lg && ia32_cg_config.use_bt) {
+			if (ia32_cg_config.use_bt && (pnc == pn_Cmp_Lg || pnc == pn_Cmp_Eq)) {
 				ir_node *l = get_Cmp_left(pred);
+				ir_node *r = get_Cmp_right(pred);
 				if (is_And(l)) {
 					ir_node *la = get_And_left(l);
 					ir_node *ra = get_And_right(l);
 					if (is_Shl(la)) {
 						ir_node *c = get_Shl_left(la);
-						if (is_Const_1(c)) {
+						if (is_Const_1(c) && (is_Const_0(r) || r == la)) {
 							/* (1 << n) & ra) */
 							ir_node *n = get_Shl_right(la);
 							flags    = gen_bt(pred, ra, n);
-							/* we must generate a Jc jump */
-							*pnc_out = ia32_pn_Cmp_unsigned|pn_Cmp_Ge;
+							/* we must generate a Jc/Jnc jump */
+							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Ge : pn_Cmp_Lt;
+							if (r == la)
+								pnc ^= pn_Cmp_Leg;
+							*pnc_out = ia32_pn_Cmp_unsigned | pnc;
 							return flags;
 						}
 					}
 					if (is_Shl(ra)) {
 						ir_node *c = get_Shl_left(ra);
-						if (is_Const_1(c)) {
+						if (is_Const_1(c) && (is_Const_0(r) || r == ra)) {
 							/* la & (1 << n)) */
 							ir_node *n = get_Shl_right(ra);
 							flags    = gen_bt(pred, la, n);
-							/* we must generate a Jc jump */
-							*pnc_out = ia32_pn_Cmp_unsigned|pn_Cmp_Ge;
+							/* we must generate a Jc/Jnc jump */
+							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Ge : pn_Cmp_Lt;
+							if (r == ra)
+								pnc ^= pn_Cmp_Leg;
+							*pnc_out = ia32_pn_Cmp_unsigned | pnc;
 							return flags;
 						}
 					}

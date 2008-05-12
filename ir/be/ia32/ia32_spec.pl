@@ -1462,7 +1462,7 @@ Bt => {
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
-	modified_flags => "CF"
+	modified_flags => $status_flags  # only CF is set, but the other flags are undefined
 },
 
 #-----------------------------------------------------------------------------#
