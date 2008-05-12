@@ -4742,17 +4742,17 @@ static ir_node *transform_node_End(ir_node *n) {
 
 /** returns 1 if a == -b */
 static int is_negated_value(ir_node *a, ir_node *b) {
-	if(is_Minus(a) && get_Minus_op(a) == b)
+	if (is_Minus(a) && get_Minus_op(a) == b)
 		return 1;
-	if(is_Minus(b) && get_Minus_op(b) == a)
+	if (is_Minus(b) && get_Minus_op(b) == a)
 		return 1;
-	if(is_Sub(a) && is_Sub(b)) {
+	if (is_Sub(a) && is_Sub(b)) {
 		ir_node *a_left  = get_Sub_left(a);
 		ir_node *a_right = get_Sub_right(a);
 		ir_node *b_left  = get_Sub_left(b);
 		ir_node *b_right = get_Sub_right(b);
 
-		if(a_left == b_right && a_right == b_left)
+		if (a_left == b_right && a_right == b_left)
 			return 1;
 	}
 
@@ -4777,29 +4777,45 @@ static ir_node *transform_node_Mux(ir_node *n) {
 			tarval *tv_t = get_Const_tarval(t);
 			if (tv_t == tarval_b_true) {
 				if (is_Const(f)) {
+					/* Muxb(sel, true, false) = sel */
 					assert(get_Const_tarval(f) == tarval_b_false);
+					DBG_OPT_ALGSIM0(oldn, sel, FS_OPT_MUX_BOOL);
 					return sel;
 				} else {
-					return new_rd_Or(dbg, irg, block, sel, f, mode_b);
+					/* Muxb(sel, true, x) = Or(sel, x) */
+					n = new_rd_Or(dbg, irg, block, sel, f, mode_b);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_OR_BOOL);
+					return n;
 				}
 			} else {
 				ir_node* not_sel = new_rd_Not(dbg, irg, block, sel, mode_b);
 				assert(tv_t == tarval_b_false);
 				if (is_Const(f)) {
+					/* Muxb(sel, false, true) = Not(sel) */
 					assert(get_Const_tarval(f) == tarval_b_true);
+					DBG_OPT_ALGSIM0(oldn, not_sel, FS_OPT_MUX_NOT_BOOL);
 					return not_sel;
 				} else {
-					return new_rd_And(dbg, irg, block, not_sel, f, mode_b);
+					/* Muxb(sel, false, x) = And(Not(sel), x) */
+					n = new_rd_And(dbg, irg, block, not_sel, f, mode_b);
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_ANDNOT_BOOL);
+					return n;
 				}
 			}
 		} else if (is_Const(f)) {
 			tarval *tv_f = get_Const_tarval(f);
 			if (tv_f == tarval_b_true) {
+				/* Muxb(sel, x, true) = Or(Not(sel), x) */
 				ir_node* not_sel = new_rd_Not(dbg, irg, block, sel, mode_b);
-				return new_rd_Or(dbg, irg, block, not_sel, t, mode_b);
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_ORNOT_BOOL);
+				n = new_rd_Or(dbg, irg, block, not_sel, t, mode_b);
+				return n;
 			} else {
+				/* Muxb(sel, x, false) = And(sel, x) */
 				assert(tv_f == tarval_b_false);
-				return new_rd_And(dbg, irg, block, sel, t, mode_b);
+				n = new_rd_And(dbg, irg, block, sel, t, mode_b);
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_AND_BOOL);
+				return n;
 			}
 		}
 	}
@@ -4824,7 +4840,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
 				ir_node *block    = get_irn_n(n, -1);
 
-				if(is_negated_value(f, t)) {
+				if (is_negated_value(f, t)) {
 					ir_node *cmp_left = get_Cmp_left(cmp);
 
 					/* Psi(a >= 0, a, -a) = Psi(a <= 0, -a, a) ==> Abs(a) */

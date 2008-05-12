@@ -79,9 +79,15 @@ enum firmstat_optimizations_t {
 	FS_OPT_CONV,                              /**< a Conv could be removed */
 	FS_OPT_CAST,                              /**< a Cast could be removed */
 	FS_OPT_MIN_MAX_EQ,                        /**< Min(a,a) = Max(a,a) = a */
+	FS_OPT_MUX_BOOL,                          /**< Muxb(sel, true, false) = sel */
+	FS_OPT_MUX_NOT_BOOL,                      /**< Muxb(sel, false, true) = Not(sel) */
+	FS_OPT_MUX_OR_BOOL,                       /**< Muxb(sel, true, x) = Or(sel, x) */
+	FS_OPT_MUX_ORNOT_BOOL,                    /**< Muxb(sel, x, true) = Or(Not(sel), x) */
+	FS_OPT_MUX_AND_BOOL,                      /**< Muxb(sel, x, false) = And(sel, x) */
+	FS_OPT_MUX_ANDNOT_BOOL,                   /**< Muxb(sel, false, x) = And(Not(sel), x) */
 	FS_OPT_MUX_C,                             /**< Mux(C, f, t) = C ? t : f */
 	FS_OPT_MUX_EQ,                            /**< Mux(v, x, x) = x */
-	FS_OPT_MUX_TRANSFORM,                     /**< Mux(a, b, c) = b OR Mux(a,b, c) = c */
+	FS_OPT_MUX_TRANSFORM,                     /**< Mux(a, b, c) = b OR Mux(a, b, c) = c */
 	FS_OPT_MUX_TO_MIN,                        /**< Mux(a < b, a, b) = Min(a,b) */
 	FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
 	FS_OPT_MUX_TO_ABS,                        /**< Mux(a > b, a, b) = Abs(a,b) */
