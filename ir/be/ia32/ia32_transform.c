@@ -1912,7 +1912,7 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 							ir_node *n = get_Shl_right(la);
 							flags    = gen_bt(pred, ra, n);
 							/* we must generate a Jc/Jnc jump */
-							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Ge : pn_Cmp_Lt;
+							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Lt : pn_Cmp_Ge;
 							if (r == la)
 								pnc ^= pn_Cmp_Leg;
 							*pnc_out = ia32_pn_Cmp_unsigned | pnc;
@@ -1926,7 +1926,7 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 							ir_node *n = get_Shl_right(ra);
 							flags    = gen_bt(pred, la, n);
 							/* we must generate a Jc/Jnc jump */
-							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Ge : pn_Cmp_Lt;
+							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Lt : pn_Cmp_Ge;
 							if (r == ra)
 								pnc ^= pn_Cmp_Leg;
 							*pnc_out = ia32_pn_Cmp_unsigned | pnc;

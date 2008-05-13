@@ -1458,7 +1458,7 @@ Bt => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "flags" ] },
 	ins       => [ "left", "right" ],
-	emit      => '. bt%M %S0, %S1',
+	emit      => '. bt%M %S1, %S0',
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
