@@ -1997,6 +1997,17 @@ vfist => {
 	attr_type => "ia32_x87_attr_t",
 },
 
+# SSE3 fisttp instruction
+vfisttp => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "vfp" ] },
+	ins       => [ "base", "index", "mem", "val" ],
+	latency   => 4,
+	units     => [ "VFP" ],
+	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
+},
+
 l_vfist => {
 	cmp_attr  => "return 1;",
 	state     => "exc_pinned",
@@ -2345,6 +2356,17 @@ fistp => {
 	rd_constructor => "NONE",
 	reg_req   => { },
 	emit      => '. fistp%M %AM',
+	mode      => "mode_M",
+	attr_type => "ia32_x87_attr_t",
+	latency   => 2,
+},
+
+# SSE3 firsttp instruction
+fisttp => {
+	state     => "exc_pinned",
+	rd_constructor => "NONE",
+	reg_req   => { },
+	emit      => '. fist%M %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,

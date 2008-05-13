@@ -1331,6 +1331,66 @@ GEN_LOAD(fld1)
 GEN_STORE(fst)
 GEN_STORE(fist)
 
+/**
+* Simulate a virtual fisttp.
+*
+* @param state  the x87 state
+* @param n      the node that should be simulated (and patched)
+*/
+static int sim_fisttp(x87_state *state, ir_node *n) {
+	x87_simulator         *sim = state->sim;
+	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
+	const arch_register_t *op2 = x87_get_irn_register(sim, val);
+	unsigned              live = vfp_live_args_after(sim, n, 0);
+	int                   insn = NO_NODE_ADDED;
+	ia32_x87_attr_t *attr;
+	int op2_reg_idx, op2_idx, depth;
+	int live_after_node;
+	ir_mode *mode;
+
+	op2_reg_idx = arch_register_get_index(op2);
+	if (op2_reg_idx == REG_VFP_UKNWN) {
+		/* just take any value from stack */
+		if (state->depth > 0) {
+			op2_idx = 0;
+			DEBUG_ONLY(op2 = NULL);
+			live_after_node = 1;
+		} else {
+			/* produce a new value which we will consume immediately */
+			x87_create_fldz(state, n, op2_reg_idx);
+			live_after_node = 0;
+			op2_idx = x87_on_stack(state, op2_reg_idx);
+			assert(op2_idx >= 0);
+		}
+	} else {
+		op2_idx = x87_on_stack(state, op2_reg_idx);
+		live_after_node = is_vfp_live(arch_register_get_index(op2), live);
+		DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
+		assert(op2_idx >= 0);
+	}
+
+	mode  = get_ia32_ls_mode(n);
+	depth = x87_get_depth(state);
+
+	if (live_after_node) {
+		/* ffistp always pop the stack */
+		panic("vfisttp with live input detected, RA failed");
+	} else {
+		/* we can only store the tos to memory */
+		if (op2_idx != 0)
+			x87_create_fxch(state, n, op2_idx);
+
+		x87_pop(state);
+		x87_patch_insn(n, op_ia32_fisttp);
+	}
+
+	attr = get_ia32_x87_attr(n);
+	attr->x87[1] = op2 = &ia32_st_regs[0];
+	DB((dbg, LEVEL_1, "<<< %s %s ->\n", get_irn_opname(n), arch_register_get_name(op2)));
+
+	return insn;
+}  /* sim_fisttp */
+
 static int sim_FtstFnstsw(x87_state *state, ir_node *n) {
 	x87_simulator         *sim         = state->sim;
 	ia32_x87_attr_t       *attr        = get_ia32_x87_attr(n);
@@ -1544,7 +1604,7 @@ static int sim_Fucom(x87_state *state, ir_node *n) {
 	}
 
 	/* patch the operation */
-	if(is_ia32_vFucomFnstsw(n)) {
+	if (is_ia32_vFucomFnstsw(n)) {
 		int i;
 
 		switch(pops) {
@@ -2314,6 +2374,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	register_sim(op_ia32_vfabs,        sim_fabs);
 	register_sim(op_ia32_vfchs,        sim_fchs);
 	register_sim(op_ia32_vfist,        sim_fist);
+	register_sim(op_ia32_vfisttp,      sim_fisttp);
 	register_sim(op_ia32_vfst,         sim_fst);
 	register_sim(op_ia32_vFtstFnstsw,  sim_FtstFnstsw);
 	register_sim(op_ia32_vFucomFnstsw, sim_Fucom);
