@@ -341,8 +341,12 @@ static int is_head(ir_node *n, ir_node *root) {
 	if (!is_outermost_StartBlock(n)) {
 		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
-			if (is_backedge(n, i)) continue;
+			ir_node *pred = get_Block_cfgpred_block(n, i);
+			/* ignore Bad control flow: it cannot happen */
+			if (is_Bad(pred))
+				continue;
+			if (is_backedge(n, i))
+				continue;
 			if (!irn_is_in_stack(pred)) {
 				some_outof_loop = 1;
 			} else {
@@ -365,25 +369,28 @@ static int is_head(ir_node *n, ir_node *root) {
  */
 static int is_endless_head(ir_node *n, ir_node *root) {
 	int i, arity;
-	int some_outof_loop = 0, some_in_loop = 0;
+	int none_outof_loop = 1, some_in_loop = 0;
 
 	assert(is_Block(n));
 	/* Test for legal loop header: Block, Phi, ... */
 	if (!is_outermost_StartBlock(n)) {
 		arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
+			/* ignore Bad control flow: it cannot happen */
+			if (is_Bad(pred))
+				continue;
 			if (is_backedge(n, i))
 				continue;
 			if (!irn_is_in_stack(pred)) {
-				some_outof_loop = 1;
+				none_outof_loop = 0;
 			} else {
 				assert(get_irn_uplink(pred) >= get_irn_uplink(root));
 				some_in_loop = 1;
 			}
 		}
 	}
-	return !some_outof_loop && some_in_loop;
+	return none_outof_loop && some_in_loop;
 }
 
 /**
@@ -396,7 +403,10 @@ static int smallest_dfn_pred(ir_node *n, int limit) {
 	if (!is_outermost_StartBlock(n)) {
 		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
+			/* ignore Bad control flow: it cannot happen */
+			if (is_Bad(pred))
+				continue;
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
@@ -417,7 +427,10 @@ static int largest_dfn_pred(ir_node *n) {
 	if (!is_outermost_StartBlock(n)) {
 		int arity = get_Block_n_cfgpreds(n);
 		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			ir_node *pred = get_Block_cfgpred_block(n, i);
+			/* ignore Bad control flow: it cannot happen */
+			if (is_Bad(pred))
+				continue;
 			if (is_backedge(n, i) || !irn_is_in_stack(pred))
 				continue;
 			if (get_irn_dfn(pred) > max) {
@@ -475,10 +488,10 @@ static ir_node *find_tail(ir_node *n) {
 			/* A dead loop not reachable from Start. */
 			for (i = tos-2; i >= 0; --i) {
 				m = stack[i];
-				if (is_endless_head (m, n)) {
+				if (is_endless_head(m, n)) {
 					res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
 					if (res_index == -2)  /* no smallest dfn pred found. */
-						res_index = largest_dfn_pred (m);
+						res_index = largest_dfn_pred(m);
 					break;
 				}
 				if (m == n) break;   /* It's not an unreachable loop, either. */
@@ -489,7 +502,7 @@ static ir_node *find_tail(ir_node *n) {
 	assert(res_index > -2);
 
 	set_backedge(m, res_index);
-	return is_outermost_StartBlock(n) ? NULL : get_nodes_block(skip_Proj(get_irn_n(m, res_index)));
+	return is_outermost_StartBlock(n) ? NULL : get_Block_cfgpred_block(m, res_index);
 }
 
 /**
@@ -529,7 +542,10 @@ static void cfscc(ir_node *n) {
 
 			if (is_backedge(n, i))
 				continue;
-			m = get_nodes_block(skip_Proj(get_irn_n(n, i)));
+			m = get_Block_cfgpred_block(n, i);
+			/* ignore Bad control flow: it cannot happen */
+			if (is_Bad(m))
+				continue;
 
 			cfscc(m);
 			if (irn_is_in_stack(m)) {
@@ -586,7 +602,7 @@ static void cfscc(ir_node *n) {
 #endif
 
 			/* Remove the cfloop from the stack ... */
-			pop_scc_unmark_visit (n);
+			pop_scc_unmark_visit(n);
 
 			/* The current backedge has been marked, that is temporarily eliminated,
 			   by find tail. Start the scc algorithm
