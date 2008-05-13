@@ -1530,6 +1530,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
+		assure_cf_loop(irg);
 		wenv.x = get_irg_link(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
@@ -1642,6 +1643,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
+					assure_cf_loop(irg);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
