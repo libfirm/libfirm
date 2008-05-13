@@ -726,7 +726,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 	int ret                   = 0;
 
 	lc_opt_err_info_t err;
-	char *end, *buf;
+	char *end, *buf, *eqsign;
 
 	if(n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
 		arg = arg + n_prefix;
@@ -756,7 +756,10 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 
 		/* find the next delimiter (the -) and extract the string up to
 		 * there. */
-		end = strchr(arg, OPT_DELIM);
+		end    = strchr(arg, OPT_DELIM);
+		eqsign = strchr(arg, '=');
+		if (eqsign && eqsign < end)
+			end = NULL;
 		while(end != NULL) {
 			/*
 			 * Copy the part of the option into the buffer and add the
@@ -772,7 +775,10 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 
 			/* Find the next option part delimiter. */
 			arg = end + 1;
-			end = strchr(arg, OPT_DELIM);
+			end    = strchr(arg, OPT_DELIM);
+			eqsign = strchr(arg, '=');
+			if (eqsign && eqsign < end)
+				end = NULL;
 			obstack_free(&obst, buf);
 		}
 
