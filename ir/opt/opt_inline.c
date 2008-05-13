@@ -1643,7 +1643,7 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
-					assure_cf_loop(irg);
+					assure_cf_loop(copy);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
