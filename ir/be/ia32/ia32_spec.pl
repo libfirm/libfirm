@@ -2000,11 +2000,11 @@ vfist => {
 # SSE3 fisttp instruction
 vfisttp => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "vfp" ], out => [ "in_r4", "none" ]},
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "res", "M" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },
 

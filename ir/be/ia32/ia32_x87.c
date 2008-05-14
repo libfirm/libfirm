@@ -1345,8 +1345,6 @@ static int sim_fisttp(x87_state *state, ir_node *n) {
 	int                   insn = NO_NODE_ADDED;
 	ia32_x87_attr_t *attr;
 	int op2_reg_idx, op2_idx, depth;
-	int live_after_node;
-	ir_mode *mode;
 
 	op2_reg_idx = arch_register_get_index(op2);
 	if (op2_reg_idx == REG_VFP_UKNWN) {
@@ -1354,35 +1352,30 @@ static int sim_fisttp(x87_state *state, ir_node *n) {
 		if (state->depth > 0) {
 			op2_idx = 0;
 			DEBUG_ONLY(op2 = NULL);
-			live_after_node = 1;
 		} else {
 			/* produce a new value which we will consume immediately */
 			x87_create_fldz(state, n, op2_reg_idx);
-			live_after_node = 0;
 			op2_idx = x87_on_stack(state, op2_reg_idx);
 			assert(op2_idx >= 0);
 		}
 	} else {
 		op2_idx = x87_on_stack(state, op2_reg_idx);
-		live_after_node = is_vfp_live(arch_register_get_index(op2), live);
 		DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
 		assert(op2_idx >= 0);
 	}
 
-	mode  = get_ia32_ls_mode(n);
 	depth = x87_get_depth(state);
 
-	if (live_after_node) {
-		/* ffistp always pop the stack */
-		panic("vfisttp with live input detected, RA failed");
-	} else {
-		/* we can only store the tos to memory */
-		if (op2_idx != 0)
-			x87_create_fxch(state, n, op2_idx);
+	/* Note: although the value is still live here, it is destroyed because
+	   of the pop. The register allocator is aware of that and introduced a copy
+	   if the value must be alive. */
 
-		x87_pop(state);
-		x87_patch_insn(n, op_ia32_fisttp);
-	}
+	/* we can only store the tos to memory */
+	if (op2_idx != 0)
+		x87_create_fxch(state, n, op2_idx);
+
+	x87_pop(state);
+	x87_patch_insn(n, op_ia32_fisttp);
 
 	attr = get_ia32_x87_attr(n);
 	attr->x87[1] = op2 = &ia32_st_regs[0];

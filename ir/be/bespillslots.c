@@ -127,7 +127,12 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 		                      const ir_mode *mode, int align)
 {
 	spill_t spill, *res;
-	int hash = hash_irn(node);
+	int     hash;
+
+	/* beware: although untypical there might be store nodes WITH Proj's,
+	   vfisttp in ia32 for instance */
+	node = skip_Proj(node);
+	hash = hash_irn(node);
 
 	/* insert into set of spills if not already there */
 	spill.spill = node;
@@ -663,7 +668,7 @@ static void assign_spillslots(be_fec_env_t *env)
 
 	for(i = 0; i < ARR_LEN(env->reloads); ++i) {
 		ir_node            *reload    = env->reloads[i];
-		ir_node            *spillnode = get_memory_edge(reload);
+		ir_node            *spillnode = skip_Proj(get_memory_edge(reload));
 		spill_t            *spill     = get_spill(env, spillnode);
 		const spill_slot_t *slot      = & spillslots[spill->spillslot];
 
