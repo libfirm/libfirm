@@ -2525,6 +2525,7 @@ static ir_node *gen_normal_Store(ir_node *node)
 			new_node = new_rd_ia32_vfst(dbgi, irg, new_block, addr.base,
 			                            addr.index, addr.mem, new_val, mode);
 		}
+		store = new_node;
 	} else if (is_float_to_int32_conv(val)) {
 		val = get_Conv_op(val);
 
