@@ -483,7 +483,7 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2);
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
-	ia32_cg_config.use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_geode) || opt_size;
+	ia32_cg_config.use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
 	ia32_cg_config.use_sse2             = use_sse2;
 	ia32_cg_config.use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
 	ia32_cg_config.use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
@@ -511,6 +511,7 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.use_mov_0            = FLAGS(opt_arch, arch_k6) && !opt_size;
 	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | arch_core2 | arch_generic32) && !opt_size;
 	ia32_cg_config.use_bt               = FLAGS(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
+	ia32_cg_config.use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
 	ia32_cg_config.optimize_cc          = opt_cc;
 	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
 

@@ -2444,6 +2444,29 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns) {
 }
 
 /**
+ * Generate a vfist or vfisttp instruction.
+ */
+static ir_node *gen_vfist(dbg_info *dbgi, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index,
+                          ir_node *mem,  ir_node *val)
+{
+	ir_node *new_node;
+
+	if (ia32_cg_config.use_fisttp) {
+		/* Note: fisttp ALWAYS pop the tos. We have to ensure here that the value is copied
+		if other users exists */
+		const arch_register_class_t *reg_class = &ia32_reg_classes[CLASS_ia32_vfp];
+		val = be_new_Copy(reg_class, irg, block, val);
+
+		new_node = new_rd_ia32_vfisttp(dbgi, irg, block, base, index, mem, val);
+	} else {
+		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
+
+		/* do a fist */
+		new_node = new_rd_ia32_vfist(dbgi, irg, block, base, index, mem, val, trunc_mode);
+	}
+	return new_node;
+}
+/**
  * Transforms a normal Store.
  *
  * @return the created ia32 Store node
@@ -2500,7 +2523,6 @@ static ir_node *gen_normal_Store(ir_node *node)
 			                            addr.index, addr.mem, new_val, mode);
 		}
 	} else if (is_float_to_int32_conv(val)) {
-		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
 		val = get_Conv_op(val);
 
 		/* convs (and strict-convs) before stores are unnecessary if the mode
@@ -2508,10 +2530,8 @@ static ir_node *gen_normal_Store(ir_node *node)
 		while(is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
 			val = get_Conv_op(val);
 		}
-		new_val = be_transform_node(val);
-
-		new_node = new_rd_ia32_vfist(dbgi, irg, new_block, addr.base,
-		                             addr.index, addr.mem, new_val, trunc_mode);
+		new_val  = be_transform_node(val);
+		new_node = gen_vfist(dbgi, irg, new_block, addr.base, addr.index, addr.mem, new_val);
 	} else {
 		new_val = create_immediate_or_transform(val, 0);
 		assert(mode != mode_b);
@@ -3000,14 +3020,10 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 	ir_graph        *irg        = current_ir_graph;
 	dbg_info        *dbgi       = get_irn_dbg_info(node);
 	ir_node         *noreg      = ia32_new_NoReg_gp(cg);
-	ir_node         *trunc_mode = ia32_new_Fpu_truncate(cg);
 	ir_mode         *mode       = get_irn_mode(node);
 	ir_node         *fist, *load;
 
-	/* do a fist */
-	fist = new_rd_ia32_vfist(dbgi, irg, block, get_irg_frame(irg), noreg,
-	                         new_NoMem(), new_op, trunc_mode);
-
+	fist = gen_vfist(dbgi, irg, block, get_irg_frame(irg), noreg, new_NoMem(), new_op);
 	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -4383,13 +4399,10 @@ static ir_node *gen_ia32_l_vfist(ir_node *node) {
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *noreg      = ia32_new_NoReg_gp(env_cg);
 	ir_mode  *mode       = get_ia32_ls_mode(node);
-	ir_node  *trunc_mode = ia32_new_Fpu_truncate(env_cg);
 	ir_node  *new_op;
 	long     am_offs;
 
-	new_op = new_rd_ia32_vfist(dbgi, irg, block, new_ptr, noreg, new_mem,
-	                           new_val, trunc_mode);
-
+	new_op = gen_vfist(dbgi, irg, block, new_ptr, noreg, new_mem, new_val);
 	am_offs = get_ia32_am_offs_int(node);
 	add_ia32_am_offs_int(new_op, am_offs);
 
@@ -4569,13 +4582,8 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node) {
 	ir_node  *nomem      = new_NoMem();
 	ir_node  *val        = get_irn_n(node, n_ia32_l_FloattoLL_val);
 	ir_node  *new_val    = be_transform_node(val);
-	ir_node  *trunc_mode = ia32_new_Fpu_truncate(env_cg);
 
-	ir_node  *fist;
-
-	/* do a fist */
-	fist = new_rd_ia32_vfist(dbgi, irg, block, frame, noreg, nomem, new_val,
-	                         trunc_mode);
+	ir_node  *fist = gen_vfist(dbgi, irg, block, frame, noreg, nomem, new_val);
 	SET_IA32_ORIG_NODE(fist, ia32_get_old_node_name(env_cg, node));
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);

@@ -1456,6 +1456,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
  				   is_ia32_xStoreSimple(node) ||
 				   is_ia32_vfst(node) ||
 				   is_ia32_vfist(node) ||
+				   is_ia32_vfisttp(node) ||
 			       is_ia32_FnstCW(node));
 #endif
 		}

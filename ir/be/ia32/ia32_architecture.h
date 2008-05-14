@@ -68,6 +68,8 @@ typedef struct {
 	unsigned use_pad_return:1;
 	/** use the bt instruction */
 	unsigned use_bt:1;
+	/** use fisttp instruction (requieres SSE3) */
+	unsigned use_fisttp:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**
