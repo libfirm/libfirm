@@ -436,10 +436,12 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	loc.time = next_use.time;
 
 	if(next_use.outermost_loop >= get_loop_depth(loop)) {
-		DB((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time, next_use.outermost_loop));
+		DB((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time,
+		    next_use.outermost_loop));
 	} else {
 		loc.time = USES_PENDING;
-		DB((dbg, DBG_START, "    %+F delayed (outerloopdepth %d < loopdetph %d)\n", node, next_use.outermost_loop, get_loop_depth(loop)));
+		DB((dbg, DBG_START, "    %+F delayed (outerdepth %d < loopdepth %d)\n",
+		    node, next_use.outermost_loop, get_loop_depth(loop)));
 	}
 	return loc;
 }
@@ -510,13 +512,36 @@ static void compute_live_ins(const ir_node *block)
 	/* so far we only put nodes into the starters list that are used inside
 	 * the loop. If register pressure in the loop is low then we can take some
 	 * values and let them live through the loop */
-	if(free_slots > 0) {
+	if (free_slots > 0) {
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
-			DB((dbg, DBG_START, "    delayed %+F taken\n", delayed[i].node));
-			ARR_APP1(loc_t, starters, delayed[i]);
-			delayed[i].node = NULL;
+			int    p, arity;
+			loc_t *loc = & delayed[i];
+
+			/* don't use values which are dead in a known predecessors
+			 * to not induce unnecessary reloads */
+			arity = get_irn_arity(block);
+			for (p = 0; p < arity; ++p) {
+				ir_node      *pred_block = get_Block_cfgpred_block(block, p);
+				block_info_t *pred_info  = get_block_info(pred_block);
+
+				if (pred_info == NULL)
+					continue;
+
+				if (!workset_contains(pred_info->end_workset, loc->node)) {
+					DB((dbg, DBG_START,
+					    "    delayed %+F not live at pred %+F\n", loc->node,
+					    pred_block));
+					goto skip_delayed;
+				}
+			}
+
+			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
+			ARR_APP1(loc_t, starters, *loc);
+			loc->node = NULL;
+		skip_delayed:
+			;
 		}
 	}
 
