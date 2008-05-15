@@ -39,7 +39,7 @@
 
 
 // XXX there is no one time init for schedulers
-#define NORMAL_DBG
+//#define NORMAL_DBG
 
 
 static int must_be_scheduled(const ir_node* const irn)
@@ -93,15 +93,7 @@ static int cost_cmp(const void* a, const void* b)
 {
 	const irn_cost_pair* const a1 = a;
 	const irn_cost_pair* const b1 = b;
-	int ret;
-	if (is_irn_forking(a1->irn)) {
-		ret = 1;
-	} else if (is_irn_forking(b1->irn)) {
-		ret = -1;
-	} else {
-		ret = b1->cost - a1->cost;
-		//ret = a1->cost - b1->cost;
-	}
+	int ret = b1->cost - a1->cost;
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
 #endif
@@ -275,7 +267,18 @@ static int root_cmp(const void* a, const void* b)
 {
 	const irn_cost_pair* const a1 = a;
 	const irn_cost_pair* const b1 = b;
-	int ret = b1->cost - a1->cost;
+	int ret;
+	if (is_irn_forking(a1->irn)) {
+		ret = 1;
+	} else if (is_irn_forking(b1->irn)) {
+		ret = -1;
+	} else {
+		ret = b1->cost - a1->cost;
+		if (ret == 0) {
+			/* place live-out nodes later */
+			ret = (count_result(a1->irn) != 0) - (count_result(b1->irn) != 0);
+		}
+	}
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
 #endif
