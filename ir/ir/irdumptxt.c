@@ -47,6 +47,7 @@
 #include "irgwalk.h"
 #include "tv_t.h"
 #include "irprintf.h"
+#include "error.h"
 
 #include "irdom.h"
 #include "field_temperature.h"
@@ -549,6 +550,77 @@ static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
 	fprintf(F, "\n");
 }
 
+static int need_nl = 1;
+
+/**
+ * Dump initializers.
+ */
+static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
+										 const ir_initializer_t *initializer, ir_type *type) {
+	tarval  *tv;
+	ir_node *value;
+
+	if (need_nl) {
+		fprintf(F, "\n%s    ", prefix);
+		need_nl = 0;
+	}
+	switch (get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL:
+		fprintf(F, "\t = <NOT_SET>");
+		break;
+	case IR_INITIALIZER_TARVAL:
+		tv = get_initializer_tarval_value(initializer);
+		ir_fprintf(F, "\t = <TV>%F", tv);
+		break;
+	case IR_INITIALIZER_CONST:
+		value = get_initializer_const_value(initializer);
+		fprintf(F, "\t = <CONST>");
+		dump_node_opcode(F, value);
+		break;
+	case IR_INITIALIZER_COMPOUND:
+		if (is_Array_type(type)) {
+			size_t i, n = get_initializer_compound_n_entries(initializer);
+			ir_type *element_type = get_array_element_type(type);
+			for (i = 0; i < n; ++i) {
+				ir_initializer_t *sub_initializer
+					= get_initializer_compound_value(initializer, i);
+
+				if (need_nl) {
+					fprintf(F, "\n%s    ", prefix);
+					need_nl = 0;
+				}
+				fprintf(F, "[%d]", i);
+				dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+			}
+		} else {
+			size_t i, n;
+			assert(is_compound_type(type));
+			n = get_compound_n_members(type);
+			for (i = 0; i < n; ++i) {
+				ir_entity        *member    = get_compound_member(type, i);
+				ir_type          *subtype   = get_entity_type(member);
+				ir_initializer_t *sub_initializer;
+
+				assert(i < get_initializer_compound_n_entries(initializer));
+				sub_initializer
+					= get_initializer_compound_value(initializer, i);
+
+				if (need_nl) {
+					fprintf(F, "\n%s    ", prefix);
+					need_nl = 0;
+				}
+				ir_fprintf(F, ".%F", member);
+				dump_ir_initializers_to_file(F, prefix, sub_initializer, subtype);
+			}
+		}
+		break;
+	default:
+		panic("invalid ir_initializer kind found");
+	}
+	need_nl = 1;
+}
+
+
 void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity) {
 	int i, j;
 	ir_type *owner, *type;
@@ -665,26 +737,34 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 
 	if (verbosity & dump_verbosity_entconsts) {
 		if (get_entity_variability(ent) != variability_uninitialized) {
-			if (is_atomic_entity(ent)) {
-				fprintf(F, "%s  atomic value: ", prefix);
-				dump_node_opcode(F, get_atomic_ent_value(ent));
+			if (ent->has_initializer) {
+				const ir_initializer_t *initializer = get_entity_initializer(ent);
+				fprintf(F, "\n%s  Initializers:");
+				need_nl = 1;
+				dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
 			} else {
-				fprintf(F, "%s  compound values:", prefix);
-				for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-					compound_graph_path *path = get_compound_ent_value_path(ent, i);
-					ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-					fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
-					if (get_type_state(type) == layout_fixed)
-						fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
-					fprintf(F, "%s", get_entity_name(ent));
-					for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-						ir_entity *node = get_compound_graph_path_node(path, j);
-						fprintf(F, ".%s", get_entity_name(node));
-						if (is_Array_type(get_entity_owner(node)))
-							fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
+				/* old compound_graph_path based initializers */
+				if (is_atomic_entity(ent)) {
+					fprintf(F, "%s  atomic value: ", prefix);
+					dump_node_opcode(F, get_atomic_ent_value(ent));
+				} else {
+					fprintf(F, "%s  compound values:", prefix);
+					for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+						compound_graph_path *path = get_compound_ent_value_path(ent, i);
+						ir_entity *ent0 = get_compound_graph_path_node(path, 0);
+						fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
+						if (get_type_state(type) == layout_fixed)
+							fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
+						fprintf(F, "%s", get_entity_name(ent));
+						for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+							ir_entity *node = get_compound_graph_path_node(path, j);
+							fprintf(F, ".%s", get_entity_name(node));
+							if (is_Array_type(get_entity_owner(node)))
+								fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
+						}
+						fprintf(F, "\t = ");
+						dump_node_opcode(F, get_compound_ent_value(ent, i));
 					}
-					fprintf(F, "\t = ");
-					dump_node_opcode(F, get_compound_ent_value(ent, i));
 				}
 			}
 			fprintf(F, "\n");

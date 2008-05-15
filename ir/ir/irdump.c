@@ -58,6 +58,7 @@
 #include "irhooks.h"
 #include "dbginfo_t.h"
 #include "irtools.h"
+#include "irprintf.h"
 
 #include "irvrfy.h"
 
@@ -732,15 +733,11 @@ int dump_node_opcode(FILE *F, ir_node *n)
 	/* implementation for default nodes */
 	switch (get_irn_opcode(n)) {
 
-	case iro_Const: {
-		int res;
-		char buf[1024];
-		res = tarval_snprintf(buf, sizeof(buf), get_Const_tarval(n));
-		assert(res < (int) sizeof(buf) && "buffer to small for tarval_snprintf");
-		fprintf(F, buf);
-	} break;
+	case iro_Const:
+		ir_fprintf(F, "%T", get_Const_tarval(n));
+		break;
 
-	case iro_SymConst: {
+	case iro_SymConst:
 		switch (get_SymConst_kind(n)) {
 		case symconst_addr_name:
 			/* don't use get_SymConst_ptr_info as it mangles the name. */
@@ -768,14 +765,14 @@ int dump_node_opcode(FILE *F, ir_node *n)
 			fprintf(F, "SymC %lu label", get_SymConst_label(n));
 			break;
 		}
-	} break;
+		break;
 
-	case iro_Filter: {
+	case iro_Filter:
 		if (!get_interprocedural_view())
 			fprintf(F, "Proj'");
 		else
 			goto default_case;
-	} break;
+		break;
 
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(n);
@@ -790,13 +787,13 @@ int dump_node_opcode(FILE *F, ir_node *n)
 	case iro_Start:
 	case iro_End:
 	case iro_EndExcept:
-	case iro_EndReg: {
+	case iro_EndReg:
 		if (get_interprocedural_view()) {
 			fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_entity(get_irn_irg(n))));
 			break;
 		} else
 			goto default_case;
-	}
+
 	case iro_CallBegin: {
 		ir_node *addr = get_CallBegin_ptr(n);
 		ir_entity *ent = NULL;
