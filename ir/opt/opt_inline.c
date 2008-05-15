@@ -1303,6 +1303,7 @@ typedef struct {
 	int n_callers_orig;      /**< for statistics */
 	unsigned got_inline:1;   /**< Set, if at least one call inside this graph was inlined. */
 	unsigned local_vars:1;   /**< Set, if a inlined function gets the address of an inlined variable. */
+	unsigned recursive:1;    /**< Set, if this function is self recursive. */
 	call_entry *call_head;   /**< The head of the list of all call nodes in this graph. */
 	call_entry *call_tail;   /**< The tail of the list of all call nodes in this graph .*/
 	unsigned *local_weights; /**< Once allocated, the beneficial weight for transmitting local addresses. */
@@ -1324,6 +1325,7 @@ static inline_irg_env *alloc_inline_irg_env(void) {
 	env->n_callers_orig    = 0;
 	env->got_inline        = 0;
 	env->local_vars        = 0;
+	env->recursive         = 0;
 	env->local_weights     = NULL;
 	return env;
 }
@@ -1382,6 +1384,8 @@ static void collect_calls2(ir_node *call, void *ctx) {
 			++callee_env->n_callers;
 			++callee_env->n_callers_orig;
 		}
+		if (callee == current_ir_graph)
+			x->recursive = 1;
 
 		/* link it in the list of possible inlinable entries */
 		entry = obstack_alloc(&temp_obst, sizeof(*entry));
@@ -1852,7 +1856,7 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
-	int       i, n_params;
+	int       i, n_params, all_const;
 	unsigned  cc, v;
 
 	inline_irg_env *curr_env, *callee_env;
@@ -1881,21 +1885,27 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 
 	/* constant parameters improve the benefice */
 	frame_ptr = get_irg_frame(current_ir_graph);
+	all_const = 1;
 	for (i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
-		if (is_Const(param) || is_SymConst(param))
+		if (is_Const(param))
 			weight += get_method_param_weight(ent, i);
-		else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr) {
-			/*
-			 * An address of a local variable is transmitted. After inlining,
-			 * scalar_replacement might be able to remove the local variable,
-			 * so honor this.
-			 */
-			v = get_method_local_adress_weight(callee, i);
-			weight += v;
-			if (v > 0)
-				*local_adr = 1;
+		else {
+			all_const = 0;
+			if (is_SymConst(param))
+				weight += get_method_param_weight(ent, i);
+			else if (is_Sel(param) && get_Sel_ptr(param) == frame_ptr) {
+				/*
+				 * An address of a local variable is transmitted. After inlining,
+				 * scalar_replacement might be able to remove the local variable,
+				 * so honor this.
+				 */
+				v = get_method_local_adress_weight(callee, i);
+				weight += v;
+				if (v > 0)
+					*local_adr = 1;
+			}
 		}
 	}
 
@@ -1912,20 +1922,33 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 
 	/* reduce the benefice if the current function is already big */
 	curr_env = get_irg_link(current_ir_graph);
-	weight -= curr_env->n_nodes / 100;
+	weight -= curr_env->n_nodes / 50;
 
 	/* give a bonus for functions with one block */
 	if (callee_env->n_blocks == 1)
 		weight = weight * 3 / 2;
 
-	/* and one for small functions: we want them to be inlined in mostly every case */
-	else if (callee_env->n_nodes < 20)
+	/* and one for small non-recursive functions: we want them to be inlined in mostly every case */
+	else if (callee_env->n_nodes < 20 && !callee_env->recursive)
 		weight += 5000;
 
 	/* and finally for leaves: they do not increase the register pressure
 	   because of callee safe registers */
 	else if (callee_env->n_call_nodes == 0)
 		weight += 25;
+
+	/*
+	 * Reduce the weight for recursive function IFF not all arguments are const.
+	 * inlining recursive functions is rarely good.
+	 */
+	if (callee_env->recursive && !all_const)
+		weight -= 500;
+
+	/*
+	 * All arguments constant is probably a good sign, give an extra bonus
+	 */
+	if (all_const)
+		weight += 100;
 
 	return weight;
 }
