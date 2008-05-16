@@ -576,6 +576,8 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 
 	/* TODO: graph might be changed, handle more gracefull */
 	set_irg_outs_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 	free_dom(irg);
 
 	free_cdep(irg);
