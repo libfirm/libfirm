@@ -155,11 +155,11 @@ void normalize_one_return(ir_graph *irg) {
 	set_irg_doms_inconsistent(irg);
 	set_irg_outs_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
+	set_irg_loopinfo_inconsistent(irg);
 }
 
 /**
- * check, whether a Ret can be moved on block upwards.
+ * Check, whether a Return can be moved on block upwards.
  *
  * In a block with a Return, all live nodes must be linked
  * with the Return, otherwise they are dead (because the Return leaves
@@ -191,7 +191,7 @@ static int can_move_ret(ir_node *ret) {
 	/* check, that predecessors are Jmps */
 	n = get_Block_n_cfgpreds(retbl);
 	for (i = 0; i < n; ++i)
-		if (get_irn_op(get_Block_cfgpred(retbl, i)) != op_Jmp)
+		if (! is_Jmp(get_Block_cfgpred(retbl, i)))
 			return 0;
 
 	/* if we have 0 control flow predecessors, we cannot move :-) */
@@ -238,9 +238,9 @@ void normalize_n_returns(ir_graph *irg) {
 
 		if (is_Return(ret) && can_move_ret(ret)) {
 			/*
-			* Ok, all conditions met, we can move this Return, put it
-			* on our work list.
-			*/
+			 * Ok, all conditions met, we can move this Return, put it
+			 * on our work list.
+			 */
 			set_irn_link(ret, list);
 			list = ret;
 			++n_rets;
@@ -276,12 +276,12 @@ void normalize_n_returns(ir_graph *irg) {
 			ir_node *jmp = get_Block_cfgpred(block, i);
 			ir_node *new_bl, *new_ret;
 
-			if (get_irn_op(jmp) != op_Jmp)
+			if (! is_Jmp(jmp))
 				continue;
 
 			new_bl = get_nodes_block(jmp);
 
-			/* create the in-array for the new Ret */
+			/* create the in-array for the new Return */
 			for (j = 0; j < n_ret_vals; ++j) {
 				ir_node *pred = get_irn_n(ret, j);
 
@@ -302,8 +302,7 @@ void normalize_n_returns(ir_graph *irg) {
 					set_irn_link(new_ret, list);
 					list = new_ret;
 					++n_rets;
-				}
-				else {
+				} else {
 					set_irn_link(new_ret, final);
 					final = new_ret;
 					++n_finals;
@@ -352,5 +351,5 @@ void normalize_n_returns(ir_graph *irg) {
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);  /* may not be needed */
 	set_irg_outs_inconsistent(irg);
-	set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+	set_irg_loopinfo_inconsistent(current_ir_graph);
 }
