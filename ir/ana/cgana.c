@@ -84,12 +84,12 @@ static eset *entities = NULL;
 /** Returns the entity that contains the implementation of the inherited
  *  entity if available, else returns the entity passed. */
 static ir_entity *get_inherited_methods_implementation(ir_entity *inh_meth) {
-	assert(get_atomic_ent_value(inh_meth) && "constant entity without value");
-	assert((get_irn_op(get_atomic_ent_value(inh_meth)) == op_SymConst) &&
-	       (get_SymConst_kind(get_atomic_ent_value(inh_meth)) == symconst_addr_ent) &&
+	ir_node *value = get_atomic_ent_value(inh_meth);
+	assert(value && "constant entity without value");
+	assert(is_SymConst_addr_ent(value) &&
 	       "Complex constant values not supported -- address of method should be straight constant!");
 
-	return get_SymConst_entity(get_atomic_ent_value(inh_meth));
+	return get_SymConst_entity(value);
 }
 
 /** Collect the entity representing the implementation of this
@@ -191,8 +191,10 @@ static void sel_methods_walker(ir_node *node, void *env) {
 	/* Call standard optimizations */
 	if (is_Sel(node)) {
 		ir_node *new_node = optimize_in_place(node);
-		if (node != new_node)
+		if (node != new_node) {
 			exchange(node, new_node);
+			node = new_node;
+		}
 	}
 
 	/* replace SymConst(name)-operations by SymConst(ent) */
@@ -205,44 +207,44 @@ static void sel_methods_walker(ir_node *node, void *env) {
 			}
 		}
 	} else if (is_Sel(node) && is_Method_type(get_entity_type(get_Sel_entity(node)))) {
-			ir_entity *ent = get_SymConst_entity(get_atomic_ent_value(get_Sel_entity(node)));
-			assert(get_entity_peculiarity(ent) != peculiarity_inherited);
+		ir_entity *ent = get_SymConst_entity(get_atomic_ent_value(get_Sel_entity(node)));
+		assert(get_entity_peculiarity(ent) != peculiarity_inherited);
 
-			if (!eset_contains(entities, ent)) {
-				/* Entity not yet handled. Find all (internal or external)
-				 * implemented methods that overwrites this entity.
-				 * This set is stored in the entity link. */
-				set_entity_link(ent, get_impl_methods(ent));
-				eset_insert(entities, ent);
-			}
+		if (!eset_contains(entities, ent)) {
+			/* Entity not yet handled. Find all (internal or external)
+			 * implemented methods that overwrites this entity.
+			 * This set is stored in the entity link. */
+			set_entity_link(ent, get_impl_methods(ent));
+			eset_insert(entities, ent);
+		}
 
-			/* -- As an add on we get an optimization that removes polymorphic calls.
-			This optimization is more powerful than that in transform_node_Sel().  -- */
-			arr = get_entity_link(ent);
-			if (arr == NULL) {
-				/*
-				 * The Sel node never returns a pointer to a usable method.
-				 * We could not call it, but it may be description:
-				 * We call a method in a dead part of the program.
-				 */
-				assert(get_entity_peculiarity(ent) == peculiarity_description);
-			}
-			else if (get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
-				(ARR_LEN(arr) == 1 && arr[0] != NULL)) {
-					ir_node *new_node;
+		/* -- As an add on we get an optimization that removes polymorphic calls.
+		This optimization is more powerful than that in transform_node_Sel().  -- */
+		arr = get_entity_link(ent);
+		if (arr == NULL) {
+			/*
+			 * The Sel node never returns a pointer to a usable method.
+			 * We could not call it, but it may be description:
+			 * We call a method in a dead part of the program.
+			 */
+			assert(get_entity_peculiarity(ent) == peculiarity_description);
+		}
+		else if (get_opt_closed_world() && get_opt_dyn_meth_dispatch() &&
+			(ARR_LEN(arr) == 1 && arr[0] != NULL)) {
+			ir_node *new_node;
 
-					/*
-					 * The Sel node returns only one possible method.
-					 * So we could replace the Sel node by a SymConst.
-					 * This method must exists.
-					 */
-					set_irg_current_block(current_ir_graph, get_nodes_block(node));
-					assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
-						peculiarity_existent);
-					new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]));
-					DBG_OPT_POLY(node, new_node);
-					exchange(node, new_node);
-			}
+			/*
+			 * The Sel node returns only one possible method.
+			 * So we could replace the Sel node by a SymConst.
+			 * This method must exists.
+			 */
+			set_irg_current_block(current_ir_graph, get_nodes_block(node));
+			assert(get_entity_peculiarity(get_SymConst_entity(get_atomic_ent_value(arr[0]))) ==
+				peculiarity_existent);
+			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]));
+			DBG_OPT_POLY(node, new_node);
+			exchange(node, new_node);
+		}
 	}
 }
 
@@ -372,7 +374,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 		assert(0 && "unexpected opcode or opcode not implemented");
 		break;
 	}
-	set_irn_link(node, NULL);
+	// set_irn_link(node, NULL);
 }
 
 /**
@@ -428,7 +430,6 @@ static void free_mark(ir_node *node, eset * set) {
 		/* nothing: */
 		break;
 	}
-	set_irn_link(node, NULL);
 }
 
 /**
@@ -476,13 +477,23 @@ static void free_ana_walker(ir_node *node, void *env) {
 		}
 		break;
 	}
-	set_irn_link(node, NULL);
 }
 
+/**
+ * Add all method addresses in global new style initializers to the set.
+ *
+ * @note
+ * We do NOT check the type here, just it it's an entity address.
+ * The reason for this is code like:
+ *
+ * void *p = function;
+ *
+ * which is sometimes used to anchor functions.
+ */
 static void add_method_address_intitialzer(ir_initializer_t *initializer,
                                            eset *set)
 {
-	switch(initializer->kind) {
+	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST: {
 		ir_node *n = initializer->consti.value;
 
@@ -501,7 +512,7 @@ static void add_method_address_intitialzer(ir_initializer_t *initializer,
 	case IR_INITIALIZER_COMPOUND: {
 		size_t i;
 
-		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *sub_initializer
 				= initializer->compound.initializers[i];
 			add_method_address_intitialzer(sub_initializer, set);
@@ -534,7 +545,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 		return;
 
 	if (ent->has_initializer) {
-
+		add_method_address_intitialzer(get_entity_initializer(ent), set);
 	} else if (is_atomic_entity(ent)) {
 		tp = get_entity_type(ent);
 
@@ -596,9 +607,11 @@ static ir_entity **get_free_methods(int *length)
 			eset_insert(free_set, ent);
 		}
 
+		set_using_irn_link(irg);
 		/* Find all method entities that gets "visible" trough this graphs,
 		 * for instance because their address is stored. */
 		irg_walk_graph(irg, NULL, free_ana_walker, free_set);
+		clear_using_irn_link(irg);
 	}
 
 	/* insert all methods that are used in global variables initializers */
@@ -667,8 +680,6 @@ static void callee_ana_proj(ir_node *node, long n, eset *methods) {
 		eset_insert(methods, unknown_entity); /* free method -> unknown */
 		break;
 	}
-
-	set_irn_link(node, NULL);
 }
 
 /**
@@ -758,8 +769,6 @@ static void callee_ana_node(ir_node *node, eset *methods) {
 		assert(0 && "invalid opcode or opcode not implemented");
 		break;
 	}
-
-	set_irn_link(node, NULL);
 }
 
 /**
