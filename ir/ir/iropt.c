@@ -887,9 +887,11 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 		if (aa == b) {
 			/* (a ^ b) ^ a -> b */
 			n = ab;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 		} else if (ab == b) {
 			/* (a ^ b) ^ b -> a */
 			n = aa;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 		}
 	} else if (is_Eor(b)) {
 		ir_node *ba = get_Eor_left(b);
@@ -898,9 +900,11 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 		if (ba == a) {
 			/* a ^ (a ^ b) -> b */
 			n = bb;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 		} else if (bb == a) {
 			/* a ^ (b ^ a) -> b */
 			n = ba;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 		}
 	}
 

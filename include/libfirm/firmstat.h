@@ -68,6 +68,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_AND,                               /**< a & 0b1...1 = 0b1...1 & a =  a & a = a */
 	FS_OPT_TO_EOR,                            /**< (a|b) & ~(a&b) = a^b */
 	FS_OPT_EOR_A_A,                           /**< a ^ a = 0 */
+	FS_OPT_EOR_A_B_A,                         /**< (a ^ b) ^ a = b */
 	FS_OPT_EOR_TO_NOT_BOOL,                   /**< bool ^ 1 = !bool */
 	FS_OPT_EOR_TO_NOT,                        /**< x ^ 0b1..1 = ~x, (a ^ b) & b -> ~a & b */
 	FS_OPT_NOT_CMP,                           /**< !(a cmp b) = a !cmp b */
