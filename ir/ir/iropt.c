@@ -2804,8 +2804,17 @@ static ir_node *transform_node_Quot(ir_node *n) {
 
 		if (is_Const(b)) {
 			tarval *tv = get_Const_tarval(b);
+			int rem;
 
+			/*
+			 * Floating point constant folding might be disabled here to
+			 * prevent rounding.
+			 * However, as we check for exact result, doing it is safe.
+			 * Switch it on.
+			 */
+			rem = tarval_enable_fp_ops(1);
 			tv = tarval_quo(get_mode_one(mode), tv);
+			(void)tarval_enable_fp_ops(rem);
 
 			/* Do the transformation if the result is either exact or we are not
 			   using strict rules. */
