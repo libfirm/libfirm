@@ -893,7 +893,8 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 			n = aa;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_EOR_A_B_A);
 		}
-	} else if (is_Eor(b)) {
+	}
+	if (is_Eor(b)) {
 		ir_node *ba = get_Eor_left(b);
 		ir_node *bb = get_Eor_right(b);
 
