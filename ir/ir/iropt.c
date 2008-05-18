@@ -868,7 +868,44 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 /**
  * Eor is commutative and has neutral 0.
  */
-#define equivalent_node_Eor  equivalent_node_neutral_zero
+static ir_node *equivalent_node_Eor(ir_node *n)
+{
+	ir_node *oldn = n;
+	ir_node *a;
+	ir_node *b;
+
+	n = equivalent_node_neutral_zero(n);
+	if (n != oldn) return n;
+
+	a = get_Eor_left(n);
+	b = get_Eor_right(n);
+
+	if (is_Eor(a)) {
+		ir_node *aa = get_Eor_left(a);
+		ir_node *ab = get_Eor_right(a);
+
+		if (aa == b) {
+			/* (a ^ b) ^ a -> b */
+			n = ab;
+		} else if (ab == b) {
+			/* (a ^ b) ^ b -> a */
+			n = aa;
+		}
+	} else if (is_Eor(b)) {
+		ir_node *ba = get_Eor_left(b);
+		ir_node *bb = get_Eor_right(b);
+
+		if (ba == a) {
+			/* a ^ (a ^ b) -> b */
+			n = bb;
+		} else if (bb == a) {
+			/* a ^ (b ^ a) -> b */
+			n = ba;
+		}
+	}
+
+	return n;
+}
 
 /*
  * Optimize a - 0 and (a - x) + x (for modes with wrap-around).
