@@ -154,19 +154,19 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = pred;                                              \
 	  ons[2] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 /**
  * Merge the debug info due to an algebraic_simplification.
  */
-#define DBG_OPT_ALGSIM3(oldn, a, n)                             \
+#define DBG_OPT_ALGSIM3(oldn, a, n, flag)                         \
 	do {                                                          \
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ALGSIM);    \
+	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
 	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
 	} while(0)
 
