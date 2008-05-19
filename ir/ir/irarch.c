@@ -516,7 +516,7 @@ static int evaluate_insn(mul_env *env, instruction *inst) {
 /**
  * Evaluate the replacement instructions and build a new graph
  * if faster than the Mul.
- * returns the root of the new graph then or irn otherwise.
+ * Returns the root of the new graph then or irn otherwise.
  *
  * @param irn      the Mul operation
  * @param operand  the multiplication operand
@@ -851,7 +851,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 
 		/* generate the Mulh instruction */
 		c = new_r_Const(current_ir_graph, block, mode, mag.M);
-		q    = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
+		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
 		if (mag.need_add) {
 			if (mag.s > 0) {
@@ -886,7 +886,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 	if (params == NULL || (opts & arch_dep_div_by_const) == 0)
 		return irn;
 
-	if (get_irn_opcode(irn) == iro_Div) {
+	if (is_Div(irn)) {
 		ir_node *c = get_Div_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
@@ -895,7 +895,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 		int n, bits;
 		int k, n_flag;
 
-		if (get_irn_op(c) != op_Const)
+		if (! is_Const(c))
 			return irn;
 
 		tv = get_Const_tarval(c);
@@ -982,7 +982,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 	if (params == NULL || (opts & arch_dep_mod_by_const) == 0)
 		return irn;
 
-	if (get_irn_opcode(irn) == iro_Mod) {
+	if (is_Mod(irn)) {
 		ir_node *c = get_Mod_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
@@ -991,7 +991,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 		int n, bits;
 		int k;
 
-		if (get_irn_op(c) != op_Const)
+		if (! is_Const(c))
 			return irn;
 
 		tv = get_Const_tarval(c);
@@ -1076,7 +1076,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 		((opts & (arch_dep_div_by_const|arch_dep_mod_by_const)) != (arch_dep_div_by_const|arch_dep_mod_by_const)))
 		return;
 
-	if (get_irn_opcode(irn) == iro_DivMod) {
+	if (is_DivMod(irn)) {
 		ir_node *c = get_DivMod_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
@@ -1085,7 +1085,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 		int n, bits;
 		int k, n_flag;
 
-		if (get_irn_op(c) != op_Const)
+		if (! is_Const(c))
 			return;
 
 		tv = get_Const_tarval(c);
