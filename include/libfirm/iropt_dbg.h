@@ -73,8 +73,8 @@
  * @param proj2  the second ProjX predecessor
  * @param n      the new Block
  */
-#define DBG_OPT_IFSIM1(oldn, proj1, proj2, n)                   \
-  do {                                                          \
+#define DBG_OPT_IFSIM1(oldn, proj1, proj2, n)                     \
+	do {                                                          \
 	  ir_node *ons[4];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = proj1;                                             \
@@ -89,8 +89,8 @@
  * @param oldn   the old Cond
  * @param n      the new Jmp
  */
-#define DBG_OPT_IFSIM2(oldn, n)                            \
-  do {                                                     \
+#define DBG_OPT_IFSIM2(oldn, n)                              \
+	do {                                                     \
 	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_IFSIM);     \
 	  __dbg_info_merge_pair(n, oldn, dbg_if_simplification); \
 	} while(0)
@@ -103,10 +103,10 @@
  * @param n     the new constant holding the value
  */
 #define DBG_OPT_CSTEVAL(oldn, n)                                  \
-  do {                                                          	\
-	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);    	  \
-    __dbg_info_merge_pair(n, oldn, dbg_const_eval);	             \
-  } while(0)
+	do {                                                          \
+	  hook_merge_nodes(&n, 1, &oldn, 1, HOOK_OPT_CONST_EVAL);     \
+	  __dbg_info_merge_pair(n, oldn, dbg_const_eval);             \
+	} while(0)
 
 /**
  * Merge the debug info due to an algebraic_simplification.
@@ -115,11 +115,11 @@
  * @param n     the new node replacing oldn
  * @param flag  firm statistics option
  */
-#define DBG_OPT_ALGSIM0(oldn, n, flag)                            \
-  do {                                                            \
-    hook_merge_nodes(&n, 1, &oldn, 1, flag);    	                \
-    __dbg_info_merge_pair(n, oldn, dbg_algebraic_simplification); \
-  } while(0)
+#define DBG_OPT_ALGSIM0(oldn, n, flag)                              \
+	do {                                                            \
+	  hook_merge_nodes(&n, 1, &oldn, 1, flag);                      \
+	  __dbg_info_merge_pair(n, oldn, dbg_algebraic_simplification); \
+	} while(0)
 
 /**
  * Merge the debug info due to an algebraic_simplification.
