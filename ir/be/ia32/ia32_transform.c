@@ -2993,22 +2993,57 @@ static ir_node *gen_Psi(ir_node *node)
 	ir_node  *psi_true    = get_Psi_val(node, 0);
 	ir_node  *psi_default = get_Psi_default(node);
 	ir_node  *cond        = get_Psi_cond(node, 0);
+	ir_mode  *mode        = get_irn_mode(node);
 	ir_node  *flags       = NULL;
 	ir_node  *new_node;
 	pn_Cmp    pnc;
 
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
-	assert(mode_needs_gp_reg(get_irn_mode(node)));
 
-	flags = get_flags_node(cond, &pnc);
+	if (mode_is_float(mode)) {
+		ir_node *cmp       = get_Proj_pred(cond);
+		ir_node *cmp_left  = get_Cmp_left(cmp);
+		ir_node *cmp_right = get_Cmp_right(cmp);
+		pn_Cmp  pnc        = get_Proj_proj(cond);
 
-	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
-		new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 0);
-	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
-		new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 1);
+		if (ia32_cg_config.use_sse2) {
+			if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le) {
+				if (cmp_left == psi_true && cmp_right == psi_default) {
+					/* psi(a <= b, a, b) => MIN */
+					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
+			                 match_commutative | match_am);
+				} else if (cmp_left == psi_default && cmp_right == psi_true) {
+					/* psi(a <= b, b, a) => MAX */
+					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
+			                 match_commutative | match_am);
+				}
+			} else if (pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge) {
+				if (cmp_left == psi_true && cmp_right == psi_default) {
+					/* psi(a >= b, a, b) => MAX */
+					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
+			                 match_commutative | match_am);
+				} else if (cmp_left == psi_default && cmp_right == psi_true) {
+					/* psi(a >= b, b, a) => MIN */
+					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
+			                 match_commutative | match_am);
+				}
+			}
+		}
+		panic("cannot transform floating point Psi");
+
 	} else {
-		new_node = create_CMov(node, cond, flags, pnc);
+		assert(mode_needs_gp_reg(mode));
+
+		flags = get_flags_node(cond, &pnc);
+
+		if (is_Const_1(psi_true) && is_Const_0(psi_default)) {
+			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 0);
+		} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
+			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 1);
+		} else {
+			new_node = create_CMov(node, cond, flags, pnc);
+		}
 	}
 	return new_node;
 }

@@ -2066,37 +2066,88 @@ static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
  */
 static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 {
-	ir_node *phi;
+	ir_node *phi, *left;
+	ir_node *cmp = NULL;
+	ir_mode *cmp_mode;
 
-	(void)sel;
-	(void)i;
-	(void)j;
+	if (ia32_cg_config.use_cmov) {
+		/* we can't handle psis with 64bit compares yet */
+		if (is_Proj(sel)) {
+			cmp = get_Proj_pred(sel);
+			if (is_Cmp(cmp)) {
+				left     = get_Cmp_left(cmp);
+				cmp_mode = get_irn_mode(left);
+				if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
+					return 0;
+			} else {
+				cmp = NULL;
+			}
+		}
 
-	if(!ia32_cg_config.use_cmov) {
-		/* TODO: we could still handle abs(x)... */
-		return 0;
-	}
+		if (ia32_cg_config.use_sse2 && cmp != NULL) {
+			/* check the Phi nodes: no 64bit and no floating point cmov */
+			for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+				ir_mode *mode = get_irn_mode(phi);
 
-	/* we can't handle psis with 64bit compares yet */
-	if(is_Proj(sel)) {
-		ir_node *pred = get_Proj_pred(sel);
-		if(is_Cmp(pred)) {
-			ir_node *left     = get_Cmp_left(pred);
-			ir_mode *cmp_mode = get_irn_mode(left);
-			if(!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
+				if (mode_is_float(mode)) {
+					/* check for Min, Max */
+					ir_node *t  = get_Phi_pred(phi, i);
+					ir_node *f  = get_Phi_pred(phi, j);
+					pn_Cmp pn   = get_Proj_proj(sel);
+					ir_node *cl = get_Cmp_left(cmp);
+					ir_node *cr = get_Cmp_right(cmp);
+					int res     = 0;
+
+					/* SSE2 supports Min & Max */
+					if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
+						if (cl == t && cr == f) {
+							/* Psi(a <=/>= b, a, b) => MIN, MAX */
+							res = 1;
+						} else if (cl == f && cr == t) {
+							/* Psi(a <=/>= b, b, a) => MAX, MIN */
+							res = 1;
+						}
+					}
+					if (! res)
+						return 0;
+
+				} else if (get_mode_size_bits(mode) > 32)
+					return 0;
+			}
+		} else {
+			/* check the Phi nodes: no 64bit and no floating point cmov */
+			for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+				ir_mode *mode = get_irn_mode(phi);
+
+				if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
+					return 0;
+			}
+		}
+
+		return 1;
+	} else {
+		/* No cmov, only some special cases */
+		if (! is_Proj(sel))
+			return 0;
+		cmp = get_Proj_pred(sel);
+		if (! is_Cmp(cmp))
+			return 0;
+
+		left     = get_Cmp_left(cmp);
+		cmp_mode = get_irn_mode(left);
+
+		/* no floating point and no 64bit yet */
+		for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+			ir_mode *mode = get_irn_mode(phi);
+
+			if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 				return 0;
 		}
+		/* Add checks for some supported cases here */
+
+		return 0;
 	}
-
-	/* check the Phi nodes */
-	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
-		ir_mode *mode = get_irn_mode(phi);
-
-		if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
-			return 0;
-	}
-
-	return 1;
+	return 0;
 }
 
 /**
