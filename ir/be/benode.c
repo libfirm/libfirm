@@ -1596,7 +1596,7 @@ arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
 	h->irn_ops.impl            = &phi_irn_ops;
 	h->arch_env                = arch_env;
 	h->phi_attrs               = pmap_create();
-	return (arch_irn_handler_t *) h;
+	return &h->irn_handler;
 }
 
 void be_phi_handler_free(arch_irn_handler_t *handler)
