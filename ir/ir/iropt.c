@@ -1224,7 +1224,7 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 					set_Conv_op(n, get_Conv_op(a));
 					return n;
 				}
-				/* else both are strict conv, second is superflous */
+				/* else both are strict conv, second is superfluous */
 			} else if(is_Proj(a)) {
 				ir_node *pred = get_Proj_pred(a);
 				if(is_Load(pred)) {

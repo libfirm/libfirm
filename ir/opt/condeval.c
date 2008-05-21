@@ -344,7 +344,7 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 }
 
 /**
- * returns wether the cmp evaluates to true or false, or can't be evaluated!
+ * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
  */
 static int eval_cmp(pn_Cmp pnc, tarval *tv1, tarval *tv2) {
@@ -574,7 +574,7 @@ static void cond_eval(ir_node* block, void* data)
 	if (get_irn_mode(selector) != mode_b)
 		return;
 
-	/* handle cases that can be immediately evalutated */
+	/* handle cases that can be immediately evaluated */
 	selector_evaluated = -1;
 	if(is_Proj(selector)) {
 		ir_node *cmp = get_Proj_pred(selector);

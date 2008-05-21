@@ -574,7 +574,7 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 
 	obstack_free(&obst, NULL);
 
-	/* TODO: graph might be changed, handle more gracefull */
+	/* TODO: graph might be changed, handle more graceful */
 	set_irg_outs_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
