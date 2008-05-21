@@ -136,8 +136,6 @@ ir_op *op_be_FrameAddr;
 ir_op *op_be_Barrier;
 ir_op *op_be_Unwind;
 
-static int beo_base = -1;
-
 static const ir_op_ops be_node_op_ops;
 
 #define N   irop_flag_none
@@ -297,24 +295,22 @@ void be_node_init(void) {
 	inited = 1;
 
 	/* Acquire all needed opcodes. */
-	beo_base = get_next_ir_opcodes(beo_Last);
-
-	op_be_Spill      = new_ir_op(beo_base + beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Reload     = new_ir_op(beo_base + beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Perm       = new_ir_op(beo_base + beo_Perm,      "be_Perm",      op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_MemPerm    = new_ir_op(beo_base + beo_MemPerm,   "be_MemPerm",   op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
-	op_be_Copy       = new_ir_op(beo_base + beo_Copy,      "be_Copy",      op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Keep       = new_ir_op(beo_base + beo_Keep,      "be_Keep",      op_pin_state_pinned, K,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_CopyKeep   = new_ir_op(beo_base + beo_CopyKeep,  "be_CopyKeep",  op_pin_state_pinned, K,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Call       = new_ir_op(beo_base + beo_Call,      "be_Call",      op_pin_state_pinned, F|M, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
-	op_be_Return     = new_ir_op(beo_base + beo_Return,    "be_Return",    op_pin_state_pinned, X,   oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
-	op_be_AddSP      = new_ir_op(beo_base + beo_AddSP,     "be_AddSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_SubSP      = new_ir_op(beo_base + beo_SubSP,     "be_SubSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_IncSP      = new_ir_op(beo_base + beo_IncSP,     "be_IncSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
-	op_be_RegParams  = new_ir_op(beo_base + beo_RegParams, "be_RegParams", op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_FrameAddr  = new_ir_op(beo_base + beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Barrier    = new_ir_op(beo_base + beo_Barrier,   "be_Barrier",   op_pin_state_pinned, N,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Unwind     = new_ir_op(beo_base + beo_Unwind,    "be_Unwind",    op_pin_state_pinned, X,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Spill      = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Reload     = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Perm       = new_ir_op(beo_Perm,      "be_Perm",      op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_MemPerm    = new_ir_op(beo_MemPerm,   "be_MemPerm",   op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
+	op_be_Copy       = new_ir_op(beo_Copy,      "be_Copy",      op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Keep       = new_ir_op(beo_Keep,      "be_Keep",      op_pin_state_pinned, K,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_CopyKeep   = new_ir_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_pinned, K,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Call       = new_ir_op(beo_Call,      "be_Call",      op_pin_state_pinned, F|M, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
+	op_be_Return     = new_ir_op(beo_Return,    "be_Return",    op_pin_state_pinned, X,   oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_AddSP      = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_SubSP      = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_IncSP      = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
+	op_be_RegParams  = new_ir_op(beo_RegParams, "be_RegParams", op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_FrameAddr  = new_ir_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Barrier    = new_ir_op(beo_Barrier,   "be_Barrier",   op_pin_state_pinned, N,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Unwind     = new_ir_op(beo_Unwind,    "be_Unwind",    op_pin_state_pinned, X,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
 	set_op_tag(op_be_Spill,      &be_node_tag);
 	op_be_Spill->ops.node_cmp_attr = FrameAddr_cmp_attr;
@@ -382,11 +378,6 @@ static void add_register_req(ir_node *node)
 int is_be_node(const ir_node *irn)
 {
 	return get_op_tag(get_irn_op(irn)) == &be_node_tag;
-}
-
-be_opcode_t be_get_irn_opcode(const ir_node *irn)
-{
-	return is_be_node(irn) ? (be_opcode_t) get_irn_opcode(irn) - beo_base : beo_NoBeOp;
 }
 
 /**
@@ -958,26 +949,9 @@ ir_node *be_new_Unwind(dbg_info *dbg, ir_graph *irg, ir_node *block,
 	return res;
 }
 
-int be_is_Spill         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Spill          ; }
-int be_is_Reload        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Reload         ; }
-int be_is_Copy          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Copy           ; }
-int be_is_CopyKeep      (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_CopyKeep       ; }
-int be_is_Perm          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Perm           ; }
-int be_is_MemPerm       (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_MemPerm        ; }
-int be_is_Keep          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Keep           ; }
-int be_is_Call          (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Call           ; }
-int be_is_Return        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Return         ; }
-int be_is_IncSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_IncSP          ; }
-int be_is_AddSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_AddSP          ; }
-int be_is_SubSP         (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_SubSP          ; }
-int be_is_RegParams     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_RegParams      ; }
-int be_is_FrameAddr     (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_FrameAddr      ; }
-int be_is_Barrier       (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Barrier        ; }
-int be_is_Unwind        (const ir_node *irn) { return be_get_irn_opcode(irn) == beo_Unwind         ; }
-
 int be_has_frame_entity(const ir_node *irn)
 {
-	switch (be_get_irn_opcode(irn)) {
+	switch (get_irn_opcode(irn)) {
 	case beo_Spill:
 	case beo_Reload:
 	case beo_FrameAddr:
@@ -1255,19 +1229,27 @@ be_node_get_irn_reg(const void *self, const ir_node *irn)
 
 static arch_irn_class_t be_node_classify(const void *self, const ir_node *irn)
 {
-	redir_proj((const ir_node **) &irn);
-
 	(void) self;
-	switch(be_get_irn_opcode(irn)) {
-#define XXX(a,b) case beo_ ## a: return arch_irn_class_ ## b
-		XXX(Spill, spill);
-		XXX(Reload, reload);
-		XXX(Perm, perm);
-		XXX(Copy, copy);
-		XXX(Return, branch);
+
+restart:
+	switch (get_irn_opcode(irn)) {
+#define XXX(a,b) case a: return b
+		XXX(beo_Spill, arch_irn_class_spill);
+		XXX(beo_Reload, arch_irn_class_reload);
+		XXX(beo_Perm, arch_irn_class_perm);
+		XXX(beo_Copy, arch_irn_class_copy);
+		XXX(beo_Return, arch_irn_class_branch);
 #undef XXX
+		case iro_Proj:
+			irn = get_Proj_pred(irn);
+			if (is_Proj(irn)) {
+				assert(get_irn_mode(irn) == mode_T);
+				irn = get_Proj_pred(irn);
+			}
+			goto restart;
+			break;
 		default:
-		return arch_irn_class_normal;
+			return arch_irn_class_normal;
 	}
 
 	return 0;
@@ -1357,7 +1339,13 @@ static const arch_irn_ops_t be_node_irn_ops = {
 
 const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
 {
-	redir_proj((const ir_node **) &irn);
+	if (is_Proj(irn)) {
+		irn = get_Proj_pred(irn);
+		if (is_Proj(irn)) {
+			assert(get_irn_mode(irn) == mode_T);
+			irn = get_Proj_pred(irn);
+		}
+	}
 	(void) self;
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;
 }
@@ -1736,7 +1724,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 			}
 
-			switch(be_get_irn_opcode(irn)) {
+			switch (get_irn_opcode(irn)) {
 			case beo_IncSP:
 				{
 					be_incsp_attr_t *a = (be_incsp_attr_t *) at;

@@ -326,7 +326,7 @@ static void peephole_ia32_Return(ir_node *node) {
 
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_from(node, irn) {
-		switch (be_get_irn_opcode(irn)) {
+		switch (get_irn_opcode(irn)) {
 		case beo_Return:
 			/* the return node itself, ignore */
 			continue;
@@ -338,9 +338,9 @@ static void peephole_ia32_Return(ir_node *node) {
 			if (be_get_IncSP_offset(irn) == 0)
 				continue;
 			return;
+		case iro_Phi:
+			continue;
 		default:
-			if (is_Phi(irn))
-				continue;
 			return;
 		}
 	}

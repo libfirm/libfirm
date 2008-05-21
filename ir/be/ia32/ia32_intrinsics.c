@@ -44,8 +44,8 @@
 /** The array of all intrinsics that must be mapped. */
 static i_record *intrinsics;
 
-/** An array to cache all entities */
-static ir_entity *i_ents[iro_MaxOpcode];
+/** An array to cache all entities. */
+static ir_entity *i_ents[iro_Last];
 
 /*
  * Maps all intrinsic calls that the backend support

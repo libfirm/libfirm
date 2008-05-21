@@ -95,7 +95,31 @@ typedef enum {
 	iro_Pin,
 	iro_ASM,
 	iro_Anchor,
-	iro_MaxOpcode
+	/* last middleend node number */
+	iro_Last,
+	/* first backend node number */
+	beo_First = iro_Last,
+	/* backend specific nodes */
+	beo_Spill = beo_First,
+	beo_Reload,
+	beo_Perm,
+	beo_MemPerm,
+	beo_Copy,
+	beo_Keep,
+	beo_CopyKeep,
+	beo_Call,
+	beo_Return,
+	beo_AddSP,
+	beo_SubSP,
+	beo_IncSP,
+	beo_RegParams,
+	beo_FrameAddr,
+	beo_Barrier,
+	beo_Unwind,
+	/* last backend node number */
+	beo_Last,
+	/* last fixed number. Dynamic node numbers start here */
+	iro_MaxOpcode = beo_Last
 } ir_opcode;
 
 extern ir_op *op_Block;           ir_op *get_op_Block     (void);

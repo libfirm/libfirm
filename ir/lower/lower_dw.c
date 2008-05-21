@@ -2346,7 +2346,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	if (! prim_types)
 		prim_types = pmap_create();
 	if (! intrinsic_fkt)
-		intrinsic_fkt = new_set(cmp_op_mode, iro_MaxOpcode);
+		intrinsic_fkt = new_set(cmp_op_mode, iro_Last);
 	if (! conv_types)
 		conv_types = new_set(cmp_conv_tp, 16);
 	if (! lowered_type)
