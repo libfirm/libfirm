@@ -739,7 +739,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 		if (get_entity_variability(ent) != variability_uninitialized) {
 			if (ent->has_initializer) {
 				const ir_initializer_t *initializer = get_entity_initializer(ent);
-				fprintf(F, "\n%s  Initializers:");
+				fprintf(F, "\n%s  Initializers:", prefix);
 				need_nl = 1;
 				dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
 			} else {

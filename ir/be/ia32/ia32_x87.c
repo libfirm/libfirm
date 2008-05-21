@@ -1341,7 +1341,6 @@ static int sim_fisttp(x87_state *state, ir_node *n) {
 	x87_simulator         *sim = state->sim;
 	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
 	const arch_register_t *op2 = x87_get_irn_register(sim, val);
-	unsigned              live = vfp_live_args_after(sim, n, 0);
 	int                   insn = NO_NODE_ADDED;
 	ia32_x87_attr_t *attr;
 	int op2_reg_idx, op2_idx, depth;

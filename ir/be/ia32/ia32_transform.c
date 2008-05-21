@@ -2985,7 +2985,7 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
 /**
  * Create instruction for an unsigned Difference or Zero.
  */
-static ir_node *create_Doz(ir_node *psi, ir_node *new_block, ir_node *a, ir_node *b) {
+static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b) {
 	ir_graph *irg   = current_ir_graph;
 	ir_mode  *mode  = get_irn_mode(psi);
 	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg, *tmpreg, *nomem;
@@ -3077,12 +3077,12 @@ static ir_node *gen_Psi(ir_node *node)
 		    is_Const_0(psi_default) && is_Sub(psi_true) &&
 		    get_Sub_left(psi_true) == cmp_left && get_Sub_right(psi_true) == cmp_right) {
 			/* Psi(a >=u b, a - b, 0) unsigned Doz */
-			return create_Doz(node, new_block, cmp_left, cmp_right);
+			return create_Doz(node, cmp_left, cmp_right);
 		} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
 				   is_Const_0(psi_true) && is_Sub(psi_default) &&
 				   get_Sub_left(psi_default) == cmp_left && get_Sub_right(psi_default) == cmp_right) {
 			/* Psi(a <=u b, 0, a - b) unsigned Doz */
-			return create_Doz(node, new_block, cmp_left, cmp_right);
+			return create_Doz(node, cmp_left, cmp_right);
 		}
 
 		flags = get_flags_node(cond, &pnc);
