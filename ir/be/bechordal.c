@@ -310,7 +310,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		}
 	}
 
-	/* collect all registers occuring in out constraints. */
+	/* collect all registers occurring in out constraints. */
 	for(i = 0; i < insn->use_start; ++i) {
 		be_operand_t *op = &insn->ops[i];
 		if(op->has_constraints)
@@ -332,7 +332,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			Check, if
 			1) the operand is constrained.
 			2) lives through the node.
-			3) is constrained to a register occuring in out constraints.
+			3) is constrained to a register occurring in out constraints.
 		*/
 		if(!op->has_constraints ||
 		   !values_interfere(birg, insn->irn, op->carrier) ||
