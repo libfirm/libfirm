@@ -2085,18 +2085,19 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 		}
 
 		if (ia32_cg_config.use_sse2 && cmp != NULL) {
+			pn_Cmp pn   = get_Proj_proj(sel);
+			ir_node *cl = get_Cmp_left(cmp);
+			ir_node *cr = get_Cmp_right(cmp);
+
 			/* check the Phi nodes: no 64bit and no floating point cmov */
 			for (phi = phi_list; phi; phi = get_irn_link(phi)) {
 				ir_mode *mode = get_irn_mode(phi);
 
 				if (mode_is_float(mode)) {
 					/* check for Min, Max */
-					ir_node *t  = get_Phi_pred(phi, i);
-					ir_node *f  = get_Phi_pred(phi, j);
-					pn_Cmp pn   = get_Proj_proj(sel);
-					ir_node *cl = get_Cmp_left(cmp);
-					ir_node *cr = get_Cmp_right(cmp);
-					int res     = 0;
+					ir_node *t = get_Phi_pred(phi, i);
+					ir_node *f = get_Phi_pred(phi, j);
+					int res    = 0;
 
 					/* SSE2 supports Min & Max */
 					if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
@@ -2126,6 +2127,9 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 
 		return 1;
 	} else {
+		ir_node *cl, *cr;
+		pn_Cmp  pn;
+
 		/* No cmov, only some special cases */
 		if (! is_Proj(sel))
 			return 0;
@@ -2136,16 +2140,63 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 		left     = get_Cmp_left(cmp);
 		cmp_mode = get_irn_mode(left);
 
-		/* no floating point and no 64bit yet */
+		/* Now some supported cases here */
+		pn = get_Proj_proj(sel);
+		cl = get_Cmp_left(cmp);
+		cr = get_Cmp_right(cmp);
+
 		for (phi = phi_list; phi; phi = get_irn_link(phi)) {
 			ir_mode *mode = get_irn_mode(phi);
+			int res = 0;
+			ir_node *t, *f;
 
+			t = get_Phi_pred(phi, i);
+			f = get_Phi_pred(phi, j);
+
+			/* no floating point and no 64bit yet */
 			if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
 				return 0;
-		}
-		/* Add checks for some supported cases here */
 
-		return 0;
+			if (is_Const(t) && is_Const(f)) {
+				if ((is_Const_null(t) && is_Const_one(f)) || (is_Const_one(t) && is_Const_null(f))) {
+					/* always support Psi(x, C1, C2) */
+					res = 1;
+				}
+			} else if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
+				if (0) {
+#if 0
+				} else if (cl == t && cr == f) {
+					/* Psi(a <=/>= b, a, b) => Min, Max */
+					res = 1;
+				} else if (cl == f && cr == t) {
+					/* Psi(a <=/>= b, b, a) => Max, Min */
+					res = 1;
+#endif
+				} else if ((pn & pn_Cmp_Gt) && !mode_is_signed(mode) &&
+				           is_Const(f) && is_Const_null(f) && is_Sub(t) &&
+				           get_Sub_left(t) == cl && get_Sub_right(t) == cr) {
+					/* Psi(a >=u b, a - b, 0) unsigned Doz */
+					res = 1;
+				} else if ((pn & pn_Cmp_Lt) && !mode_is_signed(mode) &&
+				           is_Const(t) && is_Const_null(t) && is_Sub(f) &&
+				           get_Sub_left(f) == cl && get_Sub_right(f) == cr) {
+					/* Psi(a <=u b, 0, a - b) unsigned Doz */
+					res = 1;
+				} else if (is_Const(cr) && is_Const_null(cr)) {
+					if (cl == t && is_Minus(f) && get_Minus_op(f) == cl) {
+						/* Psi(a <=/>= 0 ? a : -a) Nabs/Abs */
+						res = 1;
+					} else if (cl == f && is_Minus(t) && get_Minus_op(t) == cl) {
+						/* Psi(a <=/>= 0 ? -a : a) Abs/Nabs */
+						res = 1;
+					}
+				}
+			}
+			if (! res)
+				return 0;
+		}
+		/* all checks passed */
+		return 1;
 	}
 	return 0;
 }

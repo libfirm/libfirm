@@ -332,6 +332,7 @@ Asm => {
 	modified_flags => 1,
 },
 
+# "allocates" a free register
 ProduceVal => {
 	op_flags  => "c",
 	irn_flags => "R",

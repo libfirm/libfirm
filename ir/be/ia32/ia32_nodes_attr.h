@@ -71,6 +71,7 @@ typedef enum {
 	match_dest_am           = 1 << 9,
 	match_try_am            = 1 << 10,  /**< only try to produce AM node, don't
 	                                         do anything if AM isn't possible */
+	match_two_users         = 1 << 11   /**< the instruction uses a load two times ... */
 } match_flags_t;
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;

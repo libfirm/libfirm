@@ -581,7 +581,7 @@ const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
  * input here, for unary operations use NULL).
  */
 static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
-                                        ir_node *other, ir_node *other2)
+                                        ir_node *other, ir_node *other2, match_flags_t flags)
 {
 	ir_node *load;
 	long     pn;
@@ -612,7 +612,7 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 	if (get_nodes_block(load) != block)
 		return 0;
 	/* we only use address mode if we're the only user of the load */
-	if (get_irn_n_edges(node) > 1)
+	if (get_irn_n_edges(node) != (flags & match_two_users ? 2 : 1))
 		return 0;
 	/* in some edge cases with address mode we might reach the load normally
 	 * and through some AM sequence, if it is already materialized then we
@@ -847,7 +847,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 
 	noreg_gp = ia32_new_NoReg_gp(env_cg);
 	if (new_op2 == NULL &&
-	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op)) {
+	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op, flags)) {
 		build_address(am, op2);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		if (mode_is_float(mode)) {
@@ -858,7 +858,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		am->op_type = ia32_AddrModeS;
 	} else if (commutative && (new_op2 == NULL || use_am_and_immediates) &&
 		       use_am &&
-		       ia32_use_source_address_mode(block, op1, op2, other_op)) {
+		       ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
 		ir_node *noreg;
 		build_address(am, op1);
 
@@ -930,6 +930,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 /**
  * Construct a standard binary operation, set AM and immediate if required.
  *
+ * @param node  The original node for which the binop is created
  * @param op1   The first operand
  * @param op2   The second operand
  * @param func  The node constructor function
@@ -2955,8 +2956,9 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	return new_node;
 }
 
-
-
+/**
+ * Creates a ia32 Setcc instruction.
+ */
 static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
                                  ir_node *flags, pn_Cmp pnc, ir_node *orig_node,
                                  int ins_permuted)
@@ -2971,12 +2973,47 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, orig_node));
 
 	/* we might need to conv the result up */
-	if(get_mode_size_bits(mode) > 8) {
+	if (get_mode_size_bits(mode) > 8) {
 		new_node = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, noreg, noreg,
 		                                    nomem, new_node, mode_Bu);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, orig_node));
 	}
 
+	return new_node;
+}
+
+/**
+ * Create instruction for an unsigned Difference or Zero.
+ */
+static ir_node *create_Doz(ir_node *psi, ir_node *new_block, ir_node *a, ir_node *b) {
+	ir_graph *irg   = current_ir_graph;
+	ir_mode  *mode  = get_irn_mode(psi);
+	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg, *tmpreg, *nomem;
+	dbg_info *dbgi;
+
+	new_node = gen_binop(psi, a, b, new_rd_ia32_Sub,
+		match_mode_neutral | match_am | match_immediate | match_two_users);
+
+	block = get_nodes_block(new_node);
+
+	if (is_Proj(new_node)) {
+		sub = get_Proj_pred(new_node);
+		assert(is_ia32_Sub(sub));
+	} else {
+		sub = new_node;
+		set_irn_mode(sub, mode_T);
+		new_node = new_rd_Proj(NULL, irg, block, sub, mode, pn_ia32_res);
+	}
+	eflags = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_Sub_flags);
+
+	dbgi   = get_irn_dbg_info(psi);
+	noreg  = ia32_new_NoReg_gp(env_cg);
+	tmpreg = new_rd_ia32_ProduceVal(dbgi, irg, block);
+	nomem  = new_NoMem();
+	sbb    = new_rd_ia32_Sbb(dbgi, irg, block, noreg, noreg, nomem, tmpreg, tmpreg, eflags);
+
+	new_node = new_rd_ia32_And(dbgi, irg, block, noreg, noreg, nomem, new_node, sbb);
+	set_ia32_commutative(new_node);
 	return new_node;
 }
 
@@ -2994,58 +3031,76 @@ static ir_node *gen_Psi(ir_node *node)
 	ir_node  *psi_default = get_Psi_default(node);
 	ir_node  *cond        = get_Psi_cond(node, 0);
 	ir_mode  *mode        = get_irn_mode(node);
-	ir_node  *flags       = NULL;
-	ir_node  *new_node;
-	pn_Cmp    pnc;
+	ir_node  *cmp         = get_Proj_pred(cond);
+	ir_node  *cmp_left    = get_Cmp_left(cmp);
+	ir_node  *cmp_right   = get_Cmp_right(cmp);
+	pn_Cmp   pnc          = get_Proj_proj(cond);
 
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
 
+	/* Note: a Psi node uses a Load two times IFF it's used in the compare AND in the result */
 	if (mode_is_float(mode)) {
-		ir_node *cmp       = get_Proj_pred(cond);
-		ir_node *cmp_left  = get_Cmp_left(cmp);
-		ir_node *cmp_right = get_Cmp_right(cmp);
-		pn_Cmp  pnc        = get_Proj_proj(cond);
-
 		if (ia32_cg_config.use_sse2) {
 			if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le) {
 				if (cmp_left == psi_true && cmp_right == psi_default) {
 					/* psi(a <= b, a, b) => MIN */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
-			                 match_commutative | match_am);
+			                 match_commutative | match_am | match_two_users);
 				} else if (cmp_left == psi_default && cmp_right == psi_true) {
 					/* psi(a <= b, b, a) => MAX */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
-			                 match_commutative | match_am);
+			                 match_commutative | match_am | match_two_users);
 				}
 			} else if (pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge) {
 				if (cmp_left == psi_true && cmp_right == psi_default) {
 					/* psi(a >= b, a, b) => MAX */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
-			                 match_commutative | match_am);
+			                 match_commutative | match_am | match_two_users);
 				} else if (cmp_left == psi_default && cmp_right == psi_true) {
 					/* psi(a >= b, b, a) => MIN */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
-			                 match_commutative | match_am);
+			                 match_commutative | match_am | match_two_users);
 				}
 			}
 		}
 		panic("cannot transform floating point Psi");
 
 	} else {
+		ir_node *flags;
+		ir_node *new_node;
+
 		assert(mode_needs_gp_reg(mode));
+
+		/* check for unsigned Doz first */
+		if ((pnc & pn_Cmp_Gt) && !mode_is_signed(mode) &&
+		    is_Const_0(psi_default) && is_Sub(psi_true) &&
+		    get_Sub_left(psi_true) == cmp_left && get_Sub_right(psi_true) == cmp_right) {
+			/* Psi(a >=u b, a - b, 0) unsigned Doz */
+			return create_Doz(node, new_block, cmp_left, cmp_right);
+		} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
+				   is_Const_0(psi_true) && is_Sub(psi_default) &&
+				   get_Sub_left(psi_default) == cmp_left && get_Sub_right(psi_default) == cmp_right) {
+			/* Psi(a <=u b, 0, a - b) unsigned Doz */
+			return create_Doz(node, new_block, cmp_left, cmp_right);
+		}
 
 		flags = get_flags_node(cond, &pnc);
 
-		if (is_Const_1(psi_true) && is_Const_0(psi_default)) {
-			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 0);
-		} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
-			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, 1);
+		if (is_Const(psi_true) && is_Const(psi_default)) {
+			/* both are const, good */
+			if (is_Const_1(psi_true) && is_Const_0(psi_default)) {
+				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/0);
+			} else if (is_Const_0(psi_true) && is_Const_1(psi_default)) {
+				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/1);
+			} else {
+				/* Not that simple. */
+			}
 		} else {
 			new_node = create_CMov(node, cond, flags, pnc);
 		}
+		return new_node;
 	}
-	return new_node;
 }
 
 
