@@ -505,23 +505,22 @@ void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *c
 void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type);
 
 /**
- * Make a new phi handler.
- * @param env The architecture environment.
- * @return A new phi handler.
+ * Initialize the Phi handler.
+ * @param env The be_main environment.
  */
-arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env);
+void be_phi_handler_new(be_main_env_t *env);
 
 /**
- * Free a phi handler.
- * @param handler The handler to free.
+ * Destroy the Phi handler.
+ * @param env The be_main environment.
  */
-void be_phi_handler_free(arch_irn_handler_t *handler);
+void be_phi_handler_free(be_main_env_t *env);
 
 /**
- * Reset the register data in the phi handler.
+ * Reset the register data in the Phi handler.
  * This should be called on each new graph and deletes the register information of the current graph.
  */
-void be_phi_handler_reset(arch_irn_handler_t *handler);
+void be_phi_handler_reset(be_main_env_t *env);
 
 /**
  * Set the register requirements for a phi node.

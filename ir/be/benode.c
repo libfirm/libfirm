@@ -1369,13 +1369,6 @@ typedef struct {
 	arch_irn_flags_t       flags;
 } phi_attr_t;
 
-typedef struct {
-	arch_irn_handler_t irn_handler;
-	arch_irn_ops_t     irn_ops;
-	const arch_env_t   *arch_env;
-	pmap               *phi_attrs;
-} phi_handler_t;
-
 #define get_phi_handler_from_handler(h)  container_of(h, phi_handler_t, irn_handler)
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
 
@@ -1589,27 +1582,25 @@ const arch_irn_ops_if_t phi_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
-arch_irn_handler_t *be_phi_handler_new(const arch_env_t *arch_env)
+void be_phi_handler_new(be_main_env_t *env)
 {
-	phi_handler_t *h           = xmalloc(sizeof(h[0]));
+	phi_handler_t *h           = &env->phi_handler;
 	h->irn_handler.get_irn_ops = phi_get_irn_ops;
 	h->irn_ops.impl            = &phi_irn_ops;
-	h->arch_env                = arch_env;
+	h->arch_env                = &env->arch_env;
 	h->phi_attrs               = pmap_create();
-	return &h->irn_handler;
 }
 
-void be_phi_handler_free(arch_irn_handler_t *handler)
+void be_phi_handler_free(be_main_env_t *env)
 {
-	phi_handler_t *h = get_phi_handler_from_handler(handler);
+	phi_handler_t *h = &env->phi_handler;
 	pmap_destroy(h->phi_attrs);
 	h->phi_attrs = NULL;
-	free(handler);
 }
 
-void be_phi_handler_reset(arch_irn_handler_t *handler)
+void be_phi_handler_reset(be_main_env_t *env)
 {
-	phi_handler_t *h = get_phi_handler_from_handler(handler);
+	phi_handler_t *h = &env->phi_handler;
 	if(h->phi_attrs)
 		pmap_destroy(h->phi_attrs);
 	h->phi_attrs = pmap_create();

@@ -250,6 +250,8 @@ const backend_params *be_init(void)
  */
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
+	const arch_irn_handler_t *handler;
+
 	memset(env, 0, sizeof(*env));
 	env->options              = &be_options;
 	env->ent_trampoline_map   = pmap_create();
@@ -264,8 +266,9 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	arch_env_init(&env->arch_env, isa_if, file_handle, env);
 
 	/* Register the irn handler of the architecture */
-	if (arch_isa_get_irn_handler(env->arch_env.isa))
-		arch_env_push_irn_handler(&env->arch_env, arch_isa_get_irn_handler(env->arch_env.isa));
+	handler = arch_isa_get_irn_handler(env->arch_env.isa);
+	if (handler != NULL)
+		arch_env_push_irn_handler(&env->arch_env, handler);
 
 	/*
 	 * Register the node handler of the back end infrastructure.
@@ -273,8 +276,8 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	 * spill, reload and perm nodes.
 	 */
 	arch_env_push_irn_handler(&env->arch_env, &be_node_irn_handler);
-	env->phi_handler = be_phi_handler_new(&env->arch_env);
-	arch_env_push_irn_handler(&env->arch_env, env->phi_handler);
+	be_phi_handler_new(env);
+	arch_env_push_irn_handler(&env->arch_env, &env->phi_handler.irn_handler);
 
 	be_dbg_open();
 	return env;
@@ -287,7 +290,7 @@ static void be_done_env(be_main_env_t *env)
 {
 	env->arch_env.isa->impl->done(env->arch_env.isa);
 	be_dbg_close();
-	be_phi_handler_free(env->phi_handler);
+	be_phi_handler_free(env);
 
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
@@ -475,10 +478,16 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
+#if 0
+		{
+			unsigned percent = 100*i/num_birgs;
+			ir_printf("%u.%02u %+F\n", percent/100, percent%100, irg);
+		}
+#endif
 		be_sched_init_phase(irg);
 
 		/* reset the phi handler. */
-		be_phi_handler_reset(env.phi_handler);
+		be_phi_handler_reset(&env);
 
 		stat_ev_ctx_push_fobj("bemain_irg", irg);
 
@@ -529,7 +538,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_pop("bemain_phase");
 
 		/* reset the phi handler. */
-		be_phi_handler_reset(env.phi_handler);
+		be_phi_handler_reset(&env);
 
 		be_do_stat_nodes(irg, "03 Prepare");
 
