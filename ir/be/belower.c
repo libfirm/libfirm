@@ -49,14 +49,14 @@
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
-/* associates op with it's copy and CopyKeep */
+/** Associates an op with it's copy and CopyKeep. */
 typedef struct {
-	ir_node *op;         /* an irn which must be different */
-	ir_nodeset_t copies; /* all non-spillable copies of this irn */
+	ir_node *op;         /**< an irn which must be different */
+	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
 	const arch_register_class_t *cls;
 } op_copy_assoc_t;
 
-/* environment for constraints */
+/** Environment for constraints. */
 typedef struct {
 	be_irg_t       *birg;
 	pset           *op_set;
@@ -64,7 +64,7 @@ typedef struct {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } constraint_env_t;
 
-/* lowering walker environment */
+/** Lowering walker environment. */
 typedef struct _lower_env_t {
 	be_irg_t         *birg;
 	const arch_env_t *arch_env;
@@ -72,7 +72,7 @@ typedef struct _lower_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
 
-/* holds a perm register pair */
+/** Holds a Perm register pair. */
 typedef struct _reg_pair_t {
 	const arch_register_t *in_reg;    /**< a perm IN register */
 	ir_node               *in_node;   /**< the in node to which the register belongs */
@@ -90,15 +90,14 @@ typedef enum _perm_type_t {
 	PERM_COPY
 } perm_type_t;
 
-/* structure to represent cycles or chains in a perm */
+/** Structure to represent cycles or chains in a Perm. */
 typedef struct _perm_cycle_t {
 	const arch_register_t **elems;       /**< the registers in the cycle */
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
 
-//
-/* Compare the two operands */
+/** Compare the two operands. */
 static int cmp_op_copy_assoc(const void *a, const void *b) {
 	const op_copy_assoc_t *op1 = a;
 	const op_copy_assoc_t *op2 = b;
@@ -106,7 +105,7 @@ static int cmp_op_copy_assoc(const void *a, const void *b) {
 	return op1->op != op2->op;
 }
 
-/* Compare the in registers of two register pairs */
+/** Compare the in registers of two register pairs. */
 static int compare_reg_pair(const void *a, const void *b) {
 	const reg_pair_t *pair_a = a;
 	const reg_pair_t *pair_b = b;
@@ -117,7 +116,7 @@ static int compare_reg_pair(const void *a, const void *b) {
 		return -1;
 }
 
-/* returns the number register pairs marked as checked */
+/** returns the number register pairs marked as checked. */
 static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
 	int i, n_checked = 0;
 
@@ -511,17 +510,13 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 
 
-static int get_n_out_edges(const ir_node *irn) {
-	const ir_edge_t *edge;
-	int cnt = 0;
-
-	foreach_out_edge(irn, edge) {
-		cnt++;
-	}
-
-	return cnt;
+static int has_irn_users(const ir_node *irn) {
+	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
 }
 
+/**
+ * Skip all Proj nodes.
+ */
 static INLINE ir_node *belower_skip_proj(ir_node *irn) {
 	while(is_Proj(irn))
 		irn = get_Proj_pred(irn);
@@ -565,7 +560,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* in block far far away                             */
 	/* The copy is optimized later if not needed         */
 
-	/* check if already exists such a copy in the schedule immediatly before */
+	/* check if already exists such a copy in the schedule immediately before */
 	cpy = find_copy(env, belower_skip_proj(irn), other_different);
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
@@ -581,12 +576,12 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
-	if (get_n_out_edges(other_different) == 0) {
-		keep = be_new_Keep(cls, irg, block, 2, in);
-	}
-	else {
+	if (has_irn_users(other_different)) {
 		keep = be_new_CopyKeep_single(cls, irg, block, cpy, irn, get_irn_mode(other_different));
 		be_node_set_reg_class(keep, 1, cls);
+	}
+	else {
+		keep = be_new_Keep(cls, irg, block, 2, in);
 	}
 
 	DBG((mod, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
@@ -642,7 +637,7 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 
 				/*
 				 * We can safely ignore a should_be_same x should_be_different y
-				 * IFF both nodes are equal!
+				 * IFF both inputs are equal!
 				 */
 				if (get_irn_n(irn, idx_other) == get_irn_n(irn, idx_same)) {
 					return;
@@ -657,8 +652,6 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 		}
 	}
 }
-
-
 
 /**
  * Calls the functions to assure register constraints.
@@ -860,7 +853,7 @@ void assure_constraints(be_irg_t *birg) {
 				int     n = get_irn_arity(cp);
 
 				keep = be_new_Keep(arch_get_irn_reg_class(arch_env, cp, -1),
-					irg, get_nodes_block(cp), n, (ir_node **)&get_irn_in(cp)[1]);
+					irg, get_nodes_block(cp), n, get_irn_in(cp) + 1);
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
