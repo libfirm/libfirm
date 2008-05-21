@@ -633,6 +633,22 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 		const unsigned other = req->other_different;
 		int i;
 
+		if (arch_register_req_is(req, should_be_same)) {
+			const unsigned same = req->other_same;
+
+			if (is_po2(other) && is_po2(same)) {
+				int idx_other = ntz(other);
+				int idx_same  = ntz(same);
+
+				/*
+				 * We can safely ignore a should_be_same x should_be_different y
+				 * IFF both nodes are equal!
+				 */
+				if (get_irn_n(irn, idx_other) == get_irn_n(irn, idx_same)) {
+					return;
+				}
+			}
+		}
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
 				ir_node *different_from = get_irn_n(belower_skip_proj(irn), i);
