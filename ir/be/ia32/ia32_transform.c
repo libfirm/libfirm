@@ -3095,8 +3095,10 @@ static ir_node *gen_Psi(ir_node *node)
 				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/1);
 			} else {
 				/* Not that simple. */
+				goto need_cmov;
 			}
 		} else {
+need_cmov:
 			new_node = create_CMov(node, cond, flags, pnc);
 		}
 		return new_node;
