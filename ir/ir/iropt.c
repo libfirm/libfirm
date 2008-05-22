@@ -4875,7 +4875,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		}
 	}
 
-	if (is_Proj(sel) && !mode_honor_signed_zeros(mode)) {
+	if (is_Proj(sel)) {
 		ir_node *cmp = get_Proj_pred(sel);
 		long     pn  = get_Proj_proj(sel);
 		ir_node *f   = get_Mux_false(n);
@@ -4887,35 +4887,100 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		 *
 		 * Note further that these optimization work even for floating point
 		 * with NaN's because -NaN == NaN.
-		 * However, if +0 and -0 is handled differently, we cannot use the first
-		 * one.
+		 * However, if +0 and -0 is handled differently, we cannot use the Abs/-Abs
+		 * transformations.
 		 */
 		if (is_Cmp(cmp)) {
 			ir_node *cmp_r = get_Cmp_right(cmp);
 			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
-				ir_node *block    = get_irn_n(n, -1);
+				ir_node *block = get_nodes_block(n);
+				ir_node *cmp_l = get_Cmp_left(cmp);
 
-				if (is_negated_value(f, t)) {
-					ir_node *cmp_left = get_Cmp_left(cmp);
+				if (mode_honor_signed_zeros(mode) && is_negated_value(f, t)) {
+					/* f = -t */
 
-					/* Psi(a >= 0, a, -a) = Psi(a <= 0, -a, a) ==> Abs(a) */
-					if ( (cmp_left == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
-						|| (cmp_left == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
+					if ( (cmp_l == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
+						|| (cmp_l == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
 					{
+						/* Psi(a >/>= 0, a, -a) = Psi(a </<= 0, -a, a) ==> Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
-										 cmp_left, mode);
+										 cmp_l, mode);
 						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
 						return n;
-					/* Psi(a <= 0, a, -a) = Psi(a >= 0, -a, a) ==> -Abs(a) */
-					} else if ((cmp_left == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
-						|| (cmp_left == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
+					} else if ((cmp_l == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
+						|| (cmp_l == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
 					{
+						/* Psi(a </<= 0, a, -a) = Psi(a >/>= 0, -a, a) ==> -Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
-										 cmp_left, mode);
+										 cmp_l, mode);
 						n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
 														 block, n, mode);
 						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
 						return n;
+					}
+				}
+
+				if (mode_is_int(mode)) {
+					/* integer only */
+					if (pn == pn_Cmp_Eq) {
+						ir_node *tmp = t;
+						t = f;
+						f = tmp;
+						pn = pn_Cmp_Lg;
+					}
+					if (pn == pn_Cmp_Lg && is_And(cmp_l)) {
+						/* Psi((a & b) != 0, c, 0) */
+						ir_node *and_r = get_And_right(cmp_l);
+						ir_node *and_l;
+
+						if (and_r == t && f == cmp_r) {
+							if (is_Const(t) && tarval_is_single_bit(get_Const_tarval(t))) {
+								/* Psi((a & 2^C) != 0, 2^C, 0) */
+								n = cmp_l;
+								return n;
+							}
+						}
+						if (and_r == f && t == cmp_r) {
+							if (is_Const(f) && tarval_is_single_bit(get_Const_tarval(f))) {
+								/* Psi((a & 2^C) != 0, 0, 2^C) */
+								n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+									block, cmp_l, f, mode);
+								return n;
+							}
+						}
+						if (is_Shl(and_r)) {
+							ir_node *shl_l = get_Shl_left(and_r);
+							if (is_Const(shl_l) && is_Const_one(shl_l)) {
+								if (and_r == t && f == cmp_r) {
+									/* (a & (1 << n)) != 0, (1 << n), 0) */
+									n = cmp_l;
+									return n;
+								}
+								else if (and_r == f && t == cmp_r) {
+									/* (a & (1 << n)) != 0, 0, (1 << n)) */
+									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+										block, cmp_l, f, mode);
+									return n;
+								}
+							}
+						}
+						and_l = get_And_left(cmp_l);
+						if (is_Shl(and_l)) {
+							ir_node *shl_l = get_Shl_left(and_l);
+							if (is_Const(shl_l) && is_Const_one(shl_l)) {
+								if (and_l == t && f == cmp_r) {
+									/* ((1 << n) & a) != 0, (1 << n), 0) */
+									n = cmp_l;
+									return n;
+								}
+								else if (and_l == f && t == cmp_r) {
+									/* ((1 << n) & a) != 0, 0, (1 << n)) */
+									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+										block, cmp_l, f, mode);
+									return n;
+								}
+							}
+						}
 					}
 				}
 			}
