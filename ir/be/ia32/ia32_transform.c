@@ -3031,16 +3031,18 @@ static ir_node *gen_Psi(ir_node *node)
 	ir_node  *psi_default = get_Psi_default(node);
 	ir_node  *cond        = get_Psi_cond(node, 0);
 	ir_mode  *mode        = get_irn_mode(node);
-	ir_node  *cmp         = get_Proj_pred(cond);
-	ir_node  *cmp_left    = get_Cmp_left(cmp);
-	ir_node  *cmp_right   = get_Cmp_right(cmp);
-	pn_Cmp   pnc          = get_Proj_proj(cond);
+	pn_Cmp   pnc;
 
 	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
 
 	/* Note: a Psi node uses a Load two times IFF it's used in the compare AND in the result */
 	if (mode_is_float(mode)) {
+		ir_node  *cmp         = get_Proj_pred(cond);
+		ir_node  *cmp_left    = get_Cmp_left(cmp);
+		ir_node  *cmp_right   = get_Cmp_right(cmp);
+		pn_Cmp   pnc          = get_Proj_proj(cond);
+
 		if (ia32_cg_config.use_sse2) {
 			if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le) {
 				if (cmp_left == psi_true && cmp_right == psi_default) {
@@ -3072,17 +3074,26 @@ static ir_node *gen_Psi(ir_node *node)
 
 		assert(mode_needs_gp_reg(mode));
 
-		/* check for unsigned Doz first */
-		if ((pnc & pn_Cmp_Gt) && !mode_is_signed(mode) &&
-		    is_Const_0(psi_default) && is_Sub(psi_true) &&
-		    get_Sub_left(psi_true) == cmp_left && get_Sub_right(psi_true) == cmp_right) {
-			/* Psi(a >=u b, a - b, 0) unsigned Doz */
-			return create_Doz(node, cmp_left, cmp_right);
-		} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
-				   is_Const_0(psi_true) && is_Sub(psi_default) &&
-				   get_Sub_left(psi_default) == cmp_left && get_Sub_right(psi_default) == cmp_right) {
-			/* Psi(a <=u b, 0, a - b) unsigned Doz */
-			return create_Doz(node, cmp_left, cmp_right);
+		if (is_Proj(cond)) {
+			ir_node *cmp = get_Proj_pred(cond);
+			if (is_Cmp(cmp)) {
+				ir_node  *cmp_left    = get_Cmp_left(cmp);
+				ir_node  *cmp_right   = get_Cmp_right(cmp);
+				pn_Cmp   pnc          = get_Proj_proj(cond);
+
+				/* check for unsigned Doz first */
+				if ((pnc & pn_Cmp_Gt) && !mode_is_signed(mode) &&
+					is_Const_0(psi_default) && is_Sub(psi_true) &&
+					get_Sub_left(psi_true) == cmp_left && get_Sub_right(psi_true) == cmp_right) {
+					/* Psi(a >=u b, a - b, 0) unsigned Doz */
+					return create_Doz(node, cmp_left, cmp_right);
+				} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
+					is_Const_0(psi_true) && is_Sub(psi_default) &&
+					get_Sub_left(psi_default) == cmp_left && get_Sub_right(psi_default) == cmp_right) {
+					/* Psi(a <=u b, 0, a - b) unsigned Doz */
+					return create_Doz(node, cmp_left, cmp_right);
+				}
+			}
 		}
 
 		flags = get_flags_node(cond, &pnc);
