@@ -4820,12 +4820,35 @@ static int is_negated_value(ir_node *a, ir_node *b) {
 static ir_node *transform_node_Mux(ir_node *n) {
 	ir_node *oldn = n, *sel = get_Mux_sel(n);
 	ir_mode *mode = get_irn_mode(n);
+	ir_node  *t   = get_Mux_true(n);
+	ir_node  *f   = get_Mux_false(n);
+	ir_graph *irg = current_ir_graph;
+	ir_node  *conds[1], *vals[2];
 
+	/* first normalization step: move a possible zero to the false case */
+	if (is_Proj(sel)) {
+		ir_node *cmp = get_Proj_pred(sel);
+
+		if (is_Cmp(cmp)) {
+			if (is_Const(t) && is_Const_null(t)) {
+				/* Psi(x, 0, y) => Psi(x, y, 0) */
+				pn_Cmp pnc = get_Proj_proj(sel);
+				sel = new_r_Proj(irg, get_nodes_block(cmp), cmp, mode_b,
+					get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
+				conds[0] = sel;
+				vals[0]  = f;
+				vals[1]  = t;
+				n        = new_rd_Psi(get_irn_dbg_info(n), irg, get_nodes_block(n), 1, conds, vals, mode);
+				t = vals[0];
+				f = vals[1];
+			}
+		}
+	}
+
+	/* note: after normalization, false can only happen on default */
 	if (mode == mode_b) {
-		ir_node  *t     = get_Mux_true(n);
-		ir_node  *f     = get_Mux_false(n);
 		dbg_info *dbg   = get_irn_dbg_info(n);
-		ir_node  *block = get_irn_n(n, -1);
+		ir_node  *block = get_nodes_block(n);
 		ir_graph *irg   = current_ir_graph;
 
 		if (is_Const(t)) {
@@ -4840,20 +4863,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 					/* Muxb(sel, true, x) = Or(sel, x) */
 					n = new_rd_Or(dbg, irg, block, sel, f, mode_b);
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_OR_BOOL);
-					return n;
-				}
-			} else {
-				ir_node* not_sel = new_rd_Not(dbg, irg, block, sel, mode_b);
-				assert(tv_t == tarval_b_false);
-				if (is_Const(f)) {
-					/* Muxb(sel, false, true) = Not(sel) */
-					assert(get_Const_tarval(f) == tarval_b_true);
-					DBG_OPT_ALGSIM0(oldn, not_sel, FS_OPT_MUX_NOT_BOOL);
-					return not_sel;
-				} else {
-					/* Muxb(sel, false, x) = And(Not(sel), x) */
-					n = new_rd_And(dbg, irg, block, not_sel, f, mode_b);
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_ANDNOT_BOOL);
 					return n;
 				}
 			}
@@ -4875,11 +4884,39 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		}
 	}
 
+	/* more normalization: try to normalize Mux(x, C1, C2) into Mux(x, +1/-1, 0) op C2 */
+	if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
+		tarval *a = get_Const_tarval(t);
+		tarval *b = get_Const_tarval(f);
+		tarval *null = get_tarval_null(mode);
+		tarval *diff, *min;
+
+		if (tarval_cmp(a, b) & pn_Cmp_Gt) {
+			diff = tarval_sub(a, b);
+			min  = b;
+		} else {
+			diff = tarval_sub(b, a);
+			min  = a;
+		}
+
+		if (diff == get_tarval_one(mode) && min != null) {
+			dbg_info *dbg   = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_graph *irg   = current_ir_graph;
+
+
+			conds[0] = sel;
+			vals[0] = new_Const(mode, tarval_sub(a, min));
+			vals[1] = new_Const(mode, tarval_sub(b, min));
+			n = new_rd_Psi(dbg, irg, block, 1, conds, vals, mode);
+			n = new_rd_Add(dbg, irg, block, n, new_Const(mode, min), mode);
+			return n;
+		}
+	}
+
 	if (is_Proj(sel)) {
 		ir_node *cmp = get_Proj_pred(sel);
 		long     pn  = get_Proj_proj(sel);
-		ir_node *f   = get_Mux_false(n);
-		ir_node *t   = get_Mux_true(n);
 
 		/*
 		 * Note: normalization puts the constant on the right side,
@@ -4922,29 +4959,21 @@ static ir_node *transform_node_Mux(ir_node *n) {
 
 				if (mode_is_int(mode)) {
 					/* integer only */
-					if (pn == pn_Cmp_Eq) {
-						ir_node *tmp = t;
-						t = f;
-						f = tmp;
-						pn = pn_Cmp_Lg;
-					}
-					if (pn == pn_Cmp_Lg && is_And(cmp_l)) {
+					if ((pn == pn_Cmp_Lg || pn == pn_Cmp_Eq) && is_And(cmp_l)) {
 						/* Psi((a & b) != 0, c, 0) */
 						ir_node *and_r = get_And_right(cmp_l);
 						ir_node *and_l;
 
 						if (and_r == t && f == cmp_r) {
 							if (is_Const(t) && tarval_is_single_bit(get_Const_tarval(t))) {
-								/* Psi((a & 2^C) != 0, 2^C, 0) */
-								n = cmp_l;
-								return n;
-							}
-						}
-						if (and_r == f && t == cmp_r) {
-							if (is_Const(f) && tarval_is_single_bit(get_Const_tarval(f))) {
-								/* Psi((a & 2^C) != 0, 0, 2^C) */
-								n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
-									block, cmp_l, f, mode);
+								if (pn == pn_Cmp_Lg) {
+									/* Psi((a & 2^C) != 0, 2^C, 0) */
+									n = cmp_l;
+								} else {
+									/* Psi((a & 2^C) == 0, 2^C, 0) */
+									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+										block, cmp_l, t, mode);
+								}
 								return n;
 							}
 						}
@@ -4952,14 +4981,14 @@ static ir_node *transform_node_Mux(ir_node *n) {
 							ir_node *shl_l = get_Shl_left(and_r);
 							if (is_Const(shl_l) && is_Const_one(shl_l)) {
 								if (and_r == t && f == cmp_r) {
-									/* (a & (1 << n)) != 0, (1 << n), 0) */
-									n = cmp_l;
-									return n;
-								}
-								else if (and_r == f && t == cmp_r) {
-									/* (a & (1 << n)) != 0, 0, (1 << n)) */
-									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
-										block, cmp_l, f, mode);
+									if (pn == pn_Cmp_Lg) {
+										/* (a & (1 << n)) != 0, (1 << n), 0) */
+										n = cmp_l;
+									} else {
+										/* (a & (1 << n)) == 0, (1 << n), 0) */
+										n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+											block, cmp_l, t, mode);
+									}
 									return n;
 								}
 							}
@@ -4969,14 +4998,14 @@ static ir_node *transform_node_Mux(ir_node *n) {
 							ir_node *shl_l = get_Shl_left(and_l);
 							if (is_Const(shl_l) && is_Const_one(shl_l)) {
 								if (and_l == t && f == cmp_r) {
-									/* ((1 << n) & a) != 0, (1 << n), 0) */
-									n = cmp_l;
-									return n;
-								}
-								else if (and_l == f && t == cmp_r) {
-									/* ((1 << n) & a) != 0, 0, (1 << n)) */
-									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
-										block, cmp_l, f, mode);
+									if (pn == pn_Cmp_Lg) {
+										/* ((1 << n) & a) != 0, (1 << n), 0) */
+										n = cmp_l;
+									} else {
+										/* ((1 << n) & a) == 0, (1 << n), 0) */
+										n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
+											block, cmp_l, t, mode);
+									}
 									return n;
 								}
 							}
