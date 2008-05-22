@@ -86,7 +86,7 @@ ir_node *optimize_in_place_2(ir_node *n);
  */
 static INLINE tarval *
 value_of(ir_node *n) {
-	if ((n != NULL) && (get_irn_op(n) == op_Const))
+	if ((n != NULL) && is_Const(n))
 		return get_Const_tarval(n); /* might return tarval_bad */
 	else
 		return tarval_bad;
