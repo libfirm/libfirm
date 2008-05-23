@@ -86,13 +86,11 @@ static set *cur_reg_set = NULL;
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const
-arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
-                                         int pos)
+static const arch_register_req_t *arm_get_irn_reg_req(const ir_node *node,
+                                                      int pos)
 {
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(node);
-	(void) self;
 
 	if (is_Block(node) || mode == mode_X) {
 		return arch_no_register_req;
@@ -131,11 +129,9 @@ arch_register_req_t *arm_get_irn_reg_req(const void *self, const ir_node *node,
 	return arch_no_register_req;
 }
 
-static void arm_set_irn_reg(const void *self, ir_node *irn,
-                            const arch_register_t *reg)
+static void arm_set_irn_reg(ir_node *irn, const arch_register_t *reg)
 {
 	int pos = 0;
-	(void) self;
 
 	if (get_irn_mode(irn) == mode_X) {
 		return;
@@ -158,12 +154,10 @@ static void arm_set_irn_reg(const void *self, ir_node *irn,
 	}
 }
 
-static const arch_register_t *arm_get_irn_reg(const void *self,
-                                              const ir_node *irn)
+static const arch_register_t *arm_get_irn_reg(const ir_node *irn)
 {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
-	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -187,9 +181,8 @@ static const arch_register_t *arm_get_irn_reg(const void *self,
 	return reg;
 }
 
-static arch_irn_class_t arm_classify(const void *self, const ir_node *irn)
+static arch_irn_class_t arm_classify(const ir_node *irn)
 {
-	(void) self;
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
@@ -202,10 +195,9 @@ static arch_irn_class_t arm_classify(const void *self, const ir_node *irn)
 	return 0;
 }
 
-static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn)
+static arch_irn_flags_t arm_get_flags(const ir_node *irn)
 {
 	arch_irn_flags_t flags = arch_irn_flags_none;
-	(void) self;
 
 	if(is_Unknown(irn)) {
 		return arch_irn_flags_ignore;
@@ -226,17 +218,15 @@ static arch_irn_flags_t arm_get_flags(const void *self, const ir_node *irn)
 	return flags;
 }
 
-static ir_entity *arm_get_frame_entity(const void *self, const ir_node *irn)
+static ir_entity *arm_get_frame_entity(const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	/* TODO: return the entity assigned to the frame */
 	return NULL;
 }
 
-static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
+static void arm_set_frame_entity(ir_node *irn, ir_entity *ent)
 {
-	(void) self;
 	(void) irn;
 	(void) ent;
 	/* TODO: set the entity assigned to the frame */
@@ -246,17 +236,15 @@ static void arm_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent)
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void arm_set_stack_bias(const void *self, ir_node *irn, int bias)
+static void arm_set_stack_bias(ir_node *irn, int bias)
 {
-	(void) self;
 	(void) irn;
 	(void) bias;
 	/* TODO: correct offset if irn accesses the stack */
 }
 
-static int arm_get_sp_bias(const void *self, const ir_node *irn)
+static int arm_get_sp_bias(const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	return 0;
 }

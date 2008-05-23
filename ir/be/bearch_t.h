@@ -190,8 +190,7 @@ struct arch_irn_ops_t {
 	 * @return    The register requirements for the selected operand.
 	 *            The pointer returned is never NULL.
 	 */
-	const arch_register_req_t *(*get_irn_reg_req)(const void *self,
-	                                              const ir_node *irn, int pos);
+	const arch_register_req_t *(*get_irn_reg_req)(const ir_node *irn, int pos);
 
 	/**
 	 * Set the register for an output operand.
@@ -200,7 +199,7 @@ struct arch_irn_ops_t {
 	 * @note      If the operand is not a register operand,
 	 *            the call is ignored.
 	 */
-	void (*set_irn_reg)(const void *self, ir_node *irn, const arch_register_t *reg);
+	void (*set_irn_reg)(ir_node *irn, const arch_register_t *reg);
 
 	/**
 	 * Get the register allocated for an output operand.
@@ -210,14 +209,14 @@ struct arch_irn_ops_t {
 	 *            @c arch_register_invalid, if no register has yet been
 	 *            allocated for this node.
 	 */
-	const arch_register_t *(*get_irn_reg)(const void *self, const ir_node *irn);
+	const arch_register_t *(*get_irn_reg)(const ir_node *irn);
 
 	/**
 	 * Classify the node.
 	 * @param irn The node.
 	 * @return A classification.
 	 */
-	arch_irn_class_t (*classify)(const void *self, const ir_node *irn);
+	arch_irn_class_t (*classify)(const ir_node *irn);
 
 	/**
 	 * Get the flags of a node.
@@ -225,7 +224,7 @@ struct arch_irn_ops_t {
 	 * @param irn The node.
 	 * @return A set of flags.
 	 */
-	arch_irn_flags_t (*get_flags)(const void *self, const ir_node *irn);
+	arch_irn_flags_t (*get_flags)(const ir_node *irn);
 
 	/**
 	 * Get the entity on the stack frame this node depends on.
@@ -234,7 +233,7 @@ struct arch_irn_ops_t {
 	 * @return The entity on the stack frame or NULL, if the node does not have a
 	 *         stack frame entity.
 	 */
-	ir_entity *(*get_frame_entity)(const void *self, const ir_node *irn);
+	ir_entity *(*get_frame_entity)(const ir_node *irn);
 
 	/**
 	 * Set the entity on the stack frame this node depends on.
@@ -242,7 +241,7 @@ struct arch_irn_ops_t {
 	 * @param irn  The node in question.
 	 * @param ent  The entity to set
 	 */
-	void (*set_frame_entity)(const void *self, ir_node *irn, ir_entity *ent);
+	void (*set_frame_entity)(ir_node *irn, ir_entity *ent);
 
 	/**
 	 * Set the offset of a node carrying an entity on the stack frame.
@@ -250,7 +249,7 @@ struct arch_irn_ops_t {
 	 * @param irn  The node.
 	 * @param offset The offset of the node's stack frame entity.
 	 */
-	void (*set_frame_offset)(const void *self, ir_node *irn, int offset);
+	void (*set_frame_offset)(ir_node *irn, int offset);
 
 	/**
 	 * Returns the delta of the stackpointer for nodes that increment or
@@ -264,7 +263,7 @@ struct arch_irn_ops_t {
 	 * @return          0 if the stackpointer is not modified with a constant
 	 *                  value, otherwise the increment/decrement value
 	 */
-	int (*get_sp_bias)(const void *self, const ir_node *irn);
+	int (*get_sp_bias)(const ir_node *irn);
 
 	/**
 	 * Returns an inverse operation which yields the i-th argument
@@ -277,7 +276,7 @@ struct arch_irn_ops_t {
 	 * @param obstack   The obstack to use for allocation of the returned nodes array
 	 * @return          The inverse operation or NULL if operation invertible
 	 */
-	arch_inverse_t *(*get_inverse)(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
+	arch_inverse_t *(*get_inverse)(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
 
 	/**
 	 * Get the estimated cycle count for @p irn.
@@ -287,7 +286,7 @@ struct arch_irn_ops_t {
 	 *
 	 * @return     The estimated cycle count for this operation
 	 */
-	int (*get_op_estimated_cost)(const void *self, const ir_node *irn);
+	int (*get_op_estimated_cost)(const ir_node *irn);
 
 	/**
 	 * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
@@ -298,7 +297,7 @@ struct arch_irn_ops_t {
 	 *
 	 * @return     nonzero if argument can be loaded or zero otherwise
 	 */
-	int (*possible_memory_operand)(const void *self, const ir_node *irn, unsigned int i);
+	int (*possible_memory_operand)(const ir_node *irn, unsigned int i);
 
 	/**
 	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
@@ -308,7 +307,7 @@ struct arch_irn_ops_t {
 	 * @param spill  The spill.
 	 * @param i      The position of the reload.
 	 */
-	void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *spill, unsigned int i);
+	void (*perform_memory_operand)(ir_node *irn, ir_node *spill, unsigned int i);
 };
 
 /**

@@ -86,13 +86,12 @@ static set *cur_reg_set = NULL;
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const
-arch_register_req_t *ppc32_get_irn_reg_req(const void *self,
-                                           const ir_node *irn, int pos) {
+static const arch_register_req_t *ppc32_get_irn_reg_req(const ir_node *irn,
+                                                        int pos)
+{
 	long               node_pos = pos == -1 ? 0 : pos;
 	ir_mode           *mode     = get_irn_mode(irn);
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
-	(void) self;
 
 	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
 		DBG((mod, LEVEL_1, "ignoring block, mode_X or mode_M node %+F\n", irn));
@@ -140,9 +139,9 @@ arch_register_req_t *ppc32_get_irn_reg_req(const void *self,
 	return arch_no_register_req;
 }
 
-static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg) {
+static void ppc32_set_irn_reg(ir_node *irn, const arch_register_t *reg)
+{
 	int pos = 0;
-	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -166,10 +165,10 @@ static void ppc32_set_irn_reg(const void *self, ir_node *irn, const arch_registe
 	}
 }
 
-static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node *irn) {
+static const arch_register_t *ppc32_get_irn_reg(const ir_node *irn)
+{
 	int pos = 0;
 	const arch_register_t *reg = NULL;
-	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -193,8 +192,8 @@ static const arch_register_t *ppc32_get_irn_reg(const void *self, const ir_node 
 	return reg;
 }
 
-static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
-	(void) self;
+static arch_irn_class_t ppc32_classify(const ir_node *irn)
+{
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
@@ -207,8 +206,8 @@ static arch_irn_class_t ppc32_classify(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
-	(void) self;
+static arch_irn_flags_t ppc32_get_flags(const ir_node *irn)
+{
 	irn = skip_Proj_const(irn);
 
 	if (is_ppc32_irn(irn)) {
@@ -221,15 +220,15 @@ static arch_irn_flags_t ppc32_get_flags(const void *self, const ir_node *irn) {
 	return 0;
 }
 
-static ir_entity *ppc32_get_frame_entity(const void *self, const ir_node *irn) {
-	(void) self;
+static ir_entity *ppc32_get_frame_entity(const ir_node *irn)
+{
 	if(!is_ppc32_irn(irn)) return NULL;
 	if(get_ppc32_type(irn)!=ppc32_ac_FrameEntity) return NULL;
 	return get_ppc32_frame_entity(irn);
 }
 
-static void ppc32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
-	(void) self;
+static void ppc32_set_frame_entity(ir_node *irn, ir_entity *ent)
+{
 	if (! is_ppc32_irn(irn) || get_ppc32_type(irn) != ppc32_ac_FrameEntity)
 		return;
 	set_ppc32_frame_entity(irn, ent);
@@ -239,13 +238,13 @@ static void ppc32_set_frame_entity(const void *self, ir_node *irn, ir_entity *en
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void ppc32_set_stack_bias(const void *self, ir_node *irn, int bias) {
-	(void) self;
+static void ppc32_set_stack_bias(ir_node *irn, int bias)
+{
 	set_ppc32_offset(irn, bias);
 }
 
-static int ppc32_get_sp_bias(const void *self, const ir_node *irn) {
-	(void) self;
+static int ppc32_get_sp_bias(const ir_node *irn)
+{
 	(void) irn;
 	return 0;
 }

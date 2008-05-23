@@ -210,14 +210,12 @@ ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
  * If the node returns a tuple (mode_T) then the proj's
  * will be asked for this information.
  */
-static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
-                                                       const ir_node *node,
+static const arch_register_req_t *ia32_get_irn_reg_req(const ir_node *node,
 													   int pos)
 {
 	ir_mode *mode = get_irn_mode(node);
 	long    node_pos;
 
-	(void)self;
 	if (mode == mode_X || is_Block(node)) {
 		return arch_no_register_req;
 	}
@@ -253,11 +251,9 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const void *self,
 	return arch_no_register_req;
 }
 
-static void ia32_set_irn_reg(const void *self, ir_node *irn,
-                             const arch_register_t *reg)
+static void ia32_set_irn_reg(ir_node *irn, const arch_register_t *reg)
 {
 	int    pos = 0;
-	(void) self;
 
 	if (get_irn_mode(irn) == mode_X) {
 		return;
@@ -278,12 +274,10 @@ static void ia32_set_irn_reg(const void *self, ir_node *irn,
 	}
 }
 
-static const arch_register_t *ia32_get_irn_reg(const void *self,
-                                               const ir_node *irn)
+static const arch_register_t *ia32_get_irn_reg(const ir_node *irn)
 {
 	int pos = 0;
 	const arch_register_t *reg = NULL;
-	(void) self;
 
 	if (is_Proj(irn)) {
 
@@ -307,9 +301,8 @@ static const arch_register_t *ia32_get_irn_reg(const void *self,
 	return reg;
 }
 
-static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
+static arch_irn_class_t ia32_classify(const ir_node *irn) {
 	arch_irn_class_t classification = arch_irn_class_normal;
-	(void) self;
 
 	irn = skip_Proj_const(irn);
 
@@ -331,9 +324,8 @@ static arch_irn_class_t ia32_classify(const void *self, const ir_node *irn) {
 	return classification;
 }
 
-static arch_irn_flags_t ia32_get_flags(const void *self, const ir_node *irn) {
+static arch_irn_flags_t ia32_get_flags(const ir_node *irn) {
 	arch_irn_flags_t flags = arch_irn_flags_none;
-	(void) self;
 
 	if (is_Unknown(irn))
 		return arch_irn_flags_ignore;
@@ -365,20 +357,16 @@ typedef struct {
 	ir_graph *irg;                   /**< The associated graph. */
 } ia32_abi_env_t;
 
-static ir_entity *ia32_get_frame_entity(const void *self, const ir_node *irn) {
-	(void) self;
+static ir_entity *ia32_get_frame_entity(const ir_node *irn) {
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
-static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent) {
-	(void) self;
+static void ia32_set_frame_entity(ir_node *irn, ir_entity *ent) {
 	set_ia32_frame_ent(irn, ent);
 }
 
-static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias)
+static void ia32_set_frame_offset(ir_node *irn, int bias)
 {
-	(void) self;
-
 	if (get_ia32_frame_ent(irn) == NULL)
 		return;
 
@@ -395,10 +383,8 @@ static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias)
 	add_ia32_am_offs_int(irn, bias);
 }
 
-static int ia32_get_sp_bias(const void *self, const ir_node *node)
+static int ia32_get_sp_bias(const ir_node *node)
 {
-	(void) self;
-
 	if (is_ia32_Push(node))
 		return 4;
 
@@ -614,11 +600,10 @@ static ir_type *ia32_abi_get_between_type(void *self)
  *
  * @return     The estimated cycle count for this operation
  */
-static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
+static int ia32_get_op_estimated_cost(const ir_node *irn)
 {
 	int            cost;
 	ia32_op_type_t op_tp;
-	(void) self;
 
 	if (is_Proj(irn))
 		return 0;
@@ -665,13 +650,12 @@ static int ia32_get_op_estimated_cost(const void *self, const ir_node *irn)
  * @param obstack   The obstack to use for allocation of the returned nodes array
  * @return          The inverse operation or NULL if operation invertible
  */
-static arch_inverse_t *ia32_get_inverse(const void *self, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst) {
+static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst) {
 	ir_graph *irg;
 	ir_mode  *mode;
 	ir_mode  *irn_mode;
 	ir_node  *block, *noreg, *nomem;
 	dbg_info *dbg;
-	(void) self;
 
 	/* we cannot invert non-ia32 irns */
 	if (! is_ia32_irn(irn))
@@ -820,11 +804,10 @@ static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spil
  * @param i      The operands position
  * @return Non-Zero if operand can be loaded
  */
-static int ia32_possible_memory_operand(const void *self, const ir_node *irn, unsigned int i) {
+static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i) {
 	ir_node *op = get_irn_n(irn, i);
 	const ir_mode *mode = get_irn_mode(op);
 	const ir_mode *spillmode = get_spill_mode(op);
-	(void) self;
 
 	if (
 		(i != n_ia32_binary_left && i != n_ia32_binary_right) || /* a "real" operand position must be requested */
@@ -852,13 +835,12 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 	return 1;
 }
 
-static void ia32_perform_memory_operand(const void *self, ir_node *irn,
-                                        ir_node *spill, unsigned int i)
+static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
+                                        unsigned int i)
 {
 	ia32_code_gen_t *cg = ia32_current_cg;
-	(void) self;
 
-	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
+	assert(ia32_possible_memory_operand(irn, i) && "Cannot perform memory operand change");
 
 	if (i == n_ia32_binary_left) {
 		ia32_swap_left_right(irn);
@@ -1918,8 +1900,8 @@ static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self)
  * Returns the estimated execution time of an ia32 irn.
  */
 static sched_timestep_t ia32_sched_exectime(void *env, const ir_node *irn) {
-	const arch_env_t *arch_env = env;
-	return is_ia32_irn(irn) ? ia32_get_op_estimated_cost(arch_get_irn_ops(arch_env, irn), irn) : 1;
+	(void) env;
+	return is_ia32_irn(irn) ? ia32_get_op_estimated_cost(irn) : 1;
 }
 
 list_sched_selector_t ia32_sched_selector;
