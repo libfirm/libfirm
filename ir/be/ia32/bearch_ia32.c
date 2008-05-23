@@ -424,32 +424,33 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 	const arch_env_t *arch_env = env->aenv;
 
 	if (! env->flags.try_omit_fp) {
-		ir_node *bl      = get_irg_start_block(env->irg);
-		ir_node *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
-		ir_node *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
-		ir_node *noreg = ia32_new_NoReg_gp(cg);
-		ir_node *push;
+		ir_graph *irg     =env->irg;
+		ir_node  *bl      = get_irg_start_block(irg);
+		ir_node  *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
+		ir_node  *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
+		ir_node  *noreg = ia32_new_NoReg_gp(cg);
+		ir_node  *push;
 
 		/* ALL nodes representing bp must be set to ignore. */
 		be_node_set_flags(get_Proj_pred(curr_bp), BE_OUT_POS(get_Proj_proj(curr_bp)), arch_irn_flags_ignore);
 
 		/* push ebp */
-		push    = new_rd_ia32_Push(NULL, env->irg, bl, noreg, noreg, *mem, curr_bp, curr_sp);
-		curr_sp = new_r_Proj(env->irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
-		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
+		push    = new_rd_ia32_Push(NULL, irg, bl, noreg, noreg, *mem, curr_bp, curr_sp);
+		curr_sp = new_r_Proj(irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
+		*mem    = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
 		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 		set_ia32_flags(push, arch_irn_flags_ignore);
 
 		/* move esp to ebp */
-		curr_bp  = be_new_Copy(arch_env->bp->reg_class, env->irg, bl, curr_sp);
+		curr_bp  = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), arch_env->bp);
 		arch_set_irn_register(arch_env, curr_bp, arch_env->bp);
 		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		/* beware: the copy must be done before any other sp use */
-		curr_sp = be_new_CopyKeep_single(env->aenv->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
 		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), arch_env->sp);
 		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
@@ -475,18 +476,18 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
  */
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t   *env     = self;
-	ir_node          *curr_sp = be_abi_reg_map_get(reg_map, env->aenv->sp);
-	ir_node          *curr_bp = be_abi_reg_map_get(reg_map, env->aenv->bp);
+	ia32_abi_env_t   *env      = self;
 	const arch_env_t *arch_env = env->aenv;
+	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, arch_env->sp);
+	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, arch_env->bp);
+	ir_graph         *irg      = env->irg;
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(env->aenv->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = be_new_IncSP(arch_env->sp, irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 	} else {
-		ir_mode         *mode_bp = env->aenv->bp->reg_class->mode;
-		ir_graph        *irg     = current_ir_graph;
+		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
 
 		if (ia32_cg_config.use_leave) {
 			ir_node *leave;
@@ -505,7 +506,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
-			arch_set_irn_register(arch_env, curr_sp, env->aenv->sp);
+			arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 			/* pop ebp */
@@ -516,12 +517,12 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			*mem = new_r_Proj(irg, bl, pop, mode_M, pn_ia32_Pop_M);
 		}
-		arch_set_irn_register(arch_env, curr_sp, env->aenv->sp);
-		arch_set_irn_register(arch_env, curr_bp, env->aenv->bp);
+		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
+		arch_set_irn_register(arch_env, curr_bp, arch_env->bp);
 	}
 
-	be_abi_reg_map_set(reg_map, env->aenv->sp, curr_sp);
-	be_abi_reg_map_set(reg_map, env->aenv->bp, curr_bp);
+	be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
+	be_abi_reg_map_set(reg_map, arch_env->bp, curr_bp);
 }
 
 /**
