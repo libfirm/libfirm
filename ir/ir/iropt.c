@@ -4933,7 +4933,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 				ir_node *block = get_nodes_block(n);
 				ir_node *cmp_l = get_Cmp_left(cmp);
 
-				if (mode_honor_signed_zeros(mode) && is_negated_value(f, t)) {
+				if (!mode_honor_signed_zeros(mode) && is_negated_value(f, t)) {
 					/* f = -t */
 
 					if ( (cmp_l == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
