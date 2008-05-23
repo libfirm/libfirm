@@ -377,13 +377,14 @@ static void ia32_set_frame_entity(const void *self, ir_node *irn, ir_entity *ent
 
 static void ia32_set_frame_offset(const void *self, ir_node *irn, int bias)
 {
-	const ia32_irn_ops_t *ops = self;
+	(void) self;
 
 	if (get_ia32_frame_ent(irn) == NULL)
 		return;
 
 	if (is_ia32_Pop(irn) || is_ia32_PopMem(irn)) {
-		int omit_fp = be_abi_omit_fp(ops->cg->birg->abi);
+		ia32_code_gen_t *cg = ia32_current_cg;
+		int omit_fp = be_abi_omit_fp(cg->birg->abi);
 		if (omit_fp) {
 			/* Pop nodes modify the stack pointer before calculating the
 			 * destination address, so fix this here
@@ -854,7 +855,8 @@ static int ia32_possible_memory_operand(const void *self, const ir_node *irn, un
 static void ia32_perform_memory_operand(const void *self, ir_node *irn,
                                         ir_node *spill, unsigned int i)
 {
-	const ia32_irn_ops_t *ops = self;
+	ia32_code_gen_t *cg = ia32_current_cg;
+	(void) self;
 
 	assert(ia32_possible_memory_operand(self, irn, i) && "Cannot perform memory operand change");
 
@@ -868,7 +870,7 @@ static void ia32_perform_memory_operand(const void *self, ir_node *irn,
 	set_ia32_need_stackent(irn);
 
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
-	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(ops->cg, irn, n_ia32_binary_right));
+	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(cg, irn, n_ia32_binary_right));
 	set_irn_n(irn, n_ia32_mem, spill);
 
 	/* immediates are only allowed on the right side */
@@ -888,7 +890,7 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_if_t ia32_irn_ops_if = {
+static const arch_irn_ops_t ia32_irn_ops = {
 	ia32_get_irn_reg_req,
 	ia32_set_irn_reg,
 	ia32_get_irn_reg,
@@ -903,13 +905,6 @@ static const arch_irn_ops_if_t ia32_irn_ops_if = {
 	ia32_possible_memory_operand,
 	ia32_perform_memory_operand,
 };
-
-static ia32_irn_ops_t ia32_irn_ops = {
-	&ia32_irn_ops_if,
-	NULL
-};
-
-
 
 /**************************************************
  *                _                         _  __
@@ -1595,8 +1590,6 @@ static void *ia32_cg_init(be_irg_t *birg) {
 
 	cur_reg_set = cg->reg_set;
 
-	ia32_irn_ops.cg = cg;
-
 	assert(ia32_current_cg == NULL);
 	ia32_current_cg = cg;
 
@@ -1690,7 +1683,7 @@ static void *ia32_init(FILE *file_handle) {
 	}
 
 	ia32_register_init();
-	ia32_create_opcodes();
+	ia32_create_opcodes(&ia32_irn_ops);
 
 	be_emit_init(file_handle);
 	isa->regs_16bit     = pmap_create();
@@ -1893,19 +1886,6 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 		be_abi_call_res_reg(abi, 0, reg);
 	}
-}
-
-
-static const void *ia32_get_irn_ops(const ir_node *irn)
-{
-	(void) irn;
-	return &ia32_irn_ops;
-}
-
-arch_get_irn_ops_t *ia32_get_irn_handler(const void *self)
-{
-	(void) self;
-	return &ia32_get_irn_ops;
 }
 
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
@@ -2256,7 +2236,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_reg_class,
 	ia32_get_reg_class_for_mode,
 	ia32_get_call_abi,
-	ia32_get_irn_handler,
 	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
 	ia32_get_ilp_sched_selector,

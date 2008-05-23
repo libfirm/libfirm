@@ -35,7 +35,6 @@
 #include "set.h"
 
 typedef struct mips_isa_t            mips_isa_t;
-typedef struct mips_irn_ops_t        mips_irn_ops_t;
 typedef struct mips_transform_env_t  mips_transform_env_t;
 
 struct mips_code_gen_t {
@@ -52,11 +51,6 @@ struct mips_code_gen_t {
 struct mips_isa_t {
 	arch_isa_t             arch_isa;    /**< must be derived from arch_isa_t */
 	mips_code_gen_t       *cg;
-};
-
-struct mips_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
-	mips_code_gen_t         *cg;
 };
 
 

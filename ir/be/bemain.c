@@ -250,8 +250,6 @@ const backend_params *be_init(void)
  */
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
-	arch_get_irn_ops_t *handler;
-
 	memset(env, 0, sizeof(*env));
 	env->options              = &be_options;
 	env->ent_trampoline_map   = pmap_create();
@@ -264,10 +262,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	set_class_final(env->pic_trampolines_type, 1);
 
 	arch_env_init(&env->arch_env, isa_if, file_handle, env);
-
-	/* Register the irn handler of the architecture */
-	handler = arch_isa_get_irn_handler(env->arch_env.isa);
-	arch_env_set_irn_handler(&env->arch_env, handler);
 
 	be_phi_handler_new(env);
 
@@ -282,7 +276,7 @@ static void be_done_env(be_main_env_t *env)
 {
 	env->arch_env.isa->impl->done(env->arch_env.isa);
 	be_dbg_close();
-	be_phi_handler_free(env);
+	be_phi_handler_free();
 
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
@@ -479,7 +473,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_init_phase(irg);
 
 		/* reset the phi handler. */
-		be_phi_handler_reset(&env);
+		be_phi_handler_reset();
 
 		stat_ev_ctx_push_fobj("bemain_irg", irg);
 
@@ -530,7 +524,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_pop("bemain_phase");
 
 		/* reset the phi handler. */
-		be_phi_handler_reset(&env);
+		be_phi_handler_reset();
 
 		be_do_stat_nodes(irg, "03 Prepare");
 

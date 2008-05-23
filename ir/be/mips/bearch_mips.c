@@ -290,7 +290,7 @@ static int mips_get_sp_bias(const void *self, const ir_node *irn)
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_if_t mips_irn_ops_if = {
+static const arch_irn_ops_t mips_irn_ops = {
 	mips_get_irn_reg_req,
 	mips_set_irn_reg,
 	mips_get_irn_reg,
@@ -305,13 +305,6 @@ static const arch_irn_ops_if_t mips_irn_ops_if = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-mips_irn_ops_t mips_irn_ops = {
-	&mips_irn_ops_if,
-	NULL
-};
-
-
 
 /**************************************************
  *                _                         _  __
@@ -582,8 +575,6 @@ static void *mips_cg_init(be_irg_t *birg)
 
 	cur_reg_set = cg->reg_set;
 
-	mips_irn_ops.cg = cg;
-
 	isa->cg = cg;
 
 	return (arch_code_generator_t *)cg;
@@ -631,7 +622,7 @@ static void *mips_init(FILE *file_handle) {
 	be_emit_init(file_handle);
 
 	mips_register_init();
-	mips_create_opcodes();
+	mips_create_opcodes(&mips_irn_ops);
 	// mips_init_opcode_transforms();
 
 	/* we mark referenced global entities, so we can only emit those which
@@ -947,18 +938,6 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static const void *mips_get_irn_ops(const ir_node *irn)
-{
-	(void) irn;
-	return &mips_irn_ops;
-}
-
-arch_get_irn_ops_t *mips_get_irn_handler(const void *self)
-{
-	(void) self;
-	return &mips_get_irn_ops;
-}
-
 /**
  * Initializes the code generator interface.
  */
@@ -1031,7 +1010,6 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_reg_class,
 	mips_get_reg_class_for_mode,
 	mips_get_call_abi,
-	mips_get_irn_handler,
 	mips_get_code_generator_if,
 	mips_get_list_sched_selector,
 	mips_get_ilp_sched_selector,

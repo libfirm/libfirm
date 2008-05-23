@@ -179,7 +179,7 @@ struct arch_inverse_t {
 	ir_node  **nodes;
 };
 
-struct arch_irn_ops_if_t {
+struct arch_irn_ops_t {
 
 	/**
   	 * Get the register requirements for a given operand.
@@ -309,13 +309,6 @@ struct arch_irn_ops_if_t {
 	 * @param i      The position of the reload.
 	 */
 	void (*perform_memory_operand)(const void *self, ir_node *irn, ir_node *spill, unsigned int i);
-};
-
-/**
- * irn_ops base class.
- */
-struct arch_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
 };
 
 /**
@@ -479,13 +472,6 @@ struct arch_isa_if_t {
 	void (*get_call_abi)(const void *self, ir_type *call_type, be_abi_call_t *abi);
 
 	/**
-	 * The irn handler for this architecture.
-	 * The irn handler is registered by the Firm back end
-	 * when the architecture is initialized.
-	 */
-	arch_get_irn_ops_t *(*get_irn_handler)(const void *self);
-
-	/**
 	 * Get the code generator interface.
 	 * @param self The this pointer.
 	 * @return     Some code generator interface.
@@ -559,7 +545,6 @@ struct arch_isa_if_t {
 
 #define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))
 #define arch_isa_get_reg_class(isa,i)                  ((isa)->impl->get_reg_class(isa, i))
-#define arch_isa_get_irn_handler(isa)                  ((isa)->impl->get_irn_handler(isa))
 #define arch_isa_get_call_abi(isa,tp,abi)              ((isa)->impl->get_call_abi((isa), (tp), (abi)))
 #define arch_isa_get_reg_class_for_mode(isa,mode)      ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
 #define arch_isa_make_code_generator(isa,irg)          ((isa)->impl->make_code_generator((isa), (irg)))
@@ -574,8 +559,6 @@ struct arch_isa_if_t {
  */
 struct arch_env_t {
 	arch_isa_t *isa;                  /**< The isa about which everything is. */
-
-	arch_get_irn_ops_t *arch_handler; /**< The get_irn_ops handler for the selected architecture. */
 };
 
 /**

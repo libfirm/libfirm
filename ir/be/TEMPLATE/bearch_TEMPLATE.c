@@ -223,7 +223,7 @@ static int TEMPLATE_get_sp_bias(const void *self, const ir_node *irn) {
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_if_t TEMPLATE_irn_ops_if = {
+static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	TEMPLATE_get_irn_reg_req,
 	TEMPLATE_set_irn_reg,
 	TEMPLATE_get_irn_reg,
@@ -238,13 +238,6 @@ static const arch_irn_ops_if_t TEMPLATE_irn_ops_if = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-TEMPLATE_irn_ops_t TEMPLATE_irn_ops = {
-	&TEMPLATE_irn_ops_if,
-	NULL
-};
-
-
 
 /**************************************************
  *                _                         _  __
@@ -350,8 +343,6 @@ static void *TEMPLATE_cg_init(be_irg_t *birg) {
 
 	cur_reg_set = cg->reg_set;
 
-	TEMPLATE_irn_ops.cg = cg;
-
 	return (arch_code_generator_t *)cg;
 }
 
@@ -397,7 +388,7 @@ static void *TEMPLATE_init(FILE *outfile) {
 	be_emit_init(outfile);
 
 	TEMPLATE_register_init();
-	TEMPLATE_create_opcodes();
+	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 
 	return isa;
 }
@@ -589,18 +580,6 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static const void *TEMPLATE_get_irn_ops(const ir_node *irn)
-{
-	(void) irn;
-	return &TEMPLATE_irn_ops;
-}
-
-arch_get_irn_ops_t *TEMPLATE_get_irn_handler(const void *self)
-{
-	(void) self;
-	return &TEMPLATE_get_irn_ops;
-}
-
 int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
@@ -704,7 +683,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_reg_class,
 	TEMPLATE_get_reg_class_for_mode,
 	TEMPLATE_get_call_abi,
-	TEMPLATE_get_irn_handler,
 	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,
 	TEMPLATE_get_ilp_sched_selector,

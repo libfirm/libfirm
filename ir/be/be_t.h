@@ -79,12 +79,6 @@ struct be_options_t {
 	char filtev[128];         /**< filter mask for stat events (regex is supported) */
 };
 
-typedef struct {
-	arch_irn_ops_t     irn_ops;
-	const arch_env_t   *arch_env;
-	pmap               *phi_attrs;
-} phi_handler_t;
-
 struct be_main_env_t {
 	arch_env_t            arch_env;
 	be_options_t          *options;              /**< backend options */
@@ -94,7 +88,6 @@ struct be_main_env_t {
 	ir_type               *pic_trampolines_type; /**< Class type containing all trampolines */
 	pmap                  *ent_pic_symbol_map;
 	ir_type               *pic_symbols_type;
-	phi_handler_t         phi_handler;
 };
 
 /**

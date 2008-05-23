@@ -223,26 +223,33 @@ static void dump_arith_tarval(tarval *tv, int bytes)
 	switch (bytes) {
 	case 1:
 		be_emit_irprintf("0x%02x", get_tarval_sub_bits(tv, 0));
-		break;
+		return;
 
 	case 2:
 		be_emit_irprintf("0x%02x%02x", get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		break;
+		return;
 
 	case 4:
 		be_emit_irprintf("0x%02x%02x%02x%02x",
 			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		break;
+		return;
 
 	case 8:
 		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x",
 			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
 			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		break;
+		return;
 
-	case 10:
 	case 12:
-		break;
+		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x"
+		                   "%02x%02x%02x%02x", get_tarval_sub_bits(tv, 11),
+				get_tarval_sub_bits(tv, 10), get_tarval_sub_bits(tv, 9),
+	 			get_tarval_sub_bits(tv, 8), get_tarval_sub_bits(tv, 7),
+				get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5),
+				get_tarval_sub_bits(tv, 4), get_tarval_sub_bits(tv, 3),
+				get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1),
+				get_tarval_sub_bits(tv, 0));
+		return;
 
 	case 16:
 		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x"
@@ -255,13 +262,10 @@ static void dump_arith_tarval(tarval *tv, int bytes)
 			get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
 			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
 			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		break;
-
-
-	default:
-		fprintf(stderr, "Try to dump an tarval with %d bytes\n", bytes);
-		assert(0);
+		return;
 	}
+
+	panic("Can't dump a tarval with %d bytes\n", bytes);
 }
 
 /**

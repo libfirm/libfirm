@@ -159,11 +159,4 @@ struct _arm_isa_t {
 	arm_code_gen_t *cg;           /**< current code generator */
 };
 
-
-typedef struct _arm_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
-	arm_code_gen_t          *cg;
-} arm_irn_ops_t;
-
-
 #endif

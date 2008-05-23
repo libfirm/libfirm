@@ -34,7 +34,6 @@
 
 typedef struct TEMPLATE_isa_t            TEMPLATE_isa_t;
 typedef struct TEMPLATE_code_gen_t       TEMPLATE_code_gen_t;
-typedef struct TEMPLATE_irn_ops_t        TEMPLATE_irn_ops_t;
 typedef struct TEMPLATE_transform_env_t  TEMPLATE_transform_env_t;
 
 struct TEMPLATE_code_gen_t {
@@ -49,11 +48,6 @@ struct TEMPLATE_code_gen_t {
 
 struct TEMPLATE_isa_t {
 	arch_isa_t             arch_isa;      /**< must be derived from arch_isa */
-};
-
-struct TEMPLATE_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
-	TEMPLATE_code_gen_t     *cg;
 };
 
 /**

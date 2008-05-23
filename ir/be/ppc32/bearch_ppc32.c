@@ -372,7 +372,7 @@ static const be_abi_callbacks_t ppc32_abi_callbacks = {
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_if_t ppc32_irn_ops_if = {
+static const arch_irn_ops_t ppc32_irn_ops = {
 	ppc32_get_irn_reg_req,
 	ppc32_set_irn_reg,
 	ppc32_get_irn_reg,
@@ -387,13 +387,6 @@ static const arch_irn_ops_if_t ppc32_irn_ops_if = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-ppc32_irn_ops_t ppc32_irn_ops = {
-	&ppc32_irn_ops_if,
-	NULL
-};
-
-
 
 /**************************************************
  *                _                         _  __
@@ -626,7 +619,6 @@ static void *ppc32_cg_init(be_irg_t *birg) {
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ppc.cg");
 
 	cur_reg_set = cg->reg_set;
-	ppc32_irn_ops.cg = cg;
 
 	return (arch_code_generator_t *)cg;
 }
@@ -691,7 +683,7 @@ static void *ppc32_init(FILE *file_handle) {
 	be_emit_init(file_handle);
 
 	ppc32_register_init();
-	ppc32_create_opcodes();
+	ppc32_create_opcodes(&ppc32_irn_ops);
 
 	inited = 1;
 
@@ -848,16 +840,6 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	}
 }
 
-static const void *ppc32_get_irn_ops(const ir_node *irn) {
-	(void) irn;
-	return &ppc32_irn_ops;
-}
-
-arch_get_irn_ops_t *ppc32_get_irn_handler(const void *self) {
-	(void) self;
-	return &ppc32_get_irn_ops;
-}
-
 int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 	(void) block_env;
 	if(!is_ppc32_irn(irn))
@@ -950,7 +932,6 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_reg_class,
 	ppc32_get_reg_class_for_mode,
 	ppc32_get_call_abi,
-	ppc32_get_irn_handler,
 	ppc32_get_code_generator_if,
 	ppc32_get_list_sched_selector,
 	ppc32_get_ilp_sched_selector,

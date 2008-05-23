@@ -512,15 +512,14 @@ void be_phi_handler_new(be_main_env_t *env);
 
 /**
  * Destroy the Phi handler.
- * @param env The be_main environment.
  */
-void be_phi_handler_free(be_main_env_t *env);
+void be_phi_handler_free(void);
 
 /**
  * Reset the register data in the Phi handler.
  * This should be called on each new graph and deletes the register information of the current graph.
  */
-void be_phi_handler_reset(be_main_env_t *env);
+void be_phi_handler_reset(void);
 
 /**
  * Set the register requirements for a phi node.

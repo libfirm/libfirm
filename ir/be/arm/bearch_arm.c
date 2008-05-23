@@ -263,7 +263,7 @@ static int arm_get_sp_bias(const void *self, const ir_node *irn)
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_if_t arm_irn_ops_if = {
+static const arch_irn_ops_t arm_irn_ops = {
 	arm_get_irn_reg_req,
 	arm_set_irn_reg,
 	arm_get_irn_reg,
@@ -278,13 +278,6 @@ static const arch_irn_ops_if_t arm_irn_ops_if = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-arm_irn_ops_t arm_irn_ops = {
-	&arm_irn_ops_if,
-	NULL
-};
-
-
 
 /**************************************************
  *                _                         _  __
@@ -618,8 +611,6 @@ static void *arm_cg_init(be_irg_t *birg) {
 
 	cur_reg_set = cg->reg_set;
 
-	arm_irn_ops.cg = cg;
-
 	/* enter the current code generator */
 	isa->cg = cg;
 
@@ -797,7 +788,7 @@ static void *arm_init(FILE *file_handle) {
 	isa->cg  = NULL;
 	be_emit_init(file_handle);
 
-	arm_create_opcodes();
+	arm_create_opcodes(&arm_irn_ops);
 	arm_handle_intrinsics();
 
 	/* we mark referenced global entities, so we can only emit those which
@@ -1088,16 +1079,6 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	}
 }
 
-static const void *arm_get_irn_ops(const ir_node *irn) {
-	(void) irn;
-	return &arm_irn_ops;
-}
-
-arch_get_irn_ops_t *arm_get_irn_handler(const void *self) {
-	(void) self;
-	return &arm_get_irn_ops;
-}
-
 int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 	(void) block_env;
 	if(!is_arm_irn(irn))
@@ -1268,7 +1249,6 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_reg_class,
 	arm_get_reg_class_for_mode,
 	arm_get_call_abi,
-	arm_get_irn_handler,
 	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
 	arm_get_ilp_sched_selector,

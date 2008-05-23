@@ -95,10 +95,10 @@ typedef enum {
 	iro_Pin,
 	iro_ASM,
 	iro_Anchor,
-	/* last middleend node number */
-	iro_Last,
+	/* first not middleend node number */
+	iro_Last = iro_Anchor,
 	/* first backend node number */
-	beo_First = iro_Last,
+	beo_First,
 	/* backend specific nodes */
 	beo_Spill = beo_First,
 	beo_Reload,
@@ -117,9 +117,9 @@ typedef enum {
 	beo_Barrier,
 	beo_Unwind,
 	/* last backend node number */
-	beo_Last,
-	/* last fixed number. Dynamic node numbers start here */
-	iro_MaxOpcode = beo_Last
+	beo_Last = beo_Unwind,
+	/* first unfixed number. Dynamic node numbers start here */
+	iro_MaxOpcode
 } ir_opcode;
 
 extern ir_op *op_Block;           ir_op *get_op_Block     (void);
@@ -371,6 +371,7 @@ typedef struct {
 	verify_proj_node_func verify_proj_node; /**< Verify the Proj node. */
 	dump_node_func        dump_node;        /**< Dump a node. */
 	op_func               generic;          /**< A generic function pointer. */
+	const arch_irn_ops_t *be_ops;           /**< callbacks used by the backend. */
 } ir_op_ops;
 
 /**

@@ -64,11 +64,6 @@
 #define get_irn_attr(irn) get_irn_generic_attr(irn)
 #define get_irn_attr_const(irn) get_irn_generic_attr_const(irn)
 
-static unsigned be_node_tag = FOURCC('B', 'E', 'N', 'O');
-
-/** The current phi handler */
-static const phi_handler_t *curr_phi_handler;
-
 typedef struct {
 	arch_register_req_t req;
 	arch_irn_flags_t    flags;
@@ -289,66 +284,6 @@ static INLINE arch_register_req_t *get_req(const ir_node *node, int pos)
 	return &bereq->req;
 }
 
-void be_node_init(void) {
-	static int inited = 0;
-
-	if(inited)
-		return;
-
-	inited = 1;
-
-	/* Acquire all needed opcodes. */
-	op_be_Spill      = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Reload     = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Perm       = new_ir_op(beo_Perm,      "be_Perm",      op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_MemPerm    = new_ir_op(beo_MemPerm,   "be_MemPerm",   op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
-	op_be_Copy       = new_ir_op(beo_Copy,      "be_Copy",      op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Keep       = new_ir_op(beo_Keep,      "be_Keep",      op_pin_state_pinned, K,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_CopyKeep   = new_ir_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_pinned, K,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Call       = new_ir_op(beo_Call,      "be_Call",      op_pin_state_pinned, F|M, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
-	op_be_Return     = new_ir_op(beo_Return,    "be_Return",    op_pin_state_pinned, X,   oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
-	op_be_AddSP      = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_SubSP      = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_IncSP      = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
-	op_be_RegParams  = new_ir_op(beo_RegParams, "be_RegParams", op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_FrameAddr  = new_ir_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Barrier    = new_ir_op(beo_Barrier,   "be_Barrier",   op_pin_state_pinned, N,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
-	op_be_Unwind     = new_ir_op(beo_Unwind,    "be_Unwind",    op_pin_state_pinned, X,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
-
-	set_op_tag(op_be_Spill,      &be_node_tag);
-	op_be_Spill->ops.node_cmp_attr = FrameAddr_cmp_attr;
-	set_op_tag(op_be_Reload,     &be_node_tag);
-	op_be_Reload->ops.node_cmp_attr = FrameAddr_cmp_attr;
-	set_op_tag(op_be_Perm,       &be_node_tag);
-	op_be_Perm->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_MemPerm,    &be_node_tag);
-	op_be_MemPerm->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_Copy,       &be_node_tag);
-	op_be_Copy->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_Keep,       &be_node_tag);
-	op_be_Keep->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_CopyKeep,   &be_node_tag);
-	op_be_CopyKeep->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_Call,       &be_node_tag);
-	op_be_Call->ops.node_cmp_attr = Call_cmp_attr;
-	set_op_tag(op_be_Return,     &be_node_tag);
-	op_be_Return->ops.node_cmp_attr = Return_cmp_attr;
-	set_op_tag(op_be_AddSP,      &be_node_tag);
-	op_be_AddSP->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_SubSP,      &be_node_tag);
-	op_be_SubSP->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_IncSP,      &be_node_tag);
-	op_be_IncSP->ops.node_cmp_attr = IncSP_cmp_attr;
-	set_op_tag(op_be_RegParams,  &be_node_tag);
-	op_be_RegParams->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_FrameAddr,  &be_node_tag);
-	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
-	set_op_tag(op_be_Barrier,    &be_node_tag);
-	op_be_Barrier->ops.node_cmp_attr = node_cmp_attr;
-	set_op_tag(op_be_Unwind,     &be_node_tag);
-	op_be_Unwind->ops.node_cmp_attr = node_cmp_attr;
-}
-
 /**
  * Initializes the generic attribute of all be nodes and return ir.
  */
@@ -376,11 +311,6 @@ static void add_register_req(ir_node *node)
 	be_reg_data_t regreq;
 	memset(&regreq, 0, sizeof(regreq));
 	ARR_APP1(be_reg_data_t, a->reg_data, regreq);
-}
-
-int is_be_node(const ir_node *irn)
-{
-	return get_op_tag(get_irn_op(irn)) == &be_node_tag;
 }
 
 /**
@@ -1320,7 +1250,7 @@ static int be_node_get_sp_bias(const void *self, const ir_node *irn)
 
 */
 
-static const arch_irn_ops_if_t be_node_irn_ops_if = {
+static const arch_irn_ops_t be_node_irn_ops = {
 	be_node_get_irn_reg_req,
 	be_node_set_irn_reg,
 	be_node_get_irn_reg,
@@ -1335,29 +1265,6 @@ static const arch_irn_ops_if_t be_node_irn_ops_if = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-static const arch_irn_ops_t be_node_irn_ops = {
-	&be_node_irn_ops_if
-};
-
-/* * irn handler for common be nodes and Phi's. */
-const void *be_node_get_irn_ops(const ir_node *irn)
-{
-	if (is_Phi(irn)) {
-		if (mode_is_datab(get_irn_mode(irn)))
-			return &curr_phi_handler->irn_ops;
-		return NULL;
-	}
-
-	if (is_Proj(irn)) {
-		irn = get_Proj_pred(irn);
-		if (is_Proj(irn)) {
-			assert(get_irn_mode(irn) == mode_T);
-			irn = get_Proj_pred(irn);
-		}
-	}
-	return is_be_node(irn) ? &be_node_irn_ops : NULL;
-}
 
 /*
   ____  _     _   ___ ____  _   _   _   _                 _ _
@@ -1374,18 +1281,23 @@ typedef struct {
 	arch_irn_flags_t       flags;
 } phi_attr_t;
 
+struct {
+	arch_env_t  *arch_env;
+	pmap        *phi_attrs;
+} phi_handler;
+
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
 
 static INLINE
-phi_attr_t *get_Phi_attr(const phi_handler_t *handler, const ir_node *phi)
+phi_attr_t *get_Phi_attr(const ir_node *phi)
 {
-	phi_attr_t *attr = pmap_get(handler->phi_attrs, (void*) phi);
+	phi_attr_t *attr = pmap_get(phi_handler.phi_attrs, (void*) phi);
 	if(attr == NULL) {
 		ir_graph *irg = get_irn_irg(phi);
 		struct obstack *obst = get_irg_obstack(irg);
 		attr = obstack_alloc(obst, sizeof(attr[0]));
 		memset(attr, 0, sizeof(attr[0]));
-		pmap_insert(handler->phi_attrs, phi, attr);
+		pmap_insert(phi_handler.phi_attrs, phi, attr);
 	}
 
 	return attr;
@@ -1395,8 +1307,7 @@ phi_attr_t *get_Phi_attr(const phi_handler_t *handler, const ir_node *phi)
  * Get register class of a Phi.
  */
 static
-const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h,
-                                                     const ir_node *phi,
+const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
                                                      pset **visited)
 {
 	int n = get_irn_arity(phi);
@@ -1411,7 +1322,7 @@ const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h,
 		/* Matze: don't we unnecessary constraint our phis with this?
 		 * we only need to take the regclass IMO*/
 		if(!is_Phi(op))
-			return arch_get_register_req(h->arch_env, op, BE_OUT_POS(0));
+			return arch_get_register_req(phi_handler.arch_env, op, BE_OUT_POS(0));
 	}
 
 	/*
@@ -1426,7 +1337,7 @@ const arch_register_req_t *get_Phi_reg_req_recursive(const phi_handler_t *h,
 	for(i = 0; i < n; ++i) {
 		const arch_register_req_t *req;
 		op = get_irn_n(phi, i);
-		req = get_Phi_reg_req_recursive(h, op, visited);
+		req = get_Phi_reg_req_recursive(op, visited);
 		if(req != NULL)
 			return req;
 	}
@@ -1438,7 +1349,6 @@ static
 const arch_register_req_t *phi_get_irn_reg_req(const void *self,
                                                const ir_node *irn, int pos)
 {
-	phi_handler_t *phi_handler = get_phi_handler_from_ops(self);
 	phi_attr_t *attr;
 	(void) self;
 	(void) pos;
@@ -1446,12 +1356,12 @@ const arch_register_req_t *phi_get_irn_reg_req(const void *self,
 	if(!mode_is_datab(get_irn_mode(irn)))
 		return arch_no_register_req;
 
-	attr = get_Phi_attr(phi_handler, irn);
+	attr = get_Phi_attr(irn);
 
 	if(attr->req.type == arch_register_req_type_none) {
 		pset *visited = NULL;
 		const arch_register_req_t *req;
-		req = get_Phi_reg_req_recursive(phi_handler, irn, &visited);
+		req = get_Phi_reg_req_recursive(irn, &visited);
 
 		memcpy(&attr->req, req, sizeof(req[0]));
 		assert(attr->req.cls != NULL);
@@ -1467,42 +1377,40 @@ const arch_register_req_t *phi_get_irn_reg_req(const void *self,
 void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *node,
                         const arch_register_req_t *req)
 {
-	const arch_irn_ops_t *ops = arch_get_irn_ops(arch_env, node);
-	const phi_handler_t *handler = get_phi_handler_from_ops(ops);
 	phi_attr_t *attr;
+	(void) arch_env;
 
 	assert(mode_is_datab(get_irn_mode(node)));
 
-	attr = get_Phi_attr(handler, node);
+	attr = get_Phi_attr(node);
 	memcpy(&attr->req, req, sizeof(req[0]));
 }
 
 void be_set_phi_flags(const arch_env_t *arch_env, ir_node *node,
                       arch_irn_flags_t flags)
 {
-	const arch_irn_ops_t *ops = arch_get_irn_ops(arch_env, node);
-	const phi_handler_t *handler = get_phi_handler_from_ops(ops);
 	phi_attr_t *attr;
+	(void) arch_env;
 
 	assert(mode_is_datab(get_irn_mode(node)));
 
-	attr = get_Phi_attr(handler, node);
+	attr = get_Phi_attr(node);
 	attr->flags = flags;
 }
 
 static
 void phi_set_irn_reg(const void *self, ir_node *irn, const arch_register_t *reg)
 {
-	phi_handler_t *h = get_phi_handler_from_ops(self);
-	phi_attr_t *attr = get_Phi_attr(h, irn);
+	phi_attr_t *attr = get_Phi_attr(irn);
+	(void) self;
 	attr->reg = reg;
 }
 
 static
 const arch_register_t *phi_get_irn_reg(const void *self, const ir_node *irn)
 {
-	phi_handler_t *h = get_phi_handler_from_ops(self);
-	phi_attr_t *attr = get_Phi_attr(h, irn);
+	phi_attr_t *attr = get_Phi_attr(irn);
+	(void) self;
 	return attr->reg;
 }
 
@@ -1517,8 +1425,7 @@ arch_irn_class_t phi_classify(const void *self, const ir_node *irn)
 static
 arch_irn_flags_t phi_get_flags(const void *self, const ir_node *irn)
 {
-	phi_handler_t *h = get_phi_handler_from_ops(self);
-	phi_attr_t *attr = get_Phi_attr(h, irn);
+	phi_attr_t *attr = get_Phi_attr(irn);
 	(void) self;
 	return attr->flags;
 }
@@ -1557,8 +1464,7 @@ int phi_get_sp_bias(const void* self, const ir_node *irn)
 	return 0;
 }
 
-static
-const arch_irn_ops_if_t phi_irn_ops = {
+static const arch_irn_ops_t phi_irn_ops = {
 	phi_get_irn_reg_req,
 	phi_set_irn_reg,
 	phi_get_irn_reg,
@@ -1576,27 +1482,23 @@ const arch_irn_ops_if_t phi_irn_ops = {
 
 void be_phi_handler_new(be_main_env_t *env)
 {
-	phi_handler_t *h = &env->phi_handler;
-	h->irn_ops.impl  = &phi_irn_ops;
-	h->arch_env      = &env->arch_env;
-	h->phi_attrs     = pmap_create();
-	curr_phi_handler = h;
+	phi_handler.arch_env  = &env->arch_env;
+	phi_handler.phi_attrs = pmap_create();
+	op_Phi->ops.be_ops    = &phi_irn_ops;
 }
 
-void be_phi_handler_free(be_main_env_t *env)
+void be_phi_handler_free(void)
 {
-	phi_handler_t *h = &env->phi_handler;
-	pmap_destroy(h->phi_attrs);
-	h->phi_attrs     = NULL;
-	curr_phi_handler = NULL;
+	pmap_destroy(phi_handler.phi_attrs);
+	phi_handler.phi_attrs = NULL;
+	op_Phi->ops.be_ops    = NULL;
 }
 
-void be_phi_handler_reset(be_main_env_t *env)
+void be_phi_handler_reset(void)
 {
-	phi_handler_t *h = &env->phi_handler;
-	if(h->phi_attrs)
-		pmap_destroy(h->phi_attrs);
-	h->phi_attrs = pmap_create();
+	if(phi_handler.phi_attrs)
+		pmap_destroy(phi_handler.phi_attrs);
+	phi_handler.phi_attrs = pmap_create();
 }
 
 /*
@@ -1816,5 +1718,55 @@ static const ir_op_ops be_node_op_ops = {
 	NULL,
 	NULL,
 	dump_node,
-	NULL
+	NULL,
+	&be_node_irn_ops
 };
+
+int is_be_node(const ir_node *irn)
+{
+	return get_op_ops(get_irn_op(irn))->be_ops == &be_node_irn_ops;
+}
+
+void be_node_init(void) {
+	static int inited = 0;
+
+	if(inited)
+		return;
+
+	inited = 1;
+
+	/* Acquire all needed opcodes. */
+	op_be_Spill      = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Reload     = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Perm       = new_ir_op(beo_Perm,      "be_Perm",      op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_MemPerm    = new_ir_op(beo_MemPerm,   "be_MemPerm",   op_pin_state_pinned, N,   oparity_variable, 0, sizeof(be_memperm_attr_t), &be_node_op_ops);
+	op_be_Copy       = new_ir_op(beo_Copy,      "be_Copy",      op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Keep       = new_ir_op(beo_Keep,      "be_Keep",      op_pin_state_pinned, K,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_CopyKeep   = new_ir_op(beo_CopyKeep,  "be_CopyKeep",  op_pin_state_pinned, K,   oparity_variable, 0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Call       = new_ir_op(beo_Call,      "be_Call",      op_pin_state_pinned, F|M, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
+	op_be_Return     = new_ir_op(beo_Return,    "be_Return",    op_pin_state_pinned, X,   oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_AddSP      = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_SubSP      = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_IncSP      = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
+	op_be_RegParams  = new_ir_op(beo_RegParams, "be_RegParams", op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_FrameAddr  = new_ir_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
+	op_be_Barrier    = new_ir_op(beo_Barrier,   "be_Barrier",   op_pin_state_pinned, N,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Unwind     = new_ir_op(beo_Unwind,    "be_Unwind",    op_pin_state_pinned, X,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+
+	op_be_Spill->ops.node_cmp_attr     = FrameAddr_cmp_attr;
+	op_be_Reload->ops.node_cmp_attr    = FrameAddr_cmp_attr;
+	op_be_Perm->ops.node_cmp_attr      = node_cmp_attr;
+	op_be_MemPerm->ops.node_cmp_attr   = node_cmp_attr;
+	op_be_Copy->ops.node_cmp_attr      = node_cmp_attr;
+	op_be_Keep->ops.node_cmp_attr      = node_cmp_attr;
+	op_be_CopyKeep->ops.node_cmp_attr  = node_cmp_attr;
+	op_be_Call->ops.node_cmp_attr      = Call_cmp_attr;
+	op_be_Return->ops.node_cmp_attr    = Return_cmp_attr;
+	op_be_AddSP->ops.node_cmp_attr     = node_cmp_attr;
+	op_be_SubSP->ops.node_cmp_attr     = node_cmp_attr;
+	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;
+	op_be_RegParams->ops.node_cmp_attr = node_cmp_attr;
+	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
+	op_be_Barrier->ops.node_cmp_attr   = node_cmp_attr;
+	op_be_Unwind->ops.node_cmp_attr    = node_cmp_attr;
+}

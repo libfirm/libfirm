@@ -66,6 +66,7 @@ typedef struct _ir_extblk           ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
+typedef struct arch_irn_ops_t       arch_irn_ops_t;
 
 typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 

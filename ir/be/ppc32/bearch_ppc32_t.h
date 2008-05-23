@@ -57,12 +57,6 @@ struct _ppc32_isa_t {
 };
 
 
-typedef struct _ppc32_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
-	ppc32_code_gen_t     *cg;
-} ppc32_irn_ops_t;
-
-
 /** this is a struct to minimize the number of parameters
    for transformation walker */
 typedef struct _ppc32_transform_env_t {

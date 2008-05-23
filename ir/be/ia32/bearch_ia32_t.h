@@ -98,11 +98,6 @@ struct ia32_isa_t {
 #endif /* NDEBUG */
 };
 
-struct ia32_irn_ops_t {
-	const arch_irn_ops_if_t *impl;
-	ia32_code_gen_t         *cg;
-};
-
 /**
  * A helper type collecting needed info for IA32 intrinsic lowering.
  */

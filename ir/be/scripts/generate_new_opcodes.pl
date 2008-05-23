@@ -158,7 +158,7 @@ foreach my $class_name (keys(%reg_classes)) {
 # for registering additional opcodes
 $n_opcodes += $additional_opcodes if (defined($additional_opcodes));
 
-push(@obst_header, "void ".$arch."_create_opcodes(void);\n");
+push(@obst_header, "void ".$arch."_create_opcodes(const arch_irn_ops_t *be_ops);\n");
 
 push(@obst_enum_op, "typedef enum _$arch\_opcodes {\n");
 foreach my $op (keys(%nodes)) {
@@ -562,6 +562,7 @@ foreach my $op (keys(%nodes)) {
 
 
 	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
+	push(@obst_new_irop, "\tops.be_ops        = be_ops;\n");
 	push(@obst_new_irop, "\tops.dump_node     = $arch\_dump_node;\n");
 
 	if (defined($cmp_attr_func)) {
@@ -695,7 +696,7 @@ print OUT<<ENDOFMAIN;
  * Creates the $arch specific Firm machine operations
  * needed for the assembler irgs.
  */
-void $arch\_create_opcodes(void) {
+void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
 #define N   irop_flag_none
 #define L   irop_flag_labeled
 #define C   irop_flag_commutative
@@ -713,6 +714,13 @@ void $arch\_create_opcodes(void) {
 	ir_op_ops  ops;
 	int        cur_opcode;
 	static int run_once = 0;
+	int        i;
+
+	/* we handle all middleend nodes as well */
+	for (i = 0; i <= iro_Last; ++i) {
+		ir_op *op      = get_irp_opcode(i);
+		op->ops.be_ops = be_ops;
+	}
 ENDOFMAIN
 
 	if(defined($default_op_attr_type)) {

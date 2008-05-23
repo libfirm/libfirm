@@ -39,8 +39,6 @@ typedef struct arch_inverse_t            arch_inverse_t;
 typedef struct arch_isa_if_t             arch_isa_if_t;
 typedef struct arch_isa_t                arch_isa_t;
 typedef struct arch_env_t                arch_env_t;
-typedef struct arch_irn_ops_if_t         arch_irn_ops_if_t;
-typedef struct arch_irn_ops_t            arch_irn_ops_t;
 typedef struct arch_code_generator_t     arch_code_generator_t;
 typedef struct arch_code_generator_if_t  arch_code_generator_if_t;
 
@@ -288,14 +286,6 @@ typedef const void *(arch_get_irn_ops_t)(const ir_node *irn);
  */
 extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa,
                                  FILE *file_handle, be_main_env_t *main_env);
-
-/**
- * Set the architectural node handler to the environment.
- * @param env The environment.
- * @param handler The node handler for the selected architecture.
- * @return The environment itself.
- */
-extern void arch_env_set_irn_handler(arch_env_t *env, arch_get_irn_ops_t *handler);
 
 /**
  * Register an instruction set architecture
