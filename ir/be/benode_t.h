@@ -535,7 +535,7 @@ void be_set_phi_flags(const arch_env_t *arch_env, ir_node *phi,
                       arch_irn_flags_t flags);
 
 /**
- * irn handler for common be nodes.
+ * irn handler for common be nodes and Phi's.
  */
 const void *be_node_get_irn_ops(const ir_node *irn);
 

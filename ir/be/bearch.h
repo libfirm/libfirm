@@ -290,19 +290,12 @@ extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa,
                                  FILE *file_handle, be_main_env_t *main_env);
 
 /**
- * Add a node handler to the environment.
+ * Set the architectural node handler to the environment.
  * @param env The environment.
- * @param handler A node handler.
+ * @param handler The node handler for the selected architecture.
  * @return The environment itself.
  */
-extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, arch_get_irn_ops_t *handler);
-
-/**
- * Remove a node handler from the handler stack.
- * @param env The architecture environment.
- * @return The popped handler.
- */
-extern arch_get_irn_ops_t *arch_env_pop_irn_handler(arch_env_t *env);
+extern void arch_env_set_irn_handler(arch_env_t *env, arch_get_irn_ops_t *handler);
 
 /**
  * Register an instruction set architecture

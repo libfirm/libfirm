@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "bearch_t.h"
+#include "benode_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "xmalloc.h"
@@ -49,18 +50,9 @@ arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *fi
 	return env;
 }
 
-arch_env_t *arch_env_push_irn_handler(arch_env_t *env,
-                                      arch_get_irn_ops_t *handler)
+void arch_env_set_irn_handler(arch_env_t *env, arch_get_irn_ops_t *handler)
 {
-	assert(env->handlers_tos < ARCH_MAX_HANDLERS);
-	env->handlers[env->handlers_tos++] = handler;
-	return env;
-}
-
-arch_get_irn_ops_t *arch_env_pop_irn_handler(arch_env_t *env)
-{
-   	assert(env->handlers_tos > 0 && env->handlers_tos <= ARCH_MAX_HANDLERS);
-	return env->handlers[--env->handlers_tos];
+	env->arch_handler = handler;
 }
 
 static const arch_irn_ops_t *fallback_irn_ops = NULL;
@@ -85,33 +77,13 @@ int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
 static INLINE const arch_irn_ops_t *
 get_irn_ops(const arch_env_t *env, const ir_node *irn)
 {
-#if 1
-	int i;
+	const arch_irn_ops_t *ops = be_node_get_irn_ops(irn);
 
-	for(i = env->handlers_tos - 1; i >= 0; --i) {
-		arch_get_irn_ops_t *get_irn_ops = env->handlers[i];
-		const arch_irn_ops_t *ops = get_irn_ops(irn);
+	if (ops)
+		return ops;
+	ops = env->arch_handler(irn);
 
-		if(ops)
-			return ops;
-	}
-#else
-	if (is_Phi(irn) && !mode_is_datab(get_irn_mode(irn))) {
-		const phi_handler_t *h;
-		return &h->irn_ops;
-	}
-	if (is_Proj(irn)) {
-		irn = get_Proj_pred(irn);
-		if (is_Proj(irn)) {
-			assert(get_irn_mode(irn) == mode_T);
-			irn = get_Proj_pred(irn);
-		}
-	}
-	if (is_be_node(irn))
-		return &be_node_irn_ops;
-
-#endif
-	return fallback_irn_ops;
+	return ops != NULL ? ops : fallback_irn_ops;
 }
 
 const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn) {

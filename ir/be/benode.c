@@ -1340,8 +1340,15 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	&be_node_irn_ops_if
 };
 
+/* * irn handler for common be nodes and Phi's. */
 const void *be_node_get_irn_ops(const ir_node *irn)
 {
+	if (is_Phi(irn)) {
+		if (mode_is_datab(get_irn_mode(irn)))
+			return &curr_phi_handler->irn_ops;
+		return NULL;
+	}
+
 	if (is_Proj(irn)) {
 		irn = get_Proj_pred(irn);
 		if (is_Proj(irn)) {
@@ -1367,17 +1374,7 @@ typedef struct {
 	arch_irn_flags_t       flags;
 } phi_attr_t;
 
-#define get_phi_handler_from_handler(h)  container_of(h, phi_handler_t, irn_handler)
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
-
-static
-const void *phi_get_irn_ops(const ir_node *irn)
-{
-	if (!is_Phi(irn) || !mode_is_datab(get_irn_mode(irn)))
-		return NULL;
-
-	return &curr_phi_handler->irn_ops;
-}
 
 static INLINE
 phi_attr_t *get_Phi_attr(const phi_handler_t *handler, const ir_node *phi)
@@ -1580,7 +1577,6 @@ const arch_irn_ops_if_t phi_irn_ops = {
 void be_phi_handler_new(be_main_env_t *env)
 {
 	phi_handler_t *h = &env->phi_handler;
-	h->get_irn_ops   = phi_get_irn_ops;
 	h->irn_ops.impl  = &phi_irn_ops;
 	h->arch_env      = &env->arch_env;
 	h->phi_attrs     = pmap_create();

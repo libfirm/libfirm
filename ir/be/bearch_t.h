@@ -568,20 +568,14 @@ struct arch_isa_if_t {
 #define arch_isa_get_machine(isa)                      ((isa)->impl->get_machine((isa)))
 #define arch_isa_get_backend_irg_list(isa, irgs)       ((isa)->impl->get_backend_irg_list((isa), (irgs)))
 
-#define ARCH_MAX_HANDLERS         8
-
 /**
  * Environment for the architecture infrastructure.
  * Keep this everywhere you're going.
  */
 struct arch_env_t {
-	arch_isa_t *isa;                                /**< The isa about which everything is. */
+	arch_isa_t *isa;                  /**< The isa about which everything is. */
 
-	arch_get_irn_ops_t *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
-                                                           a stack. */
-
-	int handlers_tos;                                   /**< The stack pointer of the handler
-                                                        stack. */
+	arch_get_irn_ops_t *arch_handler; /**< The get_irn_ops handler for the selected architecture. */
 };
 
 /**

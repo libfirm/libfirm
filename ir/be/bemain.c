@@ -267,17 +267,9 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 
 	/* Register the irn handler of the architecture */
 	handler = arch_isa_get_irn_handler(env->arch_env.isa);
-	if (handler != NULL)
-		arch_env_push_irn_handler(&env->arch_env, handler);
+	arch_env_set_irn_handler(&env->arch_env, handler);
 
-	/*
-	 * Register the node handler of the back end infrastructure.
-	 * This irn handler takes care of the platform independent
-	 * spill, reload and perm nodes.
-	 */
-	arch_env_push_irn_handler(&env->arch_env, be_node_get_irn_ops);
 	be_phi_handler_new(env);
-	arch_env_push_irn_handler(&env->arch_env, env->phi_handler.get_irn_ops);
 
 	be_dbg_open();
 	return env;
