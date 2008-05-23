@@ -22,8 +22,8 @@
  * @brief   declarations for TEMPALTE backend -- private header
  * @version $Id$
  */
-#ifndef FIRM_BE_IA32_BEARCH_TEMPLATE_T_H
-#define FIRM_BE_IA32_BEARCH_TEMPLATE_T_H
+#ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H
+#define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_T_H
 
 #include "debug.h"
 #include "bearch_TEMPLATE.h"

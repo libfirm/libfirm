@@ -50,14 +50,14 @@ arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *fi
 }
 
 arch_env_t *arch_env_push_irn_handler(arch_env_t *env,
-                                      const arch_irn_handler_t *handler)
+                                      arch_get_irn_ops_t *handler)
 {
 	assert(env->handlers_tos < ARCH_MAX_HANDLERS);
 	env->handlers[env->handlers_tos++] = handler;
 	return env;
 }
 
-const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env)
+arch_get_irn_ops_t *arch_env_pop_irn_handler(arch_env_t *env)
 {
    	assert(env->handlers_tos > 0 && env->handlers_tos <= ARCH_MAX_HANDLERS);
 	return env->handlers[--env->handlers_tos];
@@ -85,16 +85,32 @@ int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
 static INLINE const arch_irn_ops_t *
 get_irn_ops(const arch_env_t *env, const ir_node *irn)
 {
+#if 1
 	int i;
 
 	for(i = env->handlers_tos - 1; i >= 0; --i) {
-		const arch_irn_handler_t *handler = env->handlers[i];
-		const arch_irn_ops_t *ops = handler->get_irn_ops(handler, irn);
+		arch_get_irn_ops_t *get_irn_ops = env->handlers[i];
+		const arch_irn_ops_t *ops = get_irn_ops(irn);
 
 		if(ops)
 			return ops;
 	}
+#else
+	if (is_Phi(irn) && !mode_is_datab(get_irn_mode(irn))) {
+		const phi_handler_t *h;
+		return &h->irn_ops;
+	}
+	if (is_Proj(irn)) {
+		irn = get_Proj_pred(irn);
+		if (is_Proj(irn)) {
+			assert(get_irn_mode(irn) == mode_T);
+			irn = get_Proj_pred(irn);
+		}
+	}
+	if (is_be_node(irn))
+		return &be_node_irn_ops;
 
+#endif
 	return fallback_irn_ops;
 }
 

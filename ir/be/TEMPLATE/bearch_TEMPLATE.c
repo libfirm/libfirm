@@ -589,22 +589,16 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static const void *TEMPLATE_get_irn_ops(const arch_irn_handler_t *self,
-                                        const ir_node *irn)
+static const void *TEMPLATE_get_irn_ops(const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	return &TEMPLATE_irn_ops;
 }
 
-const arch_irn_handler_t TEMPLATE_irn_handler = {
-	TEMPLATE_get_irn_ops
-};
-
-const arch_irn_handler_t *TEMPLATE_get_irn_handler(const void *self)
+arch_get_irn_ops_t *TEMPLATE_get_irn_handler(const void *self)
 {
 	(void) self;
-	return &TEMPLATE_irn_handler;
+	return &TEMPLATE_get_irn_ops;
 }
 
 int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)

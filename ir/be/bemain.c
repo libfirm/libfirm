@@ -250,7 +250,7 @@ const backend_params *be_init(void)
  */
 static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 {
-	const arch_irn_handler_t *handler;
+	arch_get_irn_ops_t *handler;
 
 	memset(env, 0, sizeof(*env));
 	env->options              = &be_options;
@@ -275,9 +275,9 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	 * This irn handler takes care of the platform independent
 	 * spill, reload and perm nodes.
 	 */
-	arch_env_push_irn_handler(&env->arch_env, &be_node_irn_handler);
+	arch_env_push_irn_handler(&env->arch_env, be_node_get_irn_ops);
 	be_phi_handler_new(env);
-	arch_env_push_irn_handler(&env->arch_env, &env->phi_handler.irn_handler);
+	arch_env_push_irn_handler(&env->arch_env, env->phi_handler.get_irn_ops);
 
 	be_dbg_open();
 	return env;

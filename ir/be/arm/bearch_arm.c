@@ -1088,19 +1088,14 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	}
 }
 
-static const void *arm_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
-	(void) self;
+static const void *arm_get_irn_ops(const ir_node *irn) {
 	(void) irn;
 	return &arm_irn_ops;
 }
 
-const arch_irn_handler_t arm_irn_handler = {
-	arm_get_irn_ops
-};
-
-const arch_irn_handler_t *arm_get_irn_handler(const void *self) {
+arch_get_irn_ops_t *arm_get_irn_handler(const void *self) {
 	(void) self;
-	return &arm_irn_handler;
+	return &arm_get_irn_ops;
 }
 
 int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {

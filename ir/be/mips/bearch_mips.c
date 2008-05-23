@@ -947,22 +947,16 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static const void *mips_get_irn_ops(const arch_irn_handler_t *self,
-                                    const ir_node *irn)
+static const void *mips_get_irn_ops(const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	return &mips_irn_ops;
 }
 
-const arch_irn_handler_t mips_irn_handler = {
-	mips_get_irn_ops
-};
-
-const arch_irn_handler_t *mips_get_irn_handler(const void *self)
+arch_get_irn_ops_t *mips_get_irn_handler(const void *self)
 {
 	(void) self;
-	return &mips_irn_handler;
+	return &mips_get_irn_ops;
 }
 
 /**

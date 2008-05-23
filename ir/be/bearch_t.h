@@ -319,21 +319,6 @@ struct arch_irn_ops_t {
 };
 
 /**
- * Somebody who can be asked about IR nodes.
- */
-struct arch_irn_handler_t {
-
-  /**
-    * Get the operations of an irn.
-    * @param self The handler from which the method is invoked.
-    * @param irn Some node.
-    * @return Operations for that irn.
-    */
-  const void *(*get_irn_ops)(const arch_irn_handler_t *handler,
-      const ir_node *irn);
-};
-
-/**
  * The code generator interface.
  */
 struct arch_code_generator_if_t {
@@ -497,9 +482,8 @@ struct arch_isa_if_t {
 	 * The irn handler for this architecture.
 	 * The irn handler is registered by the Firm back end
 	 * when the architecture is initialized.
-	 * (May be NULL).
 	 */
-	const arch_irn_handler_t *(*get_irn_handler)(const void *self);
+	arch_get_irn_ops_t *(*get_irn_handler)(const void *self);
 
 	/**
 	 * Get the code generator interface.
@@ -593,7 +577,7 @@ struct arch_isa_if_t {
 struct arch_env_t {
 	arch_isa_t *isa;                                /**< The isa about which everything is. */
 
-	arch_irn_handler_t const *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
+	arch_get_irn_ops_t *handlers[ARCH_MAX_HANDLERS]; /**< The handlers are organized as
                                                            a stack. */
 
 	int handlers_tos;                                   /**< The stack pointer of the handler

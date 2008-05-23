@@ -80,7 +80,7 @@ struct be_options_t {
 };
 
 typedef struct {
-	arch_irn_handler_t irn_handler;
+	arch_get_irn_ops_t *get_irn_ops;
 	arch_irn_ops_t     irn_ops;
 	const arch_env_t   *arch_env;
 	pmap               *phi_attrs;

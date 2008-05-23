@@ -1896,22 +1896,16 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 }
 
 
-static const void *ia32_get_irn_ops(const arch_irn_handler_t *self,
-                                    const ir_node *irn)
+static const void *ia32_get_irn_ops(const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	return &ia32_irn_ops;
 }
 
-const arch_irn_handler_t ia32_irn_handler = {
-	ia32_get_irn_ops
-};
-
-const arch_irn_handler_t *ia32_get_irn_handler(const void *self)
+arch_get_irn_ops_t *ia32_get_irn_handler(const void *self)
 {
 	(void) self;
-	return &ia32_irn_handler;
+	return &ia32_get_irn_ops;
 }
 
 int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)

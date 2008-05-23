@@ -848,19 +848,14 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	}
 }
 
-static const void *ppc32_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn) {
-	(void) self;
+static const void *ppc32_get_irn_ops(const ir_node *irn) {
 	(void) irn;
 	return &ppc32_irn_ops;
 }
 
-const arch_irn_handler_t ppc32_irn_handler = {
-	ppc32_get_irn_ops
-};
-
-const arch_irn_handler_t *ppc32_get_irn_handler(const void *self) {
+arch_get_irn_ops_t *ppc32_get_irn_handler(const void *self) {
 	(void) self;
-	return &ppc32_irn_handler;
+	return &ppc32_get_irn_ops;
 }
 
 int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {

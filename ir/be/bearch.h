@@ -41,7 +41,6 @@ typedef struct arch_isa_t                arch_isa_t;
 typedef struct arch_env_t                arch_env_t;
 typedef struct arch_irn_ops_if_t         arch_irn_ops_if_t;
 typedef struct arch_irn_ops_t            arch_irn_ops_t;
-typedef struct arch_irn_handler_t        arch_irn_handler_t;
 typedef struct arch_code_generator_t     arch_code_generator_t;
 typedef struct arch_code_generator_if_t  arch_code_generator_if_t;
 
@@ -274,6 +273,14 @@ extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node 
 	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is(env, irn, ignore))
 
 /**
+ * Get the operations of an irn.
+ * @param self The handler from which the method is invoked.
+ * @param irn Some node.
+ * @return Operations for that irn.
+ */
+typedef const void *(arch_get_irn_ops_t)(const ir_node *irn);
+
+/**
  * Initialize the architecture environment struct.
  * @param isa           The isa which shall be put into the environment.
  * @param file_handle   The file handle
@@ -288,14 +295,14 @@ extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa,
  * @param handler A node handler.
  * @return The environment itself.
  */
-extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, const arch_irn_handler_t *handler);
+extern arch_env_t *arch_env_push_irn_handler(arch_env_t *env, arch_get_irn_ops_t *handler);
 
 /**
  * Remove a node handler from the handler stack.
  * @param env The architecture environment.
  * @return The popped handler.
  */
-extern const arch_irn_handler_t *arch_env_pop_irn_handler(arch_env_t *env);
+extern arch_get_irn_ops_t *arch_env_pop_irn_handler(arch_env_t *env);
 
 /**
  * Register an instruction set architecture

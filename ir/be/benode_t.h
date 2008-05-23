@@ -537,7 +537,7 @@ void be_set_phi_flags(const arch_env_t *arch_env, ir_node *phi,
 /**
  * irn handler for common be nodes.
  */
-extern const arch_irn_handler_t be_node_irn_handler;
+const void *be_node_get_irn_ops(const ir_node *irn);
 
 static INLINE int be_is_Spill    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Spill    ; }
 static INLINE int be_is_Reload   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Reload   ; }

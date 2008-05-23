@@ -66,6 +66,9 @@
 
 static unsigned be_node_tag = FOURCC('B', 'E', 'N', 'O');
 
+/** The current phi handler */
+static const phi_handler_t *curr_phi_handler;
+
 typedef struct {
 	arch_register_req_t req;
 	arch_irn_flags_t    flags;
@@ -1337,7 +1340,7 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	&be_node_irn_ops_if
 };
 
-const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *irn)
+const void *be_node_get_irn_ops(const ir_node *irn)
 {
 	if (is_Proj(irn)) {
 		irn = get_Proj_pred(irn);
@@ -1346,13 +1349,8 @@ const void *be_node_get_irn_ops(const arch_irn_handler_t *self, const ir_node *i
 			irn = get_Proj_pred(irn);
 		}
 	}
-	(void) self;
 	return is_be_node(irn) ? &be_node_irn_ops : NULL;
 }
-
-const arch_irn_handler_t be_node_irn_handler = {
-	be_node_get_irn_ops
-};
 
 /*
   ____  _     _   ___ ____  _   _   _   _                 _ _
@@ -1373,15 +1371,12 @@ typedef struct {
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
 
 static
-const void *phi_get_irn_ops(const arch_irn_handler_t *handler,
-                            const ir_node *irn)
+const void *phi_get_irn_ops(const ir_node *irn)
 {
-	const phi_handler_t *h;
-	if(!is_Phi(irn) || !mode_is_datab(get_irn_mode(irn)))
+	if (!is_Phi(irn) || !mode_is_datab(get_irn_mode(irn)))
 		return NULL;
 
-	h = get_phi_handler_from_handler(handler);
-	return &h->irn_ops;
+	return &curr_phi_handler->irn_ops;
 }
 
 static INLINE
@@ -1584,18 +1579,20 @@ const arch_irn_ops_if_t phi_irn_ops = {
 
 void be_phi_handler_new(be_main_env_t *env)
 {
-	phi_handler_t *h           = &env->phi_handler;
-	h->irn_handler.get_irn_ops = phi_get_irn_ops;
-	h->irn_ops.impl            = &phi_irn_ops;
-	h->arch_env                = &env->arch_env;
-	h->phi_attrs               = pmap_create();
+	phi_handler_t *h = &env->phi_handler;
+	h->get_irn_ops   = phi_get_irn_ops;
+	h->irn_ops.impl  = &phi_irn_ops;
+	h->arch_env      = &env->arch_env;
+	h->phi_attrs     = pmap_create();
+	curr_phi_handler = h;
 }
 
 void be_phi_handler_free(be_main_env_t *env)
 {
 	phi_handler_t *h = &env->phi_handler;
 	pmap_destroy(h->phi_attrs);
-	h->phi_attrs = NULL;
+	h->phi_attrs     = NULL;
+	curr_phi_handler = NULL;
 }
 
 void be_phi_handler_reset(be_main_env_t *env)
