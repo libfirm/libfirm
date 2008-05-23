@@ -352,7 +352,6 @@ static arch_irn_flags_t ia32_get_flags(const ir_node *irn) {
  */
 typedef struct {
 	be_abi_call_flags_bits_t flags;  /**< The call flags. */
-	const arch_isa_t *isa;           /**< The ISA handle. */
 	const arch_env_t *aenv;          /**< The architecture environment. */
 	ir_graph *irg;                   /**< The associated graph. */
 } ia32_abi_env_t;
@@ -404,7 +403,7 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 {
 	ia32_abi_env_t *env = self;
 	if(env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->isa->bp);
+		pset_insert_ptr(s, env->aenv->bp);
 }
 
 /**
@@ -420,14 +419,14 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
  */
 static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env = self;
-	const ia32_isa_t *isa     = (ia32_isa_t *)env->isa;
-	ia32_code_gen_t *cg = isa->cg;
+	ia32_abi_env_t   *env      = self;
+	ia32_code_gen_t  *cg       = ia32_current_cg;
+	const arch_env_t *arch_env = env->aenv;
 
 	if (! env->flags.try_omit_fp) {
 		ir_node *bl      = get_irg_start_block(env->irg);
-		ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
-		ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
+		ir_node *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
+		ir_node *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
 		ir_node *push;
 
@@ -440,28 +439,28 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		*mem    = new_r_Proj(env->irg, bl, push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
-		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 		set_ia32_flags(push, arch_irn_flags_ignore);
 
 		/* move esp to ebp */
-		curr_bp  = be_new_Copy(env->isa->bp->reg_class, env->irg, bl, curr_sp);
-		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), env->isa->bp);
-		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
+		curr_bp  = be_new_Copy(arch_env->bp->reg_class, env->irg, bl, curr_sp);
+		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), arch_env->bp);
+		arch_set_irn_register(arch_env, curr_bp, arch_env->bp);
 		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		/* beware: the copy must be done before any other sp use */
-		curr_sp = be_new_CopyKeep_single(env->isa->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
-		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), env->isa->sp);
-		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+		curr_sp = be_new_CopyKeep_single(env->aenv->sp->reg_class, env->irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), arch_env->sp);
+		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
-		be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
-		be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+		be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
+		be_abi_reg_map_set(reg_map, arch_env->bp, curr_bp);
 
-		return env->isa->bp;
+		return arch_env->bp;
 	}
 
-	return env->isa->sp;
+	return arch_env->sp;
 }
 
 /**
@@ -476,16 +475,17 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
  */
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t *env     = self;
-	ir_node        *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
-	ir_node        *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
+	ia32_abi_env_t   *env     = self;
+	ir_node          *curr_sp = be_abi_reg_map_get(reg_map, env->aenv->sp);
+	ir_node          *curr_bp = be_abi_reg_map_get(reg_map, env->aenv->bp);
+	const arch_env_t *arch_env = env->aenv;
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = be_new_IncSP(env->aenv->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 	} else {
-		ir_mode         *mode_bp = env->isa->bp->reg_class->mode;
+		ir_mode         *mode_bp = env->aenv->bp->reg_class->mode;
 		ir_graph        *irg     = current_ir_graph;
 
 		if (ia32_cg_config.use_leave) {
@@ -505,7 +505,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
-			arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
+			arch_set_irn_register(arch_env, curr_sp, env->aenv->sp);
 			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 			/* pop ebp */
@@ -516,12 +516,12 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			*mem = new_r_Proj(irg, bl, pop, mode_M, pn_ia32_Pop_M);
 		}
-		arch_set_irn_register(env->aenv, curr_sp, env->isa->sp);
-		arch_set_irn_register(env->aenv, curr_bp, env->isa->bp);
+		arch_set_irn_register(arch_env, curr_sp, env->aenv->sp);
+		arch_set_irn_register(arch_env, curr_bp, env->aenv->bp);
 	}
 
-	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
-	be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+	be_abi_reg_map_set(reg_map, env->aenv->sp, curr_sp);
+	be_abi_reg_map_set(reg_map, env->aenv->bp, curr_bp);
 }
 
 /**
@@ -538,7 +538,6 @@ static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir
 	env->flags = fl.bits;
 	env->irg   = irg;
 	env->aenv  = aenv;
-	env->isa   = aenv->isa;
 	return env;
 }
 
@@ -1542,14 +1541,14 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  * Initializes a IA32 code generator.
  */
 static void *ia32_cg_init(be_irg_t *birg) {
-	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env.isa;
+	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env;
 	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
 
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
-	cg->arch_env  = &birg->main_env->arch_env;
 	cg->isa       = isa;
+	cg->arch_env  = birg->main_env->arch_env;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
@@ -1647,7 +1646,7 @@ static ia32_isa_t ia32_isa_template = {
 /**
  * Initializes the backend ISA.
  */
-static void *ia32_init(FILE *file_handle) {
+static arch_env_t *ia32_init(FILE *file_handle) {
 	static int inited = 0;
 	ia32_isa_t *isa;
 
@@ -1699,7 +1698,7 @@ static void *ia32_init(FILE *file_handle) {
 	 */
 	inc_master_type_visited();
 
-	return isa;
+	return &isa->arch_env;
 }
 
 
@@ -1711,7 +1710,7 @@ static void ia32_done(void *self) {
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env, 1);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
@@ -2207,7 +2206,7 @@ static lc_opt_enum_int_var_t gas_var = {
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
 	LC_OPT_ENT_INT("stackalign", "set stack alignment for calls",
-	               &ia32_isa_template.arch_isa.stack_alignment),
+	               &ia32_isa_template.arch_env.stack_alignment),
 	LC_OPT_LAST
 };
 

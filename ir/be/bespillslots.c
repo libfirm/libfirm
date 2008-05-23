@@ -763,7 +763,7 @@ static int count_spillslots(const be_fec_env_t *env)
 
 be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
 {
-	const arch_env_t *arch_env = &birg->main_env->arch_env;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
 	be_fec_env_t     *env      = xmalloc(sizeof(env[0]));
 
 	be_liveness_assure_chk(be_assure_liveness(birg));
@@ -826,7 +826,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 
 	mode  = get_irn_mode(node);
 	cls   = arch_get_irn_reg_class(arch_env, node, -1);
-	align = arch_isa_get_reg_class_alignment(arch_env_get_isa(arch_env), cls);
+	align = arch_env_get_reg_class_alignment(arch_env, cls);
 
 	be_node_needs_frame_entity(env, node, mode, align);
 }

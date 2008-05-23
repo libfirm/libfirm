@@ -2064,8 +2064,8 @@ static void process_block(ir_node *block, void *env) {
 	rss->max_height = heights_recompute_block(rss->h, block);
 
 	/* loop over all register classes */
-	for (i = arch_isa_get_n_reg_class(rss->arch_env->isa) - 1; i >= 0; --i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(rss->arch_env->isa, i);
+	for (i = arch_env_get_n_reg_class(rss->arch_env) - 1; i >= 0; --i) {
+		const arch_register_class_t *cls = arch_env_get_reg_class(rss->arch_env, i);
 
 		rss->cls = cls;
 		DBG((rss->dbg, LEVEL_1, "register class %s\n", arch_register_class_name(cls)));

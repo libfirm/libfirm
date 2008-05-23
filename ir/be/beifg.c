@@ -400,7 +400,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
 	{
-		coloring_init(&coloring, chordal_env->irg, &chordal_env->birg->main_env->arch_env);
+		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
 		coloring_save(&coloring);
 
 		ir_timer_reset(timer);
@@ -646,7 +646,7 @@ static void int_comp_rec(be_irg_t *birg, be_ifg_t *ifg, ir_node *n, bitset_t *se
 	ir_node *m;
 
 	be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
-		if(!bitset_contains_irn(seen, m) && !arch_irn_is(&birg->main_env->arch_env, m, ignore)) {
+		if(!bitset_contains_irn(seen, m) && !arch_irn_is(birg->main_env->arch_env, m, ignore)) {
 			bitset_add_irn(seen, m);
 			int_comp_rec(birg, ifg, m, seen);
 		}
@@ -663,7 +663,7 @@ static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 	ir_node *n;
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
-		if (! bitset_contains_irn(seen, n) && ! arch_irn_is(&birg->main_env->arch_env, n, ignore)) {
+		if (! bitset_contains_irn(seen, n) && ! arch_irn_is(birg->main_env->arch_env, n, ignore)) {
 			++n_comp;
 			bitset_add_irn(seen, n);
 			int_comp_rec(birg, ifg, n, seen);

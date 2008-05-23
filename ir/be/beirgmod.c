@@ -84,7 +84,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 						   const arch_register_class_t *cls,
 						   ir_node *pos)
 {
-	const arch_env_t *arch_env = &birg->main_env->arch_env;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
 	be_lv_t *lv     = birg->lv;
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_graph *irg   = get_irn_irg(bl);

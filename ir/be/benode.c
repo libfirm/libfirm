@@ -469,7 +469,7 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 	ir_node *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
 	ir_node *irn;
-	const arch_register_t *sp = arch_env->isa->sp;
+	const arch_register_t *sp = arch_env->sp;
 	be_memperm_attr_t *attr;
 	ir_node **real_in;
 
@@ -1454,7 +1454,7 @@ static const arch_irn_ops_t phi_irn_ops = {
 
 void be_phi_handler_new(be_main_env_t *env)
 {
-	phi_handler.arch_env  = &env->arch_env;
+	phi_handler.arch_env  = env->arch_env;
 	phi_handler.phi_attrs = pmap_create();
 	op_Phi->ops.be_ops    = &phi_irn_ops;
 }

@@ -307,7 +307,7 @@ static INLINE void *new_block_info(belady_env_t *bel, int id)
 	res->bl  = bl;
 	res->id  = id;
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
-	res->reload_cost  = bel->arch->isa->reload_cost * res->exec_freq;
+	res->reload_cost  = bel->arch->reload_cost * res->exec_freq;
 	res->free_at_jump = bel->n_regs;
 	INIT_LIST_HEAD(&res->br_head);
 	set_irn_link(bl, res);

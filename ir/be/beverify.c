@@ -127,7 +127,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
 
 	env.lv                  = be_liveness(birg);
 	env.irg                 = irg;
-	env.arch_env            = &birg->main_env->arch_env;
+	env.arch_env            = birg->main_env->arch_env;
 	env.cls                 = cls;
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 	env.problem_found       = 0;
@@ -351,7 +351,7 @@ int be_verify_schedule(const be_irg_t *birg)
 	env.problem_found = 0;
 	env.irg           = be_get_birg_irg(birg);
 	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
-	env.arch_env      = &birg->main_env->arch_env;
+	env.arch_env      = birg->main_env->arch_env;
 
 	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
 	/* check if all nodes are scheduled */
@@ -806,12 +806,11 @@ static void check_register_allocation(be_verify_register_allocation_env_t *env,
 static void verify_block_register_allocation(ir_node *block, void *data) {
 	be_verify_register_allocation_env_t *env = data;
 	const arch_env_t *arch_env = env->arch_env;
-	const arch_isa_t *isa = arch_env->isa;
 	int i, nregclasses;
 
-	nregclasses = arch_isa_get_n_reg_class(isa);
+	nregclasses = arch_env_get_n_reg_class(arch_env);
 	for (i = 0; i < nregclasses; ++i) {
-		const arch_register_class_t *regclass = arch_isa_get_reg_class(isa, i);
+		const arch_register_class_t *regclass = arch_env_get_reg_class(arch_env, i);
 		ir_node *node;
 		ir_nodeset_t live_nodes;
 

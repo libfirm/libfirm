@@ -37,7 +37,6 @@ typedef struct arch_register_t           arch_register_t;
 typedef struct arch_flag_t               arch_flag_t;
 typedef struct arch_inverse_t            arch_inverse_t;
 typedef struct arch_isa_if_t             arch_isa_if_t;
-typedef struct arch_isa_t                arch_isa_t;
 typedef struct arch_env_t                arch_env_t;
 typedef struct arch_code_generator_t     arch_code_generator_t;
 typedef struct arch_code_generator_if_t  arch_code_generator_if_t;
@@ -284,7 +283,7 @@ typedef const void *(arch_get_irn_ops_t)(const ir_node *irn);
  * @param file_handle   The file handle
  * @return The environment.
  */
-extern arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa,
+extern arch_env_t *arch_env_init(const arch_isa_if_t *isa,
                                  FILE *file_handle, be_main_env_t *main_env);
 
 /**

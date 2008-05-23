@@ -325,7 +325,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
  */
 static void *TEMPLATE_cg_init(be_irg_t *birg) {
 	const arch_env_t    *arch_env = be_get_birg_arch_env(birg);
-	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env->isa;
+	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
 	TEMPLATE_code_gen_t *cg       = xmalloc(sizeof(*cg));
 
 	cg->impl     = &TEMPLATE_code_gen_if;
@@ -369,7 +369,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *TEMPLATE_init(FILE *outfile) {
+static arch_env_t *TEMPLATE_init(FILE *outfile) {
 	static int run_once = 0;
 	TEMPLATE_isa_t *isa;
 
@@ -385,7 +385,7 @@ static void *TEMPLATE_init(FILE *outfile) {
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 
-	return isa;
+	return &isa->arch_env;
 }
 
 
@@ -397,7 +397,7 @@ static void TEMPLATE_done(void *self) {
 	TEMPLATE_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_isa.main_env, 0);
+	be_gas_emit_decls(isa->arch_env.main_env, 0);
 
 	be_emit_exit();
 	free(self);
@@ -442,7 +442,6 @@ const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const void *self,
 typedef struct {
 	be_abi_call_flags_bits_t flags;
 	const arch_env_t *arch_env;
-	const arch_isa_t *isa;
 	ir_graph *irg;
 } TEMPLATE_abi_env_t;
 
@@ -453,7 +452,6 @@ static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch
 	env->flags    = fl.bits;
 	env->irg      = irg;
 	env->arch_env = arch_env;
-	env->isa      = arch_env->isa;
 	return env;
 }
 
@@ -490,7 +488,7 @@ static void TEMPLATE_abi_dont_save_regs(void *self, pset *s)
 	TEMPLATE_abi_env_t *env = self;
 	if (env->flags.try_omit_fp) {
 		/* insert the BP register into the ignore set */
-		pset_insert_ptr(s, env->isa->bp);
+		pset_insert_ptr(s, env->arch_env->bp);
 	}
 }
 
@@ -505,8 +503,8 @@ static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
 	(void) mem;
 
 	if(env->flags.try_omit_fp)
-		return env->isa->sp;
-	return env->isa->bp;
+		return env->arch_env->sp;
+	return env->arch_env->bp;
 }
 
 /* Build the epilog */

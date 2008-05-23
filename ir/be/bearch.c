@@ -42,12 +42,11 @@
 #include "irprintf.h"
 
 /* Initialize the architecture environment struct. */
-arch_env_t *arch_env_init(arch_env_t *env, const arch_isa_if_t *isa_if, FILE *file_handle, be_main_env_t *main_env)
+arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_main_env_t *main_env)
 {
-	memset(env, 0, sizeof(*env));
-	env->isa                  = isa_if->init(file_handle);
-	env->isa->main_env        = main_env;
-	return env;
+	arch_env_t *arch_env = isa_if->init(file_handle);
+	arch_env->main_env   = main_env;
+	return arch_env;
 }
 
 int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)

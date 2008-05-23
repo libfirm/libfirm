@@ -553,7 +553,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 /* List schedule a graph. */
 void list_sched(be_irg_t *birg, be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = &birg->main_env->arch_env;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
 
 	int num_nodes;
@@ -601,7 +601,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa, &sel);
+	env.selector   = arch_env->impl->get_list_sched_selector(arch_env, &sel);
 	env.arch_env   = arch_env;
 	env.irg        = irg;
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
@@ -627,7 +627,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 void list_sched_single_block(const be_irg_t *birg, ir_node *block,
                              be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = &birg->main_env->arch_env;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
 	ir_graph         *irg      = birg->irg;
 
 	int num_nodes;
@@ -656,7 +656,7 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env->isa->impl->get_list_sched_selector(arch_env->isa, &sel);
+	env.selector   = arch_env->impl->get_list_sched_selector(arch_env, &sel);
 	env.arch_env   = arch_env;
 	env.irg        = irg;
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);

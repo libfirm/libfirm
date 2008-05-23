@@ -164,16 +164,15 @@ void be_peephole_after_exchange(ir_node *new_node)
 
 static void process_block(ir_node *block, void *data)
 {
-	arch_isa_t *isa = arch_env->isa;
 	unsigned n_classes;
 	unsigned i;
 	int l;
 	(void) data;
 
 	/* construct initial register assignment */
-	n_classes = arch_isa_get_n_reg_class(isa);
+	n_classes = arch_env_get_n_reg_class(arch_env);
 	for(i = 0; i < n_classes; ++i) {
-		const arch_register_class_t *cls    = arch_isa_get_reg_class(isa, i);
+		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		memset(register_values[i], 0, sizeof(ir_node*) * n_regs);
 	}
@@ -216,7 +215,6 @@ static void process_block(ir_node *block, void *data)
 
 void be_peephole_opt(be_irg_t *birg)
 {
-	arch_isa_t *isa;
 	ir_graph   *irg = be_get_birg_irg(birg);
 	unsigned n_classes;
 	unsigned i;
@@ -228,12 +226,11 @@ void be_peephole_opt(be_irg_t *birg)
 
 	arch_env = be_get_birg_arch_env(birg);
 	lv       = be_get_birg_liveness(birg);
-	isa      = arch_env->isa;
 
-	n_classes = arch_isa_get_n_reg_class(isa);
+	n_classes = arch_env_get_n_reg_class(arch_env);
 	register_values = alloca(sizeof(register_values[0]) * n_classes);
 	for(i = 0; i < n_classes; ++i) {
-		const arch_register_class_t *cls    = arch_isa_get_reg_class(isa, i);
+		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		register_values[i] = alloca(sizeof(ir_node*) * n_regs);
 	}

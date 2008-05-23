@@ -807,7 +807,7 @@ void mips_gen_routine(mips_code_gen_t *mips_cg, ir_graph *irg)
 	int i, n;
 
 	cg       = mips_cg;
-	isa      = (const mips_isa_t*) cg->arch_env->isa;
+	isa      = (const mips_isa_t*) cg->arch_env;
 	arch_env = cg->arch_env;
 
 	mips_register_emitters();

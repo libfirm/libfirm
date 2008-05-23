@@ -574,7 +574,7 @@ static const arch_code_generator_if_t arm_code_gen_if = {
  */
 static void *arm_cg_init(be_irg_t *birg) {
 	static ir_type *int_tp = NULL;
-	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env.isa;
+	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env;
 	arm_code_gen_t *cg;
 
 	if (! int_tp) {
@@ -586,7 +586,7 @@ static void *arm_cg_init(be_irg_t *birg) {
 	cg->impl         = &arm_code_gen_if;
 	cg->irg          = birg->irg;
 	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->arch_env     = &birg->main_env->arch_env;
+	cg->arch_env     = birg->main_env->arch_env;
 	cg->isa          = isa;
 	cg->birg         = birg;
 	cg->int_tp       = int_tp;
@@ -761,7 +761,7 @@ static arm_isa_t arm_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *arm_init(FILE *file_handle) {
+static arch_env_t *arm_init(FILE *file_handle) {
 	static int inited = 0;
 	arm_isa_t *isa;
 
@@ -786,7 +786,7 @@ static void *arm_init(FILE *file_handle) {
 	inc_master_type_visited();
 
 	inited = 1;
-	return isa;
+	return &isa->arch_env;
 }
 
 
@@ -797,7 +797,7 @@ static void *arm_init(FILE *file_handle) {
 static void arm_done(void *self) {
 	arm_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env, 1);
 
 	be_emit_exit();
 	free(self);
@@ -870,7 +870,6 @@ static ir_type *arm_get_between_type(void *self) {
 typedef struct {
 	be_abi_call_flags_bits_t flags;
 	const arch_env_t *arch_env;
-	const arch_isa_t *isa;
 	ir_graph *irg;
 } arm_abi_env_t;
 
@@ -881,7 +880,6 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
 	env->flags    = fl.bits;
 	env->irg      = irg;
 	env->arch_env = arch_env;
-	env->isa      = arch_env->isa;
 	return env;
 }
 
@@ -889,7 +887,7 @@ static void arm_abi_dont_save_regs(void *self, pset *s)
 {
 	arm_abi_env_t *env = self;
 	if (env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->isa->bp);
+		pset_insert_ptr(s, env->arch_env->bp);
 }
 
 
@@ -904,14 +902,14 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	ir_node *block = get_irg_start_block(irg);
 	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_gp];
 
-	ir_node *fp = be_abi_reg_map_get(reg_map, env->isa->bp);
+	ir_node *fp = be_abi_reg_map_get(reg_map, env->arch_env->bp);
 	ir_node *ip = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R12]);
-	ir_node *sp = be_abi_reg_map_get(reg_map, env->isa->sp);
+	ir_node *sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
 	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
 	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
 
 	if (env->flags.try_omit_fp)
-		return env->isa->sp;
+		return env->arch_env->sp;
 
 	ip = be_new_Copy(gp, irg, block, sp);
 	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
@@ -919,8 +917,8 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
 
-	sp = new_r_Proj(irg, block, store, env->isa->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
-	arch_set_irn_register(env->arch_env, sp, env->isa->sp);
+	sp = new_r_Proj(irg, block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
+	arch_set_irn_register(env->arch_env, sp, env->arch_env->sp);
 	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
@@ -929,15 +927,15 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
-	arch_set_irn_register(env->arch_env, fp, env->isa->bp);
+	arch_set_irn_register(env->arch_env, fp, env->arch_env->bp);
 
-	be_abi_reg_map_set(reg_map, env->isa->bp, fp);
+	be_abi_reg_map_set(reg_map, env->arch_env->bp, fp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
-	be_abi_reg_map_set(reg_map, env->isa->sp, sp);
+	be_abi_reg_map_set(reg_map, env->arch_env->sp, sp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_LR], lr);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_PC], pc);
 
-	return env->isa->bp;
+	return env->arch_env->bp;
 }
 
 /**
@@ -945,14 +943,14 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
  */
 static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
 	arm_abi_env_t *env = self;
-	ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->isa->sp);
-	ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->isa->bp);
+	ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
+	ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->arch_env->bp);
 	ir_node *curr_pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
 	ir_node	*curr_lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
 
 	// TODO: Activate Omit fp in epilogue
 	if (env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->isa->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = be_new_IncSP(env->arch_env->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		add_irn_dep(curr_sp, *mem);
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
@@ -970,22 +968,22 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, 12);
 		// FIXME
 		//set_arm_req_out_all(sub12_node, sub12_req);
-		arch_set_irn_register(env->arch_env, sub12_node, env->isa->sp);
+		arch_set_irn_register(env->arch_env, sub12_node, env->arch_env->sp);
 		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem );
 		// FIXME
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
-		curr_bp = new_r_Proj(env->irg, bl, load_node, env->isa->bp->reg_class->mode, pn_arm_LoadStackM3_res0);
-		curr_sp = new_r_Proj(env->irg, bl, load_node, env->isa->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
+		curr_bp = new_r_Proj(env->irg, bl, load_node, env->arch_env->bp->reg_class->mode, pn_arm_LoadStackM3_res0);
+		curr_sp = new_r_Proj(env->irg, bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
 		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3_res2);
 		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3_M);
-		arch_set_irn_register(env->arch_env, curr_bp, env->isa->bp);
-		arch_set_irn_register(env->arch_env, curr_sp, env->isa->sp);
+		arch_set_irn_register(env->arch_env, curr_bp, env->arch_env->bp);
+		arch_set_irn_register(env->arch_env, curr_sp, env->arch_env->sp);
 		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
 	}
-	be_abi_reg_map_set(reg_map, env->isa->sp, curr_sp);
-	be_abi_reg_map_set(reg_map, env->isa->bp, curr_bp);
+	be_abi_reg_map_set(reg_map, env->arch_env->sp, curr_sp);
+	be_abi_reg_map_set(reg_map, env->arch_env->bp, curr_bp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_LR], curr_lr);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_PC], curr_pc);
 }

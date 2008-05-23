@@ -68,7 +68,7 @@ _be_get_birg_irg(const be_irg_t *birg) {
 
 static INLINE const arch_env_t *
 _be_get_birg_arch_env(const be_irg_t *birg) {
-	return &birg->main_env->arch_env;
+	return birg->main_env->arch_env;
 }
 
 #define be_get_birg_exec_freq(birg)        _be_get_birg_exec_freq(birg)

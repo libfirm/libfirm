@@ -180,7 +180,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-	return arch_irn_consider_in_reg_alloc(&env->birg->main_env->arch_env, env->cls, irn);
+	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
 }
 
 #define has_limited_constr(req, irn) \
@@ -225,7 +225,7 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 	be_insn_env_t ie;
 
 	ie.ignore_colors = env->ignore_colors;
-	ie.aenv          = &env->birg->main_env->arch_env;
+	ie.aenv          = env->birg->main_env->arch_env;
 	ie.obst          = env->obst;
 	ie.cls           = env->cls;
 	return be_scan_insn(&ie, irn);
@@ -234,7 +234,7 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
 	const be_irg_t *birg   = env->birg;
-	const arch_env_t *aenv = &birg->main_env->arch_env;
+	const arch_env_t *aenv = birg->main_env->arch_env;
 	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
 	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	ir_node *bl            = get_nodes_block(irn);
@@ -433,7 +433,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
                                         be_insn_t **the_insn)
 {
 	be_chordal_env_t *env       = alloc_env->chordal_env;
-	const arch_env_t *aenv      = &env->birg->main_env->arch_env;
+	const arch_env_t *aenv      = env->birg->main_env->arch_env;
 	be_insn_t *insn             = *the_insn;
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
@@ -546,7 +546,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	if(!insn->has_constraints)
 		goto end;
 
-	aenv        = &env->birg->main_env->arch_env;
+	aenv        = env->birg->main_env->arch_env;
 	n_regs      = env->cls->n_regs;
 	bs          = bitset_alloca(n_regs);
 	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
@@ -885,7 +885,7 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
-	const arch_env_t *arch_env  = &env->birg->main_env->arch_env;
+	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = env->birg->lv;
 

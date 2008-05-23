@@ -602,13 +602,13 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
  * Initializes the code generator.
  */
 static void *ppc32_cg_init(be_irg_t *birg) {
-	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env.isa;
+	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env;
 	ppc32_code_gen_t *cg  = xmalloc(sizeof(*cg));
 
 	cg->impl      = &ppc32_code_gen_if;
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ppc32_cmp_irn_reg_assoc, 1024);
-	cg->arch_env  = &birg->main_env->arch_env;
+	cg->arch_env  = birg->main_env->arch_env;
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->area_size = 0;
@@ -668,7 +668,7 @@ static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *ppc32_init(FILE *file_handle) {
+static arch_env_t *ppc32_init(FILE *file_handle) {
 	static int inited = 0;
 	ppc32_isa_t *isa;
 	int i;
@@ -698,7 +698,7 @@ static void *ppc32_init(FILE *file_handle) {
 	 */
 	inc_master_type_visited();
 
-	return isa;
+	return &isa->arch_env;
 }
 
 static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
@@ -717,7 +717,7 @@ static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
 static void ppc32_done(void *self) {
 	ppc32_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env, 1);
 	be_gas_emit_switch_section(GAS_SECTION_DATA);
 	ppc32_dump_indirect_symbols(isa);
 

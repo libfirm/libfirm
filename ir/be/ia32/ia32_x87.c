@@ -2346,7 +2346,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	sim->arch_env   = arch_env;
 	sim->n_idx      = get_irg_last_idx(irg);
 	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
-	sim->isa        = (ia32_isa_t *)arch_env->isa;
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));

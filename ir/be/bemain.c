@@ -261,7 +261,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	remove_irp_type(env->pic_symbols_type);
 	set_class_final(env->pic_trampolines_type, 1);
 
-	arch_env_init(&env->arch_env, isa_if, file_handle, env);
+	env->arch_env = arch_env_init(isa_if, file_handle, env);
 
 	be_phi_handler_new(env);
 
@@ -274,7 +274,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
  */
 static void be_done_env(be_main_env_t *env)
 {
-	env->arch_env.isa->impl->done(env->arch_env.isa);
+	env->arch_env->impl->done(env->arch_env);
 	be_dbg_close();
 	be_phi_handler_free();
 
@@ -314,7 +314,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
-	be_stat_init_irg(&env->arch_env, irg);
+	be_stat_init_irg(env->arch_env, irg);
 	be_do_stat_nodes(irg, "01 Begin");
 
 	/* set the current graph (this is important for several firm functions) */
@@ -375,13 +375,13 @@ ir_timer_t *t_ra_other;
 static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
 	int i;
-	arch_isa_t *isa;
 	be_main_env_t env;
 	char prof_filename[256];
 	static const char suffix[] = ".prof";
 	be_irg_t *birgs;
 	int num_birgs;
 	ir_graph **irg_list, **backend_irg_list;
+	arch_env_t *arch_env;
 
 	be_timing = (be_options.timing == BE_TIME_ON);
 
@@ -414,14 +414,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_init_env(&env, file_handle);
 	env.cup_name = cup_name;
 
-	isa = arch_env_get_isa(&env.arch_env);
-
 	be_dbg_so(cup_name);
 	be_dbg_types();
 
+	arch_env = env.arch_env;
+
 	/* backend may provide an ordered list of irgs where code should be generated for */
 	irg_list         = NEW_ARR_F(ir_graph *, 0);
-	backend_irg_list = arch_isa_get_backend_irg_list(isa, &irg_list);
+	backend_irg_list = arch_env_get_backend_irg_list(arch_env, &irg_list);
 
 	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = backend_irg_list ? ARR_LEN(backend_irg_list) : get_irp_n_irgs();
@@ -492,7 +492,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_verify);
 
 		/* Get the code generator interface. */
-		cg_if = isa->impl->get_code_generator_if(isa);
+		cg_if = arch_env->impl->get_code_generator_if(arch_env);
 
 		/* get a code generator for this graph. */
 		birg->cg = cg_if->init(birg);
@@ -623,14 +623,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		//be_do_stat_reg_pressure(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, &env.arch_env, birg->exec_freq));
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
 #endif
 
 		/* Do register allocation */
 		be_allocate_registers(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, &env.arch_env, birg->exec_freq));
+		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
@@ -817,7 +817,7 @@ unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *c
 		bitset_clear_all(bs);
 
 	assert(bitset_size(bs) == (unsigned)cls->n_regs);
-	arch_put_non_ignore_regs(&birg->main_env->arch_env, cls, bs);
+	arch_put_non_ignore_regs(birg->main_env->arch_env, cls, bs);
 	bitset_flip_all(bs);
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
 

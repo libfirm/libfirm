@@ -409,7 +409,7 @@ struct arch_code_generator_t {
 /**
  * ISA base class.
  */
-struct arch_isa_t {
+struct arch_env_t {
 	const arch_isa_if_t   *impl;
 	const arch_register_t *sp;        /** The stack pointer register. */
 	const arch_register_t *bp;        /** The base pointer register. */
@@ -420,9 +420,9 @@ struct arch_isa_t {
 	int                    reload_cost; /** cost for a be_Reload node */
 };
 
-#define arch_isa_stack_dir(isa)  ((isa)->stack_dir)
-#define arch_isa_sp(isa)         ((isa)->sp)
-#define arch_isa_bp(isa)         ((isa)->bp)
+#define arch_env_stack_dir(env)  ((env)->stack_dir)
+#define arch_env_sp(env)         ((env)->sp)
+#define arch_env_bp(env)         ((env)->bp)
 
 /**
  * Architecture interface.
@@ -434,7 +434,7 @@ struct arch_isa_if_t {
 	 * @param main_env     the be main environment
 	 * @return a new isa instance
 	 */
-	void *(*init)(FILE *file_handle);
+	arch_env_t *(*init)(FILE *file_handle);
 
 	/**
 	 * Free the isa instance.
@@ -542,29 +542,14 @@ struct arch_isa_if_t {
 	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
 };
 
-#define arch_isa_get_n_reg_class(isa)                  ((isa)->impl->get_n_reg_class(isa))
-#define arch_isa_get_reg_class(isa,i)                  ((isa)->impl->get_reg_class(isa, i))
-#define arch_isa_get_call_abi(isa,tp,abi)              ((isa)->impl->get_call_abi((isa), (tp), (abi)))
-#define arch_isa_get_reg_class_for_mode(isa,mode)      ((isa)->impl->get_reg_class_for_mode((isa), (mode)))
-#define arch_isa_make_code_generator(isa,irg)          ((isa)->impl->make_code_generator((isa), (irg)))
-#define arch_isa_get_reg_class_alignment(isa, cls)     ((isa)->impl->get_reg_class_alignment((isa), (cls)))
-#define arch_isa_get_allowed_execution_units(isa, irn) ((isa)->impl->get_allowed_execution_units((isa), (irn)))
-#define arch_isa_get_machine(isa)                      ((isa)->impl->get_machine((isa)))
-#define arch_isa_get_backend_irg_list(isa, irgs)       ((isa)->impl->get_backend_irg_list((isa), (irgs)))
-
-/**
- * Environment for the architecture infrastructure.
- * Keep this everywhere you're going.
- */
-struct arch_env_t {
-	arch_isa_t *isa;                  /**< The isa about which everything is. */
-};
-
-/**
- * Get the isa of an arch environment.
- * @param env The environment.
- * @return The isa with which the env was initialized with.
- */
-#define arch_env_get_isa(env)   ((env)->isa)
+#define arch_env_get_n_reg_class(env)                  ((env)->impl->get_n_reg_class(env))
+#define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(env, i))
+#define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
+#define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((env), (mode)))
+#define arch_env_make_code_generator(env,irg)          ((env)->impl->make_code_generator((env), (irg)))
+#define arch_env_get_reg_class_alignment(env, cls)     ((env)->impl->get_reg_class_alignment((env), (cls)))
+#define arch_env_get_allowed_execution_units(env, irn) ((env)->impl->get_allowed_execution_units((env), (irn)))
+#define arch_env_get_machine(env)                      ((env)->impl->get_machine((env)))
+#define arch_env_get_backend_irg_list(env, irgs)       ((env)->impl->get_backend_irg_list((env), (irgs)))
 
 #endif /* FIRM_BE_BEARCH_T_H */

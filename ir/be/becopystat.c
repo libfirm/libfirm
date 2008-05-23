@@ -290,7 +290,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 
 static void copystat_collect_cls(be_chordal_env_t *cenv) {
 	ir_graph              *irg  = cenv->irg;
-	arch_env_t            *aenv = &cenv->birg->main_env->arch_env;
+	arch_env_t            *aenv = cenv->birg->main_env->arch_env;
 	ir_node               *n, **pc;
 	phi_classes_t         *pc_obj;
 	pset                  *all_phi_classes;
@@ -490,7 +490,7 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 
 	/* save colors */
-	saver.arch_env     = &chordal_env->birg->main_env->arch_env;
+	saver.arch_env     = chordal_env->birg->main_env->arch_env;
 	saver.chordal_env  = chordal_env;
 	saver.saved_colors = pmap_create();
 	save_colors(&saver);

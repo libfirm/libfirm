@@ -549,7 +549,7 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 static void *mips_cg_init(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
-	mips_isa_t       *isa      = (mips_isa_t *) arch_env->isa;
+	mips_isa_t       *isa      = (mips_isa_t *) arch_env;
 	mips_code_gen_t  *cg       = xmalloc(sizeof(*cg));
 
 	cg->impl     = &mips_code_gen_if;
@@ -595,7 +595,7 @@ static mips_isa_t mips_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static void *mips_init(FILE *file_handle) {
+static arch_env_t *mips_init(FILE *file_handle) {
 	static int inited = 0;
 	mips_isa_t *isa;
 
@@ -618,7 +618,7 @@ static void *mips_init(FILE *file_handle) {
 	 */
 	inc_master_type_visited();
 
-	return isa;
+	return &isa->arch_env;
 }
 
 /**
@@ -628,7 +628,7 @@ static void mips_done(void *self)
 {
 	mips_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_isa.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env, 1);
 
 	be_emit_exit();
 	free(isa);
@@ -667,7 +667,6 @@ const arch_register_class_t *mips_get_reg_class_for_mode(const void *self,
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
-	const arch_isa_t *isa;
 	const arch_env_t *arch_env;
 	ir_graph *irg;
 	// do special handling to support debuggers
@@ -681,7 +680,6 @@ static void *mips_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env
 	env->flags             = fl.bits;
 	env->irg               = irg;
 	env->arch_env          = arch_env;
-	env->isa               = arch_env->isa;
 	env->debug             = 1;
 	return env;
 }
@@ -691,7 +689,7 @@ static void mips_abi_dont_save_regs(void *self, pset *s)
 	mips_abi_env_t *env = self;
 
 	if(env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->isa->bp);
+		pset_insert_ptr(s, env->arch_env->bp);
 }
 
 static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap *reg_map)

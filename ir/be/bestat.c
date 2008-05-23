@@ -171,10 +171,10 @@ static void stat_reg_pressure_block(ir_node *block, void *data) {
 		const arch_env_t *arch_env = be_get_birg_arch_env(env->birg);
 		int i, n;
 
-		n = arch_isa_get_n_reg_class(arch_env->isa);
+		n = arch_env_get_n_reg_class(arch_env);
 		for (i = 0; i < n; i++) {
 			const arch_register_class_t *cls
-				= arch_isa_get_reg_class(arch_env->isa, i);
+				= arch_env_get_reg_class(arch_env, i);
 
 			check_reg_pressure_class(env, block, cls);
 		}
@@ -197,8 +197,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 #if 0
 	env.cls          = NULL;
 #else
-	env.cls          = arch_isa_get_reg_class(
-			be_get_birg_arch_env(birg)->isa, 2);
+	env.cls          = arch_env_get_reg_class(be_get_birg_arch_env(birg), 2);
 #endif
 
 	/* Collect register pressure information for each block */

@@ -181,7 +181,7 @@ static void dump(unsigned mask, ir_graph *irg,
  */
 static void memory_operand_walker(ir_node *irn, void *env) {
 	be_chordal_env_t *cenv = env;
-	const arch_env_t *aenv = &cenv->birg->main_env->arch_env;
+	const arch_env_t *aenv = cenv->birg->main_env->arch_env;
 	const ir_edge_t  *edge, *ne;
 	ir_node          *block;
 	ir_node          *spill;
@@ -287,7 +287,7 @@ static void node_stats(be_irg_t *birg, const arch_register_class_t *cls, node_st
 	struct node_stat_walker env;
 
 	memset(stat, 0, sizeof(stat[0]));
-	env.arch_env = &birg->main_env->arch_env;
+	env.arch_env = birg->main_env->arch_env;
 	env.mem_phis = bitset_irg_malloc(birg->irg);
 	env.stat     = stat;
 	env.cls      = cls;
@@ -338,7 +338,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 
 	stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
 	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
-	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, &main_env->arch_env, birg->exec_freq));
+	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
 	stat_ev_dbl("phis_before_spill", node_stat.n_phis);
 
 	/* put all ignore registers into the ignore register set. */
@@ -374,7 +374,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		stat_ev_dbl("mem_phis", node_stat.n_mem_phis);
 		stat_ev_dbl("reloads", node_stat.n_reloads);
 		stat_ev_dbl("spills", node_stat.n_spills);
-		stat_ev_dbl("spillcosts", be_estimate_irg_costs(irg, &main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
+		stat_ev_dbl("spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
 
 		/*
 			If we have a backend provided spiller, post spill is
@@ -472,9 +472,9 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
  */
 static void be_ra_chordal_main(be_irg_t *birg)
 {
-	const be_main_env_t *main_env  = birg->main_env;
-	const arch_isa_t    *isa       = arch_env_get_isa(&main_env->arch_env);
-	ir_graph            *irg       = birg->irg;
+	const be_main_env_t *main_env = birg->main_env;
+	const arch_env_t    *arch_env = main_env->arch_env;
+	ir_graph            *irg      = birg->irg;
 	int                 j, m;
 	be_chordal_env_t    chordal_env;
 	struct obstack      obst;
@@ -508,10 +508,10 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		/* use one of the generic spiller */
 
 		/* Perform the following for each register class. */
-		for (j = 0, m = arch_isa_get_n_reg_class(isa); j < m; ++j) {
+		for (j = 0, m = arch_env_get_n_reg_class(arch_env); j < m; ++j) {
 			post_spill_env_t pse;
 			const arch_register_class_t *cls
-				= arch_isa_get_reg_class(isa, j);
+				= arch_env_get_reg_class(arch_env, j);
 
 			if(arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 				continue;
@@ -534,7 +534,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		post_spill_env_t *pse;
 
 		/* the backend has it's own spiller */
-		m = arch_isa_get_n_reg_class(isa);
+		m = arch_env_get_n_reg_class(arch_env);
 
 		pse = alloca(m * sizeof(pse[0]));
 

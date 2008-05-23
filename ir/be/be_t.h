@@ -80,7 +80,7 @@ struct be_options_t {
 };
 
 struct be_main_env_t {
-	arch_env_t            arch_env;
+	arch_env_t            *arch_env;
 	be_options_t          *options;              /**< backend options */
 	arch_code_generator_t *cg;
 	const char            *cup_name;             /**< name of the compilation unit */

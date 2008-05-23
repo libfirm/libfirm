@@ -52,7 +52,7 @@ typedef struct _ppc32_code_gen_t {
 
 
 struct _ppc32_isa_t {
-	arch_isa_t             arch_isa;      /**< must be derived from arch_isa_t */
+	arch_env_t             arch_env;      /**< must be derived from arch_env_t */
 	pset                   *symbol_set;   /**< A set containing the indirect symbols. */
 };
 

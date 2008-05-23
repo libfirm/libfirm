@@ -154,7 +154,7 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 
 spill_env_t *be_new_spill_env(be_irg_t *birg)
 {
-	const arch_env_t *arch_env = &birg->main_env->arch_env;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
 
 	spill_env_t *env	= xmalloc(sizeof(env[0]));
 	env->spills			= new_set(cmp_spillinfo, 1024);
@@ -162,8 +162,8 @@ spill_env_t *be_new_spill_env(be_irg_t *birg)
 	env->birg           = birg;
 	env->arch_env       = arch_env;
 	ir_nodeset_init(&env->mem_phis);
-	env->spill_cost     = arch_env->isa->spill_cost;
-	env->reload_cost    = arch_env->isa->reload_cost;
+	env->spill_cost     = arch_env->spill_cost;
+	env->reload_cost    = arch_env->reload_cost;
 	env->exec_freq      = be_get_birg_exec_freq(birg);
 	obstack_init(&env->obst);
 

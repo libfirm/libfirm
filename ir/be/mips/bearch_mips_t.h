@@ -49,7 +49,7 @@ struct mips_code_gen_t {
 };
 
 struct mips_isa_t {
-	arch_isa_t             arch_isa;    /**< must be derived from arch_isa_t */
+	arch_env_t             arch_env;    /**< must be derived from arch_env_t */
 	mips_code_gen_t       *cg;
 };
 

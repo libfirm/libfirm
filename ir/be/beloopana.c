@@ -189,7 +189,6 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 	be_loopana_t     *loop_ana = xmalloc(sizeof(*loop_ana));
 	ir_loop          *irg_loop = get_irg_loop(irg);
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
-	const arch_isa_t *isa      = arch_env->isa;
 	int               i;
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
@@ -200,8 +199,8 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 		construct_cf_backedges(irg);
 	}
 
-	for (i = arch_isa_get_n_reg_class(isa) - 1; i >= 0; --i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
+	for (i = arch_env_get_n_reg_class(arch_env) - 1; i >= 0; --i) {
+		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
 		DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
 		DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 		DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));

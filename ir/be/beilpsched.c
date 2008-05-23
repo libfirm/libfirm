@@ -151,7 +151,6 @@ typedef struct {
 	void                 *irg_env;      /**< An environment for the irg scheduling, provided by the backend */
 	void                 *block_env;    /**< An environment for scheduling a block, provided by the backend */
 	const arch_env_t     *arch_env;
-	const arch_isa_t     *isa;          /**< The ISA */
 	const be_main_env_t  *main_env;
 	const be_machine_t   *cpu;          /**< the current abstract machine */
 	ilpsched_options_t   *opts;         /**< the ilp options for current irg */
@@ -168,9 +167,9 @@ typedef struct {
 #define get_ilpsched_node_attr(node)        (&(node)->attr.node_attr)
 
 /* check if node is considered for ILP scheduling */
-#define consider_for_sched(isa, irn) \
+#define consider_for_sched(env, irn) \
 	(! (is_Block(irn)            ||  \
-		is_normal_Proj(isa, irn) ||  \
+		is_normal_Proj(env, irn) ||  \
 		is_Phi(irn)              ||  \
 		is_NoMem(irn)            ||  \
 		is_Unknown(irn)          ||  \
@@ -223,16 +222,16 @@ static heights_t *glob_heights;
  * Check if irn is a Proj, which has no execution units assigned.
  * @return 1 if irn is a Proj having no execution units assigned, 0 otherwise
  */
-static INLINE int is_normal_Proj(const arch_isa_t *isa, const ir_node *irn) {
-	return is_Proj(irn) && (arch_isa_get_allowed_execution_units(isa, irn) == NULL);
+static INLINE int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
+	return is_Proj(irn) && (arch_env_get_allowed_execution_units(env, irn) == NULL);
 }
 
 /**
  * Skips normal Projs.
  * @return predecessor if irn is a normal Proj, otherwise irn.
  */
-static INLINE ir_node *skip_normal_Proj(const arch_isa_t *isa, ir_node *irn) {
-	if (is_normal_Proj(isa, irn))
+static INLINE ir_node *skip_normal_Proj(const arch_env_t *env, ir_node *irn) {
+	if (is_normal_Proj(env, irn))
 		return get_Proj_pred(irn);
 	return irn;
 }
@@ -340,7 +339,7 @@ static void build_block_idx(ir_node *irn, void *walk_env) {
 	ilpsched_block_attr_t *ba;
 
 	set_irn_link(irn, NULL);
-	if (! consider_for_sched(env->arch_env->isa, irn))
+	if (! consider_for_sched(env->arch_env, irn))
 		return;
 
 	node       = get_ilpsched_irn(env, irn);
@@ -379,7 +378,7 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 	ir_node               **consumer;
 	unsigned              idx;
 
-	if (! consider_for_sched(env->arch_env->isa, irn))
+	if (! consider_for_sched(env->arch_env, irn))
 		return;
 
 	block    = get_nodes_block(irn);
@@ -393,7 +392,7 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 		foreach_out_edge_kind(irn, edge, ekind[i]) {
 			ir_node *user = get_edge_src_irn(edge);
 
-			if (is_normal_Proj(env->arch_env->isa, user)) {
+			if (is_normal_Proj(env->arch_env, user)) {
 				const ir_edge_t *user_edge;
 
 				if (get_irn_mode(user) == mode_X)
@@ -495,7 +494,7 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 	ilpsched_block_attr_t *ba;
 
 	/* These nodes are handled separate */
-	if (! consider_for_sched(env->arch_env->isa, irn))
+	if (! consider_for_sched(env->arch_env, irn))
 		return;
 
 	DBG((env->dbg, LEVEL_2, "Calculating ASAP of node %+F ... ", irn));
@@ -506,7 +505,7 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
 	na->asap = 1;
 
 	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
-		ir_node *pred = skip_normal_Proj(env->arch_env->isa, get_irn_in_or_dep(irn, i));
+		ir_node *pred = skip_normal_Proj(env->arch_env, get_irn_in_or_dep(irn, i));
 
 		/* check for greatest distance to top */
 		if (! is_Phi(pred) && ! is_NoMem(pred) && get_nodes_block(pred) == block) {
@@ -579,7 +578,7 @@ static void calculate_block_alap(ir_node *block, void *walk_env) {
 
 			/* set the alap's of all predecessors */
 			for (i = get_irn_ins_or_deps(cur_irn) - 1; i >= 0; --i) {
-				ir_node *pred = skip_normal_Proj(env->arch_env->isa, get_irn_in_or_dep(cur_irn, i));
+				ir_node *pred = skip_normal_Proj(env->arch_env, get_irn_in_or_dep(cur_irn, i));
 
 				/* check for greatest distance to bottom */
 				if (! is_Phi(pred) && ! is_NoMem(pred) && get_nodes_block(pred) == block) {
@@ -649,7 +648,7 @@ static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
 	be_ilpsched_irn_t    *node, *pred_node;
 	ilpsched_node_attr_t *na, *pna;
 
-	if (! consider_for_sched(env->arch_env->isa, irn))
+	if (! consider_for_sched(env->arch_env, irn))
 		return;
 
 	if (! is_Proj(irn) && ! be_is_Keep(irn))
@@ -903,7 +902,7 @@ static INLINE int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp
  ************************************************/
 
 static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struct obstack *obst) {
-	const be_execution_unit_t ***execunits = arch_isa_get_allowed_execution_units(env->arch_env->isa, irn);
+	const be_execution_unit_t ***execunits = arch_env_get_allowed_execution_units(env->arch_env, irn);
 	unsigned                  n_unit_types = 0;
 	be_ilpsched_irn_t         *node;
 	ilpsched_node_attr_t      *na;
@@ -1060,7 +1059,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 				ir_node *pred = get_irn_n(irn, i);
 
-				if (get_nodes_block(pred) != block_node->irn && consider_for_sched(env->arch_env->isa, pred)) {
+				if (get_nodes_block(pred) != block_node->irn && consider_for_sched(env->arch_env, pred)) {
 					be_ilpsched_set_type_info(env, pred, var_obst);
 					if (! na->is_dummy_node) {
 						ilp_livein_node_t *entry = obstack_alloc(var_obst, sizeof(*entry));
@@ -1207,7 +1206,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 			ilpsched_node_attr_t *pna;
 			unsigned             delay;
 
-			pred = skip_normal_Proj(env->arch_env->isa, pred);
+			pred = skip_normal_Proj(env->arch_env, pred);
 			if (is_Phi(pred) || block_node->irn != get_nodes_block(pred) || is_NoMem(pred))
 				continue;
 
@@ -2013,8 +2012,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	const char                 *name     = "be ilp scheduling";
 	ir_graph                   *irg      = be_get_birg_irg(birg);
 	const arch_env_t           *arch_env = be_get_birg_arch_env(birg);
-	const arch_isa_t           *isa      = arch_env->isa;
-	const ilp_sched_selector_t *sel      = isa->impl->get_ilp_sched_selector(isa);
+	const ilp_sched_selector_t *sel      = arch_env->impl->get_ilp_sched_selector(arch_env);
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");
 
@@ -2028,7 +2026,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
 	env.height     = heights_new(irg);
 	env.main_env   = birg->main_env;
 	env.arch_env   = arch_env;
-	env.cpu        = arch_isa_get_machine(arch_env->isa);
+	env.cpu        = arch_env_get_machine(arch_env);
 	env.opts       = &ilp_opts;
 	env.birg       = birg;
 	env.be_opts    = be_opts;
