@@ -158,11 +158,11 @@ static INLINE const ir_op_ops *_get_op_ops(const ir_op *op) {
   return &op->ops;
 }
 
-static INLINE void _set_op_tag(ir_op *op, void *tag) {
+static INLINE void _set_op_tag(ir_op *op, unsigned tag) {
 	op->tag = tag;
 }
 
-static INLINE void *_get_op_tag(const ir_op *op) {
+static INLINE unsigned _get_op_tag(const ir_op *op) {
 	return op->tag;
 }
 

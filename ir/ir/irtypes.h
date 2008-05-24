@@ -56,7 +56,7 @@ struct ir_op {
 	op_arity opar;          /**< The arity of operator. */
 	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
 	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
-	void *tag;              /**< Some custom pointer the op's creator can attach stuff to. */
+	unsigned tag;           /**< Some custom TAG value the op's creator set to. */
 	void *attr;             /**< custom pointer where op's creator can attach attribute stuff to. */
 
 	ir_op_ops ops;          /**< The operations of the this op. */

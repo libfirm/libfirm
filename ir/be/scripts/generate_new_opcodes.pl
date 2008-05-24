@@ -584,7 +584,7 @@ foreach my $op (keys(%nodes)) {
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
 	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
 	push(@obst_new_irop, $temp);
-	push(@obst_new_irop, "\tset_op_tag(op_$op, &$arch\_op_tag);\n");
+	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {
 		push(@obst_new_irop, "\tattr = ($default_op_attr_type *) xmalloc(sizeof(attr[0]));\n");
 		push(@obst_new_irop, "\tmemset(attr, 0, sizeof(attr[0]));\n");
@@ -645,7 +645,7 @@ if (length($arch) >= 4) {
 print OUT<<ENDOFISIRN;
 
 /** A tag for the $arch opcodes. Note that the address is used as a tag value, NOT the FOURCC code. */
-static unsigned $arch\_op_tag = FOURCC('$a', '$b', '$c', '$d');
+#define $arch\_op_tag FOURCC('$a', '$b', '$c', '$d')
 
 /** Return the opcode number of the first $arch opcode. */
 int get_$arch\_opcode_first(void) {
@@ -659,7 +659,7 @@ int get_$arch\_opcode_last(void) {
 
 /** Return 1 if the given opcode is a $arch machine op, 0 otherwise */
 int is_$arch\_op(const ir_op *op) {
-	return get_op_tag(op) == &$arch\_op_tag;
+	return get_op_tag(op) == $arch\_op_tag;
 }
 
 /** Return 1 if the given node is a $arch machine node, 0 otherwise */
