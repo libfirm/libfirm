@@ -2242,7 +2242,7 @@ static void lower_ops(ir_node *node, void *env)
 	int          idx = get_irn_idx(node);
 	ir_mode      *mode = get_irn_mode(node);
 
-	if (mode == mode_b || is_Psi(node)) {
+	if (mode == mode_b || is_Psi(node) || is_Conv(node)) {
 		int i;
 
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -2346,7 +2346,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	if (! prim_types)
 		prim_types = pmap_create();
 	if (! intrinsic_fkt)
-		intrinsic_fkt = new_set(cmp_op_mode, iro_Last);
+		intrinsic_fkt = new_set(cmp_op_mode, iro_Last + 1);
 	if (! conv_types)
 		conv_types = new_set(cmp_conv_tp, 16);
 	if (! lowered_type)
