@@ -426,6 +426,7 @@ static void fix_am_source(ir_node *irn, void *env) {
 			ir_node               *load_res;
 			ir_node               *mem;
 			int                    pnres;
+			int                    pnmem;
 
 			/* should_be same constraint is fullfilled, nothing to do */
 			if(out_reg == same_reg)
@@ -443,11 +444,13 @@ static void fix_am_source(ir_node *irn, void *env) {
 			if (same_cls == &ia32_reg_classes[CLASS_ia32_gp]) {
 				load      = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 				pnres     = pn_ia32_Load_res;
+				pnmem     = pn_ia32_Load_M;
 				proj_mode = mode_Iu;
 			} else if (same_cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
 				load      = new_rd_ia32_xLoad(dbgi, irg, block, base, index, mem,
 				                              get_ia32_ls_mode(irn));
 				pnres     = pn_ia32_xLoad_res;
+				pnmem     = pn_ia32_xLoad_M;
 				proj_mode = mode_E;
 			} else {
 				panic("cannot turn back address mode for this register class");
@@ -474,9 +477,9 @@ static void fix_am_source(ir_node *irn, void *env) {
 					int      pn   = get_Proj_proj(node);
 					if(pn == 0) {
 						exchange(node, irn);
-					} else {
-						assert(pn == 1);
+					} else if(pn == pn_ia32_mem) {
 						set_Proj_pred(node, load);
+						set_Proj_proj(node, pnmem);
 					}
 				}
 				set_irn_mode(irn, mode_Iu);

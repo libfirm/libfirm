@@ -1037,9 +1037,9 @@ static void turn_back_am(ir_node *node)
 		mem_proj = NULL;
 		foreach_out_edge(node, edge) {
 			ir_node *out = get_edge_src_irn(edge);
-			if(get_Proj_proj(out) == pn_ia32_mem) {
+			if(get_irn_mode(out) == mode_M) {
+				assert(mem_proj == NULL);
 				mem_proj = out;
-				break;
 			}
 		}
 
@@ -1069,7 +1069,9 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 
 	type = get_ia32_op_type(node);
 	switch (type) {
-		case ia32_AddrModeS: turn_back_am(node); break;
+		case ia32_AddrModeS:
+			turn_back_am(node);
+			break;
 
 		case ia32_AddrModeD:
 			/* TODO implement this later... */
@@ -2026,20 +2028,20 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	ir_node *cmp = NULL;
 	ir_mode *cmp_mode;
 
-	if (ia32_cg_config.use_cmov) {
-		/* we can't handle psis with 64bit compares yet */
-		if (is_Proj(sel)) {
-			cmp = get_Proj_pred(sel);
-			if (is_Cmp(cmp)) {
-				left     = get_Cmp_left(cmp);
-				cmp_mode = get_irn_mode(left);
-				if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
-					return 0;
-			} else {
-				cmp = NULL;
-			}
+	/* we can't handle psis with 64bit compares yet */
+	if (is_Proj(sel)) {
+		cmp = get_Proj_pred(sel);
+		if (is_Cmp(cmp)) {
+			left     = get_Cmp_left(cmp);
+			cmp_mode = get_irn_mode(left);
+			if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
+				return 0;
+		} else {
+			cmp = NULL;
 		}
+	}
 
+	if (ia32_cg_config.use_cmov) {
 		if (ia32_cg_config.use_sse2 && cmp != NULL) {
 			pn_Cmp pn   = get_Proj_proj(sel);
 			ir_node *cl = get_Cmp_left(cmp);

@@ -1009,9 +1009,10 @@ Stc => {
 Cmp => {
 	irn_flags => "R",
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp" ] , out => [ "flags" ] },
+	reg_req   => { in  => [ "gp", "gp", "none", "gp", "gp" ],
+	               out => [ "flags", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
-	outs      => [ "eflags" ],
+	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => '. cmp%M %binop',
 	attr      => "int ins_permuted, int cmp_unsigned",

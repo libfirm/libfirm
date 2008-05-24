@@ -4805,22 +4805,19 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-
 	/* loads might be part of source address mode matches, so we don't
-	   transform the ProjMs yet (with the exception of loads whose result is
-	   not used)
+	 * transform the ProjMs yet (with the exception of loads whose result is
+	 * not used)
 	 */
 	if (is_Load(pred) && proj == pn_Load_M && get_irn_n_edges(pred) > 1) {
 		ir_node *res;
 
-		assert(pn_ia32_Load_M == 1); /* convention: mem-result of Source-AM
-										nodes is 1 */
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
 		res = new_rd_Proj(dbgi, irg, block, pred, mode_M, pn_Load_M);
-		set_Proj_proj(res, pn_ia32_Load_M);
+		set_Proj_proj(res, pn_ia32_mem);
 		return res;
 	}
 
