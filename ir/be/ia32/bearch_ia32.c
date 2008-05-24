@@ -2024,16 +2024,15 @@ static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
  */
 static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 {
-	ir_node *phi, *left;
+	ir_node *phi;
 	ir_node *cmp = NULL;
-	ir_mode *cmp_mode;
 
 	/* we can't handle psis with 64bit compares yet */
 	if (is_Proj(sel)) {
 		cmp = get_Proj_pred(sel);
 		if (is_Cmp(cmp)) {
-			left     = get_Cmp_left(cmp);
-			cmp_mode = get_irn_mode(left);
+			ir_node *left     = get_Cmp_left(cmp);
+			ir_mode *cmp_mode = get_irn_mode(left);
 			if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
 				return 0;
 		} else {
@@ -2089,14 +2088,8 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 		pn_Cmp  pn;
 
 		/* No cmov, only some special cases */
-		if (! is_Proj(sel))
+		if (cmp == NULL)
 			return 0;
-		cmp = get_Proj_pred(sel);
-		if (! is_Cmp(cmp))
-			return 0;
-
-		left     = get_Cmp_left(cmp);
-		cmp_mode = get_irn_mode(left);
 
 		/* Now some supported cases here */
 		pn = get_Proj_proj(sel);
