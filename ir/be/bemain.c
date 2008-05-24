@@ -274,7 +274,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
  */
 static void be_done_env(be_main_env_t *env)
 {
-	env->arch_env->impl->done(env->arch_env);
+	arch_env_done(env->arch_env);
 	be_dbg_close();
 	be_phi_handler_free();
 
@@ -492,7 +492,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_verify);
 
 		/* Get the code generator interface. */
-		cg_if = arch_env->impl->get_code_generator_if(arch_env);
+		cg_if = arch_env_get_code_generator_if(arch_env);
 
 		/* get a code generator for this graph. */
 		birg->cg = cg_if->init(birg);
