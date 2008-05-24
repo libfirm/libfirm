@@ -586,8 +586,7 @@ foreach my $op (keys(%nodes)) {
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {
-		push(@obst_new_irop, "\tattr = ($default_op_attr_type *) xmalloc(sizeof(attr[0]));\n");
-		push(@obst_new_irop, "\tmemset(attr, 0, sizeof(attr[0]));\n");
+		push(@obst_new_irop, "\tattr = &attrs[iro_$op];\n");
 		if(defined($n{op_attr_init})) {
 			push(@obst_new_irop, "\t".$n{op_attr_init}."\n");
 		}
@@ -717,8 +716,8 @@ void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
 	int        i;
 ENDOFMAIN
 
-	if(defined($default_op_attr_type)) {
-		print OUT "\t$default_op_attr_type *attr;\n";
+	if (defined($default_op_attr_type)) {
+		print OUT "\t$default_op_attr_type *attr, *attrs;\n";
 	}
 
 print OUT<<ENDOFMAIN;
@@ -738,6 +737,11 @@ print OUT<<ENDOFMAIN;
 
 	$arch\_opcode_start = cur_opcode;
 ENDOFMAIN
+
+	if (defined($default_op_attr_type)) {
+		print OUT "\tattrs = xmalloc(sizeof(attr[0]) * iro_$arch\_last);\n";
+		print OUT "\tmemset(attrs, 0, sizeof(attr[0]) * iro_$arch\_last);\n";
+	}
 
 print OUT @obst_new_irop;
 print OUT "\n";
