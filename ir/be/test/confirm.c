@@ -1,5 +1,15 @@
 #include <stdio.h>
 
+int looptest(int x) {
+	while (x) {
+		printf("%d\n", x);
+	}
+	if (x) {
+		printf("%d\n", x);
+	}
+}
+
+
 int xtest(int x) {
 	if (x) {
 		printf("%d\n", x);
@@ -38,6 +48,7 @@ int test3(int a, int b) {
 }
 
 int main(void) {
+	looptest(0);
 	printf("xtest() = %d\n", xtest(1));
 	printf("test() = %d\n", test(0, 1));
 	printf("test2() = %d\n", test2(1, 3));
