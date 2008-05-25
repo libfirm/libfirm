@@ -1,5 +1,14 @@
 #include <stdio.h>
 
+int xtest(int x) {
+	if (x) {
+		printf("%d\n", x);
+	}
+	if (x) {
+		printf("%d\n", x);
+	}
+}
+
 int test(int a, int b) {
 	int x = a * b;
 	if (a == 0)
@@ -29,8 +38,9 @@ int test3(int a, int b) {
 }
 
 int main(void) {
+	printf("xtest() = %d\n", xtest(1));
 	printf("test() = %d\n", test(0, 1));
-	printf("test() = %d\n", test2(1, 3));
-	printf("test() = %d\n", test3(-3, 3));
+	printf("test2() = %d\n", test2(1, 3));
+	printf("test3() = %d\n", test3(-3, 3));
 	return 0;
 }
