@@ -359,17 +359,39 @@ static int eval_cmp(pn_Cmp pnc, tarval *tv1, tarval *tv2) {
 	return 1;
 }
 
+/**
+ * Check for Const or constlike Confirm.
+ */
+static int is_Const_or_Confirm(const ir_node *node) {
+	if (is_Confirm(node)) {
+		if (get_Confirm_cmp(node) == pn_Cmp_Eq)
+			node = get_Confirm_bound(node);
+	}
+	return is_Const(node);
+}
+
+/**
+ * get the tarval of a COnst or constlike Confirm
+ */
+static tarval *get_Const_or_Confirm_tarval(const ir_node *node) {
+	if (is_Confirm(node)) {
+		if (get_Confirm_cmp(node) == pn_Cmp_Eq)
+			node = get_Confirm_bound(node);
+	}
+	return get_Const_tarval(node);
+}
+
 static ir_node *find_const(condeval_env_t *env, ir_node *jump, ir_node *value)
 {
 	ir_node *block = get_nodes_block(jump);
 
-	if(irn_visited(value))
+	if (irn_visited(value))
 		return NULL;
 	mark_irn_visited(value);
 
-	if(is_Const(value)) {
+	if(is_Const_or_Confirm(value)) {
 		tarval *tv_const = get_Const_tarval(env->cnst);
-		tarval *tv       = get_Const_tarval(value);
+		tarval *tv       = get_Const_or_Confirm_tarval(value);
 
 		if(eval_cmp(env->pnc, tv, tv_const) <= 0) {
 			return NULL;
@@ -436,8 +458,8 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 	}
 	mark_irn_visited(value);
 
-	if(is_Const(value)) {
-		tarval *tv = get_Const_tarval(value);
+	if(is_Const_or_Confirm(value)) {
+		tarval *tv = get_Const_or_Confirm_tarval(value);
 
 		if(tv != env->tv)
 			return NULL;
@@ -591,8 +613,8 @@ static void cond_eval(ir_node* block, void* data)
 					return;
 			}
 		}
-	} else if(is_Const(selector)) {
-		tarval *tv = get_Const_tarval(selector);
+	} else if(is_Const_or_Confirm(selector)) {
+		tarval *tv = get_Const_or_Confirm_tarval(selector);
 		if(tv == get_tarval_b_true()) {
 			selector_evaluated = 1;
 		} else {
