@@ -57,11 +57,11 @@ typedef struct _env_t {
  * This handles correctly Phi nodes.
  */
 static ir_node *get_effective_use_block(ir_node *node, int pos) {
-	/* the effective use of a Phi is in its predecessor block */
-	if (is_Phi(node))
-		return get_nodes_block(get_irn_n(node, pos));
-	else
-		return get_nodes_block(node);
+	if (is_Phi(node)) {
+		/* the effective use of a Phi is in its predecessor block */
+		node = get_irn_n(node, pos);
+	}
+	return get_nodes_block(node);
 }
 
 /**
@@ -114,6 +114,109 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
 }  /* handle_case */
 
 /**
+ * Handle a mode_b input of Cond nodes.
+ *
+ * @param block     the block which is entered by the branch
+ * @param selector  the mode_b node expressing the branch condition
+ * @param pnc       the true/false condition branch
+ * @param env       statistical environment
+ */
+static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env) {
+	ir_node *cond, *old, *cond_block, *other_blk = NULL, *con = NULL;
+	ir_node *c_b = NULL, *c_o = NULL;
+	const ir_edge_t *edge, *next;
+
+	for (edge = get_irn_out_edge_first(selector); edge; edge = next) {
+		ir_node *user     = get_edge_src_irn(edge);
+		int     pos       = get_edge_src_pos(edge);
+		ir_node *user_blk = get_effective_use_block(user, pos);
+
+		next = get_irn_out_edge_next(selector, edge);
+		if (block_dominates(block, user_blk)) {
+			/*
+			 * Ok, we found a usage of selector in a block
+			 * dominated by the branch block.
+			 * We can replace the input with true/false.
+			 */
+			if (con == NULL) {
+				con = new_Const(mode_b, pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
+			}
+			old = get_irn_n(user, pos);
+			set_irn_n(user, pos, con);
+			DBG_OPT_CONFIRM_C(old, con);
+
+			// ir_printf("2 Replacing input %d of node %n with %n\n", pos, user, con);
+
+			env->num_consts += 1;
+		} else {
+			int i, n;
+
+			/* get the other block */
+			if (other_blk == NULL) {
+				/* we have already tested, that block has only ONE Cond predecessor */
+				cond = get_Proj_pred(get_Block_cfgpred(block, 0));
+				cond_block = get_nodes_block(cond);
+				foreach_out_edge(cond, edge) {
+					ir_node *proj = get_edge_src_irn(edge);
+					if (get_Proj_proj(proj) == pnc)
+						continue;
+					edge = get_irn_out_edge_first(proj);
+					other_blk = get_edge_src_irn(edge);
+					break;
+				}
+				assert(other_blk);
+			}
+
+			n = get_Block_n_cfgpreds(user_blk);
+
+			/*
+			 * We have found a user in a non-dominated block:
+			 * check, if all its block predecessors are dominated.
+			 * If yes, place a Phi.
+			 *
+			 * Note the special case here: if block is a then, there might be no else
+			 * block. In that case the other_block is the user_blk itself and pred_block
+			 * is the cond_block ...
+			 */
+			for (i = n - 1; i >= 0; --i) {
+				ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
+
+				if (cond_block != pred_blk &&
+					!block_dominates(block, pred_blk) &&
+					!block_dominates(other_blk, pred_blk)) {
+					/* can't do anything */
+					break;
+				}
+			}
+			if (i < 0) {
+				ir_node *phi, **in;
+
+				NEW_ARR_A(ir_node *, in, n);
+				/* ok, ALL predecessors are either dominated by block OR other block */
+				if (c_b == NULL) {
+					ir_node *c_true  = new_Const(mode_b, tarval_b_true);
+					ir_node *c_false = new_Const(mode_b, tarval_b_false);
+					c_b = new_r_Confirm(current_ir_graph, cond_block, selector,
+						pnc == pn_Cond_true ? c_true : c_false, pn_Cmp_Eq);
+					c_o = new_r_Confirm(current_ir_graph, cond_block, selector,
+						pnc == pn_Cond_false ? c_true : c_false, pn_Cmp_Eq);
+				}
+				for (i = n - 1; i >= 0; --i) {
+					ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
+
+					if (block_dominates(block, pred_blk))
+						in[i] = c_b;
+					else
+						in[i] = c_o;
+				}
+				phi = new_r_Phi(current_ir_graph, user_blk, n, in, mode_b);
+				set_irn_n(user, pos, phi);
+			}
+		}
+	}
+}
+
+/**
  * Handle an IF-branch.
  *
  * @param block   the block which is entered by the branch
@@ -129,7 +232,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 	const ir_edge_t *edge, *next;
 
 	/* Beware of Bads */
-	if (is_Bad(left) ||is_Bad(right))
+	if (is_Bad(left) || is_Bad(right))
 		return;
 
 	op = get_irn_op(left);
@@ -253,11 +356,11 @@ static void insert_Confirm(ir_node *block, void *env) {
 		return;
 
 	proj = get_Block_cfgpred(block, 0);
-	if (get_irn_op(proj) != op_Proj)
+	if (! is_Proj(proj))
 		return;
 
 	cond = get_Proj_pred(proj);
-	if (get_irn_op(cond) != op_Cond)
+	if (! is_Cond(cond))
 		return;
 
 	selector = get_Cond_selector(cond);
@@ -266,6 +369,8 @@ static void insert_Confirm(ir_node *block, void *env) {
 	if (mode == mode_b) {
 		ir_node *cmp;
 		pn_Cmp pnc;
+
+		handle_modeb(block, selector, get_Proj_proj(proj), env);
 
 		/* this should be an IF, check this */
 		if (get_irn_op(selector) != op_Proj)
@@ -362,5 +467,6 @@ static void rem_Confirm(ir_node *n, void *env) {
  * Remove all Confirm nodes from a graph.
  */
 void remove_confirms(ir_graph *irg) {
-	irg_walk_graph(irg, NULL, rem_Confirm, NULL);
+	set_opt_remove_confirm(1);
+	optimize_graph_df(irg);
 }  /* remove_confirms */
