@@ -1990,6 +1990,7 @@ static ir_node *transform_node_AddSub(ir_node *n) {
 			}
 		}
 	}
+
 	return n;
 }  /* transform_node_AddSub */
 
@@ -2042,6 +2043,17 @@ static ir_node *transform_node_Add(ir_node *n) {
 	b = get_Add_right(n);
 
 	mode = get_irn_mode(n);
+
+	if (mode_is_reference(mode)) {
+		ir_mode *lmode = get_irn_mode(a);
+
+	       	if (is_Const(b) && is_Const_null(b) && mode_is_int(lmode)) {
+			/* an Add(a, NULL) is a hidden Conv */
+			dbg_info *dbg = get_irn_dbg_info(n);
+			return new_rd_Conv(dbg, current_ir_graph, get_nodes_block(n), a, mode);
+		}
+	}
+
 	HANDLE_BINOP_PHI(tarval_add, a, b, c, mode);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
@@ -2051,7 +2063,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 	if (mode_is_num(mode)) {
 		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
 		if (!is_arch_dep_running() && a == b && mode_is_int(mode)) {
-			ir_node *block = get_irn_n(n, -1);
+			ir_node *block = get_nodes_block(n);
 
 			n = new_rd_Mul(
 				get_irn_dbg_info(n),
@@ -2155,6 +2167,16 @@ static ir_node *transform_node_Sub(ir_node *n) {
 	b = get_Sub_right(n);
 
 	mode = get_irn_mode(n);
+
+	if (mode_is_int(mode)) {
+		ir_mode *lmode = get_irn_mode(a);
+
+		if (is_Const(b) && is_Const_null(b) && mode_is_reference(lmode)) {
+			/* a Sub(a, NULL) is a hidden Conv */
+			dbg_info *dbg = get_irn_dbg_info(n);
+			return new_rd_Conv(dbg, current_ir_graph, get_nodes_block(n), a, mode);
+		}
+	}
 
 restart:
 	HANDLE_BINOP_PHI(tarval_sub, a, b, c, mode);
