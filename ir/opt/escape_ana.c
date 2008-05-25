@@ -47,6 +47,7 @@
 #include "analyze_irg_args.h"
 #include "irgmod.h"
 #include "ircons.h"
+#include "irprintf.h"
 #include "debug.h"
 
 /**

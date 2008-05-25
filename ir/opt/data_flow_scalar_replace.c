@@ -806,9 +806,6 @@ static void split_call_mem_edge(env_t *env, ir_node *call, pset *accessed_entiti
   int                     *accessed_leaves_vnum = NULL; /**< An arraw, where are saved the value number, that
                                                              are synced from call's sync node, if we need it.*/
 
-  if(get_irn_node_nr(call) == 2763)
-    printf("\nHi\n");
-
   call_blk = get_nodes_block(call);
   val_arr  = get_irn_link(call_blk);
   /* An array to save the memory edges, that must be
@@ -1533,9 +1530,6 @@ void data_flow_scalar_replacement_opt(ir_graph *irg) {
         vnum = allocate_value_numbers(set_sels, value_leaves->leaves, ent, vnum);
       }
     }
-
-    if(get_firm_verbosity())
-      printf("vnumber in data flow= %i\n", vnum);
 
     /* Allocate value number for the globule memory edge.
      * and a value number for the value numbers state.*/

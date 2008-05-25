@@ -5,6 +5,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irprintf.h"
 #include "irnode.h"
 #include "tv.h"
 

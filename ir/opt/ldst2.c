@@ -549,7 +549,7 @@ static void AddSyncPreds(ir_nodeset_t* preds, ir_node* sync)
 	}
 }
 
-
+#if 0
 static void NormaliseSync(ir_node* node, void* env)
 {
 	ir_nodeset_t preds;
@@ -579,8 +579,6 @@ static void NormaliseSync(ir_node* node, void* env)
 	ir_nodeset_destroy(&preds);
 }
 
-
-#if 0
 void opt_ldst2(ir_graph* irg)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst2");

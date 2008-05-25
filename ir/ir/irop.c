@@ -246,7 +246,7 @@ new_ir_op(unsigned code, const char *name, op_pin_state p,
 	res->flags     = flags;
 	res->opar      = opar;
 	res->op_index  = op_index;
-	res->tag       = NULL;
+	res->tag       = 0;
 
 	if (ops)
 		memcpy(&res->ops, ops, sizeof(res->ops));
