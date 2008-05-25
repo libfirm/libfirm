@@ -637,8 +637,16 @@ static tarval *computed_value_Psi(ir_node *n) {
  * if it has the form Confirm(x, '=', Const).
  */
 static tarval *computed_value_Confirm(ir_node *n) {
-	return get_Confirm_cmp(n) == pn_Cmp_Eq ?
-		value_of(get_Confirm_bound(n)) : tarval_bad;
+	/*
+	 * Beware: we might produce Phi(Confirm(x == true), Confirm(x == false)).
+	 * Do NOT optimize them away (CondEval wants them), so wait until
+	 * remove_confirm is activated.
+	 */
+	if (get_opt_remove_confirm()) {
+		return get_Confirm_cmp(n) == pn_Cmp_Eq ?
+			value_of(get_Confirm_bound(n)) : tarval_bad;
+	}
+	return tarval_bad;
 }  /* computed_value_Confirm */
 
 /**
@@ -1592,19 +1600,9 @@ static ir_node *equivalent_node_Confirm(ir_node *n) {
 		 */
 		n = pred;
 	}
-	if (pnc == pn_Cmp_Eq) {
-		ir_node *bound = get_Confirm_bound(n);
-
-		/*
-		 * Optimize a rare case:
-		 * Confirm(x, '=', Constlike) ==> Constlike
-		 */
-		if (is_irn_constlike(bound)) {
-			DBG_OPT_CONFIRM(n, bound);
-			return bound;
-		}
-	}
-	return get_opt_remove_confirm() ? get_Confirm_value(n) : n;
+	if (get_opt_remove_confirm())
+		return get_Confirm_value(n);
+	return n;
 }
 
 /**
