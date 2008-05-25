@@ -36,6 +36,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "irgopt.h"
 #include "irtools.h"
 
 /**
@@ -158,13 +159,24 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				cond_block = get_nodes_block(cond);
 				foreach_out_edge(cond, edge) {
 					ir_node *proj = get_edge_src_irn(edge);
-					if (get_Proj_proj(proj) == pnc)
+					if (get_Proj_proj(proj) == (long)pnc)
 						continue;
 					edge = get_irn_out_edge_first(proj);
 					other_blk = get_edge_src_irn(edge);
 					break;
 				}
 				assert(other_blk);
+
+			 	/*
+				 * Note the special case here: if block is a then, there might be no else
+				 * block. In that case the other_block is the user_blk itself and pred_block
+				 * is the cond_block ...
+				 *
+				 * Best would be to indroduce a block here, removing this critical edge.
+				 * For some reasons I cannot repair dominance here, so I have to remove
+				 * ALL critical edges...
+				 * FIXME: This should not be needed if we could repair dominance ...
+				 */
 			}
 
 			n = get_Block_n_cfgpreds(user_blk);
@@ -173,17 +185,12 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			 * We have found a user in a non-dominated block:
 			 * check, if all its block predecessors are dominated.
 			 * If yes, place a Phi.
-			 *
-			 * Note the special case here: if block is a then, there might be no else
-			 * block. In that case the other_block is the user_blk itself and pred_block
-			 * is the cond_block ...
 			 */
 			for (i = n - 1; i >= 0; --i) {
 				ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
 
-				if (cond_block != pred_blk &&
-					!block_dominates(block, pred_blk) &&
-					!block_dominates(other_blk, pred_blk)) {
+				if (!block_dominates(block, pred_blk) &&
+				    !block_dominates(other_blk, pred_blk)) {
 					/* can't do anything */
 					break;
 				}
@@ -406,6 +413,8 @@ static void insert_Confirm(ir_node *block, void *env) {
 void construct_confirms(ir_graph *irg) {
 	env_t env;
 	int edges_active = edges_activated(irg);
+
+	remove_critical_cf_edges(irg);
 
 	/* we need dominance info */
 	assure_doms(irg);
