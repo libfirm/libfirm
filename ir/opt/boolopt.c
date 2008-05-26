@@ -264,7 +264,12 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-ir_node *skip_empty_block(ir_node *node)
+/**
+ * If node is a Jmp in a block containing no pinned instruction
+ * and having only one predecessor, skip the block and return its
+ * cf predecessor, else the node itself.
+ */
+static ir_node *skip_empty_block(ir_node *node)
 {
 	ir_node      *block;
 
@@ -314,20 +319,20 @@ restart:
 		if(!is_Proj(lower_cf))
 			continue;
 
-		lower_block = get_nodes_block(lower_cf);
-		if(get_Block_n_cfgpreds(lower_block) != 1)
-			continue;
-
 		cond = get_Proj_pred(lower_cf);
 		if(!is_Cond(cond))
 			continue;
 
-		cond_selector = get_Cond_selector(cond);
-		if(get_irn_mode(cond_selector) != mode_b)
+		lower_block = get_nodes_block(cond);
+		if(get_Block_n_cfgpreds(lower_block) != 1)
 			continue;
 
 		/* the block must not produce any side-effects */
 		if(get_Block_mark(lower_block))
+			continue;
+
+		cond_selector = get_Cond_selector(cond);
+		if(get_irn_mode(cond_selector) != mode_b)
 			continue;
 
 		lower_pred = get_Block_cfgpred_block(lower_block, 0);
@@ -362,7 +367,7 @@ restart:
 				continue;
 
 			/* normalize pncs: we need the true case to jump into the
-			 * common block */
+			 * common block (ie. conjunctive normal form) */
 			irg = current_ir_graph;
 			if(get_Proj_proj(lower_cf) == pn_Cond_false) {
 				if(cpair.proj_lo == cond_selector) {
