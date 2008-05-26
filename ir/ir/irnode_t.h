@@ -952,6 +952,14 @@ _get_Phi_next(const ir_node *phi) {
 	return phi->attr.phi.next;
 }
 
+/** Add a Phi node to the list of Block Phi's. */
+static INLINE void
+_add_Block_phi(ir_node *block, ir_node *phi) {
+	_set_Phi_next(phi, _get_Block_phis(block));
+	_set_Block_phis(block, phi);
+}
+
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -1070,8 +1078,10 @@ _get_Phi_next(const ir_node *phi) {
 #define get_irn_dbg_info(node)                _get_irn_dbg_info(node)
 #define set_irn_dbg_info(node, db)            _set_irn_dbg_info(node, db)
 
-#define set_Block_phis(node, phi)             _set_Block_phis(node, phi)
-#define get_Block_phis(node)                  _get_Block_phis(node)
+#define set_Block_phis(block, phi)            _set_Block_phis(block, phi)
+#define get_Block_phis(block)                 _get_Block_phis(block
+#define add_Block_phi(block, phi)             _add_block_phi(block, phi)
+
 #define set_Phi_next(node, phi)               _set_Phi_next(node, phi)
 #define get_Phi_next(node)                    _get_Phi_next(node)
 

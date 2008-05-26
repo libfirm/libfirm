@@ -412,6 +412,8 @@ void set_Block_label(ir_node *block, ir_label_t label);
 ir_node *get_Block_phis(const ir_node *block);
 /** Sets the head of the Phi list for this block. */
 void set_Block_phis(ir_node *block, ir_node *phi);
+/** Add a Phi node to the list of Block Phi's. */
+void add_Block_phi(ir_node *block, ir_node *phi);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(const ir_node *end);
