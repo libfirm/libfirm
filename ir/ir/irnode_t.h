@@ -1079,7 +1079,7 @@ _add_Block_phi(ir_node *block, ir_node *phi) {
 #define set_irn_dbg_info(node, db)            _set_irn_dbg_info(node, db)
 
 #define set_Block_phis(block, phi)            _set_Block_phis(block, phi)
-#define get_Block_phis(block)                 _get_Block_phis(block
+#define get_Block_phis(block)                 _get_Block_phis(block)
 #define add_Block_phi(block, phi)             _add_block_phi(block, phi)
 
 #define set_Phi_next(node, phi)               _set_Phi_next(node, phi)
