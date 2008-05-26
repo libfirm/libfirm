@@ -521,16 +521,22 @@ int  using_irn_visited(const ir_graph *irg);
 void set_using_irn_link(ir_graph *irg);
 void clear_using_irn_link(ir_graph *irg);
 int  using_irn_link(const ir_graph *irg);
+void set_using_block_mark(ir_graph *irg);
+void clear_using_block_mark(ir_graph *irg);
+int  using_block_mark(const ir_graph *irg);
 #else
-static INLINE void set_using_block_visited(ir_graph *irg) { (void) irg; }
-static INLINE void clear_using_block_visited(ir_graph *irg) { (void) irg; }
-static INLINE int using_block_visited(const ir_graph *irg) { (void) irg; return 0; }
-static INLINE void set_using_irn_visited(ir_graph *irg) { (void) irg; }
-static INLINE void clear_using_irn_visited(ir_graph *irg) { (void) irg; }
-static INLINE int using_irn_visited(const ir_graph *irg) { (void) irg; return 0; }
-static INLINE void set_using_irn_link(ir_graph *irg) { (void) irg; }
-static INLINE void clear_using_irn_link(ir_graph *irg) { (void) irg; }
-static INLINE int using_irn_link(const ir_graph *irg) { (void) irg; return 0; }
+#define set_using_block_visited(irg)
+#define clear_using_block_visited(irg)
+#define using_block_visited(irg)        0
+#define set_using_irn_visited(irg)
+#define clear_using_irn_visited(irg)
+#define using_irn_visited(irg)          0
+#define set_using_irn_link(irg)
+#define clear_using_irn_link(irg)
+#define using_irn_link(irg)             0
+#define set_using_block_mark(irg)
+#define clear_using_block_mark(irg)
+#define using_block_mark(irg)           0
 #endif
 
 /** Normalization: Move Proj nodes into the same block as its predecessors */

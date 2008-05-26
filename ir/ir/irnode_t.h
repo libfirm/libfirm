@@ -959,6 +959,19 @@ _add_Block_phi(ir_node *block, ir_node *phi) {
 	_set_Block_phis(block, phi);
 }
 
+/** Get the Block mark (single bit). */
+static INLINE unsigned
+_get_Block_mark(const ir_node *block) {
+	assert(_is_Block(block));
+	return block->attr.block.marked;
+}
+
+/** Set the Block mark (single bit). */
+static INLINE void
+_set_Block_mark(ir_node *block, unsigned mark) {
+	assert(_is_Block(block));
+	block->attr.block.marked = mark;
+}
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
@@ -1080,7 +1093,9 @@ _add_Block_phi(ir_node *block, ir_node *phi) {
 
 #define set_Block_phis(block, phi)            _set_Block_phis(block, phi)
 #define get_Block_phis(block)                 _get_Block_phis(block)
-#define add_Block_phi(block, phi)             _add_block_phi(block, phi)
+#define add_Block_phi(block, phi)             _add_Block_phi(block, phi)
+#define get_Block_mark(block)                 _get_Block_mark(block)
+#define set_Block_mark(block, mark)           _set_Block_mark(block, mark)
 
 #define set_Phi_next(node, phi)               _set_Phi_next(node, phi)
 #define get_Phi_next(node)                    _get_Phi_next(node)

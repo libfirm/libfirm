@@ -1084,7 +1084,21 @@ void clear_using_irn_link(ir_graph *irg) {
 int using_irn_link(const ir_graph *irg) {
 	return irg->using_irn_link;
 }
-#endif
+
+void set_using_block_mark(ir_graph *irg) {
+	assert(irg->using_block_mark == 0);
+	irg->using_block_mark = 1;
+}
+
+void clear_using_block_mark(ir_graph *irg) {
+	assert(irg->using_block_mark == 1);
+	irg->using_block_mark = 0;
+}
+
+int using_block_mark(const ir_graph *irg) {
+	return irg->using_block_mark;
+}
+#endif /* NDEBUG */
 
 /* Returns a estimated node count of the irg. */
 unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {

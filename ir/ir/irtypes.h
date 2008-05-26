@@ -126,6 +126,7 @@ typedef struct {
 	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
 	unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
 	unsigned has_label:1;       /**< Set if this block has a label assigned. */
+	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
 	ir_dom_info dom;            /**< Datastructure that holds information about dominators.
@@ -502,6 +503,7 @@ struct ir_graph {
 	unsigned using_irn_visited   : 1;  /**< set to 1 if we are currently using the visited flag */
 	unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
 	unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
+	unsigned using_block_mark    : 1;  /**< set to 1 if we are currently using the block mark flags */
 #endif
 };
 
