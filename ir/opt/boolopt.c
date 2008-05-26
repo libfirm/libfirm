@@ -86,16 +86,17 @@ static ir_node *bool_and(cond_pair* const cpair)
 	tarval  *const tv_lo   = cpair->tv_lo;
 	tarval  *const tv_hi   = cpair->tv_hi;
 
+	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 			(pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x <|<=|== lo | x ==|>=|> hi -> false */
 		ir_node *const t = new_Const(mode_b, tarval_b_false);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
-						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Ne)) {
+						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
 		/* x <|<=|== lo && x <|<=|!= hi -> x <|<=|== lo */
 		return proj_lo;
-	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ne) &&
+	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
 						 (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x >=|>|!= lo || x ==|>=|> hi -> x ==|>=|> hi */
 		return proj_hi;
@@ -107,7 +108,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 			ir_node  *const p = new_r_Proj(irg, block, cmp_lo, mode_b, pn_Cmp_Eq);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Gt) {
-			if (pnc_hi == pn_Cmp_Ne) {
+			if (pnc_hi == pn_Cmp_Lg) {
 				/* x > c || x != c + 1 -> x > c + 1 */
 				ir_graph *const irg   = current_ir_graph;
 				ir_node  *const block = get_nodes_block(cmp_hi);
@@ -124,7 +125,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 				ir_node  *const p = new_r_Proj(irg, block, cmp_hi, mode_b, pn_Cmp_Eq);
 				return p;
 			}
-		} else if (pnc_lo == pn_Cmp_Ne && pnc_hi == pn_Cmp_Lt) {
+		} else if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lt) {
 			/* x != c || c < c + 1 -> x < c */
 			ir_graph *const irg   = current_ir_graph;
 			ir_node  *const block = get_nodes_block(cmp_lo);
@@ -146,16 +147,17 @@ static ir_node *bool_or(cond_pair *const cpair)
 	tarval  *const tv_lo   = cpair->tv_lo;
 	tarval  *const tv_hi   = cpair->tv_hi;
 
-	if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ne) &&
-			(pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Ne)) {
+	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
+	if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
+			(pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
 		/* x >=|>|!= lo | x <|<=|!= hi -> true */
 		ir_node *const t = new_Const(mode_b, tarval_b_true);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
-						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Ne)) {
+						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
 		/* x <|<=|== lo || x <|<=|!= hi -> x <|<=|!= hi */
 		return proj_hi;
-	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ne) &&
+	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
 						 (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x >=|>|!= lo || x ==|>=|> hi -> x >=|>|!= lo */
 		return proj_lo;
@@ -164,7 +166,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 			/* x < c || x >= c + 1 -> x != c */
 			ir_graph *const irg   = current_ir_graph;
 			ir_node  *const block = get_nodes_block(cmp_lo);
-			ir_node  *const p = new_r_Proj(irg, block, cmp_lo, mode_b, pn_Cmp_Ne);
+			ir_node  *const p = new_r_Proj(irg, block, cmp_lo, mode_b, pn_Cmp_Lg);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Le) {
 			if (pnc_hi == pn_Cmp_Eq) {
@@ -181,7 +183,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 				/* x <= c || x > c + 1 -> x != c + 1 */
 				ir_graph *const irg   = current_ir_graph;
 				ir_node  *const block = get_nodes_block(cmp_hi);
-				ir_node  *const p = new_r_Proj(irg, block, cmp_hi, mode_b, pn_Cmp_Ne);
+				ir_node  *const p = new_r_Proj(irg, block, cmp_hi, mode_b, pn_Cmp_Lg);
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Ge) {
