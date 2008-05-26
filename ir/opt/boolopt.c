@@ -6,7 +6,7 @@
 #include "irgmod.h"
 #include "irgwalk.h"
 #include "irprintf.h"
-#include "irnode.h"
+#include "irnode_t.h"
 #include "tv.h"
 
 typedef struct cond_pair {
@@ -225,60 +225,46 @@ static void bool_walk(ir_node *n, void *env)
 	}
 }
 
-static struct obstack obst;
-
-typedef struct block_info_t {
-	ir_node *phi;   /**< head of the Phi list */
-	int has_pinned; /**< set if the block contains instructions that cannot be
-	                     moved */
-} block_info_t;
-
-static block_info_t* get_block_blockinfo(ir_node* block)
+/**
+ * Walker, clear Block mark and Phi list
+ */
+static void clear_block_infos(ir_node *node, void *env)
 {
-	return get_irn_link(block);
-}
-
-static void create_blockinfos(ir_node *node, void *env)
-{
-	block_info_t *block_info;
 	(void) env;
 
 	/* we visit blocks before any other nodes (from the block) */
 	if (!is_Block(node))
 		return;
 
-	block_info = obstack_alloc(&obst, sizeof(block_info[0]));
-	memset(block_info, 0, sizeof(block_info[0]));
-	set_irn_link(node, block_info);
+	/* clear the PHI list */
+	set_Block_phis(node, NULL);
+	set_Block_mark(node, 0);
 }
 
+/**
+ * Walker: collect Phi nodes and update the
+ */
 static void collect_phis(ir_node *node, void *env)
 {
 	(void) env;
 
 	if (is_Phi(node)) {
-		ir_node      *block = get_nodes_block(node);
-		block_info_t *bi    = get_block_blockinfo(block);
-
-		set_irn_link(node, bi->phi);
-		bi->phi = node;
+		ir_node *block = get_nodes_block(node);
+		add_Block_phi(block, node);
 		return;
 	}
 
 	/* Ignore control flow nodes, these will be removed. */
 	if (get_irn_pinned(node) == op_pin_state_pinned &&
 			!is_Block(node) && !is_cfop(node)) {
-		ir_node      *block = get_nodes_block(node);
-		block_info_t *bi    = get_block_blockinfo(block);
-
-		bi->has_pinned = 1;
+		ir_node *block = get_nodes_block(node);
+		set_Block_mark(block, 1);
 	}
 }
 
 ir_node *skip_empty_block(ir_node *node)
 {
 	ir_node      *block;
-	block_info_t *block_info;
 
 	if(!is_Jmp(node))
 		return node;
@@ -287,8 +273,7 @@ ir_node *skip_empty_block(ir_node *node)
 	if(get_Block_n_cfgpreds(block) != 1)
 		return node;
 
-	block_info = get_block_blockinfo(block);
-	if(block_info->has_pinned)
+	if(get_Block_mark(block))
 		return node;
 
 	return get_Block_cfgpred(block, 0);
@@ -320,7 +305,6 @@ restart:
 		ir_node      *lower_cf;
 		ir_node      *cond;
 		ir_node      *cond_selector;
-		block_info_t *block_info;
 		ir_node      *lower_pred;
 
 		lower_cf = get_Block_cfgpred(block, i);
@@ -341,8 +325,7 @@ restart:
 			continue;
 
 		/* the block must not produce any side-effects */
-		block_info = get_block_blockinfo(lower_block);
-		if(block_info->has_pinned)
+		if(get_Block_mark(lower_block))
 			continue;
 
 		lower_pred = get_Block_cfgpred_block(lower_block, 0);
@@ -436,20 +419,16 @@ void opt_bool(ir_graph *const irg)
 {
 	irg_walk_graph(irg, NULL, bool_walk, NULL);
 
-	set_using_irn_link(irg);
+	set_using_block_mark(irg);
 
-	obstack_init(&obst);
-
-	irg_walk_graph(irg, create_blockinfos, collect_phis, NULL);
+	irg_walk_graph(irg, clear_block_infos, collect_phis, NULL);
 
 	irg_block_walk_graph(irg, NULL, find_cf_and_or_walker, NULL);
-
-	obstack_free(&obst, NULL);
 
 	set_irg_outs_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
-	clear_using_irn_link(irg);
+	clear_using_block_mark(irg);
 }

@@ -67,24 +67,10 @@ static const ir_settings_if_conv_t default_info = {
 };
 
 /**
- * Additional block info.
- */
-typedef struct block_info {
-	ir_node *phi;   /**< head of the Phi list */
-	int has_pinned; /**< set if the block contains instructions that cannot be moved */
-} block_info;
-
-/** Returns the additional block info of a block. */
-static INLINE block_info* get_block_blockinfo(const ir_node* block) {
-	return get_irn_link(block);
-}
-
-
-/**
  * Returns non-zero if a Block can be emptied.
  */
 static int can_empty_block(ir_node *block) {
-	return !get_block_blockinfo(block)->has_pinned;
+	return !get_Block_mark(block);
 }
 
 
@@ -195,7 +181,7 @@ static void split_block(ir_node* block, int i, int j)
 
 	NEW_ARR_A(ir_node*, ins, arity + 1);
 
-	for (phi = get_block_blockinfo(block)->phi; phi != NULL; phi = get_irn_link(phi)) {
+	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
 		ir_node* copy = copy_to(get_irn_n(phi, i), pred_block, j);
 
 		for (k = 0; k < i; ++k) ins[k] = get_irn_n(phi, k);
@@ -216,7 +202,7 @@ static void split_block(ir_node* block, int i, int j)
 	new_pred_arity = get_irn_arity(pred_block) - 1;
 	NEW_ARR_A(ir_node*, pred_ins, new_pred_arity);
 
-	for (phi = get_block_blockinfo(pred_block)->phi; phi != NULL; phi = get_irn_link(phi)) {
+	for (phi = get_Block_phis(pred_block); phi != NULL; phi = get_Phi_next(phi)) {
 		for (k = 0; k < j; ++k) pred_ins[k] = get_irn_n(phi, k);
 		for (; k < new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
 		assert(k == new_pred_arity);
@@ -266,7 +252,7 @@ static void if_conv_walker(ir_node* block, void* env)
 	int i;
 
 	/* Bail out, if there are no Phis at all */
-	if (get_block_blockinfo(block)->phi == NULL) return;
+	if (get_Block_phis(block) == NULL) return;
 
 restart:
 	arity = get_irn_arity(block);
@@ -305,7 +291,7 @@ restart:
 
 				if (projx1 == NULL) continue;
 
-				phi = get_block_blockinfo(block)->phi;
+				phi = get_Block_phis(block);
 				if (!opt_info->allow_ifconv(get_Cond_selector(cond), phi, i, j)) continue;
 
 				DB((dbg, LEVEL_1, "Found Cond %+F with proj %+F and %+F\n",
@@ -348,7 +334,7 @@ restart:
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
 					}
 
-					next_phi = get_irn_link(phi);
+					next_phi = get_Phi_next(phi);
 
 					if (arity == 2) {
 						exchange(phi, psi);
@@ -366,7 +352,7 @@ restart:
 #if 1
 					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
 					/* copy the block-info from the Psi-block to the block before merging */
-					get_block_blockinfo(psi_block)->has_pinned |= get_block_blockinfo(block)->has_pinned;
+					set_Block_mark(psi_block, get_Block_mark(psi_block) | get_Block_mark(block));
 					set_irn_link(block, get_irn_link(psi_block));
 
 					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
@@ -374,7 +360,7 @@ restart:
 					exchange(psi_block, block);
 #else
 					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, psi_block));
-					get_block_blockinfo(psi_block)->has_pinned |=	get_block_blockinfo(block)->has_pinned;
+					set_Block_mark(psi_block, get_Block_mark(psi_block) | get_Block_mark(block));
 					exchange(block, psi_block);
 #endif
 					return;
@@ -388,16 +374,12 @@ restart:
 }
 
 /**
- * Block walker: add additional data
+ * Block walker: clear block mark and Phi list
  */
 static void init_block_link(ir_node *block, void *env)
 {
-	struct obstack *obst = env;
-	block_info *bi = obstack_alloc(obst, sizeof(*bi));
-
-	bi->phi = NULL;
-	bi->has_pinned = 0;
-	set_irn_link(block, bi);
+	set_Block_mark(block, 0);
+	set_Block_phis(block, NULL);
 }
 
 
@@ -410,10 +392,8 @@ static void collect_phis(ir_node *node, void *env) {
 
 	if (is_Phi(node)) {
 		ir_node *block = get_nodes_block(node);
-		block_info *bi = get_block_blockinfo(block);
 
-		set_irn_link(node, bi->phi);
-		bi->phi = node;
+		add_Block_phi(block, node);
 	} else {
 		if (is_no_Block(node) && get_irn_pinned(node) == op_pin_state_pinned) {
 			/*
@@ -422,10 +402,9 @@ static void collect_phis(ir_node *node, void *env) {
 			 */
 			if (!is_cfop(node)) {
 				ir_node *block = get_nodes_block(node);
-				block_info *bi = get_block_blockinfo(block);
 
 				DB((dbg, LEVEL_2, "Node %+F in block %+F is unmovable\n", node, block));
-				bi->has_pinned = 1;
+				set_Block_mark(block, 1);
 			}
 		}
 	}
@@ -540,7 +519,6 @@ static void optimise_psis_1(ir_node* psi, void* env)
 
 void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 {
-	struct obstack obst;
 	ir_settings_if_conv_t p;
 
 	/* get the parameters */
@@ -556,14 +534,13 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	compute_cdep(irg);
 	assure_doms(irg);
 
-	set_using_irn_link(irg);
+	set_using_block_mark(irg);
 
-	obstack_init(&obst);
-	irg_block_walk_graph(irg, init_block_link, NULL, &obst);
+	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 	irg_block_walk_graph(irg, NULL, if_conv_walker, &p);
 
-	clear_using_irn_link(irg);
+	clear_using_block_mark(irg);
 
 	local_optimize_graph(irg);
 
@@ -571,8 +548,6 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 #if 1
 	irg_walk_graph(irg, NULL, optimise_psis_1, NULL);
 #endif
-
-	obstack_free(&obst, NULL);
 
 	/* TODO: graph might be changed, handle more graceful */
 	set_irg_outs_inconsistent(irg);
