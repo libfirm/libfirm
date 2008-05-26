@@ -386,8 +386,8 @@ restart:
 					cpair.proj_lo = new_r_Proj(irg, lower_block,
 							get_Proj_pred(cpair.proj_lo), mode_b, cpair.pnc_lo);
 				} else {
-					assert(cpair.proj_hi == cond_selector);
 					ir_mode *mode = get_tarval_mode(cpair.tv_hi);
+					assert(cpair.proj_hi == cond_selector);
 					cpair.pnc_hi  = get_negated_pnc(cpair.pnc_hi, mode);
 					cpair.proj_hi = new_r_Proj(irg, lower_block,
 							get_Proj_pred(cpair.proj_hi), mode_b, cpair.pnc_hi);
@@ -400,8 +400,8 @@ restart:
 					cpair.proj_lo = new_r_Proj(irg, upper_block,
 							get_Proj_pred(cpair.proj_lo), mode_b, cpair.pnc_lo);
 				} else {
-					assert(cpair.proj_hi == upper_cond_selector);
 					ir_mode *mode = get_tarval_mode(cpair.tv_hi);
+					assert(cpair.proj_hi == upper_cond_selector);
 					cpair.pnc_hi  = get_negated_pnc(cpair.pnc_hi, mode);
 					cpair.proj_hi = new_r_Proj(irg, upper_block,
 							get_Proj_pred(cpair.proj_hi), mode_b, cpair.pnc_hi);
