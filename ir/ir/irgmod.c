@@ -133,8 +133,7 @@ static void collect_phiprojs_walker(ir_node *n, void *env) {
 
 	if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
-		set_Phi_next(n, get_Block_phis(block));
-		set_Block_phis(block, n);
+		add_Block_phi(n, n);
 	} else if (is_Proj(n)) {
 		pred = n;
 		do {
