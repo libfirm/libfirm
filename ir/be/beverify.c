@@ -262,6 +262,9 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			int      arity   = get_irn_arity(node);
 			int      problem = 1;
 			ir_node *prev    = sched_prev(node);
+			while(be_is_Keep(prev))
+				prev = sched_prev(prev);
+
 			for(i = 0; i < arity; ++i) {
 				ir_node *in = get_irn_n(node, i);
 				in = skip_Proj(in);
