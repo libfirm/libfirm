@@ -172,7 +172,7 @@ static void split_block(ir_node* block, int i, int j)
 	ir_node* pred_block = get_nodes_block(get_irn_n(block, i));
 	int arity = get_irn_arity(block);
 	int new_pred_arity;
-	ir_node* phi;
+	ir_node *phi, *next;
 	ir_node **ins;
 	ir_node **pred_ins;
 	int k;
@@ -202,10 +202,11 @@ static void split_block(ir_node* block, int i, int j)
 	new_pred_arity = get_irn_arity(pred_block) - 1;
 	NEW_ARR_A(ir_node*, pred_ins, new_pred_arity);
 
-	for (phi = get_Block_phis(pred_block); phi != NULL; phi = get_Phi_next(phi)) {
+	for (phi = get_Block_phis(pred_block); phi != NULL; phi = next) {
 		for (k = 0; k < j; ++k) pred_ins[k] = get_irn_n(phi, k);
 		for (; k < new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
 		assert(k == new_pred_arity);
+		next = get_Phi_next(phi);
 		if (new_pred_arity > 1) {
 			set_irn_in(phi, new_pred_arity, pred_ins);
 		} else {
