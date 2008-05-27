@@ -2047,7 +2047,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			ir_node *cr = get_Cmp_right(cmp);
 
 			/* check the Phi nodes: no 64bit and no floating point cmov */
-			for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+			for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
 				ir_mode *mode = get_irn_mode(phi);
 
 				if (mode_is_float(mode)) {
@@ -2074,7 +2074,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			}
 		} else {
 			/* check the Phi nodes: no 64bit and no floating point cmov */
-			for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+			for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
 				ir_mode *mode = get_irn_mode(phi);
 
 				if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
@@ -2096,7 +2096,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 		cl = get_Cmp_left(cmp);
 		cr = get_Cmp_right(cmp);
 
-		for (phi = phi_list; phi; phi = get_irn_link(phi)) {
+		for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
 			ir_mode *mode = get_irn_mode(phi);
 			int res = 0;
 			ir_node *t, *f;
