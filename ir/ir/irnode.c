@@ -866,6 +866,20 @@ void (set_Block_phis)(ir_node *block, ir_node *phi) {
 	_set_Block_phis(block, phi);
 }
 
+void (add_Block_phi)(ir_node *block, ir_node *phi) {
+	_add_Block_phi(block, phi);
+}
+
+/* Get the Block mark (single bit). */
+unsigned (get_Block_mark)(const ir_node *block) {
+	return _get_Block_mark(block);
+}
+
+/* Set the Block mark (single bit). */
+void (set_Block_mark)(ir_node *block, unsigned mark) {
+	_set_Block_mark(block, mark);
+}
+
 int get_End_n_keepalives(const ir_node *end) {
 	assert(end->op == op_End);
 	return (get_irn_arity(end) - END_KEEPALIVE_OFFSET);

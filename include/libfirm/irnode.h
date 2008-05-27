@@ -414,6 +414,10 @@ ir_node *get_Block_phis(const ir_node *block);
 void set_Block_phis(ir_node *block, ir_node *phi);
 /** Add a Phi node to the list of Block Phi's. */
 void add_Block_phi(ir_node *block, ir_node *phi);
+/** Get the Block mark (single bit). */
+unsigned get_Block_mark(const ir_node *block);
+/** Set the Block mark (single bit). */
+void set_Block_mark(ir_node *block, unsigned mark);
 
 /** Return the number of Keep alive node. */
 int  get_End_n_keepalives(const ir_node *end);
