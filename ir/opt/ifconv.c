@@ -353,7 +353,7 @@ restart:
 					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
 					/* copy the block-info from the Psi-block to the block before merging */
 					set_Block_mark(psi_block, get_Block_mark(psi_block) | get_Block_mark(block));
-					set_irn_link(block, get_irn_link(psi_block));
+					set_Block_phis(block, get_Block_phis(psi_block));
 
 					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
 					exchange_cdep(psi_block, block);
