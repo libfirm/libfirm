@@ -760,7 +760,6 @@ ir_node *ia32_skip_downconv(ir_node *node) {
 	return node;
 }
 
-#if 0
 static ir_node *create_upconv(ir_node *node, ir_node *orig_node)
 {
 	ir_mode  *mode = get_irn_mode(node);
@@ -778,7 +777,6 @@ static ir_node *create_upconv(ir_node *node, ir_node *orig_node)
 
 	return create_I2I_Conv(mode, tgt_mode, dbgi, block, node, orig_node);
 }
-#endif
 
 /**
  * matches operands of a node into ia32 addressing/operand modes. This covers
@@ -1085,11 +1083,13 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	assert((flags & ~(match_mode_neutral | match_immediate)) == 0);
 
 	if (flags & match_mode_neutral) {
-		op1 = ia32_skip_downconv(op1);
+		op1     = ia32_skip_downconv(op1);
+		new_op1 = be_transform_node(op1);
 	} else if (get_mode_size_bits(get_irn_mode(node)) != 32) {
-		panic("right shifting of non-32bit values not supported, yet");
+		new_op1 = create_upconv(op1, node);
+	} else {
+		new_op1 = be_transform_node(op1);
 	}
-	new_op1 = be_transform_node(op1);
 
 	/* the shift amount can be any mode that is bigger than 5 bits, since all
 	 * other bits are ignored anyway */
