@@ -70,7 +70,7 @@ static const ir_settings_if_conv_t default_info = {
  * Returns non-zero if a Block can be emptied.
  */
 static int can_empty_block(ir_node *block) {
-	return !get_Block_mark(block);
+	return get_Block_mark(block) == 0;
 }
 
 
@@ -260,7 +260,7 @@ restart:
 		ir_node* pred0;
 		ir_cdep* cdep;
 
-		pred0 = get_nodes_block(get_irn_n(block, i));
+		pred0 = get_Block_cfgpred_block(block, i);
 		for (cdep = find_cdep(pred0); cdep != NULL; cdep = cdep->next) {
 			const ir_node* dependency = cdep->node;
 			ir_node* projx0 = walk_to_projx(pred0, dependency);
@@ -283,7 +283,7 @@ restart:
 				ir_node* pred1;
 				dbg_info* cond_dbg;
 
-				pred1 = get_nodes_block(get_irn_n(block, j));
+				pred1 = get_Block_cfgpred_block(block, j);
 
 				if (!is_cdep_on(pred1, dependency)) continue;
 
@@ -349,10 +349,13 @@ restart:
 				exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
 
 				if (arity == 2) {
+					unsigned mark;
 #if 1
 					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
 					/* copy the block-info from the Psi-block to the block before merging */
-					set_Block_mark(psi_block, get_Block_mark(psi_block) | get_Block_mark(block));
+
+					mark =  get_Block_mark(psi_block) | get_Block_mark(block);
+					set_Block_mark(block, mark);
 					set_Block_phis(block, get_Block_phis(psi_block));
 
 					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
@@ -360,7 +363,9 @@ restart:
 					exchange(psi_block, block);
 #else
 					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, psi_block));
-					set_Block_mark(psi_block, get_Block_mark(psi_block) | get_Block_mark(block));
+					mark =  get_Block_mark(psi_block) | get_Block_mark(block);
+					/* mark both block just to be sure, should be enough to mark psi_block */
+					set_Block_mark(psi_block, mark);
 					exchange(block, psi_block);
 #endif
 					return;
@@ -378,6 +383,7 @@ restart:
  */
 static void init_block_link(ir_node *block, void *env)
 {
+	(void)env;
 	set_Block_mark(block, 0);
 	set_Block_phis(block, NULL);
 }
