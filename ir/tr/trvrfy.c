@@ -344,7 +344,6 @@ static int constants_on_wrong_irg(ir_entity *ent) {
  *  != 0    a trvrfy_error_codes code
  */
 int check_entity(ir_entity *ent) {
-	int rem_vpi;
 	ir_type *tp = get_entity_type(ent);
 	ir_type *owner = get_entity_owner(ent);
 
@@ -355,21 +354,6 @@ int check_entity(ir_entity *ent) {
 		error_const_on_wrong_irg,
 		ir_fprintf(stderr, "%+e not on %+F\n", ent, current_ir_graph)
 	);
-
-	rem_vpi = get_visit_pseudo_irgs();
-	set_visit_pseudo_irgs(1);
-	if ((get_entity_peculiarity(ent) == peculiarity_existent)         &&
-	    (get_entity_visibility(ent) != visibility_external_allocated) &&
-	    (is_Method_type(get_entity_type(ent)))                        &&
-	    (!get_entity_irg(ent) || !(is_ir_graph(get_entity_irg(ent))))) {
-		ASSERT_AND_RET_DBG(
-			0,
-			"Method ents with pec_exist must have an irg",
-			error_existent_entity_without_irg,
-			ir_fprintf(stderr, "%+e\n", ent)
-		);
-	}
-	set_visit_pseudo_irgs(rem_vpi);
 
 	/* Originally, this test assumed, that only method entities have
 	   pecularity_inherited.  As I changed this, I have to test for method type before
