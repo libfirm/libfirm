@@ -217,43 +217,24 @@ static void process_block(ir_node *block, void *data)
 /**
  * Walk through the block schedule and skip all barrier nodes.
  */
-static void skip_barrier(ir_node *ret_blk) {
+static void skip_barrier(ir_node *ret_blk, ir_graph *irg) {
 	ir_node *irn;
 
 	sched_foreach_reverse(ret_blk, irn) {
-		int i;
+		if (be_is_Barrier(irn)) {
+			const ir_edge_t *edge, *next;
 
-		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-			ir_node *proj = get_irn_n(irn, i);
+			foreach_out_edge_safe(irn, edge, next) {
+				ir_node *proj = get_edge_src_irn(edge);
+				int      pn   = (int)get_Proj_proj(proj);
+				ir_node *pred = get_irn_n(irn, pn);
 
-			if (is_Proj(proj)) {
-				ir_node *barrier = get_Proj_pred(proj);
-
-				if (be_is_Barrier(barrier)) {
-					int pn        = (int)get_Proj_proj(proj);
-					ir_node *pred = get_irn_n(barrier, pn);
-
-					set_irn_n(irn, i, pred);
-					if (sched_is_scheduled(barrier))
-						sched_remove(barrier);
-				}
+				edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
+				edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
 			}
-		}
-		for (i = get_irn_deps(irn) - 1; i >= 0; --i) {
-			ir_node *proj = get_irn_dep(irn, i);
-
-			if (is_Proj(proj)) {
-				ir_node *barrier = get_Proj_pred(proj);
-
-				if (be_is_Barrier(barrier)) {
-					int pn        = (int)get_Proj_proj(proj);
-					ir_node *pred = get_irn_n(barrier, pn);
-
-					set_irn_dep(irn, i, pred);
-					if (sched_is_scheduled(barrier))
-						sched_remove(barrier);
-				}
-			}
+			sched_remove(irn);
+			kill_node(irn);
+			break;
 		}
 	}
 }
@@ -271,12 +252,12 @@ static void	kill_barriers(ir_graph *irg) {
 		ir_node *be_ret = get_Block_cfgpred(end_blk, i);
 		ir_node *ret_blk = get_nodes_block(be_ret);
 
-		skip_barrier(ret_blk);
+		skip_barrier(ret_blk, irg);
 	}
 
 	/* skip the barrier on the start block */
 	start_blk = get_irg_start_block(irg);
-	skip_barrier(start_blk);
+	skip_barrier(start_blk, irg);
 }
 
 
