@@ -918,14 +918,14 @@ int is_Cast_upcast(ir_node *node);
 int is_Cast_downcast(ir_node *node);
 
 
-/** Returns true if n is Phi or Filter in interprocedural_view.
-   Returns false if irg in phase building and the Phi has zero
+/** Returns true if n is a Phi or a Filter node in INTER-procedural view.
+   Returns false if irg is in phase phase_building and the Phi has zero
    predecessors: it's a Phi0. */
 int       is_Phi(const ir_node *n);
-/** Returns true if irg in phase building and the Phi has zero
+/** Returns true if irg in phase phase_building and the Phi has zero
    predecessors. It's a Phi0 then. */
 int       is_Phi0(const ir_node *n);
-/* These routines also work for Filter nodes in interprocedural view. */
+/* These routines also work for Filter nodes in INTER-procedural view. */
 ir_node **get_Phi_preds_arr(ir_node *node);
 int       get_Phi_n_preds(const ir_node *node);
 ir_node  *get_Phi_pred(const ir_node *node, int pos);
@@ -1128,7 +1128,7 @@ typedef enum {
 } pn_InstOf;
 #define pn_InstOf_M pn_InstOf_M_regular
 
-/** InstOf access */
+/** InstOf access. */
 ir_type *get_InstOf_type(ir_node *node);
 void    set_InstOf_type(ir_node *node, ir_type *type);
 ir_node *get_InstOf_store(const ir_node *node);
@@ -1310,21 +1310,22 @@ int      is_SymConst(const ir_node *node);
 int      is_SymConst_addr_ent(const ir_node *node);
 /** Returns true if node is a Cond node. */
 int      is_Cond(const ir_node *node);
-/** Returns true of node is a CopyB node */
+/** Returns true of node is a CopyB node. */
 int      is_CopyB(const ir_node *node);
 /** Returns true if node is a Cmp node. */
 int      is_Cmp(const ir_node *node);
-/** Returns true if node is an Alloc node */
+/** Returns true if node is an Alloc node. */
 int      is_Alloc(const ir_node *node);
-/** Returns true if a node is a Jmp node */
+/** Returns true if a node is a Jmp node. */
 int      is_Jmp(const ir_node *node);
-/** Returns true if a node is a Raise node */
+/** Returns true if a node is a Raise node. */
 int      is_Raise(const ir_node *node);
-/** Returns true if a node is an ASM node */
+/** Returns true if a node is an ASM node. */
 int      is_ASM(const ir_node *node);
-/** Returns true if node is a Proj node or a Filter node in
- * intraprocedural view */
+/** Returns true if node is a Proj node or a Filter node in INTRA-procedural view. */
 int      is_Proj(const ir_node *node);
+/** Returns true if node is a Filter node. */
+int      is_Filter(const ir_node *node);
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(const ir_node *node);

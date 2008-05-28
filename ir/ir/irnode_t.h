@@ -423,8 +423,20 @@ _is_Phi(const ir_node *node) {
 
 static INLINE int
 _is_Proj(const ir_node *node) {
+	ir_op *op;
 	assert(node);
-	return (_get_irn_op(node) == op_Proj);
+
+	op = _get_irn_op(node);
+#ifdef INTERPROCEDURAL_VIEW
+	if (op == op_Filter) return !get_interprocedural_view();
+#endif
+	return (op == op_Proj);
+}
+
+static INLINE int
+_is_Filter(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Filter);
 }
 
 static INLINE int
@@ -998,6 +1010,7 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 #define is_unop(node)                         _is_unop(node)
 #define is_binop(node)                        _is_binop(node)
 #define is_Proj(node)                         _is_Proj(node)
+#define is_Filter(node)                       _is_Filter(node)
 #define is_Phi(node)                          _is_Phi(node)
 #define is_Const(node)                        _is_Const(node)
 #define is_Conv(node)                         _is_Conv(node)

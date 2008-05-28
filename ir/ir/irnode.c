@@ -2851,9 +2851,13 @@ int
 
 int
 (is_Proj)(const ir_node *node) {
-	assert(node);
-	return node->op == op_Proj ||
-	       (!get_interprocedural_view() && node->op == op_Filter);
+	return _is_Proj(node);
+}
+
+/* Returns true if node is a Filter node. */
+int
+(is_Filter)(const ir_node *node) {
+	return _is_Filter(node);
 }
 
 /* Returns true if the operation manipulates control flow. */
