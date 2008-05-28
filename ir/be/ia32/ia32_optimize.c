@@ -478,58 +478,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 }
 
 /**
- * Tries to optimize two following IncSP.
- */
-static void peephole_IncSP_IncSP(ir_node *node)
-{
-	int      pred_offs;
-	int      curr_offs;
-	int      offs;
-	ir_node *pred = be_get_IncSP_pred(node);
-	ir_node *predpred;
-
-	if(!be_is_IncSP(pred))
-		return;
-
-	if(get_irn_n_edges(pred) > 1)
-		return;
-
-	pred_offs = be_get_IncSP_offset(pred);
-	curr_offs = be_get_IncSP_offset(node);
-
-	if(pred_offs == BE_STACK_FRAME_SIZE_EXPAND) {
-		if(curr_offs != BE_STACK_FRAME_SIZE_SHRINK) {
-			return;
-		}
-		offs = 0;
-	} else if(pred_offs == BE_STACK_FRAME_SIZE_SHRINK) {
-		if(curr_offs != BE_STACK_FRAME_SIZE_EXPAND) {
-			return;
-		}
-		offs = 0;
-	} else if(curr_offs == BE_STACK_FRAME_SIZE_EXPAND
-			|| curr_offs == BE_STACK_FRAME_SIZE_SHRINK) {
-		return;
-	} else {
-		offs = curr_offs + pred_offs;
-	}
-
-	/* add pred offset to ours and remove pred IncSP */
-	be_set_IncSP_offset(node, offs);
-
-	predpred = be_get_IncSP_pred(pred);
-	be_peephole_before_exchange(pred, predpred);
-
-	/* rewire dependency edges */
-	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
-	be_set_IncSP_pred(node, predpred);
-	sched_remove(pred);
-	be_kill_node(pred);
-
-	be_peephole_after_exchange(predpred);
-}
-
-/**
  * Find a free GP register if possible, else return NULL.
  */
 static const arch_register_t *get_free_gp_reg(void)
@@ -634,7 +582,7 @@ static void peephole_be_IncSP(ir_node *node)
 	int                    offset;
 
 	/* first optimize incsp->incsp combinations */
-	peephole_IncSP_IncSP(node);
+	be_peephole_IncSP_IncSP(node);
 
 	/* transform IncSP->Store combinations to Push where possible */
 	peephole_IncSP_Store_to_push(node);

@@ -64,6 +64,14 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node);
 void be_peephole_after_exchange(ir_node *new_node);
 
 /**
+ * Tries to optimize a beIncSp node with it's previous IncSP node.
+ * Must be run from a be_peephole_opt() context.
+ *
+ * @param node  a be_IncSP node
+ */
+void be_peephole_IncSP_IncSP(ir_node *node);
+
+/**
  * Do peephole optimisations. It traverses the schedule of all blocks in
  * backward direction. The register_values variable indicates which (live)
  * values are stored in which register.
