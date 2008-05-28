@@ -174,12 +174,12 @@ void arm_emit_dest_register(const ir_node *node, int pos) {
  */
 void arm_emit_offset(const ir_node *node) {
 	int offset = 0;
-	ir_op *irn_op = get_irn_op(node);
+	ir_opcode opc = get_irn_opcode(node);
 
-	if (irn_op == op_be_Reload || irn_op == op_be_Spill) {
+	if (opc == beo_Reload || opc == beo_Spill) {
 		ir_entity *ent = be_get_frame_entity(node);
 		offset = get_entity_offset(ent);
-	} else if (irn_op == op_be_IncSP) {
+	} else if (opc == beo_IncSP) {
 		offset = - be_get_IncSP_offset(node);
 	} else {
 		assert(!"unimplemented arm_emit_offset for this node type");
@@ -193,12 +193,13 @@ void arm_emit_offset(const ir_node *node) {
  */
 static void arm_emit_fpa_postfix(const ir_mode *mode) {
 	int bits = get_mode_size_bits(mode);
+	char c = 'e';
+
 	if (bits == 32)
-		be_emit_char('s');
+		c = 's';
 	else if (bits == 64)
-		be_emit_char('d');
-	else
-		be_emit_char('e');
+		c = 'd';
+	be_emit_char(c);
 }
 
 /**
