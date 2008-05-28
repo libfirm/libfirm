@@ -107,6 +107,8 @@ static int dump_node_idx_labels = 0;
 static int dump_anchors = 0;
 /** An option to dump the macro block edges. */
 static int dump_macro_block_edges = 0;
+/** An option to dump block marker in the block title */
+static int dump_block_marker = 0;
 
 int dump_dominator_information_flag = 0;
 int opt_dump_analysed_type_info = 1;
@@ -253,6 +255,10 @@ void dump_all_anchors(int flag) {
 
 void dump_macroblock_edges(int flag) {
 	dump_macro_block_edges = flag;
+}
+
+void dump_block_marker_in_title(int flag) {
+	dump_block_marker = flag;
 }
 
 /* -------------- some extended helper functions ----------------- */
@@ -816,7 +822,9 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
 	case iro_Block:
-		fprintf(F, "%s%s", is_Block_dead(n) ? "Dead " : "", get_irn_opname(n));
+		fprintf(F, "%s%s%s",
+			is_Block_dead(n) ? "Dead " : "", get_irn_opname(n),
+			dump_block_marker ? (get_Block_mark(n) ? "*" : "") : "");
 		break;
 	case iro_Conv:
 		if (get_Conv_strict(n))
