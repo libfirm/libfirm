@@ -159,15 +159,14 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
 	fprintf(F, "  Private Attributes:\n");
 
-	if (get_irn_opcode(n) == iro_Proj)
+	if (is_Proj(n))
 		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
 
 #ifdef INTERPROCEDURAL_VIEW
-	if ((get_irp_ip_view_state() != ip_view_no)
-		&& (get_irn_opcode(n) == iro_Filter || get_irn_opcode(n) == iro_Block)) {
+	if ((get_irp_ip_view_state() != ip_view_no) && (is_Filter(n) || is_Block(n))) {
 		fprintf(F, "  inter arity: %d\n", get_irn_inter_arity(n));
 		fprintf(F, "  inter pred nodes: \n");
-		for ( i = 0; i < get_irn_inter_arity(n); ++i) {
+		for (i = 0; i < get_irn_inter_arity(n); ++i) {
 			fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
 			dump_node_opcode(F, get_irn_inter_n(n, i));
 			fprintf(F, " %ld\n", get_irn_node_nr(get_irn_inter_n(n, i)));
@@ -202,8 +201,11 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
+		if (has_Block_label(n))
+			fprintf(F, "  Label: %lu\n", get_Block_label(n));
 		ir_fprintf(F, "  macro Block: %+F\n", get_Block_MacroBlock(n));
 		fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
+		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
 		if (get_irg_dom_state(get_irn_irg(n)) != dom_none) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
 			fprintf(F, "  tree pre num %d\n", get_Block_dom_tree_pre_num(n));
@@ -224,8 +226,6 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
 			fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
 #endif
-    if (has_Block_label(n))
-      fprintf(F, "    Label: %lu\n", get_Block_label(n));
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */
