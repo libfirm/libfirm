@@ -554,6 +554,12 @@ _is_Psi(const ir_node *node) {
 }
 
 static INLINE int
+_is_Id(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Id);
+}
+
+static INLINE int
 _is_Tuple(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Tuple);
@@ -622,6 +628,12 @@ static INLINE int
 _is_Call(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Call);
+}
+
+static INLINE int
+_is_CallBegin(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_CallBegin);
 }
 
 static INLINE int
@@ -712,9 +724,21 @@ _is_Alloc(const ir_node *node) {
 }
 
 static INLINE int
+_is_Free(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Free);
+}
+
+static INLINE int
 _is_Jmp(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Jmp);
+}
+
+static INLINE int
+_is_IJmp(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_IJmp);
 }
 
 static INLINE int
@@ -1019,6 +1043,7 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 #define is_Unknown(node)                      _is_Unknown(node)
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)
+#define is_CallBegin(node)                    _is_CallBegin(node)
 #define is_Sel(node)                          _is_Sel(node)
 #define is_Mul(node)                          _is_Mul(node)
 #define is_Mulh(node)                         _is_Mulh(node)
@@ -1033,7 +1058,9 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 #define is_CopyB(node)                        _is_CopyB(node)
 #define is_Cmp(node)                          _is_Cmp(node)
 #define is_Alloc(node)                        _is_Alloc(node)
+#define is_Free(node)                         _is_Free(node)
 #define is_Jmp(node)                          _is_Jmp(node)
+#define is_IJmp(node)                         _is_IJmp(node)
 #define is_Raise(node)                        _is_Raise(node)
 #define is_ASM(node)                          _is_ASM(node)
 #define is_Anchor(node)                       _is_Anchor(node)
@@ -1058,6 +1085,7 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 #define is_Shrs(node)                         _is_Shrs(node)
 #define is_Rot(node)                          _is_Rot(node)
 #define is_Psi(node)                          _is_Psi(node)
+#define is_Id(node)                           _is_Id(node)
 #define is_Tuple(node)                        _is_Tuple(node)
 #define is_Bound(node)                        _is_Bound(node)
 #define is_no_Block(node)                     _is_no_Block(node)

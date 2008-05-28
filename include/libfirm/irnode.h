@@ -1272,6 +1272,8 @@ int      is_Shrs(const ir_node *node);
 int      is_Rot(const ir_node *node);
 /** Returns true if node is a Psi node. */
 int      is_Psi(const ir_node *node);
+/** Returns true if node is an Id node. */
+int      is_Id(const ir_node *node);
 /** Returns true if node is a Tuple node. */
 int      is_Tuple(const ir_node *node);
 /** Returns true if node is a Bound node. */
@@ -1286,6 +1288,8 @@ int      is_Unknown(const ir_node *node);
 int      is_Return(const ir_node *node);
 /** Returns true if node is a Call node. */
 int      is_Call(const ir_node *node);
+/** Returns true if node is a CallBegin node. */
+int      is_CallBegin(const ir_node *node);
 /** Returns true if node is a Sel node. */
 int      is_Sel(const ir_node *node);
 /** Returns true if node is a Mul node. */
@@ -1316,8 +1320,12 @@ int      is_CopyB(const ir_node *node);
 int      is_Cmp(const ir_node *node);
 /** Returns true if node is an Alloc node. */
 int      is_Alloc(const ir_node *node);
+/** Returns true if node is a Free node. */
+int      is_Free(const ir_node *node);
 /** Returns true if a node is a Jmp node. */
 int      is_Jmp(const ir_node *node);
+/** Returns true if a node is a IJmp node. */
+int      is_IJmp(const ir_node *node);
 /** Returns true if a node is a Raise node. */
 int      is_Raise(const ir_node *node);
 /** Returns true if a node is an ASM node. */
@@ -1326,6 +1334,7 @@ int      is_ASM(const ir_node *node);
 int      is_Proj(const ir_node *node);
 /** Returns true if node is a Filter node. */
 int      is_Filter(const ir_node *node);
+
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
 int is_cfop(const ir_node *node);
