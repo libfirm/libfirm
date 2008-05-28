@@ -32,6 +32,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "irgmod.h"
 #include "error.h"
 
 #include "beirg_t.h"
