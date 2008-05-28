@@ -37,6 +37,7 @@
 #include "beirg_t.h"
 #include "belive_t.h"
 #include "bearch_t.h"
+#include "benode_t.h"
 #include "besched_t.h"
 #include "bemodule.h"
 
@@ -213,11 +214,81 @@ static void process_block(ir_node *block, void *data)
 	}
 }
 
+/**
+ * Walk through the block schedule and skip all barrier nodes.
+ */
+static void skip_barrier(ir_node *ret_blk) {
+	ir_node *irn;
+
+	sched_foreach_reverse(ret_blk, irn) {
+		int i;
+
+		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+			ir_node *proj = get_irn_n(irn, i);
+
+			if (is_Proj(proj)) {
+				ir_node *barrier = get_Proj_pred(proj);
+
+				if (be_is_Barrier(barrier)) {
+					int pn        = (int)get_Proj_proj(proj);
+					ir_node *pred = get_irn_n(barrier, pn);
+
+					set_irn_n(irn, i, pred);
+					if (sched_is_scheduled(barrier))
+						sched_remove(barrier);
+				}
+			}
+		}
+		for (i = get_irn_deps(irn) - 1; i >= 0; --i) {
+			ir_node *proj = get_irn_dep(irn, i);
+
+			if (is_Proj(proj)) {
+				ir_node *barrier = get_Proj_pred(proj);
+
+				if (be_is_Barrier(barrier)) {
+					int pn        = (int)get_Proj_proj(proj);
+					ir_node *pred = get_irn_n(barrier, pn);
+
+					set_irn_dep(irn, i, pred);
+					if (sched_is_scheduled(barrier))
+						sched_remove(barrier);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * Kill the Barrier nodes for better peephole optimization.
+ */
+static void	kill_barriers(ir_graph *irg) {
+	ir_node *end_blk = get_irg_end_block(irg);
+	ir_node *start_blk;
+	int i;
+
+	/* skip the barrier on all return blocks */
+	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
+		ir_node *be_ret = get_Block_cfgpred(end_blk, i);
+		ir_node *ret_blk = get_nodes_block(be_ret);
+
+		skip_barrier(ret_blk);
+	}
+
+	/* skip the barrier on the start block */
+	start_blk = get_irg_start_block(irg);
+	skip_barrier(start_blk);
+}
+
+
 void be_peephole_opt(be_irg_t *birg)
 {
 	ir_graph   *irg = be_get_birg_irg(birg);
 	unsigned n_classes;
 	unsigned i;
+
+	/* barrier nodes are used for register allocations. They hinders
+	 * peephole optimizations, so remove them here. */
+	kill_barriers(irg);
 
 	/* we sometimes find BadE nodes in float apps like optest_float.c or
 	 * kahansum.c for example... */
