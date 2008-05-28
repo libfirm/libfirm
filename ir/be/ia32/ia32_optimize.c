@@ -548,9 +548,21 @@ static const arch_register_t *get_free_gp_reg(void)
 	return NULL;
 }
 
+/**
+ * Creates a Pop instruction before the given schedule point.
+ *
+ * @param dbgi        debug info
+ * @param irg         the graph
+ * @param block       the block
+ * @param stack       the previous stack value
+ * @param schedpoint  the new node is added before this node
+ * @param reg         the register to pop
+ *
+ * @return the new stack value
+ */
 static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
                            ir_node *stack, ir_node *schedpoint,
-                           const arch_register_t *free_reg)
+                           const arch_register_t *reg)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
 	ir_node *pop;
@@ -563,7 +575,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
 	arch_set_irn_register(arch_env, stack, esp);
 	val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
-	arch_set_irn_register(arch_env, val, free_reg);
+	arch_set_irn_register(arch_env, val, reg);
 
 	sched_add_before(schedpoint, pop);
 
@@ -574,6 +586,43 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	return stack;
 }
 
+/**
+ * Creates a Push instruction before the given schedule point.
+ *
+ * @param dbgi        debug info
+ * @param irg         the graph
+ * @param block       the block
+ * @param stack       the previous stack value
+ * @param schedpoint  the new node is added before this node
+ * @param reg         the register to pop
+ *
+ * @return the new stack value
+ */
+static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
+                            ir_node *stack, ir_node *schedpoint,
+                            const arch_register_t *reg)
+{
+	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	ir_node *noreg, *nomem, *push, *val;
+
+	val  = new_rd_ia32_ProduceVal(NULL, irg, block);
+	arch_set_irn_register(arch_env, val, reg);
+	sched_add_before(schedpoint, val);
+
+	noreg = ia32_new_NoReg_gp(cg);
+	nomem = get_irg_no_mem(irg);
+	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, nomem, val, stack);
+	sched_add_before(schedpoint, push);
+
+	stack = new_r_Proj(irg, block, push, mode_Iu, pn_ia32_Push_stack);
+	arch_set_irn_register(arch_env, stack, esp);
+
+	return stack;
+}
+
+/**
+ * Optimize an IncSp by replacing it with push/pop
+ */
 static void peephole_be_IncSP(ir_node *node)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
@@ -604,7 +653,7 @@ static void peephole_be_IncSP(ir_node *node)
 	if (offset < 0) {
 		/* we need a free register for pop */
 		reg = get_free_gp_reg();
-		if(reg == NULL)
+		if (reg == NULL)
 			return;
 
 		dbgi  = get_irn_dbg_info(node);
@@ -617,8 +666,16 @@ static void peephole_be_IncSP(ir_node *node)
 			stack = create_pop(dbgi, irg, block, stack, node, reg);
 		}
 	} else {
-		/* NIY: create pushs */
-		return;
+		dbgi  = get_irn_dbg_info(node);
+		block = get_nodes_block(node);
+		stack = be_get_IncSP_pred(node);
+		reg   = &ia32_gp_regs[REG_EAX];
+
+		stack = create_push(dbgi, irg, block, stack, node, reg);
+
+		if (offset == +8) {
+			stack = create_push(dbgi, irg, block, stack, node, reg);
+		}
 	}
 
 	be_peephole_before_exchange(node, stack);
