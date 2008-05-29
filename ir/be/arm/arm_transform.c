@@ -49,6 +49,7 @@
 #include "arm_nodes_attr.h"
 #include "archop.h"
 #include "arm_transform.h"
+#include "arm_optimize.h"
 #include "arm_new_nodes.h"
 #include "arm_map_regs.h"
 
@@ -77,62 +78,10 @@ static INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
-typedef struct vals_ {
-	int ops;
-	unsigned char values[4];
-	unsigned char shifts[4];
-} vals;
-
-/** Execute ROL. */
-static unsigned do_rol(unsigned v, unsigned rol) {
-	return (v << rol) | (v >> (32 - rol));
-}
-
-/**
- * construct 8bit values and rot amounts for a value
- */
-static void gen_vals_from_word(unsigned int value, vals *result)
-{
-	int initial = 0;
-
-	memset(result, 0, sizeof(*result));
-
-	/* special case: we prefer shift amount 0 */
-	if (value < 0x100) {
-		result->values[0] = value;
-		result->ops       = 1;
-		return;
-	}
-
-	while (value != 0) {
-		if (value & 0xFF) {
-			unsigned v = do_rol(value, 8) & 0xFFFFFF;
-			int shf = 0;
-			for (;;) {
-				if ((v & 3) != 0)
-					break;
-				shf += 2;
-				v >>= 2;
-			}
-			v  &= 0xFF;
-			shf = (initial + shf - 8) & 0x1F;
-			result->values[result->ops] = v;
-			result->shifts[result->ops] = shf;
-			++result->ops;
-
-			value ^= do_rol(v, shf) >> initial;
-		}
-		else {
-			value >>= 8;
-			initial += 8;
-		}
-	}
-}
-
 /**
  * Creates a arm_Const node.
  */
-static ir_node *create_const_node(dbg_info *dbg, ir_node *block, long value) {
+static ir_node *create_mov_node(dbg_info *dbg, ir_node *block, long value) {
 	ir_mode *mode  = mode_Iu;
 	ir_graph *irg  = current_ir_graph;
 	ir_node *res;
@@ -148,7 +97,7 @@ static ir_node *create_const_node(dbg_info *dbg, ir_node *block, long value) {
 /**
  * Creates a arm_Const_Neg node.
  */
-static ir_node *create_const_neg_node(dbg_info *dbg, ir_node *block, long value) {
+static ir_node *create_mvn_node(dbg_info *dbg, ir_node *block, long value) {
 	ir_mode *mode = mode_Iu;
 	ir_graph *irg = current_ir_graph;
 	ir_node *res;
@@ -164,37 +113,20 @@ static ir_node *create_const_neg_node(dbg_info *dbg, ir_node *block, long value)
 #define NEW_BINOP_NODE(opname, env, op1, op2) new_rd_arm_##opname(env->dbg, current_ir_graph, env->block, op1, op2, env->mode)
 
 /**
- * Encodes an immediate with shifter operand
- */
-static unsigned int arm_encode_imm_w_shift(unsigned int shift, unsigned int immediate) {
-	return immediate | ((shift>>1)<<8);
-}
-
-/**
- * Decode an immediate with shifter operand
- */
-unsigned int arm_decode_imm_w_shift(long imm_value) {
-	unsigned l = (unsigned)imm_value;
-	unsigned rol = (l & ~0xFF) >> 7;
-
-	return do_rol(l & 0xFF, rol);
-}
-
-/**
  * Creates a possible DAG for an constant.
  */
 static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned int value) {
 	ir_node *result;
-	vals v, vn;
+	arm_vals v, vn;
 	int cnt;
 	ir_mode *mode = mode_Iu;
 
-	gen_vals_from_word(value, &v);
-	gen_vals_from_word(~value, &vn);
+	arm_gen_vals_from_word(value, &v);
+	arm_gen_vals_from_word(~value, &vn);
 
 	if (vn.ops < v.ops) {
 		/* remove bits */
-		result = create_const_neg_node(dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
+		result = create_mvn_node(dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
 			long value = arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]);
@@ -204,7 +136,7 @@ static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned
 	}
 	else {
 		/* add bits */
-		result = create_const_node(dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
+		result = create_mov_node(dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
 			long value = arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]);
@@ -1197,44 +1129,6 @@ static ir_node *gen_be_FrameAddr(ir_node *node) {
 	return new_rd_arm_Add(dbg, current_ir_graph, block, new_op, cnst, mode, ARM_SHF_NONE, 0);
 }
 
-#if 0
-/**
- * Transforms a FrameLoad into an ARM Load.
- */
-static ir_node *gen_FrameLoad(ir_node *irn) {
-	ir_node   *new_op = NULL;
-	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node   *mem    = get_irn_n(irn, 0);
-	ir_node   *ptr    = get_irn_n(irn, 1);
-	ir_entity *ent    = be_get_frame_entity(irn);
-	ir_mode   *mode   = get_type_mode(get_entity_type(ent));
-
-	if (mode_is_float(mode)) {
-		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfld(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
-		}
-	}
-	else {
-		new_op = new_rd_ia32_Load(env->dbg, current_ir_graph, env->block, ptr, noreg, mem, mode_T);
-	}
-
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-
-	set_ia32_am_support(new_op, ia32_am_Source);
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, mode);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
-
-	return new_op;
-}
-#endif
-
 /**
  * Transform a be_AddSP into an arm_AddSP. Eat up const sizes.
  */
@@ -1249,8 +1143,8 @@ static ir_node *gen_be_AddSP(ir_node *node) {
 	ir_node  *nomem  = new_NoMem();
 	ir_node  *new_op;
 
-	/* ARM stack grows in reverse direction, make a SubSP */
-	new_op = new_rd_arm_SubSP(dbgi, irg, block, new_sp, new_sz, nomem);
+	/* ARM stack grows in reverse direction, make a SubSPandCopy */
+	new_op = new_rd_arm_SubSPandCopy(dbgi, irg, block, new_sp, new_sz, nomem);
 
 	return new_op;
 }
@@ -1409,14 +1303,14 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 
 	if (proj == pn_be_AddSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
-		                           pn_arm_SubSP_stack);
+		                           pn_arm_SubSPandCopy_stack);
 		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if(proj == pn_be_AddSP_res) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
-		                   pn_arm_SubSP_addr);
+		                   pn_arm_SubSPandCopy_addr);
 	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSP_M);
+		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSPandCopy_M);
 	}
 
 	assert(0);

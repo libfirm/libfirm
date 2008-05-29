@@ -39,6 +39,7 @@
 #include "irgopt.h"
 #include "iroptimize.h"
 #include "lowering.h"
+#include "error.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -62,6 +63,7 @@
 #include "arm_new_nodes.h"           /* arm nodes interface */
 #include "gen_arm_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
 #include "arm_transform.h"
+#include "arm_optimize.h"
 #include "arm_emitter.h"
 #include "arm_map_regs.h"
 
@@ -218,18 +220,14 @@ static arch_irn_flags_t arm_get_flags(const ir_node *irn)
 	return flags;
 }
 
-static ir_entity *arm_get_frame_entity(const ir_node *irn)
-{
-	(void) irn;
-	/* TODO: return the entity assigned to the frame */
+static ir_entity *arm_get_frame_entity(const ir_node *irn) {
+	/* we do NOT transform be_Spill or be_Reload nodes, so we never
+	   have frame access using ARM nodes. */
 	return NULL;
 }
 
-static void arm_set_frame_entity(ir_node *irn, ir_entity *ent)
-{
-	(void) irn;
-	(void) ent;
-	/* TODO: set the entity assigned to the frame */
+static void arm_set_frame_entity(ir_node *irn, ir_entity *ent) {
+	panic("arm_set_frame_entity() called. This should not happen.");
 }
 
 /**
@@ -306,10 +304,10 @@ static void arm_prepare_graph(void *self) {
  */
 static void arm_finish_irg(void *self)
 {
-	(void) self;
-	/* TODO: - fix offsets for nodes accessing stack
-			 - ...
-	*/
+	arm_code_gen_t *cg = self;
+
+	/* do peephole optimizations and fix stack offsets */
+	arm_peephole_optimization(cg);
 }
 
 

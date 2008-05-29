@@ -205,11 +205,6 @@ void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
  */
 arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
 
-/**
- * Decode an immediate with shifter operand
- */
-unsigned int arm_decode_imm_w_shift(long imm_value);
-
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 
