@@ -52,6 +52,7 @@
 #include "../be_dbgout.h"
 
 #include "arm_emitter.h"
+#include "arm_optimize.h"
 #include "gen_arm_emitter.h"
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
@@ -179,8 +180,6 @@ void arm_emit_offset(const ir_node *node) {
 	if (opc == beo_Reload || opc == beo_Spill) {
 		ir_entity *ent = be_get_frame_entity(node);
 		offset = get_entity_offset(ent);
-	} else if (opc == beo_IncSP) {
-		offset = - be_get_IncSP_offset(node);
 	} else {
 		assert(!"unimplemented arm_emit_offset for this node type");
 		panic("unimplemented arm_emit_offset for this node type");
@@ -714,19 +713,22 @@ static void emit_be_Call(const ir_node *irn) {
 
 /** Emit an IncSP node */
 static void emit_be_IncSP(const ir_node *irn) {
-	int offs = be_get_IncSP_offset(irn);
+	int offs = -be_get_IncSP_offset(irn);
 
 	if (offs != 0) {
-		be_emit_cstring("\tadd ");
+		if (offs < 0) {
+			be_emit_cstring("\tsub ");
+			offs = -offs;
+		} else {
+			be_emit_cstring("\tadd ");
+		}
 		arm_emit_dest_register(irn, 0);
 		be_emit_cstring(", ");
 		arm_emit_source_register(irn, 0);
-		be_emit_cstring(", #");
-		arm_emit_offset(irn);
+		be_emit_irprintf(", #%d", offs);
 	} else {
-		be_emit_cstring("\t/* omitted IncSP(");
-		arm_emit_offset(irn);
-		be_emit_cstring(") */");
+		/* omitted IncSP(0) */
+		return;
 	}
 	be_emit_finish_line_gas(irn);
 }
@@ -735,11 +737,7 @@ static void emit_be_Copy(const ir_node *irn) {
 	ir_mode *mode = get_irn_mode(irn);
 
 	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
-		be_emit_cstring("\t/* omitted Copy: ");
-		arm_emit_source_register(irn, 0);
-		be_emit_cstring(" -> ");
-		arm_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+		/* omitted Copy */
 		return;
 	}
 
