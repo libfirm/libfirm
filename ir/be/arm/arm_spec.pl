@@ -106,33 +106,33 @@ $mode_gp      = "mode_Iu";
 $mode_fpa     = "mode_E";
 
 # register types:
-#   0 - no special type
-#   1 - caller save (register must be saved by the caller of a function)
-#   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not assign this register)
-#   8 - emitter can choose an arbitrary register of this class
-#  16 - the register is a virtual one
-#  32 - register represents a state
+$normal      =  0; # no special type
+$caller_save =  1; # caller save (register must be saved by the caller of a function)
+$callee_save =  2; # callee save (register must be saved by the called function)
+$ignore      =  4; # ignore (do not assign this register)
+$arbitrary   =  8; # emitter can choose an arbitrary register of this class
+$virtual     = 16; # the register is a virtual one
+$state       = 32; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ "name" => "r0", "type" => 1 },
-		{ "name" => "r1", "type" => 1 },
-		{ "name" => "r2", "type" => 1 },
-		{ "name" => "r3", "type" => 1 },
-		{ "name" => "r4", "type" => 2 },
-		{ "name" => "r5", "type" => 2 },
-		{ "name" => "r6", "type" => 2 },
-		{ "name" => "r7", "type" => 2 },
-		{ "name" => "r8", "type" => 2 },
-		{ "name" => "r9", "type" => 2 },
-		{ "name" => "r10", "type" => 2 },
-		{ "name" => "r11", "type" => 2 },
-		{ "name" => "r12", "type" => 4 | 2 }, # reserved for linker
-		{ "name" => "sp", "type" => 4 | 2 }, # this is our stack pointer
-		{ "name" => "lr", "type" => 2 | 1 }, # this is our return address
-		{ "name" => "pc", "type" => 4 | 2 }, # this is our program counter
-		{ name => "gp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
+		{ "name" => "r0", "type"  => $caller_save },
+		{ "name" => "r1", "type"  => $caller_save },
+		{ "name" => "r2", "type"  => $caller_save },
+		{ "name" => "r3", "type"  => $caller_save },
+		{ "name" => "r4", "type"  => $callee_save },
+		{ "name" => "r5", "type"  => $callee_save },
+		{ "name" => "r6", "type"  => $callee_save },
+		{ "name" => "r7", "type"  => $callee_save },
+		{ "name" => "r8", "type"  => $callee_save },
+		{ "name" => "r9", "type"  => $callee_save },
+		{ "name" => "r10", "type" => $callee_save },
+		{ "name" => "r11", "type" => $callee_save },
+		{ "name" => "r12", "type" => $ignore | $callee_save }, # reserved for linker
+		{ "name" => "sp", "type"  => $ignore | $callee_save }, # this is our stack pointer
+		{ "name" => "lr", "type"  => $callee_save | $caller_save }, # this is our return address
+		{ "name" => "pc", "type"  => $ignore | $callee_save }, # this is our program counter
+		{ name => "gp_UKNWN", type => $ignore | $arbitrary | $virtual },  # we need a dummy register for Unknown nodes
 		{ "mode" => $mode_gp }
 	],
 	fpa  => [
@@ -1022,9 +1022,9 @@ AddSP => {
 	outs      => [ "stack:I|S", "M" ],
 },
 
-SubSP => {
+SubSPandCopy => {
 #irn_flags => "I",
-	comment   => "construct Sub from stack pointer",
+	comment   => "construct Sub from stack pointer and copy to Register",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	emit      => ". sub %D0, %S0, %S1\n".
