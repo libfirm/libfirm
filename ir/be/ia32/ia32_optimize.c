@@ -61,8 +61,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static ia32_code_gen_t  *cg;
 
-static void peephole_IncSP_IncSP(ir_node *node);
-
 #if 0
 static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
 {
@@ -95,7 +93,7 @@ static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
 	if(!be_is_IncSP(incsp))
 		return;
 
-	peephole_IncSP_IncSP(incsp);
+	be_peephole_IncSP_IncSP(incsp);
 
 	/* must be in the same block */
 	if(get_nodes_block(incsp) != get_nodes_block(node))
