@@ -106,77 +106,6 @@ unsigned int arm_decode_imm_w_shift(long imm_value) {
 }
 
 /**
- * Creates a Mov node.
- */
-static ir_node *create_mov_node(ir_node *sched_point, dbg_info *dbg, ir_node *block, long value) {
-	ir_graph *irg = current_ir_graph;
-	ir_node  *mov;
-
-	mov = new_rd_arm_Mov_i(dbg, irg, block, mode_Iu, value);
-	arch_set_irn_register(arch_env, mov, &arm_gp_regs[REG_R12]);
-	sched_add_before(sched_point, mov);
-	return mov;
-}
-
-/**
- * Creates a Mvn node.
- */
-static ir_node *create_mvn_node(ir_node *sched_point, dbg_info *dbg, ir_node *block, long value) {
-	ir_graph *irg = current_ir_graph;
-	ir_node  *mvn;
-
-	mvn = new_rd_arm_Mvn_i(dbg, irg, block, mode_Iu, value);
-	arch_set_irn_register(arch_env, mvn, &arm_gp_regs[REG_R12]);
-	sched_add_before(sched_point, mvn);
-	return mvn;
-}
-
-/**
- * Creates a possible DAG for an constant and schedule it before
- * the node sched_point.
- * The Dag deliveres it's result in register R12.
- */
-static ir_node *create_const_graph_value(ir_node *sched_point, unsigned int value) {
-	dbg_info *dbg;
-	ir_node  *block, *result;
-	arm_vals v, vn;
-	int      cnt;
-
-	arm_gen_vals_from_word(value, &v);
-	arm_gen_vals_from_word(~value, &vn);
-
-	dbg   = get_irn_dbg_info(sched_point);
-	block = get_nodes_block(sched_point);
-
-	if (vn.ops < v.ops) {
-		/* remove bits */
-		result = create_mvn_node(sched_point, dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
-
-		for (cnt = 1; cnt < vn.ops; ++cnt) {
-			long value = arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]);
-			ir_node *bic_i_node = new_rd_arm_Bic_i(dbg, current_ir_graph, block, result, mode_Iu, value);
-			arch_set_irn_register(arch_env, bic_i_node, &arm_gp_regs[REG_R12]);
-			sched_add_before(sched_point, bic_i_node);
-			result = bic_i_node;
-		}
-	}
-	else {
-		/* add bits */
-		result = create_mov_node(sched_point,  dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
-
-		for (cnt = 1; cnt < v.ops; ++cnt) {
-			long value = arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]);
-			ir_node *orr_i_node = new_rd_arm_Or_i(dbg, current_ir_graph, block, result, mode_Iu, value);
-			arch_set_irn_register(arch_env, orr_i_node, &arm_gp_regs[REG_R12]);
-			sched_add_before(sched_point, orr_i_node);
-			result = orr_i_node;
-		}
-	}
-	return result;
-}
-
-
-/**
  * Returns non.zero if the given offset can be directly encoded into an ARM instruction.
  */
 static int allowed_arm_immediate(int offset, arm_vals *result) {
@@ -205,13 +134,13 @@ static void peephole_be_IncSP(ir_node *node) {
 	if (allowed_arm_immediate(offset, &v))
 		return;
 
-	be_set_IncSP_offset(node, (int)arm_encode_imm_w_shift(v.shifts[0], v.values[0]) * sign);
+	be_set_IncSP_offset(node, (int)arm_rol(v.values[0], v.shifts[0]) * sign);
 
 	irg   = current_ir_graph;
 	block = get_nodes_block(node);
 	align = be_get_IncSP_align(node);
 	for (cnt = 1; cnt < v.ops; ++cnt) {
-		int value = (int)arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]);
+		int value = (int)arm_rol(v.values[cnt], v.shifts[cnt]);
 		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], irg, block, node, value * sign, align);
 		sched_add_after(node, next);
 		node = next;

@@ -725,7 +725,7 @@ static void emit_be_IncSP(const ir_node *irn) {
 		arm_emit_dest_register(irn, 0);
 		be_emit_cstring(", ");
 		arm_emit_source_register(irn, 0);
-		be_emit_irprintf(", #%d", offs);
+		be_emit_irprintf(", #%x", offs);
 	} else {
 		/* omitted IncSP(0) */
 		return;
