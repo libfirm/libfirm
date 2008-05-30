@@ -932,13 +932,14 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 
 	/* now write values sorted */
 	for (k = 0; k < size; ) {
-		int space = 0, skip = 0;
+		int space     = 0;
+		int elem_size = 1;
 		if (vals[k].kind == NORMAL) {
 			if(vals[k].v.value != NULL) {
 				dump_atomic_init(env, vals[k].v.value);
-				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
+				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
 	 		} else {
-	 			space = 1;
+	 			elem_size = 0;
 	 		}
 		} else if(vals[k].kind == TARVAL) {
 			tarval *tv   = vals[k].v.tarval;
@@ -946,7 +947,7 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 
 			assert(tv != NULL);
 
-			skip = size - 1;
+			elem_size = size;
 			dump_size_type(size);
 			dump_arith_tarval(tv, size);
 			be_emit_char('\n');
@@ -957,13 +958,11 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 			be_emit_write_line();
 		}
 
-		++k;
+		k += elem_size;
 		while (k < size && vals[k].kind == NORMAL && vals[k].v.value == NULL) {
 			++space;
 			++k;
 		}
-		space -= skip;
-		assert(space >= 0);
 
 		/* a gap */
 		if (space > 0) {
