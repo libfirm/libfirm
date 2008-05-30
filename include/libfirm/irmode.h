@@ -65,8 +65,8 @@ typedef enum { /* irm is short for `ir mode' */
 	irm_T,                        /**< tuple */
 	irm_ANY,                      /**< undefined mode */
 	irm_BAD,                      /**< bad mode */
-	irm_max                       /**< maximum value for modecode */
-} modecode;
+	irm_max                       /**< maximum value for ir_modecode */
+} ir_modecode;
 
 /** These values represent the different mode classes of value representations.
  */
@@ -84,7 +84,7 @@ typedef enum {
 	                             Floating point computations can be performed. */
 	irms_reference,         /**< A mode to represent entities.
 	                             Restricted int computations can be performed */
-} mode_sort;
+} ir_mode_sort;
 
 /** These values represent the different arithmetic operations possible with a mode.
     Further arithmetics can be defined, e.g., for @@@ modes.
@@ -105,7 +105,7 @@ typedef enum {
 	                                 according to @@@ which standards??? Only legal for modes of
 	                                 sort float_number. */
 	irma_max
-} mode_arithmetic;
+} ir_mode_arithmetic;
 
 
 /* ********** Constructor for user defined modes **************** */
@@ -113,7 +113,7 @@ typedef enum {
  * Creates a new mode.
  *
  * @param name          the name of the mode to be created
- * @param sort          the mode_sort of the mode to be created
+ * @param sort          the ir_mode_sort of the mode to be created
  * @param bit_size      number of bits this mode allocate
  * @param sign          non-zero if this is a signed mode
  * @param arithmetic    arithmetic operations possible with a mode
@@ -133,13 +133,14 @@ typedef enum {
  *   It is allowed to construct the default modes. So, a call
  *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, mode_arithmetic arithmetic, unsigned int modulo_shift);
+ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign,
+                     ir_mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  * Creates a new vector mode.
  *
  * @param name          the name of the mode to be created
- * @param sort          the mode_sort of the mode to be created
+ * @param sort          the ir_mode_sort of the mode to be created
  * @param bit_size      number of bits for one element of this mode
  * @param num_of_elem   number of elements in this vector mode
  * @param sign          non-zero if this is a signed mode
@@ -155,8 +156,8 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign, m
  * @return
  *   The new mode or NULL on error.
  */
-ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
-                            mode_arithmetic arithmetic, unsigned int modulo_shift);
+ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
+                            ir_mode_arithmetic arithmetic, unsigned int modulo_shift);
 
 /**
  * Checks whether a pointer points to a mode.
@@ -171,7 +172,7 @@ int is_mode(void *thing);
 /* ********** Access methods to read mode information *********** */
 
 /** Returns the classification of the mode */
-modecode    get_mode_modecode(const ir_mode *mode);
+ir_modecode get_mode_modecode(const ir_mode *mode);
 
 /** Returns the ident* of the mode */
 ident      *get_mode_ident(const ir_mode *mode);
@@ -180,7 +181,7 @@ ident      *get_mode_ident(const ir_mode *mode);
 const char *get_mode_name(const ir_mode *mode);
 
 /** Returns a coarse classification of the mode. */
-mode_sort   get_mode_sort(const ir_mode *mode);
+ir_mode_sort get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
 unsigned get_mode_size_bits(const ir_mode *mode);
@@ -195,7 +196,7 @@ unsigned get_mode_size_bytes(const ir_mode *mode);
 int get_mode_sign(const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
-mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
+ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
 
 /** Get the modulo shift attribute.
  *
@@ -363,7 +364,7 @@ void set_modeP_code(ir_mode *p);
 void set_modeP_data(ir_mode *p);
 
 /**
-   Functions to check, whether a modecode is signed, float, int, character,
+   Functions to check, whether a ir_modecode is signed, float, int, character,
    reference, num, data, datab or dataM.
 
    For more exact definitions read the corresponding pages

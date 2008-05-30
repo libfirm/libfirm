@@ -70,9 +70,9 @@ struct ir_op {
  * and comparisons of values of a such described mode.
  *
  * ATTRIBUTES:
- *  -  modecode code:           An unambiguous int (enum) for the mode
+ *  -  ir_modecode code:        An unambiguous int (enum) for the mode
  *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
- *  -  mode_sort sort:          sort of mode specifying possible usage categories
+ *  -  ir_mode_sort sort:       sort of mode specifying possible usage categories
  *  -  int    size:             size of the mode in Bits.
  *  -  unsigned sign:1:         signedness of this mode
  *  -  ... more to come
@@ -85,15 +85,16 @@ struct ir_op {
  */
 struct ir_mode {
 	firm_kind         kind;       /**< distinguishes this node from others */
-	modecode          code;       /**< unambiguous identifier of a mode */
+	ir_modecode       code;       /**< unambiguous identifier of a mode */
 	ident             *name;      /**< Name ident of this mode */
 
 	/* ----------------------------------------------------------------------- */
 	/* On changing this struct you have to evaluate the mode_are_equal function!*/
-	mode_sort         sort;          /**< coarse classification of this mode:
+	ir_mode_sort      sort;          /**< coarse classification of this mode:
                                           int, float, reference ...
                                           (see irmode.h) */
-	mode_arithmetic   arithmetic;    /**< different arithmetic operations possible with a mode */
+	ir_mode_arithmetic
+	                  arithmetic;    /**< different arithmetic operations possible with a mode */
 	unsigned          size;          /**< size of the mode in Bits. */
 	unsigned          sign:1;        /**< signedness of this mode */
 	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */

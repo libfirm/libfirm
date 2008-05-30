@@ -401,7 +401,7 @@ void (set_irn_mode)(ir_node *node, ir_mode *mode) {
 	_set_irn_mode(node, mode);
 }
 
-modecode get_irn_modecode(const ir_node *node) {
+ir_modecode get_irn_modecode(const ir_node *node) {
 	assert(node);
 	return node->mode->code;
 }

@@ -264,8 +264,8 @@ static ir_mode *register_mode(const ir_mode *new_mode) {
 /*
  * Creates a new mode.
  */
-ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
-                     mode_arithmetic arithmetic, unsigned int modulo_shift)
+ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign,
+                     ir_mode_arithmetic arithmetic, unsigned int modulo_shift)
 {
 	ir_mode mode_tmpl;
 	ir_mode *mode = NULL;
@@ -306,8 +306,8 @@ ir_mode *new_ir_mode(const char *name, mode_sort sort, int bit_size, int sign,
 /*
  * Creates a new vector mode.
  */
-ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
-                            mode_arithmetic arithmetic, unsigned int modulo_shift)
+ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
+                            ir_mode_arithmetic arithmetic, unsigned int modulo_shift)
 {
 	ir_mode mode_tmpl;
 	ir_mode *mode = NULL;
@@ -357,7 +357,7 @@ ir_mode *new_ir_vector_mode(const char *name, mode_sort sort, int bit_size, unsi
 }
 
 /* Functions for the direct access to all attributes of an ir_mode */
-modecode (get_mode_modecode)(const ir_mode *mode) {
+ir_modecode (get_mode_modecode)(const ir_mode *mode) {
 	return _get_mode_modecode(mode);
 }
 
@@ -369,7 +369,7 @@ const char *get_mode_name(const ir_mode *mode) {
 	return get_id_str(mode->name);
 }
 
-mode_sort (get_mode_sort)(const ir_mode* mode) {
+ir_mode_sort (get_mode_sort)(const ir_mode* mode) {
 	return _get_mode_sort(mode);
 }
 
@@ -385,7 +385,7 @@ int (get_mode_sign)(const ir_mode *mode) {
 	return _get_mode_sign(mode);
 }
 
-mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode) {
+ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode) {
 	return get_mode_arithmetic(mode);
 }
 
@@ -412,7 +412,7 @@ void (set_mode_link)(ir_mode *mode, void *l) {
 
 tarval *get_mode_min(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->min;
@@ -420,7 +420,7 @@ tarval *get_mode_min(ir_mode *mode) {
 
 tarval *get_mode_max(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->max;
@@ -428,7 +428,7 @@ tarval *get_mode_max(ir_mode *mode) {
 
 tarval *get_mode_null(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 
 	return mode->null;
@@ -436,7 +436,7 @@ tarval *get_mode_null(ir_mode *mode) {
 
 tarval *get_mode_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 
 	return mode->one;
@@ -444,7 +444,7 @@ tarval *get_mode_one(ir_mode *mode) {
 
 tarval *get_mode_minus_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
@@ -452,14 +452,14 @@ tarval *get_mode_minus_one(ir_mode *mode) {
 
 tarval *get_mode_all_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 	return mode->all_one;
 }
 
 tarval *get_mode_infinite(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_plus_inf(mode);
@@ -467,7 +467,7 @@ tarval *get_mode_infinite(ir_mode *mode) {
 
 tarval *get_mode_NAN(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (modecode) num_modes);
+	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_nan(mode);

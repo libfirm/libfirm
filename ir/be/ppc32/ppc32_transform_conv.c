@@ -108,8 +108,8 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 	ir_mode *from_mode = get_irn_mode(get_irn_n(env->irn,0));
 	ir_mode *to_mode = env->mode;
-	modecode from_modecode=get_mode_modecode(from_mode);
-	modecode to_modecode=get_mode_modecode(to_mode);
+	ir_modecode from_modecode=get_mode_modecode(from_mode);
+	ir_modecode to_modecode=get_mode_modecode(to_mode);
 
 	switch(from_modecode){
 		case irm_F:
@@ -387,8 +387,8 @@ void ppc32_conv_walk(ir_node *node, void *env) {
 
 	if (code == iro_Conv)
 	{
-		modecode from_mode=get_mode_modecode(get_irn_mode(get_irn_n(node,0)));
-		modecode to_mode=get_mode_modecode(get_irn_mode(node));
+		ir_modecode from_mode=get_mode_modecode(get_irn_mode(get_irn_n(node,0)));
+		ir_modecode to_mode=get_mode_modecode(get_irn_mode(node));
 		cw_block_attr *attr;
 
 		if(from_mode == to_mode) return;
