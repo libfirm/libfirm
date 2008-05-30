@@ -662,6 +662,12 @@ void dump_all_anchors(int flag);
  */
 void dump_macroblock_edges(int flag);
 
+/** Dumps a marked blocks with a asterisk in the title.
+ *
+ * This option is off per default.
+ */
+void dump_block_marker_in_title(int flag);
+
 /** A node info dumper callback. */
 typedef void (dump_node_info_cb_t)(void *data, FILE *f, const ir_node *n);
 
