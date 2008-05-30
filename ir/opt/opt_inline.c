@@ -821,13 +821,14 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_node             *pre_call;
 	ir_node             *post_call, *post_bl;
 	ir_node             *in[pn_Start_max];
-	ir_node             *end, *end_bl;
+	ir_node             *end, *end_bl, *block;
 	ir_node             **res_pred;
 	ir_node             **cf_pred;
+	ir_node             **args_in;
 	ir_node             *ret, *phi;
-	int                 arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity;
+	int                 arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity, n_params;
 	enum exc_mode       exc_handling;
-	ir_type             *called_frame, *curr_frame;
+	ir_type             *called_frame, *curr_frame, *mtp, *ctp;
 	ir_entity           *ent;
 	ir_graph            *rem, *irg;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
@@ -837,37 +838,37 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	ent = get_irg_entity(called_graph);
 
-	/* Do not inline variadic functions. */
-	if (get_method_variadicity(get_entity_type(ent)) == variadicity_variadic) {
-		/* Arg, KR functions are marked as variadic one's, so check further */
-		ir_type *mtp     = get_entity_type(ent);
-		ir_type *ctp     = get_Call_type(call);
-		int     n_params = get_method_n_params(mtp);
-		int     i;
-
-		/* This is too strong, but probably ok. Function calls with a wrong number of
-		   parameters should not be inlined. */
-		if (n_params != get_method_n_params(ctp))
-			return 0;
-
-		/* check types: for K&R calls, this was not done by the compiler. Again, this is
-		   too strong, but ok for now. */
-		for (i = n_params - 1; i >= 0; --i) {
-			ir_type *param_tp = get_method_param_type(mtp, i);
-			ir_type *arg_tp   = get_method_param_type(ctp, i);
-
-			if (param_tp != arg_tp)
-				return 0;
-		}
-		DB((dbg, LEVEL_1, "Inlining allowed for variadic function %+F\n", called_graph));
-		/* types match, fine: when the frame is access, the inliner stops at can_inline() */
+	mtp = get_entity_type(ent);
+	ctp = get_Call_type(call);
+	if (get_method_n_params(mtp) > get_method_n_params(ctp)) {
+		/* this is a bad feature of C: without a prototype, we can can call a function with less
+		parameters than needed. Currently we don't support this, although it would be
+		to use Unknown than. */
+		return 0;
 	}
 
-	if (get_method_n_params(get_entity_type(ent)) > get_method_n_params(get_Call_type(call))) {
-		/* this is a bad feature of C: without a prototype, we can can call a function with less
-		   parameters than needed. Currently we don't support this, although it would be
-		   to use Unknown than. */
-		return 0;
+	/* Argh, compiling C has some bad consequences:
+	   the call type AND the method type might be different.
+	   It is implementation defendant what happens in that case.
+	   We support inlining, if the bitsize of the types matches AND
+	   the same arithmetic is used. */
+	n_params = get_method_n_params(mtp);
+	for (i = n_params - 1; i >= 0; --i) {
+		ir_type *param_tp = get_method_param_type(mtp, i);
+		ir_type *arg_tp   = get_method_param_type(ctp, i);
+
+		if (param_tp != arg_tp) {
+			ir_mode *pmode = get_type_mode(param_tp);
+			ir_mode *amode = get_type_mode(arg_tp);
+
+			if (pmode == NULL || amode == NULL)
+				return 0;
+			if (get_mode_size_bits(pmode) != get_mode_size_bits(amode))
+				return 0;
+			if (get_mode_arithmetic(pmode) != get_mode_arithmetic(amode))
+				return 0;
+			/* otherwise we can simply "reinterpret" the bits */
+		}
 	}
 
 	irg = get_irn_irg(call);
@@ -930,6 +931,21 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		else            {                exc_handling = exc_no_handler; } /* !Mproj && !Xproj   */
 	}
 
+	/* create the argument tuple */
+	NEW_ARR_A(ir_type *, args_in, n_params);
+
+	block = get_nodes_block(call);
+	for (i = n_params - 1; i >= 0; --i) {
+		ir_node *arg      = get_Call_param(call, i);
+		ir_type *param_tp = get_method_param_type(mtp, i);
+		ir_mode *mode     = get_type_mode(param_tp);
+
+		if (mode != get_irn_mode(arg)) {
+			arg = new_r_Conv(irg, block, arg, mode);
+		}
+		args_in[i] = arg;
+	}
+
 	/* --
 	   the procedure and later replaces the Start node of the called graph.
 	   Post_call is the old Call node and collects the results of the called
@@ -941,7 +957,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	in[pn_Start_M]                = get_Call_mem(call);
 	in[pn_Start_P_frame_base]     = get_irg_frame(irg);
 	in[pn_Start_P_tls]            = get_irg_tls(irg);
-	in[pn_Start_T_args]           = new_Tuple(get_Call_n_params(call), get_Call_param_arr(call));
+	in[pn_Start_T_args]           = new_Tuple(n_params, args_in);
 	/* in[pn_Start_P_value_arg_base] = ??? */
 	assert(pn_Start_P_value_arg_base == pn_Start_max - 1 && "pn_Start_P_value_arg_base not supported, fix");
 	pre_call = new_Tuple(pn_Start_max - 1, in);
@@ -956,7 +972,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* Visited flags in calling irg must be >= flag in called irg.
 	   Else walker and arity computation will not work. */
 	if (get_irg_visited(irg) <= get_irg_visited(called_graph))
-		set_irg_visited(irg, get_irg_visited(called_graph)+1);
+		set_irg_visited(irg, get_irg_visited(called_graph) + 1);
 	if (get_irg_block_visited(irg) < get_irg_block_visited(called_graph))
 		set_irg_block_visited(irg, get_irg_block_visited(called_graph));
 	/* Set pre_call as new Start node in link field of the start node of
