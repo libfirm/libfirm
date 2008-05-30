@@ -2173,11 +2173,13 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		1,     /* support inline assembly */
+		0,     /* no immediate floating point mode. */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
 		NULL,  /* will be set below */
+		NULL,
 	};
 
 	ia32_setup_cg_config();

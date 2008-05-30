@@ -1193,11 +1193,13 @@ static const backend_params *arm_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */
+		0,     /* no immediate floating point mode. */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* will be set below */
+		NULL   /* no immediate fp mode */
 	};
 
 	p.dep_param    = &ad;

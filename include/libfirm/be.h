@@ -36,25 +36,30 @@
  * propagated to the libFirm parameter set.
  */
 typedef struct backend_params {
-	/** if set, the backend cannot handle DWORD access */
+	/** If set, the backend cannot handle DWORD access. */
 	unsigned do_dw_lowering:1;
-	/** if set, the backend supports inline assembly */
+	/** If set, the backend supports inline assembly. */
 	unsigned support_inline_asm:1;
+	/** If set, the target architecture use an immediate floating point mode. */
+	unsigned has_imm_fp_mode:1;
 
 	/** Additional opcodes settings. */
 	const arch_ops_info *arch_op_settings;
 
-	/** Settings for architecture dependent optimizations */
+	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
 
-	/** the architecture specific intrinsic function creator */
+	/** The architecture specific intrinsic function creator. */
 	create_intrinsic_fkt *arch_create_intrinsic_fkt;
 
-	/** the context parameter for the create intrinsic function */
+	/** The context parameter for the create intrinsic function. */
 	void *create_intrinsic_ctx;
 
-	/** backend settings for if-conversion */
+	/** Backend settings for if-conversion. */
 	const ir_settings_if_conv_t *if_conv_info;
+
+	/** The immediate floating point mode. Temporaries are calculated using this mode. */
+	ir_mode *imm_fp_mode;
 } backend_params;
 
 /**

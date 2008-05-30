@@ -978,11 +978,13 @@ static const backend_params *mips_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */
+		0,     /* no immediate floating point mode. */
 		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* no if conversion settings */
+		NULL   /* no immediate fp mode */
 	};
 
 	return &p;
