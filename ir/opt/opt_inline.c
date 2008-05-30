@@ -863,8 +863,12 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		/* types match, fine: when the frame is access, the inliner stops at can_inline() */
 	}
 
-	assert(get_method_n_params(get_entity_type(ent)) ==
-	       get_method_n_params(get_Call_type(call)));
+	if (get_method_n_params(get_entity_type(ent)) > get_method_n_params(get_Call_type(call))) {
+		/* this is a bad feature of C: without a prototype, we can can call a function with less
+		   parameters than needed. Currently we don't support this, although it would be
+		   to use Unknown than. */
+		return 0;
+	}
 
 	irg = get_irn_irg(call);
 
