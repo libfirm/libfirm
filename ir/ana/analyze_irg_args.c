@@ -474,15 +474,15 @@ static void analyze_method_params_weight(ir_entity *ent) {
  * higher optimization with procedure cloning.
  *
  * The values are calculation on demand only.
+ *
+ * @param ent  the entity to analyze
+ * @param pos  the argument number
+ *
+ * @return the parameter weight or null_weight if pos is greater
+ * than the number of arguments.
  */
 unsigned get_method_param_weight(ir_entity *ent, int pos)
 {
-#ifndef NDEBUG
-	ir_type *mtp = get_entity_type(ent);
-	int     is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
-	assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
-#endif
-
 	if (ent->attr.mtd_attr.param_weight) {
 		if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))
 			return ent->attr.mtd_attr.param_weight[pos];
