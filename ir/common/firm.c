@@ -65,11 +65,12 @@
 #include "iredges_t.h"
 #include "tropt.h"
 #include "debugger.h"
+#include "be_t.h"
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void) {
 	static lc_opt_entry_t *grp = NULL;
-	if(!grp)
+	if (!grp)
 		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");
 	return grp;
 }
@@ -83,6 +84,9 @@ void init_firm(const firm_parameter_t *param)
 {
 	firm_parameter_t def_params;
 	unsigned int     size;
+
+	/* for historical reasons be_init must be run first */
+	firm_be_init();
 
 	memset(&def_params, 0, sizeof(def_params));
 

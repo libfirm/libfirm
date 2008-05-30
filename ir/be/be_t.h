@@ -91,14 +91,20 @@ struct be_main_env_t {
 };
 
 /**
-* Put the registers to be ignored in this IRG into a bitset.
-* @param birg The backend IRG data structure.
-* @param cls  The register class.
-* @param bs   The bitset (may be NULL).
-* @return The number of registers to be ignored.
-*/
+ * Put the registers to be ignored in this IRG into a bitset.
+ * @param birg The backend IRG data structure.
+ * @param cls  The register class.
+ * @param bs   The bitset (may be NULL).
+ * @return The number of registers to be ignored.
+ */
 unsigned be_put_ignore_regs(const be_irg_t *birg,
 		const arch_register_class_t *cls, bitset_t *bs);
+
+
+/**
+ * Initialize the backend. Must be run first in init_firm();
+ */
+void firm_be_init(void);
 
 extern int be_timing;
 

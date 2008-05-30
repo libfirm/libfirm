@@ -73,12 +73,12 @@ void be_opt_register(void);
 int be_parse_arg(const char *arg);
 
 /**
- * Initialize the Firm backend. Must be run BEFORE init_firm()!
+ * Return the backend configuration parameter.
  *
  * @return libFirm configuration parameters for the selected
  *         backend
  */
-const backend_params *be_init(void);
+const backend_params *be_get_backend_param(void);
 
 /**
  * Main interface to the frontend.
