@@ -233,12 +233,16 @@ static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt) {
 	}
 }
 
-/* Initialize the Firm backend. Must be run BEFORE init_firm()! */
-const backend_params *be_init(void)
+/* Initialize the Firm backend. Must be run first in init_firm()! */
+void firm_be_init(void)
 {
 	be_opt_register();
 	be_init_modules();
+}
 
+/* Returns the backend parameter */
+const backend_params *be_get_backend_param(void)
+{
 	if (isa_if->get_params)
 		return isa_if->get_params();
 	return &be_params;
