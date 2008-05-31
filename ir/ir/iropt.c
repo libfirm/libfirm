@@ -938,12 +938,12 @@ static ir_node *equivalent_node_Add(ir_node *n) {
 	ir_node *left, *right;
 	ir_mode *mode = get_irn_mode(n);
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
-		return n;
-
 	n = equivalent_node_neutral_zero(n);
 	if (n != oldn)
+		return n;
+
+	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
 	left  = get_Add_left(n);
