@@ -2523,8 +2523,9 @@ static ir_node *gen_normal_Store(ir_node *node)
 			new_node = new_rd_ia32_xStore(dbgi, irg, new_block, addr.base,
 			                              addr.index, addr.mem, new_val);
 		} else {
-			/* We can skip ALL Convs (and strict-Convs) before stores. */
-			while (is_Conv(val)) {
+			/* We can skip ALL float Convs (and strict-Convs) before stores. */
+			while (is_Conv(val) &&
+					mode_is_float(get_irn_mode(get_Conv_op(val)))) {
 				val = get_Conv_op(val);
 			}
 			new_val = be_transform_node(val);
