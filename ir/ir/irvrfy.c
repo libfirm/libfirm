@@ -1749,7 +1749,7 @@ static int verify_node_Alloc(ir_node *n, ir_graph *irg) {
 		!mode_is_signed(op2mode) &&
 		mymode == mode_T,
 		"Alloc node", 0,
-		show_binop_failure(n, "/* Alloc: BB x M x int_u --> M x X x ref */");
+		show_node_failure(n);
 	);
 	return 1;
 }
