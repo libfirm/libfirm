@@ -351,6 +351,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	init = skip_Id(init);
 
 	switch (get_irn_opcode(init)) {
+#if 0
 	case iro_Cast:
 		do_dump_atomic_init(env, get_Cast_op(init));
 		return;
@@ -358,6 +359,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	case iro_Conv:
 		do_dump_atomic_init(env, get_Conv_op(init));
 		return;
+#endif
 
 	case iro_Const:
 		tv = get_Const_tarval(init);
@@ -416,18 +418,27 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		return;
 
 		case iro_Add:
+			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+				panic("Constant must be int or pointer for '+' to work");
+			}
 			do_dump_atomic_init(env, get_Add_left(init));
 			be_emit_cstring(" + ");
 			do_dump_atomic_init(env, get_Add_right(init));
 			return;
 
 		case iro_Sub:
+			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+				panic("Constant must be int or pointer for '-' to work");
+			}
 			do_dump_atomic_init(env, get_Sub_left(init));
 			be_emit_cstring(" - ");
 			do_dump_atomic_init(env, get_Sub_right(init));
 			return;
 
 		case iro_Mul:
+			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+				panic("Constant must be int or pointer for '*' to work");
+			}
 			do_dump_atomic_init(env, get_Mul_left(init));
 			be_emit_cstring(" * ");
 			do_dump_atomic_init(env, get_Mul_right(init));
