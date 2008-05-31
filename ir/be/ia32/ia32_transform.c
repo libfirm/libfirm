@@ -2513,26 +2513,30 @@ static ir_node *gen_normal_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
-		/* convs (and strict-convs) before stores are unnecessary if the mode
-		   is the same */
-		while (is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
-			val = get_Conv_op(val);
-		}
-		new_val = be_transform_node(val);
 		if (ia32_cg_config.use_sse2) {
+			/* Convs (and strict-Convs) before stores are unnecessary if the mode
+			   is the same. */
+			while (is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
+				val = get_Conv_op(val);
+			}
+			new_val = be_transform_node(val);
 			new_node = new_rd_ia32_xStore(dbgi, irg, new_block, addr.base,
 			                              addr.index, addr.mem, new_val);
 		} else {
+			/* We can skip ALL Convs (and strict-Convs) before stores. */
+			while (is_Conv(val)) {
+				val = get_Conv_op(val);
+			}
+			new_val = be_transform_node(val);
 			new_node = new_rd_ia32_vfst(dbgi, irg, new_block, addr.base,
 			                            addr.index, addr.mem, new_val, mode);
 		}
 		store = new_node;
-	} else if (is_float_to_int32_conv(val)) {
+	} else if (!ia32_cg_config.use_sse2 && is_float_to_int32_conv(val)) {
 		val = get_Conv_op(val);
 
-		/* convs (and strict-convs) before stores are unnecessary if the mode
-		   is the same */
-		while(is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
+		/* We can skip ALL Convs (and strict-Convs) before stores. */
+		while (is_Conv(val)) {
 			val = get_Conv_op(val);
 		}
 		new_val  = be_transform_node(val);
