@@ -210,11 +210,15 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 	dbg_info *dbg  = get_irn_dbg_info(call);
 	(void) ctx;
 
+	if (mode_is_signed(get_irn_mode(op))) {
+		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode_Iu);
+	}
+
 	irn    = new_rd_Alloc(dbg, current_ir_graph, block, mem, op, firm_unknown_type, stack_alloc);
-	mem    = new_Proj(irn, mode_M, pn_Alloc_M);
-	no_exc = new_Proj(irn, mode_X, pn_Alloc_X_regular);
-	exc    = new_Proj(irn, mode_X, pn_Alloc_X_except);
-	irn    = new_Proj(irn, get_modeP_data(), pn_Alloc_res);
+	mem    = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_M, pn_Alloc_M);
+	no_exc = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_X, pn_Alloc_X_regular);
+	exc    = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_X, pn_Alloc_X_except);
+	irn    = new_rd_Proj(dbg, current_ir_graph, block, irn, get_modeP_data(), pn_Alloc_res);
 
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
 	replace_call(irn, call, mem, no_exc, exc);
