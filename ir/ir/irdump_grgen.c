@@ -390,7 +390,7 @@ static void dump_grgen_mode(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp, i
 
 static char *dump_grgen_mode_node(ir_mode *irn_mode, grgen_dumpinfo_t *dump_info, FILE *fp)
 {
-	modecode mode_code = get_mode_modecode(irn_mode);
+	ir_modecode mode_code = get_mode_modecode(irn_mode);
 	const char *mode_name =  get_mode_name(irn_mode);
 	char *mode_node_name;
 
