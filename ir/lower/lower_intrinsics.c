@@ -691,9 +691,7 @@ int i_mapper_strcmp(ir_node *call, void *ctx) {
 	ir_node   *irn     = NULL;
 	ir_node   *exc     = NULL;
 	ir_node   *reg     = NULL;
-	ir_node   *adr     = get_Call_ptr(call);
-	ir_entity *ent     = get_SymConst_entity(adr);
-	ir_type   *call_tp = get_entity_type(ent);
+	ir_type   *call_tp = get_Call_type(call);
 	ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 	ir_entity *ent_l, *ent_r;
 	ir_type   *char_tp;
