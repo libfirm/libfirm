@@ -1315,7 +1315,15 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 	for (i = 0; i < n_preds; ++i) {
 		first_val = get_Phi_pred(n, i);
 		if (   (first_val != n)                            /* not self pointer */
-#if 1
+#if 0
+		    /* BEWARE: when the if is changed to 1, Phi's will ignore it's Bad
+		     * predecessors. Then, Phi nodes in dead code might be removed, causing
+		     * nodes pointing to themself (Add's for instance).
+		     * This is really bad and causes endless recursions in several
+		     * code pathes, so we do NOT optimize such a code.
+		     * This is not that bad as it sounds, optimize_cf() removes bad control flow
+		     * (and bad Phi predecessors), so live code is optimized later.
+		     */
 		    && (! is_Bad(first_val))
 #endif
 		   ) {        /* value not dead */
@@ -1334,7 +1342,8 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 		ir_node *scnd_val = get_Phi_pred(n, i);
 		if (   (scnd_val != n)
 		    && (scnd_val != first_val)
-#if 1
+#if 0
+		    /* see above */
 		    && (! is_Bad(scnd_val))
 #endif
 			) {
