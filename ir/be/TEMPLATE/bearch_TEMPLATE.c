@@ -359,7 +359,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		&TEMPLATE_general_purpose_regs[REG_SP],  /* stack pointer register */
 		&TEMPLATE_general_purpose_regs[REG_BP],  /* base pointer register */
 		-1,                          /* stack direction */
-		1,                           /* stack alignment for calls */
+		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */

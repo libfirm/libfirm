@@ -924,7 +924,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
 
-	stack_alignment = env->arch_env->stack_alignment;
+	stack_alignment = 1 << env->arch_env->stack_alignment;
 	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
 	new_alloc       = be_new_AddSP(env->arch_env->sp, irg, block, curr_sp, size);
 	set_irn_dbg_info(new_alloc, dbg);
@@ -993,7 +993,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 		size = get_Free_size(free);
 	}
 
-	stack_alignment = env->arch_env->stack_alignment;
+	stack_alignment = 1 << env->arch_env->stack_alignment;
 	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
 
 	/* The stack pointer will be modified in an unknown manner.
@@ -2350,8 +2350,8 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 					/* patch IncSP to produce an aligned stack pointer */
 					ir_type *between_type = env->frame->between_type;
 					int      between_size = get_type_size_bytes(between_type);
-					int      alignment    = env->arch_env->stack_alignment;
-					int      delta        = (real_bias + ofs + between_size) % env->arch_env->stack_alignment;
+					int      alignment    = 1 << env->arch_env->stack_alignment;
+					int      delta        = (real_bias + ofs + between_size) & (alignment - 1);
 					assert(ofs >= 0);
 					if (delta > 0) {
 						be_set_IncSP_offset(irn, ofs + alignment - delta);

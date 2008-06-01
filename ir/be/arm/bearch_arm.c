@@ -746,7 +746,7 @@ static arm_isa_t arm_isa_template = {
 		&arm_gp_regs[REG_SP],  /* stack pointer */
 		&arm_gp_regs[REG_R11], /* base pointer */
 		-1,                    /* stack direction */
-		1,                     /* stack alignment for calls */
+		2,                     /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                  /* main environment */
 		7,                     /* spill costs */
 		5,                     /* reload costs */

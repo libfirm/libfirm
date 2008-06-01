@@ -1629,7 +1629,7 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
 		-1,                      /* stack direction */
-		16,                      /* stack alignment */
+		4,                       /* power of two stack alignment, 2^4 == 16 */
 		NULL,                    /* main environment */
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
@@ -2179,7 +2179,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
 		NULL,  /* will be set below */
-		NULL,
+		NULL   /* will be set below */
 	};
 
 	ia32_setup_cg_config();
@@ -2203,7 +2203,7 @@ static lc_opt_enum_int_var_t gas_var = {
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
-	LC_OPT_ENT_INT("stackalign", "set stack alignment for calls",
+	LC_OPT_ENT_INT("stackalign", "set power of two stack alignment for calls",
 	               &ia32_isa_template.arch_env.stack_alignment),
 	LC_OPT_LAST
 };
