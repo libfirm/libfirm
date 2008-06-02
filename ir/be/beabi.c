@@ -113,8 +113,11 @@ struct _be_abi_irg_t {
 
 static heights_t *ir_heights;
 
-/* Flag: if set, try to omit the frame pointer if called by the backend */
+/** Flag: if set, try to omit the frame pointer in all routines. */
 static int be_omit_fp = 1;
+
+/** Flag: if set, try to omit the frame pointer in leaf routines only. */
+static int be_omit_leaf_fp = 1;
 
 /*
      _    ____ ___    ____      _ _ _                _
@@ -239,7 +242,7 @@ static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 	call->cb         = NULL;
 	call->cls_addr   = cls_addr;
 
-	call->flags.bits.try_omit_fp = be_omit_fp;
+	call->flags.bits.try_omit_fp = be_omit_fp | be_omit_leaf_fp;
 
 	return call;
 }
@@ -871,10 +874,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	ir_node *new_alloc, *size, *addr, *ins[2];
 	unsigned stack_alignment;
 
-	if (get_Alloc_where(alloc) != stack_alloc) {
-		assert(0);
-		return alloc;
-	}
+	assert(get_Alloc_where(alloc) == stack_alloc);
 
 	block = get_nodes_block(alloc);
 	irg = get_irn_irg(block);
@@ -886,7 +886,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		ir_node *irn = get_edge_src_irn(edge);
 
 		assert(is_Proj(irn));
-		switch(get_Proj_proj(irn)) {
+		switch (get_Proj_proj(irn)) {
 		case pn_Alloc_M:
 			alloc_mem = irn;
 			break;
@@ -909,7 +909,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	dbg = get_irn_dbg_info(alloc);
 
 	/* we might need to multiply the size with the element size */
-	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
+	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
 		                                     mode_Iu);
 		ir_node *cnst = new_rd_Const(dbg, irg, block, mode_Iu, tv);
@@ -971,10 +971,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	unsigned stack_alignment;
 	dbg_info *dbg;
 
-	if (get_Free_where(free) != stack_alloc) {
-		assert(0);
-		return free;
-	}
+	assert(get_Free_where(free) == stack_alloc);
 
 	block = get_nodes_block(free);
 	irg = get_irn_irg(block);
@@ -983,7 +980,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	dbg = get_irn_dbg_info(free);
 
 	/* we might need to multiply the size with the element size */
-	if(type != get_unknown_type() && get_type_size_bytes(type) != 1) {
+	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
 		ir_node *cnst = new_rd_Const(dbg, irg, block, mode_Iu, tv);
 		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Free_size(free),
@@ -1120,11 +1117,11 @@ static void process_calls_in_block(ir_node *bl, void *data)
 	ir_node *irn;
 	int n;
 
-	for(irn = get_irn_link(bl), n = 0; irn; irn = get_irn_link(irn), ++n)
+	for (irn = get_irn_link(bl), n = 0; irn; irn = get_irn_link(irn), ++n)
 		obstack_ptr_grow(&env->obst, irn);
 
 	/* If there were call nodes in the block. */
-	if(n > 0) {
+	if (n > 0) {
 		ir_node *keep;
 		ir_node **nodes;
 		int i;
@@ -1134,19 +1131,25 @@ static void process_calls_in_block(ir_node *bl, void *data)
 		/* order the call nodes according to data dependency */
 		qsort(nodes, n, sizeof(nodes[0]), cmp_call_dependency);
 
-		for(i = n - 1; i >= 0; --i) {
+		for (i = n - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
 
 			DBG((env->dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
-			switch(get_irn_opcode(irn)) {
+			switch (get_irn_opcode(irn)) {
 			case iro_Call:
+				if (! be_omit_fp) {
+					/* The stack pointer will be modified due to a call. */
+					env->call->flags.bits.try_omit_fp = 0;
+				}
 				curr_sp = adjust_call(env, irn, curr_sp);
 				break;
 			case iro_Alloc:
-				curr_sp = adjust_alloc(env, irn, curr_sp);
+				if (get_Alloc_where(irn) == stack_alloc)
+					curr_sp = adjust_alloc(env, irn, curr_sp);
 				break;
 			case iro_Free:
-				curr_sp = adjust_free(env, irn, curr_sp);
+				if (get_Free_where(irn) == stack_alloc)
+					curr_sp = adjust_free(env, irn, curr_sp);
 				break;
 			default:
 				panic("invalid call");
@@ -1158,7 +1161,7 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 		/* Keep the last stack state in the block by tying it to Keep node,
 		 * the proj from calls is already kept */
-		if(curr_sp != env->init_sp
+		if (curr_sp != env->init_sp
 				&& !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
 			nodes[0] = curr_sp;
 			keep     = be_new_Keep(env->arch_env->sp->reg_class,
@@ -2123,7 +2126,8 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	optimization_state_t state;
 	unsigned *limited_bitset;
 
-	be_omit_fp = birg->main_env->options->omit_fp;
+	be_omit_fp      = birg->main_env->options->omit_fp;
+	be_omit_leaf_fp = birg->main_env->options->omit_leaf_fp;
 
 	obstack_init(&env->obst);
 

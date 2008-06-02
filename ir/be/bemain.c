@@ -89,6 +89,7 @@ static be_options_t be_options = {
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
+	0,                                 /* try to omit leaf frame pointer */
 	0,                                 /* create PIC code */
 	0,                                 /* create gprof compatible profiling code */
 	BE_VRFY_WARN,                      /* verification level: warn */
@@ -150,19 +151,20 @@ static lc_opt_enum_int_var_t sched_var = {
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_STR      ("config",   "read another config file containing backend options", config_file, sizeof(config_file)),
-	LC_OPT_ENT_ENUM_MASK("dump",     "dump irg on several occasions",                       &dump_var),
-	LC_OPT_ENT_BOOL     ("omitfp",   "omit frame pointer",                                  &be_options.omit_fp),
-	LC_OPT_ENT_BOOL     ("pic",      "create PIC code",                                     &be_options.pic),
-	LC_OPT_ENT_BOOL     ("gprof",    "create gprof profiling code",                         &be_options.gprof),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",     "verify the backend irg",                              &vrfy_var),
-	LC_OPT_ENT_BOOL     ("time",     "get backend timing statistics",                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profile",  "instrument the code for execution count profiling",   &be_options.opt_profile),
-	LC_OPT_ENT_ENUM_PTR ("sched",    "select a scheduler",                                  &sched_var),
-	LC_OPT_ENT_STR      ("os",       "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
+	LC_OPT_ENT_STR      ("config",     "read another config file containing backend options", config_file, sizeof(config_file)),
+	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
+	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
+	LC_OPT_ENT_BOOL     ("omitleaffp", "omit frame pointer in leaf routines",                 &be_options.omit_leaf_fp),
+	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
+	LC_OPT_ENT_BOOL     ("gprof",      "create gprof profiling code",                         &be_options.gprof),
+	LC_OPT_ENT_ENUM_PTR ("vrfy",       "verify the backend irg",                              &vrfy_var),
+	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
+	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
+	LC_OPT_ENT_ENUM_PTR ("sched",      "select a scheduler",                                  &sched_var),
+	LC_OPT_ENT_STR      ("os",         "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
 #ifdef FIRM_STATISTICS
-	LC_OPT_ENT_BOOL     ("statev",   "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("filtev",   "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
+	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
+	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
 #endif
 
 #ifdef WITH_ILP

@@ -68,6 +68,7 @@ struct be_options_t {
 	int  timing;              /**< time the backend phases */
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
+	int  omit_leaf_fp;        /**< try to omit the frame pointer in leaf routines */
 	int  pic;                 /**< create position independent code */
 	int  gprof;               /**< create gprof compatible profiling code */
 	int  vrfy_option;         /**< backend verify option */
