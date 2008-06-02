@@ -2513,22 +2513,16 @@ static ir_node *gen_normal_Store(ir_node *node)
 	addr.mem = be_transform_node(mem);
 
 	if (mode_is_float(mode)) {
+		/* Convs (and strict-Convs) before stores are unnecessary if the mode
+		   is the same. */
+		while (is_Conv(val) && mode == get_irn_mode(val)) {
+			val = get_Conv_op(val);
+		}
+		new_val = be_transform_node(val);
 		if (ia32_cg_config.use_sse2) {
-			/* Convs (and strict-Convs) before stores are unnecessary if the mode
-			   is the same. */
-			while (is_Conv(val) && mode == get_irn_mode(get_Conv_op(val))) {
-				val = get_Conv_op(val);
-			}
-			new_val = be_transform_node(val);
 			new_node = new_rd_ia32_xStore(dbgi, irg, new_block, addr.base,
 			                              addr.index, addr.mem, new_val);
 		} else {
-			/* We can skip ALL float Convs (and strict-Convs) before stores. */
-			while (is_Conv(val) &&
-					mode_is_float(get_irn_mode(get_Conv_op(val)))) {
-				val = get_Conv_op(val);
-			}
-			new_val = be_transform_node(val);
 			new_node = new_rd_ia32_vfst(dbgi, irg, new_block, addr.base,
 			                            addr.index, addr.mem, new_val, mode);
 		}
