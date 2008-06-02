@@ -7,6 +7,7 @@ int looptest(int x) {
 	if (x) {
 		printf("%d\n", x);
 	}
+	return x;
 }
 
 
@@ -17,6 +18,7 @@ int xtest(int x) {
 	if (x) {
 		printf("%d\n", x);
 	}
+	return x;
 }
 
 int test(int a, int b) {
