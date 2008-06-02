@@ -2516,7 +2516,10 @@ static ir_node *gen_normal_Store(ir_node *node)
 		/* Convs (and strict-Convs) before stores are unnecessary if the mode
 		   is the same. */
 		while (is_Conv(val) && mode == get_irn_mode(val)) {
-			val = get_Conv_op(val);
+			ir_node *op = get_Conv_op(val);
+			if (!mode_is_float(get_irn_mode(op)))
+				break;
+			val = op;
 		}
 		new_val = be_transform_node(val);
 		if (ia32_cg_config.use_sse2) {
