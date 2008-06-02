@@ -144,7 +144,7 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 		ir_node *value = vals[i];
 		ir_node *value_block = blocks[i];
 
-		assert(get_irn_mode(value) == mode);
+		assert(get_irn_mode(value) == mode || is_Bad(value));
 
 		set_irn_link(value_block, value);
 		mark_irn_visited(value_block);
