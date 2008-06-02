@@ -1223,19 +1223,22 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 	ir_mode *n_mode = get_irn_mode(n);
 	ir_mode *a_mode = get_irn_mode(a);
 
+restart:
 	if (n_mode == a_mode) { /* No Conv necessary */
 		if (get_Conv_strict(n)) {
 			/* special case: the predecessor might be a also a Conv */
 			if (is_Conv(a)) {
 				if (! get_Conv_strict(a)) {
 					/* first one is not strict, kick it */
-					set_Conv_op(n, get_Conv_op(a));
-					return n;
+					a = get_Conv_op(a);
+					a_mode = get_irn_mode(a);
+					set_Conv_op(n, a);
+					goto restart;
 				}
 				/* else both are strict conv, second is superfluous */
-			} else if(is_Proj(a)) {
+			} else if (is_Proj(a)) {
 				ir_node *pred = get_Proj_pred(a);
-				if(is_Load(pred)) {
+				if (is_Load(pred)) {
 					/* loads always return with the exact precision of n_mode */
 					assert(get_Load_mode(pred) == n_mode);
 					return a;
@@ -1251,15 +1254,32 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 		ir_node *b      = get_Conv_op(a);
 		ir_mode *b_mode = get_irn_mode(b);
 
+		if (get_Conv_strict(n) && get_Conv_strict(a)) {
+			/* both are strict conv */
+			if (smaller_mode(a_mode, n_mode)) {
+				/* both are strict, but the first is smaller, so
+				   the second cannot remove more precision, remove the
+				   strict bit */
+				set_Conv_strict(n, 0);
+			}
+		}
 		if (n_mode == b_mode) {
-			if (n_mode == mode_b) {
-				n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-			} else if (mode_is_int(n_mode)) {
-				if (get_mode_size_bits(b_mode) <= get_mode_size_bits(a_mode)) {
-					n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
+			if (! get_Conv_strict(n) && ! get_Conv_strict(a)) {
+				if (n_mode == mode_b) {
+					n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+				} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
+					if (smaller_mode(b_mode, a_mode)) {
+						n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
+						DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+					}
 				}
+			}
+			if (is_Conv(b)) {
+				if (get_Conv_strict(n))
+					set_Conv_strict(b, 1);
+				n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 			}
 		}
 	}
