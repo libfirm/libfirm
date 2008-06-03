@@ -351,7 +351,6 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	init = skip_Id(init);
 
 	switch (get_irn_opcode(init)) {
-#if 0
 	case iro_Cast:
 		do_dump_atomic_init(env, get_Cast_op(init));
 		return;
@@ -359,7 +358,6 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	case iro_Conv:
 		do_dump_atomic_init(env, get_Conv_op(init));
 		return;
-#endif
 
 	case iro_Const:
 		tv = get_Const_tarval(init);
