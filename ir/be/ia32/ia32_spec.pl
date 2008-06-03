@@ -1138,7 +1138,7 @@ SwitchJmp => {
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	mode      => "mode_T",
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
+	attr      => "long pnc",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 	modified_flags => $status_flags,
