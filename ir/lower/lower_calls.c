@@ -201,14 +201,15 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct _wlk_env_t {
-	int                  arg_shift;     /**< The Argument index shift for parameters. */
-	int                  first_hidden;  /**< The index of the first hidden argument. */
-	struct obstack       obst;          /**< An obstack to allocate the data on. */
-	cl_entry             *cl_list;      /**< The call list. */
-	pmap                 *dummy_map;    /**< A map for finding the dummy arguments. */
-	unsigned             dnr;           /**< The dummy index number. */
-	const lower_params_t *params;       /**< lowering parameters */
-	int                  changed;       /**< set if the current graph was changed */
+	int                  arg_shift;       /**< The Argument index shift for parameters. */
+	int                  first_hidden;    /**< The index of the first hidden argument. */
+	struct obstack       obst;            /**< An obstack to allocate the data on. */
+	cl_entry             *cl_list;        /**< The call list. */
+	pmap                 *dummy_map;      /**< A map for finding the dummy arguments. */
+	unsigned             dnr;             /**< The dummy index number. */
+	const lower_params_t *params;         /**< Lowering parameters. */
+	unsigned             non_local_mem:1; /**< Set if non-local memory access was found. */
+	unsigned             changed:1;       /**< Set if the current graph was changed. */
 } wlk_env;
 
 /**
@@ -240,9 +241,16 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 	wlk_env *env = ctx;
 	int i;
 	ir_type *ctp;
-	ir_op *op = get_irn_op(n);
+	ir_opcode code = get_irn_opcode(n);
 
-	if (env->arg_shift > 0 && op == op_Proj) {
+	if (code == iro_Load || code == iro_Store) {
+		ir_node *ptr = get_irn_n(n, 1);
+
+		if (! is_Sel(ptr))
+			env->non_local_mem = 1;
+		else if (get_Sel_ptr(ptr) != get_irg_frame(current_ir_graph))
+			env->non_local_mem = 1;
+	} else if (env->arg_shift > 0 && code == iro_Proj) {
 		ir_node *pred = get_Proj_pred(n);
 
 		/* Fix the argument numbers */
@@ -251,7 +259,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 			set_Proj_proj(n, pnr + env->arg_shift);
 			env->changed = 1;
 		}
-	} else if (op == op_Call) {
+	} else if (code == iro_Call) {
 		ctp = get_Call_type(n);
 		if (env->params->flags & LF_COMPOUND_RETURN) {
 			/* check for compound returns */
@@ -266,7 +274,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 				}
 			}
 		}
-	} else if (op == op_CopyB && env->params->flags & LF_COMPOUND_RETURN) {
+	} else if (code == iro_CopyB && env->params->flags & LF_COMPOUND_RETURN) {
 		/* check for compound returns */
 		ir_node *src = get_CopyB_src(n);
 		/* older scheme using value_res_ent */
@@ -281,7 +289,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 					e->copyb = n;
 				}
 			}
-		} else
+		} else {
 			/* new scheme: compound results are determined by the call type only */
 			if (is_Proj(src)) {
 				ir_node *proj = get_Proj_pred(src);
@@ -298,6 +306,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 					}
 				}
 			}
+		}
 	}
 }
 
@@ -423,11 +432,10 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 				if (get_struct_member(owner, idx) == ent)
 					break;
 			assert(idx < get_struct_n_members(owner));
-		}
-		else
-
+		} else {
 			/* new scheme: compound returns are determined by the call type and are Proj's */
 			idx = get_Proj_proj(src);
+		}
 
 		ins[idx] = get_CopyB_dst(p);
 		mem      = get_CopyB_mem(p);
@@ -526,13 +534,16 @@ static void fix_call_list(ir_graph *irg, wlk_env *env) {
  */
 static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type *mtp, *lowered_mtp, *tp, *ft;
-	int i, j, k, n_ress = 0, n_ret_com = 0, n_cr_opt;
-	ir_node **new_in, *ret, *endbl, *bl, *mem, *copy;
-	cr_pair *cr_opt;
-	wlk_env env;
+	ir_graph   * rem = current_ir_graph;
+	ir_entity  *ent = get_irg_entity(irg);
+	ir_type    *mtp, *lowered_mtp, *tp, *ft;
+	int        i, j, k, n_ress = 0, n_ret_com = 0, n_cr_opt;
+	ir_node    **new_in, *ret, *endbl, *bl, *mem, *copy;
+	cr_pair    *cr_opt;
+	wlk_env    env;
 	add_hidden hidden_params;
+
+	current_ir_graph = irg;
 
 	assert(ent && "Cannot transform graph without an entity");
 	assert(get_irg_phase_state(irg) == phase_high && "call lowering must be done in phase high");
@@ -567,8 +578,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 			/* hidden arguments are added first */
 			env.arg_shift    = n_ret_com;
 			env.first_hidden = 0;
-		}
-		else {
+		} else {
 			/* hidden arguments are added last */
 			env.arg_shift    = 0;
 			env.first_hidden = get_method_n_params(mtp);
@@ -578,11 +588,12 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		env.arg_shift = 0;
 	}
 	obstack_init(&env.obst);
-	env.cl_list   = NULL;
-	env.dummy_map = pmap_create_ex(8);
-	env.dnr       = 0;
-	env.params    = lp;
-	env.changed   = 0;
+	env.cl_list       = NULL;
+	env.dummy_map     = pmap_create_ex(8);
+	env.dnr           = 0;
+	env.params        = lp;
+	env.non_local_mem = 0;
+	env.changed       = 0;
 
 	/* scan the code, fix argument numbers and collect calls. */
 	irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
@@ -595,8 +606,8 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
 	if (n_ret_com) {
 		/*
-		* Now fix the Return node of the current graph.
-		*/
+		 * Now fix the Return node of the current graph.
+		 */
 		env.changed = 1;
 
 		/* STEP 1: find the return. This is simple, we have normalized the graph. */
@@ -638,7 +649,14 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 					/* The Return(Unknown) is the Firm construct for a missing return.
 					   Do nothing. */
 				} else {
-					if (is_compound_address(ft, pred)) {
+					/**
+					 * Sorrily detecting that copy-return is possible isn't that simple.
+					 * We must check, that the hidden address is alias free during the whole
+					 * function.
+					 * A simple heuristic: all Loads/Stores inside
+					 * the function access only local frame.
+					 */
+					if (!env.non_local_mem && is_compound_address(ft, pred)) {
 						/* we can do the copy-return optimization here */
 						cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
 						cr_opt[n_cr_opt].arg = arg;
@@ -684,6 +702,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_state(irg, loopinfo_inconsistent);
 	}
+	current_ir_graph = rem;
 }
 
 /**
