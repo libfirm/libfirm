@@ -79,7 +79,7 @@ ir_op *op_Cmp;         ir_op *get_op_Cmp       (void) { return op_Cmp;       }
 ir_op *op_Shl;         ir_op *get_op_Shl       (void) { return op_Shl;       }
 ir_op *op_Shr;         ir_op *get_op_Shr       (void) { return op_Shr;       }
 ir_op *op_Shrs;        ir_op *get_op_Shrs      (void) { return op_Shrs;      }
-ir_op *op_Rot;         ir_op *get_op_Rot       (void) { return op_Rot;       }
+ir_op *op_Rotl;        ir_op *get_op_Rotl      (void) { return op_Rotl;      }
 ir_op *op_Conv;        ir_op *get_op_Conv      (void) { return op_Conv;      }
 ir_op *op_Cast;        ir_op *get_op_Cast      (void) { return op_Cast;      }
 ir_op *op_Carry;       ir_op *get_op_Carry     (void) { return op_Carry;     }
@@ -321,7 +321,7 @@ init_op(void)
 	op_Shl       = new_ir_op(iro_Shl,       "Shl",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Shr       = new_ir_op(iro_Shr,       "Shr",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Shrs      = new_ir_op(iro_Shrs,      "Shrs",      op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
-	op_Rot       = new_ir_op(iro_Rot,       "Rot",       op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
+	op_Rotl      = new_ir_op(iro_Rotl,      "Rotl",      op_pin_state_floats, N,       oparity_binary,    0, 0, NULL);
 	op_Conv      = new_ir_op(iro_Conv,      "Conv",      op_pin_state_floats, N,       oparity_unary,     0, sizeof(conv_attr), NULL);
 	op_Cast      = new_ir_op(iro_Cast,      "Cast",      op_pin_state_floats, H,       oparity_unary,     0, sizeof(cast_attr), NULL);
 	op_Carry     = new_ir_op(iro_Carry,     "Carry",     op_pin_state_floats, C,       oparity_binary,    0, 0, NULL);
@@ -409,7 +409,7 @@ void finish_op(void) {
 	free_ir_op (op_Shl      ); op_Shl       = NULL;
 	free_ir_op (op_Shr      ); op_Shr       = NULL;
 	free_ir_op (op_Shrs     ); op_Shrs      = NULL;
-	free_ir_op (op_Rot      ); op_Rot       = NULL;
+	free_ir_op (op_Rotl     ); op_Rotl      = NULL;
 	free_ir_op (op_Conv     ); op_Conv      = NULL;
 	free_ir_op (op_Cast     ); op_Cast      = NULL;
 	free_ir_op (op_Carry    ); op_Carry     = NULL;

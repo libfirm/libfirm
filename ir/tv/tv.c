@@ -1458,9 +1458,9 @@ tarval *tarval_shrs(tarval *a, tarval *b) {
 }
 
 /*
- * bitwise rotation
+ * bitwise rotation to left
  */
-tarval *tarval_rot(tarval *a, tarval *b) {
+tarval *tarval_rotl(tarval *a, tarval *b) {
 	char *temp_val = NULL;
 
 	assert(a);
@@ -1480,7 +1480,7 @@ tarval *tarval_rot(tarval *a, tarval *b) {
 	} else
 		temp_val = (char*)b->value;
 
-	sc_rot(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
+	sc_rotl(a->value, temp_val, get_mode_size_bits(a->mode), mode_is_signed(a->mode), NULL);
 	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 }
 

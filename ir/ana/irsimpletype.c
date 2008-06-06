@@ -242,7 +242,7 @@ static ir_type *find_type_for_node(ir_node *n) {
 	case iro_Shl:
 	case iro_Shr:
 	case iro_Shrs:
-	case iro_Rot:
+	case iro_Rotl:
 		tp = tp1;  break;
 	case iro_Cast:
 		tp = get_Cast_type(n);  break;

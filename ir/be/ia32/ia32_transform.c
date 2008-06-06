@@ -1665,20 +1665,20 @@ static ir_node *gen_Shrs(ir_node *node) {
 
 
 /**
- * Creates an ia32 RotL.
+ * Creates an ia32 Rol.
  *
  * @param op1   The first operator
  * @param op2   The second operator
  * @return The created ia32 RotL node
  */
-static ir_node *gen_RotL(ir_node *node, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2) {
 	return gen_shift_binop(node, op1, op2, new_rd_ia32_Rol, match_immediate);
 }
 
 
 
 /**
- * Creates an ia32 RotR.
+ * Creates an ia32 Ror.
  * NOTE: There is no RotR with immediate because this would always be a RotL
  *       "imm-mode_size_bits" which can be pre-calculated.
  *
@@ -1686,7 +1686,7 @@ static ir_node *gen_RotL(ir_node *node, ir_node *op1, ir_node *op2) {
  * @param op2   The second operator
  * @return The created ia32 RotR node
  */
-static ir_node *gen_RotR(ir_node *node, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2) {
 	return gen_shift_binop(node, op1, op2, new_rd_ia32_Ror, match_immediate);
 }
 
@@ -1697,16 +1697,16 @@ static ir_node *gen_RotR(ir_node *node, ir_node *op1, ir_node *op2) {
  *
  * @return The created ia32 RotL or RotR node
  */
-static ir_node *gen_Rot(ir_node *node) {
+static ir_node *gen_Rotl(ir_node *node) {
 	ir_node *rotate = NULL;
-	ir_node *op1    = get_Rot_left(node);
-	ir_node *op2    = get_Rot_right(node);
+	ir_node *op1    = get_Rotl_left(node);
+	ir_node *op2    = get_Rotl_right(node);
 
-	/* Firm has only Rot (which is a RotL), so we are looking for a right (op2)
+	/* Firm has only RotL, so we are looking for a right (op2)
 		 operand "-e+mode_size_bits" (it's an already modified "mode_size_bits-e",
 		 that means we can create a RotR instead of an Add and a RotL */
 
-	if (get_irn_op(op2) == op_Add) {
+	if (is_Add(op2)) {
 		ir_node *add = op2;
 		ir_node *left = get_Add_left(add);
 		ir_node *right = get_Add_right(add);
@@ -1715,19 +1715,19 @@ static ir_node *gen_Rot(ir_node *node) {
 			ir_mode *mode = get_irn_mode(node);
 			long     bits = get_mode_size_bits(mode);
 
-			if (get_irn_op(left) == op_Minus &&
-					tarval_is_long(tv)       &&
-					get_tarval_long(tv) == bits &&
-					bits                == 32)
+			if (is_Minus(left) &&
+			    tarval_is_long(tv)       &&
+			    get_tarval_long(tv) == bits &&
+			    bits                == 32)
 			{
 				DB((dbg, LEVEL_1, "RotL into RotR ... "));
-				rotate = gen_RotR(node, op1, get_Minus_op(left));
+				rotate = gen_Ror(node, op1, get_Minus_op(left));
 			}
 		}
 	}
 
 	if (rotate == NULL) {
-		rotate = gen_RotL(node, op1, op2);
+		rotate = gen_Rol(node, op1, op2);
 	}
 
 	return rotate;
@@ -2235,7 +2235,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	if(get_nodes_block(node) != get_nodes_block(val))
 		return NULL;
 
-	switch(get_irn_opcode(val)) {
+	switch (get_irn_opcode(val)) {
 	case iro_Add:
 		op1      = get_Add_left(val);
 		op2      = get_Add_right(val);
@@ -2310,9 +2310,9 @@ static ir_node *try_create_dest_am(ir_node *node) {
 		                         new_rd_ia32_SarMem, new_rd_ia32_SarMem,
 		                         match_dest_am | match_immediate);
 		break;
-	case iro_Rot:
-		op1      = get_Rot_left(val);
-		op2      = get_Rot_right(val);
+	case iro_Rotl:
+		op1      = get_Rotl_left(val);
+		op2      = get_Rotl_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_rd_ia32_RolMem, new_rd_ia32_RolMem,
 		                         match_dest_am | match_immediate);
@@ -5239,7 +5239,7 @@ static void register_transformers(void)
 	GEN(Shl);
 	GEN(Shr);
 	GEN(Shrs);
-	GEN(Rot);
+	GEN(Rotl);
 
 	GEN(Quot);
 

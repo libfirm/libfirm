@@ -659,14 +659,14 @@ static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
 }
 
 /**
- * Creates an ppc RotL.
+ * Creates an ppc Rotl.
  *
  * @param env   The transformation environment
- * @return the created ppc RotL node
+ * @return the created ppc Rotl node
  */
-static ir_node *gen_Rot(ppc32_transform_env_t *env) {
-	ir_node *op1 = get_Rot_left(env->irn);
-	ir_node *op2 = get_Rot_right(env->irn);
+static ir_node *gen_Rotl(ppc32_transform_env_t *env) {
+	ir_node *op1 = get_Rotl_left(env->irn);
+	ir_node *op2 = get_Rotl_right(env->irn);
 
 	if(is_ppc32_Const(op2))
 	{
@@ -1302,7 +1302,7 @@ void ppc32_register_transformers(void) {
 	FIRM_OP(Shl);
 	FIRM_OP(Shr);
 	FIRM_OP(Shrs);
-	FIRM_OP(Rot);
+	FIRM_OP(Rotl);
 	FIRM_OP(Quot);
 	FIRM_OP(Div);
 	FIRM_OP(DivMod);

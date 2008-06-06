@@ -418,20 +418,20 @@ static tarval *computed_value_Shrs(ir_node *n) {
 }  /* computed_value_Shrs */
 
 /**
- * Return the value of a Rot.
+ * Return the value of a Rotl.
  */
-static tarval *computed_value_Rot(ir_node *n) {
-	ir_node *a = get_Rot_left(n);
-	ir_node *b = get_Rot_right(n);
+static tarval *computed_value_Rotl(ir_node *n) {
+	ir_node *a = get_Rotl_left(n);
+	ir_node *b = get_Rotl_right(n);
 
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_rot (ta, tb);
+		return tarval_rotl(ta, tb);
 	}
 	return tarval_bad;
-}  /* computed_value_Rot */
+}  /* computed_value_Rotl */
 
 /**
  * Return the value of a Conv.
@@ -695,7 +695,7 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
-	CASE(Rot);
+	CASE(Rotl);
 	CASE(Carry);
 	CASE(Borrow);
 	CASE(Conv);
@@ -995,7 +995,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n) {
 #define equivalent_node_Shl   equivalent_node_left_zero
 #define equivalent_node_Shr   equivalent_node_left_zero
 #define equivalent_node_Shrs  equivalent_node_left_zero
-#define equivalent_node_Rot   equivalent_node_left_zero
+#define equivalent_node_Rotl  equivalent_node_left_zero
 
 /**
  * Optimize a - 0 and (a + x) - x (for modes with wrap-around).
@@ -1736,7 +1736,7 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
-	CASE(Rot);
+	CASE(Rotl);
 	CASE(Not);
 	CASE(Minus);
 	CASE(Mul);
@@ -3870,11 +3870,11 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					}
 					break;
-				case iro_Rot:
-					if (get_Rot_right(left) == get_Rot_right(right)) {
-						/* a ROT X CMP b ROT X ==> a CMP b */
-						left  = get_Rot_left(left);
-						right = get_Rot_left(right);
+				case iro_Rotl:
+					if (get_Rotl_right(left) == get_Rotl_right(right)) {
+						/* a ROTL X CMP b ROTL X ==> a CMP b */
+						left  = get_Rotl_left(left);
+						right = get_Rotl_left(right);
 						changed |= 1;
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 					}
@@ -4522,9 +4522,9 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 }  /* transform_node_Or_bf_store */
 
 /**
- * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rot
+ * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
  */
-static ir_node *transform_node_Or_Rot(ir_node *or) {
+static ir_node *transform_node_Or_Rotl(ir_node *or) {
 	ir_mode *mode = get_irn_mode(or);
 	ir_node *shl, *shr, *block;
 	ir_node *irn, *x, *c1, *c2, *v, *sub, *n;
@@ -4570,9 +4570,9 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 		/* yet, condition met */
 		block = get_irn_n(or, -1);
 
-		n = new_r_Rot(current_ir_graph, block, x, c1, mode);
+		n = new_r_Rotl(current_ir_graph, block, x, c1, mode);
 
-		DBG_OPT_ALGSIM1(or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROT);
+		DBG_OPT_ALGSIM1(or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
 		return n;
 	} else if (is_Sub(c1)) {
 		v   = c2;
@@ -4596,9 +4596,9 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 		block = get_nodes_block(or);
 
 		/* a Rot right is not supported, so use a rot left */
-		n =  new_r_Rot(current_ir_graph, block, x, sub, mode);
+		n =  new_r_Rotl(current_ir_graph, block, x, sub, mode);
 
-		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROT);
+		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
 		return n;
 	} else if (is_Sub(c2)) {
 		v   = c1;
@@ -4619,14 +4619,14 @@ static ir_node *transform_node_Or_Rot(ir_node *or) {
 		block = get_irn_n(or, -1);
 
 		/* a Rot Left */
-		n = new_r_Rot(current_ir_graph, block, x, v, mode);
+		n = new_r_Rotl(current_ir_graph, block, x, v, mode);
 
-		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROT);
+		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
 		return n;
 	}
 
 	return or;
-}  /* transform_node_Or_Rot */
+}  /* transform_node_Or_Rotl */
 
 /**
  * Transform an Or.
@@ -4671,7 +4671,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 	HANDLE_BINOP_PHI(tarval_or, a, b, c, mode);
 
 	n = transform_node_Or_bf_store(n);
-	n = transform_node_Or_Rot(n);
+	n = transform_node_Or_Rotl(n);
 	if (n != oldn)
 		return n;
 
@@ -4685,7 +4685,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 static ir_node *transform_node(ir_node *n);
 
 /**
- * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rot.
+ * Optimize (a >> c1) >> c2), works for Shr, Shrs, Shl, Rotl.
  *
  * Should be moved to reassociation?
  */
@@ -4782,17 +4782,17 @@ static ir_node *transform_node_Shl(ir_node *n) {
 }  /* transform_node_Shl */
 
 /**
- * Transform a Rot.
+ * Transform a Rotl.
  */
-static ir_node *transform_node_Rot(ir_node *n) {
+static ir_node *transform_node_Rotl(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a    = get_Rot_left(n);
-	ir_node *b    = get_Rot_right(n);
+	ir_node *a    = get_Rotl_left(n);
+	ir_node *b    = get_Rotl_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_rot, a, b, c, mode);
+	HANDLE_BINOP_PHI(tarval_rotl, a, b, c, mode);
 	return transform_node_shift(n);
-}  /* transform_node_Rot */
+}  /* transform_node_Rotl */
 
 /**
  * Transform a Conv.
@@ -5183,7 +5183,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Shr);
 	CASE(Shrs);
 	CASE(Shl);
-	CASE(Rot);
+	CASE(Rotl);
 	CASE(Conv);
 	CASE(End);
 	CASE(Mux);

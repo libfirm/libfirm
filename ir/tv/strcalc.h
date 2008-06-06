@@ -169,9 +169,9 @@ void sc_shr(const void *value1, const void *value2, int bitsize, int sign, void 
 void sc_shrs(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
- * buffer = value1 <<>> value2
+ * buffer = value1 <<left>> value2
  */
-void sc_rot(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
+void sc_rotl(const void *value1, const void *value2, int bitsize, int sign, void *buffer);
 
 /**
  * buffer = 0

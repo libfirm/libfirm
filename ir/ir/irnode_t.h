@@ -542,9 +542,9 @@ _is_Shrs(const ir_node *node) {
 }
 
 static INLINE int
-_is_Rot(const ir_node *node) {
+_is_Rotl(const ir_node *node) {
 	assert(node);
-	return (_get_irn_op(node) == op_Rot);
+	return (_get_irn_op(node) == op_Rotl);
 }
 
 static INLINE int
@@ -1083,7 +1083,7 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 #define is_Shl(node)                          _is_Shl(node)
 #define is_Shr(node)                          _is_Shr(node)
 #define is_Shrs(node)                         _is_Shrs(node)
-#define is_Rot(node)                          _is_Rot(node)
+#define is_Rotl(node)                         _is_Rotl(node)
 #define is_Psi(node)                          _is_Psi(node)
 #define is_Id(node)                           _is_Id(node)
 #define is_Tuple(node)                        _is_Tuple(node)

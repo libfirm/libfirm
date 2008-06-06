@@ -1013,17 +1013,17 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Shrs */
 
 /**
- * Translate a Rot and handle special cases.
+ * Translate a Rotl and handle special cases.
  */
-static void lower_Rot(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_node  *right = get_Rot_right(node);
+static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
+	ir_node  *right = get_Rotl_right(node);
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
 			get_tarval_long(tv) == (int) get_mode_size_bits(mode)) {
-			ir_node *left = get_Rot_left(node);
+			ir_node *left = get_Rotl_left(node);
 			ir_node *h, *l;
 			int idx = get_irn_idx(left);
 
@@ -2444,7 +2444,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Shl);
 	LOWER(Shr);
 	LOWER(Shrs);
-	LOWER(Rot);
+	LOWER(Rotl);
 	LOWER(DivMod);
 	LOWER(Div);
 	LOWER(Mod);

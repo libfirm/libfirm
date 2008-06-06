@@ -1538,21 +1538,21 @@ static int verify_node_Shift(ir_node *n, ir_graph *irg) {
 #define verify_node_Shrs  verify_node_Shift
 
 /**
- * verify a Rot node
+ * verify a Rotl node
  */
-static int verify_node_Rot(ir_node *n, ir_graph *irg) {
+static int verify_node_Rotl(ir_node *n, ir_graph *irg) {
 	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Rot_left(n));
-	ir_mode *op2mode = get_irn_mode(get_Rot_right(n));
+	ir_mode *op1mode = get_irn_mode(get_Rotl_left(n));
+	ir_mode *op2mode = get_irn_mode(get_Rotl_right(n));
 	(void) irg;
 
 	ASSERT_AND_RET_DBG(
-		/* Rot: BB x int x int --> int */
+		/* Rotl: BB x int x int --> int */
 		mode_is_int(op1mode) &&
 		mode_is_int(op2mode) &&
 		mymode == op1mode,
-		"Rot node", 0,
-		show_binop_failure(n, "/* Rot: BB x int x int --> int */");
+		"Rotl node", 0,
+		show_binop_failure(n, "/* Rotl: BB x int x int --> int */");
 	);
 	return 1;
 }
@@ -2250,7 +2250,7 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops) {
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
-	CASE(Rot);
+	CASE(Rotl);
 	CASE(Conv);
 	CASE(Cast);
 	CASE(Phi);

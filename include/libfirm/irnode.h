@@ -688,7 +688,7 @@ void      set_CallBegin_call(ir_node *node, ir_node *call);
    second arithmetic value  as listed in tech report 1999-44.
    unops are: Minus, Abs, Not, Conv, Cast
    binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
-   Shr, Shrs, Rot, Cmp */
+   Shr, Shrs, Rotl, Cmp */
 int      is_unop(const ir_node *node);
 ir_node *get_unop_op(const ir_node *node);
 void     set_unop_op(ir_node *node, ir_node *op);
@@ -884,10 +884,10 @@ void     set_Shrs_left(ir_node *node, ir_node *left);
 ir_node *get_Shrs_right(const ir_node *node);
 void     set_Shrs_right(ir_node *node, ir_node *right);
 
-ir_node *get_Rot_left(const ir_node *node);
-void     set_Rot_left(ir_node *node, ir_node *left);
-ir_node *get_Rot_right(const ir_node *node);
-void     set_Rot_right(ir_node *node, ir_node *right);
+ir_node *get_Rotl_left(const ir_node *node);
+void     set_Rotl_left(ir_node *node, ir_node *left);
+ir_node *get_Rotl_right(const ir_node *node);
+void     set_Rotl_right(ir_node *node, ir_node *right);
 
 ir_node *get_Conv_op(const ir_node *node);
 void     set_Conv_op(ir_node *node, ir_node *op);
@@ -1274,8 +1274,8 @@ int      is_Shl(const ir_node *node);
 int      is_Shr(const ir_node *node);
 /** Returns true if node is a Shrs node. */
 int      is_Shrs(const ir_node *node);
-/** Returns true if node is a Rot node. */
-int      is_Rot(const ir_node *node);
+/** Returns true if node is a Rotl node. */
+int      is_Rotl(const ir_node *node);
 /** Returns true if node is a Psi node. */
 int      is_Psi(const ir_node *node);
 /** Returns true if node is an Id node. */

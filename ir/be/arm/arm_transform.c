@@ -1549,7 +1549,7 @@ static void arm_register_transformers(void) {
 	GEN(Shl);
 	GEN(Shr);
 	GEN(Shrs);
-	BAD(Rot);	/* unsupported yet */
+	BAD(Rotl);	/* unsupported yet */
 
 	GEN(Quot);
 

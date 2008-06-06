@@ -447,7 +447,7 @@ static void _fail_char(const char *str, size_t len, const char fchar, int pos,
 /**
  * implements the bitwise NOT operation
  */
-static void _bitnot(const char *val, char *buffer) {
+static void do_bitnot(const char *val, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -457,7 +457,7 @@ static void _bitnot(const char *val, char *buffer) {
 /**
  * implements the bitwise OR operation
  */
-static void _bitor(const char *val1, const char *val2, char *buffer) {
+static void do_bitor(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -467,7 +467,7 @@ static void _bitor(const char *val1, const char *val2, char *buffer) {
 /**
  * implements the bitwise eXclusive OR operation
  */
-static void _bitxor(const char *val1, const char *val2, char *buffer) {
+static void do_bitxor(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -477,7 +477,7 @@ static void _bitxor(const char *val1, const char *val2, char *buffer) {
 /**
  * implements the bitwise AND operation
  */
-static void _bitand(const char *val1, const char *val2, char *buffer) {
+static void do_bitand(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -490,14 +490,14 @@ static void _bitand(const char *val1, const char *val2, char *buffer) {
  * @todo This implementation is wrong, as it returns the highest bit of the buffer
  *       NOT the highest bit depending on the real mode
  */
-static int _sign(const char *val) {
+static int do_sign(const char *val) {
 	return (val[calc_buffer_size-1] <= SC_7) ? (1) : (-1);
 }
 
 /**
  * returns non-zero if bit at position pos is set
  */
-static int _bit(const char *val, int pos) {
+static int do_bit(const char *val, int pos) {
 	int bit    = pos & 3;
 	int nibble = pos >> 2;
 
@@ -507,7 +507,7 @@ static int _bit(const char *val, int pos) {
 /**
  * Implements a fast ADD + 1
  */
-static void _inc(const char *val, char *buffer) {
+static void do_inc(const char *val, char *buffer) {
 	int counter = 0;
 
 	while (counter++ < calc_buffer_size) {
@@ -527,9 +527,9 @@ static void _inc(const char *val, char *buffer) {
 /**
  * Implements a unary MINUS
  */
-static void _negate(const char *val, char *buffer) {
-	_bitnot(val, buffer);
-	_inc(buffer, buffer);
+static void do_negate(const char *val, char *buffer) {
+	do_bitnot(val, buffer);
+	do_inc(buffer, buffer);
 }
 
 /**
@@ -538,7 +538,7 @@ static void _negate(const char *val, char *buffer) {
  * @todo The implementation of carry is wrong, as it is the
  *       calc_buffer_size carry, not the mode depending
  */
-static void _add(const char *val1, const char *val2, char *buffer) {
+static void do_add(const char *val1, const char *val2, char *buffer) {
 	int counter;
 	const char *add1, *add2;
 	char carry = SC_0;
@@ -556,17 +556,17 @@ static void _add(const char *val1, const char *val2, char *buffer) {
 /**
  * Implements a binary SUB
  */
-static void _sub(const char *val1, const char *val2, char *buffer) {
+static void do_sub(const char *val1, const char *val2, char *buffer) {
 	char *temp_buffer = alloca(calc_buffer_size); /* intermediate buffer to hold -val2 */
 
-	_negate(val2, temp_buffer);
-	_add(val1, temp_buffer, buffer);
+	do_negate(val2, temp_buffer);
+	do_add(val1, temp_buffer, buffer);
 }
 
 /**
  * Implements a binary MUL
  */
-static void _mul(const char *val1, const char *val2, char *buffer) {
+static void do_mul(const char *val1, const char *val2, char *buffer) {
 	char *temp_buffer; /* result buffer */
 	char *neg_val1;    /* abs of val1 */
 	char *neg_val2;    /* abs of val2 */
@@ -580,18 +580,18 @@ static void _mul(const char *val1, const char *val2, char *buffer) {
 	neg_val1 = alloca(calc_buffer_size);
 	neg_val2 = alloca(calc_buffer_size);
 
-	/* init result buffer to zeroes */
+	/* init result buffer to zeros */
 	memset(temp_buffer, SC_0, calc_buffer_size);
 
 	/* the multiplication works only for positive values, for negative values *
 	 * it is necessary to negate them and adjust the result accordingly       */
-	if (_sign(val1) == -1) {
-		_negate(val1, neg_val1);
+	if (do_sign(val1) == -1) {
+		do_negate(val1, neg_val1);
 		val1 = neg_val1;
 		sign ^= 1;
 	}
-	if (_sign(val2) == -1) {
-		_negate(val2, neg_val2);
+	if (do_sign(val2) == -1) {
+		do_negate(val2, neg_val2);
 		val2 = neg_val2;
 		sign ^= 1;
 	}
@@ -634,7 +634,7 @@ static void _mul(const char *val1, const char *val2, char *buffer) {
 	}
 
 	if (sign)
-		_negate(temp_buffer, buffer);
+		do_negate(temp_buffer, buffer);
 	else
 		memcpy(buffer, temp_buffer, calc_buffer_size);
 }
@@ -642,7 +642,7 @@ static void _mul(const char *val1, const char *val2, char *buffer) {
 /**
  * Shift the buffer to left and add a 4 bit digit
  */
-static void _push(const char digit, char *buffer) {
+static void do_push(const char digit, char *buffer) {
 	int counter;
 
 	for (counter = calc_buffer_size - 2; counter >= 0; counter--) {
@@ -656,7 +656,7 @@ static void _push(const char digit, char *buffer) {
  *
  * Note: This is MOST slow
  */
-static void _divmod(const char *rDividend, const char *divisor, char *quot, char *rem) {
+static void do_divmod(const char *rDividend, const char *divisor, char *quot, char *rem) {
 	const char *dividend = rDividend;
 	const char *minus_divisor;
 	char *neg_val1;
@@ -681,15 +681,15 @@ static void _divmod(const char *rDividend, const char *divisor, char *quot, char
 	if (sc_comp(dividend, quot) == 0)
 		return;
 
-	if (_sign(dividend) == -1) {
-		_negate(dividend, neg_val1);
+	if (do_sign(dividend) == -1) {
+		do_negate(dividend, neg_val1);
 		div_sign ^= 1;
 		rem_sign ^= 1;
 		dividend = neg_val1;
 	}
 
-	_negate(divisor, neg_val2);
-	if (_sign(divisor) == -1) {
+	do_negate(divisor, neg_val2);
+	if (do_sign(divisor) == -1) {
 		div_sign ^= 1;
 		minus_divisor = divisor;
 		divisor = neg_val2;
@@ -712,21 +712,21 @@ static void _divmod(const char *rDividend, const char *divisor, char *quot, char
 	}
 
 	for (c_dividend = calc_buffer_size - 1; c_dividend >= 0; c_dividend--) {
-		_push(dividend[c_dividend], rem);
-		_push(SC_0, quot);
+		do_push(dividend[c_dividend], rem);
+		do_push(SC_0, quot);
 
 		if (sc_comp(rem, divisor) != -1) {  /* remainder >= divisor */
 			/* subtract until the remainder becomes negative, this should
 			 * be faster than comparing remainder with divisor  */
-			_add(rem, minus_divisor, rem);
+			do_add(rem, minus_divisor, rem);
 
-			while (_sign(rem) == 1) {
+			while (do_sign(rem) == 1) {
 				quot[0] = add_table[_val(quot[0])][SC_1][0];
-				_add(rem, minus_divisor, rem);
+				do_add(rem, minus_divisor, rem);
 			}
 
 			/* subtracted one too much */
-			_add(rem, divisor, rem);
+			do_add(rem, divisor, rem);
 		}
 	}
 end:
@@ -734,10 +734,10 @@ end:
 	carry_flag = !sc_is_zero(rem);
 
 	if (div_sign)
-		_negate(quot, quot);
+		do_negate(quot, quot);
 
 	if (rem_sign)
-		_negate(rem, rem);
+		do_negate(rem, rem);
 }
 
 /**
@@ -746,7 +746,7 @@ end:
  *
  * @todo Assertions seems to be wrong
  */
-static void _shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed) {
+static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed) {
 	const char *shl;
 	char shift;
 	char carry = SC_0;
@@ -755,9 +755,9 @@ static void _shl(const char *val1, char *buffer, long shift_cnt, int bitsize, un
 	int bitoffset = 0;
 
 	assert((shift_cnt >= 0) || (0 && "negative leftshift"));
-	assert(((_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
-	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert(((do_sign(val1) != -1) || is_signed) || (0 && "unsigned mode and negative value"));
+	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
+	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
 	/* if shifting far enough the result is zero */
 	if (shift_cnt >= bitsize) {
@@ -813,7 +813,7 @@ static void _shl(const char *val1, char *buffer, long shift_cnt, int bitsize, un
  *
  * @todo Assertions seems to be wrong
  */
-static void _shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift) {
+static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift) {
 	const char *shrs;
 	char sign;
 	char msd;
@@ -824,10 +824,10 @@ static void _shr(const char *val1, char *buffer, long shift_cnt, int bitsize, un
 	int bitoffset = 0;
 
 	assert((shift_cnt >= 0) || (0 && "negative rightshift"));
-	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
-	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
+	assert(((!_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == -1)) || (0 && "value is positive, should be negative"));
+	assert(((_bitisset(val1[(bitsize-1)/4], (bitsize-1)%4)) || !is_signed || (do_sign(val1) == 1)) || (0 && "value is negative, should be positive"));
 
-	sign = signed_shift && _bit(val1, bitsize - 1) ? SC_F : SC_0;
+	sign = signed_shift && do_bit(val1, bitsize - 1) ? SC_F : SC_0;
 
 	/* if shifting far enough the result is either 0 or -1 */
 	if (shift_cnt >= bitsize) {
@@ -891,10 +891,10 @@ static void _shr(const char *val1, char *buffer, long shift_cnt, int bitsize, un
 }
 
 /**
- * Implements a Rotate Right.
+ * Implements a Rotate Left.
  * positive: low-order -> high order, negative other direction
  */
-static void _rot(const char *val1, char *buffer, long offset, int radius, unsigned is_signed) {
+static void do_rotl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed) {
 	char *temp1, *temp2;
 	temp1 = alloca(calc_buffer_size);
 	temp2 = alloca(calc_buffer_size);
@@ -907,9 +907,9 @@ static void _rot(const char *val1, char *buffer, long offset, int radius, unsign
 		return;
 	}
 
-	_shl(val1, temp1, offset, radius, is_signed);
-	_shr(val1, temp2, radius - offset, radius, is_signed, 0);
-	_bitor(temp1, temp2, buffer);
+	do_shl(val1, temp1, offset, radius, is_signed);
+	do_shr(val1, temp2, radius - offset, radius, is_signed, 0);
+	do_bitor(temp1, temp2, buffer);
 	carry_flag = 0; /* set by shr, but due to rot this is false */
 }
 
@@ -1074,8 +1074,8 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 
 		/* Radix conversion from base b to base B:
 		 *  (UnUn-1...U1U0)b == ((((Un*b + Un-1)*b + ...)*b + U1)*b + U0)B */
-		_mul(base, calc_buffer, calc_buffer); /* multiply current value with base */
-		_add(val, calc_buffer, calc_buffer);  /* add next digit to current value  */
+		do_mul(base, calc_buffer, calc_buffer); /* multiply current value with base */
+		do_add(val, calc_buffer, calc_buffer);  /* add next digit to current value  */
 
 		/* get ready for the next letter */
 		str++;
@@ -1083,7 +1083,7 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 	} /* while (len > 0 ) */
 
 	if (sign)
-		_negate(calc_buffer, calc_buffer);
+		do_negate(calc_buffer, calc_buffer);
 
 	/* beware: even if hex numbers have no sign, we need sign extension here */
 	sign_extend(calc_buffer, mode);
@@ -1116,9 +1116,9 @@ void sc_val_from_long(long value, void *buffer) {
 
 	if (sign) {
 		if (is_minlong)
-			_inc(buffer, buffer);
+			do_inc(buffer, buffer);
 
-		_negate(buffer, buffer);
+		do_negate(buffer, buffer);
 	}
 }
 
@@ -1208,8 +1208,8 @@ int sc_comp(const void* value1, const void* value2) {
 
 	/* compare signs first:
 	 * the loop below can only compare values of the same sign! */
-	if (_sign(val1) != _sign(val2))
-		return (_sign(val1) == 1)?(1):(-1);
+	if (do_sign(val1) != do_sign(val2))
+		return (do_sign(val1) == 1)?(1):(-1);
 
 	/* loop until two digits differ, the values are equal if there
 	 * are no such two digits */
@@ -1288,7 +1288,7 @@ int sc_is_zero(const void *value) {
 }
 
 int sc_is_negative(const void *value) {
-	return _sign(value) == -1;
+	return do_sign(value) == -1;
 }
 
 int sc_had_carry(void) {
@@ -1415,8 +1415,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		sign = 0;
 		if (signed_mode && base == SC_DEC) {
 			/* check for negative values */
-			if (_bit(val, bits - 1)) {
-				_negate(val, div2_res);
+			if (do_bit(val, bits - 1)) {
+				do_negate(val, div2_res);
 				sign = 1;
 				p = div2_res;
 			}
@@ -1437,7 +1437,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		m = div1_res;
 		n = div2_res;
 		for (;;) {
-			_divmod(m, base_val, n, rem_res);
+			do_divmod(m, base_val, n, rem_res);
 			t = m;
 			m = n;
 			n = t;
@@ -1498,7 +1498,7 @@ void sc_add(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s + ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_add(value1, value2, calc_buffer);
+	do_add(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1514,7 +1514,7 @@ void sc_sub(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s - ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_sub(value1, value2, calc_buffer);
+	do_sub(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1528,7 +1528,7 @@ void sc_neg(const void *value1, void *buffer) {
 
 	DEBUGPRINTF_COMPUTATION(("- %s ->", sc_print_hex(value1)));
 
-	_negate(value1, calc_buffer);
+	do_negate(value1, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1544,7 +1544,7 @@ void sc_and(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s & ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_bitand(value1, value2, calc_buffer);
+	do_bitand(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1560,7 +1560,7 @@ void sc_or(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s | ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_bitor(value1, value2, calc_buffer);
+	do_bitor(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1576,7 +1576,7 @@ void sc_xor(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s ^ ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_bitxor(value1, value2, calc_buffer);
+	do_bitxor(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1591,7 +1591,7 @@ void sc_not(const void *value1, void *buffer) {
 
 	DEBUGPRINTF_COMPUTATION(("~ %s ->", sc_print_hex(value1)));
 
-	_bitnot(value1, calc_buffer);
+	do_bitnot(value1, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1607,7 +1607,7 @@ void sc_mul(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s * ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_mul(value1, value2, calc_buffer);
+	do_mul(value1, value2, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1626,7 +1626,7 @@ void sc_div(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s / ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_divmod(value1, value2, calc_buffer, unused_res);
+	do_divmod(value1, value2, calc_buffer, unused_res);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1645,7 +1645,7 @@ void sc_mod(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s %% ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_divmod(value1, value2, unused_res, calc_buffer);
+	do_divmod(value1, value2, unused_res, calc_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
@@ -1661,7 +1661,7 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 	DEBUGPRINTF_COMPUTATION(("%s %% ", sc_print_hex(value1)));
 	DEBUGPRINTF_COMPUTATION(("%s -> ", sc_print_hex(value2)));
 
-	_divmod(value1, value2, div_buffer, mod_buffer);
+	do_divmod(value1, value2, div_buffer, mod_buffer);
 
 	DEBUGPRINTF_COMPUTATION(("%s:%s\n", sc_print_hex(div_buffer), sc_print_hex(mod_buffer)));
 }
@@ -1671,7 +1671,7 @@ void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), shift_cnt));
-	_shl(val1, calc_buffer, shift_cnt, bitsize, sign);
+	do_shl(val1, calc_buffer, shift_cnt, bitsize, sign);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1690,7 +1690,7 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), shift_cnt));
-	_shr(val1, calc_buffer, shift_cnt, bitsize, sign, 0);
+	do_shr(val1, calc_buffer, shift_cnt, bitsize, sign, 0);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1711,7 +1711,7 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s >>s %ld ", sc_print_hex(value1), offset));
-	_shr(val1, calc_buffer, offset, bitsize, sign, 1);
+	do_shr(val1, calc_buffer, offset, bitsize, sign, 1);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 
@@ -1720,13 +1720,13 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 	}
 }
 
-void sc_rot(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
 	long offset = sc_val_to_long(val2);
 
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s <<>> %ld ", sc_print_hex(value1), offset));
-	_rot(val1, calc_buffer, offset, bitsize, sign);
+	do_rotl(val1, calc_buffer, offset, bitsize, sign);
 
 	DEBUGPRINTF_COMPUTATION(("-> %s\n", sc_print_hex(calc_buffer)));
 

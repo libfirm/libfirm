@@ -465,8 +465,8 @@ tarval *tarval_shr(tarval *a, tarval *b);
 /** Signed (arithmetic) right shift. */
 tarval *tarval_shrs(tarval *a, tarval *b);
 
-/** Rotation. */
-tarval *tarval_rot(tarval *a, tarval *b);
+/** Rotation to left. */
+tarval *tarval_rotl(tarval *a, tarval *b);
 
 /**
  * Returns the carry flag of the last operation.

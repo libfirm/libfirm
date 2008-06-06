@@ -395,7 +395,7 @@ NEW_BD_UNOP(Not)
 NEW_BD_BINOP(Shl)
 NEW_BD_BINOP(Shr)
 NEW_BD_BINOP(Shrs)
-NEW_BD_BINOP(Rot)
+NEW_BD_BINOP(Rotl)
 NEW_BD_UNOP(Abs)
 NEW_BD_BINOP(Carry)
 NEW_BD_BINOP(Borrow)
@@ -1050,7 +1050,7 @@ NEW_RD_UNOP(Not)
 NEW_RD_BINOP(Shl)
 NEW_RD_BINOP(Shr)
 NEW_RD_BINOP(Shrs)
-NEW_RD_BINOP(Rot)
+NEW_RD_BINOP(Rotl)
 NEW_RD_UNOP(Abs)
 NEW_RD_BINOP(Carry)
 NEW_RD_BINOP(Borrow)
@@ -1607,9 +1607,9 @@ ir_node *new_r_Shrs(ir_graph *irg, ir_node *block,
                     ir_node *op, ir_node *k, ir_mode *mode) {
 	return new_rd_Shrs(NULL, irg, block, op, k, mode);
 }
-ir_node *new_r_Rot(ir_graph *irg, ir_node *block,
+ir_node *new_r_Rotl(ir_graph *irg, ir_node *block,
                    ir_node *op, ir_node *k, ir_mode *mode) {
-	return new_rd_Rot(NULL, irg, block, op, k, mode);
+	return new_rd_Rotl(NULL, irg, block, op, k, mode);
 }
 ir_node *new_r_Carry(ir_graph *irg, ir_node *block,
                      ir_node *op, ir_node *k, ir_mode *mode) {
@@ -2466,7 +2466,7 @@ NEW_D_UNOP(Not)
 NEW_D_BINOP(Shl)
 NEW_D_BINOP(Shr)
 NEW_D_BINOP(Shrs)
-NEW_D_BINOP(Rot)
+NEW_D_BINOP(Rotl)
 NEW_D_UNOP(Abs)
 NEW_D_BINOP(Carry)
 NEW_D_BINOP(Borrow)
@@ -3016,8 +3016,8 @@ ir_node *new_Shr(ir_node *op,  ir_node *k,   ir_mode *mode) {
 ir_node *new_Shrs(ir_node *op,  ir_node *k,   ir_mode *mode) {
 	return new_d_Shrs(NULL, op, k, mode);
 }
-ir_node *new_Rot(ir_node *op,  ir_node *k,   ir_mode *mode) {
-	return new_d_Rot(NULL, op, k, mode);
+ir_node *new_Rotl(ir_node *op,  ir_node *k,   ir_mode *mode) {
+	return new_d_Rotl(NULL, op, k, mode);
 }
 ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Carry(NULL, op1, op2, mode);

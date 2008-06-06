@@ -289,7 +289,7 @@
  *    ir_node *new_Shl    (ir_node *op,  ir_node *k,   ir_mode *mode);
  *    ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
  *    ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
- *    ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
+ *    ir_node *new_Rotl   (ir_node *op,  ir_node *k,   ir_mode *mode);
  *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
  *    ir_node *new_Cast   (ir_node *op, ir_type *to_tp);
@@ -759,10 +759,10 @@
  *
  *    Arithmetic shift right, i.e., sign extended.
  *
- *    ir_node *new_Rot (ir_node *op, ir_node *k, ir_mode *mode)
+ *    ir_node *new_Rotl (ir_node *op, ir_node *k, ir_mode *mode)
  *    ---------------------------------------------------------
  *
- *    Rotates the operand to the (right?) by k bits.
+ *    Rotates the operand to the left by k bits.
  *
  *    ir_node *new_Carry (ir_node *op1, ir_node *op2, ir_mode *mode)
  *    ------------------------------------------------------------
@@ -1648,7 +1648,7 @@ ir_node *new_rd_Shr    (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
-/** Constructor for a Rot node.
+/** Constructor for a Rotl node.
  *
  * @param   *db    A pointer for debug information.
  * @param   *irg   The IR graph the node  belongs to.
@@ -1657,7 +1657,7 @@ ir_node *new_rd_Shrs   (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_rd_Rot    (dbg_info *db, ir_graph *irg, ir_node *block,
+ir_node *new_rd_Rotl    (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 
@@ -2486,7 +2486,7 @@ ir_node *new_r_Shr    (ir_graph *irg, ir_node *block,
 ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
-/** Constructor for a Rot node.
+/** Constructor for a Rotl node.
  *
  * @param   *irg   The IR graph the node  belongs to.
  * @param   *block The IR block the node belongs to.
@@ -2494,7 +2494,7 @@ ir_node *new_r_Shrs   (ir_graph *irg, ir_node *block,
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_r_Rot    (ir_graph *irg, ir_node *block,
+ir_node *new_r_Rotl   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Conv node.
@@ -3306,7 +3306,7 @@ ir_node *new_d_Shr    (dbg_info *db, ir_node *op,  ir_node *k,   ir_mode *mode);
  */
 ir_node *new_d_Shrs   (dbg_info *db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
-/** Constructor for a Rot node.
+/** Constructor for a Rotl node.
  *
  * Adds the node to the block in current_ir_block.
  *
@@ -3315,7 +3315,7 @@ ir_node *new_d_Shrs   (dbg_info *db, ir_node *op,  ir_node *k,   ir_mode *mode);
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_d_Rot    (dbg_info *db, ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_d_Rotl   (dbg_info *db, ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *
@@ -4128,7 +4128,7 @@ ir_node *new_Shr    (ir_node *op,  ir_node *k,   ir_mode *mode);
  */
 ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
 
-/** Constructor for a Rot node.
+/** Constructor for a Rotl node.
  *
  * Adds the node to the block in current_ir_block.
  *
@@ -4136,7 +4136,7 @@ ir_node *new_Shrs   (ir_node *op,  ir_node *k,   ir_mode *mode);
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_Rot    (ir_node *op,  ir_node *k,   ir_mode *mode);
+ir_node *new_Rotl   (ir_node *op,  ir_node *k,   ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *

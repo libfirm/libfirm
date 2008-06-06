@@ -1502,7 +1502,7 @@ UNOP(Not)
 BINOP(Shl)
 BINOP(Shr)
 BINOP(Shrs)
-BINOP(Rot)
+BINOP(Rotl)
 BINOP(Cmp)
 UNOP(Conv)
 UNOP(Cast)
@@ -2715,8 +2715,8 @@ int
 }
 
 int
-(is_Rot)(const ir_node *node) {
-	return _is_Rot(node);
+(is_Rotl)(const ir_node *node) {
+	return _is_Rotl(node);
 }
 
 int
