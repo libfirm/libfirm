@@ -8,7 +8,11 @@
 * better memory disambiguator
 * float->64bit conversion fixed for x87
 * removed old verbosity level based debugging: all modules ese the new debug facility
-* BugFixes: tail recursion, load/store optimisation
+* BugFixes: tail recursion, load/store optimization, lowering of structure return, conditional
+  evaluation
+* Improved Confirm based optimization
+* ia32 Backend: supports more CPU architectures
+* arm Backend: fixed frame access
 
 ====== Libfirm 1.12.1 (2008-02-18) ======
 
