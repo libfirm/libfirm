@@ -201,15 +201,15 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct _wlk_env_t {
-	int                  arg_shift;       /**< The Argument index shift for parameters. */
-	int                  first_hidden;    /**< The index of the first hidden argument. */
-	struct obstack       obst;            /**< An obstack to allocate the data on. */
-	cl_entry             *cl_list;        /**< The call list. */
-	pmap                 *dummy_map;      /**< A map for finding the dummy arguments. */
-	unsigned             dnr;             /**< The dummy index number. */
-	const lower_params_t *params;         /**< Lowering parameters. */
-	unsigned             non_local_mem:1; /**< Set if non-local memory access was found. */
-	unsigned             changed:1;       /**< Set if the current graph was changed. */
+	int                  arg_shift;        /**< The Argument index shift for parameters. */
+	int                  first_hidden;     /**< The index of the first hidden argument. */
+	struct obstack       obst;             /**< An obstack to allocate the data on. */
+	cl_entry             *cl_list;         /**< The call list. */
+	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
+	unsigned             dnr;              /**< The dummy index number. */
+	const lower_params_t *params;          /**< Lowering parameters. */
+	unsigned             only_local_mem:1; /**< Set if only local memory access was found. */
+	unsigned             changed:1;        /**< Set if the current graph was changed. */
 } wlk_env;
 
 /**
@@ -234,32 +234,92 @@ static cl_entry *get_Call_entry(ir_node *call, wlk_env *env) {
 }
 
 /**
- * Post walker: shift all parameter indeces
+ * Finds the base address of an address by skipping Sel's and address
+ * calculation.
+ *
+ * @param adr   the address
+ * @param pEnt  points to the base entity if any
+ */
+static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt) {
+	ir_entity *ent = NULL;
+	assert(mode_is_reference(get_irn_mode(ptr)));
+
+	for (;;) {
+		if (is_Sel(ptr)) {
+			ent = get_Sel_entity(ptr);
+			ptr = get_Sel_ptr(ptr);
+		}
+		else if (is_Add(ptr)) {
+			ir_node *left = get_Add_left(ptr);
+			if (mode_is_reference(get_irn_mode(left)))
+				ptr = left;
+			else
+				ptr = get_Add_right(ptr);
+			ent = NULL;
+		} else if (is_Sub(ptr)) {
+			ptr = get_Sub_left(ptr);
+			ent = NULL;
+		} else {
+			*pEnt = ent;
+			return ptr;
+		}
+	}
+}
+
+/**
+ * Check if a given pointer represents non-local memory.
+ */
+static void check_ptr(ir_node *ptr, wlk_env *env) {
+	ir_storage_class_class_t sc;
+	ir_entity                *ent;
+
+	/* still alias free */
+	ptr = find_base_adr(ptr, &ent);
+	sc  = classify_pointer(current_ir_graph, ptr, ent);
+	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
+		/* non-local memory access */
+		env->only_local_mem = 0;
+	}
+}
+
+/**
+ * Post walker: shift all parameter indexes
  * and collect Calls with compound returns in the call list.
+ * If a non-alias free memory access is found, reset the alias free
+ * flag.
  */
 static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 	wlk_env *env = ctx;
-	int i;
+	int      i;
 	ir_type *ctp;
-	ir_opcode code = get_irn_opcode(n);
+	ir_node *ptr;
 
-	if (code == iro_Load || code == iro_Store) {
-		ir_node *ptr = get_irn_n(n, 1);
-
-		if (! is_Sel(ptr))
-			env->non_local_mem = 1;
-		else if (get_Sel_ptr(ptr) != get_irg_frame(current_ir_graph))
-			env->non_local_mem = 1;
-	} else if (env->arg_shift > 0 && code == iro_Proj) {
-		ir_node *pred = get_Proj_pred(n);
-
-		/* Fix the argument numbers */
-		if (pred == get_irg_args(current_ir_graph)) {
-			long pnr = get_Proj_proj(n);
-			set_Proj_proj(n, pnr + env->arg_shift);
-			env->changed = 1;
+	switch (get_irn_opcode(n)) {
+	case iro_Load:
+	case iro_Store:
+		if (env->only_local_mem) {
+			ptr = get_irn_n(n, 1);
+			check_ptr(ptr, env);
 		}
-	} else if (code == iro_Call) {
+		break;
+	case iro_Proj:
+		if (env->arg_shift > 0) {
+			ir_node *pred = get_Proj_pred(n);
+
+			/* Fix the argument numbers */
+			if (pred == get_irg_args(current_ir_graph)) {
+				long pnr = get_Proj_proj(n);
+				set_Proj_proj(n, pnr + env->arg_shift);
+				env->changed = 1;
+			}
+		}
+		break;
+	case iro_Call:
+		if (! is_self_recursive_Call(n)) {
+			/* any non self recursive call might access global memory */
+			env->only_local_mem = 0;
+		}
+
 		ctp = get_Call_type(n);
 		if (env->params->flags & LF_COMPOUND_RETURN) {
 			/* check for compound returns */
@@ -274,39 +334,51 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 				}
 			}
 		}
-	} else if (code == iro_CopyB && env->params->flags & LF_COMPOUND_RETURN) {
-		/* check for compound returns */
-		ir_node *src = get_CopyB_src(n);
-		/* older scheme using value_res_ent */
-		if (is_Sel(src)) {
-			ir_node *proj = get_Sel_ptr(src);
-			if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_P_value_res_base) {
-				ir_node *call = get_Proj_pred(proj);
-				if (is_Call(call)) {
-					/* found a CopyB from compound Call result */
-					cl_entry *e = get_Call_entry(call, env);
-					set_irn_link(n, e->copyb);
-					e->copyb = n;
-				}
-			}
-		} else {
-			/* new scheme: compound results are determined by the call type only */
-			if (is_Proj(src)) {
-				ir_node *proj = get_Proj_pred(src);
-				if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
+		break;
+	case iro_CopyB:
+		if (env->only_local_mem) {
+			check_ptr(get_CopyB_src(n), env);
+			if (env->only_local_mem)
+				check_ptr(get_CopyB_dst(n), env);
+		}
+		if (env->params->flags & LF_COMPOUND_RETURN) {
+			/* check for compound returns */
+			ir_node *src = get_CopyB_src(n);
+			/* older scheme using value_res_ent */
+			if (is_Sel(src)) {
+				ir_node *proj = get_Sel_ptr(src);
+				if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_P_value_res_base) {
 					ir_node *call = get_Proj_pred(proj);
 					if (is_Call(call)) {
-						ctp = get_Call_type(call);
-						if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
-							/* found a CopyB from compound Call result */
-							cl_entry *e = get_Call_entry(call, env);
-							set_irn_link(n, e->copyb);
-							e->copyb = n;
+						/* found a CopyB from compound Call result */
+						cl_entry *e = get_Call_entry(call, env);
+						set_irn_link(n, e->copyb);
+						e->copyb = n;
+					}
+				}
+			} else {
+				/* new scheme: compound results are determined by the call type only */
+				if (is_Proj(src)) {
+					ir_node *proj = get_Proj_pred(src);
+					if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
+						ir_node *call = get_Proj_pred(proj);
+						if (is_Call(call)) {
+							ctp = get_Call_type(call);
+							if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
+								/* found a CopyB from compound Call result */
+								cl_entry *e = get_Call_entry(call, env);
+								set_irn_link(n, e->copyb);
+								e->copyb = n;
+							}
 						}
 					}
 				}
 			}
 		}
+		break;
+	default:
+		/* do nothing */
+		break;
 	}
 }
 
@@ -588,12 +660,12 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		env.arg_shift = 0;
 	}
 	obstack_init(&env.obst);
-	env.cl_list       = NULL;
-	env.dummy_map     = pmap_create_ex(8);
-	env.dnr           = 0;
-	env.params        = lp;
-	env.non_local_mem = 0;
-	env.changed       = 0;
+	env.cl_list        = NULL;
+	env.dummy_map      = pmap_create_ex(8);
+	env.dnr            = 0;
+	env.params         = lp;
+	env.only_local_mem = 1;
+	env.changed        = 0;
 
 	/* scan the code, fix argument numbers and collect calls. */
 	irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
@@ -656,7 +728,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 					 * A simple heuristic: all Loads/Stores inside
 					 * the function access only local frame.
 					 */
-					if (!env.non_local_mem && is_compound_address(ft, pred)) {
+					if (env.only_local_mem && is_compound_address(ft, pred)) {
 						/* we can do the copy-return optimization here */
 						cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
 						cr_opt[n_cr_opt].arg = arg;
