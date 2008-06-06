@@ -88,7 +88,6 @@ ir\opt\tropt.h
 ir\opt\scalar_replace.h
 ir\opt\escape_ana.h
 ir\opt\proc_cloning.h
-ir\opt\opt_branches.h
 ir\opt\opt_confirms.h
 ir\opt\opt_frame.h
 ir\opt\opt_osr.h
