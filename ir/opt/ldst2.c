@@ -157,7 +157,7 @@ static ir_alias_relation AliasTest(ir_graph* irg, ir_node* addr, ir_mode* mode, 
 	} else if (is_Store(other)) {
 		other_addr = get_Store_ptr(other);
 	} else {
-		return may_alias;
+		return ir_may_alias;
 	}
 
 	other_mode = get_irn_mode(other);
@@ -301,7 +301,7 @@ static void PlaceLoad(ir_graph* irg, ir_node* block, ir_node* load, ir_node* mem
 		ir_alias_relation rel = get_alias_relation(irg, addr, mode, other_addr, other_mode);
 
 		DB((dbg, LEVEL_3, "===> Testing for alias between %+F and %+F. Relation is %d\n", addr, other_addr, rel));
-		if (rel == no_alias) {
+		if (rel == ir_no_alias) {
 			continue;
 		}
 		DB((dbg, LEVEL_3, "===> %+F potentially aliases address %+F\n", load, other_addr));
@@ -332,14 +332,14 @@ static void PlaceStore(ir_graph* irg, ir_node* block, ir_node* store, ir_node* m
 		ir_node* other_node;
 
 		DB((dbg, LEVEL_3, "===> Testing for alias between %+F and %+F. Relation is %d\n", addr, other_addr, rel));
-		if (rel == no_alias) {
+		if (rel == ir_no_alias) {
 			continue;
 		}
 		DB((dbg, LEVEL_3, "===> %+F potentially aliases address %+F\n", store, other_addr));
 
 		ir_nodeset_iterator_init(&interfere_iter, &interfere_sets[i]);
 		while ((other_node = ir_nodeset_iterator_next(&interfere_iter)) != NULL) {
-			if (AliasTest(irg, addr, mode, other_node) != no_alias) {
+			if (AliasTest(irg, addr, mode, other_node) != ir_no_alias) {
 				DB((dbg, LEVEL_3, "===> Removing %+F from execute-after set of %+F due to %+F\n", other_node, addrs[i], store));
 				ir_nodeset_remove_iterator(&interfere_sets[i], &interfere_iter);
 			}
@@ -646,7 +646,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 				ir_node *org_ptr    = pi->origin_ptr;
 				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == no_alias) {
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_fprintf(stderr, "Ld after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
 					ir_nodeset_insert(&pi->user_mem, irn);
@@ -683,7 +683,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 				ir_node *org_ptr   = pi->origin_ptr;
 				ir_mode *load_mode = get_Load_mode(pred);
 				ir_node *load_ptr  = get_Load_ptr(pred);
-				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, load_ptr, load_mode) == no_alias) {
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, load_ptr, load_mode) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
 					ir_fprintf(stderr, "St after Ld: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, load_ptr, load_mode);
 					ir_nodeset_insert(&pi->user_mem, irn);
@@ -697,7 +697,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 				ir_node *org_ptr    = pi->origin_ptr;
 				ir_mode *store_mode = get_irn_mode(get_Store_value(pred));
 				ir_node *store_ptr  = get_Store_ptr(pred);
-				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == no_alias) {
+				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
 					ir_node *mem;
 
 					ir_fprintf(stderr, "St after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);

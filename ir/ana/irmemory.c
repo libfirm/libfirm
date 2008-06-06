@@ -56,9 +56,9 @@ static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 const char *get_ir_alias_relation_name(ir_alias_relation rel) {
 #define X(a) case a: return #a
 	switch (rel) {
-	X(no_alias);
-	X(may_alias);
-	X(sure_alias);
+	X(ir_no_alias);
+	X(ir_may_alias);
+	X(ir_sure_alias);
 	default: assert(0); return "UNKNOWN";
 	}
 #undef X
@@ -104,28 +104,28 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
 /**
  * Check if a given Const node is greater or equal a given size.
  *
- * @return no_alias if the Const is greater, may_alias else
+ * @return ir_no_alias if the Const is greater, ir_may_alias else
  */
 static ir_alias_relation check_const(ir_node *cns, int size) {
 	tarval *tv = get_Const_tarval(cns);
 	tarval *tv_size;
 
 	if (size == 0)
-		return tarval_is_null(tv) ? may_alias : no_alias;
+		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
 	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-	return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? no_alias : may_alias;
+	return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? ir_no_alias : ir_may_alias;
 }  /* check_const */
 
 /**
  * Treat idx1 and idx2 as integer indexes and check if they differ always more than size.
  *
- * @return sure_alias iff idx1 == idx2
- *         no_alias iff they ALWAYS differ more than size
- *         may_alias else
+ * @return ir_sure_alias iff idx1 == idx2
+ *         ir_no_alias iff they ALWAYS differ more than size
+ *         ir_may_alias else
  */
 static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size) {
 	if (idx1 == idx2)
-		return sure_alias;
+		return ir_sure_alias;
 	if (is_Const(idx1) && is_Const(idx2)) {
 		/* both are const, we can compare them */
 		tarval *tv1 = get_Const_tarval(idx1);
@@ -134,7 +134,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 		ir_mode *m1, *m2;
 
 		if (size == 0)
-			return tv1 == tv2 ? sure_alias : no_alias;
+			return tv1 == tv2 ? ir_sure_alias : ir_no_alias;
 
 		/* arg, modes may be different */
 		m1 = get_tarval_mode(tv1);
@@ -147,7 +147,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 				m1 = mode_is_signed(m1) ? find_signed_mode(m2) : find_unsigned_mode(m2);
 				if (m1 == NULL) {
 					/* should NOT happen, but if it does we give up here */
-					return may_alias;
+					return ir_may_alias;
 				}
 				tv1 = tarval_convert_to(tv1, m1);
 			} else if (size > 0) {
@@ -155,7 +155,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 				m2 = mode_is_signed(m2) ? find_signed_mode(m1) : find_unsigned_mode(m1);
 				if (m2 == NULL) {
 					/* should NOT happen, but if it does we give up here */
-					return may_alias;
+					return ir_may_alias;
 				}
 				tv2 = tarval_convert_to(tv2, m2);
 			}
@@ -178,7 +178,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 
 					if (tarval_cmp(tv2, tv_size) & (pn_Cmp_Eq|pn_Cmp_Gt)) {
 						/* tv1 is negative and tv2 >= tv_size, so the difference is bigger than size */
-						return no_alias;
+						return ir_no_alias;
 					}
 					/* tv_size > tv2, so we can subtract without overflow */
 					tv2 = tarval_sub(tv_size, tv2);
@@ -190,7 +190,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 					tv1 = tarval_convert_to(tv1, m2);
 
 					/* now we can compare without overflow */
-					return tarval_cmp(tv1, tv2) & (pn_Cmp_Eq|pn_Cmp_Gt) ? no_alias : may_alias;
+					return tarval_cmp(tv1, tv2) & (pn_Cmp_Eq|pn_Cmp_Gt) ? ir_no_alias : ir_may_alias;
 				}
 			}
 		}
@@ -202,7 +202,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 		/* tv1 is now the "smaller" one */
 		tv      = tarval_sub(tv2, tv1);
 		tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-		return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? no_alias : may_alias;
+		return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? ir_no_alias : ir_may_alias;
 	}
 
 	/* Note: we rely here on the fact that normalization puts constants on the RIGHT side */
@@ -272,7 +272,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 		}
 
 	}
-	return may_alias;
+	return ir_may_alias;
 }  /* different_index */
 
 /**
@@ -325,7 +325,7 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 		}
 	}
 #endif
-	return may_alias;
+	return ir_may_alias;
 }  /* different_sel_offsets */
 
 /**
@@ -364,20 +364,20 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 
 			if (get_type_tpop(tp1) != get_type_tpop(tp2)) {
 				/* different type structure */
-				return no_alias;
+				return ir_no_alias;
 			}
 			if (is_Class_type(tp1)) {
 				/* check class hierarchy */
 				if (! is_SubClass_of(tp1, tp2) &&
 					! is_SubClass_of(tp2, tp1))
-					return no_alias;
+					return ir_no_alias;
 			} else {
 				/* different types */
-				return no_alias;
+				return ir_no_alias;
 			}
 		}
 	}
-	return may_alias;
+	return ir_may_alias;
 }  /* different_types */
 
 /**
@@ -418,49 +418,32 @@ static int is_malloc_Result(ir_node *node) {
 }  /* is_malloc_Result */
 
 /**
- * classify storage locations.
- * Except STORAGE_CLASS_POINTER they are all disjoint.
- * STORAGE_CLASS_POINTER potentially aliases all classes which don't have a
- * NOTTAKEN modifier.
- */
-typedef enum {
-	STORAGE_CLASS_POINTER           = 0x0000,
-	STORAGE_CLASS_GLOBALVAR         = 0x0001,
-	STORAGE_CLASS_LOCALVAR          = 0x0002,
-	STORAGE_CLASS_ARGUMENT          = 0x0003,
-	STORAGE_CLASS_TLS               = 0x0004,
-	STORAGE_CLASS_MALLOCED          = 0x0005,
-
-	STORAGE_CLASS_MODIFIER_NOTTAKEN = 0x1000,
-} storage_class_class_t;
-
-/**
  * Classify a base pointer.
  *
  * @param irg  the graph of the pointer
  * @param irn  the node representing the base address
  * @param ent  the base entity of the base address iff any
  */
-static storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent)
+ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent)
 {
-	storage_class_class_t res = STORAGE_CLASS_POINTER;
+	ir_storage_class_class_t res = ir_sc_pointer;
 	if (is_Global(irn)) {
 		ir_entity *entity = get_Global_entity(irn);
-		res = STORAGE_CLASS_GLOBALVAR;
+		res = ir_sc_globalvar;
 		if (get_entity_address_taken(entity) == ir_address_not_taken)
-			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
+			res |= ir_sc_modifier_nottaken;
 	} else if (irn == get_irg_frame(irg)) {
-		res = STORAGE_CLASS_LOCALVAR;
+		res = ir_sc_localvar;
 		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
-			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
+			res |= ir_sc_modifier_nottaken;
 	} else if (is_arg_Proj(irn)) {
-		return STORAGE_CLASS_ARGUMENT;
+		return ir_sc_argument;
 	} else if (irn == get_irg_tls(irg)) {
-		res = STORAGE_CLASS_TLS;
+		res = ir_sc_tls;
 		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
-			res |= STORAGE_CLASS_MODIFIER_NOTTAKEN;
+			res |= ir_sc_modifier_nottaken;
 	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
-		return STORAGE_CLASS_MALLOCED;
+		return ir_sc_malloced;
 	}
 
 	return res;
@@ -498,20 +481,20 @@ static ir_alias_relation _get_alias_relation(
 	ir_node               *orig_adr1 = adr1;
 	ir_node               *orig_adr2 = adr2;
 	unsigned              mode_size;
-	storage_class_class_t class1, class2;
+	ir_storage_class_class_t class1, class2;
 	int                   have_const_offsets;
 
 	if (! get_opt_alias_analysis())
-		return may_alias;
+		return ir_may_alias;
 
 	if (adr1 == adr2)
-		return sure_alias;
+		return ir_sure_alias;
 
 	options = get_irg_memory_disambiguator_options(irg);
 
 	/* The Armageddon switch */
 	if (options & aa_opt_no_alias)
-		return no_alias;
+		return ir_no_alias;
 
 	/* do the addresses have constants offsets?
 	 *  Note: nodes are normalized to have constants at right inputs,
@@ -557,15 +540,15 @@ static ir_alias_relation _get_alias_relation(
 	 */
 	if (adr1 == adr2 && have_const_offsets) {
 		if ((unsigned long)labs(offset2 - offset1) >= mode_size)
-			return no_alias;
+			return ir_no_alias;
 		else
-			return sure_alias;
+			return ir_sure_alias;
 	}
 
 	/*
 	 * Bitfields can be constructed as Sels from its base address.
 	 * As they have different entities, the disambiguator would find that they are
-	 * alias free. While this is true vor it's values, it is false for the addresses
+	 * alias free. While this is true for it's values, it is false for the addresses
 	 * (strictly speaking, the Sel's are NOT the addresses of the bitfields).
 	 * So, skip those bitfield selecting Sel's.
 	 */
@@ -587,7 +570,7 @@ static ir_alias_relation _get_alias_relation(
 	/* same base address -> compare sel entities */
 	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
 		if (ent1 != ent2)
-			return no_alias;
+			return ir_no_alias;
 		else if (have_const_offsets)
 			return different_sel_offsets(adr1, adr2);
 	}
@@ -595,32 +578,32 @@ static ir_alias_relation _get_alias_relation(
 	class1 = classify_pointer(irg, base1, ent1);
 	class2 = classify_pointer(irg, base2, ent2);
 
-	if (class1 == STORAGE_CLASS_POINTER) {
-		if (class2 & STORAGE_CLASS_MODIFIER_NOTTAKEN) {
-			return no_alias;
+	if (class1 == ir_sc_pointer) {
+		if (class2 & ir_sc_modifier_nottaken) {
+			return ir_no_alias;
 		} else {
-			return may_alias;
+			return ir_may_alias;
 		}
-	} else if (class2 == STORAGE_CLASS_POINTER) {
-		if (class1 & STORAGE_CLASS_MODIFIER_NOTTAKEN) {
-			return no_alias;
+	} else if (class2 == ir_sc_pointer) {
+		if (class1 & ir_sc_modifier_nottaken) {
+			return ir_no_alias;
 		} else {
-			return may_alias;
+			return ir_may_alias;
 		}
 	}
 
 	if (class1 != class2) {
-		return no_alias;
+		return ir_no_alias;
 	}
 
-	if (class1 == STORAGE_CLASS_GLOBALVAR) {
+	if (class1 == ir_sc_globalvar) {
 		ir_entity *entity1 = get_SymConst_entity(base1);
 		ir_entity *entity2 = get_SymConst_entity(base2);
 		if (entity1 != entity2)
-			return no_alias;
+			return ir_no_alias;
 
 		/* for some reason CSE didn't happen yet for the 2 SymConsts... */
-		return may_alias;
+		return ir_may_alias;
 	}
 
    	/* Type based alias analysis */
@@ -629,22 +612,22 @@ static ir_alias_relation _get_alias_relation(
 
 		if (options & aa_opt_byte_type_may_alias) {
 			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
-				/* One of the modes address a byte. Assume a may_alias and leave
+				/* One of the modes address a byte. Assume a ir_may_alias and leave
 				   the type based check. */
 				goto leave_type_based_alias;
 			}
 		}
 		/* cheap check: If the mode sizes did not match, the types MUST be different */
 		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
-			return no_alias;
+			return ir_no_alias;
 
 		/* cheap test: if only one is a reference mode, no alias */
 		if (mode_is_reference(mode1) != mode_is_reference(mode2))
-			return no_alias;
+			return ir_no_alias;
 
 		/* try rule R5 */
 		rel = different_types(orig_adr1, orig_adr2);
-		if (rel != may_alias)
+		if (rel != ir_may_alias)
 			return rel;
 leave_type_based_alias:;
 	}
@@ -652,12 +635,12 @@ leave_type_based_alias:;
 	/* do we have a language specific memory disambiguator? */
 	if (language_disambuigator) {
 		ir_alias_relation rel = (*language_disambuigator)(irg, orig_adr1, mode1, orig_adr2, mode2);
-		if (rel != may_alias)
+		if (rel != ir_may_alias)
 			return rel;
 	}
 
 	/* access points-to information here */
-	return may_alias;
+	return ir_may_alias;
 }  /* _get_alias_relation */
 
 /*
@@ -721,7 +704,7 @@ ir_alias_relation get_alias_relation_ex(
 	ir_fprintf(stderr, "%+F <-> %+F\n", adr1, adr2);
 
 	if (! get_opt_alias_analysis())
-		return may_alias;
+		return ir_may_alias;
 
 	if (get_irn_opcode(adr1) > get_irn_opcode(adr2)) {
 		ir_node *t = adr1;

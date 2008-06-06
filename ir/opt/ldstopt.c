@@ -586,7 +586,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				get_irn_mode(get_Store_value(pred)),
 				ptr, load_mode);
 			/* if the might be an alias, we cannot pass this Store */
-			if (rel != no_alias)
+			if (rel != ir_no_alias)
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
 		} else if (is_Load(pred)) {
@@ -924,14 +924,14 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 				get_irn_mode(get_Store_value(pred)),
 				ptr, mode);
 			/* if the might be an alias, we cannot pass this Store */
-			if (rel != no_alias)
+			if (rel != ir_no_alias)
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
 		} else if (get_irn_op(pred) == op_Load) {
 			ir_alias_relation rel = get_alias_relation(
 				current_ir_graph, get_Load_ptr(pred), get_Load_mode(pred),
 				ptr, mode);
-			if (rel != no_alias)
+			if (rel != ir_no_alias)
 				break;
 
 			pred = skip_Proj(get_Load_mem(pred));
@@ -1376,7 +1376,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 						get_irn_mode(get_Store_value(other)),
 						ptr, load_mode);
 					/* if the might be an alias, we cannot pass this Store */
-					if (rel != no_alias)
+					if (rel != ir_no_alias)
 						break;
 				}
 				/* only pure Calls are allowed here, so ignore them */

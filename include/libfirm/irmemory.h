@@ -31,9 +31,9 @@
 
 /** The alias relation of two memory addresses. */
 typedef enum {
-	no_alias,       /**< No alias. */
-	may_alias,      /**< Unknown state, may alias. */
-	sure_alias      /**< Sure alias. */
+	ir_no_alias,       /**< No alias. */
+	ir_may_alias,      /**< Unknown state, may alias. */
+	ir_sure_alias      /**< Sure alias. */
 } ir_alias_relation;
 
 /** The state of the address taken flags. */
@@ -49,7 +49,24 @@ typedef enum {
 	aa_opt_byte_type_may_alias = 2,  /**< if type based analysis is enabled: bytes types may alias other types */
 	aa_opt_no_alias            = 4,  /**< two addresses NEVER alias, use with CAUTION (gcc -fno-alias) */
 	aa_opt_inherited           = 128 /**< only for implementation: options from a graph are inherited from global */
-} disambuigator_options;
+} ir_disambuigator_options;
+
+/**
+ * Classify storage locations.
+ * Except ir_sc_pointer they are all disjoint.
+ * ir_sc_pointer potentially aliases all classes which don't have a
+ * NOTTAKEN modifier.
+ */
+typedef enum {
+	ir_sc_pointer           = 0x0,  /**< generic pointer, may be anything */
+	ir_sc_globalvar         = 0x1,  /**< an address of a global variable */
+	ir_sc_localvar          = 0x2,  /**< an address of a local variable */
+	ir_sc_argument          = 0x3,  /**< an method argument */
+	ir_sc_tls               = 0x4,  /**< an address of a thread local storage variable */
+	ir_sc_malloced          = 0x5,  /**< an allocated heap address */
+
+	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable was not taken */
+} ir_storage_class_class_t;
 
 /**
  * A source language specific memory disambiguator function.
@@ -59,6 +76,15 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
 	ir_graph *irg,
 	ir_node *adr1, ir_mode *mode1,
 	ir_node *adr2, ir_mode *mode2);
+
+/**
+ * Classify a base pointer.
+ *
+ * @param irg  the graph of the pointer
+ * @param irn  the node representing the base address
+ * @param ent  the base entity of the base address iff any
+ */
+ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent);
 
 /**
  * Returns a human readable name for an alias relation.
