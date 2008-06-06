@@ -645,6 +645,12 @@ void     set_Call_type(ir_node *node, ir_type *tp);
 /** Gets the arity of a call. Identical to get_Call_n_params(). */
 int      get_Call_arity(const ir_node *node);
 
+/**
+ * Returns non-zero if a Call is surely a self-recursive Call.
+ * Beware: if this functions returns 0, the call might be self-recursive!
+ */
+int is_self_recursive_Call(const ir_node *call);
+
 /** Set, get and remove the callee information for a Call node.
  *
  *  The callee information lists all method entities that can be called

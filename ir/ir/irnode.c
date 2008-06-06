@@ -1412,6 +1412,21 @@ void set_CallBegin_call(ir_node *node, ir_node *call) {
 	node->attr.callbegin.call = call;
 }
 
+/*
+ * Returns non-zero if a Call is surely a self-recursive Call.
+ * Beware: if this functions returns 0, the call might be self-recursive!
+ */
+int is_self_recursive_Call(const ir_node *call) {
+	const ir_node *callee = get_Call_ptr(call);
+
+	if (is_SymConst_addr_ent(callee)) {
+		const ir_entity *ent = get_SymConst_entity(callee);
+		const ir_graph  *irg = get_entity_irg(ent);
+		if (irg == get_irn_irg(call))
+			return 1;
+	}
+	return 0;
+}
 
 #define BINOP(OP)                                      \
 ir_node * get_##OP##_left(const ir_node *node) {       \
