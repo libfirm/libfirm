@@ -5851,7 +5851,7 @@ ir_node *optimize_node(ir_node *n) {
 	}
 
 	/* remove unnecessary nodes */
-	if (get_opt_constant_folding() ||
+	if (get_opt_algebraic_simplification() ||
 	    (iro == iro_Phi)  ||   /* always optimize these nodes. */
 	    (iro == iro_Id)   ||
 	    (iro == iro_Proj) ||
@@ -5879,14 +5879,14 @@ ir_node *optimize_node(ir_node *n) {
 	/* Some more constant expression evaluation that does not allow to
 	   free the node. */
 	iro = get_irn_opcode(n);
-	if (get_opt_constant_folding() ||
+	if (get_opt_algebraic_simplification() ||
 	    (iro == iro_Cond) ||
 	    (iro == iro_Proj))     /* Flags tested local. */
 		n = transform_node(n);
 
 	/* Remove nodes with dead (Bad) input.
 	   Run always for transformation induced Bads. */
-	n = gigo (n);
+	n = gigo(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for CSE */
 	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {

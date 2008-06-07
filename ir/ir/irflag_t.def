@@ -58,6 +58,9 @@ I_FLAG(control_flow_weak_simplification   , 6, ON)
 /** */
 I_FLAG(control_flow_strong_simplification , 7, ON)
 
+/** Algebraic simplifications. */
+I_FLAG(algebraic_simplification           , 8, ON)
+
 /** Remove dynamic method dispatch. */
 E_FLAG(dyn_meth_dispatch                  , 11, ON)
 

@@ -61,12 +61,19 @@ int  get_optimize(void);
 /** Enables/Disables constant folding optimization.
  *
  *  If opt_constant_folding == 1 perform
- *  - constant expression evaluation (2 + 5 ==> 7, 3 < 2 ==> false)
+ *  constant expression evaluation (2 + 5 ==> 7, 3 < 2 ==> false)
+ * Default: opt_constant_folding == 1.
+ */
+void set_opt_constant_folding(int value);
+
+/** Enables/Disables algebraic simplifications.
+ *
+ *  If opt_algebraic_simplification == 1 perform
  *  - algebraic simplification  (a * 0 ==> 0, a or a ==> a)
  *  - simplification of tests   ( !(a < b) ==> (a >= b))
  * Default: opt_constant_folding == 1.
  */
-void set_opt_constant_folding(int value);
+void set_opt_algebraic_simplification(int value);
 
 /** Enables/Disables common subexpression elimination.
  *
