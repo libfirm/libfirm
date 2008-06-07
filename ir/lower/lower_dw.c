@@ -277,7 +277,7 @@ static void prepare_links(ir_node *node, void *env)
 	lower_env_t  *lenv = env;
 	ir_mode      *mode = get_irn_op_mode(node);
 	node_entry_t *link;
-	int          i;
+	int          i, idx;
 
 	if (mode == lenv->params->high_signed ||
 		mode == lenv->params->high_unsigned) {
@@ -286,7 +286,17 @@ static void prepare_links(ir_node *node, void *env)
 
 		memset(link, 0, sizeof(*link));
 
-		lenv->entries[get_irn_idx(node)] = link;
+		idx = get_irn_idx(node);
+		if (idx >= lenv->n_entries) {
+			/* enlarge: this happens only for Rotl nodes which is RARELY */
+			int old = lenv->n_entries;
+			int n_idx = idx + (idx >> 3);
+
+			ARR_RESIZE(node_entry_t *, lenv->entries, n_idx);
+			memset(&lenv->entries[old], 0, (n_idx - old) * sizeof(lenv->entries[0]));
+			lenv->n_entries = n_idx;
+		}
+		lenv->entries[idx] = link;
 		lenv->flags |= MUST_BE_LOWERED;
 	} else if (is_Conv(node)) {
 		/* Conv nodes have two modes */
@@ -1016,32 +1026,84 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Shrs */
 
 /**
- * Translate a Rotl and handle special cases.
+ * Rebuild Rotl nodes into Or(Shl, Shr) and prepare all nodes.
+ */
+static void prepare_links_and_handle_rotl(ir_node *node, void *env) {
+	lower_env_t *lenv = env;
+
+	if (is_Rotl(node)) {
+		ir_mode *mode = get_irn_op_mode(node);
+			if (mode == lenv->params->high_signed ||
+			    mode == lenv->params->high_unsigned) {
+				ir_node  *right = get_Rotl_right(node);
+				ir_node  *left, *shl, *shr, *or, *block, *sub, *c;
+				ir_mode  *omode, *rmode;
+				ir_graph *irg;
+				dbg_info *dbg;
+				optimization_state_t state;
+
+				if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
+					tarval *tv = get_Const_tarval(right);
+
+					if (tarval_is_long(tv) &&
+					    get_tarval_long(tv) == (long)get_mode_size_bits(mode)) {
+						/* will be optimized in lower_Rotl() */
+						return;
+					}
+				}
+
+				/* replace the Rotl(x,y) by an Or(Shl(x,y), Shr(x,64-y)) and lower those */
+				dbg   = get_irn_dbg_info(node);
+				omode = get_irn_mode(node);
+				left  = get_Rotl_left(node);
+				irg   = current_ir_graph;
+				block = get_nodes_block(node);
+				shl   = new_rd_Shl(dbg, irg, block, left, right, omode);
+				rmode = get_irn_mode(right);
+				c     = new_Const_long(rmode, get_mode_size_bits(omode));
+				sub   = new_rd_Sub(dbg, irg, block, c, right, rmode);
+				shr   = new_rd_Shr(dbg, irg, block, left, sub, omode);
+
+				/* optimization must be switched off here, or we will get the Rotl back */
+				save_optimization_state(&state);
+				set_opt_algebraic_simplification(0);
+				or = new_rd_Or(dbg, irg, block, shl, shr, omode);
+				restore_optimization_state(&state);
+
+				exchange(node, or);
+
+				/* do lowering on the new nodes */
+				prepare_links(shl, env);
+				prepare_links(c, env);
+				prepare_links(sub, env);
+				prepare_links(shr, env);
+				prepare_links(or, env);
+			}
+	} else {
+		prepare_links(node, env);
+	}
+}
+
+/**
+ * Translate a special case Rotl(x, sizeof(w)).
  */
 static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_node  *right = get_Rotl_right(node);
+	ir_node *right = get_Rotl_right(node);
+	ir_node *left = get_Rotl_left(node);
+	ir_node *h, *l;
+	int idx = get_irn_idx(left);
 
-	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
+	assert(get_mode_arithmetic(mode) == irma_twos_complement &&
+	       is_Const(right) && tarval_is_long(get_Const_tarval(right)) &&
+	       get_tarval_long(get_Const_tarval(right)) == (long)get_mode_size_bits(mode));
 
-		if (tarval_is_long(tv) &&
-		    get_tarval_long(tv) == (long)get_mode_size_bits(mode)) {
-			ir_node *left = get_Rotl_left(node);
-			ir_node *h, *l;
-			int idx = get_irn_idx(left);
+	l = env->entries[idx]->low_word;
+	h = env->entries[idx]->high_word;
+	idx = get_irn_idx(node);
 
-			l = env->entries[idx]->low_word;
-			h = env->entries[idx]->high_word;
-			idx = get_irn_idx(node);
-
-			env->entries[idx]->low_word  = h;
-			env->entries[idx]->high_word = l;
-
-			return;
-		}  /* if */
-	}  /* if */
-	lower_Shiftop(node, mode, env);
-}  /* lower_Rot */
+	env->entries[idx]->low_word  = h;
+	env->entries[idx]->high_word = l;
+}  /* lower_Rotl */
 
 /**
  * Translate an Unop.
@@ -2470,14 +2532,15 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		obstack_init(&lenv.obst);
 
 		n_idx = get_irg_last_idx(irg);
+		n_idx = n_idx + (n_idx >> 2);  /* add 25% */
 		lenv.n_entries = n_idx;
-		lenv.entries   = xmalloc(n_idx * sizeof(lenv.entries[0]));
+		lenv.entries   = NEW_ARR_F(node_entry_t *, n_idx);
 		memset(lenv.entries, 0, n_idx * sizeof(lenv.entries[0]));
 
 		/* first step: link all nodes and allocate data */
 		lenv.flags = 0;
 		lenv.proj_2_block = pmap_create();
-		irg_walk_graph(irg, firm_clear_link, prepare_links, &lenv);
+		irg_walk_graph(irg, firm_clear_link, prepare_links_and_handle_rotl, &lenv);
 
 		if (lenv.flags & MUST_BE_LOWERED) {
 			DB((dbg, LEVEL_1, "Lowering graph %+F\n", irg));
@@ -2505,7 +2568,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 			}  /* if */
 		}  /* if */
 		pmap_destroy(lenv.proj_2_block);
-		free(lenv.entries);
+		DEL_ARR_F(lenv.entries);
 		obstack_free(&lenv.obst, NULL);
 	}  /* for */
 	del_pdeq(lenv.waitq);
