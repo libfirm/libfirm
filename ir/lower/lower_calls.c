@@ -36,6 +36,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irmemory.h"
 #include "irtools.h"
 #include "iroptimize.h"
 #include "array.h"
