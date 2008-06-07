@@ -588,24 +588,24 @@ static void bp_activate(unsigned bp, int active)
  */
 static void show_commands(void) {
 	dbg_printf("Internal Firm debugger extension $Revision$ commands:\n"
-		".init                  break after initialization\n"
-		".create nr             break if node nr was created\n"
-		".replace nr            break if node nr is replaced by another node\n"
-		".lower nr              break before node nr is lowered\n"
-		".remirg nr|name        break if the irg of nr or entity name is deleted\n"
-		".newent nr|name        break if the entity nr or name was created\n"
-		".newtype nr|name       break if the type nr or name was created\n"
-		".bp                    show all breakpoints\n"
-		".enable nr             enable breakpoint nr\n"
-		".disable nr            disable breakpoint nr\n"
-		".showtype nr|name      show content of the type nr or name\n"
-		".showent nr|name       show content of the entity nr or name\n"
-		".setmask name msk      sets the debug module name to mask msk\n"
-		".setlvl  name lvl      sets the debug module name to level lvl\n"
-		".setoutfile name file  redirects debug output of module name to file\n"
-		".irgname name          prints address and graph number of a method given by its name\n"
-		".irgldname ldname      prints address and graph number of a method given by its ldname\n"
-		".help                  list all commands\n"
+		"init                  break after initialization\n"
+		"create nr             break if node nr was created\n"
+		"replace nr            break if node nr is replaced by another node\n"
+		"lower nr              break before node nr is lowered\n"
+		"remirg nr|name        break if the irg of nr or entity name is deleted\n"
+		"newent nr|name        break if the entity nr or name was created\n"
+		"newtype nr|name       break if the type nr or name was created\n"
+		"bp                    show all breakpoints\n"
+		"enable nr             enable breakpoint nr\n"
+		"disable nr            disable breakpoint nr\n"
+		"showtype nr|name      show content of the type nr or name\n"
+		"showent nr|name       show content of the entity nr or name\n"
+		"setmask name msk      sets the debug module name to mask msk\n"
+		"setlvl  name lvl      sets the debug module name to level lvl\n"
+		"setoutfile name file  redirects debug output of module name to file\n"
+		"irgname name          prints address and graph number of a method given by its name\n"
+		"irgldname ldname      prints address and graph number of a method given by its ldname\n"
+		"help                  list all commands\n"
 		);
 }  /* show_commands */
 
@@ -984,19 +984,23 @@ static unsigned get_token(void) {
 	} while (c != '\0' && isspace(c));
 
 	lexer.tok_start = lexer.curr_pos - 1;
-	if (c == '.') {
+	if (c == '.' || isalpha(c)) {
 		/* command begins here */
 		int len = 0;
 
+		if (c == '.') {
+			/* skip the dot */
+			++lexer.tok_start;
+			c = next_char();
+		}
 		do {
 			c = next_char();
 			++len;
 		} while (isalpha(c));
 		unput();
 
-		--len;
 		for (i = sizeof(reserved)/sizeof(reserved[0]) - 1; i >= 0; --i) {
-			if (strncasecmp(lexer.tok_start + 1, reserved[i], len) == 0 && reserved[i][len] == '\0')
+			if (strncasecmp(lexer.tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
 				break;
 		}
 		if (i >= 0)
@@ -1059,9 +1063,7 @@ static unsigned get_token(void) {
 /**
  * High level function to use from debugger interface
  *
- * Supported commands:
- *  .create nr    break if node nr was created
- *  .help         list all commands
+ * See show_commands() for supported commands.
  */
 void firm_debug(const char *cmd) {
 	char name[1024], fname[1024];
@@ -1348,9 +1350,11 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  *
  * @section sec_cmd Supported commands
  *
+ * Historically all debugger commands start with a dot.  This isn't needed in newer
+ * versions, but still supported, ie the commands ".init" and "init" are equal.
  * The following commands are currently supported:
  *
- * @b .init
+ * @b init
  *
  * Break immediately after the debugger extension was initialized.
  * Typically this command is used in the environment to stop the execution
@@ -1358,92 +1362,92 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  *
  * $export FIRMDBG=".init"
  *
- * @b .create nr
+ * @b create nr
  *
  * Break if a new IR-node with node number nr was created.
  * Typically used to find the place where wrong nodes are created.
  *
- * @b .replace nr
+ * @b replace nr
  *
  * Break before IR-node with node number nr is replaced by another node.
  *
- * @b .lower nr
+ * @b lower nr
  *
  * Break before IR-node with node number nr is lowered.
  *
- * @b .remirg nr
+ * @b remirg nr
  *
  * Break if the irg with graph number nr is deleted.
  *
- * @b .remirg name
+ * @b remirg name
  *
  * Break if the irg of entity name is deleted.
  *
- * @b .newent nr
+ * @b newent nr
  *
  * Break if the entity with number nr was created.
  *
- * @b .newent name
+ * @b newent name
  *
  * Break if the entity name was created.
  *
- * @b .newtype nr
+ * @b newtype nr
  *
  * Break if the type with number nr was created.
  *
- * @b .newtype name
+ * @b newtype name
  *
  * Break if the type name was created.
  *
- * @b .bp
+ * @b bp
  *
  * Show all Firm internal breakpoints.
  *
- * @b .enable nr
+ * @b enable nr
  *
  * Enables breakpoint nr.
  *
- * @b .disable nr
+ * @b disable nr
  *
  * Disables breakpoint nr.
  *
- * @b .showent nr
+ * @b showent nr
  *
  * Show the content of entity nr.
  *
- * @b .showent name
+ * @b showent name
  *
  * Show the content of entity name.
  *
- * @b .showtype nr
+ * @b showtype nr
  *
  * Show the content of type nr.
  *
- * @b .showtype name
+ * @b showtype name
  *
  * Show the content of type name.
  *
- * @b .setmask name msk
+ * @b setmask name msk
  *
  * Sets the debug module name to mask msk.
  *
- * @b .setlvl name lvl
+ * @b setlvl name lvl
  *
  * Sets the debug module name to level lvl.
  *
- * @b .setoutfile name file
+ * @b setoutfile name file
  *
  * Redirects debug output of module name to file.
  *
- * @b .irgname name
+ * @b irgname name
  *
  * Prints address and graph number of a method given by its name.
  *
- * @b .irgldname name
+ * @b irgldname name
  *
  * Prints address and graph number of a method given by its linker name.
  *
- * @b .help
+ * @b help
  *
  * List all commands.
  *
@@ -1452,11 +1456,11 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  * The following example shows how to set a creation breakpoint in GDB when
  * node 2101 is created.
  *
- * -# set FIRMDBG=".init"
+ * -# set FIRMDBG="init"
  * -# start gdb with your compiler
  * -# after gdb breaks, issue
  *
- * call firm_debug(".create 2101")
+ * call firm_debug("create 2101")
  *
  * On the console the following text should be issued:
  *
@@ -1478,7 +1482,7 @@ static int __attribute__((unused)) _firm_only_that_you_can_compile_with_NDEBUG_d
  * Then, all Firm debugger extension commands can be accessed in the gdb
  * console using the firm prefix, eg.:
  *
- * firm ".create 2101"
+ * firm "create 2101"
  *
- * firm ".help"
+ * firm "help"
  */
