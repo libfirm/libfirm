@@ -915,7 +915,7 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
+		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shr_left(node);
 			ir_node *c;
@@ -950,7 +950,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
+		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
 			ir_mode *mode_l;
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shl_left(node);
@@ -987,7 +987,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) >= (int) get_mode_size_bits(mode)) {
+		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
 			ir_node *block = get_nodes_block(node);
 			ir_node *left = get_Shrs_left(node);
 			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
@@ -998,8 +998,11 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			idx = get_irn_idx(node);
 
 			if (shf_cnt > 0) {
+				ir_node *tmp;
 				c = new_r_Const_long(irg, block, mode_Iu, shf_cnt);
-				env->entries[idx]->low_word = new_r_Shrs(irg, block, left, c, mode);
+				tmp = new_r_Shrs(irg, block, left, c, mode);
+				/* low word is expected to have mode_Iu */
+				env->entries[idx]->low_word = new_r_Conv(irg, block, tmp, mode_Iu);
 			} else {
 				env->entries[idx]->low_word = left;
 			}  /* if */
@@ -1022,7 +1025,7 @@ static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
-			get_tarval_long(tv) == (int) get_mode_size_bits(mode)) {
+		    get_tarval_long(tv) == (long)get_mode_size_bits(mode)) {
 			ir_node *left = get_Rotl_left(node);
 			ir_node *h, *l;
 			int idx = get_irn_idx(left);
@@ -1134,7 +1137,7 @@ static void lower_Binop_logical(ir_node *node, ir_mode *mode, lower_env_t *env,
 	env->entries[idx]->high_word = constr_rd(dbg, irg, block, lop_h, rop_h, mode);
 }  /* lower_Binop_logical */
 
-/** create a logical operation tranformation */
+/** create a logical operation transformation */
 #define lower_logical(op)                                                \
 static void lower_##op(ir_node *node, ir_mode *mode, lower_env_t *env) { \
 	lower_Binop_logical(node, mode, env, new_rd_##op);                   \
