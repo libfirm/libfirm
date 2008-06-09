@@ -210,6 +210,7 @@ void part_block(ir_node *node) {
 	ir_node *old_block;
 	ir_node *phi;
 	ir_node *mbh;
+	ir_node *next, *block;
 
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
@@ -249,10 +250,13 @@ void part_block(ir_node *node) {
 
 	/* rewire partBlocks */
 	if (mbh != old_block) {
-		ir_node *next, *block = get_irn_link(mbh);
+		ir_node *list = NULL;
+
+		/* move blocks from mbh to old_block if old_block dominates them */
+		block = get_irn_link(mbh);
 
 		set_irn_link(mbh, NULL);
-		set_irn_link(old_block, NULL);
+		set_Block_MacroBlock(old_block, old_block);
 
 		/* note that we must splice the list of partBlock here */
 		for (; block != NULL; block = next) {
@@ -260,6 +264,10 @@ void part_block(ir_node *node) {
 			assert(is_Block(curr));
 
 			next = get_irn_link(block);
+
+			if (block == old_block)
+				continue;
+
 			assert(get_Block_MacroBlock(curr) == mbh);
 
 			for (;;) {
@@ -267,8 +275,8 @@ void part_block(ir_node *node) {
 					/* old_block dominates the block, so old_block will be
 					   the new macro block header */
 					set_Block_MacroBlock(block, old_block);
-					set_irn_link(block, get_irn_link(old_block));
-					set_irn_link(old_block, block);
+					set_irn_link(block, list);
+					list = block;
 					break;
 				}
 				if (curr == mbh) {
@@ -281,6 +289,27 @@ void part_block(ir_node *node) {
 				assert(get_Block_n_cfgpreds(curr) == 1);
 				curr = get_Block_cfgpred_block(curr, 0);
 			}
+		}
+		/* beware: do NOT directly manipulate old_block's list, as old_block is
+		   in mbh's list and this would destroy the list! */
+		set_irn_link(old_block, list);
+
+		/* finally add new_block to mbh's list */
+		set_irn_link(new_block, get_irn_link(mbh));
+		set_irn_link(mbh, new_block);
+	} else {
+		/* move blocks from mbh to new_block */
+		block = get_irn_link(mbh);
+
+		set_irn_link(mbh, NULL);
+		set_irn_link(new_block, NULL);
+
+		for (; block != NULL; block = next) {
+			next = get_irn_link(block);
+
+			set_Block_MacroBlock(block, new_block);
+			set_irn_link(block, get_irn_link(new_block));
+			set_irn_link(new_block, block);
 		}
 	}
 
