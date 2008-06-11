@@ -90,10 +90,10 @@ insert:
 	} /* n is a multi-entry block */
 }
 
-void remove_critical_cf_edges(ir_graph *irg) {
+void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges) {
 	cf_env env;
 
-	env.ignore_exc_edges = 1;
+	env.ignore_exc_edges = (char)ignore_exception_edges;
 	env.changed          = 0;
 
 	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
@@ -104,4 +104,8 @@ void remove_critical_cf_edges(ir_graph *irg) {
 		set_irg_doms_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
+}
+
+void remove_critical_cf_edges(ir_graph *irg) {
+	remove_critical_cf_edges_ex(irg, 1);
 }
