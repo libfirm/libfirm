@@ -77,6 +77,7 @@ const ia32_attr_t *get_ia32_attr_const(const ir_node *node);
 ia32_x87_attr_t *get_ia32_x87_attr(ir_node *node);
 const ia32_x87_attr_t *get_ia32_x87_attr_const(const ir_node *node);
 
+ia32_immediate_attr_t *get_ia32_immediate_attr(ir_node *node);
 const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node);
 
 /**

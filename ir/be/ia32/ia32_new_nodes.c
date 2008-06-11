@@ -414,6 +414,13 @@ const ia32_asm_attr_t *get_ia32_asm_attr_const(const ir_node *node) {
 	return asm_attr;
 }
 
+ia32_immediate_attr_t *get_ia32_immediate_attr(ir_node *node) {
+	ia32_attr_t           *attr      = get_ia32_attr(node);
+	ia32_immediate_attr_t *imm_attr  = CAST_IA32_ATTR(ia32_immediate_attr_t, attr);
+
+	return imm_attr;
+}
+
 const ia32_immediate_attr_t *get_ia32_immediate_attr_const(const ir_node *node)
 {
 	const ia32_attr_t           *attr     = get_ia32_attr_const(node);
