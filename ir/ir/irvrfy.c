@@ -868,18 +868,23 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
 
 		/* Blocks with more than one predecessor must be header blocks */
 		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 1, "partBlock with more than one predecessor", 0);
-		pred = get_Block_cfgpred(n, 0);
-		if (is_Proj(pred)) {
-			/* the predecessor MUST be a regular Proj */
-			ir_node *frag_op = get_Proj_pred(pred);
-			ASSERT_AND_RET(is_fragile_op(frag_op) && get_Proj_proj(pred) == pn_Generic_X_regular,
-				"partBlock with non-regular predecessor", 0);
+		if (get_irg_phase_state(irg) != phase_backend) {
+			pred = get_Block_cfgpred(n, 0);
+			if (is_Proj(pred)) {
+				/* the predecessor MUST be a regular Proj */
+				ir_node *frag_op = get_Proj_pred(pred);
+				ASSERT_AND_RET(
+					is_fragile_op(frag_op) && get_Proj_proj(pred) == pn_Generic_X_regular,
+					"partBlock with non-regular predecessor", 0);
+			} else {
+				/* We allow Jmps to be predecessors of partBlocks. This can happen due to optimization
+				   of fragile nodes during construction. It does not violate our assumption of dominance
+				   so let it. */
+				ASSERT_AND_RET(is_Jmp(pred) || is_Bad(pred),
+					"partBlock with non-regular predecessor", 0);
+			}
 		} else {
-			/* We allow Jmps to be predecessors of partBlocks. This can happen due to optimization
-			   of fragile nodes during construction. It does not violate our assumption of dominance
-			   so let it. */
-			ASSERT_AND_RET(is_Jmp(pred) || is_Bad(pred),
-				"partBlock with non-regular predecessor", 0);
+			/* relax in backend: Bound nodes are probably lowered into conditional jumps */
 		}
 	}
 
