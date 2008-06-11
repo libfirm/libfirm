@@ -263,14 +263,17 @@ static ir_entity *create_float_const_entity(ir_node *cnst)
 	return res;
 }
 
+/** Return non-zero is a node represents the 0 constant. */
 static int is_Const_0(ir_node *node) {
 	return is_Const(node) && is_Const_null(node);
 }
 
+/** Return non-zero is a node represents the 1 constant. */
 static int is_Const_1(ir_node *node) {
 	return is_Const(node) && is_Const_one(node);
 }
 
+/** Return non-zero is a node represents the -1 constant. */
 static int is_Const_Minus_1(ir_node *node) {
 	return is_Const(node) && is_Const_all_one(node);
 }
@@ -4314,7 +4317,6 @@ static ir_node *gen_IJmp(ir_node *node)
 {
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
-	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *op        = get_IJmp_target(node);
 	ir_node  *new_node;
@@ -4327,8 +4329,9 @@ static ir_node *gen_IJmp(ir_node *node)
 	                match_am | match_8bit_am | match_16bit_am |
 	                match_immediate | match_8bit | match_16bit);
 
-	new_node = new_rd_ia32_IJmp(dbgi, irg, new_block, addr->base, addr->index,
-	                            addr->mem, am.new_op2);
+	new_node = new_rd_ia32_IJmp(dbgi, current_ir_graph, new_block,
+	                            addr->base, addr->index, addr->mem,
+	                            am.new_op2);
 	set_am_attributes(new_node, &am);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
@@ -4336,6 +4339,41 @@ static ir_node *gen_IJmp(ir_node *node)
 
 	return new_node;
 }
+
+/**
+ * Transform a Bound node.
+ */
+static ir_node *gen_Bound(ir_node *node)
+{
+	ir_node  *new_node;
+	ir_node  *lower = get_Bound_lower(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+
+	if (is_Const_0(lower)) {
+		/* typical case for Java */
+		ir_node  *sub, *res, *flags, *block;
+		ir_graph *irg  = current_ir_graph;
+
+		res = gen_binop(node, get_Bound_index(node), get_Bound_upper(node),
+			new_rd_ia32_Sub, match_mode_neutral	| match_am | match_immediate);
+
+		block = get_nodes_block(res);
+		if (! is_Proj(res)) {
+			sub = res;
+			set_irn_mode(sub, mode_T);
+			res = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_res);
+		} else {
+			sub = get_Proj_pred(res);
+		}
+		flags = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_Sub_flags);
+		new_node = new_rd_ia32_Jcc(dbgi, irg, block, flags, pn_Cmp_Lt | ia32_pn_Cmp_unsigned);
+		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+	} else {
+		panic("generic Bound not supported in ia32 Backend");
+	}
+	return new_node;
+}
+
 
 typedef ir_node *construct_load_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
                                      ir_node *mem);
@@ -5150,36 +5188,69 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 }
 
 /**
+ * Transform the Projs from a Bound.
+ */
+static ir_node *gen_Proj_Bound(ir_node *node)
+{
+	ir_node *new_node, *block;
+	ir_node *pred = get_Proj_pred(node);
+
+	switch (get_Proj_proj(node)) {
+	case pn_Bound_M:
+		return be_transform_node(get_Bound_mem(pred));
+	case pn_Bound_X_regular:
+		new_node = be_transform_node(pred);
+		block    = get_nodes_block(new_node);
+		return new_r_Proj(current_ir_graph, block, new_node, mode_X, pn_ia32_Jcc_true);
+	case pn_Bound_X_except:
+		new_node = be_transform_node(pred);
+		block    = get_nodes_block(new_node);
+		return new_r_Proj(current_ir_graph, block, new_node, mode_X, pn_ia32_Jcc_false);
+	case pn_Bound_res:
+		return be_transform_node(get_Bound_index(pred));
+	default:
+		panic("unsupported Proj from Bound");
+	}
+}
+
+/**
  * Transform and potentially renumber Proj nodes.
  */
 static ir_node *gen_Proj(ir_node *node) {
-	ir_node  *pred = get_Proj_pred(node);
-	if (is_Store(pred)) {
-		long proj = get_Proj_proj(node);
+	ir_node *pred = get_Proj_pred(node);
+	long    proj;
+
+	switch (get_irn_opcode(pred)) {
+	case iro_Store:
+		proj = get_Proj_proj(node);
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
 			assert(0);
 			return new_r_Bad(current_ir_graph);
 		}
-	} else if (is_Load(pred)) {
+	case iro_Load:
 		return gen_Proj_Load(node);
-	} else if (is_Div(pred) || is_Mod(pred) || is_DivMod(pred)) {
+	case iro_Div:
+	case iro_Mod:
+	case iro_DivMod:
 		return gen_Proj_DivMod(node);
-	} else if (is_CopyB(pred)) {
+	case iro_CopyB:
 		return gen_Proj_CopyB(node);
-	} else if (is_Quot(pred)) {
+	case iro_Quot:
 		return gen_Proj_Quot(node);
-	} else if (be_is_SubSP(pred)) {
+	case beo_SubSP:
 		return gen_Proj_be_SubSP(node);
-	} else if (be_is_AddSP(pred)) {
+	case beo_AddSP:
 		return gen_Proj_be_AddSP(node);
-	} else if (be_is_Call(pred)) {
+	case beo_Call:
 		return gen_Proj_be_Call(node);
-	} else if (is_Cmp(pred)) {
+	case iro_Cmp:
 		return gen_Proj_Cmp(node);
-	} else if (get_irn_op(pred) == op_Start) {
-		long proj = get_Proj_proj(node);
+	case iro_Bound:
+		return gen_Proj_Bound(node);
+	case iro_Start:
+		proj = get_Proj_proj(node);
 		if (proj == pn_Start_X_initial_exec) {
 			ir_node *block = get_nodes_block(pred);
 			dbg_info *dbgi = get_irn_dbg_info(node);
@@ -5193,26 +5264,29 @@ static ir_node *gen_Proj(ir_node *node) {
 		if (node == be_get_old_anchor(anchor_tls)) {
 			return gen_Proj_tls(node);
 		}
-	} else if (is_ia32_l_FloattoLL(pred)) {
-		return gen_Proj_l_FloattoLL(node);
+		break;
+
+	default:
+		if (is_ia32_l_FloattoLL(pred)) {
+			return gen_Proj_l_FloattoLL(node);
 #ifdef FIRM_EXT_GRS
-	} else if(!is_ia32_irn(pred)) { // Quick hack for SIMD optimization
+		} else if (!is_ia32_irn(pred)) { // Quick hack for SIMD optimization
 #else
-	} else {
+		} else {
 #endif
-		ir_mode *mode = get_irn_mode(node);
-		if (mode_needs_gp_reg(mode)) {
-			ir_node *new_pred = be_transform_node(pred);
-			ir_node *block    = be_transform_node(get_nodes_block(node));
-			ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,
-			                               mode_Iu, get_Proj_proj(node));
+			ir_mode *mode = get_irn_mode(node);
+			if (mode_needs_gp_reg(mode)) {
+				ir_node *new_pred = be_transform_node(pred);
+				ir_node *block    = be_transform_node(get_nodes_block(node));
+				ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,
+											   mode_Iu, get_Proj_proj(node));
 #ifdef DEBUG_libfirm
-			new_proj->node_nr = node->node_nr;
+				new_proj->node_nr = node->node_nr;
 #endif
-			return new_proj;
+				return new_proj;
+			}
 		}
 	}
-
 	return be_duplicate_node(node);
 }
 
@@ -5264,6 +5338,7 @@ static void register_transformers(void)
 	GEN(Proj);
 	GEN(Phi);
 	GEN(IJmp);
+	GEN(Bound);
 
 	/* transform ops from intrinsic lowering */
 	GEN(ia32_l_Add);

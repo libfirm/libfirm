@@ -313,7 +313,7 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 	ir_node *last = sched_last(block);
 
 	/* we might have keeps behind the jump... */
-	while(be_is_Keep(last)) {
+	while (be_is_Keep(last)) {
 		last = sched_prev(last);
 		assert(!sched_is_end(last));
 	}
