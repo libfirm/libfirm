@@ -5337,7 +5337,7 @@ static void ia32_pretransform_node(void *arch_cg) {
 
 /**
  * Walker, checks if all ia32 nodes producing more than one result have
- * its Projs, other wise creates new projs and keep them using a be_Keep node.
+ * its Projs, otherwise creates new Projs and keep them using a be_Keep node.
  */
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
@@ -5374,28 +5374,28 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		ir_node                     *block;
 		ir_node                     *in[1];
 		const arch_register_req_t   *req;
-		const arch_register_class_t *class;
+		const arch_register_class_t *cls;
 
 		if(found_projs & (1 << i)) {
 			continue;
 		}
 
 		req   = get_ia32_out_req(node, i);
-		class = req->cls;
-		if(class == NULL) {
+		cls = req->cls;
+		if(cls == NULL) {
 			continue;
 		}
-		if(class == &ia32_reg_classes[CLASS_ia32_flags]) {
+		if(cls == &ia32_reg_classes[CLASS_ia32_flags]) {
 			continue;
 		}
 
 		block = get_nodes_block(node);
 		in[0] = new_r_Proj(current_ir_graph, block, node,
-		                   arch_register_class_mode(class), i);
+		                   arch_register_class_mode(cls), i);
 		if(last_keep != NULL) {
-			be_Keep_add_node(last_keep, class, in[0]);
+			be_Keep_add_node(last_keep, cls, in[0]);
 		} else {
-			last_keep = be_new_Keep(class, current_ir_graph, block, 1, in);
+			last_keep = be_new_Keep(cls, current_ir_graph, block, 1, in);
 			if(sched_is_scheduled(node)) {
 				sched_add_after(node, last_keep);
 			}

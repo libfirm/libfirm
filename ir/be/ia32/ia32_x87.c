@@ -1795,14 +1795,14 @@ static int sim_Copy(x87_state *state, ir_node *n) {
 	ir_node                     *pred;
 	const arch_register_t       *out;
 	const arch_register_t       *op1;
-	const arch_register_class_t *class;
+	const arch_register_class_t *cls;
 	ir_node                     *node, *next;
 	ia32_x87_attr_t             *attr;
 	int                         op1_idx, out_idx;
 	unsigned                    live;
 
-	class = arch_get_irn_reg_class(sim->arch_env, n, -1);
-	if (class->regs != ia32_vfp_regs)
+	cls = arch_get_irn_reg_class(sim->arch_env, n, -1);
+	if (cls->regs != ia32_vfp_regs)
 		return 0;
 
 	pred = get_irn_n(n, 0);

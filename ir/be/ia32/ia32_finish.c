@@ -260,7 +260,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		ir_node                     *perm_proj1;
 		ir_node                     *uses_out_reg;
 		const arch_register_req_t   *req = reqs[i];
-		const arch_register_class_t *class;
+		const arch_register_class_t *cls;
 		int                         uses_out_reg_pos;
 
 		if (!arch_register_req_is(req, should_be_same))
@@ -279,8 +279,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		/* unknowns can be changed to any register we want on emitting */
 		if (is_unknown_reg(in_reg))
 			continue;
-		class = arch_register_get_class(in_reg);
-		assert(class == arch_register_get_class(out_reg));
+		cls = arch_register_get_class(in_reg);
+		assert(cls == arch_register_get_class(out_reg));
 
 		/* check if any other input operands uses the out register */
 		arity = get_irn_arity(node);
@@ -312,7 +312,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		 * (the register can't be live since the operation will override it
 		 *  anyway) */
 		if(uses_out_reg == NULL) {
-			ir_node *copy = be_new_Copy(class, irg, block, in_node);
+			ir_node *copy = be_new_Copy(cls, irg, block, in_node);
 			DBG_OPT_2ADDRCPY(copy);
 
 			/* destination is the out register */
@@ -345,7 +345,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		 * after! the operation as we will override the register. */
 		in[0] = in_node;
 		in[1] = uses_out_reg;
-		perm  = be_new_Perm(class, irg, block, 2, in);
+		perm  = be_new_Perm(cls, irg, block, 2, in);
 
 		perm_proj0 = new_r_Proj(irg, block, perm, get_irn_mode(in[0]), 0);
 		perm_proj1 = new_r_Proj(irg, block, perm, get_irn_mode(in[1]), 1);
