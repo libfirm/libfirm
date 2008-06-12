@@ -950,13 +950,14 @@ static void ia32_prepare_graph(void *self) {
 #ifdef FIRM_GRGEN_BE
 	/* transform nodes into assembler instructions by PBQP magic */
 	ia32_transform_graph_by_pbqp(cg);
-#endif
 
 	if (cg->dump)
 		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
+#else
 
 	/* transform remaining nodes into assembler instructions */
 	ia32_transform_graph(cg);
+#endif
 
 	/* do local optimisations (mainly CSE) */
 	optimize_graph_df(cg->irg);
