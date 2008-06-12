@@ -864,7 +864,7 @@ const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
  */
 unsigned get_ia32_exc_label(const ir_node *node) {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.except_label;
+	return attr->data.has_except_label;
 }
 
 /**
@@ -872,7 +872,27 @@ unsigned get_ia32_exc_label(const ir_node *node) {
  */
 void set_ia32_exc_label(ir_node *node, unsigned flag) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.except_label = flag;
+	attr->data.has_except_label = flag;
+}
+
+/**
+ * Return the exception label id.
+ */
+ir_label_t get_ia32_exc_label_id(const ir_node *node) {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+
+	assert(attr->data.has_except_label);
+	return attr->exc_label;
+}
+
+/**
+ * Assign the exception label id.
+ */
+void set_ia32_exc_label_id(ir_node *node, ir_label_t id) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+
+	assert(attr->data.has_except_label);
+	attr->exc_label = id;
 }
 
 #ifndef NDEBUG
@@ -1130,7 +1150,7 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 	if (a->data.tp != b->data.tp)
 		return 1;
 
-	if (a->data.except_label != b->data.except_label)
+	if (a->data.has_except_label != b->data.has_except_label)
 		return 1;
 
 	if (a->data.ins_permuted != b->data.ins_permuted

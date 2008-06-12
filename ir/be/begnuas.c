@@ -271,15 +271,22 @@ static void dump_arith_tarval(tarval *tv, int bytes)
 /**
  * Return the label prefix for labeled blocks.
  */
-const char *be_gas_label_prefix(void) {
+const char *be_gas_block_label_prefix(void) {
 	return ".LG";
+}
+
+/**
+ * Return the label prefix for labeled instructions.
+ */
+const char *be_gas_insn_label_prefix(void) {
+	return ".LE";
 }
 
 /**
  * Dump a label.
  */
 static void dump_label(ir_label_t label) {
-	be_emit_irprintf("%s%ld", be_gas_label_prefix(), label);
+	be_emit_irprintf("%s%u", be_gas_block_label_prefix(), label);
 }
 
 /**

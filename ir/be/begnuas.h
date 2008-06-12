@@ -87,6 +87,11 @@ void be_gas_emit_function_epilog(ir_entity *entity);
 /**
  * Return the label prefix for labeled blocks.
  */
-const char *be_gas_label_prefix(void);
+const char *be_gas_block_label_prefix(void);
+
+/**
+ * Return the label prefix for labeled instructions.
+ */
+const char *be_gas_insn_label_prefix(void);
 
 #endif

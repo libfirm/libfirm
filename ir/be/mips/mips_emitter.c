@@ -432,7 +432,7 @@ const char* mips_get_block_label(const ir_node* block)
 static void mips_emit_block_label(const ir_node *block)
 {
 	if (has_Block_label(block)) {
-		be_emit_string(be_gas_label_prefix());
+		be_emit_string(be_gas_block_label_prefix());
 		be_emit_irprintf("%lu", get_Block_label(block));
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);

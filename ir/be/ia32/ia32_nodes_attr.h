@@ -107,7 +107,7 @@ struct ia32_attr_t {
 		unsigned am_sc_sign:1;      /**< The sign bit of the address mode symconst. */
 
 		unsigned use_frame:1;       /**< Indicates whether the operation uses the frame pointer or not. */
-		unsigned except_label:1;    /**< Set if this node needs a label because of possible exception. */
+		unsigned has_except_label:1;    /**< Set if this node needs a label because of possible exception. */
 
 		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
 
@@ -135,6 +135,8 @@ struct ia32_attr_t {
 	const arch_register_req_t **out_req; /**< register requirements for results */
 
 	const arch_register_t **slots;     /**< register slots for assigned registers */
+
+	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 
 #ifndef NDEBUG
 	const char       *orig_node;      /**< holds the name of the original ir node */

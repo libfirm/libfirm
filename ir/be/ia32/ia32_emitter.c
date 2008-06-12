@@ -73,6 +73,7 @@ static const ia32_isa_t *isa;
 static ia32_code_gen_t  *cg;
 static int               do_pic;
 static char              pic_base_label[128];
+static ir_label_t        exc_label_id;
 
 /**
  * Returns the register at in position pos.
@@ -734,12 +735,21 @@ static ir_node *get_cfop_target_block(const ir_node *irn) {
 static void ia32_emit_block_name(const ir_node *block)
 {
 	if (has_Block_label(block)) {
-		be_emit_string(be_gas_label_prefix());
-		be_emit_irprintf("%u", (unsigned)get_Block_label(block));
+		be_emit_string(be_gas_block_label_prefix());
+		be_emit_irprintf("%u", get_Block_label(block));
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);
 		be_emit_irprintf("%d", get_irn_node_nr(block));
 	}
+}
+
+/**
+ * Emits an exception label for a given node.
+ */
+static void ia32_emit_exc_label(const ir_node *node)
+{
+	be_emit_string(be_gas_insn_label_prefix());
+	be_emit_irprintf("%u", get_ia32_exc_label_id(node));
 }
 
 /**
@@ -1899,6 +1909,10 @@ static void ia32_emit_node(const ir_node *node)
 
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
+	if (is_ia32_irn(node) && get_ia32_exc_label(node)) {
+		/* emit the exception label of this instruction */
+		ia32_assign_exc_label(node);
+	}
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
 
@@ -2091,31 +2105,67 @@ static void ia32_gen_block(ir_node *block, ir_node *last_block)
 	}
 }
 
+typedef struct exc_entry {
+	ir_node *exc_instr;  /** The instruction that can issue an exception. */
+	ir_node *block;      /** The block to call then. */
+} exc_entry;
+
 /**
  * Block-walker:
- * Sets labels for control flow nodes (jump target)
+ * Sets labels for control flow nodes (jump target).
+ * Links control predecessors to there destination blocks.
  */
 static void ia32_gen_labels(ir_node *block, void *data)
 {
+	exc_entry **exc_list = data;
 	ir_node *pred;
-	int n = get_Block_n_cfgpreds(block);
-	(void) data;
+	int     n;
 
-	for (n--; n >= 0; n--) {
+	for (n = get_Block_n_cfgpreds(block) - 1; n >= 0; --n) {
 		pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block);
+
+		pred = skip_Proj(pred);
+		if (is_ia32_irn(pred) && get_ia32_exc_label(pred)) {
+			exc_entry e;
+
+			e.exc_instr = pred;
+			e.block     = block;
+			ARR_APP1(exc_entry, *exc_list, e);
+			set_irn_link(pred, block);
+		}
 	}
 }
 
 /**
  * Emit an exception label if the current instruction can fail.
  */
-void ia32_emit_exc_label(const ir_node *node)
+void ia32_assign_exc_label(const ir_node *node)
 {
 	if (get_ia32_exc_label(node)) {
-		be_emit_irprintf(".EXL%u\n", 0);
+		/* assign a new ID to the instruction */
+		set_ia32_exc_label_id(node, ++exc_label_id);
+		/* print it */
+		ia32_emit_exc_label(node);
+		be_emit_char(':');
+		be_emit_pad_comment();
+		be_emit_cstring("/* exception to Block ");
+		ia32_emit_cfop_target(node);
+		be_emit_cstring(" */\n");
 		be_emit_write_line();
 	}
+}
+
+/**
+ * Compare two exception_entries.
+ */
+static int cmp_exc_entry(const void *a, const void *b) {
+	const exc_entry *ea = a;
+	const exc_entry *eb = b;
+
+	if (get_ia32_exc_label_id(ea->exc_instr) < get_ia32_exc_label_id(eb->exc_instr))
+		return -1;
+	return +1;
 }
 
 /**
@@ -2126,6 +2176,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	ir_node   *block;
 	ir_node   *last_block = NULL;
 	ir_entity *entity     = get_irg_entity(irg);
+	exc_entry *exc_list   = NEW_ARR_F(exc_entry, 0);
 	int i, n;
 
 	cg       = ia32_cg;
@@ -2140,7 +2191,9 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
-	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
+	/* we use links to point to target blocks */
+	set_using_irn_link(irg);
+	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &exc_list);
 
 	n = ARR_LEN(cg->blk_sched);
 	for (i = 0; i < n;) {
@@ -2160,6 +2213,25 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	be_dbg_method_end();
 	be_emit_char('\n');
 	be_emit_write_line();
+
+	clear_using_irn_link(irg);
+
+	/* Sort the exception table using the exception label id's.
+	   Those are ascending with ascending addresses. */
+	qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
+	{
+		int i;
+
+		for (i = 0; i < ARR_LEN(exc_list); ++i) {
+			be_emit_cstring("\t.long ");
+			ia32_emit_exc_label(exc_list[i].exc_instr);
+			be_emit_char('\n');
+			be_emit_cstring("\t.long ");
+			ia32_emit_block_name(exc_list[i].block);
+			be_emit_char('\n');
+		}
+	}
+	DEL_ARR_F(exc_list);
 }
 
 void ia32_init_emitter(void)

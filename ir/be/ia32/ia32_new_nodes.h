@@ -355,6 +355,16 @@ unsigned get_ia32_exc_label(const ir_node *node);
  */
 void set_ia32_exc_label(ir_node *node, unsigned flag);
 
+/**
+ * Return the exception label id.
+ */
+ir_label_t get_ia32_exc_label_id(const ir_node *node);
+
+/**
+ * Assign the exception label id.
+ */
+void set_ia32_exc_label_id(ir_node *node, ir_label_t id);
+
 #ifndef NDEBUG
 
 /**
