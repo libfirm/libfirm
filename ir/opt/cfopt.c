@@ -707,6 +707,7 @@ void optimize_cf(ir_graph *irg) {
 	/* FIXME: is this still needed? */
 	edges_deactivate(irg);
 
+restart:
 	env.changed    = 0;
 	env.phis_moved = 0;
 
@@ -762,11 +763,11 @@ void optimize_cf(ir_graph *irg) {
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
+		goto restart;
 	}
 
 	/* Optimize the standard code. */
 	env.changed = 0;
-	assure_doms(irg);
 	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env);
 
 	/* Walk all keep alives, optimize them if block, add to new in-array
