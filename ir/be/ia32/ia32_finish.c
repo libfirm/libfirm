@@ -63,7 +63,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	const arch_register_t *in1_reg, *in2_reg, *out_reg;
 
 	/* fix_am will solve this for AddressMode variants */
-	if(get_ia32_op_type(irn) != ia32_Normal)
+	if (get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
 	noreg    = ia32_new_NoReg_gp(cg);
@@ -85,7 +85,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	dbg = get_irn_dbg_info(irn);
 
 	/* generate the neg src2 */
-	if(is_ia32_xSub(irn)) {
+	if (is_ia32_xSub(irn)) {
 		int size;
 		ir_entity *entity;
 		ir_mode *op_mode = get_ia32_ls_mode(irn);
@@ -118,7 +118,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 		ir_node         *flags_proj = NULL;
 		const ir_edge_t *edge;
 
-		if(get_irn_mode(irn) == mode_T) {
+		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
@@ -162,7 +162,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			 * t2 = a + ~b + Carry
 			 * Complement Carry
 			 *
-			 * a + -b = a + (~b + 1)  would sat the carry flag IF a == b ...
+			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
 			 */
 			not = new_rd_ia32_Not(dbg, irg, block, in2);
 			arch_set_irn_register(cg->arch_env, not, in2_reg);
@@ -177,13 +177,18 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			arch_set_irn_register(cg->arch_env, adc, out_reg);
 			sched_add_before(irn, adc);
 
+			set_irn_mode(adc, mode_T);
 			adc_flags = new_r_Proj(irg, block, adc, mode_Iu, pn_ia32_Adc_flags);
+			arch_set_irn_register(cg->arch_env, adc_flags,
+			                      &ia32_flags_regs[REG_EFLAGS]);
 
 			cmc = new_rd_ia32_Cmc(dbg, irg, block, adc_flags);
+			arch_set_irn_register(cg->arch_env, cmc,
+			                      &ia32_flags_regs[REG_EFLAGS]);
 			sched_add_before(irn, cmc);
 
 			exchange(flags_proj, cmc);
-			if(res_proj != NULL) {
+			if (res_proj != NULL) {
 				set_Proj_pred(res_proj, adc);
 				set_Proj_proj(res_proj, pn_ia32_Adc_res);
 			}
