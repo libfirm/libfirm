@@ -46,10 +46,13 @@ spill_env_t *be_new_spill_env(be_irg_t *birg);
  */
 void be_delete_spill_env(spill_env_t *senv);
 
+/**
+ * Return the last control flow node of a block.
+ */
 ir_node *be_get_end_of_block_insertion_point(const ir_node *block);
 
 /**
- * marks a point until which a node must be spilled
+ * Marks a point until which a node must be spilled.
  */
 void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before);
 
