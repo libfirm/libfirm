@@ -223,10 +223,13 @@ static arch_irn_flags_t arm_get_flags(const ir_node *irn)
 static ir_entity *arm_get_frame_entity(const ir_node *irn) {
 	/* we do NOT transform be_Spill or be_Reload nodes, so we never
 	   have frame access using ARM nodes. */
+	(void) irn;
 	return NULL;
 }
 
 static void arm_set_frame_entity(ir_node *irn, ir_entity *ent) {
+	(void) irn;
+	(void) ent;
 	panic("arm_set_frame_entity() called. This should not happen.");
 }
 
