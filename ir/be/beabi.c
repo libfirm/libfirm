@@ -1082,15 +1082,16 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 }
 
 /**
- * Walker: links all Call/alloc/Free nodes to the Block they are contained.
+ * Walker: links all Call/Alloc/Free nodes to the Block they are contained.
+ * Clears the irg_is_leaf flag if a Call is detected.
  */
-static void link_calls_in_block_walker(ir_node *irn, void *data)
+static void link_ops_in_block_walker(ir_node *irn, void *data)
 {
 	ir_opcode code = get_irn_opcode(irn);
 
 	if (code == iro_Call ||
-		(code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
-		(code == iro_Free && get_Free_where(irn) == stack_alloc)) {
+	   (code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
+	   (code == iro_Free && get_Free_where(irn) == stack_alloc)) {
 		be_abi_irg_t *env = data;
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
@@ -1105,12 +1106,12 @@ static void link_calls_in_block_walker(ir_node *irn, void *data)
 
 /**
  * Block-walker:
- * Process all Call nodes inside a basic block.
+ * Process all Call/Alloc/Free nodes inside a basic block.
  * Note that the link field of the block must contain a linked list of all
  * Call nodes inside the Block. We first order this list according to data dependency
  * and that connect the calls together.
  */
-static void process_calls_in_block(ir_node *bl, void *data)
+static void process_ops_in_block(ir_node *bl, void *data)
 {
 	be_abi_irg_t *env = data;
 	ir_node *curr_sp  = env->init_sp;
@@ -1161,8 +1162,8 @@ static void process_calls_in_block(ir_node *bl, void *data)
 
 		/* Keep the last stack state in the block by tying it to Keep node,
 		 * the proj from calls is already kept */
-		if (curr_sp != env->init_sp
-				&& !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
+		if (curr_sp != env->init_sp &&
+		    !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
 			nodes[0] = curr_sp;
 			keep     = be_new_Keep(env->arch_env->sp->reg_class,
 			                       get_irn_irg(bl), bl, 1, nodes);
@@ -1181,10 +1182,10 @@ static void process_calls(be_abi_irg_t *env)
 	ir_graph *irg = env->birg->irg;
 
 	env->call->flags.bits.irg_is_leaf = 1;
-	irg_walk_graph(irg, firm_clear_link, link_calls_in_block_walker, env);
+	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, env);
 
 	ir_heights = heights_new(env->birg->irg);
-	irg_block_walk_graph(irg, NULL, process_calls_in_block, env);
+	irg_block_walk_graph(irg, NULL, process_ops_in_block, env);
 	heights_free(ir_heights);
 }
 
