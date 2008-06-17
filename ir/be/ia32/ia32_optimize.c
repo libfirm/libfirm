@@ -366,8 +366,7 @@ static void peephole_ia32_Return(ir_node *node) {
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int     i, maxslot;
-	int     offset, inc_ofs;
+	int     i, maxslot, inc_ofs;
 	ir_node *node;
 	ir_node *stores[MAXPUSH_OPTIMIZE];
 	ir_node *block = get_nodes_block(irn);
