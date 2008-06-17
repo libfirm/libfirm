@@ -366,8 +366,8 @@ static void peephole_ia32_Return(ir_node *node) {
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int i;
-	int offset;
+	int     i, maxslot;
+	int     offset, inc_ofs;
 	ir_node *node;
 	ir_node *stores[MAXPUSH_OPTIMIZE];
 	ir_node *block = get_nodes_block(irn);
@@ -379,8 +379,8 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	assert(be_is_IncSP(irn));
 
-	offset = be_get_IncSP_offset(irn);
-	if (offset < 4)
+	inc_ofs = be_get_IncSP_offset(irn);
+	if (inc_ofs < 4)
 		return;
 
 	/*
@@ -389,62 +389,63 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	 * We save them into the stores array which is sorted by the frame offset/4
 	 * attached to the node
 	 */
-	for(node = sched_next(irn); !sched_is_end(node); node = sched_next(node)) {
+	maxslot = -1;
+	for (node = sched_next(irn); !sched_is_end(node); node = sched_next(node)) {
 		ir_node *mem;
 		int offset;
 		int storeslot;
 
-		// it has to be a store
-		if(!is_ia32_Store(node))
+		/* it has to be a Store */
+		if (!is_ia32_Store(node))
 			break;
 
-		// it has to use our sp value
-		if(get_irn_n(node, n_ia32_base) != irn)
+		/* it has to use our sp value */
+		if (get_irn_n(node, n_ia32_base) != irn)
 			continue;
-		// store has to be attached to NoMem
+		/* Store has to be attached to NoMem */
 		mem = get_irn_n(node, n_ia32_mem);
-		if(!is_NoMem(mem)) {
+		if (!is_NoMem(mem))
 			continue;
-		}
 
 		/* unfortunately we can't support the full AMs possible for push at the
 		 * moment. TODO: fix this */
-		if(get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
+		if (get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
 		offset = get_ia32_am_offs_int(node);
+		/* we should NEVER access uninitialized stack BELOW the current SP */
+		assert(offset >= 0);
 
-		storeslot = offset / 4;
-		if(storeslot >= MAXPUSH_OPTIMIZE)
-			continue;
+		offset = inc_ofs - 4 - offset;
 
-		// storing into the same slot twice is bad (and shouldn't happen...)
-		if(stores[storeslot] != NULL)
+		/* storing at half-slots is bad */
+		if ((offset & 3) != 0)
 			break;
 
-		// storing at half-slots is bad
-		if(offset % 4 != 0)
+		if (offset < 0 || offset >= MAXPUSH_OPTIMIZE * 4)
+			continue;
+		storeslot = offset >> 2;
+
+		/* storing into the same slot twice is bad (and shouldn't happen...) */
+		if (stores[storeslot] != NULL)
 			break;
 
 		stores[storeslot] = node;
+		if (storeslot > maxslot)
+			maxslot = storeslot;
 	}
 
 	curr_sp = be_get_IncSP_pred(irn);
 
-	// walk the stores in inverse order and create pushs for them
-	i = (offset / 4) - 1;
-	if(i >= MAXPUSH_OPTIMIZE) {
-		i = MAXPUSH_OPTIMIZE - 1;
-	}
-
-	for( ; i >= 0; --i) {
+	/* walk through the stores and create Pushs for them */
+	for (i = 0; i <= maxslot; ++i) {
 		const arch_register_t *spreg;
 		ir_node *push;
 		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
 
-		if(store == NULL || is_Bad(store))
+		if (store == NULL)
 			break;
 
 		val = get_irn_n(store, n_ia32_unary_op);
@@ -455,23 +456,23 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		sched_add_before(irn, push);
 
-		// create stackpointer proj
+		/* create stackpointer Proj */
 		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
 		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
 
-		// create memory proj
+		/* create memory Proj */
 		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
 
-		// use the memproj now
+		/* use the memproj now */
 		exchange(store, mem_proj);
 
-		// we can remove the store now
+		/* we can remove the store now */
 		sched_remove(store);
 
-		offset -= 4;
+		inc_ofs -= 4;
 	}
 
-	be_set_IncSP_offset(irn, offset);
+	be_set_IncSP_offset(irn, inc_ofs);
 	be_set_IncSP_pred(irn, curr_sp);
 }
 
