@@ -172,7 +172,7 @@ void normalize_one_return(ir_graph *irg) {
  * block of the Return block as well.
  *
  * All predecessors of the Return block must be Jmp's of course, or we
- * cannot move it up, so we check this either.
+ * cannot move it up, so we add blocks if needed.
  */
 static int can_move_ret(ir_node *ret) {
 	ir_node *retbl = get_nodes_block(ret);
@@ -190,9 +190,18 @@ static int can_move_ret(ir_node *ret) {
 
 	/* check, that predecessors are Jmps */
 	n = get_Block_n_cfgpreds(retbl);
-	for (i = 0; i < n; ++i)
-		if (! is_Jmp(get_Block_cfgpred(retbl, i)))
-			return 0;
+	for (i = 0; i < n; ++i) {
+		ir_node *pred = get_Block_cfgpred(retbl, i);
+
+		pred = skip_Tuple(pred);
+		if (! is_Jmp(pred) && !is_Bad(pred)) {
+			/* simply place a new block here */
+			ir_graph *irg  = get_irn_irg(retbl);
+			ir_node *block = new_r_Block(irg, 1, &pred);
+			ir_node *jmp   = new_r_Jmp(irg, block);
+			set_Block_cfgpred(retbl, i, jmp);
+		}
+	}
 
 	/* if we have 0 control flow predecessors, we cannot move :-) */
 	return n > 0;
@@ -276,8 +285,9 @@ void normalize_n_returns(ir_graph *irg) {
 			ir_node *jmp = get_Block_cfgpred(block, i);
 			ir_node *new_bl, *new_ret;
 
-			if (! is_Jmp(jmp))
+			if (is_Bad(jmp))
 				continue;
+			assert(is_Jmp(jmp));
 
 			new_bl = get_nodes_block(jmp);
 
