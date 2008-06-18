@@ -271,7 +271,6 @@ void be_peephole_IncSP_IncSP(ir_node *node)
 	int      curr_offs;
 	int      offs;
 	ir_node *pred = be_get_IncSP_pred(node);
-	ir_node *predpred;
 
 	if (!be_is_IncSP(pred))
 		return;
@@ -299,19 +298,17 @@ void be_peephole_IncSP_IncSP(ir_node *node)
 		offs = curr_offs + pred_offs;
 	}
 
-	/* add pred offset to ours and remove pred IncSP */
-	be_set_IncSP_offset(node, offs);
+	/* add node offset to pred and remove our IncSP */
+	be_set_IncSP_offset(pred, offs);
 
-	predpred = be_get_IncSP_pred(pred);
-	be_peephole_before_exchange(pred, predpred);
+	be_peephole_before_exchange(node, pred);
 
 	/* rewire dependency edges */
-	edges_reroute_kind(pred, predpred, EDGE_KIND_DEP, current_ir_graph);
-	be_set_IncSP_pred(node, predpred);
-	sched_remove(pred);
-	be_kill_node(pred);
+	edges_reroute_kind(node, pred, EDGE_KIND_DEP, current_ir_graph);
+	sched_remove(node);
+	be_kill_node(node);
 
-	be_peephole_after_exchange(predpred);
+	be_peephole_after_exchange(pred);
 }
 
 void be_peephole_opt(be_irg_t *birg)
