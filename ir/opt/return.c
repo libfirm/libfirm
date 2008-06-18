@@ -190,6 +190,8 @@ static int can_move_ret(ir_node *ret) {
 
 	/* check, that predecessors are Jmps */
 	n = get_Block_n_cfgpreds(retbl);
+	if (n <= 1)
+		return 0;
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(retbl, i);
 
@@ -202,9 +204,7 @@ static int can_move_ret(ir_node *ret) {
 			set_Block_cfgpred(retbl, i, jmp);
 		}
 	}
-
-	/* if we have 0 control flow predecessors, we cannot move :-) */
-	return n > 0;
+	return 1;
 }
 
 /*
