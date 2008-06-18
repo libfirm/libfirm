@@ -303,8 +303,9 @@ void be_peephole_IncSP_IncSP(ir_node *node)
 
 	be_peephole_before_exchange(node, pred);
 
-	/* rewire dependency edges */
+	/* rewire dependency/data edges */
 	edges_reroute_kind(node, pred, EDGE_KIND_DEP, current_ir_graph);
+	edges_reroute(node, pred, current_ir_graph);
 	sched_remove(node);
 	be_kill_node(node);
 
