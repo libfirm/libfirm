@@ -39,6 +39,7 @@
 #include "irprintf.h"
 #include "iredges_t.h"
 #include "ircons.h"
+#include "irflag.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irbitset.h"
@@ -948,11 +949,15 @@ static void ia32_prepare_graph(void *self) {
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
 #ifdef FIRM_GRGEN_BE
+	// disable CSE, because of two-step node-construction
+	set_opt_cse(0);
+
 	/* transform nodes into assembler instructions by PBQP magic */
 	ia32_transform_graph_by_pbqp(cg);
 
 	if (cg->dump)
 		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
+	set_opt_cse(1);
 #else
 
 	/* transform remaining nodes into assembler instructions */
