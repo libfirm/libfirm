@@ -66,8 +66,12 @@
 /* the label.                                                       */
 /*------------------------------------------------------------------*/
 
+#define set_Block_removable(block)      set_Block_mark(block, 1)
+#define set_Block_non_removable(block)  set_Block_mark(block, 0)
+#define is_Block_removable(block)       (get_Block_mark(block) != 0)
+
 /**
- * Block walker, replacing binary Conds that jumps twice into the same block
+ * Replace binary Conds that jumps twice into the same block
  * by a simple Jmp.
  * E.g.
  * @verbatim
@@ -83,12 +87,10 @@
  * Note that the simple case that Block has only these two
  * predecessors are already handled in equivalent_node_Block().
  */
-static void remove_senseless_conds(ir_node *bl, void *env) {
+static int remove_senseless_conds(ir_node *bl) {
 	int i, j;
 	int n = get_Block_n_cfgpreds(bl);
-	int *changed = env;
-
-	assert(is_Block(bl));
+	int changed = 0;
 
 	for (i = 0; i < n; ++i) {
 		ir_node *pred_i = get_Block_cfgpred(bl, i);
@@ -107,12 +109,13 @@ static void remove_senseless_conds(ir_node *bl, void *env) {
 					set_irn_n(bl, j, new_Bad());
 
 					DBG_OPT_IFSIM2(cond_i, jmp);
-					*changed = 1;
+					changed = 1;
 					break;
 				}
 			}
 		}
 	}
+	return changed;
 }
 
 /** An environment for merge_blocks and collect nodes. */
@@ -193,60 +196,69 @@ static void merge_blocks(ir_node *node, void *ctx) {
  * Do not replace blocks by Bad.  This optimization shall
  * ensure, that all Bad control flow predecessors are
  * removed, and no new other Bads are introduced.
+ * Further removed useless Conds and clear the mark of all blocks.
  *
  * Must be run in the post walker.
  */
-static void remove_dead_block_cf(ir_node *block, void *env) {
+static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
 	int i;
 	int *changed = env;
 
-	/* check block predecessors and turn control flow into bad */
+	/* Check block predecessors and turn control flow into bad.
+	   Beware of Tuple, kill them. */
 	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
-		ir_node *pred_X = get_Block_cfgpred(block, i);
+		ir_node *pred_X  = get_Block_cfgpred(block, i);
+		ir_node *skipped = skip_Tuple(pred_X);
 
-		if (! is_Bad(pred_X)) {
-			ir_node *pred_bl = get_nodes_block(skip_Proj(pred_X));
+		if (! is_Bad(skipped)) {
+			ir_node *pred_bl = get_nodes_block(skip_Proj(skipped));
 
 			if (is_Block_dead(pred_bl) || (get_Block_dom_depth(pred_bl) < 0)) {
 				set_Block_dead(pred_bl);
 				exchange(pred_X, new_Bad());
 				*changed = 1;
-			}
+			} else if (skipped != pred_X)
+				set_Block_cfgpred(block, i, skipped);
 		}
 	}
+
+	*changed |= remove_senseless_conds(block);
+
+	/* clear the block mark of all blocks */
+	set_Block_mark(block, 0);
 }
 
 /**
  * Collects all Phi nodes in link list of Block.
- * Marks all blocks "block_visited" if they contain a node other
+ * Marks all blocks "non_removable" if they contain a node other
  * than Jmp (and Proj).
  * Links all Proj nodes to their predecessors.
  * Collects all switch-Conds in a list.
  */
 static void collect_nodes(ir_node *n, void *ctx) {
-	ir_op *op = get_irn_op(n);
+	ir_opcode code = get_irn_opcode(n);
 	merge_env *env = ctx;
 
-	if (op == op_Block) {
-		/* mark the block as non-empty if it is labeled */
+	if (code == iro_Block) {
+		/* mark the block as non-removable if it is labeled */
 		if (has_Block_label(n))
-			mark_Block_block_visited(n);
+			set_Block_non_removable(n);
 	} else {
-		ir_node *b  = get_nodes_block(n);
+		ir_node *b = get_nodes_block(n);
 
-		if (op == op_Phi && get_irn_arity(n) > 0) {
+		if (code == iro_Phi && get_irn_arity(n) > 0) {
 			/* Collect Phi nodes to compact ins along with block's ins. */
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
-		} else if (op != op_Jmp && !is_Bad(b)) {  /* Check for non empty block. */
-			mark_Block_block_visited(b);
+		} else if (code != iro_Jmp && !is_Bad(b)) {  /* Check for non-empty block. */
+			set_Block_non_removable(b);
 
-			if (op == op_Proj) {               /* link Proj nodes */
+			if (code == iro_Proj) {               /* link Proj nodes */
 				ir_node *pred = get_Proj_pred(n);
 
 				set_irn_link(n, get_irn_link(pred));
 				set_irn_link(pred, n);
-			} else if (op == op_Cond) {
+			} else if (code == iro_Cond) {
 				ir_node *sel = get_Cond_selector(n);
 				if (mode_is_int(get_irn_mode(sel))) {
 					/* found a switch-Cond, collect */
@@ -259,11 +271,12 @@ static void collect_nodes(ir_node *n, void *ctx) {
 
 /** Returns true if pred is predecessor of block. */
 static int is_pred_of(ir_node *pred, ir_node *b) {
-	int i, n;
+	int i;
 
-	for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
+	for (i = get_Block_n_cfgpreds(b) - 1; i >= 0; --i) {
 		ir_node *b_pred = get_Block_cfgpred_block(b, i);
-		if (b_pred == pred) return 1;
+		if (b_pred == pred)
+			return 1;
 	}
 	return 0;
 }
@@ -303,12 +316,10 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 	if (is_Block_dead(pred))
 		return 0;
 
-	if (get_Block_block_visited(pred) + 1
-		< get_irg_block_visited(current_ir_graph)) {
-
+	if (is_Block_removable(pred)) {
 		if (!get_opt_optimize() || !get_opt_control_flow_strong_simplification()) {
 			/* Mark block so that is will not be removed: optimization is turned off. */
-			set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+			set_Block_non_removable(pred);
 			return 1;
 		}
 
@@ -321,10 +332,8 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 			   Handle all pred blocks with preds < pos as if they were already removed. */
 			for (i = 0; i < pos; i++) {
 				ir_node *b_pred = get_Block_cfgpred_block(b, i);
-				if (! is_Block_dead(b_pred) &&
-					get_Block_block_visited(b_pred) + 1
-					< get_irg_block_visited(current_ir_graph)) {
-					for (j = 0; j < get_Block_n_cfgpreds(b_pred); j++) {
+				if (! is_Block_dead(b_pred) && is_Block_removable(b_pred)) {
+					for (j = get_Block_n_cfgpreds(b_pred) - 1; j >= 0; --j) {
 						ir_node *b_pred_pred = get_Block_cfgpred_block(b_pred, j);
 						if (is_pred_of(b_pred_pred, pred))
 							goto non_dispensable;
@@ -347,7 +356,7 @@ static int test_whether_dispensable(ir_node *b, int pos) {
 	return n_preds;
 
 non_dispensable:
-	set_Block_block_visited(pred, get_irg_block_visited(current_ir_graph)-1);
+	set_Block_non_removable(pred);
 	return 1;
 }
 
@@ -424,8 +433,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 			if (is_Bad(get_Block_cfgpred(b, i))) {
 				/* case Phi 1: Do nothing */
 			}
-			else if (get_Block_block_visited(pred) + 1
-			         < get_irg_block_visited(current_ir_graph)) {
+			else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 				/* case Phi 2: It's an empty block and not yet visited. */
 				ir_node *phi_pred = get_Phi_pred(phi, i);
 
@@ -468,7 +476,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 	for (k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
 		ir_node *predb = get_nodes_block(get_Block_cfgpred(b, k));
 
-		if (get_Block_block_visited(predb) + 1 < get_irg_block_visited(current_ir_graph)) {
+		if (is_Block_removable(predb) && Block_not_block_visited(predb)) {
 			ir_node *next_phi;
 
 			/* we found a predecessor block at position k that will be removed */
@@ -495,8 +503,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 						if (is_Bad(pred)) {
 							/* Do nothing */
-						} else if (get_Block_block_visited(pred) + 1
-							< get_irg_block_visited(current_ir_graph)) {
+						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
 								if (! is_Bad(get_Block_cfgpred(pred, j)))
@@ -520,8 +527,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 						if (is_Bad(get_Block_cfgpred(b, i))) {
 							/* Do nothing */
-						} else if (get_Block_block_visited(pred) +1
-							< get_irg_block_visited(current_ir_graph)) {
+						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
 								if (! is_Bad(get_Block_cfgpred(pred, j)))
@@ -553,8 +559,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 		if (is_Bad(pred)) {
 			/* case 1: Do nothing */
-		} else if (get_Block_block_visited(pred) +1
-			< get_irg_block_visited(current_ir_graph)) {
+		} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 			/* case 2: It's an empty block and not yet visited. */
 			assert(get_Block_n_cfgpreds(b) > 1);
 			/* Else it should be optimized by equivalent_node. */
@@ -682,11 +687,8 @@ static int handle_switch_cond(ir_node *cond) {
  * It walks only over block nodes and adapts these and the Phi nodes in these blocks,
  * which it finds in a linked list computed by the first pass.
  *
- * We use the block_visited flag to mark empty blocks in the first
+ * We use the mark flag to mark removable blocks in the first
  * phase.
- * @@@ It would be better to add a struct in the link field
- * that keeps the Phi list and the mark.  Place it on an obstack, as
- * we will lose blocks and thereby generate memory leaks.
  */
 void optimize_cf(ir_graph *irg) {
 	int i, j, n;
@@ -704,51 +706,53 @@ void optimize_cf(ir_graph *irg) {
 
 	current_ir_graph = irg;
 
-	/* FIXME: is this still needed? */
+	/* FIXME: control flow opt destroys block edges. So edges are deactivated here. Fix the edges! */
 	edges_deactivate(irg);
 
+	/* we use the mark flag to mark removable blocks */
+	set_using_block_mark(irg);
 restart:
 	env.changed    = 0;
 	env.phis_moved = 0;
 
-	if (get_opt_optimize() && get_opt_unreachable_code()) {
-		ir_node *end;
+	/* ALWAYS kill unreachable control flow. Backend cannot handle it anyway.
+	   Use dominator info to kill blocks. Also optimize useless Conds. */
+	assure_doms(irg);
+	irg_block_walk_graph(irg, NULL, remove_unreachable_blocks_and_conds, &env.changed);
 
-		/* kill dead blocks using dom info */
-		assure_doms(irg);
-		irg_block_walk_graph(irg, NULL, remove_dead_block_cf, &env.changed);
+	/* fix the keep-alives */
+	for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
+		ir_node *ka = get_End_keepalive(end, i);
 
-		/* fix the keep-alives */
-		end = get_irg_end(irg);
-		for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
-			ir_node *ka = get_End_keepalive(end, i);
-
-			if (is_Block(ka)) {
-				/* do NOT keep dead blocks */
-				if (get_Block_dom_depth(ka) < 0) {
-					set_End_keepalive(end, i, new_Bad());
-					env.changed = 1;
-				}
-			} else if (is_Block_dead(get_nodes_block(ka)) ||
-			           get_Block_dom_depth(get_nodes_block(ka)) < 0) {
-				/* do NOT keep nodes in dead blocks */
+		if (is_Block(ka)) {
+			/* do NOT keep dead blocks */
+			if (get_Block_dom_depth(ka) < 0) {
 				set_End_keepalive(end, i, new_Bad());
 				env.changed = 1;
 			}
+		} else if (is_Block_dead(get_nodes_block(ka)) ||
+		           get_Block_dom_depth(get_nodes_block(ka)) < 0) {
+			/* do NOT keep nodes in dead blocks */
+			set_End_keepalive(end, i, new_Bad());
+			env.changed = 1;
 		}
 	}
-	irg_block_walk_graph(irg, NULL, remove_senseless_conds, &env.changed);
 
-	/* Use block visited flag to mark non-empty blocks. */
-	inc_irg_block_visited(irg);
-	set_using_block_visited(irg);
 	set_using_irn_link(irg);
 
 	env.list = plist_new();
 	irg_walk(end, merge_blocks, collect_nodes, &env);
 
-	clear_using_block_visited(irg);
 	clear_using_irn_link(irg);
+
+	if (env.changed) {
+		/* Handle graph state if was changed. */
+		set_irg_outs_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+		env.changed = 0;
+	}
 
 	/* handle all collected switch-Conds */
 	foreach_plist(env.list, el) {
@@ -758,16 +762,14 @@ restart:
 	plist_free(env.list);
 
 	if (env.changed) {
-		/* Handle graph state if was changed. */
-		set_irg_outs_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
+		/* The Cond optimization might generate unreachable code, so restart if
+		   it happens. */
 		goto restart;
 	}
 
 	/* Optimize the standard code. */
 	env.changed = 0;
+	assure_doms(irg);
 	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env);
 
 	/* Walk all keep alives, optimize them if block, add to new in-array
@@ -811,6 +813,7 @@ restart:
 		env.changed = 1;
 	}
 
+	clear_using_block_mark(irg);
 	clear_using_irn_visited(irg);
 
 	if (env.phis_moved) {
