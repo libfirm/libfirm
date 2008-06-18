@@ -225,7 +225,7 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
 	*changed |= remove_senseless_conds(block);
 
 	/* clear the block mark of all blocks */
-	set_Block_mark(block, 0);
+	set_Block_removable(block);
 }
 
 /**
