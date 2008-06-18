@@ -61,96 +61,27 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static ia32_code_gen_t  *cg;
 
-#if 0
-static void peephole_ia32_Store_IncSP_to_push(ir_node *node)
-{
-	ir_node  *base  = get_irn_n(node, n_ia32_Store_base);
-	ir_node  *index = get_irn_n(node, n_ia32_Store_index);
-	ir_node  *mem   = get_irn_n(node, n_ia32_Store_mem);
-	ir_node  *incsp = base;
-	ir_node  *val;
-	ir_node  *noreg;
-	ir_graph *irg;
-	ir_node  *block;
-	dbg_info *dbgi;
-	ir_mode  *mode;
-	ir_node  *push;
-	ir_node  *proj;
-	int       offset;
-	int       node_offset;
-
-	/* nomem inidicates the store doesn't alias with anything else */
-	if(!is_NoMem(mem))
-		return;
-
-	/* find an IncSP in front of us, we might have to skip barriers for this */
-	while(is_Proj(incsp)) {
-		ir_node *proj_pred = get_Proj_pred(incsp);
-		if(!be_is_Barrier(proj_pred))
-			return;
-		incsp = get_irn_n(proj_pred, get_Proj_proj(incsp));
-	}
-	if(!be_is_IncSP(incsp))
-		return;
-
-	be_peephole_IncSP_IncSP(incsp);
-
-	/* must be in the same block */
-	if(get_nodes_block(incsp) != get_nodes_block(node))
-		return;
-
-	if(!is_ia32_NoReg_GP(index) || get_ia32_am_sc(node) != NULL) {
-		panic("Invalid storeAM found (%+F)", node);
-	}
-
-	/* we should be the store to the end of the stackspace */
-	offset      = be_get_IncSP_offset(incsp);
-	mode        = get_ia32_ls_mode(node);
-	node_offset = get_ia32_am_offs_int(node);
-	if(node_offset != offset - get_mode_size_bytes(mode))
-		return;
-
-	/* we can use a push instead of the store */
-	irg   = current_ir_graph;
-	block = get_nodes_block(node);
-	dbgi  = get_irn_dbg_info(node);
-	noreg = ia32_new_NoReg_gp(cg);
-	base  = be_get_IncSP_pred(incsp);
-	val   = get_irn_n(node, n_ia32_Store_val);
-	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem, val, base);
-
-	proj  = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
-
-	be_set_IncSP_offset(incsp, offset - get_mode_size_bytes(mode));
-
-	sched_add_before(node, push);
-	sched_remove(node);
-
-	be_peephole_before_exchange(node, proj);
-	exchange(node, proj);
-	be_peephole_after_exchange(proj);
-}
-
-static void peephole_ia32_Store(ir_node *node)
-{
-	peephole_ia32_Store_IncSP_to_push(node);
-}
-#endif
-
+/**
+ * Returns non-zero if the given node produces
+ * a zero flag.
+ *
+ * @param node  the node to check
+ * @param pn    if >= 0, the projection number of the used result
+ */
 static int produces_zero_flag(ir_node *node, int pn)
 {
 	ir_node                     *count;
 	const ia32_immediate_attr_t *imm_attr;
 
-	if(!is_ia32_irn(node))
+	if (!is_ia32_irn(node))
 		return 0;
 
-	if(pn >= 0) {
-		if(pn != pn_ia32_res)
+	if (pn >= 0) {
+		if (pn != pn_ia32_res)
 			return 0;
 	}
 
-	switch(get_ia32_irn_opcode(node)) {
+	switch (get_ia32_irn_opcode(node)) {
 	case iro_ia32_Add:
 	case iro_ia32_Adc:
 	case iro_ia32_And:
@@ -171,20 +102,20 @@ static int produces_zero_flag(ir_node *node, int pn)
 		assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
 		assert(n_ia32_Shl_count == n_ia32_Shr_count
 				&& n_ia32_Shl_count == n_ia32_Sar_count);
-		if(is_ia32_ShlD(node) || is_ia32_ShrD(node)) {
+		if (is_ia32_ShlD(node) || is_ia32_ShrD(node)) {
 			count = get_irn_n(node, n_ia32_ShlD_count);
 		} else {
 			count = get_irn_n(node, n_ia32_Shl_count);
 		}
 		/* when shift count is zero the flags are not affected, so we can only
 		 * do this for constants != 0 */
-		if(!is_ia32_Immediate(count))
+		if (!is_ia32_Immediate(count))
 			return 0;
 
 		imm_attr = get_ia32_immediate_attr_const(count);
-		if(imm_attr->symconst != NULL)
+		if (imm_attr->symconst != NULL)
 			return 0;
-		if((imm_attr->offset & 0x1f) == 0)
+		if ((imm_attr->offset & 0x1f) == 0)
 			return 0;
 		return 1;
 
@@ -194,6 +125,13 @@ static int produces_zero_flag(ir_node *node, int pn)
 	return 0;
 }
 
+/**
+ * If the given node has not mode_T, creates a mode_T version (with a result Proj).
+ *
+ * @param node  the node to change
+ *
+ * @return the new mode_T node (if the mode was changed) or node itself
+ */
 static ir_node *turn_into_mode_t(ir_node *node)
 {
 	ir_node               *block;
@@ -225,16 +163,21 @@ static ir_node *turn_into_mode_t(ir_node *node)
 	return new_node;
 }
 
+/**
+ * Peephole optimization for Test instructions.
+ * We can remove the Test, if a zero flags was produced which is still
+ * live.
+ */
 static void peephole_ia32_Test(ir_node *node)
 {
-	ir_node *left  = get_irn_n(node, n_ia32_Test_left);
-	ir_node *right = get_irn_n(node, n_ia32_Test_right);
-	ir_node *flags_proj;
-	ir_node *block;
-	ir_mode *flags_mode;
-	int      pn    = -1;
-	ir_node *schedpoint;
-	const ir_edge_t       *edge;
+	ir_node         *left  = get_irn_n(node, n_ia32_Test_left);
+	ir_node         *right = get_irn_n(node, n_ia32_Test_right);
+	ir_node         *flags_proj;
+	ir_node         *block;
+	ir_mode         *flags_mode;
+	int              pn    = -1;
+	ir_node         *schedpoint;
+	const ir_edge_t *edge;
 
 	assert(n_ia32_Test_left == n_ia32_Test8Bit_left
 			&& n_ia32_Test_right == n_ia32_Test8Bit_right);
@@ -360,7 +303,7 @@ static void peephole_ia32_Return(ir_node *node) {
 #define MAXPUSH_OPTIMIZE	48
 
 /**
- * Tries to create pushs from IncSP,Store combinations.
+ * Tries to create Push's from IncSP, Store combinations.
  * The Stores are replaced by Push's, the IncSP is modified
  * (possibly into IncSP 0, but not removed).
  */
@@ -567,7 +510,7 @@ static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 }
 
 /**
- * Optimize an IncSp by replacing it with push/pop
+ * Optimize an IncSp by replacing it with Push/Pop.
  */
 static void peephole_be_IncSP(ir_node *node)
 {
@@ -965,7 +908,6 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
-	//register_peephole_optimisation(op_ia32_Store, peephole_ia32_Store);
 	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
 	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
 	register_peephole_optimisation(op_ia32_Test, peephole_ia32_Test);
