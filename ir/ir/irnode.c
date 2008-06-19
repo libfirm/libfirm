@@ -927,22 +927,35 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]) {
 
 /* Set new keep-alives from old keep-alives, skipping irn */
 void remove_End_keepalive(ir_node *end, ir_node *irn) {
-	int     n = get_End_n_keepalives(end);
-	ir_node **in;
-	int     i, idx;
+	int      n = get_End_n_keepalives(end);
+	int      i, idx;
+	ir_graph *irg;
 
-	NEW_ARR_A(ir_node *, in, n);
+	idx = -1;
+	for (i = n -1; i >= 0; --i) {
+		ir_node *old_ka = end->in[1 + END_KEEPALIVE_OFFSET + i];
 
-	for (idx = i = 0; i < n; ++i) {
-		ir_node *old_ka = get_End_keepalive(end, i);
-
-		/* skip irn */
-		if (old_ka != irn)
-			in[idx++] = old_ka;
+		/* find irn */
+		if (old_ka == irn) {
+			idx = i;
+			goto found;
+		}
 	}
+	return;
+found:
+	irg = get_irn_irg(end);
 
-	/* set new keep-alives */
-	set_End_keepalives(end, idx, in);
+	/* remove the edge */
+	edges_notify_edge(end, idx, NULL, irn, irg);
+
+	if (idx != n - 1) {
+		/* exchange with the last one */
+		ir_node *old = end->in[1 + END_KEEPALIVE_OFFSET + n - 1];
+		edges_notify_edge(end, n - 1, NULL, old, irg);
+		end->in[1 + END_KEEPALIVE_OFFSET + idx] = old;
+		edges_notify_edge(end, idx, old, NULL, irg);
+	}
+	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 }
 
 void

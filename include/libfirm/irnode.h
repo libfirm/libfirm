@@ -427,9 +427,15 @@ ir_node *get_End_keepalive(const ir_node *end, int pos);
 void add_End_keepalive(ir_node *end, ir_node *ka);
 /** Set the Keep alive node at position pos. */
 void set_End_keepalive(ir_node *end, int pos, ir_node *ka);
-/** Set new keep-alives. */
+
+/**
+ * Set new keep-alives.
+ * Beware: This might be an expensive operation if dynamic edges are enabled,
+ * so avoid it in the backend.
+ */
 void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
-/** Set new keep-alives from old keep-alives, skipping irn. */
+
+/** Remove irn from the keep-alive set. */
 void remove_End_keepalive(ir_node *end, ir_node *irn);
 
 /** Some parts of the End node are allocated separately -- their memory
