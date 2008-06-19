@@ -862,12 +862,12 @@ new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constr
 	res->attr.assem.pin_state = op_pin_state_pinned;
 	res->attr.assem.inputs    = NEW_ARR_D(ir_asm_constraint, irg->obst, arity);
 	res->attr.assem.outputs   = NEW_ARR_D(ir_asm_constraint, irg->obst, n_outs);
-    res->attr.assem.clobber   = NEW_ARR_D(ident *, irg->obst, n_clobber);
+	res->attr.assem.clobber   = NEW_ARR_D(ident *, irg->obst, n_clobber);
 	res->attr.assem.asm_text  = asm_text;
 
-    memcpy(res->attr.assem.inputs,  inputs,  sizeof(inputs[0]) * arity);
-    memcpy(res->attr.assem.outputs, outputs, sizeof(outputs[0]) * n_outs);
-    memcpy(res->attr.assem.clobber, clobber, sizeof(clobber[0]) * n_clobber);
+	memcpy(res->attr.assem.inputs,  inputs,  sizeof(inputs[0]) * arity);
+	memcpy(res->attr.assem.outputs, outputs, sizeof(outputs[0]) * n_outs);
+	memcpy(res->attr.assem.clobber, clobber, sizeof(clobber[0]) * n_clobber);
 
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
