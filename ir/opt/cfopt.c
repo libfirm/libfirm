@@ -217,8 +217,10 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
 				set_Block_dead(pred_bl);
 				exchange(pred_X, new_Bad());
 				*changed = 1;
-			} else if (skipped != pred_X)
+			} else if (skipped != pred_X) {
 				set_Block_cfgpred(block, i, skipped);
+				*changed = 1;
+			}
 		}
 	}
 
@@ -430,7 +432,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 		for (i = 0, n = get_Block_n_cfgpreds(b); i < n; ++i) {
 			pred = get_Block_cfgpred_block(b, i);
 
-			if (is_Bad(get_Block_cfgpred(b, i))) {
+			if (is_Block_dead(pred)) {
 				/* case Phi 1: Do nothing */
 			}
 			else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
@@ -501,7 +503,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 					for (i = 0; i < k; i++) {
 						pred = get_Block_cfgpred_block(b, i);
 
-						if (is_Bad(pred)) {
+						if (is_Block_dead(pred)) {
 							/* Do nothing */
 						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
@@ -523,9 +525,9 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 					/* and now all the rest */
 					for (i = k+1; i < get_Block_n_cfgpreds(b); i++) {
-						pred = get_nodes_block(get_Block_cfgpred(b, i));
+						pred = get_Block_cfgpred_block(b, i);
 
-						if (is_Bad(get_Block_cfgpred(b, i))) {
+						if (is_Block_dead(pred)) {
 							/* Do nothing */
 						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
@@ -557,19 +559,19 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 	for (i = 0; i < get_Block_n_cfgpreds(b); i++) {
 		pred = get_Block_cfgpred_block(b, i);
 
-		if (is_Bad(pred)) {
+		if (is_Block_dead(pred)) {
 			/* case 1: Do nothing */
 		} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
 			/* case 2: It's an empty block and not yet visited. */
 			assert(get_Block_n_cfgpreds(b) > 1);
 			/* Else it should be optimized by equivalent_node. */
 			for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-				ir_node *pred_block = get_Block_cfgpred(pred, j);
+				ir_node *pred_X = get_Block_cfgpred(pred, j);
 
 				/* because of breaking loops, not all predecessors are Bad-clean,
 				 * so we must check this here again */
-				if (! is_Bad(pred_block))
-					in[n_preds++] = pred_block;
+				if (! is_Bad(pred_X))
+					in[n_preds++] = pred_X;
 			}
 			/* Remove block as it might be kept alive. */
 			exchange(pred, b/*new_Bad()*/);
@@ -726,7 +728,7 @@ restart:
 
 		if (is_Block(ka)) {
 			/* do NOT keep dead blocks */
-			if (get_Block_dom_depth(ka) < 0) {
+			if (is_Block_dead(ka) || get_Block_dom_depth(ka) < 0) {
 				set_End_keepalive(end, i, new_Bad());
 				env.changed = 1;
 			}
