@@ -123,7 +123,7 @@ static void peephole_be_IncSP(ir_node *node) {
 	arm_vals v;
 
 	/* first optimize incsp->incsp combinations */
-	be_peephole_IncSP_IncSP(node);
+	node = be_peephole_IncSP_IncSP(node);
 
 	offset = be_get_IncSP_offset(node);
 	/* can be transformed into Add OR Sub */

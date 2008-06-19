@@ -265,7 +265,7 @@ static void	kill_barriers(ir_graph *irg) {
  * Tries to optimize a beIncSp node with it's previous IncSP node.
  * Must be run from a be_peephole_opt() context.
  */
-void be_peephole_IncSP_IncSP(ir_node *node)
+ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 {
 	int      pred_offs;
 	int      curr_offs;
@@ -273,27 +273,27 @@ void be_peephole_IncSP_IncSP(ir_node *node)
 	ir_node *pred = be_get_IncSP_pred(node);
 
 	if (!be_is_IncSP(pred))
-		return;
+		return node;
 
 	if (get_irn_n_edges(pred) > 1)
-		return;
+		return node;
 
 	pred_offs = be_get_IncSP_offset(pred);
 	curr_offs = be_get_IncSP_offset(node);
 
 	if (pred_offs == BE_STACK_FRAME_SIZE_EXPAND) {
 		if (curr_offs != BE_STACK_FRAME_SIZE_SHRINK) {
-			return;
+			return node;
 		}
 		offs = 0;
 	} else if (pred_offs == BE_STACK_FRAME_SIZE_SHRINK) {
 		if (curr_offs != BE_STACK_FRAME_SIZE_EXPAND) {
-			return;
+			return node;
 		}
 		offs = 0;
 	} else if (curr_offs == BE_STACK_FRAME_SIZE_EXPAND ||
 	           curr_offs == BE_STACK_FRAME_SIZE_SHRINK) {
-		return;
+		return node;
 	} else {
 		offs = curr_offs + pred_offs;
 	}
@@ -310,6 +310,7 @@ void be_peephole_IncSP_IncSP(ir_node *node)
 	be_kill_node(node);
 
 	be_peephole_after_exchange(pred);
+	return pred;
 }
 
 void be_peephole_opt(be_irg_t *birg)

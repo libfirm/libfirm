@@ -523,7 +523,7 @@ static void peephole_be_IncSP(ir_node *node)
 	int                    offset;
 
 	/* first optimize incsp->incsp combinations */
-	be_peephole_IncSP_IncSP(node);
+	node = be_peephole_IncSP_IncSP(node);
 
 	/* transform IncSP->Store combinations to Push where possible */
 	peephole_IncSP_Store_to_push(node);

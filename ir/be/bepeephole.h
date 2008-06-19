@@ -68,8 +68,10 @@ void be_peephole_after_exchange(ir_node *new_node);
  * Must be run from a be_peephole_opt() context.
  *
  * @param node  a be_IncSP node
+ *
+ * @return the new IncSP node or node itself
  */
-void be_peephole_IncSP_IncSP(ir_node *node);
+ir_node *be_peephole_IncSP_IncSP(ir_node *node);
 
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in
