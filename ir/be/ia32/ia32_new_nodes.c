@@ -329,6 +329,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				if (flags & arch_irn_flags_modify_sp) {
 					fprintf(F, " modify_sp");
 				}
+				if (flags & arch_irn_flags_modify_flags) {
+					fprintf(F, " modify_flags");
+				}
 			}
 			fprintf(F, " (%d)\n", flags);
 
