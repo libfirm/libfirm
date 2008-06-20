@@ -1067,6 +1067,13 @@ void      set_Proj_pred(ir_node *node, ir_node *pred);
 long      get_Proj_proj(const ir_node *node);
 void      set_Proj_proj(ir_node *node, long proj);
 
+/**
+ * Returns non-zero if a node is a routine parameter.
+ *
+ * @param node  the Proj node to test
+ */
+int is_arg_Proj(const ir_node *node);
+
 ir_node **get_Tuple_preds_arr(ir_node *node);
 int       get_Tuple_n_preds(const ir_node *node);
 ir_node  *get_Tuple_pred(const ir_node *node, int pos);

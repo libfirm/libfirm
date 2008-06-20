@@ -381,20 +381,6 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 }  /* different_types */
 
 /**
- * Returns non-zero if a node is a routine parameter.
- *
- * @param node  the Proj node to test
- */
-static int is_arg_Proj(ir_node *node) {
-	if (! is_Proj(node))
-		return 0;
-	node = get_Proj_pred(node);
-	if (! is_Proj(node))
-		return 0;
-	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
-}  /* is_arg_Proj */
-
-/**
  * Returns non-zero if a node is a result on a malloc-like routine.
  *
  * @param node  the Proj node to test

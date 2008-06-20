@@ -1009,6 +1009,18 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 	block->attr.block.marked = mark;
 }
 
+/** Returns non-zero if a node is a routine parameter. */
+static INLINE int
+_is_arg_Proj(const ir_node *node) {
+	if (! is_Proj(node))
+		return 0;
+	node = get_Proj_pred(node);
+	if (! is_Proj(node))
+		return 0;
+	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
+}
+
+
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
 #define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
@@ -1140,5 +1152,7 @@ _set_Block_mark(ir_node *block, unsigned mark) {
 
 #define set_Phi_next(node, phi)               _set_Phi_next(node, phi)
 #define get_Phi_next(node)                    _get_Phi_next(node)
+
+#define is_arg_Proj(node)                     _is_arg_Proj(node)
 
 #endif

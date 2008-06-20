@@ -2064,6 +2064,11 @@ set_Proj_proj(ir_node *node, long proj) {
 #endif /* INTERPROCEDURAL_VIEW */
 }
 
+/* Returns non-zero if a node is a routine parameter. */
+int (is_arg_Proj)(const ir_node *node) {
+	return _is_arg_Proj(node);
+}
+
 ir_node **
 get_Tuple_preds_arr(ir_node *node) {
 	assert(is_Tuple(node));
