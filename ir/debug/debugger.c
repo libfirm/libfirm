@@ -986,34 +986,27 @@ static unsigned get_token(void) {
 	lexer.tok_start = lexer.curr_pos - 1;
 	if (c == '.' || isalpha(c)) {
 		/* command begins here */
-		int len = 0;
+		int         len = 0;
+		const char* tok_start;
 
-		if (c == '.') {
-			/* skip the dot */
-			++lexer.tok_start;
-			c = next_char();
-		}
 		do {
 			c = next_char();
 			++len;
-		} while (isalpha(c));
-		unput();
-
-		for (i = sizeof(reserved)/sizeof(reserved[0]) - 1; i >= 0; --i) {
-			if (strncasecmp(lexer.tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
-				break;
-		}
-		if (i >= 0)
-			return 256 + i;
-		return tok_error;
-	} else if (isalpha(c)) {
-		/* identifier */
-		lexer.s = lexer.curr_pos - 1;
-
-		do {
-			c = next_char();
 		} while (isgraph(c));
 		unput();
+
+		tok_start = lexer.tok_start;
+		if (*tok_start == '.') {
+			++tok_start;
+			--len;
+		}
+		for (i = sizeof(reserved)/sizeof(reserved[0]) - 1; i >= 0; --i) {
+			if (strncasecmp(tok_start, reserved[i], len) == 0 && reserved[i][len] == '\0')
+				return 256 + i;
+		}
+
+		/* identifier */
+		lexer.s   = lexer.tok_start;
 		lexer.len = lexer.curr_pos - lexer.s;
 		return tok_identifier;
 	} else if (isdigit(c) || c == '-') {
