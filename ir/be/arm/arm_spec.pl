@@ -445,25 +445,24 @@ Shl => {
 
 Shr => {
 	irn_flags => "R",
-	comment   => "construct Shr: Shr(a, b) = a >> b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+	comment   => "construct Shr: Shr(a, b) = a >>u b",
+	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. mov %D0, %S0, lsr %S1'
 },
 
 Shrs => {
 	irn_flags => "R",
-	comment   => "construct Shrs: Shrs(a, b) = a >> b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "in_r1" ] },
+	comment   => "construct Shrs: Shrs(a, b) = a >>s b",
+	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. mov %D0, %S0, asr %S1'
 },
 
-#RotR => {
-#	irn_flags => "R",
-#	comment   => "construct RotR: RotR(a, b) = a ROTR b",
-#	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-#	emit      => '. mov %D0, %S0, ror %S1 /* RotR(%S0, %S1) -> %D0, (%A1, %A2) */'
-##	emit      => '. ror %S0, %S1, %D0'
-#},
+Ror => {
+	irn_flags => "R",
+	comment   => "construct Ror: Ror(a, b) = a <<r>> b",
+	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
+	emit      => '. mov %D0, %S0, ror %S1'
+},
 
 #RotL => {
 #  irn_flags => "R",

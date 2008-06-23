@@ -40,7 +40,7 @@ typedef enum _arm_shift_modifier {
 	ARM_SHF_LSL  = 3,   /**< logical shift left */
 	ARM_SHF_LSR  = 4,   /**< logical shift right */
 	ARM_SHF_ROR  = 5,   /**< rotate right */
-	ARM_SHF_RRX  = 6,   /**< rotate with sign extend */
+	ARM_SHF_RRX  = 6,   /**< rotate right through carry bits */
 } arm_shift_modifier;
 
 /** True, if the modifier implies a shift argument */

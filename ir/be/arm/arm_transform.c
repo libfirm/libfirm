@@ -621,6 +621,78 @@ static ir_node *gen_Shrs(ir_node *node) {
 }
 
 /**
+ * Creates an ARM Ror.
+ *
+ * @return the created ARM Ror node
+ */
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2) {
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *new_op1 = be_transform_node(op1);
+	ir_node  *new_op2 = be_transform_node(op2);
+	ir_mode  *mode    = mode_Iu;
+	dbg_info *dbg     = get_irn_dbg_info(node);
+
+	if (is_arm_Mov_i(new_op2)) {
+		return new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ROR, get_arm_imm_value(new_op2));
+	}
+	return new_rd_arm_Ror(dbg, current_ir_graph, block, new_op1, new_op2, mode);
+}
+
+/**
+ * Creates an ARM Rol.
+ *
+ * @return the created ARM Rol node
+ *
+ * Note: there is no Rol on arm, we have to use Ror
+ */
+static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2) {
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *new_op1 = be_transform_node(op1);
+	ir_mode  *mode    = mode_Iu;
+	dbg_info *dbg     = get_irn_dbg_info(node);
+	ir_node  *new_op2 = new_rd_arm_Rsb_i(dbg, current_ir_graph, block, op2, mode, 32);
+	return new_rd_arm_Ror(dbg, current_ir_graph, block, new_op1, new_op2, mode);
+}
+
+/**
+ * Creates an ARM ROR from a Firm Rotl.
+ *
+ * @return the created ARM Ror node
+ */
+static ir_node *gen_Rotl(ir_node *node) {
+	ir_node *rotate = NULL;
+	ir_node *op1    = get_Rotl_left(node);
+	ir_node *op2    = get_Rotl_right(node);
+
+	/* Firm has only RotL, so we are looking for a right (op2)
+	   operand "-e+mode_size_bits" (it's an already modified "mode_size_bits-e",
+	   that means we can create a RotR. */
+
+	if (is_Add(op2)) {
+		ir_node *add = op2;
+		ir_node *left = get_Add_left(add);
+		ir_node *right = get_Add_right(add);
+		if (is_Const(right)) {
+			tarval  *tv   = get_Const_tarval(right);
+			ir_mode *mode = get_irn_mode(node);
+			long     bits = get_mode_size_bits(mode);
+
+			if (is_Minus(left) &&
+			    tarval_is_long(tv)       &&
+			    get_tarval_long(tv) == bits &&
+			    bits                == 32)
+				rotate = gen_Ror(node, op1, get_Minus_op(left));
+		}
+	}
+
+	if (rotate == NULL) {
+		rotate = gen_Rol(node, op1, op2);
+	}
+
+	return rotate;
+}
+
+/**
  * Transforms a Not node.
  *
  * @return the created ARM Not node
@@ -1397,7 +1469,6 @@ static ir_node *gen_Proj(ir_node *node) {
 			/* we exchange the ProjX with a jump */
 			block = be_transform_node(block);
 			jump  = new_rd_Jmp(dbgi, irg, block);
-			ir_fprintf(stderr, "created jump: %+F\n", jump);
 			return jump;
 		}
 		if (node == get_irg_anchor(irg, anchor_tls)) {
@@ -1549,7 +1620,7 @@ static void arm_register_transformers(void) {
 	GEN(Shl);
 	GEN(Shr);
 	GEN(Shrs);
-	BAD(Rotl);	/* unsupported yet */
+	GEN(Rotl);
 
 	GEN(Quot);
 
