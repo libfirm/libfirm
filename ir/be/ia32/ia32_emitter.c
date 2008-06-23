@@ -2020,16 +2020,16 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
 
-	if(block == get_irg_end_block(irg) || block == get_irg_start_block(irg))
+	if (block == get_irg_end_block(irg) || block == get_irg_start_block(irg))
 		return;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 
-	if(n_cfgpreds == 0) {
+	if (n_cfgpreds == 0) {
 		need_label = 0;
-	} else if(n_cfgpreds == 1) {
+	} else if (n_cfgpreds == 1) {
 		ir_node *cfgpred = get_Block_cfgpred(block, 0);
-		if(get_nodes_block(cfgpred) == prev_block && is_fallthrough(cfgpred)) {
+		if (get_nodes_block(cfgpred) == prev_block && is_fallthrough(cfgpred)) {
 			need_label = 0;
 		}
 	}
@@ -2060,7 +2060,7 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
 		}
 	}
 
-	if (need_label) {
+	if (need_label || has_Block_label(block)) {
 		ia32_emit_block_name(block);
 		be_emit_char(':');
 
