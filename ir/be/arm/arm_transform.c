@@ -697,7 +697,20 @@ static ir_node *gen_Rotl(ir_node *node) {
 			    bits                == 32)
 				rotate = gen_Ror(node, op1, right);
 		}
+	} else if (is_Const(op2)) {
+			tarval  *tv   = get_Const_tarval(op2);
+			ir_mode *mode = get_irn_mode(node);
+			long     bits = get_mode_size_bits(mode);
 
+			if (tarval_is_long(tv) && bits == 32) {
+				ir_node  *block   = be_transform_node(get_nodes_block(node));
+				ir_node  *new_op1 = be_transform_node(op1);
+				ir_mode  *mode    = mode_Iu;
+				dbg_info *dbg     = get_irn_dbg_info(node);
+
+				bits = (bits - get_tarval_long(tv)) & 31;
+				rotate = new_rd_arm_Mov(dbg, current_ir_graph, block, new_op1, mode, ARM_SHF_ROR, bits);
+			}
 	}
 
 	if (rotate == NULL) {
