@@ -935,9 +935,9 @@ static ir_node *gen_Cond(ir_node *node) {
 		ir_node *op1      = get_Cmp_left(cmp_node);
 		ir_node *new_op1  = be_transform_node(op1);
 		ir_node *op2      = get_Cmp_right(cmp_node);
-		ir_node *new_op2  = be_transform_node(op2);
 
 		if (mode_is_float(get_irn_mode(op1))) {
+			ir_node *new_op2  = be_transform_node(op2);
 			/* floating point compare */
 			pn_Cmp pnc = get_Proj_proj(selector);
 
@@ -947,8 +947,12 @@ static ir_node *gen_Cond(ir_node *node) {
 			}
 			/* Hmm: use need cmfe */
 			return new_rd_arm_fpaCmfeBra(dbg, irg, block, new_op1, new_op2, pnc);
+		} else if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
+			/* compare with 0 */
+			return new_rd_arm_TstBra(dbg, irg, block, new_op1, new_op1, get_Proj_proj(selector));
 		} else {
 			/* integer compare */
+			ir_node *new_op2  = be_transform_node(op2);
 			return new_rd_arm_CmpBra(dbg, irg, block, new_op1, new_op2, get_Proj_proj(selector));
 		}
 	} else {

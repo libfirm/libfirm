@@ -578,6 +578,17 @@ CmpBra => {
 	attr_type => "arm_CondJmp_attr_t",
 },
 
+TstBra => {
+	op_flags  => "L|X|Y",
+	state     => "pinned",
+	comment   => "construct conditional branch: TST A, B && JMPxx LABEL",
+	mode      => "mode_T",
+	attr      => "int proj_num",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "none", "none"] },
+	attr_type => "arm_CondJmp_attr_t",
+},
+
 SwitchJmp => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",

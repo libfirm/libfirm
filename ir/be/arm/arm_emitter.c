@@ -453,6 +453,80 @@ static void emit_arm_CmpBra(const ir_node *irn) {
 	}
 }
 
+
+/**
+ * Emit a Tst with conditional branch.
+ */
+static void emit_arm_TstBra(const ir_node *irn)
+{
+	const ir_edge_t *edge;
+	const ir_node *proj_true  = NULL;
+	const ir_node *proj_false = NULL;
+	const ir_node *block;
+	const ir_node *next_block;
+	const char *suffix;
+	int proj_num = get_arm_CondJmp_proj_num(irn);
+
+	foreach_out_edge(irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long nr = get_Proj_proj(proj);
+		if (nr == pn_Cond_true) {
+			proj_true = proj;
+		} else {
+			proj_false = proj;
+		}
+	}
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+
+	/* we have a block schedule */
+	next_block = sched_next_block(block);
+
+	assert(proj_num != pn_Cmp_False);
+	assert(proj_num != pn_Cmp_True);
+
+	if (get_cfop_target_block(proj_true) == next_block) {
+		/* exchange both proj's so the second one can be omitted */
+		const ir_node *t = proj_true;
+
+		proj_true  = proj_false;
+		proj_false = t;
+		proj_num   = get_negated_pnc(proj_num, mode_Iu);
+	}
+	switch (proj_num) {
+		case pn_Cmp_Eq:  suffix = "eq"; break;
+		case pn_Cmp_Lt:  suffix = "lt"; break;
+		case pn_Cmp_Le:  suffix = "le"; break;
+		case pn_Cmp_Gt:  suffix = "gt"; break;
+		case pn_Cmp_Ge:  suffix = "ge"; break;
+		case pn_Cmp_Lg:  suffix = "ne"; break;
+		case pn_Cmp_Leg: suffix = "al"; break;
+		default: assert(!"Cmp unsupported"); suffix = "al";
+	}
+	be_emit_cstring("\ttst ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(irn);
+
+	/* emit the true proj */
+	be_emit_irprintf("\tb%s ", suffix);
+	arm_emit_cfop_target(proj_true);
+	be_emit_finish_line_gas(proj_true);
+
+	if (get_cfop_target_block(proj_false) == next_block) {
+		be_emit_cstring("\t/* fallthrough to ");
+		arm_emit_cfop_target(proj_false);
+		be_emit_cstring(" */");
+		be_emit_finish_line_gas(proj_false);
+	} else {
+		be_emit_cstring("b ");
+		arm_emit_cfop_target(proj_false);
+		be_emit_finish_line_gas(proj_false);
+	}
+}
+
 /**
  * Emit a Compare with conditional branch.
  */
@@ -945,6 +1019,7 @@ static void arm_register_emitters(void) {
 
 	/* other emitter functions */
 	ARM_EMIT(CmpBra);
+	ARM_EMIT(TstBra);
 	ARM_EMIT(fpaCmfBra);
 	ARM_EMIT(fpaCmfeBra);
 	ARM_EMIT(CopyB);
