@@ -929,6 +929,9 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
 	arch_set_irn_register(env->arch_env, fp, env->arch_env->bp);
+	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ nodes can have the ignore flag set
+	arch_set_irn_register(env->arch_env, fp, env->arch_env->bp);
+	be_node_set_flags(fp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 	be_abi_reg_map_set(reg_map, env->arch_env->bp, fp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
