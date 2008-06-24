@@ -241,9 +241,9 @@ void arm_emit_shift(const ir_node *node) {
 
 	mod = get_arm_shift_modifier(node);
 	if (ARM_HAS_SHIFT(mod)) {
-		long v = get_arm_imm_value(node);
+		int v = get_arm_imm_value(node);
 
-		be_emit_irprintf(", %s #%l", arm_shf_mod_name(mod), v);
+		be_emit_irprintf(", %s #%d", arm_shf_mod_name(mod), v);
 	}
 }
 
