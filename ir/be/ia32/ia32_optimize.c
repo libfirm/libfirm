@@ -309,13 +309,13 @@ static void peephole_ia32_Return(ir_node *node) {
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int     i, maxslot, inc_ofs;
-	ir_node *node;
-	ir_node *stores[MAXPUSH_OPTIMIZE];
-	ir_node *block = get_nodes_block(irn);
-	ir_graph *irg = cg->irg;
-	ir_node *curr_sp;
-	ir_mode *spmode = get_irn_mode(irn);
+	int      i, maxslot, inc_ofs;
+	ir_node  *node;
+	ir_node  *stores[MAXPUSH_OPTIMIZE];
+	ir_node  *block;
+	ir_graph *irg;
+	ir_node  *curr_sp;
+	ir_mode  *spmode;
 
 	memset(stores, 0, sizeof(stores));
 
@@ -327,7 +327,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	/*
 	 * We first walk the schedule after the IncSP node as long as we find
-	 * suitable stores that could be transformed to a push.
+	 * suitable Stores that could be transformed to a Push.
 	 * We save them into the stores array which is sorted by the frame offset/4
 	 * attached to the node
 	 */
@@ -379,7 +379,10 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	curr_sp = be_get_IncSP_pred(irn);
 
-	/* walk through the stores and create Pushs for them */
+	/* walk through the Stores and create Pushs for them */
+	block  = get_nodes_block(irn);
+	spmode = get_irn_mode(irn);
+	irg    = cg->irg;
 	for (i = 0; i <= maxslot; ++i) {
 		const arch_register_t *spreg;
 		ir_node *push;
@@ -408,7 +411,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		/* use the memproj now */
 		exchange(store, mem_proj);
 
-		/* we can remove the store now */
+		/* we can remove the Store now */
 		sched_remove(store);
 
 		inc_ofs -= 4;
@@ -417,6 +420,162 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	be_set_IncSP_offset(irn, inc_ofs);
 	be_set_IncSP_pred(irn, curr_sp);
 }
+
+/**
+ * Tries to create Pops from Load, IncSP combinations.
+ * The Loads are replaced by Pops, the IncSP is modified
+ * (possibly into IncSP 0, but not removed).
+ */
+static void peephole_Load_IncSP_to_pop(ir_node *irn)
+{
+	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	int      i, maxslot, inc_ofs;
+	ir_node  *node, *pred_sp, *block;
+	ir_node  *loads[MAXPUSH_OPTIMIZE];
+	ir_graph *irg;
+	unsigned regmask = 0;
+
+	memset(loads, 0, sizeof(loads));
+	assert(be_is_IncSP(irn));
+
+	inc_ofs = -be_get_IncSP_offset(irn);
+	if (inc_ofs < 4)
+		return;
+
+	/*
+	 * We first walk the schedule before the IncSP node as long as we find
+	 * suitable Loads that could be transformed to a Pop.
+	 * We save them into the stores array which is sorted by the frame offset/4
+	 * attached to the node
+	 */
+	maxslot = -1;
+	pred_sp = be_get_IncSP_pred(irn);
+	for (node = sched_prev(irn); !sched_is_end(node); node = sched_prev(node)) {
+		ir_node *mem;
+		int offset;
+		int loadslot;
+		const arch_register_t *dreg;
+
+		/* it has to be a Load */
+		if (!is_ia32_Load(node)) {
+			if (be_is_Copy(node)) {
+				if (get_irn_mode(node) != mode_Iu) {
+					/* not a GP copy, ignore */
+					continue;
+				}
+				dreg = arch_get_irn_register(arch_env, node);
+				if (regmask & (1 << dreg->index)) {
+					break;
+				}
+				/* we CAN skip Copies if the destination is not in our regmask, ie
+				   none of our future Pop will overwrite it */
+				regmask |= (1 << dreg->index);
+				continue;
+			}
+			break;
+		}
+
+		/* we can handle only GP loads */
+		if (get_ia32_ls_mode(node) != mode_Iu)
+			continue;
+
+		/* it has to use our predecessor sp value */
+		if (get_irn_n(node, n_ia32_base) != pred_sp)
+			continue;
+		/* Load has to be attached to Spill-Mem */
+		mem = skip_Proj(get_irn_n(node, n_ia32_mem));
+		if (!is_Phi(mem) && !is_ia32_Store(mem) && !is_ia32_Push(mem))
+			continue;
+
+		/* should have NO index */
+		if (get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
+			break;
+
+		offset = get_ia32_am_offs_int(node);
+		/* we should NEVER access uninitialized stack BELOW the current SP */
+		assert(offset >= 0);
+
+		/* storing at half-slots is bad */
+		if ((offset & 3) != 0)
+			break;
+
+		if (offset < 0 || offset >= MAXPUSH_OPTIMIZE * 4)
+			continue;
+		loadslot = offset >> 2;
+
+		/* loading from the same slot twice is bad (and shouldn't happen...) */
+		if (loads[loadslot] != NULL)
+			break;
+
+		dreg = arch_get_irn_register(arch_env, node);
+		if (regmask & (1 << dreg->index)) {
+			/* this register is already used */
+			break;
+		}
+		regmask |= 1 << dreg->index;
+
+		loads[loadslot] = node;
+		if (loadslot > maxslot)
+			maxslot = loadslot;
+	}
+
+	if (maxslot < 0)
+		return;
+
+	/* walk through the Loads and create Pops for them */
+	for (i = maxslot; i >= 0; --i) {
+		ir_node *load = loads[i];
+
+		if (load == NULL)
+			break;
+		inc_ofs -= 4;
+	}
+
+	/* create a new IncSP if needed */
+	block = get_nodes_block(irn);
+	irg   = cg->irg;
+	if (inc_ofs != 0) {
+		assert(inc_ofs > 0);
+		pred_sp = be_new_IncSP(esp, irg, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
+		sched_add_before(irn, pred_sp);
+	}
+
+	for (++i; i <= maxslot; ++i) {
+		ir_node *load = loads[i];
+		ir_node *mem, *pop;
+		const ir_edge_t *edge, *tmp;
+		const arch_register_t *reg;
+
+		mem = get_irn_n(load, n_ia32_mem);
+		reg = arch_get_irn_register(arch_env, load);
+
+		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
+		arch_set_irn_register(arch_env, pop, reg);
+
+		/* create stackpointer Proj */
+		pred_sp = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
+		arch_set_irn_register(arch_env, pred_sp, esp);
+
+		sched_add_before(irn, pop);
+
+		/* rewire now */
+		foreach_out_edge_safe(load, edge, tmp) {
+			ir_node *proj = get_edge_src_irn(edge);
+
+			set_Proj_pred(proj, pop);
+		}
+
+
+		/* we can remove the Load now */
+		sched_remove(load);
+		kill_node(load);
+
+	}
+	be_set_IncSP_offset(irn, 0);
+	be_set_IncSP_pred(irn, pred_sp);
+
+}
+
 
 /**
  * Find a free GP register if possible, else return NULL.
@@ -527,6 +686,9 @@ static void peephole_be_IncSP(ir_node *node)
 
 	/* transform IncSP->Store combinations to Push where possible */
 	peephole_IncSP_Store_to_push(node);
+
+	/* transform Load->IncSP combinations to Pop where possible */
+	peephole_Load_IncSP_to_pop(node);
 
 	if (arch_get_irn_register(arch_env, node) != esp)
 		return;
