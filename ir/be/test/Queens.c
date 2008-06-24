@@ -78,7 +78,7 @@ static int solve (int n) {
 }
 
 static void usage (const char *progname) {
-  printf("usage: %s\n", progname);
+  printf("usage: %s [n]\n", progname);
 }
 
 
