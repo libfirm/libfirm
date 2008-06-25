@@ -766,7 +766,7 @@ static arch_env_t *arm_init(FILE *file_handle) {
 	static int inited = 0;
 	arm_isa_t *isa;
 
-	if(inited)
+	if (inited)
 		return NULL;
 
 	isa = xmalloc(sizeof(*isa));
@@ -779,6 +779,11 @@ static arch_env_t *arm_init(FILE *file_handle) {
 
 	arm_create_opcodes(&arm_irn_ops);
 	arm_handle_intrinsics();
+
+	/* needed for the debug support */
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	be_emit_cstring(".Ltext0:\n");
+	be_emit_write_line();
 
 	/* we mark referenced global entities, so we can only emit those which
 	 * are actually referenced. (Note: you mustn't use the type visited flag

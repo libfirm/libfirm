@@ -1200,9 +1200,10 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
  * Main driver. Emits the code for one routine.
  */
 void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
-	ir_node **blk_sched;
-	int i, n;
-	ir_node *last_block = NULL;
+	ir_node   **blk_sched;
+	int       i, n;
+	ir_node   *last_block = NULL;
+	ir_entity *entity     = get_irg_entity(irg);
 
 	cg        = arm_cg;
 	isa       = (const arm_isa_t *)cg->arch_env;
@@ -1210,6 +1211,8 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
 	arm_register_emitters();
+
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
 
 	/* create the block schedule. For now, we don't need it earlier. */
 	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
@@ -1230,6 +1233,8 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 		arm_gen_block(block, last_block);
 		last_block = block;
 	}
+
+	be_dbg_method_end();
 
 	/* emit SymConst values */
 	if (set_count(sym_or_tv) > 0) {
