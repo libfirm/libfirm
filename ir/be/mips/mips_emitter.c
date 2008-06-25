@@ -436,7 +436,7 @@ static void mips_emit_block_label(const ir_node *block)
 		be_emit_irprintf("%lu", get_Block_label(block));
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);
-		be_emit_irprintf("%d", get_irn_node_nr(block));
+		be_emit_irprintf("%ld", get_irn_node_nr(block));
 
 	}
 }

@@ -286,7 +286,7 @@ const char *be_gas_insn_label_prefix(void) {
  * Dump a label.
  */
 static void dump_label(ir_label_t label) {
-	be_emit_irprintf("%s%u", be_gas_block_label_prefix(), label);
+	be_emit_irprintf("%s%lu", be_gas_block_label_prefix(), label);
 }
 
 /**

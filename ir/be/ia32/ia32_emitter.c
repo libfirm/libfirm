@@ -736,10 +736,10 @@ static void ia32_emit_block_name(const ir_node *block)
 {
 	if (has_Block_label(block)) {
 		be_emit_string(be_gas_block_label_prefix());
-		be_emit_irprintf("%u", get_Block_label(block));
+		be_emit_irprintf("%lu", get_Block_label(block));
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);
-		be_emit_irprintf("%d", get_irn_node_nr(block));
+		be_emit_irprintf("%ld", get_irn_node_nr(block));
 	}
 }
 
@@ -749,7 +749,7 @@ static void ia32_emit_block_name(const ir_node *block)
 static void ia32_emit_exc_label(const ir_node *node)
 {
 	be_emit_string(be_gas_insn_label_prefix());
-	be_emit_irprintf("%u", get_ia32_exc_label_id(node));
+	be_emit_irprintf("%lu", get_ia32_exc_label_id(node));
 }
 
 /**
