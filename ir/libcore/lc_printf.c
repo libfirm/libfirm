@@ -130,7 +130,7 @@ int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str
 	char pad = ' ';
 
 	/* Set the padding to zero, if the zero is given and we are not left
-	 * justified. (A minus ovverides the zero). See printf(3). */
+	 * justified. (A minus overrides the zero). See printf(3). */
 	if(!occ->flag_minus && occ->flag_zero)
 		pad = '0';
 
@@ -184,23 +184,20 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 	return buf;
 }
 
-/*
+/**
  * Standard argument handler.
  */
 static int std_get_lc_arg_type(const lc_arg_occ_t *occ)
 {
 	int modlen = occ->modifier_length;
-	const char *mod = occ->modifier;
-	int res = -1;
-
 
 	/* check, if the type can be derived from the modifier */
-	if(modlen > 0) {
-		switch(mod[0]) {
+	if (modlen > 0) {
+		const char *mod = occ->modifier;
+		switch (mod[0]) {
 			case 'l':
-				res = modlen > 1 && mod[1] == 'l' ? lc_arg_type_long_long : lc_arg_type_long;
-				break;
-#define TYPE_CASE(letter,type) case letter: res = lc_arg_type_ ## type; break
+				return modlen > 1 && mod[1] == 'l' ? lc_arg_type_long_long : lc_arg_type_long;
+#define TYPE_CASE(letter,type) case letter: return lc_arg_type_ ## type;
 #if 0
 			TYPE_CASE('j', intmax_t);
 			TYPE_CASE('z', size_t);
@@ -213,27 +210,21 @@ static int std_get_lc_arg_type(const lc_arg_occ_t *occ)
 
 	/* The type is given by the conversion specifier and cannot be
 	 * determined from the modifier. */
-	if(res == -1) {
-		switch(occ->conversion) {
-			case 'e':
-			case 'E':
-			case 'f':
-			case 'F':
-			case 'g':
-			case 'G':
-				res = lc_arg_type_double;
-				break;
-			case 's':
-			case 'n':
-			case 'p':
-				res = lc_arg_type_ptr;
-				break;
-			default:
-				res = lc_arg_type_int;
-		}
+	switch (occ->conversion) {
+		case 'e':
+		case 'E':
+		case 'f':
+		case 'F':
+		case 'g':
+		case 'G':
+			return lc_arg_type_double;
+		case 's':
+		case 'n':
+		case 'p':
+			return lc_arg_type_ptr;
+		default:
+			return lc_arg_type_int;
 	}
-
-	return res;
 }
 
 static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_value_t *val)
@@ -266,10 +257,10 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		default:
 			{
 				int len = LC_MAX(128, occ->width + 1);
-				char *buf = malloc(len * sizeof(char));
+				char *buf = xmalloc(len * sizeof(char));
 				res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
 				res = lc_appendable_snadd(app, buf, res);
-				free(buf);
+				xfree(buf);
 			}
 	}
 
@@ -321,7 +312,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 	const char *s;
 	const char *last = fmt + strlen(fmt);
 
-	/* Find the fisrt % */
+	/* Find the first % */
 	s = strchr(fmt, '%');
 
 	/* Emit the text before the first % was found */
@@ -440,7 +431,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 						}
 
 						if(map[ch - base] != NULL) {
-							occ.modifier = s;
+							occ.modifier = mod;
 							occ.modifier_length = s - mod;
 							occ.conversion = ch;
 							arg = map[ch - base];
