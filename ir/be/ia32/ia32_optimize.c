@@ -422,6 +422,17 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 }
 
 /**
+ * Return true if a mode can be stored in the GP register set
+ */
+static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+        if (mode == mode_fpcw)
+                return 0;
+        if (get_mode_size_bits(mode) > 32)
+                return 0;
+        return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
+}
+
+/**
  * Tries to create Pops from Load, IncSP combinations.
  * The Loads are replaced by Pops, the IncSP is modified
  * (possibly into IncSP 0, but not removed).
@@ -460,7 +471,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		/* it has to be a Load */
 		if (!is_ia32_Load(node)) {
 			if (be_is_Copy(node)) {
-				if (get_irn_mode(node) != mode_Iu) {
+				if (!mode_needs_gp_reg(get_irn_mode(node))) {
 					/* not a GP copy, ignore */
 					continue;
 				}
@@ -482,16 +493,19 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		}
 
 		/* we can handle only GP loads */
-		if (get_ia32_ls_mode(node) != mode_Iu)
+		if (!mode_needs_gp_reg(get_ia32_ls_mode(node)))
 			continue;
 
 		/* it has to use our predecessor sp value */
-		if (get_irn_n(node, n_ia32_base) != pred_sp)
-			continue;
+		if (get_irn_n(node, n_ia32_base) != pred_sp) {
+			/* it would be ok if this load does not use a Pop result,
+			 * but we do not check this */
+			break;
+		}
 		/* Load has to be attached to Spill-Mem */
 		mem = skip_Proj(get_irn_n(node, n_ia32_mem));
 		if (!is_Phi(mem) && !is_ia32_Store(mem) && !is_ia32_Push(mem))
-			continue;
+			break;
 
 		/* should have NO index */
 		if (get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
@@ -531,19 +545,16 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	if (maxslot < 0)
 		return;
 
-	/* walk through the Loads and create Pops for them */
+	/* find the first slot */
 	for (i = maxslot; i >= 0; --i) {
 		ir_node *load = loads[i];
 
 		if (load == NULL)
 			break;
 	}
+
 	ofs = inc_ofs - (maxslot + 1) * 4;
 	inc_ofs = (i+1) * 4;
-
-	/* Should work even WITH this if removed, but crashes SPEC then */
-	if (ofs > 0 || inc_ofs > 0)
-		return;
 
 	/* create a new IncSP if needed */
 	block = get_nodes_block(irn);
@@ -553,6 +564,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		sched_add_before(irn, pred_sp);
 	}
 
+	/* walk through the Loads and create Pops for them */
 	for (++i; i <= maxslot; ++i) {
 		ir_node *load = loads[i];
 		ir_node *mem, *pop;
