@@ -429,11 +429,12 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 static void peephole_Load_IncSP_to_pop(ir_node *irn)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
-	int      i, maxslot, inc_ofs;
+	int      i, maxslot, inc_ofs, ofs;
 	ir_node  *node, *pred_sp, *block;
 	ir_node  *loads[MAXPUSH_OPTIMIZE];
 	ir_graph *irg;
 	unsigned regmask = 0;
+	unsigned copymask = ~0;
 
 	memset(loads, 0, sizeof(loads));
 	assert(be_is_IncSP(irn));
@@ -454,7 +455,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		ir_node *mem;
 		int offset;
 		int loadslot;
-		const arch_register_t *dreg;
+		const arch_register_t *sreg, *dreg;
 
 		/* it has to be a Load */
 		if (!is_ia32_Load(node)) {
@@ -464,12 +465,17 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 					continue;
 				}
 				dreg = arch_get_irn_register(arch_env, node);
-				if (regmask & (1 << dreg->index)) {
+				sreg = arch_get_irn_register(arch_env, be_get_Copy_op(node));
+				if (regmask & copymask & (1 << sreg->index)) {
 					break;
 				}
-				/* we CAN skip Copies if the destination is not in our regmask, ie
-				   none of our future Pop will overwrite it */
-				regmask |= (1 << dreg->index);
+				if (regmask & copymask & (1 << dreg->index)) {
+					break;
+				}
+				/* we CAN skip Copies if neither the destination nor the source
+				 * is not in our regmask, ie none of our future Pop will overwrite it */
+				regmask |= (1 << dreg->index) | (1 << sreg->index);
+				copymask &= ~((1 << dreg->index) | (1 << sreg->index));
 				continue;
 			}
 			break;
@@ -501,6 +507,9 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 		if (offset < 0 || offset >= MAXPUSH_OPTIMIZE * 4)
 			continue;
+		/* ignore those outside the possible windows */
+		if (offset > inc_ofs - 4)
+			continue;
 		loadslot = offset >> 2;
 
 		/* loading from the same slot twice is bad (and shouldn't happen...) */
@@ -528,14 +537,18 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 		if (load == NULL)
 			break;
-		inc_ofs -= 4;
 	}
+	ofs = inc_ofs - (maxslot + 1) * 4;
+	inc_ofs = (i+1) * 4;
+
+	/* Should work even WITH this if removed, but crashes SPEC then */
+	if (ofs > 0 || inc_ofs > 0)
+		return;
 
 	/* create a new IncSP if needed */
 	block = get_nodes_block(irn);
 	irg   = cg->irg;
-	if (inc_ofs != 0) {
-		assert(inc_ofs > 0);
+	if (inc_ofs > 0) {
 		pred_sp = be_new_IncSP(esp, irg, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);
 	}
@@ -569,9 +582,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		/* we can remove the Load now */
 		sched_remove(load);
 		kill_node(load);
-
 	}
-	be_set_IncSP_offset(irn, 0);
+	be_set_IncSP_offset(irn, -ofs);
 	be_set_IncSP_pred(irn, pred_sp);
 
 }
