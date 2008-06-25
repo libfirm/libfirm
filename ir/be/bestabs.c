@@ -189,6 +189,27 @@ typedef struct walker_env {
 #endif
 
 /**
+ * mode_info for output as decimal
+ */
+static const tarval_mode_info dec_output = {
+	TVO_DECIMAL,
+	NULL,
+	NULL,
+};
+
+/**
+ * emit a tarval as decimal
+ */
+static void be_emit_tv_as_decimal(tarval *tv) {
+	ir_mode *mode = get_tarval_mode(tv);
+	const tarval_mode_info *old = get_tarval_mode_output_option(mode);
+
+	set_tarval_mode_output_option(mode, &dec_output);
+	be_emit_tarval(tv);
+	set_tarval_mode_output_option(mode, old);
+}
+
+/**
  * Generates a primitive type.
  *
  * @param h    the stabs handle
@@ -215,9 +236,9 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 
 	if (mode_is_int(mode)) {
 		be_emit_irprintf("\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
-		be_emit_tarval(get_mode_min(mode));
+		be_emit_tv_as_decimal(get_mode_min(mode));
 		be_emit_char(';');
-		be_emit_tarval(get_mode_max(mode));
+		be_emit_tv_as_decimal(get_mode_max(mode));
 		be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
 		be_emit_write_line();
 	} else if (mode_is_float(mode)) {
