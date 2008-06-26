@@ -2075,6 +2075,12 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	return 1;
 }
 
+static void set_transformed_and_mark(ir_node *const old_node, ir_node *const new_node)
+{
+	mark_irn_visited(old_node);
+	be_set_transformed_node(old_node, new_node);
+}
+
 static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
                               ir_node *mem, ir_node *ptr, ir_mode *mode,
                               construct_binop_dest_func *func,
@@ -2088,6 +2094,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	dbg_info *dbgi;
 	ir_node  *new_node;
 	ir_node  *new_op;
+	ir_node  *mem_proj;
 	int       commutative;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
@@ -2128,6 +2135,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
+	set_transformed_and_mark(get_Proj_pred(am.mem_proj), new_node);
+	mem_proj = be_transform_node(am.mem_proj);
+	set_transformed_and_mark(mem_proj ? mem_proj : am.mem_proj, new_node);
+
 	return new_node;
 }
 
@@ -2140,6 +2151,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	ir_node *block;
 	dbg_info *dbgi;
 	ir_node *new_node;
+	ir_node *mem_proj;
 	ia32_address_mode_t  am;
 	ia32_address_t *addr = &am.addr;
 	memset(&am, 0, sizeof(am));
@@ -2156,6 +2168,10 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+
+	set_transformed_and_mark(get_Proj_pred(am.mem_proj), new_node);
+	mem_proj = be_transform_node(am.mem_proj);
+	set_transformed_and_mark(mem_proj ? mem_proj : am.mem_proj, new_node);
 
 	return new_node;
 }
