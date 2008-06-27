@@ -545,7 +545,7 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
 	inst = decompose_mul(&env, R, r, tv);
 
 	/* the paper suggests 70% here */
-	mul_costs = (env.evaluate(MUL, tv) * 7) / 10;
+	mul_costs = (env.evaluate(MUL, tv) * 7 + 5) / 10;
 	if (evaluate_insn(&env, inst) <= mul_costs && !env.fail) {
 		env.op       = operand;
 		env.blk      = get_nodes_block(irn);
