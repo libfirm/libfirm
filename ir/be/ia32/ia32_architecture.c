@@ -232,7 +232,7 @@ static const insn_const size_cost = {
 	2,   /* cost of an add instruction */
 	3,   /* cost of a lea instruction */
 	3,   /* cost of a constant shift instruction */
-	3,   /* starting cost of a multiply instruction */
+	4,   /* starting cost of a multiply instruction */
 	0,   /* cost of multiply for every set bit */
 	0,   /* logarithm for alignment of function labels */
 	0,   /* logarithm for alignment of loops labels */
