@@ -47,6 +47,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static be_lv_t          *lv;
 static ir_node          *current_node;
+static ir_node          *prev_node;
 ir_node               ***register_values;
 
 static void clear_reg_value(ir_node *node)
@@ -133,26 +134,26 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 
 	DBG((dbg, LEVEL_1, "About to exchange %+F with %+F\n", old_node, new_node));
 
-	if(old_node == current_node) {
-		if(is_Proj(new_node)) {
+	if (old_node == current_node) {
+		if (is_Proj(new_node)) {
 			current_node = get_Proj_pred(new_node);
 		} else {
 			current_node = new_node;
 		}
 	}
 
-	if(!mode_is_data(get_irn_mode(old_node)))
+	if (!mode_is_data(get_irn_mode(old_node)))
 		return;
 
 	reg = arch_get_irn_register(arch_env, old_node);
-	if(reg == NULL) {
+	if (reg == NULL) {
 		panic("No register assigned at %+F\n", old_node);
 	}
 	cls     = arch_register_get_class(reg);
 	reg_idx = arch_register_get_index(reg);
 	cls_idx = arch_register_class_index(cls);
 
-	if(register_values[cls_idx][reg_idx] == old_node) {
+	if (register_values[cls_idx][reg_idx] == old_node) {
 		register_values[cls_idx][reg_idx] = new_node;
 	}
 
@@ -164,6 +165,45 @@ void be_peephole_after_exchange(ir_node *new_node)
 	be_liveness_introduce(lv, new_node);
 }
 
+void be_peephole_before_exchange_and_kill(const ir_node *old_node, ir_node *new_node)
+{
+	const arch_register_t       *reg;
+	const arch_register_class_t *cls;
+	unsigned                     reg_idx;
+	unsigned                     cls_idx;
+
+	DBG((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
+
+	if (old_node == current_node) {
+		/* current_node will be killed. Its scheduling predecessor
+		   must be processed next. */
+		prev_node = sched_prev(current_node);
+	}
+
+	if (!mode_is_data(get_irn_mode(old_node)))
+		return;
+
+	reg = arch_get_irn_register(arch_env, old_node);
+	if (reg == NULL) {
+		panic("No register assigned at %+F\n", old_node);
+	}
+	assert(reg == arch_get_irn_register(arch_env, new_node) &&
+	      "KILLING a node and replacing by different register is not allowed");
+
+	cls     = arch_register_get_class(reg);
+	reg_idx = arch_register_get_index(reg);
+	cls_idx = arch_register_class_index(cls);
+
+	if (register_values[cls_idx][reg_idx] == old_node) {
+		register_values[cls_idx][reg_idx] = new_node;
+	}
+
+	be_liveness_remove(lv, old_node);
+}
+
+/**
+ * block-walker: run peephole optimization on the given block.
+ */
 static void process_block(ir_node *block, void *data)
 {
 	unsigned n_classes;
@@ -190,28 +230,28 @@ static void process_block(ir_node *block, void *data)
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
 	for( ; !sched_is_begin(current_node);
-			current_node = sched_prev(current_node)) {
+	        current_node = prev_node != NULL ? prev_node : sched_prev(current_node)) {
 		ir_op             *op;
 		ir_node           *last;
-		peephole_opt_func  func;
+		peephole_opt_func  peephole_node;
 
-		if(is_Phi(current_node))
+		prev_node = NULL;
+		if (is_Phi(current_node))
 			break;
 
 		clear_defs(current_node);
 		set_uses(current_node);
 
 		op   = get_irn_op(current_node);
-		func = (peephole_opt_func) op->ops.generic;
-		if(func == NULL)
+		peephole_node = (peephole_opt_func)op->ops.generic;
+		if (peephole_node == NULL)
 			continue;
 
 		last = current_node;
-		func(current_node);
+		peephole_node(current_node);
 		/* was the current node replaced? */
-		if(current_node != last) {
+		if (current_node != last)
 			set_uses(current_node);
-		}
 	}
 }
 
@@ -301,7 +341,7 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	/* add node offset to pred and remove our IncSP */
 	be_set_IncSP_offset(pred, offs);
 
-	be_peephole_before_exchange(node, pred);
+	be_peephole_before_exchange_and_kill(node, pred);
 
 	/* rewire dependency/data edges */
 	edges_reroute_kind(node, pred, EDGE_KIND_DEP, current_ir_graph);
@@ -309,7 +349,6 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	sched_remove(node);
 	be_kill_node(node);
 
-	be_peephole_after_exchange(pred);
 	return pred;
 }
 

@@ -64,6 +64,16 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node);
 void be_peephole_after_exchange(ir_node *new_node);
 
 /**
+ * must be called from peephole optimisations before a node will be killed
+ * and its users will be redirected to new_node.
+ * so bepeephole can update it's internal state.
+ *
+ * Note: killing a node and rewiring os only allowed if new_node produces
+ * the same registers as old_node.
+ */
+void be_peephole_before_exchange_and_kill(const ir_node *old_node, ir_node *new_node);
+
+/**
  * Tries to optimize a beIncSp node with it's previous IncSP node.
  * Must be run from a be_peephole_opt() context.
  *
