@@ -56,6 +56,7 @@ struct HashSet {
 #endif
 };
 
+#ifndef NO_ITERATOR
 struct HashSetIterator {
 	HashSetEntry *current_bucket;
 	HashSetEntry *end;
@@ -64,6 +65,7 @@ struct HashSetIterator {
 	unsigned entries_version;
 #endif
 };
+#endif
 
 #ifdef DO_REHASH
 #undef HashSetEntry

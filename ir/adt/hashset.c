@@ -192,6 +192,8 @@
 #ifndef hashset_size
 #error You have to redefine hashset_size
 #endif
+
+#ifndef NO_ITERATOR
 #ifndef hashset_iterator_init
 #error You have to redefine hashset_iterator_init
 #endif
@@ -201,6 +203,7 @@
 #ifndef hashset_remove_iterator
 #error You have to redefine hashset_remove_iterator
 #endif
+#endif NO_ITERATOR
 
 /**
  * Returns the number of elements in the hashset
@@ -404,9 +407,9 @@ void maybe_shrink(HashSet *self)
 }
 
 /**
- * Insert an element into the hashset. If no element with key key exists yet,
+ * Insert an element into the hashset. If no element with the given key exists yet,
  * then a new one is created and initialized with the InitData function.
- * Otherwise the exisiting element is returned (for hashs where key is equal to
+ * Otherwise the existing element is returned (for hashs where key is equal to
  * value, nothing is returned.)
  *
  * @param self   the hashset
@@ -425,7 +428,7 @@ InsertReturnValue hashset_insert(HashSet *self, KeyType key)
 }
 
 /**
- * Searchs for an element with key @p key.
+ * Searches for an element with key @p key.
  *
  * @param self      the hashset
  * @param key       the key to search for
@@ -521,12 +524,15 @@ void init_size(HashSet *self, size_t initial_size)
 #ifndef NDEBUG
 	self->entries_version = 0;
 #endif
+#ifdef ADDITIONAL_INIT
+	ADDITIONAL_INIT
+#endif
 
 	reset_thresholds(self);
 }
 
 /**
- * Initialializes a hashset with the default size. The memory for the set has to
+ * Initializes a hashset with the default size. The memory for the set has to
  * already allocated.
  */
 void hashset_init(HashSet *self)
@@ -540,6 +546,9 @@ void hashset_init(HashSet *self)
  */
 void hashset_destroy(HashSet *self)
 {
+#ifdef ADDITIONAL_TERM
+	ADDITIONAL_TERM
+#endif
 	Free(self->entries);
 #ifndef NDEBUG
 	self->entries = NULL;
@@ -547,7 +556,7 @@ void hashset_destroy(HashSet *self)
 }
 
 /**
- * Initializes a hashset expecting expected_element size
+ * Initializes a hashset expecting expected_element size.
  */
 void hashset_init_size(HashSet *self, size_t expected_elements)
 {
@@ -563,6 +572,7 @@ void hashset_init_size(HashSet *self, size_t expected_elements)
 	init_size(self, po2size);
 }
 
+#ifndef NO_ITERATOR
 /**
  * Initializes a hashset iterator. The memory for the allocator has to be
  * already allocated.
@@ -621,5 +631,6 @@ void hashset_remove_iterator(HashSet *self, const HashSetIterator *iter)
 	self->num_deleted++;
 	self->consider_shrink = 1;
 }
+#endif /* NO_ITERATOR */
 
-#endif
+#endif /* HashSet */
