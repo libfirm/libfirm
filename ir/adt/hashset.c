@@ -203,7 +203,7 @@
 #ifndef hashset_remove_iterator
 #error You have to redefine hashset_remove_iterator
 #endif
-#endif NO_ITERATOR
+#endif
 
 /**
  * Returns the number of elements in the hashset
