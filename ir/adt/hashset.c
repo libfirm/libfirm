@@ -321,6 +321,7 @@ void reset_thresholds(HashSet *self)
 	self->consider_shrink   = 0;
 }
 
+#ifndef HAVE_OWN_RESIZE
 /**
  * Resize the hashset
  * @internal
@@ -359,6 +360,12 @@ void resize(HashSet *self, size_t new_size)
 	/* now we can free the old array */
 	Free(old_entries);
 }
+#else
+
+/* resize must be defined outside */
+static void resize(HashSet *self, size_t new_size);
+
+#endif
 
 /**
  * grow the hashset if adding 1 more elements would make it too crowded
