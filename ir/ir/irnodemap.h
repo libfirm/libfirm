@@ -97,7 +97,7 @@ void ir_nodemap_remove(ir_nodemap_t *nodemap, const ir_node *node);
  *
  * @param nodemap   Pointer to the nodemap
  * @param node      The pointer to find
- * @returns         1 if nodemap contains the node, 0 else
+ * @returns         the associated data of the node or NULL
  */
 void *ir_nodemap_get(const ir_nodemap_t *nodemap, const ir_node *node);
 
