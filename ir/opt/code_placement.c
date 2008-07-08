@@ -375,8 +375,13 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 	return dca;
 }
 
-static void set_projs_block(ir_node *node, ir_node *block)
-{
+/**
+ * Put all the Proj nodes of a node into a given block.
+ *
+ * @param node   the mode_T node
+ * @param block  the block to put the Proj nodes to
+ */
+static void set_projs_block(ir_node *node, ir_node *block) {
 	int i;
 
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
@@ -384,7 +389,7 @@ static void set_projs_block(ir_node *node, ir_node *block)
 
 		assert(is_Proj(succ));
 
-		if(get_irn_mode(succ) == mode_T) {
+		if (get_irn_mode(succ) == mode_T) {
 			set_projs_block(succ, block);
 		}
 		set_nodes_block(succ, block);
@@ -470,7 +475,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 	n_outs = get_irn_n_outs(n);
 	for (i = 0; i < n_outs; i++) {
 		ir_node *succ = get_irn_out(n, i);
-		if (irn_not_visited(get_irn_out(n, i))) {
+		if (irn_not_visited(succ)) {
 			pdeq_putr(worklist, succ);
 		}
 	}
@@ -525,8 +530,8 @@ void place_code(ir_graph *irg) {
 	   unnecessary executions of the node. */
 	place_late(worklist);
 
-	set_irg_outs_inconsistent(current_ir_graph);
-	set_irg_loopinfo_inconsistent(current_ir_graph);
+	set_irg_outs_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 	del_waitq(worklist);
 	current_ir_graph = rem;
 }
