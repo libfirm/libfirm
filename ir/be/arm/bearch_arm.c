@@ -889,6 +889,12 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
 	return env;
 }
 
+/**
+ * Put all registers which are saved by the prologue/epilogue in a set.
+ *
+ * @param self  The callback object.
+ * @param s     The result set.
+ */
 static void arm_abi_dont_save_regs(void *self, pset *s)
 {
 	arm_abi_env_t *env = self;
@@ -899,23 +905,37 @@ static void arm_abi_dont_save_regs(void *self, pset *s)
 
 
 /**
- * Build the ARM prolog
+* Generate the routine prologue.
+ *
+ * @param self    The callback object.
+ * @param mem     A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ *
+ * @return        The register which shall be used as a stack frame base.
+ *
+ * All nodes which define registers in @p reg_map must keep @p reg_map current.
  */
 static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map) {
-	ir_node *keep, *store;
-	arm_abi_env_t *env = self;
-	ir_graph *irg = env->irg;
-	ir_node *block = get_irg_start_block(irg);
-	arch_register_class_t *gp = &arm_reg_classes[CLASS_arm_gp];
+	arm_abi_env_t         *env = self;
+	ir_node               *keep, *store;
+	ir_graph              *irg;
+	ir_node               *block;
+	arch_register_class_t *gp;
 
-	ir_node *fp = be_abi_reg_map_get(reg_map, env->arch_env->bp);
-	ir_node *ip = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R12]);
-	ir_node *sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
-	ir_node *lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
-	ir_node *pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
+	ir_node               *fp, *ip, *lr, *pc;
+	ir_node               *sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
 
 	if (env->flags.try_omit_fp)
 		return env->arch_env->sp;
+
+	fp = be_abi_reg_map_get(reg_map, env->arch_env->bp);
+	ip = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_R12]);
+	lr = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_LR]);
+	pc = be_abi_reg_map_get(reg_map, &arm_gp_regs[REG_PC]);
+
+	gp    = &arm_reg_classes[CLASS_arm_gp];
+	irg   = env->irg;
+	block = get_irg_start_block(irg);
 
 	ip = be_new_Copy(gp, irg, block, sp);
 	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
