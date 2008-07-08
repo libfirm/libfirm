@@ -40,7 +40,7 @@ ir_node *equivalent_node(ir_node *n);
  *
  * @param node  The IR-node
  */
-unsigned ir_node_hash(ir_node *node);
+unsigned ir_node_hash(const ir_node *node);
 
 /**
  * Creates a new value table used for storing CSE identities.

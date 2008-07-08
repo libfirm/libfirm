@@ -5492,7 +5492,7 @@ int identities_cmp(const void *elt, const void *key) {
 /*
  * Calculate a hash value of a node.
  */
-unsigned ir_node_hash(ir_node *node) {
+unsigned ir_node_hash(const ir_node *node) {
 	unsigned h;
 	int i, irn_arity;
 
@@ -5600,52 +5600,6 @@ static void update_known_irn(ir_node *known_irn, const ir_node *new_ir_node) {
 	}
 }  /* update_value_table */
 
-/**
- * Return the canonical node computing the same value as n.
- *
- * @param value_table  The value table
- * @param n            The node to lookup
- *
- * Looks up the node in a hash table.
- *
- * For Const nodes this is performed in the constructor, too.  Const
- * nodes are extremely time critical because of their frequent use in
- * constant string arrays.
- */
-static INLINE ir_node *identify(pset *value_table, ir_node *n) {
-	ir_node *o = NULL;
-
-	if (!value_table) return n;
-
-	normalize_node(n);
-
-	o = pset_find(value_table, n, ir_node_hash(n));
-	if (o == NULL)
-		return n;
-
-	update_known_irn(o, n);
-	DBG_OPT_CSE(n, o);
-
-	return o;
-}  /* identify */
-
-/**
- * During construction we set the op_pin_state_pinned flag in the graph right when the
- * optimization is performed.  The flag turning on procedure global cse could
- * be changed between two allocations.  This way we are safe.
- *
- * @param value_table  The value table
- * @param n            The node to lookup
- */
-static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
-	ir_node *old = n;
-
-	n = identify(value_table, n);
-	if (n != old && get_irn_MacroBlock(old) != get_irn_MacroBlock(n))
-		set_irg_pinned(current_ir_graph, op_pin_state_floats);
-	return n;
-}  /* identify_cons */
-
 /*
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table, enters it in the table
@@ -5674,6 +5628,23 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 
 	return o;
 }  /* identify_remember */
+
+/**
+ * During construction we set the op_pin_state_pinned flag in the graph right when the
+ * optimization is performed.  The flag turning on procedure global cse could
+ * be changed between two allocations.  This way we are safe.
+ *
+ * @param value_table  The value table
+ * @param n            The node to lookup
+ */
+static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
+	ir_node *old = n;
+
+	n = identify_remember(value_table, n);
+	if (n != old && get_irn_MacroBlock(old) != get_irn_MacroBlock(n))
+		set_irg_pinned(current_ir_graph, op_pin_state_floats);
+	return n;
+}  /* identify_cons */
 
 /* Add a node to the identities value table. */
 void add_identities(pset *value_table, ir_node *node) {
@@ -5955,7 +5926,7 @@ ir_node *optimize_in_place_2(ir_node *n) {
 	   now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
 	   subexpressions within a block. */
 	if (get_opt_cse()) {
-		n = identify(current_ir_graph->value_table, n);
+		n = identify_remember(current_ir_graph->value_table, n);
 	}
 
 	/* Some more constant expression evaluation. */
