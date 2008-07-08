@@ -39,6 +39,7 @@
 #include "valueset.h"
 #include "irnodemap.h"
 #include "irnodeset.h"
+#include "iredges.h"
 #include "debug.h"
 
 #include "irgraph_t.h"
@@ -122,21 +123,6 @@ static ir_node *lookup(ir_node *e)
 }
 
 /**
- * Add or replace a value in a set by an node computing the same
- * value in a dominator block.
- */
-static ir_node *lookup_or_add(ir_node *e)
-{
-	ir_node *x = lookup(e);
-
-	if (x == NULL) {
-		x = add(e, e);
-	}
-	return x;
-}
-
-
-/**
  * Return the block info of a block
  */
 static block_info *get_block_info(ir_node *block) {
@@ -180,26 +166,6 @@ static int is_nice_value(ir_node *n) {
 
 #ifdef DEBUG_libfirm
 /**
- * Dump a ir_nodeset_t set.
- */
-static void dump_node_set(ir_nodeset_t *set, char *txt, ir_node *block)
-{
-	ir_nodeset_iterator_t iter;
-	ir_node *n;
-	int i;
-
-	DB((dbg, LEVEL_2, "%s(%+F) = {\n", txt, block));
-	i = 0;
-	foreach_ir_nodeset(set, n, iter) {
-		if ((i & 3) == 3)
-			DB((dbg, LEVEL_2, "\n"));
-		DB((dbg, LEVEL_2, " %+F,", n));
-		++i;
-	}
-	DB((dbg, LEVEL_2, "\n}\n"));
-}  /* dump_node_set */
-
-/**
  * Dump a value set.
  */
 static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block) {
@@ -221,9 +187,7 @@ static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block) {
 	DB((dbg, LEVEL_2, "\n}\n"));
 }  /* dump_value_set */
 
-
 #else
-#define dump_node_set(set, txt, block)
 #define dump_value_set(set, txt, block)
 #endif /* DEBUG_libfirm */
 
@@ -337,7 +301,7 @@ static int is_clean(ir_node *n) {
  */
 static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *env)
 {
-	ir_node *nn, *res;
+	ir_node *nn;
 	int i, arity;
 	struct obstack *old;
 
@@ -355,7 +319,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 	/* check if the node has at least one Phi predecessor */
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred    = get_irn_intra_n(node, i);
-		ir_node *pred_bl = get_nodes_block(pred);
 		ir_node *leader  = lookup(pred);
 
 		leader = leader != NULL ? leader : pred;
@@ -387,7 +350,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 	set_nodes_block(nn, get_nodes_block(node));
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred    = get_irn_intra_n(node, i);
-		ir_node *pred_bl = get_irn_intra_n(pred, -1);
 		ir_node *leader  = lookup(pred);
 
 		leader = leader != NULL ? leader : pred;
@@ -732,7 +694,6 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
-	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
@@ -825,5 +786,4 @@ void do_gvn_pre(ir_graph *irg)
 		set_irg_loopinfo_inconsistent(irg);
 
 	}
-	dump_ir_block_graph(irg, "-gvn");
 }  /* do_gvn_pre */
