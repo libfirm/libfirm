@@ -698,6 +698,9 @@ void do_gvn_pre(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
 	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
+	/* edges will crash if enabled due to our allocate on other obstack trick */
+	edges_deactivate(irg);
+
 	value_table = new_identities();
 	ir_nodemap_init(&value_map);
 
