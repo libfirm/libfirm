@@ -72,7 +72,6 @@ typedef struct pre_env {
 	struct obstack *obst;   /**< The obstack to allocate on. */
 	ir_node *start_block;   /**< The start block of the current graph. */
 	ir_node *end_block;     /**< The end block of the current graph */
-	pset *trans_set;        /**< The set of all translated values. */
 	block_info *list;       /**< Links all block info entires for easier recovery. */
 	elim_pair *pairs;       /**< A list of node pairs that must be eliminated. */
 	char changes;           /**< Non-zero, if calculation of Antic_in has changed. */
@@ -398,14 +397,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 			set_irn_n(nn, i, leader);
 	}
 	current_ir_graph->obst = old;
-
-	res = identify_remember(env->trans_set, nn);
-	if (nn != res)
-		obstack_free(env->obst, nn);
-	else {
-		DB((dbg, LEVEL_2, "--> Translate %+F in <%+F,%d> into %+F\n", node, block, pos, res));
-	}
-	return res;
+	return nn;
 }  /* phi_translate */
 
 /**
@@ -659,9 +651,14 @@ static void insert_nodes(ir_node *block, void *ctx)
 }  /* insert_nodes */
 
 /**
- * Walker, change nodes by its value if different
+ * Walker, change nodes by its value if different.
+ *
+ * We cannot do the changes right here, as this would change
+ * the hash values of the nodes in the avail_out set!
  */
 static void eliminate(ir_node *irn, void *ctx) {
+	pre_env *env = ctx;
+
 	if (is_no_Block(irn)) {
 		ir_node *block = get_nodes_block(irn);
 		block_info *bl = get_block_info(block);
@@ -671,12 +668,51 @@ static void eliminate(ir_node *irn, void *ctx) {
 			ir_node *expr = ir_valueset_lookup(bl->avail_out, value);
 
 			if (expr != NULL && expr != irn) {
-				DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", irn, expr));
-				exchange(irn, expr);
+				elim_pair *p = obstack_alloc(env->obst, sizeof(*p));
+
+				p->old_node = irn;
+				p->new_node = expr;
+				p->next     = env->pairs;
+				env->pairs  = p;
 			}
 		}
 	}
 }  /* eliminate */
+
+/**
+ * Do all the recorded changes and optimize
+ * newly created Phi's.
+ */
+static void eliminate_nodes(elim_pair *pairs) {
+	elim_pair *p;
+
+	for (p = pairs; p != NULL; p = p->next) {
+		DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", p->old_node, p->new_node));
+		/*
+		 * PRE tends to create Phi(self, self, ... , x, self, self, ...)
+		 * which we can optimize here
+		 */
+		if (is_Phi(p->new_node)) {
+			int i;
+			ir_node *res = NULL;
+
+			for (i = get_irn_intra_arity(p->new_node) - 1; i >= 0; --i) {
+				ir_node *pred = get_irn_n(p->new_node, i);
+
+				if (pred != p->old_node) {
+					if (res) {
+						res = NULL;
+						break;
+					}
+					res = pred;
+				}
+			}
+			if (res)
+				p->new_node = res;
+		}
+		exchange(p->old_node, p->new_node);
+	}
+}  /* eliminate_nodes */
 
 /*
  * Argh: Endless loops cause problems, because the
@@ -706,7 +742,6 @@ void do_gvn_pre(ir_graph *irg)
 
 	obstack_init(&obst);
 	a_env.obst        = &obst;
-	a_env.trans_set   = value_table;
 	a_env.list        = NULL;
 	a_env.start_block = get_irg_start_block(irg);
 	a_env.end_block   = get_irg_end_block(irg);
@@ -766,8 +801,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* last step: eliminate nodes */
 	irg_walk_graph(irg, NULL, eliminate, &a_env);
-
-	dump_ir_block_graph(irg, "-gvn");
+	eliminate_nodes(a_env.pairs);
 
 	/* clean up: delete all sets */
 	for (bl_info = a_env.list; bl_info != NULL; bl_info = bl_info->next) {
@@ -777,7 +811,6 @@ void do_gvn_pre(ir_graph *irg)
 		if (bl_info->new_set)
 			ir_valueset_del(bl_info->new_set);
 	}
-	del_identities(a_env.trans_set);
 	del_identities(value_table);
 	ir_nodemap_destroy(&value_map);
 	obstack_free(&obst, NULL);
