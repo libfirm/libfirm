@@ -267,6 +267,19 @@ InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
 }
 
 /**
+ * calculate shrink and enlarge limits
+ * @internal
+ */
+static INLINE
+void reset_thresholds(HashSet *self)
+{
+	self->enlarge_threshold = (size_t) HT_OCCUPANCY_FLT(self->num_buckets);
+	self->shrink_threshold  = (size_t) HT_EMPTY_FLT(self->num_buckets);
+	self->consider_shrink   = 0;
+}
+
+#ifndef HAVE_OWN_RESIZE
+/**
  * Inserts an element into a hashset under the assumption that the hashset
  * contains no deleted entries and the element doesn't exist in the hashset yet.
  * @internal
@@ -309,19 +322,6 @@ void insert_new(HashSet *self, unsigned hash, ValueType value)
 	}
 }
 
-/**
- * calculate shrink and enlarge limits
- * @internal
- */
-static INLINE
-void reset_thresholds(HashSet *self)
-{
-	self->enlarge_threshold = (size_t) HT_OCCUPANCY_FLT(self->num_buckets);
-	self->shrink_threshold  = (size_t) HT_EMPTY_FLT(self->num_buckets);
-	self->consider_shrink   = 0;
-}
-
-#ifndef HAVE_OWN_RESIZE
 /**
  * Resize the hashset
  * @internal
