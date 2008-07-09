@@ -723,15 +723,15 @@ static void eliminate_nodes(elim_pair *pairs) {
  */
 void do_gvn_pre(ir_graph *irg)
 {
-	struct obstack obst;
-	pre_env a_env;
+	struct obstack       obst;
+	pre_env              a_env;
 	optimization_state_t state;
-	block_info *bl_info;
-	unsigned antic_iter, insert_iter;
+	block_info           *bl_info;
+	unsigned             antic_iter, insert_iter;
+	ir_node              *value, *expr;
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
-	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
@@ -771,6 +771,16 @@ void do_gvn_pre(ir_graph *irg)
 	/* allocate block info for all blocks */
 	irg_walk_blkwise_graph(irg, NULL, topo_walker, &a_env);
 
+	/* clean the exp_gen set. Doing this here saves the cleanup in the iteration. */
+	for (bl_info = a_env.list; bl_info != NULL; bl_info = bl_info->next) {
+		ir_valueset_iterator_t iter;
+
+		foreach_valueset(bl_info->exp_gen, value, expr, iter) {
+			if (!is_clean(expr))
+				ir_valueset_remove_iterator(bl_info->exp_gen, &iter);
+		}
+	}
+
 	/* compute the available value sets for all blocks */
 	dom_tree_walk_irg(irg, compute_avail_top_down, NULL, &a_env);
 
@@ -783,7 +793,6 @@ void do_gvn_pre(ir_graph *irg)
 	do {
 		DB((dbg, LEVEL_1, "Antic_in Iteration %d starts ...\n", ++antic_iter));
 		a_env.changes = 0;
-		//irg_block_walk_graph(irg, compute_antic, NULL, &a_env);
 		postdom_tree_walk_irg(irg, compute_antic, NULL, &a_env);
 		a_env.first_iter = 0;
 		DB((dbg, LEVEL_1, "------------------------\n"));
