@@ -28,6 +28,8 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
+
 #include "obst.h"
 #include "irprintf_t.h"
 #include "irgraph.h"
@@ -70,11 +72,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
    (see bespill.h be_get_reload_costs_no_weight) */
 #define RELOAD_COST_FACTOR   10
 
-typedef enum {
-	value_not_reloaded,       /* the value has not been reloaded */
-	value_partially_reloaded, /* the value has been reloaded on some paths */
-	value_reloaded            /* the value has been reloaded on all paths */
-} reloaded_state_t;
+#define TIME_UNDEFINED 6666
+
+#define PLACE_SPILLS
 
 /**
  * An association between a node and a point in time.
@@ -82,7 +82,7 @@ typedef enum {
 typedef struct loc_t {
 	ir_node          *node;
 	unsigned          time;     /**< A use time (see beuses.h). */
-	reloaded_state_t  reloaded; /**< the value is a reloaded value */
+	bool              spilled;  /**< the value was already spilled on this path */
 } loc_t;
 
 typedef struct _workset_t {
@@ -171,7 +171,7 @@ static void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs)
  * Inserts the value @p val into the workset, iff it is not
  * already contained. The workset must not be full.
  */
-static void workset_insert(workset_t *workset, ir_node *val, int reloaded)
+static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 {
 	loc_t *loc;
 	int    i;
@@ -182,8 +182,8 @@ static void workset_insert(workset_t *workset, ir_node *val, int reloaded)
 	for (i = 0; i < workset->len; ++i) {
 		loc = &workset->vals[i];
 		if (loc->node == val) {
-			if(!loc->reloaded) {
-				loc->reloaded = reloaded;
+			if (spilled) {
+				loc->spilled = true;
 			}
 			return;
 		}
@@ -193,8 +193,8 @@ static void workset_insert(workset_t *workset, ir_node *val, int reloaded)
 	assert(workset->len < n_regs && "Workset already full!");
 	loc           = &workset->vals[workset->len];
 	loc->node     = val;
-	loc->reloaded = reloaded;
-	loc->time     = 6666; /* undefined yet */
+	loc->spilled  = spilled;
+	loc->time     = TIME_UNDEFINED;
 	workset->len++;
 }
 
@@ -368,10 +368,11 @@ static void displace(workset_t *new_vals, int is_usage)
 			DB((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			     workset_get_time(ws, i)));
 
-			if(!USES_IS_INFINITE(ws->vals[i].time)
-					&& !ws->vals[i].reloaded) {
-				//be_add_spill(senv, val, instr);
+#ifdef PLACE_SPILLS
+			if(!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
+				be_add_spill(senv, val, instr);
 			}
+#endif
 
 			if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
 				workset_remove(ws_start, val);
@@ -387,7 +388,7 @@ static void displace(workset_t *new_vals, int is_usage)
 	for (i = 0; i < demand; ++i) {
 		ir_node *val = to_insert[i];
 
-		workset_insert(ws, val, 1);
+		workset_insert(ws, val, false);
 	}
 }
 
@@ -404,10 +405,9 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	be_next_use_t next_use;
 	loc_t         loc;
 
-	loc.time     = USES_INFINITY;
-	loc.node     = node;
-	//loc.reloaded = rand() % 2; /* provoke a bug... */
-	loc.reloaded = 0;
+	loc.time    = USES_INFINITY;
+	loc.node    = node;
+	loc.spilled = false;
 
 	if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
 		loc.time = USES_INFINITY;
@@ -463,9 +463,9 @@ static void compute_live_ins(const ir_node *block)
 	int         i, len, ws_count;
 	int	        free_slots, free_pressure_slots;
 	unsigned    pressure;
-	//int arity;
-	//int         n_pred_worksets;
-	//workset_t **pred_worksets;
+	int         arity;
+	int         n_pred_worksets;
+	workset_t **pred_worksets;
 
 	/* Collect all values living at start of block */
 	starters = NEW_ARR_F(loc_t, 0);
@@ -579,8 +579,7 @@ static void compute_live_ins(const ir_node *block)
 
 	DEL_ARR_F(starters);
 
-#if 0
-	/* determine reloaded status of the values: If there's 1 pred block (which
+	/* determine spill status of the values: If there's 1 pred block (which
 	 * is no backedge) where the value is reloaded then we must set it to
 	 * reloaded here. We place spills in all pred where the value was not yet
 	 * reloaded to be sure we have a spill on each path */
@@ -598,21 +597,19 @@ static void compute_live_ins(const ir_node *block)
 	}
 
 	for(i = 0; i < ws_count; ++i) {
-		loc_t   *loc   = &ws->vals[i];
-		ir_node *value = loc->node;
-		int      reloaded;
+		loc_t   *loc     = &ws->vals[i];
+		ir_node *value   = loc->node;
+		bool     spilled = true;
 		int      n;
 
-		/* phis from this block aren't reloaded */
+		/* phis from this block aren't spilled */
 		if(get_nodes_block(value) == block) {
 			assert(is_Phi(value));
-			loc->reloaded = value_not_reloaded;
+			loc->spilled = false;
 			continue;
 		}
 
-		/* was the value reloaded on any of the other inputs */
-		reloaded = 0;
-		arity    = get_Block_n_cfgpreds(block);
+		/* set status to spilled if node was spilled on all predecessors */
 		for(n = 0; n < n_pred_worksets; ++n) {
 			workset_t *pred_workset = pred_worksets[n];
 			int        p_len        = workset_get_length(pred_workset);
@@ -620,20 +617,18 @@ static void compute_live_ins(const ir_node *block)
 
 			for(p = 0; p < p_len; ++p) {
 				loc_t *l = &pred_workset->vals[p];
-				if(l->node == value) {
-					if(l->reloaded) {
-						reloaded = 1;
-					}
+
+				if (l->node != value)
+					continue;
+
+				if (!l->spilled) {
+					spilled = false;
 					break;
 				}
 			}
-			if(p >= p_len) {
-				reloaded = 1;
-				break;
-			}
 		}
+		loc->spilled = spilled;
 	}
-#endif
 }
 
 /**
@@ -729,8 +724,8 @@ static void belady(ir_node *block)
 			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, in))
 				continue;
 
-			/* (note that reloaded_value is irrelevant here) */
-			workset_insert(new_vals, in, 0);
+			/* (note that "spilled" is irrelevant here) */
+			workset_insert(new_vals, in, false);
 		}
 		displace(new_vals, 1);
 
@@ -743,12 +738,12 @@ static void belady(ir_node *block)
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, proj))
 					continue;
-				workset_insert(new_vals, proj, 0);
+				workset_insert(new_vals, proj, false);
 			}
 		} else {
 			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
 				continue;
-			workset_insert(new_vals, irn, 0);
+			workset_insert(new_vals, irn, false);
 		}
 		displace(new_vals, 0);
 
@@ -801,10 +796,10 @@ static void fix_block_borders(ir_node *block, void *data)
 		workset_foreach(pred_end_workset, node, iter) {
 			ir_node *n2;
 			int      iter2;
-			int      found = 0;
+			bool     found = false;
 			workset_foreach(start_workset, n2, iter2) {
 				if(n2 == node) {
-					found = 1;
+					found = true;
 					break;
 				}
 				/* note that we do not look at phi inputs, becuase the values
@@ -813,11 +808,19 @@ static void fix_block_borders(ir_node *block, void *data)
 				 * workset */
 			}
 
-#if 0
-			if(!found && be_is_live_out(lv, pred, node)
-					&& !pred_end_workset->vals[iter].reloaded) {
-				ir_node *insert_point
-					= be_get_end_of_block_insertion_point(pred);
+			if (found)
+				continue;
+
+#ifdef PLACE_SPILLS
+			if(be_is_live_in(lv, block, node)
+					&& !pred_end_workset->vals[iter].spilled) {
+				ir_node *insert_point;
+				if (arity > 1) {
+					insert_point = be_get_end_of_block_insertion_point(pred);
+				} else {
+					insert_point = sched_first(block);
+					assert(!is_Phi(insert_point));
+				}
 				DB((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
 				     insert_point));
 				be_add_spill(senv, node, insert_point);
