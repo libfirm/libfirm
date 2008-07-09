@@ -4691,9 +4691,8 @@ static ir_node *transform_node(ir_node *n);
  */
 static ir_node *transform_node_shift(ir_node *n) {
 	ir_node *left, *right;
-	tarval *tv1, *tv2, *res;
 	ir_mode *mode;
-	int modulo_shf, flag;
+	tarval *tv1, *tv2, *res;
 
 	left = get_binop_left(n);
 
@@ -4710,36 +4709,46 @@ static ir_node *transform_node_shift(ir_node *n) {
 	if (tv2 == tarval_bad)
 		return n;
 
-	res = tarval_add(tv1, tv2);
-
-	/* beware: a simple replacement works only, if res < modulo shift */
+	res  = tarval_add(tv1, tv2);
 	mode = get_irn_mode(n);
 
-	flag = 0;
+	/* beware: a simple replacement works only, if res < modulo shift */
+	if (!is_Rotl(n)) {
+		int modulo_shf = get_mode_modulo_shift(mode);
+		assert(modulo_shf >= (int) get_mode_size_bits(mode));
+		if (modulo_shf > 0) {
+			tarval *modulo = new_tarval_from_long(modulo_shf,
+			                                      get_tarval_mode(res));
 
-	modulo_shf = get_mode_modulo_shift(mode);
-	if (modulo_shf > 0) {
-		tarval *modulo = new_tarval_from_long(modulo_shf, get_tarval_mode(res));
+			/* shifting too much */
+			if (!(tarval_cmp(res, modulo) & pn_Cmp_Lt)) {
+				if (is_Shrs(n)) {
+					ir_graph *irg   = get_irn_irg(n);
+					ir_node  *block = get_nodes_block(n);
+					dbg_info *dbgi  = get_irn_dbg_info(n);
+					ir_node  *cnst  = new_Const(mode_Iu, new_tarval_from_long(get_mode_size_bits(mode)-1, mode_Iu));
+					return new_rd_Shrs(dbgi, irg, block, get_binop_left(left),
+					                   cnst, mode);
+				}
 
-		if (tarval_cmp(res, modulo) & pn_Cmp_Lt)
-			flag = 1;
-	} else
-		flag = 1;
-
-	if (flag) {
-		/* ok, we can replace it */
-		ir_node *in[2], *irn, *block = get_irn_n(n, -1);
-
-		in[0] = get_binop_left(left);
-		in[1] = new_r_Const(current_ir_graph, block, get_tarval_mode(res), res);
-
-		irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
-
-		DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
-
-		return transform_node(irn);
+				return new_Const(mode, get_mode_null(mode));
+			}
+		}
+	} else {
+		res = tarval_mod(res, new_tarval_from_long(get_mode_size_bits(mode), get_tarval_mode(res)));
 	}
-	return n;
+
+	/* ok, we can replace it */
+	ir_node *in[2], *irn, *block = get_irn_n(n, -1);
+
+	in[0] = get_binop_left(left);
+	in[1] = new_r_Const(current_ir_graph, block, get_tarval_mode(res), res);
+
+	irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
+
+	DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
+
+	return transform_node(irn);
 }  /* transform_node_shift */
 
 /**
