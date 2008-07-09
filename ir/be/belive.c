@@ -804,9 +804,7 @@ void be_liveness_transfer(const arch_env_t *arch_env,
 				ir_nodeset_remove(nodeset, proj);
 			}
 		}
-	}
-
-	if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+	} else if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
 		ir_nodeset_remove(nodeset, node);
 	}
 
