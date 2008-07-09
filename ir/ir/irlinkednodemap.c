@@ -173,9 +173,7 @@ ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator) {
  */
 void ir_lnk_nodemap_remove_iterator(ir_lnk_nodemap_t *nodemap,
                                     ir_lnk_nodemap_iterator_t *iterator) {
-	ir_lnk_nodemap_entry_t *rem = list_entry(iterator->iter, ir_lnk_nodemap_entry_t, list);
-
-	iterator->iter = rem->list.prev;
+	ir_lnk_nodemap_entry_t *rem = list_entry(iterator->iter->prev, ir_lnk_nodemap_entry_t, list);
 
 	ir_lnk_nodemap_remove(nodemap, rem->node);
 }

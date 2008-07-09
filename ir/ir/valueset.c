@@ -171,9 +171,7 @@ ir_node *ir_valueset_iterator_next(ir_valueset_iterator_t *iterator, ir_node **e
 }
 
 void ir_valueset_remove_iterator(ir_valueset_t *valueset, ir_valueset_iterator_t *iterator) {
-	ir_valueset_entry_t *rem = list_entry(iterator->iter, ir_valueset_entry_t, list);
-
-	iterator->iter = rem->list.prev;
+	ir_valueset_entry_t *rem = list_entry(iterator->iter->prev, ir_valueset_entry_t, list);
 
 	ir_valueset_remove(valueset, rem->value);
 }
