@@ -40,6 +40,7 @@
 
 // XXX there is no one time init for schedulers
 //#define NORMAL_DBG
+#include "irprintf.h"
 
 
 static int must_be_scheduled(const ir_node* const irn)
