@@ -106,6 +106,15 @@ static void value_union(ir_valueset_t *dst, ir_valueset_t *src)
  */
 static ir_node *add(ir_node *e, ir_node *v)
 {
+	if (is_Proj(v)) {
+		ir_node *pred = get_Proj_pred(v);
+		ir_node *v_pred = identify_remember(value_table, pred);
+
+		if (v_pred != pred) {
+			/* must create a new value here */
+			v = new_r_Proj(current_ir_graph, get_nodes_block(v_pred), v_pred, get_irn_mode(v), get_Proj_proj(v));
+		}
+	}
 	v = identify_remember(value_table, v);
 	ir_nodemap_insert(&value_map, e, v);
 	return v;
@@ -154,14 +163,16 @@ static int is_nice_value(ir_node *n) {
 
 	while (is_Proj(n))
 		n = get_Proj_pred(n);
-	mode = get_irn_mode(n);
-	/*
-	 * FIXME: For now, we cannot handle Div/even if it's movable.
-	 * That should be fixed.
-	 */
-	if (!mode_is_data(mode))
+	if (get_irn_pinned(n) == op_pin_state_pinned)
 		return 0;
-	return (get_irn_pinned(n) != op_pin_state_pinned);
+	mode = get_irn_mode(n);
+	if (!mode_is_data(mode)) {
+		if (! is_Div(n) && ! is_Mod(n) && ! is_DivMod(n))
+			return 0;
+		if (! is_NoMem(get_fragile_op_mem(n)))
+			return 0;
+	}
+	return 1;
 }  /* is_nice_value */
 
 #ifdef DEBUG_libfirm
@@ -211,6 +222,11 @@ static void topo_walker(ir_node *irn, void *ctx) {
 
 	/* no need to put constants into the sets: they are always redundant */
 	if (! is_nice_value(irn) || is_irn_constlike(irn))
+		return;
+
+	/* Do not put mode_T nodes info the sets, or PhiT will be created
+	  (which are not allowed in Firm). Instead, put the Proj's here only. */
+	if (get_irn_mode(irn) == mode_T)
 		return;
 
 	/* place this node into the set of possible nodes of its block */
@@ -381,8 +397,21 @@ static void compute_antic(ir_node *block, void *ctx) {
 
 	/* the end block has no successor */
 	if (block != env->end_block) {
-		int n_succ = get_Block_n_cfg_outs(block);
+		int n_succ;
 
+		/*
+		 * This step puts all generated expression from the current
+		 * current block into Antic_in.
+		 * It is enough to do this in the first iteration only, because
+		 * the set info->exp_gen is not changed anymore.
+		 */
+		if (env->first_iter) {
+			foreach_valueset(info->exp_gen, value, expr, iter) {
+				ir_valueset_insert(info->antic_in, value, expr);
+			}
+		}
+
+		n_succ = get_Block_n_cfg_outs(block);
 		if (n_succ == 1) {
 			int i, pos = -1;
 
@@ -411,18 +440,6 @@ static void compute_antic(ir_node *block, void *ctx) {
 			int        i;
 
 			assert(n_succ > 1);
-
-			/*
-			 * This step puts all generated expression from the current
-			 * current block into Antic_in.
-			 * It is enough to do this in the first iteration only, because
-			 * the set info->exp_gen is not changed anymore.
-			 */
-			if (env->first_iter) {
-				foreach_valueset(info->exp_gen, value, expr, iter) {
-					ir_valueset_insert(info->antic_in, value, expr);
-				}
-			}
 
 			/* Select a successor to compute the disjoint of all Nodes
 			   sets, it might be useful to select the block with the
@@ -584,6 +601,22 @@ static void insert_nodes(ir_node *block, void *ctx)
 					ir_node *e_prime = pred_info->avail;
 					ir_node *nn;
 					if (!is_Phi(e_prime)) {
+						ir_node *proj_pred = NULL;
+						if (is_Proj(e_prime)) {
+							ir_node *pred = get_Proj_pred(e_prime);
+							mode = get_irn_mode(pred);
+							nn = new_ir_node(
+								get_irn_dbg_info(pred),
+								current_ir_graph, pred_blk,
+								get_irn_op(pred),
+								mode,
+								get_irn_arity(pred),
+								get_irn_in(pred) + 1);
+							copy_node_attr(pred, nn);
+
+							DB((dbg, LEVEL_2, "New node %+F in block %+F created\n", nn, pred_blk));
+							proj_pred = nn;
+						}
 						mode = get_irn_mode(e_prime);
 						nn = new_ir_node(
 							get_irn_dbg_info(e_prime),
@@ -593,6 +626,9 @@ static void insert_nodes(ir_node *block, void *ctx)
 							get_irn_arity(e_prime),
 							get_irn_in(e_prime) + 1);
 						copy_node_attr(e_prime, nn);
+						if (proj_pred != NULL) {
+							set_Proj_pred(nn, proj_pred);
+						}
 
 						DB((dbg, LEVEL_2, "New node %+F in block %+F created\n", nn, pred_blk));
 						ir_valueset_insert(pred_info->avail_out, add(nn, lookup(expr)), nn);
@@ -607,6 +643,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 			ir_valueset_insert(curr_info->new_set, value, phi);
 			free(in);
 			DB((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, expr));
+			ir_valueset_remove_iterator(curr_info->antic_in, &iter);
 			env->changes |= 1;
 		}  /* if */
   }  /* node_set_foreach */
@@ -694,6 +731,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
+	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
