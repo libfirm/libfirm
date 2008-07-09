@@ -452,7 +452,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
  * beginning of a loop. We try to reload as much values as possible now so they
  * don't get reloaded inside the loop.
  */
-static void compute_live_ins(const ir_node *block)
+static void decide_start_workset(const ir_node *block)
 {
 	ir_loop    *loop = get_irn_loop(block);
 	ir_node    *first;
@@ -464,7 +464,6 @@ static void compute_live_ins(const ir_node *block)
 	int	        free_slots, free_pressure_slots;
 	unsigned    pressure;
 	int         arity;
-	int         n_pred_worksets;
 	workset_t **pred_worksets;
 
 	/* Collect all values living at start of block */
@@ -583,23 +582,22 @@ static void compute_live_ins(const ir_node *block)
 	 * is no backedge) where the value is reloaded then we must set it to
 	 * reloaded here. We place spills in all pred where the value was not yet
 	 * reloaded to be sure we have a spill on each path */
-	n_pred_worksets = 0;
 	arity           = get_irn_arity(block);
 	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
 	for(i = 0; i < arity; ++i) {
 		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info  = get_block_info(pred_block);
-		if(pred_info == NULL)
-			continue;
 
-		pred_worksets[n_pred_worksets] = pred_info->end_workset;
-		++n_pred_worksets;
+		if(pred_info == NULL)
+			pred_worksets[i] = NULL;
+		else
+			pred_worksets[i] = pred_info->end_workset;
 	}
 
 	for(i = 0; i < ws_count; ++i) {
 		loc_t   *loc     = &ws->vals[i];
 		ir_node *value   = loc->node;
-		bool     spilled = true;
+		bool     spilled;
 		int      n;
 
 		/* phis from this block aren't spilled */
@@ -609,20 +607,60 @@ static void compute_live_ins(const ir_node *block)
 			continue;
 		}
 
-		/* set status to spilled if node was spilled on all predecessors */
-		for(n = 0; n < n_pred_worksets; ++n) {
+		/* determine if value was spilled on any predecessor */
+		spilled = false;
+		for(n = 0; n < arity; ++n) {
 			workset_t *pred_workset = pred_worksets[n];
-			int        p_len        = workset_get_length(pred_workset);
+			int        p_len;
 			int        p;
 
+			if (pred_workset == NULL)
+				continue;
+
+			p_len = workset_get_length(pred_workset);
 			for(p = 0; p < p_len; ++p) {
 				loc_t *l = &pred_workset->vals[p];
 
 				if (l->node != value)
 					continue;
 
-				if (!l->spilled) {
-					spilled = false;
+				if (l->spilled) {
+					spilled = true;
+					goto determined_spill;
+				}
+				break;
+			}
+			if (p >= p_len) {
+				spilled = true;
+				goto determined_spill;
+			}
+		}
+
+determined_spill:
+		if (spilled) {
+			for (n = 0; n < arity; ++n) {
+				workset_t *pred_workset = pred_worksets[n];
+				int        p_len;
+				int        p;
+
+				if (pred_workset == NULL)
+					continue;
+
+				p_len = workset_get_length(pred_workset);
+				for (p = 0; p < p_len; ++p) {
+					loc_t *l = &pred_workset->vals[p];
+
+					if (l->node != value)
+						continue;
+
+					if (!l->spilled) {
+						ir_node *pred_block = get_Block_cfgpred_block(block, n);
+						ir_node *insert_point
+							= be_get_end_of_block_insertion_point(pred_block);
+						DB((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
+						   	insert_point));
+						be_add_spill(senv, value, insert_point);
+					}
 					break;
 				}
 			}
@@ -680,7 +718,7 @@ static void belady(ir_node *block)
 		/* we need 2 heuristics here, for the case when all predecessor blocks
 		 * are known and when some are backedges (and therefore can't be known
 		 * yet) */
-		compute_live_ins(block);
+		decide_start_workset(block);
 	}
 
 	DB((dbg, DBG_DECIDE, "\n"));
