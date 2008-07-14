@@ -54,6 +54,25 @@
 #include "entity_t.h"
 
 /**
+ * Returns the tarval of a Const node or tarval_bad for all other nodes.
+ */
+static tarval *default_value_of(const ir_node *n) {
+	if (is_Const(n))
+		return get_Const_tarval(n); /* might return tarval_bad */
+	else
+		return tarval_bad;
+}
+
+value_of_func value_of_ptr = default_value_of;
+
+void set_value_of_func(value_of_func func) {
+	if (func != NULL)
+		value_of_ptr = func;
+	else
+		value_of_ptr = default_value_of;
+}
+
+/**
  * Return the value of a Constant.
  */
 static tarval *computed_value_Const(ir_node *n) {
@@ -4693,6 +4712,7 @@ static ir_node *transform_node_shift(ir_node *n) {
 	ir_node *left, *right;
 	ir_mode *mode;
 	tarval *tv1, *tv2, *res;
+	ir_node *in[2], *irn, *block;
 
 	left = get_binop_left(n);
 
@@ -4739,7 +4759,7 @@ static ir_node *transform_node_shift(ir_node *n) {
 	}
 
 	/* ok, we can replace it */
-	ir_node *in[2], *irn, *block = get_irn_n(n, -1);
+	block = get_nodes_block(n);
 
 	in[0] = get_binop_left(left);
 	in[1] = new_r_Const(current_ir_graph, block, get_tarval_mode(res), res);

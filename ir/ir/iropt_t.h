@@ -82,14 +82,28 @@ ir_node *optimize_node(ir_node *n);
 ir_node *optimize_in_place_2(ir_node *n);
 
 /**
- * Returns the tarval of a Const node or tarval_bad for all other nodes.
+ * The value_of operation.
+ * This operation returns for every IR node an associated tarval if existing,
+ * returning tarval_bad otherwise.
+ * No calculations are done here, just a lookup.
+ */
+typedef tarval *(*value_of_func)(const ir_node *self);
+
+extern value_of_func value_of_ptr;
+
+/**
+ * Set a new value_of function.
+ *
+ * @param func  the function, NULL restores the default behavior
+ */
+void set_value_of_func(value_of_func func);
+
+/**
+ * Returns the associated tarval of a node.
  */
 static INLINE tarval *
-value_of(ir_node *n) {
-	if ((n != NULL) && is_Const(n))
-		return get_Const_tarval(n); /* might return tarval_bad */
-	else
-		return tarval_bad;
+value_of(const ir_node *n) {
+	return value_of_ptr(n);
 }
 
 /**
