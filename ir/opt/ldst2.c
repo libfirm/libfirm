@@ -648,7 +648,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 				ir_node *store_ptr  = get_Store_ptr(pred);
 				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
-					ir_fprintf(stderr, "Ld after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
+					//ir_fprintf(stderr, "Ld after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
 					parallelise_load(pi, mem);
@@ -685,7 +685,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 				ir_node *load_ptr  = get_Load_ptr(pred);
 				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, load_ptr, load_mode) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
-					ir_fprintf(stderr, "St after Ld: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, load_ptr, load_mode);
+					//ir_fprintf(stderr, "St after Ld: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, load_ptr, load_mode);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
 					parallelise_store(pi, mem);
@@ -700,7 +700,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
 					ir_node *mem;
 
-					ir_fprintf(stderr, "St after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
+					//ir_fprintf(stderr, "St after St: %+F (%+F) does not alias %+F (%+F)\n", org_ptr, org_mode, store_ptr, store_mode);
 					ir_nodeset_insert(&pi->user_mem, irn);
 					//ir_fprintf(stderr, "adding %+F to user set\n", irn);
 					mem = get_Store_mem(pred);
