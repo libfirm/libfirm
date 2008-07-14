@@ -618,12 +618,6 @@ static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 		return;
 
 	if (handle->curr_file != fname) {
-		/* TODO: escape filename correctly */
-		if (handle->curr_file != handle->main_file) {
-			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", handle->curr_file,
-			                 N_EINCL);
-			be_emit_write_line();
-		}
 		if (fname != handle->main_file) {
 			be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", fname, N_SOL);
 			be_emit_write_line();
