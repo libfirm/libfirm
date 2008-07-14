@@ -42,6 +42,7 @@
 #include "tv.h"
 #include "irgwalk.h"
 #include "firm_types.h"
+#include "irdump_grgen.h"
 
 
 typedef struct
