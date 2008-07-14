@@ -1903,7 +1903,7 @@ typedef void (*emit_func_ptr) (const ir_node *);
 /**
  * Emits code for a node.
  */
-static void ia32_emit_node(const ir_node *node)
+static void ia32_emit_node(ir_node *node)
 {
 	ir_op *op = get_irn_op(node);
 
@@ -2094,7 +2094,7 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
  */
 static void ia32_gen_block(ir_node *block, ir_node *last_block)
 {
-	const ir_node *node;
+	ir_node *node;
 
 	ia32_emit_block_header(block, last_block);
 
@@ -2138,9 +2138,9 @@ static void ia32_gen_labels(ir_node *block, void *data)
 }
 
 /**
- * Emit an exception label if the current instruction can fail.
+ * Assign and emit an exception label if the current instruction can fail.
  */
-void ia32_assign_exc_label(const ir_node *node)
+void ia32_assign_exc_label(ir_node *node)
 {
 	if (get_ia32_exc_label(node)) {
 		/* assign a new ID to the instruction */
