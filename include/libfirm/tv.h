@@ -274,7 +274,7 @@ int tarval_is_all_one(tarval *tv);
 
 /** The 'bad' tarval. */
 extern tarval *tarval_bad;
-/** Returns the 'bad tarval. */
+/** Returns the 'bad' tarval. */
 tarval *get_tarval_bad(void);
 
 /** The 'undefined' tarval. */
@@ -292,6 +292,16 @@ tarval *get_tarval_b_false(void);
 extern tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 tarval *get_tarval_b_true(void);
+
+/** The 'top' tarval. This is just another name for the 'undefined' tarval. */
+#define tarval_top          tarval_undefined
+/** Returns the 'top' tarval. */
+#define get_tarval_top()    get_tarval_undefined()
+
+/** The 'bottom' tarval. This is just another name for the 'bad' tarval. */
+#define tarval_bottom       tarval_bad
+/** Returns the 'bottom' tarval. */
+#define get_tarval_bottom() get_tarval_bad()
 
 /* These functions calculate and return a tarval representing the requested
  * value.
