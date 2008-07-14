@@ -1564,7 +1564,11 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		return snprintf(buf, len, "<TV_OVERFLOW_BAD>");
+		if (tv == tarval_bad)
+			return snprintf(buf, len, "<TV_BAD>");
+		if (tv == tarval_undefined)
+			return snprintf(buf, len, "<TV_UNDEF>");
+		return snprintf(buf, len, "<TV_???>");
 	}
 
 	return 0;
