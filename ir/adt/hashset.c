@@ -363,7 +363,7 @@ void resize(HashSet *self, size_t new_size)
 #else
 
 /* resize must be defined outside */
-static void resize(HashSet *self, size_t new_size);
+static INLINE void resize(HashSet *self, size_t new_size);
 
 #endif
 
