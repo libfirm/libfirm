@@ -44,7 +44,6 @@
 #include "irgopt.h"
 #include "irbitset.h"
 #include "irgopt.h"
-#include "irdump_grgen.h"
 #include "pdeq.h"
 #include "pset.h"
 #include "debug.h"
