@@ -4857,10 +4857,10 @@ static ir_node *transform_node_bitop_shift(ir_node *n) {
 
 /**
  * normalisation:
- *    (x << c1) >> c2  <=>  x>>(c2-c1) & (-1>>c2)
+ *    (x << c1) >> c2  <=>  x OP (c2-c1) & ((-1 << c1) >> c2)
  *    also:
- *    	if c2 > c1:   x << (c2-c1)
- *    (x >>s c2) << c1  <=>  x>>s(c2-c1) & (-1>>c2)
+ *    (x >> c1) << c2  <=>  x OP (c2-c1) & ((-1 >> c1) << c2)
+ *      (also with x >>s c1  when c1>=c2)
  */
 static ir_node *transform_node_shl_shr(ir_node *n) {
 	ir_node  *left;
