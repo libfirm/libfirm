@@ -66,4 +66,9 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg);
  */
 ir_node *ia32_skip_downconv(ir_node *node);
 
+/**
+ * Get a primitive type for a mode.
+ */
+ir_type *get_prim_type(pmap *types, ir_mode *mode);
+
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

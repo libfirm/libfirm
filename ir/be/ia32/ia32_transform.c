@@ -164,7 +164,7 @@ static ident *unique_id(const char *tag)
 /**
  * Get a primitive type for a mode.
  */
-static ir_type *get_prim_type(pmap *types, ir_mode *mode)
+ir_type *get_prim_type(pmap *types, ir_mode *mode)
 {
 	pmap_entry *e = pmap_find(types, mode);
 	ir_type *res;
