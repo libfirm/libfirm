@@ -963,7 +963,7 @@ static void ia32_prepare_graph(void *self) {
 	ia32_transform_graph(cg);
 #endif
 
-	/* do local optimisations (mainly CSE) */
+	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(cg->irg);
 
 	if (cg->dump)
