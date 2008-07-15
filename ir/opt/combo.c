@@ -57,7 +57,6 @@ typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
 typedef struct opcode_key_t      opcode_key_t;
 typedef struct opcode_entry_t    opcode_entry_t;
-typedef struct opcode2id_entry_t opcode2id_entry_t;
 typedef struct listmap_entry_t   listmap_entry_t;
 
 /** The type of the compute function. */
@@ -80,18 +79,10 @@ struct opcode_entry_t {
 };
 
 /**
- * An entry in the opcode map2id.
- */
-struct opcode2id_entry_t {
-	opcode_key_t key;    /**< The key. */
-	unsigned     id;     /**< The associated id. */
-};
-
-/**
  * An entry in the list_map.
  */
 struct listmap_entry_t {
-	unsigned        id;     /**< The id. */
+	void            *id;    /**< The id. */
 	node_t          *list;  /**< The associated list for this id. */
 	listmap_entry_t *next;  /**< Link to the next entry in the map. */
 };
@@ -132,7 +123,10 @@ struct partition_t {
 	int               n_inputs;      /**< Maximum number of inputs of all entries. */
 	unsigned          on_worklist:1; /**< Set, if this partition is in the work list. */
 	unsigned          on_touched:1;  /**< Set, if this partition is on the touched set. */
+#ifdef DEBUG_libfirm
+	partition_t       *dbg_next;     /**< Link all partitions for debugging */
 	unsigned          nr;            /**< A unique number for (what-)mapping, >0. */
+#endif
 };
 
 typedef struct environment_t {
@@ -141,17 +135,18 @@ typedef struct environment_t {
 	partition_t     *cprop;         /**< The constant propagation list. */
 	partition_t     *touched;       /**< the touched set. */
 	partition_t     *TOP;           /**< The TOP partition. */
+#ifdef DEBUG_libfirm
+	partition_t     *dbg_list;      /**< List of all partitions. */
+#endif
 	set             *opcode_map;    /**< The initial opcode->partition map. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
-	int             next_opcode_id; /**< Next ID for the opcode2id map. */
-	int             next_type_id;   /**< Next ID for the type2id map. */
 } environment_t;
 
 /** Type of the what function. */
-typedef unsigned (*what_func)(const node_t *node, environment_t *env);
+typedef void *(*what_func)(const node_t *node, environment_t *env);
 
 #define get_irn_node(irn)         ((node_t *)get_irn_link(irn))
 #define set_irn_node(irn, node)   set_irn_link(irn, node)
@@ -159,8 +154,8 @@ typedef unsigned (*what_func)(const node_t *node, environment_t *env);
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-/** Next partition number, 0 has special meaning. */
-static unsigned part_nr = 1;
+/** Next partition number. */
+DEBUG_ONLY(static unsigned part_nr = 0);
 
 #ifdef DEBUG_libfirm
 /**
@@ -175,10 +170,23 @@ static void dump_partition(const char *msg, partition_t *part) {
 		DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", node->node));
 		first = 0;
 	}
-	DB((dbg, LEVEL_2, "}\n"));
+	DB((dbg, LEVEL_2, "\n}\n"));
 }
+
+/**
+ * Dump all partitions.
+ */
+static void dump_all_partitions(environment_t *env) {
+	partition_t *P;
+
+	DB((dbg, LEVEL_2, "All partitions\n===============\n"));
+	for (P = env->dbg_list; P != NULL; P = P->dbg_next)
+		dump_partition("", P);
+}
+
 #else
 #define dump_partition(msg, part)
+#define dump_all_partitions(env)
 #endif
 
 /**
@@ -209,13 +217,13 @@ static void del_listmap(listmap_t *map) {
 /**
  * Return the associated listmap entry for a given id.
  */
-static listmap_entry_t *listmap_find(listmap_t *map, unsigned id) {
+static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
 	listmap_entry_t key, *entry;
 
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = set_insert(map->map, &key, sizeof(key), id);
+	entry = set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -264,7 +272,11 @@ static INLINE partition_t *new_partition(environment_t *env) {
 	part->n_inputs     = 0;
 	part->on_worklist  = 0;
 	part->on_touched   = 0;
+#ifdef DEBUG_libfirm
+	part->dbg_next     = env->dbg_list;
+	env->dbg_list      = part;
 	part->nr           = part_nr++;
+#endif
 
 	return part;
 }
@@ -495,10 +507,10 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 	/* Let map be an empty mapping from the range of What to (local) list of Nodes. */
 	new_listmap(&map);
 	list_for_each_entry(node_t, x, &X->entries, node_list) {
-		unsigned        id = What(x, env);
+		void            *id = What(x, env);
 		listmap_entry_t *entry;
 
-		if (id == 0) {
+		if (id == NULL) {
 			/* input not allowed, ignore */
 			continue;
 		}
@@ -508,7 +520,7 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 		entry->list = x;
 	}
 	/* Let P be a set of Partitions. */
-	P = NULL;
+
 	/* for all sets S except one in the range of map do */
 	for (iter = map.values; iter != NULL; iter = iter->next) {
 		if (iter->next == NULL) {
@@ -533,45 +545,41 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 }
 
 /** lambda n.(n.type) */
-static unsigned lambda_type(const node_t *node, environment_t *env) {
+static void *lambda_type(const node_t *node, environment_t *env) {
 	(void)env;
-	/* ensure that it is NOT null */
-	return (((unsigned)((char *)node->type - (char *)0)) << 1) | 1;
+	return node->type;
 }
 
 /** lambda n.(n.opcode) */
-static unsigned lambda_opcode(const node_t *node, environment_t *env) {
-	opcode2id_entry_t key, *entry;
+static void *lambda_opcode(const node_t *node, environment_t *env) {
+	opcode_key_t key, *entry;
 
-	key.key.code = get_irn_opcode(node->node);
-	key.key.mode = get_irn_mode(node->node);
-	key.id       = 0;
-	entry = set_insert(env->opcode2id_map, &key, sizeof(&key), opcode_hash(&key.key));
-	if (entry->id == 0)
-		entry->id = ++env->next_opcode_id;
-	return entry->id;
+	key.code = get_irn_opcode(node->node);
+	key.mode = get_irn_mode(node->node);
+	entry = set_insert(env->opcode2id_map, &key, sizeof(&key), opcode_hash(&key));
+	return entry;
 }
 
 /** lambda n.(n[i].partition) */
-static unsigned lambda_partition(const node_t *node, environment_t *env) {
+static void *lambda_partition(const node_t *node, environment_t *env) {
 	ir_node *pred;
 	node_t  *p;
 	int     i = env->lambda_input;
 
 	if (i >= get_irn_arity(node->node)) {
 		/* we are outside the allowed range */
-		return 0;
+		return NULL;
 	}
 
 	/* ignore the "control input" for non-pinned nodes
 	   if we are running in GCSE mode */
 	if (i < env->end_idx && get_irn_pinned(node->node) != op_pin_state_pinned)
-		return 0;
+		return NULL;
 
 	pred = get_irn_n(node->node, i);
 	p    = get_irn_node(pred);
 
-	return p->part->nr;
+	return p->part;
 }
 
 /**
@@ -591,7 +599,7 @@ static void split_by(partition_t *X, environment_t *env) {
 			Q = split_by_what(Y, lambda_opcode, Q, env);
 
 			for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
-				partition_t *Z = Q[i];
+				partition_t *Z = Q[j];
 
 				for (k = Z->n_inputs - 1; k >= -1; --k) {
 					env->lambda_input = k;
@@ -713,6 +721,58 @@ static void compute_Phi(node_t *node) {
 }
 
 /**
+ * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
+ */
+static void compute_Sub(node_t *node) {
+	ir_node *sub = node->node;
+	node_t  *l   = get_irn_node(get_Sub_left(sub));
+	node_t  *r   = get_irn_node(get_Sub_right(sub));
+	tarval  *a   = l->type;
+	tarval  *b   = r->type;
+
+	if (a == tarval_top || b == tarval_top) {
+		node->type = tarval_top;
+	} else if (r->part == l->part) {
+		ir_mode *mode = get_irn_mode(sub);
+		node->type = get_mode_null(mode);
+	} else if (a == tarval_bottom || b == tarval_bottom) {
+		node->type = tarval_bottom;
+	} else {
+		node->type = tarval_sub(a, b);
+	}
+}
+
+/**
+ * (Re-)compute the type for a Proj(Cmp).
+ */
+static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
+	ir_node *proj = node->node;
+	node_t  *l    = get_irn_node(get_Cmp_left(cmp));
+	node_t  *r    = get_irn_node(get_Cmp_right(cmp));
+	tarval  *a    = l->type;
+	tarval  *b    = r->type;
+	pn_Cmp  pnc   = get_Proj_proj(proj);
+
+	/*
+	 * BEWARE: a == a is NOT always True for floating Point values, as
+	 * NaN != NaN is defined, so we must check this here.
+	 */
+	if (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt ||  pnc == pn_Cmp_Gt) {
+		if (a == tarval_top || b == tarval_top) {
+			node->type = tarval_top;
+		} else if (r->part == l->part) {
+			node->type = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+		} else if (a == tarval_bottom || b == tarval_bottom) {
+			node->type = tarval_bottom;
+		} else {
+			default_compute(node);
+		}
+	} else {
+		default_compute(node);
+	}
+}
+
+/**
  * (Re-)compute the type for a Proj-Nodes.
  */
 static void compute_Proj(node_t *node) {
@@ -726,7 +786,11 @@ static void compute_Proj(node_t *node) {
 		return;
 	}
 	if (mode != mode_X) {
-		default_compute(node);
+		ir_node *cmp = get_Proj_pred(proj);
+		if (is_Cmp(cmp))
+			compute_Proj_Cmp(node, cmp);
+		else
+			default_compute(node);
 		return;
 	}
 	/* handle mode_X nodes */
@@ -853,7 +917,7 @@ static void set_compute_functions(void) {
 	SET(Block);
 	SET(Jmp);
 	SET(Phi);
-	SET(Proj);
+	SET(Sub);
 }
 
 void combo(ir_graph *irg) {
@@ -873,12 +937,14 @@ void combo(ir_graph *irg) {
 	env.cprop          = NULL;
 	env.touched        = NULL;
 	env.TOP            = NULL;
+#ifdef DEBUG_libfirm
+	env.dbg_list       = NULL;
+#endif
 	env.opcode_map     = new_set(cmp_opcode, iro_Last * 4);
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
-	env.next_opcode_id = 0;
 
 	assure_irg_outs(irg);
 
@@ -891,7 +957,6 @@ void combo(ir_graph *irg) {
 	env.TOP = new_partition(&env);
 	env.TOP->wl_next = env.worklist;
 	env.worklist     = env.TOP;
-
 	irg_walk_graph(irg, NULL, create_initial_partitions, &env);
 
 	/* Place the START Node's partition on cprop.
@@ -913,6 +978,8 @@ void combo(ir_graph *irg) {
 		if (env.worklist != NULL)
 			cause_splits(&env);
 	}
+
+	dump_all_partitions(&env);
 
 	/* apply the result */
 	irg_walk_graph(irg, NULL, apply_result, &env);
