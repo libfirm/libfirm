@@ -123,6 +123,7 @@ struct partition_t {
 	int               n_inputs;      /**< Maximum number of inputs of all entries. */
 	unsigned          on_worklist:1; /**< Set, if this partition is in the work list. */
 	unsigned          on_touched:1;  /**< Set, if this partition is on the touched set. */
+	unsigned          on_cprop:1;    /**< Set, if this partition is on the cprop list. */
 #ifdef DEBUG_libfirm
 	partition_t       *dbg_next;     /**< Link all partitions for debugging */
 	unsigned          nr;            /**< A unique number for (what-)mapping, >0. */
@@ -272,6 +273,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
 	part->n_inputs     = 0;
 	part->on_worklist  = 0;
 	part->on_touched   = 0;
+	part->on_cprop     = 0;
 #ifdef DEBUG_libfirm
 	part->dbg_next     = env->dbg_list;
 	env->dbg_list      = part;
@@ -815,6 +817,28 @@ static void compute(node_t *node) {
 	if (func != NULL)
 		func(node);
 }
+
+/**
+ * place a node on the cprop list.
+ */
+static void add_node_to_cprop(node_t *y, environment_t *env) {
+	/* Add y to y.partition.cprop. */
+	if (y->on_cprop == 0) {
+		partition_t *Y = y->part;
+
+		y->cprop_next  = Y->cprop;
+		Y->cprop = y;
+		y->on_cprop    = 1;
+
+		/* place its partition on the cprop list */
+		if (Y->on_cprop == 0) {
+			Y->cprop_next = env->cprop;
+			env->cprop    = Y;
+			Y->on_cprop   = 1;
+		}
+	}
+}
+
 /**
  * Propagate constant evaluation.
  */
@@ -828,8 +852,9 @@ static void propagate(environment_t *env) {
 
 	while (env->cprop != NULL) {
 		/* remove a partition X from cprop */
-		X = env->cprop;
-		env->cprop = X->cprop_next;
+		X           = env->cprop;
+		X->on_cprop = 0;
+		env->cprop  = X->cprop_next;
 
 		while (X->cprop != NULL) {
 			/* remove a Node x from X.cprop */
@@ -852,11 +877,7 @@ static void propagate(environment_t *env) {
 					node_t  *y    = get_irn_node(succ);
 
 					/* Add y to y.partition.cprop. */
-					if (y->on_cprop == 0) {
-						y->cprop_next  = y->part->cprop;
-						y->part->cprop = y;
-						y->on_cprop    = 1;
-					}
+					add_node_to_cprop(y, env);
 				}
 			}
 		}
@@ -963,17 +984,13 @@ void combo(ir_graph *irg) {
 	   Place the START Node on its local worklist. */
 	start_bl = get_irg_start_block(irg);
 	start    = get_irn_node(start_bl);
-	start->part->cprop_next = env.cprop;
-	env.cprop               = start->part;
-
-	start->cprop_next  = start->part->cprop;
-	start->part->cprop = start;
+	add_node_to_cprop(start, &env);
 
 	/* set the initial exec to R */
 	initial_X = get_irg_initial_exec(irg);
 	get_irn_node(initial_X)->type = tarval_R;
 
-	while (env.cprop != NULL && env.worklist != NULL) {
+	while (env.cprop != NULL || env.worklist != NULL) {
 		propagate(&env);
 		if (env.worklist != NULL)
 			cause_splits(&env);
