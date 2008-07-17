@@ -46,7 +46,7 @@ __END__
 
 basedir=`pwd`
 
-DIRS=". langshootout ack gcc-testsuite gcc-testsuite/ieee"
+DIRS=". langshootout ack"
 test -n "$1" && DIRS="$1"
 
 for dir in $DIRS; do
@@ -80,9 +80,9 @@ for file in $curdir/$CFILES; do
     fi
 
     echo "*** GCC Compile" >> $res
-    CMD="${GCC} ${GCC_CFLAGS} ${FILE_FLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
+     CMD="${GCC} ${GCC_CFLAGS} ${FILE_FLAGS} $file ${LINKFLAGS} -o build_gcc/$name.exe"
     echo "$CMD" >> $res
-    $CMD >> $res 2>&1 || GCC_RES="failed"
+     /bin/sh -c "$CMD" >> $res 2>&1 || { GCC_RES="failed"; echo -n " ... FAILED"; }
 
     if [ ${GCC_RES} = "ok" ]; then
         GCC_RUN_RES="ok"
