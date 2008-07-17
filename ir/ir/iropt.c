@@ -4546,7 +4546,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 static ir_node *transform_node_Or_Rotl(ir_node *or) {
 	ir_mode *mode = get_irn_mode(or);
 	ir_node *shl, *shr, *block;
-	ir_node *irn, *x, *c1, *c2, *v, *sub, *n;
+	ir_node *irn, *x, *c1, *c2, *v, *sub, *n, *rotval;
 	tarval *tv1, *tv2;
 
 	if (! mode_is_int(mode))
@@ -4587,64 +4587,45 @@ static ir_node *transform_node_Or_Rotl(ir_node *or) {
 			return or;
 
 		/* yet, condition met */
-		block = get_irn_n(or, -1);
+		block = get_nodes_block(or);
 
 		n = new_r_Rotl(current_ir_graph, block, x, c1, mode);
 
 		DBG_OPT_ALGSIM1(or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
 		return n;
-	} else if (is_Sub(c1)) {
-		v   = c2;
-		sub = c1;
-
-		if (get_Sub_right(sub) != v)
-			return or;
-
-		c1 = get_Sub_left(sub);
-		if (!is_Const(c1))
-			return or;
-
-		tv1 = get_Const_tarval(c1);
-		if (! tarval_is_long(tv1))
-			return or;
-
-		if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
-			return or;
-
-		/* yet, condition met */
-		block = get_nodes_block(or);
-
-		/* a Rot right is not supported, so use a rot left */
-		n =  new_r_Rotl(current_ir_graph, block, x, sub, mode);
-
-		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
-		return n;
-	} else if (is_Sub(c2)) {
-		v   = c1;
-		sub = c2;
-
-		c1 = get_Sub_left(sub);
-		if (!is_Const(c1))
-			return or;
-
-		tv1 = get_Const_tarval(c1);
-		if (! tarval_is_long(tv1))
-			return or;
-
-		if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
-			return or;
-
-		/* yet, condition met */
-		block = get_irn_n(or, -1);
-
-		/* a Rot Left */
-		n = new_r_Rotl(current_ir_graph, block, x, v, mode);
-
-		DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
-		return n;
 	}
 
-	return or;
+    if (is_Sub(c1)) {
+	    v      = c2;
+		sub    = c1;
+        rotval = sub; /* a Rot right is not supported, so use a rot left */
+    } else if (is_Sub(c2)) {
+		v      = c1;
+    	sub    = c2;
+        rotval = v;
+    } else return or;
+
+	if (get_Sub_right(sub) != v)
+		return or;
+
+	c1 = get_Sub_left(sub);
+	if (!is_Const(c1))
+		return or;
+
+	tv1 = get_Const_tarval(c1);
+	if (! tarval_is_long(tv1))
+		return or;
+
+	if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
+		return or;
+
+	/* yet, condition met */
+	block = get_nodes_block(or);
+
+	n = new_r_Rotl(current_ir_graph, block, x, rotval, mode);
+
+	DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
+	return n;
 }  /* transform_node_Or_Rotl */
 
 /**
