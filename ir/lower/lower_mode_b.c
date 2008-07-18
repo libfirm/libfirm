@@ -18,7 +18,10 @@
  */
 
 /**
- * @file
+ * @file        lowers operations with mode_b. The result is a graph which
+ *              might still contains some convs from/to mode_b, but no
+ *              operations are performed on them anymore, they are just there
+ *              so modes match. A backend can safely skip all mode_b convs.
  * @author      Matthias Braun, Christoph Mallon
  * @version     $Id$
  */
