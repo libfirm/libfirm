@@ -933,7 +933,7 @@ static void ia32_before_abi(void *self) {
 static void ia32_prepare_graph(void *self) {
 	ia32_code_gen_t *cg = self;
 
-	/* do local optimisations */
+	/* do local optimizations */
 	optimize_graph_df(cg->irg);
 
 	/* TODO: we often have dead code reachable through out-edges here. So for
