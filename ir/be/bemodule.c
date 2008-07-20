@@ -75,6 +75,7 @@ void be_init_state(void);
 void be_init_pbqp(void);
 
 void be_quit_copystat(void);
+void be_quit_pbqp(void);
 
 /**
  * Driver for module initialization.
@@ -146,6 +147,9 @@ void be_init_modules(void)
 void be_quit_modules(void)
 {
 	be_quit_copystat();
+#ifdef FIRM_GRGEN_BE
+	be_quit_pbqp();
+#endif
 }
 
 //---------------------------------------------------------------------------
