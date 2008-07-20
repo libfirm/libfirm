@@ -1,5 +1,5 @@
 /*$ -fdeconv $*/
-/* fronent sometimes produces 16bit operations which the backend can't handle
+/* frontend sometimes produces 16bit operations which the backend can't handle
  * correctly (yet)
  */
 #include <stdio.h>
