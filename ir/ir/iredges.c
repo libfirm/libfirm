@@ -549,7 +549,12 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 
 	info->activated = 1;
 	edges_init_graph_kind(irg, kind);
-	irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
+	if (kind == EDGE_KIND_DEP) {
+		irg_walk_anchors(irg, init_lh_walker, NULL, &w);
+		irg_walk_anchors(irg, NULL, build_edges_walker, &w);
+	} else {
+		irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
+	}
 	visit_all_identities(irg, visitor, &w);
 }
 
@@ -834,11 +839,13 @@ void edges_init_dbg(int do_dbg) {
 void edges_activate(ir_graph *irg) {
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
+	edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
 void edges_deactivate(ir_graph *irg) {
-	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
+	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
+	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
 
 int edges_assure(ir_graph *irg) {
