@@ -1455,7 +1455,7 @@ static void dump_node(FILE *F, ir_node *n)
 	fputs("\" ", F);
 
 	if (get_op_flags(get_irn_op(n)) & irop_flag_dump_noinput) {
-		fputs(" node_class:23", F);
+		//fputs(" node_class:23", F);
 	}
 
 	bad |= dump_node_info(F, n);
@@ -2340,7 +2340,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
 		"classname 20: \"Keep Alive\"\n"
 		"classname 21: \"Out Edges\"\n"
 		"classname 22: \"Macro Block Edges\"\n"
-		"classname 23: \"NoInput Nodes\"\n"
+		//"classname 23: \"NoInput Nodes\"\n"
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",
