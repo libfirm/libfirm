@@ -3247,6 +3247,9 @@ is_zero(double x)
 	return fabs(x) < 0.00001;
 }
 
+/**
+ * node attribute hook for changing colors
+ */
 static int mark_remat_nodes_hook(FILE *F, ir_node *n, ir_node *l)
 {
 	spill_ilp_t *si = get_irg_link(current_ir_graph);
