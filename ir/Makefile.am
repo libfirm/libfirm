@@ -84,6 +84,7 @@ libfirm_la_SOURCES = \
 	be/becopyilp.c \
 	be/becopyopt.c \
 	be/becopystat.c \
+	be/bedbgout.c \
 	be/bedomfront.c \
 	be/beemitter.c \
 	be/beflags.c \
@@ -124,6 +125,7 @@ libfirm_la_SOURCES = \
 	be/bespillbelady.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
+	be/bespilllinearscan.c \
 	be/bespilloptions.c \
 	be/bespillremat.c \
 	be/bespillslots.c \
@@ -151,6 +153,7 @@ libfirm_la_SOURCES = \
 	debug/seqnumbers.c \
 	ident/ident.c \
 	ident/mangle.c \
+	ir/instrument.c \
 	ir/irarch.c \
 	ir/irargs.c \
 	ir/ircgcons.c \
@@ -166,19 +169,22 @@ libfirm_la_SOURCES = \
 	ir/irgwalk_blk.c \
 	ir/irgwalk.c \
 	ir/irhooks.c \
+	ir/irlinkednodemap.c \
+	ir/irlinkednodeset.c \
 	ir/irmode.c \
 	ir/irnode.c \
 	ir/irnodemap.c \
 	ir/irnodeset.c \
-	ir/irssacons.c \
 	ir/irop.c \
 	ir/iropt.c \
 	ir/irphase.c \
 	ir/irprintf.c \
 	ir/irprofile.c \
 	ir/irprog.c \
+	ir/irssacons.c \
 	ir/irvrfy.c \
 	ir/pseudo_irg.c \
+	ir/valueset.c \
 	libcore/lc_appendable.c \
 	libcore/lc_config_lexer.c \
 	libcore/lc_config_parser.c \
@@ -187,6 +193,7 @@ libfirm_la_SOURCES = \
 	libcore/lc_printf.c \
 	libcore/lc_type.c \
 	lower/lower_calls.c \
+	lower/lower_copyb.c \
 	lower/lower_dw.c \
 	lower/lower_hl.c \
 	lower/lower_intrinsics.c \
@@ -196,8 +203,11 @@ libfirm_la_SOURCES = \
 	obstack/obstack_printf.c \
 	opt/boolopt.c \
 	opt/cfopt.c \
+	opt/code_placement.c \
+	opt/combo.c \
 	opt/condeval.c \
 	opt/convopt.c \
+	opt/critical_edges.c \
 	opt/data_flow_scalar_replace.c \
 	opt/escape_ana.c \
 	opt/funccall.c \
@@ -208,6 +218,7 @@ libfirm_la_SOURCES = \
 	opt/ldstopt.c \
 	opt/opt_confirms.c \
 	opt/opt_frame.c \
+	opt/opt_inline.c \
 	opt/opt_osr.c \
 	opt/opt_polymorphy.c \
 	opt/proc_cloning.c \
@@ -249,7 +260,6 @@ EXTRA_DIST = \
 	be/bepeephole.h \
 	be/bessaconstr.h \
 	be/beifg_t.h \
-	be/be_t.h \
 	be/beblocksched.h \
 	be/bessadestrsimple.h \
 	be/becopyilp_t.h \
@@ -259,6 +269,7 @@ EXTRA_DIST = \
 	be/begnuas.h \
 	be/becopyopt_t.h \
 	be/bemodule.h \
+	be/be_t.h \
 	be/bespillremat.h \
 	be/bejavacoal.h \
 	be/belistsched.h \
@@ -303,6 +314,7 @@ EXTRA_DIST = \
 	be/bearch.h \
 	be/beschedrss.h \
 	be/beirg.h \
+	be/be_dbgout_t.h \
 	common/error.h \
 	common/statistics.h \
 	common/irtools.h \
@@ -313,19 +325,20 @@ EXTRA_DIST = \
 	debug/debugger.h \
 	ident/ident_t.h \
 	ir/irnodeset.h \
+	ir/irop_t.h \
 	ir/irmode_t.h \
+	ir/irvrfy_t.h \
 	ir/iredges_t.h \
 	ir/irphase_t.h \
 	ir/ircons_t.h \
+	ir/irdump_t.h \
+	ir/irdump_grgen.h \
 	ir/irprog_t.h \
-	ir/irgopt_t.h \
-	ir/irtypes.h \
-	ir/iredgeset.h \
 	ir/irprofile.h \
 	ir/irflag_t.def \
-	ir/irdump_t.h \
+	ir/irtypes.h \
 	ir/irnode_t.h \
-	ir/irop_t.h \
+	ir/irargs_t.h \
 	ir/irnodemap.h \
 	ir/irgraph_t.h \
 	ir/iropt_t.h \
@@ -334,8 +347,11 @@ EXTRA_DIST = \
 	ir/irflag_t.h \
 	ir/irphases_t.h \
 	ir/irphaselist.h \
-	ir/irvrfy_t.h \
-	ir/irargs_t.h \
+	ir/iredgeset.h \
+	ir/instrument.h \
+	ir/irlinkednodemap.h \
+	ir/irlinkednodeset.h \
+	ir/valueset.h \
 	libcore/lc_common_t.h \
 	libcore/lc_appendable.h \
 	libcore/lc_config.h \
@@ -350,12 +366,14 @@ EXTRA_DIST = \
 	libcore/lc_printf.h \
 	net/firmnet.h \
 	net/firmnet_t.h \
-	obstack/obstack.h \
 	opt/scalar_replace.h \
 	opt/opt_confirms.h \
 	opt/opt_polymorphy.h \
+	opt/tropt.h \
 	opt/reassoc_t.h \
+	opt/opt_inline_t.h \
 	opt/funccall_t.h \
+	stat/statev.h \
 	stat/stat_dmp.h \
 	stat/firmstat_t.h \
 	stat/pattern_dmp.h \
@@ -363,7 +381,6 @@ EXTRA_DIST = \
 	stat/dags.h \
 	stat/counter.h \
 	stat/stat_timing.h \
-	stat/statev.h \
 	tr/entity_t.h \
 	tr/type_t.h \
 	tr/tpop_t.h \
@@ -375,6 +392,7 @@ EXTRA_DIST = \
 	be/scripts/generate_machine.pl \
 	be/scripts/generate_new_opcodes.pl \
 	be/scripts/generate_regalloc_if.pl
+
 
 # ia32 backend
 
@@ -447,6 +465,7 @@ arm_sources = \
 	be/arm/arm_emitter.c \
 	be/arm/arm_map_regs.c \
 	be/arm/arm_new_nodes.c \
+	be/arm/arm_optimize.c \
 	be/arm/arm_transform.c
 arm_built_sources = \
 	be/arm/gen_arm_emitter.c \
@@ -468,6 +487,7 @@ EXTRA_DIST += \
 	be/arm/arm_map_regs.h \
 	be/arm/arm_new_nodes.h \
 	be/arm/arm_nodes_attr.h \
+	be/arm/arm_optimize.h \
 	be/arm/arm_transform.h \
 	be/arm/bearch_arm.h \
 	be/arm/bearch_arm_t.h
