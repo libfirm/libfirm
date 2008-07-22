@@ -59,6 +59,11 @@ static void reset_outs(ir_node *node, void *unused) {
 }
 #endif
 
+int get_irn_outs_computed(const ir_node *node)
+{
+	return node->out != NULL;
+}
+
 /* returns the number of successors of the node: */
 int get_irn_n_outs(ir_node *node) {
 	assert(node && node->kind == k_ir_node);

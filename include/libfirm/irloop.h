@@ -219,6 +219,6 @@ void free_all_loop_information (void);
  *
  * Returns non-zero, if the node n is not changed in the loop block
  * belongs to or in inner loops of this block. */
-int is_loop_invariant(ir_node *n, ir_node *block);
+int is_loop_invariant(const ir_node *n, const ir_node *block);
 
 #endif

@@ -1248,8 +1248,8 @@ int is_loop_variant(ir_loop *l, ir_loop *b) {
  *
  * Returns non-zero, if the node n is not changed in the loop block
  * belongs to or in inner loops of this blocks loop. */
-int is_loop_invariant(ir_node *n, ir_node *block) {
+int is_loop_invariant(const ir_node *n, const ir_node *block) {
 	ir_loop *l = get_irn_loop(block);
-	ir_node *b = is_Block(n) ? n : get_nodes_block(n);
+	const ir_node *b = is_Block(n) ? n : get_nodes_block(n);
 	return !is_loop_variant(l, get_irn_loop(b));
 }
