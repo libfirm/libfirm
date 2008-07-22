@@ -608,9 +608,7 @@ static void collect_node(ir_node * node, void *env) {
 	(void) env;
 	if (is_Block(node)
 	    || node_floats(node)
-	    || get_irn_op(node) == op_Bad
-	    || get_irn_op(node) == op_Unknown
-	    || get_irn_op(node) == op_NoMem) {
+	    || (get_op_flags(get_irn_op(node)) & irop_flag_dump_noblock)) {
 		ir_node ** arr = (ir_node **) ird_get_irg_link(get_irn_irg(node));
 		if (!arr) arr = NEW_ARR_F(ir_node *, 0);
 		ARR_APP1(ir_node *, arr, node);
@@ -1445,18 +1443,26 @@ static void dump_node(FILE *F, ir_node *n)
 		return;
 
 	/* dump this node */
-	fprintf(F, "node: {title: \""); PRINT_NODEID(n); fprintf(F, "\" label: \"");
+	fputs("node: {title: \"", F);
+	PRINT_NODEID(n);
+	fputs("\"", F);
 
+	fputs(" label: \"", F);
 	bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
 	bad |= dump_node_label(F, n);
 	dump_node_ana_vals(F, n);
 	//dump_node_ana_info(F, n);
-	fprintf(F, "\" ");
+	fputs("\" ", F);
+
+	if (get_op_flags(get_irn_op(n)) & irop_flag_dump_noinput) {
+		fputs(" node_class:23", F);
+	}
+
 	bad |= dump_node_info(F, n);
 	print_node_error(F, p);
 	print_dbg_info(F, get_irn_dbg_info(n));
 	dump_node_vcgattr(F, n, NULL, bad);
-	fprintf(F, "}\n");
+	fputs("}\n", F);
 	dump_const_node_local(F, n);
 
 	if(dump_node_edge_hook)
@@ -2334,6 +2340,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
 		"classname 20: \"Keep Alive\"\n"
 		"classname 21: \"Out Edges\"\n"
 		"classname 22: \"Macro Block Edges\"\n"
+		"classname 23: \"NoInput Nodes\"\n"
 		"infoname 1: \"Attribute\"\n"
 		"infoname 2: \"Verification errors\"\n"
 		"infoname 3: \"Debug info\"\n",

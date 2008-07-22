@@ -71,9 +71,11 @@ typedef enum {
 	irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
 	irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
 	irop_flag_uses_memory = 0x00000800, /**< This operation has a memory input and may change the memory state. */
-	irop_flag_machine     = 0x00001000, /**< This operation is a machine operation. */
-	irop_flag_machine_op  = 0x00002000, /**< This operation is a machine operand. */
-	irop_flag_user        = 0x00004000  /**< This flag and all higher ones are free for machine user. */
+	irop_flag_dump_noblock = 0x00001000, /**< node should be dumped outside any blocks */
+	irop_flag_dump_noinput = 0x00002000, /**< node is a placeholder for "no input" */
+	irop_flag_machine     = 0x00010000, /**< This operation is a machine operation. */
+	irop_flag_machine_op  = 0x00020000, /**< This operation is a machine operand. */
+	irop_flag_user        = 0x00040000  /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */
@@ -249,6 +251,8 @@ op_func get_generic_function_ptr(const ir_op *op);
  * Store a generic function pointer into an IR operation.
  */
 void set_generic_function_ptr(ir_op *op, op_func func);
+
+irop_flags get_op_flags(const ir_op *op);
 
 /**
  * The compute value operation.

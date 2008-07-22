@@ -51,6 +51,8 @@ $arch = "ia32";
 #   H   irop_flag_highlevel
 #   c   irop_flag_constlike
 #   K   irop_flag_keep
+#   NB  irop_flag_dump_noblock
+#   NI  irop_flag_dump_noinput
 #
 # irn_flags: special node flags, OPTIONAL (default is 0)
 # following irn_flags are supported:
@@ -1178,7 +1180,7 @@ GetEIP => {
 
 Unknown_GP => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB",
 	irn_flags => "I",
 	reg_req   => { out => [ "gp_UKNWN" ] },
 	units     => [],
@@ -1189,7 +1191,7 @@ Unknown_GP => {
 
 Unknown_VFP => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB",
 	irn_flags => "I",
 	reg_req   => { out => [ "vfp_UKNWN" ] },
 	units     => [],
@@ -1201,7 +1203,7 @@ Unknown_VFP => {
 
 Unknown_XMM => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB",
 	irn_flags => "I",
 	reg_req   => { out => [ "xmm_UKNWN" ] },
 	units     => [],
@@ -1212,7 +1214,7 @@ Unknown_XMM => {
 
 NoReg_GP => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB|NI",
 	irn_flags => "I",
 	reg_req   => { out => [ "gp_NOREG" ] },
 	units     => [],
@@ -1223,7 +1225,7 @@ NoReg_GP => {
 
 NoReg_VFP => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB|NI",
 	irn_flags => "I",
 	reg_req   => { out => [ "vfp_NOREG" ] },
 	units     => [],
@@ -1235,7 +1237,7 @@ NoReg_VFP => {
 
 NoReg_XMM => {
 	state     => "pinned",
-	op_flags  => "c",
+	op_flags  => "c|NB|NI",
 	irn_flags => "I",
 	reg_req   => { out => [ "xmm_NOREG" ] },
 	units     => [],
