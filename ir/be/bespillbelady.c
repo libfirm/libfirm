@@ -220,16 +220,17 @@ static INLINE void workset_remove(workset_t *workset, ir_node *val)
 	}
 }
 
-static INLINE int workset_contains(const workset_t *ws, const ir_node *val)
+static INLINE const loc_t *workset_contains(const workset_t *ws,
+                                            const ir_node *val)
 {
 	int i;
 
-	for(i=0; i<ws->len; ++i) {
+	for (i = 0; i < ws->len; ++i) {
 		if (ws->vals[i].node == val)
-			return 1;
+			return &ws->vals[i];
 	}
 
-	return 0;
+	return NULL;
 }
 
 /**
@@ -307,6 +308,7 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 static void displace(workset_t *new_vals, int is_usage)
 {
 	ir_node **to_insert = alloca(n_regs * sizeof(to_insert[0]));
+	bool     *spilled   = alloca(n_regs * sizeof(spilled[0]));
 	ir_node  *val;
 	int       i;
 	int       len;
@@ -317,6 +319,8 @@ static void displace(workset_t *new_vals, int is_usage)
 	/* 1. Identify the number of needed slots and the values to reload */
 	demand = 0;
 	workset_foreach(new_vals, val, iter) {
+		bool reloaded = false;
+
 		/* mark value as used */
 		if (is_usage)
 			ir_nodeset_insert(&used, val);
@@ -326,6 +330,7 @@ static void displace(workset_t *new_vals, int is_usage)
 			if (is_usage) {
 				DB((dbg, DBG_SPILL, "Reload %+F before %+F\n", val, instr));
 				be_add_reload(senv, val, instr, cls, 1);
+				reloaded = true;
 			}
 		} else {
 			DB((dbg, DBG_DECIDE, "    %+F already in workset\n", val));
@@ -334,7 +339,9 @@ static void displace(workset_t *new_vals, int is_usage)
 			 * spilled */
 			workset_remove(ws, val);
 		}
-		to_insert[demand++] = val;
+		spilled[demand]   = reloaded;
+		to_insert[demand] = val;
+		++demand;
 	}
 
 	/* 2. Make room for at least 'demand' slots */
@@ -344,8 +351,10 @@ static void displace(workset_t *new_vals, int is_usage)
 
 	/* Only make more free room if we do not have enough */
 	if (spills_needed > 0) {
+#ifndef PLACE_SPILLS
 		ir_node   *curr_bb  = get_nodes_block(instr);
 		workset_t *ws_start = get_block_info(curr_bb)->start_workset;
+#endif
 
 		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
 
@@ -359,9 +368,6 @@ static void displace(workset_t *new_vals, int is_usage)
 		/* sort entries by increasing nextuse-distance*/
 		workset_sort(ws);
 
-		/* Logic for not needed live-ins: If a value is disposed
-		 * before its first usage, remove it from start workset
-		 * We don't do this for phis though	*/
 		for (i = len - spills_needed; i < len; ++i) {
 			ir_node *val = ws->vals[i].node;
 
@@ -370,14 +376,20 @@ static void displace(workset_t *new_vals, int is_usage)
 
 #ifdef PLACE_SPILLS
 			if(!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
-				be_add_spill(senv, val, instr);
+				ir_node *after_pos = sched_prev(instr);
+				be_add_spill(senv, val, after_pos);
 			}
 #endif
 
+#ifndef PLACE_SPILLS
+			/* Logic for not needed live-ins: If a value is disposed
+			 * before its first use, remove it from start workset
+			 * We don't do this for phis though	*/
 			if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
 				workset_remove(ws_start, val);
 				DB((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
 			}
+#endif
 		}
 
 		/* kill the last 'demand' entries in the array */
@@ -388,7 +400,7 @@ static void displace(workset_t *new_vals, int is_usage)
 	for (i = 0; i < demand; ++i) {
 		ir_node *val = to_insert[i];
 
-		workset_insert(ws, val, false);
+		workset_insert(ws, val, spilled[i]);
 	}
 }
 
@@ -579,9 +591,8 @@ static void decide_start_workset(const ir_node *block)
 	DEL_ARR_F(starters);
 
 	/* determine spill status of the values: If there's 1 pred block (which
-	 * is no backedge) where the value is reloaded then we must set it to
-	 * reloaded here. We place spills in all pred where the value was not yet
-	 * reloaded to be sure we have a spill on each path */
+	 * is no backedge) where the value is spilled then we must set it to
+	 * spilled here. */
 	arity           = get_irn_arity(block);
 	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
 	for(i = 0; i < arity; ++i) {
@@ -626,48 +637,86 @@ static void decide_start_workset(const ir_node *block)
 
 				if (l->spilled) {
 					spilled = true;
-					goto determined_spill;
 				}
 				break;
 			}
-			if (p >= p_len) {
-				spilled = true;
-				goto determined_spill;
-			}
 		}
 
-determined_spill:
-		if (spilled) {
-			for (n = 0; n < arity; ++n) {
-				workset_t *pred_workset = pred_worksets[n];
-				int        p_len;
-				int        p;
-
-				if (pred_workset == NULL)
-					continue;
-
-				p_len = workset_get_length(pred_workset);
-				for (p = 0; p < p_len; ++p) {
-					loc_t *l = &pred_workset->vals[p];
-
-					if (l->node != value)
-						continue;
-
-					if (!l->spilled) {
-						ir_node *pred_block = get_Block_cfgpred_block(block, n);
-						ir_node *insert_point
-							= be_get_end_of_block_insertion_point(pred_block);
-						DB((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
-						   	insert_point));
-						be_add_spill(senv, value, insert_point);
-					}
-					break;
-				}
-			}
-		}
 		loc->spilled = spilled;
 	}
 }
+
+#if 0
+static void decide_start_workset2(const ir_node *block)
+{
+	int         arity;
+	workset_t **pred_worksets;
+	int         p;
+	int         len;
+
+	/* check if all predecessors are known */
+	arity           = get_irn_arity(block);
+	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
+	for (i = 0; i < arity; ++i) {
+		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
+		block_info_t *pred_info  = get_block_info(pred_block);
+
+		if (pred_info == NULL) {
+			/* not all predecessors known, use decide_start_workset */
+			decide_start_workset(block);
+			return;
+		}
+
+		pred_worksets[i] = pred_info->end_workset;
+	}
+
+	/* take values live in all pred blocks */
+	len = workset_get_length(pred_workset[0]);
+	for (p = 0; p < p_len; ++p) {
+		const loc_t *l = &pred_workset[0]->vals[p];
+		ir_node     *value;
+		bool         spilled = false;
+
+		if (USES_IS_INFINITE(l->time))
+			continue;
+
+		/* value available in all preds? */
+		value = l->node;
+		for (i = 0; i < arity; ++i) {
+			bool      found     = false;
+			workset_t p_workset = &pred_worksets[i];
+			int       p_len     = workset_get_length(p_workset);
+			int       p_i;
+
+			for (p_i = 0; p_i < p_len; ++p_i) {
+				const loc_t *p_l = &p_workset->vals[p_i];
+				if (p_l->node != value)
+					continue;
+
+				found = true;
+				if (p_l->spilled)
+					spilled = true;
+				break;
+			}
+
+			if (!found)
+				break;
+		}
+
+		/* it was available in all preds, TODO: insert spills... */
+		if (i >= arity) {
+			workset_insert(ws, value, spilled);
+		}
+	}
+
+
+	/* Copy the best ones from starters to start workset */
+	ws_count = MIN(ARR_LEN(starters), n_regs);
+	workset_clear(ws);
+	workset_bulk_fill(ws, ws_count, starters);
+}
+
+#endif
 
 /**
  * For the given block @p block, decide for each values
@@ -855,23 +904,27 @@ static void fix_block_borders(ir_node *block, void *data)
 				ir_node *insert_point;
 				if (arity > 1) {
 					insert_point = be_get_end_of_block_insertion_point(pred);
+					insert_point = sched_prev(insert_point);
 				} else {
-					insert_point = sched_first(block);
-					assert(!is_Phi(insert_point));
+					insert_point = block;
 				}
-				DB((dbg, DBG_SPILL, "Spill %+F before %+F\n", node,
+				DB((dbg, DBG_SPILL, "Spill %+F after %+F\n", node,
 				     insert_point));
 				be_add_spill(senv, node, insert_point);
 			}
 #endif
 		}
 
-		/* reload missing values in predecessors */
+		/* reload missing values in predecessors, add missing spills */
 		workset_foreach(start_workset, node, iter) {
+			const loc_t *l    = &start_workset->vals[iter];
+			const loc_t *pred_loc;
+
 			/* if node is a phi of the current block we reload
 			 * the corresponding argument, else node itself */
-			if(is_Phi(node) && block == get_nodes_block(node)) {
+			if(is_Phi(node) && get_nodes_block(node) == block) {
 				node = get_irn_n(node, i);
+				assert(!l->spilled);
 
 				/* we might have unknowns as argument for the phi */
 				if(!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
@@ -879,13 +932,25 @@ static void fix_block_borders(ir_node *block, void *data)
 			}
 
 			/* check if node is in a register at end of pred */
-			if(workset_contains(pred_end_workset, node))
-				continue;
-
-			/* node is not in memory at the end of pred -> reload it */
-			DB((dbg, DBG_FIX, "    reload %+F\n", node));
-			DB((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
-			be_add_reload_on_edge(senv, node, block, i, cls, 1);
+			pred_loc = workset_contains(pred_end_workset, node);
+			if (pred_loc != NULL) {
+#ifdef PLACE_SPILLS
+				/* we might have to spill value on this path */
+				if (!pred_loc->spilled && l->spilled) {
+					ir_node *insert_point
+						= be_get_end_of_block_insertion_point(pred);
+					insert_point = sched_prev(insert_point);
+					DB((dbg, DBG_SPILL, "Spill %+F after %+F\n", node,
+					    insert_point));
+					be_add_spill(senv, node, insert_point);
+				}
+#endif
+			} else {
+				/* node is not in register at the end of pred -> reload it */
+				DB((dbg, DBG_FIX, "    reload %+F\n", node));
+				DB((dbg, DBG_SPILL, "Reload %+F before %+F,%d\n", node, block, i));
+				be_add_reload_on_edge(senv, node, block, i, cls, 1);
+			}
 		}
 	}
 }

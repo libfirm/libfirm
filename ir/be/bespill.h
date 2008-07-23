@@ -54,7 +54,7 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block);
 /**
  * Marks a point until which a node must be spilled.
  */
-void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *before);
+void be_add_spill(spill_env_t *senv, ir_node *to_spill, ir_node *after);
 
 /**
  * Inserts a new entry into the list of reloads to place (the real nodes will

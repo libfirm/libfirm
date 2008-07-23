@@ -29,6 +29,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "pset.h"
 #include "irnode_t.h"
@@ -80,7 +81,7 @@ struct reloader_t {
 typedef struct spill_t spill_t;
 struct spill_t {
 	spill_t *next;
-	ir_node *before;   /**< spill has to be placed before this node (or earlier) */
+	ir_node *after;  /**< spill has to be placed after this node (or earlier) */
 	ir_node *spill;
 };
 
@@ -107,8 +108,6 @@ struct spill_env_t {
 	                                       placed */
 	ir_nodeset_t      mem_phis;       /**< set of all spilled phis. */
 	ir_exec_freq     *exec_freq;
-	unsigned          new_nodes_idx;  /**< all old nodes idx is smaller than
-	                                       this */
 
 #ifdef FIRM_STATISTICS
 	unsigned          spill_count;
@@ -194,32 +193,31 @@ void be_delete_spill_env(spill_env_t *env)
  *
  */
 
-void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
+void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 {
-#if 1
 	spill_info_t *spill_info = get_spillinfo(env, to_spill);
 	spill_t      *spill;
 	spill_t      *s;
 	spill_t      *last;
 
 	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
-	DB((dbg, LEVEL_1, "Add spill of %+F before %+F\n", to_spill, before));
+	DB((dbg, LEVEL_1, "Add spill of %+F after %+F\n", to_spill, after));
 
 	/* Just for safety make sure that we do not insert the spill in front of a phi */
-	for (; is_Phi(before); before = sched_next(before));
+	assert(!is_Phi(sched_next(after)));
 
 	/* spills that are dominated by others are not needed */
 	last = NULL;
 	s    = spill_info->spills;
 	for( ; s != NULL; s = s->next) {
 		/* no need to add this spill if it is dominated by another */
-		if(value_dominates(s->before, before)) {
-			DB((dbg, LEVEL_1, "...dominated by %+F, not added\n", s->before));
+		if(value_dominates(s->after, after)) {
+			DB((dbg, LEVEL_1, "...dominated by %+F, not added\n", s->after));
 			return;
 		}
 		/* remove spills that we dominate */
-		if(value_dominates(before, s->before)) {
-			DB((dbg, LEVEL_1, "...remove old spill at %+F\n", s->before));
+		if(value_dominates(after, s->after)) {
+			DB((dbg, LEVEL_1, "...remove old spill at %+F\n", s->after));
 			if(last != NULL) {
 				last->next         = s->next;
 			} else {
@@ -231,12 +229,11 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	}
 
 	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
-	spill->before = before;
+	spill->after  = after;
 	spill->next   = spill_info->spills;
 	spill->spill  = NULL;
 
 	spill_info->spills = spill;
-#endif
 }
 
 void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before,
@@ -326,9 +323,11 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 
 static ir_node *skip_keeps_phis(ir_node *node)
 {
-	node = sched_next(node);
-	while(is_Phi(node) || be_is_Keep(node)) {
-		node = sched_next(node);
+	while(true) {
+		ir_node *next = sched_next(node);
+		if(!is_Phi(next) && !be_is_Keep(next))
+			break;
+		node = next;
 	}
 	return node;
 }
@@ -385,7 +384,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 	block = get_nodes_block(node);
 	spill = get_spillinfo(env, node);
 	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
-		ir_node *arg        = get_irn_n(node, i);
+		ir_node *arg = get_irn_n(node, i);
 		ir_node *insert;
 		//get_spillinfo(env, arg);
 
@@ -394,6 +393,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 		if(!sched_is_scheduled(arg)) {
 			ir_node *pred_block = get_Block_cfgpred_block(block, i);
 			insert = be_get_end_of_block_insertion_point(pred_block);
+			insert = sched_prev(insert);
 		} else {
 			insert = skip_keeps_phis(arg);
 		}
@@ -442,19 +442,14 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	spill = spillinfo->spills;
 	for( ; spill != NULL; spill = spill->next) {
-		ir_node *block  = get_block(spill->before);
-		ir_node *before = spill->before;
+		ir_node *after = spill->after;
+		ir_node *block = get_block(after);
 
-		/* place all spills before the reloads (as we can't guarantee the
-		 * same order as the be_add_spill and be_add_reload calls.
-		 * Also make sure that we do not run into Phis when going up. */
-		while(get_irn_idx(sched_prev(before)) > env->new_nodes_idx && !is_Phi(sched_prev(before))) {
-			before = sched_prev(before);
-		}
+		after = skip_keeps_phis(after);
 
-		spill->spill    = be_spill(env->arch_env, block, to_spill);
-		sched_add_before(before, spill->spill);
-		DB((dbg, LEVEL_1, "\t%+F before %+F\n", spill->spill, before));
+		spill->spill   = be_spill(env->arch_env, block, to_spill);
+		sched_add_after(after, spill->spill);
+		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 #ifdef FIRM_STATISTICS
 		env->spill_count++;
 #endif
@@ -499,7 +494,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* override or replace spills list... */
 	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
-	spill->before = skip_keeps_phis(phi);
+	spill->after  = skip_keeps_phis(phi);
 	spill->spill  = new_r_Phi(irg, block, arity, ins, mode_M);
 	spill->next   = NULL;
 
@@ -819,9 +814,9 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	if(!sched_is_scheduled(to_spill)) {
 		/* override spillinfos or create a new one */
 		spill_t *spill = obstack_alloc(&env->obst, sizeof(spill[0]));
-		spill->before  = NULL;
-		spill->next    = NULL;
-		spill->spill   = new_NoMem();
+		spill->after = NULL;
+		spill->next  = NULL;
+		spill->spill = new_NoMem();
 
 		spillinfo->spills      = spill;
 		spillinfo->spill_costs = 0;
@@ -848,13 +843,8 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		spills_execfreq = 0;
 		s               = spillinfo->spills;
 		for( ; s != NULL; s = s->next) {
-			ir_node *spill_block = s->before;
-			double   freq;
-
-			if(!is_Block(spill_block)) {
-				spill_block = get_nodes_block(spill_block);
-			}
-			freq = get_block_execfreq(env->exec_freq, spill_block);
+			ir_node *spill_block = get_block(s->after);
+			double   freq = get_block_execfreq(env->exec_freq, spill_block);
 
 			spills_execfreq += freq;
 		}
@@ -872,10 +862,10 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	/* override spillinfos or create a new one */
-	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
-	spill->before = skip_keeps_phis(to_spill);
-	spill->next   = NULL;
-	spill->spill  = NULL;
+	spill        = obstack_alloc(&env->obst, sizeof(spill[0]));
+	spill->after = skip_keeps_phis(to_spill);
+	spill->next  = NULL;
+	spill->spill = NULL;
 
 	spillinfo->spills      = spill;
 	spillinfo->spill_costs = spill_execfreq * env->spill_cost;
@@ -905,7 +895,7 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 	 * If the bitset is not empty after that, we have reloads that are
 	 * not dominated by any spill. */
 	for (s = si->spills; s != NULL; s = s->next) {
-		ir_node *bl = get_nodes_block(s->before);
+		ir_node *bl = get_nodes_block(s->after);
 		int start   = get_Block_dom_tree_pre_num(bl);
 		int end     = get_Block_dom_max_subtree_pre_num(bl);
 
@@ -913,12 +903,11 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 	}
 
 	if (!bitset_is_empty(reloads))
-		be_add_spill(env, si->to_spill, sched_next(si->to_spill));
+		be_add_spill(env, si->to_spill, si->to_spill);
 }
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	ir_graph              *irg       = env->irg;
 	const arch_env_t      *arch_env  = env->arch_env;
 	const ir_exec_freq    *exec_freq = env->exec_freq;
 	spill_info_t          *si;
@@ -926,8 +915,6 @@ void be_insert_spills_reloads(spill_env_t *env)
 	ir_node               *node;
 
 	BE_TIMER_PUSH(t_ra_spill_apply);
-
-	env->new_nodes_idx = get_irg_last_idx(irg);
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
 	   spilled phis work correctly */

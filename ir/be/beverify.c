@@ -158,7 +158,7 @@ typedef struct be_verify_schedule_env_t_ {
 static void verify_schedule_walker(ir_node *block, void *data) {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
 	ir_node *node;
-	int non_phi_found  = 0;
+	ir_node *non_phi_found = NULL;
 	int cfchange_found = 0;
 	/* TODO ask arch about delay branches */
 	int delay_branches = 0;
@@ -200,13 +200,13 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 
 		/* Check that phis come before any other node */
 		if (is_Phi(node)) {
-			if (non_phi_found) {
-				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes in block %+F (%s)\n",
-					node, block, get_irg_dump_name(env->irg));
+			if (non_phi_found != NULL) {
+				ir_fprintf(stderr, "Verify Warning: Phi node %+F scheduled after non-Phi nodes (for example %+F) in block %+F (%s)\n",
+					node, non_phi_found, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
 			}
 		} else {
-			non_phi_found = 1;
+			non_phi_found = node;
 		}
 
 		/* Check for control flow changing nodes */

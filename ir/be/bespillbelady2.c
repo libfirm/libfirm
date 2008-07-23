@@ -1328,7 +1328,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 				DBG((dbg, DBG_GLOBAL, "\t-> use blocked. local reload: %+F, try spill at: %+F\n",
 							br->first_use, better_spill_loc));
 				be_add_reload(env->senv, irn, br->first_use, env->cls, 1);
-				be_add_spill(env->senv, irn, sched_next(better_spill_loc));
+				be_add_spill(env->senv, irn, better_spill_loc);
 				ir_nodeset_insert(env->extra_spilled, irn);
 			}
 
