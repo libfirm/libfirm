@@ -519,7 +519,10 @@ static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
 {
 	ir_graph *irg = be_get_birg_irg(env->birg);
 	ir_type *frame = get_irg_frame_type(irg);
-	ir_entity *res = frame_alloc_area(frame, slot->size, slot->align, 0);
+	/* TODO: backend should be able to specify wether we want spill slots
+	 * at begin or end of frame */
+	int        at_start = 1;
+	ir_entity *res = frame_alloc_area(frame, slot->size, slot->align, at_start);
 
 	/* adjust size of the entity type... */
 	ir_type *enttype = get_entity_type(res);
