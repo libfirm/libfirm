@@ -6205,11 +6205,15 @@ static ir_op_ops *firm_set_default_hash(ir_opcode code, ir_op_ops *ops)
 		ops->hash  = hash_##a; \
 		break
 
+	/* hash function already set */
+	if (ops->hash != NULL)
+		return ops;
+
 	switch (code) {
 	CASE(Const);
 	CASE(SymConst);
 	default:
-		/* use input/mode default hash */
+		/* use input/mode default hash if no function was given */
 		ops->hash = firm_default_hash;
 	}
 
