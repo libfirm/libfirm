@@ -1231,6 +1231,15 @@ int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 	return 0;
 }
 
+/**
+ * Hash function for Immediates
+ */
+static unsigned ia32_hash_Immediate(const ir_node *irn) {
+	const ia32_immediate_attr_t *a = get_ia32_immediate_attr_const(irn);
+
+	return HASH_PTR(a->symconst) + (a->sc_sign << 16) + a->offset;
+}
+
 /** Compare node attributes for Immediates. */
 static
 int ia32_compare_immediate_attr(ir_node *a, ir_node *b)

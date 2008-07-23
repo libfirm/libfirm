@@ -26,11 +26,16 @@ $arch = "TEMPLATE";
 #   comment   => "any comment for constructor",  # optional
 #   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
 #   cmp_attr  => "c source code for comparing node attributes", # optional
-#   outs      => { "out1", "out2" } # optional, creates pn_op_out1, ... consts
-#   ins       => { "in1", "in2" }   # optional, creates n_op_in1, ... consts
-#   mode      => "mode_Iu"          # optional, predefines the mode
+#   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
+#   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
+#   mode      => "mode_Iu",         # optional, predefines the mode
 #   emit      => "emit code with templates",   # optional for virtual nodes
-#   rd_constructor => "c source code which constructs an ir_node"  # optional
+#   attr      => "attitional attribute arguments for constructor", # optional
+#   init_attr => "emit attribute initialization template",         # optional
+#   rd_constructor => "c source code which constructs an ir_node", # optional
+#   hash_func => "name of the hash function for this operation",   # optional, get the default hash function else
+#   latency   => "latency of this operation (can be float)"        # optional
+#   attr_type => "name of the attribute struct",                   # optional
 # },
 #
 # ... # (all nodes you need to describe)

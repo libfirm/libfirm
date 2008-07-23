@@ -28,10 +28,14 @@ $new_emit_syntax = 1;
 #   comment   => "any comment for constructor",
 #   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
 #   cmp_attr  => "c source code for comparing node attributes",
+#   outs      => { "out1", "out2" } # optional, creates pn_op_out1, ... consts
+#   ins       => { "in1", "in2" }   # optional, creates n_op_in1, ... consts
+#   mode      => "mode_Iu"          # optional, predefines the mode
 #   emit      => "emit code with templates",
-#   attr      => "attitional attribute arguments for constructor"
-#   init_attr => "emit attribute initialization template"
+#   attr      => "attitional attribute arguments for constructor",
+#   init_attr => "emit attribute initialization template",
 #   rd_constructor => "c source code which constructs an ir_node"
+#   hash_func => "name of the hash function for this operation",
 #   latency   => "latency of this operation (can be float)"
 #   attr_type => "name of the attribute struct",
 # },

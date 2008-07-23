@@ -265,6 +265,12 @@ foreach my $op (keys(%nodes)) {
 		$attr_type = $default_attr_type;
 	}
 
+	# determine hash function
+	my $hash_func;
+	if (exists($n{"hash_func"})) {
+		$hash_func = $n{"hash_func"};
+	}
+
 	# determine compare function
 	my $cmp_attr_func;
 	if (exists($n{"cmp_attr"})) {
@@ -574,6 +580,9 @@ foreach my $op (keys(%nodes)) {
 	}
 	if (defined($copy_attr_func)) {
 		push(@obst_new_irop, "\tops.copy_attr = ${copy_attr_func};\n");
+	}
+	if (defined($hash_func)) {
+		push(@obst_new_irop, "\tops.hash = ${hash_func};\n");
 	}
 
 	$n_opcodes++;
