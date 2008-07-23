@@ -1,17 +1,18 @@
 ====== Libfirm 1.13.0 (XXXX-XX-XX) ======
 
-* VanDrunen's GVN-PRE implemented
+* VanDrunen's GVN-PRE fixed
 * operator strength reduce fixed and improved
 * fixed 64bit code generation for some rary compare cases
 * better tailrecursion optimization: handles x * func() and x + func()
 * improved inliner: better heuristic for inlining, can now inline recursive calls
+* improved spiller
 * lowering of CopyB nodes
 * better memory disambiguator
 * float->64bit conversion fixed for x87
 * removed old verbosity level based debugging: all modules ese the new debug facility
 * Improved Confirm based optimization and conditional evaluation (using Confirm nodes)
 * BugFixes: tail recursion, load/store optimization, lowering of structure return, conditional
-  evaluation
+  evaluation, removal of unused methods
 * reduced numer of indirections for backend operation
 * ia32 Backend: supports more CPU architectures
 * ARM Backend: fixed frame access
