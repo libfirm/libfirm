@@ -1123,6 +1123,14 @@ static void set_compute_functions(void) {
 	SET(End);
 }  /* set_compute_functions */
 
+static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
+	ir_node *irn = local != NULL ? local : n;
+	node_t *node = get_irn_node(n);
+
+	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
+	return 1;
+}
+
 void combo(ir_graph *irg) {
 	environment_t env;
 	ir_node       *start_bl, *initial_X;
@@ -1179,6 +1187,10 @@ void combo(ir_graph *irg) {
 	} while (env.cprop != NULL || env.worklist != NULL);
 
 	dump_all_partitions(&env);
+
+	set_dump_node_vcgattr_hook(dump_partition_hook);
+	dump_ir_block_graph(irg, "-partition");
+
 
 	/* apply the result */
 	irg_walk_graph(irg, NULL, apply_result, &env);
