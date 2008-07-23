@@ -1,5 +1,6 @@
 ====== Libfirm 1.13.0 (XXXX-XX-XX) ======
 
+* VanDrunen's GVN-PRE implemented
 * operator strength reduce fixed and improved
 * fixed 64bit code generation for some rary compare cases
 * better tailrecursion optimization: handles x * func() and x + func()
