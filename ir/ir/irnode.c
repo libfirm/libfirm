@@ -3209,23 +3209,25 @@ ir_entity *get_Global_entity(const ir_node *node) {
 }
 #endif
 
-#ifdef DEBUG_libfirm
-void dump_irn(const ir_node *n) {
-	int i, arity = get_irn_arity(n);
-	printf("%s%s: %ld (%p)\n", get_irn_opname(n), get_mode_name(get_irn_mode(n)), get_irn_node_nr(n), (void *)n);
-	if (!is_Block(n)) {
-		ir_node *pred = get_irn_n(n, -1);
-		printf("  block: %s%s: %ld (%p)\n", get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
-			get_irn_node_nr(pred), (void *)pred);
-	}
-	printf("  preds: \n");
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(n, i);
-		printf("    %d: %s%s: %ld (%p)\n", i, get_irn_opname(pred), get_mode_name(get_irn_mode(pred)),
-			get_irn_node_nr(pred), (void *)pred);
-	}
-}
+/*
+ * Calculate a hash value of a node.
+ */
+unsigned firm_default_hash(const ir_node *node) {
+	unsigned h;
+	int i, irn_arity;
 
-#else  /* DEBUG_libfirm */
-void dump_irn(const ir_node *n) { (void) n; }
-#endif /* DEBUG_libfirm */
+	/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
+	h = irn_arity = get_irn_intra_arity(node);
+
+	/* consider all in nodes... except the block if not a control flow. */
+	for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  ++i) {
+		h = 9*h + HASH_PTR(get_irn_intra_n(node, i));
+	}
+
+	/* ...mode,... */
+	h = 9*h + HASH_PTR(get_irn_mode(node));
+	/* ...and code */
+	h = 9*h + HASH_PTR(get_irn_op(node));
+
+	return h;
+}  /* firm_default_hash */

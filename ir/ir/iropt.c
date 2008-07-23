@@ -5708,37 +5708,13 @@ int identities_cmp(const void *elt, const void *key) {
 
 /*
  * Calculate a hash value of a node.
+ *
+ * @param node  The IR-node
  */
 unsigned ir_node_hash(const ir_node *node) {
-	unsigned h;
-	int i, irn_arity;
-
-	if (node->op == op_Const) {
-		/* special value for const, as they only differ in their tarval. */
-		h = HASH_PTR(node->attr.con.tv);
-		h = 9*h + HASH_PTR(get_irn_mode(node));
-	} else if (node->op == op_SymConst) {
-		/* special value for const, as they only differ in their symbol. */
-		h = HASH_PTR(node->attr.symc.sym.type_p);
-		h = 9*h + HASH_PTR(get_irn_mode(node));
-	} else {
-
-		/* hash table value = 9*(9*(9*(9*(9*arity+in[0])+in[1])+ ...)+mode)+code */
-		h = irn_arity = get_irn_intra_arity(node);
-
-		/* consider all in nodes... except the block if not a control flow. */
-		for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  i++) {
-			h = 9*h + HASH_PTR(get_irn_intra_n(node, i));
-		}
-
-		/* ...mode,... */
-		h = 9*h + HASH_PTR(get_irn_mode(node));
-		/* ...and code */
-		h = 9*h + HASH_PTR(get_irn_op(node));
-	}
-
-	return h;
+	return node->op->ops.hash(node);
 }  /* ir_node_hash */
+
 
 pset *new_identities(void) {
 	return new_pset(identities_cmp, N_IR_NODES);
@@ -6187,10 +6163,65 @@ ir_node *optimize_in_place(ir_node *n) {
 	return optimize_in_place_2(n);
 }  /* optimize_in_place */
 
+/**
+ * Calculate a hash value of a Const node.
+ */
+static unsigned hash_Const(const ir_node *node) {
+	unsigned h;
+
+	/* special value for const, as they only differ in their tarval. */
+	h = HASH_PTR(node->attr.con.tv);
+	h = 9*h + HASH_PTR(get_irn_mode(node));
+
+	return h;
+}  /* hash_Const */
+
+/**
+ * Calculate a hash value of a SymConst node.
+ */
+static unsigned hash_SymConst(const ir_node *node) {
+	unsigned h;
+
+	/* special value for const, as they only differ in their symbol. */
+	h = HASH_PTR(node->attr.symc.sym.type_p);
+	h = 9*h + HASH_PTR(get_irn_mode(node));
+
+	return h;
+}  /* hash_SymConst */
+
+/**
+ * Set the default hash operation in an ir_op_ops.
+ *
+ * @param code   the opcode for the default operation
+ * @param ops    the operations initialized
+ *
+ * @return
+ *    The operations.
+ */
+static ir_op_ops *firm_set_default_hash(ir_opcode code, ir_op_ops *ops)
+{
+#define CASE(a)                                    \
+	case iro_##a:                                  \
+		ops->hash  = hash_##a; \
+		break
+
+	switch (code) {
+	CASE(Const);
+	CASE(SymConst);
+	default:
+		/* use input/mode default hash */
+		ops->hash = firm_default_hash;
+	}
+
+	return ops;
+#undef CASE
+}
+
 /*
  * Sets the default operation for an ir_ops.
  */
 ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops) {
+	ops = firm_set_default_hash(code, ops);
 	ops = firm_set_default_computed_value(code, ops);
 	ops = firm_set_default_equivalent_node(code, ops);
 	ops = firm_set_default_transform_node(code, ops);

@@ -252,7 +252,16 @@ op_func get_generic_function_ptr(const ir_op *op);
  */
 void set_generic_function_ptr(ir_op *op, op_func func);
 
+/**
+ * Return the irop flags of an IR opcode.
+ */
 irop_flags get_op_flags(const ir_op *op);
+
+/**
+ * The hash operation.
+ * This operation calculates a hash value for a given IR node.
+ */
+typedef unsigned (*hash_func)(const ir_node *self);
 
 /**
  * The compute value operation.
@@ -362,6 +371,7 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
+	hash_func             hash;             /**< Calculate a hash value for an IR node. */
 	computed_value_func   computed_value;   /**< Evaluates a node into a tarval if possible. */
 	equivalent_node_func  equivalent_node;  /**< Optimizes the node by returning an equivalent one. */
 	transform_node_func   transform_node;   /**< Optimizes the node by transforming it. */

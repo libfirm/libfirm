@@ -1503,16 +1503,12 @@ void set_irn_dbg_info(ir_node *n, dbg_info *db);
  */
 dbg_info *get_irn_dbg_info(const ir_node *n);
 
-/*-----------------------------------------------------------------*/
-/** Debug aides                                                   **/
-/*-----------------------------------------------------------------*/
-
-
-/** Debug print the node.
+/**
+ * Calculate a hash value of a node. Only inputs, mode and opcode are used.
  *
- *  Writes the node, all its attributes and the predecessors to stdout if DEBUG_libfirm
- *  is set.  Else does nothing. */
-void dump_irn(const ir_node *n);
+ * @param node  the node to hash
+ */
+unsigned firm_default_hash(const ir_node *node);
 
 /*@}*/ /* end of ir_node group definition */
 

@@ -26,21 +26,27 @@
 #ifndef FIRM_IR_IROPT_T_H
 #define FIRM_IR_IROPT_T_H
 
+#include "irop_t.h"
 #include "iropt.h"
 #include "irnode_t.h"
 #include "pset.h"
 #include "tv.h"
 
-ir_node *equivalent_node(ir_node *n);
-
 /**
  * Calculate a hash value of a node.
- * The hash value is calculated from the nodes predecessors.
- * Special handling for Const and SymConst nodes (these don't have predecessors).
  *
  * @param node  The IR-node
  */
 unsigned ir_node_hash(const ir_node *node);
+
+/**
+ * equivalent_node() returns a node equivalent to input n. It skips all nodes that
+ * perform no actual computation, as, e.g., the Id nodes.  It does not create
+ * new nodes.  It is therefore safe to free n if the node returned is not n.
+ * If a node returns a Tuple we can not just skip it.  If the size of the
+ * in array fits, we transform n into a tuple (e.g., Div).
+ */
+ir_node *equivalent_node(ir_node *n);
 
 /**
  * Creates a new value table used for storing CSE identities.

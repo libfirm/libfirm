@@ -1678,6 +1678,7 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 }
 
 static const ir_op_ops be_node_op_ops = {
+	firm_default_hash,
 	NULL,
 	NULL,
 	NULL,
