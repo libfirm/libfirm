@@ -50,6 +50,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "iropt.h"
+#include "irtools.h"
 
 #include "irflag_t.h"
 #include "dbginfo_t.h"
@@ -490,12 +491,15 @@ static void free_ana_walker(ir_node *node, void *env) {
  *
  * which is sometimes used to anchor functions.
  */
-static void add_method_address_intitialzer(ir_initializer_t *initializer,
-                                           eset *set)
+static void add_method_address_inititializer(ir_initializer_t *initializer,
+                                             eset *set)
 {
+	ir_node *n;
+	size_t  i;
+
 	switch (initializer->kind) {
-	case IR_INITIALIZER_CONST: {
-		ir_node *n = initializer->consti.value;
+	case IR_INITIALIZER_CONST:
+		n = initializer->consti.value;
 
 		/* let's check if it's the address of a function */
 		if (is_Global(n)) {
@@ -505,20 +509,16 @@ static void add_method_address_intitialzer(ir_initializer_t *initializer,
 				eset_insert(set, ent);
 		}
 		return;
-	}
 	case IR_INITIALIZER_TARVAL:
 	case IR_INITIALIZER_NULL:
 		return;
-	case IR_INITIALIZER_COMPOUND: {
-		size_t i;
-
+	case IR_INITIALIZER_COMPOUND:
 		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *sub_initializer
 				= initializer->compound.initializers[i];
-			add_method_address_intitialzer(sub_initializer, set);
+			add_method_address_inititializer(sub_initializer, set);
 		}
 		return;
-	}
 	}
 	panic("invalid initializer found");
 }
@@ -545,7 +545,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 		return;
 
 	if (ent->has_initializer) {
-		add_method_address_intitialzer(get_entity_initializer(ent), set);
+		add_method_address_inititializer(get_entity_initializer(ent), set);
 	} else if (is_atomic_entity(ent)) {
 		tp = get_entity_type(ent);
 
@@ -598,19 +598,18 @@ static ir_entity **get_free_methods(int *length)
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
 		ent = get_irg_entity(irg);
-		/* insert "external visible" methods. */
 		if (get_entity_visibility(ent) != visibility_local) {
+			/* insert non-local (external) methods. */
 			eset_insert(free_set, ent);
-		}
-		/* insert "sticky" methods. */
-		if (get_entity_stickyness(ent) == stickyness_sticky) {
+		} else if (get_entity_stickyness(ent) == stickyness_sticky) {
+			/* insert "sticky" methods. */
 			eset_insert(free_set, ent);
 		}
 
 		set_using_irn_link(irg);
-		/* Find all method entities that gets "visible" trough this graphs,
+		/* Find all method entities that gets "visible" through this graphs,
 		 * for instance because their address is stored. */
-		irg_walk_graph(irg, NULL, free_ana_walker, free_set);
+		irg_walk_graph(irg, firm_clear_link, free_ana_walker, free_set);
 		clear_using_irn_link(irg);
 	}
 
