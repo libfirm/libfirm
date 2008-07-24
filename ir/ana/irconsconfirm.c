@@ -459,7 +459,7 @@ void construct_confirms(ir_graph *irg) {
  */
 static void rem_Confirm(ir_node *n, void *env) {
 	(void) env;
-	if (get_irn_op(n) == op_Confirm) {
+	if (is_Confirm(n)) {
 		ir_node *value = get_Confirm_value(n);
 		if (value != n)
 			exchange(n, value);
