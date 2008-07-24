@@ -377,6 +377,8 @@ static void displace(workset_t *new_vals, int is_usage)
 #ifdef PLACE_SPILLS
 			if (!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
 				ir_node *after_pos = sched_prev(instr);
+				DB((dbg, DBG_DECIDE, "Spill %+F after node %+F\n", val,
+				    after_pos));
 				be_add_spill(senv, val, after_pos);
 			}
 #endif
@@ -497,9 +499,6 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
 		DB((dbg, DBG_START, "    %+F not taken (dead)\n", node));
-		if (is_Phi(node)) {
-			be_spill_phi(senv, node);
-		}
 		return loc;
 	}
 
@@ -577,6 +576,8 @@ static void decide_start_workset(const ir_node *block)
 
 		if (! is_Phi(node))
 			break;
+		if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+			continue;
 
 		if (all_preds_known) {
 			available = available_in_all_preds(pred_worksets, arity, node, true);
@@ -591,6 +592,8 @@ static void decide_start_workset(const ir_node *block)
 				ARR_APP1(loc_t, delayed, loc);
 			else
 				ARR_APP1(loc_t, starters, loc);
+		} else {
+			be_spill_phi(senv, node);
 		}
 	}
 
