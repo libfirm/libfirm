@@ -49,6 +49,8 @@
 #include "irgmod.h"
 #include "debug.h"
 
+#include "tv_t.h"
+
 /* we need the tarval_R and tarval_U */
 #define tarval_R  tarval_top
 #define tarval_U  tarval_bottom
@@ -293,7 +295,7 @@ static INLINE lattice_elem_t get_node_type(const ir_node *irn) {
 static INLINE tarval *get_node_tarval(const ir_node *irn) {
 	lattice_elem_t type = get_node_type(irn);
 
-	if (get_kind(type.tv) == k_tarval)
+	if (is_tarval(type.tv))
 		return type.tv;
 	return tarval_bottom;
 }  /* get_node_type */
@@ -732,7 +734,6 @@ static void split_by(partition_t *X, environment_t *env) {
 static void default_compute(node_t *node) {
 	int     i;
 	ir_node *irn = node->node;
-	ir_mode *mode;
 
 	if (get_irn_pinned(irn) == op_pin_state_pinned) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
@@ -742,9 +743,6 @@ static void default_compute(node_t *node) {
 			return;
 		}
 	}
-	mode = get_irn_mode(irn);
-	if (! mode_is_data(mode))
-		return;
 
 	/* if any of the data inputs have type top, the result is type top */
 	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
@@ -756,6 +754,7 @@ static void default_compute(node_t *node) {
 			return;
 		}
 	}
+
 	node->type.tv = computed_value(irn);
 }  /* default_compute */
 
@@ -874,6 +873,53 @@ static void compute_Phi(node_t *node) {
  *
  * @param node  the node
  */
+static void compute_Add(node_t *node) {
+	ir_node        *sub = node->node;
+	node_t         *l   = get_irn_node(get_Add_left(sub));
+	node_t         *r   = get_irn_node(get_Add_right(sub));
+	lattice_elem_t a    = l->type;
+	lattice_elem_t b    = r->type;
+	node_t         *block = get_irn_node(get_nodes_block(sub));
+	ir_mode        *mode;
+
+	if (block->type.tv == tarval_U) {
+		node->type.tv = tarval_top;
+		return;
+	}
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
+		node->type.tv = tarval_bottom;
+	} else {
+		/* x + 0 = 0 + x = x, but beware of floating point +0 + -0, so we
+		   must call tarval_add() first to handle this case! */
+		if (is_tarval(a.tv)) {
+			if (is_tarval(b.tv)) {
+				node->type.tv = tarval_add(a.tv, b.tv);
+				return;
+			}
+			mode = get_tarval_mode(a.tv);
+			if (a.tv == get_mode_null(mode)) {
+				node->type = b;
+				return;
+			}
+		} else if (is_tarval(b.tv)) {
+			mode = get_tarval_mode(b.tv);
+			if (b.tv == get_mode_null(mode)) {
+				node->type = a;
+				return;
+			}
+		}
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Add */
+
+/**
+ * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
+ *
+ * @param node  the node
+ */
 static void compute_Sub(node_t *node) {
 	ir_node        *sub = node->node;
 	node_t         *l   = get_irn_node(get_Sub_left(sub));
@@ -895,7 +941,7 @@ static void compute_Sub(node_t *node) {
 	} else if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
 		node->type.tv = tarval_bottom;
 	} else {
-		if (get_kind(a.tv) == k_tarval && get_kind(b.tv)== k_tarval)
+		if (is_tarval(a.tv) && is_tarval(b.tv))
 			node->type.tv = tarval_sub(a.tv, b.tv);
 		else
 			node->type.tv = tarval_bottom;
@@ -906,6 +952,7 @@ static void compute_Sub(node_t *node) {
  * (Re-)compute the type for a Proj(Cmp).
  *
  * @param node  the node
+ * @param cond  the predecessor Cmp node
  */
 static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	ir_node        *proj = node->node;
@@ -933,6 +980,78 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		default_compute(node);
 	}
 }  /* compute_Proj_Cmp */
+
+/**
+ * (Re-)compute the type for a Proj(Cond).
+ *
+ * @param node  the node
+ * @param cond  the predecessor Cond node
+ */
+static void compute_Proj_Cond(node_t *node, ir_node *cond) {
+	ir_node *proj     = node->node;
+	long    pnc       = get_Proj_proj(proj);
+	ir_node *sel      = get_Cond_selector(cond);
+	node_t  *selector = get_irn_node(sel);
+
+	if (get_irn_mode(sel) == mode_b) {
+		/* an IF */
+		if (pnc == pn_Cond_true) {
+			if (selector->type.tv == tarval_b_false) {
+				node->type.tv = tarval_U;
+			} else if (selector->type.tv == tarval_b_true) {
+				node->type.tv = tarval_R;
+			} else if (selector->type.tv == tarval_bottom) {
+				node->type.tv = tarval_R;
+			} else {
+				assert(selector->type.tv == tarval_top);
+				node->type.tv = tarval_U;
+			}
+		} else {
+			assert(pnc == pn_Cond_false);
+
+			if (selector->type.tv == tarval_b_false) {
+				node->type.tv = tarval_R;
+			} else if (selector->type.tv == tarval_b_true) {
+				node->type.tv = tarval_U;
+			} else if (selector->type.tv == tarval_bottom) {
+				node->type.tv = tarval_R;
+			} else {
+				assert(selector->type.tv == tarval_top);
+				node->type.tv = tarval_U;
+			}
+		}
+	} else {
+		/* an SWITCH */
+		if (selector->type.tv == tarval_bottom) {
+			node->type.tv = tarval_R;
+		} else if (selector->type.tv == tarval_top) {
+			node->type.tv = tarval_U;
+		} else {
+			long value = get_tarval_long(selector->type.tv);
+			if (pnc == get_Cond_defaultProj(cond)) {
+				/* default switch, have to check ALL other cases */
+				int i;
+
+				for (i = get_irn_n_outs(cond) - 1; i >= 0; --i) {
+					ir_node *succ = get_irn_out(cond, i);
+
+					if (succ == proj)
+						continue;
+					if (value == get_Proj_proj(succ)) {
+						/* we found a match, will NOT take the default case */
+						node->type.tv = tarval_U;
+						return;
+					}
+				}
+				/* all cases checked, no match, will take default case */
+				node->type.tv = tarval_R;
+			} else {
+				/* normal case */
+				node->type.tv = value == pnc ? tarval_R : tarval_U;
+			}
+		}
+	}
+}  /* compute_Proj_Cond */
 
 /**
  * (Re-)compute the type for a Proj-Nodes.
@@ -964,6 +1083,9 @@ static void compute_Proj(node_t *node) {
 	case iro_Start:
 		/* the Proj_X from the Start is always reachable */
 		node->type.tv = tarval_R;
+		break;
+	case iro_Cond:
+		compute_Proj_Cond(node, pred);
 		break;
 	default:
 		default_compute(node);
@@ -1118,8 +1240,10 @@ static void set_compute_functions(void) {
 	SET(Block);
 	SET(Jmp);
 	SET(Phi);
+	SET(Add);
 	SET(Sub);
 	SET(SymConst);
+	SET(Proj);
 	SET(End);
 }  /* set_compute_functions */
 
@@ -1133,7 +1257,7 @@ static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 
 void combo(ir_graph *irg) {
 	environment_t env;
-	ir_node       *start_bl, *initial_X;
+	ir_node       *initial_X;
 	node_t        *start;
 	ir_graph      *rem = current_ir_graph;
 
@@ -1142,6 +1266,8 @@ void combo(ir_graph *irg) {
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
 	firm_dbg_set_mask(dbg, SET_LEVEL_3);
+
+	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
 	obstack_init(&env.obst);
 	env.worklist       = NULL;
@@ -1172,13 +1298,9 @@ void combo(ir_graph *irg) {
 
 	/* Place the START Node's partition on cprop.
 	   Place the START Node on its local worklist. */
-	start_bl = get_irg_start_block(irg);
-	start    = get_irn_node(start_bl);
-	add_node_to_cprop(start, &env);
-
-	/* set the initial exec to R */
 	initial_X = get_irg_initial_exec(irg);
-	get_irn_node(initial_X)->type.tv = tarval_R;
+	start     = get_irn_node(initial_X);
+	add_node_to_cprop(start, &env);
 
 	do {
 		propagate(&env);
