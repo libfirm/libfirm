@@ -282,11 +282,11 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 	assert(! (flags & arch_irn_flags_ignore));
 
 	use = be_get_next_use(uses, from, from_step, def, skip_from_uses);
-	if(USES_IS_INFINITE(use.time))
+	if (USES_IS_INFINITE(use.time))
 		return USES_INFINITY;
 
 	/* We have to keep nonspillable nodes in the workingset */
-	if(flags & arch_irn_flags_dont_spill)
+	if (flags & arch_irn_flags_dont_spill)
 		return 0;
 
 	costs = be_get_reload_costs_no_weight(senv, def, use.before);
@@ -375,7 +375,7 @@ static void displace(workset_t *new_vals, int is_usage)
 			     workset_get_time(ws, i)));
 
 #ifdef PLACE_SPILLS
-			if(!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
+			if (!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
 				ir_node *after_pos = sched_prev(instr);
 				be_add_spill(senv, val, after_pos);
 			}
@@ -404,6 +404,64 @@ static void displace(workset_t *new_vals, int is_usage)
 	}
 }
 
+enum {
+	AVAILABLE_EVERYWHERE,
+	AVAILABLE_NOWHERE,
+	AVAILABLE_PARTLY,
+	AVAILABLE_UNKNOWN
+};
+
+static unsigned available_in_all_preds(workset_t* const* pred_worksets,
+                                       size_t n_pred_worksets,
+                                       const ir_node *value, bool is_local_phi)
+{
+	size_t i;
+	bool   avail_everywhere = true;
+	bool   avail_nowhere    = true;
+
+	assert(n_pred_worksets > 0);
+
+	/* value available in all preds? */
+	for (i = 0; i < n_pred_worksets; ++i) {
+		bool             found     = false;
+		const workset_t *p_workset = pred_worksets[i];
+		int              p_len     = workset_get_length(p_workset);
+		int              p_i;
+		const ir_node   *l_value;
+
+		if (is_local_phi) {
+			assert(is_Phi(value));
+			l_value = get_irn_n(value, i);
+		} else {
+			l_value = value;
+		}
+
+		for (p_i = 0; p_i < p_len; ++p_i) {
+			const loc_t *p_l = &p_workset->vals[p_i];
+			if (p_l->node != l_value)
+				continue;
+
+			found = true;
+			break;
+		}
+
+		if (found) {
+			avail_nowhere = false;
+		} else {
+			avail_everywhere = false;
+		}
+	}
+
+	if (avail_everywhere) {
+		assert(!avail_nowhere);
+		return AVAILABLE_EVERYWHERE;
+	} else if (avail_nowhere) {
+		return AVAILABLE_NOWHERE;
+	} else {
+		return AVAILABLE_PARTLY;
+	}
+}
+
 /** Decides whether a specific node should be in the start workset or not
  *
  * @param env      belady environment
@@ -412,7 +470,7 @@ static void displace(workset_t *new_vals, int is_usage)
  * @param loop     the loop of the node
  */
 static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
-                                    ir_loop *loop)
+                                    ir_loop *loop, unsigned available)
 {
 	be_next_use_t next_use;
 	loc_t         loc;
@@ -427,19 +485,19 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	}
 
 	/* We have to keep nonspillable nodes in the workingset */
-	if(arch_irn_get_flags(arch_env, node) & arch_irn_flags_dont_spill) {
+	if (arch_irn_get_flags(arch_env, node) & arch_irn_flags_dont_spill) {
 		loc.time = 0;
 		DB((dbg, DBG_START, "    %+F taken (dontspill node)\n", node, loc.time));
 		return loc;
 	}
 
 	next_use = be_get_next_use(uses, first, 0, node, 0);
-	if(USES_IS_INFINITE(next_use.time)) {
+	if (USES_IS_INFINITE(next_use.time)) {
 		// the nodes marked as live in shouldn't be dead, so it must be a phi
 		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
 		DB((dbg, DBG_START, "    %+F not taken (dead)\n", node));
-		if(is_Phi(node)) {
+		if (is_Phi(node)) {
 			be_spill_phi(senv, node);
 		}
 		return loc;
@@ -447,7 +505,18 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 
 	loc.time = next_use.time;
 
-	if(next_use.outermost_loop >= get_loop_depth(loop)) {
+	if (available == AVAILABLE_EVERYWHERE) {
+		DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n", node,
+		    loc.time));
+		return loc;
+	} else if(available == AVAILABLE_NOWHERE) {
+		DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n", node,
+		    loc.time));
+		loc.time = USES_INFINITY;
+		return loc;
+	}
+
+	if (next_use.outermost_loop >= get_loop_depth(loop)) {
 		DB((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time,
 		    next_use.outermost_loop));
 	} else {
@@ -477,6 +546,23 @@ static void decide_start_workset(const ir_node *block)
 	unsigned    pressure;
 	int         arity;
 	workset_t **pred_worksets;
+	bool        all_preds_known;
+
+	/* check predecessors */
+	arity           = get_irn_arity(block);
+	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
+	all_preds_known = true;
+	for(i = 0; i < arity; ++i) {
+		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
+		block_info_t *pred_info  = get_block_info(pred_block);
+
+		if (pred_info == NULL) {
+			pred_worksets[i] = NULL;
+			all_preds_known  = false;
+		} else {
+			pred_worksets[i] = pred_info->end_workset;
+		}
+	}
 
 	/* Collect all values living at start of block */
 	starters = NEW_ARR_F(loc_t, 0);
@@ -487,10 +573,18 @@ static void decide_start_workset(const ir_node *block)
 
 	/* check all Phis first */
 	sched_foreach(block, node) {
+		unsigned available;
+
 		if (! is_Phi(node))
 			break;
 
-		loc = to_take_or_not_to_take(first, node, loop);
+		if (all_preds_known) {
+			available = available_in_all_preds(pred_worksets, arity, node, true);
+		} else {
+			available = AVAILABLE_UNKNOWN;
+		}
+
+		loc = to_take_or_not_to_take(first, node, loop, available);
 
 		if (! USES_IS_INFINITE(loc.time)) {
 			if (USES_IS_PENDING(loc.time))
@@ -503,8 +597,15 @@ static void decide_start_workset(const ir_node *block)
 	/* check all Live-Ins */
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
 		ir_node *node = be_lv_get_irn(lv, block, i);
+		unsigned available;
 
-		loc = to_take_or_not_to_take(first, node, loop);
+		if (all_preds_known) {
+			available = available_in_all_preds(pred_worksets, arity, node, false);
+		} else {
+			available = AVAILABLE_UNKNOWN;
+		}
+
+		loc = to_take_or_not_to_take(first, node, loop, available);
 
 		if (! USES_IS_INFINITE(loc.time)) {
 			if (USES_IS_PENDING(loc.time))
@@ -560,7 +661,7 @@ static void decide_start_workset(const ir_node *block)
 	 * but not in the start workset */
 	for (i = ARR_LEN(delayed) - 1; i >= 0; --i) {
 		ir_node *node = delayed[i].node;
-		if(node == NULL || !is_Phi(node) || get_nodes_block(node) != block)
+		if (node == NULL || !is_Phi(node) || get_nodes_block(node) != block)
 			continue;
 
 		DB((dbg, DBG_START, "    spilling delayed phi %+F\n", node));
@@ -593,18 +694,6 @@ static void decide_start_workset(const ir_node *block)
 	/* determine spill status of the values: If there's 1 pred block (which
 	 * is no backedge) where the value is spilled then we must set it to
 	 * spilled here. */
-	arity           = get_irn_arity(block);
-	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
-	for(i = 0; i < arity; ++i) {
-		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
-		block_info_t *pred_info  = get_block_info(pred_block);
-
-		if(pred_info == NULL)
-			pred_worksets[i] = NULL;
-		else
-			pred_worksets[i] = pred_info->end_workset;
-	}
-
 	for(i = 0; i < ws_count; ++i) {
 		loc_t   *loc     = &ws->vals[i];
 		ir_node *value   = loc->node;
@@ -612,7 +701,7 @@ static void decide_start_workset(const ir_node *block)
 		int      n;
 
 		/* phis from this block aren't spilled */
-		if(get_nodes_block(value) == block) {
+		if (get_nodes_block(value) == block) {
 			assert(is_Phi(value));
 			loc->spilled = false;
 			continue;
@@ -652,6 +741,7 @@ static void decide_start_workset2(const ir_node *block)
 	int         arity;
 	workset_t **pred_worksets;
 	int         p;
+	int         i;
 	int         len;
 
 	/* check if all predecessors are known */
@@ -670,10 +760,13 @@ static void decide_start_workset2(const ir_node *block)
 		pred_worksets[i] = pred_info->end_workset;
 	}
 
+	/* we construct a new workset */
+	workset_clear(ws);
+
 	/* take values live in all pred blocks */
-	len = workset_get_length(pred_workset[0]);
-	for (p = 0; p < p_len; ++p) {
-		const loc_t *l = &pred_workset[0]->vals[p];
+	len = workset_get_length(pred_worksets[0]);
+	for (p = 0; p < len; ++p) {
+		const loc_t *l = &pred_worksets[0]->vals[p];
 		ir_node     *value;
 		bool         spilled = false;
 
@@ -682,11 +775,11 @@ static void decide_start_workset2(const ir_node *block)
 
 		/* value available in all preds? */
 		value = l->node;
-		for (i = 0; i < arity; ++i) {
-			bool      found     = false;
-			workset_t p_workset = &pred_worksets[i];
-			int       p_len     = workset_get_length(p_workset);
-			int       p_i;
+		for (i = 1; i < arity; ++i) {
+			bool       found     = false;
+			workset_t *p_workset = pred_worksets[i];
+			int        p_len     = workset_get_length(p_workset);
+			int        p_i;
 
 			for (p_i = 0; p_i < p_len; ++p_i) {
 				const loc_t *p_l = &p_workset->vals[p_i];
@@ -703,19 +796,16 @@ static void decide_start_workset2(const ir_node *block)
 				break;
 		}
 
-		/* it was available in all preds, TODO: insert spills... */
+		/* it was available in all preds */
 		if (i >= arity) {
 			workset_insert(ws, value, spilled);
 		}
 	}
 
-
 	/* Copy the best ones from starters to start workset */
 	ws_count = MIN(ARR_LEN(starters), n_regs);
-	workset_clear(ws);
 	workset_bulk_fill(ws, ws_count, starters);
 }
-
 #endif
 
 /**
@@ -735,7 +825,7 @@ static void belady(ir_node *block)
 	const ir_edge_t *edge;
 
 	/* no need to process a block twice */
-	if(get_block_info(block) != NULL) {
+	if (get_block_info(block) != NULL) {
 		return;
 	}
 
@@ -746,18 +836,18 @@ static void belady(ir_node *block)
 		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
-		if(pred_info == NULL) {
+		if (pred_info == NULL) {
 			/* process predecessor first (it will be in the queue already) */
-			if(!is_backedge(block, i)) {
+			if (!is_backedge(block, i)) {
 				return;
 			}
 			has_backedges = 1;
 		}
 	}
 	(void) has_backedges;
-	if(arity == 0) {
+	if (arity == 0) {
 		workset_clear(ws);
-	} else if(arity == 1) {
+	} else if (arity == 1) {
 		ir_node      *pred_block = get_Block_cfgpred_block(block, 0);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
@@ -885,7 +975,7 @@ static void fix_block_borders(ir_node *block, void *data)
 			int      iter2;
 			bool     found = false;
 			workset_foreach(start_workset, n2, iter2) {
-				if(n2 == node) {
+				if (n2 == node) {
 					found = true;
 					break;
 				}
@@ -899,7 +989,7 @@ static void fix_block_borders(ir_node *block, void *data)
 				continue;
 
 #ifdef PLACE_SPILLS
-			if(be_is_live_in(lv, block, node)
+			if (be_is_live_in(lv, block, node)
 					&& !pred_end_workset->vals[iter].spilled) {
 				ir_node *insert_point;
 				if (arity > 1) {
@@ -922,12 +1012,12 @@ static void fix_block_borders(ir_node *block, void *data)
 
 			/* if node is a phi of the current block we reload
 			 * the corresponding argument, else node itself */
-			if(is_Phi(node) && get_nodes_block(node) == block) {
+			if (is_Phi(node) && get_nodes_block(node) == block) {
 				node = get_irn_n(node, i);
 				assert(!l->spilled);
 
 				/* we might have unknowns as argument for the phi */
-				if(!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
 					continue;
 			}
 
@@ -962,7 +1052,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	/* construct control flow loop tree */
-	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);
 	}
 
