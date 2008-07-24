@@ -10,8 +10,8 @@ dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
 m4_define([firm_major_version], [1])
-m4_define([firm_minor_version], [12])
-m4_define([firm_micro_version], [2])
+m4_define([firm_minor_version], [13])
+m4_define([firm_micro_version], [0])
 m4_define([firm_version],
           [firm_major_version.firm_minor_version.firm_micro_version])
 AC_INIT([libfirm], [firm_version], [firm@ipd.info.uni-karlsruhe.de])
