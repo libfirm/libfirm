@@ -159,10 +159,6 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback);
  * Based on VanDrunen and Hosking 2004.
  *
  * @param irg  the graph
- *
- * @note
- * Currently completely broken because the used sets do NOT
- * preserve the topological sort of its elements.
  */
 void do_gvn_pre(ir_graph *irg);
 
@@ -512,5 +508,13 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
  *  Invalidates trout information.
  */
 void optimize_class_casts(void);
+
+/**
+ * CLiff Click's combo algorithm from "Combining Analyses, combining Optimizations".
+ *
+ * Does conditional constant propagation, unreachable code elimination and optimistic
+ * global value numbering at once.
+ */
+void combo(ir_graph *irg);
 
 #endif
