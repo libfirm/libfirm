@@ -1568,7 +1568,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 			return snprintf(buf, len, "<TV_BAD>");
 		if (tv == tarval_undefined)
 			return snprintf(buf, len, "<TV_UNDEF>");
-		return snprintf(buf, len, "<TV_???>");
+		return snprintf(buf, len, "<TV_??""?>");
 	}
 
 	return 0;
