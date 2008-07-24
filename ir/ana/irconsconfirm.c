@@ -43,9 +43,9 @@
  * Walker environment.
  */
 typedef struct _env_t {
-  unsigned num_confirms;  /**< number of inserted Confirm nodes */
-  unsigned num_consts;    /**< number of constants placed */
-  unsigned num_eq;        /**< number of equalities placed */
+	unsigned num_confirms;  /**< number of inserted Confirm nodes */
+	unsigned num_consts;    /**< number of constants placed */
+	unsigned num_eq;        /**< number of equalities placed */
 } env_t;
 
 /**
@@ -59,8 +59,9 @@ typedef struct _env_t {
  */
 static ir_node *get_effective_use_block(ir_node *node, int pos) {
 	if (is_Phi(node)) {
-		/* the effective use of a Phi is in its predecessor block */
-		node = get_irn_n(node, pos);
+		/* the effective use of a Phi argument is in its predecessor block */
+		node = get_nodes_block(node);
+		return get_Block_cfgpred_block(node, pos);
 	}
 	return get_nodes_block(node);
 }
@@ -172,7 +173,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				 * block. In that case the other_block is the user_blk itself and pred_block
 				 * is the cond_block ...
 				 *
-				 * Best would be to indroduce a block here, removing this critical edge.
+				 * Best would be to introduce a block here, removing this critical edge.
 				 * For some reasons I cannot repair dominance here, so I have to remove
 				 * ALL critical edges...
 				 * FIXME: This should not be needed if we could repair dominance ...
@@ -380,11 +381,11 @@ static void insert_Confirm(ir_node *block, void *env) {
 		handle_modeb(block, selector, get_Proj_proj(proj), env);
 
 		/* this should be an IF, check this */
-		if (get_irn_op(selector) != op_Proj)
+		if (! is_Proj(selector))
 			return;
 
 		cmp = get_Proj_pred(selector);
-		if (get_irn_op(cmp) != op_Cmp)
+		if (! is_Cmp(cmp))
 			return;
 
 		pnc = get_Proj_proj(selector);
