@@ -44,6 +44,7 @@
 #include "irtools.h"
 #include "irgraph.h"
 #include "tv.h"
+#include "opt_confirms.h"
 
 //#define AVOID_PHIB
 
@@ -197,7 +198,8 @@ static void split_critical_edge(ir_node *block, int pos) {
 
 typedef struct condeval_env_t {
 	ir_node       *true_block;
-	pn_Cmp         pnc;
+	ir_node       *cmp;        /**< The Compare node that might be partial evaluated */
+	pn_Cmp         pnc;        /**< The Compare mode of teh Compare node. */
 	ir_node       *cnst;
 	tarval        *tv;
 	unsigned long  visited_nr;
@@ -346,36 +348,60 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 /**
  * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
+ *
+ * @param pnc       the compare mode of the Compare
+ * @param tv_left   the left tarval
+ * @param tv_right  the right tarval
  */
-static int eval_cmp(pn_Cmp pnc, tarval *tv1, tarval *tv2) {
-	pn_Cmp cmp_result = tarval_cmp(tv1, tv2);
+static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right) {
+	pn_Cmp cmp_result = tarval_cmp(tv_left, tv_right);
 
-	// does the compare evaluate to true?
-	if(cmp_result == pn_Cmp_False)
+	/* does the compare evaluate to true? */
+	if (cmp_result == pn_Cmp_False)
 		return -1;
-	if((cmp_result & pnc) != cmp_result)
+	if ((cmp_result & pnc) != cmp_result)
 		return 0;
 
 	return 1;
 }
 
 /**
- * Check for Const or constlike Confirm.
+ * returns whether the cmp evaluates to true or false, or can't be evaluated!
+ * 1: true, 0: false, -1: can't evaluate
+ *
+ * @param env      the environment
+ * @param cand     the candidate node, either a Const or a Confirm
+ */
+static int eval_cmp(condeval_env_t *env, ir_node *cand) {
+	if (is_Const(cand)) {
+		tarval *tv_cand   = get_Const_tarval(cand);
+		tarval *tv_cmp    = get_Const_tarval(env->cnst);
+
+		return eval_cmp_tv(env->pnc, tv_cand, tv_cmp);
+	} else { /* a Confirm */
+		tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst, env->pnc);
+
+		if (res == tarval_bad)
+			return -1;
+		return res == tarval_b_true;
+	}
+}
+
+/**
+ * Check for Const or Confirm with Const.
  */
 static int is_Const_or_Confirm(const ir_node *node) {
-	if (is_Confirm(node)) {
-		if (get_Confirm_cmp(node) == pn_Cmp_Eq)
-			node = get_Confirm_bound(node);
-	}
+	if (is_Confirm(node))
+		node = get_Confirm_bound(node);
 	return is_Const(node);
 }
 
 /**
- * get the tarval of a COnst or constlike Confirm
+ * get the tarval of a Const or Confirm with
  */
 static tarval *get_Const_or_Confirm_tarval(const ir_node *node) {
 	if (is_Confirm(node)) {
-		if (get_Confirm_cmp(node) == pn_Cmp_Eq)
+		if (get_Confirm_bound(node))
 			node = get_Confirm_bound(node);
 	}
 	return get_Const_tarval(node);
@@ -389,11 +415,8 @@ static ir_node *find_const(condeval_env_t *env, ir_node *jump, ir_node *value)
 		return NULL;
 	mark_irn_visited(value);
 
-	if(is_Const_or_Confirm(value)) {
-		tarval *tv_const = get_Const_tarval(env->cnst);
-		tarval *tv       = get_Const_or_Confirm_tarval(value);
-
-		if(eval_cmp(env->pnc, tv, tv_const) <= 0) {
+	if (is_Const_or_Confirm(value)) {
+		if (eval_cmp(env, value) <= 0) {
 			return NULL;
 		}
 
@@ -458,10 +481,10 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 	}
 	mark_irn_visited(value);
 
-	if(is_Const_or_Confirm(value)) {
+	if (is_Const_or_Confirm(value)) {
 		tarval *tv = get_Const_or_Confirm_tarval(value);
 
-		if(tv != env->tv)
+		if (tv != env->tv)
 			return NULL;
 
 		DB((
@@ -539,11 +562,12 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 		}
 
 		/* negate condition when we're looking for the false block */
-		if(env->tv == get_tarval_b_false()) {
+		if(env->tv == tarval_b_false) {
 			pnc = get_negated_pnc(pnc, get_irn_mode(right));
 		}
 
 		// (recursively) look if a pred of a phi is a constant
+		env->cmp  = cmp;
 		env->pnc  = pnc;
 		env->cnst = right;
 
@@ -608,28 +632,28 @@ static void cond_eval(ir_node* block, void* data)
 				tarval *tv_left  = get_Const_tarval(left);
 				tarval *tv_right = get_Const_tarval(right);
 
-				selector_evaluated = eval_cmp(pnc, tv_left, tv_right);
+				selector_evaluated = eval_cmp_tv(pnc, tv_left, tv_right);
 				if(selector_evaluated < 0)
 					return;
 			}
 		}
-	} else if(is_Const_or_Confirm(selector)) {
+	} else if (is_Const_or_Confirm(selector)) {
 		tarval *tv = get_Const_or_Confirm_tarval(selector);
-		if(tv == get_tarval_b_true()) {
+		if(tv == tarval_b_true) {
 			selector_evaluated = 1;
 		} else {
-			assert(tv == get_tarval_b_false());
+			assert(tv == tarval_b_false);
 			selector_evaluated = 0;
 		}
 	}
 
 	env.cnst_pred = NULL;
 	if (get_Proj_proj(projx) == pn_Cond_false) {
-		env.tv = get_tarval_b_false();
+		env.tv = tarval_b_false;
 		if(selector_evaluated >= 0)
 			selector_evaluated = !selector_evaluated;
 	} else {
-		env.tv = get_tarval_b_true();
+		env.tv = tarval_b_true;
 	}
 
 	if(selector_evaluated == 0) {
