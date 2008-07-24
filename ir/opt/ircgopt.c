@@ -59,6 +59,10 @@ static void collect_call(ir_node *node, void *env) {
 	}
 }
 
+/**
+ * Type walker, set the peculiarity of entities which graphs
+ * gets removed to peculiarity_description.
+ */
 static void make_entity_to_description(type_or_ent *tore, void *env) {
 	if (get_kind(tore) == k_entity) {
 		ir_entity *ent = (ir_entity *)tore;
