@@ -29,6 +29,7 @@
 #define FIRM_TV_TV_T_H
 
 #include "firm_config.h"
+#include "firm_common.h"
 
 #include <assert.h>
 #include "irmode.h"
@@ -113,11 +114,17 @@ _get_tarval_b_true(void) {
   return tarval_b_true;
 }
 
+static INLINE int
+_is_tarval(const void *thing) {
+	return get_kind(thing) == k_tarval;
+}
+
 #define get_tarval_mode(tv)     _get_tarval_mode(tv)
 #define get_tarval_bad()        _get_tarval_bad()
 #define get_tarval_undefined()  _get_tarval_undefined()
 #define get_tarval_b_false()    _get_tarval_b_false()
 #define get_tarval_b_true()     _get_tarval_b_true()
 #define get_tarval_P_void()     _get_tarval_P_void()
+#define is_tarval(thing)        _is_tarval(thing)
 
 #endif /* FIRM_TV_TV_T_H */

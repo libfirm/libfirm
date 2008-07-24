@@ -1836,6 +1836,10 @@ void finish_tarval(void) {
 	del_set(values);  values = NULL;
 }
 
+int (is_tarval)(const void *thing) {
+	return _is_tarval(thing);
+}
+
 /****************************************************************************
  *   end of tv.c
  ****************************************************************************/

@@ -686,4 +686,14 @@ int tarval_is_minus_inf(tarval *tv);
  */
 int tarval_is_finite(tarval *tv);
 
+/**
+ *   Checks whether a pointer points to a tarval.
+ *
+ *   @param thing     an arbitrary pointer
+ *
+ *   @return
+ *       true if the thing is a tarval, else false
+ */
+int is_tarval(const void *thing);
+
 #endif  /* FIRM_TV_TV_H */
