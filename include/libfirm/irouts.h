@@ -41,11 +41,24 @@
 /* returns the number of successors of the node: */
 int      get_irn_n_outs(ir_node *node);
 
-/** Get predecessor n */
-ir_node *get_irn_out(ir_node *node, int pos);
+/** Get the User of a node from the Def-Use edge at position pos. */
+ir_node *get_irn_out(ir_node *def, int pos);
 
-/** Set predecessor n */
-void     set_irn_out(ir_node *node, int pos, ir_node *out);
+/**
+ * Get the User and its input position from the Def-Use edge of def
+ * at position pos.
+ */
+ir_node *get_irn_out_ex(ir_node *def, int pos, int *in_pos);
+
+/**
+ * Set the User at position pos.
+ *
+ * @param def     the Def node
+ * @param pos     the number of the Def-Use edge tat is modified
+ * @param use     the Use node
+ * @param in_pos  the number of the corresponding Use-Def edge in the use node in array
+ */
+void     set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos);
 
 /* Methods to iterate through the control flow graph. Iterate from 0 to
    i < get_Block_cfg_outs(block). No order of successors guaranteed. */

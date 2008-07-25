@@ -311,7 +311,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos) {
 				 * We rely on the fact the only one arg exists, so do
 				 * a cheap CSE in this case.
 				 */
-				set_irn_out(irg_args, i, arg);
+				set_irn_out(irg_args, i, arg, 0);
 				exchange(proj, arg);
 			} else
 				arg = proj;

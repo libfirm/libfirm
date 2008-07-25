@@ -334,6 +334,14 @@ typedef struct _irn_edge_kind_info_t {
 typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
 
 /**
+ * A Def-Use edge.
+ */
+typedef struct _ir_def_use_edge {
+	ir_node *use;            /** The use node of that edge. */
+	int     pos;             /** The position of this edge in use's input array. */
+} ir_def_use_edge;
+
+/**
  * The common structure of an irnode.
  * If the node has some attributes, they are stored in the attr field.
  */
@@ -350,7 +358,7 @@ struct ir_node {
 	                              during optimization to link to nodes that
 	                              shall replace a node. */
 	/* ------- Fields for optimizations / analysis information ------- */
-	struct ir_node **out;    /**< @deprecated array of out edges. */
+	ir_def_use_edge *out;    /**< array of def-use edges. */
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 	/* ------- For debugging ------- */
 #ifdef DEBUG_libfirm
@@ -464,7 +472,7 @@ struct ir_graph {
 	/* -- Fields for optimizations / analysis information -- */
 	pset *value_table;                 /**< Hash table for global value numbering (cse)
 	                                        for optimizing use in iropt.c */
-	ir_node **outs;                    /**< Space for the out arrays. */
+	ir_def_use_edge *outs;             /**< Space for the Def-Use arrays. */
 
 	ir_loop *loop;                     /**< The outermost loop for this graph. */
 	void *link;                        /**< A void* field to link any information to

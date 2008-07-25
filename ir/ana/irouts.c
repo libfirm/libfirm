@@ -70,25 +70,37 @@ int get_irn_n_outs(ir_node *node) {
 #ifdef DEBUG_libfirm
 	/* assert(node->out_valid); */
 #endif /* defined DEBUG_libfirm */
-	return PTR_TO_INT(node->out[0]);
+	/* we misuse the first for the size info of the out array */
+	return node->out[0].pos;
 }
 
 /* Access successor n */
-ir_node *get_irn_out(ir_node *node, int pos) {
-	assert(pos >= 0 && pos < get_irn_n_outs(node));
+ir_node *get_irn_out(ir_node *def, int pos) {
+	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
-	/* assert(node->out_valid); */
+	/* assert(def->out_valid); */
 #endif /* defined DEBUG_libfirm */
-return node->out[pos+1];
+	return def->out[pos+1].use;
 }
 
-void set_irn_out(ir_node *node, int pos, ir_node *out) {
-	assert(node && out);
-	assert(pos >= 0 && pos < get_irn_n_outs(node));
+/* Access successor n */
+ir_node *get_irn_out_ex(ir_node *def, int pos, int *in_pos) {
+	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
-	node->out_valid = 1;          /* assume that this function is used correctly */
+	/* assert(def->out_valid); */
 #endif /* defined DEBUG_libfirm */
-	node->out[pos+1] = out;
+	*in_pos = def->out[pos+1].pos;
+	return def->out[pos+1].use;
+}
+
+void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos) {
+	assert(def && use);
+	assert(pos >= 0 && pos < get_irn_n_outs(def));
+#ifdef DEBUG_libfirm
+	def->out_valid = 1;          /* assume that this function is used correctly */
+#endif /* defined DEBUG_libfirm */
+	def->out[pos+1].use = use;
+	def->out[pos+1].pos = in_pos;
 }
 
 /* Return the number of control flow successors, ignore keep-alives. */
@@ -98,10 +110,10 @@ int get_Block_n_cfg_outs(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-		ir_node *succ = bl->out[i];
-		if (get_irn_mode(succ) == mode_X && get_irn_op(succ) != op_End)
-			n_cfg_outs += PTR_TO_INT(succ->out[0]);
+	for (i = 1; i <= bl->out[0].pos; ++i) {
+		ir_node *succ = bl->out[i].use;
+		if (get_irn_mode(succ) == mode_X && !is_End(succ))
+			n_cfg_outs += succ->out[0].pos;
 	}
 	return n_cfg_outs;
 }
@@ -113,18 +125,18 @@ int get_Block_n_cfg_outs_ka(ir_node *bl) {
 #ifdef DEBUG_libfirm
 	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-		ir_node *succ = bl->out[i];
+	for (i = 1; i <= bl->out[0].pos; ++i) {
+		ir_node *succ = bl->out[i].use;
 		if (get_irn_mode(succ) == mode_X) {
 
-			if (get_irn_op(succ) == op_End) {
+			if (is_End(succ)) {
 				/* ignore End if we are in the Endblock */
-				if (get_irn_n(succ, -1) == bl)
+				if (get_nodes_block(succ) == bl)
 					continue;
 				else /* count Keep-alive as one */
 					n_cfg_outs += 1;
 			} else
-				n_cfg_outs += PTR_TO_INT(succ->out[0]);
+				n_cfg_outs += succ->out[0].pos;
 		}
 	}
 	return n_cfg_outs;
@@ -135,14 +147,14 @@ ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
 	int i;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
-	assert (bl->out_valid);
+	assert(bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-		ir_node *succ = bl->out[i];
-		if (get_irn_mode(succ) == mode_X && get_irn_op(succ) != op_End) {
-			int n_outs = PTR_TO_INT(succ->out[0]);
+	for (i = 1; i <= bl->out[0].pos; ++i) {
+		ir_node *succ = bl->out[i].use;
+		if (get_irn_mode(succ) == mode_X && !is_End(succ)) {
+			int n_outs = succ->out[0].pos;
 			if (pos < n_outs)
-				return succ->out[pos + 1];
+				return succ->out[pos + 1].use;
 			else
 				pos -= n_outs;
 		}
@@ -157,23 +169,24 @@ ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
 #ifdef DEBUG_libfirm
 	assert (bl->out_valid);
 #endif /* defined DEBUG_libfirm */
-	for (i = 1; i <= PTR_TO_INT(bl->out[0]); ++i) {
-		ir_node *succ = bl->out[i];
+	for (i = 1; i <= bl->out[0].pos; ++i) {
+		ir_node *succ = bl->out[i].use;
 		if (get_irn_mode(succ) == mode_X) {
-			if (get_irn_op(succ) == op_End) {
-				if (get_irn_n(succ, -1) == bl) {
+			if (is_End(succ)) {
+				ir_node *end_bl = get_nodes_block(succ);
+				if (end_bl == bl) {
 					/* ignore End if we are in the Endblock */
 					continue;
 				}
 				if (pos == 0) {
 					/* handle keep-alive here: return the Endblock instead of the End node */
-					return get_irn_n(succ, -1);
+					return end_bl;
 				} else
 					--pos;
 			} else {
-				n_outs = PTR_TO_INT(succ->out[0]);
+				n_outs = succ->out[0].pos;
 				if (pos < n_outs)
-					return succ->out[pos + 1];
+					return succ->out[pos + 1].use;
 				else
 					pos -= n_outs;
 			}
@@ -288,7 +301,7 @@ static int _count_outs(ir_node *n) {
 	int start, i, res, irn_arity;
 
 	mark_irn_visited(n);
-	n->out = (ir_node **) 1;     /* Space for array size. */
+	n->out = INT_TO_PTR(1);     /* Space for array size. */
 
 	start = is_Block(n) ? 0 : -1;
 	irn_arity = get_irn_arity(n);
@@ -299,12 +312,12 @@ static int _count_outs(ir_node *n) {
 		ir_node *pred = skip_Tuple(get_irn_n(n, i));
 		set_irn_n(n, i, pred);
 
-		/* count outs for successors */
+		/* count Def-Use edges for predecessors */
 		if (irn_not_visited(pred))
 			res += _count_outs(pred);
 
-		/* Count my outs */
-		pred->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(pred->out) + 1);
+		/*count my Def-Use edges */
+		pred->out = INT_TO_PTR(PTR_TO_INT(pred->out) + 1);
 	}
 	return res;
 }
@@ -315,71 +328,67 @@ static int _count_outs(ir_node *n) {
  */
 static int count_outs(ir_graph *irg) {
 	ir_node *n;
-	int res;
+	int     i, res;
 
 	inc_irg_visited(irg);
 	res = _count_outs(get_irg_end(irg));
 
-	/* Now handle special nodes. We need the out count of those
+	/* Now handle anchored nodes. We need the out count of those
 	   even if they are not visible. */
-	n = get_irg_frame(irg);
-	if (! is_Bad(n) && irn_not_visited(n)) {
-		n->out = (ir_node **)1;
-		++res;
-	}
+	for (i = anchor_last - 1; i >= 0; --i) {
+		n = get_irg_anchor(irg, i);
+		if (irn_not_visited(n)) {
+			mark_irn_visited(n);
 
-	n = get_irg_args(irg);
-	if (! is_Bad(n) && irn_not_visited(n)) {
-		n->out = (ir_node **)1;
-		++res;
+			n->out = INT_TO_PTR(1);
+			++res;
+		}
 	}
-
-	n = get_irg_value_param_base(irg);
-	if (! is_Bad(n) && irn_not_visited(n)) {
-		n->out = (ir_node **)1;
-		++res;
-	}
-
 	return res;
 }
 
 /**
  * Enter memory for the outs to a node.
  *
- * @param n      current node
+ * @param use    current node
  * @param free   current free address in the chunk allocated for the outs
  *
  * @return The next free address
  */
-static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
-	int n_outs, start, i, irn_arity;
-	ir_node *pred;
+static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free) {
+	int     n_outs, start, i, irn_arity, pos;
 
-	set_irn_visited(n, get_irg_visited(current_ir_graph));
+	mark_irn_visited(use);
 
 	/* Allocate my array */
-	n_outs = PTR_TO_INT(n->out);
-	n->out = free;
+	n_outs = PTR_TO_INT(use->out);
+	use->out = free;
 #ifdef DEBUG_libfirm
-	n->out_valid = 1;
+	use->out_valid = 1;
 #endif /* defined DEBUG_libfirm */
 	free += n_outs;
 	/* We count the successors again, the space will be sufficient.
 	   We use this counter to remember the position for the next back
 	   edge. */
-	n->out[0] = (ir_node *)0;
+	use->out[0].pos = 0;
 
-	start = is_Block(n) ? 0 : -1;
-	irn_arity = get_irn_arity(n);
+	start = is_Block(use) ? 0 : -1;
+	irn_arity = get_irn_arity(use);
 
 	for (i = start; i < irn_arity; ++i) {
-		pred = get_irn_n(n, i);
+		ir_node *def = get_irn_n(use, i);
+
 		/* Recursion */
-		if (get_irn_visited(pred) < get_irg_visited(current_ir_graph))
-			free = _set_out_edges(pred, free);
-		/* Remember our back edge */
-		pred->out[get_irn_n_outs(pred)+1] = n;
-		pred->out[0] = INT_TO_PTR(get_irn_n_outs(pred) + 1);
+		if (irn_not_visited(def))
+			free = _set_out_edges(def, free);
+
+		/* Remember this Def-Use edge */
+		pos = def->out[0].pos + 1;
+		def->out[pos].use = use;
+		def->out[pos].pos = i;
+
+		/* increase the number of Def-Use edges so far */
+		def->out[0].pos = pos;
 	}
 	return free;
 }
@@ -392,24 +401,19 @@ static ir_node **_set_out_edges(ir_node *n, ir_node **free) {
  *
  * @return The next free address
  */
-static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
-	ir_node *n, *special[3];
-	int i, n_outs;
+static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
+	ir_node *n;
+	int     i, n_outs;
 
 	inc_irg_visited(irg);
 	free = _set_out_edges(get_irg_end(irg), free);
 
-	/* handle special nodes */
-	special[0] = get_irg_frame(irg);
-	special[1] = get_irg_args(irg);
-	special[2] = get_irg_value_param_base(irg);
+	/* handle anchored nodes */
+	for (i = anchor_last - 1; i >= 0; --i) {
+		n = get_irg_anchor(irg, i);
+		if (irn_not_visited(n)) {
+			mark_irn_visited(n);
 
-	for (i = 2; i >= 0; --i) {
-		n = special[i];
-		if (is_Bad(n))
-			continue;
-
-		if (get_irn_visited(n) < get_irg_visited(current_ir_graph)) {
 			n_outs = PTR_TO_INT(n->out);
 			n->out = free;
 #ifdef DEBUG_libfirm
@@ -430,8 +434,9 @@ static ir_node **set_out_edges(ir_graph *irg, ir_node **free) {
  */
 static INLINE void fix_start_proj(ir_graph *irg) {
 	ir_node *proj    = NULL;
+	ir_node *irn;
 	ir_node *startbl = get_irg_start_block(irg);
-	int i;
+	int     i, block_pos, other_pos;
 
 	if (get_Block_n_cfg_outs(startbl)) {
 		for (i = get_irn_n_outs(startbl) - 1; i >= 0; --i)
@@ -440,19 +445,20 @@ static INLINE void fix_start_proj(ir_graph *irg) {
 				break;
 			}
 
-		if (get_irn_out(proj, 0) == startbl) {
+		if (get_irn_out_ex(proj, 0, &block_pos) == startbl) {
 			assert(get_irn_n_outs(proj) == 2);
-			set_irn_out(proj, 0, get_irn_out(proj, 1));
-			set_irn_out(proj, 1, startbl);
+			irn = get_irn_out_ex(proj, 1, &other_pos);
+			set_irn_out(proj, 0, irn, other_pos);
+			set_irn_out(proj, 1, startbl, block_pos);
 		}
 	}
 }
 
 /* compute the outs for a given graph */
 void compute_irg_outs(ir_graph *irg) {
-	ir_graph *rem = current_ir_graph;
-	int n_out_edges = 0;
-	ir_node **end = NULL;         /* Only for debugging */
+	ir_graph        *rem = current_ir_graph;
+	int             n_out_edges = 0;
+	ir_def_use_edge *end = NULL;         /* Only for debugging */
 
 	current_ir_graph = irg;
 
