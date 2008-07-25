@@ -291,11 +291,12 @@ void ia32_emit_mode_suffix(const ir_node *node)
 
 void ia32_emit_x87_mode_suffix(const ir_node *node)
 {
-	ir_mode *mode = get_ia32_ls_mode(node);
-	assert(mode != NULL);
 	/* we only need to emit the mode on address mode */
-	if(get_ia32_op_type(node) != ia32_Normal)
+	if(get_ia32_op_type(node) != ia32_Normal) {
+		ir_mode *mode = get_ia32_ls_mode(node);
+		assert(mode != NULL);
 		ia32_emit_mode_suffix_mode(mode);
+	}
 }
 
 static char get_xmm_mode_suffix(ir_mode *mode)
