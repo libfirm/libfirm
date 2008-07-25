@@ -138,7 +138,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 /**
  * Return true if a mode can be stored in the GP register set
  */
-static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+INLINE int mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
 	if(get_mode_size_bits(mode) > 32)

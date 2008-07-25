@@ -71,4 +71,9 @@ ir_node *ia32_skip_downconv(ir_node *node);
  */
 ir_type *get_prim_type(pmap *types, ir_mode *mode);
 
+/**
+ * Return true if a mode can be stored in the GP register set
+ */
+INLINE int mode_needs_gp_reg(ir_mode *mode);
+
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */
