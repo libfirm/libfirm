@@ -451,10 +451,10 @@ void rta_init (int do_verbose)
  * Changes the peculiarity of entities that represents
  * dead graphs to peculiarity_description.
  */
-static void make_entity_to_description(type_or_ent *tore, void *env) {
+static void make_entity_to_description(type_or_ent tore, void *env) {
   (void) env;
-  if (get_kind(tore) == k_entity) {
-    ir_entity *ent = (ir_entity *)tore;
+  if (is_entity(tore.ent)) {
+    ir_entity *ent = tore.ent;
 
     if ((is_Method_type(get_entity_type(ent)))                        &&
         (get_entity_peculiarity(ent) != peculiarity_description)      &&

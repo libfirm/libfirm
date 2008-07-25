@@ -808,14 +808,14 @@ static int must_be_lowered(const lower_params_t *lp, ir_type *tp) {
  * type-walker: lower all method types of entities
  * and points-to types.
  */
-static void lower_method_types(type_or_ent *tore, void *env)
+static void lower_method_types(type_or_ent tore, void *env)
 {
 	const lower_params_t *lp = env;
 	ir_type *tp;
 
 	/* fix method entities */
-	if (is_entity(tore)) {
-		ir_entity *ent = (ir_entity *)tore;
+	if (is_entity(tore.ent)) {
+		ir_entity *ent = tore.ent;
 		tp = get_entity_type(ent);
 
 		if (must_be_lowered(lp, tp)) {
@@ -823,7 +823,7 @@ static void lower_method_types(type_or_ent *tore, void *env)
 			set_entity_type(ent, tp);
 		}
 	} else {
-		tp = (ir_type *)tore;
+		tp = tore.typ;
 
 		/* fix pointer to methods */
 		if (is_Pointer_type(tp)) {

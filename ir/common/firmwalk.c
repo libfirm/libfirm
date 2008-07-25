@@ -229,21 +229,21 @@ void *get_firm_walk_link(void *thing)
  *  @param env Environment pointer (currently unused)
  */
 static
-void fw_collect_tore(type_or_ent *tore, void *env)
+void fw_collect_tore(type_or_ent tore, void *env)
 {
   ir_type *tp;
   ir_entity *ent;
 
-  switch (get_kind(tore)) {
+  switch (get_kind(tore.ent)) {
   case k_entity:
-    ent = (ir_entity *)tore;
+    ent = tore.ent;
     /*  append entity to list */
     set_entity_link(ent, NULL);
     if (!pmap_contains(entity_map, ent))
       pmap_insert(entity_map, ent, env);
     break;
   case k_type:
-    tp = (ir_type *)tore;
+    tp = tore.typ;
 
     /*  append type to list */
     set_type_link(tp, NULL);

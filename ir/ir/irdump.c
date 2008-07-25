@@ -2042,15 +2042,15 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 
 /* dumps a type or entity and it's edges. */
 static void
-dump_type_info(type_or_ent *tore, void *env) {
+dump_type_info(type_or_ent tore, void *env) {
 	FILE *F = env;
 	int i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
 
-	switch (get_kind(tore)) {
+	switch (get_kind(tore.ent)) {
 	case k_entity: {
-		ir_entity *ent = (ir_entity *)tore;
+		ir_entity *ent = tore.ent;
 		ir_node *value;
 		/* The node */
 		dump_entity_node(F, ent, 0);
@@ -2092,7 +2092,7 @@ dump_type_info(type_or_ent *tore, void *env) {
 		break;
 	}
 	case k_type: {
-		ir_type *tp = (ir_type *)tore;
+		ir_type *tp = tore.typ;
 		dump_type_node(F, tp);
 		/* and now the edges */
 		switch (get_type_tpop_code(tp)) {
@@ -2159,17 +2159,18 @@ typedef struct _h_env {
  * If env->dump_ent dumps entities of classes and overwrites edges.
  */
 static void
-dump_class_hierarchy_node(type_or_ent *tore, void *ctx) {
+dump_class_hierarchy_node(type_or_ent tore, void *ctx) {
 	h_env_t *env = ctx;
 	FILE *F = env->f;
 	int i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
-	switch (get_kind(tore)) {
+	switch (get_kind(tore.ent)) {
 	case k_entity: {
-		ir_entity *ent = (ir_entity *)tore;
+		ir_entity *ent = tore.ent;
 		if (get_entity_owner(ent) == get_glob_type()) break;
-		if (!is_Method_type(get_entity_type(ent))) break;  /* GL */
+		if (!is_Method_type(get_entity_type(ent)))
+			break;  /* GL */
 		if (env->dump_ent && is_Class_type(get_entity_owner(ent))) {
 			/* The node */
 			dump_entity_node(F, ent, 0);
@@ -2181,8 +2182,9 @@ dump_class_hierarchy_node(type_or_ent *tore, void *ctx) {
 		break;
 	}
 	case k_type: {
-		ir_type *tp = (ir_type *)tore;
-		if (tp == get_glob_type()) break;
+		ir_type *tp = tore.typ;
+		if (tp == get_glob_type())
+			break;
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
 			dump_type_node(F, tp);

@@ -417,14 +417,14 @@ int check_entity(ir_entity *ent) {
 /*
  * check types and entities
  */
-static void check_tore(type_or_ent *tore, void *env) {
+static void check_tore(type_or_ent tore, void *env) {
 	int *res = env;
-	assert(tore);
-	if (is_type(tore)) {
-		*res = check_type((ir_type *)tore);
+	assert(tore.ent);
+	if (is_type(tore.typ)) {
+		*res = check_type(tore.typ);
 	} else {
-		assert(is_entity(tore));
-		*res = check_entity((ir_entity *)tore);
+		assert(is_entity(tore.ent));
+		*res = check_entity(tore.ent);
 	}
 }
 

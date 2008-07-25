@@ -36,11 +36,11 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static void do_finalization(type_or_ent *tore, void *env) {
+static void do_finalization(type_or_ent tore, void *env) {
 	ir_type *glob_tp = env;
 
-	if (is_type(tore)) {
-		ir_type *cls = (ir_type *)tore;
+	if (is_type(tore.typ)) {
+		ir_type *cls = tore.typ;
 
 		if (! is_Class_type(cls) || cls == glob_tp)
 			return;
@@ -55,7 +55,7 @@ static void do_finalization(type_or_ent *tore, void *env) {
 				get_type_name(cls)));
 		}
 	} else {
-		ir_entity *ent = (ir_entity *)tore;
+		ir_entity *ent = tore.ent;
 		ir_type *owner;
 
 		if (is_entity_final(ent))

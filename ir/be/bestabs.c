@@ -469,13 +469,13 @@ static void gen_method_type(wenv_t *env, ir_type *tp) {
  * type-walker: generate declaration for simple types,
  * put all other types on a wait queue
  */
-static void walk_type(type_or_ent *tore, void *ctx)
+static void walk_type(type_or_ent tore, void *ctx)
 {
 	wenv_t *env = ctx;
 	ir_type  *tp;
 
-	if (get_kind(tore) == k_type) {
-		tp = (ir_type *)tore;
+	if (is_type(tore.typ)) {
+		tp = tore.typ;
 
 		/* ignore the unknown type */
 		if (tp == firm_unknown_type)

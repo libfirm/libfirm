@@ -2565,7 +2565,7 @@ typedef union {
  * @param tore    points to the visited type or entity
  * @param env     free environment pointer
  */
-typedef void type_walk_func(type_or_ent *tore, void *env);
+typedef void type_walk_func(type_or_ent tore, void *env);
 
 /**  The class walk function
  *
