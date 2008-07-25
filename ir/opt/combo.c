@@ -51,6 +51,9 @@
 
 #include "tv_t.h"
 
+#include "irprintf.h"
+#include "irdump.h"
+
 /* we need the tarval_R and tarval_U */
 #define tarval_R  tarval_top
 #define tarval_U  tarval_bottom
@@ -108,14 +111,16 @@ typedef union {
  * A node.
  */
 struct node_t {
-	ir_node        *node;         /**< The IR-node itself. */
-	list_head      node_list;     /**< Double-linked list of entries. */
-	partition_t    *part;         /**< points to the partition this node belongs to */
-	node_t         *cprop_next;   /**< Next node on partition.cprop list. */
-	node_t         *next;         /**< Next node on local list (partition.touched, fallen). */
-	lattice_elem_t type;         /**< The associated lattice element "type". */
-	unsigned       on_touched:1;  /**< Set, if this node is on the partition.touched set. */
-	unsigned       on_cprop:1;    /**< Set, if this node is on the partition.cprop list. */
+	ir_node         *node;         /**< The IR-node itself. */
+	list_head       node_list;     /**< Double-linked list of entries. */
+	partition_t     *part;         /**< points to the partition this node belongs to */
+	node_t          *cprop_next;   /**< Next node on partition.cprop list. */
+	node_t          *next;         /**< Next node on local list (partition.touched, fallen). */
+	ir_def_use_edge *next_edge;    /**< Points to the next Def-Use edge to use. */
+	lattice_elem_t  type;          /**< The associated lattice element "type". */
+	int             n_inputs;      /**< Maximum input number of Def-Use edges. */
+	unsigned        on_touched:1;  /**< Set, if this node is on the partition.touched set. */
+	unsigned        on_cprop:1;    /**< Set, if this node is on the partition.cprop list. */
 };
 
 /**
@@ -275,6 +280,30 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 }  /* cmp_opcode */
 
 /**
+ * Compare two Def-Use edges for input position.
+ */
+static int cmp_def_use_edge(const void *a, const void *b) {
+	const ir_def_use_edge *ea = a;
+	const ir_def_use_edge *eb = b;
+
+	/* no overrun, because range is [-1, MAXINT] */
+	return ea->pos - eb->pos;
+}  /* cmp_def_use_edge */
+
+/**
+ * We need the Def-Use edges sorted.
+ */
+static void sort_irn_outs(node_t *node) {
+	ir_node *irn = node->node;
+	int n_outs = get_irn_n_outs(irn);
+
+	if (n_outs > 1) {
+		qsort(&irn->out[1], n_outs, sizeof(irn->out[0]), cmp_def_use_edge);
+	}
+	node->n_inputs = irn->out[n_outs + 1].pos;
+}  /* sort_irn_outs */
+
+/**
  * Return the type of a node.
  *
  * @param irn  an IR-node
@@ -383,8 +412,10 @@ static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
  * @param irn   an IR-node
  * @param part  a partition to place the node in
  * @param env   the environment
+ *
+ * @return the created node
  */
-static void create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
+static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
 
@@ -393,7 +424,9 @@ static void create_partition_node(ir_node *irn, partition_t *part, environment_t
 	node->part         = part;
 	node->cprop_next   = NULL;
 	node->next         = NULL;
+	node->next_edge    = NULL;
 	node->type.tv      = tarval_bottom; /* == tarval_U */
+	node->n_inputs     = 0;
 	node->on_touched   = 0;
 	node->on_cprop     = 0;
 	set_irn_node(irn, node);
@@ -401,7 +434,9 @@ static void create_partition_node(ir_node *irn, partition_t *part, environment_t
 	list_add_tail(&node->node_list, &part->entries);
 	++part->n_nodes;
 
-	DB((dbg, LEVEL_2, "Placing %+F in partition %u\n", irn, part->nr));
+	DB((dbg, LEVEL_3, "Placing %+F in partition %u\n", irn, part->nr));
+
+	return node;
 }  /* create_partition_node */
 
 /**
@@ -411,12 +446,12 @@ static void create_partition_node(ir_node *irn, partition_t *part, environment_t
 static void create_initial_partitions(ir_node *irn, void *ctx) {
 	environment_t *env  = ctx;
 	partition_t   *part = env->TOP;
-	int           arity;
+	node_t        *node;
 
-	create_partition_node(irn, part, env);
-	arity = get_irn_arity(irn);
-	if (arity > part->n_inputs)
-		part->n_inputs = arity;
+	node = create_partition_node(irn, part, env);
+	sort_irn_outs(node);
+	if (node->n_inputs > part->n_inputs)
+		part->n_inputs = node->n_inputs;
 }  /* create_initial_partitions */
 
 /**
@@ -500,11 +535,10 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 	Z_prime = new_partition(env);
 	n_inputs = 0;
 	for (node = g; node != NULL; node = node->next) {
-		int arity = get_irn_arity(node->node);
 		list_add(&node->node_list, &Z_prime->entries);
 		node->part = Z_prime;
-		if (arity > n_inputs)
-			n_inputs = arity;
+		if (node->n_inputs > n_inputs)
+			n_inputs = node->n_inputs;
 	}
 	Z_prime->n_inputs = n_inputs;
 	Z_prime->n_nodes  = n;
@@ -537,6 +571,41 @@ static int is_live_input(ir_node *phi, int i) {
 }  /* is_live_input */
 
 /**
+ * Return non-zero if a type is a constant.
+ */
+static int is_constant_type(lattice_elem_t type) {
+	if (type.tv != tarval_bottom && type.tv != tarval_top)
+		return 1;
+	return 0;
+}  /* is_constant_type */
+
+/**
+ * Place a node on the cprop list.
+ *
+ * @param y    the node
+ * @param env  the environment
+ */
+static void add_node_to_cprop(node_t *y, environment_t *env) {
+	/* Add y to y.partition.cprop. */
+	if (y->on_cprop == 0) {
+		partition_t *Y = y->part;
+
+		y->cprop_next  = Y->cprop;
+		Y->cprop = y;
+		y->on_cprop    = 1;
+
+		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
+
+		/* place its partition on the cprop list */
+		if (Y->on_cprop == 0) {
+			Y->cprop_next = env->cprop;
+			env->cprop    = Y;
+			Y->on_cprop   = 1;
+		}
+	}
+}  /* add_node_to_cprop */
+
+/**
  * Split the partitions if caused by the first entry on the worklist.
  *
  * @param env  the environment
@@ -545,6 +614,8 @@ static void cause_splits(environment_t *env) {
 	partition_t *X, *Y, *Z;
 	node_t      *x, *y, *e;
 	int         i, end_idx;
+	ir_opcode   code;
+	ir_node     *pred;
 
 	/* remove the first partition from the worklist */
 	X = env->worklist;
@@ -553,27 +624,34 @@ static void cause_splits(environment_t *env) {
 
 	dump_partition("Cause_split: ", X);
 	end_idx = env->end_idx;
-	for (i = X->n_inputs - 1; i >= -1; --i) {
+	for (i = -1; i <= X->n_inputs; ++i) {
 		/* empty the touched set: already done, just clear the list */
 		env->touched = NULL;
 
 		list_for_each_entry(node_t, x, &X->entries, node_list) {
+			if (i == -1) {
+				x->next_edge = &x->node->out[1];
+			}
+
 			/* ignore the "control input" for non-pinned nodes
 			   if we are running in GCSE mode */
 			if (i < end_idx && get_irn_pinned(x->node) != op_pin_state_pinned)
 				continue;
 
-			/* non-existing input */
-			if (i >= get_irn_arity(x->node))
-				continue;
+			pred = get_irn_n(x->node, i);
+			y = get_irn_node(pred);
 
-			y = get_irn_node(get_irn_n(x->node, i));
-			Y = y->part;
+			if (is_constant_type(y->type)) {
+				code = get_irn_opcode(pred);
+				if (code == iro_Sub || (code == iro_Proj && is_Cmp(get_Proj_pred(pred))))
+					add_node_to_cprop(y, env);
+			}
 
 			/* Partitions of constants should not be split simply because their Nodes have unequal
 			   functions or incongruent inputs. */
-			if (get_partition_type(Y).tv != tarval_bottom &&
+			if (y->type.tv == tarval_bottom &&
 				(! is_Phi(x->node) || is_live_input(x->node, i))) {
+				Y = y->part;
 				add_to_touched(Y, env);
 				add_to_partition_touched(y);
 			}
@@ -841,7 +919,7 @@ static void compute_Phi(node_t *node) {
 		return;
 	}
 
-	/* if any of the data inputs have type top, the result is type top */
+	/* Phi implements the Meet operation */
 	type.tv = tarval_top;
 	for (i = get_Phi_n_preds(phi) - 1; i >= 0; --i) {
 		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
@@ -856,20 +934,18 @@ static void compute_Phi(node_t *node) {
 		} else if (type.tv == tarval_top) {
 			/* first constant found */
 			type = pred->type;
-		} else if (type.tv == pred->type.tv) {
-			/* same constant, continue */
-			continue;
-		} else {
+		} else if (type.tv != pred->type.tv) {
 			/* different constants or tarval_bottom */
 			node->type.tv = tarval_bottom;
 			return;
 		}
+		/* else nothing, constants are the same */
 	}
 	node->type = type;
 }  /* compute_Phi */
 
 /**
- * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
+ * (Re-)compute the type for an Add. Special case: one nodes is a Zero Const.
  *
  * @param node  the node
  */
@@ -1105,32 +1181,6 @@ static void compute(node_t *node) {
 }  /* compute */
 
 /**
- * Place a node on the cprop list.
- *
- * @param y    the node
- * @param env  the environment
- */
-static void add_node_to_cprop(node_t *y, environment_t *env) {
-	/* Add y to y.partition.cprop. */
-	if (y->on_cprop == 0) {
-		partition_t *Y = y->part;
-
-		y->cprop_next  = Y->cprop;
-		Y->cprop = y;
-		y->on_cprop    = 1;
-
-		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
-
-		/* place its partition on the cprop list */
-		if (Y->on_cprop == 0) {
-			Y->cprop_next = env->cprop;
-			env->cprop    = Y;
-			Y->on_cprop   = 1;
-		}
-	}
-}
-
-/**
  * Propagate constant evaluation.
  *
  * @param env  the environment
@@ -1304,6 +1354,7 @@ void combo(ir_graph *irg) {
 
 	do {
 		propagate(&env);
+		dump_all_partitions(&env);
 		if (env.worklist != NULL)
 			cause_splits(&env);
 	} while (env.cprop != NULL || env.worklist != NULL);
