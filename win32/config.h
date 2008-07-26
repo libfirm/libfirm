@@ -11,6 +11,8 @@
  * Copyright:   (c) 2002-2003 Universität Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+/* always debug heap support */
+#include "crtdbg.h"
 
 /* Define to 1 if you have the <alloca.h> header file. */
 /* #undef HAVE_ALLOCA_H */
