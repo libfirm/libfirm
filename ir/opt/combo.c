@@ -58,7 +58,6 @@
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
 typedef struct opcode_key_t      opcode_key_t;
-typedef struct opcode_entry_t    opcode_entry_t;
 typedef struct listmap_entry_t   listmap_entry_t;
 
 /** The type of the compute function. */
@@ -70,14 +69,7 @@ typedef void (*compute_func)(node_t *node);
 struct opcode_key_t {
 	ir_opcode   code;   /**< The Firm opcode. */
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
-};
-
-/**
- * An entry in the opcode map.
- */
-struct opcode_entry_t {
-	opcode_key_t key;    /**< The key. */
-	partition_t  *part;  /**< The associated partition. */
+	long        proj;   /**< For Proj nodes, its proj number */
 };
 
 /**
@@ -118,6 +110,7 @@ struct node_t {
 	int             next_edge;      /**< Index of the next Def-Use edge to use. */
 	unsigned        on_touched:1;   /**< Set, if this node is on the partition.touched set. */
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
+	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
 };
 
 /**
@@ -266,7 +259,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
  * @return a hash value for the given opcode map entry
  */
 static unsigned opcode_hash(const opcode_key_t *entry) {
-	return (entry->mode - (ir_mode *)0) * 9 + entry->code;
+	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->proj * 3;
 }  /* opcode_hash */
 
 /**
@@ -276,7 +269,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 	const opcode_key_t *o1 = elt;
 	const opcode_key_t *o2 = key;
 
-	return o1->code != o2->code || o1->mode != o2->mode;
+	return o1->code != o2->code || o1->mode != o2->mode || o1->proj != o2->proj;
 }  /* cmp_opcode */
 
 /**
@@ -416,6 +409,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->next_edge      = 0;
 	node->on_touched     = 0;
 	node->on_cprop       = 0;
+	node->on_fallen      = 0;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->entries);
@@ -754,9 +748,11 @@ static void *lambda_type(const node_t *node, environment_t *env) {
 /** lambda n.(n.opcode) */
 static void *lambda_opcode(const node_t *node, environment_t *env) {
 	opcode_key_t key, *entry;
+	ir_node      *irn = node->node;
 
-	key.code = get_irn_opcode(node->node);
-	key.mode = get_irn_mode(node->node);
+	key.code = get_irn_opcode(irn);
+	key.mode = get_irn_mode(irn);
+	key.proj = is_Proj(irn) ? get_Proj_proj(irn) : 0;
 	entry = set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
@@ -1254,11 +1250,14 @@ static void propagate(environment_t *env) {
 			if (x->type.tv != old_type.tv) {
 				DB((dbg, LEVEL_2, "node %+F has changed type from %+F to %+F\n", x->node, old_type, x->type));
 
-				/* Add x to fallen. */
-				x->next      = fallen;
-				fallen       = x;
-				++n_fallen;
-
+				if (x->on_fallen == 0) {
+					/* Add x to fallen. Nodes might fall from T -> const -> _|_, so check that they are
+					   not already on the list. */
+					x->next      = fallen;
+					x->on_fallen = 1;
+					fallen       = x;
+					++n_fallen;
+				}
 				for (i = get_irn_n_outs(x->node) - 1; i >= 0; --i) {
 					ir_node *succ = get_irn_out(x->node, i);
 					node_t  *y    = get_irn_node(succ);
@@ -1274,6 +1273,10 @@ static void propagate(environment_t *env) {
 		} else {
 			Y = X;
 		}
+		/* remove the nodes from the fallen list */
+		for (x = fallen; x != NULL; x = x->next)
+			x->on_fallen = 0;
+
 		if (Y->n_nodes > 1)
 			split_by(Y, env);
 	}
