@@ -485,9 +485,6 @@ static void build_edges_walker(ir_node *irn, void *data) {
 	ir_graph              *irg = w->irg;
 	get_edge_src_n_func_t *get_n;
 
-	if (! edges_activated_kind(irg, kind))
-		return;
-
 	get_n = edge_kind_info[kind].get_n;
 	foreach_tgt(irn, i, n, kind) {
 		ir_node *pred = get_n(irn, i, kind);
@@ -502,18 +499,56 @@ static void build_edges_walker(ir_node *irn, void *data) {
 static void init_lh_walker(ir_node *irn, void *data) {
 	struct build_walker *w   = data;
 	ir_edge_kind_t      kind = w->kind;
-	INIT_LIST_HEAD(_get_irn_outs_head(irn, kind));
+	list_head           *head = _get_irn_outs_head(irn, kind);
+	INIT_LIST_HEAD(head);
 	_get_irn_edge_info(irn, kind)->out_count = 0;
 }
+
+/**
+ * Pre-Walker: initializes the list-heads and set the out-count
+ * of all nodes to 0.
+ *
+ * Additionally touches DEP nodes, as they might be DEAD.
+ * THIS IS UGLY, but I don't find a better way until we
+ *
+ * a) ensure that dead nodes are not used as input
+ * b) it might be sufficient to add those stupid NO_REG nodes
+ * to the anchor
+ */
+static void init_lh_walker_dep(ir_node *irn, void *data) {
+	struct build_walker *w   = data;
+	ir_edge_kind_t      kind = w->kind;
+	list_head           *head = _get_irn_outs_head(irn, kind);
+	int                 i;
+
+	INIT_LIST_HEAD(head);
+	_get_irn_edge_info(irn, kind)->out_count = 0;
+
+	for (i = get_irn_deps(irn) - 1; i >= 0; --i) {
+		ir_node *dep = get_irn_dep(irn, i);
+
+		head = _get_irn_outs_head(dep, kind);
+
+		INIT_LIST_HEAD(head);
+		_get_irn_edge_info(dep, kind)->out_count = 0;
+	}
+}
+
+typedef struct visitor_info_t {
+	irg_walk_func *visit;
+	void *data;
+} visitor_info_t;
 
 /**
  * Visitor: initializes the list-heads and set the out-count
  * of all nodes to 0 of nodes that are not seen so far.
  */
 static void visitor(ir_node *irn, void *data) {
+	visitor_info_t *info = data;
+
 	if (irn_not_visited(irn)) {
 		mark_irn_visited(irn);
-		init_lh_walker(irn, data);
+		info->visit(irn, info->data);
 	}
 }
 
@@ -542,20 +577,27 @@ static void visitor(ir_node *irn, void *data) {
 void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	struct build_walker w;
-	irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
+	irg_edge_info_t     *info = _get_irg_edge_info(irg, kind);
+	visitor_info_t      visit;
 
 	w.irg  = irg;
 	w.kind = kind;
 
+	visit.data = &w;
+
 	info->activated = 1;
 	edges_init_graph_kind(irg, kind);
 	if (kind == EDGE_KIND_DEP) {
-		irg_walk_anchors(irg, init_lh_walker, NULL, &w);
+		irg_walk_anchors(irg, init_lh_walker_dep, NULL, &w);
+		/* Argh: Dep nodes might be dead, so we MUST visit identities first */
+		visit.visit = init_lh_walker_dep;
+		visit_all_identities(irg, visitor, &visit);
 		irg_walk_anchors(irg, NULL, build_edges_walker, &w);
 	} else {
 		irg_walk_anchors(irg, init_lh_walker, build_edges_walker, &w);
+		visit.visit = init_lh_walker;
+		visit_all_identities(irg, visitor, &visit);
 	}
-	visit_all_identities(irg, visitor, &w);
 }
 
 void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind)
