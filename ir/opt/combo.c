@@ -69,7 +69,10 @@ typedef void (*compute_func)(node_t *node);
 struct opcode_key_t {
 	ir_opcode   code;   /**< The Firm opcode. */
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
-	long        proj;   /**< For Proj nodes, its proj number */
+	union {
+		long      proj;   /**< For Proj nodes, its proj number */
+		ir_entity *ent;   /**< For Sel Nodes, its entity */
+	} u;
 };
 
 /**
@@ -260,7 +263,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
  * @return a hash value for the given opcode map entry
  */
 static unsigned opcode_hash(const opcode_key_t *entry) {
-	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->proj * 3;
+	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ent);
 }  /* opcode_hash */
 
 /**
@@ -271,7 +274,8 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 	const opcode_key_t *o2 = key;
 
 	(void) size;
-	return o1->code != o2->code || o1->mode != o2->mode || o1->proj != o2->proj;
+	return o1->code != o2->code || o1->mode != o2->mode ||
+	       o1->u.proj != o2->u.proj || o1->u.ent != o2->u.ent;
 }  /* cmp_opcode */
 
 /**
@@ -658,7 +662,7 @@ static void cause_splits(environment_t *env) {
 				/* Partitions of constants should not be split simply because their Nodes have unequal
 				   functions or incongruent inputs. */
 				if (y->type.tv == tarval_bottom &&
-					(! is_Phi(x->node) || is_live_input(x->node, i))) {
+					(! is_Phi(y->node) || is_live_input(y->node, i))) {
 					Y = y->part;
 					add_to_touched(Y, env);
 					add_to_partition_touched(y);
@@ -752,9 +756,22 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 	opcode_key_t key, *entry;
 	ir_node      *irn = node->node;
 
-	key.code = get_irn_opcode(irn);
-	key.mode = get_irn_mode(irn);
-	key.proj = is_Proj(irn) ? get_Proj_proj(irn) : 0;
+	key.code   = get_irn_opcode(irn);
+	key.mode   = get_irn_mode(irn);
+	key.u.proj = 0;
+	key.u.ent  = NULL;
+
+	switch (get_irn_opcode(irn)) {
+	case iro_Proj:
+		key.u.proj = get_Proj_proj(irn);
+		break;
+	case iro_Sel:
+		key.u.ent = get_Sel_entity(irn);
+		break;
+	default:
+		break;
+	}
+
 	entry = set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
@@ -1324,14 +1341,16 @@ static void apply_result(ir_node *irn, void *ctx) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
-			ir_node *bad = get_irg_bad(current_ir_graph);
+			if (! is_Bad(irn)) {
+				ir_node *bad = get_irg_bad(current_ir_graph);
 
-			/* here, bad might already have a node, but this can be safely ignored
-			   as long as bad has at least ONE valid node */
-			set_irn_node(bad, node);
-			node->node = bad;
-			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-			exchange(irn, bad);
+				/* here, bad might already have a node, but this can be safely ignored
+				   as long as bad has at least ONE valid node */
+				set_irn_node(bad, node);
+				node->node = bad;
+				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+				exchange(irn, bad);
+			}
 		}
 		else if (get_irn_mode(irn) == mode_X) {
 			if (node->type.tv == tarval_unreachable) {
@@ -1341,7 +1360,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 				set_irn_node(bad, node);
 				node->node = bad;
 				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-				exchange(irn, get_irg_bad(current_ir_graph));
+				exchange(irn, bad);
 			}
 			else if (is_Proj(irn)) {
 				/* leave or Jmp */
@@ -1387,7 +1406,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 				ir_node *leader = get_leader(node);
 
 				if (leader != irn) {
-					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, leader));
+					DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
 					exchange(irn, leader);
 				}
 			}
@@ -1461,6 +1480,7 @@ void combo(ir_graph *irg) {
 	set_value_of_func(get_node_tarval);
 
 	set_compute_functions();
+	DEBUG_ONLY(part_nr = 0);
 
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);
