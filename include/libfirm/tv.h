@@ -267,10 +267,16 @@ int tarval_is_one(tarval *tv);
  */
 int tarval_is_minus_one(tarval *tv);
 
-/*
+/**
  * returns non-zero if all bits in the tarval are set
  */
 int tarval_is_all_one(tarval *tv);
+
+/**
+ * Return non-zero if the tarval is a constant (ie. NOT
+ * a reserved tarval like bad, undef, reachable etc.)
+ */
+int tarval_is_constant(tarval *tv);
 
 /** The 'bad' tarval. */
 extern tarval *tarval_bad;
@@ -284,7 +290,6 @@ tarval *get_tarval_undefined(void);
 
 /** The mode_b tarval 'false'. */
 extern tarval *tarval_b_false;
-
 /** Returns the mode_b tarval 'false'. */
 tarval *get_tarval_b_false(void);
 
@@ -292,6 +297,16 @@ tarval *get_tarval_b_false(void);
 extern tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
 tarval *get_tarval_b_true(void);
+
+/** The mode_X tarval 'unreachable'. */
+extern tarval *tarval_unreachable;
+/** Returns the mode_X tarval 'unreachable'. */
+tarval *get_tarval_unreachable(void);
+
+/** The mode_X tarval 'reachable'. */
+extern tarval *tarval_reachable;
+/** Returns the mode_X tarval 'reachable'. */
+tarval *get_tarval_reachable(void);
 
 /** The 'top' tarval. This is just another name for the 'undefined' tarval. */
 #define tarval_top          tarval_undefined

@@ -279,12 +279,14 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 /*
  *   public variables declared in tv.h
  */
-static tarval reserved_tv[4];
+static tarval reserved_tv[6];
 
-tarval *tarval_bad       = &reserved_tv[0];
-tarval *tarval_undefined = &reserved_tv[1];
-tarval *tarval_b_false   = &reserved_tv[2];
-tarval *tarval_b_true    = &reserved_tv[3];
+tarval *tarval_bad         = &reserved_tv[0];
+tarval *tarval_undefined   = &reserved_tv[1];
+tarval *tarval_b_false     = &reserved_tv[2];
+tarval *tarval_b_true      = &reserved_tv[3];
+tarval *tarval_reachable   = &reserved_tv[4];
+tarval *tarval_unreachable = &reserved_tv[5];
 
 /*
  *   public functions declared in tv.h
@@ -308,8 +310,10 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
 	case irms_internal_boolean:
 		/* match [tT][rR][uU][eE]|[fF][aA][lL][sS][eE] */
-		if (strcasecmp(str, "true")) return tarval_b_true;
-		else if (strcasecmp(str, "false")) return tarval_b_true;
+		if (strcasecmp(str, "true"))
+			return tarval_b_true;
+		else if (strcasecmp(str, "false"))
+			return tarval_b_true;
 		else
 			/* XXX This is C semantics */
 			return atoi(str) ? tarval_b_true : tarval_b_false;
@@ -458,6 +462,14 @@ tarval *(get_tarval_b_false)(void) {
 
 tarval *(get_tarval_b_true)(void) {
 	return _get_tarval_b_true();
+}
+
+tarval *(get_tarval_reachable)(void) {
+	return _get_tarval_reachable();
+}
+
+tarval *(get_tarval_unreachable)(void) {
+	return _get_tarval_unreachable();
 }
 
 tarval *get_tarval_max(ir_mode *mode) {
@@ -632,6 +644,13 @@ tarval *get_tarval_all_one(ir_mode *mode) {
 		return new_tarval_from_double(1.0, mode);
 	}
 	return tarval_bad;
+}
+
+int tarval_is_constant(tarval *tv) {
+	int num_res = sizeof(reserved_tv) / sizeof(reserved_tv[0]);
+
+	/* reserved tarvals are NOT constants */
+	return (tv < &reserved_tv[0] || tv > &reserved_tv[num_res - 1]);
 }
 
 tarval *get_tarval_minus_one(ir_mode *mode) {
@@ -1331,7 +1350,7 @@ tarval *tarval_and(tarval *a, tarval *b) {
 /*
  * bitwise or
  */
-tarval *tarval_or (tarval *a, tarval *b) {
+tarval *tarval_or(tarval *a, tarval *b) {
 	assert(a);
 	assert(b);
 	assert(a->mode == b->mode);
@@ -1568,6 +1587,10 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 			return snprintf(buf, len, "<TV_BAD>");
 		if (tv == tarval_undefined)
 			return snprintf(buf, len, "<TV_UNDEF>");
+		if (tv == tarval_unreachable)
+			return snprintf(buf, len, "<TV_UNREACHABLE>");
+		if (tv == tarval_reachable)
+			return snprintf(buf, len, "<TV_REACHABLE>");
 		return snprintf(buf, len, "<TV_??""?>");
 	}
 
@@ -1797,21 +1820,29 @@ void init_tarval_1(long null_value) {
  * Initialization of the tarval module: called after init_mode()
  */
 void init_tarval_2(void) {
-	tarval_bad->kind        = k_tarval;
-	tarval_bad->mode        = mode_BAD;
-	tarval_bad->value       = INT_TO_PTR(resid_tarval_bad);
+	tarval_bad->kind          = k_tarval;
+	tarval_bad->mode          = mode_BAD;
+	tarval_bad->value         = INT_TO_PTR(resid_tarval_bad);
 
-	tarval_undefined->kind  = k_tarval;
-	tarval_undefined->mode  = mode_ANY;
-	tarval_undefined->value = INT_TO_PTR(resid_tarval_undefined);
+	tarval_undefined->kind    = k_tarval;
+	tarval_undefined->mode    = mode_ANY;
+	tarval_undefined->value   = INT_TO_PTR(resid_tarval_undefined);
 
-	tarval_b_true->kind     = k_tarval;
-	tarval_b_true->mode     = mode_b;
-	tarval_b_true->value    = INT_TO_PTR(resid_tarval_b_true);
+	tarval_b_true->kind       = k_tarval;
+	tarval_b_true->mode       = mode_b;
+	tarval_b_true->value      = INT_TO_PTR(resid_tarval_b_true);
 
-	tarval_b_false->kind    = k_tarval;
-	tarval_b_false->mode    = mode_b;
-	tarval_b_false->value   = INT_TO_PTR(resid_tarval_b_false);
+	tarval_b_false->kind      = k_tarval;
+	tarval_b_false->mode      = mode_b;
+	tarval_b_false->value     = INT_TO_PTR(resid_tarval_b_false);
+
+	tarval_unreachable->kind  = k_tarval;
+	tarval_unreachable->mode  = mode_X;
+	tarval_unreachable->value = INT_TO_PTR(resid_tarval_unreachable);
+
+	tarval_reachable->kind    = k_tarval;
+	tarval_reachable->mode    = mode_X;
+	tarval_reachable->value   = INT_TO_PTR(resid_tarval_reachable);
 
 	/*
 	 * assign output modes that are compatible with the
