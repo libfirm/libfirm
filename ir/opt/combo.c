@@ -411,7 +411,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->part           = part;
 	node->cprop_next     = NULL;
 	node->next           = NULL;
-	node->type.tv        = mode == mode_X || mode == mode_BB ? tarval_bottom : tarval_unreachable;
+	node->type.tv        = (mode == mode_X || mode == mode_BB) ? tarval_unreachable : tarval_top;
 	node->max_user_input = 0;
 	node->next_edge      = 0;
 	node->on_touched     = 0;
@@ -420,8 +420,6 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 
 	list_add_tail(&node->node_list, &part->entries);
 	++part->n_nodes;
-
-	DB((dbg, LEVEL_3, "Placing %+F in partition %u\n", irn, part->nr));
 
 	return node;
 }  /* create_partition_node */
@@ -581,9 +579,9 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
 
-		y->cprop_next  = Y->cprop;
-		Y->cprop = y;
-		y->on_cprop    = 1;
+		y->cprop_next = Y->cprop;
+		Y->cprop      = y;
+		y->on_cprop   = 1;
 
 		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
 
@@ -843,12 +841,16 @@ static void split_by(partition_t *X, environment_t *env) {
 static void default_compute(node_t *node) {
 	int     i;
 	ir_node *irn = node->node;
+	tarval  *top = tarval_top;
+
+	if (get_irn_mode(node->node) == mode_X)
+		top = tarval_unreachable;
 
 	if (get_irn_pinned(irn) == op_pin_state_pinned) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
-			node->type.tv = tarval_top;
+			node->type.tv = top;
 			return;
 		}
 	}
@@ -859,12 +861,15 @@ static void default_compute(node_t *node) {
 		node_t  *p    = get_irn_node(pred);
 
 		if (p->type.tv == tarval_top) {
-			node->type.tv = tarval_top;
+			node->type.tv = top;
 			return;
 		}
 	}
 
-	node->type.tv = computed_value(irn);
+	if (get_irn_mode(node->node) == mode_X)
+		node->type.tv = tarval_reachable;
+	else
+		node->type.tv = computed_value(irn);
 }  /* default_compute */
 
 /**
@@ -924,7 +929,7 @@ static void compute_SymConst(node_t *node) {
 	}
 	switch (get_SymConst_kind(irn)) {
 	case symconst_addr_ent:
-	case symconst_addr_name:
+	/* case symconst_addr_name: cannot handle this yet */
 		node->type.sym = get_SymConst_symbol(irn);
 		break;
 	default:
@@ -953,10 +958,14 @@ static void compute_Phi(node_t *node) {
 	/* Phi implements the Meet operation */
 	type.tv = tarval_top;
 	for (i = get_Phi_n_preds(phi) - 1; i >= 0; --i) {
-		node_t *pred = get_irn_node(get_Phi_pred(phi, i));
+		node_t *pred   = get_irn_node(get_Phi_pred(phi, i));
+		node_t *pred_X = get_irn_node(get_Block_cfgpred(block->node, i));
 
-		if (pred->type.tv == tarval_top) {
-			/* ignore TOP inputs */
+		if (pred_X->type.tv == tarval_unreachable || pred->type.tv == tarval_top) {
+			/* ignore TOP inputs: We must check here for unreachable blocks,
+			   because Firm constants live in the Start Block are NEVER Top.
+			   Else, a Phi (1,2) will produce Bottom, even if the 2 for instance
+			   comes from a unreachable input. */
 			continue;
 		}
 		if (pred->type.tv == tarval_bottom) {
@@ -1225,16 +1234,18 @@ static void propagate(environment_t *env) {
 	int            i;
 
 	while (env->cprop != NULL) {
-		/* remove the first partition X from cprop but do not set the bit here */
+		/* remove the first partition X from cprop */
 		X          = env->cprop;
+		X->on_cprop = 0;
 		env->cprop = X->cprop_next;
 
 		fallen   = NULL;
 		n_fallen = 0;
-		do {
-			/* remove the first Node x from X.cprop but do NOT set the bit here */
-			x        = X->cprop;
-			X->cprop = x->cprop_next;
+		while (X->cprop != NULL) {
+			/* remove the first Node x from X.cprop */
+			x           = X->cprop;
+			x->on_cprop = 0;
+			X->cprop    = x->cprop_next;
 
 			/* compute a new type for x */
 			old_type = x->type;
@@ -1242,9 +1253,10 @@ static void propagate(environment_t *env) {
 			compute(x);
 			if (x->type.tv != old_type.tv) {
 				DB((dbg, LEVEL_2, "node %+F has changed type from %+F to %+F\n", x->node, old_type, x->type));
+
 				/* Add x to fallen. */
-				x->next = fallen;
-				fallen  = x;
+				x->next      = fallen;
+				fallen       = x;
 				++n_fallen;
 
 				for (i = get_irn_n_outs(x->node) - 1; i >= 0; --i) {
@@ -1255,13 +1267,7 @@ static void propagate(environment_t *env) {
 					add_node_to_cprop(y, env);
 				}
 			}
-			/* now remove x from X.cprop: this ensures that a node is not placed on the list again
-			   if is its user by itself (happens for Phi nodes and dead code) */
-			x->on_cprop = 0;
-		} while (X->cprop != NULL);
-
-		/* now remove X from cprop, we have emptied it's local list */
-		X->on_cprop = 0;
+		}
 
 		if (n_fallen > 0 && n_fallen != X->n_nodes) {
 			Y = split(X, fallen, env);
@@ -1282,7 +1288,7 @@ static ir_node *get_leader(node_t *node) {
 	partition_t *part = node->part;
 
 	if (part->n_nodes > 1) {
-		DB((dbg, LEVEL_2, "Found congruence class for %+F ", node->node));
+		DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
 
 		return get_first_node(part)->node;
 	}
@@ -1297,18 +1303,38 @@ static void apply_result(ir_node *irn, void *ctx) {
 	node_t        *node = get_irn_node(irn);
 
 	if (is_Block(irn)) {
+		if (irn == get_irg_end_block(current_ir_graph)) {
+			/* the EndBlock is always reachable even if the analysis
+			   finds out the opposite :-) */
+			return;
+		}
+
 		if (node->type.tv == tarval_unreachable) {
+			/* mark dead blocks */
 			set_Block_dead(irn);
 		}
+	} else if (is_End(irn)) {
+		/* do not touch the End node */
 	} else {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
+			ir_node *bad = get_irg_bad(current_ir_graph);
+
+			/* here, bad might already have a node, but this can be safely ignored
+			   as long as bad has at least ONE valid node */
+			set_irn_node(bad, node);
+			node->node = bad;
 			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-			exchange(irn, get_irg_bad(current_ir_graph));
+			exchange(irn, bad);
 		}
 		else if (get_irn_mode(irn) == mode_X) {
 			if (node->type.tv == tarval_unreachable) {
+				ir_node *bad = get_irg_bad(current_ir_graph);
+
+				/* see comment above */
+				set_irn_node(bad, node);
+				node->node = bad;
 				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
 				exchange(irn, get_irg_bad(current_ir_graph));
 			}
@@ -1317,12 +1343,13 @@ static void apply_result(ir_node *irn, void *ctx) {
 				ir_node *cond = get_Proj_pred(irn);
 
 				if (is_Cond(cond)) {
-					ir_node *sel = get_Cond_selector(cond);
+					node_t *sel = get_irn_node(get_Cond_selector(cond));
 
-					if (is_Const(sel)) {
-						/* Cond selector was replaced by a constant, make a Jmp */
+					if (is_tarval(sel->type.tv) && tarval_is_constant(sel->type.tv)) {
+						/* Cond selector is a constant, make a Jmp */
 						ir_node *jmp = new_r_Jmp(current_ir_graph, block->node);
-
+						set_irn_node(jmp, node);
+						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
 						exchange(irn, jmp);
 					}
@@ -1330,11 +1357,34 @@ static void apply_result(ir_node *irn, void *ctx) {
 			}
 		} else {
 			/* normal data node */
-			ir_node *leader = get_leader(node);
+			if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
+				tarval *tv = node->type.tv;
 
-			if (leader != irn) {
-				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, leader));
-				exchange(irn, leader);
+				if (! is_Const(irn)) {
+					/* can be replaced by a constant */
+					ir_node *c = new_r_Const(current_ir_graph, block->node, get_tarval_mode(tv), tv);
+					set_irn_node(c, node);
+					node->node = c;
+					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
+					exchange(irn, c);
+				}
+			} else if (is_entity(node->type.sym.entity_p)) {
+				if (! is_SymConst(irn)) {
+					/* can be replaced by a Symconst */
+					ir_node *symc = new_r_SymConst(current_ir_graph, block->node, get_irn_mode(irn), node->type.sym, symconst_addr_ent);
+					set_irn_node(symc, node);
+					node->node = symc;
+
+					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, symc));
+					exchange(irn, symc);
+				}
+			} else {
+				ir_node *leader = get_leader(node);
+
+				if (leader != irn) {
+					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, leader));
+					exchange(irn, leader);
+				}
 			}
 		}
 	}
@@ -1429,6 +1479,7 @@ void combo(ir_graph *irg) {
 
 	set_dump_node_vcgattr_hook(dump_partition_hook);
 	dump_ir_block_graph(irg, "-partition");
+	set_dump_node_vcgattr_hook(NULL);
 
 
 	/* apply the result */
