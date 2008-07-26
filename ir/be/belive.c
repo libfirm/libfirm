@@ -525,7 +525,7 @@ static void compute_liveness(be_lv_t *lv)
 	/*
 	 * inserting the variables sorted by their ID is probably
 	 * more efficient since the binary sorted set insertion
-	 * will not need to move arounf the data.
+	 * will not need to move around the data.
 	 * However, if sorting the variables a priori pays off
 	 * needs to be checked, hence the define.
 	 */
