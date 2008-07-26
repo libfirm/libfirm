@@ -105,8 +105,8 @@ typedef union {
 struct node_t {
 	ir_node         *node;          /**< The IR-node itself. */
 	list_head       node_list;      /**< Double-linked list of entries. */
+	list_head       cprop_list;     /**< Double-linked partition.cprop list. */
 	partition_t     *part;          /**< points to the partition this node belongs to */
-	node_t          *cprop_next;    /**< Next node on partition.cprop list. */
 	node_t          *next;          /**< Next node on local list (partition.touched, fallen). */
 	lattice_elem_t  type;           /**< The associated lattice element "type". */
 	int             max_user_input; /**< Maximum input number of Def-Use edges. */
@@ -121,7 +121,7 @@ struct node_t {
  */
 struct partition_t {
 	list_head         entries;         /**< The head of partition node list. */
-	node_t            *cprop;          /**< The partition.cprop list. */
+	list_head         cprop;           /**< The head of partition.cprop list. */
 	partition_t       *wl_next;        /**< Next entry in the work list if any. */
 	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
 	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
@@ -349,7 +349,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
 	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
 
 	INIT_LIST_HEAD(&part->entries);
-	part->cprop           = NULL;
+	INIT_LIST_HEAD(&part->cprop);
 	part->wl_next         = NULL;
 	part->touched_next    = NULL;
 	part->cprop_next      = NULL;
@@ -406,9 +406,9 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	ir_mode *mode = get_irn_mode(irn);
 
 	INIT_LIST_HEAD(&node->node_list);
+	INIT_LIST_HEAD(&node->cprop_list);
 	node->node           = irn;
 	node->part           = part;
-	node->cprop_next     = NULL;
 	node->next           = NULL;
 	node->type.tv        = (mode == mode_X || mode == mode_BB) ? tarval_unreachable : tarval_top;
 	node->max_user_input = 0;
@@ -425,7 +425,18 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 }  /* create_partition_node */
 
 /**
- * Walker, initialize all Nodes' type to U or top and place
+ * Pre-Walker, init all Block-Phi lists.
+ */
+static void init_block_phis(ir_node *irn, void *env) {
+	(void) env;
+
+	if (is_Block(irn)) {
+		set_Block_phis(irn, NULL);
+	}
+}
+
+/**
+ * Post-Walker, initialize all Nodes' type to U or top and place
  * all nodes into the TOP partition.
  */
 static void create_initial_partitions(ir_node *irn, void *ctx) {
@@ -441,6 +452,10 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 		part->max_arity = arity;
 	if (node->max_user_input > part->max_user_inputs)
 		part->max_user_inputs = node->max_user_input;
+
+	if (is_Phi(irn)) {
+		add_Block_phi(get_nodes_block(irn), irn);
+	}
 }  /* create_initial_partitions */
 
 /**
@@ -579,8 +594,7 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
 
-		y->cprop_next = Y->cprop;
-		Y->cprop      = y;
+		list_add_tail(&y->cprop_list, &Y->cprop);
 		y->on_cprop   = 1;
 
 		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
@@ -601,6 +615,16 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 			node_t *proj = get_irn_node(get_irn_out(y->node, i));
 
 			add_node_to_cprop(proj, env);
+		}
+	}
+	if (is_Block(y->node)) {
+		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
+		 * if someone placeis the block. The Block is only placed if the reachability
+		 * changes, and this must be re-evaluated in compute_Phi(). */
+		ir_node *phi;
+		for (phi = get_Block_phis(y->node); phi != NULL; phi = get_Phi_next(phi)) {
+			node_t *p = get_irn_node(phi);
+			add_node_to_cprop(p, env);
 		}
 	}
 }  /* add_node_to_cprop */
@@ -1256,11 +1280,11 @@ static void propagate(environment_t *env) {
 
 		fallen   = NULL;
 		n_fallen = 0;
-		while (X->cprop != NULL) {
+		while (! list_empty(&X->cprop)) {
 			/* remove the first Node x from X.cprop */
-			x           = X->cprop;
+			x = list_entry(X->cprop.next, node_t, cprop_list);
+			list_del(&x->cprop_list);
 			x->on_cprop = 0;
-			X->cprop    = x->cprop_next;
 
 			/* compute a new type for x */
 			old_type = x->type;
@@ -1485,7 +1509,7 @@ void combo(ir_graph *irg) {
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);
 	add_to_worklist(env.initial, &env);
-	irg_walk_graph(irg, NULL, create_initial_partitions, &env);
+	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
 
 	/* Place the START Node's partition on cprop.
 	   Place the START Node on its local worklist. */
