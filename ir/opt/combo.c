@@ -35,6 +35,7 @@
 
 #include "iroptimize.h"
 #include "irflag.h"
+#include "ircons.h"
 #include "list.h"
 #include "array.h"
 #include "set.h"
@@ -53,10 +54,6 @@
 
 #include "irprintf.h"
 #include "irdump.h"
-
-/* we need the tarval_R and tarval_U */
-#define tarval_R  tarval_top
-#define tarval_U  tarval_bottom
 
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
@@ -111,37 +108,38 @@ typedef union {
  * A node.
  */
 struct node_t {
-	ir_node         *node;         /**< The IR-node itself. */
-	list_head       node_list;     /**< Double-linked list of entries. */
-	partition_t     *part;         /**< points to the partition this node belongs to */
-	node_t          *cprop_next;   /**< Next node on partition.cprop list. */
-	node_t          *next;         /**< Next node on local list (partition.touched, fallen). */
-	ir_def_use_edge *next_edge;    /**< Points to the next Def-Use edge to use. */
-	lattice_elem_t  type;          /**< The associated lattice element "type". */
-	int             n_inputs;      /**< Maximum input number of Def-Use edges. */
-	unsigned        on_touched:1;  /**< Set, if this node is on the partition.touched set. */
-	unsigned        on_cprop:1;    /**< Set, if this node is on the partition.cprop list. */
+	ir_node         *node;          /**< The IR-node itself. */
+	list_head       node_list;      /**< Double-linked list of entries. */
+	partition_t     *part;          /**< points to the partition this node belongs to */
+	node_t          *cprop_next;    /**< Next node on partition.cprop list. */
+	node_t          *next;          /**< Next node on local list (partition.touched, fallen). */
+	lattice_elem_t  type;           /**< The associated lattice element "type". */
+	int             max_user_input; /**< Maximum input number of Def-Use edges. */
+	int             next_edge;      /**< Index of the next Def-Use edge to use. */
+	unsigned        on_touched:1;   /**< Set, if this node is on the partition.touched set. */
+	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 };
 
 /**
  * A partition containing congruent nodes.
  */
 struct partition_t {
-	list_head         entries;       /**< The head of partition node list. */
-	node_t            *cprop;        /**< The partition.cprop list. */
-	partition_t       *wl_next;      /**< Next entry in the work list if any. */
-	partition_t       *touched_next; /**< Points to the next partition in the touched set. */
-	partition_t       *cprop_next;   /**< Points to the next partition in the cprop list. */
-	node_t            *touched;      /**< The partition.touched set of this partition. */
-	unsigned          n_nodes;       /**< Number of entries in this partition. */
-	unsigned          n_touched;     /**< Number of entries in the partition.touched. */
-	int               n_inputs;      /**< Maximum number of inputs of all entries. */
-	unsigned          on_worklist:1; /**< Set, if this partition is in the work list. */
-	unsigned          on_touched:1;  /**< Set, if this partition is on the touched set. */
-	unsigned          on_cprop:1;    /**< Set, if this partition is on the cprop list. */
+	list_head         entries;         /**< The head of partition node list. */
+	node_t            *cprop;          /**< The partition.cprop list. */
+	partition_t       *wl_next;        /**< Next entry in the work list if any. */
+	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
+	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
+	node_t            *touched;        /**< The partition.touched set of this partition. */
+	unsigned          n_nodes;         /**< Number of entries in this partition. */
+	unsigned          n_touched;       /**< Number of entries in the partition.touched. */
+	int               max_arity;       /**< Maximum arity of all entries. */
+	int               max_user_inputs; /**< Maximum number of user inputs of all entries. */
+	unsigned          on_worklist:1;   /**< Set, if this partition is in the work list. */
+	unsigned          on_touched:1;    /**< Set, if this partition is on the touched set. */
+	unsigned          on_cprop:1;      /**< Set, if this partition is on the cprop list. */
 #ifdef DEBUG_libfirm
-	partition_t       *dbg_next;     /**< Link all partitions for debugging */
-	unsigned          nr;            /**< A unique number for (what-)mapping, >0. */
+	partition_t       *dbg_next;       /**< Link all partitions for debugging */
+	unsigned          nr;              /**< A unique number for (what-)mapping, >0. */
 #endif
 };
 
@@ -150,11 +148,10 @@ typedef struct environment_t {
 	partition_t     *worklist;      /**< The work list. */
 	partition_t     *cprop;         /**< The constant propagation list. */
 	partition_t     *touched;       /**< the touched set. */
-	partition_t     *TOP;           /**< The TOP partition. */
+	partition_t     *initial;       /**< The initial partition. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
-	set             *opcode_map;    /**< The initial opcode->partition map. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
@@ -174,14 +171,17 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static unsigned part_nr = 0);
 
 #ifdef DEBUG_libfirm
+static lattice_elem_t get_partition_type(const partition_t *X);
+
 /**
  * Dump partition to output.
  */
-static void dump_partition(const char *msg, partition_t *part) {
-	node_t *node;
-	int    first = 1;
+static void dump_partition(const char *msg, const partition_t *part) {
+	const node_t   *node;
+	int            first = 1;
+	lattice_elem_t type = get_partition_type(part);
 
-	DB((dbg, LEVEL_2, "%s part%u (%u) {\n  ", msg, part->nr, part->n_nodes));
+	DB((dbg, LEVEL_2, "%s part%u (%u, %+F) {\n  ", msg, part->nr, part->n_nodes, type));
 	list_for_each_entry(node_t, node, &part->entries, node_list) {
 		DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", node->node));
 		first = 0;
@@ -192,8 +192,8 @@ static void dump_partition(const char *msg, partition_t *part) {
 /**
  * Dump all partitions.
  */
-static void dump_all_partitions(environment_t *env) {
-	partition_t *P;
+static void dump_all_partitions(const environment_t *env) {
+	const partition_t *P;
 
 	DB((dbg, LEVEL_2, "All partitions\n===============\n"));
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next)
@@ -300,7 +300,7 @@ static void sort_irn_outs(node_t *node) {
 	if (n_outs > 1) {
 		qsort(&irn->out[1], n_outs, sizeof(irn->out[0]), cmp_def_use_edge);
 	}
-	node->n_inputs = irn->out[n_outs + 1].pos;
+	node->max_user_input = irn->out[n_outs + 1].pos;
 }  /* sort_irn_outs */
 
 /**
@@ -329,6 +329,15 @@ static INLINE tarval *get_node_tarval(const ir_node *irn) {
 	return tarval_bottom;
 }  /* get_node_type */
 
+/**
+ * Add a partition to the worklist.
+ */
+static INLINE void add_to_worklist(partition_t *X, environment_t *env) {
+	assert(X->on_worklist == 0);
+	X->wl_next     = env->worklist;
+	X->on_worklist = 1;
+	env->worklist  = X;
+}
 
 /**
  * Create a new empty partition.
@@ -341,56 +350,33 @@ static INLINE partition_t *new_partition(environment_t *env) {
 	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
 
 	INIT_LIST_HEAD(&part->entries);
-	part->cprop        = NULL;
-	part->wl_next      = env->worklist;
-	part->touched_next = NULL;
-	part->cprop_next   = NULL;
-	part->touched      = NULL;
-	part->n_nodes      = 0;
-	part->n_touched    = 0;
-	part->n_inputs     = 0;
-	part->on_worklist  = 0;
-	part->on_touched   = 0;
-	part->on_cprop     = 0;
+	part->cprop           = NULL;
+	part->wl_next         = NULL;
+	part->touched_next    = NULL;
+	part->cprop_next      = NULL;
+	part->touched         = NULL;
+	part->n_nodes         = 0;
+	part->n_touched       = 0;
+	part->max_arity       = 0;
+	part->max_user_inputs = 0;
+	part->on_worklist     = 0;
+	part->on_touched      = 0;
+	part->on_cprop        = 0;
 #ifdef DEBUG_libfirm
-	part->dbg_next     = env->dbg_list;
-	env->dbg_list      = part;
-	part->nr           = part_nr++;
+	part->dbg_next        = env->dbg_list;
+	env->dbg_list         = part;
+	part->nr              = part_nr++;
 #endif
 
 	return part;
 }  /* new_partition */
 
 /**
- * Get the partition for a given IR-node.
- *
- * @param irn   the IR-node
- * @param env   the environment
- *
- * @return the partition where irn lies
+ * Get the first node from a partition.
  */
-static INLINE partition_t *get_partition_for_irn(const ir_node *irn, environment_t *env) {
-	opcode_entry_t key, *entry;
-	unsigned       hash;
-
-	key.key.code = get_irn_opcode(irn);
-	key.key.mode = get_irn_mode(irn);
-	hash         = opcode_hash(&key.key);
-
-	entry = set_find(env->opcode_map, &key, sizeof(key), hash);
-	if (entry == NULL) {
-		/* create a new partition and place it on the wait queue */
-		partition_t *part = new_partition(env);
-
-		part->on_worklist = 1;
-		env->worklist     = part;
-
-		key.part = part;
-		set_insert(env->opcode_map, &key, sizeof(key), hash);
-		entry = &key;
-	}
-	return entry->part;
-}  /* get_partition_for_irn */
+static INLINE node_t *get_first_node(const partition_t *X) {
+	return list_entry(X->entries.next, node_t, node_list);
+}
 
 /**
  * Return the type of a partition (assuming partition is non-empty and
@@ -401,7 +387,7 @@ static INLINE partition_t *get_partition_for_irn(const ir_node *irn, environment
  * @return the type of the first element of the partition
  */
 static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
-	const node_t *first = list_entry(X->entries.next, node_t, node_list);
+	const node_t *first = get_first_node(X);
 	return first->type;
 }  /* get_partition_type */
 
@@ -418,17 +404,18 @@ static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
 static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	ir_mode *mode = get_irn_mode(irn);
 
 	INIT_LIST_HEAD(&node->node_list);
-	node->node         = irn;
-	node->part         = part;
-	node->cprop_next   = NULL;
-	node->next         = NULL;
-	node->next_edge    = NULL;
-	node->type.tv      = tarval_bottom; /* == tarval_U */
-	node->n_inputs     = 0;
-	node->on_touched   = 0;
-	node->on_cprop     = 0;
+	node->node           = irn;
+	node->part           = part;
+	node->cprop_next     = NULL;
+	node->next           = NULL;
+	node->type.tv        = mode == mode_X || mode == mode_BB ? tarval_bottom : tarval_unreachable;
+	node->max_user_input = 0;
+	node->next_edge      = 0;
+	node->on_touched     = 0;
+	node->on_cprop       = 0;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->entries);
@@ -445,13 +432,17 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
  */
 static void create_initial_partitions(ir_node *irn, void *ctx) {
 	environment_t *env  = ctx;
-	partition_t   *part = env->TOP;
+	partition_t   *part = env->initial;
 	node_t        *node;
+	int           arity;
 
 	node = create_partition_node(irn, part, env);
 	sort_irn_outs(node);
-	if (node->n_inputs > part->n_inputs)
-		part->n_inputs = node->n_inputs;
+	arity = get_irn_arity(irn);
+	if (arity > part->max_arity)
+		part->max_arity = arity;
+	if (node->max_user_input > part->max_user_inputs)
+		part->max_user_inputs = node->max_user_input;
 }  /* create_initial_partitions */
 
 /**
@@ -494,13 +485,9 @@ static INLINE void add_to_partition_touched(node_t *y) {
  */
 static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t *env) {
 	if (Z->on_worklist || Z_prime->n_nodes < Z->n_nodes) {
-		Z_prime->on_worklist = 1;
-		Z_prime->wl_next     = env->worklist;
-		env->worklist        = Z_prime;
+		add_to_worklist(Z_prime, env);
 	} else {
-		Z->on_worklist = 1;
-		Z->wl_next     = env->worklist;
-		env->worklist  = Z;
+		add_to_worklist(Z, env);
 	}
 }  /* update_worklist */
 
@@ -517,7 +504,7 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 	partition_t *Z_prime;
 	node_t      *node;
 	unsigned    n = 0;
-	int         n_inputs;
+	int         max_input, max_arity, arity;
 
 	dump_partition("Splitting ", Z);
 
@@ -533,15 +520,19 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 
 	/* Move g to a new partition, Z’. */
 	Z_prime = new_partition(env);
-	n_inputs = 0;
+	max_arity = max_input = 0;
 	for (node = g; node != NULL; node = node->next) {
 		list_add(&node->node_list, &Z_prime->entries);
 		node->part = Z_prime;
-		if (node->n_inputs > n_inputs)
-			n_inputs = node->n_inputs;
+		arity = get_irn_arity(node->node);
+		if (arity > max_arity)
+			max_arity = arity;
+		if (node->max_user_input > max_input)
+			max_input = node->max_user_input;
 	}
-	Z_prime->n_inputs = n_inputs;
-	Z_prime->n_nodes  = n;
+	Z_prime->max_arity       = max_arity;
+	Z_prime->max_user_inputs = max_input;
+	Z_prime->n_nodes         = n;
 
 	update_worklist(Z, Z_prime, env);
 
@@ -564,7 +555,7 @@ static int is_live_input(ir_node *phi, int i) {
 		ir_node        *pred  = get_Block_cfgpred(block, i);
 		lattice_elem_t type   = get_node_type(pred);
 
-		return type.tv != tarval_U;
+		return type.tv != tarval_unreachable;
 	}
 	/* else it's the control input, always live */
 	return 1;
@@ -603,6 +594,17 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 			Y->on_cprop   = 1;
 		}
 	}
+	if (get_irn_mode(y->node) == mode_T) {
+		/* mode_T nodes always produce tarval_bottom, so we must explicitly
+		   add it's Proj's to get constant evaluation to work */
+		int i;
+
+		for (i = get_irn_n_outs(y->node) - 1; i >= 0; --i) {
+			node_t *proj = get_irn_node(get_irn_out(y->node, i));
+
+			add_node_to_cprop(proj, env);
+		}
+	}
 }  /* add_node_to_cprop */
 
 /**
@@ -615,7 +617,7 @@ static void cause_splits(environment_t *env) {
 	node_t      *x, *y, *e;
 	int         i, end_idx;
 	ir_opcode   code;
-	ir_node     *pred;
+	ir_node     *succ;
 
 	/* remove the first partition from the worklist */
 	X = env->worklist;
@@ -624,36 +626,49 @@ static void cause_splits(environment_t *env) {
 
 	dump_partition("Cause_split: ", X);
 	end_idx = env->end_idx;
-	for (i = -1; i <= X->n_inputs; ++i) {
+	for (i = -1; i <= X->max_user_inputs; ++i) {
 		/* empty the touched set: already done, just clear the list */
 		env->touched = NULL;
 
 		list_for_each_entry(node_t, x, &X->entries, node_list) {
+			int num_edges;
+
 			if (i == -1) {
-				x->next_edge = &x->node->out[1];
+				x->next_edge = 1;
 			}
+			num_edges = get_irn_n_outs(x->node);
 
-			/* ignore the "control input" for non-pinned nodes
-			   if we are running in GCSE mode */
-			if (i < end_idx && get_irn_pinned(x->node) != op_pin_state_pinned)
-				continue;
+			while (x->next_edge <= num_edges) {
+				ir_def_use_edge *edge = &x->node->out[x->next_edge];
 
-			pred = get_irn_n(x->node, i);
-			y = get_irn_node(pred);
+				/* check if we have necessary edges */
+				if (edge->pos > i)
+					break;
 
-			if (is_constant_type(y->type)) {
-				code = get_irn_opcode(pred);
-				if (code == iro_Sub || (code == iro_Proj && is_Cmp(get_Proj_pred(pred))))
-					add_node_to_cprop(y, env);
-			}
+				++x->next_edge;
 
-			/* Partitions of constants should not be split simply because their Nodes have unequal
-			   functions or incongruent inputs. */
-			if (y->type.tv == tarval_bottom &&
-				(! is_Phi(x->node) || is_live_input(x->node, i))) {
-				Y = y->part;
-				add_to_touched(Y, env);
-				add_to_partition_touched(y);
+				succ = edge->use;
+
+				/* ignore the "control input" for non-pinned nodes
+				   if we are running in GCSE mode */
+				if (i < end_idx && get_irn_pinned(succ) != op_pin_state_pinned)
+					continue;
+
+				y = get_irn_node(succ);
+				if (is_constant_type(y->type)) {
+					code = get_irn_opcode(succ);
+					if (code == iro_Sub || (code == iro_Proj && is_Cmp(get_Proj_pred(succ))))
+						add_node_to_cprop(y, env);
+				}
+
+				/* Partitions of constants should not be split simply because their Nodes have unequal
+				   functions or incongruent inputs. */
+				if (y->type.tv == tarval_bottom &&
+					(! is_Phi(x->node) || is_live_input(x->node, i))) {
+					Y = y->part;
+					add_to_touched(Y, env);
+					add_to_partition_touched(y);
+				}
 			}
 		}
 
@@ -744,7 +759,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 
 	key.code = get_irn_opcode(node->node);
 	key.mode = get_irn_mode(node->node);
-	entry = set_insert(env->opcode2id_map, &key, sizeof(&key), opcode_hash(&key));
+	entry = set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
 
@@ -771,6 +786,16 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 }  /* lambda_partition */
 
 /**
+ * Checks whether a type is a constant.
+ */
+static int is_type_constant(lattice_elem_t type) {
+	if (is_tarval(type.tv))
+		return tarval_is_constant(type.tv);
+	/* else it is a symconst */
+	return 1;
+}
+
+/**
  * Implements split_by().
  *
  * @param X    the partition to split
@@ -782,23 +807,29 @@ static void split_by(partition_t *X, environment_t *env) {
 
 	P = split_by_what(X, lambda_type, P, env);
 	for (i = ARR_LEN(P) - 1; i >= 0; --i) {
-		partition_t *Y = P[i];
+		partition_t    *Y = P[i];
 
-		/* we do not want split the TOP or constant partitions */
-		if (get_partition_type(Y).tv == tarval_bottom) {
-			partition_t **Q = NEW_ARR_F(partition_t *, 0);
+		if (Y->n_nodes > 1) {
+			lattice_elem_t type = get_partition_type(Y);
 
-			Q = split_by_what(Y, lambda_opcode, Q, env);
+			/* we do not want split the TOP, unreachable or constant partitions */
+			if (type.tv != tarval_top && type.tv != tarval_unreachable && !is_type_constant(type)) {
+				partition_t **Q = NEW_ARR_F(partition_t *, 0);
 
-			for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
-				partition_t *Z = Q[j];
+				Q = split_by_what(Y, lambda_opcode, Q, env);
 
-				for (k = Z->n_inputs - 1; k >= -1; --k) {
-					env->lambda_input = k;
-					split_by_what(Z, lambda_partition, NULL, env);
+				for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
+					partition_t *Z = Q[j];
+
+					for (k = Z->max_arity - 1; k >= -1; --k) {
+						if (Z->n_nodes > 1) {
+							env->lambda_input = k;
+							split_by_what(Z, lambda_partition, NULL, env);
+						}
+					}
 				}
+				DEL_ARR_F(Q);
 			}
-			DEL_ARR_F(Q);
 		}
 	}
 	DEL_ARR_F(P);
@@ -816,7 +847,7 @@ static void default_compute(node_t *node) {
 	if (get_irn_pinned(irn) == op_pin_state_pinned) {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
-		if (block->type.tv == tarval_U) {
+		if (block->type.tv == tarval_unreachable) {
 			node->type.tv = tarval_top;
 			return;
 		}
@@ -848,13 +879,13 @@ static void compute_Block(node_t *node) {
 	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 		node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
-		if (pred->type.tv == tarval_R) {
+		if (pred->type.tv == tarval_reachable) {
 			/* A block is reachable, if at least of predecessor is reachable. */
-			node->type.tv = tarval_R;
+			node->type.tv = tarval_reachable;
 			return;
 		}
 	}
-	node->type.tv = tarval_U;
+	node->type.tv = tarval_unreachable;
 }  /* compute_Block */
 
 /**
@@ -875,7 +906,7 @@ static void compute_Jmp(node_t *node) {
  */
 static void compute_End(node_t *node) {
 	/* the End node is NOT dead of course */
-	node->type.tv = tarval_R;
+	node->type.tv = tarval_reachable;
 }
 
 /**
@@ -887,7 +918,7 @@ static void compute_SymConst(node_t *node) {
 	ir_node *irn = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(irn));
 
-	if (block->type.tv == tarval_U) {
+	if (block->type.tv == tarval_unreachable) {
 		node->type.tv = tarval_top;
 		return;
 	}
@@ -914,7 +945,7 @@ static void compute_Phi(node_t *node) {
 	/* if a Phi is in a unreachable block, its type is TOP */
 	node_t *block = get_irn_node(get_nodes_block(phi));
 
-	if (block->type.tv == tarval_U) {
+	if (block->type.tv == tarval_unreachable) {
 		node->type.tv = tarval_top;
 		return;
 	}
@@ -958,7 +989,7 @@ static void compute_Add(node_t *node) {
 	node_t         *block = get_irn_node(get_nodes_block(sub));
 	ir_mode        *mode;
 
-	if (block->type.tv == tarval_U) {
+	if (block->type.tv == tarval_unreachable) {
 		node->type.tv = tarval_top;
 		return;
 	}
@@ -1004,7 +1035,7 @@ static void compute_Sub(node_t *node) {
 	lattice_elem_t b    = r->type;
 	node_t         *block = get_irn_node(get_nodes_block(sub));
 
-	if (block->type.tv == tarval_U) {
+	if (block->type.tv == tarval_unreachable) {
 		node->type.tv = tarval_top;
 		return;
 	}
@@ -1073,35 +1104,35 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 		/* an IF */
 		if (pnc == pn_Cond_true) {
 			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_U;
+				node->type.tv = tarval_unreachable;
 			} else if (selector->type.tv == tarval_b_true) {
-				node->type.tv = tarval_R;
+				node->type.tv = tarval_reachable;
 			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_R;
+				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
-				node->type.tv = tarval_U;
+				node->type.tv = tarval_unreachable;
 			}
 		} else {
 			assert(pnc == pn_Cond_false);
 
 			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_R;
+				node->type.tv = tarval_reachable;
 			} else if (selector->type.tv == tarval_b_true) {
-				node->type.tv = tarval_U;
+				node->type.tv = tarval_unreachable;
 			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_R;
+				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
-				node->type.tv = tarval_U;
+				node->type.tv = tarval_unreachable;
 			}
 		}
 	} else {
 		/* an SWITCH */
 		if (selector->type.tv == tarval_bottom) {
-			node->type.tv = tarval_R;
+			node->type.tv = tarval_reachable;
 		} else if (selector->type.tv == tarval_top) {
-			node->type.tv = tarval_U;
+			node->type.tv = tarval_unreachable;
 		} else {
 			long value = get_tarval_long(selector->type.tv);
 			if (pnc == get_Cond_defaultProj(cond)) {
@@ -1115,15 +1146,15 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 						continue;
 					if (value == get_Proj_proj(succ)) {
 						/* we found a match, will NOT take the default case */
-						node->type.tv = tarval_U;
+						node->type.tv = tarval_unreachable;
 						return;
 					}
 				}
 				/* all cases checked, no match, will take default case */
-				node->type.tv = tarval_R;
+				node->type.tv = tarval_reachable;
 			} else {
 				/* normal case */
-				node->type.tv = value == pnc ? tarval_R : tarval_U;
+				node->type.tv = value == pnc ? tarval_reachable : tarval_unreachable;
 			}
 		}
 	}
@@ -1158,7 +1189,7 @@ static void compute_Proj(node_t *node) {
 	switch (get_irn_opcode(pred)) {
 	case iro_Start:
 		/* the Proj_X from the Start is always reachable */
-		node->type.tv = tarval_R;
+		node->type.tv = tarval_reachable;
 		break;
 	case iro_Cond:
 		compute_Proj_Cond(node, pred);
@@ -1189,8 +1220,8 @@ static void propagate(environment_t *env) {
 	partition_t    *X, *Y;
 	node_t         *x;
 	lattice_elem_t old_type;
-	node_t         *fallen = NULL;
-	unsigned       n_fallen = 0;
+	node_t         *fallen;
+	unsigned       n_fallen;
 	int            i;
 
 	while (env->cprop != NULL) {
@@ -1198,7 +1229,8 @@ static void propagate(environment_t *env) {
 		X          = env->cprop;
 		env->cprop = X->cprop_next;
 
-		dump_partition("Propagate", X);
+		fallen   = NULL;
+		n_fallen = 0;
 		do {
 			/* remove the first Node x from X.cprop but do NOT set the bit here */
 			x        = X->cprop;
@@ -1231,13 +1263,13 @@ static void propagate(environment_t *env) {
 		/* now remove X from cprop, we have emptied it's local list */
 		X->on_cprop = 0;
 
-		if (n_fallen != X->n_nodes) {
-			assert(n_fallen > 0);
+		if (n_fallen > 0 && n_fallen != X->n_nodes) {
 			Y = split(X, fallen, env);
 		} else {
 			Y = X;
 		}
-		split_by(Y, env);
+		if (Y->n_nodes > 1)
+			split_by(Y, env);
 	}
 }  /* propagate */
 
@@ -1246,14 +1278,15 @@ static void propagate(environment_t *env) {
  *
  * @param irn  the node
  */
-static ir_node *get_leader(ir_node *irn) {
-	partition_t *part = get_irn_node(irn)->part;
+static ir_node *get_leader(node_t *node) {
+	partition_t *part = node->part;
 
 	if (part->n_nodes > 1) {
-		DB((dbg, LEVEL_2, "Found congruence class for %+F ", irn));
-		dump_partition("", part);
+		DB((dbg, LEVEL_2, "Found congruence class for %+F ", node->node));
+
+		return get_first_node(part)->node;
 	}
-	return irn;
+	return node->node;
 }
 
 /**
@@ -1261,12 +1294,48 @@ static ir_node *get_leader(ir_node *irn) {
  */
 static void apply_result(ir_node *irn, void *ctx) {
 	environment_t *env = ctx;
+	node_t        *node = get_irn_node(irn);
 
-	if (is_no_Block(irn)) {
-		ir_node *leader = get_leader(irn);
+	if (is_Block(irn)) {
+		if (node->type.tv == tarval_unreachable) {
+			set_Block_dead(irn);
+		}
+	} else {
+		node_t *block = get_irn_node(get_nodes_block(irn));
 
-		if (leader != irn) {
-			exchange(irn, leader);
+		if (block->type.tv == tarval_unreachable) {
+			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+			exchange(irn, get_irg_bad(current_ir_graph));
+		}
+		else if (get_irn_mode(irn) == mode_X) {
+			if (node->type.tv == tarval_unreachable) {
+				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+				exchange(irn, get_irg_bad(current_ir_graph));
+			}
+			else if (is_Proj(irn)) {
+				/* leave or Jmp */
+				ir_node *cond = get_Proj_pred(irn);
+
+				if (is_Cond(cond)) {
+					ir_node *sel = get_Cond_selector(cond);
+
+					if (is_Const(sel)) {
+						/* Cond selector was replaced by a constant, make a Jmp */
+						ir_node *jmp = new_r_Jmp(current_ir_graph, block->node);
+
+						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
+						exchange(irn, jmp);
+					}
+				}
+			}
+		} else {
+			/* normal data node */
+			ir_node *leader = get_leader(node);
+
+			if (leader != irn) {
+				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, leader));
+				exchange(irn, leader);
+			}
 		}
 	}
 }  /* static void apply_result(ir_node *irn, void *ctx) {
@@ -1315,7 +1384,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
@@ -1323,11 +1392,10 @@ void combo(ir_graph *irg) {
 	env.worklist       = NULL;
 	env.cprop          = NULL;
 	env.touched        = NULL;
-	env.TOP            = NULL;
+	env.initial        = NULL;
 #ifdef DEBUG_libfirm
 	env.dbg_list       = NULL;
 #endif
-	env.opcode_map     = new_set(cmp_opcode, iro_Last * 4);
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
@@ -1341,9 +1409,8 @@ void combo(ir_graph *irg) {
 	set_compute_functions();
 
 	/* create the initial partition and place it on the work list */
-	env.TOP = new_partition(&env);
-	env.TOP->wl_next = env.worklist;
-	env.worklist     = env.TOP;
+	env.initial = new_partition(&env);
+	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, NULL, create_initial_partitions, &env);
 
 	/* Place the START Node's partition on cprop.
@@ -1354,7 +1421,6 @@ void combo(ir_graph *irg) {
 
 	do {
 		propagate(&env);
-		dump_all_partitions(&env);
 		if (env.worklist != NULL)
 			cause_splits(&env);
 	} while (env.cprop != NULL || env.worklist != NULL);
@@ -1369,7 +1435,6 @@ void combo(ir_graph *irg) {
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	pmap_destroy(env.type2id_map);
-	del_set(env.opcode_map);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
 
