@@ -164,7 +164,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static unsigned part_nr = 0);
 
 #ifdef DEBUG_libfirm
-static lattice_elem_t get_partition_type(const partition_t *X);
+static INLINE lattice_elem_t get_partition_type(const partition_t *X);
 
 /**
  * Dump partition to output.
@@ -205,6 +205,7 @@ static int listmap_cmp_ptr(const void *elt, const void *key, size_t size) {
 	const listmap_entry_t *e1 = elt;
 	const listmap_entry_t *e2 = key;
 
+	(void) size;
 	return e1->id != e2->id;
 }  /* listmap_cmp_ptr */
 
@@ -269,6 +270,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 	const opcode_key_t *o1 = elt;
 	const opcode_key_t *o2 = key;
 
+	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode || o1->proj != o2->proj;
 }  /* cmp_opcode */
 
@@ -1302,9 +1304,9 @@ static ir_node *get_leader(node_t *node) {
  * Post-Walker, apply the analysis results;
  */
 static void apply_result(ir_node *irn, void *ctx) {
-	environment_t *env = ctx;
-	node_t        *node = get_irn_node(irn);
+	node_t *node = get_irn_node(irn);
 
+	(void) ctx;
 	if (is_Block(irn)) {
 		if (irn == get_irg_end_block(current_ir_graph)) {
 			/* the EndBlock is always reachable even if the analysis
@@ -1421,7 +1423,7 @@ static void set_compute_functions(void) {
 
 static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 	ir_node *irn = local != NULL ? local : n;
-	node_t *node = get_irn_node(n);
+	node_t *node = get_irn_node(irn);
 
 	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
 	return 1;
@@ -1437,7 +1439,6 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
