@@ -281,10 +281,10 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
  */
 static tarval reserved_tv[6];
 
-tarval *tarval_bad         = &reserved_tv[0];
-tarval *tarval_undefined   = &reserved_tv[1];
-tarval *tarval_b_false     = &reserved_tv[2];
-tarval *tarval_b_true      = &reserved_tv[3];
+tarval *tarval_b_false     = &reserved_tv[0];
+tarval *tarval_b_true      = &reserved_tv[1];
+tarval *tarval_bad         = &reserved_tv[2];
+tarval *tarval_undefined   = &reserved_tv[3];
 tarval *tarval_reachable   = &reserved_tv[4];
 tarval *tarval_unreachable = &reserved_tv[5];
 
@@ -649,8 +649,9 @@ tarval *get_tarval_all_one(ir_mode *mode) {
 int tarval_is_constant(tarval *tv) {
 	int num_res = sizeof(reserved_tv) / sizeof(reserved_tv[0]);
 
-	/* reserved tarvals are NOT constants */
-	return (tv < &reserved_tv[0] || tv > &reserved_tv[num_res - 1]);
+	/* reserved tarvals are NOT constants. Note that although
+	   tarval_b_true and tarval_b_false are reserved, they are constants of course. */
+	return (tv < &reserved_tv[2] || tv > &reserved_tv[num_res - 1]);
 }
 
 tarval *get_tarval_minus_one(ir_mode *mode) {
@@ -1804,6 +1805,10 @@ static const tarval_mode_info hex_output = {
  * Initialization of the tarval module: called before init_mode()
  */
 void init_tarval_1(long null_value) {
+	/* if these assertion fail, tarval_is_constant() will follow ... */
+	assert(tarval_b_false == &reserved_tv[0] && "b_false MUST be the first reserved tarval!");
+	assert(tarval_b_true  == &reserved_tv[1] && "b_true MUST be the second reserved tarval!");
+
 	_null_value = null_value;
 
 	/* initialize the sets holding the tarvals with a comparison function and
