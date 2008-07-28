@@ -3636,29 +3636,9 @@ static ir_node *create_immediate_or_transform(ir_node *node,
 	return new_node;
 }
 
-static const arch_register_req_t no_register_req = {
-	arch_register_req_type_none,
-	NULL,                         /* regclass */
-	NULL,                         /* limit bitset */
-	0,                            /* same pos */
-	0                             /* different pos */
-};
 
-/**
- * An assembler constraint.
- */
-typedef struct constraint_t constraint_t;
-struct constraint_t {
-	int                         is_in;
-	int                         n_outs;
-	const arch_register_req_t **out_reqs;
 
-	const arch_register_req_t  *req;
-	unsigned                    immediate_possible;
-	char                        immediate_type;
-};
-
-static void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
+void parse_asm_constraint(int pos, constraint_t *constraint, const char *c)
 {
 	int                          immediate_possible = 0;
 	char                         immediate_type     = 0;
@@ -3931,7 +3911,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 	return reg;
 }
 
-static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
+void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
                           const char *clobber)
 {
 	ir_graph                    *irg  = get_irn_irg(node);

@@ -54,6 +54,28 @@ typedef enum {
 	ia32_known_const_max /**< last constant */
 } ia32_known_const_t;
 
+static const arch_register_req_t no_register_req = {
+	arch_register_req_type_none,
+	NULL,                         /* regclass */
+	NULL,                         /* limit bitset */
+	0,                            /* same pos */
+	0                             /* different pos */
+};
+
+/**
+ * An assembler constraint.
+ */
+typedef struct constraint_t constraint_t;
+struct constraint_t {
+	int                         is_in;
+	int                         n_outs;
+	const arch_register_req_t **out_reqs;
+
+	const arch_register_req_t  *req;
+	unsigned                    immediate_possible;
+	char                        immediate_type;
+};
+
 /**
  * Generate a known floating point constant
  */
@@ -75,6 +97,10 @@ ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode);
  * Return true if a mode can be stored in the GP register set
  */
 int ia32_mode_needs_gp_reg(ir_mode *mode);
+
+void parse_asm_constraint(int pos, constraint_t *constraint, const char *c);
+void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
+                          const char *clobber);
 
 /**
  * returns register by name (used for determining clobber specifications in
