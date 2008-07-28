@@ -27,9 +27,24 @@
 #define FIRM_BE_MAIN_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
+
+typedef enum {
+	ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER     = 0x0001,
+	ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP        = 0x0002,
+	ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE    = 0x0004,
+	ASM_CONSTRAINT_FLAG_NO_SUPPORT            = 0x0008,
+	ASM_CONSTRAINT_FLAG_MODIFIER_WRITE        = 0x0010,
+	ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE     = 0x0020,
+	ASM_CONSTRAINT_FLAG_MODIFIER_READ         = 0x0040,
+	ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ      = 0x0080,
+	ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER = 0x0100,
+	ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE  = 0x0200,
+	ASM_CONSTRAINT_FLAG_INVALID               = 0x8000
+} asm_constraint_flags_t;
 
 /**
  * This structure contains parameters that should be
@@ -58,7 +73,8 @@ typedef struct backend_params {
 	/** Backend settings for if-conversion. */
 	const ir_settings_if_conv_t *if_conv_info;
 
-	/** The immediate floating point mode. Temporaries are calculated using this mode. */
+	/** The immediate floating point mode. Temporaries are calculated using
+	 * this mode. */
 	ir_mode *imm_fp_mode;
 } backend_params;
 
@@ -84,6 +100,17 @@ const backend_params *be_get_backend_param(void);
  * Main interface to the frontend.
  */
 void be_main(FILE *output, const char *compilation_unit_name);
+
+/**
+ * parse assembler constraint strings and returns flags (so the frontend knows
+ * which operands are inputs/outputs and wether memory is required)
+ */
+asm_constraint_flags_t parse_asm_constraints(const char *constraint);
+
+/**
+ * tests wether a string is a valid clobber in an asm instruction
+ */
+bool is_valid_clobber(const char *clobber);
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;
