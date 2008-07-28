@@ -46,13 +46,25 @@ __END__
 
 basedir=`pwd`
 
-DIRS=". langshootout ack"
-test -n "$1" && DIRS="$1"
+if [ -z "$1" ]; then
+	DIRS=". langshootout ack"
+else
+	for f in "$@"; do
+		if test -d "$f"; then
+			DIRS="$DIRS $f"
+		else
+			FILES="$FILES $f"
+		fi
+	done
+fi
+for d in $DIRS; do
+	for f in $d/*.c; do
+		FILES="$FILES $f"
+	done
+done
 
-for dir in $DIRS; do
-	curdir=$basedir/$dir
-    echo "<section name=\"$curdir/\">" >> $XMLRES
-for file in $curdir/$CFILES; do
+for file in $FILES; do
+	curdir="`dirname $file`"
     COMPILE_RES="ok"
     LINK_RES="omitted"
     GCC_RES="ok"
@@ -121,8 +133,6 @@ for file in $curdir/$CFILES; do
         <diff>$DIFF_RES</diff>
     </result>
 __END__
-done
-    echo "</section>" >> $XMLRES
 done
 
 echo "</results>" >> $XMLRES
