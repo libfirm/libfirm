@@ -356,6 +356,8 @@ void (set_irn_dep)(ir_node *node, int pos, ir_node *dep) {
 int add_irn_dep(ir_node *node, ir_node *dep) {
 	int res = 0;
 
+	/* DEP edges are only allowed in backend phase */
+	assert(get_irg_phase_state(get_irn_irg(node)) == phase_backend);
 	if (node->deps == NULL) {
 		node->deps = NEW_ARR_F(ir_node *, 1);
 		node->deps[0] = dep;

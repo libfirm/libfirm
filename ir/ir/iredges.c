@@ -881,11 +881,13 @@ void edges_init_dbg(int do_dbg) {
 void edges_activate(ir_graph *irg) {
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
-	edges_activate_kind(irg, EDGE_KIND_DEP);
+	if (get_irg_phase_state(irg) == phase_backend)
+		edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
 void edges_deactivate(ir_graph *irg) {
-	edges_deactivate_kind(irg, EDGE_KIND_DEP);
+	if (get_irg_phase_state(irg) == phase_backend)
+		edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
