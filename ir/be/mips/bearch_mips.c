@@ -990,6 +990,21 @@ static const backend_params *mips_get_libfirm_params(void) {
 	return &p;
 }
 
+static asm_constraint_flags_t mips_parse_asm_constraint(const void *self,
+                                                        const char **c)
+{
+	(void) self;
+	(void) c;
+	return ASM_CONSTRAINT_FLAG_INVALID;
+}
+
+static bool mips_is_valid_clobber(const void *self, const char *clobber)
+{
+	(void) self;
+	(void) clobber;
+	return false;
+}
+
 const arch_isa_if_t mips_isa_if = {
 	mips_init,
 	mips_done,
@@ -1005,6 +1020,8 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_allowed_execution_units,
 	mips_get_machine,
 	mips_get_irg_list,
+	mips_parse_asm_constraint,
+	mips_is_valid_clobber
 };
 
 void be_init_arch_mips(void)
