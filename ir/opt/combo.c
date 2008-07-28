@@ -202,6 +202,13 @@ static void dump_all_partitions(const environment_t *env) {
 #endif
 
 /**
+ * Return the "top" value depending on the mode
+ */
+static tarval *get_top_value(const ir_mode *mode) {
+	return (mode == mode_X || mode == mode_BB) ? tarval_unreachable : tarval_top;
+}
+
+/**
  * Compare two pointer values of a listmap.
  */
 static int listmap_cmp_ptr(const void *elt, const void *key, size_t size) {
@@ -410,7 +417,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->node           = irn;
 	node->part           = part;
 	node->next           = NULL;
-	node->type.tv        = (mode == mode_X || mode == mode_BB) ? tarval_unreachable : tarval_top;
+	node->type.tv        = get_top_value(mode);
 	node->max_user_input = 0;
 	node->next_edge      = 0;
 	node->on_touched     = 0;
@@ -699,6 +706,7 @@ static void cause_splits(environment_t *env) {
 			Z->on_touched = 0;
 
 			if (Z->n_nodes != Z->n_touched) {
+				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
 				split(Z, Z->touched, env);
 			}
 			/* Empty local Z.touched. */
@@ -723,7 +731,7 @@ static void cause_splits(environment_t *env) {
  * @return if P != NULL P will be filled with the resulting partitions and returned
  */
 static partition_t **split_by_what(partition_t *X, what_func What,
-								  partition_t **P, environment_t *env) {
+                                   partition_t **P, environment_t *env) {
 	node_t          *x, *S;
 	listmap_t       map;
 	listmap_entry_t *iter;
@@ -755,6 +763,7 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 		S = iter->list;
 
 		/* Add SPLIT( X, S ) to P. */
+		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
 		R = split(X, S, env);
 		if (P != NULL) {
 			ARR_APP1(partition_t *, P, R);
@@ -842,9 +851,10 @@ static void split_by(partition_t *X, environment_t *env) {
 	partition_t **P = NEW_ARR_F(partition_t *, 0);
 	int         i, j, k;
 
+	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
 	P = split_by_what(X, lambda_type, P, env);
 	for (i = ARR_LEN(P) - 1; i >= 0; --i) {
-		partition_t    *Y = P[i];
+		partition_t *Y = P[i];
 
 		if (Y->n_nodes > 1) {
 			lattice_elem_t type = get_partition_type(Y);
@@ -853,6 +863,7 @@ static void split_by(partition_t *X, environment_t *env) {
 			if (type.tv != tarval_top && type.tv != tarval_unreachable && !is_type_constant(type)) {
 				partition_t **Q = NEW_ARR_F(partition_t *, 0);
 
+				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
 				Q = split_by_what(Y, lambda_opcode, Q, env);
 
 				for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
@@ -861,6 +872,7 @@ static void split_by(partition_t *X, environment_t *env) {
 					for (k = Z->max_arity - 1; k >= -1; --k) {
 						if (Z->n_nodes > 1) {
 							env->lambda_input = k;
+							DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", k, Z->nr));
 							split_by_what(Z, lambda_partition, NULL, env);
 						}
 					}
@@ -1216,7 +1228,18 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 static void compute_Proj(node_t *node) {
 	ir_node *proj = node->node;
 	ir_mode *mode = get_irn_mode(proj);
-	ir_node *pred;
+	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
+	ir_node *pred  = get_Proj_pred(proj);
+
+	if (block->type.tv == tarval_unreachable) {
+		/* a Proj node in an unreachable block computes Top
+		   except if it's the initial_exec node. */
+		if (get_Proj_proj(proj) != pn_Start_X_initial_exec ||
+			! is_Start(pred)) {
+			node->type.tv = get_top_value(mode);
+			return;
+		}
+	}
 
 	if (mode == mode_M) {
 		/* mode M is always bottom */
@@ -1224,15 +1247,13 @@ static void compute_Proj(node_t *node) {
 		return;
 	}
 	if (mode != mode_X) {
-		ir_node *cmp = get_Proj_pred(proj);
-		if (is_Cmp(cmp))
-			compute_Proj_Cmp(node, cmp);
+		if (is_Cmp(pred))
+			compute_Proj_Cmp(node, pred);
 		else
 			default_compute(node);
 		return;
 	}
 	/* handle mode_X nodes */
-	pred = get_Proj_pred(proj);
 
 	switch (get_irn_opcode(pred)) {
 	case iro_Start:
@@ -1312,6 +1333,7 @@ static void propagate(environment_t *env) {
 		}
 
 		if (n_fallen > 0 && n_fallen != X->n_nodes) {
+			DB((dbg, LEVEL_2, "Splitting part%d by fallen\n", X->nr));
 			Y = split(X, fallen, env);
 		} else {
 			Y = X;
@@ -1482,6 +1504,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
+	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
