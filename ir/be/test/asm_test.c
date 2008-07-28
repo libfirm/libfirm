@@ -46,6 +46,11 @@ static inline unsigned int swap32(unsigned int x)
 	return x;
 }
 
+static inline void inc(int *v)
+{
+	__asm__("incl %0" : "+g" (*v) : : "cc");
+}
+
 #if 1
 typedef struct kernel_fd_set {
 	int bla;
@@ -79,11 +84,16 @@ int justcompile(void)
 int main()
 {
 	kernel_fd_set s;
+	int k;
 
 	fd_set(20, &s);
 	assert(fd_isset(20, &s));
 
-	printf("Swap16: %d Swap32: %d\n", swap16(12), swap32(123551235));
+	printf("Swap16(0xAABB): %X Swap32(0xAABBCCDD): %X\n",
+	       swap16(0xAABB), swap32(0xAABBCCDD));
+	k = 41;
+	inc(&k);
+	printf("mov(inc(41)): %d\n", mov(k));
 
 	return mov(0);
 }
