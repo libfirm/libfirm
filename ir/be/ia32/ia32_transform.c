@@ -138,7 +138,7 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 /**
  * Return true if a mode can be stored in the GP register set
  */
-INLINE int mode_needs_gp_reg(ir_mode *mode) {
+int ia32_mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
 		return 0;
 	if(get_mode_size_bits(mode) > 32)
@@ -164,7 +164,7 @@ static ident *unique_id(const char *tag)
 /**
  * Get a primitive type for a mode.
  */
-ir_type *get_prim_type(pmap *types, ir_mode *mode)
+ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 {
 	pmap_entry *e = pmap_find(types, mode);
 	ir_type *res;
@@ -237,9 +237,9 @@ static ir_entity *create_float_const_entity(ir_node *cnst)
 			/* mode was not changed */
 			tp = get_Const_type(cnst);
 			if (tp == firm_unknown_type)
-				tp = get_prim_type(isa->types, mode);
+				tp = ia32_get_prim_type(isa->types, mode);
 		} else
-			tp = get_prim_type(isa->types, mode);
+			tp = ia32_get_prim_type(isa->types, mode);
 
 		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
 
@@ -752,8 +752,8 @@ static int is_downconv(const ir_node *node)
 
 	src_mode  = get_irn_mode(get_Conv_op(node));
 	dest_mode = get_irn_mode(node);
-	return mode_needs_gp_reg(src_mode)
-		&& mode_needs_gp_reg(dest_mode)
+	return ia32_mode_needs_gp_reg(src_mode)
+		&& ia32_mode_needs_gp_reg(dest_mode)
 		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
 }
 
@@ -2233,7 +2233,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	ir_node  *new_node;
 
 	/* handle only GP modes for now... */
-	if(!mode_needs_gp_reg(mode))
+	if(!ia32_mode_needs_gp_reg(mode))
 		return NULL;
 
 	while(1) {
@@ -2372,7 +2372,7 @@ static int is_float_to_int32_conv(const ir_node *node)
 	ir_node  *conv_op;
 	ir_mode  *conv_mode;
 
-	if(get_mode_size_bits(mode) != 32 || !mode_needs_gp_reg(mode))
+	if(get_mode_size_bits(mode) != 32 || !ia32_mode_needs_gp_reg(mode))
 		return 0;
 
 	if(!is_Conv(node))
@@ -2737,7 +2737,7 @@ static ir_node *gen_be_Copy(ir_node *node)
 	ir_node *new_node = be_duplicate_node(node);
 	ir_mode *mode     = get_irn_mode(new_node);
 
-	if (mode_needs_gp_reg(mode)) {
+	if (ia32_mode_needs_gp_reg(mode)) {
 		set_irn_mode(new_node, mode_Iu);
 	}
 
@@ -2854,7 +2854,7 @@ static ir_node *gen_Cmp(ir_node *node)
 		}
 	}
 
-	assert(mode_needs_gp_reg(cmp_mode));
+	assert(ia32_mode_needs_gp_reg(cmp_mode));
 
 	/* we prefer the Test instruction where possible except cases where
 	 * we can use SourceAM */
@@ -2958,7 +2958,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	ia32_address_t      *addr;
 
 	assert(ia32_cg_config.use_cmov);
-	assert(mode_needs_gp_reg(get_irn_mode(val_true)));
+	assert(ia32_mode_needs_gp_reg(get_irn_mode(val_true)));
 
 	addr = &am.addr;
 
@@ -3095,7 +3095,7 @@ static ir_node *gen_Psi(ir_node *node)
 		ir_node *flags;
 		ir_node *new_node;
 
-		assert(mode_needs_gp_reg(mode));
+		assert(ia32_mode_needs_gp_reg(mode));
 
 		if (is_Proj(cond)) {
 			ir_node *cmp = get_Proj_pred(cond);
@@ -3814,6 +3814,8 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 			break;
 
 		case 'm':
+		case 'o':
+		case 'V':
 			/* memory constraint no need to do anything in backend about it
 			 * (the dependencies are already respected by the memory edge of
 			 * the node) */
@@ -3824,8 +3826,6 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 		case 'F': /* no float consts yet */
 		case 's': /* makes no sense on x86 */
 		case 'X': /* we can't support that in firm */
-		case 'o':
-		case 'V':
 		case '<': /* no autodecrement on x86 */
 		case '>': /* no autoincrement on x86 */
 		case 'C': /* sse constant not supported yet */
@@ -3905,19 +3905,12 @@ static void parse_asm_constraint(int pos, constraint_t *constraint, const char *
 	constraint->immediate_type     = immediate_type;
 }
 
-static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
-                          const char *clobber)
+const arch_register_t *ia32_get_clobber_register(const char *clobber)
 {
-	ir_graph                    *irg  = get_irn_irg(node);
-	struct obstack              *obst = get_irg_obstack(irg);
-	const arch_register_t       *reg  = NULL;
+	const arch_register_t       *reg = NULL;
 	int                          c;
 	size_t                       r;
-	arch_register_req_t         *req;
 	const arch_register_class_t *cls;
-	unsigned                    *limited;
-
-	(void) pos;
 
 	/* TODO: construct a hashmap instead of doing linear search for clobber
 	 * register */
@@ -3934,6 +3927,21 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 		if(reg != NULL)
 			break;
 	}
+
+	return reg;
+}
+
+static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
+                          const char *clobber)
+{
+	ir_graph                    *irg  = get_irn_irg(node);
+	struct obstack              *obst = get_irg_obstack(irg);
+	const arch_register_t       *reg  = ia32_get_clobber_register(clobber);
+	arch_register_req_t         *req;
+	unsigned                    *limited;
+
+	(void) pos;
+
 	if(reg == NULL) {
 		panic("Register '%s' mentioned in asm clobber is unknown\n", clobber);
 		return;
@@ -3947,7 +3955,7 @@ static void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
 	req          = obstack_alloc(obst, sizeof(req[0]));
 	memset(req, 0, sizeof(req[0]));
 	req->type    = arch_register_req_type_limited;
-	req->cls     = cls;
+	req->cls     = arch_register_get_class(reg);
 	req->limited = limited;
 
 	constraint->req                = req;
@@ -4284,7 +4292,7 @@ static ir_node *gen_Unknown(ir_node *node) {
 			add_irn_dep(ret, get_irg_frame(irg));
 			return ret;
 		}
-	} else if (mode_needs_gp_reg(mode)) {
+	} else if (ia32_mode_needs_gp_reg(mode)) {
 		return ia32_new_Unknown_gp(env_cg);
 	} else {
 		panic("unsupported Unknown-Mode");
@@ -4302,7 +4310,7 @@ static ir_node *gen_Phi(ir_node *node) {
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *phi;
 
-	if(mode_needs_gp_reg(mode)) {
+	if(ia32_mode_needs_gp_reg(mode)) {
 		/* we shouldn't have any 64bit stuff around anymore */
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
@@ -5293,7 +5301,7 @@ static ir_node *gen_Proj(ir_node *node) {
 		} else {
 #endif
 			ir_mode *mode = get_irn_mode(node);
-			if (mode_needs_gp_reg(mode)) {
+			if (ia32_mode_needs_gp_reg(mode)) {
 				ir_node *new_pred = be_transform_node(pred);
 				ir_node *block    = be_transform_node(get_nodes_block(node));
 				ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,

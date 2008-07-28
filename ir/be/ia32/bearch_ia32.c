@@ -1651,6 +1651,53 @@ static ia32_isa_t ia32_isa_template = {
 #endif
 };
 
+static void init_asm_constraints(void)
+{
+	be_init_default_asm_constraint_flags();
+
+	asm_constraint_flags['a'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['b'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['c'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['d'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['D'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['S'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['Q'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['q'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['A'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['l'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['R'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['r'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['p'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['f'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['t'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['u'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['Y'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['n'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['g'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+
+	/* no support for autodecrement/autoincrement */
+	asm_constraint_flags['<'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['>'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* no float consts */
+	asm_constraint_flags['E'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['F'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* makes no sense on x86 */
+	asm_constraint_flags['s'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* no support for sse consts yet */
+	asm_constraint_flags['C'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* no support for x87 consts yet */
+	asm_constraint_flags['G'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* no support for mmx registers yet */
+	asm_constraint_flags['y'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	/* not available in 32bit mode */
+	asm_constraint_flags['Z'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['e'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+
+	/* no code yet to determine register class needed... */
+	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+}
+
 /**
  * Initializes the backend ISA.
  */
@@ -1662,6 +1709,7 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 		return NULL;
 	inited = 1;
 
+	init_asm_constraints();
 	set_tarval_output_modes();
 
 	isa = xmalloc(sizeof(*isa));
@@ -2157,6 +2205,23 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	return 0;
 }
 
+static asm_constraint_flags_t ia32_parse_asm_constraint(const void *self, const char **c)
+{
+	(void) self;
+	(void) c;
+
+	/* we already added all our simple flags to the flags modifier list in
+	 * init, so this flag we don't know. */
+	return ASM_CONSTRAINT_FLAG_INVALID;
+}
+
+static bool ia32_is_valid_clobber(const void *self, const char *clobber)
+{
+	(void) self;
+
+	return ia32_get_clobber_register(clobber) != NULL;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -2228,6 +2293,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_allowed_execution_units,
 	ia32_get_machine,
 	ia32_get_irg_list,
+	ia32_parse_asm_constraint,
+	ia32_is_valid_clobber
 };
 
 void ia32_init_emitter(void);

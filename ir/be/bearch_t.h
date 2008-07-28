@@ -522,6 +522,19 @@ struct arch_isa_if_t {
 	 * @return A flexible array ARR_F containing all desired irgs in the desired order.
 	 */
 	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
+
+	/**
+	 * parse an assembler constraint part and set flags according to its nature
+	 * advances the *c pointer to point to the last parsed character (so if you
+	 * parse a single character don't advance c)
+	 */
+	asm_constraint_flags_t (*parse_asm_constraint)(const void *self, const char **c);
+
+	/**
+	 * returns true if the string is a valid clobbered (register) in this
+	 * backend
+	 */
+	bool (*is_valid_clobber)(const void *self, const char *clobber);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
@@ -537,6 +550,8 @@ struct arch_isa_if_t {
 #define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((env), (irn)))
 #define arch_env_get_machine(env)                      ((env)->impl->get_machine(env))
 #define arch_env_get_backend_irg_list(env,irgs)        ((env)->impl->get_backend_irg_list((env), (irgs)))
+#define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((env), (c))
+#define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((env), (clobber))
 
 /**
  * ISA base class.

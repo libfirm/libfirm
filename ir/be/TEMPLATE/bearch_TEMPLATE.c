@@ -670,6 +670,20 @@ static ir_graph **TEMPLATE_get_backend_irg_list(const void *self,
 	return NULL;
 }
 
+static asm_constraint_flags_t TEMPLATE_parse_asm_constraint(const void *self,
+                                                            const char **c)
+{
+	(void) self;
+	(void) c;
+	return ASM_CONSTRAINT_FLAG_INVALID;
+}
+
+static bool TEMPLATE_is_valid_clobber(const void *self, const char *clobber)
+{
+	(void) self;
+	(void) clobber;
+	return false;
+}
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
@@ -685,7 +699,9 @@ const arch_isa_if_t TEMPLATE_isa_if = {
     TEMPLATE_get_backend_params,
 	TEMPLATE_get_allowed_execution_units,
 	TEMPLATE_get_machine,
-	TEMPLATE_get_backend_irg_list
+	TEMPLATE_get_backend_irg_list,
+	TEMPLATE_parse_asm_constraint,
+	TEMPLATE_is_valid_clobber
 };
 
 void be_init_arch_TEMPLATE(void)

@@ -91,6 +91,10 @@ struct be_main_env_t {
 	ir_type               *pic_symbols_type;
 };
 
+extern unsigned short asm_constraint_flags[256];
+
+void be_init_default_asm_constraint_flags(void);
+
 /**
  * Put the registers to be ignored in this IRG into a bitset.
  * @param birg The backend IRG data structure.
@@ -145,5 +149,6 @@ extern ir_timer_t *t_ra_ifg;       /**< timer for building interference graph */
 extern ir_timer_t *t_ra_copymin;   /**< timer for copy minimization */
 extern ir_timer_t *t_ra_ssa;       /**< timer for ssa destruction */
 extern ir_timer_t *t_ra_other;     /**< timer for remaining stuff */
+
 
 #endif /* FIRM_BE_BE_T_H */

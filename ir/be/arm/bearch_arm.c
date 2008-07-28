@@ -1204,6 +1204,21 @@ static int arm_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j) {
 	return 1;
 }
 
+static asm_constraint_flags_t arm_parse_asm_constraint(const void *self, const char **c)
+{
+	/* asm not supported */
+	(void) self;
+	(void) c;
+	return ASM_CONSTRAINT_FLAG_INVALID;
+}
+
+static bool arm_is_valid_clobber(const void *self, const char *clobber)
+{
+	(void) self;
+	(void) clobber;
+	return false;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -1274,6 +1289,8 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_allowed_execution_units,
 	arm_get_machine,
 	arm_get_irg_list,
+	arm_parse_asm_constraint,
+	arm_is_valid_clobber
 };
 
 void be_init_arch_arm(void)

@@ -69,11 +69,17 @@ ir_node *ia32_skip_downconv(ir_node *node);
 /**
  * Get a primitive type for a mode.
  */
-ir_type *get_prim_type(pmap *types, ir_mode *mode);
+ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode);
 
 /**
  * Return true if a mode can be stored in the GP register set
  */
-INLINE int mode_needs_gp_reg(ir_mode *mode);
+int ia32_mode_needs_gp_reg(ir_mode *mode);
+
+/**
+ * returns register by name (used for determining clobber specifications in
+ * asm instructions)
+ */
+const arch_register_t *ia32_get_clobber_register(const char *clobber);
 
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

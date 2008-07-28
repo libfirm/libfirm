@@ -926,6 +926,22 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	return &p;
 }
 
+static asm_constraint_flags_t ppc32_parse_asm_constraint(const void *self, const char **c)
+{
+	/* no asm support yet */
+	(void) self;
+	(void) c;
+	return ASM_CONSTRAINT_FLAG_INVALID;
+}
+
+static bool ppc32_is_valid_clobber(const void *self, const char *clobber)
+{
+	/* no asm support yet */
+	(void) self;
+	(void) clobber;
+	return false;
+}
+
 const arch_isa_if_t ppc32_isa_if = {
 	ppc32_init,
 	ppc32_done,
@@ -941,6 +957,8 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_allowed_execution_units,
 	ppc32_get_machine,
 	ppc32_get_irg_list,
+	ppc32_parse_asm_constraint,
+	ppc32_is_valid_clobber
 };
 
 void be_init_arch_ppc32(void)

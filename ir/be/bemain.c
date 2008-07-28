@@ -176,6 +176,123 @@ static const lc_opt_table_entry_t be_main_options[] = {
 
 static be_module_list_entry_t *isa_ifs = NULL;
 
+
+unsigned short asm_constraint_flags[256];
+
+void be_init_default_asm_constraint_flags(void)
+{
+	asm_constraint_flags['?'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['!'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['&'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT
+		| ASM_CONSTRAINT_FLAG_MODIFIER_EARLYCLOBBER;
+	asm_constraint_flags['%'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT
+		| ASM_CONSTRAINT_FLAG_MODIFIER_COMMUTATIVE;
+	asm_constraint_flags['!'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+
+	asm_constraint_flags['='] = ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
+		| ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
+	asm_constraint_flags['+'] = ASM_CONSTRAINT_FLAG_MODIFIER_READ
+		| ASM_CONSTRAINT_FLAG_MODIFIER_WRITE;
+
+	asm_constraint_flags['i'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['s'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['E'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['F'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['G'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['H'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['I'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['J'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['K'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['L'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['M'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['N'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['O'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+	asm_constraint_flags['P'] = ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+
+	asm_constraint_flags['m'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['o'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['V'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['<'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+	asm_constraint_flags['>'] = ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP;
+
+	asm_constraint_flags['p'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['0'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['1'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['2'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['3'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['4'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['5'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['6'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['7'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['8'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+	asm_constraint_flags['9'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER;
+
+	asm_constraint_flags['X'] = ASM_CONSTRAINT_FLAG_SUPPORTS_REGISTER
+		| ASM_CONSTRAINT_FLAG_SUPPORTS_MEMOP
+		| ASM_CONSTRAINT_FLAG_SUPPORTS_IMMEDIATE;
+
+	/* these should have been catched by the parsing code already */
+	asm_constraint_flags['#']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['*']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags[' ']  = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['\t'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['\n'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+	asm_constraint_flags['\r'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
+}
+
+asm_constraint_flags_t parse_asm_constraints(const char *constraint)
+{
+	const char             *c;
+	asm_constraint_flags_t  flags;
+	asm_constraint_flags_t  tflags;
+
+	for (c = constraint; *c != '\0'; ++c) {
+		switch (*c) {
+		case '#':
+			/* 'comment' stuff */
+			while(*c != 0 && *c != ',')
+				++c;
+			break;
+		case '*':
+			/* 'comment' character */
+			++c;
+			break;
+		case ' ':
+		case '\t':
+		case '\n':
+		case '\r':
+			break;
+		default:
+			tflags = asm_constraint_flags[(int) *c];
+			if (tflags != 0) {
+				flags |= tflags;
+			} else {
+				flags |= isa_if->parse_asm_constraint(isa_if, &c);
+			}
+			break;
+		}
+	}
+
+	if ( ((flags & ASM_CONSTRAINT_FLAG_MODIFIER_WRITE)
+			&& (flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE))
+		|| ((flags & ASM_CONSTRAINT_FLAG_MODIFIER_READ
+			&& (flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ)))) {
+		flags |= ASM_CONSTRAINT_FLAG_INVALID;
+	}
+
+	return flags;
+}
+
+bool is_valid_clobber(const char *clobber)
+{
+	/* memory is a valid clobber. (the frontend has to detect this case too,
+	 * because it has to add memory edges to the asm) */
+	if (strcmp(clobber, "memory") == 0)
+		return true;
+
+	return isa_if->is_valid_clobber(isa_if, clobber);
+}
+
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
 {
 	if (isa_if == NULL)
@@ -269,6 +386,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	remove_irp_type(env->pic_symbols_type);
 	set_class_final(env->pic_trampolines_type, 1);
 
+	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
 	env->arch_env = arch_env_init(isa_if, file_handle, env);
 
 	be_phi_handler_new(env);
