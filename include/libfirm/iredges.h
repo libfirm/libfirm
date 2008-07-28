@@ -197,14 +197,19 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
 #endif
 
 /**
- * Activate all the edges for an irg.
- * @param irg The graph to activate the edges for.
+ * Activates data and block edges for an irg.
+ * If the irg phase is phase_backend, Dependence edges are
+ * additionally activated.
+ *
+ * @param irg  The graph to activate the edges for.
  */
 void edges_activate(ir_graph *irg);
 
 /**
- * Deactivate all the edges for an irg.
- * @param irg The graph.
+ * Deactivate data and block edges for an irg.
+ * If the irg phase is phase_backend, Dependence edges are
+ * additionally deactivated.
+ * @param irg  The graph.
  */
 void edges_deactivate(ir_graph *irg);
 

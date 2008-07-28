@@ -118,14 +118,19 @@ ir_node *get_irn_n(const ir_node *node, int n);
 /**
 * Add a artificial dependency to the node.
 * The dependency is only inserted if it is not there already.
+* This is only allowed in phase_backend!
+*
 * @param node The node.
 * @param dep  The dependency target.
+*
 * @return The index in the array (get_irn_dep() with that index returns @p dep).
 */
 int add_irn_dep(ir_node *node, ir_node *dep);
 
 /**
  * Copy all dependencies from a node to another.
+ * This is only allowed in phase_backend!
+ *
  * @param tgt The node which should be enriched.
  * @param src The node whose dependencies shall be copied.
  */
