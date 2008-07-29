@@ -1137,6 +1137,13 @@ static void compute_Add(node_t *node) {
 }  /* compute_Add */
 
 /**
+ * Returns true if a type is a constant.
+ */
+static int is_con(const lattice_elem_t type) {
+	return is_entity(type.sym.entity_p) || tarval_is_constant(type.tv);
+}
+
+/**
  * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
  *
  * @param node  the node
@@ -1153,19 +1160,23 @@ static void compute_Sub(node_t *node) {
 		node->type.tv = tarval_top;
 		return;
 	}
-
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
+		if (is_tarval(a.tv) && is_tarval(b.tv)) {
+			node->type.tv = tarval_sub(a.tv, b.tv);
+		} else if (is_tarval(a.tv) && tarval_is_null(a.tv)) {
+			node->type = b;
+		} else if (is_tarval(b.tv) && tarval_is_null(b.tv)) {
+			node->type = a;
+		} else {
+			node->type.tv = tarval_bottom;
+		}
 	} else if (r->part == l->part) {
 		ir_mode *mode = get_irn_mode(sub);
 		node->type.tv = get_mode_null(mode);
-	} else if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
-		node->type.tv = tarval_bottom;
 	} else {
-		if (is_tarval(a.tv) && is_tarval(b.tv))
-			node->type.tv = tarval_sub(a.tv, b.tv);
-		else
-			node->type.tv = tarval_bottom;
+		node->type.tv = tarval_bottom;
 	}
 }  /* compute_Sub */
 
@@ -1190,12 +1201,12 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	if (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt ||  pnc == pn_Cmp_Gt) {
 		if (a.tv == tarval_top || b.tv == tarval_top) {
 			node->type.tv = tarval_top;
+		} else if (is_con(a) && is_con(b)) {
+			default_compute(node);
 		} else if (r->part == l->part) {
 			node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
-		} else if (a.tv == tarval_bottom || b.tv == tarval_bottom) {
-			node->type.tv = tarval_bottom;
 		} else {
-			default_compute(node);
+			node->type.tv = tarval_bottom;
 		}
 	} else {
 		default_compute(node);
@@ -1559,7 +1570,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
