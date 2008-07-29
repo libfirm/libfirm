@@ -2374,6 +2374,10 @@ static int is_float_to_int32_conv(const ir_node *node)
 
 	if(get_mode_size_bits(mode) != 32 || !ia32_mode_needs_gp_reg(mode))
 		return 0;
+	/* don't report unsigned as conv to 32bit, because we really need to do
+	 * a vfist with 64bit signed in this case */
+	if(!mode_is_signed(mode))
+		return 0;
 
 	if(!is_Conv(node))
 		return 0;
