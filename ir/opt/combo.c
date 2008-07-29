@@ -49,11 +49,15 @@
 #include "irouts.h"
 #include "irgmod.h"
 #include "debug.h"
+#include "error.h"
 
 #include "tv_t.h"
 
 #include "irprintf.h"
 #include "irdump.h"
+
+/* define this to check that all type translations are monotone */
+#define VERIFY_MONOTONE
 
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
@@ -145,13 +149,13 @@ typedef struct environment_t {
 	partition_t     *cprop;         /**< The constant propagation list. */
 	partition_t     *touched;       /**< the touched set. */
 	partition_t     *initial;       /**< The initial partition. */
-#ifdef DEBUG_libfirm
-	partition_t     *dbg_list;      /**< List of all partitions. */
-#endif
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
+#ifdef DEBUG_libfirm
+	partition_t     *dbg_list;      /**< List of all partitions. */
+#endif
 } environment_t;
 
 /** Type of the what function. */
@@ -199,6 +203,36 @@ static void dump_all_partitions(const environment_t *env) {
 #else
 #define dump_partition(msg, part)
 #define dump_all_partitions(env)
+#endif
+
+#if defined(VERIFY_MONOTONE) && defined (DEBUG_libfirm)
+/**
+ * Verify that a type transition is monotone
+ */
+static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_type) {
+	if (old_type.tv == new_type.tv) {
+		/* no change */
+		return;
+	}
+	if (old_type.tv == tarval_top) {
+		/* from Top down-to is always allowed */
+		return;
+	}
+	if (old_type.tv == tarval_unreachable) {
+		if (new_type.tv == tarval_reachable) {
+			/* U -> R */
+			return;
+		}
+		panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
+	}
+	if (new_type.tv == tarval_bottom) {
+		/* bottom reached */
+		return;
+	}
+	panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
+}
+#else
+#define verify_type(old_type, new_type)
 #endif
 
 /**
@@ -626,7 +660,7 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 	}
 	if (is_Block(y->node)) {
 		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
-		 * if someone placeis the block. The Block is only placed if the reachability
+		 * if someone placed the block. The Block is only placed if the reachability
 		 * changes, and this must be re-evaluated in compute_Phi(). */
 		ir_node *phi;
 		for (phi = get_Block_phis(y->node); phi != NULL; phi = get_Phi_next(phi)) {
@@ -635,6 +669,25 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 		}
 	}
 }  /* add_node_to_cprop */
+
+/**
+ * Check whether a type is neither Top or a constant.
+ * Note: U, R are NOT constants!
+ *
+ * @param type  the type to check
+ */
+static int type_is_neither_top_nor_const(const lattice_elem_t type) {
+	if (is_tarval(type.tv)) {
+		if (type.tv == tarval_top)
+			return 0;
+		if (tarval_is_constant(type.tv))
+			return 0;
+	} else {
+		/* is a symconst */
+		return 0;
+	}
+	return 1;
+}
 
 /**
  * Split the partitions if caused by the first entry on the worklist.
@@ -692,7 +745,7 @@ static void cause_splits(environment_t *env) {
 
 				/* Partitions of constants should not be split simply because their Nodes have unequal
 				   functions or incongruent inputs. */
-				if (y->type.tv == tarval_bottom &&
+				if (type_is_neither_top_nor_const(y->type) &&
 					(! is_Phi(y->node) || is_live_input(y->node, i))) {
 					Y = y->part;
 					add_to_touched(Y, env);
@@ -811,6 +864,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 
 /** lambda n.(n[i].partition) */
 static void *lambda_partition(const node_t *node, environment_t *env) {
+	ir_node *skipped = skip_Proj(node->node);
 	ir_node *pred;
 	node_t  *p;
 	int     i = env->lambda_input;
@@ -822,10 +876,10 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 
 	/* ignore the "control input" for non-pinned nodes
 	   if we are running in GCSE mode */
-	if (i < env->end_idx && get_irn_pinned(node->node) != op_pin_state_pinned)
+	if (i < env->end_idx && get_irn_pinned(skipped) != op_pin_state_pinned)
 		return NULL;
 
-	pred = get_irn_n(node->node, i);
+	pred = i == -1 ? get_irn_n(skipped, i) : get_irn_n(node->node, i);
 	p    = get_irn_node(pred);
 
 	return p->part;
@@ -1312,6 +1366,7 @@ static void propagate(environment_t *env) {
 			DB((dbg, LEVEL_3, "computing type of %+F\n", x->node));
 			compute(x);
 			if (x->type.tv != old_type.tv) {
+				verify_type(old_type, x->type);
 				DB((dbg, LEVEL_2, "node %+F has changed type from %+F to %+F\n", x->node, old_type, x->type));
 
 				if (x->on_fallen == 0) {
