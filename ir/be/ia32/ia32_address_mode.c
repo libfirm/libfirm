@@ -90,7 +90,8 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		return 1;
 	case iro_Add:
 	case iro_Sub:
-		/* Add's and Sub's are typically supported as long as both operands are immediates */
+		/* Add's and Sub's are typically supported as long as both operands are
+		 * immediates */
 		if(bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
 			return 0;
 
