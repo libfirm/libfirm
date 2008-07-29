@@ -814,11 +814,11 @@ static ir_entity *find_entity_name(const char *name) {
 /**
  * Search methods for a name.
  */
-static void show_by_name(type_or_ent *tore, void *env) {
+static void show_by_name(type_or_ent tore, void *env) {
 	ident *id = (ident *)env;
 
-	if (is_entity(tore)) {
-		ir_entity *ent = (ir_entity *)tore;
+	if (is_entity(tore.ent)) {
+		ir_entity *ent = tore.ent;
 
 		if (is_method_entity(ent)) {
 			if (get_entity_ident(ent) == id) {
