@@ -164,6 +164,11 @@ typedef void *(*what_func)(const node_t *node, environment_t *env);
 #define get_irn_node(irn)         ((node_t *)get_irn_link(irn))
 #define set_irn_node(irn, node)   set_irn_link(irn, node)
 
+/* we do NOT use tarval_unreachable here, instead we use Top for this purpose */
+#undef tarval_unreachable
+#define tarval_unreachable tarval_top
+
+
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -218,14 +223,10 @@ static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_
 		/* from Top down-to is always allowed */
 		return;
 	}
-	if (old_type.tv == tarval_unreachable) {
-		if (new_type.tv == tarval_reachable) {
-			/* U -> R */
-			return;
-		}
+	if (old_type.tv == tarval_reachable) {
 		panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
 	}
-	if (new_type.tv == tarval_bottom) {
+	if (new_type.tv == tarval_bottom || new_type.tv == tarval_reachable) {
 		/* bottom reached */
 		return;
 	}
@@ -234,13 +235,6 @@ static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_
 #else
 #define verify_type(old_type, new_type)
 #endif
-
-/**
- * Return the "top" value depending on the mode
- */
-static tarval *get_top_value(const ir_mode *mode) {
-	return (mode == mode_X || mode == mode_BB) ? tarval_unreachable : tarval_top;
-}
 
 /**
  * Compare two pointer values of a listmap.
@@ -451,7 +445,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->node           = irn;
 	node->part           = part;
 	node->next           = NULL;
-	node->type.tv        = get_top_value(mode);
+	node->type.tv        = tarval_top;
 	node->max_user_input = 0;
 	node->next_edge      = 0;
 	node->on_touched     = 0;
@@ -673,7 +667,7 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 
 /**
  * Check whether a type is neither Top or a constant.
- * Note: U, R are NOT constants!
+ * Note: U is handled like Top here, R is a constant.
  *
  * @param type  the type to check
  */
@@ -914,8 +908,8 @@ static void split_by(partition_t *X, environment_t *env) {
 		if (Y->n_nodes > 1) {
 			lattice_elem_t type = get_partition_type(Y);
 
-			/* we do not want split the TOP, unreachable or constant partitions */
-			if (type.tv != tarval_top && type.tv != tarval_unreachable && !is_type_constant(type)) {
+			/* we do not want split the TOP or constant partitions */
+			if (type.tv != tarval_top && !is_type_constant(type)) {
 				partition_t **Q = NEW_ARR_F(partition_t *, 0);
 
 				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
@@ -947,18 +941,11 @@ static void split_by(partition_t *X, environment_t *env) {
 static void default_compute(node_t *node) {
 	int     i;
 	ir_node *irn = node->node;
-	tarval  *top = tarval_top;
+	node_t  *block = get_irn_node(get_nodes_block(irn));
 
-	if (get_irn_mode(node->node) == mode_X)
-		top = tarval_unreachable;
-
-	if (get_irn_pinned(irn) == op_pin_state_pinned) {
-		node_t *block = get_irn_node(get_nodes_block(irn));
-
-		if (block->type.tv == tarval_unreachable) {
-			node->type.tv = top;
-			return;
-		}
+	if (block->type.tv == tarval_unreachable) {
+		node->type.tv = tarval_top;
+		return;
 	}
 
 	/* if any of the data inputs have type top, the result is type top */
@@ -967,7 +954,7 @@ static void default_compute(node_t *node) {
 		node_t  *p    = get_irn_node(pred);
 
 		if (p->type.tv == tarval_top) {
-			node->type.tv = top;
+			node->type.tv = tarval_top;
 			return;
 		}
 	}
@@ -996,7 +983,7 @@ static void compute_Block(node_t *node) {
 			return;
 		}
 	}
-	node->type.tv = tarval_unreachable;
+	node->type.tv = tarval_top;
 }  /* compute_Block */
 
 /**
@@ -1175,12 +1162,16 @@ static void compute_Sub(node_t *node) {
 		}
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)))) {
-		/*
-		 * BEWARE: a - a is NOT always 0 for floating Point values, as
-		 * NaN op NaN = NaN, so we must check this here.
-		 */
-		ir_mode *mode = get_irn_mode(sub);
-		node->type.tv = get_mode_null(mode);
+		if (node->type.tv == tarval_top) {
+			/*
+			 * BEWARE: a - a is NOT always 0 for floating Point values, as
+			 * NaN op NaN = NaN, so we must check this here.
+			 */
+			ir_mode *mode = get_irn_mode(sub);
+			node->type.tv = get_mode_null(mode);
+		} else {
+			node->type.tv = tarval_bottom;
+		}
 	} else {
 		node->type.tv = tarval_bottom;
 	}
@@ -1206,11 +1197,15 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		default_compute(node);
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt || pnc == pn_Cmp_Gt)) {
-		/*
-		 * BEWARE: a == a is NOT always True for floating Point values, as
-		 * NaN != NaN is defined, so we must check this here.
-		 */
-		node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+		if (node->type.tv == tarval_top) {
+			/*
+			 * BEWARE: a == a is NOT always True for floating Point values, as
+			 * NaN != NaN is defined, so we must check this here.
+			 */
+			node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+		} else {
+			node->type.tv = tarval_bottom;
+		}
 	} else {
 		node->type.tv = tarval_bottom;
 	}
@@ -1299,14 +1294,21 @@ static void compute_Proj(node_t *node) {
 	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
 	ir_node *pred  = get_Proj_pred(proj);
 
+	if (get_Proj_proj(proj) == pn_Start_X_initial_exec && is_Start(pred)) {
+		/* The initial_exec node is ALWAYS reachable. */
+		node->type.tv = tarval_reachable;
+		return;
+	}
+
 	if (block->type.tv == tarval_unreachable) {
-		/* a Proj node in an unreachable block computes Top
-		   except if it's the initial_exec node. */
-		if (get_Proj_proj(proj) != pn_Start_X_initial_exec ||
-			! is_Start(pred)) {
-			node->type.tv = get_top_value(mode);
-			return;
-		}
+		/* a Proj in a unreachable Block stay Top */
+		node->type.tv = tarval_top;
+		return;
+	}
+	if (get_irn_node(pred)->type.tv == tarval_top) {
+		/* if the predecessor is Top, its Proj follow */
+		node->type.tv = tarval_top;
+		return;
 	}
 
 	if (mode == mode_M) {
@@ -1325,7 +1327,8 @@ static void compute_Proj(node_t *node) {
 
 	switch (get_irn_opcode(pred)) {
 	case iro_Start:
-		/* the Proj_X from the Start is always reachable */
+		/* the Proj_X from the Start is always reachable.
+		   However this is already handled at the top. */
 		node->type.tv = tarval_reachable;
 		break;
 	case iro_Cond:
@@ -1575,7 +1578,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
