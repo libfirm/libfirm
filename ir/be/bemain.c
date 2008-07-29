@@ -240,10 +240,10 @@ void be_init_default_asm_constraint_flags(void)
 	asm_constraint_flags['\r'] = ASM_CONSTRAINT_FLAG_NO_SUPPORT;
 }
 
-asm_constraint_flags_t parse_asm_constraints(const char *constraint)
+asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
+	asm_constraint_flags_t  flags = 0;
 	const char             *c;
-	asm_constraint_flags_t  flags;
 	asm_constraint_flags_t  tflags;
 
 	for (c = constraint; *c != '\0'; ++c) {
@@ -279,15 +279,24 @@ asm_constraint_flags_t parse_asm_constraints(const char *constraint)
 			&& (flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ)))) {
 		flags |= ASM_CONSTRAINT_FLAG_INVALID;
 	}
+	if (! (flags & (ASM_CONSTRAINT_FLAG_MODIFIER_READ
+					| ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
+					| ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE
+					| ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ))) {
+		flags |= ASM_CONSTRAINT_FLAG_MODIFIER_READ;
+	}
 
 	return flags;
 }
 
-bool is_valid_clobber(const char *clobber)
+bool be_is_valid_clobber(const char *clobber)
 {
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
 	if (strcmp(clobber, "memory") == 0)
+		return true;
+	/* cc (condition code) is always valid */
+	if (strcmp(clobber, "cc") == 0)
 		return true;
 
 	return isa_if->is_valid_clobber(isa_if, clobber);

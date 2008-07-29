@@ -1709,7 +1709,6 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 		return NULL;
 	inited = 1;
 
-	init_asm_constraints();
 	set_tarval_output_modes();
 
 	isa = xmalloc(sizeof(*isa));
@@ -2253,6 +2252,10 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	};
 
 	ia32_setup_cg_config();
+
+	/* doesn't really belong here, but this is the earliest place the backend
+	 * is called... */
+	init_asm_constraints();
 
 	p.dep_param    = &ad;
 	p.if_conv_info = &ifconv;

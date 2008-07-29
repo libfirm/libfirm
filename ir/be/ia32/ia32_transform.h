@@ -67,13 +67,12 @@ static const arch_register_req_t no_register_req = {
  */
 typedef struct constraint_t constraint_t;
 struct constraint_t {
-	int                         is_in;
-	int                         n_outs;
-	const arch_register_req_t **out_reqs;
-
-	const arch_register_req_t  *req;
-	unsigned                    immediate_possible;
-	char                        immediate_type;
+	const arch_register_class_t *cls;
+	unsigned                     allowed_registers;
+	bool                         all_registers_allowed;
+	bool                         memory_possible;
+	char                         immediate_type;
+	int                          same_as;
 };
 
 /**
@@ -98,9 +97,9 @@ ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode);
  */
 int ia32_mode_needs_gp_reg(ir_mode *mode);
 
-void parse_asm_constraint(int pos, constraint_t *constraint, const char *c);
-void parse_clobber(ir_node *node, int pos, constraint_t *constraint,
-                          const char *clobber);
+void ia32_parse_asm_constraints(constraint_t *constraint, const char *c);
+void ia32_parse_clobber(ir_node *node, int pos, constraint_t *constraint,
+                        const char *clobber);
 
 /**
  * returns register by name (used for determining clobber specifications in

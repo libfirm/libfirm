@@ -25,11 +25,11 @@ static void sincostest(double arg)
 	printf("Arg: %f Sin: %f Cos: %f\n", arg, sin, cos);
 }
 
-static inline int mov(int val)
+static inline int mov_noeax(int val)
 {
 	int res;
 
-	__asm__ ("movl %1, %0" : "=r"(res) : "ri" (val));
+	__asm__ ("movl %1, %0" : "=r"(res) : "ri" (val) : "eax");
 
 	return res;
 }
@@ -46,9 +46,14 @@ static inline unsigned int swap32(unsigned int x)
 	return x;
 }
 
-static inline void inc(int *v)
+void inc(int *v)
 {
-	__asm__("incl %0" : "+g" (*v) : : "cc");
+	__asm__("incl %0" : "+rm" (*v) : : "cc");
+}
+
+void inc2(int *v)
+{
+	__asm__("incl %0" : "+m" (*v) : : "cc");
 }
 
 #if 1
@@ -61,7 +66,7 @@ typedef int kernel_fd_set;
 #endif
 
 void fd_set(int fd, kernel_fd_set* set) {
-	__asm__("btsl %1,%0" : "=m" (*(set)) : "r" (fd));
+	__asm__("btsl %1,%0" : "=m" (*(set)) : "r" (fd) : "cc");
 }
 
 int fd_isset(int fd, kernel_fd_set *set) {
@@ -70,7 +75,8 @@ int fd_isset(int fd, kernel_fd_set *set) {
 	__asm__ __volatile__("btl %1,%2\n"
                          "\tsetb %0"
 			: "=q" (result)
-			: "r" (fd),  "m" (*set));
+			: "r" (fd),  "m" (*set)
+			: "cc");
 	return result;
 }
 
@@ -93,9 +99,9 @@ int main()
 	       swap16(0xAABB), swap32(0xAABBCCDD));
 	k = 41;
 	inc(&k);
-	printf("mov(inc(41)): %d\n", mov(k));
+	printf("mov(inc(41)): %d\n", mov_noeax(k));
 
-	return mov(0);
+	return mov_noeax(0);
 }
 
 #else
