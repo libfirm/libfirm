@@ -39,5 +39,5 @@ int main(void)
 	array[30] = c + 31;
 	array[31] = c + 32;
 
-	return array[10];
+	return array[10] - a - b - 11;
 }
