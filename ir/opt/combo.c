@@ -25,7 +25,7 @@
  *
  * Note that we use the terminology from Click's work here, which is different
  * in some cases from Firm terminology.  Especially, Click's type is a
- * Firm tarval, nevertheless we call it type here for "maximum compatibility".
+ * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
  */
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -658,6 +658,7 @@ static void add_node_to_cprop(node_t *y, environment_t *env) {
 			add_node_to_cprop(proj, env);
 		}
 	}
+
 	if (is_Block(y->node)) {
 		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
 		 * if someone placed the block. The Block is only placed if the reachability
@@ -1172,7 +1173,12 @@ static void compute_Sub(node_t *node) {
 		} else {
 			node->type.tv = tarval_bottom;
 		}
-	} else if (r->part == l->part) {
+	} else if (r->part == l->part &&
+	           (!mode_is_float(get_irn_mode(l->node)))) {
+		/*
+		 * BEWARE: a - a is NOT always 0 for floating Point values, as
+		 * NaN op NaN = NaN, so we must check this here.
+		 */
 		ir_mode *mode = get_irn_mode(sub);
 		node->type.tv = get_mode_null(mode);
 	} else {
@@ -1194,22 +1200,19 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	lattice_elem_t b     = r->type;
 	pn_Cmp         pnc   = get_Proj_proj(proj);
 
-	/*
-	 * BEWARE: a == a is NOT always True for floating Point values, as
-	 * NaN != NaN is defined, so we must check this here.
-	 */
-	if (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt ||  pnc == pn_Cmp_Gt) {
-		if (a.tv == tarval_top || b.tv == tarval_top) {
-			node->type.tv = tarval_top;
-		} else if (is_con(a) && is_con(b)) {
-			default_compute(node);
-		} else if (r->part == l->part) {
-			node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
-		} else {
-			node->type.tv = tarval_bottom;
-		}
-	} else {
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
+	} else if (r->part == l->part &&
+	           (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt || pnc == pn_Cmp_Gt)) {
+		/*
+		 * BEWARE: a == a is NOT always True for floating Point values, as
+		 * NaN != NaN is defined, so we must check this here.
+		 */
+		node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+	} else {
+		node->type.tv = tarval_bottom;
 	}
 }  /* compute_Proj_Cmp */
 
@@ -1364,6 +1367,7 @@ static void propagate(environment_t *env) {
 		X->on_cprop = 0;
 		env->cprop = X->cprop_next;
 
+		DB((dbg, LEVEL_2, "Propagate type on part%d\n", X->nr));
 		fallen   = NULL;
 		n_fallen = 0;
 		while (! list_empty(&X->cprop)) {
@@ -1387,6 +1391,7 @@ static void propagate(environment_t *env) {
 					x->on_fallen = 1;
 					fallen       = x;
 					++n_fallen;
+					DB((dbg, LEVEL_2, "Add node %+F to fallen\n", x->node));
 				}
 				for (i = get_irn_n_outs(x->node) - 1; i >= 0; --i) {
 					ir_node *succ = get_irn_out(x->node, i);
