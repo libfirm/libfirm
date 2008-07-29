@@ -5258,6 +5258,22 @@ static ir_node *gen_Proj_Bound(ir_node *node)
 	}
 }
 
+static ir_node *gen_Proj_ASM(ir_node *node)
+{
+	ir_node *pred;
+	ir_node *new_pred;
+	ir_node *block;
+
+	if (get_irn_mode(node) != mode_M)
+		return be_duplicate_node(node);
+
+	pred     = get_Proj_pred(node);
+	new_pred = be_transform_node(pred);
+	block    = get_nodes_block(new_pred);
+	return new_r_Proj(current_ir_graph, block, new_pred, mode_M,
+			get_ia32_n_res(new_pred) + 1);
+}
+
 /**
  * Transform and potentially renumber Proj nodes.
  */
@@ -5276,6 +5292,8 @@ static ir_node *gen_Proj(ir_node *node) {
 		}
 	case iro_Load:
 		return gen_Proj_Load(node);
+	case iro_ASM:
+		return gen_Proj_ASM(node);
 	case iro_Div:
 	case iro_Mod:
 	case iro_DivMod:
@@ -5483,7 +5501,10 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		ir_node *proj = get_edge_src_irn(edge);
 		int      pn   = get_Proj_proj(proj);
 
-		assert(get_irn_mode(proj) == mode_M || pn < n_outs);
+		if (get_irn_mode(proj) == mode_M)
+			continue;
+
+		assert(pn < n_outs);
 		found_projs |= 1 << pn;
 	}
 
@@ -5500,7 +5521,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		req   = get_ia32_out_req(node, i);
+		req = get_ia32_out_req(node, i);
 		cls = req->cls;
 		if(cls == NULL) {
 			continue;
