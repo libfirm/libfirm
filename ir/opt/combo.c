@@ -334,7 +334,7 @@ static void sort_irn_outs(node_t *node) {
 	if (n_outs > 1) {
 		qsort(&irn->out[1], n_outs, sizeof(irn->out[0]), cmp_def_use_edge);
 	}
-	node->max_user_input = irn->out[n_outs + 1].pos;
+	node->max_user_input = irn->out[n_outs].pos;
 }  /* sort_irn_outs */
 
 /**
@@ -438,7 +438,6 @@ static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
 static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
-	ir_mode *mode = get_irn_mode(irn);
 
 	INIT_LIST_HEAD(&node->node_list);
 	INIT_LIST_HEAD(&node->cprop_list);
