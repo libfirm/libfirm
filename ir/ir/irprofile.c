@@ -186,6 +186,7 @@ static void add_constructor(ir_entity *method)
 	                                                   method, NULL);
 
     set_entity_compiler_generated(ptr, 1);
+    set_entity_variability(ptr, variability_constant);
     set_atomic_ent_value(ptr, val);
 }
 
