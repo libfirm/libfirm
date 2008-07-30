@@ -986,6 +986,31 @@ static void compute_Block(node_t *node) {
 }  /* compute_Block */
 
 /**
+ * (Re-)compute the type for a Bad node.
+ *
+ * @param node  the node
+ */
+static void compute_Bad(node_t *node) {
+	/* Bad nodes ALWAYS compute Top */
+	node->type.tv = tarval_top;
+}  /* compute_Bad */
+
+/**
+ * (Re-)compute the type for an Unknown node.
+ *
+ * @param node  the node
+ */
+static void compute_Unknown(node_t *node) {
+	/* While Unknown nodes compute Top, but this is dangerous:
+	 * a if (unknown) would lead to BOTH control flows unreachable.
+	 * While this is correct in the given semantics, it would destroy the Firm
+	 * graph.
+	 * For now, we compute bottom here.
+	 */
+	node->type.tv = tarval_bottom;
+}  /* compute_Unknown */
+
+/**
  * (Re-)compute the type for a Jmp node.
  *
  * @param node  the node
@@ -1339,6 +1364,28 @@ static void compute_Proj(node_t *node) {
 }  /* compute_Proj */
 
 /**
+ * (Re-)compute the type for a Confirm-Nodes.
+ *
+ * @param node  the node
+ */
+static void compute_Confirm(node_t *node) {
+	ir_node *confirm = node->node;
+	node_t  *pred = get_irn_node(get_Confirm_value(confirm));
+
+	if (get_Confirm_cmp(confirm) == pn_Cmp_Eq) {
+		node_t *bound = get_irn_node(get_Confirm_bound(confirm));
+
+		if (is_con(bound->type)) {
+			/* is equal to a constant */
+			node->type = bound->type;
+			return;
+		}
+	}
+	/* a Confirm is a copy OR a Const */
+	node->type = pred->type;
+}  /* compute_Confirm */
+
+/**
  * (Re-)compute the type for a given node.
  *
  * @param node  the node
@@ -1434,6 +1481,134 @@ static ir_node *get_leader(node_t *node) {
 		return get_first_node(part)->node;
 	}
 	return node->node;
+}  /* get_leader */
+
+/**
+ * Return non-zero if the control flow predecessor node pred
+ * is the only reachable control flow exit of its block.
+ *
+ * @param pred  the control flow exit
+ */
+static int can_exchange(ir_node *pred) {
+	if (is_Jmp(pred))
+		return 1;
+	else if (get_irn_mode(pred) == mode_T) {
+		int i, k;
+
+		/* if the predecessor block has more than one
+		reachable outputs we cannot remove the block */
+		k = 0;
+		for (i = get_irn_n_outs(pred) - 1; i >= 0; --i) {
+			ir_node *proj = get_irn_out(pred, i);
+			node_t  *node;
+
+			/* skip non-control flow Proj's */
+			if (get_irn_mode(proj) != mode_X)
+				continue;
+
+			node = get_irn_node(proj);
+			if (node->type.tv == tarval_reachable) {
+				if (++k > 1)
+					return 0;
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+/**
+ * Block Post-Walker, apply the analysis results on control flow by
+ * shortening Phi's and Block inputs.
+ */
+static void apply_cf(ir_node *block, void *ctx) {
+	node_t  *node = get_irn_node(block);
+	int     i, j, k, n;
+	ir_node **ins, **in_X;
+	ir_node *phi, *next;
+
+	(void) ctx;
+	if (block == get_irg_end_block(current_ir_graph) ||
+	    block == get_irg_start_block(current_ir_graph)) {
+		/* the EndBlock is always reachable even if the analysis
+		   finds out the opposite :-) */
+		return;
+	}
+	if (node->type.tv == tarval_unreachable) {
+		/* mark dead blocks */
+		set_Block_dead(block);
+		return;
+	}
+
+	n = get_Block_n_cfgpreds(block);
+
+	if (n == 1) {
+		/* only one predecessor combine */
+		ir_node *pred = skip_Proj(get_Block_cfgpred(block, 0));
+
+		if (can_exchange(pred))
+			exchange(block, get_nodes_block(pred));
+		return;
+	}
+
+	NEW_ARR_A(ir_node *, in_X, n);
+	k = 0;
+	for (i = 0; i < n; ++i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		node_t  *node = get_irn_node(pred);
+
+		if (node->type.tv == tarval_reachable) {
+			in_X[k++] = pred;
+		}
+	}
+	if (k >= n)
+		return;
+
+	NEW_ARR_A(ir_node *, ins, n);
+	for (phi = get_Block_phis(block); phi != NULL; phi = next) {
+		node_t *node = get_irn_node(phi);
+
+		next = get_Phi_next(phi);
+		if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
+			/* this Phi is replaced by a constant */
+			tarval  *tv = node->type.tv;
+			ir_node *c  = new_r_Const(current_ir_graph, block, get_tarval_mode(tv), tv);
+
+			set_irn_node(c, node);
+			node->node = c;
+			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, c));
+			exchange(phi, c);
+		} else {
+			j = 0;
+			for (i = 0; i < n; ++i) {
+				node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
+
+				if (pred->type.tv == tarval_reachable) {
+					ins[j++] = get_Phi_pred(phi, i);
+				}
+			}
+			if (j <= 1) {
+				/* this Phi is replaced by a single predecessor */
+				ir_node *s = ins[0];
+
+				node->node = s;
+				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, s));
+				exchange(phi, s);
+			} else {
+				set_irn_in(phi, j, ins);
+			}
+		}
+	}
+
+	if (k <= 1) {
+		/* this Block has only one live predecessor */
+		ir_node *pred = skip_Proj(in_X[0]);
+
+		if (can_exchange(pred))
+			exchange(block, get_nodes_block(pred));
+	} else {
+		set_irn_in(block, j, in_X);
+	}
 }
 
 /**
@@ -1443,19 +1618,8 @@ static void apply_result(ir_node *irn, void *ctx) {
 	node_t *node = get_irn_node(irn);
 
 	(void) ctx;
-	if (is_Block(irn)) {
-		if (irn == get_irg_end_block(current_ir_graph)) {
-			/* the EndBlock is always reachable even if the analysis
-			   finds out the opposite :-) */
-			return;
-		}
-
-		if (node->type.tv == tarval_unreachable) {
-			/* mark dead blocks */
-			set_Block_dead(irn);
-		}
-	} else if (is_End(irn)) {
-		/* do not touch the End node */
+	if (is_Block(irn) || is_End(irn)) {
+		/* blocks already handled, do not touch the End node */
 	} else {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
@@ -1531,8 +1695,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 			}
 		}
 	}
-}  /* static void apply_result(ir_node *irn, void *ctx) {
- */
+}  /* apply_result */
 
 #define SET(code) op_##code->ops.generic = (op_func)compute_##code
 
@@ -1550,12 +1713,15 @@ static void set_compute_functions(void) {
 
 	/* set specific functions */
 	SET(Block);
+	SET(Unknown);
+	SET(Bad);
 	SET(Jmp);
 	SET(Phi);
 	SET(Add);
 	SET(Sub);
 	SET(SymConst);
 	SET(Proj);
+	SET(Confirm);
 	SET(End);
 }  /* set_compute_functions */
 
@@ -1577,9 +1743,9 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_1);
+	firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
-	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
+	//DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
 	obstack_init(&env.obst);
 	env.worklist       = NULL;
@@ -1627,6 +1793,7 @@ void combo(ir_graph *irg) {
 
 
 	/* apply the result */
+	irg_block_walk_graph(irg, NULL, apply_cf, &env);
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	pmap_destroy(env.type2id_map);
