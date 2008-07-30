@@ -925,14 +925,14 @@ emit_jcc:
 	}
 
 	/* the second Proj might be a fallthrough */
-	if (! can_be_fallthrough(proj_false)) {
-		be_emit_cstring("\tjmp ");
-		ia32_emit_cfop_target(proj_false);
-		be_emit_finish_line_gas(proj_false);
-	} else {
+	if (can_be_fallthrough(proj_false)) {
 		be_emit_cstring("\t/* fallthrough to ");
 		ia32_emit_cfop_target(proj_false);
 		be_emit_cstring(" */");
+		be_emit_finish_line_gas(proj_false);
+	} else {
+		be_emit_cstring("\tjmp ");
+		ia32_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
 	}
 }
@@ -2011,8 +2011,8 @@ static int should_align_block(const ir_node *block)
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	for(i = 0; i < n_cfgpreds; ++i) {
-		ir_node *pred      = get_Block_cfgpred_block(block, i);
-		double   pred_freq = get_block_execfreq(exec_freq, pred);
+		const ir_node *pred      = get_Block_cfgpred_block(block, i);
+		double         pred_freq = get_block_execfreq(exec_freq, pred);
 
 		if(pred == prev) {
 			prev_freq += pred_freq;
