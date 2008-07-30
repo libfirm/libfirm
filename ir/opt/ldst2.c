@@ -165,6 +165,14 @@ static ir_alias_relation AliasTest(ir_graph* irg, ir_node* addr, ir_mode* mode, 
 }
 
 
+static int in_cmp(void const* va, void const* vb)
+{
+	ir_node const* const a = *(ir_node const*const*)va;
+	ir_node const* const b = *(ir_node const*const*)vb;
+	return get_irn_idx(a) - get_irn_idx(b);
+}
+
+
 static ir_node* GenerateSync(ir_graph* irg, ir_node* block, ir_nodeset_t* after_set)
 {
 	size_t set_size = ir_nodeset_size(after_set);
@@ -183,6 +191,7 @@ static ir_node* GenerateSync(ir_graph* irg, ir_node* block, ir_nodeset_t* after_
 		for (i = 0; i < set_size; i++) {
 			in[i] = ir_nodeset_iterator_next(&iter);
 		}
+		qsort(in, set_size, sizeof(*in), in_cmp);
 		return new_r_Sync(irg, block, set_size, in);
 	}
 }
