@@ -1490,7 +1490,9 @@ static ir_node *get_leader(node_t *node) {
  * @param pred  the control flow exit
  */
 static int can_exchange(ir_node *pred) {
-	if (is_Jmp(pred))
+	if (is_Start(pred))
+		return 0;
+	else if (is_Jmp(pred))
 		return 1;
 	else if (get_irn_mode(pred) == mode_T) {
 		int i, k;
