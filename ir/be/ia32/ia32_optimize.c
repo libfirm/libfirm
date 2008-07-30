@@ -251,20 +251,6 @@ static void peephole_ia32_Return(ir_node *node) {
 
 	block = get_nodes_block(node);
 
-	if (get_Block_n_cfgpreds(block) == 1) {
-		ir_node *pred = get_Block_cfgpred(block, 0);
-
-		if (is_Jmp(pred)) {
-			/* The block of the return has only one predecessor,
-			   which jumps directly to this block.
-			   This jump will be encoded as a fall through, so we
-			   ignore it here.
-			   However, the predecessor might be empty, so it must be
-			   ensured that empty blocks are gone away ... */
-			return;
-		}
-	}
-
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_from(node, irn) {
 		switch (get_irn_opcode(irn)) {
@@ -285,18 +271,11 @@ static void peephole_ia32_Return(ir_node *node) {
 			return;
 		}
 	}
-	/* yep, return is the first real instruction in this block */
-#if 0
-	{
-		/* add an rep prefix to the return */
-		ir_node *rep = new_rd_ia32_RepPrefix(get_irn_dbg_info(node), current_ir_graph, block);
-		keep_alive(rep);
-		sched_add_before(node, rep);
-	}
-#else
-	/* ensure, that the 3 byte return is generated */
+
+	/* ensure, that the 3 byte return is generated
+	 * actually the emitter tests again if the block beginning has a label and
+	 * isn't just a fallthrough */
 	be_Return_set_emit_pop(node, 1);
-#endif
 }
 
 /* only optimize up to 48 stores behind IncSPs */

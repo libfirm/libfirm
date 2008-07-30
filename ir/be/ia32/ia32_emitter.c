@@ -75,6 +75,45 @@ static int               do_pic;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
 
+/** Return the next block in Block schedule */
+static ir_node *get_prev_block_sched(const ir_node *block)
+{
+	return get_irn_link(block);
+}
+
+static bool is_fallthrough(const ir_node *cfgpred)
+{
+	ir_node *pred;
+
+	if(!is_Proj(cfgpred))
+		return true;
+	pred = get_Proj_pred(cfgpred);
+	if(is_ia32_SwitchJmp(pred))
+		return false;
+
+	return true;
+}
+
+static bool block_needs_label(const ir_node *block)
+{
+	bool need_label = true;
+	int  n_cfgpreds = get_Block_n_cfgpreds(block);
+
+	if (n_cfgpreds == 0) {
+		need_label = false;
+	} else if (n_cfgpreds == 1) {
+		ir_node *cfgpred            = get_Block_cfgpred(block, 0);
+		ir_node *cfgpred_block      = get_nodes_block(cfgpred);
+
+		if (get_prev_block_sched(block) == cfgpred_block
+				&& is_fallthrough(cfgpred)) {
+			need_label = false;
+		}
+	}
+
+	return need_label;
+}
+
 /**
  * Returns the register at in position pos.
  */
@@ -727,6 +766,7 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
  * Returns the target block for a control flow node.
  */
 static ir_node *get_cfop_target_block(const ir_node *irn) {
+	assert(get_irn_mode(irn) == mode_X);
 	return get_irn_link(irn);
 }
 
@@ -763,12 +803,6 @@ static void ia32_emit_cfop_target(const ir_node *node)
 	ia32_emit_block_name(block);
 }
 
-/** Return the next block in Block schedule */
-static ir_node *next_blk_sched(const ir_node *block)
-{
-	return get_irn_link(block);
-}
-
 /**
  * Returns the Proj with projection number proj and NOT mode_M
  */
@@ -789,6 +823,13 @@ static ir_node *get_proj(const ir_node *node, long proj) {
 			return src;
 	}
 	return NULL;
+}
+
+static bool can_be_fallthrough(const ir_node *node)
+{
+	ir_node *target_block = get_cfop_target_block(node);
+	ir_node *block        = get_nodes_block(node);
+	return get_prev_block_sched(target_block) == block;
 }
 
 /**
@@ -813,9 +854,8 @@ static void emit_ia32_Jcc(const ir_node *node)
 	assert(proj_false && "Jcc without false Proj");
 
 	block      = get_nodes_block(node);
-	next_block = next_blk_sched(block);
 
-	if (get_cfop_target_block(proj_true) == next_block) {
+	if (can_be_fallthrough(proj_true)) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
@@ -1116,20 +1156,19 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
  */
 static void emit_Jmp(const ir_node *node)
 {
-	ir_node *block, *next_block;
+	ir_node *block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
 	block = get_nodes_block(node);
 
 	/* we have a block schedule */
-	next_block = next_blk_sched(block);
-	if (get_cfop_target_block(node) != next_block) {
-		be_emit_cstring("\tjmp ");
-		ia32_emit_cfop_target(node);
-	} else {
+	if (can_be_fallthrough(node)) {
 		be_emit_cstring("\t/* fallthrough to ");
 		ia32_emit_cfop_target(node);
 		be_emit_cstring(" */");
+	} else {
+		be_emit_cstring("\tjmp ");
+		ia32_emit_cfop_target(node);
 	}
 	be_emit_finish_line_gas(node);
 }
@@ -1815,8 +1854,13 @@ static void emit_be_Return(const ir_node *node)
 	be_emit_cstring("\tret");
 
 	pop = be_Return_get_pop(node);
-	if (pop > 0 || be_Return_get_emit_pop(node)) {
+	if (pop > 0) {
 		be_emit_irprintf(" $%d", pop);
+	} else if (be_Return_get_emit_pop(node)) {
+		ir_node *block = get_nodes_block(node);
+		if (block_needs_label(block)) {
+			be_emit_cstring(" $0");
+		}
 	}
 	be_emit_finish_line_gas(node);
 }
@@ -1953,10 +1997,11 @@ static void ia32_emit_align_label(void)
  * 16 bytes. However we should only do that if the alignment nops before the
  * label aren't executed more often than we have jumps to the label.
  */
-static int should_align_block(ir_node *block, ir_node *prev)
+static int should_align_block(const ir_node *block)
 {
 	static const double DELTA = .0001;
 	ir_exec_freq *exec_freq   = cg->birg->exec_freq;
+	ir_node      *prev        = get_prev_block_sched(block);
 	double        block_freq;
 	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
 	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
@@ -1992,71 +2037,44 @@ static int should_align_block(ir_node *block, ir_node *prev)
 }
 
 /**
- * Return non-zero, if a instruction in a fall-through.
- */
-static int is_fallthrough(ir_node *cfgpred)
-{
-	ir_node *pred;
-
-	if(!is_Proj(cfgpred))
-		return 1;
-	pred = get_Proj_pred(cfgpred);
-	if(is_ia32_SwitchJmp(pred))
-		return 0;
-
-	return 1;
-}
-
-/**
  * Emit the block header for a block.
  *
  * @param block       the block
  * @param prev_block  the previous block
  */
-static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
+static void ia32_emit_block_header(ir_node *block)
 {
 	ir_graph     *irg = current_ir_graph;
 	int           n_cfgpreds;
-	int           need_label = 1;
+	bool          need_label = block_needs_label(block);
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
 
 	if (block == get_irg_end_block(irg) || block == get_irg_start_block(irg))
 		return;
 
-	n_cfgpreds = get_Block_n_cfgpreds(block);
-
-	if (n_cfgpreds == 0) {
-		need_label = 0;
-	} else if (n_cfgpreds == 1) {
-		ir_node *cfgpred = get_Block_cfgpred(block, 0);
-		if (get_nodes_block(cfgpred) == prev_block && is_fallthrough(cfgpred)) {
-			need_label = 0;
-		}
-	}
-
 	if (ia32_cg_config.label_alignment > 0) {
 		/* align the current block if:
 		 * a) if should be aligned due to its execution frequency
 		 * b) there is no fall-through here
 		 */
-		if (should_align_block(block, prev_block)) {
+		if (should_align_block(block)) {
 			ia32_emit_align_label();
 		} else {
 			/* if the predecessor block has no fall-through,
 			   we can always align the label. */
-			int i;
-			ir_node *check_node = NULL;
+			int      i;
+			bool     has_fallthrough = false;;
 
 			for (i = n_cfgpreds - 1; i >= 0; --i) {
 				ir_node *cfg_pred = get_Block_cfgpred(block, i);
-
-				if (get_nodes_block(skip_Proj(cfg_pred)) == prev_block) {
-					check_node = cfg_pred;
+				if (can_be_fallthrough(cfg_pred)) {
+					has_fallthrough = true;
 					break;
 				}
 			}
-			if (check_node == NULL || !is_fallthrough(check_node))
+
+			if (!has_fallthrough)
 				ia32_emit_align_label();
 		}
 	}
@@ -2093,11 +2111,11 @@ static void ia32_emit_block_header(ir_node *block, ir_node *prev_block)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void ia32_gen_block(ir_node *block, ir_node *last_block)
+static void ia32_gen_block(ir_node *block)
 {
 	ir_node *node;
 
-	ia32_emit_block_header(block, last_block);
+	ia32_emit_block_header(block);
 
 	/* emit the contents of the block */
 	be_dbg_set_dbg_info(get_irn_dbg_info(block));
@@ -2174,8 +2192,6 @@ static int cmp_exc_entry(const void *a, const void *b) {
  */
 void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 {
-	ir_node   *block;
-	ir_node   *last_block = NULL;
 	ir_entity *entity     = get_irg_entity(irg);
 	exc_entry *exc_list   = NEW_ARR_F(exc_entry, 0);
 	int i, n;
@@ -2196,18 +2212,19 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	set_using_irn_link(irg);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &exc_list);
 
+	/* initialize next block links */
 	n = ARR_LEN(cg->blk_sched);
-	for (i = 0; i < n;) {
-		ir_node *next_bl;
+	for (i = 0; i < n; ++i) {
+		ir_node *block = cg->blk_sched[i];
+		ir_node *prev  = i > 0 ? cg->blk_sched[i-1] : NULL;
 
-		block   = cg->blk_sched[i];
-		++i;
-		next_bl = i < n ? cg->blk_sched[i] : NULL;
+		set_irn_link(block, prev);
+	}
 
-		/* set here the link. the emitter expects to find the next block here */
-		set_irn_link(block, next_bl);
-		ia32_gen_block(block, last_block);
-		last_block = block;
+	for (i = 0; i < n; ++i) {
+		ir_node *block = cg->blk_sched[i];
+
+		ia32_gen_block(block);
 	}
 
 	be_gas_emit_function_epilog(entity);
