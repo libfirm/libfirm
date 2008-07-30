@@ -489,7 +489,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call) {
 		return TR_BAD;
 
 	case iro_Sub:
-		/* try additive, but return value mut be left */
+		/* try additive, but return value must be left */
 		a = get_Sub_left(irn);
 		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(call)) {
 			/* we are outside, ignore */
@@ -719,8 +719,10 @@ void opt_tail_recursion(void) {
 
 		current_ir_graph = irg;
 
+		set_using_irn_link(irg);
 		if (opt_tail_rec_irg(irg))
 			++n_opt_applications;
+		clear_using_irn_link(irg);
 	}
 
 	DB((dbg, LEVEL_1, "Performed tail recursion for %d of %d graphs\n",

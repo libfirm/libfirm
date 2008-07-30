@@ -439,9 +439,16 @@ void reduce_strength(ir_graph *irg);
  */
 int opt_tail_rec_irg(ir_graph *irg);
 
-/*
+/**
  * Optimize tail-recursion calls for all IR-Graphs.
- * Depends on the flag opt_tail_recursion.
+ * Can currently handle:
+ * - direct return value, i.e. return func().
+ * - additive return value, i.e. return x +/- func()
+ * - multiplicative return value, i.e. return x * func() or return -func()
+ *
+ * The current implementation must be run before optimize_funccalls(),
+ * because it expects the memory edges pointing to calls, which might be
+ * removed by optimize_funccalls().
  */
 void opt_tail_recursion(void);
 
@@ -514,6 +521,8 @@ void optimize_class_casts(void);
  *
  * Does conditional constant propagation, unreachable code elimination and optimistic
  * global value numbering at once.
+ *
+ * @param irg  the graph to run on
  */
 void combo(ir_graph *irg);
 
