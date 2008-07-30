@@ -1743,9 +1743,9 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_1);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_1);
 
-	//DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
+	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
 	obstack_init(&env.obst);
 	env.worklist       = NULL;
