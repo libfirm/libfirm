@@ -9,6 +9,8 @@ int factorial(int x) {
 }
 
 int main(int argc, char **argv) {
-	int val = atoi(argv[1]);
+	int val = 7;
+	if(argc>1)
+		val = atoi(argv[1]);
 	printf("%d\n", factorial(val));
 }
