@@ -47,7 +47,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static be_lv_t          *lv;
 static ir_node          *current_node;
-static ir_node          *prev_node;
 ir_node               ***register_values;
 
 static void clear_reg_value(ir_node *node)
@@ -148,9 +147,10 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 	DBG((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
 
 	if (current_node == old_node) {
-	  /* next node to be processed will be killed. Its scheduling predecessor
-	   * must be processed next. */
-		prev_node = sched_prev(current_node);
+		/* next node to be processed will be killed. Its scheduling predecessor
+		 * must be processed next. */
+		current_node = sched_next(current_node);
+		assert (!is_Bad(current_node));
 	}
 
 	if (!mode_is_data(get_irn_mode(old_node)))
@@ -211,29 +211,24 @@ static void process_block(ir_node *block, void *data)
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
 	for( ; !sched_is_begin(current_node);
-		current_node = prev_node != NULL ? prev_node : sched_prev(current_node)) {
+			current_node = sched_prev(current_node)) {
 		ir_op             *op;
-		ir_node           *last;
 		peephole_opt_func  peephole_node;
 
 		assert(!is_Bad(current_node));
-		prev_node = NULL;
 		if (is_Phi(current_node))
 			break;
 
 		clear_defs(current_node);
 		set_uses(current_node);
 
-		op   = get_irn_op(current_node);
+		op            = get_irn_op(current_node);
 		peephole_node = (peephole_opt_func)op->ops.generic;
 		if (peephole_node == NULL)
 			continue;
 
-		last = current_node;
 		peephole_node(current_node);
-		/* was the current node replaced? */
-		if (current_node != last)
-			set_uses(current_node);
+		assert(!is_Bad(current_node));
 	}
 }
 
