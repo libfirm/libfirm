@@ -1099,7 +1099,10 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	/* the shift amount can be any mode that is bigger than 5 bits, since all
 	 * other bits are ignored anyway */
 	while (is_Conv(op2) && get_irn_n_edges(op2) == 1) {
-		op2 = get_Conv_op(op2);
+		ir_node *const op = get_Conv_op(op2);
+		if (mode_is_float(get_irn_mode(op)))
+			break;
+		op2 = op;
 		assert(get_mode_size_bits(get_irn_mode(op2)) >= 5);
 	}
 	new_op2 = create_immediate_or_transform(op2, 0);
@@ -3193,7 +3196,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node) {
 }
 
 /**
- * Creates a x87 strict Conv by placing a Sore and a Load
+ * Creates a x87 strict Conv by placing a Store and a Load
  */
 static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 {
