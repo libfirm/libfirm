@@ -628,6 +628,10 @@ typedef struct parallelise_info
 
 static void parallelise_load(parallelise_info *pi, ir_node *irn)
 {
+	/* There is no point in investigating the same subgraph twice */
+	if (ir_nodeset_contains(&pi->user_mem, irn))
+		return;
+
 	//ir_fprintf(stderr, "considering %+F\n", irn);
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
@@ -673,6 +677,10 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 
 static void parallelise_store(parallelise_info *pi, ir_node *irn)
 {
+	/* There is no point in investigating the same subgraph twice */
+	if (ir_nodeset_contains(&pi->user_mem, irn))
+		return;
+
 	//ir_fprintf(stderr, "considering %+F\n", irn);
 	if (get_nodes_block(irn) == pi->origin_block) {
 		if (is_Proj(irn)) {
