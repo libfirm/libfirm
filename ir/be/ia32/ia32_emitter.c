@@ -1504,16 +1504,10 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 	const arch_register_t *in_reg, *out_reg;
 
 	assert(!mode_is_float(smaller_mode));
-	assert(smaller_bits == 8 || smaller_bits == 16 || smaller_bits == 32);
+	assert(smaller_bits == 8 || smaller_bits == 16);
 
 	signed_mode = mode_is_signed(smaller_mode);
-	if(smaller_bits == 32) {
-		// this should not happen as it's no convert
-		assert(0);
-		sign_suffix = "";
-	} else {
-		sign_suffix = signed_mode ? "s" : "z";
-	}
+	sign_suffix = signed_mode ? "s" : "z";
 
 	out_reg = get_out_reg(node, 0);
 
