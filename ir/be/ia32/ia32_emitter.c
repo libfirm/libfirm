@@ -1544,7 +1544,7 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 			break;
 		}
 		default:
-			assert(0 && "unsupported op type for Conv");
+			panic("unsupported op type for Conv");
 	}
 	be_emit_finish_line_gas(node);
 }
