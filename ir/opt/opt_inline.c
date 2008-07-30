@@ -726,8 +726,7 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place) {
  * inlined procedure. The new entities must be in the link field of
  * the entities.
  */
-static INLINE void
-copy_node_inline(ir_node *n, void *env) {
+static void copy_node_inline(ir_node *n, void *env) {
 	ir_node *nn;
 	ir_type *frame_tp = (ir_type *)env;
 
@@ -741,6 +740,26 @@ copy_node_inline(ir_node *n, void *env) {
 	} else if (is_Block(n)) {
 		nn = get_new_node (n);
 		nn->attr.block.irg = current_ir_graph;
+	}
+}
+
+/**
+ * Copies new predecessors of old node and move constants to
+ * the Start Block.
+ */
+static void copy_preds_inline(ir_node *n, void *env) {
+	ir_node *nn;
+
+	copy_preds(n, env);
+	nn = skip_Id(get_new_node(n));
+	if (is_irn_constlike(nn)) {
+		/* move Constants into the start block */
+		set_nodes_block(nn, get_irg_start_block(current_ir_graph));
+
+		n = identify_remember(current_ir_graph->value_table, nn);
+		if (nn != n) {
+			exchange(nn, n);
+		}
 	}
 }
 
@@ -1009,7 +1028,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* -- Performing dead node elimination inlines the graph -- */
 	/* Copies the nodes to the obstack of current_ir_graph. Updates links to new
 	   entities. */
-	irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds,
+	irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds_inline,
 	         get_irg_frame_type(called_graph));
 
 	/* Repair called_graph */
@@ -1869,7 +1888,12 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, int pos) {
 }
 
 /**
- * calculate a benefice value for inlining the given call.
+ * Calculate a benefice value for inlining the given call.
+ *
+ * @param call       the call node we have to inspect
+ * @param callee     the called graph
+ * @param local_adr  set after return if an address of a local variable is
+ *                   transmitted as a parameter
  */
 static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local_adr) {
 	ir_entity *ent = get_irg_entity(callee);
@@ -1909,9 +1933,9 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	for (i = 0; i < n_params; ++i) {
 		ir_node *param = get_Call_param(call, i);
 
-		if (is_Const(param))
+		if (is_Const(param)) {
 			weight += get_method_param_weight(ent, i);
-		else {
+		} else {
 			all_const = 0;
 			if (is_SymConst(param))
 				weight += get_method_param_weight(ent, i);
