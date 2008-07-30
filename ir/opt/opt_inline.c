@@ -439,7 +439,8 @@ void dead_node_elimination(ir_graph *irg) {
 #endif
 	struct obstack *graveyard_obst = NULL;
 	struct obstack *rebirth_obst   = NULL;
-	assert(! edges_activated(irg) && "dead node elimination requires disabled edges");
+
+	edges_deactivate(irg);
 
 	/* inform statistics that we started a dead-node elimination run */
 	hook_dead_node_elim(irg, 1);
