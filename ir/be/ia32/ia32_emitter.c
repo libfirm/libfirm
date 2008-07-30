@@ -841,7 +841,6 @@ static void emit_ia32_Jcc(const ir_node *node)
 	const ir_node *proj_true;
 	const ir_node *proj_false;
 	const ir_node *block;
-	const ir_node *next_block;
 	pn_Cmp         pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, 0, pnc);
@@ -890,7 +889,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 			case pn_Cmp_Le:
 				/* we need a local label if the false proj is a fallthrough
 				 * as the falseblock might have no label emitted then */
-				if (get_cfop_target_block(proj_false) == next_block) {
+				if (can_be_fallthrough(proj_false)) {
 					need_parity_label = 1;
 					be_emit_cstring("\tjp 1f");
 				} else {
@@ -926,7 +925,7 @@ emit_jcc:
 	}
 
 	/* the second Proj might be a fallthrough */
-	if (get_cfop_target_block(proj_false) != next_block) {
+	if (! can_be_fallthrough(proj_false)) {
 		be_emit_cstring("\tjmp ");
 		ia32_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
@@ -2039,7 +2038,6 @@ static int should_align_block(const ir_node *block)
 static void ia32_emit_block_header(ir_node *block)
 {
 	ir_graph     *irg = current_ir_graph;
-	int           n_cfgpreds;
 	bool          need_label = block_needs_label(block);
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
@@ -2058,9 +2056,9 @@ static void ia32_emit_block_header(ir_node *block)
 			/* if the predecessor block has no fall-through,
 			   we can always align the label. */
 			int      i;
-			bool     has_fallthrough = false;;
+			bool     has_fallthrough = false;
 
-			for (i = n_cfgpreds - 1; i >= 0; --i) {
+			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 				ir_node *cfg_pred = get_Block_cfgpred(block, i);
 				if (can_be_fallthrough(cfg_pred)) {
 					has_fallthrough = true;
