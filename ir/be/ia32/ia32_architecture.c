@@ -125,7 +125,7 @@ enum cpu_support {
 
 static int         opt_size             = 0;
 static cpu_support arch                 = cpu_generic;
-static cpu_support opt_arch             = cpu_core2;
+static cpu_support opt_arch             = cpu_generic;
 static int         use_sse2             = 0;
 static int         opt_cc               = 1;
 static int         opt_unsafe_floatconv = 0;
