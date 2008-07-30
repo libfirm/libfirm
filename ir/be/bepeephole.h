@@ -52,26 +52,15 @@ static INLINE ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 typedef void (*peephole_opt_func) (ir_node *node);
 
 /**
- * must be called from peephole optimisations before a node is exchanged,
- * so bepeephole can update it's internal state.
- */
-void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node);
+ * Notify the peephole phase about a newly added node, so it can update its
+ * internal state.  This is not needed for the new node, when
+ * be_peephole_exchange() is used. */
+void be_peephole_new_node(ir_node *nw);
 
 /**
- * must be called from peephole optimisations after a node is exchanged,
- * so bepeephole can update it's internal state.
- */
-void be_peephole_after_exchange(ir_node *new_node);
-
-/**
- * must be called from peephole optimisations before a node will be killed
- * and its users will be redirected to new_node.
- * so bepeephole can update it's internal state.
- *
- * Note: killing a node and rewiring os only allowed if new_node produces
- * the same registers as old_node.
- */
-void be_peephole_before_exchange_and_kill(const ir_node *old_node, ir_node *new_node);
+ * When doing peephole optimisation use this function instead of plain
+ * exchange(), so it can update its internal state. */
+void be_peephole_exchange(ir_node *old, ir_node *nw);
 
 /**
  * Tries to optimize a beIncSp node with it's previous IncSP node.

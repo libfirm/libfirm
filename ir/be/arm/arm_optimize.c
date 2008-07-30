@@ -245,10 +245,7 @@ static void peephole_be_Spill(ir_node *node) {
 		panic("peephole_be_Spill: spill not supported for this mode");
 	}
 
-	be_peephole_before_exchange(node, store);
-	sched_remove(node);
-	exchange(node, store);
-	be_peephole_after_exchange(store);
+	be_peephole_exchange(node, store);
 }
 
 /**
@@ -305,10 +302,7 @@ static void peephole_be_Reload(ir_node *node) {
 		panic("peephole_be_Spill: spill not supported for this mode");
 	}
 
-	be_peephole_before_exchange(node, proj);
-	sched_remove(node);
-	exchange(node, proj);
-	be_peephole_after_exchange(proj);
+	be_peephole_exchange(node, proj);
 }
 
 /**

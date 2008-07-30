@@ -154,12 +154,8 @@ static ir_node *turn_into_mode_t(ir_node *node)
 	reg = arch_get_irn_register(arch_env, node);
 	arch_set_irn_register(arch_env, res_proj, reg);
 
-	be_peephole_before_exchange(node, res_proj);
 	sched_add_before(node, new_node);
-	sched_remove(node);
-	exchange(node, res_proj);
-	be_peephole_after_exchange(res_proj);
-
+	be_peephole_exchange(node, res_proj);
 	return new_node;
 }
 
@@ -232,10 +228,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 	assert(get_irn_mode(node) != mode_T);
 
-	be_peephole_before_exchange(node, flags_proj);
-	exchange(node, flags_proj);
-	sched_remove(node);
-	be_peephole_after_exchange(flags_proj);
+	be_peephole_exchange(node, flags_proj);
 }
 
 /**
@@ -732,10 +725,7 @@ static void peephole_be_IncSP(ir_node *node)
 		}
 	}
 
-	be_peephole_before_exchange(node, stack);
-	sched_remove(node);
-	exchange(node, stack);
-	be_peephole_after_exchange(stack);
+	be_peephole_exchange(node, stack);
 }
 
 /**
@@ -778,10 +768,7 @@ static void peephole_ia32_Const(ir_node *node)
 	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
 
-	be_peephole_before_exchange(node, xor);
-	exchange(node, xor);
-	sched_remove(node);
-	be_peephole_after_exchange(xor);
+	be_peephole_exchange(node, xor);
 }
 
 static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
@@ -986,11 +973,8 @@ exchange:
 	DBG_OPT_LEA2ADD(node, res);
 
 	/* exchange the Add and the LEA */
-	be_peephole_before_exchange(node, res);
 	sched_add_before(node, res);
-	sched_remove(node);
-	exchange(node, res);
-	be_peephole_after_exchange(res);
+	be_peephole_exchange(node, res);
 }
 
 /**
@@ -1041,7 +1025,7 @@ static void peephole_ia32_Imul_split(ir_node *imul) {
 	res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
 
 	arch_set_irn_register(arch_env, res, reg);
-	be_peephole_after_exchange(res);
+	be_peephole_new_node(res);
 
 	set_irn_n(imul, n_ia32_IMul_mem, mem);
 	noreg = get_irn_n(imul, n_ia32_IMul_left);
