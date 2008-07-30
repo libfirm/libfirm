@@ -381,10 +381,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
 
 		/* use the memproj now */
-		exchange(store, mem_proj);
-
-		/* we can remove the Store now */
-		sched_remove(store);
+		be_peephole_exchange(store, mem_proj);
 
 		inc_ofs -= 4;
 	}
@@ -643,19 +640,14 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
  * @return the new stack value
  */
 static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
-                            ir_node *stack, ir_node *schedpoint,
-                            const arch_register_t *reg)
+                            ir_node *stack, ir_node *schedpoint)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
-	ir_node *noreg, *nomem, *push, *val;
 
-	val  = new_rd_ia32_ProduceVal(NULL, irg, block);
-	arch_set_irn_register(arch_env, val, reg);
-	sched_add_before(schedpoint, val);
-
-	noreg = ia32_new_NoReg_gp(cg);
-	nomem = get_irg_no_mem(irg);
-	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, nomem, val, stack);
+	ir_node *val   = ia32_new_Unknown_gp(cg);
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *nomem = get_irg_no_mem(irg);
+	ir_node *push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, nomem, val, stack);
 	sched_add_before(schedpoint, push);
 
 	stack = new_r_Proj(irg, block, push, mode_Iu, pn_ia32_Push_stack);
@@ -716,12 +708,10 @@ static void peephole_be_IncSP(ir_node *node)
 		dbgi  = get_irn_dbg_info(node);
 		block = get_nodes_block(node);
 		stack = be_get_IncSP_pred(node);
-		reg   = &ia32_gp_regs[REG_EAX];
-
-		stack = create_push(dbgi, irg, block, stack, node, reg);
+		stack = create_push(dbgi, irg, block, stack, node);
 
 		if (offset == +8) {
-			stack = create_push(dbgi, irg, block, stack, node, reg);
+			stack = create_push(dbgi, irg, block, stack, node);
 		}
 	}
 
