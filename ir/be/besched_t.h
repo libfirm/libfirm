@@ -269,11 +269,7 @@ static INLINE void _sched_reset(const ir_node *node)
  */
 static INLINE void _sched_remove(const ir_node *irn)
 {
-	sched_info_t *info;
-#ifndef SCHEDULE_PROJ
-	assert(!is_Proj(irn));
-#endif
-	info = get_irn_sched_info(irn);
+	sched_info_t *info = get_irn_sched_info(irn);
 	list_del(&info->list);
 	INIT_LIST_HEAD(&info->list);
 	info->scheduled = 0;

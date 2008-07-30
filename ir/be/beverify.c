@@ -291,22 +291,13 @@ static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
 	if(is_Block(node))
 		return -1;
 
+	if(is_Proj(node))
+		return 0;
+
 	if(get_irn_mode(node) == mode_M) {
-		if(is_Proj(node))
-			return 0;
 		if(is_Phi(node) || is_Sync(node) || is_Pin(node))
 			return 0;
 	}
-#ifdef SCHEDULE_PROJS
-	if(is_Proj(node)) {
-		if(get_irn_mode(node) == mode_X)
-			return 0;
-		return should_be_scheduled(env, get_Proj_pred(node));
-	}
-#else
-	if(is_Proj(node))
-		return 0;
-#endif
 	if(be_is_Keep(node) && get_irn_opcode(get_nodes_block(node)) == iro_Bad)
 		return 0;
 

@@ -486,9 +486,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		else if (irn == start_node) {
 			/* The start block will be scheduled as the first node */
 			add_to_sched(&be, irn);
-#ifdef SCHEDULE_PROJS
-			add_tuple_projs(&be, irn);
-#endif
 		}
 		else {
 			/* Other nodes must have all operands in other blocks to be made
