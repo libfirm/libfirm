@@ -454,6 +454,7 @@ void construct_confirms(ir_graph *irg) {
 		edges_deactivate(irg);
 }  /* construct_confirms */
 
+#if 0
 /**
  * Post-walker: Remove Confirm nodes
  */
@@ -472,6 +473,7 @@ static void rem_Confirm(ir_node *n, void *env) {
 		}
 	}
 }  /* rem_Confirm */
+#endif
 
 /*
  * Remove all Confirm nodes from a graph.
