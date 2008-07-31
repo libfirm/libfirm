@@ -65,8 +65,6 @@ typedef struct be_ssa_construction_env_t {
 	const ir_nodeset_t        *ignore_uses;
 	ir_node                   **new_phis;
 	int                       iterated_domfront_calculated;
-	int                       min_dom;
-	int                       max_dom;
 } be_ssa_construction_env_t;
 
 /**

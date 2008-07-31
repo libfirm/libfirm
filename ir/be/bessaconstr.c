@@ -360,7 +360,6 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		env->iterated_domfront_calculated = 1;
 	}
 
-	stat_ev_int("bessaconstr_domzone", env->max_dom - env->min_dom);
 	stat_ev_tim_push();
 	for(i = 0; i < nodes_len; ++i) {
 		ir_node *value = nodes[i];
