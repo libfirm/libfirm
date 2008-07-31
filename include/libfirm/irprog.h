@@ -46,6 +46,23 @@
 #include "firm_types.h"
 #include "irgraph.h"
 
+typedef enum ir_segment_t {
+	/** "normal" global data */
+	IR_SEGMENT_GLOBAL,
+	/** thread local storage segment */
+	IR_SEGMENT_THREAD_LOCAL,
+	/**
+	 * the constructors segment. Contains pointers to functions which are
+	 * executed on module initialization (program start or when a library is
+	 * dynamically loaded)
+	 */
+	IR_SEGMENT_CONSTRUCTORS,
+	/** like constructors, but functions are executed on module exit */
+	IR_SEGMENT_DESTRUCTORS,
+
+	IR_SEGMENT_COUNT
+} ir_segment_t;
+
 /**
  * Datastructure that holds central information about a program
  *
@@ -141,8 +158,14 @@ int get_irp_n_allirgs(void);
 ir_graph *get_irp_allirg(int pos);
 
 /**
+ * returns the type containing the entities for a segment
+ */
+ir_type *get_segment_type(ir_segment_t segment);
+
+/**
  * Returns the "global" type of the irp.
  * Upon creation this is an empty class type.
+ * This is a convenience function for get_segment_type(IR_SEGMENT_GLOBAL)
  */
 ir_type *get_glob_type(void);
 
@@ -151,13 +174,6 @@ ir_type *get_glob_type(void);
  * Upon creation this is an empty struct type.
  */
 ir_type *get_tls_type(void);
-
-/**
- * returns the constructors type containing entities that should be put in
- * the constructos section. (The constructors section contains pointers to
- * module constructor functions)
- */
-ir_type *get_constructors_type(void);
 
 /** Adds type to the list of types in irp. */
 void add_irp_type(ir_type *typ);

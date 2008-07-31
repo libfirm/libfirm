@@ -69,6 +69,7 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
+			".section\t.dtors,\"aw\",@progbits",
 			NULL, /* no cstring section */
 			NULL,
 			NULL
@@ -80,6 +81,7 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
+			".section\t.dtors,\"aw\",@progbits",
 			NULL,
 			NULL,
 			NULL
@@ -91,6 +93,7 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
+			".section\t.dtors,\"aw\",@progbits",
 			NULL,
 			NULL,
 			NULL
@@ -102,6 +105,7 @@ static const char *get_section_name(be_gas_section_t section) {
 			".data",
 			NULL,             /* TLS is not supported on Mach-O */
 			".mod_init_func",
+			NULL,             /* TODO: how is this called? */
 			".cstring",
 			".section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5",
 			".section\t__IMPORT,__pointers,non_lazy_symbol_pointers"
@@ -1296,9 +1300,13 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 	be_gas_dump_globals(get_glob_type(), &env, only_emit_marked_entities);
 	env.section = GAS_SECTION_TLS;
 	be_gas_dump_globals(get_tls_type(), &env, only_emit_marked_entities);
-	env.section = GAS_SECTION_CTOR;
-	be_gas_dump_globals(get_constructors_type(), &env,
+	env.section = GAS_SECTION_CONSTRUCTORS;
+	be_gas_dump_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env,
 	                    only_emit_marked_entities);
+	env.section = GAS_SECTION_DESTRUCTORS;
+	be_gas_dump_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env,
+	                    only_emit_marked_entities);
+
 	env.section = GAS_SECTION_PIC_SYMBOLS;
 	be_gas_dump_globals(main_env->pic_symbols_type, &env,
 	                    only_emit_marked_entities);

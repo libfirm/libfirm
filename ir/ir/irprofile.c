@@ -178,7 +178,7 @@ static void add_constructor(ir_entity *method)
     ident     *id           = id_unique("constructor_ptrt.%u");
     ir_type   *ptr_type     = new_type_pointer(id, method_type, mode_P_code);
 
-    ir_type   *constructors = get_constructors_type();
+    ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
     ident     *ide          = id_unique("constructor_ptr.%u");
     ir_entity *ptr          = new_entity(constructors, ide, ptr_type);
 	ir_graph  *irg          = get_const_code_irg();

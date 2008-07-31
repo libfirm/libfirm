@@ -40,12 +40,6 @@
 #include "irop_t.h"
 #include "irmemory.h"
 
-/** The name of the Global type. */
-#define GLOBAL_TYPE_NAME "GlobalType"
-/** The name of the Thread Local Storage type. */
-#define TLS_TYPE_NAME "TLS"
-/** The name of the constructors type. */
-#define CONSTRUCTORS_TYPE_NAME "Constructors"
 /** The initial name of the irp program. */
 #define INITAL_PROG_NAME "no_name_set"
 
@@ -81,25 +75,31 @@ static ir_prog *new_incomplete_ir_prog(void) {
 
 /** Completes an incomplete irprog. */
 static ir_prog *complete_ir_prog(ir_prog *irp) {
+	int i;
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 
 	irp->name              = IDENT(INITAL_PROG_NAME);
-	irp->glob_type         = new_type_class(IDENT(GLOBAL_TYPE_NAME));
-	irp->tls_type          = new_type_struct(IDENT(TLS_TYPE_NAME));
-	irp->constructors_type = new_type_struct(IDENT(CONSTRUCTORS_TYPE_NAME));
+
+	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
+	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
+		= new_type_struct(IDENT("ThreadLocal"));
+	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]
+		= new_type_struct(IDENT("Constructors"));
+	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
+		= new_type_struct(IDENT("Destructors"));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
-	remove_irp_type(irp->glob_type);
-	remove_irp_type(irp->tls_type);
-	remove_irp_type(irp->constructors_type);
+	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
+		remove_irp_type(irp->segment_types[i]);
+	}
 
 	/* Set these flags for debugging. */
-	irp->glob_type->flags |= tf_global_type;
-	irp->tls_type->flags  |= tf_tls_type;
+	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_global_type;
+	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_tls_type;
 
 	/* The global type is a class, but we cannot derive from it, so set
 	   the final property to assist optimizations that checks for it. */
-	set_class_final(irp->glob_type, 1);
+	set_class_final(irp->segment_types[IR_SEGMENT_GLOBAL], 1);
 
 	irp->const_code_irg   = new_const_code_irg();
 
@@ -133,9 +133,10 @@ ir_prog *new_ir_prog (void) {
 /* frees all memory used by irp.  Types in type list, irgs in irg
    list and entities in global type must be freed by hand before. */
 void free_ir_prog(void) {
-	free_type(irp->glob_type);
-	free_type(irp->tls_type);
-	free_type(irp->constructors_type);
+	int i;
+	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
+		free_type(irp->segment_types[i]);
+	}
 
 	/* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
 	DEL_ARR_F(irp->graphs);
@@ -163,16 +164,16 @@ void set_irp_main_irg(ir_graph *main_irg) {
 	irp->main_irg = main_irg;
 }
 
+ir_type *(get_segment_type)(ir_segment_t segment) {
+	return _get_segment_type(segment);
+}
+
 ir_type *(get_glob_type)(void) {
 	return _get_glob_type();
 }
 
 ir_type *(get_tls_type)(void) {
 	return _get_tls_type();
-}
-
-ir_type *(get_constructors_type)(void) {
-	return _get_constructors_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */

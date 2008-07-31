@@ -39,7 +39,8 @@ typedef enum section_t {
 	GAS_SECTION_RODATA, /**< rodata section */
 	GAS_SECTION_COMMON, /**< common section */
 	GAS_SECTION_TLS,    /**< thread local storage section */
-	GAS_SECTION_CTOR,   /**< ctor section for instrumentation code init */
+	GAS_SECTION_CONSTRUCTORS,   /**< ctors section */
+	GAS_SECTION_DESTRUCTORS,    /**< dtors section */
 	GAS_SECTION_CSTRING, /**< section for constant strings */
 	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
 	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */

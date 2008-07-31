@@ -37,6 +37,7 @@
 #include "execution_frequency.h"
 #include "irmemory.h"
 #include "callgraph.h"
+#include "irprog.h"
 #include "field_temperature.h"
 #include "irphases_t.h"
 
@@ -528,12 +529,7 @@ struct ir_prog {
 	                                     to allocate nodes the represent values
 	                                     of constant entities. It is not meant as
 	                                     a procedure.  */
-	ir_type   *glob_type;           /**< The global type.  Must be a class as it can
-	                                     have fields and procedures.  */
-	ir_type   *tls_type;            /**< The thread local storage type.  Must be a struct as it can
-	                                     only have fields.  */
-	ir_type   *constructors_type;   /**< contains links to module constructor
-	                                     functions. Must be a struct */
+	ir_type   *segment_types[IR_SEGMENT_COUNT];
 	ir_type  **types;               /**< A list of all types in the ir. */
 	ir_mode  **modes;               /**< A list of all modes in the ir. */
 	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */

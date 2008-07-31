@@ -46,23 +46,25 @@
 void  add_irp_mode(ir_mode *mode);
 
 /* INLINE functions */
+static INLINE ir_type *
+_get_segment_type(ir_segment_t segment)
+{
+	ir_type *type;
+
+	assert(segment < IR_SEGMENT_COUNT);
+	type                        = skip_tid(irp->segment_types[segment]);
+	irp->segment_types[segment] = type;
+	return type;
+}
 
 static INLINE ir_type *
 _get_glob_type(void) {
-	assert(irp);
-	return irp->glob_type = skip_tid(irp->glob_type);
+	return _get_segment_type(IR_SEGMENT_GLOBAL);
 }
 
 static INLINE ir_type *
 _get_tls_type(void) {
-	assert(irp);
-	return irp->tls_type = skip_tid(irp->tls_type);
-}
-
-static INLINE ir_type *
-_get_constructors_type(void) {
-	assert(irp);
-	return irp->constructors_type = skip_tid(irp->constructors_type);
+	return _get_segment_type(IR_SEGMENT_THREAD_LOCAL);
 }
 
 static INLINE int
@@ -170,9 +172,9 @@ void init_irprog_2(void);
 #define get_irp_n_opcodes()       _get_irp_n_opcodes()
 #define get_irp_opcode(pos)       _get_irp_opcode(pos)
 #define get_const_code_irg()      _get_const_code_irg()
+#define get_segment_type(s)       _get_segment_type(s
 #define get_glob_type()           _get_glob_type()
 #define get_tls_type()            _get_tls_type()
-#define get_constructors_type()   _get_constructors_type()
 #define get_irp_next_region_nr()  _get_irp_next_region_nr()
 #define get_irp_next_label_nr()   _get_irp_next_label_nr()
 
