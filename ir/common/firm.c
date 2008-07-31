@@ -181,6 +181,8 @@ void free_firm(void) {
 	finish_mode();
 	finish_tpop();
 	finish_ident();
+
+	firm_be_finish();
 }
 
 /* Returns the libFirm version number. */
