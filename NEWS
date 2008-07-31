@@ -2,9 +2,9 @@
 
 * VanDrunen's GVN-PRE fixed
 * operator strength reduce fixed and improved
-* fixed 64bit code generation for some rary compare cases
+* fixed 64bit code generation for some rare compare cases
 * better tailrecursion optimization: handles x * func() and x + func()
-* improved inliner: better heuristic for inlining, can now inline recursive calls
+* improved inliner: better heuristics for inlining, can now inline recursive calls
 * improved spiller
 * lowering of CopyB nodes
 * better memory disambiguator
