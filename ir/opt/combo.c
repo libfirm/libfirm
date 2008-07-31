@@ -37,7 +37,6 @@
 #include "irflag.h"
 #include "ircons.h"
 #include "list.h"
-#include "array.h"
 #include "set.h"
 #include "pmap.h"
 #include "obstack.h"
@@ -126,6 +125,7 @@ struct node_t {
 struct partition_t {
 	list_head         entries;         /**< The head of partition node list. */
 	list_head         cprop;           /**< The head of partition.cprop list. */
+	list_head         split_list;      /**< Double-linked list of entries that must be processed by split_by(). */
 	partition_t       *wl_next;        /**< Next entry in the work list if any. */
 	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
 	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
@@ -385,6 +385,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
 
 	INIT_LIST_HEAD(&part->entries);
 	INIT_LIST_HEAD(&part->cprop);
+	INIT_LIST_HEAD(&part->split_list);
 	part->wl_next         = NULL;
 	part->touched_next    = NULL;
 	part->cprop_next      = NULL;
@@ -772,13 +773,13 @@ static void cause_splits(environment_t *env) {
  *
  * @param X     the partition to split
  * @param What  a function returning an Id for every node of the partition X
- * @param P     an flexible array to store the result partitions or NULL
+ * @param P     a list head to store the result partitions
  * @param env   the environment
  *
- * @return if P != NULL P will be filled with the resulting partitions and returned
+ * @return P
  */
-static partition_t **split_by_what(partition_t *X, what_func What,
-                                   partition_t **P, environment_t *env) {
+static list_head *split_by_what(partition_t *X, what_func What,
+                                list_head *P, environment_t *env) {
 	node_t          *x, *S;
 	listmap_t       map;
 	listmap_entry_t *iter;
@@ -812,10 +813,10 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 		/* Add SPLIT( X, S ) to P. */
 		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
 		R = split(X, S, env);
-		ARR_APP1(partition_t *, P, R);
+		list_add(&R->split_list, P);
 	}
 	/* Add X to P. */
-	ARR_APP1(partition_t *, P, X);
+	list_add(&X->split_list, P);
 
 	listmap_term(&map);
 	return P;
@@ -892,56 +893,69 @@ static int is_type_constant(lattice_elem_t type) {
  * @param env  the environment
  */
 static void split_by(partition_t *X, environment_t *env) {
-	partition_t **P = NEW_ARR_F(partition_t *, 0);
-	int         i, j, k, input;
+	list_head hP;
+	list_head *P = &hP;
+	int       input;
 
+	INIT_LIST_HEAD(P);
 	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
 	P = split_by_what(X, lambda_type, P, env);
-	for (i = ARR_LEN(P) - 1; i >= 0; --i) {
-		partition_t *Y = P[i];
+	do {
+		partition_t *Y = list_entry(P->next, partition_t, split_list);
 
+		list_del(&Y->split_list);
 		if (Y->n_nodes > 1) {
 			lattice_elem_t type = get_partition_type(Y);
 
 			/* we do not want split the TOP or constant partitions */
 			if (type.tv != tarval_top && !is_type_constant(type)) {
-				partition_t **Q = NEW_ARR_F(partition_t *, 0);
+				list_head hQ;
+				list_head *Q = &hQ;
 
+				INIT_LIST_HEAD(Q);
 				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
 				Q = split_by_what(Y, lambda_opcode, Q, env);
 
-				for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
-					partition_t *Z        = Q[j];
+				do {
+					list_head   hR, hS;
+					partition_t *Z        = list_entry(Q->next, partition_t, split_list);
 					int         max_arity = Z->max_arity;
-					partition_t **R = NEW_ARR_F(partition_t *, 1);
-					partition_t **S = NULL;
+					list_head   *R = &hR, *S = &hS, *T;
 
-					/*
-					 * BEWARE: during splitting by input 2 for instance we might
-					 * create new partitions which are different by input 1, so collect
-					 * them and split further.
-					 */
-					R[0] = Z;
-					for (input = max_arity - 1; input >= -1; --input) {
-						S = NEW_ARR_F(partition_t *, 0);
-						for (k = 0; k < ARR_LEN(R); ++k) {
-							partition_t *Z_prime = R[k];
-							if (Z_prime->n_nodes > 1) {
-								env->lambda_input = input;
-								DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
-								S = split_by_what(Z_prime, lambda_partition, S, env);
-							}
+					list_del(&Z->split_list);
+
+					if (Z->n_nodes > 1) {
+						INIT_LIST_HEAD(R);
+						INIT_LIST_HEAD(S);
+
+						/*
+						 * BEWARE: during splitting by input 2 for instance we might
+						 * create new partitions which are different by input 1, so collect
+						 * them and split further.
+						 */
+						list_add(&Z->split_list, R);
+						for (input = max_arity - 1; input >= -1; --input) {
+							do {
+								partition_t *Z_prime = list_entry(R->next, partition_t, split_list);
+
+								list_del(&Z_prime->split_list);
+								if (Z_prime->n_nodes > 1) {
+									env->lambda_input = input;
+									DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
+									S = split_by_what(Z_prime, lambda_partition, S, env);
+								} else {
+									list_add(&Z_prime->split_list, S);
+								}
+							} while (!list_empty(R));
+							T = R;
+							R = S;
+							S = T;
 						}
-						DEL_ARR_F(R);
-						R = S;
 					}
-					DEL_ARR_F(S);
-				}
-				DEL_ARR_F(Q);
+				} while (!list_empty(Q));
 			}
 		}
-	}
-	DEL_ARR_F(P);
+	} while (!list_empty(P));
 }  /* split_by */
 
 /**
@@ -1449,9 +1463,9 @@ static void propagate(environment_t *env) {
 
 	while (env->cprop != NULL) {
 		/* remove the first partition X from cprop */
-		X          = env->cprop;
+		X           = env->cprop;
 		X->on_cprop = 0;
-		env->cprop = X->cprop_next;
+		env->cprop  = X->cprop_next;
 
 		DB((dbg, LEVEL_2, "Propagate type on part%d\n", X->nr));
 		fallen   = NULL;
@@ -1646,7 +1660,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		if (can_exchange(pred))
 			exchange(block, get_nodes_block(pred));
 	} else {
-		set_irn_in(block, j, in_X);
+		set_irn_in(block, k, in_X);
 	}
 }
 
@@ -1657,34 +1671,32 @@ static void apply_result(ir_node *irn, void *ctx) {
 	node_t *node = get_irn_node(irn);
 
 	(void) ctx;
-	if (is_Block(irn) || is_End(irn)) {
+	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {
 		/* blocks already handled, do not touch the End node */
 	} else {
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
-			if (! is_Bad(irn)) {
-				ir_node *bad = get_irg_bad(current_ir_graph);
+			ir_node *bad = get_irg_bad(current_ir_graph);
 
-				/* here, bad might already have a node, but this can be safely ignored
-				   as long as bad has at least ONE valid node */
-				set_irn_node(bad, node);
-				node->node = bad;
-				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-				exchange(irn, bad);
-			}
+			/* here, bad might already have a node, but this can be safely ignored
+			   as long as bad has at least ONE valid node */
+			set_irn_node(bad, node);
+			node->node = bad;
+			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+			exchange(irn, bad);
+		}
+		else if (node->type.tv == tarval_unreachable) {
+			ir_node *bad = get_irg_bad(current_ir_graph);
+
+			/* see comment above */
+			set_irn_node(bad, node);
+			node->node = bad;
+			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+			exchange(irn, bad);
 		}
 		else if (get_irn_mode(irn) == mode_X) {
-			if (node->type.tv == tarval_unreachable) {
-				ir_node *bad = get_irg_bad(current_ir_graph);
-
-				/* see comment above */
-				set_irn_node(bad, node);
-				node->node = bad;
-				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-				exchange(irn, bad);
-			}
-			else if (is_Proj(irn)) {
+			if (is_Proj(irn)) {
 				/* leave or Jmp */
 				ir_node *cond = get_Proj_pred(irn);
 
@@ -1827,10 +1839,13 @@ void combo(ir_graph *irg) {
 
 	dump_all_partitions(&env);
 
+#if 0
 	set_dump_node_vcgattr_hook(dump_partition_hook);
 	dump_ir_block_graph(irg, "-partition");
 	set_dump_node_vcgattr_hook(NULL);
-
+#else
+	(void)dump_partition_hook;
+#endif
 
 	/* apply the result */
 	irg_block_walk_graph(irg, NULL, apply_cf, &env);
