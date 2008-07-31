@@ -313,7 +313,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 
 void lv_chk_free(lv_chk_t *lv)
 {
-	obstack_free(phase_obst(&lv->ph), NULL);
+	phase_free(&lv->ph);
 	xfree(lv);
 }
 
