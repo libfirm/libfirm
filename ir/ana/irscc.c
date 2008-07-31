@@ -209,6 +209,12 @@ static INLINE void init_stack(void) {
 	tos = 0;
 }
 
+static void finish_stack(void)
+{
+	DEL_ARR_F(stack);
+	stack = NULL;
+}
+
 #if 0
 /**
  * Frees the stack.
@@ -348,6 +354,11 @@ static INLINE void init_scc(ir_graph *irg, struct obstack *obst) {
 	/*
 	irg_walk (irg, link_to_reg_end, NULL, NULL);
 	*/
+}
+
+static INLINE void finish_scc(void)
+{
+	finish_stack();
 }
 
 #ifdef INTERPROCEDURAL_VIEW
@@ -931,6 +942,8 @@ int construct_backedges(ir_graph *irg) {
 	inc_irg_visited(irg);
 
 	scc(get_irg_end(irg));
+
+	finish_scc();
 	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);

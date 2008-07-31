@@ -163,6 +163,12 @@ static INLINE void init_stack(void) {
 	tos = 0;
 }
 
+static void finish_stack(void)
+{
+	DEL_ARR_F(stack);
+	stack = NULL;
+}
+
 /**
  * Push a node n onto the IR-node stack.
  */
@@ -294,6 +300,11 @@ static INLINE void init_scc_common(void) {
 static INLINE void init_scc(ir_graph *irg, struct obstack *obst) {
 	init_scc_common();
 	irg_walk_graph(irg, init_node, NULL, obst);
+}
+
+static INLINE void finish_scc(void)
+{
+	finish_stack();
 }
 
 #ifdef INTERPROCEDURAL_VIEW
@@ -655,6 +666,7 @@ int construct_cf_backedges(ir_graph *irg) {
 		if (is_Block(el))
 			cfscc(el);
 	}
+	finish_scc();
 	obstack_free(&temp, NULL);
 
 	assert(head_rem == current_loop);
