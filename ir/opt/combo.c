@@ -733,7 +733,7 @@ static void cause_splits(environment_t *env) {
 				y = get_irn_node(succ);
 				if (is_constant_type(y->type)) {
 					code = get_irn_opcode(succ);
-					if (code == iro_Sub || (code == iro_Proj && is_Cmp(get_Proj_pred(succ))))
+					if (code == iro_Sub || code == iro_Cmp)
 						add_node_to_cprop(y, env);
 				}
 
@@ -812,14 +812,10 @@ static partition_t **split_by_what(partition_t *X, what_func What,
 		/* Add SPLIT( X, S ) to P. */
 		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
 		R = split(X, S, env);
-		if (P != NULL) {
-			ARR_APP1(partition_t *, P, R);
-		}
+		ARR_APP1(partition_t *, P, R);
 	}
 	/* Add X to P. */
-	if (P != NULL) {
-		ARR_APP1(partition_t *, P, X);
-	}
+	ARR_APP1(partition_t *, P, X);
 
 	listmap_term(&map);
 	return P;
@@ -897,7 +893,7 @@ static int is_type_constant(lattice_elem_t type) {
  */
 static void split_by(partition_t *X, environment_t *env) {
 	partition_t **P = NEW_ARR_F(partition_t *, 0);
-	int         i, j, k;
+	int         i, j, k, input;
 
 	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
 	P = split_by_what(X, lambda_type, P, env);
@@ -915,15 +911,31 @@ static void split_by(partition_t *X, environment_t *env) {
 				Q = split_by_what(Y, lambda_opcode, Q, env);
 
 				for (j = ARR_LEN(Q) - 1; j >= 0; --j) {
-					partition_t *Z = Q[j];
+					partition_t *Z        = Q[j];
+					int         max_arity = Z->max_arity;
+					partition_t **R = NEW_ARR_F(partition_t *, 1);
+					partition_t **S = NULL;
 
-					for (k = Z->max_arity - 1; k >= -1; --k) {
-						if (Z->n_nodes > 1) {
-							env->lambda_input = k;
-							DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", k, Z->nr));
-							split_by_what(Z, lambda_partition, NULL, env);
+					/*
+					 * BEWARE: during splitting by input 2 for instance we might
+					 * create new partitions which are different by input 1, so collect
+					 * them and split further.
+					 */
+					R[0] = Z;
+					for (input = max_arity - 1; input >= -1; --input) {
+						S = NEW_ARR_F(partition_t *, 0);
+						for (k = 0; k < ARR_LEN(R); ++k) {
+							partition_t *Z_prime = R[k];
+							if (Z_prime->n_nodes > 1) {
+								env->lambda_input = input;
+								DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
+								S = split_by_what(Z_prime, lambda_partition, S, env);
+							}
 						}
+						DEL_ARR_F(R);
+						R = S;
 					}
+					DEL_ARR_F(S);
 				}
 				DEL_ARR_F(Q);
 			}
@@ -1200,6 +1212,31 @@ static void compute_Sub(node_t *node) {
 		node->type.tv = tarval_bottom;
 	}
 }  /* compute_Sub */
+
+/**
+ * (Re-)compute the type for Cmp.
+ *
+ * @param node  the node
+ */
+static void compute_Cmp(node_t *node) {
+	ir_node        *cmp  = node->node;
+	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
+	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
+	lattice_elem_t a     = l->type;
+	lattice_elem_t b     = r->type;
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
+		/* both nodes are constants, we can propbably do something */
+		node->type.tv = tarval_b_true;
+	} else if (r->part == l->part) {
+		/* both nodes congruent, we can probably do something */
+		node->type.tv = tarval_b_true;
+	} else {
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Proj_Cmp */
 
 /**
  * (Re-)compute the type for a Proj(Cmp).
@@ -1722,6 +1759,7 @@ static void set_compute_functions(void) {
 	SET(Add);
 	SET(Sub);
 	SET(SymConst);
+	SET(Cmp);
 	SET(Proj);
 	SET(Confirm);
 	SET(End);
@@ -1745,7 +1783,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_1);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
