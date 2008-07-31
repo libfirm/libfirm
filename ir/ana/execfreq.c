@@ -298,6 +298,8 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		}
 	}
 
+	dfs_free(dfs);
+
 	/*
 	 * Add a loop from end to start.
 	 * The problem is then an eigenvalue problem:
