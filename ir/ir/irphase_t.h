@@ -70,7 +70,7 @@ struct _ir_phase {
  */
 typedef struct {
 	unsigned node_slots;       /**< The number of allocated node slots. */
-	unsigned node_slots_used;  /**< The number of used node slots, ie. nodes that have node data. */
+	unsigned node_slots_used;  /**< The number of used node slots, i.e. nodes that have node data. */
 	unsigned node_map_bytes;   /**< Number of used bytes for the node map. */
 	unsigned overall_bytes;    /**< Overall number of used bytes for the phase. */
 } phase_stat_t;
