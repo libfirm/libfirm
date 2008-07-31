@@ -69,14 +69,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
- * Checks that low <= what < hi.
- */
-static INLINE int is_inside(unsigned what, unsigned low, unsigned hi)
-{
-	return what - low < hi;
-}
-
-/**
  * Calculates the iterated dominance frontier of a set of blocks. Marks the
  * blocks as visited. Sets the link fields of the blocks in the dominance
  * frontier to the block itself.
@@ -96,16 +88,6 @@ void mark_iterated_dominance_frontiers(const be_ssa_construction_env_t *env)
 		for (i = 0; i < domfront_len; ++i) {
 			ir_node *y = domfront[i];
 			if (Block_block_visited(y))
-				continue;
-
-			/*
-			 * It makes no sense to add phi-functions to blocks
-			 * that are not dominated by any definition;
-			 * all uses are dominated, hence the paths reaching the uses
-			 * have to stay in the dominance subtrees of the given definitions.
-			 */
-
-			if (!is_inside(get_Block_dom_tree_pre_num(y), env->min_dom, env->max_dom))
 				continue;
 
 			if (!irn_visited(y)) {
@@ -229,16 +211,6 @@ ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 	return get_def_at_idom(env, block);
 }
 
-static
-void update_domzone(be_ssa_construction_env_t *env, const ir_node *bl)
-{
-	int start = get_Block_dom_tree_pre_num(bl);
-	int end   = get_Block_dom_max_subtree_pre_num(bl) + 1;
-
-	env->min_dom = MIN(env->min_dom, start);
-	env->max_dom = MAX(env->max_dom, end);
-}
-
 /**
  * Adds a definition into the link field of the block. The definitions are
  * sorted by dominance. A non-visited block means no definition has been
@@ -292,8 +264,6 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 	env->domfronts = be_get_birg_dom_front(birg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
-	env->min_dom   = INT_MAX;
-	env->max_dom   = 0;
 
 	set_using_irn_visited(irg);
 	set_using_block_visited(irg);
@@ -340,7 +310,6 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 		waitq_put(env->worklist, block);
 	}
 	introduce_def_at_block(block, copy);
-	update_domzone(env, block);
 }
 
 void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
@@ -363,7 +332,6 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 			waitq_put(env->worklist, block);
 		}
 		introduce_def_at_block(block, copy);
-		update_domzone(env, block);
 	}
 }
 
