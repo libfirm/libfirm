@@ -907,7 +907,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 	assert(src);
 	assert(dst_mode);
 
-	if (src->mode == dst_mode) return src;
+	if (src->mode == dst_mode)
+		return src;
 
 	if (get_mode_n_vector_elems(src->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1098,67 +1099,123 @@ tarval *tarval_neg(tarval *a) {
  * addition
  */
 tarval *tarval_add(tarval *a, tarval *b) {
-	char *buffer;
+	tarval  *res;
+	char    *buffer;
+	ir_mode *dst_mode, *src_mode = NULL;
 
 	assert(a);
 	assert(b);
-	assert(a->mode == b->mode);
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
+
+	if (mode_is_reference(a->mode)) {
+		src_mode = a->mode;
+		dst_mode = find_unsigned_mode(a->mode);
+
+		if (dst_mode == NULL)
+			return tarval_bad;
+
+		a = tarval_convert_to(a, dst_mode);
+		b = tarval_convert_to(b, dst_mode);
+	}
+	if (mode_is_reference(b->mode)) {
+		src_mode = b->mode;
+		dst_mode = find_unsigned_mode(b->mode);
+
+		if (dst_mode == 0)
+			return tarval_bad;
+
+		a = tarval_convert_to(a, dst_mode);
+		b = tarval_convert_to(b, dst_mode);
+	}
+
+	assert(a->mode == b->mode);
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
 		sc_add(a->value, b->value, buffer);
-		return get_tarval_overflow(buffer, a->length, a->mode);
+		res = get_tarval_overflow(buffer, a->length, a->mode);
+		break;
 
 	case irms_float_number:
 		if (no_float)
 			return tarval_bad;
 
 		fc_add(a->value, b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		res = get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		break;
 
 	default:
 		return tarval_bad;
 	}
+	if (src_mode != NULL)
+		return tarval_convert_to(res, src_mode);
+	return res;
 }
 
 /*
  * subtraction
  */
 tarval *tarval_sub(tarval *a, tarval *b) {
-	char *buffer;
+	tarval  *res;
+	char    *buffer;
+	ir_mode *dst_mode, *src_mode = NULL;
 
 	assert(a);
 	assert(b);
-	assert(a->mode == b->mode);
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
+	if (mode_is_reference(a->mode)) {
+		src_mode = a->mode;
+		dst_mode = find_unsigned_mode(a->mode);
+
+		if (dst_mode == NULL)
+			return tarval_bad;
+
+		a = tarval_convert_to(a, dst_mode);
+		b = tarval_convert_to(b, dst_mode);
+	}
+	if (mode_is_reference(b->mode)) {
+		src_mode = b->mode;
+		dst_mode = find_unsigned_mode(b->mode);
+
+		if (dst_mode == 0)
+			return tarval_bad;
+
+		a = tarval_convert_to(a, dst_mode);
+		b = tarval_convert_to(b, dst_mode);
+	}
+
+	assert(a->mode == b->mode);
+
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
-		return get_tarval_overflow(buffer, a->length, a->mode);
+		res = get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
 		if (no_float)
 			return tarval_bad;
 
 		fc_sub(a->value, b->value, NULL);
-		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		res = get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
 		return tarval_bad;
 	}
+	if (src_mode != NULL)
+		return tarval_convert_to(res, src_mode);
+	return res;
 }
 
 /*

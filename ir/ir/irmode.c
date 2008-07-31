@@ -843,7 +843,11 @@ void init_mode(void) {
 ir_mode *find_unsigned_mode(const ir_mode *mode) {
 	ir_mode n = *mode;
 
-	assert(mode->sort == irms_int_number);
+	/* allowed for reference mode */
+	if (mode->sort == irms_reference)
+		n.sort = irms_int_number;
+
+	assert(n.sort == irms_int_number);
 	n.sign = 0;
 	return find_mode(&n);
 }
