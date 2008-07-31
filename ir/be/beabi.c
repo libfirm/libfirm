@@ -2005,6 +2005,8 @@ void fix_call_state_inputs(be_abi_irg_t *env)
 			set_irn_n(call, inp, regnode);
 		}
 	}
+
+	DEL_ARR_F(stateregs);
 }
 
 /**
