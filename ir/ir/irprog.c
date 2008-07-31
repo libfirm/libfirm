@@ -138,12 +138,12 @@ void free_ir_prog(void) {
 		free_type(irp->segment_types[i]);
 	}
 
-	/* @@@ * free_ir_graph(irp->const_code_irg); * ?? End has no in?? */
 	DEL_ARR_F(irp->graphs);
 	DEL_ARR_F(irp->pseudo_graphs);
 	DEL_ARR_F(irp->types);
 	DEL_ARR_F(irp->modes);
 	DEL_ARR_F(irp->opcodes);
+	free_ir_graph(irp->const_code_irg);
 
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
