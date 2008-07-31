@@ -529,6 +529,8 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 void free_ir_graph(ir_graph *irg) {
 	assert(is_ir_graph(irg));
 
+	edges_deactivate(irg);
+
 	hook_free_graph(irg);
 	if (irg->outs_state != outs_none)
 		free_irg_outs(irg);
