@@ -620,7 +620,11 @@ void be_liveness_recompute(be_lv_t *lv)
 void be_liveness_free(be_lv_t *lv)
 {
 	be_liveness_invalidate(lv);
-	free(lv);
+#ifdef USE_LIVE_CHK
+	lv_chk_free(lv->lvc);
+	dfs_free(lv->dfs);
+#endif
+	xfree(lv);
 }
 
 void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
