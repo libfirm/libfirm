@@ -174,7 +174,6 @@ void free_firm(void) {
 	for (i = get_irp_n_types() - 1; i >= 0; --i)
 		free_type(get_irp_type(i));
 
-	finish_op();
 	free_ir_prog();
 
 	finish_tarval();

@@ -36,6 +36,7 @@
 #include "irgraph_t.h"
 #include "pseudo_irg.h"
 #include "array.h"
+#include "error.h"
 #include "obst.h"
 #include "irop_t.h"
 #include "irmemory.h"
@@ -138,12 +139,14 @@ void free_ir_prog(void) {
 		free_type(irp->segment_types[i]);
 	}
 
+	free_ir_graph(irp->const_code_irg);
 	DEL_ARR_F(irp->graphs);
 	DEL_ARR_F(irp->pseudo_graphs);
 	DEL_ARR_F(irp->types);
 	DEL_ARR_F(irp->modes);
+
+	finish_op();
 	DEL_ARR_F(irp->opcodes);
-	free_ir_graph(irp->const_code_irg);
 
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
@@ -322,14 +325,15 @@ void remove_irp_opcode(ir_op *opcode) {
 
 	assert(opcode);
 	for (i = ARR_LEN(irp->opcodes) -1; i >= 0; i--) {
-		if (irp->opcodes[i] == opcode) {
-			for (; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
-				irp->opcodes[i] = irp->opcodes[i+1];
-			}
-			ARR_SETLEN(ir_op *, irp->opcodes, (ARR_LEN(irp->opcodes)) - 1);
-			break;
+		if (irp->opcodes[i] != opcode)
+			continue;
+		for (; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
+			irp->opcodes[i] = irp->opcodes[i+1];
 		}
+		ARR_SETLEN(ir_op *, irp->opcodes, (ARR_LEN(irp->opcodes)) - 1);
+		return;
 	}
+	panic("Deleting unknown opcode");
 }
 
 /* Returns the number of all opcodes in the irp. */
