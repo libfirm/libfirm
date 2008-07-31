@@ -110,6 +110,7 @@ unsigned be_put_ignore_regs(const be_irg_t *birg,
  * Initialize the backend. Must be run first in init_firm();
  */
 void firm_be_init(void);
+void firm_be_finish(void);
 
 extern int be_timing;
 

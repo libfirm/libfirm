@@ -368,6 +368,12 @@ void firm_be_init(void)
 	be_init_modules();
 }
 
+/* Finalize the Firm backend. */
+void firm_be_finish(void)
+{
+	be_quit_modules();
+}
+
 /* Returns the backend parameter */
 const backend_params *be_get_backend_param(void)
 {
