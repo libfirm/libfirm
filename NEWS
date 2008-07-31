@@ -9,7 +9,7 @@
 * lowering of CopyB nodes
 * better memory disambiguator
 * float->64bit conversion fixed for x87
-* removed old verbosity level based debugging: all modules ese the new debug facility
+* removed old verbosity level based debugging: all modules use the new debug facility
 * Improved Confirm based optimization and conditional evaluation (using Confirm nodes)
 * BugFixes: tail recursion, load/store optimization, lowering of structure return, conditional
   evaluation, removal of unused methods

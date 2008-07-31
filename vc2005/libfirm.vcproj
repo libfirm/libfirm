@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="9,00"
 	Name="libfirm"
 	ProjectGUID="{7375BFCA-376F-4CB1-BBE6-7C88374BDBD9}"
+	RootNamespace="libfirm"
+	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -123,7 +125,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/WL"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include"
+				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include;../ir"
 				PreprocessorDefinitions="NO_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -5063,6 +5065,14 @@
 						/>
 					</FileConfiguration>
 				</File>
+				<File
+					RelativePath="..\ir\ir\valueset.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ir\valueset.h"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="opt"
@@ -5104,6 +5114,10 @@
 				</File>
 				<File
 					RelativePath="..\ir\opt\code_placement.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\opt\combo.c"
 					>
 				</File>
 				<File
@@ -5345,41 +5359,6 @@
 				</File>
 				<File
 					RelativePath="..\ir\opt\Makefile.in"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\opt\opt_branches.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\opt\opt_branches.h"
 					>
 				</File>
 				<File
@@ -6497,14 +6476,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="ip"
-				>
-				<File
-					RelativePath="..\ir\ip\io.c"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="libcore"
 				>
 				<File
@@ -7286,6 +7257,22 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+			</Filter>
+			<Filter
+				Name="obstack_win"
+				>
+				<File
+					RelativePath="..\ir\obstack_win\obstack.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\obstack_win\obstack.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\obstack_win\obstack_printf.c"
+					>
 				</File>
 			</Filter>
 		</Filter>
