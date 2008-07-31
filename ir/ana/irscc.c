@@ -209,24 +209,13 @@ static INLINE void init_stack(void) {
 	tos = 0;
 }
 
-static void finish_stack(void)
-{
-	DEL_ARR_F(stack);
-	stack = NULL;
-}
-
-#if 0
 /**
  * Frees the stack.
  */
-static INLINE void free_stack(void) {
-	if (stack != NULL) {
-		DEL_ARR_F(stack);
-		stack = NULL;
-	}
-	tos = 0;
+static void finish_stack(void) {
+	DEL_ARR_F(stack);
+	stack = NULL;
 }
-#endif
 
 /**
  * push a node onto the stack
