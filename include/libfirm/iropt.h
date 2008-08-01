@@ -72,7 +72,7 @@ typedef enum _fp_model_t {
 	fp_model_strict  = fp_explicit_rounding|fp_strict_algebraic|fp_strict_eval_order|
 	                   fp_exceptions|fp_environment_access,
 	/** Fast floating point model. */
-	fp_model_fast    = fp_contradictions,
+	fp_model_fast    = fp_contradictions
 } fp_model_t;
 
 /** If the expression referenced can be evaluated statically
