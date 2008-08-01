@@ -28,6 +28,8 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
+
 #include "ircons.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
