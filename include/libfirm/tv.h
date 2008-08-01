@@ -364,6 +364,8 @@ typedef enum _tarval_int_overflow_mode_t {
 
 /**
  * Sets the overflow mode for integer operations.
+ *
+ * @param ov_mode  one of teh overflow modes
  */
 void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
 
@@ -442,55 +444,173 @@ tarval *tarval_convert_to(tarval *src, ir_mode *mode);
  *   The sort member of the struct mode defines which operations are valid
  */
 
-/** Bitwise Negation of a tarval. */
+/**
+ * Bitwise Negation of a tarval.
+ *
+ * @param a  the first tarval
+ *
+ * @return ~a or tarval_bad
+ */
 tarval *tarval_not(tarval *a);
 
-/** Arithmetic Negation of a tarval. */
+/**
+ * Arithmetic Negation of a tarval.
+ *
+ * @param a  the first tarval
+ *
+ * @return -a or tarval_bad
+ */
 tarval *tarval_neg(tarval *a);
 
-/** Addition of two tarvals. */
+/**
+ * Addition of two tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a + b or tarval_bad
+ */
 tarval *tarval_add(tarval *a, tarval *b);
 
-/** Subtraction from a tarval. */
-tarval *tarval_sub(tarval *a, tarval *b);
+/**
+ * Subtraction from a tarval.
+ *
+ * @param a         the first tarval
+ * @param b         the second tarval
+ * @param dst_mode  the mode of the result, needed for mode_P - mode_P, else NULL
+ *
+ * @return a - b or tarval_bad
+ */
+tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode);
 
-/** Multiplication of tarvals. */
+/**
+ * Multiplication of tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a * b or tarval_bad
+ */
 tarval *tarval_mul(tarval *a, tarval *b);
 
-/** 'Exact' division of two tarvals. */
+/**
+ * Division of two floating point tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a / b or tarval_bad
+ */
 tarval *tarval_quo(tarval *a, tarval *b);
 
-/** Integer division of two tarvals. */
+/**
+ * Integer division of two tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a / b or tarval_bad
+ */
 tarval *tarval_div(tarval *a, tarval *b);
 
-/** Remainder of integer division. */
+/**
+ * Remainder of integer division.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a % b or tarval_bad
+ */
 tarval *tarval_mod(tarval *a, tarval *b);
 
-/** Integer division AND remainder. */
+/**
+ * Integer division AND remainder.
+ *
+ * @param a        the first tarval
+ * @param b        the second tarval
+ * @param mod_res  after return, contains the remainder result, a % b or tarval_bad
+ *
+ * @return a / b or tarval_bad
+ */
 tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
 
-/** Absolute value of a tarval. */
+/**
+ * Absolute value of a tarval.
+ *
+ * @param a  the first tarval
+ *
+ * @return |a| or tarval_bad
+ */
 tarval *tarval_abs(tarval *a);
 
-/** Bitwise and. */
+/**
+ * Bitwise and of two integer tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a & b or tarval_bad
+ */
 tarval *tarval_and(tarval *a, tarval *b);
 
-/** Bitwise or. */
+/**
+ * Bitwise or of two integer tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a | b or tarval_bad
+ */
 tarval *tarval_or(tarval *a, tarval *b);
 
-/** Bitwise exclusive or. */
+/**
+ * Bitwise exclusive or of two integer tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a ^ b or tarval_bad
+ */
 tarval *tarval_eor(tarval *a, tarval *b);
 
-/** Left shift. */
+/**
+ * Logical Left shift.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a << b or tarval_bad
+ */
 tarval *tarval_shl(tarval *a, tarval *b);
 
-/** Unsigned (logical) right shift. */
+/**
+ * Unsigned (logical) right shift.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a >>u b or tarval_bad
+ */
 tarval *tarval_shr(tarval *a, tarval *b);
 
-/** Signed (arithmetic) right shift. */
+/**
+ * Signed (arithmetic) right shift.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a >>s b or tarval_bad
+ */
 tarval *tarval_shrs(tarval *a, tarval *b);
 
-/** Rotation to left. */
+/**
+ * Rotation to left.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a <<L>> b or tarval_bad
+ */
 tarval *tarval_rotl(tarval *a, tarval *b);
 
 /**

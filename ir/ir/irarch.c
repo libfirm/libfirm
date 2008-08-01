@@ -634,7 +634,7 @@ static int tv_ld2(tarval *tv, int bits) {
 #define SHL(a, b) tarval_shl(a, b)
 #define SHR(a, b) tarval_shr(a, b)
 #define ADD(a, b) tarval_add(a, b)
-#define SUB(a, b) tarval_sub(a, b)
+#define SUB(a, b) tarval_sub(a, b, NULL)
 #define MUL(a, b) tarval_mul(a, b)
 #define DIV(a, b) tarval_div(a, b)
 #define MOD(a, b) tarval_mod(a, b)

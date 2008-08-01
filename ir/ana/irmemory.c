@@ -181,7 +181,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 						return ir_no_alias;
 					}
 					/* tv_size > tv2, so we can subtract without overflow */
-					tv2 = tarval_sub(tv_size, tv2);
+					tv2 = tarval_sub(tv_size, tv2, NULL);
 
 					/* tv1 is < 0, so we can negate it */
 					tv1 = tarval_neg(tv1);
@@ -200,7 +200,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
 			tv2 = t;
 		}
 		/* tv1 is now the "smaller" one */
-		tv      = tarval_sub(tv2, tv1);
+		tv      = tarval_sub(tv2, tv1, NULL);
 		tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
 		return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? ir_no_alias : ir_may_alias;
 	}

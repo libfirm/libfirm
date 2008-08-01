@@ -119,7 +119,7 @@ static tarval *computed_value_Add(ir_node *n) {
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
 
-	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b)))
+	if ((ta != tarval_bad) && (tb != tarval_bad))
 		return tarval_add(ta, tb);
 
 	return tarval_bad;
@@ -130,20 +130,21 @@ static tarval *computed_value_Add(ir_node *n) {
  * Special case: a - a
  */
 static tarval *computed_value_Sub(ir_node *n) {
-	ir_node *a = get_Sub_left(n);
-	ir_node *b = get_Sub_right(n);
-	tarval *ta;
-	tarval *tb;
+	ir_mode *mode = get_irn_mode(n);
+	ir_node *a    = get_Sub_left(n);
+	ir_node *b    = get_Sub_right(n);
+	tarval  *ta;
+	tarval  *tb;
 
 	/* a - a */
 	if (a == b && !is_Bad(a))
-		return get_mode_null(get_irn_mode(n));
+		return get_mode_null(mode);
 
 	ta = value_of(a);
 	tb = value_of(b);
 
-	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b)))
-		return tarval_sub(ta, tb);
+	if ((ta != tarval_bad) && (tb != tarval_bad))
+		return tarval_sub(ta, tb, mode);
 
 	return tarval_bad;
 }  /* computed_value_Sub */
@@ -243,8 +244,7 @@ static tarval *computed_value_Quot(ir_node *n) {
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
 
-	/* This was missing in original implementation. Why? */
-	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		if (tb != get_mode_null(get_tarval_mode(tb)))   /* div by zero: return tarval_bad */
 			return tarval_quo(ta, tb);
 	}
@@ -1798,6 +1798,24 @@ static int is_const_Phi(ir_node *n) {
 		return 1;
 }  /* is_const_Phi */
 
+typedef tarval *(*tarval_sub_type)(tarval *a, tarval *b, ir_mode *mode);
+typedef tarval *(*tarval_binop_type)(tarval *a, tarval *b);
+
+/**
+ * Wrapper for the tarval binop evaluation, tarval_sub has one more parameter.
+ */
+static tarval *do_eval(tarval *(*eval)(), tarval *a, tarval *b, ir_mode *mode) {
+	if (eval == tarval_sub) {
+		tarval_sub_type func = (tarval_sub_type)eval;
+
+		return func(a, b, mode);
+	} else {
+		tarval_binop_type func = (tarval_binop_type)eval;
+
+		return func(a, b);
+	}
+}
+
 /**
  * Apply an evaluator on a binop with a constant operators (and one Phi).
  *
@@ -1809,7 +1827,7 @@ static int is_const_Phi(ir_node *n) {
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(tarval *, tarval *), ir_mode *mode, int left) {
+static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(), ir_mode *mode, int left) {
 	tarval   *tv;
 	void     **res;
 	ir_node  *pred;
@@ -1821,7 +1839,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
 		for (i = 0; i < n; ++i) {
 			pred = get_irn_n(phi, i);
 			tv   = get_Const_tarval(pred);
-			tv   = eval(other, tv);
+			tv   = do_eval(eval, other, tv, mode);
 
 			if (tv == tarval_bad) {
 				/* folding failed, bad */
@@ -1833,7 +1851,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
 		for (i = 0; i < n; ++i) {
 			pred = get_irn_n(phi, i);
 			tv   = get_Const_tarval(pred);
-			tv   = eval(tv, other);
+			tv   = do_eval(eval, tv, other, mode);
 
 			if (tv == tarval_bad) {
 				/* folding failed, bad */
@@ -1861,7 +1879,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(tarval *, tarval *), ir_mode *mode) {
+static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(), ir_mode *mode) {
 	tarval   *tv_l, *tv_r, *tv;
 	void     **res;
 	ir_node  *pred;
@@ -1879,7 +1897,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(ta
 		tv_l = get_Const_tarval(pred);
 		pred = get_irn_n(b, i);
 		tv_r = get_Const_tarval(pred);
-		tv   = eval(tv_l, tv_r);
+		tv   = do_eval(eval, tv_l, tv_r, mode);
 
 		if (tv == tarval_bad) {
 			/* folding failed, bad */
@@ -4047,7 +4065,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
 				if ((proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Ge) &&
 					tarval_cmp(tv, get_mode_null(mode)) == pn_Cmp_Gt) {
-					tv = tarval_sub(tv, get_mode_one(mode));
+					tv = tarval_sub(tv, get_mode_one(mode), NULL);
 
 					if (tv != tarval_bad) {
 						proj_nr ^= pn_Cmp_Eq;
@@ -4115,7 +4133,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 							}
 
 							if (tv2 != tarval_bad) {
-								tv2 = tarval_sub(tv, tv2);
+								tv2 = tarval_sub(tv, tv2, NULL);
 
 								if (tv2 != tarval_bad) {
 									left    = a;
@@ -4127,7 +4145,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 						}
 						/* -a == c ==> a == -c, -a != c ==> a != -c */
 						else if (is_Minus(left)) {
-							tarval *tv2 = tarval_sub(get_mode_null(mode), tv);
+							tarval *tv2 = tarval_sub(get_mode_null(mode), tv, NULL);
 
 							if (tv2 != tarval_bad) {
 								left    = get_Minus_op(left);
@@ -4284,7 +4302,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 						tarval  *cond   = new_tarval_from_long(get_mode_size_bits(mode), get_tarval_mode(tv1));
 						ir_node *sl, *blk;
 
-						cond = tarval_sub(cond, tv1);
+						cond = tarval_sub(cond, tv1, NULL);
 						cond = tarval_shrs(tv, cond);
 
 						if (!tarval_is_all_one(cond) && !tarval_is_null(cond)) {
@@ -4326,7 +4344,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 					ir_node *blk  = get_irn_n(op, -1);
 					ir_mode *mode = get_irn_mode(v);
 
-					tv = tarval_sub(tv, get_mode_one(mode));
+					tv = tarval_sub(tv, get_mode_one(mode), NULL);
 					left = new_rd_And(get_irn_dbg_info(op), current_ir_graph, blk, v, new_Const(mode, tv), mode);
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_MOD_TO_AND);
@@ -4915,7 +4933,7 @@ static ir_node *transform_node_shl_shr(ir_node *n) {
 
 	pnc = tarval_cmp(tv_shl, tv_shr);
 	if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Eq) {
-		tv_shift  = tarval_sub(tv_shr, tv_shl);
+		tv_shift  = tarval_sub(tv_shr, tv_shl, NULL);
 		new_const = new_Const(get_tarval_mode(tv_shift), tv_shift);
 		if (need_shrs) {
 			new_shift = new_rd_Shrs(dbgi, irg, block, x, new_const, mode);
@@ -4924,7 +4942,7 @@ static ir_node *transform_node_shl_shr(ir_node *n) {
 		}
 	} else {
 		assert(pnc == pn_Cmp_Gt);
-		tv_shift  = tarval_sub(tv_shl, tv_shr);
+		tv_shift  = tarval_sub(tv_shl, tv_shr, NULL);
 		new_const = new_Const(get_tarval_mode(tv_shift), tv_shift);
 		new_shift = new_rd_Shl(dbgi, irg, block, x, new_const, mode);
 	}
@@ -5160,10 +5178,10 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		tarval *diff, *min;
 
 		if (tarval_cmp(a, b) & pn_Cmp_Gt) {
-			diff = tarval_sub(a, b);
+			diff = tarval_sub(a, b, NULL);
 			min  = b;
 		} else {
-			diff = tarval_sub(b, a);
+			diff = tarval_sub(b, a, NULL);
 			min  = a;
 		}
 
@@ -5174,8 +5192,8 @@ static ir_node *transform_node_Mux(ir_node *n) {
 
 
 			conds[0] = sel;
-			vals[0] = new_Const(mode, tarval_sub(a, min));
-			vals[1] = new_Const(mode, tarval_sub(b, min));
+			vals[0] = new_Const(mode, tarval_sub(a, min, NULL));
+			vals[1] = new_Const(mode, tarval_sub(b, min, NULL));
 			n = new_rd_Psi(dbg, irg, block, 1, conds, vals, mode);
 			n = new_rd_Add(dbg, irg, block, n, new_Const(mode, min), mode);
 			return n;

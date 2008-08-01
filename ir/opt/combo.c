@@ -1202,7 +1202,7 @@ static void compute_Sub(node_t *node) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
 		if (is_tarval(a.tv) && is_tarval(b.tv)) {
-			node->type.tv = tarval_sub(a.tv, b.tv);
+			node->type.tv = tarval_sub(a.tv, b.tv, get_irn_mode(sub));
 		} else if (is_tarval(a.tv) && tarval_is_null(a.tv)) {
 			node->type = b;
 		} else if (is_tarval(b.tv) && tarval_is_null(b.tv)) {

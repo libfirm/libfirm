@@ -1101,7 +1101,7 @@ tarval *tarval_neg(tarval *a) {
 tarval *tarval_add(tarval *a, tarval *b) {
 	tarval  *res;
 	char    *buffer;
-	ir_mode *dst_mode, *src_mode = NULL;
+	ir_mode *imm_mode, *dst_mode = NULL;
 
 	assert(a);
 	assert(b);
@@ -1112,24 +1112,24 @@ tarval *tarval_add(tarval *a, tarval *b) {
 	}
 
 	if (mode_is_reference(a->mode)) {
-		src_mode = a->mode;
-		dst_mode = find_unsigned_mode(a->mode);
+		dst_mode = a->mode;
+		imm_mode = find_unsigned_mode(a->mode);
 
-		if (dst_mode == NULL)
+		if (imm_mode == NULL)
 			return tarval_bad;
 
-		a = tarval_convert_to(a, dst_mode);
-		b = tarval_convert_to(b, dst_mode);
+		a = tarval_convert_to(a, imm_mode);
+		b = tarval_convert_to(b, imm_mode);
 	}
 	if (mode_is_reference(b->mode)) {
-		src_mode = b->mode;
-		dst_mode = find_unsigned_mode(b->mode);
+		dst_mode = b->mode;
+		imm_mode = find_unsigned_mode(b->mode);
 
-		if (dst_mode == 0)
+		if (imm_mode == 0)
 			return tarval_bad;
 
-		a = tarval_convert_to(a, dst_mode);
-		b = tarval_convert_to(b, dst_mode);
+		a = tarval_convert_to(a, imm_mode);
+		b = tarval_convert_to(b, imm_mode);
 	}
 
 	assert(a->mode == b->mode);
@@ -1153,18 +1153,17 @@ tarval *tarval_add(tarval *a, tarval *b) {
 	default:
 		return tarval_bad;
 	}
-	if (src_mode != NULL)
-		return tarval_convert_to(res, src_mode);
+	if (dst_mode != NULL)
+		return tarval_convert_to(res, dst_mode);
 	return res;
 }
 
 /*
  * subtraction
  */
-tarval *tarval_sub(tarval *a, tarval *b) {
+tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode) {
 	tarval  *res;
 	char    *buffer;
-	ir_mode *dst_mode, *src_mode = NULL;
 
 	assert(a);
 	assert(b);
@@ -1173,27 +1172,16 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
-	if (mode_is_reference(a->mode)) {
-		src_mode = a->mode;
-		dst_mode = find_unsigned_mode(a->mode);
 
-		if (dst_mode == NULL)
-			return tarval_bad;
-
-		a = tarval_convert_to(a, dst_mode);
-		b = tarval_convert_to(b, dst_mode);
+	if (dst_mode != NULL) {
+		if (mode_is_reference(a->mode)) {
+			a = tarval_convert_to(a, dst_mode);
+		}
+		if (mode_is_reference(b->mode)) {
+			b = tarval_convert_to(b, dst_mode);
+		}
+		assert(a->mode == dst_mode);
 	}
-	if (mode_is_reference(b->mode)) {
-		src_mode = b->mode;
-		dst_mode = find_unsigned_mode(b->mode);
-
-		if (dst_mode == 0)
-			return tarval_bad;
-
-		a = tarval_convert_to(a, dst_mode);
-		b = tarval_convert_to(b, dst_mode);
-	}
-
 	assert(a->mode == b->mode);
 
 	switch (get_mode_sort(a->mode)) {
@@ -1201,23 +1189,18 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
-		res = get_tarval_overflow(buffer, a->length, a->mode);
-		break;
+		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
 		if (no_float)
 			return tarval_bad;
 
 		fc_sub(a->value, b->value, NULL);
-		res = get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
-		break;
+		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
 		return tarval_bad;
 	}
-	if (src_mode != NULL)
-		return tarval_convert_to(res, src_mode);
-	return res;
 }
 
 /*

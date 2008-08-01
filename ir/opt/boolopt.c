@@ -100,7 +100,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 						 (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x >=|>|!= lo || x ==|>=|> hi -> x ==|>=|> hi */
 		return proj_hi;
-	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Ge && pnc_hi == pn_Cmp_Lt) {
 			/* x >= c || x < c + 1 -> x == c */
 			ir_graph *const irg   = current_ir_graph;
@@ -161,7 +161,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 						 (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x >=|>|!= lo || x ==|>=|> hi -> x >=|>|!= lo */
 		return proj_lo;
-	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo))) { /* lo + 1 == hi */
+	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Lt && pnc_hi == pn_Cmp_Ge) {
 			/* x < c || x >= c + 1 -> x != c */
 			ir_graph *const irg   = current_ir_graph;
