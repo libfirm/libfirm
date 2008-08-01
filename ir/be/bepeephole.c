@@ -124,7 +124,7 @@ static void set_uses(ir_node *node)
 	}
 }
 
-void be_peephole_new_node(ir_node *const nw)
+void be_peephole_new_node(ir_node * nw)
 {
 	be_liveness_introduce(lv, nw);
 }
@@ -174,7 +174,7 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 	be_liveness_remove(lv, old_node);
 }
 
-void be_peephole_exchange(ir_node *const old, ir_node *const nw)
+void be_peephole_exchange(ir_node *old, ir_node *nw)
 {
 	be_peephole_before_exchange(old, nw);
 	sched_remove(old);
