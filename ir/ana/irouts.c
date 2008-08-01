@@ -309,15 +309,19 @@ static int _count_outs(ir_node *n) {
 
 	for (i = start; i < irn_arity; ++i) {
 		/* Optimize Tuples.  They annoy if walking the cfg. */
-		ir_node *pred = skip_Tuple(get_irn_n(n, i));
-		set_irn_n(n, i, pred);
+		ir_node *pred         = get_irn_n(n, i);
+		ir_node *skipped_pred = skip_Tuple(pred);
+
+		if (skipped_pred != pred) {
+			set_irn_n(n, i, skipped_pred);
+		}
 
 		/* count Def-Use edges for predecessors */
-		if (irn_not_visited(pred))
-			res += _count_outs(pred);
+		if (irn_not_visited(skipped_pred))
+			res += _count_outs(skipped_pred);
 
 		/*count my Def-Use edges */
-		pred->out = INT_TO_PTR(PTR_TO_INT(pred->out) + 1);
+		skipped_pred->out = INT_TO_PTR(PTR_TO_INT(skipped_pred->out) + 1);
 	}
 	return res;
 }
