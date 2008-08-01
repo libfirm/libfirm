@@ -1,4 +1,4 @@
-====== Libfirm 1.13.0 (XXXX-XX-XX) ======
+====== Libfirm 1.13.0 (2008-07-31) ======
 
 * VanDrunen's GVN-PRE fixed
 * operator strength reduce fixed and improved
@@ -16,6 +16,7 @@
 * reduced numer of indirections for backend operation
 * ia32 Backend: supports more CPU architectures
 * ARM Backend: fixed frame access
+* support for special segments (like constructors, destructors)
 
 ====== Libfirm 1.12.1 (2008-02-18) ======
 

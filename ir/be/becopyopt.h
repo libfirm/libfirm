@@ -36,6 +36,7 @@
 
 #include "firm_types.h"
 #include "bechordal.h"
+#include "beutil.h"
 
 /**
  * Flags for dumping the IFG.

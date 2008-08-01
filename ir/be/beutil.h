@@ -35,6 +35,22 @@
 
 #include "bearch_t.h"
 
+#ifdef _MSC_VER
+typedef          __int64 long64;
+typedef unsigned __int64 ulong64;
+
+#define LL_FMT	"i64"
+#define ULL_FMT	"ui64"
+
+#else
+typedef          long long long64;
+typedef unsigned long long ulong64;
+
+#define LL_FMT	"ll"
+#define ULL_FMT	"llu"
+
+#endif /* _MSC_VER */
+
 /* iterate over a list of ir_nodes linked by link field */
 #define foreach_linked_irns(head, iter) for ((iter) = (head); (iter); (iter) = get_irn_link((iter)))
 
