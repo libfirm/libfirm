@@ -607,3 +607,50 @@ $(srcdir)/be/ppc32/gen_ppc32_machine.c $(srcdir)/be/ppc32/gen_ppc32_machine.h: \
 $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.c $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.h: \
 		be/ppc32/ppc32_spec.pl be/scripts/generate_machine.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/ppc32/ppc32_spec.pl $(srcdir)/be/ppc32
+
+# TEMPLATE backend
+
+TEMPLATE_sources = \
+	be/TEMPLATE/bearch_TEMPLATE.c \
+	be/TEMPLATE/TEMPLATE_emitter.c \
+	be/TEMPLATE/TEMPLATE_map_regs.c \
+	be/TEMPLATE/TEMPLATE_new_nodes.c \
+	be/TEMPLATE/TEMPLATE_transform.c
+TEMPLATE_built_sources = \
+	be/TEMPLATE/gen_TEMPLATE_emitter.c \
+	be/TEMPLATE/gen_TEMPLATE_emitter.h \
+	be/TEMPLATE/gen_TEMPLATE_machine.c \
+	be/TEMPLATE/gen_TEMPLATE_machine.h \
+	be/TEMPLATE/gen_TEMPLATE_regalloc_if.c \
+	be/TEMPLATE/gen_TEMPLATE_regalloc_if.h \
+	be/TEMPLATE/gen_TEMPLATE_new_nodes.c.inl \
+	be/TEMPLATE/gen_TEMPLATE_new_nodes.h
+MAINTAINERCLEANFILES += $(TEMPLATE_built_sources)
+BUILT_SOURCES += $(TEMPLATE_built_sources)
+libfirm_la_SOURCES += $(TEMPLATE_sources) $(TEMPLATE_built_sources)
+
+EXTRA_DIST += \
+	be/TEMPLATE/TEMPLATE_spec.pl \
+	be/TEMPLATE/bearch_TEMPLATE.h \
+	be/TEMPLATE/bearch_TEMPLATE_t.h \
+	be/TEMPLATE/TEMPLATE_emitter.h \
+	be/TEMPLATE/TEMPLATE_map_regs.h \
+	be/TEMPLATE/TEMPLATE_new_nodes.h \
+	be/TEMPLATE/TEMPLATE_nodes_attr.h \
+	be/TEMPLATE/TEMPLATE_transform.h
+
+$(srcdir)/be/TEMPLATE/gen_TEMPLATE_new_nodes.c.inl $(srcdir)/be/TEMPLATE/gen_TEMPLATE_new_nodes.h: \
+		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_new_opcodes.pl
+	$(PERL) $(srcdir)/be/scripts/generate_new_opcodes.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
+
+$(srcdir)/be/TEMPLATE/gen_TEMPLATE_emitter.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_emitter.h: \
+		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_emitter.pl
+	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
+
+$(srcdir)/be/TEMPLATE/gen_TEMPLATE_machine.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_machine.h: \
+		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_machine.pl
+	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
+
+$(srcdir)/be/TEMPLATE/gen_TEMPLATE_regalloc_if.c $(srcdir)/be/TEMPLATE/gen_TEMPLATE_regalloc_if.h: \
+		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_machine.pl
+	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/TEMPLATE/TEMPLATE_spec.pl $(srcdir)/be/TEMPLATE
