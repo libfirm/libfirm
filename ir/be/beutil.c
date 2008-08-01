@@ -220,28 +220,6 @@ unsigned get_num_reachable_nodes(ir_graph *irg) {
 }
 
 /**
- * Sets all node inputs to BAD node.
- */
-void be_kill_node(ir_node *irn) {
-	ir_graph *irg = get_irn_irg(irn);
-
-	assert(!is_Bad(irn));
-
-#ifdef DEBUG_libfirm
-	{
-	int i, first;
-	first = 0 - ! is_Block(irn);
-
-	for (i = get_irn_arity(irn) - 1; i >= first; --i) {
-		set_irn_n(irn, i, get_irg_bad(irg));
-	}
-	}
-#endif
-
-	edges_node_deleted(irn, irg);
-}
-
-/**
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {

@@ -559,14 +559,13 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 			set_Proj_pred(proj, pop);
 		}
 
-
 		/* we can remove the Load now */
 		sched_remove(load);
 		kill_node(load);
 	}
+
 	be_set_IncSP_offset(irn, -ofs);
 	be_set_IncSP_pred(irn, pred_sp);
-
 }
 
 
@@ -1082,7 +1081,7 @@ static INLINE void try_kill(ir_node *node)
 		sched_remove(node);
 	}
 
-	be_kill_node(node);
+	kill_node(node);
 }
 
 static void optimize_conv_store(ir_node *node)
@@ -1116,9 +1115,9 @@ static void optimize_conv_store(ir_node *node)
 
 	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
 	if(get_irn_n_edges(pred_proj) == 0) {
-		be_kill_node(pred_proj);
+		kill_node(pred_proj);
 		if(pred != pred_proj)
-			be_kill_node(pred);
+			kill_node(pred);
 	}
 }
 
@@ -1243,9 +1242,9 @@ static void optimize_conv_conv(ir_node *node)
 	exchange(node, result_conv);
 
 	if(get_irn_n_edges(pred_proj) == 0) {
-		be_kill_node(pred_proj);
+		kill_node(pred_proj);
 		if(pred != pred_proj)
-			be_kill_node(pred);
+			kill_node(pred);
 	}
 	optimize_conv_conv(result_conv);
 }

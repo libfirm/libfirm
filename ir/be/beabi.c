@@ -736,7 +736,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* kill the ProjT node */
 	if (res_proj != NULL) {
-		be_kill_node(res_proj);
+		kill_node(res_proj);
 	}
 
 	/* Make additional projs for the caller save registers
@@ -1423,7 +1423,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	stack = be_abi_reg_map_get(env->regs, arch_env->sp);
 	if (keep) {
 		stack = get_irn_n(keep, 0);
-		be_kill_node(keep);
+		kill_node(keep);
 		remove_End_keepalive(get_irg_end(env->birg->irg), keep);
 	}
 
@@ -1746,7 +1746,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* value_param_base anchor is not needed anymore now */
 	value_param_base = get_irg_value_param_base(irg);
-	be_kill_node(value_param_base);
+	kill_node(value_param_base);
 	set_irg_value_param_base(irg, new_r_Bad(irg));
 
 	env->frame = obstack_alloc(&env->obst, sizeof(env->frame[0]));
@@ -1942,7 +1942,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* the arg proj is not needed anymore now and should be only used by the anchor */
 	assert(get_irn_n_edges(arg_tuple) == 1);
-	be_kill_node(arg_tuple);
+	kill_node(arg_tuple);
 	set_irg_args(irg, new_rd_Bad(irg));
 
 	/* All Return nodes hang on the End node, so look for them there. */

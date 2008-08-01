@@ -502,7 +502,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* the old SP is not needed anymore (kill the proj) */
 			assert(is_Proj(curr_sp));
-			be_kill_node(curr_sp);
+			kill_node(curr_sp);
 
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);

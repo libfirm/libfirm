@@ -39,6 +39,7 @@
 #include "iredges_t.h"
 #include "ircons.h"
 #include "irextbb.h"
+#include "irgmod.h"
 #include "debug.h"
 
 #include "bemodule.h"
@@ -171,7 +172,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if(env->lv)
 			be_liveness_remove(env->lv, node);
 		sched_remove(node);
-		be_kill_node(node);
+		kill_node(node);
 	}
 }
 

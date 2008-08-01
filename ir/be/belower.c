@@ -504,7 +504,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	/* remove the perm from schedule */
 	if (! keep_perm) {
 		sched_remove(irn);
-		be_kill_node(irn);
+		kill_node(irn);
 	}
 }
 
@@ -754,7 +754,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 					/* now, we can kill the melted keep, except the */
 					/* ref one, we still need some information      */
 					if (melt_arr[j] != ref)
-						be_kill_node(melt_arr[j]);
+						kill_node(melt_arr[j]);
 				}
 
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
@@ -781,7 +781,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				DBG((cenv->dbg, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
 				/* finally: kill the reference copykeep */
-				be_kill_node(ref);
+				kill_node(ref);
 			}
 		}
 
@@ -858,7 +858,7 @@ void assure_constraints(be_irg_t *birg) {
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
 				sched_remove(cp);
-				be_kill_node(cp);
+				kill_node(cp);
 			}
 		}
 
@@ -988,7 +988,7 @@ found_front:
 
 		/* and kill it */
 		set_Proj_pred(proj, new_Bad());
-		be_kill_node(proj);
+		kill_node(proj);
 
 		bitset_set(moved, input);
 		n_moved++;

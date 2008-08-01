@@ -202,7 +202,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 
 	/* remove the old sub */
 	sched_remove(irn);
-	be_kill_node(irn);
+	kill_node(irn);
 
 	DBG_OPT_SUB2NEGADD(irn, res);
 }

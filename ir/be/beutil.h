@@ -136,12 +136,6 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 unsigned get_num_reachable_nodes(ir_graph *irg);
 
 /**
- * Sets all node inputs to BAD node.
- * @param irn  The node to be killed.
- */
-void be_kill_node(ir_node *irn);
-
-/**
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);

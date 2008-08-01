@@ -53,6 +53,7 @@
 #include "iredges_t.h"
 #include "irgraph_t.h"
 #include "irgopt.h"
+#include "irgmod.h"
 #include "irprintf_t.h"
 #include "irgwalk.h"
 
@@ -216,7 +217,7 @@ static void remove_empty_block(ir_node *block)
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
-	be_kill_node(jump);
+	kill_node(jump);
 	blocks_removed = 1;
 
 	/* check predecessor */
