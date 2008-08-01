@@ -23,7 +23,10 @@
  * @author  Michael Beck
  * @version $Id$
  *
- * Note that we use the terminology from Click's work here, which is different
+ * Note that the current implementation lack the leaders/followers
+ * support.
+ *
+ * Note further that we use the terminology from Click's work here, which is different
  * in some cases from Firm terminology.  Especially, Click's type is a
  * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
  */
