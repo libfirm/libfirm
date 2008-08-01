@@ -198,6 +198,7 @@ libfirm_la_SOURCES = \
 	lower/lower_hl.c \
 	lower/lower_intrinsics.c \
 	lower/lower_mode_b.c \
+	lower/lower_switch.c \
 	net/firmnet.c \
 	obstack/obstack.c \
 	obstack/obstack_printf.c \

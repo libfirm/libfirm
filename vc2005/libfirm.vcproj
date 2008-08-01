@@ -6458,6 +6458,10 @@
 					RelativePath="..\ir\lower\lower_mode_b.c"
 					>
 				</File>
+				<File
+					RelativePath="..\ir\lower\lower_switch.c"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="net"

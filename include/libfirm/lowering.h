@@ -149,6 +149,15 @@ void lower_calls_with_compounds(const lower_params_t *params);
  */
 void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
 
+/**
+ * Lowers all Switches (Cond nodes with non-boolean mode) depending on spare_size.
+ * They will either remain the same or be converted into if-cascades.
+ *
+ * @param irg        The ir graph to be lowered.
+ * @param spare_size Allowed spare size for table switches in machine words.
+ *                   (Default in edgfe: 128)
+ */
+void lower_Switch(ir_graph *irg, unsigned spare_size);
 
 /**
  * A callback type for creating an intrinsic entity for a given opcode.
