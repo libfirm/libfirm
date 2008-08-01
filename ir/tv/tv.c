@@ -1202,6 +1202,7 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 		buffer = alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
 		res = get_tarval_overflow(buffer, a->length, a->mode);
+		break;
 
 	case irms_float_number:
 		if (no_float)
@@ -1209,6 +1210,7 @@ tarval *tarval_sub(tarval *a, tarval *b) {
 
 		fc_sub(a->value, b->value, NULL);
 		res = get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
+		break;
 
 	default:
 		return tarval_bad;
