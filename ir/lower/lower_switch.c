@@ -105,7 +105,7 @@ static int should_do_table_switch(ir_node *cond, unsigned spare_size)
 
 	/* TODO: Minimum size for jump table? */
 	if(get_irn_n_outs(cond) <= 4)
-		return;
+		return 0;
 
 	default_pn = get_Cond_defaultProj(cond);
 
