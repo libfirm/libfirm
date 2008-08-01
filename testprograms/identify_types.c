@@ -1,7 +1,7 @@
 /*
  * Project:     libFIRM
  * File name:   testprograms/indentify_types.c
- * Purpose:     Shows use of type identification
+ * Purpose:     Shows use of ir_type identification
  * Author:      Christian Schaefer, Goetz Lindenmaier
  * Modified by:
  * Created:
@@ -10,29 +10,21 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
-# include "type_identify.h"
+#include <libfirm/firm.h>
 
-
-
-int main(int argc, char **argv)
+int main(void)
 {
   ident *i1, *i2;
-  type  *t1, *t2, *t3;
-
-  printf("\nCreating type information for IDENTIFY_TYPES ...\n");
-
-
-
-
-  /** init library */
+  ir_type  *t1, *t2, *t3;
   firm_parameter_t params;
   type_identify_if_t params2;
+
+  printf("\nCreating ir_type information for IDENTIFY_TYPES ...\n");
+
+  /** init library */
   memset (&params, 0, sizeof(params));
   params.size = sizeof(params);
   params2.cmp = compare_names;
@@ -64,8 +56,8 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_all_types(0);
 
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

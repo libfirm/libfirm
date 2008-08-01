@@ -10,12 +10,12 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /*
  *   a dead block / unreachable code.
@@ -48,27 +48,28 @@
 *
 **/
 
-int main(int argc, char **argv)
+int main(void)
 {
+  char *dump_file_suffix = "";
   ir_graph *irg;          /* this variable contains the irgraph */
-  type *owner;      /* the class in which this method is defined */
-  type *proc_main; /* type information for the method main */
-  type     *prim_t_int;
-  entity *ent;            /* represents this method as entity of owner */
+  ir_type *owner;      /* the class in which this method is defined */
+  ir_type *proc_main; /* ir_type information for the method main */
+  ir_type     *prim_t_int;
+  ir_entity *ent;            /* represents this method as ir_entity of owner */
   ir_node *c1, *c2, *cond, *f, *t, *endBlock, *Block1, *jmp, *Block2,
           *deadBlock, *x;
 
   /* init library */
   init_firm (NULL);
 
-  /*** Make basic type information for primitive type int. ***/
+  /*** Make basic ir_type information for primitive ir_type int. ***/
   prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
    * all functions as methods in this file.
    * Therefore we define a class "empty" according to the file name
-   * with a method main as an entity.
+   * with a method main as an ir_entity.
    */
 #define CLASSNAME "DEAD_BLOCK"
 #define METHODNAME "main"
@@ -144,11 +145,10 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Dumping the graph and a control flow graph.\n");
-  char *dump_file_suffix = "";
   dump_ir_block_graph (irg, dump_file_suffix);
   dump_cfg (irg, dump_file_suffix);
-  printf("Use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view these graphs:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

@@ -10,14 +10,10 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
-# include <reassoc.h>
-# include "firm.h"
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-
+#include <libfirm/firm.h>
 
 /**
 *  This file constructs the ir for the following pseudo-program:
@@ -53,7 +49,7 @@
 #define L_BOUND 0
 #define U_BOUND 10
 #define N_DIMS 1
-  /** The type int.   **/
+  /** The ir_type int.   **/
 #define PRIM_NAME "int"
 
 
@@ -66,7 +62,7 @@ static ir_node *r1, *f, *r, *c2;
 
 typedef enum {
   loop_forward,
-  loop_backward,
+  loop_backward
 } loop_dir_t;
 
 /**
@@ -78,14 +74,17 @@ typedef enum {
  *
  * After return, the loop body is the current block.
  *
- * @param owner        owner-type of this (method-)function
- * @param mtp          the method type of this function
+ * @param owner        owner-ir_type of this (method-)function
+ * @param mtp          the method ir_type of this function
  * @param fct_name     the name of the function
  * @param loop_dir     the loop direction
  */
 static void function_begin(ir_type *owner, ir_type *mtp, char *fct_name, loop_dir_t loop_dir) {
   symconst_symbol sym;
   ir_node *x, *t, *cmp;
+  ir_entity *ent;
+  ir_entity *array_ent;
+  ir_type *array_type;
 
   int start_value, end_value;
   pn_Cmp cmp_dir;
@@ -101,17 +100,17 @@ static void function_begin(ir_type *owner, ir_type *mtp, char *fct_name, loop_di
     cmp_dir     = pn_Cmp_Lt;
   }
 
-  /* The entity for the procedure */
-  entity *ent = new_entity (owner,  new_id_from_str(fct_name), mtp);
+  /* The ir_entity for the procedure */
+  ent = new_entity(owner,  new_id_from_str(fct_name), mtp);
 
-  /* make type infromation for the array */
-  ir_type *array_type = new_type_array(new_id_from_str("array"), N_DIMS, typ);
+  /* make ir_type infromation for the array */
+  array_type = new_type_array(new_id_from_str("array"), N_DIMS, typ);
 
   /* set the bounds for the array */
   set_array_bounds_int(array_type, 0, L_BOUND, U_BOUND);
 
-  /* The array is an entity of the owner type */
-  entity *array_ent = new_entity(owner, new_id_from_str("a"), array_type);
+  /* The array is an ir_entity of the owner ir_type */
+  array_ent = new_entity(owner, new_id_from_str("a"), array_type);
 
   /** The code of the procedure **/
 
@@ -129,7 +128,7 @@ static void function_begin(ir_type *owner, ir_type *mtp, char *fct_name, loop_di
   set_value(i_pos, new_Const_int(start_value));
 
   sym.entity_p = array_ent;
-  set_value(arr_pos, new_SymConst(sym, symconst_addr_ent));
+  set_value(arr_pos, new_SymConst(mode_P, sym, symconst_addr_ent));
   x = new_Jmp();
 
   /* We know all predecessors of the block and all set_values and set_stores are
@@ -143,8 +142,8 @@ static void function_begin(ir_type *owner, ir_type *mtp, char *fct_name, loop_di
   cmp = new_Cmp(new_Const_int(end_value), get_value(i_pos, mode_Is));
   x = new_Cond(new_Proj(cmp, mode_b, cmp_dir));
 
-  f = new_Proj(x, mode_X, 0);
-  t = new_Proj(x, mode_X, 1);
+  f = new_Proj(x, mode_X, pn_Cond_false);
+  t = new_Proj(x, mode_X, pn_Cond_true);
 
   /* generate and fill the loop body block */
   r = new_immBlock();
@@ -160,13 +159,13 @@ int x;
  */
 static void function_end(ir_node *b) {
   ir_node *x = new_Jmp();
-  mature_immBlock (r);
+  mature_immBlock(r);
   add_immBlock_pred(r1, x);
 
 
   new_immBlock();
   add_immBlock_pred(get_cur_block(), f);
-  mature_immBlock (get_cur_block());
+  mature_immBlock(get_cur_block());
   /* The Return statement */
   {
     ir_node *in[1], *store ;
@@ -187,14 +186,21 @@ main(void)
 {
   ir_graph *irg;
   ir_type *owner;
-  entity *ent, *array_ent, *array_ent2;
-  ir_type *proc_tp, *array_type, *array_type2; /* type information for the method main */
+  ir_entity *ent, *array_ent, *array_ent2;
+  ir_type *proc_tp, *array_type, *array_type2; /* ir_type information for the method main */
   ir_node *x,*x1 ,  *r, *t, *f, *f1, *t1, *cmp, *r1, *r2;
+  ir_node *d2, *res2, *res3, *res5, *res7;
   int i_pos;
+  int i, n_irgs;
+  ir_node *b, *c, *c1, *d, *res;
+  ir_node *b1, *b2, *b3, *b4, *b7, *block;
+  ir_node *mul, *q, *q1;
+  ir_node *mul4;
+  symconst_symbol sym, sym2;
 
   printf("\nCreating an IR graph: IF_EXAMPLE...\n");
 
-  init_firm (NULL);
+  init_firm(NULL);
 
   arch_dep_set_opts(arch_dep_none);
 
@@ -217,20 +223,20 @@ main(void)
 
   /* --------------------------------------------------------------------- */
 
-  /* The entity for the procedure */
-  ent = new_entity (owner,
-                    new_id_from_str (METHODNAME1),
-                    proc_tp);
+  /* The ir_entity for the procedure */
+  ent = new_entity(owner,
+                   new_id_from_str(METHODNAME1),
+                   proc_tp);
   /* The parameter and result types of the procedure. */
 
-  /* make type infromation for the array */
+  /* make ir_type infromation for the array */
   array_type = new_type_array(new_id_from_chars("array", 5),N_DIMS, typ);
   array_type2 = new_type_array(new_id_from_chars("array2", 6),N_DIMS, typ2);
   /* set the bounds for the array */
   set_array_bounds_int(array_type,  0, L_BOUND, U_BOUND);
   set_array_bounds_int(array_type2, 0, L_BOUND, U_BOUND);
 
-  /* The array is an entity of the global typ */
+  /* The array is an ir_entity of the global typ */
   array_ent  = new_entity( owner, new_id_from_str("a"), array_type);
   array_ent2 = new_entity( owner, new_id_from_str("a2"), array_type2);
 
@@ -247,43 +253,39 @@ main(void)
 
   /* Generate the constant and assign it to b. The assignment is resovled to a
      dataflow edge. */
-  set_value (i_pos, new_Const_int(0));
-  x = new_Jmp ();
+  set_value(i_pos, new_Const_int(0));
+  x = new_Jmp();
 
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
-   mature_immBlock (get_irg_current_block(irg));
+   mature_immBlock(get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   r1 = new_immBlock();
   add_immBlock_pred(get_irg_current_block(irg), x);
   cmp = new_Cmp(new_Const_int(10), get_value(i_pos, mode_Is));
   x = new_Cond(new_Proj(cmp, mode_b, pn_Cmp_Gt));
-  f = new_Proj(x, mode_X, 0);
-  t = new_Proj(x, mode_X, 1);
+  f = new_Proj(x, mode_X, pn_Cond_false);
+  t = new_Proj(x, mode_X, pn_Cond_true);
 
   /* generate and fill the then block */
-  r = new_immBlock ();
-  add_immBlock_pred (r, t);
+  r = new_immBlock();
+  add_immBlock_pred(r, t);
 
-  ir_node *b, *c, *d, *res;
-  symconst_symbol sym, sym2;
   c = new_Const_int(1);
   b = new_Const_int(4);
-  ir_node *b2 = new_Const_int(12);
+  b2 = new_Const_int(12);
   sym.entity_p =  array_ent ;
   sym2.entity_p =  array_ent2 ;
-  d = new_SymConst(sym, symconst_addr_ent);
-  ir_node *d2 = new_SymConst(sym2, symconst_addr_ent);
+  d = new_SymConst(mode_P, sym, symconst_addr_ent);
+  d2 = new_SymConst(mode_P, sym2, symconst_addr_ent);
   res = new_Add(d, new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
-  //ir_node *res2 = new_Add(d2, get_value(i_pos, mode_Is), mode_P);
-  ir_node *res2 = new_Add(d2, new_Mul(get_value(i_pos, mode_Is), b2, mode_Is), mode_P);
-  //res2 = new_Add(res2, new_Const_int(12), mode_P);
-  set_store (new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, 0));
-  set_store (new_Proj(new_Store(get_store(), res2, new_Const_int(16)), mode_M, 0));
-  d = new_SymConst(sym, symconst_addr_ent);
+  res2 = new_Add(d2, new_Mul(get_value(i_pos, mode_Is), b2, mode_Is), mode_P);
+  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, pn_Store_M));
+  set_store(new_Proj(new_Store(get_store(), res2, new_Const_int(16)), mode_M, pn_Store_M));
+  d = new_SymConst(mode_P, sym, symconst_addr_ent);
   res = new_Add(d, new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(15)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(15)), mode_M, pn_Store_M));
 
   set_value(i_pos, new_Add(get_value(i_pos, mode_Is), c, mode_Is));
 
@@ -294,18 +296,18 @@ main(void)
   mature_immBlock(r1);
 
   r2 = new_immBlock();
-  ir_node *b1 = new_Const_int(45);
+  b1 = new_Const_int(45);
   add_immBlock_pred(get_irg_current_block(irg), f);
   cmp = new_Cmp(new_Const_int(0), b1);
-  x = new_Cond (new_Proj(cmp, mode_b, pn_Cmp_Lt));
-  f1 = new_Proj (x, mode_X, 0);
-  t1 = new_Proj (x, mode_X, 1);
+  x = new_Cond(new_Proj(cmp, mode_b, pn_Cmp_Lt));
+  f1 = new_Proj(x, mode_X, pn_Cond_false);
+  t1 = new_Proj(x, mode_X, pn_Cond_true);
 
-  ir_node *block = new_immBlock();
+  block = new_immBlock();
   add_immBlock_pred(block, t1);
-  b1 = new_Sub (b1, get_value(i_pos, mode_Is), mode_Is);
+  b1 = new_Sub(b1, get_value(i_pos, mode_Is), mode_Is);
   res = new_Add(d, new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, pn_Store_M));
   set_value(i_pos, new_Sub(get_value(i_pos, mode_Is), c, mode_Is));
 
   x1 = new_Jmp();
@@ -335,16 +337,15 @@ main(void)
   /* -------------------------------------------------------------------------------- */
 
   function_begin(owner, proc_tp, METHODNAME2, loop_forward);
-  ir_node *mul, *q;
   q =  new_Const_int(15);
-  ir_node *q1 = new_Const_int(13);
+  q1 = new_Const_int(13);
   c = new_Const_int(1);
   b = new_Const_int(4);
   mul = new_Mul(q, get_value(i_pos, mode_Is), mode_Is);
 
   res = new_Add(get_value(arr_pos, mode_P), new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
   res = new_Add(q1, res, mode_P);
-  set_store(new_Proj(new_Store (get_store(), res, mul), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, mul), mode_M, pn_Store_M));
 
   set_value(i_pos, new_Add(get_value(i_pos, mode_Is), c, mode_Is));
 
@@ -356,14 +357,14 @@ main(void)
 
   c = new_Const_int(1);
   b = new_Const_int(4);
-  ir_node *b3 = new_Const_int(8);
+  b3 = new_Const_int(8);
 
   res = new_Add(get_value(arr_pos, mode_P), new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
   res = new_Add(b, res, mode_P);
   res = new_Add(b3, res, mode_P);
-  ir_node *res3 = new_Add(b3, res, mode_P);
+  res3 = new_Add(b3, res, mode_P);
   res = new_Add(res3, res, mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, get_value(i_pos, mode_Is)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, get_value(i_pos, mode_Is)), mode_M, pn_Store_M));
 
 
   set_value(i_pos, new_Sub(get_value(i_pos, mode_Is), c, mode_Is));
@@ -376,15 +377,15 @@ main(void)
 
   c = new_Const_int(1);
   b = new_Const_int(4);
-  ir_node *b4 = new_Const_int(8);
+  b4 = new_Const_int(8);
 
   set_value(i_pos, new_Add(get_value(i_pos, mode_Is), c, mode_Is));
-  ir_node *mul4 = new_Mul(get_value(i_pos, mode_Is), b4, mode_Is);
+  mul4 = new_Mul(get_value(i_pos, mode_Is), b4, mode_Is);
   res = new_Add(mul4, get_value(arr_pos, mode_P), mode_P);
-  set_store (new_Proj (new_Store (get_store (), res,get_value(i_pos, mode_Is)),
-		       mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res,get_value(i_pos, mode_Is)),
+		       mode_M, pn_Store_M));
   res = new_Add(get_value(arr_pos, mode_P), new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, get_value(i_pos, mode_Is)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, get_value(i_pos, mode_Is)), mode_M, pn_Store_M));
 
   function_end(b);
 
@@ -397,11 +398,11 @@ main(void)
 
   set_value(i_pos, new_Sub(get_value(i_pos, mode_Is), c, mode_Is));
 
-  ir_node * res5 = new_Add (c, b, mode_Is);
+  res5 = new_Add(c, b, mode_Is);
   res = new_Add(get_value(arr_pos, mode_P), new_Mul(get_value(i_pos, mode_Is), b, mode_Is), mode_P);
   res = new_Add(res, b, mode_P);
   res = new_Add(res, res5, mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, pn_Store_M));
 
   function_end(b);
 
@@ -410,7 +411,7 @@ main(void)
   function_begin(owner, proc_tp, METHODNAME6, loop_forward);
 
   c = new_Const_int(1);
-  ir_node *c1 = new_Const_int(5);
+  c1 = new_Const_int(5);
   b = new_Const_int(4);
 
   set_value(i_pos, new_Sub(get_value(i_pos, mode_Is), c, mode_Is));
@@ -420,7 +421,7 @@ main(void)
   res = new_Sub(c1, res, mode_P);
   res = new_Add( b, res, mode_P);
   res = new_Add(b, res, mode_P);
-  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, 0));
+  set_store(new_Proj(new_Store(get_store(), res, new_Const_int(19)), mode_M, pn_Store_M));
 
   function_end(b);
 
@@ -430,22 +431,21 @@ main(void)
 
   c = new_Const_int(1);
   b = new_Const_int(4);
-  ir_node *b7 = new_Const_int(19);
+  b7 = new_Const_int(19);
 
-  // a[i] = a[i+4]
   res = get_value(i_pos, mode_Is);
   res = new_Add(res, b, mode_Is);
   res = new_Add(res, b7, mode_Is);
   res = new_Mul(res, b, mode_Is);
   res = new_Add(get_value(arr_pos, mode_P), res, mode_P);
-  ir_node *res7 = new_Add( get_value(i_pos, mode_Is), b7, mode_Is);
-  set_store(new_Proj(new_Store(get_store(), res, res7), mode_M, 0));
+  res7 = new_Add( get_value(i_pos, mode_Is), b7, mode_Is);
+  set_store(new_Proj(new_Store(get_store(), res, res7), mode_M, pn_Store_M));
   set_value(i_pos, new_Sub(get_value(i_pos, mode_Is), c, mode_Is));
   function_end(b);
 
   /* -------------------------------------------------------------------------- */
 
-  int i, n_irgs = get_irp_n_irgs();
+  n_irgs = get_irp_n_irgs();
 
   printf("Done building the graph.  Dumping and optimizing it.\n");
   dump_consts_local(1);
@@ -453,29 +453,27 @@ main(void)
   for (i = 0; i < n_irgs; ++i) {
     current_ir_graph = get_irp_irg(i);
     irg_vrfy(current_ir_graph);
-    irg_finalize_cons (current_ir_graph);
+    irg_finalize_cons(current_ir_graph);
 
     /* output the vcg file */
-    //dump_ir_block_graph (current_ir_graph, "-early");
     construct_backedges(current_ir_graph);
-    dump_ir_block_graph (current_ir_graph, 0);
+    dump_ir_block_graph(current_ir_graph, 0);
     dump_all_types(0);
-    set_opt_strength_red_verbose(0);
-    set_firm_verbosity(0);
     optimize_reassociation(current_ir_graph);
-    reduce_strength(current_ir_graph);
+    opt_osr(current_ir_graph, osr_flag_default);
 
-    // remove_critical_cf_edges(current_ir_graph);
-    //set_opt_global_cse(1);
-    //place_code(current_ir_graph);
-    //set_opt_global_cse(0);
-    // optimize_reassociation(current_ir_graph);
+#if 0
+    remove_critical_cf_edges(current_ir_graph);
+    set_opt_global_cse(1);
+    place_code(current_ir_graph);
+    set_opt_global_cse(0);
+    optimize_reassociation(current_ir_graph);
+#endif
 
     dump_loop_tree(current_ir_graph, "");
-    dump_ir_block_graph (current_ir_graph, "-strength_reduced");
+    dump_ir_block_graph(current_ir_graph, "-strength_reduced");
   }
-  //printf("use xvcg to view this graph:\n");
-  //printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view the graphs\n");
 
-  return (0);
+  return 0;
 }

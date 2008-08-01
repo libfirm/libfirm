@@ -11,12 +11,12 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "firm.h"
-# include "irdump.h"
+
+#include <libfirm/firm.h>
+
 
 
 /**
@@ -37,13 +37,13 @@
 *    return d;
 **/
 
-int main(int argc, char **argv)
+int main(void)
 {
-  type     *prim_t_int;
+  ir_type     *prim_t_int;
   ir_graph *irg;       /* this variable contains the irgraph */
-  type     *owner;     /* the class in which this method is defined */
-  type     *method;    /* the type of this method */
-  entity   *ent;       /* represents this method as entity of owner */
+  ir_type     *owner;     /* the class in which this method is defined */
+  ir_type     *method;    /* the ir_type of this method */
+  ir_entity   *ent;       /* represents this method as ir_entity of owner */
   ir_node  *x, *catch_block, *block, *zero, *a, *b, *c, *d;
 
   printf("\nCreating an IR graph: EXCEPTION...\n");
@@ -51,14 +51,14 @@ int main(int argc, char **argv)
   /* init library */
   init_firm (NULL);
 
-  /*** Make basic type information for primitive type int. ***/
+  /*** Make basic ir_type information for primitive ir_type int. ***/
   prim_t_int = new_type_primitive(new_id_from_str ("int"), mode_Is);
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
    * all functions as methods in this file.
    * Therefore we define a class "IF_ELSE_EXAMPLE" with a method main as an
-   * entity.
+   * ir_entity.
    */
 #define ENTITYNAME "EXCEPTION_main"
 
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
   ent = new_entity (owner, new_id_from_str (ENTITYNAME), method);
 
-  /* Generates the basic graph for the method represented by entity ent, that
+  /* Generates the basic graph for the method represented by ir_entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
    * The constructor needs to know how many local variables the method has.
    */
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
   set_cur_block(block);
 
   /* d = a / 0 */
-  d = new_Div(get_store(), get_value(0, mode_Is), zero);
+  d = new_Div(get_store(), get_value(0, mode_Is), zero, mode_Is, op_pin_state_pinned);
   set_store(new_Proj(d, mode_M, pn_Div_M));
   x = new_Proj(d, mode_X, pn_Div_X_except);
   add_immBlock_pred(catch_block, x);
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
   set_value (2, c);  /* this (2) is variable c */
 
   /* d = b / 0 */
-  d = new_Div(get_store(), get_value(1, mode_Is), zero);
+  d = new_Div(get_store(), get_value(1, mode_Is), zero, mode_Is, op_pin_state_pinned);
   set_store(new_Proj(d, mode_M, pn_Div_M));
   x = new_Proj(d, mode_X, pn_Div_X_except);
   add_immBlock_pred(catch_block, x);
@@ -135,8 +135,8 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg, "");
   dump_ir_graph (irg, "");
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

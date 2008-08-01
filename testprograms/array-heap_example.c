@@ -10,13 +10,10 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
+#include <string.h>
+#include <stdio.h>
 
-# include <string.h>
-# include <stdio.h>
-
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+#include <libfirm/firm.h>
 
 /**
 *  variables of imperative programs.
@@ -52,20 +49,22 @@
 int
 main(void)
 {
+  char *dump_file_suffix = "";
+
   /* describes the method main */
-  type     *owner;
-  type     *proc_main;
-  entity   *proc_main_e;
+  ir_type     *owner;
+  ir_type     *proc_main;
+  ir_entity   *proc_main_e;
 
   /* describes types defined by the language */
-  type     *prim_t_int;
+  ir_type     *prim_t_int;
 
   /* describes the array and its fields. */
-  type     *array_type;   /* the type information for the array */
-  entity   *array_ent;    /* the entity representing a field of the array */
+  ir_type     *array_type;   /* the ir_type information for the array */
+  ir_entity   *array_ent;    /* the ir_entity representing a field of the array */
 
   /* Needed while finding the element size.  */
-  type     *elt_type;
+  ir_type     *elt_type;
   ir_mode  *elt_type_mode;
   int       size;
   ir_node  *arr_size;
@@ -76,7 +75,7 @@ main(void)
 
   init_firm (NULL);
 
-  /* make basic type information for primitive type int.
+  /* make basic ir_type information for primitive ir_type int.
      In Sather primitive types are represented by a class.
      This is the modeling appropriate for other languages.
      Mode_i says that all integers shall be implemented as a
@@ -88,10 +87,10 @@ main(void)
   /* first build procedure main */
   owner = get_glob_type();
   proc_main = new_type_method(new_id_from_chars("ARRAY-HEAP_EXAMPLE_main", 23), 0, 1);
-  set_method_res_type(proc_main, 0, (type *)prim_t_int);
-  proc_main_e = new_entity ((type*)owner, new_id_from_chars("ARRAY-HEAP_EXAMPLE_main", 23), (type *)proc_main);
+  set_method_res_type(proc_main, 0, (ir_type *)prim_t_int);
+  proc_main_e = new_entity ((ir_type*)owner, new_id_from_chars("ARRAY-HEAP_EXAMPLE_main", 23), (ir_type *)proc_main);
 
-  /* make type information for the array and set the bounds */
+  /* make ir_type information for the array and set the bounds */
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
@@ -101,7 +100,7 @@ main(void)
 		   new_Const(mode_Iu, new_tarval_from_long (L_BOUND, mode_Iu)),
 		   new_Const(mode_Iu, new_tarval_from_long (U_BOUND, mode_Iu)));
   /* As the array is accessed by Sel nodes, we need information about
-     the entity the node selects.  Entities of an array are it's elements
+     the ir_entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
   main_irg = new_ir_graph (proc_main_e, 4);
   array_ent = get_array_element_entity(array_type);
@@ -112,20 +111,20 @@ main(void)
   /*   first compute size in bytes. */
   elt_type = get_array_element_type(array_type);
   elt_type_mode = get_type_mode(elt_type);
-  /*   better: read bounds out of array type information */
+  /*   better: read bounds out of array ir_type information */
   size = (U_BOUND - L_BOUND + 1) * get_mode_size_bytes(elt_type_mode);
   /*   make constant representing the size */
   arr_size  = new_Const(mode_Iu, new_tarval_from_long (size, mode_Iu));
   /*   allocate and generate the Proj nodes. */
-  array     = new_Alloc(get_store(), arr_size, (type*)array_type, stack_alloc);
-  set_store(new_Proj(array, mode_M, 0));   /* make the changed memory visible */
-  array_ptr = new_Proj(array, mode_P, 2);  /* remember the pointer to the array */
+  array     = new_Alloc(get_store(), arr_size, (ir_type*)array_type, stack_alloc);
+  set_store(new_Proj(array, mode_M, pn_Alloc_M));   /* make the changed memory visible */
+  array_ptr = new_Proj(array, mode_P, pn_Alloc_res);  /* remember the pointer to the array */
 
   /* Now the "real" program: */
   /* Load element 3 of the array. For this first generate the pointer to this
      array element by a select node.  (Alternative: increase array pointer
      by (three * elt_size), but this complicates some optimizations. The
-     type information accessible via the entity allows to generate the
+     ir_type information accessible via the ir_entity allows to generate the
      pointer increment later. */
   c3 = new_Const (mode_Iu, new_tarval_from_long (3, mode_Iu));
   {
@@ -134,8 +133,8 @@ main(void)
      elt = new_Sel(get_store(), array_ptr, 1, in, array_ent);
   }
   val = new_Load(get_store(), elt, mode_Is);
-  set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_Is, 2);
+  set_store(new_Proj(val, mode_M, pn_Load_M));
+  val = new_Proj(val, mode_Is, pn_Load_res);
 
   /* return the result of procedure main */
   {
@@ -158,13 +157,12 @@ main(void)
   /* verify the graph */
   irg_vrfy(main_irg);
 
-  printf("Dumping the graph and a type graph.\n");
-  char *dump_file_suffix = "";
+  printf("Dumping the graph and a ir_type graph.\n");
   dump_ir_block_graph (main_irg, dump_file_suffix);
   dump_type_graph(main_irg, dump_file_suffix);
   dump_all_types(dump_file_suffix);
-  printf("use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view these graphs:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
-  return (0);
+  return 0;
 }

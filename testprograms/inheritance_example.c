@@ -1,7 +1,7 @@
 /*
  * Project:     libFIRM
  * File name:   testprograms/inheritance_example.c
- * Purpose:     Shows type graph with inheritance.
+ * Purpose:     Shows ir_type graph with inheritance.
  * Author:      Christian Schaefer, Goetz Lindenmaier
  * Modified by:
  * Created:
@@ -10,24 +10,22 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+#include <libfirm/firm.h>
 
 /**
-*  This file constructs type information for the following pseudo-program.
+*  This file constructs ir_type information for the following pseudo-program.
 *  The procedure code is not constructed.
 *
 *  interface I {
-*    void m1 (void);
+*    void m1(void);
 *  }
 *
 *  class C implements I {
-*    void m1 (void) {return};
-*    void m2 (int)  {return 0};
+*    void m1(void) {return};
+*    void m2(int)  {return 0};
 *  }
 *
 *  class D {
@@ -35,24 +33,24 @@
 *  }
 *
 *  class E extends C, D {
-*    void m2 (int) {return 1};
+*    void m2(int) {return 1};
 *    int a;
 *  }
 *
 **/
 
-int main(int argc, char **argv)
+int main(void)
 {
   ident *ii, *ci, *di, *ei, *m1i, *m2i, *inti, *ai, *bi; /* suffix i names identifiers */
-  type  *it, *ct, *dt, *et;                              /*        t names types       */
-  type  *m1t, *m2t;
-  type  *intt;
-  entity *i_m1e, *c_m1e, *c_m2e, *e_m2e, *d_be, *e_ae;   /*        e names entities    */
+  ir_type  *it, *ct, *dt, *et;                              /*        t names types       */
+  ir_type  *m1t, *m2t;
+  ir_type  *intt;
+  ir_entity *i_m1e, *c_m1e, *c_m2e, *e_m2e, *d_be, *e_ae;   /*        e names entities    */
 
-  printf("\nCreating type information for INHERITANCE_EXAMPLE ...\n");
+  printf("\nCreating ir_type information for INHERITANCE_EXAMPLE ...\n");
 
   /** init library */
-  init_firm (NULL);
+  init_firm(NULL);
 
   /** make idents for all used identifiers in the program. */
   ii  = new_id_from_chars("i",  strlen("i"));
@@ -65,7 +63,7 @@ int main(int argc, char **argv)
   ai  = new_id_from_chars("a",  strlen("a"));
   bi  = new_id_from_chars("b",  strlen("b"));
 
-  /** make the type information needed */
+  /** make the ir_type information needed */
   /* Language defined types */
   intt = new_type_primitive(inti, mode_Iu);
   /* Program defined types */
@@ -76,12 +74,12 @@ int main(int argc, char **argv)
   ct = new_type_class(ci);
   dt = new_type_class(di);
   et = new_type_class(ei);
-                                     /* Methods with the same type should use the same
-					method type information! */
+                                     /* Methods with the same ir_type should use the same
+					method ir_type information! */
   m1t = new_type_method(m1i, 0, 0);  /* 0 parameters, 0 results */
   m2t = new_type_method(m2i, 1, 0);  /* 1 parameter, 0 results */
 
-  /** add structure to type graph **/
+  /** add structure to ir_type graph **/
   /* parameters of methods */
   set_method_param_type(m2t, 0, intt);
   /* inheritance. The other direction is added automatically. */
@@ -99,15 +97,15 @@ int main(int argc, char **argv)
 
   /** Add overwirtes relation **/
   /* How these edges are added depends on the source language. */
-  add_entity_overwrites (c_m1e, i_m1e);
-  add_entity_overwrites (e_m2e, c_m2e);
+  add_entity_overwrites(c_m1e, i_m1e);
+  add_entity_overwrites(e_m2e, c_m2e);
 
 
   printf("Done building the graph.  Dumping it.\n");
   dump_all_types(0);
 
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
-  return (0);
+  return 0;
 }

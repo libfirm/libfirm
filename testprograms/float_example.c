@@ -10,12 +10,12 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /**
 *  An Firm program to test float values.
@@ -29,13 +29,13 @@
 *
 **/
 
-int main(int argc, char **argv)
+int main(void)
 {
   ir_graph *irg;        /* this variable contains the irgraph */
-  type     *owner;      /* the class in which this method is defined */
-  type     *proc_main;  /* type information for the method main */
-  type     *prim_t_dbl;
-  entity   *ent;        /* represents this method as entity of owner */
+  ir_type     *owner;      /* the class in which this method is defined */
+  ir_type     *proc_main;  /* ir_type information for the method main */
+  ir_type     *prim_t_dbl;
+  ir_entity   *ent;        /* represents this method as ir_entity of owner */
   ir_node  *x;          /* to build control flow */
   tarval *tv;
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
   /* init library */
   init_firm (NULL);
 
-  /** Build type information for the procedure. **/
+  /** Build ir_type information for the procedure. **/
 
   /* FIRM was designed for oo languages where all methods belong to a class.
    * For imperative languages like C we view a file as a large class containing
@@ -56,21 +56,21 @@ int main(int argc, char **argv)
 #define METHODNAME "FLOAT_EXAMPLE_main"
 #define NRARGS 0
 #define NRES 1
-  /* The type of the method */
+  /* The ir_type of the method */
   prim_t_dbl = new_type_primitive(new_id_from_chars ("dbl", 3), mode_D);
   proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
   set_method_res_type(proc_main, 0, prim_t_dbl);
 
-  /* An entity representing the method.  Owner of the entity is the global class
-     type mentioned above. */
-  ent = new_entity ((type *)owner,
+  /* An ir_entity representing the method.  Owner of the ir_entity is the global class
+     ir_type mentioned above. */
+  ent = new_entity ((ir_type *)owner,
                     new_id_from_chars (METHODNAME, strlen(METHODNAME)),
-                    (type *)proc_main);
+                    (ir_type *)proc_main);
 
   /** Build code for the procedure. **/
 
-  /* Generates the basic graph for the method represented by entity ent, that
+  /* Generates the basic graph for the method represented by ir_entity ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
    * The constructor needs to know the number of local variables (including
    * the arguments) in the method.
@@ -105,8 +105,8 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg, 0);
 
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

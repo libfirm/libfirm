@@ -11,12 +11,12 @@
  */
 
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /**
 *  This file constructs the ir for the following pseudo-program:
@@ -43,7 +43,7 @@
 *  (name e.g.: memory-imp_example.c as it models imperative concepts.)
 *
 *  In this program a local variable is dereferenced.  It has
-*  to be modeled as an entity of the stack so that a pointer to it is available.
+*  to be modeled as an ir_entity of the stack so that a pointer to it is available.
 *  It is also an example where an analysis could find out that the
 *  pointer is never actually used.
 *
@@ -62,19 +62,18 @@ int
 main(void)
 {
   ir_graph *irg;
-  type     *owner;
-  type     *method;    /* the type of this method */
-  type     *prim_t_int;
-  entity   *ent;
+  ir_type     *owner;
+  ir_type     *method;    /* the ir_type of this method */
+  ir_type     *prim_t_int;
+  ir_entity   *ent;
   ir_node  *a, *b, *x, *y, *r;
+  union symconst_symbol symbol;
 
   printf("\nCreating an IR graph: MEMORY_EXAMPLE...\n");
 
   init_firm (NULL);
 
-  set_opt_dead_node_elimination (1);
-
-  /*** Make basic type information for primitive type int. ***/
+  /*** Make basic ir_type information for primitive ir_type int. ***/
   prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Iu);
 
   /* a class to get started with, containing the main procedure */
@@ -88,22 +87,19 @@ main(void)
   irg = new_ir_graph (ent, 4);
 
   /* create two global variables, a and b point to these variables */
-  a = new_simpleSel(
-              get_store(),
-              get_irg_globals(irg),
-              new_entity(get_glob_type(),new_id_from_chars("VAR_A",6),prim_t_int));
-  b = new_simpleSel(
-              get_store(),
-              get_irg_globals(irg),
-              new_entity(get_glob_type(),new_id_from_chars("VAR_B",6),prim_t_int));
+  symbol.entity_p = new_entity(get_glob_type(),new_id_from_chars("VAR_A",6),prim_t_int);
+  a = new_SymConst(mode_P, symbol, symconst_addr_ent);
+
+  symbol.entity_p = new_entity(get_glob_type(),new_id_from_chars("VAR_B",6),prim_t_int);
+  b = new_SymConst(mode_P, symbol, symconst_addr_ent);
    /* set VAR_A and VAR_B to constant values */
   set_store (new_Proj (new_Store (get_store (), a,
 		     	          new_Const (mode_Iu, new_tarval_from_long (0, mode_Iu))),
-                       mode_M, 0));
+                       mode_M, pn_Store_M));
 
   set_store (new_Proj (new_Store (get_store (), b,
 			          new_Const (mode_Iu, new_tarval_from_long (1, mode_Iu))),
-                       mode_M, 0));
+                       mode_M, pn_Store_M));
 
   /* finish this first block */
   x = new_Jmp ();
@@ -116,15 +112,15 @@ main(void)
   /* exchange the content of the two variables. Exceptions not cached. */
   /* load the value and make it's effects visible. */
   x = new_Load (get_store (), a, mode_Iu);
-    set_store (new_Proj (x, mode_M, 0));
-    x = new_Proj(x, mode_Iu, 2);
+    set_store (new_Proj (x, mode_M, pn_Load_M));
+    x = new_Proj(x, mode_Iu, pn_Load_res);
   /* the same again: load the value and make it's effects visible. */
   y = new_Load (get_store (), b, mode_Iu);
-    set_store (new_Proj (y, mode_M, 0));
-    y = new_Proj(y, mode_Iu, 2);
+    set_store (new_Proj (y, mode_M, pn_Load_M));
+    y = new_Proj(y, mode_Iu, pn_Load_res);
   /* store the exchanged values. */
-  set_store (new_Proj (new_Store (get_store (), a, y), mode_M, 0));
-  set_store (new_Proj (new_Store (get_store (), b, x), mode_M, 0));
+  set_store (new_Proj (new_Store (get_store (), a, y), mode_M, pn_Store_M));
+  set_store (new_Proj (new_Store (get_store (), b, x), mode_M, pn_Store_M));
 
   /* test the condition */
   x = new_Cond (
@@ -135,8 +131,8 @@ main(void)
           mode_b, pn_Cmp_Gt));
 
   /* build the cfg of the loop */
-  add_immBlock_pred (r, new_Proj (x, mode_X, 0));
-  x = new_Proj (x, mode_X, 1);
+  add_immBlock_pred (r, new_Proj (x, mode_X, pn_Cond_false));
+  x = new_Proj (x, mode_X, pn_Cond_true);
   mature_immBlock(r);
 
   /* generate the block the loop exits to */
@@ -147,9 +143,9 @@ main(void)
   {
      ir_node *in[1];
      x = new_Load (get_store (), a, mode_Iu);
-     in[0] = new_Proj (x, mode_Iu, 2);
+     in[0] = new_Proj (x, mode_Iu, pn_Load_res);
 
-     x = new_Return (new_Proj(x, mode_M, 0), 1, in);
+     x = new_Return (new_Proj(x, mode_M, pn_Load_M), 1, in);
   }
   mature_immBlock (r);
   add_immBlock_pred (get_irg_end_block(irg), x);
@@ -165,8 +161,8 @@ main(void)
 
   printf("Done building the graph.  Dumping it.\n");
   dump_ir_block_graph (irg, 0);
-  printf("Use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

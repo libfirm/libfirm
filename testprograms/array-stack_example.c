@@ -12,12 +12,12 @@
  */
 
 
-# include <string.h>
-# include <stdio.h>
+#include <string.h>
+#include <stdio.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /**
 *  imperative programs.
@@ -31,7 +31,7 @@
 *  end;
 *
 *  The array is placed on the stack, i.e., a pointer to the array
-*  is obtained by selecting the entity "a" from the stack.  The variables
+*  is obtained by selecting the ir_entity "a" from the stack.  The variables
 *  on the stack are considered to be entities of the method, as locals
 *  of a method are only visible within the method.  (An alternative to
 *  make the method owner of the stack variables is to give the ownership
@@ -45,20 +45,21 @@
 int
 main(void)
 {
+  char *dump_file_suffix = "";
   /* describes the general structure of a C-file */
-  type           *owner;        /* the class standing for everything in this file */
-  type           *proc_main;    /* Typeinformation for method main. */
-  entity         *proc_main_e;  /* The entity describing that method main is an
-                                   entity of the fake class representing the file. */
+  ir_type           *owner;        /* the class standing for everything in this file */
+  ir_type           *proc_main;    /* Typeinformation for method main. */
+  ir_entity         *proc_main_e;  /* The ir_entity describing that method main is an
+                                   ir_entity of the fake class representing the file. */
 
   /* describes types defined by the language */
-  type           *prim_t_int;
+  ir_type           *prim_t_int;
 
   /* describes the array and its fields. */
-  entity         *array_ent;    /* the entity representing the array as member
+  ir_entity         *array_ent;    /* the ir_entity representing the array as member
                                    of the stack/method */
-  type           *array_type;   /* the type information for the array */
-  entity         *field_ent;    /* the entity representing a field of the
+  ir_type           *array_type;   /* the ir_type information for the array */
+  ir_entity         *field_ent;    /* the ir_entity representing a field of the
 				   array */
 
   /* holds the graph and nodes. */
@@ -69,7 +70,7 @@ main(void)
 
   printf("\nCreating an IR graph: ARRAY-STACK_EXAMPLE...\n");
 
-  /* make basic type information for primitive type int.
+  /* make basic ir_type information for primitive ir_type int.
      In Sather primitive types are represented by a class.
      This is the modeling appropriate for other languages.
      Mode_i says that all language-integers shall be implemented
@@ -83,7 +84,7 @@ main(void)
   proc_main_e = new_entity (owner, new_id_from_chars ("main", 4), proc_main);
   get_entity_ld_name(proc_main_e); /* force name mangling */
 
-  /* make type information for the array and set the bounds */
+  /* make ir_type information for the array and set the bounds */
 # define N_DIMS 1
 # define L_BOUND 0
 # define U_BOUND 9
@@ -95,13 +96,13 @@ main(void)
 
   main_irg = new_ir_graph (proc_main_e, 4);
 
-  /* The array is an entity of the method, placed on the mehtod's own memory,
+  /* The array is an ir_entity of the method, placed on the mehtod's own memory,
      the stack frame. */
   array_ent = new_entity(get_cur_frame_type(), new_id_from_chars("a", 1), array_type);
   /* As the array is accessed by Sel nodes, we need information about
-     the entity the node selects.  Entities of an array are it's elements
+     the ir_entity the node selects.  Entities of an array are it's elements
      which are, in this case, integers. */
-  /* change entity owner types.   */
+  /* change ir_entity owner types.   */
   field_ent = get_array_element_entity(array_type);
 
 
@@ -112,7 +113,7 @@ main(void)
   /* Load element 3 of the array. For this first generate the pointer
      to this the element by a select node.  (Alternative: increase
      array pointer by (three * elt_size), but this complicates some
-     optimizations.) The type information accessible via the entity
+     optimizations.) The ir_type information accessible via the ir_entity
      allows to generate the pointer increment later. */
   c3 = new_Const (mode_Iu, new_tarval_from_long (3, mode_Iu));
   {
@@ -121,8 +122,8 @@ main(void)
      elt = new_Sel(get_store(), array_ptr, 1, in, field_ent);
   }
   val = new_Load(get_store(), elt, mode_Is);
-  set_store(new_Proj(val, mode_M, 0));
-  val = new_Proj(val, mode_Is, 2);
+  set_store(new_Proj(val, mode_M, pn_Load_M));
+  val = new_Proj(val, mode_Is, pn_Load_res);
 
   /* return the result of procedure main */
   {
@@ -144,14 +145,13 @@ main(void)
 
   /* verify the graph */
   irg_vrfy(main_irg);
-  char *dump_file_suffix = "";
-  printf("Dumping the graph and a type graph.\n");
+  printf("Dumping the graph and a ir_type graph.\n");
   dump_ir_block_graph (main_irg, dump_file_suffix);
   dump_type_graph(main_irg, dump_file_suffix);
   dump_ir_block_graph_w_types(main_irg, dump_file_suffix);
   dump_all_types(dump_file_suffix);
-  printf("Use xvcg to view these graphs:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view these graphs:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

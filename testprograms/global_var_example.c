@@ -10,12 +10,10 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+#include <libfirm/firm.h>
 
 /*
  * das leere FIRM Programm
@@ -33,14 +31,16 @@
 *  }
 **/
 
-int main(int argc, char **argv)
+int main(void)
 {
+  char *dump_file_suffix = "";
   ir_graph *irg;        /* this variable contains the irgraph */
-  type     *owner;      /* the class in which this method is defined */
-  type     *proc_main;  /* type information for the method main */
-  type     *prim_t_int; /* describes int type defined by the language */
-  entity   *main_ent;   /* represents this method as entity of owner */
-  entity   *i_ent;      /* the entity representing the global variable i */
+  ir_type     *owner;      /* the class in which this method is defined */
+  ir_type     *proc_main;  /* ir_type information for the method main */
+  ir_type     *prim_t_int; /* describes int ir_type defined by the language */
+  ir_entity   *main_ent;   /* represents this method as ir_entity of owner */
+  ir_entity   *i_ent;      /* the ir_entity representing the global variable i */
+  union symconst_symbol symbol;
   ir_node  *x, *i_ptr, *store;
 
   printf("\nCreating an IR graph: GLOBAL_VAR ...\n");
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
   /* init library */
   init_firm (NULL);
 
-  /* make basic type information for primitive type int.
+  /* make basic ir_type information for primitive ir_type int.
      In Sather primitive types are represented by a class.
      This is the modeling appropriate for other languages.
      Mode_i says that all integers shall be implemented as a
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 #define NRARGS 0
 #define NRES 0
 
-  /* Main is an entity of this global class. */
+  /* Main is an ir_entity of this global class. */
   owner = get_glob_type();
   proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
                               NRARGS, NRES);
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 			 new_id_from_chars (METHODNAME, strlen(METHODNAME)),
 			 proc_main);
 
-  /* Generates the basic graph for the method represented by entity main_ent, that
+  /* Generates the basic graph for the method represented by ir_entity main_ent, that
    * is, generates start and end blocks and nodes and a first, initial block.
    * The constructor needs to know how many local variables the method has.
    */
@@ -90,7 +90,8 @@ int main(int argc, char **argv)
    * it is not matured.
    * Generate the assignment to i and the return node into this region.
    * The Return node is needed to return at least the store. */
-  i_ptr = new_simpleSel(get_store(), get_irg_globals(irg), i_ent);
+  symbol.entity_p = i_ent;
+  i_ptr = new_SymConst(mode_P, symbol, symconst_addr_ent);
 
   store = new_Store (get_store(), i_ptr,
 		     new_Const(mode_Is, new_tarval_from_long (2, mode_Is)));
@@ -117,11 +118,10 @@ int main(int argc, char **argv)
   irg_vrfy(irg);
 
   printf("Done building the graph.  Dumping it.\n");
-  char *dump_file_suffix = "";
   dump_ir_block_graph (irg, dump_file_suffix);
   dump_ir_graph_w_types (irg, dump_file_suffix);
-  printf("Use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

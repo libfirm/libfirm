@@ -10,12 +10,12 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "firm.h"
-# include "irdump.h"
+
+#include <libfirm/firm.h>
+
 
 
 /** This file constructs the ir to test a problem with code placement.
@@ -59,13 +59,13 @@
 
 #define PROGNAME "PLACE_WITH_DEAD"
 
-int main(int argc, char **argv)
+int main(void)
 {
-  type     *prim_t_int;
+  ir_type     *prim_t_int;
   ir_graph *irg;       /* this variable contains the irgraph */
-  type     *owner;     /* the class in which this method is defined */
-  type     *method;    /* the type of this method */
-  entity   *ent;       /* represents this method as entity of owner */
+  ir_type     *owner;     /* the class in which this method is defined */
+  ir_type     *method;    /* the ir_type of this method */
+  ir_entity   *ent;       /* represents this method as ir_entity of owner */
   ir_node  *a, *b, *x;
   symconst_symbol sym;
 
@@ -74,10 +74,10 @@ int main(int argc, char **argv)
   /* init library */
   init_firm (NULL);
 
-  /* Make basic type information for primitive type int. */
+  /* Make basic ir_type information for primitive ir_type int. */
   prim_t_int = new_type_primitive(new_id_from_chars ("int", 3), mode_Ls);
 
-  /* Make the method type and entity */
+  /* Make the method ir_type and ir_entity */
   owner = get_glob_type();
   method = new_type_method (new_id_from_str(PROGNAME"_main_tp"), 0, 1);
   set_method_res_type(method, 0, prim_t_int);
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
   /* Generate the two constants. A SymConst can not be constant evaluated. */
   sym.type_p = new_type_class(new_id_from_str("SomeClass"));
   a = new_Const (mode_Is, new_tarval_from_long (0, mode_Is));
-  b = new_SymConst (sym, symconst_type_size);
+  b = new_SymConst (mode_Iu, sym, symconst_type_size);
 
   /* Generate the Conv with Bad as block */
   a = new_Conv(b, mode_Ls);
@@ -118,8 +118,8 @@ int main(int argc, char **argv)
   dump_ir_graph (irg, "-placed");
   irg_vrfy(irg);
 
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

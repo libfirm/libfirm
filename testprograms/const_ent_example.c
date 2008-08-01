@@ -1,7 +1,7 @@
 /*
  * Project:     libFIRM
  * File name:   testprograms/const_ent_example.c
- * Purpose:     Shows how to construct type information for constant entities.
+ * Purpose:     Shows how to construct ir_type information for constant entities.
  * Author:      Goetz Lindenmaier
  * Modified by:
  * Created:
@@ -11,22 +11,22 @@
  */
 
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /**
- *  This file constructs type information for constant entities.
+ *  This file constructs ir_type information for constant entities.
  *
- *  It constructs the information for a class type with a dispatch
+ *  It constructs the information for a class ir_type with a dispatch
  *  table.  The class has a field a, and two methods f and g.  The
- *  class is represented by a class type with two entities for the
+ *  class is represented by a class ir_type with two entities for the
  *  field a and the reference to the dispatch table.  This reference
- *  is a constant entity.  Ther dispatch table is also represented
- *  by a class type that contains the two methods.   There is one entity
+ *  is a constant ir_entity.  Ther dispatch table is also represented
+ *  by a class ir_type that contains the two methods.   There is one ir_entity
  *  of the dispatch table which is constant.
  *
  *  Further the example shows the representation of a constant global
@@ -40,17 +40,18 @@
  *  int[4] arre = (7, 2, 13, 92);
  **/
 
-int main(int argc, char **argv)
+int main(void)
 {
   ident *Ci, *ai, *fi, *fti, *gi, *gti, *inti, *dipti, *diptpi, *diptpei, *diptei;
       /* suffix i names identifiers */
-  type  *Ct, *intt, *ft, *gt, *diptt, *diptpt;
+  ir_type  *Ct, *intt, *ft, *gt, *diptt, *diptpt;
       /*        t names types       */
-  entity *ae, *fe, *ge, *dipte, *diptpe;   /*        e names entities    */
+  ir_entity *ae, *fe, *ge, *dipte, *diptpe;   /*        e names entities    */
+  symconst_symbol sym;
   ir_node *n;
 
   printf("\nExample program for constant entites.\n");
-  printf("Creating type information...\n");
+  printf("Creating ir_type information...\n");
 
   /** init library */
   init_firm (NULL);
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
   diptpei = new_id_from_chars("C_dispatch_table_p", strlen("C_dispatch_table_p"));
 
 
-  /** make the type information needed */
+  /** make the ir_type information needed */
   /* Language defined types */
   intt = new_type_primitive(inti, mode_Is);
   /* Program defined types */
@@ -79,7 +80,7 @@ int main(int argc, char **argv)
   /* Compiler defined types: dispatch table and pointer to it  */
   diptt = new_type_class(dipti);
   diptpt = new_type_pointer(diptpi, diptt, mode_P);
-  /** add structure to type graph **/
+  /** add structure to ir_type graph **/
   /* parameters of methods */
   set_method_param_type(gt, 0, intt);
 
@@ -90,17 +91,16 @@ int main(int argc, char **argv)
   dipte  = new_entity(get_glob_type(), diptei, diptt);
   diptpe = new_entity(Ct, diptpei, diptpt);
 
-  /** Add constant entity information **/
+  /** Add constant ir_entity information **/
   current_ir_graph = get_const_code_irg();
   /* The pointer to the dispatch table is constant. */
-  /* The constant is the address of the given entity */
-  symconst_symbol sym;
+  /* The constant is the address of the given ir_entity */
   sym.entity_p = dipte;
-  n = new_SymConst(sym, symconst_addr_ent);
+  n = new_SymConst(mode_P, sym, symconst_addr_ent);
   set_entity_variability(diptpe, variability_constant);
   set_atomic_ent_value(diptpe, n);
 
-  /* The entity representing the dispatch table is constant, too. */
+  /* The ir_entity representing the dispatch table is constant, too. */
   set_entity_variability(dipte, variability_constant);
   add_compound_ent_value(dipte, get_atomic_ent_value(fe), fe);
   add_compound_ent_value(dipte, get_atomic_ent_value(ge), ge);
@@ -108,20 +108,20 @@ int main(int argc, char **argv)
 {
   /*** Example with an array ***/
   ident *arrei, *arrti;
-  type *arrt;
-  entity *arre, *arrelte;
+  ir_type *arrt;
+  ir_entity *arre, *arrelte;
 
   arrei =  new_id_from_chars("arr", strlen("arr"));
   arrti =  new_id_from_chars("arr_t",  strlen("arr_t"));
 
-  /** The array type **/
-  /* Don't reuse int type so that graph layout is better readable */
+  /** The array ir_type **/
+  /* Don't reuse int ir_type so that graph layout is better readable */
   intt = new_type_primitive(inti, mode_Is);
   arrt = new_type_array(arrti, 1, intt);
   set_array_bounds_int(arrt, 0, 0, 4);
   arrelte = get_array_element_entity(arrt);
 
-  /** The constant array entity **/
+  /** The constant array ir_entity **/
   arre = new_entity(get_glob_type(), arrei, arrt);
   set_entity_variability(arre, variability_constant);
   current_ir_graph = get_const_code_irg();
@@ -137,8 +137,8 @@ int main(int argc, char **argv)
   printf("Done building the graph.  Dumping it.\n");
   dump_all_types(0);
 
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
   return (0);
 }

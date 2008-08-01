@@ -10,12 +10,12 @@
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
 
-# include <stdio.h>
-# include <string.h>
+#include <stdio.h>
+#include <string.h>
 
-# include "irvrfy.h"
-# include "irdump.h"
-# include "firm.h"
+
+
+#include <libfirm/firm.h>
 
 /**
 *  This file constructs the ir for the following pseudo-program:
@@ -33,16 +33,16 @@ int
 main(void)
 {
   ir_graph *irg;
-  type *owner;
-  entity *ent;
-  type *proc_main; /* type information for the method main */
-  type *typ;
+  ir_type *owner;
+  ir_entity *ent;
+  ir_type *proc_main; /* ir_type information for the method main */
+  ir_type *typ;
   ir_node *x, *r, *t, *f, *a, *cmp;
   int a_pos, b_pos;
 
   printf("\nCreating an IR graph: IF_EXAMPLE...\n");
 
-  init_firm (NULL);
+  init_firm(NULL);
 
 #define CLASSNAME "IF_EXAMPLE"
 #define METHODNAME "IF_EXAMPLE_main"
@@ -55,11 +55,11 @@ main(void)
   /* Type information for the procedure */
   proc_main = new_type_method(new_id_from_chars(METHODNAME, strlen(METHODNAME)),
 			      NRARGS, NRES);
-  /* The entity for the procedure */
-  ent = new_entity (owner,
-                    new_id_from_chars (METHODNAME, strlen(METHODNAME)),
-                    proc_main);
-  /* The type int.  This type is necessary to model the result and parameters
+  /* The ir_entity for the procedure */
+  ent = new_entity(owner,
+                   new_id_from_chars(METHODNAME, strlen(METHODNAME)),
+                   proc_main);
+  /* The ir_type int.  This ir_type is necessary to model the result and parameters
      the procedure. */
 #define PRIM_NAME "int"
   typ = new_type_primitive(new_id_from_chars(PRIM_NAME, strlen(PRIM_NAME)), mode_Is);
@@ -71,7 +71,7 @@ main(void)
 
   /* Generates start and end blocks and nodes, and a first, initial block */
 #define NRLOCS 2
-  irg = new_ir_graph (ent, NRLOCS);
+  irg = new_ir_graph(ent, NRLOCS);
 
   /* The value position used for: */
   a_pos = 0;
@@ -79,63 +79,63 @@ main(void)
 
   /* Get the procedure parameter and assign it to the parameter variable
      a. */
-  set_value (a_pos, new_Proj (get_irg_args(irg), mode_Is, 0));
+  set_value(a_pos, new_Proj(get_irg_args(irg), mode_Is, 0));
   /* Generate the constant and assign it to b. The assignment is resovled to a
      dataflow edge. */
-  set_value (b_pos, new_Const (mode_Is, new_tarval_from_long (2, mode_Is)));
+  set_value(b_pos, new_Const(mode_Is, new_tarval_from_long(2, mode_Is)));
   /* We know all predecessors of the block and all set_values and set_stores are
      preformed.   We can mature the block.  */
-  mature_immBlock (get_irg_current_block(irg));
+  mature_immBlock(get_irg_current_block(irg));
 
   /* Generate a conditional branch */
   cmp = new_Cmp(get_value(a_pos, mode_Is), get_value(b_pos, mode_Is));
-  x = new_Cond (new_Proj(cmp, mode_b, pn_Cmp_Eq));
-  f = new_Proj (x, mode_X, 0);
-  t = new_Proj (x, mode_X, 1);
+  x = new_Cond(new_Proj(cmp, mode_b, pn_Cmp_Eq));
+  f = new_Proj(x, mode_X, pn_Cond_false);
+  t = new_Proj(x, mode_X, pn_Cond_true);
 
   /* generate and fill the then block */
-  r = new_immBlock ();
-  add_immBlock_pred (r, t);
+  r = new_immBlock();
+  add_immBlock_pred(r, t);
   {
     ir_node *b,*c;
-    c = new_Const (mode_Is, new_tarval_from_long (3, mode_Is));
+    c = new_Const(mode_Is, new_tarval_from_long(3, mode_Is));
     b = get_value(a_pos, mode_Is);
     a = new_Sub(b,
               c,
   	      mode_Is);
   }
-  set_value (a_pos, a);
+  set_value(a_pos, a);
 
-  mature_immBlock (r);
-  x = new_Jmp ();
+  mature_immBlock(r);
+  x = new_Jmp();
 
   /* generate the fall through block and add all cfg edges */
-  r = new_immBlock ();
-  add_immBlock_pred (r, f);
-  add_immBlock_pred (r, x);
-  mature_immBlock (r);
+  r = new_immBlock();
+  add_immBlock_pred(r, f);
+  add_immBlock_pred(r, x);
+  mature_immBlock(r);
   /* The Return statement */
   {
      ir_node *in[1], *store ;
-     in[0] = get_value (a_pos, mode_Is);
+     in[0] = get_value(a_pos, mode_Is);
      store = get_store();
 
-     x = new_Return (store, 1, in);
+     x = new_Return(store, 1, in);
   }
 
   /* finalize the end block generated in new_ir_graph() */
-  add_immBlock_pred (get_irg_end_block(irg), x);
-  mature_immBlock (get_irg_end_block(irg));
+  add_immBlock_pred(get_irg_end_block(irg), x);
+  mature_immBlock(get_irg_end_block(irg));
 
   /* verify the graph */
   irg_vrfy(irg);
-  irg_finalize_cons (irg);
+  irg_finalize_cons(irg);
 
   /* output the vcg file */
   printf("Done building the graph.  Dumping it.\n");
-  dump_ir_block_graph (irg, 0);
-  printf("use xvcg to view this graph:\n");
-  printf("/ben/goetz/bin/xvcg GRAPHNAME\n\n");
+  dump_ir_block_graph(irg, 0);
+  printf("Use ycomp to view this graph:\n");
+  printf("ycomp GRAPHNAME\n\n");
 
-  return (0);
+  return 0;
 }
