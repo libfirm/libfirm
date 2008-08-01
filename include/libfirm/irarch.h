@@ -39,7 +39,7 @@ typedef enum instr {
 	ADD,   /**< the ADD instruction */
 	ZERO,  /**< creates a ZERO constant */
 	MUL,   /**< the original MUL instruction */
-	ROOT,  /**< the ROOT value that is multiplied */
+	ROOT   /**< the ROOT value that is multiplied */
 } insn_kind;
 
 /**

@@ -82,7 +82,7 @@ typedef enum {
 	                             Integer computations can be performed. */
 	irms_float_number,      /**< A mode to represent float numbers.
 	                             Floating point computations can be performed. */
-	irms_reference,         /**< A mode to represent entities.
+	irms_reference          /**< A mode to represent entities.
 	                             Restricted int computations can be performed */
 } ir_mode_sort;
 

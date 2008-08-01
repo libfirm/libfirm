@@ -65,7 +65,7 @@ typedef enum {
 	ir_sc_tls               = 0x4,  /**< an address of a thread local storage variable */
 	ir_sc_malloced          = 0x5,  /**< an allocated heap address */
 
-	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable was not taken */
+	ir_sc_modifier_nottaken = 0x80  /**< if set, the address of the variable was not taken */
 } ir_storage_class_class_t;
 
 /**
