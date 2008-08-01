@@ -106,6 +106,12 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return conv_const_tv(node, dest_mode) == tarval_bad ? 1 : 0;
 	}
 
+	if (is_Conv(node) &&
+			is_downconv(get_irn_mode(node), dest_mode) &&
+			get_irn_mode(get_Conv_op(node)) == dest_mode) {
+		return -1;
+	}
+
 	if (get_irn_n_edges(node) > 1) {
 		DB((dbg, LEVEL_3, "multi outs at %+F\n", node));
 		return 1;
@@ -173,6 +179,12 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		} else {
 			return new_Const(dest_mode, tv);
 		}
+	}
+
+	if (is_Conv(node) &&
+			is_downconv(get_irn_mode(node), dest_mode) &&
+			get_irn_mode(get_Conv_op(node)) == dest_mode) {
+		return get_Conv_op(node);
 	}
 
 	if (get_irn_n_edges(node) > 1) {
