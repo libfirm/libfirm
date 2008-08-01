@@ -193,7 +193,7 @@ static void remove_empty_block(ir_node *block)
 	}
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them
-	 * to the succ block */
+	 * to the succ block (Pin) or pred block (Sync) */
 	foreach_out_edge_safe(block, edge, next) {
 		node = get_edge_src_irn(edge);
 
@@ -211,6 +211,11 @@ static void remove_empty_block(ir_node *block)
 		}
 		if (is_Sync(node)) {
 			set_nodes_block(node, get_nodes_block(pred));
+			continue;
+		}
+		if (is_End(node)) { /* End-keep, reroute it to the successor */
+			int pos = get_edge_src_pos(edge);
+			set_irn_n(node, pos, succ_block);
 			continue;
 		}
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
