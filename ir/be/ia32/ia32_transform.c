@@ -2561,9 +2561,15 @@ static ir_node *gen_normal_Store(ir_node *node)
 	} else if (!ia32_cg_config.use_sse2 && is_float_to_int32_conv(val)) {
 		val = get_Conv_op(val);
 
-		/* We can skip ALL Convs (and strict-Convs) before stores. */
+		/* TODO: is this optimisation still necessary at all (middleend)? */
+		/* We can skip ALL float->float up-Convs (and strict-up-Convs) before stores. */
 		while (is_Conv(val)) {
-			val = get_Conv_op(val);
+			ir_node *op = get_Conv_op(val);
+			if (!mode_is_float(get_irn_mode(op)))
+				break;
+			if (get_mode_size_bits(get_irn_mode(op)) > get_mode_size_bits(get_irn_mode(val)))
+				break;
+			val = op;
 		}
 		new_val  = be_transform_node(val);
 		new_node = gen_vfist(dbgi, irg, new_block, addr.base, addr.index, addr.mem, new_val, &store);
