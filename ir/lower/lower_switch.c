@@ -31,6 +31,7 @@
 #include <limits.h>
 
 #include "ircons.h"
+#include "irgopt.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irouts.h"
@@ -39,7 +40,7 @@
 	i >= 0 && (outirn = get_irn_out(irn, i)); --i)
 
 typedef struct walk_env {
-	unsigned         spare_size;		/**< the allowed spare size for table switches */
+	unsigned         spare_size;        /**< the allowed spare size for table switches */
 	struct obstack   obst;              /**< the obstack where data is allocated on */
 	int              changed;           /**< indicates whether a change was performed */
 } walk_env_t;
@@ -49,46 +50,11 @@ typedef struct case_data {
 	ir_node *target;
 } case_data_t;
 
-/**
- * Add the new predecessor x to node node, which is either a Block or a Phi
- */
-static void add_pred(ir_node* node, ir_node* x)
-{
-	ir_node** ins;
-	int n;
-	int i;
-
-	assert(is_Block(node) || is_Phi(node));
-
-	n = get_irn_arity(node);
-	NEW_ARR_A(ir_node*, ins, n + 1);
-	for (i = 0; i < n; i++)
-		ins[i] = get_irn_n(node, i);
-	ins[n] = x;
-	set_irn_in(node, n + 1, ins);
-}
-
-/**
- * Remove the predecessor x from node node one time, which is either a Block or a Phi
- */
-static void remove_pred(ir_node* node, ir_node* x)
-{
-	ir_node** ins;
-	int n;
-	int i, j;
-
-	assert(is_Block(node) || is_Phi(node));
-
-	n = get_irn_arity(node);
-	NEW_ARR_A(ir_node*, ins, n - 1);
-	for (i = 0, j = -1; i < n - 1; i++)
-	{
-		ins[++j] = get_irn_n(node, i);
-		if(ins[i] == x) j--;
-	}
-	assert(i == j + 1 && "x is not a pred of node");
-	set_irn_in(node, n - 1, ins);
-}
+typedef struct ifcas_env {
+	ir_node  *sel;
+	int       defindex;
+	ir_node **defusers;                 /**< the Projs pointing to the default case */
+} ifcas_env_t;
 
 /**
  * Evaluate a switch and decide whether we should build a table switch.
@@ -139,47 +105,45 @@ static int casecmp(const void *a, const void *b)
 /**
  * Creates an if cascade realizing binary search.
  */
-static void create_if_cascade(ir_node *sel, ir_node *curblock, ir_node *defblock,
-							  case_data_t *curcases, int numcases)
+static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
+                              case_data_t *curcases, int numcases)
 {
 	set_cur_block(curblock);
 
 	if(numcases == 1)
 	{
 		/* only one case: "if(sel == val) goto target else goto default;" */
-		ir_node *val  = new_Const_long(get_irn_mode(sel), curcases[0].value);
-		ir_node *cmp  = new_Cmp(sel, val);
+		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
+		ir_node *cmp  = new_Cmp(env->sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		ir_node *cond = new_Cond(proj);
-		add_pred(curcases[0].target, new_Proj(cond, mode_X, pn_Cond_true));
-		add_pred(defblock,           new_Proj(cond, mode_X, pn_Cond_false));
-		return;
+		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
+		env->defusers[env->defindex++] = new_Proj(cond, mode_X, pn_Cond_false);
 	} else if(numcases == 2) {
 		/* only two cases: "if(sel == val[0]) goto target[0];" */
-		ir_node *val  = new_Const_long(get_irn_mode(sel), curcases[0].value);
-		ir_node *cmp  = new_Cmp(sel, val);
+		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
+		ir_node *cmp  = new_Cmp(env->sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		ir_node *cond = new_Cond(proj);
 		ir_node *in[1];
 		ir_node *neblock;
 
-		add_pred(curcases[0].target, new_Proj(cond, mode_X, pn_Cond_true));
+		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
 		in[0] = new_Proj(cond, mode_X, pn_Cond_false);
 		neblock = new_Block(1, in);
 
 		/* second part: "else if(sel == val[1]) goto target[1] else goto default;" */
-		val  = new_Const_long(get_irn_mode(sel), curcases[1].value);
-		cmp  = new_Cmp(sel, val);
+		val  = new_Const_long(get_irn_mode(env->sel), curcases[1].value);
+		cmp  = new_Cmp(env->sel, val);
 		proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		cond = new_Cond(proj);
-		add_pred(curcases[1].target, new_Proj(cond, mode_X, pn_Cond_true));
-		add_pred(defblock,           new_Proj(cond, mode_X, pn_Cond_false));
-		return;
+		set_Block_cfgpred(curcases[1].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
+		env->defusers[env->defindex++] = new_Proj(cond, mode_X, pn_Cond_false);
 	} else {
 		/* recursive case: split cases in the middle */
 		int midcase = numcases / 2;
-		ir_node *val  = new_Const_long(get_irn_mode(sel), curcases[midcase].value);
-		ir_node *cmp  = new_Cmp(sel, val);
+		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[midcase].value);
+		ir_node *cmp  = new_Cmp(env->sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Lt);
 		ir_node *cond = new_Cond(proj);
 		ir_node *in[1];
@@ -193,8 +157,8 @@ static void create_if_cascade(ir_node *sel, ir_node *curblock, ir_node *defblock
 		in[0] = new_Proj(cond, mode_X, pn_Cond_false);
 		geblock = new_Block(1, in);
 
-		create_if_cascade(sel, ltblock, defblock, curcases, midcase);
-		create_if_cascade(sel, geblock, defblock, curcases + midcase, numcases - midcase);
+		create_if_cascade(env, ltblock, curcases, midcase);
+		create_if_cascade(env, geblock, curcases + midcase, numcases - midcase);
 	}
 }
 
@@ -214,6 +178,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	case_data_t *cases;
 	ir_node     *condblock;
 	ir_node     *defblock = NULL;
+	ifcas_env_t  ifcas_env;
 
 	if(get_Block_n_cfgpreds(block) != 1)
 		return;
@@ -245,27 +210,35 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	cases    = obstack_alloc(&env->obst, numcases * sizeof(*cases));
 
 	default_pn = get_Cond_defaultProj(cond);
+	ifcas_env.sel = sel;
+	ifcas_env.defindex = 0;
+	NEW_ARR_A(ir_node*, ifcas_env.defusers, numcases);
 
 	foreach_out_irn(cond, i, proj) {
 		long pn = get_Proj_proj(proj);
+		ir_node *target = get_irn_out(proj, 0);
+		assert(get_Block_n_cfgpreds(target) == 1 && "Encountered critical edge in switch");
+
 		if(pn == default_pn)
 		{
-			defblock = get_irn_out(proj, 0);
-			remove_pred(defblock, proj);
+			defblock = target;
 			continue;
 		}
 
 		cases[j].value  = pn;
-		cases[j].target = get_irn_out(proj, 0);
-		remove_pred(cases[j].target, proj);
+		cases[j].target = target;
 		j++;
 	}
+
 	assert(defblock != NULL && "Switch without default proj");
 	qsort(cases, numcases, sizeof(*cases), casecmp);
 
 	/* Now create the if cascade */
 	condblock = get_nodes_block(cond);
-	create_if_cascade(sel, condblock, defblock, cases, numcases);
+	create_if_cascade(&ifcas_env, condblock, cases, numcases);
+
+	/* Connect new default case users */
+	set_irn_in(defblock, ifcas_env.defindex, ifcas_env.defusers);
 
 	obstack_free(&env->obst, cases);
 }
@@ -288,6 +261,7 @@ void lower_Switch(ir_graph *irg, unsigned spare_size)
 	obstack_init(&env.obst);
 	env.spare_size = spare_size;
 
+	remove_critical_cf_edges(irg);
 	assure_irg_outs(irg);
 
 	irg_block_walk_graph(irg, find_cond_nodes, NULL, &env);
