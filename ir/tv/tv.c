@@ -1162,7 +1162,6 @@ tarval *tarval_add(tarval *a, tarval *b) {
  * subtraction
  */
 tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode) {
-	tarval  *res;
 	char    *buffer;
 
 	assert(a);
