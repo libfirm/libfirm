@@ -235,73 +235,6 @@ static tarval *computed_value_Mul(ir_node *n) {
 }  /* computed_value_Mul */
 
 /**
- * Return the value of a floating point Quot.
- */
-static tarval *computed_value_Quot(ir_node *n) {
-	ir_node *a = get_Quot_left(n);
-	ir_node *b = get_Quot_right(n);
-
-	tarval *ta = value_of(a);
-	tarval *tb = value_of(b);
-
-	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		if (tb != get_mode_null(get_tarval_mode(tb)))   /* div by zero: return tarval_bad */
-			return tarval_quo(ta, tb);
-	}
-	return tarval_bad;
-}  /* computed_value_Quot */
-
-/**
- * Calculate the value of an integer Div of two nodes.
- * Special case: 0 / b
- */
-static tarval *do_computed_value_Div(ir_node *a, ir_node *b) {
-	tarval *ta = value_of(a);
-	tarval *tb = value_of(b);
-
-	/* Compute c1 / c2 or 0 / a, a != 0 */
-	if (ta != tarval_bad) {
-		if ((tb != tarval_bad) && (tb != get_mode_null(get_irn_mode(b))))   /* div by zero: return tarval_bad */
-			return tarval_div(ta, tb);
-		else if (ta == get_mode_null(get_tarval_mode(ta)))  /* 0 / b == 0 */
-			return ta;
-	}
-	return tarval_bad;
-}  /* do_computed_value_Div */
-
-/**
- * Return the value of an integer Div.
- */
-static tarval *computed_value_Div(ir_node *n) {
-	return do_computed_value_Div(get_Div_left(n), get_Div_right(n));
-}  /* computed_value_Div */
-
-/**
- * Calculate the value of an integer Mod of two nodes.
- * Special case: a % 1
- */
-static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
-	tarval *ta = value_of(a);
-	tarval *tb = value_of(b);
-
-	/* Compute c1 % c2 or a % 1 */
-	if (tb != tarval_bad) {
-		if ((ta != tarval_bad) && (tb != get_mode_null(get_tarval_mode(tb))))   /* div by zero: return tarval_bad */
-			return tarval_mod(ta, tb);
-		else if (tb == get_mode_one(get_tarval_mode(tb)))    /* x mod 1 == 0 */
-			return get_mode_null(get_irn_mode(a));
-	}
-	return tarval_bad;
-}  /* do_computed_value_Mod */
-
-/**
- * Return the value of an integer Mod.
- */
-static tarval *computed_value_Mod(ir_node *n) {
-	return do_computed_value_Mod(get_Mod_left(n), get_Mod_right(n));
-}  /* computed_value_Mod */
-
-/**
  * Return the value of an Abs.
  */
 static tarval *computed_value_Abs(ir_node *n) {
@@ -580,6 +513,54 @@ static tarval *computed_value_Proj_Cmp(ir_node *n) {
 }  /* computed_value_Proj_Cmp */
 
 /**
+ * Return the value of a floating point Quot.
+ */
+static tarval *do_computed_value_Quot(ir_node *a, ir_node *b) {
+	tarval  *ta = value_of(a);
+	tarval  *tb = value_of(b);
+
+	/* cannot optimize 0 / b = 0 because of NaN */
+	if (ta != tarval_bad && tb != tarval_bad)
+		return tarval_quo(ta, tb);
+	return tarval_bad;
+}  /* do_computed_value_Quot */
+
+/**
+ * Calculate the value of an integer Div of two nodes.
+ * Special case: 0 / b
+ */
+static tarval *do_computed_value_Div(ir_node *a, ir_node *b) {
+	tarval  *ta = value_of(a);
+	tarval  *tb;
+	ir_node *dummy;
+
+	/* Compute c1 / c2 or 0 / a, a != 0 */
+	if (tarval_is_null(ta) && value_not_zero(b, &dummy))
+		return ta;  /* 0 / b == 0 */
+	tb = value_of(b);
+	if (ta != tarval_bad && tb != tarval_bad)
+		return tarval_div(ta, tb);
+	return tarval_bad;
+}  /* do_computed_value_Div */
+
+/**
+ * Calculate the value of an integer Mod of two nodes.
+ * Special case: a % 1
+ */
+static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
+	tarval *ta = value_of(a);
+	tarval *tb = value_of(b);
+
+	/* Compute a % 1 or c1 % c2 */
+	if (tarval_is_one(tb))
+		return get_mode_null(get_irn_mode(a));
+	if (tb != tarval_bad && tb != tarval_bad)
+		return tarval_mod(ta, tb);
+	return tarval_bad;
+}  /* do_computed_value_Mod */
+
+
+/**
  * Return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod),
  * Proj(DivMod) and Proj(Quot).
  */
@@ -602,12 +583,12 @@ static tarval *computed_value_Proj(ir_node *n) {
 
 	case iro_Div:
 		if (get_Proj_proj(n) == pn_Div_res)
-			return computed_value(a);
+			return do_computed_value_Div(get_Div_left(a), get_Div_right(a));
 		break;
 
 	case iro_Mod:
 		if (get_Proj_proj(n) == pn_Mod_res)
-			return computed_value(a);
+			return do_computed_value_Mod(get_Mod_left(a), get_Mod_right(a));
 		break;
 
 	case iro_Quot:
@@ -662,10 +643,13 @@ static tarval *computed_value_Confirm(ir_node *n) {
 	 * remove_confirm is activated.
 	 */
 	if (get_opt_remove_confirm()) {
-		return get_Confirm_cmp(n) == pn_Cmp_Eq ?
-			value_of(get_Confirm_bound(n)) : tarval_bad;
+		if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
+			tarval *tv = value_of(get_Confirm_bound(n));
+			if (tv != tarval_bad)
+				return tv;
+		}
 	}
-	return tarval_bad;
+	return value_of(get_Confirm_value(n));
 }  /* computed_value_Confirm */
 
 /**
@@ -703,9 +687,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Sub);
 	CASE(Minus);
 	CASE(Mul);
-	CASE(Quot);
-	CASE(Div);
-	CASE(Mod);
 	CASE(Abs);
 	CASE(And);
 	CASE(Or);
@@ -1000,10 +981,11 @@ static ir_node *equivalent_node_Add(ir_node *n) {
 static ir_node *equivalent_node_left_zero(ir_node *n) {
 	ir_node *oldn = n;
 
-	ir_node *a = get_binop_left(n);
-	ir_node *b = get_binop_right(n);
+	ir_node *a  = get_binop_left(n);
+	ir_node *b  = get_binop_right(n);
+	tarval  *tb = value_of(b);
 
-	if (is_Const(b) && is_Const_null(b)) {
+	if (tarval_is_null(tb)) {
 		n = a;
 
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
@@ -1029,15 +1011,17 @@ static ir_node *equivalent_node_Sub(ir_node *n) {
 	ir_node *oldn = n;
 	ir_node *b;
 	ir_mode *mode = get_irn_mode(n);
+	tarval  *tb;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
-	b = get_Sub_right(n);
+	b  = get_Sub_right(n);
+	tb = value_of(b);
 
 	/* Beware: modes might be different */
-	if (is_Const(b) && is_Const_null(b)) {
+	if (tarval_is_null(tb)) {
 		ir_node *a = get_Sub_left(n);
 		if (mode == get_irn_mode(a)) {
 			n = a;
@@ -1086,84 +1070,26 @@ static ir_node *equivalent_node_Mul(ir_node *n) {
 	/* we can handle here only the n * n = n bit cases */
 	if (get_irn_mode(n) == get_irn_mode(a)) {
 		ir_node *b = get_Mul_right(n);
+		tarval  *tv;
 
-		/* Mul is commutative and has again an other neutral element. */
-		if (is_Const(a) && is_Const_one(a)) {
-			n = b;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
-		} else if (is_Const(b) && is_Const_one(b)) {
+		/*
+		 * Mul is commutative and has again an other neutral element.
+		 * Constants are place right, so check this case first.
+		 */
+		tv = value_of(b);
+		if (tarval_is_one(tv)) {
 			n = a;
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+		} else {
+			tv = value_of(a);
+			if (tarval_is_one(tv)) {
+				n = b;
+				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
+			}
 		}
 	}
 	return n;
 }  /* equivalent_node_Mul */
-
-/**
- * Optimize a / 1 = a.
- */
-static ir_node *equivalent_node_Div(ir_node *n) {
-	ir_node *a = get_Div_left(n);
-	ir_node *b = get_Div_right(n);
-
-	/* Div is not commutative. */
-	if (is_Const(b) && is_Const_one(b)) { /* div(x, 1) == x */
-		/* Turn Div into a tuple (mem, bad, a) */
-		ir_node *mem = get_Div_mem(n);
-		ir_node *blk = get_irn_n(n, -1);
-		turn_into_tuple(n, pn_Div_max);
-		set_Tuple_pred(n, pn_Div_M,         mem);
-		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
-		set_Tuple_pred(n, pn_Div_X_except,  new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_Div_res,       a);
-	}
-	return n;
-}  /* equivalent_node_Div */
-
-/**
- * Optimize a / 1.0 = a.
- */
-static ir_node *equivalent_node_Quot(ir_node *n) {
-	ir_node *a = get_Quot_left(n);
-	ir_node *b = get_Quot_right(n);
-
-	/* Div is not commutative. */
-	if (is_Const(b) && is_Const_one(b)) { /* Quot(x, 1) == x */
-		/* Turn Quot into a tuple (mem, jmp, bad, a) */
-		ir_node *mem = get_Quot_mem(n);
-		ir_node *blk = get_irn_n(n, -1);
-		turn_into_tuple(n, pn_Quot_max);
-		set_Tuple_pred(n, pn_Quot_M,         mem);
-		set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
-		set_Tuple_pred(n, pn_Quot_X_except,  new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_Quot_res,       a);
-	}
-	return n;
-}  /* equivalent_node_Quot */
-
-/**
- * Optimize a / 1 = a.
- */
-static ir_node *equivalent_node_DivMod(ir_node *n) {
-	ir_node *b = get_DivMod_right(n);
-
-	/* Div is not commutative. */
-	if (is_Const(b) && is_Const_one(b)) { /* div(x, 1) == x */
-		/* Turn DivMod into a tuple (mem, jmp, bad, a, 0) */
-		ir_node *a = get_DivMod_left(n);
-		ir_node *mem = get_Div_mem(n);
-		ir_node *blk = get_irn_n(n, -1);
-		ir_mode *mode = get_DivMod_resmode(n);
-
-		turn_into_tuple(n, pn_DivMod_max);
-		set_Tuple_pred(n, pn_DivMod_M,         mem);
-		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
-		set_Tuple_pred(n, pn_DivMod_X_except,  new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_DivMod_res_div,   a);
-		set_Tuple_pred(n, pn_DivMod_res_mod,   new_Const(mode, get_mode_null(mode)));
-	}
-	return n;
-}  /* equivalent_node_DivMod */
 
 /**
  * Use algebraic simplification a | a = a | 0 = 0 | a = a.
@@ -1458,67 +1384,286 @@ static ir_node *equivalent_node_Sync(ir_node *n) {
 }  /* equivalent_node_Sync */
 
 /**
- * Optimize Proj(Tuple) and gigo() for ProjX in Bad block,
- * ProjX(Load) and ProjX(Store).
+ * Optimize Proj(Tuple).
  */
-static ir_node *equivalent_node_Proj(ir_node *proj) {
+static ir_node *equivalent_node_Proj_Tuple(ir_node *proj) {
+	ir_node *oldn  = proj;
+	ir_node *tuple = get_Proj_pred(proj);
+
+	/* Remove the Tuple/Proj combination. */
+	proj = get_Tuple_pred(tuple, get_Proj_proj(proj));
+	DBG_OPT_TUPLE(oldn, tuple, proj);
+
+	return proj;
+}  /* equivalent_node_Proj_Tuple */
+
+/**
+ * Optimize a / 1 = a.
+ */
+static ir_node *equivalent_node_Proj_Div(ir_node *proj) {
 	ir_node *oldn = proj;
-	ir_node *a = get_Proj_pred(proj);
+	ir_node *div  = get_Proj_pred(proj);
+	ir_node *b    = get_Div_right(div);
+	tarval  *tb   = value_of(b);
 
-	if (is_Tuple(a)) {
-		/* Remove the Tuple/Proj combination. */
-		if ( get_Proj_proj(proj) <= get_Tuple_n_preds(a) ) {
-			proj = get_Tuple_pred(a, get_Proj_proj(proj));
-			DBG_OPT_TUPLE(oldn, a, proj);
-		} else {
-			 /* This should not happen! */
-			assert(! "found a Proj with higher number than Tuple predecessors");
-			proj = new_Bad();
+	/* Div is not commutative. */
+	if (tarval_is_one(tb)) { /* div(x, 1) == x */
+		switch (get_Proj_proj(proj)) {
+		case pn_Div_M:
+			proj = get_Div_mem(div);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		case pn_Div_res:
+			proj = get_Div_left(div);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		default:
+			/* we cannot replace the exception Proj's here, this is done in
+			   transform_node_Proj_Div() */
+			return proj;
 		}
-	} else if (get_irn_mode(proj) == mode_X) {
-		if (is_Block_dead(get_nodes_block(skip_Proj(proj)))) {
-			/* Remove dead control flow -- early gigo(). */
-			proj = new_Bad();
-		} else if (get_opt_ldst_only_null_ptr_exceptions()) {
-			if (is_Load(a)) {
-				/* get the Load address */
-				ir_node *addr = get_Load_ptr(a);
-				ir_node *blk  = get_irn_n(a, -1);
-				ir_node *confirm;
+	}
+	return proj;
+}  /* equivalent_node_Proj_Div */
 
-				if (value_not_null(addr, &confirm)) {
-					if (confirm == NULL) {
-						/* this node may float if it did not depend on a Confirm */
-						set_irn_pinned(a, op_pin_state_floats);
-					}
-					if (get_Proj_proj(proj) == pn_Load_X_except) {
-						DBG_OPT_EXC_REM(proj);
-						return new_Bad();
-					} else
-						return new_r_Jmp(current_ir_graph, blk);
-				}
-			} else if (is_Store(a)) {
-				/* get the load/store address */
-				ir_node *addr = get_Store_ptr(a);
-				ir_node *blk  = get_irn_n(a, -1);
-				ir_node *confirm;
+/**
+ * Optimize a / 1.0 = a.
+ */
+static ir_node *equivalent_node_Proj_Quot(ir_node *proj) {
+	ir_node *oldn = proj;
+	ir_node *quot = get_Proj_pred(proj);
+	ir_node *b    = get_Quot_right(quot);
+	tarval  *tb   = value_of(b);
 
-				if (value_not_null(addr, &confirm)) {
-					if (confirm == NULL) {
-						/* this node may float if it did not depend on a Confirm */
-						set_irn_pinned(a, op_pin_state_floats);
-					}
-					if (get_Proj_proj(proj) == pn_Store_X_except) {
-						DBG_OPT_EXC_REM(proj);
-						return new_Bad();
-					} else
-						return new_r_Jmp(current_ir_graph, blk);
+	/* Div is not commutative. */
+	if (tarval_is_one(tb)) { /* Quot(x, 1) == x */
+		switch (get_Proj_proj(proj)) {
+		case pn_Quot_M:
+			proj = get_Quot_mem(quot);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		case pn_Quot_res:
+			proj = get_Quot_left(quot);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		default:
+			/* we cannot replace the exception Proj's here, this is done in
+			   transform_node_Proj_Quot() */
+			return proj;
+		}
+	}
+	return proj;
+}  /* equivalent_node_Proj_Quot */
+
+/**
+ * Optimize a / 1 = a.
+ */
+static ir_node *equivalent_node_Proj_DivMod(ir_node *proj) {
+	ir_node *oldn   = proj;
+	ir_node *divmod = get_Proj_pred(proj);
+	ir_node *b      = get_DivMod_right(divmod);
+	tarval  *tb     = value_of(b);
+
+	/* Div is not commutative. */
+	if (tarval_is_one(tb)) { /* div(x, 1) == x */
+		switch (get_Proj_proj(proj)) {
+		case pn_DivMod_M:
+			proj = get_DivMod_mem(divmod);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		case pn_DivMod_res_div:
+			proj = get_DivMod_left(divmod);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
+			return proj;
+
+		default:
+			/* we cannot replace the exception Proj's here, this is done in
+			   transform_node_Proj_DivMod().
+			   Note further that the pn_DivMod_res_div case is handled in
+			   computed_value_Proj(). */
+			return proj;
+		}
+	}
+	return proj;
+}  /* equivalent_node_Proj_DivMod */
+
+/**
+ * Optimize CopyB(mem, x, x) into a Nop.
+ */
+static ir_node *equivalent_node_Proj_CopyB(ir_node *proj) {
+	ir_node *oldn  = proj;
+	ir_node *copyb = get_Proj_pred(proj);
+	ir_node *a     = get_CopyB_dst(copyb);
+	ir_node *b     = get_CopyB_src(copyb);
+
+	if (a == b) {
+		/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
+		switch (get_Proj_proj(proj)) {
+		case pn_CopyB_M_regular:
+			proj = get_CopyB_mem(copyb);
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
+			break;
+
+		case pn_CopyB_M_except:
+		case pn_CopyB_X_except:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_irg_bad(current_ir_graph);
+			break;
+		}
+	}
+	return proj;
+}  /* equivalent_node_Proj_CopyB */
+
+/**
+ * Optimize Bounds(idx, idx, upper) into idx.
+ */
+static ir_node *equivalent_node_Proj_Bound(ir_node *proj) {
+	ir_node *oldn  = proj;
+	ir_node *bound = get_Proj_pred(proj);
+	ir_node *idx   = get_Bound_index(bound);
+	ir_node *pred  = skip_Proj(idx);
+	int ret_tuple  = 0;
+
+	if (idx == get_Bound_lower(bound))
+		ret_tuple = 1;
+	else if (is_Bound(pred)) {
+		/*
+		 * idx was Bounds checked in the same MacroBlock previously,
+		 * it is still valid if lower <= pred_lower && pred_upper <= upper.
+		 */
+		ir_node *lower = get_Bound_lower(bound);
+		ir_node *upper = get_Bound_upper(bound);
+		if (get_Bound_lower(pred) == lower &&
+			get_Bound_upper(pred) == upper &&
+			get_irn_MacroBlock(bound) == get_irn_MacroBlock(pred)) {
+			/*
+			 * One could expect that we simply return the previous
+			 * Bound here. However, this would be wrong, as we could
+			 * add an exception Proj to a new location then.
+			 * So, we must turn in into a tuple.
+			 */
+			ret_tuple = 1;
+		}
+	}
+	if (ret_tuple) {
+		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
+		switch (get_Proj_proj(proj)) {
+		case pn_Bound_M:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_Bound_mem(bound);
+			break;
+		case pn_Bound_X_except:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_irg_bad(current_ir_graph);
+			break;
+		case pn_Bound_res:
+			proj = idx;
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
+			break;
+		default:
+			/* cannot optimize pn_Bound_X_regular, handled in transform ... */
+			;
+		}
+	}
+	return proj;
+}  /* equivalent_node_Proj_Bound */
+
+/**
+ * Optimize an Exception Proj(Load) with a non-null address.
+ */
+static ir_node *equivalent_node_Proj_Load(ir_node *proj) {
+	if (get_opt_ldst_only_null_ptr_exceptions()) {
+		if (get_irn_mode(proj) == mode_X) {
+			ir_node *oldn = proj;
+			ir_node *load = get_Proj_pred(proj);
+
+			/* get the Load address */
+			ir_node *addr = get_Load_ptr(load);
+			ir_node *blk  = get_nodes_block(load);
+			ir_node *confirm;
+
+			if (value_not_null(addr, &confirm)) {
+				if (get_Proj_proj(proj) == pn_Load_X_except) {
+					DBG_OPT_EXC_REM(proj);
+					return get_irg_bad(current_ir_graph);
 				}
 			}
 		}
 	}
-
 	return proj;
+}  /* equivalent_node_Proj_Load */
+
+/**
+ * Optimize an Exception Proj(Store) with a non-null address.
+ */
+static ir_node *equivalent_node_Proj_Store(ir_node *proj) {
+	if (get_opt_ldst_only_null_ptr_exceptions()) {
+		if (get_irn_mode(proj) == mode_X) {
+			ir_node *oldn  = proj;
+			ir_node *store = get_Proj_pred(proj);
+
+			/* get the load/store address */
+			ir_node *addr = get_Store_ptr(store);
+			ir_node *blk  = get_nodes_block(store);
+			ir_node *confirm;
+
+			if (value_not_null(addr, &confirm)) {
+				if (get_Proj_proj(proj) == pn_Store_X_except) {
+					DBG_OPT_EXC_REM(proj);
+					return get_irg_bad(current_ir_graph);
+				}
+			}
+		}
+	}
+	return proj;
+}  /* equivalent_node_Proj_Store */
+
+/**
+ * Does all optimizations on nodes that must be done on it's Proj's
+ * because of creating new nodes.
+ */
+static ir_node *equivalent_node_Proj(ir_node *proj) {
+	ir_node *n = get_Proj_pred(proj);
+
+	switch (get_irn_opcode(n)) {
+	case iro_Div:
+		return equivalent_node_Proj_Div(proj);
+
+	case iro_DivMod:
+		return equivalent_node_Proj_DivMod(proj);
+
+	case iro_Quot:
+		return equivalent_node_Proj_DivMod(proj);
+
+	case iro_Tuple:
+		return equivalent_node_Proj_Tuple(proj);
+
+	case iro_CopyB:
+		return equivalent_node_Proj_CopyB(proj);
+
+	case iro_Bound:
+		return equivalent_node_Proj_Bound(proj);
+
+	case iro_Load:
+		return equivalent_node_Proj_Load(proj);
+
+	case iro_Store:
+		return equivalent_node_Proj_Store(proj);
+
+	default:
+		if (get_irn_mode(proj) == mode_X) {
+			if (is_Block_dead(get_nodes_block(n))) {
+				/* Remove dead control flow -- early gigo(). */
+				proj = get_irg_bad(current_ir_graph);
+			}
+		}
+		return proj;
+	}
 }  /* equivalent_node_Proj */
 
 /**
@@ -1529,7 +1674,7 @@ static ir_node *equivalent_node_Id(ir_node *n) {
 
 	do {
 		n = get_Id_pred(n);
-	} while (get_irn_op(n) == op_Id);
+	} while (is_Id(n));
 
 	DBG_OPT_ID(oldn, n);
 	return n;
@@ -1598,7 +1743,7 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 			 * Note: normalization puts the constant on the right side,
 			 * so we check only one case.
 			 */
-			if (cmp_l == t && is_Const(cmp_r) && is_Const_null(cmp_r)) {
+			if (cmp_l == t && tarval_is_null(value_of(cmp_r))) {
 				/* Mux(t CMP 0, X, t) */
 				if (is_Minus(f) && get_Minus_op(f) == t) {
 					/* Mux(t CMP 0, -t, t) */
@@ -1630,29 +1775,6 @@ static ir_node *equivalent_node_Psi(ir_node *n) {
 }  /* equivalent_node_Psi */
 
 /**
- * Optimize -a CMP -b into b CMP a.
- * This works only for for modes where unary Minus
- * cannot Overflow.
- * Note that two-complement integers can Overflow
- * so it will NOT work.
- *
- * For == and != can be handled in Proj(Cmp)
- */
-static ir_node *equivalent_node_Cmp(ir_node *n) {
-	ir_node *left  = get_Cmp_left(n);
-	ir_node *right = get_Cmp_right(n);
-
-	if (is_Minus(left) && is_Minus(right) &&
-		!mode_overflow_on_unary_Minus(get_irn_mode(left))) {
-		left  = get_Minus_op(left);
-		right = get_Minus_op(right);
-		set_Cmp_left(n, right);
-		set_Cmp_right(n, left);
-	}
-	return n;
-}  /* equivalent_node_Cmp */
-
-/**
  * Remove Confirm nodes if setting is on.
  * Replace Confirms(x, '=', Constlike) by Constlike.
  */
@@ -1660,77 +1782,19 @@ static ir_node *equivalent_node_Confirm(ir_node *n) {
 	ir_node *pred = get_Confirm_value(n);
 	pn_Cmp  pnc   = get_Confirm_cmp(n);
 
-	if (is_Confirm(pred) && pnc == get_Confirm_cmp(pred)) {
+	while (is_Confirm(pred) && pnc == get_Confirm_cmp(pred)) {
 		/*
 		 * rare case: two identical Confirms one after another,
 		 * replace the second one with the first.
 		 */
-		n = pred;
+		n    = pred;
+		pred = get_Confirm_value(n);
+		pnc  = get_Confirm_cmp(n);
 	}
 	if (get_opt_remove_confirm())
 		return get_Confirm_value(n);
 	return n;
 }
-
-/**
- * Optimize CopyB(mem, x, x) into a Nop.
- */
-static ir_node *equivalent_node_CopyB(ir_node *n) {
-	ir_node *a = get_CopyB_dst(n);
-	ir_node *b = get_CopyB_src(n);
-
-	if (a == b) {
-		/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
-		ir_node *mem = get_CopyB_mem(n);
-		ir_node *blk = get_nodes_block(n);
-		turn_into_tuple(n, pn_CopyB_max);
-		set_Tuple_pred(n, pn_CopyB_M,         mem);
-		set_Tuple_pred(n, pn_CopyB_X_regular, new_r_Jmp(current_ir_graph, blk));
-		set_Tuple_pred(n, pn_CopyB_X_except,  new_Bad());        /* no exception */
-		set_Tuple_pred(n, pn_CopyB_M_except,  new_Bad());
-	}
-	return n;
-}  /* equivalent_node_CopyB */
-
-/**
- * Optimize Bounds(idx, idx, upper) into idx.
- */
-static ir_node *equivalent_node_Bound(ir_node *n) {
-	ir_node *idx  = get_Bound_index(n);
-	ir_node *pred = skip_Proj(idx);
-	int ret_tuple = 0;
-
-	if (is_Bound(pred)) {
-		/*
-		 * idx was Bounds checked in the same MacroBlock previously,
-		 * it is still valid if lower <= pred_lower && pred_upper <= upper.
-		 */
-		ir_node *lower = get_Bound_lower(n);
-		ir_node *upper = get_Bound_upper(n);
-		if (get_Bound_lower(pred) == lower &&
-			get_Bound_upper(pred) == upper &&
-			get_irn_MacroBlock(n) == get_irn_MacroBlock(pred)) {
-			/*
-			 * One could expect that we simply return the previous
-			 * Bound here. However, this would be wrong, as we could
-			 * add an exception Proj to a new location then.
-			 * So, we must turn in into a tuple.
-			 */
-			ret_tuple = 1;
-		}
-	}
-	if (ret_tuple) {
-		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
-		ir_node *mem = get_Bound_mem(n);
-		ir_node *blk = get_nodes_block(n);
-		turn_into_tuple(n, pn_Bound_max);
-		set_Tuple_pred(n, pn_Bound_M,         mem);
-		set_Tuple_pred(n, pn_Bound_X_regular, new_r_Jmp(current_ir_graph, blk));       /* no exception */
-		set_Tuple_pred(n, pn_Bound_X_except,  new_Bad());       /* no exception */
-		set_Tuple_pred(n, pn_Bound_res,       idx);
-	}
-	return n;
-}  /* equivalent_node_Bound */
 
 /**
  * equivalent_node() returns a node equivalent to input n. It skips all nodes that
@@ -1776,9 +1840,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Not);
 	CASE(Minus);
 	CASE(Mul);
-	CASE(Div);
-	CASE(Quot);
-	CASE(DivMod);
 	CASE(And);
 	CASE(Conv);
 	CASE(Cast);
@@ -1788,10 +1849,7 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Id);
 	CASE(Mux);
 	CASE(Psi);
-	CASE(Cmp);
 	CASE(Confirm);
-	CASE(CopyB);
-	CASE(Bound);
 	default:
 		/* leave NULL */;
 	}
@@ -3042,6 +3100,32 @@ static ir_node *transform_node_Abs(ir_node *n) {
 }  /* transform_node_Abs */
 
 /**
+ * Optimize -a CMP -b into b CMP a.
+ * This works only for for modes where unary Minus
+ * cannot Overflow.
+ * Note that two-complement integers can Overflow
+ * so it will NOT work.
+ *
+ * For == and != can be handled in Proj(Cmp)
+ */
+static ir_node *transform_node_Cmp(ir_node *n) {
+	ir_node *oldn = n;
+	ir_node *left  = get_Cmp_left(n);
+	ir_node *right = get_Cmp_right(n);
+
+	if (is_Minus(left) && is_Minus(right) &&
+		!mode_overflow_on_unary_Minus(get_irn_mode(left))) {
+		left  = get_Minus_op(left);
+		right = get_Minus_op(right);
+		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph,
+			get_nodes_block(n), left, right);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CMP_OP_OP);
+	}
+	return n;
+}  /* transform_node_Cmp */
+
+
+/**
  * Transform a Cond node.
  *
  * Replace the Cond by a Jmp if it branches on a constant
@@ -3553,6 +3637,67 @@ static ir_node *transform_node_Cast(ir_node *n) {
 
 	return n;
 }  /* transform_node_Cast */
+
+/**
+ * Transform a Proj(Load) with a non-null address.
+ */
+static ir_node *transform_node_Proj_Load(ir_node *proj) {
+	if (get_opt_ldst_only_null_ptr_exceptions()) {
+		if (get_irn_mode(proj) == mode_X) {
+			ir_node *oldn = proj;
+			ir_node *load = get_Proj_pred(proj);
+
+			/* get the Load address */
+			ir_node *addr = get_Load_ptr(load);
+			ir_node *blk  = get_nodes_block(load);
+			ir_node *confirm;
+
+			if (value_not_null(addr, &confirm)) {
+				if (confirm == NULL) {
+					/* this node may float if it did not depend on a Confirm */
+					set_irn_pinned(load, op_pin_state_floats);
+				}
+				if (get_Proj_proj(proj) == pn_Load_X_except) {
+					DBG_OPT_EXC_REM(proj);
+					return get_irg_bad(current_ir_graph);
+				} else {
+					return new_r_Jmp(current_ir_graph, blk);
+				}
+			}
+		}
+	}
+	return proj;
+}  /* transform_node_Proj_Load */
+
+/**
+ * Transform a Proj(Store) with a non-null address.
+ */
+static ir_node *transform_node_Proj_Store(ir_node *proj) {
+	if (get_opt_ldst_only_null_ptr_exceptions()) {
+		if (get_irn_mode(proj) == mode_X) {
+			ir_node *oldn  = proj;
+			ir_node *store = get_Proj_pred(proj);
+
+			/* get the load/store address */
+			ir_node *addr = get_Store_ptr(store);
+			ir_node *blk  = get_nodes_block(store);
+			ir_node *confirm;
+
+			if (value_not_null(addr, &confirm)) {
+				if (confirm == NULL) {
+					/* this node may float if it did not depend on a Confirm */
+					set_irn_pinned(store, op_pin_state_floats);
+				}
+				if (get_Proj_proj(proj) == pn_Store_X_except) {
+					DBG_OPT_EXC_REM(proj);
+					return get_irg_bad(current_ir_graph);
+				} else
+					return new_r_Jmp(current_ir_graph, blk);
+			}
+		}
+	}
+	return proj;
+}  /* transform_node_Proj_Store */
 
 /**
  * Transform a Proj(Div) with a non-zero value.
@@ -4382,6 +4527,91 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 }  /* transform_node_Proj_Cmp */
 
 /**
+ * Optimize CopyB(mem, x, x) into a Nop.
+ */
+static ir_node *transform_node_Proj_CopyB(ir_node *proj) {
+	ir_node *oldn  = proj;
+	ir_node *copyb = get_Proj_pred(proj);
+	ir_node *a     = get_CopyB_dst(copyb);
+	ir_node *b     = get_CopyB_src(copyb);
+
+	if (a == b) {
+		switch (get_Proj_proj(proj)) {
+		case pn_CopyB_X_regular:
+			/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
+			DBG_OPT_EXC_REM(proj);
+			proj = new_r_Jmp(current_ir_graph, get_nodes_block(copyb));
+			break;
+		case pn_CopyB_M_except:
+		case pn_CopyB_X_except:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_irg_bad(current_ir_graph);
+			break;
+		default:
+			break;
+		}
+	}
+	return proj;
+}  /* transform_node_Proj_CopyB */
+
+/**
+ * Optimize Bounds(idx, idx, upper) into idx.
+ */
+static ir_node *transform_node_Proj_Bound(ir_node *proj) {
+	ir_node *oldn  = proj;
+	ir_node *bound = get_Proj_pred(proj);
+	ir_node *idx   = get_Bound_index(bound);
+	ir_node *pred  = skip_Proj(idx);
+	int ret_tuple  = 0;
+
+	if (idx == get_Bound_lower(bound))
+		ret_tuple = 1;
+	else if (is_Bound(pred)) {
+		/*
+		* idx was Bounds checked in the same MacroBlock previously,
+		* it is still valid if lower <= pred_lower && pred_upper <= upper.
+		*/
+		ir_node *lower = get_Bound_lower(bound);
+		ir_node *upper = get_Bound_upper(bound);
+		if (get_Bound_lower(pred) == lower &&
+			get_Bound_upper(pred) == upper &&
+			get_irn_MacroBlock(bound) == get_irn_MacroBlock(pred)) {
+			/*
+			 * One could expect that we simply return the previous
+			 * Bound here. However, this would be wrong, as we could
+			 * add an exception Proj to a new location then.
+			 * So, we must turn in into a tuple.
+			 */
+			ret_tuple = 1;
+		}
+	}
+	if (ret_tuple) {
+		/* Turn Bound into a tuple (mem, jmp, bad, idx) */
+		switch (get_Proj_proj(proj)) {
+		case pn_Bound_M:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_Bound_mem(bound);
+			break;
+		case pn_Bound_X_except:
+			DBG_OPT_EXC_REM(proj);
+			proj = get_irg_bad(current_ir_graph);
+			break;
+		case pn_Bound_res:
+			proj = idx;
+			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
+			break;
+		case pn_Bound_X_regular:
+			DBG_OPT_EXC_REM(proj);
+			proj = new_r_Jmp(current_ir_graph, get_nodes_block(bound));
+			break;
+		default:
+			break;
+		}
+	}
+	return proj;
+}  /* transform_node_Proj_Bound */
+
+/**
  * Does all optimizations on nodes that must be done on it's Proj's
  * because of creating new nodes.
  */
@@ -4389,6 +4619,12 @@ static ir_node *transform_node_Proj(ir_node *proj) {
 	ir_node *n = get_Proj_pred(proj);
 
 	switch (get_irn_opcode(n)) {
+	case iro_Load:
+		return transform_node_Proj_Load(proj);
+
+	case iro_Store:
+		return transform_node_Proj_Store(proj);
+
 	case iro_Div:
 		return transform_node_Proj_Div(proj);
 
@@ -4407,6 +4643,12 @@ static ir_node *transform_node_Proj(ir_node *proj) {
 	case iro_Tuple:
 		/* should not happen, but if it does will be optimized away */
 		return equivalent_node_Proj(proj);
+
+	case iro_CopyB:
+		return transform_node_Proj_CopyB(proj);
+
+	case iro_Bound:
+		return transform_node_Proj_CopyB(proj);
 
 	default:
 		/* do nothing */
@@ -5423,6 +5665,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Quot);
 	CASE(Abs);
 	CASE(Cond);
+	CASE(Cmp);
 	CASE(And);
 	CASE(Or);
 	CASE(Eor);

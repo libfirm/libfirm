@@ -111,6 +111,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_CMP_CNST_MAGN,                     /**< CMP optimization: reduced magnitude of a const */
 	FS_OPT_CMP_SHF_TO_AND,                    /**< CMP optimization: transformed shift into And */
 	FS_OPT_CMP_MOD_TO_AND,                    /**< CMP optimization: transformed Mod into And */
+	FS_OPT_NOP,                               /**< the operation is a NOP */
 	FS_OPT_RTS_ABS,                           /**< RTS optimization: call to abs() replaced */
 	FS_OPT_RTS_ALLOCA,                        /**< RTS optimization: call to alloca() replaced */
 	FS_OPT_RTS_SQRT,                          /**< RTS optimization: call to sqrt() replaced */

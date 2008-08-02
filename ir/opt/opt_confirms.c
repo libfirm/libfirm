@@ -176,18 +176,20 @@ int value_not_zero(ir_node *n, ir_node **confirm) {
  * - Confirms are evaluated
  */
 int value_not_null(ir_node *n, ir_node **confirm) {
-	ir_op *op;
+	tarval *tv;
 
 	*confirm = NULL;
 	n  = skip_Cast(n);
 
-	op = get_irn_op(n);
+	tv = value_of(n);
+	if (tarval_is_constant(tv) && ! tarval_is_null(tv))
+		return 1;
+
 	assert(mode_is_reference(get_irn_mode(n)));
 	if (get_opt_sel_based_null_check_elim()) {
 		/* skip all Sel nodes and Cast's */
-		while (op == op_Sel) {
+		while (is_Sel(n)) {
 			n = skip_Cast(get_Sel_ptr(n));
-			op = get_irn_op(n);
 		}
 	}
 	if (is_Global(n)) {
@@ -196,15 +198,14 @@ int value_not_null(ir_node *n, ir_node **confirm) {
 	} else if (n == get_irg_frame(current_ir_graph)) {
 		/* local references are never NULL */
 		return 1;
-	} else if (op == op_Const) {
-		/* explicit non-NULL addresses */
-		return !is_Const_null(n);
 	} else {
 		/* check for more Confirms */
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
-			if (get_Confirm_cmp(n) != pn_Cmp_Lg) {
+			if (get_Confirm_cmp(n) == pn_Cmp_Lg) {
 				ir_node *bound = get_Confirm_bound(n);
-				if (is_Const(bound) && is_Const_null(bound)) {
+				tarval  *tv    = value_of(bound);
+
+				if (tarval_is_null(tv)) {
 					*confirm = n;
 					return 1;
 				}
