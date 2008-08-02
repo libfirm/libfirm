@@ -593,7 +593,7 @@ static tarval *computed_value_Proj(ir_node *n) {
 
 	case iro_Quot:
 		if (get_Proj_proj(n) == pn_Quot_res)
-			return computed_value(a);
+			return do_computed_value_Quot(get_Quot_left(a), get_Quot_right(a));
 		break;
 
 	default:
@@ -1579,12 +1579,10 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj) {
 static ir_node *equivalent_node_Proj_Load(ir_node *proj) {
 	if (get_opt_ldst_only_null_ptr_exceptions()) {
 		if (get_irn_mode(proj) == mode_X) {
-			ir_node *oldn = proj;
 			ir_node *load = get_Proj_pred(proj);
 
 			/* get the Load address */
 			ir_node *addr = get_Load_ptr(load);
-			ir_node *blk  = get_nodes_block(load);
 			ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
@@ -1604,12 +1602,10 @@ static ir_node *equivalent_node_Proj_Load(ir_node *proj) {
 static ir_node *equivalent_node_Proj_Store(ir_node *proj) {
 	if (get_opt_ldst_only_null_ptr_exceptions()) {
 		if (get_irn_mode(proj) == mode_X) {
-			ir_node *oldn  = proj;
 			ir_node *store = get_Proj_pred(proj);
 
 			/* get the load/store address */
 			ir_node *addr = get_Store_ptr(store);
-			ir_node *blk  = get_nodes_block(store);
 			ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
@@ -1638,7 +1634,7 @@ static ir_node *equivalent_node_Proj(ir_node *proj) {
 		return equivalent_node_Proj_DivMod(proj);
 
 	case iro_Quot:
-		return equivalent_node_Proj_DivMod(proj);
+		return equivalent_node_Proj_Quot(proj);
 
 	case iro_Tuple:
 		return equivalent_node_Proj_Tuple(proj);
@@ -3644,7 +3640,6 @@ static ir_node *transform_node_Cast(ir_node *n) {
 static ir_node *transform_node_Proj_Load(ir_node *proj) {
 	if (get_opt_ldst_only_null_ptr_exceptions()) {
 		if (get_irn_mode(proj) == mode_X) {
-			ir_node *oldn = proj;
 			ir_node *load = get_Proj_pred(proj);
 
 			/* get the Load address */
@@ -3675,7 +3670,6 @@ static ir_node *transform_node_Proj_Load(ir_node *proj) {
 static ir_node *transform_node_Proj_Store(ir_node *proj) {
 	if (get_opt_ldst_only_null_ptr_exceptions()) {
 		if (get_irn_mode(proj) == mode_X) {
-			ir_node *oldn  = proj;
 			ir_node *store = get_Proj_pred(proj);
 
 			/* get the load/store address */
@@ -4530,7 +4524,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
  * Optimize CopyB(mem, x, x) into a Nop.
  */
 static ir_node *transform_node_Proj_CopyB(ir_node *proj) {
-	ir_node *oldn  = proj;
 	ir_node *copyb = get_Proj_pred(proj);
 	ir_node *a     = get_CopyB_dst(copyb);
 	ir_node *b     = get_CopyB_src(copyb);
@@ -4648,7 +4641,7 @@ static ir_node *transform_node_Proj(ir_node *proj) {
 		return transform_node_Proj_CopyB(proj);
 
 	case iro_Bound:
-		return transform_node_Proj_CopyB(proj);
+		return transform_node_Proj_Bound(proj);
 
 	default:
 		/* do nothing */
