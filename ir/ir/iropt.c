@@ -1294,6 +1294,23 @@ restart:
 					}
 				}
 			}
+			if (mode_is_int(n_mode) && mode_is_float(a_mode)) {
+				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
+				size_t int_mantissa = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
+				size_t float_mantissa;
+				/* FIXME There is no way to get the mantissa size of a mode */
+				switch (get_mode_size_bits(a_mode)) {
+					case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
+					case 64: float_mantissa = 52 + 1; break;
+					case 80: float_mantissa = 64 + 1; break;
+					default: float_mantissa = 0;      break;
+				}
+				if (float_mantissa != 0 && float_mantissa >= int_mantissa) {
+					n = b;
+					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+					return n;
+				}
+			}
 			if (is_Conv(b)) {
 				if (smaller_mode(b_mode, a_mode)) {
 					if (get_Conv_strict(n))
