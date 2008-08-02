@@ -554,7 +554,7 @@ static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
 	/* Compute a % 1 or c1 % c2 */
 	if (tarval_is_one(tb))
 		return get_mode_null(get_irn_mode(a));
-	if (tb != tarval_bad && tb != tarval_bad)
+	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_mod(ta, tb);
 	return tarval_bad;
 }  /* do_computed_value_Mod */
