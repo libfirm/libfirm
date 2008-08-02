@@ -252,4 +252,13 @@ ir_exc_region_t get_irp_next_region_nr(void);
 /** Returns a new, unique label number. */
 ir_label_t get_irp_next_label_nr(void);
 
+/** Add a new global asm include. */
+void add_irp_asm(ident *asm_string);
+
+/** Return the number of global asm includes. */
+int get_irp_n_asms(void);
+
+/** Return the global asm include at position pos. */
+ident *get_irp_asm(int pos);
+
 #endif

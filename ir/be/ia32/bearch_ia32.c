@@ -1704,6 +1704,7 @@ static void init_asm_constraints(void)
 static arch_env_t *ia32_init(FILE *file_handle) {
 	static int inited = 0;
 	ia32_isa_t *isa;
+	int        i, n;
 
 	if (inited)
 		return NULL;
@@ -1741,6 +1742,14 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
 	ia32_handle_intrinsics();
+
+	/* emit asm includes */
+	n = get_irp_n_asms();
+	for (i = 0; i < n; ++i) {
+		be_emit_cstring("#APP\n");
+		be_emit_ident(get_irp_asm(i));
+		be_emit_cstring("\n#NO_APP\n");
+	}
 
 	/* needed for the debug support */
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);

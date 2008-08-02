@@ -533,6 +533,7 @@ struct ir_prog {
 	ir_type  **types;               /**< A list of all types in the ir. */
 	ir_mode  **modes;               /**< A list of all modes in the ir. */
 	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */
+	ident    **global_asms;         /**< An array of global ASM insertions. */
 
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */

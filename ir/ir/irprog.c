@@ -63,6 +63,7 @@ static ir_prog *new_incomplete_ir_prog(void) {
 	res->types          = NEW_ARR_F(ir_type *, 0);
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
+	res->global_asms    = NEW_ARR_F(ident *, 0);
 	res->last_region_nr = 0;
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 	res->max_irg_idx    = 0;
@@ -127,7 +128,7 @@ void init_irprog_2(void) {
 
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
-ir_prog *new_ir_prog (void) {
+ir_prog *new_ir_prog(void) {
 	return complete_ir_prog(new_incomplete_ir_prog());
 }
 
@@ -147,6 +148,7 @@ void free_ir_prog(void) {
 
 	finish_op();
 	DEL_ARR_F(irp->opcodes);
+	DEL_ARR_F(irp->global_asms);
 
 	irp->name           = NULL;
 	irp->const_code_irg = NULL;
@@ -163,7 +165,7 @@ ir_graph *get_irp_main_irg(void) {
 }
 
 void set_irp_main_irg(ir_graph *main_irg) {
-	assert (irp);
+	assert(irp);
 	irp->main_irg = main_irg;
 }
 
@@ -399,7 +401,6 @@ ir_node** get_irp_ip_outedges(void) {
 	return irp->ip_outedges;
 }
 
-
 irg_callee_info_state get_irp_callee_info_state(void) {
 	return irp->callee_info_state;
 }
@@ -416,4 +417,20 @@ ir_exc_region_t (get_irp_next_region_nr)(void) {
 /* Returns a new, unique label number. */
 ir_label_t (get_irp_next_label_nr)(void) {
 	return _get_irp_next_label_nr();
+}
+
+/* Add a new global asm include */
+void add_irp_asm(ident *asm_string) {
+	ARR_APP1(ident *, irp->global_asms, asm_string);
+}
+
+/* Return the number of global asm includes. */
+int get_irp_n_asms(void) {
+	return ARR_LEN(irp->global_asms);
+}
+
+/* Return the global asm include at position pos. */
+ident *get_irp_asm(int pos) {
+	assert(pos <= 0 && pos < get_irp_n_asms());
+	return irp->global_asms[pos];
 }
