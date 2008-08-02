@@ -128,14 +128,13 @@ struct node_t {
 struct partition_t {
 	list_head         entries;         /**< The head of partition node list. */
 	list_head         cprop;           /**< The head of partition.cprop list. */
-	list_head         split_list;      /**< Double-linked list of entries that must be processed by split_by(). */
 	partition_t       *wl_next;        /**< Next entry in the work list if any. */
 	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
 	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
+	partition_t       *split_next;     /**< Points to the next partition in the list that must be split by split_by(). */
 	node_t            *touched;        /**< The partition.touched set of this partition. */
 	unsigned          n_nodes;         /**< Number of entries in this partition. */
 	unsigned          n_touched;       /**< Number of entries in the partition.touched. */
-	int               max_arity;       /**< Maximum arity of all entries. */
 	int               max_user_inputs; /**< Maximum number of user inputs of all entries. */
 	unsigned          on_worklist:1;   /**< Set, if this partition is in the work list. */
 	unsigned          on_touched:1;    /**< Set, if this partition is on the touched set. */
@@ -388,14 +387,13 @@ static INLINE partition_t *new_partition(environment_t *env) {
 
 	INIT_LIST_HEAD(&part->entries);
 	INIT_LIST_HEAD(&part->cprop);
-	INIT_LIST_HEAD(&part->split_list);
 	part->wl_next         = NULL;
 	part->touched_next    = NULL;
 	part->cprop_next      = NULL;
+	part->split_next      = NULL;
 	part->touched         = NULL;
 	part->n_nodes         = 0;
 	part->n_touched       = 0;
-	part->max_arity       = 0;
 	part->max_user_inputs = 0;
 	part->on_worklist     = 0;
 	part->on_touched      = 0;
@@ -481,13 +479,9 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 	environment_t *env  = ctx;
 	partition_t   *part = env->initial;
 	node_t        *node;
-	int           arity;
 
 	node = create_partition_node(irn, part, env);
 	sort_irn_outs(node);
-	arity = get_irn_arity(irn);
-	if (arity > part->max_arity)
-		part->max_arity = arity;
 	if (node->max_user_input > part->max_user_inputs)
 		part->max_user_inputs = node->max_user_input;
 
@@ -581,7 +575,6 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 		if (node->max_user_input > max_input)
 			max_input = node->max_user_input;
 	}
-	Z_prime->max_arity       = max_arity;
 	Z_prime->max_user_inputs = max_input;
 	Z_prime->n_nodes         = n;
 
@@ -776,13 +769,13 @@ static void cause_splits(environment_t *env) {
  *
  * @param X     the partition to split
  * @param What  a function returning an Id for every node of the partition X
- * @param P     a list head to store the result partitions
+ * @param P     a list to store the result partitions
  * @param env   the environment
  *
- * @return P
+ * @return *P
  */
-static list_head *split_by_what(partition_t *X, what_func What,
-                                list_head *P, environment_t *env) {
+static partition_t *split_by_what(partition_t *X, what_func What,
+                                  partition_t **P, environment_t *env) {
 	node_t          *x, *S;
 	listmap_t       map;
 	listmap_entry_t *iter;
@@ -816,13 +809,15 @@ static list_head *split_by_what(partition_t *X, what_func What,
 		/* Add SPLIT( X, S ) to P. */
 		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
 		R = split(X, S, env);
-		list_add(&R->split_list, P);
+		R->split_next = *P;
+		*P            = R;
 	}
 	/* Add X to P. */
-	list_add(&X->split_list, P);
+	X->split_next = *P;
+	*P            = X;
 
 	listmap_term(&map);
-	return P;
+	return *P;
 }  /* split_by_what */
 
 /** lambda n.(n.type) */
@@ -896,69 +891,64 @@ static int is_type_constant(lattice_elem_t type) {
  * @param env  the environment
  */
 static void split_by(partition_t *X, environment_t *env) {
-	list_head hP;
-	list_head *P = &hP;
-	int       input;
+	partition_t *P = NULL;
+	int         input;
 
-	INIT_LIST_HEAD(P);
 	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
-	P = split_by_what(X, lambda_type, P, env);
+	P = split_by_what(X, lambda_type, &P, env);
 	do {
-		partition_t *Y = list_entry(P->next, partition_t, split_list);
+		partition_t *Y = P;
 
-		list_del(&Y->split_list);
+		P = P->split_next;
 		if (Y->n_nodes > 1) {
 			lattice_elem_t type = get_partition_type(Y);
 
 			/* we do not want split the TOP or constant partitions */
 			if (type.tv != tarval_top && !is_type_constant(type)) {
-				list_head hQ;
-				list_head *Q = &hQ;
+				partition_t *Q = NULL;
 
-				INIT_LIST_HEAD(Q);
 				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
-				Q = split_by_what(Y, lambda_opcode, Q, env);
+				Q = split_by_what(Y, lambda_opcode, &Q, env);
 
 				do {
-					list_head   hR, hS;
-					partition_t *Z        = list_entry(Q->next, partition_t, split_list);
-					int         max_arity = Z->max_arity;
-					list_head   *R = &hR, *S = &hS, *T;
+					partition_t *Z = Q;
 
-					list_del(&Z->split_list);
-
+					Q = Q->split_next;
 					if (Z->n_nodes > 1) {
-						INIT_LIST_HEAD(R);
-						INIT_LIST_HEAD(S);
+						const node_t *first = get_first_node(Z);
+						int          arity  = get_irn_arity(first->node);
+						partition_t  *R, *S;
 
 						/*
 						 * BEWARE: during splitting by input 2 for instance we might
 						 * create new partitions which are different by input 1, so collect
 						 * them and split further.
 						 */
-						list_add(&Z->split_list, R);
-						for (input = max_arity - 1; input >= -1; --input) {
+						Z->split_next = NULL;
+						R             = Z;
+						S             = NULL;
+						for (input = arity - 1; input >= -1; --input) {
 							do {
-								partition_t *Z_prime = list_entry(R->next, partition_t, split_list);
+								partition_t *Z_prime = R;
 
-								list_del(&Z_prime->split_list);
+								R = R->split_next;
 								if (Z_prime->n_nodes > 1) {
 									env->lambda_input = input;
 									DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
-									S = split_by_what(Z_prime, lambda_partition, S, env);
+									S = split_by_what(Z_prime, lambda_partition, &S, env);
 								} else {
-									list_add(&Z_prime->split_list, S);
+									Z_prime->split_next = S;
+									S                   = Z_prime;
 								}
-							} while (!list_empty(R));
-							T = R;
+							} while (R != NULL);
 							R = S;
-							S = T;
+							S = NULL;
 						}
 					}
-				} while (!list_empty(Q));
+				} while (Q != NULL);
 			}
 		}
-	} while (!list_empty(P));
+	} while (P != NULL);
 }  /* split_by */
 
 /**
@@ -1798,7 +1788,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
