@@ -895,10 +895,10 @@ void be_main(FILE *file_handle, const char *cup_name)
 	ir_timer_t *t = NULL;
 
 	/* The user specified another config file to read. do that now. */
-	if(strlen(config_file) > 0) {
+	if (config_file[0] != '\0') {
 		FILE *f;
 
-		if((f = fopen(config_file, "rt")) != NULL) {
+		if ((f = fopen(config_file, "rt")) != NULL) {
 			lc_opt_from_file(config_file, f, NULL);
 			fclose(f);
 		}
