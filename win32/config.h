@@ -66,19 +66,19 @@
 #define PACKAGE_NAME "libFIRM"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libFIRM 1.13.0"
+#define PACKAGE_STRING "libFIRM 1.14.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libFIRM"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "1.13.0"
+#define PACKAGE_VERSION "1.14.0"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 #define libfirm_VERSION_MAJOR 1
-#define libfirm_VERSION_MINOR 13
+#define libfirm_VERSION_MINOR 14
 #define libfirm_VERSION_MICRO 0
 
 /* ---------------snip, snip ---------------------- */
