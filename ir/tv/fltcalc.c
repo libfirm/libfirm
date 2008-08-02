@@ -443,7 +443,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	/* make sure result has a descriptor */
 	if (result != a && result != b)
-		memcpy(&result->desc, &a->desc, sizeof(descriptor_t));
+		result->desc = a->desc;
 
 	/* determine if this is an addition or subtraction */
 	sign = a->sign ^ b->sign;
@@ -557,7 +557,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	temp = alloca(value_size);
 
 	if (result != a && result != b)
-		memcpy(&result->desc, &a->desc, sizeof(descriptor_t));
+		result->desc = a->desc;
 
 	result->sign = res_sign = a->sign ^ b->sign;
 
@@ -640,7 +640,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	dividend = alloca(value_size);
 
 	if (result != a && result != b)
-		memcpy(&result->desc, &a->desc, sizeof(descriptor_t));
+		result->desc = a->desc;
 
 	result->sign = res_sign = a->sign ^ b->sign;
 
@@ -731,7 +731,7 @@ static void _power_of_ten(int exp, descriptor_t *desc, char *result) {
 
 	/* set new descriptor (else result is supposed to already have one) */
 	if (desc != NULL)
-		memcpy(&result->desc, desc, sizeof(descriptor_t));
+		result->desc = *desc;
 
 	build = alloca(value_size);
 	temp = alloca(value_size);
@@ -786,7 +786,7 @@ static void _trunc(const fp_value *a, fp_value *result) {
 	temp = alloca(value_size);
 
 	if (a != result)
-		memcpy(&result->desc, &a->desc, sizeof(descriptor_t));
+		result->desc = a->desc;
 
 	exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 	exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
