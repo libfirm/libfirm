@@ -578,7 +578,7 @@ symconst_kind get_SymConst_kind(const ir_node *node);
 void          set_SymConst_kind(ir_node *node, symconst_kind num);
 
 /** Only to access SymConst of kind type_tag or size.  Else assertion: */
-ir_type  *get_SymConst_type(ir_node *node);
+ir_type  *get_SymConst_type(const ir_node *node);
 void     set_SymConst_type(ir_node *node, ir_type *tp);
 
 /** Only to access SymConst of kind addr_name.  Else assertion: */
@@ -1244,6 +1244,7 @@ ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
 ir_node *skip_Tuple(ir_node *node);
 /** returns operand of node if node is a Cast. */
 ir_node *skip_Cast(ir_node *node);
+const ir_node *skip_Cast_const(const ir_node *node);
 /** Returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations (including Cast, Confirm). */

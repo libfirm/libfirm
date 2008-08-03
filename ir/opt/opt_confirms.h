@@ -32,6 +32,9 @@
 
 #include "firm_types.h"
 
+/** Needed for MSVC to suporess warnings because it doest NOT handle const right. */
+typedef const ir_node *ir_node_cnst_ptr;
+
 /**
  * Check, if the value of a node is != 0.
  *
@@ -42,7 +45,7 @@
  * @param confirm  if n is confirmed to be != 0, returns
  *                 the the Confirm-node, else NULL
  */
-int value_not_zero(ir_node *n, ir_node **confirm);
+int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
 
 /**
  * Check, if the value of a node cannot represent a NULL pointer.
@@ -57,7 +60,7 @@ int value_not_zero(ir_node *n, ir_node **confirm);
  * @param confirm  if n is confirmed to be != NULL, returns
  *                 the the Confirm-node, else NULL
  */
-int value_not_null(ir_node *n, ir_node **confirm);
+int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
 
 /**
  * Possible return values of value_classify().

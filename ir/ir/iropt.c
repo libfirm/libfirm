@@ -65,6 +65,7 @@ static tarval *default_value_of(const ir_node *n) {
 
 value_of_func value_of_ptr = default_value_of;
 
+/* * Set a new value_of function. */
 void set_value_of_func(value_of_func func) {
 	if (func != NULL)
 		value_of_ptr = func;
@@ -75,14 +76,14 @@ void set_value_of_func(value_of_func func) {
 /**
  * Return the value of a Constant.
  */
-static tarval *computed_value_Const(ir_node *n) {
+static tarval *computed_value_Const(const ir_node *n) {
 	return get_Const_tarval(n);
 }  /* computed_value_Const */
 
 /**
  * Return the value of a 'sizeof', 'alignof' or 'offsetof' SymConst.
  */
-static tarval *computed_value_SymConst(ir_node *n) {
+static tarval *computed_value_SymConst(const ir_node *n) {
 	ir_type   *type;
 	ir_entity *ent;
 
@@ -112,7 +113,7 @@ static tarval *computed_value_SymConst(ir_node *n) {
 /**
  * Return the value of an Add.
  */
-static tarval *computed_value_Add(ir_node *n) {
+static tarval *computed_value_Add(const ir_node *n) {
 	ir_node *a = get_Add_left(n);
 	ir_node *b = get_Add_right(n);
 
@@ -129,7 +130,7 @@ static tarval *computed_value_Add(ir_node *n) {
  * Return the value of a Sub.
  * Special case: a - a
  */
-static tarval *computed_value_Sub(ir_node *n) {
+static tarval *computed_value_Sub(const ir_node *n) {
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *a    = get_Sub_left(n);
 	ir_node *b    = get_Sub_right(n);
@@ -153,7 +154,7 @@ static tarval *computed_value_Sub(ir_node *n) {
  * Return the value of a Carry.
  * Special : a op 0, 0 op b
  */
-static tarval *computed_value_Carry(ir_node *n) {
+static tarval *computed_value_Carry(const ir_node *n) {
 	ir_node *a = get_binop_left(n);
 	ir_node *b = get_binop_right(n);
 	ir_mode *m = get_irn_mode(n);
@@ -175,7 +176,7 @@ static tarval *computed_value_Carry(ir_node *n) {
  * Return the value of a Borrow.
  * Special : a op 0
  */
-static tarval *computed_value_Borrow(ir_node *n) {
+static tarval *computed_value_Borrow(const ir_node *n) {
 	ir_node *a = get_binop_left(n);
 	ir_node *b = get_binop_right(n);
 	ir_mode *m = get_irn_mode(n);
@@ -194,7 +195,7 @@ static tarval *computed_value_Borrow(ir_node *n) {
 /**
  * Return the value of an unary Minus.
  */
-static tarval *computed_value_Minus(ir_node *n) {
+static tarval *computed_value_Minus(const ir_node *n) {
 	ir_node *a = get_Minus_op(n);
 	tarval *ta = value_of(a);
 
@@ -207,7 +208,7 @@ static tarval *computed_value_Minus(ir_node *n) {
 /**
  * Return the value of a Mul.
  */
-static tarval *computed_value_Mul(ir_node *n) {
+static tarval *computed_value_Mul(const ir_node *n) {
 	ir_node *a = get_Mul_left(n);
 	ir_node *b = get_Mul_right(n);
 	ir_mode *mode;
@@ -237,7 +238,7 @@ static tarval *computed_value_Mul(ir_node *n) {
 /**
  * Return the value of an Abs.
  */
-static tarval *computed_value_Abs(ir_node *n) {
+static tarval *computed_value_Abs(const ir_node *n) {
 	ir_node *a = get_Abs_op(n);
 	tarval *ta = value_of(a);
 
@@ -251,7 +252,7 @@ static tarval *computed_value_Abs(ir_node *n) {
  * Return the value of an And.
  * Special case: a & 0, 0 & b
  */
-static tarval *computed_value_And(ir_node *n) {
+static tarval *computed_value_And(const ir_node *n) {
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 
@@ -271,7 +272,7 @@ static tarval *computed_value_And(ir_node *n) {
  * Return the value of an Or.
  * Special case: a | 1...1, 1...1 | b
  */
-static tarval *computed_value_Or(ir_node *n) {
+static tarval *computed_value_Or(const ir_node *n) {
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
 
@@ -290,7 +291,7 @@ static tarval *computed_value_Or(ir_node *n) {
 /**
  * Return the value of an Eor.
  */
-static tarval *computed_value_Eor(ir_node *n) {
+static tarval *computed_value_Eor(const ir_node *n) {
 	ir_node *a = get_Eor_left(n);
 	ir_node *b = get_Eor_right(n);
 
@@ -311,7 +312,7 @@ static tarval *computed_value_Eor(ir_node *n) {
 /**
  * Return the value of a Not.
  */
-static tarval *computed_value_Not(ir_node *n) {
+static tarval *computed_value_Not(const ir_node *n) {
 	ir_node *a = get_Not_op(n);
 	tarval *ta = value_of(a);
 
@@ -324,7 +325,7 @@ static tarval *computed_value_Not(ir_node *n) {
 /**
  * Return the value of a Shl.
  */
-static tarval *computed_value_Shl(ir_node *n) {
+static tarval *computed_value_Shl(const ir_node *n) {
 	ir_node *a = get_Shl_left(n);
 	ir_node *b = get_Shl_right(n);
 
@@ -340,7 +341,7 @@ static tarval *computed_value_Shl(ir_node *n) {
 /**
  * Return the value of a Shr.
  */
-static tarval *computed_value_Shr(ir_node *n) {
+static tarval *computed_value_Shr(const ir_node *n) {
 	ir_node *a = get_Shr_left(n);
 	ir_node *b = get_Shr_right(n);
 
@@ -356,7 +357,7 @@ static tarval *computed_value_Shr(ir_node *n) {
 /**
  * Return the value of a Shrs.
  */
-static tarval *computed_value_Shrs(ir_node *n) {
+static tarval *computed_value_Shrs(const ir_node *n) {
 	ir_node *a = get_Shrs_left(n);
 	ir_node *b = get_Shrs_right(n);
 
@@ -372,7 +373,7 @@ static tarval *computed_value_Shrs(ir_node *n) {
 /**
  * Return the value of a Rotl.
  */
-static tarval *computed_value_Rotl(ir_node *n) {
+static tarval *computed_value_Rotl(const ir_node *n) {
 	ir_node *a = get_Rotl_left(n);
 	ir_node *b = get_Rotl_right(n);
 
@@ -388,7 +389,7 @@ static tarval *computed_value_Rotl(ir_node *n) {
 /**
  * Return the value of a Conv.
  */
-static tarval *computed_value_Conv(ir_node *n) {
+static tarval *computed_value_Conv(const ir_node *n) {
 	ir_node *a = get_Conv_op(n);
 	tarval *ta = value_of(a);
 
@@ -399,6 +400,56 @@ static tarval *computed_value_Conv(ir_node *n) {
 }  /* computed_value_Conv */
 
 /**
+ * Calculate the value of a Mux: can be evaluated, if the
+ * sel and the right input are known.
+ */
+static tarval *computed_value_Mux(const ir_node *n) {
+	ir_node *sel = get_Mux_sel(n);
+	tarval *ts = value_of(sel);
+
+	if (ts == get_tarval_b_true()) {
+		ir_node *v = get_Mux_true(n);
+		return value_of(v);
+	}
+	else if (ts == get_tarval_b_false()) {
+		ir_node *v = get_Mux_false(n);
+		return value_of(v);
+	}
+	return tarval_bad;
+}  /* computed_value_Mux */
+
+/**
+ * Calculate the value of a Psi: can be evaluated, if a condition is true
+ * and all previous conditions are false. If all conditions are false
+ * we evaluate to the default one.
+ */
+static tarval *computed_value_Psi(const ir_node *n) {
+	if (is_Mux(n))
+		return computed_value_Mux(n);
+	return tarval_bad;
+}  /* computed_value_Psi */
+
+/**
+ * Calculate the value of a Confirm: can be evaluated,
+ * if it has the form Confirm(x, '=', Const).
+ */
+static tarval *computed_value_Confirm(const ir_node *n) {
+	/*
+	 * Beware: we might produce Phi(Confirm(x == true), Confirm(x == false)).
+	 * Do NOT optimize them away (CondEval wants them), so wait until
+	 * remove_confirm is activated.
+	 */
+	if (get_opt_remove_confirm()) {
+		if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
+			tarval *tv = value_of(get_Confirm_bound(n));
+			if (tv != tarval_bad)
+				return tv;
+		}
+	}
+	return value_of(get_Confirm_value(n));
+}  /* computed_value_Confirm */
+
+/**
  * Return the value of a Proj(Cmp).
  *
  * This performs a first step of unreachable code elimination.
@@ -407,7 +458,7 @@ static tarval *computed_value_Conv(ir_node *n) {
  * only 1 is used.
  * There are several case where we can evaluate a Cmp node, see later.
  */
-static tarval *computed_value_Proj_Cmp(ir_node *n) {
+static tarval *computed_value_Proj_Cmp(const ir_node *n) {
 	ir_node *a   = get_Proj_pred(n);
 	ir_node *aa  = get_Cmp_left(a);
 	ir_node *ab  = get_Cmp_right(a);
@@ -515,7 +566,7 @@ static tarval *computed_value_Proj_Cmp(ir_node *n) {
 /**
  * Return the value of a floating point Quot.
  */
-static tarval *do_computed_value_Quot(ir_node *a, ir_node *b) {
+static tarval *do_computed_value_Quot(const ir_node *a, const ir_node *b) {
 	tarval  *ta = value_of(a);
 	tarval  *tb = value_of(b);
 
@@ -529,7 +580,7 @@ static tarval *do_computed_value_Quot(ir_node *a, ir_node *b) {
  * Calculate the value of an integer Div of two nodes.
  * Special case: 0 / b
  */
-static tarval *do_computed_value_Div(ir_node *a, ir_node *b) {
+static tarval *do_computed_value_Div(const ir_node *a, const ir_node *b) {
 	tarval  *ta = value_of(a);
 	tarval  *tb;
 	ir_node *dummy;
@@ -547,7 +598,7 @@ static tarval *do_computed_value_Div(ir_node *a, ir_node *b) {
  * Calculate the value of an integer Mod of two nodes.
  * Special case: a % 1
  */
-static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
+static tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b) {
 	tarval *ta = value_of(a);
 	tarval *tb = value_of(b);
 
@@ -559,98 +610,72 @@ static tarval *do_computed_value_Mod(ir_node *a, ir_node *b) {
 	return tarval_bad;
 }  /* do_computed_value_Mod */
 
+/**
+ * Return the value of a Proj(DivMod).
+ */
+static tarval *computed_value_Proj_DivMod(const ir_node *n) {
+	long proj_nr = get_Proj_proj(n);
+
+	/* compute either the Div or the Mod part */
+	if (proj_nr == pn_DivMod_res_div) {
+		const ir_node *a = get_Proj_pred(n);
+		return do_computed_value_Div(get_DivMod_left(a), get_DivMod_right(a));
+	} else if (proj_nr == pn_DivMod_res_mod) {
+		const ir_node *a = get_Proj_pred(n);
+		return do_computed_value_Mod(get_DivMod_left(a), get_DivMod_right(a));
+	}
+	return tarval_bad;
+}  /* computed_value_Proj_DivMod */
 
 /**
- * Return the value of a Proj, handle Proj(Cmp), Proj(Div), Proj(Mod),
- * Proj(DivMod) and Proj(Quot).
+ * Return the value of a Proj(Div).
  */
-static tarval *computed_value_Proj(ir_node *n) {
-	ir_node *a = get_Proj_pred(n);
-	long proj_nr;
+static tarval *computed_value_Proj_Div(const ir_node *n) {
+	long proj_nr = get_Proj_proj(n);
 
-	switch (get_irn_opcode(a)) {
-	case iro_Cmp:
-		return computed_value_Proj_Cmp(n);
-
-	case iro_DivMod:
-		/* compute either the Div or the Mod part */
-		proj_nr = get_Proj_proj(n);
-		if (proj_nr == pn_DivMod_res_div)
-			return do_computed_value_Div(get_DivMod_left(a), get_DivMod_right(a));
-		else if (proj_nr == pn_DivMod_res_mod)
-			return do_computed_value_Mod(get_DivMod_left(a), get_DivMod_right(a));
-		break;
-
-	case iro_Div:
-		if (get_Proj_proj(n) == pn_Div_res)
-			return do_computed_value_Div(get_Div_left(a), get_Div_right(a));
-		break;
-
-	case iro_Mod:
-		if (get_Proj_proj(n) == pn_Mod_res)
-			return do_computed_value_Mod(get_Mod_left(a), get_Mod_right(a));
-		break;
-
-	case iro_Quot:
-		if (get_Proj_proj(n) == pn_Quot_res)
-			return do_computed_value_Quot(get_Quot_left(a), get_Quot_right(a));
-		break;
-
-	default:
-		return tarval_bad;
+	if (proj_nr == pn_Div_res) {
+		const ir_node *a = get_Proj_pred(n);
+		return do_computed_value_Div(get_Div_left(a), get_Div_right(a));
 	}
+	return tarval_bad;
+}  /* computed_value_Proj_Div */
+
+/**
+ * Return the value of a Proj(Mod).
+ */
+static tarval *computed_value_Proj_Mod(const ir_node *n) {
+	long proj_nr = get_Proj_proj(n);
+
+	if (proj_nr == pn_Mod_res) {
+		const ir_node *a = get_Proj_pred(n);
+		return do_computed_value_Mod(get_Mod_left(a), get_Mod_right(a));
+	}
+	return tarval_bad;
+}  /* computed_value_Proj_Mod */
+
+/**
+ * Return the value of a Proj(Quot).
+ */
+static tarval *computed_value_Proj_Quot(const ir_node *n) {
+	long proj_nr = get_Proj_proj(n);
+
+	if (proj_nr == pn_Quot_res) {
+		const ir_node *a = get_Proj_pred(n);
+		return do_computed_value_Quot(get_Quot_left(a), get_Quot_right(a));
+	}
+	return tarval_bad;
+}  /* computed_value_Proj_Quot */
+
+/**
+ * Return the value of a Proj.
+ */
+static tarval *computed_value_Proj(const ir_node *proj) {
+	ir_node *n = get_Proj_pred(proj);
+
+	if (n->op->ops.computed_value_Proj != NULL)
+		return n->op->ops.computed_value_Proj(proj);
 	return tarval_bad;
 }  /* computed_value_Proj */
-
-/**
- * Calculate the value of a Mux: can be evaluated, if the
- * sel and the right input are known.
- */
-static tarval *computed_value_Mux(ir_node *n) {
-	ir_node *sel = get_Mux_sel(n);
-	tarval *ts = value_of(sel);
-
-	if (ts == get_tarval_b_true()) {
-		ir_node *v = get_Mux_true(n);
-		return value_of(v);
-	}
-	else if (ts == get_tarval_b_false()) {
-		ir_node *v = get_Mux_false(n);
-		return value_of(v);
-	}
-	return tarval_bad;
-}  /* computed_value_Mux */
-
-/**
- * Calculate the value of a Psi: can be evaluated, if a condition is true
- * and all previous conditions are false. If all conditions are false
- * we evaluate to the default one.
- */
-static tarval *computed_value_Psi(ir_node *n) {
-	if (is_Mux(n))
-		return computed_value_Mux(n);
-	return tarval_bad;
-}  /* computed_value_Psi */
-
-/**
- * Calculate the value of a Confirm: can be evaluated,
- * if it has the form Confirm(x, '=', Const).
- */
-static tarval *computed_value_Confirm(ir_node *n) {
-	/*
-	 * Beware: we might produce Phi(Confirm(x == true), Confirm(x == false)).
-	 * Do NOT optimize them away (CondEval wants them), so wait until
-	 * remove_confirm is activated.
-	 */
-	if (get_opt_remove_confirm()) {
-		if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
-			tarval *tv = value_of(get_Confirm_bound(n));
-			if (tv != tarval_bad)
-				return tv;
-		}
-	}
-	return value_of(get_Confirm_value(n));
-}  /* computed_value_Confirm */
 
 /**
  * If the parameter n can be computed, return its value, else tarval_bad.
@@ -658,7 +683,7 @@ static tarval *computed_value_Confirm(ir_node *n) {
  *
  * @param n  The node this should be evaluated
  */
-tarval *computed_value(ir_node *n) {
+tarval *computed_value(const ir_node *n) {
 	if (n->op->ops.computed_value)
 		return n->op->ops.computed_value(n);
 	return tarval_bad;
@@ -675,9 +700,13 @@ tarval *computed_value(ir_node *n) {
  */
 static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops)
 {
-#define CASE(a)                                    \
-	case iro_##a:                                  \
-		ops->computed_value  = computed_value_##a; \
+#define CASE(a)                                        \
+	case iro_##a:                                      \
+		ops->computed_value      = computed_value_##a; \
+		break
+#define CASE_PROJ(a)                                        \
+	case iro_##a:                                           \
+		ops->computed_value_Proj = computed_value_Proj_##a; \
 		break
 
 	switch (code) {
@@ -685,6 +714,8 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(SymConst);
 	CASE(Add);
 	CASE(Sub);
+	CASE(Carry);
+	CASE(Borrow);
 	CASE(Minus);
 	CASE(Mul);
 	CASE(Abs);
@@ -696,18 +727,22 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Shr);
 	CASE(Shrs);
 	CASE(Rotl);
-	CASE(Carry);
-	CASE(Borrow);
 	CASE(Conv);
-	CASE(Proj);
 	CASE(Mux);
 	CASE(Psi);
 	CASE(Confirm);
+	CASE_PROJ(Cmp);
+	CASE_PROJ(DivMod);
+	CASE_PROJ(Div);
+	CASE_PROJ(Mod);
+	CASE_PROJ(Quot);
+	CASE(Proj);
 	default:
 		/* leave NULL */;
 	}
 
 	return ops;
+#undef CASE_PROJ
 #undef CASE
 }  /* firm_set_default_computed_value */
 
@@ -748,22 +783,26 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	   This should be true, as the block is matured before optimize is called.
 	   But what about Phi-cycles with the Phi0/Id that could not be resolved?
 	   Remaining Phi nodes are just Ids. */
-	if (n_preds == 1 && is_Jmp(get_Block_cfgpred(n, 0))) {
-		ir_node *predblock = get_nodes_block(get_Block_cfgpred(n, 0));
-		if (predblock == oldn) {
-			/* Jmp jumps into the block it is in -- deal self cycle. */
-			n = set_Block_dead(n);
-			DBG_OPT_DEAD_BLOCK(oldn, n);
-		} else if (get_opt_control_flow_straightening()) {
-			n = predblock;
-			DBG_OPT_STG(oldn, n);
-		}
-	} else if (n_preds == 1 && is_Cond(skip_Proj(get_Block_cfgpred(n, 0)))) {
-		ir_node *predblock = get_Block_cfgpred_block(n, 0);
-		if (predblock == oldn) {
-			/* Jmp jumps into the block it is in -- deal self cycle. */
-			n = set_Block_dead(n);
-			DBG_OPT_DEAD_BLOCK(oldn, n);
+	if (n_preds == 1) {
+		ir_node *pred = skip_Proj(get_Block_cfgpred(n, 0));
+
+		if (is_Jmp(pred)) {
+			ir_node *predblock = get_nodes_block(pred);
+			if (predblock == oldn) {
+				/* Jmp jumps into the block it is in -- deal self cycle. */
+				n = set_Block_dead(n);
+				DBG_OPT_DEAD_BLOCK(oldn, n);
+			} else if (get_opt_control_flow_straightening()) {
+				n = predblock;
+				DBG_OPT_STG(oldn, n);
+			}
+		} else if (is_Cond(pred)) {
+			ir_node *predblock = get_nodes_block(pred);
+			if (predblock == oldn) {
+				/* Jmp jumps into the block it is in -- deal self cycle. */
+				n = set_Block_dead(n);
+				DBG_OPT_DEAD_BLOCK(oldn, n);
+			}
 		}
 	} else if ((n_preds == 2) &&
 	           (get_opt_control_flow_weak_simplification())) {
@@ -774,15 +813,16 @@ static ir_node *equivalent_node_Block(ir_node *n)
 		ir_node *a = get_Block_cfgpred(n, 0);
 		ir_node *b = get_Block_cfgpred(n, 1);
 
-		if (is_Proj(a) &&
-		    is_Proj(b) &&
-		    (get_Proj_pred(a) == get_Proj_pred(b)) &&
-		    is_Cond(get_Proj_pred(a)) &&
-		    (get_irn_mode(get_Cond_selector(get_Proj_pred(a))) == mode_b)) {
-			/* Also a single entry Block following a single exit Block.  Phis have
-			   twice the same operand and will be optimized away. */
-			n = get_nodes_block(get_Proj_pred(a));
-			DBG_OPT_IFSIM1(oldn, a, b, n);
+		if (is_Proj(a) && is_Proj(b)) {
+			ir_node *cond = get_Proj_pred(a);
+
+		    if (cond == get_Proj_pred(b) && is_Cond(cond) &&
+		        get_irn_mode(get_Cond_selector(cond)) == mode_b) {
+				/* Also a single entry Block following a single exit Block.  Phis have
+				   twice the same operand and will be optimized away. */
+				n = get_nodes_block(cond);
+				DBG_OPT_IFSIM1(oldn, a, b, n);
+			}
 		}
 	} else if (get_opt_unreachable_code() &&
 	           (n != get_irg_start_block(current_ir_graph)) &&
@@ -820,10 +860,13 @@ static ir_node *equivalent_node_Block(ir_node *n)
  * Of course this only happens if the Block of the Jmp is dead.
  */
 static ir_node *equivalent_node_Jmp(ir_node *n) {
-	/* unreachable code elimination */
-	if (is_Block_dead(get_nodes_block(n)))
-		n = new_Bad();
+	ir_node *oldn = n;
 
+	/* unreachable code elimination */
+	if (is_Block_dead(get_nodes_block(n))) {
+		n = get_irg_bad(current_ir_graph);
+		DBG_OPT_DEAD_BLOCK(oldn, n);
+	}
 	return n;
 }  /* equivalent_node_Jmp */
 
@@ -838,8 +881,7 @@ static ir_node *equivalent_node_Jmp(ir_node *n) {
  * Optimize operations that are commutative and have neutral 0,
  * so a op 0 = 0 op a = a.
  */
-static ir_node *equivalent_node_neutral_zero(ir_node *n)
-{
+static ir_node *equivalent_node_neutral_zero(ir_node *n) {
 	ir_node *oldn = n;
 
 	ir_node *a = get_binop_left(n);
@@ -876,8 +918,7 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 /**
  * Eor is commutative and has neutral 0.
  */
-static ir_node *equivalent_node_Eor(ir_node *n)
-{
+static ir_node *equivalent_node_Eor(ir_node *n) {
 	ir_node *oldn = n;
 	ir_node *a;
 	ir_node *b;
@@ -920,7 +961,6 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 			return n;
 		}
 	}
-
 	return n;
 }
 
@@ -1099,16 +1139,25 @@ static ir_node *equivalent_node_Or(ir_node *n) {
 
 	ir_node *a = get_Or_left(n);
 	ir_node *b = get_Or_right(n);
+	tarval *tv;
 
 	if (a == b) {
 		n = a;    /* Or has it's own neutral element */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
-	} else if (is_Const(a) && is_Const_null(a)) {
-		n = b;
-		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
-	} else if (is_Const(b) && is_Const_null(b)) {
+		return n;
+	}
+	/* constants are cormalized to right, check this site first */
+	tv = value_of(b);
+	if (tarval_is_null(tv)) {
 		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+		return n;
+	}
+	tv = value_of(a);
+	if (tarval_is_null(tv)) {
+		n = b;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_OR);
+		return n;
 	}
 
 	return n;
@@ -1122,19 +1171,23 @@ static ir_node *equivalent_node_And(ir_node *n) {
 
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
+	tarval *tv;
 
 	if (a == b) {
 		n = a;    /* And has it's own neutral element */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
 		return n;
 	}
-	if (is_Const(a) && is_Const_all_one(a)) {
-		n = b;
+	/* constants are cormalized to right, check this site first */
+	tv = value_of(b);
+	if (tarval_is_all_one(tv)) {
+		n = a;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
-	if (is_Const(b) && is_Const_all_one(b)) {
-		n = a;
+	tv = value_of(a);
+	if (tarval_is_all_one(tv)) {
+		n = b;
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
@@ -1154,7 +1207,6 @@ static ir_node *equivalent_node_And(ir_node *n) {
 			return n;
 		}
 	}
-
 	return n;
 }  /* equivalent_node_And */
 
@@ -1266,9 +1318,6 @@ static ir_node *equivalent_node_Cast(ir_node *n) {
 }  /* equivalent_node_Cast */
 
 /**
- * Several optimizations:
- * - no Phi in start block.
- * - remove Id operators that are inputs to Phi
  * - fold Phi-nodes, iff they have only one predecessor except
  *   themselves.
  */
@@ -1284,16 +1333,10 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 	n_preds = get_Phi_n_preds(n);
 
 	block = get_nodes_block(n);
-	if ((is_Block_dead(block)) ||                  /* Control dead */
-		(block == get_irg_start_block(current_ir_graph)))  /* There should be no Phi nodes */
-		return new_Bad();                                    /* in the Start Block. */
+	if (is_Block_dead(block))                  /* Control dead */
+		return get_irg_bad(current_ir_graph);
 
 	if (n_preds == 0) return n;           /* Phi of dead Region without predecessors. */
-
-	/* If the Block has a Bad pred, we also have one. */
-	for (i = 0;  i < n_preds;  ++i)
-		if (is_Bad(get_Block_cfgpred(block, i)))
-			set_Phi_pred(n, i, new_Bad());
 
 	/* Find first non-self-referencing input */
 	for (i = 0; i < n_preds; ++i) {
@@ -1308,7 +1351,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 		     * This is not that bad as it sounds, optimize_cf() removes bad control flow
 		     * (and bad Phi predecessors), so live code is optimized later.
 		     */
-		    && (! is_Bad(first_val))
+			&& (! is_Bad(get_Block_cfgpred(block, i)))
 #endif
 		   ) {        /* value not dead */
 			break;          /* then found first value. */
@@ -1317,7 +1360,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 
 	if (i >= n_preds) {
 		/* A totally Bad or self-referencing Phi (we didn't break the above loop) */
-		return new_Bad();
+		return get_irg_bad(current_ir_graph);
 	}
 
 	/* search for rest of inputs, determine if any of these
@@ -1328,7 +1371,7 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 		    && (scnd_val != first_val)
 #if 0
 		    /* see above */
-		    && (! is_Bad(scnd_val))
+		    && (! is_Bad(get_Block_cfgpred(block, i)))
 #endif
 			) {
 			break;
@@ -1345,7 +1388,6 @@ static ir_node *equivalent_node_Phi(ir_node *n) {
 
 /**
  * Several optimizations:
- * - no Sync in start block.
  * - fold Sync-nodes, iff they have only one predecessor except
  *   themselves.
  */
@@ -1378,7 +1420,7 @@ static ir_node *equivalent_node_Sync(ir_node *n) {
 		}
 	}
 
-	if (arity == 0) return new_Bad();
+	if (arity == 0) return get_irg_bad(current_ir_graph);
 	if (arity == 1) return get_Sync_pred(n, 0);
 	return n;
 }  /* equivalent_node_Sync */
@@ -1626,40 +1668,15 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj) {
 static ir_node *equivalent_node_Proj(ir_node *proj) {
 	ir_node *n = get_Proj_pred(proj);
 
-	switch (get_irn_opcode(n)) {
-	case iro_Div:
-		return equivalent_node_Proj_Div(proj);
-
-	case iro_DivMod:
-		return equivalent_node_Proj_DivMod(proj);
-
-	case iro_Quot:
-		return equivalent_node_Proj_Quot(proj);
-
-	case iro_Tuple:
-		return equivalent_node_Proj_Tuple(proj);
-
-	case iro_CopyB:
-		return equivalent_node_Proj_CopyB(proj);
-
-	case iro_Bound:
-		return equivalent_node_Proj_Bound(proj);
-
-	case iro_Load:
-		return equivalent_node_Proj_Load(proj);
-
-	case iro_Store:
-		return equivalent_node_Proj_Store(proj);
-
-	default:
-		if (get_irn_mode(proj) == mode_X) {
-			if (is_Block_dead(get_nodes_block(n))) {
-				/* Remove dead control flow -- early gigo(). */
-				proj = get_irg_bad(current_ir_graph);
-			}
+	if (get_irn_mode(proj) == mode_X) {
+		if (is_Block_dead(get_nodes_block(n))) {
+			/* Remove dead control flow -- early gigo(). */
+			return get_irg_bad(current_ir_graph);
 		}
-		return proj;
 	}
+	if (n->op->ops.equivalent_node_Proj)
+		return n->op->ops.equivalent_node_Proj(proj);
+	return proj;
 }  /* equivalent_node_Proj */
 
 /**
@@ -1820,27 +1837,39 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	case iro_##a:                                    \
 		ops->equivalent_node  = equivalent_node_##a; \
 		break
+#define CASE_PROJ(a)                                          \
+	case iro_##a:                                             \
+		ops->equivalent_node_Proj = equivalent_node_Proj_##a; \
+		break
 
 	switch (code) {
 	CASE(Block);
 	CASE(Jmp);
 	CASE(Raise);
-	CASE(Or);
-	CASE(Add);
 	CASE(Eor);
-	CASE(Sub);
+	CASE(Add);
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
 	CASE(Rotl);
+	CASE(Sub);
 	CASE(Not);
 	CASE(Minus);
 	CASE(Mul);
+	CASE(Or);
 	CASE(And);
 	CASE(Conv);
 	CASE(Cast);
 	CASE(Phi);
 	CASE(Sync);
+	CASE_PROJ(Tuple);
+	CASE_PROJ(Div);
+	CASE_PROJ(Quot);
+	CASE_PROJ(DivMod);
+	CASE_PROJ(CopyB);
+	CASE_PROJ(Bound);
+	CASE_PROJ(Load);
+	CASE_PROJ(Store);
 	CASE(Proj);
 	CASE(Id);
 	CASE(Mux);
@@ -1852,6 +1881,7 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 
 	return ops;
 #undef CASE
+#undef CASE_PROJ
 }  /* firm_set_default_equivalent_node */
 
 /**
@@ -5567,7 +5597,7 @@ static ir_node *transform_node_Psi(ir_node *n) {
 }  /* transform_node_Psi */
 
 /**
- * optimize sync nodes that have other syncs as input we simply add the inputs
+ * optimize Sync nodes that have other syncs as input we simply add the inputs
  * of the other sync to our own inputs
  */
 static ir_node *transform_node_Sync(ir_node *n) {

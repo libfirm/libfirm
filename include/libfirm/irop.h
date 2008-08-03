@@ -268,7 +268,7 @@ typedef unsigned (*hash_func)(const ir_node *self);
  * This operation evaluates an IR node into a tarval if possible,
  * returning tarval_bad otherwise.
  */
-typedef tarval *(*computed_value_func)(ir_node *self);
+typedef tarval *(*computed_value_func)(const ir_node *self);
 
 /**
  * The equivalent node operation.
@@ -371,21 +371,24 @@ typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
  * io_op Operations.
  */
 typedef struct {
-	hash_func             hash;             /**< Calculate a hash value for an IR node. */
-	computed_value_func   computed_value;   /**< Evaluates a node into a tarval if possible. */
-	equivalent_node_func  equivalent_node;  /**< Optimizes the node by returning an equivalent one. */
-	transform_node_func   transform_node;   /**< Optimizes the node by transforming it. */
-	node_cmp_attr_func    node_cmp_attr;    /**< Compares two node attributes. */
-	reassociate_func      reassociate;      /**< Reassociate a tree. */
-	copy_attr_func        copy_attr;        /**< Copy node attributes. */
-	get_type_func         get_type;         /**< Return the type of a node. */
-	get_type_attr_func    get_type_attr;    /**< Return the type attribute of a node. */
-	get_entity_attr_func  get_entity_attr;  /**< Return the entity attribute of a node. */
-	verify_node_func      verify_node;      /**< Verify the node. */
-	verify_proj_node_func verify_proj_node; /**< Verify the Proj node. */
-	dump_node_func        dump_node;        /**< Dump a node. */
-	op_func               generic;          /**< A generic function pointer. */
-	const arch_irn_ops_t *be_ops;           /**< callbacks used by the backend. */
+	hash_func             hash;                 /**< Calculate a hash value for an IR node. */
+	computed_value_func   computed_value;       /**< Evaluates a node into a tarval if possible. */
+	computed_value_func   computed_value_Proj;  /**< Evaluates a Proj node into a tarval if possible. */
+	equivalent_node_func  equivalent_node;      /**< Optimizes the node by returning an equivalent one. */
+	equivalent_node_func  equivalent_node_Proj; /**< Optimizes the Proj node by returning an equivalent one. */
+	transform_node_func   transform_node;       /**< Optimizes the node by transforming it. */
+	equivalent_node_func  transform_node_Proj;  /**< Optimizes the Proj node by transforming it. */
+	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
+	reassociate_func      reassociate;          /**< Reassociate a tree. */
+	copy_attr_func        copy_attr;            /**< Copy node attributes. */
+	get_type_func         get_type;             /**< Return the type of a node. */
+	get_type_attr_func    get_type_attr;        /**< Return the type attribute of a node. */
+	get_entity_attr_func  get_entity_attr;      /**< Return the entity attribute of a node. */
+	verify_node_func      verify_node;          /**< Verify the node. */
+	verify_proj_node_func verify_proj_node;     /**< Verify the Proj node. */
+	dump_node_func        dump_node;            /**< Dump a node. */
+	op_func               generic;              /**< A generic function pointer. */
+	const arch_irn_ops_t *be_ops;               /**< callbacks used by the backend. */
 } ir_op_ops;
 
 /**

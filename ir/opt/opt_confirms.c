@@ -97,7 +97,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  */
-int value_not_zero(ir_node *n, ir_node **confirm) {
+int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm) {
 #define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
 	tarval *tv;
@@ -175,11 +175,11 @@ int value_not_zero(ir_node *n, ir_node **confirm) {
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
-int value_not_null(ir_node *n, ir_node **confirm) {
+int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm) {
 	tarval *tv;
 
 	*confirm = NULL;
-	n  = skip_Cast(n);
+	n  = skip_Cast_const(n);
 
 	tv = value_of(n);
 	if (tarval_is_constant(tv) && ! tarval_is_null(tv))

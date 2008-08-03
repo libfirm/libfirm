@@ -1146,10 +1146,13 @@ set_SymConst_kind(ir_node *node, symconst_kind kind) {
 }
 
 ir_type *
-get_SymConst_type(ir_node *node) {
+get_SymConst_type(const ir_node *node) {
+	/* the cast here is annoying, but we have to compensate for
+	   the skip_tip() */
+	ir_node *irn = (ir_node *)node;
 	assert(is_SymConst(node) &&
 	       (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
-	return node->attr.symc.sym.type_p = skip_tid(node->attr.symc.sym.type_p);
+	return irn->attr.symc.sym.type_p = skip_tid(irn->attr.symc.sym.type_p);
 }
 
 void
@@ -2582,7 +2585,14 @@ restart:
 
 /* returns operand of node if node is a Cast */
 ir_node *skip_Cast(ir_node *node) {
-	if (get_irn_op(node) == op_Cast)
+	if (is_Cast(node))
+		return get_Cast_op(node);
+	return node;
+}
+
+/* returns operand of node if node is a Cast */
+const ir_node *skip_Cast_const(const ir_node *node) {
+	if (is_Cast(node))
 		return get_Cast_op(node);
 	return node;
 }
