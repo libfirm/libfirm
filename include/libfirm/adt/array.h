@@ -52,7 +52,7 @@
  *         first element of this array).
  */
 #define NEW_ARR_F(type, nelts)						\
-  ((type *)_new_arr_f ((nelts), sizeof(type) * (nelts)))
+  ((type *)_new_arr_f((nelts), sizeof(type) * (nelts)))
 
 /**
  * Creates a new flexible array with the same number of elements as a
@@ -68,7 +68,7 @@
  *         first element of this array).
  */
 #define CLONE_ARR_F(type, arr)			\
-  NEW_ARR_F (type, ARR_LEN ((arr)))
+  NEW_ARR_F(type, ARR_LEN((arr)))
 
 /**
  * Duplicates an array and returns the new flexible one.
@@ -83,14 +83,14 @@
  *         first element of this array).
  */
 #define DUP_ARR_F(type, arr)							\
-  memcpy (CLONE_ARR_F (type, (arr)), (arr), sizeof(type) * ARR_LEN((arr)))
+  memcpy(CLONE_ARR_F(type, (arr)), (arr), sizeof(type) * ARR_LEN((arr)))
 
 /**
  * Delete a flexible array.
  *
  * @param arr    The flexible array.
  */
-#define DEL_ARR_F(arr) (_del_arr_f ((arr)))
+#define DEL_ARR_F(arr) (_del_arr_f((void *)(arr)))
 
 /**
  * Creates a dynamic array on an obstack.
@@ -107,7 +107,7 @@
  */
 #define NEW_ARR_D(type, obstack, nelts)					\
   (  nelts								\
-   ? (type *)_new_arr_d ((obstack), (nelts), sizeof(type) * (nelts))	\
+   ? (type *)_new_arr_d((obstack), (nelts), sizeof(type) * (nelts))	\
    : (type *)arr_mt_descr.v.elts)
 
 /**
@@ -125,7 +125,7 @@
  *         first element of this array).
  */
 #define CLONE_ARR_D(type, obstack, arr)		\
-  NEW_ARR_D (type, (obstack), ARR_LEN ((arr)))
+  NEW_ARR_D(type, (obstack), ARR_LEN((arr)))
 
 /**
  * Duplicates an array and returns the new dynamic one.
@@ -141,7 +141,7 @@
  *         first element of this array).
  */
 #define DUP_ARR_D(type, obstack, arr)							\
-  memcpy (CLONE_ARR_D (type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr)))
+  memcpy(CLONE_ARR_D(type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr)))
 
 /**
  * Create an automatic array which will be deleted at return from function.
@@ -157,10 +157,10 @@
 #define NEW_ARR_A(type, var, n)									\
   do {												\
     int _nelts = (n);										\
-    assert (_nelts >= 0);									\
-    (var) = (void *)((_arr_descr *)alloca (_ARR_ELTS_OFFS + sizeof(type) * _nelts))->v.elts;	\
-    _ARR_SET_DBGINF (_ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type));				\
-    (void)(_ARR_DESCR ((var))->nelts = _nelts);							\
+    assert(_nelts >= 0);									\
+    (var) = (void *)((_arr_descr *)alloca(_ARR_ELTS_OFFS + sizeof(type) * _nelts))->v.elts;	\
+    _ARR_SET_DBGINF(_ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type));				\
+    (void)(_ARR_DESCR((var))->nelts = _nelts);							\
   } while (0)
 
 /**
@@ -178,7 +178,7 @@
  *         first element of this array).
  */
 #define CLONE_ARR_A(type, var, arr)		\
-  NEW_ARR_A (type, (var), ARR_LEN ((arr)))
+  NEW_ARR_A(type, (var), ARR_LEN((arr)))
 
 /**
  * Duplicates an array and returns a new automatic one.
@@ -195,7 +195,7 @@
  */
 #define DUP_ARR_A(type, var, arr)					\
   do { CLONE_ARR_A(type, (var), (arr));					\
-       memcpy ((var), (arr), sizeof (type) * ARR_LEN ((arr))); }	\
+       memcpy((var), (arr), sizeof (type) * ARR_LEN((arr))); }	\
   while (0)
 
 /**
@@ -208,7 +208,7 @@
  */
 #define DECL_ARR_S(type, var, _nelts)					\
   ARR_STRUCT(type, (_nelts) ? (_nelts) : 1) _##var;			\
-  type *var = (_ARR_SET_DBGINF (&_##var, ARR_A_MAGIC, sizeof (type)),	\
+  type *var = (_ARR_SET_DBGINF(&_##var, ARR_A_MAGIC, sizeof (type)),	\
 	       _##var.nelts = _nelts,					\
 	       _##var.v.elts)
 
@@ -217,7 +217,7 @@
  *
  * @param arr  a flexible, dynamic, automatic or static array.
  */
-#define ARR_LEN(arr) (ARR_VRFY ((arr)), _ARR_DESCR((arr))->nelts)
+#define ARR_LEN(arr) (ARR_VRFY((arr)), _ARR_DESCR((arr))->nelts)
 
 /**
  * Resize a flexible array, allocate more data if needed but do NOT
@@ -230,7 +230,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_RESIZE(type, arr, n)					\
-  ((arr) = _arr_resize ((arr), (n), sizeof(type)))
+  ((arr) = _arr_resize((arr), (n), sizeof(type)))
 
 /**
  * Resize a flexible array, always reallocate data.
@@ -242,12 +242,12 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_SETLEN(type, arr, n)					\
-  ((arr) = _arr_setlen ((arr), (n), sizeof(type) * (n)))
+  ((arr) = _arr_setlen((arr), (n), sizeof(type) * (n)))
 
 /** Set a length smaller than the current length of the array.  Do not
  *  resize. len must be <= ARR_LEN(arr). */
 #define ARR_SHRINKLEN(arr,len)                                          \
-   (ARR_VRFY ((arr)), assert(_ARR_DESCR((arr))->nelts >= len),             \
+   (ARR_VRFY((arr)), assert(_ARR_DESCR((arr))->nelts >= len),             \
     _ARR_DESCR((arr))->nelts = len)
 
 /**
@@ -260,7 +260,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_EXTEND(type, arr, delta)			\
-  ARR_RESIZE (type, (arr), ARR_LEN ((arr)) + (delta))
+  ARR_RESIZE(type, (arr), ARR_LEN((arr)) + (delta))
 
 /**
  * Resize a flexible array to hold n elements only if it is currently shorter
@@ -273,7 +273,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_EXTO(type, arr, n)						\
-  ((n) >= ARR_LEN ((arr)) ? ARR_RESIZE (type, (arr), (n)+1) : (arr))
+  ((n) >= ARR_LEN((arr)) ? ARR_RESIZE(type, (arr), (n)+1) : (arr))
 
 /**
  * Append one element to a flexible array.
@@ -283,7 +283,7 @@
  * @param elt      The new element, must be of type (type).
  */
 #define ARR_APP1(type, arr, elt)					\
-  (ARR_EXTEND (type, (arr), 1), (arr)[ARR_LEN ((arr))-1] = (elt))
+  (ARR_EXTEND(type, (arr), 1), (arr)[ARR_LEN((arr))-1] = (elt))
 
 #ifdef NDEBUG
 # define ARR_VRFY(arr) ((void)0)
@@ -297,7 +297,7 @@
 		|| (_ARR_DESCR((arr))->u.allocated >= _ARR_DESCR((arr))->nelts))	\
 	    && (_ARR_DESCR((arr))->nelts >= 0))
 # define ARR_IDX_VRFY(arr, idx)				\
-    assert ((0 <= (idx)) && ((idx) < ARR_LEN ((arr))))
+    assert((0 <= (idx)) && ((idx) < ARR_LEN((arr))))
 #endif
 
 
@@ -333,17 +333,17 @@
 /**
  * The array descriptor header type.
  */
-typedef ARR_STRUCT (aligned_type, 1) _arr_descr;
+typedef ARR_STRUCT(aligned_type, 1) _arr_descr;
 
 extern _arr_descr arr_mt_descr;
 
-void *_new_arr_f (int nelts, size_t elts_size);
-void _del_arr_f (void *elts);
-void *_new_arr_d (struct obstack *obstack, int nelts, size_t elts_size);
-void *_arr_resize (void *elts, int nelts, size_t elts_size);
-void *_arr_setlen (void *elts, int nelts, size_t elts_size);
+void *_new_arr_f(int nelts, size_t elts_size);
+void _del_arr_f(void *elts);
+void *_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size);
+void *_arr_resize(void *elts, int nelts, size_t elts_size);
+void *_arr_setlen(void *elts, int nelts, size_t elts_size);
 
-#define _ARR_ELTS_OFFS offsetof (_arr_descr, v.elts)
+#define _ARR_ELTS_OFFS offsetof(_arr_descr, v.elts)
 #define _ARR_DESCR(elts) ((_arr_descr *)(void *)((char *)(elts) - _ARR_ELTS_OFFS))
 
 /*
@@ -451,6 +451,5 @@ do { \
  * This just initializes the size to zero but does not wipe out any element.
  */
 #define ARR_SET_CLEAR(arr) ARR_SHRINKLEN(arr, 0)
-
 
 #endif /* FIRM_ADT_ARRAY_H */
