@@ -3914,7 +3914,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 						return proj;
 					} else {
 						/* this case will NEVER be taken, kill it */
-						return new_Bad();
+						return get_irg_bad(current_ir_graph);
 					}
 				}
 			}
@@ -4645,42 +4645,9 @@ static ir_node *transform_node_Proj_Bound(ir_node *proj) {
 static ir_node *transform_node_Proj(ir_node *proj) {
 	ir_node *n = get_Proj_pred(proj);
 
-	switch (get_irn_opcode(n)) {
-	case iro_Load:
-		return transform_node_Proj_Load(proj);
-
-	case iro_Store:
-		return transform_node_Proj_Store(proj);
-
-	case iro_Div:
-		return transform_node_Proj_Div(proj);
-
-	case iro_Mod:
-		return transform_node_Proj_Mod(proj);
-
-	case iro_DivMod:
-		return transform_node_Proj_DivMod(proj);
-
-	case iro_Cond:
-		return transform_node_Proj_Cond(proj);
-
-	case iro_Cmp:
-		return transform_node_Proj_Cmp(proj);
-
-	case iro_Tuple:
-		/* should not happen, but if it does will be optimized away */
-		return equivalent_node_Proj(proj);
-
-	case iro_CopyB:
-		return transform_node_Proj_CopyB(proj);
-
-	case iro_Bound:
-		return transform_node_Proj_Bound(proj);
-
-	default:
-		/* do nothing */
-		return proj;
-	}
+	if (n->op->ops.transform_node_Proj)
+		return n->op->ops.transform_node_Proj(proj);
+	return proj;
 }  /* transform_node_Proj */
 
 /**
@@ -5677,30 +5644,42 @@ static ir_node *transform_node(ir_node *n) {
  */
 static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops)
 {
-#define CASE(a)                                 \
-	case iro_##a:                                 \
-		ops->transform_node  = transform_node_##a;  \
+#define CASE(a)                                         \
+	case iro_##a:                                       \
+		ops->transform_node      = transform_node_##a;  \
+		break
+#define CASE_PROJ(a)                                         \
+	case iro_##a:                                            \
+		ops->transform_node_Proj = transform_node_Proj_##a;  \
+		break
+#define CASE_PROJ_EX(a)                                      \
+	case iro_##a:                                            \
+		ops->transform_node      = transform_node_##a;       \
+		ops->transform_node_Proj = transform_node_Proj_##a;  \
 		break
 
 	switch (code) {
 	CASE(Add);
 	CASE(Sub);
 	CASE(Mul);
-	CASE(Div);
-	CASE(Mod);
-	CASE(DivMod);
+	CASE_PROJ_EX(Div);
+	CASE_PROJ_EX(Mod);
+	CASE_PROJ_EX(DivMod);
 	CASE(Quot);
 	CASE(Abs);
-	CASE(Cond);
-	CASE(Cmp);
+	CASE_PROJ_EX(Cmp);
+	CASE_PROJ_EX(Cond);
 	CASE(And);
-	CASE(Or);
 	CASE(Eor);
-	CASE(Minus);
 	CASE(Not);
+	CASE(Minus);
 	CASE(Cast);
+	CASE_PROJ(Load);
+	CASE_PROJ(Store);
+	CASE_PROJ(CopyB);
 	CASE(Proj);
 	CASE(Phi);
+	CASE(Or);
 	CASE(Sel);
 	CASE(Shr);
 	CASE(Shrs);
@@ -5716,6 +5695,8 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	}
 
 	return ops;
+#undef CASE_PROJ_EX
+#undef CASE_PROJ
 #undef CASE
 }  /* firm_set_default_transform_node */
 
