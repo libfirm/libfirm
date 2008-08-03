@@ -3483,9 +3483,21 @@ static ir_node *gen_Conv(ir_node *node) {
 			} else {
 				res = gen_x87_gp_to_fp(node, src_mode);
 				if(get_Conv_strict(node)) {
-					res = gen_x87_strict_conv(tgt_mode, res);
-					SET_IA32_ORIG_NODE(get_Proj_pred(res),
-					                   ia32_get_old_node_name(env_cg, node));
+					/* The strict-Conv is only necessary, if the int mode has more bits
+					 * than the float mantissa */
+					size_t int_mantissa = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
+					size_t float_mantissa;
+					/* FIXME There is no way to get the mantissa size of a mode */
+					switch (get_mode_size_bits(tgt_mode)) {
+						case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
+						case 64: float_mantissa = 52 + 1; break;
+						case 80: float_mantissa = 64 + 1; break;
+						default: float_mantissa = 0;      break;
+					}
+					if (float_mantissa < int_mantissa) {
+						res = gen_x87_strict_conv(tgt_mode, res);
+						SET_IA32_ORIG_NODE(get_Proj_pred(res), ia32_get_old_node_name(env_cg, node));
+					}
 				}
 				return res;
 			}
