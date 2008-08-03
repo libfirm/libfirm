@@ -5676,6 +5676,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Cast);
 	CASE_PROJ(Load);
 	CASE_PROJ(Store);
+	CASE_PROJ(Bound);
 	CASE_PROJ(CopyB);
 	CASE(Proj);
 	CASE(Phi);
