@@ -581,9 +581,9 @@ static tarval *do_computed_value_Quot(const ir_node *a, const ir_node *b) {
  * Special case: 0 / b
  */
 static tarval *do_computed_value_Div(const ir_node *a, const ir_node *b) {
-	tarval  *ta = value_of(a);
-	tarval  *tb;
-	ir_node *dummy;
+	tarval        *ta = value_of(a);
+	tarval        *tb;
+	const ir_node *dummy;
 
 	/* Compute c1 / c2 or 0 / a, a != 0 */
 	if (tarval_is_null(ta) && value_not_zero(b, &dummy))
@@ -1624,8 +1624,8 @@ static ir_node *equivalent_node_Proj_Load(ir_node *proj) {
 			ir_node *load = get_Proj_pred(proj);
 
 			/* get the Load address */
-			ir_node *addr = get_Load_ptr(load);
-			ir_node *confirm;
+			const ir_node *addr = get_Load_ptr(load);
+			const ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
 				if (get_Proj_proj(proj) == pn_Load_X_except) {
@@ -1647,8 +1647,8 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj) {
 			ir_node *store = get_Proj_pred(proj);
 
 			/* get the load/store address */
-			ir_node *addr = get_Store_ptr(store);
-			ir_node *confirm;
+			const ir_node *addr = get_Store_ptr(store);
+			const ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
 				if (get_Proj_proj(proj) == pn_Store_X_except) {
@@ -2780,9 +2780,9 @@ static ir_node *transform_node_Div(ir_node *n) {
 		DBG_OPT_CSTEVAL(n, value);
 		goto make_tuple;
 	} else {
-		ir_node *a = get_Div_left(n);
-		ir_node *b = get_Div_right(n);
-		ir_node *dummy;
+		ir_node       *a = get_Div_left(n);
+		ir_node       *b = get_Div_right(n);
+		const ir_node *dummy;
 
 		if (a == b && value_not_zero(a, &dummy)) {
 			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
@@ -2868,9 +2868,9 @@ static ir_node *transform_node_Mod(ir_node *n) {
 		DBG_OPT_CSTEVAL(n, value);
 		goto make_tuple;
 	} else {
-		ir_node *a = get_Mod_left(n);
-		ir_node *b = get_Mod_right(n);
-		ir_node *dummy;
+		ir_node       *a = get_Mod_left(n);
+		ir_node       *b = get_Mod_right(n);
+		const ir_node *dummy;
 
 		if (a == b && value_not_zero(a, &dummy)) {
 			/* BEWARE: we can optimize a%a to 0 only if this cannot cause a exception */
@@ -2917,13 +2917,13 @@ make_tuple:
  * Transform a DivMod node.
  */
 static ir_node *transform_node_DivMod(ir_node *n) {
-	ir_node *dummy;
-	ir_node *a = get_DivMod_left(n);
-	ir_node *b = get_DivMod_right(n);
-	ir_mode *mode = get_DivMod_resmode(n);
-	tarval *ta, *tb;
-	int evaluated = 0;
-	ir_node *va, *vb;
+	const ir_node *dummy;
+	ir_node       *a = get_DivMod_left(n);
+	ir_node       *b = get_DivMod_right(n);
+	ir_mode       *mode = get_DivMod_resmode(n);
+	ir_node       *va, *vb;
+	tarval        *ta, *tb;
+	int           evaluated = 0;
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
@@ -3673,9 +3673,8 @@ static ir_node *transform_node_Proj_Load(ir_node *proj) {
 			ir_node *load = get_Proj_pred(proj);
 
 			/* get the Load address */
-			ir_node *addr = get_Load_ptr(load);
-			ir_node *blk  = get_nodes_block(load);
-			ir_node *confirm;
+			const ir_node *addr = get_Load_ptr(load);
+			const ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
 				if (confirm == NULL) {
@@ -3686,6 +3685,7 @@ static ir_node *transform_node_Proj_Load(ir_node *proj) {
 					DBG_OPT_EXC_REM(proj);
 					return get_irg_bad(current_ir_graph);
 				} else {
+					ir_node *blk = get_nodes_block(load);
 					return new_r_Jmp(current_ir_graph, blk);
 				}
 			}
@@ -3703,9 +3703,8 @@ static ir_node *transform_node_Proj_Store(ir_node *proj) {
 			ir_node *store = get_Proj_pred(proj);
 
 			/* get the load/store address */
-			ir_node *addr = get_Store_ptr(store);
-			ir_node *blk  = get_nodes_block(store);
-			ir_node *confirm;
+			const ir_node *addr = get_Store_ptr(store);
+			const ir_node *confirm;
 
 			if (value_not_null(addr, &confirm)) {
 				if (confirm == NULL) {
@@ -3715,8 +3714,10 @@ static ir_node *transform_node_Proj_Store(ir_node *proj) {
 				if (get_Proj_proj(proj) == pn_Store_X_except) {
 					DBG_OPT_EXC_REM(proj);
 					return get_irg_bad(current_ir_graph);
-				} else
+				} else {
+					ir_node *blk = get_nodes_block(store);
 					return new_r_Jmp(current_ir_graph, blk);
+				}
 			}
 		}
 	}
@@ -3730,7 +3731,8 @@ static ir_node *transform_node_Proj_Store(ir_node *proj) {
 static ir_node *transform_node_Proj_Div(ir_node *proj) {
 	ir_node *div = get_Proj_pred(proj);
 	ir_node *b   = get_Div_right(div);
-	ir_node *confirm, *res, *new_mem;
+	ir_node *res, *new_mem;
+	const ir_node *confirm;
 	long proj_nr;
 
 	if (value_not_zero(b, &confirm)) {
@@ -3778,7 +3780,8 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
 static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 	ir_node *mod = get_Proj_pred(proj);
 	ir_node *b   = get_Mod_right(mod);
-	ir_node *confirm, *res, *new_mem;
+	ir_node *res, *new_mem;
+	const ir_node *confirm;
 	long proj_nr;
 
 	if (value_not_zero(b, &confirm)) {
@@ -3836,7 +3839,8 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 	ir_node *divmod = get_Proj_pred(proj);
 	ir_node *b      = get_DivMod_right(divmod);
-	ir_node *confirm, *res, *new_mem;
+	ir_node *res, *new_mem;
+	const ir_node *confirm;
 	long proj_nr;
 
 	if (value_not_zero(b, &confirm)) {

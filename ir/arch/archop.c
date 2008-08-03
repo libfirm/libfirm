@@ -151,7 +151,7 @@ new_Max(ir_node *op1, ir_node *op2, ir_mode *mode) {
 /**
  * return the value of a Min
  */
-static tarval *computed_value_Min(ir_node *n)
+static tarval *computed_value_Min(const ir_node *n)
 {
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);
@@ -175,7 +175,7 @@ static tarval *computed_value_Min(ir_node *n)
 /**
  * return the value of a Max
  */
-static tarval *computed_value_Max(ir_node *n)
+static tarval *computed_value_Max(const ir_node *n)
 {
   ir_node *a = get_binop_left(n);
   ir_node *b = get_binop_right(n);

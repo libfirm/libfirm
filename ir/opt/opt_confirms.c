@@ -769,8 +769,8 @@ check_null_case:
 		if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) &&
 			is_Const(right) && is_Const_null(right)) {
 			/* for == 0 or != 0 we have some special tools */
-			ir_mode *mode = get_irn_mode(left);
-			ir_node *dummy;
+			ir_mode       *mode = get_irn_mode(left);
+			const ir_node *dummy;
 			if (mode_is_reference(mode)) {
 				if (value_not_null(left, &dummy)) {
 					tv = pnc == pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
