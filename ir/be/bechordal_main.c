@@ -571,8 +571,6 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	stat_ev_if {
 		be_stat_ev("insns_after", count_insns(irg));
 	}
-
-	return;
 }
 
 static be_ra_t be_ra_chordal_allocator = {

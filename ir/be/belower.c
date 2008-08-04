@@ -665,8 +665,6 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
 
 	if (sched_is_scheduled(irn) && mode_is_datab(get_irn_mode(irn)))
 		assure_different_constraints(irn, walk_env);
-
-	return;
 }
 
 /**

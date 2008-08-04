@@ -282,7 +282,6 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 #ifdef INTERPROCEDURAL_VIEW
 	}
 #endif
-	return;
 }
 
 /*
@@ -432,7 +431,6 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 		nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
 		clear_using_irn_visited(current_ir_graph);
 	}
-	return;
 }
 
 /*
@@ -496,7 +494,6 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 
 		if (post) post(node, env);
 	}
-	return;
 }
 
 #ifdef INTERPROCEDURAL_VIEW

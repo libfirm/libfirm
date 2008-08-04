@@ -214,8 +214,6 @@ static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
 	}
 
 	if (post) post(node, env);
-
-	return;
 }
 
 void irg_out_walk(ir_node *node,
@@ -226,7 +224,6 @@ void irg_out_walk(ir_node *node,
 		inc_irg_visited (current_ir_graph);
 		irg_out_walk_2(node, pre, post, env);
 	}
-	return;
 }
 
 static void irg_out_block_walk2(ir_node *bl,

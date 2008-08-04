@@ -233,8 +233,6 @@ static void do_type_walk(type_or_ent tore,
 	/* execute post method */
 	if (post)
 		post(tore, env);
-
-	return;
 }
 
 /**  Check whether node contains types or entities as an attribute.
@@ -319,7 +317,6 @@ void type_walk_irg(ir_graph *irg,
 	do_type_walk(cont, pre, post, env);
 
 	current_ir_graph = rem;
-	return;
 }
 
 static void type_walk_s2s_2(type_or_ent tore,
@@ -399,7 +396,6 @@ static void type_walk_s2s_2(type_or_ent tore,
 		printf(" *** Faulty type or entity! \n");
 		break;
 	}
-	return;
 }
 
 void type_walk_super2sub(type_walk_func *pre,
@@ -494,7 +490,6 @@ type_walk_super_2(type_or_ent tore,
 		printf(" *** Faulty type or entity! \n");
 		break;
 	}
-	return;
 }
 
 void type_walk_super(type_walk_func *pre,
@@ -548,8 +543,6 @@ class_walk_s2s_2(ir_type *tp,
 	/* execute post method */
 	if (post)
 		post(tp, env);
-
-	return;
 }
 
 void class_walk_super2sub(class_walk_func *pre,

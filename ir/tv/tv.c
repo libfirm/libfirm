@@ -134,8 +134,6 @@ INLINE static void tarval_verify(tarval *tv)
 
 	if (!FIND_TARVAL(tv)) fail_verify(tv);
 	if (tv->length > 0 && !FIND_VALUE(tv->value, tv->length)) fail_verify(tv);
-
-	return;
 }
 #endif /* NDEBUG */
 

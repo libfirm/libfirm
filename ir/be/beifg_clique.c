@@ -270,8 +270,6 @@ static void find_nodes(const ifg_clique_t *ifg, cli_iter_t *it)
 		element = list_entry(cli_head->list.next, cli_element_t, list);
 		it->curr_cli_element = element;
 	}
-
-	return;
 }
 
 static ir_node *get_next_node(cli_iter_t *it)
@@ -401,8 +399,6 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 
 	it->curr_cli_element = element;
 	it->curr_irn = irn;
-
-	return;
 }
 
 static ir_node *get_next_neighbour(cli_iter_t *it)
@@ -484,8 +480,6 @@ static void ifg_clique_neighbours_break(const void *self, void *iter)
 	(void) self;
 
 	bitset_free(it->visited_neighbours);
-
-	return;
 }
 
 static ir_node *ifg_clique_nodes_begin(const void *self, void *iter)
@@ -506,8 +500,6 @@ static void ifg_clique_nodes_break(const void *self, void *iter)
 	(void) self;
 
 	bitset_free(it->visited_nodes);
-
-	return;
 }
 
 static int ifg_clique_degree(const void *self, const ir_node *irn)

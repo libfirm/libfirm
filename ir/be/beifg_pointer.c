@@ -614,8 +614,6 @@ static void ifg_pointer_neighbours_break(const void *self, void *iter)
 	(void) self;
 
 	bitset_free(it->visited_neighbours);
-
-	return;
 }
 
 static ir_node *ifg_pointer_nodes_begin(const void *self, void *iter)
