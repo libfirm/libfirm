@@ -155,6 +155,7 @@ typedef struct environment_t {
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
+	int             modified;       /**< Set, if the graph was modified. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
@@ -1568,12 +1569,12 @@ static int can_exchange(ir_node *pred) {
  * shortening Phi's and Block inputs.
  */
 static void apply_cf(ir_node *block, void *ctx) {
-	node_t  *node = get_irn_node(block);
-	int     i, j, k, n;
-	ir_node **ins, **in_X;
-	ir_node *phi, *next;
+	environment_t *env = ctx;
+	node_t        *node = get_irn_node(block);
+	int           i, j, k, n;
+	ir_node       **ins, **in_X;
+	ir_node       *phi, *next;
 
-	(void) ctx;
 	if (block == get_irg_end_block(current_ir_graph) ||
 	    block == get_irg_start_block(current_ir_graph)) {
 		/* the EndBlock is always reachable even if the analysis
@@ -1592,8 +1593,10 @@ static void apply_cf(ir_node *block, void *ctx) {
 		/* only one predecessor combine */
 		ir_node *pred = skip_Proj(get_Block_cfgpred(block, 0));
 
-		if (can_exchange(pred))
+		if (can_exchange(pred)) {
 			exchange(block, get_nodes_block(pred));
+			env->modified = 1;
+		}
 		return;
 	}
 
@@ -1624,6 +1627,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 			node->node = c;
 			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, c));
 			exchange(phi, c);
+			env->modified = 1;
 		} else {
 			j = 0;
 			for (i = 0; i < n; ++i) {
@@ -1640,8 +1644,10 @@ static void apply_cf(ir_node *block, void *ctx) {
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, s));
 				exchange(phi, s);
+				env->modified = 1;
 			} else {
 				set_irn_in(phi, j, ins);
+				env->modified = 1;
 			}
 		}
 	}
@@ -1650,10 +1656,13 @@ static void apply_cf(ir_node *block, void *ctx) {
 		/* this Block has only one live predecessor */
 		ir_node *pred = skip_Proj(in_X[0]);
 
-		if (can_exchange(pred))
+		if (can_exchange(pred)) {
 			exchange(block, get_nodes_block(pred));
+			env->modified = 1;
+		}
 	} else {
 		set_irn_in(block, k, in_X);
+		env->modified = 1;
 	}
 }
 
@@ -1661,9 +1670,9 @@ static void apply_cf(ir_node *block, void *ctx) {
  * Post-Walker, apply the analysis results;
  */
 static void apply_result(ir_node *irn, void *ctx) {
-	node_t *node = get_irn_node(irn);
+	environment_t *env = ctx;
+	node_t        *node = get_irn_node(irn);
 
-	(void) ctx;
 	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {
 		/* blocks already handled, do not touch the End node */
 	} else {
@@ -1678,6 +1687,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 			node->node = bad;
 			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
 			exchange(irn, bad);
+			env->modified = 1;
 		}
 		else if (node->type.tv == tarval_unreachable) {
 			ir_node *bad = get_irg_bad(current_ir_graph);
@@ -1687,6 +1697,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 			node->node = bad;
 			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
 			exchange(irn, bad);
+			env->modified = 1;
 		}
 		else if (get_irn_mode(irn) == mode_X) {
 			if (is_Proj(irn)) {
@@ -1703,6 +1714,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
 						exchange(irn, jmp);
+						env->modified = 1;
 					}
 				}
 			}
@@ -1718,6 +1730,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 					node->node = c;
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
 					exchange(irn, c);
+					env->modified = 1;
 				}
 			} else if (is_entity(node->type.sym.entity_p)) {
 				if (! is_SymConst(irn)) {
@@ -1728,6 +1741,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, symc));
 					exchange(irn, symc);
+					env->modified = 1;
 				}
 			} else {
 				ir_node *leader = get_leader(node);
@@ -1735,6 +1749,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 				if (leader != irn) {
 					DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
 					exchange(irn, leader);
+					env->modified = 1;
 				}
 			}
 		}
@@ -1804,6 +1819,7 @@ void combo(ir_graph *irg) {
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
+	env.modified       = 0;
 
 	assure_irg_outs(irg);
 
@@ -1843,6 +1859,14 @@ void combo(ir_graph *irg) {
 	/* apply the result */
 	irg_block_walk_graph(irg, NULL, apply_cf, &env);
 	irg_walk_graph(irg, NULL, apply_result, &env);
+
+	if (env.modified) {
+		/* control flow might changed */
+		set_irg_outs_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+	}
 
 	pmap_destroy(env.type2id_map);
 	del_set(env.opcode2id_map);
