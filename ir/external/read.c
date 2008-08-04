@@ -817,7 +817,6 @@ void freeArg (eff_t *arg)
 {
   VERBOSE_PRINT ((stdout, "free arg node \t0x%08x\n", (int) arg));
   free(arg);
-  return;
 }
 
 static
@@ -825,7 +824,6 @@ void freeValref (eff_t *valref)
 {
   VERBOSE_PRINT ((stdout, "free valref node \t0x%08x\n", (int) valref));
   free(valref);
-  return;
 }
 
 static
@@ -833,7 +831,6 @@ void freeSelect (eff_t *sel)
 {
   VERBOSE_PRINT ((stdout, "free select node \t0x%08x\n", (int) sel));
   free(sel);
-  return;
 }
 
 static
@@ -841,7 +838,6 @@ void freeLoad (eff_t *load)
 {
   VERBOSE_PRINT ((stdout, "free load node \t0x%08x\n", (int) load));
   free (load);
-  return;
 }
 
 static
@@ -849,7 +845,6 @@ void freeStore (eff_t *store)
 {
   VERBOSE_PRINT ((stdout, "free store node \t0x%08x\n", (int) store));
   free (store);
-  return;
 }
 
 static
@@ -857,7 +852,6 @@ void freeAlloc (eff_t *alloc)
 {
   VERBOSE_PRINT ((stdout, "free alloc node \t0x%08x\n", (int) alloc));
   free(alloc);
-  return;
 }
 
 static
@@ -866,7 +860,6 @@ void freeCall (eff_t *call)
   VERBOSE_PRINT ((stdout, "free call node \t0x%08x\n", (int) call));
   free(call -> effect.call.args);
   free(call);
-  return;
 }
 
 static
@@ -875,7 +868,6 @@ void freeJoin (eff_t *join)
   VERBOSE_PRINT ((stdout, "free join node \t0x%08x\n", (int) join));
   free(join -> effect.join.ins);
   free(join);
-  return;
 }
 
 static
@@ -883,7 +875,6 @@ void freeUnknown (eff_t *unknown)
 {
   VERBOSE_PRINT ((stdout, "free unknown node \t0x%08x\n", (int) unknown));
   free(unknown);
-  return;
 }
 
 static
@@ -891,7 +882,6 @@ void freeReturn (eff_t *ret)
 {
   VERBOSE_PRINT ((stdout, "free ret node \t0x%08x\n", (int) ret));
   free(ret);
-  return;
 }
 
 static
@@ -899,7 +889,6 @@ void freeRaise (eff_t *raise)
 {
   VERBOSE_PRINT ((stdout, "free raise node \t0x%08x\n", (int) raise));
   free (raise);
-  return;
 }
 
 
