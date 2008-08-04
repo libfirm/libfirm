@@ -204,6 +204,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	 * Switch should be transformed into an if cascade.
 	 * So first order the cases, so we can do a binary search on them.
 	 */
+	env->changed = 1;
 
 	numcases = get_irn_n_outs(cond) - 1;      // does not contain default case
 	NEW_ARR_A(case_data_t, cases, numcases);
@@ -255,6 +256,7 @@ void lower_switch(ir_graph *irg, unsigned spare_size)
 
 	current_ir_graph = irg;
 
+	env.changed    = 0;
 	env.spare_size = spare_size;
 
 	remove_critical_cf_edges(irg);
