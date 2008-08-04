@@ -41,7 +41,6 @@
 
 typedef struct walk_env {
 	unsigned         spare_size;        /**< the allowed spare size for table switches */
-	struct obstack   obst;              /**< the obstack where data is allocated on */
 	int              changed;           /**< indicates whether a change was performed */
 } walk_env_t;
 
@@ -207,7 +206,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	 */
 
 	numcases = get_irn_n_outs(cond) - 1;      // does not contain default case
-	cases    = obstack_alloc(&env->obst, numcases * sizeof(*cases));
+	NEW_ARR_A(case_data_t, cases, numcases);
 
 	default_pn = get_Cond_defaultProj(cond);
 	ifcas_env.sel = sel;
@@ -239,8 +238,6 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 
 	/* Connect new default case users */
 	set_irn_in(defblock, ifcas_env.defindex, ifcas_env.defusers);
-
-	obstack_free(&env->obst, cases);
 }
 
 /**
@@ -258,7 +255,6 @@ void lower_switch(ir_graph *irg, unsigned spare_size)
 
 	current_ir_graph = irg;
 
-	obstack_init(&env.obst);
 	env.spare_size = spare_size;
 
 	remove_critical_cf_edges(irg);
@@ -274,6 +270,5 @@ void lower_switch(ir_graph *irg, unsigned spare_size)
 		set_irg_loopinfo_inconsistent(irg);
 	}
 
-	obstack_free(&env.obst, NULL);
 	current_ir_graph = rem;
 }
