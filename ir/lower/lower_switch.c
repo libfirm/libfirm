@@ -251,7 +251,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
  */
-void lower_Switch(ir_graph *irg, unsigned spare_size)
+void lower_switch(ir_graph *irg, unsigned spare_size)
 {
 	walk_env_t env;
 	ir_graph *rem = current_ir_graph;

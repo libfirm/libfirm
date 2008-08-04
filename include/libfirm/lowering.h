@@ -157,7 +157,7 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
  */
-void lower_Switch(ir_graph *irg, unsigned spare_size);
+void lower_switch(ir_graph *irg, unsigned spare_size);
 
 /**
  * A callback type for creating an intrinsic entity for a given opcode.
