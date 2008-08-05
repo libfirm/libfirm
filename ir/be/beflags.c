@@ -127,7 +127,7 @@ static int can_move(ir_node *node, ir_node *after)
 }
 
 static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
-                                  ir_node *flag_consumers, int pn)
+                                  ir_node *flag_consumers, int pn, be_lv_t *lv)
 {
 	ir_node *n;
 	ir_node *copy;
@@ -139,6 +139,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		/* move it */
 		sched_remove(flags_needed);
 		sched_add_after(node, flags_needed);
+		/* No need to update liveness, because the node stays in the same block */
 		return;
 	}
 
@@ -168,6 +169,17 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 		}
 		n = get_irn_link(n);
 	} while(n != NULL);
+
+	/* No need to introduce the copy, because it only lives in this block, but
+	 * we have to update the liveness of all operands */
+	if (is_Block(node) ||
+			get_nodes_block(node) != get_nodes_block(flags_needed)) {
+		int i;
+
+		for (i = get_irn_arity(copy); i >= 0; --i) {
+			be_liveness_update(lv, get_irn_n(copy, i));
+		}
+	}
 }
 
 static int is_modify_flags(ir_node *node) {
@@ -202,7 +214,6 @@ static void fix_flags_walker(ir_node *block, void *env)
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
 	int      pn = -1;
-	(void) env;
 
 	sched_foreach_reverse(block, node) {
 		int i, arity;
@@ -220,7 +231,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		/* test whether node destroys the flags */
 		if(flags_needed != NULL && is_modify_flags(node)) {
 			/* rematerialize */
-			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
+			rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
 			flags_needed   = NULL;
 			flag_consumers = NULL;
 		}
@@ -245,7 +256,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		if(skip_Proj(new_flags_needed) != flags_needed) {
 			if(flags_needed != NULL) {
 				/* rematerialize node */
-				rematerialize_or_move(flags_needed, node, flag_consumers, pn);
+				rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
 				flags_needed   = NULL;
 				flag_consumers = NULL;
 			}
@@ -268,7 +279,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	if(flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
-		rematerialize_or_move(flags_needed, node, flag_consumers, pn);
+		rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
 		flags_needed   = NULL;
 		flag_consumers = NULL;
 	}
@@ -291,7 +302,7 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 		remat = &default_remat;
 
 	set_using_irn_link(irg);
-	irg_block_walk_graph(irg, fix_flags_walker, NULL, NULL);
+	irg_block_walk_graph(irg, fix_flags_walker, NULL, birg->lv);
 	clear_using_irn_link(irg);
 
 	if(changed) {
