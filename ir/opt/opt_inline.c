@@ -852,6 +852,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	ir_entity           *ent;
 	ir_graph            *rem, *irg;
 	irg_inline_property prop = get_irg_inline_property(called_graph);
+	unsigned long       visited;
 
 	if (prop == irg_inline_forbidden)
 		return 0;
@@ -995,17 +996,30 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		set_irg_visited(irg, get_irg_visited(called_graph) + 1);
 	if (get_irg_block_visited(irg) < get_irg_block_visited(called_graph))
 		set_irg_block_visited(irg, get_irg_block_visited(called_graph));
+	visited = get_irg_visited(irg);
+
 	/* Set pre_call as new Start node in link field of the start node of
 	   calling graph and pre_calls block as new block for the start block
 	   of calling graph.
 	   Further mark these nodes so that they are not visited by the
 	   copying. */
 	set_irn_link(get_irg_start(called_graph), pre_call);
-	set_irn_visited(get_irg_start(called_graph), get_irg_visited(irg));
+	set_irn_visited(get_irg_start(called_graph), visited);
 	set_irn_link(get_irg_start_block(called_graph), get_nodes_block(pre_call));
-	set_irn_visited(get_irg_start_block(called_graph), get_irg_visited(irg));
-	set_irn_link(get_irg_bad(called_graph), get_irg_bad(irg));
-	set_irn_visited(get_irg_bad(called_graph), get_irg_visited(irg));
+	set_irn_visited(get_irg_start_block(called_graph), visited);
+
+	assert(get_irg_n_anchors(called_graph) == get_irg_n_anchors(irg));
+
+	for (i = get_irg_n_anchors(called_graph) - 1; i >= 0; --i) {
+		ir_node *anchor = get_irg_anchor(called_graph, i);
+
+		if (get_irn_visited(anchor) >= visited) {
+			/* already set above */
+			continue;
+		}
+		set_irn_link(anchor, get_irg_anchor(irg, i));
+		set_irn_visited(anchor, visited);
+	}
 
 	/* Initialize for compaction of in arrays */
 	inc_irg_block_visited(irg);
