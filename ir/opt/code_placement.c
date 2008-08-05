@@ -127,7 +127,8 @@ place_floats_early(ir_node *n, waitq *worklist) {
 				b = pred_block;
 				depth = get_Block_dom_depth(pred_block);
 			}
-			/* Avoid that the node is placed in the Start block */
+			/* Avoid that the node is placed in the Start block if we are not in the
+			   backend phase. */
 			if (depth == 1 &&
 					get_Block_dom_depth(get_nodes_block(n)) > 1 &&
 					get_irg_phase_state(current_ir_graph) != phase_backend) {
@@ -239,15 +240,19 @@ static void place_early(waitq *worklist) {
 		if (irn_not_visited(n))
 			place_floats_early(n, worklist);
 	}
-
-	set_irg_outs_inconsistent(current_ir_graph);
 	set_irg_pinned(current_ir_graph, op_pin_state_pinned);
 }
 
 /**
- * Compute the deepest common ancestor of block and dca.
+ * Compute the deepest common dominator tree ancestor of block and dca.
+ *
+ * @param dca    the deepest common dominator tree ancestor so far,
+ *               might be NULL
+ * @param block  a block
+ *
+ * @return  the deepest common dominator tree ancestor of block and dca
  */
-static ir_node *calc_dca(ir_node *dca, ir_node *block) {
+static ir_node *calc_dom_dca(ir_node *dca, ir_node *block) {
 	assert(block);
 
 	/* we do not want to place nodes in dead blocks */
@@ -268,11 +273,11 @@ static ir_node *calc_dca(ir_node *dca, ir_node *block) {
 	while (block != dca) {
 		block = get_Block_idom(block); dca = get_Block_idom(dca);
 	}
-
 	return dca;
 }
 
-/** Deepest common dominance ancestor of DCA and CONSUMER of PRODUCER.
+/**
+ * Deepest common dominance ancestor of DCA and CONSUMER of PRODUCER.
  * I.e., DCA is the block where we might place PRODUCER.
  * A data flow edge points from producer to consumer.
  */
@@ -292,13 +297,12 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 				ir_node *new_block = get_Block_cfgpred_block(phi_block, i);
 
 				if (!is_Block_unreachable(new_block))
-					dca = calc_dca(dca, new_block);
+					dca = calc_dom_dca(dca, new_block);
 			}
 		}
 	} else {
-		dca = calc_dca(dca, get_nodes_block(consumer));
+		dca = calc_dom_dca(dca, get_nodes_block(consumer));
 	}
-
 	return dca;
 }
 
@@ -333,21 +337,21 @@ static void move_out_of_loops(ir_node *n, ir_node *early) {
 			best = dca;
 		}
 	}
-	if (best != get_nodes_block(n)) {
-		/* debug output
-		printf("Moving out of loop: "); DDMN(n);
-		printf(" Outermost block: "); DDMN(early);
-		printf(" Best block: "); DDMN(best);
-		printf(" Innermost block: "); DDMN(get_nodes_block(n));
-		*/
+	if (best != get_nodes_block(n))
 		set_nodes_block(n, best);
-	}
 }
 
-/* deepest common ancestor in the dominator tree of all nodes'
-   blocks depending on us; our final placement has to dominate DCA. */
-static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
-{
+/**
+ * Calculate the deepest common ancestor in the dominator tree of all nodes'
+ * blocks depending on node; our final placement has to dominate DCA.
+ *
+ * @param node  the definition node
+ * @param dca   the deepest common ancestor block so far, initially
+ *              NULL
+ *
+ * @return the deepest common dominator ancestor of all blocks of node's users
+ */
+static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca) {
 	int i;
 
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
@@ -362,7 +366,9 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 		}
 
 		if (is_Proj(succ)) {
-			dca = get_deepest_common_ancestor(succ, dca);
+			/* Proj nodes are in the same block as node, so
+			 * the users of Proj are our users. */
+			dca = get_deepest_common_dom_ancestor(succ, dca);
 		} else {
 			/* ignore if succ is in dead code */
 			ir_node *succ_blk = get_nodes_block(succ);
@@ -371,7 +377,6 @@ static ir_node *get_deepest_common_ancestor(ir_node *node, ir_node *dca)
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
-
 	return dca;
 }
 
@@ -458,7 +463,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 				/* deepest common ancestor in the dominator tree of all nodes'
 				   blocks depending on us; our final placement has to dominate
 				   DCA. */
-				ir_node *dca = get_deepest_common_ancestor(n, NULL);
+				ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
 				if (dca != NULL) {
 					set_nodes_block(n, dca);
 					move_out_of_loops(n, early_blk);
