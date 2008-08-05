@@ -230,7 +230,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_RESIZE(type, arr, n)					\
-  ((arr) = _arr_resize((arr), (n), sizeof(type)))
+  ((arr) = _arr_resize((void *)(arr), (n), sizeof(type)))
 
 /**
  * Resize a flexible array, always reallocate data.
@@ -242,7 +242,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_SETLEN(type, arr, n)					\
-  ((arr) = _arr_setlen((arr), (n), sizeof(type) * (n)))
+  ((arr) = _arr_setlen((void *)(arr), (n), sizeof(type) * (n)))
 
 /** Set a length smaller than the current length of the array.  Do not
  *  resize. len must be <= ARR_LEN(arr). */
