@@ -523,8 +523,8 @@ void place_code(ir_graph *irg) {
 	worklist = new_waitq();
 	place_early(worklist);
 
-	/* place_early() invalidates the outs, place_late needs them. */
-	compute_irg_outs(irg);
+	/* Note: place_early changes only blocks, no data edges. So, the
+	 * data out edges are still valid, no need to recalculate them here. */
 
 	/* Now move the nodes down in the dominator tree. This reduces the
 	   unnecessary executions of the node. */
