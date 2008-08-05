@@ -1115,7 +1115,7 @@ static void emit_align(unsigned alignment)
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
 
-	be_emit_irprintf(".p2align\t%u\n", log2_floor(alignment));
+	be_emit_irprintf("\t.p2align\t%u\n", log2_floor(alignment));
 	be_emit_write_line();
 }
 
@@ -1181,6 +1181,14 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 	if (align > 1 && !emit_as_common && section != GAS_SECTION_PIC_TRAMPOLINES
 			&& section != GAS_SECTION_PIC_SYMBOLS) {
 		emit_align(align);
+	}
+
+	if (visibility != visibility_external_allocated && !emit_as_common) {
+		be_emit_cstring("\t.type\t");
+		be_emit_ident(ld_ident);
+		be_emit_cstring(", @object\n\t.size\t");
+		be_emit_ident(ld_ident);
+		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}
 
 	if (!emit_as_common) {
