@@ -1183,7 +1183,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		emit_align(align);
 	}
 
-	if (visibility != visibility_external_allocated && !emit_as_common) {
+	if (visibility != visibility_external_allocated && !emit_as_common
+			&& be_gas_flavour == GAS_FLAVOUR_ELF) {
 		be_emit_cstring("\t.type\t");
 		be_emit_ident(ld_ident);
 		be_emit_cstring(", @object\n\t.size\t");
