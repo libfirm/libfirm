@@ -678,11 +678,11 @@ static asm_constraint_flags_t TEMPLATE_parse_asm_constraint(const void *self,
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static bool TEMPLATE_is_valid_clobber(const void *self, const char *clobber)
+static int TEMPLATE_is_valid_clobber(const void *self, const char *clobber)
 {
 	(void) self;
 	(void) clobber;
-	return false;
+	return 0;
 }
 
 const arch_isa_if_t TEMPLATE_isa_if = {
