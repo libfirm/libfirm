@@ -2223,7 +2223,7 @@ static asm_constraint_flags_t ia32_parse_asm_constraint(const void *self, const 
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static bool ia32_is_valid_clobber(const void *self, const char *clobber)
+static int ia32_is_valid_clobber(const void *self, const char *clobber)
 {
 	(void) self;
 

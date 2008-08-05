@@ -934,12 +934,12 @@ static asm_constraint_flags_t ppc32_parse_asm_constraint(const void *self, const
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static bool ppc32_is_valid_clobber(const void *self, const char *clobber)
+static int ppc32_is_valid_clobber(const void *self, const char *clobber)
 {
 	/* no asm support yet */
 	(void) self;
 	(void) clobber;
-	return false;
+	return 0;
 }
 
 const arch_isa_if_t ppc32_isa_if = {

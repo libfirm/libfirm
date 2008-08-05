@@ -1212,11 +1212,11 @@ static asm_constraint_flags_t arm_parse_asm_constraint(const void *self, const c
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static bool arm_is_valid_clobber(const void *self, const char *clobber)
+static int arm_is_valid_clobber(const void *self, const char *clobber)
 {
 	(void) self;
 	(void) clobber;
-	return false;
+	return 0;
 }
 
 /**

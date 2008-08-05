@@ -69,8 +69,8 @@ typedef struct constraint_t constraint_t;
 struct constraint_t {
 	const arch_register_class_t *cls;
 	unsigned                     allowed_registers;
-	bool                         all_registers_allowed;
-	bool                         memory_possible;
+	char                         all_registers_allowed;
+	char                         memory_possible;
 	char                         immediate_type;
 	int                          same_as;
 };

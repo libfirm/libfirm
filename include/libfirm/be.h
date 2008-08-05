@@ -31,7 +31,6 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-#include <stdbool.h>
 #include "irarch.h"
 #include "archop.h"
 #include "lowering.h"
@@ -107,14 +106,14 @@ void be_main(FILE *output, const char *compilation_unit_name);
 
 /**
  * parse assembler constraint strings and returns flags (so the frontend knows
- * which operands are inputs/outputs and wether memory is required)
+ * which operands are inputs/outputs and whether memory is required)
  */
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraints);
 
 /**
- * tests wether a string is a valid clobber in an asm instruction
+ * tests whether a string is a valid clobber in an ASM instruction
  */
-bool be_is_valid_clobber(const char *clobber);
+int be_is_valid_clobber(const char *clobber);
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;

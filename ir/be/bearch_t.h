@@ -534,7 +534,7 @@ struct arch_isa_if_t {
 	 * returns true if the string is a valid clobbered (register) in this
 	 * backend
 	 */
-	bool (*is_valid_clobber)(const void *self, const char *clobber);
+	int (*is_valid_clobber)(const void *self, const char *clobber);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))

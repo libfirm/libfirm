@@ -81,33 +81,33 @@ static ir_node *get_prev_block_sched(const ir_node *block)
 	return get_irn_link(block);
 }
 
-static bool is_fallthrough(const ir_node *cfgpred)
+static int is_fallthrough(const ir_node *cfgpred)
 {
 	ir_node *pred;
 
 	if(!is_Proj(cfgpred))
-		return true;
+		return 1;
 	pred = get_Proj_pred(cfgpred);
 	if(is_ia32_SwitchJmp(pred))
-		return false;
+		return 0;
 
-	return true;
+	return 1;
 }
 
-static bool block_needs_label(const ir_node *block)
+static int block_needs_label(const ir_node *block)
 {
-	bool need_label = true;
+	int need_label = 1;
 	int  n_cfgpreds = get_Block_n_cfgpreds(block);
 
 	if (n_cfgpreds == 0) {
-		need_label = false;
+		need_label = 0;
 	} else if (n_cfgpreds == 1) {
 		ir_node *cfgpred            = get_Block_cfgpred(block, 0);
 		ir_node *cfgpred_block      = get_nodes_block(cfgpred);
 
 		if (get_prev_block_sched(block) == cfgpred_block
 				&& is_fallthrough(cfgpred)) {
-			need_label = false;
+			need_label = 0;
 		}
 	}
 
@@ -825,7 +825,7 @@ static ir_node *get_proj(const ir_node *node, long proj) {
 	return NULL;
 }
 
-static bool can_be_fallthrough(const ir_node *node)
+static int can_be_fallthrough(const ir_node *node)
 {
 	ir_node *target_block = get_cfop_target_block(node);
 	ir_node *block        = get_nodes_block(node);
@@ -2038,7 +2038,7 @@ static int should_align_block(const ir_node *block)
 static void ia32_emit_block_header(ir_node *block)
 {
 	ir_graph     *irg = current_ir_graph;
-	bool          need_label = block_needs_label(block);
+	int           need_label = block_needs_label(block);
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
 
@@ -2055,13 +2055,13 @@ static void ia32_emit_block_header(ir_node *block)
 		} else {
 			/* if the predecessor block has no fall-through,
 			   we can always align the label. */
-			int      i;
-			bool     has_fallthrough = false;
+			int i;
+			int has_fallthrough = 0;
 
 			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 				ir_node *cfg_pred = get_Block_cfgpred(block, i);
 				if (can_be_fallthrough(cfg_pred)) {
-					has_fallthrough = true;
+					has_fallthrough = 1;
 					break;
 				}
 			}

@@ -289,15 +289,15 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 	return flags;
 }
 
-bool be_is_valid_clobber(const char *clobber)
+int be_is_valid_clobber(const char *clobber)
 {
 	/* memory is a valid clobber. (the frontend has to detect this case too,
 	 * because it has to add memory edges to the asm) */
 	if (strcmp(clobber, "memory") == 0)
-		return true;
+		return 1;
 	/* cc (condition code) is always valid */
 	if (strcmp(clobber, "cc") == 0)
-		return true;
+		return 1;
 
 	return isa_if->is_valid_clobber(isa_if, clobber);
 }
