@@ -171,7 +171,11 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 	case GAS_FLAVOUR_MINGW:
 		be_emit_cstring("\t.def\t");
 		be_emit_string(name);
-		be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
+		if (get_entity_visibility(entity) == visibility_external_visible) {
+			be_emit_cstring(";\t.scl\t2;\t.type\t32;\t.endef\n");
+		} else {
+			be_emit_cstring(";\t.scl\t3;\t.type\t32;\t.endef\n");
+		}
 		be_emit_write_line();
 		break;
 	case GAS_FLAVOUR_MACH_O:
