@@ -419,17 +419,6 @@ static tarval *computed_value_Mux(const ir_node *n) {
 }  /* computed_value_Mux */
 
 /**
- * Calculate the value of a Psi: can be evaluated, if a condition is true
- * and all previous conditions are false. If all conditions are false
- * we evaluate to the default one.
- */
-static tarval *computed_value_Psi(const ir_node *n) {
-	if (is_Mux(n))
-		return computed_value_Mux(n);
-	return tarval_bad;
-}  /* computed_value_Psi */
-
-/**
  * Calculate the value of a Confirm: can be evaluated,
  * if it has the form Confirm(x, '=', Const).
  */
@@ -729,7 +718,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Rotl);
 	CASE(Conv);
 	CASE(Mux);
-	CASE(Psi);
 	CASE(Confirm);
 	CASE_PROJ(Cmp);
 	CASE_PROJ(DivMod);
@@ -1733,8 +1721,8 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 
 			switch (proj_nr) {
 				case pn_Cmp_Eq:
-					if ((cmp_l == t && cmp_r == f) || /* Psi(t == f, t, f) -> f */
-							(cmp_l == f && cmp_r == t)) { /* Psi(f == t, t, f) -> f */
+					if ((cmp_l == t && cmp_r == f) || /* Mux(t == f, t, f) -> f */
+							(cmp_l == f && cmp_r == t)) { /* Mux(f == t, t, f) -> f */
 						n = f;
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
 						return n;
@@ -1743,8 +1731,8 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 
 				case pn_Cmp_Lg:
 				case pn_Cmp_Ne:
-					if ((cmp_l == t && cmp_r == f) || /* Psi(t != f, t, f) -> t */
-							(cmp_l == f && cmp_r == t)) { /* Psi(f != t, t, f) -> t */
+					if ((cmp_l == t && cmp_r == f) || /* Mux(t != f, t, f) -> t */
+							(cmp_l == f && cmp_r == t)) { /* Mux(f != t, t, f) -> t */
 						n = t;
 						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_TRANSFORM);
 						return n;
@@ -1775,17 +1763,6 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	}
 	return n;
 }  /* equivalent_node_Mux */
-
-/**
- * Returns a equivalent node of a Psi: if a condition is true
- * and all previous conditions are false we know its value.
- * If all conditions are false its value is the default one.
- */
-static ir_node *equivalent_node_Psi(ir_node *n) {
-	if (is_Mux(n))
-		return equivalent_node_Mux(n);
-	return n;
-}  /* equivalent_node_Psi */
 
 /**
  * Remove Confirm nodes if setting is on.
@@ -1873,7 +1850,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Proj);
 	CASE(Id);
 	CASE(Mux);
-	CASE(Psi);
 	CASE(Confirm);
 	default:
 		/* leave NULL */;
@@ -5362,7 +5338,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	ir_node  *t   = get_Mux_true(n);
 	ir_node  *f   = get_Mux_false(n);
 	ir_graph *irg = current_ir_graph;
-	ir_node  *conds[1], *vals[2];
 
 	/* first normalization step: move a possible zero to the false case */
 	if (is_Proj(sel)) {
@@ -5370,16 +5345,16 @@ static ir_node *transform_node_Mux(ir_node *n) {
 
 		if (is_Cmp(cmp)) {
 			if (is_Const(t) && is_Const_null(t)) {
-				/* Psi(x, 0, y) => Psi(x, y, 0) */
+				ir_node *tmp;
+
+				/* Mux(x, 0, y) => Mux(x, y, 0) */
 				pn_Cmp pnc = get_Proj_proj(sel);
 				sel = new_r_Proj(irg, get_nodes_block(cmp), cmp, mode_b,
 					get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
-				conds[0] = sel;
-				vals[0]  = f;
-				vals[1]  = t;
-				n        = new_rd_Psi(get_irn_dbg_info(n), irg, get_nodes_block(n), 1, conds, vals, mode);
-				t = vals[0];
-				f = vals[1];
+				n        = new_rd_Mux(get_irn_dbg_info(n), irg, get_nodes_block(n), sel, t, f, mode);
+				tmp = t;
+				t = f;
+				f = tmp;
 			}
 		}
 	}
@@ -5442,12 +5417,9 @@ static ir_node *transform_node_Mux(ir_node *n) {
 			dbg_info *dbg   = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
 			ir_graph *irg   = current_ir_graph;
-
-
-			conds[0] = sel;
-			vals[0] = new_Const(mode, tarval_sub(a, min, NULL));
-			vals[1] = new_Const(mode, tarval_sub(b, min, NULL));
-			n = new_rd_Psi(dbg, irg, block, 1, conds, vals, mode);
+			ir_node  *t     = new_Const(mode, tarval_sub(a, min, NULL));
+			ir_node  *f     = new_Const(mode, tarval_sub(b, min, NULL));
+			n = new_rd_Mux(dbg, irg, block, sel, f, t, mode);
 			n = new_rd_Add(dbg, irg, block, n, new_Const(mode, min), mode);
 			return n;
 		}
@@ -5478,7 +5450,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 					if ( (cmp_l == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
 						|| (cmp_l == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
 					{
-						/* Psi(a >/>= 0, a, -a) = Psi(a </<= 0, -a, a) ==> Abs(a) */
+						/* Mux(a >/>= 0, a, -a) = Mux(a </<= 0, -a, a) ==> Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
 										 cmp_l, mode);
 						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
@@ -5486,7 +5458,7 @@ static ir_node *transform_node_Mux(ir_node *n) {
 					} else if ((cmp_l == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
 						|| (cmp_l == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
 					{
-						/* Psi(a </<= 0, a, -a) = Psi(a >/>= 0, -a, a) ==> -Abs(a) */
+						/* Mux(a </<= 0, a, -a) = Mux(a >/>= 0, -a, a) ==> -Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), current_ir_graph, block,
 										 cmp_l, mode);
 						n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph,
@@ -5499,17 +5471,17 @@ static ir_node *transform_node_Mux(ir_node *n) {
 				if (mode_is_int(mode)) {
 					/* integer only */
 					if ((pn == pn_Cmp_Lg || pn == pn_Cmp_Eq) && is_And(cmp_l)) {
-						/* Psi((a & b) != 0, c, 0) */
+						/* Mux((a & b) != 0, c, 0) */
 						ir_node *and_r = get_And_right(cmp_l);
 						ir_node *and_l;
 
 						if (and_r == t && f == cmp_r) {
 							if (is_Const(t) && tarval_is_single_bit(get_Const_tarval(t))) {
 								if (pn == pn_Cmp_Lg) {
-									/* Psi((a & 2^C) != 0, 2^C, 0) */
+									/* Mux((a & 2^C) != 0, 2^C, 0) */
 									n = cmp_l;
 								} else {
-									/* Psi((a & 2^C) == 0, 2^C, 0) */
+									/* Mux((a & 2^C) == 0, 2^C, 0) */
 									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
 										block, cmp_l, t, mode);
 								}
@@ -5556,16 +5528,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	}
 	return arch_transform_node_Mux(n);
 }  /* transform_node_Mux */
-
-/**
- * Optimize a Psi into some simpler cases.
- */
-static ir_node *transform_node_Psi(ir_node *n) {
-	if (is_Mux(n))
-		return transform_node_Mux(n);
-
-	return n;
-}  /* transform_node_Psi */
 
 /**
  * optimize Sync nodes that have other syncs as input we simply add the inputs
@@ -5689,7 +5651,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Conv);
 	CASE(End);
 	CASE(Mux);
-	CASE(Psi);
 	CASE(Sync);
 	default:
 	  /* leave NULL */;

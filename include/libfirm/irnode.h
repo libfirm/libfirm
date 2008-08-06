@@ -1098,8 +1098,7 @@ pn_Cmp        get_Confirm_cmp(const ir_node *node);
 void          set_Confirm_cmp(ir_node *node, pn_Cmp cmp);
 
 /*
- * Mux Support: Note that Psi nodes with one condition can be handled
- * like Mux nodes, and the access functions work as expected.
+ * Mux Support
  */
 ir_node *get_Mux_sel(const ir_node *node);
 void     set_Mux_sel(ir_node *node, ir_node *sel);
@@ -1107,14 +1106,6 @@ ir_node *get_Mux_false(const ir_node *node);
 void     set_Mux_false(ir_node *node, ir_node *ir_false);
 ir_node *get_Mux_true(const ir_node *node);
 void     set_Mux_true(ir_node *node, ir_node *ir_true);
-
-ir_node *get_Psi_cond(const ir_node *node, int pos);
-void     set_Psi_cond(ir_node *node, int pos, ir_node *cond);
-ir_node *get_Psi_val(const ir_node *node, int pos);
-void     set_Psi_val(ir_node *node, int pos, ir_node *val);
-ir_node *get_Psi_default(const ir_node *node);
-void     set_Psi_default(ir_node *node, ir_node *val);
-int      get_Psi_n_conds(const ir_node *node);
 
 /**
  * Projection numbers for result of CopyB node: use for Proj nodes!
@@ -1295,8 +1286,6 @@ int      is_Shr(const ir_node *node);
 int      is_Shrs(const ir_node *node);
 /** Returns true if node is a Rotl node. */
 int      is_Rotl(const ir_node *node);
-/** Returns true if node is a Psi node. */
-int      is_Psi(const ir_node *node);
 /** Returns true if node is an Id node. */
 int      is_Id(const ir_node *node);
 /** Returns true if node is a Tuple node. */
@@ -1321,7 +1310,7 @@ int      is_Sel(const ir_node *node);
 int      is_Mul(const ir_node *node);
 /** Returns true if node is a Mulh node. */
 int      is_Mulh(const ir_node *node);
-/** Returns true if node is a Mux node or a Psi with only one condition. */
+/** Returns true if node is a Mux node. */
 int      is_Mux(const ir_node *node);
 /** Returns true if node is a Load node. */
 int      is_Load(const ir_node *node);

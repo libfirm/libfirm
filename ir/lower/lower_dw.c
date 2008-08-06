@@ -2161,58 +2161,50 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 }  /* lower_Phi */
 
 /**
- * Translate a Psi.
+ * Translate a Mux.
  */
-static void lower_Psi(ir_node *psi, ir_mode *mode, lower_env_t *env) {
+static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env) {
 	ir_graph *irg = current_ir_graph;
 	ir_node  *block, *val;
-	ir_node  **valsl, **valsh, **conds;
+	ir_node  *true_l, *true_h, *false_l, *false_h, *sel;
 	dbg_info *dbg;
-	int      idx, i, n_conds = get_Psi_n_conds(psi);
+	int      idx;
 
-	/* first create a new in array */
-	NEW_ARR_A(ir_node *, valsl, n_conds + 1);
-	NEW_ARR_A(ir_node *, valsh, n_conds + 1);
-
-	for (i = 0; i < n_conds; ++i) {
-		val = get_Psi_val(psi, i);
-		idx = get_irn_idx(val);
-		if (env->entries[idx]->low_word) {
-			/* Values already build */
-			valsl[i] = env->entries[idx]->low_word;
-			valsh[i] = env->entries[idx]->high_word;
-		} else {
-			/* still not ready */
-			pdeq_putr(env->waitq, psi);
-			return;
-		}  /* if */
-	}  /* for */
-	val = get_Psi_default(psi);
+	val = get_Mux_true(mux);
 	idx = get_irn_idx(val);
 	if (env->entries[idx]->low_word) {
 		/* Values already build */
-		valsl[i] = env->entries[idx]->low_word;
-		valsh[i] = env->entries[idx]->high_word;
+		true_l = env->entries[idx]->low_word;
+		true_h = env->entries[idx]->high_word;
 	} else {
 		/* still not ready */
-		pdeq_putr(env->waitq, psi);
+		pdeq_putr(env->waitq, mux);
+		return;
+	}  /* if */
+
+	val = get_Mux_false(mux);
+	idx = get_irn_idx(val);
+	if (env->entries[idx]->low_word) {
+		/* Values already build */
+		false_l = env->entries[idx]->low_word;
+		false_h = env->entries[idx]->high_word;
+	} else {
+		/* still not ready */
+		pdeq_putr(env->waitq, mux);
 		return;
 	}  /* if */
 
 
-	NEW_ARR_A(ir_node *, conds, n_conds);
-	for (i = 0; i < n_conds; ++i) {
-		conds[i] = get_Psi_cond(psi, i);
-	}  /* for */
+	sel = get_Mux_sel(mux);
 
-	dbg   = get_irn_dbg_info(psi);
-	block = get_nodes_block(psi);
+	dbg   = get_irn_dbg_info(mux);
+	block = get_nodes_block(mux);
 
-	idx = get_irn_idx(psi);
+	idx = get_irn_idx(mux);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_rd_Psi(dbg, irg, block, n_conds, conds, valsl, mode);
-	env->entries[idx]->high_word = new_rd_Psi(dbg, irg, block, n_conds, conds, valsh, mode);
-}  /* lower_Psi */
+	env->entries[idx]->low_word  = new_rd_Mux(dbg, irg, block, sel, false_l, true_l, mode);
+	env->entries[idx]->high_word = new_rd_Mux(dbg, irg, block, sel, false_h, true_h, mode);
+}  /* lower_Mux */
 
 /**
  * check for opcodes that must always be lowered.
@@ -2307,7 +2299,7 @@ static void lower_ops(ir_node *node, void *env)
 	int          idx = get_irn_idx(node);
 	ir_mode      *mode = get_irn_mode(node);
 
-	if (mode == mode_b || is_Psi(node) || is_Conv(node)) {
+	if (mode == mode_b || is_Mux(node) || is_Conv(node)) {
 		int i;
 
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -2500,7 +2492,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Call);
 	LOWER(Unknown);
 	LOWER(Phi);
-	LOWER(Psi);
+	LOWER(Mux);
 	LOWER(Start);
 
 	LOWER_BIN(Add);

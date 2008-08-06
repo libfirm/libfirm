@@ -548,12 +548,6 @@ _is_Rotl(const ir_node *node) {
 }
 
 static INLINE int
-_is_Psi(const ir_node *node) {
-	assert(node);
-	return (_get_irn_op(node) == op_Psi);
-}
-
-static INLINE int
 _is_Id(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_Id);
@@ -657,11 +651,7 @@ _is_Mulh(const ir_node *node) {
 static INLINE int
 _is_Mux(const ir_node *node) {
 	assert(node);
-	if (node) {
-		ir_op *op = _get_irn_op(node);
-		return (op == op_Mux || ((op == op_Psi) && _get_irn_arity(node) == 3));
-	}
-	return 0;
+	return (_get_irn_op(node) == op_Mux);
 }
 
 static INLINE int
@@ -924,11 +914,6 @@ static INLINE void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 	node->attr.cond.pred = pred;
 }
 
-static INLINE int _get_Psi_n_conds(const ir_node *node) {
-	assert(_get_irn_op(node) == op_Psi);
-	return _get_irn_arity(node) >> 1;
-}
-
 static INLINE void *_get_irn_generic_attr(ir_node *node) {
 	return &node->attr;
 }
@@ -1096,7 +1081,6 @@ _is_arg_Proj(const ir_node *node) {
 #define is_Shr(node)                          _is_Shr(node)
 #define is_Shrs(node)                         _is_Shrs(node)
 #define is_Rotl(node)                         _is_Rotl(node)
-#define is_Psi(node)                          _is_Psi(node)
 #define is_Id(node)                           _is_Id(node)
 #define is_Tuple(node)                        _is_Tuple(node)
 #define is_Bound(node)                        _is_Bound(node)
@@ -1129,7 +1113,6 @@ _is_arg_Proj(const ir_node *node) {
 #define is_irn_machine_user(node, n)          _is_irn_machine_user(node, n)
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
-#define get_Psi_n_conds(node)                 _get_Psi_n_conds(node)
 #define get_irn_generic_attr(node)            _get_irn_generic_attr(node)
 #define get_irn_generic_attr_const(node)      _get_irn_generic_attr_const(node)
 #define get_irn_idx(node)                     _get_irn_idx(node)

@@ -191,9 +191,9 @@ static ir_type *find_type_for_node(ir_node *n) {
 
 	switch (get_irn_opcode(n)) {
 
-	case iro_InstOf: {
+	case iro_InstOf:
 		assert(0 && "op_InstOf not supported");
-	} break;
+		break;
 
 		/* has no type */
 	case iro_Return: {
@@ -233,19 +233,26 @@ static ir_type *find_type_for_node(ir_node *n) {
 		break;
 
 		/* compute the type */
-	case iro_Const:  tp = get_Const_type(n); break;
+	case iro_Const:
+	     	tp = get_Const_type(n);
+		break;
 	case iro_SymConst:
-		tp = get_SymConst_value_type(n); break;
+		tp = get_SymConst_value_type(n);
+		break;
 	case iro_Sel:
-		tp = find_pointer_type_to(get_entity_type(get_Sel_entity(n))); break;
+		tp = find_pointer_type_to(get_entity_type(get_Sel_entity(n)));
+		break;
+
 		/* asymmetric binops */
 	case iro_Shl:
 	case iro_Shr:
 	case iro_Shrs:
 	case iro_Rotl:
-		tp = tp1;  break;
+		tp = tp1;
+		break;
 	case iro_Cast:
-		tp = get_Cast_type(n);  break;
+		tp = get_Cast_type(n);
+		break;
 	case iro_Phi: {
 		int i;
 		int n_preds = get_Phi_n_preds(n);
@@ -282,7 +289,8 @@ static ir_type *find_type_for_node(ir_node *n) {
 		DB((dbg, SET_LEVEL_2, "Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
 			get_type_name(tp1), get_type_name(tp2)));
 		tp = firm_unknown_type;   /* Test for supertypes? */
-	} break;
+		break;
+	}
 
 	case iro_Load: {
 		ir_node *a = get_Load_ptr(n);
@@ -295,28 +303,34 @@ static ir_type *find_type_for_node(ir_node *n) {
 		} else {
 			DB((dbg, SET_LEVEL_1, "Load %ld with typeless address. result: unknown type\n", get_irn_node_nr(n)));
 		}
-	} break;
+		break;
+	}
 	case iro_Alloc:
-		tp = find_pointer_type_to(get_Alloc_type(n));  break;
+		tp = find_pointer_type_to(get_Alloc_type(n));
+		break;
 	case iro_Proj:
-		tp = find_type_for_Proj(n); break;
+		tp = find_type_for_Proj(n);
+		break;
 	case iro_Id:
-		tp = compute_irn_type(get_Id_pred(n)); break;
+		tp = compute_irn_type(get_Id_pred(n));
+		break;
 	case iro_Unknown:
-		tp = firm_unknown_type;  break;
+		tp = firm_unknown_type;
+		break;
 	case iro_Filter:
-		assert(0 && "Filter not implemented"); break;
+		assert(0 && "Filter not implemented");
+		break;
 
 		/* catch special cases with fallthrough to binop/unop cases in default. */
-	case iro_Sub: {
+	case iro_Sub:
 		if (mode_is_int(get_irn_mode(n))       &&
 		    mode_is_reference(get_irn_mode(a)) &&
 		    mode_is_reference(get_irn_mode(b))   ) {
 			DB((dbg, SET_LEVEL_1, "Sub %ld ptr - ptr = int: unknown type\n", get_irn_node_nr(n)));
 			tp =  firm_unknown_type; break;
 		}
-	} /* fall through to Add. */
-	case iro_Add: {
+		/* fall through to Add. */
+	case iro_Add:
 		if (mode_is_reference(get_irn_mode(n)) &&
 		    mode_is_reference(get_irn_mode(a)) &&
 		    mode_is_int(get_irn_mode(b))         ) {
@@ -328,37 +342,22 @@ static ir_type *find_type_for_node(ir_node *n) {
 			tp = tp2; break;
 		}
 		goto default_code;
-	} break;
 
-	case iro_Mul: {
+	case iro_Mul:
 		if (get_irn_mode(n) != get_irn_mode(a)) {
 			DB((dbg, SET_LEVEL_1, "Mul %ld int1 * int1 = int2: unknown type\n", get_irn_node_nr(n)));
 			tp = firm_unknown_type; break;
 		}
 		goto default_code;
-	} break;
 
-	case iro_Mux: {
+	case iro_Mux:
 		a = get_Mux_true(n);
 		b = get_Mux_false(n);
 		tp1 = compute_irn_type(a);
 		tp2 = compute_irn_type(b);
 		if (tp1 == tp2)
 			tp = tp1;
-	} break;
-
-	case iro_Psi: {
-		int i, n_conds = get_Psi_n_conds(n);
-		tp1 = compute_irn_type(get_Psi_default(n));
-
-		for (i = 0; i < n_conds; ++i) {
-			tp2 = compute_irn_type(get_Psi_val(n, i));
-			if (tp2 != tp1)
-				break;
-		}
-		if (tp1 == tp2)
-			tp = tp1;
-	} break;
+		break;
 
 	case iro_Bound:
 		tp = compute_irn_type(get_Bound_index(n));
@@ -372,8 +371,7 @@ static ir_type *find_type_for_node(ir_node *n) {
 		break;
 
 	default:
-default_code: {
-
+default_code:
 		if (is_unop(n)) {
 			/* It's not proper to walk past a Conv, so this case is handled above. */
 			tp = tp1;
@@ -385,7 +383,7 @@ default_code: {
 				tp = tp1;
 				break;
 			}
-			if((tp1 == phi_cycle_type) || (tp2 == phi_cycle_type)) {
+			if ((tp1 == phi_cycle_type) || (tp2 == phi_cycle_type)) {
 				tp = phi_cycle_type;
 				break;
 			}
@@ -396,7 +394,7 @@ default_code: {
 		}
 
 		panic(" not implemented: %+F", n);
-	} break; /* default */
+		break;
 	} /* end switch */
 
 	return tp;

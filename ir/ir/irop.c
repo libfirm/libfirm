@@ -108,7 +108,6 @@ ir_op *op_EndExcept;   ir_op *get_op_EndExcept (void) { return op_EndExcept; }
 
 ir_op *op_NoMem;       ir_op *get_op_NoMem     (void) { return op_NoMem;     }
 ir_op *op_Mux;         ir_op *get_op_Mux       (void) { return op_Mux;       }
-ir_op *op_Psi;         ir_op *get_op_Psi       (void) { return op_Psi;       }
 ir_op *op_CopyB;       ir_op *get_op_CopyB     (void) { return op_CopyB;     }
 
 ir_op *op_Raise;       ir_op *get_op_Raise     (void) { return op_Raise;     }
@@ -352,7 +351,6 @@ init_op(void)
 
 	op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N|NB|NI, oparity_zero,     -1, 0, NULL);
 	op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
-	op_Psi       = new_ir_op(iro_Psi,       "Psi",       op_pin_state_floats, N,       oparity_variable, -1, 0, NULL);
 	op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",     op_pin_state_mem_pinned, F|H|M, oparity_trinary,-1, sizeof(copyb_attr), NULL);
 
 	op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_mem_pinned, H,   oparity_unary,    -1, sizeof(io_attr), NULL);
@@ -441,7 +439,6 @@ void finish_op(void) {
 	free_ir_op (op_EndExcept); op_EndExcept = NULL;
 
 	free_ir_op (op_NoMem    ); op_NoMem     = NULL;
-	free_ir_op (op_Psi      ); op_Psi       = NULL;
 	free_ir_op (op_Mux      ); op_Mux       = NULL;
 	free_ir_op (op_CopyB    ); op_CopyB     = NULL;
 

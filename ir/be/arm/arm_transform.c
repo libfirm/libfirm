@@ -1450,7 +1450,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
  */
 static ir_node *gen_Proj_Cmp(ir_node *node) {
 	(void) node;
-	panic("Psi NYI\n");
+	panic("Mux NYI\n");
 }
 
 
@@ -1672,8 +1672,7 @@ static void arm_register_transformers(void) {
 
 	BAD(ASM);	/* unsupported yet */
 	GEN(CopyB);
-	BAD(Mux);
-	BAD(Psi);	/* unsupported yet */
+	BAD(Mux);	/* unsupported yet */
 	GEN(Proj);
 	GEN(Phi);
 

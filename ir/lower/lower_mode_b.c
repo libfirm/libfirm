@@ -115,10 +115,9 @@ static ir_node *create_set(ir_node *node)
 	tarval   *tv_zero = get_tarval_null(mode);
 	ir_node  *zero    = new_d_Const(dbgi, mode, tv_zero);
 
-	ir_node *vals[2]  = { one, zero };
-	ir_node *set      = new_rd_Psi(dbgi, irg, block, 1, &node, vals, mode);
+	ir_node *set      = new_rd_Mux(dbgi, irg, block, node, zero, one, mode);
 
-	if(mode != config.lowered_mode) {
+	if (mode != config.lowered_mode) {
 		set = new_r_Conv(irg, block, set, config.lowered_mode);
 	}
 
@@ -152,7 +151,6 @@ static ir_node *lower_node(ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_op    *op    = get_irn_op(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_mode *mode   = config.lowered_mode;
 	ir_node  *res;
@@ -164,7 +162,8 @@ static ir_node *lower_node(ir_node *node)
 		return res;
 
 	/* TODO: be robust against phi-loops... */
-	if(op == op_Phi) {
+	switch (get_irn_opcode(node)) {
+	case iro_Phi: {
 		int       i, arity;
 		ir_node **in;
 		ir_node  *unknown, *new_phi;
@@ -189,7 +188,9 @@ static ir_node *lower_node(ir_node *node)
 		return new_phi;
 	}
 
-	if(op == op_And || op == op_Or || op == op_Eor) {
+	case iro_And:
+	case iro_Or:
+	case iro_Eor: {
 		int i, arity;
 		ir_node *copy = exact_copy(node);
 
@@ -206,7 +207,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return copy;
 	}
-	if(op == op_Not) {
+	case iro_Not: {
 		ir_node *op     = get_Not_op(node);
 		ir_node *low_op = lower_node(op);
 
@@ -215,30 +216,24 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
-	if(op == op_Psi) {
-		ir_node *cond        = get_Psi_cond(node, 0);
+	case iro_Mux: {
+		ir_node *cond        = get_Mux_sel(node);
 		ir_node *low_cond    = lower_node(cond);
-		ir_node *v_true      = get_Psi_val(node, 0);
+		ir_node *v_true      = get_Mux_true(node);
 		ir_node *low_v_true  = lower_node(v_true);
-		ir_node *v_false     = get_Psi_default(node);
+		ir_node *v_false     = get_Mux_false(node);
 		ir_node *low_v_false = lower_node(v_false);
 
-		ir_node *and0     = new_rd_And(dbgi, irg, block, low_cond, low_v_true,
-		                               mode);
-
+		ir_node *and0     = new_rd_And(dbgi, irg, block, low_cond, low_v_true, mode);
 		ir_node *not_cond = create_not(dbgi, low_cond);
-
-		ir_node *and1     = new_rd_And(dbgi, irg, block, not_cond, low_v_false,
-		                               mode);
-
-		ir_node *or       = new_rd_Or(dbgi, irg, block, and0, and1,
-		                              mode);
+		ir_node *and1     = new_rd_And(dbgi, irg, block, not_cond, low_v_false, mode);
+		ir_node *or       = new_rd_Or(dbgi, irg, block, and0, and1, mode);
 
 		set_irn_link(node, or);
 		pdeq_putr(lowered_nodes, node);
 		return or;
 	}
-	if(op == op_Conv) {
+	case iro_Conv: {
 		ir_node *pred     = get_Conv_op(node);
 		ir_mode *mode     = get_irn_mode(pred);
 		tarval  *tv_zeroc = get_tarval_null(mode);
@@ -254,7 +249,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return set;
 	}
-	if(op == op_Proj) {
+	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(node);
 
 		if(is_Cmp(pred)) {
@@ -334,7 +329,7 @@ static ir_node *lower_node(ir_node *node)
 
 		panic("unexpected projb: %+F (pred: %+F)", node, pred);
 	}
-	if(op == op_Const) {
+	case iro_Const: {
 		tarval *tv = get_Const_tarval(node);
 		if(tv == get_tarval_b_true()) {
 			tarval  *tv_one  = get_tarval_one(mode);
@@ -349,11 +344,11 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
-	if (op == op_Unknown) {
+	case iro_Unknown:
 		return new_Unknown(config.lowered_mode);
+	default:
+		panic("didn't expect %+F to have mode_b", node);
 	}
-
-	panic("didn't expect %+F to have mode_b", node);
 }
 
 static void lower_mode_b_walker(ir_node *node, void *env)
@@ -370,8 +365,8 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 			continue;
 
 		if(! config.lower_direct_cmp) {
-			if(is_Cond(node)
-					|| (is_Psi(node) && get_irn_mode(node) != mode_b)) {
+			if (is_Cond(node) ||
+			    (is_Mux(node) && get_irn_mode(node) != mode_b)) {
 				if(is_Proj(in)) {
 					ir_node *pred = get_Proj_pred(in);
 					if(is_Cmp(pred))

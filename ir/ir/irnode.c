@@ -2206,101 +2206,33 @@ ir_node *get_Filter_cg_pred(ir_node *node, int pos) {
 
 /* Mux support */
 ir_node *get_Mux_sel(const ir_node *node) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		return get_Psi_cond(node, 0);
-	}
 	assert(is_Mux(node));
 	return node->in[1];
 }
 
 void set_Mux_sel(ir_node *node, ir_node *sel) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		set_Psi_cond(node, 0, sel);
-	} else {
-		assert(is_Mux(node));
-		node->in[1] = sel;
-	}
+	assert(is_Mux(node));
+	node->in[1] = sel;
 }
 
 ir_node *get_Mux_false(const ir_node *node) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		return get_Psi_default(node);
-	}
 	assert(is_Mux(node));
 	return node->in[2];
 }
 
 void set_Mux_false(ir_node *node, ir_node *ir_false) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		set_Psi_default(node, ir_false);
-	} else {
-		assert(is_Mux(node));
-		node->in[2] = ir_false;
-	}
+	assert(is_Mux(node));
+	node->in[2] = ir_false;
 }
 
 ir_node *get_Mux_true(const ir_node *node) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		return get_Psi_val(node, 0);
-	}
 	assert(is_Mux(node));
 	return node->in[3];
 }
 
 void set_Mux_true(ir_node *node, ir_node *ir_true) {
-	if (is_Psi(node)) {
-		assert(get_irn_arity(node) == 3);
-		set_Psi_val(node, 0, ir_true);
-	} else {
-		assert(is_Mux(node));
-		node->in[3] = ir_true;
-	}
-}
-
-/* Psi support */
-ir_node *get_Psi_cond(const ir_node *node, int pos) {
-	assert(is_Psi(node));
-	assert(pos < get_Psi_n_conds(node));
-	return get_irn_n(node, 2 * pos);
-}
-
-void set_Psi_cond(ir_node *node, int pos, ir_node *cond) {
-	assert(is_Psi(node));
-	assert(pos < get_Psi_n_conds(node));
-	set_irn_n(node, 2 * pos, cond);
-}
-
-ir_node *get_Psi_val(const ir_node *node, int pos) {
-	assert(is_Psi(node));
-	assert(pos < get_Psi_n_conds(node));
-	return get_irn_n(node, 2 * pos + 1);
-}
-
-void set_Psi_val(ir_node *node, int pos, ir_node *val) {
-	assert(is_Psi(node));
-	assert(pos < get_Psi_n_conds(node));
-	set_irn_n(node, 2 * pos + 1, val);
-}
-
-ir_node *get_Psi_default(const ir_node *node) {
-	int def_pos = get_irn_arity(node) - 1;
-	assert(is_Psi(node));
-	return get_irn_n(node, def_pos);
-}
-
-void set_Psi_default(ir_node *node, ir_node *val) {
-	int def_pos = get_irn_arity(node);
-	assert(is_Psi(node));
-	set_irn_n(node, def_pos, val);
-}
-
-int (get_Psi_n_conds)(const ir_node *node) {
-	return _get_Psi_n_conds(node);
+	assert(is_Mux(node));
+	node->in[3] = ir_true;
 }
 
 /* CopyB support */
@@ -2755,11 +2687,6 @@ int
 }
 
 int
-(is_Psi)(const ir_node *node) {
-	return _is_Psi(node);
-}
-
-int
 (is_Id)(const ir_node *node) {
 	return _is_Id(node);
 }
@@ -2844,7 +2771,7 @@ int
 	return _is_Sel(node);
 }
 
-/* returns true if node is a Mux node or a Psi with only one condition. */
+/* returns true if node is a Mux node. */
 int
 (is_Mux)(const ir_node *node) {
 	return _is_Mux(node);

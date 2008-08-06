@@ -48,7 +48,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-/** allow every Psi to be created. */
+/** allow every Mux to be created. */
 static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
 {
 	(void) sel;
@@ -62,7 +62,7 @@ static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
  * Default options.
  */
 static const ir_settings_if_conv_t default_info = {
-	0,    /* doesn't matter for Psi */
+	0,    /* doesn't matter for Mux */
 	default_allow_ifconv
 };
 
@@ -278,8 +278,8 @@ restart:
 
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
-				ir_node* conds[1];
-				ir_node* psi_block;
+				ir_node* cond;
+				ir_node* mux_block;
 				ir_node* phi;
 				ir_node* pred1;
 				dbg_info* cond_dbg;
@@ -303,75 +303,75 @@ restart:
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
 
-				conds[0] = get_Cond_selector(cond);
+				cond = get_Cond_selector(cond);
 
-				psi_block = get_nodes_block(cond);
+				mux_block = get_nodes_block(cond);
 				cond_dbg = get_irn_dbg_info(cond);
 				do {
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
-					ir_node* psi;
+					ir_node* mux;
 					ir_node* next_phi;
 
 					if (val_i == val_j) {
-						psi = val_i;
-						DB((dbg, LEVEL_2,  "Generating no psi, because both values are equal\n"));
+						mux = val_i;
+						DB((dbg, LEVEL_2,  "Generating no Mux, because both values are equal\n"));
 					} else {
-						ir_node* vals[2];
+						ir_node *t, *f;
 
 						/* Something is very fishy if two predecessors of a PhiM point into
 						 * one block, but not at the same memory node
 						 */
 						assert(get_irn_mode(phi) != mode_M);
 						if (get_Proj_proj(projx0) == pn_Cond_true) {
-							vals[0] = val_i;
-							vals[1] = val_j;
+							t = val_i;
+							f = val_j;
 						} else {
-							vals[0] = val_j;
-							vals[1] = val_i;
+							t = val_j;
+							f = val_i;
 						}
 
-						psi = new_rd_Psi(cond_dbg, current_ir_graph, psi_block, 1, conds, vals, get_irn_mode(phi));
-						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", psi, phi));
+						mux = new_rd_Mux(cond_dbg, current_ir_graph, mux_block, cond, f, t, get_irn_mode(phi));
+						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 
 					next_phi = get_Phi_next(phi);
 
 					if (arity == 2) {
-						exchange(phi, psi);
+						exchange(phi, mux);
 					} else {
-						rewire(phi, i, j, psi);
+						rewire(phi, i, j, mux);
 					}
 
 					phi = next_phi;
 				} while (phi != NULL);
 
-				exchange(get_nodes_block(get_irn_n(block, i)), psi_block);
-				exchange(get_nodes_block(get_irn_n(block, j)), psi_block);
+				exchange(get_nodes_block(get_irn_n(block, i)), mux_block);
+				exchange(get_nodes_block(get_irn_n(block, j)), mux_block);
 
 				if (arity == 2) {
 					unsigned mark;
 #if 1
-					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, psi_block));
-					/* copy the block-info from the Psi-block to the block before merging */
+					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, mux_block));
+					/* copy the block-info from the Mux-block to the block before merging */
 
-					mark =  get_Block_mark(psi_block) | get_Block_mark(block);
+					mark =  get_Block_mark(mux_block) | get_Block_mark(block);
 					set_Block_mark(block, mark);
-					set_Block_phis(block, get_Block_phis(psi_block));
+					set_Block_phis(block, get_Block_phis(mux_block));
 
-					set_irn_in(block, get_irn_arity(psi_block), get_irn_in(psi_block) + 1);
-					exchange_cdep(psi_block, block);
-					exchange(psi_block, block);
+					set_irn_in(block, get_irn_arity(mux_block), get_irn_in(mux_block) + 1);
+					exchange_cdep(mux_block, block);
+					exchange(mux_block, block);
 #else
-					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, psi_block));
-					mark =  get_Block_mark(psi_block) | get_Block_mark(block);
-					/* mark both block just to be sure, should be enough to mark psi_block */
-					set_Block_mark(psi_block, mark);
-					exchange(block, psi_block);
+					DB((dbg, LEVEL_1,  "Welding block %+F to %+F\n", block, mux_block));
+					mark =  get_Block_mark(mux_block) | get_Block_mark(block);
+					/* mark both block just to be sure, should be enough to mark mux_block */
+					set_Block_mark(mux_block, mark);
+					exchange(block, mux_block);
 #endif
 					return;
 				} else {
-					rewire(block, i, j, new_r_Jmp(current_ir_graph, psi_block));
+					rewire(block, i, j, new_r_Jmp(current_ir_graph, mux_block));
 					goto restart;
 				}
 			}
@@ -417,80 +417,76 @@ static void collect_phis(ir_node *node, void *env) {
 	}
 }
 
-static void optimise_psis_0(ir_node* psi, void* env)
+static void optimise_muxs_0(ir_node* mux, void* env)
 {
 	ir_node* t;
 	ir_node* f;
 
 	(void) env;
 
-	if (!is_Psi(psi)) return;
+	if (!is_Mux(mux)) return;
 
-	t = get_Psi_val(psi, 0);
-	f = get_Psi_default(psi);
+	t = get_Mux_true(mux);
+	f = get_Mux_false(mux);
 
-	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", psi, t, f));
+	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", mux, t, f));
 
 	if (is_Unknown(t)) {
-		DB((dbg, LEVEL_3, "Replace Psi with unknown operand by %+F\n", f));
-		exchange(psi, f);
+		DB((dbg, LEVEL_3, "Replace Mux with unknown operand by %+F\n", f));
+		exchange(mux, f);
 		return;
 	}
 	if (is_Unknown(f)) {
-		DB((dbg, LEVEL_3, "Replace Psi with unknown operand by %+F\n", t));
-		exchange(psi, t);
+		DB((dbg, LEVEL_3, "Replace Mux with unknown operand by %+F\n", t));
+		exchange(mux, t);
 		return;
 	}
 
-	if (is_Psi(t)) {
+	if (is_Mux(t)) {
 		ir_graph* irg   = current_ir_graph;
-		ir_node*  block = get_nodes_block(psi);
-		ir_mode*  mode  = get_irn_mode(psi);
-		ir_node*  c0    = get_Psi_cond(psi, 0);
-		ir_node*  c1    = get_Psi_cond(t, 0);
-		ir_node*  t1    = get_Psi_val(t, 0);
-		ir_node*  f1    = get_Psi_default(t);
+		ir_node*  block = get_nodes_block(mux);
+		ir_mode*  mode  = get_irn_mode(mux);
+		ir_node*  c0    = get_Mux_sel(mux);
+		ir_node*  c1    = get_Mux_sel(t);
+		ir_node*  t1    = get_Mux_true(t);
+		ir_node*  f1    = get_Mux_false(t);
 		if (f == f1) {
-			/* Psi(c0, Psi(c1, x, y), y) -> typical if (c0 && c1) x else y */
+			/* Mux(c0, Mux(c1, x, y), y) -> typical if (c0 && c1) x else y */
 			ir_node* and_    = new_r_And(irg, block, c0, c1, mode_b);
-			ir_node* vals[2] = { t1, f1 };
-			ir_node* new_psi = new_r_Psi(irg, block, 1, &and_, vals, mode);
-			exchange(psi, new_psi);
+			ir_node* new_mux = new_r_Mux(irg, block, and_, f1, t1, mode);
+			exchange(mux, new_mux);
 		} else if (f == t1) {
-			/* Psi(c0, Psi(c1, x, y), x) */
+			/* Mux(c0, Mux(c1, x, y), x) */
 			ir_node* not_c1 = new_r_Not(irg, block, c1, mode_b);
 			ir_node* and_   = new_r_And(irg, block, c0, not_c1, mode_b);
-			ir_node* vals[2] = { f1, t1 };
-			ir_node* new_psi = new_r_Psi(irg, block, 1, &and_, vals, mode);
-			exchange(psi, new_psi);
+			ir_node* new_mux = new_r_Mux(irg, block, and_, t1, f1, mode);
+			exchange(mux, new_mux);
 		}
-	} else if (is_Psi(f)) {
+	} else if (is_Mux(f)) {
 		ir_graph* irg   = current_ir_graph;
-		ir_node*  block = get_nodes_block(psi);
-		ir_mode*  mode  = get_irn_mode(psi);
-		ir_node*  c0    = get_Psi_cond(psi, 0);
-		ir_node*  c1    = get_Psi_cond(f, 0);
-		ir_node*  t1    = get_Psi_val(f, 0);
-		ir_node*  f1    = get_Psi_default(f);
+		ir_node*  block = get_nodes_block(mux);
+		ir_mode*  mode  = get_irn_mode(mux);
+		ir_node*  c0    = get_Mux_sel(mux);
+		ir_node*  c1    = get_Mux_sel(f);
+		ir_node*  t1    = get_Mux_true(f);
+		ir_node*  f1    = get_Mux_false(f);
 		if (t == t1) {
-			/* Psi(c0, x, Psi(c1, x, y)) -> typical if (c0 || c1) x else y */
+			/* Mux(c0, x, Mux(c1, x, y)) -> typical if (c0 || c1) x else y */
 			ir_node* or_     = new_r_Or(irg, block, c0, c1, mode_b);
-			ir_node* vals[2] = { t1, f1 };
-			ir_node* new_psi = new_r_Psi(irg, block, 1, &or_, vals, mode);
-			exchange(psi, new_psi);
+			ir_node* new_mux = new_r_Mux(irg, block, or_, f1, t1, mode);
+			exchange(mux, new_mux);
 		} else if (t == f1) {
-			/* Psi(c0, x, Psi(c1, y, x)) */
+			/* Mux(c0, x, Mux(c1, y, x)) */
 			ir_node* not_c1  = new_r_Not(irg, block, c1, mode_b);
 			ir_node* or_     = new_r_Or(irg, block, c0, not_c1, mode_b);
-			ir_node* vals[2] = { f1, t1 };
-			ir_node* new_psi = new_r_Psi(irg, block, 1, &or_, vals, mode);
-			exchange(psi, new_psi);
+			ir_node* new_mux = new_r_Mux(irg, block, or_, t1, f1, mode);
+			exchange(mux, new_mux);
 		}
 	}
 }
 
 
-static void optimise_psis_1(ir_node* psi, void* env)
+static void optimise_muxs_1(ir_node* mux, void* env)
 {
 	ir_node* t;
 	ir_node* f;
@@ -498,27 +494,27 @@ static void optimise_psis_1(ir_node* psi, void* env)
 
 	(void) env;
 
-	if (!is_Psi(psi)) return;
+	if (!is_Mux(mux)) return;
 
-	t = get_Psi_val(psi, 0);
-	f = get_Psi_default(psi);
+	t = get_Mux_true(mux);
+	f = get_Mux_false(mux);
 
-	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", psi, t, f));
+	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", mux, t, f));
 
-	mode = get_irn_mode(psi);
+	mode = get_irn_mode(mux);
 
 	if (is_Const(t) && is_Const(f) && (mode_is_int(mode))) {
-		ir_node* block = get_nodes_block(psi);
-		ir_node* c     = get_Psi_cond(psi, 0);
+		ir_node* block = get_nodes_block(mux);
+		ir_node* c     = get_Mux_sel(mux);
 		tarval* tv_t = get_Const_tarval(t);
 		tarval* tv_f = get_Const_tarval(f);
 		if (tarval_is_one(tv_t) && tarval_is_null(tv_f)) {
 			ir_node* conv  = new_r_Conv(current_ir_graph, block, c, mode);
-			exchange(psi, conv);
+			exchange(mux, conv);
 		} else if (tarval_is_null(tv_t) && tarval_is_one(tv_f)) {
 			ir_node* not_  = new_r_Not(current_ir_graph, block, c, mode_b);
 			ir_node* conv  = new_r_Conv(current_ir_graph, block, not_, mode);
-			exchange(psi, conv);
+			exchange(mux, conv);
 		}
 	}
 }
@@ -551,9 +547,9 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 
 	local_optimize_graph(irg);
 
-	irg_walk_graph(irg, NULL, optimise_psis_0, NULL);
+	irg_walk_graph(irg, NULL, optimise_muxs_0, NULL);
 #if 1
-	irg_walk_graph(irg, NULL, optimise_psis_1, NULL);
+	irg_walk_graph(irg, NULL, optimise_muxs_1, NULL);
 #endif
 
 	/* TODO: graph might be changed, handle more graceful */

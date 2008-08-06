@@ -742,13 +742,6 @@ static void callee_ana_node(ir_node *node, eset *methods) {
 		callee_ana_node(get_Mux_true(node), methods);
 		break;
 
-	case iro_Psi:
-		for (i = get_Psi_n_conds(node) - 1; i >= 0; --i) {
-			callee_ana_node(get_Psi_val(node, i), methods);
-		}
-		callee_ana_node(get_Psi_default(node), methods);
-		break;
-
 	case iro_Id:
 		callee_ana_node(get_Id_pred(node), methods);
 		break;

@@ -2181,8 +2181,8 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem) {
 	ir_mode  *mode        = get_irn_mode(node);
-	ir_node  *psi_true    = get_Psi_val(node, 0);
-	ir_node  *psi_default = get_Psi_default(node);
+	ir_node  *mux_true    = get_Mux_true(node);
+	ir_node  *mux_false   = get_Mux_false(node);
 	ir_graph *irg;
 	ir_node  *cond;
 	ir_node  *new_mem;
@@ -2198,9 +2198,9 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem) {
 	if(get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	if(is_Const_1(psi_true) && is_Const_0(psi_default)) {
+	if(is_Const_1(mux_true) && is_Const_0(mux_false)) {
 		negated = 0;
-	} else if(is_Const_0(psi_true) && is_Const_1(psi_default)) {
+	} else if(is_Const_0(mux_true) && is_Const_1(mux_false)) {
 		negated = 1;
 	} else {
 		return NULL;
@@ -2212,7 +2212,7 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem) {
 	dbgi      = get_irn_dbg_info(node);
 	block     = get_nodes_block(node);
 	new_block = be_transform_node(block);
-	cond      = get_Psi_cond(node, 0);
+	cond      = get_Mux_sel(node);
 	flags     = get_flags_node(cond, &pnc);
 	new_mem   = be_transform_node(mem);
 	new_node  = new_rd_ia32_SetMem(dbgi, irg, new_block, addr.base,
@@ -2342,7 +2342,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 		                         match_dest_am | match_immediate);
 		break;
 	/* TODO: match ROR patterns... */
-	case iro_Psi:
+	case iro_Mux:
 		new_node = try_create_SetMem(val, ptr, mem);
 		break;
 	case iro_Minus:
@@ -2963,8 +2963,8 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	dbg_info            *dbgi          = get_irn_dbg_info(node);
 	ir_node             *block         = get_nodes_block(node);
 	ir_node             *new_block     = be_transform_node(block);
-	ir_node             *val_true      = get_Psi_val(node, 0);
-	ir_node             *val_false     = get_Psi_default(node);
+	ir_node             *val_true      = get_Mux_true(node);
+	ir_node             *val_false     = get_Mux_false(node);
 	ir_node             *new_node;
 	match_flags_t        match_flags;
 	ia32_address_mode_t  am;
@@ -3054,25 +3054,24 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b) {
 }
 
 /**
- * Transforms a Psi node into CMov.
+ * Transforms a Mux node into CMov.
  *
  * @return The transformed node.
  */
-static ir_node *gen_Psi(ir_node *node)
+static ir_node *gen_Mux(ir_node *node)
 {
 	dbg_info *dbgi        = get_irn_dbg_info(node);
 	ir_node  *block       = get_nodes_block(node);
 	ir_node  *new_block   = be_transform_node(block);
-	ir_node  *psi_true    = get_Psi_val(node, 0);
-	ir_node  *psi_default = get_Psi_default(node);
-	ir_node  *cond        = get_Psi_cond(node, 0);
+	ir_node  *mux_true    = get_Mux_true(node);
+	ir_node  *mux_false   = get_Mux_false(node);
+	ir_node  *cond        = get_Mux_sel(node);
 	ir_mode  *mode        = get_irn_mode(node);
 	pn_Cmp   pnc;
 
-	assert(get_Psi_n_conds(node) == 1);
 	assert(get_irn_mode(cond) == mode_b);
 
-	/* Note: a Psi node uses a Load two times IFF it's used in the compare AND in the result */
+	/* Note: a Mux node uses a Load two times IFF it's used in the compare AND in the result */
 	if (mode_is_float(mode)) {
 		ir_node  *cmp         = get_Proj_pred(cond);
 		ir_node  *cmp_left    = get_Cmp_left(cmp);
@@ -3081,28 +3080,28 @@ static ir_node *gen_Psi(ir_node *node)
 
 		if (ia32_cg_config.use_sse2) {
 			if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le) {
-				if (cmp_left == psi_true && cmp_right == psi_default) {
-					/* psi(a <= b, a, b) => MIN */
+				if (cmp_left == mux_true && cmp_right == mux_false) {
+					/* Mux(a <= b, a, b) => MIN */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
 			                 match_commutative | match_am | match_two_users);
-				} else if (cmp_left == psi_default && cmp_right == psi_true) {
-					/* psi(a <= b, b, a) => MAX */
+				} else if (cmp_left == mux_false && cmp_right == mux_true) {
+					/* Mux(a <= b, b, a) => MAX */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
 			                 match_commutative | match_am | match_two_users);
 				}
 			} else if (pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge) {
-				if (cmp_left == psi_true && cmp_right == psi_default) {
-					/* psi(a >= b, a, b) => MAX */
+				if (cmp_left == mux_true && cmp_right == mux_false) {
+					/* Mux(a >= b, a, b) => MAX */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMax,
 			                 match_commutative | match_am | match_two_users);
-				} else if (cmp_left == psi_default && cmp_right == psi_true) {
-					/* psi(a >= b, b, a) => MIN */
+				} else if (cmp_left == mux_false && cmp_right == mux_true) {
+					/* Mux(a >= b, b, a) => MIN */
 					return gen_binop(node, cmp_left, cmp_right, new_rd_ia32_xMin,
 			                 match_commutative | match_am | match_two_users);
 				}
 			}
 		}
-		panic("cannot transform floating point Psi");
+		panic("cannot transform floating point Mux");
 
 	} else {
 		ir_node *flags;
@@ -3119,14 +3118,14 @@ static ir_node *gen_Psi(ir_node *node)
 
 				/* check for unsigned Doz first */
 				if ((pnc & pn_Cmp_Gt) && !mode_is_signed(mode) &&
-					is_Const_0(psi_default) && is_Sub(psi_true) &&
-					get_Sub_left(psi_true) == cmp_left && get_Sub_right(psi_true) == cmp_right) {
-					/* Psi(a >=u b, a - b, 0) unsigned Doz */
+					is_Const_0(mux_false) && is_Sub(mux_true) &&
+					get_Sub_left(mux_true) == cmp_left && get_Sub_right(mux_true) == cmp_right) {
+					/* Mux(a >=u b, a - b, 0) unsigned Doz */
 					return create_Doz(node, cmp_left, cmp_right);
 				} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
-					is_Const_0(psi_true) && is_Sub(psi_default) &&
-					get_Sub_left(psi_default) == cmp_left && get_Sub_right(psi_default) == cmp_right) {
-					/* Psi(a <=u b, 0, a - b) unsigned Doz */
+					is_Const_0(mux_true) && is_Sub(mux_false) &&
+					get_Sub_left(mux_false) == cmp_left && get_Sub_right(mux_false) == cmp_right) {
+					/* Mux(a <=u b, 0, a - b) unsigned Doz */
 					return create_Doz(node, cmp_left, cmp_right);
 				}
 			}
@@ -3134,11 +3133,11 @@ static ir_node *gen_Psi(ir_node *node)
 
 		flags = get_flags_node(cond, &pnc);
 
-		if (is_Const(psi_true) && is_Const(psi_default)) {
+		if (is_Const(mux_true) && is_Const(mux_false)) {
 			/* both are const, good */
-			if (is_Const_1(psi_true) && is_Const_0(psi_default)) {
+			if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
 				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/0);
-			} else if (is_Const_0(psi_true) && is_Const_1(psi_default)) {
+			} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
 				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/1);
 			} else {
 				/* Not that simple. */
@@ -5421,8 +5420,7 @@ static void register_transformers(void)
 	GEN(Cmp);
 	GEN(ASM);
 	GEN(CopyB);
-	BAD(Mux);
-	GEN(Psi);
+	GEN(Mux);
 	GEN(Proj);
 	GEN(Phi);
 	GEN(IJmp);
