@@ -3117,10 +3117,10 @@ static ir_node *transform_node_Cmp(ir_node *n) {
 
 	if (is_Minus(left) && is_Minus(right) &&
 		!mode_overflow_on_unary_Minus(get_irn_mode(left))) {
-		left  = get_Minus_op(left);
-		right = get_Minus_op(right);
+		ir_node *const new_left  = get_Minus_op(right);
+		ir_node *const new_right = get_Minus_op(left);
 		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph,
-			get_nodes_block(n), left, right);
+			get_nodes_block(n), new_left, new_right);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CMP_OP_OP);
 	}
 	return n;
