@@ -1228,10 +1228,12 @@ restart:
 					assert(get_Load_mode(pred) == n_mode);
 					return a;
 				}
+				/* leave strict floating point Conv's */
+				return n;
+			} else {
+				/* leave strict floating point Conv's */
+				return n;
 			}
-
-			/* leave strict floating point Conv's */
-			return n;
 		}
 		n = a;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
