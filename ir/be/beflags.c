@@ -176,7 +176,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 			get_nodes_block(node) != get_nodes_block(flags_needed)) {
 		int i;
 
-		for (i = get_irn_arity(copy); i >= 0; --i) {
+		for (i = get_irn_arity(copy) - 1; i >= 0; --i) {
 			be_liveness_update(lv, get_irn_n(copy, i));
 		}
 	}
