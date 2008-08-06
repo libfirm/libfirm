@@ -40,6 +40,7 @@
 #include "irvrfy_t.h"
 #include "iropt_dbg.h"
 #include "archop.h"
+#include "irop.h"
 
 /* when we need verifying */
 #ifdef NDEBUG
@@ -56,15 +57,6 @@ static const arch_ops_info default_settings = {
 	ARCH_OPS_NONE,
 	0
 };
-
-/** The Min operation */
-ir_op *op_Min = NULL;
-
-/** The Max operation */
-ir_op *op_Max = NULL;
-
-ir_op *get_op_Min(void)  { return op_Min; }
-ir_op *get_op_Max(void)  { return op_Max; }
 
 /*
  * construct a Min: Min(a,b) = a < b ? a : b
@@ -343,16 +335,12 @@ void firm_archops_init(const arch_ops_info *info)
 	if (info->enabled_ops & ARCH_OPS_MINMAX) {
 		memset(&ops, 0, sizeof(ops));
 
-		ops.computed_value  = computed_value_Min;
-		ops.equivalent_node = equivalent_node_Min;
-		ops.verify_node     = verify_node_MinMax;
+		op_Min->ops.computed_value  = computed_value_Min;
+		op_Min->ops.equivalent_node = equivalent_node_Min;
+		op_Min->ops.verify_node     = verify_node_MinMax;
 
-		op_Min = new_ir_op(iro_Min, "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
-
-		ops.computed_value  = computed_value_Max;
-		ops.equivalent_node = equivalent_node_Max;
-		ops.verify_node     = verify_node_MinMax;
-
-		op_Max = new_ir_op(iro_Max, "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
+		op_Max->ops.computed_value  = computed_value_Max;
+		op_Max->ops.equivalent_node = equivalent_node_Max;
+		op_Max->ops.verify_node     = verify_node_MinMax;
 	}
 }
