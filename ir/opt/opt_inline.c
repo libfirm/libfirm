@@ -1008,18 +1008,11 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	set_irn_link(get_irg_start_block(called_graph), get_nodes_block(pre_call));
 	set_irn_visited(get_irg_start_block(called_graph), visited);
 
-	assert(get_irg_n_anchors(called_graph) == get_irg_n_anchors(irg));
+	set_irn_link(get_irg_bad(called_graph), get_irg_bad(current_ir_graph));
+	set_irn_visited(get_irg_bad(called_graph), visited);
 
-	for (i = get_irg_n_anchors(called_graph) - 1; i >= 0; --i) {
-		ir_node *anchor = get_irg_anchor(called_graph, i);
-
-		if (get_irn_visited(anchor) >= visited) {
-			/* already set above */
-			continue;
-		}
-		set_irn_link(anchor, get_irg_anchor(irg, i));
-		set_irn_visited(anchor, visited);
-	}
+	set_irn_link(get_irg_no_mem(called_graph), get_irg_no_mem(current_ir_graph));
+	set_irn_visited(get_irg_no_mem(called_graph), visited);
 
 	/* Initialize for compaction of in arrays */
 	inc_irg_block_visited(irg);
