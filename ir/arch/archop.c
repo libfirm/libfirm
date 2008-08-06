@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief     architecture dependant IR operations
+ * @brief     architecture dependent IR operations
  * @version   $Id$
  */
 #ifdef HAVE_CONFIG_H
@@ -53,8 +53,8 @@ static arch_ops_info settings;
 
 /** default settings */
 static const arch_ops_info default_settings = {
-  ARCH_OPS_NONE,
-  0
+	ARCH_OPS_NONE,
+	0
 };
 
 /** The Min operation */
@@ -71,22 +71,22 @@ ir_op *get_op_Max(void)  { return op_Max; }
  */
 ir_node *
 new_rd_Min(dbg_info *db, ir_graph *irg, ir_node *block,
-       ir_node *op1, ir_node *op2, ir_mode *mode)
+           ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+	ir_node *in[2];
+	ir_node *res;
 
-  if (! op_Min) {
-    assert(0);
-    return NULL;
-  }
+	if (! op_Min) {
+		assert(0);
+		return NULL;
+	}
 
-  in[0] = op1;
-  in[1] = op2;
-  res = new_ir_node(db, irg, block, op_Min, mode, 2, in);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
+	in[0] = op1;
+	in[1] = op2;
+	res = new_ir_node(db, irg, block, op_Min, mode, 2, in);
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, irg);
+	return res;
 }
 
 /*
@@ -94,28 +94,28 @@ new_rd_Min(dbg_info *db, ir_graph *irg, ir_node *block,
  */
 ir_node *
 new_rd_Max(dbg_info *db, ir_graph *irg, ir_node *block,
-       ir_node *op1, ir_node *op2, ir_mode *mode)
+           ir_node *op1, ir_node *op2, ir_mode *mode)
 {
-  ir_node *in[2];
-  ir_node *res;
+	ir_node *in[2];
+	ir_node *res;
 
-  if (! op_Max) {
-    assert(0);
-    return NULL;
-  }
+	if (! op_Max) {
+		assert(0);
+		return NULL;
+	}
 
-  in[0] = op1;
-  in[1] = op2;
-  res = new_ir_node(db, irg, block, op_Max, mode, 2, in);
-  res = optimize_node(res);
-  IRN_VRFY_IRG(res, irg);
-  return res;
+	in[0] = op1;
+	in[1] = op2;
+	res = new_ir_node(db, irg, block, op_Max, mode, 2, in);
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, irg);
+	return res;
 }
 
 ir_node *
 new_r_Min(ir_graph *irg, ir_node *block,
-       ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_Min(NULL, irg, block, op1, op2, mode);
+          ir_node *op1, ir_node *op2, ir_mode *mode) {
+	return new_rd_Min(NULL, irg, block, op1, op2, mode);
 }
 
 ir_node *
@@ -126,19 +126,19 @@ new_r_Max(ir_graph *irg, ir_node *block,
 
 ir_node *
 new_d_Min(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_Min(db, current_ir_graph, current_ir_graph->current_block,
-               op1, op2, mode);
+	return new_rd_Min(db, current_ir_graph, current_ir_graph->current_block,
+	                  op1, op2, mode);
 }
 
 ir_node *
 new_d_Max(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_rd_Max(db, current_ir_graph, current_ir_graph->current_block,
-               op1, op2, mode);
+	return new_rd_Max(db, current_ir_graph, current_ir_graph->current_block,
+	                  op1, op2, mode);
 }
 
 ir_node *
 new_Min(ir_node *op1, ir_node *op2, ir_mode *mode) {
-  return new_d_Min(NULL, op1, op2, mode);
+	return new_d_Min(NULL, op1, op2, mode);
 }
 
 ir_node *
@@ -151,49 +151,47 @@ new_Max(ir_node *op1, ir_node *op2, ir_mode *mode) {
 /**
  * return the value of a Min
  */
-static tarval *computed_value_Min(const ir_node *n)
-{
-  ir_node *a = get_binop_left(n);
-  ir_node *b = get_binop_right(n);
+static tarval *computed_value_Min(const ir_node *n) {
+	ir_node *a = get_binop_left(n);
+	ir_node *b = get_binop_right(n);
 
-  tarval *ta = value_of(a);
-  tarval *tb = value_of(b);
+	tarval *ta = value_of(a);
+	tarval *tb = value_of(b);
 
-  if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
-    pn_Cmp res = tarval_cmp(ta, tb);
+	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+		pn_Cmp res = tarval_cmp(ta, tb);
 
-    /* beware: there might be Unordered tarvals here, in that
-     * case let the backend decide, do NOT optimize */
-    if (res == pn_Cmp_Lt)
-      return ta;
-    if (res == pn_Cmp_Gt || res == pn_Cmp_Eq)
-      return tb;
-  }
-  return tarval_bad;
+		/* beware: there might be Unordered tarvals here, in that
+		* case let the backend decide, do NOT optimize */
+		if (res == pn_Cmp_Lt)
+			return ta;
+		if (res == pn_Cmp_Gt || res == pn_Cmp_Eq)
+			return tb;
+	}
+	return tarval_bad;
 }
 
 /**
  * return the value of a Max
  */
-static tarval *computed_value_Max(const ir_node *n)
-{
-  ir_node *a = get_binop_left(n);
-  ir_node *b = get_binop_right(n);
+static tarval *computed_value_Max(const ir_node *n) {
+	ir_node *a      = get_binop_left(n);
+	ir_node *b      = get_binop_right(n);
 
-  tarval *ta = value_of(a);
-  tarval *tb = value_of(b);
+	tarval *tb = value_of(b);
+	tarval *ta = value_of(a);
 
-  if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
-    pn_Cmp res = tarval_cmp(ta, tb);
+	if ((ta != tarval_bad) && (tb != tarval_bad) && (get_irn_mode(a) == get_irn_mode(b))) {
+		pn_Cmp res = tarval_cmp(ta, tb);
 
-    /* beware: there might be Unordered tarvals here, in that
-     * case let the backend decide, do NOT optimize */
-    if (res == pn_Cmp_Gt)
-      return ta;
-    if (res == pn_Cmp_Lt || res == pn_Cmp_Eq)
-      return tb;
-  }
-  return tarval_bad;
+		/* beware: there might be Unordered tarvals here, in that
+		 * case let the backend decide, do NOT optimize */
+		if (res == pn_Cmp_Gt)
+			return ta;
+		if (res == pn_Cmp_Lt || res == pn_Cmp_Eq)
+			return tb;
+	}
+	return tarval_bad;
 }
 
 /**
@@ -204,20 +202,34 @@ static tarval *computed_value_Max(const ir_node *n)
  */
 static ir_node *equivalent_node_MinMax(ir_node *n)
 {
-  ir_node *a, *b;
+	ir_node *a, *b;
+	ir_mode *mode;
+	tarval *tv;
 
-  if (settings.minmax_handle_NaN == 0 && mode_is_float(get_irn_mode(n)))
-    return n;
+	if (settings.minmax_handle_NaN == 0 && mode_is_float(get_irn_mode(n)))
+		return n;
 
-  a = get_binop_left(n);
-  b = get_binop_right(n);
+	a = get_binop_left(n);
+	b = get_binop_right(n);
 
-  if (a == b) {
-    DBG_OPT_ALGSIM0(n, a, FS_OPT_MIN_MAX_EQ);
-    return a;
-  }
+	if (a == b) {
+		DBG_OPT_ALGSIM0(n, a, FS_OPT_MIN_MAX_EQ);
+		return a;
+	}
 
-  return n;
+	mode = get_irn_mode(n);
+	tv   = n->op == op_Max ? get_mode_min(mode) : get_mode_max(mode);
+
+	if (value_of(b) == tv) {
+		DBG_OPT_ALGSIM0(n, a, FS_OPT_MIN_MAX_EQ);
+		return a;
+	}
+	if (value_of(a) == tv) {
+		DBG_OPT_ALGSIM0(n, b, FS_OPT_MIN_MAX_EQ);
+		return b;
+	}
+
+	return n;
 }
 
 #define equivalent_node_Min equivalent_node_MinMax
@@ -228,92 +240,92 @@ static ir_node *equivalent_node_MinMax(ir_node *n)
  */
 ir_node *arch_transform_node_Mux(ir_node *n)
 {
-  if (settings.enabled_ops & ARCH_OPS_MINMAX) {
-    ir_node *oldn = n, *cmp, *proj = get_Mux_sel(n);
-    long proj_nr;
+	if (settings.enabled_ops & ARCH_OPS_MINMAX) {
+		ir_node *oldn = n, *cmp, *proj = get_Mux_sel(n);
+		long proj_nr;
 
-    if (get_irn_op(proj) != op_Proj)
-      return n;
+		if (get_irn_op(proj) != op_Proj)
+			return n;
 
-    cmp = get_Proj_pred(proj);
-    if (get_irn_op(cmp) == op_Cmp) {
-      ir_node *a = get_Cmp_left(cmp);
-      ir_node *b = get_Cmp_right(cmp);
-      ir_node *t = get_Mux_true(n);
-      ir_node *f = get_Mux_false(n);
+		cmp = get_Proj_pred(proj);
+		if (get_irn_op(cmp) == op_Cmp) {
+			ir_node *a = get_Cmp_left(cmp);
+			ir_node *b = get_Cmp_right(cmp);
+			ir_node *t = get_Mux_true(n);
+			ir_node *f = get_Mux_false(n);
 
-      proj_nr = get_Proj_proj(proj);
+			proj_nr = get_Proj_proj(proj);
 
-      if (proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) {
-        if (a == t && b == f) {
-          /* a </<= b ? a : b  ==>  Min(a,b) */
-          n = new_rd_Min(get_irn_dbg_info(n),
-                current_ir_graph,
-                get_nodes_block(n),
-                a, b,
-                get_irn_mode(n));
+			if (proj_nr == pn_Cmp_Lt || proj_nr == pn_Cmp_Le) {
+				if (a == t && b == f) {
+					/* a </<= b ? a : b  ==>  Min(a,b) */
+					n = new_rd_Min(get_irn_dbg_info(n),
+						current_ir_graph,
+						get_nodes_block(n),
+						a, b,
+						get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
-          return n;
-        }
-        else if (a == f && b == t) {
-          /* a </<= b ? b : a  ==>  Max(a,b) */
-          n = new_rd_Max(get_irn_dbg_info(n),
-                current_ir_graph,
-                get_nodes_block(n),
-                a, b,
-                get_irn_mode(n));
+					DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
+					return n;
+				}
+				else if (a == f && b == t) {
+					/* a </<= b ? b : a  ==>  Max(a,b) */
+					n = new_rd_Max(get_irn_dbg_info(n),
+						current_ir_graph,
+						get_nodes_block(n),
+						a, b,
+						get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
-          return n;
-        }
-      }
-      else if (proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) {
-        if (a == t && b == f) {
-          /* a >/>= b ? a : b  ==>  Max(a,b) */
-          n = new_rd_Max(get_irn_dbg_info(n),
-                current_ir_graph,
-                get_nodes_block(n),
-                a, b,
-                get_irn_mode(n));
+					DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
+					return n;
+				}
+			}
+			else if (proj_nr == pn_Cmp_Gt || proj_nr == pn_Cmp_Ge) {
+				if (a == t && b == f) {
+					/* a >/>= b ? a : b  ==>  Max(a,b) */
+					n = new_rd_Max(get_irn_dbg_info(n),
+						current_ir_graph,
+						get_nodes_block(n),
+						a, b,
+						get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
-          return n;
-        }
-        else if (a == f && b == t) {
-          /* a >/>= b ? b : a  ==>  Min(a,b) */
-          n = new_rd_Min(get_irn_dbg_info(n),
-                current_ir_graph,
-                get_nodes_block(n),
-                a, b,
-                get_irn_mode(n));
+					DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MAX);
+					return n;
+				}
+				else if (a == f && b == t) {
+					/* a >/>= b ? b : a  ==>  Min(a,b) */
+					n = new_rd_Min(get_irn_dbg_info(n),
+						current_ir_graph,
+						get_nodes_block(n),
+						a, b,
+						get_irn_mode(n));
 
-          DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
-          return n;
-        }
-      }
-    }
-  }
-  return n;
+					DBG_OPT_ALGSIM1(oldn, cmp, proj, n, FS_OPT_MUX_TO_MIN);
+					return n;
+				}
+			}
+		}
+	}
+	return n;
 }
 
 /**
  * verify a MinMax node
  */
 static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
-  ir_mode *mymode  = get_irn_mode(n);
-  ir_mode *op1mode = get_irn_mode(get_binop_left(n));
-  ir_mode *op2mode = get_irn_mode(get_binop_right(n));
-  (void) irg;
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
+	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
+	(void) irg;
 
-  ASSERT_AND_RET(
-    /* MinMax: BB x numP x numP --> numP */
-    op1mode == mymode &&
-    op2mode == mymode &&
-    mode_is_data(mymode),
-    "Min or Max node", 0
-  );
-  return 1;
+	ASSERT_AND_RET(
+		/* MinMax: BB x numP x numP --> numP */
+		op1mode == mymode &&
+		op2mode == mymode &&
+		mode_is_data(mymode),
+		"Min or Max node", 0
+		);
+	return 1;
 }
 
 /*
@@ -321,26 +333,26 @@ static int verify_node_MinMax(ir_node *n, ir_graph *irg) {
  */
 void firm_archops_init(const arch_ops_info *info)
 {
-  ir_op_ops ops;
+	ir_op_ops ops;
 
-  if (! info)
-    info = &default_settings;
+	if (! info)
+		info = &default_settings;
 
-  memcpy(&settings, info, sizeof(settings));
+	memcpy(&settings, info, sizeof(settings));
 
-  if (info->enabled_ops & ARCH_OPS_MINMAX) {
-    memset(&ops, 0, sizeof(ops));
+	if (info->enabled_ops & ARCH_OPS_MINMAX) {
+		memset(&ops, 0, sizeof(ops));
 
-    ops.computed_value  = computed_value_Min;
-    ops.equivalent_node = equivalent_node_Min;
-    ops.verify_node     = verify_node_MinMax;
+		ops.computed_value  = computed_value_Min;
+		ops.equivalent_node = equivalent_node_Min;
+		ops.verify_node     = verify_node_MinMax;
 
-    op_Min = new_ir_op(get_next_ir_opcode(), "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
+		op_Min = new_ir_op(iro_Min, "Min",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
 
-    ops.computed_value  = computed_value_Max;
-    ops.equivalent_node = equivalent_node_Max;
-    ops.verify_node     = verify_node_MinMax;
+		ops.computed_value  = computed_value_Max;
+		ops.equivalent_node = equivalent_node_Max;
+		ops.verify_node     = verify_node_MinMax;
 
-    op_Max = new_ir_op(get_next_ir_opcode(), "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
-  }
+		op_Max = new_ir_op(iro_Max, "Max",  op_pin_state_floats, irop_flag_commutative, oparity_binary, 0, 0, &ops);
+	}
 }
