@@ -271,14 +271,15 @@ restart:
 			if (projx0 == NULL) continue;
 
 			cond = get_Proj_pred(projx0);
-			if (get_irn_op(cond) != op_Cond) continue;
+			if (! is_Cond(cond))
+				continue;
 
 			/* We only handle boolean decisions, no switches */
 			if (get_irn_mode(get_Cond_selector(cond)) != mode_b) continue;
 
 			for (j = i + 1; j < arity; ++j) {
 				ir_node* projx1;
-				ir_node* cond;
+				ir_node* sel;
 				ir_node* mux_block;
 				ir_node* phi;
 				ir_node* pred1;
@@ -303,7 +304,7 @@ restart:
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
 
-				cond = get_Cond_selector(cond);
+				sel = get_Cond_selector(cond);
 
 				mux_block = get_nodes_block(cond);
 				cond_dbg = get_irn_dbg_info(cond);
@@ -331,7 +332,7 @@ restart:
 							f = val_i;
 						}
 
-						mux = new_rd_Mux(cond_dbg, current_ir_graph, mux_block, cond, f, t, get_irn_mode(phi));
+						mux = new_rd_Mux(cond_dbg, current_ir_graph, mux_block, sel, f, t, get_irn_mode(phi));
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 
