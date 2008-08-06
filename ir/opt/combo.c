@@ -37,6 +37,7 @@
 #include <assert.h>
 
 #include "iroptimize.h"
+#include "archop.h"
 #include "irflag.h"
 #include "ircons.h"
 #include "list.h"
@@ -110,35 +111,39 @@ typedef union {
  */
 struct node_t {
 	ir_node         *node;          /**< The IR-node itself. */
-	list_head       node_list;      /**< Double-linked list of entries. */
+	list_head       node_list;      /**< Double-linked list of leader/follower entries. */
 	list_head       cprop_list;     /**< Double-linked partition.cprop list. */
 	partition_t     *part;          /**< points to the partition this node belongs to */
 	node_t          *next;          /**< Next node on local list (partition.touched, fallen). */
 	lattice_elem_t  type;           /**< The associated lattice element "type". */
 	int             max_user_input; /**< Maximum input number of Def-Use edges. */
 	int             next_edge;      /**< Index of the next Def-Use edge to use. */
+	int             n_followers;    /**< Number of followers in the outs set. */
 	unsigned        on_touched:1;   /**< Set, if this node is on the partition.touched set. */
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
+	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
 };
 
 /**
  * A partition containing congruent nodes.
  */
 struct partition_t {
-	list_head         entries;         /**< The head of partition node list. */
+	list_head         leaders;         /**< The head of partition leader node list. */
+	list_head         followers;       /**< The head of partition followers node list. */
 	list_head         cprop;           /**< The head of partition.cprop list. */
 	partition_t       *wl_next;        /**< Next entry in the work list if any. */
 	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
 	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
 	partition_t       *split_next;     /**< Points to the next partition in the list that must be split by split_by(). */
 	node_t            *touched;        /**< The partition.touched set of this partition. */
-	unsigned          n_nodes;         /**< Number of entries in this partition. */
+	unsigned          n_leaders;       /**< Number of entries in this partition.leaders. */
 	unsigned          n_touched;       /**< Number of entries in the partition.touched. */
 	int               max_user_inputs; /**< Maximum number of user inputs of all entries. */
 	unsigned          on_worklist:1;   /**< Set, if this partition is in the work list. */
 	unsigned          on_touched:1;    /**< Set, if this partition is on the touched set. */
 	unsigned          on_cprop:1;      /**< Set, if this partition is on the cprop list. */
+	unsigned          type_is_T_or_C:1;/**< Set, if all nodes in this partition have type Top or Constant. */
 #ifdef DEBUG_libfirm
 	partition_t       *dbg_next;       /**< Link all partitions for debugging */
 	unsigned          nr;              /**< A unique number for (what-)mapping, >0. */
@@ -164,8 +169,8 @@ typedef struct environment_t {
 /** Type of the what function. */
 typedef void *(*what_func)(const node_t *node, environment_t *env);
 
-#define get_irn_node(irn)         ((node_t *)get_irn_link(irn))
-#define set_irn_node(irn, node)   set_irn_link(irn, node)
+#define get_irn_node(follower)         ((node_t *)get_irn_link(follower))
+#define set_irn_node(follower, node)   set_irn_link(follower, node)
 
 /* we do NOT use tarval_unreachable here, instead we use Top for this purpose */
 #undef tarval_unreachable
@@ -189,13 +194,23 @@ static void dump_partition(const char *msg, const partition_t *part) {
 	int            first = 1;
 	lattice_elem_t type = get_partition_type(part);
 
-	DB((dbg, LEVEL_2, "%s part%u (%u, %+F) {\n  ", msg, part->nr, part->n_nodes, type));
-	list_for_each_entry(node_t, node, &part->entries, node_list) {
+	DB((dbg, LEVEL_2, "%s part%u%s (%u, %+F) {\n  ",
+		msg, part->nr, part->type_is_T_or_C ? "*" : "",
+		part->n_leaders, type));
+	list_for_each_entry(node_t, node, &part->leaders, node_list) {
 		DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", node->node));
 		first = 0;
 	}
+	if (! list_empty(&part->followers)) {
+		DB((dbg, LEVEL_2, "\n---\n"));
+		first = 1;
+		list_for_each_entry(node_t, node, &part->followers, node_list) {
+			DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", node->node));
+			first = 0;
+		}
+	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}
+}  /* dump_partition */
 
 /**
  * Dump all partitions.
@@ -386,19 +401,21 @@ static INLINE void add_to_worklist(partition_t *X, environment_t *env) {
 static INLINE partition_t *new_partition(environment_t *env) {
 	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
 
-	INIT_LIST_HEAD(&part->entries);
+	INIT_LIST_HEAD(&part->leaders);
+	INIT_LIST_HEAD(&part->followers);
 	INIT_LIST_HEAD(&part->cprop);
 	part->wl_next         = NULL;
 	part->touched_next    = NULL;
 	part->cprop_next      = NULL;
 	part->split_next      = NULL;
 	part->touched         = NULL;
-	part->n_nodes         = 0;
+	part->n_leaders       = 0;
 	part->n_touched       = 0;
 	part->max_user_inputs = 0;
 	part->on_worklist     = 0;
 	part->on_touched      = 0;
 	part->on_cprop        = 0;
+	part->type_is_T_or_C  = 0;
 #ifdef DEBUG_libfirm
 	part->dbg_next        = env->dbg_list;
 	env->dbg_list         = part;
@@ -412,7 +429,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
  * Get the first node from a partition.
  */
 static INLINE node_t *get_first_node(const partition_t *X) {
-	return list_entry(X->entries.next, node_t, node_list);
+	return list_entry(X->leaders.next, node_t, node_list);
 }
 
 /**
@@ -440,7 +457,7 @@ static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
  */
 static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
-	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	node_t   *node       = obstack_alloc(&env->obst, sizeof(*node));
 
 	INIT_LIST_HEAD(&node->node_list);
 	INIT_LIST_HEAD(&node->cprop_list);
@@ -450,13 +467,15 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->type.tv        = tarval_top;
 	node->max_user_input = 0;
 	node->next_edge      = 0;
+	node->n_followers    = 0;
 	node->on_touched     = 0;
 	node->on_cprop       = 0;
 	node->on_fallen      = 0;
+	node->is_follower    = 0;
 	set_irn_node(irn, node);
 
-	list_add_tail(&node->node_list, &part->entries);
-	++part->n_nodes;
+	list_add_tail(&node->node_list, &part->leaders);
+	++part->n_leaders;
 
 	return node;
 }  /* create_partition_node */
@@ -530,7 +549,7 @@ static INLINE void add_to_partition_touched(node_t *y) {
  * @param env      the environment
  */
 static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t *env) {
-	if (Z->on_worklist || Z_prime->n_nodes < Z->n_nodes) {
+	if (Z->on_worklist || Z_prime->n_leaders < Z->n_leaders) {
 		add_to_worklist(Z_prime, env);
 	} else {
 		add_to_worklist(Z, env);
@@ -561,14 +580,14 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 		list_del(&node->node_list);
 		++n;
 	}
-	assert(n < Z->n_nodes);
-	Z->n_nodes -= n;
+	assert(n < Z->n_leaders);
+	Z->n_leaders -= n;
 
 	/* Move g to a new partition, Z’. */
 	Z_prime = new_partition(env);
 	max_arity = max_input = 0;
 	for (node = g; node != NULL; node = node->next) {
-		list_add(&node->node_list, &Z_prime->entries);
+		list_add(&node->node_list, &Z_prime->leaders);
 		node->part = Z_prime;
 		arity = get_irn_arity(node->node);
 		if (arity > max_arity)
@@ -577,7 +596,11 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 			max_input = node->max_user_input;
 	}
 	Z_prime->max_user_inputs = max_input;
-	Z_prime->n_nodes         = n;
+	Z_prime->n_leaders       = n;
+
+	/* for now, copy the type info tag. it will be adjusted
+	   in split_by(). */
+	Z_prime->type_is_T_or_C = Z->type_is_T_or_C;
 
 	update_worklist(Z, Z_prime, env);
 
@@ -682,16 +705,70 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type) {
 }
 
 /**
+ * Collect nodes to the touched list.
+ *
+ * @param list  the list which contains the nodes that must be evaluated
+ * @param idx   the index of the def_use edge to evaluate
+ * @param env   the environment
+ */
+static void collect_touched(list_head *list, int idx, environment_t *env) {
+	node_t  *x, *y;
+	int     end_idx = env->end_idx;
+
+	list_for_each_entry(node_t, x, list, node_list) {
+		int num_edges;
+
+		if (idx == -1) {
+			/* leader edges start AFTER follower edges */
+			x->next_edge = 1 + x->n_followers;
+		}
+		num_edges = get_irn_n_outs(x->node);
+
+		/* for all edges in x.L.def_use_{idx} */
+		while (x->next_edge <= num_edges) {
+			ir_def_use_edge *edge = &x->node->out[x->next_edge];
+			ir_node         *succ;
+
+			/* check if we have necessary edges */
+			if (edge->pos > idx)
+				break;
+
+			++x->next_edge;
+
+			succ = edge->use;
+
+			/* ignore the "control input" for non-pinned nodes
+			if we are running in GCSE mode */
+			if (idx < end_idx && get_irn_pinned(succ) != op_pin_state_pinned)
+				continue;
+
+			y = get_irn_node(succ);
+			if (is_constant_type(y->type)) {
+				ir_opcode code = get_irn_opcode(succ);
+				if (code == iro_Sub || code == iro_Cmp)
+					add_node_to_cprop(y, env);
+			}
+
+			/* Partitions of constants should not be split simply because their Nodes have unequal
+			functions or incongruent inputs. */
+			if (type_is_neither_top_nor_const(y->type) &&
+				(! is_Phi(y->node) || is_live_input(y->node, idx))) {
+					partition_t *Y = y->part;
+					add_to_touched(Y, env);
+					add_to_partition_touched(y);
+			}
+		}
+	}
+}
+/**
  * Split the partitions if caused by the first entry on the worklist.
  *
  * @param env  the environment
  */
 static void cause_splits(environment_t *env) {
-	partition_t *X, *Y, *Z;
-	node_t      *x, *y, *e;
-	int         i, end_idx;
-	ir_opcode   code;
-	ir_node     *succ;
+	partition_t *X, *Z;
+	node_t      *e;
+	int         idx;
 
 	/* remove the first partition from the worklist */
 	X = env->worklist;
@@ -699,58 +776,20 @@ static void cause_splits(environment_t *env) {
 	X->on_worklist = 0;
 
 	dump_partition("Cause_split: ", X);
-	end_idx = env->end_idx;
-	for (i = -1; i <= X->max_user_inputs; ++i) {
+
+	/* combine temporary leader and follower list */
+	for (idx = -1; idx <= X->max_user_inputs; ++idx) {
 		/* empty the touched set: already done, just clear the list */
 		env->touched = NULL;
 
-		list_for_each_entry(node_t, x, &X->entries, node_list) {
-			int num_edges;
-
-			if (i == -1) {
-				x->next_edge = 1;
-			}
-			num_edges = get_irn_n_outs(x->node);
-
-			while (x->next_edge <= num_edges) {
-				ir_def_use_edge *edge = &x->node->out[x->next_edge];
-
-				/* check if we have necessary edges */
-				if (edge->pos > i)
-					break;
-
-				++x->next_edge;
-
-				succ = edge->use;
-
-				/* ignore the "control input" for non-pinned nodes
-				   if we are running in GCSE mode */
-				if (i < end_idx && get_irn_pinned(succ) != op_pin_state_pinned)
-					continue;
-
-				y = get_irn_node(succ);
-				if (is_constant_type(y->type)) {
-					code = get_irn_opcode(succ);
-					if (code == iro_Sub || code == iro_Cmp)
-						add_node_to_cprop(y, env);
-				}
-
-				/* Partitions of constants should not be split simply because their Nodes have unequal
-				   functions or incongruent inputs. */
-				if (type_is_neither_top_nor_const(y->type) &&
-					(! is_Phi(y->node) || is_live_input(y->node, i))) {
-					Y = y->part;
-					add_to_touched(Y, env);
-					add_to_partition_touched(y);
-				}
-			}
-		}
+		collect_touched(&X->leaders, idx, env);
+		collect_touched(&X->followers, idx, env);
 
 		for (Z = env->touched; Z != NULL; Z = Z->touched_next) {
 			/* remove it from the touched set */
 			Z->on_touched = 0;
 
-			if (Z->n_nodes != Z->n_touched) {
+			if (Z->n_leaders != Z->n_touched) {
 				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
 				split(Z, Z->touched, env);
 			}
@@ -784,7 +823,7 @@ static partition_t *split_by_what(partition_t *X, what_func What,
 
 	/* Let map be an empty mapping from the range of What to (local) list of Nodes. */
 	listmap_init(&map);
-	list_for_each_entry(node_t, x, &X->entries, node_list) {
+	list_for_each_entry(node_t, x, &X->leaders, node_list) {
 		void            *id = What(x, env);
 		listmap_entry_t *entry;
 
@@ -876,14 +915,14 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 }  /* lambda_partition */
 
 /**
- * Checks whether a type is a constant.
+ * Returns true if a type is a constant.
  */
-static int is_type_constant(lattice_elem_t type) {
+static int is_con(const lattice_elem_t type) {
+	/* be conservative */
 	if (is_tarval(type.tv))
 		return tarval_is_constant(type.tv);
-	/* else it is a symconst */
-	return 1;
-}
+	return is_entity(type.sym.entity_p);
+}  /* is_con */
 
 /**
  * Implements split_by().
@@ -892,20 +931,34 @@ static int is_type_constant(lattice_elem_t type) {
  * @param env  the environment
  */
 static void split_by(partition_t *X, environment_t *env) {
-	partition_t *P = NULL;
+	partition_t *I, *P = NULL;
 	int         input;
+
+	if (X->n_leaders == 1) {
+		/* we have only one leader, no need to split, just check it's type */
+		node_t *x = get_first_node(X);
+		X->type_is_T_or_C = x->type.tv == tarval_top || is_con(x->type);
+		return;
+	}
 
 	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
 	P = split_by_what(X, lambda_type, &P, env);
+
+	/* adjust the type tags, we have split partitions by type */
+	for (I = P; I != NULL; I = I->split_next) {
+		node_t *x = get_first_node(I);
+		I->type_is_T_or_C = x->type.tv == tarval_top || is_con(x->type);
+	}
+
 	do {
 		partition_t *Y = P;
 
 		P = P->split_next;
-		if (Y->n_nodes > 1) {
+		if (Y->n_leaders > 1) {
 			lattice_elem_t type = get_partition_type(Y);
 
 			/* we do not want split the TOP or constant partitions */
-			if (type.tv != tarval_top && !is_type_constant(type)) {
+			if (type.tv != tarval_top && !is_con(type)) {
 				partition_t *Q = NULL;
 
 				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
@@ -915,7 +968,7 @@ static void split_by(partition_t *X, environment_t *env) {
 					partition_t *Z = Q;
 
 					Q = Q->split_next;
-					if (Z->n_nodes > 1) {
+					if (Z->n_leaders > 1) {
 						const node_t *first = get_first_node(Z);
 						int          arity  = get_irn_arity(first->node);
 						partition_t  *R, *S;
@@ -933,7 +986,7 @@ static void split_by(partition_t *X, environment_t *env) {
 								partition_t *Z_prime = R;
 
 								R = R->split_next;
-								if (Z_prime->n_nodes > 1) {
+								if (Z_prime->n_leaders > 1) {
 									env->lambda_input = input;
 									DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
 									S = split_by_what(Z_prime, lambda_partition, &S, env);
@@ -993,6 +1046,12 @@ static void compute_Block(node_t *node) {
 	int     i;
 	ir_node *block = node->node;
 
+	if (block == get_irg_start_block(current_ir_graph)) {
+		/* start block is always reachable */
+		node->type.tv = tarval_reachable;
+		return;
+	}
+
 	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
 		node_t *pred = get_irn_node(get_Block_cfgpred(block, i));
 
@@ -1021,10 +1080,16 @@ static void compute_Bad(node_t *node) {
  * @param node  the node
  */
 static void compute_Unknown(node_t *node) {
-	/* While Unknown nodes compute Top, but this is dangerous:
-	 * a if (unknown) would lead to BOTH control flows unreachable.
+	/* While Unknown nodes should compute Top this is dangerous:
+	 * a Top input to a Cond would lead to BOTH control flows unreachable.
 	 * While this is correct in the given semantics, it would destroy the Firm
 	 * graph.
+	 *
+	 * It would be safe to compute Top IF it can be assured, that only Cmp
+	 * nodes are inputs to Conds. We check that first.
+	 * This is the way Frontends typically build Firm, but some optimizations
+	 * (cond_eval for instance) might replace them by Phib's...
+	 *
 	 * For now, we compute bottom here.
 	 */
 	node->type.tv = tarval_bottom;
@@ -1132,13 +1197,7 @@ static void compute_Add(node_t *node) {
 	node_t         *r   = get_irn_node(get_Add_right(sub));
 	lattice_elem_t a    = l->type;
 	lattice_elem_t b    = r->type;
-	node_t         *block = get_irn_node(get_nodes_block(sub));
 	ir_mode        *mode;
-
-	if (block->type.tv == tarval_unreachable) {
-		node->type.tv = tarval_top;
-		return;
-	}
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
@@ -1169,13 +1228,6 @@ static void compute_Add(node_t *node) {
 }  /* compute_Add */
 
 /**
- * Returns true if a type is a constant.
- */
-static int is_con(const lattice_elem_t type) {
-	return is_entity(type.sym.entity_p) || tarval_is_constant(type.tv);
-}
-
-/**
  * (Re-)compute the type for a Sub. Special case: both nodes are congruent.
  *
  * @param node  the node
@@ -1186,12 +1238,7 @@ static void compute_Sub(node_t *node) {
 	node_t         *r   = get_irn_node(get_Sub_right(sub));
 	lattice_elem_t a    = l->type;
 	lattice_elem_t b    = r->type;
-	node_t         *block = get_irn_node(get_nodes_block(sub));
 
-	if (block->type.tv == tarval_unreachable) {
-		node->type.tv = tarval_top;
-		return;
-	}
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
@@ -1236,7 +1283,7 @@ static void compute_Cmp(node_t *node) {
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
-		/* both nodes are constants, we can propbably do something */
+		/* both nodes are constants, we can probably do something */
 		node->type.tv = tarval_b_true;
 	} else if (r->part == l->part) {
 		/* both nodes congruent, we can probably do something */
@@ -1353,7 +1400,7 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 }  /* compute_Proj_Cond */
 
 /**
- * (Re-)compute the type for a Proj-Nodes.
+ * (Re-)compute the type for a Proj-Node.
  *
  * @param node  the node
  */
@@ -1362,12 +1409,6 @@ static void compute_Proj(node_t *node) {
 	ir_mode *mode = get_irn_mode(proj);
 	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
 	ir_node *pred  = get_Proj_pred(proj);
-
-	if (get_Proj_proj(proj) == pn_Start_X_initial_exec && is_Start(pred)) {
-		/* The initial_exec node is ALWAYS reachable. */
-		node->type.tv = tarval_reachable;
-		return;
-	}
 
 	if (block->type.tv == tarval_unreachable) {
 		/* a Proj in a unreachable Block stay Top */
@@ -1409,7 +1450,7 @@ static void compute_Proj(node_t *node) {
 }  /* compute_Proj */
 
 /**
- * (Re-)compute the type for a Confirm-Nodes.
+ * (Re-)compute the type for a Confirm.
  *
  * @param node  the node
  */
@@ -1431,16 +1472,397 @@ static void compute_Confirm(node_t *node) {
 }  /* compute_Confirm */
 
 /**
+ * (Re-)compute the type for a Max.
+ *
+ * @param node  the node
+ */
+static void compute_Max(node_t *node) {
+	ir_node        *op   = node->node;
+	node_t         *l    = get_irn_node(get_binop_left(op));
+	node_t         *r    = get_irn_node(get_binop_right(op));
+	lattice_elem_t a     = l->type;
+	lattice_elem_t b     = r->type;
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
+		/* both nodes are constants, we can probably do something */
+		if (a.tv == b.tv) {
+			/* this case handles symconsts as well */
+			node->type = a;
+		} else {
+			ir_mode *mode   = get_irn_mode(op);
+			tarval  *tv_min = get_mode_min(mode);
+
+			if (a.tv == tv_min)
+				node->type = b;
+			else if (b.tv == tv_min)
+				node->type = a;
+			else if (is_tarval(a.tv) && is_tarval(b.tv)) {
+				if (tarval_cmp(a.tv, b.tv) & pn_Cmp_Gt)
+					node->type.tv = a.tv;
+				else
+					node->type.tv = b.tv;
+			} else {
+				node->type.tv = tarval_bad;
+			}
+		}
+	} else if (r->part == l->part) {
+		/* both nodes congruent, we can probably do something */
+		node->type = a;
+	} else {
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Max */
+
+/**
+ * (Re-)compute the type for a Min.
+ *
+ * @param node  the node
+ */
+static void compute_Min(node_t *node) {
+	ir_node        *op   = node->node;
+	node_t         *l    = get_irn_node(get_binop_left(op));
+	node_t         *r    = get_irn_node(get_binop_right(op));
+	lattice_elem_t a     = l->type;
+	lattice_elem_t b     = r->type;
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
+		/* both nodes are constants, we can probably do something */
+		if (a.tv == b.tv) {
+			/* this case handles symconsts as well */
+			node->type = a;
+		} else {
+			ir_mode *mode   = get_irn_mode(op);
+			tarval  *tv_max = get_mode_max(mode);
+
+			if (a.tv == tv_max)
+				node->type = b;
+			else if (b.tv == tv_max)
+				node->type = a;
+			else if (is_tarval(a.tv) && is_tarval(b.tv)) {
+				if (tarval_cmp(a.tv, b.tv) & pn_Cmp_Gt)
+					node->type.tv = a.tv;
+				else
+					node->type.tv = b.tv;
+			} else {
+				node->type.tv = tarval_bad;
+			}
+		}
+	} else if (r->part == l->part) {
+		/* both nodes congruent, we can probably do something */
+		node->type = a;
+	} else {
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Min */
+
+/**
  * (Re-)compute the type for a given node.
  *
  * @param node  the node
  */
 static void compute(node_t *node) {
-	compute_func func = (compute_func)node->node->op->ops.generic;
+	compute_func func;
 
+	if (is_no_Block(node->node)) {
+		node_t *block = get_irn_node(get_nodes_block(node->node));
+
+		if (block->type.tv == tarval_unreachable) {
+			node->type.tv = tarval_top;
+			return;
+		}
+	}
+
+	func = (compute_func)node->node->op->ops.generic;
 	if (func != NULL)
 		func(node);
 }  /* compute */
+
+/*
+ * Identity functions: Note that one might thing that identity() is just a
+ * synonym for equivalent_node(). While this is true, we cannot use it for the algorithm
+ * here, because it expects that the identity node is one of the inputs, which is NOT
+ * always true for equivalent_node() which can handle (and does sometimes) DAGs.
+ * So, we have our own implementation, which copies some parts of equivalent_node()
+ */
+
+/**
+ * Calculates the Identity for Phi nodes
+ */
+static node_t *identity_Phi(node_t *node) {
+	ir_node *phi    = node->node;
+	ir_node *block  = get_nodes_block(phi);
+	node_t  *n_part = NULL;
+	int     i;
+
+	for (i = get_Phi_n_preds(phi) - 1; i >= 0; --i) {
+		node_t *pred_X = get_irn_node(get_Block_cfgpred(block, i));
+
+		if (pred_X->type.tv == tarval_reachable) {
+			node_t *pred = get_irn_node(get_Phi_pred(phi, i));
+
+			if (n_part == NULL)
+				n_part = pred;
+			else if (n_part->part != pred->part) {
+				/* incongruent inputs, not a follower */
+				return node;
+			}
+		}
+	}
+	/* if n_part is NULL here, all inputs path are dead, the Phi computes
+	 * tarval_top, is in the TOP partition and should NOT being split! */
+	assert(n_part != NULL);
+	return n_part;
+}  /* identity_Phi */
+
+/**
+ * Calculates the Identity for commutative 0 neutral nodes.
+ */
+static node_t *identity_comm_zero_binop(node_t *node) {
+	ir_node *op   = node->node;
+	node_t  *a    = get_irn_node(get_binop_left(op));
+	node_t  *b    = get_irn_node(get_binop_right(op));
+	ir_mode *mode = get_irn_mode(op);
+	tarval  *zero;
+
+	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+		return node;
+
+	/* node: no input should be tarval_top, else the binop would be also
+	 * Top and not being split. */
+	zero = get_mode_null(mode);
+	if (a->type.tv == zero)
+		return b;
+	if (b->type.tv == zero)
+		return a;
+	return node;
+}  /* identity_comm_zero_binop */
+
+#define identity_Add  identity_comm_zero_binop
+#define identity_Or   identity_comm_zero_binop
+
+/**
+ * Calculates the Identity for Mul nodes.
+ */
+static node_t *identity_Mul(node_t *node) {
+	ir_node *op   = node->node;
+	node_t  *a    = get_irn_node(get_Mul_left(op));
+	node_t  *b    = get_irn_node(get_Mul_right(op));
+	ir_mode *mode = get_irn_mode(op);
+	tarval  *one;
+
+	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+		return node;
+
+	/* node: no input should be tarval_top, else the binop would be also
+	 * Top and not being split. */
+	one = get_mode_one(mode);
+	if (a->type.tv == one)
+		return b;
+	if (b->type.tv == one)
+		return a;
+	return node;
+}  /* identity_Mul */
+
+/**
+ * Calculates the Identity for Sub nodes.
+ */
+static node_t *identity_Sub(node_t *node) {
+	ir_node *sub  = node->node;
+	node_t  *b    = get_irn_node(get_Sub_right(sub));
+	ir_mode *mode = get_irn_mode(sub);
+
+	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
+		return node;
+
+	/* node: no input should be tarval_top, else the binop would be also
+	 * Top and not being split. */
+	if (b->type.tv == get_mode_null(mode))
+		return get_irn_node(get_Sub_left(sub));
+	return node;
+}  /* identity_Mul */
+
+/**
+ * Calculates the Identity for And nodes.
+ */
+static node_t *identity_And(node_t *node) {
+	ir_node *and = node->node;
+	node_t  *a   = get_irn_node(get_And_left(and));
+	node_t  *b   = get_irn_node(get_And_right(and));
+	tarval  *neutral = get_mode_all_one(get_irn_mode(and));
+
+	/* node: no input should be tarval_top, else the And would be also
+	 * Top and not being split. */
+	if (a->type.tv == neutral)
+		return b;
+	if (b->type.tv == neutral)
+		return a;
+	return node;
+}  /* identity_And */
+
+/**
+ * Calculates the Identity for Confirm nodes.
+ */
+static node_t *identity_Confirm(node_t *node) {
+	ir_node *confirm = node->node;
+
+	/* a Confirm is always a Copy */
+	return get_irn_node(get_Confirm_value(confirm));
+}  /* identity_Confirm */
+
+/**
+ * Calculates the Identity for Mux nodes.
+ */
+static node_t *identity_Mux(node_t *node) {
+	ir_node *mux = node->node;
+	node_t  *sel = get_irn_node(get_Mux_sel(mux));
+	node_t  *t   = get_irn_node(get_Mux_true(mux));
+	node_t  *f   = get_irn_node(get_Mux_false(mux));
+
+	if (t->part == f->part)
+		return t;
+
+	/* Mux sel input is mode_b, so it is always a tarval */
+	if (sel->type.tv == tarval_b_true)
+		return t;
+	if (sel->type.tv == tarval_b_false)
+		return f;
+	return node;
+}  /* identity_Mux */
+
+/**
+ * Calculates the Identity for Min nodes.
+ */
+static node_t *identity_Min(node_t *node) {
+	ir_node *op   = node->node;
+	node_t  *a    = get_irn_node(get_binop_left(op));
+	node_t  *b    = get_irn_node(get_binop_right(op));
+	ir_mode *mode = get_irn_mode(op);
+	tarval  *tv_max;
+
+	if (a->part == b->part) {
+		/* leader of multiple predecessors */
+		return a;
+	}
+
+	/* works even with NaN */
+	tv_max = get_mode_max(mode);
+	if (a->type.tv == tv_max)
+		return b;
+	if (b->type.tv == tv_max)
+		return a;
+	return node;
+}  /* identity_Min */
+
+/**
+ * Calculates the Identity for Max nodes.
+ */
+static node_t *identity_Max(node_t *node) {
+	ir_node *op   = node->node;
+	node_t  *a    = get_irn_node(get_binop_left(op));
+	node_t  *b    = get_irn_node(get_binop_right(op));
+	ir_mode *mode = get_irn_mode(op);
+	tarval  *tv_min;
+
+	if (a->part == b->part) {
+		/* leader of multiple predecessors */
+		return a;
+	}
+
+	/* works even with NaN */
+	tv_min = get_mode_min(mode);
+	if (a->type.tv == tv_min)
+		return b;
+	if (b->type.tv == tv_min)
+		return a;
+	return node;
+}  /* identity_Max */
+
+/**
+ * Calculates the Identity for nodes.
+ */
+static node_t *identity(node_t *node) {
+	ir_node *irn = node->node;
+
+	switch (get_irn_opcode(irn)) {
+	case iro_Phi:
+		return identity_Phi(node);
+	case iro_Add:
+		return identity_Add(node);
+	case iro_Or:
+		return identity_Or(node);
+	case iro_Sub:
+		return identity_Sub(node);
+	case iro_And:
+		return identity_Add(node);
+	case iro_Confirm:
+		return identity_Confirm(node);
+	case iro_Mux:
+		return identity_Mux(node);
+	case iro_Min:
+		return identity_Min(node);
+	case iro_Max:
+		return identity_Max(node);
+	default:
+		return node;
+	}
+}  /* identity */
+
+/**
+ * Node follower is a (new) follower of leader, segregate leaders
+ * out edges.
+ */
+static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
+	ir_node *l = leader->node;
+	int     j, i, n = get_irn_n_outs(l);
+
+	/* The leader edges must remain sorted, but follower edges can
+	   be unsorted. */
+	for (i = leader->n_followers + 1; i <= n; ++i) {
+		if (l->out[i].use == follower) {
+			ir_def_use_edge t = l->out[i];
+
+			for (j = i - 1; j >= leader->n_followers + 1; --j)
+				l->out[j + 1] = l->out[j];
+			++leader->n_followers;
+			l->out[leader->n_followers] = t;
+
+			/* note: a node might be a n-fold follower, for instance
+			 * if x = max(a,a), so no break here. */
+		}
+	}
+}  /* segregate_def_use_chain_1 */
+
+/**
+ * Node follower is a (new) follower of leader, segregate leaders
+ * out edges. If follower is a n-congruent Input identity, all follower
+ * inputs congruent to follower are also leader.
+ */
+static void segregate_def_use_chain(const ir_node *follower, node_t *leader) {
+	ir_op *op = get_irn_op(follower);
+
+	if (op == op_Phi || op == op_Mux || op == op_Max || op == op_Min) {
+		/* n-Congruent Input Identity */
+		int i;
+
+		DB((dbg, LEVEL_2, "n-Congruent follower %+F\n", follower));
+		for (i = get_irn_arity(follower) - 1; i >= 0; --i) {
+			node_t *pred = get_irn_node(get_irn_n(follower, i));
+
+			if (pred->part == leader->part)
+				segregate_def_use_chain_1(follower, pred);
+		}
+	} else {
+		/* 1-Congruent Input Identity */
+		segregate_def_use_chain_1(follower, leader);
+	}
+}  /* segregate_def_use_chain */
 
 /**
  * Propagate constant evaluation.
@@ -1452,7 +1874,7 @@ static void propagate(environment_t *env) {
 	node_t         *x;
 	lattice_elem_t old_type;
 	node_t         *fallen;
-	unsigned       n_fallen;
+	unsigned       n_fallen, old_type_was_T_or_C;
 	int            i;
 
 	while (env->cprop != NULL) {
@@ -1460,6 +1882,8 @@ static void propagate(environment_t *env) {
 		X           = env->cprop;
 		X->on_cprop = 0;
 		env->cprop  = X->cprop_next;
+
+		old_type_was_T_or_C = X->type_is_T_or_C;
 
 		DB((dbg, LEVEL_2, "Propagate type on part%d\n", X->nr));
 		fallen   = NULL;
@@ -1497,7 +1921,7 @@ static void propagate(environment_t *env) {
 			}
 		}
 
-		if (n_fallen > 0 && n_fallen != X->n_nodes) {
+		if (n_fallen > 0 && n_fallen != X->n_leaders) {
 			DB((dbg, LEVEL_2, "Splitting part%d by fallen\n", X->nr));
 			Y = split(X, fallen, env);
 		} else {
@@ -1507,8 +1931,25 @@ static void propagate(environment_t *env) {
 		for (x = fallen; x != NULL; x = x->next)
 			x->on_fallen = 0;
 
-		if (Y->n_nodes > 1)
-			split_by(Y, env);
+		if (0 && old_type_was_T_or_C) {
+			node_t *y, *tmp;
+
+			list_for_each_entry_safe(node_t, y, tmp, &Y->leaders, node_list) {
+				node_t *eq_node = y;
+				if (! is_con(y->type))
+					eq_node = identity(y);
+
+				if (eq_node != y) {
+					/* move to followers */
+					list_del(&y->node_list);
+					--Y->n_leaders;
+
+					list_add_tail(&y->node_list, &Y->followers);
+					segregate_def_use_chain(y->node, eq_node);
+				}
+			}
+		}
+		split_by(Y, env);
 	}
 }  /* propagate */
 
@@ -1520,7 +1961,7 @@ static void propagate(environment_t *env) {
 static ir_node *get_leader(node_t *node) {
 	partition_t *part = node->part;
 
-	if (part->n_nodes > 1) {
+	if (part->n_leaders > 1) {
 		DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
 
 		return get_first_node(part)->node;
@@ -1783,6 +2224,12 @@ static void set_compute_functions(void) {
 	SET(Proj);
 	SET(Confirm);
 	SET(End);
+
+	if (op_Max != NULL)
+		SET(Max);
+	if (op_Min != NULL)
+		SET(Min);
+
 }  /* set_compute_functions */
 
 static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
@@ -1795,7 +2242,7 @@ static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 
 void combo(ir_graph *irg) {
 	environment_t env;
-	ir_node       *initial_X;
+	ir_node       *initial_bl;
 	node_t        *start;
 	ir_graph      *rem = current_ir_graph;
 
@@ -1803,7 +2250,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
@@ -1834,10 +2281,13 @@ void combo(ir_graph *irg) {
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
 
+	/* all nodes on the initial partition have type Top */
+	env.initial->type_is_T_or_C = 1;
+
 	/* Place the START Node's partition on cprop.
 	   Place the START Node on its local worklist. */
-	initial_X = get_irg_initial_exec(irg);
-	start     = get_irn_node(initial_X);
+	initial_bl = get_irg_start_block(irg);
+	start      = get_irn_node(initial_bl);
 	add_node_to_cprop(start, &env);
 
 	do {
