@@ -596,9 +596,8 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
 	}
 }  /* update_worklist */
 
-#ifdef NO_FOLLOWER
 /**
- * Split a partition by a local list.
+ * Split a partition that has NO followers by a local list.
  *
  * @param Z    the Z partition to split
  * @param g    a (non-empty) node list
@@ -606,7 +605,7 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
  *
  * @return  a new partition containing the nodes of g
  */
-static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
+static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t *env) {
 	partition_t *Z_prime;
 	node_t      *node;
 	unsigned    n = 0;
@@ -645,7 +644,11 @@ static partition_t *split(partition_t *Z, node_t *g, environment_t *env) {
 	dump_partition("Now ", Z);
 	dump_partition("Created new ", Z_prime);
 	return Z_prime;
-}  /* split */
+}  /* split_no_followers */
+
+#ifdef NO_FOLLOWER
+
+#define split(Z, g, env) split_no_followers(Z, g, env)
 
 #else
 
@@ -745,6 +748,13 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 	step_env    env1, env2, *winner;
 	node_t      *g, *h, *node;
 	int         max_input, n, m;
+
+	if (list_empty(&X->Follower)) {
+		/* if the partition has NO follower, we can use the fast
+		   splitting algorithm. */
+		return split_no_followers(X, gg, env);
+	}
+	/* else do the race */
 
 	dump_partition("Splitting ", X);
 	dump_list("by list ", gg);
@@ -2582,7 +2592,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
