@@ -32,6 +32,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "ircons.h"
 #include "irgmod.h"
 #include "error.h"
 
@@ -232,6 +233,26 @@ static void process_block(ir_node *block, void *data)
 	}
 }
 
+static void kill_node_and_preds(ir_node *node)
+{
+	int arity, i;
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred = get_irn_n(node, i);
+
+		set_irn_n(node, i, new_Bad());
+		if (get_irn_n_edges(pred) != 0)
+			continue;
+
+		kill_node_and_preds(pred);
+	}
+
+	if (!is_Proj(node))
+		sched_remove(node);
+	kill_node(node);
+}
+
 /**
  * Walk through the block schedule and skip all barrier nodes.
  */
@@ -239,21 +260,22 @@ static void skip_barrier(ir_node *ret_blk, ir_graph *irg) {
 	ir_node *irn;
 
 	sched_foreach_reverse(ret_blk, irn) {
-		if (be_is_Barrier(irn)) {
-			const ir_edge_t *edge, *next;
+		const ir_edge_t *edge, *next;
 
-			foreach_out_edge_safe(irn, edge, next) {
-				ir_node *proj = get_edge_src_irn(edge);
-				int      pn   = (int)get_Proj_proj(proj);
-				ir_node *pred = get_irn_n(irn, pn);
+		if (!be_is_Barrier(irn))
+			continue;
 
-				edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
-				edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
-			}
-			sched_remove(irn);
-			kill_node(irn);
-			break;
+		foreach_out_edge_safe(irn, edge, next) {
+			ir_node *proj = get_edge_src_irn(edge);
+			int      pn   = (int)get_Proj_proj(proj);
+			ir_node *pred = get_irn_n(irn, pn);
+
+			edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
+			edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
 		}
+
+		kill_node_and_preds(irn);
+		break;
 	}
 }
 
