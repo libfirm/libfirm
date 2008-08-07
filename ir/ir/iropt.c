@@ -522,31 +522,29 @@ static tarval *computed_value_Proj_Cmp(const ir_node *n) {
 		 * the Cmp result.
 		 */
 		else {
-			ir_node *aaa = skip_Id(skip_Proj(aa));
-			ir_node *aba = skip_Id(skip_Proj(ab));
+			ir_node *aaa = skip_Proj(aa);
+			ir_node *aba = skip_Proj(ab);
 
 			if (   (   (/* aa is ProjP and aaa is Alloc */
 			               is_Proj(aa)
 			            && mode_is_reference(get_irn_mode(aa))
 			            && is_Alloc(aaa))
 			        && (   (/* ab is NULL */
-			                   is_Const(ab)
-			                && mode_is_reference(get_irn_mode(ab))
-			                && is_Const_null(ab))
+			                mode_is_reference(get_irn_mode(ab))
+			                && tarval_is_null(tab))
 			            || (/* ab is other Alloc */
 			                   is_Proj(ab)
 			                && mode_is_reference(get_irn_mode(ab))
 			                && is_Alloc(aba)
 			                && (aaa != aba))))
 			    || (/* aa is NULL and aba is Alloc */
-			           is_Const(aa)
-			        && mode_is_reference(get_irn_mode(aa))
-			        && is_Const_null(aa)
+			        mode_is_reference(get_irn_mode(aa))
+			        && tarval_is_null(taa)
 			        && is_Proj(ab)
 			        && mode_is_reference(get_irn_mode(ab))
 			        && is_Alloc(aba)))
 				/* 3.: */
-			return new_tarval_from_long(proj_nr & pn_Cmp_Ne, mode_b);
+			return new_tarval_from_long(proj_nr & pn_Cmp_Lg, mode_b);
 		}
 	}
 	return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
