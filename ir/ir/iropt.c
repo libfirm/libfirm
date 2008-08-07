@@ -2363,18 +2363,30 @@ restart:
 		n = new_rd_Add(dbg, irg, block, a, right, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MINUS);
 		return n;
-	} else if (is_Sub(b)) { /* a - (b - c) -> a + (c - b) */
+	} else if (is_Sub(b)) {
+		/* a - (b - c) -> a + (c - b)
+		 *             -> (a - b) + c iff (b - c) is a pointer */
 		ir_graph *irg     = current_ir_graph;
 		dbg_info *s_dbg   = get_irn_dbg_info(b);
 		ir_node  *s_block = get_nodes_block(b);
-		ir_node  *s_left  = get_Sub_right(b);
-		ir_node  *s_right = get_Sub_left(b);
+		ir_node  *s_left  = get_Sub_left(b);
+		ir_node  *s_right = get_Sub_right(b);
 		ir_mode  *s_mode  = get_irn_mode(b);
-		ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_left, s_right, s_mode);
-		dbg_info *a_dbg   = get_irn_dbg_info(n);
-		ir_node  *a_block = get_nodes_block(n);
+		if (s_mode == mode_P) {
+			ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, a, s_left, mode);
+			dbg_info *a_dbg   = get_irn_dbg_info(n);
+			ir_node  *a_block = get_nodes_block(n);
 
-		n = new_rd_Add(a_dbg, irg, a_block, a, sub, mode);
+			if (s_mode != mode)
+				s_right = new_r_Conv(irg, a_block, s_right, mode);
+			n = new_rd_Add(a_dbg, irg, a_block, sub, s_right, mode);
+		} else {
+			ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, s_right, s_left, s_mode);
+			dbg_info *a_dbg   = get_irn_dbg_info(n);
+			ir_node  *a_block = get_nodes_block(n);
+
+			n = new_rd_Add(a_dbg, irg, a_block, a, sub, mode);
+		}
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_ADD);
 		return n;
 	} else if (is_Mul(b)) { /* a - (b * C) -> a + (b * -C) */
