@@ -124,6 +124,7 @@ struct node_t {
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
 	unsigned        is_flagged:1;   /**< Set, if this node is flagged by step(). */
+	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
 };
 
 /**
@@ -510,6 +511,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->on_fallen      = 0;
 	node->is_follower    = 0;
 	node->is_flagged     = 0;
+	node->by_all_const   = 0;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->Leader);
@@ -1464,6 +1466,7 @@ static void compute_Sub(node_t *node) {
 	node_t         *r   = get_irn_node(get_Sub_right(sub));
 	lattice_elem_t a    = l->type;
 	lattice_elem_t b    = r->type;
+	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
@@ -1477,6 +1480,7 @@ static void compute_Sub(node_t *node) {
 		} else {
 			node->type.tv = tarval_bottom;
 		}
+		node->by_all_const = 1;
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)))) {
 		/*
@@ -1484,7 +1488,14 @@ static void compute_Sub(node_t *node) {
 		 * NaN op NaN = NaN, so we must check this here.
 		 */
 		ir_mode *mode = get_irn_mode(sub);
-		node->type.tv = get_mode_null(mode);
+		tv = get_mode_null(mode);
+
+		/* if the node was ONCE evaluated by all constants, but now
+		   this breakes AND we cat by partition a different result, switch to bottom.
+		   This happens because initially all nodes are in the same partition ... */
+		if (node->by_all_const && node->type.tv != tv)
+			tv = tarval_bottom;
+		node->type.tv = tv;
 	} else {
 		node->type.tv = tarval_bottom;
 	}
@@ -1528,18 +1539,27 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	lattice_elem_t a     = l->type;
 	lattice_elem_t b     = r->type;
 	pn_Cmp         pnc   = get_Proj_proj(proj);
+	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
+		node->by_all_const = 1;
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt || pnc == pn_Cmp_Gt)) {
 		/*
 		 * BEWARE: a == a is NOT always True for floating Point values, as
 		 * NaN != NaN is defined, so we must check this here.
 		 */
-		node->type.tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+		tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+
+		/* if the node was ONCE evaluated by all constants, but now
+		   this breakes AND we cat by partition a different result, switch to bottom.
+		   This happens because initially all nodes are in the same partition ... */
+		if (node->by_all_const && node->type.tv != tv)
+			tv = tarval_bottom;
+		node->type.tv = tv;
 	} else {
 		node->type.tv = tarval_bottom;
 	}
@@ -2562,7 +2582,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
