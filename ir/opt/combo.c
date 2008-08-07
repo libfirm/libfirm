@@ -2043,12 +2043,14 @@ static node_t *identity(node_t *node) {
 		return identity_Phi(node);
 	case iro_Add:
 		return identity_Add(node);
+	case iro_Mul:
+		return identity_Mul(node);
 	case iro_Or:
 		return identity_Or(node);
+	case iro_And:
+		return identity_And(node);
 	case iro_Sub:
 		return identity_Sub(node);
-	case iro_And:
-		return identity_Add(node);
 	case iro_Confirm:
 		return identity_Confirm(node);
 	case iro_Mux:
@@ -2134,7 +2136,6 @@ static void segregate_def_use_chain(const ir_node *follower, node_t *leader) {
  * Make all inputs to x from inside X no longer be F.def_use edges.
  */
 static void move_edges_to_leader(node_t *x) {
-	partition_t *X   = x->part;
 	ir_node     *irn = x->node;
 	int         i, j, k;
 
