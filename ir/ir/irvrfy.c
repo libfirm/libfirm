@@ -1279,15 +1279,12 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg) {
 			(mymode ==op1mode && mymode == op2mode && mode_is_data(op1mode)) ||
 			/* Pointer Sub: BB x ref x int --> ref */
 			(op1mode == mymode && mode_is_int(op2mode) && mode_is_reference(mymode)) ||
-			/* Pointer Sub: BB x int x ref --> ref */
-			(mode_is_int(op1mode) && op2mode == mymode && mode_is_reference(mymode)) ||
 			/* Pointer Sub: BB x ref x ref --> int */
 			(op1mode == op2mode && mode_is_reference(op2mode) && mode_is_int(mymode))
 		),
 		"Sub node", 0,
 		show_binop_failure(n, "/* common Sub: BB x numP x numP --> numP */ |\n"
 			"/* Pointer Sub: BB x ref x int --> ref */   |\n"
-			"/* Pointer Sub: BB x int x ref --> ref */   |\n"
 			"/* Pointer Sub: BB x ref x ref --> int */" );
 		);
 	return 1;
