@@ -551,25 +551,13 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 }  /* create_initial_partitions */
 
 /**
- * Add a partition to the touched set if not already there.
+ * Add a node to the entry.partition.touched set and
+ * node->partition to the touched set if not already there.
  *
- * @param part  the partition
- * @param env   the environment
+ * @param y    a node
+ * @param env  the environment
  */
-static INLINE void add_to_touched(partition_t *part, environment_t *env) {
-	if (part->on_touched == 0) {
-		part->touched_next = env->touched;
-		env->touched       = part;
-		part->on_touched   = 1;
-	}
-}  /* add_to_touched */
-
-/**
- * Add a node to the entry.partition.touched set if not already there.
- *
- * @param y  a node
- */
-static INLINE void add_to_partition_touched(node_t *y) {
+static INLINE void add_to_touched(node_t *y, environment_t *env) {
 	if (y->on_touched == 0) {
 		partition_t *part = y->part;
 
@@ -577,8 +565,59 @@ static INLINE void add_to_partition_touched(node_t *y) {
 		part->touched = y;
 		y->on_touched = 1;
 		++part->n_touched;
+
+		if (part->on_touched == 0) {
+			part->touched_next = env->touched;
+			env->touched       = part;
+			part->on_touched   = 1;
+		}
 	}
-}  /* add_to_partition_touched */
+}  /* add_to_touched */
+
+/**
+ * Place a node on the cprop list.
+ *
+ * @param y    the node
+ * @param env  the environment
+ */
+static void add_to_cprop(node_t *y, environment_t *env) {
+	/* Add y to y.partition.cprop. */
+	if (y->on_cprop == 0) {
+		partition_t *Y = y->part;
+
+		list_add_tail(&y->cprop_list, &Y->cprop);
+		y->on_cprop   = 1;
+
+		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
+
+		/* place its partition on the cprop list */
+		if (Y->on_cprop == 0) {
+			Y->cprop_next = env->cprop;
+			env->cprop    = Y;
+			Y->on_cprop   = 1;
+		}
+	}
+	if (get_irn_mode(y->node) == mode_T) {
+		/* mode_T nodes always produce tarval_bottom, so we must explicitly
+		   add it's Proj's to get constant evaluation to work */
+		int i;
+
+		for (i = get_irn_n_outs(y->node) - 1; i >= 0; --i) {
+			node_t *proj = get_irn_node(get_irn_out(y->node, i));
+
+			add_to_cprop(proj, env);
+		}
+	} else if (is_Block(y->node)) {
+		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
+		 * if someone placed the block. The Block is only placed if the reachability
+		 * changes, and this must be re-evaluated in compute_Phi(). */
+		ir_node *phi;
+		for (phi = get_Block_phis(y->node); phi != NULL; phi = get_Phi_next(phi)) {
+			node_t *p = get_irn_node(phi);
+			add_to_cprop(p, env);
+		}
+	}
+}  /* add_to_cprop */
 
 /**
  * Update the worklist: If Z is on worklist then add Z' to worklist.
@@ -599,7 +638,7 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
 /**
  * Split a partition that has NO followers by a local list.
  *
- * @param Z    the Z partition to split
+ * @param Z    partition to split
  * @param g    a (non-empty) node list
  * @param env  the environment
  *
@@ -612,11 +651,13 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	int         max_input;
 
 	dump_partition("Splitting ", Z);
+	dump_list("by list ", g);
 
 	assert(g != NULL);
 
 	/* Remove g from Z. */
 	for (node = g; node != NULL; node = node->next) {
+		assert(node->part == Z);
 		list_del(&node->node_list);
 		++n;
 	}
@@ -633,10 +674,9 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 			max_input = node->max_user_input;
 	}
 	Z_prime->max_user_inputs = max_input;
-	Z_prime->n_leader       = n;
+	Z_prime->n_leader        = n;
 
-	/* for now, copy the type info tag. it will be adjusted
-	   in split_by(). */
+	/* for now, copy the type info tag, it will be adjusted in split_by(). */
 	Z_prime->type_is_T_or_C = Z->type_is_T_or_C;
 
 	update_worklist(Z, Z_prime, env);
@@ -648,7 +688,7 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 
 #ifdef NO_FOLLOWER
 
-#define split(Z, g, env) split_no_followers(Z, g, env)
+#define split(Z, g, env) split_no_followers(*(Z), g, env)
 
 #else
 
@@ -658,7 +698,6 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 typedef struct step_env {
 	node_t *initial;       /**< The initial node list. */
 	node_t *unwalked;      /**< The unwalked node list. */
-	node_t *unwalked_last; /**< Points to the last element of the unwalked node list. */
 	node_t *walked;        /**< The walked node list. */
 	int    index;          /**< Next index of Follower use_def edge. */
 	int    n_leader;       /**< number of Leader in initial. */
@@ -672,11 +711,8 @@ static int step(step_env *env) {
 
 	if (env->initial != NULL) {
 		/* Move node from initial to unwalked */
-		n = env->initial;
-		env->initial = n->race_next;
-
-		if (env->unwalked_last == NULL)
-			env->unwalked_last = n;
+		n             = env->initial;
+		env->initial  = n->race_next;
 
 		n->race_next  = env->unwalked;
 		env->unwalked = n;
@@ -701,14 +737,10 @@ static int step(step_env *env) {
 			if (! m->is_flagged) {
 				m->is_flagged = 1;
 
-				/* add m to unwalked not as first node */
-				m->race_next = NULL;
-				if (env->unwalked == NULL) {
-					env->unwalked = m;
-				} else {
-					env->unwalked_last->race_next = m;
-				}
-				env->unwalked_last = m;
+				/* add m to unwalked not as first node (we might still need to
+				   check for more follower node */
+				m->race_next = n->race_next;
+				n->race_next = m;
 				return 0;
 			}
 		}
@@ -736,13 +768,14 @@ static void clear_flags(node_t *list) {
 /**
  * Split a partition by a local list using the race.
  *
- * @param X    the partition to split
+ * @param pX   pointer to the partition to split, might be changed!
  * @param gg   a (non-empty) node list
  * @param env  the environment
  *
  * @return  a new partition containing the nodes of gg
  */
-static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
+static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
+	partition_t *X = *pX;
 	partition_t *X_prime;
 	list_head   tmp;
 	step_env    env1, env2, *winner;
@@ -756,6 +789,15 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 	}
 	/* else do the race */
 
+	/* Note: there might be n-Input followers in this partition. When we split it
+	   there inputs might end up in different partitions and these nodes must
+	   do the Follower->Leader transition. Put them on the cprop list to let
+	   this happen. */
+	list_for_each_entry(node_t, node, &X->Follower, node_list) {
+		assert(node->is_follower);
+		add_to_cprop(node, env);
+	}
+
 	dump_partition("Splitting ", X);
 	dump_list("by list ", gg);
 
@@ -765,6 +807,9 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 	g = NULL;
 	n = 0;
 	for (node = gg; node != NULL; node = node->next) {
+		assert(node->part == X);
+		assert(node->is_follower == 0);
+
 		list_del(&node->node_list);
 		list_add_tail(&node->node_list, &tmp);
 		node->race_next = g;
@@ -784,14 +829,12 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 
 	env1.initial       = g;
 	env1.unwalked      = NULL;
-	env1.unwalked_last = NULL;
 	env1.walked        = NULL;
 	env1.index         = 0;
 	env1.n_leader      = n;
 
 	env2.initial       = h;
 	env2.unwalked      = NULL;
-	env2.unwalked_last = NULL;
 	env2.walked        = NULL;
 	env2.index         = 0;
 	env2.n_leader      = m;
@@ -817,7 +860,7 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 
 	dump_race_list("winner ", winner->walked);
 
-	/* Move walked_{winner} to a new partition, X’. */
+	/* Move walked_{winner} to a new partition, X'. */
 	X_prime = new_partition(env);
 	max_input = 0;
 	for (node = winner->walked; node != NULL; node = node->race_next) {
@@ -835,14 +878,21 @@ static partition_t *split(partition_t *X, node_t *gg, environment_t *env) {
 	X_prime->max_user_inputs = max_input;
 	X->n_leader             -= winner->n_leader;
 
-	/* for now, copy the type info tag. it will be adjusted
-	   in split_by(). */
+	/* for now, copy the type info tag, it will be adjusted in split_by(). */
 	X_prime->type_is_T_or_C = X->type_is_T_or_C;
 
-	update_worklist(X, X_prime, env);
+	/* X' is the smaller part */
+	add_to_worklist(X_prime, env);
 
 	dump_partition("Now ", X);
 	dump_partition("Created new ", X_prime);
+
+	/* we have to ensure that the partition containing g is returned */
+	if (winner == &env2) {
+		*pX = X_prime;
+		return X;
+	}
+
 	return X_prime;
 }  /* split */
 #endif /* NO_FOLLOWER */
@@ -875,53 +925,6 @@ static int is_constant_type(lattice_elem_t type) {
 		return 1;
 	return 0;
 }  /* is_constant_type */
-
-/**
- * Place a node on the cprop list.
- *
- * @param y    the node
- * @param env  the environment
- */
-static void add_node_to_cprop(node_t *y, environment_t *env) {
-	/* Add y to y.partition.cprop. */
-	if (y->on_cprop == 0) {
-		partition_t *Y = y->part;
-
-		list_add_tail(&y->cprop_list, &Y->cprop);
-		y->on_cprop   = 1;
-
-		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
-
-		/* place its partition on the cprop list */
-		if (Y->on_cprop == 0) {
-			Y->cprop_next = env->cprop;
-			env->cprop    = Y;
-			Y->on_cprop   = 1;
-		}
-	}
-	if (get_irn_mode(y->node) == mode_T) {
-		/* mode_T nodes always produce tarval_bottom, so we must explicitly
-		   add it's Proj's to get constant evaluation to work */
-		int i;
-
-		for (i = get_irn_n_outs(y->node) - 1; i >= 0; --i) {
-			node_t *proj = get_irn_node(get_irn_out(y->node, i));
-
-			add_node_to_cprop(proj, env);
-		}
-	}
-
-	if (is_Block(y->node)) {
-		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
-		 * if someone placed the block. The Block is only placed if the reachability
-		 * changes, and this must be re-evaluated in compute_Phi(). */
-		ir_node *phi;
-		for (phi = get_Block_phis(y->node); phi != NULL; phi = get_Phi_next(phi)) {
-			node_t *p = get_irn_node(phi);
-			add_node_to_cprop(p, env);
-		}
-	}
-}  /* add_node_to_cprop */
 
 /**
  * Check whether a type is neither Top or a constant.
@@ -984,28 +987,26 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 			if (is_constant_type(y->type)) {
 				ir_opcode code = get_irn_opcode(succ);
 				if (code == iro_Sub || code == iro_Cmp)
-					add_node_to_cprop(y, env);
+					add_to_cprop(y, env);
 			}
 
 			/* Partitions of constants should not be split simply because their Nodes have unequal
-			functions or incongruent inputs. */
+			   functions or incongruent inputs. */
 			if (type_is_neither_top_nor_const(y->type) &&
 				(! is_Phi(y->node) || is_live_input(y->node, idx))) {
-					partition_t *Y = y->part;
-					add_to_touched(Y, env);
-					add_to_partition_touched(y);
+					add_to_touched(y, env);
 			}
 		}
 	}
-}
+}  /* collect_touched */
+
 /**
  * Split the partitions if caused by the first entry on the worklist.
  *
  * @param env  the environment
  */
 static void cause_splits(environment_t *env) {
-	partition_t *X, *Z;
-	node_t      *e;
+	partition_t *X, *Z, *N;
 	int         idx;
 
 	/* remove the first partition from the worklist */
@@ -1023,20 +1024,37 @@ static void cause_splits(environment_t *env) {
 		collect_touched(&X->Leader, idx, env);
 		collect_touched(&X->Follower, idx, env);
 
-		for (Z = env->touched; Z != NULL; Z = Z->touched_next) {
+		for (Z = env->touched; Z != NULL; Z = N) {
+			node_t **pe, *e;
+			node_t *touched;
+			unsigned n_touched = Z->n_touched;
+
+			assert(Z->touched != NULL);
+
+			/* beware, split might change Z */
+			N = Z->touched_next;
+
 			/* remove it from the touched set */
 			Z->on_touched = 0;
 
-			if (Z->n_leader != Z->n_touched) {
-				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
-				split(Z, Z->touched, env);
-			}
-			/* Empty local Z.touched. */
-			for (e = Z->touched; e != NULL; e = e->next) {
+			/* Empty local Z.touched AND filter out followers. */
+			for (pe = &Z->touched; (*pe) != NULL; pe = &e->next) {
+				e = *pe;
 				e->on_touched = 0;
+				if (e->is_follower) {
+					DB((dbg, LEVEL_2, "Removed follower %+F from touched\n", e->node));
+					--n_touched;
+					*(pe) = e->next;
+				}
 			}
+			touched      = Z->touched;
 			Z->touched   = NULL;
 			Z->n_touched = 0;
+
+			if (n_touched > 0 && Z->n_leader != n_touched) {
+				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
+				split(&Z, touched, env);
+			}
 		}
 	}
 }  /* cause_splits */
@@ -1086,7 +1104,7 @@ static partition_t *split_by_what(partition_t *X, what_func What,
 
 		/* Add SPLIT( X, S ) to P. */
 		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
-		R = split(X, S, env);
+		R = split(&X, S, env);
 		R->split_next = *P;
 		*P            = R;
 	}
@@ -2069,7 +2087,7 @@ static node_t *identity(node_t *node) {
  * out edges.
  */
 static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
-	ir_node *l = leader->node;
+	ir_node *l   = leader->node;
 	int     j, i, n = get_irn_n_outs(l);
 
 	DB((dbg, LEVEL_2, "%+F is a follower of %+F\n", follower, leader->node));
@@ -2083,9 +2101,7 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
 				l->out[j + 1] = l->out[j];
 			++leader->n_followers;
 			l->out[leader->n_followers] = t;
-
-			/* note: a node might be a n-fold follower, for instance
-			 * if x = max(a,a), so no break here. */
+			break;
 		}
 	}
 }  /* segregate_def_use_chain_1 */
@@ -2206,16 +2222,19 @@ static void propagate(environment_t *env) {
 			if (x->is_follower && identity(x) == x) {
 				/* x will make the follower -> leader transition */
 				DB((dbg, LEVEL_2, "%+F make the follower -> leader transition\n", x->node));
+
 				if (oldopcode == NULL) {
 					oldopcode = lambda_opcode(get_first_node(X), env);
 				}
 				if (oldopcode != lambda_opcode(x, env)) {
-					/* different opcode -> x falls out of this partition */
-					x->next      = fallen;
-					x->on_fallen = 1;
-					fallen       = x;
-					++n_fallen;
-					DB((dbg, LEVEL_2, "Add node %+F to fallen\n", x->node));
+					if (x->on_fallen == 0) {
+						/* different opcode -> x falls out of this partition */
+						x->next      = fallen;
+						x->on_fallen = 1;
+						fallen       = x;
+						++n_fallen;
+						DB((dbg, LEVEL_2, "Add node %+F to fallen\n", x->node));
+					}
 				}
 
 				/* move x from X.Follower to X.Leader */
@@ -2250,14 +2269,14 @@ static void propagate(environment_t *env) {
 					node_t  *y    = get_irn_node(succ);
 
 					/* Add y to y.partition.cprop. */
-					add_node_to_cprop(y, env);
+					add_to_cprop(y, env);
 				}
 			}
 		}
 
 		if (n_fallen > 0 && n_fallen != X->n_leader) {
 			DB((dbg, LEVEL_2, "Splitting part%d by fallen\n", X->nr));
-			Y = split(X, fallen, env);
+			Y = split(&X, fallen, env);
 		} else {
 			Y = X;
 		}
@@ -2269,19 +2288,22 @@ static void propagate(environment_t *env) {
 		if (old_type_was_T_or_C) {
 			node_t *y, *tmp;
 
+			if (Y->on_worklist == 0)
+				add_to_worklist(Y, env);
+
 			/* check if some nodes will make the leader -> follower transition */
 			list_for_each_entry_safe(node_t, y, tmp, &Y->Leader, node_list) {
-				if (! is_con(y->type)) {
+				if (y->type.tv != tarval_top && ! is_con(y->type)) {
 					node_t *eq_node = identity(y);
 
-					if (eq_node != y) {
+					if (eq_node != y && eq_node->part == y->part) {
 						DB((dbg, LEVEL_2, "Node %+F is a follower of %+F\n", y->node, eq_node->node));
 						/* move to Follower */
 						y->is_follower = 1;
 						list_del(&y->node_list);
+						list_add_tail(&y->node_list, &Y->Follower);
 						--Y->n_leader;
 
-						list_add_tail(&y->node_list, &Y->Follower);
 						segregate_def_use_chain(y->node, eq_node);
 					}
 				}
@@ -2540,6 +2562,37 @@ static void apply_result(ir_node *irn, void *ctx) {
 	}
 }  /* apply_result */
 
+/**
+ * Fix the keep-alives by deleting unreachable ones.
+ */
+static void apply_end(ir_node *end, environment_t *env) {
+	int i, j,  n = get_End_n_keepalives(end);
+	ir_node **in;
+
+	if (n > 0)
+		NEW_ARR_A(ir_node *, in, n);
+
+	/* fix the keep alive */
+	for (i = j = 0; i < n; i++) {
+		ir_node *ka   = get_End_keepalive(end, i);
+		node_t  *node = get_irn_node(ka);
+
+		if (! node->is_flagged) {
+			node->is_flagged = 1;
+
+			if (! is_Block(ka))
+				node = get_irn_node(get_nodes_block(ka));
+
+			if (node->type.tv != tarval_unreachable)
+				in[j++] = ka;
+		}
+	}
+	if (j != n) {
+		set_End_keepalives(end, j, in);
+		env->modified = 1;
+	}
+}  /* apply_end */
+
 #define SET(code) op_##code->ops.generic = (op_func)compute_##code
 
 /**
@@ -2593,7 +2646,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
@@ -2631,7 +2684,7 @@ void combo(ir_graph *irg) {
 	   Place the START Node on its local worklist. */
 	initial_bl = get_irg_start_block(irg);
 	start      = get_irn_node(initial_bl);
-	add_node_to_cprop(start, &env);
+	add_to_cprop(start, &env);
 
 	do {
 		propagate(&env);
@@ -2652,6 +2705,7 @@ void combo(ir_graph *irg) {
 	/* apply the result */
 	irg_block_walk_graph(irg, NULL, apply_cf, &env);
 	irg_walk_graph(irg, NULL, apply_result, &env);
+	apply_end(get_irg_end(irg), &env);
 
 	if (env.modified) {
 		/* control flow might changed */
