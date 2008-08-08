@@ -44,6 +44,7 @@
 #include "ia32_finish.h"
 #include "ia32_new_nodes.h"
 #include "ia32_map_regs.h"
+#include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"

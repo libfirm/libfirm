@@ -34,13 +34,6 @@
  */
 void ia32_transform_graph(ia32_code_gen_t *cg);
 
-#ifndef NDEBUG
-/**
- * Prints the old node name on cg obst and returns a pointer to it.
- */
-const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn);
-#endif /* NDEBUG */
-
 /**
  * Some constants needed for code generation.
  * Generated on demand.
@@ -54,27 +47,6 @@ typedef enum {
 	ia32_known_const_max /**< last constant */
 } ia32_known_const_t;
 
-static const arch_register_req_t no_register_req = {
-	arch_register_req_type_none,
-	NULL,                         /* regclass */
-	NULL,                         /* limit bitset */
-	0,                            /* same pos */
-	0                             /* different pos */
-};
-
-/**
- * An assembler constraint.
- */
-typedef struct constraint_t constraint_t;
-struct constraint_t {
-	const arch_register_class_t *cls;
-	unsigned                     allowed_registers;
-	char                         all_registers_allowed;
-	char                         memory_possible;
-	char                         immediate_type;
-	int                          same_as;
-};
-
 /**
  * Generate a known floating point constant
  */
@@ -86,25 +58,5 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg);
  * Skip all Down-Conv's on a given node and return the resulting node.
  */
 ir_node *ia32_skip_downconv(ir_node *node);
-
-/**
- * Get a primitive type for a mode.
- */
-ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode);
-
-/**
- * Return true if a mode can be stored in the GP register set
- */
-int ia32_mode_needs_gp_reg(ir_mode *mode);
-
-void ia32_parse_asm_constraints(constraint_t *constraint, const char *c);
-void ia32_parse_clobber(ir_node *node, int pos, constraint_t *constraint,
-                        const char *clobber);
-
-/**
- * returns register by name (used for determining clobber specifications in
- * asm instructions)
- */
-const arch_register_t *ia32_get_clobber_register(const char *clobber);
 
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

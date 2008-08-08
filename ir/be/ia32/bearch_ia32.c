@@ -76,6 +76,7 @@
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 #include "gen_ia32_machine.h"
+#include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
 #include "ia32_map_regs.h"
@@ -947,7 +948,7 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
-#ifdef FIRM_GRGEN_BE
+#ifndef FIRM_GRGEN_BE
 	// disable CSE, because of two-step node-construction
 	set_opt_cse(0);
 

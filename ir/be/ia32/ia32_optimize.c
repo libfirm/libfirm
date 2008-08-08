@@ -51,6 +51,7 @@
 #include "ia32_optimize.h"
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
+#include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_util.h"
