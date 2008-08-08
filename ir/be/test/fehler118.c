@@ -1,3 +1,4 @@
+/*$ -f combo $*/
 #include <stdlib.h>
 
 char *test(char *name) {
@@ -5,13 +6,11 @@ char *test(char *name) {
 	int plen;
 	int min_part = 3;
 	do {
-	        p = strrchr(name, '.');
-	        p = p ? p+1 : name;
+	        p = name;
 	        while (*p) {
-	            	plen = strcspn(p, '.');
+	            	plen = 3;
 	                p += plen;
 	            	if (plen > min_part) trunc = p-1;
-                	if (*p) p++;
 	        }
 	} while (trunc == NULL && --min_part != 0);
 	return p;
