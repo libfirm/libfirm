@@ -54,28 +54,19 @@ static const arch_register_req_t no_register_req = {
 static int check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
-	case 0:
-	case 'i':
-		return 1;
-	case 'I':
-		return val >= 0 && val <= 32;
-	case 'J':
-		return val >= 0 && val <= 63;
-	case 'K':
-		return val >= -128 && val <= 127;
-	case 'L':
-		return val == 0xff || val == 0xffff;
-	case 'M':
-		return val >= 0 && val <= 3;
-	case 'N':
-		return val >= 0 && val <= 255;
-	case 'O':
-		return val >= 0 && val <= 127;
-	default:
-		break;
+		case 0:
+		case 'i': return 1;
+
+		case 'I': return    0 <= val && val <=  31;
+		case 'J': return    0 <= val && val <=  63;
+		case 'K': return -128 <= val && val <= 127;
+		case 'L': return val == 0xff || val == 0xffff;
+		case 'M': return    0 <= val && val <=   3;
+		case 'N': return    0 <= val && val <= 255;
+		case 'O': return    0 <= val && val <= 127;
+
+		default: panic("Invalid immediate constraint found");
 	}
-	panic("Invalid immediate constraint found");
-	return 0;
 }
 
 /**
