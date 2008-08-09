@@ -948,7 +948,7 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
-#ifndef FIRM_GRGEN_BE
+#ifdef FIRM_GRGEN_BE
 	// disable CSE, because of two-step node-construction
 	set_opt_cse(0);
 
