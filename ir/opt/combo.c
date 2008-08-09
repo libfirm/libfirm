@@ -59,6 +59,10 @@
 /* define this to check that all type translations are monotone */
 #define VERIFY_MONOTONE
 
+/* define this to check the consistency of partitions */
+#define CHECK_PARTITIONS
+
+/* define this to disable followers (may be buggy) */
 #undef NO_FOLLOWER
 
 typedef struct node_t            node_t;
@@ -75,6 +79,7 @@ typedef void (*compute_func)(node_t *node);
 struct opcode_key_t {
 	ir_opcode   code;   /**< The Firm opcode. */
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
+	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
 	union {
 		long      proj;   /**< For Proj nodes, its proj number */
 		ir_entity *ent;   /**< For Sel Nodes, its entity */
@@ -184,6 +189,33 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** Next partition number. */
 DEBUG_ONLY(static unsigned part_nr = 0);
+
+/* forward */
+static node_t *identity(node_t *node);
+
+#ifdef CHECK_PARTITIONS
+/**
+ * Check a partition.
+ */
+static void check_partition(const partition_t *T) {
+	node_t   *node;
+	unsigned n = 0;
+
+	list_for_each_entry(node_t, node, &T->Leader, node_list) {
+		assert(node->is_follower == 0);
+		assert(node->part == T);
+		++n;
+	}
+	assert(n == T->n_leader);
+
+	list_for_each_entry(node_t, node, &T->Follower, node_list) {
+		assert(node->is_follower == 1);
+		assert(node->part == T);
+	}
+}  /* check_partition */
+#else
+#define check_partition(T)
+#endif /* CHECK_PARTITIONS */
 
 #ifdef DEBUG_libfirm
 static INLINE lattice_elem_t get_partition_type(const partition_t *X);
@@ -365,6 +397,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 
 	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode ||
+	       o1->arity != o2->arity ||
 	       o1->u.proj != o2->u.proj || o1->u.ent != o2->u.ent;
 }  /* cmp_opcode */
 
@@ -467,7 +500,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
  */
 static INLINE node_t *get_first_node(const partition_t *X) {
 	return list_entry(X->Leader.next, node_t, node_list);
-}
+}  /* get_first_node */
 
 /**
  * Return the type of a partition (assuming partition is non-empty and
@@ -529,7 +562,7 @@ static void init_block_phis(ir_node *irn, void *env) {
 	if (is_Block(irn)) {
 		set_Block_phis(irn, NULL);
 	}
-}
+}  /* init_block_phis */
 
 /**
  * Post-Walker, initialize all Nodes' type to U or top and place
@@ -636,6 +669,47 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
 }  /* update_worklist */
 
 /**
+ * Make all inputs to x no longer be F.def_use edges.
+ *
+ * @param x  the node
+ */
+static void move_edges_to_leader(node_t *x) {
+	ir_node     *irn = x->node;
+	int         i, j, k;
+
+	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+		node_t  *pred = get_irn_node(get_irn_n(irn, i));
+		ir_node *p;
+		int     n;
+
+		p = pred->node;
+		n = get_irn_n_outs(p);
+		for (j = 1; j <= pred->n_followers; ++j) {
+			if (p->out[j].pos == i && p->out[j].use == irn) {
+				/* found a follower edge to x, move it to the Leader */
+				ir_def_use_edge edge = p->out[j];
+
+				/* remove this edge from the Follower set */
+				p->out[j] = p->out[pred->n_followers];
+				--pred->n_followers;
+
+				/* sort it into the leader set */
+				for (k = pred->n_followers + 2; k <= n; ++k) {
+					if (p->out[k].pos >= edge.pos)
+						break;
+					p->out[k - 1] = p->out[k];
+				}
+				/* place the new edge here */
+				p->out[k - 1] = edge;
+
+				/* edge found and moved */
+				break;
+			}
+		}
+	}
+}  /* move_edges_to_leader */
+
+/**
  * Split a partition that has NO followers by a local list.
  *
  * @param Z    partition to split
@@ -664,7 +738,7 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	assert(n < Z->n_leader);
 	Z->n_leader -= n;
 
-	/* Move g to a new partition, Z’. */
+	/* Move g to a new partition, Z'. */
 	Z_prime = new_partition(env);
 	max_input = 0;
 	for (node = g; node != NULL; node = node->next) {
@@ -675,6 +749,9 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	}
 	Z_prime->max_user_inputs = max_input;
 	Z_prime->n_leader        = n;
+
+	check_partition(Z);
+	check_partition(Z_prime);
 
 	/* for now, copy the type info tag, it will be adjusted in split_by(). */
 	Z_prime->type_is_T_or_C = Z->type_is_T_or_C;
@@ -696,11 +773,11 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
  * The environment for one race step.
  */
 typedef struct step_env {
-	node_t *initial;       /**< The initial node list. */
-	node_t *unwalked;      /**< The unwalked node list. */
-	node_t *walked;        /**< The walked node list. */
-	int    index;          /**< Next index of Follower use_def edge. */
-	int    n_leader;       /**< number of Leader in initial. */
+	node_t   *initial;    /**< The initial node list. */
+	node_t   *unwalked;   /**< The unwalked node list. */
+	node_t   *walked;     /**< The walked node list. */
+	int      index;       /**< Next index of Follower use_def edge. */
+	unsigned n_leader;    /**< number of Leader in initial. */
 } step_env;
 
 /**
@@ -734,7 +811,7 @@ static int step(step_env *env) {
 			if (m->part != n->part)
 				continue;
 
-			if (! m->is_flagged) {
+			if (!m->is_flagged) {
 				m->is_flagged = 1;
 
 				/* add m to unwalked not as first node (we might still need to
@@ -779,24 +856,18 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	partition_t *X_prime;
 	list_head   tmp;
 	step_env    env1, env2, *winner;
-	node_t      *g, *h, *node;
-	int         max_input, n, m;
+	node_t      *g, *h, *node, *t;
+	int         max_input;
+	unsigned    n, m;
+	DEBUG_ONLY(static int run = 0;)
 
+	DB((dbg, LEVEL_2, "Run %d ", run++));
 	if (list_empty(&X->Follower)) {
 		/* if the partition has NO follower, we can use the fast
 		   splitting algorithm. */
 		return split_no_followers(X, gg, env);
 	}
 	/* else do the race */
-
-	/* Note: there might be n-Input followers in this partition. When we split it
-	   there inputs might end up in different partitions and these nodes must
-	   do the Follower->Leader transition. Put them on the cprop list to let
-	   this happen. */
-	list_for_each_entry(node_t, node, &X->Follower, node_list) {
-		assert(node->is_follower);
-		add_to_cprop(node, env);
-	}
 
 	dump_partition("Splitting ", X);
 	dump_list("by list ", gg);
@@ -865,21 +936,37 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	max_input = 0;
 	for (node = winner->walked; node != NULL; node = node->race_next) {
 		list_del(&node->node_list);
+		node->part = X_prime;
 		if (node->is_follower) {
 			list_add(&node->node_list, &X_prime->Follower);
 		} else {
 			list_add(&node->node_list, &X_prime->Leader);
 			++X_prime->n_leader;
 		}
-		node->part = X_prime;
 		if (node->max_user_input > max_input)
 			max_input = node->max_user_input;
 	}
 	X_prime->max_user_inputs = max_input;
-	X->n_leader             -= winner->n_leader;
+	X->n_leader             -= X_prime->n_leader;
 
 	/* for now, copy the type info tag, it will be adjusted in split_by(). */
 	X_prime->type_is_T_or_C = X->type_is_T_or_C;
+
+	/* do the Follower -> Leader transition for nodes that loose congruent inputs */
+	list_for_each_entry_safe(node_t, node, t, &X_prime->Follower, node_list) {
+		if (identity(node) == node) {
+			/* we reach a follower from both sides, this will split congruent
+			 * inputs and make it a leader. */
+			DB((dbg, LEVEL_2, "%+F make the follower -> leader transition\n", node->node));
+			node->is_follower = 0;
+			move_edges_to_leader(node);
+			list_del(&node->node_list);
+			list_add(&node->node_list, &X_prime->Leader);
+			++X_prime->n_leader;
+		}
+	}
+	check_partition(X);
+	check_partition(X_prime);
 
 	/* X' is the smaller part */
 	add_to_worklist(X_prime, env);
@@ -984,6 +1071,11 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 				continue;
 
 			y = get_irn_node(succ);
+
+			/* ignore block edges touching followers */
+			if (idx == -1 && y->is_follower)
+				continue;
+
 			if (is_constant_type(y->type)) {
 				ir_opcode code = get_irn_opcode(succ);
 				if (code == iro_Sub || code == iro_Cmp)
@@ -1025,8 +1117,8 @@ static void cause_splits(environment_t *env) {
 		collect_touched(&X->Follower, idx, env);
 
 		for (Z = env->touched; Z != NULL; Z = N) {
-			node_t **pe, *e;
-			node_t *touched;
+			node_t   *e;
+			node_t   *touched  = Z->touched;
 			unsigned n_touched = Z->n_touched;
 
 			assert(Z->touched != NULL);
@@ -1037,17 +1129,11 @@ static void cause_splits(environment_t *env) {
 			/* remove it from the touched set */
 			Z->on_touched = 0;
 
-			/* Empty local Z.touched AND filter out followers. */
-			for (pe = &Z->touched; (*pe) != NULL; pe = &e->next) {
-				e = *pe;
+			/* Empty local Z.touched. */
+			for (e = touched; e != NULL; e = e->next) {
+				assert(e->is_follower == 0);
 				e->on_touched = 0;
-				if (e->is_follower) {
-					DB((dbg, LEVEL_2, "Removed follower %+F from touched\n", e->node));
-					--n_touched;
-					*(pe) = e->next;
-				}
 			}
-			touched      = Z->touched;
 			Z->touched   = NULL;
 			Z->n_touched = 0;
 
@@ -1129,6 +1215,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 
 	key.code   = get_irn_opcode(irn);
 	key.mode   = get_irn_mode(irn);
+	key.arity  = get_irn_arity(irn);
 	key.u.proj = 0;
 	key.u.ent  = NULL;
 
@@ -2110,82 +2197,18 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
  * Node follower is a (new) follower of leader, segregate Leader
  * out edges. If follower is a n-congruent Input identity, all follower
  * inputs congruent to follower are also leader.
+ *
+ * @param follower  the follower IR node
  */
-static void segregate_def_use_chain(const ir_node *follower, node_t *leader) {
-	ir_op *op = get_irn_op(follower);
+static void segregate_def_use_chain(const ir_node *follower) {
+	int i;
 
-	if (op == op_Phi) {
-		/* n-Congruent Input Identity for Phi's */
-		int i;
-		ir_node *block = get_nodes_block(follower);
+	for (i = get_irn_arity(follower) - 1; i >= 0; --i) {
+		node_t *pred = get_irn_node(get_irn_n(follower, i));
 
-		DB((dbg, LEVEL_2, "n-Congruent follower %+F\n", follower));
-		for (i = get_irn_arity(follower) - 1; i >= 0; --i) {
-			node_t *pred_X = get_irn_node(get_Block_cfgpred(block, i));
-
-			/* beware: we are NOT followers of dead inputs */
-			if (pred_X->type.tv == tarval_reachable) {
-				node_t *pred = get_irn_node(get_irn_n(follower, i));
-
-				if (pred->part == leader->part)
-					segregate_def_use_chain_1(follower, pred);
-			}
-		}
-	} else if (op == op_Mux || op == op_Max || op == op_Min) {
-		/* n-Congruent Input Identity */
-		int i;
-
-		DB((dbg, LEVEL_2, "n-Congruent follower %+F\n", follower));
-		for (i = get_irn_arity(follower) - 1; i >= 0; --i) {
-			node_t *pred = get_irn_node(get_irn_n(follower, i));
-
-			if (pred->part == leader->part)
-				segregate_def_use_chain_1(follower, pred);
-		}
-	} else {
-		/* 1-Congruent Input Identity */
-		segregate_def_use_chain_1(follower, leader);
+		segregate_def_use_chain_1(follower, pred);
 	}
 }  /* segregate_def_use_chain */
-
-/**
- * Make all inputs to x from inside X no longer be F.def_use edges.
- */
-static void move_edges_to_leader(node_t *x) {
-	ir_node     *irn = x->node;
-	int         i, j, k;
-
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-		node_t  *pred = get_irn_node(get_irn_n(irn, i));
-		ir_node *p;
-		int     n;
-
-		p = pred->node;
-		n = get_irn_n_outs(p);
-		for (j = 1; j <= pred->n_followers; ++j) {
-			if (p->out[j].pos == i && p->out[j].use == irn) {
-				/* found a follower edge to x, move it to the Leader */
-				ir_def_use_edge edge = p->out[j];
-
-				/* remove this edge from the Follower set */
-				p->out[j] = p->out[pred->n_followers];
-				--pred->n_followers;
-
-				/* sort it into the leader set */
-				for (k = pred->n_followers + 2; k <= n; ++k) {
-					if (p->out[k].pos >= edge.pos)
-						break;
-					p->out[k - 1] = p->out[k];
-				}
-				/* place the new edge here */
-				p->out[k - 1] = edge;
-
-				/* edge found and moved */
-				break;
-			}
-		}
-	}
-}
 
 /**
  * Propagate constant evaluation.
@@ -2216,6 +2239,7 @@ static void propagate(environment_t *env) {
 		while (! list_empty(&X->cprop)) {
 			/* remove the first Node x from X.cprop */
 			x = list_entry(X->cprop.next, node_t, cprop_list);
+			assert(x->part == X);
 			list_del(&x->cprop_list);
 			x->on_cprop = 0;
 
@@ -2304,7 +2328,7 @@ static void propagate(environment_t *env) {
 						list_add_tail(&y->node_list, &Y->Follower);
 						--Y->n_leader;
 
-						segregate_def_use_chain(y->node, eq_node);
+						segregate_def_use_chain(y->node);
 					}
 				}
 			}
@@ -2323,7 +2347,10 @@ static ir_node *get_leader(node_t *node) {
 	partition_t *part = node->part;
 
 	if (part->n_leader > 1 || node->is_follower) {
-		DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
+		if (node->is_follower)
+			DB((dbg, LEVEL_2, "Replacing follower %+F\n", node->node));
+		else
+			DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
 
 		return get_first_node(part)->node;
 	}
@@ -2549,6 +2576,8 @@ static void apply_result(ir_node *irn, void *ctx) {
 					exchange(irn, symc);
 					env->modified = 1;
 				}
+			} else if (is_Confirm(irn)) {
+				/* Confirms are always follower, but do not kill them here */
 			} else {
 				ir_node *leader = get_leader(node);
 
@@ -2577,7 +2606,9 @@ static void apply_end(ir_node *end, environment_t *env) {
 		ir_node *ka   = get_End_keepalive(end, i);
 		node_t  *node = get_irn_node(ka);
 
-		if (! node->is_flagged) {
+		/* Use the is_flagged bit to mark already visited nodes.
+		 * This should not be ready but better safe than sorry. */
+		if (node->is_flagged == 0) {
 			node->is_flagged = 1;
 
 			if (! is_Block(ka))
@@ -2646,7 +2677,7 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	firm_dbg_set_mask(dbg, SET_LEVEL_3);
+	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
