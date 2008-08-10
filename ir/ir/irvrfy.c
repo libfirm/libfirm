@@ -1824,11 +1824,11 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
 	(void) irg;
 
 	ASSERT_AND_RET(
-		/* Mux: BB x b x numP x numP --> numP */
+		/* Mux: BB x b x datab x datab --> datab */
 		op1mode == mode_b &&
 		op2mode == mymode &&
 		op3mode == mymode &&
-		mode_is_data(mymode),
+		mode_is_datab(mymode),
 		"Mux node", 0
 		);
 	return 1;
