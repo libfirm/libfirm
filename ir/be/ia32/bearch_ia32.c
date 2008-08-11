@@ -977,7 +977,7 @@ static void ia32_prepare_graph(void *self) {
 			break;
 #endif
 
-		default: panic("Invalid tansformer");
+		default: panic("Invalid transformer");
 	}
 
 	/* do local optimizations (mainly CSE) */
