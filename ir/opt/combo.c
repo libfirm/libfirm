@@ -128,8 +128,8 @@ struct node_t {
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
+	unsigned        is_flagged:1;   /**< Set, if this node was visited by the race. */
 	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
-	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
 };
 
 /**
@@ -203,7 +203,7 @@ static void check_partition(const partition_t *T) {
 
 	list_for_each_entry(node_t, node, &T->Leader, node_list) {
 		assert(node->is_follower == 0);
-		assert(node->flagged == 0);
+		assert(node->is_flagged == 0);
 		assert(node->part == T);
 		++n;
 	}
@@ -211,7 +211,7 @@ static void check_partition(const partition_t *T) {
 
 	list_for_each_entry(node_t, node, &T->Follower, node_list) {
 		assert(node->is_follower == 1);
-		assert(node->flagged == 0);
+		assert(node->is_flagged == 0);
 		assert(node->part == T);
 	}
 }  /* check_partition */
@@ -568,7 +568,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->on_fallen      = 0;
 	node->is_follower    = 0;
 	node->by_all_const   = 0;
-	node->flagged        = 0;
+	node->is_flagged     = 0;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->Leader);
@@ -819,8 +819,24 @@ typedef struct step_env {
 	node_t   *unwalked;   /**< The unwalked node list. */
 	node_t   *walked;     /**< The walked node list. */
 	int      index;       /**< Next index of Follower use_def edge. */
-	unsigned side;        /**< side number. */
 } step_env;
+
+/**
+ * Return non-zero, if a input is a real follower
+ *
+ * @param irn    the node to check
+ * @param input  number of the input
+ */
+static int is_real_follower(const ir_node *irn, int input) {
+	if (input == 1 && is_Confirm(irn)) {
+		/* return the Confirm bound input */
+		return 0;
+	}
+	if (input == 0 && is_Mux(irn)) {
+		/* ignore the Mux sel input */
+	}
+	return 1;
+}
 
 /**
  * Do one step in the race.
@@ -843,28 +859,35 @@ static int step(step_env *env) {
 		/* let n be the first node in unwalked */
 		n = env->unwalked;
 		while (env->index < n->n_followers) {
+			const ir_def_use_edge *edge = &n->node->out[1 + env->index];
+
 			/* let m be n.F.def_use[index] */
-			node_t *m = get_irn_node(n->node->out[1 + env->index].use);
+			node_t *m = get_irn_node(edge->use);
 
 			assert(m->is_follower);
+			/*
+			 * Some inputs, like the get_Confirm_bound are NOT
+			 * real followers, sort them out.
+			 */
+			if (! is_real_follower(m->node, edge->pos)) {
+				++env->index;
+				continue;
+			}
 			++env->index;
 
 			/* only followers from our partition */
 			if (m->part != n->part)
 				continue;
 
-			if ((m->flagged & env->side) == 0) {
-				m->flagged |= env->side;
+			if (m->is_flagged == 0) {
+				m->is_flagged = 1;
 
-				if (m->flagged != 3) {
-					/* visited the first time */
-					/* add m to unwalked not as first node (we might still need to
-					   check for more follower node */
-					m->race_next = n->race_next;
-					n->race_next = m;
-					return 0;
-				}
-				/* else already visited by the other side and on the other list */
+				/* visited the first time */
+				/* add m to unwalked not as first node (we might still need to
+				   check for more follower node */
+				m->race_next = n->race_next;
+				n->race_next = m;
+				return 0;
 			}
 		}
 		/* move n to walked */
@@ -881,23 +904,12 @@ static int step(step_env *env) {
  * nodes that where touched from both sides.
  *
  * @param list  the list
- *
- * @return non-zero if a Follower -> Leader transition take place
  */
-static int clear_flags(node_t *list) {
+static void clear_flags(node_t *list) {
 	node_t *n;
-	int    res = 0;
 
-	for (n = list; n != NULL; n = n->race_next) {
-		if (n->flagged == 3) {
-			/* we reach a follower from both sides, this will split congruent
-			 * inputs and make it a leader. */
-			follower_to_leader(n);
-			res = 1;
-		}
-		n->flagged = 0;
-	}
-	return res;
+	for (n = list; n != NULL; n = n->race_next)
+		n->is_flagged = 0;
 }  /* clear_flags */
 
 /**
@@ -915,7 +927,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	list_head   tmp;
 	step_env    env1, env2, *winner;
 	node_t      *g, *h, *node, *t;
-	int         max_input, transitions;
+	int         max_input;
 	unsigned    n;
 	DEBUG_ONLY(static int run = 0;)
 
@@ -956,13 +968,11 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	env1.unwalked      = NULL;
 	env1.walked        = NULL;
 	env1.index         = 0;
-	env1.side          = 1;
 
 	env2.initial       = h;
 	env2.unwalked      = NULL;
 	env2.walked        = NULL;
 	env2.index         = 0;
-	env2.side          = 2;
 
 	for (;;) {
 		if (step(&env1)) {
@@ -978,10 +988,10 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	assert(winner->unwalked == NULL);
 
 	/* clear flags from walked/unwalked */
-	transitions  = clear_flags(env1.unwalked);
-	transitions |= clear_flags(env1.walked);
-	transitions |= clear_flags(env2.unwalked);
-	transitions |= clear_flags(env2.walked);
+	clear_flags(env1.unwalked);
+	clear_flags(env1.walked);
+	clear_flags(env2.unwalked);
+	clear_flags(env2.walked);
 
 	dump_race_list("winner ", winner->walked);
 
@@ -1013,10 +1023,8 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	 * loose its congruence, so we need to check this case for all follower.
 	 */
 	list_for_each_entry_safe(node_t, node, t, &X_prime->Follower, node_list) {
-		if (identity(node) == node) {
+		if (identity(node) == node)
 			follower_to_leader(node);
-			transitions = 1;
-		}
 	}
 
 	check_partition(X);
@@ -1024,15 +1032,6 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 
 	/* X' is the smaller part */
 	add_to_worklist(X_prime, env);
-
-	if (transitions && X->on_worklist == 0) {
-		/*
-		 * If there where transition from Follower to Leader,
-		 * these nodes must be split out from X_prime.
-		 * This is only possible if cause_split() will be called on X.
-		 */
-		add_to_worklist(X, env);
-	}
 
 	dump_partition("Now ", X);
 	dump_partition("Created new ", X_prime);
@@ -1117,8 +1116,8 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 
 		/* for all edges in x.L.def_use_{idx} */
 		while (x->next_edge <= num_edges) {
-			ir_def_use_edge *edge = &x->node->out[x->next_edge];
-			ir_node         *succ;
+			const ir_def_use_edge *edge = &x->node->out[x->next_edge];
+			ir_node               *succ;
 
 			/* check if we have necessary edges */
 			if (edge->pos > idx)
@@ -2139,18 +2138,23 @@ static node_t *identity_Confirm(node_t *node) {
  */
 static node_t *identity_Mux(node_t *node) {
 	ir_node *mux = node->node;
-	node_t  *sel = get_irn_node(get_Mux_sel(mux));
 	node_t  *t   = get_irn_node(get_Mux_true(mux));
 	node_t  *f   = get_irn_node(get_Mux_false(mux));
+	node_t  *sel;
 
 	if (t->part == f->part)
 		return t;
+
+	/* for now, the 1-input identity is not supported */
+#if 0
+	sel = get_irn_node(get_Mux_sel(mux));
 
 	/* Mux sel input is mode_b, so it is always a tarval */
 	if (sel->type.tv == tarval_b_true)
 		return t;
 	if (sel->type.tv == tarval_b_false)
 		return f;
+#endif
 	return node;
 }  /* identity_Mux */
 
@@ -2664,10 +2668,10 @@ static void apply_end(ir_node *end, environment_t *env) {
 		ir_node *ka   = get_End_keepalive(end, i);
 		node_t  *node = get_irn_node(ka);
 
-		/* Use the flagged bits to mark already visited nodes.
+		/* Use the is_flagged bit to mark already visited nodes.
 		 * This should not be ready but better safe than sorry. */
-		if (node->flagged == 0) {
-			node->flagged = 3;
+		if (node->is_flagged == 0) {
+			node->is_flagged = 1;
 
 			if (! is_Block(ka))
 				node = get_irn_node(get_nodes_block(ka));
