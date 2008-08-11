@@ -95,7 +95,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_node         *initial_fpcw = NULL;
-static heights_t       *heights      = NULL;
 
 extern ir_op *get_op_Mulh(void);
 

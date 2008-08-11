@@ -41,7 +41,9 @@
 #include "gen_ia32_regalloc_if.h"
 
 /** hold the current code generator during transformation */
-ia32_code_gen_t *env_cg       = NULL;
+ia32_code_gen_t *env_cg = NULL;
+
+heights_t *heights = NULL;
 
 static const arch_register_req_t no_register_req = {
 	arch_register_req_type_none,
