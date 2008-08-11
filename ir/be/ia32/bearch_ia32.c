@@ -927,6 +927,15 @@ static void ia32_before_abi(void *self) {
 	}
 }
 
+typedef enum transformer_t {
+	TRANSFORMER_DEFAULT,
+#ifdef FIRM_GRGEN_BE
+	TRANSFORMER_PBQP
+#endif
+} transformer_t;
+
+static transformer_t be_transformer = TRANSFORMER_DEFAULT;
+
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
@@ -948,21 +957,28 @@ static void ia32_prepare_graph(void *self) {
 	if (cg->dump)
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
+	switch (be_transformer) {
+		case TRANSFORMER_DEFAULT:
+			/* transform remaining nodes into assembler instructions */
+			ia32_transform_graph(cg);
+			break;
+
 #ifdef FIRM_GRGEN_BE
-	// disable CSE, because of two-step node-construction
-	set_opt_cse(0);
+		case TRANSFORMER_PBQP:
+			// disable CSE, because of two-step node-construction
+			set_opt_cse(0);
 
-	/* transform nodes into assembler instructions by PBQP magic */
-	ia32_transform_graph_by_pbqp(cg);
+			/* transform nodes into assembler instructions by PBQP magic */
+			ia32_transform_graph_by_pbqp(cg);
 
-	if (cg->dump)
-		be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
-	set_opt_cse(1);
-#else
-
-	/* transform remaining nodes into assembler instructions */
-	ia32_transform_graph(cg);
+			if (cg->dump)
+				be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
+			set_opt_cse(1);
+			break;
 #endif
+
+		default: panic("Invalid tansformer");
+	}
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(cg->irg);
@@ -2284,8 +2300,21 @@ static lc_opt_enum_int_var_t gas_var = {
 	(int*) &be_gas_flavour, gas_items
 };
 
+static const lc_opt_enum_int_items_t transformer_items[] = {
+	{ "default", TRANSFORMER_DEFAULT },
+#ifdef FIRM_GRGEN_BE
+	{ "pbqp",    TRANSFORMER_PBQP    },
+#endif
+	{ NULL,      0                   }
+};
+
+static lc_opt_enum_int_var_t transformer_var = {
+	(int*)&be_transformer, transformer_items
+};
+
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
+	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
 	LC_OPT_ENT_INT("stackalign", "set power of two stack alignment for calls",
 	               &ia32_isa_template.arch_env.stack_alignment),
 	LC_OPT_LAST
