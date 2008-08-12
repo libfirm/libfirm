@@ -2224,6 +2224,27 @@ void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls,
 			bitset_set(bs, reg->index);
 }
 
+void be_abi_set_non_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, unsigned *raw_bitset)
+{
+	unsigned         i;
+	arch_register_t *reg;
+
+	for (i = 0; i < cls->n_regs; ++i) {
+		if (arch_register_type_is(&cls->regs[i], ignore))
+			continue;
+
+		rbitset_set(raw_bitset, i);
+	}
+
+	for (reg = pset_first(abi->ignore_regs); reg != NULL;
+	     reg = pset_next(abi->ignore_regs)) {
+		if (reg->reg_class != cls)
+			continue;
+
+		rbitset_clear(raw_bitset, reg->index);
+	}
+}
+
 /* Returns the stack layout from a abi environment. */
 const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi) {
 	return abi->frame;
