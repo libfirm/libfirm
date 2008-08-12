@@ -599,8 +599,12 @@ ir_node *gen_ASM(ir_node *node)
 		}
 
 		if (input == NULL) {
+#ifdef FIRM_GRGEN_BE
+			input         = get_irn_n(node, i);
+#else
 			ir_node *pred = get_irn_n(node, i);
 			input         = be_transform_node(pred);
+#endif
 
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
