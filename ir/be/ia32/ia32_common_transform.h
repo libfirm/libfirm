@@ -21,7 +21,7 @@
  * @file
  * @brief       This file implements the common parts of IR transformation from
  *              firm into ia32-Firm.
- * @author      Sebastian Buchwald
+ * @author      Matthias Braun, Sebastian Buchwald
  * @version     $Id: ia32_common_transform.h 20999 2008-08-05 16:48:29Z beck $
  */
 #ifndef FIRM_BE_IA32_IA32_COMMON_TRANSFORM_H
