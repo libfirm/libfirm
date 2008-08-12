@@ -161,6 +161,62 @@ static ir_node *turn_into_mode_t(ir_node *node)
 }
 
 /**
+ * Replace Cmp(x, 0) by a Test(x, x)
+ */
+static void peephole_ia32_Cmp(ir_node *const node)
+{
+	ir_node                     *right;
+	ia32_immediate_attr_t const *imm;
+	dbg_info                    *dbgi;
+	ir_graph                    *irg;
+	ir_node                     *block;
+	ir_node                     *noreg;
+	ir_node                     *nomem;
+	ir_node                     *op;
+	ia32_attr_t           const *attr;
+	int                          ins_permuted;
+	int                          cmp_unsigned;
+	ir_node                     *test;
+	arch_register_t       const *reg;
+
+	if (get_ia32_op_type(node) != ia32_Normal)
+		return;
+
+	right = get_irn_n(node, n_ia32_Cmp_right);
+	if (!is_ia32_Immediate(right))
+		return;
+
+	imm = get_ia32_immediate_attr_const(right);
+	if (imm->symconst != NULL || imm->offset != 0)
+		return;
+
+	dbgi         = get_irn_dbg_info(node);
+	irg          = current_ir_graph;
+	block        = get_nodes_block(node);
+	noreg        = ia32_new_NoReg_gp(cg);
+	nomem        = get_irg_no_mem(irg);
+	op           = get_irn_n(node, n_ia32_Cmp_left);
+	attr         = get_irn_generic_attr(node);
+	ins_permuted = attr->data.ins_permuted;
+	cmp_unsigned = attr->data.cmp_unsigned;
+
+	if (is_ia32_Cmp(node)) {
+		test = new_rd_ia32_Test(dbgi, irg, block, noreg, noreg, nomem,
+		                        op, op, ins_permuted, cmp_unsigned);
+	} else {
+		test = new_rd_ia32_Test8Bit(dbgi, irg, block, noreg, noreg, nomem,
+		                            op, op, ins_permuted, cmp_unsigned);
+	}
+	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
+
+	reg = arch_get_irn_register(arch_env, node);
+	arch_set_irn_register(arch_env, test, reg);
+
+	sched_add_before(node, test);
+	be_peephole_exchange(node, test);
+}
+
+/**
  * Peephole optimization for Test instructions.
  * We can remove the Test, if a zero flags was produced which is still
  * live.
@@ -1046,12 +1102,14 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
-	register_peephole_optimisation(op_ia32_Const, peephole_ia32_Const);
-	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
-	register_peephole_optimisation(op_ia32_Lea, peephole_ia32_Lea);
-	register_peephole_optimisation(op_ia32_Test, peephole_ia32_Test);
+	register_peephole_optimisation(op_ia32_Const,    peephole_ia32_Const);
+	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
+	register_peephole_optimisation(op_ia32_Lea,      peephole_ia32_Lea);
+	register_peephole_optimisation(op_ia32_Cmp,      peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Cmp8Bit,  peephole_ia32_Cmp);
+	register_peephole_optimisation(op_ia32_Test,     peephole_ia32_Test);
 	register_peephole_optimisation(op_ia32_Test8Bit, peephole_ia32_Test);
-	register_peephole_optimisation(op_be_Return, peephole_ia32_Return);
+	register_peephole_optimisation(op_be_Return,     peephole_ia32_Return);
 	if (! ia32_cg_config.use_imul_mem_imm32)
 		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
 	if (ia32_cg_config.use_pxor)

@@ -2723,64 +2723,31 @@ static ir_node *gen_Cmp(ir_node *node)
 
 	assert(ia32_mode_needs_gp_reg(cmp_mode));
 
-	/* we prefer the Test instruction where possible except cases where
-	 * we can use SourceAM */
+	/* Prefer the Test instruction, when encountering (x & y) ==/!= 0 */
 	cmp_unsigned = !mode_is_signed(cmp_mode);
-	if (is_Const_0(right)) {
-		if (is_And(left) &&
-				get_irn_n_edges(left) == 1 &&
-				can_fold_test_and(node)) {
-			/* Test(and_left, and_right) */
-			ir_node *and_left  = get_And_left(left);
-			ir_node *and_right = get_And_right(left);
-			ir_mode *mode      = get_irn_mode(and_left);
+	if (is_Const_0(right)          &&
+	    is_And(left)               &&
+	    get_irn_n_edges(left) == 1 &&
+	    can_fold_test_and(node)) {
+		/* Test(and_left, and_right) */
+		ir_node *and_left  = get_And_left(left);
+		ir_node *and_right = get_And_right(left);
+		ir_mode *mode      = get_irn_mode(and_left);
 
-			match_arguments(&am, block, and_left, and_right, NULL,
-			                match_commutative |
-			                match_am | match_8bit_am | match_16bit_am |
-			                match_am_and_immediates | match_immediate |
-			                match_8bit | match_16bit);
-			if (get_mode_size_bits(mode) == 8) {
-				new_node = new_rd_ia32_Test8Bit(dbgi, irg, new_block, addr->base,
-				                                addr->index, addr->mem, am.new_op1,
-				                                am.new_op2, am.ins_permuted,
-				                                cmp_unsigned);
-			} else {
-				new_node = new_rd_ia32_Test(dbgi, irg, new_block, addr->base,
-				                            addr->index, addr->mem, am.new_op1,
-				                            am.new_op2, am.ins_permuted, cmp_unsigned);
-			}
+		match_arguments(&am, block, and_left, and_right, NULL,
+										match_commutative |
+										match_am | match_8bit_am | match_16bit_am |
+										match_am_and_immediates | match_immediate |
+										match_8bit | match_16bit);
+		if (get_mode_size_bits(mode) == 8) {
+			new_node = new_rd_ia32_Test8Bit(dbgi, irg, new_block, addr->base,
+																			addr->index, addr->mem, am.new_op1,
+																			am.new_op2, am.ins_permuted,
+																			cmp_unsigned);
 		} else {
-			match_arguments(&am, block, NULL, left, NULL,
-			                match_am | match_8bit_am | match_16bit_am |
-			                match_8bit | match_16bit);
-			if (am.op_type == ia32_AddrModeS) {
-				/* Cmp(AM, 0) */
-				ir_node *imm_zero = try_create_Immediate(right, 0);
-				if (get_mode_size_bits(cmp_mode) == 8) {
-					new_node = new_rd_ia32_Cmp8Bit(dbgi, irg, new_block, addr->base,
-					                               addr->index, addr->mem, am.new_op2,
-					                               imm_zero, am.ins_permuted,
-					                               cmp_unsigned);
-				} else {
-					new_node = new_rd_ia32_Cmp(dbgi, irg, new_block, addr->base,
-					                           addr->index, addr->mem, am.new_op2,
-					                           imm_zero, am.ins_permuted, cmp_unsigned);
-				}
-			} else {
-				/* Test(left, left) */
-				if (get_mode_size_bits(cmp_mode) == 8) {
-					new_node = new_rd_ia32_Test8Bit(dbgi, irg, new_block, addr->base,
-					                                addr->index, addr->mem, am.new_op2,
-					                                am.new_op2, am.ins_permuted,
-					                                cmp_unsigned);
-				} else {
-					new_node = new_rd_ia32_Test(dbgi, irg, new_block, addr->base,
-					                            addr->index, addr->mem, am.new_op2,
-					                            am.new_op2, am.ins_permuted,
-					                            cmp_unsigned);
-				}
-			}
+			new_node = new_rd_ia32_Test(dbgi, irg, new_block, addr->base,
+																	addr->index, addr->mem, am.new_op1,
+																	am.new_op2, am.ins_permuted, cmp_unsigned);
 		}
 	} else {
 		/* Cmp(left, right) */
