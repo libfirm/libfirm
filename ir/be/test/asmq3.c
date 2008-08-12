@@ -1,4 +1,4 @@
-/*$ -fomit-frame-pointer $*/
+/*$ -fomit-frame-pointer -O3 $*/
 
 int main(void)
 {
