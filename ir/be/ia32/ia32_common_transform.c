@@ -475,6 +475,7 @@ ir_node *gen_ASM(ir_node *node)
 	const ir_asm_constraint    *out_constraints;
 	ident                     **clobbers;
 	int                         clobbers_flags = 0;
+	unsigned                    clobber_bits_gp = 0;
 
 	/* workaround for lots of buggy code out there as most people think volatile
 	 * asm is enough for everything and forget the flags (linux kernel, etc.)
@@ -490,13 +491,21 @@ ir_node *gen_ASM(ir_node *node)
 	clobbers   = get_ASM_clobbers(node);
 	n_clobbers = 0;
 	for(i = 0; i < get_ASM_n_clobbers(node); ++i) {
-		const char *c = get_id_str(clobbers[i]);
+		const arch_register_req_t *req;
+		const char                *c = get_id_str(clobbers[i]);
+
 		if (strcmp(c, "memory") == 0)
 			continue;
 		if (strcmp(c, "cc") == 0) {
 			clobbers_flags = 1;
 			continue;
 		}
+
+		req = parse_clobber(c);
+		if (req->cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+			clobber_bits_gp |= *req->limited;
+		}
+
 		n_clobbers++;
 	}
 	n_out_constraints = get_ASM_n_output_constraints(node);
@@ -558,6 +567,22 @@ ir_node *gen_ASM(ir_node *node)
 		const arch_register_req_t *req;
 
 		parse_asm_constraints(&parsed_constraint, c, 0);
+		if (clobber_bits_gp != 0 &&
+		    parsed_constraint.cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+			if (parsed_constraint.all_registers_allowed) {
+				parsed_constraint.all_registers_allowed = 0;
+				parsed_constraint.allowed_registers     =
+					1 << REG_EAX |
+					1 << REG_EBX |
+					1 << REG_ECX |
+					1 << REG_EDX |
+					1 << REG_ESI |
+					1 << REG_EDI |
+					1 << REG_EBP;
+			}
+			parsed_constraint.allowed_registers &= ~clobber_bits_gp;
+		}
+
 		req = make_register_req(&parsed_constraint, n_out_constraints,
 		                        out_reg_reqs, i);
 		in_reg_reqs[i] = req;
