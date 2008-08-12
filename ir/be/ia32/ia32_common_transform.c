@@ -569,15 +569,17 @@ ir_node *gen_ASM(ir_node *node)
 		const arch_register_req_t *req;
 
 		parse_asm_constraints(&parsed_constraint, c, 0);
-		r_clobber_bits = clobber_bits[parsed_constraint.cls->index];
-		if (r_clobber_bits != 0) {
-			if (parsed_constraint.all_registers_allowed) {
-				parsed_constraint.all_registers_allowed = 0;
-				be_abi_set_non_ignore_regs(env_cg->birg->abi,
-						parsed_constraint.cls,
-						&parsed_constraint.allowed_registers);
+		if (parsed_constraint.cls != NULL) {
+			r_clobber_bits = clobber_bits[parsed_constraint.cls->index];
+			if (r_clobber_bits != 0) {
+				if (parsed_constraint.all_registers_allowed) {
+					parsed_constraint.all_registers_allowed = 0;
+					be_abi_set_non_ignore_regs(env_cg->birg->abi,
+							parsed_constraint.cls,
+							&parsed_constraint.allowed_registers);
+				}
+				parsed_constraint.allowed_registers &= ~r_clobber_bits;
 			}
-			parsed_constraint.allowed_registers &= ~r_clobber_bits;
 		}
 
 		req = make_register_req(&parsed_constraint, n_out_constraints,
