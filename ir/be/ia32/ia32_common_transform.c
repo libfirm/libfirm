@@ -32,6 +32,7 @@
 #include "typerep.h"
 
 #include "../betranshlp.h"
+#include "../beirg_t.h"
 
 #include "ia32_architecture.h"
 #include "ia32_common_transform.h"
@@ -475,7 +476,9 @@ ir_node *gen_ASM(ir_node *node)
 	const ir_asm_constraint    *out_constraints;
 	ident                     **clobbers;
 	int                         clobbers_flags = 0;
-	unsigned                    clobber_bits_gp = 0;
+	unsigned                    clobber_bits[N_CLASSES];
+
+	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
 	/* workaround for lots of buggy code out there as most people think volatile
 	 * asm is enough for everything and forget the flags (linux kernel, etc.)
@@ -502,9 +505,7 @@ ir_node *gen_ASM(ir_node *node)
 		}
 
 		req = parse_clobber(c);
-		if (req->cls == &ia32_reg_classes[CLASS_ia32_gp]) {
-			clobber_bits_gp |= *req->limited;
-		}
+		clobber_bits[req->cls->index] |= *req->limited;
 
 		n_clobbers++;
 	}
@@ -563,24 +564,20 @@ ir_node *gen_ASM(ir_node *node)
 		unsigned                   pos          = constraint->pos;
 		int                        is_memory_op = 0;
 		ir_node                   *input        = NULL;
+		unsigned                   r_clobber_bits;
 		constraint_t               parsed_constraint;
 		const arch_register_req_t *req;
 
 		parse_asm_constraints(&parsed_constraint, c, 0);
-		if (clobber_bits_gp != 0 &&
-		    parsed_constraint.cls == &ia32_reg_classes[CLASS_ia32_gp]) {
+		r_clobber_bits = clobber_bits[parsed_constraint.cls->index];
+		if (r_clobber_bits != 0) {
 			if (parsed_constraint.all_registers_allowed) {
 				parsed_constraint.all_registers_allowed = 0;
-				parsed_constraint.allowed_registers     =
-					1 << REG_EAX |
-					1 << REG_EBX |
-					1 << REG_ECX |
-					1 << REG_EDX |
-					1 << REG_ESI |
-					1 << REG_EDI |
-					1 << REG_EBP;
+				be_abi_set_non_ignore_regs(env_cg->birg->abi,
+						parsed_constraint.cls,
+						&parsed_constraint.allowed_registers);
 			}
-			parsed_constraint.allowed_registers &= ~clobber_bits_gp;
+			parsed_constraint.allowed_registers &= ~r_clobber_bits;
 		}
 
 		req = make_register_req(&parsed_constraint, n_out_constraints,
