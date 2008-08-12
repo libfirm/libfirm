@@ -457,8 +457,12 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 ir_node *gen_ASM(ir_node *node)
 {
 	ir_graph                   *irg       = current_ir_graph;
+#ifdef FIRM_GRGEN_BE
+	ir_node                    *new_block = get_nodes_block(node);
+#else
 	ir_node                    *block     = get_nodes_block(node);
 	ir_node                    *new_block = be_transform_node(block);
+#endif
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
 	int                         i, arity;
 	int                         out_idx;
