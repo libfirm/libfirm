@@ -782,7 +782,7 @@ static unsigned optimize_load(ir_node *load)
 				} else {
 					compound_graph_path *path = get_accessed_path(ptr);
 
-					if (path) {
+					if (path && !ent->has_initializer) {
 						ir_node *c;
 
 						assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
