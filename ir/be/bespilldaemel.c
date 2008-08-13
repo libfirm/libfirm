@@ -94,8 +94,8 @@ static double get_spill_costs(ir_node *node)
 		}
 
 		if(is_Phi(use)) {
-			int      in         = get_edge_src_pos(edge);
-			ir_node *block      = get_nodes_block(use);
+			int      in    = get_edge_src_pos(edge);
+			ir_node *block = get_nodes_block(use);
 
 			costs += be_get_reload_costs_on_edge(spill_env, node, block, in);
 		} else {
@@ -415,7 +415,7 @@ void be_init_daemelspill(void)
 	};
 
 	be_register_spiller("daemel", &daemel_spiller);
-	FIRM_DBG_REGISTER(dbg, "ir.be.spilldaemel");
+	FIRM_DBG_REGISTER(dbg, "firm.be.spilldaemel");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);
