@@ -719,10 +719,11 @@ void opt_tail_recursion(void) {
 
 		current_ir_graph = irg;
 
-		set_using_irn_link(irg);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		if (opt_tail_rec_irg(irg))
 			++n_opt_applications;
-		clear_using_irn_link(irg);
+
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	}
 
 	DB((dbg, LEVEL_1, "Performed tail recursion for %d of %d graphs\n",

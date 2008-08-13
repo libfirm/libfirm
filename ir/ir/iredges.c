@@ -977,10 +977,10 @@ void irg_block_edges_walk(ir_node *node,
 	assert(edges_activated(current_ir_graph));
 	assert(is_Block(node));
 
-	set_using_block_visited(current_ir_graph);
+	ir_reserve_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
 
 	inc_irg_block_visited(current_ir_graph);
 	irg_block_edges_walk2(node, pre, post, env);
 
-	clear_using_block_visited(current_ir_graph);
+	ir_free_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
 }

@@ -2140,7 +2140,7 @@ static node_t *identity_Mux(node_t *node) {
 	ir_node *mux = node->node;
 	node_t  *t   = get_irn_node(get_Mux_true(mux));
 	node_t  *f   = get_irn_node(get_Mux_false(mux));
-	node_t  *sel;
+	/*node_t  *sel; */
 
 	if (t->part == f->part)
 		return t;

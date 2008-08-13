@@ -453,22 +453,24 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
 
-	cls       = ncls;
-	n_regs    = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	cls    = ncls;
+	n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
 
-	if(n_regs == 0)
+	/* shortcut for register classes with ignore regs only */
+	if (n_regs == 0)
 		return;
 
-	arch_env       = be_get_birg_arch_env(birg);
-	exec_freq      = be_get_birg_exec_freq(birg);
+	arch_env  = be_get_birg_arch_env(birg);
+	exec_freq = be_get_birg_exec_freq(birg);
 
 	be_clear_links(irg);
-	set_using_irn_link(irg);
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 	inc_irg_visited(irg);
 
 	obstack_init(&obst);
 	senv = be_new_spill_env(birg);
+
+	assure_cf_loop(irg);
 
 	/* do a post-order walk over the CFG to make sure we have a maximum number
 	 * of preds processed before entering a block */
@@ -481,8 +483,7 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 	tentative_mode = 0;
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
 
-	clear_using_irn_link(irg);
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 
 	be_insert_spills_reloads(senv);
 

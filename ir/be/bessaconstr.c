@@ -265,9 +265,8 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
 
-	set_using_irn_visited(irg);
-	set_using_block_visited(irg);
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
+			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
 
 	/* we use the visited flag to indicate blocks in the dominance frontier
 	 * and blocks that already have the relevant value at the end calculated */
@@ -283,9 +282,8 @@ void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 	del_waitq(env->worklist);
 	DEL_ARR_F(env->new_phis);
 
-	clear_using_irn_visited(env->irg);
-	clear_using_block_visited(env->irg);
-	clear_using_irn_link(env->irg);
+	ir_free_resources(env->irg, IR_RESOURCE_IRN_VISITED
+			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
 
 	stat_ev_tim_pop("bessaconstr_total_time");
 	stat_ev_ctx_pop("bessaconstr");

@@ -2201,7 +2201,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
 	/* we use links to point to target blocks */
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &exc_list);
 
 	/* initialize next block links */
@@ -2224,7 +2224,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	be_emit_char('\n');
 	be_emit_write_line();
 
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* Sort the exception table using the exception label id's.
 	   Those are ascending with ascending addresses. */

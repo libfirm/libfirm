@@ -510,10 +510,7 @@ struct ir_graph {
 #endif
 
 #ifndef NDEBUG
-	unsigned using_irn_visited   : 1;  /**< set to 1 if we are currently using the visited flag */
-	unsigned using_block_visited : 1;  /**< set to 1 if we are currently using the block_visited flag */
-	unsigned using_irn_link      : 1;  /**< set to 1 if we are currently using the irn_link fields */
-	unsigned using_block_mark    : 1;  /**< set to 1 if we are currently using the block mark flags */
+	ir_resources_t  reserved_resources;
 #endif
 };
 

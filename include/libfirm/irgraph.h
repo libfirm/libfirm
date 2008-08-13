@@ -512,31 +512,22 @@ void          set_irg_block_visited(ir_graph *irg, unsigned long i);
  * if 2 parties try to use the flags.
  */
 #ifndef NDEBUG
-void set_using_block_visited(ir_graph *irg);
-void clear_using_block_visited(ir_graph *irg);
-int  using_block_visited(const ir_graph *irg);
-void set_using_irn_visited(ir_graph *irg);
-void clear_using_irn_visited(ir_graph *irg);
-int  using_irn_visited(const ir_graph *irg);
-void set_using_irn_link(ir_graph *irg);
-void clear_using_irn_link(ir_graph *irg);
-int  using_irn_link(const ir_graph *irg);
-void set_using_block_mark(ir_graph *irg);
-void clear_using_block_mark(ir_graph *irg);
-int  using_block_mark(const ir_graph *irg);
+enum ir_resources_enum_t {
+	IR_RESOURCE_BLOCK_VISITED = 1 << 0,
+	IR_RESOURCE_BLOCK_MARK    = 1 << 1,
+	IR_RESOURCE_IRN_VISITED   = 1 << 2,
+	IR_RESOURCE_IRN_LINK      = 1 << 3,
+	IR_RESOURCE_LOOP_LINK     = 1 << 4,
+};
+typedef unsigned ir_resources_t;
+
+void ir_reserve_resources(ir_graph *irg, ir_resources_t resources);
+void ir_free_resources(ir_graph *irg, ir_resources_t resources);
+ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #else
-#define set_using_block_visited(irg)
-#define clear_using_block_visited(irg)
-#define using_block_visited(irg)        0
-#define set_using_irn_visited(irg)
-#define clear_using_irn_visited(irg)
-#define using_irn_visited(irg)          0
-#define set_using_irn_link(irg)
-#define clear_using_irn_link(irg)
-#define using_irn_link(irg)             0
-#define set_using_block_mark(irg)
-#define clear_using_block_mark(irg)
-#define using_block_mark(irg)           0
+#define ir_reserve_resources(irg,resources)
+#define ir_free_resources(irg,resources)
+#define ir_resources_reserved(irg)           0
 #endif
 
 /** Normalization: Move Proj nodes into the same block as its predecessors */

@@ -301,9 +301,9 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 	if(remat == NULL)
 		remat = &default_remat;
 
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, fix_flags_walker, NULL, birg->lv);
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if(changed) {
 		be_remove_dead_nodes_from_schedule(birg);

@@ -712,7 +712,7 @@ void optimize_cf(ir_graph *irg) {
 	edges_deactivate(irg);
 
 	/* we use the mark flag to mark removable blocks */
-	set_using_block_mark(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK);
 restart:
 	env.changed    = 0;
 	env.phis_moved = 0;
@@ -740,12 +740,12 @@ restart:
 		}
 	}
 
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	env.list = plist_new();
 	irg_walk(end, merge_blocks, collect_nodes, &env);
 
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (env.changed) {
 		/* Handle graph state if was changed. */
@@ -782,7 +782,7 @@ restart:
 
 	/* in rare cases a node may be kept alive more than once, use the visited flag to detect this */
 	inc_irg_visited(irg);
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {
@@ -815,8 +815,7 @@ restart:
 		env.changed = 1;
 	}
 
-	clear_using_block_mark(irg);
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_VISITED);
 
 	if (env.phis_moved) {
 		/* Bad: when we moved Phi's, we might produce dead Phi nodes

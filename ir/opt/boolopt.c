@@ -426,7 +426,7 @@ void opt_bool(ir_graph *const irg)
 {
 	irg_walk_graph(irg, NULL, bool_walk, NULL);
 
-	set_using_block_mark(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK);
 
 	irg_walk_graph(irg, clear_block_infos, collect_phis, NULL);
 
@@ -437,5 +437,5 @@ void opt_bool(ir_graph *const irg)
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
-	clear_using_block_mark(irg);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK);
 }

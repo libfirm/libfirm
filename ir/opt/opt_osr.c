@@ -997,7 +997,7 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 	ir_node *end = get_irg_end(irg);
 	int i, n;
 
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	current_ir_graph = irg;
 	inc_irg_visited(irg);
@@ -1014,7 +1014,7 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 			dfs(ka, env);
 	}
 
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	current_ir_graph = rem;
 }

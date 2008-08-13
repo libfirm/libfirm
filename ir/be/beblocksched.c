@@ -361,7 +361,7 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	ir_node            *startblock = get_irg_start_block(irg);
 	blocksched_entry_t *entry      = get_irn_link(startblock);
 
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
 	env->worklist = new_pdeq();
@@ -369,7 +369,7 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 	assert(pdeq_empty(env->worklist));
 	del_pdeq(env->worklist);
 
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	return entry;
 }
@@ -712,8 +712,7 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
 	list.end    = NULL;
 	list.n_blks = 0;
 
-	set_using_irn_link(irg);
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 	inc_irg_block_visited(irg);
 
 	create_block_list(get_irg_start_block(irg), &list);
@@ -726,8 +725,7 @@ static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfr
 		blk_list[i] = b;
 	}
 
-	clear_using_irn_link(irg);
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 
 	return blk_list;
 }

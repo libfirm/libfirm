@@ -485,7 +485,7 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 
 	res->phase_state = irg->phase_state;
 
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* copy all nodes from the graph irg to the new graph res */
 	irg_walk_anchors(irg, copy_all_nodes, set_all_preds, res);
@@ -512,7 +512,7 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 	   is different from the original one. */
 	res->estimated_node_count = irg->estimated_node_count;
 
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	return res;
 }
@@ -1043,62 +1043,21 @@ void *get_irg_loc_description(ir_graph *irg, int n) {
 }
 
 #ifndef NDEBUG
-void set_using_block_visited(ir_graph *irg) {
-	assert(irg->using_block_visited == 0);
-	irg->using_block_visited = 1;
+void ir_reserve_resources(ir_graph *irg, ir_resources_t resources)
+{
+	assert((irg->reserved_resources & resources) == 0);
+	irg->reserved_resources |= resources;
 }
 
-void clear_using_block_visited(ir_graph *irg) {
-	assert(irg->using_block_visited == 1);
-	irg->using_block_visited = 0;
+void ir_free_resources(ir_graph *irg, ir_resources_t resources)
+{
+	assert((irg->reserved_resources & resources) == resources);
+	irg->reserved_resources &= ~resources;
 }
 
-int using_block_visited(const ir_graph *irg) {
-	return irg->using_block_visited;
-}
-
-
-void set_using_irn_visited(ir_graph *irg) {
-	assert(irg->using_irn_visited == 0);
-	irg->using_irn_visited = 1;
-}
-
-void clear_using_irn_visited(ir_graph *irg) {
-	assert(irg->using_irn_visited == 1);
-	irg->using_irn_visited = 0;
-}
-
-int using_irn_visited(const ir_graph *irg) {
-	return irg->using_irn_visited;
-}
-
-
-void set_using_irn_link(ir_graph *irg) {
-	assert(irg->using_irn_link == 0);
-	irg->using_irn_link = 1;
-}
-
-void clear_using_irn_link(ir_graph *irg) {
-	assert(irg->using_irn_link == 1);
-	irg->using_irn_link = 0;
-}
-
-int using_irn_link(const ir_graph *irg) {
-	return irg->using_irn_link;
-}
-
-void set_using_block_mark(ir_graph *irg) {
-	assert(irg->using_block_mark == 0);
-	irg->using_block_mark = 1;
-}
-
-void clear_using_block_mark(ir_graph *irg) {
-	assert(irg->using_block_mark == 1);
-	irg->using_block_mark = 0;
-}
-
-int using_block_mark(const ir_graph *irg) {
-	return irg->using_block_mark;
+ir_resources_t ir_resources_reserved(const ir_graph *irg)
+{
+	return irg->reserved_resources;
 }
 #endif /* NDEBUG */
 

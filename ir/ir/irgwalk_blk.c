@@ -371,7 +371,7 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
   blks.follow_deps = follow_deps != 0;
 
   /* first step: traverse the graph and fill the lists */
-  set_using_irn_visited(irg);
+  ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
   inc_irg_visited(irg);
   collect_walk(end_node, &blks);
 
@@ -394,7 +394,7 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
 #ifdef INTERPROCEDURAL_VIEW
   set_interprocedural_view(old_view);
 #endif
-  clear_using_irn_visited(irg);
+  ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
 
 void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)

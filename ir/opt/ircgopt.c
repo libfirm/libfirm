@@ -108,7 +108,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
 				ir_node *node = get_irg_end(irg);
 
 				/* collect calls */
-				set_using_irn_link(irg);
+				ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 				irg_walk_graph(irg, firm_clear_link, collect_call, node);
 
 				/* iterate calls */
@@ -128,7 +128,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
 						}
 					}
 				}
-				clear_using_irn_link(irg);
+				ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 			}
 		}
 		DEL_ARR_F(marked);

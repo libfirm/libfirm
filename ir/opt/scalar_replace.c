@@ -301,7 +301,7 @@ static int find_possible_replacements(ir_graph *irg) {
 	int     i;
 	int     res = 0;
 
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
 	/*
@@ -358,7 +358,7 @@ static int find_possible_replacements(ir_graph *irg) {
 		}
 	}
 
-	clear_using_irn_visited(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	return res;
 }
 

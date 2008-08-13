@@ -191,7 +191,7 @@ void optimize_graph_df(ir_graph *irg) {
 	set_irg_doms_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	end  = get_irg_end(irg);
 	n_ka = get_End_n_keepalives(end);
@@ -229,7 +229,7 @@ void optimize_graph_df(ir_graph *irg) {
 
 	del_pdeq(waitq);
 
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (! state)
 		edges_deactivate(irg);

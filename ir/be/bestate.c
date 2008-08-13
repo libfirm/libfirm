@@ -560,8 +560,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	ir_nodemap_init(&env.spill_infos);
 
 	assure_doms(irg);
-	set_using_irn_visited(irg);
-	set_using_irn_link(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 	inc_irg_visited(irg);
 
 	/* process blocks */
@@ -570,8 +569,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	/* fix block end_states that don't match the next blocks start_state */
 	irg_block_walk_graph(irg, fix_block_borders, NULL, &env);
 
-	clear_using_irn_visited(irg);
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
 
 	/* reconstruct ssa-form */
 	info = env.spills;

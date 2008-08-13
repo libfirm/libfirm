@@ -606,11 +606,11 @@ static ir_entity **get_free_methods(int *length)
 			eset_insert(free_set, ent);
 		}
 
-		set_using_irn_link(irg);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		/* Find all method entities that gets "visible" through this graphs,
 		 * for instance because their address is stored. */
 		irg_walk_graph(irg, firm_clear_link, free_ana_walker, free_set);
-		clear_using_irn_link(irg);
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	}
 
 	/* insert all methods that are used in global variables initializers */

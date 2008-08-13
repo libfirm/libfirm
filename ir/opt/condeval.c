@@ -710,8 +710,7 @@ void opt_cond_eval(ir_graph* irg)
 	normalize_proj_nodes(irg);
 
 	edges_assure(irg);
-	set_using_irn_link(irg);
-	set_using_irn_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	changed = 0;
 	do {
@@ -720,8 +719,7 @@ void opt_cond_eval(ir_graph* irg)
 		changed |= rerun;
 	} while (rerun);
 
-	clear_using_irn_visited(irg);
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	if (changed) {
 		/* control flow changed, some blocks may become dead */

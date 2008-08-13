@@ -275,10 +275,10 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 		pset_new_destroy(&irg_set);
 	} else {
 #endif
-		set_using_irn_visited(current_ir_graph);
+		ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_2(node, pre, post, env);
-		clear_using_irn_visited(current_ir_graph);
+		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 #ifdef INTERPROCEDURAL_VIEW
 	}
 #endif
@@ -426,10 +426,10 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 	if (get_interprocedural_view()) {
 		assert(0 && "This is not yet implemented.");
 	} else {
-		set_using_irn_visited(current_ir_graph);
+		ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
-		clear_using_irn_visited(current_ir_graph);
+		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 	}
 }
 
@@ -601,16 +601,17 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
    flag, so that it can be interleaved with the other walker.         */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
+	ir_graph *irg = current_ir_graph;
 	ir_node *block, *pred;
 	int i;
 
-	hook_irg_block_walk(current_ir_graph, node, (generic_func *)pre, (generic_func *)post);
+	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
 	assert(node);
 	assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
 					       * interleaves with irg_walk */
-	set_using_block_visited(current_ir_graph);
-	inc_irg_block_visited(current_ir_graph);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	inc_irg_block_visited(irg);
 	block = is_Block(node) ? node : get_nodes_block(node);
 	assert(get_irn_op(block) == op_Block);
 	irg_block_walk_2(block, pre, post, env);
@@ -636,7 +637,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 		}
 	}
 
-	clear_using_block_visited(current_ir_graph);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
 
 /*

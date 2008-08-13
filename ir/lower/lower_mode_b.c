@@ -405,7 +405,8 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 {
 	config        = *nconfig;
 	lowered_nodes = new_pdeq();
-	set_using_irn_link(irg);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	irg_walk_graph(irg, clear_links, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
@@ -416,5 +417,5 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	}
 	del_pdeq(lowered_nodes);
 
-	clear_using_irn_link(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
