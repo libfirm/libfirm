@@ -1864,7 +1864,9 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	ir_mode  *mode;
 	unsigned  cc;
 	int       n, i, regnum;
+	int                 pop_amount = 0;
 	be_abi_call_flags_t call_flags = be_abi_call_get_flags(abi);
+
 	(void) self;
 
 	/* set abi flags for calls */
@@ -1882,8 +1884,9 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		cc = cc_cdecl_set;
 	} else {
 		cc = get_method_calling_convention(method_type);
-		if (get_method_additional_properties(method_type) & mtp_property_private
-				&& (ia32_cg_config.optimize_cc)) {
+		if (!(cc & cc_fixed)                                                     &&
+		    get_method_additional_properties(method_type) & mtp_property_private &&
+		    ia32_cg_config.optimize_cc) {
 			/* set the calling conventions to register parameter */
 			cc = (cc & ~cc_bits) | cc_reg_param;
 		}
@@ -1892,7 +1895,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	/* we have to pop the shadow parameter ourself for compound calls */
 	if( (get_method_calling_convention(method_type) & cc_compound_ret)
 			&& !(cc & cc_reg_param)) {
-		be_abi_call_set_pop(abi, get_mode_size_bytes(mode_P_data));
+		pop_amount += get_mode_size_bytes(mode_P_data);
 	}
 
 	n = get_method_n_params(method_type);
@@ -1911,11 +1914,20 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		} else {
 			/* Micro optimisation: if the mode is shorter than 4 bytes, load 4 bytes.
 			 * movl has a shorter opcode than mov[sz][bw]l */
-			ir_mode *load_mode = mode;
-			if (mode != NULL && get_mode_size_bytes(mode) < 4) load_mode = mode_Iu;
+			ir_mode  *load_mode = mode;
+			unsigned  size      = get_mode_size_bytes(mode);
+
+			if (cc & cc_callee_clear_stk) {
+				pop_amount += (size + 3U) & ~3U;
+			}
+
+			if (mode != NULL && size < 4) load_mode = mode_Iu;
+
 			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0);
 		}
 	}
+
+	be_abi_call_set_pop(abi, pop_amount);
 
 	/* set return registers */
 	n = get_method_n_ress(method_type);
