@@ -157,12 +157,9 @@ extern void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_
 /**
  * Get the register requirements for a node.
  * @param env The architecture environment.
- * @param req A pointer to a requirements structure, where the data can
- *            be put into.
  * @param irn The node.
  * @param pos The position of the operand you're interested in.
- * @return    A pointer to the register requirements which may <b>not</b>
- *            neccessarily be equal to @p req. If NULL is returned, the
+ * @return    A pointer to the register requirements.  If NULL is returned, the
  *            operand was no register operand.
  */
 extern const arch_register_req_t *
@@ -237,7 +234,6 @@ arch_get_irn_register(const arch_env_t *env, const ir_node *irn);
  * Set the register for a certain output operand.
  * @param env The architecture environment.
  * @param irn The node.
- * @param idx The index of the output operand.
  * @param reg The register.
  */
 extern void arch_set_irn_register(const arch_env_t *env, ir_node *irn,
