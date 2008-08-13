@@ -1874,7 +1874,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
-	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
+	call_flags.bits.call_has_imm          = 1;  /* No call immediates, we handle this by ourselves */
 
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
@@ -1914,14 +1914,17 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		} else {
 			/* Micro optimisation: if the mode is shorter than 4 bytes, load 4 bytes.
 			 * movl has a shorter opcode than mov[sz][bw]l */
-			ir_mode  *load_mode = mode;
-			unsigned  size      = get_mode_size_bytes(mode);
+			ir_mode *load_mode = mode;
 
-			if (cc & cc_callee_clear_stk) {
-				pop_amount += (size + 3U) & ~3U;
+			if (mode != NULL) {
+				unsigned size = get_mode_size_bytes(mode);
+
+				if (cc & cc_callee_clear_stk) {
+					pop_amount += (size + 3U) & ~3U;
+				}
+
+				if (size < 4) load_mode = mode_Iu;
 			}
-
-			if (mode != NULL && size < 4) load_mode = mode_Iu;
 
 			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0);
 		}
