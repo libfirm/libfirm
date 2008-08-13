@@ -219,8 +219,8 @@ $arch = "ia32";
 	XXM => "${arch}_emit_xmm_mode_suffix(node);",
 	XSD => "${arch}_emit_xmm_mode_suffix_s(node);",
 	AM => "${arch}_emit_am(node);",
-	unop3 => "${arch}_emit_unop(node, 3);",
-	unop4 => "${arch}_emit_unop(node, 4);",
+	unop3 => "${arch}_emit_unop(node, n_ia32_unary_op);",
+	unop4 => "${arch}_emit_unop(node, n_ia32_binary_right);",
 	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
 	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
@@ -275,32 +275,33 @@ sub ia32_custom_init_attr {
 $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
-	ia32_attr_t     => "\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
-	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_x87_attributes(res);",
 	ia32_asm_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);".
 		"\tinit_ia32_asm_attributes(res);",
-	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);",
-	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_copyb_attributes(res, size);",
+	ia32_attr_t     =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
 	ia32_condcode_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, pnc);",
+	ia32_copyb_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_copyb_attributes(res, size);",
+	ia32_immediate_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);",
+	ia32_x87_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_x87_attributes(res);",
 );
 
 %compare_attr = (
-	ia32_attr_t           => "ia32_compare_nodes_attr",
-	ia32_x87_attr_t       => "ia32_compare_x87_attr",
 	ia32_asm_attr_t       => "ia32_compare_asm_attr",
-	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
-	ia32_copyb_attr_t     => "ia32_compare_copyb_attr",
+	ia32_attr_t           => "ia32_compare_nodes_attr",
 	ia32_condcode_attr_t  => "ia32_compare_condcode_attr",
+	ia32_copyb_attr_t     => "ia32_compare_copyb_attr",
+	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
+	ia32_x87_attr_t       => "ia32_compare_x87_attr",
 );
 
 %operands = (
@@ -431,11 +432,11 @@ l_Adc => {
 
 Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constrains
+	# very strict constraints
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
 	               out => [ "eax", "edx", "none" ] },
-	ins       => [ "base", "index", "mem", "val_high", "val_low" ],
+	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. mul%M %unop4',
 	outs      => [ "res_low", "res_high", "M" ],
 	am        => "source,binary",
@@ -446,7 +447,7 @@ Mul => {
 
 l_Mul => {
 	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constrains
+	# very strict constraints
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
 	outs      => [ "EAX", "EDX", "M" ],
@@ -474,7 +475,7 @@ IMul1OP => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
 	               out => [ "eax", "edx", "none" ] },
-	ins       => [ "base", "index", "mem", "val_high", "val_low" ],
+	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. imul%M %unop4',
 	outs      => [ "res_low", "res_high", "M" ],
 	am        => "source,binary",
@@ -1380,7 +1381,7 @@ Push => {
 	ins       => [ "base", "index", "mem", "val", "stack" ],
 	emit      => '. push%M %unop3',
 	outs      => [ "stack:I|S", "M" ],
-	am        => "source,binary",
+	am        => "source,unary",
 	latency   => 2,
 	units     => [ "GP" ],
 },
