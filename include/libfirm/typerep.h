@@ -1974,6 +1974,7 @@ typedef enum {
 	cc_compound_ret        = 0x10000000, /**< The method returns a compound type. */
 	cc_frame_on_caller_stk = 0x20000000, /**< The method did not allocate an own stack frame, instead the
 	                                          caller must reserve size on its own stack. */
+	cc_fpreg_param         = 0x40000000, /**< Transmit floating point parameters in registers, else the stack is used. */
 	cc_fixed               = (int)0x80000000, /**< The calling convention must not be changed later on */
 	cc_bits                = (0xFF << 24)/**< The calling convention bits. */
 } calling_convention;
