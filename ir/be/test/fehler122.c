@@ -1,4 +1,4 @@
-/*$ -f combo $*/
+/*$ -fcombo $*/
 int *zptr;
 
 #define swap(lv1, lv2) \

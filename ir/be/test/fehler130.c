@@ -1,4 +1,4 @@
-/*$ -f combo $*/
+/*$ -fcombo $*/
 static int bi_valid;
 static int bi_buf = 0;
 
