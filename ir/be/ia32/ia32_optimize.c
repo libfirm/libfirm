@@ -178,6 +178,8 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	int                          cmp_unsigned;
 	ir_node                     *test;
 	arch_register_t       const *reg;
+	ir_edge_t             const *edge;
+	ir_edge_t             const *tmp;
 
 	if (get_ia32_op_type(node) != ia32_Normal)
 		return;
@@ -211,6 +213,13 @@ static void peephole_ia32_Cmp(ir_node *const node)
 
 	reg = arch_get_irn_register(arch_env, node);
 	arch_set_irn_register(arch_env, test, reg);
+
+	foreach_out_edge_safe(node, edge, tmp) {
+		ir_node *const user = get_edge_src_irn(edge);
+
+		if (is_Proj(user))
+			exchange(user, test);
+	}
 
 	sched_add_before(node, test);
 	be_peephole_exchange(node, test);
