@@ -128,8 +128,8 @@ struct node_t {
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
-	unsigned        is_flagged:1;   /**< Set, if this node was visited by the race. */
 	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
+	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
 };
 
 /**
@@ -203,7 +203,7 @@ static void check_partition(const partition_t *T) {
 
 	list_for_each_entry(node_t, node, &T->Leader, node_list) {
 		assert(node->is_follower == 0);
-		assert(node->is_flagged == 0);
+		assert(node->flagged == 0);
 		assert(node->part == T);
 		++n;
 	}
@@ -211,10 +211,24 @@ static void check_partition(const partition_t *T) {
 
 	list_for_each_entry(node_t, node, &T->Follower, node_list) {
 		assert(node->is_follower == 1);
-		assert(node->is_flagged == 0);
+		assert(node->flagged == 0);
 		assert(node->part == T);
 	}
 }  /* check_partition */
+
+static void check_all_partitions(environment_t *env) {
+	partition_t *P;
+	node_t      *node;
+
+	for (P = env->dbg_list; P != NULL; P = P->dbg_next) {
+		check_partition(P);
+		list_for_each_entry(node_t, node, &P->Follower, node_list) {
+			node_t *leader = identity(node);
+
+			assert(leader != node && leader->part == node->part);
+		}
+	}
+}
 
 /**
  * Check list.
@@ -239,6 +253,7 @@ static void check_list(const node_t *list, const partition_t *Z) {
 #else
 #define check_partition(T)
 #define check_list(list, Z)
+#define check_all_partitions(env)
 #endif /* CHECK_PARTITIONS */
 
 #ifdef DEBUG_libfirm
@@ -568,7 +583,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->on_fallen      = 0;
 	node->is_follower    = 0;
 	node->by_all_const   = 0;
-	node->is_flagged     = 0;
+	node->flagged        = 0;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->Leader);
@@ -819,6 +834,7 @@ typedef struct step_env {
 	node_t   *unwalked;   /**< The unwalked node list. */
 	node_t   *walked;     /**< The walked node list. */
 	int      index;       /**< Next index of Follower use_def edge. */
+	unsigned side;        /**< side number. */
 } step_env;
 
 /**
@@ -834,6 +850,15 @@ static int is_real_follower(const ir_node *irn, int input) {
 	}
 	if (input == 0 && is_Mux(irn)) {
 		/* ignore the Mux sel input */
+		return 0;
+	}
+	if (is_Phi(irn)) {
+		/* dead inputs are not follower edges */
+		ir_node *block = get_nodes_block(irn);
+		node_t  *pred  = get_irn_node(get_Block_cfgpred(block, input));
+
+		if (pred->type.tv == tarval_unreachable)
+			return 0;
 	}
 	return 1;
 }
@@ -879,15 +904,18 @@ static int step(step_env *env) {
 			if (m->part != n->part)
 				continue;
 
-			if (m->is_flagged == 0) {
-				m->is_flagged = 1;
+			if ((m->flagged & env->side) == 0) {
+				m->flagged |= env->side;
 
-				/* visited the first time */
-				/* add m to unwalked not as first node (we might still need to
-				   check for more follower node */
-				m->race_next = n->race_next;
-				n->race_next = m;
-				return 0;
+				if (m->flagged != 3) {
+					/* visited the first time */
+					/* add m to unwalked not as first node (we might still need to
+					   check for more follower node */
+					m->race_next = n->race_next;
+					n->race_next = m;
+					return 0;
+				}
+				/* else already visited by the other side and on the other list */
 			}
 		}
 		/* move n to walked */
@@ -905,11 +933,20 @@ static int step(step_env *env) {
  *
  * @param list  the list
  */
-static void clear_flags(node_t *list) {
+static int clear_flags(node_t *list) {
+	int    res = 0;
 	node_t *n;
 
-	for (n = list; n != NULL; n = n->race_next)
-		n->is_flagged = 0;
+	for (n = list; n != NULL; n = n->race_next) {
+		if (n->flagged == 3) {
+			/* we reach a follower from both sides, this will split congruent
+			 * inputs and make it a leader. */
+			follower_to_leader(n);
+			res = 1;
+		}
+		n->flagged = 0;
+	}
+	return res;
 }  /* clear_flags */
 
 /**
@@ -927,7 +964,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	list_head   tmp;
 	step_env    env1, env2, *winner;
 	node_t      *g, *h, *node, *t;
-	int         max_input;
+	int         max_input, transitions;
 	unsigned    n;
 	DEBUG_ONLY(static int run = 0;)
 
@@ -968,11 +1005,13 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	env1.unwalked      = NULL;
 	env1.walked        = NULL;
 	env1.index         = 0;
+	env1.side          = 1;
 
 	env2.initial       = h;
 	env2.unwalked      = NULL;
 	env2.walked        = NULL;
 	env2.index         = 0;
+	env2.side          = 2;
 
 	for (;;) {
 		if (step(&env1)) {
@@ -988,10 +1027,10 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	assert(winner->unwalked == NULL);
 
 	/* clear flags from walked/unwalked */
-	clear_flags(env1.unwalked);
-	clear_flags(env1.walked);
-	clear_flags(env2.unwalked);
-	clear_flags(env2.walked);
+	transitions  = clear_flags(env1.unwalked);
+	transitions |= clear_flags(env1.walked);
+	transitions |= clear_flags(env2.unwalked);
+	transitions |= clear_flags(env2.walked);
 
 	dump_race_list("winner ", winner->walked);
 
@@ -1023,8 +1062,10 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	 * loose its congruence, so we need to check this case for all follower.
 	 */
 	list_for_each_entry_safe(node_t, node, t, &X_prime->Follower, node_list) {
-		if (identity(node) == node)
+		if (identity(node) == node) {
 			follower_to_leader(node);
+			transitions = 1;
+		}
 	}
 
 	check_partition(X);
@@ -1032,6 +1073,24 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 
 	/* X' is the smaller part */
 	add_to_worklist(X_prime, env);
+
+	/*
+	 * If there where follower to leader transitions, ensure that the nodes
+	 * can be split out if necessary.
+	 */
+	if (transitions) {
+		/* place partitions on the cprop list */
+                if (X_prime->on_cprop == 0) {
+			X_prime->cprop_next = env->cprop;
+			env->cprop          = X_prime;
+			X_prime->on_cprop   = 1;
+		}
+                if (X->on_cprop == 0) {
+			X->cprop_next = env->cprop;
+			env->cprop    = X;
+			X->on_cprop   = 1;
+		}
+	}
 
 	dump_partition("Now ", X);
 	dump_partition("Created new ", X_prime);
@@ -2378,8 +2437,7 @@ static void propagate(environment_t *env) {
 
 			/* check if some nodes will make the leader -> follower transition */
 			list_for_each_entry_safe(node_t, y, tmp, &Y->Leader, node_list) {
-				if (!is_Phi(y->node) &&
-				    y->type.tv != tarval_top && ! is_con(y->type)) {
+				if (y->type.tv != tarval_top && ! is_con(y->type)) {
 					node_t *eq_node = identity(y);
 
 					if (eq_node != y && eq_node->part == y->part) {
@@ -2409,8 +2467,9 @@ static ir_node *get_leader(node_t *node) {
 	partition_t *part = node->part;
 
 	if (part->n_leader > 1 || node->is_follower) {
-		if (node->is_follower)
+		if (node->is_follower) {
 			DB((dbg, LEVEL_2, "Replacing follower %+F\n", node->node));
+		}
 		else
 			DB((dbg, LEVEL_2, "Found congruence class for %+F\n", node->node));
 
@@ -2668,10 +2727,10 @@ static void apply_end(ir_node *end, environment_t *env) {
 		ir_node *ka   = get_End_keepalive(end, i);
 		node_t  *node = get_irn_node(ka);
 
-		/* Use the is_flagged bit to mark already visited nodes.
+		/* Use the flagged bits to mark already visited nodes.
 		 * This should not be ready but better safe than sorry. */
-		if (node->is_flagged == 0) {
-			node->is_flagged = 1;
+		if (node->flagged == 0) {
+			node->flagged = 3;
 
 			if (! is_Block(ka))
 				node = get_irn_node(get_nodes_block(ka));
@@ -2786,6 +2845,7 @@ void combo(ir_graph *irg) {
 	} while (env.cprop != NULL || env.worklist != NULL);
 
 	dump_all_partitions(&env);
+	check_all_partitions(&env);
 
 #if 0
 	set_dump_node_vcgattr_hook(dump_partition_hook);
