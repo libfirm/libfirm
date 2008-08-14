@@ -60,6 +60,8 @@ enum firmstat_optimizations_t {
 	FS_OPT_SUB_SUB_X_Y_Z,                     /**< (x - y) - z = x - (y + z) */
 	FS_OPT_SUB_C_NOT_X,                       /**< c - ~a = a + (c+1) */
 	FS_OPT_SUB_TO_ADD,                        /**< (-a) - b = -(a + b), a - (b - c) = a + (c - b), a - (b * C) -> a + (b * -C) */
+	FS_OPT_SUB_TO_NOT,                        /**< /* -1 - x -> ~x on two's complement */
+	FS_OPT_SUB_TO_CONV,                       /**< /* a - NULL = (int)a */
 	FS_OPT_MUL_MINUS,                         /**< (-a) * (b - c) -> a * (c - b) */
 	FS_OPT_MUL_MINUS_1,                       /**< a * -1 = -a */
 	FS_OPT_MINUS_MUL_C,                       /**< (-a) * C = a * (-C) */

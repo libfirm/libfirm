@@ -78,6 +78,8 @@ static const struct {
 	{ FS_OPT_SUB_SUB_X_Y_Z,  "algebraic simplification: (x - y) - z = x - (y + z)" },
 	{ FS_OPT_SUB_C_NOT_X,    "algebraic simplification: c - ~a = a + (c+1)" },
 	{ FS_OPT_SUB_TO_ADD,     "algebraic simplification: (-a) - b = -(a + b), a - (b - c) = a + (c - b), a - (b * C) = a + (b * -C)" },
+	{ FS_OPT_SUB_TO_NOT,     "algebraic simplification: -1 - x -> ~x" },
+	{ FS_OPT_SUB_TO_CONV,    "algebraic simplification: a - NULL = (int)a" },
 	{ FS_OPT_MUL_MINUS,      "algebraic simplification: (-a) * (b - c) = a * (c - b)" },
 	{ FS_OPT_MUL_MINUS_1,    "algebraic simplification: a * -1 = -a" },
 	{ FS_OPT_MINUS_MUL_C,    "algebraic simplification: (-a) * C = a * (-C)" },

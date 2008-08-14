@@ -2319,7 +2319,9 @@ static ir_node *transform_node_Sub(ir_node *n) {
 		if (is_Const(b) && is_Const_null(b) && mode_is_reference(lmode)) {
 			/* a Sub(a, NULL) is a hidden Conv */
 			dbg_info *dbg = get_irn_dbg_info(n);
-			return new_rd_Conv(dbg, current_ir_graph, get_nodes_block(n), a, mode);
+			n = new_rd_Conv(dbg, current_ir_graph, get_nodes_block(n), a, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_CONV);
+			return n;
 		}
 
 		if (mode == lmode                                     &&
@@ -2328,7 +2330,9 @@ static ir_node *transform_node_Sub(ir_node *n) {
 		    get_Const_tarval(a) == get_mode_minus_one(mode)) {
 			/* -1 - x -> ~x */
 			dbg_info *dbg = get_irn_dbg_info(n);
-			return new_rd_Not(dbg, current_ir_graph, get_nodes_block(n), b, mode);
+			n = new_rd_Not(dbg, current_ir_graph, get_nodes_block(n), b, mode);
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_TO_NOT);
+			return n;
 		}
 	}
 
