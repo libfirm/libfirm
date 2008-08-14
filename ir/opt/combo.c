@@ -844,21 +844,59 @@ typedef struct step_env {
  * @param input  number of the input
  */
 static int is_real_follower(const ir_node *irn, int input) {
-	if (input == 1 && is_Confirm(irn)) {
-		/* return the Confirm bound input */
-		return 0;
-	}
-	if (input == 0 && is_Mux(irn)) {
-		/* ignore the Mux sel input */
-		return 0;
-	}
-	if (is_Phi(irn)) {
+	node_t *pred;
+
+	switch (get_irn_opcode(irn)) {
+	case iro_Confirm:
+		if (input == 1) {
+			/* ignore the Confirm bound input */
+			return 0;
+		}
+		break;
+	case iro_Mux:
+		if (input == 0) {
+			/* ignore the Mux sel input */
+			return 0;
+		}
+		break;
+	case iro_Phi: {
 		/* dead inputs are not follower edges */
 		ir_node *block = get_nodes_block(irn);
 		node_t  *pred  = get_irn_node(get_Block_cfgpred(block, input));
 
 		if (pred->type.tv == tarval_unreachable)
 			return 0;
+		break;
+	}
+	case iro_Sub:
+		if (input == 1) {
+			/* only a Sub x,0 might be a follower */
+			return 0;
+		}
+		break;
+	case iro_Or:
+	case iro_Add:
+		pred = get_irn_node(get_irn_n(irn, input));
+		if (is_tarval(pred->type.tv) && tarval_is_null(pred->type.tv))
+			return 0;
+		break;
+	case iro_Mul:
+		pred = get_irn_node(get_irn_n(irn, input));
+		if (is_tarval(pred->type.tv) && tarval_is_one(pred->type.tv))
+			return 0;
+		break;
+	case iro_And:
+		pred = get_irn_node(get_irn_n(irn, input));
+		if (is_tarval(pred->type.tv) && tarval_is_all_one(pred->type.tv))
+			return 0;
+		break;
+	case iro_Min:
+	case iro_Max:
+		/* all inputs are followers */
+		return 1;
+	default:
+		assert(!"opcode not implemented yet");
+		break;
 	}
 	return 1;
 }
@@ -2421,6 +2459,11 @@ static void propagate(environment_t *env) {
 		if (n_fallen > 0 && n_fallen != X->n_leader) {
 			DB((dbg, LEVEL_2, "Splitting part%d by fallen\n", X->nr));
 			Y = split(&X, fallen, env);
+			/*
+			 * We have split out fallen node. The type of the result
+			 * partition is NOT set yet.
+			 */
+			Y->type_is_T_or_C = 0;
 		} else {
 			Y = X;
 		}
