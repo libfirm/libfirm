@@ -431,6 +431,44 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 	return ent_cache[kct];
 }
 
+static int prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                       ir_node *const other)
+{
+	if (get_nodes_block(other) != block)
+		return 0;
+
+	if (is_Sync(other)) {
+		int i;
+
+		for (i = get_Sync_n_preds(other) - 1; i >= 0; --i) {
+			ir_node *const pred = get_Sync_pred(other, i);
+
+			if (get_nodes_block(pred) != block)
+				continue;
+
+			/* Do not block ourselves from getting eaten */
+			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
+				continue;
+
+			if (!heights_reachable_in_block(heights, pred, am_candidate))
+				continue;
+
+			return 1;
+		}
+
+		return 0;
+	} else {
+		/* Do not block ourselves from getting eaten */
+		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
+			return 0;
+
+		if (!heights_reachable_in_block(heights, other, am_candidate))
+			return 0;
+
+		return 1;
+	}
+}
+
 /**
  * return true if the node is a Proj(Load) and could be used in source address
  * mode for another node. Will return only true if the @p other node is not
@@ -478,11 +516,10 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 		return 0;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
-	if (other != NULL && get_nodes_block(other) == block &&
-	    heights_reachable_in_block(heights, other, load))
+	if (other != NULL && prevents_AM(block, load, other))
 		return 0;
-	if (other2 != NULL && get_nodes_block(other2) == block &&
-	    heights_reachable_in_block(heights, other2, load))
+
+	if (other2 != NULL && prevents_AM(block, load, other2))
 		return 0;
 
 	return 1;
@@ -1315,6 +1352,49 @@ static ir_node *gen_Sub(ir_node *node) {
 			| match_am | match_immediate);
 }
 
+static ir_node *transform_AM_mem(ir_graph *const irg, ir_node *const block,
+                                 ir_node  *const src_val,
+                                 ir_node  *const src_mem,
+                                 ir_node  *const am_mem)
+{
+	if (is_NoMem(am_mem)) {
+		return be_transform_node(src_mem);
+	} else if (is_Proj(src_val) &&
+	           is_Proj(src_mem) &&
+	           get_Proj_pred(src_val) == get_Proj_pred(src_mem)) {
+		/* avoid memory loop */
+		return am_mem;
+	} else if (is_Proj(src_val) && is_Sync(src_mem)) {
+		ir_node  *const ptr_pred = get_Proj_pred(src_val);
+		int       const arity    = get_Sync_n_preds(src_mem);
+		int             n        = 0;
+		ir_node **      ins;
+		int             i;
+
+		NEW_ARR_A(ir_node*, ins, arity + 1);
+
+		for (i = arity - 1; i >= 0; --i) {
+			ir_node *const pred = get_Sync_pred(src_mem, i);
+
+			/* avoid memory loop */
+			if (is_Proj(pred) && get_Proj_pred(pred) == ptr_pred)
+				continue;
+
+			ins[n++] = be_transform_node(pred);
+		}
+
+		ins[n++] = am_mem;
+
+		return new_r_Sync(irg, block, n, ins);
+	} else {
+		ir_node *ins[2];
+
+		ins[0] = be_transform_node(src_mem);
+		ins[1] = am_mem;
+		return new_r_Sync(irg, block, 2, ins);
+	}
+}
+
 /**
  * Generates an ia32 DivMod with additional infrastructure for the
  * register allocator if needed.
@@ -1364,17 +1444,7 @@ static ir_node *create_Div(ir_node *node)
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	   is the memory of the consumed address. We can have only the second op as address
 	   in Div nodes, so check only op2. */
-	if(!is_NoMem(mem) && skip_Proj(mem) != skip_Proj(op2)) {
-		new_mem = be_transform_node(mem);
-		if(!is_NoMem(addr->mem)) {
-			ir_node *in[2];
-			in[0] = new_mem;
-			in[1] = addr->mem;
-			new_mem = new_rd_Sync(dbgi, irg, new_block, 2, in);
-		}
-	} else {
-		new_mem = addr->mem;
-	}
+	new_mem = transform_AM_mem(irg, block, op2, mem, addr->mem);
 
 	if (mode_is_signed(mode)) {
 		ir_node *produceval = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
