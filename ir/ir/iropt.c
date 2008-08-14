@@ -2321,6 +2321,15 @@ static ir_node *transform_node_Sub(ir_node *n) {
 			dbg_info *dbg = get_irn_dbg_info(n);
 			return new_rd_Conv(dbg, current_ir_graph, get_nodes_block(n), a, mode);
 		}
+
+		if (mode == lmode                                     &&
+		    get_mode_arithmetic(mode) == irma_twos_complement &&
+		    is_Const(a)                                       &&
+		    get_Const_tarval(a) == get_mode_minus_one(mode)) {
+			/* -1 - x -> ~x */
+			dbg_info *dbg = get_irn_dbg_info(n);
+			return new_rd_Not(dbg, current_ir_graph, get_nodes_block(n), b, mode);
+		}
 	}
 
 restart:
