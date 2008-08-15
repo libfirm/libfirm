@@ -167,7 +167,8 @@ typedef struct environment_t {
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
-	int             modified;       /**< Set, if the graph was modified. */
+	char            nonstd_cond;    /**< Set, if a Condb note has a non-Cmp predecessor. */
+	char            modified;       /**< Set, if the graph was modified. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
@@ -189,6 +190,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** Next partition number. */
 DEBUG_ONLY(static unsigned part_nr = 0);
+
+/** The tarval returned by Unknown nodes. */
+static tarval *tarval_UNKNOWN;
 
 /* forward */
 static node_t *identity(node_t *node);
@@ -619,6 +623,11 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 
 	if (is_Phi(irn)) {
 		add_Block_phi(get_nodes_block(irn), irn);
+	} else if (is_Cond(irn)) {
+		/* check if all Cond's have a Cmp predecessor. */
+		if (get_irn_mode(irn) == mode_b && !is_Cmp(skip_Proj(get_Cond_selector(irn))))
+			env->nonstd_cond = 1;
+
 	}
 }  /* create_initial_partitions */
 
@@ -1588,10 +1597,8 @@ static void compute_Unknown(node_t *node) {
 	 * nodes are inputs to Conds. We check that first.
 	 * This is the way Frontends typically build Firm, but some optimizations
 	 * (cond_eval for instance) might replace them by Phib's...
-	 *
-	 * For now, we compute bottom here.
 	 */
-	node->type.tv = tarval_bottom;
+	node->type.tv = tarval_UNKNOWN;
 }  /* compute_Unknown */
 
 /**
@@ -1785,7 +1792,11 @@ static void compute_Cmp(node_t *node) {
 	lattice_elem_t b     = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
+		/*
+		 * Top is congruent to any other value, we can
+		 * calculate the compare result.
+		 */
+		node->type.tv = tarval_b_true;
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
 		node->type.tv = tarval_b_true;
@@ -1813,7 +1824,9 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
+		/* see above */
+		tv = new_tarval_from_long((pnc & pn_Cmp_Eq) ^ pn_Cmp_Eq, mode_b);
+		goto not_equal;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
 		node->by_all_const = 1;
@@ -1824,6 +1837,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		 * NaN != NaN is defined, so we must check this here.
 		 */
 		tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+not_equal:
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breakes AND we cat by partition a different result, switch to bottom.
@@ -2852,6 +2866,7 @@ void combo(ir_graph *irg) {
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
+	env.nonstd_cond    = 0;
 	env.modified       = 0;
 
 	assure_irg_outs(irg);
@@ -2866,6 +2881,8 @@ void combo(ir_graph *irg) {
 	env.initial = new_partition(&env);
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
+
+	tarval_UNKNOWN = env.nonstd_cond ? tarval_bad : tarval_top;
 
 	/* all nodes on the initial partition have type Top */
 	env.initial->type_is_T_or_C = 1;
