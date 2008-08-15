@@ -2164,6 +2164,12 @@ void inline_functions(int maxsize, int inline_threshold) {
 			curr_call = curr_call->next;
 		}
 
+	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+
+		env = get_irg_link(irg);
 		if (env->got_inline) {
 			/* this irg got calls inlined: optimize it */
 
