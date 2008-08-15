@@ -57,7 +57,7 @@
 #include "irdump.h"
 
 /* define this to check that all type translations are monotone */
-#define VERIFY_MONOTONE
+#undef VERIFY_MONOTONE
 
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
@@ -878,13 +878,18 @@ static int is_real_follower(const ir_node *irn, int input) {
 		break;
 	}
 	case iro_Sub:
+	case iro_Shr:
+	case iro_Shl:
+	case iro_Shrs:
+	case iro_Rotl:
 		if (input == 1) {
-			/* only a Sub x,0 might be a follower */
+			/* only a Sub x,0 / Shift x,0 might be a follower */
 			return 0;
 		}
 		break;
-	case iro_Or:
 	case iro_Add:
+	case iro_Or:
+	case iro_Eor:
 		pred = get_irn_node(get_irn_n(irn, input));
 		if (is_tarval(pred->type.tv) && tarval_is_null(pred->type.tv))
 			return 0;
@@ -1242,7 +1247,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 
 			if (is_constant_type(y->type)) {
 				ir_opcode code = get_irn_opcode(succ);
-				if (code == iro_Sub || code == iro_Cmp)
+				if (code == iro_Sub || code == iro_Eor || code == iro_Cmp)
 					add_to_cprop(y, env);
 			}
 
@@ -1780,6 +1785,47 @@ static void compute_Sub(node_t *node) {
 }  /* compute_Sub */
 
 /**
+ * (Re-)compute the type for an Eor. Special case: both nodes are congruent.
+ *
+ * @param node  the node
+ */
+static void compute_Eor(node_t *node) {
+	ir_node        *eor = node->node;
+	node_t         *l   = get_irn_node(get_Eor_left(eor));
+	node_t         *r   = get_irn_node(get_Eor_right(eor));
+	lattice_elem_t a    = l->type;
+	lattice_elem_t b    = r->type;
+	tarval         *tv;
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (is_con(a) && is_con(b)) {
+		if (is_tarval(a.tv) && is_tarval(b.tv)) {
+			node->type.tv = tarval_eor(a.tv, b.tv);
+		} else if (is_tarval(a.tv) && tarval_is_null(a.tv)) {
+			node->type = b;
+		} else if (is_tarval(b.tv) && tarval_is_null(b.tv)) {
+			node->type = a;
+		} else {
+			node->type.tv = tarval_bottom;
+		}
+		node->by_all_const = 1;
+	} else if (r->part == l->part) {
+		ir_mode *mode = get_irn_mode(eor);
+		tv = get_mode_null(mode);
+
+		/* if the node was ONCE evaluated by all constants, but now
+		   this breakes AND we cat by partition a different result, switch to bottom.
+		   This happens because initially all nodes are in the same partition ... */
+		if (node->by_all_const && node->type.tv != tv)
+			tv = tarval_bottom;
+		node->type.tv = tv;
+	} else {
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Eor */
+
+/**
  * (Re-)compute the type for Cmp.
  *
  * @param node  the node
@@ -1792,11 +1838,15 @@ static void compute_Cmp(node_t *node) {
 	lattice_elem_t b     = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
+#ifdef WITH_UNKNOWN
 		/*
 		 * Top is congruent to any other value, we can
 		 * calculate the compare result.
 		 */
 		node->type.tv = tarval_b_true;
+#else
+		node->type.tv = tarval_top;
+#endif
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
 		node->type.tv = tarval_b_true;
@@ -1824,9 +1874,13 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
+#ifdef WITH_UNKNOWN
 		/* see above */
 		tv = new_tarval_from_long((pnc & pn_Cmp_Eq) ^ pn_Cmp_Eq, mode_b);
 		goto not_equal;
+#else
+		node->type.tv = tarval_top;
+#endif
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
 		node->by_all_const = 1;
@@ -2165,8 +2219,22 @@ static node_t *identity_comm_zero_binop(node_t *node) {
 	return node;
 }  /* identity_comm_zero_binop */
 
-#define identity_Add  identity_comm_zero_binop
-#define identity_Or   identity_comm_zero_binop
+/**
+ * Calculates the Identity for Shift nodes.
+ */
+static node_t *identity_shift(node_t *node) {
+	ir_node *op   = node->node;
+	node_t  *b    = get_irn_node(get_binop_right(op));
+	ir_mode *mode = get_irn_mode(b->node);
+	tarval  *zero;
+
+	/* node: no input should be tarval_top, else the binop would be also
+	 * Top and not being split. */
+	zero = get_mode_null(mode);
+	if (b->type.tv == zero)
+		return get_irn_node(get_binop_left(op));
+	return node;
+}  /* identity_shift */
 
 /**
  * Calculates the Identity for Mul nodes.
@@ -2321,12 +2389,17 @@ static node_t *identity(node_t *node) {
 	switch (get_irn_opcode(irn)) {
 	case iro_Phi:
 		return identity_Phi(node);
-	case iro_Add:
-		return identity_Add(node);
 	case iro_Mul:
 		return identity_Mul(node);
+	case iro_Add:
 	case iro_Or:
-		return identity_Or(node);
+	case iro_Eor:
+		return identity_comm_zero_binop(node);
+	case iro_Shr:
+	case iro_Shl:
+	case iro_Shrs:
+	case iro_Rotl:
+		return identity_shift(node);
 	case iro_And:
 		return identity_And(node);
 	case iro_Sub:
@@ -2692,14 +2765,17 @@ static void apply_result(ir_node *irn, void *ctx) {
 			env->modified = 1;
 		}
 		else if (node->type.tv == tarval_unreachable) {
-			ir_node *bad = get_irg_bad(current_ir_graph);
+			/* don't kick away Unknown */
+			if (! is_Unknown(irn)) {
+				ir_node *bad = get_irg_bad(current_ir_graph);
 
-			/* see comment above */
-			set_irn_node(bad, node);
-			node->node = bad;
-			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-			exchange(irn, bad);
-			env->modified = 1;
+				/* see comment above */
+				set_irn_node(bad, node);
+				node->node = bad;
+				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
+				exchange(irn, bad);
+				env->modified = 1;
+			}
 		}
 		else if (get_irn_mode(irn) == mode_X) {
 			if (is_Proj(irn)) {
@@ -2819,6 +2895,7 @@ static void set_compute_functions(void) {
 	SET(Phi);
 	SET(Add);
 	SET(Sub);
+	SET(Eor);
 	SET(SymConst);
 	SET(Cmp);
 	SET(Proj);
@@ -2882,7 +2959,11 @@ void combo(ir_graph *irg) {
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
 
+#ifdef WITH_UNKNOWN
 	tarval_UNKNOWN = env.nonstd_cond ? tarval_bad : tarval_top;
+#else
+	tarval_UNKNOWN = tarval_bad;
+#endif
 
 	/* all nodes on the initial partition have type Top */
 	env.initial->type_is_T_or_C = 1;
