@@ -2637,7 +2637,7 @@ static int can_exchange(ir_node *pred) {
 		return 1;
 	}
 	return 0;
-}
+}  /* can_exchange */
 
 /**
  * Block Post-Walker, apply the analysis results on control flow by
@@ -2650,26 +2650,49 @@ static void apply_cf(ir_node *block, void *ctx) {
 	ir_node       **ins, **in_X;
 	ir_node       *phi, *next;
 
-	if (block == get_irg_end_block(current_ir_graph) ||
-	    block == get_irg_start_block(current_ir_graph)) {
+	n = get_Block_n_cfgpreds(block);
+
+	if (node->type.tv == tarval_unreachable) {
+		env->modified = 1;
+
+		for (i = n - 1; i >= 0; --i) {
+			ir_node *pred    = get_Block_cfgpred(block, i);
+			node_t  *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+
+			if (pred_bl->flagged == 0) {
+				pred_bl->flagged = 3;
+
+				if (pred_bl->type.tv == tarval_reachable) {
+					/*
+					 * We will remove an edge from block to its pred.
+					 * This might leave the pred block as an endless loop
+					 */
+					if (! is_backedge(block, i))
+						keep_alive(pred_bl->node);
+				}
+			}
+		}
+
 		/* the EndBlock is always reachable even if the analysis
 		   finds out the opposite :-) */
+		if (block != get_irg_end_block(current_ir_graph)) {
+			/* mark dead blocks */
+			set_Block_dead(block);
+		} else {
+			/* the endblock is unreachable */
+			set_irn_in(block, 0, NULL);
+		}
 		return;
 	}
-	if (node->type.tv == tarval_unreachable) {
-		/* mark dead blocks */
-		set_Block_dead(block);
-		return;
-	}
-
-	n = get_Block_n_cfgpreds(block);
 
 	if (n == 1) {
 		/* only one predecessor combine */
 		ir_node *pred = skip_Proj(get_Block_cfgpred(block, 0));
 
 		if (can_exchange(pred)) {
-			exchange(block, get_nodes_block(pred));
+			ir_node *new_block = get_nodes_block(pred);
+			exchange(block, new_block);
+			node->node = new_block;
 			env->modified = 1;
 		}
 		return;
@@ -2683,6 +2706,21 @@ static void apply_cf(ir_node *block, void *ctx) {
 
 		if (node->type.tv == tarval_reachable) {
 			in_X[k++] = pred;
+		} else {
+			node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+
+			if (pred_bl->flagged == 0) {
+				pred_bl->flagged = 3;
+
+				if (pred_bl->type.tv == tarval_reachable) {
+					/*
+					 * We will remove an edge from block to its pred.
+					 * This might leave the pred block as an endless loop
+					 */
+					if (! is_backedge(block, i))
+						keep_alive(pred_bl->node);
+				}
+			}
 		}
 	}
 	if (k >= n)
@@ -2712,13 +2750,15 @@ static void apply_cf(ir_node *block, void *ctx) {
 					ins[j++] = get_Phi_pred(phi, i);
 				}
 			}
-			if (j <= 1) {
+			if (j == 1) {
 				/* this Phi is replaced by a single predecessor */
 				ir_node *s = ins[0];
+				node_t *phi_node = get_irn_node(phi);
 
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F because of cf change\n", phi, s));
 				exchange(phi, s);
+				phi_node->node = s;
 				env->modified = 1;
 			} else {
 				set_irn_in(phi, j, ins);
@@ -2727,12 +2767,14 @@ static void apply_cf(ir_node *block, void *ctx) {
 		}
 	}
 
-	if (k <= 1) {
+	if (k == 1) {
 		/* this Block has only one live predecessor */
 		ir_node *pred = skip_Proj(in_X[0]);
 
 		if (can_exchange(pred)) {
-			exchange(block, get_nodes_block(pred));
+			ir_node *new_block = get_nodes_block(pred);
+			exchange(block, new_block);
+			node->node = new_block;
 			env->modified = 1;
 		}
 	} else {
@@ -2787,7 +2829,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 
 					if (is_tarval(sel->type.tv) && tarval_is_constant(sel->type.tv)) {
 						/* Cond selector is a constant, make a Jmp */
-						ir_node *jmp = new_r_Jmp(current_ir_graph, block->node);
+						ir_node *jmp  = new_r_Jmp(current_ir_graph, block->node);
 						set_irn_node(jmp, node);
 						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
@@ -2855,17 +2897,11 @@ static void apply_end(ir_node *end, environment_t *env) {
 		ir_node *ka   = get_End_keepalive(end, i);
 		node_t  *node = get_irn_node(ka);
 
-		/* Use the flagged bits to mark already visited nodes.
-		 * This should not be ready but better safe than sorry. */
-		if (node->flagged == 0) {
-			node->flagged = 3;
+		if (! is_Block(ka))
+			node = get_irn_node(get_nodes_block(ka));
 
-			if (! is_Block(ka))
-				node = get_irn_node(get_nodes_block(ka));
-
-			if (node->type.tv != tarval_unreachable)
-				in[j++] = ka;
-		}
+		if (node->type.tv != tarval_unreachable)
+			in[j++] = ka;
 	}
 	if (j != n) {
 		set_End_keepalives(end, j, in);
@@ -2947,12 +2983,16 @@ void combo(ir_graph *irg) {
 	env.modified       = 0;
 
 	assure_irg_outs(irg);
+	assure_cf_loop(irg);
+
 
 	/* we have our own value_of function */
 	set_value_of_func(get_node_tarval);
 
 	set_compute_functions();
 	DEBUG_ONLY(part_nr = 0);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);
@@ -3003,6 +3043,8 @@ void combo(ir_graph *irg) {
 		set_irg_doms_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	pmap_destroy(env.type2id_map);
 	del_set(env.opcode2id_map);
