@@ -1123,11 +1123,6 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 			env->cprop          = X_prime;
 			X_prime->on_cprop   = 1;
 		}
-                if (X->on_cprop == 0) {
-			X->cprop_next = env->cprop;
-			env->cprop    = X;
-			X->on_cprop   = 1;
-		}
 	}
 
 	dump_partition("Now ", X);
