@@ -166,6 +166,10 @@ void irg_set_nloc(ir_graph *res, int n_loc) {
 		                               the store. This is not the number of parameters
 		                               to the procedure!  */
 	}
+	if (res->loc_descriptions) {
+		xfree(res->loc_descriptions);
+	}
+	res->loc_descriptions = NULL;
 }
 
 /* Allocates a list of nodes:
