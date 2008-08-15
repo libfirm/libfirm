@@ -1,4 +1,4 @@
-/*$ -fcombo.c $*/
+/*$ -fcombo $*/
 
 int test() {
 	int i, j;
