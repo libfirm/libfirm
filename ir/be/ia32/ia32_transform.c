@@ -2658,7 +2658,7 @@ static ir_node *gen_CopyB(ir_node *node) {
 		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem, rem);
 	} else {
 		if(size == 0) {
-			ir_fprintf(stderr, "Optimisation warning copyb %+F with size <4\n",
+			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
 			           node);
 		}
 		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem, size);
