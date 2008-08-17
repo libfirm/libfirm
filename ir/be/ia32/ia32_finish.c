@@ -405,8 +405,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 	if (get_ia32_am_arity(irn) != ia32_am_binary)
 		return;
 
-	base  = get_irn_n(irn, 0);
-	index = get_irn_n(irn, 1);
+	base  = get_irn_n(irn, n_ia32_base);
+	index = get_irn_n(irn, n_ia32_index);
 
 	reg_base  = arch_get_irn_register(arch_env, base);
 	reg_index = arch_get_irn_register(arch_env, index);
@@ -482,9 +482,9 @@ static void fix_am_source(ir_node *irn, void *env) {
 				foreach_out_edge_safe(irn, edge, next) {
 					ir_node *node = get_edge_src_irn(edge);
 					int      pn   = get_Proj_proj(node);
-					if(pn == 0) {
+					if (pn == pn_ia32_res) {
 						exchange(node, irn);
-					} else if(pn == pn_ia32_mem) {
+					} else if (pn == pn_ia32_mem) {
 						set_Proj_pred(node, load);
 						set_Proj_proj(node, pnmem);
 					}
