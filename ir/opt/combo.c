@@ -1891,7 +1891,9 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		 * NaN != NaN is defined, so we must check this here.
 		 */
 		tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+#ifdef WITH_UNKNOWN
 not_equal:
+#endif
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breakes AND we cat by partition a different result, switch to bottom.
