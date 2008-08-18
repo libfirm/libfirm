@@ -115,6 +115,16 @@ struct ia32_intrinsic_env_t {
 	tarval     *u64_bias;     /**< bias value for conversion from float to unsigned 64 */
 };
 
+typedef enum transformer_t {
+	TRANSFORMER_DEFAULT,
+#ifdef FIRM_GRGEN_BE
+	TRANSFORMER_PBQP
+#endif
+} transformer_t;
+
+/** The selected transformer. */
+extern transformer_t be_transformer;
+
 /** The mode for the floating point control word. */
 extern ir_mode *mode_fpcw;
 

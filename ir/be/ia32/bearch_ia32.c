@@ -927,14 +927,7 @@ static void ia32_before_abi(void *self) {
 	}
 }
 
-typedef enum transformer_t {
-	TRANSFORMER_DEFAULT,
-#ifdef FIRM_GRGEN_BE
-	TRANSFORMER_PBQP
-#endif
-} transformer_t;
-
-static transformer_t be_transformer = TRANSFORMER_DEFAULT;
+transformer_t be_transformer = TRANSFORMER_DEFAULT;
 
 /**
  * Transforms the standard firm graph into
@@ -977,7 +970,7 @@ static void ia32_prepare_graph(void *self) {
 			break;
 #endif
 
-		default: panic("Invalid transformer");
+		default: panic("invalid transformer");
 	}
 
 	/* do local optimizations (mainly CSE) */

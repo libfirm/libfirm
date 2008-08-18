@@ -460,12 +460,24 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 ir_node *gen_ASM(ir_node *node)
 {
 	ir_graph                   *irg       = current_ir_graph;
+
+	ir_node *block = NULL;
+	ir_node *new_block = NULL;
+	switch (be_transformer) {
+		case TRANSFORMER_DEFAULT:
+			block = get_nodes_block(node);
+			new_block = be_transform_node(block);
+			break;
+
 #ifdef FIRM_GRGEN_BE
-	ir_node                    *new_block = get_nodes_block(node);
-#else
-	ir_node                    *block     = get_nodes_block(node);
-	ir_node                    *new_block = be_transform_node(block);
+		case TRANSFORMER_PBQP:
+			new_block = get_nodes_block(node);
+			break;
 #endif
+
+		default: panic("invalid transformer");
+	}
+
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
 	int                         i, arity;
 	int                         out_idx;
@@ -599,12 +611,21 @@ ir_node *gen_ASM(ir_node *node)
 		}
 
 		if (input == NULL) {
+			ir_node *pred = NULL;
+			switch (be_transformer) {
+				case TRANSFORMER_DEFAULT:
+					pred  = get_irn_n(node, i);
+					input = be_transform_node(pred);
+					break;
+
 #ifdef FIRM_GRGEN_BE
-			input         = get_irn_n(node, i);
-#else
-			ir_node *pred = get_irn_n(node, i);
-			input         = be_transform_node(pred);
+				case TRANSFORMER_PBQP:
+					input = get_irn_n(node, i);
+					break;
 #endif
+
+				default: panic("invalid transformer");
+			}
 
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
