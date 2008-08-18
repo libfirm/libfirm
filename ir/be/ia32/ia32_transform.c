@@ -2627,48 +2627,6 @@ static ir_node *gen_Cond(ir_node *node) {
 	return new_node;
 }
 
-/**
- * Transforms a CopyB node.
- *
- * @return The transformed node.
- */
-static ir_node *gen_CopyB(ir_node *node) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *src      = get_CopyB_src(node);
-	ir_node  *new_src  = be_transform_node(src);
-	ir_node  *dst      = get_CopyB_dst(node);
-	ir_node  *new_dst  = be_transform_node(dst);
-	ir_node  *mem      = get_CopyB_mem(node);
-	ir_node  *new_mem  = be_transform_node(mem);
-	ir_node  *res      = NULL;
-	ir_graph *irg      = current_ir_graph;
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	int      size      = get_type_size_bytes(get_CopyB_type(node));
-	int      rem;
-
-	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
-	/* then we need the size explicitly in ECX.                    */
-	if (size >= 32 * 4) {
-		rem = size & 0x3; /* size % 4 */
-		size >>= 2;
-
-		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
-		add_irn_dep(res, get_irg_frame(irg));
-
-		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem, rem);
-	} else {
-		if(size == 0) {
-			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
-			           node);
-		}
-		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem, size);
-	}
-
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
-
-	return res;
-}
-
 static ir_node *gen_be_Copy(ir_node *node)
 {
 	ir_node *new_node = be_duplicate_node(node);

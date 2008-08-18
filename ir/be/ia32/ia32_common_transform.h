@@ -87,6 +87,13 @@ int ia32_mode_needs_gp_reg(ir_mode *mode);
 ir_node *gen_ASM(ir_node *node);
 
 /**
+ * Transforms a CopyB node.
+ *
+ * @return The transformed node.
+ */
+ir_node *gen_CopyB(ir_node *node) ;
+
+/**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
