@@ -460,24 +460,8 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 ir_node *gen_ASM(ir_node *node)
 {
 	ir_graph                   *irg       = current_ir_graph;
-
-	ir_node *block = NULL;
-	ir_node *new_block = NULL;
-	switch (be_transformer) {
-		case TRANSFORMER_DEFAULT:
-			block = get_nodes_block(node);
-			new_block = be_transform_node(block);
-			break;
-
-#ifdef FIRM_GRGEN_BE
-		case TRANSFORMER_PBQP:
-			new_block = get_nodes_block(node);
-			break;
-#endif
-
-		default: panic("invalid transformer");
-	}
-
+	ir_node                    *block = NULL;
+	ir_node                    *new_block = NULL;
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
 	int                         i, arity;
 	int                         out_idx;
@@ -499,6 +483,22 @@ ir_node *gen_ASM(ir_node *node)
 
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
+	switch (be_transformer) {
+	case TRANSFORMER_DEFAULT:
+		block     = get_nodes_block(node);
+		new_block = be_transform_node(block);
+		break;
+
+#ifdef FIRM_GRGEN_BE
+	case TRANSFORMER_PBQP:
+		new_block = get_nodes_block(node);
+		break;
+#endif
+
+	default:
+		panic("invalid transformer");
+	}
+
 	/* workaround for lots of buggy code out there as most people think volatile
 	 * asm is enough for everything and forget the flags (linux kernel, etc.)
 	 */
@@ -512,7 +512,7 @@ ir_node *gen_ASM(ir_node *node)
 
 	clobbers   = get_ASM_clobbers(node);
 	n_clobbers = 0;
-	for(i = 0; i < get_ASM_n_clobbers(node); ++i) {
+	for (i = 0; i < get_ASM_n_clobbers(node); ++i) {
 		const arch_register_req_t *req;
 		const char                *c = get_id_str(clobbers[i]);
 
@@ -535,12 +535,12 @@ ir_node *gen_ASM(ir_node *node)
 	out_constraints = get_ASM_output_constraints(node);
 
 	/* determine size of register_map */
-	for(out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint *constraint = &out_constraints[out_idx];
 		if (constraint->pos > reg_map_size)
 			reg_map_size = constraint->pos;
 	}
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		const ir_asm_constraint   *constraint = &in_constraints[i];
 		if(constraint->pos > reg_map_size)
 			reg_map_size = constraint->pos;
@@ -554,7 +554,7 @@ ir_node *gen_ASM(ir_node *node)
 	/* construct output constraints */
 	out_reg_reqs = obstack_alloc(obst, out_arity * sizeof(out_reg_reqs[0]));
 
-	for(out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
+	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint   *constraint = &out_constraints[out_idx];
 		const char                *c       = get_id_str(constraint->constraint);
 		unsigned                   pos        = constraint->pos;
@@ -575,7 +575,7 @@ ir_node *gen_ASM(ir_node *node)
 
 	/* inputs + input constraints */
 	in_reg_reqs = obstack_alloc(obst, arity * sizeof(in_reg_reqs[0]));
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node                   *pred         = get_irn_n(node, i);
 		const ir_asm_constraint   *constraint   = &in_constraints[i];
 		ident                     *constr_id    = constraint->constraint;
@@ -613,18 +613,18 @@ ir_node *gen_ASM(ir_node *node)
 		if (input == NULL) {
 			ir_node *pred = NULL;
 			switch (be_transformer) {
-				case TRANSFORMER_DEFAULT:
-					pred  = get_irn_n(node, i);
-					input = be_transform_node(pred);
-					break;
+			case TRANSFORMER_DEFAULT:
+				pred  = get_irn_n(node, i);
+				input = be_transform_node(pred);
+				break;
 
 #ifdef FIRM_GRGEN_BE
-				case TRANSFORMER_PBQP:
-					input = get_irn_n(node, i);
-					break;
+			case TRANSFORMER_PBQP:
+				input = get_irn_n(node, i);
+				break;
 #endif
 
-				default: panic("invalid transformer");
+			default: panic("invalid transformer");
 			}
 
 			if (parsed_constraint.cls == NULL
@@ -644,7 +644,7 @@ ir_node *gen_ASM(ir_node *node)
 	}
 
 	/* parse clobbers */
-	for(i = 0; i < get_ASM_n_clobbers(node); ++i) {
+	for (i = 0; i < get_ASM_n_clobbers(node); ++i) {
 		const char                *c = get_id_str(clobbers[i]);
 		const arch_register_req_t *req;
 
