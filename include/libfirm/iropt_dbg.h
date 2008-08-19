@@ -390,4 +390,30 @@
 	  hook_merge_nodes(NULL, 0, &n, 1, HOOK_OPT_CONFIRM_E);    \
 	} while(0)
 
+/**
+ * Merge the debug info due to a GVN-PRE result.
+ *
+ * @param oldn  the old node
+ * @param n     the new node replacing oldn
+ * @param flag  firm statistics option
+ */
+#define DBG_OPT_GVN_PRE(oldn, n, flag)             \
+	do {                                           \
+	  hook_merge_nodes(&n, 1, &oldn, 1, flag);     \
+	  __dbg_info_merge_pair(n, oldn, dbg_gvn_pre); \
+	} while(0)
+
+/**
+ * Merge the debug info due to a combo result.
+ *
+ * @param oldn  the old node
+ * @param n     the new node replacing oldn
+ * @param flag  firm statistics option
+ */
+#define DBG_OPT_COMBO(oldn, n, flag)             \
+	do {                                         \
+	  hook_merge_nodes(&n, 1, &oldn, 1, flag);   \
+	  __dbg_info_merge_pair(n, oldn, dbg_combo); \
+	} while(0)
+
 #endif

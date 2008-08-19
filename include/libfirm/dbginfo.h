@@ -85,6 +85,8 @@ typedef enum {
 	dbg_rem_poly_call,            /**< Remove polymorphic call. */
 	dbg_dead_code,                /**< Removing unreachable code, I.e. blocks that are never executed. */
 	dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
+	dbg_gvn_pre,                  /**< A Firm node was replace because of the GVN-PRE algorithm. */
+	dbg_combo,                    /**< A Firm node was replace because of the combo algorithm. */
 	dbg_backend,                  /**< A Firm subgraph was replaced because of a Backend transformation */
 	dbg_max                       /**< Maximum value. */
 } dbg_action;

@@ -48,6 +48,7 @@
 #include "irop.h"
 #include "irouts.h"
 #include "irgmod.h"
+#include "iropt_dbg.h"
 #include "debug.h"
 #include "error.h"
 
@@ -2693,6 +2694,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 
 		if (can_exchange(pred)) {
 			ir_node *new_block = get_nodes_block(pred);
+			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
 			exchange(block, new_block);
 			node->node = new_block;
 			env->modified = 1;
@@ -2741,6 +2743,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 			set_irn_node(c, node);
 			node->node = c;
 			DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", phi, c));
+			DBG_OPT_COMBO(phi, c, FS_OPT_COMBO_CONST);
 			exchange(phi, c);
 			env->modified = 1;
 		} else {
@@ -2759,6 +2762,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 
 				node->node = s;
 				DB((dbg, LEVEL_1, "%+F is replaced by %+F because of cf change\n", phi, s));
+				DBG_OPT_COMBO(phi, s, FS_OPT_COMBO_FOLLOWER);
 				exchange(phi, s);
 				phi_node->node = s;
 				env->modified = 1;
@@ -2775,6 +2779,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 
 		if (can_exchange(pred)) {
 			ir_node *new_block = get_nodes_block(pred);
+			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
 			exchange(block, new_block);
 			node->node = new_block;
 			env->modified = 1;
@@ -2830,11 +2835,12 @@ static void apply_result(ir_node *irn, void *ctx) {
 					node_t *sel = get_irn_node(get_Cond_selector(cond));
 
 					if (is_tarval(sel->type.tv) && tarval_is_constant(sel->type.tv)) {
-						/* Cond selector is a constant, make a Jmp */
+						/* Cond selector is a constant and the Proj is reachable, make a Jmp */
 						ir_node *jmp  = new_r_Jmp(current_ir_graph, block->node);
 						set_irn_node(jmp, node);
 						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
+						DBG_OPT_COMBO(irn, jmp, FS_OPT_COMBO_CF);
 						exchange(irn, jmp);
 						env->modified = 1;
 					}
@@ -2855,6 +2861,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 					set_irn_node(c, node);
 					node->node = c;
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
+					DBG_OPT_COMBO(irn, c, FS_OPT_COMBO_CONST);
 					exchange(irn, c);
 					env->modified = 1;
 				}
@@ -2866,6 +2873,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 					node->node = symc;
 
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, symc));
+					DBG_OPT_COMBO(irn, symc, FS_OPT_COMBO_CONST);
 					exchange(irn, symc);
 					env->modified = 1;
 				}
@@ -2876,6 +2884,10 @@ static void apply_result(ir_node *irn, void *ctx) {
 
 				if (leader != irn) {
 					DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
+					if (node->is_follower)
+						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
+					else
+						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
 					exchange(irn, leader);
 					env->modified = 1;
 				}

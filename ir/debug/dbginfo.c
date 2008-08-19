@@ -69,6 +69,8 @@ const char *dbg_action_2_str(dbg_action a) {
 	CASE(dbg_rem_poly_call);
 	CASE(dbg_dead_code);
 	CASE(dbg_opt_confirm);
+	CASE(dbg_gvn_pre);
+	CASE(dbg_combo);
 	CASE(dbg_backend);
 	default:
 		if (a <= dbg_max)

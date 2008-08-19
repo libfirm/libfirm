@@ -114,6 +114,13 @@ enum firmstat_optimizations_t {
 	FS_OPT_CMP_SHF_TO_AND,                    /**< CMP optimization: transformed shift into And */
 	FS_OPT_CMP_MOD_TO_AND,                    /**< CMP optimization: transformed Mod into And */
 	FS_OPT_NOP,                               /**< the operation is a NOP */
+	FS_OPT_GVN_FOLLOWER,                      /**< GVN-PRE: replaced a follower */
+	FS_OPT_GVN_FULLY,                         /**< GVN-PRE: replaced by fully redundant value */
+	FS_OPT_GVN_PARTLY,                        /**< GVN-PRE: replaced by partly redundant value */
+	FS_OPT_COMBO_CONST,                       /**< Combo: evaluated into Constant */
+	FS_OPT_COMBO_CF,                          /**< Combo: removed conditional control flow */
+	FS_OPT_COMBO_FOLLOWER,                    /**< Combo: replaced a follower */
+	FS_OPT_COMBO_CONGRUENT,                   /**< Combo: replaced by congruent */
 	FS_OPT_RTS_ABS,                           /**< RTS optimization: call to abs() replaced */
 	FS_OPT_RTS_ALLOCA,                        /**< RTS optimization: call to alloca() replaced */
 	FS_OPT_RTS_SQRT,                          /**< RTS optimization: call to sqrt() replaced */
