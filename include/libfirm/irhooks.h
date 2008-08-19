@@ -236,12 +236,12 @@ extern hook_entry_t *hooks[hook_last];
  * execute the hook what with the args args
  * Do not use this macro directly.
  */
-#define hook_exec(what, args) do {       \
-  hook_entry_t *p;                       \
-  for (p = hooks[what]; p; p = p->next){ \
-    void *ctx = p->context;              \
-    p->hook._##what args;                \
-  }                                      \
+#define hook_exec(what, args) do {           \
+  hook_entry_t *_p;                          \
+  for (_p = hooks[what]; _p; _p = _p->next){ \
+    void *ctx = _p->context;                 \
+    _p->hook._##what args;                   \
+  }                                          \
 } while (0)
 
 #else
