@@ -77,6 +77,7 @@ typedef struct pre_env {
 	ir_node *end_block;     /**< The end block of the current graph */
 	block_info *list;       /**< Links all block info entires for easier recovery. */
 	elim_pair *pairs;       /**< A list of node pairs that must be eliminated. */
+	unsigned last_idx;      /**< last node index of "old" nodes, all higher indexes are newly created once. */
 	char changes;           /**< Non-zero, if calculation of Antic_in has changed. */
 	char first_iter;        /**< non-zero for first iteration */
 } pre_env;
@@ -719,7 +720,7 @@ static void eliminate(ir_node *irn, void *ctx) {
 				p->old_node = irn;
 				p->new_node = expr;
 				p->next     = env->pairs;
-				p->reason   = FS_OPT_GVN_FULLY;
+				p->reason   = get_irn_idx(expr) >= env->last_idx ? FS_OPT_GVN_PARTLY : FS_OPT_GVN_FULLY;
 				env->pairs  = p;
 			}
 		}
@@ -851,6 +852,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* compute redundant expressions */
 	insert_iter = 0;
+	a_env.last_idx = get_irg_last_idx(irg);
 	do {
 		DB((dbg, LEVEL_1, "Insert Iteration %d starts ...\n", ++insert_iter));
 		a_env.changes = 0;
