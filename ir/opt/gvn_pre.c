@@ -40,6 +40,7 @@
 #include "irnodemap.h"
 #include "irnodeset.h"
 #include "iredges.h"
+#include "iropt_dbg.h"
 #include "debug.h"
 
 #include "irgraph_t.h"
@@ -66,6 +67,7 @@ typedef struct elim_pair {
 	ir_node *old_node;      /**< The old node that will be replaced. */
 	ir_node *new_node;      /**< The new node. */
 	struct elim_pair *next; /**< Links all entries in a list. */
+	int     reason;         /**< The reason for the replacement. */
 } elim_pair;
 
 /** The environment for the GVN-PRE algorithm */
@@ -102,7 +104,12 @@ static void value_union(ir_valueset_t *dst, ir_valueset_t *src)
 /* ----------  Functions for Values ---------- */
 
 /**
- * Add a node node representing the value value to the set.
+ * Add a node e representing the value v to the set.
+ *
+ * @param e  a node representing an expression
+ * @param v  a node representing a value
+ *
+ * @return the final value for the expression e
  */
 static ir_node *add(ir_node *e, ir_node *v)
 {
@@ -118,10 +125,15 @@ static ir_node *add(ir_node *e, ir_node *v)
 	v = identify_remember(value_table, v);
 	ir_nodemap_insert(&value_map, e, v);
 	return v;
-}
+}  /* add */
 
 /**
  * Lookup a value in a value set.
+ *
+ * @param e  a node representing an expression
+ *
+ * @return a node representing the value or NULL if
+ *         the given expression is not available
  */
 static ir_node *lookup(ir_node *e)
 {
@@ -129,17 +141,22 @@ static ir_node *lookup(ir_node *e)
 	if (value != NULL)
 		return identify_remember(value_table, value);
 	return NULL;
-}
+}  /* lookup */
 
 /**
- * Return the block info of a block
+ * Return the block info of a block.
+ *
+ * @param block  the block
  */
 static block_info *get_block_info(ir_node *block) {
 	return get_irn_link(block);
-}
+}  /* get_block_info */
 
 /**
- * allocate a block info
+ * Allocate a block info for a block.
+ *
+ * @param block   the block
+ * @param env     the environment
  */
 static void alloc_blk_info(ir_node *block, pre_env *env) {
 	block_info *info = obstack_alloc(env->obst, sizeof(*info));
@@ -153,10 +170,12 @@ static void alloc_blk_info(ir_node *block, pre_env *env) {
 	info->not_found = 0;
 	info->next      = env->list;
 	env->list       = info;
-}
+}  /* alloc_blk_info */
 
 /**
  * Returns non-zero if a node is movable and a possible candidate for PRE.
+ *
+ * @param n  the node
  */
 static int is_nice_value(ir_node *n) {
 	ir_mode *mode;
@@ -178,6 +197,10 @@ static int is_nice_value(ir_node *n) {
 #ifdef DEBUG_libfirm
 /**
  * Dump a value set.
+ *
+ * @param set    the set to dump
+ * @param txt    a text to describe the set
+ * @param block  the owner block of the set
  */
 static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block) {
 	ir_valueset_iterator_t iter;
@@ -245,6 +268,9 @@ static void topo_walker(ir_node *irn, void *ctx) {
  * Precondition:
  *  This function must be called in the top-down dominance order:
  *  Then, it computes Leader(Nodes(block)) instead of Nodes(block) !
+ *
+ * @param block   the block
+ * @param ctx     walker context
  */
 static void compute_avail_top_down(ir_node *block, void *ctx)
 {
@@ -274,10 +300,13 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
 	value_union(info->avail_out, info->exp_gen);
 
 	dump_value_set(info->avail_out, "Avail_out", block);
-}
+}  /* compute_avail_top_down */
 
 /**
  * check if a node n is clean in block block.
+ *
+ * @param n      the node
+ * @param block  the block
  */
 static int _is_clean(ir_node *n, ir_node *block)
 {
@@ -302,18 +331,27 @@ static int _is_clean(ir_node *n, ir_node *block)
 bad:
 	mark_irn_visited(n);
 	return 0;
-}
+}  /* _is_clean */
 
 /**
  * check if a node n is clean.
+ *
+ * @param n  the node to check
  */
 static int is_clean(ir_node *n) {
 	int res = _is_clean(n, get_nodes_block(n));
 	return res;
-}
+}  /* is_clean */
 
 /**
- * Implements phi_translate.
+ * Implements phi_translate. Translate a expression above a Phi.
+ *
+ * @param node   the node
+ * @param block  the block in which the node is translated
+ * @param pos    the input number of the destination block
+ * @param env    the environment
+ *
+ * @return a node representing the translated value
  */
 static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *env)
 {
@@ -379,7 +417,10 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 }  /* phi_translate */
 
 /**
- * computes Antic_in(block):
+ * Block-walker, computes Antic_in(block).
+ *
+ * @param block  the block
+ * @param ctx    the walker environment
  */
 static void compute_antic(ir_node *block, void *ctx) {
 	pre_env    *env = ctx;
@@ -486,6 +527,9 @@ static void compute_antic(ir_node *block, void *ctx) {
  *     2c. Insert a new Phi merging the values of the predecessors.
  *     2d. Insert the new Phi, and the new expressions, into the
  *         NEW_SETS set.
+ *
+ * @param block  the block
+ * @param ctx    the walker environment
  */
 static void insert_nodes(ir_node *block, void *ctx)
 {
@@ -654,6 +698,9 @@ static void insert_nodes(ir_node *block, void *ctx)
  *
  * We cannot do the changes right here, as this would change
  * the hash values of the nodes in the avail_out set!
+ *
+ * @param irn  the node
+ * @param ctx  the walker environment
  */
 static void eliminate(ir_node *irn, void *ctx) {
 	pre_env *env = ctx;
@@ -672,6 +719,7 @@ static void eliminate(ir_node *irn, void *ctx) {
 				p->old_node = irn;
 				p->new_node = expr;
 				p->next     = env->pairs;
+				p->reason   = FS_OPT_GVN_FULLY;
 				env->pairs  = p;
 			}
 		}
@@ -681,6 +729,8 @@ static void eliminate(ir_node *irn, void *ctx) {
 /**
  * Do all the recorded changes and optimize
  * newly created Phi's.
+ *
+ * @param pairs  list of elimination pairs
  */
 static void eliminate_nodes(elim_pair *pairs) {
 	elim_pair *p;
@@ -709,6 +759,7 @@ static void eliminate_nodes(elim_pair *pairs) {
 			if (res)
 				p->new_node = res;
 		}
+		DBG_OPT_GVN_PRE(p->old_node, p->new_node, p->reason);
 		exchange(p->old_node, p->new_node);
 	}
 }  /* eliminate_nodes */
