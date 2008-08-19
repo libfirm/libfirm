@@ -4316,18 +4316,6 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	return new_rd_Unknown(irg, mode);
 }
 
-/**
- * Transform the Thread Local Storage Proj.
- */
-static ir_node *gen_Proj_tls(ir_node *node) {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_graph *irg   = current_ir_graph;
-	dbg_info *dbgi  = NULL;
-	ir_node  *res   = new_rd_ia32_LdTls(dbgi, irg, block, mode_Iu);
-
-	return res;
-}
-
 static ir_node *gen_be_Call(ir_node *node) {
 	ir_node *res = be_duplicate_node(node);
 	be_node_add_flags(res, -1, arch_irn_flags_modify_flags);

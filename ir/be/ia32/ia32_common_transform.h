@@ -91,7 +91,12 @@ ir_node *gen_ASM(ir_node *node);
  *
  * @return The transformed node.
  */
-ir_node *gen_CopyB(ir_node *node) ;
+ir_node *gen_CopyB(ir_node *node);
+
+/**
+ * Transform the Thread Local Storage Proj.
+ */
+ir_node *gen_Proj_tls(ir_node *node);
 
 /**
  * This function just sets the register for the Unknown node

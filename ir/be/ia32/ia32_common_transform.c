@@ -727,6 +727,31 @@ ir_node *gen_CopyB(ir_node *node) {
 	return res;
 }
 
+ir_node *gen_Proj_tls(ir_node *node) {
+	ir_node  *block = NULL;
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = NULL;
+	ir_node  *res   = NULL;
+
+	switch (be_transformer) {
+		case TRANSFORMER_DEFAULT:
+			block = be_transform_node(get_nodes_block(node));
+			break;
+
+#ifdef FIRM_GRGEN_BE
+		case TRANSFORMER_PBQP:
+			block = get_nodes_block(node);
+			break;
+#endif
+
+		default: panic("invalid transformer");
+	}
+
+	res   = new_rd_ia32_LdTls(dbgi, irg, block, mode_Iu);
+
+	return res;
+}
+
 ir_node *gen_Unknown(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
