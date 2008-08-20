@@ -576,7 +576,8 @@ int get_ia32_am_scale(const ir_node *node) {
  * Sets the index register scale for address mode.
  */
 void set_ia32_am_scale(ir_node *node, int scale) {
-	ia32_attr_t *attr   = get_ia32_attr(node);
+	ia32_attr_t *attr = get_ia32_attr(node);
+	assert(0 <= scale && scale < 4 && "AM scale out of range");
 	attr->data.am_scale = scale;
 }
 
