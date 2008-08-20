@@ -255,6 +255,9 @@ void conv_opt_walker(ir_node *node, void *data)
 	mode      = get_irn_mode(node);
 	pred_mode = get_irn_mode(pred);
 
+	if (mode_is_reference(mode) || mode_is_reference(pred_mode))
+		return;
+
 	if (!is_Phi(pred) && !is_downconv(pred_mode, mode))
 		return;
 
