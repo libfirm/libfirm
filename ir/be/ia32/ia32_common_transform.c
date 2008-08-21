@@ -795,14 +795,12 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 		if (same_as >= n_outs)
 			panic("invalid output number in same_as constraint");
 
-		other_constr         = out_reqs[same_as];
+		other_constr     = out_reqs[same_as];
 
-		req                  = obstack_alloc(obst, sizeof(req[0]));
-		req->cls             = other_constr->cls;
-		req->type            = arch_register_req_type_should_be_same;
-		req->limited         = NULL;
-		req->other_same      = 1U << pos;
-		req->other_different = 0;
+		req              = obstack_alloc(obst, sizeof(req[0]));
+		*req             = *other_constr;
+		req->type       |= arch_register_req_type_should_be_same;
+		req->other_same  = 1U << pos;
 
 		/* switch constraints. This is because in firm we have same_as
 		 * constraints on the output constraints while in the gcc asm syntax
