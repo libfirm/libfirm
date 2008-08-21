@@ -363,6 +363,7 @@ void set_modeP_code(ir_mode *p);
  */
 void set_modeP_data(ir_mode *p);
 
+/*@{*/
 /**
    Functions to check, whether a ir_modecode is signed, float, int, character,
    reference, num, data, datab or dataM.
@@ -393,7 +394,6 @@ void set_modeP_data(ir_mode *p);
 
    Vector "int" and "float" are defined by the arithmetic and vector_elem > 1.
 */
-/*@}*/
 /* Test for a certain class of modes. */
 int mode_is_signed (const ir_mode *mode);
 int mode_is_float (const ir_mode *mode);
@@ -405,6 +405,7 @@ int mode_is_datab (const ir_mode *mode);
 int mode_is_dataM (const ir_mode *mode);
 int mode_is_float_vector (const ir_mode *mode);
 int mode_is_int_vector (const ir_mode *mode);
+/*@}*/
 
 /** Returns true if sm can be converted to lm without loss
    according to firm definition */
