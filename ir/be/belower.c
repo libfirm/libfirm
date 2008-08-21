@@ -894,34 +894,35 @@ static int push_through_perm(ir_node *perm, void *data)
 	bitset_t *moved   = bitset_alloca(arity);
 	int n_moved;
 	int new_size;
-	ir_node *frontier = sched_first(bl);
+	ir_node *frontier = bl;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.permmove");
 
 	int i, n;
 	const ir_edge_t *edge;
-	ir_node *last_proj = NULL, *irn;
+	ir_node *one_proj = NULL, *irn;
 	const arch_register_class_t *cls = NULL;
 
 	DBG((mod, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
 
-	/* get some proj and find out the register class of the proj. */
-	foreach_out_edge (perm, edge) {
-		last_proj  = get_edge_src_irn(edge);
-		cls = arch_get_irn_reg_class(aenv, last_proj, -1);
-		assert(is_Proj(last_proj));
-		break;
-	}
+	/* get some Proj and find out the register class of that Proj. */
+	edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
+	one_proj = get_edge_src_irn(edge);
+	assert(is_Proj(one_proj));
+	cls      = arch_get_irn_reg_class(aenv, one_proj, -1);
 
-	/* find the point in the schedule after which the
+	/* Find the point in the schedule after which the
 	 * potentially movable nodes must be defined.
-	 * A perm will only be pushed up to first instruction
-	 * which lets an operand of itself die.  */
-
+	 * A Perm will only be pushed up to first instruction
+	 * which lets an operand of itself die.
+	 * If we would allow to move the Perm above this instruction,
+	 * the former dead operand would be live now at the point of
+	 * the Perm, increasing the register pressure by one.
+	 */
 	sched_foreach_reverse_from (sched_prev(perm), irn) {
-		for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
+		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			if(arch_irn_consider_in_reg_alloc(aenv, cls, op)
-				&& !values_interfere(env->birg, op, last_proj)) {
+			if (arch_irn_consider_in_reg_alloc(aenv, cls, op)
+				&& !values_interfere(env->birg, op, one_proj)) {
 				frontier = sched_next(irn);
 				goto found_front;
 			}
@@ -938,11 +939,12 @@ found_front:
 		int                        input = -1;
 		ir_node                   *proj;
 
+		/* search if node is a INPUT of Perm */
 		foreach_out_edge(perm, edge) {
 			ir_node *out = get_edge_src_irn(edge);
 			int      pn  = get_Proj_proj(out);
 			ir_node *in  = get_irn_n(perm, pn);
-			if(node == in) {
+			if (node == in) {
 				proj  = out;
 				input = pn;
 				break;
