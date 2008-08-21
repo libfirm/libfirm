@@ -326,11 +326,12 @@ const char *get_align_name(ir_align a);
 
 /** This enumeration flags the stickyness of an entity. */
 typedef enum {
-	stickyness_unsticky,          /**< The entity can be removed from
-	                                 the program, unless contraindicated
-	                                 by other attributes. Default. */
-	stickyness_sticky             /**< The entity must remain in the
-	                                 program in any case. */
+	stickyness_unsticky,  /**< The entity can be removed from
+	                           the program, unless contraindicated
+	                           by other attributes. Default. */
+	stickyness_sticky     /**< The entity must remain in the
+	                           program in any case. There might be external
+	                           callers. */
 } ir_stickyness;
 
 /** Get the entity's stickyness. */

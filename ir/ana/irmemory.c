@@ -1142,8 +1142,11 @@ void mark_private_methods(void) {
 		ir_entity              *ent = get_irg_entity(irg);
 		ir_address_taken_state state = get_entity_address_taken(ent);
 
+		/* If an entity is sticky, it might be called from external
+		   places (like inline assembler), so do NOT mark it as private. */
 		if (get_entity_visibility(ent) == visibility_local &&
-		    state == ir_address_not_taken) {
+		    state == ir_address_not_taken &&
+		    get_entity_stickyness(ent) != stickyness_sticky) {
 			ir_type *mtp = get_entity_type(ent);
 
 			set_entity_additional_property(ent, mtp_property_private);
