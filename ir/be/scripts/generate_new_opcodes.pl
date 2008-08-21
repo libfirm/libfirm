@@ -1229,7 +1229,7 @@ EOF
 			push(@req_type_mask, "arch_register_req_type_should_be_same");
 		}
 		if ($different_pos != 0) {
-			push(@req_type_mask, "arch_register_req_type_should_be_different");
+			push(@req_type_mask, "arch_register_req_type_must_be_different");
 		}
 		my $reqtype      = join(" | ", @req_type_mask);
 

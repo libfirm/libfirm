@@ -984,7 +984,7 @@ void be_set_constr_limited(ir_node *node, int pos, const arch_register_req_t *re
 	arch_register_req_t *r = get_req(node, pos);
 
 	assert(arch_register_req_is(req, limited));
-	assert(! (req->type & (arch_register_req_type_should_be_same | arch_register_req_type_should_be_different)));
+	assert(!(req->type & (arch_register_req_type_should_be_same | arch_register_req_type_must_be_different)));
 	memcpy(r, req, sizeof(r[0]));
 	r->limited = rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
 }

@@ -332,7 +332,7 @@ extern char *arch_register_req_format(char *buf, size_t len,
 		}
 	}
 
-	if(arch_register_req_is(req, should_be_different)) {
+	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
 		int i;
 

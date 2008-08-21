@@ -129,7 +129,7 @@ static void dump_reg_req(FILE *F, const ir_node *node,
 				}
 			}
 
-			if (reqs[i]->type & arch_register_req_type_should_be_different) {
+			if (reqs[i]->type & arch_register_req_type_must_be_different) {
 				const unsigned other = reqs[i]->other_different;
 				int i;
 

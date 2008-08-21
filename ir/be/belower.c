@@ -615,8 +615,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 }
 
 /**
- * Checks if node has a should_be_different constraint in output
- * and adds a Keep then to assure the constraint.
+ * Checks if node has a must_be_different constraint in output and adds a Keep
+ * then to assure the constraint.
  */
 static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	const arch_register_req_t *req;
@@ -624,7 +624,7 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 
 	req = arch_get_register_req(arch_env, irn, -1);
 
-	if (arch_register_req_is(req, should_be_different)) {
+	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
 		int i;
 
@@ -636,7 +636,7 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 				int idx_same  = ntz(same);
 
 				/*
-				 * We can safely ignore a should_be_same x should_be_different y
+				 * We can safely ignore a should_be_same x must_be_different y
 				 * IFF both inputs are equal!
 				 */
 				if (get_irn_n(irn, idx_other) == get_irn_n(irn, idx_same)) {
