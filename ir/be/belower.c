@@ -921,9 +921,9 @@ static int push_through_perm(ir_node *perm, void *data)
 	sched_foreach_reverse_from (sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			if (arch_irn_consider_in_reg_alloc(aenv, cls, op)
-				&& !values_interfere(env->birg, op, one_proj)) {
-				frontier = sched_next(irn);
+			if (arch_irn_consider_in_reg_alloc(aenv, cls, op) &&
+			    !values_interfere(env->birg, op, one_proj)) {
+				frontier = irn;
 				goto found_front;
 			}
 		}
