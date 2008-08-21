@@ -1338,11 +1338,9 @@ static void emit_ia32_Asm(const ir_node *node)
 	while(*s != 0) {
 		if(*s == '%') {
 			s = emit_asm_operand(node, s);
-			continue;
 		} else {
-			be_emit_char(*s);
+			be_emit_char(*s++);
 		}
-		++s;
 	}
 
 	be_emit_char('\n');
