@@ -714,6 +714,11 @@ void     set_Add_left(ir_node *node, ir_node *left);
 ir_node *get_Add_right(const ir_node *node);
 void     set_Add_right(ir_node *node, ir_node *right);
 
+ir_node *get_Carry_left(const ir_node *node);
+void     set_Carry_left(ir_node *node, ir_node *left);
+ir_node *get_Carry_right(const ir_node *node);
+void     set_Carry_right(ir_node *node, ir_node *right);
+
 ir_node *get_Sub_left(const ir_node *node);
 void     set_Sub_left(ir_node *node, ir_node *left);
 ir_node *get_Sub_right(const ir_node *node);
@@ -1268,6 +1273,8 @@ int      is_DivMod(const ir_node *node);
 int      is_Quot(const ir_node *node);
 /** Returns true if node is an Add node. */
 int      is_Add(const ir_node *node);
+/** Returns true if node is a Carry node. */
+int      is_Carry(const ir_node *node);
 /** Returns true if node is an And node. */
 int      is_And(const ir_node *node);
 /** Returns true if node is an Or node. */

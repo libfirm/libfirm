@@ -1504,6 +1504,7 @@ void set_##OP##_resmode(ir_node *node, ir_mode *mode) { \
 
 
 BINOP(Add)
+BINOP(Carry)
 BINOP(Sub)
 UNOP(Minus)
 BINOP(Mul)
@@ -2639,6 +2640,11 @@ int
 int
 (is_Add)(const ir_node *node) {
 	return _is_Add(node);
+}
+
+int
+(is_Carry)(const ir_node *node) {
+	return _is_Carry(node);
 }
 
 int

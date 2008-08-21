@@ -494,6 +494,12 @@ _is_Add(const ir_node *node) {
 }
 
 static INLINE int
+_is_Carry(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Carry);
+}
+
+static INLINE int
 _is_And(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_And);
@@ -1072,6 +1078,7 @@ _is_arg_Proj(const ir_node *node) {
 #define is_DivMod(node)                       _is_DivMod(node)
 #define is_Quot(node)                         _is_Quot(node)
 #define is_Add(node)                          _is_Add(node)
+#define is_Carry(node)                        _is_Carry(node)
 #define is_And(node)                          _is_And(node)
 #define is_Or(node)                           _is_Or(node)
 #define is_Eor(node)                          _is_Eor(node)
