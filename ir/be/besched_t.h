@@ -301,7 +301,7 @@ static INLINE int _sched_comes_after(const ir_node *n1, const ir_node *n2)
 {
 	assert(_sched_is_scheduled(n1));
 	assert(_sched_is_scheduled(n2));
-	assert(get_nodes_block(n1) == get_nodes_block(n2));
+	assert((is_Block(n1) ? n1 : get_nodes_block(n1)) == (is_Block(n2) ? n2 : get_nodes_block(n2)));
 	return _sched_get_time_step(n1) < _sched_get_time_step(n2);
 }
 
