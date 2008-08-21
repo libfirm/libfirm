@@ -1329,7 +1329,7 @@ static void emit_ia32_Asm(const ir_node *node)
 	ident                 *asm_text = attr->asm_text;
 	const char            *s        = get_id_str(asm_text);
 
-	be_emit_cstring("# Begin ASM \t");
+	be_emit_cstring("#APP\t");
 	be_emit_finish_line_gas(node);
 
 	if (s[0] != '\t')
@@ -1348,7 +1348,7 @@ static void emit_ia32_Asm(const ir_node *node)
 	be_emit_char('\n');
 	be_emit_write_line();
 
-	be_emit_cstring("# End ASM\n");
+	be_emit_cstring("#NO_APP\n");
 	be_emit_write_line();
 }
 
