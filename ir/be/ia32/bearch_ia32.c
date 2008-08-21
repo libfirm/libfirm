@@ -1877,8 +1877,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		cc = cc_cdecl_set;
 	} else {
 		cc = get_method_calling_convention(method_type);
-		if (!(cc & cc_fixed)                                                     &&
-		    get_method_additional_properties(method_type) & mtp_property_private &&
+		if (get_method_additional_properties(method_type) & mtp_property_private &&
 		    ia32_cg_config.optimize_cc) {
 			/* set the calling conventions to register parameter */
 			cc = (cc & ~cc_bits) | cc_reg_param;
