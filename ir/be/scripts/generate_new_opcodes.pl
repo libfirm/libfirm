@@ -1185,21 +1185,6 @@ sub generate_requirements {
 };
 
 EOF
-	} elsif ($reqs =~ /^new_reg_(.*)$/) {
-		if(!is_reg_class($1)) {
-			die "$1 is not a register class in requirements for $op\n";
-		}
-		$class  = $1;
-		$result = <<EOF;
-{
-	arch_register_req_type_should_be_different_from_all,
-	& ${arch}_reg_classes[CLASS_${arch}_${class}],
-	NULL,        /* limit bitset */
-	0,           /* same pos */
-	0            /* different pos */
-};
-
-EOF
 	} elsif (is_reg_class($reqs)) {
 		$class  = $reqs;
 		$result = <<EOF;
