@@ -439,16 +439,17 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 
 void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 {
-	ir_graph *irg           = get_irn_irg(perm);
-	int            arity    = get_irn_arity(perm);
-	be_reg_data_t *old_data = alloca(arity * sizeof(old_data[0]));
-	be_node_attr_t *attr    = get_irn_attr(perm);
-	ir_node **new_in        = NEW_ARR_D(ir_node *, irg->obst, new_size);
+	int            arity     = get_irn_arity(perm);
+	be_reg_data_t  *old_data = alloca(arity * sizeof(old_data[0]));
+	be_node_attr_t *attr     = get_irn_attr(perm);
+	ir_node        **new_in;
 
 	int i;
 
 	assert(be_is_Perm(perm));
 	assert(new_size <= arity);
+
+	NEW_ARR_A(ir_node *, new_in, new_size);
 
 	/* save the old register data */
 	memcpy(old_data, attr->reg_data, arity * sizeof(old_data[0]));
