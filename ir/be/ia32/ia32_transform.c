@@ -4666,8 +4666,8 @@ static void ia32_pretransform_node(void *arch_cg) {
 }
 
 /**
- * Walker, checks if all ia32 nodes producing more than one result have
- * its Projs, otherwise creates new Projs and keep them using a be_Keep node.
+ * Walker, checks if all ia32 nodes producing more than one result have their
+ * Projs, otherwise creates new Projs and keeps them using a be_Keep node.
  */
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
