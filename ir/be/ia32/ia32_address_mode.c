@@ -67,8 +67,9 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		/* Consts are typically immediates */
 		if (!tarval_is_long(get_Const_tarval(node))) {
 #ifdef DEBUG_libfirm
-			ir_fprintf(stderr, "Optimisation warning tarval of %+F(%+F) is not "
-			           "a long.\n", node, current_ir_graph);
+			ir_fprintf(stderr,
+			           "Optimisation warning tarval of %+F(%+F) is not a long.\n",
+			           node, current_ir_graph);
 #endif
 			return 0;
 		}
@@ -165,8 +166,7 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	case iro_SymConst:
 		/* place the entity into the symconst */
 		if (addr->symconst_ent != NULL) {
-			panic("Internal error: more than 1 symconst in address "
-			      "calculation");
+			panic("Internal error: more than 1 symconst in address calculation");
 		}
 		addr->symconst_ent  = get_SymConst_entity(node);
 #ifndef SUPPORT_NEGATIVE_SYMCONSTS
@@ -260,8 +260,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 		if(val < 0 || val > 3)
 			return 0;
 		if(val == 0) {
-			ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) "
-			           "found\n");
+			ir_fprintf(stderr, "Optimisation warning: unoptimized Shl(,0) found\n");
 		}
 
 		shifted_val = get_Shl_left(node);
