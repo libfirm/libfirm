@@ -628,7 +628,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	/** TODO: this is not correct for cases where return values are passed
-	 * on the stack, but no known ABI does this currentl...
+	 * on the stack, but no known ABI does this currently...
 	 */
 	n_reg_results = n_res;
 

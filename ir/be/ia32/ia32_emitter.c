@@ -85,10 +85,10 @@ static int is_fallthrough(const ir_node *cfgpred)
 {
 	ir_node *pred;
 
-	if(!is_Proj(cfgpred))
+	if (!is_Proj(cfgpred))
 		return 1;
 	pred = get_Proj_pred(cfgpred);
-	if(is_ia32_SwitchJmp(pred))
+	if (is_ia32_SwitchJmp(pred))
 		return 0;
 
 	return 1;
@@ -102,8 +102,8 @@ static int block_needs_label(const ir_node *block)
 	if (n_cfgpreds == 0) {
 		need_label = 0;
 	} else if (n_cfgpreds == 1) {
-		ir_node *cfgpred            = get_Block_cfgpred(block, 0);
-		ir_node *cfgpred_block      = get_nodes_block(cfgpred);
+		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
+		ir_node *cfgpred_block = get_nodes_block(cfgpred);
 
 		if (get_prev_block_sched(block) == cfgpred_block
 				&& is_fallthrough(cfgpred)) {
@@ -132,7 +132,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 
 	assert(reg && "no in register found");
 
-	if(reg == &ia32_gp_regs[REG_GP_NOREG])
+	if (reg == &ia32_gp_regs[REG_GP_NOREG])
 		panic("trying to emit noreg for %+F input %d", irn, pos);
 
 	/* in case of unknown register: just return a valid register */
@@ -232,17 +232,13 @@ static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 {
 	const char *reg_name;
 
-	if(mode != NULL) {
+	if (mode != NULL) {
 		int size = get_mode_size_bits(mode);
-		if(size == 8) {
-			emit_8bit_register(reg);
-			return;
-		} else if(size == 16) {
-			emit_16bit_register(reg);
-			return;
-		} else {
-			assert(mode_is_float(mode) || size == 32);
+		switch (size) {
+			case  8: emit_8bit_register(reg);  return;
+			case 16: emit_16bit_register(reg); return;
 		}
+		assert(mode_is_float(mode) || size == 32);
 	}
 
 	reg_name = arch_register_get_name(reg);
@@ -253,7 +249,7 @@ static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 
 void ia32_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg      = get_in_reg(node, pos);
+	const arch_register_t *reg = get_in_reg(node, pos);
 
 	emit_register(reg, NULL);
 }
@@ -264,7 +260,7 @@ void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
 {
 	const arch_register_t *reg;
 	ir_node               *in = get_irn_n(node, pos);
-	if(is_ia32_Immediate(in)) {
+	if (is_ia32_Immediate(in)) {
 		emit_ia32_Immediate(in);
 		return;
 	}
@@ -298,7 +294,7 @@ void ia32_emit_x87_register(const ir_node *node, int pos)
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 {
-	if(mode_is_float(mode)) {
+	if (mode_is_float(mode)) {
 		switch(get_mode_size_bits(mode)) {
 		case 32: be_emit_char('s'); return;
 		case 64: be_emit_char('l'); return;
@@ -308,12 +304,12 @@ static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 	} else {
 		assert(mode_is_int(mode) || mode_is_reference(mode));
 		switch(get_mode_size_bits(mode)) {
+		/* gas docu says q is the suffix but gcc, objdump and icc use ll
+		 * apparently */
 		case 64: be_emit_cstring("ll"); return;
-				 /* gas docu says q is the suffix but gcc, objdump and icc use
-				 	ll apparently */
-		case 32: be_emit_char('l'); return;
-		case 16: be_emit_char('w'); return;
-		case 8:  be_emit_char('b'); return;
+		case 32: be_emit_char('l');     return;
+		case 16: be_emit_char('w');     return;
+		case 8:  be_emit_char('b');     return;
 		}
 	}
 	panic("Can't output mode_suffix for %+F", mode);
@@ -322,7 +318,7 @@ static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 void ia32_emit_mode_suffix(const ir_node *node)
 {
 	ir_mode *mode = get_ia32_ls_mode(node);
-	if(mode == NULL)
+	if (mode == NULL)
 		mode = mode_Iu;
 
 	ia32_emit_mode_suffix_mode(mode);
@@ -331,7 +327,7 @@ void ia32_emit_mode_suffix(const ir_node *node)
 void ia32_emit_x87_mode_suffix(const ir_node *node)
 {
 	/* we only need to emit the mode on address mode */
-	if(get_ia32_op_type(node) != ia32_Normal) {
+	if (get_ia32_op_type(node) != ia32_Normal) {
 		ir_mode *mode = get_ia32_ls_mode(node);
 		assert(mode != NULL);
 		ia32_emit_mode_suffix_mode(mode);
@@ -342,14 +338,10 @@ static char get_xmm_mode_suffix(ir_mode *mode)
 {
 	assert(mode_is_float(mode));
 	switch(get_mode_size_bits(mode)) {
-	case 32:
-		return 's';
-	case 64:
-		return 'd';
-	default:
-		assert(0);
+	case 32: return 's';
+	case 64: return 'd';
+	default: panic("Invalid XMM mode");
 	}
-	return '%';
 }
 
 void ia32_emit_xmm_mode_suffix(const ir_node *node)
@@ -369,19 +361,15 @@ void ia32_emit_xmm_mode_suffix_s(const ir_node *node)
 
 void ia32_emit_extend_suffix(const ir_mode *mode)
 {
-	if(get_mode_size_bits(mode) == 32)
+	if (get_mode_size_bits(mode) == 32)
 		return;
-	if(mode_is_signed(mode)) {
-		be_emit_char('s');
-	} else {
-		be_emit_char('z');
-	}
+	be_emit_char(mode_is_signed(mode) ? 's' : 'z');
 }
 
 void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 {
 	ir_node *in = get_irn_n(node, pos);
-	if(is_ia32_Immediate(in)) {
+	if (is_ia32_Immediate(in)) {
 		emit_ia32_Immediate(in);
 	} else {
 		const ir_mode         *mode = get_ia32_ls_mode(node);
@@ -393,7 +381,8 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-void ia32_emit_binop(const ir_node *node) {
+void ia32_emit_binop(const ir_node *node)
+{
 	const ir_node         *right_op  = get_irn_n(node, n_ia32_binary_right);
 	const ir_mode         *mode      = get_ia32_ls_mode(node);
 	const arch_register_t *reg_left;
@@ -401,7 +390,7 @@ void ia32_emit_binop(const ir_node *node) {
 	switch(get_ia32_op_type(node)) {
 	case ia32_Normal:
 		reg_left = get_in_reg(node, n_ia32_binary_left);
-		if(is_ia32_Immediate(right_op)) {
+		if (is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(right_op);
 			be_emit_cstring(", ");
 			emit_register(reg_left, mode);
@@ -415,7 +404,7 @@ void ia32_emit_binop(const ir_node *node) {
 		}
 		break;
 	case ia32_AddrModeS:
-		if(is_ia32_Immediate(right_op)) {
+		if (is_ia32_Immediate(right_op)) {
 			emit_ia32_Immediate(right_op);
 			be_emit_cstring(", ");
 			ia32_emit_am(node);
@@ -437,7 +426,8 @@ void ia32_emit_binop(const ir_node *node) {
 /**
  * Emits registers and/or address mode of a binary operation.
  */
-void ia32_emit_x87_binop(const ir_node *node) {
+void ia32_emit_x87_binop(const ir_node *node)
+{
 	switch(get_ia32_op_type(node)) {
 		case ia32_Normal:
 			{
@@ -468,7 +458,8 @@ void ia32_emit_x87_binop(const ir_node *node) {
 /**
  * Emits registers and/or address mode of a unary operation.
  */
-void ia32_emit_unop(const ir_node *node, int pos) {
+void ia32_emit_unop(const ir_node *node, int pos)
+{
 	const ir_node *op;
 
 	switch(get_ia32_op_type(node)) {
@@ -515,12 +506,13 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 /**
  * Emits address mode.
  */
-void ia32_emit_am(const ir_node *node) {
+void ia32_emit_am(const ir_node *node)
+{
 	ir_entity *ent       = get_ia32_am_sc(node);
 	int        offs      = get_ia32_am_offs_int(node);
-	ir_node   *base      = get_irn_n(node, 0);
+	ir_node   *base      = get_irn_n(node, n_ia32_base);
 	int        has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *index     = get_irn_n(node, 1);
+	ir_node   *index     = get_irn_n(node, n_ia32_index);
 	int        has_index = !is_ia32_NoReg_GP(index);
 
 	/* just to be sure... */
@@ -533,8 +525,9 @@ void ia32_emit_am(const ir_node *node) {
 		ia32_emit_entity(ent, 0);
 	}
 
-	if(offs != 0) {
-		if(ent != NULL) {
+	/* also handle special case if nothing is set */
+	if (offs != 0 || (ent == NULL && !has_base && !has_index)) {
+		if (ent != NULL) {
 			be_emit_irprintf("%+d", offs);
 		} else {
 			be_emit_irprintf("%d", offs);
@@ -559,15 +552,10 @@ void ia32_emit_am(const ir_node *node) {
 
 			scale = get_ia32_am_scale(node);
 			if (scale > 0) {
-				be_emit_irprintf(",%d", 1 << get_ia32_am_scale(node));
+				be_emit_irprintf(",%d", 1 << scale);
 			}
 		}
 		be_emit_char(')');
-	}
-
-	/* special case if nothing is set */
-	if(ent == NULL && offs == 0 && !has_base && !has_index) {
-		be_emit_char('0');
 	}
 }
 
@@ -583,7 +571,7 @@ static void emit_ia32_IMul(const ir_node *node)
 	ia32_emit_binop(node);
 
 	/* do we need the 3-address form? */
-	if(is_ia32_NoReg_GP(left) ||
+	if (is_ia32_NoReg_GP(left) ||
 			get_in_reg(node, n_ia32_IMul_left) != out_reg) {
 		be_emit_cstring(", ");
 		emit_register(out_reg, get_ia32_ls_mode(node));
@@ -649,29 +637,29 @@ static ir_node *find_original_value(ir_node *node)
 	inc_irg_visited(current_ir_graph);
 	while(1) {
 		mark_irn_visited(node);
-		if(be_is_Copy(node)) {
+		if (be_is_Copy(node)) {
 			node = be_get_Copy_op(node);
-		} else if(be_is_CopyKeep(node)) {
+		} else if (be_is_CopyKeep(node)) {
 			node = be_get_CopyKeep_op(node);
-		} else if(is_Proj(node)) {
+		} else if (is_Proj(node)) {
 			ir_node *pred = get_Proj_pred(node);
-			if(be_is_Perm(pred)) {
+			if (be_is_Perm(pred)) {
 				node = get_irn_n(pred, get_Proj_proj(node));
-			} else if(be_is_MemPerm(pred)) {
+			} else if (be_is_MemPerm(pred)) {
 				node = get_irn_n(pred, get_Proj_proj(node) + 1);
-			} else if(is_ia32_Load(pred)) {
+			} else if (is_ia32_Load(pred)) {
 				node = get_irn_n(pred, n_ia32_Load_mem);
 			} else {
 				return node;
 			}
-		} else if(is_ia32_Store(node)) {
+		} else if (is_ia32_Store(node)) {
 			node = get_irn_n(node, n_ia32_Store_val);
-		} else if(is_Phi(node)) {
+		} else if (is_Phi(node)) {
 			int i, arity;
 			arity = get_irn_arity(node);
 			for(i = 0; i < arity; ++i) {
 				ir_node *in = get_irn_n(node, i);
-				if(irn_visited(in))
+				if (irn_visited(in))
 					continue;
 				node = in;
 				break;
@@ -690,9 +678,9 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 	const ia32_attr_t *flags_attr;
 	flags = skip_Proj(flags);
 
-	if(is_ia32_Sahf(flags)) {
+	if (is_ia32_Sahf(flags)) {
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
-		if(!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
+		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
 				|| is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
 			cmp = find_original_value(cmp);
 			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
@@ -700,14 +688,14 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);
-		if(flags_attr->data.ins_permuted)
+		if (flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
-	} else if(is_ia32_Ucomi(flags) || is_ia32_Fucomi(flags)
+	} else if (is_ia32_Ucomi(flags) || is_ia32_Fucomi(flags)
 			|| is_ia32_Fucompi(flags)) {
 		flags_attr = get_ia32_attr_const(flags);
 
-		if(flags_attr->data.ins_permuted)
+		if (flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
 		pnc |= ia32_pn_Cmp_float;
 	} else {
@@ -717,9 +705,9 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 #endif
 		flags_attr = get_ia32_attr_const(flags);
 
-		if(flags_attr->data.ins_permuted)
+		if (flags_attr->data.ins_permuted)
 			pnc = get_mirrored_pnc(pnc);
-		if(flags_attr->data.cmp_unsigned)
+		if (flags_attr->data.cmp_unsigned)
 			pnc |= ia32_pn_Cmp_unsigned;
 	}
 
@@ -730,7 +718,7 @@ static void ia32_emit_cmp_suffix(int pnc)
 {
 	const char        *str;
 
-	if((pnc & ia32_pn_Cmp_float) || (pnc & ia32_pn_Cmp_unsigned)) {
+	if ((pnc & ia32_pn_Cmp_float) || (pnc & ia32_pn_Cmp_unsigned)) {
 		pnc = pnc & 7;
 		assert(cmp2condition_u[pnc].num == pnc);
 		str = cmp2condition_u[pnc].name;
@@ -751,8 +739,8 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 	pn_Cmp pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
-	if(attr->data.ins_permuted) {
-		if(pnc & ia32_pn_Cmp_float) {
+	if (attr->data.ins_permuted) {
+		if (pnc & ia32_pn_Cmp_float) {
 			pnc = get_negated_pnc(pnc, mode_F);
 		} else {
 			pnc = get_negated_pnc(pnc, mode_Iu);
@@ -765,7 +753,8 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 /**
  * Returns the target block for a control flow node.
  */
-static ir_node *get_cfop_target_block(const ir_node *irn) {
+static ir_node *get_cfop_target_block(const ir_node *irn)
+{
 	assert(get_irn_mode(irn) == mode_X);
 	return get_irn_link(irn);
 }
@@ -806,7 +795,8 @@ static void ia32_emit_cfop_target(const ir_node *node)
 /**
  * Returns the Proj with projection number proj and NOT mode_M
  */
-static ir_node *get_proj(const ir_node *node, long proj) {
+static ir_node *get_proj(const ir_node *node, long proj)
+{
 	const ir_edge_t *edge;
 	ir_node         *src;
 
@@ -860,7 +850,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		if(pnc & ia32_pn_Cmp_float) {
+		if (pnc & ia32_pn_Cmp_float) {
 			pnc = get_negated_pnc(pnc, mode_F);
 		} else {
 			pnc = get_negated_pnc(pnc, mode_Iu);
@@ -919,7 +909,7 @@ emit_jcc:
 		be_emit_finish_line_gas(proj_true);
 	}
 
-	if(need_parity_label) {
+	if (need_parity_label) {
 		be_emit_cstring("1:");
 		be_emit_write_line();
 	}
@@ -954,9 +944,9 @@ static void emit_ia32_CMov(const ir_node *node)
 	                                 get_irn_n(node, n_ia32_CMov_val_false));
 
 	/* should be same constraint fullfilled? */
-	if(out == in_false) {
+	if (out == in_false) {
 		/* yes -> nothing to do */
-	} else if(out == in_true) {
+	} else if (out == in_true) {
 		const arch_register_t *tmp;
 
 		assert(get_ia32_op_type(node) == ia32_Normal);
@@ -975,8 +965,8 @@ static void emit_ia32_CMov(const ir_node *node)
 		be_emit_finish_line_gas(node);
 	}
 
-	if(ins_permuted) {
-		if(pnc & ia32_pn_Cmp_float) {
+	if (ins_permuted) {
+		if (pnc & ia32_pn_Cmp_float) {
 			pnc = get_negated_pnc(pnc, mode_F);
 		} else {
 			pnc = get_negated_pnc(pnc, mode_Iu);
@@ -988,7 +978,7 @@ static void emit_ia32_CMov(const ir_node *node)
 	be_emit_cstring("\tcmov");
 	ia32_emit_cmp_suffix(pnc);
 	be_emit_char(' ');
-	if(get_ia32_op_type(node) == ia32_AddrModeS) {
+	if (get_ia32_op_type(node) == ia32_AddrModeS) {
 		ia32_emit_am(node);
 	} else {
 		emit_register(in_true, get_ia32_ls_mode(node));
@@ -1028,7 +1018,8 @@ typedef struct _jmp_tbl_t {
 /**
  * Compare two variables of type branch_t. Used to sort all switch cases
  */
-static int ia32_cmp_branch_t(const void *a, const void *b) {
+static int ia32_cmp_branch_t(const void *a, const void *b)
+{
 	branch_t *b1 = (branch_t *)a;
 	branch_t *b2 = (branch_t *)b;
 
@@ -1177,13 +1168,13 @@ static void emit_ia32_Immediate(const ir_node *node)
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 
 	be_emit_char('$');
-	if(attr->symconst != NULL) {
-		if(attr->sc_sign)
+	if (attr->symconst != NULL) {
+		if (attr->sc_sign)
 			be_emit_char('-');
 		ia32_emit_entity(attr->symconst, 0);
 	}
-	if(attr->symconst == NULL || attr->offset != 0) {
-		if(attr->symconst != NULL) {
+	if (attr->symconst == NULL || attr->offset != 0) {
+		if (attr->symconst != NULL) {
 			be_emit_irprintf("%+d", attr->offset);
 		} else {
 			be_emit_irprintf("0x%X", attr->offset);
@@ -1251,7 +1242,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 
 	/* parse number */
 	sscanf(s, "%d%n", &num, &p);
-	if(num < 0) {
+	if (num < 0) {
 		ir_fprintf(stderr, "Warning: Couldn't parse assembler operand (%+F)\n",
 		           node);
 		return s;
@@ -1259,7 +1250,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		s += p;
 	}
 
-	if(num < 0 || num >= ARR_LEN(asm_regs)) {
+	if (num < 0 || num >= ARR_LEN(asm_regs)) {
 		ir_fprintf(stderr, "Error: Custom assembler references invalid "
 		           "input/output (%+F)\n", node);
 		return s;
@@ -1268,30 +1259,30 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	assert(asm_reg->valid);
 
 	/* get register */
-	if(asm_reg->use_input == 0) {
+	if (asm_reg->use_input == 0) {
 		reg = get_out_reg(node, asm_reg->inout_pos);
 	} else {
 		ir_node *pred = get_irn_n(node, asm_reg->inout_pos);
 
 		/* might be an immediate value */
-		if(is_ia32_Immediate(pred)) {
+		if (is_ia32_Immediate(pred)) {
 			emit_ia32_Immediate(pred);
 			return s;
 		}
 		reg = get_in_reg(node, asm_reg->inout_pos);
 	}
-	if(reg == NULL) {
+	if (reg == NULL) {
 		ir_fprintf(stderr, "Warning: no register assigned for %d asm op "
 		           "(%+F)\n", num, node);
 		return s;
 	}
 
-	if(asm_reg->memory) {
+	if (asm_reg->memory) {
 		be_emit_char('(');
 	}
 
 	/* emit it */
-	if(modifier != 0) {
+	if (modifier != 0) {
 		be_emit_char('%');
 		switch(modifier) {
 		case 'b':
@@ -1311,7 +1302,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		emit_register(reg, asm_reg->mode);
 	}
 
-	if(asm_reg->memory) {
+	if (asm_reg->memory) {
 		be_emit_char(')');
 	}
 
@@ -1336,7 +1327,7 @@ static void emit_ia32_Asm(const ir_node *node)
 		be_emit_char('\t');
 
 	while(*s != 0) {
-		if(*s == '%') {
+		if (*s == '%') {
 			s = emit_asm_operand(node, s);
 		} else {
 			be_emit_char(*s++);
@@ -1364,7 +1355,8 @@ static void emit_ia32_Asm(const ir_node *node)
 /**
  * Emit movsb/w instructions to make mov count divideable by 4
  */
-static void emit_CopyB_prolog(unsigned size) {
+static void emit_CopyB_prolog(unsigned size)
+{
 	be_emit_cstring("\tcld");
 	be_emit_finish_line_gas(NULL);
 
@@ -1437,21 +1429,21 @@ static void emit_ia32_Conv_with_FP(const ir_node *node)
 
 	be_emit_cstring("\tcvt");
 
-	if(is_ia32_Conv_I2FP(node)) {
-		if(ls_bits == 32) {
+	if (is_ia32_Conv_I2FP(node)) {
+		if (ls_bits == 32) {
 			be_emit_cstring("si2ss");
 		} else {
 			be_emit_cstring("si2sd");
 		}
-	} else if(is_ia32_Conv_FP2I(node)) {
-		if(ls_bits == 32) {
+	} else if (is_ia32_Conv_FP2I(node)) {
+		if (ls_bits == 32) {
 			be_emit_cstring("ss2si");
 		} else {
 			be_emit_cstring("sd2si");
 		}
 	} else {
 		assert(is_ia32_Conv_FP2FP(node));
-		if(ls_bits == 32) {
+		if (ls_bits == 32) {
 			be_emit_cstring("sd2ss");
 		} else {
 			be_emit_cstring("ss2sd");
@@ -1607,13 +1599,13 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	const arch_register_t *out = arch_get_irn_register(arch_env, node);
 	ir_mode               *mode;
 
-	if(in == out) {
+	if (in == out) {
 		return;
 	}
-	if(is_unknown_reg(in))
+	if (is_unknown_reg(in))
 		return;
 	/* copies of vf nodes aren't real... */
-	if(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
 	mode = get_irn_mode(node);
@@ -1876,8 +1868,8 @@ static void emit_Nothing(const ir_node *node)
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
-static void ia32_register_emitters(void) {
-
+static void ia32_register_emitters(void)
+{
 #define IA32_EMIT2(a,b) op_ia32_##a->ops.generic = (op_func)emit_ia32_##b
 #define IA32_EMIT(a)    IA32_EMIT2(a,a)
 #define EMIT(a)         op_##a->ops.generic = (op_func)emit_##a
@@ -1998,13 +1990,13 @@ static int should_align_block(const ir_node *block)
 	double        jmp_freq  = 0;  /**< execfreq of all non-fallthrough blocks */
 	int           i, n_cfgpreds;
 
-	if(exec_freq == NULL)
+	if (exec_freq == NULL)
 		return 0;
-	if(ia32_cg_config.label_alignment_factor <= 0)
+	if (ia32_cg_config.label_alignment_factor <= 0)
 		return 0;
 
 	block_freq = get_block_execfreq(exec_freq, block);
-	if(block_freq < DELTA)
+	if (block_freq < DELTA)
 		return 0;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
@@ -2012,14 +2004,14 @@ static int should_align_block(const ir_node *block)
 		const ir_node *pred      = get_Block_cfgpred_block(block, i);
 		double         pred_freq = get_block_execfreq(exec_freq, pred);
 
-		if(pred == prev) {
+		if (pred == prev) {
 			prev_freq += pred_freq;
 		} else {
 			jmp_freq  += pred_freq;
 		}
 	}
 
-	if(prev_freq < DELTA && !(jmp_freq < DELTA))
+	if (prev_freq < DELTA && !(jmp_freq < DELTA))
 		return 1;
 
 	jmp_freq /= prev_freq;
@@ -2168,7 +2160,8 @@ void ia32_assign_exc_label(ir_node *node)
 /**
  * Compare two exception_entries.
  */
-static int cmp_exc_entry(const void *a, const void *b) {
+static int cmp_exc_entry(const void *a, const void *b)
+{
 	const exc_entry *ea = a;
 	const exc_entry *eb = b;
 
