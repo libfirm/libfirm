@@ -4318,7 +4318,20 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 
 static ir_node *gen_be_Call(ir_node *node) {
 	ir_node *res = be_duplicate_node(node);
+	ir_type *call_tp;
+
 	be_node_add_flags(res, -1, arch_irn_flags_modify_flags);
+
+	/* Run the x87 simulator if the call returns a float value */
+	call_tp = be_Call_get_type(node);
+	if (get_method_n_ress(call_tp) > 0) {
+		ir_type *const res_type = get_method_res_type(call_tp, 0);
+		ir_mode *const res_mode = get_type_mode(res_type);
+
+		if (res_mode != NULL && mode_is_float(res_mode)) {
+			env_cg->do_x87_sim = 1;
+		}
+	}
 
 	return res;
 }
