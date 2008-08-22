@@ -305,7 +305,7 @@ static ir_node* gen_Const(ir_node *node)
 	if(tarval_is_long(tv)) {
 		val = get_tarval_long(tv);
 	} else {
-		panic("Can't get value of tarval %+F\n", node);
+		panic("Can't get value of tarval %+F", node);
 	}
 
 	val = get_tarval_long(tv);
@@ -499,7 +499,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 		break;
 	}
 
-	panic("invalid proj attached to %+F\n", divmod);
+	panic("invalid proj attached to %+F", divmod);
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)
@@ -775,7 +775,7 @@ static ir_node *gen_Conv(ir_node *node)
 		} else if(src_size == 16) {
 			res = new_rd_mips_seh(dbgi, irg, block, new_op);
 		} else {
-			panic("invalid conv %+F\n", node);
+			panic("invalid conv %+F", node);
 		}
 	} else {
 		ir_node *and_const;
@@ -785,7 +785,7 @@ static ir_node *gen_Conv(ir_node *node)
 		} else if(src_size == 16) {
 			and_const = mips_create_Immediate(0xffff);
 		} else {
-			panic("invalid conv %+F\n", node);
+			panic("invalid conv %+F", node);
 		}
 		res = new_rd_mips_and(dbgi, irg, block, new_op, and_const);
 	}
@@ -1131,7 +1131,7 @@ static ir_node *gen_AddSP(ir_node *node)
 
 static ir_node *gen_Bad(ir_node *node)
 {
-	panic("Unexpected node %+F found in mips transform phase.\n", node);
+	panic("Unexpected node %+F found in mips transform phase.", node);
 	return NULL;
 }
 

@@ -215,7 +215,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		int               is_use;
 
 		if (cand_idx >= n_live_nodes) {
-			panic("can't spill enough values for node %+F\n", node);
+			panic("can't spill enough values for node %+F", node);
 		}
 
 

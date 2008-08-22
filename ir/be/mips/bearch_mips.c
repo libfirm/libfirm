@@ -236,10 +236,10 @@ static void mips_set_frame_entity(ir_node *node, ir_entity *entity)
 	mips_load_store_attr_t *attr;
 
 	if(!is_mips_irn(node)) {
-		panic("trying to set frame entity on non load/store node %+F\n", node);
+		panic("trying to set frame entity on non load/store node %+F", node);
 	}
 	if(!mips_is_Load(node) && !mips_is_Store(node)) {
-		panic("trying to set frame entity on non load/store node %+F\n", node);
+		panic("trying to set frame entity on non load/store node %+F", node);
 	}
 
 	attr = get_irn_generic_attr(node);
@@ -255,10 +255,10 @@ static void mips_set_frame_offset(ir_node *node, int offset)
 	mips_load_store_attr_t *attr;
 
 	if(!is_mips_irn(node)) {
-		panic("trying to set frame offset on non load/store node %+F\n", node);
+		panic("trying to set frame offset on non load/store node %+F", node);
 	}
 	if(!mips_is_Load(node) && !mips_is_Store(node)) {
-		panic("trying to set frame offset on non load/store node %+F\n", node);
+		panic("trying to set frame offset on non load/store node %+F", node);
 	}
 
 	attr = get_irn_generic_attr(node);

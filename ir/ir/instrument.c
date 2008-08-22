@@ -63,7 +63,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent) {
 		}
 	}
 	if (first_block == NULL) {
-		panic("Cannot find first block of irg %+F\n", irg);
+		panic("Cannot find first block of irg %+F", irg);
 	}
 
 	/* check if this block has only one predecessor */

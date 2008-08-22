@@ -224,11 +224,11 @@ static ir_node *gen_Conv(ir_node *node) {
 			}
 		}
 		else if (USE_VFP(env_cg->isa)) {
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 			return NULL;
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 			return NULL;
 		}
 	}
@@ -264,7 +264,7 @@ static ir_node *gen_Conv(ir_node *node) {
 				return gen_zero_extension(dbg, block, new_op, min_bits);
 			}
 		} else {
-			panic("Cannot handle Conv %+F->%+F with %d->%d bits\n", src_mode, dst_mode,
+			panic("Cannot handle Conv %+F->%+F with %d->%d bits", src_mode, dst_mode,
 				src_bits, dst_bits);
 			return NULL;
 		}
@@ -317,11 +317,11 @@ static ir_node *gen_Add(ir_node *node) {
 			return new_rd_arm_fpaAdf(dbg, irg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 			return NULL;
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 			return NULL;
 		}
 	} else {
@@ -393,11 +393,11 @@ static ir_node *gen_Mul(ir_node *node) {
 		}
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 			return NULL;
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 			return NULL;
 		}
 	}
@@ -432,10 +432,10 @@ static ir_node *gen_Quot(ir_node *node) {
 		return new_rd_arm_fpaDvf(dbg, current_ir_graph, block, new_op1, new_op2, mode);
 	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
-		panic("VFP not supported yet\n");
+		panic("VFP not supported yet");
 	}
 	else {
-		panic("Softfloat not supported yet\n");
+		panic("Softfloat not supported yet");
 		return NULL;
 	}
 }
@@ -526,11 +526,11 @@ static ir_node *gen_Sub(ir_node *node) {
 			return new_rd_arm_fpaSuf(dbg, irg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 			return NULL;
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 			return NULL;
 		}
 	}
@@ -759,10 +759,10 @@ static ir_node *gen_Abs(ir_node *node) {
 			return new_rd_arm_fpaAbs(dbg, current_ir_graph, block, new_op, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 		}
 	}
 	assert(mode_is_data(mode));
@@ -788,10 +788,10 @@ static ir_node *gen_Minus(ir_node *node) {
 			return new_rd_arm_fpaMvf(dbg, current_ir_graph, block, op, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 		}
 	}
 	assert(mode_is_data(mode));
@@ -821,10 +821,10 @@ static ir_node *gen_Load(ir_node *node) {
 			new_load = new_rd_arm_fpaLdf(dbg, irg, block, new_ptr, new_mem, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 		}
 	}
 	else {
@@ -843,7 +843,7 @@ static ir_node *gen_Load(ir_node *node) {
 				new_load = new_rd_arm_Load(dbg, irg, block, new_ptr, new_mem);
 				break;
 			default:
-				panic("mode size not supported\n");
+				panic("mode size not supported");
 			}
 		} else {
 			/* zero extended loads */
@@ -858,7 +858,7 @@ static ir_node *gen_Load(ir_node *node) {
 				new_load = new_rd_arm_Load(dbg, irg, block, new_ptr, new_mem);
 				break;
 			default:
-				panic("mode size not supported\n");
+				panic("mode size not supported");
 			}
 		}
 	}
@@ -898,9 +898,9 @@ static ir_node *gen_Store(ir_node *node) {
 			new_store = new_rd_arm_fpaStf(dbg, irg, block, new_ptr, new_val, new_mem, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 		} else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 		}
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Store");
@@ -1083,10 +1083,10 @@ static ir_node *gen_Const(ir_node *node) {
 		}
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet\n");
+			panic("VFP not supported yet");
 		}
 		else {
-			panic("Softfloat not supported yet\n");
+			panic("Softfloat not supported yet");
 		}
 	}
 	return create_const_graph(node, block);
@@ -1450,7 +1450,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
  */
 static ir_node *gen_Proj_Cmp(ir_node *node) {
 	(void) node;
-	panic("Mux NYI\n");
+	panic("Mux NYI");
 }
 
 
@@ -1619,7 +1619,7 @@ static ir_node *gen_Phi(ir_node *node) {
  * the BAD transformer.
  */
 static ir_node *bad_transform(ir_node *irn) {
-	panic("ARM backend: Not implemented: %+F\n", irn);
+	panic("ARM backend: Not implemented: %+F", irn);
 	return irn;
 }
 

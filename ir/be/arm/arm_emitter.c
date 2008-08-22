@@ -969,7 +969,7 @@ static void emit_arm_fpaDbl2GP(const ir_node *irn) {
 
 static void emit_arm_LdTls(const ir_node *irn) {
 	(void) irn;
-	panic("TLS not supported for this target\n");
+	panic("TLS not supported for this target");
 	/* Er... our gcc does not support it... Install a newer toolchain. */
 }
 

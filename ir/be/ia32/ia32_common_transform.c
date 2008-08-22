@@ -843,7 +843,7 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 	unsigned              *limited;
 
 	if(reg == NULL) {
-		panic("Register '%s' mentioned in asm clobber is unknown\n", clobber);
+		panic("Register '%s' mentioned in asm clobber is unknown", clobber);
 	}
 
 	assert(reg->index < 32);

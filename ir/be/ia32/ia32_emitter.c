@@ -316,7 +316,7 @@ static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 		case 8:  be_emit_char('b'); return;
 		}
 	}
-	panic("Can't output mode_suffix for %+F\n", mode);
+	panic("Can't output mode_suffix for %+F", mode);
 }
 
 void ia32_emit_mode_suffix(const ir_node *node)
@@ -1686,7 +1686,7 @@ static void emit_be_Perm(const ir_node *node)
 	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
 		/* is a NOP */
 	} else {
-		panic("unexpected register class in be_Perm (%+F)\n", node);
+		panic("unexpected register class in be_Perm (%+F)", node);
 	}
 }
 

@@ -3995,7 +3995,7 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node) {
  * the BAD transformer.
  */
 static ir_node *bad_transform(ir_node *node) {
-	panic("No transform function for %+F available.\n", node);
+	panic("No transform function for %+F available.", node);
 	return NULL;
 }
 

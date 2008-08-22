@@ -273,7 +273,7 @@ static void dump_arith_tarval(tarval *tv, int bytes)
 		return;
 	}
 
-	panic("Can't dump a tarval with %d bytes\n", bytes);
+	panic("Can't dump a tarval with %d bytes", bytes);
 }
 
 /**
@@ -495,7 +495,7 @@ static void dump_size_type(size_t size) {
 		break;
 
 	default:
-		panic("Try to dump a type with %u bytes\n", (unsigned) size);
+		panic("Try to dump a type with %u bytes", (unsigned)size);
 	}
 }
 
@@ -806,7 +806,7 @@ static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 		panic("bitfield initializer is compound");
 	}
 	if (tv == NULL) {
-		panic("Couldn't get numeric value for bitfield initializer\n");
+		panic("Couldn't get numeric value for bitfield initializer");
 	}
 
 	/* normalize offset */
@@ -1050,7 +1050,7 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 			tarval *tv = get_atomic_init_tv(value);
 			unsigned char curr_bits, last_bits = 0;
 			if (tv == NULL) {
-				panic("Couldn't get numeric value for bitfield initializer '%s'\n",
+				panic("Couldn't get numeric value for bitfield initializer '%s'",
 				      get_entity_ld_name(ent));
 			}
 			/* normalize offset */

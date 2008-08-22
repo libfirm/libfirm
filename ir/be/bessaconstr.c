@@ -386,7 +386,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 			def = search_def(env, at);
 
 			if(def == NULL) {
-				panic("no definition found for %+F at position %d\n", use, pos);
+				panic("no definition found for %+F at position %d", use, pos);
 			}
 
 			DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));

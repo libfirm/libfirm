@@ -317,7 +317,7 @@ void mips_emit_IncSP(const ir_node *node)
 	}
 
 	if(offset > 0xffff || offset < -0xffff) {
-		panic("stackframe > 2^16 bytes not supported yet\n");
+		panic("stackframe > 2^16 bytes not supported yet");
 	}
 
 	if(offset > 0) {
