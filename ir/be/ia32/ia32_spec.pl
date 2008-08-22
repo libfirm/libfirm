@@ -1323,21 +1323,6 @@ Load => {
 	units     => [ "GP" ],
 },
 
-l_Load => {
-	op_flags  => "L|F",
-	cmp_attr  => "return 1;",
-	outs      => [ "res", "M" ],
-	arity     => 2,
-},
-
-l_Store => {
-	op_flags  => "L|F",
-	cmp_attr  => "return 1;",
-	state     => "exc_pinned",
-	arity     => 3,
-	mode      => "mode_M",
-},
-
 Store => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
@@ -1992,12 +1977,6 @@ vfild => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-l_vfild => {
-	cmp_attr  => "return 1;",
-	outs      => [ "res", "M" ],
-	arity     => 2,
-},
-
 vfist => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ] },
@@ -2017,13 +1996,6 @@ vfisttp => {
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
-},
-
-l_vfist => {
-	cmp_attr  => "return 1;",
-	state     => "exc_pinned",
-	arity     => 3,
-	mode      => "mode_M",
 },
 
 

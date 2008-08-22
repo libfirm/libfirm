@@ -3625,81 +3625,6 @@ static ir_node *gen_Bound(ir_node *node)
 }
 
 
-typedef ir_node *construct_load_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
-                                     ir_node *mem);
-
-typedef ir_node *construct_store_func(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index, \
-                                      ir_node *val, ir_node *mem);
-
-/**
- * Transforms a lowered Load into a "real" one.
- */
-static ir_node *gen_lowered_Load(ir_node *node, construct_load_func func)
-{
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *ptr     = get_irn_n(node, 0);
-	ir_node  *new_ptr = be_transform_node(ptr);
-	ir_node  *mem     = get_irn_n(node, 1);
-	ir_node  *new_mem = be_transform_node(mem);
-	ir_graph *irg     = current_ir_graph;
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *mode    = get_ia32_ls_mode(node);
-	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_node  *new_op;
-
-	new_op  = func(dbgi, irg, block, new_ptr, noreg, new_mem);
-
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_offs_int(new_op, get_ia32_am_offs_int(node));
-	set_ia32_am_scale(new_op, get_ia32_am_scale(node));
-	set_ia32_am_sc(new_op, get_ia32_am_sc(node));
-	if (is_ia32_am_sc_sign(node))
-		set_ia32_am_sc_sign(new_op);
-	set_ia32_ls_mode(new_op, mode);
-	if (is_ia32_use_frame(node)) {
-		set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
-		set_ia32_use_frame(new_op);
-	}
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
-/**
- * Transforms a lowered Store into a "real" one.
- */
-static ir_node *gen_lowered_Store(ir_node *node, construct_store_func func)
-{
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *ptr     = get_irn_n(node, 0);
-	ir_node  *new_ptr = be_transform_node(ptr);
-	ir_node  *val     = get_irn_n(node, 1);
-	ir_node  *new_val = be_transform_node(val);
-	ir_node  *mem     = get_irn_n(node, 2);
-	ir_node  *new_mem = be_transform_node(mem);
-	ir_graph *irg     = current_ir_graph;
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *noreg   = ia32_new_NoReg_gp(env_cg);
-	ir_mode  *mode    = get_ia32_ls_mode(node);
-	ir_node  *new_op;
-	long     am_offs;
-
-	new_op = func(dbgi, irg, block, new_ptr, noreg, new_val, new_mem);
-
-	am_offs = get_ia32_am_offs_int(node);
-	add_ia32_am_offs_int(new_op, am_offs);
-
-	set_ia32_op_type(new_op, ia32_AddrModeD);
-	set_ia32_ls_mode(new_op, mode);
-	set_ia32_frame_ent(new_op, get_ia32_frame_ent(node));
-	set_ia32_use_frame(new_op);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env_cg, node));
-
-	return new_op;
-}
-
 static ir_node *gen_ia32_l_ShlDep(ir_node *node)
 {
 	ir_node *left  = get_irn_n(node, n_ia32_l_ShlDep_val);
@@ -3747,71 +3672,6 @@ static ir_node *gen_ia32_l_Adc(ir_node *node)
 	return gen_binop_flags(node, new_rd_ia32_Adc,
 			match_commutative | match_am | match_immediate |
 			match_mode_neutral);
-}
-
-/**
- * Transforms an ia32_l_vfild into a "real" ia32_vfild node
- *
- * @param node   The node to transform
- * @return the created ia32 vfild node
- */
-static ir_node *gen_ia32_l_vfild(ir_node *node) {
-	return gen_lowered_Load(node, new_rd_ia32_vfild);
-}
-
-/**
- * Transforms an ia32_l_Load into a "real" ia32_Load node
- *
- * @param node   The node to transform
- * @return the created ia32 Load node
- */
-static ir_node *gen_ia32_l_Load(ir_node *node) {
-	return gen_lowered_Load(node, new_rd_ia32_Load);
-}
-
-/**
- * Transforms an ia32_l_Store into a "real" ia32_Store node
- *
- * @param node   The node to transform
- * @return the created ia32 Store node
- */
-static ir_node *gen_ia32_l_Store(ir_node *node) {
-	return gen_lowered_Store(node, new_rd_ia32_Store);
-}
-
-/**
- * Transforms a l_vfist into a "real" vfist node.
- *
- * @param node   The node to transform
- * @return the created ia32 vfist node
- */
-static ir_node *gen_ia32_l_vfist(ir_node *node) {
-	ir_node  *block      = be_transform_node(get_nodes_block(node));
-	ir_node  *ptr        = get_irn_n(node, 0);
-	ir_node  *new_ptr    = be_transform_node(ptr);
-	ir_node  *val        = get_irn_n(node, 1);
-	ir_node  *new_val    = be_transform_node(val);
-	ir_node  *mem        = get_irn_n(node, 2);
-	ir_node  *new_mem    = be_transform_node(mem);
-	ir_graph *irg        = current_ir_graph;
-	dbg_info *dbgi       = get_irn_dbg_info(node);
-	ir_node  *noreg      = ia32_new_NoReg_gp(env_cg);
-	ir_mode  *mode       = get_ia32_ls_mode(node);
-	ir_node  *memres, *fist;
-	long     am_offs;
-
-	memres = gen_vfist(dbgi, irg, block, new_ptr, noreg, new_mem, new_val, &fist);
-	am_offs = get_ia32_am_offs_int(node);
-	add_ia32_am_offs_int(fist, am_offs);
-
-	set_ia32_op_type(fist, ia32_AddrModeD);
-	set_ia32_ls_mode(fist, mode);
-	set_ia32_frame_ent(fist, get_ia32_frame_ent(node));
-	set_ia32_use_frame(fist);
-
-	SET_IA32_ORIG_NODE(fist, ia32_get_old_node_name(env_cg, node));
-
-	return memres;
 }
 
 /**
@@ -4620,10 +4480,6 @@ static void register_transformers(void)
 	GEN(ia32_l_ShrD);
 	GEN(ia32_l_Sub);
 	GEN(ia32_l_Sbb);
-	GEN(ia32_l_vfild);
-	GEN(ia32_l_Load);
-	GEN(ia32_l_vfist);
-	GEN(ia32_l_Store);
 	GEN(ia32_l_LLtoFloat);
 	GEN(ia32_l_FloattoLL);
 
