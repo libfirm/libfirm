@@ -1335,7 +1335,7 @@ set_Call_ptr(ir_node *node, ir_node *ptr) {
 ir_node **
 get_Call_param_arr(ir_node *node) {
 	assert(is_Call(node));
-	return (ir_node **)&get_irn_in(node)[CALL_PARAM_OFFSET + 1];
+	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
 int
