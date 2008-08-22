@@ -347,13 +347,18 @@ static void peephole_ia32_Return(ir_node *node) {
  */
 static void peephole_IncSP_Store_to_push(ir_node *irn)
 {
-	int      i, maxslot, inc_ofs;
-	ir_node  *node;
-	ir_node  *stores[MAXPUSH_OPTIMIZE];
-	ir_node  *block;
-	ir_graph *irg;
-	ir_node  *curr_sp;
-	ir_mode  *spmode;
+	int              i;
+	int              maxslot;
+	int              inc_ofs;
+	ir_node         *node;
+	ir_node         *stores[MAXPUSH_OPTIMIZE];
+	ir_node         *block;
+	ir_graph        *irg;
+	ir_node         *curr_sp;
+	ir_mode         *spmode;
+	ir_node         *first_push = NULL;
+	ir_edge_t const *edge;
+	ir_edge_t const *next;
 
 	memset(stores, 0, sizeof(stores));
 
@@ -389,20 +394,18 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		/* unfortunately we can't support the full AMs possible for push at the
 		 * moment. TODO: fix this */
-		if (get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
+		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
 		offset = get_ia32_am_offs_int(node);
 		/* we should NEVER access uninitialized stack BELOW the current SP */
 		assert(offset >= 0);
 
-		offset = inc_ofs - 4 - offset;
-
 		/* storing at half-slots is bad */
 		if ((offset & 3) != 0)
 			break;
 
-		if (offset < 0 || offset >= MAXPUSH_OPTIMIZE * 4)
+		if (inc_ofs - 4 < offset || offset >= MAXPUSH_OPTIMIZE * 4)
 			continue;
 		storeslot = offset >> 2;
 
@@ -415,21 +418,23 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 			maxslot = storeslot;
 	}
 
-	curr_sp = be_get_IncSP_pred(irn);
+	curr_sp = irn;
+
+	for (i = -1; i < maxslot; ++i) {
+		if (stores[i + 1] == NULL)
+			break;
+	}
 
 	/* walk through the Stores and create Pushs for them */
 	block  = get_nodes_block(irn);
 	spmode = get_irn_mode(irn);
 	irg    = cg->irg;
-	for (i = 0; i <= maxslot; ++i) {
+	for (; i >= 0; --i) {
 		const arch_register_t *spreg;
 		ir_node *push;
 		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
-
-		if (store == NULL)
-			break;
 
 		val = get_irn_n(store, n_ia32_unary_op);
 		mem = get_irn_n(store, n_ia32_mem);
@@ -437,7 +442,10 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
 
-		sched_add_before(irn, push);
+		if (first_push == NULL)
+			first_push = push;
+
+		sched_add_after(curr_sp, push);
 
 		/* create stackpointer Proj */
 		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
@@ -452,8 +460,17 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		inc_ofs -= 4;
 	}
 
+	foreach_out_edge_safe(irn, edge, next) {
+		ir_node *const src = get_edge_src_irn(edge);
+		int      const pos = get_edge_src_pos(edge);
+
+		if (src == first_push)
+			continue;
+
+		set_irn_n(src, pos, curr_sp);
+	}
+
 	be_set_IncSP_offset(irn, inc_ofs);
-	be_set_IncSP_pred(irn, curr_sp);
 }
 
 /**
