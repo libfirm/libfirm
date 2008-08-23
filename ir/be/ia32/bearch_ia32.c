@@ -486,7 +486,6 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(arch_env->sp, irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
-		add_irn_dep(curr_sp, *mem);
 	} else {
 		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
 
