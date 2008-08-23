@@ -63,9 +63,6 @@
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
 
-/* define this to disable followers (may be buggy) */
-#undef NO_FOLLOWER
-
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
 typedef struct opcode_key_t      opcode_key_t;
@@ -814,12 +811,6 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
 	return Z_prime;
 }  /* split_no_followers */
 
-#ifdef NO_FOLLOWER
-
-#define split(Z, g, env) split_no_followers(*(Z), g, env)
-
-#else
-
 /**
  * Make the Follower -> Leader transition for a node.
  *
@@ -1151,7 +1142,6 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 
 	return X_prime;
 }  /* split */
-#endif /* NO_FOLLOWER */
 
 /**
  * Returns non-zero if the i'th input of a Phi node is live.
@@ -2556,7 +2546,6 @@ static void propagate(environment_t *env) {
 		for (x = fallen; x != NULL; x = x->next)
 			x->on_fallen = 0;
 
-#ifndef NO_FOLLOWER
 		if (old_type_was_T_or_C) {
 			node_t *y, *tmp;
 
@@ -2581,7 +2570,6 @@ static void propagate(environment_t *env) {
 				}
 			}
 		}
-#endif
 		split_by(Y, env);
 	}
 }  /* propagate */
@@ -2659,19 +2647,22 @@ static void apply_cf(ir_node *block, void *ctx) {
 		env->modified = 1;
 
 		for (i = n - 1; i >= 0; --i) {
-			ir_node *pred    = get_Block_cfgpred(block, i);
-			node_t  *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+			ir_node *pred = get_Block_cfgpred(block, i);
 
-			if (pred_bl->flagged == 0) {
-				pred_bl->flagged = 3;
+			if (! is_Bad(pred)) {
+				node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
 
-				if (pred_bl->type.tv == tarval_reachable) {
-					/*
-					 * We will remove an edge from block to its pred.
-					 * This might leave the pred block as an endless loop
-					 */
-					if (! is_backedge(block, i))
-						keep_alive(pred_bl->node);
+				if (pred_bl->flagged == 0) {
+					pred_bl->flagged = 3;
+
+					if (pred_bl->type.tv == tarval_reachable) {
+						/*
+						 * We will remove an edge from block to its pred.
+						 * This might leave the pred block as an endless loop
+						 */
+						if (! is_backedge(block, i))
+							keep_alive(pred_bl->node);
+					}
 				}
 			}
 		}
@@ -2681,6 +2672,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		if (block != get_irg_end_block(current_ir_graph)) {
 			/* mark dead blocks */
 			set_Block_dead(block);
+			DB((dbg, LEVEL_1, "Removing dead %+F\n", block));
 		} else {
 			/* the endblock is unreachable */
 			set_irn_in(block, 0, NULL);
@@ -2694,6 +2686,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 
 		if (can_exchange(pred)) {
 			ir_node *new_block = get_nodes_block(pred);
+			DB((dbg, LEVEL_1, "Fuse %+F with %+F\n", block, new_block));
 			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
 			exchange(block, new_block);
 			node->node = new_block;
@@ -2711,18 +2704,21 @@ static void apply_cf(ir_node *block, void *ctx) {
 		if (node->type.tv == tarval_reachable) {
 			in_X[k++] = pred;
 		} else {
-			node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+			DB((dbg, LEVEL_1, "Removing dead input %d from %+F (%+F)\n", i, block, pred));
+			if (! is_Bad(pred)) {
+				node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
 
-			if (pred_bl->flagged == 0) {
-				pred_bl->flagged = 3;
+				if (pred_bl->flagged == 0) {
+					pred_bl->flagged = 3;
 
-				if (pred_bl->type.tv == tarval_reachable) {
-					/*
-					 * We will remove an edge from block to its pred.
-					 * This might leave the pred block as an endless loop
-					 */
-					if (! is_backedge(block, i))
-						keep_alive(pred_bl->node);
+					if (pred_bl->type.tv == tarval_reachable) {
+						/*
+						 * We will remove an edge from block to its pred.
+						 * This might leave the pred block as an endless loop
+						 */
+						if (! is_backedge(block, i))
+							keep_alive(pred_bl->node);
+					}
 				}
 			}
 		}
