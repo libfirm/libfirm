@@ -1001,7 +1001,6 @@ done:
 	fp_value          *tmp = alloca(calc_buffer_size);
 	ieee_descriptor_t tmp_desc;
 	(void) len;
-	(void) desc;
 
 #ifdef HAVE_LONG_DOUBLE
 	val = strtold(str, NULL);
@@ -1020,7 +1019,7 @@ done:
 	tmp_desc.clss          = NORMAL;
 	fc_val_from_ieee754(val, &tmp_desc, tmp);
 #endif /* HAVE_LONG_DOUBLE */
-	return fc_cast(tmp, &tmp_desc, result);
+	return fc_cast(tmp, desc, result);
 #endif
 }
 
