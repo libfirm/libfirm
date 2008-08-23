@@ -39,6 +39,8 @@
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "irtools.h"
+#include "irprintf.h"
+#include "error.h"
 
 #ifdef DEBUG_libfirm
 /* Note:  ir_node.out_valid and ir_graph.n_outs are only present when DEBUG_libfirm is defined */
@@ -430,27 +432,25 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
 
 /**
  * We want that the out of ProjX from Start contains the next block at
- * position 1, the Start block at position 2.  This is necessary for
+ * position 0, the Start block at position 1.  This is necessary for
  * the out block walker.
  */
 static INLINE void fix_start_proj(ir_graph *irg) {
-	ir_node *proj    = NULL;
-	ir_node *irn;
 	ir_node *startbl = get_irg_start_block(irg);
-	int     i, block_pos, other_pos;
 
 	if (get_Block_n_cfg_outs(startbl)) {
-		for (i = get_irn_n_outs(startbl) - 1; i >= 0; --i)
-			if (get_irn_mode(get_irn_out(startbl, i)) == mode_X) {
-				proj = get_irn_out(startbl, i);
-				break;
-			}
+		ir_node *proj = get_irg_initial_exec(irg);
+		ir_node *irn;
+		int     block_pos, other_pos;
 
-		if (get_irn_out_ex(proj, 0, &block_pos) == startbl) {
-			assert(get_irn_n_outs(proj) == 2);
-			irn = get_irn_out_ex(proj, 1, &other_pos);
-			set_irn_out(proj, 0, irn, other_pos);
-			set_irn_out(proj, 1, startbl, block_pos);
+		if (get_irn_n_outs(proj) == 2) {
+			if (get_irn_out_ex(proj, 0, &block_pos) == startbl) {
+				irn = get_irn_out_ex(proj, 1, &other_pos);
+				set_irn_out(proj, 0, irn, other_pos);
+				set_irn_out(proj, 1, startbl, block_pos);
+			}
+		} else {
+			assert(get_irg_phase_state(irg) == phase_backend);
 		}
 	}
 }
@@ -487,8 +487,8 @@ void compute_irg_outs(ir_graph *irg) {
 	assert (end == (irg->outs + n_out_edges));
 
 	/* We want that the out of ProjX from Start contains the next block at
-	   position 1, the Start block at position 2.  This is necessary for
-	   the out block walker. */
+	   position 0, the Start block at position 1.  This is necessary for
+	   code placement (place_early() ONLY if started GCSE on graphs with dead blocks) */
 	fix_start_proj(irg);
 
 	current_ir_graph->outs_state = outs_consistent;
@@ -671,4 +671,47 @@ void free_irg_outs(ir_graph *irg) {
 	   have been lying to us */
 	irg_walk_graph (irg, reset_outs, NULL, NULL);
 #endif /* defined DEBUG_libfirm */
+}
+
+static void check_out_edges(ir_node *irn, void *env) {
+	int i, j, pos;
+	int *pError = env;
+	int error = *pError;
+	int last = is_Block(irn) ? 0 : -1;
+
+	/* check forward: every input must have an out edge */
+	for (i = get_irn_arity(irn) - 1; i >= last; --i) {
+		ir_node *pred = get_irn_n(irn, i);
+
+		for (j = get_irn_n_outs(pred) - 1; j >= 0; --j) {
+			ir_node *user = get_irn_out_ex(pred, j, &pos);
+
+			if (user == irn && pos == i) {
+				break;
+			}
+		}
+		if (j < 0) {
+			ir_fprintf(stderr, "Missing out edge from %+F input %d to %+F", irn, i, pred);
+			++error;
+		}
+	}
+
+	/* checking backward */
+	for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+		ir_node *user = get_irn_out_ex(irn, i, &pos);
+
+		if (get_irn_n(user, pos) != irn) {
+			ir_fprintf(stderr, "Spurious out edge from %+F output %d to %+F", irn, i, user);
+			++error;
+		}
+	}
+	*pError = error;
+}
+
+/* verify outs edges. */
+void verify_outs(ir_graph *irg) {
+	int errors = 0;
+	irg_walk_graph(irg, NULL, check_out_edges, &errors);
+	if (errors > 0)
+		panic("Out edges are corrupt");
 }
