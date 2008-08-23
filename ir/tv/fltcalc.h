@@ -55,6 +55,28 @@ typedef enum {
 
 #define FC_DEFAULT_PRECISION 64
 
+/**
+ * possible float states
+ */
+typedef enum {
+	NORMAL,       /**< normal representation, implicit 1 */
+	ZERO,         /**< +/-0 */
+	SUBNORMAL,    /**< denormals, implicit 0 */
+	INF,          /**< +/-oo */
+	NAN,          /**< Not A Number */
+} value_class_t;
+
+/**
+ * A descriptor for an IEEE float value.
+ */
+typedef struct ieee_descriptor_t {
+	unsigned char exponent_size;    /**< size of exponent in bits */
+	unsigned char mantissa_size;    /**< size of mantissa in bits */
+	unsigned char explicit_one;     /**< set if the leading one is explicit */
+	unsigned char clss;             /**< state of this float */
+} ieee_descriptor_t;
+
+struct _fp_value;
 typedef struct _fp_value fp_value;
 
 /*@{*/
@@ -68,7 +90,7 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, void *result);
+void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
@@ -77,17 +99,17 @@ void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char man
  * will be rounded. Therefore only an approximation of the passed float can be
  * expected in this case.
  *
- * @param l The floating point number to build a representation for
- * @param exp_size The number of bits of the new exponent
- * @param mant_size The number of bits of the new mantissa
- * @param result A buffer to hold the value built. If this is NULL, the internal
- *               accumulator buffer is used. Note that the buffer must be big
- *               enough to hold the value. Use fc_get_buffer_length() to find out
- *               the size needed
- * @return The result pointer passed to the function. If this was NULL this returns
- *               a pointer to the internal accumulator buffer
+ * @param l       The floating point number to build a representation for
+ * @param desc    The floating point descriptor
+ * @param result  A buffer to hold the value built. If this is NULL, the internal
+ *                accumulator buffer is used. Note that the buffer must be big
+ *                enough to hold the value. Use fc_get_buffer_length() to find out
+ *                the size needed
+ *
+ * @return  The result pointer passed to the function. If this was NULL this returns
+ *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *result);
+fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result);
 
 /** retrieve the float value of an internal value
  * This function casts the internal value to LLDBL and returns a LLDBL with
@@ -96,7 +118,8 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
  * rounding, so the returned value might not the same than the actually
  * represented value.
  *
- * @param val The representation of a float value
+ * @param val  The representation of a float value
+ *
  * @return a float value approximating the represented value
  */
 LLDBL fc_val_to_ieee754(const fp_value *val);
@@ -106,40 +129,36 @@ LLDBL fc_val_to_ieee754(const fp_value *val);
  * If the new precision is less than the original precision the returned
  * value might not be the same as the original value.
  *
- * @param val The value to be casted
- * @param exp_size The number of bits of the new exponent
- * @param mant_size The number of bits of the new mantissa
- * @param result A buffer to hold the value built. If this is NULL, the internal
- *               accumulator buffer is used. Note that the buffer must be big
- *               enough to hold the value. Use fc_get_buffer_length() to find out
- *               the size needed
- * @return The result pointer passed to the function. If this was NULL this returns
- *               a pointer to the internal accumulator buffer
+ * @param val     The value to be casted
+ * @param desc    The floating point descriptor
+ * @param result  A buffer to hold the value built. If this is NULL, the internal
+ *                accumulator buffer is used. Note that the buffer must be big
+ *                enough to hold the value. Use fc_get_buffer_length() to find out
+ *                the size needed
+ * @return  The result pointer passed to the function. If this was NULL this returns
+ *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_cast(const fp_value *val, char exp_size, char mant_size, fp_value *result);
+fp_value *fc_cast(const fp_value *val, const ieee_descriptor_t *desc, fp_value *result);
 
 /*@{*/
 /** build a special float value
  * This function builds a representation for a special float value, as indicated by the
  * function's suffix.
  *
- * @param exponent_size The number of bits of exponent of the float type the value
- *               is created for
- * @param mantissa_size The number of bits of mantissa of the float type the value
- *               is created for
- * @param result A buffer to hold the value built. If this is NULL, the internal
- *               accumulator buffer is used. Note that the buffer must be big
- *               enough to hold the value. Use fc_get_buffer_length() to find out
- *               the size needed
- * @return The result pointer passed to the function. If this was NULL this returns
- *               a pointer to the internal accumulator buffer
+ * @param desc    The floating point descriptor
+ * @param result  A buffer to hold the value built. If this is NULL, the internal
+ *                accumulator buffer is used. Note that the buffer must be big
+ *                enough to hold the value. Use fc_get_buffer_length() to find out
+ *                the size needed
+ * @return  The result pointer passed to the function. If this was NULL this returns
+ *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
-fp_value *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
-fp_value *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
-fp_value *fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
-fp_value *fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
-fp_value *fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result);
+fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result);
 /*@}*/
 
 int fc_is_zero(const fp_value *a);

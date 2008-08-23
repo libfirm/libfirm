@@ -104,6 +104,10 @@ static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 /** if this is set non-zero, the constant folding for floating point is OFF */
 static int no_float = 0;
 
+static const ieee_descriptor_t single_desc   = {  8, 23, 0, NORMAL };
+static const ieee_descriptor_t double_desc   = { 11, 52, 0, NORMAL };
+static const ieee_descriptor_t extended_desc = { 15, 63, 1, NORMAL };
+
 /****************************************************************************
  *   private functions
  ****************************************************************************/
@@ -319,14 +323,14 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	case irms_float_number:
 		switch (get_mode_size_bits(mode)) {
 		case 32:
-			fc_val_from_str(str, len, 8, 23, NULL);
+			fc_val_from_str(str, len, &single_desc, NULL);
 			break;
 		case 64:
-			fc_val_from_str(str, len, 11, 52, NULL);
+			fc_val_from_str(str, len, &double_desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_val_from_str(str, len, 15, 64, NULL);
+			fc_val_from_str(str, len, &extended_desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in new_tarval_from_str()");
@@ -398,14 +402,14 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode) {
 
 	switch (get_mode_size_bits(mode)) {
 	case 32:
-		fc_val_from_ieee754(d, 8, 23, NULL);
+		fc_val_from_ieee754(d, &single_desc, NULL);
 		break;
 	case 64:
-		fc_val_from_ieee754(d, 11, 52, NULL);
+		fc_val_from_ieee754(d, &double_desc, NULL);
 		break;
 	case 80:
 	case 96:
-		fc_val_from_ieee754(d, 15, 64, NULL);
+		fc_val_from_ieee754(d, &extended_desc, NULL);
 		break;
 	default:
 		panic("Unsupported mode in new_tarval_from_double()");
@@ -491,14 +495,14 @@ tarval *get_tarval_max(ir_mode *mode) {
 	case irms_float_number:
 		switch(get_mode_size_bits(mode)) {
 		case 32:
-			fc_get_max(8, 23, NULL);
+			fc_get_max(&single_desc, NULL);
 			break;
 		case 64:
-			fc_get_max(11, 52, NULL);
+			fc_get_max(&double_desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_get_max(15, 64, NULL);
+			fc_get_max(&extended_desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in get_tarval_max()");
@@ -514,6 +518,8 @@ tarval *get_tarval_max(ir_mode *mode) {
 }
 
 tarval *get_tarval_min(ir_mode *mode) {
+	ieee_descriptor_t desc;
+
 	assert(mode);
 
 	if (get_mode_n_vector_elems(mode) > 1) {
@@ -521,7 +527,7 @@ tarval *get_tarval_min(ir_mode *mode) {
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -534,14 +540,26 @@ tarval *get_tarval_min(ir_mode *mode) {
 	case irms_float_number:
 		switch(get_mode_size_bits(mode)) {
 		case 32:
-			fc_get_min(8, 23, NULL);
+			desc.exponent_size = 8;
+			desc.mantissa_size = 23;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_min(&desc, NULL);
 			break;
 		case 64:
-			fc_get_min(11, 52, NULL);
+			desc.exponent_size = 11;
+			desc.mantissa_size = 52;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_min(&desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_get_min(15, 64, NULL);
+			desc.exponent_size = 15;
+			desc.mantissa_size = 64;
+			desc.explicit_one  = 1;
+			desc.clss          = NORMAL;
+			fc_get_min(&desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in get_tarval_min()");
@@ -681,6 +699,8 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 }
 
 tarval *get_tarval_nan(ir_mode *mode) {
+	ieee_descriptor_t desc;
+
 	assert(mode);
 
 	if (get_mode_n_vector_elems(mode) > 1) {
@@ -691,14 +711,26 @@ tarval *get_tarval_nan(ir_mode *mode) {
 	if (get_mode_sort(mode) == irms_float_number) {
 		switch(get_mode_size_bits(mode)) {
 		case 32:
-			fc_get_qnan(8, 23, NULL);
+			desc.exponent_size = 8;
+			desc.mantissa_size = 23;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_qnan(&desc, NULL);
 			break;
 		case 64:
-			fc_get_qnan(11, 52, NULL);
+			desc.exponent_size = 11;
+			desc.mantissa_size = 52;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_qnan(&desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_get_qnan(15, 64, NULL);
+			desc.exponent_size = 15;
+			desc.mantissa_size = 64;
+			desc.explicit_one  = 1;
+			desc.clss          = NORMAL;
+			fc_get_qnan(&desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in get_tarval_nan()");
@@ -711,6 +743,8 @@ tarval *get_tarval_nan(ir_mode *mode) {
 }
 
 tarval *get_tarval_plus_inf(ir_mode *mode) {
+	ieee_descriptor_t desc;
+
 	assert(mode);
 
 	if (get_mode_n_vector_elems(mode) > 1) {
@@ -721,14 +755,26 @@ tarval *get_tarval_plus_inf(ir_mode *mode) {
 	if (get_mode_sort(mode) == irms_float_number) {
 		switch(get_mode_size_bits(mode)) {
 		case 32:
-			fc_get_plusinf(8, 23, NULL);
+			desc.exponent_size = 8;
+			desc.mantissa_size = 23;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_plusinf(&desc, NULL);
 			break;
 		case 64:
-			fc_get_plusinf(11, 52, NULL);
+			desc.exponent_size = 11;
+			desc.mantissa_size = 52;
+			desc.explicit_one  = 0;
+			desc.clss          = NORMAL;
+			fc_get_plusinf(&desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_get_plusinf(15, 64, NULL);
+			desc.exponent_size = 15;
+			desc.mantissa_size = 64;
+			desc.explicit_one  = 1;
+			desc.clss          = NORMAL;
+			fc_get_plusinf(&desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in get_tarval_plus_inf()");
@@ -751,14 +797,14 @@ tarval *get_tarval_minus_inf(ir_mode *mode) {
 	if (get_mode_sort(mode) == irms_float_number) {
 		switch(get_mode_size_bits(mode)) {
 		case 32:
-			fc_get_minusinf(8, 23, NULL);
+			fc_get_minusinf(&single_desc, NULL);
 			break;
 		case 64:
-			fc_get_minusinf(11, 52, NULL);
+			fc_get_minusinf(&double_desc, NULL);
 			break;
 		case 80:
 		case 96:
-			fc_get_minusinf(15, 64, NULL);
+			fc_get_minusinf(&extended_desc, NULL);
 			break;
 		default:
 			panic("Unsupported mode in get_tarval_minus_inf()");
@@ -925,14 +971,14 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 		case irms_float_number:
 			switch (get_mode_size_bits(dst_mode)) {
 			case 32:
-				fc_cast(src->value, 8, 23, NULL);
+				fc_cast(src->value, &single_desc, NULL);
 				break;
 			case 64:
-				fc_cast(src->value, 11, 52, NULL);
+				fc_cast(src->value, &double_desc, NULL);
 				break;
 			case 80:
 			case 96:
-				fc_cast(src->value, 15, 64, NULL);
+				fc_cast(src->value, &extended_desc, NULL);
 				break;
 			default:
 				panic("Unsupported mode in tarval_convert_to()");
@@ -990,14 +1036,14 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 			buffer[100 - 1] = '\0';
 			switch (get_mode_size_bits(dst_mode)) {
 			case 32:
-				fc_val_from_str(buffer, 0, 8, 23, NULL);
+				fc_val_from_str(buffer, 0, &single_desc, NULL);
 				break;
 			case 64:
-				fc_val_from_str(buffer, 0, 11, 52, NULL);
+				fc_val_from_str(buffer, 0, &double_desc, NULL);
 				break;
 			case 80:
 			case 96:
-				fc_val_from_str(buffer, 0, 15, 64, NULL);
+				fc_val_from_str(buffer, 0, &extended_desc, NULL);
 				break;
 			default:
 				panic("Unsupported mode in tarval_convert_to()");

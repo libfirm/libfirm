@@ -97,29 +97,11 @@ typedef union {
 #endif
 #endif
 
-/**
- * possible float states
- */
-typedef enum {
-	NORMAL,       /**< normal representation, implicit 1 */
-	ZERO,         /**< +/-0 */
-	SUBNORMAL,    /**< denormals, implicit 0 */
-	INF,          /**< +/-oo */
-	NAN,          /**< Not A Number */
-} value_class_t;
-
-/** A descriptor for an IEEE float value. */
-typedef struct {
-	unsigned char exponent_size;    /**< size of exponent in bits */
-	unsigned char mantissa_size;    /**< size of mantissa in bits */
-	value_class_t clss;             /**< state of this float */
-} descriptor_t;
-
 #define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
 
 /* our floating point value */
 struct _fp_value {
-	descriptor_t desc;
+	ieee_descriptor_t desc;
 	char sign;
 	char value[1];			/* exp[value_size] + mant[value_size] */
 };
@@ -128,8 +110,8 @@ struct _fp_value {
 #define _mant(a) &((a)->value[value_size])
 
 #define _save_result(x) memcpy((x), sc_get_buffer(), value_size)
-#define _shift_right(x, y, b) sc_shr((x), (y), value_size*4, 0, (b))
-#define _shift_left(x, y, b) sc_shl((x), (y), value_size*4, 0, (b))
+#define _shift_right(x, y, res) sc_shr((x), (y), value_size*4, 0, (res))
+#define _shift_left(x, y, res) sc_shl((x), (y), value_size*4, 0, (res))
 
 
 #ifdef FLTCALC_DEBUG
@@ -175,23 +157,24 @@ static void fail_char(const char *str, unsigned int len, int pos) {
 
 /** pack machine-like */
 static void *pack(const fp_value *int_float, void *packed) {
-	char *shift_val;
-	char *temp;
+	char     *shift_val;
+	char     *temp;
 	fp_value *val_buffer;
+	int      pos;
 
-	temp = alloca(value_size);
+	temp      = alloca(value_size);
 	shift_val = alloca(value_size);
 
-	switch (int_float->desc.clss) {
+	switch ((value_class_t)int_float->desc.clss) {
 	case NAN:
 		val_buffer = alloca(calc_buffer_size);
-		fc_get_qnan(int_float->desc.exponent_size, int_float->desc.mantissa_size, val_buffer);
+		fc_get_qnan(&int_float->desc, val_buffer);
 		int_float = val_buffer;
 		break;
 
 	case INF:
 		val_buffer = alloca(calc_buffer_size);
-		fc_get_plusinf(int_float->desc.exponent_size, int_float->desc.mantissa_size, val_buffer);
+		fc_get_plusinf(&int_float->desc, val_buffer);
 		val_buffer->sign = int_float->sign;
 		int_float = val_buffer;
 		break;
@@ -199,17 +182,19 @@ static void *pack(const fp_value *int_float, void *packed) {
 	default:
 		break;
 	}
-	/* pack sign */
+	/* pack sign: move it to the left after exponent AND mantissa */
 	sc_val_from_ulong(int_float->sign, temp);
 
-	sc_val_from_ulong(int_float->desc.exponent_size + int_float->desc.mantissa_size, NULL);
+	pos = int_float->desc.exponent_size + int_float->desc.mantissa_size + int_float->desc.explicit_one;
+	sc_val_from_ulong(pos, NULL);
 	_shift_left(temp, sc_get_buffer(), packed);
 
-	/* extract exponent */
-	sc_val_from_ulong(int_float->desc.mantissa_size, shift_val);
-
+	/* pack exponent: move it to the left after mantissa */
+	pos = int_float->desc.mantissa_size + int_float->desc.explicit_one;
+	sc_val_from_ulong(pos, shift_val);
 	_shift_left(_exp(int_float), shift_val, temp);
 
+	/* combine sign|exponent */
 	sc_or(temp, packed, packed);
 
 	/* extract mantissa */
@@ -218,10 +203,10 @@ static void *pack(const fp_value *int_float, void *packed) {
 	_shift_right(_mant(int_float), shift_val, temp);
 
 	/* remove leading 1 (or 0 if denormalized) */
-	sc_max_from_bits(int_float->desc.mantissa_size, 0, shift_val); /* all mantissa bits are 1's */
+	sc_max_from_bits(pos, 0, shift_val); /* all mantissa bits are 1's */
 	sc_and(temp, shift_val, temp);
 
-	/* save result */
+	/* combine sign|exponent|mantissa */
 	sc_or(temp, packed, packed);
 
 	return packed;
@@ -392,7 +377,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 
 			case FC_TONEGATIVE:
 			case FC_TOZERO:
-				fc_get_max(out_val->desc.exponent_size, out_val->desc.mantissa_size, out_val);
+				fc_get_max(&out_val->desc, out_val);
 			}
 		} else {
 			/* value is negative */
@@ -404,7 +389,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 
 			case FC_TOPOSITIVE:
 			case FC_TOZERO:
-				fc_get_min(out_val->desc.exponent_size, out_val->desc.mantissa_size, out_val);
+				fc_get_min(&out_val->desc, out_val);
 			}
 		}
 	}
@@ -450,7 +435,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	/* produce NaN on inf - inf */
 	if (sign && (a->desc.clss == INF) && (b->desc.clss == INF)) {
-		fc_get_qnan(a->desc.exponent_size, b->desc.mantissa_size, result);
+		fc_get_qnan(&a->desc, result);
 		return;
 	}
 
@@ -564,7 +549,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	/* produce NaN on 0 * inf */
 	if (a->desc.clss == ZERO) {
 		if (b->desc.clss == INF)
-			fc_get_qnan(a->desc.exponent_size, a->desc.mantissa_size, result);
+			fc_get_qnan(&a->desc, result);
 		else {
 			if (a != result)
 				memcpy(result, a, calc_buffer_size);
@@ -574,7 +559,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	}
 	if (b->desc.clss == ZERO) {
 		if (a->desc.clss == INF)
-			fc_get_qnan(a->desc.exponent_size, a->desc.mantissa_size, result);
+			fc_get_qnan(&a->desc, result);
 		else {
 			if (b != result)
 				memcpy(result, b, calc_buffer_size);
@@ -647,8 +632,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	/* produce NAN on 0/0 and inf/inf */
 	if (a->desc.clss == ZERO) {
 		if (b->desc.clss == ZERO)
-			/* 0/0 -> nan */
-			fc_get_qnan(a->desc.exponent_size, a->desc.mantissa_size, result);
+			/* 0/0 -> NaN */
+			fc_get_qnan(&a->desc, result);
 		else {
 			/* 0/x -> a */
 			if (a != result)
@@ -660,8 +645,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	if (b->desc.clss == INF) {
 		if (a->desc.clss == INF)
-			/* inf/inf -> nan */
-			fc_get_qnan(a->desc.exponent_size, a->desc.mantissa_size, result);
+			/* inf/inf -> NaN */
+			fc_get_qnan(&a->desc, result);
 		else {
 			/* x/inf -> 0 */
 			sc_val_from_ulong(0, NULL);
@@ -682,9 +667,9 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	if (b->desc.clss == ZERO) {
 		/* division by zero */
 		if (result->sign)
-			fc_get_minusinf(a->desc.exponent_size, a->desc.mantissa_size, result);
+			fc_get_minusinf(&a->desc, result);
 		else
-			fc_get_plusinf(a->desc.exponent_size, a->desc.mantissa_size, result);
+			fc_get_plusinf(&a->desc, result);
 		return;
 	}
 
@@ -722,7 +707,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 }
 
 #if 0
-static void _power_of_ten(int exp, descriptor_t *desc, char *result) {
+static void _power_of_ten(int exp, ieee_descriptor_t *desc, char *result) {
 	char *build;
 	char *temp;
 
@@ -830,7 +815,7 @@ int fc_get_buffer_length(void) {
 	return calc_buffer_size;
 }
 
-void *fc_val_from_str(const char *str, unsigned int len, char exp_size, char mant_size, void *result) {
+void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result) {
 #if 0
 	enum {
 		START,
@@ -1011,31 +996,40 @@ done:
 	return result;
 #else
 	/* XXX excuse of an implementation to make things work */
-	LLDBL val;
-	fp_value *tmp = alloca(calc_buffer_size);
+	LLDBL             val;
+	fp_value          *tmp = alloca(calc_buffer_size);
+	ieee_descriptor_t tmp_desc;
 	(void) len;
 
 #ifdef HAVE_LONG_DOUBLE
 	val = strtold(str, NULL);
 	DEBUGPRINTF(("val_from_str(%s)\n", str));
-	fc_val_from_ieee754(val, 15, 64, tmp);
+	tmp_desc.exponent_size = 15;
+	tmp_desc.mantissa_size = 63;
+	tmp_desc.explicit_one  = 1;
+	tmp_desc.clss          = NORMAL;
+	fc_val_from_ieee754(val, &tmp_desc, tmp);
 #else
 	val = strtod(str, NULL);
 	DEBUGPRINTF(("val_from_str(%s)\n", str));
-	fc_val_from_ieee754(val, 11, 52, tmp);
+	tmp_desc.exponent_size = 11;
+	tmp_desc.mantissa_size = 52;
+	tmp_desc.explicit_one  = 0;
+	tmp_desc.clss          = NORMAL;
+	fc_val_from_ieee754(val, &tmp_desc, tmp);
 #endif /* HAVE_LONG_DOUBLE */
-	return fc_cast(tmp, exp_size, mant_size, result);
+	return fc_cast(tmp, &tmp_desc, result);
 #endif
 }
 
-fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *result) {
+fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result) {
 	char *temp;
 	int bias_res, bias_val, mant_val;
 	value_t srcval;
 	UINT32 sign, exponent, mantissa0, mantissa1;
 
 	srcval.d = l;
-	bias_res = ((1 << (exp_size - 1)) - 1);
+	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
 
 #ifdef HAVE_LONG_DOUBLE
 	mant_val  = 64;
@@ -1064,16 +1058,17 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	if (result == NULL) result = calc_buffer;
 	temp = alloca(value_size);
 
-	/* CLEAR the buffer, else some bits might be uninitialised */
+	/* CLEAR the buffer, else some bits might be uninitialized */
 	memset(result, 0, fc_get_buffer_length());
 
-	result->desc.exponent_size = exp_size;
-	result->desc.mantissa_size = mant_size;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
 
 	/* extract sign */
 	result->sign = sign;
 
-	/* sign and flag suffice to identify nan or inf, no exponent/mantissa
+	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
 	 * encoding is needed. the function can return immediately in these cases */
 	if (isnan(l)) {
 		result->desc.clss = NAN;
@@ -1090,23 +1085,16 @@ fp_value *fc_val_from_ieee754(LLDBL l, char exp_size, char mant_size, fp_value *
 	 * this looks more complicated than it is: unbiased input exponent + output bias,
 	 * minus the mantissa difference which is added again later when the output float
 	 * becomes normalized */
-#ifdef HAVE_EXPLICIT_ONE
-	sc_val_from_long((exponent-bias_val+bias_res)-(mant_val-mant_size-1), _exp(result));
-#else
-	sc_val_from_long((exponent-bias_val+bias_res)-(mant_val-mant_size), _exp(result));
-#endif
+	sc_val_from_long((exponent - bias_val + bias_res) - (mant_val - desc->mantissa_size), _exp(result));
 
 	/* build mantissa representation */
-#ifndef HAVE_EXPLICIT_ONE
 	if (exponent != 0) {
 		/* insert the hidden bit */
 		sc_val_from_ulong(1, temp);
 		sc_val_from_ulong(mant_val + ROUNDING_BITS, NULL);
 		_shift_left(temp, sc_get_buffer(), NULL);
 	}
-	else
-#endif
-	{
+	else {
 		sc_val_from_ulong(0, NULL);
 	}
 
@@ -1149,22 +1137,23 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	UINT32 mantissa0;
 	UINT32 mantissa1;
 
-	value_t buildval;
+	value_t           buildval;
+	ieee_descriptor_t desc;
 
 #ifdef HAVE_LONG_DOUBLE
-	char result_exponent = 15;
-	char result_mantissa = 64;
+	desc.exponent_size = 15;
+	desc.mantissa_size = 63;
+	desc.explicit_one  = 1;
+	desc.clss          = NORMAL;
 #else
-	char result_exponent = 11;
-	char result_mantissa = 52;
+	desc.exponent_size = 11;
+	desc.mantissa_size = 52;
+	desc.explicit_one  = 0;
+	desc.clss          = NORMAL;
 #endif
 
 	temp = alloca(calc_buffer_size);
-#ifdef HAVE_EXPLICIT_ONE
-	value = fc_cast(val, result_exponent, result_mantissa-1, temp);
-#else
-	value = fc_cast(val, result_exponent, result_mantissa, temp);
-#endif
+	value = fc_cast(val, &desc, temp);
 
 	sign = value->sign;
 
@@ -1179,10 +1168,10 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	mantissa1 = 0;
 
 	for (byte_offset = 0; byte_offset < 4; byte_offset++)
-		mantissa1 |= sc_sub_bits(_mant(value), result_mantissa, byte_offset) << (byte_offset<<3);
+		mantissa1 |= sc_sub_bits(_mant(value), desc.mantissa_size, byte_offset) << (byte_offset<<3);
 
-	for (; (byte_offset<<3) < result_mantissa; byte_offset++)
-		mantissa0 |= sc_sub_bits(_mant(value), result_mantissa, byte_offset) << ((byte_offset-4)<<3);
+	for (; (byte_offset<<3) < desc.mantissa_size; byte_offset++)
+		mantissa0 |= sc_sub_bits(_mant(value), desc.mantissa_size, byte_offset) << ((byte_offset-4)<<3);
 
 #ifdef HAVE_LONG_DOUBLE
 	buildval.val.high = sign << 15;
@@ -1201,14 +1190,16 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	return buildval.d;
 }
 
-fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value *result) {
+fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value *result) {
 	char *temp;
 	int exp_offset, val_bias, res_bias;
 
 	if (result == NULL) result = calc_buffer;
 	temp = alloca(value_size);
 
-	if (value->desc.exponent_size == exp_size && value->desc.mantissa_size == mant_size) {
+	if (value->desc.exponent_size == desc->exponent_size &&
+		value->desc.mantissa_size == desc->mantissa_size &&
+		value->desc.explicit_one  == desc->explicit_one) {
 		if (value != result)
 			memcpy(result, value, calc_buffer_size);
 		return result;
@@ -1216,15 +1207,16 @@ fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value
 
 	if (value->desc.clss == NAN) {
 		if (sc_get_highest_set_bit(_mant(value)) == value->desc.mantissa_size + 1)
-			return fc_get_qnan(exp_size, mant_size, result);
+			return fc_get_qnan(desc, result);
 		else
-			return fc_get_snan(exp_size, mant_size, result);
+			return fc_get_snan(desc, result);
 	}
 
 	/* set the descriptor of the new value */
-	result->desc.exponent_size = exp_size;
-	result->desc.mantissa_size = mant_size;
-	result->desc.clss = value->desc.clss;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = value->desc.clss;
 
 	result->sign = value->sign;
 
@@ -1232,9 +1224,9 @@ fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value
 	 * this would change the exponent, which is unwanted. So calculate this
 	 * offset and add it */
 	val_bias = (1 << (value->desc.exponent_size - 1)) - 1;
-	res_bias = (1 << (exp_size - 1)) - 1;
+	res_bias = (1 << (desc->exponent_size - 1)) - 1;
 
-	exp_offset = (res_bias - val_bias) - (value->desc.mantissa_size - mant_size);
+	exp_offset = (res_bias - val_bias) - (value->desc.mantissa_size - desc->mantissa_size);
 	sc_val_from_long(exp_offset, temp);
 	sc_add(_exp(value), temp, _exp(result));
 
@@ -1253,43 +1245,45 @@ fp_value *fc_cast(const fp_value *value, char exp_size, char mant_size, fp_value
 	return result;
 }
 
-fp_value *fc_get_max(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = exponent_size;
-	result->desc.mantissa_size = mantissa_size;
-	result->desc.clss = NORMAL;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = NORMAL;
 
 	result->sign = 0;
 
-	sc_val_from_ulong((1<<exponent_size) - 2, _exp(result));
+	sc_val_from_ulong((1 << desc->exponent_size) - 2, _exp(result));
 
-	sc_max_from_bits(mantissa_size + 1, 0, _mant(result));
+	sc_max_from_bits(desc->mantissa_size + 1, 0, _mant(result));
 	sc_val_from_ulong(ROUNDING_BITS, NULL);
 	_shift_left(_mant(result), sc_get_buffer(), _mant(result));
 
 	return result;
 }
 
-fp_value *fc_get_min(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	fc_get_max(exponent_size, mantissa_size, result);
+	fc_get_max(desc, result);
 	result->sign = 1;
 
 	return result;
 }
 
-fp_value *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = exponent_size;
-	result->desc.mantissa_size = mantissa_size;
-	result->desc.clss = NAN;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = NAN;
 
 	result->sign = 0;
 
-	sc_val_from_ulong((1<<exponent_size)-1, _exp(result));
+	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
 
 	/* signaling NaN has non-zero mantissa with msb not set */
 	sc_val_from_ulong(1, _mant(result));
@@ -1297,46 +1291,48 @@ fp_value *fc_get_snan(unsigned int exponent_size, unsigned int mantissa_size, fp
 	return result;
 }
 
-fp_value *fc_get_qnan(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = exponent_size;
-	result->desc.mantissa_size = mantissa_size;
-	result->desc.clss = NAN;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = NAN;
 
 	result->sign = 0;
 
-	sc_val_from_ulong((1<<exponent_size)-1, _exp(result));
+	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
 
 	/* quiet NaN has the msb of the mantissa set, so shift one there */
 	sc_val_from_ulong(1, _mant(result));
 	/* mantissa_size >+< 1 because of two extra rounding bits */
-	sc_val_from_ulong(mantissa_size + 1, NULL);
+	sc_val_from_ulong(desc->mantissa_size + 1, NULL);
 	_shift_left(_mant(result), sc_get_buffer(), _mant(result));
 
 	return result;
 }
 
-fp_value *fc_get_plusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = exponent_size;
-	result->desc.mantissa_size = mantissa_size;
-	result->desc.clss = NORMAL;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = NORMAL;
 
 	result->sign = 0;
 
-	sc_val_from_ulong((1<<exponent_size)-1, _exp(result));
+	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
 
 	sc_val_from_ulong(0, _mant(result));
 
 	return result;
 }
 
-fp_value *fc_get_minusinf(unsigned int exponent_size, unsigned int mantissa_size, fp_value *result) {
+fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result) {
 	if (result == NULL) result = calc_buffer;
 
-	fc_get_plusinf(exponent_size, mantissa_size, result);
+	fc_get_plusinf(desc, result);
 	result->sign = 1;
 
 	return result;
@@ -1416,7 +1412,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 
 	switch (base) {
 	case FC_DEC:
-		switch (val->desc.clss) {
+		switch ((value_class_t)val->desc.clss) {
 		case INF:
 			if (buflen >= 8 + val->sign) sprintf(buf, "%sINFINITY", val->sign ? "-":"");
 			else snprintf(buf, buflen, "%sINF", val->sign ? "-":NULL);
@@ -1439,7 +1435,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 		break;
 
 	case FC_HEX:
-		switch (val->desc.clss) {
+		switch ((value_class_t)val->desc.clss) {
 		case INF:
 			if (buflen >= 8+val->sign) sprintf(buf, "%sINFINITY", val->sign?"-":"");
 			else snprintf(buf, buflen, "%sINF", val->sign?"-":NULL);
