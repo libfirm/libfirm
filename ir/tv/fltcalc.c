@@ -841,9 +841,10 @@ void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t
 	power_val = alloca(calc_buffer_size);
 	mant_str = alloca((len)?(len):(strlen(str)));
 
-	result->desc.exponent_size = exp_size;
-	result->desc.mantissa_size = mant_size;
-	result->desc.clss = NORMAL;
+	result->desc.exponent_size = desc->exponent_size;
+	result->desc.mantissa_size = desc->mantissa_size;
+	result->desc.explicit_one  = desc->explicit_one;
+	result->desc.clss          = NORMAL;
 
 	old_str = str;
 	pos = 0;
@@ -1000,6 +1001,7 @@ done:
 	fp_value          *tmp = alloca(calc_buffer_size);
 	ieee_descriptor_t tmp_desc;
 	(void) len;
+	(void) desc;
 
 #ifdef HAVE_LONG_DOUBLE
 	val = strtold(str, NULL);
@@ -1032,7 +1034,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
 
 #ifdef HAVE_LONG_DOUBLE
-	mant_val  = 64;
+	mant_val  = 63;
 	bias_val  = 0x3fff;
 	sign      = (srcval.val.high & 0x00008000) != 0;
 	exponent  = (srcval.val.high & 0x00007FFF) ;
