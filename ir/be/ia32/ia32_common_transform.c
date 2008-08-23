@@ -659,6 +659,12 @@ ir_node *gen_ASM(ir_node *node)
 	new_node = new_rd_ia32_Asm(dbgi, irg, new_block, arity, in, out_arity,
 	                           get_ASM_text(node), register_map);
 
+	/* Prevent the ASM node from being scheduled before the Barrier, if it has
+	 * no inputs */
+	if (arity == 0 && get_irg_start_block(irg) == new_block) {
+		add_irn_dep(new_node, get_irg_frame(irg));
+	}
+
 	set_ia32_out_req_all(new_node, out_reg_reqs);
 	set_ia32_in_req_all(new_node, in_reg_reqs);
 
