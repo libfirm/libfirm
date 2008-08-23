@@ -226,7 +226,6 @@ int ia32_mode_needs_gp_reg(ir_mode *mode) {
 static void parse_asm_constraints(constraint_t *constraint, const char *c,
                            int is_output)
 {
-	asm_constraint_flags_t       flags              = 0;
 	char                         immediate_type     = '\0';
 	unsigned                     limited            = 0;
 	const arch_register_class_t *cls                = NULL;
@@ -254,15 +253,9 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case '\n':
 			break;
 
-		case '=':
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
-				| ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ;
-			break;
-
-		case '+':
-			flags |= ASM_CONSTRAINT_FLAG_MODIFIER_WRITE
-				| ASM_CONSTRAINT_FLAG_MODIFIER_READ;
-			break;
+		/* Skip out/in-out marker */
+		case '=': break;
+		case '+': break;
 
 		case '*':
 			++c;
