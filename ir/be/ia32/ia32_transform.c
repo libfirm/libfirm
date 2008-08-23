@@ -2324,20 +2324,22 @@ static int is_float_to_int32_conv(const ir_node *node)
  */
 static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 {
-	ir_mode  *mode      = get_irn_mode(cns);
-	unsigned size       = get_mode_size_bytes(mode);
-	tarval   *tv        = get_Const_tarval(cns);
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *ptr       = get_Store_ptr(node);
-	ir_node  *mem       = get_Store_mem(node);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	int      ofs        = 0;
-	ir_node  *new_node;
-	ia32_address_t addr;
+	ir_mode        *mode      = get_irn_mode(cns);
+	unsigned        size      = get_mode_size_bytes(mode);
+	tarval         *tv        = get_Const_tarval(cns);
+	ir_node        *block     = get_nodes_block(node);
+	ir_node        *new_block = be_transform_node(block);
+	ir_node        *ptr       = get_Store_ptr(node);
+	ir_node        *mem       = get_Store_mem(node);
+	ir_graph       *irg       = current_ir_graph;
+	dbg_info       *dbgi      = get_irn_dbg_info(node);
+	int             ofs       = 0;
+	size_t          i         = 0;
+	ir_node        *ins[4];
+	ia32_address_t  addr;
 
-	assert(size % 4 == 0);
+	assert(size % 4 ==  0);
+	assert(size     <= 16);
 
 	build_address_ptr(&addr, ptr, mem);
 
@@ -2349,7 +2351,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 			(get_tarval_sub_bits(tv, ofs + 3) << 24);
 		ir_node *imm = create_Immediate(NULL, 0, val);
 
-		new_node = new_rd_ia32_Store(dbgi, irg, new_block, addr.base,
+		ir_node *new_node = new_rd_ia32_Store(dbgi, irg, new_block, addr.base,
 			addr.index, addr.mem, imm);
 
 		set_irn_pinned(new_node, get_irn_pinned(node));
@@ -2358,13 +2360,14 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		set_address(new_node, &addr);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
+		ins[i++] = new_node;
+
 		size        -= 4;
 		ofs         += 4;
 		addr.offset += 4;
-		addr.mem     = new_node;
 	} while (size != 0);
 
-	return new_node;
+	return i == 1 ? ins[0] : new_rd_Sync(dbgi, irg, new_block, i, ins);
 }
 
 /**
