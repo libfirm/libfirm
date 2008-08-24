@@ -50,9 +50,12 @@ enum reserved_id {
  *
  * Call before init_mode().
  *
- * @param null_value  The reference mode NULL value, typical 0l
+ * @param null_value
+ *            The reference mode NULL value, typical 0l
+ * @param support_quad_precision
+ *            If non-zero, activate support for quad precision
  */
-void init_tarval_1(long null_value);
+void init_tarval_1(long null_value, int support_quad_precision);
 
 /**
  * Initialization of the tarval module.

@@ -1756,7 +1756,7 @@ static const tarval_mode_info hex_output = {
 /*
  * Initialization of the tarval module: called before init_mode()
  */
-void init_tarval_1(long null_value) {
+void init_tarval_1(long null_value, int support_quad_precision) {
 	/* if these assertion fail, tarval_is_constant() will follow ... */
 	assert(tarval_b_false == &reserved_tv[0] && "b_false MUST be the first reserved tarval!");
 	assert(tarval_b_true  == &reserved_tv[1] && "b_true MUST be the second reserved tarval!");
@@ -1767,10 +1767,8 @@ void init_tarval_1(long null_value) {
 	 * an initial size, which is the expected number of constants */
 	tarvals = new_set(cmp_tv, N_CONSTANTS);
 	values  = new_set(memcmp, N_CONSTANTS);
-	/* init strcalc with precision of 68 to support floating point values with 64
-	 * bit mantissa (needs extra bits for rounding and overflow) */
-	init_strcalc(68);
-	init_fltcalc(0);
+	/* calls init_strcalc() with needed size */
+	init_fltcalc(support_quad_precision ? 112 : 64);
 }
 
 /*

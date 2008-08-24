@@ -52,7 +52,7 @@
 
 #include "xmalloc.h"
 
-/** The number of extra precesion rounding bits */
+/** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
 typedef uint32_t UINT32;
@@ -1531,11 +1531,11 @@ void init_fltcalc(int precision) {
 		/* does nothing if already init */
 		if (precision == 0) precision = FC_DEFAULT_PRECISION;
 
-		init_strcalc(precision + 4);
+		init_strcalc(precision + 2 + ROUNDING_BITS);
 
-		/* needs additionally two bits to round, a bit as explicit 1., and one for
+		/* needs additionally rounding bits, one bit as explicit 1., and one for
 		 * addition overflow */
-		max_precision = sc_get_precision() - 4;
+		max_precision = sc_get_precision() - (2 + ROUNDING_BITS);
 		if (max_precision < precision)
 			printf("WARNING: not enough precision available, using %d\n", max_precision);
 
