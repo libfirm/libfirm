@@ -2530,6 +2530,13 @@ const ir_node *skip_Cast_const(const ir_node *node) {
 	return node;
 }
 
+/* returns operand of node if node is a Pin */
+ir_node *skip_Pin(ir_node *node) {
+	if (is_Pin(node))
+		return get_Pin_op(node);
+	return node;
+}
+
 /* returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node) {
 	if (get_irn_op(node) == op_Confirm)

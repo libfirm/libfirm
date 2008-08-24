@@ -1238,9 +1238,11 @@ ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
 /** Returns corresponding operand of Tuple if node is a Proj from
    a Tuple. */
 ir_node *skip_Tuple(ir_node *node);
-/** returns operand of node if node is a Cast. */
+/** Returns operand of node if node is a Cast. */
 ir_node *skip_Cast(ir_node *node);
 const ir_node *skip_Cast_const(const ir_node *node);
+/** Returns operand of node if node is a Pin. */
+ir_node *skip_Pin(ir_node *node);
 /** Returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations (including Cast, Confirm). */
