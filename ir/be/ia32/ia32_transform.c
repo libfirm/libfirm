@@ -2506,7 +2506,7 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode = get_irn_mode(val);
 
 	if (mode_is_float(mode) && is_Const(val)) {
-		int transform = 1;
+		int transform;
 
 		/* we are storing a floating point constant */
 		if (ia32_cg_config.use_sse2) {
