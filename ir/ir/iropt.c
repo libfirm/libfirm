@@ -2224,7 +2224,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			n = new_rd_Sub(
 					get_irn_dbg_info(n),
 					current_ir_graph,
-					get_irn_n(n, -1),
+					get_nodes_block(n),
 					b,
 					get_Minus_op(a),
 					mode);
@@ -2235,7 +2235,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			n = new_rd_Sub(
 					get_irn_dbg_info(n),
 					current_ir_graph,
-					get_irn_n(n, -1),
+					get_nodes_block(n),
 					a,
 					get_Minus_op(b),
 					mode);
@@ -2249,14 +2249,14 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 				if (is_Const(b) && is_Const_one(b)) {
 					/* ~x + 1 = -x */
-					ir_node *blk = get_irn_n(n, -1);
+					ir_node *blk = get_nodes_block(n);
 					n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, mode);
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_1);
 					return n;
 				}
 				if (op == b) {
 					/* ~x + x = -1 */
-					ir_node *blk = get_irn_n(n, -1);
+					ir_node *blk = get_nodes_block(n);
 					n = new_r_Const(current_ir_graph, blk, mode, get_mode_minus_one(mode));
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
 					return n;
@@ -2267,7 +2267,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 				if (op == a) {
 					/* x + ~x = -1 */
-					ir_node *blk = get_irn_n(n, -1);
+					ir_node *blk = get_nodes_block(n);
 					n = new_r_Const(current_ir_graph, blk, mode, get_mode_minus_one(mode));
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
 					return n;
@@ -2428,7 +2428,7 @@ restart:
 		n = new_rd_Minus(
 				get_irn_dbg_info(n),
 				current_ir_graph,
-				get_irn_n(n, -1),
+				get_nodes_block(n),
 				b,
 				mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
@@ -2443,7 +2443,7 @@ restart:
 			if (left == b) {
 				if (mode != get_irn_mode(right)) {
 					/* This Sub is an effective Cast */
-					right = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), right, mode);
+					right = new_r_Conv(get_irn_irg(n), get_nodes_block(n), right, mode);
 				}
 				n = right;
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
@@ -2451,7 +2451,7 @@ restart:
 			} else if (right == b) {
 				if (mode != get_irn_mode(left)) {
  					/* This Sub is an effective Cast */
-					left = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), left, mode);
+					left = new_r_Conv(get_irn_irg(n), get_nodes_block(n), left, mode);
 				}
 				n = left;
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
@@ -2468,20 +2468,20 @@ restart:
 			if (left == a) {
 				ir_mode *r_mode = get_irn_mode(right);
 
-				n = new_r_Minus(get_irn_irg(n), get_irn_n(n, -1), right, r_mode);
+				n = new_r_Minus(get_irn_irg(n), get_nodes_block(n), right, r_mode);
 				if (mode != r_mode) {
 					/* This Sub is an effective Cast */
-					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
+					n = new_r_Conv(get_irn_irg(n), get_nodes_block(n), n, mode);
 				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
 				return n;
 			} else if (right == a) {
 				ir_mode *l_mode = get_irn_mode(left);
 
-				n = new_r_Minus(get_irn_irg(n), get_irn_n(n, -1), left, l_mode);
+				n = new_r_Minus(get_irn_irg(n), get_nodes_block(n), left, l_mode);
 				if (mode != l_mode) {
  					/* This Sub is an effective Cast */
-					n = new_r_Conv(get_irn_irg(n), get_irn_n(n, -1), n, mode);
+					n = new_r_Conv(get_irn_irg(n), get_nodes_block(n), n, mode);
 				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
 				return n;
@@ -2516,7 +2516,7 @@ restart:
 		ir_node *mb = get_Mul_right(a);
 
 		if (ma == b) {
-			ir_node *blk = get_irn_n(n, -1);
+			ir_node *blk = get_nodes_block(n);
 			n = new_rd_Mul(
 					get_irn_dbg_info(n),
 					current_ir_graph, blk,
@@ -2531,7 +2531,7 @@ restart:
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
 			return n;
 		} else if (mb == b) {
-			ir_node *blk = get_irn_n(n, -1);
+			ir_node *blk = get_nodes_block(n);
 			n = new_rd_Mul(
 					get_irn_dbg_info(n),
 					current_ir_graph, blk,
@@ -2550,7 +2550,7 @@ restart:
 	if (is_Sub(a)) { /* (x - y) - b -> x - (y + b) */
 		ir_node *x   =      get_Sub_left(a);
 		ir_node *y        = get_Sub_right(a);
-		ir_node *blk      = get_irn_n(n, -1);
+		ir_node *blk      = get_nodes_block(n);
 		ir_mode *m_b      = get_irn_mode(b);
 		ir_mode *m_y      = get_irn_mode(y);
 		ir_mode *add_mode;
@@ -2587,7 +2587,7 @@ restart:
 
 			tv = tarval_add(tv, get_mode_one(mode));
 			if (tv != tarval_bad) {
-				ir_node *blk = get_irn_n(n, -1);
+				ir_node *blk = get_nodes_block(n);
 				ir_node *c = new_r_Const(current_ir_graph, blk, mode, tv);
 				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, get_Not_op(b), c, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_C_NOT_X);
@@ -2612,14 +2612,14 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode) {
 
 	if (ta == get_mode_one(smode)) {
 		/* (L)1 * (L)b = (L)b */
-		ir_node *blk = get_irn_n(n, -1);
+		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, b, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_1);
 		return n;
 	}
 	else if (ta == get_mode_minus_one(smode)) {
 		/* (L)-1 * (L)b = (L)b */
-		ir_node *blk = get_irn_n(n, -1);
+		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, b, smode);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
@@ -2634,7 +2634,7 @@ static ir_node *transform_node_Mul2n(ir_node *n, ir_mode *mode) {
 	}
 	else if (tb == get_mode_minus_one(smode)) {
 		/* (L)a * (L)-1 = (L)-a */
-		ir_node *blk = get_irn_n(n, -1);
+		ir_node *blk = get_nodes_block(n);
 		n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, a, smode);
 		n = new_rd_Conv(get_irn_dbg_info(n), current_ir_graph, blk, n, mode);
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
@@ -2670,7 +2670,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		else if (value_of(b) == get_mode_minus_one(mode))
 			r = a;
 		if (r) {
-			n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), r, mode);
+			n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), r, mode);
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS_1);
 			return n;
 		}
@@ -2796,7 +2796,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 
 				if (tv == get_mode_minus_one(mode)) {
 					/* a / -1 */
-					value = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), a, mode);
+					value = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, mode);
 					DBG_OPT_CSTEVAL(n, value);
 					goto make_tuple;
 				}
@@ -2812,11 +2812,10 @@ static ir_node *transform_node_Div(ir_node *n) {
 make_tuple:
 		/* Turn Div into a tuple (mem, jmp, bad, value) */
 		mem = get_Div_mem(n);
-		blk = get_irn_n(n, -1);
+		blk = get_nodes_block(n);
 
 		/* skip a potential Pin */
-		if (is_Pin(mem))
-			mem = get_Pin_op(mem);
+		mem = skip_Pin(mem);
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -2900,11 +2899,10 @@ static ir_node *transform_node_Mod(ir_node *n) {
 make_tuple:
 		/* Turn Mod into a tuple (mem, jmp, bad, value) */
 		mem = get_Mod_mem(n);
-		blk = get_irn_n(n, -1);
+		blk = get_nodes_block(n);
 
 		/* skip a potential Pin */
-		if (is_Pin(mem))
-			mem = get_Pin_op(mem);
+		mem = skip_Pin(mem);
 		turn_into_tuple(n, pn_Mod_max);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
 		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -2978,7 +2976,7 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 			DBG_OPT_CSTEVAL(n, vb);
 			goto make_tuple;
 		} else if (mode_is_signed(mode) && tb == get_mode_minus_one(mode)) {
-			va = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), a, mode);
+			va = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, mode);
 			vb = new_Const(mode, get_mode_null(mode));
 			DBG_OPT_CSTEVAL(n, va);
 			DBG_OPT_CSTEVAL(n, vb);
@@ -3013,10 +3011,9 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 make_tuple:
 		mem = get_DivMod_mem(n);
 		/* skip a potential Pin */
-		if (is_Pin(mem))
-			mem = get_Pin_op(mem);
+		mem = skip_Pin(mem);
 
-		blk = get_irn_n(n, -1);
+		blk = get_nodes_block(n);
 		turn_into_tuple(n, pn_DivMod_max);
 		set_Tuple_pred(n, pn_DivMod_M,         mem);
 		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -3037,9 +3034,9 @@ static ir_node *transform_node_Quot(ir_node *n) {
 
 	if (get_mode_arithmetic(mode) == irma_ieee754) {
 		ir_node *b = get_Quot_right(n);
+		tarval *tv = value_of(b);
 
-		if (is_Const(b)) {
-			tarval *tv = get_Const_tarval(b);
+		if (tv != tarval_bad) {
 			int rem;
 
 			/*
@@ -3056,15 +3053,14 @@ static ir_node *transform_node_Quot(ir_node *n) {
 			   using strict rules. */
 			if (tv != tarval_bad &&
 			    (tarval_ieee754_get_exact() || (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic) == 0)) {
-				ir_node *blk = get_irn_n(n, -1);
+				ir_node *blk = get_nodes_block(n);
 				ir_node *c = new_r_Const(current_ir_graph, blk, mode, tv);
 				ir_node *a = get_Quot_left(n);
 				ir_node *m = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, a, c, mode);
 				ir_node *mem = get_Quot_mem(n);
 
 				/* skip a potential Pin */
-				if (is_Pin(mem))
-					mem = get_Pin_op(mem);
+				mem = skip_Pin(mem);
 				turn_into_tuple(n, pn_Quot_max);
 				set_Tuple_pred(n, pn_Quot_M, mem);
 				set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(current_ir_graph, blk));
@@ -3218,7 +3214,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 		ir_mode *a_mode = get_irn_mode(a_op);
 		ir_mode *b_mode = get_irn_mode(b_op);
 		if(a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
-			ir_node *blk = get_irn_n(n, -1);
+			ir_node *blk = get_nodes_block(n);
 
 			n = exact_copy(n);
 			set_binop_left(n, a_op);
@@ -3270,7 +3266,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 
 		if (c != NULL) {
 			/* (a sop c) & (b sop c) => (a & b) sop c */
-			ir_node *blk = get_irn_n(n, -1);
+			ir_node *blk = get_nodes_block(n);
 
 			ir_node *new_n = exact_copy(n);
 			set_binop_left(new_n, op1);
@@ -3463,7 +3459,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 
 	if (a == b) {
 		/* a ^ a = 0 */
-		n = new_rd_Const(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1),
+		n = new_rd_Const(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n),
 		                 mode, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_A_A);
 	} else if (mode == mode_b &&
@@ -3471,7 +3467,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 			is_Const(b) && is_Const_one(b) &&
 			is_Cmp(get_Proj_pred(a))) {
 		/* The Eor negates a Cmp. The Cmp has the negated result anyways! */
-		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
+		n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
 
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
@@ -3511,7 +3507,7 @@ static ir_node *transform_node_Not(ir_node *n) {
 			is_Proj(a) &&
 			is_Cmp(get_Proj_pred(a))) {
 		/* We negate a Cmp. The Cmp has the negated result anyways! */
-		n = new_r_Proj(current_ir_graph, get_irn_n(n, -1), get_Proj_pred(a),
+		n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
 				mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
 		return n;
@@ -3542,7 +3538,7 @@ static ir_node *transform_node_Not(ir_node *n) {
 			if (is_Const(add_r) && is_Const_all_one(add_r)) {
 				/* ~(x + -1) = -x */
 				ir_node *op = get_Add_left(a);
-				ir_node *blk = get_irn_n(n, -1);
+				ir_node *blk = get_nodes_block(n);
 				n = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, blk, op, get_irn_mode(n));
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
 			}
@@ -3574,7 +3570,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 			/* -(~x) = x + 1 */
 			ir_node *op   = get_Not_op(a);
 			tarval *tv    = get_mode_one(mode);
-			ir_node *blk  = get_irn_n(n, -1);
+			ir_node *blk  = get_nodes_block(n);
 			ir_node *c    = new_r_Const(current_ir_graph, blk, mode, tv);
 			n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
 			DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
@@ -3590,7 +3586,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 					/* -(a >>u (size-1)) = a >>s (size-1) */
 					ir_node *v = get_Shr_left(a);
 
-					n = new_rd_Shrs(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), v, c, mode);
+					n = new_rd_Shrs(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), v, c, mode);
 					DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_PREDICATE);
 					return n;
 				}
@@ -3606,7 +3602,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 					/* -(a >>s (size-1)) = a >>u (size-1) */
 					ir_node *v = get_Shrs_left(a);
 
-					n = new_rd_Shr(get_irn_dbg_info(n), current_ir_graph, get_irn_n(n, -1), v, c, mode);
+					n = new_rd_Shr(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), v, c, mode);
 					DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_PREDICATE);
 					return n;
 				}
@@ -3617,7 +3613,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 		/* - (a-b) = b - a */
 		ir_node *la  = get_Sub_left(a);
 		ir_node *ra  = get_Sub_right(a);
-		ir_node *blk = get_irn_n(n, -1);
+		ir_node *blk = get_nodes_block(n);
 
 		n = new_rd_Sub(get_irn_dbg_info(n), current_ir_graph, blk, ra, la, mode);
 		DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_SUB);
@@ -3627,9 +3623,10 @@ static ir_node *transform_node_Minus(ir_node *n) {
 	if (is_Mul(a)) { /* -(a * const) -> a * -const */
 		ir_node *mul_l = get_Mul_left(a);
 		ir_node *mul_r = get_Mul_right(a);
-		if (is_Const(mul_r)) {
-			tarval   *tv    = tarval_neg(get_Const_tarval(mul_r));
-			if(tv != tarval_bad) {
+		tarval  *tv    = value_of(mul_r);
+		if (tv != tarval_bad) {
+			tv = tarval_neg(tv);
+			if (tv != tarval_bad) {
 				ir_node  *cnst  = new_Const(mode, tv);
 				dbg_info *dbg   = get_irn_dbg_info(a);
 				ir_graph *irg   = current_ir_graph;
@@ -3741,8 +3738,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj) {
 		if (confirm == NULL) {
 			/* we are sure we have a Const != 0 */
 			new_mem = get_Div_mem(div);
-			if (is_Pin(new_mem))
-				new_mem = get_Pin_op(new_mem);
+			new_mem = skip_Pin(new_mem);
 			set_Div_mem(div, new_mem);
 			set_irn_pinned(div, op_pin_state_floats);
 		}
@@ -3792,8 +3788,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj) {
 		if (confirm == NULL) {
 			/* we are sure we have a Const != 0 */
 			new_mem = get_Mod_mem(mod);
-			if (is_Pin(new_mem))
-				new_mem = get_Pin_op(new_mem);
+			new_mem = skip_Pin(new_mem);
 			set_Mod_mem(mod, new_mem);
 			set_irn_pinned(mod, op_pin_state_floats);
 		}
@@ -3851,8 +3846,7 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj) {
 		if (confirm == NULL) {
 			/* we are sure we have a Const != 0 */
 			new_mem = get_DivMod_mem(divmod);
-			if (is_Pin(new_mem))
-				new_mem = get_Pin_op(new_mem);
+			new_mem = skip_Pin(new_mem);
 			set_DivMod_mem(divmod, new_mem);
 			set_irn_pinned(divmod, op_pin_state_floats);
 		}
@@ -4190,9 +4184,9 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	 * later and may help to normalize more compares.
 	 * Of course this is only possible for integer values.
 	 */
-	if (is_Const(right)) {
+	tv = value_of(right);
+	if (tv != tarval_bad) {
 		mode = get_irn_mode(right);
-		tv = get_Const_tarval(right);
 
 		/* TODO extend to arbitrary constants */
 		if (is_Conv(left) && tarval_is_null(tv)) {
@@ -4545,7 +4539,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 	}
 
 	if (changed) {
-		ir_node *block = get_irn_n(n, -1); /* Beware of get_nodes_Block() */
+		ir_node *block = get_nodes_block(n);
 
 		/* create a new compare */
 		n = new_rd_Cmp(get_irn_dbg_info(n), current_ir_graph, block, left, right);
