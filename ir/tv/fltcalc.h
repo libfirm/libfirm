@@ -208,7 +208,7 @@ int fc_get_exponent(const fp_value *value);
 /**
  * Return non-zero if a given value can be converted lossless into another precision.
  */
-int fc_can_lossless_conv_to(const fp_value *value, char exp_size, char mant_size);
+int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc);
 
 /** Set new rounding mode
  * This function sets the rounding mode to one of the following, returning

@@ -94,19 +94,28 @@ enum float_to_int_mode {
 
 #define fail_verify(a) _fail_verify((a), __FILE__, __LINE__)
 
-/****************************************************************************
- *   private variables
- ****************************************************************************/
-static struct set *tarvals = NULL;   /* container for tarval structs */
-static struct set *values = NULL;    /* container for values */
+/** A set containing all existing tarvals. */
+static struct set *tarvals = NULL;
+/** A set containing all existing values. */
+static struct set *values = NULL;
+
+/** The integer overflow mode. */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
 /** if this is set non-zero, the constant folding for floating point is OFF */
 static int no_float = 0;
 
-static const ieee_descriptor_t single_desc   = {  8, 23, 0, NORMAL };
-static const ieee_descriptor_t double_desc   = { 11, 52, 0, NORMAL };
-static const ieee_descriptor_t extended_desc = { 15, 63, 1, NORMAL };
+/** IEEE-754r half precision */
+static const ieee_descriptor_t half_desc     = {  5,  10, 0, NORMAL };
+/** IEEE-754 single precision */
+static const ieee_descriptor_t single_desc   = {  8,  23, 0, NORMAL };
+/** IEEE-754 double precision */
+static const ieee_descriptor_t double_desc   = { 11,  52, 0, NORMAL };
+/** Intel x87 extended precision */
+static const ieee_descriptor_t extended_desc = { 15,  63, 1, NORMAL };
+
+/** IEEE-754r quad precision */
+static const ieee_descriptor_t quad_desc     = { 15, 112, 0, NORMAL };
 
 /****************************************************************************
  *   private functions
@@ -290,6 +299,23 @@ tarval *tarval_undefined   = &reserved_tv[3];
 tarval *tarval_reachable   = &reserved_tv[4];
 tarval *tarval_unreachable = &reserved_tv[5];
 
+/**
+ * get the float descriptor for given mode.
+ */
+static const ieee_descriptor_t *get_descriptor(const ir_mode *mode) {
+	switch (get_mode_size_bits(mode)) {
+	case 16:  return &half_desc;
+	case 32:  return &single_desc;
+	case 64:  return &double_desc;
+	case 80:
+	case 96:  return &extended_desc;
+	case 128: return &quad_desc;
+	default:
+		panic("Unsupported mode in get_descriptor()");
+		return NULL;
+	}
+}
+
 /*
  *   public functions declared in tv.h
  */
@@ -299,6 +325,8 @@ tarval *tarval_unreachable = &reserved_tv[5];
  */
 tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 {
+	const ieee_descriptor_t *desc;
+
 	assert(str);
 	assert(len);
 	assert(mode);
@@ -321,20 +349,8 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			return atoi(str) ? tarval_b_true : tarval_b_false;
 
 	case irms_float_number:
-		switch (get_mode_size_bits(mode)) {
-		case 32:
-			fc_val_from_str(str, len, &single_desc, NULL);
-			break;
-		case 64:
-			fc_val_from_str(str, len, &double_desc, NULL);
-			break;
-		case 80:
-		case 96:
-			fc_val_from_str(str, len, &extended_desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in new_tarval_from_str()");
-		}
+		desc = get_descriptor(mode);
+		fc_val_from_str(str, len, desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 	case irms_reference:
@@ -398,22 +414,11 @@ long get_tarval_long(tarval* tv) {
 }
 
 tarval *new_tarval_from_double(long double d, ir_mode *mode) {
-	assert(mode && (get_mode_sort(mode) == irms_float_number));
+	const ieee_descriptor_t *desc;
 
-	switch (get_mode_size_bits(mode)) {
-	case 32:
-		fc_val_from_ieee754(d, &single_desc, NULL);
-		break;
-	case 64:
-		fc_val_from_ieee754(d, &double_desc, NULL);
-		break;
-	case 80:
-	case 96:
-		fc_val_from_ieee754(d, &extended_desc, NULL);
-		break;
-	default:
-		panic("Unsupported mode in new_tarval_from_double()");
-	}
+	assert(mode && (get_mode_sort(mode) == irms_float_number));
+	desc = get_descriptor(mode);
+	fc_val_from_ieee754(d, desc, NULL);
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 }
 
@@ -475,14 +480,15 @@ tarval *(get_tarval_unreachable)(void) {
 }
 
 tarval *get_tarval_max(ir_mode *mode) {
-	assert(mode);
+	const ieee_descriptor_t *desc;
 
+	assert(mode);
 	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -493,20 +499,8 @@ tarval *get_tarval_max(ir_mode *mode) {
 		return tarval_b_true;
 
 	case irms_float_number:
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			fc_get_max(&single_desc, NULL);
-			break;
-		case 64:
-			fc_get_max(&double_desc, NULL);
-			break;
-		case 80:
-		case 96:
-			fc_get_max(&extended_desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in get_tarval_max()");
-		}
+		desc = get_descriptor(mode);
+		fc_get_max(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 	case irms_reference:
@@ -518,10 +512,9 @@ tarval *get_tarval_max(ir_mode *mode) {
 }
 
 tarval *get_tarval_min(ir_mode *mode) {
-	ieee_descriptor_t desc;
+	const ieee_descriptor_t *desc;
 
 	assert(mode);
-
 	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
@@ -538,32 +531,8 @@ tarval *get_tarval_min(ir_mode *mode) {
 		return tarval_b_false;
 
 	case irms_float_number:
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			desc.exponent_size = 8;
-			desc.mantissa_size = 23;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_min(&desc, NULL);
-			break;
-		case 64:
-			desc.exponent_size = 11;
-			desc.mantissa_size = 52;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_min(&desc, NULL);
-			break;
-		case 80:
-		case 96:
-			desc.exponent_size = 15;
-			desc.mantissa_size = 64;
-			desc.explicit_one  = 1;
-			desc.clss          = NORMAL;
-			fc_get_min(&desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in get_tarval_min()");
-		}
+		desc = get_descriptor(mode);
+		fc_get_min(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 	case irms_reference:
@@ -585,7 +554,7 @@ tarval *get_tarval_null(ir_mode *mode) {
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -614,7 +583,7 @@ tarval *get_tarval_one(ir_mode *mode) {
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -643,7 +612,7 @@ tarval *get_tarval_all_one(ir_mode *mode) {
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -678,7 +647,7 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 		return tarval_bad;
 	}
 
-	switch(get_mode_sort(mode)) {
+	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
@@ -699,42 +668,17 @@ tarval *get_tarval_minus_one(ir_mode *mode) {
 }
 
 tarval *get_tarval_nan(ir_mode *mode) {
-	ieee_descriptor_t desc;
+	const ieee_descriptor_t *desc;
 
 	assert(mode);
-
 	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
 
 	if (get_mode_sort(mode) == irms_float_number) {
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			desc.exponent_size = 8;
-			desc.mantissa_size = 23;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_qnan(&desc, NULL);
-			break;
-		case 64:
-			desc.exponent_size = 11;
-			desc.mantissa_size = 52;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_qnan(&desc, NULL);
-			break;
-		case 80:
-		case 96:
-			desc.exponent_size = 15;
-			desc.mantissa_size = 64;
-			desc.explicit_one  = 1;
-			desc.clss          = NORMAL;
-			fc_get_qnan(&desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in get_tarval_nan()");
-		}
+		desc = get_descriptor(mode);
+		fc_get_qnan(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
 		assert(0 && "tarval is not floating point");
@@ -743,42 +687,15 @@ tarval *get_tarval_nan(ir_mode *mode) {
 }
 
 tarval *get_tarval_plus_inf(ir_mode *mode) {
-	ieee_descriptor_t desc;
-
 	assert(mode);
-
 	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
 
 	if (get_mode_sort(mode) == irms_float_number) {
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			desc.exponent_size = 8;
-			desc.mantissa_size = 23;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_plusinf(&desc, NULL);
-			break;
-		case 64:
-			desc.exponent_size = 11;
-			desc.mantissa_size = 52;
-			desc.explicit_one  = 0;
-			desc.clss          = NORMAL;
-			fc_get_plusinf(&desc, NULL);
-			break;
-		case 80:
-		case 96:
-			desc.exponent_size = 15;
-			desc.mantissa_size = 64;
-			desc.explicit_one  = 1;
-			desc.clss          = NORMAL;
-			fc_get_plusinf(&desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in get_tarval_plus_inf()");
-		}
+		const ieee_descriptor_t *desc = get_descriptor(mode);
+		fc_get_plusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
 		assert(0 && "tarval is not floating point");
@@ -795,20 +712,8 @@ tarval *get_tarval_minus_inf(ir_mode *mode) {
 	}
 
 	if (get_mode_sort(mode) == irms_float_number) {
-		switch(get_mode_size_bits(mode)) {
-		case 32:
-			fc_get_minusinf(&single_desc, NULL);
-			break;
-		case 64:
-			fc_get_minusinf(&double_desc, NULL);
-			break;
-		case 80:
-		case 96:
-			fc_get_minusinf(&extended_desc, NULL);
-			break;
-		default:
-			panic("Unsupported mode in get_tarval_minus_inf()");
-		}
+		const ieee_descriptor_t *desc = get_descriptor(mode);
+		fc_get_minusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 	} else {
 		assert(0 && "tarval is not floating point");
@@ -945,8 +850,9 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
  * convert to other mode
  */
 tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
-	char *buffer;
-	fp_value *res;
+	char                    *buffer;
+	fp_value                *res;
+	const ieee_descriptor_t *desc;
 
 	assert(src);
 	assert(dst_mode);
@@ -969,20 +875,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 	case irms_float_number:
 		switch (get_mode_sort(dst_mode)) {
 		case irms_float_number:
-			switch (get_mode_size_bits(dst_mode)) {
-			case 32:
-				fc_cast(src->value, &single_desc, NULL);
-				break;
-			case 64:
-				fc_cast(src->value, &double_desc, NULL);
-				break;
-			case 80:
-			case 96:
-				fc_cast(src->value, &extended_desc, NULL);
-				break;
-			default:
-				panic("Unsupported mode in tarval_convert_to()");
-			}
+			desc = get_descriptor(dst_mode);
+			fc_cast(src->value, desc, NULL);
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		case irms_int_number:
@@ -1034,20 +928,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 			snprintf(buffer, 100, "%s",
 				sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
 			buffer[100 - 1] = '\0';
-			switch (get_mode_size_bits(dst_mode)) {
-			case 32:
-				fc_val_from_str(buffer, 0, &single_desc, NULL);
-				break;
-			case 64:
-				fc_val_from_str(buffer, 0, &double_desc, NULL);
-				break;
-			case 80:
-			case 96:
-				fc_val_from_str(buffer, 0, &extended_desc, NULL);
-				break;
-			default:
-				panic("Unsupported mode in tarval_convert_to()");
-			}
+			desc = get_descriptor(dst_mode);
+			fc_val_from_str(buffer, 0, desc, NULL);
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		default:
@@ -1419,7 +1301,7 @@ tarval *tarval_and(tarval *a, tarval *b) {
 
 	/* works even for vector modes */
 
-	switch(get_mode_sort(a->mode)) {
+	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
 		return (a == tarval_b_false) ? a : b;
 
@@ -1800,23 +1682,8 @@ int tarval_ieee754_get_exponent(tarval *tv) {
  * precision loss.
  */
 int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode) {
-	char exp_size, mant_size;
-	switch (get_mode_size_bits(mode)) {
-	case 32:
-		exp_size = 8; mant_size = 23;
-		break;
-	case 64:
-		exp_size = 11; mant_size = 52;
-		break;
-	case 80:
-	case 96:
-		exp_size = 15; mant_size = 64;
-		break;
-	default:
-		panic("Unsupported mode in tarval_ieee754_can_conv_lossless()");
-		return 0;
-	}
-	return fc_can_lossless_conv_to(tv->value, exp_size, mant_size);
+	const ieee_descriptor_t *desc = get_descriptor(mode);
+	return fc_can_lossless_conv_to(tv->value, desc);
 }
 
 /* Set the immediate precision for IEEE-754 results. */

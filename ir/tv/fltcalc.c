@@ -1489,7 +1489,7 @@ int fc_get_exponent(const fp_value *value) {
 }
 
 /* Return non-zero if a given value can be converted lossless into another precision */
-int fc_can_lossless_conv_to(const fp_value *value, char exp_size, char mant_size) {
+int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc) {
 	int v;
 	int exp_bias;
 
@@ -1504,12 +1504,12 @@ int fc_can_lossless_conv_to(const fp_value *value, char exp_size, char mant_size
 	}
 
 	/* check if the exponent can be encoded: note, 0 and all ones are reserved for the exponent */
-	exp_bias = (1 << (exp_size - 1)) - 1;
+	exp_bias = (1 << (desc->exponent_size - 1)) - 1;
 	v = fc_get_exponent(value) + exp_bias;
-	if (0 < v && v < (1 << exp_size) - 1) {
-		/* check the mantissa */
+	if (0 < v && v < (1 << desc->exponent_size) - 1) {
+		/* exponent can be encoded, now check the mantissa */
 		v = value->desc.mantissa_size + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
-		return v < mant_size;
+		return v < desc->mantissa_size;
 	}
 	return 0;
 }
