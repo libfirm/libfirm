@@ -73,6 +73,9 @@ static ir_op _op_ModC;
 /** The Div by Const node. */
 static ir_op _op_DivModC;
 
+/** The Quot by Const node. */
+static ir_op _op_QuotC;
+
 /** The memory Proj node. */
 static ir_op _op_ProjM;
 
@@ -96,7 +99,7 @@ static ir_op _op_SelSelSel;
 /**
  * global status
  */
-static const int status_disable = 0;
+static const unsigned status_disable = 0;
 static stat_info_t *status = (stat_info_t *)&status_disable;
 
 /**
@@ -564,27 +567,33 @@ static ir_op *stat_get_irn_op(ir_node *node)
 		}  /* if */
 		break;
 	case iro_Mul:
-		if (get_irn_op(get_Mul_left(node)) == op_Const || get_irn_op(get_Mul_right(node)) == op_Const) {
+		if (is_Const(get_Mul_left(node)) || is_Const(get_Mul_right(node))) {
 			/* special case, a Multiply by a const, count on extra counter */
 			op = status->op_MulC ? status->op_MulC : op;
 		}  /* if */
 		break;
 	case iro_Div:
-		if (get_irn_op(get_Div_right(node)) == op_Const) {
+		if (is_Const(get_Div_right(node))) {
 			/* special case, a division by a const, count on extra counter */
 			op = status->op_DivC ? status->op_DivC : op;
 		}  /* if */
 		break;
 	case iro_Mod:
-		if (get_irn_op(get_Mod_right(node)) == op_Const) {
+		if (is_Const(get_Mod_right(node))) {
 			/* special case, a module by a const, count on extra counter */
 			op = status->op_ModC ? status->op_ModC : op;
 		}  /* if */
 		break;
 	case iro_DivMod:
-		if (get_irn_op(get_DivMod_right(node)) == op_Const) {
+		if (is_Const(get_DivMod_right(node))) {
 			/* special case, a division/modulo by a const, count on extra counter */
 			op = status->op_DivModC ? status->op_DivModC : op;
+		}  /* if */
+		break;
+	case iro_Quot:
+		if (is_Const(get_Quot_right(node))) {
+			/* special case, a floating point division by a const, count on extra counter */
+			op = status->op_QuotC ? status->op_QuotC : op;
 		}  /* if */
 		break;
 	case iro_Sel:
@@ -2230,6 +2239,9 @@ void firm_init_stat(unsigned enable_options)
 		_op_DivModC.code = --num;
 		_op_DivModC.name = new_id_from_chars(X("DivModC"));
 
+		_op_QuotC.code   = --num;
+		_op_QuotC.name   = new_id_from_chars(X("QuotC"));
+
 		status->op_Phi0    = &_op_Phi0;
 		status->op_PhiM    = &_op_PhiM;
 		status->op_ProjM   = &_op_ProjM;
@@ -2237,6 +2249,7 @@ void firm_init_stat(unsigned enable_options)
 		status->op_DivC    = &_op_DivC;
 		status->op_ModC    = &_op_ModC;
 		status->op_DivModC = &_op_DivModC;
+		status->op_QuotC   = &_op_QuotC;
 	} else {
 		status->op_Phi0    = NULL;
 		status->op_PhiM    = NULL;
@@ -2245,6 +2258,7 @@ void firm_init_stat(unsigned enable_options)
 		status->op_DivC    = NULL;
 		status->op_ModC    = NULL;
 		status->op_DivModC = NULL;
+		status->op_QuotC   = NULL;
 	}  /* if */
 
 	/* for Florian: count the Sel depth */

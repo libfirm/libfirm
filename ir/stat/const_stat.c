@@ -72,20 +72,28 @@ static float_classify_t classify_float_value(tarval *tv) {
 		return STAT_FC_1;
 	else if (tv == get_mode_one(mode))
 		return STAT_FC_1;
+	else if (tarval_ieee754_zero_mantissa(tv)) {
+		int exp = tarval_ieee754_get_exponent(tv);
 
+		if (exp == 1)
+			return STAT_FC_2;
+		else if (exp == -1)
+			return STAT_FC_0_5;
+		return STAT_FC_POWER_OF_TWO;
+	}
 	return STAT_FC_OTHER;
 }
 
 /* return a human readable name for an float classification */
 const char *stat_fc_name(float_classify_t classification) {
 	switch (classification) {
-	case STAT_FC_0:     return "0.0";
-	case STAT_FC_1:     return "1.0";
-	case STAT_FC_2:     return "2.0";
-	case STAT_FC_0_5:   return "0.5";
-	case STAT_FC_EXACT: return "exact";
-	case STAT_FC_OTHER: return "other";
-	default:            return "<UNKNOWN>";
+	case STAT_FC_0:            return "0.0";
+	case STAT_FC_1:            return "1.0";
+	case STAT_FC_2:            return "2.0";
+	case STAT_FC_0_5:          return "0.5";
+	case STAT_FC_POWER_OF_TWO: return "2.0^x";
+	case STAT_FC_OTHER:        return "other";
+	default:                   return "<UNKNOWN>";
 	}
 }
 

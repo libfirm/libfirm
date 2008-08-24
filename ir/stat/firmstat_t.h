@@ -255,7 +255,7 @@ typedef enum _float_classify_t {
 	STAT_FC_1,                /**< the float value 1.0 */
 	STAT_FC_2,                /**< the float value 2.0 */
 	STAT_FC_0_5,              /**< the float value 0.5 */
-	STAT_FC_EXACT,            /**< an exact value */
+	STAT_FC_POWER_OF_TWO,     /**< another 2^x value */
 	STAT_FC_OTHER,            /**< all other values */
 	STAT_FC_MAX               /**< last value */
 } float_classify_t;
@@ -331,6 +331,7 @@ typedef struct _statistic_info_t {
 	ir_op                   *op_DivC;            /**< pseudo op for division by const */
 	ir_op                   *op_ModC;            /**< pseudo op for modulo by const */
 	ir_op                   *op_DivModC;         /**< pseudo op for DivMod by const */
+	ir_op                   *op_QuotC;           /**< pseudo op for floating point division by const */
 	ir_op                   *op_SelSel;          /**< pseudo op for Sel(Sel) */
 	ir_op                   *op_SelSelSel;       /**< pseudo op for Sel(Sel(Sel)) */
 	dumper_t                *dumper;             /**< list of dumper */
