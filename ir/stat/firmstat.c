@@ -989,12 +989,6 @@ static void update_node_stat(ir_node *node, void *env)
 	/* handle statistics for special node types */
 
 	switch (op->code) {
-	case iro_Const:
-		if (status->stat_options & FIRMSTAT_COUNT_CONSTS) {
-			/* check properties of constants */
-			stat_update_const(status, node, graph);
-		}  /* if */
-		break;
 	case iro_Call:
 		/* check for properties that depends on calls like recursion/leaf/indirect call */
 		stat_update_call(node, graph);
@@ -1010,6 +1004,20 @@ static void update_node_stat(ir_node *node, void *env)
 	default:
 		;
 	}  /* switch */
+
+	/* we want to count the constant IN nodes, not the CSE'ed constant's itself */
+	if (status->stat_options & FIRMSTAT_COUNT_CONSTS) {
+		int i;
+
+		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
+			ir_node *pred = get_irn_n(node, i);
+
+			if (is_Const(pred)) {
+				/* check properties of constants */
+				stat_update_const(status, pred, graph);
+			}  /* if */
+		}  /* for */
+	}  /* if */
 }  /* update_node_stat */
 
 /**
