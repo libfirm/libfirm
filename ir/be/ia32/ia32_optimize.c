@@ -560,7 +560,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 			break;
 
 		/* should have NO index */
-		if (get_ia32_am_scale(node) > 0 || !is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
+		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
 			break;
 
 		offset = get_ia32_am_offs_int(node);
