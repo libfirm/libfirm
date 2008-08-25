@@ -6,11 +6,11 @@
 #define ROR(a,b) (((a) >> (b)) | ((a) << ((sizeof (a) * CHAR_BIT) - (b))))
 
 unsigned long long testL(unsigned long long a, int cnt) {
-	return ROL(a, cnt);
+	return cnt == 0 ? a : ROL(a, cnt);
 }
 
 unsigned long long testR(unsigned long long a, int cnt) {
-	return ROR(a, cnt);
+	return cnt == 0 ? a : ROR(a, cnt);
 }
 
 int main() {
