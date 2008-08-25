@@ -37,7 +37,7 @@ int spec_load(char *filename, int size) {
 	if (rc < 0) {
 		fprintf(stderr, "Error reading from %s: %s\n", filename,
 				strerror(errno));
-		exit(1);
+		exit(0);
 	}
 	close(fd);
 	return 0;
