@@ -515,7 +515,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	maxslot = -1;
 	pred_sp = be_get_IncSP_pred(irn);
 	for (node = sched_prev(irn); !sched_is_end(node); node = sched_prev(node)) {
-		ir_node *mem;
 		int offset;
 		int loadslot;
 		const arch_register_t *sreg, *dreg;
@@ -554,10 +553,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 			 * but we do not check this */
 			break;
 		}
-		/* Load has to be attached to Spill-Mem */
-		mem = skip_Proj(get_irn_n(node, n_ia32_mem));
-		if (!is_Phi(mem) && !is_ia32_Store(mem) && !is_ia32_Push(mem))
-			break;
 
 		/* should have NO index */
 		if (!is_ia32_NoReg_GP(get_irn_n(node, n_ia32_index)))
