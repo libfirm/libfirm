@@ -620,7 +620,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  */
 static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 	const arch_register_req_t *req;
-	const arch_env_t          *arch_env = be_get_birg_arch_env(env->birg);
+	const arch_env_t          *arch_env    = be_get_birg_arch_env(env->birg);
+	ir_node                   *skipped_irn = belower_skip_proj(irn);
 
 	req = arch_get_register_req(arch_env, irn, -1);
 
@@ -639,14 +640,14 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 				 * We can safely ignore a should_be_same x must_be_different y
 				 * IFF both inputs are equal!
 				 */
-				if (get_irn_n(irn, idx_other) == get_irn_n(irn, idx_same)) {
+				if (get_irn_n(skipped_irn, idx_other) == get_irn_n(skipped_irn, idx_same)) {
 					return;
 				}
 			}
 		}
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_node *different_from = get_irn_n(belower_skip_proj(irn), i);
+				ir_node *different_from = get_irn_n(skipped_irn, i);
 				gen_assure_different_pattern(irn, different_from, env);
 			}
 		}
