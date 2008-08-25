@@ -138,7 +138,9 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 	char *p;
 	int i;
 
-	assert(irg && op && mode);
+	assert(irg);
+	assert(op);
+	assert(mode);
 	p = obstack_alloc(irg->obst, node_size);
 	memset(p, 0, node_size);
 	res = (ir_node *)(p + firm_add_node_size);
