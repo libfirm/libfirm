@@ -60,6 +60,7 @@
 #include "irflag_t.h"
 #include "irhooks.h"
 #include "irtools.h"
+#include "iropt_dbg.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -759,6 +760,7 @@ static void copy_preds_inline(ir_node *n, void *env) {
 
 		n = identify_remember(current_ir_graph->value_table, nn);
 		if (nn != n) {
+			DBG_OPT_CSE(nn, n);
 			exchange(nn, n);
 		}
 	}

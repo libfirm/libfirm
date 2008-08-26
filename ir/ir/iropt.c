@@ -6083,7 +6083,6 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 
 	if (o != n) {
 		update_known_irn(o, n);
-		DBG_OPT_CSE(n, o);
 	}
 
 	return o;
@@ -6321,7 +6320,10 @@ ir_node *optimize_node(ir_node *n) {
 
 	/* Now we have a legal, useful node. Enter it in hash table for CSE */
 	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
-		n = identify_remember(current_ir_graph->value_table, n);
+		ir_node *o = n;
+		n = identify_remember(current_ir_graph->value_table, o);
+		if (o != n)
+			DBG_OPT_CSE(o, n);
 	}
 
 	return n;
@@ -6386,7 +6388,10 @@ ir_node *optimize_in_place_2(ir_node *n) {
 	   now all nodes are op_pin_state_pinned to blocks, i.e., the cse only finds common
 	   subexpressions within a block. */
 	if (get_opt_cse()) {
-		n = identify_remember(current_ir_graph->value_table, n);
+		ir_node *o = n;
+		n = identify_remember(current_ir_graph->value_table, o);
+		if (o != n)
+			DBG_OPT_CSE(o, n);
 	}
 
 	/* Some more constant expression evaluation. */
@@ -6406,8 +6411,12 @@ ir_node *optimize_in_place_2(ir_node *n) {
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
 	   Blocks should be unique anyways.  (Except the successor of start:
 	   is cse with the start block!) */
-	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block))
-		n = identify_remember(current_ir_graph->value_table, n);
+	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
+		ir_node *o = n;
+		n = identify_remember(current_ir_graph->value_table, o);
+		if (o != n)
+			DBG_OPT_CSE(o, n);
+	}
 
 	return n;
 }  /* optimize_in_place_2 */
