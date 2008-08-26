@@ -1661,14 +1661,15 @@ static void stat_irg_block_walk(void *ctx, ir_graph *irg, ir_node *node, generic
  * @param kind  the optimization kind
  */
 static void removed_due_opt(ir_node *n, hmap_opt_entry_t *hmap, hook_opt_kind kind) {
-	ir_op *op          = stat_get_irn_op(n);
-	opt_entry_t *entry = opt_get_entry(op, hmap);
+	opt_entry_t *entry;
+	ir_op *op = stat_get_irn_op(n);
 
 	/* ignore CSE for Constants */
 	if (kind == HOOK_OPT_CSE && (is_Const(n) || is_SymConst(n)))
 		return;
 
 	/* increase global value */
+	entry = opt_get_entry(op, hmap);
 	cnt_inc(&entry->count);
 }  /* removed_due_opt */
 
