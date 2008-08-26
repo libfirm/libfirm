@@ -1974,30 +1974,49 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 {
 	ir_node *load;
 
-	if(!is_Proj(node))
+	if (!is_Proj(node))
 		return 0;
 
 	/* we only use address mode if we're the only user of the load */
-	if(get_irn_n_edges(node) > 1)
+	if (get_irn_n_edges(node) > 1)
 		return 0;
 
 	load = get_Proj_pred(node);
-	if(!is_Load(load))
+	if (!is_Load(load))
 		return 0;
-	if(get_nodes_block(load) != block)
+	if (get_nodes_block(load) != block)
 		return 0;
 
-	/* Store should be attached to the load */
-	if(!is_Proj(mem) || get_Proj_pred(mem) != load)
-		return 0;
 	/* store should have the same pointer as the load */
-	if(get_Load_ptr(load) != ptr)
+	if (get_Load_ptr(load) != ptr)
 		return 0;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
-	if(other != NULL && get_nodes_block(other) == block
-			&& heights_reachable_in_block(heights, other, load))
+	if (other != NULL                   &&
+	    get_nodes_block(other) == block &&
+	    heights_reachable_in_block(heights, other, load)) {
 		return 0;
+	}
+
+	if (is_Sync(mem)) {
+		int i;
+
+		for (i = get_Sync_n_preds(mem) - 1; i >= 0; --i) {
+			ir_node *const pred = get_Sync_pred(mem, i);
+
+			if (is_Proj(pred) && get_Proj_pred(pred) == load)
+				continue;
+
+			if (get_nodes_block(pred) == block &&
+			    heights_reachable_in_block(heights, pred, load)) {
+				return 0;
+			}
+		}
+	} else {
+		/* Store should be attached to the load */
+		if (!is_Proj(mem) || get_Proj_pred(mem) != load)
+			return 0;
+	}
 
 	return 1;
 }
