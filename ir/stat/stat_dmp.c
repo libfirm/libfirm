@@ -112,6 +112,7 @@ static const struct {
 	{ FS_OPT_MUX_TO_MIN,     "algebraic simplification: Mux(a < b, a, b) = Min(a,b)" },
 	{ FS_OPT_MUX_TO_MAX,     "algebraic simplification: Mux(a > b, a, b) = Max(a,b)" },
 	{ FS_OPT_MUX_TO_ABS,     "algebraic simplification: Mux(a > 0, a, -a) = Abs(a)" },
+	{ FS_OPT_MUX_TO_BITOP,   "algebraic simplification: Mux((a & 2^x) ==/!= 0, 2^x, 0) = (a & 2^x) (xor 2^x)" },
 	{ FS_OPT_IDEM_UNARY,     "algebraic simplification: Idempotent unary operation" },
 	{ FS_OPT_MINUS_NOT,      "algebraic simplification: -(~x) = x + 1" },
 	{ FS_OPT_NOT_MINUS_1,    "algebraic simplification: ~(x - 1) = -x" },

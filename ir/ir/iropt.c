@@ -5499,10 +5499,12 @@ static ir_node *transform_node_Mux(ir_node *n) {
 								if (pn == pn_Cmp_Lg) {
 									/* Mux((a & 2^C) != 0, 2^C, 0) */
 									n = cmp_l;
+									DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 								} else {
 									/* Mux((a & 2^C) == 0, 2^C, 0) */
 									n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
 										block, cmp_l, t, mode);
+									DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 								}
 								return n;
 							}
@@ -5514,10 +5516,12 @@ static ir_node *transform_node_Mux(ir_node *n) {
 									if (pn == pn_Cmp_Lg) {
 										/* (a & (1 << n)) != 0, (1 << n), 0) */
 										n = cmp_l;
+										DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 									} else {
 										/* (a & (1 << n)) == 0, (1 << n), 0) */
 										n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
 											block, cmp_l, t, mode);
+										DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 									}
 									return n;
 								}
@@ -5531,10 +5535,12 @@ static ir_node *transform_node_Mux(ir_node *n) {
 									if (pn == pn_Cmp_Lg) {
 										/* ((1 << n) & a) != 0, (1 << n), 0) */
 										n = cmp_l;
+										DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 									} else {
 										/* ((1 << n) & a) == 0, (1 << n), 0) */
 										n = new_rd_Eor(get_irn_dbg_info(n), current_ir_graph,
 											block, cmp_l, t, mode);
+										DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_BITOP);
 									}
 									return n;
 								}
