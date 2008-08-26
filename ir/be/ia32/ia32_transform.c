@@ -2224,8 +2224,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 		op1      = get_Sub_left(val);
 		op2      = get_Sub_right(val);
 		if(is_Const(op2)) {
-			ir_fprintf(stderr, "Optimisation warning: not-normalize sub ,C"
-			           "found\n");
+			ir_fprintf(stderr, "Optimisation warning: not-normalized sub ,C found\n");
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_rd_ia32_SubMem, new_rd_ia32_SubMem8Bit,
