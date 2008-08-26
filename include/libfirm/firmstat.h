@@ -90,11 +90,10 @@ enum firmstat_optimizations_t {
 	FS_OPT_MUX_ANDNOT_BOOL,                   /**< Muxb(sel, false, x) = And(Not(sel), x) */
 	FS_OPT_MUX_C,                             /**< Mux(C, f, t) = C ? t : f */
 	FS_OPT_MUX_EQ,                            /**< Mux(v, x, x) = x */
-	FS_OPT_MUX_TRANSFORM,                     /**< Mux(a, b, c) = b OR Mux(a, b, c) = c */
+	FS_OPT_MUX_TRANSFORM,                     /**< Mux(t ==/!= f, t, f) = f/t, Mux(t ==/!= 0, -t, t) = -t/t */
 	FS_OPT_MUX_TO_MIN,                        /**< Mux(a < b, a, b) = Min(a,b) */
 	FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
-	FS_OPT_MUX_TO_ABS,                        /**< Mux(a > b, a, b) = Abs(a,b) */
-	FS_OPT_MUX_TO_SHR,                        /**< Mux(a > b, a, b) = a >> b */
+	FS_OPT_MUX_TO_ABS,                        /**< Mux(a > 0, a, -a) = Abs(a) */
 	FS_OPT_IDEM_UNARY,                        /**< Idempotent unary operation */
 	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
 	FS_OPT_NOT_MINUS_1,                       /**< ~(x - 1) = -x */
