@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-long long test(long *i, int p) {
-	long long v = *i + (p != 0);
+long long test(long long *i, int *p) {
+	long long v = *i + (*p != 0);
 	return v;
 }
 
