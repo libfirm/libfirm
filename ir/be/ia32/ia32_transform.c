@@ -2223,7 +2223,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	case iro_Sub:
 		op1      = get_Sub_left(val);
 		op2      = get_Sub_right(val);
-		if(is_Const(op2)) {
+		if (is_Const(op2) && !mode_is_float(mode)) {
 			ir_fprintf(stderr, "Optimisation warning: not-normalized sub ,C found\n");
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
