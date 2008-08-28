@@ -824,6 +824,7 @@ void do_gvn_pre(ir_graph *irg)
 	irg_walk_blkwise_graph(irg, NULL, topo_walker, &a_env);
 
 	/* clean the exp_gen set. Doing this here saves the cleanup in the iteration. */
+	inc_irg_visited(irg);
 	for (bl_info = a_env.list; bl_info != NULL; bl_info = bl_info->next) {
 		ir_valueset_iterator_t iter;
 
