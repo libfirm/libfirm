@@ -883,16 +883,16 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
 	ir_node             *src_block  = get_nodes_block(node);
 	ir_node             *op1        = get_irn_n(node, n_ia32_l_binop_left);
 	ir_node             *op2        = get_irn_n(node, n_ia32_l_binop_right);
+	ir_node             *eflags     = get_irn_n(node, n_ia32_l_binop_eflags);
 	dbg_info            *dbgi;
-	ir_node             *block, *new_node, *eflags, *new_eflags;
+	ir_node             *block, *new_node, *new_eflags;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr       = &am.addr;
 
-	match_arguments(&am, src_block, op1, op2, NULL, flags);
+	match_arguments(&am, src_block, op1, op2, eflags, flags);
 
 	dbgi       = get_irn_dbg_info(node);
 	block      = be_transform_node(src_block);
-	eflags     = get_irn_n(node, n_ia32_l_binop_eflags);
 	new_eflags = be_transform_node(eflags);
 	new_node   = func(dbgi, current_ir_graph, block, addr->base, addr->index,
 	                addr->mem, am.new_op1, am.new_op2, new_eflags);
