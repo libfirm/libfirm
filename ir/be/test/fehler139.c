@@ -6,7 +6,8 @@ long long test(long long *i, int *p) {
 }
 
 int main() {
-	long x = 0xFFFFFFFF;
-	printf("%llx\n", test(&x, 5));
+	long long x = 0xFFFFFFFF;
+	int       i = 5;
+	printf("%llx\n", test(&x, &i));
 	return 0;
 }
