@@ -3330,7 +3330,8 @@ static ir_node *gen_Conv(ir_node *node) {
 					switch (get_mode_size_bits(tgt_mode)) {
 						case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
 						case 64: float_mantissa = 52 + 1; break;
-						case 80: float_mantissa = 64 + 1; break;
+						case 80:
+						case 96: float_mantissa = 64;     break;
 						default: float_mantissa = 0;      break;
 					}
 					if (float_mantissa < int_mantissa) {
