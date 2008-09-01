@@ -33,6 +33,8 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
+
 #include "debug.h"
 #include "list.h"
 #include "pdeq.h"
@@ -40,6 +42,8 @@
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "iredges_t.h"
+#include "irloop_t.h"
+#include "irgwalk.h"
 #include "execfreq.h"
 
 #include "bemodule.h"
@@ -50,6 +54,20 @@
 #include "be_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+typedef struct loop_edge_t loop_edge_t;
+struct loop_edge_t {
+	ir_node     *block;
+	int          pos;
+	loop_edge_t *next;
+};
+
+typedef struct loop_info_t loop_info_t;
+struct loop_info_t {
+	loop_edge_t *entry_edges;
+	loop_edge_t *exit_edges;
+	size_t       max_register_pressure;
+};
 
 typedef struct worklist_entry_t worklist_entry_t;
 struct worklist_entry_t {
@@ -65,12 +83,20 @@ struct worklist_t {
 	size_t            n_live_values;
 };
 
+typedef struct block_info_t block_info_t;
+struct block_info_t {
+	worklist_t *start_worklist;
+	worklist_t *end_worklist;
+};
+
 static const arch_env_t            *arch_env;
 static const arch_register_class_t *cls;
 static struct obstack               obst;
 static spill_env_t                 *senv;
 static size_t                       n_regs;
-static int                          tentative_mode;
+static size_t                       max_register_pressure;
+static bool                         tentative_mode;
+static bool                         should_have_reached_fixpoint;
 static ir_exec_freq                *exec_freq;
 
 static worklist_t *new_worklist(void)
@@ -88,6 +114,23 @@ static void mark_irn_not_visited(ir_node *node)
 	set_irn_visited(node, get_irg_visited(current_ir_graph) - 1);
 }
 
+static bool worklist_contains(const ir_node *node)
+{
+	return irn_visited(node);
+}
+
+static block_info_t *get_block_info(ir_node *block)
+{
+	block_info_t *info = get_irn_link(block);
+	if (info != NULL)
+		return info;
+
+	info = obstack_alloc(&obst, sizeof(info[0]));
+	memset(info, 0, sizeof(info[0]));
+	set_irn_link(block, info);
+	return info;
+}
+
 static void deactivate_worklist(const worklist_t *worklist)
 {
 	struct list_head *entry;
@@ -95,9 +138,22 @@ static void deactivate_worklist(const worklist_t *worklist)
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry
 			= list_entry(entry, worklist_entry_t, head);
-		assert(irn_visited(wl_entry->value));
+		assert(worklist_contains(wl_entry->value));
 		mark_irn_not_visited(wl_entry->value);
 		set_irn_link(wl_entry->value, NULL);
+	}
+}
+
+static void activate_worklist(const worklist_t *worklist)
+{
+	struct list_head *entry;
+
+	list_for_each(entry, &worklist->live_values) {
+		worklist_entry_t *wl_entry
+			= list_entry(entry, worklist_entry_t, head);
+		assert(!worklist_contains(wl_entry->value));
+		mark_irn_visited(wl_entry->value);
+		set_irn_link(wl_entry->value, wl_entry);
 	}
 }
 
@@ -112,7 +168,9 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 	worklist_t       *new_worklist;
 	struct list_head *entry;
 
-	if(succ_block != NULL && get_Block_n_cfgpreds(succ_block) > 1) {
+	if (succ_block != NULL &&
+			(get_Block_n_cfgpreds(succ_block) > 1
+			 || get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) > 1)) {
 		reload_point = be_get_end_of_block_insertion_point(block);
 	}
 
@@ -122,34 +180,63 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
 		ir_node          *value     = wl_entry->value;
-		worklist_entry_t *new_entry
-			= obstack_alloc(&obst, sizeof(new_entry[0]));
 
-		if(is_Phi(value) && get_nodes_block(value) == succ_block) {
+		if (is_Phi(value) && get_nodes_block(value) == succ_block) {
 			value = get_Phi_pred(value, succ_pos);
+
+			/* can happen for unknown phi preds */
+			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, value))
+				continue;
 		}
 
+		worklist_entry_t *new_entry
+			= obstack_alloc(&obst, sizeof(new_entry[0]));
 		new_entry->value = value;
-		if(reload_point != NULL) {
+		if (reload_point != NULL) {
 			new_entry->reload_point = reload_point;
 		} else {
 			new_entry->reload_point = wl_entry->reload_point;
 		}
 		new_entry->next_reload = NULL;
 
-		if(irn_not_visited(value)) {
+		if (irn_not_visited(value)) {
 			list_add_tail(&new_entry->head, &new_worklist->live_values);
 			++n_live_values;
 
 			mark_irn_visited(value);
 			set_irn_link(value, new_entry);
-		} else {
+		}
+#if 0
+		else {
 			/* the only way we might visit a value again, is when we get it as
 			 * phi predecessor */
-			assert(is_Phi(wl_entry->value));
+			assert(is_Phi(wl_entry->value)
+					&& get_nodes_block(wl_entry->value) == succ_block);
 		}
+#endif
 	}
 	new_worklist->n_live_values = n_live_values;
+
+	return new_worklist;
+}
+
+static worklist_t *duplicate_worklist(const worklist_t *worklist)
+{
+	worklist_t       *new_worklist;
+	struct list_head *entry;
+
+	new_worklist = obstack_alloc(&obst, sizeof(new_worklist[0]));
+	INIT_LIST_HEAD(&new_worklist->live_values);
+	new_worklist->n_live_values = worklist->n_live_values;
+
+	list_for_each(entry, &worklist->live_values) {
+		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
+		worklist_entry_t *new_entry
+			= obstack_alloc(&obst, sizeof(new_entry[0]));
+
+		memcpy(new_entry, wl_entry, sizeof(new_entry[0]));
+		list_add_tail(&new_entry->head, &new_worklist->live_values);
+	}
 
 	return new_worklist;
 }
@@ -169,9 +256,104 @@ static void print_worklist(const worklist_t *worklist, int level)
 }
 #endif
 
+
+
+static void clear_loop_info(ir_loop *loop)
+{
+	int n_elements = get_loop_n_elements(loop);
+	int i;
+
+	loop->link = NULL;
+	for (i = 0; i < n_elements; ++i) {
+		loop_element element = get_loop_element(loop, i);
+		if (*element.kind != k_ir_loop)
+			continue;
+
+		clear_loop_info(element.son);
+	}
+}
+
+static loop_info_t *get_loop_info(ir_loop *loop)
+{
+	loop_info_t *info = loop->link;
+	if (info != NULL)
+		return info;
+
+	info = obstack_alloc(&obst, sizeof(info[0]));
+	memset(info, 0, sizeof(info[0]));
+	loop->link = info;
+	return info;
+}
+
+/**
+ * constructs loop in+out edges when called in a block walker
+ */
+static void construct_loop_edges(ir_node *block, void *data)
+{
+	int      n_cfgpreds = get_Block_n_cfgpreds(block);
+	ir_loop *loop       = get_irn_loop(block);
+	int      i;
+
+	(void) data;
+
+	for (i = 0; i < n_cfgpreds; ++i) {
+		ir_node     *cfgpred_block = get_Block_cfgpred_block(block, i);
+		ir_loop     *cfgpred_loop  = get_irn_loop(cfgpred_block);
+		loop_edge_t *edge;
+
+		if (cfgpred_loop == loop)
+			continue;
+
+		/* critical edges are splitted, so we can't jump from 1 loop
+		 * directly into another without going out of it */
+		assert(get_loop_depth(cfgpred_loop) != get_loop_depth(loop));
+
+		/* edge out of loop */
+		bool is_exit_edge;
+		ir_loop *l, *goal;
+		if (get_loop_depth(cfgpred_loop) > get_loop_depth(loop)) {
+			is_exit_edge = true;
+			l            = cfgpred_loop;
+			goal         = loop;
+		} else {
+			is_exit_edge = false;
+			l            = loop;
+			goal         = cfgpred_loop;
+		}
+
+		/* this might be a jump out/in multiple loops */
+		do {
+			loop_info_t *l_info = get_loop_info(l);
+
+			edge = obstack_alloc(&obst, sizeof(edge[0]));
+			memset(edge, 0, sizeof(edge[0]));
+			edge->block = block;
+			edge->pos   = i;
+
+			if (is_exit_edge) {
+				ir_fprintf(stderr, "Loop %p exit edge %+F:%d\n",
+				           l, block, i);
+				edge->next         = l_info->exit_edges;
+				l_info->exit_edges = edge;
+				assert(get_loop_depth(loop) < get_loop_depth(l));
+			} else {
+				ir_fprintf(stderr, "Loop %p entry edge %+F:%d\n",
+				           l, block, i);
+				edge->next          = l_info->entry_edges;
+				l_info->entry_edges = edge;
+				assert(get_loop_depth(cfgpred_loop) < get_loop_depth(l));
+			}
+			l = get_loop_outer_loop(l);
+		} while(l != goal);
+	}
+}
+
+
+
+
 static void place_reload(worklist_entry_t *entry)
 {
-	if(tentative_mode)
+	if (tentative_mode)
 		return;
 
 	/* walk list of reload points */
@@ -186,6 +368,7 @@ static void place_reload(worklist_entry_t *entry)
 	} while(entry != NULL);
 }
 
+#if 0
 /**
  * does stuff required for non-active worklists: spills all values not live
  * in the active worklist; links live values to the current worklist
@@ -199,10 +382,10 @@ static void process_non_active_worklist(const worklist_t *worklist,
 		worklist_entry_t *wl_entry = list_entry(entry, worklist_entry_t, head);
 		ir_node          *value    = wl_entry->value;
 
-		if(!irn_visited(value)) {
+		if (!worklist_contains(value)) {
 			/* if we still have room in the worklist, then we can simply take
 			 * the value */
-			if(current_worklist->n_live_values < n_regs) {
+			if (current_worklist->n_live_values < n_regs) {
 				worklist_entry_t *new_entry
 					= obstack_alloc(&obst, sizeof(new_entry[0]));
 
@@ -226,29 +409,35 @@ static void process_non_active_worklist(const worklist_t *worklist,
 		}
 	}
 }
+#endif
 
 /**
  * makes sure the worklist contains not more than n_regs - room_needed entries
  */
 static void make_room(worklist_t *worklist, size_t room_needed)
 {
-	int spills_needed = worklist->n_live_values + room_needed - n_regs;
-	if(spills_needed > 0) {
-		int               i     = spills_needed;
-		struct list_head *entry = worklist->live_values.next;
-		for(i = spills_needed; i > 0; --i) {
-			struct list_head *next = entry->next;
-			worklist_entry_t *wl_entry
-				= list_entry(entry, worklist_entry_t, head);
-			assert(irn_visited(wl_entry->value));
-			mark_irn_not_visited(wl_entry->value);
-			place_reload(wl_entry);
-			list_del(entry);
+	int               i;
+	int               spills_needed;
+	struct list_head *entry;
 
-			entry = next;
-		}
-		worklist->n_live_values -= spills_needed;
+	spills_needed = worklist->n_live_values + room_needed - n_regs;
+	if (spills_needed <= 0)
+		return;
+
+	entry = worklist->live_values.next;
+	for(i = spills_needed; i > 0; --i) {
+		struct list_head *next = entry->next;
+		worklist_entry_t *wl_entry
+			= list_entry(entry, worklist_entry_t, head);
+
+		assert(worklist_contains(wl_entry->value));
+		mark_irn_not_visited(wl_entry->value);
+		place_reload(wl_entry);
+		list_del(entry);
+
+		entry = next;
 	}
+	worklist->n_live_values -= spills_needed;
 }
 
 /**
@@ -257,15 +446,16 @@ static void make_room(worklist_t *worklist, size_t room_needed)
  */
 static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 {
-	/* is the node in the worklist already? */
+	assert(arch_irn_consider_in_reg_alloc(arch_env, cls, value));
+
+	/* already in the worklist? move around, otherwise add at back */
 	worklist_entry_t *entry = get_irn_link(value);
-	if(irn_visited(value)) {
+	if (worklist_contains(value)) {
 		assert(entry != NULL);
 
-		assert(irn_visited(value));
 		list_del(&entry->head);
 	} else {
-		if(entry == NULL) {
+		if (entry == NULL) {
 			entry        = obstack_alloc(&obst, sizeof(entry[0]));
 			entry->value = value;
 			set_irn_link(value, entry);
@@ -287,8 +477,14 @@ static void worklist_remove(worklist_t *worklist, ir_node *value)
 	list_del(&entry->head);
 	--worklist->n_live_values;
 
-	assert(irn_visited(value));
+	assert(worklist_contains(value));
 	mark_irn_not_visited(value);
+}
+
+static void update_max_pressure(worklist_t *worklist)
+{
+	if (worklist->n_live_values > max_register_pressure)
+		max_register_pressure = worklist->n_live_values;
 }
 
 static void do_spilling(ir_node *block, worklist_t *worklist)
@@ -302,8 +498,9 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 		size_t n_defs = 0;
 
 		DB((dbg, LEVEL_2, "\t%+F... ", node));
+		update_max_pressure(worklist);
 
-		if(is_Phi(node)) {
+		if (is_Phi(node)) {
 			ir_node *node2;
 			/* TODO: if we have some free registers, then we could decide to
 			 * not spill some phis (but not for phis where at least 1 input is
@@ -313,34 +510,35 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 			sched_foreach_reverse_from(node, node2) {
 				assert(is_Phi(node2));
 
-				if(irn_visited(node2))
+				if (worklist_contains(node2))
 					continue;
-				if(!arch_irn_consider_in_reg_alloc(arch_env, cls, node2))
+				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node2))
 					continue;
 
-				if(!tentative_mode)
+				if (!tentative_mode)
 					be_spill_phi(senv, node2);
 			}
+			DB((dbg, LEVEL_2, "\n"));
 			break;
 		}
 
 		/* remove values defined by this instruction from the workset. Values
 		 * defined but not in the workset need free registers */
-		if(get_irn_mode(node) == mode_T) {
+		if (get_irn_mode(node) == mode_T) {
 			const ir_edge_t *edge;
 
 			foreach_out_edge(node, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				if(!arch_irn_consider_in_reg_alloc(arch_env, cls, proj))
+				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, proj))
 					continue;
-				if(irn_visited(proj)) {
+				if (worklist_contains(proj)) {
 					worklist_remove(worklist, proj);
 				} else {
 					++n_defs;
 				}
 			}
-		} else if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
-			if(irn_visited(node)) {
+		} else if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+			if (worklist_contains(node)) {
 				worklist_remove(worklist, node);
 			} else {
 				n_defs = 1;
@@ -350,12 +548,12 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 		/* make sure we have enough free registers for the spills */
 		make_room(worklist, n_defs);
 
-		/* put all values by the instruction into the workset */
+		/* put all values used by the instruction into the workset */
 		arity = get_irn_arity(node);
 		for(i = 0; i < arity; ++i) {
 			ir_node *use = get_irn_n(node, i);
 
-			if(!arch_irn_consider_in_reg_alloc(arch_env, cls, use))
+			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, use))
 				continue;
 
 			val_used(worklist, use, node);
@@ -371,6 +569,8 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 #endif
 	}
 
+	update_max_pressure(worklist);
+
 #ifdef DEBUG_libfirm
 	DB((dbg, LEVEL_1, "worklist at begin of %+F:", block));
 	print_worklist(worklist, LEVEL_1);
@@ -378,14 +578,35 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 #endif
 }
 
+static bool worklists_equal(const worklist_t *wl1, const worklist_t *wl2)
+{
+	const struct list_head *i1 = &wl1->live_values;
+	const struct list_head *i2 = &wl2->live_values;
+
+	for ( ; i1 != &wl1->live_values && i2 != &wl2->live_values;
+			i1 = i1->next, i2 = i2->next) {
+		worklist_entry_t *entry1 = list_entry(i1, worklist_entry_t, head);
+		worklist_entry_t *entry2 = list_entry(i2, worklist_entry_t, head);
+
+		if (entry1->value != entry2->value)
+			return false;
+	}
+	/* both lists at the end */
+	if (i1 != &wl1->live_values || i2 != &wl2->live_values)
+		return false;
+
+	return true;
+}
+
 static void process_block(ir_node *block, void *env)
 {
-	int              n_preds;
-	const ir_edge_t *edge;
+	block_info_t    *block_info      = NULL;
 	worklist_t      *worklist        = NULL;
 	double           best_execfreq   = -1;
 	ir_node         *best_succ_block = NULL;
 	int              best_pos        = -1;
+	int              n_preds;
+	const ir_edge_t *edge;
 
 	(void) env;
 	DB((dbg, LEVEL_1, "Processing %+F\n", block));
@@ -395,9 +616,10 @@ static void process_block(ir_node *block, void *env)
 		ir_node *succ_block = get_edge_src_irn(edge);
 		double   execfreq   = get_block_execfreq(exec_freq, succ_block);
 
-		if(execfreq > best_execfreq) {
-			worklist_t *succ_worklist = get_irn_link(succ_block);
-			if(succ_worklist != NULL) {
+		if (execfreq > best_execfreq) {
+			block_info_t *block_info    = get_block_info(succ_block);
+			worklist_t   *succ_worklist = block_info->start_worklist;
+			if (succ_worklist != NULL) {
 				best_execfreq   = execfreq;
 				worklist        = succ_worklist;
 				best_succ_block = succ_block;
@@ -405,48 +627,291 @@ static void process_block(ir_node *block, void *env)
 			}
 		}
 	}
-	if(worklist == NULL) {
+	if (worklist == NULL) {
 		/* at least 1 successor block must have been processed unless it was
 		 * the end block */
 		assert(tentative_mode || block == get_irg_end_block(get_irn_irg(block)));
 
 		worklist = new_worklist();
-#ifdef DEBUG_libfirm
-		DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
-		print_worklist(worklist, LEVEL_1);
-		DB((dbg, LEVEL_1, "\n"));
-#endif
 	} else {
 		worklist = duplicate_activate_worklist(worklist, block, best_succ_block,
 		                                       best_pos);
 
+		/* handle this in fix_blocks later... */
+#if 0
 		/* now we could have live values in the succ worklists that are not
 		 * live anymore in the worklist we picked. We need reloads for them. */
 		foreach_block_succ(block, edge) {
 			ir_node      *succ_block    = get_edge_src_irn(edge);
-			worklist_t   *succ_worklist = get_irn_link(succ_block);
+			block_info_t *block_info    = get_block_info(succ_block);
+			worklist_t   *succ_worklist = block_info->start_worklist;
 
-			if(succ_block == best_succ_block)
+			if (succ_block == best_succ_block)
 				continue;
 
 			process_non_active_worklist(succ_worklist, worklist);
 		}
-
-#ifdef DEBUG_libfirm
-		DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
-		print_worklist(worklist, LEVEL_1);
-		DB((dbg, LEVEL_1, "\n"));
 #endif
 	}
+
+	block_info = get_block_info(block);
+
+#ifdef DEBUG_libfirm
+	DB((dbg, LEVEL_1, "worklist at end of %+F:", block));
+	print_worklist(worklist, LEVEL_1);
+	DB((dbg, LEVEL_1, "\n"));
+
+	if (should_have_reached_fixpoint) {
+		assert(worklists_equal(block_info->end_worklist, worklist));
+	}
+#endif
+	block_info->end_worklist = duplicate_worklist(worklist);
 
 	do_spilling(block, worklist);
 	deactivate_worklist(worklist);
 
-	set_irn_link(block, worklist);
+#ifdef DEBUG_libfirm
+	if (should_have_reached_fixpoint) {
+		assert(worklists_equal(block_info->start_worklist, worklist));
+	}
+#endif
+	block_info->start_worklist = worklist;
 
 	/* we shouldn't have any live values left at the start block */
 	n_preds = get_Block_n_cfgpreds(block);
 	assert(n_preds != 0 || worklist->n_live_values == 0);
+}
+
+typedef struct block_or_loop_t block_or_loop_t;
+struct block_or_loop_t {
+	union {
+		ir_node *block;
+		ir_loop *loop;
+	} v;
+	bool is_loop;
+};
+
+static block_or_loop_t *loop_blocks;
+static ir_loop         *current_loop;
+
+static void find_blocks(ir_node *block);
+
+static void find_in_loop(ir_loop *loop, ir_node *entry)
+{
+	loop_info_t *loop_info = get_loop_info(loop);
+
+	/* simply mark 1 block in the loop to indicate that the loop was already
+	 * processed */
+	ir_node *some_block = loop_info->entry_edges->block;
+	if (Block_block_visited(some_block))
+		return;
+
+	block_or_loop_t block_or_loop;
+	block_or_loop.v.loop  = loop;
+	block_or_loop.is_loop = true;
+	ARR_APP1(block_or_loop_t, loop_blocks, block_or_loop);
+
+#ifndef NDEBUG
+	{
+		/* we should be 1 of the entry blocks */
+		loop_edge_t *edge  = loop_info->entry_edges;
+		bool         found = false;
+		for ( ; edge != NULL; edge = edge->next) {
+			if (edge->block == entry)
+				found = true;
+		}
+		assert(found);
+	}
+#endif
+	/* check all loop successors */
+	loop_edge_t *edge = loop_info->exit_edges;
+	for ( ; edge != NULL; edge = edge->next) {
+		ir_node     *succ      = edge->block;
+		ir_loop     *succ_loop = get_irn_loop(succ);
+
+		if (succ_loop == current_loop) {
+			find_blocks(succ);
+		} else {
+			assert(get_loop_depth(succ_loop) < get_loop_depth(current_loop));
+		}
+	}
+}
+
+static void find_blocks(ir_node *block)
+{
+	const ir_edge_t *edge;
+
+	if (Block_block_visited(block))
+		return;
+
+	block_or_loop_t block_or_loop;
+	block_or_loop.v.block = block;
+	block_or_loop.is_loop = false;
+
+	ARR_APP1(block_or_loop_t, loop_blocks, block_or_loop);
+	mark_Block_block_visited(block);
+
+	foreach_block_succ(block, edge) {
+		ir_node *succ = get_edge_src_irn(edge);
+
+		/* is it part of the current loop? */
+		ir_loop *loop = get_irn_loop(succ);
+		if (loop != current_loop) {
+			/* a sub-loop? */
+			if (get_loop_depth(loop) > get_loop_depth(current_loop)) {
+				find_in_loop(loop, succ);
+			} else {
+				/* parent loop: we're not interested in the block */
+			}
+		} else {
+			find_blocks(succ);
+		}
+	}
+}
+
+static void process_block_or_loop(const block_or_loop_t *block_or_loop)
+{
+	if (block_or_loop->is_loop) {
+		loop_info_t *loop_info = get_loop_info(block_or_loop->v.loop);
+
+		if (loop_info->max_register_pressure > max_register_pressure)
+			max_register_pressure = loop_info->max_register_pressure;
+
+		/* TODO: push unused livethroughs... */
+		return;
+	}
+	process_block(block_or_loop->v.block, NULL);
+}
+
+static void process_loop(ir_loop *loop)
+{
+	/* first handle all sub-loops */
+	int n_elements = get_loop_n_elements(loop);
+	int i;
+
+	for (i = 0; i < n_elements; ++i) {
+		loop_element element = get_loop_element(loop, i);
+		if (*element.kind != k_ir_loop)
+			continue;
+
+		process_loop(element.son);
+	}
+
+	/* create a postorder of the blocks */
+	loop_info_t *loop_info = get_loop_info(loop);
+	loop_edge_t *edge      = loop_info->entry_edges;
+	ir_node     *some_block;
+	if (edge != NULL) {
+		some_block = edge->block;
+	} else {
+		assert(loop == get_irg_loop(current_ir_graph));
+		some_block = get_irg_start_block(current_ir_graph);
+	}
+
+	loop_blocks  = NEW_ARR_F(block_or_loop_t,0);
+	current_loop = loop;
+
+	ir_reserve_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
+	inc_irg_block_visited(current_ir_graph);
+	find_blocks(some_block);
+	/* for endless loops the end-block might be unreachable */
+	if (loop == get_irg_loop(current_ir_graph)) {
+		find_blocks(get_irg_end_block(current_ir_graph));
+	}
+	ir_free_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
+
+	fprintf(stderr, "Block List for loop %p\n", loop);
+	int len = ARR_LEN(loop_blocks);
+	for (i = 0; i < len; ++i) {
+		block_or_loop_t *block_or_loop = &loop_blocks[i];
+		if (block_or_loop->is_loop) {
+			ir_fprintf(stderr, " L-%p", block_or_loop->v.loop);
+		} else {
+			ir_fprintf(stderr, " B-%+F", block_or_loop->v.block);
+		}
+	}
+	fprintf(stderr, "\n");
+
+	max_register_pressure = 0;
+
+	/* run1: tentative phase */
+	tentative_mode = true;
+	for (i = len-1; i >= 0; --i) {
+		process_block_or_loop(&loop_blocks[i]);
+	}
+
+	/* run2: tentative phase - should reach fixpoint */
+	tentative_mode = true;
+	for (i = len-1; i >= 0; --i) {
+		process_block_or_loop(&loop_blocks[i]);
+	}
+
+#ifndef NDEBUG
+	/* run3: tentative phase - check fixpoint */
+	tentative_mode               = true;
+	should_have_reached_fixpoint = true;
+	for (i = len-1; i >= 0; --i) {
+		process_block_or_loop(&loop_blocks[i]);
+	}
+	should_have_reached_fixpoint = false;
+#endif
+
+	/* run4: add spills/reloads */
+	tentative_mode = false;
+	for (i = len-1; i >= 0; --i) {
+		process_block_or_loop(&loop_blocks[i]);
+	}
+
+	loop_info->max_register_pressure = max_register_pressure;
+	ir_fprintf(stderr, "Regpressure in loop %p: %u\n", loop,
+	           (unsigned) max_register_pressure);
+
+	DEL_ARR_F(loop_blocks);
+}
+
+static void fix_block_borders(ir_node *block, void *data)
+{
+	block_info_t *block_info     = get_block_info(block);
+	worklist_t   *start_worklist = block_info->start_worklist;
+	int           n_cfgpreds     = get_Block_n_cfgpreds(block);
+	int           i;
+
+	(void) data;
+	assert(start_worklist != NULL);
+
+	for (i = 0; i < n_cfgpreds; ++i) {
+		ir_node      *pred_block      = get_Block_cfgpred_block(block, i);
+		block_info_t *pred_block_info = get_block_info(pred_block);
+		worklist_t   *end_worklist    = pred_block_info->end_worklist;
+
+		assert(end_worklist != NULL);
+
+		/* reload missing values */
+		struct list_head *entry;
+
+		activate_worklist(end_worklist);
+
+		list_for_each(entry, &start_worklist->live_values) {
+			worklist_entry_t *wl_entry
+				= list_entry(entry, worklist_entry_t, head);
+			ir_node          *value = wl_entry->value;
+
+			if (is_Phi(value) && get_nodes_block(value) == block) {
+				value = get_irn_n(value, i);
+
+				/* we might have unknowns as argument for the phi */
+				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, value))
+					continue;
+			}
+
+			if (worklist_contains(value))
+				continue;
+
+			be_add_reload_on_edge(senv, value, block, i, cls, 1);
+		}
+
+		deactivate_worklist(end_worklist);
+	}
 }
 
 static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
@@ -464,14 +929,20 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 	exec_freq = be_get_birg_exec_freq(birg);
 
 	be_clear_links(irg);
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK
+			| IR_RESOURCE_LOOP_LINK);
 	inc_irg_visited(irg);
 
 	obstack_init(&obst);
 	senv = be_new_spill_env(birg);
 
 	assure_cf_loop(irg);
+	clear_loop_info(get_irg_loop(irg));
+	irg_block_walk_graph(irg, construct_loop_edges, NULL, NULL);
 
+	process_loop(get_irg_loop(current_ir_graph));
+
+#if 0
 	/* do a post-order walk over the CFG to make sure we have a maximum number
 	 * of preds processed before entering a block */
 	tentative_mode = 1;
@@ -482,8 +953,12 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 
 	tentative_mode = 0;
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
+#endif
 
-	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
+	irg_block_walk_graph(irg, fix_block_borders, NULL, NULL);
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK
+			| IR_RESOURCE_LOOP_LINK);
 
 	be_insert_spills_reloads(senv);
 

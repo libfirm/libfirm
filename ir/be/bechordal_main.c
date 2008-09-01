@@ -394,8 +394,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(birg);
 			be_verify_register_pressure(birg, pse->cls, irg);
-		}
-		else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+		} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 			assert(be_verify_schedule(birg) && "Schedule verification failed");
 			assert(be_verify_register_pressure(birg, pse->cls, irg)
 				&& "Register pressure verification failed");
