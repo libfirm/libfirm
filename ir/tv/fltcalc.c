@@ -1140,6 +1140,7 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 
 	value_t           buildval;
 	ieee_descriptor_t desc;
+	unsigned          mantissa_size;
 
 #ifdef HAVE_LONG_DOUBLE
 	desc.exponent_size = 15;
@@ -1152,6 +1153,7 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	desc.explicit_one  = 0;
 	desc.clss          = NORMAL;
 #endif
+	mantissa_size = desc.mantissa_size + desc.explicit_one;
 
 	temp = alloca(calc_buffer_size);
 	value = fc_cast(val, &desc, temp);
@@ -1169,10 +1171,10 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	mantissa1 = 0;
 
 	for (byte_offset = 0; byte_offset < 4; byte_offset++)
-		mantissa1 |= sc_sub_bits(_mant(value), desc.mantissa_size, byte_offset) << (byte_offset<<3);
+		mantissa1 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << (byte_offset << 3);
 
 	for (; (byte_offset<<3) < desc.mantissa_size; byte_offset++)
-		mantissa0 |= sc_sub_bits(_mant(value), desc.mantissa_size, byte_offset) << ((byte_offset-4)<<3);
+		mantissa0 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
 
 #ifdef HAVE_LONG_DOUBLE
 	buildval.val.high = sign << 15;
