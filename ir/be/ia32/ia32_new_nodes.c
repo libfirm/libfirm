@@ -288,9 +288,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			if (is_ia32_SwitchJmp(n)) {
 				fprintf(F, "pn_code = %ld\n", get_ia32_condcode(n));
 			} else if (is_ia32_CMov(n) || is_ia32_Set(n) || is_ia32_Jcc(n)) {
+				ia32_attr_t *attr = get_ia32_attr(n);
 				long pnc = get_ia32_condcode(n);
 				fprintf(F, "pn_code = 0x%lX (%s)\n", pnc, get_pnc_string(pnc & pn_Cmp_True));
-				ia32_attr_t *attr = get_ia32_attr(n);
 				fprintf(F, "ins_permuted = %u \n", attr->data.ins_permuted);
 				fprintf(F, "cmp_unsigned = %u \n", attr->data.cmp_unsigned);
 			}
