@@ -331,9 +331,7 @@ static void peephole_ia32_Return(ir_node *node) {
 		}
 	}
 
-	/* ensure, that the 3 byte return is generated
-	 * actually the emitter tests again if the block beginning has a label and
-	 * isn't just a fallthrough */
+	/* ensure, that the 3 byte return is generated */
 	be_Return_set_emit_pop(node, 1);
 }
 

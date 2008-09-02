@@ -1837,13 +1837,8 @@ static void emit_be_Return(const ir_node *node)
 	be_emit_cstring("\tret");
 
 	pop = be_Return_get_pop(node);
-	if (pop > 0) {
+	if (pop > 0 || be_Return_get_emit_pop(node)) {
 		be_emit_irprintf(" $%d", pop);
-	} else if (be_Return_get_emit_pop(node)) {
-		ir_node *block = get_nodes_block(node);
-		if (block_needs_label(block)) {
-			be_emit_cstring(" $0");
-		}
 	}
 	be_emit_finish_line_gas(node);
 }
