@@ -75,10 +75,12 @@ static float_classify_t classify_float_value(tarval *tv) {
 	else if (tarval_is_finite(tv) && tarval_ieee754_zero_mantissa(tv)) {
 		int exp = tarval_ieee754_get_exponent(tv);
 
-		if (exp == 1)
-			return STAT_FC_2;
-		else if (exp == -1)
-			return STAT_FC_0_5;
+		if (! tarval_is_negative(tv)) {
+			if (exp == 1)
+				return STAT_FC_2;
+			else if (exp == -1)
+				return STAT_FC_0_5;
+		}
 		return STAT_FC_POWER_OF_TWO;
 	}
 	return STAT_FC_OTHER;
