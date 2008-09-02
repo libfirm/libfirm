@@ -627,10 +627,12 @@ static void decide_start_workset(const ir_node *block)
 	/* so far we only put nodes into the starters list that are used inside
 	 * the loop. If register pressure in the loop is low then we can take some
 	 * values and let them live through the loop */
+	DB((dbg, DBG_START, "Loop pressure %d, taking %d delayed vals\n",
+	    pressure, free_slots));
 	if (free_slots > 0) {
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
-		for (i = 0; i < ARR_LEN(delayed) && i < free_slots; ++i) {
+		for (i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
 			int    p, arity;
 			loc_t *loc = & delayed[i];
 
@@ -655,6 +657,7 @@ static void decide_start_workset(const ir_node *block)
 			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
 			ARR_APP1(loc_t, starters, *loc);
 			loc->node = NULL;
+			--free_slots;
 		skip_delayed:
 			;
 		}
