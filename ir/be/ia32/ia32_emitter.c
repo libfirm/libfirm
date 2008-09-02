@@ -634,40 +634,40 @@ static const struct cmp2conditon_t cmp2condition_u[] = {
  */
 static ir_node *find_original_value(ir_node *node)
 {
-	inc_irg_visited(current_ir_graph);
-	while(1) {
-		mark_irn_visited(node);
-		if (be_is_Copy(node)) {
-			node = be_get_Copy_op(node);
-		} else if (be_is_CopyKeep(node)) {
-			node = be_get_CopyKeep_op(node);
-		} else if (is_Proj(node)) {
-			ir_node *pred = get_Proj_pred(node);
-			if (be_is_Perm(pred)) {
-				node = get_irn_n(pred, get_Proj_proj(node));
-			} else if (be_is_MemPerm(pred)) {
-				node = get_irn_n(pred, get_Proj_proj(node) + 1);
-			} else if (is_ia32_Load(pred)) {
-				node = get_irn_n(pred, n_ia32_Load_mem);
-			} else {
-				return node;
-			}
-		} else if (is_ia32_Store(node)) {
-			node = get_irn_n(node, n_ia32_Store_val);
-		} else if (is_Phi(node)) {
-			int i, arity;
-			arity = get_irn_arity(node);
-			for(i = 0; i < arity; ++i) {
-				ir_node *in = get_irn_n(node, i);
-				if (irn_visited(in))
-					continue;
-				node = in;
-				break;
-			}
-			assert(i < arity);
+	if (irn_visited(node))
+		return NULL;
+
+	mark_irn_visited(node);
+	if (be_is_Copy(node)) {
+		return find_original_value(be_get_Copy_op(node));
+	} else if (be_is_CopyKeep(node)) {
+		return find_original_value(be_get_CopyKeep_op(node));
+	} else if (is_Proj(node)) {
+		ir_node *pred = get_Proj_pred(node);
+		if (be_is_Perm(pred)) {
+			return find_original_value(get_irn_n(pred, get_Proj_proj(node)));
+		} else if (be_is_MemPerm(pred)) {
+			return find_original_value(get_irn_n(pred, get_Proj_proj(node) + 1));
+		} else if (is_ia32_Load(pred)) {
+			return find_original_value(get_irn_n(pred, n_ia32_Load_mem));
 		} else {
 			return node;
 		}
+	} else if (is_ia32_Store(node)) {
+		return find_original_value(get_irn_n(node, n_ia32_Store_val));
+	} else if (is_Phi(node)) {
+		int i, arity;
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *in  = get_irn_n(node, i);
+			ir_node *res = find_original_value(in);
+
+			if (res != NULL)
+				return res;
+		}
+		return NULL;
+	} else {
+		return node;
 	}
 }
 
@@ -682,7 +682,9 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 		ir_node *cmp = get_irn_n(flags, n_ia32_Sahf_val);
 		if (!(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
 				|| is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp))) {
+			inc_irg_visited(current_ir_graph);
 			cmp = find_original_value(cmp);
+			assert(cmp != NULL);
 			assert(is_ia32_FucomFnstsw(cmp) || is_ia32_FucompFnstsw(cmp)
 			       || is_ia32_FucomppFnstsw(cmp) || is_ia32_FtstFnstsw(cmp));
 		}
