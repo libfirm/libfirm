@@ -25,7 +25,7 @@
  * @version     $Id$
  *
  * TODO:
- *   - handle phis correctly, decide wether we should spill them ~ok
+ *   - handle phis correctly, decide whether we should spill them ~ok
  *   - merge multiple start worksets of blocks ~ok
  *   - how to and when to do the tentative phase...
  */
@@ -180,6 +180,7 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
 		ir_node          *value     = wl_entry->value;
+		worklist_entry_t *new_entry;
 
 		if (is_Phi(value) && get_nodes_block(value) == succ_block) {
 			value = get_Phi_pred(value, succ_pos);
@@ -189,8 +190,7 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 				continue;
 		}
 
-		worklist_entry_t *new_entry
-			= obstack_alloc(&obst, sizeof(new_entry[0]));
+		new_entry = obstack_alloc(&obst, sizeof(new_entry[0]));
 		new_entry->value = value;
 		if (reload_point != NULL) {
 			new_entry->reload_point = reload_point;
@@ -300,6 +300,8 @@ static void construct_loop_edges(ir_node *block, void *data)
 		ir_node     *cfgpred_block = get_Block_cfgpred_block(block, i);
 		ir_loop     *cfgpred_loop  = get_irn_loop(cfgpred_block);
 		loop_edge_t *edge;
+		bool        is_exit_edge;
+		ir_loop     *l, *goal;
 
 		if (cfgpred_loop == loop)
 			continue;
@@ -309,8 +311,6 @@ static void construct_loop_edges(ir_node *block, void *data)
 		assert(get_loop_depth(cfgpred_loop) != get_loop_depth(loop));
 
 		/* edge out of loop */
-		bool is_exit_edge;
-		ir_loop *l, *goal;
 		if (get_loop_depth(cfgpred_loop) > get_loop_depth(loop)) {
 			is_exit_edge = true;
 			l            = cfgpred_loop;
@@ -446,10 +446,11 @@ static void make_room(worklist_t *worklist, size_t room_needed)
  */
 static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 {
-	assert(arch_irn_consider_in_reg_alloc(arch_env, cls, value));
-
 	/* already in the worklist? move around, otherwise add at back */
 	worklist_entry_t *entry = get_irn_link(value);
+
+	assert(arch_irn_consider_in_reg_alloc(arch_env, cls, value));
+
 	if (worklist_contains(value)) {
 		assert(entry != NULL);
 
@@ -698,7 +699,9 @@ static void find_blocks(ir_node *block);
 
 static void find_in_loop(ir_loop *loop, ir_node *entry)
 {
-	loop_info_t *loop_info = get_loop_info(loop);
+	loop_info_t     *loop_info = get_loop_info(loop);
+	block_or_loop_t block_or_loop;
+	loop_edge_t     *edge;
 
 	/* simply mark 1 block in the loop to indicate that the loop was already
 	 * processed */
@@ -706,7 +709,6 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 	if (Block_block_visited(some_block))
 		return;
 
-	block_or_loop_t block_or_loop;
 	block_or_loop.v.loop  = loop;
 	block_or_loop.is_loop = true;
 	ARR_APP1(block_or_loop_t, loop_blocks, block_or_loop);
@@ -724,10 +726,9 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 	}
 #endif
 	/* check all loop successors */
-	loop_edge_t *edge = loop_info->exit_edges;
-	for ( ; edge != NULL; edge = edge->next) {
-		ir_node     *succ      = edge->block;
-		ir_loop     *succ_loop = get_irn_loop(succ);
+	for (edge = loop_info->exit_edges; edge != NULL; edge = edge->next) {
+		ir_node *succ      = edge->block;
+		ir_loop *succ_loop = get_irn_loop(succ);
 
 		if (succ_loop == current_loop) {
 			find_blocks(succ);
@@ -740,11 +741,11 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 static void find_blocks(ir_node *block)
 {
 	const ir_edge_t *edge;
+	block_or_loop_t block_or_loop;
 
 	if (Block_block_visited(block))
 		return;
 
-	block_or_loop_t block_or_loop;
 	block_or_loop.v.block = block;
 	block_or_loop.is_loop = false;
 
@@ -785,10 +786,13 @@ static void process_block_or_loop(const block_or_loop_t *block_or_loop)
 
 static void process_loop(ir_loop *loop)
 {
-	/* first handle all sub-loops */
-	int n_elements = get_loop_n_elements(loop);
-	int i;
+	int         n_elements = get_loop_n_elements(loop);
+	int         i, len;
+	loop_info_t *loop_info;
+	loop_edge_t *edge;
+	ir_node     *some_block;
 
+	/* first handle all sub-loops */
 	for (i = 0; i < n_elements; ++i) {
 		loop_element element = get_loop_element(loop, i);
 		if (*element.kind != k_ir_loop)
@@ -798,9 +802,8 @@ static void process_loop(ir_loop *loop)
 	}
 
 	/* create a postorder of the blocks */
-	loop_info_t *loop_info = get_loop_info(loop);
-	loop_edge_t *edge      = loop_info->entry_edges;
-	ir_node     *some_block;
+	loop_info = get_loop_info(loop);
+	edge      = loop_info->entry_edges;
 	if (edge != NULL) {
 		some_block = edge->block;
 	} else {
@@ -821,7 +824,7 @@ static void process_loop(ir_loop *loop)
 	ir_free_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
 
 	fprintf(stderr, "Block List for loop %p\n", loop);
-	int len = ARR_LEN(loop_blocks);
+	len = ARR_LEN(loop_blocks);
 	for (i = 0; i < len; ++i) {
 		block_or_loop_t *block_or_loop = &loop_blocks[i];
 		if (block_or_loop->is_loop) {
@@ -883,12 +886,11 @@ static void fix_block_borders(ir_node *block, void *data)
 		ir_node      *pred_block      = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_block_info = get_block_info(pred_block);
 		worklist_t   *end_worklist    = pred_block_info->end_worklist;
+		struct list_head *entry;
 
 		assert(end_worklist != NULL);
 
 		/* reload missing values */
-		struct list_head *entry;
-
 		activate_worklist(end_worklist);
 
 		list_for_each(entry, &start_worklist->live_values) {
