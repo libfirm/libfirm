@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <signal.h>
-#include <stdlib.h>
+#include <unistd.h>
 
 void f(int x)
 {
@@ -10,7 +10,7 @@ void f(int x)
 void handler(int sig)
 {
 	(void)sig;
-	exit(0);
+	_exit(0);
 }
 
 int main(void)
