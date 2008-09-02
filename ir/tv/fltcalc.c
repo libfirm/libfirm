@@ -1408,6 +1408,7 @@ int fc_is_subnormal(const fp_value *a) {
 
 char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 	char *mul_1;
+	LLDBL flt_val;
 
 	mul_1 = alloca(calc_buffer_size);
 
@@ -1425,12 +1426,12 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 			snprintf(buf, buflen, "0.0");
 			break;
 		default:
-			/* XXX to be implemented */
+			flt_val = fc_val_to_ieee754(val);
 #ifdef HAVE_LONG_DOUBLE
 			/* XXX 30 is arbitrary */
-			snprintf(buf, buflen, "%.30LE", fc_val_to_ieee754(val));
+			snprintf(buf, buflen, "%.30LE", flt_val);
 #else
-			snprintf(buf, buflen, "%.18E", fc_val_to_ieee754(val));
+			snprintf(buf, buflen, "%.18E", flt_val);
 #endif
 		}
 		break;
@@ -1448,10 +1449,11 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 			snprintf(buf, buflen, "0.0");
 			break;
 		default:
+			flt_val = fc_val_to_ieee754(val);
 #ifdef HAVE_LONG_DOUBLE
-			snprintf(buf, buflen, "%LA", fc_val_to_ieee754(val));
+			snprintf(buf, buflen, "%LA", flt_val);
 #else
-			snprintf(buf, buflen, "%A", fc_val_to_ieee754(val));
+			snprintf(buf, buflen, "%A", flt_val);
 #endif
 		}
 		break;
