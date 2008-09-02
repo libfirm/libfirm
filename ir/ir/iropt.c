@@ -2718,7 +2718,8 @@ static ir_node *transform_node_Mul(ir_node *n) {
 	if (get_mode_arithmetic(mode) == irma_ieee754) {
 		if (is_Const(a)) {
 			tarval *tv = get_Const_tarval(a);
-			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)) {
+			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)
+					&& !tarval_is_negative(tv)) {
 				/* 2.0 * b = b + b */
 				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), b, b, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_A_A);
@@ -2727,7 +2728,8 @@ static ir_node *transform_node_Mul(ir_node *n) {
 		}
 		else if (is_Const(b)) {
 			tarval *tv = get_Const_tarval(b);
-			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)) {
+			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)
+					&& !tarval_is_negative(tv)) {
 				/* a * 2.0 = a + a */
 				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, a, mode);
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_A_A);
