@@ -3737,7 +3737,9 @@ static ir_node *gen_lowered_64bit_shifts(ir_node *node, ir_node *high,
 
 	/* the shift amount can be any mode that is bigger than 5 bits, since all
 	 * other bits are ignored anyway */
-	while (is_Conv(count) && get_irn_n_edges(count) == 1) {
+	while (is_Conv(count)              &&
+	       get_irn_n_edges(count) == 1 &&
+	       mode_is_int(get_irn_mode(count))) {
 		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
 		count = get_Conv_op(count);
 	}
