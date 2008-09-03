@@ -107,7 +107,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (is_Conv(node) &&
-			is_downconv(get_irn_mode(node), dest_mode) &&
+			is_downconv(mode, dest_mode) &&
 			get_irn_mode(get_Conv_op(node)) == dest_mode) {
 		return -1;
 	}
@@ -117,7 +117,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return 1;
 	}
 
-	if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
+	if (is_Conv(node) && is_downconv(mode, dest_mode)) {
 		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
 
@@ -140,7 +140,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 #endif
 
-	if (!is_optimizable_node(node)) {
+	if (!mode_is_int(mode) || !is_optimizable_node(node)) {
 		return 1;
 	}
 
@@ -165,10 +165,11 @@ static ir_node *place_conv(ir_node *node, ir_mode *dest_mode)
 static
 ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 {
-	size_t arity;
-	size_t i;
+	ir_mode *mode = get_irn_mode(node);
+	size_t   arity;
+	size_t   i;
 
-	if (get_irn_mode(node) == dest_mode)
+	if (mode == dest_mode)
 		return node;
 
 	if (is_Const(node)) {
@@ -182,7 +183,7 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (is_Conv(node) &&
-			is_downconv(get_irn_mode(node), dest_mode) &&
+			is_downconv(mode, dest_mode) &&
 			get_irn_mode(get_Conv_op(node)) == dest_mode) {
 		return get_Conv_op(node);
 	}
@@ -191,11 +192,11 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return place_conv(node, dest_mode);
 	}
 
-	if (is_Conv(node) && is_downconv(get_irn_mode(node), dest_mode)) {
+	if (is_Conv(node) && is_downconv(mode, dest_mode)) {
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
-	if (!is_optimizable_node(node)) {
+	if (!mode_is_int(mode) || !is_optimizable_node(node)) {
 		return place_conv(node, dest_mode);
 	}
 
