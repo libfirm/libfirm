@@ -2190,6 +2190,8 @@ static ir_node *try_create_dest_am(ir_node *node) {
 		if(is_Conv(val)) {
 			ir_node *conv_op   = get_Conv_op(val);
 			ir_mode *pred_mode = get_irn_mode(conv_op);
+			if (!ia32_mode_needs_gp_reg(pred_mode))
+				break;
 			if(pred_mode == mode_b || bits <= get_mode_size_bits(pred_mode)) {
 				val = conv_op;
 				continue;
@@ -2223,7 +2225,7 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	case iro_Sub:
 		op1      = get_Sub_left(val);
 		op2      = get_Sub_right(val);
-		if (is_Const(op2) && !mode_is_float(mode)) {
+		if (is_Const(op2)) {
 			ir_fprintf(stderr, "Optimisation warning: not-normalized sub ,C found\n");
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
