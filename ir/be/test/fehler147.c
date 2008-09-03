@@ -6,12 +6,6 @@ void foo(unsigned char *colors) {
 	int v;
 	float glow = g;
 
-	if (glow < 0) {
-		glow = 0;
-	} else if(glow > 1) {
-		glow = 1;
-	}
-
 	v = myftol(255*glow);
 	colors[0] = colors[1] = colors[2] = v;
 }
