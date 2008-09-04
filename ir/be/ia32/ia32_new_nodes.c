@@ -310,6 +310,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			/* need stackent */
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
 
+			/* need stackent */
+			fprintf(F, "is reload = %d\n", is_ia32_is_reload(n));
+
 			/* dump latency */
 			fprintf(F, "latency = %d\n", get_ia32_latency(n));
 
@@ -658,6 +661,16 @@ void clear_ia32_need_stackent(ir_node *node) {
 int is_ia32_need_stackent(const ir_node *node) {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.need_stackent;
+}
+
+void set_ia32_is_reload(ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.is_reload = 1;
+}
+
+int is_ia32_is_reload(const ir_node *node) {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return attr->data.is_reload;
 }
 
 /**

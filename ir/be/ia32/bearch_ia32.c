@@ -839,6 +839,9 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i) {
 static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
                                         unsigned int i)
 {
+	ir_mode *load_mode;
+	ir_mode *dest_op_mode;
+
 	ia32_code_gen_t *cg = ia32_current_cg;
 
 	assert(ia32_possible_memory_operand(irn, i) && "Cannot perform memory operand change");
@@ -848,13 +851,19 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 	}
 
 	set_ia32_op_type(irn, ia32_AddrModeS);
-	set_ia32_ls_mode(irn, get_irn_mode(get_irn_n(irn, i)));
+
+	load_mode    = get_irn_mode(get_irn_n(irn, i));
+	dest_op_mode = get_ia32_ls_mode(irn);
+	if (get_mode_size_bits(load_mode) <= get_mode_size_bits(dest_op_mode)) {
+		set_ia32_ls_mode(irn, load_mode);
+	}
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
 
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(cg, irn, n_ia32_binary_right));
 	set_irn_n(irn, n_ia32_mem, spill);
+	set_ia32_is_reload(irn);
 
 	/* immediates are only allowed on the right side */
 	if (i == n_ia32_binary_left && is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_left))) {
@@ -1425,7 +1434,11 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 		if (is_ia32_need_stackent(node) || is_ia32_Load(node)) {
 			const ir_mode     *mode  = get_ia32_ls_mode(node);
 			const ia32_attr_t *attr  = get_ia32_attr_const(node);
-			int                align = get_mode_size_bytes(mode);
+			int                align;
+
+			if (is_ia32_is_reload(node)) {
+				mode = get_spill_mode_mode(mode);
+			}
 
 			if(attr->data.need_64bit_stackent) {
 				mode = mode_Ls;
@@ -1433,6 +1446,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			if(attr->data.need_32bit_stackent) {
 				mode = mode_Is;
 			}
+			align = get_mode_size_bytes(mode);
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else if (is_ia32_vfild(node) || is_ia32_xLoad(node)
 		           || is_ia32_vfld(node)) {

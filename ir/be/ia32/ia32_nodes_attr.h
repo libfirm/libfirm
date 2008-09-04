@@ -117,6 +117,7 @@ struct ia32_attr_t {
 		unsigned ins_permuted : 1;      /**< inputs of node have been permuted
 		                                     (for commutative nodes) */
 		unsigned cmp_unsigned : 1;      /**< compare should be unsigned */
+		unsigned is_reload : 1;         /**< node performs a reload */
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */
