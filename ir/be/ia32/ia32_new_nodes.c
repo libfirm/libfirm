@@ -298,22 +298,11 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			/* dump n_res */
 			fprintf(F, "n_res = %d\n", get_ia32_n_res(n));
-
-			/* dump use_frame */
 			fprintf(F, "use_frame = %d\n", is_ia32_use_frame(n));
-
-			/* commutative */
 			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
-
-			/* need stackent */
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
-
-			/* need stackent */
 			fprintf(F, "is reload = %d\n", is_ia32_is_reload(n));
-
-			/* dump latency */
 			fprintf(F, "latency = %d\n", get_ia32_latency(n));
 
 			/* dump flags */
