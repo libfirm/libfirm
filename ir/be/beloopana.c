@@ -138,7 +138,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 		}
 
 		pressure = MAX(pressure, son_pressure);
-   	}
+	}
 	DBG((dbg, LEVEL_1, "Done with loop %d, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
 
 	/* update info in set */
