@@ -1,14 +1,16 @@
-unsigned short tdenm, tquot;
+unsigned short tdenm = 0xff;
+unsigned int ui = 0xffffffff;
 
-void test(unsigned short num[]) {
+int test(void) {
 
-	unsigned int tnum = (((unsigned int) num[0]) << 16) + num[1];
+	unsigned int tnum = ui;
 
 	/* Do not execute the divide instruction if it will overflow. */
 	if ((tdenm * 0xffffL) < tnum)
-		tquot = 0xffff;
+		return 0;
+	return 1;
 }
 
 int main(int argc, char *argv[]) {
-	return 0;
+	return test();
 }
