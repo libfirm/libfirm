@@ -383,4 +383,4 @@ void be_init_peephole(void)
 	FIRM_DBG_REGISTER(dbg, "firm.be.peephole");
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole);
