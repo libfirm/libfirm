@@ -838,7 +838,7 @@ static void walker(ir_node *proj, void *env)
 }
 
 
-void opt_ldst2(ir_graph *irg)
+void opt_sync(ir_graph *irg)
 {
 	assure_irg_address_taken_computed(irg);
 	assure_irp_globals_address_taken_computed();

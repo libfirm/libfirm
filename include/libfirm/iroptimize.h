@@ -196,7 +196,7 @@ struct ir_settings_if_conv_t {
  */
 void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
 
-void opt_ldst2(ir_graph *irg);
+void opt_sync(ir_graph *irg);
 
 /**
  * Load/Store optimization.
