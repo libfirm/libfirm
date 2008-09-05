@@ -5744,12 +5744,17 @@ static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
 static int node_cmp_attr_Sel(ir_node *a, ir_node *b) {
 	const ir_entity *a_ent = get_Sel_entity(a);
 	const ir_entity *b_ent = get_Sel_entity(b);
+#if 0
 	return
 		(a_ent->kind    != b_ent->kind)    ||
 		(a_ent->name    != b_ent->name)    ||
 		(a_ent->owner   != b_ent->owner)   ||
 		(a_ent->ld_name != b_ent->ld_name) ||
 		(a_ent->type    != b_ent->type);
+#endif
+	/* Matze: inlining of functions can produce 2 entities with same type,
+	 * name, etc. */
+	return a_ent != b_ent;
 }  /* node_cmp_attr_Sel */
 
 /** Compares the attributes of two Phi nodes. */
