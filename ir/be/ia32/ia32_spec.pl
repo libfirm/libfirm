@@ -151,14 +151,14 @@ $arch = "ia32";
 		{ mode => "mode_E" }
 	],
 	vfp => [
-		{ name => "vf0", type => 1 | 16 },
-		{ name => "vf1", type => 1 | 16 },
-		{ name => "vf2", type => 1 | 16 },
-		{ name => "vf3", type => 1 | 16 },
-		{ name => "vf4", type => 1 | 16 },
-		{ name => "vf5", type => 1 | 16 },
-		{ name => "vf6", type => 1 | 16 },
-		{ name => "vf7", type => 1 | 16 },
+		{ name => "vf0", type => 1 },
+		{ name => "vf1", type => 1 },
+		{ name => "vf2", type => 1 },
+		{ name => "vf3", type => 1 },
+		{ name => "vf4", type => 1 },
+		{ name => "vf5", type => 1 },
+		{ name => "vf6", type => 1 },
+		{ name => "vf7", type => 1 },
 		{ name => "vfp_NOREG", type => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
 		{ name => "vfp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ mode => "mode_E" }
