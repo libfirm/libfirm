@@ -973,8 +973,6 @@ static void ia32_prepare_graph(void *self) {
 			/* transform nodes into assembler instructions by PBQP magic */
 			ia32_transform_graph_by_pbqp(cg);
 
-			if (cg->dump)
-				be_dump(cg->irg, "-after_pbqp_transform", dump_ir_block_graph_sched);
 			set_opt_cse(1);
 			break;
 #endif
