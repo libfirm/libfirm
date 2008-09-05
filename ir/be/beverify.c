@@ -692,19 +692,15 @@ static int my_values_interfere(const ir_node *a, const ir_node *b) {
 
 /*--------------------------------------------------------------------------- */
 
+static const arch_env_t            *arch_env;
+static ir_graph                    *irg;
+static be_lv_t                     *lv;
+static int                          problem_found;
+static const arch_register_class_t *regclass;
+static ir_node                    **registers;
 
-
-typedef struct _be_verify_register_allocation_env_t {
-	const arch_env_t *arch_env;
-	ir_graph *irg;
-	be_lv_t *lv;
-	int problem_found;
-} be_verify_register_allocation_env_t;
-
-static void check_register_constraints(ir_node *node,
-                                       be_verify_register_allocation_env_t *env)
+static void check_register_constraints(ir_node *node)
 {
-	const arch_env_t      *arch_env = env->arch_env;
 	const arch_register_t *reg;
 	int                   i, arity;
 
@@ -713,13 +709,12 @@ static void check_register_constraints(ir_node *node,
 		reg = arch_get_irn_register(arch_env, node);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
-					node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
-		}
-		else if (! arch_register_type_is(reg, joker) && !arch_reg_is_allocatable(arch_env, node, -1, reg)) {
+					node, get_nodes_block(node), get_irg_dump_name(irg));
+			problem_found = 1;
+		} else if (! arch_register_type_is(reg, joker) && !arch_reg_is_allocatable(arch_env, node, -1, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
-					reg->name, node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
+					reg->name, node, get_nodes_block(node), get_irg_dump_name(irg));
+			problem_found = 1;
 		}
 	}
 
@@ -733,8 +728,8 @@ static void check_register_constraints(ir_node *node,
 
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
-				node, get_nodes_block(node), get_irg_dump_name(env->irg), i);
-			env->problem_found = 1;
+				node, get_nodes_block(node), get_irg_dump_name(irg), i);
+			problem_found = 1;
 			continue;
 		}
 
@@ -744,103 +739,159 @@ static void check_register_constraints(ir_node *node,
 		reg = arch_get_irn_register(arch_env, pred);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
-			           pred, get_nodes_block(pred), get_irg_dump_name(env->irg), node);
-			env->problem_found = 1;
+			           pred, get_nodes_block(pred), get_irg_dump_name(irg), node);
+			problem_found = 1;
 			continue;
 		}
 		else if (! arch_register_type_is(reg, joker) && ! arch_reg_is_allocatable(arch_env, node, i, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
-			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(env->irg));
-			env->problem_found = 1;
+			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(irg));
+			problem_found = 1;
 		}
 	}
-}
 
-static void check_register_allocation(be_verify_register_allocation_env_t *env,
-                                      const arch_register_class_t *regclass,
-                                      ir_nodeset_t *nodes)
-{
-	const arch_env_t      *arch_env  = env->arch_env;
-	const arch_register_t *reg       = NULL;
-	int                   fail       = 0;
-	bitset_t              *registers = bitset_alloca(arch_register_class_n_regs(regclass));
-	ir_node               *node;
-	ir_nodeset_iterator_t  iter;
-
-	foreach_ir_nodeset(nodes, node, iter) {
-		if (arch_get_irn_reg_class(arch_env, node, -1) != regclass)
-			continue;
+	/* phis should be NOPs at this point, which means all input regs
+	 * must be the same as the output reg */
+	if (is_Phi(node)) {
+		int i, arity;
 
 		reg = arch_get_irn_register(arch_env, node);
 
-		/* this problem is already reported in 'check_register_constraints' */
-		if (! reg)
-			continue;
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node               *pred     = get_Phi_pred(node, i);
+			const arch_register_t *pred_reg = arch_get_irn_register(arch_env, pred);
 
-		if (bitset_is_set(registers, reg->index)) {
-			fail = 1;
-			break;
-		}
-		bitset_set(registers, reg->index);
-	}
-
-	if (fail) {
-		ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s)\n",
-			       reg->name, get_nodes_block(node), get_irg_dump_name(env->irg));
-		env->problem_found = 1;
-
-		foreach_ir_nodeset(nodes, node, iter) {
-			if (arch_get_irn_register(arch_env, node) == reg) {
-				ir_fprintf(stderr, "  at node %+F\n", node);
+			if (reg != pred_reg) {
+				ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
+			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(irg));
+				problem_found = 1;
 			}
 		}
 	}
 }
 
+static void value_used(ir_node *node) {
+	const arch_register_t *reg;
+	ir_node               *reg_node;
+
+	if (arch_get_irn_reg_class(arch_env, node, -1) != regclass)
+		return;
+
+	reg = arch_get_irn_register(arch_env, node);
+	if (reg->type & arch_register_type_virtual)
+		return;
+
+	reg_node = registers[reg->index];
+	if (reg_node != NULL && reg_node != node) {
+		ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
+			       reg->name, get_nodes_block(node), get_irg_dump_name(irg),
+			       node, reg_node);
+		problem_found = 1;
+	}
+
+	registers[reg->index] = node;
+}
+
+static void value_def(ir_node *node)
+{
+	const arch_register_t *reg;
+	ir_node               *reg_node;
+
+	if (arch_get_irn_reg_class(arch_env, node, -1) != regclass)
+		return;
+
+	reg = arch_get_irn_register(arch_env, node);
+	if (reg->type & arch_register_type_virtual)
+		return;
+
+	reg_node = registers[reg->index];
+
+	if (reg_node != node) {
+		ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
+			       node, reg->name, reg_node, get_nodes_block(node), get_irg_dump_name(irg));
+		problem_found = 1;
+	}
+	registers[reg->index] = NULL;
+}
+
 static void verify_block_register_allocation(ir_node *block, void *data) {
-	be_verify_register_allocation_env_t *env = data;
-	const arch_env_t *arch_env = env->arch_env;
 	int i, nregclasses;
+	(void) data;
 
 	nregclasses = arch_env_get_n_reg_class(arch_env);
 	for (i = 0; i < nregclasses; ++i) {
-		const arch_register_class_t *regclass = arch_env_get_reg_class(arch_env, i);
-		ir_node *node;
-		ir_nodeset_t live_nodes;
+		ir_node               *node;
+		int                    i2;
 
-		ir_nodeset_init(&live_nodes);
+		regclass = arch_env_get_reg_class(arch_env, i);
 
-		be_liveness_end_of_block(env->lv, env->arch_env, regclass, block,
-		                         &live_nodes);
-		check_register_allocation(env, regclass, &live_nodes);
+		int i;
 
-		sched_foreach_reverse(block, node) {
-			if (is_Phi(node))
-				break;
+		assert(lv->nodes && "live sets must be computed");
 
-			be_liveness_transfer(env->arch_env, regclass, node, &live_nodes);
-			check_register_allocation(env, regclass, &live_nodes);
-			check_register_constraints(node, env);
+		int n_regs = arch_register_class_n_regs(regclass);
+		registers  = alloca(n_regs * sizeof(registers[0]));
+		memset(registers, 0, n_regs * sizeof(registers[0]));
+
+		be_lv_foreach(lv, block, be_lv_state_end, i) {
+			ir_node *node = be_lv_get_irn(lv, block, i);
+			value_used(node);
 		}
 
-		ir_nodeset_destroy(&live_nodes);
+		sched_foreach_reverse(block, node) {
+			int arity;
+
+			if (get_irn_mode(node) == mode_T) {
+				const ir_edge_t *edge;
+				foreach_out_edge(node, edge) {
+					ir_node *def = get_edge_src_irn(edge);
+					value_def(def);
+				}
+			} else {
+				value_def(node);
+			}
+
+			check_register_constraints(node);
+			if (is_Phi(node))
+				continue;
+
+			arity = get_irn_arity(node);
+			for (i2 = 0; i2 < arity; ++i2) {
+				ir_node *use = get_irn_n(node, i2);
+				value_used(use);
+			}
+		}
+
+		be_lv_foreach(lv, block, be_lv_state_in, i) {
+			ir_node *node = be_lv_get_irn(lv, block, i);
+			value_def(node);
+		}
+
+		/* set must be empty now */
+		for (i2 = 0; i2 < n_regs; ++i2) {
+			if (registers[i2] == NULL)
+				continue;
+
+			ir_fprintf(stderr, "Verify warning: Node %+F not live-in and no def found in block %+F(%s)\n",
+					registers[i2], block, get_irg_dump_name(irg));
+			problem_found = 1;
+		}
 	}
 }
 
 int be_verify_register_allocation(const be_irg_t *birg) {
-	be_verify_register_allocation_env_t env;
+	arch_env      = be_get_birg_arch_env(birg);
+	irg           = be_get_birg_irg(birg);
+	lv            = be_liveness(birg);
+	problem_found = 0;
 
-	env.arch_env = be_get_birg_arch_env(birg);
-	env.irg      = be_get_birg_irg(birg);
-	env.lv       = be_liveness(birg);
-	env.problem_found = 0;
+	be_liveness_assure_sets(lv);
+	irg_block_walk_graph(irg, verify_block_register_allocation, NULL, NULL);
 
-	be_liveness_assure_sets(env.lv);
-	irg_block_walk_graph(env.irg, verify_block_register_allocation, NULL, &env);
+	be_liveness_free(lv);
 
-	be_liveness_free(env.lv);
-
-	return !env.problem_found;
+	return !problem_found;
 }
 
 
