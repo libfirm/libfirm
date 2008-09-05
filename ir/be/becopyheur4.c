@@ -1390,6 +1390,8 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 	ir_node      *irn;
 	co_mst_env_t mst_env;
 
+	last_chunk_id = 0;
+
 	stat_ev_tim_push();
 
 	/* init phase */
