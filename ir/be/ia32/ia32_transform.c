@@ -2700,7 +2700,7 @@ static ir_node *create_Ucomi(ir_node *node)
 }
 
 /**
- * helper function: checks wether all Cmp projs are Lg or Eq which is needed
+ * helper function: checks whether all Cmp projs are Lg or Eq which is needed
  * to fold an and into a test node
  */
 static int can_fold_test_and(ir_node *node)
