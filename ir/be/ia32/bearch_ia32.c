@@ -558,37 +558,23 @@ static void ia32_abi_done(void *self) {
 static ir_type *ia32_abi_get_between_type(void *self)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
-	static ir_type *omit_fp_between_type = NULL;
-	static ir_type *between_type         = NULL;
-
-	ia32_abi_env_t *env = self;
+	static ir_type *between_type = NULL;
+	(void) self;
 
 	if (! between_type) {
-		ir_entity *old_bp_ent;
 		ir_entity *ret_addr_ent;
-		ir_entity *omit_fp_ret_addr_ent;
+		ir_type   *ret_addr_type;
 
-		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_Iu);
-		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
+		ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
+		between_type  = new_type_struct(IDENT("ia32_between_type"));
+		ret_addr_ent  = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
 
-		between_type           = new_type_struct(IDENT("ia32_between_type"));
-		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
-
-		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+		set_entity_offset(ret_addr_ent, 0);
+		set_type_size_bytes(between_type, get_type_size_bytes(ret_addr_type));
 		set_type_state(between_type, layout_fixed);
-
-		omit_fp_between_type = new_type_struct(IDENT("ia32_between_type_omit_fp"));
-		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
-
-		set_entity_offset(omit_fp_ret_addr_ent, 0);
-		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
-		set_type_state(omit_fp_between_type, layout_fixed);
 	}
 
-	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
+	return between_type;
 #undef IDENT
 }
 
