@@ -59,11 +59,13 @@ timing_sched_env_t *timing_sched_prepare_max_prio(timing_sched_env_t *env)
 
 timing_sched_env_t *timing_sched_get(timing_sched_env_t *env)
 {
+	(void) env;
 	return NULL;
 }
 
 int timing_sched_set(const timing_sched_env_t *env)
 {
+	(void) env;
 	return 0;
 }
 
