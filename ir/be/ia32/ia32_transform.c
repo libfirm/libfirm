@@ -530,6 +530,7 @@ struct ia32_address_mode_t {
 	ia32_address_t  addr;
 	ir_mode        *ls_mode;
 	ir_node        *mem_proj;
+	ir_node        *am_node;
 	ia32_op_type_t  op_type;
 	ir_node        *new_op1;
 	ir_node        *new_op2;
@@ -580,6 +581,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	am->pinned   = get_irn_pinned(load);
 	am->ls_mode  = get_Load_mode(load);
 	am->mem_proj = be_get_Proj_for_pn(load, pn_Load_M);
+	am->am_node  = node;
 
 	/* construct load address */
 	ia32_create_address_mode(addr, ptr, /*force=*/0);
@@ -2038,6 +2040,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ir_node  *noreg_gp  = ia32_new_NoReg_gp(env_cg);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi;
+	ir_node  *new_mem;
 	ir_node  *new_node;
 	ir_node  *new_op;
 	ir_node  *mem_proj;
@@ -2067,13 +2070,15 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	if(addr->mem == NULL)
 		addr->mem = new_NoMem();
 
-	dbgi  = get_irn_dbg_info(node);
-	block = be_transform_node(src_block);
+	dbgi    = get_irn_dbg_info(node);
+	block   = be_transform_node(src_block);
+	new_mem = transform_AM_mem(irg, block, am.am_node, mem, addr->mem);
+
 	if(get_mode_size_bits(mode) == 8) {
 		new_node = func8bit(dbgi, irg, block, addr->base, addr->index,
-		                    addr->mem, new_op);
+		                    new_mem, new_op);
 	} else {
-		new_node = func(dbgi, irg, block, addr->base, addr->index, addr->mem,
+		new_node = func(dbgi, irg, block, addr->base, addr->index, new_mem,
 		                new_op);
 	}
 	set_address(new_node, addr);
@@ -2092,12 +2097,13 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
                              ir_node *ptr, ir_mode *mode,
                              construct_unop_dest_func *func)
 {
-	ir_graph *irg      = current_ir_graph;
-	ir_node *src_block = get_nodes_block(node);
-	ir_node *block;
+	ir_graph *irg       = current_ir_graph;
+	ir_node  *src_block = get_nodes_block(node);
+	ir_node  *block;
 	dbg_info *dbgi;
-	ir_node *new_node;
-	ir_node *mem_proj;
+	ir_node  *new_mem;
+	ir_node  *new_node;
+	ir_node  *mem_proj;
 	ia32_address_mode_t  am;
 	ia32_address_t *addr = &am.addr;
 	memset(&am, 0, sizeof(am));
@@ -2109,7 +2115,8 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 	dbgi     = get_irn_dbg_info(node);
 	block    = be_transform_node(src_block);
-	new_node = func(dbgi, irg, block, addr->base, addr->index, addr->mem);
+	new_mem  = transform_AM_mem(irg, block, am.am_node, mem, addr->mem);
+	new_node = func(dbgi, irg, block, addr->base, addr->index, new_mem);
 	set_address(new_node, addr);
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_ia32_ls_mode(new_node, mode);
