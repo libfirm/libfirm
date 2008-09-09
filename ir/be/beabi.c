@@ -2040,6 +2040,34 @@ static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 	return result;
 }
 
+static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
+{
+	ident     *old_id = get_entity_ld_ident(entity);
+	ident     *id     = mangle3("L", old_id, "$non_lazy_ptr");
+	ir_type   *e_type = get_entity_type(entity);
+	ir_type   *type   = new_type_pointer(id, e_type, mode_P_data);
+	ir_type   *parent = be->pic_symbols_type;
+	ir_entity *ent    = new_entity(parent, old_id, type);
+	set_entity_ld_ident(ent, id);
+	set_entity_visibility(ent, visibility_local);
+	set_entity_variability(ent, variability_uninitialized);
+
+	return ent;
+}
+
+static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
+{
+	ir_entity *result = pmap_get(env->ent_pic_symbol_map, entity);
+	if (result == NULL) {
+		result = create_pic_symbol(env, entity);
+		pmap_insert(env->ent_pic_symbol_map, entity, result);
+	}
+
+	return result;
+}
+
+
+
 /**
  * Returns non-zero if a given entity can be accessed using a relative address.
  */
@@ -2066,8 +2094,12 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
+		dbg_info  *dbgi;
 		ir_node   *pred = get_irn_n(node, i);
 		ir_entity *entity;
+		ir_entity *pic_symbol;
+		ir_node   *pic_symconst;
+
 		if (!is_SymConst(pred))
 			continue;
 
@@ -2078,7 +2110,6 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		/* calls can jump to relative addresses, so we can directly jump to
 		   the (relatively) known call address or the trampoline */
 		if (is_Call(node) && i == 1) {
-			dbg_info  *dbgi;
 			ir_entity *trampoline;
 			ir_node   *trampoline_const;
 
@@ -2087,7 +2118,8 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 			dbgi             = get_irn_dbg_info(pred);
 			trampoline       = get_trampoline(be, entity);
-			trampoline_const = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code, trampoline, NULL);
+			trampoline_const = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
+			                                            trampoline, NULL);
 			set_irn_n(node, i, trampoline_const);
 			continue;
 		}
@@ -2106,6 +2138,13 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 			set_irn_n(node, i, add);
 			continue;
 		}
+
+		/* get entry from pic symbol segment */
+		dbgi         = get_irn_dbg_info(pred);
+		pic_symbol   = get_pic_symbol(be, entity);
+		pic_symconst = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
+ 		                                        pic_symbol, NULL);
+		set_Add_right(add, pic_symconst);
 
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
