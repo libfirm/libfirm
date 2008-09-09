@@ -1259,7 +1259,7 @@ restart:
 					}
 				}
 			}
-			if (mode_is_int(n_mode) && mode_is_float(a_mode)) {
+			if (mode_is_int(n_mode) && get_mode_arithmetic(a_mode) == irma_ieee754) {
 				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
 				size_t int_mantissa = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
 				size_t float_mantissa = tarval_ieee754_get_mantissa_size(a_mode);
