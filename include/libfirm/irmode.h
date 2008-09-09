@@ -43,7 +43,7 @@
 /**
  * Predefined mode according to tech report 1999-14.
  */
-typedef enum { /* irm is short for `ir mode' */
+typedef enum ir_modecode { /* irm is short for `ir mode' */
 	irm_BB,                       /**< basic block */
 	irm_X,                        /**< execution */
 	irm_F,                        /**< float(32) */
@@ -70,7 +70,7 @@ typedef enum { /* irm is short for `ir mode' */
 
 /** These values represent the different mode classes of value representations.
  */
-typedef enum {
+typedef enum ir_mode_sort {
 	/* Predefined sorts of modes */
 	irms_auxiliary,         /**< Only for Firm use. Not extensible. (irm_T) */
 	irms_control_flow,      /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
@@ -89,7 +89,7 @@ typedef enum {
 /** These values represent the different arithmetic operations possible with a mode.
     Further arithmetics can be defined, e.g., for @@@ modes.
  */
-typedef enum {
+typedef enum ir_mode_arithmetic {
 	irma_uninitialized = 0,
 	irma_none = 1,              /**< For modes for which no representation is specified.
 	                                 These are modes of sort auxiliary, internal_boolean and character. */
