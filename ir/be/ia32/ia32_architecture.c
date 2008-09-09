@@ -330,9 +330,15 @@ static const insn_const k8_cost = {
 	1,   /* cost of a constant shift instruction */
 	3,   /* starting cost of a multiply instruction */
 	0,   /* cost of multiply for every set bit */
+#if 0 /* TEST */
 	4,   /* logarithm for alignment of function labels */
 	4,   /* logarithm for alignment of loops labels */
 	7,   /* maximum skip for alignment of loops labels */
+#else
+	0,
+	0,
+	0
+#endif
 };
 
 /* costs for the K10 */
