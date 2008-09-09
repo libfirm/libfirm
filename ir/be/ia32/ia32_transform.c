@@ -3512,7 +3512,8 @@ static ir_node *gen_be_AddSP(ir_node *node)
 	ir_node  *sz = get_irn_n(node, be_pos_AddSP_size);
 	ir_node  *sp = get_irn_n(node, be_pos_AddSP_old_sp);
 
-	return gen_binop(node, sp, sz, new_rd_ia32_SubSP, match_am);
+	return gen_binop(node, sp, sz, new_rd_ia32_SubSP,
+	                 match_am | match_immediate);
 }
 
 /**
@@ -3523,7 +3524,8 @@ static ir_node *gen_be_SubSP(ir_node *node)
 	ir_node  *sz = get_irn_n(node, be_pos_SubSP_size);
 	ir_node  *sp = get_irn_n(node, be_pos_SubSP_old_sp);
 
-	return gen_binop(node, sp, sz, new_rd_ia32_AddSP, match_am);
+	return gen_binop(node, sp, sz, new_rd_ia32_AddSP,
+	                 match_am | match_immediate);
 }
 
 /**
