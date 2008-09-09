@@ -1262,8 +1262,8 @@ restart:
 			if (get_mode_arithmetic(n_mode) == irma_twos_complement &&
 			    get_mode_arithmetic(a_mode) == irma_ieee754) {
 				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
-				size_t int_mantissa = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
-				size_t float_mantissa = tarval_ieee754_get_mantissa_size(a_mode);
+				unsigned int_mantissa   = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
+				unsigned float_mantissa = tarval_ieee754_get_mantissa_size(a_mode);
 
 				if (float_mantissa >= int_mantissa) {
 					n = b;
