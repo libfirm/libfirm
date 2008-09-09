@@ -422,8 +422,8 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 
 static void worklist_remove(worklist_t *worklist, ir_node *value)
 {
-	ir_fprintf(stderr, "removing %+F\n", value);
 	worklist_entry_t *entry = get_irn_link(value);
+	ir_fprintf(stderr, "removing %+F\n", value);
 	assert(entry != NULL);
 	list_del(&entry->head);
 	--worklist->n_live_values;
@@ -757,6 +757,8 @@ static void push_unused_livethrough(loop_info_t *loop_info, ir_node *value)
 
 static void push_unused_livethroughs(loop_info_t *loop_info)
 {
+	loop_edge_t *edge;
+
 	/* we can only push unused livethroughs if register pressure inside the loop
 	 * was low enough */
 	if (loop_info->max_register_pressure >= n_regs)
@@ -765,25 +767,26 @@ static void push_unused_livethroughs(loop_info_t *loop_info)
 	/* find unused livethroughs: register pressure in the loop was low enough
 	 * which means that we had no spills which implies that at every point in
 	 * the loop all*/
-	loop_edge_t *edge = loop_info->exit_edges;
-	for ( ; edge != NULL; edge = edge->next) {
+	for (edge = loop_info->exit_edges; edge != NULL; edge = edge->next) {
 		ir_node            *block          = edge->block;
 		const block_info_t *info           = get_block_info(block);
 		worklist_t         *start_worklist = info->start_worklist;
+		ir_node            *exit_block;
+		const block_info_t *exit_info;
+		worklist_t         *end_worklist;
+		struct list_head   *entry;
 
 		if (start_worklist == NULL)
 			continue;
 
-		ir_node            *exit_block
-			= get_Block_cfgpred_block(edge->block, edge->pos);
-		const block_info_t *exit_info    = get_block_info(exit_block);
-		worklist_t         *end_worklist = exit_info->end_worklist;
+		exit_block   = get_Block_cfgpred_block(edge->block, edge->pos);
+		exit_info    = get_block_info(exit_block);
+		end_worklist = exit_info->end_worklist;
 
 		activate_worklist(end_worklist);
 		/* all values contained in the start_worklist, which are not available
 		 * in the end_worklist, must be unused livethroughs */
 
-		struct list_head *entry;
 		list_for_each(entry, &start_worklist->live_values) {
 			worklist_entry_t *wl_entry
 				= list_entry(entry, worklist_entry_t, head);

@@ -822,20 +822,18 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 	nregclasses = arch_env_get_n_reg_class(arch_env);
 	for (i = 0; i < nregclasses; ++i) {
 		ir_node               *node;
-		int                    i2;
+		int                   i2, lv_idx, n_regs;
 
 		regclass = arch_env_get_reg_class(arch_env, i);
 
-		int i;
-
 		assert(lv->nodes && "live sets must be computed");
 
-		int n_regs = arch_register_class_n_regs(regclass);
-		registers  = alloca(n_regs * sizeof(registers[0]));
+		n_regs    = arch_register_class_n_regs(regclass);
+		registers = alloca(n_regs * sizeof(registers[0]));
 		memset(registers, 0, n_regs * sizeof(registers[0]));
 
-		be_lv_foreach(lv, block, be_lv_state_end, i) {
-			ir_node *node = be_lv_get_irn(lv, block, i);
+		be_lv_foreach(lv, block, be_lv_state_end, lv_idx) {
+			ir_node *node = be_lv_get_irn(lv, block, lv_idx);
 			value_used(node);
 		}
 
