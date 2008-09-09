@@ -763,8 +763,8 @@ static void check_register_constraints(ir_node *node)
 			const arch_register_t *pred_reg = arch_get_irn_register(arch_env, pred);
 
 			if (reg != pred_reg) {
-				ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
-			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(irg));
+				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",
+				           i, node, get_nodes_block(node), get_irg_dump_name(irg), pred_reg->name, reg->name);
 				problem_found = 1;
 			}
 		}
