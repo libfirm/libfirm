@@ -532,7 +532,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	} else {
 		post_spill_env_t *pse;
 
-		/* the backend has it's own spiller */
+		/* the backend has its own spiller */
 		m = arch_env_get_n_reg_class(arch_env);
 
 		pse = alloca(m * sizeof(pse[0]));
