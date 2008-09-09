@@ -322,22 +322,25 @@ static void ppc32_abi_regs_saved_by_me(void *self, pset *regs)
 
 /**
  * Generate the prologue.
- * @param self    The callback object.
- * @param mem     A pointer to the mem node. Update this if you define new memory.
- * @param reg_map A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param self       The callback object.
+ * @param mem        A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map    A mapping mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param stack_bias Points to the current stack bias, can be modified if needed.
+ *
  * @return        The register which shall be used as a stack frame base.
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
  */
-static const arch_register_t *ppc32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
+static const arch_register_t *ppc32_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
 {
 	ppc32_abi_env *env = (ppc32_abi_env *) self;
 	be_abi_call_flags_t flags = be_abi_call_get_flags(env->call);
 	(void) mem;
 	(void) reg_map;
+	(void) stack_bias;
 	isleaf = flags.bits.irg_is_leaf;
 
-	if(flags.bits.try_omit_fp)
+	if (flags.bits.try_omit_fp)
 		return &ppc32_gp_regs[REG_R1];
 	else
 		return &ppc32_gp_regs[REG_R31];

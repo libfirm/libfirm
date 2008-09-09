@@ -692,7 +692,7 @@ static void mips_abi_dont_save_regs(void *self, pset *s)
 		pset_insert_ptr(s, env->arch_env->bp);
 }
 
-static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap *reg_map)
+static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap *reg_map, int *stack_bias)
 {
 	mips_abi_env_t *env = self;
 	ir_graph *irg = env->irg;
@@ -701,7 +701,9 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	int initialstackframesize;
 
-	if(env->debug) {
+	(void) stack_bias;
+
+	if (env->debug) {
 		/*
 		 * The calling conventions wants a stack frame of at least 24bytes size with
 		 *   a0-a3 saved in offset 0-12

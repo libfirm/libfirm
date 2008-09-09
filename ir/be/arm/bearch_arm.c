@@ -902,20 +902,19 @@ static void arm_abi_dont_save_regs(void *self, pset *s)
 		pset_insert_ptr(s, env->arch_env->bp);
 }
 
-
-
 /**
-* Generate the routine prologue.
+ * Generate the routine prologue.
  *
- * @param self    The callback object.
- * @param mem     A pointer to the mem node. Update this if you define new memory.
- * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param self       The callback object.
+ * @param mem        A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map    A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param stack_bias Points to the current stack bias, can be modified if needed.
  *
  * @return        The register which shall be used as a stack frame base.
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
  */
-static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map) {
+static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias) {
 	arm_abi_env_t         *env = self;
 	ir_node               *keep, *store;
 	ir_graph              *irg;
@@ -924,6 +923,8 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 
 	ir_node               *fp, *ip, *lr, *pc;
 	ir_node               *sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
+
+	(void) stack_bias;
 
 	if (env->flags.try_omit_fp)
 		return env->arch_env->sp;

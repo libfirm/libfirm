@@ -496,11 +496,12 @@ static void TEMPLATE_abi_dont_save_regs(void *self, pset *s)
  * Build the prolog, return the BASE POINTER register
  */
 static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
-                                                    pmap *reg_map)
+                                                    pmap *reg_map, int *stack_bias)
 {
 	TEMPLATE_abi_env_t *env = self;
 	(void) reg_map;
 	(void) mem;
+	(void) stack_bias;
 
 	if(env->flags.try_omit_fp)
 		return env->arch_env->sp;

@@ -410,15 +410,16 @@ static void ia32_abi_dont_save_regs(void *self, pset *s)
 /**
  * Generate the routine prologue.
  *
- * @param self    The callback object.
- * @param mem     A pointer to the mem node. Update this if you define new memory.
- * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param self       The callback object.
+ * @param mem        A pointer to the mem node. Update this if you define new memory.
+ * @param reg_map    A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+ * @param stack_bias Points to the current stack bias, can be modified if needed.
  *
- * @return        The register which shall be used as a stack frame base.
+ * @return           The register which shall be used as a stack frame base.
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
  */
-static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map)
+static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
 {
 	ia32_abi_env_t   *env      = self;
 	ia32_code_gen_t  *cg       = ia32_current_cg;
@@ -443,6 +444,9 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		/* the push must have SP out register */
 		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
 		set_ia32_flags(push, arch_irn_flags_ignore);
+
+		/* this modifies the stack bias, because we pushed 32bit */
+		*stack_bias -= 4;
 
 		/* move esp to ebp */
 		curr_bp  = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
@@ -558,23 +562,37 @@ static void ia32_abi_done(void *self) {
 static ir_type *ia32_abi_get_between_type(void *self)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
-	static ir_type *between_type = NULL;
-	(void) self;
+	static ir_type *omit_fp_between_type = NULL;
+	static ir_type *between_type         = NULL;
+
+	ia32_abi_env_t *env = self;
 
 	if (! between_type) {
+		ir_entity *old_bp_ent;
 		ir_entity *ret_addr_ent;
-		ir_type   *ret_addr_type;
+		ir_entity *omit_fp_ret_addr_ent;
 
-		ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
-		between_type  = new_type_struct(IDENT("ia32_between_type"));
-		ret_addr_ent  = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
+		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_Iu);
+		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
 
-		set_entity_offset(ret_addr_ent, 0);
-		set_type_size_bytes(between_type, get_type_size_bytes(ret_addr_type));
+		between_type           = new_type_struct(IDENT("ia32_between_type"));
+		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
+		ret_addr_ent           = new_entity(between_type, IDENT("ret_addr"), ret_addr_type);
+
+		set_entity_offset(old_bp_ent, 0);
+		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
+		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
 		set_type_state(between_type, layout_fixed);
+
+		omit_fp_between_type = new_type_struct(IDENT("ia32_between_type_omit_fp"));
+		omit_fp_ret_addr_ent = new_entity(omit_fp_between_type, IDENT("ret_addr"), ret_addr_type);
+
+		set_entity_offset(omit_fp_ret_addr_ent, 0);
+		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
+		set_type_state(omit_fp_between_type, layout_fixed);
 	}
 
-	return between_type;
+	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
 #undef IDENT
 }
 

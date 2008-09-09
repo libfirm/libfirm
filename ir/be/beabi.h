@@ -84,14 +84,15 @@ struct _be_abi_callbacks_t {
 
 	/**
 	 * Generate the prologue.
-	 * @param self    The callback object.
-	 * @param mem     A pointer to the mem node. Update this if you define new memory.
-	 * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
-	 * @return        The register which shall be used as a stack frame base.
+	 * @param self       The callback object.
+	 * @param mem        A pointer to the mem node. Update this if you define new memory.
+	 * @param reg_map    A map mapping all callee_save/ignore/parameter registers to their defining nodes.
+	 * @param stack_bias Points to the current stack bias, can be modified if needed.
+	 * @return           The register which shall be used as a stack frame base.
 	 *
 	 * All nodes which define registers in @p reg_map must keep @p reg_map current.
 	 */
-	const arch_register_t *(*prologue)(void *self, ir_node **mem, pmap *reg_map);
+	const arch_register_t *(*prologue)(void *self, ir_node **mem, pmap *reg_map, int *stack_bias);
 
 	/**
 	 * Generate the epilogue.
@@ -157,6 +158,11 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call);
 ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *bi);
+
+/**
+ * Fix the stack bias for all nodes accessing the stack frame using the
+ * stack pointer.
+ */
 void be_abi_fix_stack_bias(be_abi_irg_t *env);
 void be_abi_free(be_abi_irg_t *abi);
 
@@ -189,7 +195,7 @@ ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
  * - between_type: A struct type describing the stack layout between arguments
  *                 and frame type. In architectures that put the return address
  *                 automatically on the stack, the return address is put here.
- * - frame_type:   A class type describing the frame layout
+ * - frame_type:   A class type describing the frame layout.
  */
 struct _be_stack_layout_t {
 	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
@@ -198,9 +204,10 @@ struct _be_stack_layout_t {
 
 	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
 
-	int initial_offset;
-	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
 	ir_entity **param_map;             /**< An array mapping type parameters to arg_type entries */
+	int initial_offset;                /**< the initial difference between stack pointer and frame pointer */
+	int initial_bias;                  /**< the initial stack bias */
+	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
 };
 
 /**

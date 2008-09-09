@@ -279,17 +279,15 @@ static int get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
 	ir_type *t = get_entity_owner(ent);
 	int ofs    = get_entity_offset(ent);
 
-	int i, index;
+	int index;
 
 	/* Find the type the entity is contained in. */
-	for(index = 0; index < N_FRAME_TYPES; ++index) {
-		if(frame->order[index] == t)
+	for (index = 0; index < N_FRAME_TYPES; ++index) {
+		if (frame->order[index] == t)
 			break;
+		/* Add the size of all the types below the one of the entity to the entity's offset */
+		ofs += get_type_size_bytes(frame->order[index]);
 	}
-
-	/* Add the size of all the types below the one of the entity to the entity's offset */
-	for(i = 0; i < index; ++i)
-		ofs += get_type_size_bytes(frame->order[i]);
 
 	/* correct the offset by the initial position of the frame pointer */
 	ofs -= frame->initial_offset;
@@ -309,7 +307,7 @@ static ir_entity *search_ent_with_offset(ir_type *t, int offset)
 
 	for(i = 0, n = get_compound_n_members(t); i < n; ++i) {
 		ir_entity *ent = get_compound_member(t, i);
-		if(get_entity_offset(ent) == offset)
+		if (get_entity_offset(ent) == offset)
 			return ent;
 	}
 
@@ -1865,7 +1863,7 @@ static void modify_irg(be_abi_irg_t *env)
 	mem = new_mem_proj;
 
 	/* Generate the Prologue */
-	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs);
+	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs, &env->frame->initial_bias);
 
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
@@ -2372,6 +2370,15 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	DEL_ARR_F(walker_env.sp_nodes);
 }
 
+/**
+ * Fix all stack accessing operations in the block bl.
+ *
+ * @param env        the abi environment
+ * @param bl         the block to process
+ * @param real_bias  the bias value
+ *
+ * @return the bias at the end of this block
+ */
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 {
 	const arch_env_t *arch_env = env->birg->main_env->arch_env;
@@ -2388,7 +2395,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		   node.
 		 */
 		ir_entity *ent = arch_get_frame_entity(arch_env, irn);
-		if(ent) {
+		if (ent) {
 			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(env->frame, ent, bias);
 			arch_set_frame_offset(arch_env, irn, offset);
@@ -2402,13 +2409,13 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		 */
 		ofs = arch_get_sp_bias(arch_env, irn);
 
-		if(be_is_IncSP(irn)) {
+		if (be_is_IncSP(irn)) {
 			/* fill in real stack frame size */
-			if(ofs == BE_STACK_FRAME_SIZE_EXPAND) {
+			if (ofs == BE_STACK_FRAME_SIZE_EXPAND) {
 				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
 				ofs = (int) get_type_size_bytes(frame_type);
 				be_set_IncSP_offset(irn, ofs);
-			} else if(ofs == BE_STACK_FRAME_SIZE_SHRINK) {
+			} else if (ofs == BE_STACK_FRAME_SIZE_SHRINK) {
 				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
 				ofs = - (int)get_type_size_bytes(frame_type);
 				be_set_IncSP_offset(irn, ofs);
@@ -2455,7 +2462,8 @@ struct bias_walk {
 };
 
 /**
- * Block-Walker: fix all stack offsets
+ * Block-Walker: fix all stack offsets for all blocks
+ * except the start block
  */
 static void stack_bias_walker(ir_node *bl, void *data)
 {
@@ -2467,17 +2475,19 @@ static void stack_bias_walker(ir_node *bl, void *data)
 
 void be_abi_fix_stack_bias(be_abi_irg_t *env)
 {
-	ir_graph *irg  = env->birg->irg;
-	struct bias_walk bw;
+	be_stack_layout_t *frame = env->frame;
+	ir_graph          *irg;
+	struct bias_walk  bw;
 
-	stack_frame_compute_initial_offset(env->frame);
-	// stack_layout_dump(stdout, env->frame);
+	stack_frame_compute_initial_offset(frame);
+	// stack_layout_dump(stdout, frame);
 
 	/* Determine the stack bias at the end of the start block. */
-	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), 0);
-	bw.between_size     = get_type_size_bytes(env->frame->between_type);
+	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), frame->initial_bias);
+	bw.between_size     = get_type_size_bytes(frame->between_type);
 
 	/* fix the bias is all other blocks */
+	irg    = env->birg->irg;
 	bw.env = env;
 	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
