@@ -1,10 +1,13 @@
-void f(int);
-
 volatile int G1, G2, G3, G4, G5;
 
 volatile int VG;
 
-void test()
+static void __attribute__((noinline)) f(int k)
+{
+	(void) k;
+}
+
+static void __attribute__((noinline)) test()
 {
 	int foo = rand();
 
@@ -36,5 +39,14 @@ void test()
 		VG = foo;
 		G5 = t5;
 
+	}
+}
+
+int main(void)
+{
+	int i;
+
+	for(i = 0; i < 50000; ++i) {
+		test();
 	}
 }

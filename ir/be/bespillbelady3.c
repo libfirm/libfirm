@@ -64,6 +64,7 @@ struct loop_edge_t {
 
 typedef struct loop_info_t loop_info_t;
 struct loop_info_t {
+	ir_loop     *loop;
 	loop_edge_t *entry_edges;
 	loop_edge_t *exit_edges;
 	size_t       max_register_pressure;
@@ -74,7 +75,7 @@ struct worklist_entry_t {
 	struct list_head  head;
 	ir_node          *value;
 	ir_node          *reload_point;
-	worklist_entry_t *next_reload;
+	ir_loop          *unused_livethrough_loop;
 };
 
 typedef struct worklist_t worklist_t;
@@ -102,6 +103,7 @@ static ir_exec_freq                *exec_freq;
 static worklist_t *new_worklist(void)
 {
 	worklist_t *worklist = obstack_alloc(&obst, sizeof(worklist[0]));
+	memset(worklist, 0, sizeof(worklist[0]));
 
 	INIT_LIST_HEAD(&worklist->live_values);
 	worklist->n_live_values    = 0;
@@ -191,13 +193,14 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 		}
 
 		new_entry = obstack_alloc(&obst, sizeof(new_entry[0]));
+		memset(new_entry, 0, sizeof(new_entry[0]));
+
 		new_entry->value = value;
 		if (reload_point != NULL) {
 			new_entry->reload_point = reload_point;
 		} else {
 			new_entry->reload_point = wl_entry->reload_point;
 		}
-		new_entry->next_reload = NULL;
 
 		if (irn_not_visited(value)) {
 			list_add_tail(&new_entry->head, &new_worklist->live_values);
@@ -206,14 +209,6 @@ static worklist_t *duplicate_activate_worklist(const worklist_t *worklist,
 			mark_irn_visited(value);
 			set_irn_link(value, new_entry);
 		}
-#if 0
-		else {
-			/* the only way we might visit a value again, is when we get it as
-			 * phi predecessor */
-			assert(is_Phi(wl_entry->value)
-					&& get_nodes_block(wl_entry->value) == succ_block);
-		}
-#endif
 	}
 	new_worklist->n_live_values = n_live_values;
 
@@ -281,6 +276,7 @@ static loop_info_t *get_loop_info(ir_loop *loop)
 
 	info = obstack_alloc(&obst, sizeof(info[0]));
 	memset(info, 0, sizeof(info[0]));
+	info->loop = loop;
 	loop->link = info;
 	return info;
 }
@@ -356,60 +352,12 @@ static void place_reload(worklist_entry_t *entry)
 	if (tentative_mode)
 		return;
 
-	/* walk list of reload points */
-	do {
-		DB((dbg, LEVEL_1, "reload of %+F before %+F\n", entry->value,
-		    entry->reload_point));
-		assert(entry->reload_point != NULL);
-		be_add_reload(senv, entry->value, entry->reload_point, cls, 1);
-		entry->reload_point = NULL;
-
-		entry = entry->next_reload;
-	} while(entry != NULL);
+	DB((dbg, LEVEL_1, "reload of %+F before %+F\n", entry->value,
+		entry->reload_point));
+	assert(entry->reload_point != NULL);
+	be_add_reload(senv, entry->value, entry->reload_point, cls, 1);
+	entry->reload_point = NULL;
 }
-
-#if 0
-/**
- * does stuff required for non-active worklists: spills all values not live
- * in the active worklist; links live values to the current worklist
- */
-static void process_non_active_worklist(const worklist_t *worklist,
-                                        worklist_t *current_worklist)
-{
-	struct list_head *entry;
-
-	list_for_each(entry, &worklist->live_values) {
-		worklist_entry_t *wl_entry = list_entry(entry, worklist_entry_t, head);
-		ir_node          *value    = wl_entry->value;
-
-		if (!worklist_contains(value)) {
-			/* if we still have room in the worklist, then we can simply take
-			 * the value */
-			if (current_worklist->n_live_values < n_regs) {
-				worklist_entry_t *new_entry
-					= obstack_alloc(&obst, sizeof(new_entry[0]));
-
-				new_entry->value        = value;
-				new_entry->reload_point = wl_entry->reload_point;
-				new_entry->next_reload  = wl_entry->next_reload;
-				set_irn_link(value, new_entry);
-				mark_irn_visited(value);
-				list_add(&new_entry->head, &current_worklist->live_values);
-				++current_worklist->n_live_values;
-			} else {
-				/* value is not in current worklist, place reloads */
-				place_reload(wl_entry);
-			}
-		} else {
-			/* value is in current worklist, link it with the reload point
-			 * from this path */
-			worklist_entry_t *active_entry = get_irn_link(value);
-			wl_entry->next_reload          = active_entry->next_reload;
-			active_entry->next_reload      = wl_entry;
-		}
-	}
-}
-#endif
 
 /**
  * makes sure the worklist contains not more than n_regs - room_needed entries
@@ -458,6 +406,8 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 	} else {
 		if (entry == NULL) {
 			entry        = obstack_alloc(&obst, sizeof(entry[0]));
+			memset(entry, 0, sizeof(entry[0]));
+
 			entry->value = value;
 			set_irn_link(value, entry);
 		}
@@ -467,12 +417,12 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 	}
 
 	entry->reload_point = sched_point;
-	entry->next_reload  = NULL;
 	list_add_tail(&entry->head, &worklist->live_values);
 }
 
 static void worklist_remove(worklist_t *worklist, ir_node *value)
 {
+	ir_fprintf(stderr, "removing %+F\n", value);
 	worklist_entry_t *entry = get_irn_link(value);
 	assert(entry != NULL);
 	list_del(&entry->head);
@@ -637,22 +587,6 @@ static void process_block(ir_node *block, void *env)
 	} else {
 		worklist = duplicate_activate_worklist(worklist, block, best_succ_block,
 		                                       best_pos);
-
-		/* handle this in fix_blocks later... */
-#if 0
-		/* now we could have live values in the succ worklists that are not
-		 * live anymore in the worklist we picked. We need reloads for them. */
-		foreach_block_succ(block, edge) {
-			ir_node      *succ_block    = get_edge_src_irn(edge);
-			block_info_t *block_info    = get_block_info(succ_block);
-			worklist_t   *succ_worklist = block_info->start_worklist;
-
-			if (succ_block == best_succ_block)
-				continue;
-
-			process_non_active_worklist(succ_worklist, worklist);
-		}
-#endif
 	}
 
 	block_info = get_block_info(block);
@@ -770,6 +704,105 @@ static void find_blocks(ir_node *block)
 	}
 }
 
+/**
+ * append an entry to a worklist. WARNING: The entry must not already be in the
+ * worklist.
+ */
+static void worklist_append(worklist_t *worklist, ir_node *value,
+                            ir_node *reload_point,
+							ir_loop *unused_livethrough_loop)
+{
+	worklist_entry_t *entry     = obstack_alloc(&obst, sizeof(entry[0]));
+	memset(entry, 0, sizeof(entry[0]));
+
+	entry->value                   = value;
+	entry->reload_point            = reload_point;
+	entry->unused_livethrough_loop = unused_livethrough_loop;
+	list_add_tail(&entry->head, &worklist->live_values);
+	++worklist->n_live_values;
+	assert(worklist->n_live_values <= n_regs);
+}
+
+static void push_unused_livethrough(loop_info_t *loop_info, ir_node *value)
+{
+	/* add the value to all loop exit and entry blocks */
+	loop_edge_t *edge = loop_info->exit_edges;
+	for ( ; edge != NULL; edge = edge->next) {
+		ir_node            *block
+			= get_Block_cfgpred_block(edge->block, edge->pos);
+		const block_info_t *info     = get_block_info(block);
+		worklist_t         *worklist = info->end_worklist;
+		/* TODO: we need a smarter mechanism here, that makes the reloader place
+		 * reload nodes on all loop exits... */
+		ir_node *reload_point = NULL;
+
+		worklist_append(worklist, value, reload_point, loop_info->loop);
+	}
+	edge = loop_info->entry_edges;
+	for ( ; edge != NULL; edge = edge->next) {
+		ir_node            *entry_block = edge->block;
+		const block_info_t *info        = get_block_info(entry_block);
+		worklist_t         *worklist    = info->start_worklist;
+
+		ir_node *pred_block
+			= get_Block_cfgpred_block(entry_block, edge->pos);
+		ir_node *reload_point = be_get_end_of_block_insertion_point(pred_block);
+
+		worklist_append(worklist, value, reload_point, loop_info->loop);
+	}
+
+	set_irn_link(value, NULL);
+	++loop_info->max_register_pressure;
+}
+
+static void push_unused_livethroughs(loop_info_t *loop_info)
+{
+	/* we can only push unused livethroughs if register pressure inside the loop
+	 * was low enough */
+	if (loop_info->max_register_pressure >= n_regs)
+		return;
+
+	/* find unused livethroughs: register pressure in the loop was low enough
+	 * which means that we had no spills which implies that at every point in
+	 * the loop all*/
+	loop_edge_t *edge = loop_info->exit_edges;
+	for ( ; edge != NULL; edge = edge->next) {
+		ir_node            *block          = edge->block;
+		const block_info_t *info           = get_block_info(block);
+		worklist_t         *start_worklist = info->start_worklist;
+
+		if (start_worklist == NULL)
+			continue;
+
+		ir_node            *exit_block
+			= get_Block_cfgpred_block(edge->block, edge->pos);
+		const block_info_t *exit_info    = get_block_info(exit_block);
+		worklist_t         *end_worklist = exit_info->end_worklist;
+
+		activate_worklist(end_worklist);
+		/* all values contained in the start_worklist, which are not available
+		 * in the end_worklist, must be unused livethroughs */
+
+		struct list_head *entry;
+		list_for_each(entry, &start_worklist->live_values) {
+			worklist_entry_t *wl_entry
+				= list_entry(entry, worklist_entry_t, head);
+			ir_node *value = wl_entry->value;
+
+			if (!worklist_contains(value)) {
+				/* add it to all loop exits */
+				ir_fprintf(stderr, "Found unused livethrough: %+F (regpressure in loop %d)\n", value, loop_info->max_register_pressure);
+				push_unused_livethrough(loop_info, value);
+				mark_irn_visited(value);
+			}
+
+			if (loop_info->max_register_pressure >= n_regs)
+				break;
+		}
+		deactivate_worklist(end_worklist);
+	}
+}
+
 static void process_block_or_loop(const block_or_loop_t *block_or_loop)
 {
 	if (block_or_loop->is_loop) {
@@ -778,7 +811,7 @@ static void process_block_or_loop(const block_or_loop_t *block_or_loop)
 		if (loop_info->max_register_pressure > max_register_pressure)
 			max_register_pressure = loop_info->max_register_pressure;
 
-		/* TODO: push unused livethroughs... */
+		push_unused_livethroughs(loop_info);
 		return;
 	}
 	process_block(block_or_loop->v.block, NULL);
@@ -877,6 +910,7 @@ static void fix_block_borders(ir_node *block, void *data)
 	block_info_t *block_info     = get_block_info(block);
 	worklist_t   *start_worklist = block_info->start_worklist;
 	int           n_cfgpreds     = get_Block_n_cfgpreds(block);
+	ir_loop      *loop           = get_irn_loop(block);
 	int           i;
 
 	(void) data;
@@ -886,9 +920,15 @@ static void fix_block_borders(ir_node *block, void *data)
 		ir_node      *pred_block      = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_block_info = get_block_info(pred_block);
 		worklist_t   *end_worklist    = pred_block_info->end_worklist;
+		ir_loop      *pred_loop       = get_irn_loop(pred_block);
+		bool          is_loop_entry   = false;
 		struct list_head *entry;
 
 		assert(end_worklist != NULL);
+
+		if (get_loop_depth(pred_loop) < get_loop_depth(loop)) {
+			is_loop_entry = true;
+		}
 
 		/* reload missing values */
 		activate_worklist(end_worklist);
@@ -907,6 +947,8 @@ static void fix_block_borders(ir_node *block, void *data)
 			}
 
 			if (worklist_contains(value))
+				continue;
+			if (wl_entry->unused_livethrough_loop != NULL && !is_loop_entry)
 				continue;
 
 			be_add_reload_on_edge(senv, value, block, i, cls, 1);
@@ -943,19 +985,6 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 	irg_block_walk_graph(irg, construct_loop_edges, NULL, NULL);
 
 	process_loop(get_irg_loop(current_ir_graph));
-
-#if 0
-	/* do a post-order walk over the CFG to make sure we have a maximum number
-	 * of preds processed before entering a block */
-	tentative_mode = 1;
-	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
-
-	tentative_mode = 1;
-	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
-
-	tentative_mode = 0;
-	irg_block_edges_walk(get_irg_start_block(irg), NULL, process_block, NULL);
-#endif
 
 	irg_block_walk_graph(irg, fix_block_borders, NULL, NULL);
 
