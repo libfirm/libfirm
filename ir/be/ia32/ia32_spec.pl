@@ -912,7 +912,7 @@ NegMem => {
 
 Minus64Bit => {
 	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "gp" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1", "in_r2" ] },
 	outs      => [ "low_res", "high_res" ],
 	units     => [ "GP" ],
 	latency   => 3,
