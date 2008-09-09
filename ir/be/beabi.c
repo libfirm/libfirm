@@ -344,6 +344,7 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	frame->between_type   = between;
 	frame->frame_type     = locals;
 	frame->initial_offset = 0;
+	frame->initial_bias   = 0;
 	frame->stack_dir      = stack_dir;
 	frame->order[1]       = between;
 	frame->param_map      = param_map;
