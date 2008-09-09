@@ -2477,7 +2477,7 @@ static void stack_bias_walker(ir_node *bl, void *data)
 void be_abi_fix_stack_bias(be_abi_irg_t *env)
 {
 	be_stack_layout_t *frame = env->frame;
-	ir_graph          *irg;
+	ir_graph          *irg   = env->birg->irg;
 	struct bias_walk  bw;
 
 	stack_frame_compute_initial_offset(frame);
@@ -2488,7 +2488,6 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	bw.between_size     = get_type_size_bytes(frame->between_type);
 
 	/* fix the bias is all other blocks */
-	irg    = env->birg->irg;
 	bw.env = env;
 	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
