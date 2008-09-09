@@ -176,17 +176,17 @@ static int cmp_tv(const void *p1, const void *p2, size_t n) {
 
 	assert(tv1->kind == k_tarval);
 	assert(tv2->kind == k_tarval);
-	if(tv1->mode < tv2->mode)
+	if (tv1->mode < tv2->mode)
 		return -1;
-	if(tv1->mode > tv2->mode)
+	if (tv1->mode > tv2->mode)
 		return 1;
-	if(tv1->length < tv2->length)
+	if (tv1->length < tv2->length)
 		return -1;
-	if(tv1->length > tv2->length)
+	if (tv1->length > tv2->length)
 		return 1;
-	if(tv1->value < tv2->value)
+	if (tv1->value < tv2->value)
 		return -1;
-	if(tv1->value > tv2->value)
+	if (tv1->value > tv2->value)
 		return 1;
 
 	return 0;
@@ -1694,6 +1694,17 @@ unsigned tarval_ieee754_set_immediate_precision(unsigned bits) {
 /* Returns non-zero if the result of the last IEEE-754 operation was exact. */
 unsigned tarval_ieee754_get_exact(void) {
 	return fc_is_exact();
+}
+
+/* Return the size of the mantissa in bits (including possible
+   implicit bits) for the given mode. */
+unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode) {
+	const ieee_descriptor_t *desc;
+
+	assert(get_mode_arithmetic(mode) == irma_ieee754);
+	desc = get_descriptor(mode);
+
+	return desc->mantissa_size + desc->explicit_one;
 }
 
 /* check if its the a floating point NaN */

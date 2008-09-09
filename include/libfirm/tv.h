@@ -789,6 +789,12 @@ unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
 unsigned tarval_ieee754_get_exact(void);
 
 /**
+ * Return the size of the mantissa in bits (including possible
+ * implicit bits) for the given mode.
+ */
+unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode);
+
+/**
  * Enable/Disable floating point constant folding.
  */
 int tarval_enable_fp_ops(int enable);
