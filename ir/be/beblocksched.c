@@ -58,6 +58,7 @@
 #include "beirgmod.h"
 #include "bemodule.h"
 #include "be.h"
+#include "error.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
@@ -114,7 +115,7 @@ typedef struct _edge_t {
 	int     pos;                /**< number of cfg predecessor (target) */
 	double  execfreq;           /**< the frequency */
 	int     highest_execfreq;   /**< flag that indicates whether this edge is the edge with the highest
-							   	     execfreq pointing away from this block */
+	                                 execfreq pointing away from this block */
 } edge_t;
 
 typedef struct _blocksched_env_t {
@@ -764,6 +765,6 @@ ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 #endif /* WITH_ILP */
 	}
 
-	assert(0 && "unknown blocksched algo");
+	panic("unknown blocksched algo");
 	return NULL;
 }
