@@ -1063,7 +1063,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* -- Precompute some values -- */
 	end_bl = get_new_node(get_irg_end_block(called_graph));
 	end = get_new_node(get_irg_end(called_graph));
-	arity = get_irn_arity(end_bl);    /* arity = n_exc + n_ret  */
+	arity = get_Block_n_cfgpreds(end_bl);    /* arity = n_exc + n_ret  */
 	n_res = get_method_n_ress(get_Call_type(call));
 
 	res_pred = xmalloc(n_res * sizeof(*res_pred));
@@ -1086,7 +1086,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	n_ret = 0;
 	for (i = 0; i < arity; i++) {
 		ir_node *ret;
-		ret = get_irn_n(end_bl, i);
+		ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
 			cf_pred[n_ret] = new_r_Jmp(irg, get_nodes_block(ret));
 			n_ret++;
@@ -1100,7 +1100,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* First the Memory-Phi */
 	n_ret = 0;
 	for (i = 0; i < arity; i++) {
-		ret = get_irn_n(end_bl, i);
+		ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
 			cf_pred[n_ret] = get_Return_mem(ret);
 			n_ret++;
@@ -1118,7 +1118,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		for (j = 0; j < n_res; j++) {
 			n_ret = 0;
 			for (i = 0; i < arity; i++) {
-				ret = get_irn_n(end_bl, i);
+				ret = get_Block_cfgpred(end_bl, i);
 				if (is_Return(ret)) {
 					cf_pred[n_ret] = get_Return_res(ret, j);
 					n_ret++;
@@ -1159,7 +1159,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		n_exc = 0;
 		for (i = 0; i < arity; i++) {
 			ir_node *ret, *irn;
-			ret = get_irn_n(end_bl, i);
+			ret = get_Block_cfgpred(end_bl, i);
 			irn = skip_Proj(ret);
 			if (is_fragile_op(irn) || is_Raise(irn)) {
 				cf_pred[n_exc] = ret;
@@ -1173,7 +1173,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			n_exc = 0;
 			for (i = 0; i < arity; i++) {
 				ir_node *ret;
-				ret = skip_Proj(get_irn_n(end_bl, i));
+				ret = skip_Proj(get_Block_cfgpred(end_bl, i));
 				if (is_Call(ret)) {
 					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 3);
 					n_exc++;
@@ -1199,7 +1199,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		/* assert(exc_handling == 1 || no exceptions. ) */
 		n_exc = 0;
 		for (i = 0; i < arity; i++) {
-			ir_node *ret = get_irn_n(end_bl, i);
+			ir_node *ret = get_Block_cfgpred(end_bl, i);
 			ir_node *irn = skip_Proj(ret);
 
 			if (is_fragile_op(irn) || is_Raise(irn)) {
