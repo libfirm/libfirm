@@ -904,10 +904,6 @@ ir_node *get_End_keepalive(const ir_node *end, int pos) {
 void add_End_keepalive(ir_node *end, ir_node *ka) {
 	ir_graph *irg = get_irn_irg(end);
 	assert(is_End(end));
-
-	if (get_irg_phase_state(irg) == phase_building) {
-		assert((is_Phi(ka) || is_Block(ka) || is_irn_keep(ka)) && "Only Phi, Block or Keep nodes can be kept alive!");
-	}
 	add_irn_n(end, ka);
 }
 
