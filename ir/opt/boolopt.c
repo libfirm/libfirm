@@ -187,7 +187,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Ge) {
-			/* x == c || c >= c + 1 -> x >= c */
+			/* x == c || x >= c + 1 -> x >= c */
 			ir_graph *const irg   = current_ir_graph;
 			ir_node  *const block = get_nodes_block(cmp_lo);
 			ir_node  *const p     = new_r_Proj(irg, block, cmp_lo, mode_b, pn_Cmp_Ge);
