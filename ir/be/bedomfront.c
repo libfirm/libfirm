@@ -140,6 +140,7 @@ ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info,
 	return pmap_get(info->df_map, block);
 }
 
+#if 0
 /**
  * Calculates the iterated dominance frontier of a set of blocks.
  * Also clears the link field of the returned blocks as a side effect
@@ -163,12 +164,11 @@ void be_get_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
 
 		for (i = 0; i < domfront_len; ++i) {
 			ir_node *y = domfront[i];
-			if(!ir_nodeset_insert(blocks, y))
-				continue;
-
-			waitq_put(worklist, y);
+			if (ir_nodeset_insert(blocks, y))
+				waitq_put(worklist, y);
 		}
 	}
 
 	del_waitq(worklist);
 }
+#endif
