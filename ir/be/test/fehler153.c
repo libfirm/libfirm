@@ -3,19 +3,23 @@
 #include <signal.h>
 
 volatile int x = 2;
+volatile int y;
 
 int test(void) {
 
 	x = 3;
+	y = 4;
 
-	for(;;);
+	for(;;) {
+		x = y;
+	}
 }
 
 void handler(int sig)
 {
-	printf(x == 3 ? "ok\n" : "fail");
+	printf(x == 4 ? "ok\n" : "fail");
 	fflush(stdout);
-	exit(x == 3);
+	exit(x != 4);
 }
 
 int main(int argc, char *argv[]) {
