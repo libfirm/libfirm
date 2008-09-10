@@ -549,7 +549,7 @@ static void ou_optimize(unit_t *ou) {
 
 	arch_get_allocatable_regs(aenv, ou->nodes[0], -1, pos_regs);
 
-	/* exclude ingore colors */
+	/* exclude ignore colors */
 	bitset_andnot(pos_regs, ou->co->cenv->ignore_colors);
 
 	assert(bitset_popcnt(pos_regs) != 0 && "No register is allowed for this node !!?");
