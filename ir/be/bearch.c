@@ -57,10 +57,10 @@ arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_mai
  */
 static int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
 {
-	int i, n;
-	for(i = 0, n = cls->n_regs; i < n; ++i)
+	int i, n = cls->n_regs;
+	for (i = n - 1; i >= 0; --i)
 		bitset_set(bs, i);
-	return cls->n_regs;
+	return n;
 }
 
 /**
