@@ -798,13 +798,9 @@ restart:
 				irg_block_walk(ka, optimize_blocks, remove_simple_blocks, &env.changed);
 				mark_irn_visited(ka);
 				in[j++] = ka;
-			} else if (op == op_Phi) {
+			} else {
 				mark_irn_visited(ka);
 				/* don't keep alive dead blocks */
-				if (! is_Block_dead(get_nodes_block(ka)))
-					in[j++] = ka;
-			} else if (is_op_keep(op)) {
-				mark_irn_visited(ka);
 				if (! is_Block_dead(get_nodes_block(ka)))
 					in[j++] = ka;
 			}
