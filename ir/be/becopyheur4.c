@@ -456,13 +456,13 @@ static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
 #ifdef DEBUG_libfirm
-		DB((dbg, LEVEL_4, "Attempt to let c1 (id %u): ", c1 ? c1->id : -1));
+		DB((dbg, LEVEL_4, "Attempt to let c1 (id %u): ", c1 ? c1->id : 0));
 		if (c1) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c1);
 		} else {
 			DB((dbg, LEVEL_4, "{%+F}", src));
 		}
-		DB((dbg, LEVEL_4, "\n\tabsorb c2 (id %u): ", c2 ? c2->id : -1));
+		DB((dbg, LEVEL_4, "\n\tabsorb c2 (id %u): ", c2 ? c2->id : 0));
 		if (c2) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c2);
 		} else {
