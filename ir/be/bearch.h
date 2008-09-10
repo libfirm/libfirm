@@ -48,18 +48,18 @@ typedef enum arch_register_class_flags_t {
 } arch_register_class_flags_t;
 
 typedef enum arch_register_type_t {
-  	arch_register_type_none         = 0,
+	arch_register_type_none         = 0,
 	arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller
-                                             upon a function call. It thus can be overwritten
-                                             in the called function. */
+	                                           upon a function call. It thus can be overwritten
+	                                           in the called function. */
 	arch_register_type_callee_save  = 2,  /**< The register must be saved by the caller
-                                             upon a function call. It thus can be overwritten
-                                             in the called function. */
+	                                           upon a function call. It thus can be overwritten
+	                                           in the called function. */
 	arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
 	arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
 	arch_register_type_virtual      = 16, /**< This is just a virtual register.Virtual registers have
-                                               nearly no constraints, it is a allowed to have multiple
-											   definition for the same register at a point) */
+	                                           nearly no constraints, it is a allowed to have multiple
+	                                           definition for the same register at a point) */
 	arch_register_type_state        = 32, /**< The register represents a state that should be handled by
 	                                           bestate code */
 } arch_register_type_t;
@@ -73,7 +73,7 @@ typedef enum arch_register_type_t {
 extern int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs);
 
 typedef enum arch_operand_type_t {
-  	arch_operand_type_invalid,
+	arch_operand_type_invalid,
 	arch_operand_type_memory,
 	arch_operand_type_register,
 	arch_operand_type_immediate,
@@ -181,7 +181,7 @@ extern int arch_is_register_operand(const arch_env_t *env,
  * a register class for an operand of a node.
  * @param env The environment.
  * @param irn The node.
- * @param pos The postition of the node's operand.
+ * @param pos The position of the node's operand.
  * @param bs  The bitset all allocatable registers shall be put into.
  *            Note, that you can also pass NULL here. If you don't,
  *            make sure, the bitset is as large as the register class
@@ -237,7 +237,7 @@ arch_get_irn_register(const arch_env_t *env, const ir_node *irn);
  * @param reg The register.
  */
 extern void arch_set_irn_register(const arch_env_t *env, ir_node *irn,
-		const arch_register_t *reg);
+                                  const arch_register_t *reg);
 
 /**
  * Classify a node.
