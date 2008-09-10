@@ -81,7 +81,7 @@ static firm_dbg_module_t *dbg = NULL;
 typedef float real_t;
 #define REAL(C)   (C ## f)
 
-static int last_chunk_id        = 0;
+static unsigned last_chunk_id   = 0;
 static int recolor_limit        = 4;
 static real_t dislike_influence = REAL(0.1);
 
@@ -99,8 +99,8 @@ typedef struct _aff_chunk_t {
 	int              weight;                /**< Weight of this chunk */
 	unsigned         weight_consistent : 1; /**< Set if the weight is consistent. */
 	unsigned         deleted           : 1; /**< For debugging: Set if the was deleted. */
-	int              id;                    /**< An id of this chunk. */
-	int              visited;
+	unsigned         id;                    /**< An id of this chunk. */
+	unsigned         visited;
 	col_cost_t       color_affinity[1];
 } aff_chunk_t;
 
@@ -110,7 +110,7 @@ typedef struct _aff_chunk_t {
 typedef struct _aff_edge_t {
 	const ir_node *src;                   /**< Source node. */
 	const ir_node *tgt;                   /**< Target node. */
-	double  weight;                 /**< The weight of this edge. */
+	int           weight;                 /**< The weight of this edge. */
 } aff_edge_t;
 
 /* main coalescing environment */
@@ -124,7 +124,7 @@ typedef struct _co_mst_env_t {
 	be_ifg_t         *ifg;           /**< the interference graph */
 	const arch_env_t *aenv;          /**< the arch environment */
 	copy_opt_t       *co;            /**< the copy opt object */
-	int               chunk_visited;
+	unsigned         chunk_visited;
 	col_cost_t      **single_cols;
 } co_mst_env_t;
 
@@ -456,13 +456,13 @@ static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
 #ifdef DEBUG_libfirm
-		DB((dbg, LEVEL_4, "Attempt to let c1 (id %d): ", c1 ? c1->id : -1));
+		DB((dbg, LEVEL_4, "Attempt to let c1 (id %u): ", c1 ? c1->id : -1));
 		if (c1) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c1);
 		} else {
 			DB((dbg, LEVEL_4, "{%+F}", src));
 		}
-		DB((dbg, LEVEL_4, "\n\tabsorb c2 (id %d): ", c2 ? c2->id : -1));
+		DB((dbg, LEVEL_4, "\n\tabsorb c2 (id %u): ", c2 ? c2->id : -1));
 		if (c2) {
 			DBG_AFF_CHUNK(env, LEVEL_4, c2);
 		} else {
@@ -681,7 +681,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 	foreach_pset(env->chunkset, curr_chunk) {
 		aff_chunk_assure_weight(env, curr_chunk);
 
-		DBG((dbg, LEVEL_1, "entry #%d", curr_chunk->id));
+		DBG((dbg, LEVEL_1, "entry #%u", curr_chunk->id));
 		DBG_AFF_CHUNK(env, LEVEL_1, curr_chunk);
 		DBG((dbg, LEVEL_1, "\n"));
 
@@ -698,7 +698,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 
 			aff_chunk_assure_weight(env, curr_chunk);
 
-			DBG((dbg, LEVEL_1, "entry #%d", curr_chunk->id));
+			DBG((dbg, LEVEL_1, "entry #%u", curr_chunk->id));
 			DBG_AFF_CHUNK(env, LEVEL_1, curr_chunk);
 			DBG((dbg, LEVEL_1, "\n"));
 
@@ -782,7 +782,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 {
 	waitq *nodes = new_waitq();
 
-	DBG((dbg, LEVEL_1, "\n\tExpanding new chunk (#%d) from %+F, color %d:", chunk->id, node->irn, col));
+	DBG((dbg, LEVEL_1, "\n\tExpanding new chunk (#%u) from %+F, color %d:", chunk->id, node->irn, col));
 
 	/* init queue and chunk */
 	waitq_put(nodes, node);
@@ -1150,11 +1150,11 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	int         idx, len, i, nidx, pos;
 	struct list_head changed;
 
-	DB((dbg, LEVEL_2, "fragmentizing chunk #%d", c->id));
+	DB((dbg, LEVEL_2, "fragmentizing chunk #%u", c->id));
 	DBG_AFF_CHUNK(env, LEVEL_2, c);
 	DB((dbg, LEVEL_2, "\n"));
 
-	stat_ev_ctx_push_fmt("heur4_color_chunk", "%d", c->id);
+	stat_ev_ctx_push_fmt("heur4_color_chunk", "%u", c->id);
 
 	++env->chunk_visited;
 
@@ -1258,7 +1258,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		if (local_best) {
 			aff_chunk_assure_weight(env, local_best);
 
-			DB((dbg, LEVEL_3, "\t\tlocal best chunk (id %d) for color %d: ", local_best->id, col));
+			DB((dbg, LEVEL_3, "\t\tlocal best chunk (id %u) for color %d: ", local_best->id, col));
 			DBG_AFF_CHUNK(env, LEVEL_3, local_best);
 
 			if (! best_chunk || best_chunk->weight < local_best->weight) {
@@ -1267,7 +1267,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 				if (best_starts)
 					del_waitq(best_starts);
 				best_starts = good_starts;
-				DB((dbg, LEVEL_3, "\n\t\t... setting global best chunk (id %d), color %d\n", best_chunk->id, best_color));
+				DB((dbg, LEVEL_3, "\n\t\t... setting global best chunk (id %u), color %d\n", best_chunk->id, best_color));
 			} else {
 				DB((dbg, LEVEL_3, "\n\t\t... omitting, global best is better\n"));
 				del_waitq(good_starts);
@@ -1299,7 +1299,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		return;
 	}
 
-	DB((dbg, LEVEL_2, "\tbest chunk #%d ", best_chunk->id));
+	DB((dbg, LEVEL_2, "\tbest chunk #%u ", best_chunk->id));
 	DBG_AFF_CHUNK(env, LEVEL_2, best_chunk);
 	DB((dbg, LEVEL_2, "using color %d\n", best_color));
 
@@ -1309,7 +1309,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 		int res;
 
 		/* bring the node to the color. */
-		DB((dbg, LEVEL_4, "\tManifesting color %d for %+F, chunk #%d\n", best_color, node->irn, best_chunk->id));
+		DB((dbg, LEVEL_4, "\tManifesting color %d for %+F, chunk #%u\n", best_color, node->irn, best_chunk->id));
 		INIT_LIST_HEAD(&changed);
 		stat_ev_tim_push();
 		res = change_node_color(env, node, best_color, &changed);
@@ -1436,7 +1436,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 		aff_chunk_t *chunk = pqueue_get(mst_env.chunks);
 
 		color_aff_chunk(&mst_env, chunk);
-		DB((dbg, LEVEL_4, "<<<====== Coloring chunk (%d) done\n", chunk->id));
+		DB((dbg, LEVEL_4, "<<<====== Coloring chunk (%u) done\n", chunk->id));
 		delete_aff_chunk(&mst_env, chunk);
 	}
 
