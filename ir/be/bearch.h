@@ -64,14 +64,6 @@ typedef enum arch_register_type_t {
 	                                           bestate code */
 } arch_register_type_t;
 
-/**
- * Put all registers in a class into a bitset.
- * @param cls The class.
- * @param bs The bitset. May be NULL.
- * @return The number of registers in the class.
- */
-extern int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs);
-
 typedef enum arch_operand_type_t {
 	arch_operand_type_invalid,
 	arch_operand_type_memory,

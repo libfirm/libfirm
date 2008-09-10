@@ -49,14 +49,17 @@ arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_mai
 	return arch_env;
 }
 
-int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
+/**
+ * Put all registers in a class into a bitset.
+ * @param cls The class.
+ * @param bs The bitset. May be NULL.
+ * @return The number of registers in the class.
+ */
+static int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
 {
-	if(bs) {
-		int i, n;
-		for(i = 0, n = cls->n_regs; i < n; ++i)
-			bitset_set(bs, i);
-	}
-
+	int i, n;
+	for(i = 0, n = cls->n_regs; i < n; ++i)
+		bitset_set(bs, i);
 	return cls->n_regs;
 }
 
