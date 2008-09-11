@@ -15,7 +15,7 @@ void handler(int sig)
 {
 	printf(x == 3 ? "ok\n" : "fail");
 	fflush(stdout);
-	exit(x == 3);
+	exit(x != 3);
 }
 
 int main(int argc, char *argv[]) {
