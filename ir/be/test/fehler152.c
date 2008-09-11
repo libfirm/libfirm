@@ -19,8 +19,8 @@ void handler(int sig)
 }
 
 int main(int argc, char *argv[]) {
-	alarm(1);
 	signal(SIGALRM, handler);
+	alarm(1);
 	test();
 	printf("FAIL ENDLESS LOOP\n");
 	return 1;

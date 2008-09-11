@@ -20,8 +20,8 @@ void handler(int sig)
 }
 
 int main(void) {
-	alarm(1);
 	signal(SIGALRM, handler);
+	alarm(1);
 
 	foo(0);
 
