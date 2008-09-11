@@ -126,10 +126,12 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	const ir_edge_t *edge;
 	int arity, i;
 
-#if 0
-	if(get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) > 1)
-		return 0;
+#if 1
+	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) < 1)
+#else
+	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) != 1)
 #endif
+		return 0;
 
 	foreach_block_succ(block, edge) {
 		succ_block = get_edge_src_irn(edge);
