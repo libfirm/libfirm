@@ -49,7 +49,7 @@
  */
 ir_type *default_firm_get_Alloc(ir_node *n) {
 	n = skip_Proj(n);
-	if (get_irn_op(n) == op_Alloc) {
+	if (is_Alloc(n)) {
 		return get_Alloc_type(n);
 	}
 	return NULL;

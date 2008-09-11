@@ -597,10 +597,10 @@ static ir_op *stat_get_irn_op(ir_node *node)
 		}  /* if */
 		break;
 	case iro_Sel:
-		if (get_irn_op(get_Sel_ptr(node)) == op_Sel) {
+		if (is_Sel(get_Sel_ptr(node))) {
 			/* special case, a Sel of a Sel, count on extra counter */
 			op = status->op_SelSel ? status->op_SelSel : op;
-			if (get_irn_op(get_Sel_ptr(get_Sel_ptr(node))) == op_Sel) {
+			if (is_Sel(get_Sel_ptr(get_Sel_ptr(node)))) {
 				/* special case, a Sel of a Sel of a Sel, count on extra counter */
 				op = status->op_SelSelSel ? status->op_SelSelSel : op;
 			}  /* if */
@@ -722,7 +722,7 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 	cnt_inc(&eb_entry->cnt[bcnt_nodes]);
 
 	/* don't count keep-alive edges */
-	if (get_irn_op(node) == op_End)
+	if (is_End(node))
 		return;
 
 	arity = get_irn_arity(node);
@@ -804,7 +804,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 	/* found a call, this function is not a leaf */
 	graph->is_leaf = 0;
 
-	if (get_irn_op(ptr) == op_SymConst) {
+	if (is_SymConst(ptr)) {
 		if (get_SymConst_kind(ptr) == symconst_addr_ent) {
 			/* ok, we seems to know the entity */
 			ent = get_SymConst_entity(ptr);
@@ -872,7 +872,7 @@ static void stat_update_call_2(ir_node *call, graph_entry_t *graph)
 	if (is_Bad(block))
 		return;
 
-	if (get_irn_op(ptr) == op_SymConst) {
+	if (is_SymConst(ptr)) {
 		if (get_SymConst_kind(ptr) == symconst_addr_ent) {
 			/* ok, we seems to know the entity */
 			ent = get_SymConst_entity(ptr);

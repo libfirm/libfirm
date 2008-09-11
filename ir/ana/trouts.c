@@ -548,10 +548,10 @@ static void chain_accesses(ir_node *n, void *env) {
 	ir_node *addr;
 
 	(void) env;
-	if (get_irn_op(n) == op_Alloc) {
+	if (is_Alloc(n)) {
 		add_type_alloc(get_Alloc_type(n), n);
 		return;
-	} else if (get_irn_op(n) == op_Cast) {
+	} else if (is_Cast(n)) {
 		add_type_cast(get_Cast_type(n), n);
 		return;
 	} else if (is_Sel(n)) {
@@ -562,7 +562,7 @@ static void chain_accesses(ir_node *n, void *env) {
 		return;
 	} else if (is_memop(n)) {
 		addr = get_memop_ptr(n);
-	} else if (get_irn_op(n) == op_Call) {
+	} else if (is_Call(n)) {
 		addr = get_Call_ptr(n);
 		if (! is_Sel(addr)) return;  /* Sels before Calls mean a Load / polymorphic Call. */
 	} else {

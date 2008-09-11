@@ -283,7 +283,7 @@ static void show_phi_inputs(ir_node *phi, ir_node *block) {
  * @param ptr  the node representing the address
  */
 static ir_entity *get_ptr_entity(ir_node *ptr) {
-	if (get_irn_op(ptr) == op_Sel) {
+	if (is_Sel(ptr)) {
 		return get_Sel_entity(ptr);
 	} else if (is_SymConst_addr_ent(ptr)) {
 		return get_SymConst_entity(ptr);
@@ -394,15 +394,15 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
 	/* if we have exception flow, we must have a real Memory input */
 	if (proj == pn_Call_X_regular)
 		ASSERT_AND_RET(
-			get_irn_op(get_Call_mem(n)) != op_NoMem,
+			!is_NoMem(get_Call_mem(n)),
 			"Regular Proj from FunctionCall", 0);
 	else if (proj == pn_Call_X_except)
 		ASSERT_AND_RET(
-			get_irn_op(get_Call_mem(n)) != op_NoMem,
+			!is_NoMem(get_Call_mem(n)),
 			"Exception Proj from FunctionCall", 0);
 	else if (proj == pn_Call_M_regular || proj == pn_Call_M_except)
 		ASSERT_AND_RET(
-			(get_irn_op(get_Call_mem(n)) != op_NoMem || 1),
+			(!is_NoMem(get_Call_mem(n)) || 1),
 			"Memory Proj from FunctionCall", 0);
 	return 1;
 }
@@ -1614,7 +1614,7 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 	/* Phi: BB x dataM^n --> dataM */
 	for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_irn_n(n, i);
-		if (!is_Bad(pred) && (get_irn_op(pred) != op_Unknown)) {
+		if (!is_Bad(pred) && !is_Unknown(pred)) {
 			ASSERT_AND_RET_DBG(
 				get_irn_mode(pred) == mymode,
 				"Phi node", 0,
@@ -2145,7 +2145,7 @@ static void check_bads(ir_node *node, void *env) {
 		}
 
 		if ((venv->flags & TUPLE) == 0) {
-			if (get_irn_op(node) == op_Tuple) {
+			if (is_Tuple(node)) {
 				venv->res |= TUPLE;
 
 				if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {

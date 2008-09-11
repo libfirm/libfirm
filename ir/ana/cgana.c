@@ -348,7 +348,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set) {
 		 * op_Tuple oder ein Knoten, der in "free_ana_walker" behandelt
 		 * wird. */
 		ir_node * pred = get_Proj_pred(node);
-		if (get_irn_link(pred) != MARK && get_irn_op(pred) == op_Tuple) {
+		if (get_irn_link(pred) != MARK && is_Tuple(pred)) {
 			free_mark_proj(get_Tuple_pred(pred, get_Proj_proj(node)), n, set);
 		} else {
 			/* nothing: da in "free_ana_walker" behandelt. */

@@ -171,8 +171,8 @@ int get_type_estimated_n_fields(ir_type *tp) {
   case tpo_array: {
     long n_elt = DEFAULT_N_ARRAY_ELEMENTS;
     assert(get_array_n_dimensions(tp) == 1 && "other not implemented");
-    if ((get_irn_op(get_array_lower_bound(tp, 0)) == op_Const) &&
-	(get_irn_op(get_array_upper_bound(tp, 0)) == op_Const)   ) {
+    if (is_Const(get_array_lower_bound(tp, 0)) &&
+        is_Const(get_array_upper_bound(tp, 0))) {
       n_elt = get_array_upper_bound_int(tp, 0) - get_array_upper_bound_int(tp, 0);
     }
     s = n_elt;
@@ -214,8 +214,8 @@ int get_type_estimated_size_bytes(ir_type *tp) {
     int elt_s = get_type_estimated_size_bytes(get_array_element_type(tp));
     long n_elt = DEFAULT_N_ARRAY_ELEMENTS;
     assert(get_array_n_dimensions(tp) == 1 && "other not implemented");
-    if ((get_irn_op(get_array_lower_bound(tp, 0)) == op_Const) &&
-	(get_irn_op(get_array_upper_bound(tp, 0)) == op_Const)   ) {
+    if (is_Const(get_array_lower_bound(tp, 0)) &&
+        is_Const(get_array_upper_bound(tp, 0))) {
       n_elt = get_array_upper_bound_int(tp, 0) - get_array_lower_bound_int(tp, 0);
     }
     s = n_elt * elt_s;
@@ -306,7 +306,7 @@ double get_entity_estimated_n_loads(ir_entity *ent) {
   double n_loads = 0;
   for (i = 0; i < n_acc; ++i) {
     ir_node *acc = get_entity_access(ent, i);
-    if (get_irn_op(acc) == op_Load) {
+    if (is_Load(acc)) {
       n_loads += get_irn_final_cost(acc);
     }
   }
@@ -318,7 +318,7 @@ double get_entity_estimated_n_stores(ir_entity *ent) {
   double n_stores = 0;
   for (i = 0; i < n_acc; ++i) {
     ir_node *acc = get_entity_access(ent, i);
-    if (get_irn_op(acc) == op_Store)
+    if (is_Store(acc))
       n_stores += get_irn_final_cost(acc);
   }
   return n_stores;
@@ -330,8 +330,7 @@ double get_entity_estimated_n_calls(ir_entity *ent) {
   double n_calls = 0;
   for (i = 0; i < n_acc; ++i) {
     ir_node *acc = get_entity_access(ent, i);
-    if (get_irn_op(acc) == op_Call)
-
+    if (is_Call(acc))
       n_calls += get_irn_final_cost(acc);
   }
   return n_calls;

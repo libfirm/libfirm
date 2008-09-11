@@ -402,8 +402,8 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 
 		default:
 			if (get_irn_op(node) == get_op_Max() ||
-				get_irn_op(node) == get_op_Min() ||
-				get_irn_op(node) == get_op_Mulh())
+			    get_irn_op(node) == get_op_Min() ||
+			    is_Mulh(node))
 			{
 				/* TODO: implement */
 				/* ignore for now  */

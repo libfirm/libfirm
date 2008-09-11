@@ -494,7 +494,7 @@ static void emit_be_Perm(const ir_node *irn) {
 static void emit_Proj(const ir_node *irn) {
 	ir_node *pred = get_Proj_pred(irn);
 
-	if (get_irn_op(pred) == op_Start) {
+	if (is_Start(pred)) {
 		if (get_Proj_proj(irn) == pn_Start_X_initial_exec) {
 			emit_Jmp(irn);
 		}

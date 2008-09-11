@@ -1493,7 +1493,7 @@ static ir_node *gen_Proj(ir_node *node) {
 		return gen_Proj_be_AddSP(node);
 	} else if (is_Cmp(pred)) {
 		return gen_Proj_Cmp(node);
-	} else if (get_irn_op(pred) == op_Start) {
+	} else if (is_Start(pred)) {
 		if (proj == pn_Start_X_initial_exec) {
 			ir_node *block = get_nodes_block(pred);
 			ir_node *jump;

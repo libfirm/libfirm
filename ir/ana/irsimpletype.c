@@ -117,13 +117,13 @@ static ir_type *find_type_for_Proj(ir_node *n) {
 		/* Deal with Start / Call here: we need to know the Proj Nr. */
 		assert(get_irn_mode(pred) == mode_T);
 		pred_pred = get_Proj_pred(pred);
-		if (get_irn_op(pred_pred) == op_Start)  {
+		if (is_Start(pred_pred))  {
 			ir_type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
 			tp = get_method_param_type(mtp, get_Proj_proj(n));
-		} else if (get_irn_op(pred_pred) == op_Call) {
+		} else if (is_Call(pred_pred)) {
 			ir_type *mtp = get_Call_type(pred_pred);
 			tp = get_method_res_type(mtp, get_Proj_proj(n));
-		} else if (get_irn_op(pred_pred) == op_Tuple) {
+		} else if (is_Tuple(pred_pred)) {
 			panic("Encountered nested Tuple");
 		} else {
 			DB((dbg, SET_LEVEL_1, "Proj %ld from Proj from ??: unknown type\n", get_irn_node_nr(n)));

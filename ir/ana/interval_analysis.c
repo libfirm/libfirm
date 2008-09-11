@@ -261,7 +261,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
 
     cfop = get_Block_cfgpred(b, i);
     if (is_Proj(cfop)) {
-      if (get_irn_op(get_Proj_pred(cfop)) != op_Cond) {
+      if (!is_Cond(get_Proj_pred(cfop))) {
         cfop = skip_Proj(cfop);
       } else {
         assert(get_nodes_block(cfop) == get_nodes_block(skip_Proj(cfop)));
@@ -270,8 +270,7 @@ static void construct_interval_block(ir_node *b, ir_loop *l) {
 
     pred = skip_Proj(get_nodes_block(cfop));
     /* We want nice blocks. */
-    assert(   get_irn_op(pred) != op_Bad
-           && get_irn_op(skip_Proj(get_Block_cfgpred(b, i))) != op_Bad);
+    assert(!is_Bad(pred) && !is_Bad(skip_Proj(get_Block_cfgpred(b, i))));
     pred_l = get_irn_loop(pred);
     if (pred_l == l) {
       add_region_in(b, pred);

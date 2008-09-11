@@ -949,7 +949,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 			set_Tuple_pred(node, i, new_r_Bad(irg));
 		if (rt->mem_proj_nr >= 0)
 			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_regular));
-		if (get_irn_op(mem) != op_NoMem) {
+		if (!is_NoMem(mem)) {
 			/* Exceptions can only be handled with real memory */
 			if (rt->regular_proj_nr >= 0)
 				set_Tuple_pred(node, rt->regular_proj_nr, new_r_Proj(irg, bl, call, mode_X, pn_Call_X_regular));

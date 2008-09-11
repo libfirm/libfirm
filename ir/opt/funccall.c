@@ -207,7 +207,7 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 		mem  = get_irn_link(call);
 
 		/* beware of calls in the pure call list */
-		if (! mem || get_irn_op(mem) == op_Call)
+		if (!mem || is_Call(mem))
 			continue;
 		assert(get_irn_mode(mem) == mode_M);
 
@@ -463,8 +463,7 @@ static unsigned _follow_mem(ir_node *node) {
 		case iro_Call:
 			/* A call is only tolerable if its either constant or pure. */
 			ptr = get_Call_ptr(node);
-			if (get_irn_op(ptr) == op_SymConst &&
-				get_SymConst_kind(ptr) == symconst_addr_ent) {
+			if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
 				ir_entity *ent = get_SymConst_entity(ptr);
 				ir_graph  *irg = get_entity_irg(ent);
 

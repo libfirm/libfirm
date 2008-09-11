@@ -4341,7 +4341,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
 					if (tv != tarval_bad) {
 						/* c >= 0 : Abs(a) <= c  ==>  (unsigned)(a + c) <= 2*c */
-						if (get_irn_op(left) == op_Abs) { // TODO something is missing here
+						if (is_Abs(left)) { // TODO something is missing here
 						}
 					}
 				}

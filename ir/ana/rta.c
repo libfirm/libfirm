@@ -353,7 +353,7 @@ static void force_description (ir_entity *ent, ir_entity *addr)
       ir_node *f_addr = get_atomic_ent_value (over);
       ir_entity *impl_ent = get_SymConst_entity (f_addr);
 
-      assert ((get_irn_op(f_addr) == op_SymConst) && "can't do complex addrs");
+      assert(is_SymConst(f_addr) && "can't do complex addrs");
       if (impl_ent == addr) {
         assert (0 && "gibt's denn sowas");
         force_description (over, addr);

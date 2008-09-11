@@ -383,8 +383,7 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
 		v = (v << 8) | get_tarval_sub_bits(tv, 1);
 		v = (v << 8) | get_tarval_sub_bits(tv, 0);
 		*resL = new_Const_long(mode_Is, v);
-	}
-	else if (get_irn_op(skip_Proj(arg)) == op_Load) {
+	} else if (is_Load(skip_Proj(arg))) {
 		/* FIXME: handling of low/high depends on LE/BE here */
 		assert(0);
 	}
@@ -423,8 +422,7 @@ static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
 		v = (v << 8) | get_tarval_sub_bits(tv, 1);
 		v = (v << 8) | get_tarval_sub_bits(tv, 0);
 		return new_Const_long(mode_Is, v);
-	}
-	else if (get_irn_op(skip_Proj(arg)) == op_Load) {
+	} else if (is_Load(skip_Proj(arg))) {
 		ir_node *load;
 
 		load = skip_Proj(arg);

@@ -482,7 +482,7 @@ is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 
 	for (n = get_irn_arity(irn)-1; n>=0 && remat; --n) {
 		ir_node        *op = get_irn_n(irn, n);
-		remat &= has_reg_class(si, op) || arch_irn_get_flags(arch_env, op) & arch_irn_flags_ignore || (get_irn_op(op) == op_NoMem);
+		remat &= has_reg_class(si, op) || arch_irn_get_flags(arch_env, op) & arch_irn_flags_ignore || is_NoMem(op);
 
 //		if(!remat)
 //			ir_fprintf(stderr, "  Argument %d (%+F) of Node %+F has wrong regclass\n", i, op, irn);

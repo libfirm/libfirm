@@ -122,7 +122,7 @@ static int is_method_leaving_raise(ir_node *raise)
 static ir_node *is_depend_alloc(ir_node *adr) {
   ir_node *alloc;
 
-  if (get_irn_op(adr) != op_Sel)
+  if (!is_Sel(adr))
     return NULL;
 
   /* should be a simple Sel */
@@ -130,7 +130,7 @@ static ir_node *is_depend_alloc(ir_node *adr) {
     return NULL;
 
   alloc = skip_Proj(get_Sel_ptr(adr));
-  if (get_irn_op(alloc) != op_Alloc)
+  if (!is_Alloc(alloc))
     return NULL;
 
   /* hmm, we depend on this Alloc */

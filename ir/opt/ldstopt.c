@@ -256,14 +256,12 @@ static void collect_nodes(ir_node *node, void *env)
 static ir_entity *find_constant_entity(ir_node *ptr)
 {
 	for (;;) {
-		ir_op *op = get_irn_op(ptr);
-
-		if (op == op_SymConst && (get_SymConst_kind(ptr) == symconst_addr_ent)) {
+		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
 			ir_entity *ent = get_SymConst_entity(ptr);
 			if (variability_constant == get_entity_variability(ent))
 				return ent;
 			return NULL;
-		} else if (op == op_Sel) {
+		} else if (is_Sel(ptr)) {
 			ir_entity *ent = get_Sel_entity(ptr);
 			ir_type   *tp  = get_entity_owner(ent);
 
@@ -336,7 +334,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 	ir_entity           *root, *field;
 	int                 path_len, pos;
 
-	if (get_irn_op(ptr) == op_SymConst) {
+	if (is_SymConst(ptr)) {
 		/* a SymConst. If the depth is 0, this is an access to a global
 		 * entity and we don't need a component path, else we know
 		 * at least it's length.
@@ -345,7 +343,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 		root = get_SymConst_entity(ptr);
 		res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
 	} else {
-		assert(get_irn_op(ptr) == op_Sel);
+		assert(is_Sel(ptr));
 		/* it's a Sel, go up until we find the root */
 		res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
 
@@ -927,7 +925,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 			if (rel != ir_no_alias)
 				break;
 			pred = skip_Proj(get_Store_mem(pred));
-		} else if (get_irn_op(pred) == op_Load) {
+		} else if (is_Load(pred)) {
 			ir_alias_relation rel = get_alias_relation(
 				current_ir_graph, get_Load_ptr(pred), get_Load_mode(pred),
 				ptr, mode);
@@ -1031,7 +1029,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	store = skip_Proj(projM);
 	old_store = store;
-	if (get_irn_op(store) != op_Store)
+	if (!is_Store(store))
 		return 0;
 
 	block = get_nodes_block(store);

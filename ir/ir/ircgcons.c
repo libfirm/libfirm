@@ -96,7 +96,7 @@ static void caller_init(int arr_length, ir_entity ** free_methods) {
     ir_node * call;
     /* We collected all call nodes in a link list at the end node. */
     for (call = get_irn_link(get_irg_end(irg)); call; call = get_irn_link(call)) {
-      if (get_irn_op(call) != op_Call) continue;
+      if (!is_Call(call)) continue;
       for (j = get_Call_n_callees(call) - 1; j >= 0; --j) {
         ir_entity * ent = get_Call_callee(call, j);
         if (get_entity_irg(ent)) {
@@ -126,7 +126,7 @@ static INLINE ir_node * tail(ir_node * node) {
  * (auch bei Proj->Call Operationen) und Phi-Operationen in die Liste ihres
  * Grundblocks einfügen. */
 static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail) {
-  if (get_irn_op(node) == op_Call) {
+  if (is_Call(node)) {
     /* Die Liste von Call an call_tail anhängen. */
     ir_node * link;
     assert(get_irn_link(*call_tail) == NULL);
@@ -261,9 +261,9 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
    * dass oben für "verschiedene" Proj-Operationen wegen CSE nur eine
    * Filter-Operation erzeugt worden sein kann. */
   for (link = get_irg_start(irg), proj = get_irn_link(link); proj; proj = get_irn_link(proj)) {
-    if (get_irn_op(proj) == op_Id) { /* replaced with filter */
+    if (is_Id(proj)) { /* replaced with filter */
       ir_node * filter = get_Id_pred(proj);
-      assert(get_irn_op(filter) == op_Filter);
+      assert(is_Filter(filter));
       if (filter != link && get_irn_link(filter) == NULL) {
     set_irn_link(link, filter);
     link = filter;
@@ -279,7 +279,7 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
   if (data->open) {
     set_Block_cg_cfgpred(start_block, 0, get_cg_Unknown(mode_X));
     for (proj = get_irn_link(get_irg_start(irg)); proj; proj = get_irn_link(proj)) {
-      if (get_irn_op(proj) == op_Filter) {
+      if (is_Filter(proj)) {
     set_Filter_cg_pred(proj, 0, get_cg_Unknown(get_irn_mode(proj)));
       }
     }
@@ -457,7 +457,7 @@ static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
   /* Move projs of this node. */
   proj = get_irn_link(node);
   for (; proj; proj = skip_Id(get_irn_link(proj))) {
-    if (get_irn_op(proj) != op_Proj && get_irn_op(proj) != op_Filter) continue;
+    if (get_irn_op(proj) != op_Proj && !is_Filter(proj)) continue;
     if ((get_nodes_block(proj) == from_block) && (skip_Proj(get_irn_n(proj, 0)) == node))
       set_nodes_block(proj, to_block);
   }
@@ -482,7 +482,7 @@ static void construct_start(ir_entity * caller, ir_entity * callee,
 
   set_Block_cg_cfgpred(get_nodes_block(start), data->count, exec);
   for (filter = get_irn_link(start); filter; filter = get_irn_link(filter)) {
-    if (get_irn_op(filter) != op_Filter) continue;
+    if (!is_Filter(filter)) continue;
     if (get_Proj_pred(filter) == start) {
       switch ((int) get_Proj_proj(filter)) {
       case pn_Start_M:
@@ -573,7 +573,7 @@ static ir_node * get_except(ir_node * call) {
    * Aufrufstelle nur ein einziges Mal aufgerufen. */
   ir_node * proj;
   for (proj = get_irn_link(call); proj && get_irn_op(proj) == op_Proj; proj = get_irn_link(proj)) {
-    if (get_Proj_proj(proj) == 1 && get_irn_op(get_Proj_pred(proj)) == op_Call) {
+    if (get_Proj_proj(proj) == 1 && is_Call(get_Proj_pred(proj))) {
       return proj;
     }
   }
@@ -857,7 +857,7 @@ void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
 
     current_ir_graph = get_irp_irg(i);
     for (node = get_irn_link(get_irg_end(current_ir_graph)); node; node = get_irn_link(node)) {
-      if (get_irn_op(node) == op_Call) {
+      if (is_Call(node)) {
         int j, n_callees = get_Call_n_callees(node);
         for (j = 0; j < n_callees; ++j)
           if (get_entity_irg(get_Call_callee(node, j)))
@@ -881,7 +881,7 @@ void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
 static void destruct_walker(ir_node * node, void * env)
 {
   (void) env;
-  if (get_irn_op(node) == op_Block) {
+  if (is_Block(node)) {
     remove_Block_cg_cfgpred_arr(node);
     /* Do not turn Break into Jmp.  Better: merge blocks right away.
        Well, but there are Breaks left.
@@ -891,13 +891,13 @@ static void destruct_walker(ir_node * node, void * env)
       if (get_irn_op(pred) == op_Break)
 	exchange(node, get_nodes_block(pred));
     }
-  } else if (get_irn_op(node) == op_Filter) {
+  } else if (is_Filter(node)) {
     set_irg_current_block(current_ir_graph, get_nodes_block(node));
     exchange(node, new_Proj(get_Filter_pred(node), get_irn_mode(node), get_Filter_proj(node)));
   } else if (get_irn_op(node) == op_Break) {
     set_irg_current_block(current_ir_graph, get_nodes_block(node));
     exchange(node, new_Jmp());
-  } else if (get_irn_op(node) == op_Call) {
+  } else if (is_Call(node)) {
     remove_Call_callee_arr(node);
   } else if (get_irn_op(node) == op_Proj) {
     /*  some ProjX end up in strange blocks. */

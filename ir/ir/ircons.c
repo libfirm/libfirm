@@ -254,7 +254,7 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 
 	for (i = arity - 1; i >= 0; --i)
-		if (get_irn_op(in[i]) == op_Unknown) {
+		if (is_Unknown(in[i])) {
 			has_unknown = 1;
 			break;
 		}
@@ -1744,7 +1744,7 @@ new_d_Block(dbg_info *db, int arity, ir_node **in) {
 	}
 
 	for (i = arity-1; i >= 0; i--)
-		if (get_irn_op(in[i]) == op_Unknown) {
+		if (is_Unknown(in[i])) {
 			has_unknown = 1;
 			break;
 		}
@@ -1897,11 +1897,11 @@ static INLINE ir_node **new_frag_arr(ir_node *n) {
 	   finished yet. */
 	opt = get_opt_optimize(); set_optimize(0);
 	/* Here we rely on the fact that all frag ops have Memory as first result! */
-	if (get_irn_op(n) == op_Call)
+	if (is_Call(n)) {
 		arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
-	else if (get_irn_op(n) == op_CopyB)
+	} else if (is_CopyB(n)) {
 		arr[0] = new_Proj(n, mode_M, pn_CopyB_M_except);
-	else {
+	} else {
 		assert((pn_Quot_M == pn_DivMod_M) &&
 		       (pn_Quot_M == pn_Div_M)    &&
 		       (pn_Quot_M == pn_Mod_M)    &&

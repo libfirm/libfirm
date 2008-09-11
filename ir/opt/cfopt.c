@@ -788,9 +788,7 @@ restart:
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (irn_not_visited(ka)) {
-			ir_op *op = get_irn_op(ka);
-
-			if ((op == op_Block) && !Block_block_visited(ka)) {
+			if (is_Block(ka) && !Block_block_visited(ka)) {
 				/* irg_block_walk() will increase the block visited flag, but we must visit only
 				   these blocks that are not visited yet, so decrease it first. */
 				set_irg_block_visited(irg, get_irg_block_visited(irg) - 1);

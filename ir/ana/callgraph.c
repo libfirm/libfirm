@@ -728,7 +728,7 @@ static int is_ip_head(ir_graph *n, ir_graph *pred)
 		for (i = 0; i < arity; i++) {
 			ir_node *pred_cfop = skip_Proj(get_Block_cfgpred(sblock, i));
 			//printf("  "); DDMN(pred_cfop);
-			if (get_irn_op(pred_cfop) == op_CallBegin) {  /* could be Unknown */
+			if (is_CallBegin(pred_cfop)) { /* could be Unknown */
 				ir_graph *ip_pred = get_irn_irg(pred_cfop);
 				//printf("   "); DDMG(ip_pred);
 				if ((ip_pred == pred) && is_backedge(sblock, i)) {

@@ -233,7 +233,7 @@ static int is_const_sel(ir_node *sel) {
   for (i = 0; i < n; ++i) {
     ir_node *idx = get_Sel_index(sel, i);
 
-    if (get_irn_op(idx) != op_Const)
+    if (!is_Const(idx))
       return 0;
   }
   return 1;
@@ -302,9 +302,8 @@ static void link_all_leave_sels(ir_entity *ent, ir_node *sel)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(sel, i);
 
-    if (get_irn_op(succ) == op_Sel)
+    if (is_Sel(succ))
       link_all_leave_sels(ent, succ);
-
   }
 
    /* if Sel nodes with memory inputs are used, a entity can be
@@ -361,7 +360,7 @@ static int find_possible_replacements(ir_graph *irg)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if (get_irn_op(succ) == op_Sel) {
+    if (is_Sel(succ)) {
       ir_entity *ent = get_Sel_entity(succ);
       set_entity_link(ent, NULL);
     }
@@ -375,7 +374,7 @@ static int find_possible_replacements(ir_graph *irg)
   for (i = 0; i < n; ++i) {
     ir_node *succ = get_irn_out(irg_frame, i);
 
-    if (get_irn_op(succ) == op_Sel) {
+    if (is_Sel(succ)) {
       ir_entity *ent = get_Sel_entity(succ);
       ir_type *ent_type;
 
@@ -421,7 +420,7 @@ static int is_leave_sel(ir_node *sel) {
 
   for(i = get_irn_n_outs(sel) - 1; i >= 0; i--) {
     succ = get_irn_out(sel, i);
-    if(get_irn_op(succ) == op_Sel)
+    if (is_Sel(succ))
       return 0;
   }
 
@@ -444,7 +443,7 @@ static path_t *find_path(ir_node *sel, unsigned len)
   n    = get_Sel_n_indexs(sel);
   len += n + 1;
 
-  if (get_irn_op(pred) != op_Sel) {
+  if (!is_Sel(pred)) {
     /* we found the root */
 
     res = xmalloc(sizeof(*res) + (len - 1) * sizeof(res->path));
@@ -459,7 +458,7 @@ static path_t *find_path(ir_node *sel, unsigned len)
   for (i = 0; i < n; ++i) {
     ir_node *index = get_Sel_index(sel, i);
 
-    if(get_irn_op(index) == op_Const)
+    if (is_Const(index))
       res->path[pos++].tv = get_Const_tarval(index);
   }
   return res;
@@ -658,7 +657,7 @@ static void sync_stored_scalars(ir_node *blk, env_t *env) {
 	/* We must check this, why it is possible to get a Bad node
 	 * form new_r_Sync(), when the node can be optimized.
 	 * In this case we must do nothing.*/
-	if(get_irn_op(sync) == op_Sync)  {
+	if (is_Sync(sync))  {
 	  val_arr[env->gl_mem_vnum].mem_edge_state = sync;
 	  /* We add this sync node to the sync's fix list.*/
 	  add_sync_to_fixlist(val_arr[env->gl_mem_vnum].mem_edge_state, unk_vnum, env);
@@ -885,8 +884,7 @@ static void split_call_mem_edge(env_t *env, ir_node *call, pset *accessed_entiti
       /* We must check this, why it is possible to get a Bad node
        * form new_r_Sync(), when the node can be optimized.
        * In this case we must do nothing.*/
-      if(get_irn_op(sync) == op_Sync) {
-
+      if (is_Sync(sync)) {
 	set_Call_mem(call, sync);
 	if(ARR_LEN(accessed_leaves_vnum))
 	  /* We add this sync node to the sync's fix list.*/
@@ -943,7 +941,7 @@ static void split_memory_edge(ir_node *irn, void *ctx) {
 
 	  /* Calls that have a NoMem input do neither read nor write memory.
 	     We can completely ignore them here. */
-	  if (get_irn_op(get_Call_mem(irn)) == op_NoMem)
+	  if (is_NoMem(get_Call_mem(irn)))
 	    return;
 
           /* We save in this set all entities,
@@ -955,7 +953,7 @@ static void split_memory_edge(ir_node *irn, void *ctx) {
 
             sel = get_Call_param(irn, i);
 	    value_sels = NULL;
-            if(get_irn_op(sel) == op_Sel) {
+            if (is_Sel(sel)) {
               key_sels.sel = sel;
               value_sels   = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
 
@@ -1100,7 +1098,7 @@ static void fix_syncs(env_t *env)
     pred  = get_nodes_block(pred);
 
     /* We first repair the global memory edge at the first position of sync predecessors.*/
-    if(get_irn_op(get_irn_n(sync, 0)) == op_Unknown) {
+    if (is_Unknown(get_irn_n(sync, 0))) {
       inc_irg_block_visited(current_ir_graph);
       val = find_vnum_value(pred, env->gl_mem_vnum);
 
@@ -1112,7 +1110,7 @@ static void fix_syncs(env_t *env)
       /* We repair the leaves*/
 
       assert(k <= ARR_LEN(l->accessed_vnum) && "The algorythm for sync repair is wron");
-      if(get_irn_op(get_irn_n(sync, i)) == op_Unknown) {
+      if (is_Unknown(get_irn_n(sync, i))) {
         inc_irg_block_visited(current_ir_graph);
         val = find_vnum_value(pred, l->accessed_vnum[k++]);
 
@@ -1218,7 +1216,6 @@ static void analyse_calls(ir_node *irn, void *ctx) {
   int                 i, vnum;
   unsigned int        acces_type;
   ir_node             *param, *call_ptr, *blk;
-  ir_op               *op;
   ir_entity           *meth_ent;
   sels_t              key_sels, *value_sels;
   call_access_t       key_call, *value_call;
@@ -1226,18 +1223,18 @@ static void analyse_calls(ir_node *irn, void *ctx) {
   env_t               *env;
 
   env = ctx;
-  if(get_irn_op(irn) != op_Call)
+  if (!is_Call(irn))
     return;
 
   /* Calls that have a NoMem input do neither read nor write memory.
      We can completely ignore them here. */
-  if (get_irn_op(get_Call_mem(irn)) == op_NoMem)
+  if (is_NoMem(get_Call_mem(irn)))
     return;
 
   /* We iterate over the parameters of this call nodes.*/
   for ( i = get_Call_n_params(irn) - 1; i >= 0; i--) {
     param = get_Call_param(irn, i);
-    if(get_irn_op(param) == op_Sel) {
+    if (is_Sel(param)) {
       /* We have found a parameter with operation sel.*/
       key_sels.sel = param;
       value_sels   = set_find(env->set_sels, &key_sels, sizeof(key_sels), HASH_PTR(key_sels.sel));
@@ -1245,9 +1242,8 @@ static void analyse_calls(ir_node *irn, void *ctx) {
 
         /* We have found a call, that have as parameter a sel from our set_sels.*/
         call_ptr = get_Call_ptr(irn);
-        op = get_irn_op(call_ptr);
 
-        if(op == op_SymConst && get_SymConst_kind(call_ptr) == symconst_addr_ent) {
+        if (is_SymConst(call_ptr) && get_SymConst_kind(call_ptr) == symconst_addr_ent) {
           meth_ent = get_SymConst_entity(call_ptr);
 	  /* we get the access type for our sel.*/
 	  acces_type = get_method_param_access(meth_ent, i);
@@ -1516,7 +1512,7 @@ void data_flow_scalar_replacement_opt(ir_graph *irg) {
     for (i = 0 ; i < get_irn_n_outs(irg_frame); i++) {
       ir_node *succ = get_irn_out(irg_frame, i);
 
-      if (get_irn_op(succ) == op_Sel) {
+      if (is_Sel(succ)) {
         ir_entity *ent = get_Sel_entity(succ);
 
         if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)

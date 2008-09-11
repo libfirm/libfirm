@@ -192,12 +192,12 @@ static void my_irg_walk_current_graph(irg_walk_func *pre, irg_walk_func *post, v
 static void walk_pre(ir_node *n, void *env)
 {
   (void) env;
-  if (get_irn_op(n) == op_Raise)
+  if (is_Raise(n))
     just_passed_a_Raise = 1;
 
-  if (   (get_irn_op(n) == op_Proj)
-      && (get_irn_op(get_Proj_pred(n)) == op_Cond)
-      && (just_passed_a_Raise)) {
+  if (get_irn_op(n) == op_Proj  &&
+      is_Cond(get_Proj_pred(n)) &&
+      just_passed_a_Raise) {
     ir_node *other_proj;
     ir_node *c = get_Proj_pred(n);
 
@@ -215,7 +215,7 @@ static void walk_pre(ir_node *n, void *env)
     }
   }
 
-  if (get_irn_op(n) == op_Cond) {
+  if (is_Cond(n)) {
     set_irn_link(n, Cond_list);
     Cond_list = n;
   }
@@ -224,13 +224,14 @@ static void walk_pre(ir_node *n, void *env)
 static void walk_post(ir_node *n, void *env)
 {
   (void) env;
-  if (get_irn_op(n) == op_Raise)
+  if (is_Raise(n))
     just_passed_a_Raise = 0;
 
-  if (   (get_irn_op(n) == op_Proj)
-      && (get_irn_op(get_Proj_pred(n)) == op_Cond)
-      && ((get_ProjX_probability(n) == Cond_prob_exception_taken)    ||
-	  (get_ProjX_probability(n) == Cond_prob_was_exception_taken)   )) {
+  if (get_irn_op(n) == op_Proj  &&
+      is_Cond(get_Proj_pred(n)) && (
+        get_ProjX_probability(n) == Cond_prob_exception_taken ||
+        get_ProjX_probability(n) == Cond_prob_was_exception_taken
+      )) {
     just_passed_a_Raise = 1;
   }
 }
@@ -315,7 +316,7 @@ static INLINE double get_weighted_region_exec_freq(void *reg, int pos) {
   ir_node *cfop;
   if (is_ir_node(reg)) {
     cfop = get_Block_cfgpred((ir_node *)reg, pos);
-    if (is_Proj(cfop) && (get_irn_op(get_Proj_pred(cfop)) != op_Cond))
+    if (is_Proj(cfop) && !is_Cond(get_Proj_pred(cfop)))
       cfop = skip_Proj(cfop);
   } else {
     assert(is_ir_loop(reg));

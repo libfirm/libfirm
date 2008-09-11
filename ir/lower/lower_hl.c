@@ -354,7 +354,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	int offset, bit_offset, bits, bf_bits, old_cse;
 	dbg_info *db;
 
-	if (get_irn_op(sel) != op_Sel)
+	if (!is_Sel(sel))
 		return;
 
 	ent     = get_Sel_entity(sel);
@@ -447,7 +447,7 @@ static void lower_bitfields_stores(ir_node *store) {
 	dbg_info *db;
 
 	/* check bitfield access */
-	if (get_irn_op(sel) != op_Sel)
+	if (!is_Sel(sel))
 		return;
 
 	ent     = get_Sel_entity(sel);
@@ -568,9 +568,8 @@ static void lower_bf_access(ir_node *irn, void *env) {
 	{
 		long proj     = get_Proj_proj(irn);
 		ir_node *pred = get_Proj_pred(irn);
-		ir_op *op     = get_irn_op(pred);
 
-		if ((proj == pn_Load_res) && (op == op_Load))
+		if (proj == pn_Load_res && is_Load(pred))
 			lower_bitfields_loads(irn, pred);
 		break;
 	}

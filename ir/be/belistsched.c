@@ -229,7 +229,7 @@ static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 
 		/* if irn is an End we have keep-alives and op might be a block, skip that */
 		if (is_Block(op)) {
-		  	assert(get_irn_op(irn) == op_End);
+			assert(is_End(irn));
 			continue;
 		}
 

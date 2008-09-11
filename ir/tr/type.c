@@ -1693,7 +1693,7 @@ void set_array_upper_bound_int(ir_type *array, int dimension, int upper_bound) {
 
 int has_array_lower_bound(const ir_type *array, int dimension) {
 	assert(array && (array->type_op == type_array));
-	return (get_irn_op(array->attr.aa.lower_bound[dimension]) != op_Unknown);
+	return !is_Unknown(array->attr.aa.lower_bound[dimension]);
 }
 
 ir_node *get_array_lower_bound(const ir_type *array, int dimension) {
@@ -1705,13 +1705,13 @@ long get_array_lower_bound_int(const ir_type *array, int dimension) {
 	ir_node *node;
 	assert(array && (array->type_op == type_array));
 	node = array->attr.aa.lower_bound[dimension];
-	assert(get_irn_op(node) == op_Const);
+	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
 }
 
 int has_array_upper_bound(const ir_type *array, int dimension) {
 	assert(array && (array->type_op == type_array));
-	return get_irn_op(array->attr.aa.upper_bound[dimension]) != op_Unknown;
+	return !is_Unknown(array->attr.aa.upper_bound[dimension]);
 }
 
 ir_node *get_array_upper_bound(const ir_type *array, int dimension) {
@@ -1723,7 +1723,7 @@ long get_array_upper_bound_int(const ir_type *array, int dimension) {
 	ir_node *node;
 	assert(array && (array->type_op == type_array));
 	node = array->attr.aa.upper_bound[dimension];
-	assert(get_irn_op(node) == op_Const);
+	assert(is_Const(node));
 	return get_tarval_long(get_Const_tarval(node));
 }
 

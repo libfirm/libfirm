@@ -180,9 +180,9 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	}
 
 	/* This is not nice, output it as a marker in the predecessor list. */
-	if ((get_irn_op(n) == op_Block) ||
-		(get_irn_op(n) == op_Phi) ||
-		((get_irn_op(n) == op_Filter) && get_interprocedural_view())) {
+	if (is_Block(n)             ||
+	    get_irn_op(n) == op_Phi ||
+	    (is_Filter(n) && get_interprocedural_view())) {
 		fprintf(F, "  backedges:");
 		comma = ' ';
 		for (i = 0; i < get_irn_arity(n); i++)
@@ -831,14 +831,14 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 			ir_node *acc = get_entity_access(ent, i);
 			int depth = get_weighted_loop_depth(acc);
 			assert(depth < max_depth);
-			if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
+			if (is_Load(acc) || is_Call(acc)) {
 				L_freq[depth]++;
 				max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
 				if (addr_is_alloc(acc)) {
 					LA_freq[depth]++;
 					max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
 				}
-			} else if (get_irn_op(acc) == op_Store) {
+			} else if (is_Store(acc)) {
 				S_freq[depth]++;
 				max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
 				if (addr_is_alloc(acc)) {
@@ -964,7 +964,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 		ir_node *acc = get_entity_access(ent, i);
 		int depth = get_weighted_loop_depth(acc);
 		assert(depth <= max_depth);
-		if ((get_irn_op(acc) == op_Load) || (get_irn_op(acc) == op_Call)) {
+		if (is_Load(acc) || is_Call(acc)) {
 			L_freq[depth]++;
 			max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
 			if (addr_is_alloc(acc)) {
@@ -975,7 +975,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 				disp[depth]++;
 				*max_disp = (depth > *max_disp) ? depth : *max_disp;
 			}
-		} else if (get_irn_op(acc) == op_Store) {
+		} else if (is_Store(acc)) {
 			S_freq[depth]++;
 			max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
 			if (addr_is_alloc(acc)) {
@@ -1069,7 +1069,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 			assert(depth <= max_depth);
 			freq[depth]++;
 			max_freq = (depth > max_freq) ? depth : max_freq;
-			assert(get_irn_op(all) == op_Alloc);
+			assert(is_Alloc(all));
 		}
 
 		fprintf(F, "%s ", get_type_name(tp));
@@ -1222,16 +1222,16 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 
 				fprintf(F, "[");
 
-				if (get_irn_op(lower) == op_Const)
+				if (is_Const(lower)) {
 					fprintf(F, "%ld .. ", get_tarval_long(get_Const_tarval(lower)));
-				else {
+				} else {
 					dump_node_opcode(F, lower);
 					fprintf(F, " %ld .. ", get_irn_node_nr(lower));
 				}
 
-				if (get_irn_op(upper) == op_Const)
+				if (is_Const(upper)) {
 					fprintf(F, "%ld]", get_tarval_long(get_Const_tarval(lower)));
-				else {
+				} else {
 					dump_node_opcode(F, upper);
 					fprintf(F, " %ld]", get_irn_node_nr(upper));
 				}
@@ -1339,7 +1339,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 			assert(depth <= max_depth);
 			freq[depth]++;
 			max_freq = (depth > max_freq) ? depth : max_freq;
-			assert(get_irn_op(all) == op_Alloc);
+			assert(is_Alloc(all));
 		}
 
 		if (max_freq >= 0) {

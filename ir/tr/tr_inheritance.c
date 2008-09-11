@@ -621,7 +621,7 @@ void verify_irn_class_cast_state(ir_node *n, void *env) {
 	ir_type             *fromtype, *totype;
 	int                 ref_depth = 0;
 
-	if (get_irn_op(n) != op_Cast) return;
+	if (!is_Cast(n)) return;
 
 	fromtype = get_irn_typeinfo_type(get_Cast_op(n));
 	totype   = get_Cast_type(n);

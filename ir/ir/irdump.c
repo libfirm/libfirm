@@ -801,7 +801,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
 	case iro_CallBegin: {
 		ir_node *addr = get_CallBegin_ptr(n);
 		ir_entity *ent = NULL;
-		if (get_irn_op(addr) == op_Sel)
+		if (is_Sel(addr))
 			ent = get_Sel_entity(addr);
 		else if (is_Global(addr))
 			ent = get_Global_entity(addr);
@@ -2728,7 +2728,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 		fprintf(F, "}\n");
 		/* Dump the edges */
 		for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
-			if (get_irn_op(skip_Proj(get_Block_cfgpred(block, i))) != op_Bad) {
+			if (!is_Bad(skip_Proj(get_Block_cfgpred(block, i)))) {
 				pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);

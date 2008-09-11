@@ -483,7 +483,7 @@ op_pin_state (is_irn_pinned_in_irg) (const ir_node *node) {
 
 void set_irn_pinned(ir_node *node, op_pin_state state) {
 	/* due to optimization an opt may be turned into a Tuple */
-	if (get_irn_op(node) == op_Tuple)
+	if (is_Tuple(node))
 		return;
 
 	assert(node && get_op_pinned(get_irn_op(node)) >= op_pin_state_exc_pinned);
@@ -2449,7 +2449,7 @@ get_irn_irg(const ir_node *node) {
 		node = get_irn_n(node, -1);
 	if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
 		node = get_irn_n(node, -1);
-	assert(get_irn_op(node) == op_Block);
+	assert(is_Block(node));
 	return node->attr.block.irg;
 }
 
@@ -2537,7 +2537,7 @@ ir_node *skip_Pin(ir_node *node) {
 
 /* returns operand of node if node is a Confirm */
 ir_node *skip_Confirm(ir_node *node) {
-	if (get_irn_op(node) == op_Confirm)
+	if (is_Confirm(node))
 		return get_Confirm_value(node);
 	return node;
 }

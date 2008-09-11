@@ -241,7 +241,7 @@ value_classify_sign classify_value_sign(ir_node *n) {
 		}
 		break;
 	}
-	if (get_irn_op(n) != op_Confirm)
+	if (!is_Confirm(n))
 		return value_classified_unknown;
 
 	tv  = value_of(get_Confirm_bound(n));

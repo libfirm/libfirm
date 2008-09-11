@@ -104,7 +104,7 @@ static int is_arg(ir_node *node)
 		return 0;
 
 	node = get_Proj_pred(node);
-	return get_irn_op(node) == op_Start;
+	return is_Start(node);
 }  /* is_arg */
 
 /**
@@ -241,10 +241,10 @@ static void connect_dags(ir_node *node, void *env)
 	}  /* if */
 
 	/* if this option is set, Loads are always leaves */
-	if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && get_irn_op(node) == op_Load)
+	if (dag_env->options & FIRMSTAT_LOAD_IS_LEAVE && is_Load(node))
 		return;
 
-	if (dag_env->options & FIRMSTAT_CALL_IS_LEAVE && get_irn_op(node) == op_Call)
+	if (dag_env->options & FIRMSTAT_CALL_IS_LEAVE && is_Call(node))
 		return;
 
 	entry = get_irn_dag_entry(node);

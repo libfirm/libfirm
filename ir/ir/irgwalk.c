@@ -66,43 +66,44 @@ static void irg_walk_cg(ir_node * node, unsigned long visited,
 	if (pre) pre(node, env);
 
 	pred = skip_Proj(node);
-	if (get_irn_op(pred) == op_CallBegin
-		|| get_irn_op(pred) == op_EndReg
-		|| get_irn_op(pred) == op_EndExcept) {
-			current_ir_graph = get_irn_irg(pred);
+	if (is_CallBegin(pred)            ||
+	    get_irn_op(pred) == op_EndReg ||
+	    get_irn_op(pred) == op_EndExcept) {
+		current_ir_graph = get_irn_irg(pred);
 	}
 
 	if (is_no_Block(node)) { /* not block */
 		irg_walk_cg(get_nodes_block(node), visited, irg_set, pre, post, env);
 	}
 
-	if (get_irn_op(node) == op_Block) { /* block */
+	if (is_Block(node)) { /* block */
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node * exec = get_irn_n(node, i);
 			ir_node * pred = skip_Proj(exec);
-			if ((get_irn_op(pred) != op_CallBegin
-				&& get_irn_op(pred) != op_EndReg
-				&& get_irn_op(pred) != op_EndExcept)
-				|| pset_new_contains(irg_set, get_irn_irg(pred))) {
-					irg_walk_cg(exec, visited, irg_set, pre, post, env);
+			if ((
+			      !is_CallBegin(pred)           &&
+			      get_irn_op(pred) != op_EndReg &&
+			      get_irn_op(pred) != op_EndExcept
+			    ) || pset_new_contains(irg_set, get_irn_irg(pred))) {
+				irg_walk_cg(exec, visited, irg_set, pre, post, env);
 			}
 		}
-	} else if (get_irn_op(node) == op_Filter) { /* filter */
+	} else if (is_Filter(node)) { /* filter */
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node * pred = get_irn_n(node, i);
-			if (get_irn_op(pred) == op_Unknown || get_irn_op(pred) == op_Bad) {
+			if (is_Unknown(pred) || is_Bad(pred)) {
 				irg_walk_cg(pred, visited, irg_set, pre, post, env);
 			} else {
 				ir_node * exec;
 				exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
 
-				if (op_Bad == get_irn_op (exec)) {
+				if (is_Bad(exec)) {
 					continue;
 				}
 
-				assert(get_irn_op(exec) == op_CallBegin
-					|| get_irn_op(exec) == op_EndReg
-					|| get_irn_op(exec) == op_EndExcept);
+				assert(is_CallBegin(exec)            ||
+				       get_irn_op(exec) == op_EndReg ||
+				       get_irn_op(exec) == op_EndExcept);
 				if (pset_new_contains(irg_set, get_irn_irg(exec))) {
 					current_ir_graph = get_irn_irg(exec);
 					irg_walk_cg(pred, visited, irg_set, pre, post, env);
@@ -458,9 +459,9 @@ switch_irg(ir_node *n, int index) {
 
 	if (get_interprocedural_view()) {
 		/* Only Filter and Block nodes can have predecessors in other graphs. */
-		if (get_irn_op(n) == op_Filter)
+		if (is_Filter(n))
 			n = get_nodes_block(n);
-		if (get_irn_op(n) == op_Block) {
+		if (is_Block(n)) {
 			ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
 			if (is_ip_cfop(cfop)) {
 				current_ir_graph = get_irn_irg(cfop);
@@ -613,15 +614,15 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 	block = is_Block(node) ? node : get_nodes_block(node);
-	assert(get_irn_op(block) == op_Block);
+	assert(is_Block(block));
 	irg_block_walk_2(block, pre, post, env);
 
 	/* keepalive: the endless loops ... */
-	if (get_irn_op(node) == op_End) {
+	if (is_End(node)) {
 		int arity = get_irn_arity(node);
 		for (i = 0; i < arity; i++) {
 			pred = get_irn_n(node, i);
-			if (get_irn_op(pred) == op_Block)
+			if (is_Block(pred))
 				irg_block_walk_2(pred, pre, post, env);
 		}
 		/* Sometimes the blocks died, but are still reachable through Phis.

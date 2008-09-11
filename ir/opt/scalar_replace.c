@@ -131,7 +131,7 @@ static int is_const_sel(ir_node *sel) {
 	for (i = 0; i < n; ++i) {
 		ir_node *idx = get_Sel_index(sel, i);
 
-		if (get_irn_op(idx) != op_Const)
+		if (!is_Const(idx))
 			return 0;
 	}
 	return 1;
@@ -488,12 +488,11 @@ typedef struct _env_t {
  */
 static void topologic_walker(ir_node *node, void *ctx) {
 	env_t        *env = ctx;
-	ir_op        *op = get_irn_op(node);
 	ir_node      *adr, *block, *mem, *val;
 	ir_mode      *mode;
 	unsigned     vnum;
 
-	if (op == op_Load) {
+	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
 		adr = get_Load_ptr(node);
 
@@ -537,7 +536,7 @@ static void topologic_walker(ir_node *node, void *ctx) {
 		set_Tuple_pred(node, pn_Load_res,       val);
 		set_Tuple_pred(node, pn_Load_X_regular, new_Jmp());
 		set_Tuple_pred(node, pn_Load_X_except,  new_Bad());
-	} else if (op == op_Store) {
+	} else if (is_Store(node)) {
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
 		/* a Store always can be replaced */

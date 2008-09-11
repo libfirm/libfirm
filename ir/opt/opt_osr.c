@@ -1189,7 +1189,7 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 	ir_node *iv, *rc;
 	ir_node *nleft = NULL, *nright = NULL;
 
-	if (get_irn_op(cmp) != op_Cmp)
+	if (!is_Cmp(cmp))
 		return;
 
 	left  = get_Cmp_left(cmp);

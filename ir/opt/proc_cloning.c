@@ -274,7 +274,7 @@ static void set_preds(ir_node *irn, void *env) {
 	} else {
 		/* First we set the block our copy if it is not a block.*/
 		set_nodes_block(irn_copy, get_irn_link(get_nodes_block(irn)));
-		if (get_irn_op(irn) == op_End) {
+		if (is_End(irn)) {
 			/* Handle the keep-alives. This must be done separately, because
 			   the End node was NOT copied */
 			for (i = 0; i < get_End_n_keepalives(irn); ++i)
@@ -533,7 +533,7 @@ restart:
 
 		/* we know, that a SymConst is here */
 		ptr = get_Call_ptr(call);
-		assert(get_irn_op(ptr) == op_SymConst);
+		assert(is_SymConst(ptr));
 
 		callee = get_SymConst_entity(ptr);
 		if (callee != entry->q.ent) {

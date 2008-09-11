@@ -247,7 +247,7 @@ static void cancel_out_casts(ir_node *cast) {
 	ir_type *tp_cast, *tp_pred, *tp_orig;
 	int ref_depth = 0;
 
-	if (get_irn_op(pred) != op_Cast) return;
+	if (!is_Cast(pred)) return;
 	orig = get_Cast_op(pred);
 
 	tp_cast = get_Cast_type(cast);
@@ -299,7 +299,7 @@ static void concretize_selected_entity(ir_node *sel) {
 	sel_ent = get_Sel_entity(sel);
 	cast = get_Sel_ptr(sel);
 
-	while (get_irn_op(cast) == op_Cast) {
+	while (is_Cast(cast)) {
 		cast_tp = get_Cast_type(cast);
 		ptr = get_Cast_op(cast);
 		orig_tp = get_irn_typeinfo_type(ptr);
@@ -340,7 +340,7 @@ static void concretize_Phi_type(ir_node *phi) {
 	if (n_preds == 0) return;
 	pred[0] = get_Phi_pred(phi, 0);
 
-	if (get_irn_op(pred[0]) != op_Cast) return;
+	if (!is_Cast(pred[0])) return;
 
 	if (!is_Cast_upcast(pred[0])) return;
 
@@ -350,7 +350,7 @@ static void concretize_Phi_type(ir_node *phi) {
 	pred[0] = get_Cast_op(pred[0]);
 	for (i = 1; i < n_preds; ++i) {
 		pred[i] = get_Phi_pred(phi, i);
-		if (get_irn_op(pred[i]) != op_Cast) return;
+		if (!is_Cast(pred[i])) return;
 		if (get_irn_typeinfo_type(get_Cast_op(pred[i])) != fromtype) return;
 		pred[i] = get_Cast_op(pred[i]);
 	}

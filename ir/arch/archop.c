@@ -240,7 +240,7 @@ ir_node *arch_transform_node_Mux(ir_node *n)
 			return n;
 
 		cmp = get_Proj_pred(proj);
-		if (get_irn_op(cmp) == op_Cmp) {
+		if (is_Cmp(cmp)) {
 			ir_node *a = get_Cmp_left(cmp);
 			ir_node *b = get_Cmp_right(cmp);
 			ir_node *t = get_Mux_true(n);

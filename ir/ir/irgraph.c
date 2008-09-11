@@ -643,7 +643,7 @@ ir_node *
 
 void
 (set_irg_end_except)(ir_graph *irg, ir_node *node) {
-	assert(get_irn_op(node) == op_EndExcept || get_irn_op(node) == op_End);
+	assert(get_irn_op(node) == op_EndExcept || is_End(node));
 	_set_irg_end_except(irg, node);
 }
 

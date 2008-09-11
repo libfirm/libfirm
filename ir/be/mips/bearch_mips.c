@@ -398,7 +398,7 @@ typedef struct _wenv_t {
 static void collect_copyb_nodes(ir_node *node, void *env) {
 	wenv_t *wenv = env;
 
-	if (get_irn_op(node) == op_CopyB) {
+	if (is_CopyB(node)) {
 		set_irn_link(node, wenv->list);
 		wenv->list = node;
 	}

@@ -78,7 +78,7 @@ static void collect_data(ir_node *node, void *env) {
 		if (op == op_Proj) {
 			ir_node *start = get_Proj_pred(pred);
 
-			if (get_irn_op(start) == op_Start) {
+			if (is_Start(start)) {
 				if (get_Proj_proj(pred) == pn_Start_T_args) {
 					/* found Proj(ProjT(Start)) */
 					set_irn_link(node, data->proj_data);

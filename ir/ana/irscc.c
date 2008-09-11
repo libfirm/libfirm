@@ -393,11 +393,12 @@ static INLINE int get_start_index(ir_node *n) {
 	   not reachable.
 	   I.e., with this code, the order on the loop tree is correct. But a (single)
 	   test showed the loop tree is deeper.   */
-	if (get_irn_op(n) == op_Phi   ||
-	    get_irn_op(n) == op_Block ||
-	    (get_irn_op(n) == op_Filter && get_interprocedural_view()) ||
-	    (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
-	    get_irn_pinned(n) == op_pin_state_floats))
+	if (get_irn_op(n) == op_Phi                      ||
+	    is_Block(n)                                  ||
+	    (is_Filter(n) && get_interprocedural_view()) || (
+	      get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
+	      get_irn_pinned(n)              == op_pin_state_floats
+	    ))
 		// Here we could test for backedge at -1 which is illegal
 		return 0;
 	else
@@ -410,7 +411,7 @@ static INLINE int get_start_index(ir_node *n) {
 	   But it guarantees that Blocks are analysed before nodes contained in the
 	   block.  If so, we can set the value to undef if the block is not \
 	   executed. */
-	if (is_cfop(n) || is_fragile_op(n) || get_irn_op(n) == op_Start)
+	if (is_cfop(n) || is_fragile_op(n) || is_Start(n))
 		return -1;
 	else
 		return 0;
@@ -833,7 +834,7 @@ static void my_scc(ir_node *n) {
 			ir_node *m;
 			if (is_backedge(n, i)) continue;
 			m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-			/* if ((!m) || (get_irn_op(m) == op_Unknown)) continue; */
+			/* if (!m || is_Unknown(m)) continue; */
 			my_scc(m);
 			if (irn_is_in_stack(m)) {
 				/* Uplink of m is smaller if n->m is a backedge.
