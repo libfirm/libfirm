@@ -1863,10 +1863,11 @@ static int is_const_Phi(ir_node *n) {
 
 	if (! is_Phi(n) || get_irn_arity(n) == 0)
 		return 0;
-	for (i = get_irn_arity(n) - 1; i >= 0; --i)
+	for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 		if (! is_Const(get_irn_n(n, i)))
 			return 0;
-		return 1;
+	}
+	return 1;
 }  /* is_const_Phi */
 
 typedef tarval *(*tarval_sub_type)(tarval *a, tarval *b, ir_mode *mode);
