@@ -63,7 +63,7 @@ ir_node *get_Block_idom(const ir_node *bl) {
 void set_Block_idom(ir_node *bl, ir_node *n) {
 	ir_dom_info *bli = get_dom_info(bl);
 
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 
 	/* Set the immediate dominator of bl to n */
 	bli->idom = n;
@@ -92,7 +92,7 @@ ir_node *get_Block_ipostdom(const ir_node *bl) {
 void set_Block_ipostdom(ir_node *bl, ir_node *n) {
 	ir_dom_info *bli = get_pdom_info(bl);
 
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 
 	/* Set the immediate post dominator of bl to n */
 	bli->idom = n;
@@ -110,43 +110,43 @@ void set_Block_ipostdom(ir_node *bl, ir_node *n) {
 }
 
 int get_Block_dom_pre_num(const ir_node *bl) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	return get_dom_info(bl)->pre_num;
 }
 
 void set_Block_dom_pre_num(ir_node *bl, int num) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	get_dom_info(bl)->pre_num = num;
 }
 
 int get_Block_dom_depth(const ir_node *bl) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	return get_dom_info(bl)->dom_depth;
 }
 
 void set_Block_dom_depth(ir_node *bl, int depth) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	get_dom_info(bl)->dom_depth = depth;
 }
 
 
 int get_Block_postdom_pre_num(const ir_node *bl) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	return get_pdom_info(bl)->pre_num;
 }
 
 void set_Block_postdom_pre_num(ir_node *bl, int num) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	get_pdom_info(bl)->pre_num = num;
 }
 
 int get_Block_postdom_depth(const ir_node *bl) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	return get_pdom_info(bl)->dom_depth;
 }
 
 void set_Block_postdom_depth(ir_node *bl, int depth) {
-	assert(get_irn_op(bl) == op_Block);
+	assert(is_Block(bl));
 	get_pdom_info(bl)->dom_depth = depth;
 }
 
@@ -636,7 +636,7 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
 		for (i = j = 0; i < arity; i++) {
 			ir_node *pred = get_End_keepalive(end, i);
 
-			if (get_irn_op(pred) == op_Block) {
+			if (is_Block(pred)) {
 				if (Block_not_block_visited(pred)) {
 					/* we found a endless loop */
 					dec_irg_block_visited(irg);
