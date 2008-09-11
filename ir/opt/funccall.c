@@ -576,12 +576,17 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 	if (prop != mtp_no_property) {
 		/* check, if a keep-alive exists */
 		for (j = get_End_n_keepalives(end) - 1; j >= 0; --j) {
-			ir_node *mem = get_End_keepalive(end, j);
+			ir_node *kept = get_End_keepalive(end, j);
 
-			if (mode_M != get_irn_mode(mem))
+			if (is_Block(kept)) {
+				prop = mtp_no_property;
+				break;
+			}
+
+			if (mode_M != get_irn_mode(kept))
 				continue;
 
-			prop = max_property(prop, follow_mem(mem, prop));
+			prop = max_property(prop, follow_mem(kept, prop));
 			if (prop == mtp_no_property)
 				break;
 		}
