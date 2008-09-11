@@ -201,7 +201,7 @@
  *    set_cur_block(block).  If several blocks are constructed in parallel block
  *    switches need to be performed constantly.
  *
- *    To generate a Block node (with the comfortable interface) it's predecessor
+ *    To generate a Block node (with the comfortable interface), its predecessor
  *    control flow nodes need not be known.  In case of cyclic control flow these
  *    can not be known when the block is constructed.  With add_immBlock_pred(block,
  *    cfnode) predecessors can be added to the block.  If all predecessors are
