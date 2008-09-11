@@ -5281,12 +5281,9 @@ static ir_node *transform_node_Conv(ir_node *n) {
 	ir_node *c, *oldn = n;
 	ir_node *a = get_Conv_op(n);
 
-	if (is_const_Phi(a)) {
-		c = apply_conv_on_phi(a, get_irn_mode(n));
-		if (c) {
-			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
-			return c;
-		}
+	if (is_Phi(a)) {
+		// let deconv do this
+		return n;
 	}
 
 	if (is_Unknown(a)) { /* Conv_A(Unknown_B) -> Unknown_A */
