@@ -230,7 +230,7 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {
 	foreach_out_edge(irn, edge) {
 		proj = get_edge_src_irn(edge);
 
-		if (get_Proj_proj(proj) == pn)
+		if (is_Proj(proj) && get_Proj_proj(proj) == pn)
 			return proj;
 	}
 
