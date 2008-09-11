@@ -732,10 +732,6 @@ void (mark_Block_block_visited)(ir_node *node) {
 	_mark_Block_block_visited(node);
 }
 
-int (Block_not_block_visited)(const ir_node *node) {
-	return _Block_not_block_visited(node);
-}
-
 int (Block_block_visited)(const ir_node *node) {
 	return _Block_block_visited(node);
 }

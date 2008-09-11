@@ -921,7 +921,7 @@ static void split_memory_edge(ir_node *irn, void *ctx) {
    else
      irn_blk = get_nodes_block(irn);
 
-   if (Block_not_block_visited(irn_blk)) {
+   if (!Block_block_visited(irn_blk)) {
     /* We sync first the stored scalar address in this block.*/
     mark_Block_block_visited(irn_blk);
     sync_stored_scalars(irn_blk, env);
@@ -988,7 +988,7 @@ static ir_node *find_vnum_value(ir_node *block, unsigned vnum)
   int               i;
   ir_node           *res;
 
-  if (Block_not_block_visited(block)) {
+  if (!Block_block_visited(block)) {
     mark_Block_block_visited(block);
 
     val_arr = get_irn_link(block);

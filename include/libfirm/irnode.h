@@ -375,7 +375,6 @@ int       is_Block_dead(const ir_node *block);
 
 /* For this current_ir_graph must be set. */
 void      mark_Block_block_visited(ir_node *node);
-int       Block_not_block_visited(const ir_node *node);
 int       Block_block_visited(const ir_node *node);
 
 #ifdef INTERPROCEDURAL_VIEW

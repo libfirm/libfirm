@@ -637,13 +637,12 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
 			ir_node *pred = get_End_keepalive(end, i);
 
 			if (is_Block(pred)) {
-				if (Block_not_block_visited(pred)) {
-					/* we found a endless loop */
-					dec_irg_block_visited(irg);
-					irg_block_walk(pred, pre, NULL, &n_blocks);
-				}
-				else
+				if (Block_block_visited(pred))
 					continue;
+
+				/* we found an endless loop */
+				dec_irg_block_visited(irg);
+				irg_block_walk(pred, pre, NULL, &n_blocks);
 			}
 			in[j++] = pred;
 		}

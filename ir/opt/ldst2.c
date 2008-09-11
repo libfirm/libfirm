@@ -370,7 +370,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 	if (block != last_block) {
 		DB((dbg, LEVEL_3, "===> Changing block from %+F to %+F\n", last_block, block));
 		block_change = 1;
-		if (Block_not_block_visited(block)) {
+		if (!Block_block_visited(block)) {
 			mark_Block_block_visited(block);
 		} else {
 			DB((dbg, LEVEL_2, "===> Hit already visited block at %+F\n", node));
@@ -410,7 +410,7 @@ static int WalkMem(ir_graph* irg, ir_node* node, ir_node* last_block)
 				ir_node* unknown;
 
 				DB((dbg, LEVEL_3, "===> The predecessor was not finished yet\n"));
-				assert(!Block_not_block_visited(pred_block));
+				assert(Block_block_visited(pred_block));
 
 				unknown = new_r_Unknown(irg, mode_M);
 				for (i = 0; i < count_addrs; i++) {

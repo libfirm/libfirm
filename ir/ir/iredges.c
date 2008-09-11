@@ -953,7 +953,7 @@ static void irg_block_edges_walk2(ir_node *bl,
                                 void *env) {
 	const ir_edge_t *edge, *next;
 
-	if (Block_not_block_visited(bl)) {
+	if (!Block_block_visited(bl)) {
 		mark_Block_block_visited(bl);
 
 		if (pre)

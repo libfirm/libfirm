@@ -233,7 +233,7 @@ static void irg_out_block_walk2(ir_node *bl,
                                 void *env) {
 	int i, n;
 
-	if (Block_not_block_visited(bl)) {
+	if (!Block_block_visited(bl)) {
 		mark_Block_block_visited(bl);
 
 		if (pre)

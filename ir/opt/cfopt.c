@@ -434,8 +434,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 			if (is_Block_dead(pred)) {
 				/* case Phi 1: Do nothing */
-			}
-			else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
+			} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 				/* case Phi 2: It's an empty block and not yet visited. */
 				ir_node *phi_pred = get_Phi_pred(phi, i);
 
@@ -478,7 +477,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 	for (k = 0, n = get_Block_n_cfgpreds(b); k < n; ++k) {
 		ir_node *predb = get_nodes_block(get_Block_cfgpred(b, k));
 
-		if (is_Block_removable(predb) && Block_not_block_visited(predb)) {
+		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
 			ir_node *next_phi;
 
 			/* we found a predecessor block at position k that will be removed */
@@ -505,7 +504,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 						if (is_Block_dead(pred)) {
 							/* Do nothing */
-						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
+						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
 								if (! is_Bad(get_Block_cfgpred(pred, j)))
@@ -529,7 +528,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 						if (is_Block_dead(pred)) {
 							/* Do nothing */
-						} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
+						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
 								if (! is_Bad(get_Block_cfgpred(pred, j)))
@@ -561,7 +560,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 
 		if (is_Block_dead(pred)) {
 			/* case 1: Do nothing */
-		} else if (is_Block_removable(pred) && Block_not_block_visited(pred)) {
+		} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 			/* case 2: It's an empty block and not yet visited. */
 			assert(get_Block_n_cfgpreds(b) > 1);
 			/* Else it should be optimized by equivalent_node. */
@@ -791,7 +790,7 @@ restart:
 		if (irn_not_visited(ka)) {
 			ir_op *op = get_irn_op(ka);
 
-			if ((op == op_Block) && Block_not_block_visited(ka)) {
+			if ((op == op_Block) && !Block_block_visited(ka)) {
 				/* irg_block_walk() will increase the block visited flag, but we must visit only
 				   these blocks that are not visited yet, so decrease it first. */
 				set_irg_block_visited(irg, get_irg_block_visited(irg) - 1);

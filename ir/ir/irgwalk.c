@@ -574,7 +574,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
 {
 	int i;
 
-	if (Block_not_block_visited(node)) {
+	if (!Block_block_visited(node)) {
 		mark_Block_block_visited(node);
 
 		if(pre) pre(node, env);
