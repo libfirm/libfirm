@@ -1660,7 +1660,7 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
 		-1,                      /* stack direction */
-		4,                       /* power of two stack alignment, 2^4 == 16 */
+		2,                       /* power of two stack alignment, 2^2 == 4 */
 		NULL,                    /* main environment */
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
