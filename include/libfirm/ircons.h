@@ -1209,7 +1209,7 @@ ir_node *new_rd_Cond   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c)
 
 /** Constructor for a Return node.
  *
- * Returns the memory an zero or more return values.  Only node that
+ * Returns the memory and zero or more return values.  Only node that
  * can end regular control flow.
  *
  * @param *db    A pointer for debug information.
@@ -2109,7 +2109,7 @@ ir_node *new_r_Cond   (ir_graph *irg, ir_node *block, ir_node *c);
 
 /** Constructor for a Return node.
  *
- * Returns the memory an zero or more return values.  Only node that
+ * Returns the memory and zero or more return values.  Only node that
  * can end regular control flow.
  *
  * @param *irg   The IR graph the node  belongs to.
@@ -2938,7 +2938,7 @@ ir_node *new_d_Cond   (dbg_info *db, ir_node *c);
  *
  * Adds the node to the block in current_ir_block.
  *
- * Returns the memory an zero or more return values.  Only node that
+ * Returns the memory and zero or more return values.  Only node that
  * can end regular control flow.
  *
  * @param *db    A pointer for debug information.
@@ -3740,7 +3740,7 @@ ir_node *new_Cond   (ir_node *c);
 
 /** Constructor for a Return node.
  *
- * Returns the memory an zero or more return values.  Only node that
+ * Returns the memory and zero or more return values.  Only node that
  * can end regular control flow. Adds the node to the block in current_ir_block.
  *
  * @param *store The state of memory.
