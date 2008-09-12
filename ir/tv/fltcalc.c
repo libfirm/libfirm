@@ -1337,7 +1337,7 @@ fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result) {
 	result->desc.exponent_size = desc->exponent_size;
 	result->desc.mantissa_size = desc->mantissa_size;
 	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = NORMAL;
+	result->desc.clss          = INF;
 
 	result->sign = 0;
 
@@ -1434,11 +1434,10 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 	case FC_DEC:
 		switch ((value_class_t)val->desc.clss) {
 		case INF:
-			if (buflen >= 8 + val->sign) sprintf(buf, "%sINFINITY", val->sign ? "-":"");
-			else snprintf(buf, buflen, "%sINF", val->sign ? "-":NULL);
+			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 			break;
 		case NAN:
-			snprintf(buf, buflen, "NAN");
+			snprintf(buf, buflen, "NaN");
 			break;
 		case ZERO:
 			snprintf(buf, buflen, "0.0");
@@ -1457,8 +1456,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 	case FC_HEX:
 		switch ((value_class_t)val->desc.clss) {
 		case INF:
-			if (buflen >= 8+val->sign) sprintf(buf, "%sINFINITY", val->sign?"-":"");
-			else snprintf(buf, buflen, "%sINF", val->sign?"-":NULL);
+			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 			break;
 		case NAN:
 			snprintf(buf, buflen, "NAN");
