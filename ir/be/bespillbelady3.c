@@ -559,14 +559,16 @@ static bool fill_start_worklist(worklist_t *new_worklist, ir_node *block)
 
 	/* construct worklist */
 	foreach_block_succ(block, edge) {
-		ir_node *succ_block = get_edge_src_irn(edge);
-		double   execfreq   = get_block_execfreq(exec_freq, succ_block);
+		ir_node      *succ_block = get_edge_src_irn(edge);
+		double       execfreq    = get_block_execfreq(exec_freq, succ_block);
+		block_info_t *block_info;
+		worklist_t   *succ_worklist;
 
 		if (execfreq < best_execfreq)
 			continue;
 
-		block_info_t *block_info    = get_block_info(succ_block);
-		worklist_t   *succ_worklist = block_info->start_worklist;
+		block_info    = get_block_info(succ_block);
+		succ_worklist = block_info->start_worklist;
 
 		if (succ_worklist == NULL || succ_worklist->visited >= worklist_visited)
 			continue;
@@ -757,15 +759,16 @@ static void worklist_append(worklist_t *worklist, ir_node *value,
 
 static void push_unused_livethrough(loop_info_t *loop_info, ir_node *value)
 {
+	loop_edge_t *edge;
 	++worklist_visited;
 
 	/* add the value to all loop exit and entry blocks */
-	loop_edge_t *edge = loop_info->exit_edges;
-	for ( ; edge != NULL; edge = edge->next) {
+	for (edge = loop_info->exit_edges; edge != NULL; edge = edge->next) {
 		ir_node            *block
 			= get_Block_cfgpred_block(edge->block, edge->pos);
 		const block_info_t *info     = get_block_info(block);
 		worklist_t         *worklist = info->end_worklist;
+		ir_node            *reload_point = NULL;
 
 		if (worklist->visited >= worklist_visited)
 			continue;
@@ -773,7 +776,6 @@ static void push_unused_livethrough(loop_info_t *loop_info, ir_node *value)
 
 		/* TODO: we need a smarter mechanism here, that makes the reloader place
 		 * reload nodes on all loop exits... */
-		ir_node *reload_point = NULL;
 
 		worklist_append(worklist, value, reload_point, loop_info->loop);
 	}
@@ -782,14 +784,15 @@ static void push_unused_livethrough(loop_info_t *loop_info, ir_node *value)
 		ir_node            *entry_block = edge->block;
 		const block_info_t *info        = get_block_info(entry_block);
 		worklist_t         *worklist    = info->start_worklist;
+		ir_node            *pred_block;
+		ir_node            *reload_point;
 
 		if (worklist->visited >= worklist_visited)
 			continue;
 		worklist->visited = worklist_visited;
 
-		ir_node *pred_block
-			= get_Block_cfgpred_block(entry_block, edge->pos);
-		ir_node *reload_point = be_get_end_of_block_insertion_point(pred_block);
+		pred_block   = get_Block_cfgpred_block(entry_block, edge->pos);
+		reload_point = be_get_end_of_block_insertion_point(pred_block);
 
 		worklist_append(worklist, value, reload_point, loop_info->loop);
 	}
