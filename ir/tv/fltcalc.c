@@ -182,6 +182,8 @@ static void *pack(const fp_value *int_float, void *packed) {
 	default:
 		break;
 	}
+	assert(int_float->desc.explicit_one <= 1);
+
 	/* pack sign: move it to the left after exponent AND mantissa */
 	sc_val_from_ulong(int_float->sign, temp);
 
@@ -397,16 +399,19 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
 }
 
 /**
- * Operations involving NaN's must return NaN
+ * Operations involving NaN's must return NaN.
+ * They are NOT exact.
  */
 #define handle_NAN(a, b, result) \
 do {                                                      \
   if (a->desc.clss == NAN) {                              \
     if (a != result) memcpy(result, a, calc_buffer_size); \
+    fc_exact = 0;                                         \
     return;                                               \
   }                                                       \
   if (b->desc.clss == NAN) {                              \
     if (b != result) memcpy(result, b, calc_buffer_size); \
+    fc_exact = 0;                                         \
     return;                                               \
   }                                                       \
 }while (0)
@@ -435,6 +440,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	/* produce NaN on inf - inf */
 	if (sign && (a->desc.clss == INF) && (b->desc.clss == INF)) {
+		fc_exact = 0;
 		fc_get_qnan(&a->desc, result);
 		return;
 	}
@@ -474,12 +480,14 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 	if (a->desc.clss == ZERO || b->desc.clss == INF) {
 		if (b != result)
 			memcpy(result, b, calc_buffer_size);
+		fc_exact = b->desc.clss == NORMAL;
 		result->sign = res_sign;
 		return;
 	}
 	if (b->desc.clss == ZERO || a->desc.clss == INF) {
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
+		fc_exact = a->desc.clss == NORMAL;
 		result->sign = res_sign;
 		return;
 	}
@@ -548,9 +556,10 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	/* produce NaN on 0 * inf */
 	if (a->desc.clss == ZERO) {
-		if (b->desc.clss == INF)
+		if (b->desc.clss == INF) {
 			fc_get_qnan(&a->desc, result);
-		else {
+			fc_exact = 0;
+		} else {
 			if (a != result)
 				memcpy(result, a, calc_buffer_size);
 			result->sign = res_sign;
@@ -558,9 +567,10 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 		return;
 	}
 	if (b->desc.clss == ZERO) {
-		if (a->desc.clss == INF)
+		if (a->desc.clss == INF) {
 			fc_get_qnan(&a->desc, result);
-		else {
+			fc_exact = 0;
+		} else {
 			if (b != result)
 				memcpy(result, b, calc_buffer_size);
 			result->sign = res_sign;
@@ -569,12 +579,14 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 	}
 
 	if (a->desc.clss == INF) {
+		fc_exact = 0;
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
 		result->sign = res_sign;
 		return;
 	}
 	if (b->desc.clss == INF) {
+		fc_exact = 0;
 		if (b != result)
 			memcpy(result, b, calc_buffer_size);
 		result->sign = res_sign;
@@ -631,10 +643,11 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 
 	/* produce NAN on 0/0 and inf/inf */
 	if (a->desc.clss == ZERO) {
-		if (b->desc.clss == ZERO)
+		if (b->desc.clss == ZERO) {
 			/* 0/0 -> NaN */
 			fc_get_qnan(&a->desc, result);
-		else {
+			fc_exact = 0;
+		} else {
 			/* 0/x -> a */
 			if (a != result)
 				memcpy(result, a, calc_buffer_size);
@@ -644,10 +657,11 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	}
 
 	if (b->desc.clss == INF) {
-		if (a->desc.clss == INF)
+		fc_exact = 0;
+		if (a->desc.clss == INF) {
 			/* inf/inf -> NaN */
 			fc_get_qnan(&a->desc, result);
-		else {
+		} else {
 			/* x/inf -> 0 */
 			sc_val_from_ulong(0, NULL);
 			_save_result(_exp(result));
@@ -658,6 +672,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 	}
 
 	if (a->desc.clss == INF) {
+		fc_exact = 0;
 		/* inf/x -> inf */
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
@@ -665,6 +680,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 		return;
 	}
 	if (b->desc.clss == ZERO) {
+		fc_exact = 0;
 		/* division by zero */
 		if (result->sign)
 			fc_get_minusinf(&a->desc, result);
