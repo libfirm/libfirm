@@ -361,12 +361,81 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 	return res;
 }  /* rec_get_accessed_path */
 
-/** Returns an access path or NULL.  The access path is only
- *  valid, if the graph is in phase_high and _no_ address computation is used.
+/**
+ * Returns an access path or NULL.  The access path is only
+ * valid, if the graph is in phase_high and _no_ address computation is used.
  */
 static compound_graph_path *get_accessed_path(ir_node *ptr) {
 	return rec_get_accessed_path(ptr, 0);
 }  /* get_accessed_path */
+
+typedef struct path_entry {
+	ir_entity         *ent;
+	struct path_entry *next;
+	long              index;
+} path_entry;
+
+static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
+	path_entry       entry, *p;
+	ir_entity        *ent;
+	ir_initializer_t *initializer;
+
+	entry.next      = next;
+
+	if (is_Sel(ptr)) {
+		ir_entity *field;
+		ir_type   *tp;
+
+		entry.ent = field = get_Sel_entity(ptr);
+		tp = get_entity_owner(field);
+		if (is_Array_type(tp)) {
+			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
+			entry.index     = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
+		} else {
+			int i, n_members = get_compound_n_members(tp);
+			for (i = 0; i < n_members; ++i) {
+				if (get_compound_member(tp, i) == field)
+					break;
+			}
+			if (i >= n_members) {
+				/* not found: should NOT happen */
+				return NULL;
+			}
+			entry.index = i;
+		}
+		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
+	}
+
+	/* found the end */
+	assert(is_SymConst(ptr));
+
+	ent = get_SymConst_entity(ptr);
+	initializer = get_entity_initializer(ent);
+	for (p = next; p != NULL; p = p->next) {
+		unsigned n;
+
+		if (initializer->kind != IR_INITIALIZER_COMPOUND)
+			return NULL;
+
+		n = get_initializer_compound_n_entries(initializer);
+		if (p->index >= n)
+			return NULL;
+		initializer = get_initializer_compound_value(initializer, p->index);
+	}
+
+	switch (initializer->kind) {
+	case IR_INITIALIZER_CONST:
+		return get_initializer_const_value(initializer);
+	case IR_INITIALIZER_TARVAL:
+	case IR_INITIALIZER_NULL:
+	default:
+		return NULL;
+	}
+}
+
+static ir_node *find_compound_ent_value(ir_node *ptr) {
+	return rec_find_compound_ent_value(ptr, NULL);
+}
 
 /* forward */
 static void reduce_adr_usage(ir_node *ptr);
@@ -778,30 +847,22 @@ static unsigned optimize_load(ir_node *load)
 					reduce_adr_usage(ptr);
 					return res;
 				} else {
-					compound_graph_path *path = get_accessed_path(ptr);
+					ir_node *c = NULL;
+					if (ent->has_initializer) {
+						/* new style initializer */
+						c = find_compound_ent_value(ptr);
+					} else {
+						/* old style initializer */
+						compound_graph_path *path = get_accessed_path(ptr);
 
-					if (path && !ent->has_initializer) {
-						ir_node *c;
+						if (path) {
+							assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
 
-						assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-						/*
-						{
-							int j;
-							for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-								ir_entity *node = get_compound_graph_path_node(path, j);
-								fprintf(stdout, ".%s", get_entity_name(node));
-								if (is_Array_type(get_entity_owner(node)))
-									fprintf(stdout, "[%d]", get_compound_graph_path_array_index(path, j));
-							}
-							printf("\n");
+							c = get_compound_ent_value_by_path(ent, path);
+							free_compound_graph_path(path);
 						}
-						*/
-
-						c = get_compound_ent_value_by_path(ent, path);
-						free_compound_graph_path(path);
-
-						/* printf("  cons: "); DDMN(c); */
-
+					}
+					if (c != NULL) {
 						if (info->projs[pn_Load_M]) {
 							exchange(info->projs[pn_Load_M], mem);
 							res |= DF_CHANGED;
@@ -819,8 +880,8 @@ static unsigned optimize_load(ir_node *load)
 						Reflectiontest.
 						printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
 						get_entity_name(get_irg_entity(current_ir_graph)));
-						printf("  load: "); DDMN(load);
-						printf("  ptr:  "); DDMN(ptr);
+						ir_printf("  load: %+F\n", load);
+						ir_printf("  ptr:  %+F\n", ptr);
 						*/
 					}
 				}
