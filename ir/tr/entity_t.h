@@ -40,17 +40,26 @@ typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
 } ir_initializer_base_t;
 
+/**
+ * An compound initializer.
+ */
 typedef struct ir_initializer_compound_t {
 	ir_initializer_base_t  base;
 	unsigned               n_initializers;
 	ir_initializer_t      *initializers[1];
 } ir_initializer_compound_t;
 
+/**
+ * An initializer containing an ir_node,
+ */
 typedef struct ir_initializer_const_t {
 	ir_initializer_base_t  base;
 	ir_node               *value;
 } ir_initializer_const_t ;
 
+/**
+ * An initializer containing a tarval.
+ */
 typedef struct ir_initializer_tarval_t {
 	ir_initializer_base_t  base;
 	tarval                *value;
@@ -139,7 +148,7 @@ struct ir_entity {
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
-	unsigned has_initializer:1;
+	unsigned has_initializer:1;    /**< if set, this entity is initialized by new style initializers. */
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
 	                                    of owner is determined. */
 	unsigned char offset_bit_remainder;
