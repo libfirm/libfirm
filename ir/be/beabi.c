@@ -1729,6 +1729,10 @@ static void modify_irg(be_abi_irg_t *env)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
+	/* Must fetch memory here, otherwise the start Barrier gets the wrong
+	 * memory, which leads to loops in the DAG. */
+	old_mem = get_irg_initial_mem(irg);
+
 	/* set the links of all frame entities to NULL, we use it
 	   to detect if an entity is already linked in the value_param_list */
 	tp = get_method_value_param_type(method_type);
@@ -1856,7 +1860,6 @@ static void modify_irg(be_abi_irg_t *env)
 	obstack_free(&env->obst, rm);
 
 	/* create a new initial memory proj */
-	old_mem = get_irg_initial_mem(irg);
 	assert(is_Proj(old_mem));
 	new_mem_proj = new_r_Proj(irg, get_nodes_block(old_mem),
 	                          new_r_Unknown(irg, mode_T), mode_M,
