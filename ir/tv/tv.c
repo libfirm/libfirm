@@ -1025,8 +1025,7 @@ tarval *tarval_neg(tarval *a) {
  * addition
  */
 tarval *tarval_add(tarval *a, tarval *b) {
-	tarval  *res;
-	char    *buffer;
+	char *buffer;
 
 	assert(a);
 	assert(b);
