@@ -171,8 +171,8 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 
 	current_ir_graph = irg;
 
-	/* First step: fix all calls by removing it's memory input.
-	   It's original memory input is preserved in their link fields. */
+	/* First step: fix all calls by removing their memory input.
+	 * The original memory input is preserved in their link fields. */
 	for (call = call_list; call; call = next) {
 		next = get_irn_link(call);
 		mem  = get_Call_mem(call);
@@ -181,7 +181,7 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 		set_Call_mem(call, get_irg_no_mem(irg));
 
 		/*
-		 * Sorrily we cannot simply set the node to 'float'.
+		 * Unfortunately we cannot simply set the node to 'float'.
 		 * There is a reason for that:
 		 *
 		 * - The call might be inside a loop/if that is NOT entered
