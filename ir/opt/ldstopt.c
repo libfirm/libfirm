@@ -477,17 +477,13 @@ ptr_arith:
 			tv_index = tarval_div(tv, sz);
 			tv       = tarval_mod(tv, sz);
 
-			if (tv_index == tarval_bad || tv == tarval_bad)
-				return NULL;
+			/* worked above, should work again */
+			assert(tv_index != tarval_bad && tv != tarval_bad);
 
 			/* bounds already checked above */
 			index = get_tarval_long(tv_index);
 			set_compound_graph_path_array_index(res, pos, index);
 			++pos;
-		}
-		if (! tarval_is_null(tv)) {
-			/* hmm, wrong access */
-			return NULL;
 		}
 	} else if (is_Sub(ptr)) {
 		ir_node *l = get_Sub_left(ptr);
