@@ -497,20 +497,43 @@ typedef struct path_entry {
 
 static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
 	path_entry       entry, *p;
-	ir_entity        *ent;
+	ir_entity        *ent, *field;
 	ir_initializer_t *initializer;
+	tarval           *tv;
+	ir_type          *tp;
 
 	entry.next      = next;
 
-	if (is_Sel(ptr)) {
-		ir_entity *field;
-		ir_type   *tp;
+	if (is_SymConst(ptr)) {
+		/* found the root */
+		ent = get_SymConst_entity(ptr);
+		initializer = get_entity_initializer(ent);
+		for (p = next; p != NULL; p = p->next) {
+			unsigned n;
 
+			if (initializer->kind != IR_INITIALIZER_COMPOUND)
+				return NULL;
+
+			n = get_initializer_compound_n_entries(initializer);
+			if (p->index >= n)
+				return NULL;
+			initializer = get_initializer_compound_value(initializer, p->index);
+		}
+
+		switch (initializer->kind) {
+		case IR_INITIALIZER_CONST:
+			return get_initializer_const_value(initializer);
+		case IR_INITIALIZER_TARVAL:
+		case IR_INITIALIZER_NULL:
+		default:
+			return NULL;
+		}
+	} else if (is_Sel(ptr)) {
 		entry.ent = field = get_Sel_entity(ptr);
 		tp = get_entity_owner(field);
 		if (is_Array_type(tp)) {
 			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
-			entry.index     = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
+			entry.index = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
 		} else {
 			int i, n_members = get_compound_n_members(tp);
 			for (i = 0; i < n_members; ++i) {
@@ -524,33 +547,104 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
 			entry.index = i;
 		}
 		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
-	}
+	}  else if (is_Add(ptr)) {
+		ir_node  *l = get_Add_left(ptr);
+		ir_node  *r = get_Add_right(ptr);
+		ir_mode  *mode;
+		unsigned pos;
 
-	/* found the end */
-	assert(is_SymConst(ptr));
+		if (is_Const(r)) {
+			ptr = l;
+			tv  = get_Const_tarval(r);
+		} else {
+			ptr = r;
+			tv  = get_Const_tarval(l);
+		}
+ptr_arith:
+		mode = get_tarval_mode(tv);
 
-	ent = get_SymConst_entity(ptr);
-	initializer = get_entity_initializer(ent);
-	for (p = next; p != NULL; p = p->next) {
-		unsigned n;
+		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
+		if (is_Sel(ptr)) {
+			field = get_Sel_entity(ptr);
+		} else {
+			field = get_SymConst_entity(ptr);
+		}
 
-		if (initializer->kind != IR_INITIALIZER_COMPOUND)
+		/* count needed entries */
+		pos = 0;
+		for (ent = field;;) {
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			++pos;
+		}
+		/* should be at least ONE entry */
+		if (pos == 0)
 			return NULL;
 
-		n = get_initializer_compound_n_entries(initializer);
-		if (p->index >= n)
-			return NULL;
-		initializer = get_initializer_compound_value(initializer, p->index);
-	}
+		/* allocate the right number of entries */
+		NEW_ARR_A(path_entry, p, pos);
 
-	switch (initializer->kind) {
-	case IR_INITIALIZER_CONST:
-		return get_initializer_const_value(initializer);
-	case IR_INITIALIZER_TARVAL:
-	case IR_INITIALIZER_NULL:
-	default:
-		return NULL;
+		/* fill them up */
+		pos = 0;
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index, *tlower, *tupper;
+			long     index;
+			ir_node  *bound;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			p[pos].ent  = ent;
+			p[pos].next = &p[pos + 1];
+
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tv, sz);
+			tv       = tarval_mod(tv, sz);
+
+			if (tv_index == tarval_bad || tv == tarval_bad)
+				return NULL;
+
+			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
+			bound  = get_array_lower_bound(tp, 0);
+			tlower = computed_value(bound);
+			bound  = get_array_upper_bound(tp, 0);
+			tupper = computed_value(bound);
+
+			if (tlower == tarval_bad || tupper == tarval_bad)
+				return NULL;
+
+			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+				return NULL;
+			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+				return NULL;
+
+			/* ok, bounds check finished */
+			index = get_tarval_long(tv_index);
+			p[pos].index = index;
+			++pos;
+		}
+		if (! tarval_is_null(tv)) {
+			/* hmm, wrong access */
+			return NULL;
+		}
+		p[pos - 1].next = next;
+		return rec_find_compound_ent_value(ptr, p);
+	} else if (is_Sub(ptr)) {
+		ir_node *l = get_Sub_left(ptr);
+		ir_node *r = get_Sub_right(ptr);
+
+		ptr = l;
+		tv  = get_Const_tarval(r);
+		tv  = tarval_neg(tv);
+		goto ptr_arith;
 	}
+	return NULL;
 }
 
 static ir_node *find_compound_ent_value(ir_node *ptr) {
