@@ -436,35 +436,35 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		}
 		return;
 
-		case iro_Add:
-			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-				panic("Constant must be int or pointer for '+' to work");
-			}
-			do_dump_atomic_init(env, get_Add_left(init));
-			be_emit_cstring(" + ");
-			do_dump_atomic_init(env, get_Add_right(init));
-			return;
+	case iro_Add:
+		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+			panic("Constant must be int or pointer for '+' to work");
+		}
+		do_dump_atomic_init(env, get_Add_left(init));
+		be_emit_cstring(" + ");
+		do_dump_atomic_init(env, get_Add_right(init));
+		return;
 
-		case iro_Sub:
-			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-				panic("Constant must be int or pointer for '-' to work");
-			}
-			do_dump_atomic_init(env, get_Sub_left(init));
-			be_emit_cstring(" - ");
-			do_dump_atomic_init(env, get_Sub_right(init));
-			return;
+	case iro_Sub:
+		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+			panic("Constant must be int or pointer for '-' to work");
+		}
+		do_dump_atomic_init(env, get_Sub_left(init));
+		be_emit_cstring(" - ");
+		do_dump_atomic_init(env, get_Sub_right(init));
+		return;
 
-		case iro_Mul:
-			if (!mode_is_int(mode) && !mode_is_reference(mode)) {
-				panic("Constant must be int or pointer for '*' to work");
-			}
-			do_dump_atomic_init(env, get_Mul_left(init));
-			be_emit_cstring(" * ");
-			do_dump_atomic_init(env, get_Mul_right(init));
-			return;
+	case iro_Mul:
+		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
+			panic("Constant must be int or pointer for '*' to work");
+		}
+		do_dump_atomic_init(env, get_Mul_left(init));
+		be_emit_cstring(" * ");
+		do_dump_atomic_init(env, get_Mul_right(init));
+		return;
 
-		default:
-			assert(0 && "dump_atomic_init(): unknown IR-node");
+	default:
+		panic("dump_atomic_init(): unsupported IR-node %+F", init);
 	}
 }
 
