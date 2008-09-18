@@ -408,24 +408,6 @@ ptr_arith:
 		}
 		idx = 0;
 		for (ent = field;;) {
-			tp = get_entity_type(ent);
-			if (! is_Array_type(tp))
-				break;
-			ent = get_array_element_entity(tp);
-			++idx;
-		}
-		/* should be at least ONE array */
-		if (idx == 0)
-			return NULL;
-
-		res = rec_get_accessed_path(ptr, depth + idx);
-		if (res == NULL)
-			return NULL;
-
-		path_len = get_compound_graph_path_length(res);
-		pos      = path_len - depth - idx;
-
-		for (ent = field;;) {
 			unsigned size;
 			tarval   *sz, *tv_index, *tlower, *tupper;
 			long     index;
@@ -435,8 +417,6 @@ ptr_arith:
 			if (! is_Array_type(tp))
 				break;
 			ent = get_array_element_entity(tp);
-			set_compound_graph_path_node(res, pos, ent);
-
 			size = get_type_size_bytes(get_entity_type(ent));
 			sz   = new_tarval_from_long(size, mode);
 
@@ -461,6 +441,46 @@ ptr_arith:
 				return NULL;
 
 			/* ok, bounds check finished */
+			index = get_tarval_long(tv_index);
+			++idx;
+		}
+		if (! tarval_is_null(tv)) {
+			/* access to some struct/union member */
+			return NULL;
+		}
+
+		/* should be at least ONE array */
+		if (idx == 0)
+			return NULL;
+
+		res = rec_get_accessed_path(ptr, depth + idx);
+		if (res == NULL)
+			return NULL;
+
+		path_len = get_compound_graph_path_length(res);
+		pos      = path_len - depth - idx;
+
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index;
+			long     index;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			set_compound_graph_path_node(res, pos, ent);
+
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tv, sz);
+			tv       = tarval_mod(tv, sz);
+
+			if (tv_index == tarval_bad || tv == tarval_bad)
+				return NULL;
+
+			/* bounds already checked above */
 			index = get_tarval_long(tv_index);
 			set_compound_graph_path_array_index(res, pos, index);
 			++pos;
@@ -501,23 +521,45 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
 	ir_initializer_t *initializer;
 	tarval           *tv;
 	ir_type          *tp;
+	unsigned         n;
 
-	entry.next      = next;
-
+	entry.next = next;
 	if (is_SymConst(ptr)) {
 		/* found the root */
-		ent = get_SymConst_entity(ptr);
+		ent         = get_SymConst_entity(ptr);
 		initializer = get_entity_initializer(ent);
-		for (p = next; p != NULL; p = p->next) {
-			unsigned n;
-
+		for (p = next; p != NULL;) {
 			if (initializer->kind != IR_INITIALIZER_COMPOUND)
 				return NULL;
+			n  = get_initializer_compound_n_entries(initializer);
+			tp = get_entity_type(ent);
 
-			n = get_initializer_compound_n_entries(initializer);
+			if (is_Array_type(tp)) {
+				ent = get_array_element_entity(tp);
+				if (ent != p->ent) {
+					/* a missing [0] */
+					if (0 >= n)
+						return NULL;
+					initializer = get_initializer_compound_value(initializer, 0);
+					continue;
+				}
+			}
 			if (p->index >= n)
 				return NULL;
 			initializer = get_initializer_compound_value(initializer, p->index);
+
+			ent = p->ent;
+			p   = p->next;
+		}
+		tp = get_entity_type(ent);
+		while (is_Array_type(tp)) {
+			ent = get_array_element_entity(tp);
+			tp = get_entity_type(ent);
+			/* a missing [0] */
+			n  = get_initializer_compound_n_entries(initializer);
+			if (0 >= n)
+				return NULL;
+			initializer = get_initializer_compound_value(initializer, 0);
 		}
 
 		switch (initializer->kind) {
