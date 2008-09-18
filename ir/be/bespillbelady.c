@@ -1045,13 +1045,12 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 
 void be_init_spillbelady(void)
 {
-	lc_opt_entry_t *be_grp       = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *belady_group = lc_opt_get_grp(be_grp, "belady");
-	lc_opt_add_table(belady_group, options);
-
 	static be_spiller_t belady_spiller = {
 		be_spill_belady
 	};
+	lc_opt_entry_t *be_grp       = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *belady_group = lc_opt_get_grp(be_grp, "belady");
+	lc_opt_add_table(belady_group, options);
 
 	be_register_spiller("belady", &belady_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
