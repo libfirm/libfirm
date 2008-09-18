@@ -907,6 +907,25 @@ int mode_wrap_around(const ir_mode *mode) {
 	return mode_is_int(mode);
 }
 
+/*
+ * Returns non-zero if the cast from mode src to mode dst is a
+ * reinterpret cast (ie. only the bit pattern is reinterpreted,
+ * no conversion is done)
+ */
+int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst) {
+	ir_mode_arithmetic ma;
+
+	if (src == dst)
+		return 1;
+	if (get_mode_size_bits(src) != get_mode_size_bits(dst))
+		return 0;
+	ma = get_mode_arithmetic(src);
+	if (ma != get_mode_arithmetic(dst))
+		return 0;
+
+	return ma == irma_twos_complement || ma == irma_ones_complement;
+}
+
 void finish_mode(void) {
 	obstack_free(&modes, 0);
 	DEL_ARR_F(mode_list);

@@ -468,4 +468,11 @@ ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
  */
 void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
+/**
+ * Returns non-zero if the cast from mode src to mode dst is a
+ * reinterpret cast (ie. only the bit pattern is reinterpreted,
+ * no conversion is done)
+ */
+int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
+
 #endif

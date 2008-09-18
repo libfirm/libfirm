@@ -1052,7 +1052,7 @@ static unsigned optimize_load(ir_node *load)
 
 	/* check if we can determine the entity that will be loaded */
 	ent = find_constant_entity(ptr);
-	if (ent) {
+	if (ent != NULL) {
 		if ((allocation_static == get_entity_allocation(ent)) &&
 			(visibility_external_allocated != get_entity_visibility(ent))) {
 			/* a static allocation that is not external: there should be NO exception
@@ -1115,12 +1115,35 @@ static unsigned optimize_load(ir_node *load)
 						}
 					}
 					if (c != NULL) {
+						/* check, if the mode matches OR can be easily converted info */
+						ir_mode *c_mode = get_irn_mode(c);
+						ir_mode *l_mode = get_Load_mode(load);
+
+						if (c_mode != l_mode) {
+							if (is_reinterpret_cast(c_mode, l_mode)) {
+								/* we can safely cast */
+								dbg_info *dbg   = get_irn_dbg_info(load);
+								ir_node  *block = get_nodes_block(load);
+
+								/* copy the value from the const code irg and cast it */
+								c = copy_const_value(dbg, c);
+								c = new_rd_Conv(dbg, current_ir_graph, block, c, l_mode);
+							} else {
+								/* must be some operation */
+								c = NULL;
+							}
+						} else {
+							/* copy the value from the const code irg */
+							c = copy_const_value(get_irn_dbg_info(load), c);
+						}
+					}
+					if (c != NULL) {
 						if (info->projs[pn_Load_M]) {
 							exchange(info->projs[pn_Load_M], mem);
 							res |= DF_CHANGED;
 						}
 						if (info->projs[pn_Load_res]) {
-							exchange(info->projs[pn_Load_res], copy_const_value(get_irn_dbg_info(load), c));
+							exchange(info->projs[pn_Load_res], c);
 							res |= DF_CHANGED;
 						}
 						kill_node(load);
