@@ -82,7 +82,7 @@ typedef float real_t;
 #define REAL(C)   (C ## f)
 
 static unsigned last_chunk_id   = 0;
-static int recolor_limit        = 4;
+static int recolor_limit        = 7;
 static real_t dislike_influence = REAL(0.1);
 
 typedef struct _col_cost_t {
@@ -862,12 +862,12 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
 		if (get_mst_irn_col(node) == col) {
 			decider        = decider_has_color;
 			check_for_best = 1;
-			DBG((dbg, LEVEL_4, "\tcolor %d wanted", col));
+			DBG((dbg, LEVEL_4, "\tcolor %d wanted\n", col));
 		}
 		else {
 			decider        = decider_hasnot_color;
 			check_for_best = 0;
-			DBG((dbg, LEVEL_4, "\tcolor %d forbidden", col));
+			DBG((dbg, LEVEL_4, "\tcolor %d forbidden\n", col));
 		}
 
 		/* create a new chunk starting at current node */
@@ -1013,12 +1013,14 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 	if (depth > *max_depth)
 		*max_depth = depth;
 
-	if (depth >= recolor_limit)
-		return 0;
-
 	DBG((dbg, LEVEL_4, "\tRecoloring %+F with color-costs", node->irn));
 	DBG_COL_COST(env, LEVEL_4, costs);
 	DB((dbg, LEVEL_4, "\n"));
+
+	if (depth >= recolor_limit) {
+		DBG((dbg, LEVEL_4, "\tHit recolor limit\n"));
+		return 0;
+	}
 
 	for (i = 0; i < env->n_regs; ++i) {
 		int tgt_col  = costs[i].col;
@@ -1026,8 +1028,10 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		int j;
 
 		/* If the costs for that color (and all successive) are infinite, bail out we won't make it anyway. */
-		if (costs[i].cost == REAL(0.0))
+		if (costs[i].cost == REAL(0.0)) {
+			DBG((dbg, LEVEL_4, "\tAll further colors forbidden\n"));
 			return 0;
+		}
 
 		/* Set the new color of the node and mark the node as temporarily fixed. */
 		assert(node->tmp_col < 0 && "Node must not have been temporary fixed.");
@@ -1080,6 +1084,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 		}
 	}
 
+	DBG((dbg, LEVEL_4, "\tAll colors failed\n"));
 	return 0;
 }
 
