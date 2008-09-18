@@ -1071,6 +1071,7 @@ static unsigned optimize_load(ir_node *load)
 			}
 
 			if (variability_constant == get_entity_variability(ent)) {
+				ir_node *c = NULL;
 				if (is_atomic_entity(ent)) {
 					/* Might not be atomic after
 					   lowering of Sels.  In this
@@ -1079,27 +1080,8 @@ static unsigned optimize_load(ir_node *load)
 					/* more simpler case: we load the content of a constant value:
 					 * replace it by the constant itself
 					 */
-
-					/* no memory */
-					if (info->projs[pn_Load_M]) {
-						exchange(info->projs[pn_Load_M], mem);
-						res |= DF_CHANGED;
-					}
-					/* no result :-) */
-					if (info->projs[pn_Load_res]) {
-						if (is_atomic_entity(ent)) {
-							ir_node *c = copy_const_value(get_irn_dbg_info(load), get_atomic_ent_value(ent));
-
-							DBG_OPT_RC(load, c);
-							exchange(info->projs[pn_Load_res], c);
-							res |= DF_CHANGED;
-						}
-					}
-					kill_node(load);
-					reduce_adr_usage(ptr);
-					return res;
+					c = get_atomic_ent_value(ent);
 				} else {
-					ir_node *c = NULL;
 					if (ent->has_initializer) {
 						/* new style initializer */
 						c = find_compound_ent_value(ptr);
@@ -1114,51 +1096,42 @@ static unsigned optimize_load(ir_node *load)
 							free_compound_graph_path(path);
 						}
 					}
-					if (c != NULL) {
-						/* check, if the mode matches OR can be easily converted info */
-						ir_mode *c_mode = get_irn_mode(c);
-						ir_mode *l_mode = get_Load_mode(load);
+				}
+				if (c != NULL) {
+					/* check, if the mode matches OR can be easily converted info */
+					ir_mode *c_mode = get_irn_mode(c);
+					ir_mode *l_mode = get_Load_mode(load);
 
-						if (c_mode != l_mode) {
-							if (is_reinterpret_cast(c_mode, l_mode)) {
-								/* we can safely cast */
-								dbg_info *dbg   = get_irn_dbg_info(load);
-								ir_node  *block = get_nodes_block(load);
+					if (c_mode != l_mode) {
+						if (is_reinterpret_cast(c_mode, l_mode)) {
+							/* we can safely cast */
+							dbg_info *dbg   = get_irn_dbg_info(load);
+							ir_node  *block = get_nodes_block(load);
 
-								/* copy the value from the const code irg and cast it */
-								c = copy_const_value(dbg, c);
-								c = new_rd_Conv(dbg, current_ir_graph, block, c, l_mode);
-							} else {
-								/* must be some operation */
-								c = NULL;
-							}
+							/* copy the value from the const code irg and cast it */
+							c = copy_const_value(dbg, c);
+							c = new_rd_Conv(dbg, current_ir_graph, block, c, l_mode);
 						} else {
-							/* copy the value from the const code irg */
-							c = copy_const_value(get_irn_dbg_info(load), c);
+							/* must be some operation */
+							c = NULL;
 						}
-					}
-					if (c != NULL) {
-						if (info->projs[pn_Load_M]) {
-							exchange(info->projs[pn_Load_M], mem);
-							res |= DF_CHANGED;
-						}
-						if (info->projs[pn_Load_res]) {
-							exchange(info->projs[pn_Load_res], c);
-							res |= DF_CHANGED;
-						}
-						kill_node(load);
-						reduce_adr_usage(ptr);
-						return res;
 					} else {
-						/*  We can not determine a correct access path.  E.g., in jack, we load
-						a byte from an object to generate an exception.   Happens in test program
-						Reflectiontest.
-						printf(">>>>>>>>>>>>> Found access to constant entity %s in function %s\n", get_entity_name(ent),
-						get_entity_name(get_irg_entity(current_ir_graph)));
-						ir_printf("  load: %+F\n", load);
-						ir_printf("  ptr:  %+F\n", ptr);
-						*/
+						/* copy the value from the const code irg */
+						c = copy_const_value(get_irn_dbg_info(load), c);
 					}
+				}
+				if (c != NULL) {
+					if (info->projs[pn_Load_M]) {
+						exchange(info->projs[pn_Load_M], mem);
+						res |= DF_CHANGED;
+					}
+					if (info->projs[pn_Load_res]) {
+						exchange(info->projs[pn_Load_res], c);
+						res |= DF_CHANGED;
+					}
+					kill_node(load);
+					reduce_adr_usage(ptr);
+					return res;
 				}
 			}
 		}
