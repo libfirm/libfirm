@@ -945,6 +945,33 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 }  /* follow_Mem_chain */
 
 /**
+ * Check if we can replace the load by a given const from
+ * the const code irg.
+ */
+static ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
+	ir_mode *c_mode = get_irn_mode(c);
+	ir_mode *l_mode = get_Load_mode(load);
+	ir_node *res    = NULL;
+
+	if (c_mode != l_mode) {
+		/* check, if the mode matches OR can be easily converted info */
+		if (is_reinterpret_cast(c_mode, l_mode)) {
+			/* we can safely cast */
+			dbg_info *dbg   = get_irn_dbg_info(load);
+			ir_node  *block = get_nodes_block(load);
+
+			/* copy the value from the const code irg and cast it */
+			res = copy_const_value(dbg, c);
+			res = new_rd_Conv(dbg, current_ir_graph, block, res, l_mode);
+		}
+	} else {
+		/* copy the value from the const code irg */
+		res = copy_const_value(get_irn_dbg_info(load), c);
+	}
+	return res;
+}  /* can_replace_load_by_const */
+
+/**
  * optimize a Load
  *
  * @param load  the Load node
@@ -1089,7 +1116,7 @@ static unsigned optimize_load(ir_node *load)
 						/* old style initializer */
 						compound_graph_path *path = get_accessed_path(ptr);
 
-						if (path) {
+						if (path != NULL) {
 							assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
 
 							c = get_compound_ent_value_by_path(ent, path);
@@ -1097,29 +1124,8 @@ static unsigned optimize_load(ir_node *load)
 						}
 					}
 				}
-				if (c != NULL) {
-					/* check, if the mode matches OR can be easily converted info */
-					ir_mode *c_mode = get_irn_mode(c);
-					ir_mode *l_mode = get_Load_mode(load);
-
-					if (c_mode != l_mode) {
-						if (is_reinterpret_cast(c_mode, l_mode)) {
-							/* we can safely cast */
-							dbg_info *dbg   = get_irn_dbg_info(load);
-							ir_node  *block = get_nodes_block(load);
-
-							/* copy the value from the const code irg and cast it */
-							c = copy_const_value(dbg, c);
-							c = new_rd_Conv(dbg, current_ir_graph, block, c, l_mode);
-						} else {
-							/* must be some operation */
-							c = NULL;
-						}
-					} else {
-						/* copy the value from the const code irg */
-						c = copy_const_value(get_irn_dbg_info(load), c);
-					}
-				}
+				if (c != NULL)
+					c = can_replace_load_by_const(load, c);
 				if (c != NULL) {
 					if (info->projs[pn_Load_M]) {
 						exchange(info->projs[pn_Load_M], mem);
