@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   Available Optimisations of libFirm.
- * @version $Id: cfopt.h 13543 2007-04-29 19:29:02Z beck $
+ * @version $Id$
  */
 #ifndef FIRM_IROPTIMIZE_H
 #define FIRM_IROPTIMIZE_H
