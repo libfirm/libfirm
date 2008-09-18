@@ -307,6 +307,31 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 
 			/* try next */
 			ptr = get_Sel_ptr(ptr);
+		} else if (is_Add(ptr)) {
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+
+			if (get_irn_mode(l) == get_irn_mode(ptr) && is_Const(r))
+				ptr = l;
+			else if (get_irn_mode(r) == get_irn_mode(ptr) && is_Const(l))
+				ptr = r;
+			else
+				return NULL;
+
+			/* for now, we support only one addition, reassoc should fold all others */
+			if (! is_SymConst(ptr) && !is_Sel(ptr))
+				return NULL;
+		} else if (is_Sub(ptr)) {
+			ir_node *l = get_Sub_left(ptr);
+			ir_node *r = get_Sub_right(ptr);
+
+			if (get_irn_mode(l) == get_irn_mode(ptr) &&	is_Const(r))
+				ptr = l;
+			else
+				return NULL;
+			/* for now, we support only one substraction, reassoc should fold all others */
+			if (! is_SymConst(ptr) && !is_Sel(ptr))
+				return NULL;
 		} else
 			return NULL;
 	}
@@ -331,8 +356,10 @@ static long get_Sel_array_index_long(ir_node *n, int dim) {
  */
 static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 	compound_graph_path *res = NULL;
-	ir_entity           *root, *field;
-	int                 path_len, pos;
+	ir_entity           *root, *field, *ent;
+	int                 path_len, pos, idx;
+	tarval              *tv;
+	ir_type             *tp;
 
 	if (is_SymConst(ptr)) {
 		/* a SymConst. If the depth is 0, this is an access to a global
@@ -342,10 +369,11 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 		assert(get_SymConst_kind(ptr) == symconst_addr_ent);
 		root = get_SymConst_entity(ptr);
 		res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
-	} else {
-		assert(is_Sel(ptr));
+	} else if (is_Sel(ptr)) {
 		/* it's a Sel, go up until we find the root */
 		res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
+		if (res == NULL)
+			return NULL;
 
 		/* fill up the step in the path at the current position */
 		field    = get_Sel_entity(ptr);
@@ -357,6 +385,98 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
 			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
 		}
+	} else if (is_Add(ptr)) {
+		ir_node *l = get_Add_left(ptr);
+		ir_node *r = get_Add_right(ptr);
+		ir_mode *mode;
+
+		if (is_Const(r)) {
+			ptr = l;
+			tv  = get_Const_tarval(r);
+		} else {
+			ptr = r;
+			tv  = get_Const_tarval(l);
+		}
+ptr_arith:
+		mode = get_tarval_mode(tv);
+
+		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
+		if (is_Sel(ptr)) {
+			field = get_Sel_entity(ptr);
+		} else {
+			field = get_SymConst_entity(ptr);
+		}
+		idx = 0;
+		for (ent = field;;) {
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			++idx;
+		}
+		/* should be at least ONE array */
+		if (idx == 0)
+			return NULL;
+
+		res = rec_get_accessed_path(ptr, depth + idx);
+		if (res == NULL)
+			return NULL;
+
+		path_len = get_compound_graph_path_length(res);
+		pos      = path_len - depth - idx;
+
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index, *tlower, *tupper;
+			long     index;
+			ir_node  *bound;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			set_compound_graph_path_node(res, pos, ent);
+
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tv, sz);
+			tv       = tarval_mod(tv, sz);
+
+			if (tv_index == tarval_bad || tv == tarval_bad)
+				return NULL;
+
+			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
+			bound  = get_array_lower_bound(tp, 0);
+			tlower = computed_value(bound);
+			bound  = get_array_upper_bound(tp, 0);
+			tupper = computed_value(bound);
+
+			if (tlower == tarval_bad || tupper == tarval_bad)
+				return NULL;
+
+			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+				return NULL;
+			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+				return NULL;
+
+			/* ok, bounds check finished */
+			index = get_tarval_long(tv_index);
+			set_compound_graph_path_array_index(res, pos, index);
+			++pos;
+		}
+		if (! tarval_is_null(tv)) {
+			/* hmm, wrong access */
+			return NULL;
+		}
+	} else if (is_Sub(ptr)) {
+		ir_node *l = get_Sub_left(ptr);
+		ir_node *r = get_Sub_right(ptr);
+
+		ptr = l;
+		tv  = get_Const_tarval(r);
+		tv  = tarval_neg(tv);
+		goto ptr_arith;
 	}
 	return res;
 }  /* rec_get_accessed_path */
