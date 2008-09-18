@@ -457,13 +457,13 @@ void set_atomic_ent_value(ir_entity *ent, ir_node *val);
 
 /** the kind (type) of an initializer */
 typedef enum ir_initializer_kind_t {
-	/* initializer containing an ir_node from the const-code irg */
+	/** initializer containing an ir_node from the const-code irg */
 	IR_INITIALIZER_CONST,
-	/* initializer containing a tarval */
+	/** initializer containing a tarval */
 	IR_INITIALIZER_TARVAL,
-	/* initializes type with default values (usually 0) */
+	/** initializes type with default values (usually 0) */
 	IR_INITIALIZER_NULL,
-	/* list of initializers used to initializer a compound or array type */
+	/** list of initializers used to initializer a compound or array type */
 	IR_INITIALIZER_COMPOUND
 } ir_initializer_kind_t;
 
@@ -516,10 +516,16 @@ void free_compound_graph_path(compound_graph_path *gr);
 /** Returns the length of a graph path */
 int get_compound_graph_path_length(const compound_graph_path *gr);
 
+/** Get the entity node of an compound graph path at position pos. */
 ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, int pos);
-void set_compound_graph_path_node(compound_graph_path *gr, int pos, ir_entity *node);
-int get_compound_graph_path_array_index(const compound_graph_path *gr, int pos);
-void set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
+/** Set the entity node of an compound graph path at position pos. */
+void      set_compound_graph_path_node(compound_graph_path *gr, int pos, ir_entity *node);
+/** Get the index of an compound graph path at position pos. */
+int       get_compound_graph_path_array_index(const compound_graph_path *gr, int pos);
+/** Set the index of an compound graph path at position pos. */
+void      set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
+/** Get the type of an compound graph path. */
+ir_type   *get_compound_graph_path_type(const compound_graph_path *gr);
 
 /** Checks whether the path up to pos is correct. If the path contains a NULL,
  *  assumes the path is not complete and returns non-zero. */
@@ -565,8 +571,10 @@ ir_entity *get_compound_ent_value_member(ir_entity *ent, int pos);
 /** Sets the path at pos 0 */
 void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member, int pos);
 
+/** Sets the new style initializers of an entity. */
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
 
+/** Return the new style initializers of an entity. */
 ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 
 /** Initializes the entity ent which must be of a one dimensional

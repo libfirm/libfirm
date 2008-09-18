@@ -888,6 +888,12 @@ set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index)
 	gr->list[pos].index = index;
 }  /* set_compound_graph_path_array_index */
 
+ir_type *
+get_compound_graph_path_type(const compound_graph_path *gr) {
+	assert(gr && is_compound_graph_path(gr));
+	return gr->tp;
+}
+
 /* A value of a compound entity is a pair of value and the corresponding path to a member of
    the compound. */
 void
