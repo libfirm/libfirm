@@ -182,49 +182,50 @@ ir_node *transform_node_Sel(ir_node *node) {
  *  a tuple, or replace the Projs of the load.
  *  Therefore we call this optimization in ldstopt().
  */
-ir_node *transform_node_Load(ir_node *n) {
-	ir_node *field_ptr, *new_node, *ptr;
+ir_node *transform_polymorph_Load(ir_node *load) {
+	ir_node *new_node = NULL;
+	ir_node *field_ptr, *ptr;
 	ir_entity *ent;
 	ir_type *dyn_tp;
 
 	if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
-		return n;
+		return load;
 
-	field_ptr = get_Load_ptr(n);
+	field_ptr = get_Load_ptr(load);
 
-	if (! is_Sel(field_ptr)) return n;
+	if (! is_Sel(field_ptr)) return load;
 
 	ent = get_Sel_entity(field_ptr);
 	if ((get_entity_allocation(ent) != allocation_static)    ||
 		(get_entity_variability(ent) != variability_constant)  )
-		return n;
+		return load;
 
 	/* If the entity is a leave in the inheritance tree,
 	   we can replace the Sel by a constant. */
 	if ((get_irp_phase_state() != phase_building) && is_final_ent(ent)) {
-		new_node = copy_const_value(get_irn_dbg_info(n), get_atomic_ent_value(ent));
-		DBG_OPT_POLY(field_ptr, new_node);
+		new_node = get_atomic_ent_value(ent);
+	} else {
+		/* If we know the dynamic type, we can replace the Sel by a constant. */
+		ptr = get_Sel_ptr(field_ptr);    /* The address we select from. */
+		dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
 
-		return new_node;
+		if (dyn_tp != firm_unknown_type) {
+			ir_entity *loaded_ent;
+
+			/* We know which method will be called, no dispatch necessary. */
+			loaded_ent = resolve_ent_polymorphy(dyn_tp, ent);
+			/* called_ent may not be description: has no Address/Const to Call! */
+			assert(get_entity_peculiarity(loaded_ent) != peculiarity_description);
+			new_node = get_atomic_ent_value(loaded_ent);
+		}
 	}
+	if (new_node != NULL) {
+		new_node = can_replace_load_by_const(load, new_node);
+		if (new_node != NULL) {
+			DBG_OPT_POLY(field_ptr, new_node);
 
-	/* If we know the dynamic type, we can replace the Sel by a constant. */
-	ptr = get_Sel_ptr(field_ptr);    /* The address we select from. */
-	dyn_tp = get_dynamic_type(ptr);  /* The runtime type of ptr. */
-
-	if (dyn_tp != firm_unknown_type) {
-		ir_entity *loaded_ent;
-
-		/* We know which method will be called, no dispatch necessary. */
-		loaded_ent = resolve_ent_polymorphy(dyn_tp, ent);
-		/* called_ent may not be description: has no Address/Const to Call! */
-		assert(get_entity_peculiarity(loaded_ent) != peculiarity_description);
-
-		new_node = copy_const_value(get_irn_dbg_info(n), get_atomic_ent_value(loaded_ent));
-		DBG_OPT_POLY(field_ptr, new_node);
-
-		return new_node;
+			return new_node;
+		}
 	}
-
-	return n;
+	return load;
 }

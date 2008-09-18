@@ -48,6 +48,6 @@ ir_node *transform_node_Sel(ir_node *node);
  *  a tuple, or replace the Projs of the load.
  *  Therefore we call this optimization in ldstopt.
  */
-ir_node *transform_node_Load(ir_node *n);
+ir_node *transform_polymorph_Load(ir_node *n);
 
 #endif /* FIRM_OPT_OPT_POLYMORPHY_H */

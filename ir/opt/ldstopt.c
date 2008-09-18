@@ -944,11 +944,11 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 	return res;
 }  /* follow_Mem_chain */
 
-/**
+/*
  * Check if we can replace the load by a given const from
  * the const code irg.
  */
-static ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
+ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
 	ir_mode *c_mode = get_irn_mode(c);
 	ir_mode *l_mode = get_Load_mode(load);
 	ir_node *res    = NULL;
@@ -979,7 +979,7 @@ static ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
 static unsigned optimize_load(ir_node *load)
 {
 	ldst_info_t *info = get_irn_link(load);
-	ir_node *mem, *ptr, *new_node;
+	ir_node *mem, *ptr, *value;
 	ir_entity *ent;
 	unsigned res = 0;
 
@@ -999,38 +999,22 @@ static unsigned optimize_load(ir_node *load)
 	 * like x = new O; x->t;
 	 */
 	if (info->projs[pn_Load_X_except]) {
-		if (is_Sel(ptr)) {
-			ir_node *mem = get_Sel_mem(ptr);
+		ir_node *addr = ptr;
 
-			/* FIXME: works with the current FE, but better use the base */
-			if (is_Alloc(skip_Proj(mem))) {
-				/* ok, check the types */
-				ir_entity *ent    = get_Sel_entity(ptr);
-				ir_type   *s_type = get_entity_type(ent);
-				ir_type   *a_type = get_Alloc_type(mem);
-
-				if (is_SubClass_of(s_type, a_type)) {
-					/* ok, condition met: there can't be an exception because
-					* Alloc guarantees that enough memory was allocated */
-
-					exchange(info->projs[pn_Load_X_except], new_Bad());
-					info->projs[pn_Load_X_except] = NULL;
-					exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-					info->projs[pn_Load_X_regular] = NULL;
-					res |= CF_CHANGED;
-				}
-			}
-		} else if (is_Alloc(skip_Proj(skip_Cast(ptr)))) {
-				/* simple case: a direct load after an Alloc. Firm Alloc throw
-				 * an exception in case of out-of-memory. So, there is no way for an
-				 * exception in this load.
-				 * This code is constructed by the "exception lowering" in the Jack compiler.
-				 */
-				exchange(info->projs[pn_Load_X_except], new_Bad());
-				info->projs[pn_Load_X_except] = NULL;
-				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-				info->projs[pn_Load_X_regular] = NULL;
-				res |= CF_CHANGED;
+		/* find base address */
+		while (is_Sel(addr))
+			addr = get_Sel_ptr(addr);
+		if (is_Alloc(skip_Proj(skip_Cast(addr)))) {
+			/* simple case: a direct load after an Alloc. Firm Alloc throw
+			 * an exception in case of out-of-memory. So, there is no way for an
+			 * exception in this load.
+			 * This code is constructed by the "exception lowering" in the Jack compiler.
+			 */
+			exchange(info->projs[pn_Load_X_except], new_Bad());
+			info->projs[pn_Load_X_except] = NULL;
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			info->projs[pn_Load_X_regular] = NULL;
+			res |= CF_CHANGED;
 		}
 	}
 
@@ -1053,12 +1037,62 @@ static unsigned optimize_load(ir_node *load)
 
 	/* Load from a constant polymorphic field, where we can resolve
 	   polymorphism. */
-	new_node = transform_node_Load(load);
-	if (new_node != load) {
-		if (info->projs[pn_Load_M]) {
-			exchange(info->projs[pn_Load_M], mem);
-			info->projs[pn_Load_M] = NULL;
+	value = transform_polymorph_Load(load);
+	if (value == NULL) {
+		/* check if we can determine the entity that will be loaded */
+		ent = find_constant_entity(ptr);
+		if (ent != NULL) {
+			if ((allocation_static == get_entity_allocation(ent)) &&
+				(visibility_external_allocated != get_entity_visibility(ent))) {
+				/* a static allocation that is not external: there should be NO exception
+				 * when loading even if we cannot replace the load itself. */
+
+				/* no exception, clear the info field as it might be checked later again */
+				if (info->projs[pn_Load_X_except]) {
+					exchange(info->projs[pn_Load_X_except], new_Bad());
+					info->projs[pn_Load_X_except] = NULL;
+					res |= CF_CHANGED;
+				}
+				if (info->projs[pn_Load_X_regular]) {
+					exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+					info->projs[pn_Load_X_regular] = NULL;
+					res |= CF_CHANGED;
+				}
+
+				if (variability_constant == get_entity_variability(ent)) {
+					if (is_atomic_entity(ent)) {
+						/* Might not be atomic after
+						   lowering of Sels.  In this
+						   case we could also load, but
+						   it's more complicated. */
+						/* more simpler case: we load the content of a constant value:
+						 * replace it by the constant itself
+						 */
+						value = get_atomic_ent_value(ent);
+					} else {
+						if (ent->has_initializer) {
+							/* new style initializer */
+							value = find_compound_ent_value(ptr);
+						} else {
+							/* old style initializer */
+							compound_graph_path *path = get_accessed_path(ptr);
+
+							if (path != NULL) {
+								assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+
+								value = get_compound_ent_value_by_path(ent, path);
+								free_compound_graph_path(path);
+							}
+						}
+					}
+					if (value != NULL)
+						value = can_replace_load_by_const(load, value);
+				}
+			}
 		}
+	}
+	if (value != NULL) {
+		/* we completely replace the load by this value */
 		if (info->projs[pn_Load_X_except]) {
 			exchange(info->projs[pn_Load_X_except], new_Bad());
 			info->projs[pn_Load_X_except] = NULL;
@@ -1069,78 +1103,17 @@ static unsigned optimize_load(ir_node *load)
 			info->projs[pn_Load_X_regular] = NULL;
 			res |= CF_CHANGED;
 		}
-		if (info->projs[pn_Load_res])
-			exchange(info->projs[pn_Load_res], new_node);
-
+		if (info->projs[pn_Load_M]) {
+			exchange(info->projs[pn_Load_M], mem);
+			res |= DF_CHANGED;
+		}
+		if (info->projs[pn_Load_res]) {
+			exchange(info->projs[pn_Load_res], value);
+			res |= DF_CHANGED;
+		}
 		kill_node(load);
 		reduce_adr_usage(ptr);
-		return res | DF_CHANGED;
-	}
-
-	/* check if we can determine the entity that will be loaded */
-	ent = find_constant_entity(ptr);
-	if (ent != NULL) {
-		if ((allocation_static == get_entity_allocation(ent)) &&
-			(visibility_external_allocated != get_entity_visibility(ent))) {
-			/* a static allocation that is not external: there should be NO exception
-			 * when loading. */
-
-			/* no exception, clear the info field as it might be checked later again */
-			if (info->projs[pn_Load_X_except]) {
-				exchange(info->projs[pn_Load_X_except], new_Bad());
-				info->projs[pn_Load_X_except] = NULL;
-				res |= CF_CHANGED;
-			}
-			if (info->projs[pn_Load_X_regular]) {
-				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-				info->projs[pn_Load_X_regular] = NULL;
-				res |= CF_CHANGED;
-			}
-
-			if (variability_constant == get_entity_variability(ent)) {
-				ir_node *c = NULL;
-				if (is_atomic_entity(ent)) {
-					/* Might not be atomic after
-					   lowering of Sels.  In this
-					   case we could also load, but
-					   it's more complicated. */
-					/* more simpler case: we load the content of a constant value:
-					 * replace it by the constant itself
-					 */
-					c = get_atomic_ent_value(ent);
-				} else {
-					if (ent->has_initializer) {
-						/* new style initializer */
-						c = find_compound_ent_value(ptr);
-					} else {
-						/* old style initializer */
-						compound_graph_path *path = get_accessed_path(ptr);
-
-						if (path != NULL) {
-							assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
-
-							c = get_compound_ent_value_by_path(ent, path);
-							free_compound_graph_path(path);
-						}
-					}
-				}
-				if (c != NULL)
-					c = can_replace_load_by_const(load, c);
-				if (c != NULL) {
-					if (info->projs[pn_Load_M]) {
-						exchange(info->projs[pn_Load_M], mem);
-						res |= DF_CHANGED;
-					}
-					if (info->projs[pn_Load_res]) {
-						exchange(info->projs[pn_Load_res], c);
-						res |= DF_CHANGED;
-					}
-					kill_node(load);
-					reduce_adr_usage(ptr);
-					return res;
-				}
-			}
-		}
+		return res;
 	}
 
 	/* Check, if the address of this load is used more than once.
@@ -1230,7 +1203,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 		}
 
 		if (is_Store(pred)) {
-			/* check if we can pass thru this store */
+			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
 				current_ir_graph,
 				get_Store_ptr(pred),
