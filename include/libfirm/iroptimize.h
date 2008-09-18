@@ -198,6 +198,19 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
 
 void opt_sync(ir_graph *irg);
 
+/*
+ * Check if we can replace the load by a given const from
+ * the const code irg.
+ *
+ * @param load   the load to replace
+ * @param c      the constant
+ *
+ * @return in the modes match or can be transformed using a reinterpret cast
+ *         returns a copy of the constant (possibly Conv'ed) on the
+ *         current_ir_graph
+ */
+ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
+
 /**
  * Load/Store optimization.
  *
