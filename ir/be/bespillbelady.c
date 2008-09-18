@@ -68,13 +68,9 @@
 #define DBG_WORKSET 128
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* factor to weight the different costs of reloading/rematerializing a node
-   (see bespill.h be_get_reload_costs_no_weight) */
-#define RELOAD_COST_FACTOR   10
-
 #define TIME_UNDEFINED 6666
 
-#define PLACE_SPILLS
+//#define LOOK_AT_LOOPDEPTH
 
 /**
  * An association between a node and a point in time.
@@ -105,6 +101,21 @@ static unsigned                     instr_nr; /**< current instruction number
 static ir_nodeset_t                 used;
 static spill_env_t                 *senv;   /**< see bespill.h */
 static pdeq                        *worklist;
+
+static bool                         move_spills      = true;
+static bool                         respectloopdepth = true;
+static bool                         improve_known_preds = true;
+/* factor to weight the different costs of reloading/rematerializing a node
+   (see bespill.h be_get_reload_costs_no_weight) */
+static int                          remat_bonus      = 10;
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_BOOL   ("movespills", "try to move spills out of loops", &move_spills),
+	LC_OPT_ENT_BOOL   ("respectloopdepth", "exprimental (outermost loop cutting)", &respectloopdepth),
+	LC_OPT_ENT_BOOL   ("improveknownpreds", "experimental (known preds cutting)", &improve_known_preds),
+	LC_OPT_ENT_INT    ("rematbonus", "give bonus to rematerialisable nodes", &remat_bonus),
+	LC_OPT_LAST
+};
 
 static int loc_compare(const void *a, const void *b)
 {
@@ -289,9 +300,12 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 	if (flags & arch_irn_flags_dont_spill)
 		return 0;
 
-	costs = be_get_reload_costs_no_weight(senv, def, use.before);
-	assert(costs * RELOAD_COST_FACTOR < 1000);
-	time  = use.time + 1000 - (costs * RELOAD_COST_FACTOR);
+	/* give some bonus to rematerialisable nodes */
+	if (remat_bonus > 0) {
+		costs = be_get_reload_costs_no_weight(senv, def, use.before);
+		assert(costs * remat_bonus < 1000);
+		time  = use.time + 1000 - (costs * remat_bonus);
+	}
 
 	return time;
 }
@@ -351,10 +365,13 @@ static void displace(workset_t *new_vals, int is_usage)
 
 	/* Only make more free room if we do not have enough */
 	if (spills_needed > 0) {
-#ifndef PLACE_SPILLS
-		ir_node   *curr_bb  = get_nodes_block(instr);
-		workset_t *ws_start = get_block_info(curr_bb)->start_workset;
-#endif
+		ir_node   *curr_bb  = NULL;
+		workset_t *ws_start = NULL;
+
+		if (move_spills) {
+			curr_bb  = get_nodes_block(instr);
+			ws_start = get_block_info(curr_bb)->start_workset;
+		}
 
 		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
 
@@ -374,24 +391,23 @@ static void displace(workset_t *new_vals, int is_usage)
 			DB((dbg, DBG_DECIDE, "    disposing node %+F (%u)\n", val,
 			     workset_get_time(ws, i)));
 
-#ifdef PLACE_SPILLS
-			if (!USES_IS_INFINITE(ws->vals[i].time) && !ws->vals[i].spilled) {
-				ir_node *after_pos = sched_prev(instr);
-				DB((dbg, DBG_DECIDE, "Spill %+F after node %+F\n", val,
-				    after_pos));
-				be_add_spill(senv, val, after_pos);
+			if (move_spills) {
+				if (!USES_IS_INFINITE(ws->vals[i].time)
+						&& !ws->vals[i].spilled) {
+					ir_node *after_pos = sched_prev(instr);
+					DB((dbg, DBG_DECIDE, "Spill %+F after node %+F\n", val,
+						after_pos));
+					be_add_spill(senv, val, after_pos);
+				}
+			} else {
+				/* Logic for not needed live-ins: If a value is disposed
+				 * before its first use, remove it from start workset
+				 * We don't do this for phis though	*/
+				if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
+					workset_remove(ws_start, val);
+					DB((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
+				}
 			}
-#endif
-
-#ifndef PLACE_SPILLS
-			/* Logic for not needed live-ins: If a value is disposed
-			 * before its first use, remove it from start workset
-			 * We don't do this for phis though	*/
-			if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
-				workset_remove(ws_start, val);
-				DB((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
-			}
-#endif
 		}
 
 		/* kill the last 'demand' entries in the array */
@@ -504,18 +520,20 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 
 	loc.time = next_use.time;
 
-	if (available == AVAILABLE_EVERYWHERE) {
-		DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n", node,
-		    loc.time));
-		return loc;
-	} else if(available == AVAILABLE_NOWHERE) {
-		DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n", node,
-		    loc.time));
-		loc.time = USES_INFINITY;
-		return loc;
+	if (improve_known_preds) {
+		if (available == AVAILABLE_EVERYWHERE) {
+			DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n",
+			    node, loc.time));
+			return loc;
+		} else if(available == AVAILABLE_NOWHERE) {
+			DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n",
+			    node, loc.time));
+			loc.time = USES_INFINITY;
+			return loc;
+		}
 	}
 
-	if (next_use.outermost_loop >= get_loop_depth(loop)) {
+	if (!respectloopdepth || next_use.outermost_loop >= get_loop_depth(loop)) {
 		DB((dbg, DBG_START, "    %+F taken (%u, loop %d)\n", node, loc.time,
 		    next_use.outermost_loop));
 	} else {
@@ -523,6 +541,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 		DB((dbg, DBG_START, "    %+F delayed (outerdepth %d < loopdepth %d)\n",
 		    node, next_use.outermost_loop, get_loop_depth(loop)));
 	}
+
 	return loc;
 }
 
@@ -741,79 +760,6 @@ static void decide_start_workset(const ir_node *block)
 	}
 }
 
-#if 0
-static void decide_start_workset2(const ir_node *block)
-{
-	int         arity;
-	workset_t **pred_worksets;
-	int         p;
-	int         i;
-	int         len;
-
-	/* check if all predecessors are known */
-	arity           = get_irn_arity(block);
-	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
-	for (i = 0; i < arity; ++i) {
-		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
-		block_info_t *pred_info  = get_block_info(pred_block);
-
-		if (pred_info == NULL) {
-			/* not all predecessors known, use decide_start_workset */
-			decide_start_workset(block);
-			return;
-		}
-
-		pred_worksets[i] = pred_info->end_workset;
-	}
-
-	/* we construct a new workset */
-	workset_clear(ws);
-
-	/* take values live in all pred blocks */
-	len = workset_get_length(pred_worksets[0]);
-	for (p = 0; p < len; ++p) {
-		const loc_t *l = &pred_worksets[0]->vals[p];
-		ir_node     *value;
-		bool         spilled = false;
-
-		if (USES_IS_INFINITE(l->time))
-			continue;
-
-		/* value available in all preds? */
-		value = l->node;
-		for (i = 1; i < arity; ++i) {
-			bool       found     = false;
-			workset_t *p_workset = pred_worksets[i];
-			int        p_len     = workset_get_length(p_workset);
-			int        p_i;
-
-			for (p_i = 0; p_i < p_len; ++p_i) {
-				const loc_t *p_l = &p_workset->vals[p_i];
-				if (p_l->node != value)
-					continue;
-
-				found = true;
-				if (p_l->spilled)
-					spilled = true;
-				break;
-			}
-
-			if (!found)
-				break;
-		}
-
-		/* it was available in all preds */
-		if (i >= arity) {
-			workset_insert(ws, value, spilled);
-		}
-	}
-
-	/* Copy the best ones from starters to start workset */
-	ws_count = MIN(ARR_LEN(starters), n_regs);
-	workset_bulk_fill(ws, ws_count, starters);
-}
-#endif
-
 /**
  * For the given block @p block, decide for each values
  * whether it is used from a register or is reloaded
@@ -994,8 +940,7 @@ static void fix_block_borders(ir_node *block, void *data)
 			if (found)
 				continue;
 
-#ifdef PLACE_SPILLS
-			if (be_is_live_in(lv, block, node)
+			if (move_spills && be_is_live_in(lv, block, node)
 					&& !pred_end_workset->vals[iter].spilled) {
 				ir_node *insert_point;
 				if (arity > 1) {
@@ -1008,7 +953,6 @@ static void fix_block_borders(ir_node *block, void *data)
 				     insert_point));
 				be_add_spill(senv, node, insert_point);
 			}
-#endif
 		}
 
 		/* reload missing values in predecessors, add missing spills */
@@ -1030,9 +974,8 @@ static void fix_block_borders(ir_node *block, void *data)
 			/* check if node is in a register at end of pred */
 			pred_loc = workset_contains(pred_end_workset, node);
 			if (pred_loc != NULL) {
-#ifdef PLACE_SPILLS
 				/* we might have to spill value on this path */
-				if (!pred_loc->spilled && l->spilled) {
+				if (move_spills && !pred_loc->spilled && l->spilled) {
 					ir_node *insert_point
 						= be_get_end_of_block_insertion_point(pred);
 					insert_point = sched_prev(insert_point);
@@ -1040,7 +983,6 @@ static void fix_block_borders(ir_node *block, void *data)
 					    insert_point));
 					be_add_spill(senv, node, insert_point);
 				}
-#endif
 			} else {
 				/* node is not in register at the end of pred -> reload it */
 				DB((dbg, DBG_FIX, "    reload %+F\n", node));
@@ -1103,6 +1045,10 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 
 void be_init_spillbelady(void)
 {
+	lc_opt_entry_t *be_grp       = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *belady_group = lc_opt_get_grp(be_grp, "belady");
+	lc_opt_add_table(belady_group, options);
+
 	static be_spiller_t belady_spiller = {
 		be_spill_belady
 	};
