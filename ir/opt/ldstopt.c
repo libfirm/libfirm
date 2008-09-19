@@ -410,7 +410,6 @@ ptr_arith:
 		for (ent = field;;) {
 			unsigned size;
 			tarval   *sz, *tv_index, *tlower, *tupper;
-			long     index;
 			ir_node  *bound;
 
 			tp = get_entity_type(ent);
@@ -441,7 +440,6 @@ ptr_arith:
 				return NULL;
 
 			/* ok, bounds check finished */
-			index = get_tarval_long(tv_index);
 			++idx;
 		}
 		if (! tarval_is_null(tv)) {
@@ -1038,7 +1036,8 @@ static unsigned optimize_load(ir_node *load)
 	/* Load from a constant polymorphic field, where we can resolve
 	   polymorphism. */
 	value = transform_polymorph_Load(load);
-	if (value == NULL) {
+	if (value == load) {
+		value = NULL;
 		/* check if we can determine the entity that will be loaded */
 		ent = find_constant_entity(ptr);
 		if (ent != NULL) {
