@@ -511,7 +511,6 @@ void          set_irg_block_visited(ir_graph *irg, unsigned long i);
  * block_visited flags. If NDEBUG is not defined, then the compiler will abort
  * if 2 parties try to use the flags.
  */
-#ifndef NDEBUG
 enum ir_resources_enum_t {
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,
@@ -521,6 +520,7 @@ enum ir_resources_enum_t {
 };
 typedef unsigned ir_resources_t;
 
+#ifndef NDEBUG
 void ir_reserve_resources(ir_graph *irg, ir_resources_t resources);
 void ir_free_resources(ir_graph *irg, ir_resources_t resources);
 ir_resources_t ir_resources_reserved(const ir_graph *irg);

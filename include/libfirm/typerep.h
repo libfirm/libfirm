@@ -1387,10 +1387,7 @@ unsigned get_type_size_bytes(const ir_type *tp);
  */
 void set_type_size_bytes(ir_type *tp, unsigned size);
 
-/** Returns the alignment of a type in bytes.
- *
- *  Returns -1 if the alignment is NOT
- *  a byte size, i.e. not dividable by 8. Calls get_type_alignment_bits(). */
+/** Returns the alignment of a type in bytes. */
 unsigned get_type_alignment_bytes(ir_type *tp);
 
 /** Returns the alignment of a type in bits.
