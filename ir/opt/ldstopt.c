@@ -28,6 +28,7 @@
 #endif
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "iroptimize.h"
 #include "irnode_t.h"
@@ -772,6 +773,102 @@ static unsigned is_Call_pure(ir_node *call) {
 	return (prop & (mtp_property_const|mtp_property_pure)) != 0;
 }  /* is_Call_pure */
 
+static ir_node *get_base_ptr(ir_node *ptr)
+{
+	while (is_Add(ptr) && is_Const(get_Add_right(ptr))) {
+		ptr = get_Add_left(ptr);
+	}
+
+	return ptr;
+}
+
+static long get_base_offset(ir_node *ptr)
+{
+	/* TODO: long might not be enough, we should probably use some tarval thingy... */
+	long offset = 0;
+	while (is_Add(ptr)) {
+		ir_node *right = get_Add_right(ptr);
+		if (!is_Const(right))
+			break;
+		offset += get_tarval_long(get_Const_tarval(right));
+		ptr = get_Add_left(ptr);
+	}
+
+	return offset;
+}
+
+static int try_load_store(ir_node *load,
+		ir_node *load_base_ptr, long load_offset, ir_node *store)
+{
+	ldst_info_t *info;
+	ir_node *store_ptr      = get_Store_ptr(store);
+	ir_node *store_base_ptr = get_base_ptr(store_ptr);
+	ir_node *store_value;
+	ir_mode *store_mode;
+	ir_node *load_ptr;
+	ir_mode *load_mode;
+	long     store_offset   = get_base_offset(store_ptr);
+	long     load_mode_len;
+	long     store_mode_len;
+	long     delta;
+	int      res;
+
+	if (load_base_ptr != store_base_ptr)
+		return 0;
+
+	load_mode     = get_Load_mode(load);
+	load_mode_len = get_mode_size_bytes(load_mode);
+	store_mode     = get_irn_mode(get_Store_value(store));
+	store_mode_len = get_mode_size_bytes(store_mode);
+
+	delta         = load_offset - store_offset;
+	if (delta < 0 || delta >= store_mode_len)
+		return 0;
+
+	if (store_mode_len - delta > load_mode_len)
+		return 0;
+
+	store_value = get_Store_value(store);
+	DBG_OPT_RAW(load, store_value);
+
+	/* produce a shift to adjust offset delta */
+	if (delta > 0) {
+		ir_node *cnst = new_r_Const_long(current_ir_graph,
+				get_irg_start_block(current_ir_graph), mode_Iu, delta * 8);
+		store_value = new_r_Shr(current_ir_graph, get_nodes_block(load),
+		                        store_value, cnst, store_mode);
+	}
+
+	/* add an convert if needed */
+	if (store_mode != load_mode) {
+		store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
+		                         store_value, load_mode);
+	}
+
+	info = get_irn_link(load);
+	if (info->projs[pn_Load_M])
+		exchange(info->projs[pn_Load_M], get_Load_mem(load));
+
+	res = 0;
+	/* no exception */
+	if (info->projs[pn_Load_X_except]) {
+		exchange( info->projs[pn_Load_X_except], new_Bad());
+		res |= CF_CHANGED;
+	}
+	if (info->projs[pn_Load_X_regular]) {
+		exchange( info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+		res |= CF_CHANGED;
+	}
+
+	if (info->projs[pn_Load_res])
+		exchange(info->projs[pn_Load_res], store_value);
+
+	load_ptr = get_Load_ptr(load);
+	kill_node(load);
+	reduce_adr_usage(load_ptr);
+	return res | DF_CHANGED;
+}
+
 /**
  * Follow the memory chain as long as there are only Loads,
  * alias free Stores, and constant Calls and try to replace the
@@ -789,60 +886,33 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 	ir_node *ptr       = get_Load_ptr(load);
 	ir_node *mem       = get_Load_mem(load);
 	ir_mode *load_mode = get_Load_mode(load);
+	ir_node *base_ptr  = get_base_ptr(ptr);
+	long     load_offset = get_base_offset(ptr);
 
 	for (pred = curr; load != pred; ) {
 		ldst_info_t *pred_info = get_irn_link(pred);
 
 		/*
-		 * BEWARE: one might think that checking the modes is useless, because
-		 * if the pointers are identical, they refer to the same object.
-		 * This is only true in strong typed languages, not in C were the following
-		 * is possible a = *(ir_type1 *)p; b = *(ir_type2 *)p ...
+		 * a Load immediately after a Store -- a read after write.
+		 * We may remove the Load, if both Load & Store does not have an
+		 * exception handler OR they are in the same MacroBlock. In the latter
+		 * case the Load cannot throw an exception when the previous Store was
+		 * quiet.
+		 *
+		 * Why we need to check for Store Exception? If the Store cannot
+		 * be executed (ROM) the exception handler might simply jump into
+		 * the load MacroBlock :-(
+		 * We could make it a little bit better if we would know that the
+		 * exception handler of the Store jumps directly to the end...
 		 */
-		if (is_Store(pred) && get_Store_ptr(pred) == ptr &&
-		    can_use_stored_value(get_irn_mode(get_Store_value(pred)), load_mode)) {
-			/*
-			 * a Load immediately after a Store -- a read after write.
-			 * We may remove the Load, if both Load & Store does not have an exception handler
-			 * OR they are in the same MacroBlock. In the latter case the Load cannot
-			 * throw an exception when the previous Store was quiet.
-			 *
-			 * Why we need to check for Store Exception? If the Store cannot
-			 * be executed (ROM) the exception handler might simply jump into
-			 * the load MacroBlock :-(
-			 * We could make it a little bit better if we would know that the exception
-			 * handler of the Store jumps directly to the end...
-			 */
-			if ((pred_info->projs[pn_Store_X_except] == NULL && info->projs[pn_Load_X_except] == NULL) ||
-			    get_nodes_MacroBlock(load) == get_nodes_MacroBlock(pred)) {
-				ir_node *value = get_Store_value(pred);
-
-				DBG_OPT_RAW(load, value);
-
-				/* add an convert if needed */
-				if (get_irn_mode(get_Store_value(pred)) != load_mode) {
-					value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
-				}
-
-				if (info->projs[pn_Load_M])
-					exchange(info->projs[pn_Load_M], mem);
-
-				/* no exception */
-				if (info->projs[pn_Load_X_except]) {
-					exchange( info->projs[pn_Load_X_except], new_Bad());
-					res |= CF_CHANGED;
-				}
-				if (info->projs[pn_Load_X_regular]) {
-					exchange( info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-					res |= CF_CHANGED;
-				}
-
-				if (info->projs[pn_Load_res])
-					exchange(info->projs[pn_Load_res], value);
-
-				kill_node(load);
-				reduce_adr_usage(ptr);
-				return res | DF_CHANGED;
+		if (is_Store(pred) && ((pred_info->projs[pn_Store_X_except] == NULL
+				&& info->projs[pn_Load_X_except] == NULL)
+				|| get_nodes_MacroBlock(load) == get_nodes_MacroBlock(pred)))
+		{
+			int changes
+				= try_load_store(load, base_ptr, load_offset, pred);
+			if (changes != 0) {
+				return res | changes;
 			}
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
@@ -1117,7 +1187,7 @@ static unsigned optimize_load(ir_node *load)
 
 	/* Check, if the address of this load is used more than once.
 	 * If not, this load cannot be removed in any case. */
-	if (get_irn_n_uses(ptr) <= 1)
+	if (get_irn_n_uses(ptr) <= 1 && get_irn_n_uses(get_base_ptr(ptr)) <= 1)
 		return res;
 
 	/*
