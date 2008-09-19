@@ -222,6 +222,7 @@ static void check_all_partitions(environment_t *env) {
 	partition_t *P;
 	node_t      *node;
 
+#ifdef DEBUG_libfirm
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next) {
 		check_partition(P);
 		list_for_each_entry(node_t, node, &P->Follower, node_list) {
@@ -230,6 +231,7 @@ static void check_all_partitions(environment_t *env) {
 			assert(leader != node && leader->part == node->part);
 		}
 	}
+#endif
 }
 
 /**
@@ -2956,11 +2958,13 @@ static void set_compute_functions(void) {
 }  /* set_compute_functions */
 
 static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
+#ifdef DEBUG_libfirm
 	ir_node *irn = local != NULL ? local : n;
 	node_t *node = get_irn_node(irn);
 
 	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
 	return 1;
+#endif
 }
 
 void combo(ir_graph *irg) {
