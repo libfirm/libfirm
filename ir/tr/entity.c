@@ -940,10 +940,9 @@ get_compound_ent_value_path(ir_entity *ent, int pos) {
  * Returns non-zero, if two compound_graph_pathes are equal
  *
  * @param path1            the first path
- * @param visited_indices
  * @param path2            the second path
  */
-static int equal_paths(compound_graph_path *path1, int *visited_indices, compound_graph_path *path2) {
+static int equal_paths(compound_graph_path *path1, compound_graph_path *path2) {
 	int i;
 	int len1 = get_compound_graph_path_length(path1);
 	int len2 = get_compound_graph_path_length(path2);
@@ -957,20 +956,12 @@ static int equal_paths(compound_graph_path *path1, int *visited_indices, compoun
 
 		if (node1 != node2) return 0;
 
-		/* FIXME: Strange code. What is it good for? */
 		tp = get_entity_owner(node1);
 		if (is_Array_type(tp)) {
-			long low;
-
-			/* Compute the index of this node. */
-			assert(get_array_n_dimensions(tp) == 1 && "multidim not implemented");
-
-			low = get_array_lower_bound_int(tp, 0);
-			if (low + visited_indices[i] < get_compound_graph_path_array_index(path2, i)) {
-				visited_indices[i]++;
+			int index1 = get_compound_graph_path_array_index(path1, i);
+			int index2 = get_compound_graph_path_array_index(path2, i);
+			if (index1 != index2)
 				return 0;
-			} else
-				assert(low + visited_indices[i] == get_compound_graph_path_array_index(path2, i));
 		}
 	}
 	return 1;
@@ -980,45 +971,28 @@ static int equal_paths(compound_graph_path *path1, int *visited_indices, compoun
  * Returns the position of a value with the given path.
  * The path must contain array indices for all array element entities.
  *
- * @todo  This implementation is very slow (O(number of initializers^2) and should
- *        be replaced when the new tree oriented
+ * @todo  This implementation is very slow (O(number of initializers * |path|)
+ *        and should be replaced when the new tree oriented
  *        value representation is finally implemented.
  */
 static int get_compound_ent_pos_by_path(ir_entity *ent, compound_graph_path *path) {
 	int i, n_paths = get_compound_ent_n_values(ent);
-	int *visited_indices;
-	int path_len = get_compound_graph_path_length(path);
 
-	NEW_ARR_A(int *, visited_indices, path_len);
-	memset(visited_indices, 0, sizeof(*visited_indices) * path_len);
 	for (i = 0; i < n_paths; i ++) {
-		if (equal_paths(get_compound_ent_value_path(ent, i), visited_indices, path))
+		compound_graph_path *gr = get_compound_ent_value_path(ent, i);
+		if (equal_paths(gr, path))
 			return i;
 	}
-
-#if 0
-	{
-		int j;
-		printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-		printf("Entity %s : ", get_entity_name(ent));
-		for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-			ir_entity *node = get_compound_graph_path_node(path, j);
-			printf("%s", get_entity_name(node));
-			if (is_Array_type(get_entity_owner(node)))
-				printf("[%d]", get_compound_graph_path_array_index(path, j));
-		}
-		printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
-	}
-#endif
-
-	assert(0 && "path not found");
 	return -1;
 }  /* get_compound_ent_pos_by_path */
 
 /* Returns a constant value given the access path.
  *  The path must contain array indices for all array element entities. */
 ir_node *get_compound_ent_value_by_path(ir_entity *ent, compound_graph_path *path) {
-	return get_compound_ent_value(ent, get_compound_ent_pos_by_path(ent, path));
+	int pos = get_compound_ent_pos_by_path(ent, path);
+	if (pos >= 0)
+		return get_compound_ent_value(ent, pos);
+	return NULL;
 }  /* get_compound_ent_value_by_path */
 
 
