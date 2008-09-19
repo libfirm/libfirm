@@ -28,7 +28,6 @@
 #endif
 
 #include <string.h>
-#include <stdbool.h>
 
 #include "iroptimize.h"
 #include "irnode_t.h"
@@ -773,41 +772,77 @@ static unsigned is_Call_pure(ir_node *call) {
 	return (prop & (mtp_property_const|mtp_property_pure)) != 0;
 }  /* is_Call_pure */
 
-static ir_node *get_base_ptr(ir_node *ptr)
+static ir_node *get_base_and_offset(ir_node *ptr, long *pOffset)
 {
-	while (is_Add(ptr) && is_Const(get_Add_right(ptr))) {
-		ptr = get_Add_left(ptr);
+	ir_mode *mode  = get_irn_mode(ptr);
+	long    offset = 0;
+
+	/* TODO: long might not be enough, we should probably use some tarval thingy... */
+	for (;;) {
+		if (is_Add(ptr)) {
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+
+			if (get_irn_mode(l) != mode || !is_Const(r))
+				break;
+
+			offset += get_tarval_long(get_Const_tarval(r));
+			ptr     = l;
+		} else if (is_Sub(ptr)) {
+			ir_node *l = get_Sub_left(ptr);
+			ir_node *r = get_Sub_right(ptr);
+
+			if (get_irn_mode(l) != mode || !is_Const(r))
+				break;
+
+			offset -= get_tarval_long(get_Const_tarval(r));
+			ptr     = l;
+		} else if (is_Sel(ptr)) {
+			ir_entity *ent = get_Sel_entity(ptr);
+			ir_type   *tp  = get_entity_owner(ent);
+
+			if (is_Array_type(tp)) {
+				int     size;
+				ir_node *index;
+
+				/* only one dimensional arrays yet */
+				if (get_Sel_n_indexs(ptr) != 1)
+					break;
+				index = get_Sel_index(ptr, 0);
+				if (! is_Const(index))
+					break;
+
+				tp = get_entity_type(ent);
+				if (get_type_state(tp) != layout_fixed)
+					break;
+
+				size    = get_type_size_bytes(tp);
+				offset += size * get_tarval_long(get_Const_tarval(index));
+			} else {
+				if (get_type_state(tp) != layout_fixed)
+					break;
+				offset += get_entity_offset(ent);
+			}
+			ptr = get_Sel_ptr(ptr);
+		} else
+			break;
 	}
 
+	*pOffset = offset;
 	return ptr;
 }
 
-static long get_base_offset(ir_node *ptr)
-{
-	/* TODO: long might not be enough, we should probably use some tarval thingy... */
-	long offset = 0;
-	while (is_Add(ptr)) {
-		ir_node *right = get_Add_right(ptr);
-		if (!is_Const(right))
-			break;
-		offset += get_tarval_long(get_Const_tarval(right));
-		ptr = get_Add_left(ptr);
-	}
-
-	return offset;
-}
-
-static int try_load_store(ir_node *load,
+static int try_load_after_store(ir_node *load,
 		ir_node *load_base_ptr, long load_offset, ir_node *store)
 {
 	ldst_info_t *info;
 	ir_node *store_ptr      = get_Store_ptr(store);
-	ir_node *store_base_ptr = get_base_ptr(store_ptr);
+	long     store_offset;
+	ir_node *store_base_ptr = get_base_and_offset(store_ptr, &store_offset);
 	ir_node *store_value;
 	ir_mode *store_mode;
 	ir_node *load_ptr;
 	ir_mode *load_mode;
-	long     store_offset   = get_base_offset(store_ptr);
 	long     load_mode_len;
 	long     store_mode_len;
 	long     delta;
@@ -816,25 +851,26 @@ static int try_load_store(ir_node *load,
 	if (load_base_ptr != store_base_ptr)
 		return 0;
 
-	load_mode     = get_Load_mode(load);
-	load_mode_len = get_mode_size_bytes(load_mode);
+	load_mode      = get_Load_mode(load);
+	load_mode_len  = get_mode_size_bytes(load_mode);
 	store_mode     = get_irn_mode(get_Store_value(store));
 	store_mode_len = get_mode_size_bytes(store_mode);
-
-	delta         = load_offset - store_offset;
-	if (delta < 0 || delta >= store_mode_len)
+	delta          = load_offset - store_offset;
+	if (delta < 0 || delta + load_mode_len > store_mode_len)
 		return 0;
 
-	if (store_mode_len - delta > load_mode_len)
+	if (get_mode_arithmetic(store_mode) != irma_twos_complement ||
+	    get_mode_arithmetic(load_mode)  != irma_twos_complement)
 		return 0;
 
 	store_value = get_Store_value(store);
-	DBG_OPT_RAW(load, store_value);
 
 	/* produce a shift to adjust offset delta */
 	if (delta > 0) {
-		ir_node *cnst = new_r_Const_long(current_ir_graph,
-				get_irg_start_block(current_ir_graph), mode_Iu, delta * 8);
+		ir_node *cnst;
+
+		/* FIXME: only true for little endian */
+		cnst        = new_Const_long(mode_Iu, delta * 8);
 		store_value = new_r_Shr(current_ir_graph, get_nodes_block(load),
 		                        store_value, cnst, store_mode);
 	}
@@ -844,6 +880,8 @@ static int try_load_store(ir_node *load,
 		store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
 		                         store_value, load_mode);
 	}
+
+	DBG_OPT_RAW(load, store_value);
 
 	info = get_irn_link(load);
 	if (info->projs[pn_Load_M])
@@ -880,14 +918,12 @@ static int try_load_store(ir_node *load,
  * INC_MASTER() must be called before dive into
  */
 static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
-	unsigned res = 0;
+	unsigned    res = 0;
 	ldst_info_t *info = get_irn_link(load);
-	ir_node *pred;
-	ir_node *ptr       = get_Load_ptr(load);
-	ir_node *mem       = get_Load_mem(load);
-	ir_mode *load_mode = get_Load_mode(load);
-	ir_node *base_ptr  = get_base_ptr(ptr);
-	long     load_offset = get_base_offset(ptr);
+	ir_node     *pred;
+	ir_node     *ptr       = get_Load_ptr(load);
+	ir_node     *mem       = get_Load_mem(load);
+	ir_mode     *load_mode = get_Load_mode(load);
 
 	for (pred = curr; load != pred; ) {
 		ldst_info_t *pred_info = get_irn_link(pred);
@@ -909,11 +945,12 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				&& info->projs[pn_Load_X_except] == NULL)
 				|| get_nodes_MacroBlock(load) == get_nodes_MacroBlock(pred)))
 		{
-			int changes
-				= try_load_store(load, base_ptr, load_offset, pred);
-			if (changes != 0) {
+			long    load_offset;
+			ir_node *base_ptr = get_base_and_offset(ptr, &load_offset);
+			int     changes   = try_load_after_store(load, base_ptr, load_offset, pred);
+
+			if (changes != 0)
 				return res | changes;
-			}
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
 			/*
@@ -1047,9 +1084,10 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
 static unsigned optimize_load(ir_node *load)
 {
 	ldst_info_t *info = get_irn_link(load);
-	ir_node *mem, *ptr, *value;
-	ir_entity *ent;
-	unsigned res = 0;
+	ir_node     *mem, *ptr, *value;
+	ir_entity   *ent;
+	long        dummy;
+	unsigned    res = 0;
 
 	/* do NOT touch volatile loads for now */
 	if (get_Load_volatility(load) == volatility_is_volatile)
@@ -1186,8 +1224,8 @@ static unsigned optimize_load(ir_node *load)
 	}
 
 	/* Check, if the address of this load is used more than once.
-	 * If not, this load cannot be removed in any case. */
-	if (get_irn_n_uses(ptr) <= 1 && get_irn_n_uses(get_base_ptr(ptr)) <= 1)
+	 * If not, more load cannot be removed in any case. */
+	if (get_irn_n_uses(ptr) <= 1 && get_irn_n_uses(get_base_and_offset(ptr, &dummy)) <= 1)
 		return res;
 
 	/*
