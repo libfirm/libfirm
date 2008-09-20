@@ -454,6 +454,14 @@ static ir_node *skip_Bitfield_Sels(ir_node *adr) {
 
 /**
  * Determine the alias relation between two addresses.
+ *
+ * @param irg    the graph of both memory operations
+ * @param addr1  pointer address of the first memory operation
+ * @param mode1  the mode of the accessed data through addr1
+ * @param addr2  pointer address of the second memory operation
+ * @param mode2  the mode of the accessed data through addr2
+ *
+ * @return foudn memory relation
  */
 static ir_alias_relation _get_alias_relation(
 	ir_graph *irg,
@@ -491,7 +499,7 @@ static ir_alias_relation _get_alias_relation(
 	have_const_offsets = 1;
 	while (is_Add(adr1)) {
 		ir_node *add_right = get_Add_right(adr1);
-		if (is_Const(add_right)) {
+		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
 			tarval *tv  = get_Const_tarval(add_right);
 			offset1    += get_tarval_long(tv);
 			adr1        = get_Add_left(adr1);
@@ -505,7 +513,7 @@ static ir_alias_relation _get_alias_relation(
 	}
 	while (is_Add(adr2)) {
 		ir_node *add_right = get_Add_right(adr2);
-		if (is_Const(add_right)) {
+		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
 			tarval *tv  = get_Const_tarval(add_right);
 			offset2    += get_tarval_long(tv);
 			adr2        = get_Add_left(adr2);
@@ -563,7 +571,36 @@ static ir_alias_relation _get_alias_relation(
 			return different_sel_offsets(adr1, adr2);
 	}
 
-   	/* Type based alias analysis */
+	class1 = classify_pointer(irg, base1, ent1);
+	class2 = classify_pointer(irg, base2, ent2);
+
+	if (class1 == ir_sc_pointer) {
+		if (class2 & ir_sc_modifier_nottaken) {
+			/* a pointer and an object whose objects was never taken */
+			return ir_no_alias;
+		}
+	} else if (class2 == ir_sc_pointer) {
+		if (class1 & ir_sc_modifier_nottaken) {
+			/* a pointer and an object whose objects was never taken */
+			return ir_no_alias;
+		}
+	} else if (class1 != class2) {
+		/* two objects from different memory spaces */
+		return ir_no_alias;
+	} else {
+		/* both classes are equal */
+		if (class1 == ir_sc_globalvar) {
+			ir_entity *entity1 = get_SymConst_entity(base1);
+			ir_entity *entity2 = get_SymConst_entity(base2);
+			if (entity1 != entity2)
+				return ir_no_alias;
+
+			/* for some reason CSE didn't happen yet for the 2 SymConsts... */
+			return ir_may_alias;
+		}
+	}
+
+	/* Type based alias analysis */
 	if (options & aa_opt_type_based) {
 		ir_alias_relation rel;
 
@@ -582,42 +619,15 @@ static ir_alias_relation _get_alias_relation(
 		if (mode_is_reference(mode1) != mode_is_reference(mode2))
 			return ir_no_alias;
 
+		/* cheap test: if arithmetic is different, no alias */
+		if (get_mode_arithmetic(mode1) != get_mode_arithmetic(mode2))
+			return ir_no_alias;
+
 		/* try rule R5 */
 		rel = different_types(orig_adr1, orig_adr2);
 		if (rel != ir_may_alias)
 			return rel;
 leave_type_based_alias:;
-	}
-
-	class1 = classify_pointer(irg, base1, ent1);
-	class2 = classify_pointer(irg, base2, ent2);
-
-	if (class1 == ir_sc_pointer) {
-		if (class2 & ir_sc_modifier_nottaken) {
-			return ir_no_alias;
-		} else {
-			return ir_may_alias;
-		}
-	} else if (class2 == ir_sc_pointer) {
-		if (class1 & ir_sc_modifier_nottaken) {
-			return ir_no_alias;
-		} else {
-			return ir_may_alias;
-		}
-	}
-
-	if (class1 != class2) {
-		return ir_no_alias;
-	}
-
-	if (class1 == ir_sc_globalvar) {
-		ir_entity *entity1 = get_SymConst_entity(base1);
-		ir_entity *entity2 = get_SymConst_entity(base2);
-		if (entity1 != entity2)
-			return ir_no_alias;
-
-		/* for some reason CSE didn't happen yet for the 2 SymConsts... */
-		return ir_may_alias;
 	}
 
 	/* do we have a language specific memory disambiguator? */
