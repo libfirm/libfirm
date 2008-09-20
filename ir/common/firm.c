@@ -63,6 +63,7 @@
 #include "funccall_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
+#include "irmemory_t.h"
 #include "tropt.h"
 #include "debugger.h"
 #include "be_t.h"
@@ -148,6 +149,8 @@ void init_firm(const firm_parameter_t *param)
 	init_type_identify(def_params.ti_if);
 	/* class cast optimization */
 	firm_init_class_casts_opt();
+	/* memory disambiguation */
+	firm_init_memory_disambiguator();
 
 	/* Init architecture dependent optimizations. */
 	arch_dep_init(arch_dep_default_factory);

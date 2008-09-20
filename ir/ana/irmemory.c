@@ -33,6 +33,7 @@
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
+#include "irmemory_t.h"
 #include "irmemory.h"
 #include "irflag.h"
 #include "hashptr.h"
@@ -1052,8 +1053,6 @@ static void check_global_address(ir_node *irn, void *env) {
 static void analyse_irp_globals_address_taken(void) {
 	int i;
 
-	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
-
 	init_taken_flag(get_glob_type());
 	init_taken_flag(get_tls_type());
 
@@ -1093,6 +1092,10 @@ void assure_irp_globals_address_taken_computed(void) {
 	if (irp->globals_adr_taken_state == ir_address_taken_not_computed)
 		analyse_irp_globals_address_taken();
 }  /* assure_irp_globals_address_taken_computed */
+
+void firm_init_memory_disambiguator(void) {
+	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
+}
 
 
 #include <adt/pmap.h>
