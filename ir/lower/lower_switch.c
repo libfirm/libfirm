@@ -107,6 +107,8 @@ static int casecmp(const void *a, const void *b)
 static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
                               case_data_t *curcases, int numcases)
 {
+	assert(numcases > 0);
+
 	set_cur_block(curblock);
 
 	if(numcases == 1)
