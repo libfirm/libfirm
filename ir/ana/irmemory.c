@@ -104,6 +104,9 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
 /**
  * Check if a given Const node is greater or equal a given size.
  *
+ * @param cns   a Const node
+ * @param size  a integer size
+ *
  * @return ir_no_alias if the Const is greater, ir_may_alias else
  */
 static ir_alias_relation check_const(ir_node *cns, int size) {
@@ -118,6 +121,10 @@ static ir_alias_relation check_const(ir_node *cns, int size) {
 
 /**
  * Treat idx1 and idx2 as integer indexes and check if they differ always more than size.
+ *
+ * @param idx1  a node representing the first index
+ * @param idx2  a node representing the second index
+ * @param size  an integer size
  *
  * @return ir_sure_alias iff idx1 == idx2
  *         ir_no_alias iff they ALWAYS differ more than size
@@ -355,12 +362,10 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 
 		if (tp1 != tp2) {
 #if 0
-			if (is_Pointer_type(tp1) && is_Pointer_type(tp2)) {
-				/* do deref until no pointer types are found */
-				do {
-					tp1 = get_pointer_points_to_type(tp1);
-					tp2 = get_pointer_points_to_type(tp2);
-				} while (is_Pointer_type(tp1) && is_Pointer_type(tp2));
+			/* do deref until no pointer types are found */
+			while (is_Pointer_type(tp1) && is_Pointer_type(tp2)) {
+				tp1 = get_pointer_points_to_type(tp1);
+				tp2 = get_pointer_points_to_type(tp2);
 			}
 #endif
 
@@ -461,7 +466,7 @@ static ir_node *skip_Bitfield_Sels(ir_node *adr) {
  * @param addr2  pointer address of the second memory operation
  * @param mode2  the mode of the accessed data through addr2
  *
- * @return foudn memory relation
+ * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
 	ir_graph *irg,
@@ -551,7 +556,7 @@ static ir_alias_relation _get_alias_relation(
 	adr1 = skip_Bitfield_Sels(adr1);
 	adr2 = skip_Bitfield_Sels(adr2);
 
-	/* skip sels */
+	/* skip Sels */
 	base1 = adr1;
 	base2 = adr2;
 	ent1  = NULL;
@@ -563,7 +568,7 @@ static ir_alias_relation _get_alias_relation(
 		base2 = find_base_adr(adr2, &ent2);
 	}
 
-	/* same base address -> compare sel entities */
+	/* same base address -> compare Sel entities */
 	if (base1 == base2 && ent1 != NULL && ent2 != NULL) {
 		if (ent1 != ent2)
 			return ir_no_alias;
@@ -936,11 +941,13 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 		return;
 	}
 	}
-	panic("invalid initialzier found");
-}
+	panic("invalid initializer found");
+}  /* check_initializer_nodes */
 
 /**
- * Mark all entities used in the initializer for the given entity as address taken
+ * Mark all entities used in the initializer for the given entity as address taken.
+ *
+ * @param ent  the entity
  */
 static void check_initializer(ir_entity *ent) {
 	ir_node *n;
@@ -950,8 +957,8 @@ static void check_initializer(ir_entity *ent) {
 	if (get_entity_variability(ent) == variability_uninitialized)
 		return;
 
-	/* Beware: Methods initialized with "themself". This does not count as a taken
-	   address. */
+	/* Beware: Methods are always initialized with "themself". This does not
+	   count as a taken address. */
 	if (is_Method_type(get_entity_type(ent)))
 		return;
 
@@ -979,7 +986,9 @@ static void check_initializer(ir_entity *ent) {
 
 
 /**
- * Mark all entities used in initializers as address taken
+ * Mark all entities used in initializers as address taken.
+ *
+ * @param tp  a compound type
  */
 static void check_initializers(ir_type *tp) {
 	int i;
@@ -994,6 +1003,8 @@ static void check_initializers(ir_type *tp) {
 #ifdef DEBUG_libfirm
 /**
  * Print the address taken state of all entities of a given type for debugging.
+ *
+ * @param tp  a compound type
  */
 static void print_address_taken_state(ir_type *tp) {
 	int i;
@@ -1094,6 +1105,8 @@ static pmap *mtp_map;
 
 /**
  * Clone a method type if not already cloned.
+ *
+ * @param tp  the type to clone
  */
 static ir_type *clone_type_and_cache(ir_type *tp) {
 	static ident *prefix = NULL;
@@ -1114,7 +1127,8 @@ static ir_type *clone_type_and_cache(ir_type *tp) {
 }  /* clone_type_and_cache */
 
 /**
- * Copy the calling conventions from the entities to the call type.
+ * Walker: clone all call types of Calls to methods having the
+ * mtp_property_private property set.
  */
 static void update_calls_to_private(ir_node *call, void *env) {
 	(void) env;
