@@ -354,6 +354,7 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 		ir_type *tp2 = get_entity_type(ent2);
 
 		if (tp1 != tp2) {
+#if 0
 			if (is_Pointer_type(tp1) && is_Pointer_type(tp2)) {
 				/* do deref until no pointer types are found */
 				do {
@@ -361,6 +362,7 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 					tp2 = get_pointer_points_to_type(tp2);
 				} while (is_Pointer_type(tp1) && is_Pointer_type(tp2));
 			}
+#endif
 
 			if (get_type_tpop(tp1) != get_type_tpop(tp2)) {
 				/* different type structure */
@@ -561,6 +563,32 @@ static ir_alias_relation _get_alias_relation(
 			return different_sel_offsets(adr1, adr2);
 	}
 
+   	/* Type based alias analysis */
+	if (options & aa_opt_type_based) {
+		ir_alias_relation rel;
+
+		if (options & aa_opt_byte_type_may_alias) {
+			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
+				/* One of the modes address a byte. Assume a ir_may_alias and leave
+				   the type based check. */
+				goto leave_type_based_alias;
+			}
+		}
+		/* cheap check: If the mode sizes did not match, the types MUST be different */
+		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
+			return ir_no_alias;
+
+		/* cheap test: if only one is a reference mode, no alias */
+		if (mode_is_reference(mode1) != mode_is_reference(mode2))
+			return ir_no_alias;
+
+		/* try rule R5 */
+		rel = different_types(orig_adr1, orig_adr2);
+		if (rel != ir_may_alias)
+			return rel;
+leave_type_based_alias:;
+	}
+
 	class1 = classify_pointer(irg, base1, ent1);
 	class2 = classify_pointer(irg, base2, ent2);
 
@@ -590,32 +618,6 @@ static ir_alias_relation _get_alias_relation(
 
 		/* for some reason CSE didn't happen yet for the 2 SymConsts... */
 		return ir_may_alias;
-	}
-
-   	/* Type based alias analysis */
-	if (options & aa_opt_type_based) {
-		ir_alias_relation rel;
-
-		if (options & aa_opt_byte_type_may_alias) {
-			if (get_mode_size_bits(mode1) == 8 || get_mode_size_bits(mode2) == 8) {
-				/* One of the modes address a byte. Assume a ir_may_alias and leave
-				   the type based check. */
-				goto leave_type_based_alias;
-			}
-		}
-		/* cheap check: If the mode sizes did not match, the types MUST be different */
-		if (get_mode_size_bits(mode1) != get_mode_size_bits(mode2))
-			return ir_no_alias;
-
-		/* cheap test: if only one is a reference mode, no alias */
-		if (mode_is_reference(mode1) != mode_is_reference(mode2))
-			return ir_no_alias;
-
-		/* try rule R5 */
-		rel = different_types(orig_adr1, orig_adr2);
-		if (rel != ir_may_alias)
-			return rel;
-leave_type_based_alias:;
 	}
 
 	/* do we have a language specific memory disambiguator? */
