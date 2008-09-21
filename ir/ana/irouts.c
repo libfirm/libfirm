@@ -106,7 +106,7 @@ void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos) {
 }
 
 /* Return the number of control flow successors, ignore keep-alives. */
-int get_Block_n_cfg_outs(ir_node *bl) {
+int get_Block_n_cfg_outs(const ir_node *bl) {
 	int i, n_cfg_outs = 0;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -121,7 +121,7 @@ int get_Block_n_cfg_outs(ir_node *bl) {
 }
 
 /* Return the number of control flow successors, honor keep-alives. */
-int get_Block_n_cfg_outs_ka(ir_node *bl) {
+int get_Block_n_cfg_outs_ka(const ir_node *bl) {
 	int i, n_cfg_outs = 0;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -145,7 +145,7 @@ int get_Block_n_cfg_outs_ka(ir_node *bl) {
 }
 
 /* Access predecessor n, ignore keep-alives. */
-ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
+ir_node *get_Block_cfg_out(const ir_node *bl, int pos) {
 	int i;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -165,7 +165,7 @@ ir_node *get_Block_cfg_out(ir_node *bl, int pos) {
 }
 
 /* Access predecessor n, honor keep-alives. */
-ir_node *get_Block_cfg_out_ka(ir_node *bl, int pos) {
+ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos) {
 	int i, n_outs;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
