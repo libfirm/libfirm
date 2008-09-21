@@ -105,12 +105,12 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
 
 	irp->const_code_irg   = new_const_code_irg();
 
-	irp->phase_state             = phase_building;
-	irp->outs_state              = outs_none;
-	irp->ip_outedges             = NULL;
-	irp->trouts_state            = outs_none;
-	irp->class_cast_state        = ir_class_casts_transitive;
-	irp->globals_adr_taken_state = ir_address_taken_not_computed;
+	irp->phase_state                = phase_building;
+	irp->outs_state                 = outs_none;
+	irp->ip_outedges                = NULL;
+	irp->trouts_state               = outs_none;
+	irp->class_cast_state           = ir_class_casts_transitive;
+	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 
 	return irp;
 #undef IDENT

@@ -840,10 +840,10 @@ static void walker(ir_node *proj, void *env)
 
 void opt_sync(ir_graph *irg)
 {
-	assure_irg_address_taken_computed(irg);
-	assure_irp_globals_address_taken_computed();
+	//assure_irg_entity_usage_computed(irg);
+	//assure_irp_globals_entity_usage_computed();
 
 	irg_walk_graph(irg, NULL, walker, NULL);
-  //optimize_graph_df(irg);
+	//optimize_graph_df(irg);
 	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 }

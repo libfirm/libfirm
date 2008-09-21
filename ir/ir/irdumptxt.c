@@ -589,7 +589,7 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 					fprintf(F, "\n%s    ", prefix);
 					need_nl = 0;
 				}
-				fprintf(F, "[%d]", i);
+				fprintf(F, "[%d]", (int) i);
 				dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
 			}
 		} else {

@@ -538,7 +538,7 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
 					continue;
 				}
 			}
-			if (p->index >= n)
+			if (p->index >= (int) n)
 				return NULL;
 			initializer = get_initializer_compound_value(initializer, p->index);
 
@@ -2145,8 +2145,8 @@ void optimize_load_store(ir_graph *irg) {
 	assure_postdoms(irg);
 
 	if (get_opt_alias_analysis()) {
-		assure_irg_address_taken_computed(irg);
-		assure_irp_globals_address_taken_computed();
+		assure_irg_entity_usage_computed(irg);
+		assure_irp_globals_entity_usage_computed();
 	}
 
 	obstack_init(&env.obst);

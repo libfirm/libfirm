@@ -397,22 +397,23 @@ int is_entity_backend_marked(const ir_entity *ent);
 void set_entity_backend_marked(ir_entity *ent, int flag);
 
 /**
- * The state of the address_taken flag.
+ * Bitfield type indicating the way an entity is used.
  */
 typedef enum {
-	ir_address_not_taken     = 0,  /**< The address is NOT taken. */
-	ir_address_taken_unknown = 1,  /**< The state of the address taken flag is unknown. */
-	ir_address_taken         = 2   /**< The address IS taken. */
-} ir_address_taken_state;
+	ir_usage_address_taken    = 1 << 0,
+	ir_usage_write            = 1 << 1,
+	ir_usage_read             = 1 << 2,
+	ir_usage_reinterpret_cast = 1 << 3,
+	ir_usage_unknown
+		= ir_usage_address_taken | ir_usage_write | ir_usage_read
+		| ir_usage_reinterpret_cast
+} ir_entity_usage;
 
-/** Return the state of the address taken flag of an entity. */
-ir_address_taken_state get_entity_address_taken(const ir_entity *ent);
+/** Return the entity usage */
+ir_entity_usage get_entity_usage(const ir_entity *ent);
 
 /** Sets/resets the state of the address taken flag of an entity. */
-void set_entity_address_taken(ir_entity *ent, ir_address_taken_state flag);
-
-/** Return the name of the address_taken state. */
-const char *get_address_taken_state_name(ir_address_taken_state state);
+void set_entity_usage(ir_entity *ent, ir_entity_usage flag);
 
 /**
  * Returns the debug information of an entity.

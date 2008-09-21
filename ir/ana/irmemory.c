@@ -29,6 +29,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -424,17 +425,17 @@ ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity
 	if (is_Global(irn)) {
 		ir_entity *entity = get_Global_entity(irn);
 		res = ir_sc_globalvar;
-		if (get_entity_address_taken(entity) == ir_address_not_taken)
+		if (! (get_entity_usage(entity) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (irn == get_irg_frame(irg)) {
 		res = ir_sc_localvar;
-		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
+		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (is_arg_Proj(irn)) {
 		return ir_sc_argument;
 	} else if (irn == get_irg_tls(irg)) {
 		res = ir_sc_tls;
-		if (ent != NULL && get_entity_address_taken(ent) == ir_address_not_taken)
+		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
 		return ir_sc_malloced;
@@ -756,53 +757,64 @@ void mem_disambig_term(void) {
  * @return non-zero if the Load/Store is a hidden cast, zero else
  */
 static int is_hidden_cast(ir_mode *mode, ir_mode *ent_mode) {
+	if (ent_mode == NULL)
+		return false;
+
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
 			get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
 			get_mode_sort(ent_mode) != get_mode_sort(mode) ||
 			get_mode_arithmetic(ent_mode) != irma_twos_complement ||
 			get_mode_arithmetic(mode) != irma_twos_complement)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }  /* is_hidden_cast */
 
 /**
- * Determine the address_taken state of a node (or it's successor Sels).
+ * Determine the usage state of a node (or it's successor Sels).
  *
  * @param irn  the node
  */
-static ir_address_taken_state find_address_taken_state(ir_node *irn) {
-	int       i, j;
+static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *entity) {
+	int       i;
 	ir_mode   *emode, *mode;
 	ir_node   *value;
 	ir_entity *ent;
 	ir_type   *tp;
+	ir_entity_usage res = 0;
 
 	for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irn, i);
 
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
+			assert(irn == get_Load_ptr(succ));
+			res |= ir_usage_read;
+
 			/* check if this load is not a hidden conversion */
-			mode = get_Load_mode(succ);
-			ent = is_SymConst(irn) ? get_SymConst_entity(irn) : get_Sel_entity(irn);
-			emode = get_type_mode(get_entity_type(ent));
+			mode  = get_Load_mode(succ);
+			emode = get_type_mode(get_entity_type(entity));
 			if (is_hidden_cast(mode, emode))
-				return ir_address_taken;
+				res |= ir_usage_reinterpret_cast;
 			break;
 
 		case iro_Store:
 			/* check that the node is not the Store's value */
-			value = get_Store_value(succ);
-			if (value == irn)
-				return ir_address_taken;
-			/* check if this Store is not a hidden conversion */
-			mode = get_irn_mode(value);
-			ent = is_SymConst(irn) ? get_SymConst_entity(irn) : get_Sel_entity(irn);
-			emode = get_type_mode(get_entity_type(ent));
-			if (is_hidden_cast(mode, emode))
-				return ir_address_taken;
+			if (irn == get_Store_value(succ)) {
+				res |= ir_usage_unknown;
+			}
+			if (irn == get_Store_ptr(succ)) {
+				res |= ir_usage_write;
+
+				/* check if this Store is not a hidden conversion */
+				value = get_Store_value(succ);
+				mode  = get_irn_mode(value);
+				emode = get_type_mode(get_entity_type(entity));
+				if (is_hidden_cast(mode, emode))
+					res |= ir_usage_reinterpret_cast;
+			}
+			assert(irn != get_Store_mem(succ));
 			break;
 
 		case iro_CopyB:
@@ -811,41 +823,51 @@ static ir_address_taken_state find_address_taken_state(ir_node *irn) {
 			tp  = get_entity_type(ent);
 			if (tp != get_CopyB_type(succ)) {
 				/* bad, different types, might be a hidden conversion */
-				return ir_address_taken;
+				res |= ir_usage_reinterpret_cast;
+			}
+			if (irn == get_CopyB_dst(succ)) {
+				res |= ir_usage_write;
+			} else {
+				assert(irn == get_CopyB_src(succ));
+				res |= ir_usage_read;
 			}
 			break;
 
+		case iro_Add:
+		case iro_Sub:
 		case iro_Sel: {
 			/* Check the successor of irn. */
-			ir_address_taken_state res = find_address_taken_state(succ);
-			if (res != ir_address_not_taken)
-				return res;
+			res |= determine_entity_usage(succ, entity);
 			break;
 		}
 
 		case iro_Call:
-			/* Only the call address is not an address taker but
-			   this is an uninteresting case, so we ignore it here. */
-			for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
-				ir_node *param = get_Call_param(succ, j);
-				if (param == irn)
-					return ir_address_taken;
+			if (irn == get_Call_ptr(succ)) {
+				/* TODO: we could check for reinterpret casts here...
+				 * But I doubt anyone is interested in that bit for
+				 * function entities and I'm too lazy to write the code now.
+				 */
+				res |= ir_usage_read;
+			} else {
+				assert(irn != get_Call_mem(succ));
+				res |= ir_usage_unknown;
 			}
 			break;
 
 		default:
-			/* another op, the address may be taken */
-			return ir_address_taken_unknown;
+			/* another op, we don't know anything */
+			res |= ir_usage_unknown;
+			break;
 		}
 	}
-	/* All successors finished, the address is not taken. */
-	return ir_address_not_taken;
-}  /* find_address_taken_state */
+
+	return res;
+}
 
 /**
- * Update the "address taken" flag of all frame entities.
+ * Update the usage flags of all frame entities.
  */
-static void analyse_irg_address_taken(ir_graph *irg) {
+static void analyse_irg_entity_usage(ir_graph *irg) {
 	ir_type *ft = get_irg_frame_type(irg);
 	ir_node *irg_frame;
 	int i;
@@ -854,7 +876,7 @@ static void analyse_irg_address_taken(ir_graph *irg) {
 	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(ft, i);
 
-		set_entity_address_taken(ent, ir_address_not_taken);
+		set_entity_usage(ent, 0);
 	}
 
 	assure_irg_outs(irg);
@@ -862,58 +884,55 @@ static void analyse_irg_address_taken(ir_graph *irg) {
 	irg_frame = get_irg_frame(irg);
 
 	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
-		ir_node *succ = get_irn_out(irg_frame, i);
-		ir_address_taken_state state;
+		ir_node        *succ = get_irn_out(irg_frame, i);
+		ir_entity      *entity;
+		ir_entity_usage flags;
 
-	    if (is_Sel(succ)) {
-			ir_entity *ent = get_Sel_entity(succ);
+	    if (!is_Sel(succ))
+			continue;
 
-			if (get_entity_address_taken(ent) == ir_address_taken)
-				continue;
-
-			state = find_address_taken_state(succ);
-			if (state > get_entity_address_taken(ent))
-				set_entity_address_taken(ent, state);
-		}
+		entity = get_Sel_entity(succ);
+		flags  = get_entity_usage(entity);
+		flags |= determine_entity_usage(succ, entity);
+		set_entity_usage(entity, flags);
 	}
+
 	/* now computed */
-	irg->adr_taken_state = ir_address_taken_computed;
-}  /* analyse_address_taken */
+	irg->entity_usage_state = ir_entity_usage_computed;
+}
 
-/* Returns the current address taken state of the graph. */
-ir_address_taken_computed_state get_irg_address_taken_state(const ir_graph *irg) {
-	return irg->adr_taken_state;
-}  /* get_irg_address_taken_state */
+ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg) {
+	return irg->entity_usage_state;
+}
 
-/* Sets the current address taken state of the graph. */
-void set_irg_address_taken_state(ir_graph *irg, ir_address_taken_computed_state state) {
-	irg->adr_taken_state = state;
-}  /* set_irg_address_taken_state */
+void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state state) {
+	irg->entity_usage_state = state;
+}
 
-/* Assure that the address taken flag is computed for the given graph. */
-void assure_irg_address_taken_computed(ir_graph *irg) {
-	if (irg->adr_taken_state == ir_address_taken_not_computed)
-		analyse_irg_address_taken(irg);
-}  /* assure_irg_address_taken_computed */
+void assure_irg_entity_usage_computed(ir_graph *irg) {
+	if (irg->entity_usage_state != ir_entity_usage_not_computed)
+		return;
+
+	analyse_irg_entity_usage(irg);
+}
 
 
 /**
- * Initialize the address_taken flag for a global type like type.
+ * Initialize the entity_usage flag for a global type like type.
  */
-static void init_taken_flag(ir_type * tp) {
+static void init_entity_usage(ir_type * tp) {
 	int i;
 
-	/* All external visible entities are at least
-	   ir_address_taken_unknown. This is very conservative. */
+	/* We have to be conservative: All external visible entities are unknown */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-		ir_entity *ent = get_compound_member(tp, i);
-		ir_address_taken_state state;
+		ir_entity       *entity = get_compound_member(tp, i);
+		ir_entity_usage  flags;
 
-		state = get_entity_visibility(ent) == visibility_external_visible ?
-				ir_address_taken_unknown : ir_address_not_taken ;
-		set_entity_address_taken(ent, state);
+		flags = get_entity_visibility(entity) == visibility_external_visible ?
+				ir_usage_unknown : 0;
+		set_entity_usage(entity, flags);
 	}
-}  /* init_taken_flag */
+}
 
 static void check_initializer_nodes(ir_initializer_t *initializer)
 {
@@ -924,7 +943,7 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 		/* let's check if it's an address */
 		if (is_Global(n)) {
 			ir_entity *ent = get_Global_entity(n);
-			set_entity_address_taken(ent, ir_address_taken);
+			set_entity_usage(ent, ir_usage_unknown);
 		}
 		return;
 	}
@@ -970,7 +989,7 @@ static void check_initializer(ir_entity *ent) {
 		n = get_atomic_ent_value(ent);
 		if (is_Global(n)) {
 			ir_entity *ent = get_Global_entity(n);
-			set_entity_address_taken(ent, ir_address_taken);
+			set_entity_usage(ent, ir_usage_unknown);
 		}
 	} else {
 		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
@@ -979,7 +998,7 @@ static void check_initializer(ir_entity *ent) {
 			/* let's check if it's an address */
 			if (is_Global(n)) {
 				ir_entity *ent = get_Global_entity(n);
-				set_entity_address_taken(ent, ir_address_taken);
+				set_entity_usage(ent, ir_usage_unknown);
 			}
 		}
 	}
@@ -1003,22 +1022,30 @@ static void check_initializers(ir_type *tp) {
 
 #ifdef DEBUG_libfirm
 /**
- * Print the address taken state of all entities of a given type for debugging.
+ * Print the entity usage flags of all entities of a given type for debugging.
  *
  * @param tp  a compound type
  */
-static void print_address_taken_state(ir_type *tp) {
+static void print_entity_usage_flags(ir_type *tp) {
 	int i;
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_compound_member(tp, i);
-		ir_address_taken_state state = get_entity_address_taken(ent);
+		ir_entity_usage flags = get_entity_usage(ent);
 
-		if (state != ir_address_not_taken) {
-			assert(ir_address_not_taken <= (int) state && state <= ir_address_taken);
-			ir_printf("%+F: %s\n", ent, get_address_taken_state_name(state));
-		}
+		if (flags == 0)
+			continue;
+		ir_printf("%+F:");
+		if (flags & ir_usage_address_taken)
+			printf(" address_taken");
+		if (flags & ir_usage_read)
+			printf(" read");
+		if (flags & ir_usage_write)
+			printf(" write");
+		if (flags & ir_usage_reinterpret_cast)
+			printf(" reinterp_cast");
+		printf("\n");
 	}
-}  /* print_address_taken_state */
+}
 #endif /* DEBUG_libfirm */
 
 /**
@@ -1027,7 +1054,7 @@ static void print_address_taken_state(ir_type *tp) {
 static void check_global_address(ir_node *irn, void *env) {
 	ir_node *tls = env;
 	ir_entity *ent;
-	ir_address_taken_state state;
+	ir_entity_usage flags;
 
 	if (is_Global(irn)) {
 		/* A global. */
@@ -1038,26 +1065,27 @@ static void check_global_address(ir_node *irn, void *env) {
 	} else
 		return;
 
-	if (get_entity_address_taken(ent) >= ir_address_taken) {
-		/* Already at the maximum. */
-		return;
-	}
-	state = find_address_taken_state(irn);
-	if (state > get_entity_address_taken(ent))
-		set_entity_address_taken(ent, state);
+	flags = get_entity_usage(ent);
+	flags |= determine_entity_usage(irn, ent);
+	set_entity_usage(ent, flags);
 }  /* check_global_address */
 
 /**
- * Update the "address taken" flag of all global entities.
+ * Update the entity usage flags of all global entities.
  */
-static void analyse_irp_globals_address_taken(void) {
+static void analyse_irp_globals_entity_usage(void) {
 	int i;
+	ir_segment_t s;
 
-	init_taken_flag(get_glob_type());
-	init_taken_flag(get_tls_type());
+	for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+		ir_type *type = get_segment_type(s);
+		init_entity_usage(type);
+	}
 
-	check_initializers(get_glob_type());
-	check_initializers(get_tls_type());
+	for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+		ir_type *type = get_segment_type(s);
+		check_initializers(type);
+	}
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -1068,30 +1096,34 @@ static void analyse_irp_globals_address_taken(void) {
 
 #ifdef DEBUG_libfirm
 	if (firm_dbg_get_mask(dbg) & LEVEL_1) {
-		print_address_taken_state(get_glob_type());
-		print_address_taken_state(get_tls_type());
+		ir_segment_t s;
+		for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+			print_entity_usage_flags(get_segment_type(s));
+		}
 	}
 #endif /* DEBUG_libfirm */
 
 	/* now computed */
-	irp->globals_adr_taken_state = ir_address_taken_computed;
-}  /* analyse_irp_globals_address_taken */
+	irp->globals_entity_usage_state = ir_entity_usage_computed;
+}
 
 /* Returns the current address taken state of the globals. */
-ir_address_taken_computed_state get_irp_globals_address_taken_state(void) {
-	return irp->globals_adr_taken_state;
-}  /* get_irp_globals_address_taken_state */
+ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void) {
+	return irp->globals_entity_usage_state;
+}
 
 /* Sets the current address taken state of the graph. */
-void set_irp_globals_address_taken_state(ir_address_taken_computed_state state) {
-	irp->globals_adr_taken_state = state;
-}  /* set_irg_address_taken_state */
+void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state) {
+	irp->globals_entity_usage_state = state;
+}
 
 /* Assure that the address taken flag is computed for the globals. */
-void assure_irp_globals_address_taken_computed(void) {
-	if (irp->globals_adr_taken_state == ir_address_taken_not_computed)
-		analyse_irp_globals_address_taken();
-}  /* assure_irp_globals_address_taken_computed */
+void assure_irp_globals_entity_usage_computed(void) {
+	if (irp->globals_entity_usage_state != ir_entity_usage_not_computed)
+		return;
+
+	analyse_irp_globals_entity_usage();
+}
 
 void firm_init_memory_disambiguator(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
@@ -1161,20 +1193,20 @@ void mark_private_methods(void) {
 
 	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
 
-	assure_irp_globals_address_taken_computed();
+	assure_irp_globals_entity_usage_computed();
 
 	mtp_map = pmap_create();
 
 	/* first step: change the calling conventions of the local non-escaped entities */
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		ir_graph               *irg = get_irp_irg(i);
-		ir_entity              *ent = get_irg_entity(irg);
-		ir_address_taken_state state = get_entity_address_taken(ent);
+		ir_graph        *irg   = get_irp_irg(i);
+		ir_entity       *ent   = get_irg_entity(irg);
+		ir_entity_usage  flags = get_entity_usage(ent);
 
 		/* If an entity is sticky, it might be called from external
 		   places (like inline assembler), so do NOT mark it as private. */
 		if (get_entity_visibility(ent) == visibility_local &&
-		    state == ir_address_not_taken &&
+		    !(flags & ir_usage_address_taken) &&
 		    get_entity_stickyness(ent) != stickyness_sticky) {
 			ir_type *mtp = get_entity_type(ent);
 

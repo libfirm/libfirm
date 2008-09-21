@@ -36,11 +36,11 @@ typedef enum {
 	ir_sure_alias      /**< Sure alias. */
 } ir_alias_relation;
 
-/** The state of the address taken flags. */
+/** The state of the entity usage flags. */
 typedef enum {
-	ir_address_taken_not_computed, /**< Address taken flag is not computed. */
-	ir_address_taken_computed      /**< Address taken flag is computed. */
-} ir_address_taken_computed_state;
+	ir_entity_usage_not_computed,
+	ir_entity_usage_computed
+} ir_entity_usage_computed_state;
 
 /** Possible options for the memory disambiguator. */
 typedef enum {
@@ -164,44 +164,35 @@ ir_alias_relation get_alias_relation_ex(
  */
 void mem_disambig_term(void);
 
-/**
- * Returns the current address taken state of the graph.
- */
-ir_address_taken_computed_state get_irg_address_taken_state(const ir_graph *irg);
+ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg);
+
+void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state state);
 
 /**
- * Sets the current address taken state of the graph.
+ * Assure that the entity usage flags have been computed for the given graph.
  *
- * @param irg    the graph
- * @param state  the new state
- */
-void set_irg_address_taken_state(ir_graph *irg, ir_address_taken_computed_state state);
-
-/**
- * Assure that the address taken flag is computed for the given graph.
- *
- * This is an intraprocedural analysis that computes the address_taken state
+ * This is an intraprocedural analysis that computes the entity usage state
  * for all local variables.
  *
  * Note that this is a conservative estimation that by no Firm transformation
  * can be invalidated, so it's only recomputed if manually triggered by calling
- * set_irg_address_taken_state(irg, ir_address_taken_not_computed).
+ * set_irg_entity_usage_state(irg, ir_entity_usage_not_computed).
  * Even then the information is not cleaned from the variables, call
- * assure_irg_address_taken_computed() again for recomputation.
+ * assure_irg_entity_usage_computed() again for recomputation.
  */
-void assure_irg_address_taken_computed(ir_graph *irg);
+void assure_irg_entity_usage_computed(ir_graph *irg);
 
 /**
  * Returns the current address taken state of the globals.
  */
-ir_address_taken_computed_state get_irp_globals_address_taken_state(void);
+ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void);
 
 /**
  * Sets the current address taken state of the globals.
  *
  * @param state  the new state
  */
-void set_irp_globals_address_taken_state(ir_address_taken_computed_state state);
+void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state);
 
 /**
  * Assure that the address taken flag is computed for the global and TLS entities (variables).
@@ -211,11 +202,11 @@ void set_irp_globals_address_taken_state(ir_address_taken_computed_state state);
  *
  * Note that this is a conservative estimation that by no Firm transformation
  * can be invalidated, so it's only recomputed if manually triggered by calling
- * set_irp_globals_address_taken_state(ir_address_taken_not_computed).
+ * set_irp_globals_entity_usage_state(ir_entity_usage_not_computed).
  * Even then the information is not cleaned from the variables, call
- * assure_irp_globals_address_taken_computed() again for recomputation.
+ * assure_irp_globals_entity_usage_computed() again for recomputation.
  */
-void assure_irp_globals_address_taken_computed(void);
+void assure_irp_globals_entity_usage_computed(void);
 
 /**
  * Get the memory disambiguator options for a graph.

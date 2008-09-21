@@ -144,7 +144,7 @@ struct ir_entity {
 	unsigned align:1;              /**< Specifies alignment of entities content. */
 	unsigned stickyness:2;         /**< Specifies whether this entity is sticky.  */
 	unsigned peculiarity:3;        /**< The peculiarity of this entity. */
-	unsigned address_taken:3;      /**< A flag that can be set to mark address taken entities. */
+	unsigned usage:4;              /**< flag indicating usage types of this entity. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
@@ -369,19 +369,16 @@ _set_entity_backend_marked(ir_entity *ent, int flag) {
 	ent->backend_marked = flag ? 1 : 0;
 }
 
-static INLINE ir_address_taken_state
-_get_entity_address_taken(const ir_entity *ent) {
+static INLINE ir_entity_usage
+_get_entity_usage(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
-	return ent->address_taken;
+	return ent->usage;
 }
 
 static INLINE void
-_set_entity_address_taken(ir_entity *ent, ir_address_taken_state state) {
+_set_entity_usage(ir_entity *ent, ir_entity_usage state) {
 	assert(ent && ent->kind == k_entity);
-	assert(state == ir_address_not_taken ||
-			state == ir_address_taken_unknown ||
-			state == ir_address_taken);
-	ent->address_taken = state;
+	ent->usage = state;
 }
 
 static INLINE int
@@ -504,8 +501,8 @@ _set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
 #define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
 #define is_entity_backend_marked(ent)            _is_entity_backend_marked(ent)
 #define set_entity_backend_marked(ent, flag)     _set_entity_backend_marked(ent, flag)
-#define get_entity_address_taken(ent)            _get_entity_address_taken(ent)
-#define set_entity_address_taken(ent, flag)      _set_entity_address_taken(ent, flag)
+#define get_entity_usage(ent)                    _get_entity_usage(ent)
+#define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)
 #define set_entity_offset(ent, offset)           _set_entity_offset(ent, offset)
 #define get_entity_offset_bits_remainder(ent)    _get_entity_offset_bits_remainder(ent)

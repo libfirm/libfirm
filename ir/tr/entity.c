@@ -146,7 +146,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->align                = align_is_aligned;
 	res->stickyness           = stickyness_unsticky;
 	res->peculiarity          = peculiarity_existent;
-	res->address_taken        = ir_address_taken_unknown;
+	res->usage                = ir_usage_unknown;
 	res->final                = 0;
 	res->compiler_gen         = 0;
 	res->backend_marked       = 0;
@@ -561,27 +561,13 @@ void (set_entity_backend_marked)(ir_entity *ent, int flag) {
 	_set_entity_backend_marked(ent, flag);
 }  /* set_entity_backend_marked */
 
-/* Checks if the address of an entity was taken. */
-ir_address_taken_state (get_entity_address_taken)(const ir_entity *ent) {
-	return _get_entity_address_taken(ent);
-}  /* is_entity_address_taken */
+ir_entity_usage (get_entity_usage)(const ir_entity *ent) {
+	return _get_entity_usage(ent);
+}
 
-/* Sets/resets the address taken flag. */
-void (set_entity_address_taken)(ir_entity *ent, ir_address_taken_state flag) {
-	_set_entity_address_taken(ent, flag);
-}  /* set_entity_address_taken */
-
-/* Return the name of the address_taken state. */
-const char *get_address_taken_state_name(ir_address_taken_state state) {
-#define X(a)    case a: return #a
-	switch (state) {
-	X(ir_address_not_taken);
-	X(ir_address_taken_unknown);
-	X(ir_address_taken);
-    default: return "BAD VALUE";
-	}
-#undef X
-}  /* get_address_taken_state_name */
+void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags) {
+	_set_entity_usage(ent, flags);
+}
 
 /* Get the entity's stickyness */
 ir_stickyness
