@@ -1398,7 +1398,7 @@ static unsigned optimize_store(ir_node *store) {
 	entity = find_entity(ptr);
 
 	/* a store to an entity which is never read is unnecessary */
-	if (!(get_entity_usage(entity) & ir_usage_read)) {
+	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
 		ldst_info_t *info = get_irn_link(store);
 		if (info->projs[pn_Store_X_except] == NULL) {
 			exchange(info->projs[pn_Store_M], get_Store_mem(store));
@@ -2209,6 +2209,7 @@ void optimize_load_store(ir_graph *irg) {
 	/* Handle graph state */
 	if (env.changes) {
 		set_irg_outs_inconsistent(irg);
+		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 	}
 
 	if (env.changes & CF_CHANGED) {
