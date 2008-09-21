@@ -47,8 +47,9 @@
 #include "irgraph.h"
 
 typedef enum ir_segment_t {
+	IR_SEGMENT_FIRST,
 	/** "normal" global data */
-	IR_SEGMENT_GLOBAL,
+	IR_SEGMENT_GLOBAL = IR_SEGMENT_FIRST,
 	/** thread local storage segment */
 	IR_SEGMENT_THREAD_LOCAL,
 	/**
