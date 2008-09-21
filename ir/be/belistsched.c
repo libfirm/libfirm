@@ -90,7 +90,7 @@ typedef struct _list_sched_options_t {
 } list_sched_options_t;
 
 static list_sched_options_t list_sched_options = {
-	BE_SCHED_SELECT_HEUR,     /* mueller heuristic selector */
+	BE_SCHED_SELECT_NORMAL,   /* mueller heuristic selector */
 	BE_SCHED_PREP_NONE,       /* no scheduling preparation */
 };
 
