@@ -67,7 +67,7 @@ int get_irn_outs_computed(const ir_node *node)
 }
 
 /* returns the number of successors of the node: */
-int get_irn_n_outs(ir_node *node) {
+int get_irn_n_outs(const ir_node *node) {
 	assert(node && node->kind == k_ir_node);
 #ifdef DEBUG_libfirm
 	/* assert(node->out_valid); */
@@ -77,7 +77,7 @@ int get_irn_n_outs(ir_node *node) {
 }
 
 /* Access successor n */
-ir_node *get_irn_out(ir_node *def, int pos) {
+ir_node *get_irn_out(const ir_node *def, int pos) {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
 	/* assert(def->out_valid); */
@@ -86,7 +86,7 @@ ir_node *get_irn_out(ir_node *def, int pos) {
 }
 
 /* Access successor n */
-ir_node *get_irn_out_ex(ir_node *def, int pos, int *in_pos) {
+ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos) {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
 	/* assert(def->out_valid); */

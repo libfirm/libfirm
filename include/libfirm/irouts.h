@@ -39,16 +39,16 @@
    order of successors guaranteed.  Will return edges from block to floating
    nodes even if irgraph is in state "op_pin_state_floats". */
 /* returns the number of successors of the node: */
-int      get_irn_n_outs(ir_node *node);
+int      get_irn_n_outs(const ir_node *node);
 
 /** Get the User of a node from the Def-Use edge at position pos. */
-ir_node *get_irn_out(ir_node *def, int pos);
+ir_node *get_irn_out(const ir_node *def, int pos);
 
 /**
  * Get the User and its input position from the Def-Use edge of def
  * at position pos.
  */
-ir_node *get_irn_out_ex(ir_node *def, int pos, int *in_pos);
+ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos);
 
 /**
  * Set the User at position pos.
@@ -64,16 +64,16 @@ void     set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos);
    i < get_Block_cfg_outs(block). No order of successors guaranteed. */
 
 /** Return the number of control flow successors, ignore keep-alives. */
-int      get_Block_n_cfg_outs(ir_node *node);
+int      get_Block_n_cfg_outs(const ir_node *node);
 
 /** Return the number of control flow successors, honor keep-alives. */
-int      get_Block_n_cfg_outs_ka(ir_node *node);
+int      get_Block_n_cfg_outs_ka(const ir_node *node);
 
 /** Access predecessor n, ignore keep-alives. */
-ir_node *get_Block_cfg_out(ir_node *node, int pos);
+ir_node *get_Block_cfg_out(const ir_node *node, int pos);
 
 /** Access predecessor n, honor keep-alives. */
-ir_node *get_Block_cfg_out_ka(ir_node *node, int pos);
+ir_node *get_Block_cfg_out_ka(const ir_node *node, int pos);
 
 /** Walks over the graph starting at node.  Walks also if graph is in state
    "outs_inconsistent".  Assumes current_ir_graph is set properly. */
