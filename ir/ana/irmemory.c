@@ -780,7 +780,6 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 	int       i;
 	ir_mode   *emode, *mode;
 	ir_node   *value;
-	ir_entity *ent;
 	ir_type   *tp;
 	ir_entity_usage res = 0;
 
@@ -819,8 +818,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 
 		case iro_CopyB:
 			/* CopyB are like Loads/Stores */
-			ent = is_SymConst(irn) ? get_SymConst_entity(irn) : get_Sel_entity(irn);
-			tp  = get_entity_type(ent);
+			tp  = get_entity_type(entity);
 			if (tp != get_CopyB_type(succ)) {
 				/* bad, different types, might be a hidden conversion */
 				res |= ir_usage_reinterpret_cast;
