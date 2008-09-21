@@ -924,10 +924,13 @@ static void init_entity_usage(ir_type * tp) {
 	/* We have to be conservative: All external visible entities are unknown */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
 		ir_entity       *entity = get_compound_member(tp, i);
-		ir_entity_usage  flags;
+		ir_entity_usage  flags  = 0;
 
-		flags = get_entity_visibility(entity) == visibility_external_visible ?
-				ir_usage_unknown : 0;
+		if (get_entity_visibility(entity) == visibility_external_visible
+				|| get_entity_visibility(entity) == visibility_external_allocated) {
+			flags |= ir_usage_unknown;
+		}
+
 		set_entity_usage(entity, flags);
 	}
 }
