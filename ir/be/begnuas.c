@@ -1220,14 +1220,21 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 				be_emit_write_line();
 				break;
 			}
-		} else if (section == GAS_SECTION_PIC_TRAMPOLINES) {
+		} else if (section == GAS_SECTION_PIC_TRAMPOLINES
+				|| section == GAS_SECTION_PIC_SYMBOLS) {
 			if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
 				be_emit_cstring("\t.indirect_symbol ");
 				be_emit_ident(get_entity_ident(ent));
 				be_emit_char('\n');
 				be_emit_write_line();
-				be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
-				be_emit_write_line();
+				if (section == GAS_SECTION_PIC_TRAMPOLINES) {
+					be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
+					be_emit_write_line();
+				} else {
+					assert(section == GAS_SECTION_PIC_SYMBOLS);
+					be_emit_cstring("\t.long 0\n");
+					be_emit_write_line();
+				}
 			} else {
 				panic("PIC trampolines not yet supported in this gas mode");
 			}

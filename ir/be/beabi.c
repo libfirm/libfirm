@@ -2131,13 +2131,13 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		mode     = get_irn_mode(pred);
 		unknown  = new_r_Unknown(irg, mode);
 		pic_base = arch_code_generator_get_pic_base(env->birg->cg);
-		add      = new_r_Add(irg, block, pic_base, pred, mode);
-
-		/* make sure the walker doesn't visit this add again */
-		mark_irn_visited(add);
 
 		/* all ok now for locally constructed stuff */
 		if (can_address_relative(entity)) {
+			ir_node *add = new_r_Add(irg, block, pic_base, pred, mode);
+
+			/* make sure the walker doesn't visit this add again */
+			mark_irn_visited(add);
 			set_irn_n(node, i, add);
 			continue;
 		}
@@ -2147,7 +2147,8 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		pic_symbol   = get_pic_symbol(be, entity);
 		pic_symconst = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
  		                                        pic_symbol, NULL);
-		set_Add_right(add, pic_symconst);
+		add = new_r_Add(irg, block, pic_base, pic_symconst, mode);
+		mark_irn_visited(add);
 
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
