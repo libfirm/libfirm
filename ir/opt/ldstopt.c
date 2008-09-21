@@ -386,11 +386,12 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
 		}
 	} else if (is_Add(ptr)) {
-		ir_node *l = get_Add_left(ptr);
-		ir_node *r = get_Add_right(ptr);
-		ir_mode *mode;
+		ir_node *l    = get_Add_left(ptr);
+		ir_node *r    = get_Add_right(ptr);
+		ir_mode *mode = get_irn_mode(ptr);
+		tarval  *tmp;
 
-		if (is_Const(r)) {
+		if (is_Const(r) && get_irn_mode(l) == mode) {
 			ptr = l;
 			tv  = get_Const_tarval(r);
 		} else {
@@ -399,6 +400,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 		}
 ptr_arith:
 		mode = get_tarval_mode(tv);
+		tmp  = tv;
 
 		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
 		if (is_Sel(ptr)) {
@@ -419,10 +421,10 @@ ptr_arith:
 			size = get_type_size_bytes(get_entity_type(ent));
 			sz   = new_tarval_from_long(size, mode);
 
-			tv_index = tarval_div(tv, sz);
-			tv       = tarval_mod(tv, sz);
+			tv_index = tarval_div(tmp, sz);
+			tmp      = tarval_mod(tmp, sz);
 
-			if (tv_index == tarval_bad || tv == tarval_bad)
+			if (tv_index == tarval_bad || tmp == tarval_bad)
 				return NULL;
 
 			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
@@ -442,7 +444,7 @@ ptr_arith:
 			/* ok, bounds check finished */
 			++idx;
 		}
-		if (! tarval_is_null(tv)) {
+		if (! tarval_is_null(tmp)) {
 			/* access to some struct/union member */
 			return NULL;
 		}
@@ -500,7 +502,8 @@ ptr_arith:
  * valid, if the graph is in phase_high and _no_ address computation is used.
  */
 static compound_graph_path *get_accessed_path(ir_node *ptr) {
-	return rec_get_accessed_path(ptr, 0);
+	compound_graph_path *gr = rec_get_accessed_path(ptr, 0);
+	return gr;
 }  /* get_accessed_path */
 
 typedef struct path_entry {
@@ -1188,6 +1191,7 @@ static unsigned optimize_load(ir_node *load)
 								assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
 
 								value = get_compound_ent_value_by_path(ent, path);
+								DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
 								free_compound_graph_path(path);
 							}
 						}
