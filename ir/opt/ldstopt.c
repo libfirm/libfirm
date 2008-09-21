@@ -1352,18 +1352,61 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 	return res;
 }  /* follow_Mem_chain_for_Store */
 
+/** find entity used as base for an address calculation */
+static ir_entity *find_entity(ir_node *ptr)
+{
+	switch(get_irn_opcode(ptr)) {
+	case iro_SymConst:
+		return get_SymConst_entity(ptr);
+	case iro_Sel: {
+		ir_node *pred = get_Sel_ptr(ptr);
+		if (get_irg_frame(get_irn_irg(ptr)) == pred)
+			return get_Sel_entity(ptr);
+
+		return find_entity(pred);
+	}
+	case iro_Sub:
+	case iro_Add: {
+		ir_node *left = get_binop_left(ptr);
+		ir_node *right;
+		if (mode_is_reference(get_irn_mode(left)))
+			return find_entity(left);
+		right = get_binop_right(ptr);
+		if (mode_is_reference(get_irn_mode(right)))
+			return find_entity(right);
+		return NULL;
+	}
+	default:
+		return NULL;
+	}
+}
+
 /**
  * optimize a Store
  *
  * @param store  the Store node
  */
 static unsigned optimize_store(ir_node *store) {
-	ir_node *ptr, *mem;
+	ir_node   *ptr;
+	ir_node   *mem;
+	ir_entity *entity;
 
 	if (get_Store_volatility(store) == volatility_is_volatile)
 		return 0;
 
-	ptr = get_Store_ptr(store);
+	ptr    = get_Store_ptr(store);
+	entity = find_entity(ptr);
+
+	/* a store to an entity which is never read is unnecessary */
+	if (!(get_entity_usage(entity) & ir_usage_read)) {
+		ldst_info_t *info = get_irn_link(store);
+		if (info->projs[pn_Store_X_except] == NULL) {
+			exchange(info->projs[pn_Store_M], get_Store_mem(store));
+			kill_node(store);
+			reduce_adr_usage(ptr);
+			return DF_CHANGED;
+		}
+	}
 
 	/* Check, if the address of this Store is used more than once.
 	 * If not, this Store cannot be removed in any case. */
