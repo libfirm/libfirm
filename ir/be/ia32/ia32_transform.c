@@ -29,6 +29,7 @@
 #endif
 
 #include <limits.h>
+#include <stdbool.h>
 
 #include "irargs_t.h"
 #include "irnode_t.h"
@@ -131,46 +132,46 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                 ir_node *op, ir_node *orig_node);
 
 /** Return non-zero is a node represents the 0 constant. */
-static int is_Const_0(ir_node *node) {
+static bool is_Const_0(ir_node *node) {
 	return is_Const(node) && is_Const_null(node);
 }
 
 /** Return non-zero is a node represents the 1 constant. */
-static int is_Const_1(ir_node *node) {
+static bool is_Const_1(ir_node *node) {
 	return is_Const(node) && is_Const_one(node);
 }
 
 /** Return non-zero is a node represents the -1 constant. */
-static int is_Const_Minus_1(ir_node *node) {
+static bool is_Const_Minus_1(ir_node *node) {
 	return is_Const(node) && is_Const_all_one(node);
 }
 
 /**
  * returns true if constant can be created with a simple float command
  */
-static int is_simple_x87_Const(ir_node *node)
+static bool is_simple_x87_Const(ir_node *node)
 {
 	tarval *tv = get_Const_tarval(node);
 	if (tarval_is_null(tv) || tarval_is_one(tv))
-		return 1;
+		return true;
 
 	/* TODO: match all the other float constants */
-	return 0;
+	return false;
 }
 
 /**
  * returns true if constant can be created with a simple float command
  */
-static int is_simple_sse_Const(ir_node *node)
+static bool is_simple_sse_Const(ir_node *node)
 {
 	tarval  *tv   = get_Const_tarval(node);
 	ir_mode *mode = get_tarval_mode(tv);
 
 	if (mode == mode_F)
-		return 1;
+		return true;
 
 	if (tarval_is_null(tv) || tarval_is_one(tv))
-		return 1;
+		return true;
 
 	if (mode == mode_D) {
 		unsigned val = get_tarval_sub_bits(tv, 0) |
@@ -179,11 +180,11 @@ static int is_simple_sse_Const(ir_node *node)
 			(get_tarval_sub_bits(tv, 3) << 24);
 		if (val == 0)
 			/* lower 32bit are zero, really a 32bit constant */
-			return 1;
+			return true;
 	}
 
 	/* TODO: match all the other float constants */
-	return 0;
+	return false;
 }
 
 /**
@@ -2710,7 +2711,7 @@ static ir_node *create_Ucomi(ir_node *node)
  * helper function: checks whether all Cmp projs are Lg or Eq which is needed
  * to fold an and into a test node
  */
-static int can_fold_test_and(ir_node *node)
+static bool can_fold_test_and(ir_node *node)
 {
 	const ir_edge_t *edge;
 
@@ -2719,10 +2720,61 @@ static int can_fold_test_and(ir_node *node)
 		ir_node *proj = get_edge_src_irn(edge);
 		pn_Cmp   pnc  = get_Proj_proj(proj);
 		if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
+}
+
+/**
+ * returns true if it is assured, that the upper bits of a node are "clean"
+ * which means for a 16 or 8 bit value, that the upper bits in the register
+ * are 0 for unsigned and a copy of the last significant bit for unsigned
+ * numbers.
+ */
+static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+{
+	assert(ia32_mode_needs_gp_reg(mode));
+	if (get_mode_size_bits(mode) >= 32)
+		return true;
+
+	if (is_ia32_Conv_I2I(transformed_node)
+			|| is_ia32_Conv_I2I8Bit(transformed_node)) {
+		ir_mode *smaller_mode = get_ia32_ls_mode(transformed_node);
+		if (mode_is_signed(smaller_mode) != mode_is_signed(mode))
+			return false;
+		if (get_mode_size_bits(smaller_mode) > get_mode_size_bits(mode))
+			return false;
+
+		return true;
+	}
+
+	if (is_ia32_Shr(transformed_node) && !mode_is_signed(mode)) {
+		ir_node *right = get_irn_n(transformed_node, n_ia32_Shr_count);
+		if (is_ia32_Immediate(right)) {
+			const ia32_immediate_attr_t *attr
+				= get_ia32_immediate_attr_const(right);
+			if (attr->symconst == 0
+					&& (unsigned) attr->offset >= (32 - get_mode_size_bits(mode))) {
+				return true;
+			}
+		}
+	}
+
+	if (is_ia32_And(transformed_node) && !mode_is_signed(mode)) {
+		ir_node *right = get_irn_n(transformed_node, n_ia32_And_right);
+		if (is_ia32_Immediate(right)) {
+			const ia32_immediate_attr_t *attr
+				= get_ia32_immediate_attr_const(right);
+			if (attr->symconst == 0
+					&& (unsigned) attr->offset
+					<= (0xffffffff >> (32 - get_mode_size_bits(mode)))) {
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -2763,20 +2815,34 @@ static ir_node *gen_Cmp(ir_node *node)
 		ir_node *and_right = get_And_right(left);
 		ir_mode *mode      = get_irn_mode(and_left);
 
+		/* matze: code here used mode instead of cmd_mode, I think it is always
+		 * the same as cmp_mode, but I leave this here to see if this is really
+		 * true...
+		 */
+		assert(mode == cmp_mode);
+
 		match_arguments(&am, block, and_left, and_right, NULL,
 										match_commutative |
 										match_am | match_8bit_am | match_16bit_am |
 										match_am_and_immediates | match_immediate |
 										match_8bit | match_16bit);
-		if (get_mode_size_bits(mode) == 8) {
+
+		/* use 32bit compare mode if possible since the opcode is smaller */
+		if (upper_bits_clean(am.new_op1, cmp_mode)
+				&& upper_bits_clean(am.new_op2, cmp_mode)) {
+			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
+		}
+
+		if (get_mode_size_bits(cmp_mode) == 8) {
 			new_node = new_rd_ia32_Test8Bit(dbgi, irg, new_block, addr->base,
-																			addr->index, addr->mem, am.new_op1,
-																			am.new_op2, am.ins_permuted,
-																			cmp_unsigned);
+			                                addr->index, addr->mem, am.new_op1,
+			                                am.new_op2, am.ins_permuted,
+			                                cmp_unsigned);
 		} else {
 			new_node = new_rd_ia32_Test(dbgi, irg, new_block, addr->base,
-																	addr->index, addr->mem, am.new_op1,
-																	am.new_op2, am.ins_permuted, cmp_unsigned);
+			                            addr->index, addr->mem, am.new_op1,
+			                            am.new_op2, am.ins_permuted,
+										cmp_unsigned);
 		}
 	} else {
 		/* Cmp(left, right) */
@@ -2784,6 +2850,12 @@ static ir_node *gen_Cmp(ir_node *node)
 		                match_commutative | match_am | match_8bit_am |
 		                match_16bit_am | match_am_and_immediates |
 		                match_immediate | match_8bit | match_16bit);
+		/* use 32bit compare mode if possible since the opcode is smaller */
+		if (upper_bits_clean(am.new_op1, cmp_mode)
+				&& upper_bits_clean(am.new_op2, cmp_mode)) {
+			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
+		}
+
 		if (get_mode_size_bits(cmp_mode) == 8) {
 			new_node = new_rd_ia32_Cmp8Bit(dbgi, irg, new_block, addr->base,
 			                               addr->index, addr->mem, am.new_op1,
@@ -3224,6 +3296,17 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 	match_arguments(&am, block, NULL, op, NULL,
 	                match_8bit | match_16bit |
 	                match_am | match_8bit_am | match_16bit_am);
+
+	if (upper_bits_clean(am.new_op2, smaller_mode)) {
+		/* unnecessary conv. in theory it shouldn't have been AM */
+		assert(is_ia32_NoReg_GP(addr->base));
+		assert(is_ia32_NoReg_GP(addr->index));
+		assert(is_NoMem(addr->mem));
+		assert(am.addr.offset == 0);
+		assert(am.addr.symconst_ent == NULL);
+		return am.new_op2;
+	}
+
 	if (smaller_bits == 8) {
 		new_node = new_rd_ia32_Conv_I2I8Bit(dbgi, irg, new_block, addr->base,
 		                                    addr->index, addr->mem, am.new_op2,
