@@ -2751,7 +2751,7 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 
 	if (is_ia32_Shr(transformed_node) && !mode_is_signed(mode)) {
 		ir_node *right = get_irn_n(transformed_node, n_ia32_Shr_count);
-		if (is_ia32_Immediate(right)) {
+		if (is_ia32_Immediate(right) || is_ia32_Const(right)) {
 			const ia32_immediate_attr_t *attr
 				= get_ia32_immediate_attr_const(right);
 			if (attr->symconst == 0
@@ -2763,7 +2763,7 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 
 	if (is_ia32_And(transformed_node) && !mode_is_signed(mode)) {
 		ir_node *right = get_irn_n(transformed_node, n_ia32_And_right);
-		if (is_ia32_Immediate(right)) {
+		if (is_ia32_Immediate(right) || is_ia32_Const(right)) {
 			const ia32_immediate_attr_t *attr
 				= get_ia32_immediate_attr_const(right);
 			if (attr->symconst == 0
@@ -2771,6 +2771,22 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 					<= (0xffffffff >> (32 - get_mode_size_bits(mode)))) {
 				return true;
 			}
+		}
+	}
+
+	if (is_ia32_Immediate(transformed_node)
+			|| is_ia32_Const(transformed_node)) {
+		const ia32_immediate_attr_t *attr
+			= get_ia32_immediate_attr_const(transformed_node);
+		if (mode_is_signed(mode)) {
+			long shifted = attr->offset >> (get_mode_size_bits(mode) - 1);
+			if (shifted == 0 || shifted == -1)
+				return true;
+		} else {
+			unsigned long shifted = (unsigned long) attr->offset;
+			shifted >>= get_mode_size_bits(mode);
+			if (shifted == 0)
+				return true;
 		}
 	}
 
