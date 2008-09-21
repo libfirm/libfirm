@@ -172,7 +172,7 @@ void init_irprog_2(void);
 #define get_irp_n_opcodes()       _get_irp_n_opcodes()
 #define get_irp_opcode(pos)       _get_irp_opcode(pos)
 #define get_const_code_irg()      _get_const_code_irg()
-#define get_segment_type(s)       _get_segment_type(s
+#define get_segment_type(s)       _get_segment_type(s)
 #define get_glob_type()           _get_glob_type()
 #define get_tls_type()            _get_tls_type()
 #define get_irp_next_region_nr()  _get_irp_next_region_nr()
