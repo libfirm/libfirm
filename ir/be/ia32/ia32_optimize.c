@@ -97,17 +97,17 @@ static int produces_zero_flag(ir_node *node, int pn)
 
 	case iro_ia32_ShlD:
 	case iro_ia32_ShrD:
+		assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
+		count = get_irn_n(node, n_ia32_ShlD_count);
+		goto check_shift_amount;
+
 	case iro_ia32_Shl:
 	case iro_ia32_Shr:
 	case iro_ia32_Sar:
-		assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
 		assert(n_ia32_Shl_count == n_ia32_Shr_count
 				&& n_ia32_Shl_count == n_ia32_Sar_count);
-		if (is_ia32_ShlD(node) || is_ia32_ShrD(node)) {
-			count = get_irn_n(node, n_ia32_ShlD_count);
-		} else {
-			count = get_irn_n(node, n_ia32_Shl_count);
-		}
+		count = get_irn_n(node, n_ia32_Shl_count);
+check_shift_amount:
 		/* when shift count is zero the flags are not affected, so we can only
 		 * do this for constants != 0 */
 		if (!is_ia32_Immediate(count))
