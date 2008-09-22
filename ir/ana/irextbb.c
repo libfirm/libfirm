@@ -284,12 +284,12 @@ ir_extblk *get_nodes_extbb(ir_node *node) {
 }
 
 /* Gets the visited counter of an extended block. */
-unsigned long (get_extbb_visited)(const ir_extblk *blk) {
+ir_visited_t (get_extbb_visited)(const ir_extblk *blk) {
   return _get_extbb_visited(blk);
 }
 
 /* Sets the visited counter of an extended block. */
-void (set_extbb_visited)(ir_extblk *blk, unsigned long visited) {
+void (set_extbb_visited)(ir_extblk *blk, ir_visited_t visited) {
   _set_extbb_visited(blk, visited);
 }
 

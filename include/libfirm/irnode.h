@@ -204,9 +204,9 @@ ident *get_irn_opident(const ir_node *node);
 /** If arg is an argument of the node, returns it's position, -1 otherwise */
 int get_irn_pred_pos(ir_node *node, ir_node *arg);
 /** Gets the visited counter of a node. */
-unsigned long get_irn_visited(const ir_node *node);
+ir_visited_t get_irn_visited(const ir_node *node);
 /** Sets the visited counter of a node. */
-void set_irn_visited(ir_node *node, unsigned long visited);
+void set_irn_visited(ir_node *node, ir_visited_t visited);
 /** Sets visited to get_irg_visited(current_ir_graph). */
 void mark_irn_visited(ir_node *node);
 /** Returns 1 if visited < get_irg_visited(current_ir_graph). */
@@ -363,8 +363,8 @@ void      set_Block_matured(ir_node *node, int matured);
 
 /** A visited flag only for block nodes.
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
-unsigned long get_Block_block_visited(const ir_node *node);
-void      set_Block_block_visited(ir_node *node, unsigned long visit);
+ir_visited_t get_Block_block_visited(const ir_node *node);
+void         set_Block_block_visited(ir_node *node, ir_visited_t visit);
 
 /**
  * Marks a block as dead but do not replace it with a Bad node.

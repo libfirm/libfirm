@@ -52,10 +52,10 @@
 
 #include "irgwalk.h"
 
-static unsigned long master_cg_visited = 0;
-static INLINE int cg_irg_visited     (ir_graph *n);
+static ir_visited_t master_cg_visited = 0;
+static INLINE int cg_irg_visited      (ir_graph *n);
 static INLINE void mark_cg_irg_visited(ir_graph *n);
-static INLINE void set_cg_irg_visited (ir_graph *n, unsigned long i);
+static INLINE void set_cg_irg_visited (ir_graph *n, ir_visited_t i);
 
 /** Returns the callgraph state of the program representation. */
 irp_callgraph_state get_irp_callgraph_state(void) {
@@ -465,14 +465,14 @@ static INLINE void mark_cg_irg_visited(ir_graph *irg) {
 /**
  * Set a graphs visited flag to i.
  */
-static INLINE void set_cg_irg_visited(ir_graph *irg, unsigned long i) {
+static INLINE void set_cg_irg_visited(ir_graph *irg, ir_visited_t i) {
 	irg->self_visited = i;
 }
 
 /**
  * Returns the visited flag of a graph.
  */
-static INLINE unsigned long get_cg_irg_visited(ir_graph *irg) {
+static INLINE ir_visited_t get_cg_irg_visited(ir_graph *irg) {
 	return irg->self_visited;
 }
 
@@ -1018,7 +1018,7 @@ static void reset_isbe(void) {
 static void compute_loop_depth(ir_graph *irg, void *env) {
 	int current_nesting = *(int *) env;
 	int old_nesting = irg->callgraph_loop_depth;
-	unsigned long old_visited = get_cg_irg_visited(irg);
+	ir_visited_t old_visited = get_cg_irg_visited(irg);
 	int i, n_callees;
 
 	//return ;

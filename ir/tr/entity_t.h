@@ -155,7 +155,7 @@ struct ir_entity {
 	                               /**< If the entity is a bit field, this is the offset of
 	                                    the start of the bit field within the byte specified
 	                                    by offset. */
-	unsigned long visit;           /**< visited counter for walks of the type information. */
+	ir_visited_t visit;            /**< visited counter for walks of the type information. */
 	struct dbg_info *dbi;          /**< A pointer to information for debug support. */
 	void *link;                    /**< To store some intermediate information. */
 	ir_type *repr_class;           /**< If this entity represents a class info, the associated class. */
@@ -428,14 +428,14 @@ _get_entity_irg(const ir_entity *ent) {
 	return irg;
 }
 
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_entity_visited(ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
 	return ent->visit;
 }
 
 static INLINE void
-_set_entity_visited(ir_entity *ent, unsigned long num) {
+_set_entity_visited(ir_entity *ent, ir_visited_t num) {
 	assert(ent && ent->kind == k_entity);
 	ent->visit = num;
 }

@@ -36,7 +36,7 @@
  */
 struct _ir_extblk {
   firm_kind kind;        /**< k_ir_extblk */
-  unsigned long visited; /**< visited flag */
+  ir_visited_t visited;  /**< visited flag */
   ir_node  **blks;       /**< blocks belonging to this extended block */
   void *link;            /**< private link field */
 };
@@ -54,7 +54,7 @@ _is_ir_extbb (const void *thing) {
  * Gets the visited counter of an extended block.
  * Internal version for libFirm.
  */
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_extbb_visited(const ir_extblk *blk) {
   assert(blk);
   return blk->visited;
@@ -65,7 +65,7 @@ _get_extbb_visited(const ir_extblk *blk) {
  * Internal version for libFirm.
  */
 static INLINE void
-_set_extbb_visited(ir_extblk *blk, unsigned long visited) {
+_set_extbb_visited(ir_extblk *blk, ir_visited_t visited) {
   assert(blk);
   blk->visited = visited;
 }

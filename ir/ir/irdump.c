@@ -1573,7 +1573,7 @@ static void print_edge_vcgattr(FILE *F, ir_node *from, int to) {
 /** dump edges to our inputs */
 static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 	int i, num;
-	unsigned long visited = get_irn_visited(n);
+	ir_visited_t visited = get_irn_visited(n);
 
 	if (!dump_keepalive && is_End(n)) {
 		/* the End node has only keep-alive edges */

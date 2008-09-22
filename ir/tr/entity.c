@@ -1333,11 +1333,11 @@ int equal_entity(ir_entity *ent1, ir_entity *ent2) {
 }  /* equal_entity */
 
 
-unsigned long (get_entity_visited)(ir_entity *ent) {
+ir_visited_t (get_entity_visited)(ir_entity *ent) {
 	return _get_entity_visited(ent);
 }  /* get_entity_visited */
 
-void (set_entity_visited)(ir_entity *ent, unsigned long num) {
+void (set_entity_visited)(ir_entity *ent, ir_visited_t num) {
 	_set_entity_visited(ent, num);
 }  /* set_entity_visited */
 

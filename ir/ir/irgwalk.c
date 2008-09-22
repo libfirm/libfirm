@@ -51,7 +51,7 @@
  * Walk over an interprocedural graph (callgraph).
  * Visits only graphs in irg_set.
  */
-static void irg_walk_cg(ir_node * node, unsigned long visited,
+static void irg_walk_cg(ir_node * node, ir_visited_t visited,
                         pset_new_t *irg_set, irg_walk_func *pre,
                         irg_walk_func *post, void * env) {
 	int i;
@@ -258,7 +258,7 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 	if (get_interprocedural_view()) {
 		pset_new_t           irg_set;
 		pset_new_iterator_t  iter;
-		unsigned long        visited;
+		ir_visited_t         visited;
 		ir_graph            *irg;
 		assert(get_irp_ip_view_state() == ip_view_valid);
 

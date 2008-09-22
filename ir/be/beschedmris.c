@@ -89,7 +89,7 @@ static void *mris_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 }
 
 #if 0
-static int compute_height(mris_env_t *env, ir_node *irn, unsigned long visited)
+static int compute_height(mris_env_t *env, ir_node *irn, ir_visited_t visited)
 {
 	mris_irn_t *mi = get_mris_irn(env, irn);
 
@@ -123,7 +123,7 @@ static int compute_height(mris_env_t *env, ir_node *irn, unsigned long visited)
 static void compute_heights(mris_env_t *env)
 {
 	const ir_edge_t *edge;
-	unsigned long visited;
+	ir_visited_t visited;
 
 	visited = get_irg_visited(env->irg) + 1;
 	set_irg_visited(env->irg, visited);
@@ -209,7 +209,7 @@ static ir_node *put_lowest_in_front(mris_env_t *env, ir_node **in)
 }
 
 #if 0
-static void reaches_walker(mris_env_t *env, ir_node *irn, ir_node *tgt, int *found, unsigned long visited)
+static void reaches_walker(mris_env_t *env, ir_node *irn, ir_node *tgt, int *found, ir_visited_t visited)
 {
 	if(get_irn_visited(irn) < visited && get_nodes_block(irn) == env->bl) {
 
@@ -232,7 +232,7 @@ static void reaches_walker(mris_env_t *env, ir_node *irn, ir_node *tgt, int *fou
 static int reaches(mris_env_t *env, ir_node *src, ir_node *tgt)
 {
 	int found = 0;
-	unsigned long visited = get_irg_visited(env->irg) + 1;
+	ir_visited_t visited = get_irg_visited(env->irg) + 1;
 
 	set_irg_visited(env->irg, visited);
 	reaches_walker(env, src, tgt, &found, visited);

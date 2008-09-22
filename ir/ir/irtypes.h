@@ -122,7 +122,7 @@ struct ir_mode {
 typedef struct {
 	/* General attributes */
 	ir_graph *irg;              /**< The graph this block belongs to. */
-	unsigned long block_visited; /**< For the walker that walks over all blocks. */
+	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
 	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
@@ -353,7 +353,7 @@ struct ir_node {
 	ir_op *op;               /**< The Opcode of this node. */
 	ir_mode *mode;           /**< The Mode of this node. */
 	struct ir_node **in;     /**< The array of predecessors / operands. */
-	unsigned long visited;   /**< The visited counter for walks of the graph. */
+	ir_visited_t visited;    /**< The visited counter for walks of the graph. */
 	void *link;              /**< To attach additional information to the node, e.g.
 	                              used while construction to link Phi0 nodes and
 	                              during optimization to link to nodes that
@@ -490,13 +490,13 @@ struct ir_graph {
 	ir_loop   *l;                            /**< For callgraph analysis. */
 
 	/* -- Fields for Walking the graph -- */
-	unsigned long visited;             /**< this flag is an identifier for
+	ir_visited_t visited;             /**< this flag is an identifier for
 	                  ir walk. it will be incremented
 	                  every time someone walks through
 	                  the graph */
-	unsigned long block_visited;       /**< same as visited, for a complete block */
+	ir_visited_t block_visited;        /**< same as visited, for a complete block */
 
-	unsigned long self_visited;        /**< visited flag of the irg */
+	ir_visited_t self_visited;         /**< visited flag of the irg */
 
 	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
 	                                        updated after every walk */

@@ -82,14 +82,14 @@ ir_extblk *get_nodes_extbb(ir_node *node);
  *
  * @param blk  the extended basic block
  */
-unsigned long get_extbb_visited(const ir_extblk *blk);
+ir_visited_t get_extbb_visited(const ir_extblk *blk);
 
 /**
  * Sets the visited counter of an extended block.
  *
  * @param blk  the extended basic block
  */
-void set_extbb_visited(ir_extblk *blk, unsigned long visited);
+void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
 
 /**
  * Mark an extended block as visited in a graph.

@@ -925,18 +925,18 @@ void *
 	return _get_irg_link(irg);
 }
 
-unsigned long
+ir_visited_t
 (get_irg_visited)(const ir_graph *irg) {
 	return _get_irg_visited(irg);
 }
 
 #ifdef INTERPROCEDURAL_VIEW
 /** maximum visited flag content of all ir_graph visited fields. */
-static unsigned long max_irg_visited = 0;
+static ir_visited_t max_irg_visited = 0;
 #endif /* INTERPROCEDURAL_VIEW */
 
 void
-set_irg_visited(ir_graph *irg, unsigned long visited) {
+set_irg_visited(ir_graph *irg, ir_visited_t visited) {
 	irg->visited = visited;
 #ifdef INTERPROCEDURAL_VIEW
 	if (irg->visited > max_irg_visited) {
@@ -957,13 +957,13 @@ inc_irg_visited(ir_graph *irg) {
 }
 
 #ifdef INTERPROCEDURAL_VIEW
-unsigned long
+ir_visited_t
 get_max_irg_visited(void) {
-	/*
+#ifndef NDEBUG
 	int i;
 	for(i = 0; i < get_irp_n_irgs(); i++)
-	assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
-	 */
+		assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+#endif
 	return max_irg_visited;
 }
 
@@ -971,24 +971,24 @@ void set_max_irg_visited(int val) {
 	max_irg_visited = val;
 }
 
-unsigned long
+ir_visited_t
 inc_max_irg_visited(void) {
-	/*
+#ifndef NDEBUG
 	int i;
 	for(i = 0; i < get_irp_n_irgs(); i++)
-	assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
-	*/
+		assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
+#endif
 	return ++max_irg_visited;
 }
 #endif /* INTERPROCEDURAL_VIEW */
 
-unsigned long
+ir_visited_t
 (get_irg_block_visited)(const ir_graph *irg) {
 	return _get_irg_block_visited(irg);
 }
 
 void
-(set_irg_block_visited)(ir_graph *irg, unsigned long visited) {
+(set_irg_block_visited)(ir_graph *irg, ir_visited_t visited) {
 	_set_irg_block_visited(irg, visited);
 }
 

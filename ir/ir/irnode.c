@@ -445,11 +445,11 @@ ident *get_irn_opident(const ir_node *node) {
 	return node->op->name;
 }
 
-unsigned long (get_irn_visited)(const ir_node *node) {
+ir_visited_t (get_irn_visited)(const ir_node *node) {
 	return _get_irn_visited(node);
 }
 
-void (set_irn_visited)(ir_node *node, unsigned long visited) {
+void (set_irn_visited)(ir_node *node, ir_visited_t visited) {
 	_set_irn_visited(node, visited);
 }
 
@@ -719,11 +719,11 @@ void set_Block_matured(ir_node *node, int matured) {
 	node->attr.block.is_matured = matured;
 }
 
-unsigned long (get_Block_block_visited)(const ir_node *node) {
+ir_visited_t (get_Block_block_visited)(const ir_node *node) {
 	return _get_Block_block_visited(node);
 }
 
-void (set_Block_block_visited)(ir_node *node, unsigned long visit) {
+void (set_Block_block_visited)(ir_node *node, ir_visited_t visit) {
 	_set_Block_block_visited(node, visit);
 }
 

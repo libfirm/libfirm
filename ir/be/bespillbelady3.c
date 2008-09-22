@@ -84,7 +84,7 @@ typedef struct worklist_t worklist_t;
 struct worklist_t {
 	struct list_head  live_values;
 	size_t            n_live_values;
-	unsigned long     visited;
+	ir_visited_t      visited;
 };
 
 typedef struct block_info_t block_info_t;
@@ -103,7 +103,7 @@ static bool                         tentative_mode;
 static bool                         should_have_reached_fixpoint;
 static bool                         do_push_unused_livethroughs;
 static ir_exec_freq                *exec_freq;
-static unsigned long                worklist_visited;
+static ir_visited_t                 worklist_visited;
 
 static worklist_t *new_worklist(void)
 {

@@ -491,20 +491,20 @@ void *get_irg_link (const ir_graph *irg);
 
 /** Increments visited flag by one.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-void          inc_irg_visited(ir_graph *irg);
-unsigned long get_irg_visited(const ir_graph *irg);
-void          set_irg_visited(ir_graph *irg, unsigned long i);
+void         inc_irg_visited(ir_graph *irg);
+ir_visited_t get_irg_visited(const ir_graph *irg);
+void         set_irg_visited(ir_graph *irg, ir_visited_t i);
 /** An interprocedural flag valid for all irgs.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-unsigned long get_max_irg_visited(void);
-void          set_max_irg_visited(int val);
-unsigned long inc_max_irg_visited(void);
+ir_visited_t get_max_irg_visited(void);
+void         set_max_irg_visited(int val);
+ir_visited_t inc_max_irg_visited(void);
 
 /** Increments block_visited by one.
  *  @see also: get_irn_visited() get_irg_block_visited(). */
-void          inc_irg_block_visited(ir_graph *irg);
-unsigned long get_irg_block_visited(const ir_graph *irg);
-void          set_irg_block_visited(ir_graph *irg, unsigned long i);
+void         inc_irg_block_visited(ir_graph *irg);
+ir_visited_t get_irg_block_visited(const ir_graph *irg);
+void         set_irg_block_visited(ir_graph *irg, ir_visited_t i);
 
 /**
  * Debug helpers: You can indicate whether you are currently using visited or

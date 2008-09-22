@@ -306,7 +306,7 @@ _set_irn_mode(ir_node *node, ir_mode *mode) {
  * Gets the visited counter of a node.
  * Intern version for libFirm.
  */
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_irn_visited(const ir_node *node) {
 	assert(node);
 	return node->visited;
@@ -317,7 +317,7 @@ _get_irn_visited(const ir_node *node) {
  * Intern version for libFirm.
  */
 static INLINE void
-_set_irn_visited(ir_node *node, unsigned long visited) {
+_set_irn_visited(ir_node *node, ir_visited_t visited) {
 	assert(node);
 	node->visited = visited;
 }
@@ -798,14 +798,14 @@ _get_Block_cfgpred_block(const ir_node *node, int pos) {
 	return res;
 }
 
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_Block_block_visited(const ir_node *node) {
 	assert(node->op == op_Block);
 	return node->attr.block.block_visited;
 }
 
 static INLINE void
-_set_Block_block_visited(ir_node *node, unsigned long visit) {
+_set_Block_block_visited(ir_node *node, ir_visited_t visit) {
 	assert(node->op == op_Block);
 	node->attr.block.block_visited = visit;
 }

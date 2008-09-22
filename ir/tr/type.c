@@ -110,11 +110,11 @@ void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask) {
 }
 
 /** the global type visited flag */
-unsigned long firm_type_visited;
+ir_visited_t firm_type_visited;
 
-void (set_master_type_visited)(unsigned long val) { _set_master_type_visited(val); }
-unsigned long (get_master_type_visited)(void)     { return _get_master_type_visited(); }
-void (inc_master_type_visited)(void)              { _inc_master_type_visited(); }
+void (set_master_type_visited)(ir_visited_t val) { _set_master_type_visited(val); }
+ir_visited_t (get_master_type_visited)(void)     { return _get_master_type_visited(); }
+void (inc_master_type_visited)(void)             { _inc_master_type_visited(); }
 
 /*
  * Creates a new type representation.
@@ -423,11 +423,11 @@ set_type_state(ir_type *tp, ir_type_state state) {
 		tp->flags &= ~tf_layout_fixed;
 }
 
-unsigned long (get_type_visited)(const ir_type *tp) {
+ir_visited_t (get_type_visited)(const ir_type *tp) {
 	return _get_type_visited(tp);
 }
 
-void (set_type_visited)(ir_type *tp, unsigned long num) {
+void (set_type_visited)(ir_type *tp, ir_visited_t num) {
 	_set_type_visited(tp, num);
 }
 

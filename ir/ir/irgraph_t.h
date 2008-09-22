@@ -420,18 +420,18 @@ _get_irg_link(const ir_graph *irg) {
 	return irg->link;
 }
 
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_irg_visited(const ir_graph *irg) {
 	return irg->visited;
 }
 
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_irg_block_visited(const ir_graph *irg) {
 	return irg->block_visited;
 }
 
 static INLINE void
-_set_irg_block_visited(ir_graph *irg, unsigned long visited) {
+_set_irg_block_visited(ir_graph *irg, ir_visited_t visited) {
 	irg->block_visited = visited;
 }
 

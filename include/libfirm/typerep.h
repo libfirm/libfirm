@@ -666,10 +666,10 @@ int equal_entity(ir_entity *ent1, ir_entity *ent2);
 long get_entity_nr(const ir_entity *ent);
 
 /** Returns the entities visited count. */
-unsigned long get_entity_visited(ir_entity *ent);
+ir_visited_t get_entity_visited(ir_entity *ent);
 
 /** Sets the entities visited count. */
-void set_entity_visited(ir_entity *ent, unsigned long num);
+void set_entity_visited(ir_entity *ent, ir_visited_t num);
 
 /** Sets visited field in entity to entity_visited. */
 void mark_entity_visited(ir_entity *ent);
@@ -1404,9 +1404,9 @@ unsigned get_type_alignment_bytes(ir_type *tp);
 void set_type_alignment_bytes(ir_type *tp, unsigned align);
 
 /** Returns the visited count of a type. */
-unsigned long get_type_visited(const ir_type *tp);
+ir_visited_t get_type_visited(const ir_type *tp);
 /** Sets the visited count of a type to num. */
-void set_type_visited(ir_type *tp, unsigned long num);
+void set_type_visited(ir_type *tp, ir_visited_t num);
 /** Sets visited field in type to type_visited. */
 void mark_type_visited(ir_type *tp);
 /** Returns non-zero if the type is already visited */
@@ -1431,9 +1431,9 @@ void set_type_link(ir_type *tp, void *l);
  *
  * @see  typewalk
  */
-void          set_master_type_visited(unsigned long val);
-unsigned long get_master_type_visited(void);
-void          inc_master_type_visited(void);
+void         set_master_type_visited(ir_visited_t val);
+ir_visited_t get_master_type_visited(void);
+void         inc_master_type_visited(void);
 
 /**
  * Sets the debug information of a type.

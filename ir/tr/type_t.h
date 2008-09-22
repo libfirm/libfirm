@@ -225,7 +225,7 @@ struct ir_type {
 	                              calculated automatically by get_type_alignment().
 	                              Alignment must be given in bytes. */
 	ir_mode *mode;           /**< The mode for atomic types */
-	unsigned long visit;     /**< visited counter for walks of the type information */
+	ir_visited_t visit;      /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
 	ir_type *assoc_type;     /**< The associated lowered/unlowered type */
@@ -298,11 +298,11 @@ void firm_init_type(dbg_info *builtin_db, unsigned default_cc_mask);
  *  inline functions   *
  * ------------------- */
 
-extern unsigned long firm_type_visited;
+extern ir_visited_t firm_type_visited;
 
-static INLINE void _set_master_type_visited(unsigned long val) { firm_type_visited = val; }
-static INLINE unsigned long _get_master_type_visited(void)     { return firm_type_visited; }
-static INLINE void _inc_master_type_visited(void)              { ++firm_type_visited; }
+static INLINE void _set_master_type_visited(ir_visited_t val) { firm_type_visited = val; }
+static INLINE ir_visited_t _get_master_type_visited(void)     { return firm_type_visited; }
+static INLINE void _inc_master_type_visited(void)             { ++firm_type_visited; }
 
 static INLINE void *
 _get_type_link(const ir_type *tp) {
@@ -364,14 +364,14 @@ _get_type_state(const ir_type *tp) {
 	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
-static INLINE unsigned long
+static INLINE ir_visited_t
 _get_type_visited(const ir_type *tp) {
 	assert(tp && tp->kind == k_type);
 	return tp->visit;
 }
 
 static INLINE void
-_set_type_visited(ir_type *tp, unsigned long num) {
+_set_type_visited(ir_type *tp, ir_visited_t num) {
 	assert(tp && tp->kind == k_type);
 	tp->visit = num;
 }

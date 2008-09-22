@@ -202,7 +202,7 @@ typedef struct condeval_env_t {
 	pn_Cmp         pnc;        /**< The Compare mode of the Compare node. */
 	ir_node       *cnst;
 	tarval        *tv;
-	unsigned long  visited_nr;
+	ir_visited_t   visited_nr;
 
 	ir_node       *cnst_pred;   /**< the block before the constant */
 	int            cnst_pos;    /**< the pos to the constant block (needed to

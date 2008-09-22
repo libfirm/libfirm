@@ -224,7 +224,7 @@ static pset *get_type_map(const ir_type *tp, dir d) {
 static void compute_down_closure(ir_type *tp) {
 	pset *myset, *subset;
 	int i, n_subtypes, n_members, n_supertypes;
-	unsigned long master_visited = get_master_type_visited();
+	ir_visited_t master_visited = get_master_type_visited();
 
 	assert(is_Class_type(tp));
 
@@ -278,7 +278,7 @@ static void compute_down_closure(ir_type *tp) {
 static void compute_up_closure(ir_type *tp) {
 	pset *myset, *subset;
 	int i, n_subtypes, n_members, n_supertypes;
-	unsigned long master_visited = get_master_type_visited();
+	ir_visited_t master_visited = get_master_type_visited();
 
 	assert(is_Class_type(tp));
 
