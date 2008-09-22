@@ -52,10 +52,10 @@
 
 #include "irgwalk.h"
 
-static int master_cg_visited = 0;
-static INLINE int  cg_irg_visited     (ir_graph *n);
+static unsigned long master_cg_visited = 0;
+static INLINE int cg_irg_visited     (ir_graph *n);
 static INLINE void mark_cg_irg_visited(ir_graph *n);
-static INLINE void set_cg_irg_visited (ir_graph *n, int i);
+static INLINE void set_cg_irg_visited (ir_graph *n, unsigned long i);
 
 /** Returns the callgraph state of the program representation. */
 irp_callgraph_state get_irp_callgraph_state(void) {
@@ -386,11 +386,21 @@ static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func
 		post(irg, env);
 }
 
-void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env) {
-	int i, n_irgs = get_irp_n_irgs();
+void callgraph_walk(ir_entity **roots, unsigned n_roots,
+		callgraph_walk_func *pre, callgraph_walk_func *post, void *env) {
+	//int i, n_irgs = get_irp_n_irgs();
+	unsigned r;
 	++master_cg_visited;
 
-	do_walk(get_irp_main_irg(), pre, post, env);
+	for (r = 0; r < n_roots; ++r) {
+		ir_graph *irg = get_entity_irg(roots[r]);
+		if (irg == NULL)
+			continue;
+
+		do_walk(irg, pre, post, env);
+	}
+
+#if 0
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
@@ -401,6 +411,7 @@ void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *e
 		if (!cg_irg_visited(irg))
 			do_walk(irg, pre, post, env);
 	}
+#endif
 }
 
 /* ----------------------------------------------------------------------------------- */
@@ -441,36 +452,28 @@ static INLINE scc_info *new_scc_info(struct obstack *obst) {
  * Returns non-zero if a graph was already visited.
  */
 static INLINE int cg_irg_visited(ir_graph *irg) {
-	scc_info *info = get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
-	return info->visited >= master_cg_visited;
+	return irg->self_visited >= master_cg_visited;
 }
 
 /**
  * Marks a graph as visited.
  */
 static INLINE void mark_cg_irg_visited(ir_graph *irg) {
-	scc_info *info = get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
-	info->visited = master_cg_visited;
+	irg->self_visited = master_cg_visited;
 }
 
 /**
  * Set a graphs visited flag to i.
  */
-static INLINE void set_cg_irg_visited(ir_graph *irg, int i) {
-	scc_info *info = get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
-	info->visited = i;
+static INLINE void set_cg_irg_visited(ir_graph *irg, unsigned long i) {
+	irg->self_visited = i;
 }
 
 /**
  * Returns the visited flag of a graph.
  */
-static INLINE int get_cg_irg_visited(ir_graph *irg) {
-	scc_info *info = get_irg_link(irg);
-	assert(info && "missing call to init_scc()");
-	return info->visited;
+static INLINE unsigned long get_cg_irg_visited(ir_graph *irg) {
+	return irg->self_visited;
 }
 
 static INLINE void mark_irg_in_stack(ir_graph *irg) {
@@ -1015,7 +1018,7 @@ static void reset_isbe(void) {
 static void compute_loop_depth(ir_graph *irg, void *env) {
 	int current_nesting = *(int *) env;
 	int old_nesting = irg->callgraph_loop_depth;
-	int old_visited = get_cg_irg_visited(irg);
+	unsigned long old_visited = get_cg_irg_visited(irg);
 	int i, n_callees;
 
 	//return ;

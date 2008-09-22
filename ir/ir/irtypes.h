@@ -496,6 +496,8 @@ struct ir_graph {
 	                  the graph */
 	unsigned long block_visited;       /**< same as visited, for a complete block */
 
+	unsigned long self_visited;        /**< visited flag of the irg */
+
 	unsigned estimated_node_count;     /**< estimated number of nodes in this graph,
 	                                        updated after every walk */
 	irg_edges_info_t edge_info;        /**< edge info for automatic outs */

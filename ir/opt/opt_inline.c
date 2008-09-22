@@ -2007,6 +2007,35 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	return weight;
 }
 
+static ir_graph **irgs;
+static int      last_irg;
+
+static void callgraph_walker(ir_graph *irg, void *data)
+{
+	(void) data;
+	irgs[last_irg++] = irg;
+}
+
+static ir_graph **create_irg_list(void)
+{
+	ir_entity **roots;
+	int       arr_len;
+	int       n_irgs = get_irp_n_irgs();
+
+	cgana(&arr_len, &roots);
+	compute_callgraph();
+
+	last_irg = 0;
+	irgs     = xmalloc(n_irgs * sizeof(*irgs));
+	memset(irgs, 0, sizeof(n_irgs * sizeof(*irgs)));
+
+	callgraph_walk(roots, arr_len, NULL, callgraph_walker, NULL);
+	xfree(roots);
+	assert(n_irgs == last_irg);
+
+	return irgs;
+}
+
 /**
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
@@ -2021,9 +2050,12 @@ void inline_functions(int maxsize, int inline_threshold) {
 	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
+	ir_graph         **irgs;
 
 	rem = current_ir_graph;
 	obstack_init(&temp_obst);
+
+	irgs = create_irg_list();
 
 	/* a map for the copied graphs, used to inline recursive calls */
 	copied_graphs = pmap_create();
@@ -2031,13 +2063,13 @@ void inline_functions(int maxsize, int inline_threshold) {
 	/* extend all irgs by a temporary data structure for inlining. */
 	n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i)
-		set_irg_link(get_irp_irg(i), alloc_inline_irg_env());
+		set_irg_link(irgs[i], alloc_inline_irg_env());
 
 	/* Precompute information in temporary data structure. */
 	wenv.ignore_runtime = 0;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+		ir_graph *irg = irgs[i];
 
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
@@ -2052,7 +2084,7 @@ void inline_functions(int maxsize, int inline_threshold) {
 	for (i = 0; i < n_irgs; ++i) {
 		int      phiproj_computed = 0;
 		ir_node  *call;
-		ir_graph *irg = get_irp_irg(i);
+		ir_graph *irg = irgs[i];
 
 		current_ir_graph = irg;
 		env = get_irg_link(irg);
@@ -2169,7 +2201,7 @@ void inline_functions(int maxsize, int inline_threshold) {
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
+		ir_graph *irg = irgs[i];
 
 		env = get_irg_link(irg);
 		if (env->got_inline) {
@@ -2202,6 +2234,8 @@ void inline_functions(int maxsize, int inline_threshold) {
 		free_ir_graph(copy);
 	}
 	pmap_destroy(copied_graphs);
+
+	xfree(irgs);
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
