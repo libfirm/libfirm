@@ -71,21 +71,21 @@ static int should_do_table_switch(ir_node *cond, unsigned spare_size)
 	unsigned long spare, num_cases = 0;
 
 	/* TODO: Minimum size for jump table? */
-	if(get_irn_n_outs(cond) <= 4)
+	if (get_irn_n_outs(cond) <= 4)
 		return 0;
 
 	default_pn = get_Cond_defaultProj(cond);
 
 	foreach_out_irn(cond, i, proj) {
 		long pn = get_Proj_proj(proj);
-		if(pn == default_pn)
+		if (pn == default_pn)
 			continue;
 
-		if(pn < switch_min)
+		if (pn < switch_min)
 			switch_min = pn;
-		if(pn > switch_max)
+		if (pn > switch_max)
 			switch_max = pn;
-		num_cases++;
+		++num_cases;
 	}
 
 	/*
@@ -98,7 +98,9 @@ static int should_do_table_switch(ir_node *cond, unsigned spare_size)
 
 static int casecmp(const void *a, const void *b)
 {
-	return ((case_data_t *) a)->value - ((case_data_t *) b)->value;
+	const case_data_t *cda = a;
+	const case_data_t *cdb = b;
+	return cda->value - cdb->value;
 }
 
 /**
@@ -107,12 +109,14 @@ static int casecmp(const void *a, const void *b)
 static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
                               case_data_t *curcases, int numcases)
 {
-	assert(numcases > 0);
+	assert(numcases >= 0);
 
 	set_cur_block(curblock);
 
-	if(numcases == 1)
-	{
+	if (numcases == 0) {
+		/* zero cases: "goto default;" */
+		env->defusers[env->defindex++] = new_Jmp();
+	} else if (numcases == 1) {
 		/* only one case: "if(sel == val) goto target else goto default;" */
 		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
 		ir_node *cmp  = new_Cmp(env->sel, val);
@@ -120,7 +124,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		ir_node *cond = new_Cond(proj);
 		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
 		env->defusers[env->defindex++] = new_Proj(cond, mode_X, pn_Cond_false);
-	} else if(numcases == 2) {
+	} else if (numcases == 2) {
 		/* only two cases: "if(sel == val[0]) goto target[0];" */
 		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
 		ir_node *cmp  = new_Cmp(env->sel, val);
@@ -181,25 +185,25 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	ir_node     *defblock = NULL;
 	ifcas_env_t  ifcas_env;
 
-	if(get_Block_n_cfgpreds(block) != 1)
+	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
 	projx = get_Block_cfgpred(block, 0);
-	if(!is_Proj(projx))
+	if (!is_Proj(projx))
 		return;
 	assert(get_irn_mode(projx) == mode_X);
 
 	cond = get_Proj_pred(projx);
-	if(!is_Cond(cond))
+	if (!is_Cond(cond))
 		return;
 
 	sel      = get_Cond_selector(cond);
 	sel_mode = get_irn_mode(sel);
 
-	if(sel_mode == mode_b)    /* not a switch? */
+	if (sel_mode == mode_b)    /* not a switch? */
 		return;
 
-	if(should_do_table_switch(cond, env->spare_size))
+	if (should_do_table_switch(cond, env->spare_size))
 		return;
 
 	/*
@@ -221,8 +225,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 		ir_node *target = get_irn_out(proj, 0);
 		assert(get_Block_n_cfgpreds(target) == 1 && "Encountered critical edge in switch");
 
-		if(pn == default_pn)
-		{
+		if (pn == default_pn) {
 			defblock = target;
 			continue;
 		}
@@ -266,13 +269,12 @@ void lower_switch(ir_graph *irg, unsigned spare_size)
 
 	irg_block_walk_graph(irg, find_cond_nodes, NULL, &env);
 
-	if(env.changed) {
+	if (env.changed) {
 		/* control flow changed */
 		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
-
 	current_ir_graph = rem;
 }
