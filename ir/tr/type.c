@@ -2152,6 +2152,13 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, i
 		/* calculate offset and new type size */
 		offset = 0;
 		frame_size += size;
+
+		/* increase size to match alignment... */
+		if (alignment > frame_align) {
+			frame_align = alignment;
+			set_type_alignment_bytes(frame_type, frame_align);
+			frame_size  = (frame_size + frame_align - 1) & ~(frame_align - 1);
+		}
 	} else {
 		/* calculate offset and new type size */
 		offset = (frame_size + alignment - 1) & ~(alignment - 1);
