@@ -95,8 +95,10 @@ static int cost_cmp(const void* a, const void* b)
 	const irn_cost_pair* const a1 = a;
 	const irn_cost_pair* const b1 = b;
 	int ret = b1->cost - a1->cost;
+	if (ret == 0)
+		ret = (int)get_irn_idx(a1->irn) - (int)get_irn_idx(b1->irn);
 #if defined NORMAL_DBG
-	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
+	ir_fprintf(stderr, "cost %+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
 #endif
 	return ret;
 }
@@ -127,6 +129,7 @@ static int normal_tree_cost(ir_node* irn)
 	flag_and_cost* fc    = get_irn_link(irn);
 	ir_node*       block = get_nodes_block(irn);
 	int            arity = get_irn_arity(irn);
+	ir_node*       last;
 	int            n_res;
 	int            cost;
 	int            n_op_res = 0;
@@ -180,10 +183,14 @@ static int normal_tree_cost(ir_node* irn)
 	}
 
 	cost = 0;
+	last = 0;
 	for (i = 0; i < arity; ++i) {
-		if (get_irn_mode(fc->costs[i].irn) == mode_M) continue;
-		if (arch_irn_is(cur_arch_env, fc->costs[i].irn, ignore)) continue;
+		ir_node* op = fc->costs[i].irn;
+		if (op == last)                            continue;
+		if (get_irn_mode(op) == mode_M)            continue;
+		if (arch_irn_is(cur_arch_env, op, ignore)) continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
+		last = op;
 		++n_op_res;
 	}
 	n_res = count_result(irn);
@@ -281,7 +288,7 @@ static int root_cmp(const void* a, const void* b)
 		}
 	}
 #if defined NORMAL_DBG
-	ir_fprintf(stderr, "%+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
+	ir_fprintf(stderr, "root %+F %s %+F\n", a1->irn, ret < 0 ? "<" : ret > 0 ? ">" : "=", b1->irn);
 #endif
 	return ret;
 }
