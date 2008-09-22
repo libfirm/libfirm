@@ -497,7 +497,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			ir_node *leave;
 
 			/* leave */
-			leave   = new_rd_ia32_Leave(NULL, irg, bl, curr_sp, curr_bp);
+			leave   = new_rd_ia32_Leave(NULL, irg, bl, curr_bp);
 			set_ia32_flags(leave, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
