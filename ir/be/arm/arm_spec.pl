@@ -691,7 +691,7 @@ StoreStackM4Inc => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+	comment   => "construct Store: Push 4 Registers = ST ptr,val",
 	reg_req   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. stmfd %S0!, {%S1, %S2, %S3, %S4}',
 	outs      => [ "ptr", "M" ],
