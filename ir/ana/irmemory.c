@@ -363,13 +363,11 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
 		ir_type *tp2 = get_entity_type(ent2);
 
 		if (tp1 != tp2) {
-#if 0
 			/* do deref until no pointer types are found */
 			while (is_Pointer_type(tp1) && is_Pointer_type(tp2)) {
 				tp1 = get_pointer_points_to_type(tp1);
 				tp2 = get_pointer_points_to_type(tp2);
 			}
-#endif
 
 			if (get_type_tpop(tp1) != get_type_tpop(tp2)) {
 				/* different type structure */
