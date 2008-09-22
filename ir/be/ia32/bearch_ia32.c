@@ -971,6 +971,7 @@ static void ia32_prepare_graph(void *self) {
 
 #ifdef FIRM_GRGEN_BE
 		case TRANSFORMER_PBQP:
+		case TRANSFORMER_RAND:
 			// disable CSE, because of two-step node-construction
 			set_opt_cse(0);
 
@@ -2327,6 +2328,7 @@ static const lc_opt_enum_int_items_t transformer_items[] = {
 	{ "default", TRANSFORMER_DEFAULT },
 #ifdef FIRM_GRGEN_BE
 	{ "pbqp",    TRANSFORMER_PBQP    },
+	{ "random",  TRANSFORMER_RAND    },
 #endif
 	{ NULL,      0                   }
 };

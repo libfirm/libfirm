@@ -118,7 +118,8 @@ struct ia32_intrinsic_env_t {
 typedef enum transformer_t {
 	TRANSFORMER_DEFAULT,
 #ifdef FIRM_GRGEN_BE
-	TRANSFORMER_PBQP
+	TRANSFORMER_PBQP,
+	TRANSFORMER_RAND
 #endif
 } transformer_t;
 

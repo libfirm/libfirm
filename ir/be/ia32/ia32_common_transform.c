@@ -484,6 +484,7 @@ ir_node *gen_ASM(ir_node *node)
 
 #ifdef FIRM_GRGEN_BE
 	case TRANSFORMER_PBQP:
+	case TRANSFORMER_RAND:
 		new_block = get_nodes_block(node);
 		break;
 #endif
@@ -613,6 +614,7 @@ ir_node *gen_ASM(ir_node *node)
 
 #ifdef FIRM_GRGEN_BE
 			case TRANSFORMER_PBQP:
+			case TRANSFORMER_RAND:
 				input = get_irn_n(node, i);
 				break;
 #endif
@@ -693,6 +695,7 @@ ir_node *gen_CopyB(ir_node *node) {
 
 #ifdef FIRM_GRGEN_BE
 		case TRANSFORMER_PBQP:
+		case TRANSFORMER_RAND:
 			block    = get_nodes_block(node);
 			new_src  = get_CopyB_src(node);
 			new_dst  = get_CopyB_dst(node);
@@ -739,6 +742,7 @@ ir_node *gen_Proj_tls(ir_node *node) {
 
 #ifdef FIRM_GRGEN_BE
 		case TRANSFORMER_PBQP:
+		case TRANSFORMER_RAND:
 			block = get_nodes_block(node);
 			break;
 #endif
