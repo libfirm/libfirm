@@ -513,6 +513,7 @@ void place_code(ir_graph *irg) {
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
+	remove_critical_cf_edges(irg);
 
 	/* Handle graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
