@@ -1035,7 +1035,7 @@ static void mips_fix_CopyB_Proj(mips_transform_env_t* env) {
 	long n = get_Proj_proj(node);
 
 	if(n == pn_CopyB_M_except) {
-		assert(0);
+		panic("Unsupported Proj from CopyB");
 	} else if(n == pn_CopyB_M_regular) {
 		set_Proj_proj(node, pn_Store_M);
 	} else if(n == pn_CopyB_M_except) {

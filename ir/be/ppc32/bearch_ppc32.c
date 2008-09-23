@@ -890,14 +890,14 @@ static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const void
 	(void) self;
 	(void) irn;
 	/* TODO */
-	assert(0);
+	panic("Unimplemented ppc32_get_allowed_execution_units()");
 	return NULL;
 }
 
 static const be_machine_t *ppc32_get_machine(const void *self) {
 	(void) self;
 	/* TODO */
-	assert(0);
+	panic("Unimplemented ppc32_get_machine()");
 	return NULL;
 }
 

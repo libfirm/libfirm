@@ -95,7 +95,7 @@ static FILE *text_open(const char *basename, const char * suffix1, const char *s
 	F = fopen(fname, "w");   /* open file for writing */
 	if (!F) {
 		perror(fname);
-		assert(0);
+		abort();
 	}
 	free(fname);
 

@@ -53,6 +53,7 @@
 #include "array.h"
 #include "firmstat.h"
 #include "xmalloc.h"
+#include "error.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -305,7 +306,7 @@ static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op
 		result = new_rd_Sub(db, irg, block, op1, op2, mode);
 		break;
 	default:
-		assert(0);
+		panic("Unsupported opcode");
 		result = NULL;
 	}
 	return result;
@@ -1117,7 +1118,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			DB((dbg, LEVEL_4, " - %+F", tv_r));
 			break;
 		default:
-			assert(0);
+			panic("Unsupported opcode");
 			tv = tarval_bad;
 		}
 

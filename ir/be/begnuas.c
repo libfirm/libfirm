@@ -1261,7 +1261,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 				dump_compound_init(env, ent);
 				break;
 			default:
-				assert(0);
+				panic("Unimplemented type kind in dump_global()");
 			}
 		}
 	}

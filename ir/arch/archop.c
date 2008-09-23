@@ -41,6 +41,7 @@
 #include "iropt_dbg.h"
 #include "archop.h"
 #include "irop.h"
+#include "error.h"
 
 /* when we need verifying */
 #ifdef NDEBUG
@@ -69,8 +70,7 @@ new_rd_Min(dbg_info *db, ir_graph *irg, ir_node *block,
 	ir_node *res;
 
 	if (! op_Min) {
-		assert(0);
-		return NULL;
+		panic("cannot create Min node, not allowed");
 	}
 
 	in[0] = op1;
@@ -92,8 +92,7 @@ new_rd_Max(dbg_info *db, ir_graph *irg, ir_node *block,
 	ir_node *res;
 
 	if (! op_Max) {
-		assert(0);
-		return NULL;
+		panic("cannot create Max node, not allowed");
 	}
 
 	in[0] = op1;

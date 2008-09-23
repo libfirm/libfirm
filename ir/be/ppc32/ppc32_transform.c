@@ -38,6 +38,7 @@
 #include "iropt_t.h"
 #include "irprintf.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../benode_t.h"
 #include "bearch_ppc32_t.h"
@@ -186,9 +187,7 @@ int is_16bit_signed_const(ir_node *node)
 			return 0;
 		}
 		default:
-			fprintf(stderr, "is_16bit_signed_const(): Mode not supported: %s\n", get_mode_name(get_irn_mode(node)));
-			assert(0);
-			return 0;
+			panic("is_16bit_signed_const(): Mode not supported: %F", get_irn_mode(node));
 	}
 }
 
@@ -221,9 +220,7 @@ int is_16bit_unsigned_const(ir_node *node)
 			return 1;
 		}
 		default:
-			fprintf(stderr, "is_16bit_unsigned_const(): Mode not supported: %s\n", get_mode_name(get_irn_mode(node)));
-			assert(0);
-			return 0;
+			panic("is_16bit_unsigned_const(): Mode not supported: %F", get_irn_mode(node));
 	}
 }
 
@@ -278,9 +275,7 @@ static ir_node *gen_Add(ppc32_transform_env_t *env) {
 			return new_rd_ppc32_Add(env->dbg, env->irg, env->block, op1, op2, env->mode);
 
 		default:
-			fprintf(stderr, "Mode for Add not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Add not supported: %F", env->mode);
 	}
 }
 
@@ -309,9 +304,7 @@ static ir_node *gen_Mul(ppc32_transform_env_t *env) {
 
 		case irm_P:
 		default:
-			fprintf(stderr, "Mode for Mul not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Mul not supported: %F", env->mode);
 	}
 }
 
@@ -340,9 +333,7 @@ static ir_node *gen_Mulh(ppc32_transform_env_t *env) {
 		case irm_F:
 		case irm_P:
 		default:
-			fprintf(stderr, "Mode for Mulh not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Mulh not supported: %F", env->mode);
 	}
 }
 
@@ -410,9 +401,7 @@ static ir_node *gen_Sub(ppc32_transform_env_t *env) {
 			return new_rd_ppc32_Sub(env->dbg, env->irg, env->block, op1, op2, env->mode);
 
 		default:
-			fprintf(stderr, "Mode for Sub not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Sub not supported: %F", env->mode);
 	}
 }
 
@@ -433,9 +422,7 @@ static ir_node *gen_Quot(ppc32_transform_env_t *env) {
 			return new_rd_ppc32_fDivs(env->dbg, env->irg, env->block, op1, op2, env->mode);
 
 		default:
-			fprintf(stderr, "Mode for Quot not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Quot not supported: %F", env->mode);
 	}
 }
 
@@ -461,9 +448,7 @@ static ir_node *gen_Div(ppc32_transform_env_t *env) {
 			return new_rd_ppc32_Divwu(env->dbg, env->irg, env->block, op1, op2, mode_T);
 
 		default:
-			fprintf(stderr, "Mode for Div not supported: %s\n", get_mode_name(get_irn_mode(op1)));
-			assert(0);
-			return NULL;
+			panic("Mode for Div not supported: %F", get_irn_mode(op1));
 	}
 }
 
@@ -517,10 +502,7 @@ static ir_node *gen_DivMod(ppc32_transform_env_t *env) {
 			break;
 
 		default:
-			fprintf(stderr, "Mode for DivMod not supported: %s\n", get_mode_name(res_mode));
-			assert(0);
-			return 0;
-
+			panic("Mode for DivMod not supported: %F", res_mode);
 	}
 
 	if (proj_div == NULL)
@@ -755,9 +737,7 @@ static ir_node *gen_Minus(ppc32_transform_env_t *env) {
 			return new_rd_ppc32_Neg(env->dbg, env->irg, env->block, op, env->mode);
 
 		default:
-			fprintf(stderr, "Mode for Neg not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return NULL;
+			panic("Mode for Neg not supported: %F", env->mode);
 	}
 }
 
@@ -884,11 +864,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 			break;
 	}
 
-	fprintf(stderr, "Mode for Conv not supported: %s -> %s\n",
-		get_mode_name(get_irn_mode(get_irn_n(env->irn,0))),get_mode_name(env->mode));
-	assert(0);
-	return NULL;
-
+	panic("Mode for Conv not supported: %F -> %F", get_irn_mode(op), env->mode);
 #undef SKIP
 }
 
@@ -921,8 +897,7 @@ static ir_node *gen_Abs(ppc32_transform_env_t *env) {
 		default:
 			break;
 	}
-	fprintf(stderr, "Mode for Abs not supported: %s\n", get_mode_name(env->mode));
-	assert(0);
+	panic("Mode for Abs not supported: %F", env->mode);
 	return NULL;
 }
 
@@ -967,11 +942,7 @@ static ir_node *gen_Unknown(ppc32_transform_env_t *env) {
 	else if (mode_is_int(env->mode))
 		return new_rd_ppc32_Unknown(env->dbg, env->irg, env->block, env->mode);
 	else
-	{
-		fprintf(stderr, "Mode %s for unknown value not supported.\n", get_mode_name(env->mode));
-		assert(0);
-		return 0;
-	}
+		panic("Mode %F for unknown value not supported.", env->mode);
 }
 
 static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32_transform_env_t *env) {
@@ -1048,9 +1019,7 @@ static ir_node *gen_Load(ppc32_transform_env_t *env) {
 			break;
 
 		default:
-			fprintf(stderr, "Mode for Load not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return 0;
+			panic("Mode for Load not supported: %F", env->mode);
 	}
 
 	if(tv_const)
@@ -1109,9 +1078,7 @@ static ir_node *gen_Store(ppc32_transform_env_t *env) {
 			break;
 
 		default:
-			fprintf(stderr, "Mode for Store not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return 0;
+			panic("Mode for Store not supported: %F", env->mode);
 	}
 	if(tv_const)
 	{
@@ -1274,9 +1241,7 @@ static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env) {
  * the BAD transformer.
  */
 static ir_node *bad_transform(ppc32_transform_env_t *env) {
-	ir_fprintf(stderr, "Not implemented: %+F\n", env->irn);
-	assert(0);
-	return NULL;
+	panic("Transformation not implemented: %+F\n", env->irn);
 }
 
 /**
@@ -1548,9 +1513,7 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
 		}
 
 		default:
-			fprintf(stderr, "Mode for Const not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return 0;
+			panic("Mode for Const not supported: %F", env->mode);
 	}
 	set_ppc32_constant_tarval(node, tv_const);
 	return node;
@@ -1603,11 +1566,8 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 		}
 
 		default:
-			fprintf(stderr, "Mode for fConst not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return 0;
+			panic("Mode for fConst not supported: %F", env->mode);
 	}
-	assert(0 && "Dead end!");
 }
 
 
@@ -1663,9 +1623,7 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
 		}
 
 		default:
-			fprintf(stderr, "Mode for SymConst not supported: %s\n", get_mode_name(env->mode));
-			assert(0);
-			return 0;
+			panic("Mode for SymConst not supported: %F", env->mode);
 	}
 	return node;
 }

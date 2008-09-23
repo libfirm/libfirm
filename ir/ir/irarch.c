@@ -52,6 +52,7 @@
 #include "ircons.h"
 #include "irarch.h"
 #include "irflag.h"
+#include "error.h"
 
 #undef DEB
 
@@ -467,7 +468,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 	case ZERO:
 		return inst->irn = new_r_Const(current_ir_graph, env->blk, env->mode, get_mode_null(env->mode));
 	default:
-		assert(0);
+		panic("Unsupported instruction kind");
 		return NULL;
 	}
 }
@@ -507,10 +508,8 @@ static int evaluate_insn(mul_env *env, instruction *inst) {
 	case ZERO:
 		inst->costs = costs = env->evaluate(inst->kind, NULL);
 		return costs;
-	default:
-		assert(0);
-		return 0;
 	}
+	panic("Unsupported instruction kind");
 }
 
 /**

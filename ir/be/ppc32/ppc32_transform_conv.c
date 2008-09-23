@@ -37,6 +37,7 @@
 #include "ircons.h"
 #include "iropt_t.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../benode_t.h"
 #include "bearch_ppc32_t.h"
@@ -173,11 +174,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 		default:
 			break;
 	}
-	fprintf(stderr, "Mode for Conv not supported: %s -> %s\n", get_mode_name(from_mode), get_mode_name(to_mode));
-	assert(0);
-	return 0;
-
-	// return op;
+	panic("Mode for Conv not supported: %F -> %F", from_mode, to_mode);
 }
 
 int search_from_node_in_block(ir_node *from, ir_node *to)

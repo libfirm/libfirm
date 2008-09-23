@@ -385,7 +385,7 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
 		*resL = new_Const_long(mode_Is, v);
 	} else if (is_Load(skip_Proj(arg))) {
 		/* FIXME: handling of low/high depends on LE/BE here */
-		assert(0);
+		panic("Unimplemented convert_dbl_to_int() case");
 	}
 	else {
 		ir_graph *irg = current_ir_graph;
@@ -427,8 +427,7 @@ static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
 
 		load = skip_Proj(arg);
 	}
-	assert(0);
-	return NULL;
+	panic("Unimplemented convert_sng_to_int() case");
 }
 
 /**
@@ -1142,15 +1141,13 @@ static const be_execution_unit_t ***arm_get_allowed_execution_units(const void *
 	(void) self;
 	(void) irn;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("Unimplemented arm_get_allowed_execution_units()");
 }
 
 static const be_machine_t *arm_get_machine(const void *self) {
 	(void) self;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("Unimplemented arm_get_machine()");
 }
 
 /**

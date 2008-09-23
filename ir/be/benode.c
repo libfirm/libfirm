@@ -42,6 +42,7 @@
 #include "offset.h"
 #include "bitfiddle.h"
 #include "raw_bitset.h"
+#include "error.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"
@@ -1421,14 +1422,14 @@ static void phi_set_frame_entity(ir_node *irn, ir_entity *ent)
 {
 	(void) irn;
 	(void) ent;
-	assert(0);
+	panic("phi_set_frame_entity() should not be called");
 }
 
 static void phi_set_frame_offset(ir_node *irn, int bias)
 {
 	(void) irn;
 	(void) bias;
-	assert(0);
+	panic("phi_set_frame_offset() should not be called");
 }
 
 static int phi_get_sp_bias(const ir_node *irn)

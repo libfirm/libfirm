@@ -45,8 +45,8 @@
 #include "tv_t.h"
 #include "irdump.h"
 #include "irgraph_t.h"
-
 #include "callgraph.h"
+#include "error.h"
 
 /**
  * An interval initializer.
@@ -109,8 +109,8 @@ static INLINE void insert_entity_in_owner(ir_entity *ent) {
 	case tpo_array:
 		set_array_element_entity(owner, ent);
 		break;
-	default: assert(0);
 	}
+	panic("Unsupported type kind");
 }  /* insert_entity_in_owner */
 
 /**

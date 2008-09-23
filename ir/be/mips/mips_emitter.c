@@ -160,7 +160,7 @@ static const char *get_symconst_str(ir_node *node)
 		id = get_entity_ident(get_SymConst_entity(node));
 		return get_id_str(id);
 	default:
-		assert(0);
+		panic("Unsupported SymConst kind");
 	}
 
 	return NULL;

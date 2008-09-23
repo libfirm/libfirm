@@ -460,8 +460,7 @@ static void dump_to_file(be_raext_env_t *raenv, char *filename) {
 
 	if (!(f = fopen(filename, "wt"))) {
 		fprintf(stderr, "Could not open file %s for writing\n", filename);
-		assert(0);
-		exit(0xdeadbeef);
+		abort();
 	}
 	raenv->f = f;
 
@@ -630,8 +629,7 @@ static int read_and_apply_results(be_raext_env_t *raenv, char *filename) {
 
 	if (!(f = fopen(filename, "rt"))) {
 		fprintf(stderr, "Could not open file %s for reading\n", filename);
-		assert(0);
-		exit(0xdeadbeef);
+		abort();
 	}
 	raenv->f = f;
 

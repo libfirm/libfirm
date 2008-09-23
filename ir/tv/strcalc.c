@@ -41,6 +41,7 @@
 
 #include "strcalc.h"
 #include "xmalloc.h"
+#include "error.h"
 
 /*
  * local definitions and macros
@@ -1455,9 +1456,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		break;
 
 	default:
-		printf("%i\n", base);
-		assert(0);
-		return NULL;
+		panic("Unsupported base %d", base);
 	}
 	return pos;
 }

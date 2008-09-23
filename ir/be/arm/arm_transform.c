@@ -1323,8 +1323,7 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	default:
 		break;
 	}
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("Unsupported Proj from Load");
 }
 
 /**
@@ -1348,8 +1347,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 	default:
 		break;
 	}
-	assert(0);
-	return new_rd_Unknown(irg, mode);
+	panic("Unsupported Proj from CopyB");
 }
 
 /**
@@ -1390,8 +1388,7 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	default:
 		break;
 	}
-	assert(0);
-	return new_rd_Unknown(irg, mode);
+	panic("Unsupported Proj from Quot");
 }
 
 /**
@@ -1416,9 +1413,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	} else if (proj == pn_be_AddSP_M) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSPandCopy_M);
 	}
-
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("Unsupported Proj from AddSP");
 }
 
 /**
@@ -1440,9 +1435,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	} else if (proj == pn_be_SubSP_M) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_AddSP_M);
 	}
-
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("Unsupported Proj from SubSP");
 }
 
 /**
@@ -1478,8 +1471,7 @@ static ir_node *gen_Proj(ir_node *node) {
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
-			assert(0);
-			return new_r_Bad(irg);
+			panic("Unsupported Proj from Store");
 		}
 	} else if (is_Load(pred)) {
 		return gen_Proj_Load(node);

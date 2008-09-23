@@ -127,10 +127,9 @@ static void _fail_verify(tarval *tv, const char* file, int line)
 {
 	/* print a memory image of the tarval and throw an assertion */
 	if (tv)
-		printf("%s:%d: Invalid tarval:\n  mode: %s\n value: [%p]\n", file, line, get_mode_name(tv->mode), tv->value);
+		panic("%s:%d: Invalid tarval: mode: %F\n value: [%p]", file, line, tv->mode, tv->value);
 	else
-		printf("%s:%d: Invalid tarval (null)", file, line);
-	assert(0);
+		panic("%s:%d: Invalid tarval (null)", file, line);
 }
 #ifdef __GNUC__
 INLINE static void tarval_verify(tarval *tv) __attribute__ ((unused));
@@ -335,8 +334,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		break;
+		panic("Unsupported tarval creation with mode %F", mode);
 
 	case irms_internal_boolean:
 		/* match [tT][rR][uU][eE]|[fF][aA][lL][sS][eE] */
@@ -359,9 +357,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		sc_val_from_str(str, len, NULL, mode);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
 	}
-
-	assert(0);  /* can't be reached, can it? */
-	return NULL;
+	panic("Unsupported tarval creation with mode %F", mode);
 }
 
 /*
@@ -492,8 +488,7 @@ tarval *get_tarval_max(ir_mode *mode) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		break;
+		panic("mode %F does not support maximum value", mode);
 
 	case irms_internal_boolean:
 		return tarval_b_true;
@@ -524,8 +519,7 @@ tarval *get_tarval_min(ir_mode *mode) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		break;
+		panic("mode %F does not support minimum value", mode);
 
 	case irms_internal_boolean:
 		return tarval_b_false;
@@ -558,8 +552,7 @@ tarval *get_tarval_null(ir_mode *mode) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		break;
+		panic("mode %F does not support null value", mode);
 
 	case irms_float_number:
 		return new_tarval_from_double(0.0, mode);
@@ -577,18 +570,14 @@ tarval *get_tarval_null(ir_mode *mode) {
 tarval *get_tarval_one(ir_mode *mode) {
 	assert(mode);
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		assert(0);
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		break;
+		panic("mode %F does not support one value", mode);
 
 	case irms_internal_boolean:
 		return tarval_b_true;
@@ -606,18 +595,14 @@ tarval *get_tarval_one(ir_mode *mode) {
 tarval *get_tarval_all_one(ir_mode *mode) {
 	assert(mode);
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		assert(0);
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
-		assert(0);
-		return tarval_bad;
+		panic("mode %F does not support all-one value", mode);
 
 	case irms_int_number:
 	case irms_internal_boolean:
@@ -642,18 +627,15 @@ int tarval_is_constant(tarval *tv) {
 tarval *get_tarval_minus_one(ir_mode *mode) {
 	assert(mode);
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
 	case irms_auxiliary:
 	case irms_internal_boolean:
-		assert(0);
-		break;
+		panic("mode %F does not support minus one value", mode);
 
 	case irms_reference:
 		return tarval_bad;
@@ -671,58 +653,46 @@ tarval *get_tarval_nan(ir_mode *mode) {
 	const ieee_descriptor_t *desc;
 
 	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	if (get_mode_sort(mode) == irms_float_number) {
 		desc = get_descriptor(mode);
 		fc_get_qnan(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-	} else {
-		assert(0 && "tarval is not floating point");
-		return tarval_bad;
-	}
+	} else
+		panic("mode %F does not support NaN value", mode);
 }
 
 tarval *get_tarval_plus_inf(ir_mode *mode) {
 	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	if (get_mode_sort(mode) == irms_float_number) {
 		const ieee_descriptor_t *desc = get_descriptor(mode);
 		fc_get_plusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-	} else {
-		assert(0 && "tarval is not floating point");
-		return tarval_bad;
-	}
+	} else
+		panic("mode %F does not support +inf value", mode);
 }
 
 tarval *get_tarval_minus_inf(ir_mode *mode) {
 	assert(mode);
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
+	if (get_mode_n_vector_elems(mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	if (get_mode_sort(mode) == irms_float_number) {
 		const ieee_descriptor_t *desc = get_descriptor(mode);
 		fc_get_minusinf(desc, NULL);
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
-	} else {
-		assert(0 && "tarval is not floating point");
-		return tarval_bad;
-	}
+	} else
+		panic("mode %F does not support -inf value", mode);
 }
 
 /*
- * Arithmethic operations on tarvals ========================================
+ * Arithmetic operations on tarvals ========================================
  */
 
 /*
@@ -731,11 +701,8 @@ tarval *get_tarval_minus_inf(ir_mode *mode) {
 int tarval_is_negative(tarval *a) {
 	assert(a);
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		assert(0 && "tarval_is_negative is not allowed for vector modes");
-		return 0;
-	}
+	if (get_mode_n_vector_elems(a->mode) > 1)
+		panic("vector arithmetic not implemented yet");
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
@@ -747,8 +714,7 @@ int tarval_is_negative(tarval *a) {
 		return fc_is_negative(a->value);
 
 	default:
-		assert(0 && "not implemented");
-		return 0;
+		panic("mode %F does not support negation value", a->mode);
 	}
 }
 
@@ -793,7 +759,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b) {
 	assert(b);
 
 	if (a == tarval_bad || b == tarval_bad) {
-		assert(0 && "Comparison with tarval_bad");
+		panic("Comparison with tarval_bad");
 		return pn_Cmp_False;
 	}
 

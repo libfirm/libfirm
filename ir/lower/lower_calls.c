@@ -42,6 +42,7 @@
 #include "array.h"
 #include "pmap.h"
 #include "xmalloc.h"
+#include "error.h"
 
 /** A type map for def_find_pointer_type. */
 static pmap *type_map;
@@ -124,7 +125,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 
 				if (n_regs > 0) {
 					/* this compound will be returned solely in registers */
-					assert(0);
+					panic("Returning compounds in registers not yet implemented");
 				}
 				else {
 					/* this compound will be allocated on callers stack and its

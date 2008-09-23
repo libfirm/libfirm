@@ -951,16 +951,14 @@ static const be_execution_unit_t ***mips_get_allowed_execution_units(
 	(void) self;
 	(void) irn;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("Unimplemented mips_get_allowed_execution_units()");
 }
 
 static const be_machine_t *mips_get_machine(const void *self)
 {
 	(void) self;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("Unimplemented mips_get_machine()");
 }
 
 /**

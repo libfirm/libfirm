@@ -63,6 +63,7 @@
 #include "irdump.h"
 #include "iredges_t.h"
 #include "debug.h"
+#include "error.h"
 
 #ifdef _WIN32
 /* Break into the debugger. The Win32 way. */
@@ -435,8 +436,8 @@ static const char *reason_str(bp_reasons_t reason)
 	case BP_ON_REMIRG:   return "removing IRG";
 	case BP_ON_NEW_ENT:  return "entity creation";
 	case BP_ON_NEW_TYPE: return "type creation";
-	default:             assert(0);
 	}
+	panic("unsupported reason");
 	return "unknown";
 }  /* reason_str */
 
