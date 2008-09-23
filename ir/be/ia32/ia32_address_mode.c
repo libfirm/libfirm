@@ -441,7 +441,7 @@ static int value_last_used_here(ir_node *here, ir_node *value)
 
 /**
  * Walker: mark those nodes that cannot be part of an address mode because
- * there value must be access through an register
+ * their value must be accessed through a register
  */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
