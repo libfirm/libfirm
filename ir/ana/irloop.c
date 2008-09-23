@@ -45,6 +45,7 @@ void add_loop_son(ir_loop *loop, ir_loop *son) {
 	lson.son = son;
 	ARR_APP1(loop_element, loop->children, lson);
 	++loop->n_sons;
+	loop->flags |= loop_outer_loop;
 }
 
 void add_loop_node(ir_loop *loop, ir_node *n) {

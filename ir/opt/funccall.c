@@ -38,6 +38,7 @@
 #include "irvrfy.h"
 #include "dbginfo_t.h"
 #include "irflag_t.h"
+#include "irloop_t.h"
 #include "ircons.h"
 #include "iredges_t.h"
 #include "analyze_irg_args.h"
@@ -52,10 +53,11 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 typedef struct _env_t {
 	unsigned n_calls_SymConst;
 	unsigned n_calls_Sel;
-	ir_node  *const_call_list;       /**< The list of all const function calls that will be changed. */
-	ir_node  *pure_call_list;        /**< The list of all pure function calls that will be changed. */
-	ir_node  *nothrow_call_list;     /**< The list of all nothrow function calls that will be changed. */
-	ir_node  *proj_list;             /**< The list of all potential Proj nodes that must be fixed. */
+	ir_node  *float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
+	ir_node  *nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
+	ir_node  *pure_call_list;           /**< The list of all pure function calls that will be changed. */
+	ir_node  *nothrow_call_list;        /**< The list of all nothrow function calls that will be changed. */
+	ir_node  *proj_list;                /**< The list of all potential Proj nodes that must be fixed. */
 } env_t;
 
 /** If non-null, evaluates entities for being a heap alloc. */
@@ -79,10 +81,10 @@ static unsigned *busy_set;
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
 static void collect_const_and_pure_calls(ir_node *node, void *env) {
-	env_t *ctx = env;
-	ir_node *call, *ptr;
+	env_t     *ctx = env;
+	ir_node   *call, *ptr;
 	ir_entity *ent;
-	unsigned prop;
+	unsigned  and_prop, or_prop, prop;
 
 	if (is_Call(node)) {
 		call = node;
@@ -110,17 +112,21 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
 			}
 
 			/* note that const function are a subset of pure ones */
-			prop = mtp_property_const | mtp_property_pure;
+			and_prop = mtp_property_const | mtp_property_pure;
+			or_prop  = 0;
 			for (i = 0; i < n_callees; ++i) {
 				ent = get_Call_callee(call, i);
 				if (ent == unknown_entity) {
 					/* we don't know which entity is called here */
 					return;
 				}
-				prop &= get_entity_additional_properties(ent);
-				if (prop == mtp_no_property)
+				prop      = get_entity_additional_properties(ent);
+				and_prop &= prop;
+				or_prop  &= prop;
+				if (and_prop == mtp_no_property)
 					return;
 			}
+			prop = and_prop | (or_prop & mtp_property_has_loop);
 			++ctx->n_calls_Sel;
 		} else
 			return;
@@ -130,8 +136,13 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
 			set_irn_link(call, ctx->pure_call_list);
 			ctx->pure_call_list = call;
 		} else {
-			set_irn_link(call, ctx->const_call_list);
-			ctx->const_call_list = call;
+			if (prop & mtp_property_has_loop) {
+				set_irn_link(call, ctx->nonfloat_const_call_list);
+				ctx->nonfloat_const_call_list = call;
+			} else {
+				set_irn_link(call, ctx->float_const_call_list);
+				ctx->float_const_call_list = call;
+			}
 		}
 	} else if (is_Proj(node)) {
 		/*
@@ -160,20 +171,20 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
 /**
  * Fix the list of collected Calls.
  *
- * @param irg        the graph that contained calls to pure functions
- * @param call_list  the list of all call sites of const functions
- * @param proj_list  the list of all memory/exception Proj's of this call sites
+ * @param irg  the graph that contained calls to pure functions
+ * @param ctx  context
  */
-static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
+static void fix_const_call_lists(ir_graph *irg, env_t *ctx) {
 	ir_node *call, *next, *mem, *proj;
 	int exc_changed = 0;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
 
-	/* First step: fix all calls by removing their memory input.
+	/* First step: fix all calls by removing their memory input and let
+	 * them floating.
 	 * The original memory input is preserved in their link fields. */
-	for (call = call_list; call; call = next) {
+	for (call = ctx->float_const_call_list; call != NULL; call = next) {
 		next = get_irn_link(call);
 		mem  = get_Call_mem(call);
 
@@ -200,8 +211,8 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 		hook_func_call(irg, call);
 	}
 
-	/* Second step: fix all Proj's */
-	for (proj = proj_list; proj; proj = next) {
+	/* Last step: fix all Proj's */
+	for (proj = ctx->proj_list; proj != NULL; proj = next) {
 		next = get_irn_link(proj);
 		call = get_Proj_pred(proj);
 		mem  = get_irn_link(call);
@@ -623,13 +634,14 @@ static void handle_const_Calls(env_t *ctx) {
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg  = get_irp_irg(i);
 
-		ctx->const_call_list = NULL;
-		ctx->pure_call_list  = NULL;
-		ctx->proj_list = NULL;
+		ctx->float_const_call_list    = NULL;
+		ctx->nonfloat_const_call_list = NULL;
+		ctx->pure_call_list           = NULL;
+		ctx->proj_list                = NULL;
 		irg_walk_graph(irg, NULL, collect_const_and_pure_calls, ctx);
 
-		if (ctx->const_call_list) {
-			fix_const_call_list(irg, ctx->const_call_list, ctx->proj_list);
+		if (ctx->float_const_call_list != NULL) {
+			fix_const_call_lists(irg, ctx);
 
 			/* this graph was changed, invalidate analysis info */
 			set_irg_outs_inconsistent(irg);
@@ -972,6 +984,19 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 	return curr_prop;
 }  /* check_nothrow_or_malloc */
 
+/**
+ * When a function was detected as "const", it might be moved out of loops.
+ * This might be dangerous if the graph might contain endless loops.
+ */
+static void check_for_possible_endless_loops(ir_graph *irg) {
+	ir_loop *root_loop;
+	assure_cf_loop(irg);
+
+	root_loop = get_irg_loop(irg);
+	if (root_loop->flags & loop_outer_loop)
+		set_irg_additional_property(irg, mtp_property_has_loop);
+}
+
 /*
  * optimize function calls by handling const functions
  */
@@ -1030,6 +1055,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 		if (prop & mtp_property_const) {
 			++num_const;
 			DB((dbg, LEVEL_2, "%+F has the const property\n", irg));
+			check_for_possible_endless_loops(irg);
 		} else if (prop & mtp_property_pure) {
 			++num_pure;
 			DB((dbg, LEVEL_2, "%+F has the pure property\n", irg));

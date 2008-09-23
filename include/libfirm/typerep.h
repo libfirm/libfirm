@@ -150,6 +150,7 @@ typedef enum {
 	mtp_property_runtime   = 0x00000100, /**< This method represents a runtime routine. */
 	mtp_property_private   = 0x00000200, /**< All method invocations are known, the backend is free to
 	                                       optimize the call in any possible way. */
+	mtp_property_has_loop  = 0x00000400, /**< Set, if this method contains one possible endless loop. */
 	mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
 	                                       inherited from type. */
 } mtp_additional_property;

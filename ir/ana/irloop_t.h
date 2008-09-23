@@ -43,7 +43,8 @@ typedef enum loop_flags {
 	loop_wrap_around   = 0x00000010,  /**< this loop is NOT endless, because of wrap around */
 	loop_end_false     = 0x00000020,  /**< this loop end can't be computed "from compute_loop_info.c" */
 	do_loop            = 0x00000040,  /**< this is a do loop */
-	once               = 0x00000080,  /**< this is a do loop, with a false condition.It itarate once */
+	once               = 0x00000080,  /**< this is a do loop, with a false condition. It iterate exactly once. */
+	loop_outer_loop    = 0x00000100   /**< id set, this loop has child loops (is a no leaf). */
 } loop_flags_t;
 
 /**
