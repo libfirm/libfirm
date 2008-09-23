@@ -195,8 +195,8 @@ static void fix_const_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj
 		 * observable states...
 		 */
 
-		/* finally, this call can float
-		set_irn_pinned(call, op_pin_state_floats); */
+		/* finally, this call can float */
+		set_irn_pinned(call, op_pin_state_floats);
 		hook_func_call(irg, call);
 	}
 
