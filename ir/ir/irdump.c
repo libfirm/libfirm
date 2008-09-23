@@ -328,6 +328,7 @@ static void init_colors(void)
 	custom_color(ird_color_phi,                   "105 255 105");
 	custom_color(ird_color_anchor,                "100 100 255");
 	named_color(ird_color_error,                  "red");
+	custom_color(ird_color_entity,                "204 204 255");
 
 	initialized = 1;
 }
@@ -376,7 +377,7 @@ static void print_type_ent_edge(FILE *F, ir_type *T, ir_entity *E, const char *f
  * Prints the edge from an entity E to an entity T with additional info fmt, ...
  * to the file F.
  */
-static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge, const char *fmt, ...)
+static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge, ird_color_t color, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -388,6 +389,9 @@ static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge
 	PRINT_ENTID(E);
 	fprintf(F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
+	fprintf(F, " ");
+	if (color != (ird_color_t) -1)
+		print_vcg_color(F, color);
 	fprintf(F, "}\n");
 	va_end(ap);
 }
@@ -2001,17 +2005,15 @@ int dump_type_node(FILE *F, ir_type *tp)
 }
 
 
-void dump_entity_node(FILE *F, ir_entity *ent, int color)
+void dump_entity_node(FILE *F, ir_entity *ent)
 {
 	fprintf(F, "node: {title: \"");
 	PRINT_ENTID(ent); fprintf(F, "\"");
 	fprintf(F, DEFAULT_TYPE_ATTRIBUTE);
 	fprintf(F, "label: ");
-	fprintf(F, "\"ent %s\" ", get_ent_dump_name(ent));
-	if (color)
-		fprintf(F, "color:%d", color);
-	else
-		fprintf(F, ENTITY_NODE_ATTR);
+	fprintf(F, "\"%s\" ", get_ent_dump_name(ent));
+
+	print_vcg_color(F, ird_color_entity);
 	fprintf(F, "\n info1: \"");
 
 	dump_entity_to_file(F, ent, dump_verbosity_entattrs | dump_verbosity_entconsts);
@@ -2053,7 +2055,7 @@ dump_type_info(type_or_ent tore, void *env) {
 		ir_entity *ent = tore.ent;
 		ir_node *value;
 		/* The node */
-		dump_entity_node(F, ent, 0);
+		dump_entity_node(F, ent);
 		/* The Edges */
 		/* skip this to reduce graph.  Member edge of type is parallel to this edge. *
 		fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
@@ -2061,7 +2063,7 @@ dump_type_info(type_or_ent tore, void *env) {
 		print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
 		if (is_Class_type(get_entity_owner(ent))) {
 			for(i = 0; i < get_entity_n_overwrites(ent); i++)
-				print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, ENT_OVERWRITES_EDGE_ATTR);
+				print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, -1, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		/* attached subgraphs */
 		if (const_entities && (get_entity_variability(ent) != variability_uninitialized)) {
@@ -2079,7 +2081,7 @@ dump_type_info(type_or_ent tore, void *env) {
 					if (value) {
 						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
 						dump_const_expression(F, value);
-						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, ENT_CORR_EDGE_ATTR, i);
+						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
 						/*
 						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
@@ -2173,11 +2175,11 @@ dump_class_hierarchy_node(type_or_ent tore, void *ctx) {
 			break;  /* GL */
 		if (env->dump_ent && is_Class_type(get_entity_owner(ent))) {
 			/* The node */
-			dump_entity_node(F, ent, 0);
+			dump_entity_node(F, ent);
 			/* The edges */
 			print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
 			for(i = 0; i < get_entity_n_overwrites(ent); i++)
-				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, ENT_OVERWRITES_EDGE_ATTR);
+				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, -1, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		break;
 	}
@@ -2831,7 +2833,6 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix) {
 	}
 }
 
-#ifdef INTERPROCEDURAL_VIEW
 void dump_callgraph(const char *suffix) {
 	FILE *F = vcg_open_name("Callgraph", suffix);
 
@@ -2839,29 +2840,24 @@ void dump_callgraph(const char *suffix) {
 		int i, rem = edge_label;
 		//int colorize;
 		edge_label = 1;
-		dump_vcg_header(F, "Callgraph", NULL);
-
-		//colorize = get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent;
+		dump_vcg_header(F, "Callgraph", "Hierarchiv", NULL);
 
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 			ir_graph *irg = get_irp_irg(i);
 			ir_entity *ent = get_irg_entity(irg);
 			int j;
-			//int n_callees = get_irg_n_callees(irg);
-			int color;
+			int n_callees = get_irg_n_callees(irg);
 
-			//color = colorize ? get_entity_color(ent) : ird_color_green;
-			color = ird_color_green;
-			dump_entity_node(F, ent, color);
+			dump_entity_node(F, ent);
 			for (j = 0; j < n_callees; ++j) {
 				ir_entity *c = get_irg_entity(get_irg_callee(irg, j));
 				//if (id_is_prefix(prefix, get_entity_ld_ident(c))) continue;
 				int be = is_irg_callee_backedge(irg, j);
 				char *attr;
 				attr = (be) ?
-					"label:\"recursion %d\" color:%d" :
-				"label:\"calls %d\" color:%d";
-				print_ent_ent_edge(F, ent, c, be, attr, get_irg_callee_loop_depth(irg, j), color);
+					"label:\"recursion %d\"" :
+				"label:\"calls %d\"";
+				print_ent_ent_edge(F, ent, c, be, ird_color_entity, attr, get_irg_callee_loop_depth(irg, j));
 			}
 		}
 
@@ -2871,6 +2867,7 @@ void dump_callgraph(const char *suffix) {
 	}
 }
 
+#if 0
 /* Dump all irgs in interprocedural view to a single file. */
 void dump_all_cg_block_graph(const char *suffix) {
 	FILE *f = vcg_open_name("All_graphs", suffix);

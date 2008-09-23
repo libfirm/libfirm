@@ -62,6 +62,7 @@ typedef enum ird_color_t {
 	ird_color_proj,
 	ird_color_uses_memory,
 	ird_color_error,
+	ird_color_entity,
 	ird_color_count
 } ird_color_t;
 
