@@ -1964,11 +1964,13 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	}
 
 	callee_env = get_irg_link(callee);
-	if (get_entity_visibility(ent) == visibility_local &&
-	    callee_env->n_callers_orig == 1 &&
-	    callee != current_ir_graph) {
+	if (callee_env->n_callers == 1 && callee != current_ir_graph) {
 		/* we are the only caller, give big bonus */
-		weight += 5000;
+		if (get_entity_visibility(ent) == visibility_local) {
+			weight += 5000;
+		} else {
+			weight += 200;
+		}
 	}
 
 	/* do not inline big functions */
@@ -2018,19 +2020,20 @@ static void callgraph_walker(ir_graph *irg, void *data)
 
 static ir_graph **create_irg_list(void)
 {
-	ir_entity **roots;
+	ir_entity **free_methods;
 	int       arr_len;
 	int       n_irgs = get_irp_n_irgs();
 
-	cgana(&arr_len, &roots);
+	cgana(&arr_len, &free_methods);
+	xfree(free_methods);
+
 	compute_callgraph();
 
 	last_irg = 0;
 	irgs     = xmalloc(n_irgs * sizeof(*irgs));
 	memset(irgs, 0, sizeof(n_irgs * sizeof(*irgs)));
 
-	callgraph_walk(roots, arr_len, NULL, callgraph_walker, NULL);
-	xfree(roots);
+	callgraph_walk(NULL, callgraph_walker, NULL);
 	assert(n_irgs == last_irg);
 
 	return irgs;

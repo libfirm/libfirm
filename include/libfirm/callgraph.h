@@ -126,8 +126,8 @@ typedef void callgraph_walk_func(ir_graph *g, void *env);
  * @param post - walker function, executed after the predecessor of a node are visited
  * @param env  - environment, passed to pre and post
  */
-void callgraph_walk(ir_entity **roots, unsigned n_roots,
-		callgraph_walk_func *pre, callgraph_walk_func *post, void *env);
+void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post,
+                    void *env);
 
 /**
  * Compute the backedges that represent recursions and a looptree.
