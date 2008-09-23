@@ -193,6 +193,10 @@ static void collect_irg_calls(ir_node *call, void *env) {
 		if (get_entity_visibility(callee) == visibility_external_allocated)
 			return;
 
+		/* we cannot clone calls to weak functions */
+		if (get_entity_additional_properties(callee) & mtp_property_weak)
+			return;
+
 		process_call(call, callee, hmap);
 	}
 }

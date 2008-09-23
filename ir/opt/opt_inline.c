@@ -1327,10 +1327,18 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	if (env.head != NULL) {
 		/* There are calls to inline */
 		collect_phiprojs(irg);
+
 		for (entry = env.head; entry != NULL; entry = entry->next) {
-			ir_graph *callee = entry->callee;
-			if (((_obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst)) < size) ||
-			    (get_irg_inline_property(callee) >= irg_inline_forced)) {
+			ir_graph            *callee = entry->callee;
+			irg_inline_property prop    = get_irg_inline_property(callee);
+
+			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
+				/* do not inline forbidden / weak graphs */
+				continue;
+			}
+
+			if (prop >= irg_inline_forced ||
+			    _obstack_memory_used(callee->obst) - (int)obstack_room(callee->obst) < size) {
 				inline_method(entry->call, callee);
 			}
 		}
@@ -1603,15 +1611,23 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 
 			tail = NULL;
 			for (entry = env->call_head; entry != NULL; entry = entry->next) {
-				ir_graph *callee;
+				ir_graph            *callee;
+				irg_inline_property prop;
 
-				if (env->n_nodes > maxsize) break;
+				if (env->n_nodes > maxsize)
+					break;
 
 				call   = entry->call;
 				callee = entry->callee;
 
+				prop = get_irg_inline_property(callee);
+				if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
+					/* do not inline forbidden / weak graphs */
+					continue;
+				}
+
 				if (is_leave(callee) && (
-				    is_smaller(callee, leavesize) || (get_irg_inline_property(callee) >= irg_inline_forced))) {
+				    is_smaller(callee, leavesize) || prop >= irg_inline_forced)) {
 					if (!phiproj_computed) {
 						phiproj_computed = 1;
 						collect_phiprojs(current_ir_graph);
@@ -1655,11 +1671,18 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 		/* note that the list of possible calls is updated during the process */
 		tail = NULL;
 		for (entry = env->call_head; entry != NULL; entry = entry->next) {
-			ir_graph   *callee;
-			pmap_entry *e;
+			irg_inline_property prop;
+			ir_graph            *callee;
+			pmap_entry          *e;
 
 			call   = entry->call;
 			callee = entry->callee;
+
+			prop = get_irg_inline_property(callee);
+			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
+				/* do not inline forbidden / weak graphs */
+				continue;
+			}
 
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
@@ -1670,8 +1693,8 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
 				callee = e->value;
 			}
 
-			if (((is_smaller(callee, size) && (env->n_nodes < maxsize)) ||    /* small function */
-				(get_irg_inline_property(callee) >= irg_inline_forced))) {
+			if (prop >= irg_inline_forced ||
+			    (is_smaller(callee, size) && env->n_nodes < maxsize) /* small function */) {
 				if (current_ir_graph == callee) {
 					/*
 					 * Recursive call: we cannot directly inline because we cannot walk
@@ -1915,8 +1938,8 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 
 	inline_irg_env *curr_env, *callee_env;
 
-	if (get_entity_additional_properties(ent) & mtp_property_noreturn) {
-		/* do NOT inline noreturn calls */
+	if (get_entity_additional_properties(ent) & mtp_property_noreturn|mtp_property_weak) {
+		/* do NOT inline noreturn or weak calls */
 		return INT_MIN;
 	}
 
@@ -2074,7 +2097,6 @@ void inline_functions(int maxsize, int inline_threshold) {
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = irgs[i];
 
-		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
 		wenv.x         = get_irg_link(irg);
@@ -2095,15 +2117,22 @@ void inline_functions(int maxsize, int inline_threshold) {
 		/* note that the list of possible calls is updated during the process */
 		last_call = &env->call_head;
 		for (curr_call = env->call_head; curr_call != NULL;) {
-			ir_graph   *callee;
-			pmap_entry *e;
-			int        benefice;
-			unsigned   local_adr;
+			irg_inline_property prop;
+			ir_graph            *callee;
+			pmap_entry          *e;
+			int                 benefice;
+			unsigned            local_adr;
 
 			if (env->n_nodes > maxsize) break;
 
 			call   = curr_call->call;
 			callee = curr_call->callee;
+
+			prop = get_irg_inline_property(callee);
+			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
+				/* do not inline forbidden / weak graphs */
+				continue;
+			}
 
 			e = pmap_find(copied_graphs, callee);
 			if (e != NULL) {
@@ -2119,8 +2148,7 @@ void inline_functions(int maxsize, int inline_threshold) {
 			benefice = calc_inline_benefice(call, callee, &local_adr);
 			DB((dbg, LEVEL_2, "In %+F Call %+F has benefice %d\n", irg, callee, benefice));
 
-			if (benefice > -inline_threshold ||
-				(get_irg_inline_property(callee) >= irg_inline_forced)) {
+			if (benefice > -inline_threshold || prop >= irg_inline_forced) {
 				if (current_ir_graph == callee) {
 					/*
 					 * Recursive call: we cannot directly inline because we cannot walk

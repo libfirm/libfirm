@@ -143,10 +143,12 @@ typedef enum {
 	                                       GCC: __attribute__((naked)). */
 	mtp_property_malloc    = 0x00000020, /**< This method returns newly allocate memory.
 	                                       GCC: __attribute__((malloc)). */
-	mtp_property_intrinsic = 0x00000040, /**< This method is intrinsic. It is expected that
+	mtp_property_weak      = 0x00000040, /**< This method is weak. It is expected that
+	                                       GCC: __attribute__((weak)). */
+	mtp_property_intrinsic = 0x00000080, /**< This method is intrinsic. It is expected that
 	                                       a lowering phase will remove all calls to it. */
-	mtp_property_runtime   = 0x00000080, /**< This method represents a runtime routine. */
-	mtp_property_private   = 0x00000100, /**< All method invocations are known, the backend is free to
+	mtp_property_runtime   = 0x00000100, /**< This method represents a runtime routine. */
+	mtp_property_private   = 0x00000200, /**< All method invocations are known, the backend is free to
 	                                       optimize the call in any possible way. */
 	mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
 	                                       inherited from type. */

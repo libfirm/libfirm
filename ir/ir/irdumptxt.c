@@ -702,6 +702,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				if (mask & mtp_property_noreturn) fprintf(F, "noreturn_function, ");
 				if (mask & mtp_property_nothrow)  fprintf(F, "nothrow_function, ");
 				if (mask & mtp_property_naked)    fprintf(F, "naked_function, ");
+				if (mask & mtp_property_weak)     fprintf(F, "weak_function, ");
 			}
 			fprintf(F, "\n%s  calling convention: ", prefix);
 			if (cc & cc_reg_param) fprintf(F, "regparam, ");
