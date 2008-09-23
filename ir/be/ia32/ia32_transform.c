@@ -4144,8 +4144,7 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, 1);
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("No idea how to transform proj");
 }
 
 /**
