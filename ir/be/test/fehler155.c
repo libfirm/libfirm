@@ -1,6 +1,6 @@
 struct {
 	int x;
-	int lets[];
+	int lets[3008];
 } glob;
 
 int x = 42;
