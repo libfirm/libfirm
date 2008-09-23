@@ -388,7 +388,7 @@ static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func
 
 void callgraph_walk(ir_entity **roots, unsigned n_roots,
 		callgraph_walk_func *pre, callgraph_walk_func *post, void *env) {
-	//int i, n_irgs = get_irp_n_irgs();
+	int i, n_irgs = get_irp_n_irgs();
 	unsigned r;
 	++master_cg_visited;
 
@@ -400,18 +400,15 @@ void callgraph_walk(ir_entity **roots, unsigned n_roots,
 		do_walk(irg, pre, post, env);
 	}
 
-#if 0
-	for (i = 0; i < n_irgs; i++) {
-		ir_graph *irg = get_irp_irg(i);
-		if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
-			do_walk(irg, pre, post, env);
-	}
+	/* cgana "optimizes" the graph instead of just analysing it so the
+	 * roots list isn't even correct anymore when passed to this method...
+	 * so we hack around this and search for more unreferenced/free
+	 * methods... */
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if (!cg_irg_visited(irg))
 			do_walk(irg, pre, post, env);
 	}
-#endif
 }
 
 /* ----------------------------------------------------------------------------------- */
