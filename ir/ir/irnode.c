@@ -1397,7 +1397,8 @@ ir_entity *get_Call_callee(const ir_node *node, int pos) {
 void set_Call_callee_arr(ir_node *node, const int n, ir_entity ** arr) {
 	assert(is_Call(node));
 	if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, current_ir_graph->obst, n);
+		ir_graph *irg = get_irn_irg(node);
+		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, irg->obst, n);
 	}
 	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
 }
