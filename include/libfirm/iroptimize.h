@@ -539,4 +539,57 @@ void optimize_class_casts(void);
  */
 void combo(ir_graph *irg);
 
+/** Inlines all small methods at call sites where the called address comes
+ *  from a SymConst node that references the entity representing the called
+ *  method.
+ *
+ *  The size argument is a rough measure for the code size of the method:
+ *  Methods where the obstack containing the firm graph is smaller than
+ *  size are inlined.  Further only a limited number of calls are inlined.
+ *  If the method contains more than 1024 inlineable calls none will be
+ *  inlined.
+ *  Inlining is only performed if flags `optimize' and `inlineing' are set.
+ *  The graph may not be in state phase_building.
+ *  It is recommended to call local_optimize_graph() after inlining as this
+ *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
+ *  combination as control flow operation.
+ */
+void inline_small_irgs(ir_graph *irg, int size);
+
+
+/** Inlineing with a different heuristic than inline_small_irgs().
+ *
+ *  Inlines leave functions.  If inlinening creates new leave
+ *  function inlines these, too. (If g calls f, and f calls leave h,
+ *  h is first inlined in f and then f in g.)
+ *
+ *  Then inlines all small functions (this is not recursive).
+ *
+ *  For a heuristic this inlineing uses firm node counts.  It does
+ *  not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
+ *  If the ignore_runtime flag is set, calls to functions marked with the
+ *  mtp_property_runtime property are ignored.
+ *
+ *  @param maxsize         Do not inline any calls if a method has more than
+ *                         maxsize firm nodes.  It may reach this limit by
+ *                         inlineing.
+ *  @param leavesize       Inline leave functions if they have less than leavesize
+ *                         nodes.
+ *  @param size            Inline all function smaller than size.
+ *  @param ignore_runtime  count a function only calling runtime functions as
+ *                         leave
+ */
+void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_runtime);
+
+/**
+ * Heuristic inliner. Calculates a benefice value for every call and inlines
+ * those calls with a value higher than the threshold.
+ *
+ *  @param maxsize     Do not inline any calls if a method has more than
+ *                     maxsize firm nodes.  It may reach this limit by
+ *                     inlineing.
+ * @param threshold    inlining threshold
+ */
+void inline_functions(int maxsize, int inline_threshold);
+
 #endif
