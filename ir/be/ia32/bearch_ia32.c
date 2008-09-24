@@ -1117,8 +1117,6 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 
 /**
  * Called before the register allocator.
- * Calculate a block schedule here. We need it for the x87
- * simulator and the emitter.
  */
 static void ia32_before_ra(void *self) {
 	ia32_code_gen_t *cg = self;
