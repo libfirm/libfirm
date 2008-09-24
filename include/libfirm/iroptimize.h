@@ -579,7 +579,8 @@ void inline_small_irgs(ir_graph *irg, int size);
  *  @param ignore_runtime  count a function only calling runtime functions as
  *                         leave
  */
-void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_runtime);
+void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+		unsigned size, int ignore_runtime);
 
 /**
  * Heuristic inliner. Calculates a benefice value for every call and inlines
@@ -590,6 +591,6 @@ void inline_leave_functions(int maxsize, int leavesize, int size, int ignore_run
  *                     inlineing.
  * @param threshold    inlining threshold
  */
-void inline_functions(int maxsize, int inline_threshold);
+void inline_functions(unsigned maxsize, int inline_threshold);
 
 #endif
