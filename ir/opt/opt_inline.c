@@ -1987,47 +1987,48 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 	}
 
 	callee_env = get_irg_link(callee);
-	if (callee_env->n_callers == 1 && callee != current_ir_graph) {
-		/* we are the only caller, give big bonus */
-		if (get_entity_visibility(ent) == visibility_local) {
-			weight += 5000;
-		} else {
-			weight += 200;
-		}
+	if (callee_env->n_callers == 1
+			&& callee != current_ir_graph
+			&& get_entity_visibility(ent) == visibility_local) {
+		weight += 5000;
 	}
-
-	/* do not inline big functions */
-	weight -= callee_env->n_nodes;
 
 	/* reduce the benefice if the current function is already big */
 	curr_env = get_irg_link(current_ir_graph);
-	weight -= curr_env->n_nodes / 50;
+
+	/* inlining is usually a good idea unless the resulting function is
+	 * becoming too big */
+	if (curr_env->n_nodes + callee_env->n_nodes > 500) {
+		weight -= curr_env->n_nodes / 20;
+		/* do not inline big functions */
+		weight -= callee_env->n_nodes / 4;
+	}
 
 	/* give a bonus for functions with one block */
 	if (callee_env->n_blocks == 1)
 		weight = weight * 3 / 2;
 
 	/* and one for small non-recursive functions: we want them to be inlined in mostly every case */
-	else if (callee_env->n_nodes < 20 && !callee_env->recursive)
+	if (callee_env->n_nodes < 30 && !callee_env->recursive)
 		weight += 5000;
 
 	/* and finally for leaves: they do not increase the register pressure
 	   because of callee safe registers */
-	else if (callee_env->n_call_nodes == 0)
-		weight += 25;
+	if (callee_env->n_call_nodes == 0)
+		weight += 400;
 
 	/*
 	 * Reduce the weight for recursive function IFF not all arguments are const.
 	 * inlining recursive functions is rarely good.
 	 */
 	if (callee_env->recursive && !all_const)
-		weight -= 500;
+		weight -= 1000;
 
 	/*
 	 * All arguments constant is probably a good sign, give an extra bonus
 	 */
 	if (all_const)
-		weight += 100;
+		weight += 1308;
 
 	return weight;
 }
@@ -2238,15 +2239,22 @@ void inline_functions(int maxsize, int inline_threshold) {
 		if (env->got_inline) {
 			/* this irg got calls inlined: optimize it */
 
-			/* scalar replacement does not work well with Tuple nodes, so optimize them away */
-			optimize_graph_df(irg);
+			if (0) {
+				/* scalar replacement does not work well with Tuple nodes, so optimize them away */
+				optimize_graph_df(irg);
 
-			if (env->local_vars) {
-				if (scalar_replacement_opt(irg)) {
-					optimize_graph_df(irg);
+				if (env->local_vars) {
+					if (scalar_replacement_opt(irg)) {
+						optimize_graph_df(irg);
+					}
 				}
+				optimize_cf(irg);
+			} else {
+				if (env->local_vars) {
+					scalar_replacement_opt(irg);
+				}
+				combo(irg);
 			}
-			optimize_cf(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
 			DB((dbg, LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
