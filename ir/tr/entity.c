@@ -109,8 +109,9 @@ static INLINE void insert_entity_in_owner(ir_entity *ent) {
 	case tpo_array:
 		set_array_element_entity(owner, ent);
 		break;
+	default:
+		panic("Unsupported type kind");
 	}
-	panic("Unsupported type kind");
 }  /* insert_entity_in_owner */
 
 /**
