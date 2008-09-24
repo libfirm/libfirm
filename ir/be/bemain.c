@@ -689,8 +689,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		 */
 		if (ir_profile_has_data())
 			birg->exec_freq = ir_create_execfreqs_from_profile(irg);
-		else
+		else {
+			/* TODO: edges are corrupt for EDGE_KIND_BLOCK after the local
+			 * optimize graph phase merges blocks in the x86 backend */
+			edges_deactivate(irg);
 			birg->exec_freq = compute_execfreq(irg, 10);
+		}
 		BE_TIMER_POP(t_execfreq);
 
 
