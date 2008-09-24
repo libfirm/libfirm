@@ -1020,6 +1020,7 @@ const arch_isa_if_t mips_isa_if = {
 	mips_get_allowed_execution_units,
 	mips_get_machine,
 	mips_get_irg_list,
+	NULL,                /* mark remat */
 	mips_parse_asm_constraint,
 	mips_is_valid_clobber
 };

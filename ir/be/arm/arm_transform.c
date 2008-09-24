@@ -1335,7 +1335,6 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 	ir_node  *new_pred = be_transform_node(pred);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch(proj) {

@@ -1029,6 +1029,8 @@ static void turn_back_am(ir_node *node)
 	load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
+	if (is_ia32_is_reload(node))
+		set_ia32_is_reload(load);
 	set_irn_n(node, n_ia32_mem, new_NoMem());
 
 	switch (get_ia32_am_arity(node)) {
@@ -1170,6 +1172,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	set_ia32_ls_mode(new_op, spillmode);
 	set_ia32_frame_ent(new_op, ent);
 	set_ia32_use_frame(new_op);
+	set_ia32_is_reload(new_op);
 
 	DBG_OPT_RELOAD2LD(node, new_op);
 
@@ -1240,6 +1243,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	set_ia32_ls_mode(store, mode);
 	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
+	set_ia32_is_spill(store);
 	SET_IA32_ORIG_NODE(store, ia32_get_old_node_name(cg, node));
 	DBG_OPT_SPILL2ST(node, store);
 
@@ -2118,6 +2122,13 @@ static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
 	return NULL;
 }
 
+static void ia32_mark_remat(const void *self, ir_node *node) {
+	(void) self;
+	if (is_ia32_irn(node)) {
+		set_ia32_is_remat(node);
+	}
+}
+
 /**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
@@ -2358,6 +2369,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_allowed_execution_units,
 	ia32_get_machine,
 	ia32_get_irg_list,
+	ia32_mark_remat,
 	ia32_parse_asm_constraint,
 	ia32_is_valid_clobber
 };

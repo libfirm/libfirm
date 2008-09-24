@@ -714,6 +714,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	                  get_irn_op(spilled), get_irn_mode(spilled),
 	                  get_irn_arity(spilled), ins);
 	copy_node_attr(spilled, res);
+	arch_env_mark_remat(env->arch_env, res);
 	new_backedge_info(res);
 
 	DBG((dbg, LEVEL_1, "Insert remat %+F of %+F before reloader %+F\n", res, spilled, reloader));

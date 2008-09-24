@@ -466,6 +466,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 			/* copy address mode information to load */
 			set_ia32_op_type(load, ia32_AddrModeS);
 			ia32_copy_am_attrs(load, irn);
+			if (is_ia32_is_reload(irn))
+				set_ia32_is_reload(load);
 
 			/* insert the load into schedule */
 			sched_add_before(irn, load);

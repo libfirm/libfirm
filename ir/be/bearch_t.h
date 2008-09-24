@@ -524,6 +524,11 @@ struct arch_isa_if_t {
 	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
 
 	/**
+	 * mark node as rematerialized
+	 */
+	void (*mark_remat)(const void *self, ir_node *node);
+
+	/**
 	 * parse an assembler constraint part and set flags according to its nature
 	 * advances the *c pointer to point to the last parsed character (so if you
 	 * parse a single character don't advance c)
@@ -552,6 +557,8 @@ struct arch_isa_if_t {
 #define arch_env_get_backend_irg_list(env,irgs)        ((env)->impl->get_backend_irg_list((env), (irgs)))
 #define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((env), (c))
 #define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((env), (clobber))
+#define arch_env_mark_remat(env,node) \
+	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((env), (node)); } while(0)
 
 /**
  * ISA base class.

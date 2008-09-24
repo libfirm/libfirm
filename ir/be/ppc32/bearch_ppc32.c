@@ -960,6 +960,7 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_get_allowed_execution_units,
 	ppc32_get_machine,
 	ppc32_get_irg_list,
+	NULL,                 /* mark remat */
 	ppc32_parse_asm_constraint,
 	ppc32_is_valid_clobber
 };

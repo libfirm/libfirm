@@ -58,7 +58,7 @@ typedef enum {
 
 typedef enum {
 	match_commutative       = 1 << 0,   /**< inputs are commutative */
-	match_am_and_immediates = 1 << 1,   /**< mode support AM and immediate at
+	match_am_and_immediates = 1 << 1,   /**< node supports AM and immediate at
 	                                         the same time */
 	match_am                = 1 << 2,   /**< node supports (32bit) source AM */
 	match_8bit_am           = 1 << 3,   /**< node supports 8bit source AM */
@@ -118,6 +118,8 @@ struct ia32_attr_t {
 		                                     (for commutative nodes) */
 		unsigned cmp_unsigned : 1;      /**< compare should be unsigned */
 		unsigned is_reload : 1;         /**< node performs a reload */
+		unsigned is_spill : 1;
+		unsigned is_remat : 1;
 	} data;
 
 	int       *out_flags;     /**< flags for each produced value */

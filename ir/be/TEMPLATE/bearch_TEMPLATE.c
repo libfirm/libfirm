@@ -701,6 +701,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_allowed_execution_units,
 	TEMPLATE_get_machine,
 	TEMPLATE_get_backend_irg_list,
+	NULL,                    /* mark remat */
 	TEMPLATE_parse_asm_constraint,
 	TEMPLATE_is_valid_clobber
 };

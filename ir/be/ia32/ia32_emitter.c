@@ -74,6 +74,7 @@ static ia32_code_gen_t  *cg;
 static int               do_pic;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
+static int               mark_spill_reload = 0;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -1930,9 +1931,25 @@ static void ia32_emit_node(ir_node *node)
 
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
-	if (is_ia32_irn(node) && get_ia32_exc_label(node)) {
-		/* emit the exception label of this instruction */
-		ia32_assign_exc_label(node);
+	if (is_ia32_irn(node)) {
+		if (get_ia32_exc_label(node)) {
+			/* emit the exception label of this instruction */
+			ia32_assign_exc_label(node);
+		}
+		if (mark_spill_reload) {
+			if (is_ia32_is_spill(node)) {
+				be_emit_cstring("\txchg %ebx, %ebx        /* spill mark */\n");
+				be_emit_write_line();
+			}
+			if (is_ia32_is_reload(node)) {
+				be_emit_cstring("\txchg %edx, %edx        /* reload mark */\n");
+				be_emit_write_line();
+			}
+			if (is_ia32_is_remat(node)) {
+				be_emit_cstring("\txchg %ecx, %ecx        /* remat mark */\n");
+				be_emit_write_line();
+			}
+		}
 	}
 	if (op->ops.generic) {
 		emit_func_ptr func = (emit_func_ptr) op->ops.generic;
@@ -2228,7 +2245,20 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	DEL_ARR_F(exc_list);
 }
 
+static const lc_opt_table_entry_t ia32_emitter_options[] = {
+	LC_OPT_ENT_BOOL("mark_spill_reload",   "mark spills and reloads with ud opcodes", &mark_spill_reload),
+	LC_OPT_LAST
+};
+
 void ia32_init_emitter(void)
 {
+	lc_opt_entry_t *be_grp;
+	lc_opt_entry_t *ia32_grp;
+
+	be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
+	ia32_grp = lc_opt_get_grp(be_grp, "ia32");
+
+	lc_opt_add_table(ia32_grp, ia32_emitter_options);
+
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.emitter");
 }

@@ -215,6 +215,12 @@ int is_ia32_need_stackent(const ir_node *node);
 void set_ia32_is_reload(ir_node *node);
 int is_ia32_is_reload(const ir_node *node);
 
+void set_ia32_is_spill(ir_node *node);
+int is_ia32_is_spill(const ir_node *node);
+
+void set_ia32_is_remat(ir_node *node);
+int is_ia32_is_remat(const ir_node *node);
+
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */

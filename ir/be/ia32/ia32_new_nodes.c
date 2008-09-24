@@ -662,6 +662,26 @@ int is_ia32_is_reload(const ir_node *node) {
 	return attr->data.is_reload;
 }
 
+void set_ia32_is_spill(ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.is_spill = 1;
+}
+
+int is_ia32_is_spill(const ir_node *node) {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return attr->data.is_spill;
+}
+
+void set_ia32_is_remat(ir_node *node) {
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.is_remat = 1;
+}
+
+int is_ia32_is_remat(const ir_node *node) {
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return attr->data.is_remat;
+}
+
 /**
  * Gets the mode of the stored/loaded value (only set for Store/Load)
  */

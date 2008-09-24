@@ -62,6 +62,16 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static const arch_env_t *arch_env;
 static ia32_code_gen_t  *cg;
 
+static void copy_mark(const ir_node *old, ir_node *new)
+{
+	if (is_ia32_is_reload(old))
+		set_ia32_is_reload(new);
+	if (is_ia32_is_spill(old))
+		set_ia32_is_spill(new);
+	if (is_ia32_is_remat(old))
+		set_ia32_is_remat(new);
+}
+
 /**
  * Returns non-zero if the given node produces
  * a zero flag.
@@ -222,6 +232,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	}
 
 	sched_add_before(node, test);
+	copy_mark(node, test);
 	be_peephole_exchange(node, test);
 }
 
@@ -439,6 +450,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
 
 		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
+		copy_mark(store, push);
 
 		if (first_push == NULL)
 			first_push = push;
@@ -470,6 +482,90 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 	be_set_IncSP_offset(irn, inc_ofs);
 }
+
+#if 0
+static void peephole_store_incsp(ir_node *store)
+{
+	dbg_info *dbgi;
+	ir_node  *node;
+	ir_node  *block;
+	ir_node  *noref;
+	ir_node  *mem;
+	ir_node  *push;
+	ir_node  *val;
+	ir_node  *am_base = get_irn_n(store, n_ia32_Store_base);
+	if (!be_is_IncSP(am_base)
+			|| get_nodes_block(am_base) != get_nodes_block(store))
+		return;
+	mem = get_irn_n(store, n_ia32_Store_mem);
+	if (!is_ia32_NoReg_GP(get_irn_n(store, n_ia32_Store_index))
+			|| !is_NoMem(mem))
+		return;
+
+	int incsp_offset = be_get_IncSP_offset(am_base);
+	if (incsp_offset <= 0)
+		return;
+
+	/* we have to be at offset 0 */
+	int my_offset = get_ia32_am_offs_int(store);
+	if (my_offset != 0) {
+		/* TODO here: find out wether there is a store with offset 0 before
+		 * us and wether we can move it down to our place */
+		return;
+	}
+	ir_mode *ls_mode = get_ia32_ls_mode(store);
+	int my_store_size = get_mode_size_bytes(ls_mode);
+
+	if (my_offset + my_store_size > incsp_offset)
+		return;
+
+	/* correctness checking:
+		- noone else must write to that stackslot
+		    (because after translation incsp won't allocate it anymore)
+	*/
+	sched_foreach_reverse_from(store, node) {
+		int i, arity;
+
+		if (node == am_base)
+			break;
+
+		/* make sure noone else can use the space on the stack */
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *pred = get_irn_n(node, i);
+			if (pred != am_base)
+				continue;
+
+			if (i == n_ia32_base &&
+					(get_ia32_op_type(node) == ia32_AddrModeS
+					 || get_ia32_op_type(node) == ia32_AddrModeD)) {
+				int      node_offset  = get_ia32_am_offs_int(node);
+				ir_mode *node_ls_mode = get_ia32_ls_mode(node);
+				int      node_size    = get_mode_size_bytes(node);
+				/* overlapping with our position? abort */
+				if (node_offset < my_offset + my_store_size
+						&& node_offset + node_size >= my_offset)
+					return;
+				/* otherwise it's fine */
+				continue;
+			}
+
+			/* strange use of esp: abort */
+			return;
+		}
+	}
+
+	/* all ok, change to push */
+	dbgi  = get_irn_dbg_info(store);
+	block = get_nodes_block(store);
+	noreg = ia32_new_NoReg_gp(cg);
+	val   = get_ia32_
+
+	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem,
+
+	create_push(dbgi, current_ir_graph, block, am_base, store);
+}
+#endif
 
 /**
  * Return true if a mode can be stored in the GP register set
@@ -621,6 +717,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
 		arch_set_irn_register(arch_env, pop, reg);
+
+		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
 		pred_sp = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
@@ -833,6 +931,7 @@ static void peephole_ia32_Const(ir_node *node)
 	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
 
+	copy_mark(node, xor);
 	be_peephole_exchange(node, xor);
 }
 
@@ -1039,6 +1138,7 @@ exchange:
 
 	/* exchange the Add and the LEA */
 	sched_add_before(node, res);
+	copy_mark(node, res);
 	be_peephole_exchange(node, res);
 }
 

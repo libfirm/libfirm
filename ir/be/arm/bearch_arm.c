@@ -1285,6 +1285,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_allowed_execution_units,
 	arm_get_machine,
 	arm_get_irg_list,
+	NULL,               /* mark remat */
 	arm_parse_asm_constraint,
 	arm_is_valid_clobber
 };
