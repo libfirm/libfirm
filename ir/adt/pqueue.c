@@ -45,7 +45,7 @@
 
 typedef struct _pqueue_el_t {
 	void *data;
-	int  key;
+	int  priority;
 } pqueue_el_t;
 
 struct _pqueue_t {
@@ -63,11 +63,12 @@ static void pqueue_heapify(pqueue_t *q, unsigned pos) {
 		pqueue_el_t tmp;
 		unsigned    exchange = pos;
 
-		if (q->elems[exchange].key < q->elems[pos * 2].key) {
+		if (q->elems[exchange].priority < q->elems[pos * 2].priority) {
 			exchange = pos * 2;
 		}
 
-		if ((pos * 2 + 1) < len && q->elems[exchange].key < q->elems[pos * 2 + 1].key) {
+		if ((pos * 2 + 1) < len
+				&& q->elems[exchange].priority < q->elems[pos * 2 + 1].priority) {
 			exchange = pos * 2 + 1;
 		}
 
@@ -86,7 +87,7 @@ static void pqueue_heapify(pqueue_t *q, unsigned pos) {
  * Sifts up a newly inserted element at position @p pos.
  */
 static void pqueue_sift_up(pqueue_t *q, unsigned pos) {
-	while(q->elems[pos].key > q->elems[pos / 2].key) {
+	while(q->elems[pos].priority > q->elems[pos / 2].priority) {
 		pqueue_el_t tmp;
 
 		tmp               = q->elems[pos];
@@ -108,11 +109,11 @@ void del_pqueue(pqueue_t *q) {
 	free(q);
 }
 
-void pqueue_put(pqueue_t *q, void *data, int key) {
+void pqueue_put(pqueue_t *q, void *data, int priority) {
 	pqueue_el_t el;
 
-	el.data = data;
-	el.key  = key;
+	el.data     = data;
+	el.priority = priority;
 
 	ARR_APP1(pqueue_el_t, q->elems, el);
 

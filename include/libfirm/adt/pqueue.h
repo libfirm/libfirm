@@ -44,11 +44,11 @@ void del_pqueue(pqueue_t *q);
 
 /**
  * Inserts a new element into a priority queue.
- * @param q      The priority queue the element should be inserted to.
- * @param data   The actual data which should be stored in the queue.
- * @param key    The priority for the data.
+ * @param q         The priority queue the element should be inserted to.
+ * @param data      The actual data which should be stored in the queue.
+ * @param priority  The priority for the data.
  */
-void pqueue_put(pqueue_t *q, void *data, int key);
+void pqueue_put(pqueue_t *q, void *data, int priority);
 
 /**
  * Returns and removes the first element, ie. that one with the highest priority, from the queue.
