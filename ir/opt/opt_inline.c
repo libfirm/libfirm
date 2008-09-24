@@ -2125,7 +2125,10 @@ void inline_functions(int maxsize, int inline_threshold) {
 			int                 benefice;
 			unsigned            local_adr;
 
-			if (env->n_nodes > maxsize) break;
+			if (env->n_nodes > maxsize) {
+				DB((dbg, LEVEL_2, "%+F: too big (%d)\n", irg, env->n_nodes));
+				break;
+			}
 
 			call   = curr_call->call;
 			callee = curr_call->callee;
@@ -2133,6 +2136,9 @@ void inline_functions(int maxsize, int inline_threshold) {
 			prop = get_irg_inline_property(callee);
 			if (prop == irg_inline_forbidden
 					|| (get_irg_additional_properties(callee) & mtp_property_weak)) {
+				DB((dbg, LEVEL_2, "In %+F Call %+F: %s\n",
+							prop == irg_inline_forbidden ? "inline forbidder" :
+							"mtp_property_weak"));
 				/* do not inline forbidden / weak graphs */
 				last_call = &curr_call->next;
 				curr_call = curr_call->next;
