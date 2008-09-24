@@ -56,7 +56,7 @@ struct _pqueue_t {
  * Enforces the heap characteristics if the queue
  * starting from element at position @p pos.
  */
-static void pqueue_heapify(pqueue *q, unsigned pos) {
+static void pqueue_heapify(pqueue_t *q, unsigned pos) {
 	unsigned len = ARR_LEN(q->elems);
 
 	while (pos * 2 < len) {
@@ -85,7 +85,7 @@ static void pqueue_heapify(pqueue *q, unsigned pos) {
 /**
  * Sifts up a newly inserted element at position @p pos.
  */
-static void pqueue_sift_up(pqueue *q, unsigned pos) {
+static void pqueue_sift_up(pqueue_t *q, unsigned pos) {
 	while(q->elems[pos].key > q->elems[pos / 2].key) {
 		pqueue_el_t tmp;
 
@@ -97,32 +97,18 @@ static void pqueue_sift_up(pqueue *q, unsigned pos) {
 	}
 }
 
-/**
- * Creates a new priority queue.
- * @return A priority queue of initial length 0.
- */
-pqueue *new_pqueue(void) {
-	pqueue *res = xmalloc(sizeof(*res));
+pqueue_t *new_pqueue(void) {
+	pqueue_t *res = xmalloc(sizeof(*res));
 	res->elems = NEW_ARR_F(pqueue_el_t, 0);
 	return res;
 }
 
-/**
- * Frees all memory allocated by the priority queue.
- * @param q   The priority queue to destroy.
- */
-void del_pqueue(pqueue *q) {
+void del_pqueue(pqueue_t *q) {
 	DEL_ARR_F(q->elems);
 	free(q);
 }
 
-/**
- * Inserts a new element into a priority queue.
- * @param q      The priority queue the element should be inserted to.
- * @param data   The actual data which should be stored in the queue.
- * @param key    The priority for the data.
- */
-void pqueue_put(pqueue *q, void *data, int key) {
+void pqueue_put(pqueue_t *q, void *data, int key) {
 	pqueue_el_t el;
 
 	el.data = data;
@@ -133,12 +119,7 @@ void pqueue_put(pqueue *q, void *data, int key) {
 	pqueue_sift_up(q, ARR_LEN(q->elems) - 1);
 }
 
-/**
- * Returns and removes the first element, ie. that one with the highest priority, from the queue.
- * @param q   The priority queue.
- * @return The first element of the queue. Asserts if queue is empty.
- */
-void *pqueue_get(pqueue *q) {
+void *pqueue_pop_front(pqueue_t *q) {
 	switch(ARR_LEN(q->elems)) {
 		case 0:
 			assert(0 && "Attempt to retrieve element from empty priority queue.");
@@ -161,20 +142,10 @@ void *pqueue_get(pqueue *q) {
 	}
 }
 
-/**
- * Get the length of the priority queue.
- * @param q   The priority queue.
- * @return The length of the queue.
- */
-int pqueue_length(pqueue *q) {
+int pqueue_length(const pqueue_t *q) {
 	return ARR_LEN(q->elems);
 }
 
-/**
- * Returns true if queue is empty.
- * @param q   The priority queue.
- * @return 1 if the queue is empty, 0 otherwise.
- */
-int pqueue_empty(pqueue *q) {
+int pqueue_empty(const pqueue_t *q) {
 	return ARR_LEN(q->elems) == 0;
 }

@@ -119,7 +119,7 @@ typedef struct _co_mst_env_t {
 	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
-	pqueue           *chunks;        /**< priority queue for chunks */
+	pqueue_t         *chunks;        /**< priority queue for chunks */
 	pset             *chunkset;      /**< set holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
 	const arch_env_t *aenv;          /**< the arch environment */
@@ -711,7 +711,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 
 static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chunk_t *chunk)
 {
-	pqueue *grow = new_pqueue();
+	pqueue_t *grow = new_pqueue();
 	const ir_node *max_node = NULL;
 	int max_weight = 0;
 	int i;
@@ -746,7 +746,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		bitset_remv_irn(visited, max_node);
 		i = 0;
 		while (!pqueue_empty(grow)) {
-			ir_node *irn = pqueue_get(grow);
+			ir_node *irn = pqueue_pop_front(grow);
 			affinity_node_t *an = get_affinity_info(env->co, irn);
 			neighb_t *neigh;
 
@@ -1438,7 +1438,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 
 	/* color chunks as long as there are some */
 	while (! pqueue_empty(mst_env.chunks)) {
-		aff_chunk_t *chunk = pqueue_get(mst_env.chunks);
+		aff_chunk_t *chunk = pqueue_pop_front(mst_env.chunks);
 
 		color_aff_chunk(&mst_env, chunk);
 		DB((dbg, LEVEL_4, "<<<====== Coloring chunk (%u) done\n", chunk->id));
