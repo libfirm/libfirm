@@ -1938,7 +1938,8 @@ static int calc_inline_benefice(ir_node *call, ir_graph *callee, unsigned *local
 
 	inline_irg_env *curr_env, *callee_env;
 
-	if (get_entity_additional_properties(ent) & mtp_property_noreturn|mtp_property_weak) {
+	if (get_entity_additional_properties(ent) &
+			(mtp_property_noreturn|mtp_property_weak)) {
 		/* do NOT inline noreturn or weak calls */
 		return INT_MIN;
 	}
