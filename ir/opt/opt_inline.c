@@ -2131,8 +2131,11 @@ void inline_functions(int maxsize, int inline_threshold) {
 			callee = curr_call->callee;
 
 			prop = get_irg_inline_property(callee);
-			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
+			if (prop == irg_inline_forbidden
+					|| (get_irg_additional_properties(callee) & mtp_property_weak)) {
 				/* do not inline forbidden / weak graphs */
+				last_call = &curr_call->next;
+				curr_call = curr_call->next;
 				continue;
 			}
 
