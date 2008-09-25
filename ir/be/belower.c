@@ -801,8 +801,6 @@ void assure_constraints(be_irg_t *birg) {
 	ir_node          **nodes;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.constr");
 
-	be_assure_dom_front(birg);
-
 	DEBUG_ONLY(cenv.dbg = mod;)
 	cenv.birg   = birg;
 	cenv.op_set = new_pset(cmp_op_copy_assoc, 16);

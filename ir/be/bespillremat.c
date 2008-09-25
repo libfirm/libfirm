@@ -4425,7 +4425,6 @@ be_spill_remat(be_irg_t *birg, const arch_register_class_t *cls)
 	if(opt_verify & VERIFY_DOMINANCE)
 		be_check_dominance(irg);
 
-	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
 
 	obstack_init(&obst);

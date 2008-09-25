@@ -484,7 +484,6 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	BE_TIMER_PUSH(t_ra_prolog);
 
-	be_assure_dom_front(birg);
 	be_assure_liveness(birg);
 
 	chordal_env.obst          = &obst;

@@ -998,7 +998,6 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	int colors_n          = arch_register_class_n_regs(cls);
 	ir_graph *irg         = chordal_env->irg;
 
-	be_assure_dom_front(birg);
 	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);

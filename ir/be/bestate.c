@@ -542,7 +542,6 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	be_lv_t *lv = be_assure_liveness(birg);
 
 	be_liveness_assure_sets(lv);
-	be_assure_dom_front(birg);
 	/* construct control flow loop tree */
 	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);
