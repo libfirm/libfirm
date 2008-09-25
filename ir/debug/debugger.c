@@ -436,9 +436,9 @@ static const char *reason_str(bp_reasons_t reason)
 	case BP_ON_REMIRG:   return "removing IRG";
 	case BP_ON_NEW_ENT:  return "entity creation";
 	case BP_ON_NEW_TYPE: return "type creation";
+	case BP_MAX_REASON:  break;
 	}
 	panic("unsupported reason");
-	return "unknown";
 }  /* reason_str */
 
 /**
