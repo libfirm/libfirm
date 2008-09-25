@@ -44,8 +44,7 @@ struct mips_code_gen_t {
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	mips_isa_t                     *isa;            /**< the isa instance */
 	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
-	ir_node                        **bl_list;		/**< The block schedule list. */
-	survive_dce_t				   *bl_list_sdce;	/**< survive dce environment for the block schedule list */
+	ir_node                        **block_schedule;
 };
 
 struct mips_isa_t {

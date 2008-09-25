@@ -311,8 +311,6 @@ void mips_emit_IncSP(const ir_node *node)
 	int   offset = be_get_IncSP_offset(node);
 
 	if(offset == 0) {
-		be_emit_cstring("\t/* omitted IncSP with 0 */");
-		be_emit_finish_line_gas(node);
 		return;
 	}
 
@@ -816,10 +814,9 @@ void mips_gen_routine(mips_code_gen_t *mips_cg, ir_graph *irg)
 
 	mips_emit_func_prolog(irg);
 
-	dump_ir_block_graph_sched(irg, "-kaputtelist");
-
-	for (i = 0, n = mips_get_sched_n_blocks(cg); i < n; ++i) {
-		ir_node *block = mips_get_sched_block(cg, i);
+	n = ARR_LEN(cg->block_schedule);
+	for (i = 0; i < n; ++i) {
+		ir_node *block = cg->block_schedule[i];
 		mips_gen_block(block);
 	}
 

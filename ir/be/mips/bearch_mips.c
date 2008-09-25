@@ -48,6 +48,8 @@
 #include "../benode_t.h"
 #include "../belower.h"
 #include "../besched_t.h"
+#include "../beblocksched.h"
+#include "../beirg_t.h"
 #include "be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
@@ -304,174 +306,35 @@ static const arch_irn_ops_t mips_irn_ops = {
  *                       |___/
  **************************************************/
 
-
-typedef struct {
-	ir_node *start;
-	ir_node *end;
-	unsigned cnt;
-} anchor;
-
-/**
- * Ext-Block walker: create a block schedule
- */
-static void create_block_list(ir_extblk *blk, void *env) {
-	anchor *list = env;
-	int i, n;
-
-	for (i = 0, n = get_extbb_n_blocks(blk); i < n; ++i) {
-		ir_node *block = get_extbb_block(blk, i);
-
-		set_irn_link(block, NULL);
-		if (list->start)
-			set_irn_link(list->end, block);
-		else
-			list->start = block;
-
-		list->end = block;
-		list->cnt += 1;
-	}
-}
-
-/* return the scheduled block at position pos */
-ir_node *mips_get_sched_block(const mips_code_gen_t *cg, int pos) {
-	if (0 <= pos && pos < ARR_LEN(cg->bl_list))
-		return cg->bl_list[pos];
-	return NULL;
-}
-
-/* return the number of scheduled blocks */
-int mips_get_sched_n_blocks(const mips_code_gen_t *cg) {
-	return ARR_LEN(cg->bl_list);
-}
-
-/* set a block schedule number */
-void mips_set_block_sched_nr(ir_node *block, int nr) {
-	set_irn_link(block, INT_TO_PTR(nr));
-}
-
-/* get a block schedule number */
-int mips_get_block_sched_nr(ir_node *block) {
-	return PTR_TO_INT(get_irn_link(block));
-}
-
-/**
- * Creates a block schedule for the given graph.
- */
-static void mips_create_block_sched(mips_code_gen_t *cg) {
-	anchor list;
-	ir_node **bl_list, *block;
-	unsigned i;
-
-	if (cg->bl_list) {
-		DEL_ARR_F(cg->bl_list);
-		free_survive_dce(cg->bl_list_sdce);
-	}
-
-	/* calculate the block schedule here */
-	compute_extbb(cg->irg);
-
-	list.start = NULL;
-	list.end   = NULL;
-	list.cnt   = 0;
-	irg_extblock_walk_graph(cg->irg, NULL, create_block_list, &list);
-
-
-	bl_list = NEW_ARR_F(ir_node *, list.cnt);
-	cg->bl_list_sdce = new_survive_dce();
-	for (i = 0, block = list.start; block; block = get_irn_link(block)) {
-		bl_list[i] = block;
-		survive_dce_register_irn(cg->bl_list_sdce, &bl_list[i]);
-		i++;
-	}
-
-	cg->bl_list = bl_list;
-}
-
-#if 0
-typedef struct _wenv_t {
-	ir_node *list;
-} wenv_t;
-
-/**
- * Walker: link all CopyB nodes
- */
-static void collect_copyb_nodes(ir_node *node, void *env) {
-	wenv_t *wenv = env;
-
-	if (is_CopyB(node)) {
-		set_irn_link(node, wenv->list);
-		wenv->list = node;
-	}
-}
-#endif
-
-static void replace_copyb_nodes(mips_code_gen_t *cg) {
-#if 0
-	wenv_t env;
-	ir_node *copy, *next;
-	ir_node *old_bl, *new_bl, *jmp, *new_jmp, *mem;
-	const ir_edge_t *edge;
-
-	/* build code for all copyB */
-	env.list = NULL;
-	irg_walk_graph(cg->irg, NULL, collect_copyb_nodes, &env);
-
-	for (copy = env.list; copy; copy = next) {
-		next = get_irn_link(copy);
-
-		old_bl = get_nodes_block(copy);
-		part_block(copy);
-		jmp     = get_Block_cfgpred(old_bl, 0);
-		new_jmp = new_r_Jmp(cg->irg, get_nodes_block(copy));
-
-		new_bl = new_r_Block(cg->irg, 1, &new_jmp);
-		set_nodes_block(jmp, new_bl);
-
-		mem = gen_code_for_CopyB(new_bl, copy);
-
-		/* fix copyB's out edges */
-		foreach_out_edge(copy, edge) {
-			ir_node *succ = get_edge_src_irn(edge);
-
-			assert(is_Proj(succ));
-			switch (get_Proj_proj(succ)) {
-			case pn_CopyB_M_regular:
-			case pn_CopyB_M_except:
-				exchange(succ, mem);
-				break;
-			default:
-				exchange(succ, get_irg_bad(cg->irg));
-			}
-		}
-	}
-#endif
-	(void) cg;
-}
-
 /**
  * Transforms the standard firm graph into
  * a mips firm graph
  */
 static void mips_prepare_graph(void *self) {
 	mips_code_gen_t *cg = self;
-	int bl_nr, n;
 
-	// replace all copyb nodes in the block with a loop
-	// and mips store/load nodes
-	replace_copyb_nodes(cg);
+	/* do local optimizations */
+	optimize_graph_df(cg->irg);
 
-	// Calculate block schedule
-	mips_create_block_sched(cg);
-
-	/* enter the block number into every blocks link field */
-	for (bl_nr = 0, n = mips_get_sched_n_blocks(cg); bl_nr < n; ++bl_nr) {
-		ir_node *bl = mips_get_sched_block(cg, bl_nr);
-		mips_set_block_sched_nr(bl, bl_nr);
-	}
+	/* TODO: we often have dead code reachable through out-edges here. So for
+	 * now we rebuild edges (as we need correct user count for code selection)
+	 */
+#if 1
+	edges_deactivate(cg->irg);
+	edges_activate(cg->irg);
+#endif
 
 	// walk the graph and transform firm nodes into mips nodes where possible
 	mips_transform_graph(cg);
 	dump_ir_block_graph_sched(cg->irg, "-transformed");
+
+	/* do local optimizations (mainly CSE) */
+	optimize_graph_df(cg->irg);
+
+	/* do code placement, to optimize the position of constants */
+	place_code(cg->irg);
+
+	be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
 }
 
 /**
@@ -480,6 +343,10 @@ static void mips_prepare_graph(void *self) {
 static void mips_finish_irg(void *self) {
 	mips_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
+
+	/* create block schedule, this also removes empty blocks which might
+	 * produce critical edges */
+   	cg->block_schedule = be_create_block_schedule(irg, cg->birg->exec_freq);
 
 	dump_ir_block_graph_sched(irg, "-mips-finished");
 }
@@ -521,10 +388,6 @@ static void mips_emit_and_done(void *self)
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
-	if (cg->bl_list) {
-		DEL_ARR_F(cg->bl_list);
-		free_survive_dce(cg->bl_list_sdce);
-	}
 	free(cg);
 }
 
@@ -551,6 +414,7 @@ static void *mips_cg_init(be_irg_t *birg)
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
 	mips_isa_t       *isa      = (mips_isa_t *) arch_env;
 	mips_code_gen_t  *cg       = xmalloc(sizeof(*cg));
+	memset(cg, 0, sizeof(*cg));
 
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
@@ -558,7 +422,6 @@ static void *mips_cg_init(be_irg_t *birg)
 	cg->arch_env = arch_env;
 	cg->isa      = isa;
 	cg->birg     = birg;
-	cg->bl_list  = NULL;
 
 	cur_reg_set = cg->reg_set;
 

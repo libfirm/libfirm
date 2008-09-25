@@ -334,6 +334,7 @@ static ir_node* gen_SymConst(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_entity *entity;
+	const arch_register_t **slots;
 	ir_node *lui, *or_const, *or;
 
 	if(get_SymConst_kind(node) != symconst_addr_ent) {
@@ -347,6 +348,9 @@ static ir_node* gen_SymConst(ir_node *node)
 	or_const       = new_rd_mips_Immediate(dbgi, irg, block,
 	                                       MIPS_IMM_SYMCONST_LO, entity, 0);
 	or             = new_rd_mips_or(dbgi, irg, block, lui, or_const);
+
+	slots    = get_mips_slots(or_const);
+	slots[0] = &mips_gp_regs[REG_GP_NOREG];
 
 	return or;
 }
@@ -1129,52 +1133,41 @@ static ir_node *gen_AddSP(ir_node *node)
  *
  *********************************************************/
 
-static ir_node *gen_Bad(ir_node *node)
+typedef ir_node *(*mips_transform_func) (ir_node *node);
+
+static void register_transformer(ir_op *op, mips_transform_func func)
 {
-	panic("Unexpected node %+F found in mips transform phase.", node);
-	return NULL;
+	assert(op->ops.generic == NULL);
+	op->ops.generic = (op_func) func;
 }
 
 static void register_transformers(void)
 {
 	clear_irp_opcodes_generic_func();
 
-	op_Add->ops.generic      = (op_func) gen_Add;
-	op_Sub->ops.generic      = (op_func) gen_Sub;
-	op_And->ops.generic      = (op_func) gen_And;
-	op_Or->ops.generic       = (op_func) gen_Or;
-	op_Eor->ops.generic      = (op_func) gen_Eor;
-	op_Shl->ops.generic      = (op_func) gen_Shl;
-	op_Shr->ops.generic      = (op_func) gen_Shr;
-	op_Shrs->ops.generic     = (op_func) gen_Shrs;
-	op_Not->ops.generic      = (op_func) gen_Not;
-	op_Minus->ops.generic    = (op_func) gen_Minus;
-	op_Div->ops.generic      = (op_func) gen_Div;
-	op_Mod->ops.generic      = (op_func) gen_Mod;
-	op_DivMod->ops.generic   = (op_func) gen_DivMod;
-	op_Abs->ops.generic      = (op_func) gen_Abs;
-	op_Load->ops.generic     = (op_func) gen_Load;
-	op_Store->ops.generic    = (op_func) gen_Store;
-	op_Cond->ops.generic     = (op_func) gen_Cond;
-	op_Conv->ops.generic     = (op_func) gen_Conv;
-	op_Const->ops.generic    = (op_func) gen_Const;
-	op_SymConst->ops.generic = (op_func) gen_SymConst;
-	op_Unknown->ops.generic  = (op_func) gen_Unknown;
-	op_Proj->ops.generic     = (op_func) gen_Proj;
-	op_Phi->ops.generic      = (op_func) gen_Phi;
-
-	op_Raise->ops.generic     = (op_func) gen_Bad;
-	op_Sel->ops.generic       = (op_func) gen_Bad;
-	op_InstOf->ops.generic    = (op_func) gen_Bad;
-	op_Cast->ops.generic      = (op_func) gen_Bad;
-	op_Free->ops.generic      = (op_func) gen_Bad;
-	op_Tuple->ops.generic     = (op_func) gen_Bad;
-	op_Id->ops.generic        = (op_func) gen_Bad;
-	op_Confirm->ops.generic   = (op_func) gen_Bad;
-	op_Filter->ops.generic    = (op_func) gen_Bad;
-	op_CallBegin->ops.generic = (op_func) gen_Bad;
-	op_EndReg->ops.generic    = (op_func) gen_Bad;
-	op_EndExcept->ops.generic = (op_func) gen_Bad;
+	register_transformer(op_Add, gen_Add);
+	register_transformer(op_Sub, gen_Sub);
+	register_transformer(op_And, gen_And);
+	register_transformer(op_Or,  gen_Or);
+	register_transformer(op_Eor, gen_Eor);
+	register_transformer(op_Shl, gen_Shl);
+	register_transformer(op_Shr, gen_Shr);
+	register_transformer(op_Shrs, gen_Shrs);
+	register_transformer(op_Not, gen_Not);
+	register_transformer(op_Minus, gen_Minus);
+	register_transformer(op_Div, gen_Div);
+	register_transformer(op_Mod, gen_Mod);
+	register_transformer(op_DivMod, gen_DivMod);
+	register_transformer(op_Abs, gen_Abs);
+	register_transformer(op_Load, gen_Load);
+	register_transformer(op_Store, gen_Store);
+	register_transformer(op_Cond, gen_Cond);
+	register_transformer(op_Conv, gen_Conv);
+	register_transformer(op_Const, gen_Const);
+	register_transformer(op_SymConst, gen_SymConst);
+	register_transformer(op_Unknown, gen_Unknown);
+	register_transformer(op_Proj, gen_Proj);
+	register_transformer(op_Phi, gen_Phi);
 }
 
 void mips_transform_graph(mips_code_gen_t *cg)

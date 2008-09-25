@@ -97,7 +97,7 @@ $new_emit_syntax = 1;
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold\
 %reg_classes = (
 	"gp" => [
-		{ name => "zero", type => 4+2 },  # always zero
+		{ name => "zero", type => 4 },  # always zero
 		{ name => "at", type => 4 }, # reserved for assembler
 		{ name => "v0", realname => "2", type => 1 }, # first return value
 		{ name => "v1", realname => "3", type => 1 }, # second return value
