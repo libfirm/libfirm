@@ -418,6 +418,11 @@ void ia32_mark_non_am(ir_node *node)
 	bitset_set(non_address_mode_nodes, get_irn_idx(node));
 }
 
+int ia32_is_non_address_mode_node(ir_node *node)
+{
+	return bitset_is_set(non_address_mode_nodes, get_irn_idx(node));
+}
+
 static int value_last_used_here(ir_node *here, ir_node *value)
 {
 	ir_node *block = get_nodes_block(here);

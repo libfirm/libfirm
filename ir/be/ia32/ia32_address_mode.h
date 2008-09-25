@@ -63,6 +63,11 @@ void ia32_calculate_non_address_mode_nodes(be_irg_t *birg);
 void ia32_free_non_address_mode_nodes(void);
 
 /**
+ * Tells whether the given node is a non address mode node.
+ */
+int ia32_is_non_address_mode_node(ir_node *node);
+
+/**
  * mark a node so it will not be used as part of address modes
  */
 void ia32_mark_non_am(ir_node *node);
