@@ -4021,8 +4021,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_SubSP_M);
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("No idea how to transform proj->AddSP");
 }
 
 /**
@@ -4045,8 +4044,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_AddSP_M);
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, get_irn_mode(node));
+	panic("No idea how to transform proj->SubSP");
 }
 
 /**
@@ -4156,7 +4154,6 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 	ir_node  *new_pred = be_transform_node(pred);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
 
 	assert(is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred));
@@ -4211,8 +4208,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node) {
 		break;
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, mode);
+	panic("No idea how to transform proj->DivMod");
 }
 
 /**
@@ -4224,7 +4220,6 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 	ir_node  *new_pred = be_transform_node(pred);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch(proj) {
@@ -4239,8 +4234,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 		break;
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, mode);
+	panic("No idea how to transform proj->CopyB");
 }
 
 /**
@@ -4252,7 +4246,6 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	ir_node  *new_pred = be_transform_node(pred);
 	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch(proj) {
@@ -4276,8 +4269,7 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 		break;
 	}
 
-	assert(0);
-	return new_rd_Unknown(irg, mode);
+	panic("No idea how to transform proj->Quot");
 }
 
 static ir_node *gen_be_Call(ir_node *node) {
@@ -4457,8 +4449,7 @@ static ir_node *gen_Proj(ir_node *node) {
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
-			assert(0);
-			return new_r_Bad(current_ir_graph);
+			panic("No idea how to transform proj->Store");
 		}
 	case iro_Load:
 		return gen_Proj_Load(node);
