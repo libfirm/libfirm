@@ -972,14 +972,8 @@ static void ia32_prepare_graph(void *self) {
 #ifdef FIRM_GRGEN_BE
 		case TRANSFORMER_PBQP:
 		case TRANSFORMER_RAND:
-			// disable CSE, because of two-step node-construction
-			cse_last = get_opt_cse();
-			set_opt_cse(0);
-
 			/* transform nodes into assembler instructions by PBQP magic */
 			ia32_transform_graph_by_pbqp(cg);
-
-			set_opt_cse(cse_last);
 			break;
 #endif
 
