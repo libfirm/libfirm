@@ -257,10 +257,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 {
 	for (;;) {
 		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
-			ir_entity *ent = get_SymConst_entity(ptr);
-			if (variability_constant == get_entity_variability(ent))
-				return ent;
-			return NULL;
+			return get_SymConst_entity(ptr);
 		} else if (is_Sel(ptr)) {
 			ir_entity *ent = get_Sel_entity(ptr);
 			ir_type   *tp  = get_entity_owner(ent);
