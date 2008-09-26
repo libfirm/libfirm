@@ -691,7 +691,7 @@ static ir_node *find_compound_ent_value(ir_node *ptr) {
 static void reduce_adr_usage(ir_node *ptr);
 
 /**
- * Update a Load that may lost it's usage.
+ * Update a Load that may have lost its users.
  */
 static void handle_load_update(ir_node *load) {
 	ldst_info_t *info = get_irn_link(load);
@@ -704,7 +704,7 @@ static void handle_load_update(ir_node *load) {
 		ir_node *ptr = get_Load_ptr(load);
 		ir_node *mem = get_Load_mem(load);
 
-		/* a Load which value is neither used nor exception checked, remove it */
+		/* a Load whose value is neither used nor exception checked, remove it */
 		exchange(info->projs[pn_Load_M], mem);
 		if (info->projs[pn_Load_X_regular])
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
@@ -714,7 +714,7 @@ static void handle_load_update(ir_node *load) {
 }  /* handle_load_update */
 
 /**
- * A Use of an address node is vanished. Check if this was a Proj
+ * A use of an address node has vanished. Check if this was a Proj
  * node and update the counters.
  */
 static void reduce_adr_usage(ir_node *ptr) {
@@ -1125,7 +1125,7 @@ static unsigned optimize_load(ir_node *load)
 	}
 
 	/* The mem of the Load. Must still be returned after optimization. */
-	mem  = get_Load_mem(load);
+	mem = get_Load_mem(load);
 
 	if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
 		/* a Load which value is neither used nor exception checked, remove it */
