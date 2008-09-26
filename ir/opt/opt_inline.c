@@ -2058,10 +2058,11 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 static void inline_into(ir_graph *irg, unsigned maxsize,
 		int inline_threshold, pmap *copied_graphs)
 {
-	int             phiproj_computed = 0;
+	int            phiproj_computed = 0;
 	inline_irg_env *env = get_irg_link(irg);
 	call_entry     *curr_call;
-	wenv_t          wenv;
+	wenv_t         wenv;
+	pqueue_t       *pqueue;
 
 	if (env->n_nodes > maxsize) {
 		DB((dbg, LEVEL_2, "%+F: too big (%d)\n", irg, env->n_nodes));
@@ -2071,10 +2072,10 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	current_ir_graph = irg;
 
 	/* put irgs into the pqueue */
-	pqueue_t *pqueue = new_pqueue();
+	pqueue = new_pqueue();
 
 	for (curr_call = env->call_head; curr_call != NULL;
-			curr_call = curr_call->next) {
+	     curr_call = curr_call->next) {
 
 		if (is_Tuple(curr_call->call))
 			continue;
@@ -2167,7 +2168,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		/* after we have inlined callee, all called methods inside
 		 * callee are now called once more */
 		for (centry = callee_env->call_head; centry != NULL;
-				centry = centry->next) {
+		     centry = centry->next) {
 			inline_irg_env *penv = get_irg_link(centry->callee);
 			++penv->n_callers;
 		}
@@ -2180,7 +2181,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 		/* we just generate a bunch of new calls */
 		for (centry = callee_env->call_head; centry != NULL;
-				centry = centry->next) {
+		     centry = centry->next) {
 		   	/* Note that the src list points to Call nodes in the inlined graph,
 		   	 * but we need Call nodes in our graph. Luckily the inliner leaves
 		   	 * this information in the link field. */
