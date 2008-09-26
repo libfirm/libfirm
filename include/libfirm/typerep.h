@@ -403,10 +403,13 @@ void set_entity_backend_marked(ir_entity *ent, int flag);
  * Bitfield type indicating the way an entity is used.
  */
 typedef enum {
-	ir_usage_address_taken    = 1 << 0,
-	ir_usage_write            = 1 << 1,
-	ir_usage_read             = 1 << 2,
-	ir_usage_reinterpret_cast = 1 << 3,
+	ir_usage_none             = 0,      /**< This entity is unused. */
+	ir_usage_address_taken    = 1 << 0, /**< The address of this entity was taken. */
+	ir_usage_write            = 1 << 1, /**< The entity was written to. */
+	ir_usage_read             = 1 << 2, /**< The entity was read. */
+	ir_usage_reinterpret_cast = 1 << 3, /**< The entity was read but with a wrong mode
+	                                         (an implicit reinterpret cast) */
+	/** Unknown access */
 	ir_usage_unknown
 		= ir_usage_address_taken | ir_usage_write | ir_usage_read
 		| ir_usage_reinterpret_cast

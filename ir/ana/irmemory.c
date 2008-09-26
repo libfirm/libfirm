@@ -928,38 +928,42 @@ static void init_entity_usage(ir_type * tp) {
 
 	/* We have to be conservative: All external visible entities are unknown */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-		ir_entity       *entity = get_compound_member(tp, i);
-		ir_entity_usage  flags  = 0;
+		ir_entity       *ent  = get_compound_member(tp, i);
+		ir_entity_usage flags = ir_usage_none;
+		ir_visibility   vis   = get_entity_visibility(ent);
 
-		if (get_entity_visibility(entity) == visibility_external_visible   ||
-		    get_entity_visibility(entity) == visibility_external_allocated ||
-		    get_entity_stickyness(entity) == stickyness_sticky) {
+		if (vis == visibility_external_visible   ||
+		    vis == visibility_external_allocated ||
+		    get_entity_stickyness(ent) == stickyness_sticky) {
 			flags |= ir_usage_unknown;
 		}
-
-		set_entity_usage(entity, flags);
+		set_entity_usage(ent, flags);
 	}
 }
 
+/**
+ * Mark all entities used in the initializer as unknown usage.
+ *
+ * @param initializer  the initializer to check
+ */
 static void check_initializer_nodes(ir_initializer_t *initializer)
 {
-	switch (initializer->kind) {
-	case IR_INITIALIZER_CONST: {
-		ir_node *n = initializer->consti.value;
+	unsigned i;
+	ir_node  *n;
 
+	switch (initializer->kind) {
+	case IR_INITIALIZER_CONST:
 		/* let's check if it's an address */
+		n = initializer->consti.value;
 		if (is_Global(n)) {
 			ir_entity *ent = get_Global_entity(n);
 			set_entity_usage(ent, ir_usage_unknown);
 		}
 		return;
-	}
 	case IR_INITIALIZER_TARVAL:
 	case IR_INITIALIZER_NULL:
 		return;
-	case IR_INITIALIZER_COMPOUND: {
-		size_t i;
-
+	case IR_INITIALIZER_COMPOUND:
 		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *sub_initializer
 				= initializer->compound.initializers[i];
@@ -967,12 +971,12 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 		}
 		return;
 	}
-	}
 	panic("invalid initializer found");
 }  /* check_initializer_nodes */
 
 /**
- * Mark all entities used in the initializer for the given entity as address taken.
+ * Mark all entities used in the initializer for the given entity as unknown
+ * usage.
  *
  * @param ent  the entity
  */
@@ -1013,7 +1017,7 @@ static void check_initializer(ir_entity *ent) {
 
 
 /**
- * Mark all entities used in initializers as address taken.
+ * Mark all entities used in initializers as unknown usage.
  *
  * @param tp  a compound type
  */
