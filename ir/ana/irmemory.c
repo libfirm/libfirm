@@ -850,6 +850,11 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			}
 			break;
 
+#if 0
+		case iro_Phi:
+			/* TODO implement marker algo */
+#endif
+
 		default:
 			/* another op, we don't know anything */
 			res |= ir_usage_unknown;
@@ -870,9 +875,11 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 
 	/* set initial state to not_taken, as this is the "smallest" state */
 	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
-		ir_entity *ent = get_class_member(ft, i);
+		ir_entity       *ent   = get_class_member(ft, i);
+		ir_entity_usage  flags =
+			get_entity_stickyness(ent) == stickyness_sticky ? ir_usage_unknown : 0;
 
-		set_entity_usage(ent, 0);
+		set_entity_usage(ent, flags);
 	}
 
 	assure_irg_outs(irg);
@@ -924,8 +931,9 @@ static void init_entity_usage(ir_type * tp) {
 		ir_entity       *entity = get_compound_member(tp, i);
 		ir_entity_usage  flags  = 0;
 
-		if (get_entity_visibility(entity) == visibility_external_visible
-				|| get_entity_visibility(entity) == visibility_external_allocated) {
+		if (get_entity_visibility(entity) == visibility_external_visible   ||
+		    get_entity_visibility(entity) == visibility_external_allocated ||
+		    get_entity_stickyness(entity) == stickyness_sticky) {
 			flags |= ir_usage_unknown;
 		}
 
