@@ -770,7 +770,7 @@ static int is_hidden_cast(ir_mode *mode, ir_mode *ent_mode) {
 }  /* is_hidden_cast */
 
 /**
- * Determine the usage state of a node (or it's successor Sels).
+ * Determine the usage state of a node (or its successor Sels).
  *
  * @param irn  the node
  */
@@ -1041,7 +1041,7 @@ static void print_entity_usage_flags(ir_type *tp) {
 
 		if (flags == 0)
 			continue;
-		ir_printf("%+F:");
+		ir_printf("%+F:", ent);
 		if (flags & ir_usage_address_taken)
 			printf(" address_taken");
 		if (flags & ir_usage_read)
