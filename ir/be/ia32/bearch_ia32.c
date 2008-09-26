@@ -920,7 +920,7 @@ static ir_entity *mcount = NULL;
 static void ia32_before_abi(void *self) {
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,  /* lowered mode */
-		mode_Bu,  /* prefered mode for set */
+		mode_Bu,  /* preferred mode for set */
 		0,        /* don't lower direct compares */
 	};
 	ia32_code_gen_t *cg = self;
