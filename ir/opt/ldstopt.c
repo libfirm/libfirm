@@ -361,7 +361,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
 	if (is_SymConst(ptr)) {
 		/* a SymConst. If the depth is 0, this is an access to a global
 		 * entity and we don't need a component path, else we know
-		 * at least it's length.
+		 * at least its length.
 		 */
 		assert(get_SymConst_kind(ptr) == symconst_addr_ent);
 		root = get_SymConst_entity(ptr);
@@ -727,7 +727,7 @@ static void reduce_adr_usage(ir_node *ptr) {
 				ldst_info_t *info = get_irn_link(pred);
 				info->projs[get_Proj_proj(ptr)] = NULL;
 
-				/* this node lost it's result proj, handle that */
+				/* this node lost its result proj, handle that */
 				handle_load_update(pred);
 			}
 		}
