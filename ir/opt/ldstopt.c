@@ -1148,54 +1148,48 @@ static unsigned optimize_load(ir_node *load)
 		value = NULL;
 		/* check if we can determine the entity that will be loaded */
 		ent = find_constant_entity(ptr);
-		if (ent != NULL) {
-			if ((allocation_static == get_entity_allocation(ent)) &&
-				(visibility_external_allocated != get_entity_visibility(ent))) {
-				/* a static allocation that is not external: there should be NO exception
-				 * when loading even if we cannot replace the load itself. */
+		if (ent != NULL                                     &&
+		    allocation_static == get_entity_allocation(ent) &&
+		    visibility_external_allocated != get_entity_visibility(ent)) {
+			/* a static allocation that is not external: there should be NO exception
+			 * when loading even if we cannot replace the load itself. */
 
-				/* no exception, clear the info field as it might be checked later again */
-				if (info->projs[pn_Load_X_except]) {
-					exchange(info->projs[pn_Load_X_except], new_Bad());
-					info->projs[pn_Load_X_except] = NULL;
-					res |= CF_CHANGED;
-				}
-				if (info->projs[pn_Load_X_regular]) {
-					exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-					info->projs[pn_Load_X_regular] = NULL;
-					res |= CF_CHANGED;
-				}
+			/* no exception, clear the info field as it might be checked later again */
+			if (info->projs[pn_Load_X_except]) {
+				exchange(info->projs[pn_Load_X_except], new_Bad());
+				info->projs[pn_Load_X_except] = NULL;
+				res |= CF_CHANGED;
+			}
+			if (info->projs[pn_Load_X_regular]) {
+				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+				info->projs[pn_Load_X_regular] = NULL;
+				res |= CF_CHANGED;
+			}
 
-				if (variability_constant == get_entity_variability(ent)) {
-					if (is_atomic_entity(ent)) {
-						/* Might not be atomic after
-						   lowering of Sels.  In this
-						   case we could also load, but
-						   it's more complicated. */
-						/* more simpler case: we load the content of a constant value:
-						 * replace it by the constant itself
-						 */
-						value = get_atomic_ent_value(ent);
-					} else {
-						if (ent->has_initializer) {
-							/* new style initializer */
-							value = find_compound_ent_value(ptr);
-						} else {
-							/* old style initializer */
-							compound_graph_path *path = get_accessed_path(ptr);
+			if (variability_constant == get_entity_variability(ent)) {
+				if (is_atomic_entity(ent)) {
+					/* Might not be atomic after lowering of Sels.  In this case we
+					 * could also load, but it's more complicated. */
+					/* more simpler case: we load the content of a constant value:
+					 * replace it by the constant itself */
+					value = get_atomic_ent_value(ent);
+				} else if (ent->has_initializer) {
+					/* new style initializer */
+					value = find_compound_ent_value(ptr);
+				} else {
+					/* old style initializer */
+					compound_graph_path *path = get_accessed_path(ptr);
 
-							if (path != NULL) {
-								assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+					if (path != NULL) {
+						assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
 
-								value = get_compound_ent_value_by_path(ent, path);
-								DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
-								free_compound_graph_path(path);
-							}
-						}
+						value = get_compound_ent_value_by_path(ent, path);
+						DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
+						free_compound_graph_path(path);
 					}
-					if (value != NULL)
-						value = can_replace_load_by_const(load, value);
 				}
+				if (value != NULL)
+					value = can_replace_load_by_const(load, value);
 			}
 		}
 	}
