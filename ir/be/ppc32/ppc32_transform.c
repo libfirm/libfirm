@@ -1311,7 +1311,7 @@ void ppc32_register_transformers(void) {
 	BAD(Free);
 	BAD(Tuple);
 	BAD(Id);
-	BAD(Bad);
+	//BAD(Bad);
 	BAD(Confirm);
 	BAD(Filter);
 	BAD(CallBegin);
