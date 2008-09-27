@@ -784,7 +784,7 @@ static void find_addr(ir_node *node, void *env) {
 		 * using alloca is called in loop.  In GCC present in SPEC2000 inlining
 		 * into schedule_block cause it to require 2GB of ram instead of 256MB.
 		 *
-		 * Sorryly this is true with our implementation also.
+		 * Sorrily this is true with our implementation also.
 		 * Moreover, we cannot differentiate between alloca() and VLA yet, so this
 		 * disables inlining of functions using VLA (with are completely save).
 		 *
@@ -1233,28 +1233,28 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 }
 
 /********************************************************************/
-/* Apply inlineing to small methods.                                */
+/* Apply inlining to small methods.                                 */
 /********************************************************************/
 
 static struct obstack  temp_obst;
 
 /** Represents a possible inlinable call in a graph. */
 typedef struct _call_entry {
-	ir_node    *call;       /**< the Call node */
-	ir_graph   *callee;     /**< the callee IR-graph called here */
-	list_head  list;        /**< for linking the next one */
-	int        loop_depth;  /**< the loop depth of this call */
-	int        benefice;    /**< calculated benefice of this call */
-	unsigned   local_adr:1; /**< Set if this calls get an address of a local variable. */
-	unsigned   all_const:1; /**< Set if this calls has only constant parameters. */
+	ir_node    *call;       /**< The Call node. */
+	ir_graph   *callee;     /**< The callee IR-graph. */
+	list_head  list;        /**< List head for linking the next one. */
+	int        loop_depth;  /**< The loop depth of this call. */
+	int        benefice;    /**< The calculated benefice of this call. */
+	unsigned   local_adr:1; /**< Set if this call gets an address of a local variable. */
+	unsigned   all_const:1; /**< Set if this call has only constant parameters. */
 } call_entry;
 
 /**
  * environment for inlining small irgs
  */
 typedef struct _inline_env_t {
-	struct obstack obst;  /**< an obstack where call_entries are allocated on. */
-	list_head      calls; /**< the call entry list */
+	struct obstack obst;  /**< An obstack where call_entries are allocated on. */
+	list_head      calls; /**< The call entry list. */
 } inline_env_t;
 
 /**
@@ -1318,10 +1318,10 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	free_callee_info(irg);
 
 	/* Find Call nodes to inline.
-	   (We can not inline during a walk of the graph, as inlineing the same
+	   (We can not inline during a walk of the graph, as inlining the same
 	   method several times changes the visited flag of the walked graph:
-	   after the first inlineing visited of the callee equals visited of
-	   the caller.  With the next inlineing both are increased.) */
+	   after the first inlining visited of the callee equals visited of
+	   the caller.  With the next inlining both are increased.) */
 	obstack_init(&env.obst);
 	INIT_LIST_HEAD(&env.calls);
 	irg_walk_graph(irg, NULL, collect_calls, &env);
@@ -1550,7 +1550,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 	for (i = 0; i < n_irgs; ++i)
 		set_irg_link(get_irp_irg(i), alloc_inline_irg_env());
 
-	/* Precompute information in temporary data structure. */
+	/* Pre-compute information in temporary data structure. */
 	wenv.ignore_runtime = ignore_runtime;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
@@ -1604,7 +1604,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					if (did_inline) {
 						inline_irg_env *callee_env = get_irg_link(callee);
 
-						/* was inlined, must be recomputed */
+						/* call was inlined, Phi/Projs for current graph must be recomputed */
 						phiproj_computed = 0;
 
 						/* Do some statistics */
@@ -1707,7 +1707,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 				if (did_inline) {
 					inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
 
-					/* was inlined, must be recomputed */
+					/* call was inlined, Phi/Projs for current graph must be recomputed */
 					phiproj_computed = 0;
 
 					/* callee was inline. Append it's call list. */
@@ -2190,7 +2190,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		if (!did_inline)
 			continue;
 
-		/* got inlined, must be recomputed */
+		/* call was inlined, Phi/Projs for current graph must be recomputed */
 		phiproj_computed = 0;
 
 		/* remove it from the caller list */
@@ -2232,7 +2232,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	del_pqueue(pqueue);
 }
 
-/**
+/*
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  */
@@ -2258,7 +2258,7 @@ void inline_functions(unsigned maxsize, int inline_threshold) {
 	for (i = 0; i < n_irgs; ++i)
 		set_irg_link(irgs[i], alloc_inline_irg_env());
 
-	/* Precompute information in temporary data structure. */
+	/* Pre-compute information in temporary data structure. */
 	wenv.ignore_runtime = 0;
 	wenv.ignore_callers = 0;
 	for (i = 0; i < n_irgs; ++i) {
