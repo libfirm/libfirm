@@ -2037,7 +2037,7 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 	ir_graph            *callee  = call->callee;
 	irg_inline_property prop     = get_irg_inline_property(callee);
 
-	if (prop & irg_inline_forced) {
+	if (prop >= irg_inline_forced) {
 		/* give them a big benefice, so forced are inline first */
 		benefice = 100000 + call->loop_depth;
 		call->benefice = benefice;
@@ -2049,7 +2049,7 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 			get_irn_irg(call->call), call->call, callee, benefice));
 	}
 
-	if (benefice < inline_threshold && !(prop & irg_inline_forced))
+	if (benefice < inline_threshold && prop < irg_inline_forced)
 		return;
 
 	pqueue_put(pqueue, call, benefice);
@@ -2100,13 +2100,12 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		ir_graph            *callee     = curr_call->callee;
 		ir_node             *call_node  = curr_call->call;
 		inline_irg_env      *callee_env = get_irg_link(callee);
+		irg_inline_property prop        = get_irg_inline_property(callee);
 		int                 loop_depth;
 		const call_entry    *centry;
 		pmap_entry          *e;
 
-		/* we need a hard limit here, else it would be possible to inline
-		 * recursive functions forever. */
-		if (env->n_nodes + callee_env->n_nodes > maxsize) {
+		if ((prop < irg_inline_forced) && env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
 						env->n_nodes, callee, callee_env->n_nodes));
 			continue;
