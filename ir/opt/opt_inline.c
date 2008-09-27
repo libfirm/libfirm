@@ -2033,21 +2033,12 @@ static ir_graph **create_irg_list(void) {
 static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
                             int inline_threshold)
 {
-	int                 benefice;
 	ir_graph            *callee  = call->callee;
 	irg_inline_property prop     = get_irg_inline_property(callee);
+	int                 benefice = calc_inline_benefice(call, callee);
 
-	if (prop >= irg_inline_forced) {
-		/* give them a big benefice, so forced are inline first */
-		benefice = 100000 + call->loop_depth;
-		call->benefice = benefice;
-		DB((dbg, LEVEL_2, "In %+F Call %+F to %+F is forced\n",
-			get_irn_irg(call->call), call->call, callee));
-	} else {
-		benefice = calc_inline_benefice(call, callee);
 		DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
 			get_irn_irg(call->call), call->call, callee, benefice));
-	}
 
 	if (benefice < inline_threshold && prop < irg_inline_forced)
 		return;
