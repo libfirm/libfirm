@@ -1448,6 +1448,9 @@ static void collect_calls2(ir_node *call, void *ctx) {
 		entry->call       = call;
 		entry->callee     = callee;
 		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
+		entry->benefice   = 0;
+		entry->local_adr  = 0;
+		entry->all_const  = 0;
 
 		list_add_tail(&entry->list, &x->calls);
 	}
