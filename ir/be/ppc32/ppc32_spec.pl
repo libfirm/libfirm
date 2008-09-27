@@ -239,7 +239,6 @@ $default_cmp_attr = "NULL";
 },
 
 "Addi" => {
-  "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "construct Add: Addi(a, const) = Addi(const, a) = a + const",
   "reg_req"   => { "in" => [ "!r0" ], "out" => [ "gp" ] },
@@ -596,7 +595,6 @@ $default_cmp_attr = "NULL";
 },
 
 "Ori" => {
-  "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "ors constant with register",
   "reg_req"   => { "in" => [ "gp"], "out" => [ "gp" ] },
@@ -608,7 +606,6 @@ $default_cmp_attr = "NULL";
 },
 
 "Andi_dot" => {
-  "op_flags"  => "c",
   "irn_flags" => "R",
   "comment"   => "ands constant with register with cr0 update",
   "reg_req"   => { "in" => [ "gp"], "out" => [ "gp", "cr0" ] },
