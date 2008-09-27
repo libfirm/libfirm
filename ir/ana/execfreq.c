@@ -285,13 +285,13 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		freq = set_insert_freq(freqs, bb);
 		freq->idx = idx;
 
-		gs_matrix_set(mat, idx, idx, -1.0);
 		for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
 			ir_node *pred = get_Block_cfgpred_block(bb, i);
 			int pred_idx  = size - dfs_get_post_num(dfs, pred) - 1;
 
 			gs_matrix_set(mat, idx, pred_idx, get_cf_probability(bb, i, loop_weight));
 		}
+		gs_matrix_set(mat, idx, idx, -1.0);
 	}
 
 	dfs_free(dfs);
