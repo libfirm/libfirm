@@ -42,6 +42,7 @@
 #include "irgwalk.h"
 
 #include "adt/array.h"
+#include "adt/list.h"
 #include "adt/pset.h"
 #include "adt/pmap.h"
 #include "adt/pdeq.h"
@@ -1238,22 +1239,22 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 static struct obstack  temp_obst;
 
 /** Represents a possible inlinable call in a graph. */
-typedef struct _call_entry call_entry;
-struct _call_entry {
-	ir_node    *call;      /**< the Call node */
-	ir_graph   *callee;    /**< the callee IR-graph called here */
-	call_entry *next;      /**< for linking the next one */
-	int         loop_depth; /**< the loop depth of this call */
-	unsigned    local_adr : 1;
-};
+typedef struct _call_entry {
+	ir_node    *call;       /**< the Call node */
+	ir_graph   *callee;     /**< the callee IR-graph called here */
+	list_head  list;        /**< for linking the next one */
+	int        loop_depth;  /**< the loop depth of this call */
+	int        benefice;    /**< calculated benefice of this call */
+	unsigned   local_adr:1; /**< Set if this calls get an address of a local variable. */
+	unsigned   all_const:1; /**< Set if this calls has only constant parameters. */
+} call_entry;
 
 /**
  * environment for inlining small irgs
  */
 typedef struct _inline_env_t {
 	struct obstack obst;  /**< an obstack where call_entries are allocated on. */
-	call_entry *head;     /**< the head of the call entry list */
-	call_entry *tail;     /**< the tail of the call entry list */
+	list_head      calls; /**< the call entry list */
 } inline_env_t;
 
 /**
@@ -1278,6 +1279,7 @@ static ir_graph *get_call_called_irg(ir_node *call) {
  * Walker: Collect all calls to known graphs inside a graph.
  */
 static void collect_calls(ir_node *call, void *env) {
+	(void) env;
 	if (is_Call(call)) {
 		ir_graph *called_irg = get_call_called_irg(call);
 
@@ -1287,14 +1289,12 @@ static void collect_calls(ir_node *call, void *env) {
 			call_entry   *entry = obstack_alloc(&ienv->obst, sizeof(*entry));
 			entry->call       = call;
 			entry->callee     = called_irg;
-			entry->next       = NULL;
 			entry->loop_depth = 0;
+			entry->benefice   = 0;
+			entry->local_adr  = 0;
+			entry->all_const  = 0;
 
-			if (ienv->tail == NULL)
-				ienv->head = entry;
-			else
-				ienv->tail->next = entry;
-			ienv->tail = entry;
+			list_add_tail(&entry->list, &ienv->calls);
 		}
 	}
 }
@@ -1323,14 +1323,14 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	   after the first inlineing visited of the callee equals visited of
 	   the caller.  With the next inlineing both are increased.) */
 	obstack_init(&env.obst);
-	env.head = env.tail = NULL;
+	INIT_LIST_HEAD(&env.calls);
 	irg_walk_graph(irg, NULL, collect_calls, &env);
 
-	if (env.head != NULL) {
+	if (! list_empty(&env.calls)) {
 		/* There are calls to inline */
 		collect_phiprojs(irg);
 
-		for (entry = env.head; entry != NULL; entry = entry->next) {
+		list_for_each_entry(call_entry, entry, &env.calls, list) {
 			ir_graph            *callee = entry->callee;
 			irg_inline_property prop    = get_irg_inline_property(callee);
 
@@ -1353,19 +1353,18 @@ void inline_small_irgs(ir_graph *irg, int size) {
  * Environment for inlining irgs.
  */
 typedef struct {
-	unsigned n_nodes;             /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
-	unsigned n_blocks;            /**< Number of Blocks in graph without Start and End block. */
-	unsigned n_nodes_orig;        /**< for statistics */
-	unsigned n_call_nodes;        /**< Number of Call nodes in the graph. */
-	unsigned n_call_nodes_orig;   /**< for statistics */
-	unsigned n_callers;           /**< Number of known graphs that call this graphs. */
-	unsigned n_callers_orig;      /**< for statistics */
-	unsigned got_inline:1;   /**< Set, if at least one call inside this graph was inlined. */
-	unsigned local_vars:1;   /**< Set, if a inlined function gets the address of an inlined variable. */
-	unsigned recursive:1;    /**< Set, if this function is self recursive. */
-	call_entry *call_head;   /**< The head of the list of all call nodes in this graph. */
-	call_entry *call_tail;   /**< The tail of the list of all call nodes in this graph .*/
-	unsigned *local_weights; /**< Once allocated, the beneficial weight for transmitting local addresses. */
+	list_head calls;             /**< List of of all call nodes in this graph. */
+	unsigned  *local_weights;    /**< Once allocated, the beneficial weight for transmitting local addresses. */
+	unsigned  n_nodes;           /**< Number of nodes in graph except Id, Tuple, Proj, Start, End. */
+	unsigned  n_blocks;          /**< Number of Blocks in graph without Start and End block. */
+	unsigned  n_nodes_orig;      /**< for statistics */
+	unsigned  n_call_nodes;      /**< Number of Call nodes in the graph. */
+	unsigned  n_call_nodes_orig; /**< for statistics */
+	unsigned  n_callers;         /**< Number of known graphs that call this graphs. */
+	unsigned  n_callers_orig;    /**< for statistics */
+	unsigned  got_inline:1;      /**< Set, if at least one call inside this graph was inlined. */
+	unsigned  local_vars:1;      /**< Set, if an inlined function got the address of a local variable. */
+	unsigned  recursive:1;       /**< Set, if this function is self recursive. */
 } inline_irg_env;
 
 /**
@@ -1373,11 +1372,11 @@ typedef struct {
  */
 static inline_irg_env *alloc_inline_irg_env(void) {
 	inline_irg_env *env    = obstack_alloc(&temp_obst, sizeof(*env));
+	INIT_LIST_HEAD(&env->calls);
+	env->local_weights     = NULL;
 	env->n_nodes           = -2; /* do not count count Start, End */
 	env->n_blocks          = -2; /* do not count count Start, End Block */
 	env->n_nodes_orig      = -2; /* do not count Start, End */
-	env->call_head         = NULL;
-	env->call_tail         = NULL;
 	env->n_call_nodes      = 0;
 	env->n_call_nodes_orig = 0;
 	env->n_callers         = 0;
@@ -1385,7 +1384,6 @@ static inline_irg_env *alloc_inline_irg_env(void) {
 	env->got_inline        = 0;
 	env->local_vars        = 0;
 	env->recursive         = 0;
-	env->local_weights     = NULL;
 	return env;
 }
 
@@ -1449,16 +1447,9 @@ static void collect_calls2(ir_node *call, void *ctx) {
 		entry = obstack_alloc(&temp_obst, sizeof(*entry));
 		entry->call       = call;
 		entry->callee     = callee;
-		entry->next       = NULL;
 		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
 
-		entry->next  = x->call_head;
-		x->call_head = entry;
-
-		if (entry->next == NULL) {
-			/* keep tail up to date */
-			x->call_tail = entry;
-		}
+		list_add_tail(&entry->list, &x->calls);
 	}
 }
 
@@ -1481,35 +1472,46 @@ INLINE static int is_smaller(ir_graph *callee, unsigned size) {
 }
 
 /**
- * Append the nodes of the list src to the nodes of the list in environment dst.
+ * Duplicate a call entry.
+ *
+ * @param entry     the original entry to duplicate
+ * @param new_call  the new call node
+ * @param loop_depth_delta
+ *                  delta value for the loop depth
  */
-static void append_call_list(inline_irg_env *dst, call_entry *src) {
+static call_entry *duplicate_call_entry(const call_entry *entry,
+                                        ir_node *new_call, int loop_depth_delta) {
+	call_entry *nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
+	nentry->call       = new_call;
+	nentry->callee     = entry->callee;
+	nentry->benefice   = entry->benefice;
+	nentry->loop_depth = entry->loop_depth + loop_depth_delta;
+	nentry->local_adr  = entry->local_adr;
+	nentry->all_const  = entry->all_const;
+
+	return nentry;
+}
+
+/**
+ * Append all call nodes of the source environment to the nodes of in the destination
+ * environment.
+ *
+ * @param dst         destination environment
+ * @param src         source environment
+ * @param loop_depth  the loop depth of the call that is replaced by the src list
+ */
+static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_depth) {
 	call_entry *entry, *nentry;
 
 	/* Note that the src list points to Call nodes in the inlined graph, but
 	   we need Call nodes in our graph. Luckily the inliner leaves this information
 	   in the link field. */
-	for (entry = src; entry != NULL; entry = entry->next) {
-		nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
-		nentry->call         = get_irn_link(entry->call);
-		nentry->callee       = entry->callee;
-		nentry->next         = NULL;
-		nentry->loop_depth   = entry->loop_depth;
-		dst->call_tail->next = nentry;
-		dst->call_tail       = nentry;
+	list_for_each_entry(call_entry, entry, &src->calls, list) {
+		nentry = duplicate_call_entry(entry, get_irn_link(entry->call), loop_depth);
+		list_add_tail(&nentry->list, &dst->calls);
 	}
-}
-
-static call_entry *duplicate_call_entry(const call_entry *entry,
-		int loop_depth_delta, ir_node *new_call)
-{
-	call_entry *nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
-	nentry->call       = new_call;
-	nentry->callee     = entry->callee;
-	nentry->next       = NULL;
-	nentry->loop_depth = entry->loop_depth + loop_depth_delta;
-
-	return nentry;
+	dst->n_call_nodes += src->n_call_nodes;
+	dst->n_nodes      += src->n_nodes;
 }
 
 /*
@@ -1521,7 +1523,7 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
  * size are inlined.
  */
 void inline_leave_functions(unsigned maxsize, unsigned leavesize,
-		unsigned size, int ignore_runtime)
+                            unsigned size, int ignore_runtime)
 {
 	inline_irg_env   *env;
 	ir_graph         *irg;
@@ -1529,7 +1531,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 	ir_graph         *rem;
 	int              did_inline;
 	wenv_t           wenv;
-	call_entry       *entry, *tail;
+	call_entry       *entry, *next;
 	const call_entry *centry;
 	pmap             *copied_graphs;
 	pmap_entry       *pm_entry;
@@ -1570,10 +1572,9 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 			int phiproj_computed = 0;
 
 			current_ir_graph = get_irp_irg(i);
-			env = (inline_irg_env *)get_irg_link(current_ir_graph);
+			env              = get_irg_link(current_ir_graph);
 
-			tail = NULL;
-			for (entry = env->call_head; entry != NULL; entry = entry->next) {
+			list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
 				ir_graph            *callee;
 				irg_inline_property  prop;
 
@@ -1598,7 +1599,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					did_inline = inline_method(call, callee);
 
 					if (did_inline) {
-						inline_irg_env *callee_env = (inline_irg_env *)get_irg_link(callee);
+						inline_irg_env *callee_env = get_irg_link(callee);
 
 						/* was inlined, must be recomputed */
 						phiproj_computed = 0;
@@ -1610,16 +1611,11 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 						--callee_env->n_callers;
 
 						/* remove this call from the list */
-						if (tail != NULL)
-							tail->next = entry->next;
-						else
-							env->call_head = entry->next;
+						list_del(&entry->list);
 						continue;
 					}
 				}
-				tail = entry;
 			}
-			env->call_tail = tail;
 		}
 	} while (did_inline);
 
@@ -1629,11 +1625,10 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		int phiproj_computed = 0;
 
 		current_ir_graph = get_irp_irg(i);
-		env = (inline_irg_env *)get_irg_link(current_ir_graph);
+		env              = get_irg_link(current_ir_graph);
 
 		/* note that the list of possible calls is updated during the process */
-		tail = NULL;
-		for (entry = env->call_head; entry != NULL; entry = entry->next) {
+		list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
 			irg_inline_property prop;
 			ir_graph            *callee;
 			pmap_entry          *e;
@@ -1715,34 +1710,27 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					/* callee was inline. Append it's call list. */
 					env->got_inline = 1;
 					--env->n_call_nodes;
-					append_call_list(env, callee_env->call_head);
-					env->n_call_nodes += callee_env->n_call_nodes;
-					env->n_nodes += callee_env->n_nodes;
+					append_call_list(env, callee_env, entry->loop_depth);
 					--callee_env->n_callers;
 
 					/* after we have inlined callee, all called methods inside callee
 					   are now called once more */
-					for (centry = callee_env->call_head; centry != NULL; centry = centry->next) {
+					list_for_each_entry(call_entry, centry, &callee_env->calls, list) {
 						inline_irg_env *penv = get_irg_link(centry->callee);
 						++penv->n_callers;
 					}
 
 					/* remove this call from the list */
-					if (tail != NULL)
-						tail->next = entry->next;
-					else
-						env->call_head = entry->next;
+					list_del(&entry->list);
 					continue;
 				}
 			}
-			tail = entry;
 		}
-		env->call_tail = tail;
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
 		irg = get_irp_irg(i);
-		env = (inline_irg_env *)get_irg_link(irg);
+		env = get_irg_link(irg);
 
 		if (env->got_inline) {
 			optimize_graph_df(irg);
@@ -1888,11 +1876,8 @@ static unsigned get_method_local_adress_weight(ir_graph *callee, int pos) {
  *
  * @param call       the call node we have to inspect
  * @param callee     the called graph
- * @param local_adr  set after return if an address of a local variable is
- *                   transmitted as a parameter
  */
-static int calc_inline_benefice(const call_entry *entry, ir_graph *callee,
-                                unsigned *local_adr)
+static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
 	ir_node   *call = entry->call;
 	ir_entity *ent  = get_irg_entity(callee);
@@ -1909,15 +1894,13 @@ static int calc_inline_benefice(const call_entry *entry, ir_graph *callee,
 	if (prop == irg_inline_forbidden) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
-		return INT_MIN;
+		return entry->benefice = INT_MIN;
 	}
 
-	if ( (get_irg_additional_properties(callee)
-				| get_entity_additional_properties(ent))
-			& (mtp_property_noreturn | mtp_property_weak)) {
+	if (get_irg_additional_properties(callee) & (mtp_property_noreturn | mtp_property_weak)) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: not inlining noreturn or weak\n",
 		    call, callee));
-		return INT_MIN;
+		return entry->benefice = INT_MIN;
 	}
 
 	/* costs for every passed parameter */
@@ -1958,15 +1941,16 @@ static int calc_inline_benefice(const call_entry *entry, ir_graph *callee,
 				v = get_method_local_adress_weight(callee, i);
 				weight += v;
 				if (v > 0)
-					*local_adr = 1;
+					entry->local_adr = 1;
 			}
 		}
 	}
+	entry->all_const = all_const;
 
 	callee_env = get_irg_link(callee);
-	if (callee_env->n_callers == 1
-			&& callee != current_ir_graph
-			&& get_entity_visibility(ent) == visibility_local) {
+	if (callee_env->n_callers == 1 &&
+	    callee != current_ir_graph &&
+		get_entity_visibility(ent) == visibility_local) {
 		weight += 700;
 	}
 
@@ -1983,13 +1967,6 @@ static int calc_inline_benefice(const call_entry *entry, ir_graph *callee,
 	if (callee_env->n_call_nodes == 0)
 		weight += 400;
 
-	/*
-	 * Reduce the weight for recursive function IFF not all arguments are const.
-	 * inlining recursive functions is rarely good.
-	 */
-	if (callee_env->recursive && !all_const)
-		weight -= 2000;
-
 	/** it's important to inline inner loops first */
 	if (entry->loop_depth > 30)
 		weight += 30 * 1024;
@@ -2000,22 +1977,28 @@ static int calc_inline_benefice(const call_entry *entry, ir_graph *callee,
 	 * All arguments constant is probably a good sign, give an extra bonus
 	 */
 	if (all_const)
-		weight += 1308;
+		weight += 1024;
 
-	return weight;
+	return entry->benefice = weight;
 }
 
 static ir_graph **irgs;
 static int      last_irg;
 
-static void callgraph_walker(ir_graph *irg, void *data)
-{
+/**
+ * Callgraph walker, collect all visited graphs.
+ */
+static void callgraph_walker(ir_graph *irg, void *data) {
 	(void) data;
 	irgs[last_irg++] = irg;
 }
 
-static ir_graph **create_irg_list(void)
-{
+/**
+ * Creates an inline order for all graphs.
+ *
+ * @return the list of graphs.
+ */
+static ir_graph **create_irg_list(void) {
 	ir_entity **free_methods;
 	int       arr_len;
 	int       n_irgs = get_irp_n_irgs();
@@ -2035,19 +2018,33 @@ static ir_graph **create_irg_list(void)
 	return irgs;
 }
 
+/**
+ * Push a call onto the priority list if its
+ * benefice is big enough.
+ *
+ * @param pqueue   the priority queue of calls
+ * @param call     the call entry
+ * @param inlien_threshold
+ *                 the threshold value
+ */
 static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
                             int inline_threshold)
 {
-	ir_graph            *callee    = call->callee;
-	irg_inline_property  prop      = get_irg_inline_property(callee);
-	unsigned             local_adr;
-	int                  benefice;
+	int                 benefice;
+	ir_graph            *callee  = call->callee;
+	irg_inline_property prop     = get_irg_inline_property(callee);
 
-	benefice        = calc_inline_benefice(call, callee, &local_adr);
-	call->local_adr = local_adr;
-
-	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
-		get_irn_irg(call->call), call->call, callee, benefice));
+	if (prop & irg_inline_forced) {
+		/* give them a big benefice, so forced are inline first */
+		benefice = 100000 + call->loop_depth;
+		call->benefice = benefice;
+		DB((dbg, LEVEL_2, "In %+F Call %+F to %+F is forced\n",
+			get_irn_irg(call->call), call->call, callee));
+	} else {
+		benefice = calc_inline_benefice(call, callee);
+		DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
+			get_irn_irg(call->call), call->call, callee, benefice));
+	}
 
 	if (benefice < inline_threshold && !(prop & irg_inline_forced))
 		return;
@@ -2055,14 +2052,28 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 	pqueue_put(pqueue, call, benefice);
 }
 
+/**
+ * Try to inline calls into a graph.
+ *
+ * @param irg      the graph into which we inline
+ * @param maxsize  do NOT inline if the size of irg gets
+ *                 bigger than this amount
+ * @param inline_threshold
+ *                 threshold value for inline decision
+ * @param copied_graphs
+ *                 map containing copied of recursive graphs
+ */
 static void inline_into(ir_graph *irg, unsigned maxsize,
-		int inline_threshold, pmap *copied_graphs)
+                        int inline_threshold, pmap *copied_graphs)
 {
 	int            phiproj_computed = 0;
 	inline_irg_env *env = get_irg_link(irg);
 	call_entry     *curr_call;
 	wenv_t         wenv;
 	pqueue_t       *pqueue;
+
+	if (env->n_call_nodes == 0)
+		return;
 
 	if (env->n_nodes > maxsize) {
 		DB((dbg, LEVEL_2, "%+F: too big (%d)\n", irg, env->n_nodes));
@@ -2074,30 +2085,25 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	/* put irgs into the pqueue */
 	pqueue = new_pqueue();
 
-	for (curr_call = env->call_head; curr_call != NULL;
-	     curr_call = curr_call->next) {
-
-		if (is_Tuple(curr_call->call))
-			continue;
+	list_for_each_entry(call_entry, curr_call, &env->calls, list) {
 		assert(is_Call(curr_call->call));
-
 		maybe_push_call(pqueue, curr_call, inline_threshold);
 	}
 
 	/* note that the list of possible calls is updated during the process */
 	while (!pqueue_empty(pqueue)) {
-		int                  did_inline;
-		pmap_entry          *e;
-		call_entry          *curr_call = pqueue_pop_front(pqueue);
-		ir_graph            *callee    = curr_call->callee;
-		ir_node             *call_node = curr_call->call;
-		irg_inline_property  prop      = get_irg_inline_property(callee);
-		const call_entry    *centry;
+		int                 did_inline;
+		call_entry          *curr_call  = pqueue_pop_front(pqueue);
+		ir_graph            *callee     = curr_call->callee;
+		ir_node             *call_node  = curr_call->call;
 		inline_irg_env      *callee_env = get_irg_link(callee);
-		int                  depth      = curr_call->loop_depth;
+		int                 loop_depth;
+		const call_entry    *centry;
+		pmap_entry          *e;
 
-		if (! (prop & irg_inline_forced)
-				&& env->n_nodes + callee_env->n_nodes > maxsize) {
+		/* we need a hard limit here, else it would be possible to inline
+		 * recursive functions forever. */
+		if (env->n_nodes + callee_env->n_nodes > maxsize) {
 			DB((dbg, LEVEL_2, "%+F: too big (%d) + %+F (%d)\n", irg,
 						env->n_nodes, callee, callee_env->n_nodes));
 			continue;
@@ -2105,11 +2111,21 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 		e = pmap_find(copied_graphs, callee);
 		if (e != NULL) {
+			int benefice = curr_call->benefice;
 			/*
-			* Remap callee if we have a copy.
-			* FIXME: Should we do this only for recursive Calls ?
-			*/
-			callee = e->value;
+			 * Reduce the weight for recursive function IFF not all arguments are const.
+			 * inlining recursive functions is rarely good.
+			 */
+			if (!curr_call->all_const)
+				benefice -= 2000;
+			if (benefice < inline_threshold)
+				continue;
+
+			/*
+			 * Remap callee if we have a copy.
+			 */
+			callee     = e->value;
+			callee_env = get_irg_link(callee);
 		}
 
 		if (current_ir_graph == callee) {
@@ -2118,8 +2134,17 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			 * walk the graph and change it. So we have to make a copy of
 			 * the graph first.
 			 */
-			inline_irg_env *callee_env;
-			ir_graph       *copy;
+			int benefice = curr_call->benefice;
+			ir_graph *copy;
+
+			/*
+			 * Reduce the weight for recursive function IFF not all arguments are const.
+			 * inlining recursive functions is rarely good.
+			 */
+			if (!curr_call->all_const)
+				benefice -= 2000;
+			if (benefice < inline_threshold)
+				continue;
 
 			/*
 			 * No copy yet, create one.
@@ -2131,7 +2156,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			/* create_irg_copy() destroys the Proj links, recompute them */
 			phiproj_computed = 0;
 
-			/* allocate new environment */
+			/* allocate a new environment */
 			callee_env = alloc_inline_irg_env();
 			set_irg_link(copy, callee_env);
 
@@ -2162,16 +2187,11 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		if (!did_inline)
 			continue;
 
-		/* was inlined, must be recomputed */
+		/* got inlined, must be recomputed */
 		phiproj_computed = 0;
 
-		/* after we have inlined callee, all called methods inside
-		 * callee are now called once more */
-		for (centry = callee_env->call_head; centry != NULL;
-		     centry = centry->next) {
-			inline_irg_env *penv = get_irg_link(centry->callee);
-			++penv->n_callers;
-		}
+		/* remove it from the caller list */
+		list_del(&curr_call->list);
 
 		/* callee was inline. Append it's call list. */
 		env->got_inline = 1;
@@ -2180,19 +2200,24 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		--env->n_call_nodes;
 
 		/* we just generate a bunch of new calls */
-		for (centry = callee_env->call_head; centry != NULL;
-		     centry = centry->next) {
-		   	/* Note that the src list points to Call nodes in the inlined graph,
-		   	 * but we need Call nodes in our graph. Luckily the inliner leaves
-		   	 * this information in the link field. */
+		loop_depth = curr_call->loop_depth;
+		list_for_each_entry(call_entry, centry, &callee_env->calls, list) {
+			inline_irg_env *penv = get_irg_link(centry->callee);
+			ir_node        *new_call;
+			call_entry     *new_entry;
 
-			ir_node    *new_call = get_irn_link(centry->call);
-			call_entry *new_entry;
+			/* after we have inlined callee, all called methods inside
+			 * callee are now called once more */
+			++penv->n_callers;
 
-			if (!is_Call(new_call))
-				continue;
+			/* Note that the src list points to Call nodes in the inlined graph,
+			 * but we need Call nodes in our graph. Luckily the inliner leaves
+			 * this information in the link field. */
+			new_call = get_irn_link(centry->call);
+			assert(is_Call(new_call));
 
-			new_entry = duplicate_call_entry(centry, depth, new_call);
+			new_entry = duplicate_call_entry(centry, new_call, loop_depth);
+			list_add_tail(&new_entry->list, &env->calls);
 			maybe_push_call(pqueue, new_entry, inline_threshold);
 		}
 
@@ -2238,7 +2263,7 @@ void inline_functions(unsigned maxsize, int inline_threshold) {
 
 		free_callee_info(irg);
 
-		wenv.x         = get_irg_link(irg);
+		wenv.x = get_irg_link(irg);
 		assure_cf_loop(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
