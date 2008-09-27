@@ -801,6 +801,12 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	am->commutative = commutative;
 }
 
+static void set_transformed_and_mark(ir_node *const old_node, ir_node *const new_node)
+{
+	mark_irn_visited(old_node);
+	be_set_transformed_node(old_node, new_node);
+}
+
 static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 {
 	ir_mode  *mode;
@@ -813,8 +819,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 	mode = get_irn_mode(node);
 	load = get_Proj_pred(am->mem_proj);
 
-	mark_irn_visited(load);
-	be_set_transformed_node(load, node);
+	set_transformed_and_mark(load, node);
 
 	if (mode != mode_T) {
 		set_irn_mode(node, mode_T);
@@ -2022,12 +2027,6 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	}
 
 	return 1;
-}
-
-static void set_transformed_and_mark(ir_node *const old_node, ir_node *const new_node)
-{
-	mark_irn_visited(old_node);
-	be_set_transformed_node(old_node, new_node);
 }
 
 static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
@@ -3596,8 +3595,7 @@ static ir_node *gen_be_Return(ir_node *node) {
 	                          arity, in);
 	copy_node_attr(barrier, new_barrier);
 	be_duplicate_deps(barrier, new_barrier);
-	be_set_transformed_node(barrier, new_barrier);
-	mark_irn_visited(barrier);
+	set_transformed_and_mark(barrier, new_barrier);
 
 	/* transform normally */
 	return be_duplicate_node(node);
