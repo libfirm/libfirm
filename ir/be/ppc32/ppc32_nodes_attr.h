@@ -26,6 +26,7 @@
 #ifndef FIRM_BE_PPC32_PPC32_NODES_ATTR_H
 #define FIRM_BE_PPC32_PPC32_NODES_ATTR_H
 
+#include "irnode_t.h"
 #include "../bearch_t.h"
 
 typedef struct
@@ -51,6 +52,7 @@ typedef enum {
 } ppc32_attr_offset_mode;
 
 typedef struct _ppc32_attr_t {
+	except_attr  exc;           /**< the exception attribute. MUST be the first one. */
 	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
