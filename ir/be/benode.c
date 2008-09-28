@@ -43,6 +43,7 @@
 #include "bitfiddle.h"
 #include "raw_bitset.h"
 #include "error.h"
+#include "array_t.h"
 
 #include "irop_t.h"
 #include "irmode_t.h"

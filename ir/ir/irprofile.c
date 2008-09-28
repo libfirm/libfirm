@@ -36,6 +36,7 @@
 #include "set.h"
 #include "list.h"
 #include "pmap.h"
+#include "array_t.h"
 
 #include "irprintf.h"
 #include "irgwalk.h"

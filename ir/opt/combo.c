@@ -50,6 +50,7 @@
 #include "irgmod.h"
 #include "iropt_dbg.h"
 #include "debug.h"
+#include "array_t.h"
 #include "error.h"
 
 #include "tv_t.h"

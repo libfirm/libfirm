@@ -38,6 +38,7 @@
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
+#include "array_t.h"
 
 #include "bearch_t.h"
 #include "belower.h"

@@ -39,7 +39,7 @@
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "irtools.h"
-#include "array.h"
+#include "array_t.h"
 #include "xmalloc.h"
 
 // debug

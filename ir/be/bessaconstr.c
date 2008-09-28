@@ -50,6 +50,9 @@
 #include "config.h"
 #endif
 
+/* statev in this file is extensive, so only enable if needed */
+#define DISABLE_STATEV
+
 #include "bessaconstr.h"
 #include "bemodule.h"
 #include "besched_t.h"

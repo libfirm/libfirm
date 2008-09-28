@@ -39,7 +39,7 @@
 #include "irmemory.h"
 #include "irtools.h"
 #include "iroptimize.h"
-#include "array.h"
+#include "array_t.h"
 #include "pmap.h"
 #include "xmalloc.h"
 #include "error.h"

@@ -40,7 +40,7 @@
 #include "iropt_t.h"
 #include "irgmod.h"
 #include "irhooks.h"
-#include "array.h"
+#include "array_t.h"
 #include "irbackedge_t.h"
 #include "irflag_t.h"
 #include "iredges_t.h"

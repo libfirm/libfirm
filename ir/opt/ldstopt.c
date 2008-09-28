@@ -42,7 +42,7 @@
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
 #include "irflag_t.h"
-#include "array.h"
+#include "array_t.h"
 #include "irhooks.h"
 #include "iredges.h"
 #include "irtools.h"

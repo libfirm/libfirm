@@ -34,7 +34,7 @@
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
-#include "array.h"
+#include "array_t.h"
 #include "irprog.h"
 #include "entity_t.h"
 #include "xmalloc.h"

@@ -53,7 +53,9 @@
 #include "besched_t.h"
 #include "be_t.h"
 
+#ifndef NDEBUG
 #define EXPENSIVE_CHECKS
+#endif
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -681,7 +683,10 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 		}
 		assert(found);
 	}
+#else
+	(void) entry;
 #endif
+
 	/* check all loop successors */
 	for (edge = loop_info->exit_edges; edge != NULL; edge = edge->next) {
 		ir_node *succ      = edge->block;

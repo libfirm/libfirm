@@ -50,7 +50,7 @@
 #include "irnode_t.h"
 #include "irtools.h"
 #include "irgmod.h"
-#include "array.h"
+#include "array_t.h"
 #include "xmalloc.h"
 
 /**

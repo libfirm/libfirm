@@ -34,7 +34,7 @@
 #include "debug.h"
 #include "iroptimize.h"
 #include "scalar_replace.h"
-#include "array.h"
+#include "array_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "irgmod.h"

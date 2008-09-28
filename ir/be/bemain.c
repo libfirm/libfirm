@@ -531,29 +531,29 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_timing = (be_options.timing == BE_TIME_ON);
 
 	if (be_timing) {
-		t_abi        = ir_timer_register("time_beabi",       "be abi introduction");
-		t_codegen    = ir_timer_register("time_codegen",     "codegeneration");
-		t_sched      = ir_timer_register("time_sched",       "scheduling");
-		t_constr     = ir_timer_register("time_constr",      "assure constraints");
-		t_finish     = ir_timer_register("time_finish",      "graph finish");
-		t_emit       = ir_timer_register("time_emiter",      "code emiter");
-		t_verify     = ir_timer_register("time_verify",      "graph verification");
-		t_other      = ir_timer_register("time_other",       "other");
-		t_heights    = ir_timer_register("time_heights",     "heights");
-		t_live       = ir_timer_register("time_liveness",    "be liveness");
-		t_execfreq   = ir_timer_register("time_execfreq",    "execfreq");
-		t_ssa_constr = ir_timer_register("time_ssa_constr",  "ssa reconstruction");
-		t_ra_prolog  = ir_timer_register("time_ra_prolog",   "regalloc prolog");
-		t_ra_epilog  = ir_timer_register("time_ra_epilog",   "regalloc epilog");
-		t_ra_constr  = ir_timer_register("time_ra_constr",   "regalloc constraints");
-		t_ra_spill   = ir_timer_register("time_ra_spill",    "spiller");
+		t_abi        = ir_timer_register("bemain_time_beabi",       "be abi introduction");
+		t_codegen    = ir_timer_register("bemain_time_codegen",     "codegeneration");
+		t_sched      = ir_timer_register("bemain_time_sched",       "scheduling");
+		t_constr     = ir_timer_register("bemain_time_constr",      "assure constraints");
+		t_finish     = ir_timer_register("bemain_time_finish",      "graph finish");
+		t_emit       = ir_timer_register("bemain_time_emiter",      "code emiter");
+		t_verify     = ir_timer_register("bemain_time_verify",      "graph verification");
+		t_other      = ir_timer_register("bemain_time_other",       "other");
+		t_heights    = ir_timer_register("bemain_time_heights",     "heights");
+		t_live       = ir_timer_register("bemain_time_liveness",    "be liveness");
+		t_execfreq   = ir_timer_register("bemain_time_execfreq",    "execfreq");
+		t_ssa_constr = ir_timer_register("bemain_time_ssa_constr",  "ssa reconstruction");
+		t_ra_prolog  = ir_timer_register("bemain_time_ra_prolog",   "regalloc prolog");
+		t_ra_epilog  = ir_timer_register("bemain_time_ra_epilog",   "regalloc epilog");
+		t_ra_constr  = ir_timer_register("bemain_time_ra_constr",   "regalloc constraints");
+		t_ra_spill   = ir_timer_register("bemain_time_ra_spill",    "spiller");
 		t_ra_spill_apply
-			= ir_timer_register("time_ra_spill_apply", "apply spills");
-		t_ra_color   = ir_timer_register("time_ra_color",    "graph coloring");
-		t_ra_ifg     = ir_timer_register("time_ra_ifg",      "interference graph");
-		t_ra_copymin = ir_timer_register("time_ra_copymin",  "copy minimization");
-		t_ra_ssa     = ir_timer_register("time_ra_ssadestr", "ssa destruction");
-		t_ra_other   = ir_timer_register("time_ra_other",    "regalloc other");
+			= ir_timer_register("bemain_time_ra_spill_apply", "apply spills");
+		t_ra_color   = ir_timer_register("bemain_time_ra_color",    "graph coloring");
+		t_ra_ifg     = ir_timer_register("bemain_time_ra_ifg",      "interference graph");
+		t_ra_copymin = ir_timer_register("bemain_time_ra_copymin",  "copy minimization");
+		t_ra_ssa     = ir_timer_register("bemain_time_ra_ssadestr", "ssa destruction");
+		t_ra_other   = ir_timer_register("bemain_time_ra_other",    "regalloc other");
 	}
 
 	be_init_env(&env, file_handle);
@@ -564,7 +564,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	arch_env = env.arch_env;
 
-	/* backend may provide an ordered list of irgs where code should be generated for */
+	/* backend may provide an ordered list of irgs where code should be
+	 * generated for */
 	irg_list         = NEW_ARR_F(ir_graph *, 0);
 	backend_irg_list = arch_env_get_backend_irg_list(arch_env, &irg_list);
 
@@ -609,12 +610,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
-#if 0
-		{
-			unsigned percent = 100*i/num_birgs;
-			ir_printf("%u.%02u %+F\n", percent/100, percent%100, irg);
-		}
-#endif
 		be_sched_init_phase(irg);
 
 		/* reset the phi handler. */
@@ -662,11 +657,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* generate code */
-		stat_ev_ctx_push_str("bemain_phase", "prepare");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
-		stat_ev_ctx_pop("bemain_phase");
 
 		/* reset the phi handler. */
 		be_phi_handler_reset();
@@ -702,11 +695,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* be_live_chk_compare(birg); */
 
 		/* let backend prepare scheduling */
-		stat_ev_ctx_push_str("bemain_phase", "before_sched");
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_before_sched(birg->cg);
 		BE_TIMER_POP(t_codegen);
-		stat_ev_ctx_pop("bemain_phase");
 
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
@@ -881,14 +872,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_free_phase(irg);
 
 		be_free_birg(birg);
-
-        /* switched off due to statistics (statistic module needs all irgs) */
-#if 0   /* STA needs irgs */
-#ifdef FIRM_STATISTICS
-		if (! stat_is_active())
-#endif /* FIRM_STATISTICS */
-			free_ir_graph(irg);
-#endif /* if 0 */
 		stat_ev_ctx_pop("bemain_irg");
 	}
 	ir_profile_free();
@@ -944,7 +927,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 		ir_timer_stop(t);
 		ir_timer_leave_high_priority();
 		stat_ev_if {
-			stat_ev_dbl("backend_time", ir_timer_elapsed_msec(t));
+			stat_ev_dbl("bemain_backend_time", ir_timer_elapsed_msec(t));
 		} else {
 			printf("%-20s: %lu msec\n", "BEMAINLOOP", ir_timer_elapsed_msec(t));
 		}

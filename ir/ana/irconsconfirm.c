@@ -38,6 +38,7 @@
 #include "irprintf.h"
 #include "irgopt.h"
 #include "irtools.h"
+#include "array_t.h"
 
 /**
  * Walker environment.

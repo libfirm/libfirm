@@ -43,6 +43,7 @@
 
 #include "bitset.h"
 #include "debug.h"
+#include "array_t.h"
 #include "irtools.h"
 
 #include "../bearch_t.h"                /* the general register allocator interface */

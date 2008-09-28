@@ -30,6 +30,7 @@
 
 #include <limits.h>
 
+#include "array_t.h"
 #include "ircons.h"
 #include "irgopt.h"
 #include "irgwalk.h"

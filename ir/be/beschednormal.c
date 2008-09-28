@@ -36,7 +36,7 @@
 #include "irtools.h"
 #include "irgwalk.h"
 #include "benode_t.h"
-
+#include "array_t.h"
 
 // XXX there is no one time init for schedulers
 //#define NORMAL_DBG

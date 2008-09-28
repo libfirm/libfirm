@@ -50,6 +50,7 @@
 #include "bipartite.h"
 #include "hungarian.h"
 #include "plist.h"
+#include "array_t.h"
 
 #include "height.h"
 

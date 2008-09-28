@@ -45,7 +45,7 @@
 #include "irvrfy.h"
 #include "iredges.h"
 
-#include "array.h"
+#include "array_t.h"
 
 #include "irouts.h"
 #include "irbackedge_t.h"

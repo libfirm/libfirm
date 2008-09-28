@@ -41,6 +41,7 @@
 #include "irvrfy.h"
 #include "pmap.h"
 #include "xmalloc.h"
+#include "array_t.h"
 #include "iropt_dbg.h"
 
 /** Walker environment. */

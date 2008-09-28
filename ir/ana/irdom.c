@@ -40,7 +40,7 @@
 #include "irgraph_t.h"   /* To access state field. */
 #include "irnode_t.h"
 #include "ircons_t.h"
-#include "array.h"
+#include "array_t.h"
 #include "iredges.h"
 
 

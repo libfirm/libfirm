@@ -48,6 +48,7 @@
 #include "irdom.h"
 #include "archop.h"
 #include "error.h"
+#include "array_t.h"
 #include "height.h"
 
 #include "../benode_t.h"
@@ -2828,13 +2829,12 @@ static ir_node *gen_Cmp(ir_node *node)
 		/* Test(and_left, and_right) */
 		ir_node *and_left  = get_And_left(left);
 		ir_node *and_right = get_And_right(left);
-		ir_mode *mode      = get_irn_mode(and_left);
 
 		/* matze: code here used mode instead of cmd_mode, I think it is always
 		 * the same as cmp_mode, but I leave this here to see if this is really
 		 * true...
 		 */
-		assert(mode == cmp_mode);
+		assert(get_irn_mode(and_left) == cmp_mode);
 
 		match_arguments(&am, block, and_left, and_right, NULL,
 										match_commutative |

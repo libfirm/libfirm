@@ -41,7 +41,7 @@
 #include "pdeq.h"
 #include "irtools.h"
 #include "obst.h"
-#include "array.h"
+#include "array_t.h"
 #include "be_dbgout_t.h"
 #include "beabi.h"
 #include "bemodule.h"

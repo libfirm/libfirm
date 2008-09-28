@@ -29,7 +29,7 @@
 
 #include "iroptimize.h"
 
-#include "array.h"
+#include "array_t.h"
 #include "debug.h"
 #include "ircons.h"
 #include "irgraph.h"

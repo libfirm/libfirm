@@ -39,6 +39,7 @@
 #include "irgwalk.h"
 #include "obst.h"
 #include "pmap.h"
+#include "array_t.h"
 #include "pdeq.h"
 #include "irprintf.h"
 #include "debug.h"

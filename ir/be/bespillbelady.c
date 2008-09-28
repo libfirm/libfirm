@@ -292,8 +292,9 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 
 	assert(! (flags & arch_irn_flags_ignore));
 
-	use = be_get_next_use(uses, from, from_step, def, skip_from_uses);
-	if (USES_IS_INFINITE(use.time))
+	use  = be_get_next_use(uses, from, from_step, def, skip_from_uses);
+	time = use.time;
+	if (USES_IS_INFINITE(time))
 		return USES_INFINITY;
 
 	/* We have to keep nonspillable nodes in the workingset */
@@ -304,7 +305,7 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
 	if (remat_bonus > 0) {
 		costs = be_get_reload_costs_no_weight(senv, def, use.before);
 		assert(costs * remat_bonus < 1000);
-		time  = use.time + 1000 - (costs * remat_bonus);
+		time  += 1000 - (costs * remat_bonus);
 	}
 
 	return time;
