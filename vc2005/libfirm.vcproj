@@ -1534,41 +1534,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\be\beraextern.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\be\beraextern.h"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\be\besched.c"
 					>
 					<FileConfiguration
@@ -2123,6 +2088,14 @@
 					</File>
 					<File
 						RelativePath="..\ir\be\ia32\ia32_architecture.h"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_common_transform.c"
+						>
+					</File>
+					<File
+						RelativePath="..\ir\be\ia32\ia32_common_transform.h"
 						>
 					</File>
 					<File
@@ -7031,6 +7004,10 @@
 				</File>
 				<File
 					RelativePath="..\ir\ana\irmemory.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ana\irmemory_t.h"
 					>
 				</File>
 				<File
