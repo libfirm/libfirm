@@ -41,10 +41,7 @@
      31 |   x   |   x   |   x   |   x   |   x   | impossible
  */
 
-struct s {
-	char m[100];
-} a;
-
+char sc[100];
 char c;
 
 int main(int argc, char **argv)
@@ -52,14 +49,16 @@ int main(int argc, char **argv)
 	return 0;
 }
 
+/* Source address modes */
+
 void load_01(void)
 {
-	c = a.m[0];
+	c = sc[0];
 }
 
 void load_03(void)
 {
-	c = a.m[1];
+	c = sc[1];
 }
 
 void load_16(char* base)
@@ -69,7 +68,7 @@ void load_16(char* base)
 
 void load_17(int base)
 {
-	c = a.m[base];
+	c = sc[base];
 }
 
 void load_18(char* base)
@@ -79,7 +78,7 @@ void load_18(char* base)
 
 void load_19(int base)
 {
-	c = a.m[base + 1];
+	c = sc[base + 1];
 }
 
 void load_20_add(char* base, int index)
@@ -92,14 +91,14 @@ void load_20_shift(char* base, int index)
 	c = base[4 * index];
 }
 
-void load_21_add(int index)
+void load_21_add(int base, int index)
 {
-	c = a.m[2 * index];
+	c = sc[base + 2 * index];
 }
 
-void load_21_shift(int index)
+void load_21_shift(int base, int index)
 {
-	c = a.m[4 * index];
+	c = sc[base + 4 * index];
 }
 
 void load_22_add(char* base, int index)
@@ -112,14 +111,14 @@ void load_22_shift(char* base, int index)
 	c = base[4 * index + 1];
 }
 
-void load_23_add(int index)
+void load_23_add(int base, int index)
 {
-	c = a.m[2 * index + 1];
+	c = sc[base + 2 * index + 1];
 }
 
-void load_23_shift(int index)
+void load_23_shift(int base, int index)
 {
-	c = a.m[4 * index + 1];
+	c = sc[base + 4 * index + 1];
 }
 
 void load_24(char* base, int index)
@@ -129,7 +128,7 @@ void load_24(char* base, int index)
 
 void load_25(int base, int index)
 {
-	c = a.m[base + index];
+	c = sc[base + index];
 }
 
 void load_26(char* base, int index)
@@ -139,5 +138,97 @@ void load_26(char* base, int index)
 
 void load_27(int base, int index)
 {
-	c = a.m[base + index + 1];
+	c = sc[base + index + 1];
+}
+
+/* Destination address modes */
+
+void store_01(void)
+{
+	sc[0] = c;
+}
+
+void store_03(void)
+{
+	sc[1] = c;
+}
+
+void store_16(char* base)
+{
+	base[0] = c;
+}
+
+void store_17(int base)
+{
+	sc[base] = c;
+}
+
+void store_18(char* base)
+{
+	base[1] = c;
+}
+
+void store_19(int base)
+{
+	sc[base + 1] = c;
+}
+
+void store_20_add(char* base, int index)
+{
+	base[2 * index] = c;
+}
+
+void store_20_shift(char* base, int index)
+{
+	base[4 * index] = c;
+}
+
+void store_21_add(int base, int index)
+{
+	sc[base + 2 * index] = c;
+}
+
+void store_21_shift(int base, int index)
+{
+	sc[base + 4 * index] = c;
+}
+
+void store_22_add(char* base, int index)
+{
+	base[2 * index + 1] = c;
+}
+
+void store_22_shift(char* base, int index)
+{
+	base[4 * index + 1] = c;
+}
+
+void store_23_add(int base, int index)
+{
+	sc[base + 2 * index + 1] = c;
+}
+
+void store_23_shift(int base, int index)
+{
+	sc[base + 4 * index + 1] = c;
+}
+
+void store_24(char* base, int index)
+{
+	base[index] = c;
+}
+
+void store_25(int base, int index)
+{
+	sc[base + index] = c;
+}
+
+void store_26(char* base, int index)
+{
+	base[index + 1] = c;
+}
+
+void store_27(int base, int index)
+{
+	sc[base + index + 1] = c;
 }
