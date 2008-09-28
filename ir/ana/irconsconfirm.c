@@ -124,7 +124,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
  * @param env       statistical environment
  */
 static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env) {
-	ir_node *cond, *old, *cond_block, *other_blk = NULL, *con = NULL;
+	ir_node *cond, *old, *cond_block = NULL, *other_blk = NULL, *con = NULL;
 	ir_node *c_b = NULL, *c_o = NULL;
 	const ir_edge_t *edge, *next;
 
