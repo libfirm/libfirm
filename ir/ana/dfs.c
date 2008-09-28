@@ -116,11 +116,11 @@ static void dfs_perform(dfs_t *dfs, void *n, void *anc, int level)
 
 static void classify_edges(dfs_t *dfs)
 {
+	dfs_edge_t *edge;
 	stat_ev_cnt_decl(anc);
 	stat_ev_cnt_decl(back);
 	stat_ev_cnt_decl(fwd);
 	stat_ev_cnt_decl(cross);
-	dfs_edge_t *edge;
 
 	foreach_set (dfs->edges, edge) {
 		dfs_node_t *src = edge->s;

@@ -350,9 +350,9 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
 void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
                                          ir_node **nodes, size_t nodes_len)
 {
-	stat_ev_cnt_decl(uses);
 	const ir_edge_t *edge, *next;
 	size_t i;
+	stat_ev_cnt_decl(uses);
 
 	BE_TIMER_PUSH(t_ssa_constr);
 
