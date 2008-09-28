@@ -501,6 +501,10 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 			stat_ev_ctx_push_str("bechordal_cls", cls->name);
 
+			stat_ev_if {
+				be_do_stat_reg_pressure(birg, cls);
+			}
+
 			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
 			pse.birg = birg;
 			pre_spill(&pse, cls);

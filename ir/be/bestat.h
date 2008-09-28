@@ -53,7 +53,7 @@ extern const char *be_stat_tags[STAT_TAG_LAST];
  * Collects statistics information about register pressure.
  * @param birg The be irg object containing the irg
  */
-void be_do_stat_reg_pressure(be_irg_t *birg);
+void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls);
 
 /**
  * Collect statistics about amount of ready nodes per block
@@ -106,7 +106,7 @@ void be_close_stat_file(void);
 
 #define be_stat_init_irg(arch_env, irg)
 #define be_do_stat_nodes(irg, phase)
-#define be_do_stat_reg_pressure(birg)
+#define be_do_stat_reg_pressure(birg,cls)
 #define be_do_stat_sched_ready(block, ready_set)
 #define be_do_stat_perm(class_name, n_regs, perm, block, n, real_size)
 #define be_do_stat_permcycle(class_name, perm, block, is_chain, n_elems, n_ops)

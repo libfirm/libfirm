@@ -165,23 +165,10 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 static void stat_reg_pressure_block(ir_node *block, void *data) {
 	pressure_walker_env_t *env = data;
 
-	if(env->cls != NULL) {
-		check_reg_pressure_class(env, block, env->cls);
-	} else {
-		const arch_env_t *arch_env = be_get_birg_arch_env(env->birg);
-		int i, n;
-
-		n = arch_env_get_n_reg_class(arch_env);
-		for (i = 0; i < n; i++) {
-			const arch_register_class_t *cls
-				= arch_env_get_reg_class(arch_env, i);
-
-			check_reg_pressure_class(env, block, cls);
-		}
-	}
+	check_reg_pressure_class(env, block, env->cls);
 }
 
-void be_do_stat_reg_pressure(be_irg_t *birg) {
+void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls) {
 	pressure_walker_env_t  env;
 	ir_graph              *irg = be_get_birg_irg(birg);
 	double                 average_pressure;
@@ -192,20 +179,14 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 	env.regpressure  = 0;
 	be_liveness_assure_sets(be_assure_liveness(birg));
 	env.lv           = be_get_birg_liveness(birg);
-
-	// hack for now, TODO: remove me later
-#if 0
-	env.cls          = NULL;
-#else
-	env.cls          = arch_env_get_reg_class(be_get_birg_arch_env(birg), 2);
-#endif
+	env.cls          = cls;
 
 	/* Collect register pressure information for each block */
 	irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &env);
 
 	average_pressure = env.regpressure / env.insn_count;
-	stat_ev_emit("bemain_average_register_pressure", average_pressure);
-	stat_ev_emit("bemain_maximum_register_pressure", env.max_pressure);
+	stat_ev_emit("bechordal_average_register_pressure", average_pressure);
+	stat_ev_emit("bechordal_maximum_register_pressure", env.max_pressure);
 }
 
 /**

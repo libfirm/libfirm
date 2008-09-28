@@ -757,11 +757,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_vrfy(birg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
-		/* do some statistics */
-		stat_ev_if {
-			be_do_stat_reg_pressure(birg);
-		}
-
 #ifdef FIRM_STATISTICS
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
 #endif
