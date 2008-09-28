@@ -120,6 +120,10 @@ class EmitSqlite3(EmitBase):
 	def __init__(self, options, tables, ctxcols, evcols):
 		import sqlite3
 
+		if options.database == None:
+			print "Have to specify database (file-)name for sqlite"
+			sys.exit(1)
+
 		if os.path.isfile(options.database):
 			os.unlink(options.database)
 
@@ -160,11 +164,13 @@ class Conv:
 
 		self.valid_keys = set()
 
-		for line in self.input():
+		inp = self.input()
+
+		for line in inp:
 			if line[0] == 'P':
 				ind = line.index(';', 2)
 				key = line[2:ind]
-				if not key in ctxcols:
+				if not ctxcols.has_key(key):
 					ctxcols[key] = ctxind
 					ctxind += 1
 
@@ -173,7 +179,7 @@ class Conv:
 				key = line[2:ind]
 				if self.filter.match(key):
 					self.n_events += 1
-					if not key in evcols:
+					if not evcols.has_key(key):
 						self.valid_keys.add(key)
 						evcols[key] = evind
 						evind += 1
@@ -187,6 +193,7 @@ class Conv:
 		lineno     = 0
 		ids        = 0
 		curr_id    = 0
+		last_push_curr_id = 0
 		keystack   = []
 		idstack    = []
 		curr_event = 0
@@ -202,7 +209,7 @@ class Conv:
 			if op == 'P':
 				# flush the current events
 				if len(evcols):
-					self.emit.ev(curr_id, evcols)
+					self.emit.ev(last_push_curr_id, evcols)
 					evcols.clear()
 
 				# push the key
@@ -210,6 +217,7 @@ class Conv:
 				val   = items[2]
 				keystack.append(key)
 				curr_id = ids
+				last_push_curr_id = curr_id
 				ids += 1
 				idstack.append(curr_id)
 				ctxcols[key] = val
