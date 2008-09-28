@@ -237,8 +237,6 @@ typedef struct _node_stat_t {
 struct node_stat_walker {
 	node_stat_t      *stat;
 	const arch_env_t *arch_env;
-	bitset_t         *mem_phis;
-	const arch_register_class_t *cls;
 };
 
 static void node_stat_walker(ir_node *irn, void *data)
@@ -246,58 +244,40 @@ static void node_stat_walker(ir_node *irn, void *data)
 	struct node_stat_walker *env  = data;
 	const arch_env_t        *aenv = env->arch_env;
 
-	if (arch_irn_consider_in_reg_alloc(aenv, env->cls, irn)) {
-
-		/* if the node is a normal phi */
-		if(is_Phi(irn))
+	/* if the node is a normal phi */
+	if(is_Phi(irn)) {
+		if (get_irn_mode(irn) == mode_M) {
+			env->stat->n_mem_phis++;
+		} else {
 			env->stat->n_phis++;
-
-		else {
-			arch_irn_class_t classify = arch_irn_classify(aenv, irn);
-
-			if(classify & arch_irn_class_spill)
-				++env->stat->n_spills;
-			if(classify & arch_irn_class_reload)
-				++env->stat->n_reloads;
-			if(classify & arch_irn_class_copy)
-				++env->stat->n_copies;
-			if(classify & arch_irn_class_perm)
-				++env->stat->n_perms;
 		}
-	}
+	} else {
+		arch_irn_class_t classify = arch_irn_classify(aenv, irn);
 
-	/* a mem phi is a PhiM with a mem phi operand or a Spill operand */
-	/*else*/ if(is_Phi(irn) && get_irn_mode(irn) == mode_M) {
-		int i;
-
-		for(i = get_irn_arity(irn) - 1; i >= 0; --i) {
-			ir_node *op = get_irn_n(irn, i);
-
-			if((is_Phi(op) && bitset_contains_irn(env->mem_phis, op)) || (arch_irn_classify(aenv, op) & arch_irn_class_spill)) {
-				bitset_add_irn(env->mem_phis, irn);
-				env->stat->n_mem_phis++;
-				break;
-			}
-		}
+		if(classify & arch_irn_class_spill)
+			++env->stat->n_spills;
+		if(classify & arch_irn_class_reload)
+			++env->stat->n_reloads;
+		if(classify & arch_irn_class_copy)
+			++env->stat->n_copies;
+		if(classify & arch_irn_class_perm)
+			++env->stat->n_perms;
 	}
 }
 
-static void node_stats(be_irg_t *birg, const arch_register_class_t *cls, node_stat_t *stat)
+static void node_stats(be_irg_t *birg, node_stat_t *stat)
 {
 	struct node_stat_walker env;
 
-	memset(stat, 0, sizeof(stat[0]));
+	memset(stat, 0, sizeof(*stat));
 	env.arch_env = birg->main_env->arch_env;
-	env.mem_phis = bitset_irg_malloc(birg->irg);
 	env.stat     = stat;
-	env.cls      = cls;
 	irg_walk_graph(birg->irg, NULL, node_stat_walker, &env);
-	bitset_free(env.mem_phis);
 }
 
 static void insn_count_walker(ir_node *irn, void *data)
 {
-	int *cnt = data;
+	unsigned long *cnt = data;
 
 	switch(get_irn_opcode(irn)) {
 	case iro_Proj:
@@ -310,12 +290,29 @@ static void insn_count_walker(ir_node *irn, void *data)
 	}
 }
 
-static unsigned int count_insns(ir_graph *irg)
+static unsigned long count_insns(ir_graph *irg)
 {
-	int cnt = 0;
+	unsigned long cnt = 0;
 	irg_walk_graph(irg, insn_count_walker, NULL, &cnt);
 	return cnt;
 }
+
+static void block_count_walker(ir_node *node, void *data)
+{
+	unsigned long *cnt = data;
+	if (node == get_irg_end_block(current_ir_graph))
+		return;
+	(*cnt)++;
+}
+
+static unsigned long count_blocks(ir_graph *irg)
+{
+	unsigned long cnt = 0;
+	irg_block_walk_graph(irg, block_count_walker, NULL, &cnt);
+	return cnt;
+}
+
+static node_stat_t last_node_stat;
 
 /**
  * Perform things which need to be done per register class before spilling.
@@ -326,7 +323,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = be_get_birg_irg(birg);
 	const be_main_env_t *main_env    = birg->main_env;
-	node_stat_t          node_stat;
 
 	pse->cls                   = cls;
 	chordal_env->cls           = cls;
@@ -336,10 +332,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_assure_liveness(birg);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
 
-	stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
-	stat_ev_do(node_stats(birg, pse->cls, &node_stat));
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
-	stat_ev_dbl("bechordal_phis_before_spill", node_stat.n_phis);
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
@@ -349,8 +342,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	BE_TIMER_POP(t_ra_constr);
 
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
-
-	stat_ev_ctx_pop("bechordal_cls");
 }
 
 /**
@@ -361,19 +352,11 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;
 	const be_main_env_t *main_env    = birg->main_env;
-	node_stat_t          node_stat;
 	int                  colors_n     = arch_register_class_n_regs(chordal_env->cls);
 	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
-
-		stat_ev_ctx_push_str("bechordal_cls", pse->cls->name);
-		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
-		stat_ev_dbl("bechordal_phis_after_spill", node_stat.n_phis);
-		stat_ev_dbl("bechordal_mem_phis", node_stat.n_mem_phis);
-		stat_ev_dbl("bechordal_reloads", node_stat.n_reloads);
-		stat_ev_dbl("bechordal_spills", node_stat.n_spills);
 		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
 
 		/*
@@ -413,17 +396,20 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		chordal_env->ifg = be_create_ifg(chordal_env);
 		BE_TIMER_POP(t_ra_ifg);
 
-		{
+		stat_ev_if {
 			be_ifg_stat_t stat;
+			node_stat_t   node_stat;
 
-			stat_ev_do(be_ifg_stat(birg, chordal_env->ifg, &stat));
+			be_ifg_stat(birg, chordal_env->ifg, &stat);
 			stat_ev_dbl("bechordal_ifg_nodes", stat.n_nodes);
 			stat_ev_dbl("bechordal_ifg_edges", stat.n_edges);
 			stat_ev_dbl("bechordal_ifg_comps", stat.n_comps);
 
-			stat_ev_do(node_stats(birg, pse->cls, &node_stat));
-			stat_ev_dbl("bechordal_perms_before_coal", node_stat.n_perms);
-			stat_ev_dbl("bechordal_copies_before_coal", node_stat.n_copies);
+			node_stats(birg, &node_stat);
+			stat_ev_dbl("bechordal_perms_before_coal",
+					node_stat.n_perms - last_node_stat.n_perms);
+			stat_ev_dbl("bechordal_copies_before_coal",
+					node_stat.n_copies - last_node_stat.n_copies);
 		}
 
 		/* copy minimization */
@@ -446,11 +432,6 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			be_ssa_destruction_check(chordal_env);
 			BE_TIMER_POP(t_verify);
 		}
-
-		stat_ev_do(node_stats(birg, pse->cls, &node_stat));
-		stat_ev_dbl("bechordal_perms_after_coal", node_stat.n_perms);
-		stat_ev_dbl("bechordal_copies_after_coal", node_stat.n_copies);
-		stat_ev_ctx_pop("bechordal_cls");
 
 		/* the ifg exists only if there are allocatable regs */
 		be_ifg_free(chordal_env->ifg);
@@ -498,6 +479,8 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	stat_ev_if {
 		be_stat_ev("bechordal_insns_before", count_insns(irg));
+		be_stat_ev("bechordal_blocks_before", count_blocks(irg));
+		node_stats(birg, &last_node_stat);
 	}
 
 	if (! arch_code_generator_has_spiller(birg->cg)) {
@@ -513,6 +496,8 @@ static void be_ra_chordal_main(be_irg_t *birg)
 				continue;
 
 
+			stat_ev_ctx_push_str("bechordal_cls", cls->name);
+
 			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
 			pse.birg = birg;
 			pre_spill(&pse, cls);
@@ -525,6 +510,27 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			     dump_ir_block_graph_sched);
 
 			post_spill(&pse, 0);
+
+			stat_ev_if {
+				node_stat_t node_stat;
+
+				node_stats(birg, &node_stat);
+				stat_ev_dbl("bechordal_phis",
+						node_stat.n_phis - last_node_stat.n_phis);
+				stat_ev_dbl("bechordal_mem_phis",
+						node_stat.n_mem_phis - last_node_stat.n_mem_phis);
+				stat_ev_dbl("bechordal_reloads",
+						node_stat.n_reloads - last_node_stat.n_reloads);
+				stat_ev_dbl("bechordal_spills",
+						node_stat.n_spills - last_node_stat.n_spills);
+				stat_ev_dbl("bechordal_perms_after_coal",
+						node_stat.n_perms - last_node_stat.n_perms);
+				stat_ev_dbl("bechordal_copies_after_coal",
+						node_stat.n_copies - last_node_stat.n_copies);
+
+				last_node_stat = node_stat;
+				stat_ev_ctx_pop("bechordal_cls");
+			}
 		}
 	} else {
 		post_spill_env_t *pse;

@@ -204,8 +204,8 @@ void be_do_stat_reg_pressure(be_irg_t *birg) {
 	irg_block_walk_graph(irg, stat_reg_pressure_block, NULL, &env);
 
 	average_pressure = env.regpressure / env.insn_count;
-	stat_ev_emit("average_register_pressure", average_pressure);
-	stat_ev_emit("maximum_register_pressure", env.max_pressure);
+	stat_ev_emit("bemain_average_register_pressure", average_pressure);
+	stat_ev_emit("bemain_maximum_register_pressure", env.max_pressure);
 }
 
 /**

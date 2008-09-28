@@ -758,17 +758,19 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_verify);
 
 		/* do some statistics */
-		//be_do_stat_reg_pressure(birg);
+		stat_ev_if {
+			be_do_stat_reg_pressure(birg);
+		}
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
+		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
 #endif
 
 		/* Do register allocation */
 		be_allocate_registers(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
+		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);

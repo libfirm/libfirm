@@ -319,8 +319,11 @@ static arch_irn_class_t ia32_classify(const ir_node *irn) {
 	if (is_ia32_St(irn))
 		classification |= arch_irn_class_store;
 
-	if (is_ia32_need_stackent(irn))
+	if (is_ia32_is_reload(irn))
 		classification |= arch_irn_class_reload;
+
+	if (is_ia32_is_spill(irn))
+		classification |= arch_irn_class_spill;
 
 	return classification;
 }
