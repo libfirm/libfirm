@@ -33,6 +33,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#define DISABLE_STATEV
+
 #include <float.h>
 
 #include "array.h"

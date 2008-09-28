@@ -32,6 +32,8 @@
 
 #include <stdlib.h>
 
+#define DISABLE_STATEV
+
 #include <assert.h>
 #include "irtools.h"
 #include "irprintf.h"

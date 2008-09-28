@@ -115,8 +115,6 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
 	int b2a = _value_dominates(b, a);
 	int res = 0;
 
-	stat_ev_ctx_push("beintlive");
-
 	/*
 	 * Adjust a and b so, that a dominates b if
 	 * a dominates b or vice versa.
@@ -133,7 +131,7 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
 		const ir_edge_t *edge;
 		ir_node *bb = get_nodes_block(b);
 
-		stat_ev_dbl("beintlive_ignore", arch_irn_is(lv->birg->main_env->arch_env, a, ignore));
+		//stat_ev_dbl("beintlive_ignore", arch_irn_is(lv->birg->main_env->arch_env, a, ignore));
 
 		/*
 		 * If a is live end in b's block it is
@@ -165,7 +163,6 @@ static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, cons
   	}
 
 end:
-	stat_ev_ctx_pop("beintlive");
 	return res;
 }
 

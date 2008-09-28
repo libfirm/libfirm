@@ -104,7 +104,7 @@ static INLINE int key_matches(const char *key)
 
 void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 {
-	if (ev == 'E' && !key_matches(key))
+	if (!key_matches(key))
 		return;
 
 	mfprintf(stat_ev_file, "%c;%s", ev, key);
