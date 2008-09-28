@@ -42,6 +42,7 @@
  */
 
 char sc[100];
+char* sc_pointers[100];
 char c;
 
 int main(int argc, char **argv)
@@ -143,92 +144,92 @@ void load_27(int base, int index)
 
 /* Destination address modes */
 
-void store_01(void)
+void store_immediate_01(void)
 {
-	sc[0] = c;
+	sc_pointers[0] = sc + 42;
 }
 
-void store_03(void)
+void store_immediate_03(void)
 {
-	sc[1] = c;
+	sc_pointers[1] = sc + 42;
 }
 
-void store_16(char* base)
+void store_immediate_16(char** base)
 {
-	base[0] = c;
+	base[0] = sc + 42;
 }
 
-void store_17(int base)
+void store_immediate_17(int base)
 {
-	sc[base] = c;
+	sc_pointers[base] = sc + 42;
 }
 
-void store_18(char* base)
+void store_immediate_18(char** base)
 {
-	base[1] = c;
+	base[1] = sc + 42;
 }
 
-void store_19(int base)
+void store_immediate_19(int base)
 {
-	sc[base + 1] = c;
+	sc_pointers[base + 1] = sc + 42;
 }
 
-void store_20_add(char* base, int index)
+void store_immediate_20_add(char** base, int index)
 {
-	base[2 * index] = c;
+	base[2 * index] = sc + 42;
 }
 
-void store_20_shift(char* base, int index)
+void store_immediate_20_shift(char** base, int index)
 {
-	base[4 * index] = c;
+	base[4 * index] = sc + 42;
 }
 
-void store_21_add(int base, int index)
+void store_immediate_21_add(int base, int index)
 {
-	sc[base + 2 * index] = c;
+	sc_pointers[base + 2 * index] = sc + 42;
 }
 
-void store_21_shift(int base, int index)
+void store_immediate_21_shift(int base, int index)
 {
-	sc[base + 4 * index] = c;
+	sc_pointers[base + 4 * index] = sc + 42;
 }
 
-void store_22_add(char* base, int index)
+void store_immediate_22_add(char** base, int index)
 {
-	base[2 * index + 1] = c;
+	base[2 * index + 1] = sc + 42;
 }
 
-void store_22_shift(char* base, int index)
+void store_immediate_22_shift(char** base, int index)
 {
-	base[4 * index + 1] = c;
+	base[4 * index + 1] = sc + 42;
 }
 
-void store_23_add(int base, int index)
+void store_immediate_23_add(int base, int index)
 {
-	sc[base + 2 * index + 1] = c;
+	sc_pointers[base + 2 * index + 1] = sc + 42;
 }
 
-void store_23_shift(int base, int index)
+void store_immediate_23_shift(int base, int index)
 {
-	sc[base + 4 * index + 1] = c;
+	sc_pointers[base + 4 * index + 1] = sc + 42;
 }
 
-void store_24(char* base, int index)
+void store_immediate_24(char** base, int index)
 {
-	base[index] = c;
+	base[index] = sc + 42;
 }
 
-void store_25(int base, int index)
+void store_immediate_25(int base, int index)
 {
-	sc[base + index] = c;
+	sc_pointers[base + index] = sc + 42;
 }
 
-void store_26(char* base, int index)
+void store_immediate_26(char** base, int index)
 {
-	base[index + 1] = c;
+	base[index + 1] = sc + 42;
 }
 
-void store_27(int base, int index)
+void store_immediate_27(int base, int index)
 {
-	sc[base + index + 1] = c;
+	sc_pointers[base + index + 1] = sc + 42;
 }
