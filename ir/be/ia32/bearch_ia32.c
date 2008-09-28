@@ -325,6 +325,9 @@ static arch_irn_class_t ia32_classify(const ir_node *irn) {
 	if (is_ia32_is_spill(irn))
 		classification |= arch_irn_class_spill;
 
+	if (is_ia32_is_remat(irn))
+		classification |= arch_irn_class_remat;
+
 	return classification;
 }
 

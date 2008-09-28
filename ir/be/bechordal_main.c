@@ -232,6 +232,7 @@ typedef struct _node_stat_t {
 	unsigned int n_perms;     /**< Perms */
 	unsigned int n_spills;    /**< Spill nodes */
 	unsigned int n_reloads;   /**< Reloads */
+	unsigned int n_remats;    /**< Remats */
 } node_stat_t;
 
 struct node_stat_walker {
@@ -258,6 +259,8 @@ static void node_stat_walker(ir_node *irn, void *data)
 			++env->stat->n_spills;
 		if(classify & arch_irn_class_reload)
 			++env->stat->n_reloads;
+		if(classify & arch_irn_class_remat)
+			++env->stat->n_remats;
 		if(classify & arch_irn_class_copy)
 			++env->stat->n_copies;
 		if(classify & arch_irn_class_perm)
@@ -521,6 +524,8 @@ static void be_ra_chordal_main(be_irg_t *birg)
 						node_stat.n_mem_phis - last_node_stat.n_mem_phis);
 				stat_ev_dbl("bechordal_reloads",
 						node_stat.n_reloads - last_node_stat.n_reloads);
+				stat_ev_dbl("bechordal_remats",
+						node_stat.n_remats - last_node_stat.n_remats);
 				stat_ev_dbl("bechordal_spills",
 						node_stat.n_spills - last_node_stat.n_spills);
 				stat_ev_dbl("bechordal_perms_after_coal",
