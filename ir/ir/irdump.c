@@ -651,8 +651,9 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 
 	current_ir_graph = irg;
 
-	if(walk_flag)
+	if(walk_flag) {
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
+	}
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
 		ird_set_irg_link(get_irp_irg(i), NULL);
@@ -673,8 +674,9 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 	set_interprocedural_view(rem_view);
 #endif
 
-	if(walk_flag)
+	if(walk_flag) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	}
 
 	current_ir_graph = rem;
 	return ird_get_irg_link(irg);
