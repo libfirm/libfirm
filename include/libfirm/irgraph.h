@@ -446,18 +446,18 @@ typedef enum {
 	irg_callee_info_inconsistent
 } irg_callee_info_state;
 
-/** returns the callee_info_state of an IR graph. */
+/** Returns the callee_info_state of an IR graph. */
 irg_callee_info_state get_irg_callee_info_state(const ir_graph *irg);
 
-/** sets the callee_info_state of an IR graph. */
+/** Sets the callee_info_state of an IR graph. */
 void                  set_irg_callee_info_state(ir_graph *irg, irg_callee_info_state s);
 
 /** property:
- *  Tells how to handle an ir graph in inlineing.
+ *  Tells how to handle an ir graph in inlining.
  */
 typedef enum {
-	irg_inline_any,            /**< No restriction on inlineing. Default. */
-	irg_inline_forbidden,      /**< The graph may not be inlined. */
+	irg_inline_any,            /**< No restriction on inlining. Default. */
+	irg_inline_forbidden,      /**< The graph must not be inlined. */
 	irg_inline_recomended,     /**< The graph should be inlined. */
 	irg_inline_forced,         /**< The graph must be inlined. */
 	irg_inline_forced_no_body  /**< The graph must be inlined. No body is allowed
@@ -512,11 +512,11 @@ void         set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * if 2 parties try to use the flags.
  */
 enum ir_resources_enum_t {
-	IR_RESOURCE_BLOCK_VISITED = 1 << 0,
-	IR_RESOURCE_BLOCK_MARK    = 1 << 1,
-	IR_RESOURCE_IRN_VISITED   = 1 << 2,
-	IR_RESOURCE_IRN_LINK      = 1 << 3,
-	IR_RESOURCE_LOOP_LINK     = 1 << 4,
+	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
+	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */
+	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
+	IR_RESOURCE_IRN_LINK      = 1 << 3,  /**< IR-node link fields are used. */
+	IR_RESOURCE_LOOP_LINK     = 1 << 4,  /**< IR-loop link fields are used. */
 };
 typedef unsigned ir_resources_t;
 
@@ -533,10 +533,10 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg);
 /** Normalization: Move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);
 
-/** set a description for local value n */
+/** Set a description for local value n. */
 void set_irg_loc_description(ir_graph *irg, int n, void *description);
 
-/** get the description for local value n */
+/** Get the description for local value n. */
 void *get_irg_loc_description(ir_graph *irg, int n);
 
 /** Returns a estimated node count of the irg. This count is updated
