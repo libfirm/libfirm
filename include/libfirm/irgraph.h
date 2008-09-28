@@ -282,10 +282,8 @@ void     set_irg_no_mem(ir_graph *irg, ir_node *node);
 /** Returns the number of value numbers of an IR graph. */
 int      get_irg_n_locs(ir_graph *irg);
 
-#ifdef DEBUG_libfirm
 /** Returns the graph number. */
 long     get_irg_graph_nr(const ir_graph *irg);
-#endif
 
 /**
  * Returns the graph number. This is a unique number for the graph and is
