@@ -500,6 +500,7 @@ static INLINE tarval *get_node_tarval(const ir_node *irn) {
  */
 static INLINE void add_to_worklist(partition_t *X, environment_t *env) {
 	assert(X->on_worklist == 0);
+	DB((dbg, LEVEL_2, "Adding part%d to worklist\n", X->nr));
 	X->wl_next     = env->worklist;
 	X->on_worklist = 1;
 	env->worklist  = X;
@@ -2552,9 +2553,6 @@ static void propagate(environment_t *env) {
 		if (old_type_was_T_or_C) {
 			node_t *y, *tmp;
 
-			if (Y->on_worklist == 0)
-				add_to_worklist(Y, env);
-
 			/* check if some nodes will make the leader -> follower transition */
 			list_for_each_entry_safe(node_t, y, tmp, &Y->Leader, node_list) {
 				if (y->type.tv != tarval_top && ! is_con(y->type)) {
@@ -2999,7 +2997,6 @@ void combo(ir_graph *irg) {
 
 	assure_irg_outs(irg);
 	assure_cf_loop(irg);
-
 
 	/* we have our own value_of function */
 	set_value_of_func(get_node_tarval);
