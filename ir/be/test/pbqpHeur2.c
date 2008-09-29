@@ -1,7 +1,7 @@
-char *block;
-volatile char arr[100];
-char ca,cb,cc;
-int b;
+int *block;
+volatile int arr[100];
+int ca,cb,cc;
+int b = 3008;
 
 int k3_3(char* base, int i1, int i2, int i3, int k1, int k2, int k3)
 {
@@ -39,16 +39,14 @@ int k7,k8,k9;
 
 void full_am(int base, int index)
 {
-	ca = arr[base + 4*index];
-	cb = arr[base + 4*index];
-	cc = arr[base + 4*index];
+	ca = arr[index] + b;
 
-	b = k3_3(base + 4 * index, g1, g2, g3, 1, 2, 3);
-	b = k3_3(block, h1, h2, h3, 42, 5, 6);
+	//b = k3_3(base + 4 * index, g1, g2, g3, 1, 2, 3);
+	//b = k3_3(block, h1, h2, h3, 42, 5, 6);
 
-	b = k3_3(ca, k1, k2, k3, 7, 8, 9);
-	b = k3_3(cb, k4, k5, k6, 10, 11, 12);
-	b = k3_3(cc, k7, k8, k9, 13, 14, 15);
+	b = k3_3(block, ca, k2, k3, 7, 8, 9);
+	//b = k3_3(cb, k4, k5, k6, 10, 11, 12);
+	//b = k3_3(cc, k7, k8, k9, 13, 14, 15);
 }
 
 int main(int argc, char **argv) {
