@@ -71,7 +71,7 @@ void set_opt_constant_folding(int value);
  *  If opt_algebraic_simplification == 1 perform
  *  - algebraic simplification  (a * 0 ==> 0, a or a ==> a)
  *  - simplification of tests   ( !(a < b) ==> (a >= b))
- * Default: opt_constant_folding == 1.
+ * Default: opt_algebraic_simplification == 1.
  */
 void set_opt_algebraic_simplification(int value);
 
@@ -95,6 +95,15 @@ int get_opt_cse(void);
  * Default: opt_global_cse == 0.
  */
 void set_opt_global_cse(int value);
+
+/** Enables/Disables usage of combo algorithm.
+ *
+ *  If opt_combo == 1 perform combo optimization
+ *  instead of combinations of optimiza_graph_df()/
+ *  optimize_graph_cf()
+ * Default: opt_combo == 1.
+ */
+void set_opt_combo(int value);
 
 /** Enables/Disables strength reduction.
  *

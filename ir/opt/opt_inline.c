@@ -2273,22 +2273,18 @@ void inline_functions(unsigned maxsize, int inline_threshold) {
 		env = get_irg_link(irg);
 		if (env->got_inline) {
 			/* this irg got calls inlined: optimize it */
-
-			if (0) {
-				/* scalar replacement does not work well with Tuple nodes, so optimize them away */
-				optimize_graph_df(irg);
-
+			if (get_opt_combo()) {
+				if (env->local_vars) {
+					scalar_replacement_opt(irg);
+				}
+				combo(irg);
+			} else {
 				if (env->local_vars) {
 					if (scalar_replacement_opt(irg)) {
 						optimize_graph_df(irg);
 					}
 				}
 				optimize_cf(irg);
-			} else {
-				if (env->local_vars) {
-					scalar_replacement_opt(irg);
-				}
-				combo(irg);
 			}
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
