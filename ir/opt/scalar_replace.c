@@ -172,9 +172,9 @@ static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode) {
  */
 int is_address_taken(ir_node *sel)
 {
-	int     i;
-	ir_mode *emode, *mode;
-	ir_node *value;
+	int       i, input_nr, k;
+	ir_mode   *emode, *mode;
+	ir_node   *value;
 	ir_entity *ent;
 
 	if (! is_const_sel(sel))
@@ -185,14 +185,14 @@ int is_address_taken(ir_node *sel)
 
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
+			/* do not remove volatile variables */
+			if (get_Load_volatility(succ) == volatility_is_volatile)
+				return 1;
 			/* check if this load is not a hidden conversion */
 			mode = get_Load_mode(succ);
 			ent = get_Sel_entity(sel);
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
-				return 1;
-			/* do not remove volatile variables */
-			if (get_Load_volatility(succ) == volatility_is_volatile)
 				return 1;
 			break;
 
@@ -201,14 +201,14 @@ int is_address_taken(ir_node *sel)
 			value = get_Store_value(succ);
 			if (value == sel)
 				return 1;
+			/* do not remove volatile variables */
+			if (get_Store_volatility(succ) == volatility_is_volatile)
+				return 1;
 			/* check if this Store is not a hidden conversion */
 			mode = get_irn_mode(value);
 			ent = get_Sel_entity(sel);
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
-				return 1;
-			/* do not remove volatile variables */
-			if (get_Store_volatility(succ) == volatility_is_volatile)
 				return 1;
 			break;
 
@@ -229,6 +229,26 @@ int is_address_taken(ir_node *sel)
 			 * value parameter, the address is NOT taken.
 			 */
 			return 1;
+
+		case iro_Tuple:
+			/* Non-optimized Tuple, happens in inlining */
+			for (input_nr = get_Tuple_n_preds(succ) - 1; input_nr >= 0; --input_nr) {
+				ir_node *pred = get_Tuple_pred(succ, input_nr);
+
+				if (pred == sel) {
+					/* we found one input */
+					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+						ir_node *proj = get_irn_out(succ, k);
+
+						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
+							int res = is_address_taken(proj);
+							if (res)
+								return 1;
+						}
+					}
+				}
+			}
+			break;
 
 		default:
 			/* another op, the address is taken */
