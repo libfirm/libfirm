@@ -2022,8 +2022,7 @@ static ir_graph **create_irg_list(void) {
 }
 
 /**
- * Push a call onto the priority list if its
- * benefice is big enough.
+ * Push a call onto the priority list if its benefice is big enough.
  *
  * @param pqueue   the priority queue of calls
  * @param call     the call entry
@@ -2037,10 +2036,10 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 	irg_inline_property prop     = get_irg_inline_property(callee);
 	int                 benefice = calc_inline_benefice(call, callee);
 
-		DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
-			get_irn_irg(call->call), call->call, callee, benefice));
+	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
+	    get_irn_irg(call->call), call->call, callee, benefice));
 
-	if (benefice < inline_threshold && prop < irg_inline_forced)
+	if (benefice < inline_threshold && prop != irg_inline_forbidden)
 		return;
 
 	pqueue_put(pqueue, call, benefice);
