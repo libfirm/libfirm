@@ -21,7 +21,7 @@ class EmitBase:
 		for x in cols.iterkeys():
 			sorted[cols[x]] = x
 		for x in sorted:
-			create += (', %s %s' % (x, type))
+			create += (", '%s' %s" % (x, type))
 		create += ');'
 		return create
 
@@ -71,8 +71,10 @@ class EmitMysqlInfile(EmitBase):
 		c = self.conn.cursor()
 		c.execute('drop table if exists ' + self.evtab)
 		c.execute('drop table if exists ' + self.ctxtab)
-		c.execute(self.create_table(self.ctxcols, self.ctxtab, 'char(80)', 'unique'))
-		c.execute(self.create_table(self.evcols, self.evtab, 'double default null', ''))
+		table_ctx = self.create_table(self.ctxcols, self.ctxtab, 'char(80)', 'unique')
+		c.execute(table_ctx)
+		table_ev = self.create_table(self.evcols, self.evtab, 'double default null', '')
+		c.execute(table_ev)
 		self.conn.commit()
 
 		if options.verbose:
@@ -130,8 +132,10 @@ class EmitSqlite3(EmitBase):
 		self.ctxtab = tables['ctx']
 		self.evtab  = tables['ev']
 		self.conn = sqlite3.connect(options.database)
-		self.conn.execute(self.create_table(ctxcols, self.ctxtab, 'text', 'unique'))
-		self.conn.execute(self.create_table(evcols, self.evtab, 'double', ''))
+		table_ctx = self.create_table(ctxcols, self.ctxtab, 'text', 'unique')
+		self.conn.execute(table_ctx)
+		table_ev = self.create_table(evcols, self.evtab, 'double', '')
+		self.conn.execute(table_ev)
 
 		n = max(len(ctxcols), len(evcols)) + 1
 		q = ['?']
@@ -141,13 +145,29 @@ class EmitSqlite3(EmitBase):
 			q.append('?')
 
 	def ev(self, curr_id, evitems):
-		keys = ','.join(evitems.keys())
-		stmt = 'insert into %s (id, %s) values (%s)' % (self.evtab, keys, self.quests[len(evitems)])
+		keys = ""
+		first = True
+		for key in evitems.keys():
+			if first:
+				first = False
+			else:
+				keys += ", "
+			keys += "'%s'" % (key)
+
+		stmt = "insert into '%s' (id, %s) values (%s)" % (self.evtab, keys, self.quests[len(evitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(evitems.values()))
 
 	def ctx(self, curr_id, ctxitems):
-		keys = ','.join(ctxitems.keys())
-		stmt = 'insert into %s (id, %s) values (%s)' % (self.ctxtab, keys, self.quests[len(ctxitems)])
+		keys = ""
+		first = True
+		for key in ctxitems.keys():
+			if first:
+				first = False
+			else:
+				keys += ", "
+			keys += "'%s'" % (key)
+
+		stmt = "insert into '%s' (id, %s) values (%s)" % (self.ctxtab, keys, self.quests[len(ctxitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(ctxitems.values()))
 
 	def commit(self):
