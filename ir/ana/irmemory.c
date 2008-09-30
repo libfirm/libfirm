@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "adt/pmap.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irprog_t.h"
@@ -44,9 +45,11 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "error.h"
+#include "typerep.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
 
 /** The source language specific language disambiguator function. */
 static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
@@ -1161,13 +1164,9 @@ void assure_irp_globals_entity_usage_computed(void) {
 
 void firm_init_memory_disambiguator(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
+	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
 }
 
-
-#include <adt/pmap.h>
-#include "typerep.h"
-
-DEBUG_ONLY(static firm_dbg_module_t *dbgcall = NULL;)
 
 /** Maps method types to cloned method types. */
 static pmap *mtp_map;
@@ -1224,8 +1223,6 @@ static void update_calls_to_private(ir_node *call, void *env) {
 void mark_private_methods(void) {
 	int i;
 	int changed = 0;
-
-	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
 
 	assure_irp_globals_entity_usage_computed();
 
