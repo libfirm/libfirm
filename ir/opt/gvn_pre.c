@@ -54,8 +54,9 @@ typedef struct block_info {
 	ir_valueset_t     *antic_in;  /**< The Antic_in set for a block. */
 	ir_valueset_t     *new_set;   /**< The set of all new values for a block. */
 	ir_node           *avail;     /**< The get_map(avail, block) result. */
-	int               not_found;  /**< Non-zero, if avail was not found in this block. */
+	ir_node           *block;     /**< The Block of the block info. */
 	struct block_info *next;      /**< Links all entries, so we can recover the sets easily. */
+	int               not_found;  /**< Non-zero, if avail was not found in this block. */
 } block_info;
 
 /**
@@ -168,9 +169,10 @@ static void alloc_blk_info(ir_node *block, pre_env *env) {
 	info->antic_in  = ir_valueset_new(16);
 	info->new_set   = NULL;
 	info->avail     = NULL;
-	info->not_found = 0;
+	info->block     = block;
 	info->next      = env->list;
 	env->list       = info;
+	info->not_found = 0;
 }  /* alloc_blk_info */
 
 /**
@@ -308,57 +310,53 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
  *
  * @param n      the node
  * @param block  the block
+ * @param set    a value set, containing the already processed predecessors
  */
-static int _is_clean(ir_node *n, ir_node *block)
-{
+static int is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *set) {
 	int i;
 
-	if (get_nodes_block(n) != block)
-		return 1;
 	if (is_Phi(n))
 		return 1;
 
-	if (irn_visited(n))
+	if (! is_nice_value(n))
 		return 0;
 
-	if (! is_nice_value(n))
-		goto bad;
 	for (i = get_irn_arity(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_irn_n(n, i);
-		if (! _is_clean(pred, block))
-			goto bad;
+		ir_node *value;
+
+		if (get_nodes_block(pred) != block)
+			continue;
+
+		if (is_Phi(pred))
+			continue;
+
+		if (! is_nice_value(pred))
+			return 0;
+
+		value = lookup(pred);
+		if (! value)
+			return 0;
+		if (! ir_valueset_lookup(set, value))
+			return 0;
 	}
 	return 1;
-bad:
-	mark_irn_visited(n);
-	return 0;
-}  /* _is_clean */
-
-/**
- * check if a node n is clean.
- *
- * @param n  the node to check
- */
-static int is_clean(ir_node *n) {
-	int res = _is_clean(n, get_nodes_block(n));
-	return res;
-}  /* is_clean */
+}  /* is_clean_in_block */
 
 /**
  * Implements phi_translate. Translate a expression above a Phi.
  *
- * @param node   the node
- * @param block  the block in which the node is translated
- * @param pos    the input number of the destination block
- * @param env    the environment
+ * @param node        the node
+ * @param block       the block in which the node is translated
+ * @param pos         the input number of the destination block
+ * @param translated  the valueset containing the other already translated nodes
  *
  * @return a node representing the translated value
  */
-static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *env)
+static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valueset_t *translated)
 {
-	ir_node *nn;
-	int i, arity;
-	struct obstack *old;
+	ir_node        *nn;
+	int            i, arity;
 
 	if (is_Phi(node)) {
 		if (get_nodes_block(node) == block) {
@@ -375,21 +373,19 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred    = get_irn_intra_n(node, i);
 		ir_node *leader  = lookup(pred);
+		ir_node *trans;
 
 		leader = leader != NULL ? leader : pred;
-		if (is_Phi(leader) && get_nodes_block(pred) == block)
+		trans  = ir_valueset_lookup(translated, leader);
+
+		if ((trans != NULL && trans != leader) || (is_Phi(leader) && get_nodes_block(leader) == block))
 			break;
 	}
 	if (i >= arity) {
-		/* no Phi in the predecessors */
+		/* no translation needed */
 		return node;
 	}
 
-	/* Create a copy of the node in the pos'th predecessor block.
-	   Use our environmental obstack, as these nodes are always
-	   temporary. */
-	old = current_ir_graph->obst;
-	current_ir_graph->obst = env->obst;
 	nn = new_ir_node(
 		get_irn_dbg_info(node),
 		current_ir_graph,
@@ -406,14 +402,19 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, pre_env *e
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred    = get_irn_intra_n(node, i);
 		ir_node *leader  = lookup(pred);
+		ir_node *trans;
 
 		leader = leader != NULL ? leader : pred;
-		if (is_Phi(leader) && get_irn_intra_n(pred, -1) == block)
-			set_irn_n(nn, i, get_Phi_pred(leader, pos));
+		trans  = ir_valueset_lookup(translated, leader);
+		if (trans == NULL)
+			trans = leader;
+
+		if (is_Phi(trans) && get_nodes_block(trans) == block)
+			set_irn_n(nn, i, get_Phi_pred(trans, pos));
 		else
-			set_irn_n(nn, i, leader);
+			set_irn_n(nn, i, trans);
 	}
-	current_ir_graph->obst = old;
+	nn = optimize_node(nn);
 	return nn;
 }  /* phi_translate */
 
@@ -471,9 +472,9 @@ static void compute_antic(ir_node *block, void *ctx) {
 			/* translate into list: we cannot insert into a set we iterate
 			 * and succ might be equal to block for endless loops */
 			foreach_valueset(succ_info->antic_in, value, expr, iter) {
-				ir_node *trans = phi_translate(expr, succ, pos, env);
+				ir_node *trans = phi_translate(expr, succ, pos, info->antic_in);
 
-				if (is_clean(trans))
+				if (is_clean_in_block(trans, block, info->antic_in))
 					ir_valueset_insert(info->antic_in, value, trans);
 			}
 		} else { /* n_succ > 1 */
@@ -500,7 +501,8 @@ static void compute_antic(ir_node *block, void *ctx) {
 				if (i >= n_succ) {
 					/* we found a value that is common in all Antic_in(succ(b)),
 					    put it in Antic_in(b) if the value is NOT already represented. */
-					ir_valueset_insert(info->antic_in, value, expr);
+					if (is_clean_in_block(expr, block, info->antic_in))
+						ir_valueset_insert(info->antic_in, value, expr);
 				}
 			}
 		}
@@ -595,7 +597,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 			if (is_Bad(pred_blk))
 				continue;
 
-			e_prime = phi_translate(expr, block, pos, env);
+			e_prime = phi_translate(expr, block, pos, curr_info->avail_out);
 			v_prime = lookup(e_prime);
 			if (v_prime == NULL)
 				v_prime = value;
@@ -625,7 +627,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 		/* If it's not the same value already existing along every predecessor, and
 		   it's defined by some predecessor, it is partially redundant. */
 		if (! all_same && by_some) {
-			ir_node *phi, **in;
+			ir_node *phi, *l, **in;
 
 			DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", expr, block));
 
@@ -659,7 +661,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 								get_irn_in(pred) + 1);
 							copy_node_attr(pred, nn);
 
-							DB((dbg, LEVEL_2, "New node %+F in block %+F created\n", nn, pred_blk));
+							DB((dbg, LEVEL_1, "New node %+F in block %+F created\n", nn, pred_blk));
 							proj_pred = nn;
 						}
 						mode = get_irn_mode(e_prime);
@@ -675,19 +677,27 @@ static void insert_nodes(ir_node *block, void *ctx)
 							set_Proj_pred(nn, proj_pred);
 						}
 
-						DB((dbg, LEVEL_2, "New node %+F in block %+F created\n", nn, pred_blk));
-						ir_valueset_insert(pred_info->avail_out, add(nn, lookup(expr)), nn);
+						DB((dbg, LEVEL_1, "New node %+F in block %+F created\n", nn, pred_blk));
+						l = lookup(expr);
+						if (l == NULL) {
+							l = add(expr, value);
+						}
+						ir_valueset_insert(pred_info->avail_out, add(nn, l), nn);
 						pred_info->avail = nn;
 					}
 				}
 				in[pos] = pred_info->avail;
 			}  /* for */
 			phi = new_r_Phi(current_ir_graph, block, arity, in, mode);
-			value = add(phi, lookup(expr));
+			l = lookup(expr);
+			if (l == NULL) {
+				l = add(expr, value);
+			}
+			value = add(phi, l);
 			ir_valueset_replace(curr_info->avail_out, value, phi);
 			ir_valueset_insert(curr_info->new_set, value, phi);
 			free(in);
-			DB((dbg, LEVEL_2, "New %+F for redundant %+F created\n", phi, expr));
+			DB((dbg, LEVEL_1, "New %+F for redundant %+F created\n", phi, expr));
 			ir_valueset_remove_iterator(curr_info->antic_in, &iter);
 			env->changes |= 1;
 		}  /* if */
@@ -737,6 +747,9 @@ static void eliminate_nodes(elim_pair *pairs) {
 	elim_pair *p;
 
 	for (p = pairs; p != NULL; p = p->next) {
+		/* might be already changed */
+		p->new_node = skip_Id(p->new_node);
+
 		DB((dbg, LEVEL_2, "Replacing %+F by %+F\n", p->old_node, p->new_node));
 		/*
 		 * PRE tends to create Phi(self, self, ... , x, self, self, ...)
@@ -757,8 +770,10 @@ static void eliminate_nodes(elim_pair *pairs) {
 					res = pred;
 				}
 			}
-			if (res)
+			if (res) {
+				exchange(p->new_node, res);
 				p->new_node = res;
+			}
 		}
 		DBG_OPT_GVN_PRE(p->old_node, p->new_node, p->reason);
 		exchange(p->old_node, p->new_node);
@@ -784,6 +799,7 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
+	firm_dbg_set_mask(dbg, 3);
 
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
@@ -818,22 +834,20 @@ void do_gvn_pre(ir_graph *irg)
 	save_optimization_state(&state);
 	set_opt_global_cse(1);
 
-	DB((dbg, LEVEL_1, "Doing GVN-PRE for %e\n", get_irg_entity(irg)));
+	DB((dbg, LEVEL_1, "Doing GVN-PRE for %+F\n", irg));
 
 	/* allocate block info for all blocks */
 	irg_walk_blkwise_graph(irg, NULL, topo_walker, &a_env);
 
 	/* clean the exp_gen set. Doing this here saves the cleanup in the iteration. */
-	inc_irg_visited(irg);
 	for (bl_info = a_env.list; bl_info != NULL; bl_info = bl_info->next) {
 		ir_valueset_iterator_t iter;
 
 		foreach_valueset(bl_info->exp_gen, value, expr, iter) {
-			if (!is_clean(expr))
+			if (!is_clean_in_block(expr, bl_info->block, bl_info->exp_gen))
 				ir_valueset_remove_iterator(bl_info->exp_gen, &iter);
 		}
 	}
-
 	/* compute the available value sets for all blocks */
 	dom_tree_walk_irg(irg, compute_avail_top_down, NULL, &a_env);
 
