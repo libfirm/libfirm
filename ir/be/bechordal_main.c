@@ -367,12 +367,12 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			called in a loop after spilling for each register class.
 			But we only need to fix stack nodes once in this case.
 		*/
-		BE_TIMER_PUSH(t_ra_spill);
+		BE_TIMER_PUSH(t_ra_spill_apply);
 		check_for_memory_operands(chordal_env);
 		if (iteration == 0) {
 			be_abi_fix_stack_nodes(birg->abi);
 		}
-		BE_TIMER_POP(t_ra_spill);
+		BE_TIMER_POP(t_ra_spill_apply);
 
 		BE_TIMER_PUSH(t_verify);
 
