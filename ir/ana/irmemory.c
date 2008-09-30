@@ -850,13 +850,36 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			}
 			break;
 
-#if 0
-		case iro_Phi:
-			/* TODO implement marker algo */
-#endif
+		/* skip identities */
+		case iro_Id:
+			res |= determine_entity_usage(succ, entity);
+			break;
+
+		/* skip tuples */
+		case iro_Tuple: {
+			int input_nr;
+			for (input_nr = get_Tuple_n_preds(succ) - 1; input_nr >= 0;
+					--input_nr) {
+				ir_node *pred = get_Tuple_pred(succ, input_nr);
+				if (pred == irn) {
+					int k;
+					/* we found one input */
+					for (k = get_irn_n_outs(succ) - 1; k >= 0; --k) {
+						ir_node *proj = get_irn_out(succ, k);
+
+						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
+							res |= determine_entity_usage(proj, entity);
+							break;
+						}
+					}
+				}
+			}
+			break;
+		}
 
 		default:
-			/* another op, we don't know anything */
+			/* another op, we don't know anything (we could do more advanced
+			 * things like a dataflow analysis here) */
 			res |= ir_usage_unknown;
 			break;
 		}
