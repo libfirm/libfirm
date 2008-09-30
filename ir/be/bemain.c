@@ -910,6 +910,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 		be_options.statev = 1;
 		stat_ev_begin(buf, be_options.filtev);
+		stat_ev_ctx_push_str("bemain_compilation_unit", cup_name);
 	}
 #endif
 
@@ -931,8 +932,10 @@ void be_main(FILE *file_handle, const char *cup_name)
 	}
 
 #ifdef FIRM_STATISTICS
-	if (be_options.statev)
+	if (be_options.statev) {
+		stat_ev_ctx_pop("bemain_compilation_unit");
 		stat_ev_end();
+	}
 #endif
 }
 
