@@ -1093,6 +1093,8 @@ static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	ir_node *left = get_Rotl_left(node);
 	ir_node *h, *l;
 	int idx = get_irn_idx(left);
+	(void) right;
+	(void) mode;
 
 	assert(get_mode_arithmetic(mode) == irma_twos_complement &&
 	       is_Const(right) && tarval_is_long(get_Const_tarval(right)) &&
