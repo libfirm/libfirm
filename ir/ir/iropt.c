@@ -5279,14 +5279,15 @@ static ir_node *transform_node_Rotl(ir_node *n) {
  */
 static ir_node *transform_node_Conv(ir_node *n) {
 	ir_node *c, *oldn = n;
-	ir_node *a = get_Conv_op(n);
+	ir_mode *mode = get_irn_mode(n);
+	ir_node *a    = get_Conv_op(n);
 
-	if (get_irn_mode(n) != mode_b && is_const_Phi(a)) {
+	if (mode != mode_b && is_const_Phi(a)) {
 		/* Do NOT optimize mode_b Conv's, this leads to remaining
 		 * Phib nodes later, because the conv_b_lower operation
 		 * is instantly reverted, when it tries to insert a Convb.
 		 */
-		c = apply_conv_on_phi(a, get_irn_mode(n));
+		c = apply_conv_on_phi(a, mode);
 		if (c) {
 			DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);
 			return c;
@@ -5294,8 +5295,32 @@ static ir_node *transform_node_Conv(ir_node *n) {
 	}
 
 	if (is_Unknown(a)) { /* Conv_A(Unknown_B) -> Unknown_A */
-		ir_mode *mode = get_irn_mode(n);
 		return new_r_Unknown(current_ir_graph, mode);
+	}
+
+	if (mode_is_reference(mode) &&
+	        get_mode_size_bits(mode) == get_mode_size_bits(get_irn_mode(a)) &&
+	        is_Add(a)) {
+		ir_node *l = get_Add_left(a);
+		ir_node *r = get_Add_right(a);
+		dbg_info *dbgi = get_irn_dbg_info(a);
+		ir_node *block = get_nodes_block(n);
+		if(is_Conv(l)) {
+			ir_node *lop = get_Conv_op(l);
+			if(get_irn_mode(lop) == mode) {
+				/* ConvP(AddI(ConvI(P), x)) -> AddP(P, x) */
+				n = new_rd_Add(dbgi, current_ir_graph, block, lop, r, mode);
+				return n;
+			}
+		}
+		if(is_Conv(r)) {
+			ir_node *rop = get_Conv_op(r);
+			if(get_irn_mode(rop) == mode) {
+				/* ConvP(AddI(x, ConvI(P))) -> AddP(x, P) */
+				n = new_rd_Add(dbgi, current_ir_graph, block, l, rop, mode);
+				return n;
+			}
+		}
 	}
 
 	return n;
