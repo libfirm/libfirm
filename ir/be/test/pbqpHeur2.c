@@ -1,5 +1,6 @@
 unsigned *block;
 unsigned *block1, *block2, *block3, *block4, *block5, *block6, *block7;
+unsigned *block8;
 volatile unsigned arr[100];
 unsigned ca,cb,cc;
 unsigned b = 3008;
@@ -100,23 +101,28 @@ unsigned k1,k2,k3;
 unsigned k4,k5,k6;
 unsigned k7,k8,k9;
 unsigned k10,k11,k12;
+unsigned s1,s2,s3;
 
 void full_am(unsigned base, int index)
 {
 	unsigned ca = arr[index] + base;
 
-	/* user for shift const */
+	/* users for shift const */
 	b = k3_3_am(block, h1, h2, h3, 2, 3, 4);
 	b = k3_3_am(block, h4, h5, h6, 2, 5, 6);
 	b = k3_3_am(block, h7, h8, h9, 2, 7, 8);
 
+	/* users for symconst */
+	b = k3_3(block8, &arr, s2, s3, 51, 52, 53);
+
+	/* users for offset */
 	b = k3_3_2(block1, 4 * index, g2, g3, 31, 32, 33);
 	b = k3_3_2(block2, 4 * index, g5, g6, 34, 35, 36);
 	b = k3_3_2(block6, 4 * index, g7, g8, 37, 38, 39);
 	b = k3_3_2(block7, 4 * index, g9, g10, 40, 41, 42);
 	//b = k3_3(base + 4 * index, base + 4 * index, g8, g9, 37, 38, 39);
 
-	/* user for computed value */
+	/* users for computed value */
 	//b = k3_3(block1, ca, k2, k3, 7, 8, 9);
 	//b = k3_3(block2, ca, k5, k6, 10, 11, 12);
 	b = k3_3(block3, ca, k8, k9, 13, 14, 15);
