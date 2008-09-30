@@ -103,7 +103,7 @@ unsigned k10,k11,k12;
 
 void full_am(unsigned base, int index)
 {
-	unsigned ca = arr[index] + b;
+	unsigned ca = arr[index] + base;
 
 	/* user for shift const */
 	b = k3_3_am(block, h1, h2, h3, 2, 3, 4);
