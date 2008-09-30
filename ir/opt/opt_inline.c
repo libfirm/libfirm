@@ -2039,8 +2039,9 @@ static void maybe_push_call(pqueue_t *pqueue, call_entry *call,
 	DB((dbg, LEVEL_2, "In %+F Call %+F to %+F has benefice %d\n",
 	    get_irn_irg(call->call), call->call, callee, benefice));
 
-	if (benefice < inline_threshold && prop != irg_inline_forbidden)
+	if (prop < irg_inline_forced && benefice < inline_threshold) {
 		return;
+	}
 
 	pqueue_put(pqueue, call, benefice);
 }
