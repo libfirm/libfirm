@@ -98,7 +98,6 @@ static be_uses_t                   *uses;   /**< env for the next-use magic */
 static ir_node                     *instr;  /**< current instruction */
 static unsigned                     instr_nr; /**< current instruction number
 	                                               (relative to block start) */
-static ir_nodeset_t                 used;
 static spill_env_t                 *senv;   /**< see bespill.h */
 static pdeq                        *worklist;
 
@@ -336,10 +335,6 @@ static void displace(workset_t *new_vals, int is_usage)
 	workset_foreach(new_vals, val, iter) {
 		bool reloaded = false;
 
-		/* mark value as used */
-		if (is_usage)
-			ir_nodeset_insert(&used, val);
-
 		if (! workset_contains(ws, val)) {
 			DB((dbg, DBG_DECIDE, "    insert %+F\n", val));
 			if (is_usage) {
@@ -399,14 +394,6 @@ static void displace(workset_t *new_vals, int is_usage)
 					DB((dbg, DBG_DECIDE, "Spill %+F after node %+F\n", val,
 						after_pos));
 					be_add_spill(senv, val, after_pos);
-				}
-			} else {
-				/* Logic for not needed live-ins: If a value is disposed
-				 * before its first use, remove it from start workset
-				 * We don't do this for phis though	*/
-				if (!is_Phi(val) && ! ir_nodeset_contains(&used, val)) {
-					workset_remove(ws_start, val);
-					DB((dbg, DBG_DECIDE, "    (and removing %+F from start workset)\n", val));
 				}
 			}
 		}
@@ -829,7 +816,6 @@ static void belady(ir_node *block)
 
 	/* process the block from start to end */
 	DB((dbg, DBG_WSETS, "Processing...\n"));
-	ir_nodeset_init(&used);
 	instr_nr = 0;
 	/* TODO: this leaks (into the obstack)... */
 	new_vals = new_workset();
@@ -879,7 +865,6 @@ static void belady(ir_node *block)
 
 		instr_nr++;
 	}
-	ir_nodeset_destroy(&used);
 
 	/* Remember end-workset for this block */
 	block_info->end_workset = workset_clone(ws);

@@ -516,8 +516,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	/* Iterate over all remaining nodes */
 	while (ir_nodeset_size(&be.cands) > 0) {
 		ir_nodeset_iterator_t iter;
-		/* collect statistics about amount of ready nodes */
-		be_do_stat_sched_ready(block, &be.cands);
 
 		/* Keeps must be scheduled immediately */
 		foreach_ir_nodeset(&be.cands, irn, iter) {

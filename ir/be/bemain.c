@@ -459,9 +459,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
-	be_stat_init_irg(env->arch_env, irg);
-	be_do_stat_nodes(irg, "01 Begin");
-
 	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = irg;
 
@@ -615,7 +612,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* reset the phi handler. */
 		be_phi_handler_reset();
 
-		stat_ev_ctx_push_fobj("bemain_irg", irg);
+		stat_ev_if {
+			stat_ev_ctx_push_fobj("bemain_irg", irg);
+			be_stat_ev("bemain_insns_start", be_count_insns(irg));
+			be_stat_ev("bemain_blocks_start", be_count_blocks(irg));
+		}
 
 		/* stop and reset timers */
 		BE_TIMER_PUSH(t_other);   /* t_other */
@@ -646,7 +647,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_abi);
 
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
-		be_do_stat_nodes(irg, "02 Abi");
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
@@ -663,8 +663,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* reset the phi handler. */
 		be_phi_handler_reset();
-
-		be_do_stat_nodes(irg, "03 Prepare");
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 
@@ -722,8 +720,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_vrfy(birg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
-		be_do_stat_nodes(irg, "04 Schedule");
-
 		/* introduce patterns to assure constraints */
 		BE_TIMER_PUSH(t_constr);
 		/* we switch off optimizations here, because they might cause trouble */
@@ -738,7 +734,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_constr);
 
 		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
-		be_do_stat_nodes(irg, "05 Constraints");
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		BE_TIMER_PUSH(t_codegen);
@@ -757,9 +752,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_vrfy(birg, be_options.vrfy_option);
 		BE_TIMER_POP(t_verify);
 
-#ifdef FIRM_STATISTICS
-		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
-#endif
+		stat_ev_if {
+			stat_ev_dbl("bemain_costs_before_ra",
+					be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
+			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
+			be_stat_ev("bemain_blocks_before_ra", be_count_blocks(irg));
+		}
 
 		/* Do register allocation */
 		be_allocate_registers(birg);
@@ -769,7 +767,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
-		be_do_stat_nodes(irg, "06 Register Allocation");
 
 		/* let the code generator prepare the graph for emitter */
 		BE_TIMER_PUSH(t_finish);
@@ -790,6 +787,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_POP(t_finish);
 
 		dump(DUMP_FINAL, irg, "-finish", dump_ir_block_graph_sched);
+
+		stat_ev_if {
+			be_stat_ev("bemain_insns_finish", be_count_insns(irg));
+			be_stat_ev("bemain_blocks_finish", be_count_blocks(irg));
+		}
 
 		/* check schedule and register allocation */
 		BE_TIMER_PUSH(t_verify);
@@ -821,7 +823,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_free(birg->abi);
 		BE_TIMER_POP(t_abi);
 
-		be_do_stat_nodes(irg, "07 Final");
 		restore_optimization_state(&state);
 
 		BE_TIMER_POP(t_other);

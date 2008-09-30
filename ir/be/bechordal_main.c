@@ -222,100 +222,8 @@ static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
 	irg_walk_graph(chordal_env->irg, NULL, memory_operand_walker, chordal_env);
 }
 
-/**
- * Sorry for doing stats again...
- */
-typedef struct _node_stat_t {
-	unsigned int n_phis;      /**< Phis of the current register class. */
-	unsigned int n_mem_phis;  /**< Memory Phis (Phis with spill operands). */
-	unsigned int n_copies;    /**< Copies */
-	unsigned int n_perms;     /**< Perms */
-	unsigned int n_spills;    /**< Spill nodes */
-	unsigned int n_reloads;   /**< Reloads */
-	unsigned int n_remats;    /**< Remats */
-} node_stat_t;
 
-struct node_stat_walker {
-	node_stat_t      *stat;
-	const arch_env_t *arch_env;
-};
-
-static void node_stat_walker(ir_node *irn, void *data)
-{
-	struct node_stat_walker *env  = data;
-	const arch_env_t        *aenv = env->arch_env;
-
-	/* if the node is a normal phi */
-	if(is_Phi(irn)) {
-		if (get_irn_mode(irn) == mode_M) {
-			env->stat->n_mem_phis++;
-		} else {
-			env->stat->n_phis++;
-		}
-	} else {
-		arch_irn_class_t classify = arch_irn_classify(aenv, irn);
-
-		if(classify & arch_irn_class_spill)
-			++env->stat->n_spills;
-		if(classify & arch_irn_class_reload)
-			++env->stat->n_reloads;
-		if(classify & arch_irn_class_remat)
-			++env->stat->n_remats;
-		if(classify & arch_irn_class_copy)
-			++env->stat->n_copies;
-		if(classify & arch_irn_class_perm)
-			++env->stat->n_perms;
-	}
-}
-
-static void node_stats(be_irg_t *birg, node_stat_t *stat)
-{
-	struct node_stat_walker env;
-
-	memset(stat, 0, sizeof(*stat));
-	env.arch_env = birg->main_env->arch_env;
-	env.stat     = stat;
-	irg_walk_graph(birg->irg, NULL, node_stat_walker, &env);
-}
-
-static void insn_count_walker(ir_node *irn, void *data)
-{
-	unsigned long *cnt = data;
-
-	switch(get_irn_opcode(irn)) {
-	case iro_Proj:
-	case iro_Phi:
-	case iro_Start:
-	case iro_End:
-		break;
-	default:
-		(*cnt)++;
-	}
-}
-
-static unsigned long count_insns(ir_graph *irg)
-{
-	unsigned long cnt = 0;
-	irg_walk_graph(irg, insn_count_walker, NULL, &cnt);
-	return cnt;
-}
-
-static void block_count_walker(ir_node *node, void *data)
-{
-	unsigned long *cnt = data;
-	if (node == get_irg_end_block(current_ir_graph))
-		return;
-	(*cnt)++;
-}
-
-static unsigned long count_blocks(ir_graph *irg)
-{
-	unsigned long cnt = 0;
-	irg_block_walk_graph(irg, block_count_walker, NULL, &cnt);
-	return cnt;
-}
-
-static node_stat_t last_node_stat;
+static be_node_stats_t last_node_stats;
 
 /**
  * Perform things which need to be done per register class before spilling.
@@ -400,19 +308,21 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		BE_TIMER_POP(t_ra_ifg);
 
 		stat_ev_if {
-			be_ifg_stat_t stat;
-			node_stat_t   node_stat;
+			be_ifg_stat_t   stat;
+			be_node_stats_t node_stats;
 
 			be_ifg_stat(birg, chordal_env->ifg, &stat);
 			stat_ev_dbl("bechordal_ifg_nodes", stat.n_nodes);
 			stat_ev_dbl("bechordal_ifg_edges", stat.n_edges);
 			stat_ev_dbl("bechordal_ifg_comps", stat.n_comps);
 
-			node_stats(birg, &node_stat);
+			be_collect_node_stats(&node_stats, birg);
+			be_subtract_node_stats(&node_stats, &last_node_stats);
+
 			stat_ev_dbl("bechordal_perms_before_coal",
-					node_stat.n_perms - last_node_stat.n_perms);
+					node_stats[BE_STAT_PERMS]);
 			stat_ev_dbl("bechordal_copies_before_coal",
-					node_stat.n_copies - last_node_stat.n_copies);
+					node_stats[BE_STAT_COPIES]);
 		}
 
 		/* copy minimization */
@@ -481,9 +391,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	BE_TIMER_POP(t_ra_prolog);
 
 	stat_ev_if {
-		be_stat_ev("bechordal_insns_before", count_insns(irg));
-		be_stat_ev("bechordal_blocks_before", count_blocks(irg));
-		node_stats(birg, &last_node_stat);
+		be_collect_node_stats(&last_node_stats, birg);
 	}
 
 	if (! arch_code_generator_has_spiller(birg->cg)) {
@@ -519,25 +427,13 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			post_spill(&pse, 0);
 
 			stat_ev_if {
-				node_stat_t node_stat;
+				be_node_stats_t node_stats;
 
-				node_stats(birg, &node_stat);
-				stat_ev_dbl("bechordal_phis",
-						node_stat.n_phis - last_node_stat.n_phis);
-				stat_ev_dbl("bechordal_mem_phis",
-						node_stat.n_mem_phis - last_node_stat.n_mem_phis);
-				stat_ev_dbl("bechordal_reloads",
-						node_stat.n_reloads - last_node_stat.n_reloads);
-				stat_ev_dbl("bechordal_remats",
-						node_stat.n_remats - last_node_stat.n_remats);
-				stat_ev_dbl("bechordal_spills",
-						node_stat.n_spills - last_node_stat.n_spills);
-				stat_ev_dbl("bechordal_perms_after_coal",
-						node_stat.n_perms - last_node_stat.n_perms);
-				stat_ev_dbl("bechordal_copies_after_coal",
-						node_stat.n_copies - last_node_stat.n_copies);
+				be_collect_node_stats(&node_stats, birg);
+				be_subtract_node_stats(&node_stats, &last_node_stats);
+				be_emit_node_stats(&node_stats, "bechordal_");
 
-				last_node_stat = node_stat;
+				be_copy_node_stats(&last_node_stats, &node_stats);
 				stat_ev_ctx_pop("bechordal_cls");
 			}
 		}
@@ -578,10 +474,6 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	BE_TIMER_POP(t_ra_epilog);
 
 	BE_TIMER_POP(t_ra_other);
-
-	stat_ev_if {
-		be_stat_ev("bechordal_insns_after", count_insns(irg));
-	}
 }
 
 static be_ra_t be_ra_chordal_allocator = {

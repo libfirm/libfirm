@@ -365,8 +365,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 	real_size = n - get_n_checked_pairs(pairs, n);
 
-	be_do_stat_perm(reg_class->name, reg_class->n_regs, irn, block, n, real_size);
-
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
 		i = n_ops = 0;
@@ -495,8 +493,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				sched_point = cpyxchg;
 			}
 		}
-
-		be_do_stat_permcycle(reg_class->name, irn, block, cycle->type == PERM_CHAIN, cycle->n_elems, n_ops);
 
 		free((void *) cycle->elems);
 		free(cycle);
