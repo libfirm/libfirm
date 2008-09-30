@@ -230,6 +230,13 @@ int is_address_taken(ir_node *sel)
 			 */
 			return 1;
 
+		case iro_Id: {
+			int res = is_address_taken(succ);
+			if (res)
+				return 1;
+			break;
+		}
+
 		case iro_Tuple:
 			/* Non-optimized Tuple, happens in inlining */
 			for (input_nr = get_Tuple_n_preds(succ) - 1; input_nr >= 0; --input_nr) {
