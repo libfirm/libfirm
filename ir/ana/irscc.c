@@ -451,6 +451,8 @@ static int is_head(ir_node *n, ir_node *root) {
 	if (!is_outermost_Start(n)) {
 #ifndef NDEBUG
 		int uplink = get_irn_uplink(root);
+#else
+		(void) root;
 #endif
 		arity = get_irn_arity(n);
 		for (i = get_start_index(n); i < arity; i++) {
@@ -488,6 +490,8 @@ static int is_endless_head(ir_node *n, ir_node *root) {
 	if (!is_outermost_Start(n)) {
 #ifndef NDEBUG
 		int uplink = get_irn_uplink(root);
+#else
+		(void) root;
 #endif
 		arity = get_irn_arity(n);
 		for (i = get_start_index(n); i < arity; i++) {

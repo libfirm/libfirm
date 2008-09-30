@@ -91,6 +91,7 @@ static unsigned *get_backarray(ir_node *n) {
 	return ba;
 }
 
+#ifndef NDEBUG
 /**
  * Returns non-zero if node has no backarray, or
  *                  if size of backarray == size of in array.
@@ -101,6 +102,7 @@ static int legal_backarray(ir_node *n) {
 		return 0;
 	return 1;
 }
+#endif
 
 void fix_backedges(struct obstack *obst, ir_node *n) {
 	unsigned *arr = mere_get_backarray(n);
