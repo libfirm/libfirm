@@ -1245,6 +1245,22 @@ static int is_completely_overwritten(ir_mode *old_mode, ir_mode *new_mode)
 }  /* is_completely_overwritten */
 
 /**
+ * Check whether small is a part of large (starting at same address).
+ */
+static int is_partially_same(ir_node *small, ir_node *large)
+{
+	ir_mode *sm = get_irn_mode(small);
+	ir_mode *lm = get_irn_mode(large);
+
+	/* FIXME: Check endianness */
+	return is_Conv(small) && get_Conv_op(small) == large
+	    && get_mode_size_bytes(sm) < get_mode_size_bytes(lm)
+	    && get_mode_arithmetic(sm) == irma_twos_complement
+	    && get_mode_arithmetic(lm) == irma_twos_complement
+		&& get_;
+}  /* is_partially_same */
+
+/**
  * follow the memory chain as long as there are only Loads and alias free Stores.
  *
  * INC_MASTER() must be called before dive into
@@ -1268,24 +1284,55 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
 		 * if the pointers are identical, they refer to the same object.
 		 * This is only true in strong typed languages, not is C were the following
 		 * is possible *(ir_type1 *)p = a; *(ir_type2 *)p = b ...
-		 * However, if the mode that is written have a bigger  or equal size the the old
-		 * one, the old value is completely overwritten and can be killed ...
+		 * However, if the size of the mode that is written is bigger or equal the
+		 * size of the old one, the old value is completely overwritten and can be
+		 * killed ...
 		 */
 		if (is_Store(pred) && get_Store_ptr(pred) == ptr &&
-		    get_nodes_MacroBlock(pred) == mblk &&
-		    is_completely_overwritten(get_irn_mode(get_Store_value(pred)), mode)) {
+            get_nodes_MacroBlock(pred) == mblk) {
 			/*
 			 * a Store after a Store in the same MacroBlock -- a write after write.
-			 * We may remove the first Store, if it does not have an exception handler.
+			 */
+
+			/*
+			 * We may remove the first Store, if the old value is completely
+			 * overwritten or the old value is a part of the new value,
+			 * and if it does not have an exception handler.
 			 *
 			 * TODO: What, if both have the same exception handler ???
 			 */
-			if (get_Store_volatility(pred) != volatility_is_volatile && !pred_info->projs[pn_Store_X_except]) {
-				DBG_OPT_WAW(pred, store);
-				exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
-				kill_node(pred);
-				reduce_adr_usage(ptr);
-				return DF_CHANGED;
+			if (get_Store_volatility(pred) != volatility_is_volatile
+			        && !pred_info->projs[pn_Store_X_except]) {
+				ir_node *predvalue = get_Store_value(pred);
+				ir_mode *predmode  = get_irn_mode(predvalue);
+
+				if(is_completely_overwritten(predmode, mode)
+				        || is_partially_same(predvalue, value)) {
+					DBG_OPT_WAW(pred, store);
+					exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
+					kill_node(pred);
+					reduce_adr_usage(ptr);
+					return DF_CHANGED;
+				}
+			}
+
+			/*
+			 * We may remove the Store, if the old value already contains
+			 * the new value, and if it does not have an exception handler.
+			 *
+			 * TODO: What, if both have the same exception handler ???
+			 */
+			if (get_Store_volatility(store) != volatility_is_volatile
+			        && !info->projs[pn_Store_X_except]) {
+				ir_node *predvalue = get_Store_value(pred);
+
+				if(is_partially_same(value, predvalue)) {
+					DBG_OPT_WAW(pred, store);
+					exchange(info->projs[pn_Store_M], mem);
+					kill_node(store);
+					reduce_adr_usage(ptr);
+					return DF_CHANGED;
+				}
 			}
 		} else if (is_Load(pred) && get_Load_ptr(pred) == ptr &&
 		           value == pred_info->projs[pn_Load_res]) {
