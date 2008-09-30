@@ -1256,8 +1256,7 @@ static int is_partially_same(ir_node *small, ir_node *large)
 	return is_Conv(small) && get_Conv_op(small) == large
 	    && get_mode_size_bytes(sm) < get_mode_size_bytes(lm)
 	    && get_mode_arithmetic(sm) == irma_twos_complement
-	    && get_mode_arithmetic(lm) == irma_twos_complement
-		&& get_;
+	    && get_mode_arithmetic(lm) == irma_twos_complement;
 }  /* is_partially_same */
 
 /**
