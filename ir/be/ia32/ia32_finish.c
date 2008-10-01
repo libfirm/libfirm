@@ -387,7 +387,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
  * register -> base or index is broken then.
  * Solution: Turn back this address mode into explicit Load + Operation.
  */
-static void fix_am_source(ir_node *irn, void *env) {
+static void fix_am_source(ir_node *irn, void *env)
+{
 	ia32_code_gen_t            *cg = env;
 	const arch_env_t           *arch_env = cg->arch_env;
 	ir_node                    *base;
@@ -489,6 +490,8 @@ static void fix_am_source(ir_node *irn, void *env) {
 					} else if (pn == pn_ia32_mem) {
 						set_Proj_pred(node, load);
 						set_Proj_proj(node, pnmem);
+					} else {
+						panic("Unexpected Proj");
 					}
 				}
 				set_irn_mode(irn, mode_Iu);
