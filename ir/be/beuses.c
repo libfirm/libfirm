@@ -370,8 +370,6 @@ void set_sched_step_walker(ir_node *block, void *data)
 		set_irn_link(node, INT_TO_PTR(step));
 		if(is_Phi(node))
 			continue;
-		if(is_Proj(node))
-			continue;
 		++step;
 	}
 }

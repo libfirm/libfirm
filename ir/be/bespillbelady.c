@@ -42,7 +42,6 @@
 #include "irprintf.h"
 #include "irnodeset.h"
 #include "xmalloc.h"
-#include "pdeq.h"
 
 #include "beutil.h"
 #include "bearch_t.h"
@@ -99,7 +98,7 @@ static ir_node                     *instr;  /**< current instruction */
 static unsigned                     instr_nr; /**< current instruction number
 	                                               (relative to block start) */
 static spill_env_t                 *senv;   /**< see bespill.h */
-static pdeq                        *worklist;
+static ir_node                    **blocklist;
 
 static bool                         move_spills      = true;
 static bool                         respectloopdepth = true;
@@ -753,50 +752,31 @@ static void decide_start_workset(const ir_node *block)
  * whether it is used from a register or is reloaded
  * before the use.
  */
-static void belady(ir_node *block)
+static void process_block(ir_node *block)
 {
 	workset_t       *new_vals;
 	ir_node         *irn;
 	int              iter;
 	block_info_t    *block_info;
-	int              i, arity;
-	int              has_backedges = 0;
-	//int              first         = 0;
-	const ir_edge_t *edge;
+	int              arity;
 
 	/* no need to process a block twice */
-	if (get_block_info(block) != NULL) {
-		return;
-	}
+	assert(get_block_info(block) == NULL);
 
-	/* check if all predecessor blocks are processed yet (though for backedges
-	 * we have to make an exception as we can't process them first) */
+	/* construct start workset */
 	arity = get_Block_n_cfgpreds(block);
-	for(i = 0; i < arity; ++i) {
-		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
-		block_info_t *pred_info  = get_block_info(pred_block);
-
-		if (pred_info == NULL) {
-			/* process predecessor first (it will be in the queue already) */
-			if (!is_backedge(block, i)) {
-				return;
-			}
-			has_backedges = 1;
-		}
-	}
-	(void) has_backedges;
 	if (arity == 0) {
+		/* no predecessor -> empty set */
 		workset_clear(ws);
 	} else if (arity == 1) {
+		/* one predecessor, copy it's end workset */
 		ir_node      *pred_block = get_Block_cfgpred_block(block, 0);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
 		assert(pred_info != NULL);
 		workset_copy(ws, pred_info->end_workset);
 	} else {
-		/* we need 2 heuristics here, for the case when all predecessor blocks
-		 * are known and when some are backedges (and therefore can't be known
-		 * yet) */
+		/* multiple predecessors, do more advanced magic :) */
 		decide_start_workset(block);
 	}
 
@@ -872,12 +852,6 @@ static void belady(ir_node *block)
 	workset_foreach(ws, irn, iter)
 		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
 		     workset_get_time(ws, iter)));
-
-	/* add successor blocks into worklist */
-	foreach_block_succ(block, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		pdeq_putr(worklist, succ);
-	}
 }
 
 /**
@@ -979,45 +953,62 @@ static void fix_block_borders(ir_node *block, void *data)
 	}
 }
 
+static void add_block(ir_node *block, void *data)
+{
+	(void) data;
+	ARR_APP1(ir_node*, blocklist, block);
+}
+
 static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 {
+	int i;
 	ir_graph *irg = be_get_birg_irg(birg);
 
 	be_liveness_assure_sets(be_assure_liveness(birg));
 
+	stat_ev_tim_push();
 	/* construct control flow loop tree */
 	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);
 	}
+	stat_ev_tim_pop("belady_time_backedges");
 
+	stat_ev_tim_push();
 	be_clear_links(irg);
+	stat_ev_tim_pop("belady_time_clear_links");
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* init belady env */
+	stat_ev_tim_push();
 	obstack_init(&obst);
-	arch_env = birg->main_env->arch_env;
-	cls      = rcls;
-	lv       = be_get_birg_liveness(birg);
-	n_regs   = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
-	ws       = new_workset();
-	uses     = be_begin_uses(irg, lv);
-	loop_ana = be_new_loop_pressure(birg);
-	senv     = be_new_spill_env(birg);
-	worklist = new_pdeq();
+	arch_env  = birg->main_env->arch_env;
+	cls       = rcls;
+	lv        = be_get_birg_liveness(birg);
+	n_regs    = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	ws        = new_workset();
+	uses      = be_begin_uses(irg, lv);
+	loop_ana  = be_new_loop_pressure(birg, cls);
+	senv      = be_new_spill_env(birg);
+	blocklist = NEW_ARR_F(ir_node*, 0);
+	irg_block_edges_walk(get_irg_start_block(irg), NULL, add_block, NULL);
+	stat_ev_tim_pop("belady_time_init");
 
-	pdeq_putr(worklist, get_irg_start_block(irg));
-
-	while(!pdeq_empty(worklist)) {
-		ir_node *block = pdeq_getl(worklist);
-		belady(block);
+	stat_ev_tim_push();
+	/* walk blocks in reverse postorder */
+	for (i = ARR_LEN(blocklist) - 1; i >= 0; --i) {
+		process_block(blocklist[i]);
 	}
-	/* end block might not be reachable in endless loops */
-	belady(get_irg_end_block(irg));
+	DEL_ARR_F(blocklist);
+	stat_ev_tim_pop("belady_time_belady");
 
-	del_pdeq(worklist);
-
+	stat_ev_tim_push();
 	/* belady was block-local, fix the global flow by adding reloads on the
 	 * edges */
 	irg_block_walk_graph(irg, fix_block_borders, NULL, NULL);
+	stat_ev_tim_pop("belady_time_fix_borders");
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* Insert spill/reload nodes into the graph and fix usages */
 	be_insert_spills_reloads(senv);

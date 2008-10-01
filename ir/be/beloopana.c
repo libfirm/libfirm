@@ -72,7 +72,9 @@ static int cmp_loop_info(const void *a, const void *b, size_t size) {
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given block.
  */
-static unsigned be_compute_block_pressure(be_loopana_t *loop_ana, ir_node *block, const arch_register_class_t *cls) {
+static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
+		ir_node *block, const arch_register_class_t *cls)
+{
 	const be_irg_t   *birg       = loop_ana->birg;
 	const arch_env_t *aenv       = be_get_birg_arch_env(birg);
 	be_lv_t          *lv         = be_get_birg_liveness(birg);
@@ -184,7 +186,9 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg,
  * @param birg  The backend irg object
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
+be_loopana_t *be_new_loop_pressure(be_irg_t *birg,
+                                   const arch_register_class_t *cls)
+{
 	ir_graph         *irg      = be_get_birg_irg(birg);
 	be_loopana_t     *loop_ana = xmalloc(sizeof(*loop_ana));
 	ir_loop          *irg_loop = get_irg_loop(irg);
@@ -199,12 +203,16 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg) {
 		construct_cf_backedges(irg);
 	}
 
-	for (i = arch_env_get_n_reg_class(arch_env) - 1; i >= 0; --i) {
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
-		DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
-		DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
-		DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
+	if (cls != NULL) {
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);
+	} else {
+		for (i = arch_env_get_n_reg_class(arch_env) - 1; i >= 0; --i) {
+			const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
+			DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
+			DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
+			DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
+			be_compute_loop_pressure(loop_ana, irg_loop, cls);
+		}
 	}
 
 	return loop_ana;
