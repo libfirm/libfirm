@@ -870,10 +870,14 @@ static void fix_block_borders(ir_node *block, void *data)
 	DB((dbg, DBG_FIX, "\n"));
 	DB((dbg, DBG_FIX, "Fixing %+F\n", block));
 
+	arity = get_irn_arity(block);
+	/* can happen for endless loops */
+	if (arity == 0)
+		return;
+
 	start_workset = get_block_info(block)->start_workset;
 
 	/* process all pred blocks */
-	arity = get_irn_arity(block);
 	for (i = 0; i < arity; ++i) {
 		ir_node   *pred = get_Block_cfgpred_block(block, i);
 		workset_t *pred_end_workset = get_block_info(pred)->end_workset;
