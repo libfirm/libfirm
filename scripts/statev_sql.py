@@ -134,8 +134,10 @@ class EmitSqlite3(EmitBase):
 		self.conn = sqlite3.connect(options.database)
 		table_ctx = self.create_table(ctxcols, self.ctxtab, 'text', 'unique')
 		self.conn.execute(table_ctx)
+		self.conn.execute("CREATE INDEX IF NOT EXISTS ctxindex ON ctx(id)")
 		table_ev = self.create_table(evcols, self.evtab, 'double', '')
 		self.conn.execute(table_ev)
+		self.conn.execute("CREATE INDEX IF NOT EXISTS evindex ON ev(id)")
 
 		n = max(len(ctxcols), len(evcols)) + 1
 		q = ['?']
