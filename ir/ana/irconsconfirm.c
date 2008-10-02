@@ -415,7 +415,7 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 }  /* insert_Confirm_in_block */
 
 /**
- * The given will be dereferenced, add non-null confirms.
+ * The given pointer will be dereferenced, add non-null Confirms.
  *
  * @param ptr    a node representing an address
  * @param block  the block of the dereferencing instruction
@@ -430,6 +430,11 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 		int     pos;
 		ir_node *blk;
 
+
+		if (is_Confirm(succ)) {
+			/* beware of loops */
+			continue;
+		}
 
 		if ((is_Load(succ) || is_Store(succ)) &&
 			get_nodes_block(succ) == block) {
@@ -571,7 +576,7 @@ static void rem_Confirm(ir_node *n, void *env) {
 			exchange(n, value);
 		else {
 			/*
-			 * Strange: a Confirm is it's own bound. This can happen
+			 * Strange: a Confirm is its own bound. This can happen
 			 * in dead blocks when Phi nodes are already removed.
 			 */
 			exchange(n, new_Bad());
