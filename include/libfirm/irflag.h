@@ -212,9 +212,20 @@ void set_opt_ldst_only_null_ptr_exceptions(int value);
  * Enabling this flag is meaningless if ldst_non_null_exceptions is
  * enabled.
  *
- * This flags should be set for Java style languages.
+ * This flag should be set for Java style languages.
  */
 void set_opt_sel_based_null_check_elim(int value);
+
+/**
+ * Enable/Disable Global Null Pointer Test Elimination.
+ *
+ * In languages where it is illegal to dereference NULL pointer, doing
+ * so makes the pointer "valid non-null", else the program will stop
+ * anyway by a fault.
+ *
+ * This flag should be set for C style languages.
+ */
+void set_opt_global_null_ptr_elimination(int value);
 
 /**
  * Enable/Disable Automatic construction of Sync nodes during
@@ -223,7 +234,7 @@ void set_opt_sel_based_null_check_elim(int value);
  * If this flags is set, sequential non-volatile Loads are automatically
  * rearranged so that they can be executed in parallel by creating Sync nodes.
  *
- * This flags should be set for Java style languages.
+ * This flag should be set for Java style languages.
  */
 void set_opt_auto_create_sync(int value);
 

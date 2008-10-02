@@ -64,6 +64,9 @@ I_FLAG(algebraic_simplification           , 8, ON)
 /** Use combo instead of df/cf optimizations. */
 I_FLAG(combo                              , 9, ON)
 
+/** Use Global Null Pointer Test elimination. */
+I_FLAG(global_null_ptr_elimination        , 10, ON)
+
 /** Remove dynamic method dispatch. */
 E_FLAG(dyn_meth_dispatch                  , 11, ON)
 
