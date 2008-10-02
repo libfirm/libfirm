@@ -415,6 +415,30 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 }  /* insert_Confirm_in_block */
 
 /**
+ * Checks if a node is a non-null Confirm.
+ */
+static int is_non_null_Confirm(const ir_node *ptr) {
+	/*
+	 * While a SymConst is not a Confirm, it is non-null
+	 * anyway. This helps to reduce the number of
+	 * constructed Confirms.
+	 */
+	if (is_SymConst_addr_ent(ptr))
+		return 0;
+	for (;;) {
+		if (! is_Confirm(ptr))
+			return 0;
+		if (get_Confirm_cmp(ptr) == pn_Cmp_Lg) {
+			ir_node *bound = get_Confirm_bound(ptr);
+
+			if (is_Const(bound) && is_Const_null(bound))
+				return 1;
+		}
+		ptr = get_Confirm_value(ptr);
+	}
+}  /* is_non_null_Confirm */
+
+/**
  * The given pointer will be dereferenced, add non-null Confirms.
  *
  * @param ptr    a node representing an address
@@ -448,7 +472,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 		pos = get_edge_src_pos(edge);
 		blk = get_effective_use_block(succ, pos);
 
-		if (block_dominates(block, blk)) {
+		if (block_dominates(block, blk) && !is_non_null_Confirm(get_irn_n(succ, pos))) {
 			/*
 			 * Ok, we found a usage of ptr in a block
 			 * dominated by the Load/Store block.
@@ -469,30 +493,6 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 		}
 	}
 }  /* insert_non_null */
-
-/**
- * Checks if a node is a non-null Confirm.
- */
-static int is_non_null_Confirm(const ir_node *ptr) {
-	/*
-	 * While a SymConst is not a Confirm, it is non-null
-	 * anyway. This helps to reduce the number of
-	 * constructed Confirms.
-	 */
-	if (is_SymConst_addr_ent(ptr))
-		return 0;
-	for (;;) {
-		if (! is_Confirm(ptr))
-			return 0;
-		if (get_Confirm_cmp(ptr) == pn_Cmp_Lg) {
-			ir_node *bound = get_Confirm_bound(ptr);
-
-			if (is_Const(bound) && is_Const_null(bound))
-				return 1;
-		}
-		ptr = get_Confirm_value(ptr);
-	}
-}  /* is_non_null_Confirm */
 
 /**
  * Pre-walker: Called for every node to insert Confirm nodes
