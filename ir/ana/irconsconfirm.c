@@ -424,7 +424,7 @@ static int is_non_null_Confirm(const ir_node *ptr) {
 	 * constructed Confirms.
 	 */
 	if (is_SymConst_addr_ent(ptr))
-		return 0;
+		return 1;
 	for (;;) {
 		if (! is_Confirm(ptr))
 			return 0;
