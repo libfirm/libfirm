@@ -110,6 +110,12 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 
 const arch_register_req_t *parse_clobber(const char *clobber);
 
+/**
+ * Checks whether other node inputs depend on the am_candidate (via mem-proj).
+ */
+int prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                       ir_node *const other);
+
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type);
 
 #endif /* FIRM_BE_IA32_IA32_COMMON_TRANSFORM_H */

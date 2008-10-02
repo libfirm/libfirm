@@ -863,6 +863,45 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 	return req;
 }
 
+
+int prevents_AM(ir_node *const block, ir_node *const am_candidate,
+                       ir_node *const other)
+{
+	if (get_nodes_block(other) != block)
+		return 0;
+
+	if (is_Sync(other)) {
+		int i;
+
+		for (i = get_Sync_n_preds(other) - 1; i >= 0; --i) {
+			ir_node *const pred = get_Sync_pred(other, i);
+
+			if (get_nodes_block(pred) != block)
+				continue;
+
+			/* Do not block ourselves from getting eaten */
+			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
+				continue;
+
+			if (!heights_reachable_in_block(heights, pred, am_candidate))
+				continue;
+
+			return 1;
+		}
+
+		return 0;
+	} else {
+		/* Do not block ourselves from getting eaten */
+		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
+			return 0;
+
+		if (!heights_reachable_in_block(heights, other, am_candidate))
+			return 0;
+
+		return 1;
+	}
+}
+
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
 	int          minus         = 0;

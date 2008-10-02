@@ -433,44 +433,6 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct) {
 	return ent_cache[kct];
 }
 
-static int prevents_AM(ir_node *const block, ir_node *const am_candidate,
-                       ir_node *const other)
-{
-	if (get_nodes_block(other) != block)
-		return 0;
-
-	if (is_Sync(other)) {
-		int i;
-
-		for (i = get_Sync_n_preds(other) - 1; i >= 0; --i) {
-			ir_node *const pred = get_Sync_pred(other, i);
-
-			if (get_nodes_block(pred) != block)
-				continue;
-
-			/* Do not block ourselves from getting eaten */
-			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
-				continue;
-
-			if (!heights_reachable_in_block(heights, pred, am_candidate))
-				continue;
-
-			return 1;
-		}
-
-		return 0;
-	} else {
-		/* Do not block ourselves from getting eaten */
-		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
-			return 0;
-
-		if (!heights_reachable_in_block(heights, other, am_candidate))
-			return 0;
-
-		return 1;
-	}
-}
-
 /**
  * return true if the node is a Proj(Load) and could be used in source address
  * mode for another node. Will return only true if the @p other node is not
