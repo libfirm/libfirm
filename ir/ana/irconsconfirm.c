@@ -39,6 +39,8 @@
 #include "irgopt.h"
 #include "irtools.h"
 #include "array_t.h"
+#include "debug.h"
+#include "irflag.h"
 
 /**
  * Walker environment.
@@ -48,6 +50,9 @@ typedef struct _env_t {
 	unsigned num_consts;    /**< number of constants placed */
 	unsigned num_eq;        /**< number of equalities placed */
 } env_t;
+
+/** The debug handle. */
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Return the effective use block of a node and it's predecessor on
@@ -148,7 +153,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			set_irn_n(user, pos, con);
 			DBG_OPT_CONFIRM_C(old, con);
 
-			// ir_printf("2 Replacing input %d of node %n with %n\n", pos, user, con);
+			DB((dbg, LEVEL_2, "Replacing input %d of node %n with %n\n", pos, user, con));
 
 			env->num_consts += 1;
 		} else {
@@ -282,7 +287,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 				set_irn_n(user, pos, right);
 				DBG_OPT_CONFIRM(left, right);
 
-//				ir_printf("2 Replacing input %d of node %n with %n\n", pos, user, right);
+				DB((dbg, LEVEL_2, "Replacing input %d of node %n with %n\n", pos, user, right));
 
 				env->num_eq += 1;
 			} else if (block_dominates(blk, cond_block)) {
@@ -342,7 +347,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 
 				pos = get_edge_src_pos(edge);
 				set_irn_n(succ, pos, c);
-//				ir_printf("3 Replacing input %d of node %n with %n\n", pos, user, c);
+				DB((dbg, LEVEL_2, "Replacing input %d of node %n with %n\n", pos, succ, c));
 
 				env->num_confirms += 1;
 			}
@@ -351,9 +356,9 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 }  /* handle_if */
 
 /**
- * Pre-walker: Called for every block to insert Confirm nodes
+ * Pre-block-walker: Called for every block to insert Confirm nodes
  */
-static void insert_Confirm(ir_node *block, void *env) {
+static void insert_Confirm_in_block(ir_node *block, void *env) {
 	ir_node *cond, *proj, *selector;
 	ir_mode *mode;
 
@@ -395,7 +400,7 @@ static void insert_Confirm(ir_node *block, void *env) {
 			/* it's the false branch */
 			pnc = get_negated_pnc(pnc, mode);
 		}
-//		ir_printf("At %n using %n Confirm %=\n", block, cmp, pnc);
+		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, cmp, pnc));
 
 		handle_if(block, cmp, pnc, env);
 	} else if (mode_is_int(mode)) {
@@ -407,6 +412,99 @@ static void insert_Confirm(ir_node *block, void *env) {
 
 		handle_case(block, get_Cond_selector(cond), proj_nr, env);
 	}
+}  /* insert_Confirm_in_block */
+
+/**
+ * The given will be dereferenced, add non-null confirms.
+ *
+ * @param ptr    a node representing an address
+ * @param block  the block of the dereferencing instruction
+ * @param env    environment
+ */
+static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
+	const ir_edge_t *edge, *next;
+	ir_node         *c = NULL;
+
+	foreach_out_edge_safe(ptr, edge, next) {
+		ir_node *succ = get_edge_src_irn(edge);
+		int     pos;
+		ir_node *blk;
+
+
+		if ((is_Load(succ) || is_Store(succ)) &&
+			get_nodes_block(succ) == block) {
+			/* Ignore Loads and Store in the same block for now,
+			   because we are not sure if they are dominated.
+			   This is not a bad restriction: if exception flow is
+			   present, they are in other blocks either. */
+			continue;
+		}
+
+		pos = get_edge_src_pos(edge);
+		blk = get_effective_use_block(succ, pos);
+
+		if (block_dominates(block, blk)) {
+			/*
+			 * Ok, we found a usage of ptr in a block
+			 * dominated by the Load/Store block.
+			 * We can replace the input with a Confirm(ptr, !=, NULL).
+			 */
+			if (c == NULL) {
+				ir_mode *mode = get_irn_mode(ptr);
+				c = new_Const(mode, get_mode_null(mode));
+
+				c = new_r_Confirm(current_ir_graph, block, ptr, c, pn_Cmp_Lg);
+			}
+
+			set_irn_n(succ, pos, c);
+			DB((dbg, LEVEL_2, "Replacing input %d of node %n with %n\n", pos, succ, c));
+
+
+			env->num_confirms += 1;
+		}
+	}
+}  /* insert_non_null */
+
+/**
+ * Checks if a node is a non-null Confirm.
+ */
+static int is_non_null_Confirm(const ir_node *ptr) {
+	for (;;) {
+		if (! is_Confirm(ptr))
+			return 0;
+		if (get_Confirm_cmp(ptr) == pn_Cmp_Lg) {
+			ir_node *bound = get_Confirm_bound(ptr);
+
+			if (is_Const(bound) && is_Const_null(bound))
+				return 1;
+		}
+		ptr = get_Confirm_value(ptr);
+	}
+}  /* is_non_null_Confirm */
+
+/**
+ * Pre-walker: Called for every node to insert Confirm nodes
+ */
+static void insert_Confirm(ir_node *node, void *env) {
+	ir_node *ptr;
+
+	switch (get_irn_opcode(node)) {
+	case iro_Block:
+		insert_Confirm_in_block(node, env);
+		break;
+	case iro_Load:
+		ptr = get_Load_ptr(node);
+		if (! is_non_null_Confirm(ptr))
+			insert_non_null(ptr, get_nodes_block(node), env);
+		break;
+	case iro_Store:
+		ptr = get_Store_ptr(node);
+		if (! is_non_null_Confirm(ptr))
+			insert_non_null(ptr, get_nodes_block(node), env);
+		break;
+	default:
+		break;
+	}
 }  /* insert_Confirm */
 
 /*
@@ -415,6 +513,9 @@ static void insert_Confirm(ir_node *block, void *env) {
 void construct_confirms(ir_graph *irg) {
 	env_t env;
 	int edges_active = edges_activated(irg);
+
+
+	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
 
 	remove_critical_cf_edges(irg);
 
@@ -433,8 +534,13 @@ void construct_confirms(ir_graph *irg) {
 	env.num_consts   = 0;
 	env.num_eq       = 0;
 
-	/* now, visit all blocks and add Confirms where possible */
-	irg_block_walk_graph(irg, insert_Confirm, NULL, &env);
+	if (get_opt_global_null_ptr_elimination()) {
+		/* do global NULL test elimination */
+		irg_walk_graph(irg, insert_Confirm, NULL, &env);
+	} else {
+		/* now, visit all blocks and add Confirms where possible */
+		irg_block_walk_graph(irg, insert_Confirm_in_block, NULL, &env);
+	}
 
 	if (env.num_confirms | env.num_consts | env.num_eq) {
 		/* we have add nodes or changed DF edges */
@@ -444,11 +550,9 @@ void construct_confirms(ir_graph *irg) {
 		set_irg_loopinfo_inconsistent(irg);
 	}
 
-#if 0
-	printf("# Confirms inserted : %u\n", env.num_confirms);
-	printf("# Const replacements: %u\n", env.num_consts);
-	printf("# node equalities   : %u\n", env.num_eq);
-#endif
+	DB((dbg, LEVEL_1, "# Confirms inserted : %u\n", env.num_confirms));
+	DB((dbg, LEVEL_1, "# Const replacements: %u\n", env.num_consts));
+	DB((dbg, LEVEL_1, "# node equalities   : %u\n", env.num_eq));
 
 	/* deactivate edges if they where off */
 	if (! edges_active)
@@ -480,6 +584,9 @@ static void rem_Confirm(ir_node *n, void *env) {
  * Remove all Confirm nodes from a graph.
  */
 void remove_confirms(ir_graph *irg) {
+	int rem = get_opt_remove_confirm();
+
 	set_opt_remove_confirm(1);
 	optimize_graph_df(irg);
+	set_opt_remove_confirm(rem);
 }  /* remove_confirms */
