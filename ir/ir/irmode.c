@@ -523,6 +523,79 @@ int (mode_is_int_vector)(const ir_mode *mode) {
 /* Returns true if sm can be converted to lm without loss. */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm) {
 	int sm_bits, lm_bits;
+
+	assert(sm);
+	assert(lm);
+
+	if (sm == lm) return 1;
+
+	sm_bits = get_mode_size_bits(sm);
+	lm_bits = get_mode_size_bits(lm);
+
+	switch (get_mode_sort(sm)) {
+	case irms_int_number:
+		switch (get_mode_sort(lm)) {
+		case irms_int_number:
+			if (get_mode_arithmetic(sm) != get_mode_arithmetic(lm))
+				return 0;
+
+			/* only two complement implemented */
+			assert(get_mode_arithmetic(sm) == irma_twos_complement);
+
+			/* integers are convertable if
+			 *   - both have the same sign and lm is the larger one
+			 *   - lm is the signed one and is at least two bits larger
+			 *     (one for the sign, one for the highest bit of sm)
+			 *   - sm & lm are two_complement and lm has greater or equal number of bits
+			 */
+			if (mode_is_signed(sm)) {
+				if (!mode_is_signed(lm))
+					return 0;
+				return sm_bits <= lm_bits;
+			} else {
+				if (mode_is_signed(lm)) {
+					return sm_bits < lm_bits;
+				}
+				return sm_bits <= lm_bits;
+			}
+			break;
+
+		case irms_float_number:
+			/* int to float works if the float is large enough */
+			return 0;
+
+		default:
+			break;
+		}
+		break;
+
+	case irms_float_number:
+		if (get_mode_arithmetic(sm) == get_mode_arithmetic(lm)) {
+			if ( (get_mode_sort(lm) == irms_float_number)
+				&& (get_mode_size_bits(lm) >= get_mode_size_bits(sm)) )
+				return 1;
+		}
+		break;
+
+	case irms_reference:
+		/* do exist machines out there with different pointer lenghts ?*/
+		return 0;
+
+	case irms_internal_boolean:
+		return mode_is_int(lm);
+
+	default:
+		break;
+	}
+
+	/* else */
+	return 0;
+}
+
+/* Returns true if a value of mode sm can be converted into mode lm
+   and backwards without loss. */
+int values_in_mode(const ir_mode *sm, const ir_mode *lm) {
+	int sm_bits, lm_bits;
 	ir_mode_arithmetic arith;
 
 	assert(sm);

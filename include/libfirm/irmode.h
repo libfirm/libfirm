@@ -407,9 +407,25 @@ int mode_is_float_vector (const ir_mode *mode);
 int mode_is_int_vector (const ir_mode *mode);
 /*@}*/
 
-/** Returns true if sm can be converted to lm without loss
-   according to firm definition */
+/**
+ * Returns true if sm can be converted to lm without loss
+ * according to firm definition.
+ *
+ * Note that mode_Iu is NOT smaller than mode_Is here.
+ *
+ * @see values_in_mode()
+ */
 int smaller_mode(const ir_mode *sm, const ir_mode *lm);
+
+/**
+ * Returns true if a value of mode sm can be converted into mode lm
+ * and backwards without loss.
+ *
+ * Note that mode_Iu values CAN be converted in mode_Is and back.
+ *
+ * @see smaller_mode()
+ */
+int values_in_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
  * Returns a matching unsigned mode for a given integer signed mode.

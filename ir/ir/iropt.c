@@ -1254,7 +1254,7 @@ restart:
 					n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 				} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
-					if (smaller_mode(b_mode, a_mode)) {
+					if (values_in_mode(b_mode, a_mode)) {
 						n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
 						DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 					}
