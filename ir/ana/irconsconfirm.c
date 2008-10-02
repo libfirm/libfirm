@@ -474,6 +474,13 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
  * Checks if a node is a non-null Confirm.
  */
 static int is_non_null_Confirm(const ir_node *ptr) {
+	/*
+	 * While a SymConst is not a Confirm, it is non-null
+	 * anyway. This helps to reduce the number of
+	 * constructed Confirms.
+	 */
+	if (is_SymConst_addr_ent(ptr))
+		return 0;
 	for (;;) {
 		if (! is_Confirm(ptr))
 			return 0;
