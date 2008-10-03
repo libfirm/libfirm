@@ -2700,6 +2700,9 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 	if (get_mode_size_bits(mode) >= 32)
 		return true;
 
+	if (is_Proj(transformed_node))
+		return upper_bits_clean(get_Proj_pred(transformed_node), mode);
+
 	if (is_ia32_Conv_I2I(transformed_node)
 			|| is_ia32_Conv_I2I8Bit(transformed_node)) {
 		ir_mode *smaller_mode = get_ia32_ls_mode(transformed_node);
@@ -2721,6 +2724,7 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 				return true;
 			}
 		}
+		return upper_bits_clean(get_irn_n(transformed_node, n_ia32_Shr_val), mode);
 	}
 
 	if (is_ia32_And(transformed_node) && !mode_is_signed(mode)) {
@@ -2734,7 +2738,10 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 				return true;
 			}
 		}
+		/* TODO recurse? */
 	}
+
+	/* TODO recurse on Or, Xor, ... if appropriate? */
 
 	if (is_ia32_Immediate(transformed_node)
 			|| is_ia32_Const(transformed_node)) {
@@ -2805,8 +2812,8 @@ static ir_node *gen_Cmp(ir_node *node)
 										match_8bit | match_16bit);
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
-		if (upper_bits_clean(am.new_op1, cmp_mode)
-				&& upper_bits_clean(am.new_op2, cmp_mode)) {
+		if (upper_bits_clean(am.new_op1, cmp_mode) &&
+		    upper_bits_clean(am.new_op2, cmp_mode)) {
 			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
 		}
 
@@ -2828,8 +2835,8 @@ static ir_node *gen_Cmp(ir_node *node)
 		                match_16bit_am | match_am_and_immediates |
 		                match_immediate | match_8bit | match_16bit);
 		/* use 32bit compare mode if possible since the opcode is smaller */
-		if (upper_bits_clean(am.new_op1, cmp_mode)
-				&& upper_bits_clean(am.new_op2, cmp_mode)) {
+		if (upper_bits_clean(am.new_op1, cmp_mode) &&
+		    upper_bits_clean(am.new_op2, cmp_mode)) {
 			cmp_mode = mode_is_signed(cmp_mode) ? mode_Is : mode_Iu;
 		}
 
