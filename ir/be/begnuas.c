@@ -634,19 +634,21 @@ static int ent_is_string_const(ir_entity *ent)
 static void dump_string_cst(ir_entity *ent)
 {
 	int      i, len;
+	int      output_len;
 	ir_type *type;
 	int      type_size;
 	int      remaining_space;
 
-	len = get_compound_ent_n_values(ent);
+	len        = get_compound_ent_n_values(ent);
+	output_len = len;
 	if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
 		be_emit_cstring("\t.ascii \"");
 	} else {
 		be_emit_cstring("\t.string \"");
-		len -= 1;
+		output_len -= 1;
 	}
 
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < output_len; ++i) {
 		ir_node *irn;
 		int c;
 
