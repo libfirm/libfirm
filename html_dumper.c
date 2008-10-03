@@ -15,9 +15,14 @@ static void dump_vector(FILE *f, vector *vec)
 
 	fprintf(f, "<span class=\"vector\">( ");
 	unsigned len = vec->len;
-	assert(len> 0);
+	assert(len > 0);
 	for (index = 0; index < len; ++index) {
+#if EXT_GRS_DEBUG
+		fprintf(f, "<span title=\"%s\">%6d</span>", vec->entries[index].name,
+				vec->entries[index].data);
+#else
 		fprintf(f, "%6d", vec->entries[index].data);
+#endif
 	}
 	fprintf(f, " )</span>\n");
 }
@@ -28,8 +33,8 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	assert(mat);
 	num *p = mat->entries;
 
-	assert(mat->cols > 0);
-	assert(mat->rows > 0);
+	assert(mat->cols> 0);
+	assert(mat->rows> 0);
 	fprintf(f, "\t\\begin{pmatrix}\n");
 	for (row = 0; row < mat->rows; ++row) {
 		fprintf(f, "\t %6d", *p++);
@@ -51,6 +56,10 @@ static void dump_edge_costs(pbqp *pbqp)
 	fputs("<p>", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node *src_node = get_node(pbqp, src_index);
+
+		if (!src_node)
+			continue;
+
 		unsigned edge_index;
 		unsigned len = ARR_LEN(src_node->edges);
 		for (edge_index = 0; edge_index < len; ++edge_index) {
@@ -79,9 +88,11 @@ static void dump_node_costs(pbqp *pbqp)
 	fputs("<p>", pbqp->dump_file);
 	for (index = 0; index < pbqp->num_nodes; ++index) {
 		pbqp_node *node = get_node(pbqp, index);
-		fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", index);
-		dump_vector(pbqp->dump_file, node->costs);
-		fputs("<br>\n", pbqp->dump_file);
+		if (node) {
+			fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", index);
+			dump_vector(pbqp->dump_file, node->costs);
+			fputs("<br>\n", pbqp->dump_file);
+		}
 	}
 	fputs("</p>", pbqp->dump_file);
 }
@@ -93,20 +104,27 @@ static void dump_section(FILE *f, int level, char *txt)
 	fprintf(f, "<h%d>%s</h%d>\n", level, txt, level);
 }
 
-void dump_graph(pbqp *pbqp)
+void pbqp_dump_graph(pbqp *pbqp)
 {
 	unsigned src_index;
 
-	assert(pbqp != NULL);
-	assert(pbqp->dump_file != NULL);
+	assert(pbqp);
+	assert(pbqp->dump_file);
 
 	fputs("<p>\n<graph>\n\tgraph input {\n", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
-		fprintf(pbqp->dump_file, "\t n%d;\n", src_index);
+		pbqp_node *node = get_node(pbqp, src_index);
+		if (node) {
+			fprintf(pbqp->dump_file, "\t n%d;\n", src_index);
+		}
 	}
 
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node *node = get_node(pbqp, src_index);
+
+		if (!node)
+			continue;
+
 		unsigned len = ARR_LEN(node->edges);
 		unsigned edge_index;
 		for (edge_index = 0; edge_index < len; ++edge_index) {
@@ -128,7 +146,7 @@ void dump_input(pbqp *pbqp)
 
 	dump_section(pbqp->dump_file, 1, "1. PBQP Problem");
 	dump_section(pbqp->dump_file, 2, "1.1 Topology");
-	dump_graph(pbqp);
+	pbqp_dump_graph(pbqp);
 	dump_section(pbqp->dump_file, 2, "1.2 Cost Vectors");
 	dump_node_costs(pbqp);
 	dump_section(pbqp->dump_file, 2, "1.3 Cost Matrices");

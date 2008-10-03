@@ -3,14 +3,6 @@
 
 #include "pbqp_t.h"
 
-/**
- * Create an empty PBQP instance with the given number of nodes.
- */
-pbqp* alloc_pbqp(int number_nodes);
-
-/**
- * Free the given PBQP.
- */
-void free_pbqp(pbqp *pbqp);
+void solve_pbqp_heuristical(pbqp *pbqp);
 
 #endif /* KAPS_HEURISTICAL_H */
