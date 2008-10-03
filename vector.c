@@ -19,11 +19,10 @@ vector *vector_alloc(pbqp *pbqp, unsigned length)
 
 vector *vector_copy(pbqp *pbqp, vector *v)
 {
-	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * length);
+	unsigned len = v->len;
+	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * len);
 
 	assert(copy);
-
-	unsigned len = v->len;
 
 	copy->len = len;
 	memcpy(copy->entries, v->entries, sizeof(*copy->entries) * len);
