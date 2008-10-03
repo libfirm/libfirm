@@ -23,4 +23,7 @@ void add_node_costs(pbqp *pbqp, int node_index, vector *costs);
  */
 void add_edge_costs(pbqp *pbqp, int src_index, int tgt_index, matrix *costs);
 
+pbqp_edge *get_edge(pbqp *pbqp, int src_index, int tgt_index);
+pbqp_node *get_node(pbqp *pbqp, int index);
+
 #endif /* KAPS_KAPS_H */

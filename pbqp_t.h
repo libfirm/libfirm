@@ -3,6 +3,8 @@
 
 #include <limits.h>
 
+#include "adt/obstack.h"
+
 #include "matrix_t.h"
 #include "vector_t.h"
 
@@ -10,6 +12,7 @@ typedef int num;
 
 typedef struct pbqp_edge pbqp_edge;
 typedef struct pbqp_node pbqp_node;
+typedef struct pbqp      pbqp;
 
 static const num INF_COST = INT_MAX;
 

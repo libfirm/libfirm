@@ -6,7 +6,7 @@ vector *vector_copy(pbqp *pbqp, vector *v)
 {
 	int i;
 	int len;
-	vector *copy = obstack_alloc(pbqp->obstack, sizeof(*copy));
+	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy));
 
 	assert(copy);
 
