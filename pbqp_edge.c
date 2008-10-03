@@ -1,3 +1,4 @@
+#include "adt/array.h"
 #include "assert.h"
 
 #include "kaps.h"
@@ -27,7 +28,14 @@ pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, matrix *costs)
 
 	edge->costs = matrix_copy(pbqp, costs);
 
-	// TODO: connect edge with nodes
+	/*
+	 * Connect edge with incident nodes. Since the edge is allocated, we know
+	 * that it don't appear in the edge lists of the nodes.
+	 */
+	ARR_APP1(pbqp_edge *, src_node->edges, edge);
+	edge->src = src_node;
+	ARR_APP1(pbqp_edge *, tgt_node->edges, edge);
+	edge->tgt = tgt_node;
 
 	return edge;
 }
