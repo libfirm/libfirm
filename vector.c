@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "adt/array.h"
 
 #include "pbqp_t.h"
@@ -5,26 +7,18 @@
 
 vector *vector_alloc(pbqp *pbqp, unsigned length)
 {
-	unsigned index;
-
 	assert(length > 0);
 	vector *vec = obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
 	assert(vec);
 
 	vec->len = length;
-	for (index = 0; index < length; ++index) {
-		vec->entries[index].data = 0;
-#if EXT_GRS_DEBUG
-		vec->entries[index].name = NULL;
-#endif
-	}
+	memset(vec->entries, 0, sizeof(*vec->entries) * length);
 
 	return vec;
 }
 
 vector *vector_copy(pbqp *pbqp, vector *v)
 {
-	unsigned i;
 	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * length);
 
 	assert(copy);
@@ -32,9 +26,7 @@ vector *vector_copy(pbqp *pbqp, vector *v)
 	unsigned len = v->len;
 
 	copy->len = len;
-	for (i = 0; i < len; ++i) {
-		copy->entries[i] = v->entries[i];
-	}
+	memcpy(copy->entries, v->entries, sizeof(*copy->entries) * len);
 
 	return copy;
 }
