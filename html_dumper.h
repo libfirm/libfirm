@@ -3,6 +3,6 @@
 
 #include "pbqp_t.h"
 
-void dump_input(pbqp *pbqp);
+void pbqp_dump_input(pbqp *pbqp);
 
 #endif /* KAPS_HTML_DUMPER_H */

@@ -139,7 +139,7 @@ void pbqp_dump_graph(pbqp *pbqp)
 	fputs("\t}\n</graph>\n</p>\n", pbqp->dump_file);
 }
 
-void dump_input(pbqp *pbqp)
+void pbqp_dump_input(pbqp *pbqp)
 {
 	assert(pbqp);
 	assert(pbqp->dump_file);
