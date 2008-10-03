@@ -1,43 +1,31 @@
-#include "assert.h"
+#include <assert.h>
+#include <string.h>
 
 #include "pbqp_t.h"
 #include "matrix.h"
 
 pbqp_matrix *pbqp_matrix_alloc(pbqp *pbqp, unsigned rows, unsigned cols)
 {
-	pbqp_matrix *mat;
-	unsigned index;
-
 	assert(cols> 0);
 	assert(rows> 0);
 
 	unsigned length = rows * cols;
 
-	mat = obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(num) * (length - 1));
+	pbqp_matrix *mat = obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
 	assert(mat);
 
 	mat->cols = cols;
 	mat->rows = rows;
-	for (index = 0; index < length; ++index) {
-		mat->entries[index] = 0;
-	}
+	memset(mat->entries, 0, sizeof(*mat->entries) * length);
 
 	return mat;
 }
 
 pbqp_matrix *pbqp_matrix_copy(pbqp *pbqp, pbqp_matrix *m)
 {
-	int i;
-	int len;
-	pbqp_matrix *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy));
-
+	unsigned     len  = m->rows * m->cols;
+	pbqp_matrix *copy = obstack_copy(&pbqp->obstack, m, sizeof(*copy) + sizeof(*copy->entries) * len);
 	assert(copy);
-
-	len = m->rows * m->cols;
-
-	for (i = 0; i < len; ++i) {
-		copy->entries[i] = m->entries[i];
-	}
 
 	return copy;
 }
