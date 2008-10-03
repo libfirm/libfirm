@@ -675,7 +675,7 @@ static void dump_string_cst(ir_entity *ent)
 	remaining_space = type_size - len;
 	assert(remaining_space >= 0);
 	if(remaining_space > 0) {
-		be_emit_irprintf("\t.skip\t%d\n", remaining_space);
+		be_emit_irprintf("\t.space\t%d\n", remaining_space);
 	}
 }
 
@@ -996,7 +996,7 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 
 		/* a gap */
 		if (space > 0) {
-			be_emit_irprintf("\t.skip\t%d\n", space);
+			be_emit_irprintf("\t.space\t%d\n", space);
 			be_emit_write_line();
 		}
 	}
@@ -1109,7 +1109,7 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 
 		/* a gap */
 		if (space > 0) {
-			be_emit_irprintf("\t.skip\t%d\n", space);
+			be_emit_irprintf("\t.space\t%d\n", space);
 			be_emit_write_line();
 		}
 	}
