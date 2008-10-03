@@ -3,10 +3,14 @@
 
 #include "matrix_t.h"
 
+pbqp_matrix *pbqp_matrix_alloc(pbqp *pbqp, unsigned rows, unsigned cols);
+
 /* Copy the given matrix. */
-matrix *matrix_copy(pbqp *pbqp, matrix *m);
+pbqp_matrix *pbqp_matrix_copy(pbqp *pbqp, pbqp_matrix *m);
 
 /* sum += summand */
-void matrix_add(matrix *sum, matrix *summand);
+void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand);
+
+void pbqp_matrix_set(pbqp_matrix *mat, unsigned row, unsigned col, num value);
 
 #endif /* KAPS_MATRIX_H */

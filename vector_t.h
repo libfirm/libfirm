@@ -1,14 +1,24 @@
 #ifndef KAPS_VECTOR_T_H
 #define KAPS_VECTOR_T_H
 
+#include "../debug.h"
+
 #include "pbqp_t.h"
 
-struct vector;
+typedef struct vec_elem vec_elem;
+
+struct vec_elem {
+	num data;
+#if EXT_GRS_DEBUG
+	char *name;
+#endif
+};
+
 typedef struct vector vector;
 
 struct vector {
-	int len;
-	int entries[];
+	unsigned len;
+	vec_elem entries[];
 };
 
 #endif /* KAPS_VECTOR_T_H */

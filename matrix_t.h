@@ -1,12 +1,14 @@
 #ifndef KAPS_MATRIX_T_H
 #define KAPS_MATRIX_T_H
 
-typedef struct matrix matrix;
+#include "pbqp_t.h"
 
-struct matrix {
-	int rows;
-	int cols;
-	int entries[];
+typedef struct pbqp_matrix pbqp_matrix;
+
+struct pbqp_matrix {
+	unsigned rows;
+	unsigned cols;
+	num entries[];
 };
 
 #endif /* KAPS_MATRIX_T_H */

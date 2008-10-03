@@ -3,6 +3,6 @@
 
 #include "pbqp_t.h"
 
-pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, matrix *costs);
+pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *costs);
 
 #endif /* KAPS_PBQP_EDGE_H */

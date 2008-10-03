@@ -4,9 +4,9 @@
 #include "pbqp_t.h"
 
 struct pbqp_edge {
-	pbqp_node *src;                    /* Source node. */
-	pbqp_node *tgt;                    /* Target node. */
-	matrix *costs;                     /* Cost matrix. */
+	unsigned src;                      /* Source index. */
+	unsigned tgt;                      /* Target index. */
+	pbqp_matrix  *costs;                    /* Cost matrix. */
 };
 
 #endif /* KAPS_PBQP_EDGE_T_H */
