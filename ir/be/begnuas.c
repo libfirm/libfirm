@@ -816,6 +816,7 @@ static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	if (tv == NULL) {
 		panic("Couldn't get numeric value for bitfield initializer");
 	}
+	tv = tarval_convert_to(tv, get_type_mode(type));
 
 	/* normalize offset */
 	vals        += offset_bits >> 3;
