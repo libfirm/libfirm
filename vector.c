@@ -5,11 +5,10 @@
 
 vector *vector_alloc(pbqp *pbqp, unsigned length)
 {
-	vector *vec;
 	unsigned index;
 
 	assert(length > 0);
-	vec = obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(vec_elem) * (length - 1));
+	vector *vec = obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
 	assert(vec);
 
 	vec->len = length;
@@ -25,14 +24,14 @@ vector *vector_alloc(pbqp *pbqp, unsigned length)
 
 vector *vector_copy(pbqp *pbqp, vector *v)
 {
-	int i;
-	int len;
-	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy));
+	unsigned i;
+	vector *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * length);
 
 	assert(copy);
 
-	len = v->len;
+	unsigned len = v->len;
 
+	copy->len = len;
 	for (i = 0; i < len; ++i) {
 		copy->entries[i] = v->entries[i];
 	}
