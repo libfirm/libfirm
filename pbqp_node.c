@@ -13,6 +13,8 @@ pbqp_node *alloc_node(pbqp *pbqp, vector *costs)
 
 	node->edges = NEW_ARR_F(pbqp_edge *, 0);
 	node->costs = vector_copy(pbqp, costs);
+	node->bucket_index = UINT_MAX;
+	node->solution = UINT_MAX;
 
 	return node;
 }

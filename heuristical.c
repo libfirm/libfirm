@@ -8,6 +8,7 @@
 #include "matrix.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
+#include "pbqp_node.h"
 #include "pbqp_node_t.h"
 #include "vector.h"
 
@@ -46,7 +47,98 @@ static void fill_node_buckets(pbqp *pbqp)
 			arity = 3;
 		}
 
+		node->bucket_index = ARR_LEN(node_buckets[arity]);
+
 		ARR_APP1(pbqp_node *, node_buckets[arity], node);
+	}
+}
+
+static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
+{
+	pbqp_matrix    *mat;
+	pbqp_node      *src_node;
+	pbqp_node      *tgt_node;
+	vector         *src_vec;
+	vector         *tgt_vec;
+	int             src_len;
+	int             tgt_len;
+	int             src_index;
+
+	assert(pbqp);
+	assert(edge);
+
+	src_node = get_node(pbqp, edge->src);
+	tgt_node = get_node(pbqp, edge->tgt);
+	assert(src_node);
+	assert(tgt_node);
+
+	src_vec = src_node->costs;
+	tgt_vec = tgt_node->costs;
+	assert(src_vec);
+	assert(tgt_vec);
+
+	src_len = src_vec->len;
+	tgt_len = tgt_vec->len;
+	assert(src_len > 0);
+	assert(tgt_len > 0);
+
+	mat = edge->costs;
+	assert(mat);
+
+	/* Normalize towards source node. */
+	for (src_index = 0; src_index < src_len; ++src_index) {
+		num min = pbqp_matrix_get_row_min(mat, src_index, tgt_vec);
+
+		if (min != 0) {
+			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
+			vector_add_value(src_vec, min);
+
+			// TODO add to edge_list if inf
+		}
+	}
+}
+
+static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
+{
+	pbqp_matrix    *mat;
+	pbqp_node      *src_node;
+	pbqp_node      *tgt_node;
+	vector         *src_vec;
+	vector         *tgt_vec;
+	int             src_len;
+	int             tgt_len;
+	int             tgt_index;
+
+	assert(pbqp);
+	assert(edge);
+
+	src_node = get_node(pbqp, edge->src);
+	tgt_node = get_node(pbqp, edge->tgt);
+	assert(src_node);
+	assert(tgt_node);
+
+	src_vec = src_node->costs;
+	tgt_vec = tgt_node->costs;
+	assert(src_vec);
+	assert(tgt_vec);
+
+	src_len = src_vec->len;
+	tgt_len = tgt_vec->len;
+	assert(src_len > 0);
+	assert(tgt_len > 0);
+
+	mat = edge->costs;
+	assert(mat);
+
+	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
+		num min = pbqp_matrix_get_col_min(mat, tgt_index, src_vec);
+
+		if (min != 0) {
+			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
+			vector_add_value(tgt_vec, min);
+
+			// TODO add to edge_list if inf
+		}
 	}
 }
 
@@ -59,8 +151,6 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	vector         *tgt_vec;
 	int             src_len;
 	int             tgt_len;
-	int             src_index;
-	int             tgt_index;
 
 	assert(pbqp);
 	assert(edge);
@@ -94,29 +184,8 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 		dump_simplifyedge(pbqp, edge);
 	}
 
-	/* Normalize towards source node. */
-	for (src_index = 0; src_index < src_len; ++src_index) {
-		num min = pbqp_matrix_get_row_min(mat, src_index, tgt_vec);
-
-		if (min != 0) {
-			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
-			vector_add_value(src_vec, min);
-
-			// TODO add to edge_list if inf
-		}
-	}
-
-	/* Normalize towards target node. */
-	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
-		num min = pbqp_matrix_get_col_min(mat, tgt_index, src_vec);
-
-		if (min != 0) {
-			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
-			vector_add_value(tgt_vec, min);
-
-			// TODO add to edge_list if inf
-		}
-	}
+	normalize_towards_source(pbqp, edge);
+	normalize_towards_target(pbqp, edge);
 
 	if (pbqp->dump_file) {
 		fputs("<br>\nOutput:<br>\n", pbqp->dump_file);
@@ -130,6 +199,40 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 			delete_edge(pbqp, edge);
 		}
 	}
+}
+
+static void reorder_node(pbqp_node *node)
+{
+	unsigned arity;
+	unsigned old_arity;
+	unsigned old_bucket_len;
+
+	assert(node);
+
+	arity = ARR_LEN(node->edges);
+
+	/* Equal bucket as before */
+	if (arity > 2) return;
+
+	/* Assume node lost one incident edge. */
+	old_arity = arity + 1;
+
+	if (ARR_LEN(node_buckets[old_arity]) <= (int)node->bucket_index
+			|| node_buckets[old_arity][node->bucket_index] != node) {
+		/* Old arity is new arity, so we have nothing to do. */
+		return;
+	}
+
+	old_bucket_len = ARR_LEN(node_buckets[old_arity]);
+	assert (node_buckets[old_arity][node->bucket_index] == node);
+
+	/* Delete node from old bucket... */
+	node_buckets[old_arity][node->bucket_index]
+			= node_buckets[old_arity][old_bucket_len - 1];
+	ARR_SHRINKLEN(node_buckets[old_arity], (int)old_bucket_len - 1);
+
+	/* ..and add to new one. */
+	ARR_APP1(pbqp_node *, node_buckets[arity], node);
 }
 
 void solve_pbqp_heuristical(pbqp *pbqp)
@@ -177,7 +280,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		if (ARR_LEN(edge_bucket) > 0) {
 			panic("Please implement edge simplification");
 		} else if (ARR_LEN(node_buckets[1]) > 0) {
-			panic("Please implement RI simplification");
+			applyRI(pbqp);
 		} else if (ARR_LEN(node_buckets[2]) > 0) {
 			panic("Please implement RII simplification");
 		} else if (ARR_LEN(node_buckets[3]) > 0) {
@@ -187,4 +290,55 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 			// break;
 		}
 	}
+}
+
+void applyRI(pbqp *pbqp)
+{
+	pbqp_node  **bucket     = node_buckets[1];
+	unsigned     bucket_len = ARR_LEN(bucket);
+	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_edge   *edge       = node->edges[0];
+	pbqp_matrix *mat        = edge->costs;
+	int          is_src     = get_node(pbqp, edge->src) == node;
+	unsigned my_index;
+	unsigned other_index;
+
+	if (is_src) {
+		my_index    = edge->src;
+		other_index = edge->tgt;
+	} else {
+		my_index    = edge->tgt;
+		other_index = edge->src;
+	}
+
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RI-Reduktion of Node n%d", my_index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
+		dump_node(pbqp, my_index);
+		dump_node(pbqp, other_index);
+		dump_edge(pbqp, edge);
+	}
+
+	if (is_src) {
+		pbqp_node *tgt_node = get_node(pbqp, edge->tgt);
+		pbqp_matrix_add_to_all_cols(mat, node->costs);
+		normalize_towards_target(pbqp, edge);
+		disconnect_edge(tgt_node, edge);
+	} else {
+		pbqp_node *src_node = get_node(pbqp, edge->src);
+		pbqp_matrix_add_to_all_rows(mat, node->costs);
+		normalize_towards_source(pbqp, edge);
+		disconnect_edge(src_node, edge);
+	}
+
+	if (pbqp->dump_file) {
+		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
+		dump_node(pbqp, other_index);
+	}
+
+	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
+	reorder_node(get_node(pbqp, other_index));
 }

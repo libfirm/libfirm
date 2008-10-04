@@ -5,4 +5,6 @@
 
 void solve_pbqp_heuristical(pbqp *pbqp);
 
+void applyRI(pbqp *pbqp);
+
 #endif /* KAPS_HEURISTICAL_H */

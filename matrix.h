@@ -25,4 +25,7 @@ void pbqp_matrix_sub_row_value(pbqp_matrix *matrix, unsigned row_index,
 
 int pbqp_matrix_is_zero(pbqp_matrix *mat, vector *src_vec, vector *tgt_vec);
 
+void pbqp_matrix_add_to_all_cols(pbqp_matrix *mat, vector *vec);
+void pbqp_matrix_add_to_all_rows(pbqp_matrix *mat, vector *vec);
+
 #endif /* KAPS_MATRIX_H */

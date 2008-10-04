@@ -199,3 +199,53 @@ int pbqp_matrix_is_zero(pbqp_matrix *mat, vector *src_vec, vector *tgt_vec)
 
 	return 1;
 }
+
+void pbqp_matrix_add_to_all_cols(pbqp_matrix *mat, vector *vec)
+{
+	unsigned col_index;
+	unsigned col_len;
+	unsigned row_index;
+	unsigned row_len;
+
+	assert(mat);
+	assert(vec);
+	assert(mat->rows == vec->len);
+
+	col_len = mat->cols;
+	row_len = mat->rows;
+
+	for (row_index = 0; row_index < row_len; ++row_index) {
+		num value = vec->entries[row_index].data;
+		for (col_index = 0; col_index < col_len; ++col_index) {
+			if (mat->entries[row_index * col_len + col_index] == INF_COSTS)
+				continue;
+
+			mat->entries[row_index * col_len + col_index] += value;
+		}
+	}
+}
+
+void pbqp_matrix_add_to_all_rows(pbqp_matrix *mat, vector *vec)
+{
+	unsigned col_index;
+	unsigned col_len;
+	unsigned row_index;
+	unsigned row_len;
+
+	assert(mat);
+	assert(vec);
+	assert(mat->cols == vec->len);
+
+	col_len = mat->cols;
+	row_len = mat->rows;
+
+	for (row_index = 0; row_index < row_len; ++row_index) {
+		for (col_index = 0; col_index < col_len; ++col_index) {
+			num value = vec->entries[col_index].data;
+			if (mat->entries[row_index * col_len + col_index] == INF_COSTS)
+				continue;
+
+			mat->entries[row_index * col_len + col_index] += value;
+		}
+	}
+}

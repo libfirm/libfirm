@@ -5,7 +5,9 @@
 
 struct pbqp_node {
 	pbqp_edge **edges;
-	vector *costs;
+	vector     *costs;
+	unsigned    bucket_index;
+	unsigned    solution;
 };
 
 #endif /* KAPS_PBQP_NODE_T_H */

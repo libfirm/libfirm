@@ -66,7 +66,7 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	fprintf(f, "\t\\end{pmatrix}\n");
 }
 
-static void dump_edge(pbqp *pbqp, pbqp_edge *edge)
+void dump_edge(pbqp *pbqp, pbqp_edge *edge)
 {
 	fputs("<tex>\n", pbqp->dump_file);
 	fprintf(pbqp->dump_file, "\t\\overline\n{C}_{%d,%d}=\n",
@@ -102,7 +102,7 @@ static void dump_edge_costs(pbqp *pbqp)
 	fputs("</p>", pbqp->dump_file);
 }
 
-static void dump_node(pbqp *pbqp, unsigned index)
+void dump_node(pbqp *pbqp, unsigned index)
 {
 	assert(pbqp);
 	assert(pbqp->dump_file);
