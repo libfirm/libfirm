@@ -1171,18 +1171,14 @@ static void peephole_ia32_Imul_split(ir_node *imul) {
 	load = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 
 	/* copy all attributes */
-	set_irn_pinned(load, get_irn_pinned(imul));
-	set_ia32_op_type(load, ia32_AddrModeS);
-	set_ia32_ls_mode(load, get_ia32_ls_mode(imul));
+	set_irn_pinned(    load, get_irn_pinned(imul));
+	set_ia32_op_type(  load, ia32_AddrModeS);
+	ia32_copy_am_attrs(load, imul);
 
-	set_ia32_am_scale(load, get_ia32_am_scale(imul));
-	set_ia32_am_sc(load, get_ia32_am_sc(imul));
-	set_ia32_am_offs_int(load, get_ia32_am_offs_int(imul));
-	if (is_ia32_am_sc_sign(imul))
-		set_ia32_am_sc_sign(load);
-	if (is_ia32_use_frame(imul))
-		set_ia32_use_frame(load);
-	set_ia32_frame_ent(load, get_ia32_frame_ent(imul));
+	set_ia32_am_offs_int( imul, 0);
+	set_ia32_am_sc(       imul, NULL);
+	set_ia32_am_scale(    imul, 0);
+	clear_ia32_am_sc_sign(imul);
 
 	sched_add_before(imul, load);
 
@@ -1194,7 +1190,9 @@ static void peephole_ia32_Imul_split(ir_node *imul) {
 
 	set_irn_n(imul, n_ia32_IMul_mem, mem);
 	noreg = get_irn_n(imul, n_ia32_IMul_left);
-	set_irn_n(imul, n_ia32_IMul_left, res);
+	set_irn_n(imul, n_ia32_IMul_base,  noreg);
+	set_irn_n(imul, n_ia32_IMul_index, noreg);
+	set_irn_n(imul, n_ia32_IMul_left,  res);
 	set_ia32_op_type(imul, ia32_Normal);
 }
 
