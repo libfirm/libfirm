@@ -801,49 +801,59 @@ static ir_mode *get_spill_mode(const ir_node *node)
  */
 static int ia32_is_spillmode_compatible(const ir_mode *mode, const ir_mode *spillmode)
 {
-	if(mode_is_float(mode)) {
-		return mode == spillmode;
-	} else {
-		return 1;
-	}
+	return !mode_is_float(mode) || mode == spillmode;
 }
 
 /**
  * Check if irn can load its operand at position i from memory (source addressmode).
- * @param self   Pointer to irn ops itself
  * @param irn    The irn to be checked
  * @param i      The operands position
  * @return Non-Zero if operand can be loaded
  */
-static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i) {
-	ir_node *op = get_irn_n(irn, i);
-	const ir_mode *mode = get_irn_mode(op);
+static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
+{
+	ir_node       *op        = get_irn_n(irn, i);
+	const ir_mode *mode      = get_irn_mode(op);
 	const ir_mode *spillmode = get_spill_mode(op);
 
-	if (
-		(i != n_ia32_binary_left && i != n_ia32_binary_right) || /* a "real" operand position must be requested */
-		! is_ia32_irn(irn)                                    ||  /* must be an ia32 irn */
-		get_ia32_am_arity(irn) != ia32_am_binary              ||  /* must be a binary operation TODO is this necessary? */
-		get_ia32_op_type(irn) != ia32_Normal                  ||  /* must not already be a addressmode irn */
-		! (get_ia32_am_support(irn) & ia32_am_Source)         ||  /* must be capable of source addressmode */
-		! ia32_is_spillmode_compatible(mode, spillmode)       ||
-		is_ia32_use_frame(irn))                                  /* must not already use frame */
+	if (!is_ia32_irn(irn)                              ||  /* must be an ia32 irn */
+	    get_ia32_op_type(irn) != ia32_Normal           ||  /* must not already be a addressmode irn */
+	    !(get_ia32_am_support(irn) & ia32_am_Source)   ||  /* must be capable of source addressmode */
+	    !ia32_is_spillmode_compatible(mode, spillmode) ||
+	    is_ia32_use_frame(irn))                            /* must not already use frame */
 		return 0;
 
-	if (i == n_ia32_binary_left) {
-		const arch_register_req_t *req;
-		if(!is_ia32_commutative(irn))
-			return 0;
-		/* we can't swap left/right for limited registers
-		 * (As this (currently) breaks constraint handling copies)
-		 */
-		req = get_ia32_in_req(irn, n_ia32_binary_left);
-		if (req->type & arch_register_req_type_limited) {
-			return 0;
-		}
-	}
+	switch (get_ia32_am_arity(irn)) {
+		case ia32_am_unary:
+			return i == n_ia32_unary_op;
 
-	return 1;
+		case ia32_am_binary:
+			switch (i) {
+				case n_ia32_binary_left: {
+					const arch_register_req_t *req;
+					if (!is_ia32_commutative(irn))
+						return 0;
+
+					/* we can't swap left/right for limited registers
+					 * (As this (currently) breaks constraint handling copies)
+					 */
+					req = get_ia32_in_req(irn, n_ia32_binary_left);
+					if (req->type & arch_register_req_type_limited)
+						return 0;
+
+					return 1;
+				}
+
+				case n_ia32_binary_right:
+					return 1;
+
+				default:
+					return 0;
+			}
+
+		default:
+			panic("Unknown arity");
+	}
 }
 
 static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
@@ -852,13 +862,7 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 	ir_mode *load_mode;
 	ir_mode *dest_op_mode;
 
-	ia32_code_gen_t *cg = ia32_current_cg;
-
 	assert(ia32_possible_memory_operand(irn, i) && "Cannot perform memory operand change");
-
-	if (i == n_ia32_binary_left) {
-		ia32_swap_left_right(irn);
-	}
 
 	set_ia32_op_type(irn, ia32_AddrModeS);
 
@@ -870,15 +874,18 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
 
-	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
-	set_irn_n(irn, n_ia32_binary_right, ia32_get_admissible_noreg(cg, irn, n_ia32_binary_right));
-	set_irn_n(irn, n_ia32_mem, spill);
-	set_ia32_is_reload(irn);
-
-	/* immediates are only allowed on the right side */
-	if (i == n_ia32_binary_left && is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_left))) {
+	if (i == n_ia32_binary_left                  &&
+	    get_ia32_am_arity(irn) == ia32_am_binary &&
+	    /* immediates are only allowed on the right side */
+	    !is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_right))) {
 		ia32_swap_left_right(irn);
+		i = n_ia32_binary_right;
 	}
+
+	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
+	set_irn_n(irn, n_ia32_mem,  spill);
+	set_irn_n(irn, i,           ia32_get_admissible_noreg(ia32_current_cg, irn, i));
+	set_ia32_is_reload(irn);
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
