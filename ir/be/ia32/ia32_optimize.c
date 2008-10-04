@@ -72,68 +72,74 @@ static void copy_mark(const ir_node *old, ir_node *new)
 		set_ia32_is_remat(new);
 }
 
+typedef enum produces_flag_t {
+	produces_no_flag,
+	produces_flag_zero,
+	produces_flag_carry
+} produces_flag_t;
+
 /**
- * Returns non-zero if the given node produces
- * a zero flag.
+ * Return which usable flag the given node produces
  *
  * @param node  the node to check
- * @param pn    if >= 0, the projection number of the used result
+ * @param pn    the projection number of the used result
  */
-static int produces_zero_flag(ir_node *node, int pn)
+static produces_flag_t produces_test_flag(ir_node *node, int pn)
 {
 	ir_node                     *count;
 	const ia32_immediate_attr_t *imm_attr;
 
 	if (!is_ia32_irn(node))
-		return 0;
-
-	if (pn >= 0) {
-		if (pn != pn_ia32_res)
-			return 0;
-	}
+		return produces_no_flag;
 
 	switch (get_ia32_irn_opcode(node)) {
-	case iro_ia32_Add:
-	case iro_ia32_Adc:
-	case iro_ia32_And:
-	case iro_ia32_Or:
-	case iro_ia32_Xor:
-	case iro_ia32_Sub:
-	case iro_ia32_Sbb:
-	case iro_ia32_Neg:
-	case iro_ia32_Inc:
-	case iro_ia32_Dec:
-		return 1;
+		case iro_ia32_Add:
+		case iro_ia32_Adc:
+		case iro_ia32_And:
+		case iro_ia32_Or:
+		case iro_ia32_Xor:
+		case iro_ia32_Sub:
+		case iro_ia32_Sbb:
+		case iro_ia32_Neg:
+		case iro_ia32_Inc:
+		case iro_ia32_Dec:
+			break;
 
-	case iro_ia32_ShlD:
-	case iro_ia32_ShrD:
-		assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
-		count = get_irn_n(node, n_ia32_ShlD_count);
-		goto check_shift_amount;
+		case iro_ia32_ShlD:
+		case iro_ia32_ShrD:
+			assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
+			count = get_irn_n(node, n_ia32_ShlD_count);
+			goto check_shift_amount;
 
-	case iro_ia32_Shl:
-	case iro_ia32_Shr:
-	case iro_ia32_Sar:
-		assert(n_ia32_Shl_count == n_ia32_Shr_count
-				&& n_ia32_Shl_count == n_ia32_Sar_count);
-		count = get_irn_n(node, n_ia32_Shl_count);
+		case iro_ia32_Shl:
+		case iro_ia32_Shr:
+		case iro_ia32_Sar:
+			assert(n_ia32_Shl_count == n_ia32_Shr_count
+					&& n_ia32_Shl_count == n_ia32_Sar_count);
+			count = get_irn_n(node, n_ia32_Shl_count);
 check_shift_amount:
-		/* when shift count is zero the flags are not affected, so we can only
-		 * do this for constants != 0 */
-		if (!is_ia32_Immediate(count))
-			return 0;
+			/* when shift count is zero the flags are not affected, so we can only
+			 * do this for constants != 0 */
+			if (!is_ia32_Immediate(count))
+				return produces_no_flag;
 
-		imm_attr = get_ia32_immediate_attr_const(count);
-		if (imm_attr->symconst != NULL)
-			return 0;
-		if ((imm_attr->offset & 0x1f) == 0)
-			return 0;
-		return 1;
+			imm_attr = get_ia32_immediate_attr_const(count);
+			if (imm_attr->symconst != NULL)
+				return produces_no_flag;
+			if ((imm_attr->offset & 0x1f) == 0)
+				return produces_no_flag;
+			break;
 
-	default:
-		break;
+		case iro_ia32_Mul:
+			return pn == pn_ia32_Mul_res_high ?
+				produces_flag_carry : produces_no_flag;
+
+		default:
+			return produces_no_flag;
 	}
-	return 0;
+
+	return pn == pn_ia32_res ?
+		produces_flag_zero : produces_no_flag;
 }
 
 /**
@@ -248,7 +254,7 @@ static void peephole_ia32_Test(ir_node *node)
 	ir_node         *flags_proj;
 	ir_node         *block;
 	ir_mode         *flags_mode;
-	int              pn    = -1;
+	int              pn    = pn_ia32_res;
 	ir_node         *schedpoint;
 	const ir_edge_t *edge;
 
@@ -295,8 +301,27 @@ static void peephole_ia32_Test(ir_node *node)
 		}
 	}
 
-	if(!produces_zero_flag(left, pn))
-		return;
+	switch (produces_test_flag(left, pn)) {
+		case produces_flag_zero:
+			break;
+
+		case produces_flag_carry:
+			foreach_out_edge(node, edge) {
+				ir_node *user = get_edge_src_irn(edge);
+				int      pnc  = get_ia32_condcode(user);
+
+				switch (pnc) {
+					case pn_Cmp_Eq: pnc = pn_Cmp_Ge | ia32_pn_Cmp_unsigned; break;
+					case pn_Cmp_Lg: pnc = pn_Cmp_Lt | ia32_pn_Cmp_unsigned; break;
+					default: panic("unexpected pn");
+				}
+				set_ia32_condcode(user, pnc);
+			}
+			break;
+
+		default:
+			return;
+	}
 
 	left = turn_into_mode_t(left);
 

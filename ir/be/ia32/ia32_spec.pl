@@ -434,10 +434,10 @@ Mul => {
 	# very strict constraints
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax", "gp" ],
-	               out => [ "eax", "edx", "none" ] },
+	               out => [ "eax", "flags", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	emit      => '. mul%M %unop4',
-	outs      => [ "res_low", "res_high", "M" ],
+	outs      => [ "res_low", "flags", "res_high", "M" ],
 	am        => "source,binary",
 	latency   => 10,
 	units     => [ "GP" ],
@@ -449,7 +449,7 @@ l_Mul => {
 	# very strict constraints
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
-	outs      => [ "EAX", "EDX", "M" ],
+	outs      => [ "EAX", "flags", "EDX", "M" ],
 	arity     => 2
 },
 
