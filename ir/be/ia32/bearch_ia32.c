@@ -1020,14 +1020,10 @@ static void turn_back_am(ir_node *node)
 	ir_node  *base  = get_irn_n(node, n_ia32_base);
 	ir_node  *index = get_irn_n(node, n_ia32_index);
 	ir_node  *mem   = get_irn_n(node, n_ia32_mem);
-	ir_node  *noreg = ia32_new_NoReg_gp(ia32_current_cg);
-	ir_node  *load;
-	ir_node  *load_res;
-	ir_node  *mem_proj;
-	const ir_edge_t *edge;
+	ir_node  *noreg;
 
-	load     = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
-	load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
+	ir_node  *load     = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
+	ir_node  *load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
@@ -1040,7 +1036,7 @@ static void turn_back_am(ir_node *node)
 			break;
 
 		case ia32_am_binary:
-			if (is_ia32_Immediate(get_irn_n(node, n_ia32_Cmp_right))) {
+			if (is_ia32_Immediate(get_irn_n(node, n_ia32_binary_right))) {
 				assert(is_ia32_Cmp(node)  || is_ia32_Cmp8Bit(node) ||
 				       is_ia32_Test(node) || is_ia32_Test8Bit(node));
 				set_irn_n(node, n_ia32_binary_left, load_res);
@@ -1053,9 +1049,11 @@ static void turn_back_am(ir_node *node)
 			set_irn_n(node, n_ia32_binary_right, load_res);
 			break;
 
-		default: break;
+		default:
+			panic("Unknown arity");
 	}
-	set_irn_n(node, n_ia32_base, noreg);
+	noreg = ia32_new_NoReg_gp(ia32_current_cg);
+	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
 	set_ia32_am_offs_int(node, 0);
 	set_ia32_am_sc(node, NULL);
@@ -1064,18 +1062,14 @@ static void turn_back_am(ir_node *node)
 
 	/* rewire mem-proj */
 	if (get_irn_mode(node) == mode_T) {
-		mem_proj = NULL;
+		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *out = get_edge_src_irn(edge);
-			if(get_irn_mode(out) == mode_M) {
-				assert(mem_proj == NULL);
-				mem_proj = out;
+			if (get_irn_mode(out) == mode_M) {
+				set_Proj_pred(out, load);
+				set_Proj_proj(out, pn_ia32_Load_M);
+				break;
 			}
-		}
-
-		if(mem_proj != NULL) {
-			set_Proj_pred(mem_proj, load);
-			set_Proj_proj(mem_proj, pn_ia32_Load_M);
 		}
 	}
 
