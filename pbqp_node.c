@@ -6,7 +6,7 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-pbqp_node *alloc_node(pbqp *pbqp, vector *costs)
+pbqp_node *alloc_node(pbqp *pbqp, unsigned node_index, vector *costs)
 {
 	pbqp_node *node = obstack_alloc(&pbqp->obstack, sizeof(*node));
 	assert(node);
@@ -15,6 +15,7 @@ pbqp_node *alloc_node(pbqp *pbqp, vector *costs)
 	node->costs = vector_copy(pbqp, costs);
 	node->bucket_index = UINT_MAX;
 	node->solution = UINT_MAX;
+	node->index = node_index;
 
 	return node;
 }

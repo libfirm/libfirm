@@ -38,7 +38,13 @@ void vector_add(vector *sum, vector *summand)
 	len = sum->len;
 
 	for (i = 0; i < len; ++i) {
-		sum->entries[i].data += summand->entries[i].data;
+		if (sum->entries[i].data == INF_COSTS) continue;
+
+		if (summand->entries[i].data == INF_COSTS) {
+			sum->entries[i].data = INF_COSTS;
+		} else {
+			sum->entries[i].data += summand->entries[i].data;
+		}
 	}
 }
 
@@ -68,6 +74,80 @@ void vector_add_value(vector *vec, num value)
 	for (index = 0; index < len; ++index) {
 		if (vec->entries[index].data == INF_COSTS) continue;
 
-		vec->entries[index].data += value;
+		if (value == INF_COSTS) {
+			vec->entries[index].data = INF_COSTS;
+		} else {
+			vec->entries[index].data += value;
+		}
 	}
+}
+
+void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index)
+{
+	unsigned index;
+	unsigned len;
+
+	assert(vec);
+	assert(mat);
+	assert(vec->len == mat->rows);
+	assert(col_index < mat->cols);
+
+	len = vec->len;
+
+	for (index = 0; index < len; ++index) {
+		if (vec->entries[index].data == INF_COSTS) continue;
+
+		if (mat->entries[index * mat->cols + col_index] == INF_COSTS) {
+			vec->entries[index].data = INF_COSTS;
+		} else {
+			vec->entries[index].data += mat->entries[index * mat->cols + col_index];
+		}
+	}
+}
+
+void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index)
+{
+	unsigned index;
+	unsigned len;
+
+	assert(vec);
+	assert(mat);
+	assert(vec->len == mat->cols);
+	assert(row_index < mat->rows);
+
+	len = vec->len;
+
+	for (index = 0; index < len; ++index) {
+		if (vec->entries[index].data == INF_COSTS) continue;
+
+		if (mat->entries[row_index * mat->cols + index] == INF_COSTS) {
+			vec->entries[index].data = INF_COSTS;
+		} else {
+			vec->entries[index].data += mat->entries[row_index * mat->cols + index];
+		}
+	}
+}
+
+unsigned vector_get_min_index(vector *vec)
+{
+	unsigned index;
+	unsigned len;
+	unsigned min_index = 0;
+	num      min       = INF_COSTS;
+
+	assert(vec);
+
+	len = vec->len;
+	assert(len > 0);
+
+	for (index = 0; index < len; ++index) {
+		num elem = vec->entries[index].data;
+
+		if (elem < min) {
+			min = elem;
+			min_index = index;
+		}
+	}
+
+	return min_index;
 }

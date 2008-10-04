@@ -19,7 +19,7 @@ static void dump_vector(FILE *f, vector *vec)
 	for (index = 0; index < len; ++index) {
 #if EXT_GRS_DEBUG
 		if (vec->entries[index].data == INF_COSTS) {
-			fprintf(f, "<span title=\"%s\">inf</span>",
+			fprintf(f, "<span title=\"%s\"> inf </span>",
 					vec->entries[index].name);
 		} else {
 			fprintf(f, "<span title=\"%s\">%6d</span>",
@@ -27,7 +27,7 @@ static void dump_vector(FILE *f, vector *vec)
 		}
 #else
 		if (vec->entries[index].data == INF_COSTS) {
-			fputs("inf", f);
+			fputs(" inf ", f);
 		} else {
 			fprintf(f, "%6d", vec->entries[index].data);
 		}

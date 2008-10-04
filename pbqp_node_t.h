@@ -8,6 +8,7 @@ struct pbqp_node {
 	vector     *costs;
 	unsigned    bucket_index;
 	unsigned    solution;
+	unsigned    index;
 };
 
 #endif /* KAPS_PBQP_NODE_T_H */

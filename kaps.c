@@ -63,7 +63,7 @@ void add_node_costs(pbqp *pbqp, unsigned node_index, vector *costs)
 	pbqp_node *node = get_node(pbqp, node_index);
 
 	if (node == NULL) {
-		node = alloc_node(pbqp, costs);
+		node = alloc_node(pbqp, node_index, costs);
 		pbqp->nodes[node_index] = node;
 	} else {
 		vector_add(node->costs, costs);

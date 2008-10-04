@@ -19,4 +19,9 @@ void vector_set_description(vector *vec, unsigned index, char *name);
 
 void vector_add_value(vector *vec, num value);
 
+void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index);
+void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index);
+
+unsigned vector_get_min_index(vector *vec);
+
 #endif /* KAPS_VECTOR_H */

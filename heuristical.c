@@ -14,12 +14,14 @@
 
 static pbqp_edge **edge_bucket;
 static pbqp_node **node_buckets[4];
+static pbqp_node **reduced_bucket;
 
 static void init_buckets(void)
 {
 	int i;
 
 	edge_bucket = NEW_ARR_F(pbqp_edge *, 0);
+	reduced_bucket = NEW_ARR_F(pbqp_node *, 0);
 
 	for (i = 0; i < 4; ++i) {
 		node_buckets[i] = NEW_ARR_F(pbqp_node *, 0);
@@ -91,7 +93,7 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
-			vector_add_value(src_vec, min);
+			src_vec->entries[src_index].data += min;
 
 			// TODO add to edge_list if inf
 		}
@@ -135,7 +137,7 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
-			vector_add_value(tgt_vec, min);
+			tgt_vec->entries[tgt_index].data += min;
 
 			// TODO add to edge_list if inf
 		}
@@ -287,8 +289,51 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		} else if (ARR_LEN(node_buckets[3]) > 0) {
 			panic("Please implement RN simplification");
 		} else {
-			panic("Please implement back propagation");
-			// break;
+			break;
+		}
+	}
+
+	if (pbqp->dump_file) {
+		dump_section(pbqp->dump_file, 1, "4. Determine Solution/Minimum");
+		dump_section(pbqp->dump_file, 2, "4.1. Trivial Solution");
+	}
+
+	/* Solve trivial nodes and calculate solution. */
+	node_len = ARR_LEN(node_buckets[0]);
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		pbqp_node *node = node_buckets[0][node_index];
+		assert(node);
+
+		node->solution = vector_get_min_index(node->costs);
+		pbqp->solution += node->costs->entries[node->solution].data;
+		if (pbqp->dump_file) {
+			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+			dump_node(pbqp, node->index);
+		}
+	}
+
+	if (pbqp->dump_file) {
+		dump_section(pbqp->dump_file, 2, "Minimum");
+		fprintf(pbqp->dump_file, "Minimum is equal to %d.", pbqp->solution);
+		dump_section(pbqp->dump_file, 2, "Back Propagation");
+	}
+
+	/* Solve reduced nodes. */
+	node_len = ARR_LEN(reduced_bucket);
+	for (node_index = node_len; node_index > 0; --node_index) {
+		pbqp_node *node = reduced_bucket[node_index - 1];
+		assert(node);
+
+		switch (ARR_LEN(node->edges)) {
+			case 1:
+				back_propagate_RI(pbqp, node);
+				break;
+			case 2:
+				panic("Please implement back propagation for RII");
+				break;
+			default:
+				panic("Only nodes with degree one or two should be in this bucket");
+				break;
 		}
 	}
 }
@@ -331,6 +376,7 @@ void applyRI(pbqp *pbqp)
 	} else {
 		pbqp_node *src_node = get_node(pbqp, edge->src);
 		pbqp_matrix_add_to_all_rows(mat, node->costs);
+		dump_edge(pbqp, edge);
 		normalize_towards_source(pbqp, edge);
 		disconnect_edge(src_node, edge);
 	}
@@ -340,6 +386,42 @@ void applyRI(pbqp *pbqp)
 		dump_node(pbqp, other_index);
 	}
 
+	/* Remove node from bucket... */
 	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
 	reorder_node(get_node(pbqp, other_index));
+
+	/* ...and add it to back propagation list. */
+	ARR_APP1(pbqp_node *, reduced_bucket, node);
+}
+
+void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
+{
+	pbqp_edge   *edge;
+	pbqp_node   *other;
+	pbqp_matrix *mat;
+	vector      *vec;
+	int          is_src;
+
+	assert(pbqp);
+	assert(node);
+
+	edge = node->edges[0];
+	mat = edge->costs;
+	is_src = get_node(pbqp, edge->src) == node;
+	vec = node->costs;
+
+	if (is_src) {
+		other = get_node(pbqp, edge->tgt);
+		assert(other);
+		vector_add_matrix_col(vec, mat, other->solution);
+	} else {
+		other = get_node(pbqp, edge->src);
+		assert(other);
+		vector_add_matrix_row(vec, mat, other->solution);
+	}
+
+	node->solution = vector_get_min_index(vec);
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+	}
 }
