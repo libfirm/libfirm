@@ -1238,7 +1238,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p) {
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
 				if (is_ia32_use_frame(n))
 					set_ia32_use_frame(vfld);
-				set_ia32_op_type(vfld, ia32_am_Source);
+				set_ia32_op_type(vfld, ia32_AddrModeS);
 				add_ia32_am_offs_int(vfld, get_ia32_am_offs_int(n));
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
 				set_ia32_ls_mode(vfld, get_ia32_ls_mode(n));
