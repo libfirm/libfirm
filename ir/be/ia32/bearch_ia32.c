@@ -180,7 +180,8 @@ ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg) {
 /**
  * Returns the admissible noreg register node for input register pos of node irn.
  */
-ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos) {
+static ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos)
+{
 	const arch_register_req_t *req;
 
 	req = arch_get_register_req(cg->arch_env, irn, pos);

@@ -153,11 +153,6 @@ ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
 ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg);
 
 /**
- * Returns gp_noreg or fp_noreg, depending on input requirements.
- */
-ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos);
-
-/**
  * Maps all intrinsic calls that the backend support
  * and map all instructions the backend did not support
  * to runtime calls.
