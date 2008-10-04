@@ -1,5 +1,6 @@
 #include "adt/array.h"
 #include "assert.h"
+#include "error.h"
 
 #include "heuristical.h"
 #include "html_dumper.h"
@@ -171,4 +172,19 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	/* Put node into bucket representing their arity. */
 	fill_node_buckets(pbqp);
+
+	for (;;) {
+		if (ARR_LEN(edge_bucket) > 0) {
+			panic("Please implement edge simplification");
+		} else if (ARR_LEN(node_buckets[1]) > 0) {
+			panic("Please implement RI simplification");
+		} else if (ARR_LEN(node_buckets[2]) > 0) {
+			panic("Please implement RII simplification");
+		} else if (ARR_LEN(node_buckets[3]) > 0) {
+			panic("Please implement RN simplification");
+		} else {
+			panic("Please implement back propagation");
+			// break;
+		}
+	}
 }
