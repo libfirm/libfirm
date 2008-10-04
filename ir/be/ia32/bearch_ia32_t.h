@@ -153,6 +153,12 @@ ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
 ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg);
 
 /**
+ * Split instruction with source AM into Load and separate instruction.
+ * @return result of the Load
+ */
+ir_node *turn_back_am(ir_node *node);
+
+/**
  * Maps all intrinsic calls that the backend support
  * and map all instructions the backend did not support
  * to runtime calls.

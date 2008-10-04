@@ -1022,7 +1022,7 @@ static void ia32_before_sched(void *self) {
 	(void) self;
 }
 
-static void turn_back_am(ir_node *node)
+ir_node *turn_back_am(ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -1047,8 +1047,6 @@ static void turn_back_am(ir_node *node)
 
 		case ia32_am_binary:
 			if (is_ia32_Immediate(get_irn_n(node, n_ia32_binary_right))) {
-				assert(is_ia32_Cmp(node)  || is_ia32_Cmp8Bit(node) ||
-				       is_ia32_Test(node) || is_ia32_Test8Bit(node));
 				set_irn_n(node, n_ia32_binary_left, load_res);
 			} else {
 				set_irn_n(node, n_ia32_binary_right, load_res);
@@ -1082,6 +1080,8 @@ static void turn_back_am(ir_node *node)
 	set_ia32_op_type(node, ia32_Normal);
 	if (sched_is_scheduled(node))
 		sched_add_before(node, load);
+
+	return load_res;
 }
 
 static ir_node *flags_remat(ir_node *node, ir_node *after)

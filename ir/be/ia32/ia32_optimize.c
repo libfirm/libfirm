@@ -1147,14 +1147,13 @@ exchange:
 /**
  * Split a Imul mem, imm into a Load mem and Imul reg, imm if possible.
  */
-static void peephole_ia32_Imul_split(ir_node *imul) {
+static void peephole_ia32_Imul_split(ir_node *imul)
+{
 	const ir_node         *right = get_irn_n(imul, n_ia32_IMul_right);
 	const arch_register_t *reg;
-	ir_node               *load, *block, *base, *index, *mem, *res, *noreg;
-	dbg_info              *dbgi;
-	ir_graph              *irg;
+	ir_node               *res;
 
-	if (! is_ia32_Immediate(right) || get_ia32_op_type(imul) != ia32_AddrModeS) {
+	if (!is_ia32_Immediate(right) || get_ia32_op_type(imul) != ia32_AddrModeS) {
 		/* no memory, imm form ignore */
 		return;
 	}
@@ -1164,38 +1163,8 @@ static void peephole_ia32_Imul_split(ir_node *imul) {
 		return;
 
 	/* fine, we can rebuild it */
-	dbgi  = get_irn_dbg_info(imul);
-	block = get_nodes_block(imul);
-	irg   = current_ir_graph;
-	base  = get_irn_n(imul, n_ia32_IMul_base);
-	index = get_irn_n(imul, n_ia32_IMul_index);
-	mem   = get_irn_n(imul, n_ia32_IMul_mem);
-	load = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
-
-	/* copy all attributes */
-	set_irn_pinned(    load, get_irn_pinned(imul));
-	set_ia32_op_type(  load, ia32_AddrModeS);
-	ia32_copy_am_attrs(load, imul);
-
-	set_ia32_am_offs_int( imul, 0);
-	set_ia32_am_sc(       imul, NULL);
-	set_ia32_am_scale(    imul, 0);
-	clear_ia32_am_sc_sign(imul);
-
-	sched_add_before(imul, load);
-
-	mem = new_rd_Proj(dbgi, irg, block, load, mode_M, pn_ia32_Load_M);
-	res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
-
+	res = turn_back_am(imul);
 	arch_set_irn_register(arch_env, res, reg);
-	be_peephole_new_node(res);
-
-	set_irn_n(imul, n_ia32_IMul_mem, mem);
-	noreg = get_irn_n(imul, n_ia32_IMul_left);
-	set_irn_n(imul, n_ia32_IMul_base,  noreg);
-	set_irn_n(imul, n_ia32_IMul_index, noreg);
-	set_irn_n(imul, n_ia32_IMul_left,  res);
-	set_ia32_op_type(imul, ia32_Normal);
 }
 
 /**
