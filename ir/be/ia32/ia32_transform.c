@@ -737,20 +737,19 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
+		am->op_type = ia32_Normal;
+
 		if (flags & match_try_am) {
 			am->new_op1 = NULL;
 			am->new_op2 = NULL;
-			am->op_type = ia32_Normal;
 			return;
 		}
 
 		new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
 		if (new_op2 == NULL)
 			new_op2 = be_transform_node(op2);
-		am->op_type = ia32_Normal;
-		am->ls_mode = get_irn_mode(op2);
-		if (flags & match_mode_neutral)
-			am->ls_mode = mode_Iu;
+		am->ls_mode =
+			(flags & match_mode_neutral ? mode_Iu : get_irn_mode(op2));
 	}
 	if (addr->base == NULL)
 		addr->base = noreg_gp;
