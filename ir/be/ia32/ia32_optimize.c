@@ -274,12 +274,14 @@ static void peephole_ia32_Test(ir_node *node)
 
 	/* walk schedule up and abort when we find left or some other node destroys
 	   the flags */
-	schedpoint = sched_prev(node);
-	while(schedpoint != left) {
+	schedpoint = node;
+	for (;;) {
 		schedpoint = sched_prev(schedpoint);
-		if(arch_irn_is(arch_env, schedpoint, modify_flags))
+		if (schedpoint == left)
+			break;
+		if (arch_irn_is(arch_env, schedpoint, modify_flags))
 			return;
-		if(schedpoint == block)
+		if (schedpoint == block)
 			panic("couldn't find left");
 	}
 
