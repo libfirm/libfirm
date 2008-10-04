@@ -819,12 +819,14 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 
 	if (!is_ia32_irn(irn)                              ||  /* must be an ia32 irn */
 	    get_ia32_op_type(irn) != ia32_Normal           ||  /* must not already be a addressmode irn */
-	    !(get_ia32_am_support(irn) & ia32_am_Source)   ||  /* must be capable of source addressmode */
 	    !ia32_is_spillmode_compatible(mode, spillmode) ||
 	    is_ia32_use_frame(irn))                            /* must not already use frame */
 		return 0;
 
-	switch (get_ia32_am_arity(irn)) {
+	switch (get_ia32_am_support(irn)) {
+		case ia32_am_none:
+			return 0;
+
 		case ia32_am_unary:
 			return i == n_ia32_unary_op;
 
@@ -853,7 +855,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 			}
 
 		default:
-			panic("Unknown arity");
+			panic("Unknown AM type");
 	}
 }
 
@@ -875,8 +877,8 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 	set_ia32_use_frame(irn);
 	set_ia32_need_stackent(irn);
 
-	if (i == n_ia32_binary_left                  &&
-	    get_ia32_am_arity(irn) == ia32_am_binary &&
+	if (i == n_ia32_binary_left                    &&
+	    get_ia32_am_support(irn) == ia32_am_binary &&
 	    /* immediates are only allowed on the right side */
 	    !is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_right))) {
 		ia32_swap_left_right(irn);
@@ -1038,7 +1040,7 @@ static void turn_back_am(ir_node *node)
 		set_ia32_is_reload(load);
 	set_irn_n(node, n_ia32_mem, new_NoMem());
 
-	switch (get_ia32_am_arity(node)) {
+	switch (get_ia32_am_support(node)) {
 		case ia32_am_unary:
 			set_irn_n(node, n_ia32_unary_op, load_res);
 			break;
@@ -1054,7 +1056,7 @@ static void turn_back_am(ir_node *node)
 			break;
 
 		default:
-			panic("Unknown arity");
+			panic("Unknown AM type");
 	}
 	noreg = ia32_new_NoReg_gp(ia32_current_cg);
 	set_irn_n(node, n_ia32_base,  noreg);

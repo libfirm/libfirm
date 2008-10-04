@@ -257,17 +257,14 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			/* dump supported am */
 			fprintf(F, "AM support = ");
 			switch (get_ia32_am_support(n)) {
-				case ia32_am_None:
-					fprintf(F, "none");
-					break;
-				case ia32_am_Source:
-					fprintf(F, "source only (Load)");
-					break;
+				case ia32_am_none:   fputs("none\n",            F); break;
+				case ia32_am_unary:  fputs("source (unary)\n",  F); break;
+				case ia32_am_binary: fputs("source (binary)\n", F); break;
+
 				default:
-					fprintf(F, "unknown (%d)", get_ia32_am_support(n));
+					fprintf(F, "unknown (%d)\n", get_ia32_am_support(n));
 					break;
 			}
-			fprintf(F, "\n");
 
 			/* dump AM offset */
 			if(get_ia32_am_offs_int(n) != 0) {
@@ -471,15 +468,8 @@ void set_ia32_op_type(ir_node *node, ia32_op_type_t tp) {
 	attr->data.tp     = tp;
 }
 
-/**
- * Gets the supported address mode of an ia32 node
- */
-ia32_am_type_t get_ia32_am_support(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.am_support;
-}
-
-ia32_am_arity_t get_ia32_am_arity(const ir_node *node) {
+ia32_am_type_t get_ia32_am_support(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_arity;
 }
@@ -487,15 +477,10 @@ ia32_am_arity_t get_ia32_am_arity(const ir_node *node) {
 /**
  * Sets the supported address mode of an ia32 node
  */
-void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
-                         ia32_am_arity_t arity) {
-	ia32_attr_t *attr     = get_ia32_attr(node);
-	attr->data.am_support = am_tp;
-	attr->data.am_arity   = arity;
-
-	assert(am_tp == ia32_am_None ?
-		arity == ia32_am_arity_none :
-		arity == ia32_am_unary || arity == ia32_am_binary);
+void set_ia32_am_support(ir_node *node, ia32_am_type_t arity)
+{
+	ia32_attr_t *attr   = get_ia32_attr(node);
+	attr->data.am_arity = arity;
 }
 
 /**

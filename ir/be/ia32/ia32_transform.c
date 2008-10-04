@@ -819,7 +819,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if (is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+		set_ia32_am_support(new_node, ia32_am_none);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	new_node = fix_mem_proj(new_node, &am);
@@ -869,7 +869,7 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+		set_ia32_am_support(new_node, ia32_am_none);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	new_node = fix_mem_proj(new_node, &am);
@@ -1209,7 +1209,7 @@ static ir_node *gen_Mulh(ir_node *node)
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
 	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_None, ia32_am_arity_none);
+		set_ia32_am_support(new_node, ia32_am_none);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
 	assert(get_irn_mode(new_node) == mode_T);

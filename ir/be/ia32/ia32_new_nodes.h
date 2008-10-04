@@ -103,17 +103,14 @@ ia32_op_type_t get_ia32_op_type(const ir_node *node);
 void set_ia32_op_type(ir_node *node, ia32_op_type_t tp);
 
 /**
- * Gets the supported addrmode of an ia32 node
+ * Gets the supported address mode of an ia32 node
  */
 ia32_am_type_t get_ia32_am_support(const ir_node *node);
-
-ia32_am_arity_t get_ia32_am_arity(const ir_node *node);
 
 /**
  * Sets the supported addrmode of an ia32 node
  */
-void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
-                         ia32_am_arity_t am_arity);
+void set_ia32_am_support(ir_node *node, ia32_am_type_t am_arity);
 
 /**
  * Gets the addressmode offset as long.

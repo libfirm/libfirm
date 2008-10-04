@@ -403,7 +403,7 @@ static void fix_am_source(ir_node *irn, void *env)
 	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
 		return;
 	/* only need to fix binary operations */
-	if (get_ia32_am_arity(irn) != ia32_am_binary)
+	if (get_ia32_am_support(irn) != ia32_am_binary)
 		return;
 
 	base  = get_irn_n(irn, n_ia32_base);

@@ -253,9 +253,9 @@ sub ia32_custom_init_attr {
 	if(defined($node->{am})) {
 		my $am = $node->{am};
 		if($am eq "source,unary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_unary);";
+			$res .= "\tset_ia32_am_support(res, ia32_am_unary);";
 		} elsif($am eq "source,binary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_binary);";
+			$res .= "\tset_ia32_am_support(res, ia32_am_binary);";
 		} elsif($am eq "none") {
 			# nothing to do
 		} else {

@@ -44,16 +44,11 @@ typedef enum {
 	ia32_AddrModeS
 } ia32_op_type_t;
 
-typedef	enum {
-	ia32_am_None   = 0, /**< no addrmode support */
-	ia32_am_Source = 2  /**< addrmode for source only */
-} ia32_am_type_t;
-
 typedef enum {
-	ia32_am_arity_none = 0,
-	ia32_am_unary      = 1,
-	ia32_am_binary     = 2
-} ia32_am_arity_t;
+	ia32_am_none   = 0,
+	ia32_am_unary  = 1,
+	ia32_am_binary = 2
+} ia32_am_type_t;
 
 typedef enum {
 	match_commutative       = 1 << 0,   /**< inputs are commutative */
@@ -98,19 +93,18 @@ typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	struct ia32_attr_data_bitfield {
-		unsigned flags:5;           /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
-		unsigned tp:3;              /**< ia32 node type. */
-		unsigned am_support:2;      /**< Indicates the address mode type supported by this node. */
-		unsigned am_arity  : 2;
-		unsigned am_scale:2;        /**< The address mode scale for index register. */
-		unsigned am_sc_sign:1;      /**< The sign bit of the address mode symconst. */
+		unsigned flags:5;               /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
+		unsigned tp:3;                  /**< ia32 node type. */
+		unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
+		unsigned am_scale:2;            /**< The address mode scale for index register. */
+		unsigned am_sc_sign:1;          /**< The sign bit of the address mode symconst. */
 
-		unsigned use_frame:1;       /**< Indicates whether the operation uses the frame pointer or not. */
-		unsigned has_except_label:1;    /**< Set if this node needs a label because of possible exception. */
+		unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
+		unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 
-		unsigned is_commutative:1;  /**< Indicates whether op is commutative or not. */
+		unsigned is_commutative:1;      /**< Indicates whether op is commutative or not. */
 
-		unsigned need_stackent:1;   /**< Set to 1 if node need space on stack. */
+		unsigned need_stackent:1;       /**< Set to 1 if node need space on stack. */
 		unsigned need_64bit_stackent:1; /**< needs a 64bit stack entity (see double->unsigned int conv) */
 		unsigned need_32bit_stackent:1; /**< needs a 32bit stack entity */
 		unsigned ins_permuted : 1;      /**< inputs of node have been permuted
