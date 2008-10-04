@@ -232,6 +232,7 @@ static void reorder_node(pbqp_node *node)
 	ARR_SHRINKLEN(node_buckets[old_arity], (int)old_bucket_len - 1);
 
 	/* ..and add to new one. */
+	node->bucket_index = ARR_LEN(node_buckets[arity]);
 	ARR_APP1(pbqp_node *, node_buckets[arity], node);
 }
 
