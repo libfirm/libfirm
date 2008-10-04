@@ -87,7 +87,7 @@ int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 	return
 		mode_is_int(src_mode) &&
 		mode_is_int(dest_mode) &&
-		get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
+		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
 static
