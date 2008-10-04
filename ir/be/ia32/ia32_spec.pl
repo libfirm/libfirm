@@ -256,8 +256,6 @@ sub ia32_custom_init_attr {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_unary);";
 		} elsif($am eq "source,binary") {
 			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_binary);";
-		} elsif($am eq "source,ternary") {
-			$res .= "\tset_ia32_am_support(res, ia32_am_Source, ia32_am_ternary);";
 		} elsif($am eq "none") {
 			# nothing to do
 		} else {
@@ -682,7 +680,7 @@ IDiv => {
 	               out => [ "eax", "flags", "none", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
 	outs      => [ "div_res", "flags", "M", "mod_res", "X_exc" ],
-	am        => "source,ternary",
+	am        => "source,unary",
 	emit      => ". idiv%M %unop3",
 	latency   => 25,
 	units     => [ "GP" ],
@@ -696,7 +694,7 @@ Div => {
 	               out => [ "eax", "flags", "none", "edx", "none" ] },
 	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
 	outs      => [ "div_res", "flags", "M", "mod_res", "X_exc" ],
-	am        => "source,ternary",
+	am        => "source,unary",
 	emit      => ". div%M %unop3",
 	latency   => 25,
 	units     => [ "GP" ],

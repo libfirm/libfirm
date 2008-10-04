@@ -52,8 +52,7 @@ typedef	enum {
 typedef enum {
 	ia32_am_arity_none = 0,
 	ia32_am_unary      = 1,
-	ia32_am_binary     = 2,
-	ia32_am_ternary    = 3,
+	ia32_am_binary     = 2
 } ia32_am_arity_t;
 
 typedef enum {

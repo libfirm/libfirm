@@ -493,9 +493,9 @@ void set_ia32_am_support(ir_node *node, ia32_am_type_t am_tp,
 	attr->data.am_support = am_tp;
 	attr->data.am_arity   = arity;
 
-	assert((am_tp == ia32_am_None && arity == ia32_am_arity_none) ||
-	       (am_tp != ia32_am_None &&
-	       ((arity == ia32_am_unary) || (arity == ia32_am_binary) || (arity == ia32_am_ternary))));
+	assert(am_tp == ia32_am_None ?
+		arity == ia32_am_arity_none :
+		arity == ia32_am_unary || arity == ia32_am_binary);
 }
 
 /**

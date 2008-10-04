@@ -1045,10 +1045,6 @@ static void turn_back_am(ir_node *node)
 			}
 			break;
 
-		case ia32_am_ternary:
-			set_irn_n(node, n_ia32_binary_right, load_res);
-			break;
-
 		default:
 			panic("Unknown arity");
 	}
