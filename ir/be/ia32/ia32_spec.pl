@@ -307,13 +307,14 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 %operands = (
 );
 
-$mode_xmm     = "mode_E";
-$mode_gp      = "mode_Iu";
-$mode_flags   = "mode_Iu";
-$mode_fpcw    = "mode_fpcw";
-$status_flags = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
-$fpcw_flags   = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
-                  "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
+$mode_xmm           = "mode_E";
+$mode_gp            = "mode_Iu";
+$mode_flags         = "mode_Iu";
+$mode_fpcw          = "mode_fpcw";
+$status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
+$status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
+$fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
+                        "FP_PC0", "FP_PC1", "FP_RC0", "FP_RC1", "FP_X" ];
 
 %nodes = (
 
@@ -930,7 +931,7 @@ Inc => {
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	latency   => 1,
-	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+	modified_flags => $status_flags_wo_cf
 },
 
 IncMem => {
@@ -942,7 +943,7 @@ IncMem => {
 	units     => [ "GP" ],
 	mode      => "mode_M",
 	latency   => 1,
-	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+	modified_flags => $status_flags_wo_cf
 },
 
 Dec => {
@@ -955,7 +956,7 @@ Dec => {
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	latency   => 1,
-	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+	modified_flags => $status_flags_wo_cf
 },
 
 DecMem => {
@@ -967,7 +968,7 @@ DecMem => {
 	units     => [ "GP" ],
 	mode      => "mode_M",
 	latency   => 1,
-	modified_flags => [ "OF", "SF", "ZF", "AF", "PF" ]
+	modified_flags => $status_flags_wo_cf
 },
 
 Not => {
