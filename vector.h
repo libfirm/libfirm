@@ -17,4 +17,6 @@ void vector_set(vector *vec, unsigned index, num value);
 void vector_set_description(vector *vec, unsigned index, char *name);
 #endif
 
+void vector_add_value(vector *vec, num value);
+
 #endif /* KAPS_VECTOR_H */

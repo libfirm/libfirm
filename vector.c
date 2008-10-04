@@ -55,3 +55,19 @@ void vector_set_description(vector *vec, unsigned index, char *name)
 	vec->entries[index].name = name;
 }
 #endif
+
+void vector_add_value(vector *vec, num value)
+{
+	unsigned index;
+	unsigned len;
+
+	assert(vec);
+
+	len = vec->len;
+
+	for (index = 0; index < len; ++index) {
+		if (vec->entries[index].data == INF_COSTS) continue;
+
+		vec->entries[index].data += value;
+	}
+}

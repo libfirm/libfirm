@@ -18,10 +18,19 @@ static void dump_vector(FILE *f, vector *vec)
 	assert(len > 0);
 	for (index = 0; index < len; ++index) {
 #if EXT_GRS_DEBUG
-		fprintf(f, "<span title=\"%s\">%6d</span>", vec->entries[index].name,
-				vec->entries[index].data);
+		if (vec->entries[index].data == INF_COSTS) {
+			fprintf(f, "<span title=\"%s\">inf</span>",
+					vec->entries[index].name);
+		} else {
+			fprintf(f, "<span title=\"%s\">%6d</span>",
+					vec->entries[index].name, vec->entries[index].data);
+		}
 #else
-		fprintf(f, "%6d", vec->entries[index].data);
+		if (vec->entries[index].data == INF_COSTS) {
+			fputs("inf", f);
+		} else {
+			fprintf(f, "%6d", vec->entries[index].data);
+		}
 #endif
 	}
 	fprintf(f, " )</span>\n");
@@ -37,13 +46,33 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	assert(mat->rows> 0);
 	fprintf(f, "\t\\begin{pmatrix}\n");
 	for (row = 0; row < mat->rows; ++row) {
-		fprintf(f, "\t %6d", *p++);
+		if (*p == INF_COSTS) {
+			fputs("\t inf", f);
+			p++;
+		} else {
+			fprintf(f, "\t %6d", *p++);
+		}
+
 		for (col = 1; col < mat->cols; ++col) {
-			fprintf(f, "& %6d", *p++);
+			if (*p == INF_COSTS) {
+				fputs("& inf", f);
+				p++;
+			} else {
+				fprintf(f, "& %6d", *p++);
+			}
 		}
 		fprintf(f, "\\\\\n");
 	}
 	fprintf(f, "\t\\end{pmatrix}\n");
+}
+
+static void dump_edge(pbqp *pbqp, pbqp_edge *edge)
+{
+	fputs("<tex>\n", pbqp->dump_file);
+	fprintf(pbqp->dump_file, "\t\\overline\n{C}_{%d,%d}=\n",
+			edge->src, edge->tgt);
+	dump_matrix(pbqp->dump_file, edge->costs);
+	fputs("</tex><br>", pbqp->dump_file);
 }
 
 static void dump_edge_costs(pbqp *pbqp)
@@ -66,15 +95,24 @@ static void dump_edge_costs(pbqp *pbqp)
 			pbqp_edge *edge = src_node->edges[edge_index];
 			unsigned tgt_index = edge->tgt;
 			if (src_index < tgt_index) {
-				fputs("<tex>\n", pbqp->dump_file);
-				fprintf(pbqp->dump_file, "\t\\overline\n{C}_{%d,%d}=\n",
-						src_index, tgt_index);
-				dump_matrix(pbqp->dump_file, edge->costs);
-				fputs("</tex><br>", pbqp->dump_file);
+				dump_edge(pbqp, edge);
 			}
 		}
 	}
 	fputs("</p>", pbqp->dump_file);
+}
+
+static void dump_node(pbqp *pbqp, unsigned index)
+{
+	assert(pbqp);
+	assert(pbqp->dump_file);
+
+	pbqp_node *node = get_node(pbqp, index);
+	if (node) {
+		fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", index);
+		dump_vector(pbqp->dump_file, node->costs);
+		fputs("<br>\n", pbqp->dump_file);
+	}
 }
 
 static void dump_node_costs(pbqp *pbqp)
@@ -87,17 +125,12 @@ static void dump_node_costs(pbqp *pbqp)
 	/* dump node costs */
 	fputs("<p>", pbqp->dump_file);
 	for (index = 0; index < pbqp->num_nodes; ++index) {
-		pbqp_node *node = get_node(pbqp, index);
-		if (node) {
-			fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", index);
-			dump_vector(pbqp->dump_file, node->costs);
-			fputs("<br>\n", pbqp->dump_file);
-		}
+		dump_node(pbqp, index);
 	}
 	fputs("</p>", pbqp->dump_file);
 }
 
-static void dump_section(FILE *f, int level, char *txt)
+void dump_section(FILE *f, int level, char *txt)
 {
 	assert(f);
 
@@ -151,4 +184,14 @@ void pbqp_dump_input(pbqp *pbqp)
 	dump_node_costs(pbqp);
 	dump_section(pbqp->dump_file, 2, "1.3 Cost Matrices");
 	dump_edge_costs(pbqp);
+}
+
+void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge)
+{
+	assert(pbqp);
+	assert(pbqp->dump_file);
+
+	dump_node(pbqp, edge->src);
+	dump_edge(pbqp, edge);
+	dump_node(pbqp, edge->tgt);
 }

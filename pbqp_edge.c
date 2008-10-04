@@ -11,8 +11,14 @@
 
 pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *costs)
 {
+	int transpose = 0;
+
 	if (tgt_index < src_index) {
-		return alloc_edge(pbqp, tgt_index, src_index, costs);
+		int tmp = src_index;
+		src_index = tgt_index;
+		tgt_index = tmp;
+
+		transpose = 1;
 	}
 
 	pbqp_edge *edge = obstack_alloc(&pbqp->obstack, sizeof(*edge));
@@ -24,7 +30,11 @@ pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *cos
 	pbqp_node *tgt_node = get_node(pbqp, tgt_index);
 	assert(tgt_node);
 
-	edge->costs = pbqp_matrix_copy(pbqp, costs);
+	if (transpose) {
+		edge->costs = pbqp_matrix_copy_and_transpose(pbqp, costs);
+	} else {
+		edge->costs = pbqp_matrix_copy(pbqp, costs);
+	}
 
 	/*
 	 * Connect edge with incident nodes. Since the edge is allocated, we know
@@ -36,4 +46,20 @@ pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *cos
 	edge->tgt = tgt_index;
 
 	return edge;
+}
+
+void delete_edge(pbqp *pbqp, pbqp_edge *edge)
+{
+	pbqp_node  *src_node;
+	pbqp_node  *tgt_node;
+
+	assert(edge);
+
+	src_node = get_node(pbqp, edge->src);
+	tgt_node = get_node(pbqp, edge->tgt);
+	assert(src_node);
+	assert(tgt_node);
+
+	disconnect_edge(src_node, edge);
+	disconnect_edge(tgt_node, edge);
 }
