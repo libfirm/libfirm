@@ -1181,40 +1181,20 @@ static ir_node *gen_Mulh(ir_node *node)
 {
 	ir_node              *block     = get_nodes_block(node);
 	ir_node              *new_block = be_transform_node(block);
-	ir_graph             *irg       = current_ir_graph;
 	dbg_info             *dbgi      = get_irn_dbg_info(node);
 	ir_node              *op1       = get_Mulh_left(node);
 	ir_node              *op2       = get_Mulh_right(node);
 	ir_mode              *mode      = get_irn_mode(node);
 	construct_binop_func *func;
-	ir_node              *proj_res_high;
 	ir_node              *new_node;
-	ia32_address_mode_t   am;
-	ia32_address_t       *addr = &am.addr;
-
-	assert(!mode_is_float(mode) && "Mulh with float not supported");
-	assert(get_mode_size_bits(mode) == 32);
-
-	match_arguments(&am, block, op1, op2, NULL, match_commutative | match_am);
+	ir_node              *proj_res_high;
 
 	func     = mode_is_signed(mode) ? new_rd_ia32_IMul1OP : new_rd_ia32_Mul;
-	new_node = func(dbgi, irg, new_block, addr->base, addr->index, addr->mem,
-	                am.new_op1, am.new_op2);
-
-	set_am_attributes(new_node, &am);
-	/* we can't use source address mode anymore when using immediates */
-	if(is_ia32_Immediate(am.new_op1) || is_ia32_Immediate(am.new_op2))
-		set_ia32_am_support(new_node, ia32_am_none);
-	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
-
-	assert(get_irn_mode(new_node) == mode_T);
-
-	fix_mem_proj(new_node, &am);
+	new_node = gen_binop(node, op1, op2, func, match_commutative | match_am);
 
 	assert(pn_ia32_IMul1OP_res_high == pn_ia32_Mul_res_high);
-	proj_res_high = new_rd_Proj(dbgi, irg, block, new_node,
-	                       mode_Iu, pn_ia32_IMul1OP_res_high);
-
+	proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
+	                            mode_Iu, pn_ia32_IMul1OP_res_high);
 	return proj_res_high;
 }
 
