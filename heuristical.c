@@ -13,9 +13,40 @@
 static pbqp_edge **edge_bucket;
 static pbqp_node **node_buckets[4];
 
-static void init_buckets(pbqp *pbqp)
+static void init_buckets(void)
 {
-	// TODO
+	int i;
+
+	edge_bucket = NEW_ARR_F(pbqp_edge *, 0);
+
+	for (i = 0; i < 4; ++i) {
+		node_buckets[i] = NEW_ARR_F(pbqp_node *, 0);
+	}
+}
+
+static void fill_node_buckets(pbqp *pbqp)
+{
+	unsigned node_index;
+	unsigned node_len;
+
+	assert(pbqp);
+	node_len = pbqp->num_nodes;
+
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		unsigned   arity;
+		pbqp_node *node = get_node(pbqp, node_index);
+
+		if (!node) continue;
+
+		arity = ARR_LEN(node->edges);
+
+		/* We have only one bucket for nodes with arity >= 3. */
+		if (arity > 3) {
+			arity = 3;
+		}
+
+		ARR_APP1(pbqp_node *, node_buckets[arity], node);
+	}
 }
 
 static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
@@ -114,7 +145,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	node_len = pbqp->num_nodes;
 
-	init_buckets(pbqp);
+	init_buckets();
 
 	/* First simplify all edges. */
 	for (node_index = 0; node_index < node_len; ++node_index) {
@@ -137,4 +168,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 			simplify_edge(pbqp, edge);
 		}
 	}
+
+	/* Put node into bucket representing their arity. */
+	fill_node_buckets(pbqp);
 }
