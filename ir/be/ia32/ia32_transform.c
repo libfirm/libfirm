@@ -1179,32 +1179,27 @@ static ir_node *gen_Mul(ir_node *node) {
  */
 static ir_node *gen_Mulh(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	ir_graph *irg       = current_ir_graph;
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_mode  *mode      = get_irn_mode(node);
-	ir_node  *op1       = get_Mulh_left(node);
-	ir_node  *op2       = get_Mulh_right(node);
-	ir_node  *proj_res_high;
-	ir_node  *new_node;
-	ia32_address_mode_t  am;
-	ia32_address_t      *addr = &am.addr;
+	ir_node              *block     = get_nodes_block(node);
+	ir_node              *new_block = be_transform_node(block);
+	ir_graph             *irg       = current_ir_graph;
+	dbg_info             *dbgi      = get_irn_dbg_info(node);
+	ir_node              *op1       = get_Mulh_left(node);
+	ir_node              *op2       = get_Mulh_right(node);
+	ir_mode              *mode      = get_irn_mode(node);
+	construct_binop_func *func;
+	ir_node              *proj_res_high;
+	ir_node              *new_node;
+	ia32_address_mode_t   am;
+	ia32_address_t       *addr = &am.addr;
 
 	assert(!mode_is_float(mode) && "Mulh with float not supported");
 	assert(get_mode_size_bits(mode) == 32);
 
 	match_arguments(&am, block, op1, op2, NULL, match_commutative | match_am);
 
-	if (mode_is_signed(mode)) {
-		new_node = new_rd_ia32_IMul1OP(dbgi, irg, new_block, addr->base,
-		                               addr->index, addr->mem, am.new_op1,
-		                               am.new_op2);
-	} else {
-		new_node = new_rd_ia32_Mul(dbgi, irg, new_block, addr->base,
-		                           addr->index, addr->mem, am.new_op1,
-		                           am.new_op2);
-	}
+	func     = mode_is_signed(mode) ? new_rd_ia32_IMul1OP : new_rd_ia32_Mul;
+	new_node = func(dbgi, irg, new_block, addr->base, addr->index, addr->mem,
+	                am.new_op1, am.new_op2);
 
 	set_am_attributes(new_node, &am);
 	/* we can't use source address mode anymore when using immediates */
