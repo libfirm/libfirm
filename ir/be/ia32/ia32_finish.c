@@ -479,8 +479,11 @@ static void fix_am_source(ir_node *irn, void *env)
 			arch_set_irn_register(cg->arch_env, load_res, out_reg);
 
 			/* set the new input operand */
-			set_irn_n(irn, n_ia32_binary_right, load_res);
-			if(get_irn_mode(irn) == mode_T) {
+			if (is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_right)))
+				set_irn_n(irn, n_ia32_binary_left, load_res);
+			else
+				set_irn_n(irn, n_ia32_binary_right, load_res);
+			if (get_irn_mode(irn) == mode_T) {
 				const ir_edge_t *edge, *next;
 				foreach_out_edge_safe(irn, edge, next) {
 					ir_node *node = get_edge_src_irn(edge);
