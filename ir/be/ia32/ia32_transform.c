@@ -1179,28 +1179,27 @@ static ir_node *gen_Mul(ir_node *node) {
  *
  * @return the created ia32 Mulh node
  */
-static ir_node *gen_Mulh(ir_node *node)
-{
+static ir_node *gen_Mulh(ir_node *node) {
 	ir_node              *block     = get_nodes_block(node);
 	ir_node              *new_block = be_transform_node(block);
 	dbg_info             *dbgi      = get_irn_dbg_info(node);
 	ir_node              *op1       = get_Mulh_left(node);
 	ir_node              *op2       = get_Mulh_right(node);
 	ir_mode              *mode      = get_irn_mode(node);
-	construct_binop_func *func;
 	ir_node              *new_node;
 	ir_node              *proj_res_high;
 
-	func     = mode_is_signed(mode) ? new_rd_ia32_IMul1OP : new_rd_ia32_Mul;
-	new_node = gen_binop(node, op1, op2, func, match_commutative | match_am);
-
-	assert(pn_ia32_IMul1OP_res_high == pn_ia32_Mul_res_high);
-	proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
+	if (mode_is_signed(mode)) {
+		new_node = gen_binop(node, op1, op2, new_rd_ia32_IMul1OP, match_commutative | match_am);
+		proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
 	                            mode_Iu, pn_ia32_IMul1OP_res_high);
+	} else {
+		new_node = gen_binop(node, op1, op2, new_rd_ia32_Mul, match_commutative | match_am);
+		proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
+	                            mode_Iu, pn_ia32_Mul_res_high);
+	}
 	return proj_res_high;
 }
-
-
 
 /**
  * Creates an ia32 And.
