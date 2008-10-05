@@ -531,6 +531,8 @@ static void ilp2_apply(ilp_env_t *ienv) {
 					assert(0 && "This should be a x-var");
 			}
 		}
+
+		xfree(sol);
 	}
 
 #ifdef COPYOPT_STAT
