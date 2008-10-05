@@ -1348,7 +1348,6 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
   phi = new_Phi (n_ins, ins, join_md);
 
   mature_immBlock (c_block);
-  memset (ins, 0x00, n_ins * sizeof (ir_node*));
   free (ins);
 
   eff->firmnode = phi;
