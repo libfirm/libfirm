@@ -17,6 +17,13 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
+static num add(num x, num y)
+{
+	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
+
+	return x + y;
+}
+
 static void init_buckets(void)
 {
 	int i;
@@ -96,7 +103,8 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
-			src_vec->entries[src_index].data += min;
+			src_vec->entries[src_index].data = add(
+					src_vec->entries[src_index].data, min);
 
 			// TODO add to edge_list if inf
 		}
@@ -140,7 +148,8 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
-			tgt_vec->entries[tgt_index].data += min;
+			tgt_vec->entries[tgt_index].data = add(
+					tgt_vec->entries[tgt_index].data, min);
 
 			// TODO add to edge_list if inf
 		}
@@ -314,7 +323,8 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		assert(node);
 
 		node->solution = vector_get_min_index(node->costs);
-		pbqp->solution += node->costs->entries[node->solution].data;
+		pbqp->solution = add(pbqp->solution,
+				node->costs->entries[node->solution].data);
 		if (pbqp->dump_file) {
 			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 			dump_node(pbqp, node);
