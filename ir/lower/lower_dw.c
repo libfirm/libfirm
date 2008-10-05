@@ -37,6 +37,7 @@
 
 #include <assert.h>
 
+#include "error.h"
 #include "lowering.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -2210,11 +2211,42 @@ static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env) {
 	env->entries[idx]->high_word = new_rd_Mux(dbg, irg, block, sel, false_h, true_h, mode);
 }  /* lower_Mux */
 
+static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
+{
+	ir_mode *his = env->params->high_signed;
+	ir_mode *hiu = env->params->high_unsigned;
+	int      i;
+	ir_node *n;
+
+	(void)mode;
+
+	for (i = get_irn_arity(asmn) - 1; i >= 0; --i) {
+		ir_mode *op_mode = get_irn_mode(get_irn_n(asmn, i));
+		if (op_mode == his || op_mode == hiu) {
+			panic("lowering ASM unimplemented");
+		}
+	}
+
+	for (n = asmn;;) {
+		ir_mode *proj_mode;
+
+		n = get_irn_link(n);
+		if (n == NULL)
+			break;
+
+		proj_mode = get_irn_mode(n);
+		if (proj_mode == his || proj_mode == hiu) {
+			panic("lowering ASM unimplemented");
+		}
+	}
+}
+
 /**
  * check for opcodes that must always be lowered.
  */
 static int always_lower(ir_opcode code) {
 	switch (code) {
+	case iro_ASM:
 	case iro_Proj:
 	case iro_Start:
 	case iro_Call:
@@ -2484,6 +2516,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 #define LOWER_UN(op)      LOWER2(op, lower_Unop)
 
 	/* the table of all operations that must be lowered follows */
+	LOWER(ASM);
 	LOWER(Load);
 	LOWER(Store);
 	LOWER(Const);
