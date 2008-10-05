@@ -1568,7 +1568,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 		DBG((rss->dbg, LEVEL_3, "\t\t\t%3d -> %3d         %3d -> %3d\n", i, assignment[i], i, assignment_rev[i]));
 	}
 
-	values    = xmalloc(sizeof(values[0]));
+	values    = XMALLOC(ir_nodeset_t);
 	ir_nodeset_init_size(values, 10);
 	cur_chain = 0;
 	/* Construction of the minimal chain partition */
@@ -1646,7 +1646,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 			free(temp);
 		}
 
-		temp = xmalloc(sizeof(temp[0]));
+		temp = XMALLOC(ir_nodeset_t);
 		ir_nodeset_init_size(temp, 10);
 
 		/* Select all nodes from current value set, having another node in the set as descendant. */

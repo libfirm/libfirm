@@ -59,7 +59,6 @@
 #include "pdeq.h"
 #include "irdump.h"
 #include "array_t.h"
-#include "xmalloc.h"
 
 /** A map from mode to a primitive type. */
 static pmap *prim_types;

@@ -500,16 +500,14 @@ static void ilp2_build(ilp_env_t *ienv) {
 
 static void ilp2_apply(ilp_env_t *ienv) {
 	local_env_t *lenv = ienv->env;
-	double *sol;
-	lpp_sol_state_t state;
-	int i, count;
+	int i;
 
 	/* first check if there was sth. to optimize */
 	if (lenv->first_x_var >= 0) {
+		int              count = lenv->last_x_var - lenv->first_x_var + 1;
+		double          *sol   = XMALLOCN(double, count);
+		lpp_sol_state_t  state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
 
-		count = lenv->last_x_var - lenv->first_x_var + 1;
-		sol = xmalloc(count * sizeof(sol[0]));
-		state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
 		if (state != lpp_optimal) {
 			printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, state);
 			assert(state >= lpp_feasible && "The solution should at least be feasible!");

@@ -954,7 +954,7 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 	 * In the worst case, every initializer allocates one byte.
 	 * Moreover, initializer might be big, do not allocate on stack.
 	 */
-	vals = xcalloc(size, sizeof(vals[0]));
+	vals = XMALLOCNZ(normal_or_bitfield, size);
 
 #ifndef NDEBUG
 	glob_vals = vals;
@@ -1043,7 +1043,7 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 	 * In the worst case, every initializer allocates one byte.
 	 * Moreover, initializer might be big, do not allocate on stack.
 	 */
-	vals = xcalloc(last_ofs, sizeof(vals[0]));
+	vals = XMALLOCNZ(normal_or_bitfield, last_ofs);
 
 	/* collect the values and store them at the offsets */
 	for (i = 0; i < n; ++i) {

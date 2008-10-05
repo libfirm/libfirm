@@ -554,11 +554,11 @@ void emit_mips_jump_table(const ir_node *irn)
 	const mips_attr_t *attr = get_mips_attr_const(irn);
 
 	/* fill the table structure */
-	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
+	tbl.label        = XMALLOCN(char, SNPRINTF_BUF_LEN);
 	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, "JMPTBL_");
 	tbl.defBlock     = NULL;
 	tbl.num_branches = get_irn_n_edges(irn);
-	tbl.branches     = xcalloc(tbl.num_branches, sizeof(tbl.branches[0]));
+	tbl.branches     = XMALLOCNZ(branch_t, tbl.num_branches);
 	tbl.min_value    = INT_MAX;
 	tbl.max_value    = INT_MIN;
 

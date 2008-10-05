@@ -156,7 +156,7 @@ void compute_cdep(ir_graph *irg) {
 	cdep_env env;
 
 	free_cdep(irg);
-	cdep_data = xmalloc(sizeof(*cdep_data));
+	cdep_data = XMALLOC(cdep_info);
 	obstack_init(&cdep_data->obst);
 
 	cdep_data->cdep_map = pmap_create();

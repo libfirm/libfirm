@@ -81,8 +81,7 @@ static int lc_arg_cmp(const void *p1, const void *p2, UNUSED(size_t size))
 
 lc_arg_env_t *lc_arg_new_env(void)
 {
-	lc_arg_env_t *env = xmalloc(sizeof(*env));
-	memset(env, 0, sizeof(*env));
+	lc_arg_env_t *env = XMALLOCZ(lc_arg_env_t);
 	env->args = new_set(lc_arg_cmp, 16);
 	return env;
 }
@@ -257,7 +256,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		default:
 			{
 				int len = LC_MAX(128, occ->width + 1);
-				char *buf = xmalloc(len * sizeof(char));
+				char *buf = XMALLOCN(char, len);
 				res = dispatch_snprintf(buf, len, fmt, occ->lc_arg_type, val);
 				res = lc_appendable_snadd(app, buf, res);
 				xfree(buf);

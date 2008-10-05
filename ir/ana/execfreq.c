@@ -163,10 +163,9 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 
 #ifdef COMPARE_AGAINST_GAUSSJORDAN
 	{
-		double *nw = xmalloc(size * size * sizeof(*nw));
-		double *nx = xmalloc(size * sizeof(*nx));
+		double *nw = XMALLOCN(double, size * size);
+		double *nx = XMALLOCNZ(double, size);
 
-		memset(nx, 0, size * sizeof(*nx));
 		gs_matrix_export(mat, nw, size);
 
 		stat_ev_tim_push();
@@ -213,8 +212,7 @@ static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 
 ir_exec_freq *create_execfreq(ir_graph *irg)
 {
-	ir_exec_freq *execfreq = xmalloc(sizeof(execfreq[0]));
-	memset(execfreq, 0, sizeof(execfreq[0]));
+	ir_exec_freq *execfreq = XMALLOCZ(ir_exec_freq);
 	execfreq->set = new_set(cmp_freq, 32);
 
 	memset(&execfreq->hook, 0, sizeof(execfreq->hook));
@@ -258,8 +256,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	 * => they can "flow" from start to end.
 	 */
 	dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
-	ef = xmalloc(sizeof(ef[0]));
-	memset(ef, 0, sizeof(ef[0]));
+	ef = XMALLOCZ(ir_exec_freq);
 	ef->min_non_zero = HUGE_VAL; /* initialize with a reasonable large number. */
 	freqs = ef->set = new_set(cmp_freq, dfs_get_n_nodes(dfs));
 
@@ -275,7 +272,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 
 	size = dfs_get_n_nodes(dfs);
 	mat  = gs_new_matrix(size, size);
-	x    = xmalloc(size*sizeof(*x));
+	x    = XMALLOCN(double, size);
 
 	for (idx = dfs_get_n_nodes(dfs) - 1; idx >= 0; --idx) {
 		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);

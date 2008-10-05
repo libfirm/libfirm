@@ -38,7 +38,6 @@
 #include "pset.h"
 #include "pmap.h"
 #include "bitset.h"
-#include "xmalloc.h"
 
 #include "irprintf_t.h"
 #include "irnode_t.h"

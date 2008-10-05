@@ -132,8 +132,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 
 	assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
-	res = xmalloc(sizeof(*res));
-	memset(res, 0, sizeof(*res));
+	res = XMALLOCZ(ir_entity);
 
 	res->kind    = k_entity;
 	res->name    = name;
@@ -267,7 +266,7 @@ copy_entity_own(ir_entity *old, ir_type *new_owner) {
 	assert(get_type_state(new_owner) != layout_fixed);
 
 	if (old->owner == new_owner) return old;
-	newe = xmalloc(sizeof(*newe));
+	newe = XMALLOC(ir_entity);
 	memcpy(newe, old, sizeof(*newe));
 	newe->owner = new_owner;
 	if (is_Class_type(new_owner)) {
@@ -289,7 +288,7 @@ copy_entity_name(ir_entity *old, ident *new_name) {
 	assert(old && old->kind == k_entity);
 
 	if (old->name == new_name) return old;
-	newe = xmalloc(sizeof(*newe));
+	newe = XMALLOC(ir_entity);
 	memcpy(newe, old, sizeof(*newe));
 	newe->name = new_name;
 	newe->ld_name = NULL;

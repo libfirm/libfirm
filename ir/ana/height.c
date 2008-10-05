@@ -245,7 +245,7 @@ void heights_recompute(heights_t *h)
 
 heights_t *heights_new(ir_graph *irg)
 {
-	heights_t *res = xmalloc(sizeof(res[0]));
+	heights_t *res = XMALLOC(heights_t);
 	phase_init(&res->ph, "heights", irg, PHASE_DEFAULT_GROWTH, irn_height_init, NULL);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
 	heights_recompute(res);

@@ -33,7 +33,6 @@
 #include "benode_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
-#include "xmalloc.h"
 
 #include "bitset.h"
 #include "pset.h"

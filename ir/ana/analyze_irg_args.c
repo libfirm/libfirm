@@ -37,7 +37,6 @@
 #include "array_t.h"
 #include "irprog.h"
 #include "entity_t.h"
-#include "xmalloc.h"
 
 #include "analyze_irg_args.h"
 

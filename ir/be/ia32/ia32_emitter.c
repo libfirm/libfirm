@@ -1044,11 +1044,11 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 	const ir_edge_t    *edge;
 
 	/* fill the table structure */
-	tbl.label        = xmalloc(SNPRINTF_BUF_LEN);
+	tbl.label        = XMALLOCN(char, SNPRINTF_BUF_LEN);
 	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, ".TBL_");
 	tbl.defProj      = NULL;
 	tbl.num_branches = get_irn_n_edges(node) - 1;
-	tbl.branches     = xcalloc(tbl.num_branches, sizeof(tbl.branches[0]));
+	tbl.branches     = XMALLOCNZ(branch_t, tbl.num_branches);
 	tbl.min_value    = INT_MAX;
 	tbl.max_value    = INT_MIN;
 

@@ -89,9 +89,7 @@ void hungarian_print_costmatrix(hungarian_problem_t *p) {
  */
 hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type) {
 	int i;
-	hungarian_problem_t *p = xmalloc(sizeof(*p));
-
-	memset(p, 0, sizeof(p[0]));
+	hungarian_problem_t *p = XMALLOCZ(hungarian_problem_t);
 
 	FIRM_DBG_REGISTER(p->dbg, "firm.hungarian");
 
@@ -207,15 +205,15 @@ int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost, in
 	m    = p->num_rows;
 	n    = p->num_cols;
 
-	col_mate     = xcalloc(p->num_rows, sizeof(col_mate[0]));
-	unchosen_row = xcalloc(p->num_rows, sizeof(unchosen_row[0]));
-	row_dec      = xcalloc(p->num_rows, sizeof(row_dec[0]));
-	slack_row    = xcalloc(p->num_rows, sizeof(slack_row[0]));
+	col_mate     = XMALLOCNZ(int, p->num_rows);
+	unchosen_row = XMALLOCNZ(int, p->num_rows);
+	row_dec      = XMALLOCNZ(int, p->num_rows);
+	slack_row    = XMALLOCNZ(int, p->num_rows);
 
-	row_mate     = xcalloc(p->num_cols, sizeof(row_mate[0]));
-	parent_row   = xcalloc(p->num_cols, sizeof(parent_row[0]));
-	col_inc      = xcalloc(p->num_cols, sizeof(col_inc[0]));
-	slack        = xcalloc(p->num_cols, sizeof(slack[0]));
+	row_mate     = XMALLOCNZ(int, p->num_cols);
+	parent_row   = XMALLOCNZ(int, p->num_cols);
+	col_inc      = XMALLOCNZ(int, p->num_cols);
+	slack        = XMALLOCNZ(int, p->num_cols);
 
 	memset(assignment, -1, m * sizeof(assignment[0]));
 

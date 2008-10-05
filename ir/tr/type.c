@@ -1191,10 +1191,10 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db) {
 	res->flags                       |= tf_layout_fixed;
 	res->size                         = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params             = n_param;
-	res->attr.ma.params               = xcalloc(n_param, sizeof(res->attr.ma.params[0]));
+	res->attr.ma.params               = XMALLOCNZ(tp_ent_pair, n_param);
 	res->attr.ma.value_params         = NULL;
 	res->attr.ma.n_res                = n_res;
-	res->attr.ma.res_type             = xcalloc(n_res, sizeof(res->attr.ma.res_type[0]));
+	res->attr.ma.res_type             = XMALLOCNZ(tp_ent_pair, n_res);
 	res->attr.ma.value_ress           = NULL;
 	res->attr.ma.variadicity          = variadicity_non_variadic;
 	res->attr.ma.first_variadic_param = -1;
@@ -1233,11 +1233,11 @@ ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 	res->assoc_type                    = tp->assoc_type;
 	res->size                          = tp->size;
 	res->attr.ma.n_params              = n_params;
-	res->attr.ma.params                = xcalloc(n_params, sizeof(res->attr.ma.params[0]));
+	res->attr.ma.params                = XMALLOCN(tp_ent_pair, n_params);
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
 	res->attr.ma.value_params          = tp->attr.ma.value_params;
 	res->attr.ma.n_res                 = n_res;
-	res->attr.ma.res_type              = xcalloc(n_res, sizeof(res->attr.ma.res_type[0]));
+	res->attr.ma.res_type              = XMALLOCN(tp_ent_pair, n_res);
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
 	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
 	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
@@ -1597,9 +1597,9 @@ ir_type *new_d_type_array(ident *name, int n_dimensions, ir_type *element_type, 
 
 	res = new_type(type_array, NULL, name, db);
 	res->attr.aa.n_dimensions = n_dimensions;
-	res->attr.aa.lower_bound  = xcalloc(n_dimensions, sizeof(*res->attr.aa.lower_bound));
-	res->attr.aa.upper_bound  = xcalloc(n_dimensions, sizeof(*res->attr.aa.upper_bound));
-	res->attr.aa.order        = xcalloc(n_dimensions, sizeof(*res->attr.aa.order));
+	res->attr.aa.lower_bound  = XMALLOCNZ(ir_node*, n_dimensions);
+	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
+	res->attr.aa.order        = XMALLOCNZ(int,      n_dimensions);
 
 	current_ir_graph = get_const_code_irg();
 	unk = new_Unknown(mode_Iu);

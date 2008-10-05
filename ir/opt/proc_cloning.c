@@ -51,7 +51,6 @@
 #include "irtools.h"
 #include "irgmod.h"
 #include "array_t.h"
-#include "xmalloc.h"
 
 /**
  * This struct contains the information quadruple for a Call, which we need to

@@ -244,7 +244,7 @@ static INLINE void compute_back_edge_chains(lv_chk_t *lv)
 
 lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 {
-	lv_chk_t *res = xmalloc(sizeof(res[0]));
+	lv_chk_t *res = XMALLOC(lv_chk_t);
 	struct obstack *obst;
 	int i;
 

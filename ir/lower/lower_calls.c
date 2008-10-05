@@ -41,7 +41,6 @@
 #include "iroptimize.h"
 #include "array_t.h"
 #include "pmap.h"
-#include "xmalloc.h"
 #include "error.h"
 
 /** A type map for def_find_pointer_type. */

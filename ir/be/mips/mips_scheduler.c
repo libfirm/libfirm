@@ -63,8 +63,7 @@ typedef struct {
 
 static void *mips_scheduler_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
 {
-	mips_sched_env_t *sched_env = xmalloc(sizeof(sched_env[0]));
-	memset(sched_env, 0, sizeof(sched_env[0]));
+	mips_sched_env_t *sched_env = XMALLOCZ(mips_sched_env_t);
 
 	sched_env->arch_env = arch_env;
 	sched_env->div_set = new_pset(pset_default_ptr_cmp, 4);

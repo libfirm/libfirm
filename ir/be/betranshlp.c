@@ -408,7 +408,7 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 
 	/* create a new obstack */
 	old_obst = irg->obst;
-	new_obst = xmalloc(sizeof(*new_obst));
+	new_obst = XMALLOC(struct obstack);
 	obstack_init(new_obst);
 	irg->obst = new_obst;
 	irg->last_node_idx = 0;

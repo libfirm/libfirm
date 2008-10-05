@@ -41,7 +41,6 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 #include "irnodeset.h"
-#include "xmalloc.h"
 
 #include "beutil.h"
 #include "bearch_t.h"

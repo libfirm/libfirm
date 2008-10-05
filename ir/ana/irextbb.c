@@ -204,7 +204,7 @@ void compute_extbb(ir_graph *irg) {
 	if (irg->extbb_obst)
 		obstack_free(irg->extbb_obst, NULL);
 	else
-		irg->extbb_obst = xmalloc(sizeof(*irg->extbb_obst));
+		irg->extbb_obst = XMALLOC(struct obstack);
 	obstack_init(irg->extbb_obst);
 
 	env.obst        = irg->extbb_obst;

@@ -1299,15 +1299,13 @@ static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
  * Register a dumper.
  */
 static void stat_register_dumper(const dumper_t *dumper) {
-	dumper_t *p = xmalloc(sizeof(*p));
+	dumper_t *p = XMALLOC(dumper_t);
 
-	if (p) {
-		memcpy(p, dumper, sizeof(*p));
+	memcpy(p, dumper, sizeof(*p));
 
-		p->next        = status->dumper;
-		p->status      = status;
-		status->dumper = p;
-	}
+	p->next        = status->dumper;
+	p->status      = status;
+	status->dumper = p;
 
 	/* FIXME: memory leak */
 }  /* stat_register_dumper */
@@ -2186,8 +2184,7 @@ void firm_init_stat(unsigned enable_options)
 	if (! (enable_options & FIRMSTAT_ENABLED))
 		return;
 
-	status = xmalloc(sizeof(*status));
-	memset(status, 0, sizeof(*status));
+	status = XMALLOCZ(stat_info_t);
 
 	/* enable statistics */
 	status->stat_options = enable_options & FIRMSTAT_ENABLED ? enable_options : 0;

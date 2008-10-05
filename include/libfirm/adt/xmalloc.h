@@ -34,11 +34,46 @@
 /* xmalloc() & friends. */
 
 void *xmalloc(size_t size);
-void *xcalloc(size_t num, size_t size);
 void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *str);
 
 #define xfree(ptr)      free(ptr)
+
+/**
+ * Allocate n objects of a certain type
+ */
+#define XMALLOCN(type, n) ((type*)xmalloc(sizeof(type) * (n)))
+
+/**
+ * Allocate n objects of a certain type and zero them
+ */
+#define XMALLOCNZ(type, n) ((type*)memset(xmalloc(sizeof(type) * (n)), 0, sizeof(type) * (n)))
+
+/**
+ * Allocate one object of a certain type
+ */
+#define XMALLOC(type) XMALLOCN(type, 1)
+
+/**
+ * Allocate one object of a certain type and zero it
+ */
+#define XMALLOCZ(type) XMALLOCNZ(type, 1)
+
+/**
+ * Reallocate n objects of a certain type
+ */
+#define XREALLOC(ptr, type, n) ((type*)xrealloc(ptr, sizeof(type) * (n)))
+
+/**
+ * Allocate an object with n elements of a flexible array member
+ */
+#define XMALLOCF(type, member, n) ((type*)xmalloc(offsetof(type, member) + sizeof(((type*)0)->member) * (n)))
+
+/**
+ * Allocate an object with n elements of a flexible array member and zero the
+ * whole object
+ */
+#define XMALLOCFZ(type, member, n) ((type*)memset(xmalloc(offsetof(type, member) + sizeof(((type*)0)->member) * (n)), 0, offsetof(type, member) + sizeof(((type*)0)->member) * (n)))
 
 
 /* Includes for alloca() */

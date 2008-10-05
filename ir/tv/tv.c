@@ -1525,7 +1525,7 @@ char *get_tarval_bitpattern(tarval *tv) {
 	int i, j, pos = 0;
 	int n = get_mode_size_bits(tv->mode);
 	int bytes = (n + 7) / 8;
-	char *res = xmalloc((n + 1) * sizeof(char));
+	char *res = XMALLOCN(char, n + 1);
 	unsigned char byte;
 
 	for(i = 0; i < bytes; i++) {

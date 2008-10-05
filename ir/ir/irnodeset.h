@@ -90,7 +90,7 @@ void ir_nodeset_destroy(ir_nodeset_t *nodeset);
  * @return The initialized nodeset
  */
 static INLINE ir_nodeset_t *ir_nodeset_new(size_t expected_elements) {
-	ir_nodeset_t *res = xmalloc(sizeof(*res));
+	ir_nodeset_t *res = XMALLOC(ir_nodeset_t);
 	ir_nodeset_init_size(res, expected_elements);
 	return res;
 }

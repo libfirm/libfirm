@@ -106,7 +106,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 		return NULL;
 	}
 
-	nodes = xmalloc(n * sizeof(nodes[0]));
+	nodes = XMALLOCN(ir_node*, n);
 
 	DBG((dbg, LEVEL_1, "live:\n"));
 	i = 0;

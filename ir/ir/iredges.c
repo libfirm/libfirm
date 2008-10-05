@@ -42,7 +42,6 @@
 #include "debug.h"
 #include "set.h"
 #include "bitset.h"
-#include "xmalloc.h"
 
 #include "iredgeset.h"
 #include "hashptr.h"

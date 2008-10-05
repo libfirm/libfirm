@@ -75,7 +75,7 @@ static FILE *text_open(const char *basename, const char * suffix1, const char *s
 	if (!suffix3) suffix3 = ".txt";
 
 	/* open file for vcg graph */
-	fname = xmalloc(strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for escapes. */
+	fname = XMALLOCN(char, strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for escapes. */
 
 	j = 0;
 	for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
@@ -822,7 +822,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 			max_depth = (depth > max_depth) ? depth : max_depth ;
 		}
 
-		L_freq = xcalloc(4 * max_depth, sizeof(L_freq[0]));
+		L_freq = XMALLOCNZ(int, 4 * max_depth);
 
 		S_freq  = L_freq + 1*max_depth;
 		LA_freq = L_freq + 2*max_depth;
@@ -955,7 +955,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 		max_depth = (depth > max_depth) ? depth : max_depth ;
 	}
 
-	L_freq = xcalloc(4 * (max_depth+1), sizeof(L_freq[0]));
+	L_freq = XMALLOCNZ(int, 4 * (max_depth + 1));
 
 	S_freq  = L_freq + 1*max_depth;
 	LA_freq = L_freq + 2*max_depth;
@@ -1060,7 +1060,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 			max_depth = (depth > max_depth) ? depth : max_depth ;
 		}
 
-		freq = xcalloc(2 * (max_depth+1), sizeof(freq[0]));
+		freq = XMALLOCNZ(int, 2 * (max_depth + 1));
 
 		disp = freq + max_depth;
 
@@ -1332,7 +1332,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 			max_depth = (depth > max_depth) ? depth : max_depth ;
 		}
 
-		freq = xcalloc(max_depth+1, sizeof(freq[0]));
+		freq = XMALLOCNZ(int, max_depth + 1);
 
 		for (i = 0; i < n_all; ++i) {
 			ir_node *all = get_type_alloc(tp, i);

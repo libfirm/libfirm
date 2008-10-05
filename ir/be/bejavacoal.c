@@ -153,7 +153,7 @@ static int start_vm(jni_env_t *env, int argc, char *argv[])
 	}
 
 	memset(&args, 0, sizeof(args));
-	opts = xmalloc(argc * sizeof(opts[0]));
+	opts = XMALLOCN(JavaVMOption, argc);
 	for(i = 0; i < argc; ++i) {
 		opts[i].optionString = argv[i];
 		opts[i].extraInfo    = NULL;
@@ -326,7 +326,6 @@ static int jc_call_int(be_java_coal_t *c, int mth_index, ...)
 
 be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_regs, int dbg_level)
 {
-	be_java_coal_t *c;
 	jni_env_t *env = get_jvm();
 	JNIEnv *jni = env->jni;
 	jmethodID fact;
@@ -334,8 +333,7 @@ be_java_coal_t *be_java_coal_init(const char *graph_name, int n_nodes, int n_reg
 	jstring str;
 	int i;
 
-	c = xmalloc(sizeof(c[0]));
-	memset(c, 0, sizeof(c[0]));
+	be_java_coal_t *c = XMALLOCZ(be_java_coal_t);
 	c->env = env;
 
 	/* Find the class we are are looking for. */

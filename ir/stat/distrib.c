@@ -60,9 +60,7 @@ static int int_cmp_fun(const void *elt, const void *key) {
  * create a new distribution table
  */
 distrib_tbl_t *stat_new_distrib_tbl(pset_cmp_fun cmp_func, distrib_hash_fun hash_func) {
-	distrib_tbl_t *res;
-
-	res = xmalloc(sizeof(*res));
+	distrib_tbl_t *res = XMALLOC(distrib_tbl_t);
 
 	obstack_init(&res->cnts);
 

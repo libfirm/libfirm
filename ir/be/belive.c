@@ -585,9 +585,8 @@ void be_liveness_invalidate(be_lv_t *lv)
 /* Compute the inter block liveness for a graph. */
 be_lv_t *be_liveness(const be_irg_t *birg)
 {
-	be_lv_t *lv = xmalloc(sizeof(lv[0]));
+	be_lv_t *lv = XMALLOCZ(be_lv_t);
 
-	memset(lv, 0, sizeof(lv[0]));
 	lv->irg  = be_get_birg_irg(birg);
 	lv->birg = birg;
 #ifdef USE_LIVE_CHK

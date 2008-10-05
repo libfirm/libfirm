@@ -162,7 +162,7 @@ dfs_edge_kind_t dfs_get_edge_kind(const dfs_t *dfs, const void *a, const void *b
 
 dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 {
-	dfs_t *res = xmalloc(sizeof(res[0]));
+	dfs_t *res = XMALLOC(dfs_t);
 	dfs_node_t *node;
 
 	res->graph_impl = graph_impl;
@@ -193,8 +193,8 @@ dfs_t *dfs_new(const absgraph_t *graph_impl, void *graph_self)
 	classify_edges(res);
 
 	assert(res->pre_num == res->post_num);
-	res->pre_order = xmalloc(res->pre_num * sizeof(res->pre_order));
-	res->post_order = xmalloc(res->post_num * sizeof(res->post_order));
+	res->pre_order  = XMALLOCN(dfs_node_t*, res->pre_num);
+	res->post_order = XMALLOCN(dfs_node_t*, res->post_num);
 	foreach_set (res->nodes, node) {
 		assert(node->pre_num < res->pre_num);
 		assert(node->post_num < res->post_num);
@@ -251,7 +251,7 @@ static int node_level_cmp(const void *a, const void *b)
 
 void dfs_dump(const dfs_t *dfs, FILE *file)
 {
-	dfs_node_t **nodes = xmalloc(dfs->pre_num * sizeof(nodes[0]));
+	dfs_node_t **nodes = XMALLOCN(dfs_node_t*, dfs->pre_num);
 	dfs_node_t *node;
 	dfs_edge_t *edge;
 	int i, n = 0;

@@ -115,7 +115,7 @@ ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 
 be_dom_front_info_t *be_compute_dominance_frontiers(ir_graph *irg)
 {
-	be_dom_front_info_t *info = xmalloc(sizeof(*info));
+	be_dom_front_info_t *info = XMALLOC(be_dom_front_info_t);
 
 	edges_assure(irg);
 	obstack_init(&info->obst);

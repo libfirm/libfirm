@@ -100,7 +100,7 @@ void ir_lnk_nodemap_destroy(ir_lnk_nodemap_t *nodemap);
  * @return The initialized nodemap
  */
 static INLINE ir_lnk_nodemap_t *ir_lnk_nodemap_new(size_t expected_elements) {
-	ir_lnk_nodemap_t *res = xmalloc(sizeof(*res));
+	ir_lnk_nodemap_t *res = XMALLOC(ir_lnk_nodemap_t);
 	ir_lnk_nodemap_init_size(res, expected_elements);
 	return res;
 }

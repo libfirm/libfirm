@@ -51,11 +51,9 @@ ir_prog *get_irp(void) { return irp; }
 /**
  *  Create a new incomplete ir_prog.
  */
-static ir_prog *new_incomplete_ir_prog(void) {
-	ir_prog *res;
-
-	res = xmalloc(sizeof(*res));
-	memset(res, 0, sizeof(*res));
+static ir_prog *new_incomplete_ir_prog(void)
+{
+	ir_prog *res = XMALLOCZ(ir_prog);
 
 	res->kind           = k_ir_prog;
 	res->graphs         = NEW_ARR_F(ir_graph *, 0);

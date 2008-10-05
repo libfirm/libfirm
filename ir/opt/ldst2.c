@@ -525,7 +525,7 @@ static void Detotalise(ir_graph* irg)
 	size_t npreds = get_Block_n_cfgpreds(end_block);
 	size_t i;
 
-	unfinished_phis = xmalloc(sizeof(*unfinished_phis) * count_addrs);
+	unfinished_phis = XMALLOCN(ir_node, count_addrs);
 	for (i = 0; i < count_addrs; i++) {
 		unfinished_phis[i] = NULL;
 	}

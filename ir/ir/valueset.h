@@ -89,7 +89,7 @@ void ir_valueset_destroy(ir_valueset_t *valueset);
  * @return The initialized value set
  */
 static INLINE ir_valueset_t *ir_valueset_new(size_t expected_elements) {
-	ir_valueset_t *res = xmalloc(sizeof(*res));
+	ir_valueset_t *res = XMALLOC(ir_valueset_t);
 	ir_valueset_init_size(res, expected_elements);
 	return res;
 }

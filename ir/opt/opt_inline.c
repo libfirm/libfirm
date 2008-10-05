@@ -472,7 +472,7 @@ void dead_node_elimination(ir_graph *irg) {
 	graveyard_obst = irg->obst;
 
 	/* A new obstack, where the reachable nodes will be copied to. */
-	rebirth_obst = xmalloc(sizeof(*rebirth_obst));
+	rebirth_obst = XMALLOC(struct obstack);
 	irg->obst = rebirth_obst;
 	obstack_init(irg->obst);
 	irg->last_node_idx = 0;
@@ -663,7 +663,7 @@ static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_
  * Make a new Survive DCE environment.
  */
 survive_dce_t *new_survive_dce(void) {
-	survive_dce_t *res = xmalloc(sizeof(res[0]));
+	survive_dce_t *res = XMALLOC(survive_dce_t);
 	obstack_init(&res->obst);
 	res->places     = pmap_create();
 	res->new_places = NULL;
@@ -1068,8 +1068,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	arity = get_Block_n_cfgpreds(end_bl);    /* arity = n_exc + n_ret  */
 	n_res = get_method_n_ress(get_Call_type(call));
 
-	res_pred = xmalloc(n_res * sizeof(*res_pred));
-	cf_pred  = xmalloc(arity * sizeof(*res_pred));
+	res_pred = XMALLOCN(ir_node*, n_res);
+	cf_pred  = XMALLOCN(ir_node*, arity);
 
 	set_irg_current_block(irg, post_bl); /* just to make sure */
 
@@ -1209,9 +1209,9 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 				n_exc++;
 			}
 		}
-		main_end_bl = get_irg_end_block(irg);
+		main_end_bl       = get_irg_end_block(irg);
 		main_end_bl_arity = get_irn_arity(main_end_bl);
-		end_preds =  xmalloc((n_exc + main_end_bl_arity) * sizeof(*end_preds));
+		end_preds         = XMALLOCN(ir_node*, n_exc + main_end_bl_arity);
 
 		for (i = 0; i < main_end_bl_arity; ++i)
 			end_preds[i] = get_irn_n(main_end_bl, i);
@@ -2012,8 +2012,7 @@ static ir_graph **create_irg_list(void) {
 	compute_callgraph();
 
 	last_irg = 0;
-	irgs     = xmalloc(n_irgs * sizeof(*irgs));
-	memset(irgs, 0, sizeof(n_irgs * sizeof(*irgs)));
+	irgs     = XMALLOCNZ(ir_graph*, n_irgs);
 
 	callgraph_walk(NULL, callgraph_walker, NULL);
 	assert(n_irgs == last_irg);

@@ -1487,7 +1487,7 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byt
 	/* this is used to cache the packed version of the value */
 	static char *packed_value = NULL;
 
-	if (packed_value == NULL) packed_value = xmalloc(value_size);
+	if (packed_value == NULL) packed_value = XMALLOCN(char, value_size);
 
 	if (value != NULL)
 		pack(value, packed_value);

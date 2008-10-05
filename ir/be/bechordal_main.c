@@ -54,7 +54,6 @@
 #include "irnode.h"
 #include "ircons.h"
 #include "debug.h"
-#include "xmalloc.h"
 #include "execfreq.h"
 #include "iredges_t.h"
 

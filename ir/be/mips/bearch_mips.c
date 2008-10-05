@@ -413,8 +413,7 @@ static void *mips_cg_init(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
 	mips_isa_t       *isa      = (mips_isa_t *) arch_env;
-	mips_code_gen_t  *cg       = xmalloc(sizeof(*cg));
-	memset(cg, 0, sizeof(*cg));
+	mips_code_gen_t  *cg       = XMALLOCZ(mips_code_gen_t);
 
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
@@ -466,7 +465,7 @@ static arch_env_t *mips_init(FILE *file_handle) {
 		return NULL;
 	inited = 1;
 
-	isa = xcalloc(1, sizeof(isa[0]));
+	isa = XMALLOC(mips_isa_t);
 	memcpy(isa, &mips_isa_template, sizeof(isa[0]));
 
 	be_emit_init(file_handle);
@@ -538,7 +537,7 @@ typedef struct {
 
 static void *mips_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
 {
-	mips_abi_env_t *env    = xmalloc(sizeof(env[0]));
+	mips_abi_env_t *env    = XMALLOC(mips_abi_env_t);
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags             = fl.bits;
 	env->irg               = irg;

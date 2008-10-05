@@ -427,13 +427,12 @@ static const be_ifg_impl_t ifg_list_impl = {
 
 be_ifg_t *be_ifg_list_new(const be_chordal_env_t *env)
 {
-	ifg_list_t *ifg = xmalloc(sizeof(*ifg));
-	adj_head_t **adj_heads_array = xmalloc(env->irg->last_node_idx * sizeof(adj_heads_array[0]));
+	ifg_list_t  *ifg             = XMALLOC(ifg_list_t);
+	adj_head_t **adj_heads_array = XMALLOCNZ(adj_head_t*, env->irg->last_node_idx);
 
 	ifg->impl = &ifg_list_impl;
 	ifg->env  = env;
 
-	memset(adj_heads_array, 0, env->irg->last_node_idx * sizeof(adj_heads_array[0]));
 	ifg->adj_heads = adj_heads_array;
 
 	obstack_init(&ifg->obst);

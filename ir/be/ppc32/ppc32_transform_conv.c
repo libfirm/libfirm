@@ -214,7 +214,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 		memslot = frame_alloc_area(frame_type, get_mode_size_bytes(mode_D), 4, 0);
 	}
 
-	attr->convs = xmalloc(attr->conv_count * sizeof(ir_node *));
+	attr->convs = XMALLOCN(ir_node*, attr->conv_count);
 
 	for (i = 0, current_conv = attr->first_conv; i < attr->conv_count; i++, current_conv = current_conv->link)
 	{
@@ -241,7 +241,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 
 void init_block(void)
 {
-	cw_block_attr *attr = xmalloc(sizeof(cw_block_attr));
+	cw_block_attr *attr = XMALLOC(cw_block_attr);
 	attr->first_conv    = NULL;
 	attr->convs         = NULL; /* attr->convs is set in finalize_block() */
 	attr->conv_count    = 0;

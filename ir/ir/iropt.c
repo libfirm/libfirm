@@ -49,7 +49,6 @@
 #include "opt_polymorphy.h"
 #include "irtools.h"
 #include "array_t.h"
-#include "xmalloc.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"

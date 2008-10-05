@@ -696,7 +696,7 @@ static list_tuple *construct_extblock_lists(ir_graph *irg) {
 	ir_node **blk_list = construct_block_lists(irg);
 	int i;
 	ir_graph *rem = current_ir_graph;
-	list_tuple *lists = xmalloc(sizeof(*lists));
+	list_tuple *lists = XMALLOC(list_tuple);
 
 	current_ir_graph = irg;
 
@@ -1294,7 +1294,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 /* Adds a new node info dumper callback. */
 void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 {
-	hook_entry_t *info = xmalloc(sizeof(*info));
+	hook_entry_t *info = XMALLOC(hook_entry_t);
 
 	info->hook._hook_node_info = cb;
 	info->context              = data;
@@ -2377,7 +2377,7 @@ FILE *vcg_open(ir_graph *irg, const char * suffix1, const char *suffix2) {
 	if (!suffix2) suffix2 = "";
 
 	/* open file for vcg graph */
-	fname = xmalloc (len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
+	fname = XMALLOCN(char, len * 2 + strlen(suffix1) + strlen(suffix2) + 5);
 
 	/* strncpy (fname, nm, len); */     /* copy the filename */
 	j = 0;
@@ -2421,7 +2421,7 @@ FILE *vcg_open_name(const char *name, const char *suffix) {
 	if (!suffix) suffix = "";
 
 	/** open file for vcg graph */
-	fname = xmalloc(len * 2 + 5 + strlen(suffix));
+	fname = XMALLOCN(char, len * 2 + 5 + strlen(suffix));
 	/* strcpy (fname, name);*/    /* copy the filename */
 	j = 0;
 	for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */

@@ -676,7 +676,7 @@ void compute_doms(ir_graph *irg) {
 	n_blocks = init_construction(irg, count_and_init_blocks_dom);
 
 	/* Memory for temporary information. */
-	tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
+	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
 
 	/* We need the out data structure. */
 	assure_irg_outs(irg);
@@ -815,7 +815,7 @@ void compute_postdoms(ir_graph *irg) {
 	n_blocks = init_construction(irg, count_and_init_blocks_pdom);
 
 	/* Memory for temporary information. */
-	tdi_list = xcalloc(n_blocks, sizeof(tdi_list[0]));
+	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
 
 	/* We need the out data structure. */
 	assure_irg_outs(irg);

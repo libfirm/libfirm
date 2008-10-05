@@ -115,7 +115,7 @@ static int edge_counter;
 
 irg_grgen_dumper_env_t *init_irg_grgen_dumper(char *file, int append)
 {
-	irg_grgen_dumper_env_t *const grgen_dumper_env = xmalloc(sizeof(*grgen_dumper_env));
+	irg_grgen_dumper_env_t *const grgen_dumper_env = XMALLOC(irg_grgen_dumper_env_t);
 	FILE *fp;
 
 	if(append)

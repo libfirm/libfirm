@@ -45,7 +45,6 @@
 #include "irflag_t.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
-#include "xmalloc.h"
 
 #if USE_EXPLICIT_PHI_IN_STACK
 /* A stack needed for the automatic Phi node construction in constructor

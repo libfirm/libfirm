@@ -48,7 +48,6 @@
 #include "irtools.h"
 #include "opt_polymorphy.h"
 #include "irmemory.h"
-#include "xmalloc.h"
 #include "irphase_t.h"
 #include "irgopt.h"
 #include "debug.h"

@@ -1002,7 +1002,7 @@ static void reduce(walk_env *env, ir_region *reg) {
 ir_reg_tree *construct_region_tree(ir_graph *irg) {
 	walk_env env;
 	ir_graph *rem = current_ir_graph;
-	ir_reg_tree *res = xmalloc(sizeof(*res));
+	ir_reg_tree *res = XMALLOC(ir_reg_tree);
 
 	obstack_init(&res->obst);
 

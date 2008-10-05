@@ -496,7 +496,7 @@ static void trace_update_time(void *data, ir_node *irn) {
  * @return The environment
  */
 static trace_env_t *trace_init(const be_irg_t *birg) {
-	trace_env_t *env = xcalloc(1, sizeof(*env));
+	trace_env_t *env = XMALLOCZ(trace_env_t);
 	ir_graph    *irg = be_get_birg_irg(birg);
 	int         nn   = get_irg_last_idx(irg);
 

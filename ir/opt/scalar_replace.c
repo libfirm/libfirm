@@ -406,8 +406,7 @@ static path_t *find_path(ir_node *sel, unsigned len) {
 
 	if (! is_Sel(pred)) {
 		/* we found the root */
-
-		res = xmalloc(sizeof(*res) + (len - 1) * sizeof(res->path));
+		res = XMALLOCF(path_t, path, len);
 		res->path_len = len;
 	} else
 		res = find_path(pred, len);

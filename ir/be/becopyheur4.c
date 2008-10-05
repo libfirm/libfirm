@@ -256,7 +256,7 @@ static int cmp_col_cost_gt(const void *a, const void *b) {
  * Creates a new affinity chunk
  */
 static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
-	aff_chunk_t *c = xmalloc(sizeof(*c) + (env->n_regs - 1) * sizeof(c->color_affinity[0]));
+	aff_chunk_t *c = XMALLOCF(aff_chunk_t, color_affinity, env->n_regs);
 	c->n                 = NEW_ARR_F(const ir_node *, 0);
 	c->interfere         = NEW_ARR_F(const ir_node *, 0);
 	c->weight            = -1;

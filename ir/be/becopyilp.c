@@ -95,7 +95,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp);
 
 
 size_red_t *new_size_red(copy_opt_t *co) {
-	size_red_t *res = xmalloc(sizeof(*res));
+	size_red_t *res = XMALLOC(size_red_t);
 
 	res->co = co;
 	res->all_removed = pset_new_ptr_default();
@@ -208,8 +208,7 @@ void free_size_red(size_red_t *sr) {
 #include <stdio.h>
 
 ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env) {
-	ilp_env_t *res = xmalloc(sizeof(*res));
-	assert(res);
+	ilp_env_t *res = XMALLOC(ilp_env_t);
 
 	res->co         = co;
 	res->build      = build;

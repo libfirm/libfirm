@@ -892,14 +892,12 @@ static void process_cloud(co2_cloud_t *cloud)
 	co2_t *env  = cloud->env;
 	int n_regs  = env->n_regs;
 	int n_edges = 0;
-	int *mst_edges = xmalloc(cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
+	int *mst_edges = XMALLOCNZ(int, cloud->n_memb * cloud->n_memb);
 	pdeq *q;
 
 	edge_t *edges;
 	int i;
 	int best_col;
-
-	memset(mst_edges, 0, cloud->n_memb * cloud->n_memb * sizeof(mst_edges[0]));
 
 	/* Collect all edges in the cloud on an obstack and sort the increasingly */
 	obstack_init(&cloud->obst);
@@ -1063,7 +1061,7 @@ static void process(co2_t *env)
 	}
 
 	i = 0;
-	clouds = xmalloc(n_clouds * sizeof(clouds[0]));
+	clouds = XMALLOCN(co2_cloud_t*, n_clouds);
 	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list)
 		clouds[i++] = pos;
 	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);

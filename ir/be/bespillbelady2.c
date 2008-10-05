@@ -54,7 +54,6 @@
 #include "irprintf.h"
 #include "execfreq.h"
 #include "dfs_t.h"
-#include "xmalloc.h"
 
 #include "beutil.h"
 #include "bearch_t.h"

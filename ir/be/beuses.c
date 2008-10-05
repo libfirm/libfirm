@@ -376,7 +376,7 @@ void set_sched_step_walker(ir_node *block, void *data)
 
 be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv)
 {
-	be_uses_t *env = xmalloc(sizeof(env[0]));
+	be_uses_t *env = XMALLOC(be_uses_t);
 
 	edges_assure(irg);
 

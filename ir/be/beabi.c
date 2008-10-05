@@ -235,8 +235,7 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
  */
 static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 {
-	be_abi_call_t *call = xmalloc(sizeof(call[0]));
-	memset(call, 0, sizeof(call[0]));
+	be_abi_call_t *call = XMALLOCZ(be_abi_call_t);
 
 	call->flags.val  = 0;
 	call->params     = new_set(cmp_call_arg, 16);
@@ -2163,7 +2162,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 {
-	be_abi_irg_t *env  = xmalloc(sizeof(env[0]));
+	be_abi_irg_t *env  = XMALLOC(be_abi_irg_t);
 	ir_node *old_frame = get_irg_frame(birg->irg);
 	ir_graph *irg      = birg->irg;
 

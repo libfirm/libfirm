@@ -30,7 +30,6 @@
 #include "firm_config.h"
 
 #include "firm_types.h"
-#include "xmalloc.h"
 
 #define HashSet          ir_edgeset_t
 #define HashSetIterator  ir_edgeset_iterator_t

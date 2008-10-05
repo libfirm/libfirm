@@ -767,7 +767,7 @@ static int count_spillslots(const be_fec_env_t *env)
 be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
-	be_fec_env_t     *env      = xmalloc(sizeof(env[0]));
+	be_fec_env_t     *env      = XMALLOC(be_fec_env_t);
 
 	be_liveness_assure_chk(be_assure_liveness(birg));
 

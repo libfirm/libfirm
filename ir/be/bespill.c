@@ -155,7 +155,7 @@ spill_env_t *be_new_spill_env(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 
-	spill_env_t *env	= xmalloc(sizeof(env[0]));
+	spill_env_t *env = XMALLOC(spill_env_t);
 	env->spills			= new_set(cmp_spillinfo, 1024);
 	env->irg            = be_get_birg_irg(birg);
 	env->birg           = birg;

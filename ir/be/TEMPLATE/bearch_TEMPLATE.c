@@ -326,7 +326,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 static void *TEMPLATE_cg_init(be_irg_t *birg) {
 	const arch_env_t    *arch_env = be_get_birg_arch_env(birg);
 	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
-	TEMPLATE_code_gen_t *cg       = xmalloc(sizeof(*cg));
+	TEMPLATE_code_gen_t *cg       = XMALLOC(TEMPLATE_code_gen_t);
 
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
@@ -377,7 +377,7 @@ static arch_env_t *TEMPLATE_init(FILE *outfile) {
 		return NULL;
 	run_once = 1;
 
-	isa = xcalloc(1, sizeof(*isa));
+	isa = XMALLOC(TEMPLATE_isa_t);
 	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
 
 	be_emit_init(outfile);
@@ -447,7 +447,7 @@ typedef struct {
 
 static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
 {
-	TEMPLATE_abi_env_t *env = xmalloc(sizeof(env[0]));
+	TEMPLATE_abi_env_t *env = XMALLOC(TEMPLATE_abi_env_t);
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;

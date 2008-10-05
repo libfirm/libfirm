@@ -480,11 +480,11 @@ no_stable_set:
  * Creates a new qnode
  */
 static INLINE qnode_t *new_qnode(const unit_t *ou, int color) {
-	qnode_t *qn = xmalloc(sizeof(*qn));
-	qn->ou = ou;
-	qn->color = color;
-	qn->mis = xmalloc(ou->node_count * sizeof(*qn->mis));
-	qn->conflicts = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
+	qnode_t *qn = XMALLOC(qnode_t);
+	qn->ou            = ou;
+	qn->color         = color;
+	qn->mis           = XMALLOCN(ir_node*, ou->node_count);
+	qn->conflicts     = new_set(set_cmp_conflict_t, SLOTS_CONFLICTS);
 	qn->changed_nodes = new_set(set_cmp_node_stat_t, SLOTS_CHANGED_NODES);
 	return qn;
 }

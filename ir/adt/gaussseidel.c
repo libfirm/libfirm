@@ -43,7 +43,7 @@ struct _gs_matrix_t {
 static INLINE void alloc_cols(row_col_t *row, int c_cols) {
 	assert(c_cols > row->c_cols);
 	row->c_cols = c_cols;
-	row->cols   = xrealloc(row->cols, c_cols * sizeof(*row->cols));
+	row->cols   = XREALLOC(row->cols, col_val_t, c_cols);
 }
 
 static INLINE void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init) {
@@ -51,7 +51,7 @@ static INLINE void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_
 	assert(c_rows > m->c_rows);
 
 	m->c_rows = c_rows;
-	m->rows   = xrealloc(m->rows, c_rows * sizeof(*m->rows));
+	m->rows   = XREALLOC(m->rows, row_col_t, c_rows);
 
 	for (i = begin_init; i < c_rows; ++i) {
 		m->rows[i].c_cols = 0;
@@ -64,8 +64,7 @@ static INLINE void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_
 }
 
 gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols) {
-	gs_matrix_t *res = xmalloc(sizeof(*res));
-	memset(res, 0, sizeof(*res));
+	gs_matrix_t *res = XMALLOCZ(gs_matrix_t);
 	if (n_init_rows < 16)
 		n_init_rows = 16;
 	res->initial_col_increase = n_init_cols;
@@ -117,7 +116,7 @@ void gs_matrix_trim_row_capacities(gs_matrix_t *m) {
 		if (the_row->c_cols) {
 			the_row->c_cols    = the_row->n_cols;
 			if (the_row->c_cols)
-				the_row->cols = xrealloc(the_row->cols, the_row->c_cols * sizeof(*the_row->cols));
+				the_row->cols = XREALLOC(the_row->cols, col_val_t, the_row->c_cols);
 			else
 				xfree(the_row->cols);
 		}
@@ -281,7 +280,7 @@ void gs_matrix_export(const gs_matrix_t *m, double *nw, int size)
 void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out) {
 	int effective_rows = MIN(a, m->c_rows);
 	int r, c, i;
-	double *elems = xmalloc(b * sizeof(*elems));
+	double *elems = XMALLOCN(double, b);
 
 	// The rows which have some content
 	for (r=0; r < effective_rows; ++r) {

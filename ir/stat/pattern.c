@@ -802,7 +802,7 @@ static void pattern_output(const char *fname) {
 	/* creates a dumper */
 	dump = new_vcg_dumper(fname, 100);
 
-	pattern_arr = xmalloc(sizeof(*pattern_arr) * count);
+	pattern_arr = XMALLOCN(pattern_entry_t*, count);
 	for (i = 0, entry = pset_first(status->pattern_hash);
 	     entry && i < count;
 	     entry = pset_next(status->pattern_hash), ++i) {

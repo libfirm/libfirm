@@ -95,7 +95,7 @@
 
 #ifndef Alloc
 #include "xmalloc.h"
-#define Alloc(size)    (HashSetEntry*) xmalloc((size) * sizeof(HashSetEntry))
+#define Alloc(size) XMALLOCN(HashSetEntry, (size))
 #define Free(ptr)      free(ptr)
 #endif /* Alloc */
 

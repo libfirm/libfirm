@@ -250,9 +250,7 @@ int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
 void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
                            void *module)
 {
-	be_module_list_entry_t *entry;
-
-    entry       = xmalloc(sizeof(entry[0]));
+	be_module_list_entry_t *entry = XMALLOC(be_module_list_entry_t);
 	entry->name = name;
 	entry->data = module;
 	entry->next = *list_head;
@@ -267,9 +265,7 @@ void be_add_module_list_opt(lc_opt_entry_t *grp, const char *name,
                             be_module_list_entry_t * const * list_head,
                             void **var)
 {
-	module_opt_data_t *moddata;
-
-	moddata            = xmalloc(sizeof(moddata[0]));
+	module_opt_data_t *moddata = XMALLOC(module_opt_data_t);
 	moddata->var       = var;
 	moddata->list_head = list_head;
 

@@ -299,7 +299,7 @@ static INLINE void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 	max_idx = MAX(max_idx, last_irg_idx);
 	new_cap = (size_t) (max_idx * phase->growth_factor / 256);
 
-	phase->data_ptr = (void **)xrealloc(phase->data_ptr, new_cap * sizeof(phase->data_ptr[0]));
+	phase->data_ptr = XREALLOC(phase->data_ptr, void*, new_cap);
 
 	/* initialize the newly allocated memory. */
 	memset(phase->data_ptr + old_cap, 0, (new_cap - old_cap) * sizeof(phase->data_ptr[0]));

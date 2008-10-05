@@ -539,7 +539,7 @@ static const be_ifg_impl_t ifg_clique_impl = {
 
 be_ifg_t *be_ifg_clique_new(const be_chordal_env_t *env)
 {
-	ifg_clique_t *ifg	= xmalloc(sizeof(*ifg));
+	ifg_clique_t *ifg	= XMALLOC(ifg_clique_t);
 
 	ifg->impl     		= &ifg_clique_impl;
 	ifg->env			= env;

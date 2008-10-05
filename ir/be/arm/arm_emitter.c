@@ -703,7 +703,7 @@ static void emit_arm_SwitchJmp(const ir_node *irn) {
 	block_nr = get_irn_node_nr(irn);
 	n_projs = get_arm_SwitchJmp_n_projs(irn);
 
-	projs = xcalloc(n_projs , sizeof(ir_node*));
+	projs = XMALLOCNZ(ir_node*, n_projs);
 
 	foreach_out_edge(irn, edge) {
 		proj = get_edge_src_irn(edge);

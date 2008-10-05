@@ -31,7 +31,6 @@
 #define _FIRM_IRNODEMAP_H_
 
 #include "irnode.h"
-#include "xmalloc.h"
 
 typedef struct ir_nodemap_entry_t {
 	const ir_node *node;

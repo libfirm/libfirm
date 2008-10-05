@@ -195,7 +195,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.copyopt");
 
-	co = xcalloc(1, sizeof(*co));
+	co = XMALLOCZ(copy_opt_t);
 	co->cenv      = chordal_env;
 	co->aenv      = chordal_env->birg->main_env->arch_env;
 	co->irg       = chordal_env->irg;
@@ -206,7 +206,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 	s2 = get_entity_name(get_irg_entity(co->irg));
 	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;
-	co->name = xmalloc(len);
+	co->name = XMALLOCN(char, len);
 	snprintf(co->name, len, "%s__%s__%s", s1, s2, s3);
 
 	return co;
@@ -385,7 +385,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 		return;
 
 	/* Init a new unit */
-	unit = xcalloc(1, sizeof(*unit));
+	unit = XMALLOCZ(unit_t);
 	unit->co = co;
 	unit->node_count = 1;
 	INIT_LIST_HEAD(&unit->queue);
@@ -396,8 +396,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 		/* init */
 		arity = get_irn_arity(irn);
-		unit->nodes = xmalloc((arity+1) * sizeof(*unit->nodes));
-		unit->costs = xmalloc((arity+1) * sizeof(*unit->costs));
+		unit->nodes = XMALLOCN(ir_node*, arity + 1);
+		unit->costs = XMALLOCN(int,      arity + 1);
 		unit->nodes[0] = irn;
 
 		/* fill */
@@ -437,13 +437,13 @@ static void co_collect_units(ir_node *irn, void *env) {
 				}
 			}
 		}
-		unit->nodes = xrealloc(unit->nodes, unit->node_count * sizeof(*unit->nodes));
-		unit->costs = xrealloc(unit->costs, unit->node_count * sizeof(*unit->costs));
+		unit->nodes = XREALLOC(unit->nodes, ir_node*, unit->node_count);
+		unit->costs = XREALLOC(unit->costs, int,      unit->node_count);
 	} else if (is_Perm_Proj(co->aenv, irn)) {
 		/* Proj of a perm with corresponding arg */
 		assert(!nodes_interfere(co->cenv, irn, get_Perm_src(irn)));
-		unit->nodes = xmalloc(2 * sizeof(*unit->nodes));
-		unit->costs = xmalloc(2 * sizeof(*unit->costs));
+		unit->nodes = XMALLOCN(ir_node*, 2);
+		unit->costs = XMALLOCN(int,      2);
 		unit->node_count = 2;
 		unit->nodes[0] = irn;
 		unit->nodes[1] = get_Perm_src(irn);
@@ -471,8 +471,8 @@ static void co_collect_units(ir_node *irn, void *env) {
 			if (count != 0) {
 				int k = 0;
 				++count;
-				unit->nodes = xmalloc(count * sizeof(*unit->nodes));
-				unit->costs = xmalloc(count * sizeof(*unit->costs));
+				unit->nodes = XMALLOCN(ir_node*, count);
+				unit->costs = XMALLOCN(int,      count);
 				unit->node_count = count;
 				unit->nodes[k++] = irn;
 
@@ -864,7 +864,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
 	be_ifg_t *ifg  = co->cenv->ifg;
 	int *color_map = alloca(co->cls->n_regs * sizeof(color_map[0]));
-	int *node_map  = xmalloc((get_irg_last_idx(co->irg) + 1) * sizeof(node_map[0]));
+	int *node_map  = XMALLOCN(int, get_irg_last_idx(co->irg) + 1);
 
 	ir_node *irn;
 	void *it, *nit;
@@ -1141,7 +1141,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	char *tu_name;
 
 	n = strlen(env->birg->main_env->cup_name);
-	tu_name = xmalloc((n + 1) * sizeof(*tu_name));
+	tu_name = XMALLOCN(char, n + 1);
 	strcpy(tu_name, env->birg->main_env->cup_name);
 	for (i = 0; i < n; ++i)
 		if (tu_name[i] == '.')

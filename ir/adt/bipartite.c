@@ -41,12 +41,8 @@ struct _bipartite_t {
 
 bipartite_t *bipartite_new(int n_left, int n_right)
 {
-	int i, size;
-	bipartite_t *gr;
-
-	size = n_left > 0 ? n_left - 1 : 0;
-	gr = xmalloc(sizeof(*gr) + size * sizeof(void *));
-	memset(gr, 0, sizeof(*gr));
+	bipartite_t *gr = XMALLOCFZ(bipartite_t, adj, n_left);
+	int i;
 
 	gr->n_left = n_left;
 	gr->n_right = n_right;

@@ -581,7 +581,7 @@ static void *arm_cg_init(be_irg_t *birg) {
 		int_tp = new_type_primitive(new_id_from_chars("int", 3), mode_Is);
 	}
 
-	cg = xmalloc(sizeof(*cg));
+	cg = XMALLOC(arm_code_gen_t);
 	cg->impl         = &arm_code_gen_if;
 	cg->irg          = birg->irg;
 	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
@@ -767,7 +767,7 @@ static arch_env_t *arm_init(FILE *file_handle) {
 	if (inited)
 		return NULL;
 
-	isa = xmalloc(sizeof(*isa));
+	isa = XMALLOC(arm_isa_t);
 	memcpy(isa, &arm_isa_template, sizeof(*isa));
 
 	arm_register_init();
@@ -879,8 +879,8 @@ typedef struct {
 
 static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
 {
-	arm_abi_env_t *env     = xmalloc(sizeof(env[0]));
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	arm_abi_env_t       *env = XMALLOC(arm_abi_env_t);
+	be_abi_call_flags_t  fl  = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;
 	env->arch_env = arch_env;

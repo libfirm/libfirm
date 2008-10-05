@@ -184,7 +184,7 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 	int degree = be_ifg_degree(ifg, irn);
 	void *iter = be_ifg_neighbours_iter_alloca(ifg);
 
-	ir_node **neighbours = xmalloc(degree * sizeof(neighbours[0]));
+	ir_node **neighbours = XMALLOCN(ir_node*, degree);
 
 	ir_node *curr;
 	int i, j;
@@ -276,7 +276,7 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 	const int node_count = be_ifg_check_get_node_count(ifg);
 	int i = 0;
 
-	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));
+	ir_node **all_nodes = XMALLOCN(ir_node*, node_count);
 
 	be_ifg_foreach_node(ifg, iter1, n)
 	{
@@ -294,7 +294,7 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 
 	for (i = 0; i < node_count; i++)
 	{
-		ir_node **neighbours = xmalloc(node_count * sizeof(neighbours[0]));
+		ir_node **neighbours = XMALLOCN(ir_node*, node_count);
 		int j = 0;
 		int k = 0;
 		int degree = 0;
@@ -334,7 +334,7 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 	const int node_count = be_ifg_check_get_node_count(ifg);
 	int i = 0;
 
-	ir_node **all_nodes = xmalloc(node_count * sizeof(all_nodes[0]));
+	ir_node **all_nodes = XMALLOCN(ir_node*, node_count);
 
 	be_ifg_foreach_node(ifg, iter1, n)
 	{
@@ -352,7 +352,7 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 	for (i = 0; i < node_count; i++)
 	{
-		ir_node **neighbours = xmalloc(node_count * sizeof(neighbours[0]));
+		ir_node **neighbours = XMALLOCN(ir_node*, node_count);
 		int j = 0;
 		int k = 0;
 		int degree = 0;

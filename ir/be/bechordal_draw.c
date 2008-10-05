@@ -163,7 +163,7 @@ const plotter_if_t ps_plotter_vtab = {
 
 plotter_t *new_plotter_ps(const char *filename)
 {
-	ps_plotter_t *ps_plotter = xmalloc(sizeof(*ps_plotter));
+	ps_plotter_t *ps_plotter = XMALLOC(ps_plotter_t);
 	plotter_t *p = (plotter_t *) ps_plotter;
 
 	ps_plotter->filename = filename;

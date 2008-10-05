@@ -631,7 +631,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 			DB((dbg, LEVEL_1, "Partial redundant %+F from block %+F found\n", expr, block));
 
-			in = xmalloc(arity * sizeof(*in));
+			in = XMALLOCN(ir_node*, arity);
 			/* for all predecessor blocks */
 			for (pos = 0; pos < arity; ++pos) {
 				ir_node *pred_blk = get_Block_cfgpred_block(block, pos);

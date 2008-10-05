@@ -47,9 +47,7 @@ tp_op *
 new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size,
          const tp_op_ops *ops)
 {
-	tp_op *res;
-
-	res = xmalloc(sizeof(*res));
+	tp_op *res = XMALLOC(tp_op);
 	res->code          = code;
 	res->name          = name;
 	res->flags         = flags;

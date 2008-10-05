@@ -818,7 +818,7 @@ static const debug_ops stabs_ops = {
 
 /* Opens a stabs handler */
 dbg_handle *be_stabs_open(void) {
-	stabs_handle *h = xmalloc(sizeof(*h));
+	stabs_handle *h = XMALLOC(stabs_handle);
 
 	h->base.ops     = &stabs_ops;
 	h->cur_ent      = NULL;

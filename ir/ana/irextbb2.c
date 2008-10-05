@@ -191,7 +191,7 @@ void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs) {
 		obstack_free(irg->extbb_obst, NULL);
 	}
 	else {
-		irg->extbb_obst = xmalloc(sizeof(*irg->extbb_obst));
+		irg->extbb_obst = XMALLOC(struct obstack);
 	}
 	obstack_init(irg->extbb_obst);
 

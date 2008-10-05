@@ -545,8 +545,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
  */
 static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
 {
-	ia32_abi_env_t *env    = xmalloc(sizeof(env[0]));
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
+	ia32_abi_env_t      *env = XMALLOC(ia32_abi_env_t);
+	be_abi_call_flags_t  fl  = be_abi_call_get_flags(call);
 	env->flags = fl.bits;
 	env->irg   = irg;
 	env->aenv  = aenv;
@@ -1580,7 +1580,7 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
  */
 static void *ia32_cg_init(be_irg_t *birg) {
 	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env;
-	ia32_code_gen_t *cg  = xcalloc(1, sizeof(*cg));
+	ia32_code_gen_t *cg  = XMALLOCZ(ia32_code_gen_t);
 
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
@@ -1742,7 +1742,7 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 
 	set_tarval_output_modes();
 
-	isa = xmalloc(sizeof(*isa));
+	isa = XMALLOC(ia32_isa_t);
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
 	if(mode_fpcw == NULL) {
@@ -1765,7 +1765,7 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 	ia32_build_8bit_reg_map_high(isa->regs_8bit_high);
 
 #ifndef NDEBUG
-	isa->name_obst = xmalloc(sizeof(*isa->name_obst));
+	isa->name_obst = XMALLOC(struct obstack);
 	obstack_init(isa->name_obst);
 #endif /* NDEBUG */
 

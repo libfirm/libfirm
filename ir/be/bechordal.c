@@ -48,7 +48,6 @@
 #include "irtools.h"
 #include "irbitset.h"
 #include "debug.h"
-#include "xmalloc.h"
 #include "iredges.h"
 
 #include "beutil.h"

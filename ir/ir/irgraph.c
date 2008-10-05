@@ -195,7 +195,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 
 	/*-- initialized for each graph. --*/
 	res->kind = k_ir_graph;
-	res->obst = xmalloc (sizeof(*res->obst));
+	res->obst = XMALLOC(struct obstack);
 	obstack_init(res->obst);
 
 	res->phase_state = phase_building;
@@ -320,7 +320,7 @@ ir_graph *new_const_code_irg(void) {
 #if USE_EXPLICIT_PHI_IN_STACK
 	res->Phi_in_stack = NULL;
 #endif
-	res->obst       = xmalloc(sizeof(*res->obst));
+	res->obst       = XMALLOC(struct obstack);
 	obstack_init (res->obst);
 	res->extbb_obst = NULL;
 
@@ -471,7 +471,7 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 #if USE_EXPLICIT_PHI_IN_STACK
 	res->Phi_in_stack = NULL;
 #endif
-	res->obst       = xmalloc(sizeof(*res->obst));
+	res->obst       = XMALLOC(struct obstack);
 	obstack_init(res->obst);
 	res->extbb_obst = NULL;
 
@@ -1035,7 +1035,7 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description) {
 	assert(0 <= n && n < irg->n_loc);
 
 	if (! irg->loc_descriptions)
-		irg->loc_descriptions = xcalloc(sizeof(*irg->loc_descriptions), irg->n_loc);
+		irg->loc_descriptions = XMALLOCNZ(void*, irg->n_loc);
 
 	irg->loc_descriptions[n] = description;
 }

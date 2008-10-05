@@ -56,8 +56,6 @@
 # define NODE_NAME(n, m) (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
 # define CHECK_NAME(n, m) assert (0 == xmlStrcmp (n->name, (const xmlChar*) #m))
 
-# define NEW(T)     (T*)xmalloc(sizeof (T))
-
 
 #define VERBOSE_PRINTING 0
 
@@ -309,7 +307,7 @@ parseArg (xmlDocPtr doc, xmlNodePtr argelm)
 
   typeid = getNodeTypeStr (argelm);
 
-  arg = NEW (eff_t);
+  arg = XMALLOC(eff_t);
   arg -> kind = eff_arg;
   arg -> id = new_id_from_str(id);
   arg -> effect.arg.num = num;
@@ -331,7 +329,7 @@ parseValref (xmlDocPtr doc, xmlNodePtr valelm)
   ref_id = getNodeRefId (valelm);
   VERBOSE_PRINT ((stdout, "val->refid = \"%s\"\n", ref_id));
 
-  valref = NEW (eff_t);
+  valref = XMALLOC(eff_t);
   valref->kind = eff_valref;
   valref-> id = new_id_from_str(ref_id);
 
@@ -345,7 +343,7 @@ parseSelect (xmlDocPtr doc, xmlNodePtr selelm)
   entity_t *ent;
   xmlNodePtr child;
   eff_t *valref = NULL;
-  eff_t *sel = NEW (eff_t);
+  eff_t *sel = XMALLOC(eff_t);
   sel->kind = eff_select;
 
   CHECK_NAME (selelm, select);
@@ -377,7 +375,7 @@ parseLoad (xmlDocPtr doc, xmlNodePtr loadelm)
   ident *id;
   xmlNodePtr child;
   eff_t *sel;
-  eff_t *load = NEW (eff_t);
+  eff_t *load = XMALLOC(eff_t);
   load->kind = eff_load;
 
   CHECK_NAME (loadelm, load);
@@ -410,7 +408,7 @@ parseStore (xmlDocPtr doc, xmlNodePtr storeelm)
   xmlNodePtr child;
   eff_t *sel;
   eff_t *valref;
-  eff_t *store = NEW (eff_t);
+  eff_t *store = XMALLOC(eff_t);
   store->kind = eff_store;
 
   CHECK_NAME (storeelm, store);
@@ -443,7 +441,7 @@ parseAlloc (xmlDocPtr doc, xmlNodePtr allocelm)
 {
   ident *id;
   ident *type_id;
-  eff_t *alloc = NEW (eff_t); /* ...! */
+  eff_t *alloc = XMALLOC(eff_t); /* ...! */
   alloc->kind = eff_alloc;
   (void) doc;
 
@@ -468,7 +466,7 @@ parseCall (xmlDocPtr doc, xmlNodePtr callelm)
   eff_t *sel;
   xmlNodePtr arg;
   int n_args;
-  eff_t *call = NEW (eff_t);
+  eff_t *call = XMALLOC(eff_t);
   call->kind = eff_call;
 
   CHECK_NAME (callelm, call);
@@ -502,7 +500,7 @@ parseCall (xmlDocPtr doc, xmlNodePtr callelm)
   free (sel);
 
   if (0 != n_args) {
-    ident **args = (ident**) xmalloc(n_args * sizeof(ident*));
+    ident **args = XMALLOCN(ident*, n_args);
     int i = 0;
 
     while (NULL != arg) {
@@ -526,7 +524,7 @@ parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
   ident **ins;
   int i;
   xmlNodePtr child;
-  eff_t *join = NEW (eff_t);
+  eff_t *join = XMALLOC(eff_t);
   join->kind = eff_join;
 
   CHECK_NAME (joinelm, join);
@@ -542,7 +540,7 @@ parseJoin (xmlDocPtr doc, xmlNodePtr joinelm)
     child = child->next;
   }
 
-  ins = (ident **) xmalloc (n_ins * sizeof (ident *) );
+  ins = XMALLOCN(ident*, n_ins);
   i = 0;
   child = get_valid_child(joinelm);
 
@@ -564,7 +562,7 @@ static eff_t*
 parseUnknown (xmlDocPtr doc, xmlNodePtr unknownelm)
 {
   ident *id;
-  eff_t *unknown = NEW (eff_t);
+  eff_t *unknown = XMALLOC(eff_t);
   unknown->kind = eff_unknown;
   (void) doc;
 
@@ -580,7 +578,7 @@ static eff_t*
 parseReturn (xmlDocPtr doc, xmlNodePtr retelm)
 {
   xmlNodePtr child;
-  eff_t *ret = NEW (eff_t);
+  eff_t *ret = XMALLOC(eff_t);
   ret->kind = eff_ret;
 
   CHECK_NAME (retelm, ret);
@@ -605,7 +603,7 @@ parseRaise (xmlDocPtr doc, xmlNodePtr raiseelm)
   const char *tp_id;
   eff_t *valref;
   xmlNodePtr child;
-  eff_t *raise = NEW (eff_t);
+  eff_t *raise = XMALLOC(eff_t);
   raise->kind = eff_raise;
 
   CHECK_NAME (raiseelm, raise);
@@ -639,7 +637,7 @@ parseType (xmlDocPtr doc, xmlNodePtr typeelm)
   VERBOSE_PRINT ((stdout, "type = \"%s\"\n", getNodeTypeStr (typeelm)));
   (void) doc;
 
-  type = (type_t*) xmalloc (sizeof (type_t));
+  type = XMALLOC(type_t);
   type -> type_ident = new_id_from_str(getNodeTypeStr (typeelm));
   type -> id         = new_id_from_str(tp_id);
 
@@ -651,7 +649,7 @@ parseType (xmlDocPtr doc, xmlNodePtr typeelm)
 static void
 parseEntity (xmlDocPtr doc, xmlNodePtr entelm)
 {
-  entity_t *ent = NEW (entity_t);
+  entity_t *ent = XMALLOC(entity_t);
   (void) doc;
 
   /* parse it */
@@ -691,10 +689,10 @@ parseEffect (xmlDocPtr doc, xmlNodePtr effelm)
   }
   VERBOSE_PRINT ((stdout, "has %d effects\n", n_effs));
 
-  curr_effs = NEW (proc_t);
+  curr_effs = XMALLOC(proc_t);
   curr_effs -> proc_ident = new_id_from_str(procname);
   curr_effs -> ownerid = new_id_from_str(ownerid);
-  curr_effs->effs = (eff_t**) xmalloc (n_effs * sizeof (eff_t*));
+  curr_effs->effs = XMALLOCN(eff_t*, n_effs);
 
   cur = effelm -> xmlChildrenNode;
   while (NULL != cur) {
@@ -791,7 +789,7 @@ int read_extern (const char *filename)
     cur = cur->next;
   }
 
-  module = NEW(module_t);
+  module = XMALLOC(module_t);
   module -> id = mod_id;
   module -> types = types;
   module -> entities = entities;
@@ -1313,7 +1311,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
 
   c_block   = new_immBlock ();  /* for the Phi after the branch(es) */
 
-  ins = (ir_node**) xmalloc (n_ins * sizeof (ir_node*));
+  ins = XMALLOCN(ir_node*, n_ins);
   for (i = 0; i < n_ins; i ++) {
     ir_node *projX   = NULL;
     ir_node *s_block = NULL;

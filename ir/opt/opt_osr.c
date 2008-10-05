@@ -52,7 +52,6 @@
 #include "irloop_t.h"
 #include "array.h"
 #include "firmstat.h"
-#include "xmalloc.h"
 #include "error.h"
 
 /** The debug handle. */

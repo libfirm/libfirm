@@ -46,8 +46,8 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 {
 	int i, j, row, col, col2, biggest_r = 0, biggest_c = 0, t;
 	double big, temp, sum;
-	double *scramvec = xmalloc(nsize * sizeof(*scramvec));
-	int *x = xmalloc(nsize * sizeof(*x));
+	double *scramvec = XMALLOCN(double, nsize);
+	int    *x        = XMALLOCN(int,    nsize);
 	int res = 0;
 
 #define _A(row,col) A[(row)*nsize + (col)]

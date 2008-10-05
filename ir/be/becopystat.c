@@ -31,7 +31,6 @@
 #include <string.h>
 
 #include "timing.h"
-#include "xmalloc.h"
 #include "irgraph.h"
 #include "irgwalk.h"
 #include "irprog.h"

@@ -235,10 +235,7 @@ new_ir_op(unsigned code, const char *name, op_pin_state p,
           unsigned flags, op_arity opar, int op_index, size_t attr_size,
           const ir_op_ops *ops)
 {
-	ir_op *res;
-
-	res = (ir_op *)xmalloc(sizeof(*res));
-	memset(res, 0, sizeof(*res));
+	ir_op *res = XMALLOCZ(ir_op);
 
 	res->code      = code;
 	res->name      = new_id_from_chars(name, strlen(name));

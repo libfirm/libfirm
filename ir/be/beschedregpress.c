@@ -176,7 +176,7 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 
 static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const be_irg_t *birg)
 {
-	reg_pressure_main_env_t *main_env = xmalloc(sizeof(main_env[0]));
+	reg_pressure_main_env_t *main_env = XMALLOC(reg_pressure_main_env_t);
 
 	main_env->arch_env = be_get_birg_arch_env(birg);
 	main_env->vtab     = vtab;
@@ -198,7 +198,7 @@ static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
 	ir_node *irn;
-	reg_pressure_selector_env_t *env  = xmalloc(sizeof(env[0]));
+	reg_pressure_selector_env_t *env = XMALLOC(reg_pressure_selector_env_t);
 
 	obstack_init(&env->obst);
 	ir_nodeset_init(&env->already_scheduled);

@@ -264,7 +264,7 @@ typedef struct
  */
 static void *ppc32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
 {
-	ppc32_abi_env *env = xmalloc(sizeof(ppc32_abi_env));
+	ppc32_abi_env *env = XMALLOC(ppc32_abi_env);
 	(void) aenv;
 
 	env->call = call;
@@ -606,7 +606,7 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
  */
 static void *ppc32_cg_init(be_irg_t *birg) {
 	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env;
-	ppc32_code_gen_t *cg  = xmalloc(sizeof(*cg));
+	ppc32_code_gen_t *cg  = XMALLOC(ppc32_code_gen_t);
 
 	cg->impl      = &ppc32_code_gen_if;
 	cg->irg       = birg->irg;
@@ -679,7 +679,7 @@ static arch_env_t *ppc32_init(FILE *file_handle) {
 	if (inited)
 		return NULL;
 
-	isa = xmalloc(sizeof(*isa));
+	isa = XMALLOC(ppc32_isa_t);
 	memcpy(isa, &ppc32_isa_template, sizeof(*isa));
 
 	be_emit_init(file_handle);

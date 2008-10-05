@@ -69,10 +69,9 @@ typedef struct {
   ir_node * except, * except_mem; /* EndExcept and Mem for exception return */
 } irg_data_t;
 
-static irg_data_t * irg_data_create(void) {
-  irg_data_t *data = xmalloc(sizeof(*data));
-  memset(data, 0, sizeof(*data)); /* init */
-  return data;
+static irg_data_t * irg_data_create(void)
+{
+  return XMALLOCZ(irg_data_t);
 }
 
 /** Count the number of callers of each method and mark open methods.

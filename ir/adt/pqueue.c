@@ -99,7 +99,7 @@ static void pqueue_sift_up(pqueue_t *q, unsigned pos) {
 }
 
 pqueue_t *new_pqueue(void) {
-	pqueue_t *res = xmalloc(sizeof(*res));
+	pqueue_t *res = XMALLOC(pqueue_t);
 	res->elems = NEW_ARR_F(pqueue_el_t, 0);
 	return res;
 }

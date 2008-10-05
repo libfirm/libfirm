@@ -632,7 +632,7 @@ static ir_entity **get_free_methods(int *length)
 
 	/* Finally, transform the set into an array. */
 	*length = eset_count(free_set);
-	arr = xmalloc(sizeof(ir_entity *) * (*length));
+	arr = XMALLOCN(ir_entity*, *length);
 	for (i = 0, ent = eset_first(free_set); ent; ent = eset_next(free_set)) {
 		arr[i++] = ent;
 	}
