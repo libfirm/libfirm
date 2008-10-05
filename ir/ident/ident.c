@@ -40,6 +40,7 @@
 
 #include "ident_t.h"
 #include "set.h"
+#include "xmalloc.h"
 
 /* for debugging only, not the real implementation */
 struct _ident {
