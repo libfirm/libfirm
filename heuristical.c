@@ -370,7 +370,6 @@ void applyRI(pbqp *pbqp)
 		normalize_towards_target(pbqp, edge);
 	} else {
 		pbqp_matrix_add_to_all_rows(mat, node->costs);
-		dump_edge(pbqp, edge);
 		normalize_towards_source(pbqp, edge);
 	}
 	disconnect_edge(other_node, edge);
