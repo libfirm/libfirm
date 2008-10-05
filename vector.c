@@ -128,6 +128,28 @@ void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index)
 	}
 }
 
+num vector_get_min(vector *vec)
+{
+	unsigned index;
+	unsigned len;
+	num      min = INF_COSTS;
+
+	assert(vec);
+
+	len = vec->len;
+	assert(len > 0);
+
+	for (index = 0; index < len; ++index) {
+		num elem = vec->entries[index].data;
+
+		if (elem < min) {
+			min = elem;
+		}
+	}
+
+	return min;
+}
+
 unsigned vector_get_min_index(vector *vec)
 {
 	unsigned index;

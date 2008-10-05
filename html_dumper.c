@@ -146,7 +146,7 @@ void pbqp_dump_graph(pbqp *pbqp)
 	fputs("<p>\n<graph>\n\tgraph input {\n", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node *node = get_node(pbqp, src_index);
-		if (node) {
+		if (node && !node_is_reduced(node)) {
 			fprintf(pbqp->dump_file, "\t n%d;\n", src_index);
 		}
 	}
@@ -157,10 +157,17 @@ void pbqp_dump_graph(pbqp *pbqp)
 		if (!node)
 			continue;
 
+		if (node_is_reduced(node))
+			continue;
+
 		unsigned len = ARR_LEN(node->edges);
 		unsigned edge_index;
 		for (edge_index = 0; edge_index < len; ++edge_index) {
-			unsigned tgt_index = node->edges[edge_index]->tgt->index;
+			pbqp_node *tgt_node = node->edges[edge_index]->tgt;
+			unsigned tgt_index = tgt_node->index;
+
+			if (node_is_reduced(tgt_node))
+				continue;
 
 			if (src_index < tgt_index) {
 				fprintf(pbqp->dump_file, "\t n%d -- n%d;\n", src_index,

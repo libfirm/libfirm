@@ -14,7 +14,8 @@
 
 static pbqp_edge **edge_bucket;
 static pbqp_node **node_buckets[4];
-static pbqp_node **reduced_bucket;
+static pbqp_node **reduced_bucket = NULL;
+static int         buckets_filled = 0;
 
 static void init_buckets(void)
 {
@@ -53,6 +54,8 @@ static void fill_node_buckets(pbqp *pbqp)
 
 		ARR_APP1(pbqp_node *, node_buckets[arity], node);
 	}
+
+	buckets_filled = 1;
 }
 
 static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
@@ -144,6 +147,45 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 	}
 }
 
+static void reorder_node(pbqp_node *node)
+{
+	unsigned arity;
+	unsigned old_arity;
+	unsigned old_bucket_len;
+
+	if (!buckets_filled) return;
+
+	assert(node);
+
+	arity = ARR_LEN(node->edges);
+
+	/* Equal bucket as before */
+	if (arity > 2) return;
+
+	/* Assume node lost one incident edge. */
+	old_arity = arity + 1;
+
+	if (ARR_LEN(node_buckets[old_arity]) <= (int)node->bucket_index
+			|| node_buckets[old_arity][node->bucket_index] != node) {
+		/* Old arity is new arity, so we have nothing to do. */
+		return;
+	}
+
+	old_bucket_len = ARR_LEN(node_buckets[old_arity]);
+	assert (node_buckets[old_arity][node->bucket_index] == node);
+
+	/* Delete node from old bucket... */
+	node_buckets[old_arity][old_bucket_len - 1]->bucket_index
+			= node->bucket_index;
+	node_buckets[old_arity][node->bucket_index]
+			= node_buckets[old_arity][old_bucket_len - 1];
+	ARR_SHRINKLEN(node_buckets[old_arity], (int)old_bucket_len - 1);
+
+	/* ..and add to new one. */
+	node->bucket_index = ARR_LEN(node_buckets[arity]);
+	ARR_APP1(pbqp_node *, node_buckets[arity], node);
+}
+
 static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
@@ -199,43 +241,10 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 			fputs("edge has been eliminated", pbqp->dump_file);
 
 			delete_edge(edge);
+			reorder_node(src_node);
+			reorder_node(tgt_node);
 		}
 	}
-}
-
-static void reorder_node(pbqp_node *node)
-{
-	unsigned arity;
-	unsigned old_arity;
-	unsigned old_bucket_len;
-
-	assert(node);
-
-	arity = ARR_LEN(node->edges);
-
-	/* Equal bucket as before */
-	if (arity > 2) return;
-
-	/* Assume node lost one incident edge. */
-	old_arity = arity + 1;
-
-	if (ARR_LEN(node_buckets[old_arity]) <= (int)node->bucket_index
-			|| node_buckets[old_arity][node->bucket_index] != node) {
-		/* Old arity is new arity, so we have nothing to do. */
-		return;
-	}
-
-	old_bucket_len = ARR_LEN(node_buckets[old_arity]);
-	assert (node_buckets[old_arity][node->bucket_index] == node);
-
-	/* Delete node from old bucket... */
-	node_buckets[old_arity][node->bucket_index]
-			= node_buckets[old_arity][old_bucket_len - 1];
-	ARR_SHRINKLEN(node_buckets[old_arity], (int)old_bucket_len - 1);
-
-	/* ..and add to new one. */
-	node->bucket_index = ARR_LEN(node_buckets[arity]);
-	ARR_APP1(pbqp_node *, node_buckets[arity], node);
 }
 
 void solve_pbqp_heuristical(pbqp *pbqp)
@@ -384,7 +393,113 @@ void applyRI(pbqp *pbqp)
 	reorder_node(other_node);
 
 	/* ...and add it to back propagation list. */
+	node->bucket_index = ARR_LEN(reduced_bucket);
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
+}
+
+void applyRII(pbqp *pbqp)
+{
+	pbqp_node  **bucket     = node_buckets[1];
+	unsigned     bucket_len = ARR_LEN(bucket);
+	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_edge   *src_edge   = node->edges[0];
+	pbqp_edge   *tgt_edge   = node->edges[1];
+	int          src_is_src = src_edge->src == node;
+	int          tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix *src_mat;
+	pbqp_matrix *tgt_mat;
+	pbqp_node   *src_node;
+	pbqp_node   *tgt_node;
+	pbqp_matrix *mat;
+	vector      *vec;
+	vector      *node_vec;
+	vector      *src_vec;
+	vector      *tgt_vec;
+	unsigned     col_index;
+	unsigned     col_len;
+	unsigned     row_index;
+	unsigned     row_len;
+	unsigned     node_len;
+
+	if (src_is_src) {
+		src_node = src_edge->tgt;
+	} else {
+		src_node = src_edge->src;
+	}
+
+	if (tgt_is_src) {
+		tgt_node = tgt_edge->tgt;
+	} else {
+		tgt_node = tgt_edge->src;
+	}
+
+	/* Swap nodes if necessary. */
+	if (tgt_node->index < src_node->index) {
+		pbqp_node *tmp_node;
+		pbqp_edge *tmp_edge;
+
+		tmp_node = src_node;
+		src_node = tgt_node;
+		tgt_node = tmp_node;
+
+		tmp_edge = src_edge;
+		src_edge = tgt_edge;
+		tgt_edge = tmp_edge;
+
+		src_is_src = src_edge->src == node;
+		tgt_is_src = tgt_edge->src == node;
+	}
+
+	src_mat = src_edge->costs;
+	tgt_mat = tgt_edge->costs;
+
+	src_vec  = src_node->costs;
+	tgt_vec  = tgt_node->costs;
+	node_vec = node->costs;
+
+	row_len  = ARR_LEN(src_vec);
+	col_len  = ARR_LEN(tgt_vec);
+	node_len = ARR_LEN(node_vec);
+
+	mat = pbqp_matrix_alloc(pbqp, row_len, col_len);
+
+	for (row_index = 0; row_index < row_len; ++row_index) {
+		for (col_index = 0; col_index < col_len; ++col_index) {
+			vec = vector_copy(pbqp, node_vec);
+
+			if (src_is_src) {
+				vector_add_matrix_col(vec, src_mat, row_index);
+			} else {
+				vector_add_matrix_row(vec, src_mat, row_index);
+			}
+
+			if (tgt_is_src) {
+				vector_add_matrix_col(vec, tgt_mat, col_index);
+			} else {
+				vector_add_matrix_row(vec, tgt_mat, col_index);
+			}
+
+			mat->entries[row_index * col_len + col_index] = vector_get_min_index(vec);
+		}
+	}
+
+	pbqp_edge *edge = get_edge(pbqp, src_node->index, tgt_node->index);
+
+	if (edge == NULL) {
+		edge = alloc_edge(pbqp, src_node->index, tgt_node->index, mat);
+	} else {
+		pbqp_matrix_add(edge->costs, mat);
+
+		/* Free local matrix. */
+		obstack_free(&pbqp->obstack, mat);
+	}
+
+	/* Disconnect node. */
+	disconnect_edge(src_node, src_edge);
+	disconnect_edge(tgt_node, tgt_edge);
+
+	/* Edge has changed so we simplify it. */
+	simplify_edge(pbqp, edge);
 }
 
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
@@ -417,4 +532,17 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
+}
+
+int node_is_reduced(pbqp_node *node)
+{
+	if (!reduced_bucket) return 0;
+
+	assert(node);
+	if (ARR_LEN(node->edges) == 0) return 1;
+
+	unsigned bucket_length = ARR_LEN(reduced_bucket);
+	unsigned bucket_index  = node->bucket_index;
+
+	return bucket_index < bucket_length && reduced_bucket[bucket_index] == node;
 }
