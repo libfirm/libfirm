@@ -208,18 +208,25 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 	DBG_OPT_SUB2NEGADD(irn, res);
 }
 
-static INLINE int need_constraint_copy(ir_node *irn) {
-	/* the 3 operand form of IMul needs no constraint copy */
-	if(is_ia32_IMul(irn)) {
-		ir_node *right = get_irn_n(irn, n_ia32_IMul_right);
-		if(is_ia32_Immediate(right))
-			return 0;
-	}
+static INLINE int need_constraint_copy(ir_node *irn)
+{
+	/* TODO this should be determined from the node specification */
+	switch (get_ia32_irn_opcode(irn)) {
+		case iro_ia32_IMul: {
+			/* the 3 operand form of IMul needs no constraint copy */
+			ir_node *right = get_irn_n(irn, n_ia32_IMul_right);
+			return !is_ia32_Immediate(right);
+		}
 
-	return	! is_ia32_Lea(irn)      &&
-		! is_ia32_Conv_I2I(irn)     &&
-		! is_ia32_Conv_I2I8Bit(irn) &&
-		! is_ia32_CMov(irn);
+		case iro_ia32_Lea:
+		case iro_ia32_Conv_I2I:
+		case iro_ia32_Conv_I2I8Bit:
+		case iro_ia32_CMov:
+			return 0;
+
+		default:
+			return 1;
+	}
 }
 
 /**
