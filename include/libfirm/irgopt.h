@@ -39,20 +39,22 @@ void local_optimize_node(ir_node *n);
  * @param irg  The graph to be optimized.
  *
  * After applying local_optimize_graph() to a IR-graph, Bad nodes
- * only occure as predecessor of Block and Phi nodes.
+ * only occur as predecessor of Block and Phi nodes.
  */
 void local_optimize_graph(ir_graph *irg);
 
 /** Applies local optimizations (see iropt.h) to all nodes in the graph.
  *
+ * After applying optimize_graph_df() to a IR-graph, Bad nodes
+ * only occur as predecessor of Block and Phi nodes.
+ *
+ * This version uses fixpoint iteration.
+ *
  * @param irg  The graph to be optimized.
  *
- * After applying local_optimize_graph() to a IR-graph, Bad nodes
- * only occure as predecessor of Block and Phi nodes.
- *
- * This version used a fixpoint iteration.
+ * @return non-zero if the optimization could be applied, 0 else
  */
-void optimize_graph_df(ir_graph *irg);
+int optimize_graph_df(ir_graph *irg);
 
 /** Performs dead node elimination by copying the ir graph to a new obstack.
  *

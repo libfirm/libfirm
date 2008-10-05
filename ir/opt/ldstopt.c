@@ -2211,7 +2211,7 @@ static int optimize_loops(ir_graph *irg) {
 /*
  * do the load store optimization
  */
-void optimize_load_store(ir_graph *irg) {
+int optimize_load_store(ir_graph *irg) {
 	walk_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
@@ -2258,4 +2258,5 @@ void optimize_load_store(ir_graph *irg) {
 		have Bad() predecessors. */
 		set_irg_doms_inconsistent(irg);
 	}
+	return (int) env.changes;
 }  /* optimize_load_store */

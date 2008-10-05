@@ -63,8 +63,10 @@ void opt_bool(ir_graph *irg);
  * Try to reduce the number of conv nodes in the given ir graph.
  *
  * @param irg  the graph
+ *
+ * @return non-zero if the optimization could be applied, 0 else
  */
-void conv_opt(ir_graph *irg);
+int conv_opt(ir_graph *irg);
 
 /**
  * Do the scalar replacement optimization.
@@ -235,8 +237,10 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
  *
  * Store after Load: A Store after a Load is removed, if the
  *   Store doesn't have an exception handler.
+ *
+ * @return non-zero if the optimization could be applied, 0 else
  */
-void optimize_load_store(ir_graph *irg);
+int optimize_load_store(ir_graph *irg);
 
 /**
  * Do Loop unrolling in the given graph.
@@ -372,9 +376,9 @@ void proc_cloning(float threshold);
  * See Muchnik 12.3.1 Algebraic Simplification and Reassociation of
  * Addressing Expressions.
  *
- *
+ * @return non-zero if the optimization could be applied, 0 else
  */
-void optimize_reassociation(ir_graph *irg);
+int optimize_reassociation(ir_graph *irg);
 
 /**
  * Normalize the Returns of a graph by creating a new End block

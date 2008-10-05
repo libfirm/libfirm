@@ -166,11 +166,11 @@ static void opt_walker(ir_node *n, void *env) {
 }
 
 /* Applies local optimizations to all nodes in the graph until fixpoint. */
-void optimize_graph_df(ir_graph *irg) {
+int optimize_graph_df(ir_graph *irg) {
 	pdeq     *waitq = new_pdeq();
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;
-	int      i, state, n_ka;
+	int      i, state, n_ka, changed;
 
 	current_ir_graph = irg;
 
@@ -220,6 +220,10 @@ void optimize_graph_df(ir_graph *irg) {
 	set_irg_visited(current_ir_graph, get_irg_visited(irg) - 1);
 	irg_walk(get_irg_end(irg), NULL, opt_walker, waitq);
 
+	/* any optimized nodes are stored in the wait queue,
+	 * so if it's not empty, the graph has been changed */
+	changed = !pdeq_empty(waitq);
+
 	/* finish the wait queue */
 	while (! pdeq_empty(waitq)) {
 		ir_node *n = pdeq_getl(waitq);
@@ -235,4 +239,5 @@ void optimize_graph_df(ir_graph *irg) {
 		edges_deactivate(irg);
 
 	current_ir_graph = rem;
+	return changed;
 }

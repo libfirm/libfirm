@@ -274,7 +274,7 @@ void conv_opt_walker(ir_node *node, void *data)
 	}
 }
 
-void conv_opt(ir_graph *irg)
+int conv_opt(ir_graph *irg)
 {
 	char invalidate = 0;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
@@ -292,4 +292,5 @@ void conv_opt(ir_graph *irg)
 	if (invalidate) {
 		set_irg_outs_inconsistent(irg);
 	}
+	return invalidate;
 }

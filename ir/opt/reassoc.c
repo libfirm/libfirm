@@ -872,7 +872,7 @@ static void reverse_rules(ir_node *node, void *env) {
 /*
  * do the reassociation
  */
-void optimize_reassociation(ir_graph *irg)
+int optimize_reassociation(ir_graph *irg)
 {
 	walker_t env;
 	irg_loopinfo_state state;
@@ -931,6 +931,7 @@ void optimize_reassociation(ir_graph *irg)
 
 	del_waitq(env.wq);
 	current_ir_graph = rem;
+	return env.changes;
 }  /* optimize_reassociation */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
