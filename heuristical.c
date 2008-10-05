@@ -69,8 +69,8 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 	assert(pbqp);
 	assert(edge);
 
-	src_node = get_node(pbqp, edge->src);
-	tgt_node = get_node(pbqp, edge->tgt);
+	src_node = edge->src;
+	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
 
@@ -114,8 +114,8 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 	assert(pbqp);
 	assert(edge);
 
-	src_node = get_node(pbqp, edge->src);
-	tgt_node = get_node(pbqp, edge->tgt);
+	src_node = edge->src;
+	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
 
@@ -157,16 +157,16 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	assert(pbqp);
 	assert(edge);
 
-	if(pbqp->dump_file) {
-		char txt[100];
-		sprintf(txt, "Simplification of Edge n%d-n%d", edge->src, edge->tgt);
-		dump_section(pbqp->dump_file, 3, txt);
-	}
-
-	src_node = get_node(pbqp, edge->src);
-	tgt_node = get_node(pbqp, edge->tgt);
+	src_node = edge->src;
+	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
+
+	if(pbqp->dump_file) {
+		char txt[100];
+		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
+		dump_section(pbqp->dump_file, 3, txt);
+	}
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
@@ -198,7 +198,7 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 		if (pbqp->dump_file) {
 			fputs("edge has been eliminated", pbqp->dump_file);
 
-			delete_edge(pbqp, edge);
+			delete_edge(edge);
 		}
 	}
 }
@@ -270,7 +270,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 			pbqp_edge *edge = edges[edge_index];
 
 			/* Simplify only once per edge. */
-			if (node_index != edge->src) continue;
+			if (node_index != edge->src->index) continue;
 
 			simplify_edge(pbqp, edge);
 		}
@@ -308,7 +308,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		pbqp->solution += node->costs->entries[node->solution].data;
 		if (pbqp->dump_file) {
 			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
-			dump_node(pbqp, node->index);
+			dump_node(pbqp, node);
 		}
 	}
 
@@ -345,50 +345,44 @@ void applyRI(pbqp *pbqp)
 	pbqp_node   *node       = bucket[bucket_len - 1];
 	pbqp_edge   *edge       = node->edges[0];
 	pbqp_matrix *mat        = edge->costs;
-	int          is_src     = get_node(pbqp, edge->src) == node;
-	unsigned my_index;
-	unsigned other_index;
+	int          is_src     = edge->src == node;
+	pbqp_node   *other_node;
 
 	if (is_src) {
-		my_index    = edge->src;
-		other_index = edge->tgt;
+		other_node = edge->tgt;
 	} else {
-		my_index    = edge->tgt;
-		other_index = edge->src;
+		other_node = edge->src;
 	}
 
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RI-Reduktion of Node n%d", my_index);
+		sprintf(txt, "RI-Reduktion of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp, my_index);
-		dump_node(pbqp, other_index);
+		dump_node(pbqp, node);
+		dump_node(pbqp, other_node);
 		dump_edge(pbqp, edge);
 	}
 
 	if (is_src) {
-		pbqp_node *tgt_node = get_node(pbqp, edge->tgt);
 		pbqp_matrix_add_to_all_cols(mat, node->costs);
 		normalize_towards_target(pbqp, edge);
-		disconnect_edge(tgt_node, edge);
 	} else {
-		pbqp_node *src_node = get_node(pbqp, edge->src);
 		pbqp_matrix_add_to_all_rows(mat, node->costs);
 		dump_edge(pbqp, edge);
 		normalize_towards_source(pbqp, edge);
-		disconnect_edge(src_node, edge);
 	}
+	disconnect_edge(other_node, edge);
 
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp, other_index);
+		dump_node(pbqp, other_node);
 	}
 
 	/* Remove node from bucket... */
 	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
-	reorder_node(get_node(pbqp, other_index));
+	reorder_node(other_node);
 
 	/* ...and add it to back propagation list. */
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
@@ -407,15 +401,15 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 
 	edge = node->edges[0];
 	mat = edge->costs;
-	is_src = get_node(pbqp, edge->src) == node;
+	is_src = edge->src == node;
 	vec = node->costs;
 
 	if (is_src) {
-		other = get_node(pbqp, edge->tgt);
+		other = edge->tgt;
 		assert(other);
 		vector_add_matrix_col(vec, mat, other->solution);
 	} else {
-		other = get_node(pbqp, edge->src);
+		other = edge->src;
 		assert(other);
 		vector_add_matrix_row(vec, mat, other->solution);
 	}

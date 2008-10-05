@@ -41,22 +41,22 @@ pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *cos
 	 * that it don't appear in the edge lists of the nodes.
 	 */
 	ARR_APP1(pbqp_edge *, src_node->edges, edge);
-	edge->src = src_index;
+	edge->src = src_node;
 	ARR_APP1(pbqp_edge *, tgt_node->edges, edge);
-	edge->tgt = tgt_index;
+	edge->tgt = tgt_node;
 
 	return edge;
 }
 
-void delete_edge(pbqp *pbqp, pbqp_edge *edge)
+void delete_edge(pbqp_edge *edge)
 {
 	pbqp_node  *src_node;
 	pbqp_node  *tgt_node;
 
 	assert(edge);
 
-	src_node = get_node(pbqp, edge->src);
-	tgt_node = get_node(pbqp, edge->tgt);
+	src_node = edge->src;
+	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
 

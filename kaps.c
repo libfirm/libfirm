@@ -30,7 +30,7 @@ pbqp_edge *get_edge(pbqp *pbqp, unsigned src_index, unsigned tgt_index)
 
 	for (i = 0; i < len; ++i) {
 		pbqp_edge *cur_edge = src_node->edges[i];
-		if (cur_edge->tgt == tgt_index) {
+		if (cur_edge->tgt->index == tgt_index) {
 			return cur_edge;
 		}
 	}

@@ -70,7 +70,7 @@ void dump_edge(pbqp *pbqp, pbqp_edge *edge)
 {
 	fputs("<tex>\n", pbqp->dump_file);
 	fprintf(pbqp->dump_file, "\t\\overline\n{C}_{%d,%d}=\n",
-			edge->src, edge->tgt);
+			edge->src->index, edge->tgt->index);
 	dump_matrix(pbqp->dump_file, edge->costs);
 	fputs("</tex><br>", pbqp->dump_file);
 }
@@ -93,7 +93,7 @@ static void dump_edge_costs(pbqp *pbqp)
 		unsigned len = ARR_LEN(src_node->edges);
 		for (edge_index = 0; edge_index < len; ++edge_index) {
 			pbqp_edge *edge = src_node->edges[edge_index];
-			unsigned tgt_index = edge->tgt;
+			unsigned tgt_index = edge->tgt->index;
 			if (src_index < tgt_index) {
 				dump_edge(pbqp, edge);
 			}
@@ -102,14 +102,13 @@ static void dump_edge_costs(pbqp *pbqp)
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_node(pbqp *pbqp, unsigned index)
+void dump_node(pbqp *pbqp, pbqp_node *node)
 {
 	assert(pbqp);
 	assert(pbqp->dump_file);
 
-	pbqp_node *node = get_node(pbqp, index);
 	if (node) {
-		fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", index);
+		fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", node->index);
 		dump_vector(pbqp->dump_file, node->costs);
 		fputs("<br>\n", pbqp->dump_file);
 	}
@@ -125,7 +124,7 @@ static void dump_node_costs(pbqp *pbqp)
 	/* dump node costs */
 	fputs("<p>", pbqp->dump_file);
 	for (index = 0; index < pbqp->num_nodes; ++index) {
-		dump_node(pbqp, index);
+		dump_node(pbqp, get_node(pbqp, index));
 	}
 	fputs("</p>", pbqp->dump_file);
 }
@@ -161,7 +160,7 @@ void pbqp_dump_graph(pbqp *pbqp)
 		unsigned len = ARR_LEN(node->edges);
 		unsigned edge_index;
 		for (edge_index = 0; edge_index < len; ++edge_index) {
-			unsigned tgt_index = node->edges[edge_index]->tgt;
+			unsigned tgt_index = node->edges[edge_index]->tgt->index;
 
 			if (src_index < tgt_index) {
 				fprintf(pbqp->dump_file, "\t n%d -- n%d;\n", src_index,
