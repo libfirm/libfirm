@@ -46,8 +46,10 @@ pbqp *alloc_pbqp(unsigned number_nodes)
 
 	pbqp->solution = 0;
 	pbqp->num_nodes = number_nodes;
+	pbqp->dump_file = NULL;
 	pbqp->nodes = obstack_alloc(&pbqp->obstack, number_nodes
 			* sizeof(*pbqp->nodes));
+	memset(pbqp->nodes, 0, number_nodes * sizeof(*pbqp->nodes));
 
 	return pbqp;
 }
@@ -80,6 +82,14 @@ void add_edge_costs(pbqp *pbqp, unsigned src_index, unsigned tgt_index,
 	} else {
 		pbqp_matrix_add(edge->costs, costs);
 	}
+}
+
+num get_node_solution(pbqp *pbqp, unsigned node_index)
+{
+	pbqp_node *node = get_node(pbqp, node_index);
+	assert(node);
+
+	return node->solution;
 }
 
 num get_solution(pbqp *pbqp)

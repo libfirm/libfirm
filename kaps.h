@@ -26,6 +26,7 @@ void add_edge_costs(pbqp *pbqp, unsigned src_index, unsigned tgt_index, pbqp_mat
 pbqp_edge *get_edge(pbqp *pbqp, unsigned src_index, unsigned tgt_index);
 pbqp_node *get_node(pbqp *pbqp, unsigned index);
 
+num get_node_solution(pbqp *pbqp, unsigned node_index);
 num get_solution(pbqp *pbqp);
 
 void set_dumpfile(pbqp *pbqp, FILE *f);
