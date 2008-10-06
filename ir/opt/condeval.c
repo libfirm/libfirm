@@ -90,7 +90,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	irg = get_irn_irg(block);
 	assert(block != get_irg_start_block(irg));
 
-	/* a Blocks with only 1 predecessor need no Phi */
+	/* a Block with only 1 predecessor needs no Phi */
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	if(n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
@@ -732,5 +732,4 @@ void opt_cond_eval(ir_graph* irg)
 		 * to call optimize_df() an dead code. */
 		optimize_cf(irg);
 	}
-
 }
