@@ -253,7 +253,7 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 
 	if (pbqp_matrix_is_zero(mat, src_vec, tgt_vec)) {
 		if (pbqp->dump_file) {
-			fputs("edge has been eliminated", pbqp->dump_file);
+			fputs("edge has been eliminated<br>\n", pbqp->dump_file);
 		}
 
 		delete_edge(edge);
