@@ -3,6 +3,7 @@
 
 #include "pbqp_edge_t.h"
 #include "pbqp_node_t.h"
+#include "heuristical.h"
 #include "html_dumper.h"
 #include "kaps.h"
 #include "pbqp_t.h"

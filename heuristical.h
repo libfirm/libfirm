@@ -9,4 +9,6 @@ void applyRI(pbqp *pbqp);
 
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node);
 
+int node_is_reduced(pbqp_node *node);
+
 #endif /* KAPS_HEURISTICAL_H */
