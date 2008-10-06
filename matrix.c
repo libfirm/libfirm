@@ -65,7 +65,7 @@ void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand)
 	len = sum->rows * sum->cols;
 
 	for (i = 0; i < len; ++i) {
-		sum->entries[i] += summand->entries[i];
+		sum->entries[i] = pbqp_add(sum->entries[i], summand->entries[i]);
 	}
 }
 
@@ -217,10 +217,8 @@ void pbqp_matrix_add_to_all_cols(pbqp_matrix *mat, vector *vec)
 	for (row_index = 0; row_index < row_len; ++row_index) {
 		num value = vec->entries[row_index].data;
 		for (col_index = 0; col_index < col_len; ++col_index) {
-			if (mat->entries[row_index * col_len + col_index] == INF_COSTS)
-				continue;
-
-			mat->entries[row_index * col_len + col_index] += value;
+			mat->entries[row_index * col_len + col_index] = pbqp_add(
+					mat->entries[row_index * col_len + col_index], value);
 		}
 	}
 }
@@ -242,10 +240,8 @@ void pbqp_matrix_add_to_all_rows(pbqp_matrix *mat, vector *vec)
 	for (row_index = 0; row_index < row_len; ++row_index) {
 		for (col_index = 0; col_index < col_len; ++col_index) {
 			num value = vec->entries[col_index].data;
-			if (mat->entries[row_index * col_len + col_index] == INF_COSTS)
-				continue;
 
-			mat->entries[row_index * col_len + col_index] += value;
+			mat->entries[row_index * col_len + col_index] = pbqp_add(mat->entries[row_index * col_len + col_index], value);
 		}
 	}
 }

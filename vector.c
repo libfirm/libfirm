@@ -5,6 +5,13 @@
 #include "pbqp_t.h"
 #include "vector.h"
 
+num pbqp_add(num x, num y)
+{
+	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
+
+	return x + y;
+}
+
 vector *vector_alloc(pbqp *pbqp, unsigned length)
 {
 	assert(length > 0);
@@ -38,13 +45,8 @@ void vector_add(vector *sum, vector *summand)
 	len = sum->len;
 
 	for (i = 0; i < len; ++i) {
-		if (sum->entries[i].data == INF_COSTS) continue;
-
-		if (summand->entries[i].data == INF_COSTS) {
-			sum->entries[i].data = INF_COSTS;
-		} else {
-			sum->entries[i].data += summand->entries[i].data;
-		}
+		sum->entries[i].data = pbqp_add(sum->entries[i].data,
+				summand->entries[i].data);
 	}
 }
 
@@ -72,13 +74,7 @@ void vector_add_value(vector *vec, num value)
 	len = vec->len;
 
 	for (index = 0; index < len; ++index) {
-		if (vec->entries[index].data == INF_COSTS) continue;
-
-		if (value == INF_COSTS) {
-			vec->entries[index].data = INF_COSTS;
-		} else {
-			vec->entries[index].data += value;
-		}
+		vec->entries[index].data = pbqp_add(vec->entries[index].data, value);
 	}
 }
 
@@ -95,13 +91,7 @@ void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index)
 	len = vec->len;
 
 	for (index = 0; index < len; ++index) {
-		if (vec->entries[index].data == INF_COSTS) continue;
-
-		if (mat->entries[index * mat->cols + col_index] == INF_COSTS) {
-			vec->entries[index].data = INF_COSTS;
-		} else {
-			vec->entries[index].data += mat->entries[index * mat->cols + col_index];
-		}
+		vec->entries[index].data = pbqp_add(vec->entries[index].data, mat->entries[index * mat->cols + col_index]);
 	}
 }
 
@@ -118,13 +108,8 @@ void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index)
 	len = vec->len;
 
 	for (index = 0; index < len; ++index) {
-		if (vec->entries[index].data == INF_COSTS) continue;
-
-		if (mat->entries[row_index * mat->cols + index] == INF_COSTS) {
-			vec->entries[index].data = INF_COSTS;
-		} else {
-			vec->entries[index].data += mat->entries[row_index * mat->cols + index];
-		}
+		vec->entries[index].data = pbqp_add(vec->entries[index].data,
+				mat->entries[row_index * mat->cols + index]);
 	}
 }
 

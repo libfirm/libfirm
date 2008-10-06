@@ -17,13 +17,6 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
-static num add(num x, num y)
-{
-	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
-
-	return x + y;
-}
-
 static void init_buckets(void)
 {
 	int i;
@@ -103,7 +96,7 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
-			src_vec->entries[src_index].data = add(
+			src_vec->entries[src_index].data = pbqp_add(
 					src_vec->entries[src_index].data, min);
 
 			// TODO add to edge_list if inf
@@ -148,7 +141,7 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 		if (min != 0) {
 			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
-			tgt_vec->entries[tgt_index].data = add(
+			tgt_vec->entries[tgt_index].data = pbqp_add(
 					tgt_vec->entries[tgt_index].data, min);
 
 			// TODO add to edge_list if inf
@@ -309,7 +302,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		} else if (ARR_LEN(node_buckets[1]) > 0) {
 			applyRI(pbqp);
 		} else if (ARR_LEN(node_buckets[2]) > 0) {
-			panic("Please implement RII simplification");
+			applyRII(pbqp);
 		} else if (ARR_LEN(node_buckets[3]) > 0) {
 			panic("Please implement RN simplification");
 		} else {
@@ -329,7 +322,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		assert(node);
 
 		node->solution = vector_get_min_index(node->costs);
-		pbqp->solution = add(pbqp->solution,
+		pbqp->solution = pbqp_add(pbqp->solution,
 				node->costs->entries[node->solution].data);
 		if (pbqp->dump_file) {
 			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
@@ -415,7 +408,7 @@ void applyRI(pbqp *pbqp)
 
 void applyRII(pbqp *pbqp)
 {
-	pbqp_node  **bucket     = node_buckets[1];
+	pbqp_node  **bucket     = node_buckets[2];
 	unsigned     bucket_len = ARR_LEN(bucket);
 	pbqp_node   *node       = bucket[bucket_len - 1];
 	pbqp_edge   *src_edge   = node->edges[0];
@@ -436,6 +429,8 @@ void applyRII(pbqp *pbqp)
 	unsigned     row_index;
 	unsigned     row_len;
 	unsigned     node_len;
+
+	assert(pbqp);
 
 	if (src_is_src) {
 		src_node = src_edge->tgt;
@@ -466,6 +461,19 @@ void applyRII(pbqp *pbqp)
 		tgt_is_src = tgt_edge->src == node;
 	}
 
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RII-Reduktion of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
+		dump_node(pbqp, src_node);
+		dump_edge(pbqp, src_edge);
+		dump_node(pbqp, node);
+		dump_edge(pbqp, tgt_edge);
+		dump_node(pbqp, tgt_node);
+	}
+
 	src_mat = src_edge->costs;
 	tgt_mat = tgt_edge->costs;
 
@@ -473,9 +481,9 @@ void applyRII(pbqp *pbqp)
 	tgt_vec  = tgt_node->costs;
 	node_vec = node->costs;
 
-	row_len  = ARR_LEN(src_vec);
-	col_len  = ARR_LEN(tgt_vec);
-	node_len = ARR_LEN(node_vec);
+	row_len  = src_vec->len;
+	col_len  = tgt_vec->len;
+	node_len = node_vec->len;
 
 	mat = pbqp_matrix_alloc(pbqp, row_len, col_len);
 
@@ -495,11 +503,22 @@ void applyRII(pbqp *pbqp)
 				vector_add_matrix_row(vec, tgt_mat, col_index);
 			}
 
-			mat->entries[row_index * col_len + col_index] = vector_get_min_index(vec);
+			mat->entries[row_index * col_len + col_index] = vector_get_min(vec);
 		}
 	}
 
 	pbqp_edge *edge = get_edge(pbqp, src_node->index, tgt_node->index);
+
+	/* Disconnect node. */
+	disconnect_edge(src_node, src_edge);
+	disconnect_edge(tgt_node, tgt_edge);
+
+	/* Remove node from bucket... */
+	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
+
+	/* ...and add it to back propagation list. */
+	node->bucket_index = ARR_LEN(reduced_bucket);
+	ARR_APP1(pbqp_node *, reduced_bucket, node);
 
 	if (edge == NULL) {
 		edge = alloc_edge(pbqp, src_node->index, tgt_node->index, mat);
@@ -508,11 +527,15 @@ void applyRII(pbqp *pbqp)
 
 		/* Free local matrix. */
 		obstack_free(&pbqp->obstack, mat);
+
+		reorder_node(src_node);
+		reorder_node(tgt_node);
 	}
 
-	/* Disconnect node. */
-	disconnect_edge(src_node, src_edge);
-	disconnect_edge(tgt_node, tgt_edge);
+	if (pbqp->dump_file) {
+		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
+		dump_edge(pbqp, edge);
+	}
 
 	/* Edge has changed so we simplify it. */
 	simplify_edge(pbqp, edge);
