@@ -207,9 +207,7 @@ void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs) {
 
 	/* the end block needs a extbb assigned (even for endless loops) */
 	endblock = get_irg_end_block(irg);
-	if (! irn_visited(endblock)) {
-		create_extblk(endblock, &env);
-	}
+	create_extblk(endblock, &env);
 
 	/*
 		Ok, we have now the list of all extended blocks starting with env.head
