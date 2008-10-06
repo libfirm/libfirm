@@ -19,7 +19,9 @@ pbqp_edge *get_edge(pbqp *pbqp, unsigned src_index, unsigned tgt_index)
 	int len;
 
 	if (tgt_index < src_index) {
-		return get_edge(pbqp, tgt_index, src_index);
+		unsigned tmp = src_index;
+		src_index    = tgt_index;
+		tgt_index    = tmp;
 	}
 
 	pbqp_node *src_node = get_node(pbqp, src_index);
