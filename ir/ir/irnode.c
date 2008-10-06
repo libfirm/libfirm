@@ -457,10 +457,6 @@ void (mark_irn_visited)(ir_node *node) {
 	_mark_irn_visited(node);
 }
 
-int (irn_not_visited)(const ir_node *node) {
-	return _irn_not_visited(node);
-}
-
 int (irn_visited)(const ir_node *node) {
 	return _irn_visited(node);
 }

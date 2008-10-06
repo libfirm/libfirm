@@ -227,7 +227,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
       ir_node *pred = _get_walk_irn_n(env, node, i);
       ir_node *blk  = get_nodes_block(pred);
 
-      if (irn_not_visited(pred)) {
+      if (!irn_visited(pred)) {
         collect_walk(pred, env);
 
         /* control flow predecessors are always block inputs */
@@ -250,14 +250,14 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
   else {
     block = get_nodes_block(node);
 
-    if (irn_not_visited(block))
+    if (!irn_visited(block))
       collect_walk(block, env);
 
     is_phi = is_Phi(node);
     for (i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
       ir_node *pred = _get_walk_irn_n(env, node, i);
 
-      if (irn_not_visited(pred)) {
+      if (!irn_visited(pred)) {
         collect_walk(pred, env);
 
       /* BEWARE: predecessors of End nodes might be blocks */
@@ -302,7 +302,7 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
       if (is_no_Block(pred)) {
         ir_node *blk  = get_nodes_block(pred);
 
-        if (irn_not_visited(pred)) {
+        if (!irn_visited(pred)) {
           if (block != blk)
             continue;
           collect_blks_lists(pred, block, entry, env);

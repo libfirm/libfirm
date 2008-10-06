@@ -165,7 +165,7 @@ static void merge_blocks(ir_node *node, void *ctx) {
 		if (!is_Block_dead(b)) {
 			new_block = equivalent_node(b);
 
-			while (irn_not_visited(b) && (!is_Block_dead(new_block)) && (new_block != b)) {
+			while (!irn_visited(b) && !is_Block_dead(new_block) && new_block != b) {
 				/* We would have to run gigo() if new is bad, so we
 				   promote it directly below. Nevertheless, we sometimes reach a block
 				   the first time through a dataflow node.  In this case we optimized the
@@ -787,7 +787,7 @@ restart:
 	for (i = j = 0; i < n; i++) {
 		ir_node *ka = get_End_keepalive(end, i);
 
-		if (irn_not_visited(ka)) {
+		if (!irn_visited(ka)) {
 			if (is_Block(ka) && !Block_block_visited(ka)) {
 				/* irg_block_walk() will increase the block visited flag, but we must visit only
 				   these blocks that are not visited yet, so decrease it first. */

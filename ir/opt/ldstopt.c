@@ -2080,7 +2080,7 @@ static void dfs(ir_node *irn, loop_env *env)
 			ir_node *pred = get_irn_n(irn, i);
 			node_entry *o = get_irn_ne(pred, env);
 
-			if (irn_not_visited(pred)) {
+			if (!irn_visited(pred)) {
 				dfs(pred, env);
 				node->low = MIN(node->low, o->low);
 			}
@@ -2091,7 +2091,7 @@ static void dfs(ir_node *irn, loop_env *env)
 		ir_node *pred = get_fragile_op_mem(irn);
 		node_entry *o = get_irn_ne(pred, env);
 
-		if (irn_not_visited(pred)) {
+		if (!irn_visited(pred)) {
 			dfs(pred, env);
 			node->low = MIN(node->low, o->low);
 		}
@@ -2101,7 +2101,7 @@ static void dfs(ir_node *irn, loop_env *env)
 		ir_node *pred = get_Proj_pred(irn);
 		node_entry *o = get_irn_ne(pred, env);
 
-		if (irn_not_visited(pred)) {
+		if (!irn_visited(pred)) {
 			dfs(pred, env);
 			node->low = MIN(node->low, o->low);
 		}
@@ -2167,7 +2167,7 @@ static void do_dfs(ir_graph *irg, loop_env *env) {
 	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
-		if (is_Phi(ka) && irn_not_visited(ka))
+		if (is_Phi(ka) && !irn_visited(ka))
 			dfs(ka, env);
 	}
 	current_ir_graph = rem;

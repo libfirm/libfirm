@@ -545,7 +545,7 @@ typedef struct visitor_info_t {
 static void visitor(ir_node *irn, void *data) {
 	visitor_info_t *info = data;
 
-	if (irn_not_visited(irn)) {
+	if (!irn_visited(irn)) {
 		mark_irn_visited(irn);
 		info->visit(irn, info->data);
 	}

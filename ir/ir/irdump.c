@@ -1356,7 +1356,7 @@ static void dump_const_node_local(FILE *F, ir_node *n) {
 
 	for (i = 0; i < get_irn_arity(n); i++) {
 		ir_node *con = get_irn_n(n, i);
-		if (is_constlike_node(con) && irn_not_visited(con)) {
+		if (is_constlike_node(con) && !irn_visited(con)) {
 			int bad = 0;
 
 			mark_irn_visited(con);

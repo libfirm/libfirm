@@ -68,7 +68,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 	int i, irn_arity;
 
 	/* we must not run into an infinite loop */
-	assert(irn_not_visited(n));
+	assert(!irn_visited(n));
 	mark_irn_visited(n);
 
 	/* Place floating nodes. */
@@ -92,7 +92,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			ir_node *pred = get_irn_n(n, i);
 			ir_node *pred_block;
 
-			if ((irn_not_visited(pred))
+			if (!irn_visited(pred)
 			    && (get_irn_pinned(pred) == op_pin_state_floats)) {
 
 				/*
@@ -154,7 +154,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		 */
 		for (i = -1; i < irn_arity; ++i) {
 			ir_node *pred = get_irn_n(n, i);
-			if (irn_not_visited(pred))
+			if (!irn_visited(pred))
 				waitq_put(worklist, pred);
 		}
 	} else if (is_Block(n)) {
@@ -164,7 +164,7 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		 */
 		for (i = irn_arity - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(n, i);
-			if (irn_not_visited(pred))
+			if (!irn_visited(pred))
 				waitq_put(worklist, pred);
 		}
 	} else if (is_Phi(n)) {
@@ -177,13 +177,13 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		 * of the Phi-input if the Phi is not in a bad block.
 		 */
 		pred = get_nodes_block(n);
-		if (irn_not_visited(pred))
+		if (!irn_visited(pred))
 			waitq_put(worklist, pred);
 
 		for (i = irn_arity - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(n, i);
 
-			if (irn_not_visited(pred)) {
+			if (!irn_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
 					is_Block_unreachable(get_nodes_block(pred))) {
@@ -201,13 +201,13 @@ place_floats_early(ir_node *n, waitq *worklist) {
 		 * All other nodes: move nodes from dead blocks into the same block.
 		 */
 		pred = get_nodes_block(n);
-		if (irn_not_visited(pred))
+		if (!irn_visited(pred))
 			waitq_put(worklist, pred);
 
 		for (i = irn_arity - 1; i >= 0; --i) {
 			ir_node *pred = get_irn_n(n, i);
 
-			if (irn_not_visited(pred)) {
+			if (!irn_visited(pred)) {
 				if (! in_dead_block &&
 					get_irn_pinned(pred) == op_pin_state_floats &&
 					is_Block_unreachable(get_nodes_block(pred))) {
@@ -237,7 +237,7 @@ static void place_early(waitq *worklist) {
 	/* Work the content of the worklist. */
 	while (!waitq_empty(worklist)) {
 		ir_node *n = waitq_get(worklist);
-		if (irn_not_visited(n))
+		if (!irn_visited(n))
 			place_floats_early(n, worklist);
 	}
 	set_irg_pinned(current_ir_graph, op_pin_state_pinned);
@@ -417,7 +417,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 	int i, n_outs;
 	ir_node *early_blk;
 
-	assert(irn_not_visited(n)); /* no multiple placement */
+	assert(!irn_visited(n)); /* no multiple placement */
 
 	mark_irn_visited(n);
 
@@ -445,7 +445,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 		    producer of one of their inputs in the same block anyway. */
 		for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
 			ir_node *succ = get_irn_out(n, i);
-			if (irn_not_visited(succ) && !is_Phi(succ))
+			if (!irn_visited(succ) && !is_Phi(succ))
 				place_floats_late(succ, worklist);
 		}
 
@@ -480,7 +480,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
 	n_outs = get_irn_n_outs(n);
 	for (i = 0; i < n_outs; i++) {
 		ir_node *succ = get_irn_out(n, i);
-		if (irn_not_visited(succ)) {
+		if (!irn_visited(succ)) {
 			pdeq_putr(worklist, succ);
 		}
 	}
@@ -502,7 +502,7 @@ static void place_late(waitq *worklist) {
 	/* And now empty the worklist again... */
 	while (!waitq_empty(worklist)) {
 		ir_node *n = waitq_get(worklist);
-		if (irn_not_visited(n))
+		if (!irn_visited(n))
 			place_floats_late(n, worklist);
 	}
 }

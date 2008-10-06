@@ -316,7 +316,7 @@ static int _count_outs(ir_node *n) {
 		}
 
 		/* count Def-Use edges for predecessors */
-		if (irn_not_visited(skipped_pred))
+		if (!irn_visited(skipped_pred))
 			res += _count_outs(skipped_pred);
 
 		/*count my Def-Use edges */
@@ -340,7 +340,7 @@ static int count_outs(ir_graph *irg) {
 	   even if they are not visible. */
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
-		if (irn_not_visited(n)) {
+		if (!irn_visited(n)) {
 			mark_irn_visited(n);
 
 			n->out = INT_TO_PTR(1);
@@ -382,7 +382,7 @@ static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free) {
 		ir_node *def = get_irn_n(use, i);
 
 		/* Recursion */
-		if (irn_not_visited(def))
+		if (!irn_visited(def))
 			free = _set_out_edges(def, free);
 
 		/* Remember this Def-Use edge */
@@ -414,7 +414,7 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
 	/* handle anchored nodes */
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
-		if (irn_not_visited(n)) {
+		if (!irn_visited(n)) {
 			mark_irn_visited(n);
 
 			n_outs = PTR_TO_INT(n->out);

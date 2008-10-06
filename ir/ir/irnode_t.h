@@ -343,16 +343,6 @@ _irn_visited(const ir_node *node) {
 }
 
 /**
- * Returns non-zero if a node of was NOT visited.
- * Intern version for libFirm.
- */
-static INLINE int
-_irn_not_visited(const ir_node *node) {
-	assert(node);
-	return (node->visited < current_ir_graph->visited);
-}
-
-/**
  * Sets the link of a node.
  * Intern version of libFirm.
  */
@@ -1023,7 +1013,6 @@ _is_arg_Proj(const ir_node *node) {
 #define set_irn_visited(node, v)              _set_irn_visited(node, v)
 #define mark_irn_visited(node)                _mark_irn_visited(node)
 #define irn_visited(node)                     _irn_visited(node)
-#define irn_not_visited(node)                 _irn_not_visited(node)
 #define set_irn_link(node, link)              _set_irn_link(node, link)
 #define get_irn_link(node)                    _get_irn_link(node)
 #define get_irn_pinned(node)                  _get_irn_pinned(node)

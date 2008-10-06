@@ -209,8 +209,6 @@ ir_visited_t get_irn_visited(const ir_node *node);
 void set_irn_visited(ir_node *node, ir_visited_t visited);
 /** Sets visited to get_irg_visited(current_ir_graph). */
 void mark_irn_visited(ir_node *node);
-/** Returns 1 if visited < get_irg_visited(current_ir_graph). */
-int irn_not_visited(const ir_node *node);
 /** Returns 1 if visited >= get_irg_visited(current_ir_graph). */
 int irn_visited(const ir_node *node);
 

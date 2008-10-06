@@ -939,7 +939,7 @@ static void dfs(ir_node *irn, iv_env *env)
 		for (i = 0; i < n; ++i) {
 			ir_node *pred = get_irn_n(irn, i);
 
-			if (irn_not_visited(pred))
+			if (!irn_visited(pred))
 				dfs(pred, env);
 		}
 	}
@@ -951,7 +951,7 @@ static void dfs(ir_node *irn, iv_env *env)
 		push(env, irn);
 
 		/* handle the block */
-		if (irn_not_visited(block))
+		if (!irn_visited(block))
 			dfs(block, env);
 
 		n = get_irn_arity(irn);
@@ -959,7 +959,7 @@ static void dfs(ir_node *irn, iv_env *env)
 			ir_node *pred = get_irn_n(irn, i);
 			node_entry *o = get_irn_ne(pred, env);
 
-			if (irn_not_visited(pred)) {
+			if (!irn_visited(pred)) {
 				dfs(pred, env);
 				node->low = MIN(node->low, o->low);
 			}
@@ -1010,7 +1010,7 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 	for (i = 0; i < n; ++i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
-		if (irn_not_visited(ka))
+		if (!irn_visited(ka))
 			dfs(ka, env);
 	}
 
