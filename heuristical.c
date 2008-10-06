@@ -208,11 +208,13 @@ static void reorder_node(pbqp_node *node)
 	old_bucket_len   = ARR_LEN(old_bucket);
 	old_bucket_index = node->bucket_index;
 
-	if (old_bucket_len <= old_bucket_index ||
-	    old_bucket[old_bucket_index] != node) {
+	if (old_bucket_len <= old_bucket_index || old_bucket[old_bucket_index]
+			!= node) {
+		unsigned bucket_len = ARR_LEN(node_buckets[arity]);
+
 		/* Old arity is new arity, so we have nothing to do. */
-		assert(old_bucket_index < ARR_LEN(node_buckets[arity]) &&
-		       node_buckets[arity][old_bucket_index] == node);
+		assert(old_bucket_index < bucket_len);
+		assert(node_buckets[arity][old_bucket_index] == node);
 		return;
 	}
 
@@ -343,7 +345,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		} else if (ARR_LEN(node_buckets[2]) > 0) {
 			apply_RII(pbqp);
 		} else if (ARR_LEN(node_buckets[3]) > 0) {
-			panic("Please implement RN simplification");
+			apply_RN(pbqp);
 		} else {
 			break;
 		}
@@ -606,7 +608,7 @@ void apply_RN(pbqp *pbqp)
 	unsigned     edge_index;
 	unsigned     edge_len   = ARR_LEN(node->edges);
 	unsigned     node_index;
-	unsigned     node_len   = ARR_LEN(node_vec);
+	unsigned     node_len   = node_vec->len;
 	unsigned     min_index  = 0;
 	num          min        = INF_COSTS;
 	int          is_src;
@@ -651,7 +653,7 @@ void apply_RN(pbqp *pbqp)
 
 	/* Add all incident edges to edge bucket, since they are now independent. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-		insert_into_edge_bucket(node->edges[node_index]);
+		insert_into_edge_bucket(node->edges[edge_index]);
 	}
 }
 
