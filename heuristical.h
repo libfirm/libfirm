@@ -5,6 +5,8 @@
 
 void solve_pbqp_heuristical(pbqp *pbqp);
 
+void apply_edge(pbqp *pbqp);
+
 void apply_RI(pbqp *pbqp);
 void apply_RII(pbqp *pbqp);
 void apply_RN(pbqp *pbqp);

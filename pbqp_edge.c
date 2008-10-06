@@ -44,6 +44,7 @@ pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *cos
 	edge->src = src_node;
 	ARR_APP1(pbqp_edge *, tgt_node->edges, edge);
 	edge->tgt = tgt_node;
+	edge->bucket_index = UINT_MAX;
 
 	return edge;
 }

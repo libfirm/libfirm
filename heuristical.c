@@ -17,6 +17,19 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
+static void insert_into_edge_bucket(pbqp_edge *edge)
+{
+	unsigned bucket_len = ARR_LEN(edge_bucket);
+
+	if (edge->bucket_index < bucket_len && edge_bucket[edge->bucket_index]
+			== edge)
+		/* Edge is already inserted. */
+		return;
+
+	edge->bucket_index = bucket_len;
+	ARR_APP1(pbqp_edge *, edge_bucket, edge);
+}
+
 static void init_buckets(void)
 {
 	int i;
@@ -117,7 +130,9 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 			src_vec->entries[src_index].data = pbqp_add(
 					src_vec->entries[src_index].data, min);
 
-			// TODO add to edge_list if inf
+			if (min == INF_COSTS) {
+				insert_into_edge_bucket(edge);
+			}
 		}
 	}
 }
@@ -162,7 +177,9 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 			tgt_vec->entries[tgt_index].data = pbqp_add(
 					tgt_vec->entries[tgt_index].data, min);
 
-			// TODO add to edge_list if inf
+			if (min == INF_COSTS) {
+				insert_into_edge_bucket(edge);
+			}
 		}
 	}
 }
@@ -190,6 +207,8 @@ static void reorder_node(pbqp_node *node)
 	old_bucket       = node_buckets[old_arity];
 	old_bucket_len   = ARR_LEN(old_bucket);
 	old_bucket_index = node->bucket_index;
+
+	unsigned test = ARR_LEN(node_buckets[arity]);
 
 	if (old_bucket_len <= old_bucket_index ||
 	    old_bucket[old_bucket_index] != node) {
@@ -229,6 +248,10 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	tgt_node = edge->tgt;
 	assert(src_node);
 	assert(tgt_node);
+
+	/* If edge are already deleted, we have nothing to do. */
+	if (!is_connected(src_node, edge) || !is_connected(tgt_node, edge))
+		return;
 
 	if (pbqp->dump_file) {
 		char txt[100];
@@ -316,7 +339,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	for (;;) {
 		if (ARR_LEN(edge_bucket) > 0) {
-			panic("Please implement edge simplification");
+			apply_edge(pbqp);
 		} else if (ARR_LEN(node_buckets[1]) > 0) {
 			apply_RI(pbqp);
 		} else if (ARR_LEN(node_buckets[2]) > 0) {
@@ -374,6 +397,16 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	}
 
 	free_buckets();
+}
+
+void apply_edge(pbqp *pbqp)
+{
+	unsigned   bucket_len = ARR_LEN(edge_bucket);
+	pbqp_edge *edge       = edge_bucket[bucket_len - 1];
+
+	ARR_SHRINKLEN(edge_bucket, (int)bucket_len - 1);
+
+	simplify_edge(pbqp, edge);
 }
 
 void apply_RI(pbqp *pbqp)
@@ -620,7 +653,7 @@ void apply_RN(pbqp *pbqp)
 
 	/* Add all incident edges to edge bucket, since they are now independent. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-		ARR_APP1(pbqp_edge *, edge_bucket, node->edges[node_index]);
+		insert_into_edge_bucket(node->edges[node_index]);
 	}
 }
 
