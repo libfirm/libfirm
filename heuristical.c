@@ -288,7 +288,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 			pbqp_edge *edge = edges[edge_index];
 
 			/* Simplify only once per edge. */
-			if (node_index != edge->src->index) continue;
+			if (node != edge->src) continue;
 
 			simplify_edge(pbqp, edge);
 		}
