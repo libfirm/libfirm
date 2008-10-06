@@ -503,8 +503,13 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
 	ia32_cg_config.use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
 	ia32_cg_config.use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
+	/* valgrind can't cope with femms yet and the usefullness of the optimisation is questionable anyway */
+#if 0
 	ia32_cg_config.use_femms            = FLAGS(opt_arch, arch_athlon_plus) &&
 	                                      FLAGS(arch, arch_feature_mmx | arch_all_amd);
+#else
+	ia32_cg_config.use_femms            = 0;
+#endif
 	ia32_cg_config.use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
 	ia32_cg_config.use_cmov             = FLAGS(arch, arch_feature_p6_insn);
 	ia32_cg_config.use_modeD_moves      = FLAGS(opt_arch, arch_athlon_plus | arch_geode | arch_ppro |
