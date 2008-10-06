@@ -80,6 +80,12 @@ void add_edge_costs(pbqp *pbqp, unsigned src_index, unsigned tgt_index,
 {
 	pbqp_edge *edge = get_edge(pbqp, src_index, tgt_index);
 
+	if (tgt_index < src_index) {
+		pbqp_matrix_transpose(pbqp, costs);
+		add_edge_costs(pbqp, tgt_index, src_index, costs);
+		return;
+	}
+
 	if (edge == NULL) {
 		edge = alloc_edge(pbqp, src_index, tgt_index, costs);
 	} else {

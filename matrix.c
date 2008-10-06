@@ -52,6 +52,20 @@ pbqp_matrix *pbqp_matrix_copy_and_transpose(pbqp *pbqp, pbqp_matrix *m)
 	return copy;
 }
 
+void pbqp_matrix_transpose(pbqp *pbqp, pbqp_matrix *mat)
+{
+	unsigned len;
+
+	assert(mat);
+	len = mat->rows * mat->cols;
+
+	pbqp_matrix *tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
+
+	memcpy(mat, tmp, sizeof(*mat) + sizeof(*mat->entries) * len);
+
+	obstack_free(&pbqp->obstack, tmp);
+}
+
 void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand)
 {
 	int i;

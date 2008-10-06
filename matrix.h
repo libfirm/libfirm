@@ -10,6 +10,8 @@ pbqp_matrix *pbqp_matrix_copy(pbqp *pbqp, pbqp_matrix *m);
 
 pbqp_matrix *pbqp_matrix_copy_and_transpose(pbqp *pbqp, pbqp_matrix *m);
 
+void pbqp_matrix_transpose(pbqp *pbqp, pbqp_matrix *mat);
+
 /* sum += summand */
 void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand);
 
