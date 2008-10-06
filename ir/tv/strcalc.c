@@ -1325,7 +1325,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	static const char small_digits[] = "0123456789abcdef";
 
 	char *base_val, *div1_res, *div2_res, *rem_res;
-	int counter, nibbles, i, sign;
+	int counter, nibbles, i, sign, mask;
 	char x;
 
 	const char *val = (const char *)value;
@@ -1365,7 +1365,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			x = and_table[_val(val[++counter])][bits & 3];
+			mask = zex_digit[bits & 3];
+			x = and_table[_val(val[counter++])][mask];
 			*(--pos) = digits[_val(x)];
 		}
 
@@ -1391,7 +1392,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			x = and_table[_val(val[++counter])][bits & 3];
+			mask = zex_digit[bits & 3];
+			x = and_table[_val(val[counter++])][mask];
 
 			pos -= 4;
 			p = binary_table[_val(x)];
@@ -1430,9 +1432,9 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
+			mask = zex_digit[bits & 3];
+			div1_res[counter] = and_table[_val(p[counter])][mask];
 			++counter;
-
-			div1_res[counter] = and_table[_val(p[counter])][bits & 3];
 		}
 
 		m = div1_res;
