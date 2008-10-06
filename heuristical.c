@@ -563,6 +563,67 @@ void apply_RII(pbqp *pbqp)
 	simplify_edge(pbqp, edge);
 }
 
+void apply_RN(pbqp *pbqp)
+{
+	pbqp_node  **bucket     = node_buckets[3];
+	unsigned     bucket_len = ARR_LEN(bucket);
+	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_edge   *edge;
+	vector      *node_vec   = node->costs;
+	vector      *vec;
+	pbqp_matrix *mat;
+	unsigned     edge_index;
+	unsigned     edge_len   = ARR_LEN(node->edges);
+	unsigned     node_index;
+	unsigned     node_len   = ARR_LEN(node_vec);
+	unsigned     min_index  = 0;
+	num          min        = INF_COSTS;
+	int          is_src;
+
+	assert(pbqp);
+
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		num value = 0;
+
+		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+			edge   = node->edges[edge_index];
+			mat    = edge->costs;
+			is_src = edge->src == node;
+
+			if (is_src) {
+				vec = vector_copy(pbqp, edge->tgt->costs);
+				vector_add_matrix_row(vec, mat, node_index);
+			} else {
+				vec = vector_copy(pbqp, edge->src->costs);
+				vector_add_matrix_col(vec, mat, node_index);
+			}
+
+			value = pbqp_add(value, vector_get_min(vec));
+
+			obstack_free(&pbqp->obstack, vec);
+		}
+
+		if (value < min) {
+			min = value;
+			min_index = node_index;
+		}
+	}
+
+	node->solution = min_index;
+
+	/* Now that we found the local minimum set all other costs to infinity. */
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		if (node_index != min_index) {
+			node_vec->entries[node_index].data = INF_COSTS;
+		}
+	}
+
+	/* Add all incident edges to edge bucket, since they are now independent. */
+	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+		ARR_APP1(pbqp_edge *, edge_bucket, node->edges[node_index]);
+	}
+}
+
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 {
 	pbqp_edge   *edge;

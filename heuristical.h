@@ -7,6 +7,7 @@ void solve_pbqp_heuristical(pbqp *pbqp);
 
 void apply_RI(pbqp *pbqp);
 void apply_RII(pbqp *pbqp);
+void apply_RN(pbqp *pbqp);
 
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node);
 void back_propagate_RII(pbqp *pbqp, pbqp_node *node);
