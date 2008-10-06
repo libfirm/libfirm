@@ -314,9 +314,9 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		if (ARR_LEN(edge_bucket) > 0) {
 			panic("Please implement edge simplification");
 		} else if (ARR_LEN(node_buckets[1]) > 0) {
-			applyRI(pbqp);
+			apply_RI(pbqp);
 		} else if (ARR_LEN(node_buckets[2]) > 0) {
-			applyRII(pbqp);
+			apply_RII(pbqp);
 		} else if (ARR_LEN(node_buckets[3]) > 0) {
 			panic("Please implement RN simplification");
 		} else {
@@ -372,7 +372,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	free_buckets();
 }
 
-void applyRI(pbqp *pbqp)
+void apply_RI(pbqp *pbqp)
 {
 	pbqp_node  **bucket     = node_buckets[1];
 	unsigned     bucket_len = ARR_LEN(bucket);
@@ -422,7 +422,7 @@ void applyRI(pbqp *pbqp)
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
 }
 
-void applyRII(pbqp *pbqp)
+void apply_RII(pbqp *pbqp)
 {
 	pbqp_node  **bucket     = node_buckets[2];
 	unsigned     bucket_len = ARR_LEN(bucket);
