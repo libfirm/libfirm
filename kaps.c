@@ -25,14 +25,15 @@ pbqp_edge *get_edge(pbqp *pbqp, unsigned src_index, unsigned tgt_index)
 	}
 
 	pbqp_node *src_node = get_node(pbqp, src_index);
+	pbqp_node *tgt_node = get_node(pbqp, tgt_index);
 	assert(src_node);
-	assert(get_node(pbqp, tgt_index));
+	assert(tgt_node);
 
 	len = ARR_LEN(src_node->edges);
 
 	for (i = 0; i < len; ++i) {
 		pbqp_edge *cur_edge = src_node->edges[i];
-		if (cur_edge->tgt->index == tgt_index) {
+		if (cur_edge->tgt == tgt_node) {
 			return cur_edge;
 		}
 	}
