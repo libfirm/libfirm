@@ -208,8 +208,6 @@ static void reorder_node(pbqp_node *node)
 	old_bucket_len   = ARR_LEN(old_bucket);
 	old_bucket_index = node->bucket_index;
 
-	unsigned test = ARR_LEN(node_buckets[arity]);
-
 	if (old_bucket_len <= old_bucket_index ||
 	    old_bucket[old_bucket_index] != node) {
 		/* Old arity is new arity, so we have nothing to do. */
