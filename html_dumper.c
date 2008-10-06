@@ -48,18 +48,18 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	for (row = 0; row < mat->rows; ++row) {
 		if (*p == INF_COSTS) {
 			fputs("\t inf", f);
-			p++;
 		} else {
-			fprintf(f, "\t %6d", *p++);
+			fprintf(f, "\t %6d", *p);
 		}
+		++p;
 
 		for (col = 1; col < mat->cols; ++col) {
 			if (*p == INF_COSTS) {
 				fputs("& inf", f);
-				p++;
 			} else {
-				fprintf(f, "& %6d", *p++);
+				fprintf(f, "& %6d", *p);
 			}
+			++p
 		}
 		fprintf(f, "\\\\\n");
 	}
