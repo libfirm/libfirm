@@ -29,6 +29,20 @@ static void init_buckets(void)
 	}
 }
 
+static void free_buckets(void)
+{
+	int i;
+
+	for (i = 0; i < 4; ++i) {
+		DEL_ARR_F(node_buckets[i]);
+	}
+
+	DEL_ARR_F(edge_bucket);
+	DEL_ARR_F(reduced_bucket);
+
+	buckets_filled = 0;
+}
+
 static void fill_node_buckets(pbqp *pbqp)
 {
 	unsigned node_index;
@@ -347,13 +361,15 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 				back_propagate_RI(pbqp, node);
 				break;
 			case 2:
-				panic("Please implement back propagation for RII");
+				back_propagate_RII(pbqp, node);
 				break;
 			default:
 				panic("Only nodes with degree one or two should be in this bucket");
 				break;
 		}
 	}
+
+	free_buckets();
 }
 
 void applyRI(pbqp *pbqp)
@@ -573,6 +589,82 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
+}
+
+void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
+{
+	pbqp_edge   *src_edge   = node->edges[0];
+	pbqp_edge   *tgt_edge   = node->edges[1];
+	int          src_is_src = src_edge->src == node;
+	int          tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix *src_mat;
+	pbqp_matrix *tgt_mat;
+	pbqp_node   *src_node;
+	pbqp_node   *tgt_node;
+	vector      *vec;
+	vector      *node_vec;
+	unsigned     col_index;
+	unsigned     row_index;
+
+	assert(pbqp);
+
+	if (src_is_src) {
+		src_node = src_edge->tgt;
+	} else {
+		src_node = src_edge->src;
+	}
+
+	if (tgt_is_src) {
+		tgt_node = tgt_edge->tgt;
+	} else {
+		tgt_node = tgt_edge->src;
+	}
+
+	/* Swap nodes if necessary. */
+	if (tgt_node->index < src_node->index) {
+		pbqp_node *tmp_node;
+		pbqp_edge *tmp_edge;
+
+		tmp_node = src_node;
+		src_node = tgt_node;
+		tgt_node = tmp_node;
+
+		tmp_edge = src_edge;
+		src_edge = tgt_edge;
+		tgt_edge = tmp_edge;
+
+		src_is_src = src_edge->src == node;
+		tgt_is_src = tgt_edge->src == node;
+	}
+
+	src_mat = src_edge->costs;
+	tgt_mat = tgt_edge->costs;
+
+	node_vec = node->costs;
+
+	row_index = src_node->solution;
+	col_index = tgt_node->solution;
+
+	vec = vector_copy(pbqp, node_vec);
+
+	if (src_is_src) {
+		vector_add_matrix_col(vec, src_mat, row_index);
+	} else {
+		vector_add_matrix_row(vec, src_mat, row_index);
+	}
+
+	if (tgt_is_src) {
+		vector_add_matrix_col(vec, tgt_mat, col_index);
+	} else {
+		vector_add_matrix_row(vec, tgt_mat, col_index);
+	}
+
+	node->solution = vector_get_min_index(vec);
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+	}
+
+	obstack_free(&pbqp->obstack, vec);
 }
 
 int node_is_reduced(pbqp_node *node)
