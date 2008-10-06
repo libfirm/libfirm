@@ -219,7 +219,7 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	assert(src_node);
 	assert(tgt_node);
 
-	if(pbqp->dump_file) {
+	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
 		dump_section(pbqp->dump_file, 3, txt);
