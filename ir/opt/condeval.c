@@ -69,7 +69,11 @@ static void add_pred(ir_node* node, ir_node* x)
 	set_irn_in(node, n + 1, ins);
 }
 
-static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
+static ir_node *ssa_second_def;
+static ir_node *ssa_second_def_block;
+
+static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
+                                           int first)
 {
 	int i;
 	int n_cfgpreds;
@@ -87,6 +91,15 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 		return value;
 	}
 
+	/* the other defs can't be marked for cases where a user of the original
+	 * value is in the same block as the alternative definition.
+	 * In this case we mustn't use the alternative definition.
+	 * So we keep a flag that indicated wether we walked at least 1 block
+	 * away and may use the alternative definition */
+	if (block == ssa_second_def_block && !first) {
+		return ssa_second_def;
+	}
+
 	irg = get_irn_irg(block);
 	assert(block != get_irg_start_block(irg));
 
@@ -94,7 +107,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 	if(n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
-		ir_node *value      = search_def_and_create_phis(pred_block, mode);
+		ir_node *value      = search_def_and_create_phis(pred_block, mode, 0);
 
 		set_irn_link(block, value);
 		mark_irn_visited(block);
@@ -113,7 +126,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	/* set Phi predecessors */
 	for(i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_node *pred_val = search_def_and_create_phis(pred_block, mode);
+		ir_node *pred_val   = search_def_and_create_phis(pred_block, mode, 0);
 
 		set_irn_n(phi, i, pred_val);
 	}
@@ -126,35 +139,26 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
  * first value (the users are determined through the out-edges of the value).
  * Uses the irn_visited flags. Works without using the dominance tree.
  */
-static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_vals)
+static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
+                          ir_node *second_block, ir_node *second_val)
 {
-	int i;
 	ir_graph *irg;
 	ir_mode *mode;
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
-	ir_node *value;
 
-	assert(n_vals == 2);
-
-	irg = get_irn_irg(vals[0]);
+	irg = get_irn_irg(orig_val);
 	inc_irg_visited(irg);
 
-	mode = get_irn_mode(vals[0]);
-	for(i = 0; i < n_vals; ++i) {
-		ir_node *value = vals[i];
-		ir_node *value_block = blocks[i];
+	mode = get_irn_mode(orig_val);
+	set_irn_link(orig_block, orig_val);
+	mark_irn_visited(orig_block);
 
-		assert(get_irn_mode(value) == mode || is_Bad(value));
-
-		set_irn_link(value_block, value);
-		mark_irn_visited(value_block);
-	}
+	ssa_second_def_block = second_block;
+	ssa_second_def       = second_val;
 
 	/* Only fix the users of the first, i.e. the original node */
-	value = vals[0];
-
-	foreach_out_edge_safe(value, edge, next) {
+	foreach_out_edge_safe(orig_val, edge, next) {
 		ir_node *user = get_edge_src_irn(edge);
 		int j = get_edge_src_pos(edge);
 		ir_node *user_block = get_nodes_block(user);
@@ -164,16 +168,13 @@ static void construct_ssa(ir_node * const *blocks, ir_node * const *vals, int n_
 		if (is_End(user))
 			continue;
 
-		if (user_block == blocks[1])
-			continue;
-
 		DB((dbg, LEVEL_3, ">>> Fixing user %+F (pred %d == %+F)\n", user, j, get_irn_n(user, j)));
 
 		if(is_Phi(user)) {
 			ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
-			newval = search_def_and_create_phis(pred_block, mode);
+			newval = search_def_and_create_phis(pred_block, mode, 1);
 		} else {
-			newval = search_def_and_create_phis(user_block, mode);
+			newval = search_def_and_create_phis(user_block, mode, 1);
 		}
 
 		/* don't fix newly created Phis from the SSA construction */
@@ -240,6 +241,7 @@ static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
 			} else {
 				new_pred = copy_and_fix_node(env, block, copy_block, j, pred);
 			}
+			DB((dbg, LEVEL_2, ">> Set Pred of %+F to %+F\n", copy, new_pred));
 			set_irn_n(copy, i, new_pred);
 		}
 	}
@@ -316,9 +318,8 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 
 	/* fix data-flow (and reconstruct SSA if needed) */
 	foreach_out_edge(block, edge) {
-		ir_node *vals[2];
-		ir_node *blocks[2];
 		ir_node *node = get_edge_src_irn(edge);
+		ir_node *copy_node;
 		ir_mode *mode;
 
 		if (is_Block(node)) {
@@ -337,11 +338,8 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 
 		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
 
-		blocks[0] = block;
-		vals[0] = node;
-		blocks[1] = copy_block;
-		vals[1] = get_irn_link(node);
-		construct_ssa(blocks, vals, 2);
+		copy_node = get_irn_link(node);
+		construct_ssa(block, node, copy_block, copy_node);
 	}
 }
 
