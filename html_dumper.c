@@ -7,6 +7,16 @@
 #include "kaps.h"
 #include "pbqp_t.h"
 
+/* Caution: Due to static buffer use only once per statement */
+static const char *cost2a(num const cost)
+{
+	static char buf[10];
+
+	if (cost == INF_COSTS) return "inf";
+	sprintf(buf, "%6d", cost);
+	return buf;
+}
+
 /* print vector */
 static void dump_vector(FILE *f, vector *vec)
 {
@@ -18,19 +28,10 @@ static void dump_vector(FILE *f, vector *vec)
 	assert(len > 0);
 	for (index = 0; index < len; ++index) {
 #if EXT_GRS_DEBUG
-		if (vec->entries[index].data == INF_COSTS) {
-			fprintf(f, "<span title=\"%s\"> inf </span>",
-					vec->entries[index].name);
-		} else {
-			fprintf(f, "<span title=\"%s\">%6d</span>",
-					vec->entries[index].name, vec->entries[index].data);
-		}
+		fprintf(f, "<span title=\"%s\">%s</span> ",
+				vec->entries[index].name, cost2a(vec->entries[index].data));
 #else
-		if (vec->entries[index].data == INF_COSTS) {
-			fputs(" inf ", f);
-		} else {
-			fprintf(f, "%6d", vec->entries[index].data);
-		}
+		fprintf(f, "%s ", cost2a(vec->entries[index].data));
 #endif
 	}
 	fprintf(f, " )</span>\n");
@@ -46,20 +47,10 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	assert(mat->rows> 0);
 	fprintf(f, "\t\\begin{pmatrix}\n");
 	for (row = 0; row < mat->rows; ++row) {
-		if (*p == INF_COSTS) {
-			fputs("\t inf", f);
-		} else {
-			fprintf(f, "\t %6d", *p);
-		}
-		++p;
+		fprintf(f, "\t %s", cost2a(*p++));
 
 		for (col = 1; col < mat->cols; ++col) {
-			if (*p == INF_COSTS) {
-				fputs("& inf", f);
-			} else {
-				fprintf(f, "& %6d", *p);
-			}
-			++p
+			fprintf(f, "& %s", cost2a(*p++));
 		}
 		fprintf(f, "\\\\\n");
 	}
