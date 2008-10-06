@@ -158,9 +158,12 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 static void reorder_node(pbqp_node *node)
 {
-	unsigned arity;
-	unsigned old_arity;
-	unsigned old_bucket_len;
+	unsigned    arity;
+	unsigned    old_arity;
+	unsigned    old_bucket_len;
+	unsigned    old_bucket_index;
+	pbqp_node **old_bucket;
+	pbqp_node  *other;
 
 	if (!buckets_filled) return;
 
@@ -168,31 +171,34 @@ static void reorder_node(pbqp_node *node)
 
 	arity = ARR_LEN(node->edges);
 
-	/* Equal bucket as before */
+	/* Same bucket as before */
 	if (arity > 2) return;
 
 	/* Assume node lost one incident edge. */
-	old_arity = arity + 1;
+	old_arity        = arity + 1;
+	old_bucket       = node_buckets[old_arity];
+	old_bucket_len   = ARR_LEN(old_bucket);
+	old_bucket_index = node->bucket_index;
 
-	if (ARR_LEN(node_buckets[old_arity]) <= (int)node->bucket_index
-			|| node_buckets[old_arity][node->bucket_index] != node) {
+	if (old_bucket_len <= old_bucket_index ||
+	    old_bucket[old_bucket_index] != node) {
 		/* Old arity is new arity, so we have nothing to do. */
+		assert(old_bucket_index < ARR_LEN(node_buckets[arity]) &&
+		       node_buckets[arity][old_bucket_index] == node);
 		return;
 	}
 
-	old_bucket_len = ARR_LEN(node_buckets[old_arity]);
-	assert (node_buckets[old_arity][node->bucket_index] == node);
+	assert(old_bucket[old_bucket_index] == node);
 
 	/* Delete node from old bucket... */
-	node_buckets[old_arity][old_bucket_len - 1]->bucket_index
-			= node->bucket_index;
-	node_buckets[old_arity][node->bucket_index]
-			= node_buckets[old_arity][old_bucket_len - 1];
-	ARR_SHRINKLEN(node_buckets[old_arity], (int)old_bucket_len - 1);
+	other                        = old_bucket[old_bucket_len - 1];
+	other->bucket_index          = old_bucket_index;
+	old_bucket[old_bucket_index] = other;
+	ARR_SHRINKLEN(node_buckets[old_arity], old_bucket_len - 1);
 
 	/* ..and add to new one. */
 	node->bucket_index = ARR_LEN(node_buckets[arity]);
-	ARR_APP1(pbqp_node *, node_buckets[arity], node);
+	ARR_APP1(pbqp_node*, node_buckets[arity], node);
 }
 
 static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
