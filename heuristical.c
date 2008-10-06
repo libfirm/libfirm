@@ -504,6 +504,8 @@ void applyRII(pbqp *pbqp)
 			}
 
 			mat->entries[row_index * col_len + col_index] = vector_get_min(vec);
+
+			obstack_free(&pbqp->obstack, vec);
 		}
 	}
 
