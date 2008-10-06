@@ -593,9 +593,9 @@ static void decide_start_workset(const ir_node *block)
 		loc = to_take_or_not_to_take(first, node, loop, available);
 
 		if (! USES_IS_INFINITE(loc.time)) {
-			if (USES_IS_PENDING(loc.time))
+			/*if (USES_IS_PENDING(loc.time))
 				ARR_APP1(loc_t, delayed, loc);
-			else
+			else*/
 				ARR_APP1(loc_t, starters, loc);
 		} else {
 			be_spill_phi(senv, node);
