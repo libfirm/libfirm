@@ -35,10 +35,14 @@ static void free_buckets(void)
 
 	for (i = 0; i < 4; ++i) {
 		DEL_ARR_F(node_buckets[i]);
+		node_buckets[i] = NULL;
 	}
 
 	DEL_ARR_F(edge_bucket);
+	edge_bucket = NULL;
+
 	DEL_ARR_F(reduced_bucket);
+	reduced_bucket = NULL;
 
 	buckets_filled = 0;
 }
