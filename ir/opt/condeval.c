@@ -85,12 +85,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	if(is_Bad(block))
 		return new_Bad();
 
-	/* already processed this block? */
-	if(irn_visited(block)) {
-		ir_node *value = (ir_node*) get_irn_link(block);
-		return value;
-	}
-
 	/* the other defs can't be marked for cases where a user of the original
 	 * value is in the same block as the alternative definition.
 	 * In this case we mustn't use the alternative definition.
@@ -98,6 +92,12 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	 * away and may use the alternative definition */
 	if (block == ssa_second_def_block && !first) {
 		return ssa_second_def;
+	}
+
+	/* already processed this block? */
+	if(irn_visited(block)) {
+		ir_node *value = (ir_node*) get_irn_link(block);
+		return value;
 	}
 
 	irg = get_irn_irg(block);
@@ -146,6 +146,10 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	ir_mode *mode;
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
+
+	/* no need to do anything */
+	if (orig_val == second_val)
+		return;
 
 	irg = get_irn_irg(orig_val);
 	inc_irg_visited(irg);
