@@ -138,6 +138,7 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 		spill.mode      = mode;
 		spill.alignment = align;
 		res             = set_insert(env->spills, &spill, sizeof(spill), hash);
+		DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill.spillslot, node));
 	} else {
 		assert(res->mode == mode);
 		assert(res->alignment == align);
@@ -167,6 +168,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	spill.spillslot = set_count(env->spills);
 	spill.mode      = mode;
 	spill.alignment = align;
+	DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill.spillslot, node));
 	res             = set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	/* collect attached spills and mem-phis */
@@ -354,7 +356,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	if(spillcount == 0)
 		return;
 
-	DBG((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
+	DB((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
 
 	interferences       = alloca(spillcount * sizeof(interferences[0]));
 	spillslot_unionfind = alloca(spillcount * sizeof(spillslot_unionfind[0]));
@@ -390,7 +392,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 				continue;
 
 			if (my_values_interfere(env->birg, spill1, spill2)) {
-				DBG((dbg, DBG_INTERFERENCES,
+				DB((dbg, DBG_INTERFERENCES,
 				     "Slot %d and %d interfere\n", i, i2));
 
 				bitset_set(interferences[i], i2);
@@ -418,7 +420,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			continue;
 		}
 
-		DBG((dbg, DBG_COALESCING,
+		DB((dbg, DBG_COALESCING,
 		     "Merging %d and %d because of affinity edge\n", s1, s2));
 
 		merge_interferences(env, interferences, spillslot_unionfind, s1, s2);
@@ -444,7 +446,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 				continue;
 			}
 
-			DBG((dbg, DBG_COALESCING,
+			DB((dbg, DBG_COALESCING,
 			     "Merging %d and %d because it is possible\n", s1, s2));
 
 			if(merge_interferences(env, interferences, spillslot_unionfind, s1, s2) != 0) {
