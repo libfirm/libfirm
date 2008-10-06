@@ -2666,7 +2666,7 @@ static bool can_fold_test_and(ir_node *node)
 /**
  * returns true if it is assured, that the upper bits of a node are "clean"
  * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for unsigned
+ * are 0 for unsigned and a copy of the last significant bit for signed
  * numbers.
  */
 static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
