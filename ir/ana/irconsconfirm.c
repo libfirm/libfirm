@@ -385,9 +385,8 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 		ir_node *cmp;
 		pn_Cmp pnc;
 
-#if 0
 		handle_modeb(block, selector, get_Proj_proj(proj), env);
-#endif
+
 		/* this should be an IF, check this */
 		if (! is_Proj(selector))
 			return;
