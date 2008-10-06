@@ -427,7 +427,7 @@ void apply_RI(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RI-Reduktion of Node n%d", node->index);
+		sprintf(txt, "RI-Reduction of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
@@ -516,7 +516,7 @@ void apply_RII(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RII-Reduktion of Node n%d", node->index);
+		sprintf(txt, "RII-Reduction of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
@@ -615,6 +615,13 @@ void apply_RN(pbqp *pbqp)
 
 	assert(pbqp);
 
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = 0;
 
@@ -640,6 +647,13 @@ void apply_RN(pbqp *pbqp)
 			min = value;
 			min_index = node_index;
 		}
+	}
+
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
+					node->index, min_index);
+		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %d<br>\n",
+							min);
 	}
 
 	node->solution = min_index;
