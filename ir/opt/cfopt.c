@@ -798,7 +798,7 @@ restart:
 			} else {
 				mark_irn_visited(ka);
 				/* don't keep alive dead blocks */
-				if (! is_Block_dead(get_nodes_block(ka)))
+				if (!is_Bad(ka) && !is_Block_dead(get_nodes_block(ka)))
 					in[j++] = ka;
 			}
 		}
