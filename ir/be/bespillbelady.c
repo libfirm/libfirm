@@ -511,7 +511,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 			DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n",
 			    node, loc.time));
 			return loc;
-		} else if(available == AVAILABLE_NOWHERE || available == AVAILABLE_PARTLY) {
+		} else if(available == AVAILABLE_NOWHERE) {
 			DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n",
 			    node, loc.time));
 			loc.time = USES_INFINITY;
@@ -638,35 +638,35 @@ static void decide_start_workset(const ir_node *block)
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
-			//int    p, arity;
+			int    p, arity;
 			loc_t *loc = & delayed[i];
 
-#if 0
-			/* don't use values which are dead in a known predecessors
-			 * to not induce unnecessary reloads */
-			arity = get_irn_arity(block);
-			for (p = 0; p < arity; ++p) {
-				ir_node      *pred_block = get_Block_cfgpred_block(block, p);
-				block_info_t *pred_info  = get_block_info(pred_block);
+			if (!is_Phi(loc->node)) {
+				/* don't use values which are dead in a known predecessors
+				 * to not induce unnecessary reloads */
+				arity = get_irn_arity(block);
+				for (p = 0; p < arity; ++p) {
+					ir_node      *pred_block = get_Block_cfgpred_block(block, p);
+					block_info_t *pred_info  = get_block_info(pred_block);
 
-				if (pred_info == NULL)
-					continue;
+					if (pred_info == NULL)
+						continue;
 
-				if (!workset_contains(pred_info->end_workset, loc->node)) {
-					DB((dbg, DBG_START,
-						"    delayed %+F not live at pred %+F\n", loc->node,
-						pred_block));
-					goto skip_delayed;
+					if (!workset_contains(pred_info->end_workset, loc->node)) {
+						DB((dbg, DBG_START,
+							"    delayed %+F not live at pred %+F\n", loc->node,
+							pred_block));
+						goto skip_delayed;
+					}
 				}
 			}
-#endif
 
 			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
 			ARR_APP1(loc_t, starters, *loc);
 			loc->node = NULL;
 			--free_slots;
-//		skip_delayed:
-//			;
+		skip_delayed:
+			;
 		}
 	}
 
