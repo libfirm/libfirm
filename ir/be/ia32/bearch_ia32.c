@@ -1269,6 +1269,7 @@ static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpo
 	set_ia32_use_frame(push);
 	set_ia32_op_type(push, ia32_AddrModeS);
 	set_ia32_ls_mode(push, mode_Is);
+	set_ia32_is_spill(push);
 
 	sched_add_before(schedpoint, push);
 	return push;
@@ -1287,6 +1288,7 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	set_ia32_use_frame(pop);
 	set_ia32_op_type(pop, ia32_AddrModeD);
 	set_ia32_ls_mode(pop, mode_Is);
+	set_ia32_is_reload(pop);
 
 	sched_add_before(schedpoint, pop);
 

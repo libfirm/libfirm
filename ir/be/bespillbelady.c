@@ -593,9 +593,9 @@ static void decide_start_workset(const ir_node *block)
 		loc = to_take_or_not_to_take(first, node, loop, available);
 
 		if (! USES_IS_INFINITE(loc.time)) {
-			/*if (USES_IS_PENDING(loc.time))
+			if (USES_IS_PENDING(loc.time) && !all_preds_known)
 				ARR_APP1(loc_t, delayed, loc);
-			else*/
+			else
 				ARR_APP1(loc_t, starters, loc);
 		} else {
 			be_spill_phi(senv, node);
@@ -616,7 +616,7 @@ static void decide_start_workset(const ir_node *block)
 		loc = to_take_or_not_to_take(first, node, loop, available);
 
 		if (! USES_IS_INFINITE(loc.time)) {
-			if (USES_IS_PENDING(loc.time))
+			if (USES_IS_PENDING(loc.time) && !all_preds_known)
 				ARR_APP1(loc_t, delayed, loc);
 			else
 				ARR_APP1(loc_t, starters, loc);
@@ -638,9 +638,10 @@ static void decide_start_workset(const ir_node *block)
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
-			int    p, arity;
+			//int    p, arity;
 			loc_t *loc = & delayed[i];
 
+#if 0
 			/* don't use values which are dead in a known predecessors
 			 * to not induce unnecessary reloads */
 			arity = get_irn_arity(block);
@@ -653,18 +654,19 @@ static void decide_start_workset(const ir_node *block)
 
 				if (!workset_contains(pred_info->end_workset, loc->node)) {
 					DB((dbg, DBG_START,
-					    "    delayed %+F not live at pred %+F\n", loc->node,
-					    pred_block));
+						"    delayed %+F not live at pred %+F\n", loc->node,
+						pred_block));
 					goto skip_delayed;
 				}
 			}
+#endif
 
 			DB((dbg, DBG_START, "    delayed %+F taken\n", loc->node));
 			ARR_APP1(loc_t, starters, *loc);
 			loc->node = NULL;
 			--free_slots;
-		skip_delayed:
-			;
+//		skip_delayed:
+//			;
 		}
 	}
 
