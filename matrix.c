@@ -83,6 +83,36 @@ void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand)
 	}
 }
 
+void pbqp_matrix_set_col_value(pbqp_matrix *mat, unsigned col, num value)
+{
+	unsigned row_index;
+	unsigned row_len;
+
+	assert(mat);
+	assert(col < mat->cols);
+
+	row_len = mat->rows;
+
+	for (row_index = 0; row_index < row_len; ++row_index) {
+		mat->entries[row_index * mat->cols + col] = value;
+	}
+}
+
+void pbqp_matrix_set_row_value(pbqp_matrix *mat, unsigned row, num value)
+{
+	unsigned col_index;
+	unsigned col_len;
+
+	assert(mat);
+	assert(row < mat->rows);
+
+	col_len = mat->cols;
+
+	for (col_index = 0; col_index < col_len; ++col_index) {
+		mat->entries[row * mat->cols + col_index] = value;
+	}
+}
+
 void pbqp_matrix_set(pbqp_matrix *mat, unsigned row, unsigned col, num value)
 {
 	assert(mat);
@@ -121,16 +151,22 @@ num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *fla
 void pbqp_matrix_sub_col_value(pbqp_matrix *matrix, unsigned col_index,
 		vector *flags, num value)
 {
+	unsigned col_len;
 	unsigned row_index;
+	unsigned row_len;
 
 	assert(matrix);
 	assert(flags);
 	assert(matrix->rows == flags->len);
 
-	unsigned col_len = matrix->cols;
-	unsigned row_len = matrix->rows;
+	col_len = matrix->cols;
+	row_len = matrix->rows;
 
 	for (row_index = 0; row_index < row_len; ++row_index) {
+		if (flags->entries[row_index].data == INF_COSTS) {
+			matrix->entries[row_index * col_len + col_index] = 0;
+			continue;
+		}
 		/* inf - x = inf if x < inf */
 		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS && value
 				!= INF_COSTS)
@@ -168,19 +204,24 @@ void pbqp_matrix_sub_row_value(pbqp_matrix *matrix, unsigned row_index,
 		vector *flags, num value)
 {
 	unsigned col_index;
+	unsigned col_len;
 
 	assert(matrix);
 	assert(flags);
 	assert(matrix->cols == flags->len);
 
-	unsigned len = flags->len;
+	col_len = matrix->cols;
 
-	for (col_index = 0; col_index < len; ++col_index) {
+	for (col_index = 0; col_index < col_len; ++col_index) {
+		if (flags->entries[col_index].data == INF_COSTS) {
+			matrix->entries[row_index * col_len + col_index] = 0;
+			continue;
+		}
 		/* inf - x = inf if x < inf */
-		if (matrix->entries[row_index * len + col_index] == INF_COSTS && value
+		if (matrix->entries[row_index * col_len + col_index] == INF_COSTS && value
 				!= INF_COSTS)
 			continue;
-		matrix->entries[row_index * len + col_index] -= value;
+		matrix->entries[row_index * col_len + col_index] -= value;
 	}
 }
 

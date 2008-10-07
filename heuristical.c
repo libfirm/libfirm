@@ -126,7 +126,11 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 		num min = pbqp_matrix_get_row_min(mat, src_index, tgt_vec);
 
 		if (min != 0) {
-			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
+			if (src_vec->entries[src_index].data == INF_COSTS) {
+				pbqp_matrix_set_row_value(mat, src_index, 0);
+			} else {
+				pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
+			}
 			src_vec->entries[src_index].data = pbqp_add(
 					src_vec->entries[src_index].data, min);
 
@@ -173,7 +177,11 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 		num min = pbqp_matrix_get_col_min(mat, tgt_index, src_vec);
 
 		if (min != 0) {
-			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
+			if (tgt_vec->entries[tgt_index].data == INF_COSTS) {
+				pbqp_matrix_set_col_value(mat, tgt_index, 0);
+			} else {
+				pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
+			}
 			tgt_vec->entries[tgt_index].data = pbqp_add(
 					tgt_vec->entries[tgt_index].data, min);
 
