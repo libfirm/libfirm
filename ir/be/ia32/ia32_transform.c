@@ -2258,17 +2258,13 @@ static ir_node *try_create_dest_am(ir_node *node) {
 	return new_node;
 }
 
-static int is_float_to_int32_conv(const ir_node *node)
+static int is_float_to_int_conv(const ir_node *node)
 {
 	ir_mode  *mode = get_irn_mode(node);
 	ir_node  *conv_op;
 	ir_mode  *conv_mode;
 
-	if(get_mode_size_bits(mode) != 32 || !ia32_mode_needs_gp_reg(mode))
-		return 0;
-	/* don't report unsigned as conv to 32bit, because we really need to do
-	 * a vfist with 64bit signed in this case */
-	if(!mode_is_signed(mode))
+	if (mode != mode_Is && mode != mode_Hs)
 		return 0;
 
 	if(!is_Conv(node))
@@ -2421,7 +2417,7 @@ static ir_node *gen_normal_Store(ir_node *node)
 			                            addr.index, addr.mem, new_val, mode);
 		}
 		store = new_node;
-	} else if (!ia32_cg_config.use_sse2 && is_float_to_int32_conv(val)) {
+	} else if (!ia32_cg_config.use_sse2 && is_float_to_int_conv(val)) {
 		val = get_Conv_op(val);
 
 		/* TODO: is this optimisation still necessary at all (middleend)? */
@@ -3129,12 +3125,12 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode) {
 	ir_node  *new_node;
 	int       src_bits;
 
-	/* fild can use source AM if the operand is a signed 32bit integer */
-	if (src_mode == mode_Is) {
+	/* fild can use source AM if the operand is a signed 16bit or 32bit integer */
+	if (src_mode == mode_Is || src_mode == mode_Hs) {
 		ia32_address_mode_t am;
 
 		match_arguments(&am, src_block, NULL, op, NULL,
-		                match_am | match_try_am);
+		                match_am | match_try_am | match_16bit | match_16bit_am);
 		if (am.op_type == ia32_AddrModeS) {
 			ia32_address_t *addr = &am.addr;
 
