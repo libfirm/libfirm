@@ -511,7 +511,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 			DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n",
 			    node, loc.time));
 			return loc;
-		} else if(available == AVAILABLE_NOWHERE) {
+		} else if(available == AVAILABLE_NOWHERE || available == AVAILABLE_PARTLY) {
 			DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n",
 			    node, loc.time));
 			loc.time = USES_INFINITY;
