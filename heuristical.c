@@ -135,7 +135,15 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 					src_vec->entries[src_index].data, min);
 
 			if (min == INF_COSTS) {
-				insert_into_edge_bucket(edge);
+				unsigned edge_index;
+				unsigned edge_len = ARR_LEN(src_node->edges);
+
+				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+					pbqp_edge *edge_candidate = src_node->edges[edge_index];
+					if (edge_candidate != edge) {
+						insert_into_edge_bucket(edge_candidate);
+					}
+				}
 			}
 		}
 	}
@@ -186,7 +194,15 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 					tgt_vec->entries[tgt_index].data, min);
 
 			if (min == INF_COSTS) {
-				insert_into_edge_bucket(edge);
+				unsigned edge_index;
+				unsigned edge_len = ARR_LEN(tgt_node->edges);
+
+				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+					pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+					if (edge_candidate != edge) {
+						insert_into_edge_bucket(edge_candidate);
+					}
+				}
 			}
 		}
 	}
