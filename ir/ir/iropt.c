@@ -5344,6 +5344,9 @@ static ir_node *transform_node_End(ir_node *n) {
 			continue;
 		} else if (is_irn_pinned_in_irg(ka) && is_Block_dead(get_nodes_block(ka))) {
 			continue;
+		} else if (is_Bad(ka)) {
+			/* no need to keep Bad */
+			continue;
 		}
 		in[j++] = ka;
 	}

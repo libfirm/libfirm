@@ -2911,7 +2911,7 @@ static void apply_end(ir_node *end, environment_t *env) {
 		if (! is_Block(ka))
 			node = get_irn_node(get_nodes_block(ka));
 
-		if (node->type.tv != tarval_unreachable)
+		if (node->type.tv != tarval_unreachable && !is_Bad(ka))
 			in[j++] = ka;
 	}
 	if (j != n) {
