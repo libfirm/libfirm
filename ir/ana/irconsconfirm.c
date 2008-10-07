@@ -457,19 +457,9 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 		ir_node *blk;
 
 
-		if (is_Confirm(succ)) {
-			/* beware of loops */
+		/* for now, we place a Confirm only in front of a Cmp */
+		if (! is_Cmp(succ))
 			continue;
-		}
-
-		if ((is_Load(succ) || is_Store(succ)) &&
-			get_nodes_block(succ) == block) {
-			/* Ignore Loads and Store in the same block for now,
-			   because we are not sure if they are dominated.
-			   This is not a bad restriction: if exception flow is
-			   present, they are in other blocks either. */
-			continue;
-		}
 
 		pos = get_edge_src_pos(edge);
 		blk = get_effective_use_block(succ, pos);
@@ -549,7 +539,7 @@ void construct_confirms(ir_graph *irg) {
 	env.num_eq       = 0;
 	env.num_non_null = 0;
 
-	if (0 && get_opt_global_null_ptr_elimination()) {
+	if (get_opt_global_null_ptr_elimination()) {
 		/* do global NULL test elimination */
 		irg_walk_graph(irg, insert_Confirm, NULL, &env);
 	} else {
