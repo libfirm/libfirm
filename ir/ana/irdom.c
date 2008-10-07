@@ -444,13 +444,15 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
  * count the number of blocks and clears the post dominance info
  */
 static void count_and_init_blocks_pdom(ir_node *bl, void *env) {
-	int *n_blocks = (int *) env;
-	(*n_blocks) ++;
+	if (is_Block(bl)) {
+		int *n_blocks = (int *) env;
+		(*n_blocks) ++;
 
-	memset(get_pdom_info(bl), 0, sizeof(ir_dom_info));
-	set_Block_ipostdom(bl, NULL);
-	set_Block_postdom_pre_num(bl, -1);
-	set_Block_postdom_depth(bl, -1);
+		memset(get_pdom_info(bl), 0, sizeof(ir_dom_info));
+		set_Block_ipostdom(bl, NULL);
+		set_Block_postdom_pre_num(bl, -1);
+		set_Block_postdom_depth(bl, -1);
+	}
 }
 
 /** temporary type used while constructing the dominator / post dominator tree. */
@@ -594,13 +596,15 @@ INLINE static void dom_link(tmp_dom_info *v, tmp_dom_info *w) {
  * Walker: count the number of blocks and clears the dominance info
  */
 static void count_and_init_blocks_dom(ir_node *bl, void *env) {
-	int *n_blocks = (int *) env;
-	(*n_blocks) ++;
+	if (is_Block(bl)) {
+		int *n_blocks = (int *) env;
+		(*n_blocks) ++;
 
-	memset(get_dom_info(bl), 0, sizeof(ir_dom_info));
-	set_Block_idom(bl, NULL);
-	set_Block_dom_pre_num(bl, -1);
-	set_Block_dom_depth(bl, -1);
+		memset(get_dom_info(bl), 0, sizeof(ir_dom_info));
+		set_Block_idom(bl, NULL);
+		set_Block_dom_pre_num(bl, -1);
+		set_Block_dom_depth(bl, -1);
+	}
 }
 
 /**
@@ -608,52 +612,21 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env) {
  *
  * - count the number of blocks
  * - clear the dominance info
- * - remove Block-keepalives of live blocks to reduce
- *   the number of "phantom" block edges
  *
  * @param irg  the graph
  * @param pre  a walker function that will be called for every block in the graph
  */
 static int init_construction(ir_graph *irg, irg_walk_func *pre) {
-	ir_graph *rem = current_ir_graph;
-	ir_node *end;
-	int arity;
 	int n_blocks = 0;
 
-	current_ir_graph = irg;
-
-	/* this visits only the reachable blocks */
-	irg_block_walk(get_irg_end_block(irg), pre, NULL, &n_blocks);
-
-	/* now visit the unreachable (from End) Blocks and remove unnecessary keep-alives */
-	end   = get_irg_end(irg);
-	arity = get_End_n_keepalives(end);
-	if (arity) {    /* we have keep-alives */
-		ir_node **in;
-		int i, j;
-
-		NEW_ARR_A(ir_node *, in, arity);
-		for (i = j = 0; i < arity; i++) {
-			ir_node *pred = get_End_keepalive(end, i);
-
-			if (is_Block(pred)) {
-				if (Block_block_visited(pred))
-					continue;
-
-				/* we found an endless loop */
-				dec_irg_block_visited(irg);
-				irg_block_walk(pred, pre, NULL, &n_blocks);
-			}
-			in[j++] = pred;
-		}
-		if (j != arity) {
-			/* we kill some Block keep-alives */
-			set_End_keepalives(end, j, in);
-			set_irg_outs_inconsistent(irg);
-		}
-	}
-
-	current_ir_graph = rem;
+	/*
+	 * Normally one would use irg_block_walk_graph() here, however, this does NOT
+	 * guarantee that all UNREACHABLE blocks are visited.
+	 * This could led to wrong dominance info in those blocks, causing
+	 * the verifier to crash for instance.
+	 * So, we visit EVERY node to ensure the info is updated.
+	 */
+	irg_walk_graph(irg, pre, NULL, &n_blocks);
 	return n_blocks;
 }
 
