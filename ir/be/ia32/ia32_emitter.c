@@ -295,23 +295,14 @@ void ia32_emit_x87_register(const ir_node *node, int pos)
 
 static void ia32_emit_mode_suffix_mode(const ir_mode *mode)
 {
-	if (mode_is_float(mode)) {
-		switch(get_mode_size_bits(mode)) {
-		case 32: be_emit_char('s'); return;
-		case 64: be_emit_char('l'); return;
-		case 80:
-		case 96: be_emit_char('t'); return;
-		}
-	} else {
-		assert(mode_is_int(mode) || mode_is_reference(mode));
-		switch(get_mode_size_bits(mode)) {
+	assert(mode_is_int(mode) || mode_is_reference(mode));
+	switch (get_mode_size_bits(mode)) {
+		case 8:  be_emit_char('b');     return;
+		case 16: be_emit_char('w');     return;
+		case 32: be_emit_char('l');     return;
 		/* gas docu says q is the suffix but gcc, objdump and icc use ll
 		 * apparently */
 		case 64: be_emit_cstring("ll"); return;
-		case 32: be_emit_char('l');     return;
-		case 16: be_emit_char('w');     return;
-		case 8:  be_emit_char('b');     return;
-		}
 	}
 	panic("Can't output mode_suffix for %+F", mode);
 }
@@ -327,12 +318,33 @@ void ia32_emit_mode_suffix(const ir_node *node)
 
 void ia32_emit_x87_mode_suffix(const ir_node *node)
 {
+	ir_mode *mode;
+
 	/* we only need to emit the mode on address mode */
-	if (get_ia32_op_type(node) != ia32_Normal) {
-		ir_mode *mode = get_ia32_ls_mode(node);
-		assert(mode != NULL);
-		ia32_emit_mode_suffix_mode(mode);
+	if (get_ia32_op_type(node) == ia32_Normal)
+		return;
+
+	mode = get_ia32_ls_mode(node);
+	assert(mode != NULL);
+
+	if (mode_is_float(mode)) {
+		switch (get_mode_size_bits(mode)) {
+			case 32: be_emit_char('s'); return;
+			case 64: be_emit_char('l'); return;
+			case 80:
+			case 96: be_emit_char('t'); return;
+		}
+	} else {
+		assert(mode_is_int(mode));
+		switch (get_mode_size_bits(mode)) {
+			case 16: be_emit_char('s');     return;
+			case 32: be_emit_char('l');     return;
+			/* gas docu says q is the suffix but gcc, objdump and icc use ll
+			 * apparently */
+			case 64: be_emit_cstring("ll"); return;
+		}
 	}
+	panic("Can't output mode_suffix for %+F", mode);
 }
 
 static char get_xmm_mode_suffix(ir_mode *mode)
