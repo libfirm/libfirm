@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "pbqp_t.h"
+#include "vector.h"
 #include "matrix.h"
 
 pbqp_matrix *pbqp_matrix_alloc(pbqp *pbqp, unsigned rows, unsigned cols)
