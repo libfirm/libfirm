@@ -9,7 +9,13 @@ num pbqp_add(num x, num y)
 {
 	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
 
-	return x + y;
+	num res = x + y;
+
+	assert(res >= x);
+	assert(res >= y);
+	assert(res < INF_COSTS);
+
+	return res;
 }
 
 vector *vector_alloc(pbqp *pbqp, unsigned length)
