@@ -788,13 +788,15 @@ restart:
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (!irn_visited(ka)) {
-			if (is_Block(ka) && !Block_block_visited(ka)) {
-				/* irg_block_walk() will increase the block visited flag, but we must visit only
-				   these blocks that are not visited yet, so decrease it first. */
-				set_irg_block_visited(irg, get_irg_block_visited(irg) - 1);
-				irg_block_walk(ka, optimize_blocks, remove_simple_blocks, &env.changed);
-				mark_irn_visited(ka);
-				in[j++] = ka;
+			if (is_Block(ka)) {
+				if (!Block_block_visited(ka)) {
+					/* irg_block_walk() will increase the block visited flag, but we must visit only
+					   these blocks that are not visited yet, so decrease it first. */
+					set_irg_block_visited(irg, get_irg_block_visited(irg) - 1);
+					irg_block_walk(ka, optimize_blocks, remove_simple_blocks, &env.changed);
+					mark_irn_visited(ka);
+					in[j++] = ka;
+				}
 			} else {
 				mark_irn_visited(ka);
 				/* don't keep alive dead blocks */
