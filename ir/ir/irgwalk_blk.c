@@ -216,9 +216,9 @@ typedef struct dom_traversal_t {
 } dom_traversal_t;
 
 /**
- * Dom block pre walker.
+ * Dom block walker. Visit all nodes in pre oder.
  */
-static void pre_block_visit(ir_node *block, void *env) {
+static void dom_block_visit_pre(ir_node *block, void *env) {
 	dom_traversal_t *ctx   = env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
@@ -226,9 +226,9 @@ static void pre_block_visit(ir_node *block, void *env) {
 }
 
 /**
- * Dom block post walker.
+ * Dom block walker. Visit all nodes in post oder.
  */
-static void post_block_visit(ir_node *block, void *env) {
+static void dom_block_visit_post(ir_node *block, void *env) {
 	dom_traversal_t *ctx   = env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
@@ -236,9 +236,20 @@ static void post_block_visit(ir_node *block, void *env) {
 }
 
 /**
- * Do the traversal in the dominator tree.
+ * Dom block walker. Visit all nodes in pre oder, than in post order.
  */
-static void traverse_dom_blocks(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env) {
+static void dom_block_visit_both(ir_node *block, void *env) {
+	dom_traversal_t *ctx   = env;
+	block_entry_t   *entry = block_find_entry(block, ctx->blks);
+
+	traverse_block_pre(block, entry, ctx->pre, ctx->env);
+	traverse_block_post(block, entry, ctx->post, ctx->env);
+}
+
+/**
+ * Do the traversal in the dominator tree in top-down order.
+ */
+static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env) {
 	dom_traversal_t ctx;
 
 	ctx.blks = blks;
@@ -246,10 +257,12 @@ static void traverse_dom_blocks(blk_collect_data_t* blks, irg_walk_func *pre, ir
 	ctx.post = post;
 	ctx.env  = env;
 
-	dom_tree_walk_irg(current_ir_graph,
-		pre != NULL ? pre_block_visit : NULL,
-		post != NULL ? post_block_visit : NULL,
-		&ctx);
+	if (pre != NULL && post != NULL)
+		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_both, NULL, &ctx);
+	else if (pre != NULL)
+		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_pre, NULL, &ctx);
+	else if (post != NULL)
+		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_post, NULL, &ctx);
 }
 
 /**
@@ -455,11 +468,11 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
 	current_ir_graph = rem;
 }
 
-void irg_walk_blkwise_dom_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
 	current_ir_graph = irg;
-	do_irg_walk_blk(irg, pre, post, env, 0, traverse_dom_blocks);
+	do_irg_walk_blk(irg, pre, post, env, 0, traverse_dom_blocks_top_down);
 	current_ir_graph = rem;
 }

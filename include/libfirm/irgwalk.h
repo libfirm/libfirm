@@ -216,7 +216,7 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
 /**
  * Walks over reachable nodes in block-wise topological order, i.e. visit
  * all nodes in a block before going to another block, starting at the end operation.
- * Visit the blocks in dominator tree order.
+ * Visit the blocks in dominator tree top-down order.
  * Executes pre before visiting the predecessor of a node, post after.
  * irg_walk_blkwise_graph() uses the visited flag in irg and the nodes to
  * determine visited nodes.
@@ -231,7 +231,7 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  */
-void irg_walk_blkwise_dom_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
 /**
  * Additionally walk over all anchors. Do NOT increase the visit flag.
