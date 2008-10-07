@@ -829,7 +829,8 @@ void do_gvn_pre(ir_graph *irg)
 
 	/*
 	 * Switch on GCSE. We need it to correctly compute
-	 * the leader of a node by hashing.
+	 * the value of a node, which is independent from
+	 * its block.
 	 */
 	save_optimization_state(&state);
 	set_opt_global_cse(1);
@@ -837,7 +838,7 @@ void do_gvn_pre(ir_graph *irg)
 	DB((dbg, LEVEL_1, "Doing GVN-PRE for %+F\n", irg));
 
 	/* allocate block info for all blocks */
-	irg_walk_blkwise_graph(irg, NULL, topo_walker, &a_env);
+	irg_walk_blkwise_dom_top_down(irg, NULL, topo_walker, &a_env);
 
 	/* clean the exp_gen set. Doing this here saves the cleanup in the iteration. */
 	for (bl_info = a_env.list; bl_info != NULL; bl_info = bl_info->next) {
@@ -899,6 +900,5 @@ void do_gvn_pre(ir_graph *irg)
 	if (a_env.pairs) {
 		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
-
 	}
 }  /* do_gvn_pre */
