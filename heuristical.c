@@ -647,7 +647,7 @@ void apply_RN(pbqp *pbqp)
 	}
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		num value = 0;
+		num value = node_vec->entries[node_index].data;
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 			edge   = node->edges[edge_index];
