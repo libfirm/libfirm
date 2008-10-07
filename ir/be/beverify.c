@@ -908,9 +908,8 @@ static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
 	ir_graph *irg = env->irg;
 	const ir_edge_t* edge;
 
-	if(irn_visited(node))
+	if (irn_visited_else_mark(node))
 		return;
-	mark_irn_visited(node);
 
 	/* we find too many (uncritical) dead nodes in block out edges */
 	if(is_Block(node))

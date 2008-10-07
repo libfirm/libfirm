@@ -537,8 +537,7 @@ static void cfscc(ir_node *n) {
 
 	assert(is_Block(n));
 
-	if (irn_visited(n)) return;
-	mark_irn_visited(n);
+	if (irn_visited_else_mark(n)) return;
 
 	/* Initialize the node */
 	set_irn_dfn(n, current_dfn);      /* Depth first number for this node */

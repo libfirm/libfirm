@@ -252,8 +252,8 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 	int            arity = get_irn_arity(irn);
 	int            i;
 
-	if (irn_visited(irn)) return sched;
-	if (is_End(irn))      return sched;
+	if (irn_visited_else_mark(irn)) return sched;
+	if (is_End(irn))                return sched;
 
 	if (!is_Phi(irn) && !be_is_Keep(irn)) {
 		for (i = 0; i < arity; ++i) {
@@ -265,7 +265,6 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 		}
 	}
 
-	mark_irn_visited(irn);
 	ARR_APP1(ir_node*, sched, irn);
 	return sched;
 }

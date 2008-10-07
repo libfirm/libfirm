@@ -273,11 +273,10 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	const ir_edge_t    *edge;
 	double             best_succ_execfreq;
 
-	if (irn_visited(block))
+	if (irn_visited_else_mark(block))
 		return;
 
 	env->blockcount++;
-	mark_irn_visited(block);
 
 	DBG((dbg, LEVEL_1, "Pick succ of %+F\n", block));
 

@@ -211,6 +211,9 @@ void set_irn_visited(ir_node *node, ir_visited_t visited);
 void mark_irn_visited(ir_node *node);
 /** Returns 1 if visited >= get_irg_visited(current_ir_graph). */
 int irn_visited(const ir_node *node);
+/** Returns 1 if visited >= get_irg_visited(current_ir_graph). Marks the node
+ * visited, if it was not. */
+int irn_visited_else_mark(ir_node *node);
 
 /**
  * Sets the link of a node.

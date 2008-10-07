@@ -715,9 +715,8 @@ static INLINE int is_outermost_loop(ir_loop *l) {
  * @param n  node to start
  */
 static void scc(ir_node *n) {
-	if (irn_visited(n))
+	if (irn_visited_else_mark(n))
 		return;
-	mark_irn_visited(n);
 
 	/* Initialize the node */
 	set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
@@ -816,9 +815,8 @@ static void scc(ir_node *n) {
 #ifdef INTERPROCEDURAL_VIEW
 static void my_scc(ir_node *n) {
 	int i;
-	if (irn_visited(n))
+	if (irn_visited_else_mark(n))
 		return;
-	mark_irn_visited(n);
 
 	/* Initialize the node */
 	set_irn_dfn(n, current_dfn);      /* Depth first number for this node */

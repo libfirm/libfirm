@@ -413,9 +413,8 @@ static ir_node *find_const_or_confirm(condeval_env_t *env, ir_node *jump, ir_nod
 {
 	ir_node *block = get_nodes_block(jump);
 
-	if (irn_visited(value))
+	if (irn_visited_else_mark(value))
 		return NULL;
-	mark_irn_visited(value);
 
 	if (is_Const_or_Confirm(value)) {
 		if (eval_cmp(env, value) <= 0) {
@@ -478,10 +477,9 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 {
 	ir_node *block = get_nodes_block(jump);
 
-	if(irn_visited(value)) {
+	if (irn_visited_else_mark(value)) {
 		return NULL;
 	}
-	mark_irn_visited(value);
 
 	if (is_Const_or_Confirm(value)) {
 		tarval *tv = get_Const_or_Confirm_tarval(value);

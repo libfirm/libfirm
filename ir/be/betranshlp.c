@@ -174,10 +174,8 @@ static void fix_loops(ir_node *node) {
 
 	assert(node_is_in_irgs_storage(env.irg, node));
 
-	if (irn_visited(node))
+	if (irn_visited_else_mark(node))
 		return;
-
-	mark_irn_visited(node);
 
 	changed = 0;
 	if (! is_Block(node)) {

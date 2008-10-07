@@ -109,11 +109,10 @@ static void create_extblk(ir_node *block, env_t *env)
 {
 	ir_extblk *extblk;
 
-	if (irn_visited(block))
+	if (irn_visited_else_mark(block))
 		return;
 
 	extblk = allocate_extblk(block, env);
-	mark_irn_visited(block);
 
 	pick_successor(block, extblk, env);
 }

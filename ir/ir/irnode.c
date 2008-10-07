@@ -461,6 +461,10 @@ int (irn_visited)(const ir_node *node) {
 	return _irn_visited(node);
 }
 
+int (irn_visited_else_mark)(ir_node *node) {
+	return _irn_visited_else_mark(node);
+}
+
 void (set_irn_link)(ir_node *node, void *link) {
 	_set_irn_link(node, link);
 }

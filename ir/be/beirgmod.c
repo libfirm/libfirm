@@ -161,10 +161,9 @@ static void remove_empty_block(ir_node *block)
 	ir_node *succ_block;
 	ir_node *jump = NULL;
 
-	if (irn_visited(block))
+	if (irn_visited_else_mark(block))
 		return;
 
-	mark_irn_visited(block);
 	if (get_Block_n_cfgpreds(block) != 1)
 		goto check_preds;
 

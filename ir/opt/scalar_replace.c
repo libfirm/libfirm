@@ -290,7 +290,7 @@ static void link_all_leave_sels(ir_entity *ent, ir_node *sel) {
 		 * visited more than once causing a ring here, so we use the
 		 * node flag to mark linked nodes
 		 */
-		if (irn_visited(sel))
+		if (irn_visited_else_mark(sel))
 			return;
 
 		/* we know we are at a leave, because this function is only
@@ -299,8 +299,6 @@ static void link_all_leave_sels(ir_entity *ent, ir_node *sel) {
 		 */
 		set_irn_link(sel, get_entity_link(ent));
 		set_entity_link(ent, sel);
-
-		mark_irn_visited(sel);
 	}
 }
 

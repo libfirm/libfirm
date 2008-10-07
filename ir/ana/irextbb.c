@@ -111,7 +111,7 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx) {
 			 */
 			ir_node *cf_op = skip_Proj(get_Block_cfgpred(block, 0));
 
-			if (!irn_visited(cf_op)) {
+			if (!irn_visited_else_mark(cf_op)) {
 				ir_node *pred_bl = get_nodes_block(cf_op);
 				if (get_block_n_succs(pred_bl) > 2) {
 					/* More than two successors means we have a jump table.
@@ -125,7 +125,6 @@ static void pre_walk_calc_extbb(ir_node *block, void *ctx) {
 					 */
 					set_Block_extbb(block, NULL);
 				}
-				mark_irn_visited(cf_op);
 			} else {
 				/* already marked, so begin a new extended block here */
 				allocate_extblk(block, env);

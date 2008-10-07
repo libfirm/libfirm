@@ -340,9 +340,7 @@ static int count_outs(ir_graph *irg) {
 	   even if they are not visible. */
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
-		if (!irn_visited(n)) {
-			mark_irn_visited(n);
-
+		if (!irn_visited_else_mark(n)) {
 			n->out = INT_TO_PTR(1);
 			++res;
 		}
@@ -414,9 +412,7 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
 	/* handle anchored nodes */
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
-		if (!irn_visited(n)) {
-			mark_irn_visited(n);
-
+		if (!irn_visited_else_mark(n)) {
 			n_outs = PTR_TO_INT(n->out);
 			n->out = free;
 #ifdef DEBUG_libfirm

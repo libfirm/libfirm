@@ -222,7 +222,7 @@ ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 static
 void introduce_def_at_block(ir_node *block, ir_node *def)
 {
-	if(irn_visited(block)) {
+	if (irn_visited_else_mark(block)) {
 		ir_node *node = block;
 		ir_node *current_def;
 
@@ -244,7 +244,6 @@ void introduce_def_at_block(ir_node *block, ir_node *def)
 	} else {
 		set_irn_link(block, def);
 		set_irn_link(def, NULL);
-		mark_irn_visited(block);
 	}
 }
 

@@ -199,7 +199,7 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 				continue;
 		}
 
-		if (irn_visited(value))
+		if (irn_visited_else_mark(value))
 			continue;
 
 		new_entry = obstack_alloc(&obst, sizeof(new_entry[0]));
@@ -215,7 +215,6 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 		list_add_tail(&new_entry->head, &new_worklist->live_values);
 		++n_live_values;
 
-		mark_irn_visited(value);
 		set_irn_link(value, new_entry);
 		new_worklist->n_live_values++;
 	}

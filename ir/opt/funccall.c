@@ -438,10 +438,8 @@ static unsigned _follow_mem(ir_node *node) {
 		if (mode == mtp_no_property)
 			return mtp_no_property;
 
-		if (irn_visited(node))
+		if (irn_visited_else_mark(node))
 			return mode;
-
-		mark_irn_visited(node);
 
 		switch (get_irn_opcode(node)) {
 		case iro_Proj:
