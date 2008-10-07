@@ -11,8 +11,15 @@ num pbqp_add(num x, num y)
 
 	num res = x + y;
 
-	assert(res >= x);
-	assert(res >= y);
+	/* No positive overflow. */
+	assert(x < 0 || y < 0 || res >= x);
+	assert(x < 0 || y < 0 || res >= y);
+
+	/* No negative overflow. */
+	assert(x > 0 || y > 0 || res <= x);
+	assert(x > 0 || y > 0 || res <= y);
+
+	/* Result is not infinity.*/
 	assert(res < INF_COSTS);
 
 	return res;
