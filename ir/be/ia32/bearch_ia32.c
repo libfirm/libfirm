@@ -392,6 +392,9 @@ static void ia32_set_frame_offset(ir_node *irn, int bias)
 
 static int ia32_get_sp_bias(const ir_node *node)
 {
+	if (is_ia32_Call(node))
+		return -(int)get_ia32_call_attr_const(node)->pop;
+
 	if (is_ia32_Push(node))
 		return 4;
 
@@ -1889,7 +1892,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
-	call_flags.bits.call_has_imm          = 1;  /* No call immediates, we handle this by ourselves */
+	call_flags.bits.call_has_imm          = 0;  /* No call immediates, we handle this by ourselves */
 
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
@@ -2088,16 +2091,13 @@ static const be_execution_unit_t ***ia32_get_allowed_execution_units(
 
 	if (is_ia32_irn(irn)) {
 		ret = get_ia32_exec_units(irn);
-	}
-	else if (is_be_node(irn)) {
-		if (be_is_Call(irn) || be_is_Return(irn)) {
+	} else if (is_be_node(irn)) {
+		if (be_is_Return(irn)) {
 			ret = _units_callret;
-		}
-		else if (be_is_Barrier(irn)) {
+		} else if (be_is_Barrier(irn)) {
 			ret = _units_dummy;
-		}
-		else {
-			 ret = _units_other;
+		} else {
+			ret = _units_other;
 		}
 	}
 	else {

@@ -438,6 +438,22 @@ const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node) {
 	return cc_attr;
 }
 
+ia32_call_attr_t *get_ia32_call_attr(ir_node *node)
+{
+	ia32_attr_t      *attr      = get_ia32_attr(node);
+	ia32_call_attr_t *call_attr = CAST_IA32_ATTR(ia32_call_attr_t, attr);
+
+	return call_attr;
+}
+
+const ia32_call_attr_t *get_ia32_call_attr_const(const ir_node *node)
+{
+	const ia32_attr_t      *attr      = get_ia32_attr_const(node);
+	const ia32_call_attr_t *call_attr = CONST_CAST_IA32_ATTR(ia32_call_attr_t, attr);
+
+	return call_attr;
+}
+
 ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node) {
 	ia32_attr_t       *attr       = get_ia32_attr(node);
 	ia32_copyb_attr_t *copyb_attr = CAST_IA32_ATTR(ia32_copyb_attr_t, attr);
@@ -1095,6 +1111,17 @@ init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 	attr->offset   = offset;
 }
 
+void init_ia32_call_attributes(ir_node *const res, unsigned const pop, ir_type *const call_tp)
+{
+	ia32_call_attr_t *attr = get_irn_generic_attr(res);
+
+#ifndef NDEBUG
+	attr->attr.attr_type  |= IA32_ATTR_ia32_call_attr_t;
+#endif
+	attr->pop     = pop;
+	attr->call_tp = call_tp;
+}
+
 void
 init_ia32_copyb_attributes(ir_node *res, unsigned size) {
 	ia32_copyb_attr_t *attr = get_irn_generic_attr(res);
@@ -1198,6 +1225,26 @@ int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
 	attr_b = get_ia32_condcode_attr_const(b);
 
 	if(attr_a->pn_code != attr_b->pn_code)
+		return 1;
+
+	return 0;
+}
+
+static int ia32_compare_call_attr(ir_node *a, ir_node *b)
+{
+	const ia32_call_attr_t *attr_a;
+	const ia32_call_attr_t *attr_b;
+
+	if (ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_call_attr_const(a);
+	attr_b = get_ia32_call_attr_const(b);
+
+	if (attr_a->pop != attr_b->pop)
+		return 1;
+
+	if (attr_a->call_tp != attr_b->call_tp)
 		return 1;
 
 	return 0;

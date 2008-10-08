@@ -82,7 +82,8 @@ typedef enum {
 	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
 	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
 	IA32_ATTR_ia32_condcode_attr_t  = 1 << 4,
-	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5
+	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5,
+	IA32_ATTR_ia32_call_attr_t      = 1 << 6
 } ia32_attr_type_t;
 #endif
 
@@ -140,6 +141,16 @@ struct ia32_attr_t {
 #endif
 };
 COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield);
+
+/**
+ * The attributes for a Call node.
+ */
+typedef struct ia32_call_attr_t ia32_call_attr_t;
+struct ia32_call_attr_t {
+	ia32_attr_t  attr;    /**< generic attribute */
+	unsigned     pop;     /**< number of bytes that get popped by the callee */
+	ir_type     *call_tp; /**< The call type, copied from the original Call node. */
+};
 
 /**
  * The attributes for nodes with condition code.
@@ -204,6 +215,7 @@ struct ia32_asm_attr_t {
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
 	ia32_attr_t            attr;
+	ia32_call_attr_t       call_attr;
 	ia32_condcode_attr_t   cc_attr;
 	ia32_copyb_attr_t      cpy_attr;
 	ia32_x87_attr_t        x87_attr;

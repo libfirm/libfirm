@@ -255,7 +255,52 @@ void ia32_emit_source_register(const ir_node *node, int pos)
 	emit_register(reg, NULL);
 }
 
-static void emit_ia32_Immediate(const ir_node *node);
+static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
+{
+	ident *id;
+
+	set_entity_backend_marked(entity, 1);
+	id = get_entity_ld_ident(entity);
+	be_emit_ident(id);
+
+	if (get_entity_owner(entity) == get_tls_type()) {
+		if (get_entity_visibility(entity) == visibility_external_allocated) {
+			be_emit_cstring("@INDNTPOFF");
+		} else {
+			be_emit_cstring("@NTPOFF");
+		}
+	}
+
+	if (!no_pic_adjust && do_pic) {
+		/* TODO: only do this when necessary */
+		be_emit_char('-');
+		be_emit_string(pic_base_label);
+	}
+}
+
+static void emit_ia32_Immediate_no_prefix(const ir_node *node)
+{
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
+
+	if (attr->symconst != NULL) {
+		if (attr->sc_sign)
+			be_emit_char('-');
+		ia32_emit_entity(attr->symconst, 0);
+	}
+	if (attr->symconst == NULL || attr->offset != 0) {
+		if (attr->symconst != NULL) {
+			be_emit_irprintf("%+d", attr->offset);
+		} else {
+			be_emit_irprintf("0x%X", attr->offset);
+		}
+	}
+}
+
+static void emit_ia32_Immediate(const ir_node *node)
+{
+	be_emit_char('$');
+	emit_ia32_Immediate_no_prefix(node);
+}
 
 void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
 {
@@ -476,6 +521,11 @@ static void ia32_emit_cmp_suffix(int pnc)
 	be_emit_string(str);
 }
 
+typedef enum ia32_emit_mod_t {
+	EMIT_RESPECT_LS   = 1U << 0,
+	EMIT_ALTERNATE_AM = 1U << 1
+} ia32_emit_mod_t;
+
 /**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
@@ -495,6 +545,7 @@ static void ia32_emit_cmp_suffix(int pnc)
  *
  * x starts at 0
  * # modifier for %ASx, %D and %S uses ls mode of node to alter register width
+ * * modifier does not prefix immediates with $, but AM with *
  */
 static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 {
@@ -502,8 +553,8 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 	va_start(ap, fmt);
 
 	for (;;) {
-		const char    *start = fmt;
-		const ir_mode *mode  = NULL;
+		const char      *start = fmt;
+		ia32_emit_mod_t  mod   = 0;
 
 		while (*fmt != '%' && *fmt != '\n' && *fmt != '\0')
 			++fmt;
@@ -523,8 +574,13 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 			break;
 
 		++fmt;
+		if (*fmt == '*') {
+			mod |= EMIT_ALTERNATE_AM;
+			++fmt;
+		}
+
 		if (*fmt == '#') {
-			mode = get_ia32_ls_mode(node);
+			mod |= EMIT_RESPECT_LS;
 			++fmt;
 		}
 
@@ -536,12 +592,16 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 			case 'A': {
 				switch (*fmt++) {
 					case 'M':
+						if (mod & EMIT_ALTERNATE_AM)
+							be_emit_char('*');
 						ia32_emit_am(node);
 						break;
 
 					case 'R': {
 						const arch_register_t *reg = va_arg(ap, const arch_register_t*);
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
+							if (mod & EMIT_ALTERNATE_AM)
+								be_emit_char('*');
 							ia32_emit_am(node);
 						} else {
 							emit_register(reg, NULL);
@@ -551,6 +611,8 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 					case 'S':
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
+							if (mod & EMIT_ALTERNATE_AM)
+								be_emit_char('*');
 							ia32_emit_am(node);
 							++fmt;
 						} else {
@@ -573,12 +635,14 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 				pos = *fmt++ - '0';
 				reg = get_out_reg(node, pos);
-				emit_register(reg, mode);
+				emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				break;
 			}
 
 			case 'I':
-				emit_ia32_Immediate(node);
+				if (!(mod & EMIT_ALTERNATE_AM))
+					be_emit_char('$');
+				emit_ia32_Immediate_no_prefix(node);
 				break;
 
 			case 'L':
@@ -613,10 +677,12 @@ emit_S:
 				pos = *fmt++ - '0';
 				in  = get_irn_n(node, pos);
 				if (is_ia32_Immediate(in)) {
-					emit_ia32_Immediate(in);
+					if (!(mod & EMIT_ALTERNATE_AM))
+						be_emit_char('$');
+					emit_ia32_Immediate_no_prefix(in);
 				} else {
 					const arch_register_t *reg = get_in_reg(node, pos);
-					emit_register(reg, mode);
+					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				}
 				break;
 			}
@@ -696,29 +762,6 @@ void ia32_emit_unop(const ir_node *node, int pos)
 	char fmt[] = "%ASx";
 	fmt[3] = '0' + pos;
 	ia32_emitf(node, fmt);
-}
-
-static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
-{
-	ident *id;
-
-	set_entity_backend_marked(entity, 1);
-	id = get_entity_ld_ident(entity);
-	be_emit_ident(id);
-
-	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == visibility_external_allocated) {
-			be_emit_cstring("@INDNTPOFF");
-		} else {
-			be_emit_cstring("@NTPOFF");
-		}
-	}
-
-	if (!no_pic_adjust && do_pic) {
-		/* TODO: only do this when necessary */
-		be_emit_char('-');
-		be_emit_string(pic_base_label);
-	}
 }
 
 /**
@@ -1215,25 +1258,6 @@ static void emit_Jmp(const ir_node *node)
 	}
 }
 
-static void emit_ia32_Immediate(const ir_node *node)
-{
-	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
-
-	be_emit_char('$');
-	if (attr->symconst != NULL) {
-		if (attr->sc_sign)
-			be_emit_char('-');
-		ia32_emit_entity(attr->symconst, 0);
-	}
-	if (attr->symconst == NULL || attr->offset != 0) {
-		if (attr->symconst != NULL) {
-			be_emit_irprintf("%+d", attr->offset);
-		} else {
-			be_emit_irprintf("0x%X", attr->offset);
-		}
-	}
-}
-
 /**
  * Emit an inline assembler operand.
  *
@@ -1521,6 +1545,16 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 	}
 }
 
+/**
+ * Emits a call
+ */
+static void emit_ia32_Call(const ir_node *node)
+{
+	/* Special case: Call must not have its immediates prefixed by $, instead
+	 * address mode is prefixed by *. */
+	ia32_emitf(node, "\tcall %*AS3\n");
+}
+
 
 /*******************************************
  *  _                          _
@@ -1531,24 +1565,6 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
  * |_.__/ \___|_| |_|\___/ \__,_|\___||___/
  *
  *******************************************/
-
-/**
- * Emits a backend call
- */
-static void emit_be_Call(const ir_node *node)
-{
-	ir_entity *ent = be_Call_get_entity(node);
-
-	be_emit_cstring("\tcall ");
-	if (ent) {
-		ia32_emit_entity(ent, 1);
-	} else {
-		const arch_register_t *reg = get_in_reg(node, be_pos_Call_ptr);
-		be_emit_char('*');
-		emit_register(reg, NULL);
-	}
-	be_emit_finish_line_gas(node);
-}
 
 /**
  * Emits code to increase stack pointer.
@@ -1795,6 +1811,7 @@ static void ia32_register_emitters(void)
 	IA32_EMIT2(Conv_I2I8Bit, Conv_I2I);
 	IA32_EMIT(Asm);
 	IA32_EMIT(CMov);
+	IA32_EMIT(Call);
 	IA32_EMIT(Const);
 	IA32_EMIT(Conv_FP2FP);
 	IA32_EMIT(Conv_FP2I);
@@ -1810,7 +1827,6 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(SwitchJmp);
 
 	/* benode emitter */
-	BE_EMIT(Call);
 	BE_EMIT(Copy);
 	BE_EMIT(CopyKeep);
 	BE_EMIT(IncSP);

@@ -279,6 +279,9 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_attr_t     =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+	ia32_call_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, pnc);",
@@ -296,6 +299,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 %compare_attr = (
 	ia32_asm_attr_t       => "ia32_compare_asm_attr",
 	ia32_attr_t           => "ia32_compare_nodes_attr",
+	ia32_call_attr_t      => "ia32_compare_call_attr",
 	ia32_condcode_attr_t  => "ia32_compare_condcode_attr",
 	ia32_copyb_attr_t     => "ia32_compare_copyb_attr",
 	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
@@ -1458,6 +1462,21 @@ Bt => {
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags  # only CF is set, but the other flags are undefined
+},
+
+Call => {
+	state     => "exc_pinned",
+	reg_req   => {
+		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
+		out => [ "esp", "fpcw", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ]
+	},
+	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
+	outs      => [ "stack:I|S", "fpcw:I", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ],
+	attr_type => "ia32_call_attr_t",
+	attr      => "unsigned pop, ir_type *call_tp",
+	am        => "source,unary",
+	units     => [ "BRANCH" ],
+	latency   => 4, # random number
 },
 
 #-----------------------------------------------------------------------------#

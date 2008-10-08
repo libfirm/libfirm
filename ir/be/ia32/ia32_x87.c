@@ -1913,7 +1913,7 @@ static ir_node *get_call_result_proj(ir_node *call) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long pn = get_Proj_proj(proj);
 
-		if (pn == pn_be_Call_first_res) {
+		if (pn == pn_ia32_Call_vf0) {
 			return proj;
 		}
 	}
@@ -1922,7 +1922,7 @@ static ir_node *get_call_result_proj(ir_node *call) {
 }  /* get_call_result_proj */
 
 /**
- * Simulate a be_Call.
+ * Simulate a ia32_Call.
  *
  * @param state      the x87 state
  * @param n          the node that should be simulated
@@ -1931,7 +1931,7 @@ static ir_node *get_call_result_proj(ir_node *call) {
  */
 static int sim_Call(x87_state *state, ir_node *n)
 {
-	ir_type *call_tp = be_Call_get_type(n);
+	ir_type *call_tp = get_ia32_call_attr_const(n)->call_tp;
 	ir_type *res_type;
 	ir_mode *mode;
 	ir_node *resproj;
@@ -2354,6 +2354,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	/* set the generic function pointer of instruction we must simulate */
 	clear_irp_opcodes_generic_func();
 
+	register_sim(op_ia32_Call,         sim_Call);
 	register_sim(op_ia32_vfld,         sim_fld);
 	register_sim(op_ia32_vfild,        sim_fild);
 	register_sim(op_ia32_vfld1,        sim_fld1);
@@ -2372,7 +2373,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
 	register_sim(op_ia32_vFucomFnstsw, sim_Fucom);
 	register_sim(op_ia32_vFucomi,      sim_Fucom);
 	register_sim(op_be_Copy,           sim_Copy);
-	register_sim(op_be_Call,           sim_Call);
 	register_sim(op_be_Spill,          sim_Spill);
 	register_sim(op_be_Reload,         sim_Reload);
 	register_sim(op_be_Return,         sim_Return);

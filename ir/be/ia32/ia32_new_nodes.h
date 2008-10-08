@@ -87,6 +87,12 @@ ia32_condcode_attr_t *get_ia32_condcode_attr(ir_node *node);
 const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node);
 
 /**
+ * Gets the Call node attributes.
+ */
+ia32_call_attr_t *get_ia32_call_attr(ir_node *node);
+const ia32_call_attr_t *get_ia32_call_attr_const(const ir_node *node);
+
+/**
  * Gets the CopyB node attributes.
  */
 ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node);
@@ -454,6 +460,7 @@ void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);
 void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
                                     int symconst_sign, long offset);
+void init_ia32_call_attributes(ir_node *res, unsigned pop, ir_type *call_tp);
 void init_ia32_copyb_attributes(ir_node *res, unsigned size);
 void init_ia32_condcode_attributes(ir_node *res, long pnc);
 

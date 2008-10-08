@@ -4210,14 +4210,30 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	panic("No idea how to transform proj->Quot");
 }
 
-static ir_node *gen_be_Call(ir_node *node) {
-	ir_node *res = be_duplicate_node(node);
-	ir_type *call_tp;
-
-	be_node_add_flags(res, -1, arch_irn_flags_modify_flags);
+static ir_node *gen_be_Call(ir_node *node)
+{
+	dbg_info       *const dbgi      = get_irn_dbg_info(node);
+	ir_graph       *const irg       = current_ir_graph;
+	ir_node        *const src_block = get_nodes_block(node);
+	ir_node        *const block     = be_transform_node(src_block);
+	ir_node        *const src_mem   = get_irn_n(node, be_pos_Call_mem);
+	ir_node        *const src_sp    = get_irn_n(node, be_pos_Call_sp);
+	ir_node        *const sp        = be_transform_node(src_sp);
+	ir_node        *const src_ptr   = get_irn_n(node, be_pos_Call_ptr);
+	ir_node        *const noreg     = ia32_new_NoReg_gp(env_cg);
+	ia32_address_mode_t   am;
+	ia32_address_t *const addr      = &am.addr;
+	ir_node        *      mem;
+	ir_node        *      call;
+	int                   i;
+	ir_node        *      fpcw;
+	ir_node        *      eax       = noreg;
+	ir_node        *      ecx       = noreg;
+	ir_node        *      edx       = noreg;
+	unsigned        const pop       = be_Call_get_pop(node);
+	ir_type        *const call_tp   = be_Call_get_type(node);
 
 	/* Run the x87 simulator if the call returns a float value */
-	call_tp = be_Call_get_type(node);
 	if (get_method_n_ress(call_tp) > 0) {
 		ir_type *const res_type = get_method_res_type(call_tp, 0);
 		ir_mode *const res_mode = get_type_mode(res_type);
@@ -4227,7 +4243,41 @@ static ir_node *gen_be_Call(ir_node *node) {
 		}
 	}
 
-	return res;
+	/* We do not want be_Call direct calls */
+	assert(be_Call_get_entity(node) == NULL);
+
+	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
+	                match_am | match_immediate);
+
+	i    = get_irn_arity(node) - 1;
+	fpcw = be_transform_node(get_irn_n(node, i--));
+	for (; i >= be_pos_Call_first_arg; --i) {
+		arch_register_req_t const *const req =
+			arch_get_register_req(env_cg->arch_env, node, i);
+		ir_node *const reg_parm = be_transform_node(get_irn_n(node, i));
+
+		assert(req->type == arch_register_req_type_limited);
+		assert(req->cls == &ia32_reg_classes[CLASS_ia32_gp]);
+
+		switch (*req->limited) {
+			case 1 << REG_EAX: assert(eax == noreg); eax = reg_parm; break;
+			case 1 << REG_ECX: assert(ecx == noreg); ecx = reg_parm; break;
+			case 1 << REG_EDX: assert(edx == noreg); edx = reg_parm; break;
+			default: panic("Invalid GP register for register parameter");
+		}
+	}
+
+	mem  = transform_AM_mem(irg, block, src_ptr, src_mem, addr->mem);
+	call = new_rd_ia32_Call(dbgi, irg, block, addr->base, addr->index, mem,
+	                        am.new_op2, sp, fpcw, eax, ecx, edx, pop, call_tp);
+	set_am_attributes(call, &am);
+	call = fix_mem_proj(call, &am);
+
+	if (get_irn_pinned(node) == op_pin_state_pinned)
+		set_irn_pinned(call, op_pin_state_pinned);
+
+	SET_IA32_ORIG_NODE(call, ia32_get_old_node_name(env_cg, node));
+	return call;
 }
 
 static ir_node *gen_be_IncSP(ir_node *node) {
@@ -4240,7 +4290,8 @@ static ir_node *gen_be_IncSP(ir_node *node) {
 /**
  * Transform the Projs from a be_Call.
  */
-static ir_node *gen_Proj_be_Call(ir_node *node) {
+static ir_node *gen_Proj_be_Call(ir_node *node)
+{
 	ir_node  *block       = be_transform_node(get_nodes_block(node));
 	ir_node  *call        = get_Proj_pred(node);
 	ir_node  *new_call    = be_transform_node(call);
@@ -4252,6 +4303,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 	ir_mode  *mode        = get_irn_mode(node);
 	ir_node  *sse_load;
 	const arch_register_class_t *cls;
+	ir_node                     *res;
 
 	/* The following is kinda tricky: If we're using SSE, then we have to
 	 * move the result value of the call in floating point registers to an
@@ -4270,9 +4322,9 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 			call_res_pred = get_Proj_pred(call_res_new);
 		}
 
-		if (call_res_pred == NULL || be_is_Call(call_res_pred)) {
+		if (call_res_pred == NULL || is_ia32_Call(call_res_pred)) {
 			return new_rd_Proj(dbgi, irg, block, new_call, mode_M,
-			                   pn_be_Call_M_regular);
+			                   n_ia32_Call_mem);
 		} else {
 			assert(is_ia32_xLoad(call_res_pred));
 			return new_rd_Proj(dbgi, irg, block, call_res_pred, mode_M,
@@ -4319,7 +4371,47 @@ static ir_node *gen_Proj_be_Call(ir_node *node) {
 		mode = cls->mode;
 	}
 
-	return new_rd_Proj(dbgi, irg, block, new_call, mode, proj);
+	/* Map from be_Call to ia32_Call proj number */
+	if (proj == pn_be_Call_sp) {
+		proj = pn_ia32_Call_stack;
+	} else if (proj == pn_be_Call_M_regular) {
+		proj = pn_ia32_Call_M;
+	} else {
+		arch_register_req_t const *const req    = arch_get_register_req(env_cg->arch_env, node, BE_OUT_POS(proj));
+		int                        const n_outs = get_ia32_n_res(new_call);
+		int                              i;
+
+		assert(proj      >= pn_be_Call_first_res);
+		assert(req->type == arch_register_req_type_limited);
+
+		for (i = 0; i < n_outs; ++i) {
+			arch_register_req_t const *const new_req = get_ia32_out_req(new_call, i);
+
+			if (new_req->type     != arch_register_req_type_limited ||
+			    new_req->cls      != req->cls                       ||
+			    *new_req->limited != *req->limited)
+				continue;
+
+			proj = i;
+			break;
+		}
+		assert(i < n_outs);
+	}
+
+	res = new_rd_Proj(dbgi, irg, block, new_call, mode, proj);
+
+	/* TODO arch_set_irn_register() only operates on Projs, need variant with index */
+	switch (proj) {
+		case pn_ia32_Call_stack:
+			arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+			break;
+
+		case pn_ia32_Call_fpcw:
+			arch_set_irn_register(env_cg->arch_env, res, &ia32_fp_cw_regs[REG_FPCW]);
+			break;
+	}
+
+	return res;
 }
 
 /**
@@ -4593,11 +4685,16 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	assert(n_outs < (int) sizeof(unsigned) * 8);
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		int      pn   = get_Proj_proj(proj);
+		int      pn;
+
+		/* The node could be kept */
+		if (is_End(proj))
+			continue;
 
 		if (get_irn_mode(proj) == mode_M)
 			continue;
 
+		pn = get_Proj_proj(proj);
 		assert(pn < n_outs);
 		found_projs |= 1 << pn;
 	}
