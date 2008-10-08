@@ -3024,6 +3024,27 @@ static void apply_cf(ir_node *block, void *ctx) {
 }  /* apply_cf */
 
 /**
+ * Exchange a node by its leader.
+ * Beware: in rare cases the mode might be wrong here, for instance
+ * AddP(x, NULL) is a follower of x, but with different mode.
+ * Fix it here.
+ */
+static void exchange_leader(ir_node *irn, ir_node *leader) {
+	ir_mode *mode = get_irn_mode(irn);
+	if (mode != get_irn_mode(leader)) {
+		/* The conv is a no-op, so we are fre to place in
+		 * either in the block of the leader OR in irn's block.
+		 * Propably placing it into leaders block might reduce
+		 * the number of Conv due to CSE. */
+		ir_node  *block = get_nodes_block(leader);
+		dbg_info *dbg   = get_irn_dbg_info(irn);
+
+		leader = new_rd_Conv(dbg, current_ir_graph, block, leader, mode);
+	}
+	exchange(irn, leader);
+}
+
+/**
  * Post-Walker, apply the analysis results;
  */
 static void apply_result(ir_node *irn, void *ctx) {
@@ -3095,7 +3116,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 					node->node = c;
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));
 					DBG_OPT_COMBO(irn, c, FS_OPT_COMBO_CONST);
-					exchange(irn, c);
+					exchange_leader(irn, c);
 					env->modified = 1;
 				}
 			} else if (is_entity(node->type.sym.entity_p)) {
@@ -3107,7 +3128,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, symc));
 					DBG_OPT_COMBO(irn, symc, FS_OPT_COMBO_CONST);
-					exchange(irn, symc);
+					exchange_leader(irn, symc);
 					env->modified = 1;
 				}
 			} else if (is_Confirm(irn)) {
@@ -3121,7 +3142,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
 					else
 						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
-					exchange(irn, leader);
+					exchange_leader(irn, leader);
 					env->modified = 1;
 				}
 			}
