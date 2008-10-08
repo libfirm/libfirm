@@ -23,6 +23,13 @@
  * @author  Michael Beck
  * @version $Id$
  *
+ * This is a slightly enhanced version of Cliff Clicks combo algorithm
+ * - support for commutative node is added, add(a,b) and add(b,a) ARE congruent
+ * - supports all Firm direct (by a data edge) identities except Mux
+ *   (Mux can be a 2-input or 1-input identity, only 2-input is implemented yet)
+ * - supports Confirm nodes (handle them like COpies but do NOT remove them)
+ * - support for global congruences is implemented but not tested yet
+ *
  * Note further that we use the terminology from Click's work here, which is different
  * in some cases from Firm terminology.  Especially, Click's type is a
  * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
@@ -168,6 +175,7 @@ typedef struct environment_t {
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
 	char            nonstd_cond;    /**< Set, if a Condb note has a non-Cmp predecessor. */
 	char            modified;       /**< Set, if the graph was modified. */
+	char            commutative;    /**< Set, if commutation nodes should be handled specially. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
@@ -186,6 +194,9 @@ typedef void *(*what_func)(const node_t *node, environment_t *env);
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
+
+/** The what reason. */
+DEBUG_ONLY(static const char *what_reason;)
 
 /** Next partition number. */
 DEBUG_ONLY(static unsigned part_nr = 0);
@@ -219,6 +230,54 @@ static void check_partition(const partition_t *T) {
 	}
 }  /* check_partition */
 
+/**
+ * check that all leader nodes in the partition have the same opcode.
+ */
+static void check_opcode(const partition_t *Z) {
+	node_t       *node;
+	opcode_key_t key;
+	int          first = 1;
+
+	list_for_each_entry(node_t, node, &Z->Leader, node_list) {
+		ir_node *irn = node->node;
+
+		if (first) {
+			key.code   = get_irn_opcode(irn);
+			key.mode   = get_irn_mode(irn);
+			key.arity  = get_irn_arity(irn);
+			key.u.proj = 0;
+			key.u.ent  = NULL;
+
+			switch (get_irn_opcode(irn)) {
+			case iro_Proj:
+				key.u.proj = get_Proj_proj(irn);
+				break;
+			case iro_Sel:
+				key.u.ent = get_Sel_entity(irn);
+				break;
+			default:
+				break;
+			}
+			first = 0;
+		} else {
+			assert(key.code   == get_irn_opcode(irn));
+			assert(key.mode   == get_irn_mode(irn));
+			assert(key.arity  == get_irn_arity(irn));
+
+			switch (get_irn_opcode(irn)) {
+			case iro_Proj:
+				assert(key.u.proj == get_Proj_proj(irn));
+				break;
+			case iro_Sel:
+				assert(key.u.ent == get_Sel_entity(irn));
+				break;
+			default:
+				break;
+			}
+		}
+	}
+}  /* check_opcode */
+
 static void check_all_partitions(environment_t *env) {
 	partition_t *P;
 	node_t      *node;
@@ -226,6 +285,8 @@ static void check_all_partitions(environment_t *env) {
 #ifdef DEBUG_libfirm
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next) {
 		check_partition(P);
+		if (! P->type_is_T_or_C)
+			check_opcode(P);
 		list_for_each_entry(node_t, node, &P->Follower, node_list) {
 			node_t *leader = identity(node);
 
@@ -334,11 +395,24 @@ static void dump_all_partitions(const environment_t *env) {
 		dump_partition("", P);
 }
 
+/**
+ * Sump a split list.
+ */
+static void dump_split_list(const partition_t *list) {
+	const partition_t *p;
+
+	DB((dbg, LEVEL_2, "Split by %s produced = {\n", what_reason));
+	for (p = list; p != NULL; p = p->split_next)
+		DB((dbg, LEVEL_2, "part%u, ", p->nr));
+	DB((dbg, LEVEL_2, "\n}\n"));
+}
+
 #else
 #define dump_partition(msg, part)
 #define dump_race_list(msg, list)
 #define dump_list(msg, list)
 #define dump_all_partitions(env)
+#define dump_split_list(list)
 #endif
 
 #if defined(VERIFY_MONOTONE) && defined (DEBUG_libfirm)
@@ -429,7 +503,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
  * @return a hash value for the given opcode map entry
  */
 static unsigned opcode_hash(const opcode_key_t *entry) {
-	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ent);
+	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ent) + entry->arity;
 }  /* opcode_hash */
 
 /**
@@ -1128,7 +1202,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	 */
 	if (transitions) {
 		/* place partitions on the cprop list */
-                if (X_prime->on_cprop == 0) {
+		if (X_prime->on_cprop == 0) {
 			X_prime->cprop_next = env->cprop;
 			env->cprop          = X_prime;
 			X_prime->on_cprop   = 1;
@@ -1228,6 +1302,11 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 
 			succ = edge->use;
 
+			/* only non-commutative nodes */
+			if (env->commutative &&
+			    (idx == 0 || idx == 1) && is_op_commutative(get_irn_op(succ)))
+				continue;
+
 			/* ignore the "control input" for non-pinned nodes
 			if we are running in GCSE mode */
 			if (idx < end_idx && get_irn_pinned(succ) != op_pin_state_pinned)
@@ -1242,7 +1321,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 
 			if (is_constant_type(y->type)) {
 				ir_opcode code = get_irn_opcode(succ);
-				if (code == iro_Sub || code == iro_Eor || code == iro_Cmp)
+				if (code == iro_Sub || code == iro_Cmp)
 					add_to_cprop(y, env);
 			}
 
@@ -1255,6 +1334,57 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 		}
 	}
 }  /* collect_touched */
+
+/**
+ * Collect commutative nodes to the touched list.
+ *
+ * @param list  the list which contains the nodes that must be evaluated
+ * @param env   the environment
+ */
+static void collect_commutative_touched(list_head *list, environment_t *env) {
+	node_t  *x, *y;
+
+	list_for_each_entry(node_t, x, list, node_list) {
+		int num_edges;
+
+		num_edges = get_irn_n_outs(x->node);
+
+		x->next_edge = x->n_followers + 1;
+
+		/* for all edges in x.L.def_use_{idx} */
+		while (x->next_edge <= num_edges) {
+			const ir_def_use_edge *edge = &x->node->out[x->next_edge];
+			ir_node               *succ;
+
+			/* check if we have necessary edges */
+			if (edge->pos > 1)
+				break;
+
+			++x->next_edge;
+			if (edge->pos < 0)
+				continue;
+
+			succ = edge->use;
+
+			/* only commutative nodes */
+			if (!is_op_commutative(get_irn_op(succ)))
+				continue;
+
+			y = get_irn_node(succ);
+			if (is_constant_type(y->type)) {
+				ir_opcode code = get_irn_opcode(succ);
+				if (code == iro_Eor)
+					add_to_cprop(y, env);
+			}
+
+			/* Partitions of constants should not be split simply because their Nodes have unequal
+			   functions or incongruent inputs. */
+			if (type_is_neither_top_nor_const(y->type)) {
+				add_to_touched(y, env);
+			}
+		}
+	}
+}  /* collect_commutative_touched */
 
 /**
  * Split the partitions if caused by the first entry on the worklist.
@@ -1271,6 +1401,44 @@ static void cause_splits(environment_t *env) {
 	X->on_worklist = 0;
 
 	dump_partition("Cause_split: ", X);
+
+	if (env->commutative) {
+		/* handle commutative nodes first */
+
+		/* empty the touched set: already done, just clear the list */
+		env->touched = NULL;
+
+		collect_commutative_touched(&X->Leader, env);
+		collect_commutative_touched(&X->Follower, env);
+
+		for (Z = env->touched; Z != NULL; Z = N) {
+			node_t   *e;
+			node_t   *touched  = Z->touched;
+			unsigned n_touched = Z->n_touched;
+
+			assert(Z->touched != NULL);
+
+			/* beware, split might change Z */
+			N = Z->touched_next;
+
+			/* remove it from the touched set */
+			Z->on_touched = 0;
+
+			/* Empty local Z.touched. */
+			for (e = touched; e != NULL; e = e->next) {
+				assert(e->is_follower == 0);
+				e->on_touched = 0;
+			}
+			Z->touched   = NULL;
+			Z->n_touched = 0;
+
+			if (0 < n_touched && n_touched < Z->n_leader) {
+				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
+				split(&Z, touched, env);
+			} else
+				assert(n_touched <= Z->n_leader);
+		}
+	}
 
 	/* combine temporary leader and follower list */
 	for (idx = -1; idx <= X->max_user_inputs; ++idx) {
@@ -1354,7 +1522,7 @@ static partition_t *split_by_what(partition_t *X, what_func What,
 		S = iter->list;
 
 		/* Add SPLIT( X, S ) to P. */
-		DB((dbg, LEVEL_2, "Split part%d by what\n", X->nr));
+		DB((dbg, LEVEL_2, "Split part%d by WHAT = %s\n", X->nr, what_reason));
 		R = split(&X, S, env);
 		R->split_next = *P;
 		*P            = R;
@@ -1407,7 +1575,13 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 	int     i = env->lambda_input;
 
 	if (i >= get_irn_arity(node->node)) {
-		/* we are outside the allowed range */
+		/*
+		 * We are outside the allowed range: This can happen even
+		 * if we have split by opcode first: doing so might move Followers
+		 * to Leaders and those will have a different opcode!
+		 * Note that in this case the partition is on the cprop list and will be
+		 * split again.
+		 */
 		return NULL;
 	}
 
@@ -1421,6 +1595,58 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 
 	return p->part;
 }  /* lambda_partition */
+
+/** lambda n.(n[i].partition) for commutative nodes */
+static void *lambda_commutative_partition(const node_t *node, environment_t *env) {
+	ir_node     *irn     = node->node;
+	ir_node     *skipped = skip_Proj(irn);
+	ir_node     *pred, *left, *right;
+	node_t      *p;
+	partition_t *pl, *pr;
+	int         i = env->lambda_input;
+
+	if (i >= get_irn_arity(node->node)) {
+		/*
+		 * We are outside the allowed range: This can happen even
+		 * if we have split by opcode first: doing so might move Followers
+		 * to Leaders and those will have a different opcode!
+		 * Note that in this case the partition is on the cprop list and will be
+		 * split again.
+		 */
+		return NULL;
+	}
+
+	/* ignore the "control input" for non-pinned nodes
+	   if we are running in GCSE mode */
+	if (i < env->end_idx && get_irn_pinned(skipped) != op_pin_state_pinned)
+		return NULL;
+
+	if (i == -1) {
+		pred = get_irn_n(skipped, i);
+		p    = get_irn_node(pred);
+		return p->part;
+	}
+
+	if (is_op_commutative(get_irn_op(irn))) {
+		/* normalize partition order by returning the "smaller" on input 0,
+		   the "bigger" on input 1. */
+		left  = get_binop_left(irn);
+		pl    = get_irn_node(left)->part;
+		right = get_binop_right(irn);
+		pr    = get_irn_node(right)->part;
+
+		if (i == 0)
+			return pl < pr ? pl : pr;
+		else
+		return pl > pr ? pl : pr;
+	} else {
+		/* a not split out Follower */
+		pred = get_irn_n(irn, i);
+		p    = get_irn_node(pred);
+
+		return p->part;
+	}
+}  /* lambda_commutative_partition */
 
 /**
  * Returns true if a type is a constant.
@@ -1451,8 +1677,9 @@ static void split_by(partition_t *X, environment_t *env) {
 		return;
 	}
 
-	DB((dbg, LEVEL_2, "WHAT = lambda n.(n.type) on part%d\n", X->nr));
+	DEBUG_ONLY(what_reason = "lambda n.(n.type)";)
 	P = split_by_what(X, lambda_type, &P, env);
+	dump_split_list(P);
 
 	/* adjust the type tags, we have split partitions by type */
 	for (I = P; I != NULL; I = I->split_next) {
@@ -1469,8 +1696,9 @@ static void split_by(partition_t *X, environment_t *env) {
 			if (! Y->type_is_T_or_C) {
 				partition_t *Q = NULL;
 
-				DB((dbg, LEVEL_2, "WHAT = lambda n.(n.opcode) on part%d\n", Y->nr));
+				DEBUG_ONLY(what_reason = "lambda n.(n.opcode)";)
 				Q = split_by_what(Y, lambda_opcode, &Q, env);
+				dump_split_list(Q);
 
 				do {
 					partition_t *Z = Q;
@@ -1480,6 +1708,11 @@ static void split_by(partition_t *X, environment_t *env) {
 						const node_t *first = get_first_node(Z);
 						int          arity  = get_irn_arity(first->node);
 						partition_t  *R, *S;
+						what_func    what = lambda_partition;
+						DEBUG_ONLY(char buf[64];)
+
+						if (env->commutative && is_op_commutative(get_irn_op(first->node)))
+							what = lambda_commutative_partition;
 
 						/*
 						 * BEWARE: during splitting by input 2 for instance we might
@@ -1496,8 +1729,10 @@ static void split_by(partition_t *X, environment_t *env) {
 								R = R->split_next;
 								if (Z_prime->n_leader > 1) {
 									env->lambda_input = input;
-									DB((dbg, LEVEL_2, "WHAT = lambda n.(n[%d].partition) on part%d\n", input, Z_prime->nr));
-									S = split_by_what(Z_prime, lambda_partition, &S, env);
+									DEBUG_ONLY(snprintf(buf, sizeof(buf), "lambda n.(n[%d].partition)", input);)
+									DEBUG_ONLY(what_reason = buf;)
+									S = split_by_what(Z_prime, what, &S, env);
+									dump_split_list(S);
 								} else {
 									Z_prime->split_next = S;
 									S                   = Z_prime;
@@ -2993,6 +3228,7 @@ void combo(ir_graph *irg) {
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
 	env.nonstd_cond    = 0;
+	env.commutative    = 1;
 	env.modified       = 0;
 
 	assure_irg_outs(irg);
