@@ -1824,7 +1824,6 @@ static void ia32_register_emitters(void)
 	/* firm emitter */
 	EMIT(Jmp);
 	IGN(Phi);
-	IGN(Proj);
 	IGN(Start);
 
 #undef BE_EMIT
