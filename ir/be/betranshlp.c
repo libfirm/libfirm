@@ -146,7 +146,6 @@ ir_node *be_transform_node(ir_node *node) {
 	}
 
 	be_set_transformed_node(node, new_node);
-	mark_irn_visited(new_node);
 	hook_dead_node_elim_subst(current_ir_graph, node, new_node);
 	return new_node;
 }
