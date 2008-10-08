@@ -24,10 +24,10 @@
  * @version $Id$
  *
  * This is a slightly enhanced version of Cliff Clicks combo algorithm
- * - support for commutative node is added, add(a,b) and add(b,a) ARE congruent
+ * - support for commutative nodes is added, Add(a,b) and Add(b,a) ARE congruent
  * - supports all Firm direct (by a data edge) identities except Mux
  *   (Mux can be a 2-input or 1-input identity, only 2-input is implemented yet)
- * - supports Confirm nodes (handle them like COpies but do NOT remove them)
+ * - supports Confirm nodes (handle them like Copies but do NOT remove them)
  * - support for global congruences is implemented but not tested yet
  *
  * Note further that we use the terminology from Click's work here, which is different
@@ -368,21 +368,21 @@ static void do_dump_list(const char *msg, const node_t *node, int ofs) {
 	DB((dbg, LEVEL_3, "\n}\n"));
 
 #undef GET_LINK
-}
+}  /* do_dump_list */
 
 /**
  * Dumps a race list.
  */
 static void dump_race_list(const char *msg, const node_t *list) {
 	do_dump_list(msg, list, offsetof(node_t, race_next));
-}
+}  /* dump_race_list */
 
 /**
  * Dumps a local list.
  */
 static void dump_list(const char *msg, const node_t *list) {
 	do_dump_list(msg, list, offsetof(node_t, next));
-}
+}  /* dump_list */
 
 /**
  * Dump all partitions.
@@ -393,7 +393,7 @@ static void dump_all_partitions(const environment_t *env) {
 	DB((dbg, LEVEL_2, "All partitions\n===============\n"));
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next)
 		dump_partition("", P);
-}
+}  /* dump_all_partitions */
 
 /**
  * Sump a split list.
@@ -405,7 +405,7 @@ static void dump_split_list(const partition_t *list) {
 	for (p = list; p != NULL; p = p->split_next)
 		DB((dbg, LEVEL_2, "part%u, ", p->nr));
 	DB((dbg, LEVEL_2, "\n}\n"));
-}
+}  /* dump_split_list */
 
 #else
 #define dump_partition(msg, part)
@@ -436,7 +436,7 @@ static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_
 		return;
 	}
 	panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
-}
+}  /* verify_type */
 #else
 #define verify_type(old_type, new_type)
 #endif
@@ -477,7 +477,7 @@ static void listmap_term(listmap_t *map) {
  * @param map  the listmap
  * @param id   the id to search for
  *
- * @return the asociated listmap entry for the given id
+ * @return the associated listmap entry for the given id
  */
 static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
 	listmap_entry_t key, *entry;
@@ -703,7 +703,6 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 		/* check if all Cond's have a Cmp predecessor. */
 		if (get_irn_mode(irn) == mode_b && !is_Cmp(skip_Proj(get_Cond_selector(irn))))
 			env->nonstd_cond = 1;
-
 	}
 }  /* create_initial_partitions */
 
@@ -983,7 +982,7 @@ static int is_real_follower(const ir_node *irn, int input) {
 		break;
 	}
 	return 1;
-}
+}  /* is_real_follower */
 
 /**
  * Do one step in the race.
@@ -1267,7 +1266,7 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type) {
 		return 0;
 	}
 	return 1;
-}
+}  /* type_is_neither_top_nor_const */
 
 /**
  * Collect nodes to the touched list.
@@ -2004,7 +2003,8 @@ static void compute_Sub(node_t *node) {
 		tv = get_mode_null(mode);
 
 		/* if the node was ONCE evaluated by all constants, but now
-		   this breakes AND we cat by partition a different result, switch to bottom.
+		   this breaks AND we get from the argument partitions a different
+		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->by_all_const && node->type.tv != tv)
 			tv = tarval_bottom;
@@ -2045,7 +2045,8 @@ static void compute_Eor(node_t *node) {
 		tv = get_mode_null(mode);
 
 		/* if the node was ONCE evaluated by all constants, but now
-		   this breakes AND we cat by partition a different result, switch to bottom.
+		   this breaks AND we get from the argument partitions a different
+		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->by_all_const && node->type.tv != tv)
 			tv = tarval_bottom;
@@ -2126,7 +2127,8 @@ not_equal:
 #endif
 
 		/* if the node was ONCE evaluated by all constants, but now
-		   this breakes AND we cat by partition a different result, switch to bottom.
+		   this breaks AND we get from the argument partitions a different
+		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
 		if (node->by_all_const && node->type.tv != tv)
 			tv = tarval_bottom;
@@ -2286,18 +2288,18 @@ static void compute_Confirm(node_t *node) {
  * @param node  the node
  */
 static void compute_Max(node_t *node) {
-	ir_node        *op   = node->node;
-	node_t         *l    = get_irn_node(get_binop_left(op));
-	node_t         *r    = get_irn_node(get_binop_right(op));
-	lattice_elem_t a     = l->type;
-	lattice_elem_t b     = r->type;
+	ir_node        *op = node->node;
+	node_t         *l  = get_irn_node(get_binop_left(op));
+	node_t         *r  = get_irn_node(get_binop_right(op));
+	lattice_elem_t a   = l->type;
+	lattice_elem_t b   = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
 		if (a.tv == b.tv) {
-			/* this case handles symconsts as well */
+			/* this case handles SymConsts as well */
 			node->type = a;
 		} else {
 			ir_mode *mode   = get_irn_mode(op);
@@ -2330,18 +2332,18 @@ static void compute_Max(node_t *node) {
  * @param node  the node
  */
 static void compute_Min(node_t *node) {
-	ir_node        *op   = node->node;
-	node_t         *l    = get_irn_node(get_binop_left(op));
-	node_t         *r    = get_irn_node(get_binop_right(op));
-	lattice_elem_t a     = l->type;
-	lattice_elem_t b     = r->type;
+	ir_node        *op = node->node;
+	node_t         *l  = get_irn_node(get_binop_left(op));
+	node_t         *r  = get_irn_node(get_binop_right(op));
+	lattice_elem_t a   = l->type;
+	lattice_elem_t b   = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
 		if (a.tv == b.tv) {
-			/* this case handles symconsts as well */
+			/* this case handles SymConsts as well */
 			node->type = a;
 		} else {
 			ir_mode *mode   = get_irn_mode(op);
@@ -2509,7 +2511,7 @@ static node_t *identity_Sub(node_t *node) {
 	if (b->type.tv == get_mode_null(mode))
 		return get_irn_node(get_Sub_left(sub));
 	return node;
-}  /* identity_Mul */
+}  /* identity_Sub */
 
 /**
  * Calculates the Identity for And nodes.
@@ -2674,9 +2676,8 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
 }  /* segregate_def_use_chain_1 */
 
 /**
- * Node follower is a (new) follower of leader, segregate Leader
- * out edges. If follower is a n-congruent Input identity, all follower
- * inputs congruent to follower are also leader.
+ * Node follower is a (new) follower segregate its Leader
+ * out edges.
  *
  * @param follower  the follower IR node
  */
@@ -2845,7 +2846,7 @@ static int can_exchange(ir_node *pred) {
 		int i, k;
 
 		/* if the predecessor block has more than one
-		reachable outputs we cannot remove the block */
+		   reachable outputs we cannot remove the block */
 		k = 0;
 		for (i = get_irn_n_outs(pred) - 1; i >= 0; --i) {
 			ir_node *proj = get_irn_out(pred, i);
@@ -3020,7 +3021,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		set_irn_in(block, k, in_X);
 		env->modified = 1;
 	}
-}
+}  /* apply_cf */
 
 /**
  * Post-Walker, apply the analysis results;
@@ -3099,7 +3100,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 				}
 			} else if (is_entity(node->type.sym.entity_p)) {
 				if (! is_SymConst(irn)) {
-					/* can be replaced by a Symconst */
+					/* can be replaced by a SymConst */
 					ir_node *symc = new_r_SymConst(current_ir_graph, block->node, get_irn_mode(irn), node->type.sym, symconst_addr_ent);
 					set_irn_node(symc, node);
 					node->node = symc;
@@ -3211,7 +3212,6 @@ void combo(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.combo");
-	//firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DB((dbg, LEVEL_1, "Doing COMBO for %+F\n", irg));
 
