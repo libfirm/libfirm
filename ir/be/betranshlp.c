@@ -46,8 +46,6 @@
 
 typedef struct be_transform_env_t {
 	ir_graph *irg;         /**< The irg, the node should be created in */
-	int      visited;      /**< visited count that indicates whether a
-	                            node is already transformed */
 	waitq    *worklist;    /**< worklist of nodes that still need to be
 	                            transformed */
 	ir_node  *old_anchor;  /**< the old anchor node in the old irg */
@@ -271,7 +269,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform,
 	inc_irg_visited(irg);
 
 	env.irg         = irg;
-	env.visited     = get_irg_visited(irg);
 	env.worklist    = new_waitq();
 	env.old_anchor  = irg->anchor;
 
