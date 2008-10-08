@@ -1924,6 +1924,23 @@ static void ia32_register_emitters(void)
 typedef void (*emit_func_ptr) (const ir_node *);
 
 /**
+ * Assign and emit an exception label if the current instruction can fail.
+ */
+static void ia32_assign_exc_label(ir_node *node)
+{
+	/* assign a new ID to the instruction */
+	set_ia32_exc_label_id(node, ++exc_label_id);
+	/* print it */
+	ia32_emit_exc_label(node);
+	be_emit_char(':');
+	be_emit_pad_comment();
+	be_emit_cstring("/* exception to Block ");
+	ia32_emit_cfop_target(node);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
+}
+
+/**
  * Emits code for a node.
  */
 static void ia32_emit_node(ir_node *node)
@@ -2146,25 +2163,6 @@ static void ia32_gen_labels(ir_node *block, void *data)
 			ARR_APP1(exc_entry, *exc_list, e);
 			set_irn_link(pred, block);
 		}
-	}
-}
-
-/**
- * Assign and emit an exception label if the current instruction can fail.
- */
-void ia32_assign_exc_label(ir_node *node)
-{
-	if (get_ia32_exc_label(node)) {
-		/* assign a new ID to the instruction */
-		set_ia32_exc_label_id(node, ++exc_label_id);
-		/* print it */
-		ia32_emit_exc_label(node);
-		be_emit_char(':');
-		be_emit_pad_comment();
-		be_emit_cstring("/* exception to Block ");
-		ia32_emit_cfop_target(node);
-		be_emit_cstring(" */\n");
-		be_emit_write_line();
 	}
 }
 

@@ -50,6 +50,5 @@ void ia32_emit_am(const ir_node *node);
 void ia32_emit_x87_binop(const ir_node *node);
 
 void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
-void ia32_assign_exc_label(ir_node *node);
 
 #endif
