@@ -763,12 +763,6 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	am->commutative = commutative;
 }
 
-static void set_transformed_and_mark(ir_node *const old_node, ir_node *const new_node)
-{
-	mark_irn_visited(old_node);
-	be_set_transformed_node(old_node, new_node);
-}
-
 static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 {
 	ir_mode  *mode;
@@ -781,7 +775,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 	mode = get_irn_mode(node);
 	load = get_Proj_pred(am->mem_proj);
 
-	set_transformed_and_mark(load, node);
+	be_set_transformed_node(load, node);
 
 	if (mode != mode_T) {
 		set_irn_mode(node, mode_T);
@@ -2024,9 +2018,9 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
-	set_transformed_and_mark(get_Proj_pred(am.mem_proj), new_node);
+	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
 	mem_proj = be_transform_node(am.mem_proj);
-	set_transformed_and_mark(mem_proj ? mem_proj : am.mem_proj, new_node);
+	be_set_transformed_node(mem_proj ? mem_proj : am.mem_proj, new_node);
 
 	return new_node;
 }
@@ -2060,9 +2054,9 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	set_ia32_ls_mode(new_node, mode);
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
-	set_transformed_and_mark(get_Proj_pred(am.mem_proj), new_node);
+	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
 	mem_proj = be_transform_node(am.mem_proj);
-	set_transformed_and_mark(mem_proj ? mem_proj : am.mem_proj, new_node);
+	be_set_transformed_node(mem_proj ? mem_proj : am.mem_proj, new_node);
 
 	return new_node;
 }
@@ -3535,7 +3529,7 @@ static ir_node *gen_be_Return(ir_node *node) {
 	                          arity, in);
 	copy_node_attr(barrier, new_barrier);
 	be_duplicate_deps(barrier, new_barrier);
-	set_transformed_and_mark(barrier, new_barrier);
+	be_set_transformed_node(barrier, new_barrier);
 
 	/* transform normally */
 	return be_duplicate_node(node);

@@ -56,8 +56,10 @@ typedef struct be_transform_env_t {
 
 static be_transform_env_t env;
 
-void be_set_transformed_node(ir_node *old_node, ir_node *new_node) {
+void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
+{
 	set_irn_link(old_node, new_node);
+	mark_irn_visited(old_node);
 }
 
 int be_is_transformed(const ir_node *node) {
