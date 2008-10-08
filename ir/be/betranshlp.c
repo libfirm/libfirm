@@ -132,7 +132,6 @@ ir_node *be_transform_node(ir_node *node) {
 	if (new_node != NULL)
 		return new_node;
 
-	mark_irn_visited(node);
 	DEBUG_ONLY(be_set_transformed_node(node, NULL));
 
 	op = get_irn_op(node);
