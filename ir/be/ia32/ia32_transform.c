@@ -4498,18 +4498,19 @@ static ir_node *gen_Proj(ir_node *node) {
 		return gen_Proj_Bound(node);
 	case iro_Start:
 		proj = get_Proj_proj(node);
-		if (proj == pn_Start_X_initial_exec) {
-			ir_node *block = get_nodes_block(pred);
-			dbg_info *dbgi = get_irn_dbg_info(node);
-			ir_node *jump;
+		switch (proj) {
+			case pn_Start_X_initial_exec: {
+				ir_node  *block     = get_nodes_block(pred);
+				ir_node  *new_block = be_transform_node(block);
+				dbg_info *dbgi      = get_irn_dbg_info(node);
+				/* we exchange the ProjX with a jump */
+				ir_node  *jump      = new_rd_Jmp(dbgi, current_ir_graph, new_block);
 
-			/* we exchange the ProjX with a jump */
-			block = be_transform_node(block);
-			jump  = new_rd_Jmp(dbgi, current_ir_graph, block);
-			return jump;
-		}
-		if (node == be_get_old_anchor(anchor_tls)) {
-			return gen_Proj_tls(node);
+				return jump;
+			}
+
+			case pn_Start_P_tls:
+				return gen_Proj_tls(node);
 		}
 		break;
 
