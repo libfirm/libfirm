@@ -1792,39 +1792,39 @@ static void ia32_register_emitters(void)
 	ia32_register_spec_emitters();
 
 	/* other ia32 emitter functions */
+	IA32_EMIT2(Conv_I2I8Bit, Conv_I2I);
 	IA32_EMIT(Asm);
 	IA32_EMIT(CMov);
-	IA32_EMIT(IMul);
-	IA32_EMIT(SwitchJmp);
+	IA32_EMIT(Const);
+	IA32_EMIT(Conv_FP2FP);
+	IA32_EMIT(Conv_FP2I);
+	IA32_EMIT(Conv_I2FP);
+	IA32_EMIT(Conv_I2I);
 	IA32_EMIT(CopyB);
 	IA32_EMIT(CopyB_i);
-	IA32_EMIT(Conv_I2FP);
-	IA32_EMIT(Conv_FP2I);
-	IA32_EMIT(Conv_FP2FP);
-	IA32_EMIT(Conv_I2I);
-	IA32_EMIT2(Conv_I2I8Bit, Conv_I2I);
-	IA32_EMIT(Const);
+	IA32_EMIT(GetEIP);
+	IA32_EMIT(IMul);
+	IA32_EMIT(Jcc);
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
-	IA32_EMIT(Jcc);
-	IA32_EMIT(GetEIP);
+	IA32_EMIT(SwitchJmp);
 
 	/* benode emitter */
 	BE_EMIT(Call);
-	BE_EMIT(IncSP);
 	BE_EMIT(Copy);
 	BE_EMIT(CopyKeep);
+	BE_EMIT(IncSP);
 	BE_EMIT(Perm);
 	BE_EMIT(Return);
 
-	BE_IGN(RegParams);
 	BE_IGN(Barrier);
 	BE_IGN(Keep);
+	BE_IGN(RegParams);
 
 	/* firm emitter */
 	EMIT(Jmp);
-	IGN(Proj);
 	IGN(Phi);
+	IGN(Proj);
 	IGN(Start);
 
 #undef BE_EMIT
