@@ -1370,9 +1370,6 @@ static void emit_ia32_Asm(const ir_node *node)
  */
 static void emit_CopyB_prolog(unsigned size)
 {
-	be_emit_cstring("\tcld");
-	be_emit_finish_line_gas(NULL);
-
 	if (size & 1) {
 		be_emit_cstring("\tmovsb");
 		be_emit_finish_line_gas(NULL);
