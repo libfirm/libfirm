@@ -1125,20 +1125,18 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 		be_emit_cstring(":\n");
 		be_emit_write_line();
 
-		be_emit_cstring(".long ");
-		ia32_emit_cfop_target(tbl.branches[0].target);
-		be_emit_finish_line_gas(NULL);
-
 		last_value = tbl.branches[0].value;
-		for (i = 1; i < tbl.num_branches; ++i) {
-			while (++last_value < tbl.branches[i].value) {
+		for (i = 0; i != tbl.num_branches; ++i) {
+			while (last_value != tbl.branches[i].value) {
 				be_emit_cstring(".long ");
 				ia32_emit_cfop_target(tbl.defProj);
 				be_emit_finish_line_gas(NULL);
+				++last_value;
 			}
 			be_emit_cstring(".long ");
 			ia32_emit_cfop_target(tbl.branches[i].target);
 			be_emit_finish_line_gas(NULL);
+			++last_value;
 		}
 		be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	} else {
