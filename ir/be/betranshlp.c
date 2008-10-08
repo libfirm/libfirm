@@ -360,8 +360,6 @@ static ir_node *gen_Block(ir_node *node) {
 		set_Block_MacroBlock(block, macroblock);
 	}
 
-	be_set_transformed_node(node, block);
-
 	/* put the preds in the worklist */
 	be_enqueue_preds(node);
 
@@ -381,7 +379,6 @@ static ir_node *gen_End(ir_node *node) {
 	be_duplicate_deps(node, new_end);
 
 	set_irg_end(irg, new_end);
-	be_set_transformed_node(new_end, new_end);
 
 	/* transform preds */
 	arity = get_irn_arity(node);

@@ -1590,7 +1590,6 @@ static ir_node *gen_Phi(ir_node *node) {
 	copy_node_attr(node, phi);
 	be_duplicate_deps(node, phi);
 
-	be_set_transformed_node(node, phi);
 	be_enqueue_preds(node);
 
 	return phi;
