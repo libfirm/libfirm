@@ -446,12 +446,14 @@ void ia32_emit_x87_binop(const ir_node *node)
 			{
 				const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
 				const arch_register_t *in1      = x87_attr->x87[0];
-				const arch_register_t *in2      = x87_attr->x87[1];
+				const arch_register_t *in       = x87_attr->x87[1];
 				const arch_register_t *out      = x87_attr->x87[2];
-				const arch_register_t *in;
 
-				in  = out ? ((out == in2) ? in1 : in2) : in2;
-				out = out ? out : in1;
+				if (out == NULL) {
+					out = in1;
+				} else if (out == in) {
+					in = in1;
+				}
 
 				be_emit_char('%');
 				be_emit_string(arch_register_get_name(in));
