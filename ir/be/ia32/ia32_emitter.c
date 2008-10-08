@@ -1373,21 +1373,13 @@ static void emit_CopyB_prolog(unsigned size)
 	be_emit_cstring("\tcld");
 	be_emit_finish_line_gas(NULL);
 
-	switch (size) {
-	case 1:
+	if (size & 1) {
 		be_emit_cstring("\tmovsb");
 		be_emit_finish_line_gas(NULL);
-		break;
-	case 2:
+	}
+	if (size & 2) {
 		be_emit_cstring("\tmovsw");
 		be_emit_finish_line_gas(NULL);
-		break;
-	case 3:
-		be_emit_cstring("\tmovsb");
-		be_emit_finish_line_gas(NULL);
-		be_emit_cstring("\tmovsw");
-		be_emit_finish_line_gas(NULL);
-		break;
 	}
 }
 
@@ -1411,7 +1403,7 @@ static void emit_ia32_CopyB_i(const ir_node *node)
 {
 	unsigned size = get_ia32_copyb_size(node);
 
-	emit_CopyB_prolog(size & 0x3);
+	emit_CopyB_prolog(size);
 
 	size >>= 2;
 	while (size--) {
