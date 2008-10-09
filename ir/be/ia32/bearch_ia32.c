@@ -70,6 +70,7 @@
 #include "../begnuas.h"
 #include "../bestate.h"
 #include "../beflags.h"
+#include "../betranshlp.h"
 
 #include "bearch_ia32_t.h"
 
@@ -1560,8 +1561,7 @@ static ir_node *ia32_get_pic_base(void *self) {
 	get_eip     = new_rd_ia32_GetEIP(NULL, cg->irg, block);
 	cg->get_eip = get_eip;
 
-	add_irn_dep(get_eip, get_irg_frame(cg->irg));
-
+	be_dep_on_frame(get_eip);
 	return get_eip;
 }
 

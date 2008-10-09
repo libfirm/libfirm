@@ -654,11 +654,8 @@ ir_node *gen_ASM(ir_node *node)
 	new_node = new_rd_ia32_Asm(dbgi, irg, new_block, arity, in, out_arity,
 	                           get_ASM_text(node), register_map);
 
-	/* Prevent the ASM node from being scheduled before the Barrier, if it has
-	 * no inputs */
-	if (arity == 0 && get_irg_start_block(irg) == new_block) {
-		add_irn_dep(new_node, get_irg_frame(irg));
-	}
+	if (arity == 0)
+		be_dep_on_frame(new_node);
 
 	set_ia32_out_req_all(new_node, out_reg_reqs);
 	set_ia32_in_req_all(new_node, in_reg_reqs);
@@ -713,7 +710,7 @@ ir_node *gen_CopyB(ir_node *node) {
 		size >>= 2;
 
 		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
-		add_irn_dep(res, get_irg_frame(irg));
+		be_dep_on_frame(res);
 
 		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem, rem);
 	} else {
@@ -769,12 +766,7 @@ ir_node *gen_Unknown(ir_node *node)
 			ir_node  *block = get_irg_start_block(irg);
 			ir_node  *ret   = new_rd_ia32_vfldz(dbgi, irg, block);
 
-			/* Const Nodes before the initial IncSP are a bad idea, because
-			 * they could be spilled and we have no SP ready at that point yet.
-			 * So add a dependency to the initial frame pointer calculation to
-			 * avoid that situation.
-			 */
-			add_irn_dep(ret, get_irg_frame(irg));
+			be_dep_on_frame(ret);
 			return ret;
 		}
 	} else if (ia32_mode_needs_gp_reg(mode)) {

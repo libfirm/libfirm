@@ -89,8 +89,7 @@ static ir_node *create_mov_node(dbg_info *dbg, ir_node *block, long value) {
 	if (mode_needs_gp_reg(mode))
 		mode = mode_Iu;
 	res = new_rd_arm_Mov_i(dbg, irg, block, mode, value);
-	/* ensure the const is scheduled AFTER the stack frame */
-	add_irn_dep(res, get_irg_frame(irg));
+	be_dep_on_frame(res);
 	return res;
 }
 
@@ -105,8 +104,7 @@ static ir_node *create_mvn_node(dbg_info *dbg, ir_node *block, long value) {
 	if (mode_needs_gp_reg(mode))
 		mode = mode_Iu;
 	res = new_rd_arm_Mvn_i(dbg, irg, block, mode, value);
-	/* ensure the const is scheduled AFTER the stack frame */
-	add_irn_dep(res, get_irg_frame(irg));
+	be_dep_on_frame(res);
 	return res;
 }
 
@@ -1077,8 +1075,7 @@ static ir_node *gen_Const(ir_node *node) {
 			} else {
 				node = new_rd_arm_fpaConst(dbg, irg, block, tv);
 			}
-			/* ensure the const is scheduled AFTER the stack frame */
-			add_irn_dep(node, get_irg_frame(irg));
+			be_dep_on_frame(node);
 			return node;
 		}
 		else if (USE_VFP(env_cg->isa)) {
@@ -1105,8 +1102,7 @@ static ir_node *gen_SymConst(ir_node *node) {
 	ir_node  *res;
 
 	res = new_rd_arm_SymConst(dbg, irg, block, mode, get_sc_ident(node));
-	/* ensure the const is scheduled AFTER the stack frame */
-	add_irn_dep(res, get_irg_frame(irg));
+	be_dep_on_frame(res);
 	return res;
 }
 

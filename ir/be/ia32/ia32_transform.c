@@ -291,16 +291,9 @@ static ir_node *gen_Const(ir_node *node) {
 			}
 		}
 end:
-		/* Const Nodes before the initial IncSP are a bad idea, because
-		 * they could be spilled and we have no SP ready at that point yet.
-		 * So add a dependency to the initial frame pointer calculation to
-		 * avoid that situation.
-		 */
-		if (get_irg_start_block(irg) == block) {
-			add_irn_dep(load, get_irg_frame(irg));
-		}
-
 		SET_IA32_ORIG_NODE(load, ia32_get_old_node_name(env_cg, node));
+
+		be_dep_on_frame(load);
 		return res;
 	} else { /* non-float mode */
 		ir_node *cnst;
@@ -318,11 +311,7 @@ end:
 		cnst = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, val);
 		SET_IA32_ORIG_NODE(cnst, ia32_get_old_node_name(env_cg, node));
 
-		/* see above */
-		if (get_irg_start_block(irg) == block) {
-			add_irn_dep(cnst, get_irg_frame(irg));
-		}
-
+		be_dep_on_frame(cnst);
 		return cnst;
 	}
 }
@@ -358,15 +347,9 @@ static ir_node *gen_SymConst(ir_node *node) {
 		cnst = new_rd_ia32_Const(dbgi, irg, block, entity, 0, 0);
 	}
 
-	/* Const Nodes before the initial IncSP are a bad idea, because
-	 * they could be spilled and we have no SP ready at that point yet
-	 */
-	if (get_irg_start_block(irg) == block) {
-		add_irn_dep(cnst, get_irg_frame(irg));
-	}
-
 	SET_IA32_ORIG_NODE(cnst, ia32_get_old_node_name(env_cg, node));
 
+	be_dep_on_frame(cnst);
 	return cnst;
 }
 
@@ -1093,7 +1076,7 @@ static ir_node *gen_Add(ir_node *node) {
 		ir_graph *irg = current_ir_graph;
 		new_node = new_rd_ia32_Const(dbgi, irg, new_block, addr.symconst_ent,
 		                             addr.symconst_sign, addr.offset);
-		add_irn_dep(new_node, get_irg_frame(irg));
+		be_dep_on_frame(new_node);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 		return new_node;
 	}
@@ -1388,7 +1371,7 @@ static ir_node *create_Div(ir_node *node)
 
 	if (mode_is_signed(mode)) {
 		ir_node *produceval = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
-		add_irn_dep(produceval, get_irg_frame(irg));
+		be_dep_on_frame(produceval);
 		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block, am.new_op1,
 		                                  produceval);
 
@@ -1397,7 +1380,7 @@ static ir_node *create_Div(ir_node *node)
 		                            am.new_op1, sign_extension);
 	} else {
 		sign_extension = new_rd_ia32_Const(dbgi, irg, new_block, NULL, 0, 0);
-		add_irn_dep(sign_extension, get_irg_frame(irg));
+		be_dep_on_frame(sign_extension);
 
 		new_node = new_rd_ia32_Div(dbgi, irg, new_block, addr->base,
 		                           addr->index, new_mem, am.new_op2,
@@ -1495,8 +1478,8 @@ static ir_node *gen_Shrs(ir_node *node) {
 			ir_node  *op     = left;
 			ir_node  *new_op = be_transform_node(op);
 			ir_node  *pval   = new_rd_ia32_ProduceVal(dbgi, irg, block);
-			add_irn_dep(pval, get_irg_frame(irg));
 
+			be_dep_on_frame(pval);
 			return new_rd_ia32_Cltd(dbgi, irg, block, new_op, pval);
 		}
 	}
@@ -1724,7 +1707,7 @@ static ir_node *gen_Abs(ir_node *node)
 		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block,
 		                                           new_op, pval);
 
-		add_irn_dep(pval, get_irg_frame(irg));
+		be_dep_on_frame(pval);
 		SET_IA32_ORIG_NODE(sign_extension,ia32_get_old_node_name(env_cg, node));
 
 		xor = new_rd_ia32_Xor(dbgi, irg, new_block, noreg_gp, noreg_gp,
@@ -1897,15 +1880,9 @@ static ir_node *gen_Load(ir_node *node) {
 		add_ia32_flags(new_node, arch_irn_flags_rematerializable);
 	}
 
-	/* make sure we are scheduled behind the initial IncSP/Barrier
-	 * to avoid spills being placed before it
-	 */
-	if (block == get_irg_start_block(irg)) {
-		add_irn_dep(new_node, get_irg_frame(irg));
-	}
-
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
+	be_dep_on_frame(new_node);
 	return new_node;
 }
 

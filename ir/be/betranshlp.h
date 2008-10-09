@@ -54,6 +54,12 @@ ir_node *be_transform_node(ir_node *node);
 void be_duplicate_deps(ir_node *old_node, ir_node *new_node);
 
 /**
+ * Depend on the frame if the node is in the start block.  This prevents
+ * nodes being scheduled before they can be spilled.
+ */
+void be_dep_on_frame(ir_node *node);
+
+/**
  * Duplicate a node during transformation.
  */
 ir_node *be_duplicate_node(ir_node *node);

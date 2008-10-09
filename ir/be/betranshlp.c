@@ -85,6 +85,14 @@ void be_duplicate_deps(ir_node *old_node, ir_node *new_node) {
 	}
 }
 
+void be_dep_on_frame(ir_node *const node)
+{
+	ir_graph *const irg = current_ir_graph;
+
+	if (get_irg_start_block(irg) == get_nodes_block(node))
+		add_irn_dep(node, get_irg_frame(irg));
+}
+
 ir_node *be_duplicate_node(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_graph *irg   = env.irg;
