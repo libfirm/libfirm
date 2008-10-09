@@ -855,29 +855,32 @@ static int try_load_after_store(ir_node *load,
 	store_mode     = get_irn_mode(get_Store_value(store));
 	store_mode_len = get_mode_size_bytes(store_mode);
 	delta          = load_offset - store_offset;
-	if (delta < 0 || delta + load_mode_len > store_mode_len)
-		return 0;
+	store_value    = get_Store_value(store);
 
-	if (get_mode_arithmetic(store_mode) != irma_twos_complement ||
-	    get_mode_arithmetic(load_mode)  != irma_twos_complement)
-		return 0;
+	if (delta != 0 || store_mode != load_mode) {
+		if (delta < 0 || delta + load_mode_len > store_mode_len)
+			return 0;
 
-	store_value = get_Store_value(store);
+		if (get_mode_arithmetic(store_mode) != irma_twos_complement ||
+			get_mode_arithmetic(load_mode)  != irma_twos_complement)
+			return 0;
 
-	/* produce a shift to adjust offset delta */
-	if (delta > 0) {
-		ir_node *cnst;
 
-		/* FIXME: only true for little endian */
-		cnst        = new_Const_long(mode_Iu, delta * 8);
-		store_value = new_r_Shr(current_ir_graph, get_nodes_block(load),
-		                        store_value, cnst, store_mode);
-	}
+		/* produce a shift to adjust offset delta */
+		if (delta > 0) {
+			ir_node *cnst;
 
-	/* add an convert if needed */
-	if (store_mode != load_mode) {
-		store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
-		                         store_value, load_mode);
+			/* FIXME: only true for little endian */
+			cnst        = new_Const_long(mode_Iu, delta * 8);
+			store_value = new_r_Shr(current_ir_graph, get_nodes_block(load),
+									store_value, cnst, store_mode);
+		}
+
+		/* add an convert if needed */
+		if (store_mode != load_mode) {
+			store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
+									 store_value, load_mode);
+		}
 	}
 
 	DBG_OPT_RAW(load, store_value);
