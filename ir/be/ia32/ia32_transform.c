@@ -4740,16 +4740,16 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 }
 
 /* do the transformation */
-void ia32_transform_graph(ia32_code_gen_t *cg) {
+void ia32_transform_graph(ia32_code_gen_t *cg)
+{
 	int cse_last;
-	ir_graph *irg = cg->irg;
 
 	register_transformers();
 	env_cg       = cg;
 	initial_fpcw = NULL;
 
 	BE_TIMER_PUSH(t_heights);
-	heights      = heights_new(irg);
+	heights      = heights_new(cg->irg);
 	BE_TIMER_POP(t_heights);
 	ia32_calculate_non_address_mode_nodes(cg->birg);
 
