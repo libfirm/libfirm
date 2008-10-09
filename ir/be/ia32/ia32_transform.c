@@ -4641,8 +4641,9 @@ static void register_transformers(void)
 /**
  * Pre-transform all unknown and noreg nodes.
  */
-static void ia32_pretransform_node(void *arch_cg) {
-	ia32_code_gen_t *cg = arch_cg;
+static void ia32_pretransform_node(void)
+{
+	ia32_code_gen_t *cg = env_cg;
 
 	cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
 	cg->unknown_vfp = be_pre_transform_node(cg->unknown_vfp);
@@ -4758,7 +4759,7 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 	cse_last = get_opt_cse();
 	set_opt_cse(0);
 
-	be_transform_graph(cg->birg, ia32_pretransform_node, cg);
+	be_transform_graph(cg->birg, ia32_pretransform_node);
 
 	set_opt_cse(cse_last);
 

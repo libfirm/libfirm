@@ -1173,7 +1173,7 @@ void mips_transform_graph(mips_code_gen_t *cg)
 {
 	env_cg = cg;
 	register_transformers();
-	be_transform_graph(cg->birg, NULL, cg);
+	be_transform_graph(cg->birg, NULL);
 }
 
 /**

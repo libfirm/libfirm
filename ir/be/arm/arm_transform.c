@@ -1712,8 +1712,9 @@ static void arm_register_transformers(void) {
 /**
  * Pre-transform all unknown nodes.
  */
-static void arm_pretransform_node(void *arch_cg) {
-	arm_code_gen_t *cg = arch_cg;
+static void arm_pretransform_node(void)
+{
+	arm_code_gen_t *cg = env_cg;
 
 	cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
 	cg->unknown_fpa = be_pre_transform_node(cg->unknown_fpa);
@@ -1764,7 +1765,7 @@ void arm_transform_graph(arm_code_gen_t *cg) {
 	}
 	arm_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->birg, arm_pretransform_node, cg);
+	be_transform_graph(cg->birg, arm_pretransform_node);
 }
 
 void arm_init_transform(void) {

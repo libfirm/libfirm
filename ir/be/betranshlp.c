@@ -253,8 +253,7 @@ static void kill_unused_anchor(int anchor)
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */
-static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform,
-                            void *cg)
+static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 {
 	int       i;
 	ir_node  *old_end, *new_anchor;
@@ -291,7 +290,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform,
 	kill_unused_anchor(anchor_tls);
 
 	if (pre_transform)
-		(*pre_transform)(cg);
+		pre_transform();
 
 	/* process worklist (this should transform all nodes in the graph) */
 	while (! waitq_empty(env.worklist)) {
@@ -384,7 +383,7 @@ static ir_node *gen_End(ir_node *node) {
 	return new_end;
 }
 
-void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
+void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func)
 {
 	ir_graph *irg = birg->irg;
 	ir_graph *old_current_ir_graph = current_ir_graph;
@@ -409,7 +408,7 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg)
 	op_End->ops.generic   = (op_func)gen_End;
 
 	/* do the main transformation */
-	transform_nodes(irg, func, cg);
+	transform_nodes(irg, func);
 
 	/* free the old obstack */
 	obstack_free(old_obst, 0);

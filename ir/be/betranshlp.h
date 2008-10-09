@@ -33,7 +33,7 @@
 /**
  * A callback to pre-transform some nodes before the transformation starts.
  */
-typedef void (arch_pretrans_nodes)(void *arch_cg);
+typedef void (arch_pretrans_nodes)(void);
 
 /**
  * The type of a transform function.
@@ -76,6 +76,6 @@ void be_enqueue_preds(ir_node *node);
 /**
  * Transform a graph. Transformers must be registered first.
  */
-void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func, void *cg_env);
+void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func);
 
 #endif /* FIRM_BE_BETRANSHLP_H */
