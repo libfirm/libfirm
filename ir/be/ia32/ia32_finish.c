@@ -338,16 +338,18 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 			/* set copy as in */
 			set_irn_n(node, same_pos, copy);
 
-			DBG((dbg, LEVEL_1, "created copy %+F for should be same argument "
-			     "at input %d of %+F\n", copy, same_pos, node));
+			DBG((dbg, LEVEL_1,
+				"created copy %+F for should be same argument at input %d of %+F\n",
+				copy, same_pos, node));
 			continue;
 		}
 
 		/* for commutative nodes we can simply swap the left/right */
 		if (uses_out_reg_pos == n_ia32_binary_right && is_ia32_commutative(node)) {
 			ia32_swap_left_right(node);
-			DBG((dbg, LEVEL_1, "swapped left/right input of %+F to resolve "
-	   		     "should be same constraint\n", node));
+			DBG((dbg, LEVEL_1,
+				"swapped left/right input of %+F to resolve should be same constraint\n",
+				node));
 			continue;
 		}
 
@@ -369,9 +371,9 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 
 		sched_add_before(node, perm);
 
-		DBG((dbg, LEVEL_1, "created perm %+F for should be same argument "
-		     "at input %d of %+F (need permutate with %+F)\n", perm, same_pos,
-		     node, uses_out_reg));
+		DBG((dbg, LEVEL_1,
+			"created perm %+F for should be same argument at input %d of %+F (need permutate with %+F)\n",
+			perm, same_pos, node, uses_out_reg));
 
 		/* use the perm results */
 		for(i2 = 0; i2 < arity; ++i2) {
