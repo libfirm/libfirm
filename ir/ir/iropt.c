@@ -1252,10 +1252,12 @@ restart:
 				if (n_mode == mode_b) {
 					n = b; /* Convb(Conv*(xxxb(...))) == xxxb(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+					return n;
 				} else if (get_mode_arithmetic(n_mode) == get_mode_arithmetic(a_mode)) {
 					if (values_in_mode(b_mode, a_mode)) {
 						n = b;        /* ConvS(ConvL(xxxS(...))) == xxxS(...) */
 						DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+						return n;
 					}
 				}
 			}
@@ -1276,6 +1278,7 @@ restart:
 						set_Conv_strict(b, 1);
 					n = b; /* ConvA(ConvB(ConvA(...))) == ConvA(...) */
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+					return n;
 				}
 			}
 		}
