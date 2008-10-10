@@ -788,7 +788,7 @@ static void walker(ir_node *proj, void *env)
 	}
 
 	n = ir_nodeset_size(&pi.user_mem);
-	if (n != 0) { /* nothing happend otherwise */
+	if (n != 0) { /* nothing happened otherwise */
 		ir_graph               *irg  = current_ir_graph;
 		ir_node                *sync;
 		ir_node               **in;
