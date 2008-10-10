@@ -889,6 +889,8 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 		i = n_ia32_binary_right;
 	}
 
+	assert(is_NoMem(get_irn_n(irn, n_ia32_mem)));
+
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, n_ia32_mem,  spill);
 	set_irn_n(irn, i,           ia32_get_admissible_noreg(ia32_current_cg, irn, i));
