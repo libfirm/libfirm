@@ -599,9 +599,9 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 					case 'R': {
 						const arch_register_t *reg = va_arg(ap, const arch_register_t*);
+						if (mod & EMIT_ALTERNATE_AM)
+							be_emit_char('*');
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
-							if (mod & EMIT_ALTERNATE_AM)
-								be_emit_char('*');
 							ia32_emit_am(node);
 						} else {
 							emit_register(reg, NULL);
@@ -681,6 +681,8 @@ emit_S:
 						be_emit_char('$');
 					emit_ia32_Immediate_no_prefix(in);
 				} else {
+					if (mod & EMIT_ALTERNATE_AM)
+						be_emit_char('*');
 					const arch_register_t *reg = get_in_reg(node, pos);
 					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				}
