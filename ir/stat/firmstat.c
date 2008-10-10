@@ -970,7 +970,7 @@ static void update_node_stat(ir_node *node, void *env)
 	node_entry_t *entry;
 
 	ir_op *op = stat_get_irn_op(node);
-	int arity = get_irn_arity(node);
+	int i, arity = get_irn_arity(node);
 
 	entry = opcode_get_entry(op, graph->opcode_hash);
 
@@ -1001,6 +1001,16 @@ static void update_node_stat(ir_node *node, void *env)
 		/* check address properties */
 		stat_update_address(get_Store_ptr(node), graph);
 		break;
+	case iro_Phi:
+		/* check for non-strict Phi nodes */
+		for (i = arity - 1; i >= 0; --i) {
+			ir_node *pred = get_Phi_pred(node, i);
+			if (is_Unknown(pred)) {
+				/* found an Unknown predecessor, graph is not strict */
+				graph->is_strict = 0;
+				break;
+			}
+		}
 	default:
 		;
 	}  /* switch */
@@ -1186,6 +1196,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	graph->is_leaf_call  = LCS_UNKNOWN;
 	graph->is_recursive  = 0;
 	graph->is_chain_call = 1;
+	graph->is_strict     = 1;
 
 	/* create new block counter */
 	graph->block_hash = new_pset(block_cmp, 5);
@@ -1550,6 +1561,7 @@ static void stat_new_graph(void *ctx, ir_graph *irg, ir_entity *ent) {
 		graph->is_leaf_call  = 0;
 		graph->is_recursive  = 0;
 		graph->is_chain_call = 0;
+		graph->is_strict     = 1;
 		graph->is_analyzed   = 0;
 	}
 	STAT_LEAVE;

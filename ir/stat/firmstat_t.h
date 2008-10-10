@@ -167,6 +167,7 @@ typedef struct _graph_entry_t {
 	unsigned                   is_leaf_call:2;               /**< set, if this irg calls only leaf functions */
 	unsigned                   is_recursive:1;               /**< set, if this irg has recursive calls */
 	unsigned                   is_chain_call:1;              /**< set, if this irg is a chain call */
+	unsigned                   is_strict:1;                  /**< set, if this irg represents a strict program */
 	unsigned                   is_analyzed:1;                /**< helper: set, if this irg was already analysed */
 } graph_entry_t;
 

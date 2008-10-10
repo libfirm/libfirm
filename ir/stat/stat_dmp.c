@@ -485,6 +485,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			" calls only leaf functions : %s\n"
 			" recursive                 : %s\n"
 			" chain call                : %s\n"
+			" strict                    : %s\n"
 			" calls                     : %u\n"
 			" indirect calls            : %u\n"
 			" external calls            : %u\n",
@@ -497,6 +498,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 			entry->is_leaf_call == LCS_NON_LEAF_CALL ? "NO" : (entry->is_leaf_call == LCS_LEAF_CALL ? "Yes" : "Maybe"),
 			entry->is_recursive ? "YES" : "NO",
 			entry->is_chain_call ? "YES" : "NO",
+			entry->is_strict ? "YES" : "NO",
 			cnt_to_uint(&entry->cnt[gcnt_all_calls]),
 			cnt_to_uint(&entry->cnt[gcnt_indirect_calls]),
 			cnt_to_uint(&entry->cnt[gcnt_external_calls])
