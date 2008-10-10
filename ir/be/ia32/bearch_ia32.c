@@ -832,7 +832,9 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 			return 0;
 
 		case ia32_am_unary:
-			return i == n_ia32_unary_op;
+			if (i != n_ia32_unary_op)
+				return 0;
+			break;
 
 		case ia32_am_binary:
 			switch (i) {
@@ -847,20 +849,27 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 					req = get_ia32_in_req(irn, n_ia32_binary_left);
 					if (req->type & arch_register_req_type_limited)
 						return 0;
-
-					return 1;
+					break;
 				}
 
 				case n_ia32_binary_right:
-					return 1;
+					break;
 
 				default:
 					return 0;
 			}
+			break;
 
 		default:
 			panic("Unknown AM type");
 	}
+
+	/* HACK: must not already use "real" memory.
+	 * This can happen for Call and Div */
+	if (!is_NoMem(get_irn_n(irn, n_ia32_mem)))
+		return 0;
+
+	return 1;
 }
 
 static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
