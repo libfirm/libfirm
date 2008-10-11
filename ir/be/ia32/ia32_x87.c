@@ -1721,8 +1721,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 	return node_added;
 }
 
-static
-void keep_float_node_alive(x87_state *state, ir_node *node)
+static void keep_float_node_alive(ir_node *node)
 {
 	ir_graph                    *irg;
 	ir_node                     *block;
@@ -1732,7 +1731,7 @@ void keep_float_node_alive(x87_state *state, ir_node *node)
 
 	irg    = get_irn_irg(node);
 	block  = get_nodes_block(node);
-	cls    = arch_get_irn_reg_class(state->sim->arch_env, node, -1);
+	cls    = arch_get_irn_reg_class(node, -1);
 	in[0]  = node;
 	keep   = be_new_Keep(cls, irg, block, 1, in);
 
@@ -1837,7 +1836,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 	int                         op1_idx, out_idx;
 	unsigned                    live;
 
-	cls = arch_get_irn_reg_class(sim->arch_env, n, -1);
+	cls = arch_get_irn_reg_class(n, -1);
 	if (cls->regs != ia32_vfp_regs)
 		return 0;
 
@@ -1888,7 +1887,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		sched_add_before(next, node);
 
 		if (get_irn_n_edges(pred) == 0) {
-			keep_float_node_alive(state, pred);
+			keep_float_node_alive(pred);
 		}
 
 		DB((dbg, LEVEL_1, "<<< %+F %s -> ?\n", node, op1->name));

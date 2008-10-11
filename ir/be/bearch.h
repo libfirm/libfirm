@@ -194,14 +194,12 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
 
 /**
  * Get the register class of an operand of a node.
- * @param env The architecture environment.
  * @param irn The node.
  * @param pos The position of the operand, -1 for the output.
  * @return    The register class of the operand or NULL, if
  *            operand is a non-register operand.
  */
-extern const arch_register_class_t *
-arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos);
+const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos);
 
 /**
  * Get the register allocated at a certain output operand of a node.
@@ -241,11 +239,11 @@ extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node 
 
 #define arch_irn_is(env, irn, flag) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ ## flag) != 0)
 
-#define arch_irn_has_reg_class(env, irn, pos, cls) \
-	((cls) == arch_get_irn_reg_class(env, irn, pos))
+#define arch_irn_has_reg_class(irn, pos, cls) \
+	((cls) == arch_get_irn_reg_class(irn, pos))
 
 #define arch_irn_consider_in_reg_alloc(env, cls, irn) \
-	(arch_irn_has_reg_class(env, irn, -1, cls) && !arch_irn_is(env, irn, ignore))
+	(arch_irn_has_reg_class(irn, -1, cls) && !arch_irn_is(env, irn, ignore))
 
 /**
  * Get the operations of an irn.

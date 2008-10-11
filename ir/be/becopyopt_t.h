@@ -61,7 +61,7 @@ struct _copy_opt_t {
 
 #define get_irn_col(co, irn)		arch_register_get_index(arch_get_irn_register((co)->aenv, irn))
 #define set_irn_col(co, irn, col)	arch_set_irn_register((co)->aenv, irn, arch_register_for_index((co)->cls, col))
-#define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class((co)->aenv, irn, -1) == (co)->cls)
+#define is_curr_reg_class(co, irn)	(arch_get_irn_reg_class(irn, -1) == (co)->cls)
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 

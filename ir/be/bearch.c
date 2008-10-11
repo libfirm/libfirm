@@ -210,12 +210,10 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
 	return req->cls == reg->reg_class;
 }
 
-const arch_register_class_t *
-arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
+const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
-	(void)env; // TODO remove parameter
 
 	assert(req->type != arch_register_req_type_none || req->cls == NULL);
 

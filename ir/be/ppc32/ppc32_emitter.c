@@ -393,7 +393,7 @@ static void emit_ppc32_Switch(const ir_node *irn) {
  * Emits code for a backend Copy node
  */
 static void emit_be_Copy(const ir_node *irn) {
-	const arch_register_class_t *regclass = arch_get_irn_reg_class(arch_env, irn, 0);
+	const arch_register_class_t *regclass = arch_get_irn_reg_class(irn, 0);
 
 	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
 		be_emit_cstring("\tmr ");
@@ -415,7 +415,7 @@ static void emit_be_Copy(const ir_node *irn) {
  * Emits code for a backend Perm node
  */
 static void emit_be_Perm(const ir_node *irn) {
-	const arch_register_class_t *regclass = arch_get_irn_reg_class(arch_env, irn, 0);
+	const arch_register_class_t *regclass = arch_get_irn_reg_class(irn, 0);
 
 	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
 		be_emit_cstring("\txor ");

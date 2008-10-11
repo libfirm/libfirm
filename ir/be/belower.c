@@ -543,7 +543,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	pset                        *op_set   = env->op_set;
 	const arch_env_t            *arch_env = be_get_birg_arch_env(birg);
 	ir_node                     *block    = get_nodes_block(irn);
-	const arch_register_class_t *cls      = arch_get_irn_reg_class(arch_env, other_different, -1);
+	const arch_register_class_t *cls      = arch_get_irn_reg_class(other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
 	op_copy_assoc_t             key, *entry;
 	DEBUG_ONLY(firm_dbg_module_t *mod     = env->dbg;)
@@ -790,7 +790,6 @@ static void melt_copykeeps(constraint_env_t *cenv) {
  */
 void assure_constraints(be_irg_t *birg) {
 	ir_graph         *irg      = be_get_birg_irg(birg);
-	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
 	constraint_env_t cenv;
 	op_copy_assoc_t  *entry;
 	ir_node          **nodes;
@@ -844,7 +843,7 @@ void assure_constraints(be_irg_t *birg) {
 				ir_node *keep;
 				int     n = get_irn_arity(cp);
 
-				keep = be_new_Keep(arch_get_irn_reg_class(arch_env, cp, -1),
+				keep = be_new_Keep(arch_get_irn_reg_class(cp, -1),
 					irg, get_nodes_block(cp), n, get_irn_in(cp) + 1);
 				sched_add_before(cp, keep);
 
@@ -902,7 +901,7 @@ static int push_through_perm(ir_node *perm, void *data)
 	edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
 	one_proj = get_edge_src_irn(edge);
 	assert(is_Proj(one_proj));
-	cls      = arch_get_irn_reg_class(aenv, one_proj, -1);
+	cls      = arch_get_irn_reg_class(one_proj, -1);
 
 	/* Find the point in the schedule after which the
 	 * potentially movable nodes must be defined.

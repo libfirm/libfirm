@@ -648,8 +648,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 			}
 
 			if (is_Proj(user)) {
-
-				//if (arch_get_irn_reg_class(rss->arch_env, user, -1) == rss->cls)
+				//if (arch_get_irn_reg_class(user, -1) == rss->cls)
 					collect_descendants(rss, rirn, user, got_sink, cur_desc_walk);
 			}
 			else {
@@ -717,7 +716,7 @@ static void collect_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *irn, int *
 			ir_node *consumer = get_edge_src_irn(edge);
 
 			if (is_Proj(consumer)) {
-				//if (arch_get_irn_reg_class(rss->arch_env, consumer, -1) == rss->cls)
+				//if (arch_get_irn_reg_class(consumer, -1) == rss->cls)
 					collect_consumer(rss, rss_irn, consumer, got_sink);
 			}
 			else
@@ -2112,7 +2111,7 @@ static void process_block(ir_node *block, void *env) {
 			if (be_is_Keep(irn))
 				continue;
 
-			if (! arch_irn_is(rss->arch_env, irn, ignore) && arch_get_irn_reg_class(rss->arch_env, irn, -1) == cls) {
+			if (!arch_irn_is(rss->arch_env, irn, ignore) && arch_get_irn_reg_class(irn, -1) == cls) {
 				plist_insert_back(rss->nodes, skip_Proj(irn));
 			}
 			//}

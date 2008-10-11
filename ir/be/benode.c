@@ -470,7 +470,7 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 {
 	int i;
 	ir_node *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
 	ir_node *irn;
 	const arch_register_t *sp = arch_env->sp;
 	be_memperm_attr_t *attr;
@@ -1058,9 +1058,10 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn)
 {
 	ir_graph                    *irg       = get_irn_irg(block);
 	ir_node                     *frame     = get_irg_frame(irg);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn, -1);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
 	ir_node                     *spill;
+	(void)arch_env;
 
 	spill = be_new_Spill(cls, cls_frame, irg, block, frame, irn);
 	return spill;
@@ -1072,7 +1073,7 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 

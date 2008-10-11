@@ -248,7 +248,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 		phi_block = get_nodes_block(phi);
 		phi_reg   = get_reg(phi);
-		cls       = arch_get_irn_reg_class(get_chordal_arch(chordal_env), phi, -1);
+		cls       = arch_get_irn_reg_class(phi, -1);
 
 		/* process all arguments of the phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {

@@ -245,7 +245,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		const arch_register_t *reg;
 		const arch_register_req_t *req;
 
-		if (arch_get_irn_reg_class(aenv, irn, i) != env->cls)
+		if (arch_get_irn_reg_class(irn, i) != env->cls)
 			continue;
 
 		reg = arch_get_irn_register(aenv, op);

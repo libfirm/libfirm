@@ -4391,7 +4391,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 
 	/* transform call modes */
 	if (mode_is_data(mode)) {
-		cls  = arch_get_irn_reg_class(env_cg->arch_env, node, -1);
+		cls  = arch_get_irn_reg_class(node, -1);
 		mode = cls->mode;
 	}
 
