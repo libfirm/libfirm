@@ -52,7 +52,6 @@ typedef struct _trace_irn {
 
 typedef struct _trace_env {
 	trace_irn_t      *sched_info;               /**< trace scheduling information about the nodes */
-	const arch_env_t *arch_env;                 /**< the arch environment */
 	sched_timestep_t curr_time;                 /**< current time of the scheduler */
 	void             *selector_env;             /**< the backend selector environment */
 	const list_sched_selector_t *selector;      /**< the actual backend selector */
@@ -498,7 +497,6 @@ static trace_env_t *trace_init(const be_irg_t *birg) {
 	ir_graph    *irg = be_get_birg_irg(birg);
 	int         nn   = get_irg_last_idx(irg);
 
-	env->arch_env   = be_get_birg_arch_env(birg);
 	env->curr_time  = 0;
 	env->sched_info = NEW_ARR_F(trace_irn_t, nn);
 	env->liveness   = be_liveness(birg);
