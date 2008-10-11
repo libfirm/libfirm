@@ -195,11 +195,9 @@ int arch_is_register_operand(const ir_node *irn, int pos)
 	return req != NULL;
 }
 
-int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
-    int pos, const arch_register_t *reg)
+int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg)
 {
 	const arch_register_req_t *req = arch_get_register_req(irn, pos);
-	(void)env; // TODO remove parameter
 
 	if(req->type == arch_register_req_type_none)
 		return 0;

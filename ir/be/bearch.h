@@ -185,14 +185,12 @@ extern void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t 
 
 /**
  * Check, if a register is assignable to an operand of a node.
- * @param env The architecture environment.
  * @param irn The node.
  * @param pos The position of the operand.
  * @param reg The register.
  * @return    1, if the register might be allocated to the operand 0 if not.
  */
-extern int arch_reg_is_allocatable(const arch_env_t *env,
-    const ir_node *irn, int pos, const arch_register_t *reg);
+int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg);
 
 /**
  * Get the register class of an operand of a node.
