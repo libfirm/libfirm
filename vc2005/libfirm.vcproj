@@ -46,7 +46,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -126,7 +126,7 @@
 				AdditionalOptions="/WL"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include;../ir"
-				PreprocessorDefinitions="NO_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="NO_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -173,7 +173,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Header install"
-				CommandLine="cd ..&#x0D;&#x0A;mkdir ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /Y win32\firm_config.h ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /E /Y include\libfirm  ..\ipd\include\libfirm&#x0D;&#x0A;"
+				CommandLine="cd ..&#x0D;&#x0A;mkdir ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /E /Y include\libfirm  ..\ipd\include\libfirm&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -206,7 +206,7 @@
 				AdditionalOptions="/WL"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -253,7 +253,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Header install"
-				CommandLine="cd ..&#x0D;&#x0A;mkdir ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /Y win32\firm_config.h ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /E /Y include\libfirm  ..\ipd\include\libfirm&#x0D;&#x0A;"
+				CommandLine="cd ..&#x0D;&#x0A;mkdir ..\ipd\include\libfirm&#x0D;&#x0A;xcopy /M /E /Y include\libfirm  ..\ipd\include\libfirm&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -266,10 +266,6 @@
 			>
 			<File
 				RelativePath="..\win32\config.h"
-				>
-			</File>
-			<File
-				RelativePath="..\win32\firm_config.h"
 				>
 			</File>
 			<File
@@ -931,10 +927,6 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\ir\be\becopyheur3.c"
-					>
-				</File>
-				<File
 					RelativePath="..\ir\be\becopyheur4.c"
 					>
 				</File>
@@ -1265,14 +1257,6 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\beirgmod.h"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bejavacoal.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bejavacoal.h"
 					>
 				</File>
 				<File
