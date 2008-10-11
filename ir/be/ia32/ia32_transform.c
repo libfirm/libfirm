@@ -3440,7 +3440,7 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 	ir_node  *new_node;
 
 	new_node = new_rd_ia32_Lea(dbgi, irg, block, new_op, noreg);
-	set_ia32_frame_ent(new_node, arch_get_frame_entity(env_cg->arch_env, node));
+	set_ia32_frame_ent(new_node, arch_get_frame_entity(node));
 	set_ia32_use_frame(new_node);
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));

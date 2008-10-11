@@ -575,7 +575,7 @@ static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node,
 
 	/* beware: we might have Stores with Memory Proj's, ia32 fisttp for instance */
 	node = skip_Proj(node);
-	assert(arch_get_frame_entity(arch_env, node) == NULL);
+	assert(arch_get_frame_entity(node) == NULL);
 	arch_set_frame_entity(arch_env, node, entity);
 }
 

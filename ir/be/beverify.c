@@ -432,7 +432,7 @@ void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *
 
 static
 void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
-	ir_entity *spillent = arch_get_frame_entity(env->arch_env, node);
+	ir_entity *spillent = arch_get_frame_entity(node);
 	be_check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
@@ -543,7 +543,7 @@ static void collect_spills_walker(ir_node *node, void *data) {
 			env->problem_found = 1;
 			return;
 		}
-		ent = arch_get_frame_entity(env->arch_env, node);
+		ent = arch_get_frame_entity(node);
 		be_check_entity(env, node, ent);
 
 		collect(env, spill, node, ent);
@@ -588,7 +588,7 @@ static void check_lonely_spills(ir_node *node, void *data) {
 	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
 		if(be_is_Spill(node)) {
-			ir_entity *ent = arch_get_frame_entity(env->arch_env, node);
+			ir_entity *ent = arch_get_frame_entity(node);
 			be_check_entity(env, node, ent);
 		}
 

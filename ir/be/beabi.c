@@ -2399,7 +2399,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		   If so, set the true offset (including the bias) for that
 		   node.
 		 */
-		ir_entity *ent = arch_get_frame_entity(arch_env, irn);
+		ir_entity *ent = arch_get_frame_entity(irn);
 		if (ent) {
 			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(&env->frame, ent, bias);
