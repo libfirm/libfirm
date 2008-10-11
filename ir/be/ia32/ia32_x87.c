@@ -2432,6 +2432,8 @@ static void update_liveness_walker(ir_node *block, void *data)
 
 void x87_simulate_graph(be_irg_t *birg)
 {
+	/* TODO improve code quality (less executed fxch) by using execfreqs */
+
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;
 	x87_simulator sim;
