@@ -2403,7 +2403,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		if (ent) {
 			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(&env->frame, ent, bias);
-			arch_set_frame_offset(arch_env, irn, offset);
+			arch_set_frame_offset(irn, offset);
 			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
 			     ent, offset, bias));
 		}

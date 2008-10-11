@@ -133,7 +133,7 @@ typedef enum arch_irn_flags_t {
  */
 extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
 
-extern void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int bias);
+void arch_set_frame_offset(ir_node *irn, int bias);
 
 extern ir_entity *arch_get_frame_entity(const arch_env_t *env, const ir_node *irn);
 extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, ir_entity *ent);

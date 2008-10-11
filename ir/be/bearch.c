@@ -90,10 +90,9 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
 	return ops->get_irn_reg_req(irn, pos);
 }
 
-void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int offset)
+void arch_set_frame_offset(ir_node *irn, int offset)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	ops->set_frame_offset(irn, offset);
 }
 
