@@ -116,13 +116,12 @@ typedef enum arch_irn_class_t {
  * Some flags describing a node in more detail.
  */
 typedef enum arch_irn_flags_t {
-	arch_irn_flags_none             = 0, /**< Node flags. */
-	arch_irn_flags_dont_spill       = 1, /**< This must not be spilled. */
-	arch_irn_flags_rematerializable = 2, /**< This can be replicated instead of spilled/reloaded. */
-	arch_irn_flags_ignore           = 4, /**< Ignore node during register allocation. */
-	arch_irn_flags_modify_sp        = 8, /**< I modify the stack pointer. */
-	arch_irn_flags_modify_flags     = 16, /**< I modify flags. */
-	arch_irn_flags_last             = arch_irn_flags_modify_flags
+	arch_irn_flags_none             = 0,       /**< Node flags. */
+	arch_irn_flags_dont_spill       = 1U << 0, /**< This must not be spilled. */
+	arch_irn_flags_rematerializable = 1U << 1, /**< This can be replicated instead of spilled/reloaded. */
+	arch_irn_flags_ignore           = 1U << 2, /**< Ignore node during register allocation. */
+	arch_irn_flags_modify_sp        = 1U << 3, /**< I modify the stack pointer. */
+	arch_irn_flags_modify_flags     = 1U << 4  /**< I modify flags. */
 } arch_irn_flags_t;
 
 void arch_set_frame_offset(ir_node *irn, int bias);
