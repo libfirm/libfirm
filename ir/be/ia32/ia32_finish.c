@@ -401,103 +401,52 @@ static void fix_am_source(ir_node *irn, void *env)
 {
 	ia32_code_gen_t            *cg = env;
 	const arch_env_t           *arch_env = cg->arch_env;
-	ir_node                    *base;
-	ir_node                    *index;
-	ir_node                    *noreg;
-	const arch_register_t      *reg_base;
-	const arch_register_t      *reg_index;
 	const arch_register_req_t **reqs;
 	int                         n_res, i;
 
 	/* check only ia32 nodes with source address mode */
-	if (! is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
+	if (!is_ia32_irn(irn) || get_ia32_op_type(irn) != ia32_AddrModeS)
 		return;
 	/* only need to fix binary operations */
 	if (get_ia32_am_support(irn) != ia32_am_binary)
 		return;
 
-	base  = get_irn_n(irn, n_ia32_base);
-	index = get_irn_n(irn, n_ia32_index);
-
-	reg_base  = arch_get_irn_register(arch_env, base);
-	reg_index = arch_get_irn_register(arch_env, index);
-	reqs      = get_ia32_out_req_all(irn);
-
-	noreg = ia32_new_NoReg_gp(cg);
-
+	reqs  = get_ia32_out_req_all(irn);
 	n_res = get_ia32_n_res(irn);
 
 	for (i = 0; i < n_res; i++) {
-		if (arch_register_req_is(reqs[i], should_be_same)) {
-			/* get in and out register */
-			const arch_register_t *out_reg   = get_ia32_out_reg(irn, i);
-			int                    same_pos  = get_first_same(reqs[i]);
-			ir_node               *same_node = get_irn_n(irn, same_pos);
-			const arch_register_t *same_reg
-				= arch_get_irn_register(arch_env, same_node);
-			ir_graph              *irg   = cg->irg;
-			dbg_info              *dbgi  = get_irn_dbg_info(irn);
-			ir_node               *block = get_nodes_block(irn);
-			ir_node               *load;
-			ir_node               *load_res;
-			ir_node               *mem;
+		const arch_register_t *out_reg;
+		int                    same_pos;
+		ir_node               *same_node;
+		const arch_register_t *same_reg;
+		ir_node               *load_res;
 
-			/* should_be same constraint is fullfilled, nothing to do */
-			if (out_reg == same_reg)
-				continue;
+		if (!arch_register_req_is(reqs[i], should_be_same))
+			continue;
 
-			/* we only need to do something if the out reg is the same as base
-			   or index register */
-			if (out_reg != reg_base && out_reg != reg_index)
-				continue;
+		/* get in and out register */
+		out_reg   = get_ia32_out_reg(irn, i);
+		same_pos  = get_first_same(reqs[i]);
+		same_node = get_irn_n(irn, same_pos);
+		same_reg  = arch_get_irn_register(arch_env, same_node);
 
-			/* turn back address mode */
-			mem  = get_irn_n(irn, n_ia32_mem);
-			assert(get_irn_mode(mem) == mode_M);
-			load = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
+		/* should_be same constraint is fullfilled, nothing to do */
+		if (out_reg == same_reg)
+			continue;
 
-			/* copy address mode information to load */
-			set_ia32_op_type(load, ia32_AddrModeS);
-			ia32_copy_am_attrs(load, irn);
-			if (is_ia32_is_reload(irn))
-				set_ia32_is_reload(load);
+		/* we only need to do something if the out reg is the same as base
+			 or index register */
+		if (out_reg != arch_get_irn_register(arch_env, get_irn_n(irn, n_ia32_base)) &&
+				out_reg != arch_get_irn_register(arch_env, get_irn_n(irn, n_ia32_index)))
+			continue;
 
-			/* insert the load into schedule */
-			sched_add_before(irn, load);
+		load_res = turn_back_am(irn);
+		arch_set_irn_register(cg->arch_env, load_res, out_reg);
 
-			DBG((dbg, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
-
-			load_res = new_r_Proj(cg->irg, block, load, mode_Iu, pn_ia32_Load_res);
-			arch_set_irn_register(cg->arch_env, load_res, out_reg);
-
-			/* set the new input operand */
-			if (is_ia32_Immediate(get_irn_n(irn, n_ia32_binary_right)))
-				set_irn_n(irn, n_ia32_binary_left, load_res);
-			else
-				set_irn_n(irn, n_ia32_binary_right, load_res);
-			if (get_irn_mode(irn) == mode_T) {
-				const ir_edge_t *edge, *next;
-				foreach_out_edge_safe(irn, edge, next) {
-					ir_node *node = get_edge_src_irn(edge);
-					int      pn   = get_Proj_proj(node);
-					if (pn == pn_ia32_res) {
-						exchange(node, irn);
-					} else if (pn == pn_ia32_mem) {
-						set_Proj_pred(node, load);
-						set_Proj_proj(node, pn_ia32_Load_M);
-					} else {
-						panic("Unexpected Proj");
-					}
-				}
-				set_irn_mode(irn, mode_Iu);
-			}
-
-			/* this is a normal node now */
-			set_irn_n(irn, n_ia32_base,  noreg);
-			set_irn_n(irn, n_ia32_index, noreg);
-			set_ia32_op_type(irn, ia32_Normal);
-			break;
-		}
+		DBG((dbg, LEVEL_3,
+			"irg %+F: build back AM source for node %+F, inserted load %+F\n",
+			cg->irg, irn, get_Proj_pred(load_res)));
+		break;
 	}
 }
 
