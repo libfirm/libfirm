@@ -68,7 +68,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define SNPRINTF_BUF_LEN 128
 
-static const arch_env_t *arch_env;
 static const ia32_isa_t *isa;
 static ia32_code_gen_t  *cg;
 static int               do_pic;
@@ -2112,7 +2111,6 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	cg       = ia32_cg;
 	isa      = (const ia32_isa_t*) cg->arch_env;
-	arch_env = cg->arch_env;
 	do_pic   = cg->birg->main_env->options->pic;
 
 	ia32_register_emitters();
