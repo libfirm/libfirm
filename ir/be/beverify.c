@@ -147,7 +147,6 @@ typedef struct be_verify_schedule_env_t_ {
 	int      problem_found;     /**< flags indicating if there was a problem */
 	bitset_t *scheduled;        /**< bitset of scheduled nodes */
 	ir_graph *irg;              /**< the irg to check */
-	const arch_env_t *arch_env; /**< the arch_env */
 } be_verify_schedule_env_t;
 
 /**
@@ -344,7 +343,6 @@ int be_verify_schedule(const be_irg_t *birg)
 	env.problem_found = 0;
 	env.irg           = be_get_birg_irg(birg);
 	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
-	env.arch_env      = birg->main_env->arch_env;
 
 	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
 	/* check if all nodes are scheduled */
