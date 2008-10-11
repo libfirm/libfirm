@@ -31,9 +31,7 @@
  *  from the method type.
  *  The type information so far is saved in the link field.
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irtypeinfo.h"
 #include "irsimpletype.h"

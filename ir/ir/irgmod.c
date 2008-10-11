@@ -23,9 +23,7 @@
  * @author   Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irvrfy.h"
 #include "irflag_t.h"

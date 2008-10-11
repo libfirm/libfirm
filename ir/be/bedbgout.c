@@ -24,9 +24,7 @@
  * @date    11.9.2006
  * @version $Id: bestabs.c 17143 2008-01-02 20:56:33Z beck $
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "be_dbgout_t.h"
 #include "bemodule.h"

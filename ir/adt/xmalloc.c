@@ -26,9 +26,7 @@
 
 /* @@@ ToDo: replace this file with the one from liberty.
    [reimplement xstrdup, ... ] */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STRING_H
 # include <string.h>

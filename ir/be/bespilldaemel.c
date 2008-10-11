@@ -33,9 +33,7 @@
  *   Spilling in this context means placing a spill instruction behind the
  *   definition of the value and a reload before each usage.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "debug.h"
 

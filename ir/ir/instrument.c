@@ -24,9 +24,7 @@
  * @author  Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irgraph_t.h"
 #include "iredges.h"

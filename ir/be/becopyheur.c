@@ -32,9 +32,7 @@
  * and the qnode is reinserted in the queue. The first qnode colored without
  * conflicts is the best one.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "debug.h"
 #include "bitset.h"

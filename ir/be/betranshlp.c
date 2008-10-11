@@ -24,9 +24,7 @@
  * @date        14.06.2007
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "pdeq.h"
 #include "irop_t.h"

@@ -34,9 +34,7 @@
  * in some cases from Firm terminology.  Especially, Click's type is a
  * Firm tarval/entity, nevertheless we call it type here for "maximum compatibility".
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include <assert.h>
 

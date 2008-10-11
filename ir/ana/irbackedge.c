@@ -24,9 +24,7 @@
  * @date      7.2002
  * @version   $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode_t.h"
 #include "irgraph_t.h"

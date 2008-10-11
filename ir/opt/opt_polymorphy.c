@@ -25,9 +25,7 @@
  * @summary
  *  This file subsumes optimization code from cgana.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "iroptimize.h"
 #include "irprog_t.h"

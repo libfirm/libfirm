@@ -23,9 +23,7 @@
  * @author  Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "iropt_t.h"
 #include "irnode_t.h"

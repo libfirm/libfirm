@@ -23,9 +23,7 @@
  * @author  Matthias Braun, Christoph Mallon
  * @version $Id: cfopt.c 22579 2008-10-07 14:54:04Z beck $
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include <assert.h>
 #include <string.h>

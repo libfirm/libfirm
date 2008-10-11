@@ -29,9 +29,7 @@
  * Minimum Register Instruction Sequencing to Reduce Register Spills
  * in out-of-order issue superscalar architectures
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <limits.h>
 

@@ -45,9 +45,7 @@
  * @see  type_t.h type tpop
  */
 
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STRING_H
 # include <string.h>

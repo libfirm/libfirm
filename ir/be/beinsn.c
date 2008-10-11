@@ -23,9 +23,7 @@
  * @author      Sebastian Hack
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irgraph_t.h"
 #include "irmode_t.h"

@@ -43,9 +43,7 @@
 
     TODO: Fix Esmond's ugly MixedCapsIdentifiers ;->
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef PSET
 # define SET pset

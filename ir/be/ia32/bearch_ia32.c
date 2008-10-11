@@ -23,9 +23,7 @@
  * @author      Christian Wuerdig
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

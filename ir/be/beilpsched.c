@@ -29,9 +29,7 @@
  * by Daniel Kaestner and Sebastian Winkel
  * extended with register pressure constraints by Christian Wuerdig
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef WITH_ILP
 

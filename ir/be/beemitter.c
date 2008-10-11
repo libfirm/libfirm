@@ -24,9 +24,7 @@
  * @date        12.03.2007
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "beemitter.h"
 #include "irprintf.h"

@@ -23,9 +23,7 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel, Michael Beck
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irprog.h"
 #include "irop_t.h"

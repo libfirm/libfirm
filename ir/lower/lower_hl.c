@@ -23,9 +23,7 @@
  * @author  Boris Boesler, Goetz Lindenmaier, Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "lowering.h"
 #include "irmode_t.h"

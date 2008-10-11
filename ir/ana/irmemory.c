@@ -24,9 +24,7 @@
  * @date     27.12.2006
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdlib.h>
 #include <stdbool.h>

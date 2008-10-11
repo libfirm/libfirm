@@ -24,9 +24,7 @@
  * @author  Christoph Mallon, Matthias Braun
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "iroptimize.h"
 

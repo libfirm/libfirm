@@ -23,9 +23,7 @@
  * @author     Beyhan Veliev
  * @version    $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>

@@ -34,9 +34,7 @@
  * a next and prev pointers on blocks. The greedy algorithm sorts the edges by
  * execution frequencies and tries to transform them to fallthroughs in this order
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "beblocksched.h"
 

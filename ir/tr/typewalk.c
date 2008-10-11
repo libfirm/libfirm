@@ -29,9 +29,7 @@
  * - execute the pre function before recursion
  * - execute the post function after recursion
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>

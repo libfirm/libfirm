@@ -32,9 +32,7 @@
  *   capacity of the blocks to let global variables live through
  *   them.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <math.h>
 #include <limits.h>

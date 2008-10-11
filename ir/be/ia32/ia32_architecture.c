@@ -23,9 +23,7 @@
  * @author      Michael Beck, Matthias Braun
  * @version     $Id: bearch_ia32_t.h 16363 2007-10-25 23:27:07Z beck $
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

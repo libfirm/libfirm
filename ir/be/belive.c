@@ -24,9 +24,7 @@
  * @date        06.12.2004
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 /* statev is expensive here, only enable when needed */
 #define DISABLE_STATEV

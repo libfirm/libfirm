@@ -35,9 +35,7 @@
  *  requires no compute time.  As firm nodes can not be freed and reallocated
  *  pointers for nodes are unique (until a call of dead_node_elimination).
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irtypeinfo.h"
 

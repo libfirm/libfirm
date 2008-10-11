@@ -27,9 +27,7 @@
  * Implements "Strenght Reduction of Multiplications by Integer Constants" by Youfeng Wu.
  * Implements Division and Modulo by Consts from "Hackers Delight",
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>

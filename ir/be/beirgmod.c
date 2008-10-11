@@ -29,9 +29,7 @@
  * - empty block elimination
  * - a simple dead node elimination (set inputs of unreachable nodes to BAD)
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdlib.h>
 

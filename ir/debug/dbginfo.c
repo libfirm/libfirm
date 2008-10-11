@@ -24,9 +24,7 @@
  * @date     2001
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "dbginfo_t.h"
 #include "irnode_t.h"

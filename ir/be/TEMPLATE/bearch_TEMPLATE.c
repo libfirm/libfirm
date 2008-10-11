@@ -22,9 +22,7 @@
  * @brief    The main TEMPLATE backend driver file.
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "pseudo_irg.h"
 #include "irgwalk.h"

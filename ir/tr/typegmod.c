@@ -23,9 +23,7 @@
  * @author  Goetz Lindenmaier, Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "type_t.h"
 #include "tpop_t.h"

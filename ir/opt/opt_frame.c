@@ -26,9 +26,7 @@
  * @summary
  *   Optimize the frame type by removing unused type members.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "iroptimize.h"
 #include "irgraph_t.h"

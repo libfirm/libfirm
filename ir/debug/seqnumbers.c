@@ -30,9 +30,7 @@
  *  and a line number. The number 0 represents empty information.
  *  This module is an optional "snap-in" for the Firm debug info.
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "set.h"
 #include "hashptr.h"

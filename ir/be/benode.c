@@ -27,9 +27,7 @@
  * Backend node support for generic backend nodes.
  * This file provides Perm, Copy, Spill and Reload nodes.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdlib.h>
 

@@ -29,9 +29,7 @@
  * - Register-constrained nodes
  * - Two-address code instructions
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "execfreq.h"
 #include "xmalloc.h"

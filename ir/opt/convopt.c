@@ -36,9 +36,7 @@
  * TODO: * try to optimize cmp modes
  *       * decide when it is useful to move the convs through phis
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "iroptimize.h"
 

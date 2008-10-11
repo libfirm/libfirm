@@ -23,9 +23,7 @@
  * @author  Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode_t.h"
 #include "irgraph_t.h"

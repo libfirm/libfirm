@@ -28,9 +28,7 @@
  * as described in: Sid-Ahmed-Ali Touati
  * Register Saturation in Superscalar and VLIW Codes
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <limits.h>
 

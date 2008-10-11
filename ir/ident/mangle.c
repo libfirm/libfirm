@@ -23,9 +23,7 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 # include <stdio.h>
 

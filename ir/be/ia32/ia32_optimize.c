@@ -23,9 +23,7 @@
  * @author      Matthias Braun, Christian Wuerdig
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode.h"
 #include "irprog_t.h"

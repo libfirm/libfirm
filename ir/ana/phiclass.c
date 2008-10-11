@@ -24,9 +24,7 @@
  * @cvsid  $Id$
  * @date   09.08.2005
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>

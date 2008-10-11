@@ -24,9 +24,7 @@
  * @date        17.06.2007
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <assert.h>
 #include <string.h>
@@ -39,9 +37,7 @@
 #include "irprintf.h"
 #include "statev.h"
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #ifdef HAVE_REGEX_H
 #define FIRM_HAVE_REGEX

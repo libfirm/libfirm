@@ -28,9 +28,7 @@
  *  by Keith D. Cooper, L. Taylor Simpson, Christopher A. Vick.
  *  Extended version.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "adt/pdeq.h"
 #include "iroptimize.h"

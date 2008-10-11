@@ -27,9 +27,7 @@
  *   This are out-edges (also called def-use edges) that are dynamically
  *   updated as the graph changes.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode_t.h"
 #include "iropt_t.h"

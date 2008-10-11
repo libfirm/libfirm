@@ -24,9 +24,7 @@
  * @author      Matthias Braun
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "ia32_address_mode.h"
 #include "ia32_transform.h"

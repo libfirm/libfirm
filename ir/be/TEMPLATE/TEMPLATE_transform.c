@@ -22,9 +22,7 @@
  * @brief   code selection (transform FIRM into TEMPLATE FIRM)
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode_t.h"
 #include "irgraph_t.h"

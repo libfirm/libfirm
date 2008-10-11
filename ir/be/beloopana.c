@@ -24,9 +24,7 @@
  * @date        19.02.2007
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "set.h"
 #include "pset.h"

@@ -31,9 +31,7 @@
  *  methods that are 'free', i.e., their adress is handled by
  *  the program directly, or they are visible external.
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #ifdef HAVE_STRING_H
 # include <string.h>

@@ -31,9 +31,7 @@
  * aren't be constant. The constant parameters of the function are placed
  * in the function graph. They aren't be passed as parameters.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <string.h>
 

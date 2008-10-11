@@ -35,9 +35,7 @@
  * spilled. So in some situations (for example 2 adc-nodes that use the flags of
  * a single add node on x86) operations have to be repeated to work correctly.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irgwalk.h"
 #include "irnode_t.h"

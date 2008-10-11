@@ -29,9 +29,7 @@
  *   - merge multiple start worksets of blocks ~ok
  *   - how to and when to do the tentative phase...
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <stdbool.h>
 

@@ -24,9 +24,7 @@
  * @author      Matthias Braun, Sebastian Buchwald
  * @version     $Id: ia32_common_transform.c 21012 2008-08-06 13:35:17Z beck $
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "error.h"
 #include "irargs_t.h"

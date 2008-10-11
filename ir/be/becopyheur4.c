@@ -29,9 +29,7 @@
  * (also known as "heur3" :)
  * Performs simple copy minimization.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h" /* HAVE_CONFIG_H */
 
 #define DISABLE_STATEV
 

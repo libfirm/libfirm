@@ -24,9 +24,7 @@
  * @date     29.10.2004
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irnode.h"
 #include "trouts.h"

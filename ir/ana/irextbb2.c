@@ -27,9 +27,7 @@
  *  Alternative algorithm for computing extended basic blocks (using out edges
  *  and execution frequencies)
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irextbb_t.h"
 #include "irgwalk.h"

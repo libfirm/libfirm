@@ -24,9 +24,7 @@
  * @date     5.2005
  * @version  $Id$
  */
-#ifdef HAVE_CONFIG_H
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "irextbb_t.h"
 #include "irgwalk.h"

@@ -26,9 +26,7 @@
  *  A phase contains a link to private data for each node in an ir graph.
  *  A phase is independent from the globally visible link field of ir nodes.
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "array.h"
 #include "util.h"

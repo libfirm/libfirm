@@ -24,9 +24,7 @@
  * @author  Michael Beck, Goetz Lindenmaier
  * @version $Id$
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "irgraph_t.h"  /* for checking whether constant code is allocated
                            on proper obstack */

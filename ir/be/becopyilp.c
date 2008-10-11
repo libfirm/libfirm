@@ -24,9 +24,7 @@
  * @date        28.02.2006
  * @version     $Id$
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#include "config.h" /* HAVE_CONFIG_H */
 
 #include "irtools.h"
 #include "irprintf.h"
