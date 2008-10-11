@@ -137,7 +137,7 @@ static void estimate_block_costs(ir_node *block, void *data)
 	double  costs = 0.0;
 
 	sched_foreach(block, node) {
-		costs += arch_get_op_estimated_cost(env->arch_env, node);
+		costs += arch_get_op_estimated_cost(node);
 	}
 
 	env->costs += costs * get_block_execfreq(env->execfreqs, block);

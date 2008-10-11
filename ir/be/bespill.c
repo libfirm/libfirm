@@ -640,7 +640,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if(be_is_Reload(spilled)) {
 		costs += 2;
 	} else {
-		costs += arch_get_op_estimated_cost(env->arch_env, spilled);
+		costs += arch_get_op_estimated_cost(spilled);
 	}
 	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;

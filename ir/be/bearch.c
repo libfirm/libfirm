@@ -147,10 +147,9 @@ void arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsigned int i)
 	}
 }
 
-int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn)
+int arch_get_op_estimated_cost(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 
 	if(ops->get_op_estimated_cost) {
 		return ops->get_op_estimated_cost(irn);
