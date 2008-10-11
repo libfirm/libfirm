@@ -435,16 +435,12 @@ static void fix_am_source(ir_node *irn, void *env)
 			ir_node               *same_node = get_irn_n(irn, same_pos);
 			const arch_register_t *same_reg
 				= arch_get_irn_register(arch_env, same_node);
-			const arch_register_class_t *same_cls;
 			ir_graph              *irg   = cg->irg;
 			dbg_info              *dbgi  = get_irn_dbg_info(irn);
 			ir_node               *block = get_nodes_block(irn);
-			ir_mode               *proj_mode;
 			ir_node               *load;
 			ir_node               *load_res;
 			ir_node               *mem;
-			int                    pnres;
-			int                    pnmem;
 
 			/* should_be same constraint is fullfilled, nothing to do */
 			if (out_reg == same_reg)
@@ -456,23 +452,9 @@ static void fix_am_source(ir_node *irn, void *env)
 				continue;
 
 			/* turn back address mode */
-			same_cls = arch_register_get_class(same_reg);
-			mem = get_irn_n(irn, n_ia32_mem);
+			mem  = get_irn_n(irn, n_ia32_mem);
 			assert(get_irn_mode(mem) == mode_M);
-			if (same_cls == &ia32_reg_classes[CLASS_ia32_gp]) {
-				load      = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
-				pnres     = pn_ia32_Load_res;
-				pnmem     = pn_ia32_Load_M;
-				proj_mode = mode_Iu;
-			} else if (same_cls == &ia32_reg_classes[CLASS_ia32_xmm]) {
-				load      = new_rd_ia32_xLoad(dbgi, irg, block, base, index, mem,
-				                              get_ia32_ls_mode(irn));
-				pnres     = pn_ia32_xLoad_res;
-				pnmem     = pn_ia32_xLoad_M;
-				proj_mode = mode_E;
-			} else {
-				panic("cannot turn back address mode for this register class");
-			}
+			load = new_rd_ia32_Load(dbgi, irg, block, base, index, mem);
 
 			/* copy address mode information to load */
 			set_ia32_op_type(load, ia32_AddrModeS);
@@ -485,7 +467,7 @@ static void fix_am_source(ir_node *irn, void *env)
 
 			DBG((dbg, LEVEL_3, "irg %+F: build back AM source for node %+F, inserted load %+F\n", cg->irg, irn, load));
 
-			load_res = new_r_Proj(cg->irg, block, load, proj_mode, pnres);
+			load_res = new_r_Proj(cg->irg, block, load, mode_Iu, pn_ia32_Load_res);
 			arch_set_irn_register(cg->arch_env, load_res, out_reg);
 
 			/* set the new input operand */
@@ -502,7 +484,7 @@ static void fix_am_source(ir_node *irn, void *env)
 						exchange(node, irn);
 					} else if (pn == pn_ia32_mem) {
 						set_Proj_pred(node, load);
-						set_Proj_proj(node, pnmem);
+						set_Proj_proj(node, pn_ia32_Load_M);
 					} else {
 						panic("Unexpected Proj");
 					}
