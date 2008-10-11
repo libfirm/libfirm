@@ -900,6 +900,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	int op2_idx = 0, op1_idx;
 	int out_idx, do_pop = 0;
 	ia32_x87_attr_t *attr;
+	int permuted;
 	ir_node *patched_insn;
 	ir_op *dst;
 	x87_simulator         *sim     = state->sim;
@@ -930,7 +931,12 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 		op1_live_after = is_vfp_live(arch_register_get_index(op1_reg), live);
 	}
 
+	attr     = get_ia32_x87_attr(n);
+	permuted = attr->attr.data.ins_permuted;
+
 	if (reg_index_2 != REG_VFP_NOREG) {
+		assert(!permuted);
+
 		if(reg_index_2 == REG_VFP_UKNWN) {
 			op2_idx        = 0;
 			op2_live_after = 1;
@@ -1026,20 +1032,17 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 			/* first operand is live: push it here */
 			x87_create_fpush(state, n, op1_idx, n_ia32_binary_left);
 			op1_idx = 0;
-			/* use fxxx (tos = tos X mem) */
-			dst = tmpl->normal_op;
-			out_idx = 0;
 		} else {
 			/* first operand is dead: bring it to tos */
 			if (op1_idx != 0) {
 				x87_create_fxch(state, n, op1_idx);
 				op1_idx = 0;
 			}
-
-			/* use fxxxp (tos = tos X mem) */
-			dst = tmpl->normal_op;
-			out_idx = 0;
 		}
+
+		/* use fxxx (tos = tos X mem) */
+		dst = permuted ? tmpl->reverse_op : tmpl->normal_op;
+		out_idx = 0;
 	}
 
 	patched_insn = x87_patch_insn(n, dst);
@@ -1049,7 +1052,6 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl) {
 	}
 
 	/* patch the operation */
-	attr = get_ia32_x87_attr(n);
 	attr->x87[0] = op1_reg = &ia32_st_regs[op1_idx];
 	if (reg_index_2 != REG_VFP_NOREG) {
 		attr->x87[1] = op2_reg = &ia32_st_regs[op2_idx];
