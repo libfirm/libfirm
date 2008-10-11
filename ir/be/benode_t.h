@@ -378,14 +378,13 @@ ir_node *be_spill(ir_node *block, ir_node *irn);
 /**
  * Make a reload and insert it into the schedule.
  *
- * @param arch_env The architecture environment.
  * @param cls      The register class of the reloaded value.
  * @param insert   The node in the schedule in front of which the reload is inserted.
  * @param mode     The mode of the original (spilled) value.
  * @param spill    The spill node corresponding to this reload.
  * @return         A freshly made reload.
  */
-ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill);
+ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill);
 
 enum {
 	be_pos_CopyKeep_op = 0

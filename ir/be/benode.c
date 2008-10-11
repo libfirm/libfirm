@@ -1043,14 +1043,13 @@ ir_node *be_spill(ir_node *block, ir_node *irn)
 	return spill;
 }
 
-ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
+ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
 {
 	ir_node  *reload;
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
-	(void)arch_env; // TODO remove parameter
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 

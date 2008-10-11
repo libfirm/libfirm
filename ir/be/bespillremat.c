@@ -3699,7 +3699,6 @@ insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 	defs_t   *defs;
 	ir_node  *reload,
 			 *spill;
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	DBG((si->dbg, LEVEL_3, "\t  inserting reload for value %+F before %+F\n", value, after));
 
@@ -3708,7 +3707,7 @@ insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 	spill = defs->spills;
 	assert(spill && "no spill placed before reload");
 
-	reload = be_reload(arch_env, si->cls, after, get_irn_mode(value), spill);
+	reload = be_reload(si->cls, after, get_irn_mode(value), spill);
 
 	/* enter into the linked list */
 	set_irn_link(reload, defs->remats);

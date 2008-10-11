@@ -906,7 +906,6 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn)
 
 void be_insert_spills_reloads(spill_env_t *env)
 {
-	const arch_env_t      *arch_env  = env->arch_env;
 	const ir_exec_freq    *exec_freq = env->exec_freq;
 	spill_info_t          *si;
 	ir_nodeset_iterator_t  iter;
@@ -1009,7 +1008,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				/* create a reload, use the first spill for now SSA
 				 * reconstruction for memory comes below */
 				assert(si->spills != NULL);
-				copy = be_reload(arch_env, si->reload_cls, rld->reloader, mode,
+				copy = be_reload(si->reload_cls, rld->reloader, mode,
 				                 si->spills->spill);
 #ifdef FIRM_STATISTICS
 				env->reload_count++;
