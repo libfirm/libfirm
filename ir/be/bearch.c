@@ -125,9 +125,9 @@ arch_inverse_t *arch_get_inverse(const ir_node *irn, int i, arch_inverse_t *inve
 	}
 }
 
-int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsigned int i) {
+int arch_possible_memory_operand(const ir_node *irn, unsigned int i)
+{
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 
 	if(ops->possible_memory_operand) {
 		return ops->possible_memory_operand(irn, i);

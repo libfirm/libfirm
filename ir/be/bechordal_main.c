@@ -201,7 +201,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 
 		assert(src && "outedges broken!");
 
-		if (get_nodes_block(src) == block && arch_possible_memory_operand(aenv, src, pos)) {
+		if (get_nodes_block(src) == block && arch_possible_memory_operand(src, pos)) {
 			arch_perform_memory_operand(aenv, src, spill, pos);
 		}
 	}
