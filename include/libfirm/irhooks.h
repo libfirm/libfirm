@@ -26,7 +26,6 @@
 #ifndef FIRM_IR_IRHOOKS_H
 #define FIRM_IR_IRHOOKS_H
 
-#include "firm_config.h"
 #include "irop.h"
 #include "irnode.h"
 #include "irgraph.h"

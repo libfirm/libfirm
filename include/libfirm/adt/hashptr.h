@@ -26,16 +26,13 @@
 #ifndef FIRM_ADT_HASHPTR_H
 #define FIRM_ADT_HASHPTR_H
 
-#include "firm_config.h"
-#include "compiler.h"
-
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME 16777619U
 
 /* Computing x * _FIRM_FNV_FNV_PRIME */
 #define _FIRM_FNV_TIMES_PRIME(x) ((x) * _FIRM_FNV_FNV_PRIME)
 
-static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
+static inline unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
 {
 	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
@@ -48,7 +45,7 @@ static INLINE unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
 	return hash;
 }
 
-static INLINE unsigned firm_fnv_hash_str(const char *data)
+static inline unsigned firm_fnv_hash_str(const char *data)
 {
 	unsigned i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
@@ -79,7 +76,7 @@ static INLINE unsigned firm_fnv_hash_str(const char *data)
 #pragma warning(disable:4307)
 #endif /* _MSC_VER */
 
-static INLINE unsigned _hash_combine(unsigned x, unsigned y)
+static inline unsigned _hash_combine(unsigned x, unsigned y)
 {
   unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
   hash ^= x;

@@ -27,8 +27,6 @@
 #ifndef FIRM_IR_IRPRINTF_H
 #define FIRM_IR_IRPRINTF_H
 
-#include "firm_config.h"
-
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>

@@ -28,7 +28,6 @@
 
 #include <stddef.h>
 
-#include "firm_config.h"
 #include "firm_types.h"
 #include "irop.h"
 #include "iropt.h"

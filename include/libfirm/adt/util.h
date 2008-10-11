@@ -26,8 +26,6 @@
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
 
-#include "firm_config.h"
-
 /**
  * Get the offset of a member of a struct.
  * @param type   The type of the struct member is in.

@@ -48,7 +48,7 @@
 #define _bitset_inside_ntz(unit)         _bitset_ia32_inside_ntz(unit)
 #define _bitset_inside_ntz_value(unit)   _bitset_ia32_inside_ntz_value(unit)
 
-static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
+static inline int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 {
 	int res;
 	__asm__("bt    %2, %1\n\t"
@@ -60,7 +60,7 @@ static INLINE int _bitset_ia32_inside_is_set(bitset_unit_t *unit, unsigned bit)
 	return res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
+static inline unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 {
 	unsigned res;
 	__asm__("bsr    %1, %0\n\t"
@@ -73,7 +73,7 @@ static INLINE unsigned _bitset_ia32_inside_nlz(bitset_unit_t *unit)
 	return res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
+static inline unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
 	unsigned res;
 	__asm__("bsfl   %1, %0\n\t"
 			"cmovz  %2, %0\n\t"
@@ -83,7 +83,7 @@ static INLINE unsigned _bitset_ia32_inside_ntz(bitset_unit_t *unit) {
 	return res;
 }
 
-static INLINE unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
+static inline unsigned _bitset_ia32_inside_ntz_value(bitset_unit_t unit) {
 	unsigned res;
 	__asm__("bsfl   %1, %0\n\t"
 			"cmovz  %2, %0\n\t"

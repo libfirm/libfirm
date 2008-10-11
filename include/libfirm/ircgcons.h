@@ -28,8 +28,6 @@
 #ifndef FIRM_IR_IRCGCONS_H
 #define FIRM_IR_IRCGCONS_H
 
-#include "firm_config.h"
-
 #ifdef INTERPROCEDURAL_VIEW
 
 #include "firm_types.h"

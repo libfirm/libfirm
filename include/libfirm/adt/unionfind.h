@@ -41,7 +41,7 @@
  * @param from	The first element that should be initialized
  * @param to	the index of the first element which is not initialized anymore
  */
-static INLINE void uf_init(int* data, int from, int to) {
+static inline void uf_init(int* data, int from, int to) {
 	int i;
 	for(i = from; i < to; ++i) {
 		data[i] = -1;
@@ -58,7 +58,7 @@ static INLINE void uf_init(int* data, int from, int to) {
  * @return		0 if the new union set is represented by set1, 1 if it is
  *              represented by set2
  */
-static INLINE int uf_union(int* data, int set1, int set2) {
+static inline int uf_union(int* data, int set1, int set2) {
 	int d1 = data[set1];
 	int d2 = data[set2];
 	int newcount;
@@ -91,7 +91,7 @@ static INLINE int uf_union(int* data, int set1, int set2) {
  * @param e		The element
  * @return		The representative of the set that contains @p e
  */
-static INLINE int uf_find(int* data, int e) {
+static inline int uf_find(int* data, int e) {
 	/* go through list to find representative */
 	int repr = e;
 	while(data[repr] >= 0) {
