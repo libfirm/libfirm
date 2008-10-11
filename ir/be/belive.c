@@ -824,12 +824,11 @@ void be_liveness_transfer(const arch_register_class_t *cls,
 
 
 
-void be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env,
+void be_liveness_end_of_block(const be_lv_t *lv,
                               const arch_register_class_t *cls,
                               const ir_node *block, ir_nodeset_t *live)
 {
 	int i;
-	(void)arch_env; // TODO remove parameter
 
 	assert(lv->nodes && "live sets must be computed");
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
@@ -849,8 +848,9 @@ void be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env,
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
+	(void)arch_env; // TODO remove parameter
 
-	be_liveness_end_of_block(lv, arch_env, cls, bl, live);
+	be_liveness_end_of_block(lv, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
 		/*
 		 * If we encounter the node we want to insert the Perm after,
@@ -870,9 +870,10 @@ void be_liveness_nodes_live_at_input(const be_lv_t *lv,
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
+	(void)arch_env; // TODO remove parameter
 
 	assert(lv->nodes && "live sets must be computed");
-	be_liveness_end_of_block(lv, arch_env, cls, bl, live);
+	be_liveness_end_of_block(lv, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
 		be_liveness_transfer(cls, irn, live);
 		if(irn == pos)

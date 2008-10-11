@@ -62,15 +62,14 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
                                      ir_node *block,
                                      const arch_register_class_t *cls)
 {
-	be_irg_t         *birg = env->birg;
-	ir_graph         *irg  = be_get_birg_irg(birg);
-	const arch_env_t *aenv = be_get_birg_arch_env(birg);
-	ir_node          *irn;
-	ir_nodeset_t      live_nodes;
-	int               max_live;
+	be_irg_t     *birg = env->birg;
+	ir_graph     *irg  = be_get_birg_irg(birg);
+	ir_node      *irn;
+	ir_nodeset_t  live_nodes;
+	int           max_live;
 
 	ir_nodeset_init(&live_nodes);
-	be_liveness_end_of_block(env->lv, aenv, cls, block, &live_nodes);
+	be_liveness_end_of_block(env->lv, cls, block, &live_nodes);
 	max_live = ir_nodeset_size(&live_nodes);
 	env->regpressure += max_live;
 

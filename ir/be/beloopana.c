@@ -76,7 +76,6 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
 		ir_node *block, const arch_register_class_t *cls)
 {
 	const be_irg_t   *birg       = loop_ana->birg;
-	const arch_env_t *aenv       = be_get_birg_arch_env(birg);
 	be_lv_t          *lv         = be_get_birg_liveness(birg);
 	ir_nodeset_t      live_nodes;
 	ir_node          *irn;
@@ -86,7 +85,7 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
 
 	/* determine largest pressure with this block */
 	ir_nodeset_init(&live_nodes);
-	be_liveness_end_of_block(lv, aenv, cls, block, &live_nodes);
+	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 	max_live   = ir_nodeset_size(&live_nodes);
 
 	sched_foreach_reverse(block, irn) {

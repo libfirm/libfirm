@@ -158,13 +158,12 @@ void be_liveness_transfer(const arch_register_class_t *cls, ir_node *node,
 
 /**
  * Put all node live at the end of a block into a set.
- * @param arch_env The architecture environment.
  * @param cls      The register class to consider.
  * @param bl       The block.
  * @param live     The set to put them into.
  * @return live.
  */
-void be_liveness_end_of_block(const be_lv_t *lv, const arch_env_t *arch_env,
+void be_liveness_end_of_block(const be_lv_t *lv,
                               const arch_register_class_t *cls,
                               const ir_node *bl, ir_nodeset_t *nodeset);
 

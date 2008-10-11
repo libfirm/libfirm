@@ -53,7 +53,6 @@ static int my_values_interfere(const ir_node *a, const ir_node *b);
 typedef struct be_verify_register_pressure_env_t_ {
 	ir_graph                    *irg;                 /**< the irg to verify */
 	 be_lv_t                    *lv;                  /**< Liveness information. */
-	const arch_env_t            *arch_env;            /**< an architecture environment */
 	const arch_register_class_t *cls;                 /**< the register class to check for */
 	int                         registers_available;  /**< number of available registers */
 	int                         problem_found;        /**< flag indicating if a problem was found */
@@ -85,7 +84,7 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 	/* collect register pressure info, start with end of a block */
 	// ir_fprintf(stderr, "liveness check %+F\n", block);
 	ir_nodeset_init(&live_nodes);
-	be_liveness_end_of_block(env->lv, env->arch_env, env->cls, block,
+	be_liveness_end_of_block(env->lv, env->cls, block,
 	                         &live_nodes);
 
 	// print_living_values(stderr, &live_nodes);
@@ -127,7 +126,6 @@ int be_verify_register_pressure(const be_irg_t *birg,
 
 	env.lv                  = be_liveness(birg);
 	env.irg                 = irg;
-	env.arch_env            = birg->main_env->arch_env;
 	env.cls                 = cls;
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
 	env.problem_found       = 0;

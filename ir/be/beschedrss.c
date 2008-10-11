@@ -2073,7 +2073,7 @@ static void process_block(ir_node *block, void *env) {
 
 		/* Get all live value at end of Block having current register class */
 		ir_nodeset_init(&rss->live_block);
-		be_liveness_end_of_block(rss->liveness, rss->arch_env, rss->cls, rss->block, &rss->live_block);
+		be_liveness_end_of_block(rss->liveness, rss->cls, rss->block, &rss->live_block);
 
 		/* reset the list of interesting nodes */
 		plist_clear(rss->nodes);

@@ -59,7 +59,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static spill_env_t                 *spill_env;
 static int                          n_regs;
-static const arch_env_t            *arch_env;
 static const arch_register_class_t *cls;
 static const be_lv_t               *lv;
 static bitset_t                    *spilled_nodes;
@@ -316,7 +315,7 @@ static void spill_block(ir_node *block, void *data)
 
 	/* construct set of live nodes at end of block */
 	ir_nodeset_init(&live_nodes);
-	be_liveness_end_of_block(lv, arch_env, cls, block, &live_nodes);
+	be_liveness_end_of_block(lv, cls, block, &live_nodes);
 
 	/* remove already spilled nodes from liveset */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
@@ -390,7 +389,6 @@ void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 	be_liveness_assure_sets(be_assure_liveness(birg));
 
 	spill_env     = be_new_spill_env(birg);
-	arch_env      = be_get_birg_arch_env(birg);
 	cls           = new_cls;
 	lv            = be_get_birg_liveness(birg);
 	spilled_nodes = bitset_malloc(get_irg_last_idx(irg));
