@@ -1342,11 +1342,9 @@ const arch_register_req_t *phi_get_irn_reg_req(const ir_node *irn, int pos)
 	return &attr->req;
 }
 
-void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *node,
-                        const arch_register_req_t *req)
+void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 {
 	phi_attr_t *attr;
-	(void) arch_env;
 
 	assert(mode_is_datab(get_irn_mode(node)));
 

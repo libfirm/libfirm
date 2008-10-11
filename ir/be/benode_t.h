@@ -513,8 +513,7 @@ void be_phi_handler_reset(void);
 /**
  * Set the register requirements for a phi node.
  */
-void be_set_phi_reg_req(const arch_env_t *arch_env, ir_node *phi,
-                        const arch_register_req_t *req);
+void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 
 /*
  * Set flags for a phi node
