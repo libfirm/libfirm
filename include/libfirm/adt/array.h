@@ -282,7 +282,7 @@ typedef int (ir_arr_cmp_func_t)(const void *a, const void *b);
  * @note           The differences to bsearch(3) which does not give proper insert locations
  *                 in the case that the element is not conatined in the array.
  */
-static inline __attribute__((const, unused)) int
+static inline int
 ir_arr_bsearch(const void *arr, size_t elm_size, ir_arr_cmp_func_t *cmp, const void *elm)
 {
 	int hi = ARR_LEN(arr);
