@@ -80,11 +80,11 @@ typedef struct _bl_info_t {
 struct _lv_chk_t {
 	ir_phase ph;
 	const dfs_t *dfs;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 	int n_blocks;
 	bitset_t *back_edge_src;
 	bitset_t *back_edge_tgt;
 	bl_info_t **map;
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
 static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
@@ -108,7 +108,7 @@ static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
  */
 static INLINE int is_liveness_node(const ir_node *irn)
 {
-	switch(get_irn_opcode(irn)) {
+	switch (get_irn_opcode(irn)) {
 	case iro_Block:
 	case iro_Bad:
 	case iro_End:
@@ -336,10 +336,10 @@ void lv_chk_free(lv_chk_t *lv)
  */
 unsigned lv_chk_bl_in_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
-	stat_ev_cnt_decl(uses);
-
 	ir_node *def_bl;
 	const ir_edge_t *edge;
+
+	stat_ev_cnt_decl(uses);
 
 	int res = 0;
 
@@ -416,10 +416,10 @@ end:
 
 unsigned lv_chk_bl_end_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
-	stat_ev_cnt_decl(uses);
-
 	ir_node *def_bl;
 	const ir_edge_t *edge;
+
+	stat_ev_cnt_decl(uses);
 
 	int res = 0;
 
@@ -431,9 +431,7 @@ unsigned lv_chk_bl_end_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node
 	def_bl = get_nodes_block(var);
 	if (!block_dominates(def_bl, bl)) {
 		goto end;
-	}
-
-	else {
+	} else {
 		bitset_t *uses = bitset_alloca(lv->n_blocks);
 		bitset_t *tmp  = bitset_alloca(lv->n_blocks);
 		int min_dom    = get_Block_dom_tree_pre_num(def_bl) + 1;
@@ -500,11 +498,10 @@ end:
  */
 unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
-	stat_ev_cnt_decl(uses);
-	stat_ev_cnt_decl(iter);
-
 	int res  = 0;
 	ir_node *def_bl;
+	stat_ev_cnt_decl(uses);
+	stat_ev_cnt_decl(iter);
 
 	assert(is_Block(bl) && "can only check for liveness in a block");
 
@@ -564,7 +561,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 	 * We try to gather as much information as possible during looking
 	 * at the uses.
 	 *
-	 * Note that we know for shure that bl != def_bl. That is sometimes
+	 * Note that we know for sure that bl != def_bl. That is sometimes
 	 * silently exploited below.
 	 */
 	else {
@@ -654,11 +651,11 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 			stat_ev_cnt_inc(iter);
 
 			/*
-			 * This is somehat tricky. Since this routine handles both, live in
+			 * This is somewhat tricky. Since this routine handles both, live in
 			 * and end/out we have to handle all the border cases correctly.
 			 * Each node is in its own red_reachable set (see calculation
 			 * function above). That means, that in the case where bl == t, the
-			 * intersection check of uses and rechability below will always
+			 * intersection check of uses and reachability below will always
 			 * find an intersection, namely t.
 			 *
 			 * However, if a block contains a use and the variable is dead
