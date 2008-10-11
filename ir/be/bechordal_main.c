@@ -78,10 +78,6 @@
 #include "bespilloptions.h"
 #include "belower.h"
 
-#ifdef WITH_ILP
-#include "bespillremat.h"
-#endif /* WITH_ILP */
-
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"

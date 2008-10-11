@@ -55,7 +55,6 @@
 #include "bearch_t.h"
 #include "benode_t.h"
 #include "beutil.h"
-#include "bespillremat.h"
 #include "bespill.h"
 #include "beirg_t.h"
 
