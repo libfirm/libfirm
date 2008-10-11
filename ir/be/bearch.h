@@ -136,7 +136,7 @@ extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);
-extern void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, ir_entity *ent);
+void       arch_set_frame_entity(ir_node *irn, ir_entity *ent);
 extern int arch_get_sp_bias(const arch_env_t *env, ir_node *irn);
 
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);

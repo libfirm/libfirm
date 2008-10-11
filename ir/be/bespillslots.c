@@ -555,8 +555,7 @@ static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
 }
 
 
-static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node,
-                                ir_entity *entity)
+static void assign_spill_entity(ir_node *node, ir_entity *entity)
 {
 	if(is_NoMem(node))
 		return;
@@ -568,7 +567,7 @@ static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node,
 			ir_node *in = get_irn_n(node, i);
 			assert(!is_Phi(in));
 
-			assign_spill_entity(arch_env, in, entity);
+			assign_spill_entity(in, entity);
 		}
 		return;
 	}
@@ -576,7 +575,7 @@ static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node,
 	/* beware: we might have Stores with Memory Proj's, ia32 fisttp for instance */
 	node = skip_Proj(node);
 	assert(arch_get_frame_entity(node) == NULL);
-	arch_set_frame_entity(arch_env, node, entity);
+	arch_set_frame_entity(node, entity);
 }
 
 /**
@@ -585,7 +584,6 @@ static void assign_spill_entity(const arch_env_t *arch_env, ir_node *node,
  */
 static void assign_spillslots(be_fec_env_t *env)
 {
-	const arch_env_t *arch_env = env->arch_env;
 	int i;
 	int spillcount;
 	spill_t *spill;
@@ -664,7 +662,7 @@ static void assign_spillslots(be_fec_env_t *env)
 				}
 			}
 		} else {
-			assign_spill_entity(arch_env, node, slot->entity);
+			assign_spill_entity(node, slot->entity);
 		}
 	}
 
@@ -676,7 +674,7 @@ static void assign_spillslots(be_fec_env_t *env)
 
 		assert(slot->entity != NULL);
 
-		arch_set_frame_entity(arch_env, reload, slot->entity);
+		arch_set_frame_entity(reload, slot->entity);
 	}
 }
 
