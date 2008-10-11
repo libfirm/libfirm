@@ -95,7 +95,7 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
 		if (is_Phi(irn))
 			break;
 
-		be_liveness_transfer(aenv, cls, irn, &live_nodes);
+		be_liveness_transfer(cls, irn, &live_nodes);
 		cnt        = ir_nodeset_size(&live_nodes);
 		max_live   = MAX(cnt, max_live);
 	}

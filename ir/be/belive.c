@@ -790,12 +790,10 @@ int be_check_dominance(ir_graph *irg)
 	return !problem_found;
 }
 
-void be_liveness_transfer(const arch_env_t *arch_env,
-                          const arch_register_class_t *cls,
+void be_liveness_transfer(const arch_register_class_t *cls,
                           ir_node *node, ir_nodeset_t *nodeset)
 {
 	int i, arity;
-	(void)arch_env; // TODO remove parameter
 
 	/* You should better break out of your loop when hitting the first phi
 	 * function. */
@@ -861,7 +859,7 @@ void be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env,
 		if(irn == pos)
 			return;
 
-		be_liveness_transfer(arch_env, cls, irn, live);
+		be_liveness_transfer(cls, irn, live);
 	}
 }
 
@@ -876,7 +874,7 @@ void be_liveness_nodes_live_at_input(const be_lv_t *lv,
 	assert(lv->nodes && "live sets must be computed");
 	be_liveness_end_of_block(lv, arch_env, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
-		be_liveness_transfer(arch_env, cls, irn, live);
+		be_liveness_transfer(cls, irn, live);
 		if(irn == pos)
 			return;
 	}

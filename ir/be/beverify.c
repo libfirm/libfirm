@@ -102,7 +102,7 @@ static void verify_liveness_walker(ir_node *block, void *data) {
 			break;
 
 		// print_living_values(stderr, &live_nodes);
-		be_liveness_transfer(env->arch_env, env->cls, irn, &live_nodes);
+		be_liveness_transfer(env->cls, irn, &live_nodes);
 
 		pressure = ir_nodeset_size(&live_nodes);
 

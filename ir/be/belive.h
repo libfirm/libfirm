@@ -147,15 +147,13 @@ int be_check_dominance(ir_graph *irg);
  * The liveness transfer function.
  * Updates a live set over a single step from a given node to its predecessor.
  * Everything defined at the node is removed from the set, the uses of the node get inserted.
- * @param arch_env The architecture environment.
  * @param cls      The register class to consider.
  * @param irn      The node at which liveness should be computed.
  * @param live     The set of nodes live before @p irn. This set gets modified by updating it to
  *                 the nodes live after irn.
  * @return live.
  */
-void be_liveness_transfer(const arch_env_t *arch_env,
-                          const arch_register_class_t *cls, ir_node *node,
+void be_liveness_transfer(const arch_register_class_t *cls, ir_node *node,
                           ir_nodeset_t *nodeset);
 
 /**

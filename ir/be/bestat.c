@@ -80,7 +80,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 		if(is_Phi(irn))
 			break;
 
-		be_liveness_transfer(aenv, cls, irn, &live_nodes);
+		be_liveness_transfer(cls, irn, &live_nodes);
 		cnt      = ir_nodeset_size(&live_nodes);
 		max_live = cnt < max_live ? max_live : cnt;
 		env->regpressure += cnt;
