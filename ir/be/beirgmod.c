@@ -97,7 +97,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
 	ir_nodeset_init(&live);
-	be_liveness_nodes_live_at(lv, birg->main_env->arch_env, cls, pos, &live);
+	be_liveness_nodes_live_at(lv, cls, pos, &live);
 
 	n = ir_nodeset_size(&live);
 	if(n == 0) {

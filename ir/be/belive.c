@@ -842,13 +842,12 @@ void be_liveness_end_of_block(const be_lv_t *lv,
 
 
 
-void be_liveness_nodes_live_at(const be_lv_t *lv, const arch_env_t *arch_env,
+void be_liveness_nodes_live_at(const be_lv_t *lv,
                                const arch_register_class_t *cls,
                                const ir_node *pos, ir_nodeset_t *live)
 {
 	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_node *irn;
-	(void)arch_env; // TODO remove parameter
 
 	be_liveness_end_of_block(lv, cls, bl, live);
 	sched_foreach_reverse(bl, irn) {
