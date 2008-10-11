@@ -82,13 +82,6 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs);
 void free_copy_opt(copy_opt_t *co);
 
 /**
- * Checks if a node is optimizable, viz. has something to do with coalescing
- * @param arch The architecture environment
- * @param irn  The irn to check
- */
-int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn);
-
-/**
  * Computes the costs of a copy according to loop depth
  * @param co   The copy opt object.
  * @param pos	the argument position of arg in the root arguments

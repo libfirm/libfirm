@@ -213,10 +213,14 @@ void free_copy_opt(copy_opt_t *co) {
 	free(co);
 }
 
-int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
+/**
+ * Checks if a node is optimizable, viz. has something to do with coalescing
+ * @param irn  The irn to check
+ */
+static int co_is_optimizable_root(ir_node *irn)
+{
 	const arch_register_req_t *req;
 	const arch_register_t *reg;
-	(void)co; // TODO remove parameter
 
 	if (arch_irn_is(irn, ignore))
 		return 0;
@@ -378,7 +382,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 
 	if (!is_curr_reg_class(co, irn))
 		return;
-	if (!co_is_optimizable_root(co, irn))
+	if (!co_is_optimizable_root(irn))
 		return;
 
 	/* Init a new unit */
