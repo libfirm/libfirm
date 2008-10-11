@@ -130,18 +130,6 @@ fi
 AC_SUBST([FIRMCONFIG_WITH_ILP])
 AC_SUBST(enable_ilp)
 
-dnl enable JVM calling from Firm
-dnl --------------------------------
-AC_ARG_ENABLE([jvm],
-[AS_HELP_STRING([--enable-jvm], [enable to call the jvm])],
-[enable_jvm="$enableval"], [enable_jvm="no"])
-
-if test "$enable_jvm" = yes; then
-  FIRMCONFIG_WITH_JVM="#define FIRMCONFIG_WITH_JVM"
-fi
-AC_SUBST([FIRMCONFIG_WITH_JVM])
-AC_SUBST(enable_jvm)
-
 dnl enable wchar_t support for identifiers
 dnl --------------------------------
 AC_ARG_ENABLE([wchar_support],

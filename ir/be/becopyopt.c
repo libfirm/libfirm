@@ -60,7 +60,6 @@
 #include "belive_t.h"
 #include "beinsn_t.h"
 #include "besched_t.h"
-#include "bejavacoal.h"
 #include "bestatevent.h"
 #include "beirg_t.h"
 #include "error.h"

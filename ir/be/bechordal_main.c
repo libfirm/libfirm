@@ -59,7 +59,6 @@
 
 #include "bechordal_t.h"
 #include "beabi.h"
-#include "bejavacoal.h"
 #include "beutil.h"
 #include "besched.h"
 #include "besched_t.h"
@@ -83,7 +82,6 @@
 #include "bespillremat.h"
 #endif /* WITH_ILP */
 
-#include "bejavacoal.h"
 #include "becopystat.h"
 #include "becopyopt.h"
 #include "bessadestr.h"

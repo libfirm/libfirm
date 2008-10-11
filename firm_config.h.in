@@ -7,9 +7,6 @@
 /* define to 1 to use the ILP solver */
 @FIRMCONFIG_WITH_ILP@
 
-/* define to 1 to enable Firm to call the JVM */
-@FIRMCONFIG_WITH_JVM@
-
 /* define to 1 to have wchar_t support for identifiers */
 @FIRMCONFIG_FIRM_ENABLE_WCHAR@
 

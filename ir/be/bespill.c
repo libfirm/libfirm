@@ -55,7 +55,6 @@
 #include "belive_t.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
-#include "bejavacoal.h"
 #include "bespilloptions.h"
 #include "bestatevent.h"
 #include "bessaconstr.h"

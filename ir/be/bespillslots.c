@@ -43,7 +43,6 @@
 #include "besched.h"
 #include "bespillslots.h"
 #include "bechordal_t.h"
-#include "bejavacoal.h"
 #include "bestatevent.h"
 #include "bespilloptions.h"
 #include "bemodule.h"

@@ -43,7 +43,6 @@ void be_init_chordal(void);
 void be_init_chordal_main(void);
 void be_init_copycoal(void);
 void be_init_copyheur2(void);
-void be_init_copyheur3(void);
 void be_init_copyheur4(void);
 void be_init_copyheur5(void);
 void be_init_copystat(void);
@@ -57,7 +56,6 @@ void be_init_arch_sta(void);
 void be_init_arch_TEMPLATE(void);
 void be_init_ilpsched(void);
 void be_init_copyilp(void);
-void be_init_javacoal(void);
 void be_init_peephole(void);
 void be_init_ra(void);
 void be_init_spillbelady(void);
@@ -129,11 +127,6 @@ void be_init_modules(void)
 	be_init_ilpsched();
 	be_init_copyilp();
 #endif /* WITH_ILP */
-
-#ifdef WITH_JVM
-	be_init_copyheur3();
-	be_init_javacoal();
-#endif /* WITH_JVM */
 
 #if PLUGIN_IR_BE_STA
 	be_init_arch_sta();
