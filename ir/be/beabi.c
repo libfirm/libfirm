@@ -2306,7 +2306,6 @@ typedef ir_node **node_array;
 
 typedef struct fix_stack_walker_env_t {
 	node_array sp_nodes;
-	const arch_env_t *arch_env;
 } fix_stack_walker_env_t;
 
 /**
@@ -2332,7 +2331,6 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	fix_stack_walker_env_t walker_env;
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);
-	walker_env.arch_env = birg->main_env->arch_env;
 
 	irg_walk_graph(birg->irg, collect_stack_nodes_walker, NULL, &walker_env);
 
