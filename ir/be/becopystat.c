@@ -443,7 +443,6 @@ void copystat_dump_pretty(ir_graph *irg) {
  * Used to get dependable and comparable benchmark results.
  */
 typedef struct color_saver {
-	arch_env_t *arch_env;
 	be_chordal_env_t *chordal_env;
 	pmap *saved_colors;
 	int flag; /* 0 save, 1 load */
@@ -491,7 +490,6 @@ void co_compare_solvers(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "----> CO: %s\n", co->name));
 
 	/* save colors */
-	saver.arch_env     = chordal_env->birg->main_env->arch_env;
 	saver.chordal_env  = chordal_env;
 	saver.saved_colors = pmap_create();
 	save_colors(&saver);
