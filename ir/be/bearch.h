@@ -217,13 +217,12 @@ void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
 
 /**
  * Classify a node.
- * @param env The architecture environment.
  * @param irn The node.
  * @return A classification of the node.
  */
-extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn);
+arch_irn_class_t arch_irn_classify(const ir_node *irn);
 
-#define arch_irn_class_is(env, irn, irn_class) ((arch_irn_classify(env, irn) & arch_irn_class_ ## irn_class) != 0)
+#define arch_irn_class_is(irn, irn_class) ((arch_irn_classify(irn) & arch_irn_class_ ## irn_class) != 0)
 
 /**
  * Get the flags of a node.

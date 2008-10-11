@@ -228,7 +228,7 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 		return 0;
 
 	req = arch_get_register_req(irn, -1);
-	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(req))
+	if (is_Reg_Phi(irn) || is_Perm_Proj(irn) || is_2addr_code(req))
 		return 1;
 
 	return 0;
@@ -438,7 +438,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 		}
 		unit->nodes = XREALLOC(unit->nodes, ir_node*, unit->node_count);
 		unit->costs = XREALLOC(unit->costs, int,      unit->node_count);
-	} else if (is_Perm_Proj(co->aenv, irn)) {
+	} else if (is_Perm_Proj(irn)) {
 		/* Proj of a perm with corresponding arg */
 		assert(!nodes_interfere(co->cenv, irn, get_Perm_src(irn)));
 		unit->nodes = XMALLOCN(ir_node*, 2);
@@ -783,8 +783,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 			ir_node *arg = get_irn_n(irn, pos);
 			add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
 		}
-	}
-	else if (is_Perm_Proj(co->aenv, irn)) { /* Perms */
+	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
 	}

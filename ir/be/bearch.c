@@ -232,10 +232,9 @@ void arch_set_irn_register(ir_node *irn, const arch_register_t *reg)
 	ops->set_irn_reg(irn, reg);
 }
 
-extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn)
+arch_irn_class_t arch_irn_classify(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	return ops->classify(irn);
 }
 

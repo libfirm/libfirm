@@ -814,7 +814,6 @@ void be_assign_entities(be_fec_env_t *env)
 static void collect_spills_walker(ir_node *node, void *data)
 {
 	be_fec_env_t *env = data;
-	const arch_env_t *arch_env = env->arch_env;
 	const ir_mode *mode;
 	const arch_register_class_t *cls;
 	int align;
@@ -823,12 +822,12 @@ static void collect_spills_walker(ir_node *node, void *data)
 	if (is_Proj(node))
 		return;
 
-	if (!arch_irn_class_is(arch_env, node, reload))
+	if (!arch_irn_class_is(node, reload))
 		return;
 
 	mode  = get_irn_mode(node);
 	cls   = arch_get_irn_reg_class(node, -1);
-	align = arch_env_get_reg_class_alignment(arch_env, cls);
+	align = arch_env_get_reg_class_alignment(env->arch_env, cls);
 
 	be_node_needs_frame_entity(env, node, mode, align);
 }

@@ -428,7 +428,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block) {
 	for (cur_pos = 0, curr = root; curr; curr = get_irn_link(curr), cur_pos++) {
 		sched_timestep_t d;
 
-		if (arch_irn_class_is(env->arch_env, curr, branch)) {
+		if (arch_irn_class_is(curr, branch)) {
 			/* assure, that branches can be executed last */
 			d = 0;
 		}
@@ -526,13 +526,14 @@ static void trace_free(void *data) {
 /**
  * Simple selector. Just assure that jumps are scheduled last.
  */
-static ir_node *basic_selection(const arch_env_t *arch_env, ir_nodeset_t *ready_set) {
+static ir_node *basic_selection(ir_nodeset_t *ready_set)
+{
 	ir_node *irn = NULL;
 	ir_nodeset_iterator_t iter;
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (! arch_irn_class_is(arch_env, irn, branch)) {
+		if (!arch_irn_class_is(irn, branch)) {
 			return irn;
 		}
 	}
@@ -584,7 +585,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 		if (cnt == 1) {
 			irn = get_nodeset_node(&ecands);
 
-			if (arch_irn_class_is(env->arch_env, irn, branch)) {
+			if (arch_irn_class_is(irn, branch)) {
 				/* BEWARE: don't select a JUMP if others are still possible */
 				goto force_mcands;
 			}
@@ -592,12 +593,12 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 		}
 		else if (cnt > 1) {
 			DB((env->dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
-			irn = basic_selection(env->arch_env, &ecands);
+			irn = basic_selection(&ecands);
 		}
 		else {
 force_mcands:
 			DB((env->dbg, LEVEL_3, "\tmcand = %d\n", ir_nodeset_size(&mcands)));
-			irn = basic_selection(env->arch_env, &mcands);
+			irn = basic_selection(&mcands);
 		}
 	}
 
@@ -660,7 +661,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 	/* priority based selection, heuristic inspired by mueller diss */
 	foreach_ir_nodeset(ns, irn, iter) {
 		/* make sure that branches are scheduled last */
-		if (! arch_irn_class_is(trace_env->arch_env, irn, branch)) {
+		if (!arch_irn_class_is(irn, branch)) {
 			int rdiff = get_irn_reg_diff(trace_env, irn);
 			int sign  = rdiff < 0;
 			int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;
@@ -700,7 +701,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 		DBG((trace_env->dbg, LEVEL_4, "heuristic selected %+F:\n", cand));
 	}
 	else {
-		cand = basic_selection(trace_env->arch_env, ns);
+		cand = basic_selection(ns);
 	}
 
 	return cand;

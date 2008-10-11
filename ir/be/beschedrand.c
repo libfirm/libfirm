@@ -41,15 +41,15 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
                               ir_nodeset_t *live_set)
 {
 	ir_nodeset_iterator_t iter;
-	const arch_env_t *arch_env = block_env;
 	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
-	(void) live_set;
+	(void)block_env;
+	(void)live_set;
 
 	/* assure that branches and constants are executed last */
 	ir_nodeset_iterator_init(&iter, ready_set);
 	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
-		if (! arch_irn_class_is(arch_env, irn, branch)) {
+		if (!arch_irn_class_is(irn, branch)) {
 			only_branches_left = 0;
 			break;
 		}
@@ -71,7 +71,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 				}
 				++i;
 			}
-		} while(arch_irn_class_is(arch_env, irn, branch));
+		} while (arch_irn_class_is(irn, branch));
 	}
 
 	return irn;
@@ -79,18 +79,20 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 
 static void *random_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
 {
-	(void) vtab;
+	(void)vtab;
+	(void)birg;
 	/* Using time(NULL) as a seed here gives really random results,
 	   but is NOT deterministic which makes debugging impossible.
 	   Moreover no-one want non-deterministic compilers ... */
 	srand(0x4711);
-	return (void *) be_get_birg_arch_env(birg);
+	return NULL;
 }
 
 static void *random_init_block(void *graph_env, ir_node *block)
 {
-	(void) block;
-	return graph_env;
+	(void)graph_env;
+	(void)block;
+	return NULL;
 }
 
 const list_sched_selector_t random_selector = {

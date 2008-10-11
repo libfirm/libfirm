@@ -294,7 +294,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 		Ignore branch instructions for the time being.
 		They should only be scheduled if there is nothing else.
 		*/
-		if (! arch_irn_class_is(env->main_env->arch_env, irn, branch)) {
+		if (!arch_irn_class_is(irn, branch)) {
 			int costs = reg_pr_costs(env, irn);
 			if (costs <= curr_cost) {
 				res       = irn;

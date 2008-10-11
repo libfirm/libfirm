@@ -158,8 +158,7 @@ double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_
 
 
 
-static const arch_env_t *arch_env;
-static be_node_stats_t  *stats;
+static be_node_stats_t *stats;
 
 static void node_stat_walker(ir_node *irn, void *data)
 {
@@ -173,7 +172,7 @@ static void node_stat_walker(ir_node *irn, void *data)
 			(*stats)[BE_STAT_PHIS]++;
 		}
 	} else {
-		arch_irn_class_t classify = arch_irn_classify(arch_env, irn);
+		arch_irn_class_t classify = arch_irn_classify(irn);
 
 		if(classify & arch_irn_class_spill)
 			(*stats)[BE_STAT_SPILLS]++;
@@ -190,8 +189,7 @@ static void node_stat_walker(ir_node *irn, void *data)
 
 void be_collect_node_stats(be_node_stats_t *new_stats, be_irg_t *birg)
 {
-	arch_env = birg->main_env->arch_env;
-	stats    = new_stats;
+	stats = new_stats;
 
 	memset(stats, 0, sizeof(*stats));
 	irg_walk_graph(birg->irg, NULL, node_stat_walker, NULL);

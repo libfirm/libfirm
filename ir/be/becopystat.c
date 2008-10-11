@@ -139,8 +139,10 @@ void copystat_reset(void) {
 /**
  * Collect general data
  */
-static void irg_stat_walker(ir_node *node, void *env) {
-	arch_env_t *arch_env = env;
+static void irg_stat_walker(ir_node *node, void *env)
+{
+	(void)env;
+
 	curr_vals[I_ALL_NODES]++; /* count all nodes */
 
 	if (is_Block(node)) /* count all blocks */
@@ -149,14 +151,15 @@ static void irg_stat_walker(ir_node *node, void *env) {
 	if (is_Reg_Phi(node)) /* collect phis */
 		ir_nodeset_insert(all_phi_nodes, node);
 
-	if (is_Perm_Proj(arch_env, node))
+	if (is_Perm_Proj(node))
 		ir_nodeset_insert(all_copy_nodes, node);
 
 	/* TODO: Add 2-Addr-Code nodes */
 }
 
-static void copystat_collect_irg(ir_graph *irg, arch_env_t *arch_env) {
-	irg_walk_graph(irg, irg_stat_walker, NULL, arch_env);
+static void copystat_collect_irg(ir_graph *irg)
+{
+	irg_walk_graph(irg, irg_stat_walker, NULL, NULL);
 	last_irg = irg;
 }
 
@@ -289,14 +292,13 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 
 static void copystat_collect_cls(be_chordal_env_t *cenv) {
 	ir_graph              *irg  = cenv->irg;
-	arch_env_t            *aenv = cenv->birg->main_env->arch_env;
 	ir_node               *n, **pc;
 	phi_classes_t         *pc_obj;
 	pset                  *all_phi_classes;
 	ir_nodeset_iterator_t iter;
 
 	copystat_reset();
-	copystat_collect_irg(irg, aenv);
+	copystat_collect_irg(irg);
 
 	/* compute the Phi classes of the collected Phis */
 	pc_obj          = phi_class_new_from_set(cenv->irg, all_phi_nodes, 0);

@@ -45,14 +45,14 @@
 static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
                                ir_nodeset_t *live_set)
 {
-	const arch_env_t *arch_env = block_env;
-	ir_node          *irn      = NULL;
-	ir_nodeset_iterator_t iter;
-	(void) live_set;
+	ir_node               *irn;
+	ir_nodeset_iterator_t  iter;
+	(void)block_env;
+	(void)live_set;
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (! arch_irn_class_is(arch_env, irn, branch)) {
+		if (!arch_irn_class_is(irn, branch)) {
 			return irn;
 		}
 	}
@@ -66,14 +66,16 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
 
 static void *trivial_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
 {
-	(void) vtab;
-	return (void *) be_get_birg_arch_env(birg);
+	(void)vtab;
+	(void)birg;
+	return NULL;
 }
 
 static void *trivial_init_block(void *graph_env, ir_node *block)
 {
-	(void) block;
-	return graph_env;
+	(void)graph_env;
+	(void)block;
+	return NULL;
 }
 
 const list_sched_selector_t trivial_selector = {

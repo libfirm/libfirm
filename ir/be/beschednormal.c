@@ -72,7 +72,7 @@ static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set,
 	for (; sched_count-- != 0; ++sched) {
 		ir_node* irn = *sched;
 		if (ir_nodeset_contains(ready_set, irn) &&
-				!arch_irn_class_is(cur_arch_env, irn, branch)) {
+				!arch_irn_class_is(irn, branch)) {
 #if defined NORMAL_DBG
 			ir_fprintf(stderr, "scheduling %+F\n", irn);
 #endif

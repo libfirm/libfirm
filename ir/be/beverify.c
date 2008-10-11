@@ -527,13 +527,12 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
  */
 static void collect_spills_walker(ir_node *node, void *data) {
 	be_verify_spillslots_env_t *env = data;
-	const arch_env_t *arch_env = env->arch_env;
 
 	/* @@@ ia32_classify returns classification of Proj_pred :-/ */
 	if(is_Proj(node))
 		return;
 
-	if(arch_irn_class_is(arch_env, node, reload)) {
+	if (arch_irn_class_is(node, reload)) {
 		ir_node *spill = get_memory_edge(node);
 		ir_entity *ent;
 
