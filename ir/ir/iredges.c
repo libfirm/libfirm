@@ -38,7 +38,6 @@
 #include "irgwalk.h"
 #include "irdump_t.h"
 #include "irprintf.h"
-#include "irhooks.h"
 #include "debug.h"
 #include "set.h"
 #include "bitset.h"
