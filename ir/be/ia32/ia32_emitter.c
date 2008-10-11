@@ -2108,7 +2108,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	int i, n;
 
 	cg       = ia32_cg;
-	isa      = (const ia32_isa_t*) cg->arch_env;
+	isa      = cg->isa;
 	do_pic   = cg->birg->main_env->options->pic;
 
 	ia32_register_emitters();

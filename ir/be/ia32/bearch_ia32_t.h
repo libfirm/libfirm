@@ -58,7 +58,6 @@ typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 struct ia32_code_gen_t {
 	const arch_code_generator_if_t *impl;          /**< implementation */
 	ir_graph                       *irg;           /**< current irg */
-	const arch_env_t               *arch_env;      /**< the arch env */
 	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */

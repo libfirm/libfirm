@@ -205,7 +205,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 #ifndef NDEBUG
 const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
-	ia32_isa_t *isa = (ia32_isa_t*) cg->arch_env;
+	const ia32_isa_t *isa = cg->isa;
 
 	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", irn);
 	obstack_1grow(isa->name_obst, 0);

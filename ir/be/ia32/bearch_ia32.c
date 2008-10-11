@@ -1595,7 +1595,6 @@ static void *ia32_cg_init(be_irg_t *birg) {
 	cg->irg       = birg->irg;
 	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
 	cg->isa       = isa;
-	cg->arch_env  = birg->main_env->arch_env;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
 	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
