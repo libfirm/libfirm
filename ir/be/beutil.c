@@ -58,17 +58,12 @@ pset *be_empty_set(void)
 	return empty_set;
 }
 
-struct dump_env {
-  	FILE *f;
-	arch_env_t *env;
-};
-
 static void dump_allocated_block(ir_node *block, void *data)
 {
-	int i, n;
+	FILE          *f = data;
 	const ir_node *irn;
-	struct dump_env *dump_env = data;
-	FILE *f = dump_env->f;
+	int            n;
+	int            i;
 
 	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"", block);
 	sched_foreach(block, irn) {
@@ -105,20 +100,19 @@ static void dump_allocated_block(ir_node *block, void *data)
 	}
 }
 
-void dump_allocated_irg(arch_env_t *arch_env, ir_graph *irg, char *suffix)
+void dump_allocated_irg(ir_graph *irg, char *suffix)
 {
-	char buf[1024];
-	struct dump_env env;
-
-	env.env = arch_env;
+	char  buf[1024];
+	FILE *f;
 
 	ir_snprintf(buf, sizeof(buf), "%F-alloc%s.vcg", irg, suffix);
 
-	if((env.f = fopen(buf, "wt")) != NULL) {
-		fprintf(env.f, "graph:{title:\"prg\"\n");
-		irg_block_walk_graph(irg, dump_allocated_block, NULL, &env);
-		fprintf(env.f, "}\n");
-		fclose(env.f);
+	f = fopen(buf, "wt");
+	if (f != NULL) {
+		fprintf(f, "graph:{title:\"prg\"\n");
+		irg_block_walk_graph(irg, dump_allocated_block, NULL, f);
+		fprintf(f, "}\n");
+		fclose(f);
 	}
 }
 
