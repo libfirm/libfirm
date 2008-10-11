@@ -1,2 +1,0 @@
-/* define to 1 to have wchar_t support for identifiers */
-@FIRMCONFIG_FIRM_ENABLE_WCHAR@

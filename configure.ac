@@ -92,18 +92,6 @@ if test "$enable_ilp" = yes; then
   AC_DEFINE([WITH_ILP], [], [enable to build code using ilp solvers])
 fi
 
-dnl enable wchar_t support for identifiers
-dnl --------------------------------
-AC_ARG_ENABLE([wchar_support],
-[AS_HELP_STRING([--enable-wchar-support], [enable wchar_t support for identifiers (needed for java)])],
-[enable_wchar_support="$enableval"], [enable_wchar_support="no"])
-
-if test "$enable_wchar_support" = yes; then
-  FIRMCONFIG_FIRM_ENABLE_WCHAR="#define FIRM_ENABLE_WCHAR"
-fi
-AC_SUBST([FIRMCONFIG_FIRM_ENABLE_WCHAR])
-AC_SUBST([enable_wchar_support])
-
 dnl disable backend
 dnl ---------------
 AC_ARG_ENABLE([backend],
@@ -170,7 +158,6 @@ dnl ===============
 
 dnl Output results
 AC_CONFIG_FILES([
-	firm_config.h
 	Makefile
 	ir/Makefile
 	include/libfirm/Makefile
@@ -197,6 +184,4 @@ echo "     debug/verifiers       $enable_debug_libfirm"
 echo "     assertions            $enable_assert"
 echo "     statistics            $enable_statistics"
 echo "     ilp                   $enable_ilp"
-echo "     jvm                   $enable_jvm"
-echo "     wide char support     $enable_wchar_support"
 echo ""
