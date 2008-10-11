@@ -275,7 +275,7 @@ static void peephole_be_Reload(ir_node *node) {
 		ptr = gen_ptr_sub(node, frame, &v);
 	}
 
-	reg   = arch_get_irn_register(arch_env, node);
+	reg   = arch_get_irn_register(node);
 	mem   = be_get_Reload_mem(node);
 	mode  = get_irn_mode(node);
 	irg   = current_ir_graph;

@@ -220,11 +220,9 @@ const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 	return req->cls;
 }
 
-extern const arch_register_t *
-arch_get_irn_register(const arch_env_t *env, const ir_node *irn)
+const arch_register_t *arch_get_irn_register(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	return ops->get_irn_reg(irn);
 }
 

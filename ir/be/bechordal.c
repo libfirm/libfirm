@@ -229,12 +229,11 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 
 static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 {
-	const be_irg_t *birg   = env->birg;
-	const arch_env_t *aenv = birg->main_env->arch_env;
 	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
 	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
 	ir_node *bl            = get_nodes_block(irn);
-	be_lv_t *lv            = env->birg->lv;
+	const be_irg_t *birg   = env->birg;
+	be_lv_t *lv            = birg->lv;
 
 	be_insn_t *insn;
 	int i, j;
@@ -248,7 +247,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if (arch_get_irn_reg_class(irn, i) != env->cls)
 			continue;
 
-		reg = arch_get_irn_register(aenv, op);
+		reg = arch_get_irn_register(op);
 
 		if (reg == NULL || !arch_register_type_is(reg, ignore))
 			continue;
@@ -692,7 +691,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		/* Put the colors of all Projs in a bitset. */
 		foreach_out_edge(perm, edge) {
 			ir_node *proj              = get_edge_src_irn(edge);
-			const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+			const arch_register_t *reg = arch_get_irn_register(proj);
 
 			if(reg != NULL)
 				bitset_set(bs, reg->index);
@@ -701,7 +700,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		/* Assign the not yet assigned Projs of the Perm a suitable color. */
 		foreach_out_edge(perm, edge) {
 			ir_node *proj              = get_edge_src_irn(edge);
-			const arch_register_t *reg = arch_get_irn_register(aenv, proj);
+			const arch_register_t *reg = arch_get_irn_register(proj);
 
 			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
 
@@ -908,7 +907,7 @@ static void assign(ir_node *block, void *env_ptr)
 	be_lv_foreach(lv, block, be_lv_state_in, idx) {
 		irn = be_lv_get_irn(lv, block, idx);
 		if(has_reg_class(env, irn)) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;
 
 			assert(reg && "Node must have been assigned a register");
@@ -944,13 +943,13 @@ static void assign(ir_node *block, void *env_ptr)
 			int col = NO_COLOR;
 
 			if(ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
-				reg = arch_get_irn_register(arch_env, irn);
+				reg = arch_get_irn_register(irn);
 				col = reg->index;
 				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
 			} else {
 				col = get_next_free_reg(alloc_env, colors);
 				reg = arch_register_for_index(env->cls, col);
-				assert(arch_get_irn_register(arch_env, irn) == NULL && "This node must not have been assigned a register yet");
+				assert(arch_get_irn_register(irn) == NULL && "This node must not have been assigned a register yet");
 				assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
 			}
 
@@ -965,7 +964,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 		/* Clear the color upon a use. */
 		else if(!b->is_def) {
-			const arch_register_t *reg = arch_get_irn_register(arch_env, irn);
+			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;
 
 			assert(reg && "Register must have been assigned");

@@ -177,7 +177,7 @@ static INLINE int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
 	if (found)
 		return found->new_color;
 	else
-		return get_irn_col(qn->ou->co, irn);
+		return get_irn_col(irn);
 }
 
 /**
@@ -210,7 +210,7 @@ static INLINE void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->pinned_local = 1;
 	if (found->new_color == NO_COLOR)
-		found->new_color = get_irn_col(qn->ou->co, irn);
+		found->new_color = get_irn_col(irn);
 }
 
 

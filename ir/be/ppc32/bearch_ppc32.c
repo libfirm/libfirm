@@ -550,7 +550,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 		}
 
 		/* copy the register from the old node to the new Load */
-		reg = arch_get_irn_register(cgenv->arch_env, node);
+		reg = arch_get_irn_register(node);
 		arch_set_irn_register(cgenv->arch_env, load, reg);
 
 		exchange(node, proj);

@@ -451,7 +451,7 @@ static void save_load(ir_node *irn, void *env) {
 	color_save_t *saver = env;
 	if (saver->chordal_env->cls == arch_get_irn_reg_class(irn, -1)) {
 		if (saver->flag == 0) { /* save */
-			const arch_register_t *reg = arch_get_irn_register(saver->arch_env, irn);
+			const arch_register_t *reg = arch_get_irn_register(irn);
 			pmap_insert(saver->saved_colors, irn, (void *) reg);
 		} else { /*load */
 			arch_register_t *reg = pmap_get(saver->saved_colors, irn);

@@ -56,7 +56,6 @@ static char printbuf[SNPRINTF_BUF_LEN];
 
 extern int isleaf;
 
-static const arch_env_t       *arch_env;
 static const ppc32_code_gen_t *cg;
 
 
@@ -83,7 +82,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	   in register we need. */
 	op = get_irn_n(irn, pos);
 
-	reg = arch_get_irn_register(arch_env, op);
+	reg = arch_get_irn_register(op);
 
 	assert(reg && "no in register found");
 	return reg;
@@ -104,7 +103,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 	/*           Proj with the corresponding projnum for the register */
 
 	if (get_irn_mode(irn) != mode_T) {
-		reg = arch_get_irn_register(arch_env, irn);
+		reg = arch_get_irn_register(irn);
 	} else if (is_ppc32_irn(irn)) {
 		reg = get_ppc32_out_reg(irn, pos);
 	} else {
@@ -114,7 +113,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 			proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj) && "non-Proj from mode_T node");
 			if (get_Proj_proj(proj) == pos) {
-				reg = arch_get_irn_register(arch_env, proj);
+				reg = arch_get_irn_register(proj);
 				break;
 			}
 		}
@@ -676,8 +675,7 @@ void ppc32_gen_routine(const ppc32_code_gen_t *ppc32_cg, ir_graph *irg)
 	ir_node *block;
 	int i, n;
 
-	cg       = ppc32_cg;
-	arch_env = cg->arch_env;
+	cg = ppc32_cg;
 
 	ppc32_register_emitters();
 

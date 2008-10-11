@@ -60,7 +60,7 @@ static void clear_reg_value(ir_node *node)
 	if(!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg     = arch_get_irn_register(arch_env, node);
+	reg     = arch_get_irn_register(node);
 	if(reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
@@ -85,7 +85,7 @@ static void set_reg_value(ir_node *node)
 	if(!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	if(reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
@@ -157,11 +157,11 @@ void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
 	if (!mode_is_data(get_irn_mode(old_node)))
 		return;
 
-	reg = arch_get_irn_register(arch_env, old_node);
+	reg = arch_get_irn_register(old_node);
 	if (reg == NULL) {
 		panic("No register assigned at %+F", old_node);
 	}
-	assert(reg == arch_get_irn_register(arch_env, new_node) &&
+	assert(reg == arch_get_irn_register(new_node) &&
 	      "KILLING a node and replacing by different register is not allowed");
 
 	cls     = arch_register_get_class(reg);

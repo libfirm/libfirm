@@ -445,11 +445,10 @@ static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 /**
  * Wrap the arch_* function here so we can check for errors.
  */
-static INLINE const arch_register_t *x87_get_irn_register(x87_simulator *sim, const ir_node *irn)
+static INLINE const arch_register_t *x87_get_irn_register(const ir_node *irn)
 {
-	const arch_register_t *res;
+	const arch_register_t *res = arch_get_irn_register(irn);
 
-	res = arch_get_irn_register(sim->arch_env, irn);
 	assert(res->reg_class->regs == ia32_vfp_regs);
 	return res;
 }  /* x87_get_irn_register */
@@ -667,7 +666,7 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx)
 {
 	ir_node               *fpush, *pred = get_irn_n(n, op_idx);
 	ia32_x87_attr_t       *attr;
-	const arch_register_t *out = x87_get_irn_register(state->sim, pred);
+	const arch_register_t *out = x87_get_irn_register(pred);
 
 	x87_push_dbl(state, arch_register_get_index(out), pred);
 
@@ -769,14 +768,14 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 			ir_node *proj = get_edge_src_irn(edge);
 
 			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
-				const arch_register_t *reg = x87_get_irn_register(sim, proj);
+				const arch_register_t *reg = x87_get_irn_register(proj);
 				live &= ~(1 << arch_register_get_index(reg));
 			}
 		}
 	}
 
 	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
-		const arch_register_t *reg = x87_get_irn_register(sim, irn);
+		const arch_register_t *reg = x87_get_irn_register(irn);
 		live &= ~(1 << arch_register_get_index(reg));
 	}
 
@@ -784,7 +783,7 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 		ir_node *op = get_irn_n(irn, i);
 
 		if (mode_is_float(get_irn_mode(op)) && arch_irn_consider_in_reg_alloc(arch_env, cls, op)) {
-			const arch_register_t *reg = x87_get_irn_register(sim, op);
+			const arch_register_t *reg = x87_get_irn_register(op);
 			live |= 1 << arch_register_get_index(reg);
 		}
 	}
@@ -814,7 +813,7 @@ static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node 
 		if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
 			continue;
 
-		reg = x87_get_irn_register(sim, node);
+		reg = x87_get_irn_register(node);
 		live |= 1 << arch_register_get_index(reg);
 	}
 
@@ -930,9 +929,9 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 	x87_simulator         *sim     = state->sim;
 	ir_node               *op1     = get_irn_n(n, n_ia32_binary_left);
 	ir_node               *op2     = get_irn_n(n, n_ia32_binary_right);
-	const arch_register_t *op1_reg = x87_get_irn_register(sim, op1);
-	const arch_register_t *op2_reg = x87_get_irn_register(sim, op2);
-	const arch_register_t *out     = x87_get_irn_register(sim, n);
+	const arch_register_t *op1_reg = x87_get_irn_register(op1);
+	const arch_register_t *op2_reg = x87_get_irn_register(op2);
+	const arch_register_t *out     = x87_get_irn_register(n);
 	int reg_index_1                = arch_register_get_index(op1_reg);
 	int reg_index_2                = arch_register_get_index(op2_reg);
 	vfp_liveness           live    = vfp_live_args_after(sim, n, REGMASK(out));
@@ -1108,8 +1107,8 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 {
 	int op1_idx, out_idx;
 	x87_simulator         *sim = state->sim;
-	const arch_register_t *op1 = x87_get_irn_register(sim, get_irn_n(n, UNOP_IDX));
-	const arch_register_t *out = x87_get_irn_register(sim, n);
+	const arch_register_t *op1 = x87_get_irn_register(get_irn_n(n, UNOP_IDX));
+	const arch_register_t *out = x87_get_irn_register(n);
 	ia32_x87_attr_t *attr;
 	unsigned live = vfp_live_args_after(sim, n, REGMASK(out));
 
@@ -1152,12 +1151,12 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
  */
 static int sim_load(x87_state *state, ir_node *n, ir_op *op)
 {
-	const arch_register_t *out = x87_get_irn_register(state->sim, n);
+	const arch_register_t *out = x87_get_irn_register(n);
 	ia32_x87_attr_t *attr;
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, arch_register_get_name(out)));
 	x87_push(state, arch_register_get_index(out), x87_patch_insn(n, op));
-	assert(out == x87_get_irn_register(state->sim, n));
+	assert(out == x87_get_irn_register(n));
 	attr = get_ia32_x87_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
@@ -1206,7 +1205,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 {
 	x87_simulator         *sim = state->sim;
 	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
-	const arch_register_t *op2 = x87_get_irn_register(sim, val);
+	const arch_register_t *op2 = x87_get_irn_register(val);
 	unsigned              live = vfp_live_args_after(sim, n, 0);
 	int                   insn = NO_NODE_ADDED;
 	ia32_x87_attr_t *attr;
@@ -1370,9 +1369,8 @@ GEN_STORE(fist)
 */
 static int sim_fisttp(x87_state *state, ir_node *n)
 {
-	x87_simulator         *sim = state->sim;
 	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
-	const arch_register_t *op2 = x87_get_irn_register(sim, val);
+	const arch_register_t *op2 = x87_get_irn_register(val);
 	int                   insn = NO_NODE_ADDED;
 	ia32_x87_attr_t *attr;
 	int op2_reg_idx, op2_idx, depth;
@@ -1420,7 +1418,7 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 	x87_simulator         *sim         = state->sim;
 	ia32_x87_attr_t       *attr        = get_ia32_x87_attr(n);
 	ir_node               *op1_node    = get_irn_n(n, n_ia32_vFtstFnstsw_left);
-	const arch_register_t *reg1        = x87_get_irn_register(sim, op1_node);
+	const arch_register_t *reg1        = x87_get_irn_register(op1_node);
 	int                    reg_index_1 = arch_register_get_index(reg1);
 	int                    op1_idx     = x87_on_stack(state, reg_index_1);
 	unsigned               live        = vfp_live_args_after(sim, n, 0);
@@ -1465,8 +1463,8 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	x87_simulator         *sim = state->sim;
 	ir_node               *op1_node = get_irn_n(n, n_ia32_vFucomFnstsw_left);
 	ir_node               *op2_node = get_irn_n(n, n_ia32_vFucomFnstsw_right);
-	const arch_register_t *op1      = x87_get_irn_register(sim, op1_node);
-	const arch_register_t *op2      = x87_get_irn_register(sim, op2_node);
+	const arch_register_t *op1      = x87_get_irn_register(op1_node);
+	const arch_register_t *op2      = x87_get_irn_register(op2_node);
 	int reg_index_1 = arch_register_get_index(op1);
 	int reg_index_2 = arch_register_get_index(op2);
 	unsigned live = vfp_live_args_after(sim, n, 0);
@@ -1701,7 +1699,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		op      = get_irn_n(node, i);
-		op_reg  = arch_get_irn_register(state->sim->arch_env, op);
+		op_reg  = arch_get_irn_register(op);
 		if (arch_register_get_class(op_reg) != &ia32_reg_classes[CLASS_ia32_vfp])
 			continue;
 
@@ -1789,8 +1787,8 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		break;
 	}
 
-	out = x87_get_irn_register(sim, n);
-	op1 = x87_get_irn_register(sim, pred);
+	out = x87_get_irn_register(n);
+	op1 = x87_get_irn_register(pred);
 
 	if (cnstr != NULL) {
 		/* copy a constant */
@@ -1826,7 +1824,6 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
  */
 static int sim_Copy(x87_state *state, ir_node *n)
 {
-	x87_simulator               *sim = state->sim;
 	ir_node                     *pred;
 	const arch_register_t       *out;
 	const arch_register_t       *op1;
@@ -1841,9 +1838,9 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		return 0;
 
 	pred = get_irn_n(n, 0);
-	out  = x87_get_irn_register(sim, n);
-	op1  = x87_get_irn_register(sim, pred);
-	live = vfp_live_args_after(sim, n, REGMASK(out));
+	out  = x87_get_irn_register(n);
+	op1  = x87_get_irn_register(pred);
+	live = vfp_live_args_after(state->sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(out)));
@@ -1862,7 +1859,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 		sched_add_before(next, node);
 
 		DB((dbg, LEVEL_1, "<<< %+F %s -> %s\n", node, op1->name,
-		    arch_get_irn_register(sim->arch_env, node)->name));
+		    arch_get_irn_register(node)->name));
 		return NO_NODE_ADDED;
 	}
 
@@ -1994,7 +1991,7 @@ static int sim_Call(x87_state *state, ir_node *n)
 	resproj = get_call_result_proj(n);
 	assert(resproj != NULL);
 
-	reg = x87_get_irn_register(state->sim, resproj);
+	reg = x87_get_irn_register(resproj);
 	x87_push(state, arch_register_get_index(reg), resproj);
 
 end_call:
@@ -2077,7 +2074,6 @@ typedef struct _perm_data_t {
 static int sim_Perm(x87_state *state, ir_node *irn)
 {
 	int             i, n;
-	x87_simulator   *sim = state->sim;
 	ir_node         *pred = get_irn_n(irn, 0);
 	int             *stack_pos;
 	const ir_edge_t *edge;
@@ -2097,7 +2093,7 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 
 	/* collect old stack positions */
 	for (i = 0; i < n; ++i) {
-		const arch_register_t *inreg = x87_get_irn_register(sim, get_irn_n(irn, i));
+		const arch_register_t *inreg = x87_get_irn_register(get_irn_n(irn, i));
 		int idx = x87_on_stack(state, arch_register_get_index(inreg));
 
 		assert(idx >= 0 && "Perm argument not on x87 stack");
@@ -2107,7 +2103,7 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 	/* now do the permutation */
 	foreach_out_edge(irn, edge) {
 		ir_node               *proj = get_edge_src_irn(edge);
-		const arch_register_t *out  = x87_get_irn_register(sim, proj);
+		const arch_register_t *out  = x87_get_irn_register(proj);
 		long                  num   = get_Proj_proj(proj);
 
 		assert(0 <= num && num < n && "More Proj's than Perm inputs");
@@ -2263,7 +2259,7 @@ static void fix_unknown_phis(x87_state *state, ir_node *block,
 		if (!is_ia32_Unknown_VFP(op))
 			continue;
 
-		reg = arch_get_irn_register(state->sim->arch_env, node);
+		reg = arch_get_irn_register(node);
 
 		/* create a zero at end of pred block */
 		zero = new_rd_ia32_fldz(NULL, current_ir_graph, pred_block, mode_E);

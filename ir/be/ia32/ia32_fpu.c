@@ -238,7 +238,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 	if(!mode_is_data(get_irn_mode(node)))
 		return;
 
-	reg = arch_get_irn_register(env->arch_env, node);
+	reg = arch_get_irn_register(node);
 	if(reg == &ia32_fp_cw_regs[REG_FPCW] && !is_ia32_ChangeCW(node)) {
 		ARR_APP1(ir_node*, env->state_nodes, node);
 	}

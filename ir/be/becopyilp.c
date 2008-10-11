@@ -176,7 +176,7 @@ void sr_reinsert(size_red_t *sr) {
 
 		be_ifg_foreach_neighbour(ifg, iter, irn, other) {
 			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
-				bitset_set(used_cols, get_irn_col(sr->co, other));
+				bitset_set(used_cols, get_irn_col(other));
 		}
 
 		/* now all bits not set are possible colors */

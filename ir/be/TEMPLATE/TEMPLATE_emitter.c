@@ -48,8 +48,6 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-static const arch_env_t *arch_env;
-
 /**
  * Returns the register at in position pos.
  */
@@ -64,7 +62,7 @@ static const arch_register_t *get_in_reg(const ir_node *node, int pos)
 	   in register we need. */
 	op = get_irn_n(node, pos);
 
-	reg = arch_get_irn_register(arch_env, op);
+	reg = arch_get_irn_register(op);
 
 	assert(reg && "no in register found");
 	return reg;
@@ -84,7 +82,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 	/*           Proj with the corresponding projnum for the register */
 
 	if (get_irn_mode(node) != mode_T) {
-		reg = arch_get_irn_register(arch_env, node);
+		reg = arch_get_irn_register(node);
 	} else if (is_TEMPLATE_irn(node)) {
 		reg = get_TEMPLATE_out_reg(node, pos);
 	} else {
@@ -94,7 +92,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 			proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj) && "non-Proj from mode_T node");
 			if (get_Proj_proj(proj) == pos) {
-				reg = arch_get_irn_register(arch_env, proj);
+				reg = arch_get_irn_register(proj);
 				break;
 			}
 		}
@@ -273,9 +271,9 @@ void TEMPLATE_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver
  */
-void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg) {
-
-	arch_env = cg->arch_env;
+void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg)
+{
+	(void)cg;
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();

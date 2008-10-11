@@ -118,7 +118,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 				obstack_grow(obst, &o, sizeof(o));
 				insn->n_ops++;
 				insn->out_constraints |= o.has_constraints;
-				pre_colored += arch_get_irn_register(arch_env, p) != NULL;
+				pre_colored += arch_get_irn_register(p) != NULL;
 			}
 		}
 	} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
@@ -132,7 +132,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		obstack_grow(obst, &o, sizeof(o));
 		insn->n_ops++;
 		insn->out_constraints |= o.has_constraints;
-		pre_colored += arch_get_irn_register(arch_env, irn) != NULL;
+		pre_colored += arch_get_irn_register(irn) != NULL;
 	}
 
 	if (pre_colored > 0) {

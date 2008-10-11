@@ -1194,7 +1194,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	}
 
 	/* copy the register from the old node to the new Load */
-	reg = arch_get_irn_register(cg->arch_env, node);
+	reg = arch_get_irn_register(node);
 	arch_set_irn_register(cg->arch_env, new_op, reg);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));

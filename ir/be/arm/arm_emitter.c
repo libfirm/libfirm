@@ -67,7 +67,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_env_t     *arch_env = NULL;
 static const arm_code_gen_t *cg;
 static const arm_isa_t      *isa;
 static set                  *sym_or_tv;
@@ -85,7 +84,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 	   in register we need. */
 	op = get_irn_n(irn, pos);
 
-	reg = arch_get_irn_register(arch_env, op);
+	reg = arch_get_irn_register(op);
 
 	assert(reg && "no in register found");
 
@@ -120,7 +119,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
     /*           Proj with the corresponding projnum for the register */
 
     if (get_irn_mode(node) != mode_T) {
-        reg = arch_get_irn_register(arch_env, node);
+        reg = arch_get_irn_register(node);
     } else if (is_arm_irn(node)) {
         reg = get_arm_out_reg(node, pos);
     } else {
@@ -130,7 +129,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
             proj = get_edge_src_irn(edge);
             assert(is_Proj(proj) && "non-Proj from mode_T node");
             if (get_Proj_proj(proj) == pos) {
-                reg = arch_get_irn_register(arch_env, proj);
+                reg = arch_get_irn_register(proj);
                 break;
             }
         }
@@ -1204,7 +1203,6 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 
 	cg        = arm_cg;
 	isa       = (const arm_isa_t *)cg->arch_env;
-	arch_env  = cg->arch_env;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
 	arm_register_emitters();

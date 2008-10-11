@@ -314,7 +314,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	n = get_irn_arity(irn);
 	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
-	reg_class = arch_get_irn_register(arch_env, get_irn_n(irn, 0))->reg_class;
+	reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	pairs     = alloca(n * sizeof(pairs[0]));
 
 	/* build the list of register pairs (in, out) */
@@ -324,8 +324,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		pn                = get_Proj_proj(pairs[i].out_node);
 		pairs[i].in_node  = get_irn_n(irn, pn);
 
-		pairs[i].in_reg  = arch_get_irn_register(arch_env, pairs[i].in_node);
-		pairs[i].out_reg = arch_get_irn_register(arch_env, pairs[i].out_node);
+		pairs[i].in_reg  = arch_get_irn_register(pairs[i].in_node);
+		pairs[i].out_reg = arch_get_irn_register(pairs[i].out_node);
 
 		pairs[i].checked = 0;
 		i++;
@@ -974,7 +974,7 @@ found_front:
 		sched_add_after(perm, node);
 
 		/* give it the proj's register */
-		arch_set_irn_register(aenv, node, arch_get_irn_register(aenv, proj));
+		arch_set_irn_register(aenv, node, arch_get_irn_register(proj));
 
 		/* reroute all users of the proj to the moved node. */
 		edges_reroute(proj, node, irg);

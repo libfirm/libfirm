@@ -80,10 +80,10 @@ size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
 
 static void *regs_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 {
-	coloring_t *coloring = (coloring_t *) ph;
-	(void) data;
+	(void)ph;
+	(void)data;
 
-	return (void *) arch_get_irn_register(coloring->arch_env, irn);
+	return (void*)arch_get_irn_register(irn);
 }
 
 coloring_t *coloring_init(coloring_t *c, ir_graph *irg, const arch_env_t *aenv)

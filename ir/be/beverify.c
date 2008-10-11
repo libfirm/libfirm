@@ -706,7 +706,7 @@ static void check_register_constraints(ir_node *node)
 
 	/* verify output register */
 	if (arch_get_irn_reg_class(node, -1) != NULL) {
-		reg = arch_get_irn_register(arch_env, node);
+		reg = arch_get_irn_register(node);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 					node, get_nodes_block(node), get_irg_dump_name(irg));
@@ -736,7 +736,7 @@ static void check_register_constraints(ir_node *node)
 		if (arch_get_irn_reg_class(node, i) == NULL)
 			continue;
 
-		reg = arch_get_irn_register(arch_env, pred);
+		reg = arch_get_irn_register(pred);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
 			           pred, get_nodes_block(pred), get_irg_dump_name(irg), node);
@@ -754,12 +754,12 @@ static void check_register_constraints(ir_node *node)
 	if (is_Phi(node)) {
 		int i, arity;
 
-		reg = arch_get_irn_register(arch_env, node);
+		reg = arch_get_irn_register(node);
 
 		arity = get_irn_arity(node);
 		for (i = 0; i < arity; ++i) {
 			ir_node               *pred     = get_Phi_pred(node, i);
-			const arch_register_t *pred_reg = arch_get_irn_register(arch_env, pred);
+			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
 			if (reg != pred_reg && !arch_register_type_is(pred_reg, joker)) {
 				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",
@@ -777,7 +777,7 @@ static void value_used(ir_node *node) {
 	if (arch_get_irn_reg_class(node, -1) != regclass)
 		return;
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	if (reg->type & arch_register_type_virtual)
 		return;
 
@@ -800,7 +800,7 @@ static void value_def(ir_node *node)
 	if (arch_get_irn_reg_class(node, -1) != regclass)
 		return;
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	if (reg->type & arch_register_type_virtual)
 		return;
 

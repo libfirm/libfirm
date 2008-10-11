@@ -129,7 +129,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 	   in register we need. */
 	op = get_irn_n(irn, pos);
 
-	reg = arch_get_irn_register(arch_env, op);
+	reg = arch_get_irn_register(op);
 
 	assert(reg && "no in register found");
 
@@ -168,7 +168,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 
 	if (get_irn_mode(irn) != mode_T) {
 		assert(pos == 0);
-		reg = arch_get_irn_register(arch_env, irn);
+		reg = arch_get_irn_register(irn);
 	} else if (is_ia32_irn(irn)) {
 		reg = get_ia32_out_reg(irn, pos);
 	} else {
@@ -178,7 +178,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 			proj = get_edge_src_irn(edge);
 			assert(is_Proj(proj) && "non-Proj from mode_T node");
 			if (get_Proj_proj(proj) == pos) {
-				reg = arch_get_irn_register(arch_env, proj);
+				reg = arch_get_irn_register(proj);
 				break;
 			}
 		}
@@ -1066,17 +1066,15 @@ static void emit_ia32_CMov(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
-	const arch_register_t *out          = arch_get_irn_register(arch_env, node);
+	const arch_register_t *out          = arch_get_irn_register(node);
 	pn_Cmp                 pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
 	pnc = determine_final_pnc(node, n_ia32_CMov_eflags, pnc);
 
-	in_true  = arch_get_irn_register(arch_env,
-	                                 get_irn_n(node, n_ia32_CMov_val_true));
-	in_false = arch_get_irn_register(arch_env,
-	                                 get_irn_n(node, n_ia32_CMov_val_false));
+	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_true));
+	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_false));
 
 	/* should be same constraint fullfilled? */
 	if (out == in_false) {
@@ -1534,7 +1532,7 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 	if (signed_mode                                    &&
 			smaller_bits == 16                             &&
 			&ia32_gp_regs[REG_EAX] == get_out_reg(node, 0) &&
-			&ia32_gp_regs[REG_EAX] == arch_get_irn_register(arch_env, get_irn_n(node, n_ia32_unary_op))) {
+			&ia32_gp_regs[REG_EAX] == arch_get_irn_register(get_irn_n(node, n_ia32_unary_op))) {
 		/* argument and result are both in EAX and signedness is ok: use the
 		 * smaller cwtl opcode */
 		ia32_emitf(node, "\tcwtl\n");
@@ -1587,8 +1585,8 @@ static void emit_be_IncSP(const ir_node *node)
  */
 static void Copy_emitter(const ir_node *node, const ir_node *op)
 {
-	const arch_register_t *in  = arch_get_irn_register(arch_env, op);
-	const arch_register_t *out = arch_get_irn_register(arch_env, node);
+	const arch_register_t *in  = arch_get_irn_register(op);
+	const arch_register_t *out = arch_get_irn_register(node);
 
 	if (in == out) {
 		return;
@@ -1624,8 +1622,8 @@ static void emit_be_Perm(const ir_node *node)
 	const arch_register_t *in0, *in1;
 	const arch_register_class_t *cls0, *cls1;
 
-	in0 = arch_get_irn_register(arch_env, get_irn_n(node, 0));
-	in1 = arch_get_irn_register(arch_env, get_irn_n(node, 1));
+	in0 = arch_get_irn_register(get_irn_n(node, 0));
+	in1 = arch_get_irn_register(get_irn_n(node, 1));
 
 	cls0 = arch_register_get_class(in0);
 	cls1 = arch_register_get_class(in1);

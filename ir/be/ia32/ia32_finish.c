@@ -73,8 +73,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	nomem    = new_rd_NoMem(cg->irg);
 	in1      = get_irn_n(irn, n_ia32_binary_left);
 	in2      = get_irn_n(irn, n_ia32_binary_right);
-	in1_reg  = arch_get_irn_register(cg->arch_env, in1);
-	in2_reg  = arch_get_irn_register(cg->arch_env, in2);
+	in1_reg  = arch_get_irn_register(in1);
+	in2_reg  = arch_get_irn_register(in2);
 	out_reg  = get_ia32_out_reg(irn, 0);
 
 	irg     = cg->irg;
@@ -286,7 +286,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		/* get in and out register */
 		out_reg  = get_ia32_out_reg(node, i);
 		in_node  = get_irn_n(node, same_pos);
-		in_reg   = arch_get_irn_register(arch_env, in_node);
+		in_reg   = arch_get_irn_register(in_node);
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
@@ -308,7 +308,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			in_reg = arch_get_irn_register(arch_env, in);
+			in_reg = arch_get_irn_register(in);
 
 			if (in_reg != out_reg)
 				continue;
@@ -400,7 +400,6 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 static void fix_am_source(ir_node *irn, void *env)
 {
 	ia32_code_gen_t            *cg = env;
-	const arch_env_t           *arch_env = cg->arch_env;
 	const arch_register_req_t **reqs;
 	int                         n_res, i;
 
@@ -428,7 +427,7 @@ static void fix_am_source(ir_node *irn, void *env)
 		out_reg   = get_ia32_out_reg(irn, i);
 		same_pos  = get_first_same(reqs[i]);
 		same_node = get_irn_n(irn, same_pos);
-		same_reg  = arch_get_irn_register(arch_env, same_node);
+		same_reg  = arch_get_irn_register(same_node);
 
 		/* should_be same constraint is fullfilled, nothing to do */
 		if (out_reg == same_reg)
@@ -436,8 +435,8 @@ static void fix_am_source(ir_node *irn, void *env)
 
 		/* we only need to do something if the out reg is the same as base
 			 or index register */
-		if (out_reg != arch_get_irn_register(arch_env, get_irn_n(irn, n_ia32_base)) &&
-				out_reg != arch_get_irn_register(arch_env, get_irn_n(irn, n_ia32_index)))
+		if (out_reg != arch_get_irn_register(get_irn_n(irn, n_ia32_base)) &&
+				out_reg != arch_get_irn_register(get_irn_n(irn, n_ia32_index)))
 			continue;
 
 		load_res = turn_back_am(irn);

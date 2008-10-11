@@ -204,7 +204,7 @@ static void *co2_irn_init(ir_phase *ph, const ir_node *irn, void *data)
 	memset(ci, 0, size);
 	INIT_LIST_HEAD(&ci->changed_list);
 	ci->touched_next = env->touched;
-	ci->orig_col     = get_irn_col(env->co, irn);
+	ci->orig_col     = get_irn_col(irn);
 	env->touched     = ci;
 	ci->irn          = irn;
 	ci->aff          = a;

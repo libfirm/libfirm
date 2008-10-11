@@ -168,7 +168,7 @@ static ir_node *turn_into_mode_t(ir_node *node)
 	res_proj = new_r_Proj(current_ir_graph, block, new_node, mode_Iu,
 	                      pn_ia32_res);
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	arch_set_irn_register(arch_env, res_proj, reg);
 
 	sched_add_before(node, new_node);
@@ -227,7 +227,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	arch_set_irn_register(arch_env, test, reg);
 
 	foreach_out_edge_safe(node, edge, tmp) {
@@ -476,7 +476,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		val = get_irn_n(store, n_ia32_unary_op);
 		mem = get_irn_n(store, n_ia32_mem);
-		spreg = arch_get_irn_register(cg->arch_env, curr_sp);
+		spreg = arch_get_irn_register(curr_sp);
 
 		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
 		copy_mark(store, push);
@@ -649,8 +649,8 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 					/* not a GP copy, ignore */
 					continue;
 				}
-				dreg = arch_get_irn_register(arch_env, node);
-				sreg = arch_get_irn_register(arch_env, be_get_Copy_op(node));
+				dreg = arch_get_irn_register(node);
+				sreg = arch_get_irn_register(be_get_Copy_op(node));
 				if (regmask & copymask & (1 << sreg->index)) {
 					break;
 				}
@@ -700,7 +700,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (loads[loadslot] != NULL)
 			break;
 
-		dreg = arch_get_irn_register(arch_env, node);
+		dreg = arch_get_irn_register(node);
 		if (regmask & (1 << dreg->index)) {
 			/* this register is already used */
 			break;
@@ -742,7 +742,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		const arch_register_t *reg;
 
 		mem = get_irn_n(load, n_ia32_mem);
-		reg = arch_get_irn_register(arch_env, load);
+		reg = arch_get_irn_register(load);
 
 		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
 		arch_set_irn_register(arch_env, pop, reg);
@@ -880,7 +880,7 @@ static void peephole_be_IncSP(ir_node *node)
 	/* transform Load->IncSP combinations to Pop where possible */
 	peephole_Load_IncSP_to_pop(node);
 
-	if (arch_get_irn_register(arch_env, node) != esp)
+	if (arch_get_irn_register(node) != esp)
 		return;
 
 	/* replace IncSP -4 by Pop freereg when possible */
@@ -943,7 +943,7 @@ static void peephole_ia32_Const(ir_node *node)
 	if (be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
 		return;
 
-	reg = arch_get_irn_register(arch_env, node);
+	reg = arch_get_irn_register(node);
 	assert(be_peephole_get_reg_value(reg) == NULL);
 
 	/* create xor(produceval, produceval) */
@@ -1046,13 +1046,13 @@ static void peephole_ia32_Lea(ir_node *node)
 		base     = NULL;
 		base_reg = NULL;
 	} else {
-		base_reg = arch_get_irn_register(arch_env, base);
+		base_reg = arch_get_irn_register(base);
 	}
 	if(is_noreg(cg, index)) {
 		index     = NULL;
 		index_reg = NULL;
 	} else {
-		index_reg = arch_get_irn_register(arch_env, index);
+		index_reg = arch_get_irn_register(index);
 	}
 
 	if(base == NULL && index == NULL) {
@@ -1063,7 +1063,7 @@ static void peephole_ia32_Lea(ir_node *node)
 		return;
 	}
 
-	out_reg = arch_get_irn_register(arch_env, node);
+	out_reg = arch_get_irn_register(node);
 	scale   = get_ia32_am_scale(node);
 	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
 	/* check if we have immediates values (frame entities should already be

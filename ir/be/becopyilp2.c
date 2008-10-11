@@ -87,7 +87,7 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 			bitset_pos_t col;
 			int cst_idx;
 			const arch_register_req_t *req;
-			int curr_node_color = get_irn_col(ienv->co, irn);
+			int curr_node_color = get_irn_col(irn);
 			int node_nr = (int)get_irn_idx(irn);
 			local_env_t *lenv = ienv->env;
 
@@ -190,12 +190,12 @@ static void build_affinity_cstr(ilp_env_t *ienv) {
 
 		root = curr->nodes[0];
 		root_nr = (int) get_irn_idx(root);
-		root_col = get_irn_col(ienv->co, root);
+		root_col = get_irn_col(root);
 
 		for (i = 1; i < curr->node_count; ++i) {
 			arg = curr->nodes[i];
 			arg_nr = (int) get_irn_idx(arg);
-			arg_col = get_irn_col(ienv->co, arg);
+			arg_col = get_irn_col(arg);
 
 			/* add a new affinity variable */
 			y_idx = lpp_add_var(ienv->lp, name_cdd_sorted(buf, 'y', root_nr, arg_nr), lpp_binary, curr->costs[i]);

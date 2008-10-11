@@ -1095,7 +1095,7 @@ static void mips_transform_Reload(mips_transform_env_t* env) {
 	}
 
 	/* copy the register from the old node to the new Load */
-	reg = arch_get_irn_register(env->cg->arch_env, node);
+	reg = arch_get_irn_register(node);
 	arch_set_irn_register(env->cg->arch_env, proj, reg);
 
 	exchange(node, proj);
@@ -1115,7 +1115,7 @@ static ir_node *gen_AddSP(ir_node *node)
 	add = new_rd_mips_addu(env->dbg, env->irg, env->block, op1, op2);
 
 	/* copy the register requirements from the old node to the new node */
-	reg = arch_get_irn_register(env->cg->arch_env, node);
+	reg = arch_get_irn_register(node);
 	arch_set_irn_register(env->cg->arch_env, add, reg);
 
 	return add;

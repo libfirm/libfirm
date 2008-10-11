@@ -53,8 +53,8 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define get_chordal_arch(ce) ((ce)->birg->main_env->arch_env)
-#define get_reg(irn) arch_get_irn_register(get_chordal_arch(chordal_env), irn)
-#define set_reg(irn, reg) arch_set_irn_register(get_chordal_arch(chordal_env), irn, reg)
+#define get_reg(irn)         arch_get_irn_register(irn)
+#define set_reg(irn, reg)    arch_set_irn_register(get_chordal_arch(chordal_env), irn, reg)
 
 #define is_Perm(irn)            (arch_irn_class_is(arch_env, irn, perm))
 #define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, -1))

@@ -69,13 +69,12 @@ static void dump_allocated_block(ir_node *block, void *data)
 	const ir_node *irn;
 	struct dump_env *dump_env = data;
 	FILE *f = dump_env->f;
-	arch_env_t *env = dump_env->env;
 
 	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"", block);
 	sched_foreach(block, irn) {
 		const char *prefix = "";
 
-		const arch_register_t *reg = arch_get_irn_register(env, irn);
+		const arch_register_t *reg = arch_get_irn_register(irn);
 
 		ir_fprintf(f, "\n");
 		if(reg)
@@ -88,7 +87,7 @@ static void dump_allocated_block(ir_node *block, void *data)
 				ir_node *op = get_irn_n(irn, i);
 				if (arch_is_register_operand(op, -1)) {
 					ir_fprintf(f, "%s%s", prefix,
-						arch_register_get_name(arch_get_irn_register(env, op)));
+						arch_register_get_name(arch_get_irn_register(op)));
 					prefix = ", ";
 				}
 			}

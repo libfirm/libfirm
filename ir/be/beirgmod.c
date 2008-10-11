@@ -124,7 +124,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	curr = perm;
 	for (i = 0; i < n; ++i) {
 		ir_node *perm_op = get_irn_n(perm, i);
-		const arch_register_t *reg = arch_get_irn_register(arch_env, perm_op);
+		const arch_register_t *reg = arch_get_irn_register(perm_op);
 		be_ssa_construction_env_t senv;
 
 		ir_mode *mode = get_irn_mode(perm_op);

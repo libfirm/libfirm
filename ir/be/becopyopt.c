@@ -223,7 +223,7 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 	if (arch_irn_is(co->aenv, irn, ignore))
 		return 0;
 
-	reg = arch_get_irn_register(co->aenv, irn);
+	reg = arch_get_irn_register(irn);
 	if (arch_register_type_is(reg, ignore))
 		return 0;
 
@@ -650,11 +650,11 @@ int co_get_copy_costs(const copy_opt_t *co) {
 	ASSERT_OU_AVAIL(co);
 
 	list_for_each_entry(unit_t, curr, &co->units, units) {
-		int root_col = get_irn_col(co, curr->nodes[0]);
+		int root_col = get_irn_col(curr->nodes[0]);
 		DBG((dbg, LEVEL_1, "  %3d costs for root %+F color %d\n", curr->inevitable_costs, curr->nodes[0], root_col));
 		res += curr->inevitable_costs;
 		for (i=1; i<curr->node_count; ++i) {
-			int arg_col = get_irn_col(co, curr->nodes[i]);
+			int arg_col = get_irn_col(curr->nodes[i]);
 			if (root_col != arg_col) {
 				DBG((dbg, LEVEL_1, "  %3d for arg %+F color %d\n", curr->costs[i], curr->nodes[i], arg_col));
 				res += curr->costs[i];
@@ -692,7 +692,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 				stat->aff_edges += 1;
 				stat->max_costs += neigh->costs;
 
-				if(get_irn_col(co, an->irn) != get_irn_col(co, neigh->irn)) {
+				if (get_irn_col(an->irn) != get_irn_col(neigh->irn)) {
 					stat->costs += neigh->costs;
 					stat->unsatisfied_edges += 1;
 				}
@@ -774,7 +774,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	if (!is_curr_reg_class(co, irn) || arch_irn_is(co->aenv, irn, ignore))
 		return;
 
-	reg = arch_get_irn_register(co->aenv, irn);
+	reg = arch_get_irn_register(irn);
 	if (arch_register_type_is(reg, ignore))
 		return;
 
@@ -999,7 +999,7 @@ static int ifg_is_dump_node(void *self, ir_node *irn)
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
 	co_ifg_dump_t *env         = self;
-	const arch_register_t *reg = arch_get_irn_register(env->co->aenv, irn);
+	const arch_register_t *reg = arch_get_irn_register(irn);
 	const arch_register_req_t *req;
 	int limited;
 
@@ -1032,12 +1032,12 @@ static void ifg_dump_at_end(FILE *file, void *self)
 	affinity_node_t *a;
 
 	co_gs_foreach_aff_node(env->co, a) {
-		const arch_register_t *ar = arch_get_irn_register(env->co->aenv, a->irn);
+		const arch_register_t *ar = arch_get_irn_register(a->irn);
 		unsigned aidx = get_irn_idx(a->irn);
 		neighb_t *n;
 
 		co_gs_foreach_neighb(a, n) {
-			const arch_register_t *nr = arch_get_irn_register(env->co->aenv, n->irn);
+			const arch_register_t *nr = arch_get_irn_register(n->irn);
 			unsigned nidx = get_irn_idx(n->irn);
 
 			if(aidx < nidx) {

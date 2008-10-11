@@ -268,7 +268,7 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 	sched_foreach(block, node) {
 		if (!is_Phi(node))
 			break;
-		if (arch_get_irn_register(env->arch_env, node) != env->reg)
+		if (arch_get_irn_register(node) != env->reg)
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
@@ -318,7 +318,7 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 		if(!mode_is_data(get_irn_mode(node)))
 			continue;
 
-		if (arch_get_irn_register(env->arch_env, node) != env->reg)
+		if (arch_get_irn_register(node) != env->reg)
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
@@ -409,7 +409,7 @@ void belady(minibelady_env_t *env, ir_node *block)
 			if(!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			reg = arch_get_irn_register(env->arch_env, in);
+			reg = arch_get_irn_register(in);
 			if(reg == env->reg) {
 				assert(need_val == NULL);
 				need_val = in;
@@ -436,7 +436,7 @@ void belady(minibelady_env_t *env, ir_node *block)
 				if(!mode_is_data(get_irn_mode(proj)))
 					continue;
 
-				reg = arch_get_irn_register(env->arch_env, proj);
+				reg = arch_get_irn_register(proj);
 				if(reg == env->reg) {
 					current_state = proj;
 					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
@@ -444,8 +444,7 @@ void belady(minibelady_env_t *env, ir_node *block)
 			}
 		} else {
 			if(mode_is_data(get_irn_mode(node))) {
-				const arch_register_t *reg =
-					arch_get_irn_register(env->arch_env, node);
+				const arch_register_t *reg = arch_get_irn_register(node);
 				if(reg == env->reg) {
 					current_state = node;
 					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));

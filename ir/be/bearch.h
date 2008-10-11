@@ -203,12 +203,10 @@ const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 
 /**
  * Get the register allocated at a certain output operand of a node.
- * @param env The arch environment.
  * @param irn The node.
  * @return    The register allocated for this operand
  */
-extern const arch_register_t *
-arch_get_irn_register(const arch_env_t *env, const ir_node *irn);
+const arch_register_t *arch_get_irn_register(const ir_node *irn);
 
 /**
  * Set the register for a certain output operand.

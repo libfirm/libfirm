@@ -371,7 +371,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 		res->tmp_col       = -1;
 		res->int_neighs    = NULL;
 		res->int_aff_neigh = 0;
-		res->col           = arch_register_get_index(arch_get_irn_register(env->aenv, irn));
+		res->col           = arch_register_get_index(arch_get_irn_register(irn));
 		res->init_col      = res->col;
 		INIT_LIST_HEAD(&res->list);
 

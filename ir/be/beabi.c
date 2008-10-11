@@ -774,7 +774,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		for(i = 0; i < n_reg_results; ++i) {
 			ir_node *proj = res_projs[i];
-			const arch_register_t *reg = arch_get_irn_register(arch_env, proj);
+			const arch_register_t *reg = arch_get_irn_register(proj);
 			set_irn_link(proj, (void*) reg);
 			obstack_ptr_grow(obst, proj);
 		}
