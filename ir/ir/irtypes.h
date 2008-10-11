@@ -370,10 +370,6 @@ struct ir_node {
 #endif
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
-#ifdef DO_HEAPANALYSIS
-	struct abstval *av;      /**< Heapanalysis: The abstract value of this node. */
-	struct section *sec;     /**< Heapanalysis: The section of this node. */
-#endif
 	struct ir_node **deps;   /**< Additional dependencies induced by state. */
 	irn_edges_info_t edge_info;  /**< Everlasting out edges. */
 	/* ------- Opcode depending fields -------- */

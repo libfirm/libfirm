@@ -83,18 +83,6 @@ AC_ARG_ENABLE([profile],
 
 AC_SUBST([enable_profile_libfirm])
 
-dnl set heap analyses support
-dnl -------------------------
-AC_ARG_ENABLE([heapanalysis],
-[AS_HELP_STRING([--enable-heapanalysis], [Compile with heap analysis.])],
-[enable_heapanalysis=$enableval], [enable_heapanalysis="no"])
-
-if test "$enable_heapanalysis" = "yes"; then
-	FIRMCONFIG_DO_HEAPANALYSIS="#define DO_HEAPANALYSIS"
-fi
-AC_SUBST([FIRMCONFIG_DO_HEAPANALYSIS])
-AC_SUBST([enable_heapanalysis])
-
 dnl enable Firm hooks
 dnl -------------
 AC_ARG_ENABLE([hooks],

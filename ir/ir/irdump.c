@@ -68,14 +68,6 @@
 #include "eset.h"
 #include "pset.h"
 
-#if DO_HEAPANALYSIS
-extern void dump_irn_chi_term(FILE *FL, ir_node *n);
-extern void dump_irn_state(FILE *FL, ir_node *n);
-extern int  get_opt_dump_abstvals(void);
-typedef unsigned long SeqNo;
-extern SeqNo get_Block_seqno(ir_node *n);
-#endif
-
 /** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
 
@@ -1473,10 +1465,6 @@ static void dump_node(FILE *F, ir_node *n)
 
 	if(dump_node_edge_hook)
 		dump_node_edge_hook(F, n);
-#if DO_HEAPANALYSIS
-	dump_irn_chi_term(F, n);
-	dump_irn_state(F, n);
-#endif
 }
 
 /** dump the edge to the block this node belongs to */
@@ -1725,10 +1713,6 @@ static void dump_whole_block(FILE *F, ir_node *block) {
 	PRINT_NODEID(block);
 	fprintf(F, "\"  label: \"");
 	dump_node_label(F, block);
-#if DO_HEAPANALYSIS
-	if (get_opt_dump_abstvals())
-		fprintf(F, " seqno: %d", (int)get_Block_seqno(block));
-#endif
 
 	/* colorize blocks */
 	if (! get_Block_matured(block))
@@ -1759,9 +1743,6 @@ static void dump_whole_block(FILE *F, ir_node *block) {
 	/* Close the vcg information for the block */
 	fprintf(F, "}\n");
 	dump_const_node_local(F, block);
-#if DO_HEAPANALYSIS
-	dump_irn_chi_term(F, block);
-#endif
 	fprintf(F, "\n");
 }
 
