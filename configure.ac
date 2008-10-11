@@ -112,9 +112,8 @@ AC_ARG_ENABLE([ilp],
 
 if test "$enable_ilp" = yes; then
   FIRMCONFIG_WITH_ILP="#define FIRMCONFIG_WITH_ILP"
+  AC_DEFINE([WITH_ILP], [], [enable to build code using ilp solvers])
 fi
-AC_SUBST([FIRMCONFIG_WITH_ILP])
-AC_SUBST(enable_ilp)
 
 dnl enable wchar_t support for identifiers
 dnl --------------------------------
