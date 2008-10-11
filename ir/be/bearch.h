@@ -125,14 +125,6 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flags_last             = arch_irn_flags_modify_flags
 } arch_irn_flags_t;
 
-/**
- * Get the string representation of a flag.
- * This functions does not handle or'ed bitmasks of flags.
- * @param flag The flag.
- * @return The flag as a string.
- */
-extern const char *arch_irn_flag_str(arch_irn_flags_t flag);
-
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);

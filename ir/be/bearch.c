@@ -242,21 +242,6 @@ arch_irn_flags_t arch_irn_get_flags(const ir_node *irn)
 	return ops->get_flags(irn);
 }
 
-extern const char *arch_irn_flag_str(arch_irn_flags_t fl)
-{
-	switch(fl) {
-#define XXX(x) case arch_irn_flags_ ## x: return #x;
-		XXX(dont_spill);
-		XXX(ignore);
-		XXX(rematerializable);
-		XXX(modify_sp);
-		XXX(modify_flags);
-		XXX(none);
-#undef XXX
-	}
-	return "n/a";
-}
-
 extern char *arch_register_req_format(char *buf, size_t len,
                                       const arch_register_req_t *req,
                                       const ir_node *node)
