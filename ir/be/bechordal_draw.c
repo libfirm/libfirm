@@ -242,7 +242,6 @@ const draw_chordal_opts_t draw_chordal_def_opts = {
 
 typedef struct _draw_chordal_env_t {
 	const be_chordal_env_t      *chordal_env;
-	const arch_env_t            *arch_env;
 	const arch_register_class_t *cls;
 	pmap                        *block_dims;
 	plotter_t                   *plotter;
@@ -467,7 +466,6 @@ void draw_interval_tree(const draw_chordal_opts_t *opts, const be_chordal_env_t 
 	struct block_dims  *start_dims;
 	ir_node            *start_block = get_irg_start_block(chordal_env->irg);
 
-	env.arch_env    = chordal_env->birg->main_env->arch_env;
 	env.opts        = opts;
 	env.block_dims  = pmap_create();
 	env.plotter     = plotter;
