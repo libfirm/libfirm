@@ -2432,21 +2432,12 @@ static void update_liveness_walker(ir_node *block, void *data)
 	update_liveness(sim, block);
 }  /* update_liveness_walker */
 
-/**
- * Run a simulation and fix all virtual instructions for a graph.
- *
- * @param env       the architecture environment
- * @param irg       the current graph
- *
- * Needs a block-schedule.
- */
-void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg)
+void x87_simulate_graph(be_irg_t *birg)
 {
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;
 	x87_simulator sim;
 	ir_graph      *irg = be_get_birg_irg(birg);
-	(void)arch_env;
 
 	/* create the simulator */
 	x87_init_simulator(&sim, irg);

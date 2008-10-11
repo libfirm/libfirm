@@ -35,11 +35,10 @@
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  *
- * @param env       architecture environment
  * @param birg      the graph to simulate and patch
  *
- * Registers must be allocated.		Needs a block-schedule.
+ * Registers must be allocated.
  */
-void x87_simulate_graph(const arch_env_t *env, be_irg_t *birg);
+void x87_simulate_graph(be_irg_t *birg);
 
 #endif /* FIRM_BE_IA32_IA32_X87_H */

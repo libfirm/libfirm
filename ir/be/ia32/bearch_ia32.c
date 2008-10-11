@@ -1519,7 +1519,7 @@ static void ia32_finish(void *self) {
 
 	/* we might have to rewrite x87 virtual registers */
 	if (cg->do_x87_sim) {
-		x87_simulate_graph(cg->arch_env, cg->birg);
+		x87_simulate_graph(cg->birg);
 	}
 
 	/* do peephole optimisations */
