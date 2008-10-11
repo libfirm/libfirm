@@ -59,10 +59,10 @@ my @obst_init_unit_types;  # stack for unit type variable init
 my $bundle_size       = exists($vliw{"bundle_size"})       ? $vliw{"bundle_size"} : 3;
 my $bundles_per_cycle = exists($vliw{"bundles_per_cycle"}) ? $vliw{"bundles_per_cycle"} : 1;
 
-my $num_unit_types = scalar(keys(%cpu));
 my $tmp            = uc($arch);
 my $idx            = 0;
 my $has_desc       = defined(%cpu);
+my $num_unit_types = scalar(keys(%cpu));
 
 if ($has_desc) {
 	push(@obst_unit_tp_defs, "/* enum for execution unit types */\n");
