@@ -32,6 +32,7 @@
 
 #include <math.h>
 
+#include "array_t.h"
 #include "hashptr.h"
 #include "debug.h"
 #include "obst.h"
@@ -282,8 +283,7 @@ typedef struct _memoperand_t {
 static INLINE int
 has_reg_class(const spill_ilp_t * si, const ir_node * irn)
 {
-	return arch_irn_consider_in_reg_alloc(si->birg->main_env->arch_env,
-	                                      si->cls, irn);
+	return arch_irn_consider_in_reg_alloc(si->cls, irn);
 }
 
 #if 0
@@ -453,15 +453,14 @@ execution_frequency(const spill_ilp_t *si, const ir_node * irn)
 #endif
 }
 
-static double
-get_cost(const spill_ilp_t * si, const ir_node * irn)
+static double get_cost(const ir_node *irn)
 {
 	if(be_is_Spill(irn)) {
 		return opt_cost_spill;
 	} else if(be_is_Reload(irn)){
 		return opt_cost_reload;
 	} else {
-		return arch_get_op_estimated_cost(si->birg->main_env->arch_env, irn);
+		return arch_get_op_estimated_cost(irn);
 	}
 }
 
@@ -471,9 +470,8 @@ get_cost(const spill_ilp_t * si, const ir_node * irn)
 static INLINE int
 is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 {
-	int               n;
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
-	int               remat = (arch_irn_get_flags(arch_env, irn) & arch_irn_flags_rematerializable) != 0;
+	int n;
+	int remat = (arch_irn_get_flags(irn) & arch_irn_flags_rematerializable) != 0;
 
 #if 0
 	if(!remat)
@@ -482,7 +480,7 @@ is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 
 	for (n = get_irn_arity(irn)-1; n>=0 && remat; --n) {
 		ir_node        *op = get_irn_n(irn, n);
-		remat &= has_reg_class(si, op) || arch_irn_get_flags(arch_env, op) & arch_irn_flags_ignore || is_NoMem(op);
+		remat &= has_reg_class(si, op) || arch_irn_get_flags(op) & arch_irn_flags_ignore || is_NoMem(op);
 
 //		if(!remat)
 //			ir_fprintf(stderr, "  Argument %d (%+F) of Node %+F has wrong regclass\n", i, op, irn);
@@ -515,7 +513,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 
 		remat          = obstack_alloc(si->obst, sizeof(*remat));
 		remat->op      = op;
-		remat->cost    = (int)get_cost(si, op);
+		remat->cost    = (int)get_cost(op);
 		remat->value   = dest_value;
 		remat->proj    = proj;
 		remat->inverse = 0;
@@ -1780,16 +1778,15 @@ insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
 static void
 luke_blockwalker(ir_node * bb, void * data)
 {
-	spill_ilp_t    *si = (spill_ilp_t*)data;
-	ir_node        *irn;
-	pset           *live;
-	char            buf[256];
-	ilp_cst_t       cst;
-	spill_bb_t     *spill_bb = get_irn_link(bb);
-	ir_node        *tmp;
-	spill_t        *spill;
-	pset           *defs = pset_new_ptr_default();
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
+	spill_ilp_t *si = (spill_ilp_t*)data;
+	ir_node     *irn;
+	pset        *live;
+	char         buf[256];
+	ilp_cst_t    cst;
+	spill_bb_t  *spill_bb = get_irn_link(bb);
+	ir_node     *tmp;
+	spill_t     *spill;
+	pset        *defs = pset_new_ptr_default();
 
 	live = pset_new_ptr_default();
 
@@ -2242,7 +2239,8 @@ skip_one_must_die:
 
 			if(opt_memoperands && (!is_start_block(bb) || be_is_Barrier(irn))) {
 				for(n = get_irn_arity(irn)-1; n>=0; --n) {
-					if(get_irn_n(irn, n) == arg && arch_possible_memory_operand(arch_env, irn, n)) {
+					if (get_irn_n(irn, n) == arg &&
+							arch_possible_memory_operand(irn, n)) {
 						ilp_var_t       memoperand;
 
 						ir_snprintf(buf, sizeof(buf), "memoperand_%N_%d", irn, n);
@@ -2278,7 +2276,7 @@ skip_one_must_die:
 				assert(spill);
 
 				ir_snprintf(buf, sizeof(buf), "delete_%N", tmp);
-				delete = lpp_add_var_default(si->lpp, buf, lpp_binary, -1.0*get_cost(si, irn)*execution_frequency(si, bb), 0.0);
+				delete = lpp_add_var_default(si->lpp, buf, lpp_binary, -1.0 * get_cost(irn) * execution_frequency(si, bb), 0.0);
 
 				/* op may not be killed if its first live_range is 1 */
 				ir_snprintf(buf, sizeof(buf), "killorig-lr_%N", tmp);
@@ -2296,7 +2294,7 @@ skip_one_must_die:
 				assert(spill);
 
 				ir_snprintf(buf, sizeof(buf), "keep_%N", tmp);
-				keep = lpp_add_var_default(si->lpp, buf, lpp_binary, get_cost(si, irn)*execution_frequency(si, bb), 1.0);
+				keep = lpp_add_var_default(si->lpp, buf, lpp_binary, get_cost(irn) * execution_frequency(si, bb), 1.0);
 
 				/* op may not be killed if its first live_range is 1 */
 				ir_snprintf(buf, sizeof(buf), "killorig-lr_%N", tmp);
@@ -2395,7 +2393,8 @@ skip_one_must_die:
 					}
 				}
 				for(n = get_irn_arity(irn)-1; n>=0; --n) {
-					if(get_irn_n(irn, n) == arg && arch_possible_memory_operand(arch_env, irn, n)) {
+					if (get_irn_n(irn, n) == arg &&
+							arch_possible_memory_operand(irn, n)) {
 						memoperand_t  *memoperand;
 						memoperand = set_find_memoperand(si->memoperands, irn, n);
 
@@ -3422,15 +3421,15 @@ connect_all_spills_with_keep(spill_ilp_t * si)
 }
 
 /** insert a spill at an arbitrary position */
-ir_node *be_spill2(const arch_env_t *arch_env, ir_node *irn, ir_node *insert)
+static ir_node *be_spill2(ir_node *irn, ir_node *insert)
 {
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *spill;
 	ir_node  *next;
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(arch_env, irn, -1);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(arch_env, frame, -1);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn, -1);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
 
 	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
 
@@ -3617,11 +3616,10 @@ insert_spill(spill_ilp_t * si, ir_node * irn, const ir_node * value, ir_node * b
 {
 	defs_t   *defs;
 	ir_node  *spill;
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	DBG((si->dbg, LEVEL_3, "\t  inserting spill for value %+F after %+F\n", irn, before));
 
-	spill = be_spill2(arch_env, irn, before);
+	spill = be_spill2(irn, before);
 
 	defs = set_insert_def(si->values, value);
 	assert(defs);
@@ -3724,10 +3722,9 @@ insert_reload(spill_ilp_t * si, const ir_node * value, ir_node * after)
 
 void perform_memory_operand(spill_ilp_t * si, memoperand_t * memoperand)
 {
-	defs_t           *defs;
-	ir_node          *value = get_irn_n(memoperand->irn, memoperand->pos);
-	ir_node          *spill;
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
+	defs_t  *defs;
+	ir_node *value = get_irn_n(memoperand->irn, memoperand->pos);
+	ir_node *spill;
 
 	DBG((si->dbg, LEVEL_2, "\t  inserting memory operand for value %+F at %+F\n", value, memoperand->irn));
 
@@ -3736,7 +3733,7 @@ void perform_memory_operand(spill_ilp_t * si, memoperand_t * memoperand)
 	spill = defs->spills;
 	assert(spill && "no spill placed before reload");
 
-	arch_perform_memory_operand(arch_env, memoperand->irn, spill, memoperand->pos);
+	arch_perform_memory_operand(memoperand->irn, spill, memoperand->pos);
 }
 
 void insert_memoperands(spill_ilp_t * si)
@@ -3830,7 +3827,6 @@ insert_mem_copy(spill_ilp_t * si, ir_node * bb, ir_node * value)
 {
 	ir_node          *insert_pos = bb;
 	ir_node          *spill;
-	const arch_env_t *arch_env = si->birg->main_env->arch_env;
 
 	/* find last definition of arg value in block */
 	ir_node  *next;
@@ -3855,7 +3851,7 @@ insert_mem_copy(spill_ilp_t * si, ir_node * bb, ir_node * value)
 
 	DBG((si->dbg, LEVEL_2, "\t  inserting mem copy for value %+F after %+F\n", value, insert_pos));
 
-	spill = be_spill2(arch_env, is_Block(insert_pos)?value:insert_pos, insert_pos);
+	spill = be_spill2(is_Block(insert_pos)?value:insert_pos, insert_pos);
 
 	return spill;
 }
@@ -4049,7 +4045,7 @@ walker_kill_unused(ir_node * bb, void * data)
 
 		if(!bitset_is_set(kh->used, get_irn_idx(irn))) {
 			if(be_is_Spill(irn) || be_is_Reload(irn)) {
-				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(kh->si, irn)*execution_frequency(kh->si, bb)));
+				DBG((kh->si->dbg, LEVEL_1, "\t SUBOPTIMAL! %+F IS UNUSED (cost: %g)\n", irn, get_cost(irn) * execution_frequency(kh->si, bb)));
 #if 0
 				assert(lpp_get_sol_state(kh->si->lpp) != lpp_optimal && "optimal solution is suboptimal?");
 #endif
@@ -4297,8 +4293,8 @@ get_n_regs(spill_ilp_t * si)
 	bitset_t *arch_regs = bitset_malloc(arch_n_regs);
 	bitset_t *abi_regs = bitset_malloc(arch_n_regs);
 
-	arch_put_non_ignore_regs(si->birg->main_env->arch_env, si->cls, arch_regs);
-    be_abi_put_ignore_regs(si->birg->abi, si->cls, abi_regs);
+	arch_put_non_ignore_regs(si->cls, arch_regs);
+	be_abi_put_ignore_regs(si->birg->abi, si->cls, abi_regs);
 
 	bitset_andnot(arch_regs, abi_regs);
 	arch_n_regs = bitset_popcnt(arch_regs);
