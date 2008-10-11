@@ -106,12 +106,12 @@ static void restore_irn_color(ir_node *irn, void *c)
 		arch_set_irn_register(irn, reg);
 }
 
-void coloring_save(coloring_t *c)
+static void coloring_save(coloring_t *c)
 {
 	irg_walk_graph(c->irg, NULL, get_irn_color, c);
 }
 
-void coloring_restore(coloring_t *c)
+static void coloring_restore(coloring_t *c)
 {
 	irg_walk_graph(c->irg, NULL, restore_irn_color, c);
 }
