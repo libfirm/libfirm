@@ -84,12 +84,6 @@ static INLINE const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	return be_ops;
 }
 
-const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn)
-{
-	(void)env; // TODO remove parameter
-	return get_irn_ops(irn);
-}
-
 const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
                                                  const ir_node *irn, int pos)
 {
