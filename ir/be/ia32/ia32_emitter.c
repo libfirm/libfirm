@@ -678,9 +678,11 @@ emit_S:
 						be_emit_char('$');
 					emit_ia32_Immediate_no_prefix(in);
 				} else {
+					const arch_register_t *reg;
+
 					if (mod & EMIT_ALTERNATE_AM)
 						be_emit_char('*');
-					const arch_register_t *reg = get_in_reg(node, pos);
+					reg = get_in_reg(node, pos);
 					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				}
 				break;
