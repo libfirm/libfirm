@@ -1352,11 +1352,9 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	memcpy(&attr->req, req, sizeof(req[0]));
 }
 
-void be_set_phi_flags(const arch_env_t *arch_env, ir_node *node,
-                      arch_irn_flags_t flags)
+void be_set_phi_flags(ir_node *node, arch_irn_flags_t flags)
 {
 	phi_attr_t *attr;
-	(void) arch_env;
 
 	assert(mode_is_datab(get_irn_mode(node)));
 

@@ -518,8 +518,7 @@ void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 /*
  * Set flags for a phi node
  */
-void be_set_phi_flags(const arch_env_t *arch_env, ir_node *phi,
-                      arch_irn_flags_t flags);
+void be_set_phi_flags(ir_node *phi, arch_irn_flags_t flags);
 
 /**
  * irn handler for common be nodes and Phi's.

@@ -2367,7 +2367,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(phi, &env->sp_req);
-		be_set_phi_flags(walker_env.arch_env, phi, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
+		be_set_phi_flags(phi, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 		arch_set_irn_register(phi, env->arch_env->sp);
 	}
 	be_ssa_construction_destroy(&senv);

@@ -225,7 +225,6 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 }
 
 typedef struct collect_fpu_mode_nodes_env_t {
-	const arch_env_t *arch_env;
 	ir_node         **state_nodes;
 } collect_fpu_mode_nodes_env_t;
 
@@ -256,7 +255,6 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	int i, len;
 
 	/* do ssa construction for the fpu modes */
-	env.arch_env = be_get_birg_arch_env(birg);
 	env.state_nodes = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, collect_fpu_mode_nodes_walker, NULL, &env);
 
@@ -292,7 +290,7 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	len = ARR_LEN(phis);
 	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
-		be_set_phi_flags(env.arch_env, phi, arch_irn_flags_ignore);
+		be_set_phi_flags(phi, arch_irn_flags_ignore);
 		arch_set_irn_register(phi, reg);
 	}
 	be_ssa_construction_destroy(&senv);

@@ -62,7 +62,6 @@ typedef struct spill_info_t {
 
 typedef struct minibelady_env_t {
 	struct obstack         obst;
-	const arch_env_t      *arch_env;
 	const arch_register_t *reg;
 	const be_lv_t         *lv;
 	void                  *func_env;
@@ -547,7 +546,6 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	}
 
 	obstack_init(&env.obst);
-	env.arch_env      = be_get_birg_arch_env(birg);
 	env.reg           = reg;
 	env.func_env      = func_env;
 	env.create_spill  = create_spill;
@@ -600,7 +598,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 		len = ARR_LEN(phis);
 		for(i = 0; i < len; ++i) {
 			ir_node *phi = phis[i];
-			be_set_phi_flags(env.arch_env, phi, arch_irn_flags_ignore);
+			be_set_phi_flags(phi, arch_irn_flags_ignore);
 			arch_set_irn_register(phi, env.reg);
 		}
 		be_ssa_construction_destroy(&senv);
