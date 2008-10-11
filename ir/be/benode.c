@@ -1249,9 +1249,8 @@ typedef struct {
 	arch_irn_flags_t       flags;
 } phi_attr_t;
 
-struct {
-	arch_env_t  *arch_env;
-	pmap        *phi_attrs;
+static struct {
+	pmap *phi_attrs;
 } phi_handler;
 
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
@@ -1426,9 +1425,8 @@ static const arch_irn_ops_t phi_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
-void be_phi_handler_new(be_main_env_t *env)
+void be_phi_handler_new(void)
 {
-	phi_handler.arch_env  = env->arch_env;
 	phi_handler.phi_attrs = pmap_create();
 	op_Phi->ops.be_ops    = &phi_irn_ops;
 }

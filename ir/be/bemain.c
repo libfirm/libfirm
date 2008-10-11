@@ -406,7 +406,7 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
 	env->arch_env = arch_env_init(isa_if, file_handle, env);
 
-	be_phi_handler_new(env);
+	be_phi_handler_new();
 
 	be_dbg_open();
 	return env;

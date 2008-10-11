@@ -495,9 +495,8 @@ void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type);
 
 /**
  * Initialize the Phi handler.
- * @param env The be_main environment.
  */
-void be_phi_handler_new(be_main_env_t *env);
+void be_phi_handler_new(void);
 
 /**
  * Destroy the Phi handler.
