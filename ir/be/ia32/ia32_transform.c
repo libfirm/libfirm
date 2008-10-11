@@ -3969,7 +3969,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 	if (proj == pn_be_AddSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
 		                           pn_ia32_SubSP_stack);
-		arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_AddSP_res) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
@@ -3996,7 +3996,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node)
 	if (proj == pn_be_SubSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
 		                           pn_ia32_AddSP_stack);
-		arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_AddSP_M);
@@ -4427,11 +4427,11 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	/* TODO arch_set_irn_register() only operates on Projs, need variant with index */
 	switch (proj) {
 		case pn_ia32_Call_stack:
-			arch_set_irn_register(env_cg->arch_env, res, &ia32_gp_regs[REG_ESP]);
+			arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
 			break;
 
 		case pn_ia32_Call_fpcw:
-			arch_set_irn_register(env_cg->arch_env, res, &ia32_fp_cw_regs[REG_FPCW]);
+			arch_set_irn_register(res, &ia32_fp_cw_regs[REG_FPCW]);
 			break;
 	}
 

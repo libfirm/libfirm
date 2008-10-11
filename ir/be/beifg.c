@@ -105,7 +105,7 @@ static void restore_irn_color(ir_node *irn, void *c)
 	coloring_t *coloring = c;
 	const arch_register_t *reg = phase_get_irn_data(&coloring->ph, irn);
 	if(reg)
-		arch_set_irn_register(coloring->arch_env, irn, reg);
+		arch_set_irn_register(irn, reg);
 }
 
 void coloring_save(coloring_t *c)

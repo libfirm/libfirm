@@ -226,11 +226,9 @@ const arch_register_t *arch_get_irn_register(const ir_node *irn)
 	return ops->get_irn_reg(irn);
 }
 
-extern void arch_set_irn_register(const arch_env_t *env,
-    ir_node *irn, const arch_register_t *reg)
+void arch_set_irn_register(ir_node *irn, const arch_register_t *reg)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	ops->set_irn_reg(irn, reg);
 }
 

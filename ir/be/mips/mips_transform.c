@@ -60,9 +60,6 @@
 
 #include "gen_mips_regalloc_if.h"
 
-/** hold the current code generator during transformation */
-static mips_code_gen_t *env_cg = NULL;
-
 /****************************************************************************************************
  *                  _        _                        __                           _   _
  *                 | |      | |                      / _|                         | | (_)
@@ -1096,7 +1093,7 @@ static void mips_transform_Reload(mips_transform_env_t* env) {
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(env->cg->arch_env, proj, reg);
+	arch_set_irn_register(proj, reg);
 
 	exchange(node, proj);
 }
@@ -1116,7 +1113,7 @@ static ir_node *gen_AddSP(ir_node *node)
 
 	/* copy the register requirements from the old node to the new node */
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(env->cg->arch_env, add, reg);
+	arch_set_irn_register(add, reg);
 
 	return add;
 }
@@ -1171,7 +1168,6 @@ static void register_transformers(void)
 
 void mips_transform_graph(mips_code_gen_t *cg)
 {
-	env_cg = cg;
 	register_transformers();
 	be_transform_graph(cg->birg, NULL);
 }

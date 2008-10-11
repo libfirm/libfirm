@@ -101,7 +101,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 		set_ia32_op_type(res, ia32_AddrModeS);
 		set_ia32_ls_mode(res, op_mode);
 
-		arch_set_irn_register(cg->arch_env, res, in2_reg);
+		arch_set_irn_register(res, in2_reg);
 
 		/* add to schedule */
 		sched_add_before(irn, res);
@@ -138,14 +138,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 
 		if (flags_proj == NULL) {
 			res = new_rd_ia32_Neg(dbg, irg, block, in2);
-			arch_set_irn_register(cg->arch_env, res, in2_reg);
+			arch_set_irn_register(res, in2_reg);
 
 			/* add to schedule */
 			sched_add_before(irn, res);
 
 			/* generate the add */
 			res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
-			arch_set_irn_register(cg->arch_env, res, out_reg);
+			arch_set_irn_register(res, out_reg);
 			set_ia32_commutative(res);
 
 			/* exchange the add and the sub */
@@ -167,27 +167,24 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
 			 */
 			not = new_rd_ia32_Not(dbg, irg, block, in2);
-			arch_set_irn_register(cg->arch_env, not, in2_reg);
+			arch_set_irn_register(not, in2_reg);
 			sched_add_before(irn, not);
 
 			stc = new_rd_ia32_Stc(dbg, irg, block);
-			arch_set_irn_register(cg->arch_env, stc,
-			                      &ia32_flags_regs[REG_EFLAGS]);
+			arch_set_irn_register(stc, &ia32_flags_regs[REG_EFLAGS]);
 			sched_add_before(irn, stc);
 
 			adc = new_rd_ia32_Adc(dbg, irg, block, noreg, noreg, nomem, not,
 			                      in1, stc);
-			arch_set_irn_register(cg->arch_env, adc, out_reg);
+			arch_set_irn_register(adc, out_reg);
 			sched_add_before(irn, adc);
 
 			set_irn_mode(adc, mode_T);
 			adc_flags = new_r_Proj(irg, block, adc, mode_Iu, pn_ia32_Adc_flags);
-			arch_set_irn_register(cg->arch_env, adc_flags,
-			                      &ia32_flags_regs[REG_EFLAGS]);
+			arch_set_irn_register(adc_flags, &ia32_flags_regs[REG_EFLAGS]);
 
 			cmc = new_rd_ia32_Cmc(dbg, irg, block, adc_flags);
-			arch_set_irn_register(cg->arch_env, cmc,
-			                      &ia32_flags_regs[REG_EFLAGS]);
+			arch_set_irn_register(cmc, &ia32_flags_regs[REG_EFLAGS]);
 			sched_add_before(irn, cmc);
 
 			exchange(flags_proj, cmc);
@@ -255,7 +252,6 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
                                                ir_node *node)
 {
 	ir_graph                   *irg      = cg->irg;
-	const arch_env_t           *arch_env = cg->arch_env;
 	const arch_register_req_t **reqs;
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
@@ -331,7 +327,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 			DBG_OPT_2ADDRCPY(copy);
 
 			/* destination is the out register */
-			arch_set_irn_register(arch_env, copy, out_reg);
+			arch_set_irn_register(copy, out_reg);
 
 			/* insert copy before the node into the schedule */
 			sched_add_before(node, copy);
@@ -367,8 +363,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		perm_proj0 = new_r_Proj(irg, block, perm, get_irn_mode(in[0]), 0);
 		perm_proj1 = new_r_Proj(irg, block, perm, get_irn_mode(in[1]), 1);
 
-		arch_set_irn_register(arch_env, perm_proj0, out_reg);
-		arch_set_irn_register(arch_env, perm_proj1, in_reg);
+		arch_set_irn_register(perm_proj0, out_reg);
+		arch_set_irn_register(perm_proj1, in_reg);
 
 		sched_add_before(node, perm);
 
@@ -397,9 +393,8 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
  * register -> base or index is broken then.
  * Solution: Turn back this address mode into explicit Load + Operation.
  */
-static void fix_am_source(ir_node *irn, void *env)
+static void fix_am_source(ir_node *irn)
 {
-	ia32_code_gen_t            *cg = env;
 	const arch_register_req_t **reqs;
 	int                         n_res, i;
 
@@ -440,11 +435,11 @@ static void fix_am_source(ir_node *irn, void *env)
 			continue;
 
 		load_res = turn_back_am(irn);
-		arch_set_irn_register(cg->arch_env, load_res, out_reg);
+		arch_set_irn_register(load_res, out_reg);
 
 		DBG((dbg, LEVEL_3,
 			"irg %+F: build back AM source for node %+F, inserted load %+F\n",
-			cg->irg, irn, get_Proj_pred(load_res)));
+			get_irn_irg(irn), irn, get_Proj_pred(load_res)));
 		break;
 	}
 }
@@ -460,7 +455,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 	/* first: turn back AM source if necessary */
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
 		next = sched_next(irn);
-		fix_am_source(irn, env);
+		fix_am_source(irn);
 	}
 
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {

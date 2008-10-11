@@ -59,8 +59,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_env_t *arch_env;
-static ia32_code_gen_t  *cg;
+static ia32_code_gen_t *cg;
 
 static void copy_mark(const ir_node *old, ir_node *new)
 {
@@ -169,7 +168,7 @@ static ir_node *turn_into_mode_t(ir_node *node)
 	                      pn_ia32_res);
 
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(arch_env, res_proj, reg);
+	arch_set_irn_register(res_proj, reg);
 
 	sched_add_before(node, new_node);
 	be_peephole_exchange(node, res_proj);
@@ -228,7 +227,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(arch_env, test, reg);
+	arch_set_irn_register(test, reg);
 
 	foreach_out_edge_safe(node, edge, tmp) {
 		ir_node *const user = get_edge_src_irn(edge);
@@ -285,7 +284,7 @@ static void peephole_ia32_Test(ir_node *node)
 		schedpoint = sched_prev(schedpoint);
 		if (schedpoint == left)
 			break;
-		if (arch_irn_is(arch_env, schedpoint, modify_flags))
+		if (arch_irn_is(cg->arch_env, schedpoint, modify_flags))
 			return;
 		if (schedpoint == block)
 			panic("couldn't find left");
@@ -328,7 +327,7 @@ static void peephole_ia32_Test(ir_node *node)
 	flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 	flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
 	                        pn_ia32_flags);
-	arch_set_irn_register(arch_env, flags_proj, &ia32_flags_regs[REG_EFLAGS]);
+	arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
 
 	assert(get_irn_mode(node) != mode_T);
 
@@ -488,7 +487,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 
 		/* create stackpointer Proj */
 		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
-		arch_set_irn_register(cg->arch_env, curr_sp, spreg);
+		arch_set_irn_register(curr_sp, spreg);
 
 		/* create memory Proj */
 		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
@@ -745,13 +744,13 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		reg = arch_get_irn_register(load);
 
 		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
-		arch_set_irn_register(arch_env, pop, reg);
+		arch_set_irn_register(pop, reg);
 
 		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
 		pred_sp = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
-		arch_set_irn_register(arch_env, pred_sp, esp);
+		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
 
@@ -816,9 +815,9 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	pop   = new_rd_ia32_Pop(dbgi, irg, block, new_NoMem(), stack);
 
 	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
-	arch_set_irn_register(arch_env, stack, esp);
+	arch_set_irn_register(stack, esp);
 	val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
-	arch_set_irn_register(arch_env, val, reg);
+	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);
 
@@ -853,7 +852,7 @@ static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	sched_add_before(schedpoint, push);
 
 	stack = new_r_Proj(irg, block, push, mode_Iu, pn_ia32_Push_stack);
-	arch_set_irn_register(arch_env, stack, esp);
+	arch_set_irn_register(stack, esp);
 
 	return stack;
 }
@@ -950,12 +949,12 @@ static void peephole_ia32_Const(ir_node *node)
 	block      = get_nodes_block(node);
 	dbgi       = get_irn_dbg_info(node);
 	produceval = new_rd_ia32_ProduceVal(dbgi, irg, block);
-	arch_set_irn_register(arch_env, produceval, reg);
+	arch_set_irn_register(produceval, reg);
 
 	noreg = ia32_new_NoReg_gp(cg);
 	xor   = new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_NoMem(),
 	                        produceval, produceval);
-	arch_set_irn_register(arch_env, xor, reg);
+	arch_set_irn_register(xor, reg);
 
 	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
@@ -969,19 +968,18 @@ static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
 	return node == cg->noreg_gp;
 }
 
-static ir_node *create_immediate_from_int(ia32_code_gen_t *cg, int val)
+static ir_node *create_immediate_from_int(int val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL,
 	                                              0, val);
-	arch_set_irn_register(cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
 }
 
-static ir_node *create_immediate_from_am(ia32_code_gen_t *cg,
-                                         const ir_node *node)
+static ir_node *create_immediate_from_am(const ir_node *node)
 {
 	ir_graph  *irg     = get_irn_irg(node);
 	ir_node   *block   = get_nodes_block(node);
@@ -991,7 +989,7 @@ static ir_node *create_immediate_from_am(ia32_code_gen_t *cg,
 	ir_node   *res;
 
 	res = new_rd_ia32_Immediate(NULL, irg, block, entity, sc_sign, offset);
-	arch_set_irn_register(cg->arch_env, res, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(res, &ia32_gp_regs[REG_GP_NOREG]);
 	return res;
 }
 
@@ -1016,8 +1014,7 @@ static int is_am_minus_one(const ir_node *node)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	const arch_env_t      *arch_env = cg->arch_env;
-	ir_graph              *irg      = current_ir_graph;
+	ir_graph              *irg = current_ir_graph;
 	ir_node               *base;
 	ir_node               *index;
 	const arch_register_t *base_reg;
@@ -1101,7 +1098,7 @@ static void peephole_ia32_Lea(ir_node *node)
 				goto make_add_immediate;
 			} else if(!has_immediates && scale > 0) {
 				op1 = index;
-				op2 = create_immediate_from_int(cg, scale);
+				op2 = create_immediate_from_int(scale);
 				goto make_shl;
 			} else if(!has_immediates) {
 #ifdef DEBUG_libfirm
@@ -1127,18 +1124,18 @@ make_add_immediate:
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
 			res   = new_rd_ia32_Inc(dbgi, irg, block, op1);
-			arch_set_irn_register(arch_env, res, out_reg);
+			arch_set_irn_register(res, out_reg);
 			goto exchange;
 		}
 		if(is_am_minus_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
 			res   = new_rd_ia32_Dec(dbgi, irg, block, op1);
-			arch_set_irn_register(arch_env, res, out_reg);
+			arch_set_irn_register(res, out_reg);
 			goto exchange;
 		}
 	}
-	op2 = create_immediate_from_am(cg, node);
+	op2 = create_immediate_from_am(node);
 
 make_add:
 	dbgi  = get_irn_dbg_info(node);
@@ -1146,7 +1143,7 @@ make_add:
 	noreg = ia32_new_NoReg_gp(cg);
 	nomem = new_NoMem();
 	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, nomem, op1, op2);
-	arch_set_irn_register(arch_env, res, out_reg);
+	arch_set_irn_register(res, out_reg);
 	set_ia32_commutative(res);
 	goto exchange;
 
@@ -1156,7 +1153,7 @@ make_shl:
 	noreg = ia32_new_NoReg_gp(cg);
 	nomem = new_NoMem();
 	res   = new_rd_ia32_Shl(dbgi, irg, block, op1, op2);
-	arch_set_irn_register(arch_env, res, out_reg);
+	arch_set_irn_register(res, out_reg);
 	goto exchange;
 
 exchange:
@@ -1191,7 +1188,7 @@ static void peephole_ia32_Imul_split(ir_node *imul)
 
 	/* fine, we can rebuild it */
 	res = turn_back_am(imul);
-	arch_set_irn_register(arch_env, res, reg);
+	arch_set_irn_register(res, reg);
 }
 
 /**
@@ -1212,8 +1209,7 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
 /* Perform peephole-optimizations. */
 void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 {
-	cg       = new_cg;
-	arch_env = cg->arch_env;
+	cg = new_cg;
 
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();

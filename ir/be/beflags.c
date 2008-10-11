@@ -261,7 +261,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			}
 
 			flags_needed = new_flags_needed;
-			arch_set_irn_register(arch_env, flags_needed, flags_reg);
+			arch_set_irn_register(flags_needed, flags_reg);
 			if(is_Proj(flags_needed)) {
 				pn           = get_Proj_proj(flags_needed);
 				flags_needed = get_Proj_pred(flags_needed);

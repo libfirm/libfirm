@@ -455,7 +455,7 @@ static void save_load(ir_node *irn, void *env) {
 			pmap_insert(saver->saved_colors, irn, (void *) reg);
 		} else { /*load */
 			arch_register_t *reg = pmap_get(saver->saved_colors, irn);
-			arch_set_irn_register(saver->arch_env, irn, reg);
+			arch_set_irn_register(irn, reg);
 		}
 	}
 }

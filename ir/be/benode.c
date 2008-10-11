@@ -773,12 +773,13 @@ ir_node *be_RegParams_append_out_reg(ir_node *regparams,
 	ir_mode *mode = arch_register_class_mode(cls);
 	int n = ARR_LEN(attr->reg_data);
 	ir_node *proj;
+	(void)arch_env; // TODO remove parameter
 
 	assert(be_is_RegParams(regparams));
 	proj = new_r_Proj(irg, block, regparams, mode, n);
 	add_register_req(regparams);
 	be_set_constr_single_reg(regparams, BE_OUT_POS(n), reg);
-	arch_set_irn_register(arch_env, proj, reg);
+	arch_set_irn_register(proj, reg);
 
 	/* TODO decide, whether we need to set ignore/modify sp flags here? */
 

@@ -283,7 +283,6 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_graph        *irg = get_irn_irg(irn);
 	const arch_register_class_t *reg_class;
-	const arch_env_t            *arch_env;
 	lower_env_t     *env         = walk_env;
 	int             real_size    = 0;
 	int             keep_perm    = 0;
@@ -295,7 +294,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *cpyxchg = NULL;
 	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
-	arch_env = env->arch_env;
 	do_copy  = env->do_copy;
 	DEBUG_ONLY(mod = env->dbg_module;)
 	block    = get_nodes_block(irn);
@@ -465,8 +463,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				set_Proj_pred(res1, cpyxchg);
 				set_Proj_proj(res1, 1);
 
-				arch_set_irn_register(arch_env, res2, cycle->elems[i + 1]);
-				arch_set_irn_register(arch_env, res1, cycle->elems[i]);
+				arch_set_irn_register(res2, cycle->elems[i + 1]);
+				arch_set_irn_register(res1, cycle->elems[i]);
 
 				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 				sched_add_after(sched_point, cpyxchg);
@@ -481,7 +479,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
 				cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
-				arch_set_irn_register(arch_env, cpyxchg, cycle->elems[i + 1]);
+				arch_set_irn_register(cpyxchg, cycle->elems[i + 1]);
 				n_ops++;
 
 				/* exchange copy node and proj */
@@ -974,7 +972,7 @@ found_front:
 		sched_add_after(perm, node);
 
 		/* give it the proj's register */
-		arch_set_irn_register(aenv, node, arch_get_irn_register(proj));
+		arch_set_irn_register(node, arch_get_irn_register(proj));
 
 		/* reroute all users of the proj to the moved node. */
 		edges_reroute(proj, node, irg);

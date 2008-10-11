@@ -137,7 +137,7 @@ static ir_node *create_fldcw_ent(ia32_code_gen_t *cg, ir_node *block,
 	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 	set_ia32_am_sc(reload, entity);
 	set_ia32_use_frame(reload);
-	arch_set_irn_register(cg->arch_env, reload, &ia32_fp_cw_regs[REG_FPCW]);
+	arch_set_irn_register(reload, &ia32_fp_cw_regs[REG_FPCW]);
 
 	return reload;
 }
@@ -171,7 +171,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 		set_ia32_use_frame(reload);
-		arch_set_irn_register(cg->arch_env, reload, &ia32_fp_cw_regs[REG_FPCW]);
+		arch_set_irn_register(reload, &ia32_fp_cw_regs[REG_FPCW]);
 
 		sched_add_before(before, reload);
 	} else {
@@ -199,8 +199,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		/* TODO: make the actual mode configurable in ChangeCW... */
 		or_const = new_rd_ia32_Immediate(NULL, irg, get_irg_start_block(irg),
 		                                 NULL, 0, 3072);
-		arch_set_irn_register(cg->arch_env, or_const,
-		                      &ia32_gp_regs[REG_GP_NOREG]);
+		arch_set_irn_register(or_const, &ia32_gp_regs[REG_GP_NOREG]);
 		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, nomem, load_res,
 		                    or_const);
 		sched_add_before(before, or);
@@ -216,7 +215,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
 		set_ia32_use_frame(fldcw);
-		arch_set_irn_register(cg->arch_env, fldcw, &ia32_fp_cw_regs[REG_FPCW]);
+		arch_set_irn_register(fldcw, &ia32_fp_cw_regs[REG_FPCW]);
 		sched_add_before(before, fldcw);
 
 		reload = fldcw;
@@ -294,7 +293,7 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
 		be_set_phi_flags(env.arch_env, phi, arch_irn_flags_ignore);
-		arch_set_irn_register(env.arch_env, phi, reg);
+		arch_set_irn_register(phi, reg);
 	}
 	be_ssa_construction_destroy(&senv);
 	DEL_ARR_F(env.state_nodes);

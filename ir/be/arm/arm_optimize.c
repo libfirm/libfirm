@@ -39,7 +39,6 @@
 #include "gen_arm_regalloc_if.h"
 #include "gen_arm_new_nodes.h"
 
-static const arch_env_t *arch_env;
 static arm_code_gen_t  *cg;
 
 /** Execute ARM ROL. */
@@ -159,13 +158,13 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 	ir_node *ptr;
 
 	ptr = new_rd_arm_Add_i(dbg, irg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
-	arch_set_irn_register(arch_env, ptr, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
 		ir_node *next = new_rd_arm_Add_i(dbg, irg, block, ptr, mode_Iu, value);
-		arch_set_irn_register(arch_env, next, &arm_gp_regs[REG_R12]);
+		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
 	}
@@ -184,13 +183,13 @@ static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 	ir_node *ptr;
 
 	ptr = new_rd_arm_Sub_i(dbg, irg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
-	arch_set_irn_register(arch_env, ptr, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
 		ir_node *next = new_rd_arm_Sub_i(dbg, irg, block, ptr, mode_Iu, value);
-		arch_set_irn_register(arch_env, next, &arm_gp_regs[REG_R12]);
+		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
 	}
@@ -288,7 +287,7 @@ static void peephole_be_Reload(ir_node *node) {
 			load = new_rd_arm_fpaLdf(dbg, irg, block, ptr, mem, mode);
 			sched_add_before(node, load);
 			proj = new_rd_Proj(dbg, irg, block, load, mode, pn_arm_fpaLdf_res);
-			arch_set_irn_register(arch_env, proj, reg);
+			arch_set_irn_register(proj, reg);
 		} else {
 			panic("peephole_be_Spill: spill not supported for this mode");
 		}
@@ -297,7 +296,7 @@ static void peephole_be_Reload(ir_node *node) {
 		load = new_rd_arm_Load(dbg, irg, block, ptr, mem);
 		sched_add_before(node, load);
 		proj = new_rd_Proj(dbg, irg, block, load, mode_Iu, pn_arm_Load_res);
-		arch_set_irn_register(arch_env, proj, reg);
+		arch_set_irn_register(proj, reg);
 	} else {
 		panic("peephole_be_Spill: spill not supported for this mode");
 	}
@@ -316,8 +315,7 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
 /* Perform peephole-optimizations. */
 void arm_peephole_optimization(arm_code_gen_t *new_cg)
 {
-	cg       = new_cg;
-	arch_env = cg->arch_env;
+	cg = new_cg;
 
 	/* register peephole optimizations */
 	clear_irp_opcodes_generic_func();

@@ -1400,7 +1400,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	if (proj == pn_be_AddSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
 		                           pn_arm_SubSPandCopy_stack);
-		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
+		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if(proj == pn_be_AddSP_res) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
@@ -1425,7 +1425,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	if (proj == pn_be_SubSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
 		                           pn_arm_AddSP_stack);
-		arch_set_irn_register(env_cg->arch_env, res, &arm_gp_regs[REG_SP]);
+		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
 		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_AddSP_M);
@@ -1523,7 +1523,7 @@ static INLINE ir_node *create_const(ir_node **place,
 
 	block = get_irg_start_block(env_cg->irg);
 	res = func(NULL, env_cg->irg, block);
-	arch_set_irn_register(env_cg->arch_env, res, reg);
+	arch_set_irn_register(res, reg);
 	*place = res;
 
 	add_irn_dep(get_irg_end(env_cg->irg), res);

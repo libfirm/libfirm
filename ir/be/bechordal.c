@@ -428,7 +428,6 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
                                         be_insn_t **the_insn)
 {
 	be_chordal_env_t *env       = alloc_env->chordal_env;
-	const arch_env_t *aenv      = env->birg->main_env->arch_env;
 	be_insn_t *insn             = *the_insn;
 	ir_node *perm               = NULL;
 	bitset_t *out_constr        = bitset_alloca(env->cls->n_regs);
@@ -462,7 +461,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 	be_stat_ev("constr_perm", get_irn_arity(perm));
 	foreach_out_edge(perm, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
-		arch_set_irn_register(aenv, proj, NULL);
+		arch_set_irn_register(proj, NULL);
 	}
 
 	/*
@@ -495,7 +494,6 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
                                    ir_node *irn, int *silent)
 {
-	const arch_env_t *aenv;
 	int n_regs;
 	bitset_t *bs;
 	ir_node **alloc_nodes;
@@ -541,7 +539,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	if(!insn->has_constraints)
 		goto end;
 
-	aenv        = env->birg->main_env->arch_env;
 	n_regs      = env->cls->n_regs;
 	bs          = bitset_alloca(n_regs);
 	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
@@ -671,14 +668,14 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 		irn = alloc_nodes[i];
 		if (irn != NULL) {
-			arch_set_irn_register(aenv, irn, reg);
+			arch_set_irn_register(irn, reg);
 			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 
 		irn = pmap_get(partners, alloc_nodes[i]);
 		if (irn != NULL) {
-			arch_set_irn_register(aenv, irn, reg);
+			arch_set_irn_register(irn, reg);
 			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
@@ -708,7 +705,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 				col = get_next_free_reg(alloc_env, bs);
 				reg = arch_register_for_index(env->cls, col);
 				bitset_set(bs, reg->index);
-				arch_set_irn_register(aenv, proj, reg);
+				arch_set_irn_register(proj, reg);
 				pset_insert_ptr(alloc_env->pre_colored, proj);
 				DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", proj, reg->name));
 			}
@@ -954,7 +951,7 @@ static void assign(ir_node *block, void *env_ptr)
 			}
 
 			bitset_set(colors, col);
-			arch_set_irn_register(arch_env, irn, reg);
+			arch_set_irn_register(irn, reg);
 
 			DBG((dbg, LEVEL_1, "\tassigning register %s(%d) to %+F\n", arch_register_get_name(reg), col, irn));
 

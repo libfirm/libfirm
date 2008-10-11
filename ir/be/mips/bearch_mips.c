@@ -661,7 +661,7 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 
 	fp = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_res);
 	*mem = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_M);
-	arch_set_irn_register(env->arch_env, fp, &mips_gp_regs[REG_FP]);
+	arch_set_irn_register(fp, &mips_gp_regs[REG_FP]);
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);

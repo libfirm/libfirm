@@ -937,24 +937,24 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	block = get_irg_start_block(irg);
 
 	ip = be_new_Copy(gp, irg, block, sp);
-	arch_set_irn_register(env->arch_env, ip, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(ip, &arm_gp_regs[REG_R12]);
 	be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
 
 	sp = new_r_Proj(irg, block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
-	arch_set_irn_register(env->arch_env, sp, env->arch_env->sp);
+	arch_set_irn_register(sp, env->arch_env->sp);
 	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
 	be_node_set_reg_class(keep, 1, gp);
-	arch_set_irn_register(env->arch_env, keep, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(keep, &arm_gp_regs[REG_R12]);
 	be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
-	arch_set_irn_register(env->arch_env, fp, env->arch_env->bp);
+	arch_set_irn_register(fp, env->arch_env->bp);
 	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ nodes can have the ignore flag set
-	arch_set_irn_register(env->arch_env, fp, env->arch_env->bp);
+	arch_set_irn_register(fp, env->arch_env->bp);
 	be_node_set_flags(fp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 	be_abi_reg_map_set(reg_map, env->arch_env->bp, fp);
@@ -982,11 +982,11 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
 		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_gp]);
-		arch_set_irn_register(env->arch_env, curr_lr, &arm_gp_regs[REG_LR]);
+		arch_set_irn_register(curr_lr, &arm_gp_regs[REG_LR]);
 		be_set_constr_single_reg(curr_lr, BE_OUT_POS(0), &arm_gp_regs[REG_LR] );
 
 		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
-		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
+		arch_set_irn_register(curr_pc, &arm_gp_regs[REG_PC]);
 		be_set_constr_single_reg(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC] );
 		be_node_set_flags(curr_pc, BE_OUT_POS(0), arch_irn_flags_ignore);
 	} else {
@@ -995,7 +995,7 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, 12);
 		// FIXME
 		//set_arm_req_out_all(sub12_node, sub12_req);
-		arch_set_irn_register(env->arch_env, sub12_node, env->arch_env->sp);
+		arch_set_irn_register(sub12_node, env->arch_env->sp);
 		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem );
 		// FIXME
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
@@ -1005,9 +1005,9 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		curr_sp = new_r_Proj(env->irg, bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
 		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3_res2);
 		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3_M);
-		arch_set_irn_register(env->arch_env, curr_bp, env->arch_env->bp);
-		arch_set_irn_register(env->arch_env, curr_sp, env->arch_env->sp);
-		arch_set_irn_register(env->arch_env, curr_pc, &arm_gp_regs[REG_PC]);
+		arch_set_irn_register(curr_bp, env->arch_env->bp);
+		arch_set_irn_register(curr_sp, env->arch_env->sp);
+		arch_set_irn_register(curr_pc, &arm_gp_regs[REG_PC]);
 	}
 	be_abi_reg_map_set(reg_map, env->arch_env->sp, curr_sp);
 	be_abi_reg_map_set(reg_map, env->arch_env->bp, curr_bp);

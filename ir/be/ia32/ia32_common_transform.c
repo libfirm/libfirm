@@ -174,7 +174,7 @@ ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block,
 	                                              symconst, symconst_sign, val);
-	arch_set_irn_register(env_cg->arch_env, immediate, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
 }

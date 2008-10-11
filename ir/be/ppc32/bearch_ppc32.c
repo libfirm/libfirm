@@ -482,7 +482,7 @@ static void ppc32_before_ra(void *self) {
 
 static void ppc32_transform_spill(ir_node *node, void *env)
 {
-	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
+	(void)env;
 
 	if(be_is_Spill(node))
 	{
@@ -551,7 +551,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 		/* copy the register from the old node to the new Load */
 		reg = arch_get_irn_register(node);
-		arch_set_irn_register(cgenv->arch_env, load, reg);
+		arch_set_irn_register(load, reg);
 
 		exchange(node, proj);
 	}
@@ -563,7 +563,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 static void ppc32_after_ra(void *self) {
 	ppc32_code_gen_t *cg = self;
 	be_coalesce_spillslots(cg->birg);
-	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_spill, cg);
+	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_spill, NULL);
 }
 
 /**

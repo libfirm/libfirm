@@ -1203,10 +1203,9 @@ static void collect_and_rewire_users(ir_node *store, ir_node *old_val, ir_node *
  */
 static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 {
-	x87_simulator         *sim = state->sim;
 	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
 	const arch_register_t *op2 = x87_get_irn_register(val);
-	unsigned              live = vfp_live_args_after(sim, n, 0);
+	unsigned              live = vfp_live_args_after(state->sim, n, 0);
 	int                   insn = NO_NODE_ADDED;
 	ia32_x87_attr_t *attr;
 	int op2_reg_idx, op2_idx, depth;
@@ -1278,7 +1277,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 
 				assert(mem && "Store memory not found");
 
-				arch_set_irn_register(sim->arch_env, rproj, op2);
+				arch_set_irn_register(rproj, op2);
 
 				/* reroute all former users of the store memory to the load memory */
 				edges_reroute(mem, mproj, irg);
@@ -1747,7 +1746,6 @@ static void keep_float_node_alive(ir_node *node)
  */
 static ir_node *create_Copy(x87_state *state, ir_node *n)
 {
-	x87_simulator *sim = state->sim;
 	ir_graph *irg = get_irn_irg(n);
 	dbg_info *n_dbg = get_irn_dbg_info(n);
 	ir_mode *mode = get_irn_mode(n);
@@ -1809,7 +1807,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 		attr->x87[0] = &ia32_st_regs[op1_idx];
 		attr->x87[2] = &ia32_st_regs[0];
 	}
-	arch_set_irn_register(sim->arch_env, res, out);
+	arch_set_irn_register(res, out);
 
 	return res;
 }  /* create_Copy */

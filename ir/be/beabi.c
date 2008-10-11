@@ -669,7 +669,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	curr_sp = new_r_Proj(irg, bl, low_call, get_irn_mode(curr_sp),
 	                     pn_be_Call_sp);
 	be_set_constr_single_reg(low_call, BE_OUT_POS(pn_be_Call_sp), sp);
-	arch_set_irn_register(arch_env, curr_sp, sp);
+	arch_set_irn_register(curr_sp, sp);
 	be_node_set_flags(low_call, BE_OUT_POS(pn_be_Call_sp),
 			arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
@@ -728,7 +728,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		assert(arg->in_reg);
 		be_set_constr_single_reg(low_call, BE_OUT_POS(pn), arg->reg);
-		arch_set_irn_register(arch_env, proj, arg->reg);
+		arch_set_irn_register(proj, arg->reg);
 	}
 	obstack_free(obst, in);
 	exchange(irn, low_call);
@@ -759,7 +759,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
-			arch_set_irn_register(arch_env, proj, reg);
+			arch_set_irn_register(proj, reg);
 
 			/* a call can produce ignore registers, in this case set the flag and register for the Proj */
 			if (arch_register_type_is(reg, ignore)) {
@@ -1364,7 +1364,7 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 			be_set_constr_single_reg(irn, n, reg);
 		be_set_constr_single_reg(irn, pos, reg);
 		be_node_set_reg_class(irn, pos, reg->reg_class);
-		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+		arch_set_irn_register(proj, reg);
 
 		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
 		if (arch_register_type_is(reg, ignore) || arch_irn_is(env->birg->main_env->arch_env, in[n], ignore))
@@ -1840,7 +1840,7 @@ static void modify_irg(be_abi_irg_t *env)
 		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg(env->reg_params, pos, reg);
-		arch_set_irn_register(env->birg->main_env->arch_env, proj, reg);
+		arch_set_irn_register(proj, reg);
 
 		/*
 		 * If the register is an ignore register,
@@ -1878,7 +1878,7 @@ static void modify_irg(be_abi_irg_t *env)
 	create_barrier(env, start_bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	arch_set_irn_register(env->birg->main_env->arch_env, env->init_sp, sp);
+	arch_set_irn_register(env->init_sp, sp);
 
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
@@ -2368,7 +2368,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 		ir_node *phi = phis[i];
 		be_set_phi_reg_req(walker_env.arch_env, phi, &env->sp_req);
 		be_set_phi_flags(walker_env.arch_env, phi, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
-		arch_set_irn_register(walker_env.arch_env, phi, env->arch_env->sp);
+		arch_set_irn_register(phi, env->arch_env->sp);
 	}
 	be_ssa_construction_destroy(&senv);
 

@@ -210,12 +210,10 @@ const arch_register_t *arch_get_irn_register(const ir_node *irn);
 
 /**
  * Set the register for a certain output operand.
- * @param env The architecture environment.
  * @param irn The node.
  * @param reg The register.
  */
-extern void arch_set_irn_register(const arch_env_t *env, ir_node *irn,
-                                  const arch_register_t *reg);
+void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
 
 /**
  * Classify a node.

@@ -1463,7 +1463,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 			continue;
 
 		reg = arch_register_for_index(co->cls, mirn->col);
-		arch_set_irn_register(co->aenv, irn, reg);
+		arch_set_irn_register(irn, reg);
 		DB((dbg, LEVEL_1, "%+F set color from %d to %d\n", irn, mirn->init_col, mirn->col));
 	}
 

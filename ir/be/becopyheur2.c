@@ -1096,12 +1096,11 @@ static void process(co2_t *env)
 
 static void writeback_colors(co2_t *env)
 {
-	const arch_env_t *aenv = env->co->aenv;
 	co2_irn_t *irn;
 
 	for(irn = env->touched; irn; irn = irn->touched_next) {
 		const arch_register_t *reg = arch_register_for_index(env->co->cls, irn->orig_col);
-		arch_set_irn_register(aenv, (ir_node *) irn->irn, reg);
+		arch_set_irn_register((ir_node*)irn->irn, reg);
 	}
 }
 

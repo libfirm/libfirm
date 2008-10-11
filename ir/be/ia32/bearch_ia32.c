@@ -132,7 +132,7 @@ static INLINE ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 
 	block = get_irg_start_block(cg->irg);
 	res = func(NULL, cg->irg, block);
-	arch_set_irn_register(cg->arch_env, res, reg);
+	arch_set_irn_register(res, reg);
 	*place = res;
 
 	add_irn_dep(get_irg_end(cg->irg), res);
@@ -447,7 +447,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		*mem    = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
-		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
+		arch_set_irn_register(curr_sp, arch_env->sp);
 		set_ia32_flags(push, arch_irn_flags_ignore);
 
 		/* this modifies the stack bias, because we pushed 32bit */
@@ -456,13 +456,13 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		/* move esp to ebp */
 		curr_bp  = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
 		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), arch_env->bp);
-		arch_set_irn_register(arch_env, curr_bp, arch_env->bp);
+		arch_set_irn_register(curr_bp, arch_env->bp);
 		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		/* beware: the copy must be done before any other sp use */
 		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
 		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), arch_env->sp);
-		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
+		arch_set_irn_register(curr_sp, arch_env->sp);
 		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 		be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
@@ -515,7 +515,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
-			arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
+			arch_set_irn_register(curr_sp, arch_env->sp);
 			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
 
 			/* pop ebp */
@@ -526,8 +526,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			*mem = new_r_Proj(irg, bl, pop, mode_M, pn_ia32_Pop_M);
 		}
-		arch_set_irn_register(arch_env, curr_sp, arch_env->sp);
-		arch_set_irn_register(arch_env, curr_bp, arch_env->bp);
+		arch_set_irn_register(curr_sp, arch_env->sp);
+		arch_set_irn_register(curr_bp, arch_env->bp);
 	}
 
 	be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
@@ -1195,7 +1195,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(cg->arch_env, new_op, reg);
+	arch_set_irn_register(new_op, reg);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 
@@ -1304,7 +1304,8 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	return pop;
 }
 
-static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred, int pos) {
+static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
+{
 	ir_graph *irg = get_irn_irg(node);
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
@@ -1313,7 +1314,7 @@ static ir_node* create_spproj(ia32_code_gen_t *cg, ir_node *node, ir_node *pred,
 	ir_node *sp;
 
 	sp = new_rd_Proj(dbg, irg, block, pred, spmode, pos);
-	arch_set_irn_register(cg->arch_env, sp, spreg);
+	arch_set_irn_register(sp, spreg);
 
 	return sp;
 }
@@ -1353,12 +1354,12 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, inent);
-		sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
+		sp = create_spproj(node, push, pn_ia32_Push_stack);
 		if(entsize == 8) {
 			/* add another push after the first one */
 			push = create_push(cg, node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
-			sp = create_spproj(cg, node, push, pn_ia32_Push_stack);
+			sp = create_spproj(node, push, pn_ia32_Push_stack);
 		}
 
 		set_irn_n(node, i, new_Bad());
@@ -1379,13 +1380,13 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		pop = create_pop(cg, node, node, sp, outent);
-		sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
+		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 		if(entsize == 8) {
 			add_ia32_am_offs_int(pop, 4);
 
 			/* add another pop after the first one */
 			pop = create_pop(cg, node, node, sp, outent);
-			sp = create_spproj(cg, node, pop, pn_ia32_Pop_stack);
+			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 		}
 
 		pops[i] = pop;

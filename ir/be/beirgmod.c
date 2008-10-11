@@ -85,7 +85,6 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 						   const arch_register_class_t *cls,
 						   ir_node *pos)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
 	be_lv_t *lv     = birg->lv;
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_graph *irg   = get_irn_irg(bl);
@@ -98,7 +97,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
 
 	ir_nodeset_init(&live);
-	be_liveness_nodes_live_at(lv, arch_env, cls, pos, &live);
+	be_liveness_nodes_live_at(lv, birg->main_env->arch_env, cls, pos, &live);
 
 	n = ir_nodeset_size(&live);
 	if(n == 0) {
@@ -129,7 +128,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 
 		ir_mode *mode = get_irn_mode(perm_op);
 		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
-		arch_set_irn_register(arch_env, proj, reg);
+		arch_set_irn_register(proj, reg);
 
 		curr = proj;
 
