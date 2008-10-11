@@ -583,7 +583,6 @@ static void *arm_cg_init(be_irg_t *birg) {
 	cg->impl         = &arm_code_gen_if;
 	cg->irg          = birg->irg;
 	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->arch_env     = birg->main_env->arch_env;
 	cg->isa          = isa;
 	cg->birg         = birg;
 	cg->int_tp       = int_tp;
