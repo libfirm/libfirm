@@ -418,7 +418,6 @@ static void *mips_cg_init(be_irg_t *birg)
 	cg->impl     = &mips_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
-	cg->arch_env = arch_env;
 	cg->isa      = isa;
 	cg->birg     = birg;
 

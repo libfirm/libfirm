@@ -40,7 +40,6 @@ typedef struct mips_transform_env_t  mips_transform_env_t;
 struct mips_code_gen_t {
 	const arch_code_generator_if_t *impl;           /**< implementation */
 	ir_graph                       *irg;            /**< current irg */
-	const arch_env_t               *arch_env;       /**< the arch env */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	mips_isa_t                     *isa;            /**< the isa instance */
 	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
