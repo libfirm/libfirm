@@ -61,18 +61,6 @@ if test "$enable_assert" = no; then
 fi
 AC_SUBST([enable_assert])
 
-dnl disable inlining
-dnl ----------------
-AC_ARG_ENABLE([inlining],
-[AS_HELP_STRING([--disable-inlining], [disable inline C-extension])],
-[enable_inlining="$enableval"], [enable_inlining="yes"])
-
-if test "$enable_inlining" = yes; then
-  FIRMCONFIG_USE_INLINING="#define USE_INLINING"
-fi
-AC_SUBST([FIRMCONFIG_USE_INLINING])
-AC_SUBST([enable_inlining])
-
 dnl set profiling
 dnl -------------
 AC_ARG_ENABLE([profile],
@@ -199,6 +187,9 @@ AC_CONFIG_FILES([
 	include/libfirm/Makefile
 	libfirm.pc
 ])
+
+#always do inlining
+AC_DEFINE([INLINE], [inline], [define inline to compiler inline keyword])
 
 BACKENDS=""
 if test "$enable_backend" == yes; then

@@ -1,17 +1,8 @@
 /* define to 1 to have wchar_t support for identifiers */
 @FIRMCONFIG_FIRM_ENABLE_WCHAR@
 
-/* undef to disable inlining */
-@FIRMCONFIG_USE_INLINING@
-
 /* define to enable hooks */
 @FIRMCONFIG_FIRM_ENABLE_HOOKS@
-
-#ifdef USE_INLINING
-#define INLINE inline
-#else
-#define INLINE
-#endif
 
 /* Firm statistics need hooks */
 #ifdef FIRM_STATISTICS
