@@ -176,14 +176,15 @@ static void dump(unsigned mask, ir_graph *irg,
 }
 
 /**
- * Checks for every reload if it's user can perform the load on itself.
+ * Checks for every reload if its user can perform the load on itself.
  */
-static void memory_operand_walker(ir_node *irn, void *env) {
-	be_chordal_env_t *cenv = env;
-	const arch_env_t *aenv = cenv->birg->main_env->arch_env;
+static void memory_operand_walker(ir_node *irn, void *env)
+{
 	const ir_edge_t  *edge, *ne;
 	ir_node          *block;
 	ir_node          *spill;
+
+	(void)env;
 
 	if (! be_is_Reload(irn))
 		return;
@@ -202,7 +203,7 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 		assert(src && "outedges broken!");
 
 		if (get_nodes_block(src) == block && arch_possible_memory_operand(src, pos)) {
-			arch_perform_memory_operand(aenv, src, spill, pos);
+			arch_perform_memory_operand(src, spill, pos);
 		}
 	}
 
@@ -217,8 +218,9 @@ static void memory_operand_walker(ir_node *irn, void *env) {
 /**
  * Starts a walk for memory operands if supported by the backend.
  */
-static INLINE void check_for_memory_operands(be_chordal_env_t *chordal_env) {
-	irg_walk_graph(chordal_env->irg, NULL, memory_operand_walker, chordal_env);
+static INLINE void check_for_memory_operands(ir_graph *irg)
+{
+	irg_walk_graph(irg, NULL, memory_operand_walker, NULL);
 }
 
 
@@ -275,7 +277,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			But we only need to fix stack nodes once in this case.
 		*/
 		BE_TIMER_PUSH(t_ra_spill_apply);
-		check_for_memory_operands(chordal_env);
+		check_for_memory_operands(irg);
 		if (iteration == 0) {
 			be_abi_fix_stack_nodes(birg->abi);
 		}
