@@ -196,7 +196,6 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 
 	co = XMALLOCZ(copy_opt_t);
 	co->cenv      = chordal_env;
-	co->aenv      = chordal_env->birg->main_env->arch_env;
 	co->irg       = chordal_env->irg;
 	co->cls       = chordal_env->cls;
 	co->get_costs = get_costs;
