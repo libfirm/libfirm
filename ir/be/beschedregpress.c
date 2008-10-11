@@ -50,7 +50,6 @@ typedef struct _usage_stats_t {
 
 typedef struct {
 	const list_sched_selector_t *vtab;
-	const arch_env_t *arch_env;
 } reg_pressure_main_env_t;
 
 typedef struct {
@@ -178,8 +177,7 @@ static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const be
 {
 	reg_pressure_main_env_t *main_env = XMALLOC(reg_pressure_main_env_t);
 
-	main_env->arch_env = be_get_birg_arch_env(birg);
-	main_env->vtab     = vtab;
+	main_env->vtab = vtab;
 	irg_walk_graph(be_get_birg_irg(birg), firm_clear_link, NULL, NULL);
 
 	return main_env;
