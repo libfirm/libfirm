@@ -195,7 +195,6 @@ be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg,
                                 const arch_register_class_t *cls,
                                 struct obstack *obst)
 {
-	ie->aenv = be_get_birg_arch_env(birg);
 	ie->cls  = cls;
 	ie->obst = obst;
 	ie->ignore_colors = bitset_obstack_alloc(obst, cls->n_regs);

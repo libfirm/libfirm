@@ -62,7 +62,6 @@ struct _be_insn_t {
 
 struct _be_insn_env_t {
 	struct obstack              *obst;
-	const arch_env_t            *aenv;
 	const arch_register_class_t *cls;
 	bitset_t                    *ignore_colors;
 };
