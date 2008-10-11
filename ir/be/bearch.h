@@ -69,8 +69,7 @@ typedef enum arch_operand_type_t {
 	arch_operand_type_memory,
 	arch_operand_type_register,
 	arch_operand_type_immediate,
-	arch_operand_type_symconst,
-	arch_operand_type_last
+	arch_operand_type_symconst
 } arch_operand_type_t;
 
 /**
