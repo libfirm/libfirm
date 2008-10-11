@@ -60,11 +60,13 @@ static const char *get_mode_name_ex(ir_mode *mode) {
 	return get_mode_name(mode);
 }
 
-/** the last IRG, on which a verify error was found */
+/** the last IRG, on which a verification error was found */
 static ir_graph *last_irg_error = NULL;
 
 /**
  * print the name of the entity of an verification failure
+ *
+ * @param node  the node caused the failure
  */
 static void show_entity_failure(ir_node *node) {
 	ir_graph *irg = get_irn_irg(node);
@@ -1612,9 +1614,9 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 	}
 
 	/* Phi: BB x dataM^n --> dataM */
-	for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-		ir_node *pred = get_irn_n(n, i);
-		if (!is_Bad(pred) && !is_Unknown(pred)) {
+	for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
+		ir_node *pred = get_Phi_pred(n, i);
+		if (!is_Bad(pred)) {
 			ASSERT_AND_RET_DBG(
 				get_irn_mode(pred) == mymode,
 				"Phi node", 0,
