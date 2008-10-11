@@ -363,11 +363,10 @@ typedef struct _spill_t {
 } spill_t;
 
 typedef struct {
-	const arch_env_t *arch_env;
-	ir_graph *irg;
-	set *spills;
-	ir_node **reloads;
-	int problem_found;
+	ir_graph  *irg;
+	set       *spills;
+	ir_node  **reloads;
+	int        problem_found;
 } be_verify_spillslots_env_t;
 
 static int cmp_spill(const void* d1, const void* d2, size_t size) {
@@ -595,11 +594,10 @@ static void check_lonely_spills(ir_node *node, void *data) {
 	}
 }
 
-int be_verify_spillslots(const arch_env_t *arch_env, ir_graph *irg)
+int be_verify_spillslots(ir_graph *irg)
 {
 	be_verify_spillslots_env_t env;
 
-	env.arch_env = arch_env;
 	env.irg = irg;
 	env.spills = new_set(cmp_spill, 10);
 	env.reloads = NEW_ARR_F(ir_node*, 0);
