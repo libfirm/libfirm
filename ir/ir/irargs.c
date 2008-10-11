@@ -27,8 +27,6 @@
 # include "config.h"
 #endif
 
-#include "firm_config.h"
-
 #include "bitset.h"
 
 #include <ctype.h>

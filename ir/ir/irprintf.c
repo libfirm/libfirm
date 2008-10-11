@@ -41,7 +41,6 @@
 
 #include <ctype.h>
 
-#include "firm_config.h"
 #include "ident.h"
 #include "irmode_t.h"
 #include "irnode_t.h"

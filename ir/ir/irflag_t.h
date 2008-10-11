@@ -26,8 +26,6 @@
 #ifndef FIRM_IR_IRFLAG_T_H
 #define FIRM_IR_IRFLAG_T_H
 
-#include "firm_config.h"
-
 #include "irflag.h"
 
 /**

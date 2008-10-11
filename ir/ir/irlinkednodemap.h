@@ -26,8 +26,6 @@
 #ifndef _FIRM_IRLINKEDNODEMAP_H_
 #define _FIRM_IRLINKEDNODEMAP_H_
 
-#include "firm_config.h"
-
 #include "firm_types.h"
 #include "xmalloc.h"
 #include "list.h"

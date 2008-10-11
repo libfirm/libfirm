@@ -27,7 +27,6 @@
 #ifndef FIRM_IR_IRPROG_T_H
 #define FIRM_IR_IRPROG_T_H
 
-#include "firm_config.h"
 #include "irprog.h"
 #include "irtypes.h"
 #include "pseudo_irg.h"

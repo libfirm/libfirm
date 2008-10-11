@@ -26,7 +26,6 @@
 #ifndef FIRM_IR_IRNODE_T_H
 #define FIRM_IR_IRNODE_T_H
 
-#include "firm_config.h"
 #include "irtypes.h"
 #include "irnode.h"
 #include "irop_t.h"

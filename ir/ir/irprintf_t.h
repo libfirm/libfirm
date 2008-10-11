@@ -27,7 +27,6 @@
 #ifndef FIRM_IR_IRPRINTF_T_H
 #define FIRM_IR_IRPRINTF_T_H
 
-#include "firm_config.h"
 #include "irprintf.h"
 
 #ifdef DEBUG_libfirm

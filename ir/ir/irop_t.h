@@ -26,7 +26,6 @@
 #ifndef FIRM_IR_IROP_T_H
 #define FIRM_IR_IROP_T_H
 
-#include "firm_config.h"
 #include "irop.h"
 #include "irtypes.h"
 #include "tv.h"

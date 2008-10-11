@@ -27,7 +27,6 @@
 #ifndef FIRM_IR_EDGES_T_H
 #define FIRM_IR_EDGES_T_H
 
-#include "firm_config.h"
 #include "debug.h"
 
 #include "set.h"

@@ -27,8 +27,6 @@
 #ifndef _FIRM_IREDGESET_H_
 #define _FIRM_IREDGESET_H_
 
-#include "firm_config.h"
-
 #include "firm_types.h"
 
 #define HashSet          ir_edgeset_t
