@@ -28,8 +28,6 @@
 #include "config.h"
 #endif
 
-#include "firm_config.h"
-
 #ifdef DEBUG_libfirm
 
 #ifdef _WIN32

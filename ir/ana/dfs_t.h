@@ -29,7 +29,6 @@
 #ifndef FIRM_ANA_DFS_T_H
 #define FIRM_ANA_DFS_T_H
 
-#include "firm_config.h"
 #include "hashptr.h"
 #include "absgraph.h"
 #include "obst.h"

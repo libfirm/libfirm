@@ -26,7 +26,6 @@
 #ifndef FIRM_COMMON_IRTOOLS_H
 #define FIRM_COMMON_IRTOOLS_H
 
-#include "firm_config.h"
 #include "firm_types.h"
 
 #include "lc_opts.h"

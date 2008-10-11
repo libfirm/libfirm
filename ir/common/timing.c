@@ -26,8 +26,6 @@
 #include "config.h"
 #endif
 
-#include "firm_config.h"
-
 #include <stdio.h>
 #include <string.h>
 

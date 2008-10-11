@@ -27,7 +27,6 @@
 #ifndef FIRM_TR_TYPE_T_H
 #define FIRM_TR_TYPE_T_H
 
-#include "firm_config.h"
 #include "typerep.h"
 #include "tpop_t.h"
 #include "irgraph.h"

@@ -28,7 +28,6 @@
 #ifndef FIRM_TV_TV_T_H
 #define FIRM_TV_TV_T_H
 
-#include "firm_config.h"
 #include "firm_common.h"
 
 #include <assert.h>

@@ -29,7 +29,6 @@
 #include <assert.h>
 
 #include "firm_common_t.h"
-#include "firm_config.h"
 
 #include "typerep.h"
 #include "type_t.h"

@@ -27,8 +27,6 @@
 #ifndef FIRM_COMMON_DEBUG_H
 #define FIRM_COMMON_DEBUG_H
 
-#include "firm_config.h"
-
 /* WITH DEBUG OUTPUT */
 #ifdef DEBUG_libfirm
 
