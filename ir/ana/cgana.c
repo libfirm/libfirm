@@ -63,10 +63,6 @@
 
 #include "irdump.h"
 
-#include "irhooks.h"
-
-
-
 /* unambiguous address used as a mark. */
 static void *MARK = &MARK;
 
