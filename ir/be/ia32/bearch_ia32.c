@@ -279,10 +279,8 @@ static void ia32_set_irn_reg(ir_node *irn, const arch_register_t *reg)
 static const arch_register_t *ia32_get_irn_reg(const ir_node *irn)
 {
 	int pos = 0;
-	const arch_register_t *reg = NULL;
 
 	if (is_Proj(irn)) {
-
 		if (get_irn_mode(irn) == mode_X) {
 			return NULL;
 		}
@@ -292,15 +290,12 @@ static const arch_register_t *ia32_get_irn_reg(const ir_node *irn)
 	}
 
 	if (is_ia32_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_ia32_slots(irn);
+		const arch_register_t **slots = get_ia32_slots(irn);
 		assert(pos < get_ia32_n_res(irn));
-		reg   = slots[pos];
+		return slots[pos];
 	} else {
-		reg = ia32_get_firm_reg(irn, cur_reg_set);
+		return ia32_get_firm_reg(irn, cur_reg_set);
 	}
-
-	return reg;
 }
 
 static arch_irn_class_t ia32_classify(const ir_node *irn) {
