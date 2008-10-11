@@ -37,6 +37,9 @@
 #include "xmalloc.h"
 #include "irprintf.h"
 
+/**
+ * Environment for extbb construction.
+ */
 typedef struct _env {
 	struct obstack *obst;   /**< the obstack where allocations took place */
 	ir_extblk *head;        /**< head of the list of all extended blocks */
