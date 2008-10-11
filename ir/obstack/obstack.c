@@ -30,11 +30,12 @@
 
 #include <stdio.h>		/* Random thing to get __GNU_LIBRARY__.  */
 #include <stddef.h>
+#include <stdint.h>
 
 /* Determine default alignment.  */
 union fooround
 {
-  unsigned i;
+  uintmax_t i;
   long double d;
   void *p;
 };
@@ -138,7 +139,7 @@ _obstack_begin (struct obstack *h,
   chunk = h->chunk = CALL_CHUNKFUN (h, h -> chunk_size);
   if (!chunk)
     (*obstack_alloc_failed_handler) ();
-  h->next_free = h->object_base = __PTR_ALIGN((char *) chunk, chunk->contents,
+  h->next_free = h->object_base = __PTR_ALIGN ((char *) chunk, chunk->contents,
 					       alignment - 1);
   h->chunk_limit = chunk->limit
     = (char *) chunk + h->chunk_size;
