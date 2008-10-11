@@ -180,20 +180,6 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
                                const ir_node *pos, ir_nodeset_t *live);
 
 /**
- * Compute a set of nodes which are live at another node.
- * BEWARE: This is the liveness immediately before the node,
- *         so the node itself is not alive but it's operands are.
- * @param arch_env The architecture environment.
- * @param cls      The register class to consider.
- * @param pos      The node.
- * @param live     The set to put them into.
- */
-void be_liveness_nodes_live_at_input(const be_lv_t *lv,
-                                     const arch_env_t *arch_env,
-                                     const arch_register_class_t *cls,
-                                     const ir_node *pos, ir_nodeset_t *live);
-
-/**
  * Make sure the live sets are computed.
  * @param lv The liveness information.
  */

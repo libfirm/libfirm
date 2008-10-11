@@ -862,24 +862,6 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
 	}
 }
 
-void be_liveness_nodes_live_at_input(const be_lv_t *lv,
-                                     const arch_env_t *arch_env,
-                                     const arch_register_class_t *cls,
-                                     const ir_node *pos, ir_nodeset_t *live)
-{
-	const ir_node *bl = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_node *irn;
-	(void)arch_env; // TODO remove parameter
-
-	assert(lv->nodes && "live sets must be computed");
-	be_liveness_end_of_block(lv, cls, bl, live);
-	sched_foreach_reverse(bl, irn) {
-		be_liveness_transfer(cls, irn, live);
-		if(irn == pos)
-			return;
-	}
-}
-
 static void collect_node(ir_node *irn, void *data)
 {
 	struct obstack *obst = data;
