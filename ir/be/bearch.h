@@ -155,14 +155,12 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
 
 /**
  * Check if an operand is a register operand.
- * @param env The environment.
  * @param irn The node.
  * @param pos The position of the operand.
  * @return 1, if the operand is significant for register allocation, 0
  * if not.
  */
-extern int arch_is_register_operand(const arch_env_t *env,
-    const ir_node *irn, int pos);
+int arch_is_register_operand(const ir_node *irn, int pos);
 
 /**
  * Get the number of allocatable registers concerning

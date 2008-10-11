@@ -187,12 +187,10 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 	}
 }
 
-int arch_is_register_operand(const arch_env_t *env,
-    const ir_node *irn, int pos)
+int arch_is_register_operand(const ir_node *irn, int pos)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
-	(void)env; // TODO remove parameter
 
 	return req != NULL;
 }
