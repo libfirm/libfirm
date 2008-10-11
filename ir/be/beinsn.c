@@ -46,8 +46,7 @@
  * @param mach_op  the machine operand for which uses are added
  */
 static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_node *mach_op) {
-	const arch_env_t *arch_env = env->aenv;
-	struct obstack *obst       = env->obst;
+	struct obstack *obst = env->obst;
 	int i, n;
 
 	for (i = 0, n = get_irn_arity(mach_op); i < n; ++i) {
@@ -55,7 +54,7 @@ static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_n
 
 		if (is_irn_machine_operand(op)) {
 			add_machine_operands(env, insn, op);
-		} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
+		} else if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
 			be_operand_t o;
 
 			/* found a register use, create an operand */
@@ -82,8 +81,7 @@ static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_n
  */
 be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 {
-	const arch_env_t *arch_env = env->aenv;
-	struct obstack *obst       = env->obst;
+	struct obstack *obst = env->obst;
 	be_operand_t o;
 	be_insn_t *insn;
 	int i, n;
@@ -107,7 +105,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 			   in the backend, but check it for now. */
 			assert(get_irn_mode(p) != mode_T);
 
-			if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, p)) {
+			if (arch_irn_consider_in_reg_alloc(env->cls, p)) {
 				/* found a def: create a new operand */
 				o.req             = arch_get_register_req(p, -1);
 				o.carrier         = p;
@@ -121,7 +119,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 				pre_colored += arch_get_irn_register(p) != NULL;
 			}
 		}
-	} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
+	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 		/* only one def, create one operand */
 		o.req     = arch_get_register_req(irn, -1);
 		o.carrier = irn;
@@ -147,7 +145,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 		if (is_irn_machine_operand(op)) {
 			add_machine_operands(env, insn, op);
-		} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
+		} else if (arch_irn_consider_in_reg_alloc(env->cls, op)) {
 			/* found a register use, create an operand */
 			o.req     = arch_get_register_req(irn, i);
 			o.carrier = op;

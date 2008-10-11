@@ -83,7 +83,7 @@ static INLINE struct list_head *_get_block_border_head(const be_chordal_env_t *i
 #define border_prev(b)                      (list_entry((b)->list.prev, border_t, list))
 
 #define chordal_has_class(chordal_env, irn) \
-	arch_irn_consider_in_reg_alloc(chordal_env->birg->main_env->arch_env, chordal_env->cls, irn)
+	arch_irn_consider_in_reg_alloc(chordal_env->cls, irn)
 
 void be_ra_chordal_color(be_chordal_env_t *chordal_env);
 

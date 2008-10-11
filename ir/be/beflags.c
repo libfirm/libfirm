@@ -53,7 +53,6 @@
 #include "besched_t.h"
 #include "benode_t.h"
 
-static const arch_env_t            *arch_env   = NULL;
 static const arch_register_class_t *flag_class = NULL;
 static const arch_register_t       *flags_reg  = NULL;
 static func_rematerialize           remat      = NULL;
@@ -185,7 +184,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 static int is_modify_flags(ir_node *node) {
 	int i, arity;
 
-	if(arch_irn_is(arch_env, node, modify_flags))
+	if (arch_irn_is(node, modify_flags))
 		return 1;
 	if(!be_is_Keep(node))
 		return 0;
@@ -194,7 +193,7 @@ static int is_modify_flags(ir_node *node) {
 	for(i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(node, i);
 		in = skip_Proj(in);
-		if(arch_irn_is(arch_env, in, modify_flags))
+		if (arch_irn_is(in, modify_flags))
 			return 1;
 	}
 
@@ -250,7 +249,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			continue;
 
 		/* spiller can't (correctly) remat flag consumers at the moment */
-		assert(!arch_irn_is(arch_env, node, rematerializable));
+		assert(!arch_irn_is(node, rematerializable));
 
 		if(skip_Proj(new_flags_needed) != flags_needed) {
 			if(flags_needed != NULL) {
@@ -268,7 +267,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 			}
 			flag_consumers = node;
 			set_irn_link(flag_consumers, NULL);
-			assert(arch_irn_is(arch_env, flags_needed, rematerializable));
+			assert(arch_irn_is(flags_needed, rematerializable));
 		} else {
 			/* link all consumers in a list */
 			set_irn_link(node, flag_consumers);
@@ -292,7 +291,6 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 {
 	ir_graph *irg = be_get_birg_irg(birg);
 
-	arch_env   = be_get_birg_arch_env(birg);
 	flag_class = flag_cls;
 	flags_reg  = & flag_class->regs[0];
 	remat      = remat_func;

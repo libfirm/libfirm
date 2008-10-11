@@ -296,7 +296,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 		set *edges;
 		int i, o, n_nodes, n_edges;
 
-		if (arch_irn_is(ienv->co->aenv, aff->irn, ignore))
+		if (arch_irn_is(aff->irn, ignore))
 			continue;
 
 		obstack_init(&ob);
@@ -305,7 +305,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 		/* get all affinity neighbours */
 		n_nodes = 0;
 		co_gs_foreach_neighb(aff, nbr) {
-			if (!arch_irn_is(ienv->co->aenv, nbr->irn, ignore)) {
+			if (!arch_irn_is(nbr->irn, ignore)) {
 				obstack_ptr_grow(&ob, nbr->irn);
 				++n_nodes;
 			}
@@ -409,7 +409,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn) {
 	if (pdeq_contains(path, irn))
 		return;
 
-	if (arch_irn_is(ienv->co->aenv, irn, ignore))
+	if (arch_irn_is(irn, ignore))
 		return;
 
 	/* insert the new irn */

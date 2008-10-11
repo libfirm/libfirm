@@ -1178,8 +1178,8 @@ static void ifg_dump_graph_attr(FILE *f, void *self)
 
 static int ifg_is_dump_node(void *self, ir_node *irn)
 {
-	co2_t *env = self;
-	return !arch_irn_is(env->co->aenv, irn, ignore);
+	(void)self;
+	return !arch_irn_is(irn, ignore);
 }
 
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)

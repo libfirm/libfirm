@@ -199,7 +199,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	spill_t      *s;
 	spill_t      *last;
 
-	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
+	assert(!arch_irn_is(to_spill, dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F after %+F\n", to_spill, after));
 
 	/* Just for safety make sure that we do not insert the spill in front of a phi */
@@ -265,7 +265,7 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	spill_info_t *info;
 	reloader_t *rel;
 
-	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
+	assert(!arch_irn_is(to_spill, dont_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -572,7 +572,7 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 	/*
 	 * Ignore registers are always available
 	 */
-	if(arch_irn_is(env->arch_env, arg, ignore)) {
+	if (arch_irn_is(arg, ignore)) {
 		return 1;
 	}
 
@@ -604,13 +604,11 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 /**
  * Checks whether the node can principally be rematerialized
  */
-static int is_remat_node(spill_env_t *env, const ir_node *node)
+static int is_remat_node(const ir_node *node)
 {
-	const arch_env_t *arch_env = env->arch_env;
-
 	assert(!be_is_Spill(node));
 
-	if(arch_irn_is(arch_env, node, rematerializable))
+	if (arch_irn_is(node, rematerializable))
 		return 1;
 
 	return 0;
@@ -633,7 +631,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	int argremats;
 	int costs = 0;
 
-	if(!is_remat_node(env, spilled))
+	if (!is_remat_node(spilled))
 		return REMAT_COST_INFINITE;
 
 	if(be_is_Reload(spilled)) {
@@ -644,7 +642,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;
 	}
-	if(arch_irn_is(env->arch_env, spilled, modify_flags)) {
+	if (arch_irn_is(spilled, modify_flags)) {
 		return REMAT_COST_INFINITE;
 	}
 
@@ -803,7 +801,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	if(spillinfo->spill_costs >= 0)
 		return;
 
-	assert(! arch_irn_is(env->arch_env, to_spill, dont_spill));
+	assert(!arch_irn_is(to_spill, dont_spill));
 	assert(!be_is_Reload(to_spill));
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled

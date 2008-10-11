@@ -68,7 +68,6 @@ typedef struct {
 /** Lowering walker environment. */
 typedef struct _lower_env_t {
 	be_irg_t         *birg;
-	const arch_env_t *arch_env;
 	unsigned          do_copy : 1;
 	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
@@ -519,16 +518,16 @@ static INLINE ir_node *belower_skip_proj(ir_node *irn) {
 	return irn;
 }
 
-static ir_node *find_copy(constraint_env_t *env, ir_node *irn, ir_node *op) {
-	const arch_env_t *arch_env = be_get_birg_arch_env(env->birg);
-	ir_node          *block    = get_nodes_block(irn);
-	ir_node          *cur_node;
+static ir_node *find_copy(ir_node *irn, ir_node *op)
+{
+	ir_node *block    = get_nodes_block(irn);
+	ir_node *cur_node;
 
 	for (cur_node = sched_prev(irn);
 		! is_Block(cur_node) && be_is_Copy(cur_node) && get_nodes_block(cur_node) == block;
 		cur_node = sched_prev(cur_node))
 	{
-		if (be_get_Copy_op(cur_node) == op && arch_irn_is(arch_env, cur_node, dont_spill))
+		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
 			return cur_node;
 	}
 
@@ -539,14 +538,14 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	be_irg_t                    *birg     = env->birg;
 	ir_graph                    *irg      = be_get_birg_irg(birg);
 	pset                        *op_set   = env->op_set;
-	const arch_env_t            *arch_env = be_get_birg_arch_env(birg);
 	ir_node                     *block    = get_nodes_block(irn);
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
 	op_copy_assoc_t             key, *entry;
 	DEBUG_ONLY(firm_dbg_module_t *mod     = env->dbg;)
 
-	if (arch_irn_is(arch_env, other_different, ignore) || ! mode_is_datab(get_irn_mode(other_different))) {
+	if (arch_irn_is(other_different, ignore) ||
+			!mode_is_datab(get_irn_mode(other_different))) {
 		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
 	}
@@ -557,7 +556,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* The copy is optimized later if not needed         */
 
 	/* check if already exists such a copy in the schedule immediately before */
-	cpy = find_copy(env, belower_skip_proj(irn), other_different);
+	cpy = find_copy(belower_skip_proj(irn), other_different);
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
 		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
@@ -873,8 +872,7 @@ void assure_constraints(be_irg_t *birg) {
  */
 static int push_through_perm(ir_node *perm, void *data)
 {
-	lower_env_t *env       = data;
-	const arch_env_t *aenv = env->arch_env;
+	lower_env_t *env = data;
 
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
@@ -912,7 +910,7 @@ static int push_through_perm(ir_node *perm, void *data)
 	sched_foreach_reverse_from (sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			if (arch_irn_consider_in_reg_alloc(aenv, cls, op) &&
+			if (arch_irn_consider_in_reg_alloc(cls, op) &&
 			    !values_interfere(env->birg, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
@@ -946,7 +944,7 @@ found_front:
 			break;
 		if(!sched_comes_after(frontier, node))
 			break;
-		if(arch_irn_is(aenv, node, modify_flags))
+		if (arch_irn_is(node, modify_flags))
 			break;
 		if(is_Proj(node)) {
 			req = arch_get_register_req(get_Proj_pred(node),
@@ -958,7 +956,7 @@ found_front:
 			break;
 		for(i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *opop = get_irn_n(node, i);
-			if (arch_irn_consider_in_reg_alloc(aenv, cls, opop)) {
+			if (arch_irn_consider_in_reg_alloc(cls, opop)) {
 				break;
 			}
 		}
@@ -1052,9 +1050,8 @@ void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	lower_env_t env;
 	ir_graph    *irg = be_get_birg_irg(birg);
 
-	env.birg     = birg;
-	env.arch_env = be_get_birg_arch_env(birg);
-	env.do_copy  = do_copy;
+	env.birg    = birg;
+	env.do_copy = do_copy;
 	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
 	/* we will need interference */

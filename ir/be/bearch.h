@@ -226,19 +226,18 @@ arch_irn_class_t arch_irn_classify(const ir_node *irn);
 
 /**
  * Get the flags of a node.
- * @param env The architecture environment.
  * @param irn The node.
  * @return The flags.
  */
-extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn);
+arch_irn_flags_t arch_irn_get_flags(const ir_node *irn);
 
-#define arch_irn_is(env, irn, flag) ((arch_irn_get_flags(env, irn) & arch_irn_flags_ ## flag) != 0)
+#define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
 
 #define arch_irn_has_reg_class(irn, pos, cls) \
 	((cls) == arch_get_irn_reg_class(irn, pos))
 
-#define arch_irn_consider_in_reg_alloc(env, cls, irn) \
-	(arch_irn_has_reg_class(irn, -1, cls) && !arch_irn_is(env, irn, ignore))
+#define arch_irn_consider_in_reg_alloc(cls, irn) \
+	(arch_irn_has_reg_class(irn, -1, cls) && !arch_irn_is(irn, ignore))
 
 /**
  * Get the operations of an irn.

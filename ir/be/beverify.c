@@ -287,7 +287,8 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 	}
 }
 
-static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
+static int should_be_scheduled(ir_node *node)
+{
 	if(is_Block(node))
 		return -1;
 
@@ -311,7 +312,7 @@ static int should_be_scheduled(be_verify_schedule_env_t *env, ir_node *node) {
 		break;
 	}
 
-	if(arch_irn_get_flags(env->arch_env, node) & arch_irn_flags_ignore)
+	if (arch_irn_get_flags(node) & arch_irn_flags_ignore)
 		return -1;
 
 	return 1;
@@ -322,7 +323,7 @@ static void check_schedule(ir_node *node, void *data) {
 	int should_be;
 	int scheduled;
 
-	should_be = should_be_scheduled(env, node);
+	should_be = should_be_scheduled(node);
 	if(should_be == -1)
 		return;
 

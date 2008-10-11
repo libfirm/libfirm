@@ -179,7 +179,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  */
 static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
-	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
+	return arch_irn_consider_in_reg_alloc(env->cls, irn);
 }
 
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
@@ -877,7 +877,6 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
-	const arch_env_t *arch_env  = env->birg->main_env->arch_env;
 	struct list_head *head      = get_block_border_head(env, block);
 	be_lv_t *lv                 = env->birg->lv;
 
@@ -929,7 +928,7 @@ static void assign(ir_node *block, void *env_ptr)
 	list_for_each_entry_reverse(border_t, b, head, list) {
 		ir_node *irn = b->irn;
 		int nr       = get_irn_idx(irn);
-		int ignore   = arch_irn_is(arch_env, irn, ignore);
+		int ignore   = arch_irn_is(irn, ignore);
 
 		/*
 		 * Assign a color, if it is a local def. Global defs already have a

@@ -640,15 +640,15 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	bitset_free(nodes);
 }
 
-static void int_comp_rec(be_irg_t *birg, be_ifg_t *ifg, ir_node *n, bitset_t *seen)
+static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 {
 	void    *neigh_it = be_ifg_neighbours_iter_alloca(ifg);
 	ir_node *m;
 
 	be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
-		if(!bitset_contains_irn(seen, m) && !arch_irn_is(birg->main_env->arch_env, m, ignore)) {
+		if (!bitset_contains_irn(seen, m) && !arch_irn_is(m, ignore)) {
 			bitset_add_irn(seen, m);
-			int_comp_rec(birg, ifg, m, seen);
+			int_comp_rec(ifg, m, seen);
 		}
 	}
 
@@ -663,10 +663,10 @@ static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 	ir_node *n;
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
-		if (! bitset_contains_irn(seen, n) && ! arch_irn_is(birg->main_env->arch_env, n, ignore)) {
+		if (!bitset_contains_irn(seen, n) && !arch_irn_is(n, ignore)) {
 			++n_comp;
 			bitset_add_irn(seen, n);
-			int_comp_rec(birg, ifg, n, seen);
+			int_comp_rec(ifg, n, seen);
 		}
 	}
 

@@ -124,7 +124,6 @@ typedef struct _co_mst_env_t {
 	pqueue_t         *chunks;        /**< priority queue for chunks */
 	pset             *chunkset;      /**< set holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
-	const arch_env_t *aenv;          /**< the arch environment */
 	copy_opt_t       *co;            /**< the copy opt object */
 	unsigned         chunk_visited;
 	col_cost_t      **single_cols;
@@ -399,7 +398,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 		/* build list of interfering neighbours */
 		len = 0;
 		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh) {
-			if (! arch_irn_is(env->aenv, neigh, ignore)) {
+			if (!arch_irn_is(neigh, ignore)) {
 				obstack_ptr_grow(phase_obst(ph), neigh);
 				++len;
 			}
@@ -558,7 +557,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 					const ir_node *m    = neigh->irn;
 
 					/* skip ignore nodes */
-					if (arch_irn_is(env->aenv, m, ignore))
+					if (arch_irn_is(m, ignore))
 						continue;
 
 					w += node_contains(c->n, m) ? neigh->costs : 0;
@@ -589,7 +588,7 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t
 		int           i;
 
 		/* skip ignore nodes */
-		if (arch_irn_is(env->aenv, n, ignore))
+		if (arch_irn_is(n, ignore))
 			continue;
 
 		/* check if the affinity neighbour interfere */
@@ -625,7 +624,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 		affinity_node_t *an;
 
 		/* skip ignore nodes */
-		if (arch_irn_is(env->aenv, n, ignore))
+		if (arch_irn_is(n, ignore))
 			continue;
 
 		n1 = get_co_mst_irn(env, n);
@@ -648,7 +647,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 					aff_edge_t   edge;
 
 					/* skip ignore nodes */
-					if (arch_irn_is(env->aenv, m, ignore))
+					if (arch_irn_is(m, ignore))
 						continue;
 
 					edge.src = n;
@@ -724,7 +723,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		int w = 0;
 		neighb_t *neigh;
 
-		if (arch_irn_is(env->aenv, irn, ignore))
+		if (arch_irn_is(irn, ignore))
 			continue;
 
 		if (an) {
@@ -752,7 +751,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 			affinity_node_t *an = get_affinity_info(env->co, irn);
 			neighb_t *neigh;
 
-			if (arch_irn_is(env->aenv, irn, ignore))
+			if (arch_irn_is(irn, ignore))
 				continue;
 
 			assert(i <= ARR_LEN(chunk->n));
@@ -806,7 +805,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 				co_mst_irn_t *n2;
 
 				/* skip ignore nodes */
-				if (arch_irn_is(env->aenv, m, ignore))
+				if (arch_irn_is(m, ignore))
 					continue;
 
 				n2 = get_co_mst_irn(env, m);
@@ -1049,7 +1048,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 			neigh = node->int_neighs[j];
 
 			/* skip ignore nodes */
-			if (arch_irn_is(env->aenv, neigh, ignore))
+			if (arch_irn_is(neigh, ignore))
 				continue;
 
 			nn = get_co_mst_irn(env, neigh);
@@ -1413,7 +1412,6 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 	mst_env.co            = co;
 	mst_env.ignore_regs   = ignore_regs;
 	mst_env.ifg           = co->cenv->ifg;
-	mst_env.aenv          = co->aenv;
 	mst_env.chunkset      = pset_new_ptr(512);
 	mst_env.chunk_visited = 0;
 	mst_env.single_cols   = phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
@@ -1452,7 +1450,7 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 		co_mst_irn_t *mirn;
 		const arch_register_t *reg;
 
-		if (arch_irn_is(mst_env.aenv, irn, ignore))
+		if (arch_irn_is(irn, ignore))
 			continue;
 
 		mirn = get_co_mst_irn(&mst_env, irn);

@@ -238,10 +238,9 @@ arch_irn_class_t arch_irn_classify(const ir_node *irn)
 	return ops->classify(irn);
 }
 
-extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn)
+arch_irn_flags_t arch_irn_get_flags(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	return ops->get_flags(irn);
 }
 

@@ -95,7 +95,6 @@ struct block_info_t {
 	worklist_t *end_worklist;
 };
 
-static const arch_env_t            *arch_env;
 static const arch_register_class_t *cls;
 static struct obstack               obst;
 static spill_env_t                 *senv;
@@ -195,7 +194,7 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 			value = get_Phi_pred(value, succ_pos);
 
 			/* can happen for unknown phi preds */
-			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, value))
+			if (!arch_irn_consider_in_reg_alloc(cls, value))
 				continue;
 		}
 
@@ -399,7 +398,7 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 	/* already in the worklist? move around, otherwise add at back */
 	worklist_entry_t *entry = get_irn_link(value);
 
-	assert(arch_irn_consider_in_reg_alloc(arch_env, cls, value));
+	assert(arch_irn_consider_in_reg_alloc(cls, value));
 
 	if (worklist_contains(value)) {
 		assert(entry != NULL);
@@ -464,7 +463,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 
 				if (worklist_contains(node2))
 					continue;
-				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node2))
+				if (!arch_irn_consider_in_reg_alloc(cls, node2))
 					continue;
 
 				if (!tentative_mode)
@@ -481,7 +480,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 
 			foreach_out_edge(node, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, proj))
+				if (!arch_irn_consider_in_reg_alloc(cls, proj))
 					continue;
 				if (worklist_contains(proj)) {
 					worklist_remove(worklist, proj);
@@ -489,7 +488,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 					++n_defs;
 				}
 			}
-		} else if (arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+		} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
 			if (worklist_contains(node)) {
 				worklist_remove(worklist, node);
 			} else {
@@ -505,7 +504,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 		for(i = 0; i < arity; ++i) {
 			ir_node *use = get_irn_n(node, i);
 
-			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, use))
+			if (!arch_irn_consider_in_reg_alloc(cls, use))
 				continue;
 
 			val_used(worklist, use, node);
@@ -1002,7 +1001,7 @@ static void fix_block_borders(ir_node *block, void *data)
 				value = get_irn_n(value, i);
 
 				/* we might have unknowns as argument for the phi */
-				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, value))
+				if (!arch_irn_consider_in_reg_alloc(cls, value))
 					continue;
 			}
 
@@ -1030,7 +1029,6 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 		return;
 
 	worklist_visited = 0;
-	arch_env         = be_get_birg_arch_env(birg);
 	exec_freq        = be_get_birg_exec_freq(birg);
 
 	be_clear_links(irg);

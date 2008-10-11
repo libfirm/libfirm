@@ -284,7 +284,7 @@ static void peephole_ia32_Test(ir_node *node)
 		schedpoint = sched_prev(schedpoint);
 		if (schedpoint == left)
 			break;
-		if (arch_irn_is(cg->arch_env, schedpoint, modify_flags))
+		if (arch_irn_is(schedpoint, modify_flags))
 			return;
 		if (schedpoint == block)
 			panic("couldn't find left");

@@ -204,7 +204,7 @@ static INLINE void workset_bulk_fill(workset_t *workset, int count, const loc_t 
 static INLINE void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val) {
 	int i;
 	/* check for current regclass */
-	if (!arch_irn_consider_in_reg_alloc(env->arch, env->cls, val)) {
+	if (!arch_irn_consider_in_reg_alloc(env->cls, val)) {
 		// DBG((dbg, DBG_WORKSET, "Skipped %+F\n", val));
 		return;
 	}
@@ -503,7 +503,7 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 	belady_env_t *env          = bi->bel;
 	sched_timestep_t curr_step = sched_get_time_step(env->instr);
 	next_use_t *use            = get_current_use(bi, irn);
-	int flags                  = arch_irn_get_flags(env->arch, irn);
+	int flags                  = arch_irn_get_flags(irn);
 
 	assert(!(flags & arch_irn_flags_ignore));
 
@@ -737,7 +737,7 @@ static void belady(belady_env_t *env, int id) {
 		if (is_op_forking(get_irn_op(env->instr))) {
 			for (i = get_irn_arity(env->instr) - 1; i >= 0; --i) {
 				ir_node *op = get_irn_n(env->instr, i);
-				block_info->free_at_jump -= arch_irn_consider_in_reg_alloc(env->arch, env->cls, op);
+				block_info->free_at_jump -= arch_irn_consider_in_reg_alloc(env->cls, op);
 			}
 		}
 
@@ -1079,7 +1079,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 			 * there might by unknwons as operands of phis in that case
 			 * we set the costs to zero, since they won't get spilled.
 			 */
-			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, op))
+			if (arch_irn_consider_in_reg_alloc(env->cls, op))
 				c = can_make_available_at_end(ges, pr, op, limit - glob_costs, level + 1);
 			else
 				c = 0.0;
@@ -1446,7 +1446,7 @@ static void global_assign(belady_env_t *env)
 			if (!is_Phi(irn))
 				break;
 
-			if (arch_irn_consider_in_reg_alloc(env->arch, env->cls, irn)
+			if (arch_irn_consider_in_reg_alloc(env->cls, irn)
 					&& !bitset_contains_irn(ges.succ_phis, irn))
 				be_spill_phi(env->senv, irn);
 		}

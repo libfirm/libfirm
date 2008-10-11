@@ -424,7 +424,7 @@ static void draw_block(ir_node *bl, void *data)
 
 		be_lv_foreach(lv, bl, be_lv_state_in, idx) {
 			ir_node *irn = be_lv_get_irn(lv, bl, idx);
-			if (arch_irn_consider_in_reg_alloc(env->arch_env, env->cls, irn)) {
+			if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 				const arch_register_t *reg = arch_get_irn_register(irn);
 				int     col = arch_register_get_index(reg);
 				int     x   = (col + 1) * opts->h_inter_gap;

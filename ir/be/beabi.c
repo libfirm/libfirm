@@ -1367,10 +1367,10 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 		arch_set_irn_register(proj, reg);
 
 		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
-		if (arch_register_type_is(reg, ignore) || arch_irn_is(env->birg->main_env->arch_env, in[n], ignore))
+		if (arch_register_type_is(reg, ignore) || arch_irn_is(in[n], ignore))
 			flags |= arch_irn_flags_ignore;
 
-		if (arch_irn_is(env->birg->main_env->arch_env, in[n], modify_sp))
+		if (arch_irn_is(in[n], modify_sp))
 			flags |= arch_irn_flags_modify_sp;
 
 		be_node_set_flags(irn, pos, flags);
@@ -2316,7 +2316,7 @@ static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	fix_stack_walker_env_t *env = data;
 
-	if (arch_irn_is(env->arch_env, node, modify_sp)) {
+	if (arch_irn_is(node, modify_sp)) {
 		assert(get_irn_mode(node) != mode_M && get_irn_mode(node) != mode_T);
 		ARR_APP1(ir_node*, env->sp_nodes, node);
 	}

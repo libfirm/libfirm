@@ -71,7 +71,7 @@ typedef struct _regpressure_ana_t {
 
 static INLINE int has_reg_class(const regpressure_ana_t *ra, const ir_node *irn)
 {
-	return arch_irn_consider_in_reg_alloc(ra->arch_env, ra->cls, irn);
+	return arch_irn_consider_in_reg_alloc(ra->cls, irn);
 }
 
 static INLINE int regpressure(pset *live) {

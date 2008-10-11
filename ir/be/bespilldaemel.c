@@ -160,11 +160,11 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		foreach_out_edge(node, edge) {
 			const ir_node *proj = get_edge_src_irn(edge);
 
-			if(arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
 				++values_defined;
 			}
 		}
-	} else if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+	} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
 		++values_defined;
 	}
 
@@ -172,7 +172,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	arity = get_irn_arity(node);
 	for(i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		if(arch_irn_consider_in_reg_alloc(arch_env, cls, pred)
+		if (arch_irn_consider_in_reg_alloc(cls, pred)
 				&& !ir_nodeset_contains(live_nodes, pred)) {
 			++free_regs_needed;
 		}
@@ -223,7 +223,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		cand_node = candidate->node;
 		++cand_idx;
 
-		if(arch_irn_is(arch_env, cand_node, dont_spill))
+		if (arch_irn_is(cand_node, dont_spill))
 			continue;
 
 		/* make sure the node is not an argument of the instruction */
@@ -260,30 +260,30 @@ static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 		foreach_out_edge(node, edge) {
 			const ir_node *proj = get_edge_src_irn(edge);
 
-			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
 				ir_nodeset_remove(nodeset, proj);
 			}
 		}
 	}
 
-    if(arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
-        ir_nodeset_remove(nodeset, node);
-    }
+	if (arch_irn_consider_in_reg_alloc(cls, node)) {
+		ir_nodeset_remove(nodeset, node);
+	}
 }
 
 static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 {
 	int i, arity;
 
-    arity = get_irn_arity(node);
-    for(i = 0; i < arity; ++i) {
-        ir_node *op = get_irn_n(node, i);
+	arity = get_irn_arity(node);
+	for(i = 0; i < arity; ++i) {
+		ir_node *op = get_irn_n(node, i);
 
-        if(arch_irn_consider_in_reg_alloc(arch_env, cls, op)
-		   && !bitset_is_set(spilled_nodes, get_irn_idx(op))) {
-            ir_nodeset_insert(nodeset, op);
+		if (arch_irn_consider_in_reg_alloc(cls, op) &&
+				!bitset_is_set(spilled_nodes, get_irn_idx(op))) {
+			ir_nodeset_insert(nodeset, op);
 		}
-    }
+	}
 }
 
 static __attribute__((unused))

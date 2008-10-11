@@ -49,9 +49,6 @@ static int must_be_scheduled(const ir_node* const irn)
 }
 
 
-static const arch_env_t *cur_arch_env;
-
-
 static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set,
                               ir_nodeset_t *live_set)
 {
@@ -116,7 +113,7 @@ static int count_result(const ir_node* irn)
 	return
 		mode != mode_M &&
 		mode != mode_X &&
-		!arch_irn_is(cur_arch_env, irn, ignore);
+		!arch_irn_is(irn, ignore);
 }
 
 
@@ -164,7 +161,7 @@ static int normal_tree_cost(ir_node* irn)
 
 				cost = normal_tree_cost(pred);
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
-				if (!arch_irn_is(cur_arch_env, pred, ignore)) {
+				if (!arch_irn_is(pred, ignore)) {
 					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
 					pred_fc = get_irn_link(real_pred);
 					pred_fc->no_root = 1;
@@ -186,9 +183,9 @@ static int normal_tree_cost(ir_node* irn)
 	last = 0;
 	for (i = 0; i < arity; ++i) {
 		ir_node* op = fc->costs[i].irn;
-		if (op == last)                            continue;
-		if (get_irn_mode(op) == mode_M)            continue;
-		if (arch_irn_is(cur_arch_env, op, ignore)) continue;
+		if (op == last)                 continue;
+		if (get_irn_mode(op) == mode_M) continue;
+		if (arch_irn_is(op, ignore))    continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
 		last = op;
 		++n_op_res;
@@ -367,8 +364,6 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 	heights_t *heights;
 
 	(void)vtab;
-
-	cur_arch_env = be_get_birg_arch_env(birg);
 
 	be_clear_links(irg);
 

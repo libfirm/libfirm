@@ -139,7 +139,6 @@ typedef unsigned char vfp_liveness;
 struct _x87_simulator {
 	struct obstack obst;        /**< An obstack for fast allocating. */
 	pmap *blk_states;           /**< Map blocks to states. */
-	const arch_env_t *arch_env; /**< The architecture environment. */
 	be_lv_t *lv;                /**< intrablock liveness. */
 	vfp_liveness *live;         /**< Liveness information. */
 	unsigned n_idx;             /**< The cached get_irg_last_idx() result. */
@@ -748,18 +747,16 @@ static ir_node *x87_create_fldz(x87_state *state, ir_node *n, int regidx)
  * Updates a live set over a single step from a given node to its predecessor.
  * Everything defined at the node is removed from the set, the uses of the node get inserted.
  *
- * @param sim      The simulator handle.
  * @param irn      The node at which liveness should be computed.
  * @param live     The bitset of registers live before @p irn. This set gets modified by updating it to
  *                 the registers live after irn.
  *
  * @return The live bitset.
  */
-static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_liveness live)
+static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
 {
 	int i, n;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
-	const arch_env_t *arch_env = sim->arch_env;
 
 	if (get_irn_mode(irn) == mode_T) {
 		const ir_edge_t *edge;
@@ -767,14 +764,14 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 		foreach_out_edge(irn, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
 
-			if (arch_irn_consider_in_reg_alloc(arch_env, cls, proj)) {
+			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
 				const arch_register_t *reg = x87_get_irn_register(proj);
 				live &= ~(1 << arch_register_get_index(reg));
 			}
 		}
 	}
 
-	if (arch_irn_consider_in_reg_alloc(arch_env, cls, irn)) {
+	if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 		const arch_register_t *reg = x87_get_irn_register(irn);
 		live &= ~(1 << arch_register_get_index(reg));
 	}
@@ -782,7 +779,8 @@ static vfp_liveness vfp_liveness_transfer(x87_simulator *sim, ir_node *irn, vfp_
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if (mode_is_float(get_irn_mode(op)) && arch_irn_consider_in_reg_alloc(arch_env, cls, op)) {
+		if (mode_is_float(get_irn_mode(op)) &&
+				arch_irn_consider_in_reg_alloc(cls, op)) {
 			const arch_register_t *reg = x87_get_irn_register(op);
 			live |= 1 << arch_register_get_index(reg);
 		}
@@ -804,13 +802,12 @@ static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node 
 	int i;
 	vfp_liveness live = 0;
 	const arch_register_class_t *cls = &ia32_reg_classes[CLASS_ia32_vfp];
-	const arch_env_t *arch_env = sim->arch_env;
 	const be_lv_t *lv = sim->lv;
 
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
 		const arch_register_t *reg;
 		const ir_node *node = be_lv_get_irn(lv, block, i);
-		if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
 		reg = x87_get_irn_register(node);
@@ -862,7 +859,7 @@ static void update_liveness(x87_simulator *sim, ir_node *block)
 		idx = get_irn_idx(irn);
 		sim->live[idx] = live;
 
-		live = vfp_liveness_transfer(sim, irn, live);
+		live = vfp_liveness_transfer(irn, live);
 	}
 	idx = get_irn_idx(block);
 	sim->live[idx] = live;
@@ -2114,7 +2111,6 @@ static int sim_Perm(x87_state *state, ir_node *irn)
 
 static int sim_Barrier(x87_state *state, ir_node *node)
 {
-	//const arch_env_t *arch_env = state->sim->arch_env;
 	int i, arity;
 
 	/* materialize unknown if needed */
@@ -2373,14 +2369,11 @@ static void register_sim(ir_op *op, sim_func func)
  *
  * @param sim       a simulator handle, will be initialized
  * @param irg       the current graph
- * @param arch_env  the architecture environment
  */
-static void x87_init_simulator(x87_simulator *sim, ir_graph *irg,
-                               const arch_env_t *arch_env)
+static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 {
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
-	sim->arch_env   = arch_env;
 	sim->n_idx      = get_irg_last_idx(irg);
 	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
 
@@ -2453,9 +2446,10 @@ void x87_simulate_graph(const arch_env_t *arch_env, be_irg_t *birg)
 	blk_state     *bl_state;
 	x87_simulator sim;
 	ir_graph      *irg = be_get_birg_irg(birg);
+	(void)arch_env;
 
 	/* create the simulator */
-	x87_init_simulator(&sim, irg, arch_env);
+	x87_init_simulator(&sim, irg);
 
 	start_block = get_irg_start_block(irg);
 	bl_state    = x87_get_bl_state(&sim, start_block);

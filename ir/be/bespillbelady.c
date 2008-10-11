@@ -85,7 +85,6 @@ typedef struct _workset_t {
 } workset_t;
 
 static struct obstack               obst;
-static const arch_env_t            *arch_env;
 static const arch_register_class_t *cls;
 static const be_lv_t               *lv;
 static be_loopana_t                *loop_ana;
@@ -184,7 +183,7 @@ static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 	loc_t *loc;
 	int    i;
 	/* check for current regclass */
-	assert(arch_irn_consider_in_reg_alloc(arch_env, cls, val));
+	assert(arch_irn_consider_in_reg_alloc(cls, val));
 
 	/* check if val is already contained */
 	for (i = 0; i < workset->len; ++i) {
@@ -283,7 +282,7 @@ static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
                                     const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;
-	int           flags = arch_irn_get_flags(arch_env, def);
+	int           flags = arch_irn_get_flags(def);
 	unsigned      costs;
 	unsigned      time;
 
@@ -483,13 +482,13 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 	loc.node    = node;
 	loc.spilled = false;
 
-	if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node)) {
+	if (!arch_irn_consider_in_reg_alloc(cls, node)) {
 		loc.time = USES_INFINITY;
 		return loc;
 	}
 
 	/* We have to keep nonspillable nodes in the workingset */
-	if (arch_irn_get_flags(arch_env, node) & arch_irn_flags_dont_spill) {
+	if (arch_irn_get_flags(node) & arch_irn_flags_dont_spill) {
 		loc.time = 0;
 		DB((dbg, DBG_START, "    %+F taken (dontspill node)\n", node, loc.time));
 		return loc;
@@ -581,7 +580,7 @@ static void decide_start_workset(const ir_node *block)
 
 		if (! is_Phi(node))
 			break;
-		if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
 		if (all_preds_known) {
@@ -818,7 +817,7 @@ static void process_block(ir_node *block)
 		workset_clear(new_vals);
 		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
 			ir_node *in = get_irn_n(irn, i);
-			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, in))
+			if (!arch_irn_consider_in_reg_alloc(cls, in))
 				continue;
 
 			/* (note that "spilled" is irrelevant here) */
@@ -833,12 +832,12 @@ static void process_block(ir_node *block)
 
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
-				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, proj))
+				if (!arch_irn_consider_in_reg_alloc(cls, proj))
 					continue;
 				workset_insert(new_vals, proj, false);
 			}
 		} else {
-			if (!arch_irn_consider_in_reg_alloc(arch_env, cls, irn))
+			if (!arch_irn_consider_in_reg_alloc(cls, irn))
 				continue;
 			workset_insert(new_vals, irn, false);
 		}
@@ -932,7 +931,7 @@ static void fix_block_borders(ir_node *block, void *data)
 				assert(!l->spilled);
 
 				/* we might have unknowns as argument for the phi */
-				if (!arch_irn_consider_in_reg_alloc(arch_env, cls, node))
+				if (!arch_irn_consider_in_reg_alloc(cls, node))
 					continue;
 			}
 
@@ -987,7 +986,6 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	/* init belady env */
 	stat_ev_tim_push();
 	obstack_init(&obst);
-	arch_env  = birg->main_env->arch_env;
 	cls       = rcls;
 	lv        = be_get_birg_liveness(birg);
 	n_regs    = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
