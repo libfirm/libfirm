@@ -114,10 +114,9 @@ int arch_get_sp_bias(ir_node *irn)
 	return ops->get_sp_bias(irn);
 }
 
-arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack)
+arch_inverse_t *arch_get_inverse(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 
 	if(ops->get_inverse) {
 		return ops->get_inverse(irn, i, inverse, obstack);

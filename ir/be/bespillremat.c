@@ -534,7 +534,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 		DBG((si->dbg, LEVEL_5, "\t  requesting inverse op for argument %d of op %+F\n", n, op));
 
 		/* else ask the backend to give an inverse op */
-		if(arch_get_inverse(si->birg->main_env->arch_env, op, n, &inverse, si->obst)) {
+		if(arch_get_inverse(op, n, &inverse, si->obst)) {
 			int   i;
 
 			DBG((si->dbg, LEVEL_4, "\t  backend gave us an inverse op with %d nodes and cost %d\n", inverse.n, inverse.costs));
