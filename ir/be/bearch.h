@@ -136,15 +136,6 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsign
 const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
 
 /**
- * Check if an operand is a register operand.
- * @param irn The node.
- * @param pos The position of the operand.
- * @return 1, if the operand is significant for register allocation, 0
- * if not.
- */
-int arch_is_register_operand(const ir_node *irn, int pos);
-
-/**
  * Get the number of allocatable registers concerning
  * a register class for an operand of a node.
  * @param irn The node.

@@ -185,14 +185,6 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 	}
 }
 
-int arch_is_register_operand(const ir_node *irn, int pos)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
-
-	return req != NULL;
-}
-
 int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg)
 {
 	const arch_register_req_t *req = arch_get_register_req(irn, pos);
