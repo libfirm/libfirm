@@ -109,6 +109,9 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <string.h>
 
@@ -450,8 +453,8 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    50,    50,    52,    53,    56,    57,    60,    60,    62,
-      62,    64,    66,    67
+       0,    53,    53,    55,    56,    59,    60,    63,    63,    65,
+      65,    67,    69,    70
 };
 #endif
 
