@@ -140,8 +140,6 @@ typedef struct _sched_irn_t {
 typedef struct _sched_env_t {
 	sched_irn_t *sched_info;                    /**< scheduling info per node */
 	const list_sched_selector_t *selector;      /**< The node selector. */
-	const arch_env_t *arch_env;                 /**< The architecture environment. */
-	const ir_graph *irg;                        /**< The graph to schedule. */
 	void *selector_env;                         /**< A pointer to give to the selector. */
 } sched_env_t;
 
@@ -546,8 +544,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 /* List schedule a graph. */
 void list_sched(be_irg_t *birg, be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
-	ir_graph         *irg      = birg->irg;
+	ir_graph *irg = birg->irg;
 
 	int num_nodes;
 	sched_env_t env;
@@ -575,8 +572,8 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 	 */
 
 	/* Assure, that we have no dangling out-edges to deleted stuff */
-	edges_deactivate(birg->irg);
-	edges_activate(birg->irg);
+	edges_deactivate(irg);
+	edges_activate(irg);
 #endif
 
 	switch (list_sched_options.prep) {
@@ -594,9 +591,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env_get_list_sched_selector(arch_env, &sel);
-	env.arch_env   = arch_env;
-	env.irg        = irg;
+	env.selector   = arch_env_get_list_sched_selector(birg->main_env->arch_env, &sel);
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
 
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
@@ -620,8 +615,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 void list_sched_single_block(const be_irg_t *birg, ir_node *block,
                              be_options_t *be_opts)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
-	ir_graph         *irg      = birg->irg;
+	ir_graph *irg = birg->irg;
 
 	int num_nodes;
 	sched_env_t env;
@@ -642,16 +636,14 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 	}
 
 	/* Assure, that the out edges are computed */
-	edges_deactivate(birg->irg);
-	edges_activate(birg->irg);
+	edges_deactivate(irg);
+	edges_activate(irg);
 
 	num_nodes = get_irg_last_idx(irg);
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env_get_list_sched_selector(arch_env, &sel);
-	env.arch_env   = arch_env;
-	env.irg        = irg;
+	env.selector   = arch_env_get_list_sched_selector(birg->main_env->arch_env, &sel);
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
 
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
