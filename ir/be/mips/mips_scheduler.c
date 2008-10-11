@@ -43,7 +43,6 @@
 list_sched_selector_t mips_sched_selector;
 
 typedef struct {
-	const arch_env_t* arch_env;
 	pset *div_set;
 	/**
 	 * This array holds an entry for each register that specifies how much cycles
@@ -59,11 +58,10 @@ typedef struct {
 /* Matze: deprecated and totally broken */
 #if 0
 
-static void *mips_scheduler_init_graph(const list_sched_selector_t *vtab, const arch_env_t *arch_env, ir_graph *irg)
+static void *mips_scheduler_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
 {
 	mips_sched_env_t *sched_env = XMALLOCZ(mips_sched_env_t);
 
-	sched_env->arch_env = arch_env;
 	sched_env->div_set = new_pset(pset_default_ptr_cmp, 4);
 
 	return sched_env;
@@ -142,7 +140,6 @@ static int mips_scheduler_node_allowed(mips_sched_env_t *sched_env, ir_node* nod
 static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodeset *live_set)
 {
 	mips_sched_env_t *sched_env = (mips_sched_env_t*) block_env;
-	const arch_env_t *arch_env = (const arch_env_t*) sched_env->arch_env;
 	ir_node *node = NULL;
 	ir_node *block = sched_env->block;
 	ir_node *condjmp = NULL;
@@ -152,7 +149,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 	// test all nodes in the ready set and take the first non-branch that
 	// is allowed
 	for (node = nodeset_first(ready_set); node != NULL; node = nodeset_next(ready_set)) {
-		if (arch_irn_class_is(arch_env, node, branch)) {
+		if (arch_irn_class_is(node, branch)) {
 			if (is_irn_forking(node))
 				condjmp = node;
 			continue;
@@ -185,7 +182,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 			return condjmp;
 		}
 		node = nodeset_first(ready_set);
-		assert(arch_irn_class_is(arch_env, node, branch));
+		assert(arch_irn_class_is(node, branch));
 		nodeset_break(ready_set);
 		return node;
 	}
