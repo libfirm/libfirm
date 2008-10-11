@@ -91,10 +91,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 
 	/* in case of a joker register: just return a valid register */
 	if (arch_register_type_is(reg, joker)) {
-		const arch_register_req_t *req;
-
-		/* ask for the requirements */
-		req = arch_get_register_req(arch_env, irn, pos);
+		const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 		if (arch_register_req_is(req, limited)) {
 			/* in case of limited requirements: get the first allowed register */

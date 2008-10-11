@@ -140,9 +140,7 @@ void sr_remove(size_red_t *sr) {
 	while (redo) {
 		redo = 0;
 		be_ifg_foreach_node(ifg, iter, irn) {
-			const arch_register_req_t *req;
-
-			req = arch_get_register_req(sr->co->aenv, irn, -1);
+			const arch_register_req_t *req = arch_get_register_req(irn, -1);
 
 			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
 				if (sr_is_simplicial(sr, irn)) {

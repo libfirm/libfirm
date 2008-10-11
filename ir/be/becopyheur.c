@@ -242,7 +242,6 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	copy_opt_t *co = qn->ou->co;
 	const be_chordal_env_t *chordal_env = co->cenv;
 	const arch_register_class_t *cls = co->cls;
-	const arch_env_t *arch_env = co->aenv;
 	int irn_col = qnode_get_new_color(qn, irn);
 	ir_node *sub_res, *curr;
 	be_ifg_t *ifg = chordal_env->ifg;
@@ -278,7 +277,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		bitset_flip_all(free_cols);
 
 		/* Exclude colors not assignable to the irn */
-		req = arch_get_register_req(arch_env, irn, -1);
+		req = arch_get_register_req(irn, -1);
 		if (arch_register_req_is(req, limited)) {
 			bitset_t *limited = bitset_alloca(cls->n_regs);
 			rbitset_copy_to_bitset(req->limited, limited);
@@ -302,7 +301,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 #endif /* SEARCH_FREE_COLORS */
 
 	/* If target color is not allocatable changing color is impossible */
-	if (!arch_reg_is_allocatable(arch_env, irn, -1, arch_register_for_index(cls, col))) {
+	if (!arch_reg_is_allocatable(co->aenv, irn, -1, arch_register_for_index(cls, col))) {
 		DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
 		return CHANGE_IMPOSSIBLE;
 	}

@@ -266,7 +266,7 @@ static INLINE bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 	if(ci->adm_cache == NULL) {
 		const arch_register_req_t *req;
 		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
-		req = arch_get_register_req(env->co->aenv, ci->irn, BE_OUT_POS(0));
+		req = arch_get_register_req(ci->irn, BE_OUT_POS(0));
 
 		if(arch_register_req_is(req, limited)) {
 			int i, n;
@@ -309,7 +309,7 @@ static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair
 {
 	const arch_register_req_t *req;
 
-	req = arch_get_register_req(env->co->aenv, irn, BE_OUT_POS(0));
+	req = arch_get_register_req(irn, BE_OUT_POS(0));
 
 	if (arch_register_req_is(req, limited)) {
 		unsigned n_regs   = env->co->cls->n_regs;
@@ -1154,11 +1154,11 @@ static const char *get_dot_color_name(size_t col)
 	return col < (sizeof(names)/sizeof(names[0])) ? names[col] : "white";
 }
 
-static const char *get_dot_shape_name(co2_t *env, co2_irn_t *ci)
+static const char *get_dot_shape_name(co2_irn_t *ci)
 {
 	const arch_register_req_t *req;
 
-	req = arch_get_register_req(env->co->aenv, ci->irn, BE_OUT_POS(0));
+	req = arch_get_register_req(ci->irn, BE_OUT_POS(0));
 	if(arch_register_req_is(req, limited))
 		return "diamond";
 
@@ -1201,7 +1201,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 	}
 
 	ir_fprintf(f, "label=\"%+F%s\" style=filled peripheries=%d color=%s shape=%s", irn, buf, peri,
-		get_dot_color_name(get_col(env, irn)), get_dot_shape_name(env, ci));
+		get_dot_color_name(get_col(env, irn)), get_dot_shape_name(ci));
 }
 
 static void ifg_dump_at_end(FILE *file, void *self)

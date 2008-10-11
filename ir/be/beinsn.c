@@ -59,7 +59,7 @@ static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_n
 			be_operand_t o;
 
 			/* found a register use, create an operand */
-			o.req     = arch_get_register_req(arch_env, mach_op, i);
+			o.req     = arch_get_register_req(mach_op, i);
 			o.carrier = op;
 			o.irn     = insn->irn;
 			o.pos     = i;
@@ -109,7 +109,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 			if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, p)) {
 				/* found a def: create a new operand */
-				o.req             = arch_get_register_req(arch_env, p, -1);
+				o.req             = arch_get_register_req(p, -1);
 				o.carrier         = p;
 				o.irn             = irn;
 				o.pos             = -(get_Proj_proj(p) + 1);
@@ -123,7 +123,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		}
 	} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, irn)) {
 		/* only one def, create one operand */
-		o.req     = arch_get_register_req(arch_env, irn, -1);
+		o.req     = arch_get_register_req(irn, -1);
 		o.carrier = irn;
 		o.irn     = irn;
 		o.pos     = -1;
@@ -149,7 +149,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 			add_machine_operands(env, insn, op);
 		} else if (arch_irn_consider_in_reg_alloc(arch_env, env->cls, op)) {
 			/* found a register use, create an operand */
-			o.req     = arch_get_register_req(arch_env, irn, i);
+			o.req     = arch_get_register_req(irn, i);
 			o.carrier = op;
 			o.irn     = irn;
 			o.pos     = i;

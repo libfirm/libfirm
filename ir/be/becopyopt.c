@@ -228,7 +228,7 @@ int co_is_optimizable_root(const copy_opt_t *co, ir_node *irn) {
 	if (arch_register_type_is(reg, ignore))
 		return 0;
 
-	req = arch_get_register_req(co->aenv, irn, -1);
+	req = arch_get_register_req(irn, -1);
 	if (is_Reg_Phi(irn) || is_Perm_Proj(co->aenv, irn) || is_2addr_code(req))
 		return 1;
 
@@ -449,8 +449,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 		unit->nodes[1] = get_Perm_src(irn);
 		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
 	} else {
-		const arch_register_req_t *req =
-			arch_get_register_req(co->aenv, irn, -1);
+		const arch_register_req_t *req = arch_get_register_req(irn, -1);
 
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
@@ -523,12 +522,11 @@ static int compare_ous(const void *k1, const void *k2) {
 	const unit_t *u2 = *((const unit_t **) k2);
 	int i, o, u1_has_constr, u2_has_constr;
 	arch_register_req_t req;
-	const arch_env_t *aenv = u1->co->aenv;
 
 	/* Units with constraints come first */
 	u1_has_constr = 0;
 	for (i=0; i<u1->node_count; ++i) {
-		arch_get_register_req(aenv, &req, u1->nodes[i], -1);
+		arch_get_register_req(&req, u1->nodes[i], -1);
 		if (arch_register_req_is(&req, limited)) {
 			u1_has_constr = 1;
 			break;
@@ -537,7 +535,7 @@ static int compare_ous(const void *k1, const void *k2) {
 
 	u2_has_constr = 0;
 	for (i=0; i<u2->node_count; ++i) {
-		arch_get_register_req(aenv, &req, u2->nodes[i], -1);
+		arch_get_register_req(&req, u2->nodes[i], -1);
 		if (arch_register_req_is(&req, limited)) {
 			u2_has_constr = 1;
 			break;
@@ -792,7 +790,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
 	}
 	else { /* 2-address code */
-		const arch_register_req_t *req = arch_get_register_req(co->aenv, irn, -1);
+		const arch_register_req_t *req = arch_get_register_req(irn, -1);
 		if (is_2addr_code(req)) {
 			const unsigned other = req->other_same;
 			int i;
@@ -849,7 +847,7 @@ static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, 
 	constr[1] = bitset_alloca(co->cls->n_regs);
 
 	for (j = 0; j < 2; ++j) {
-		req = arch_get_register_req(co->aenv, nodes[j], BE_OUT_POS(0));
+		req = arch_get_register_req(nodes[j], BE_OUT_POS(0));
 		if(arch_register_req_is(req, limited))
 			rbitset_copy_to_bitset(req->limited, constr[j]);
 		else
@@ -901,7 +899,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			const arch_register_req_t *req;
 			ir_node *adj;
 
-			req = arch_get_register_req(co->aenv, irn, BE_OUT_POS(0));
+			req = arch_get_register_req(irn, BE_OUT_POS(0));
 			if(arch_register_req_is(req, limited)) {
 				for(i = 0; i < co->cls->n_regs; ++i) {
 					if(!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
@@ -1006,7 +1004,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 	const arch_register_req_t *req;
 	int limited;
 
-	req = arch_get_register_req(env->co->aenv, irn, BE_OUT_POS(0));
+	req = arch_get_register_req(irn, BE_OUT_POS(0));
 	limited = arch_register_req_is(req, limited);
 
 	if(env->flags & CO_IFG_DUMP_LABELS) {

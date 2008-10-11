@@ -617,11 +617,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  * then to assure the constraint.
  */
 static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
-	const arch_register_req_t *req;
-	const arch_env_t          *arch_env    = be_get_birg_arch_env(env->birg);
 	ir_node                   *skipped_irn = belower_skip_proj(irn);
-
-	req = arch_get_register_req(arch_env, irn, -1);
+	const arch_register_req_t *req         = arch_get_register_req(irn, -1);
 
 	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
@@ -955,10 +952,10 @@ found_front:
 		if(arch_irn_is(aenv, node, modify_flags))
 			break;
 		if(is_Proj(node)) {
-			req = arch_get_register_req(aenv, get_Proj_pred(node),
+			req = arch_get_register_req(get_Proj_pred(node),
 			                            -1 - get_Proj_proj(node));
 		} else {
-			req = arch_get_register_req(aenv, node, -1);
+			req = arch_get_register_req(node, -1);
 		}
 		if(req->type != arch_register_req_type_normal)
 			break;

@@ -4276,8 +4276,7 @@ static ir_node *gen_be_Call(ir_node *node)
 	i    = get_irn_arity(node) - 1;
 	fpcw = be_transform_node(get_irn_n(node, i--));
 	for (; i >= be_pos_Call_first_arg; --i) {
-		arch_register_req_t const *const req =
-			arch_get_register_req(env_cg->arch_env, node, i);
+		arch_register_req_t const *const req = arch_get_register_req(node, i);
 		ir_node *const reg_parm = be_transform_node(get_irn_n(node, i));
 
 		assert(req->type == arch_register_req_type_limited);
@@ -4402,7 +4401,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	} else if (proj == pn_be_Call_M_regular) {
 		proj = pn_ia32_Call_M;
 	} else {
-		arch_register_req_t const *const req    = arch_get_register_req(env_cg->arch_env, node, BE_OUT_POS(proj));
+		arch_register_req_t const *const req    = arch_get_register_req(node, BE_OUT_POS(proj));
 		int                        const n_outs = get_ia32_n_res(new_call);
 		int                              i;
 

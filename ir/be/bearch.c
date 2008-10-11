@@ -84,11 +84,9 @@ static INLINE const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	return be_ops;
 }
 
-const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
-                                                 const ir_node *irn, int pos)
+const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	return ops->get_irn_reg_req(irn, pos);
 }
 
@@ -221,9 +219,8 @@ int arch_is_register_operand(const arch_env_t *env,
 int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
     int pos, const arch_register_t *reg)
 {
-	const arch_register_req_t *req;
-
-	req = arch_get_register_req(env, irn, pos);
+	const arch_register_req_t *req = arch_get_register_req(irn, pos);
+	(void)env; // TODO remove parameter
 
 	if(req->type == arch_register_req_type_none)
 		return 0;

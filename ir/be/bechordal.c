@@ -182,9 +182,6 @@ static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 	return arch_irn_consider_in_reg_alloc(env->birg->main_env->arch_env, env->cls, irn);
 }
 
-#define has_limited_constr(req, irn) \
-	(arch_get_register_req(arch_env, (req), irn, -1) && (req)->type == arch_register_req_type_limited)
-
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
 {
 	bitset_t *tmp = alloc_env->tmp_colors;
@@ -258,7 +255,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if(arch_register_type_is(reg, joker))
 			continue;
 
-		req = arch_get_register_req(aenv, irn, i);
+		req = arch_get_register_req(irn, i);
 		if (!arch_register_req_is(req, limited))
 			continue;
 

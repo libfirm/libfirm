@@ -138,10 +138,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 
 	/* in case of unknown register: just return a valid register */
 	if (reg == &ia32_gp_regs[REG_GP_UKNWN]) {
-		const arch_register_req_t *req;
-
-		/* ask for the requirements */
-		req = arch_get_register_req(arch_env, irn, pos);
+		const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 		if (arch_register_req_is(req, limited)) {
 			/* in case of limited requirements: get the first allowed register */

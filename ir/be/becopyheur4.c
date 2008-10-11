@@ -381,7 +381,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 		res->adm_colors = bitset_obstack_alloc(phase_obst(ph), env->n_regs);
 
 		/* Exclude colors not assignable to the irn */
-		req = arch_get_register_req(env->aenv, irn, -1);
+		req = arch_get_register_req(irn, -1);
 		if (arch_register_req_is(req, limited))
 			rbitset_copy_to_bitset(req->limited, res->adm_colors);
 		else

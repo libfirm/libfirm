@@ -183,9 +183,8 @@ ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg) {
  */
 static ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos)
 {
-	const arch_register_req_t *req;
+	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
-	req = arch_get_register_req(cg->arch_env, irn, pos);
 	assert(req != NULL && "Missing register requirements");
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
 		return ia32_new_NoReg_gp(cg);

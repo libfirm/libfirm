@@ -1315,7 +1315,7 @@ const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
 		/* Matze: don't we unnecessary constraint our phis with this?
 		 * we only need to take the regclass IMO*/
 		if(!is_Phi(op))
-			return arch_get_register_req(phi_handler.arch_env, op, BE_OUT_POS(0));
+			return arch_get_register_req(op, BE_OUT_POS(0));
 	}
 
 	/*
