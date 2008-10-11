@@ -195,6 +195,8 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 		}
 	}
 
+	set_irn_mode(res, get_irn_mode(irn));
+
 	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, irn));
 
 	/* remove the old sub */
