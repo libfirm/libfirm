@@ -158,18 +158,6 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 	}
 }
 
-int arch_is_possible_memory_operand(const arch_env_t *env, const ir_node *irn, int i)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
-
-	if(ops->possible_memory_operand) {
-	   	return ops->possible_memory_operand(irn, i);
-	} else {
-		return 0;
-	}
-}
-
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
