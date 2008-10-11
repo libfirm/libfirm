@@ -29,8 +29,6 @@
 #ifndef FIRM_BE_BEEMITTER_H
 #define FIRM_BE_BEEMITTER_H
 
-#include "firm_config.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 #include "firm_types.h"

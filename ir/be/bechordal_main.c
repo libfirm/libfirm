@@ -36,7 +36,6 @@
 #include "list.h"
 #include "bitset.h"
 #include "iterator.h"
-#include "firm_config.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

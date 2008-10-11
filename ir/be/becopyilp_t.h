@@ -27,7 +27,6 @@
 #ifndef FIRM_BE_BECOPYILP_T_H
 #define FIRM_BE_BECOPYILP_T_H
 
-#include "firm_config.h"
 #include "firm_types.h"
 #include "pset.h"
 #include "becopyopt_t.h"

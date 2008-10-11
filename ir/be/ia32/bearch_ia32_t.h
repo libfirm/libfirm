@@ -26,8 +26,6 @@
 #ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
 #define FIRM_BE_IA32_BEARCH_IA32_T_H
 
-#include "firm_config.h"
-
 #include "pmap.h"
 #include "debug.h"
 #include "ia32_nodes_attr.h"

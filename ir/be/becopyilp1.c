@@ -28,8 +28,6 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "firm_config.h"
-
 #ifdef WITH_ILP
 
 #include "becopyilp_t.h"

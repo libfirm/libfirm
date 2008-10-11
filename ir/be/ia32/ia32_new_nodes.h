@@ -29,7 +29,6 @@
 #ifndef FIRM_BE_IA32_IA32_NEW_NODES_H
 #define FIRM_BE_IA32_IA32_NEW_NODES_H
 
-#include "firm_config.h"
 #include "ia32_nodes_attr.h"
 
 /** indices for AM inputs */

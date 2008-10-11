@@ -26,8 +26,6 @@
 #ifndef FIRM_BE_BEUTIL_H
 #define FIRM_BE_BEUTIL_H
 
-#include "firm_config.h"
-
 #include <stdio.h>
 
 #include "firm_types.h"

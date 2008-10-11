@@ -27,7 +27,6 @@
 #ifndef FIRM_BE_BECOPYSTAT_H
 #define FIRM_BE_BECOPYSTAT_H
 
-#include "firm_config.h"
 #include "firm_types.h"
 #include "bearch_t.h"
 #include "bechordal_t.h"

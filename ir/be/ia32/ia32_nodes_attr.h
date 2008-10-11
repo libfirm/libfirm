@@ -26,8 +26,6 @@
 #ifndef FIRM_BE_IA32_IA32_NODES_ATTR_H
 #define FIRM_BE_IA32_IA32_NODES_ATTR_H
 
-#include "firm_config.h"
-
 #include "firm_types.h"
 #include "../bearch_t.h"
 #include "../bemachine.h"

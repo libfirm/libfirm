@@ -26,8 +26,6 @@
 #ifndef FIRM_BE_BESTAT_H
 #define FIRM_BE_BESTAT_H
 
-#include "firm_config.h"
-
 #include "firm_types.h"
 #include "irnodeset.h"
 
