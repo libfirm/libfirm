@@ -50,10 +50,8 @@ AC_ARG_ENABLE([debug],
 [AS_HELP_STRING([--disable-debug], [disable verifiers and additional debugging routines])],
 [enable_debug_libfirm="$enableval"], [enable_debug_libfirm="yes"])
 if test "$enable_debug_libfirm" = yes; then
-	FIRMCONFIG_DEBUG_libfirm="#define DEBUG_libfirm"
+	AC_DEFINE([DEBUG_libfirm], [], [define to enable debug mode and checks])
 fi
-AC_SUBST([FIRMCONFIG_DEBUG_libfirm])
-AC_SUBST([enable_debug_libfirm])
 
 AC_ARG_ENABLE([assert],
 [AS_HELP_STRING([--disable-assert], [disable assertions])],
