@@ -228,8 +228,6 @@ void register_hook(hook_type_t hook, hook_entry_t *entry);
  */
 void unregister_hook(hook_type_t hook, hook_entry_t *entry);
 
-#ifdef FIRM_ENABLE_HOOKS
-
 extern hook_entry_t *hooks[hook_last];
 
 /**
@@ -243,12 +241,6 @@ extern hook_entry_t *hooks[hook_last];
     _p->hook._##what args;                   \
   }                                          \
 } while (0)
-
-#else
-
-#define hook_exec(what, args)
-
-#endif /* FIRM_ENABLE_HOOKS */
 
 #define hook_new_ir_op(op)                hook_exec(hook_new_ir_op, (ctx, op))
 #define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (ctx, op))

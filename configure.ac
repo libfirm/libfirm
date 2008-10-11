@@ -69,17 +69,6 @@ AC_ARG_ENABLE([profile],
 
 AC_SUBST([enable_profile_libfirm])
 
-dnl enable Firm hooks
-dnl -------------
-AC_ARG_ENABLE([hooks],
-[AS_HELP_STRING([--disable-hooks], [disable Firm hooks])],
-[enable_hooks="$enableval"], [enable_hooks="yes"])
-
-if test "$enable_hooks" = yes; then
-	FIRMCONFIG_FIRM_ENABLE_HOOKS="#define FIRM_ENABLE_HOOKS"
-fi
-AC_SUBST([FIRMCONFIG_FIRM_ENABLE_HOOKS])
-
 dnl enable Firm statistics
 dnl -------------
 AC_ARG_ENABLE([statistics],
@@ -206,7 +195,6 @@ echo "     backends              $BACKENDS"
 echo "     profiling             $enable_profile_libfirm"
 echo "     debug/verifiers       $enable_debug_libfirm"
 echo "     assertions            $enable_assert"
-echo "     hooks                 $enable_hooks"
 echo "     statistics            $enable_statistics"
 echo "     ilp                   $enable_ilp"
 echo "     jvm                   $enable_jvm"

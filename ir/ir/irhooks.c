@@ -29,8 +29,6 @@
 
 #include "irhooks.h"
 
-#ifdef FIRM_ENABLE_HOOKS
-
 /* the hooks */
 hook_entry_t *hooks[hook_last];
 
@@ -61,14 +59,6 @@ void unregister_hook(hook_type_t hook, hook_entry_t *entry) {
     entry->next = NULL;
   }
 }
-
-
-#else
-
-void register_hook(hook_type_t hook, hook_entry_t *entry) {}
-void unregister_hook(hook_type_t hook, hook_entry_t *entry) {}
-
-#endif /* FIRM_ENABLE_HOOKS */
 
 int firm_init_hooks(void) {
   /* this strange code assures that both functions are available

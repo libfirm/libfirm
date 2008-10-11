@@ -1,12 +1,2 @@
 /* define to 1 to have wchar_t support for identifiers */
 @FIRMCONFIG_FIRM_ENABLE_WCHAR@
-
-/* define to enable hooks */
-@FIRMCONFIG_FIRM_ENABLE_HOOKS@
-
-/* Firm statistics need hooks */
-#ifdef FIRM_STATISTICS
-#ifndef FIRM_ENABLE_HOOKS
-#define FIRM_ENABLE_HOOKS
-#endif
-#endif
