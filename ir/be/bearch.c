@@ -64,16 +64,13 @@ static int arch_register_class_put(const arch_register_class_t *cls, bitset_t *b
 
 /**
  * Get the isa responsible for a node.
- * @param env The arch environment with the isa stack.
  * @param irn The node to get the responsible isa for.
  * @return The irn operations given by the responsible isa.
  */
-static INLINE const arch_irn_ops_t *
-get_irn_ops(const arch_env_t *env, const ir_node *irn)
+static INLINE const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 {
 	const ir_op          *ops;
 	const arch_irn_ops_t *be_ops;
-	(void) env;
 
 	if (is_Proj(irn)) {
 		irn = get_Proj_pred(irn);
@@ -87,44 +84,52 @@ get_irn_ops(const arch_env_t *env, const ir_node *irn)
 	return be_ops;
 }
 
-const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn) {
-	return get_irn_ops(env, irn);
+const arch_irn_ops_t *arch_get_irn_ops(const arch_env_t *env, const ir_node *irn)
+{
+	(void)env; // TODO remove parameter
+	return get_irn_ops(irn);
 }
 
 const arch_register_req_t *arch_get_register_req(const arch_env_t *env,
                                                  const ir_node *irn, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->get_irn_reg_req(irn, pos);
 }
 
 void arch_set_frame_offset(const arch_env_t *env, ir_node *irn, int offset)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	ops->set_frame_offset(irn, offset);
 }
 
 ir_entity *arch_get_frame_entity(const arch_env_t *env, const ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->get_frame_entity(irn);
 }
 
 void arch_set_frame_entity(const arch_env_t *env, ir_node *irn, ir_entity *ent)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	ops->set_frame_entity(irn, ent);
 }
 
 int arch_get_sp_bias(const arch_env_t *env, ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->get_sp_bias(irn);
 }
 
 arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 
 	if(ops->get_inverse) {
 		return ops->get_inverse(irn, i, inverse, obstack);
@@ -134,7 +139,8 @@ arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int 
 }
 
 int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsigned int i) {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 
 	if(ops->possible_memory_operand) {
 		return ops->possible_memory_operand(irn, i);
@@ -144,7 +150,8 @@ int arch_possible_memory_operand(const arch_env_t *env, const ir_node *irn, unsi
 }
 
 void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *spill, unsigned int i) {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 
 	if(ops->perform_memory_operand) {
 		ops->perform_memory_operand(irn, spill, i);
@@ -155,7 +162,8 @@ void arch_perform_memory_operand(const arch_env_t *env, ir_node *irn, ir_node *s
 
 int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 
 	if(ops->get_op_estimated_cost) {
 		return ops->get_op_estimated_cost(irn);
@@ -166,7 +174,8 @@ int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn)
 
 int arch_is_possible_memory_operand(const arch_env_t *env, const ir_node *irn, int i)
 {
-   	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 
 	if(ops->possible_memory_operand) {
 	   	return ops->possible_memory_operand(irn, i);
@@ -177,8 +186,9 @@ int arch_is_possible_memory_operand(const arch_env_t *env, const ir_node *irn, i
 
 int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+	(void)env; // TODO remove parameter
 
 	if(req->type == arch_register_req_type_none) {
 		bitset_clear_all(bs);
@@ -207,8 +217,9 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 int arch_is_register_operand(const arch_env_t *env,
     const ir_node *irn, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+	(void)env; // TODO remove parameter
 
 	return req != NULL;
 }
@@ -234,8 +245,9 @@ int arch_reg_is_allocatable(const arch_env_t *env, const ir_node *irn,
 const arch_register_class_t *
 arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+	(void)env; // TODO remove parameter
 
 	assert(req->type != arch_register_req_type_none || req->cls == NULL);
 
@@ -245,26 +257,30 @@ arch_get_irn_reg_class(const arch_env_t *env, const ir_node *irn, int pos)
 extern const arch_register_t *
 arch_get_irn_register(const arch_env_t *env, const ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->get_irn_reg(irn);
 }
 
 extern void arch_set_irn_register(const arch_env_t *env,
     ir_node *irn, const arch_register_t *reg)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	ops->set_irn_reg(irn, reg);
 }
 
 extern arch_irn_class_t arch_irn_classify(const arch_env_t *env, const ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->classify(irn);
 }
 
 extern arch_irn_flags_t arch_irn_get_flags(const arch_env_t *env, const ir_node *irn)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(env, irn);
+	const arch_irn_ops_t *ops = get_irn_ops(irn);
+	(void)env; // TODO remove parameter
 	return ops->get_flags(irn);
 }
 
