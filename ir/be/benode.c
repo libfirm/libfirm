@@ -1038,7 +1038,7 @@ ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn)
 	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn, -1);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
 	ir_node                     *spill;
-	(void)arch_env;
+	(void)arch_env; // TODO remove parameter
 
 	spill = be_new_Spill(cls, cls_frame, irg, block, frame, irn);
 	return spill;
@@ -1051,13 +1051,14 @@ ir_node *be_reload(const arch_env_t *arch_env, const arch_register_class_t *cls,
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
+	(void)arch_env; // TODO remove parameter
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
 	reload = be_new_Reload(cls, cls_frame, irg, bl, frame, spill, mode);
 
 	if (is_Block(insert)) {
-		insert = sched_skip(insert, 0, sched_skip_cf_predicator, (void *) arch_env);
+		insert = sched_skip(insert, 0, sched_skip_cf_predicator, NULL);
 		sched_add_after(insert, reload);
 	} else {
 		sched_add_before(insert, reload);

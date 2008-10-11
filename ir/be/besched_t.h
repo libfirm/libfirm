@@ -317,8 +317,7 @@ typedef int (sched_predicator_t)(const ir_node *irn, void *data);
  * Predicate for sched_skip(), returns non-zero if irn is a control flow changing node.
  *
  * @param irn   the node to evaluate
- * @param data  an arch_env_t * used to determine if irn is a cf
- *              node for the given architecture
+ * @param data  unused
  */
 int sched_skip_cf_predicator(const ir_node *irn, void *data);
 

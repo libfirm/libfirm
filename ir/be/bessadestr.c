@@ -173,7 +173,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			perm = be_new_Perm(chordal_env->cls, irg, pred_bl, n_projs, in);
 			be_stat_ev("phi_perm", n_projs);
 
-			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, &chordal_env->birg->main_env->arch_env);
+			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, NULL);
 			sched_add_after(insert_after, perm);
 
 			/*
@@ -287,7 +287,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
-				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, &chordal_env->birg->main_env->arch_env), dupl);
+				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, NULL), dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);

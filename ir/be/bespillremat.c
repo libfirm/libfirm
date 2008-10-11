@@ -403,7 +403,7 @@ set_find_spill(set * set, const ir_node * value)
 #define pset_foreach(s,i) for((i)=pset_first((s)); (i); (i)=pset_next((s)))
 #define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
 #define foreach_post_remat(s,i) for((i)=next_post_remat((s)); (i); (i)=next_post_remat((i)))
-#define foreach_pre_remat(si,s,i) for((i)=next_pre_remat((si),(s)); (i); (i)=next_pre_remat((si),(i)))
+#define foreach_pre_remat(s,i) for((i)=next_pre_remat((s)); (i); (i)=next_pre_remat((i)))
 #define	sched_foreach_op(s,i) for((i)=sched_next_op((s));!sched_is_end((i));(i)=sched_next_op((i)))
 
 static int
@@ -707,10 +707,9 @@ value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_no
 	return ret;
 }
 
-static INLINE ir_node *
-sched_block_last_noncf(const spill_ilp_t * si, const ir_node * bb)
+static INLINE ir_node *sched_block_last_noncf(const ir_node * bb)
 {
-    return sched_skip((ir_node*)bb, 0, sched_skip_cf_predicator, (void *) si->birg->main_env->arch_env);
+	return sched_skip((ir_node*)bb, 0, sched_skip_cf_predicator, NULL);
 }
 
 /**
@@ -777,11 +776,10 @@ sched_put_after(ir_node * insert, ir_node * irn)
 	sched_add_before(insert, irn);
 }
 
-static void
-sched_put_before(const spill_ilp_t * si, ir_node * insert, ir_node * irn)
+static void sched_put_before(ir_node * insert, ir_node * irn)
 {
   if(is_Block(insert)) {
-	  insert = sched_block_last_noncf(si, insert);
+	  insert = sched_block_last_noncf(insert);
   } else {
 	  insert = sched_next_nonproj(insert, 0);
 	  insert = sched_prev(insert);
@@ -814,14 +812,13 @@ next_post_remat(const ir_node * irn)
 }
 
 
-static ir_node *
-next_pre_remat(const spill_ilp_t * si, const ir_node * irn)
+static ir_node *next_pre_remat(const ir_node * irn)
 {
 	op_t      *op;
 	ir_node   *ret;
 
 	if(is_Block(irn)) {
-		ret = sched_block_last_noncf(si, irn);
+		ret = sched_block_last_noncf(irn);
 		ret = sched_next(ret);
 		ret = sched_prev_op(ret);
 	} else {
@@ -851,7 +848,7 @@ can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * 
 			   res = 1;
 
 	if(is_Block(pos)) {
-		prev = sched_block_last_noncf(si, pos);
+		prev = sched_block_last_noncf(pos);
 		prev = sched_next_nonproj(prev, 0);
 	} else {
 		prev = sched_prev_op(pos);
@@ -936,7 +933,7 @@ insert_copy_before(const spill_ilp_t * si, const ir_node * irn, ir_node * pos)
 
 	set_phi_class(si->pc, copy, NULL);
 	set_nodes_block(copy, bb);
-	sched_put_before(si, pos, copy);
+	sched_put_before(pos, copy);
 
 	return copy;
 }
@@ -1100,7 +1097,7 @@ get_live_end(spill_ilp_t * si, ir_node * bb, pset * live)
 	sched_foreach_reverse(bb, irn) {
 		int  i;
 
-		if(!sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) break;
+		if (!sched_skip_cf_predicator(irn, NULL)) break;
 
 		for(i=get_irn_arity(irn)-1; i>=0; --i) {
 			ir_node *arg = get_irn_n(irn,i);
@@ -1114,7 +1111,7 @@ get_live_end(spill_ilp_t * si, ir_node * bb, pset * live)
 	 * find values that are used by remats at end of block
 	 * and insert them into live set
 	 */
-	foreach_pre_remat(si, bb, irn) {
+	foreach_pre_remat(bb, irn) {
 		int       n;
 
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
@@ -1146,7 +1143,7 @@ walker_regclass_copy_insertor(ir_node * irn, void * data)
 
 			if(!has_reg_class(si, phi_arg)) {
 				ir_node   *copy = be_new_Copy(si->cls, si->birg->irg, bb, phi_arg);
-				ir_node   *pos = sched_block_last_noncf(si, bb);
+				ir_node   *pos = sched_block_last_noncf(bb);
 				op_t      *op = obstack_alloc(si->obst, sizeof(*op));
 
 				DBG((si->dbg, LEVEL_2, "\t copy to my regclass for arg %+F of %+F\n", phi_arg, irn));
@@ -1264,7 +1261,7 @@ walker_remat_insertor(ir_node * bb, void * data)
 		}
 
 		/* do not place post remats after jumps */
-		if(sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) {
+		if (sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) {
 			del_pset(used);
 			del_pset(args);
 			break;
@@ -1478,7 +1475,7 @@ luke_endwalker(ir_node * bb, void * data)
 	 * find values that are used by remats at end of block
 	 * and insert them into live set
 	 */
-	foreach_pre_remat(si, bb, irn) {
+	foreach_pre_remat(bb, irn) {
 		int       n;
 
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
@@ -1495,7 +1492,7 @@ luke_endwalker(ir_node * bb, void * data)
 	sched_foreach_reverse(bb, irn) {
 		int   n;
 
-		if(!sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) break;
+		if (!sched_skip_cf_predicator(irn, si->birg->main_env->arch_env)) break;
 
 		for (n=get_irn_arity(irn)-1; n>=0; --n) {
 			ir_node        *irn_arg = get_irn_n(irn, n);
@@ -1754,7 +1751,7 @@ insert_mem_copy_position(spill_ilp_t * si, pset * live, const ir_node * block)
 		lpp_set_factor_fast(si->lpp, cst, to_copy_spill->reg_out, -1.0);
 		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, to_copy_op->attr.live_range.ilp, -1.0);
-		foreach_pre_remat(si, block, tmp) {
+		foreach_pre_remat(block, tmp) {
 			op_t     *remat_op = get_irn_link(tmp);
 			if(remat_op->attr.remat.remat->value == to_copy) {
 				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
@@ -1827,7 +1824,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
-		foreach_pre_remat(si, bb, tmp) {
+		foreach_pre_remat(bb, tmp) {
 			op_t     *remat_op = get_irn_link(tmp);
 			if(remat_op->attr.remat.remat->value == irn) {
 				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
@@ -1841,7 +1838,7 @@ luke_blockwalker(ir_node * bb, void * data)
 		lpp_set_factor_fast(si->lpp, cst, spill->reg_out, 1.0);
 		if(reload != ILP_UNDEF) lpp_set_factor_fast(si->lpp, cst, reload, -1.0);
 		lpp_set_factor_fast(si->lpp, cst, op->attr.live_range.ilp, -1.0);
-		foreach_pre_remat(si, bb, tmp) {
+		foreach_pre_remat(bb, tmp) {
 			op_t     *remat_op = get_irn_link(tmp);
 			if(remat_op->attr.remat.remat->value == irn) {
 				lpp_set_factor_fast(si->lpp, cst, remat_op->attr.remat.ilp, -1.0);
@@ -1876,7 +1873,7 @@ luke_blockwalker(ir_node * bb, void * data)
 	/*
 	 * assure the remat args are available
 	 */
-	foreach_pre_remat(si, bb, tmp) {
+	foreach_pre_remat(bb, tmp) {
 		op_t     *remat_op = get_irn_link(tmp);
 		int       n;
 
@@ -1922,7 +1919,7 @@ luke_blockwalker(ir_node * bb, void * data)
 	 *    B A S I C  B L O C K  B O D Y
 	 **************************************/
 
-	sched_foreach_reverse_from(sched_block_last_noncf(si, bb), irn) {
+	sched_foreach_reverse_from(sched_block_last_noncf(bb), irn) {
 		op_t       *op;
 		op_t       *tmp_op;
 		int         n,
@@ -1983,7 +1980,7 @@ luke_blockwalker(ir_node * bb, void * data)
 					}
 				}
 			}
-			foreach_pre_remat(si, irn, tmp) {
+			foreach_pre_remat(irn, tmp) {
 				for (n=get_irn_arity(tmp)-1; n>=0; --n) {
 					ir_node        *remat_arg = get_irn_n(tmp, n);
 					if(has_reg_class(si, remat_arg)) {
@@ -2378,7 +2375,7 @@ skip_one_must_die:
 
 			lpp_set_factor_fast(si->lpp, requirements, arg_op->attr.live_range.ilp, 1.0);
 			lpp_set_factor_fast(si->lpp, requirements, op->attr.live_range.args.reloads[i], 1.0);
-			foreach_pre_remat(si, irn, tmp) {
+			foreach_pre_remat(irn, tmp) {
 				op_t     *remat_op = get_irn_link(tmp);
 				if(remat_op->attr.remat.remat->value == arg) {
 					lpp_set_factor_fast(si->lpp, requirements, remat_op->attr.remat.ilp, 1.0);
@@ -2427,7 +2424,7 @@ skip_one_must_die:
 		}
 
 		/* requirements for remats */
-		foreach_pre_remat(si, irn, tmp) {
+		foreach_pre_remat(irn, tmp) {
 			op_t        *remat_op = get_irn_link(tmp);
 			int          n;
 
@@ -3925,7 +3922,7 @@ walker_reload_placer(ir_node * bb, void * data) {
 			if(!is_zero(name->value)) {
 				ir_node    *reload;
 				ir_node    *insert_pos = bb;
-				ir_node    *prev = sched_block_last_noncf(si, bb);
+				ir_node    *prev = sched_block_last_noncf(bb);
 				op_t       *prev_op = get_irn_link(prev);
 
 				while(be_is_Spill(prev)) {

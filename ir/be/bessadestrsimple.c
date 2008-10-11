@@ -240,7 +240,7 @@ static ir_node *insert_copies(ssa_destr_env_t *sde, const arch_register_class_t 
 
 	/* In case this is a 'normal' phi we insert at the
 	 * end of the pred block before cf nodes */
-	last_cpy = sched_skip(pred_blk, 0, sched_skip_cf_predicator, (void *)sde->aenv);
+	last_cpy = sched_skip(pred_blk, 0, sched_skip_cf_predicator, NULL);
 	last_cpy = sched_next(last_cpy);
 
 	/* If we detect a loop stop recursion. */
