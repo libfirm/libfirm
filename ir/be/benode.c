@@ -762,30 +762,6 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 	return res;
 }
 
-ir_node *be_RegParams_append_out_reg(ir_node *regparams,
-                                     const arch_env_t *arch_env,
-                                     const arch_register_t *reg)
-{
-	ir_graph *irg = get_irn_irg(regparams);
-	ir_node *block = get_nodes_block(regparams);
-	be_node_attr_t *attr = get_irn_attr(regparams);
-	const arch_register_class_t *cls = arch_register_get_class(reg);
-	ir_mode *mode = arch_register_class_mode(cls);
-	int n = ARR_LEN(attr->reg_data);
-	ir_node *proj;
-	(void)arch_env; // TODO remove parameter
-
-	assert(be_is_RegParams(regparams));
-	proj = new_r_Proj(irg, block, regparams, mode, n);
-	add_register_req(regparams);
-	be_set_constr_single_reg(regparams, BE_OUT_POS(n), reg);
-	arch_set_irn_register(proj, reg);
-
-	/* TODO decide, whether we need to set ignore/modify sp flags here? */
-
-	return proj;
-}
-
 ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent)
 {
 	be_frame_attr_t *a;

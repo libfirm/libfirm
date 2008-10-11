@@ -367,15 +367,6 @@ ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
 ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
 
 /**
- * Appends a register out requirement to a RegParams node
- *
- * @returns the proj node for the new register
- */
-ir_node *be_RegParams_append_out_reg(ir_node *regparams,
-                                     const arch_env_t *arch_env,
-                                     const arch_register_t *reg);
-
-/**
  * Make a spill node.
  *
  * @param arch_env  The architecture environment.
