@@ -47,8 +47,6 @@
 # include "config.h"
 #endif
 
-#include "firm_config.h"
-
 #ifdef PSET
 # define SET pset
 # define PMANGLE(pre) pre##_pset

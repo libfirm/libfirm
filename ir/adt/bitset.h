@@ -27,8 +27,6 @@
 #ifndef FIRM_ADT_BITSET_H
 #define FIRM_ADT_BITSET_H
 
-#include "firm_config.h"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

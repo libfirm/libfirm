@@ -7,7 +7,6 @@
 #include <string.h>
 #include "xmalloc.h"
 #include "gaussseidel.h"
-#include "firm_config.h"
 #include "util.h"
 
 #define MAX(x,y)   ((x) > (y) ? (x) : (y))
