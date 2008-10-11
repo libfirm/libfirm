@@ -1962,7 +1962,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	pset *ser_set = new_pset(cmp_rss_edges, 20);
 
 	/* available_regs = R = |arch_non_ignore_regs cut ~abi_ignore_regs| */
-	arch_put_non_ignore_regs(rss->arch_env, rss->cls, arch_nonign_bs);
+	arch_put_non_ignore_regs(rss->cls, arch_nonign_bs);
 	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
 	bitset_andnot(arch_nonign_bs, abi_ign_bs);
 	available_regs  = bitset_popcnt(arch_nonign_bs);

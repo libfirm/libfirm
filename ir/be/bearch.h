@@ -186,11 +186,10 @@ extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, 
 /**
  * Put all registers which shall not be ignored by the register
  * allocator in a bit set.
- * @param env The arch env.
  * @param cls The register class to consider.
  * @param bs  The bit set to put the registers to.
  */
-extern void arch_put_non_ignore_regs(const arch_env_t *env, const arch_register_class_t *cls, bitset_t *bs);
+extern void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs);
 
 /**
  * Check, if a register is assignable to an operand of a node.

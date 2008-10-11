@@ -644,7 +644,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			pmap_insert(partners, proj, NULL);
 
 			bitset_clear_all(bs);
-			arch_put_non_ignore_regs(aenv, env->cls, bs);
+			arch_put_non_ignore_regs(env->cls, bs);
 			bitset_andnot(bs, env->ignore_colors);
 			bitset_foreach(bs, col) {
 				//hungarian_add(bp, n_alloc, col, 1);

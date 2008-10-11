@@ -184,7 +184,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		if (type & arch_register_req_type_limited) {
 			rbitset_copy_to_bitset(req->limited, op->regs);
 		} else {
-			arch_put_non_ignore_regs(arch_env, env->cls, op->regs);
+			arch_put_non_ignore_regs(env->cls, op->regs);
 			if (env->ignore_colors)
 				bitset_andnot(op->regs, env->ignore_colors);
 		}

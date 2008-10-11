@@ -558,7 +558,7 @@ int co_solve_ilp2(copy_opt_t *co) {
 
 	my.normal_colors = bitset_alloca(arch_register_class_n_regs(co->cls));
 	bitset_clear_all(my.normal_colors);
-	arch_put_non_ignore_regs(co->aenv, co->cls, my.normal_colors);
+	arch_put_non_ignore_regs(co->cls, my.normal_colors);
 	my.n_colors = bitset_popcnt(my.normal_colors);
 
 	ienv = new_ilp_env(co, ilp2_build, ilp2_apply, &my);
