@@ -204,21 +204,6 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 	}
 }
 
-int arch_count_non_ignore_regs(const arch_env_t *env,
-                               const arch_register_class_t *cls)
-{
-	unsigned i;
-	int result = 0;
-	(void) env;
-
-	for(i = 0; i < cls->n_regs; ++i) {
-		if(!arch_register_type_is(&cls->regs[i], ignore))
-			result++;
-	}
-
-	return result;
-}
-
 int arch_is_register_operand(const arch_env_t *env,
     const ir_node *irn, int pos)
 {
