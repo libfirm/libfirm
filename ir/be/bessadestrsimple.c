@@ -63,7 +63,6 @@
 typedef struct _ssa_destr_env_t {
 	ir_graph                    *irg;
 	const arch_register_class_t *cls;
-	const arch_env_t            *aenv;
 	set                         *vars;
 } ssa_destr_env_t;
 
@@ -163,7 +162,7 @@ static void values_to_vars(ir_node *irn, void *env) {
 	int             nr, i, build_vals = 0;
 	ir_node         **vals;
 
-	if (arch_get_irn_reg_class(sde->aenv, irn, -1) == NULL)
+	if (arch_get_irn_reg_class(irn, -1) == NULL)
 		return;
 
 	vals = get_phi_class(pc, irn);
@@ -297,21 +296,21 @@ static void ssa_destr_simple_walker(ir_node *blk, void *env) {
 			if (!is_Phi(phi))
 				break;
 
-			if (arch_irn_is(sde->aenv, phi, ignore))
+			if (arch_irn_is(phi, ignore))
 				continue;
 
-			cls = arch_get_irn_reg_class(sde->aenv, phi, -1);
+			cls = arch_get_irn_reg_class(phi, -1);
 			insert_copies(sde, cls, phi, pos, phi);
 		}
 	}
 }
 
 
-set *be_ssa_destr_simple(ir_graph *irg, const arch_env_t *aenv) {
+set *be_ssa_destr_simple(ir_graph *irg)
+{
 	ssa_destr_env_t sde;
 
 	sde.irg = irg;
-	sde.aenv = aenv;
 	sde.vars = new_set(compare_var_infos, 16);
 
 	be_clear_links(irg);

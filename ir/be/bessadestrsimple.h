@@ -44,7 +44,7 @@
  *
  * @return A set mapping SSA values to variables
  */
-set *be_ssa_destr_simple(ir_graph *irg, const arch_env_t *aenv);
+set *be_ssa_destr_simple(ir_graph *irg);
 
 void free_ssa_destr_simple(set *vars);
 
