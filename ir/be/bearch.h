@@ -137,7 +137,7 @@ void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);
 void       arch_set_frame_entity(ir_node *irn, ir_entity *ent);
-extern int arch_get_sp_bias(const arch_env_t *env, ir_node *irn);
+int        arch_get_sp_bias(ir_node *irn);
 
 extern int arch_get_op_estimated_cost(const arch_env_t *env, const ir_node *irn);
 extern arch_inverse_t *arch_get_inverse(const arch_env_t *env, const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);

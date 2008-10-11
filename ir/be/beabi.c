@@ -2386,7 +2386,6 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
  */
 static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 {
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
 	int               omit_fp  = env->call->flags.bits.try_omit_fp;
 	ir_node          *irn;
 	int               wanted_bias = real_bias;
@@ -2412,7 +2411,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		 * If the node modifies the stack pointer by a constant offset,
 		 * record that in the bias.
 		 */
-		ofs = arch_get_sp_bias(arch_env, irn);
+		ofs = arch_get_sp_bias(irn);
 
 		if (be_is_IncSP(irn)) {
 			/* fill in real stack frame size */

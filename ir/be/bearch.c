@@ -108,10 +108,9 @@ void arch_set_frame_entity(ir_node *irn, ir_entity *ent)
 	ops->set_frame_entity(irn, ent);
 }
 
-int arch_get_sp_bias(const arch_env_t *env, ir_node *irn)
+int arch_get_sp_bias(ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	(void)env; // TODO remove parameter
 	return ops->get_sp_bias(irn);
 }
 
