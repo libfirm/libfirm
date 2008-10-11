@@ -55,7 +55,6 @@
 struct _mris_env_t {
 	ir_phase          ph;
 	heights_t         *heights;
-	const arch_env_t  *aenv;
 	ir_graph          *irg;
 	ir_node           *bl;
 	int               visited;
@@ -515,7 +514,6 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	ir_graph   *irg = be_get_birg_irg(birg);
 
 	phase_init(&env->ph, "mris", irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init, NULL);
-	env->aenv     = be_get_birg_arch_env(birg);
 	env->irg      = irg;
 	env->visited  = 0;
 	env->heights  = heights_new(irg);
