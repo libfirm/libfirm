@@ -225,7 +225,6 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_chordal_env_t    *chordal_env = &pse->cenv;
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = be_get_birg_irg(birg);
-	const be_main_env_t *main_env    = birg->main_env;
 
 	pse->cls                   = cls;
 	chordal_env->cls           = cls;
@@ -235,7 +234,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_assure_liveness(birg);
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
 
-	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq));
+	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, birg->exec_freq));
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
@@ -254,13 +253,12 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 	be_chordal_env_t    *chordal_env = &pse->cenv;
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;
-	const be_main_env_t *main_env    = birg->main_env;
-	int                  colors_n     = arch_register_class_n_regs(chordal_env->cls);
+	int                  colors_n    = arch_register_class_n_regs(chordal_env->cls);
 	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
-		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg, main_env->arch_env, birg->exec_freq) - pse->pre_spill_cost);
+		stat_ev_dbl("bechordal_spillcosts", be_estimate_irg_costs(irg, birg->exec_freq) - pse->pre_spill_cost);
 
 		/*
 			If we have a backend provided spiller, post spill is

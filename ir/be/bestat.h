@@ -66,8 +66,7 @@ void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls);
  * Gives a cost estimate for the program (based on execution frequencies)
  * and backend op_estimated_cost
  */
-double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env,
-                             ir_exec_freq *execfreqs);
+double be_estimate_irg_costs(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /**
  * return number of "instructions" (=nodes without some virtual nodes like Proj,

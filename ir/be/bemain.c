@@ -752,7 +752,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		stat_ev_if {
 			stat_ev_dbl("bemain_costs_before_ra",
-					be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
+					be_estimate_irg_costs(irg, birg->exec_freq));
 			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
 			be_stat_ev("bemain_blocks_before_ra", be_count_blocks(irg));
 		}
@@ -761,7 +761,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_allocate_registers(birg);
 
 #ifdef FIRM_STATISTICS
-		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, arch_env, birg->exec_freq));
+		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, birg->exec_freq));
 #endif
 
 		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);

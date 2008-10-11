@@ -122,7 +122,6 @@ void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls) {
 
 
 typedef struct _estimate_irg_costs_env_t {
-	const arch_env_t *arch_env;
 	ir_exec_freq     *execfreqs;
 	double           costs;
 } estimate_irg_costs_env_t;
@@ -140,11 +139,10 @@ static void estimate_block_costs(ir_node *block, void *data)
 	env->costs += costs * get_block_execfreq(env->execfreqs, block);
 }
 
-double be_estimate_irg_costs(ir_graph *irg, const arch_env_t *arch_env, ir_exec_freq *execfreqs)
+double be_estimate_irg_costs(ir_graph *irg, ir_exec_freq *execfreqs)
 {
 	estimate_irg_costs_env_t env;
 
-	env.arch_env  = arch_env;
 	env.execfreqs = execfreqs;
 	env.costs     = 0.0;
 
