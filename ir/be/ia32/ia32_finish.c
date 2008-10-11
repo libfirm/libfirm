@@ -56,7 +56,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
-static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
+static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
+{
 	ir_graph *irg;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
 	ir_node *noreg_fp, *block;
@@ -124,7 +125,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg) {
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
-				if(pn == pn_ia32_Sub_res) {
+				if (pn == pn_ia32_Sub_res) {
 					assert(res_proj == NULL);
 					res_proj = proj;
 				} else {
@@ -300,23 +301,23 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		arity = get_irn_arity(node);
 		uses_out_reg     = NULL;
 		uses_out_reg_pos = -1;
-		for(i2 = 0; i2 < arity; ++i2) {
+		for (i2 = 0; i2 < arity; ++i2) {
 			ir_node               *in     = get_irn_n(node, i2);
 			const arch_register_t *in_reg;
 
-			if(!mode_is_data(get_irn_mode(in)))
+			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
 			in_reg = arch_get_irn_register(arch_env, in);
 
-			if(in_reg != out_reg)
+			if (in_reg != out_reg)
 				continue;
 
-			if(uses_out_reg != NULL && in != uses_out_reg) {
+			if (uses_out_reg != NULL && in != uses_out_reg) {
 				panic("invalid register allocation");
 			}
 			uses_out_reg = in;
-			if(uses_out_reg_pos >= 0)
+			if (uses_out_reg_pos >= 0)
 				uses_out_reg_pos = -1; /* multiple inputs... */
 			else
 				uses_out_reg_pos = i2;
@@ -325,7 +326,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		/* no-one else is using the out reg, we can simply copy it
 		 * (the register can't be live since the operation will override it
 		 *  anyway) */
-		if(uses_out_reg == NULL) {
+		if (uses_out_reg == NULL) {
 			ir_node *copy = be_new_Copy(cls, irg, block, in_node);
 			DBG_OPT_2ADDRCPY(copy);
 
@@ -376,12 +377,12 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 			perm, same_pos, node, uses_out_reg));
 
 		/* use the perm results */
-		for(i2 = 0; i2 < arity; ++i2) {
+		for (i2 = 0; i2 < arity; ++i2) {
 			ir_node *in = get_irn_n(node, i2);
 
-			if(in == in_node) {
+			if (in == in_node) {
 				set_irn_n(node, i2, perm_proj0);
-			} else if(in == uses_out_reg) {
+			} else if (in == uses_out_reg) {
 				set_irn_n(node, i2, perm_proj1);
 			}
 		}
@@ -446,7 +447,7 @@ static void fix_am_source(ir_node *irn, void *env)
 			int                    pnmem;
 
 			/* should_be same constraint is fullfilled, nothing to do */
-			if(out_reg == same_reg)
+			if (out_reg == same_reg)
 				continue;
 
 			/* we only need to do something if the out reg is the same as base
@@ -521,7 +522,8 @@ static void fix_am_source(ir_node *irn, void *env)
 /**
  * Block walker: finishes a block
  */
-static void ia32_finish_irg_walker(ir_node *block, void *env) {
+static void ia32_finish_irg_walker(ir_node *block, void *env)
+{
 	ia32_code_gen_t *cg = env;
 	ir_node *irn, *next;
 
@@ -557,7 +559,8 @@ static void ia32_finish_irg_walker(ir_node *block, void *env) {
 /**
  * Block walker: pushes all blocks on a wait queue
  */
-static void ia32_push_on_queue_walker(ir_node *block, void *env) {
+static void ia32_push_on_queue_walker(ir_node *block, void *env)
+{
 	waitq *wq = env;
 	waitq_put(wq, block);
 }
@@ -566,7 +569,8 @@ static void ia32_push_on_queue_walker(ir_node *block, void *env) {
 /**
  * Add Copy nodes for not fulfilled should_be_equal constraints
  */
-void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg) {
+void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg)
+{
 	waitq *wq = new_waitq();
 
 	/* Push the blocks on the waitq because ia32_finish_irg_walker starts more walks ... */
