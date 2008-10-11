@@ -59,7 +59,6 @@ typedef struct _coloring_t coloring_t;
 
 struct _coloring_t {
 	ir_phase         ph;
-	const arch_env_t *arch_env;
 	ir_graph         *irg;
 };
 
@@ -86,10 +85,9 @@ static void *regs_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 	return (void*)arch_get_irn_register(irn);
 }
 
-coloring_t *coloring_init(coloring_t *c, ir_graph *irg, const arch_env_t *aenv)
+static coloring_t *coloring_init(coloring_t *c, ir_graph *irg)
 {
 	phase_init(&c->ph, "regs_map", irg, PHASE_DEFAULT_GROWTH, regs_irn_data_init, NULL);
-	c->arch_env = aenv;
 	c->irg = irg;
 	return c;
 }
@@ -400,7 +398,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 
 	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
 	{
-		coloring_init(&coloring, chordal_env->irg, chordal_env->birg->main_env->arch_env);
+		coloring_init(&coloring, chordal_env->irg);
 		coloring_save(&coloring);
 
 		ir_timer_reset(timer);
