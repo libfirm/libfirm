@@ -96,8 +96,6 @@ typedef struct _post_spill_env_t {
 	double                      pre_spill_cost;
 } post_spill_env_t;
 
-static be_options_t  *main_opts;
-
 static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ "copy", BE_CH_LOWER_PERM_COPY },
 	{ "swap", BE_CH_LOWER_PERM_SWAP },
@@ -353,14 +351,12 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
  */
 static void be_ra_chordal_main(be_irg_t *birg)
 {
-	const be_main_env_t *main_env = birg->main_env;
-	const arch_env_t    *arch_env = main_env->arch_env;
-	ir_graph            *irg      = birg->irg;
-	int                 j, m;
-	be_chordal_env_t    chordal_env;
-	struct obstack      obst;
-
-	main_opts = main_env->options;
+	const arch_env_t *arch_env = birg->main_env->arch_env;
+	ir_graph         *irg      = birg->irg;
+	int               j;
+	int               m;
+	be_chordal_env_t  chordal_env;
+	struct obstack    obst;
 
 	BE_TIMER_PUSH(t_ra_other);
 
