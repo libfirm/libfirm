@@ -64,14 +64,6 @@ typedef enum arch_register_type_t {
 	                                           bestate code */
 } arch_register_type_t;
 
-typedef enum arch_operand_type_t {
-	arch_operand_type_invalid,
-	arch_operand_type_memory,
-	arch_operand_type_register,
-	arch_operand_type_immediate,
-	arch_operand_type_symconst
-} arch_operand_type_t;
-
 /**
  * Different types of register allocation requirements.
  */
