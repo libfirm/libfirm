@@ -369,12 +369,11 @@ ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
 /**
  * Make a spill node.
  *
- * @param arch_env  The architecture environment.
  * @param irn       The node to be spilled.
  * @param spill_ctx The context in which the spill is introduced (This is mostly == irn up to the case of Phis).
  * @return          The new spill node.
  */
-ir_node *be_spill(const arch_env_t *arch_env, ir_node *block, ir_node *irn);
+ir_node *be_spill(ir_node *block, ir_node *irn);
 
 /**
  * Make a reload and insert it into the schedule.
