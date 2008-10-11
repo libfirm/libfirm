@@ -167,7 +167,6 @@ extern int arch_is_register_operand(const arch_env_t *env,
 /**
  * Get the number of allocatable registers concerning
  * a register class for an operand of a node.
- * @param env The environment.
  * @param irn The node.
  * @param pos The position of the node's operand.
  * @param bs  The bitset all allocatable registers shall be put into.
@@ -176,7 +175,7 @@ extern int arch_is_register_operand(const arch_env_t *env,
  *            has registers.
  * @return    The amount of registers allocatable for that operand.
  */
-extern int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs);
+int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs);
 
 /**
  * Put all registers which shall not be ignored by the register

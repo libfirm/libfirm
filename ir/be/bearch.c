@@ -158,11 +158,10 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 	}
 }
 
-int arch_get_allocatable_regs(const arch_env_t *env, const ir_node *irn, int pos, bitset_t *bs)
+int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
-	(void)env; // TODO remove parameter
 
 	if(req->type == arch_register_req_type_none) {
 		bitset_clear_all(bs);

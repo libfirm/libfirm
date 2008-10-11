@@ -534,7 +534,6 @@ static INLINE void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
 static void ou_optimize(unit_t *ou) {
 	int i;
 	qnode_t *curr = NULL, *tmp;
-	const arch_env_t *aenv = ou->co->aenv;
 	const arch_register_class_t *cls = ou->co->cls;
 	bitset_pos_t idx;
 	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
@@ -546,7 +545,7 @@ static void ou_optimize(unit_t *ou) {
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
 
-	arch_get_allocatable_regs(aenv, ou->nodes[0], -1, pos_regs);
+	arch_get_allocatable_regs(ou->nodes[0], -1, pos_regs);
 
 	/* exclude ignore colors */
 	bitset_andnot(pos_regs, ou->co->cenv->ignore_colors);
