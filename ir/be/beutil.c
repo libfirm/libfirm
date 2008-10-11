@@ -56,64 +56,6 @@ pset *be_empty_set(void)
 	return empty_set;
 }
 
-static void dump_allocated_block(ir_node *block, void *data)
-{
-	FILE          *f = data;
-	const ir_node *irn;
-	int            n;
-	int            i;
-
-	ir_fprintf(f, "node:{title:\"b%N\"\nlabel:\"", block);
-	sched_foreach(block, irn) {
-		const char *prefix = "";
-
-		const arch_register_t *reg = arch_get_irn_register(irn);
-
-		ir_fprintf(f, "\n");
-		if(reg)
-			ir_fprintf(f, "%s = ", arch_register_get_name(reg));
-
-		ir_fprintf(f, "%n(", irn);
-
-		if(block != get_irg_start_block(get_irn_irg(block))) {
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *op = get_irn_n(irn, i);
-				if (arch_is_register_operand(op, -1)) {
-					ir_fprintf(f, "%s%s", prefix,
-						arch_register_get_name(arch_get_irn_register(op)));
-					prefix = ", ";
-				}
-			}
-		}
-
-		ir_fprintf(f, ")");
-	}
-	ir_fprintf(f, "\"}\n");
-
-	if(get_irg_start_block(get_irn_irg(block)) != block) {
-		for(i = 0, n = get_irn_arity(block); i < n; ++i) {
-			ir_node *pred_bl = get_nodes_block(get_irn_n(block, i));
-			ir_fprintf(f, "edge:{sourcename:\"b%N\" targetname:\"b%N\"}\n", block, pred_bl);
-		}
-	}
-}
-
-void dump_allocated_irg(ir_graph *irg, char *suffix)
-{
-	char  buf[1024];
-	FILE *f;
-
-	ir_snprintf(buf, sizeof(buf), "%F-alloc%s.vcg", irg, suffix);
-
-	f = fopen(buf, "wt");
-	if (f != NULL) {
-		fprintf(f, "graph:{title:\"prg\"\n");
-		irg_block_walk_graph(irg, dump_allocated_block, NULL, f);
-		fprintf(f, "}\n");
-		fclose(f);
-	}
-}
-
 /**
  * Edge hook to dump the schedule edges.
  */

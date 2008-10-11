@@ -110,14 +110,6 @@ static INLINE int is_data_node(const ir_node *irn)
 	return 0;
 }
 
-/**
- * Dump a vcg graph containing the controlflow graph, the schedule and
- * allocated registers.
- * @param irg The irg. Note that scheduling, register allocation must
- * have been performed.
- */
-void dump_allocated_irg(ir_graph *irg, char *suffix);
-
 void be_clear_links(ir_graph *irg);
 
 /**
