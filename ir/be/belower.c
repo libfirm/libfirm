@@ -98,15 +98,17 @@ typedef struct _perm_cycle_t {
 } perm_cycle_t;
 
 /** returns the number register pairs marked as checked. */
-static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
-	int i, n_checked = 0;
+static int get_n_unchecked_pairs(reg_pair_t const *const pairs, int const n)
+{
+	int n_unchecked = 0;
+	int i;
 
 	for (i = 0; i < n; i++) {
-		if (pairs[i].checked)
-			n_checked++;
+		if (!pairs[i].checked)
+			n_unchecked++;
 	}
 
-	return n_checked;
+	return n_unchecked;
 }
 
 /**
@@ -213,7 +215,7 @@ static void get_perm_cycle(perm_cycle_t *const cycle,
 {
 	int         head         = pairs[start].in_reg->index;
 	int         cur_idx      = pairs[start].out_reg->index;
-	int   const n_pairs_done = get_n_checked_pairs(pairs, n);
+	int   const n_pairs_todo = get_n_unchecked_pairs(pairs, n);
 	perm_type_t cycle_tp     = PERM_CYCLE;
 	int         idx;
 
@@ -232,7 +234,7 @@ static void get_perm_cycle(perm_cycle_t *const cycle,
 	}
 
 	/* assume worst case: all remaining pairs build a cycle or chain */
-	cycle->elems    = XMALLOCNZ(const arch_register_t*, (n - n_pairs_done) * 2);
+	cycle->elems    = XMALLOCNZ(const arch_register_t*, n_pairs_todo * 2);
 	cycle->n_elems  = 2;  /* initial number of elements is 2 */
 	cycle->elems[0] = pairs[start].in_reg;
 	cycle->elems[1] = pairs[start].out_reg;
@@ -344,7 +346,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	}
 
 	/* check for cycles and chains */
-	while (get_n_checked_pairs(pairs, n) < n) {
+	while (get_n_unchecked_pairs(pairs, n) > 0) {
 		perm_cycle_t cycle;
 		int          j;
 
