@@ -45,6 +45,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.
+	 * May be NULL.
+	 *
 	 * @param vtab     The selector vtab.
 	 * @param birg     The backend graph.
 	 * @return         The environment pointer that is passed to all other functions in this struct.
@@ -53,6 +55,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called before scheduling starts on a block.
+	 * May be NULL.
+	 *
 	 * @param graph_env   The environment.
 	 * @param block       The block which is to be scheduled.
 	 * @return A per-block pointer that is additionally passed to select.
@@ -63,6 +67,7 @@ struct _list_sched_selector_t {
 	 * The selection function.
 	 * It picks one node out of the ready list to be scheduled next.
 	 * The function does not have to delete the node from the ready set.
+	 * MUST be implemented.
 	 *
 	 * @param block_env   Some private information as returned by init_block().
 	 * @param sched_head  The schedule so far.
@@ -75,6 +80,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * This function decides, if a node should appear in a schedule.
+	 * May be NULL.
+	 *
 	 * @param block_env The block environment.
 	 * @param irn       The node.
 	 * @return 1, if the node should be scheduled, 0 if not.
@@ -83,6 +90,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * This function gets executed after a node finally has been made ready.
+	 * May be NULL.
+	 *
 	 * @param block_env The block environment.
 	 * @param irn       The node made ready.
 	 * @param pred      The previously scheduled node.
@@ -91,6 +100,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * This function gets executed after a node finally has been selected.
+	 * May be NULL.
+	 *
 	 * @param block_env The block environment.
 	 * @param irn       The selected node.
 	 */
@@ -98,12 +109,17 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Returns the execution time of node irn.
+	 * May be NULL.
+	 *
+	 * @param block_env The block environment.
+	 * @param irn       The selected node.
 	 */
 	unsigned (*exectime)(void *block_env, const ir_node *irn);
 
 	/**
 	 * Calculates the latency of executing cycle curr_cycle of node curr in cycle pred_cycle
 	 * of node pred.
+	 * May be NULL.
 	 *
 	 * @param block_env   The block environment.
 	 * @param pred        The previous node.
@@ -115,6 +131,8 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called after a block has been scheduled.
+	 * May be NULL.
+	 *
 	 * @param env The environment.
 	 * @param block_env The per block environment as returned by init_block().
 	 */
@@ -122,10 +140,11 @@ struct _list_sched_selector_t {
 
 	/**
 	 * Called after a whole graph has been scheduled.
+	 * May be NULL.
+	 *
 	 * @param env The environment.
 	 */
 	void (*finish_graph)(void *env);
-
 };
 
 
@@ -134,6 +153,9 @@ struct _list_sched_selector_t {
  */
 extern const list_sched_selector_t trivial_selector;
 
+/**
+ * A trivial selector that selects a pseudo-random-node (deterministic).
+ */
 extern const list_sched_selector_t random_selector;
 
 /**
@@ -149,12 +171,13 @@ extern const list_sched_selector_t muchnik_selector;
 
 /**
  * A selector based on trace scheduling as introduced by Muchnik[TM]
- * but using the mueller heuristic selector.
+ * but using the Mueller heuristic selector.
  */
 extern const list_sched_selector_t heuristic_selector;
 
 /**
- * A selector based on the strong normal form theorem
+ * A selector based on the strong normal form theorem (ie minimizing
+ * the register pressure).
  */
 extern const list_sched_selector_t normal_selector;
 
