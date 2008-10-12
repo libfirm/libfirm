@@ -51,6 +51,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg_permmove;)
 
 /** Associates an ir_node with it's copy and CopyKeep. */
 typedef struct {
@@ -198,9 +199,11 @@ static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx
  * Gets an array of register pairs and tries to identify a cycle or chain
  * starting at position start.
  *
- * @param cycle Variable to hold the cycle
- * @param pairs Array of register pairs
- * @param start Index to start
+ * @param cycle  Variable to hold the cycle
+ * @param pairs  Array of register pairs
+ * @param n      length of the pairs array
+ * @param start  Index to start
+ *
  * @return The cycle or chain
  */
 static void get_perm_cycle(perm_cycle_t *const cycle,
@@ -279,11 +282,10 @@ static void get_perm_cycle(perm_cycle_t *const cycle,
  *
  * @param irn      The perm node
  * @param block    The block the perm node belongs to
- * @param walk_env The environment
+ * @param env      The lowerer environment
  */
-static void lower_perm_node(ir_node *irn, void *walk_env)
+static void lower_perm_node(ir_node *irn, lower_env_t *env)
 {
-	lower_env_t                 *const env         = walk_env;
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_graph                    *const irg         = get_irn_irg(irn);
 	ir_node                     *const block       = get_nodes_block(irn);
@@ -846,15 +848,15 @@ void assure_constraints(be_irg_t *birg) {
  * @note This routine needs interference.
  * @note Probably, we can implement it a little more efficient.
  *       Especially searching the frontier lazily might be better.
- * @param perm The perm.
- * @param data The walker data (lower_env_t).
+ *
+ * @param perm The perm
+ * @param env  The lowerer environment
+ *
  * @return     1, if there is something left to perm over.
  *             0, if removed the complete perm.
  */
-static int push_through_perm(ir_node *perm, void *data)
+static int push_through_perm(ir_node *perm, lower_env_t *env)
 {
-	lower_env_t *env = data;
-
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
 	ir_node *node;
@@ -865,14 +867,13 @@ static int push_through_perm(ir_node *perm, void *data)
 	int n_moved;
 	int new_size;
 	ir_node *frontier = bl;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.permmove");
 
 	int i, n;
 	const ir_edge_t *edge;
 	ir_node *one_proj = NULL, *irn;
 	const arch_register_class_t *cls = NULL;
 
-	DBG((mod, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+	DBG((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
 
 	/* get some Proj and find out the register class of that Proj. */
 	edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
@@ -888,7 +889,7 @@ static int push_through_perm(ir_node *perm, void *data)
 	 * the former dead operand would be live now at the point of
 	 * the Perm, increasing the register pressure by one.
 	 */
-	sched_foreach_reverse_from (sched_prev(perm), irn) {
+	sched_foreach_reverse_from(sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
 			if (arch_irn_consider_in_reg_alloc(cls, op) &&
@@ -900,11 +901,11 @@ static int push_through_perm(ir_node *perm, void *data)
 	}
 found_front:
 
-	DBG((mod, LEVEL_2, "\tfrontier: %+F\n", frontier));
+	DBG((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
 	node = sched_prev(perm);
 	n_moved = 0;
-	while(!sched_is_begin(node)) {
+	while (!sched_is_begin(node)) {
 		const arch_register_req_t *req;
 		int                        input = -1;
 		ir_node                   *proj;
@@ -921,30 +922,30 @@ found_front:
 			}
 		}
 		/* it wasn't an input to the perm, we can't do anything more */
-		if(input < 0)
+		if (input < 0)
 			break;
-		if(!sched_comes_after(frontier, node))
+		if (!sched_comes_after(frontier, node))
 			break;
 		if (arch_irn_is(node, modify_flags))
 			break;
-		if(is_Proj(node)) {
+		if (is_Proj(node)) {
 			req = arch_get_register_req(get_Proj_pred(node),
 			                            -1 - get_Proj_proj(node));
 		} else {
 			req = arch_get_register_req(node, -1);
 		}
-		if(req->type != arch_register_req_type_normal)
+		if (req->type != arch_register_req_type_normal)
 			break;
-		for(i = get_irn_arity(node) - 1; i >= 0; --i) {
+		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 			ir_node *opop = get_irn_n(node, i);
 			if (arch_irn_consider_in_reg_alloc(cls, opop)) {
 				break;
 			}
 		}
-		if(i >= 0)
+		if (i >= 0)
 			break;
 
-		DBG((mod, LEVEL_2, "\tmoving %+F after %+F, killing %+F\n", node, perm, proj));
+		DBG((dbg_permmove, LEVEL_2, "\tmoving %+F after %+F, killing %+F\n", node, perm, proj));
 
 		/* move the movable node in front of the Perm */
 		sched_remove(node);
@@ -979,8 +980,8 @@ found_front:
 	proj_map = alloca(arity * sizeof(proj_map[0]));
 	memset(proj_map, -1, sizeof(proj_map[0]));
 	n   = 0;
-	for(i = 0; i < arity; ++i) {
-		if(bitset_is_set(moved, i))
+	for (i = 0; i < arity; ++i) {
+		if (bitset_is_set(moved, i))
 			continue;
 		map[n]      = i;
 		proj_map[i] = n;
@@ -1013,10 +1014,8 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 		return;
 
 	perm_stayed = push_through_perm(irn, walk_env);
-	if (!perm_stayed)
-		return;
-
-	lower_perm_node(irn, walk_env);
+	if (perm_stayed)
+		lower_perm_node(irn, walk_env);
 }
 
 /**
@@ -1031,6 +1030,7 @@ void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	ir_graph    *irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
+	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
 
 	env.birg    = birg;
 	env.do_copy = do_copy;
