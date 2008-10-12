@@ -1033,7 +1033,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 {
 	int perm_stayed;
 
-	if (be_is_Perm(irn))
+	if (!be_is_Perm(irn))
 		return;
 
 	perm_stayed = push_through_perm(irn, walk_env);
