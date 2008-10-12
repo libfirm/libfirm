@@ -110,6 +110,10 @@ static INLINE int is_data_node(const ir_node *irn)
 	return 0;
 }
 
+/**
+ * Clears the link fields of all nodes of the given graph.
+ * @param irg The graph.
+ */
 void be_clear_links(ir_graph *irg);
 
 /**

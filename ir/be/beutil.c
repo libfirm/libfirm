@@ -115,28 +115,11 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 	dumper(irg, buf);
 }
 
-
-
-static void collect_phis(ir_node *irn, void *data)
-{
-	(void) data;
-	if(is_Phi(irn)) {
-		ir_node *bl = get_nodes_block(irn);
-		set_irn_link(irn, get_irn_link(bl));
-		set_irn_link(bl, irn);
-	}
-}
-
 void be_clear_links(ir_graph *irg)
 {
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-}
-
-void be_collect_phis(ir_graph *irg)
-{
-	irg_walk_graph(irg, collect_phis, NULL, NULL);
 }
 
 static void count_num_reachable_nodes(ir_node *irn, void *env)
