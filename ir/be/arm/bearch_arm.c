@@ -189,9 +189,6 @@ static arch_irn_class_t arm_classify(const ir_node *irn)
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
 	}
-	else if (is_arm_irn(irn)) {
-		return arch_irn_class_normal;
-	}
 
 	return 0;
 }

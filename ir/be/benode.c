@@ -1155,7 +1155,7 @@ restart:
 			goto restart;
 			break;
 		default:
-			return arch_irn_class_normal;
+			return 0;
 	}
 
 	return 0;
@@ -1374,7 +1374,7 @@ static const arch_register_t *phi_get_irn_reg(const ir_node *irn)
 static arch_irn_class_t phi_classify(const ir_node *irn)
 {
 	(void) irn;
-	return arch_irn_class_normal;
+	return 0;
 }
 
 static arch_irn_flags_t phi_get_flags(const ir_node *irn)

@@ -297,7 +297,7 @@ static const arch_register_t *ia32_get_irn_reg(const ir_node *irn)
 }
 
 static arch_irn_class_t ia32_classify(const ir_node *irn) {
-	arch_irn_class_t classification = arch_irn_class_normal;
+	arch_irn_class_t classification = 0;
 
 	irn = skip_Proj_const(irn);
 
@@ -305,7 +305,7 @@ static arch_irn_class_t ia32_classify(const ir_node *irn) {
 		classification |= arch_irn_class_branch;
 
 	if (! is_ia32_irn(irn))
-		return classification & ~arch_irn_class_normal;
+		return classification;
 
 	if (is_ia32_Ld(irn))
 		classification |= arch_irn_class_load;

@@ -197,9 +197,6 @@ static arch_irn_class_t ppc32_classify(const ir_node *irn)
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
 	}
-	else if (is_ppc32_irn(irn)) {
-		return arch_irn_class_normal;
-	}
 
 	return 0;
 }
