@@ -1114,7 +1114,7 @@ static void writeback_colors(co2_t *env)
 
 static const char *get_dot_color_name(size_t col)
 {
-	static const char *names[] = {
+	static const char *const names[] = {
 		"blue",
 		"red",
 		"green",
