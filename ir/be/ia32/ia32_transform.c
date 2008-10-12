@@ -2153,14 +2153,14 @@ static ir_node *try_create_dest_am(ir_node *node)
 	case iro_Add:
 		op1      = get_Add_left(val);
 		op2      = get_Add_right(val);
-		if (is_Const_1(op2)) {
-			new_node = dest_am_unop(val, op1, mem, ptr, mode,
-			                        new_rd_ia32_IncMem);
-			break;
-		} else if (is_Const_Minus_1(op2)) {
-			new_node = dest_am_unop(val, op1, mem, ptr, mode,
-			                        new_rd_ia32_DecMem);
-			break;
+		if (ia32_cg_config.use_incdec) {
+			if (is_Const_1(op2)) {
+				new_node = dest_am_unop(val, op1, mem, ptr, mode, new_rd_ia32_IncMem);
+				break;
+			} else if (is_Const_Minus_1(op2)) {
+				new_node = dest_am_unop(val, op1, mem, ptr, mode, new_rd_ia32_DecMem);
+				break;
+			}
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_rd_ia32_AddMem, new_rd_ia32_AddMem8Bit,
