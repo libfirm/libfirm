@@ -38,7 +38,7 @@ static ir_nodemap_entry_t null_nodemap_entry = { NULL, NULL };
 #define HashSetIterator           ir_nodemap_iterator_t
 #define ValueType                 ir_nodemap_entry_t
 #define NullValue                 null_nodemap_entry
-#define KeyType                   const ir_node*
+#define KeyType                   ir_node*
 #define ConstKeyType              const ir_node*
 #define GetKey(value)             (value).node
 #define InitData(self,value,key)  (value).node = (key)
@@ -78,7 +78,7 @@ void *ir_nodemap_get(const ir_nodemap_t *self, const ir_node *node)
 	return entry->data;
 }
 
-void ir_nodemap_insert(ir_nodemap_t *self, const ir_node *node, void *data)
+void ir_nodemap_insert(ir_nodemap_t *self, ir_node *node, void *data)
 {
 	ir_nodemap_entry_t *entry = _ir_nodemap_insert(self, node);
 	entry->data               = data;

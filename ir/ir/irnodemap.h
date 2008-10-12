@@ -24,7 +24,7 @@
  * @brief     A nodemap. This should be preferred over a simple pset, because it
  *            tries to guarantee deterministic behavior. (and is faster)
  * @version   $Id$
- * @note      Actually the bits to make the behaviour deterministic are not
+ * @note      Actually the bits to make the behavior deterministic are not
  *            implemented yet...
  */
 #ifndef _FIRM_IRNODEMAP_H_
@@ -33,8 +33,8 @@
 #include "irnode.h"
 
 typedef struct ir_nodemap_entry_t {
-	const ir_node *node;
-	void          *data;
+	ir_node *node;
+	void    *data;
 } ir_nodemap_entry_t;
 
 #define HashSet          ir_nodemap_t
@@ -80,7 +80,7 @@ void ir_nodemap_destroy(ir_nodemap_t *nodemap);
  * @param node      node to insert into the nodemap
  * @param data      data to associate with the node
  */
-void ir_nodemap_insert(ir_nodemap_t *nodemap, const ir_node *node, void *data);
+void ir_nodemap_insert(ir_nodemap_t *nodemap, ir_node *node, void *data);
 
 /**
  * Removes a node from a nodemap. Does nothing if the nodemap doesn't contain
@@ -108,7 +108,6 @@ void *ir_nodemap_get(const ir_nodemap_t *nodemap, const ir_node *node);
  */
 size_t ir_nodemap_size(const ir_nodemap_t *nodemap);
 
-#if 0
 /**
  * Initializes a nodemap iterator. Sets the iterator before the first element in
  * the nodemap.
@@ -128,7 +127,7 @@ void ir_nodemap_iterator_init(ir_nodemap_iterator_t *iterator,
  * @param iterator  Pointer to the nodemap iterator.
  * @returns         Next element in the nodemap or NULL
  */
-ir_node *ir_nodemap_iterator_next(ir_nodemap_iterator_t *iterator);
+ir_nodemap_entry_t ir_nodemap_iterator_next(ir_nodemap_iterator_t *iterator);
 
 /**
  * Removes the element the iterator currently points to
@@ -138,6 +137,10 @@ ir_node *ir_nodemap_iterator_next(ir_nodemap_iterator_t *iterator);
  */
 void ir_nodemap_remove_iterator(ir_nodemap_t *nodemap,
                                 const ir_nodemap_iterator_t *iterator);
-#endif
+
+#define foreach_ir_nodemap(nodemap, entry, iter) \
+	for (ir_nodemap_iterator_init(&iter, nodemap), \
+		entry = ir_nodemap_iterator_next(&iter);    \
+		entry.node != NULL; entry = ir_nodemap_iterator_next(&iter))
 
 #endif
