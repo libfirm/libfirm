@@ -994,18 +994,6 @@ int is_ia32_St(const ir_node *node) {
 	       op == iro_ia32_fstp;
 }
 
-/**
- * Returns the name of the OUT register at position pos.
- */
-const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_name(attr->slots[pos]);
-}
-
 void ia32_swap_left_right(ir_node *node)
 {
 	ia32_attr_t *attr  = get_ia32_attr(node);
