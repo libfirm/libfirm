@@ -290,8 +290,8 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_graph                    *const irg         = get_irn_irg(irn);
 	ir_node                     *const block       = get_nodes_block(irn);
-	int                          const n           = get_irn_arity(irn);
-	reg_pair_t                  *const pairs       = alloca(n * sizeof(pairs[0]));
+	int                          const arity       = get_irn_arity(irn);
+	reg_pair_t                  *const pairs       = alloca(arity * sizeof(pairs[0]));
 	int                                keep_perm   = 0;
 	int                                do_copy     = env->do_copy;
 	/* Get the schedule predecessor node to the perm.
@@ -299,21 +299,33 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	 * nodes after this node, everything should be ok. */
 	ir_node                     *      sched_point = sched_prev(irn);
 	const ir_edge_t             *      edge;
+	const ir_edge_t             *      next;
+	int                                n;
 	int                                i;
 
 	DBG((dbg, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
 	assert(sched_point && "Perm is not scheduled or has no predecessor");
 
-	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
+	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
 
 	/* build the list of register pairs (in, out) */
-	i = 0;
-	foreach_out_edge(irn, edge) {
-		reg_pair_t *const pair = &pairs[i++];
-		ir_node    *const out  = get_edge_src_irn(edge);
-		long        const pn   = get_Proj_proj(out);
-		ir_node    *const in   = get_irn_n(irn, pn);
+	n = 0;
+	foreach_out_edge_safe(irn, edge, next) {
+		ir_node               *const out     = get_edge_src_irn(edge);
+		long                   const pn      = get_Proj_proj(out);
+		ir_node               *const in      = get_irn_n(irn, pn);
+		arch_register_t const *const in_reg  = arch_get_irn_register(in);
+		arch_register_t const *const out_reg = arch_get_irn_register(out);
+		reg_pair_t            *      pair;
 
+		if (in_reg == out_reg) {
+			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
+						irn, in, out, out_reg->name));
+			exchange(out, in);
+			continue;
+		}
+
+		pair           = &pairs[n++];
 		pair->in_node  = in;
 		pair->in_reg   = arch_get_irn_register(in);
 		pair->out_node = out;
@@ -321,22 +333,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 		pair->checked  = 0;
 	}
 
-	/* Mark all equal pairs as checked, and exchange the OUT proj with the IN
-	 * node. */
-	for (i = 0; i < n; i++) {
-		reg_pair_t *const pair = &pairs[i];
-
-		if (pair->in_reg->index != pair->out_reg->index)
-			continue;
-
-		DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
-					irn, pair->in_node, pair->out_node, pair->out_reg->name));
-
-		/* reroute the edges from the proj to the argument */
-		exchange(pair->out_node, pair->in_node);
-
-		pair->checked = 1;
-	}
+	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n));
 
 	/* Set do_copy to 0 if it's on but we have no free register */
 	/* TODO check for free register */
@@ -359,7 +356,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 		}
 		DB((dbg, LEVEL_1, "\n"));
 
-		if (n == 2 && cycle.type == PERM_CYCLE) {
+		if (cycle.type == PERM_CYCLE && arity == 2) {
 			/* We don't need to do anything if we have a Perm with two elements
 			 * which represents a cycle, because those nodes already represent
 			 * exchange nodes */
