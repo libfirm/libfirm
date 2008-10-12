@@ -1153,12 +1153,10 @@ restart:
 				irn = get_Proj_pred(irn);
 			}
 			goto restart;
-			break;
+
 		default:
 			return 0;
 	}
-
-	return 0;
 }
 
 static arch_irn_flags_t be_node_get_flags(const ir_node *node)
