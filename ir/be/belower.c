@@ -285,7 +285,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_graph        *irg = get_irn_irg(irn);
 	const arch_register_class_t *reg_class;
 	lower_env_t     *env         = walk_env;
-	int             real_size    = 0;
 	int             keep_perm    = 0;
 	int             n, i, pn, do_copy, j, n_ops;
 	reg_pair_t      *pairs;
@@ -351,8 +350,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	if (do_copy) {
 		do_copy = 0;
 	}
-
-	real_size = n - get_n_checked_pairs(pairs, n);
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
