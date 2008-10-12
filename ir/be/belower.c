@@ -119,32 +119,44 @@ static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
 }
 
 /**
- * Gets the node corresponding to a register from an array of register pairs.
+ * Gets the node corresponding to an IN register from an array of register pairs.
  * NOTE: The given registers pairs and the register to look for must belong
  *       to the same register class.
  *
  * @param pairs  The array of register pairs
  * @param n      The number of pairs
  * @param reg    The register to look for
- * @param in_out 0 == look for IN register, 1 == look for OUT register
  * @return The corresponding node or NULL if not found
  */
-static ir_node *get_node_for_register(reg_pair_t *pairs, int n, const arch_register_t *reg, int in_out) {
+static ir_node *get_node_for_in_register(reg_pair_t *pairs, int n, const arch_register_t *reg) {
 	int i;
 
-	if (in_out) {
-		for (i = 0; i < n; i++) {
-			/* out register matches */
-			if (pairs[i].out_reg->index == reg->index)
-				return pairs[i].out_node;
-		}
+	for (i = 0; i < n; i++) {
+		/* in register matches */
+		if (pairs[i].in_reg->index == reg->index)
+			return pairs[i].in_node;
 	}
-	else {
-		for (i = 0; i < n; i++) {
-			/* in register matches */
-			if (pairs[i].in_reg->index == reg->index)
-				return pairs[i].in_node;
-		}
+
+	return NULL;
+}
+
+/**
+ * Gets the node corresponding to an OUT register from an array of register pairs.
+ * NOTE: The given registers pairs and the register to look for must belong
+ *       to the same register class.
+ *
+ * @param pairs  The array of register pairs
+ * @param n      The number of pairs
+ * @param reg    The register to look for
+ * @return The corresponding node or NULL if not found
+ */
+static ir_node *get_node_for_out_register(reg_pair_t *pairs, int n, const arch_register_t *reg) {
+	int i;
+
+	for (i = 0; i < n; i++) {
+		/* out register matches */
+		if (pairs[i].out_reg->index == reg->index)
+			return pairs[i].out_node;
 	}
 
 	return NULL;
@@ -375,11 +387,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 		/* build copy/swap nodes from back to front */
 		for (i = cycle->n_elems - 2; i >= 0; i--) {
-			arg1 = get_node_for_register(pairs, n, cycle->elems[i], 0);
-			arg2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 0);
+			arg1 = get_node_for_in_register(pairs, n, cycle->elems[i]);
+			arg2 = get_node_for_in_register(pairs, n, cycle->elems[i + 1]);
 
-			res1 = get_node_for_register(pairs, n, cycle->elems[i], 1);
-			res2 = get_node_for_register(pairs, n, cycle->elems[i + 1], 1);
+			res1 = get_node_for_out_register(pairs, n, cycle->elems[i]);
+			res2 = get_node_for_out_register(pairs, n, cycle->elems[i + 1]);
 			/*
 				If we have a cycle and don't copy: we need to create exchange nodes
 				NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
@@ -504,15 +516,13 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 	ir_node *block    = get_nodes_block(irn);
 	ir_node *cur_node;
 
-	for (cur_node = sched_prev(irn);
-		! is_Block(cur_node) && be_is_Copy(cur_node) && get_nodes_block(cur_node) == block;
-		cur_node = sched_prev(cur_node))
-	{
+	for (cur_node = irn;;) {
+		cur_node = sched_prev(cur_node);
+		if (! be_is_Copy(cur_node))
+			return NULL;
 		if (be_get_Copy_op(cur_node) == op && arch_irn_is(cur_node, dont_spill))
 			return cur_node;
 	}
-
-	return NULL;
 }
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
@@ -590,10 +600,13 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 /**
  * Checks if node has a must_be_different constraint in output and adds a Keep
  * then to assure the constraint.
+ *
+ * @param irn          the node to check
+ * @param skipped_irn  if irn is a Proj node, its predecessor, else irn
+ * @param env          the constraint environment
  */
-static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
-	ir_node                   *skipped_irn = belower_skip_proj(irn);
-	const arch_register_req_t *req         = arch_get_register_req(irn, -1);
+static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env) {
+	const arch_register_req_t *req = arch_get_register_req(irn, -1);
 
 	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
@@ -627,15 +640,29 @@ static void assure_different_constraints(ir_node *irn, constraint_env_t *env) {
 /**
  * Calls the functions to assure register constraints.
  *
- * @param irn      The node to be checked for lowering
+ * @param block    The block to be checked
  * @param walk_env The walker environment
  */
-static void assure_constraints_walker(ir_node *irn, void *walk_env) {
-	if (is_Block(irn))
-		return;
+static void assure_constraints_walker(ir_node *block, void *walk_env) {
+	ir_node *irn;
 
-	if (sched_is_scheduled(irn) && mode_is_datab(get_irn_mode(irn)))
-		assure_different_constraints(irn, walk_env);
+	sched_foreach_reverse(block, irn) {
+		ir_mode *mode = get_irn_mode(irn);
+
+		if (mode == mode_T) {
+			const ir_edge_t *edge;
+
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+
+				mode = get_irn_mode(proj);
+				if (mode_is_datab(mode))
+					assure_different_constraints(proj, irn, walk_env);
+			}
+		} else if (mode_is_datab(mode)) {
+			assure_different_constraints(irn, irn, walk_env);
+		}
+	}
 }
 
 /**
@@ -778,7 +805,7 @@ void assure_constraints(be_irg_t *birg) {
 	ir_nodemap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
-	irg_walk_blkwise_graph(irg, NULL, assure_constraints_walker, &cenv);
+	irg_block_walk_graph(irg, NULL, assure_constraints_walker, &cenv);
 
 	/* melt copykeeps, pointing to projs of */
 	/* the same mode_T node and keeping the */
