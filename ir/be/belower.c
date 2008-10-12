@@ -164,33 +164,44 @@ static ir_node *get_node_for_out_register(reg_pair_t *pairs, int n, const arch_r
 }
 
 /**
- * Gets the index in the register pair array where the in/out register
+ * Gets the index in the register pair array where the in register
  * corresponds to reg_idx.
  *
  * @param pairs  The array of register pairs
  * @param n      The number of pairs
  * @param reg    The register index to look for
- * @param in_out 0 == look for IN register, 1 == look for OUT register
+ *
  * @return The corresponding index in pairs or -1 if not found
  */
-static int get_pairidx_for_regidx(reg_pair_t *pairs, int n, int reg_idx, int in_out) {
+static int get_pairidx_for_in_regidx(reg_pair_t *pairs, int n, unsigned reg_idx) {
 	int i;
 
-	if (in_out) {
-		for (i = 0; i < n; i++) {
-			/* out register matches */
-			if ((int) pairs[i].out_reg->index == reg_idx)
-				return i;
-		}
+	for (i = 0; i < n; i++) {
+		/* in register matches */
+		if (pairs[i].in_reg->index == reg_idx)
+			return i;
 	}
-	else {
-		for (i = 0; i < n; i++) {
-			/* in register matches */
-			if ((int) pairs[i].in_reg->index == reg_idx)
-				return i;
-		}
-	}
+	return -1;
+}
 
+/**
+ * Gets the index in the register pair array where the out register
+ * corresponds to reg_idx.
+ *
+ * @param pairs  The array of register pairs
+ * @param n      The number of pairs
+ * @param reg    The register index to look for
+ *
+ * @return The corresponding index in pairs or -1 if not found
+ */
+static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx) {
+	int i;
+
+	for (i = 0; i < n; i++) {
+		/* out register matches */
+		if ((int) pairs[i].out_reg->index == reg_idx)
+			return i;
+	}
 	return -1;
 }
 
@@ -204,8 +215,8 @@ static int get_pairidx_for_regidx(reg_pair_t *pairs, int n, int reg_idx, int in_
  * @return The cycle or chain
  */
 static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int n, int start) {
-	int head         = pairs[start].in_reg->index;
-	int cur_idx      = pairs[start].out_reg->index;
+	unsigned head    = pairs[start].in_reg->index;
+	unsigned cur_idx = pairs[start].out_reg->index;
 	int cur_pair_idx = start;
 	int n_pairs_done = get_n_checked_pairs(pairs, n);
 	int idx;
@@ -214,7 +225,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	/* We could be right in the middle of a chain, so we need to find the start */
 	while (head != cur_idx) {
 		/* goto previous register in cycle or chain */
-		cur_pair_idx = get_pairidx_for_regidx(pairs, n, head, 1);
+		cur_pair_idx = get_pairidx_for_out_regidx(pairs, n, head);
 
 		if (cur_pair_idx < 0) {
 			cycle_tp = PERM_CHAIN;
@@ -238,7 +249,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	/* check for cycle or end of a chain */
 	while (cur_idx != head) {
 		/* goto next register in cycle or chain */
-		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cur_idx, 0);
+		cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cur_idx);
 
 		if (cur_pair_idx < 0)
 			break;
@@ -258,12 +269,12 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 
 	/* mark all pairs having one in/out register with cycle in common as checked */
 	for (idx = 0; idx < cycle->n_elems; idx++) {
-		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cycle->elems[idx]->index, 0);
+		cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cycle->elems[idx]->index);
 
 		if (cur_pair_idx >= 0)
 			pairs[cur_pair_idx].checked = 1;
 
-		cur_pair_idx = get_pairidx_for_regidx(pairs, n, cycle->elems[idx]->index, 1);
+		cur_pair_idx = get_pairidx_for_out_regidx(pairs, n, cycle->elems[idx]->index);
 
 		if (cur_pair_idx >= 0)
 			pairs[cur_pair_idx].checked = 1;
@@ -437,7 +448,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 
 				if (i > 0) {
 					/* cycle is not done yet */
-					int pidx = get_pairidx_for_regidx(pairs, n, cycle->elems[i]->index, 0);
+					int pidx = get_pairidx_for_in_regidx(pairs, n, cycle->elems[i]->index);
 
 					/* create intermediate proj */
 					res1 = new_r_Proj(irg, block, cpyxchg, get_irn_mode(res1), 0);
