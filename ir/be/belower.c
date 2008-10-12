@@ -328,17 +328,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			DBG((mod, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
 				irn, pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
 
-			/* We have to check for a special case:
-				The in-node could be a Proj from a Perm. In this case,
-				we need to correct the projnum */
-			if (be_is_Perm(pairs[i].in_node) && is_Proj(pairs[i].in_node)) {
-				set_Proj_proj(pairs[i].out_node, get_Proj_proj(pairs[i].in_node));
-			}
-
 			/* reroute the edges from the proj to the argument */
 			exchange(pairs[i].out_node, pairs[i].in_node);
-			//edges_reroute(pairs[i].out_node, pairs[i].in_node, env->birg->irg);
-			//set_irn_n(pairs[i].out_node, 0, new_Bad());
 
 			pairs[i].checked = 1;
 		}
