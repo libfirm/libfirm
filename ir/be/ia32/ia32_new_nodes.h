@@ -416,16 +416,6 @@ int is_ia32_AddrModeS(const ir_node *node);
 int is_ia32_AddrModeD(const ir_node *node);
 
 /**
- * Checks if node is a Load or fLoad.
- */
-int is_ia32_Ld(const ir_node *node);
-
-/**
- * Checks if node is a Store or fStore.
- */
-int is_ia32_St(const ir_node *node);
-
-/**
  * Swaps left/right input of a node (and adjusts pnc if needed)
  */
 void ia32_swap_left_right(ir_node *node);

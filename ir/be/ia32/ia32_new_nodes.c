@@ -188,10 +188,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_mode_txt:
-			if (is_ia32_Ld(n) || is_ia32_St(n)) {
-				mode = get_ia32_ls_mode(n);
-				fprintf(F, "[%s]", mode ? get_mode_name(mode) : "?NOMODE?");
-			}
+			mode = get_ia32_ls_mode(n);
+			if (mode != NULL)
+				fprintf(F, "[%s]", get_mode_name(mode));
 			break;
 
 		case dump_node_nodeattr_txt:
@@ -968,30 +967,6 @@ int is_ia32_AddrModeS(const ir_node *node) {
 int is_ia32_AddrModeD(const ir_node *node) {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return (attr->data.tp == ia32_AddrModeD);
-}
-
-/**
- * Checks if node is a Load or xLoad/vfLoad.
- */
-int is_ia32_Ld(const ir_node *node) {
-	int op = get_ia32_irn_opcode(node);
-	return op == iro_ia32_Load ||
-	       op == iro_ia32_xLoad ||
-	       op == iro_ia32_vfld ||
-	       op == iro_ia32_fld;
-}
-
-/**
- * Checks if node is a Store or xStore/vfStore.
- */
-int is_ia32_St(const ir_node *node) {
-	int op = get_ia32_irn_opcode(node);
-	return op == iro_ia32_Store ||
-	       op == iro_ia32_Store8Bit ||
-	       op == iro_ia32_xStore ||
-	       op == iro_ia32_vfst ||
-	       op == iro_ia32_fst ||
-	       op == iro_ia32_fstp;
 }
 
 void ia32_swap_left_right(ir_node *node)
