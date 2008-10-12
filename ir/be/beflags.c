@@ -72,7 +72,7 @@ static ir_node *default_remat(ir_node *node, ir_node *after)
 }
 
 /**
- * tests wether we can legally move node node after node after
+ * tests whether we can legally move node node after node after
  * (only works for nodes in same block)
  */
 static int can_move(ir_node *node, ir_node *after)
