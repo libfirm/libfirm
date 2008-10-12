@@ -307,12 +307,6 @@ static arch_irn_class_t ia32_classify(const ir_node *irn) {
 	if (! is_ia32_irn(irn))
 		return classification;
 
-	if (is_ia32_Ld(irn))
-		classification |= arch_irn_class_load;
-
-	if (is_ia32_St(irn))
-		classification |= arch_irn_class_store;
-
 	if (is_ia32_is_reload(irn))
 		classification |= arch_irn_class_reload;
 
@@ -1475,14 +1469,7 @@ static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 			int            align = 4;
 			be_node_needs_frame_entity(env, node, mode, align);
 		} else {
-#ifndef NDEBUG
-			assert(is_ia32_St(node) ||
- 				   is_ia32_xStoreSimple(node) ||
-				   is_ia32_vfst(node) ||
-				   is_ia32_vfist(node) ||
-				   is_ia32_vfisttp(node) ||
-			       is_ia32_FnstCW(node));
-#endif
+			assert(is_ia32_St(node));
 		}
 	}
 }
