@@ -65,19 +65,18 @@ static int cmp_loop_info(const void *a, const void *b, size_t size) {
 
 /**
  * Compute the highest register pressure in a block.
- * @param loop_ana  The loop ana object.
+ * @param birg      The graph.
  * @param block     The block to compute pressure for.
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given block.
  */
-static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
+static unsigned be_compute_block_pressure(const be_irg_t *birg,
 		ir_node *block, const arch_register_class_t *cls)
 {
-	const be_irg_t   *birg       = loop_ana->birg;
-	be_lv_t          *lv         = be_get_birg_liveness(birg);
-	ir_nodeset_t      live_nodes;
-	ir_node          *irn;
-	int              max_live;
+	be_lv_t      *lv = be_get_birg_liveness(birg);
+	ir_nodeset_t  live_nodes;
+	ir_node      *irn;
+	int          max_live;
 
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
@@ -93,8 +92,8 @@ static unsigned be_compute_block_pressure(be_loopana_t *loop_ana,
 			break;
 
 		be_liveness_transfer(cls, irn, &live_nodes);
-		cnt        = ir_nodeset_size(&live_nodes);
-		max_live   = MAX(cnt, max_live);
+		cnt      = ir_nodeset_size(&live_nodes);
+		max_live = MAX(cnt, max_live);
 	}
 
 	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
@@ -124,16 +123,11 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 		unsigned     son_pressure;
 		loop_element elem = get_loop_element(loop, i);
 
-		switch (*elem.kind) {
-			case k_ir_node:
-				son_pressure = be_compute_block_pressure(loop_ana, elem.node, cls);
-				break;
-			case k_ir_loop:
-				son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
-				break;
-			default:
-				panic("Unknown element found in loop");
-				break;
+		if (*elem.kind == k_ir_node)
+			son_pressure = be_compute_block_pressure(loop_ana->birg, elem.node, cls);
+		else {
+			assert(*elem.kind == k_ir_loop);
+			son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
 		}
 
 		pressure = MAX(pressure, son_pressure);
@@ -232,7 +226,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 	if (entry)
 		pressure = entry->max_pressure;
 	else
-		assert(0 && "Pressure not computed for given class and loop object.");
+		panic("Pressure not computed for given class and loop object.");
 
 	return pressure;
 }
