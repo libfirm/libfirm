@@ -562,7 +562,7 @@ void list_sched(be_irg_t *birg, be_options_t *be_opts)
 		case BE_SCHED_SELECT_HEUR:     sel = heuristic_selector;    break;
 		case BE_SCHED_SELECT_NORMAL:   sel = normal_selector;       break;
 		default:
-		case BE_SCHED_SELECT_HMUCHNIK: sel = trivial_selector;      break;
+		case BE_SCHED_SELECT_HMUCHNIK: sel = heuristic_selector;    break;
 	}
 
 #if 1
