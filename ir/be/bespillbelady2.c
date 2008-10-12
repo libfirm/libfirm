@@ -431,7 +431,7 @@ struct _bring_in_t {
 	block_info_t *bi;          /**< The block to which bring in should happen. */
 	int pressure_so_far;       /**< The maximal pressure till the first use of irn in bl. */
 	ir_node *first_use;        /**< The first user of irn in bl. */
-	sched_timestep_t use_step; /**< Schedule sttep of the first use. */
+	sched_timestep_t use_step; /**< Schedule step of the first use. */
 
 	int is_remat : 1;          /**< Is rematerializable. */
 	int sect_pressure;         /**< Offset to maximum pressure in block. */
@@ -505,7 +505,7 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 
 	assert(!(flags & arch_irn_flags_ignore));
 
-	/* We have to keep nonspillable nodes in the workingset */
+	/* We have to keep non-spillable nodes in the working set */
 	if(flags & arch_irn_flags_dont_spill)
 		return 0;
 
@@ -543,7 +543,7 @@ static INLINE int is_local_phi(const ir_node *bl, const ir_node *irn)
  * @param irn  The node in question.
  * @return     1, if node is something transported into @p bl, 0 if not.
  * @note       The function will only give correct answers in the case
- *             where @p irn is unsed in the block @p bl which is always
+ *             where @p irn is unused in the block @p bl which is always
  *             the case in our usage scenario.
  */
 static INLINE int is_transport_in(const ir_node *bl, const ir_node *irn)
@@ -679,7 +679,7 @@ static void belady(belady_env_t *env, int id) {
 		int i, arity;
 		assert(workset_get_length(env->ws) <= env->n_regs && "Too much values in workset!");
 
-		/* projs are handled with the tuple value.
+		/* Projs are handled with the tuple value.
 		 * Phis are no real instr (see insert_starters())
 		 * instr_nr does not increase */
 		if (is_Proj(irn) || is_Phi(irn))
@@ -719,7 +719,7 @@ static void belady(belady_env_t *env, int id) {
 
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
-		if (get_irn_mode(irn) == mode_T) { /* special handling for tuples and projs */
+		if (get_irn_mode(irn) == mode_T) { /* special handling for Tuples and Projs */
 			const ir_edge_t *edge;
 
 			foreach_out_edge(irn, edge) {
@@ -993,7 +993,7 @@ static double can_make_available_at_end(global_end_state_t *ges, ir_node *bl, ir
 
 		/*
 		 * finally there is some room. we can at least reload the value.
-		 * but we will try to let ot live through anyhow.
+		 * but we will try to let or live through anyhow.
 		 */
 		if (slot >= 0) {
 			irn_action_t *vs    = new_irn_action(ges, irn, bi->bl);
@@ -1074,7 +1074,7 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 			double c;
 
 			/*
-			 * there might by unknwons as operands of phis in that case
+			 * there might by Unknowns as operands of Phis in that case
 			 * we set the costs to zero, since they won't get spilled.
 			 */
 			if (arch_irn_consider_in_reg_alloc(env->cls, op))
@@ -1232,7 +1232,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 	// assert(!is_local_phi(bl, irn) || !bitset_contains_irn(ges->succ_phis, irn));
 
 	/*
-	 * if we cannot bring the value to the use, let's see ifit would be worthwhile
+	 * if we cannot bring the value to the use, let's see if it would be worthwhile
 	 * to bring the value to the beginning of the block to have a better spill
 	 * location.
 	 *
@@ -1269,7 +1269,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 		 *
 		 * If the second is larger than the first,
 		 * we have to increment the total block pressure and hence
-		 * save the old pressure to restire it in case of failing to
+		 * save the old pressure to restore it in case of failing to
 		 * bring the variable into the block in a register.
 		 */
 		trans = trans_begin(ges);
@@ -1291,7 +1291,7 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 		 *
 		 * following actions can be taken:
 		 * a) commit changes
-		 * b) mark phi as succeded if node was phi
+		 * b) mark phi as succeeded if node was phi
 		 * c) insert reload at use location
 		 * d) give a spill location hint
 		 *
@@ -1330,10 +1330,10 @@ static void optimize_variable(global_end_state_t *ges, bring_in_t *br)
 			}
 
 			/*
-			 * go from the last bring in use to the first and add all the variabled
+			 * go from the last bring in use to the first and add all the variables
 			 * which additionally live through the block to their pressure.
 			 * at the point were the actually treated use is, we have to increase
-			 * the pressure by one more as the nrought in value starts to count.
+			 * the pressure by one more as the brought in value starts to count.
 			 * Finally, adjust the front pressure as well.
 			 */
 			pressure_inc = 0;
@@ -1428,7 +1428,7 @@ static void global_assign(belady_env_t *env)
 			workset_set_version(bi->ws_end, j, ver_youngest);
 	}
 
-	/* determine ordeer and optimize them */
+	/* determine order and optimize them */
 	for (br = determine_global_order(env); *br; ++br)
 		optimize_variable(&ges, *br);
 
