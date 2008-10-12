@@ -513,7 +513,6 @@ static INLINE ir_node *belower_skip_proj(ir_node *irn) {
 
 static ir_node *find_copy(ir_node *irn, ir_node *op)
 {
-	ir_node *block    = get_nodes_block(irn);
 	ir_node *cur_node;
 
 	for (cur_node = irn;;) {
