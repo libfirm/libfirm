@@ -33,6 +33,7 @@
 #include "irhooks.h"
 #include "xmalloc.h"
 #include "irnodeset.h"
+#include "irnodemap.h"
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
@@ -48,9 +49,8 @@
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
-/** Associates an op with it's copy and CopyKeep. */
+/** Associates an ir_node with it's copy and CopyKeep. */
 typedef struct {
-	ir_node *op;         /**< an irn which must be different */
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
 	const arch_register_class_t *cls;
 } op_copy_assoc_t;
@@ -58,7 +58,7 @@ typedef struct {
 /** Environment for constraints. */
 typedef struct {
 	be_irg_t       *birg;
-	pset           *op_set;
+	ir_nodemap_t   op_set;
 	struct obstack obst;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } constraint_env_t;
@@ -94,14 +94,6 @@ typedef struct _perm_cycle_t {
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
-
-/** Compare the two operands. */
-static int cmp_op_copy_assoc(const void *a, const void *b) {
-	const op_copy_assoc_t *op1 = a;
-	const op_copy_assoc_t *op2 = b;
-
-	return op1->op != op2->op;
-}
 
 /** Compare the in registers of two register pairs. */
 static int compare_reg_pair(const void *a, const void *b) {
@@ -535,11 +527,11 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
 	be_irg_t                    *birg     = env->birg;
 	ir_graph                    *irg      = be_get_birg_irg(birg);
-	pset                        *op_set   = env->op_set;
+	ir_nodemap_t                *op_set   = &env->op_set;
 	ir_node                     *block    = get_nodes_block(irn);
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
-	op_copy_assoc_t             key, *entry;
+	op_copy_assoc_t             *entry;
 	DEBUG_ONLY(firm_dbg_module_t *mod     = env->dbg;)
 
 	if (arch_irn_is(other_different, ignore) ||
@@ -585,15 +577,14 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		sched_add_before(belower_skip_proj(irn), cpy);
 	sched_add_after(irn, keep);
 
-	/* insert the other different and it's copies into the set */
-	key.op = other_different;
-	entry  = pset_find(op_set, &key, hash_irn(other_different));
-
+	/* insert the other different and it's copies into the map */
+	entry = ir_nodemap_get(op_set, other_different);
 	if (! entry) {
-		entry         = obstack_alloc(&env->obst, sizeof(*entry));
+		entry      = obstack_alloc(&env->obst, sizeof(*entry));
+		entry->cls = cls;
 		ir_nodeset_init(&entry->copies);
-		entry->op     = other_different;
-		entry->cls    = cls;
+
+		ir_nodemap_insert(op_set, other_different, entry);
 	}
 
 	/* insert copy */
@@ -603,8 +594,6 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	if (be_is_CopyKeep(keep)) {
 		ir_nodeset_insert(&entry->copies, keep);
 	}
-
-	pset_insert(op_set, entry, hash_irn(other_different));
 }
 
 /**
@@ -665,10 +654,12 @@ static void assure_constraints_walker(ir_node *irn, void *walk_env) {
 static void melt_copykeeps(constraint_env_t *cenv) {
 	be_irg_t *birg = cenv->birg;
 	ir_graph *irg  = be_get_birg_irg(birg);
-	op_copy_assoc_t *entry;
+	ir_nodemap_iterator_t map_iter;
+	ir_nodemap_entry_t    map_entry;
 
 	/* for all */
-	foreach_pset(cenv->op_set, entry) {
+	foreach_ir_nodemap(&cenv->op_set, map_entry, map_iter) {
+		op_copy_assoc_t *entry = map_entry.data;
 		int     idx, num_ck;
 		ir_node *cp;
 		struct obstack obst;
@@ -784,15 +775,16 @@ static void melt_copykeeps(constraint_env_t *cenv) {
  * @param birg  The birg structure containing the irg
  */
 void assure_constraints(be_irg_t *birg) {
-	ir_graph         *irg      = be_get_birg_irg(birg);
-	constraint_env_t cenv;
-	op_copy_assoc_t  *entry;
-	ir_node          **nodes;
+	ir_graph              *irg = be_get_birg_irg(birg);
+	constraint_env_t      cenv;
+	ir_node               **nodes;
+	ir_nodemap_iterator_t map_iter;
+	ir_nodemap_entry_t    map_entry;
 	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.constr");
 
 	DEBUG_ONLY(cenv.dbg = mod;)
 	cenv.birg   = birg;
-	cenv.op_set = new_pset(cmp_op_copy_assoc, 16);
+	ir_nodemap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
 	irg_walk_blkwise_graph(irg, NULL, assure_constraints_walker, &cenv);
@@ -803,7 +795,8 @@ void assure_constraints(be_irg_t *birg) {
 	melt_copykeeps(&cenv);
 
 	/* for all */
-	foreach_pset(cenv.op_set, entry) {
+	foreach_ir_nodemap(&cenv.op_set, map_entry, map_iter) {
+		op_copy_assoc_t *entry = map_entry.data;
 		int     n;
 		ir_node *cp;
 		ir_nodeset_iterator_t iter;
@@ -813,7 +806,7 @@ void assure_constraints(be_irg_t *birg) {
 		nodes = alloca(n * sizeof(nodes[0]));
 
 		/* put the node in an array */
-		DBG((mod, LEVEL_1, "introduce copies for %+F ", entry->op));
+		DBG((mod, LEVEL_1, "introduce copies for %+F ", map_entry.node));
 
 		/* collect all copies */
 		n = 0;
@@ -826,9 +819,9 @@ void assure_constraints(be_irg_t *birg) {
 
 		/* introduce the copies for the operand and it's copies */
 		be_ssa_construction_init(&senv, birg);
-		be_ssa_construction_add_copy(&senv, entry->op);
+		be_ssa_construction_add_copy(&senv, map_entry.node);
 		be_ssa_construction_add_copies(&senv, nodes, n);
-		be_ssa_construction_fix_users(&senv, entry->op);
+		be_ssa_construction_fix_users(&senv, map_entry.node);
 		be_ssa_construction_destroy(&senv);
 
 		/* Could be that not all CopyKeeps are really needed, */
@@ -851,7 +844,7 @@ void assure_constraints(be_irg_t *birg) {
 		ir_nodeset_destroy(&entry->copies);
 	}
 
-	del_pset(cenv.op_set);
+	ir_nodemap_destroy(&cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
 	be_liveness_invalidate(be_get_birg_liveness(birg));
 }
