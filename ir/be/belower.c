@@ -49,6 +49,9 @@
 
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
+DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
+
 /** Associates an ir_node with it's copy and CopyKeep. */
 typedef struct {
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
@@ -60,14 +63,12 @@ typedef struct {
 	be_irg_t       *birg;
 	ir_nodemap_t   op_set;
 	struct obstack obst;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } constraint_env_t;
 
 /** Lowering walker environment. */
 typedef struct _lower_env_t {
 	be_irg_t         *birg;
 	unsigned          do_copy : 1;
-	DEBUG_ONLY(firm_dbg_module_t *dbg_module;)
 } lower_env_t;
 
 /** Holds a Perm register pair. */
@@ -292,10 +293,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 	ir_node         *sched_point, *block, *in[2];
 	ir_node         *arg1, *arg2, *res1, *res2;
 	ir_node         *cpyxchg = NULL;
-	DEBUG_ONLY(firm_dbg_module_t *mod;)
 
 	do_copy  = env->do_copy;
-	DEBUG_ONLY(mod = env->dbg_module;)
 	block    = get_nodes_block(irn);
 
 	/*
@@ -305,8 +304,8 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 			should be ok.
 	*/
 	sched_point = sched_prev(irn);
-	DBG((mod, LEVEL_1, "perm: %+F\n", irn));
-	DBG((mod, LEVEL_1, "sched point is %+F\n", sched_point));
+	DBG((dbg, LEVEL_1, "perm: %+F\n", irn));
+	DBG((dbg, LEVEL_1, "sched point is %+F\n", sched_point));
 	assert(sched_point && "Perm is not scheduled or has no predecessor");
 
 	n = get_irn_arity(irn);
@@ -336,7 +335,7 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		the IN node. */
 	for (i = 0; i < n; i++) {
 		if (pairs[i].in_reg->index == pairs[i].out_reg->index) {
-			DBG((mod, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
+			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
 				irn, pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
 
 			/* reroute the edges from the proj to the argument */
@@ -362,11 +361,11 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 		cycle = XMALLOCZ(perm_cycle_t);
 		cycle = get_perm_cycle(cycle, pairs, n, i);
 
-		DB((mod, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle->type == PERM_CHAIN ? "chain" : "cycle"));
+		DB((dbg, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle->type == PERM_CHAIN ? "chain" : "cycle"));
 		for (j = 0; j < cycle->n_elems; j++) {
-			DB((mod, LEVEL_1, " %s", cycle->elems[j]->name));
+			DB((dbg, LEVEL_1, " %s", cycle->elems[j]->name));
 		}
-		DB((mod, LEVEL_1, "\n"));
+		DB((dbg, LEVEL_1, "\n"));
 
 		/*
 			We don't need to do anything if we have a Perm with two
@@ -428,9 +427,9 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				/* "middle" Perm and set this to one in node of the successor */
 				/* Perm.                                                      */
 
-				DBG((mod, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
+				DBG((dbg, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
 					irn, arg1, cycle->elems[i]->name, arg2, cycle->elems[i + 1]->name));
-				DBG((mod, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
+				DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
 					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
 				cpyxchg = be_new_Perm(reg_class, irg, block, 2, in);
@@ -458,13 +457,13 @@ static void lower_perm_node(ir_node *irn, void *walk_env) {
 				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 				sched_add_after(sched_point, cpyxchg);
 
-				DBG((mod, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
+				DBG((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 
 				/* set the new scheduling point */
 				sched_point = res1;
 			}
 			else {
-				DBG((mod, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+				DBG((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
 
 				cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
@@ -529,11 +528,10 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	const arch_register_class_t *cls      = arch_get_irn_reg_class(other_different, -1);
 	ir_node                     *in[2], *keep, *cpy;
 	op_copy_assoc_t             *entry;
-	DEBUG_ONLY(firm_dbg_module_t *mod     = env->dbg;)
 
 	if (arch_irn_is(other_different, ignore) ||
 			!mode_is_datab(get_irn_mode(other_different))) {
-		DBG((mod, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
+		DBG((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
 	}
 
@@ -547,10 +545,10 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
 		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
-		DBG((mod, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
+		DBG((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	}
 	else {
-		DBG((mod, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
+		DBG((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
 	}
 
 	in[0] = irn;
@@ -566,7 +564,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		keep = be_new_Keep(cls, irg, block, 2, in);
 	}
 
-	DBG((mod, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
+	DBG((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
@@ -713,7 +711,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				ref_mode_T = skip_Proj(get_irn_n(ref, 1));
 				obstack_grow(&obst, &ref, sizeof(ref));
 
-				DBG((cenv->dbg, LEVEL_1, "Trying to melt %+F:\n", ref));
+				DBG((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
 
 				/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
 				for (j = 0; j < num_ck; ++j) {
@@ -722,7 +720,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 					if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
 						obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
 						ir_nodeset_remove(&entry->copies, cur_ck);
-						DBG((cenv->dbg, LEVEL_1, "\t%+F\n", cur_ck));
+						DBG((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
 						ck_arr[j] = NULL;
 						++n_melt;
 						sched_remove(cur_ck);
@@ -732,7 +730,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 
 				/* check, if we found some candidates for melting */
 				if (n_melt == 1) {
-					DBG((cenv->dbg, LEVEL_1, "\tno candidate found\n"));
+					DBG((dbg_constr, LEVEL_1, "\tno candidate found\n"));
 					continue;
 				}
 
@@ -772,7 +770,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
 
 				sched_add_before(sched_pt, new_ck);
-				DBG((cenv->dbg, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+				DBG((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
 				/* finally: kill the reference copykeep */
 				kill_node(ref);
@@ -794,10 +792,10 @@ void assure_constraints(be_irg_t *birg) {
 	ir_node               **nodes;
 	ir_nodemap_iterator_t map_iter;
 	ir_nodemap_entry_t    map_entry;
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, "firm.be.lower.constr");
 
-	DEBUG_ONLY(cenv.dbg = mod;)
-	cenv.birg   = birg;
+	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
+
+	cenv.birg = birg;
 	ir_nodemap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
@@ -820,16 +818,16 @@ void assure_constraints(be_irg_t *birg) {
 		nodes = alloca(n * sizeof(nodes[0]));
 
 		/* put the node in an array */
-		DBG((mod, LEVEL_1, "introduce copies for %+F ", map_entry.node));
+		DBG((dbg_constr, LEVEL_1, "introduce copies for %+F ", map_entry.node));
 
 		/* collect all copies */
 		n = 0;
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			nodes[n++] = cp;
-			DB((mod, LEVEL_1, ", %+F ", cp));
+			DB((dbg_constr, LEVEL_1, ", %+F ", cp));
 		}
 
-		DB((mod, LEVEL_1, "\n"));
+		DB((dbg_constr, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
 		be_ssa_construction_init(&senv, birg);
@@ -1052,14 +1050,16 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
  */
 void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	lower_env_t env;
-	ir_graph    *irg = be_get_birg_irg(birg);
+	ir_graph    *irg;
+
+	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 
 	env.birg    = birg;
 	env.do_copy = do_copy;
-	FIRM_DBG_REGISTER(env.dbg_module, "firm.be.lower");
 
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
 
+	irg = be_get_birg_irg(birg);
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }
