@@ -1006,18 +1006,6 @@ const char *get_ia32_out_reg_name(const ir_node *node, int pos) {
 	return arch_register_get_name(attr->slots[pos]);
 }
 
-/**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_ia32_out_regnr(const ir_node *node, int pos) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_index(attr->slots[pos]);
-}
-
 void ia32_swap_left_right(ir_node *node)
 {
 	ia32_attr_t *attr  = get_ia32_attr(node);

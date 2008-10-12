@@ -306,11 +306,6 @@ const arch_register_t **get_ia32_slots(const ir_node *node);
 const char *get_ia32_out_reg_name(const ir_node *node, int pos);
 
 /**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_ia32_out_regnr(const ir_node *node, int pos);
-
-/**
  * Returns the OUT register at position pos.
  */
 const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
