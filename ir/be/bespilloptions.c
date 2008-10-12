@@ -45,19 +45,19 @@ static const lc_opt_table_entry_t be_spill_options[] = {
 };
 
 static be_module_list_entry_t *spillers = NULL;
-static be_spiller_t *selected_spiller = NULL;
+static const be_spiller_t *selected_spiller = NULL;
 
-void be_register_spiller(const char *name, be_spiller_t *spiller)
+void be_register_spiller(const char *name, const be_spiller_t *spiller)
 {
-	if(selected_spiller == NULL)
+	if (selected_spiller == NULL)
 		selected_spiller = spiller;
 	be_add_module_to_list(&spillers, name, spiller);
 }
 
-void be_do_spill(be_irg_t *birg, const arch_register_class_t* cls)
+void be_do_spill(be_irg_t *birg, const arch_register_class_t *cls)
 {
 	assert(selected_spiller != NULL);
-	if(selected_spiller != NULL) {
+	if (selected_spiller != NULL) {
 		selected_spiller->spill(birg, cls);
 	}
 }

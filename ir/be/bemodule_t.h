@@ -29,10 +29,13 @@
 
 #include "bemodule.h"
 
+/**
+ * A module list entry.
+ */
 struct be_module_list_entry_t {
-	const char *name;
-	void *data;
-	struct be_module_list_entry_t *next;
+	const char *name;                    /**< The name of the entry. */
+	const void *data;                    /**< Some data associated with this entry. */
+	struct be_module_list_entry_t *next; /**< Points to the next entry. */
 };
 
 #endif /* FIRM_BE_BEMODULE_T_H */
