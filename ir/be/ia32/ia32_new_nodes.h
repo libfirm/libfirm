@@ -409,12 +409,6 @@ void set_ia32_orig_node(ir_node *node, const char *name);
 ident *ia32_get_ent_ident(ir_entity *ent);
 
 /**
- * Returns the proj of the result value for nodes that have the usual
- * (res, Mem) result tuple
- */
-ir_node *get_ia32_result_proj(const ir_node *node);
-
-/**
  * Copy the attributes from a Const to an ia32_Const
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);

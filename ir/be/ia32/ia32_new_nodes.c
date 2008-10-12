@@ -1140,19 +1140,6 @@ init_ia32_condcode_attributes(ir_node *res, long pnc) {
 	attr->pn_code = pnc;
 }
 
-ir_node *get_ia32_result_proj(const ir_node *node)
-{
-	const ir_edge_t *edge;
-
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if(get_Proj_proj(proj) == 0) {
-			return proj;
-		}
-	}
-	return NULL;
-}
-
 /***************************************************************************************
  *                  _                            _                   _
  *                 | |                          | |                 | |
