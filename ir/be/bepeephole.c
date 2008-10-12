@@ -298,8 +298,31 @@ static void	kill_barriers(ir_graph *irg) {
 	skip_barrier(start_blk, irg);
 }
 
+/**
+ * Check whether the node has only one user.  Explicitly ignore the anchor.
+ */
+static int has_only_one_user(ir_node *node)
+{
+	int              n = get_irn_n_edges(node);
+	const ir_edge_t *edge;
+
+	if (n <= 1)
+		return 1;
+
+	if (n > 2)
+		return 0;
+
+	foreach_out_edge(node, edge) {
+		ir_node *src = get_edge_src_irn(edge);
+		if (is_Anchor(src))
+			return 1;
+	}
+
+	return 0;
+}
+
 /*
- * Tries to optimize a beIncSp node with it's previous IncSP node.
+ * Tries to optimize a beIncSP node with its previous IncSP node.
  * Must be run from a be_peephole_opt() context.
  */
 ir_node *be_peephole_IncSP_IncSP(ir_node *node)
@@ -312,7 +335,7 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	if (!be_is_IncSP(pred))
 		return node;
 
-	if (get_irn_n_edges(pred) > 1)
+	if (!has_only_one_user(pred))
 		return node;
 
 	pred_offs = be_get_IncSP_offset(pred);
