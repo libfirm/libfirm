@@ -30,7 +30,6 @@
 
 #include "ircons.h"
 #include "debug.h"
-#include "irhooks.h"
 #include "xmalloc.h"
 #include "irnodeset.h"
 #include "irnodemap.h"
