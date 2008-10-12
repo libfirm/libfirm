@@ -93,6 +93,7 @@ struct block_info_t {
 	worklist_t *end_worklist;
 };
 
+/** The register class we currently run on. */
 static const arch_register_class_t *cls;
 static struct obstack               obst;
 static spill_env_t                 *senv;
@@ -101,6 +102,7 @@ static size_t                       max_register_pressure;
 static bool                         tentative_mode;
 static bool                         should_have_reached_fixpoint;
 static bool                         do_push_unused_livethroughs;
+/** Execution frequency for the current graph. */
 static ir_exec_freq                *exec_freq;
 static ir_visited_t                 worklist_visited;
 
@@ -255,7 +257,12 @@ static void print_worklist(const worklist_t *worklist, int level)
 #endif
 
 
-
+/**
+ * Clear the link fields of a loop and all
+ * its child loops.
+ *
+ * @param loop  the root loop
+ */
 static void clear_loop_info(ir_loop *loop)
 {
 	int n_elements = get_loop_n_elements(loop);
@@ -339,7 +346,7 @@ static void construct_loop_edges(ir_node *block, void *data)
 				assert(get_loop_depth(cfgpred_loop) < get_loop_depth(l));
 			}
 			l = get_loop_outer_loop(l);
-		} while(l != goal);
+		} while (l != goal);
 	}
 }
 
@@ -638,13 +645,10 @@ static void process_block(ir_node *block, void *env)
 	//assert(n_preds != 0 || worklist->n_live_values == 0);
 }
 
-typedef struct block_or_loop_t block_or_loop_t;
-struct block_or_loop_t {
-	union {
-		ir_node *block;
-		ir_loop *loop;
-	} v;
-	bool is_loop;
+typedef union block_or_loop_t block_or_loop_t;
+union block_or_loop_t {
+	ir_node *block;
+	ir_loop *loop;
 };
 
 static block_or_loop_t *loop_blocks;
@@ -664,8 +668,7 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 	if (Block_block_visited(some_block))
 		return;
 
-	block_or_loop.v.loop  = loop;
-	block_or_loop.is_loop = true;
+	block_or_loop.loop = loop;
 	ARR_APP1(block_or_loop_t, loop_blocks, block_or_loop);
 
 #ifndef NDEBUG
@@ -674,8 +677,10 @@ static void find_in_loop(ir_loop *loop, ir_node *entry)
 		loop_edge_t *edge  = loop_info->entry_edges;
 		bool         found = false;
 		for ( ; edge != NULL; edge = edge->next) {
-			if (edge->block == entry)
+			if (edge->block == entry) {
 				found = true;
+				break;
+			}
 		}
 		assert(found);
 	}
@@ -704,8 +709,7 @@ static void find_blocks(ir_node *block)
 	if (Block_block_visited(block))
 		return;
 
-	block_or_loop.v.block = block;
-	block_or_loop.is_loop = false;
+	block_or_loop.block = block;
 
 	ARR_APP1(block_or_loop_t, loop_blocks, block_or_loop);
 	mark_Block_block_visited(block);
@@ -856,10 +860,10 @@ static void push_unused_livethroughs(loop_info_t *loop_info)
 	}
 }
 
-static void process_block_or_loop(const block_or_loop_t *block_or_loop)
+static void process_block_or_loop(const block_or_loop_t block_or_loop)
 {
-	if (block_or_loop->is_loop) {
-		loop_info_t *loop_info = get_loop_info(block_or_loop->v.loop);
+	if (block_or_loop.loop->kind == k_ir_loop) {
+		loop_info_t *loop_info = get_loop_info(block_or_loop.loop);
 
 		if (do_push_unused_livethroughs)
 			push_unused_livethroughs(loop_info);
@@ -869,7 +873,7 @@ static void process_block_or_loop(const block_or_loop_t *block_or_loop)
 
 		return;
 	}
-	process_block(block_or_loop->v.block, NULL);
+	process_block(block_or_loop.block, NULL);
 }
 
 static void process_loop(ir_loop *loop)
@@ -914,11 +918,11 @@ static void process_loop(ir_loop *loop)
 	DB((dbg, LEVEL_3, "Block List for loop %p\n", loop));
 	len = ARR_LEN(loop_blocks);
 	for (i = 0; i < len; ++i) {
-		block_or_loop_t *block_or_loop = &loop_blocks[i];
-		if (block_or_loop->is_loop) {
-			DB((dbg, LEVEL_3, " L-%p", block_or_loop->v.loop));
+		block_or_loop_t block_or_loop = loop_blocks[i];
+		if (block_or_loop.loop->kind == k_ir_loop) {
+			DB((dbg, LEVEL_3, " L-%p", block_or_loop.loop));
 		} else {
-			DB((dbg, LEVEL_3, " B-%+F", block_or_loop->v.block));
+			DB((dbg, LEVEL_3, " B-%+F", block_or_loop.block));
 		}
 	}
 	DB((dbg, LEVEL_3, "\n"));
@@ -928,13 +932,13 @@ static void process_loop(ir_loop *loop)
 	/* run1: tentative phase */
 	tentative_mode = true;
 	for (i = len-1; i >= 0; --i) {
-		process_block_or_loop(&loop_blocks[i]);
+		process_block_or_loop(loop_blocks[i]);
 	}
 
 	/* run2: tentative phase - should reach fixpoint */
 	tentative_mode = true;
 	for (i = len-1; i >= 0; --i) {
-		process_block_or_loop(&loop_blocks[i]);
+		process_block_or_loop(loop_blocks[i]);
 	}
 
 #ifndef NDEBUG
@@ -942,7 +946,7 @@ static void process_loop(ir_loop *loop)
 	tentative_mode               = true;
 	should_have_reached_fixpoint = true;
 	for (i = len-1; i >= 0; --i) {
-		process_block_or_loop(&loop_blocks[i]);
+		process_block_or_loop(loop_blocks[i]);
 	}
 	should_have_reached_fixpoint = false;
 #endif
@@ -951,7 +955,7 @@ static void process_loop(ir_loop *loop)
 	tentative_mode              = false;
 	do_push_unused_livethroughs = true;
 	for (i = len-1; i >= 0; --i) {
-		process_block_or_loop(&loop_blocks[i]);
+		process_block_or_loop(loop_blocks[i]);
 	}
 	do_push_unused_livethroughs = false;
 
@@ -1015,6 +1019,12 @@ static void fix_block_borders(ir_node *block, void *data)
 	}
 }
 
+/**
+ * Run the spill algorithm.
+ *
+ * @param birg  the graph to run on
+ * @param ncls  the register class to run on
+ */
 static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
@@ -1041,7 +1051,7 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 	clear_loop_info(get_irg_loop(irg));
 	irg_block_walk_graph(irg, construct_loop_edges, NULL, NULL);
 
-	process_loop(get_irg_loop(current_ir_graph));
+	process_loop(get_irg_loop(irg));
 
 	irg_block_walk_graph(irg, fix_block_borders, NULL, NULL);
 
