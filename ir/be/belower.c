@@ -199,7 +199,7 @@ static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx
 
 	for (i = 0; i < n; i++) {
 		/* out register matches */
-		if ((int) pairs[i].out_reg->index == reg_idx)
+		if (pairs[i].out_reg->index == reg_idx)
 			return i;
 	}
 	return -1;
