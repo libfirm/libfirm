@@ -96,10 +96,8 @@ typedef enum arch_irn_class_t {
 	arch_irn_class_copy       = 1 << 3,
 	arch_irn_class_perm       = 1 << 4,
 	arch_irn_class_branch     = 1 << 5,
-	arch_irn_class_call       = 1 << 6,
 	arch_irn_class_load       = 1 << 7,
-	arch_irn_class_store      = 1 << 8,
-	arch_irn_class_stackparam = 1 << 9,
+	arch_irn_class_store      = 1 << 8
 } arch_irn_class_t;
 
 /**
