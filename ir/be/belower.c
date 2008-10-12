@@ -206,32 +206,34 @@ static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx
 }
 
 /**
- * Gets an array of register pairs and tries to identify a cycle or chain starting
- * at position start.
+ * Gets an array of register pairs and tries to identify a cycle or chain
+ * starting at position start.
  *
  * @param cycle Variable to hold the cycle
  * @param pairs Array of register pairs
  * @param start Index to start
  * @return The cycle or chain
  */
-static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int n, int start) {
-	unsigned head    = pairs[start].in_reg->index;
-	unsigned cur_idx = pairs[start].out_reg->index;
-	int cur_pair_idx = start;
-	int n_pairs_done = get_n_checked_pairs(pairs, n);
-	int idx;
-	perm_type_t cycle_tp = PERM_CYCLE;
+static perm_cycle_t *get_perm_cycle(perm_cycle_t *const cycle,
+                                    reg_pair_t   *const pairs,
+                                    int           const n,
+                                    int                 start)
+{
+	int         head         = pairs[start].in_reg->index;
+	int         cur_idx      = pairs[start].out_reg->index;
+	int   const n_pairs_done = get_n_checked_pairs(pairs, n);
+	perm_type_t cycle_tp     = PERM_CYCLE;
+	int         idx;
 
 	/* We could be right in the middle of a chain, so we need to find the start */
 	while (head != cur_idx) {
 		/* goto previous register in cycle or chain */
-		cur_pair_idx = get_pairidx_for_out_regidx(pairs, n, head);
+		int const cur_pair_idx = get_pairidx_for_out_regidx(pairs, n, head);
 
 		if (cur_pair_idx < 0) {
 			cycle_tp = PERM_CHAIN;
 			break;
-		}
-		else {
+		} else {
 			head  = pairs[cur_pair_idx].in_reg->index;
 			start = cur_pair_idx;
 		}
@@ -249,7 +251,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 	/* check for cycle or end of a chain */
 	while (cur_idx != head) {
 		/* goto next register in cycle or chain */
-		cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cur_idx);
+		int const cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cur_idx);
 
 		if (cur_pair_idx < 0)
 			break;
@@ -260,8 +262,7 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 		if (cur_idx != head) {
 			cycle->elems[idx++] = pairs[cur_pair_idx].out_reg;
 			cycle->n_elems++;
-		}
-		else {
+		} else {
 			/* we are there where we started -> CYCLE */
 			cycle->type = PERM_CYCLE;
 		}
@@ -269,13 +270,13 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
 
 	/* mark all pairs having one in/out register with cycle in common as checked */
 	for (idx = 0; idx < cycle->n_elems; idx++) {
-		cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cycle->elems[idx]->index);
+		int cur_pair_idx;
 
+		cur_pair_idx = get_pairidx_for_in_regidx(pairs, n, cycle->elems[idx]->index);
 		if (cur_pair_idx >= 0)
 			pairs[cur_pair_idx].checked = 1;
 
 		cur_pair_idx = get_pairidx_for_out_regidx(pairs, n, cycle->elems[idx]->index);
-
 		if (cur_pair_idx >= 0)
 			pairs[cur_pair_idx].checked = 1;
 	}
@@ -293,211 +294,200 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *cycle, reg_pair_t *pairs, int 
  * @param block    The block the perm node belongs to
  * @param walk_env The environment
  */
-static void lower_perm_node(ir_node *irn, void *walk_env) {
-	ir_graph        *irg = get_irn_irg(irn);
-	const arch_register_class_t *reg_class;
-	lower_env_t     *env         = walk_env;
-	int             keep_perm    = 0;
-	int             n, i, pn, do_copy, j, n_ops;
-	reg_pair_t      *pairs;
-	const ir_edge_t *edge;
-	ir_node         *sched_point, *block, *in[2];
-	ir_node         *arg1, *arg2, *res1, *res2;
-	ir_node         *cpyxchg = NULL;
+static void lower_perm_node(ir_node *irn, void *walk_env)
+{
+	lower_env_t                 *const env         = walk_env;
+	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	ir_graph                    *const irg         = get_irn_irg(irn);
+	ir_node                     *const block       = get_nodes_block(irn);
+	int                          const n           = get_irn_arity(irn);
+	reg_pair_t                  *const pairs       = alloca(n * sizeof(pairs[0]));
+	int                                keep_perm   = 0;
+	int                                do_copy     = env->do_copy;
+	/* Get the schedule predecessor node to the perm.
+	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
+	 * nodes after this node, everything should be ok. */
+	ir_node                     *      sched_point = sched_prev(irn);
+	const ir_edge_t             *      edge;
+	int                                i;
 
-	do_copy  = env->do_copy;
-	block    = get_nodes_block(irn);
-
-	/*
-		Get the schedule predecessor node to the perm
-		NOTE: This works with auto-magic. If we insert the
-			new copy/exchange nodes after this node, everything
-			should be ok.
-	*/
-	sched_point = sched_prev(irn);
-	DBG((dbg, LEVEL_1, "perm: %+F\n", irn));
-	DBG((dbg, LEVEL_1, "sched point is %+F\n", sched_point));
+	DBG((dbg, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
 	assert(sched_point && "Perm is not scheduled or has no predecessor");
 
-	n = get_irn_arity(irn);
 	assert(n == get_irn_n_edges(irn) && "perm's in and out numbers different");
-
-	reg_class = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	pairs     = alloca(n * sizeof(pairs[0]));
 
 	/* build the list of register pairs (in, out) */
 	i = 0;
 	foreach_out_edge(irn, edge) {
-		pairs[i].out_node = get_edge_src_irn(edge);
-		pn                = get_Proj_proj(pairs[i].out_node);
-		pairs[i].in_node  = get_irn_n(irn, pn);
+		reg_pair_t *const pair = &pairs[i++];
+		ir_node    *const out  = get_edge_src_irn(edge);
+		long        const pn   = get_Proj_proj(out);
+		ir_node    *const in   = get_irn_n(irn, pn);
 
-		pairs[i].in_reg  = arch_get_irn_register(pairs[i].in_node);
-		pairs[i].out_reg = arch_get_irn_register(pairs[i].out_node);
-
-		pairs[i].checked = 0;
-		i++;
+		pair->in_node  = in;
+		pair->in_reg   = arch_get_irn_register(in);
+		pair->out_node = out;
+		pair->out_reg  = arch_get_irn_register(out);
+		pair->checked  = 0;
 	}
 
 	/* sort the register pairs by the indices of the in registers */
 	qsort(pairs, n, sizeof(pairs[0]), compare_reg_pair);
 
-	/* Mark all equal pairs as checked, and exchange the OUT proj with
-		the IN node. */
+	/* Mark all equal pairs as checked, and exchange the OUT proj with the IN
+	 * node. */
 	for (i = 0; i < n; i++) {
-		if (pairs[i].in_reg->index == pairs[i].out_reg->index) {
-			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
-				irn, pairs[i].in_node, pairs[i].out_node, pairs[i].out_reg->name));
+		reg_pair_t *const pair = &pairs[i];
 
-			/* reroute the edges from the proj to the argument */
-			exchange(pairs[i].out_node, pairs[i].in_node);
+		if (pair->in_reg->index != pair->out_reg->index)
+			continue;
 
-			pairs[i].checked = 1;
-		}
+		DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
+					irn, pair->in_node, pair->out_node, pair->out_reg->name));
+
+		/* reroute the edges from the proj to the argument */
+		exchange(pair->out_node, pair->in_node);
+
+		pair->checked = 1;
 	}
 
 	/* Set do_copy to 0 if it's on but we have no free register */
+	/* TODO check for free register */
 	if (do_copy) {
 		do_copy = 0;
 	}
 
 	/* check for cycles and chains */
 	while (get_n_checked_pairs(pairs, n) < n) {
-		perm_cycle_t *cycle;
-
-		i = n_ops = 0;
+		perm_cycle_t cycle;
+		int          j;
 
 		/* go to the first not-checked pair */
-		while (pairs[i].checked) i++;
-		cycle = XMALLOCZ(perm_cycle_t);
-		cycle = get_perm_cycle(cycle, pairs, n, i);
+		for (i = 0; pairs[i].checked; ++i) {}
+		get_perm_cycle(&cycle, pairs, n, i);
 
-		DB((dbg, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle->type == PERM_CHAIN ? "chain" : "cycle"));
-		for (j = 0; j < cycle->n_elems; j++) {
-			DB((dbg, LEVEL_1, " %s", cycle->elems[j]->name));
+		DB((dbg, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle.type == PERM_CHAIN ? "chain" : "cycle"));
+		for (j = 0; j < cycle.n_elems; j++) {
+			DB((dbg, LEVEL_1, " %s", cycle.elems[j]->name));
 		}
 		DB((dbg, LEVEL_1, "\n"));
 
-		/*
-			We don't need to do anything if we have a Perm with two
-			elements which represents a cycle, because those nodes
-			already represent exchange nodes
-		*/
-		if (n == 2 && cycle->type == PERM_CYCLE) {
-			free(cycle);
+		if (n == 2 && cycle.type == PERM_CYCLE) {
+			/* We don't need to do anything if we have a Perm with two elements
+			 * which represents a cycle, because those nodes already represent
+			 * exchange nodes */
 			keep_perm = 1;
-			continue;
-		}
+		} else {
+			/* TODO: - iff PERM_CYCLE && do_copy -> determine free temp reg and
+			 * insert copy to/from it before/after the copy cascade (this
+			 * reduces the cycle into a chain) */
 
-//TODO: - iff PERM_CYCLE && do_copy -> determine free temp reg and insert copy to/from it before/after
-//        the copy cascade (this reduces the cycle into a chain)
+			/* build copy/swap nodes from back to front */
+			for (i = cycle.n_elems - 2; i >= 0; i--) {
+				ir_node *arg1 = get_node_for_in_register(pairs, n, cycle.elems[i]);
+				ir_node *arg2 = get_node_for_in_register(pairs, n, cycle.elems[i + 1]);
 
-		/* build copy/swap nodes from back to front */
-		for (i = cycle->n_elems - 2; i >= 0; i--) {
-			arg1 = get_node_for_in_register(pairs, n, cycle->elems[i]);
-			arg2 = get_node_for_in_register(pairs, n, cycle->elems[i + 1]);
+				ir_node *res1 = get_node_for_out_register(pairs, n, cycle.elems[i]);
+				ir_node *res2 = get_node_for_out_register(pairs, n, cycle.elems[i + 1]);
+				/* If we have a cycle and don't copy: we need to create exchange
+				 * nodes
+				 * NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
+				 * IN_1  = in  node with register i
+				 * IN_2  = in  node with register i + 1
+				 * OUT_1 = out node with register i + 1
+				 * OUT_2 = out node with register i */
+				if (cycle.type == PERM_CYCLE && !do_copy) {
+					ir_node *in[2];
+					ir_node *cpyxchg;
 
-			res1 = get_node_for_out_register(pairs, n, cycle->elems[i]);
-			res2 = get_node_for_out_register(pairs, n, cycle->elems[i + 1]);
-			/*
-				If we have a cycle and don't copy: we need to create exchange nodes
-				NOTE: An exchange node is a perm node with 2 INs and 2 OUTs
-				IN_1  = in node with register i
-				IN_2  = in node with register i + 1
-				OUT_1 = out node with register i + 1
-				OUT_2 = out node with register i
-			*/
-			if (cycle->type == PERM_CYCLE && !do_copy) {
-				in[0] = arg1;
-				in[1] = arg2;
+					in[0] = arg1;
+					in[1] = arg2;
 
-				/* At this point we have to handle the following problem:     */
-				/*                                                            */
-				/* If we have a cycle with more than two elements, then       */
-				/* this could correspond to the following Perm node:          */
-				/*                                                            */
-				/*   +----+   +----+   +----+                                 */
-				/*   | r1 |   | r2 |   | r3 |                                 */
-				/*   +-+--+   +-+--+   +--+-+                                 */
-				/*     |        |         |                                   */
-				/*     |        |         |                                   */
-				/*   +-+--------+---------+-+                                 */
-				/*   |         Perm         |                                 */
-				/*   +-+--------+---------+-+                                 */
-				/*     |        |         |                                   */
-				/*     |        |         |                                   */
-				/*   +-+--+   +-+--+   +--+-+                                 */
-				/*   |Proj|   |Proj|   |Proj|                                 */
-				/*   | r2 |   | r3 |   | r1 |                                 */
-				/*   +----+   +----+   +----+                                 */
-				/*                                                            */
-				/* This node is about to be split up into two 2x Perm's       */
-				/* for which we need 4 Proj's and the one additional Proj     */
-				/* of the first Perm has to be one IN of the second. So in    */
-				/* general we need to create one additional Proj for each     */
-				/* "middle" Perm and set this to one in node of the successor */
-				/* Perm.                                                      */
+					/* At this point we have to handle the following problem:
+					 *
+					 * If we have a cycle with more than two elements, then this
+					 * could correspond to the following Perm node:
+					 *
+					 *   +----+   +----+   +----+
+					 *   | r1 |   | r2 |   | r3 |
+					 *   +-+--+   +-+--+   +--+-+
+					 *     |        |         |
+					 *     |        |         |
+					 *   +-+--------+---------+-+
+					 *   |         Perm         |
+					 *   +-+--------+---------+-+
+					 *     |        |         |
+					 *     |        |         |
+					 *   +-+--+   +-+--+   +--+-+
+					 *   |Proj|   |Proj|   |Proj|
+					 *   | r2 |   | r3 |   | r1 |
+					 *   +----+   +----+   +----+
+					 *
+					 * This node is about to be split up into two 2x Perm's for
+					 * which we need 4 Proj's and the one additional Proj of the
+					 * first Perm has to be one IN of the second. So in general
+					 * we need to create one additional Proj for each "middle"
+					 * Perm and set this to one in node of the successor Perm. */
 
-				DBG((dbg, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
-					irn, arg1, cycle->elems[i]->name, arg2, cycle->elems[i + 1]->name));
-				DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
-					irn, res1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
+					DBG((dbg, LEVEL_1, "%+F creating exchange node (%+F, %s) and (%+F, %s) with\n",
+								irn, arg1, cycle.elems[i]->name, arg2, cycle.elems[i + 1]->name));
+					DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
+								irn, res1, cycle.elems[i]->name, res2, cycle.elems[i + 1]->name));
 
-				cpyxchg = be_new_Perm(reg_class, irg, block, 2, in);
-				n_ops++;
+					cpyxchg = be_new_Perm(reg_class, irg, block, 2, in);
 
-				if (i > 0) {
-					/* cycle is not done yet */
-					int pidx = get_pairidx_for_in_regidx(pairs, n, cycle->elems[i]->index);
+					if (i > 0) {
+						/* cycle is not done yet */
+						int pidx = get_pairidx_for_in_regidx(pairs, n, cycle.elems[i]->index);
 
-					/* create intermediate proj */
-					res1 = new_r_Proj(irg, block, cpyxchg, get_irn_mode(res1), 0);
+						/* create intermediate proj */
+						res1 = new_r_Proj(irg, block, cpyxchg, get_irn_mode(res1), 0);
 
-					/* set as in for next Perm */
-					pairs[pidx].in_node = res1;
+						/* set as in for next Perm */
+						pairs[pidx].in_node = res1;
+					}
+
+					set_Proj_pred(res2, cpyxchg);
+					set_Proj_proj(res2, 0);
+					set_Proj_pred(res1, cpyxchg);
+					set_Proj_proj(res1, 1);
+
+					arch_set_irn_register(res2, cycle.elems[i + 1]);
+					arch_set_irn_register(res1, cycle.elems[i]);
+
+					/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+					sched_add_after(sched_point, cpyxchg);
+
+					DBG((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
+
+					/* set the new scheduling point */
+					sched_point = res1;
+				} else {
+					ir_node *cpyxchg;
+
+					DBG((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+								irn, arg1, cycle.elems[i]->name, res2, cycle.elems[i + 1]->name));
+
+					cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
+					arch_set_irn_register(cpyxchg, cycle.elems[i + 1]);
+
+					/* exchange copy node and proj */
+					exchange(res2, cpyxchg);
+
+					/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
+					sched_add_after(sched_point, cpyxchg);
+
+					/* set the new scheduling point */
+					sched_point = cpyxchg;
 				}
-
-				set_Proj_pred(res2, cpyxchg);
-				set_Proj_proj(res2, 0);
-				set_Proj_pred(res1, cpyxchg);
-				set_Proj_proj(res1, 1);
-
-				arch_set_irn_register(res2, cycle->elems[i + 1]);
-				arch_set_irn_register(res1, cycle->elems[i]);
-
-				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-				sched_add_after(sched_point, cpyxchg);
-
-				DBG((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
-
-				/* set the new scheduling point */
-				sched_point = res1;
-			}
-			else {
-				DBG((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
-					irn, arg1, cycle->elems[i]->name, res2, cycle->elems[i + 1]->name));
-
-				cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
-				arch_set_irn_register(cpyxchg, cycle->elems[i + 1]);
-				n_ops++;
-
-				/* exchange copy node and proj */
-				exchange(res2, cpyxchg);
-
-				/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-				sched_add_after(sched_point, cpyxchg);
-
-				/* set the new scheduling point */
-				sched_point = cpyxchg;
 			}
 		}
 
-		free((void *) cycle->elems);
-		free(cycle);
+		free((void*)cycle.elems);
 	}
 
 	/* remove the perm from schedule */
-	if (! keep_perm) {
+	if (!keep_perm) {
 		sched_remove(irn);
 		kill_node(irn);
 	}
