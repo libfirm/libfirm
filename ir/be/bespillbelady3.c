@@ -737,17 +737,16 @@ static void worklist_append(worklist_t *worklist, ir_node *value,
                             ir_node *reload_point,
 							ir_loop *unused_livethrough_loop)
 {
-	worklist_entry_t *entry     = obstack_alloc(&obst, sizeof(entry[0]));
-	memset(entry, 0, sizeof(entry[0]));
+	worklist_entry_t *entry;
 
 #ifdef EXPENSIVE_CHECKS
-	{
-		worklist_entry_t *entry;
-		foreach_worklist(entry, worklist) {
-			assert(entry->value != value);
-		}
+	foreach_worklist(entry, worklist) {
+		assert(entry->value != value);
 	}
 #endif
+
+	entry = obstack_alloc(&obst, sizeof(*entry));
+	memset(entry, 0, sizeof(entry[0]));
 
 	entry->value                   = value;
 	entry->reload_point            = reload_point;
@@ -898,7 +897,7 @@ static void process_loop(ir_loop *loop)
 		some_block = get_irg_start_block(current_ir_graph);
 	}
 
-	loop_blocks  = NEW_ARR_F(block_or_loop_t,0);
+	loop_blocks  = NEW_ARR_F(block_or_loop_t, 0);
 	current_loop = loop;
 
 	ir_reserve_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
@@ -978,7 +977,7 @@ static void fix_block_borders(ir_node *block, void *data)
 		worklist_t   *end_worklist    = pred_block_info->end_worklist;
 		ir_loop      *pred_loop       = get_irn_loop(pred_block);
 		bool          is_loop_entry   = false;
-		worklist_entry_t *wl_entry;
+		worklist_entry_t *entry;
 
 		assert(end_worklist != NULL);
 
@@ -989,8 +988,11 @@ static void fix_block_borders(ir_node *block, void *data)
 		/* reload missing values */
 		activate_worklist(end_worklist);
 
-		foreach_worklist(wl_entry, start_worklist) {
-			ir_node *value = wl_entry->value;
+		foreach_worklist(entry, start_worklist) {
+			ir_node *value = entry->value;
+
+			if (!is_loop_entry && entry->unused_livethrough_loop != NULL)
+				continue;
 
 			if (is_Phi(value) && get_nodes_block(value) == block) {
 				value = get_irn_n(value, i);
@@ -999,12 +1001,8 @@ static void fix_block_borders(ir_node *block, void *data)
 				if (!arch_irn_consider_in_reg_alloc(cls, value))
 					continue;
 			}
-
 			if (worklist_contains(value))
 				continue;
-			if (wl_entry->unused_livethrough_loop != NULL && !is_loop_entry)
-				continue;
-
 			be_add_reload_on_edge(senv, value, block, i, cls, 1);
 		}
 
