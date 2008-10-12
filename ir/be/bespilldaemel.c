@@ -19,12 +19,12 @@
 
 /**
  * @file
- * @brief       Naiv spilling algorithm
+ * @brief       Naive spilling algorithm
  * @author      Matthias Braun
  * @date        20.09.2005
  * @version     $Id: bespillbelady.c 13913 2007-05-18 12:48:56Z matze $
  * @summary
- *   This implements a naiv spilling algorithm. It is design to produce similar
+ *   This implements a naive spilling algorithm. It is designed to produce similar
  *   effects to the spill decisions produced by traditional graph coloring
  *   register allocators that spill while they are coloring the graph.
  *
