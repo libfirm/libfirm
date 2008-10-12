@@ -96,17 +96,6 @@ typedef struct _perm_cycle_t {
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */
 } perm_cycle_t;
 
-/** Compare the in registers of two register pairs. */
-static int compare_reg_pair(const void *a, const void *b) {
-	const reg_pair_t *pair_a = a;
-	const reg_pair_t *pair_b = b;
-
-	if (pair_a->in_reg->index > pair_b->in_reg->index)
-		return 1;
-	else
-		return -1;
-}
-
 /** returns the number register pairs marked as checked. */
 static int get_n_checked_pairs(reg_pair_t *pairs, int n) {
 	int i, n_checked = 0;
@@ -328,9 +317,6 @@ static void lower_perm_node(ir_node *irn, void *walk_env)
 		pair->out_reg  = arch_get_irn_register(out);
 		pair->checked  = 0;
 	}
-
-	/* sort the register pairs by the indices of the in registers */
-	qsort(pairs, n, sizeof(pairs[0]), compare_reg_pair);
 
 	/* Mark all equal pairs as checked, and exchange the OUT proj with the IN
 	 * node. */
