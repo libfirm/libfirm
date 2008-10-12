@@ -511,12 +511,11 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 }
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
-	be_irg_t                    *birg     = env->birg;
-	ir_graph                    *irg      = be_get_birg_irg(birg);
-	ir_nodemap_t                *op_set   = &env->op_set;
-	ir_node                     *block    = get_nodes_block(irn);
-	const arch_register_class_t *cls      = arch_get_irn_reg_class(other_different, -1);
-	ir_node                     *in[2], *keep, *cpy;
+	ir_graph                    *irg;
+	ir_nodemap_t                *op_set;
+	ir_node                     *block;
+	const arch_register_class_t *cls;
+	ir_node                     *keep, *cpy;
 	op_copy_assoc_t             *entry;
 
 	if (arch_irn_is(other_different, ignore) ||
@@ -524,6 +523,11 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		DBG((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
 	}
+
+	irg    = be_get_birg_irg(env->birg);
+	op_set = &env->op_set;
+	block  = get_nodes_block(irn);
+	cls    = arch_get_irn_reg_class(other_different, -1);
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */
@@ -536,21 +540,20 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		cpy = be_new_Copy(cls, irg, block, other_different);
 		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
 		DBG((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
-	}
-	else {
+	} else {
 		DBG((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
 	}
-
-	in[0] = irn;
-	in[1] = cpy;
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
 	if (has_irn_users(other_different)) {
 		keep = be_new_CopyKeep_single(cls, irg, block, cpy, irn, get_irn_mode(other_different));
 		be_node_set_reg_class(keep, 1, cls);
-	}
-	else {
+	} else {
+		ir_node *in[2];
+
+		in[0] = irn;
+		in[1] = cpy;
 		keep = be_new_Keep(cls, irg, block, 2, in);
 	}
 
@@ -576,9 +579,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_nodeset_insert(&entry->copies, cpy);
 
 	/* insert keep in case of CopyKeep */
-	if (be_is_CopyKeep(keep)) {
+	if (be_is_CopyKeep(keep))
 		ir_nodeset_insert(&entry->copies, keep);
-	}
 }
 
 /**
