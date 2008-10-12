@@ -148,7 +148,7 @@ void be_quit_modules(void)
 //---------------------------------------------------------------------------
 
 typedef struct module_opt_data_t {
-	void **var;
+	const void **var;
 	be_module_list_entry_t * const *list_head;
 } module_opt_data_t;
 
