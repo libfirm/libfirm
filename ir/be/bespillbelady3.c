@@ -80,6 +80,8 @@ struct worklist_entry_t {
 	ir_loop          *unused_livethrough_loop;
 };
 
+#define foreach_worklist(entry, wl) list_for_each_entry(worklist_entry_t, entry, &(wl)->live_values, head)
+
 typedef struct worklist_t worklist_t;
 struct worklist_t {
 	struct list_head  live_values;
@@ -141,27 +143,23 @@ static block_info_t *get_block_info(ir_node *block)
 
 static void deactivate_worklist(const worklist_t *worklist)
 {
-	struct list_head *entry;
+	worklist_entry_t *entry;
 
-	list_for_each(entry, &worklist->live_values) {
-		worklist_entry_t *wl_entry
-			= list_entry(entry, worklist_entry_t, head);
-		assert(worklist_contains(wl_entry->value));
-		mark_irn_not_visited(wl_entry->value);
-		set_irn_link(wl_entry->value, NULL);
+	foreach_worklist(entry, worklist) {
+		assert(worklist_contains(entry->value));
+		mark_irn_not_visited(entry->value);
+		set_irn_link(entry->value, NULL);
 	}
 }
 
 static void activate_worklist(const worklist_t *worklist)
 {
-	struct list_head *entry;
+	worklist_entry_t *entry;
 
-	list_for_each(entry, &worklist->live_values) {
-		worklist_entry_t *wl_entry
-			= list_entry(entry, worklist_entry_t, head);
-		assert(!worklist_contains(wl_entry->value));
-		mark_irn_visited(wl_entry->value);
-		set_irn_link(wl_entry->value, wl_entry);
+	foreach_worklist(entry, worklist) {
+		assert(!worklist_contains(entry->value));
+		mark_irn_visited(entry->value);
+		set_irn_link(entry->value, entry);
 	}
 }
 
@@ -174,7 +172,7 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 {
 	ir_node          *reload_point  = NULL;
 	size_t            n_live_values = 0;
-	struct list_head *entry;
+	worklist_entry_t *entry;
 
 	if (succ_block != NULL &&
 			(get_Block_n_cfgpreds(succ_block) > 1
@@ -182,9 +180,8 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 		reload_point = be_get_end_of_block_insertion_point(block);
 	}
 
-	list_for_each(entry, &worklist->live_values) {
-		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
-		ir_node          *value     = wl_entry->value;
+	foreach_worklist(entry, worklist) {
+		ir_node          *value = entry->value;
 		worklist_entry_t *new_entry;
 
 		if (new_worklist->n_live_values >= n_regs)
@@ -208,7 +205,7 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 		if (reload_point != NULL) {
 			new_entry->reload_point = reload_point;
 		} else {
-			new_entry->reload_point = wl_entry->reload_point;
+			new_entry->reload_point = entry->reload_point;
 		}
 
 		list_add_tail(&new_entry->head, &new_worklist->live_values);
@@ -745,11 +742,9 @@ static void worklist_append(worklist_t *worklist, ir_node *value,
 
 #ifdef EXPENSIVE_CHECKS
 	{
-		struct list_head *entry;
-		list_for_each(entry, &worklist->live_values) {
-			worklist_entry_t *wl_entry
-				= list_entry(entry, worklist_entry_t, head);
-			assert(wl_entry->value != value);
+		worklist_entry_t *entry;
+		foreach_worklist(entry, worklist) {
+			assert(entry->value != value);
 		}
 	}
 #endif
@@ -983,7 +978,7 @@ static void fix_block_borders(ir_node *block, void *data)
 		worklist_t   *end_worklist    = pred_block_info->end_worklist;
 		ir_loop      *pred_loop       = get_irn_loop(pred_block);
 		bool          is_loop_entry   = false;
-		struct list_head *entry;
+		worklist_entry_t *wl_entry;
 
 		assert(end_worklist != NULL);
 
@@ -994,10 +989,8 @@ static void fix_block_borders(ir_node *block, void *data)
 		/* reload missing values */
 		activate_worklist(end_worklist);
 
-		list_for_each(entry, &start_worklist->live_values) {
-			worklist_entry_t *wl_entry
-				= list_entry(entry, worklist_entry_t, head);
-			ir_node          *value = wl_entry->value;
+		foreach_worklist(wl_entry, start_worklist) {
+			ir_node *value = wl_entry->value;
 
 			if (is_Phi(value) && get_nodes_block(value) == block) {
 				value = get_irn_n(value, i);
