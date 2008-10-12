@@ -1061,5 +1061,5 @@ void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_birg_liveness(birg));
 
-	irg_walk_blkwise_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
+	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }
