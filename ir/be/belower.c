@@ -214,10 +214,10 @@ static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx
  * @param start Index to start
  * @return The cycle or chain
  */
-static perm_cycle_t *get_perm_cycle(perm_cycle_t *const cycle,
-                                    reg_pair_t   *const pairs,
-                                    int           const n,
-                                    int                 start)
+static void get_perm_cycle(perm_cycle_t *const cycle,
+                           reg_pair_t   *const pairs,
+                           int           const n,
+                           int                 start)
 {
 	int         head         = pairs[start].in_reg->index;
 	int         cur_idx      = pairs[start].out_reg->index;
@@ -280,8 +280,6 @@ static perm_cycle_t *get_perm_cycle(perm_cycle_t *const cycle,
 		if (cur_pair_idx >= 0)
 			pairs[cur_pair_idx].checked = 1;
 	}
-
-	return cycle;
 }
 
 /**
@@ -499,15 +497,6 @@ static int has_irn_users(const ir_node *irn) {
 	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
 }
 
-/**
- * Skip all Proj nodes.
- */
-static INLINE ir_node *belower_skip_proj(ir_node *irn) {
-	while(is_Proj(irn))
-		irn = get_Proj_pred(irn);
-	return irn;
-}
-
 static ir_node *find_copy(ir_node *irn, ir_node *op)
 {
 	ir_node *cur_node;
@@ -542,7 +531,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* The copy is optimized later if not needed         */
 
 	/* check if already exists such a copy in the schedule immediately before */
-	cpy = find_copy(belower_skip_proj(irn), other_different);
+	cpy = find_copy(skip_Proj(irn), other_different);
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
 		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
@@ -570,7 +559,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
 	if (! sched_is_scheduled(cpy))
-		sched_add_before(belower_skip_proj(irn), cpy);
+		sched_add_before(skip_Proj(irn), cpy);
 	sched_add_after(irn, keep);
 
 	/* insert the other different and it's copies into the map */
