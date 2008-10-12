@@ -34,7 +34,7 @@
  */
 struct be_module_list_entry_t {
 	const char *name;                    /**< The name of the entry. */
-	const void *data;                    /**< Some data associated with this entry. */
+	void *data;                          /**< Some data associated with this entry. */
 	struct be_module_list_entry_t *next; /**< Points to the next entry. */
 };
 

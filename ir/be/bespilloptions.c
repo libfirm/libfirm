@@ -47,7 +47,7 @@ static const lc_opt_table_entry_t be_spill_options[] = {
 static be_module_list_entry_t *spillers = NULL;
 static const be_spiller_t *selected_spiller = NULL;
 
-void be_register_spiller(const char *name, const be_spiller_t *spiller)
+void be_register_spiller(const char *name, be_spiller_t *spiller)
 {
 	if (selected_spiller == NULL)
 		selected_spiller = spiller;

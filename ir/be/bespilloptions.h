@@ -53,7 +53,7 @@ typedef struct be_spiller_t {
  *                 used to select it
  * @param spiller  a spill entry
  */
-void be_register_spiller(const char *name, const be_spiller_t *spiller);
+void be_register_spiller(const char *name, be_spiller_t *spiller);
 
 /**
  * Execute the selected spill algorithm

@@ -148,7 +148,7 @@ void be_quit_modules(void)
 //---------------------------------------------------------------------------
 
 typedef struct module_opt_data_t {
-	const void **var;
+	void **var;
 	be_module_list_entry_t * const *list_head;
 } module_opt_data_t;
 
@@ -241,7 +241,7 @@ int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
  * Add a new module to list.
  */
 void be_add_module_to_list(be_module_list_entry_t **list_head, const char *name,
-                           const void *module)
+                           void *module)
 {
 	be_module_list_entry_t *entry = XMALLOC(be_module_list_entry_t);
 	entry->name = name;
