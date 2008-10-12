@@ -66,7 +66,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const arm_code_gen_t *cg;
-static const arm_isa_t      *isa;
 static set                  *sym_or_tv;
 
 /**
@@ -810,7 +809,7 @@ static void emit_be_Copy(const ir_node *irn) {
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(isa)) {
+		if (USE_FPA(cg->isa)) {
 			be_emit_cstring("\tmvf");
 			arm_emit_mode(irn);
 			be_emit_char(' ');
@@ -1200,7 +1199,6 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	ir_entity *entity     = get_irg_entity(irg);
 
 	cg        = arm_cg;
-	isa       = cg->isa;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
 	arm_register_emitters();
