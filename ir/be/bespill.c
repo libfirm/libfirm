@@ -835,7 +835,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		spill_t *s;
 		double   spills_execfreq;
 
-		/* calculate sum of executaion frequencies of individual spills */
+		/* calculate sum of execution frequencies of individual spills */
 		spills_execfreq = 0;
 		s               = spillinfo->spills;
 		for( ; s != NULL; s = s->next) {
