@@ -1032,12 +1032,11 @@ found_front:
  * @param irn      The node to be checked for lowering
  * @param walk_env The walker environment
  */
-static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env) {
+static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
+{
 	int perm_stayed;
 
-	if (is_Block(irn) || is_Proj(irn))
-		return;
-	if (!be_is_Perm(irn))
+	if (be_is_Perm(irn))
 		return;
 
 	perm_stayed = push_through_perm(irn, walk_env);
