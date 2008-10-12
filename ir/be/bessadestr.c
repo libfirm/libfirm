@@ -53,10 +53,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define get_reg(irn)         arch_get_irn_register(irn)
 #define set_reg(irn, reg)    arch_set_irn_register(irn, reg)
 
-#define is_Perm(irn)            (arch_irn_class_is(arch_env, irn, perm))
-#define get_reg_cls(irn)        (arch_get_irn_reg_class(arch_env, irn, -1))
-#define is_curr_reg_class(irn)  (get_reg_cls(p) == chordal_env->cls)
-
 static void clear_link(ir_node *irn, void *data) {
 	(void) data;
 	set_irn_link(irn, NULL);
