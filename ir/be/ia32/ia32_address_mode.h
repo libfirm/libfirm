@@ -46,10 +46,14 @@ struct ia32_address_t {
 	int        symconst_sign; /**< The "sign" of the symconst. */
 };
 
+typedef enum ia32_create_am_flags_t {
+	ia32_create_am_force = 1U << 0 /**< Ignore the marking of node as a non-address-mode node */
+} ia32_create_am_flags_t;
+
 /**
  * Create an address mode for a given node.
  */
-void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force);
+void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_am_flags_t);
 
 /**
  * Mark those nodes of the given graph that cannot be used inside an

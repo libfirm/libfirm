@@ -196,13 +196,15 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
  *
  * @param addr    the address mode data so far
  * @param node    the node
- * @param force   if set, ignore the marking of node as a non-address-mode node
+ * @param flags   the flags
  *
  * @return the folded node
  */
-static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node, int force)
+static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
+                               ia32_create_am_flags_t flags)
 {
-	if (!force && bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+	if (!(flags & ia32_create_am_force) &&
+			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
 		return node;
 
 	if (is_Add(node)) {
@@ -295,7 +297,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 }
 
 /* Create an address mode for a given node. */
-void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
+void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_am_flags_t flags)
 {
 	int      res = 0;
 	ir_node *eat_imms;
@@ -306,20 +308,21 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 	}
 
 #ifndef AGGRESSIVE_AM
-	if (!force && get_irn_n_edges(node) > 1) {
+	if (!(flags & ia32_create_am_force) && get_irn_n_edges(node) > 1) {
 		addr->base = node;
 		return;
 	}
 #endif
 
-	if (!force && bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
+	if (!(flags & ia32_create_am_force) &&
+			bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
 		addr->base = node;
 		return;
 	}
 
-	eat_imms = eat_immediates(addr, node, force);
+	eat_imms = eat_immediates(addr, node, flags);
 	if (eat_imms != node) {
-		if (force) {
+		if (flags & ia32_create_am_force) {
 			eat_imms = ia32_skip_downconv(eat_imms);
 		}
 
@@ -357,13 +360,13 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, int force)
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
 
-		if (force) {
+		if (flags & ia32_create_am_force) {
 			left  = ia32_skip_downconv(left);
 			right = ia32_skip_downconv(right);
 		}
 
-		assert(force || !is_immediate(addr, left, 0));
-		assert(force || !is_immediate(addr, right, 0));
+		assert(flags & ia32_create_am_force || !is_immediate(addr, left,  0));
+		assert(flags & ia32_create_am_force || !is_immediate(addr, right, 0));
 
 		if (eat_shl(addr, left)) {
 			left = NULL;
