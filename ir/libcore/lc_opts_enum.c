@@ -83,12 +83,22 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name),
 	const char *prefix								= "";			 \
 	TYPE(value) = *var->value; \
 	int i; \
+	size_t l = strlen(buf); \
  \
-	for(i = 0; items[i].name != NULL; ++i) { \
+	if (l >= n) \
+		return (int)l; \
+	n -= l; \
+	n += 2; \
+	for (i = 0; items[i].name != NULL; ++i) { \
 		TYPE(item_value) = items[i].value; \
-		if(cond) { \
-			strncat(buf, prefix, n); \
-			strncat(buf, items[i].name, n); \
+		if (cond) { \
+			if (n <= 2) \
+				break; \
+			strcat(buf, prefix); \
+			l = strlen(items[i].name); \
+			if (n <= l) \
+				break; \
+			strcat(buf, items[i].name); \
 			prefix = ", "; \
 		} \
 	} \
@@ -104,10 +114,21 @@ int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, LC_UNUSED(const char *n
 	const lc_opt_enum_ ## N ## _items_t *items	= var->items; \
 	const char *prefix								= "";			 \
 	int i; \
+	size_t l = strlen(buf); \
  \
-	for(i = 0; items[i].name != NULL; ++i) { \
-		strncat(buf, prefix, n); \
-		strncat(buf, items[i].name, n); \
+	if (l >= n) \
+		return (int)l; \
+	n -= l; \
+	n += 2; \
+	for (i = 0; items[i].name != NULL; ++i) { \
+		if (n <= 2) \
+			break; \
+		strcat(buf, prefix); n -= 2; \
+		l = strlen(items[i].name); \
+		if (n <= l) \
+			break; \
+		strcat(buf, items[i].name); \
+		n -= l; \
 		prefix = ", "; \
 	} \
  \
