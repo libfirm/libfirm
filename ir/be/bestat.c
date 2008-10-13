@@ -153,11 +153,9 @@ double be_estimate_irg_costs(ir_graph *irg, ir_exec_freq *execfreqs)
 
 
 
-static be_node_stats_t *stats;
-
 static void node_stat_walker(ir_node *irn, void *data)
 {
-	(void) data;
+	be_node_stats_t *const stats = data;
 
 	/* if the node is a normal phi */
 	if(is_Phi(irn)) {
@@ -184,10 +182,8 @@ static void node_stat_walker(ir_node *irn, void *data)
 
 void be_collect_node_stats(be_node_stats_t *new_stats, be_irg_t *birg)
 {
-	stats = new_stats;
-
-	memset(stats, 0, sizeof(*stats));
-	irg_walk_graph(birg->irg, NULL, node_stat_walker, NULL);
+	memset(new_stats, 0, sizeof(*new_stats));
+	irg_walk_graph(birg->irg, NULL, node_stat_walker, new_stats);
 }
 
 void be_subtract_node_stats(be_node_stats_t *stats, be_node_stats_t *sub)
