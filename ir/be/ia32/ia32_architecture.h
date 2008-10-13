@@ -91,9 +91,21 @@ typedef struct {
 
 extern ia32_code_gen_config_t  ia32_cg_config;
 
+/** Initialize the ia32 architecture module. */
 void ia32_init_architecture(void);
+
+/** Setup the ia32_cg_config structure by inspecting current user settings. */
 void ia32_setup_cg_config(void);
 
+/**
+ * Evaluate the costs of an instruction. Used by the irach multiplication
+ * lowerer.
+ *
+ * @param kind   the instruction
+ * @param tv     for MUL instruction, the multiplication constant
+ *
+ * @return the cost
+ */
 int ia32_evaluate_insn(insn_kind kind, tarval *tv);
 
 #endif
