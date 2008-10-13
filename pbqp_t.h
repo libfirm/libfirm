@@ -2,11 +2,12 @@
 #define KAPS_PBQP_T_H
 
 #include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "adt/obstack.h"
 
-typedef int num;
+typedef intmax_t num;
 
 #include "matrix_t.h"
 #include "vector_t.h"
@@ -15,7 +16,7 @@ typedef struct pbqp_edge pbqp_edge;
 typedef struct pbqp_node pbqp_node;
 typedef struct pbqp      pbqp;
 
-static const num INF_COSTS = INT_MAX;
+static const num INF_COSTS = INTMAX_MAX;
 
 struct pbqp {
 	struct obstack obstack;            /* Obstack. */

@@ -397,7 +397,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Minimum");
-		fprintf(pbqp->dump_file, "Minimum is equal to %d.", pbqp->solution);
+		fprintf(pbqp->dump_file, "Minimum is equal to %lld.", pbqp->solution);
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
 
@@ -676,7 +676,7 @@ void apply_RN(pbqp *pbqp)
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
-		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %d<br>\n",
+		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %lld<br>\n",
 							min);
 	}
 

@@ -14,7 +14,7 @@ static const char *cost2a(num const cost)
 	static char buf[10];
 
 	if (cost == INF_COSTS) return "inf";
-	sprintf(buf, "%6d", cost);
+	sprintf(buf, "%10lld", cost);
 	return buf;
 }
 
