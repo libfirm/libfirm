@@ -73,7 +73,7 @@ void ia32_free_non_address_mode_nodes(void);
 /**
  * Tells whether the given node is a non address mode node.
  */
-int ia32_is_non_address_mode_node(ir_node *node);
+int ia32_is_non_address_mode_node(ir_node const *node);
 
 /**
  * mark a node so it will not be used as part of address modes

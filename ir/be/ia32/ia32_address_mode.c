@@ -91,7 +91,7 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 	case iro_Sub:
 		/* Add's and Sub's are typically supported as long as both operands are
 		 * immediates */
-		if (bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+		if (ia32_is_non_address_mode_node(node))
 			return 0;
 
 		left  = get_binop_left(node);
@@ -173,14 +173,14 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 		addr->symconst_sign = negate;
 		break;
 	case iro_Add:
-		assert(!bitset_is_set(non_address_mode_nodes, get_irn_idx(node)));
+		assert(!ia32_is_non_address_mode_node(node));
 		left  = get_Add_left(node);
 		right = get_Add_right(node);
 		eat_immediate(addr, left, negate);
 		eat_immediate(addr, right, negate);
 		break;
 	case iro_Sub:
-		assert(!bitset_is_set(non_address_mode_nodes, get_irn_idx(node)));
+		assert(!ia32_is_non_address_mode_node(node));
 		left  = get_Sub_left(node);
 		right = get_Sub_right(node);
 		eat_immediate(addr, left, negate);
@@ -203,8 +203,8 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
                                ia32_create_am_flags_t flags)
 {
-	if (!(flags & ia32_create_am_force)                          &&
-			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)) &&
+	if (!(flags & ia32_create_am_force)     &&
+			ia32_is_non_address_mode_node(node) &&
 			(!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2))
 		return node;
 
@@ -284,7 +284,7 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	/* we can only eat a shl if we don't have a scale or index set yet */
 	if (addr->scale != 0 || addr->index != NULL)
 		return 0;
-	if (bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+	if (ia32_is_non_address_mode_node(node))
 		return 0;
 
 #ifndef AGGRESSIVE_AM
@@ -315,8 +315,8 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 	}
 #endif
 
-	if (!(flags & ia32_create_am_force) &&
-			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)) &&
+	if (!(flags & ia32_create_am_force)     &&
+			ia32_is_non_address_mode_node(node) &&
 			(!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2)) {
 		addr->base = node;
 		return;
@@ -336,7 +336,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 			return;
 		}
 #endif
-		if (bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
+		if (ia32_is_non_address_mode_node(node)) {
 			addr->base = node;
 			return;
 		}
@@ -377,7 +377,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 		}
 		if (left != NULL          &&
 				be_is_FrameAddr(left) &&
-				!bitset_is_set(non_address_mode_nodes, get_irn_idx(left))) {
+				!ia32_is_non_address_mode_node(left)) {
 			assert(addr->base == NULL);
 			assert(addr->frame_entity == NULL);
 			addr->base         = be_get_FrameAddr_frame(left);
@@ -386,7 +386,7 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 			left               = NULL;
 		} else if (right != NULL   &&
 				be_is_FrameAddr(right) &&
-				!bitset_is_set(non_address_mode_nodes, get_irn_idx(right))) {
+				!ia32_is_non_address_mode_node(right)) {
 			assert(addr->base == NULL);
 			assert(addr->frame_entity == NULL);
 			addr->base         = be_get_FrameAddr_frame(right);
@@ -423,7 +423,7 @@ void ia32_mark_non_am(ir_node *node)
 	bitset_set(non_address_mode_nodes, get_irn_idx(node));
 }
 
-int ia32_is_non_address_mode_node(ir_node *node)
+int ia32_is_non_address_mode_node(ir_node const *node)
 {
 	return bitset_is_set(non_address_mode_nodes, get_irn_idx(node));
 }
