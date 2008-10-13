@@ -329,14 +329,34 @@ static void peephole_ia32_Test(ir_node *node)
 		be_peephole_exchange(node, flags_proj);
 	} else if (is_ia32_Immediate(right)) {
 		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
+		unsigned                           offset;
 
 		/* A test with a symconst is rather strange, but better safe than sorry */
 		if (imm->symconst != NULL)
 			return;
-		if (imm->offset < 0 || 256 <= imm->offset)
-			return;
 
-		if (get_ia32_op_type(node) != ia32_AddrModeS) {
+		offset = imm->offset;
+		if (get_ia32_op_type(node) == ia32_AddrModeS) {
+			ia32_attr_t *const attr = get_irn_generic_attr(node);
+
+			if ((offset & 0xFFFFFF00) == 0) {
+				/* attr->am_offs += 0; */
+			} else if ((offset & 0xFFFF00FF) == 0) {
+				ir_node *imm = create_Immediate(NULL, 0, offset >>  8);
+				set_irn_n(node, n_ia32_Test_right, imm);
+				attr->am_offs += 1;
+			} else if ((offset & 0xFF00FFFF) == 0) {
+				ir_node *imm = create_Immediate(NULL, 0, offset >> 16);
+				set_irn_n(node, n_ia32_Test_right, imm);
+				attr->am_offs += 2;
+			} else if ((offset & 0x00FFFFFF) == 0) {
+				ir_node *imm = create_Immediate(NULL, 0, offset >> 24);
+				set_irn_n(node, n_ia32_Test_right, imm);
+				attr->am_offs += 3;
+			} else {
+				return;
+			}
+		} else if (offset < 256) {
 			arch_register_t const* const reg = arch_get_irn_register(left);
 
 			if (reg != &ia32_gp_regs[REG_EAX] &&
@@ -345,6 +365,8 @@ static void peephole_ia32_Test(ir_node *node)
 					reg != &ia32_gp_regs[REG_EDX]) {
 				return;
 			}
+		} else {
+			return;
 		}
 
 		/* Technically we should build a Test8Bit because of the register
