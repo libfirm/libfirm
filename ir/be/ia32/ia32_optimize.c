@@ -241,95 +241,116 @@ static void peephole_ia32_Cmp(ir_node *const node)
 
 /**
  * Peephole optimization for Test instructions.
- * We can remove the Test, if a zero flags was produced which is still
- * live.
+ * - Remove the Test, if an appropriate flag was produced which is still live
+ * - Change a Test(x, c) to 8Bit, if 0 <= c < 256 (3 byte shorter opcode)
  */
 static void peephole_ia32_Test(ir_node *node)
 {
-	ir_node         *left  = get_irn_n(node, n_ia32_Test_left);
-	ir_node         *right = get_irn_n(node, n_ia32_Test_right);
-	ir_node         *flags_proj;
-	ir_node         *block;
-	ir_mode         *flags_mode;
-	int              pn    = pn_ia32_res;
-	ir_node         *schedpoint;
-	const ir_edge_t *edge;
+	ir_node *left  = get_irn_n(node, n_ia32_Test_left);
+	ir_node *right = get_irn_n(node, n_ia32_Test_right);
 
 	assert(n_ia32_Test_left == n_ia32_Test8Bit_left
 			&& n_ia32_Test_right == n_ia32_Test8Bit_right);
 
-	/* we need a test for 0 */
-	if(left != right)
-		return;
+	if (left == right) { /* we need a test for 0 */
+		ir_node         *block = get_nodes_block(node);
+		int              pn    = pn_ia32_res;
+		ir_node         *flags_proj;
+		ir_mode         *flags_mode;
+		ir_node         *schedpoint;
+		const ir_edge_t *edge;
 
-	block = get_nodes_block(node);
-	if(get_nodes_block(left) != block)
-		return;
-
-	if(is_Proj(left)) {
-		pn   = get_Proj_proj(left);
-		left = get_Proj_pred(left);
-	}
-
-	/* happens rarely, but if it does code will panic' */
-	if (is_ia32_Unknown_GP(left))
-		return;
-
-	/* walk schedule up and abort when we find left or some other node destroys
-	   the flags */
-	schedpoint = node;
-	for (;;) {
-		schedpoint = sched_prev(schedpoint);
-		if (schedpoint == left)
-			break;
-		if (arch_irn_is(schedpoint, modify_flags))
+		if (get_nodes_block(left) != block)
 			return;
-		if (schedpoint == block)
-			panic("couldn't find left");
-	}
 
-	/* make sure only Lg/Eq tests are used */
-	foreach_out_edge(node, edge) {
-		ir_node *user = get_edge_src_irn(edge);
-		int      pnc  = get_ia32_condcode(user);
-
-		if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
-			return;
+		if (is_Proj(left)) {
+			pn   = get_Proj_proj(left);
+			left = get_Proj_pred(left);
 		}
-	}
 
-	switch (produces_test_flag(left, pn)) {
-		case produces_flag_zero:
-			break;
-
-		case produces_flag_carry:
-			foreach_out_edge(node, edge) {
-				ir_node *user = get_edge_src_irn(edge);
-				int      pnc  = get_ia32_condcode(user);
-
-				switch (pnc) {
-					case pn_Cmp_Eq: pnc = pn_Cmp_Ge | ia32_pn_Cmp_unsigned; break;
-					case pn_Cmp_Lg: pnc = pn_Cmp_Lt | ia32_pn_Cmp_unsigned; break;
-					default: panic("unexpected pn");
-				}
-				set_ia32_condcode(user, pnc);
-			}
-			break;
-
-		default:
+		/* happens rarely, but if it does code will panic' */
+		if (is_ia32_Unknown_GP(left))
 			return;
+
+		/* walk schedule up and abort when we find left or some other node destroys
+			 the flags */
+		schedpoint = node;
+		for (;;) {
+			schedpoint = sched_prev(schedpoint);
+			if (schedpoint == left)
+				break;
+			if (arch_irn_is(schedpoint, modify_flags))
+				return;
+			if (schedpoint == block)
+				panic("couldn't find left");
+		}
+
+		/* make sure only Lg/Eq tests are used */
+		foreach_out_edge(node, edge) {
+			ir_node *user = get_edge_src_irn(edge);
+			int      pnc  = get_ia32_condcode(user);
+
+			if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
+				return;
+			}
+		}
+
+		switch (produces_test_flag(left, pn)) {
+			case produces_flag_zero:
+				break;
+
+			case produces_flag_carry:
+				foreach_out_edge(node, edge) {
+					ir_node *user = get_edge_src_irn(edge);
+					int      pnc  = get_ia32_condcode(user);
+
+					switch (pnc) {
+						case pn_Cmp_Eq: pnc = pn_Cmp_Ge | ia32_pn_Cmp_unsigned; break;
+						case pn_Cmp_Lg: pnc = pn_Cmp_Lt | ia32_pn_Cmp_unsigned; break;
+						default: panic("unexpected pn");
+					}
+					set_ia32_condcode(user, pnc);
+				}
+				break;
+
+			default:
+				return;
+		}
+
+		left = turn_into_mode_t(left);
+
+		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
+		flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
+				pn_ia32_flags);
+		arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
+
+		assert(get_irn_mode(node) != mode_T);
+
+		be_peephole_exchange(node, flags_proj);
+	} else if (is_ia32_Immediate(right)) {
+		ia32_immediate_attr_t const *const imm = get_ia32_immediate_attr_const(right);
+
+		/* A test with a symconst is rather strange, but better safe than sorry */
+		if (imm->symconst != NULL)
+			return;
+		if (imm->offset < 0 || 256 <= imm->offset)
+			return;
+
+		if (get_ia32_op_type(node) != ia32_AddrModeS) {
+			arch_register_t const* const reg = arch_get_irn_register(left);
+
+			if (reg != &ia32_gp_regs[REG_EAX] &&
+					reg != &ia32_gp_regs[REG_EBX] &&
+					reg != &ia32_gp_regs[REG_ECX] &&
+					reg != &ia32_gp_regs[REG_EDX]) {
+				return;
+			}
+		}
+
+		/* Technically we should build a Test8Bit because of the register
+		 * constraints, but nobody changes registers at this point anymore. */
+		set_ia32_ls_mode(node, mode_Bu);
 	}
-
-	left = turn_into_mode_t(left);
-
-	flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-	flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
-	                        pn_ia32_flags);
-	arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
-
-	assert(get_irn_mode(node) != mode_T);
-
-	be_peephole_exchange(node, flags_proj);
 }
 
 /**
