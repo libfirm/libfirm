@@ -26,9 +26,7 @@
  *
  * Abstract graph implementations for the CFG of a ir_graph.
  */
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "irgraph_t.h"
 #include "iredges_t.h"

@@ -17,9 +17,7 @@
    License along with the GNU C Library; if not, write to the Free
    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
    Boston, MA 02110-1301, USA.  */
-#ifdef HAVE_CONFIG_H
-# include <config.h>
-#endif
+#include <config.h>
 
 #include "obstack.h"
 
@@ -94,7 +92,7 @@ int obstack_exit_failure = EXIT_FAILURE;
       (*(void (*) (void *)) (h)->freefun) ((old_chunk)); \
   } while (0)
 
-
+
 /* Initialize an obstack H for use.  Specify chunk size SIZE (0 means default).
    Objects start on multiples of ALIGNMENT (0 means use default).
    CHUNKFUN is the function to use to allocate chunks,
@@ -295,7 +293,7 @@ _obstack_allocated_p (struct obstack *h, void *obj)
     }
   return lp != 0;
 }
-
+
 /* Free objects in obstack H, including OBJ and everything allocate
    more recently than OBJ.  If OBJ is zero, free everything in H.  */
 

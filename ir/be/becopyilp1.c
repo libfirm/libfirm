@@ -24,7 +24,7 @@
  * @date    17.05.2005
  * @version $Id$
  */
-#include "config.h" /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifdef WITH_ILP
 

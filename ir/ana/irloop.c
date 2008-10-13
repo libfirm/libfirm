@@ -24,9 +24,7 @@
  * @date     7.2002
  * @version  $Id: irloop_t.h 17143 2008-01-02 20:56:33Z beck $
  */
-#ifdef HAVE_CONFIG_H
 # include "config.h"
-#endif
 
 #ifdef HAVE_STRING_H
 # include <string.h>

@@ -24,7 +24,7 @@
  * @date       16.11.2006
  * @version    $Id$
  */
-#include "config.h" /* HAVE_CONFIG_H */
+#include "config.h"
 
 #include "assert.h"
 #include "irhooks.h"

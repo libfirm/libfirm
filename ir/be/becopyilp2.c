@@ -44,7 +44,7 @@
  *
  *		x_nc, y_ij \in N,   w_ij \in R^+
  */
-#include "config.h" /* HAVE_CONFIG_H */
+#include "config.h"
 
 #ifdef WITH_ILP
 
