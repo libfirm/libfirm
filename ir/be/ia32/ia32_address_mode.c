@@ -475,7 +475,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 	case iro_Store:
 		/* Do not mark the pointer, because we want to turn it into AM. */
 		val = get_Store_value(node);
-		bitset_set(non_address_mode_nodes, get_irn_idx(val));
+		ia32_mark_non_am(val);
 		break;
 
 	case iro_Shl:
@@ -505,7 +505,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		/* At least one of left and right are not used by anyone else, so it is
 		 * beneficial for the register pressure (if both are unused otherwise,
 		 * else neutral) and ALU use to not fold AM. */
-		bitset_set(non_address_mode_nodes, get_irn_idx(node));
+		ia32_mark_non_am(node);
 		break;
 
 	default:
@@ -513,7 +513,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
-			bitset_set(non_address_mode_nodes, get_irn_idx(in));
+			ia32_mark_non_am(in);
 		}
 		break;
 	}
