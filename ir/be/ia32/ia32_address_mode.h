@@ -35,15 +35,15 @@
  */
 typedef struct ia32_address_t ia32_address_t;
 struct ia32_address_t {
-    ir_node   *base;             /**< The base register (if any) */
-    ir_node   *index;            /**< The index register (if any). */
-	ir_node   *mem;              /**< The memory value (if any). */
-    int        offset;           /**< An integer offset. */
-    int        scale;            /**< An integer scale. {0,1,2,3} */
-    ir_entity *symconst_ent;     /**< A SynConst entity if any. */
-    int        use_frame;        /**< Set, if the frame is accessed */
-    ir_entity *frame_entity;     /**< The accessed frame entity if any. */
-    int        symconst_sign;    /**< The "sign" of the symconst. */
+	ir_node   *base;          /**< The base register (if any) */
+	ir_node   *index;         /**< The index register (if any). */
+	ir_node   *mem;           /**< The memory value (if any). */
+	int        offset;        /**< An integer offset. */
+	int        scale;         /**< An integer scale. {0,1,2,3} */
+	ir_entity *symconst_ent;  /**< A SynConst entity if any. */
+	int        use_frame;     /**< Set, if the frame is accessed */
+	ir_entity *frame_entity;  /**< The accessed frame entity if any. */
+	int        symconst_sign; /**< The "sign" of the symconst. */
 };
 
 /**
