@@ -496,7 +496,7 @@ static void build_address_ptr(ia32_address_t *addr, ir_node *ptr, ir_node *mem)
 
 	/* construct load address */
 	memset(addr, 0, sizeof(addr[0]));
-	ia32_create_address_mode(addr, ptr, /*force=*/0);
+	ia32_create_address_mode(addr, ptr, 0);
 
 	noreg_gp    = ia32_new_NoReg_gp(env_cg);
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
@@ -535,7 +535,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	am->am_node  = node;
 
 	/* construct load address */
-	ia32_create_address_mode(addr, ptr, /*force=*/0);
+	ia32_create_address_mode(addr, ptr, 0);
 
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_gp;
@@ -1075,7 +1075,7 @@ static ir_node *gen_Add(ir_node *node)
 	 *   3. Otherwise -> Lea
 	 */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, node, /*force=*/1);
+	ia32_create_address_mode(&addr, node, ia32_create_am_force);
 	add_immediate_op = NULL;
 
 	dbgi      = get_irn_dbg_info(node);
@@ -1859,7 +1859,7 @@ static ir_node *gen_Load(ir_node *node)
 
 	/* construct load address */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, /*force=*/0);
+	ia32_create_address_mode(&addr, ptr, 0);
 	base  = addr.base;
 	index = addr.index;
 
@@ -2368,7 +2368,7 @@ static ir_node *gen_normal_Store(ir_node *node)
 
 	/* construct store address */
 	memset(&addr, 0, sizeof(addr));
-	ia32_create_address_mode(&addr, ptr, /*force=*/0);
+	ia32_create_address_mode(&addr, ptr, 0);
 
 	if (addr.base == NULL) {
 		addr.base = noreg;
