@@ -109,16 +109,8 @@ void arch_dep_init(arch_dep_params_factory_t factory);
 void arch_dep_set_opts(arch_dep_opts_t opts);
 
 /**
- * Replace Muls with Shifts and Add/Subs.
- * This function is driven by the 3 parameters:
- * - also_use_subs
- * - maximum_shifts
- * - highest_shift_amount
- *
- * If irn is a Mul with a Const, the constant is inspected if it meets the
- * requirements of the three variables stated above. If a Shl/Add/Sub
- * sequence can be generated that meets these requirements, this expression
- * is returned. In each other case irn is returned unmodified.
+ * Replace Muls with Lea/Shifts/Add/Subs if these
+ * have smaller costs than the original multiplication.
  *
  * @param irn       The Firm node to inspect.
  * @return          A replacement expression for irn.
