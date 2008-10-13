@@ -2027,11 +2027,11 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 	ir_node  *mem_proj;
 	ia32_address_mode_t  am;
 	ia32_address_t *addr = &am.addr;
-	memset(&am, 0, sizeof(am));
 
 	if (!use_dest_am(src_block, op, mem, ptr, NULL))
 		return NULL;
 
+	memset(&am, 0, sizeof(am));
 	build_address(&am, op);
 
 	dbgi     = get_irn_dbg_info(node);
@@ -2160,8 +2160,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_rd_ia32_SubMem, new_rd_ia32_SubMem8Bit,
-		                         match_dest_am | match_immediate |
-		                         match_immediate);
+		                         match_dest_am | match_immediate);
 		break;
 	case iro_And:
 		op1      = get_And_left(val);
