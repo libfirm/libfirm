@@ -2264,7 +2264,8 @@ static int is_float_to_int_conv(const ir_node *node)
 }
 
 /**
- * Transform a Store(floatConst).
+ * Transform a Store(floatConst) into a sequence of
+ * integer stores.
  *
  * @return the created ia32 Store node
  */
@@ -2344,11 +2345,11 @@ static ir_node *gen_vfist(dbg_info *dbgi, ir_graph *irg, ir_node *block, ir_node
 	return new_node;
 }
 /**
- * Transforms a normal Store.
+ * Transforms a general (no special case) Store.
  *
  * @return the created ia32 Store node
  */
-static ir_node *gen_normal_Store(ir_node *node)
+static ir_node *gen_general_Store(ir_node *node)
 {
 	ir_node  *val       = get_Store_value(node);
 	ir_mode  *mode      = get_irn_mode(val);
@@ -2452,18 +2453,14 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode = get_irn_mode(val);
 
 	if (mode_is_float(mode) && is_Const(val)) {
-		int transform;
-
-		/* we are storing a floating point constant */
-		if (ia32_cg_config.use_sse2) {
-			transform = !is_simple_sse_Const(val);
-		} else {
-			transform = !is_simple_x87_Const(val);
-		}
-		if (transform)
-			return gen_float_const_Store(node, val);
+		/* We can transform every floating const store
+		   into a sequence of integer stores.
+		   If the constant is already in a register,
+		   it would be better to use it, but we don't
+		   have this information here. */
+		return gen_float_const_Store(node, val);
 	}
-	return gen_normal_Store(node);
+	return gen_general_Store(node);
 }
 
 /**
