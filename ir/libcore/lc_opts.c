@@ -628,7 +628,7 @@ static void lc_opt_print_help_rec(lc_opt_entry_t *ent, char separator, lc_opt_en
 	lc_grp_special_t *s = lc_get_grp_special(ent);
 	char grp_name[512];
 	char value[256];
-	char values[256];
+	char values[512];
 	lc_opt_entry_t *e;
 
 	if(!list_empty(&s->opts)) {
