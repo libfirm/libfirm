@@ -1455,10 +1455,10 @@ need_stackent:
 					mode = mode_Is;
 				} else if (attr->data.need_64bit_stackent) {
 					mode = mode_Ls;
-				} else if (is_ia32_is_reload(node)) {
-					mode = get_spill_mode_mode(mode);
 				} else {
 					mode = get_ia32_ls_mode(node);
+					if (is_ia32_is_reload(node))
+						mode = get_spill_mode_mode(mode);
 				}
 				align = get_mode_size_bytes(mode);
 				break;
