@@ -43,7 +43,6 @@
 /* gas/ld don't support negative symconsts :-( */
 #undef SUPPORT_NEGATIVE_SYMCONSTS
 
-static be_lv_t  *lv;
 static bitset_t *non_address_mode_nodes;
 
 /**
@@ -428,9 +427,9 @@ int ia32_is_non_address_mode_node(ir_node const *node)
 	return bitset_is_set(non_address_mode_nodes, get_irn_idx(node));
 }
 
-static int value_last_used_here(ir_node *here, ir_node *value)
+static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 {
-	ir_node *block = get_nodes_block(here);
+	ir_node         *block = get_nodes_block(here);
 	const ir_edge_t *edge;
 
 	/* If the value is live end it is for sure it does not die here */
@@ -455,12 +454,13 @@ static int value_last_used_here(ir_node *here, ir_node *value)
  */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
-	int i, arity;
+	be_lv_t *lv = env;
+	int      arity;
+	int      i;
 	ir_node *val;
 	ir_node *left;
 	ir_node *right;
 	ir_mode *mode;
-	(void) env;
 
 	mode = get_irn_mode(node);
 	if (!mode_is_int(mode) && !mode_is_reference(mode) && mode != mode_b)
@@ -497,8 +497,8 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		 * an addition and has the same register pressure for the case that only
 		 * one operand dies, but is faster (on Pentium 4).
 		 * && instead of || only folds AM if both operands do not die here */
-		if (!value_last_used_here(node, left) ||
-				!value_last_used_here(node, right)) {
+		if (!value_last_used_here(lv, node, left) ||
+				!value_last_used_here(lv, node, right)) {
 			return;
 		}
 
@@ -522,11 +522,11 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 void ia32_calculate_non_address_mode_nodes(be_irg_t *birg)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
+	be_lv_t  *lv  = be_assure_liveness(birg);
 
-	lv                     = be_assure_liveness(birg);
 	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
 
-	irg_walk_graph(irg, NULL, mark_non_address_nodes, NULL);
+	irg_walk_graph(irg, NULL, mark_non_address_nodes, lv);
 }
 
 void ia32_free_non_address_mode_nodes(void)
