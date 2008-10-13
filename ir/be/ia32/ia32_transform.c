@@ -1942,25 +1942,10 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 		return 0;
 	}
 
-	if (is_Sync(mem)) {
-		int i;
-
-		for (i = get_Sync_n_preds(mem) - 1; i >= 0; --i) {
-			ir_node *const pred = get_Sync_pred(mem, i);
-
-			if (is_Proj(pred) && get_Proj_pred(pred) == load)
-				continue;
-
-			if (get_nodes_block(pred) == block &&
-			    heights_reachable_in_block(heights, pred, load)) {
-				return 0;
-			}
-		}
-	} else {
-		/* Store should be attached to the load */
-		if (!is_Proj(mem) || get_Proj_pred(mem) != load)
-			return 0;
-	}
+	if (prevents_AM(block, load, mem))
+		return 0;
+	/* Store should be attached to the load via mem */
+	assert(heights_reachable_in_block(heights, mem, load));
 
 	return 1;
 }
