@@ -504,7 +504,8 @@ static void build_address_ptr(ia32_address_t *addr, ir_node *ptr, ir_node *mem)
 	addr->mem   = be_transform_node(mem);
 }
 
-static void build_address(ia32_address_mode_t *am, ir_node *node)
+static void build_address(ia32_address_mode_t *am, ir_node *node,
+                          ia32_create_am_flags_t flags)
 {
 	ir_node        *noreg_gp = ia32_new_NoReg_gp(env_cg);
 	ia32_address_t *addr     = &am->addr;
@@ -535,7 +536,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node)
 	am->am_node  = node;
 
 	/* construct load address */
-	ia32_create_address_mode(addr, ptr, 0);
+	ia32_create_address_mode(addr, ptr, flags);
 
 	addr->base  = addr->base  ? be_transform_node(addr->base)  : noreg_gp;
 	addr->index = addr->index ? be_transform_node(addr->index) : noreg_gp;
@@ -696,7 +697,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	noreg_gp = ia32_new_NoReg_gp(env_cg);
 	if (new_op2 == NULL &&
 	    use_am && ia32_use_source_address_mode(block, op2, op1, other_op, flags)) {
-		build_address(am, op2);
+		build_address(am, op2, 0);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		if (mode_is_float(mode)) {
 			new_op2 = ia32_new_NoReg_vfp(env_cg);
@@ -708,7 +709,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		       use_am &&
 		       ia32_use_source_address_mode(block, op1, op2, other_op, flags)) {
 		ir_node *noreg;
-		build_address(am, op1);
+		build_address(am, op1, 0);
 
 		if (mode_is_float(mode)) {
 			noreg = ia32_new_NoReg_vfp(env_cg);
@@ -1975,10 +1976,10 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	commutative = (flags & match_commutative) != 0;
 
 	if (use_dest_am(src_block, op1, mem, ptr, op2)) {
-		build_address(&am, op1);
+		build_address(&am, op1, ia32_create_am_double_use);
 		new_op = create_immediate_or_transform(op2, 0);
 	} else if (commutative && use_dest_am(src_block, op2, mem, ptr, op1)) {
-		build_address(&am, op2);
+		build_address(&am, op2, ia32_create_am_double_use);
 		new_op = create_immediate_or_transform(op1, 0);
 	} else {
 		return NULL;
@@ -2032,7 +2033,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 		return NULL;
 
 	memset(&am, 0, sizeof(am));
-	build_address(&am, op);
+	build_address(&am, op, ia32_create_am_double_use);
 
 	dbgi     = get_irn_dbg_info(node);
 	block    = be_transform_node(src_block);

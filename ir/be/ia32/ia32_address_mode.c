@@ -203,8 +203,9 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
                                ia32_create_am_flags_t flags)
 {
-	if (!(flags & ia32_create_am_force) &&
-			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)))
+	if (!(flags & ia32_create_am_force)                          &&
+			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)) &&
+			(!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2))
 		return node;
 
 	if (is_Add(node)) {
@@ -315,7 +316,8 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 #endif
 
 	if (!(flags & ia32_create_am_force) &&
-			bitset_is_set(non_address_mode_nodes, get_irn_idx(node))) {
+			bitset_is_set(non_address_mode_nodes, get_irn_idx(node)) &&
+			(!(flags & ia32_create_am_double_use) || get_irn_n_edges(node) > 2)) {
 		addr->base = node;
 		return;
 	}

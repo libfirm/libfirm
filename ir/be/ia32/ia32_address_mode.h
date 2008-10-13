@@ -47,7 +47,11 @@ struct ia32_address_t {
 };
 
 typedef enum ia32_create_am_flags_t {
-	ia32_create_am_force = 1U << 0 /**< Ignore the marking of node as a non-address-mode node */
+	ia32_create_am_force      = 1U << 0, /**< Ignore the marking of node as a
+	                                          non-address-mode node */
+	ia32_create_am_double_use = 1U << 1  /**< Fold AM, even if the root of
+	                                          address calculation has two users.
+	                                          This is useful for dest AM */
 } ia32_create_am_flags_t;
 
 /**
