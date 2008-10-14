@@ -312,21 +312,13 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *grp,
 const lc_arg_env_t *lc_opt_get_arg_env(void);
 
 /**
- * Standard procedure for options initialization.
- * @param cmnt_name  Base name for the file.
- * @param root       The option's root.
- * @param arg_prefix A prefix that is added to each option.
- * @param argc       Number of entries in @p argv.
- * @param argv       A stadard argument vector.
- *
  * This function tries to open a ini file in the user's homedir
  * (On win32 this is \Documents and Settings\Application Data)
  * which is called .<ini_name>rc (on win32 <ini_name>.ini)
  *
  * and an ini file in the current directory which is called <ini_name>.ini on
  * both systems.
- * Afterwards, the argument vectors are processed.
  */
-void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_prefix, int argc, const char **argv);
+void lc_opt_default_configs(const char *init_name);
 
 #endif

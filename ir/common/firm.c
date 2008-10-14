@@ -73,8 +73,8 @@ lc_opt_entry_t *firm_opt_get_root(void) {
 }
 
 void firm_init_options(const char *arg_prefix, int argc, const char **argv) {
-	/* parse any init files for firm */
-	lc_opts_init("firm", firm_opt_get_root(), arg_prefix, argc, argv);
+	/* parse commandline */
+	lc_opt_from_argv(firm_opt_get_root(), arg_prefix, argc, argv, NULL);
 }
 
 void init_firm(const firm_parameter_t *param)

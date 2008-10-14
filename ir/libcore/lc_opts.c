@@ -815,6 +815,12 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 	return ret;
 }
 
+static int lc_opts_default_error_handler(const char *prefix, const lc_opt_err_info_t *err)
+{
+	fprintf(stderr, "%s: %s; %s\n", prefix, err->msg, err->arg);
+	return 0;
+}
+
 int lc_opt_from_argv(const lc_opt_entry_t *root,
 					 const char *opt_prefix,
 					 int argc, const char *argv[],
@@ -822,6 +828,9 @@ int lc_opt_from_argv(const lc_opt_entry_t *root,
 {
 	int i;
 	int options_set = 0;
+
+	if (handler == NULL)
+		handler = lc_opts_default_error_handler;
 
 	for(i = 0; i < argc; ++i) {
 		options_set |= lc_opt_from_single_arg(root, opt_prefix, argv[i], handler);
@@ -890,13 +899,7 @@ const lc_arg_env_t *lc_opt_get_arg_env(void)
 	return env;
 }
 
-static int lc_opts_default_error_handler(const char *prefix, const lc_opt_err_info_t *err)
-{
-	fprintf(stderr, "%s: %s; %s\n", prefix, err->msg, err->arg);
-	return 0;
-}
-
-void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_prefix, int argc, const char **argv)
+void lc_opt_default_configs(const char *ini_name)
 {
 	FILE *f;
 	char path[MAX_PATH];
@@ -939,7 +942,6 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 	/* Process ini file in user's home. */
 	f = fopen(path, "rt");
 	if (f) {
-		fprintf(stderr, "Warning: Automatically reading options from '%s'\n", path);
 		lc_opt_from_file(path, f, lc_opts_default_error_handler);
 		fclose(f);
 	}
@@ -947,11 +949,7 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 	/* Process ini file in current directory. */
 	f = fopen(local_ini_file, "rt");
 	if (f) {
-		fprintf(stderr, "Warning: Automatically reading options from '%s'\n", local_ini_file);
 		lc_opt_from_file(local_ini_file, f, lc_opts_default_error_handler);
 		fclose(f);
 	}
-
-	/* process arguments from the command line */
-	lc_opt_from_argv(root, arg_prefix, argc, argv, lc_opts_default_error_handler);
 }
