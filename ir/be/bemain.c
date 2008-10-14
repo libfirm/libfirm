@@ -334,7 +334,7 @@ void be_opt_register(void)
 int be_parse_arg(const char *arg) {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
-		lc_opt_print_help(be_grp, stdout);
+		lc_opt_print_help_for_entry(be_grp, '-', stdout);
 		return -1;
 	}
 	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
