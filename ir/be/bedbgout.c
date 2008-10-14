@@ -80,9 +80,6 @@ void be_dbg_open(void) {
 }
 
 void be_register_dbgout_module(const char *name,
-                               be_create_dbgout_module_func func);
-
-void be_register_dbgout_module(const char *name,
                                be_create_dbgout_module_func func)
 {
 	if (selected_dbgout_module == NULL)
@@ -102,7 +99,7 @@ void be_init_dbgout(void) {
 
 	be_add_module_list_opt(be_grp, "debuginfo", "debug info format",
 	                       &dbgout_modules, (void**) &selected_dbgout_module);
-	be_register_dbgout_module("null", create_null_dbgout_module);
+	be_register_dbgout_module("none", create_null_dbgout_module);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dbgout);
