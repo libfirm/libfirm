@@ -156,7 +156,6 @@ foreach my $class_name (keys(%reg_classes)) {
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};
-		my $execunitvarname = get_execunit_variable_name($_->{"unit"});
 
 
 		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
@@ -166,8 +165,7 @@ foreach my $class_name (keys(%reg_classes)) {
 		push(@obst_regtypes_def, "\t\t\"$realname\",\n");
 		push(@obst_regtypes_def, "\t\t$class_ptr,\n");
 		push(@obst_regtypes_def, "\t\tREG_${ucname},\n");
-		push(@obst_regtypes_def, "\t\t$type,\n");
-		push(@obst_regtypes_def, "\t\t$execunitvarname\n");
+		push(@obst_regtypes_def, "\t\t$type\n");
 		push(@obst_regtypes_def, "\t},\n");
 
 		$idx++;

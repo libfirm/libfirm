@@ -43,7 +43,6 @@ struct arch_register_t {
 	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
 	unsigned                    index;        /**< The index of the register in the class. */
 	arch_register_type_t        type;         /**< The type of the register. */
-	void                        *data;        /**< Custom data. */
 };
 
 static INLINE const arch_register_class_t *
