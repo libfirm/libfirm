@@ -881,11 +881,13 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 	/* The user specified another config file to read. do that now. */
 	if (config_file[0] != '\0') {
-		FILE *f;
+		FILE *f = fopen(config_file, "rt");
 
-		if ((f = fopen(config_file, "rt")) != NULL) {
+		if (f != NULL) {
 			lc_opt_from_file(config_file, f, NULL);
 			fclose(f);
+		} else {
+			fprintf(stderr, "Warning: Cannot open config file '%s'\n", config_file);
 		}
 	}
 
