@@ -155,7 +155,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("omitleaffp", "omit frame pointer in leaf routines",                 &be_options.omit_leaf_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_BOOL     ("gprof",      "create gprof profiling code",                         &be_options.gprof),
-	LC_OPT_ENT_ENUM_PTR ("vrfy",       "verify the backend irg",                              &vrfy_var),
+	LC_OPT_ENT_ENUM_PTR ("verify",       "verify the backend irg",                              &vrfy_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
 	LC_OPT_ENT_ENUM_PTR ("sched",      "select a scheduler",                                  &sched_var),
