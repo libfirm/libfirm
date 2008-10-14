@@ -270,9 +270,9 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 		}
 		BE_TIMER_POP(t_ra_spill_apply);
 
-		BE_TIMER_PUSH(t_verify);
 
 		/* verify schedule and register pressure */
+		BE_TIMER_PUSH(t_verify);
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(birg);
 			be_verify_register_pressure(birg, pse->cls, irg);
@@ -448,7 +448,12 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	}
 
 	BE_TIMER_PUSH(t_verify);
-	be_verify_register_allocation(birg);
+	if (chordal_env.opts->vrfy_option == BE_CH_VRFY_WARN) {
+		be_verify_register_allocation(birg);
+	} else if(chordal_env.opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+		assert(be_verify_register_allocation(birg)
+				&& "Register allocation invalid");
+	}
 	BE_TIMER_POP(t_verify);
 
 	BE_TIMER_PUSH(t_ra_epilog);
