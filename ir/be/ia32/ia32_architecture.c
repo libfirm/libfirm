@@ -492,14 +492,14 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster then leave although it has a
 	 * longer opcode */
-	ia32_cg_config.use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2);
+	ia32_cg_config.use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
 	ia32_cg_config.use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
 	ia32_cg_config.use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
 	ia32_cg_config.use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
 	ia32_cg_config.use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
-	/* valgrind can't cope with femms yet and the usefullness of the optimisation is questionable anyway */
+	/* valgrind can't cope with femms yet and the usefulness of the optimization is questionable anyway */
 #if 0
 	ia32_cg_config.use_femms            = FLAGS(opt_arch, arch_athlon_plus) &&
 	                                      FLAGS(arch, arch_feature_mmx | arch_all_amd);
@@ -536,7 +536,7 @@ void ia32_setup_cg_config(void)
 	ia32_cg_config.label_alignment          = arch_costs->label_alignment;
 	ia32_cg_config.label_alignment_max_skip = arch_costs->label_alignment_max_skip;
 
-	if (opt_arch & (arch_i386 | arch_i486)) {
+	if (opt_arch & (arch_i386 | arch_i486) || opt_size) {
 		ia32_cg_config.label_alignment_factor = 0;
 	} else if (opt_arch & arch_all_amd) {
 		ia32_cg_config.label_alignment_factor = 3;
