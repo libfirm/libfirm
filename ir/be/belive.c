@@ -57,19 +57,24 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc);
 
+/**
+ * Filter out some nodes for which we never need liveness.
+ *
+ * @param irn  the node t check
+ * @return 0 if no liveness info is needed, 1 else
+ */
 static INLINE int is_liveness_node(const ir_node *irn)
 {
-	switch(get_irn_opcode(irn)) {
+	switch (get_irn_opcode(irn)) {
 	case iro_Block:
 	case iro_Bad:
 	case iro_End:
 	case iro_Anchor:
 	case iro_NoMem:
 		return 0;
-	default:;
+	default:
+		return 1;
 	}
-
-	return 1;
 }
 
 int (be_lv_next_irn)(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
@@ -364,10 +369,10 @@ static void live_end_at_block(be_lv_t *lv, ir_node *def, ir_node *block, bitset_
 	}
 }
 
-struct _lv_walker_t {
+typedef struct _lv_walker_t {
 	be_lv_t *lv;
 	void *data;
-};
+} lv_walker_t;
 
 typedef struct lv_remove_walker_t {
 	be_lv_t       *lv;
@@ -377,22 +382,16 @@ typedef struct lv_remove_walker_t {
 
 /**
  * Liveness analysis for a value.
- * This functions is meant to be called by a firm walker, to compute the
- * set of all blocks a value is live in.
- * @param irn The node (value).
- * @param env Ignored.
+ * Compute the set of all blocks a value is live in.
+ * @param irn     The node (value).
+ * @param walker  walker data
  */
-static void liveness_for_node(ir_node *irn, void *data)
+static void liveness_for_node(ir_node *irn, lv_walker_t *walker)
 {
-	struct _lv_walker_t *walker = data;
-	be_lv_t *lv       = walker->lv;
-	bitset_t *visited = walker->data;
+	be_lv_t         *lv      = walker->lv;
+	bitset_t        *visited = walker->data;
 	const ir_edge_t *edge;
 	ir_node *def_block;
-
-	/* Don't compute liveness information for non-data nodes. */
-	if(!is_liveness_node(irn))
-		return;
 
 	bitset_clear_all(visited);
 	def_block = get_nodes_block(irn);
@@ -409,7 +408,7 @@ static void liveness_for_node(ir_node *irn, void *data)
 		 * If the usage is no data node, skip this use, since it does not
 		 * affect the liveness of the node.
 		 */
-		if(!is_liveness_node(use))
+		if (!is_liveness_node(use))
 			continue;
 
 		/* Get the block where the usage is in. */
@@ -420,7 +419,7 @@ static void liveness_for_node(ir_node *irn, void *data)
 		 * through which the value reaches the phi function and mark the
 		 * value as live out of that block.
 		 */
-		if(is_Phi(use)) {
+		if (is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
 			live_end_at_block(lv, irn, pred_block, visited, 0);
 		}
@@ -429,12 +428,12 @@ static void liveness_for_node(ir_node *irn, void *data)
 		 * Else, the value is live in at this block. Mark it and call live
 		 * out on the predecessors.
 		 */
-		else if(def_block != use_block) {
+		else if (def_block != use_block) {
 			int i, n;
 
 			mark_live_in(lv, use_block, irn);
 
-			for(i = 0, n = get_Block_n_cfgpreds(use_block); i < n; ++i) {
+			for (i = 0, n = get_Block_n_cfgpreds(use_block); i < n; ++i) {
 				ir_node *pred_block = get_Block_cfgpred_block(use_block, i);
 				live_end_at_block(lv, irn, pred_block, visited, 1);
 			}
@@ -494,6 +493,10 @@ static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn, void *old)
 	return info;
 }
 
+/**
+ * Walker, collect all nodes for which we want calculate liveness info
+ * on an obstack.
+ */
 static void collect_nodes(ir_node *irn, void *data)
 {
 	struct obstack *obst = data;
@@ -501,6 +504,10 @@ static void collect_nodes(ir_node *irn, void *data)
 		obstack_ptr_grow(obst, irn);
 }
 
+#ifdef LV_COMPUTE_SORTED
+/**
+ * Compare two nodes by its node index.
+ */
 static int node_idx_cmp(const void *a, const void *b)
 {
 	const ir_node *p = *(ir_node **) a;
@@ -509,17 +516,18 @@ static int node_idx_cmp(const void *a, const void *b)
 	int ib = get_irn_idx(q);
 	return ia - ib;
 }
+#endif /* LV_COMPUTE_SORTED */
 
 static void compute_liveness(be_lv_t *lv)
 {
 	struct obstack obst;
-	struct _lv_walker_t w;
+	lv_walker_t w;
 	ir_node **nodes;
 	int i, n;
 
 	stat_ev_tim_push();
 	obstack_init(&obst);
-	irg_walk_graph(lv->irg, collect_nodes, NULL, &obst);
+	irg_walk_graph(lv->irg, NULL, collect_nodes, &obst);
 	n      = obstack_object_size(&obst) / sizeof(nodes[0]);
 	nodes  = obstack_finish(&obst);
 
@@ -648,8 +656,9 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 
 void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
-	if (lv->nodes) {
-		struct _lv_walker_t w;
+	/* Don't compute liveness information for non-data nodes. */
+	if (lv->nodes && is_liveness_node(irn)) {
+		lv_walker_t w;
 		w.lv   = lv;
 		w.data = bitset_malloc(get_irg_last_idx(lv->irg));
 		liveness_for_node(irn, &w);
@@ -665,7 +674,7 @@ void be_liveness_update(be_lv_t *lv, ir_node *irn)
 
 static void lv_check_walker(ir_node *bl, void *data)
 {
-	struct _lv_walker_t *w = data;
+	lv_walker_t *w = data;
 	be_lv_t *lv    = w->lv;
 	be_lv_t *fresh = w->data;
 
@@ -707,7 +716,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 
 void be_liveness_check(be_lv_t *lv)
 {
-	struct _lv_walker_t w;
+	lv_walker_t w;
 	be_lv_t *fresh = be_liveness(lv->birg);
 
 	w.lv   = lv;
@@ -719,7 +728,7 @@ void be_liveness_check(be_lv_t *lv)
 
 static void lv_dump_block_walker(ir_node *irn, void *data)
 {
-	struct _lv_walker_t *w = data;
+	lv_walker_t *w = data;
 	if(is_Block(irn))
 		lv_dump_block(w->lv, w->data, irn);
 }
@@ -728,7 +737,7 @@ static void lv_dump_block_walker(ir_node *irn, void *data)
 /* Dump the liveness information for a graph. */
 void be_liveness_dump(const be_lv_t *lv, FILE *f)
 {
-	struct _lv_walker_t w;
+	lv_walker_t w;
 
 	w.lv   = (be_lv_t *) lv;
 	w.data = f;
