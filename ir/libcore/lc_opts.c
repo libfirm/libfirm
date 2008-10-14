@@ -708,9 +708,16 @@ void lc_opt_print_tree(lc_opt_entry_t *ent, FILE *f)
 	lc_opt_print_tree_grp_indent(ent, f, 0);
 }
 
+static int lc_opts_default_error_handler(const char *prefix, const lc_opt_err_info_t *err)
+{
+	fprintf(stderr, "%s: %s; %s\n", prefix, err->msg, err->arg);
+	return 0;
+}
 
 void lc_opt_from_file(const char *filename, FILE *f, lc_opt_error_handler_t *handler)
 {
+	if (handler == NULL)
+		handler = lc_opts_default_error_handler;
 	PMANGLE(in) = f;
 	lc_opt_init_parser(filename, handler);
 	PMANGLE(parse)();
@@ -813,12 +820,6 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 	}
 
 	return ret;
-}
-
-static int lc_opts_default_error_handler(const char *prefix, const lc_opt_err_info_t *err)
-{
-	fprintf(stderr, "%s: %s; %s\n", prefix, err->msg, err->arg);
-	return 0;
 }
 
 int lc_opt_from_argv(const lc_opt_entry_t *root,
