@@ -761,7 +761,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	nbr->costs += costs;
 }
 
-static INLINE void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
+static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	if (! be_ifg_connected(co->cenv->ifg, n1, n2)) {
 		add_edge(co, n1, n2, costs);
 		add_edge(co, n2, n1, costs);

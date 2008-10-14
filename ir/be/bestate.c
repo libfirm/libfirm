@@ -76,7 +76,7 @@ typedef struct block_info_t {
 	ir_node *end_state;
 } block_info_t;
 
-static INLINE
+static inline
 block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 {
 	block_info_t *res = obstack_alloc(obst, sizeof(*res));
@@ -89,14 +89,14 @@ block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 	return res;
 }
 
-static INLINE
+static inline
 block_info_t *get_block_info(ir_node *block)
 {
 	assert(irn_visited(block));
 	return (block_info_t*) get_irn_link(block);
 }
 
-static INLINE
+static inline
 spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 {
 	spill_info_t *spill_info = obstack_alloc(&env->obst, sizeof(spill_info[0]));
@@ -113,7 +113,7 @@ spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 	return spill_info;
 }
 
-static INLINE
+static inline
 spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 {
 	spill_info_t *spill_info

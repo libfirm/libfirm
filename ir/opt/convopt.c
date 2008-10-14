@@ -52,7 +52,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-static INLINE int imin(int a, int b) { return a < b ? a : b; }
+static inline int imin(int a, int b) { return a < b ? a : b; }
 
 static
 int is_optimizable_node(const ir_node *node)

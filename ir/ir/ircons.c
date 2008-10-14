@@ -1781,7 +1781,7 @@ new_d_Block(dbg_info *db, int arity, ir_node **in) {
 * *************************************************************************** */
 
 /** Creates a Phi node with 0 predecessors. */
-static INLINE ir_node *
+static inline ir_node *
 new_rd_Phi0(ir_graph *irg, ir_node *block, ir_mode *mode) {
 	ir_node *res;
 
@@ -1802,7 +1802,7 @@ new_rd_Phi0(ir_graph *irg, ir_node *block, ir_mode *mode) {
  * @param phi0   in non-NULL: the Phi0 node in the same block that represents
  *               the value for which the new Phi is constructed
  */
-static INLINE ir_node *
+static inline ir_node *
 new_rd_Phi_in(ir_graph *irg, ir_node *block, ir_mode *mode,
               ir_node **in, int ins, ir_node *phi0) {
 	int i;
@@ -1882,7 +1882,7 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
  * Further the last entry in frag_arr of current block points to n.  This
  * constructs a chain block->last_frag_op-> ... first_frag_op of all frag ops in the block.
  */
-static INLINE ir_node **new_frag_arr(ir_node *n) {
+static inline ir_node **new_frag_arr(ir_node *n) {
 	ir_node **arr;
 	int opt;
 
@@ -1917,7 +1917,7 @@ static INLINE ir_node **new_frag_arr(ir_node *n) {
 /**
  * Returns the frag_arr from a node.
  */
-static INLINE ir_node **get_frag_arr(ir_node *n) {
+static inline ir_node **get_frag_arr(ir_node *n) {
 	switch (get_irn_opcode(n)) {
 	case iro_Call:
 		return n->attr.call.exc.frag_arr;

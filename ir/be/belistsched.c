@@ -159,7 +159,7 @@ typedef struct _block_sched_env_t {
 /**
  * Returns non-zero if a node must be placed in the schedule.
  */
-static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
+static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
 {
 	int res = -1;
 
@@ -177,7 +177,7 @@ static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void
 /**
  * Returns non-zero if the node is already scheduled
  */
-static INLINE int is_already_scheduled(block_sched_env_t *env, ir_node *n)
+static inline int is_already_scheduled(block_sched_env_t *env, ir_node *n)
 {
 	int idx = get_irn_idx(n);
 
@@ -188,7 +188,7 @@ static INLINE int is_already_scheduled(block_sched_env_t *env, ir_node *n)
 /**
  * Mark a node as already scheduled
  */
-static INLINE void set_already_scheduled(block_sched_env_t *env, ir_node *n)
+static inline void set_already_scheduled(block_sched_env_t *env, ir_node *n)
 {
 	int idx = get_irn_idx(n);
 
@@ -205,7 +205,7 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn);
  * @param irn   The node to make ready.
  * @return 1, if the node could be made ready, 0 else.
  */
-static INLINE int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
+static inline int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 {
 	int i, n;
 
@@ -282,7 +282,7 @@ static void make_users_ready(block_sched_env_t *env, ir_node *irn)
 /**
  * Returns the number of not yet schedules users.
  */
-static INLINE int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n) {
+static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -292,7 +292,7 @@ static INLINE int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n) {
 /**
  * Sets the number of not yet schedules users.
  */
-static INLINE void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
+static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -302,7 +302,7 @@ static INLINE void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, in
 /**
  * Add @p num to the number of not yet schedules users and returns the result.
  */
-static INLINE int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
+static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));

@@ -278,7 +278,7 @@ typedef struct _memoperand_t {
 	ilp_var_t            ilp; /**< the ilp var for this memory operand */
 } memoperand_t;
 
-static INLINE int
+static inline int
 has_reg_class(const spill_ilp_t * si, const ir_node * irn)
 {
 	return arch_irn_consider_in_reg_alloc(si->cls, irn);
@@ -465,7 +465,7 @@ static double get_cost(const ir_node *irn)
 /**
  * Checks, whether node and its operands have suitable reg classes
  */
-static INLINE int
+static inline int
 is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 {
 	int n;
@@ -490,7 +490,7 @@ is_rematerializable(const spill_ilp_t * si, const ir_node * irn)
 /**
  * Try to create a remat from @p op with destination value @p dest_value
  */
-static INLINE remat_t *
+static inline remat_t *
 get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * op)
 {
 	remat_t  *remat = NULL;
@@ -569,7 +569,7 @@ get_remat_from_op(spill_ilp_t * si, const ir_node * dest_value, const ir_node * 
 }
 
 
-static INLINE void
+static inline void
 add_remat(const spill_ilp_t * si, const remat_t * remat)
 {
 	remat_info_t    *remat_info,
@@ -639,7 +639,7 @@ get_irn_n_nonignore_args(const spill_ilp_t * si, const ir_node * irn)
 	return ret;
 }
 
-static INLINE void
+static inline void
 get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 {
 	int      n;
@@ -672,7 +672,7 @@ get_remats_from_op(spill_ilp_t * si, const ir_node * op)
 	}
 }
 
-static INLINE int
+static inline int
 value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_node * val)
 {
 	ir_node *block;
@@ -705,7 +705,7 @@ value_is_defined_before(const spill_ilp_t * si, const ir_node * pos, const ir_no
 	return ret;
 }
 
-static INLINE ir_node *sched_block_last_noncf(const ir_node * bb)
+static inline ir_node *sched_block_last_noncf(const ir_node * bb)
 {
 	return sched_skip((ir_node*)bb, 0, sched_skip_cf_predicator, NULL);
 }
@@ -713,7 +713,7 @@ static INLINE ir_node *sched_block_last_noncf(const ir_node * bb)
 /**
  * Returns first non-Phi node of block @p bb
  */
-static INLINE ir_node *
+static inline ir_node *
 sched_block_first_nonphi(const ir_node * bb)
 {
 	return sched_skip((ir_node*)bb, 1, sched_skip_phi_predicator, NULL);
@@ -726,7 +726,7 @@ sched_skip_proj_predicator(const ir_node * irn, void * data)
 	return (is_Proj(irn));
 }
 
-static INLINE ir_node *
+static inline ir_node *
 sched_next_nonproj(const ir_node * irn, int forward)
 {
 	return sched_skip((ir_node*)irn, forward, sched_skip_proj_predicator, NULL);
@@ -736,7 +736,7 @@ sched_next_nonproj(const ir_node * irn, int forward)
  * Returns next operation node (non-Proj) after @p irn
  * or the basic block of this node
  */
-static INLINE ir_node *
+static inline ir_node *
 sched_next_op(const ir_node * irn)
 {
 	ir_node *next = sched_next(irn);
@@ -751,7 +751,7 @@ sched_next_op(const ir_node * irn)
  * Returns previous operation node (non-Proj) before @p irn
  * or the basic block of this node
  */
-static INLINE ir_node *
+static inline ir_node *
 sched_prev_op(const ir_node * irn)
 {
 	ir_node *prev = sched_prev(irn);
@@ -837,7 +837,7 @@ static ir_node *next_pre_remat(const ir_node * irn)
 /**
  * Tells you whether a @p remat can be placed before the irn @p pos
  */
-static INLINE int
+static inline int
 can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
 {
 	const ir_node   *op = remat->op;
@@ -886,7 +886,7 @@ can_remat_before(const spill_ilp_t * si, const remat_t * remat, const ir_node * 
 /**
  * Tells you whether a @p remat can be placed after the irn @p pos
  */
-static INLINE int
+static inline int
 can_remat_after(const spill_ilp_t * si, const remat_t * remat, const ir_node * pos, const pset * live)
 {
 	if(is_Block(pos)) {
@@ -3235,7 +3235,7 @@ memcopyhandler(spill_ilp_t * si)
 }
 
 
-static INLINE int
+static inline int
 is_zero(double x)
 {
 	return fabs(x) < 0.00001;

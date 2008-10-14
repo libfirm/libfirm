@@ -107,45 +107,45 @@ void set_irn_loop(ir_node *n, ir_loop *loop);
  */
 void mature_loops(ir_loop *loop, struct obstack *obst);
 
-/* -------- INLINE functions -------- */
+/* -------- inline functions -------- */
 
-static INLINE int
+static inline int
 _is_ir_loop(const void *thing) {
 	return get_kind(thing) == k_ir_loop;
 }
 
-static INLINE void
+static inline void
 _set_irg_loop(ir_graph *irg, ir_loop *loop) {
 	assert(irg);
 	irg->loop = loop;
 }
 
-static INLINE ir_loop *
+static inline ir_loop *
 _get_irg_loop(ir_graph *irg) {
 	assert(irg);
 	return irg->loop;
 }
 
-static INLINE ir_loop *
+static inline ir_loop *
 _get_loop_outer_loop(const ir_loop *loop) {
 	assert(_is_ir_loop(loop));
 	return loop->outer_loop;
 }
 
-static INLINE int
+static inline int
 _get_loop_depth(const ir_loop *loop) {
 	assert(_is_ir_loop(loop));
 	return loop->depth;
 }
 
-static INLINE int
+static inline int
 _get_loop_n_sons(const ir_loop *loop) {
 	assert(_is_ir_loop(loop));
 	return loop->n_sons;
 }
 
 /* Uses temporary information to get the loop */
-static INLINE ir_loop *
+static inline ir_loop *
 _get_irn_loop(const ir_node *n) {
 	return n->loop;
 }

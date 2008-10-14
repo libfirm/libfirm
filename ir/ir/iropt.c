@@ -6134,7 +6134,7 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
  * @param value_table  The value table
  * @param n            The node to lookup
  */
-static INLINE ir_node *identify_cons(pset *value_table, ir_node *n) {
+static inline ir_node *identify_cons(pset *value_table, ir_node *n) {
 	ir_node *old = n;
 
 	n = identify_remember(value_table, n);

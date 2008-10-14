@@ -65,11 +65,11 @@ static int exec_freq_cmp(const void *e1, const void *e2, size_t size) {
   return (ef1->reg != ef2->reg);
 }
 
-static INLINE unsigned int exec_freq_hash(reg_exec_freq *e) {
+static inline unsigned int exec_freq_hash(reg_exec_freq *e) {
   return HASH_PTR(e->reg);
 }
 
-static INLINE void set_region_exec_freq(void *reg, double freq) {
+static inline void set_region_exec_freq(void *reg, double freq) {
   reg_exec_freq ef;
   ef.reg  = reg;
   ef.freq = freq;
@@ -295,7 +295,7 @@ int is_fragile_Proj(ir_node *n) {
 
 static double exception_prob = 0.001;
 
-static INLINE int is_loop_head(ir_node *cond)
+static inline int is_loop_head(ir_node *cond)
 {
   (void) cond;
   return 0;
@@ -305,7 +305,7 @@ static INLINE int is_loop_head(ir_node *cond)
  *
  *  Given all outs of the predecessor region, we can compute the weight of
  *  this single edge. */
-static INLINE double get_weighted_region_exec_freq(void *reg, int pos) {
+static inline double get_weighted_region_exec_freq(void *reg, int pos) {
   void *pred_reg        = get_region_in(reg, pos);
   double res, full_freq = get_region_exec_freq (pred_reg);
   int n_outs            = get_region_n_outs    (pred_reg);
@@ -332,7 +332,7 @@ static INLINE double get_weighted_region_exec_freq(void *reg, int pos) {
   return res;
 }
 
-static INLINE void compute_region_freqency(void *reg, double head_weight) {
+static inline void compute_region_freqency(void *reg, double head_weight) {
   int i, n_ins = get_region_n_ins(reg);
   double my_freq = 0;
 

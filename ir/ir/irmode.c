@@ -58,7 +58,7 @@ static ir_mode **mode_list;
  *
  * TODO: Add other fields
  **/
-static INLINE int modes_are_equal(const ir_mode *m, const ir_mode *n) {
+static inline int modes_are_equal(const ir_mode *m, const ir_mode *n) {
 	if (m == n) return 1;
 	if (m->sort         == n->sort &&
 		m->arithmetic   == n->arithmetic &&

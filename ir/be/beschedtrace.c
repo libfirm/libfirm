@@ -71,7 +71,7 @@ static ir_node *get_nodeset_node(const ir_nodeset_t *nodeset)
 /**
  * Returns non-zero if the node is a root node
  */
-static INLINE unsigned is_root_node(trace_env_t *env, ir_node *n)
+static inline unsigned is_root_node(trace_env_t *env, ir_node *n)
 {
 	int idx = get_irn_idx(n);
 
@@ -82,7 +82,7 @@ static INLINE unsigned is_root_node(trace_env_t *env, ir_node *n)
 /**
  * Mark a node as root node
  */
-static INLINE void mark_root_node(trace_env_t *env, ir_node *n)
+static inline void mark_root_node(trace_env_t *env, ir_node *n)
 {
 	int idx = get_irn_idx(n);
 
@@ -93,7 +93,7 @@ static INLINE void mark_root_node(trace_env_t *env, ir_node *n)
 /**
  * Get the current delay.
  */
-static INLINE sched_timestep_t get_irn_delay(trace_env_t *env, ir_node *n) {
+static inline sched_timestep_t get_irn_delay(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -103,7 +103,7 @@ static INLINE sched_timestep_t get_irn_delay(trace_env_t *env, ir_node *n) {
 /**
  * Set the current delay.
  */
-static INLINE void set_irn_delay(trace_env_t *env, ir_node *n, sched_timestep_t delay) {
+static inline void set_irn_delay(trace_env_t *env, ir_node *n, sched_timestep_t delay) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -113,7 +113,7 @@ static INLINE void set_irn_delay(trace_env_t *env, ir_node *n, sched_timestep_t 
 /**
  * Get the current etime.
  */
-static INLINE sched_timestep_t get_irn_etime(trace_env_t *env, ir_node *n) {
+static inline sched_timestep_t get_irn_etime(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -123,7 +123,7 @@ static INLINE sched_timestep_t get_irn_etime(trace_env_t *env, ir_node *n) {
 /**
  * Set the current etime.
  */
-static INLINE void set_irn_etime(trace_env_t *env, ir_node *n, sched_timestep_t etime) {
+static inline void set_irn_etime(trace_env_t *env, ir_node *n, sched_timestep_t etime) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -133,7 +133,7 @@ static INLINE void set_irn_etime(trace_env_t *env, ir_node *n, sched_timestep_t 
 /**
  * Get the number of users.
  */
-static INLINE unsigned get_irn_num_user(trace_env_t *env, ir_node *n) {
+static inline unsigned get_irn_num_user(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -143,7 +143,7 @@ static INLINE unsigned get_irn_num_user(trace_env_t *env, ir_node *n) {
 /**
  * Set the number of users.
  */
-static INLINE void set_irn_num_user(trace_env_t *env, ir_node *n, unsigned num_user) {
+static inline void set_irn_num_user(trace_env_t *env, ir_node *n, unsigned num_user) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -153,7 +153,7 @@ static INLINE void set_irn_num_user(trace_env_t *env, ir_node *n, unsigned num_u
 /**
  * Get the register difference.
  */
-static INLINE int get_irn_reg_diff(trace_env_t *env, ir_node *n) {
+static inline int get_irn_reg_diff(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -163,7 +163,7 @@ static INLINE int get_irn_reg_diff(trace_env_t *env, ir_node *n) {
 /**
  * Set the register difference.
  */
-static INLINE void set_irn_reg_diff(trace_env_t *env, ir_node *n, int reg_diff) {
+static inline void set_irn_reg_diff(trace_env_t *env, ir_node *n, int reg_diff) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -173,7 +173,7 @@ static INLINE void set_irn_reg_diff(trace_env_t *env, ir_node *n, int reg_diff) 
 /**
  * Get the pre-order position.
  */
-static INLINE int get_irn_preorder(trace_env_t *env, ir_node *n) {
+static inline int get_irn_preorder(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -183,7 +183,7 @@ static INLINE int get_irn_preorder(trace_env_t *env, ir_node *n) {
 /**
  * Set the pre-order position.
  */
-static INLINE void set_irn_preorder(trace_env_t *env, ir_node *n, int pos) {
+static inline void set_irn_preorder(trace_env_t *env, ir_node *n, int pos) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -193,7 +193,7 @@ static INLINE void set_irn_preorder(trace_env_t *env, ir_node *n, int pos) {
 /**
  * Get the pre-order position.
  */
-static INLINE unsigned get_irn_critical_path_len(trace_env_t *env, ir_node *n) {
+static inline unsigned get_irn_critical_path_len(trace_env_t *env, ir_node *n) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -203,7 +203,7 @@ static INLINE unsigned get_irn_critical_path_len(trace_env_t *env, ir_node *n) {
 /**
  * Set the pre-order position.
  */
-static INLINE void set_irn_critical_path_len(trace_env_t *env, ir_node *n, unsigned len) {
+static inline void set_irn_critical_path_len(trace_env_t *env, ir_node *n, unsigned len) {
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));

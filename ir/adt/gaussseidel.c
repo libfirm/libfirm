@@ -41,13 +41,13 @@ struct _gs_matrix_t {
 	row_col_t *rows;
 };
 
-static INLINE void alloc_cols(row_col_t *row, int c_cols) {
+static inline void alloc_cols(row_col_t *row, int c_cols) {
 	assert(c_cols > row->c_cols);
 	row->c_cols = c_cols;
 	row->cols   = XREALLOC(row->cols, col_val_t, c_cols);
 }
 
-static INLINE void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init) {
+static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init) {
 	int i;
 	assert(c_rows > m->c_rows);
 

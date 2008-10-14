@@ -66,12 +66,12 @@ typedef struct timeval ir_timer_val_t;
 
 #include <stddef.h>
 
-static INLINE void _time_get(ir_timer_val_t *val);
-static INLINE void _time_reset(ir_timer_val_t *val);
-static INLINE unsigned long _time_to_msec(const ir_timer_val_t *val);
-static INLINE ir_timer_val_t *_time_add(ir_timer_val_t *res,
+static inline void _time_get(ir_timer_val_t *val);
+static inline void _time_reset(ir_timer_val_t *val);
+static inline unsigned long _time_to_msec(const ir_timer_val_t *val);
+static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs);
-static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res,
+static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs);
 
 /**
@@ -130,36 +130,36 @@ ir_timer_t *ir_timer_register(const char *name, const char *desc)
 
 #ifdef HAVE_GETTIMEOFDAY
 
-static INLINE void _time_get(ir_timer_val_t *val)
+static inline void _time_get(ir_timer_val_t *val)
 {
 	gettimeofday(val, NULL);
 }
 
-static INLINE void _time_reset(ir_timer_val_t *val)
+static inline void _time_reset(ir_timer_val_t *val)
 {
 	timerclear(val);
 }
 
-static INLINE unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
+static inline unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
 {
 	return (unsigned long) elapsed->tv_sec * 1000UL
 		+ (unsigned long) elapsed->tv_usec / 1000UL;
 }
 
-static INLINE unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
+static inline unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
 {
 	return (unsigned long) elapsed->tv_sec * 1000000UL
 		+ (unsigned long) elapsed->tv_usec;
 }
 
-static INLINE ir_timer_val_t *_time_add(ir_timer_val_t *res,
+static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	timeradd(lhs, rhs, res);
 		return res;
 }
 
-static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res,
+static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	timersub(lhs, rhs, res);
@@ -168,18 +168,18 @@ static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 
 #elif defined(_WIN32)
 
-static INLINE void _time_get(ir_timer_val_t *val)
+static inline void _time_get(ir_timer_val_t *val)
 {
 	if(!QueryPerformanceCounter(&val->hi_prec))
 		val->lo_prec = timeGetTime();
 }
 
-static INLINE void _time_reset(ir_timer_val_t *val)
+static inline void _time_reset(ir_timer_val_t *val)
 {
 	memset(val, 0, sizeof(val[0]));
 }
 
-static INLINE unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
+static inline unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
 {
 	LARGE_INTEGER freq;
 
@@ -189,7 +189,7 @@ static INLINE unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
 	return (unsigned long) ((elapsed->hi_prec.QuadPart * 1000) / freq.QuadPart);
 }
 
-static INLINE unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
+static inline unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
 {
 	LARGE_INTEGER freq;
 
@@ -199,7 +199,7 @@ static INLINE unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
 	return (unsigned long) ((elapsed->hi_prec.QuadPart * 1000000) / freq.QuadPart);
 }
 
-static INLINE ir_timer_val_t *_time_add(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
+static inline ir_timer_val_t *_time_add(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	LARGE_INTEGER dummy;
 	if(QueryPerformanceFrequency(&dummy))
@@ -210,7 +210,7 @@ static INLINE ir_timer_val_t *_time_add(ir_timer_val_t *res, const ir_timer_val_
 	return res;
 }
 
-static INLINE ir_timer_val_t *_time_sub(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
+static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	LARGE_INTEGER dummy;
 	if(QueryPerformanceFrequency(&dummy))

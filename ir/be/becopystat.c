@@ -166,7 +166,7 @@ static void copystat_collect_irg(ir_graph *irg)
  * @return 1 if the block at pos @p pos removed a critical edge
  * 		   0 else
  */
-static INLINE int was_edge_critical(const ir_node *bl, int pos) {
+static inline int was_edge_critical(const ir_node *bl, int pos) {
 	const ir_edge_t *edge;
 	const ir_node *bl_at_pos, *bl_before;
 	assert(is_Block(bl));

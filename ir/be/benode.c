@@ -257,7 +257,7 @@ static int Call_cmp_attr(ir_node *a, ir_node *b) {
 	return _node_cmp_attr(&a_attr->node_attr, &b_attr->node_attr);
 }
 
-static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
+static inline be_req_t *get_be_req(const ir_node *node, int pos)
 {
 	int idx;
 	const be_node_attr_t *attr;
@@ -278,7 +278,7 @@ static INLINE be_req_t *get_be_req(const ir_node *node, int pos)
 	return pos < 0 ? &rd->req : &rd->in_req;
 }
 
-static INLINE arch_register_req_t *get_req(const ir_node *node, int pos)
+static inline arch_register_req_t *get_req(const ir_node *node, int pos)
 {
 	be_req_t *bereq = get_be_req(node, pos);
 	return &bereq->req;
@@ -1253,7 +1253,7 @@ static struct {
 
 #define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
 
-static INLINE
+static inline
 phi_attr_t *get_Phi_attr(const ir_node *phi)
 {
 	phi_attr_t *attr = pmap_get(phi_handler.phi_attrs, (void*) phi);

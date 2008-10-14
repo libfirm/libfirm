@@ -66,22 +66,22 @@ void firm_init_flags(void);
 
 /* generate the getter functions for external access */
 #define E_FLAG(name, value, def)                    \
-static INLINE int _get_opt_##name(void) {           \
+static inline int _get_opt_##name(void) {           \
   return libFIRM_opt & irf_##name;                  \
 }
 
 /* generate the getter functions for internal access */
 #define I_FLAG(name, value, def)                   \
-static INLINE int get_opt_##name(void) {           \
+static inline int get_opt_##name(void) {           \
   return libFIRM_opt & irf_##name;                 \
 }
 
 /* generate getter and setter functions for running flags */
 #define R_FLAG(name, value)                        \
-static INLINE int is_##name##_running(void) {      \
+static inline int is_##name##_running(void) {      \
   return libFIRM_running & ir_rf_##name;           \
 }                                                  \
-static INLINE void set_##name##_running(int flag) {\
+static inline void set_##name##_running(int flag) {\
   if (flag) libFIRM_running |= ir_rf_##name;       \
   else      libFIRM_running &= ~ir_rf_##name;      \
 }
@@ -92,11 +92,11 @@ static INLINE void set_##name##_running(int flag) {\
 #undef E_FLAG
 #undef R_FLAG
 
-static INLINE int _get_optimize(void) {
+static inline int _get_optimize(void) {
 	return get_opt_optimize();
 }
 
-static INLINE firm_verification_t
+static inline firm_verification_t
 get_node_verification_mode(void) {
 	return opt_do_node_verification;
 }

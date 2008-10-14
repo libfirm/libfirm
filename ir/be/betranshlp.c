@@ -62,7 +62,7 @@ int be_is_transformed(const ir_node *node) {
 	return irn_visited(node);
 }
 
-static INLINE ir_node *be_get_transformed_node(ir_node *old_node) {
+static inline ir_node *be_get_transformed_node(ir_node *old_node) {
 	if (irn_visited(old_node)) {
 		ir_node *new_node = get_irn_link(old_node);
 		assert(new_node != NULL);

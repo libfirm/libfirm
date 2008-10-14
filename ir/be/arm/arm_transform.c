@@ -72,7 +72,7 @@ extern ir_op *get_op_Mulh(void);
  *
  ****************************************************************************************************/
 
-static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
@@ -1510,7 +1510,7 @@ static ir_node *gen_Proj(ir_node *node) {
 
 typedef ir_node *(*create_const_node_func)(dbg_info *db, ir_graph *irg, ir_node *block);
 
-static INLINE ir_node *create_const(ir_node **place,
+static inline ir_node *create_const(ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
 {
@@ -1610,7 +1610,7 @@ static ir_node *bad_transform(ir_node *irn) {
 /**
  * Set a node emitter. Make it a bit more type safe.
  */
-static INLINE void set_transformer(ir_op *op, be_transform_func arm_transform_func) {
+static inline void set_transformer(ir_op *op, be_transform_func arm_transform_func) {
 	op->ops.generic = (op_func)arm_transform_func;
 }
 

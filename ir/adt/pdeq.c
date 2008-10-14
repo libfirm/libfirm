@@ -93,7 +93,7 @@ static unsigned pdeqs_cached;
  *
  * @param p   The pdeq chunk.
  */
-static INLINE void free_pdeq_block (pdeq *p)
+static inline void free_pdeq_block (pdeq *p)
 {
 #ifndef NDEBUG
   p->magic = 0xbadf00d1;
@@ -110,7 +110,7 @@ static INLINE void free_pdeq_block (pdeq *p)
  *
  * @return A new pdeq chunk.
  */
-static INLINE pdeq *alloc_pdeq_block (void)
+static inline pdeq *alloc_pdeq_block (void)
 {
   pdeq *p;
   if (TUNE_NSAVED_PDEQS && pdeqs_cached) {

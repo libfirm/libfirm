@@ -137,7 +137,7 @@ pset *be_get_var_values(set *vars, int var_nr) {
 	return vi->values;
 }
 
-static INLINE ir_node *get_first_phi(ir_node **s) {
+static inline ir_node *get_first_phi(ir_node **s) {
 	int i;
 
 	for (i = ARR_LEN(s) - 1; i >= 0; --i) {

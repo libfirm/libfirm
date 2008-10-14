@@ -107,7 +107,7 @@ void set_value_of_func(value_of_func func);
 /**
  * Returns the associated tarval of a node.
  */
-static INLINE tarval *
+static inline tarval *
 value_of(const ir_node *n) {
 	return value_of_ptr(n);
 }

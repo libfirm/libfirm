@@ -53,7 +53,7 @@ struct _be_dom_front_info_t {
  * @param bl The block.
  * @return The immediate dominator of the block.
  */
-static INLINE
+static inline
 ir_node *get_idom(ir_node *bl)
 {
 	ir_node *idom = get_Block_idom(bl);

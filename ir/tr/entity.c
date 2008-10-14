@@ -92,7 +92,7 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 /**
  * Add an entity to it's already set owner type.
  */
-static INLINE void insert_entity_in_owner(ir_entity *ent) {
+static inline void insert_entity_in_owner(ir_entity *ent) {
 	ir_type *owner = ent->owner;
 	switch (get_type_tpop_code(owner)) {
 	case tpo_class:
@@ -122,7 +122,7 @@ static INLINE void insert_entity_in_owner(ir_entity *ent) {
  *
  * @return the new created entity
  */
-static INLINE ir_entity *
+static inline ir_entity *
 new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 {
 	ir_entity *res;

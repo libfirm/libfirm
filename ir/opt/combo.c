@@ -321,7 +321,7 @@ static void check_list(const node_t *list, const partition_t *Z) {
 #endif /* CHECK_PARTITIONS */
 
 #ifdef DEBUG_libfirm
-static INLINE lattice_elem_t get_partition_type(const partition_t *X);
+static inline lattice_elem_t get_partition_type(const partition_t *X);
 
 /**
  * Dump partition to output.
@@ -548,7 +548,7 @@ static void sort_irn_outs(node_t *node) {
  *
  * @return the associated type of this node
  */
-static INLINE lattice_elem_t get_node_type(const ir_node *irn) {
+static inline lattice_elem_t get_node_type(const ir_node *irn) {
 	return get_irn_node(irn)->type;
 }  /* get_node_type */
 
@@ -559,7 +559,7 @@ static INLINE lattice_elem_t get_node_type(const ir_node *irn) {
  *
  * @return the associated type of this node
  */
-static INLINE tarval *get_node_tarval(const ir_node *irn) {
+static inline tarval *get_node_tarval(const ir_node *irn) {
 	lattice_elem_t type = get_node_type(irn);
 
 	if (is_tarval(type.tv))
@@ -570,7 +570,7 @@ static INLINE tarval *get_node_tarval(const ir_node *irn) {
 /**
  * Add a partition to the worklist.
  */
-static INLINE void add_to_worklist(partition_t *X, environment_t *env) {
+static inline void add_to_worklist(partition_t *X, environment_t *env) {
 	assert(X->on_worklist == 0);
 	DB((dbg, LEVEL_2, "Adding part%d to worklist\n", X->nr));
 	X->wl_next     = env->worklist;
@@ -585,7 +585,7 @@ static INLINE void add_to_worklist(partition_t *X, environment_t *env) {
  *
  * @return a newly allocated partition
  */
-static INLINE partition_t *new_partition(environment_t *env) {
+static inline partition_t *new_partition(environment_t *env) {
 	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
 
 	INIT_LIST_HEAD(&part->Leader);
@@ -615,7 +615,7 @@ static INLINE partition_t *new_partition(environment_t *env) {
 /**
  * Get the first node from a partition.
  */
-static INLINE node_t *get_first_node(const partition_t *X) {
+static inline node_t *get_first_node(const partition_t *X) {
 	return list_entry(X->Leader.next, node_t, node_list);
 }  /* get_first_node */
 
@@ -627,7 +627,7 @@ static INLINE node_t *get_first_node(const partition_t *X) {
  *
  * @return the type of the first element of the partition
  */
-static INLINE lattice_elem_t get_partition_type(const partition_t *X) {
+static inline lattice_elem_t get_partition_type(const partition_t *X) {
 	const node_t *first = get_first_node(X);
 	return first->type;
 }  /* get_partition_type */
@@ -711,7 +711,7 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
  * @param y    a node
  * @param env  the environment
  */
-static INLINE void add_to_touched(node_t *y, environment_t *env) {
+static inline void add_to_touched(node_t *y, environment_t *env) {
 	if (y->on_touched == 0) {
 		partition_t *part = y->part;
 

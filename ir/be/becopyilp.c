@@ -106,7 +106,7 @@ size_red_t *new_size_red(copy_opt_t *co) {
 /**
  * Checks if a node is simplicial in the graph heeding the already removed nodes.
  */
-static INLINE int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
+static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
 	int i, o, size = 0;
 	ir_node **all, *curr;
 	be_ifg_t *ifg = sr->co->cenv->ifg;
@@ -270,7 +270,7 @@ void free_ilp_env(ilp_env_t *ienv) {
 
 #else /* WITH_ILP */
 
-static INLINE void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static inline void only_that_you_can_compile_without_WITH_ILP_defined(void) {
 }
 
 #endif /* WITH_ILP */

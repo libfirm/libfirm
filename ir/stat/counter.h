@@ -46,7 +46,7 @@ typedef struct _counter_t {
 /**
  * increase a counter
  */
-static INLINE void cnt_inc(counter_t *cnt)
+static inline void cnt_inc(counter_t *cnt)
 {
 	int i;
 
@@ -59,7 +59,7 @@ static INLINE void cnt_inc(counter_t *cnt)
 /**
  * decrease a counter
  */
-static INLINE void cnt_dec(counter_t *cnt)
+static inline void cnt_dec(counter_t *cnt)
 {
 	int i;
 
@@ -72,7 +72,7 @@ static INLINE void cnt_dec(counter_t *cnt)
 /**
  * set a counter to zero
  */
-static INLINE void cnt_clr(counter_t *cnt)
+static inline void cnt_clr(counter_t *cnt)
 {
 	memset(cnt->cnt, 0, sizeof(cnt->cnt));
 }
@@ -80,7 +80,7 @@ static INLINE void cnt_clr(counter_t *cnt)
 /**
  * add a counter to another
  */
-static INLINE void cnt_add(counter_t *dst, const counter_t *src)
+static inline void cnt_add(counter_t *dst, const counter_t *src)
 {
 	int i, carry = 0;
 
@@ -98,7 +98,7 @@ static INLINE void cnt_add(counter_t *dst, const counter_t *src)
 /**
  * add an (positive) integer to an counter
  */
-static INLINE void cnt_add_i(counter_t *dst, int src)
+static inline void cnt_add_i(counter_t *dst, int src)
 {
 	int i;
 	unsigned carry = src;
@@ -118,7 +118,7 @@ static INLINE void cnt_add_i(counter_t *dst, int src)
 /**
  * compare two counter
  */
-static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
+static inline int cnt_cmp(const counter_t *a, const counter_t *b)
 {
 	int i;
 	unsigned va, vb;
@@ -139,7 +139,7 @@ static INLINE int cnt_cmp(const counter_t *a, const counter_t *b)
 /**
  * convert a counter into a double
  */
-static INLINE double cnt_to_dbl(const counter_t *a)
+static inline double cnt_to_dbl(const counter_t *a)
 {
 	int i;
 	double res = 0.0, scale = 1.0, tmp;
@@ -158,7 +158,7 @@ static INLINE double cnt_to_dbl(const counter_t *a)
 /**
  * convert a counter into an unsigned
  */
-static INLINE unsigned cnt_to_uint(const counter_t *a)
+static inline unsigned cnt_to_uint(const counter_t *a)
 {
 	int i;
 
@@ -172,7 +172,7 @@ static INLINE unsigned cnt_to_uint(const counter_t *a)
 /**
  * check, if a counter is equal to an unsigned
  */
-static INLINE int cnt_eq(const counter_t *a, unsigned value)
+static inline int cnt_eq(const counter_t *a, unsigned value)
 {
 	int i;
 
@@ -186,7 +186,7 @@ static INLINE int cnt_eq(const counter_t *a, unsigned value)
 /**
  * check, if a counter as greater than an unsigned
  */
-static INLINE int cnt_gt(const counter_t *a, unsigned value)
+static inline int cnt_gt(const counter_t *a, unsigned value)
 {
 	int i;
 

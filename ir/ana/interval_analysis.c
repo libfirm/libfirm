@@ -68,11 +68,11 @@ int region_attr_cmp(const void *e1, const void *e2, size_t size) {
   return (ra1->reg != ra2->reg);
 }
 
-static INLINE int attr_set_hash(region_attr *a) {
+static inline int attr_set_hash(region_attr *a) {
   return HASH_PTR(a->reg);
 }
 
-static INLINE region_attr *get_region_attr(void *region) {
+static inline region_attr *get_region_attr(void *region) {
   region_attr r_attr, *res;
   r_attr.reg = region;
 
@@ -128,7 +128,7 @@ void add_loop_cfop (void *region, void *cfop) {
   ARR_APP1(void *, get_region_attr(region)->op_array, cfop);
 }
 
-static INLINE void exc_outs(void *reg, ir_node *cfop) {
+static inline void exc_outs(void *reg, ir_node *cfop) {
   if (is_fragile_op(cfop) || (is_fragile_Proj(cfop)))
     inc_region_n_exc_outs(reg);
 }

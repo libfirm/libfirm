@@ -442,7 +442,7 @@ static ir_node *get_irn_Proj_for_mode(ir_node *n, ir_mode *m)
 /**
  * Wrap the arch_* function here so we can check for errors.
  */
-static INLINE const arch_register_t *x87_get_irn_register(const ir_node *irn)
+static inline const arch_register_t *x87_get_irn_register(const ir_node *irn)
 {
 	const arch_register_t *res = arch_get_irn_register(irn);
 

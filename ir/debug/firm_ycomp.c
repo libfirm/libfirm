@@ -141,7 +141,7 @@ static int cmp_nodes(const void *a, const void *b) {
 	return n1->irn != n2->irn;
 }
 
-static INLINE void send_cmd(firm_ycomp_dbg_t *dbg, const char *buf) {
+static inline void send_cmd(firm_ycomp_dbg_t *dbg, const char *buf) {
 	ssize_t res, len;
 
 	len = strlen(buf);
@@ -191,7 +191,7 @@ static void firm_ycomp_debug_init_realizer(firm_ycomp_dbg_t *dbg) {
 /**
  * Retrieve the appropriate realizer for given node.
  */
-static INLINE unsigned get_node_realizer(ir_node *node) {
+static inline unsigned get_node_realizer(ir_node *node) {
 	unsigned realizer;
 	ir_opcode opc = get_irn_opcode(node);
 
@@ -222,7 +222,7 @@ static INLINE unsigned get_node_realizer(ir_node *node) {
 /**
  * Retrieve the appropriate realizer for given edge.
  */
-static INLINE unsigned get_edge_realizer(ir_node *src, ir_node *tgt) {
+static inline unsigned get_edge_realizer(ir_node *src, ir_node *tgt) {
 	unsigned realizer;
 	ir_mode  *tgt_mode, *src_mode;
 

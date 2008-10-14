@@ -144,7 +144,7 @@ static int loc_compare(const void *a, const void *b)
 	return (p->time > q->time) - (p->time < q->time);
 }
 
-static INLINE void workset_print(const workset_t *w)
+static inline void workset_print(const workset_t *w)
 {
 	int i;
 
@@ -156,7 +156,7 @@ static INLINE void workset_print(const workset_t *w)
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
  */
-static INLINE workset_t *new_workset(belady_env_t *env, struct obstack *ob) {
+static inline workset_t *new_workset(belady_env_t *env, struct obstack *ob) {
 	workset_t *res;
 	size_t size = sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]);
 	res = obstack_alloc(ob, size);
@@ -167,7 +167,7 @@ static INLINE workset_t *new_workset(belady_env_t *env, struct obstack *ob) {
 /**
  * Alloc a new instance on obstack and make it equal to @param ws
  */
-static INLINE workset_t *workset_clone(belady_env_t *env, struct obstack *ob, workset_t *ws) {
+static inline workset_t *workset_clone(belady_env_t *env, struct obstack *ob, workset_t *ws) {
 	workset_t *res;
 	size_t size = sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]);
 	res = obstack_alloc(ob, size);
@@ -179,7 +179,7 @@ static INLINE workset_t *workset_clone(belady_env_t *env, struct obstack *ob, wo
  * Do NOT alloc anything. Make @param tgt equal to @param src.
  * returns @param tgt for convenience
  */
-static INLINE workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset_t *src) {
+static inline workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset_t *src) {
 	size_t size = sizeof(*src) + (env->n_regs)*sizeof(src->vals[0]);
 	memcpy(tgt, src, size);
 	return tgt;
@@ -190,7 +190,7 @@ static INLINE workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset
  * @param count locations given at memory @param locs.
  * Set the length of @param ws to count.
  */
-static INLINE void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs) {
+static inline void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs) {
 	workset->len = count;
 	memcpy(&(workset->vals[0]), locs, count * sizeof(locs[0]));
 }
@@ -199,7 +199,7 @@ static INLINE void workset_bulk_fill(workset_t *workset, int count, const loc_t 
  * Inserts the value @p val into the workset, iff it is not
  * already contained. The workset must not be full.
  */
-static INLINE void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val) {
+static inline void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val) {
 	int i;
 	/* check for current regclass */
 	if (!arch_irn_consider_in_reg_alloc(env->cls, val)) {
@@ -220,14 +220,14 @@ static INLINE void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val
 /**
  * Removes all entries from this workset
  */
-static INLINE void workset_clear(workset_t *ws) {
+static inline void workset_clear(workset_t *ws) {
 	ws->len = 0;
 }
 
 /**
  * Removes the value @p val from the workset if present.
  */
-static INLINE void workset_remove(workset_t *ws, ir_node *val) {
+static inline void workset_remove(workset_t *ws, ir_node *val) {
 	int i;
 	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val) {
@@ -237,7 +237,7 @@ static INLINE void workset_remove(workset_t *ws, ir_node *val) {
 	}
 }
 
-static INLINE int workset_get_index(const workset_t *ws, const ir_node *val) {
+static inline int workset_get_index(const workset_t *ws, const ir_node *val) {
 	int i;
 	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val)
@@ -293,7 +293,7 @@ typedef struct _block_info_t {
 
 } block_info_t;
 
-static INLINE void *new_block_info(belady_env_t *bel, int id)
+static inline void *new_block_info(belady_env_t *bel, int id)
 {
 	ir_node      *bl  = bel->blocks[id];
 	block_info_t *res = obstack_alloc(&bel->ob, sizeof(*res));
@@ -314,7 +314,7 @@ static INLINE void *new_block_info(belady_env_t *bel, int id)
 #define get_block_info(block)        ((block_info_t *)get_irn_link(block))
 #define set_block_info(block, info)  set_irn_link(block, info)
 
-static INLINE ir_node *block_info_get_last_ins(block_info_t *bi)
+static inline ir_node *block_info_get_last_ins(block_info_t *bi)
 {
 	if (!bi->last_ins)
 		bi->last_ins = be_get_end_of_block_insertion_point(bi->bl);
@@ -376,7 +376,7 @@ static void build_next_uses(block_info_t *bi)
 
 #define get_current_use(bi, irn) 	 phase_get_irn_data(&(bi)->next_uses, (irn))
 
-static INLINE void advance_current_use(block_info_t *bi, const ir_node *irn)
+static inline void advance_current_use(block_info_t *bi, const ir_node *irn)
 {
 	next_use_t *use = get_current_use(bi, irn);
 
@@ -440,7 +440,7 @@ struct _bring_in_t {
 	bring_in_t *sect_head;
 };
 
-static INLINE bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const next_use_t *use)
+static inline bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const next_use_t *use)
 {
 	bring_in_t *br    = obstack_alloc(&bi->bel->ob, sizeof(br[0]));
 
@@ -496,7 +496,7 @@ static int bring_in_cmp(const void *a, const void *b)
 	return (fq > fp) - (fq < fp);
 }
 
-static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, int is_usage)
+static inline unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, int is_usage)
 {
 	belady_env_t *env          = bi->bel;
 	sched_timestep_t curr_step = sched_get_time_step(env->instr);
@@ -530,7 +530,7 @@ static INLINE unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 	return be_is_live_end(env->lv, bi->bl, irn) ? LIVE_END : DEAD;
 }
 
-static INLINE int is_local_phi(const ir_node *bl, const ir_node *irn)
+static inline int is_local_phi(const ir_node *bl, const ir_node *irn)
 {
 	return is_Phi(irn) && get_nodes_block(irn) == bl;
 }
@@ -546,7 +546,7 @@ static INLINE int is_local_phi(const ir_node *bl, const ir_node *irn)
  *             where @p irn is unused in the block @p bl which is always
  *             the case in our usage scenario.
  */
-static INLINE int is_transport_in(const ir_node *bl, const ir_node *irn)
+static inline int is_transport_in(const ir_node *bl, const ir_node *irn)
 {
 	return get_nodes_block(irn) != bl || is_Phi(irn);
 }
@@ -815,14 +815,14 @@ typedef struct {
 	irn_action_t  *ia_top;
 } rollback_info_t;
 
-static INLINE block_state_t *get_block_state(global_end_state_t *ges, const block_info_t *bi)
+static inline block_state_t *get_block_state(global_end_state_t *ges, const block_info_t *bi)
 {
 	int id = bi->id;
 	assert(!ver_is_younger(ges->bs_tops_vers[id], ges->version));
 	return ver_is_older(ges->bs_tops_vers[id], ges->version) ? NULL : ges->bs_tops[bi->id];
 }
 
-static INLINE const workset_t *get_end_state(global_end_state_t *ges, block_info_t *bi)
+static inline const workset_t *get_end_state(global_end_state_t *ges, block_info_t *bi)
 {
 	block_state_t *bs = get_block_state(ges, bi);
 	return bs ? bs->end_state : bi->ws_end;
@@ -864,7 +864,7 @@ static irn_action_t *new_irn_action(global_end_state_t *ges, ir_node *irn, const
 	return ia;
 }
 
-static INLINE rollback_info_t trans_begin(global_end_state_t *ges)
+static inline rollback_info_t trans_begin(global_end_state_t *ges)
 {
 	rollback_info_t rb;
 	rb.obst_level = obstack_base(&ges->obst);
@@ -873,7 +873,7 @@ static INLINE rollback_info_t trans_begin(global_end_state_t *ges)
 	return rb;
 }
 
-static INLINE void trans_rollback(global_end_state_t *ges, rollback_info_t *rb)
+static inline void trans_rollback(global_end_state_t *ges, rollback_info_t *rb)
 {
 	block_state_t *bs;
 

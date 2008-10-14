@@ -524,21 +524,21 @@ void be_set_phi_flags(ir_node *phi, arch_irn_flags_t flags);
  */
 const void *be_node_get_irn_ops(const ir_node *irn);
 
-static INLINE int be_is_Spill    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Spill    ; }
-static INLINE int be_is_Reload   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Reload   ; }
-static INLINE int be_is_Copy     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Copy     ; }
-static INLINE int be_is_CopyKeep (const ir_node *irn) { return get_irn_opcode(irn) == beo_CopyKeep ; }
-static INLINE int be_is_Perm     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Perm     ; }
-static INLINE int be_is_MemPerm  (const ir_node *irn) { return get_irn_opcode(irn) == beo_MemPerm  ; }
-static INLINE int be_is_Keep     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Keep     ; }
-static INLINE int be_is_Call     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Call     ; }
-static INLINE int be_is_Return   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Return   ; }
-static INLINE int be_is_IncSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_IncSP    ; }
-static INLINE int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_AddSP    ; }
-static INLINE int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
-static INLINE int be_is_RegParams(const ir_node *irn) { return get_irn_opcode(irn) == beo_RegParams; }
-static INLINE int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
-static INLINE int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
-static INLINE int be_is_Unwind   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Unwind   ; }
+static inline int be_is_Spill    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Spill    ; }
+static inline int be_is_Reload   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Reload   ; }
+static inline int be_is_Copy     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Copy     ; }
+static inline int be_is_CopyKeep (const ir_node *irn) { return get_irn_opcode(irn) == beo_CopyKeep ; }
+static inline int be_is_Perm     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Perm     ; }
+static inline int be_is_MemPerm  (const ir_node *irn) { return get_irn_opcode(irn) == beo_MemPerm  ; }
+static inline int be_is_Keep     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Keep     ; }
+static inline int be_is_Call     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Call     ; }
+static inline int be_is_Return   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Return   ; }
+static inline int be_is_IncSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_IncSP    ; }
+static inline int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_AddSP    ; }
+static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
+static inline int be_is_RegParams(const ir_node *irn) { return get_irn_opcode(irn) == beo_RegParams; }
+static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
+static inline int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
+static inline int be_is_Unwind   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Unwind   ; }
 
 #endif /* FIRM_BE_BENODE_T_H */

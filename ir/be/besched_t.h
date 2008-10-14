@@ -63,7 +63,7 @@ typedef struct _sched_info_t {
  * for a given graph.
  * @param irg  The graph.
  */
-static INLINE int _have_sched_info(const ir_graph *irg)
+static inline int _have_sched_info(const ir_graph *irg)
 {
 	return get_irg_phase(irg, PHASE_BE_SCHED) != NULL;
 }
@@ -73,7 +73,7 @@ static INLINE int _have_sched_info(const ir_graph *irg)
  * @param irn The node.
  * @return 1, if the node is scheduled, 0 if not.
  */
-static INLINE int _sched_is_scheduled(const ir_node *irn)
+static inline int _sched_is_scheduled(const ir_node *irn)
 {
 	return get_irn_sched_info(irn)->scheduled;
 }
@@ -83,7 +83,7 @@ static INLINE int _sched_is_scheduled(const ir_node *irn)
  * @param irn The node.
  * @return The time step in the schedule.
  */
-static INLINE int _sched_get_time_step(const ir_node *irn)
+static inline int _sched_get_time_step(const ir_node *irn)
 {
 	assert(_sched_is_scheduled(irn));
 	return get_irn_sched_info(irn)->time_step;
@@ -95,7 +95,7 @@ static INLINE int _sched_get_time_step(const ir_node *irn)
  * @param irn The node to check for.
  * @return 1, if the node consumes/produces data, false if not.
  */
-static INLINE int to_appear_in_schedule(const ir_node *irn)
+static inline int to_appear_in_schedule(const ir_node *irn)
 {
 	switch(get_irn_opcode(irn)) {
 		case iro_Start:
@@ -114,7 +114,7 @@ static INLINE int to_appear_in_schedule(const ir_node *irn)
  * @param irn The ir node.
  * @return 1, if the node has a scheduling successor, 0 if not.
  */
-static INLINE int _sched_has_next(const ir_node *irn)
+static inline int _sched_has_next(const ir_node *irn)
 {
 	const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
@@ -127,7 +127,7 @@ static INLINE int _sched_has_next(const ir_node *irn)
  * @param irn The ir node.
  * @return 1, if the node has a scheduling predecessor, 0 if not.
  */
-static INLINE int _sched_has_prev(const ir_node *irn)
+static inline int _sched_has_prev(const ir_node *irn)
 {
    	const ir_node *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	const sched_info_t *info = get_irn_sched_info(irn);
@@ -140,7 +140,7 @@ static INLINE int _sched_has_prev(const ir_node *irn)
  * @param irn The node.
  * @return The next ir node in the schedule or the block, if the node has no next node.
  */
-static INLINE ir_node *_sched_next(const ir_node *irn)
+static inline ir_node *_sched_next(const ir_node *irn)
 {
 	const sched_info_t *info = get_irn_sched_info(irn);
 	return get_sched_info_irn(get_irn_irg(irn), _sched_entry(info->list.next));
@@ -152,7 +152,7 @@ static INLINE ir_node *_sched_next(const ir_node *irn)
  * @return The next ir node in the schedule or the block, if the node has no predecessor.
  * predecessor.
  */
-static INLINE ir_node *_sched_prev(const ir_node *irn)
+static inline ir_node *_sched_prev(const ir_node *irn)
 {
 	const sched_info_t *info = get_irn_sched_info(irn);
 	return get_sched_info_irn(get_irn_irg(irn), _sched_entry(info->list.prev));
@@ -164,7 +164,7 @@ static INLINE ir_node *_sched_prev(const ir_node *irn)
  * @return The first node in the schedule or the block itself
  *         if there is no node in the schedule.
  */
-static INLINE ir_node *_sched_first(const ir_node *block)
+static inline ir_node *_sched_first(const ir_node *block)
 {
 	assert(is_Block(block) && "Need a block here");
 	return _sched_next(block);
@@ -176,7 +176,7 @@ static INLINE ir_node *_sched_first(const ir_node *block)
  * @return The last ir node in a schedule, or the block itself
  *         if there is no node in the schedule.
  */
-static INLINE ir_node *_sched_last(const ir_node *block)
+static inline ir_node *_sched_last(const ir_node *block)
 {
 	assert(is_Block(block) && "Need a block here");
 	return _sched_prev(block);
@@ -188,7 +188,7 @@ static INLINE ir_node *_sched_last(const ir_node *block)
  */
 void sched_renumber(const ir_node *block);
 
-static INLINE void _sched_set_time_stamp(const ir_node *irn)
+static inline void _sched_set_time_stamp(const ir_node *irn)
 {
 	sched_info_t *inf = get_irn_sched_info(irn);
 	sched_timestep_t before_ts = _sched_entry(inf->list.prev)->time_step;
@@ -221,7 +221,7 @@ static INLINE void _sched_set_time_stamp(const ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE void _sched_add_before(const ir_node *before, const ir_node *irn)
+static inline void _sched_add_before(const ir_node *before, const ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
 	assert(_sched_is_scheduled(before));
@@ -238,7 +238,7 @@ static INLINE void _sched_add_before(const ir_node *before, const ir_node *irn)
  * @param irn The node to add.
  * @return The given node.
  */
-static INLINE void _sched_add_after(const ir_node *after, const ir_node *irn)
+static inline void _sched_add_after(const ir_node *after, const ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
 	assert(_sched_is_scheduled(after));
@@ -249,7 +249,7 @@ static INLINE void _sched_add_after(const ir_node *after, const ir_node *irn)
 	info->scheduled = 1;
 }
 
-static INLINE void _sched_init_block(const ir_node *block)
+static inline void _sched_init_block(const ir_node *block)
 {
 	sched_info_t *info = get_irn_sched_info(block);
 	assert(info->scheduled == 0 && info->time_step == 0);
@@ -257,7 +257,7 @@ static INLINE void _sched_init_block(const ir_node *block)
 	info->scheduled = 1;
 }
 
-static INLINE void _sched_reset(const ir_node *node)
+static inline void _sched_reset(const ir_node *node)
 {
 	sched_info_t *info = get_irn_sched_info(node);
 	info->scheduled = 0;
@@ -267,7 +267,7 @@ static INLINE void _sched_reset(const ir_node *node)
  * Remove a node from the scheduled.
  * @param irn The node.
  */
-static INLINE void _sched_remove(const ir_node *irn)
+static inline void _sched_remove(const ir_node *irn)
 {
 	sched_info_t *info = get_irn_sched_info(irn);
 	list_del(&info->list);
@@ -282,7 +282,7 @@ static INLINE void _sched_remove(const ir_node *irn)
  * @return A number smaller, equals to or larger than 0, if a is
  *         before, the same, or after b in the schedule.
  */
-static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
+static inline int _sched_cmp(const ir_node *a, const ir_node *b)
 {
 	assert(_sched_is_scheduled(a) && _sched_is_scheduled(b));
 	assert(get_nodes_block(a) == get_nodes_block(b));
@@ -297,7 +297,7 @@ static INLINE int _sched_cmp(const ir_node *a, const ir_node *b)
  * @return     1, if n1 is in front of n2 in the schedule, 0 else.
  * @note       Both nodes must be in the same block.
  */
-static INLINE int _sched_comes_after(const ir_node *n1, const ir_node *n2)
+static inline int _sched_comes_after(const ir_node *n1, const ir_node *n2)
 {
 	assert(_sched_is_scheduled(n1));
 	assert(_sched_is_scheduled(n2));

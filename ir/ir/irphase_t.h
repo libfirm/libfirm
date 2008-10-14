@@ -273,7 +273,7 @@ ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start);
 /**
  * This is private and only here for performance reasons.
  */
-static INLINE void _phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
+static inline void _phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
 {
 	int idx;
 
@@ -289,7 +289,7 @@ static INLINE void _phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
 /**
  * This is private and just here for performance reasons.
  */
-static INLINE void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
+static inline void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 {
 	unsigned last_irg_idx = get_irg_last_idx(phase->irg);
 	size_t old_cap        = phase->n_data_ptr;
@@ -311,13 +311,13 @@ static INLINE void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
  */
 #define _private_phase_assure_capacity(ph, max_idx) ((max_idx) >= (ph)->n_data_ptr ? (_private_phase_enlarge((ph), (max_idx)), 1) : 1)
 
-static INLINE void *_phase_get_irn_data(const ir_phase *ph, const ir_node *irn)
+static inline void *_phase_get_irn_data(const ir_phase *ph, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
 }
 
-static INLINE void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *data)
+static inline void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *data)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;
@@ -332,7 +332,7 @@ static INLINE void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *
 }
 
 
-static INLINE void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
+static inline void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;
@@ -353,12 +353,12 @@ static INLINE void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 	return res;
 }
 
-static INLINE ir_phase *_get_irg_phase(const ir_graph *irg, ir_phase_id id)
+static inline ir_phase *_get_irg_phase(const ir_graph *irg, ir_phase_id id)
 {
 	return irg->phases[id];
 }
 
-static INLINE void *_get_irn_phase_info(const ir_node *irn, ir_phase_id id)
+static inline void *_get_irn_phase_info(const ir_node *irn, ir_phase_id id)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	const ir_phase *ph  = get_irg_phase(irg, id);
@@ -366,7 +366,7 @@ static INLINE void *_get_irn_phase_info(const ir_node *irn, ir_phase_id id)
 	return _phase_get_irn_data(ph, irn);
 }
 
-static INLINE void *_get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id id)
+static inline void *_get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id id)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	ir_phase *ph  = get_irg_phase(irg, id);
@@ -374,7 +374,7 @@ static INLINE void *_get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id i
 	return _phase_get_or_set_irn_data(ph, irn);
 }
 
-static INLINE void *_set_irn_phase_info(const ir_node *irn, ir_phase_id id, void *data)
+static inline void *_set_irn_phase_info(const ir_node *irn, ir_phase_id id, void *data)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	ir_phase *ph  = get_irg_phase(irg, id);

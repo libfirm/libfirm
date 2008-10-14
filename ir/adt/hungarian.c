@@ -58,7 +58,7 @@ struct _hungarian_problem_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
-static INLINE void *get_init_mem(struct obstack *obst, long sz) {
+static inline void *get_init_mem(struct obstack *obst, long sz) {
 	void *p = obstack_alloc(obst, sz);
 	memset(p, 0, sz);
 	return p;

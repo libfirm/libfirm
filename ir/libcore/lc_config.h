@@ -33,7 +33,6 @@
 
 /* ISO C99 Standard stuff */
 #ifdef LC_HAVE_C99
-#define LC_INLINE      inline
 #define LC_FUNCNAME    __func__
 #define LC_UNUSED(x)   x
 #define LC_LONGLONG    long long
@@ -42,7 +41,7 @@
 /* definitions using GCC */
 #elif defined(__GNUC__)
 
-#define LC_INLINE      __inline__
+#define inline         __inline__
 #define LC_FUNCNAME    __FUNCTION__
 #define LC_UNUSED(x)   x __attribute__((__unused__))
 
@@ -56,7 +55,7 @@
 
 #elif defined(_MSC_VER)
 
-#define LC_INLINE      __inline
+#define inline         __inline
 #define LC_FUNCNAME    "<unknown>"
 #define LC_UNUSED(x)   x
 #define LC_LONGLONG    __int64
@@ -83,7 +82,7 @@ typedef unsigned __int64		uint64;
 /* default definitions */
 #else /* defined(_MSC_VER) */
 
-#define LC_INLINE
+#define inline
 #define LC_FUNCNAME "<unknown>"
 #define LC_UNUSED(x)
 #define LC_LONGLONG long

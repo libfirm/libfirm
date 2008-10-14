@@ -51,12 +51,12 @@ typedef struct _irn_phi_class_t {
 	ir_node ***phi_cls; /* the array of node pointers representing the class */
 } irn_phi_class_t;
 
-static INLINE ir_node ***_get_phi_class(ir_phase *ph, ir_node *irn) {
+static inline ir_node ***_get_phi_class(ir_phase *ph, ir_node *irn) {
 	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	return ipc->phi_cls;
 }
 
-static INLINE void _set_phi_class(ir_phase *ph, ir_node *irn, ir_node ***cls) {
+static inline void _set_phi_class(ir_phase *ph, ir_node *irn, ir_node ***cls) {
 	irn_phi_class_t *ipc = phase_get_or_set_irn_data(ph, irn);
 	ipc->phi_cls = cls;
 }

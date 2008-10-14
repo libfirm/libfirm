@@ -45,7 +45,7 @@ extern int             emit_linelength;
  *
  * @param env  the emitter environment
  */
-static INLINE void be_emit_char(char c)
+static inline void be_emit_char(char c)
 {
 	obstack_1grow(&emit_obst, c);
 	emit_linelength++;
@@ -58,7 +58,7 @@ static INLINE void be_emit_char(char c)
  * @param str  the string
  * @param l    the length of the given string
  */
-static INLINE void be_emit_string_len(const char *str, size_t l)
+static inline void be_emit_string_len(const char *str, size_t l)
 {
 	obstack_grow(&emit_obst, str, l);
 	emit_linelength += l;
@@ -70,7 +70,7 @@ static INLINE void be_emit_string_len(const char *str, size_t l)
  * @param env  the emitter environment
  * @param str  the null-terminated string
  */
-static INLINE void be_emit_string(const char *str)
+static inline void be_emit_string(const char *str)
 {
 	size_t len = strlen(str);
 	be_emit_string_len(str, len);

@@ -237,7 +237,7 @@ static int reaches(mris_env_t *env, ir_node *src, ir_node *tgt)
 }
 #endif
 
-static INLINE ir_node *skip_Projs(ir_node *irn)
+static inline ir_node *skip_Projs(ir_node *irn)
 {
 	return is_Proj(irn) ? skip_Projs(get_Proj_pred(irn)) : irn;
 }

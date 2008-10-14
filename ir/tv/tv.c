@@ -130,10 +130,10 @@ static void _fail_verify(tarval *tv, const char* file, int line)
 		panic("%s:%d: Invalid tarval (null)", file, line);
 }
 #ifdef __GNUC__
-INLINE static void tarval_verify(tarval *tv) __attribute__ ((unused));
+inline static void tarval_verify(tarval *tv) __attribute__ ((unused));
 #endif
 
-INLINE static void tarval_verify(tarval *tv)
+inline static void tarval_verify(tarval *tv)
 {
 	assert(tv);
 	assert(tv->mode);

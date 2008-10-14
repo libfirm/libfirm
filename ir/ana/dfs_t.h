@@ -76,7 +76,7 @@ static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, const void *
 
 #define _dfs_int_is_ancestor(n, m) ((m)->pre_num >= (n)->pre_num && (m)->pre_num <= (n)->max_pre_num)
 
-static INLINE int _dfs_is_ancestor(const struct _dfs_t *dfs, const void *a, const void *b)
+static inline int _dfs_is_ancestor(const struct _dfs_t *dfs, const void *a, const void *b)
 {
 	struct _dfs_node_t *n = _dfs_get_node(dfs, a);
 	struct _dfs_node_t *m = _dfs_get_node(dfs, b);

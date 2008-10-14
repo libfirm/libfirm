@@ -134,7 +134,7 @@ static int edges_dbg = 0;
 static long last_edge_num = -1;
 #endif
 
-static INLINE long edge_get_id(const ir_edge_t *e) {
+static inline long edge_get_id(const ir_edge_t *e) {
 #ifdef DEBUG_libfirm
 	return e->edge_nr;
 #else /* DEBUG_libfirm */
@@ -244,7 +244,7 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos) {
  * @param tgt  the edge target
  * @param kind the kind of the edge
  */
-static INLINE void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
+static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
 	irn_edge_info_t *info = _get_irn_edge_info(tgt, kind);
 	info->out_count += ofs;
 
@@ -273,7 +273,7 @@ static INLINE void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
  * Verify the edge list of a node, ie. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
-static INLINE void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
+static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
 	int                    err       = 0;
 	int                    num       = 0;
 	pset                   *lh_set   = pset_new_ptr(16);

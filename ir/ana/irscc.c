@@ -91,7 +91,7 @@ typedef struct scc_info {
 /**
  * Allocates a new SCC info on the given obstack.
  */
-static INLINE scc_info *new_scc_info(struct obstack *obst) {
+static inline scc_info *new_scc_info(struct obstack *obst) {
 	scc_info *info = obstack_alloc(obst, sizeof(*info));
 	memset(info, 0, sizeof(*info));
 	return info;
@@ -100,7 +100,7 @@ static INLINE scc_info *new_scc_info(struct obstack *obst) {
 /**
  * Mark node n being on the SCC stack.
  */
-static INLINE void mark_irn_in_stack(ir_node *n) {
+static inline void mark_irn_in_stack(ir_node *n) {
 	scc_info *scc = get_irn_link(n);
 	assert(scc);
 	scc->in_stack = 1;
@@ -109,7 +109,7 @@ static INLINE void mark_irn_in_stack(ir_node *n) {
 /**
 * Mark node n NOT being on the SCC stack.
 */
-static INLINE void mark_irn_not_in_stack(ir_node *n) {
+static inline void mark_irn_not_in_stack(ir_node *n) {
 	scc_info *scc = get_irn_link(n);
 	assert(scc);
 	scc->in_stack = 0;
@@ -118,7 +118,7 @@ static INLINE void mark_irn_not_in_stack(ir_node *n) {
 /**
  * Checks if a node is on the SCC stack.
  */
-static INLINE int irn_is_in_stack(ir_node *n) {
+static inline int irn_is_in_stack(ir_node *n) {
 	scc_info *scc = get_irn_link(n);
 	assert(scc);
 	return scc->in_stack;
@@ -127,7 +127,7 @@ static INLINE int irn_is_in_stack(ir_node *n) {
 /**
  * Sets the uplink number for a node.
  */
-static INLINE void set_irn_uplink(ir_node *n, int uplink) {
+static inline void set_irn_uplink(ir_node *n, int uplink) {
 	scc_info *scc = get_irn_link(n);
 	assert(scc);
 	scc->uplink = uplink;
@@ -145,7 +145,7 @@ static int get_irn_uplink(ir_node *n) {
 /**
  * Sets the depth-first-search number for a node.
  */
-static INLINE void set_irn_dfn(ir_node *n, int dfn) {
+static inline void set_irn_dfn(ir_node *n, int dfn) {
 	scc_info *scc = get_irn_link(n);
 	assert(scc);
 	scc->dfn = dfn;
@@ -198,7 +198,7 @@ static int tos = 0;                /* top of stack */
 /**
  * initializes the stack
  */
-static INLINE void init_stack(void) {
+static inline void init_stack(void) {
 	if (stack) {
 		ARR_RESIZE(ir_node *, stack, 1000);
 	} else {
@@ -220,7 +220,7 @@ static void finish_stack(void) {
  *
  * @param n  The node to push
  */
-static INLINE void push(ir_node *n) {
+static inline void push(ir_node *n) {
 	if (tos == ARR_LEN(stack)) {
 		int nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
@@ -234,7 +234,7 @@ static INLINE void push(ir_node *n) {
  *
  * @return  The topmost node
  */
-static INLINE ir_node *pop(void) {
+static inline ir_node *pop(void) {
 	ir_node *n = stack[--tos];
 	mark_irn_not_in_stack(n);
 	return n;
@@ -244,7 +244,7 @@ static INLINE ir_node *pop(void) {
  * The nodes up to n belong to the current loop.
  * Removes them from the stack and adds them to the current loop.
  */
-static INLINE void pop_scc_to_loop(ir_node *n) {
+static inline void pop_scc_to_loop(ir_node *n) {
 	ir_node *m;
 	int i = 0;
 
@@ -293,7 +293,7 @@ static void close_loop(ir_loop *l) {
 
 /* Removes and unmarks all nodes up to n from the stack.
    The nodes must be visited once more to assign them to a scc. */
-static INLINE void pop_scc_unmark_visit(ir_node *n) {
+static inline void pop_scc_unmark_visit(ir_node *n) {
 	ir_node *m = NULL;
 
 	while (m != n) {
@@ -323,19 +323,19 @@ static ir_loop *new_loop(void) {
 
 /* Initialization steps. **********************************************/
 
-static INLINE void init_node(ir_node *n, void *env) {
+static inline void init_node(ir_node *n, void *env) {
 	struct obstack *obst = env;
 	set_irn_link(n, new_scc_info(obst));
 	clear_backedges(n);
 }
 
-static INLINE void init_scc_common(void) {
+static inline void init_scc_common(void) {
 	current_dfn = 1;
 	loop_node_cnt = 0;
 	init_stack();
 }
 
-static INLINE void init_scc(ir_graph *irg, struct obstack *obst) {
+static inline void init_scc(ir_graph *irg, struct obstack *obst) {
 	init_scc_common();
 	irg_walk_graph(irg, init_node, NULL, obst);
 	/*
@@ -343,13 +343,13 @@ static INLINE void init_scc(ir_graph *irg, struct obstack *obst) {
 	*/
 }
 
-static INLINE void finish_scc(void)
+static inline void finish_scc(void)
 {
 	finish_stack();
 }
 
 #ifdef INTERPROCEDURAL_VIEW
-static INLINE void init_ip_scc(struct obstack *obst) {
+static inline void init_ip_scc(struct obstack *obst) {
 	init_scc_common();
 	cg_walk(init_node, NULL, obst);
 
@@ -380,7 +380,7 @@ static int is_outermost_Start(ir_node *n) {
 }
 
 /* When to walk from nodes to blocks. Only for Control flow operations? */
-static INLINE int get_start_index(ir_node *n) {
+static inline int get_start_index(ir_node *n) {
 #undef BLOCK_BEFORE_NODE
 #define BLOCK_BEFORE_NODE 1
 
@@ -423,7 +423,7 @@ static INLINE int get_start_index(ir_node *n) {
  *
  * @param n  the node to check
  */
-static INLINE int is_possible_loop_head(ir_node *n) {
+static inline int is_possible_loop_head(ir_node *n) {
 	ir_op *op = get_irn_op(n);
 	return ((op == op_Block) ||
 	        (op == op_Phi) ||
@@ -698,7 +698,7 @@ ir_node *get_projx_link(ir_node *cb_projx) {
 
 #endif
 
-static INLINE int is_outermost_loop(ir_loop *l) {
+static inline int is_outermost_loop(ir_loop *l) {
 	return l == get_loop_outer_loop(l);
 }
 

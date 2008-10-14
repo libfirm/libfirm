@@ -46,27 +46,27 @@ struct be_irg_t {
 	be_lv_t                *lv;
 };
 
-static INLINE be_lv_t *
+static inline be_lv_t *
 _be_get_birg_liveness(const be_irg_t *birg) {
 	return birg->lv;
 }
 
-static INLINE ir_exec_freq *
+static inline ir_exec_freq *
 _be_get_birg_exec_freq(const be_irg_t *birg) {
 	return birg->exec_freq;
 }
 
-static INLINE be_dom_front_info_t *
+static inline be_dom_front_info_t *
 _be_get_birg_dom_front(const be_irg_t *birg) {
 	return birg->dom_front;
 }
 
-static INLINE ir_graph *
+static inline ir_graph *
 _be_get_birg_irg(const be_irg_t *birg) {
 	return birg->irg;
 }
 
-static INLINE const arch_env_t *
+static inline const arch_env_t *
 _be_get_birg_arch_env(const be_irg_t *birg) {
 	return birg->main_env->arch_env;
 }

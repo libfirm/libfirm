@@ -45,19 +45,19 @@ struct arch_register_t {
 	arch_register_type_t        type;         /**< The type of the register. */
 };
 
-static INLINE const arch_register_class_t *
+static inline const arch_register_class_t *
 _arch_register_get_class(const arch_register_t *reg)
 {
 	return reg->reg_class;
 }
 
-static INLINE
+static inline
 unsigned _arch_register_get_index(const arch_register_t *reg)
 {
 	return reg->index;
 }
 
-static INLINE
+static inline
 const char *_arch_register_get_name(const arch_register_t *reg)
 {
 	return reg->name;
@@ -105,7 +105,7 @@ struct arch_register_class_t {
 /** return the register class flags */
 #define arch_register_class_flags(cls) ((cls)->flags)
 
-static INLINE const arch_register_t *
+static inline const arch_register_t *
 _arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
 {
 	assert(idx < cls->n_regs);
@@ -139,7 +139,7 @@ struct arch_register_req_t {
 	                                         (must_be_different) */
 };
 
-static INLINE int reg_reqs_equal(const arch_register_req_t *req1,
+static inline int reg_reqs_equal(const arch_register_req_t *req1,
                                  const arch_register_req_t *req2)
 {
 	if (req1 == req2)

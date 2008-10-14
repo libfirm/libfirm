@@ -170,7 +170,7 @@ static be_abi_call_arg_t *get_or_set_call_arg(be_abi_call_t *call, int is_res, i
  * @param is_res    true for call results, false for call arguments
  * @param pos       position of the argument
  */
-static INLINE be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
+static inline be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
 {
 	return get_or_set_call_arg(call, is_res, pos, 0);
 }
@@ -381,7 +381,7 @@ static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
  * Returns non-zero if the call argument at given position
  * is transfered on the stack.
  */
-static INLINE int is_on_stack(be_abi_call_t *call, int pos)
+static inline int is_on_stack(be_abi_call_t *call, int pos)
 {
 	be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
 	return arg && !arg->in_reg;

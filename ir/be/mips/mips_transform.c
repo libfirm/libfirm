@@ -71,7 +71,7 @@
 typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg,
 	ir_node *block, ir_node *left, ir_node *right);
 
-static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 

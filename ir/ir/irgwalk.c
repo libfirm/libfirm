@@ -451,7 +451,7 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
  * Returns current_ir_graph and sets it to the irg of predecessor index
  * of node n.
  */
-static INLINE ir_graph *
+static inline ir_graph *
 switch_irg(ir_node *n, int index) {
 	ir_graph *old_current = current_ir_graph;
 

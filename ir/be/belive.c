@@ -63,7 +63,7 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc);
  * @param irn  the node t check
  * @return 0 if no liveness info is needed, 1 else
  */
-static INLINE int is_liveness_node(const ir_node *irn)
+static inline int is_liveness_node(const ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
 	case iro_Block:
@@ -104,7 +104,7 @@ int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
 
 
 #ifdef LV_USE_BINARY_SEARCH
-static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx)
+static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx)
 {
 	struct _be_lv_info_t *payload = arr + 1;
 
@@ -152,7 +152,7 @@ static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 /**
  * This function searches linearly for the node in the array.
  */
-static INLINE unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx) {
+static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx) {
 	unsigned n  = arr[0].u.head.n_members;
 	unsigned i;
 
@@ -304,7 +304,7 @@ static void register_node(be_lv_t *lv, const ir_node *irn)
 /**
  * Mark a node as live-in in a block.
  */
-static INLINE void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
+static inline void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
@@ -315,7 +315,7 @@ static INLINE void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 /**
  * Mark a node as live-out in a block.
  */
-static INLINE void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
+static inline void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
@@ -326,7 +326,7 @@ static INLINE void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 /**
  * Mark a node as live-end in a block.
  */
-static INLINE void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
+static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
 	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));

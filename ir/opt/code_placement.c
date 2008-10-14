@@ -306,7 +306,7 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 
 /* FIXME: the name clashes here with the function from ana/field_temperature.c
  * please rename. */
-static INLINE int get_irn_loop_depth(ir_node *n) {
+static inline int get_irn_loop_depth(ir_node *n) {
 	return get_loop_depth(get_irn_loop(n));
 }
 

@@ -218,7 +218,7 @@ static heights_t *glob_heights;
  * Check if irn is a Proj, which has no execution units assigned.
  * @return 1 if irn is a Proj having no execution units assigned, 0 otherwise
  */
-static INLINE int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
+static inline int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
 	return is_Proj(irn) && (arch_env_get_allowed_execution_units(env, irn) == NULL);
 }
 
@@ -226,13 +226,13 @@ static INLINE int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
  * Skips normal Projs.
  * @return predecessor if irn is a normal Proj, otherwise irn.
  */
-static INLINE ir_node *skip_normal_Proj(const arch_env_t *env, ir_node *irn) {
+static inline ir_node *skip_normal_Proj(const arch_env_t *env, ir_node *irn) {
 	if (is_normal_Proj(env, irn))
 		return get_Proj_pred(irn);
 	return irn;
 }
 
-static INLINE int fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, void *env) {
+static inline int fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, void *env) {
 	unsigned lat = be_ilp_sched_latency(sel, irn, env);
 	if (lat == 0 && ! is_Proj(irn) && ! be_is_Keep(irn))
 		lat = 1;
@@ -681,7 +681,7 @@ static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
  *
  *******************************************/
 
-static INLINE void check_for_keeps(waitq *keeps, const ir_node *block, const ir_node *irn) {
+static inline void check_for_keeps(waitq *keeps, const ir_node *block, const ir_node *irn) {
 	const ir_edge_t *edge;
         (void) block;
 
@@ -698,7 +698,7 @@ static INLINE void check_for_keeps(waitq *keeps, const ir_node *block, const ir_
 /**
  * Inserts @p irn before @p before into schedule and notifies backend.
  */
-static INLINE void notified_sched_add_before(be_ilpsched_env_t *env,
+static inline void notified_sched_add_before(be_ilpsched_env_t *env,
 	const ir_node *before, const ir_node *irn, unsigned cycle)
 {
 	be_ilp_sched_node_scheduled(env->sel, irn, cycle, env->block_env);
@@ -875,7 +875,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 /**
  * Check if node can be executed on given unit type.
  */
-static INLINE int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node) {
+static inline int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node) {
 	int                  i;
 	ilpsched_node_attr_t *na = get_ilpsched_node_attr(node);
 
@@ -2085,7 +2085,7 @@ void be_init_ilpsched(void)
 
 #else /* WITH_ILP */
 
-static INLINE void some_picky_compiler_do_not_allow_empty_files(void)
+static inline void some_picky_compiler_do_not_allow_empty_files(void)
 {}
 
 #endif /* WITH_ILP */

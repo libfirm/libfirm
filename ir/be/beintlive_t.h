@@ -28,7 +28,7 @@
  * @param b The second node.
  * @return 1 if a comes before b in the same block or if a == b, 0 else.
  */
-static INLINE int _value_dominates_intrablock(const ir_node *a, const ir_node *b)
+static inline int _value_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
 	/* TODO: ? :  can be removed?! */
 	sched_timestep_t as = sched_is_scheduled(a) ? sched_get_time_step(a) : 0;
@@ -42,7 +42,7 @@ static INLINE int _value_dominates_intrablock(const ir_node *a, const ir_node *b
  * @param b The second node.
  * @return 1 if a comes before b in the same block, 0 else.
  */
-static INLINE int _value_strictly_dominates_intrablock(const ir_node *a, const ir_node *b)
+static inline int _value_strictly_dominates_intrablock(const ir_node *a, const ir_node *b)
 {
 	/* TODO: ? :  can be removed?! */
 	sched_timestep_t as = sched_is_scheduled(a) ? sched_get_time_step(a) : 0;
@@ -57,7 +57,7 @@ static INLINE int _value_strictly_dominates_intrablock(const ir_node *a, const i
  * @param b The second node.
  * @return 1 if a dominates b or if a == b, 0 else.
  */
-static INLINE int _value_dominates(const ir_node *a, const ir_node *b)
+static inline int _value_dominates(const ir_node *a, const ir_node *b)
 {
 	const ir_node *block_a = get_block_const(a);
 	const ir_node *block_b = get_block_const(b);
@@ -83,7 +83,7 @@ static INLINE int _value_dominates(const ir_node *a, const ir_node *b)
  * @param b The second node.
  * @return 1 if a dominates b, 0 else.
  */
-static INLINE int _value_strictly_dominates(const ir_node *a, const ir_node *b)
+static inline int _value_strictly_dominates(const ir_node *a, const ir_node *b)
 {
 	const ir_node *block_a = get_block_const(a);
 	const ir_node *block_b = get_block_const(b);
@@ -109,7 +109,7 @@ static INLINE int _value_strictly_dominates(const ir_node *a, const ir_node *b)
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
  */
-static INLINE int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
+static inline int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 {
 	int a2b = _value_dominates(a, b);
 	int b2a = _value_dominates(b, a);
@@ -175,7 +175,7 @@ end:
  * @param edge The use.
  * @return     1, if @p irn dominates the use @p edge.
  */
-static INLINE int _dominates_use(const ir_node *irn, const ir_edge_t *edge)
+static inline int _dominates_use(const ir_node *irn, const ir_edge_t *edge)
 {
 	ir_node *use = get_edge_src_irn(edge);
 
@@ -197,7 +197,7 @@ static INLINE int _dominates_use(const ir_node *irn, const ir_edge_t *edge)
  * @param edge The use.
  * @return     1, if @p irn strictly dominates the use @p edge.
  */
-static INLINE int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *edge)
+static inline int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *edge)
 {
 	return get_edge_src_irn(edge) != irn && _dominates_use(irn, edge);
 }
@@ -209,7 +209,7 @@ static INLINE int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *e
  * @param where The location to check for.
  * @return      1, if @p irn is live in front of @p where.
  */
-static INLINE int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
+static inline int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
 	const be_lv_t *lv = be_get_birg_liveness(birg);
 	const ir_edge_t *edge;
@@ -244,7 +244,7 @@ static INLINE int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn
  * @param where The location to check for.
  * @return      1, if @p irn is live after @p where.
  */
-static INLINE int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
+static inline int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
 	const be_lv_t *lv = be_get_birg_liveness(birg);
 	const ir_edge_t *edge;

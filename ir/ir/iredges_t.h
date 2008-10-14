@@ -76,7 +76,7 @@ struct _ir_edge_t {
 * @param irn The node.
 * @return The first out edge that points to this node.
 */
-static INLINE const ir_edge_t *_get_irn_out_edge_first_kind(const ir_node *irn, ir_edge_kind_t kind)
+static inline const ir_edge_t *_get_irn_out_edge_first_kind(const ir_node *irn, ir_edge_kind_t kind)
 {
 	const struct list_head *head = _get_irn_outs_head(irn, kind);
 	return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
@@ -88,7 +88,7 @@ static INLINE const ir_edge_t *_get_irn_out_edge_first_kind(const ir_node *irn, 
 * @param last The last out edge you have seen.
 * @return The next out edge in @p irn 's out list after @p last.
 */
-static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last)
+static inline const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last)
 {
 	struct list_head *next = last->list.next;
 	return next == _get_irn_outs_head(irn, last->kind) ? NULL : list_entry(next, ir_edge_t, list);
@@ -99,7 +99,7 @@ static INLINE const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
 * @param irn The node.
 * @return The number of edges pointing to this node.
 */
-static INLINE int _get_irn_n_edges_kind(const ir_node *irn, int kind)
+static inline int _get_irn_n_edges_kind(const ir_node *irn, int kind)
 {
 	/* Perhaps out_count was buggy. This code does it more safely. */
 #if 0
@@ -113,7 +113,7 @@ static INLINE int _get_irn_n_edges_kind(const ir_node *irn, int kind)
 #endif
 }
 
-static INLINE int _edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind)
+static inline int _edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind)
 {
 	return _get_irg_edge_info(irg, kind)->activated;
 }
@@ -122,7 +122,7 @@ static INLINE int _edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind
 * Assure, that the edges information is present for a certain graph.
 * @param irg The graph.
 */
-static INLINE void _edges_assure_kind(ir_graph *irg, int kind)
+static inline void _edges_assure_kind(ir_graph *irg, int kind)
 {
 	if(!_edges_activated_kind(irg, kind))
 		edges_activate_kind(irg, kind);
@@ -160,17 +160,17 @@ int edges_register_private_data(size_t n);
 *              edges_register_private_data().
 * @return A pointer to the private data.
 */
-static INLINE void *_get_edge_private_data(const ir_edge_t *edge, int ofs)
+static inline void *_get_edge_private_data(const ir_edge_t *edge, int ofs)
 {
 	return (void *) ((char *) edge + sizeof(edge[0]) + ofs);
 }
 
-static INLINE ir_node *_get_edge_src_irn(const ir_edge_t *edge)
+static inline ir_node *_get_edge_src_irn(const ir_edge_t *edge)
 {
 	return edge->src;
 }
 
-static INLINE int _get_edge_src_pos(const ir_edge_t *edge)
+static inline int _get_edge_src_pos(const ir_edge_t *edge)
 {
 	return edge->pos;
 }

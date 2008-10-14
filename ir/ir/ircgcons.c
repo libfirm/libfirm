@@ -111,7 +111,7 @@ static void caller_init(int arr_length, ir_entity ** free_methods) {
 }
 
 /*
-static INLINE ir_node * tail(ir_node * node) {
+static inline ir_node * tail(ir_node * node) {
   ir_node * link;
   for (; (link = get_irn_link(node)); node = link) ;
   return node;
@@ -216,7 +216,7 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data);
  * cause cycles we don't want to see, as Unknwon is in the Start Block
  * of the procedure. Use unknown of outermost irg where the start
  * block has no predecessors. */
-static INLINE ir_node *get_cg_Unknown(ir_mode *m) {
+static inline ir_node *get_cg_Unknown(ir_mode *m) {
   assert((get_Block_n_cfgpreds(get_irg_start_block(get_irp_main_irg())) == 1) &&
 	 (get_nodes_block(get_Block_cfgpred(get_irg_start_block(get_irp_main_irg()), 0)) ==
 	  get_irg_start_block(get_irp_main_irg())));

@@ -92,7 +92,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * accesses.  This function is called for all Phi and Block nodes
  * in a Block.
  */
-static INLINE int
+static inline int
 compute_new_arity(ir_node *b) {
 	int i, res, irn_arity;
 	int irg_v, block_v;
@@ -1454,7 +1454,7 @@ static void collect_calls2(ir_node *call, void *ctx) {
  * Returns TRUE if the number of callers is 0 in the irg's environment,
  * hence this irg is a leave.
  */
-INLINE static int is_leave(ir_graph *irg) {
+inline static int is_leave(ir_graph *irg) {
 	inline_irg_env *env = get_irg_link(irg);
 	return env->n_call_nodes == 0;
 }
@@ -1463,7 +1463,7 @@ INLINE static int is_leave(ir_graph *irg) {
  * Returns TRUE if the number of nodes in the callee is
  * smaller then size in the irg's environment.
  */
-INLINE static int is_smaller(ir_graph *callee, unsigned size) {
+inline static int is_smaller(ir_graph *callee, unsigned size) {
 	inline_irg_env *env = get_irg_link(callee);
 	return env->n_nodes < size;
 }

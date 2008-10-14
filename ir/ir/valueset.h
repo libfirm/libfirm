@@ -86,7 +86,7 @@ void ir_valueset_destroy(ir_valueset_t *valueset);
  * @param expected_elements   Number of elements expected in the value set (roughly)
  * @return The initialized value set
  */
-static INLINE ir_valueset_t *ir_valueset_new(size_t expected_elements) {
+static inline ir_valueset_t *ir_valueset_new(size_t expected_elements) {
 	ir_valueset_t *res = XMALLOC(ir_valueset_t);
 	ir_valueset_init_size(res, expected_elements);
 	return res;
@@ -95,7 +95,7 @@ static INLINE ir_valueset_t *ir_valueset_new(size_t expected_elements) {
 /**
  * Destroys a value set and frees the memory of the set itself.
  */
-static INLINE void ir_valueset_del(ir_valueset_t *valueset) {
+static inline void ir_valueset_del(ir_valueset_t *valueset) {
 	ir_valueset_destroy(valueset);
 	xfree(valueset);
 }

@@ -36,12 +36,12 @@
 
 #else
 
-static INLINE void ir_debugf(const char *fmt, ...)
+static inline void ir_debugf(const char *fmt, ...)
 {
 	(void) fmt;
 }
 
-static INLINE void ir_fdebugf(FILE *f, const char *fmt, ...)
+static inline void ir_fdebugf(FILE *f, const char *fmt, ...)
 {
 	(void) f;
 	(void) fmt;

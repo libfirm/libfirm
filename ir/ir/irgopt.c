@@ -67,7 +67,7 @@ static void optimize_in_place_wrapper (ir_node *n, void *env) {
  *
  * @note current_ir_graph must be set
  */
-static INLINE void do_local_optimize(ir_node *n) {
+static inline void do_local_optimize(ir_node *n) {
 	/* Handle graph state */
 	assert(get_irg_phase_state(current_ir_graph) != phase_building);
 

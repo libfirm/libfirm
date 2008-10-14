@@ -429,7 +429,7 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
  * position 0, the Start block at position 1.  This is necessary for
  * the out block walker.
  */
-static INLINE void fix_start_proj(ir_graph *irg) {
+static inline void fix_start_proj(ir_graph *irg) {
 	ir_node *startbl = get_irg_start_block(irg);
 
 	if (get_Block_n_cfg_outs(startbl)) {

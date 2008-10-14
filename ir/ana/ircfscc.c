@@ -78,7 +78,7 @@ typedef struct scc_info {
 } scc_info;
 
 /** Allocate a new scc_info on the given obstack */
-static INLINE scc_info *new_scc_info(struct obstack *obst) {
+static inline scc_info *new_scc_info(struct obstack *obst) {
 	scc_info *info = obstack_alloc(obst, sizeof(*info));
 	memset(info, 0, sizeof(*info));
 	return info;
@@ -87,7 +87,7 @@ static INLINE scc_info *new_scc_info(struct obstack *obst) {
 /**
  * Marks the node n to be on the stack.
  */
-static INLINE void mark_irn_in_stack(ir_node *n) {
+static inline void mark_irn_in_stack(ir_node *n) {
 	scc_info *info = get_irn_link(n);
 	info->in_stack = 1;
 }
@@ -95,7 +95,7 @@ static INLINE void mark_irn_in_stack(ir_node *n) {
 /**
  * Marks the node n to be not on the stack.
  */
-static INLINE void mark_irn_not_in_stack(ir_node *n) {
+static inline void mark_irn_not_in_stack(ir_node *n) {
 	scc_info *info = get_irn_link(n);
 	info->in_stack = 0;
 }
@@ -103,7 +103,7 @@ static INLINE void mark_irn_not_in_stack(ir_node *n) {
 /**
  * Returns whether node n is on the stack.
  */
-static INLINE int irn_is_in_stack(ir_node *n) {
+static inline int irn_is_in_stack(ir_node *n) {
 	scc_info *info = get_irn_link(n);
 	return info->in_stack;
 }
@@ -111,7 +111,7 @@ static INLINE int irn_is_in_stack(ir_node *n) {
 /**
  * Sets node n uplink value.
  */
-static INLINE void set_irn_uplink(ir_node *n, int uplink) {
+static inline void set_irn_uplink(ir_node *n, int uplink) {
 	scc_info *info = get_irn_link(n);
 	info->uplink = uplink;
 }
@@ -119,7 +119,7 @@ static INLINE void set_irn_uplink(ir_node *n, int uplink) {
 /**
  * Return node n uplink value.
  */
-static INLINE int get_irn_uplink(ir_node *n) {
+static inline int get_irn_uplink(ir_node *n) {
 	scc_info *info = get_irn_link(n);
 	return info->uplink;
 }
@@ -127,7 +127,7 @@ static INLINE int get_irn_uplink(ir_node *n) {
 /**
  * Sets node n dfn value.
  */
-static INLINE void set_irn_dfn(ir_node *n, int dfn) {
+static inline void set_irn_dfn(ir_node *n, int dfn) {
 	scc_info *info = get_irn_link(n);
 	info->dfn = dfn;
 }
@@ -135,7 +135,7 @@ static INLINE void set_irn_dfn(ir_node *n, int dfn) {
 /**
  * Returns node n dfn value.
  */
-static INLINE int get_irn_dfn(ir_node *n) {
+static inline int get_irn_dfn(ir_node *n) {
 	scc_info *info = get_irn_link(n);
 	return info->dfn;
 }
@@ -152,7 +152,7 @@ static int tos = 0;
 /**
  * Initializes the IR-node stack
  */
-static INLINE void init_stack(void) {
+static inline void init_stack(void) {
 	if (stack) {
 		ARR_RESIZE(ir_node *, stack, 1000);
 	} else {
@@ -170,7 +170,7 @@ static void finish_stack(void)
 /**
  * Push a node n onto the IR-node stack.
  */
-static INLINE void push(ir_node *n) {
+static inline void push(ir_node *n) {
 	if (tos == ARR_LEN(stack)) {
 		int nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
@@ -182,7 +182,7 @@ static INLINE void push(ir_node *n) {
 /**
  * Pop a node from the IR-node stack and return it.
  */
-static INLINE ir_node *pop(void) {
+static inline ir_node *pop(void) {
 	ir_node *n = stack[--tos];
 	mark_irn_not_in_stack(n);
 	return n;
@@ -192,7 +192,7 @@ static INLINE ir_node *pop(void) {
  * The nodes from tos up to n belong to the current loop.
  * Removes them from the stack and adds them to the current loop.
  */
-static INLINE void pop_scc_to_loop(ir_node *n) {
+static inline void pop_scc_to_loop(ir_node *n) {
 	ir_node *m;
 
 	do {
@@ -237,7 +237,7 @@ static void close_loop(ir_loop *l) {
  * Removes and unmarks all nodes up to n from the stack.
  * The nodes must be visited once more to assign them to a scc.
  */
-static INLINE void pop_scc_unmark_visit(ir_node *n) {
+static inline void pop_scc_unmark_visit(ir_node *n) {
 	ir_node *m;
 
 	do {
@@ -275,7 +275,7 @@ static ir_loop *new_loop(void) {
  * Clear the backedges for all nodes.
  * Called from a walker.
  */
-static INLINE void init_node(ir_node *n, void *env) {
+static inline void init_node(ir_node *n, void *env) {
 	struct obstack *obst = env;
 	if (is_Block(n))
 		set_irn_link(n, new_scc_info(obst));
@@ -285,7 +285,7 @@ static INLINE void init_node(ir_node *n, void *env) {
 /**
  * Initializes the common global settings for the scc algorithm
  */
-static INLINE void init_scc_common(void) {
+static inline void init_scc_common(void) {
 	current_dfn   = 1;
 	loop_node_cnt = 0;
 	init_stack();
@@ -295,12 +295,12 @@ static INLINE void init_scc_common(void) {
  * Initializes the scc algorithm for the intraprocedural case.
  * Add scc info to every block node.
  */
-static INLINE void init_scc(ir_graph *irg, struct obstack *obst) {
+static inline void init_scc(ir_graph *irg, struct obstack *obst) {
 	init_scc_common();
 	irg_walk_graph(irg, init_node, NULL, obst);
 }
 
-static INLINE void finish_scc(void)
+static inline void finish_scc(void)
 {
 	finish_stack();
 }
@@ -309,7 +309,7 @@ static INLINE void finish_scc(void)
 /**
  * Initializes the scc algorithm for the interprocedural case.
  */
-static INLINE void init_ip_scc(struct obstack *obst) {
+static inline void init_ip_scc(struct obstack *obst) {
 	init_scc_common();
 	cg_walk(init_node, NULL, obst);
 
@@ -519,7 +519,7 @@ static ir_node *find_tail(ir_node *n) {
 /**
  * returns non.zero if l is the outermost loop.
  */
-INLINE static int is_outermost_loop(ir_loop *l) {
+inline static int is_outermost_loop(ir_loop *l) {
 	return l == get_loop_outer_loop(l);
 }
 

@@ -174,7 +174,7 @@ static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len) {
  *
  * The hash value for the buffer content is updated.
  */
-static INLINE void put_byte(CODE_BUFFER *buf, BYTE byte) {
+static inline void put_byte(CODE_BUFFER *buf, BYTE byte) {
 	if (buf->next < buf->end) {
 		*buf->next++ = byte;
 		buf->hash = (buf->hash * 9) ^ byte;
@@ -232,7 +232,7 @@ static unsigned buf_overrun(const CODE_BUFFER *buf) {
  *
  * @return  the next byte from the code buffer
  */
-static INLINE BYTE look_byte(CODE_BUFFER *buf) {
+static inline BYTE look_byte(CODE_BUFFER *buf) {
 	if (buf->next < buf->end)
 		return *buf->next;
 	return VLC_TAG_END;
@@ -245,7 +245,7 @@ static INLINE BYTE look_byte(CODE_BUFFER *buf) {
  *
  * @return  the next byte from the code buffer
  */
-static INLINE BYTE get_byte(CODE_BUFFER *buf) {
+static inline BYTE get_byte(CODE_BUFFER *buf) {
 	if (buf->next < buf->end)
 		return *buf->next++;
 	return VLC_TAG_END;

@@ -536,7 +536,7 @@ typedef void (emit_func)(const ir_node *irn);
 /**
  * Set a node emitter. Make it a bit more type safe.
  */
-static INLINE void set_emitter(ir_op *op, emit_func ppc32_emit_node) {
+static inline void set_emitter(ir_op *op, emit_func ppc32_emit_node) {
 	op->ops.generic = (op_func)ppc32_emit_node;
 }
 

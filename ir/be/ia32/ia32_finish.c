@@ -206,7 +206,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	DBG_OPT_SUB2NEGADD(irn, res);
 }
 
-static INLINE int need_constraint_copy(ir_node *irn)
+static inline int need_constraint_copy(ir_node *irn)
 {
 	/* TODO this should be determined from the node specification */
 	switch (get_ia32_irn_opcode(irn)) {

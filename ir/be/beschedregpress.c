@@ -86,7 +86,7 @@ static int cmp_usage(const void *a, const void *b)
 }
 #endif
 
-static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
+static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	usage_stats_t *us = get_irn_link(irn);
 
@@ -103,7 +103,7 @@ static INLINE usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t 
 	return us;
 }
 
-static INLINE usage_stats_t *get_usage_stats(ir_node *irn)
+static inline usage_stats_t *get_usage_stats(ir_node *irn)
 {
 	usage_stats_t *us = get_irn_link(irn);
 	assert(us && "This node must have usage stats");
@@ -181,7 +181,7 @@ static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, const be
 	return main_env;
 }
 
-static INLINE int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
+static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
 {
 	int res = -1;
 
@@ -256,7 +256,7 @@ static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
 	return res;
 }
 
-static INLINE int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
+static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	int i, n;
 	int sum = 0;

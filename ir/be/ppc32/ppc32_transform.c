@@ -58,7 +58,7 @@ ir_mode* ppc32_mode_Cond = NULL;
 /**
  * Returns the proj of a given node with the given proj number
  */
-static INLINE ir_node *get_succ_Proj(ir_node *node, long proj)
+static inline ir_node *get_succ_Proj(ir_node *node, long proj)
 {
 	const ir_edge_t *edge;
 	foreach_out_edge(node, edge)

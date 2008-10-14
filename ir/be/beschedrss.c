@@ -1243,7 +1243,7 @@ static void compute_killing_function(rss_t *rss) {
 /**
  * Adds the edge src -> tgt to the dvg. Checks if reverse edge is already there (asserts).
  */
-static INLINE void add_dvg_edge(rss_t *rss, dvg_t *dvg, const ir_node *src, const ir_node *tgt, int have_source) {
+static inline void add_dvg_edge(rss_t *rss, dvg_t *dvg, const ir_node *src, const ir_node *tgt, int have_source) {
 	rss_edge_t *dvg_edge;
 	rss_edge_t key;
 

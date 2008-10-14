@@ -65,7 +65,7 @@ static int arch_register_class_put(const arch_register_class_t *cls, bitset_t *b
  * @param irn The node to get the responsible isa for.
  * @return The irn operations given by the responsible isa.
  */
-static INLINE const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
+static inline const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 {
 	const ir_op          *ops;
 	const arch_irn_ops_t *be_ops;

@@ -97,7 +97,7 @@ void ir_lnk_nodemap_destroy(ir_lnk_nodemap_t *nodemap);
  * @param expected_elements   Number of elements expected in the nodemap (roughly)
  * @return The initialized nodemap
  */
-static INLINE ir_lnk_nodemap_t *ir_lnk_nodemap_new(size_t expected_elements) {
+static inline ir_lnk_nodemap_t *ir_lnk_nodemap_new(size_t expected_elements) {
 	ir_lnk_nodemap_t *res = XMALLOC(ir_lnk_nodemap_t);
 	ir_lnk_nodemap_init_size(res, expected_elements);
 	return res;
@@ -106,7 +106,7 @@ static INLINE ir_lnk_nodemap_t *ir_lnk_nodemap_new(size_t expected_elements) {
 /**
  * Destroys a linked nodemap and frees the memory of the nodemap itself.
  */
-static INLINE void ir_lnk_nodemap_del(ir_lnk_nodemap_t *nodemap) {
+static inline void ir_lnk_nodemap_del(ir_lnk_nodemap_t *nodemap) {
 	ir_lnk_nodemap_destroy(nodemap);
 	xfree(nodemap);
 }

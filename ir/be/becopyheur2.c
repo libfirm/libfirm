@@ -253,13 +253,13 @@ static col_t get_col(co2_t *env, const ir_node *irn)
 	return ci->tmp_fixed ? ci->tmp_col : ci->orig_col;
 }
 
-static INLINE int color_is_fix(co2_t *env, const ir_node *irn)
+static inline int color_is_fix(co2_t *env, const ir_node *irn)
 {
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	return ci->fixed || ci->tmp_fixed;
 }
 
-static INLINE bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
+static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 {
 	if(ci->adm_cache == NULL) {
 		const arch_register_req_t *req;
@@ -284,19 +284,19 @@ static INLINE bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 	return ci->adm_cache;
 }
 
-static INLINE bitset_t *admissible_colors(co2_t *env, co2_irn_t *ci, bitset_t *bs)
+static inline bitset_t *admissible_colors(co2_t *env, co2_irn_t *ci, bitset_t *bs)
 {
 	bitset_copy(bs, get_adm(env, ci));
 	return bs;
 }
 
-static INLINE int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
+static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 {
 	bitset_t *bs = get_adm(env, ci);
 	return bitset_is_set(bs, col);
 }
 
-static INLINE int is_constrained(co2_t *env, co2_irn_t *ci)
+static inline int is_constrained(co2_t *env, co2_irn_t *ci)
 {
 	if(!ci->adm_cache)
 		get_adm(env, ci);

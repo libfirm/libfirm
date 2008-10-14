@@ -166,7 +166,7 @@ static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
 /**
  * calculate the hash value of an tr_inh_trans_tp
  */
-static INLINE unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v) {
+static inline unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v) {
 	return HASH_PTR(v->kind);
 }
 

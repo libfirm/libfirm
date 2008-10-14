@@ -214,7 +214,7 @@ static void workset_clear(workset_t *workset)
 /**
  * Removes the value @p val from the workset if present.
  */
-static INLINE void workset_remove(workset_t *workset, ir_node *val)
+static inline void workset_remove(workset_t *workset, ir_node *val)
 {
 	int i;
 	for(i = 0; i < workset->len; ++i) {
@@ -225,7 +225,7 @@ static INLINE void workset_remove(workset_t *workset, ir_node *val)
 	}
 }
 
-static INLINE const loc_t *workset_contains(const workset_t *ws,
+static inline const loc_t *workset_contains(const workset_t *ws,
                                             const ir_node *val)
 {
 	int i;
@@ -276,7 +276,7 @@ static void *new_block_info(void)
 /**
  * @return The distance to the next use or 0 if irn has dont_spill flag set
  */
-static INLINE unsigned get_distance(ir_node *from, unsigned from_step,
+static inline unsigned get_distance(ir_node *from, unsigned from_step,
                                     const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;

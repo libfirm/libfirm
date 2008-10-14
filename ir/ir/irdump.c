@@ -472,7 +472,7 @@ static void print_enum_item_edge(FILE *F, ir_type *E, int item, const char *fmt,
 /*-----------------------------------------------------------------*/
 
 static void dump_whole_node(ir_node *n, void *env);
-static INLINE void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg);
+static inline void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg);
 
 /*-----------------------------------------------------------------*/
 /* Helper functions.                                                */
@@ -1304,7 +1304,7 @@ void dump_remv_node_info_callback(void *handle)
 /**
  * Dump the node information of a node n to a file F.
  */
-static INLINE int dump_node_info(FILE *F, ir_node *n)
+static inline int dump_node_info(FILE *F, ir_node *n)
 {
 	int bad = 0;
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
@@ -1322,7 +1322,7 @@ static INLINE int dump_node_info(FILE *F, ir_node *n)
 	return bad;
 }
 
-static INLINE int is_constlike_node(const ir_node *node)
+static inline int is_constlike_node(const ir_node *node)
 {
 	const ir_op *op = get_irn_op(node);
 	return is_op_constlike(op);
@@ -2205,13 +2205,13 @@ dump_out_edge(ir_node *n, void *env) {
 	}
 }
 
-static INLINE void
+static inline void
 dump_loop_label(FILE *F, ir_loop *loop) {
 	fprintf(F, "loop %d, %d sons, %d nodes",
 	        get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
 }
 
-static INLINE void dump_loop_info(FILE *F, ir_loop *loop) {
+static inline void dump_loop_info(FILE *F, ir_loop *loop) {
 	fprintf(F, " info1: \"");
 	fprintf(F, " loop nr: %d", get_loop_loop_nr(loop));
 #ifdef DEBUG_libfirm   /* GL @@@ debug analyses */
@@ -2220,7 +2220,7 @@ static INLINE void dump_loop_info(FILE *F, ir_loop *loop) {
 	fprintf(F, "\"");
 }
 
-static INLINE void
+static inline void
 dump_loop_node(FILE *F, ir_loop *loop) {
 	fprintf(F, "node: {title: \"");
 	PRINT_LOOPID(loop);
@@ -2231,7 +2231,7 @@ dump_loop_node(FILE *F, ir_loop *loop) {
 	fprintf(F, "}\n");
 }
 
-static INLINE void
+static inline void
 dump_loop_node_edge(FILE *F, ir_loop *loop, int i) {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
@@ -2242,7 +2242,7 @@ dump_loop_node_edge(FILE *F, ir_loop *loop, int i) {
 	fprintf(F, "}\n");
 }
 
-static INLINE void
+static inline void
 dump_loop_son_edge(FILE *F, ir_loop *loop, int i) {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
@@ -2271,7 +2271,7 @@ void dump_loops(FILE *F, ir_loop *loop) {
 	}
 }
 
-static INLINE
+static inline
 void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;

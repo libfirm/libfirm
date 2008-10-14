@@ -228,7 +228,7 @@ static int compare_edge_t(const void *k1, const void *k2, size_t size) {
 
 #define HASH_EDGE(e) (hash_irn((e)->n1) ^ hash_irn((e)->n2))
 
-static INLINE edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
 	edge_t new_edge;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -242,7 +242,7 @@ static INLINE edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
 	return set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
-static INLINE edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
+static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
 	edge_t new_edge;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -255,7 +255,7 @@ static INLINE edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
 	return set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
-static INLINE void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
 	edge_t new_edge, *e;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -569,7 +569,7 @@ int co_solve_ilp2(copy_opt_t *co) {
 
 #else /* WITH_ILP */
 
-static INLINE void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static inline void only_that_you_can_compile_without_WITH_ILP_defined(void) {
 }
 
 #endif /* WITH_ILP */

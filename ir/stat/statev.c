@@ -74,7 +74,7 @@ timing_sched_env_t stat_ev_sched_normal;
 #include <regex.h>
 static regex_t regex;
 static regex_t *filter = NULL;
-static INLINE int key_matches(const char *key)
+static inline int key_matches(const char *key)
 {
 	if (!filter)
 		return 1;
@@ -84,7 +84,7 @@ static INLINE int key_matches(const char *key)
 
 #else
 static char filter[128] = { '\0' };
-static INLINE int key_matches(const char *key)
+static inline int key_matches(const char *key)
 {
 	int i = 0;
 

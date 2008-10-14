@@ -104,7 +104,7 @@ static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
  * @param irn A node.
  * @return    1 if the node shall be considered in liveness, 0 if not.
  */
-static INLINE int is_liveness_node(const ir_node *irn)
+static inline int is_liveness_node(const ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
 	case iro_Block:
@@ -203,7 +203,7 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 }
 
 
-static INLINE void compute_back_edge_chains(lv_chk_t *lv)
+static inline void compute_back_edge_chains(lv_chk_t *lv)
 {
 	bitset_pos_t elm;
 	int i, n;

@@ -96,7 +96,7 @@ void ir_lnk_nodeset_destroy(ir_lnk_nodeset_t *nodeset);
  * @param expected_elements   Number of elements expected in the nodeset (roughly)
  * @return The initialized nodeset
  */
-static INLINE ir_lnk_nodeset_t *ir_lnk_nodeset_new(size_t expected_elements) {
+static inline ir_lnk_nodeset_t *ir_lnk_nodeset_new(size_t expected_elements) {
 	ir_lnk_nodeset_t *res = XMALLOC(ir_lnk_nodeset_t);
 	ir_lnk_nodeset_init_size(res, expected_elements);
 	return res;
@@ -105,7 +105,7 @@ static INLINE ir_lnk_nodeset_t *ir_lnk_nodeset_new(size_t expected_elements) {
 /**
  * Destroys a linked nodeset and frees the memory of the nodeset itself.
  */
-static INLINE void ir_lnk_nodeset_del(ir_lnk_nodeset_t *nodeset) {
+static inline void ir_lnk_nodeset_del(ir_lnk_nodeset_t *nodeset) {
 	ir_lnk_nodeset_destroy(nodeset);
 	xfree(nodeset);
 }

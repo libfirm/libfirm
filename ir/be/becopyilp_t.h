@@ -86,7 +86,7 @@ void free_size_red(size_red_t *sr);
  *       units (ou's) args could be merged and weights are accumulated.
  *       Is this necessary?
  */
-static INLINE int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) {
+static inline int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) {
 	int    i;
 	unit_t *curr;
 

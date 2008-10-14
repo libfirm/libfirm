@@ -51,9 +51,9 @@
 #include "irgwalk.h"
 
 static ir_visited_t master_cg_visited = 0;
-static INLINE int cg_irg_visited      (ir_graph *n);
-static INLINE void mark_cg_irg_visited(ir_graph *n);
-static INLINE void set_cg_irg_visited (ir_graph *n, ir_visited_t i);
+static inline int cg_irg_visited      (ir_graph *n);
+static inline void mark_cg_irg_visited(ir_graph *n);
+static inline void set_cg_irg_visited (ir_graph *n, ir_visited_t i);
 
 /** Returns the callgraph state of the program representation. */
 irp_callgraph_state get_irp_callgraph_state(void) {
@@ -431,7 +431,7 @@ typedef struct scc_info {
 /**
  * allocates a new scc_info on the obstack
  */
-static INLINE scc_info *new_scc_info(struct obstack *obst) {
+static inline scc_info *new_scc_info(struct obstack *obst) {
 	scc_info *info = obstack_alloc(obst, sizeof(*info));
 	memset(info, 0, sizeof(*info));
 	return info;
@@ -440,68 +440,68 @@ static INLINE scc_info *new_scc_info(struct obstack *obst) {
 /**
  * Returns non-zero if a graph was already visited.
  */
-static INLINE int cg_irg_visited(ir_graph *irg) {
+static inline int cg_irg_visited(ir_graph *irg) {
 	return irg->self_visited >= master_cg_visited;
 }
 
 /**
  * Marks a graph as visited.
  */
-static INLINE void mark_cg_irg_visited(ir_graph *irg) {
+static inline void mark_cg_irg_visited(ir_graph *irg) {
 	irg->self_visited = master_cg_visited;
 }
 
 /**
  * Set a graphs visited flag to i.
  */
-static INLINE void set_cg_irg_visited(ir_graph *irg, ir_visited_t i) {
+static inline void set_cg_irg_visited(ir_graph *irg, ir_visited_t i) {
 	irg->self_visited = i;
 }
 
 /**
  * Returns the visited flag of a graph.
  */
-static INLINE ir_visited_t get_cg_irg_visited(ir_graph *irg) {
+static inline ir_visited_t get_cg_irg_visited(ir_graph *irg) {
 	return irg->self_visited;
 }
 
-static INLINE void mark_irg_in_stack(ir_graph *irg) {
+static inline void mark_irg_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->in_stack = 1;
 }
 
-static INLINE void mark_irg_not_in_stack(ir_graph *irg) {
+static inline void mark_irg_not_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->in_stack = 0;
 }
 
-static INLINE int irg_is_in_stack(ir_graph *irg) {
+static inline int irg_is_in_stack(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->in_stack;
 }
 
-static INLINE void set_irg_uplink(ir_graph *irg, int uplink) {
+static inline void set_irg_uplink(ir_graph *irg, int uplink) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->uplink = uplink;
 }
 
-static INLINE int get_irg_uplink(ir_graph *irg) {
+static inline int get_irg_uplink(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->uplink;
 }
 
-static INLINE void set_irg_dfn(ir_graph *irg, int dfn) {
+static inline void set_irg_dfn(ir_graph *irg, int dfn) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->dfn = dfn;
 }
 
-static INLINE int get_irg_dfn(ir_graph *irg) {
+static inline int get_irg_dfn(ir_graph *irg) {
 	scc_info *info = get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->dfn;
@@ -517,7 +517,7 @@ static int tos = 0;                /**< top of stack */
 /**
  * Initialize the irg stack.
  */
-static INLINE void init_stack(void) {
+static inline void init_stack(void) {
 	if (stack) {
 		ARR_RESIZE(ir_graph *, stack, 1000);
 	} else {
@@ -530,7 +530,7 @@ static INLINE void init_stack(void) {
  * push a graph on the irg stack
  * @param n the graph to be pushed
  */
-static INLINE void push(ir_graph *irg) {
+static inline void push(ir_graph *irg) {
 	if (tos == ARR_LEN(stack)) {
 		int nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
@@ -542,7 +542,7 @@ static INLINE void push(ir_graph *irg) {
 /**
  * return the topmost graph on the stack and pop it
  */
-static INLINE ir_graph *pop(void) {
+static inline ir_graph *pop(void) {
 	ir_graph *irg = stack[--tos];
 	mark_irg_not_in_stack(irg);
 	return irg;
@@ -552,7 +552,7 @@ static INLINE ir_graph *pop(void) {
  * The nodes up to irg belong to the current loop.
  * Removes them from the stack and adds them to the current loop.
  */
-static INLINE void pop_scc_to_loop(ir_graph *irg) {
+static inline void pop_scc_to_loop(ir_graph *irg) {
 	ir_graph *m;
 
 	do {
@@ -594,7 +594,7 @@ static void close_loop(ir_loop *l) {
  * Removes and unmarks all nodes up to n from the stack.
  * The nodes must be visited once more to assign them to a scc.
  */
-static INLINE void pop_scc_unmark_visit(ir_graph *n) {
+static inline void pop_scc_unmark_visit(ir_graph *n) {
 	ir_graph *m = NULL;
 
 	while (m != n) {

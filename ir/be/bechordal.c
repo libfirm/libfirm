@@ -118,7 +118,7 @@ static void check_heads(be_chordal_env_t *env)
  * @param is_def Is the border a use or a def.
  * @return The created border.
  */
-static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head,
+static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head,
 			ir_node *irn, unsigned step, unsigned pressure,
 			unsigned is_def, unsigned is_real)
 {
@@ -175,7 +175,7 @@ static INLINE border_t *border_add(be_chordal_env_t *env, struct list_head *head
  * @param irn The node.
  * @return 1, if the node is of that register class, 0 if not.
  */
-static INLINE int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
+static inline int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
 	return arch_irn_consider_in_reg_alloc(env->cls, irn);
 }

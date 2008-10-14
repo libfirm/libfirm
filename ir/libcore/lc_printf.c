@@ -59,7 +59,7 @@ struct _lc_arg_env_t {
 /** The default argument environment. */
 static lc_arg_env_t *default_env = NULL;
 
-static INLINE lc_arg_env_t *_lc_arg_get_default_env(void)
+static inline lc_arg_env_t *_lc_arg_get_default_env(void)
 {
 	if(!default_env)
 		default_env = lc_arg_add_std(lc_arg_new_env());

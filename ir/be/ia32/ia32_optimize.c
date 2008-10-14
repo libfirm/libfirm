@@ -639,7 +639,7 @@ static void peephole_store_incsp(ir_node *store)
 /**
  * Return true if a mode can be stored in the GP register set
  */
-static INLINE int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode) {
         if (mode == mode_fpcw)
                 return 0;
         if (get_mode_size_bits(mode) > 32)
@@ -1004,7 +1004,7 @@ static void peephole_ia32_Const(ir_node *node)
 	be_peephole_exchange(node, xor);
 }
 
-static INLINE int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
+static inline int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
 {
 	return node == cg->noreg_gp;
 }
@@ -1275,7 +1275,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
  * all it's Projs are removed as well.
  * @param irn  The irn to be removed from schedule
  */
-static INLINE void try_kill(ir_node *node)
+static inline void try_kill(ir_node *node)
 {
 	if(get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge, *next;

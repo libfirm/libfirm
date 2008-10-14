@@ -75,7 +75,7 @@ struct _be_lv_info_t {
 	} u;
 };
 
-static INLINE int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
+static inline int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
 {
 	struct _be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
 
@@ -93,7 +93,7 @@ static INLINE int _be_lv_next_irn(const struct _be_lv_t *lv, const ir_node *bl, 
 	return -1;
 }
 
-static INLINE ir_node *_be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *bl, int i)
+static inline ir_node *_be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *bl, int i)
 {
 	struct _be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
 	return get_idx_irn(lv->irg, arr[i + 1].u.node.idx);
@@ -101,7 +101,7 @@ static INLINE ir_node *_be_lv_get_irn(const struct _be_lv_t *lv, const ir_node *
 
 struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *bl, const ir_node *irn);
 
-static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *block, const ir_node *irn, unsigned flags)
+static inline int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *block, const ir_node *irn, unsigned flags)
 {
 	int res;
 
@@ -122,7 +122,7 @@ static INLINE int _be_is_live_xxx(const struct _be_lv_t *li, const ir_node *bloc
 	for (i = _be_lv_next_irn(lv, bl, flags, 0); i >= 0; i = _be_lv_next_irn(lv, bl, flags, i + 1))
 
 
-static INLINE pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
+static inline pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *block, int state, pset *s)
 {
 	int i;
 	be_lv_foreach(lv, block, state, i)

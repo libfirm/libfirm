@@ -577,14 +577,14 @@ static void dom_compress(tmp_dom_info *v) {
  * if V is a root, return v, else return the vertex u, not being the
  * root, with minimum u->semi on the path from v to its root.
  */
-INLINE static tmp_dom_info *dom_eval(tmp_dom_info *v) {
+inline static tmp_dom_info *dom_eval(tmp_dom_info *v) {
 	if (!v->ancestor) return v;
 	dom_compress (v);
 	return v->label;
 }
 
 /** make V W's ancestor */
-INLINE static void dom_link(tmp_dom_info *v, tmp_dom_info *w) {
+inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w) {
 	w->ancestor = v;
 }
 

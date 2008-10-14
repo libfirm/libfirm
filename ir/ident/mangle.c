@@ -39,7 +39,7 @@
 static struct obstack mangle_obst;
 
 /** returned a mangled type name, currently no mangling */
-static INLINE ident *mangle_type(ir_type *tp) {
+static inline ident *mangle_type(ir_type *tp) {
 	assert(tp->kind == k_type);
 	return tp->name;
 }

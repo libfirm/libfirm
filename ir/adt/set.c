@@ -126,7 +126,7 @@ MANGLEP(stats) (SET *table)
 	  table->naccess, table->ncollision, table->nkey, table->ndups, table->max_chain_len, nfree);
 }
 
-static INLINE void
+static inline void
 stat_chain_len (SET *table, int chain_len)
 {
   table->ncollision += chain_len;
@@ -244,7 +244,7 @@ MANGLEP(count) (SET *table)
  * do one iteration step, return 1
  * if still data in the set, 0 else
  */
-static INLINE int
+static inline int
 iter_step (SET *table)
 {
   if (++table->iter_j >= SEGMENT_SIZE) {
@@ -305,7 +305,7 @@ MANGLEP(break) (SET *table)
 /*
  * limit the hash value
  */
-static INLINE unsigned
+static inline unsigned
 Hash (SET *table, unsigned h)
 {
   unsigned address;
@@ -319,7 +319,7 @@ Hash (SET *table, unsigned h)
  * returns non-zero if the number of elements in
  * the set is greater then number of segments * MAX_LOAD_FACTOR
  */
-static INLINE int
+static inline int
 loaded (SET *table)
 {
   return (  ++table->nkey

@@ -73,7 +73,7 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
 const arch_register_t *ia32_get_RegParam_reg(unsigned cc, size_t nr,
                                              const ir_mode *mode);
 
-static INLINE int is_unknown_reg(const arch_register_t *reg)
+static inline int is_unknown_reg(const arch_register_t *reg)
 {
 	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
 			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]

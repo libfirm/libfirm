@@ -192,7 +192,7 @@ static void dbg_col_cost(const co_mst_env_t *env, const col_cost_t *cost) {
 
 #endif /* DEBUG_libfirm */
 
-static INLINE int get_mst_irn_col(const co_mst_irn_t *node) {
+static inline int get_mst_irn_col(const co_mst_irn_t *node) {
 	return node->tmp_col >= 0 ? node->tmp_col : node->col;
 }
 
@@ -252,7 +252,7 @@ static int cmp_col_cost_gt(const void *a, const void *b) {
 /**
  * Creates a new affinity chunk
  */
-static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
+static inline aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 	aff_chunk_t *c = XMALLOCF(aff_chunk_t, color_affinity, env->n_regs);
 	c->n                 = NEW_ARR_F(const ir_node *, 0);
 	c->interfere         = NEW_ARR_F(const ir_node *, 0);
@@ -268,7 +268,7 @@ static INLINE aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 /**
  * Frees all memory allocated by an affinity chunk.
  */
-static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
+static inline void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	pset_remove(env->chunkset, c, c->id);
 	DEL_ARR_F(c->interfere);
 	DEL_ARR_F(c->n);
@@ -282,7 +282,7 @@ static INLINE void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
  * @return the position where n is found in the array arr or ~pos
  * if the nodes is not here.
  */
-static INLINE int nodes_bsearch(const ir_node **arr, const ir_node *n) {
+static inline int nodes_bsearch(const ir_node **arr, const ir_node *n) {
 	int hi = ARR_LEN(arr);
 	int lo = 0;
 
@@ -334,7 +334,7 @@ static int nodes_insert(const ir_node ***arr, const ir_node *irn) {
 /**
  * Adds a node to an affinity chunk
  */
-static INLINE void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
+static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
 	int i;
 
 	if (! nodes_insert(&c->n, node->irn))
@@ -410,7 +410,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 /**
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
-static INLINE int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *irn) {
+static inline int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *irn) {
 	return node_contains(chunk->interfere, irn);
 }
 
@@ -420,7 +420,7 @@ static INLINE int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *
  * @param c2    Another chunk
  * @return 1 if there are interferences between nodes of c1 and c2, 0 otherwise.
  */
-static INLINE int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t *c2) {
+static inline int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t *c2) {
 	int i;
 
 	if (c1 == c2)
@@ -440,7 +440,7 @@ static INLINE int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t 
  * Returns the affinity chunk of @p irn or creates a new
  * one with @p irn as element if there is none assigned.
  */
-static INLINE aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn) {
+static inline aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn) {
 	co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	return node->chunk;
 }
@@ -890,7 +890,7 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
  * Resets the temporary fixed color of all nodes within wait queue @p nodes.
  * ATTENTION: the queue is empty after calling this function!
  */
-static INLINE void reject_coloring(struct list_head *nodes) {
+static inline void reject_coloring(struct list_head *nodes) {
 	co_mst_irn_t *n, *temp;
 	DB((dbg, LEVEL_4, "\treject coloring for"));
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
@@ -902,7 +902,7 @@ static INLINE void reject_coloring(struct list_head *nodes) {
 	DB((dbg, LEVEL_4, "\n"));
 }
 
-static INLINE void materialize_coloring(struct list_head *nodes) {
+static inline void materialize_coloring(struct list_head *nodes) {
 	co_mst_irn_t *n, *temp;
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
 		assert(n->tmp_col >= 0);
@@ -912,7 +912,7 @@ static INLINE void materialize_coloring(struct list_head *nodes) {
 	}
 }
 
-static INLINE void set_temp_color(co_mst_irn_t *node, int col, struct list_head *changed)
+static inline void set_temp_color(co_mst_irn_t *node, int col, struct list_head *changed)
 {
 	assert(col >= 0);
 	assert(!node->fixed);
@@ -924,7 +924,7 @@ static INLINE void set_temp_color(co_mst_irn_t *node, int col, struct list_head 
 	node->tmp_col = col;
 }
 
-static INLINE int is_loose(co_mst_irn_t *node)
+static inline int is_loose(co_mst_irn_t *node)
 {
 	return !node->fixed && node->tmp_col < 0;
 }

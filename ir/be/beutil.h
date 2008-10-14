@@ -68,17 +68,17 @@ pset *be_empty_set(void);
  * @return The block of the node, or the node itself, if the node is a
  *         block.
  */
-static INLINE ir_node *get_block(ir_node *irn)
+static inline ir_node *get_block(ir_node *irn)
 {
 	return is_Block(irn) ? irn : get_nodes_block(irn);
 }
 
-static INLINE const ir_node *get_block_const(const ir_node *irn)
+static inline const ir_node *get_block_const(const ir_node *irn)
 {
 	return is_Block(irn) ? irn : get_nodes_block(irn);
 }
 
-static INLINE int is_firm_be_mode(const ir_mode *mode)
+static inline int is_firm_be_mode(const ir_mode *mode)
 {
 	return mode_is_data(mode);
 }
@@ -91,7 +91,7 @@ static INLINE int is_firm_be_mode(const ir_mode *mode)
  * @param irn The node to check for.
  * @return 1, if the node is a data node, 0 if not.
  */
-static INLINE int is_data_node(const ir_node *irn)
+static inline int is_data_node(const ir_node *irn)
 {
 	int i, n;
 
