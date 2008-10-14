@@ -148,9 +148,7 @@ print OUT<<EOF;
  *            created by: $0 $specfile $target_dir
  * \@date      $creation_time
  */
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include "gen_$arch\_machine.h"
 
