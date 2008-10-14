@@ -927,7 +927,7 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 			snprintf(home_dir_ini_file, sizeof(home_dir_ini_file), ".%src", ini_name);
 			home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
 		} else {
-			/* FIXME: some error occured */
+			/* FIXME: some error occurred */
 			home_dir_ini_file[0] = '\0';
 		}
 	}
@@ -939,6 +939,7 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 	/* Process ini file in user's home. */
 	f = fopen(path, "rt");
 	if (f) {
+		fprintf(stderr, "Warning: Automatically reading options from '%s'\n", path);
 		lc_opt_from_file(path, f, lc_opts_default_error_handler);
 		fclose(f);
 	}
@@ -946,6 +947,7 @@ void lc_opts_init(const char *ini_name, lc_opt_entry_t *root, const char *arg_pr
 	/* Process ini file in current directory. */
 	f = fopen(local_ini_file, "rt");
 	if (f) {
+		fprintf(stderr, "Warning: Automatically reading options from '%s'\n", local_ini_file);
 		lc_opt_from_file(local_ini_file, f, lc_opts_default_error_handler);
 		fclose(f);
 	}
