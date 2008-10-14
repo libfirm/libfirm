@@ -317,18 +317,17 @@ void be_opt_register(void)
 	lc_opt_entry_t *be_grp;
 	static int run_once = 0;
 
-	if (run_once) {
+	if (run_once)
 		return;
-	}
-	run_once     = 1;
-
-	be_init_modules();
+	run_once = 1;
 
 	be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_add_table(be_grp, be_main_options);
 
 	be_add_module_list_opt(be_grp, "isa", "the instruction set architecture",
 	                       &isa_ifs, (void**) &isa_if);
+
+	be_init_modules();
 }
 
 /* Parse one argument. */
