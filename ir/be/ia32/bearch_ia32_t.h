@@ -26,6 +26,7 @@
 #ifndef FIRM_BE_IA32_BEARCH_IA32_T_H
 #define FIRM_BE_IA32_BEARCH_IA32_T_H
 
+#include "config.h"
 #include "pmap.h"
 #include "debug.h"
 #include "ia32_nodes_attr.h"
@@ -120,8 +121,13 @@ typedef enum transformer_t {
 #endif
 } transformer_t;
 
+#ifdef FIRM_GRGEN_BE
 /** The selected transformer. */
 extern transformer_t be_transformer;
+
+#else
+#define be_transformer TRANSFORMER_DEFAULT
+#endif
 
 /** The mode for the floating point control word. */
 extern ir_mode *mode_fpcw;

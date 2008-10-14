@@ -89,6 +89,8 @@
 
 #ifdef FIRM_GRGEN_BE
 #include "ia32_pbqp_transform.h"
+
+transformer_t be_transformer = TRANSFORMER_DEFAULT;
 #endif
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -957,8 +959,6 @@ static void ia32_before_abi(void *self) {
 	}
 }
 
-transformer_t be_transformer = TRANSFORMER_DEFAULT;
-
 /**
  * Transforms the standard firm graph into
  * an ia32 firm graph
@@ -981,20 +981,21 @@ static void ia32_prepare_graph(void *self) {
 		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
 
 	switch (be_transformer) {
-		case TRANSFORMER_DEFAULT:
-			/* transform remaining nodes into assembler instructions */
-			ia32_transform_graph(cg);
-			break;
+	case TRANSFORMER_DEFAULT:
+		/* transform remaining nodes into assembler instructions */
+		ia32_transform_graph(cg);
+		break;
 
 #ifdef FIRM_GRGEN_BE
-		case TRANSFORMER_PBQP:
-		case TRANSFORMER_RAND:
-			/* transform nodes into assembler instructions by PBQP magic */
-			ia32_transform_graph_by_pbqp(cg);
-			break;
+	case TRANSFORMER_PBQP:
+	case TRANSFORMER_RAND:
+		/* transform nodes into assembler instructions by PBQP magic */
+		ia32_transform_graph_by_pbqp(cg);
+		break;
 #endif
 
-		default: panic("invalid transformer");
+	default:
+		panic("invalid transformer");
 	}
 
 	/* do local optimizations (mainly CSE) */
@@ -2354,22 +2355,24 @@ static lc_opt_enum_int_var_t gas_var = {
 	(int*) &be_gas_flavour, gas_items
 };
 
+#ifdef FIRM_GRGEN_BE
 static const lc_opt_enum_int_items_t transformer_items[] = {
 	{ "default", TRANSFORMER_DEFAULT },
-#ifdef FIRM_GRGEN_BE
 	{ "pbqp",    TRANSFORMER_PBQP    },
 	{ "random",  TRANSFORMER_RAND    },
-#endif
 	{ NULL,      0                   }
 };
 
 static lc_opt_enum_int_var_t transformer_var = {
 	(int*)&be_transformer, transformer_items
 };
+#endif
 
 static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("gasmode", "set the GAS compatibility mode", &gas_var),
+#ifdef FIRM_GRGEN_BE
 	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
+#endif
 	LC_OPT_ENT_INT("stackalign", "set power of two stack alignment for calls",
 	               &ia32_isa_template.arch_env.stack_alignment),
 	LC_OPT_LAST
