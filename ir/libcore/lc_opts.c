@@ -131,7 +131,7 @@ static lc_opt_entry_t *init_grp(lc_opt_entry_t *ent, lc_opt_err_info_t *err)
 	set_error(err, lc_opt_err_none, "");
 	if(ent->parent) {
 		if(ent->parent->is_grp)
-			list_add(&ent->list, &lc_get_grp_special(ent->parent)->grps);
+			list_add_tail(&ent->list, &lc_get_grp_special(ent->parent)->grps);
 		else
 			set_error(err, lc_opt_err_grp_expected, ent->parent->name);
 	}
@@ -151,7 +151,7 @@ static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
 
 	ent->is_grp = 0;
 	set_error(err, lc_opt_err_none, "");
-	list_add(&ent->list, &lc_get_grp_special(ent->parent)->opts);
+	list_add_tail(&ent->list, &lc_get_grp_special(ent->parent)->opts);
 
 	s->type		 = type;
 	s->value	 = val;
