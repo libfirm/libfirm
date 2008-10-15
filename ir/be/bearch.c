@@ -158,8 +158,7 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 
 int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 	if(req->type == arch_register_req_type_none) {
 		bitset_clear_all(bs);
@@ -202,8 +201,7 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
 
 const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	const arch_register_req_t *req = ops->get_irn_reg_req(irn, pos);
+	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 	assert(req->type != arch_register_req_type_none || req->cls == NULL);
 
