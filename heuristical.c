@@ -622,22 +622,37 @@ void apply_RII(pbqp *pbqp)
 
 void apply_RN(pbqp *pbqp)
 {
-	pbqp_node  **bucket     = node_buckets[3];
-	unsigned     bucket_len = ARR_LEN(bucket);
-	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_node  **bucket       = node_buckets[3];
+	unsigned     bucket_len   = ARR_LEN(bucket);
+	unsigned     bucket_index;
+	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
-	vector      *node_vec   = node->costs;
+	vector      *node_vec;
 	vector      *vec;
 	pbqp_matrix *mat;
 	unsigned     edge_index;
-	unsigned     edge_len   = ARR_LEN(node->edges);
+	unsigned     max_degree   = 0;
 	unsigned     node_index;
-	unsigned     node_len   = node_vec->len;
-	unsigned     min_index  = 0;
-	num          min        = INF_COSTS;
+	unsigned     node_len;
+	unsigned     min_index    = 0;
+	num          min          = INF_COSTS;
 	int          is_src;
 
 	assert(pbqp);
+
+	/* Search for node with maximum degree. */
+	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
+		pbqp_node *candidate = bucket[bucket_index];
+		unsigned   degree    = ARR_LEN(candidate->edges);
+
+		if (degree > max_degree) {
+			node = candidate;
+			max_degree = degree;
+		}
+	}
+	assert(node);
+	node_vec = node->costs;
+	node_len = node_vec->len;
 
 	if (pbqp->dump_file) {
 		char     txt[100];
@@ -649,7 +664,7 @@ void apply_RN(pbqp *pbqp)
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = node_vec->entries[node_index].data;
 
-		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+		for (edge_index = 0; edge_index < max_degree; ++edge_index) {
 			edge   = node->edges[edge_index];
 			mat    = edge->costs;
 			is_src = edge->src == node;
@@ -690,7 +705,7 @@ void apply_RN(pbqp *pbqp)
 	}
 
 	/* Add all incident edges to edge bucket, since they are now independent. */
-	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
 		insert_into_edge_bucket(node->edges[edge_index]);
 	}
 }
