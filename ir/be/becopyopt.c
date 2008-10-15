@@ -411,7 +411,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			int o, arg_pos;
 			ir_node *arg = get_irn_n(irn, i);
 
-			assert(arch_get_irn_reg_class(arg, -1) == co->cls && "Argument not in same register class.");
+			assert(arch_get_irn_reg_class_out(arg) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {

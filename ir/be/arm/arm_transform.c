@@ -864,7 +864,7 @@ static ir_node *gen_Load(ir_node *node) {
 	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
 		/* add a result proj and a Keep to produce a pseudo use */
 		ir_node *proj = new_r_Proj(irg, block, new_load, mode_Iu, pn_arm_Load_res);
-		be_new_Keep(arch_get_irn_reg_class(proj, -1), irg, block, 1, &proj);
+		be_new_Keep(arch_get_irn_reg_class_out(proj), irg, block, 1, &proj);
 	}
 
 	return new_load;

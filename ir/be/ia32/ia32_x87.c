@@ -1715,15 +1715,12 @@ static int sim_Keep(x87_state *state, ir_node *node)
 
 static void keep_float_node_alive(ir_node *node)
 {
-	ir_graph                    *irg;
-	ir_node                     *block;
+	ir_graph                    *irg    = get_irn_irg(node);
+	ir_node                     *block  = get_nodes_block(node);
+	const arch_register_class_t *cls    = arch_get_irn_reg_class_out(node);
 	ir_node                     *in[1];
 	ir_node                     *keep;
-	const arch_register_class_t *cls;
 
-	irg    = get_irn_irg(node);
-	block  = get_nodes_block(node);
-	cls    = arch_get_irn_reg_class(node, -1);
 	in[0]  = node;
 	keep   = be_new_Keep(cls, irg, block, 1, in);
 
@@ -1826,7 +1823,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 	int                         op1_idx, out_idx;
 	unsigned                    live;
 
-	cls = arch_get_irn_reg_class(n, -1);
+	cls = arch_get_irn_reg_class_out(n);
 	if (cls->regs != ia32_vfp_regs)
 		return 0;
 

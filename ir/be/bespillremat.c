@@ -3423,8 +3423,8 @@ static ir_node *be_spill2(ir_node *irn, ir_node *insert)
 	ir_node  *frame = get_irg_frame(irg);
 	ir_node  *spill;
 	ir_node  *next;
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn, -1);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class_out(irn);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
 
 	spill = be_new_Spill(cls, cls_frame, irg, bl, frame, irn);
 

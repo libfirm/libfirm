@@ -171,6 +171,8 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
  */
 const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos);
 
+#define arch_get_irn_reg_class_out(irn) arch_get_irn_reg_class(irn, -1)
+
 /**
  * Get the register allocated at a certain output operand of a node.
  * @param irn The node.
@@ -203,11 +205,8 @@ arch_irn_flags_t arch_irn_get_flags(const ir_node *irn);
 
 #define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
 
-#define arch_irn_has_reg_class(irn, pos, cls) \
-	((cls) == arch_get_irn_reg_class(irn, pos))
-
 #define arch_irn_consider_in_reg_alloc(cls, irn) \
-	(arch_irn_has_reg_class(irn, -1, cls) && !arch_irn_is(irn, ignore))
+	(arch_get_irn_reg_class_out(irn) == (cls) && !arch_irn_is(irn, ignore))
 
 /**
  * Get the operations of an irn.

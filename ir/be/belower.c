@@ -513,7 +513,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	irg    = be_get_birg_irg(env->birg);
 	op_set = &env->op_set;
 	block  = get_nodes_block(irn);
-	cls    = arch_get_irn_reg_class(other_different, -1);
+	cls    = arch_get_irn_reg_class_out(other_different);
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */
@@ -818,11 +818,11 @@ void assure_constraints(be_irg_t *birg) {
 		/* so we transform unnecessary ones into Keeps.       */
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
-				ir_node *keep;
-				int     n = get_irn_arity(cp);
+				const arch_register_class_t *cls = arch_get_irn_reg_class_out(cp);
+				int                          n   = get_irn_arity(cp);
+				ir_node                     *keep;
 
-				keep = be_new_Keep(arch_get_irn_reg_class(cp, -1),
-					irg, get_nodes_block(cp), n, get_irn_in(cp) + 1);
+				keep = be_new_Keep(cls, irg, get_nodes_block(cp), n, get_irn_in(cp) + 1);
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */
@@ -865,19 +865,16 @@ static int push_through_perm(ir_node *perm, lower_env_t *env)
 	int n_moved;
 	int new_size;
 	ir_node *frontier = bl;
-
+	ir_node *irn;
 	int i, n;
-	const ir_edge_t *edge;
-	ir_node *one_proj = NULL, *irn;
-	const arch_register_class_t *cls = NULL;
-
-	DBG((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
 
 	/* get some Proj and find out the register class of that Proj. */
-	edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
-	one_proj = get_edge_src_irn(edge);
+	const ir_edge_t             *edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
+	ir_node                     *one_proj = get_edge_src_irn(edge);
+	const arch_register_class_t *cls      = arch_get_irn_reg_class_out(one_proj);
 	assert(is_Proj(one_proj));
-	cls      = arch_get_irn_reg_class(one_proj, -1);
+
+	DBG((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
 
 	/* Find the point in the schedule after which the
 	 * potentially movable nodes must be defined.

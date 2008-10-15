@@ -697,7 +697,7 @@ static void check_register_constraints(ir_node *node)
 	int                   i, arity;
 
 	/* verify output register */
-	if (arch_get_irn_reg_class(node, -1) != NULL) {
+	if (arch_get_irn_reg_class_out(node) != NULL) {
 		reg = arch_get_irn_register(node);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
@@ -766,7 +766,7 @@ static void value_used(ir_node *node) {
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
-	if (arch_get_irn_reg_class(node, -1) != regclass)
+	if (arch_get_irn_reg_class_out(node) != regclass)
 		return;
 
 	reg = arch_get_irn_register(node);
@@ -789,7 +789,7 @@ static void value_def(ir_node *node)
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
-	if (arch_get_irn_reg_class(node, -1) != regclass)
+	if (arch_get_irn_reg_class_out(node) != regclass)
 		return;
 
 	reg = arch_get_irn_register(node);

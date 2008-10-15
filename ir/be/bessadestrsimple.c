@@ -160,7 +160,7 @@ static void values_to_vars(ir_node *irn, void *env) {
 	int             nr, i, build_vals = 0;
 	ir_node         **vals;
 
-	if (arch_get_irn_reg_class(irn, -1) == NULL)
+	if (arch_get_irn_reg_class_out(irn) == NULL)
 		return;
 
 	vals = get_phi_class(pc, irn);
@@ -297,7 +297,7 @@ static void ssa_destr_simple_walker(ir_node *blk, void *env) {
 			if (arch_irn_is(phi, ignore))
 				continue;
 
-			cls = arch_get_irn_reg_class(phi, -1);
+			cls = arch_get_irn_reg_class_out(phi);
 			insert_copies(sde, cls, phi, pos, phi);
 		}
 	}

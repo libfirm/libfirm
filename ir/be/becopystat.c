@@ -304,18 +304,18 @@ static void copystat_collect_cls(be_chordal_env_t *cenv) {
 	all_phi_classes = get_all_phi_classes(pc_obj);
 
 	foreach_ir_nodeset(all_phi_nodes, n, iter) {
-		if (arch_get_irn_reg_class(n, -1) == cenv->cls)
+		if (arch_get_irn_reg_class_out(n) == cenv->cls)
 			stat_phi_node(cenv, n);
 	}
 
 	foreach_ir_nodeset(all_copy_nodes, n, iter) {
-		if (arch_get_irn_reg_class(n, -1) == cenv->cls)
+		if (arch_get_irn_reg_class_out(n) == cenv->cls)
 			stat_copy_node(cenv, n);
 	}
 
 	foreach_pset(all_phi_classes, pc) {
 		ir_node *member = pc[0];
-		if (arch_get_irn_reg_class(member, -1) == cenv->cls)
+		if (arch_get_irn_reg_class_out(member) == cenv->cls)
 			stat_phi_class(cenv, pc);
 	}
 
@@ -449,7 +449,7 @@ typedef struct color_saver {
 
 static void save_load(ir_node *irn, void *env) {
 	color_save_t *saver = env;
-	if (saver->chordal_env->cls == arch_get_irn_reg_class(irn, -1)) {
+	if (saver->chordal_env->cls == arch_get_irn_reg_class_out(irn)) {
 		if (saver->flag == 0) { /* save */
 			const arch_register_t *reg = arch_get_irn_register(irn);
 			pmap_insert(saver->saved_colors, irn, (void *) reg);

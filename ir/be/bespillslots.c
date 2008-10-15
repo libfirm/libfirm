@@ -824,7 +824,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 		return;
 
 	mode  = get_irn_mode(node);
-	cls   = arch_get_irn_reg_class(node, -1);
+	cls   = arch_get_irn_reg_class_out(node);
 	align = arch_env_get_reg_class_alignment(env->arch_env, cls);
 
 	be_node_needs_frame_entity(env, node, mode, align);

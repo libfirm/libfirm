@@ -466,13 +466,13 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 
 ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 {
-	int i;
-	ir_node *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
-	ir_node *irn;
-	const arch_register_t *sp = arch_env->sp;
-	be_memperm_attr_t *attr;
-	ir_node **real_in;
+	ir_node                      *frame     = get_irg_frame(irg);
+	const arch_register_class_t  *cls_frame = arch_get_irn_reg_class_out(frame);
+	const arch_register_t        *sp        = arch_env->sp;
+	ir_node                      *irn;
+	be_memperm_attr_t            *attr;
+	ir_node                     **real_in;
+	int                           i;
 
 	real_in = alloca((n+1) * sizeof(real_in[0]));
 	real_in[0] = frame;
@@ -1033,8 +1033,8 @@ ir_node *be_spill(ir_node *block, ir_node *irn)
 {
 	ir_graph                    *irg       = get_irn_irg(block);
 	ir_node                     *frame     = get_irg_frame(irg);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn, -1);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class_out(irn);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
 	ir_node                     *spill;
 
 	spill = be_new_Spill(cls, cls_frame, irg, block, frame, irn);
@@ -1047,7 +1047,7 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg   = get_irn_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame, -1);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 

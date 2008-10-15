@@ -521,7 +521,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 		ir_node  *block = get_nodes_block(node);
 		ir_mode  *mode  = get_irn_mode(node);
 
-		const arch_register_class_t *regclass = arch_get_irn_reg_class(node, -1);
+		const arch_register_class_t *regclass = arch_get_irn_reg_class_out(node);
 
 		if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 		{
