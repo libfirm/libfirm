@@ -703,7 +703,7 @@ static void check_register_constraints(ir_node *node)
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 					node, get_nodes_block(node), get_irg_dump_name(irg));
 			problem_found = 1;
-		} else if (!arch_register_type_is(reg, joker) && !arch_reg_is_allocatable(node, -1, reg)) {
+		} else if (!arch_register_type_is(reg, joker) && !arch_reg_out_is_allocatable(node, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
 					reg->name, node, get_nodes_block(node), get_irg_dump_name(irg));
 			problem_found = 1;

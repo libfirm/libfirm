@@ -299,7 +299,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 #endif /* SEARCH_FREE_COLORS */
 
 	/* If target color is not allocatable changing color is impossible */
-	if (!arch_reg_is_allocatable(irn, -1, arch_register_for_index(cls, col))) {
+	if (!arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, col))) {
 		DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
 		return CHANGE_IMPOSSIBLE;
 	}

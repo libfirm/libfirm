@@ -162,6 +162,8 @@ extern void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t 
  */
 int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg);
 
+#define arch_reg_out_is_allocatable(irn, reg) arch_reg_is_allocatable(irn, -1, reg)
+
 /**
  * Get the register class of an operand of a node.
  * @param irn The node.
