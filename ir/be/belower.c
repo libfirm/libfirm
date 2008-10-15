@@ -926,12 +926,7 @@ found_front:
 			break;
 		if (arch_irn_is(node, modify_flags))
 			break;
-		if (is_Proj(node)) {
-			req = arch_get_register_req(get_Proj_pred(node),
-			                            -1 - get_Proj_proj(node));
-		} else {
-			req = arch_get_register_req_out(node);
-		}
+		req = arch_get_register_req_out(node);
 		if (req->type != arch_register_req_type_normal)
 			break;
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
