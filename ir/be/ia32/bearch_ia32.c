@@ -1007,9 +1007,6 @@ static void ia32_prepare_graph(void *self) {
 	/* optimize address mode */
 	ia32_optimize_graph(cg);
 
-	if (cg->dump)
-		be_dump(cg->irg, "-am", dump_ir_block_graph_sched);
-
 	/* do code placement, to optimize the position of constants */
 	place_code(cg->irg);
 
