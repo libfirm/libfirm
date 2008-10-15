@@ -1106,6 +1106,7 @@ be_node_get_irn_reg_req(const ir_node *irn, int pos)
 		if (get_irn_mode(irn) == mode_T)
 			return arch_no_register_req;
 
+		assert(pos == -1);
 		out_pos = redir_proj((const ir_node **)&irn);
 		assert(is_be_node(irn));
 		return get_out_reg_req(irn, out_pos);
