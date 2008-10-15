@@ -47,20 +47,6 @@ arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_mai
 }
 
 /**
- * Put all registers in a class into a bitset.
- * @param cls The class.
- * @param bs The bitset.
- * @return The number of registers in the class.
- */
-static int arch_register_class_put(const arch_register_class_t *cls, bitset_t *bs)
-{
-	int i, n = cls->n_regs;
-	for (i = n - 1; i >= 0; --i)
-		bitset_set(bs, i);
-	return n;
-}
-
-/**
  * Get the isa responsible for a node.
  * @param irn The node to get the responsible isa for.
  * @return The irn operations given by the responsible isa.
