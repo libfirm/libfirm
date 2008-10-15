@@ -28,6 +28,10 @@
 #ifndef FIRM_ADT_XMALLOC_H
 #define FIRM_ADT_XMALLOC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -83,6 +87,10 @@ char *xstrdup(const char *str);
 #include <malloc.h>
 #else
 #include <alloca.h>
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
