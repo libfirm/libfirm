@@ -138,9 +138,6 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
  * @param irn The node.
  * @param pos The position of the node's operand.
  * @param bs  The bitset all allocatable registers shall be put into.
- *            Note, that you can also pass NULL here. If you don't,
- *            make sure, the bitset is as large as the register class
- *            has registers.
  * @return    The amount of registers allocatable for that operand.
  */
 int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs);
