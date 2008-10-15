@@ -105,7 +105,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 			if (arch_irn_consider_in_reg_alloc(env->cls, p)) {
 				/* found a def: create a new operand */
-				o.req             = arch_get_register_req(p, -1);
+				o.req             = arch_get_register_req_out(p);
 				o.carrier         = p;
 				o.irn             = irn;
 				o.pos             = -(get_Proj_proj(p) + 1);
@@ -119,7 +119,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 		}
 	} else if (arch_irn_consider_in_reg_alloc(env->cls, irn)) {
 		/* only one def, create one operand */
-		o.req     = arch_get_register_req(irn, -1);
+		o.req     = arch_get_register_req_out(irn);
 		o.carrier = irn;
 		o.irn     = irn;
 		o.pos     = -1;

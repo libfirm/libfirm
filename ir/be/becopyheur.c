@@ -275,7 +275,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		bitset_flip_all(free_cols);
 
 		/* Exclude colors not assignable to the irn */
-		req = arch_get_register_req(irn, -1);
+		req = arch_get_register_req_out(irn);
 		if (arch_register_req_is(req, limited)) {
 			bitset_t *limited = bitset_alloca(cls->n_regs);
 			rbitset_copy_to_bitset(req->limited, limited);

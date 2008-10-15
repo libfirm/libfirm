@@ -264,7 +264,7 @@ static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 	if(ci->adm_cache == NULL) {
 		const arch_register_req_t *req;
 		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
-		req = arch_get_register_req(ci->irn, BE_OUT_POS(0));
+		req = arch_get_register_req_out(ci->irn);
 
 		if(arch_register_req_is(req, limited)) {
 			int i, n;
@@ -305,9 +305,7 @@ static inline int is_constrained(co2_t *env, co2_irn_t *ci)
 
 static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair_t *col_costs, int costs)
 {
-	const arch_register_req_t *req;
-
-	req = arch_get_register_req(irn, BE_OUT_POS(0));
+	const arch_register_req_t *req = arch_get_register_req_out(irn);
 
 	if (arch_register_req_is(req, limited)) {
 		unsigned n_regs   = env->co->cls->n_regs;
@@ -1153,9 +1151,8 @@ static const char *get_dot_color_name(size_t col)
 
 static const char *get_dot_shape_name(co2_irn_t *ci)
 {
-	const arch_register_req_t *req;
+	const arch_register_req_t *req = arch_get_register_req_out(ci->irn);
 
-	req = arch_get_register_req(ci->irn, BE_OUT_POS(0));
 	if(arch_register_req_is(req, limited))
 		return "diamond";
 

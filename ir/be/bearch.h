@@ -130,6 +130,8 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsign
  */
 const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
 
+#define arch_get_register_req_out(irn) arch_get_register_req(irn, -1)
+
 /**
  * Get the number of allocatable registers concerning
  * a register class for an operand of a node.
