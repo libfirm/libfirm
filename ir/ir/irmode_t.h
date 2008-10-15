@@ -118,60 +118,51 @@ _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
 
 static inline int
 _mode_is_signed(const ir_mode *mode) {
-	assert(mode);
 	return mode->sign;
 }
 
 static inline int
 _mode_is_float(const ir_mode *mode) {
-	assert(mode);
 	return (_get_mode_sort(mode) == irms_float_number);
 }
 
 static inline int
 _mode_is_int(const ir_mode *mode) {
-	assert(mode);
 	return (_get_mode_sort(mode) == irms_int_number);
 }
 
 static inline int
 _mode_is_reference(const ir_mode *mode) {
-	assert(mode);
 	return (_get_mode_sort(mode) == irms_reference);
 }
 
 static inline int
 _mode_is_num(const ir_mode *mode) {
-	assert(mode);
-	return (_mode_is_int(mode) || _mode_is_float(mode));
+	return (_get_mode_sort(mode) & irms_is_num);
 }
 
 static inline int
 _mode_is_data(const ir_mode *mode) {
-	return (_mode_is_int(mode) || _mode_is_float(mode) || _mode_is_reference(mode));
+	return (_get_mode_sort(mode) & irms_is_data);
 }
 
 static inline int
 _mode_is_datab(const ir_mode *mode) {
-	assert(mode);
-	return (_mode_is_data(mode) || _get_mode_sort(mode) == irms_internal_boolean);
+	return (_get_mode_sort(mode) & irms_is_datab);
 }
 
 static inline int
 _mode_is_dataM(const ir_mode *mode) {
-	assert(mode);
-	return (_mode_is_data(mode) || _get_mode_modecode(mode) == irm_M);
+	return (_get_mode_sort(mode) & irms_is_dataM);
 }
 
 static inline int
 _mode_is_float_vector(const ir_mode *mode) {
-	assert(mode);
 	return (_get_mode_sort(mode) == irms_float_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
 static inline int
 _mode_is_int_vector(const ir_mode *mode) {
-	assert(mode);
 	return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
