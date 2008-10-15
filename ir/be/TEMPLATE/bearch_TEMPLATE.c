@@ -263,14 +263,6 @@ static void TEMPLATE_finish_irg(void *self) {
 }
 
 
-/**
- * These are some hooks which must be filled but are probably not needed.
- */
-static void TEMPLATE_before_sched(void *self) {
-	(void) self;
-	/* Some stuff you need to do after scheduling but before register allocation */
-}
-
 static void TEMPLATE_before_ra(void *self) {
 	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
@@ -308,7 +300,6 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	NULL,                    /* before abi introduce hook */
 	TEMPLATE_prepare_graph,
 	NULL,                    /* spill hook */
-	TEMPLATE_before_sched,   /* before scheduling hook */
 	TEMPLATE_before_ra,      /* before register allocation hook */
 	TEMPLATE_after_ra,       /* after register allocation hook */
 	TEMPLATE_finish_irg,

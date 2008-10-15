@@ -348,14 +348,6 @@ static void mips_finish_irg(void *self) {
 }
 
 
-/**
- * These are some hooks which must be filled but are probably not needed.
- */
-static void mips_before_sched(void *self)
-{
-	(void) self;
-}
-
 static void mips_before_ra(void *self)
 {
 	(void) self;
@@ -395,7 +387,6 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 	NULL,                /* before abi introduce */
 	mips_prepare_graph,
 	NULL,                /* spill */
-	mips_before_sched,   /* before scheduling hook */
 	mips_before_ra,      /* before register allocation hook */
 	mips_after_ra,
 	mips_finish_irg,

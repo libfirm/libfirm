@@ -689,11 +689,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* disabled for now, fails for EmptyFor.c and XXEndless.c */
 		/* be_live_chk_compare(birg); */
 
-		/* let backend prepare scheduling */
-		BE_TIMER_PUSH(t_codegen);
-		arch_code_generator_before_sched(birg->cg);
-		BE_TIMER_POP(t_codegen);
-
 		/* schedule the irg */
 		BE_TIMER_PUSH(t_sched);
 		switch (be_options.scheduler) {

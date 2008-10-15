@@ -342,11 +342,6 @@ struct arch_code_generator_if_t {
 	void (*spill)(void *self, be_irg_t *birg);
 
 	/**
-	 * Called before scheduling.
-	 */
-	void (*before_sched)(void *self);
-
-	/**
 	 * Called before register allocation.
 	 */
 	void (*before_ra)(void *self);
@@ -388,7 +383,6 @@ do { \
 
 #define arch_code_generator_before_abi(cg)      _arch_cg_call(cg, before_abi)
 #define arch_code_generator_prepare_graph(cg)   _arch_cg_call(cg, prepare_graph)
-#define arch_code_generator_before_sched(cg)    _arch_cg_call(cg, before_sched)
 #define arch_code_generator_before_ra(cg)       _arch_cg_call(cg, before_ra)
 #define arch_code_generator_after_ra(cg)        _arch_cg_call(cg, after_ra)
 #define arch_code_generator_finish(cg)          _arch_cg_call(cg, finish)

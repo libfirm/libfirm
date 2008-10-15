@@ -458,14 +458,6 @@ static void ppc32_finish_irg(void *self) {
 
 
 /**
- * These are some hooks which must be filled but are probably not needed.
- */
-static void ppc32_before_sched(void *self) {
-	(void) self;
-	/* Some stuff you need to do after scheduling but before register allocation */
-}
-
-/**
  * Called before the register allocator.
  * Calculate a block schedule here. We need it for the x87
  * simulator and the emitter.
@@ -589,7 +581,6 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 	ppc32_before_abi,
 	ppc32_prepare_graph,
 	NULL,                 /* spill */
-	ppc32_before_sched,   /* before scheduling hook */
 	ppc32_before_ra,      /* before register allocation hook */
 	ppc32_after_ra,
 	ppc32_finish_irg,

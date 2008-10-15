@@ -310,15 +310,6 @@ static void arm_finish_irg(void *self)
 }
 
 
-/**
- * These are some hooks which must be filled but are probably not needed.
- */
-static void arm_before_sched(void *self)
-{
-	(void) self;
-	/* Some stuff you need to do after scheduling but before register allocation */
-}
-
 static void arm_before_ra(void *self)
 {
 	(void) self;
@@ -556,7 +547,6 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_before_abi,     /* before abi introduce */
 	arm_prepare_graph,
 	NULL,               /* spill */
-	arm_before_sched,   /* before scheduling hook */
 	arm_before_ra,      /* before register allocation hook */
 	arm_after_ra,
 	arm_finish_irg,
