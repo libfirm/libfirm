@@ -232,22 +232,19 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 	/* Consider all phis of this block */
 	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
-		int i, max;
-		ir_node *arg, *phi_block, *arg_block;
-		const arch_register_t *phi_reg, *arg_reg;
-		const arch_register_class_t *cls;
+		ir_node                     *phi_block = get_nodes_block(phi);
+		const arch_register_t       *phi_reg   = get_reg(phi);
+		const arch_register_class_t *cls       = phi_reg->reg_class;
+		int                          max;
+		int                          i;
 
 		assert(is_Phi(phi) && "Can only handle phi-destruction :)");
 
-		phi_block = get_nodes_block(phi);
-		phi_reg   = get_reg(phi);
-		cls       = arch_get_irn_reg_class(phi, -1);
-
 		/* process all arguments of the phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
-			arg       = get_irn_n(phi, i);
-			arg_block = get_Block_cfgpred_block(phi_block, i);
-			arg_reg   = get_reg(arg);
+			ir_node               *arg       = get_irn_n(phi, i);
+			ir_node               *arg_block = get_Block_cfgpred_block(phi_block, i);
+			const arch_register_t *arg_reg   = get_reg(arg);
 
 			if (arch_irn_is(arg, ignore))
 				continue;

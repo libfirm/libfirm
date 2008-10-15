@@ -229,8 +229,11 @@ static int co_is_optimizable_root(ir_node *irn)
 	if (arch_register_type_is(reg, ignore))
 		return 0;
 
+	if (is_Reg_Phi(irn) || is_Perm_Proj(irn))
+		return 1;
+
 	req = arch_get_register_req(irn, -1);
-	if (is_Reg_Phi(irn) || is_Perm_Proj(irn) || is_2addr_code(req))
+	if (is_2addr_code(req))
 		return 1;
 
 	return 0;
@@ -376,11 +379,13 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 	return safe_costs+best_weight;
 }
 
-static void co_collect_units(ir_node *irn, void *env) {
-	copy_opt_t *co = env;
+static void co_collect_units(ir_node *irn, void *env)
+{
+	const arch_register_req_t *req = arch_get_register_req(irn, -1);
+	copy_opt_t                *co  = env;
 	unit_t *unit;
 
-	if (!is_curr_reg_class(co, irn))
+	if (req->cls != co->cls)
 		return;
 	if (!co_is_optimizable_root(irn))
 		return;
@@ -406,7 +411,7 @@ static void co_collect_units(ir_node *irn, void *env) {
 			int o, arg_pos;
 			ir_node *arg = get_irn_n(irn, i);
 
-			assert(is_curr_reg_class(co, arg) && "Argument not in same register class.");
+			assert(arch_get_irn_reg_class(arg, -1) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {
@@ -450,8 +455,6 @@ static void co_collect_units(ir_node *irn, void *env) {
 		unit->nodes[1] = get_Perm_src(irn);
 		unit->costs[1] = co->get_costs(co, irn, unit->nodes[1], -1);
 	} else {
-		const arch_register_req_t *req = arch_get_register_req(irn, -1);
-
 		/* Src == Tgt of a 2-addr-code instruction */
 		if (is_2addr_code(req)) {
 			const unsigned other = req->other_same;
@@ -769,11 +772,12 @@ static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs
 }
 
 static void build_graph_walker(ir_node *irn, void *env) {
-	copy_opt_t *co = env;
+	const arch_register_req_t *req = arch_get_register_req(irn, -1);
+	copy_opt_t                *co  = env;
 	int pos, max;
 	const arch_register_t *reg;
 
-	if (!is_curr_reg_class(co, irn) || arch_irn_is(irn, ignore))
+	if (req->cls != co->cls || arch_irn_is(irn, ignore))
 		return;
 
 	reg = arch_get_irn_register(irn);
@@ -788,9 +792,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	} else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
 		add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
-	}
-	else { /* 2-address code */
-		const arch_register_req_t *req = arch_get_register_req(irn, -1);
+	} else { /* 2-address code */
 		if (is_2addr_code(req)) {
 			const unsigned other = req->other_same;
 			int i;

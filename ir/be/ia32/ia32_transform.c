@@ -4306,8 +4306,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	long      proj        = get_Proj_proj(node);
 	ir_mode  *mode        = get_irn_mode(node);
 	ir_node  *sse_load;
-	const arch_register_class_t *cls;
-	ir_node                     *res;
+	ir_node  *res;
 
 	/* The following is kinda tricky: If we're using SSE, then we have to
 	 * move the result value of the call in floating point registers to an
@@ -4371,7 +4370,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 
 	/* transform call modes */
 	if (mode_is_data(mode)) {
-		cls  = arch_get_irn_reg_class(node, -1);
+		const arch_register_class_t *cls = arch_get_irn_reg_class(node, -1);
 		mode = cls->mode;
 	}
 

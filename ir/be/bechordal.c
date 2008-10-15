@@ -241,7 +241,8 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		const arch_register_t *reg;
 		const arch_register_req_t *req;
 
-		if (arch_get_irn_reg_class(irn, i) != env->cls)
+		req = arch_get_register_req(irn, i);
+		if (req->cls != env->cls)
 			continue;
 
 		reg = arch_get_irn_register(op);
@@ -251,7 +252,6 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if(arch_register_type_is(reg, joker))
 			continue;
 
-		req = arch_get_register_req(irn, i);
 		if (!arch_register_req_is(req, limited))
 			continue;
 
