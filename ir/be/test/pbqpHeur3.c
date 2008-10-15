@@ -1,3 +1,16 @@
+/**
+ * This test case shows that it's not possible to find a PBQP solution for
+ * arbitrary pattern sets.
+ *
+ * To get infinity costs you have to remove the following Lea rules:
+ * - Add(Shl(ShiftConst(), index=IR_node()), imm=Const())
+ * - Add(Shl(ShiftConst(), index=IR_node()), base=IR_node())
+ *
+ * You also have to use the following compiler flags:
+ * -O3 -fno-reassociation
+ *
+ * For more details take a look at the diamond function.
+ */
 unsigned   a;
 unsigned   b;
 unsigned  *gi1, gi2, gi3, gi4, gi5;
@@ -77,6 +90,20 @@ unsigned add_3_add_const_shift_users(unsigned i1, unsigned i2, unsigned i3,
 
 void diamond(void)
 {
+	/*
+	 * This is the basic structure.
+	 *
+	 *             as
+	 *            /  \
+	 *          asb  asc
+	 *            \  /
+	 *             sum
+	 *
+	 * The basic idea is to make a heuristical "consume me" decision for "as".
+	 * If "asb" and "asc" have no terminal rules which consumes "as", they also
+	 * have to be consumed. Therefore "sum" has to consume both paths up to
+	 * "as", which isn't possible.
+	 */
 	unsigned as  = a << 3;
 	unsigned asb = as + 123235;
 	unsigned asc = as + 235346;
