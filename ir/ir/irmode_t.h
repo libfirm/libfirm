@@ -138,22 +138,22 @@ _mode_is_reference(const ir_mode *mode) {
 
 static inline int
 _mode_is_num(const ir_mode *mode) {
-	return (_get_mode_sort(mode) & irms_is_num);
+	return (_get_mode_sort(mode) & irmsh_is_num);
 }
 
 static inline int
 _mode_is_data(const ir_mode *mode) {
-	return (_get_mode_sort(mode) & irms_is_data);
+	return (_get_mode_sort(mode) & irmsh_is_data);
 }
 
 static inline int
 _mode_is_datab(const ir_mode *mode) {
-	return (_get_mode_sort(mode) & irms_is_datab);
+	return (_get_mode_sort(mode) & irmsh_is_datab);
 }
 
 static inline int
 _mode_is_dataM(const ir_mode *mode) {
-	return (_get_mode_sort(mode) & irms_is_dataM);
+	return (_get_mode_sort(mode) & irmsh_is_dataM);
 }
 
 static inline int

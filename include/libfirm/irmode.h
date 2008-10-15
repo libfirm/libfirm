@@ -68,18 +68,20 @@ typedef enum ir_modecode { /* irm is short for `ir mode' */
 	irm_max                       /**< maximum value for ir_modecode */
 } ir_modecode;
 
+/** Helper values for ir_mode_sort. */
+enum ir_mode_sort_helper {
+	irmsh_is_num   = 0x10, /**< mode represents a number */
+	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
+	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
+	irmsh_is_dataM = 0x80, /**< mode represents data or is memory */
+};
+
 /**
  * These values represent the different mode classes of value representations.
  * Beware: do not change the order of these values without checking
  * the mode_is
  */
 typedef enum ir_mode_sort {
-	/* helper */
-	irms_is_num   = 0x10, /**< mode represents a number */
-	irms_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
-	irms_is_datab = 0x40, /**< mode represents data or is internal boolean */
-	irms_is_dataM = 0x80, /**< mode represents data or is memory */
-
 	/* Predefined sorts of modes */
 	irms_auxiliary        = 0, /**< Only for Firm use. Not extensible. (irm_T) */
 	irms_control_flow     = 1, /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
@@ -87,18 +89,18 @@ typedef enum ir_mode_sort {
 
 	/** Internal boolean representation.
 	     Storing to memory impossible, convert first. (irm_b) */
-	irms_internal_boolean = 3 | irms_is_datab,
+	irms_internal_boolean = 3 | irmsh_is_datab,
 
 	/* user-extensible sorts of modes */
 	/** A mode to represent entities.
 	    Restricted int computations can be performed */
-	irms_reference        = 4 | irms_is_data | irms_is_datab | irms_is_dataM,
+	irms_reference        = 4 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
 	/** A mode to represent int numbers.
 	    Integer computations can be performed. */
-	irms_int_number       = 5 | irms_is_data | irms_is_datab | irms_is_dataM | irms_is_num,
+	irms_int_number       = 5 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
 	/** A mode to represent float numbers.
 	    Floating point computations can be performed. */
-	irms_float_number     = 6 | irms_is_data | irms_is_datab | irms_is_dataM | irms_is_num,
+	irms_float_number     = 6 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
 } ir_mode_sort;
 
 /** These values represent the different arithmetic operations possible with a mode.
