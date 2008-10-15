@@ -349,14 +349,13 @@ typedef struct _ir_def_use_edge {
 struct ir_node {
 	/* ------- Basics of the representation  ------- */
 	firm_kind kind;          /**< Distinguishes this node from others. */
-    unsigned node_idx;       /**< The node index of this node in its graph. */
+	unsigned node_idx;       /**< The node index of this node in its graph. */
 	ir_op *op;               /**< The Opcode of this node. */
 	ir_mode *mode;           /**< The Mode of this node. */
 	struct ir_node **in;     /**< The array of predecessors / operands. */
 	ir_visited_t visited;    /**< The visited counter for walks of the graph. */
 	void *link;              /**< To attach additional information to the node, e.g.
-	                              used while construction to link Phi0 nodes and
-	                              during optimization to link to nodes that
+	                              used during optimization to link to nodes that
 	                              shall replace a node. */
 	/* ------- Fields for optimizations / analysis information ------- */
 	ir_def_use_edge *out;    /**< array of def-use edges. */
