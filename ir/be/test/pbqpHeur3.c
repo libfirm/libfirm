@@ -116,19 +116,27 @@ unsigned k3_3_3(char* base, unsigned i1, unsigned i2, unsigned i3, unsigned k1, 
 	return 0;
 }
 
-unsigned k3_3_4(char* base, unsigned i1, unsigned i2, unsigned i3, char *k1, char *k2, char *k3)
+unsigned k3_3_4(unsigned i1, unsigned i2, unsigned i3,
+		char *k1, char *k2,	char *k3,
+		unsigned **gp1, unsigned **gp2, unsigned **gp3, unsigned **gp4,
+		unsigned **gp5, unsigned **gp6, unsigned **gp7, unsigned **gp8,
+		unsigned **gp9,
+		const int c1, const int c2)
 {
-	gp10 = i1 + k1;
-	gp11 = i2 + k1;
-	gp12 = i3 + k1;
+	unsigned tmp2 = (i2 << 3) + c1;
+	unsigned tmp3 = (i3 << 3) + c2;
 
-	gp13 = i1 + k2;
-	gp14 = i2 + k2;
-	gp15 = i3 + k2;
+	*gp1 = i1 + k1;
+	*gp2 = tmp2 + k1;
+	*gp3 = tmp3 + k1;
 
-	gp16 = i1 + k3;
-	gp17 = i2 + k3;
-	gp18 = i3 + k3;
+	*gp4 = i1 + k2;
+	*gp5 = tmp2 + k2;
+	*gp6 = tmp3 + k2;
+
+	*gp7 = i1 + k3;
+	*gp8 = tmp2 + k3;
+	*gp9 = tmp3 + k3;
 
 	return 0;
 }
@@ -142,7 +150,10 @@ void diamond(void)
 
 	d = sum;
 
-	use = k3_3_4(block1, asb, gi1, gi2, &gi3, &gi4, &gi5);
+	use = k3_3_4(asb, gi1, gi2,
+			&gi3, &gi4, &gi5,
+			&gp10, &gp11, &gp12, &gp13, &gp14, &gp15, &gp16, &gp17, &gp18,
+			63563, 234754);
 //	use = k3_3(block2, asb, gi3, gi4, 13, 14, 15);
 //
 //	use = k3_3(block3, asb, gi5, gi6, 16, 17, 18);
