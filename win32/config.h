@@ -97,7 +97,9 @@
 /* Define the right const token */
 /* #undef const */
 
+#ifndef inline
 #define inline __inline
+#endif
 
 /* map some non-POSIX names for Win32 */
 #define snprintf    _snprintf
