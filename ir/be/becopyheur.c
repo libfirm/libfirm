@@ -530,11 +530,13 @@ static inline void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
  * nodes. (All other phi classes are reduced to this case.)
  */
 static void ou_optimize(unit_t *ou) {
-	int i;
-	qnode_t *curr = NULL, *tmp;
-	const arch_register_class_t *cls = ou->co->cls;
-	bitset_pos_t idx;
-	bitset_t *pos_regs = bitset_alloca(cls->n_regs);
+	qnode_t                     *curr = NULL;
+	qnode_t                     *tmp;
+	const arch_register_req_t   *req;
+	bitset_t const*              ignore;
+	bitset_pos_t                 n_regs;
+	bitset_pos_t                 idx;
+	int                          i;
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
 	for (i=0; i<ou->node_count; ++i)
@@ -543,16 +545,28 @@ static void ou_optimize(unit_t *ou) {
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
 
-	arch_get_allocatable_regs(ou->nodes[0], -1, pos_regs);
+	req     = arch_get_register_req_out(ou->nodes[0]);
+	ignore  = ou->co->cenv->ignore_colors;
+	n_regs  = req->cls->n_regs;
+	if (arch_register_req_is(req, limited)) {
+		rawbs_base_t const* limited = req->limited;
 
-	/* exclude ignore colors */
-	bitset_andnot(pos_regs, ou->co->cenv->ignore_colors);
+		for (idx = 0; idx != n_regs; ++idx) {
+			if (bitset_is_set(ignore, idx))
+				continue;
+			if (!rbitset_is_set(limited, idx))
+				continue;
 
-	assert(bitset_popcnt(pos_regs) != 0 && "No register is allowed for this node !!?");
+			ou_insert_qnode(ou, new_qnode(ou, idx));
+		}
+	} else {
+		for (idx = 0; idx != n_regs; ++idx) {
+			if (bitset_is_set(ignore, idx))
+				continue;
 
-	/* create new qnode */
-	bitset_foreach(pos_regs, idx)
-		ou_insert_qnode(ou, new_qnode(ou, idx));
+			ou_insert_qnode(ou, new_qnode(ou, idx));
+		}
+	}
 
 	/* search best */
 	for (;;) {

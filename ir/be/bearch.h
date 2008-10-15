@@ -133,16 +133,6 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
 #define arch_get_register_req_out(irn) arch_get_register_req(irn, -1)
 
 /**
- * Get the number of allocatable registers concerning
- * a register class for an operand of a node.
- * @param irn The node.
- * @param pos The position of the node's operand.
- * @param bs  The bitset all allocatable registers shall be put into.
- * @return    The amount of registers allocatable for that operand.
- */
-int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs);
-
-/**
  * Put all registers which shall not be ignored by the register
  * allocator in a bit set.
  * @param cls The register class to consider.

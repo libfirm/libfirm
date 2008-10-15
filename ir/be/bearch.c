@@ -156,24 +156,6 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 	}
 }
 
-int arch_get_allocatable_regs(const ir_node *irn, int pos, bitset_t *bs)
-{
-	const arch_register_req_t *req = arch_get_register_req(irn, pos);
-
-	if(req->type == arch_register_req_type_none) {
-		bitset_clear_all(bs);
-		return 0;
-	}
-
-	if(arch_register_req_is(req, limited)) {
-		rbitset_copy_to_bitset(req->limited, bs);
-		return bitset_popcnt(bs);
-	}
-
-	arch_register_class_put(req->cls, bs);
-	return req->cls->n_regs;
-}
-
 void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 {
 	unsigned i;
