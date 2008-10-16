@@ -54,8 +54,6 @@ static char printbuf[SNPRINTF_BUF_LEN];
 
 extern int isleaf;
 
-static const ppc32_code_gen_t *cg;
-
 
 /*************************************************************
  *             _       _    __   _          _
@@ -599,7 +597,7 @@ static void ppc32_gen_block(const ir_node *block) {
  */
 static void ppc32_emit_start(ir_graph *irg) {
 	const char *irg_name  = get_entity_ld_name(get_irg_entity(irg));
-	int         framesize = get_type_size_bytes(get_irg_frame_type(cg->irg));
+	int         framesize = get_type_size_bytes(get_irg_frame_type(irg));
 
 	if(! strcmp(irg_name, "main")) {					   // XXX: underscore hack
 		irg_name = "_main";
@@ -629,7 +627,7 @@ static void ppc32_emit_start(ir_graph *irg) {
  * Emits code for function end
  */
 static void ppc32_emit_end(ir_graph *irg) {
-	int framesize = get_type_size_bytes(get_irg_frame_type(cg->irg));
+	int framesize = get_type_size_bytes(get_irg_frame_type(irg));
 	(void) irg;
 
 /*	if(!isleaf) {
@@ -668,12 +666,10 @@ void ppc32_gen_labels(ir_node *block, void *env) {
 /**
  * Main driver: generates code for one routine
  */
-void ppc32_gen_routine(const ppc32_code_gen_t *ppc32_cg, ir_graph *irg)
+void ppc32_gen_routine(const ppc32_code_gen_t *cg, ir_graph *irg)
 {
 	ir_node *block;
 	int i, n;
-
-	cg = ppc32_cg;
 
 	ppc32_register_emitters();
 
