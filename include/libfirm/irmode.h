@@ -85,7 +85,7 @@ typedef enum ir_mode_sort {
 	/* Predefined sorts of modes */
 	irms_auxiliary        = 0, /**< Only for Firm use. Not extensible. (irm_T) */
 	irms_control_flow     = 1, /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
-	irms_memory           = 2, /**< Marks the memory mode.  Not extensible. (irm_M) */
+	irms_memory           = 2 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
 
 	/** Internal boolean representation.
 	     Storing to memory impossible, convert first. (irm_b) */
