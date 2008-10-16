@@ -2,12 +2,15 @@
  * This test case shows that it's not possible to find a PBQP solution for
  * arbitrary pattern sets.
  *
+ * You also have to use the following compiler flags:
+ * -O3 -fno-reassociation
+ *
+ * Because of the disabled reassociation you have to add the following rule:
+ * - Add(Add(Shl(ShiftConst(), index=IR_node()), imm=Const()), base=IR_node())
+ *
  * To get infinity costs you have to remove the following Lea rules:
  * - Add(Shl(ShiftConst(), index=IR_node()), imm=Const())
  * - Add(Shl(ShiftConst(), index=IR_node()), base=IR_node())
- *
- * You also have to use the following compiler flags:
- * -O3 -fno-reassociation
  *
  * For more details take a look at the diamond function.
  */
