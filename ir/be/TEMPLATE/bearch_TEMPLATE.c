@@ -317,7 +317,6 @@ static void *TEMPLATE_cg_init(be_irg_t *birg) {
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
 	cg->reg_set  = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
-	cg->arch_env = arch_env;
 	cg->isa      = isa;
 	cg->birg     = birg;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.TEMPLATE.cg");
