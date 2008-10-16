@@ -25,23 +25,20 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
+#include <stdlib.h>
+#include <string.h>
 
-# include <stddef.h>
+#include <stddef.h>
 
-# include "irprog_t.h"
-# include "irmode_t.h"
-# include "ident.h"
-# include "tv_t.h"
-# include "obst.h"
-# include "irhooks.h"
-# include "irtools.h"
-# include "array.h"
+#include "irprog_t.h"
+#include "irmode_t.h"
+#include "ident.h"
+#include "tv_t.h"
+#include "obst.h"
+#include "irhooks.h"
+#include "irtools.h"
+#include "array.h"
+#include "error.h"
 
 /** Obstack to hold all modes. */
 static struct obstack modes;
