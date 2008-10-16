@@ -290,14 +290,15 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
 	case irms_control_flow:
 	case irms_memory:
 	case irms_internal_boolean:
-		assert(0 && "internal modes cannot be user defined");
-		break;
+		panic("internal modes cannot be user defined");
 
 	case irms_float_number:
 	case irms_int_number:
 	case irms_reference:
 		mode = register_mode(&mode_tmpl);
+		break;
 	}
+	assert(mode != NULL);
 	return mode;
 }
 
@@ -337,20 +338,18 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
 	case irms_control_flow:
 	case irms_memory:
 	case irms_internal_boolean:
-		assert(0 && "internal modes cannot be user defined");
-		break;
+		panic("internal modes cannot be user defined");
 
 	case irms_reference:
-		assert(0 && "only integer and floating point modes can be vectorized");
-		break;
+		panic("only integer and floating point modes can be vectorized");
 
 	case irms_float_number:
-		assert(0 && "not yet implemented");
-		break;
+		panic("not yet implemented");
 
 	case irms_int_number:
 		mode = register_mode(&mode_tmpl);
 	}
+	assert(mode != NULL);
 	return mode;
 }
 
