@@ -816,15 +816,10 @@ static const debug_ops stabs_ops = {
 
 /* Opens a stabs handler */
 dbg_handle *be_stabs_open(void) {
-	stabs_handle *h = XMALLOC(stabs_handle);
+	stabs_handle *h = XMALLOCZ(stabs_handle);
 
 	h->base.ops     = &stabs_ops;
-	h->cur_ent      = NULL;
-	h->layout       = NULL;
-	h->next_type_nr = 0;
 	h->type_map     = pmap_create_ex(64);
-	h->main_file    = NULL;
-	h->curr_file    = NULL;
 
 	return &h->base;
 }
