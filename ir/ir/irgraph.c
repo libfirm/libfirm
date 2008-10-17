@@ -133,6 +133,8 @@ static ir_graph *alloc_graph(void) {
  */
 static void free_graph(ir_graph *irg) {
 	char *ptr = (char *)irg;
+
+	DEL_ARR_F(irg->idx_irn_map);
 	free(ptr - additional_graph_data_size);
 }
 
