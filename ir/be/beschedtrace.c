@@ -282,7 +282,7 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn) {
 	ir_node *block = get_nodes_block(irn);
 
 	if (be_is_Call(irn)) {
-		/* we want calls prefered */
+		/* we want calls preferred */
 		return -5;
 	}
 
