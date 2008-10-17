@@ -1081,9 +1081,9 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	partition_t *X = *pX;
 	partition_t *X_prime;
 	list_head   tmp;
-	step_env    env1, env2, *winner;
+	step_env    senv[2];
 	node_t      *g, *h, *node, *t;
-	int         max_input, transitions;
+	int         max_input, transitions, winner, shf;
 	unsigned    n;
 	DEBUG_ONLY(static int run = 0;)
 
@@ -1120,44 +1120,46 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	/* restore X.Leader */
 	list_splice(&tmp, &X->Leader);
 
-	env1.initial       = g;
-	env1.unwalked      = NULL;
-	env1.walked        = NULL;
-	env1.index         = 0;
-	env1.side          = 1;
+	senv[0].initial   = g;
+	senv[0].unwalked  = NULL;
+	senv[0].walked    = NULL;
+	senv[0].index     = 0;
+	senv[0].side      = 1;
 
-	env2.initial       = h;
-	env2.unwalked      = NULL;
-	env2.walked        = NULL;
-	env2.index         = 0;
-	env2.side          = 2;
+	senv[1].initial   = h;
+	senv[1].unwalked  = NULL;
+	senv[1].walked    = NULL;
+	senv[1].index     = 0;
+	senv[1].side      = 2;
 
 	for (;;) {
-		if (step(&env1)) {
-			winner = &env1;
+		if (step(&senv[0])) {
+			winner = 0;
 			break;
 		}
-		if (step(&env2)) {
-			winner = &env2;
+		if (step(&senv[1])) {
+			winner = 1;
 			break;
 		}
 	}
-	assert(winner->initial == NULL);
-	assert(winner->unwalked == NULL);
+	assert(senv[winner].initial == NULL);
+	assert(senv[winner].unwalked == NULL);
 
 	/* clear flags from walked/unwalked */
-	transitions  = clear_flags(env1.unwalked);
-	transitions |= clear_flags(env1.walked);
-	transitions |= clear_flags(env2.unwalked);
-	transitions |= clear_flags(env2.walked);
+	shf = winner;
+	transitions  = clear_flags(senv[0].unwalked) << shf;
+	transitions |= clear_flags(senv[0].walked)   << shf;
+	shf ^= 1;
+	transitions |= clear_flags(senv[1].unwalked) << shf;
+	transitions |= clear_flags(senv[1].walked)   << shf;
 
-	dump_race_list("winner ", winner->walked);
+	dump_race_list("winner ", senv[winner].walked);
 
 	/* Move walked_{winner} to a new partition, X'. */
 	X_prime   = new_partition(env);
 	max_input = 0;
 	n         = 0;
-	for (node = winner->walked; node != NULL; node = node->race_next) {
+	for (node = senv[winner].walked; node != NULL; node = node->race_next) {
 		list_del(&node->node_list);
 		node->part = X_prime;
 		if (node->is_follower) {
@@ -1183,7 +1185,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	list_for_each_entry_safe(node_t, node, t, &X_prime->Follower, node_list) {
 		if (identity(node) == node) {
 			follower_to_leader(node);
-			transitions = 1;
+			transitions |= 1;
 		}
 	}
 
@@ -1197,12 +1199,20 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	 * If there where follower to leader transitions, ensure that the nodes
 	 * can be split out if necessary.
 	 */
-	if (transitions) {
-		/* place partitions on the cprop list */
+	if (transitions & 1) {
+		/* place winner partition on the cprop list */
 		if (X_prime->on_cprop == 0) {
 			X_prime->cprop_next = env->cprop;
 			env->cprop          = X_prime;
 			X_prime->on_cprop   = 1;
+		}
+	}
+	if (transitions & 2) {
+		/* place other partition on the cprop list */
+		if (X->on_cprop == 0) {
+			X->cprop_next = env->cprop;
+			env->cprop    = X;
+			X->on_cprop   = 1;
 		}
 	}
 
@@ -1210,7 +1220,7 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	dump_partition("Created new ", X_prime);
 
 	/* we have to ensure that the partition containing g is returned */
-	if (winner == &env2) {
+	if (winner != 0) {
 		*pX = X_prime;
 		return X;
 	}
