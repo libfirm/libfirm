@@ -1132,6 +1132,20 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
 	senv[1].index     = 0;
 	senv[1].side      = 2;
 
+	/*
+	 * Some informations on the race that are not stated clearly in Click's
+	 * thesis.
+	 * 1) A follower stays on the side that reach him first.
+	 * 2) If the other side reches a follower, if will be converted to
+	 *    a leader. /This must be done after the race is over, else the
+	 *    edges we are iterating on are renumbered./
+	 * 3) /New leader might end up on both sides./
+	 * 4) /If one side ends up with new Leaders, we must ensure that
+	 *    they can split out by opcode, hence we have to put _every_
+	 *    partition with new Leader nodes on the cprop list, as
+	 *    opcode splitting is done by split_by() at the end of
+	 *    constant propagation./
+	 */
 	for (;;) {
 		if (step(&senv[0])) {
 			winner = 0;
