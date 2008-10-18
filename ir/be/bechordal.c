@@ -369,13 +369,9 @@ void be_pre_spill_prepare_constr(be_chordal_env_t *cenv) {
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
 {
 	const be_chordal_env_t *env = alloc_env->chordal_env;
-
-	int n_uses   = be_insn_n_uses(insn);
-	int n_defs   = be_insn_n_defs(insn);
-	bitset_t *bs = bitset_alloca(env->cls->n_regs);
-	int *pairing = alloca(MAX(n_defs, n_uses) * sizeof(pairing[0]));
-
-	int i, j;
+	bitset_t               *bs  = bitset_alloca(env->cls->n_regs);
+	int                     i;
+	int                     j;
 
 	/*
 		For each out operand, try to find an in operand which can be assigned the
