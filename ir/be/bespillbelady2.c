@@ -1064,7 +1064,6 @@ static double can_bring_in(global_end_state_t *ges, ir_node *bl, ir_node *irn, d
 
 	if (is_transport_in(bl, irn)) {
 		int i, n           = get_irn_arity(bl);
-		ir_node **nodes    = alloca(get_irn_arity(bl) * sizeof(nodes[0]));
 		rollback_info_t rb = trans_begin(ges);
 
 		glob_costs = 0.0;
