@@ -433,19 +433,20 @@ static void debug_vcg_dump_kill(rss_t *rss) {
 }
 
 /* Dumps the potential killing DAG (PKG) as vcg. */
-static void debug_vcg_dump_pkg(rss_t *rss, ir_nodeset_t *max_ac, int iteration) {
+static void debug_vcg_dump_pkg(rss_t *rss, ir_nodeset_t *max_ac, int iteration)
+{
 	FILE              *f;
 	char              file_name[256];
-	char              *suffix   = alloca(32);
+	char              suffix[32];
 	static const char suffix1[] = "-RSS-PKG.vcg";
 	static const char suffix2[] = "-RSS-PKG-MAXAC.vcg";
 	plist_element_t   *el;
 
 	if (! max_ac) {
-		snprintf(suffix, 32, "%s", suffix1);
+		snprintf(suffix, sizeof(suffix), "%s", suffix1);
 	}
 	else {
-		snprintf(suffix, 32, "-%02d%s", iteration, suffix2);
+		snprintf(suffix, sizeof(suffix), "-%02d%s", iteration, suffix2);
 	}
 
 	build_file_name(rss, suffix, strlen(suffix) + 1, file_name, sizeof(file_name));
