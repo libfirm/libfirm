@@ -544,11 +544,12 @@ static void collect_spills_walker(ir_node *node, void *data) {
 	}
 }
 
-static void check_spillslot_interference(be_verify_spillslots_env_t *env) {
-	int spillcount = set_count(env->spills);
-	spill_t **spills = alloca(spillcount * sizeof(spills[0]));
-	spill_t *spill;
-	int i;
+static void check_spillslot_interference(be_verify_spillslots_env_t *env)
+{
+	int       spillcount = set_count(env->spills);
+	spill_t **spills     = ALLOCAN(spill_t*, spillcount);
+	spill_t  *spill;
+	int       i;
 
 	for(spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
 		spills[i] = spill;
@@ -820,8 +821,7 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 		assert(lv->nodes && "live sets must be computed");
 
 		n_regs    = arch_register_class_n_regs(regclass);
-		registers = alloca(n_regs * sizeof(registers[0]));
-		memset(registers, 0, n_regs * sizeof(registers[0]));
+		registers = ALLOCANZ(ir_node*, n_regs);
 
 		be_lv_foreach(lv, block, be_lv_state_end, idx) {
 			ir_node *node = be_lv_get_irn(lv, block, idx);

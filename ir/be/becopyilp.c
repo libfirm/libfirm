@@ -106,13 +106,15 @@ size_red_t *new_size_red(copy_opt_t *co) {
 /**
  * Checks if a node is simplicial in the graph heeding the already removed nodes.
  */
-static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn) {
-	int i, o, size = 0;
-	ir_node **all, *curr;
-	be_ifg_t *ifg = sr->co->cenv->ifg;
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
-
-	all = alloca(be_ifg_degree(ifg, ifn) * sizeof(*all));
+static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
+{
+	be_ifg_t *ifg  = sr->co->cenv->ifg;
+	void     *iter = be_ifg_neighbours_iter_alloca(ifg);
+	ir_node **all  = ALLOCAN(ir_node*, be_ifg_degree(ifg, ifn));
+	ir_node  *curr;
+	int       size = 0;
+	int       i;
+	int       o;
 
 	/* get all non-removed neighbors */
 	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)

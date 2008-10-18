@@ -292,7 +292,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			pmap_insert(wd->fname_map, (void *)fname, ent);
 
 			/* initialize file name string constant */
-			tarval_string = alloca(sizeof(*tarval_string) * (len));
+			tarval_string = ALLOCAN(tarval*, len);
 			for (i = 0; i < len; ++i) {
 				tarval_string[i] = new_tarval_from_long(fname[i], mode_Bs);
 			}
@@ -440,7 +440,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
 	/* initialize function name string constant */
-	tarval_string = alloca(sizeof(*tarval_string) * (filename_len));
+	tarval_string = ALLOCAN(tarval*, filename_len);
 	for (i = 0; i < filename_len; ++i) {
 		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
 	}

@@ -563,7 +563,7 @@ static inline int is_transport_in(const ir_node *bl, const ir_node *irn)
 static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
 	belady_env_t *env       = bi->bel;
 	workset_t    *ws        = env->ws;
-	ir_node     **to_insert = alloca(env->n_regs * sizeof(to_insert[0]));
+	ir_node     **to_insert = ALLOCAN(ir_node*, env->n_regs);
 
 	int i, len, max_allowed, demand, iter;
 	ir_node *val;

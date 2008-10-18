@@ -316,8 +316,8 @@ static inline unsigned get_distance(ir_node *from, unsigned from_step,
  */
 static void displace(workset_t *new_vals, int is_usage)
 {
-	ir_node **to_insert = alloca(n_regs * sizeof(to_insert[0]));
-	bool     *spilled   = alloca(n_regs * sizeof(spilled[0]));
+	ir_node **to_insert = ALLOCAN(ir_node*, n_regs);
+	bool     *spilled   = ALLOCAN(bool,     n_regs);
 	ir_node  *val;
 	int       i;
 	int       len;
@@ -551,7 +551,7 @@ static void decide_start_workset(const ir_node *block)
 
 	/* check predecessors */
 	arity           = get_irn_arity(block);
-	pred_worksets   = alloca(sizeof(pred_worksets[0]) * arity);
+	pred_worksets   = ALLOCAN(workset_t*, arity);
 	all_preds_known = true;
 	for(i = 0; i < arity; ++i) {
 		ir_node      *pred_block = get_Block_cfgpred_block(block, i);

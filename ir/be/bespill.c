@@ -483,7 +483,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* build a new PhiM */
 	arity   = get_irn_arity(phi);
-	ins     = alloca(sizeof(ir_node*) * arity);
+	ins     = ALLOCAN(ir_node*, arity);
 	unknown = new_r_Unknown(irg, mode_M);
 	for(i = 0; i < arity; ++i) {
 		ins[i] = unknown;
@@ -689,7 +689,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 		bl = get_nodes_block(reloader);
 	}
 
-	ins = alloca(get_irn_arity(spilled) * sizeof(ins[0]));
+	ins = ALLOCAN(ir_node*, get_irn_arity(spilled));
 	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
 		ir_node *arg = get_irn_n(spilled, i);
 

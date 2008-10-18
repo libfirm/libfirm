@@ -125,16 +125,17 @@ static void build_coloring_cstr(ilp_env_t *ienv) {
 		}
 }
 
-static void build_interference_cstr(ilp_env_t *ienv) {
-	lpp_t *lpp        = ienv->lp;
-	local_env_t *lenv = ienv->env;
-	be_ifg_t *ifg     = ienv->co->cenv->ifg;
-	int n_colors      = lenv->n_colors;
-	int i, col;
-
-	void *iter = be_ifg_cliques_iter_alloca(ifg);
-	ir_node **clique = alloca(sizeof(*clique) * n_colors);
-	int size;
+static void build_interference_cstr(ilp_env_t *ienv)
+{
+	lpp_t       *lpp      = ienv->lp;
+	local_env_t *lenv     = ienv->env;
+	be_ifg_t    *ifg      = ienv->co->cenv->ifg;
+	int          n_colors = lenv->n_colors;
+	void        *iter     = be_ifg_cliques_iter_alloca(ifg);
+	ir_node    **clique   = ALLOCAN(ir_node*, n_colors);
+	int          size;
+	int          col;
+	int          i;
 
 	char buf[16];
 
@@ -414,8 +415,8 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn) {
 
 
 	/* check for forbidden interferences */
-	len = pdeq_len(path);
-	curr_path = alloca(len * sizeof(*curr_path));
+	len       = pdeq_len(path);
+	curr_path = ALLOCAN(ir_node*, len);
 	pdeq_copyl(path, (const void **)curr_path);
 
 	for (i=1; i<len; ++i)

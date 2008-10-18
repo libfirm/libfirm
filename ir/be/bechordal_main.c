@@ -429,7 +429,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		/* the backend has its own spiller */
 		m = arch_env_get_n_reg_class(arch_env);
 
-		pse = alloca(m * sizeof(pse[0]));
+		pse = ALLOCAN(post_spill_env_t, m);
 
 		for (j = 0; j < m; ++j) {
 			memcpy(&pse[j].cenv, &chordal_env, sizeof(chordal_env));

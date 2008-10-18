@@ -3504,7 +3504,7 @@ static ir_node *gen_be_Return(ir_node *node)
 
 	/* create a new barrier */
 	arity = get_irn_arity(barrier);
-	in = alloca(arity * sizeof(in[0]));
+	in    = ALLOCAN(ir_node*, arity);
 	for (i = 0; i < arity; ++i) {
 		ir_node *new_in;
 

@@ -185,7 +185,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		return;
 	DBG((dbg, LEVEL_2, "\tspills needed after %+F: %d\n", node, spills_needed));
 
-	candidates = alloca(n_live_nodes * sizeof(candidates[0]));
+	candidates = ALLOCAN(spill_candidate_t, n_live_nodes);
 
 	/* construct array with spill candidates and calculate their costs */
 	i = 0;

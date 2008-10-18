@@ -166,12 +166,13 @@ void create_reload(minibelady_env_t *env, ir_node *state, ir_node *before,
 static
 void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
-	ir_graph *irg = get_irn_irg(phi);
-	ir_node *block = get_nodes_block(phi);
-	int i, arity = get_irn_arity(phi);
-	ir_node **in = alloca(arity * sizeof(in[0]));
-	ir_node *spill_to_kill = NULL;
+	ir_graph     *irg           = get_irn_irg(phi);
+	ir_node      *block         = get_nodes_block(phi);
+	int           arity         = get_irn_arity(phi);
+	ir_node     **in            = ALLOCAN(ir_node*, arity);
+	ir_node      *spill_to_kill = NULL;
 	spill_info_t *spill_info;
+	int           i;
 
 	/* does a spill exist for the phis value? */
 	spill_info = get_spill_info(env, phi);

@@ -1252,7 +1252,7 @@ static void create_abstract_call(ir_graph *irg, proc_t *proc, eff_t *eff)
     VERBOSE_PRINT((stdout, "number of args expected: %d\n",
            get_method_n_params(mtype)));
   }
-  irns = alloca(num * sizeof(ir_node*));
+  irns = ALLOCAN(ir_node*, num);
   for(i = 0; i < num; i++) {
     irns[i] = find_valueid_in_proc_effects(eff -> effect.call.args[i], proc)
       -> firmnode;

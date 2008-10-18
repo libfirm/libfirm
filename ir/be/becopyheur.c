@@ -390,11 +390,11 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	 * safe: node has no interference, hence it is in every max stable set.
 	 * unsafe: node has an interference
 	 */
-	safe = alloca((ou->node_count-1) * sizeof(*safe));
-	safe_costs = 0;
-	safe_count = 0;
-	unsafe = alloca((ou->node_count-1) * sizeof(*unsafe));
-	unsafe_costs = alloca((ou->node_count-1) * sizeof(*unsafe_costs));
+	safe         = ALLOCAN(ir_node*, ou->node_count - 1);
+	safe_costs   = 0;
+	safe_count   = 0;
+	unsafe       = ALLOCAN(ir_node*, ou->node_count - 1);
+	unsafe_costs = ALLOCAN(int,      ou->node_count - 1);
 	unsafe_count = 0;
 	for(i=1; i<ou->node_count; ++i) {
 		int is_safe = 1;

@@ -478,8 +478,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 		if (get_class_n_supertypes(typ1) != get_class_n_supertypes(typ2)) return 0;
 		if (get_class_peculiarity(typ1) != get_class_peculiarity(typ2)) return 0;
 		/** Compare the members **/
-		m = alloca(sizeof(ir_entity *) * get_class_n_members(typ1));
-		memset(m, 0, sizeof(ir_entity *) * get_class_n_members(typ1));
+		m = ALLOCANZ(ir_entity*, get_class_n_members(typ1));
 		/* First sort the members of typ2 */
 		for (i = 0; i < get_class_n_members(typ1); i++) {
 			ir_entity *e1 = get_class_member(typ1, i);
@@ -495,8 +494,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 				return 0;
 		}
 		/** Compare the supertypes **/
-		t = alloca(sizeof(ir_entity *) * get_class_n_supertypes(typ1));
-		memset(t, 0, sizeof(ir_entity *) * get_class_n_supertypes(typ1));
+		t = ALLOCANZ(ir_type*, get_class_n_supertypes(typ1));
 		/* First sort the supertypes of typ2 */
 		for (i = 0; i < get_class_n_supertypes(typ1); i++) {
 			ir_type *t1 = get_class_supertype(typ1, i);
@@ -515,8 +513,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 
 	case tpo_struct:
 		if (get_struct_n_members(typ1) != get_struct_n_members(typ2)) return 0;
-		m = alloca(sizeof(ir_entity *) * get_struct_n_members(typ1));
-		memset(m, 0, sizeof(ir_entity *) * get_struct_n_members(typ1));
+		m = ALLOCANZ(ir_entity*, get_struct_n_members(typ1));
 		/* First sort the members of lt */
 		for (i = 0; i < get_struct_n_members(typ1); i++) {
 			ir_entity *e1 = get_struct_member(typ1, i);
@@ -563,8 +560,7 @@ int equal_type(ir_type *typ1, ir_type *typ2) {
 
 	case tpo_union:
 		if (get_union_n_members(typ1) != get_union_n_members(typ2)) return 0;
-		m = alloca(sizeof(ir_entity *) * get_union_n_members(typ1));
-		memset(m, 0, sizeof(ir_entity *) * get_union_n_members(typ1));
+		m = ALLOCANZ(ir_entity*, get_union_n_members(typ1));
 		/* First sort the members of lt */
 		for (i = 0; i < get_union_n_members(typ1); i++) {
 			ir_entity *e1 = get_union_member(typ1, i);
@@ -631,8 +627,7 @@ int smaller_type(ir_type *st, ir_type *lt) {
 		if (n_st_members != get_struct_n_members(lt))
 			return 0;
 
-		m = alloca(sizeof(ir_entity *) * n_st_members);
-		memset(m, 0, sizeof(ir_entity *) * n_st_members);
+		m = ALLOCANZ(ir_entity*, n_st_members);
 		/* First sort the members of lt */
 		for (i = 0; i < n_st_members; ++i) {
 			ir_entity *se = get_struct_member(st, i);
@@ -682,8 +677,7 @@ int smaller_type(ir_type *st, ir_type *lt) {
 	case tpo_union:
 		n_st_members = get_union_n_members(st);
 		if (n_st_members != get_union_n_members(lt)) return 0;
-		m = alloca(sizeof(ir_entity *) * n_st_members);
-		memset(m, 0, sizeof(ir_entity *) * n_st_members);
+		m = ALLOCANZ(ir_entity*, n_st_members);
 		/* First sort the members of lt */
 		for (i = 0; i < n_st_members; ++i) {
 			ir_entity *se = get_union_member(st, i);

@@ -384,11 +384,11 @@ void be_peephole_opt(be_irg_t *birg)
 	lv       = be_get_birg_liveness(birg);
 
 	n_classes = arch_env_get_n_reg_class(arch_env);
-	register_values = alloca(sizeof(register_values[0]) * n_classes);
+	register_values = ALLOCAN(ir_node**, n_classes);
 	for(i = 0; i < n_classes; ++i) {
 		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
-		register_values[i] = alloca(sizeof(ir_node*) * n_regs);
+		register_values[i] = ALLOCAN(ir_node*, n_regs);
 	}
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);

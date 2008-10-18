@@ -740,7 +740,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 	be_abi_call_set_flags(abi, call_flags, &mips_abi_callbacks);
 
 	/* collect the mode for each type */
-	modes = alloca(n * sizeof(modes[0]));
+	modes = ALLOCAN(ir_mode*, n);
 	for (i = 0; i < n; i++) {
 		tp       = get_method_param_type(method_type, i);
 		modes[i] = get_type_mode(tp);

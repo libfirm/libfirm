@@ -307,11 +307,11 @@ static int ou_max_ind_set_costs(unit_t *ou) {
 	 * safe: node has no interference, hence it is in every max stable set.
 	 * unsafe: node has an interference
 	 */
-	safe = alloca((ou->node_count-1) * sizeof(*safe));
-	safe_costs = 0;
-	safe_count = 0;
-	unsafe = alloca((ou->node_count-1) * sizeof(*unsafe));
-	unsafe_costs = alloca((ou->node_count-1) * sizeof(*unsafe_costs));
+	safe         = ALLOCAN(ir_node*, ou->node_count - 1);
+	safe_costs   = 0;
+	safe_count   = 0;
+	unsafe       = ALLOCAN(ir_node*, ou->node_count - 1);
+	unsafe_costs = ALLOCAN(int,      ou->node_count - 1);
 	unsafe_count = 0;
 	for(i=1; i<ou->node_count; ++i) {
 		int is_safe = 1;
@@ -572,7 +572,7 @@ static void co_sort_units(copy_opt_t *co) {
 	/* get the number of ous, remove them form the list and fill the array */
 	list_for_each_entry(unit_t, ou, &co->units, units)
 		count++;
-	ous = alloca(count * sizeof(*ous));
+	ous = ALLOCAN(unit_t, count);
 
 	costs = co_get_max_copy_costs(co);
 
@@ -861,9 +861,9 @@ static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, 
 
 void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 {
-	be_ifg_t *ifg  = co->cenv->ifg;
-	int *color_map = alloca(co->cls->n_regs * sizeof(color_map[0]));
-	int *node_map  = XMALLOCN(int, get_irg_last_idx(co->irg) + 1);
+	be_ifg_t *ifg       = co->cenv->ifg;
+	int      *color_map = ALLOCAN(int, co->cls->n_regs);
+	int      *node_map  = XMALLOCN(int, get_irg_last_idx(co->irg) + 1);
 
 	ir_node *irn;
 	void *it, *nit;

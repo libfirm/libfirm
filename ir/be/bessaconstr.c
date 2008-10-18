@@ -116,8 +116,8 @@ ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 {
 	int i, n_preds = get_Block_n_cfgpreds(block);
 	ir_graph *irg = get_irn_irg(block);
-	ir_node *phi;
-	ir_node **ins = alloca(n_preds * sizeof(ins[0]));
+	ir_node **ins = ALLOCAN(ir_node*, n_preds);
+	ir_node  *phi;
 
 	assert(n_preds > 1);
 

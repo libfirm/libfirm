@@ -1307,19 +1307,18 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
  * push/pop into/from memory cascades. This is possible without using
  * any registers.
  */
-static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node) {
-	ir_graph *irg = get_irn_irg(node);
-	ir_node *block = get_nodes_block(node);
-	ir_node *in[1];
-	ir_node *keep;
-	int i, arity;
-	ir_node *sp = be_abi_get_ignore_irn(cg->birg->abi, &ia32_gp_regs[REG_ESP]);
+static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
+{
+	ir_graph        *irg   = get_irn_irg(node);
+	ir_node         *block = get_nodes_block(node);
+	ir_node         *sp    = be_abi_get_ignore_irn(cg->birg->abi, &ia32_gp_regs[REG_ESP]);
+	int              arity = be_get_MemPerm_entity_arity(node);
+	ir_node        **pops  = ALLOCAN(ir_node*, arity);
+	ir_node         *in[1];
+	ir_node         *keep;
+	int              i;
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
-	ir_node **pops;
-
-	arity = be_get_MemPerm_entity_arity(node);
-	pops = alloca(arity * sizeof(pops[0]));
 
 	/* create Pushs */
 	for(i = 0; i < arity; ++i) {

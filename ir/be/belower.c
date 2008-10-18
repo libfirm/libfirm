@@ -291,7 +291,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	ir_graph                    *const irg         = get_irn_irg(irn);
 	ir_node                     *const block       = get_nodes_block(irn);
 	int                          const arity       = get_irn_arity(irn);
-	reg_pair_t                  *const pairs       = alloca(arity * sizeof(pairs[0]));
+	reg_pair_t                  *const pairs       = ALLOCAN(reg_pair_t, arity);
 	int                                keep_perm   = 0;
 	int                                do_copy     = env->do_copy;
 	/* Get the schedule predecessor node to the perm.
@@ -767,7 +767,6 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 void assure_constraints(be_irg_t *birg) {
 	ir_graph              *irg = be_get_birg_irg(birg);
 	constraint_env_t      cenv;
-	ir_node               **nodes;
 	ir_nodemap_iterator_t map_iter;
 	ir_nodemap_entry_t    map_entry;
 
@@ -786,14 +785,12 @@ void assure_constraints(be_irg_t *birg) {
 
 	/* for all */
 	foreach_ir_nodemap(&cenv.op_set, map_entry, map_iter) {
-		op_copy_assoc_t *entry = map_entry.data;
-		int     n;
-		ir_node *cp;
-		ir_nodeset_iterator_t iter;
+		op_copy_assoc_t          *entry = map_entry.data;
+		int                       n     = ir_nodeset_size(&entry->copies);
+		ir_node                 **nodes = ALLOCAN(ir_node*, n);
+		ir_node                  *cp;
+		ir_nodeset_iterator_t     iter;
 		be_ssa_construction_env_t senv;
-
-		n     = ir_nodeset_size(&entry->copies);
-		nodes = alloca(n * sizeof(nodes[0]));
 
 		/* put the node in an array */
 		DBG((dbg_constr, LEVEL_1, "introduce copies for %+F ", map_entry.node));
@@ -966,8 +963,8 @@ found_front:
 		return 0;
 	}
 
-	map      = alloca(new_size * sizeof(map[0]));
-	proj_map = alloca(arity * sizeof(proj_map[0]));
+	map      = ALLOCAN(int, new_size);
+	proj_map = ALLOCAN(int, arity);
 	memset(proj_map, -1, sizeof(proj_map[0]));
 	n   = 0;
 	for (i = 0; i < arity; ++i) {

@@ -757,9 +757,8 @@ static void split_phi_mem_edge(ir_node *irn, env_t *env) {
   irn_blk = get_nodes_block(irn);
   val_arr = get_irn_link(irn_blk);
 
-  n = get_Block_n_cfgpreds(irn_blk);
-
-  in = alloca(sizeof(*in) * n);
+  n  = get_Block_n_cfgpreds(irn_blk);
+  in = ALLOCAN(ir_node*, n);
 
   for(value_ent = set_first(env->set_ent); value_ent; value_ent = set_next(env->set_ent))
      if(val_arr[GET_ENT_VNUM(value_ent->ent)].access_type < 3)

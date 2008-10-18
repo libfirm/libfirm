@@ -565,7 +565,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 	/* we might need 1 birg more for instrumentation constructor */
 	num_birgs = backend_irg_list ? ARR_LEN(backend_irg_list) : get_irp_n_irgs();
-	birgs     = alloca(sizeof(birgs[0]) * (num_birgs + 1));
+	birgs     = ALLOCAN(be_irg_t, num_birgs + 1);
 
 	/* First: initialize all birgs */
 	for(i = 0; i < num_birgs; ++i) {
@@ -899,7 +899,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.statev) {
 		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
-		char       *buf = alloca(pos - cup_name + 1);
+		char       *buf = ALLOCAN(char, pos - cup_name + 1);
 		strncpy(buf, cup_name, pos - cup_name);
 		buf[pos - cup_name] = '\0';
 

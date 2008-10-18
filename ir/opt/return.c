@@ -73,8 +73,7 @@ void normalize_one_return(ir_graph *irg) {
 		return;
 	}
 
-	returns = alloca((n + 7) >> 3);
-	memset(returns, 0, (n + 7) >> 3);
+	returns = ALLOCANZ(unsigned char, (n + 7) >> 3);
 
 	for (n_rets = i = 0; i < n; ++i) {
 		ir_node *node = get_Block_cfgpred(endbl, i);
@@ -93,9 +92,9 @@ void normalize_one_return(ir_graph *irg) {
 	if (n_rets <= 1)
 		return;
 
-	in       = alloca(sizeof(*in)       * IMAX(n_rets, n_ret_vals));
-	retvals  = alloca(sizeof(*retvals)  * n_rets * n_ret_vals);
-	endbl_in = alloca(sizeof(*endbl_in) * n);
+	in       = ALLOCAN(ir_node*,  IMAX(n_rets, n_ret_vals));
+	retvals  = ALLOCAN(ir_node*,  n_rets * n_ret_vals);
+	endbl_in = ALLOCAN(ir_node*,  n);
 
 	last_idx = 0;
 	for (j = i = 0; i < n; ++i) {
@@ -268,7 +267,7 @@ void normalize_n_returns(ir_graph *irg) {
 	 */
 	end        = get_irg_end(irg);
 	n_ret_vals = get_irn_arity(list);
-	in         = alloca(sizeof(*in) * n_ret_vals);
+	in         = ALLOCAN(ir_node*, n_ret_vals);
 	while (list) {
 		ir_node *ret   = list;
 		ir_node *block = get_nodes_block(ret);
@@ -341,7 +340,7 @@ void normalize_n_returns(ir_graph *irg) {
 	 * Last step: Create a new endblock, with all nodes on the final
 	 * list as predecessors.
 	 */
-	in = alloca(sizeof(*in) * n_finals);
+	in = ALLOCAN(ir_node*, n_finals);
 
 	for (i = 0; final; ++i, final = get_irn_link(final))
 		in[i] = final;

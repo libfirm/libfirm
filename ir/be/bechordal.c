@@ -534,10 +534,10 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 	n_regs      = env->cls->n_regs;
 	bs          = bitset_alloca(n_regs);
-	alloc_nodes = alloca(n_regs * sizeof(alloc_nodes[0]));
+	alloc_nodes = ALLOCAN(ir_node*, n_regs);
 	//bp          = hungarian_new(n_regs, n_regs, 2, HUNGARIAN_MATCH_PERFECT);
 	bp          = bipartite_new(n_regs, n_regs);
-	assignment  = alloca(n_regs * sizeof(assignment[0]));
+	assignment  = ALLOCAN(int, n_regs);
 	partners    = pmap_create();
 
 	/*

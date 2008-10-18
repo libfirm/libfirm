@@ -1347,7 +1347,7 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
 static void update_dvg(rss_t *rss, dvg_t *dvg, rss_irn_t *src, rss_irn_t *tgt) {
 	int i, j, idx;
 	rss_edge_t *edge;
-	rss_edge_t **arr = alloca(pset_count(dvg->edges) * sizeof(arr[0]));
+	rss_edge_t **arr = ALLOCAN(rss_edge_t*, pset_count(dvg->edges));
 
 	/*
 		Add an edge from serialization target to serialization src:
@@ -1454,9 +1454,9 @@ static void build_dvg_pkiller_list(rss_t *rss, dvg_t *dvg) {
  */
 static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration) {
 	int         n               = ir_nodeset_size(&dvg->nodes);
-	int         *assignment     = alloca(n * sizeof(assignment[0]));
-	int         *assignment_rev = alloca(n * sizeof(assignment_rev[0]));
-	int         *idx_map        = alloca(n * sizeof(idx_map[0]));
+	int         *assignment     = ALLOCAN(int, n);
+	int         *assignment_rev = ALLOCAN(int, n);
+	int         *idx_map        = ALLOCAN(int, n);
 	hungarian_problem_t *bp;
 	ir_nodeset_t *values, *temp;
 	ir_nodeset_iterator_t iter;
@@ -1718,7 +1718,7 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 	int        n                    = ir_nodeset_size(sat_vals);
 	int        n_idx                = ARR_LEN_SAFE(rss->idx_map);
 	int        i                    = 0;
-	ir_node    **val_arr            = alloca(n * sizeof(val_arr[0]));
+	ir_node    **val_arr            = ALLOCAN(ir_node*, n);
 	bitset_t   *bs_sv               = bitset_alloca(n_idx);
 	bitset_t   *bs_vdesc            = bitset_alloca(n_idx);
 	bitset_t   *bs_tmp              = bitset_alloca(n_idx);

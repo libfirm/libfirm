@@ -530,7 +530,7 @@ static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struc
 	/* The node has the color it should not have _and_ has not been visited yet. */
 	if(!color_is_fix(env, irn)) {
 		int n_regs            = env->co->cls->n_regs;
-		col_cost_pair_t *csts = alloca(n_regs * sizeof(csts[0]));
+		col_cost_pair_t *csts = ALLOCAN(col_cost_pair_t, n_regs);
 
 		/* Get the costs for giving the node a specific color. */
 		determine_color_costs(env, ci, csts);
@@ -571,7 +571,7 @@ static int change_color_single(co2_t *env, const ir_node *irn, col_t tgt_col, st
 
 	if(!color_is_fix(env, irn) && is_color_admissible(env, ci, tgt_col)) {
 		int n_regs           = env->co->cls->n_regs;
-		col_cost_pair_t *seq = alloca(n_regs * sizeof(seq[0]));
+		col_cost_pair_t *seq = ALLOCAN(col_cost_pair_t, n_regs);
 
 		/* Get the costs for giving the node a specific color. */
 		single_color_cost(env, ci, tgt_col, seq);
@@ -696,7 +696,7 @@ static void unfix_subtree(co2_cloud_irn_t *ci)
 static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 {
 	co2_t *env           = ci->cloud->env;
-	col_cost_pair_t *seq = alloca(env->n_regs * sizeof(seq[0]));
+	col_cost_pair_t *seq = ALLOCAN(col_cost_pair_t, env->n_regs);
 	int is_root          = ci->mst_parent == ci;
 	col_t parent_col     = is_root ? (col_t) -1 : get_col(env, ci->mst_parent->inh.irn);
 	int min_badness      = INT_MAX;

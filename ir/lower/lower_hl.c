@@ -99,11 +99,11 @@ static void lower_sel(ir_node *sel) {
 			index = get_Sel_index(sel, 0);
 
 			if (is_Array_type(owner)) {
-				ir_node *last_size;
 				ir_type *arr_ty = owner;
-				int dims = get_array_n_dimensions(arr_ty);
-				int *map = alloca(sizeof(int) * dims);
-				int i;
+				int      dims   = get_array_n_dimensions(arr_ty);
+				int     *map    = ALLOCAN(int, dims);
+				ir_node *last_size;
+				int      i;
 
 				assert(dims == get_Sel_n_indexs(sel)
 					&& "array dimension must match number of indices of Sel node");

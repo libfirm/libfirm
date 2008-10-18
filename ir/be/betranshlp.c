@@ -109,7 +109,7 @@ ir_node *be_duplicate_node(ir_node *node) {
 			add_irn_n(new_node, in);
 		}
 	} else {
-		ir_node **ins = alloca(arity * sizeof(ins[0]));
+		ir_node **ins = ALLOCAN(ir_node*, arity);
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
 			ins[i] = be_transform_node(in);

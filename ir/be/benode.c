@@ -440,7 +440,7 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 {
 	int            arity     = get_irn_arity(perm);
-	be_reg_data_t  *old_data = alloca(arity * sizeof(old_data[0]));
+	be_reg_data_t  *old_data = ALLOCAN(be_reg_data_t, arity);
 	be_node_attr_t *attr     = get_irn_attr(perm);
 	ir_node        **new_in;
 
@@ -474,7 +474,7 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 	ir_node                     **real_in;
 	int                           i;
 
-	real_in = alloca((n+1) * sizeof(real_in[0]));
+	real_in = ALLOCAN(ir_node*, n + 1);
 	real_in[0] = frame;
 	memcpy(&real_in[1], in, n * sizeof(real_in[0]));
 
@@ -790,8 +790,8 @@ ir_entity *be_get_FrameAddr_entity(const ir_node *node)
 
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
 {
-	ir_node *irn;
-	ir_node **in = (ir_node **) alloca((n + 1) * sizeof(in[0]));
+	ir_node  *irn;
+	ir_node **in = ALLOCAN(ir_node*, n + 1);
 
 	in[0] = src;
 	memcpy(&in[1], in_keep, n * sizeof(in[0]));

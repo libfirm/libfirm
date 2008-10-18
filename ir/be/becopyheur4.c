@@ -932,11 +932,12 @@ static inline int is_loose(co_mst_irn_t *node)
 /**
  * Determines the costs for each color if it would be assigned to node @p node.
  */
-static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs) {
-	int *neigh_cols = alloca(env->n_regs * sizeof(*neigh_cols));
-	int n_loose = 0;
+static void determine_color_costs(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs)
+{
+	int   *neigh_cols = ALLOCAN(int, env->n_regs);
+	int    n_loose    = 0;
 	real_t coeff;
-	int i;
+	int    i;
 
 	for (i = 0; i < env->n_regs; ++i) {
 		neigh_cols[i] = 0;
@@ -981,7 +982,7 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
 
 	/* The node has the color it should not have _and_ has not been visited yet. */
 	if (is_loose(node)) {
-		col_cost_t *costs = alloca(env->n_regs * sizeof(costs[0]));
+		col_cost_t *costs = ALLOCAN(col_cost_t, env->n_regs);
 
 		/* Get the costs for giving the node a specific color. */
 		determine_color_costs(env, node, costs);
@@ -1149,7 +1150,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	int         n_int_chunks  = 0;
 	waitq       *tmp_chunks   = new_waitq();
 	waitq       *best_starts  = NULL;
-	col_cost_t  *order        = alloca(env->n_regs * sizeof(order[0]));
+	col_cost_t  *order        = ALLOCANZ(col_cost_t, env->n_regs);
 	bitset_t    *visited;
 	int         idx, len, i, nidx, pos;
 	struct list_head changed;
@@ -1163,8 +1164,6 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 	++env->chunk_visited;
 
 	/* compute color preference */
-	memset(order, 0, env->n_regs * sizeof(order[0]));
-
 	for (pos = 0, len = ARR_LEN(c->interfere); pos < len; ++pos) {
 		const ir_node *n = c->interfere[pos];
 		co_mst_irn_t *node = get_co_mst_irn(env, n);

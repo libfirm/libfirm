@@ -329,11 +329,14 @@ static void concretize_selected_entity(ir_node *sel) {
 	}
 }
 
-static void concretize_Phi_type(ir_node *phi) {
-	int i, n_preds = get_Phi_n_preds(phi);
-	ir_node **pred = alloca(n_preds * sizeof(ir_node *));
-	ir_node *nn;
-	ir_type *totype, *fromtype;
+static void concretize_Phi_type(ir_node *phi)
+{
+	int       n_preds = get_Phi_n_preds(phi);
+	ir_node **pred    = ALLOCAN(ir_node*, n_preds);
+	ir_node  *nn;
+	ir_type  *totype;
+	ir_type  *fromtype;
+	int       i;
 
 	if (n_preds == 0) return;
 	pred[0] = get_Phi_pred(phi, 0);

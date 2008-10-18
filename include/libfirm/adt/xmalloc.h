@@ -79,6 +79,16 @@ char *xstrdup(const char *str);
  */
 #define XMALLOCFZ(type, member, n) ((type*)memset(xmalloc(offsetof(type, member) + sizeof(((type*)0)->member) * (n)), 0, offsetof(type, member) + sizeof(((type*)0)->member) * (n)))
 
+/**
+ * Allocate n objects of a certain type on the stack
+ */
+#define ALLOCAN(type, n) ((type*)alloca(sizeof(type) * (n)))
+
+/**
+ * Allocate n objects of a certain type on the stack and zero them
+ */
+#define ALLOCANZ(type, n) ((type*)memset((type*)alloca(sizeof(type) * (n)), 0, sizeof(type) * (n)))
+
 
 /* Includes for alloca() */
 #if defined(__FreeBSD__)

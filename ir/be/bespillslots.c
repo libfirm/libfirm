@@ -355,9 +355,9 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 
 	DB((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
 
-	interferences       = alloca(spillcount * sizeof(interferences[0]));
-	spillslot_unionfind = alloca(spillcount * sizeof(spillslot_unionfind[0]));
-	spilllist           = alloca(spillcount * sizeof(spilllist[0]));
+	interferences       = ALLOCAN(bitset_t*, spillcount);
+	spillslot_unionfind = ALLOCAN(int,       spillcount);
+	spilllist           = ALLOCAN(spill_t*,  spillcount);
 
 	uf_init(spillslot_unionfind, 0, spillcount);
 
@@ -581,15 +581,10 @@ static void assign_spill_entity(ir_node *node, ir_entity *entity)
  */
 static void assign_spillslots(be_fec_env_t *env)
 {
-	int i;
-	int spillcount;
-	spill_t *spill;
-	spill_slot_t* spillslots;
-
-	spillcount = set_count(env->spills);
-	spillslots = alloca(spillcount * sizeof(spillslots[0]));
-
-	memset(spillslots, 0, spillcount * sizeof(spillslots[0]));
+	int           spillcount = set_count(env->spills);
+	spill_slot_t *spillslots = ALLOCANZ(spill_slot_t, spillcount);
+	spill_t      *spill;
+	int           i;
 
 	/* construct spillslots */
 	for(spill = set_first(env->spills); spill != NULL;
@@ -705,11 +700,11 @@ static void create_memperms(be_fec_env_t *env)
 	memperm_t *memperm;
 
 	for(memperm = set_first(env->memperms); memperm != NULL; memperm = set_next(env->memperms)) {
-		int i;
-		memperm_entry_t *entry;
-		ir_node *blockend;
-		ir_node** nodes = alloca(memperm->entrycount * sizeof(nodes[0]));
-		ir_node* mempermnode;
+		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
+		memperm_entry_t  *entry;
+		ir_node          *blockend;
+		ir_node          *mempermnode;
+		int               i;
 
 		assert(memperm->entrycount > 0);
 

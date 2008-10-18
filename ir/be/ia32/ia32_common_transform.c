@@ -499,8 +499,7 @@ ir_node *gen_ASM(ir_node *node)
 	}
 
 	arity = get_irn_arity(node);
-	in    = alloca(arity * sizeof(in[0]));
-	memset(in, 0, arity * sizeof(in[0]));
+	in    = ALLOCANZ(ir_node*, arity);
 
 	clobbers   = get_ASM_clobbers(node);
 	n_clobbers = 0;

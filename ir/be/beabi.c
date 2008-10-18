@@ -599,8 +599,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* search the greatest result proj number */
 
-	res_projs = alloca(n_res * sizeof(res_projs[0]));
-	memset(res_projs, 0, n_res * sizeof(res_projs[0]));
+	res_projs = ALLOCANZ(ir_node*, n_res);
 
 	foreach_out_edge(irn, edge) {
 		const ir_edge_t *res_edge;

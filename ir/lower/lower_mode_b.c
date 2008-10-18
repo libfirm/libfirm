@@ -166,8 +166,8 @@ static ir_node *lower_node(ir_node *node)
 		ir_node **in;
 		ir_node  *unknown, *new_phi;
 
-		arity = get_irn_arity(node);
-		in    = alloca(arity * sizeof(in[0]));
+		arity   = get_irn_arity(node);
+		in      = ALLOCAN(ir_node*, arity);
 		unknown = new_Unknown(config.lowered_mode);
 		for(i = 0; i < arity; ++i) {
 			in[i] = unknown;
