@@ -506,7 +506,6 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	}
 	else {
 		int i;
-		int *edgenums = alloca(sizeof(edgenums[0]) * arity);
 
 		snprintf(name, sizeof(name), "block_in_constr_%ld", get_irn_node_nr(block));
 		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater, arity - 1);
