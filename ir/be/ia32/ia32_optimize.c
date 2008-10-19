@@ -1449,6 +1449,9 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	}
 
+	/* Some user (like Phis) won't be happy if we change the mode. */
+	set_irn_mode(result_conv, get_irn_mode(node));
+
 	/* kill the conv */
 	exchange(node, result_conv);
 
