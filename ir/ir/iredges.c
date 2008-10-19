@@ -339,6 +339,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 		if (edge) {
 			msg = "deleting";
 			list_del(&edge->list);
+			ir_edgeset_remove(edges, edge);
 			edge->invalid = 1;
 			edge->pos = -2;
 			edge->src = NULL;
