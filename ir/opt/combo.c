@@ -69,6 +69,9 @@
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
 
+/* allow optimization of non-strict programs */
+#undef WITH_UNKNOWN
+
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
 typedef struct opcode_key_t      opcode_key_t;
@@ -1670,7 +1673,8 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
 }  /* lambda_commutative_partition */
 
 /**
- * Returns true if a type is a constant.
+ * Returns true if a type is a constant (and NOT Top
+ * or Bottom).
  */
 static int is_con(const lattice_elem_t type) {
 	/* be conservative */
@@ -2091,15 +2095,11 @@ static void compute_Cmp(node_t *node) {
 	lattice_elem_t b     = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-#ifdef WITH_UNKNOWN
 		/*
 		 * Top is congruent to any other value, we can
 		 * calculate the compare result.
 		 */
 		node->type.tv = tarval_b_true;
-#else
-		node->type.tv = tarval_top;
-#endif
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
 		node->type.tv = tarval_b_true;
@@ -2127,13 +2127,11 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-#ifdef WITH_UNKNOWN
-		/* see above */
-		tv = pnc & pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
-		goto not_equal;
-#else
-		node->type.tv = tarval_top;
-#endif
+		/*
+		 * Top is congruent to any other value, we can
+		 * calculate the compare result.
+		 */
+		goto congruent;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
 		node->by_all_const = 1;
@@ -2143,10 +2141,8 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		 * BEWARE: a == a is NOT always True for floating Point values, as
 		 * NaN != NaN is defined, so we must check this here.
 		 */
+congruent:
 		tv = pnc & pn_Cmp_Eq ? tarval_b_true: tarval_b_false;
-#ifdef WITH_UNKNOWN
-not_equal:
-#endif
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breaks AND we get from the argument partitions a different
@@ -3163,13 +3159,33 @@ static void apply_result(ir_node *irn, void *ctx) {
 				ir_node *leader = get_leader(node);
 
 				if (leader != irn) {
-					DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
-					if (node->is_follower)
-						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
-					else
-						DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
-					exchange_leader(irn, leader);
-					env->modified = 1;
+					int non_strict_phi = 0;
+
+					/*
+					 * Beware: Do not remove Phi(Unknown, ..., x, ..., Unknown)
+					 * as this might create non-strict programs.
+					 */
+					if (node->is_follower && is_Phi(irn) && !is_Unknown(leader)) {
+						int i;
+
+						for (i = get_Phi_n_preds(irn) - 1; i >= 0; --i) {
+							ir_node *pred = get_Phi_pred(irn, i);
+
+							if (is_Unknown(pred)) {
+								non_strict_phi = 1;
+								break;
+							}
+						}
+					}
+					if (! non_strict_phi) {
+						DB((dbg, LEVEL_1, "%+F from part%d is replaced by %+F\n", irn, node->part->nr, leader));
+						if (node->is_follower)
+							DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_FOLLOWER);
+						else
+							DBG_OPT_COMBO(irn, leader, FS_OPT_COMBO_CONGRUENT);
+						exchange_leader(irn, leader);
+						env->modified = 1;
+					}
 				}
 			}
 		}
