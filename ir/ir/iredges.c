@@ -39,6 +39,7 @@
 #include "debug.h"
 #include "set.h"
 #include "bitset.h"
+#include "error.h"
 
 #include "iredgeset.h"
 #include "hashptr.h"
@@ -199,6 +200,7 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind) {
 			obstack_free(&info->edges_obst, NULL);
 		}
 		obstack_init(&info->edges_obst);
+		INIT_LIST_HEAD(&info->free_edges);
 		ir_edgeset_init_size(&info->edges, amount);
 		info->allocated = 1;
 	}
@@ -340,6 +342,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			msg = "deleting";
 			list_del(&edge->list);
 			ir_edgeset_remove(edges, edge);
+			list_add(&edge->list, &info->free_edges);
 			edge->invalid = 1;
 			edge->pos = -2;
 			edge->src = NULL;
@@ -347,21 +350,17 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			edge->edge_nr = -1;
 #endif /* DEBUG_libfirm */
 			edge_change_cnt(old_tgt, kind, -1);
-		}
-
-		/* If the edge was not found issue a warning on the debug stream */
-		else {
+		} else {
+			/* If the edge was not found issue a warning on the debug stream */
 			msg = "edge to delete not found!\n";
 		}
-	} /* if */
-
-	/*
-	 * The target is not NULL and the old target differs
-	 * from the new target, the edge shall be moved (if the
-	 * old target was != NULL) or added (if the old target was
-	 * NULL).
-	 */
-	else {
+	} else {
+		/*
+		 * The target is not NULL and the old target differs
+		 * from the new target, the edge shall be moved (if the
+		 * old target was != NULL) or added (if the old target was
+		 * NULL).
+		 */
 		struct list_head *head = _get_irn_outs_head(tgt, kind);
 
 		assert(head->next && head->prev &&
@@ -377,33 +376,35 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 			list_move(&edge->list, head);
 			edge_change_cnt(old_tgt, kind, -1);
-		}
-
-		/* The old target was null, thus, the edge is newly created. */
-		else {
+		} else {
+			/* The old target was NULL, thus, the edge is newly created. */
 			ir_edge_t *new_edge;
-			ir_edge_t *edge
-				= obstack_alloc(&info->edges_obst, EDGE_SIZE);
-			memset(edge, 0, EDGE_SIZE);
-			edge->src = src;
-			edge->pos = pos;
-			edge->kind = kind;
+			ir_edge_t *edge;
+
+			if (list_empty(&info->free_edges)) {
+				edge = obstack_alloc(&info->edges_obst, EDGE_SIZE);
+			} else {
+				edge = list_entry(info->free_edges.next, ir_edge_t, list);
+				list_del(&edge->list);
+			}
+
+			edge->src       = src;
+			edge->pos       = pos;
+			edge->invalid   = 0;
+			edge->present   = 0;
+			edge->kind      = kind;
+			edge->list.next = NULL;
+			edge->list.prev = NULL;
 			DEBUG_ONLY(edge->src_nr = get_irn_node_nr(src));
 
 			new_edge = ir_edgeset_insert(edges, edge);
-			if(new_edge != edge) {
-				obstack_free(&info->edges_obst, edge);
+			if (new_edge != edge) {
+				panic("new edge exists already");
 			}
-
-			assert(! edge->invalid && "Freshly inserted edge is invalid?!?");
-			assert(edge->list.next == NULL && edge->list.prev == NULL &&
-				"New edge must not have list head initialized");
 
 			msg = "adding";
 			list_add(&edge->list, head);
-#ifdef DEBUG_libfirm
-			edge->edge_nr = ++last_edge_num;
-#endif /* DEBUG_libfirm */
+			DEBUG_ONLY(edge->edge_nr = ++last_edge_num);
 		}
 
 		edge_change_cnt(tgt, kind, +1);
