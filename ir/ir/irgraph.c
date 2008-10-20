@@ -133,7 +133,10 @@ static ir_graph *alloc_graph(void) {
  */
 static void free_graph(ir_graph *irg) {
 	char *ptr = (char *)irg;
+	int  i;
 
+	for (i = 0; i < EDGE_KIND_LAST; ++i)
+		edges_deactivate_kind(irg, i);
 	DEL_ARR_F(irg->idx_irn_map);
 	free(ptr - additional_graph_data_size);
 }
