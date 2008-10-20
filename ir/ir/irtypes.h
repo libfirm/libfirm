@@ -382,10 +382,11 @@ struct ir_node {
  * Edge info to put into an irg.
  */
 typedef struct _irg_edge_info_t {
-	ir_edgeset_t    edges;
-	struct obstack  edges_obst;
-	unsigned        allocated : 1;
-	unsigned        activated : 1;  /**< set if edges are activated for the graph. */
+	ir_edgeset_t     edges;          /**< A set containing all edges of the current graph. */
+	struct list_head free_edges;     /**< list of all free edges. */
+	struct obstack   edges_obst;     /**< Obstack, where edges are allocated on. */
+	unsigned         allocated : 1;  /**< Set if edges are allocated on the obstack. */
+	unsigned         activated : 1;  /**< Set if edges are activated for the graph. */
 } irg_edge_info_t;
 
 typedef irg_edge_info_t irg_edges_info_t[EDGE_KIND_LAST];
@@ -507,7 +508,7 @@ struct ir_graph {
 #endif
 
 #ifndef NDEBUG
-	ir_resources_t  reserved_resources;
+	ir_resources_t  reserved_resources;/**< Bitset for tracking used resources. */
 #endif
 };
 
