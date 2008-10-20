@@ -2109,7 +2109,7 @@ static void compute_Cmp(node_t *node) {
 	} else {
 		node->type.tv = tarval_bottom;
 	}
-}  /* compute_Proj_Cmp */
+}  /* compute_Cmp */
 
 /**
  * (Re-)compute the type for a Proj(Cmp).
@@ -2129,7 +2129,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 #ifdef WITH_UNKNOWN
 		/* see above */
-		tv = new_tarval_from_long((pnc & pn_Cmp_Eq) ^ pn_Cmp_Eq, mode_b);
+		tv = pnc & pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
 		goto not_equal;
 #else
 		node->type.tv = tarval_top;
@@ -2143,7 +2143,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		 * BEWARE: a == a is NOT always True for floating Point values, as
 		 * NaN != NaN is defined, so we must check this here.
 		 */
-		tv = new_tarval_from_long(pnc & pn_Cmp_Eq, mode_b);
+		tv = pnc & pn_Cmp_Eq ? tarval_b_true: tarval_b_false;
 #ifdef WITH_UNKNOWN
 not_equal:
 #endif
@@ -2398,14 +2398,18 @@ static void compute_Min(node_t *node) {
  * @param node  the node
  */
 static void compute(node_t *node) {
+	ir_node *irn = node->node;
 	compute_func func;
 
-	if (is_no_Block(node->node)) {
-		node_t *block = get_irn_node(get_nodes_block(node->node));
+	if (is_no_Block(irn)) {
+		/* for pinned nodes, check its control input */
+		if (get_irn_pinned(irn) == op_pin_state_pinned) {
+			node_t *block = get_irn_node(get_nodes_block(irn));
 
-		if (block->type.tv == tarval_unreachable) {
-			node->type.tv = tarval_top;
-			return;
+			if (block->type.tv == tarval_unreachable) {
+				node->type.tv = tarval_top;
+				return;
+			}
 		}
 	}
 
@@ -3056,7 +3060,7 @@ static void exchange_leader(ir_node *irn, ir_node *leader) {
 	if (mode != get_irn_mode(leader)) {
 		/* The conv is a no-op, so we are fre to place in
 		 * either in the block of the leader OR in irn's block.
-		 * Propably placing it into leaders block might reduce
+		 * Probably placing it into leaders block might reduce
 		 * the number of Conv due to CSE. */
 		ir_node  *block = get_nodes_block(leader);
 		dbg_info *dbg   = get_irn_dbg_info(irn);
