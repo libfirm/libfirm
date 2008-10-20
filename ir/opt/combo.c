@@ -1873,6 +1873,18 @@ static void compute_Jmp(node_t *node) {
 }  /* compute_Jmp */
 
 /**
+ * (Re-)compute the type for the Return node.
+ *
+ * @param node  the node
+ */
+static void compute_Return(node_t *node) {
+	/* The Return node is NOT dead if it is in a reachable block.
+	 * This is already checked in compute(). so we can return
+	 * Reachable here. */
+	node->type.tv = tarval_reachable;
+}  /* compute_Return */
+
+/**
  * (Re-)compute the type for the End node.
  *
  * @param node  the node
@@ -1880,7 +1892,7 @@ static void compute_Jmp(node_t *node) {
 static void compute_End(node_t *node) {
 	/* the End node is NOT dead of course */
 	node->type.tv = tarval_reachable;
-}
+}  /* compute_End */
 
 /**
  * (Re-)compute the type for a SymConst node.
@@ -3246,6 +3258,7 @@ static void set_compute_functions(void) {
 	SET(Cmp);
 	SET(Proj);
 	SET(Confirm);
+	SET(Return);
 	SET(End);
 
 	if (op_Max != NULL)
