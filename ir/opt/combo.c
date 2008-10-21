@@ -28,6 +28,30 @@
  * - supports all Firm direct (by a data edge) identities except Mux
  *   (Mux can be a 2-input or 1-input identity, only 2-input is implemented yet)
  * - supports Confirm nodes (handle them like Copies but do NOT remove them)
+ * - let Cmp nodes calculate Top like all othe data nodes: this would let
+ *   Mux nodes to calculate Unknown instead of taking the true result
+ * - let Cond(Top) always select FALSE/default: This is tricky. Nodes are only reavaluated
+ *   IFF the predecessor changed its type. Because nodes are initialized with Top
+ *   this never happens, let all Proj(Cond) be unreachable.
+ *   We avoid this condition by the same way we work around Phi: whenever a Block
+ *   node is placed on the list, place its Cond nodes (and because they are Tuple
+ *   all its Proj-nodes either on the cprop list)
+ *   Especially, this changes the meaning of Click's example:
+ *
+ *   int main() {
+ *     int x;
+ *
+ *     if (x == 2)
+ *       printf("x == 2\n");
+ *     if (x == 3)
+ *       printf("x == 3\n");
+ *   }
+ *
+ *   Would print:
+ *   x == 2
+ *   x == 3
+ *
+ *   using Click's version while is silent with our.
  * - support for global congruences is implemented but not tested yet
  *
  * Note further that we use the terminology from Click's work here, which is different
@@ -69,8 +93,9 @@
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
 
+
 /* allow optimization of non-strict programs */
-#undef WITH_UNKNOWN
+#define WITH_UNKNOWN
 
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
@@ -137,6 +162,7 @@ struct node_t {
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
 	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
 	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
+	node_t          *cond;          /**< if this is a Block node, points to its Cond if any */
 };
 
 /**
@@ -174,7 +200,6 @@ typedef struct environment_t {
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
-	char            nonstd_cond;    /**< Set, if a Condb note has a non-Cmp predecessor. */
 	char            modified;       /**< Set, if the graph was modified. */
 	char            commutative;    /**< Set, if commutation nodes should be handled specially. */
 #ifdef DEBUG_libfirm
@@ -261,9 +286,9 @@ static void check_opcode(const partition_t *Z) {
 			}
 			first = 0;
 		} else {
-			assert(key.code   == get_irn_opcode(irn));
-			assert(key.mode   == get_irn_mode(irn));
-			assert(key.arity  == get_irn_arity(irn));
+			assert(key.code  == get_irn_opcode(irn));
+			assert(key.mode  == get_irn_mode(irn));
+			assert(key.arity == get_irn_arity(irn));
 
 			switch (get_irn_opcode(irn)) {
 			case iro_Proj:
@@ -280,10 +305,10 @@ static void check_opcode(const partition_t *Z) {
 }  /* check_opcode */
 
 static void check_all_partitions(environment_t *env) {
+#ifdef DEBUG_libfirm
 	partition_t *P;
 	node_t      *node;
 
-#ifdef DEBUG_libfirm
 	for (P = env->dbg_list; P != NULL; P = P->dbg_next) {
 		check_partition(P);
 		if (! P->type_is_T_or_C)
@@ -407,6 +432,17 @@ static void dump_split_list(const partition_t *list) {
 		DB((dbg, LEVEL_2, "part%u, ", p->nr));
 	DB((dbg, LEVEL_2, "\n}\n"));
 }  /* dump_split_list */
+
+/**
+ * Dump partition and type for a node.
+ */
+static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
+	ir_node *irn = local != NULL ? local : n;
+	node_t *node = get_irn_node(irn);
+
+	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
+	return 1;
+}  /* dump_partition_hook */
 
 #else
 #define dump_partition(msg, part)
@@ -665,6 +701,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->is_follower    = 0;
 	node->by_all_const   = 0;
 	node->flagged        = 0;
+	node->cond           = NULL;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->Leader);
@@ -701,9 +738,10 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 	if (is_Phi(irn)) {
 		add_Block_phi(get_nodes_block(irn), irn);
 	} else if (is_Cond(irn)) {
-		/* check if all Cond's have a Cmp predecessor. */
-		if (get_irn_mode(irn) == mode_b && !is_Cmp(skip_Proj(get_Cond_selector(irn))))
-			env->nonstd_cond = 1;
+		node_t *block = get_irn_node(get_nodes_block(irn));
+
+		/* link every block with its Cond node if any */
+		block->cond = node;
 	}
 }  /* create_initial_partitions */
 
@@ -775,6 +813,9 @@ static void add_to_cprop(node_t *y, environment_t *env) {
 			node_t *p = get_irn_node(phi);
 			add_to_cprop(p, env);
 		}
+		/* same for Conds: they must be re-evaluated due to the way we handle Top */
+		if (y->cond != NULL)
+			add_to_cprop(y->cond, env);
 	}
 }  /* add_to_cprop */
 
@@ -2107,16 +2148,12 @@ static void compute_Cmp(node_t *node) {
 	lattice_elem_t b     = r->type;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-		/*
-		 * Top is congruent to any other value, we can
-		 * calculate the compare result.
-		 */
+		node->type.tv = tarval_top;
+	} else if (r->part == l->part) {
+		/* both nodes congruent, we can probably do something */
 		node->type.tv = tarval_b_true;
 	} else if (is_con(a) && is_con(b)) {
 		/* both nodes are constants, we can probably do something */
-		node->type.tv = tarval_b_true;
-	} else if (r->part == l->part) {
-		/* both nodes congruent, we can probably do something */
 		node->type.tv = tarval_b_true;
 	} else {
 		node->type.tv = tarval_bottom;
@@ -2139,11 +2176,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 	tarval         *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
-		/*
-		 * Top is congruent to any other value, we can
-		 * calculate the compare result.
-		 */
-		goto congruent;
+		node->type.tv = tarval_undefined;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
 		node->by_all_const = 1;
@@ -2153,7 +2186,6 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		 * BEWARE: a == a is NOT always True for floating Point values, as
 		 * NaN != NaN is defined, so we must check this here.
 		 */
-congruent:
 		tv = pnc & pn_Cmp_Eq ? tarval_b_true: tarval_b_false;
 
 		/* if the node was ONCE evaluated by all constants, but now
@@ -2191,6 +2223,7 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
+				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_unreachable;
 			}
 		} else {
@@ -2204,7 +2237,8 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
-				node->type.tv = tarval_unreachable;
+				/* any condition based on Top is "!=" */
+				node->type.tv = tarval_reachable;
 			}
 		}
 	} else {
@@ -2212,7 +2246,11 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 		if (selector->type.tv == tarval_bottom) {
 			node->type.tv = tarval_reachable;
 		} else if (selector->type.tv == tarval_top) {
-			node->type.tv = tarval_unreachable;
+			if (pnc == get_Cond_defaultProj(cond)) {
+				/* a switch based of Top is always "default" */
+				node->type.tv = tarval_reachable;
+			} else
+				node->type.tv = tarval_unreachable;
 		} else {
 			long value = get_tarval_long(selector->type.tv);
 			if (pnc == get_Cond_defaultProj(cond)) {
@@ -2256,7 +2294,7 @@ static void compute_Proj(node_t *node) {
 		node->type.tv = tarval_top;
 		return;
 	}
-	if (get_irn_node(pred)->type.tv == tarval_top) {
+	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred)) {
 		/* if the predecessor is Top, its Proj follow */
 		node->type.tv = tarval_top;
 		return;
@@ -2411,7 +2449,7 @@ static void compute(node_t *node) {
 
 	if (is_no_Block(irn)) {
 		/* for pinned nodes, check its control input */
-		if (get_irn_pinned(irn) == op_pin_state_pinned) {
+		if (get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
 			node_t *block = get_irn_node(get_nodes_block(irn));
 
 			if (block->type.tv == tarval_unreachable) {
@@ -3268,16 +3306,6 @@ static void set_compute_functions(void) {
 
 }  /* set_compute_functions */
 
-static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
-#ifdef DEBUG_libfirm
-	ir_node *irn = local != NULL ? local : n;
-	node_t *node = get_irn_node(irn);
-
-	ir_fprintf(F, "info2 : \"partition %u type %+F\"\n", node->part->nr, node->type);
-	return 1;
-#endif
-}
-
 void combo(ir_graph *irg) {
 	environment_t env;
 	ir_node       *initial_bl;
@@ -3303,7 +3331,6 @@ void combo(ir_graph *irg) {
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
-	env.nonstd_cond    = 0;
 	env.commutative    = 1;
 	env.modified       = 0;
 
@@ -3323,8 +3350,11 @@ void combo(ir_graph *irg) {
 	add_to_worklist(env.initial, &env);
 	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
 
+	/* set the hook: from now, every node has a partition and a type */
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook));
+
 #ifdef WITH_UNKNOWN
-	tarval_UNKNOWN = env.nonstd_cond ? tarval_bad : tarval_top;
+	tarval_UNKNOWN = tarval_top;
 #else
 	tarval_UNKNOWN = tarval_bad;
 #endif
@@ -3348,11 +3378,7 @@ void combo(ir_graph *irg) {
 	check_all_partitions(&env);
 
 #if 0
-	set_dump_node_vcgattr_hook(dump_partition_hook);
 	dump_ir_block_graph(irg, "-partition");
-	set_dump_node_vcgattr_hook(NULL);
-#else
-	(void)dump_partition_hook;
 #endif
 
 	/* apply the result */
@@ -3369,6 +3395,9 @@ void combo(ir_graph *irg) {
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	/* remove the partition hook */
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));
 
 	pmap_destroy(env.type2id_map);
 	del_set(env.opcode2id_map);
