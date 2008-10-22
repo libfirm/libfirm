@@ -460,7 +460,7 @@ static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 /**
  * Verify that a type transition is monotone
  */
-static void do_verify_type(const lattice_elem_t old_type, node_t *node) {
+static void verify_type(const lattice_elem_t old_type, node_t *node) {
 	if (old_type.tv == node->type.tv) {
 		/* no change */
 		return;
@@ -476,11 +476,8 @@ static void do_verify_type(const lattice_elem_t old_type, node_t *node) {
 	panic("combo: wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
 }  /* verify_type */
 
-#define decl_verify(node)  lattice_elem_t old_type = (node)->type;
-#define verify_type(node)  do_verify_type(old_type, node)
 #else
-#define decl_verify(node)  (void)0;
-#define verify_type(node)
+#define verify_type(old_type, node)
 #endif
 
 /**
@@ -2482,7 +2479,7 @@ static void compute(node_t *node) {
 
 			if (block->type.tv == tarval_unreachable) {
 				node->type.tv = tarval_top;
-				goto end;
+				return;
 			}
 		}
 	}
@@ -2490,8 +2487,6 @@ static void compute(node_t *node) {
 	func = (compute_func)node->node->op->ops.generic;
 	if (func != NULL)
 		func(node);
-end:
-	verify_type(node);
 }  /* compute */
 
 /*
@@ -2870,6 +2865,7 @@ static void propagate(environment_t *env) {
 			compute(x);
 			if (x->type.tv != old_type.tv) {
 				DB((dbg, LEVEL_2, "node %+F has changed type from %+F to %+F\n", x->node, old_type, x->type));
+				verify_type(old_type, x);
 
 				if (x->on_fallen == 0) {
 					/* Add x to fallen. Nodes might fall from T -> const -> _|_, so check that they are
