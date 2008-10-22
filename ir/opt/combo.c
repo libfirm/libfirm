@@ -88,7 +88,7 @@
 #include "irdump.h"
 
 /* define this to check that all type translations are monotone */
-#undef VERIFY_MONOTONE
+#define VERIFY_MONOTONE
 
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
@@ -162,7 +162,6 @@ struct node_t {
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
 	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
 	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
-	node_t          *cond;          /**< if this is a Block node, points to its Cond if any */
 };
 
 /**
@@ -172,6 +171,7 @@ struct partition_t {
 	list_head         Leader;          /**< The head of partition Leader node list. */
 	list_head         Follower;        /**< The head of partition Follower node list. */
 	list_head         cprop;           /**< The head of partition.cprop list. */
+	list_head         cprop_X;         /**< The head of partition.cprop (Cond nodes and its Projs) list. */
 	partition_t       *wl_next;        /**< Next entry in the work list if any. */
 	partition_t       *touched_next;   /**< Points to the next partition in the touched set. */
 	partition_t       *cprop_next;     /**< Points to the next partition in the cprop list. */
@@ -228,7 +228,11 @@ DEBUG_ONLY(static const char *what_reason;)
 DEBUG_ONLY(static unsigned part_nr = 0);
 
 /** The tarval returned by Unknown nodes. */
-static tarval *tarval_UNKNOWN;
+#ifdef WITH_UNKNOWN
+#define tarval_UNKNOWN tarval_top
+#else
+#define tarval_UNKNOWN tarval_bad
+#endif
 
 /* forward */
 static node_t *identity(node_t *node);
@@ -456,8 +460,8 @@ static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 /**
  * Verify that a type transition is monotone
  */
-static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_type) {
-	if (old_type.tv == new_type.tv) {
+static void do_verify_type(const lattice_elem_t old_type, node_t *node) {
+	if (old_type.tv == node->type.tv) {
 		/* no change */
 		return;
 	}
@@ -465,17 +469,18 @@ static void verify_type(const lattice_elem_t old_type, const lattice_elem_t new_
 		/* from Top down-to is always allowed */
 		return;
 	}
-	if (old_type.tv == tarval_reachable) {
-		panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
-	}
-	if (new_type.tv == tarval_bottom || new_type.tv == tarval_reachable) {
+	if (node->type.tv == tarval_bottom || node->type.tv == tarval_reachable) {
 		/* bottom reached */
 		return;
 	}
-	panic("verify_type(): wrong translation from %+F to %+F", old_type, new_type);
+	panic("combo: wrong translation from %+F to %+F on node %+F", old_type, node->type, node->node);
 }  /* verify_type */
+
+#define decl_verify(node)  lattice_elem_t old_type = (node)->type;
+#define verify_type(node)  do_verify_type(old_type, node)
 #else
-#define verify_type(old_type, new_type)
+#define decl_verify(node)  (void)0;
+#define verify_type(node)
 #endif
 
 /**
@@ -630,6 +635,7 @@ static inline partition_t *new_partition(environment_t *env) {
 	INIT_LIST_HEAD(&part->Leader);
 	INIT_LIST_HEAD(&part->Follower);
 	INIT_LIST_HEAD(&part->cprop);
+	INIT_LIST_HEAD(&part->cprop_X);
 	part->wl_next         = NULL;
 	part->touched_next    = NULL;
 	part->cprop_next      = NULL;
@@ -701,7 +707,6 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->is_follower    = 0;
 	node->by_all_const   = 0;
 	node->flagged        = 0;
-	node->cond           = NULL;
 	set_irn_node(irn, node);
 
 	list_add_tail(&node->node_list, &part->Leader);
@@ -711,18 +716,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 }  /* create_partition_node */
 
 /**
- * Pre-Walker, init all Block-Phi lists.
- */
-static void init_block_phis(ir_node *irn, void *env) {
-	(void) env;
-
-	if (is_Block(irn)) {
-		set_Block_phis(irn, NULL);
-	}
-}  /* init_block_phis */
-
-/**
- * Post-Walker, initialize all Nodes' type to U or top and place
+ * Pre-Walker, initialize all Nodes' type to U or top and place
  * all nodes into the TOP partition.
  */
 static void create_initial_partitions(ir_node *irn, void *ctx) {
@@ -735,15 +729,21 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 	if (node->max_user_input > part->max_user_inputs)
 		part->max_user_inputs = node->max_user_input;
 
-	if (is_Phi(irn)) {
-		add_Block_phi(get_nodes_block(irn), irn);
-	} else if (is_Cond(irn)) {
-		node_t *block = get_irn_node(get_nodes_block(irn));
-
-		/* link every block with its Cond node if any */
-		block->cond = node;
+	if (is_Block(irn)) {
+		set_Block_phis(irn, NULL);
 	}
 }  /* create_initial_partitions */
+
+/**
+ * Post-Walker, collect  all Block-Phi lists, set Cond.
+ */
+static void init_block_phis(ir_node *irn, void *ctx) {
+	(void) ctx;
+
+	if (is_Phi(irn)) {
+		add_Block_phi(get_nodes_block(irn), irn);
+	}
+}  /* init_block_phis */
 
 /**
  * Add a node to the entry.partition.touched set and
@@ -778,11 +778,17 @@ static inline void add_to_touched(node_t *y, environment_t *env) {
  * @param env  the environment
  */
 static void add_to_cprop(node_t *y, environment_t *env) {
+	ir_node *irn;
+
 	/* Add y to y.partition.cprop. */
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
 
-		list_add_tail(&y->cprop_list, &Y->cprop);
+		/* place Conds and its Proj nodes on the cprop_X list */
+		if (is_Cond(skip_Proj(y->node)))
+			list_add_tail(&y->cprop_list, &Y->cprop_X);
+		else
+			list_add_tail(&y->cprop_list, &Y->cprop);
 		y->on_cprop   = 1;
 
 		DB((dbg, LEVEL_3, "Add %+F to part%u.cprop\n", y->node, Y->nr));
@@ -794,28 +800,26 @@ static void add_to_cprop(node_t *y, environment_t *env) {
 			Y->on_cprop   = 1;
 		}
 	}
-	if (get_irn_mode(y->node) == mode_T) {
+	irn = y->node;
+	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes always produce tarval_bottom, so we must explicitly
 		   add it's Proj's to get constant evaluation to work */
 		int i;
 
-		for (i = get_irn_n_outs(y->node) - 1; i >= 0; --i) {
-			node_t *proj = get_irn_node(get_irn_out(y->node, i));
+		for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
+			node_t *proj = get_irn_node(get_irn_out(irn, i));
 
 			add_to_cprop(proj, env);
 		}
-	} else if (is_Block(y->node)) {
+	} else if (is_Block(irn)) {
 		/* Due to the way we handle Phi's, we must place all Phis of a block on the list
 		 * if someone placed the block. The Block is only placed if the reachability
 		 * changes, and this must be re-evaluated in compute_Phi(). */
 		ir_node *phi;
-		for (phi = get_Block_phis(y->node); phi != NULL; phi = get_Phi_next(phi)) {
+		for (phi = get_Block_phis(irn); phi != NULL; phi = get_Phi_next(phi)) {
 			node_t *p = get_irn_node(phi);
 			add_to_cprop(p, env);
 		}
-		/* same for Conds: they must be re-evaluated due to the way we handle Top */
-		if (y->cond != NULL)
-			add_to_cprop(y->cond, env);
 	}
 }  /* add_to_cprop */
 
@@ -2212,6 +2216,29 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 	ir_node *sel      = get_Cond_selector(cond);
 	node_t  *selector = get_irn_node(sel);
 
+	/*
+	 * Note: it is crucial for the monotony that the Proj(Cond)
+	 * are evaluates after all predecessors of the Cond selector are
+	 * processed.
+	 * Example
+	 *
+	 * if (x != 0)
+	 *
+	 * Due to the fact that 0 is a const, the Cmp gets immediately
+	 * on the cprop list. It will be evaluated before x is evaluated,
+	 * might leaving x as Top. When later x is evaluated, the Cmp
+	 * might change its value.
+	 * BUT if the Cond is evaluated before this happens, Proj(Cond, FALSE)
+	 * gets R, and later changed to F if Cmp is evaluated to True!
+	 *
+	 * We prevent this by putting Conds in an extra cprop_X queue, which
+	 * gets evaluated after the cprop queue is empty.
+	 *
+	 * Note that this even happens with Click's original algorithm, if
+	 * Cmp(x, 0) is evaluated to True first and later changed to False
+	 * if x was Top first tiome and later Const ...
+	 * It is unclear how Click solved that problem ...
+	 */
 	if (get_irn_mode(sel) == mode_b) {
 		/* an IF */
 		if (pnc == pn_Cond_true) {
@@ -2446,6 +2473,7 @@ static void compute_Min(node_t *node) {
 static void compute(node_t *node) {
 	ir_node *irn = node->node;
 	compute_func func;
+	decl_verify(node);
 
 	if (is_no_Block(irn)) {
 		/* for pinned nodes, check its control input */
@@ -2454,7 +2482,7 @@ static void compute(node_t *node) {
 
 			if (block->type.tv == tarval_unreachable) {
 				node->type.tv = tarval_top;
-				return;
+				goto end;
 			}
 		}
 	}
@@ -2462,6 +2490,8 @@ static void compute(node_t *node) {
 	func = (compute_func)node->node->op->ops.generic;
 	if (func != NULL)
 		func(node);
+end:
+	verify_type(node);
 }  /* compute */
 
 /*
@@ -2789,9 +2819,27 @@ static void propagate(environment_t *env) {
 		DB((dbg, LEVEL_2, "Propagate type on part%d\n", X->nr));
 		fallen   = NULL;
 		n_fallen = 0;
-		while (! list_empty(&X->cprop)) {
+		for (;;) {
+			int cprop_empty   = list_empty(&X->cprop);
+			int cprop_X_empty = list_empty(&X->cprop_X);
+
+			if (cprop_empty && cprop_X_empty) {
+				/* both cprop lists are empty */
+				break;
+			}
+
 			/* remove the first Node x from X.cprop */
-			x = list_entry(X->cprop.next, node_t, cprop_list);
+			if (cprop_empty) {
+				/* Get a node from the cprop_X list only if
+				 * all data nodes are processed.
+				 * This ensures, that all inputs of the Cond
+				 * predecessor are processed if its type is still Top.
+				 */
+				x = list_entry(X->cprop_X.next, node_t, cprop_list);
+			} else {
+				x = list_entry(X->cprop.next, node_t, cprop_list);
+			}
+
 			//assert(x->part == X);
 			list_del(&x->cprop_list);
 			x->on_cprop = 0;
@@ -2821,7 +2869,6 @@ static void propagate(environment_t *env) {
 			DB((dbg, LEVEL_3, "computing type of %+F\n", x->node));
 			compute(x);
 			if (x->type.tv != old_type.tv) {
-				verify_type(old_type, x->type);
 				DB((dbg, LEVEL_2, "node %+F has changed type from %+F to %+F\n", x->node, old_type, x->type));
 
 				if (x->on_fallen == 0) {
@@ -3035,6 +3082,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 	if (k >= n)
 		return;
 
+	/* fix Phi's */
 	NEW_ARR_A(ir_node *, ins, n);
 	for (phi = get_Block_phis(block); phi != NULL; phi = next) {
 		node_t *node = get_irn_node(phi);
@@ -3078,6 +3126,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		}
 	}
 
+	/* fix block */
 	if (k == 1) {
 		/* this Block has only one live predecessor */
 		ir_node *pred = skip_Proj(in_X[0]);
@@ -3088,11 +3137,11 @@ static void apply_cf(ir_node *block, void *ctx) {
 			exchange(block, new_block);
 			node->node = new_block;
 			env->modified = 1;
+			return;
 		}
-	} else {
-		set_irn_in(block, k, in_X);
-		env->modified = 1;
 	}
+	set_irn_in(block, k, in_X);
+	env->modified = 1;
 }  /* apply_cf */
 
 /**
@@ -3139,16 +3188,20 @@ static void apply_result(ir_node *irn, void *ctx) {
 			exchange(irn, bad);
 			env->modified = 1;
 		}
-		else if (node->type.tv == tarval_unreachable) {
-			/* don't kick away Unknown */
+		else if (node->type.tv == tarval_top) {
+			/* don't kick away Unknown's, they might be still needed */
 			if (! is_Unknown(irn)) {
-				ir_node *bad = get_irg_bad(current_ir_graph);
+				ir_mode *mode = get_irn_mode(irn);
+				ir_node *unk  = new_r_Unknown(current_ir_graph, mode);
+
+				/* control flow should already be handled at apply_cf() */
+				assert(mode != mode_X);
 
 				/* see comment above */
-				set_irn_node(bad, node);
-				node->node = bad;
-				DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
-				exchange(irn, bad);
+				set_irn_node(unk, node);
+				node->node = unk;
+				DB((dbg, LEVEL_1, "%+F computes Top\n", irn));
+				exchange(irn, unk);
 				env->modified = 1;
 			}
 		}
@@ -3348,16 +3401,10 @@ void combo(ir_graph *irg) {
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);
 	add_to_worklist(env.initial, &env);
-	irg_walk_graph(irg, init_block_phis, create_initial_partitions, &env);
+	irg_walk_graph(irg, create_initial_partitions, init_block_phis, &env);
 
 	/* set the hook: from now, every node has a partition and a type */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook));
-
-#ifdef WITH_UNKNOWN
-	tarval_UNKNOWN = tarval_top;
-#else
-	tarval_UNKNOWN = tarval_bad;
-#endif
 
 	/* all nodes on the initial partition have type Top */
 	env.initial->type_is_T_or_C = 1;
