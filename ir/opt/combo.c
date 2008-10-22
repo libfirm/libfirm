@@ -3430,8 +3430,11 @@ void combo(ir_graph *irg) {
 
 	/* apply the result */
 	irg_block_walk_graph(irg, NULL, apply_cf, &env);
-	irg_walk_graph(irg, NULL, apply_result, &env);
+	/* Kill keep-alives of dead blocks: this speeds up apply_result()
+	 * and fixes assertion because dead cf to dead blocks is NOT removed by
+	 * apply_cf(). */
 	apply_end(get_irg_end(irg), &env);
+	irg_walk_graph(irg, NULL, apply_result, &env);
 
 	if (env.modified) {
 		/* control flow might changed */
