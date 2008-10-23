@@ -159,7 +159,6 @@ struct node_t {
 	unsigned        on_cprop:1;     /**< Set, if this node is on the partition.cprop list. */
 	unsigned        on_fallen:1;    /**< Set, if this node is on the fallen list. */
 	unsigned        is_follower:1;  /**< Set, if this node is a follower. */
-	unsigned        by_all_const:1; /**< Set, if this node was once evaluated by all constants. */
 	unsigned        flagged:2;      /**< 2 Bits, set if this node was visited by race 1 or 2. */
 };
 
@@ -702,7 +701,6 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->on_cprop       = 0;
 	node->on_fallen      = 0;
 	node->is_follower    = 0;
-	node->by_all_const   = 0;
 	node->flagged        = 0;
 	set_irn_node(irn, node);
 
@@ -1938,6 +1936,19 @@ static void compute_End(node_t *node) {
 }  /* compute_End */
 
 /**
+ * (Re-)compute the type for a Call.
+ *
+ * @param node  the node
+ */
+static void compute_Call(node_t *node) {
+	/*
+	 * A Call computes always bottom, even if it has Unknown
+	 * predecessors.
+	 */
+	node->type.tv = tarval_bottom;
+}  /* compute_Call */
+
+/**
  * (Re-)compute the type for a SymConst node.
  *
  * @param node  the node
@@ -2073,7 +2084,6 @@ static void compute_Sub(node_t *node) {
 		} else {
 			node->type.tv = tarval_bottom;
 		}
-		node->by_all_const = 1;
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)))) {
 		/*
@@ -2087,7 +2097,7 @@ static void compute_Sub(node_t *node) {
 		   this breaks AND we get from the argument partitions a different
 		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->by_all_const && node->type.tv != tv)
+		if (node->type.tv != tv)
 			tv = tarval_bottom;
 		node->type.tv = tv;
 	} else {
@@ -2120,7 +2130,6 @@ static void compute_Eor(node_t *node) {
 		} else {
 			node->type.tv = tarval_bottom;
 		}
-		node->by_all_const = 1;
 	} else if (r->part == l->part) {
 		ir_mode *mode = get_irn_mode(eor);
 		tv = get_mode_null(mode);
@@ -2129,7 +2138,7 @@ static void compute_Eor(node_t *node) {
 		   this breaks AND we get from the argument partitions a different
 		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->by_all_const && node->type.tv != tv)
+		if (node->type.tv != tv)
 			tv = tarval_bottom;
 		node->type.tv = tv;
 	} else {
@@ -2181,7 +2190,6 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		node->type.tv = tarval_undefined;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
-		node->by_all_const = 1;
 	} else if (r->part == l->part &&
 	           (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt || pnc == pn_Cmp_Gt)) {
 		/*
@@ -2194,7 +2202,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
 		   this breaks AND we get from the argument partitions a different
 		   result, switch to bottom.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->by_all_const && node->type.tv != tv)
+		if (node->type.tv != tv)
 			tv = tarval_bottom;
 		node->type.tv = tv;
 	} else {
@@ -3409,6 +3417,7 @@ static void set_compute_functions(void) {
 	SET(Confirm);
 	SET(Return);
 	SET(End);
+	SET(Call);
 
 	if (op_Max != NULL)
 		SET(Max);
