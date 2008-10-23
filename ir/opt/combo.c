@@ -2470,7 +2470,6 @@ static void compute_Min(node_t *node) {
 static void compute(node_t *node) {
 	ir_node *irn = node->node;
 	compute_func func;
-	decl_verify(node);
 
 	if (is_no_Block(irn)) {
 		/* for pinned nodes, check its control input */
