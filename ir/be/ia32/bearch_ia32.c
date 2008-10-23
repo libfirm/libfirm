@@ -394,19 +394,6 @@ static int ia32_get_sp_bias(const ir_node *node)
 }
 
 /**
- * Put all registers which are saved by the prologue/epilogue in a set.
- *
- * @param self  The callback object.
- * @param s     The result set.
- */
-static void ia32_abi_dont_save_regs(void *self, pset *s)
-{
-	ia32_abi_env_t *env = self;
-	if(env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->aenv->bp);
-}
-
-/**
  * Generate the routine prologue.
  *
  * @param self       The callback object.
@@ -898,7 +885,6 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 	ia32_abi_init,
 	ia32_abi_done,
 	ia32_abi_get_between_type,
-	ia32_abi_dont_save_regs,
 	ia32_abi_prologue,
 	ia32_abi_epilogue
 };

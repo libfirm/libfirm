@@ -305,17 +305,6 @@ static ir_type *ppc32_abi_get_between_type(void *self)
 }
 
 /**
- * Put all registers which are saved by the prologue/epilogue in a set.
- * @param self The callback object.
- * @param regs A set.
- */
-static void ppc32_abi_regs_saved_by_me(void *self, pset *regs)
-{
-	(void) self;
-	(void) regs;
-}
-
-/**
  * Generate the prologue.
  * @param self       The callback object.
  * @param mem        A pointer to the mem node. Update this if you define new memory.
@@ -362,7 +351,6 @@ static const be_abi_callbacks_t ppc32_abi_callbacks = {
 	ppc32_abi_init,
 	ppc32_abi_done,
 	ppc32_abi_get_between_type,
-	ppc32_abi_regs_saved_by_me,
 	ppc32_abi_prologue,
 	ppc32_abi_epilogue,
 };

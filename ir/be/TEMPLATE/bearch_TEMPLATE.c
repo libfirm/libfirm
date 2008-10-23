@@ -468,15 +468,6 @@ static ir_type *TEMPLATE_get_between_type(void *self)
 	return between_type;
 }
 
-static void TEMPLATE_abi_dont_save_regs(void *self, pset *s)
-{
-	TEMPLATE_abi_env_t *env = self;
-	if (env->flags.try_omit_fp) {
-		/* insert the BP register into the ignore set */
-		pset_insert_ptr(s, env->arch_env->bp);
-	}
-}
-
 /**
  * Build the prolog, return the BASE POINTER register
  */
@@ -507,7 +498,6 @@ static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
 	TEMPLATE_abi_init,
 	free,
 	TEMPLATE_get_between_type,
-	TEMPLATE_abi_dont_save_regs,
 	TEMPLATE_abi_prologue,
 	TEMPLATE_abi_epilogue,
 };

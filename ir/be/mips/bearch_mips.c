@@ -532,14 +532,6 @@ static void *mips_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env
 	return env;
 }
 
-static void mips_abi_dont_save_regs(void *self, pset *s)
-{
-	mips_abi_env_t *env = self;
-
-	if(env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->arch_env->bp);
-}
-
 static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap *reg_map, int *stack_bias)
 {
 	mips_abi_env_t *env = self;
@@ -705,7 +697,6 @@ static const be_abi_callbacks_t mips_abi_callbacks = {
 	mips_abi_init,
 	free,
 	mips_abi_get_between_type,
-	mips_abi_dont_save_regs,
 	mips_abi_prologue,
 	mips_abi_epilogue,
 };

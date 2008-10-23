@@ -872,19 +872,6 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
 }
 
 /**
- * Put all registers which are saved by the prologue/epilogue in a set.
- *
- * @param self  The callback object.
- * @param s     The result set.
- */
-static void arm_abi_dont_save_regs(void *self, pset *s)
-{
-	arm_abi_env_t *env = self;
-	if (env->flags.try_omit_fp)
-		pset_insert_ptr(s, env->arch_env->bp);
-}
-
-/**
  * Generate the routine prologue.
  *
  * @param self       The callback object.
@@ -1003,7 +990,6 @@ static const be_abi_callbacks_t arm_abi_callbacks = {
 	arm_abi_init,
 	free,
 	arm_get_between_type,
-	arm_abi_dont_save_regs,
 	arm_abi_prologue,
 	arm_abi_epilogue,
 };

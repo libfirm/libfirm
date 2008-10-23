@@ -76,13 +76,6 @@ struct _be_abi_callbacks_t {
 	ir_type *(*get_between_type)(void *self);
 
 	/**
-	 * Put all registers which are saved by the prologue/epilogue in a set.
-	 * @param self The callback object.
-	 * @param regs A set.
-	 */
-	void (*regs_saved_by_me)(void *self, pset *regs);
-
-	/**
 	 * Generate the prologue.
 	 * @param self       The callback object.
 	 * @param mem        A pointer to the mem node. Update this if you define new memory.
