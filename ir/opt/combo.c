@@ -686,6 +686,12 @@ static inline lattice_elem_t get_partition_type(const partition_t *X) {
 static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	tarval *init = tarval_top;
+
+	if (is_Proj(irn) && get_irn_mode(irn) == mode_M) {
+		/* mode_M Proj's must never be removed */
+		init = tarval_bottom;
+	}
 
 	INIT_LIST_HEAD(&node->node_list);
 	INIT_LIST_HEAD(&node->cprop_list);
@@ -693,7 +699,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
 	node->part           = part;
 	node->next           = NULL;
 	node->race_next      = NULL;
-	node->type.tv        = tarval_top;
+	node->type.tv        = init;
 	node->max_user_input = 0;
 	node->next_edge      = 0;
 	node->n_followers    = 0;
@@ -2519,16 +2525,15 @@ static void compute(node_t *node) {
 	ir_node *irn = node->node;
 	compute_func func;
 
-#ifndef VERIFY_MONOTONE
 	/*
 	 * Once a node reaches bottom, the type cannot fall further
 	 * in the lattice and we can stop computation.
-	 * Do not take this exit if the monotony verifier is
-	 * enabled to catch errors.
+	 * This reduces further checking for ProjM not allowed to raise
+	 * its type below...
 	 */
 	if (node->type.tv == tarval_bottom)
 		return;
-#endif
+
 	if (is_no_Block(irn)) {
 		/* for pinned nodes, check its control input */
 		if (get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
@@ -3234,7 +3239,8 @@ static void apply_result(ir_node *irn, void *ctx) {
 	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {
 		/* blocks already handled, do not touch the End node */
 	} else {
-		node_t *block = get_irn_node(get_nodes_block(irn));
+		node_t  *block = get_irn_node(get_nodes_block(irn));
+		ir_mode *mode = get_irn_mode(irn);
 
 		if (block->type.tv == tarval_unreachable) {
 			ir_node *bad = get_irg_bad(current_ir_graph);
@@ -3246,12 +3252,24 @@ static void apply_result(ir_node *irn, void *ctx) {
 			DB((dbg, LEVEL_1, "%+F is unreachable\n", irn));
 			exchange(irn, bad);
 			env->modified = 1;
-		}
-		else if (node->type.tv == tarval_top) {
-			/* don't kick away Unknown's, they might be still needed */
-			if (! is_Unknown(irn)) {
-				ir_mode *mode = get_irn_mode(irn);
-				ir_node *unk  = new_r_Unknown(current_ir_graph, mode);
+		} else if (mode == mode_M && is_Proj(irn)) {
+			ir_node *pred  = get_Proj_pred(irn);
+			node_t  *pnode = get_irn_node(pred);
+
+			if (pnode->type.tv == tarval_top) {
+				/* skip the predecessor */
+				ir_node *mem = get_memop_mem(pred);
+				node->node = mem;
+				DB((dbg, LEVEL_1, "%+F computes Top, replaced by %+F\n", irn, mem));
+				exchange(irn, mem);
+				env->modified = 1;
+			}
+		} else if (node->type.tv == tarval_top) {
+			if (mode == mode_T) {
+				/* Do not kill mode_T nodes, kill their Projs */
+			} else if (! is_Unknown(irn)) {
+				/* don't kick away Unknown's, they might be still needed */
+				ir_node *unk = new_r_Unknown(current_ir_graph, mode);
 
 				/* control flow should already be handled at apply_cf() */
 				assert(mode != mode_X);
