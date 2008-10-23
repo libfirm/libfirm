@@ -268,7 +268,7 @@ static ir_node *gen_Const(ir_node *node)
 				                             mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
+				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
 				res = new_r_Proj(irg, block, load, mode_xmm, pn_ia32_xLoad_res);
 			}
 		} else {
@@ -286,7 +286,7 @@ static ir_node *gen_Const(ir_node *node)
 				load     = new_rd_ia32_vfld(dbgi, irg, block, noreg, noreg, nomem, mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				set_ia32_flags(load, get_ia32_flags(load) | arch_irn_flags_rematerializable);
+				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
 				res = new_r_Proj(irg, block, load, mode_vfp, pn_ia32_vfld_res);
 				/* take the mode from the entity */
 				set_ia32_ls_mode(load, get_type_mode(get_entity_type(floatent)));
@@ -1312,6 +1312,9 @@ static ir_node *transform_AM_mem(ir_graph *const irg, ir_node *const block,
 
 		NEW_ARR_A(ir_node*, ins, arity + 1);
 
+		/* NOTE: This sometimes produces dead-code because the old sync in
+		 * src_mem might not be used anymore, we should detect this case
+		 * and kill the sync... */
 		for (i = arity - 1; i >= 0; --i) {
 			ir_node *const pred = get_Sync_pred(src_mem, i);
 
@@ -1905,7 +1908,10 @@ static ir_node *gen_Load(ir_node *node)
 	set_address(new_node, &addr);
 
 	if (get_irn_pinned(node) == op_pin_state_floats) {
-		add_ia32_flags(new_node, arch_irn_flags_rematerializable);
+		assert(pn_ia32_xLoad_res == pn_ia32_vfld_res
+				&& pn_ia32_vfld_res == pn_ia32_Load_res
+				&& pn_ia32_Load_res == pn_ia32_res);
+		arch_irn_add_flags(new_node, arch_irn_flags_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
@@ -2307,6 +2313,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		set_address(new_node, &addr);
 		SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 
+		assert(i < 4);
 		ins[i++] = new_node;
 
 		size        -= 4;
@@ -2314,7 +2321,11 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		addr.offset += 4;
 	} while (size != 0);
 
-	return i == 1 ? ins[0] : new_rd_Sync(dbgi, irg, new_block, i, ins);
+	if (i > 1) {
+		return new_rd_Sync(dbgi, irg, new_block, i, ins);
+	} else {
+		return ins[0];
+	}
 }
 
 /**
@@ -4286,7 +4297,7 @@ static ir_node *gen_be_Call(ir_node *node)
 static ir_node *gen_be_IncSP(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
-	be_node_add_flags(res, -1, arch_irn_flags_modify_flags);
+	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
 
 	return res;
 }
@@ -4381,17 +4392,17 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		proj = pn_ia32_Call_M;
 	} else {
 		arch_register_req_t const *const req    = arch_get_register_req_out(node);
-		int                        const n_outs = get_ia32_n_res(new_call);
+		int                        const n_outs = arch_irn_get_n_outs(new_call);
 		int                              i;
 
 		assert(proj      >= pn_be_Call_first_res);
-		assert(req->type == arch_register_req_type_limited);
+		assert(req->type & arch_register_req_type_limited);
 
 		for (i = 0; i < n_outs; ++i) {
 			arch_register_req_t const *const new_req = get_ia32_out_req(new_call, i);
 
-			if (new_req->type     != arch_register_req_type_limited ||
-			    new_req->cls      != req->cls                       ||
+			if (!(new_req->type & arch_register_req_type_limited) ||
+			    new_req->cls      != req->cls                     ||
 			    *new_req->limited != *req->limited)
 				continue;
 
@@ -4466,7 +4477,7 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	new_pred = be_transform_node(pred);
 	block    = get_nodes_block(new_pred);
 	return new_r_Proj(current_ir_graph, block, new_pred, mode_M,
-			get_ia32_n_res(new_pred) + 1);
+			arch_irn_get_n_outs(new_pred) + 1);
 }
 
 /**
@@ -4682,7 +4693,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	if (!is_ia32_irn(node))
 		return;
 
-	n_outs = get_ia32_n_res(node);
+	n_outs = arch_irn_get_n_outs(node);
 	if (n_outs <= 0)
 		return;
 	if (is_ia32_SwitchJmp(node))

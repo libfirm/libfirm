@@ -370,6 +370,7 @@ struct ir_node {
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
 	struct ir_node **deps;   /**< Additional dependencies induced by state. */
+	void            *backend_info;
 	irn_edges_info_t edge_info;  /**< Everlasting out edges. */
 	/* ------- Opcode depending fields -------- */
 	attr attr;               /**< The set of attributes of this node. Depends on opcode.

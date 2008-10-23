@@ -73,7 +73,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	in2      = get_irn_n(irn, n_ia32_binary_right);
 	in1_reg  = arch_get_irn_register(in1);
 	in2_reg  = arch_get_irn_register(in2);
-	out_reg  = get_ia32_out_reg(irn, 0);
+	out_reg  = arch_irn_get_register(irn, 0);
 
 	irg     = cg->irg;
 	block   = get_nodes_block(irn);
@@ -258,7 +258,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 	ir_node                    *in_node, *block;
 
 	reqs  = get_ia32_out_req_all(node);
-	n_res = get_ia32_n_res(node);
+	n_res = arch_irn_get_n_outs(node);
 	block = get_nodes_block(node);
 
 	/* check all OUT requirements, if there is a should_be_same */
@@ -280,7 +280,7 @@ static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
 		same_pos = get_first_same(req);
 
 		/* get in and out register */
-		out_reg  = get_ia32_out_reg(node, i);
+		out_reg  = arch_irn_get_register(node, i);
 		in_node  = get_irn_n(node, same_pos);
 		in_reg   = arch_get_irn_register(in_node);
 
@@ -406,7 +406,7 @@ static void fix_am_source(ir_node *irn)
 		return;
 
 	reqs  = get_ia32_out_req_all(irn);
-	n_res = get_ia32_n_res(irn);
+	n_res = arch_irn_get_n_outs(irn);
 
 	for (i = 0; i < n_res; i++) {
 		const arch_register_t *out_reg;
@@ -419,7 +419,7 @@ static void fix_am_source(ir_node *irn)
 			continue;
 
 		/* get in and out register */
-		out_reg   = get_ia32_out_reg(irn, i);
+		out_reg   = arch_irn_get_register(irn, i);
 		same_pos  = get_first_same(reqs[i]);
 		same_node = get_irn_n(irn, same_pos);
 		same_reg  = arch_get_irn_register(same_node);

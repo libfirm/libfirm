@@ -205,9 +205,6 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				if (attr->flags & arch_irn_flags_rematerializable) {
 					fprintf(F, " remat");
 				}
-				if (attr->flags & arch_irn_flags_ignore) {
-					fprintf(F, " ignore");
-				}
 			}
 			fprintf(F, " (%d)\n", attr->flags);
 

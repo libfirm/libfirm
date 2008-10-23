@@ -130,58 +130,6 @@ static const arch_register_req_t *arm_get_irn_reg_req(const ir_node *node,
 	return arch_no_register_req;
 }
 
-static void arm_set_irn_reg(ir_node *irn, const arch_register_t *reg)
-{
-	int pos = 0;
-
-	if (get_irn_mode(irn) == mode_X) {
-		return;
-	}
-
-	if (is_Proj(irn)) {
-		pos = get_Proj_proj(irn);
-		irn = skip_Proj(irn);
-	}
-
-	if (is_arm_irn(irn)) {
-		const arch_register_t **slots;
-
-		slots      = get_arm_slots(irn);
-		slots[pos] = reg;
-	}
-	else {
-		/* here we set the registers for the Phi nodes */
-		arm_set_firm_reg(irn, reg, cur_reg_set);
-	}
-}
-
-static const arch_register_t *arm_get_irn_reg(const ir_node *irn)
-{
-	int pos = 0;
-	const arch_register_t *reg = NULL;
-
-	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return NULL;
-		}
-
-		pos = get_Proj_proj(irn);
-		irn = skip_Proj_const(irn);
-	}
-
-	if (is_arm_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_arm_slots(irn);
-		reg   = slots[pos];
-	}
-	else {
-		reg = arm_get_firm_reg(irn, cur_reg_set);
-	}
-
-	return reg;
-}
-
 static arch_irn_class_t arm_classify(const ir_node *irn)
 {
 	irn = skip_Proj_const(irn);
@@ -191,29 +139,6 @@ static arch_irn_class_t arm_classify(const ir_node *irn)
 	}
 
 	return 0;
-}
-
-static arch_irn_flags_t arm_get_flags(const ir_node *irn)
-{
-	arch_irn_flags_t flags = arch_irn_flags_none;
-
-	if(is_Unknown(irn)) {
-		return arch_irn_flags_ignore;
-	}
-
-	if (is_Proj(irn) && mode_is_datab(get_irn_mode(irn))) {
-		ir_node *pred = get_Proj_pred(irn);
-		if (is_arm_irn(pred)) {
-			flags = get_arm_out_flags(pred, get_Proj_proj(irn));
-		}
-		irn = pred;
-	}
-
-	if (is_arm_irn(irn)) {
-		flags |= get_arm_flags(irn);
-	}
-
-	return flags;
 }
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn) {
@@ -250,10 +175,7 @@ static int arm_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t arm_irn_ops = {
 	arm_get_irn_reg_req,
-	arm_set_irn_reg,
-	arm_get_irn_reg,
 	arm_classify,
-	arm_get_flags,
 	arm_get_frame_entity,
 	arm_set_frame_entity,
 	arm_set_stack_bias,
@@ -908,8 +830,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	block = get_irg_start_block(irg);
 
 	ip = be_new_Copy(gp, irg, block, sp);
-	arch_set_irn_register(ip, &arm_gp_regs[REG_R12]);
-	be_set_constr_single_reg(ip, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
+	be_set_constr_single_reg_out(ip, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
 
 	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
 
@@ -918,15 +839,13 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
-	be_node_set_reg_class(keep, 1, gp);
-	arch_set_irn_register(keep, &arm_gp_regs[REG_R12]);
-	be_set_constr_single_reg(keep, BE_OUT_POS(0), &arm_gp_regs[REG_R12] );
+	be_node_set_reg_class_in(keep, 1, gp);
+	be_set_constr_single_reg_out(keep, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
 
 	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
 	arch_set_irn_register(fp, env->arch_env->bp);
-	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ nodes can have the ignore flag set
-	arch_set_irn_register(fp, env->arch_env->bp);
-	be_node_set_flags(fp, BE_OUT_POS(0), arch_irn_flags_ignore);
+	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ have custom register requirements
+	be_set_constr_single_reg_out(fp, 0, env->arch_env->bp, 0);
 
 	be_abi_reg_map_set(reg_map, env->arch_env->bp, fp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
@@ -952,14 +871,10 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		curr_sp = be_new_IncSP(env->arch_env->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 
 		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
-		be_node_set_reg_class(curr_lr, 1, &arm_reg_classes[CLASS_arm_gp]);
-		arch_set_irn_register(curr_lr, &arm_gp_regs[REG_LR]);
-		be_set_constr_single_reg(curr_lr, BE_OUT_POS(0), &arm_gp_regs[REG_LR] );
+		be_set_constr_single_reg_out(curr_lr, 0, &arm_gp_regs[REG_LR], 0);
 
 		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
-		arch_set_irn_register(curr_pc, &arm_gp_regs[REG_PC]);
-		be_set_constr_single_reg(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC] );
-		be_node_set_flags(curr_pc, BE_OUT_POS(0), arch_irn_flags_ignore);
+		be_set_constr_single_reg_out(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC], 0);
 	} else {
 		ir_node *sub12_node;
 		ir_node *load_node;
@@ -1243,6 +1158,7 @@ static const lc_opt_table_entry_t arm_options[] = {
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
 	arm_done,
+	NULL,  /* handle_intrinsics */
 	arm_get_n_reg_class,
 	arm_get_reg_class,
 	arm_get_reg_class_for_mode,

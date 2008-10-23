@@ -562,39 +562,19 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 	if(arg == get_irg_frame(env->irg))
 		return 1;
 
+#if 0
 	/* hack for now (happens when command should be inserted at end of block) */
-	if(is_Block(reloader)) {
+	if(is_Block(reloader))
 		return 0;
-	}
+#else
+	(void)reloader;
+#endif
 
 	/*
 	 * Ignore registers are always available
 	 */
-	if (arch_irn_is(arg, ignore)) {
+	if (arch_irn_is_ignore(arg))
 		return 1;
-	}
-
- 	/* the following test does not work while spilling,
-	 * because the liveness info is not adapted yet to the effects of the
-	 * additional spills/reloads.
-	 */
-#if 0
-	/* we want to remat before the insn reloader
-	 * thus an arguments is alive if
-	 *   - it interferes with the reloaders result
-	 *   - or it is (last-) used by reloader itself
-	 */
-	if (values_interfere(env->birg->lv, reloader, arg)) {
-		return 1;
-	}
-
-	arity = get_irn_arity(reloader);
-	for (i = 0; i < arity; ++i) {
-		ir_node *rel_arg = get_irn_n(reloader, i);
-		if (rel_arg == arg)
-			return 1;
-	}
-#endif
 
  	return 0;
 }
@@ -640,6 +620,10 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;
 	}
+	/* never rematerialize a node which modifies the flags.
+	 * (would be better to test wether the flags are actually live at point
+	 * reloader...)
+	 */
 	if (arch_irn_is(spilled, modify_flags)) {
 		return REMAT_COST_INFINITE;
 	}

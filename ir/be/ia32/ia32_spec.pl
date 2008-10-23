@@ -17,7 +17,7 @@ $arch = "ia32";
 #
 # <op-name> => {
 #   op_flags  => "N|L|C|X|I|F|Y|H|c|K",
-#   irn_flags => "R|N|I|S"
+#   irn_flags => "R|N"
 #   arity     => "0|1|2|3 ... |variable|dynamic|any",
 #   state     => "floats|pinned|mem_pinned|exc_pinned",
 #   args      => [
@@ -63,8 +63,6 @@ $arch = "ia32";
 # following irn_flags are supported:
 #   R   rematerializeable
 #   N   not spillable
-#   I   ignore for register allocation
-#   S   modifies stack pointer
 #
 # state: state of the operation, OPTIONAL (default is "floats")
 #
@@ -79,10 +77,7 @@ $arch = "ia32";
 #
 # outs:  if a node defines more than one output, the names of the projections
 #        nodes having outs having automatically the mode mode_T
-#        One can also annotate some flags for each out, additional to irn_flags.
-#        They are separated from name with a colon ':', and concatenated by pipe '|'
-#        Only I and S are available at the moment (same meaning as in irn_flags).
-#        example: [ "frame:I", "stack:I|S", "M" ]
+#        example: [ "frame", "stack", "M" ]
 #
 # comment: OPTIONAL comment for the node constructor
 #
@@ -248,7 +243,7 @@ sub ia32_custom_init_attr {
 	my $res = "";
 
 	if(defined($node->{modified_flags})) {
-		$res .= "\tset_ia32_flags(res, get_ia32_flags(res) | arch_irn_flags_modify_flags);\n";
+		$res .= "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n";
 	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
@@ -323,8 +318,7 @@ $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
 Immediate => {
 	state     => "pinned",
 	op_flags  => "c",
-	irn_flags => "I",
-	reg_req   => { out => [ "gp_NOREG" ] },
+	reg_req   => { out => [ "gp_NOREG:I" ] },
 	attr      => "ir_entity *symconst, int symconst_sign, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
@@ -1191,8 +1185,7 @@ GetEIP => {
 Unknown_GP => {
 	state     => "pinned",
 	op_flags  => "c|NB",
-	irn_flags => "I",
-	reg_req   => { out => [ "gp_UKNWN" ] },
+	reg_req   => { out => [ "gp_UKNWN:I" ] },
 	units     => [],
 	emit      => "",
 	latency   => 0,
@@ -1202,8 +1195,7 @@ Unknown_GP => {
 Unknown_VFP => {
 	state     => "pinned",
 	op_flags  => "c|NB",
-	irn_flags => "I",
-	reg_req   => { out => [ "vfp_UKNWN" ] },
+	reg_req   => { out => [ "vfp_UKNWN:I" ] },
 	units     => [],
 	emit      => "",
 	mode      => "mode_E",
@@ -1214,8 +1206,7 @@ Unknown_VFP => {
 Unknown_XMM => {
 	state     => "pinned",
 	op_flags  => "c|NB",
-	irn_flags => "I",
-	reg_req   => { out => [ "xmm_UKNWN" ] },
+	reg_req   => { out => [ "xmm_UKNWN:I" ] },
 	units     => [],
 	emit      => "",
 	latency   => 0,
@@ -1225,8 +1216,7 @@ Unknown_XMM => {
 NoReg_GP => {
 	state     => "pinned",
 	op_flags  => "c|NB|NI",
-	irn_flags => "I",
-	reg_req   => { out => [ "gp_NOREG" ] },
+	reg_req   => { out => [ "gp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
 	latency   => 0,
@@ -1236,8 +1226,7 @@ NoReg_GP => {
 NoReg_VFP => {
 	state     => "pinned",
 	op_flags  => "c|NB|NI",
-	irn_flags => "I",
-	reg_req   => { out => [ "vfp_NOREG" ] },
+	reg_req   => { out => [ "vfp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
 	mode      => "mode_E",
@@ -1248,8 +1237,7 @@ NoReg_VFP => {
 NoReg_XMM => {
 	state     => "pinned",
 	op_flags  => "c|NB|NI",
-	irn_flags => "I",
-	reg_req   => { out => [ "xmm_NOREG" ] },
+	reg_req   => { out => [ "xmm_NOREG:I" ] },
 	units     => [],
 	emit      => "",
 	latency   => 0,
@@ -1259,8 +1247,7 @@ NoReg_XMM => {
 ChangeCW => {
 	state     => "pinned",
 	op_flags  => "c",
-	irn_flags => "I",
-	reg_req   => { out => [ "fp_cw" ] },
+	reg_req   => { out => [ "fpcw:I" ] },
 	mode      => $mode_fpcw,
 	latency   => 3,
 	units     => [ "GP" ],
@@ -1270,7 +1257,7 @@ ChangeCW => {
 FldCW => {
 	op_flags  => "L|F",
 	state     => "pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fp_cw" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
 	ins       => [ "base", "index", "mem" ],
 	latency   => 5,
 	emit      => ". fldcw %AM",
@@ -1365,10 +1352,10 @@ Lea => {
 
 Push => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp", "esp" ], out => [ "esp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp", "esp" ], out => [ "esp:I|S", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "stack" ],
 	emit      => '. push%M %unop3',
-	outs      => [ "stack:I|S", "M" ],
+	outs      => [ "stack", "M" ],
 	am        => "source,unary",
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1376,9 +1363,19 @@ Push => {
 
 Pop => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "none", "esp" ], out => [ "gp", "none", "none", "esp" ] },
+	reg_req   => { in => [ "none", "esp" ], out => [ "gp", "none", "none", "esp:I|S" ] },
 	ins       => [ "mem", "stack" ],
-	outs      => [ "res", "M", "unused", "stack:I|S" ],
+	outs      => [ "res", "M", "unused", "stack" ],
+	emit      => '. pop%M %D0',
+	latency   => 3, # Pop is more expensive than Push on Athlon
+	units     => [ "GP" ],
+},
+
+PopEbp => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "none", "esp" ], out => [ "ebp:I", "none", "none", "esp:I|S" ] },
+	ins       => [ "mem", "stack" ],
+	outs      => [ "res", "M", "unused", "stack" ],
 	emit      => '. pop%M %D0',
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
@@ -1386,53 +1383,51 @@ Pop => {
 
 PopMem => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "none", "none", "none", "esp" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "none", "none", "none", "esp:I|S" ] },
 	ins       => [ "base", "index", "mem", "stack" ],
-	outs      => [ "unused0", "M", "unused1", "stack:I|S" ],
+	outs      => [ "unused0", "M", "unused1", "stack" ],
 	emit      => '. pop%M %AM',
 	latency   => 3, # Pop is more expensive than Push on Athlon
 	units     => [ "GP" ],
 },
 
 Enter => {
-	reg_req   => { in => [ "esp" ], out => [ "ebp", "esp", "none" ] },
+	reg_req   => { in => [ "esp" ], out => [ "ebp", "esp:I|S", "none" ] },
 	emit      => '. enter',
-	outs      => [ "frame:I", "stack:I|S", "M" ],
+	outs      => [ "frame", "stack", "M" ],
 	latency   => 15,
 	units     => [ "GP" ],
 },
 
 Leave => {
-	reg_req   => { in => [ "ebp" ], out => [ "ebp", "esp" ] },
+	reg_req   => { in => [ "ebp" ], out => [ "ebp", "esp:I|S" ] },
 	emit      => '. leave',
-	outs      => [ "frame:I", "stack:I|S" ],
+	outs      => [ "frame", "stack" ],
 	latency   => 3,
 	units     => [ "GP" ],
 },
 
 AddSP => {
-	irn_flags => "I",
 	state     => "pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "in_r4", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "esp:I|S", "none" ] },
 	ins       => [ "base", "index", "mem", "stack", "size" ],
 	am        => "source,binary",
 	emit      => '. addl %binop',
 	latency   => 1,
-	outs      => [ "stack:I|S", "M" ],
+	outs      => [ "stack", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
 
 SubSP => {
-#irn_flags => "I",
 	state     => "pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "in_r4", "gp", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "esp", "gp" ], out => [ "esp:I|S", "gp", "none" ] },
 	ins       => [ "base", "index", "mem", "stack", "size" ],
 	am        => "source,binary",
 	emit      => ". subl %binop\n".
 	             ". movl %%esp, %D1",
 	latency   => 2,
-	outs      => [ "stack:I|S", "addr", "M" ],
+	outs      => [ "stack", "addr", "M" ],
 	units     => [ "GP" ],
 	modified_flags => $status_flags
 },
@@ -1468,10 +1463,10 @@ Call => {
 	state     => "exc_pinned",
 	reg_req   => {
 		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
-		out => [ "esp", "fpcw", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ]
+		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ]
 	},
 	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
-	outs      => [ "stack:I|S", "fpcw:I", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ],
+	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ],
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",
 	am        => "source,unary",
@@ -2022,6 +2017,7 @@ vfisttp => {
 vfldz => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2031,6 +2027,7 @@ vfldz => {
 vfld1 => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2040,6 +2037,7 @@ vfld1 => {
 vfldpi => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2049,6 +2047,7 @@ vfldpi => {
 vfldln2 => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2058,6 +2057,7 @@ vfldln2 => {
 vfldlg2 => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2067,6 +2067,7 @@ vfldlg2 => {
 vfldl2t => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",
@@ -2076,6 +2077,7 @@ vfldl2t => {
 vfldl2e => {
 	irn_flags => "R",
 	reg_req   => { out => [ "vfp" ] },
+	outs      => [ "res" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_E",

@@ -632,7 +632,7 @@ static void collect_descendants(rss_t *rss, rss_irn_t *rirn, ir_node *irn, int *
 			ir_node *user = get_edge_src_irn(edge);
 
 			/* skip ignore nodes as they do not really contribute to register pressure */
-			if (arch_irn_is(user, ignore))
+			if (arch_irn_is_ignore(user))
 				continue;
 
 			/*
@@ -680,7 +680,7 @@ static void collect_single_consumer(rss_t *rss, rss_irn_t *rss_irn, ir_node *con
 	assert(! is_Proj(consumer) && "Cannot handle Projs");
 
 	if (! is_Phi(consumer) && ! is_Block(consumer) && get_nodes_block(consumer) == block) {
-		if (!arch_irn_is(consumer, ignore) &&
+		if (!arch_irn_is_ignore(consumer) &&
 				!plist_has_value(rss_irn->consumer_list, consumer)) {
 			plist_insert_back(rss_irn->consumer_list, consumer);
 			DBG((rss->dbg, LEVEL_2, "\t\tconsumer %+F\n", consumer));
@@ -2111,7 +2111,7 @@ static void process_block(ir_node *block, void *env) {
 			if (be_is_Keep(irn))
 				continue;
 
-			if (!arch_irn_is(irn, ignore) &&
+			if (!arch_irn_is_ignore(irn) &&
 					arch_get_irn_reg_class_out(irn) == cls) {
 				plist_insert_back(rss->nodes, skip_Proj(irn));
 			}

@@ -29,6 +29,7 @@
 
 #include "bearch_t.h"
 #include "benode_t.h"
+#include "beinfo.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 
@@ -176,28 +177,78 @@ const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 	return req->cls;
 }
 
-const arch_register_t *arch_get_irn_register(const ir_node *irn)
+static inline reg_out_info_t *get_out_info(const ir_node *node)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	return ops->get_irn_reg(irn);
+	int                   pos  = 0;
+	const backend_info_t *info;
+
+	assert(get_irn_mode(node) != mode_T);
+	if (is_Proj(node)) {
+		pos  = get_Proj_proj(node);
+		node = get_Proj_pred(node);
+	}
+
+	info = be_get_info(node);
+	assert(pos >= 0 && pos < ARR_LEN(info->out_infos));
+	return &info->out_infos[pos];
 }
 
-void arch_set_irn_register(ir_node *irn, const arch_register_t *reg)
+
+static inline reg_out_info_t *get_out_info_n(const ir_node *node, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	ops->set_irn_reg(irn, reg);
+	const backend_info_t *info = be_get_info(node);
+	assert(!is_Proj(node));
+	assert(pos >= 0 && pos < ARR_LEN(info->out_infos));
+	return &info->out_infos[pos];
 }
 
-arch_irn_class_t arch_irn_classify(const ir_node *irn)
+
+const arch_register_t *arch_get_irn_register(const ir_node *node)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	return ops->classify(irn);
+	const reg_out_info_t *out = get_out_info(node);
+	return out->reg;
 }
 
-arch_irn_flags_t arch_irn_get_flags(const ir_node *irn)
+const arch_register_t *arch_irn_get_register(const ir_node *node, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	return ops->get_flags(irn);
+	const reg_out_info_t *out = get_out_info_n(node, pos);
+	return out->reg;
+}
+
+void arch_irn_set_register(ir_node *node, int pos, const arch_register_t *reg)
+{
+	reg_out_info_t *out = get_out_info_n(node, pos);
+	out->reg            = reg;
+}
+
+void arch_set_irn_register(ir_node *node, const arch_register_t *reg)
+{
+	reg_out_info_t *out = get_out_info(node);
+	out->reg = reg;
+}
+
+arch_irn_class_t arch_irn_classify(const ir_node *node)
+{
+	const arch_irn_ops_t *ops = get_irn_ops(node);
+	return ops->classify(node);
+}
+
+arch_irn_flags_t arch_irn_get_flags(const ir_node *node)
+{
+	backend_info_t *info = be_get_info(node);
+	return info->flags;
+}
+
+void arch_irn_set_flags(ir_node *node, arch_irn_flags_t flags)
+{
+	backend_info_t *info = be_get_info(node);
+	info->flags = flags;
+}
+
+void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags)
+{
+	backend_info_t *info = be_get_info(node);
+	info->flags |= flags;
 }
 
 extern char *arch_register_req_format(char *buf, size_t len,
@@ -245,6 +296,13 @@ extern char *arch_register_req_format(char *buf, size_t len,
 				strncat(buf, tmp, len);
 			}
 		}
+	}
+
+	if (arch_register_req_is(req, ignore)) {
+		strncat(buf, " ignore", len);
+	}
+	if (arch_register_req_is(req, produces_sp)) {
+		strncat(buf, " produces_sp", len);
 	}
 
 	return buf;

@@ -249,53 +249,7 @@ static const arch_register_req_t *ia32_get_irn_reg_req(const ir_node *node,
 	}
 
 	/* unknowns should be transformed already */
-	assert(!is_Unknown(node));
 	return arch_no_register_req;
-}
-
-static void ia32_set_irn_reg(ir_node *irn, const arch_register_t *reg)
-{
-	int    pos = 0;
-
-	if (get_irn_mode(irn) == mode_X) {
-		return;
-	}
-
-	if (is_Proj(irn)) {
-		pos = get_Proj_proj(irn);
-		irn = skip_Proj(irn);
-	}
-
-	if (is_ia32_irn(irn)) {
-		const arch_register_t **slots;
-
-		slots      = get_ia32_slots(irn);
-		slots[pos] = reg;
-	} else {
-		ia32_set_firm_reg(irn, reg, cur_reg_set);
-	}
-}
-
-static const arch_register_t *ia32_get_irn_reg(const ir_node *irn)
-{
-	int pos = 0;
-
-	if (is_Proj(irn)) {
-		if (get_irn_mode(irn) == mode_X) {
-			return NULL;
-		}
-
-		pos = get_Proj_proj(irn);
-		irn = skip_Proj_const(irn);
-	}
-
-	if (is_ia32_irn(irn)) {
-		const arch_register_t **slots = get_ia32_slots(irn);
-		assert(pos < get_ia32_n_res(irn));
-		return slots[pos];
-	} else {
-		return ia32_get_firm_reg(irn, cur_reg_set);
-	}
 }
 
 static arch_irn_class_t ia32_classify(const ir_node *irn) {
@@ -319,29 +273,6 @@ static arch_irn_class_t ia32_classify(const ir_node *irn) {
 		classification |= arch_irn_class_remat;
 
 	return classification;
-}
-
-static arch_irn_flags_t ia32_get_flags(const ir_node *irn) {
-	arch_irn_flags_t flags = arch_irn_flags_none;
-
-	if (is_Unknown(irn))
-		return arch_irn_flags_ignore;
-
-	if(is_Proj(irn) && mode_is_datab(get_irn_mode(irn))) {
-		ir_node *pred = get_Proj_pred(irn);
-
-		if(is_ia32_irn(pred)) {
-			flags = get_ia32_out_flags(pred, get_Proj_proj(irn));
-		}
-
-		irn = pred;
-	}
-
-	if (is_ia32_irn(irn)) {
-		flags |= get_ia32_flags(irn);
-	}
-
-	return flags;
 }
 
 /**
@@ -412,15 +343,16 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 	const arch_env_t *arch_env = env->aenv;
 
 	if (! env->flags.try_omit_fp) {
-		ir_graph *irg     =env->irg;
+		ir_graph *irg     = env->irg;
 		ir_node  *bl      = get_irg_start_block(irg);
 		ir_node  *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
 		ir_node  *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
-		ir_node  *noreg = ia32_new_NoReg_gp(cg);
+		ir_node  *noreg   = ia32_new_NoReg_gp(cg);
 		ir_node  *push;
 
-		/* ALL nodes representing bp must be set to ignore. */
-		be_node_set_flags(get_Proj_pred(curr_bp), BE_OUT_POS(get_Proj_proj(curr_bp)), arch_irn_flags_ignore);
+		/* mark bp register as ignore */
+		be_set_constr_single_reg_out(get_Proj_pred(curr_bp),
+				get_Proj_proj(curr_bp), arch_env->bp, arch_register_req_type_ignore);
 
 		/* push ebp */
 		push    = new_rd_ia32_Push(NULL, irg, bl, noreg, noreg, *mem, curr_bp, curr_sp);
@@ -429,22 +361,19 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		/* the push must have SP out register */
 		arch_set_irn_register(curr_sp, arch_env->sp);
-		set_ia32_flags(push, arch_irn_flags_ignore);
 
 		/* this modifies the stack bias, because we pushed 32bit */
 		*stack_bias -= 4;
 
 		/* move esp to ebp */
-		curr_bp  = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
-		be_set_constr_single_reg(curr_bp, BE_OUT_POS(0), arch_env->bp);
-		arch_set_irn_register(curr_bp, arch_env->bp);
-		be_node_set_flags(curr_bp, BE_OUT_POS(0), arch_irn_flags_ignore);
+		curr_bp = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
+		be_set_constr_single_reg_out(curr_bp, 0, arch_env->bp,
+		                             arch_register_req_type_ignore);
 
 		/* beware: the copy must be done before any other sp use */
 		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
-		be_set_constr_single_reg(curr_sp, BE_OUT_POS(0), arch_env->sp);
-		arch_set_irn_register(curr_sp, arch_env->sp);
-		be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
+		be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
+				                     arch_register_req_type_produces_sp);
 
 		be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
 		be_abi_reg_map_set(reg_map, arch_env->bp, curr_bp);
@@ -484,7 +413,6 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* leave */
 			leave   = new_rd_ia32_Leave(NULL, irg, bl, curr_bp);
-			set_ia32_flags(leave, arch_irn_flags_ignore);
 			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 		} else {
@@ -497,11 +425,11 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
 			arch_set_irn_register(curr_sp, arch_env->sp);
-			be_node_set_flags(curr_sp, BE_OUT_POS(0), arch_irn_flags_ignore);
+			be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
+				                         arch_register_req_type_ignore);
 
 			/* pop ebp */
-			pop     = new_rd_ia32_Pop(NULL, env->irg, bl, *mem, curr_sp);
-			set_ia32_flags(pop, arch_irn_flags_ignore);
+			pop     = new_rd_ia32_PopEbp(NULL, env->irg, bl, *mem, curr_sp);
 			curr_bp = new_r_Proj(irg, bl, pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(irg, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
 
@@ -893,10 +821,7 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 
 static const arch_irn_ops_t ia32_irn_ops = {
 	ia32_get_irn_reg_req,
-	ia32_set_irn_reg,
-	ia32_get_irn_reg,
 	ia32_classify,
-	ia32_get_flags,
 	ia32_get_frame_entity,
 	ia32_set_frame_entity,
 	ia32_set_frame_offset,
@@ -1164,7 +1089,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	/* copy the register from the old node to the new Load */
 	reg = arch_get_irn_register(node);
-	arch_set_irn_register(new_op, reg);
+	arch_set_irn_register(proj, reg);
 
 	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
 
@@ -1769,7 +1694,6 @@ static arch_env_t *ia32_init(FILE *file_handle) {
 
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
-	ia32_handle_intrinsics();
 
 	/* emit asm includes */
 	n = get_irp_n_asms();
@@ -2355,6 +2279,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
 	ia32_done,
+	ia32_handle_intrinsics,
 	ia32_get_n_reg_class,
 	ia32_get_reg_class,
 	ia32_get_reg_class_for_mode,

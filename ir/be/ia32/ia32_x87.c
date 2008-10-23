@@ -450,6 +450,15 @@ static inline const arch_register_t *x87_get_irn_register(const ir_node *irn)
 	return res;
 }  /* x87_get_irn_register */
 
+static inline const arch_register_t *x87_irn_get_register(const ir_node *irn,
+                                                          int pos)
+{
+	const arch_register_t *res = arch_irn_get_register(irn, pos);
+
+	assert(res->reg_class->regs == ia32_vfp_regs);
+	return res;
+}
+
 /* -------------- x87 perm --------------- */
 
 /**
@@ -926,7 +935,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 	ir_node               *op2     = get_irn_n(n, n_ia32_binary_right);
 	const arch_register_t *op1_reg = x87_get_irn_register(op1);
 	const arch_register_t *op2_reg = x87_get_irn_register(op2);
-	const arch_register_t *out     = x87_get_irn_register(n);
+	const arch_register_t *out     = x87_irn_get_register(n, pn_ia32_res);
 	int reg_index_1                = arch_register_get_index(op1_reg);
 	int reg_index_2                = arch_register_get_index(op2_reg);
 	vfp_liveness           live    = vfp_live_args_after(sim, n, REGMASK(out));
@@ -1144,14 +1153,14 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
  *
  * @return NO_NODE_ADDED
  */
-static int sim_load(x87_state *state, ir_node *n, ir_op *op)
+static int sim_load(x87_state *state, ir_node *n, ir_op *op, int res_pos)
 {
-	const arch_register_t *out = x87_get_irn_register(n);
+	const arch_register_t *out = x87_irn_get_register(n, res_pos);
 	ia32_x87_attr_t *attr;
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, arch_register_get_name(out)));
 	x87_push(state, arch_register_get_index(out), x87_patch_insn(n, op));
-	assert(out == x87_get_irn_register(n));
+	assert(out == x87_irn_get_register(n, res_pos));
 	attr = get_ia32_x87_attr(n);
 	attr->x87[2] = out = &ia32_st_regs[0];
 	DB((dbg, LEVEL_1, "<<< %s -> %s\n", get_irn_opname(n), arch_register_get_name(out)));
@@ -1320,12 +1329,10 @@ static int sim_##op(x87_state *state, ir_node *n) { \
 #define GEN_BINOP(op)   _GEN_BINOP(op, op)
 #define GEN_BINOPR(op)	_GEN_BINOP(op, op##r)
 
-#define GEN_LOAD2(op, nop) \
-static int sim_##op(x87_state *state, ir_node *n) { \
-	return sim_load(state, n, op_ia32_##nop); \
+#define GEN_LOAD(op)                                              \
+static int sim_##op(x87_state *state, ir_node *n) {               \
+	return sim_load(state, n, op_ia32_##op, pn_ia32_v##op##_res); \
 }
-
-#define GEN_LOAD(op)	GEN_LOAD2(op, op)
 
 #define GEN_UNOP(op) \
 static int sim_##op(x87_state *state, ir_node *n) { \
@@ -2001,7 +2008,7 @@ end_call:
  */
 static int sim_Spill(x87_state *state, ir_node *n)
 {
-	assert(0 && "Spill not lowered");
+	panic("Spill not lowered");
 	return sim_fst(state, n);
 }  /* sim_Spill */
 
@@ -2015,7 +2022,7 @@ static int sim_Spill(x87_state *state, ir_node *n)
  */
 static int sim_Reload(x87_state *state, ir_node *n)
 {
-	assert(0 && "Reload not lowered");
+	panic("Reload not lowered");
 	return sim_fld(state, n);
 }  /* sim_Reload */
 

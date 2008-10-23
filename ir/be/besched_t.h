@@ -36,26 +36,10 @@
 
 #include "beutil.h"
 #include "besched.h"
-
-typedef unsigned int sched_timestep_t;
-
-extern size_t sched_irn_data_offset;
-
-/**
- * The schedule structure which is present at each ir node.
- *
- * Currently, only basic blocks are scheduled. The list head of
- * every block schedule list is the Block list.
- */
-typedef struct _sched_info_t {
-	struct list_head list;         /**< The list head to list the nodes in a schedule. */
-	unsigned idx;                  /**< The node index of the nodes this schedule info belongs to. */
-	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is larger than b's. */
-	unsigned scheduled : 1;        /**< 1, if the node is in the schedule of the block, 0 else. */
-} sched_info_t;
+#include "beinfo.h"
 
 #define _sched_entry(list_head)             (list_entry(list_head, sched_info_t, list))
-#define get_irn_sched_info(irn)             ((sched_info_t *) get_or_set_irn_phase_info(skip_Proj_const(irn), PHASE_BE_SCHED))
+#define get_irn_sched_info(irn)             (&be_get_info(skip_Proj_const(irn))->sched_info)
 #define get_sched_info_irn(irg, sched_info) get_idx_irn((irg), (sched_info)->idx)
 
 /**
@@ -65,7 +49,7 @@ typedef struct _sched_info_t {
  */
 static inline int _have_sched_info(const ir_graph *irg)
 {
-	return get_irg_phase(irg, PHASE_BE_SCHED) != NULL;
+	return be_info_initialized(irg);
 }
 
 /**

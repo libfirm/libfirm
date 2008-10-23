@@ -1173,8 +1173,9 @@ static void ifg_dump_graph_attr(FILE *f, void *self)
 
 static int ifg_is_dump_node(void *self, ir_node *irn)
 {
+	const arch_register_req_t *req = arch_get_register_req_out(irn);
 	(void)self;
-	return !arch_irn_is(irn, ignore);
+	return !(req->type & arch_register_req_type_ignore);
 }
 
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)

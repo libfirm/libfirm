@@ -280,11 +280,10 @@ static inline unsigned get_distance(ir_node *from, unsigned from_step,
                                     const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;
-	int           flags = arch_irn_get_flags(def);
 	unsigned      costs;
 	unsigned      time;
 
-	assert(! (flags & arch_irn_flags_ignore));
+	assert(!arch_irn_is_ignore(def));
 
 	use  = be_get_next_use(uses, from, from_step, def, skip_from_uses);
 	time = use.time;
@@ -292,7 +291,7 @@ static inline unsigned get_distance(ir_node *from, unsigned from_step,
 		return USES_INFINITY;
 
 	/* We have to keep nonspillable nodes in the workingset */
-	if (flags & arch_irn_flags_dont_spill)
+	if (arch_irn_get_flags(def) & arch_irn_flags_dont_spill)
 		return 0;
 
 	/* give some bonus to rematerialisable nodes */

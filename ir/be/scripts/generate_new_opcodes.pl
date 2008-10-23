@@ -487,10 +487,8 @@ foreach my $op (keys(%nodes)) {
 						$temp .= "\tflags |= arch_irn_flags_rematerializable;\n";
 					} elsif ($flag eq "N") {
 						$temp .= "\tflags |= arch_irn_flags_dont_spill;\n";
-					} elsif ($flag eq "I") {
-						$temp .= "\tflags |= arch_irn_flags_ignore;\n";
-					} elsif ($flag eq "S") {
-						$temp .= "\tflags |= arch_irn_flags_modify_sp;\n";
+					} else {
+						die "Fatal error: unknown flag $flag for ${op}\n";
 					}
 				}
 				$temp .= "\n";
@@ -512,33 +510,6 @@ foreach my $op (keys(%nodes)) {
 				$temp .= &$custom_init_attr_func(\%n, $op);
 			}
 			$temp .= "\n";
-
-			# set flags for outs
-			if (exists($n{"outs"})) {
-				undef my @outs;
-				@outs     = @{ $n{"outs"} };
-
-				for (my $idx = 0; $idx <= $#outs; $idx++) {
-					# check, if we have additional flags annotated to out
-					if ($outs[$idx] =~ /:((S|I)(\|(S|I))*)/) {
-						my $flag_string = $1;
-						my $prefix = "";
-						my $flags  = "";
-
-						foreach my $flag (split(/\|/, $flag_string)) {
-							if ($flag eq "I") {
-								$flags .= $prefix."arch_irn_flags_ignore";
-								$prefix = " | ";
-							} elsif ($flag eq "S") {
-								$flags .= $prefix."arch_irn_flags_modify_sp";
-								$prefix = " | ";
-							}
-						}
-
-						$temp .= "\tset_$arch\_out_flags(res, $flags, $idx);\n";
-					}
-				}
-			}
 
 			if (exists($n{"init_attr"})) {
 				$temp .= "\tattr = get_irn_generic_attr(res);\n";
@@ -899,6 +870,7 @@ TP_SEARCH:	foreach my $cur_type (keys(%cpu)) {
 sub mangle_requirements {
 	my $reqs  = shift;
 	my $class = shift;
+	my $flags = shift;
 
 	my @alternatives = split(/ /, $reqs);
 	for(my $idx = 0; $idx < scalar(@alternatives); $idx++) {
@@ -908,6 +880,10 @@ sub mangle_requirements {
 	@alternatives = sort @alternatives;
 
 	my $name = $class."_".join('_', @alternatives);
+	if (defined($flags)) {
+		$flags =~ s/\|/_/g;
+		$name .= "_$flags";
+	}
 
 	return $name;
 }
@@ -961,13 +937,14 @@ sub build_inout_idx_class {
 
 		for (my $idx = 0; $idx <= $#reqs; $idx++) {
 			my $class = undef;
+			my ($req,) = split(/:/, $reqs[$idx]);
 
-			if ($reqs[$idx] eq "none") {
+			if ($req eq "none") {
 				$class = "none";
-			} elsif (is_reg_class($reqs[$idx])) {
-				$class = $reqs[$idx];
+			} elsif (is_reg_class($req)) {
+				$class = $req;
 			} else {
-				my @regs = split(/ /, $reqs[$idx]);
+				my @regs = split(/ /, $req);
 GET_CLASS:		foreach my $reg (@regs) {
 					if ($reg =~ /!?(in|out)\_r\d+/ || $reg =~ /!in/) {
 						$class = "UNKNOWN_CLASS";
@@ -1015,6 +992,7 @@ sub build_subset_class_func {
 	my $idx   = shift;
 	my $is_in = shift;
 	my @regs  = split(/ /, shift);
+	my $flags = shift;
 
 	my @idx_class = build_inout_idx_class($node, $op, !$is_in);
 
@@ -1165,13 +1143,24 @@ CHECK_REQS: foreach (@regs) {
 # Generate register requirements structure
 ###
 sub generate_requirements {
-	my $reqs  = shift;
+	my ($reqs, $flags) = split(/:/, shift);
 	my $node  = shift;
 	my $op    = shift;
 	my $idx   = shift;
 	my $is_in = shift;
 	my $class = "";
 	my $result;
+
+	my @req_type_mask;
+	if (defined($flags)) {
+		foreach my $f (split(/|/, $flags)) {
+			if ($f eq "I") {
+				push(@req_type_mask, "arch_register_req_type_ignore");
+			} elsif ($f eq "S") {
+				push(@req_type_mask, "arch_register_req_type_produces_sp");
+			}
+		}
+	}
 
 	if ($reqs eq "none") {
 
@@ -1186,10 +1175,12 @@ sub generate_requirements {
 
 EOF
 	} elsif (is_reg_class($reqs)) {
+		push(@req_type_mask, "arch_register_req_type_normal");
+		my $reqtype = join(" | ", @req_type_mask);
 		$class  = $reqs;
 		$result = <<EOF;
 {
-	arch_register_req_type_normal,
+	${reqtype},
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
 	0,           /* same pos */
@@ -1199,9 +1190,8 @@ EOF
 EOF
 
 	} else {
-		my @req_type_mask;
 		my ($regclass, $limit_bitset, $same_pos, $different_pos)
-			= build_subset_class_func($node, $op, $idx, $is_in, $reqs);
+			= build_subset_class_func($node, $op, $idx, $is_in, $reqs, $flags);
 
 		if (!defined($regclass)) {
 			die("Fatal error: Could not build subset for requirements '$reqs' of '$op' pos $idx ... exiting.\n");
@@ -1216,7 +1206,7 @@ EOF
 		if ($different_pos != 0) {
 			push(@req_type_mask, "arch_register_req_type_must_be_different");
 		}
-		my $reqtype      = join(" | ", @req_type_mask);
+		my $reqtype = join(" | ", @req_type_mask);
 
  		if(!defined($limit_bitset)) {
 			$limit_bitset = "NULL";
@@ -1235,7 +1225,7 @@ EOF
 EOF
 	}
 
-	my $name = "${arch}_requirements_".mangle_requirements($reqs, $class);
+	my $name = "${arch}_requirements_".mangle_requirements($reqs, $class, $flags);
 	if(defined($requirements{$name})) {
 		return $name;
 	}

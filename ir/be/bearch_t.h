@@ -32,6 +32,7 @@
 #include "beilpsched.h"
 #include "bemachine.h"
 #include "beirg.h"
+#include "beinfo.h"
 #include "beabi.h"
 #include "raw_bitset.h"
 
@@ -184,31 +185,11 @@ struct arch_irn_ops_t {
   	 * Get the register requirements for a given operand.
 	 * @param self The self pointer.
 	 * @param irn The node.
-	 * @param pos The operand's position
-	 *        (-1 for the result of the node, 0..n for the input operands).
+	 * @param pos The operand's position (0..n for the input operands).
 	 * @return    The register requirements for the selected operand.
 	 *            The pointer returned is never NULL.
 	 */
 	const arch_register_req_t *(*get_irn_reg_req)(const ir_node *irn, int pos);
-
-	/**
-	 * Set the register for an output operand.
-	 * @param irn The node.
-	 * @param reg The register allocated to that operand.
-	 * @note      If the operand is not a register operand,
-	 *            the call is ignored.
-	 */
-	void (*set_irn_reg)(ir_node *irn, const arch_register_t *reg);
-
-	/**
-	 * Get the register allocated for an output operand.
-	 * @param irn The node.
-	 * @return    The register allocated at that operand. NULL, if
-	 *            the operand was no register operand or
-	 *            @c arch_register_invalid, if no register has yet been
-	 *            allocated for this node.
-	 */
-	const arch_register_t *(*get_irn_reg)(const ir_node *irn);
 
 	/**
 	 * Classify the node.
@@ -216,14 +197,6 @@ struct arch_irn_ops_t {
 	 * @return A classification.
 	 */
 	arch_irn_class_t (*classify)(const ir_node *irn);
-
-	/**
-	 * Get the flags of a node.
-	 * @param self The irn ops themselves.
-	 * @param irn The node.
-	 * @return A set of flags.
-	 */
-	arch_irn_flags_t (*get_flags)(const ir_node *irn);
 
 	/**
 	 * Get the entity on the stack frame this node depends on.
@@ -416,6 +389,8 @@ struct arch_isa_if_t {
 	 */
 	void (*done)(void *self);
 
+	void (*handle_intrinsics)(void);
+
 	/**
 	 * Get the the number of register classes in the isa.
 	 * @return The number of register classes.
@@ -536,6 +511,8 @@ struct arch_isa_if_t {
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
+#define arch_env_handle_intrinsics(env)                \
+	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
 #define arch_env_get_n_reg_class(env)                  ((env)->impl->get_n_reg_class(env))
 #define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(env, i))
 #define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((env), (mode)))
@@ -571,4 +548,25 @@ struct arch_env_t {
 #define arch_env_sp(env)         ((env)->sp)
 #define arch_env_bp(env)         ((env)->bp)
 
-#endif /* FIRM_BE_BEARCH_T_H */
+static inline unsigned arch_irn_get_n_outs(const ir_node *node)
+{
+	backend_info_t *info = be_get_info(node);
+	return ARR_LEN(info->out_infos);
+}
+
+static inline bool arch_irn_consider_in_reg_alloc(
+		const arch_register_class_t *cls, const ir_node *node)
+{
+	const arch_register_req_t *req = arch_get_register_req_out(node);
+	return
+		req->cls == cls &&
+		!(req->type & arch_register_req_type_ignore);
+}
+
+static inline bool arch_irn_is_ignore(const ir_node *irn)
+{
+	const arch_register_req_t *req = arch_get_register_req_out(irn);
+	return !!(req->type & arch_register_req_type_ignore);
+}
+
+#endif

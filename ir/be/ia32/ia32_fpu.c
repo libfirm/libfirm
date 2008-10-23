@@ -288,7 +288,6 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	len = ARR_LEN(phis);
 	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
-		be_set_phi_flags(phi, arch_irn_flags_ignore);
 		arch_set_irn_register(phi, reg);
 	}
 	be_ssa_construction_destroy(&senv);

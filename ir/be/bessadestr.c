@@ -131,13 +131,15 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 		 * register class by construction.
 		 */
 		for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
-			ir_node     *arg  = get_irn_n(phi, i);
-			unsigned     hash = hash_irn(arg);
-			perm_proj_t  templ;
+			ir_node                   *arg = get_irn_n(phi, i);
+			const arch_register_req_t *req = arch_get_register_req_out(arg);
+			unsigned                   hash;
+			perm_proj_t                templ;
 
-			if (arch_irn_is(arg, ignore))
+			if (req->type & arch_register_req_type_ignore)
 				continue;
 
+			hash = hash_irn(arg);
 			templ.arg  = arg;
 			pp         = set_find(arg_set, &templ, sizeof(templ), hash);
 
@@ -242,12 +244,16 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 
 		/* process all arguments of the phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
-			ir_node               *arg       = get_irn_n(phi, i);
-			ir_node               *arg_block = get_Block_cfgpred_block(phi_block, i);
-			const arch_register_t *arg_reg   = get_reg(arg);
+			ir_node                   *arg = get_irn_n(phi, i);
+			const arch_register_req_t *req = arch_get_register_req_out(arg);
+			const arch_register_t     *arg_reg;
+			ir_node                   *arg_block;
 
-			if (arch_irn_is(arg, ignore))
+			if (req->type & arch_register_req_type_ignore)
 				continue;
+
+			arg_block = get_Block_cfgpred_block(phi_block, i);
+			arg_reg   = get_reg(arg);
 
 			assert(arg_reg && "Register must be set while placing perms");
 
@@ -420,9 +426,10 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data) {
 		phi_reg = get_reg(phi);
 		/* iterate over all args of phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
-			ir_node *arg = get_irn_n(phi, i);
+			ir_node                   *arg = get_irn_n(phi, i);
+			const arch_register_req_t *req = arch_get_register_req_out(arg);
 
-			if (arch_irn_is(arg, ignore))
+			if (req->type & arch_register_req_type_ignore)
 				continue;
 
 			arg_reg = get_reg(arg);

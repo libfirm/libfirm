@@ -10,99 +10,6 @@ $new_emit_syntax = 1;
 # the number of additional opcodes you want to register
 #$additional_opcodes = 0;
 
-# The node description is done as a perl hash initializer with the
-# following structure:
-#
-# %nodes = (
-#
-# <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",
-#   irn_flags => "R|N|I|S"
-#   arity     => "0|1|2|3 ... |variable|dynamic|any",
-#   state     => "floats|pinned|mem_pinned|exc_pinned",
-#   args      => [
-#                    { type => "type 1", name => "name 1" },
-#                    { type => "type 2", name => "name 2" },
-#                    ...
-#                  ],
-#   comment   => "any comment for constructor",
-#   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
-#   cmp_attr  => "c source code for comparing node attributes",
-#   outs      => { "out1", "out2" } # optional, creates pn_op_out1, ... consts
-#   ins       => { "in1", "in2" }   # optional, creates n_op_in1, ... consts
-#   mode      => "mode_Iu"          # optional, predefines the mode
-#   emit      => "emit code with templates",
-#   attr      => "attitional attribute arguments for constructor",
-#   init_attr => "emit attribute initialization template",
-#   rd_constructor => "c source code which constructs an ir_node"
-#   hash_func => "name of the hash function for this operation",
-#   latency   => "latency of this operation (can be float)"
-#   attr_type => "name of the attribute struct",
-# },
-#
-# ... # (all nodes you need to describe)
-#
-# ); # close the %nodes initializer
-
-# op_flags: flags for the operation, OPTIONAL (default is "N")
-# the op_flags correspond to the firm irop_flags:
-#   N   irop_flag_none
-#   L   irop_flag_labeled
-#   C   irop_flag_commutative
-#   X   irop_flag_cfopcode
-#   I   irop_flag_ip_cfopcode
-#   F   irop_flag_fragile
-#   Y   irop_flag_forking
-#   H   irop_flag_highlevel
-#   c   irop_flag_constlike
-#   K   irop_flag_keep
-#
-# irn_flags: special node flags, OPTIONAL (default is 0)
-# following irn_flags are supported:
-#   R   rematerializeable
-#   N   not spillable
-#   I   ignore for register allocation
-#   S   modifies stack pointer
-#
-# state: state of the operation, OPTIONAL (default is "floats")
-#
-# arity: arity of the operation, MUST NOT BE OMITTED
-#
-# args:  the OPTIONAL arguments of the node constructor (debug, irg and block
-#        are always the first 3 arguments and are always autmatically
-#        created)
-#        If this key is missing the following arguments will be created:
-#        for i = 1 .. arity: ir_node *op_i
-#        ir_mode *mode
-#
-# outs:  if a node defines more than one output, the names of the projections
-#        nodes having outs having automatically the mode mode_T
-#        One can also annotate some flags for each out, additional to irn_flags.
-#        They are separated from name with a colon ':', and concatenated by pipe '|'
-#        Only I and S are available at the moment (same meaning as in irn_flags).
-#        example: [ "frame:I", "stack:I|S", "M" ]
-#
-# comment: OPTIONAL comment for the node constructor
-#
-# rd_constructor: for every operation there will be a
-#      new_rd_<arch>_<op-name> function with the arguments from above
-#      which creates the ir_node corresponding to the defined operation
-#      you can either put the complete source code of this function here
-#
-#      This key is OPTIONAL. If omitted, the following constructor will
-#      be created:
-#      if (!op_<arch>_<op-name>) assert(0);
-#      for i = 1 to arity
-#         set in[i] = op_i
-#      done
-#      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
-#      return res
-#
-# NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
-#
-# latency: the latency of the operation, default is 1
-#
-
 #
 # Modes
 #
@@ -232,8 +139,7 @@ $default_copy_attr = "arm_copy_attr";
 Unknown_GP => {
 	state     => "pinned",
 	op_flags  => "c",
-	irn_flags => "I",
-	reg_req   => { out => [ "gp_UKNWN" ] },
+	reg_req   => { out => [ "gp_UKNWN:I" ] },
 	emit      => "",
 	mode      => $mode_gp,
 },
@@ -241,8 +147,7 @@ Unknown_GP => {
 Unknown_FPA => {
 	state     => "pinned",
 	op_flags  => "c",
-	irn_flags => "I",
-	reg_req   => { out => [ "fpa_UKNWN" ] },
+	reg_req   => { out => [ "fpa_UKNWN:I" ] },
 	emit      => "",
 	mode      => $mode_fpa,
 },
@@ -1029,21 +934,19 @@ fpaDbl2GP => {
 },
 
 AddSP => {
-	irn_flags => "I",
 	comment   => "construct Add to stack pointer",
-	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "none" ] },
+	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	emit      => '. add %D0, %S0, %S1',
-	outs      => [ "stack:I|S", "M" ],
+	outs      => [ "stack", "M" ],
 },
 
 SubSPandCopy => {
-#irn_flags => "I",
 	comment   => "construct Sub from stack pointer and copy to Register",
-	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "in_r1", "gp", "none" ] },
+	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	emit      => ". sub %D0, %S0, %S1\n".
 	             ". mov sp, %D1",
-	outs      => [ "stack:I|S", "addr", "M" ],
+	outs      => [ "stack", "addr", "M" ],
 },
 
 LdTls => {

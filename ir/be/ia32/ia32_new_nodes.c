@@ -46,6 +46,7 @@
 #include "xmalloc.h"
 
 #include "../bearch_t.h"
+#include "../beinfo.h"
 
 #include "bearch_ia32_t.h"
 #include "ia32_nodes_attr.h"
@@ -70,7 +71,7 @@
 static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
                          int inout) {
 	char *dir = inout ? "out" : "in";
-	int   max = inout ? get_ia32_n_res(n) : get_irn_arity(n);
+	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
 	char  buf[1024];
 	int   i;
 
@@ -139,7 +140,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	int          bad  = 0;
 	int          i, n_res, flags;
 	const arch_register_req_t **reqs;
-	const arch_register_t     **slots;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -205,7 +205,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			n_res = get_ia32_n_res(n);
+			n_res = arch_irn_get_n_outs(n);
 			fprintf(F, "=== IA32 attr begin ===\n");
 
 			/* dump IN requirements */
@@ -221,12 +221,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			}
 
 			/* dump assigned registers */
-			slots = get_ia32_slots(n);
-			if (slots && n_res > 0) {
+			if (n_res > 0) {
 				for (i = 0; i < n_res; i++) {
-					const arch_register_t *reg;
-
-					reg = slots[i];
+					const arch_register_t *reg = arch_irn_get_register(n, i);
 
 					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
 				}
@@ -292,7 +289,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			fprintf(F, "n_res = %d\n", get_ia32_n_res(n));
+			fprintf(F, "n_res = %d\n", arch_irn_get_n_outs(n));
 			fprintf(F, "use_frame = %d\n", is_ia32_use_frame(n));
 			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
@@ -301,7 +298,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 
 			/* dump flags */
 			fprintf(F, "flags =");
-			flags = get_ia32_flags(n);
+			flags = arch_irn_get_flags(n);
 			if (flags == arch_irn_flags_none) {
 				fprintf(F, " none");
 			}
@@ -311,12 +308,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				}
 				if (flags & arch_irn_flags_rematerializable) {
 					fprintf(F, " remat");
-				}
-				if (flags & arch_irn_flags_ignore) {
-					fprintf(F, " ignore");
-				}
-				if (flags & arch_irn_flags_modify_sp) {
-					fprintf(F, " modify_sp");
 				}
 				if (flags & arch_irn_flags_modify_flags) {
 					fprintf(F, " modify_flags");
@@ -797,43 +788,6 @@ void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 }
 
 /**
- * Returns the register flag of an ia32 node.
- */
-arch_irn_flags_t get_ia32_flags(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->data.flags;
-}
-
-/**
- * Sets the register flag of an ia32 node.
- */
-void set_ia32_flags(ir_node *node, arch_irn_flags_t flags) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->data.flags  = flags;
-}
-
-void add_ia32_flags(ir_node *node, arch_irn_flags_t flags) {
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->data.flags  |= flags;
-}
-
-/**
- * Returns the result register slots of an ia32 node.
- */
-const arch_register_t **get_ia32_slots(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->slots;
-}
-
-/**
- * Returns the number of results.
- */
-int get_ia32_n_res(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return ARR_LEN(attr->slots);
-}
-
-/**
  * Returns the condition code of a node.
  */
 long get_ia32_condcode(const ir_node *node)
@@ -858,24 +812,6 @@ unsigned get_ia32_copyb_size(const ir_node *node)
 {
 	const ia32_copyb_attr_t *attr = get_ia32_copyb_attr_const(node);
 	return attr->size;
-}
-
-/**
- * Sets the flags for the n'th out.
- */
-void set_ia32_out_flags(ir_node *node, arch_irn_flags_t flags, int pos) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
-	attr->out_flags[pos] = flags;
-}
-
-/**
- * Gets the flags for the n'th out.
- */
-arch_irn_flags_t get_ia32_out_flags(const ir_node *node, int pos) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	assert(pos < ARR_LEN(attr->out_flags) && "Invalid OUT position.");
-	return attr->out_flags[pos];
 }
 
 /**
@@ -982,18 +918,6 @@ void ia32_swap_left_right(ir_node *node)
 }
 
 /**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return attr->slots[pos];
-}
-
-/**
  * Initializes the nodes attributes.
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
@@ -1005,8 +929,9 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
 	ia32_attr_t     *attr = get_ia32_attr(node);
+	backend_info_t  *info;
 
-	set_ia32_flags(node, flags);
+	arch_irn_set_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
 	set_ia32_out_req_all(node, out_reqs);
 
@@ -1015,12 +940,9 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	attr->attr_type  |= IA32_ATTR_ia32_attr_t;
 #endif
 
-	attr->out_flags = NEW_ARR_D(int, obst, n_res);
-	memset(attr->out_flags, 0, n_res * sizeof(attr->out_flags[0]));
-
-	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	/* void* cast to suppress an incorrect warning on MSVC */
-	memset((void*)attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	info            = be_get_info(node);
+	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
+	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
 void
@@ -1264,16 +1186,17 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)
 	struct obstack    *obst     = get_irg_obstack(irg);
 	const ia32_attr_t *attr_old = get_ia32_attr_const(old_node);
 	ia32_attr_t       *attr_new = get_ia32_attr(new_node);
+	backend_info_t    *old_info = be_get_info(old_node);
+	backend_info_t    *new_info;
+
+	new_info = be_get_info(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
 
 	/* copy out flags */
-	attr_new->out_flags =
-		DUP_ARR_D(int, obst, attr_old->out_flags);
-	/* copy register assignments */
-	attr_new->slots =
-		DUP_ARR_D(arch_register_t*, obst, attr_old->slots);
+	new_info->out_infos =
+		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 }
 
 /* Include the generated constructor functions */

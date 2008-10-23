@@ -504,7 +504,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	ir_node                     *keep, *cpy;
 	op_copy_assoc_t             *entry;
 
-	if (arch_irn_is(other_different, ignore) ||
+	if (arch_irn_is_ignore(other_different) ||
 			!mode_is_datab(get_irn_mode(other_different))) {
 		DBG((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
@@ -524,7 +524,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	cpy = find_copy(skip_Proj(irn), other_different);
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
-		be_node_set_flags(cpy, BE_OUT_POS(0), arch_irn_flags_dont_spill);
+		arch_irn_set_flags(cpy, arch_irn_flags_dont_spill);
 		DBG((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
 		DBG((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
@@ -534,7 +534,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* of the other_different irn in case of CopyKeep.   */
 	if (has_irn_users(other_different)) {
 		keep = be_new_CopyKeep_single(cls, irg, block, cpy, irn, get_irn_mode(other_different));
-		be_node_set_reg_class(keep, 1, cls);
+		be_node_set_reg_class_in(keep, 1, cls);
 	} else {
 		ir_node *in[2];
 
@@ -736,7 +736,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 
 				/* set register class for all kept inputs */
 				for (j = 1; j <= n_melt; ++j)
-					be_node_set_reg_class(new_ck, j, entry->cls);
+					be_node_set_reg_class_in(new_ck, j, entry->cls);
 
 				ir_nodeset_insert(&entry->copies, new_ck);
 

@@ -92,7 +92,6 @@ typedef struct ia32_attr_t ia32_attr_t;
 struct ia32_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
 	struct ia32_attr_data_bitfield {
-		unsigned flags:5;               /**< Indicating if spillable, rematerializeable, stack modifying and/or ignore. */
 		unsigned tp:3;                  /**< ia32 node type. */
 		unsigned am_arity:2;            /**< Indicates the address mode type supported by this node. */
 		unsigned am_scale:2;            /**< The address mode scale for index register. */
@@ -114,8 +113,6 @@ struct ia32_attr_t {
 		unsigned is_remat : 1;
 	} data;
 
-	int       *out_flags;     /**< flags for each produced value */
-
 	int        am_offs;       /**< offsets for AddrMode */
 	ir_entity *am_sc;         /**< SymConst for AddrMode */
 
@@ -128,8 +125,6 @@ struct ia32_attr_t {
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
-
-	const arch_register_t **slots;     /**< register slots for assigned registers */
 
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 

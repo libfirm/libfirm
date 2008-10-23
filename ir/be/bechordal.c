@@ -921,7 +921,7 @@ static void assign(ir_node *block, void *env_ptr)
 	list_for_each_entry_reverse(border_t, b, head, list) {
 		ir_node *irn = b->irn;
 		int nr       = get_irn_idx(irn);
-		int ignore   = arch_irn_is(irn, ignore);
+		int ignore   = arch_irn_is_ignore(irn);
 
 		/*
 		 * Assign a color, if it is a local def. Global defs already have a

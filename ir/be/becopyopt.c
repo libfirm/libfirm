@@ -220,9 +220,9 @@ void free_copy_opt(copy_opt_t *co) {
 static int co_is_optimizable_root(ir_node *irn)
 {
 	const arch_register_req_t *req;
-	const arch_register_t *reg;
+	const arch_register_t     *reg;
 
-	if (arch_irn_is(irn, ignore))
+	if (arch_irn_is_ignore(irn))
 		return 0;
 
 	reg = arch_get_irn_register(irn);
@@ -422,25 +422,26 @@ static void co_collect_units(ir_node *irn, void *env)
 			/* Else insert the argument of the phi to the members of this ou */
 			DBG((dbg, LEVEL_1, "\t   Member: %+F\n", arg));
 
-			if (!arch_irn_is(arg, ignore)) {
-				/* Check if arg has occurred at a prior position in the arg/list */
-				arg_pos = 0;
-				for (o=1; o<unit->node_count; ++o) {
-					if (unit->nodes[o] == arg) {
-						arg_pos = o;
-						break;
-					}
-				}
+			if (arch_irn_is_ignore(arg))
+				continue;
 
-				if (!arg_pos) { /* a new argument */
-					/* insert node, set costs */
-					unit->nodes[unit->node_count] = arg;
-					unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
-					unit->node_count++;
-				} else { /* arg has occurred before in same phi */
-					/* increase costs for existing arg */
-					unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
+			/* Check if arg has occurred at a prior position in the arg/list */
+			arg_pos = 0;
+			for (o=1; o<unit->node_count; ++o) {
+				if (unit->nodes[o] == arg) {
+					arg_pos = o;
+					break;
 				}
+			}
+
+			if (!arg_pos) { /* a new argument */
+				/* insert node, set costs */
+				unit->nodes[unit->node_count] = arg;
+				unit->costs[unit->node_count] = co->get_costs(co, irn, arg, i);
+				unit->node_count++;
+			} else { /* arg has occurred before in same phi */
+				/* increase costs for existing arg */
+				unit->costs[arg_pos] += co->get_costs(co, irn, arg, i);
 			}
 		}
 		unit->nodes = XREALLOC(unit->nodes, ir_node*, unit->node_count);
@@ -464,10 +465,11 @@ static void co_collect_units(ir_node *irn, void *env)
 			for (i = 0; (1U << i) <= other; ++i) {
 				if (other & (1U << i)) {
 					ir_node *o  = get_irn_n(skip_Proj(irn), i);
-					if (!arch_irn_is(o, ignore) &&
-							!nodes_interfere(co->cenv, irn, o)) {
-						++count;
-					}
+					if (arch_irn_is_ignore(o))
+						continue;
+					if (nodes_interfere(co->cenv, irn, o))
+						continue;
+					++count;
 				}
 			}
 
@@ -482,7 +484,7 @@ static void co_collect_units(ir_node *irn, void *env)
 				for (i = 0; 1U << i <= other; ++i) {
 					if (other & (1U << i)) {
 						ir_node *o  = get_irn_n(skip_Proj(irn), i);
-						if (!arch_irn_is(o, ignore) &&
+						if (!arch_irn_is_ignore(o) &&
 								!nodes_interfere(co->cenv, irn, o)) {
 							unit->nodes[k] = o;
 							unit->costs[k] = co->get_costs(co, irn, o, -1);
@@ -777,7 +779,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	int pos, max;
 	const arch_register_t *reg;
 
-	if (req->cls != co->cls || arch_irn_is(irn, ignore))
+	if (req->cls != co->cls || arch_irn_is_ignore(irn))
 		return;
 
 	reg = arch_get_irn_register(irn);
@@ -800,7 +802,7 @@ static void build_graph_walker(ir_node *irn, void *env) {
 			for (i = 0; 1U << i <= other; ++i) {
 				if (other & (1U << i)) {
 					ir_node *other = get_irn_n(skip_Proj(irn), i);
-					if (!arch_irn_is(other, ignore))
+					if (!arch_irn_is_ignore(other))
 						add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
 				}
 			}
@@ -886,14 +888,15 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 	n = n_regs;
 	be_ifg_foreach_node(ifg, it, irn) {
-		if (!arch_irn_is(irn, ignore))
-			node_map[get_irn_idx(irn)] = n++;
+		if (arch_irn_is_ignore(irn))
+			continue;
+		node_map[get_irn_idx(irn)] = n++;
 	}
 
 	fprintf(f, "%d %d\n", n, n_regs);
 
 	be_ifg_foreach_node(ifg, it, irn) {
-		if (!arch_irn_is(irn, ignore)) {
+		if (!arch_irn_is_ignore(irn)) {
 			int idx                        = node_map[get_irn_idx(irn)];
 			affinity_node_t           *a   = get_affinity_info(co, irn);
 			const arch_register_req_t *req = arch_get_register_req_out(irn);
@@ -907,7 +910,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			}
 
 			be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
-				if (!arch_irn_is(adj, ignore) &&
+				if (!arch_irn_is_ignore(adj) &&
 						!co_dump_appel_disjoint_constraints(co, irn, adj)) {
 					int adj_idx = node_map[get_irn_idx(adj)];
 					if(idx < adj_idx)
@@ -919,7 +922,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 				neighb_t *n;
 
 				co_gs_foreach_neighb(a, n) {
-					if (!arch_irn_is(n->irn, ignore)) {
+					if (!arch_irn_is_ignore(n->irn)) {
 						int n_idx = node_map[get_irn_idx(n->irn)];
 						if(idx < n_idx)
 							fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
@@ -994,7 +997,7 @@ static void ifg_dump_graph_attr(FILE *f, void *self)
 static int ifg_is_dump_node(void *self, ir_node *irn)
 {
 	(void)self;
-	return !arch_irn_is(irn, ignore);
+	return !arch_irn_is_ignore(irn);
 }
 
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)

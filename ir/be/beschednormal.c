@@ -108,16 +108,19 @@ typedef struct flag_and_cost {
 static int count_result(const ir_node* irn)
 {
 	const ir_mode* mode = get_irn_mode(irn);
-	return
-		mode != mode_M &&
-		mode != mode_X &&
-		!arch_irn_is(irn, ignore);
+
+	if (mode == mode_M || mode == mode_X)
+		return 0;
+
+	if (arch_get_register_req_out(irn)->type & arch_register_req_type_ignore)
+		return 0;
+
+	return 1;
 }
 
 
 /* TODO high cost for store trees
  */
-
 
 static int normal_tree_cost(ir_node* irn)
 {
@@ -159,7 +162,7 @@ static int normal_tree_cost(ir_node* irn)
 
 				cost = normal_tree_cost(pred);
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
-				if (!arch_irn_is(pred, ignore)) {
+				if (!arch_irn_is_ignore(pred)) {
 					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
 					pred_fc = get_irn_link(real_pred);
 					pred_fc->no_root = 1;
@@ -183,7 +186,7 @@ static int normal_tree_cost(ir_node* irn)
 		ir_node* op = fc->costs[i].irn;
 		if (op == last)                 continue;
 		if (get_irn_mode(op) == mode_M) continue;
-		if (arch_irn_is(op, ignore))    continue;
+		if (arch_irn_is_ignore(op))     continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
 		last = op;
 		++n_op_res;

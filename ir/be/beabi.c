@@ -665,10 +665,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* create new stack pointer */
 	curr_sp = new_r_Proj(irg, bl, low_call, get_irn_mode(curr_sp),
 	                     pn_be_Call_sp);
-	be_set_constr_single_reg(low_call, BE_OUT_POS(pn_be_Call_sp), sp);
+	be_set_constr_single_reg_out(low_call, pn_be_Call_sp, sp,
+			arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 	arch_set_irn_register(curr_sp, sp);
-	be_node_set_flags(low_call, BE_OUT_POS(pn_be_Call_sp),
-			arch_irn_flags_ignore | arch_irn_flags_modify_sp);
 
 	for(i = 0; i < n_res; ++i) {
 		int pn;
@@ -704,7 +703,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		Set the register class of the call address to
 		the backend provided class (default: stack pointer class)
 	*/
-	be_node_set_reg_class(low_call, be_pos_Call_ptr, call->cls_addr);
+	be_node_set_reg_class_in(low_call, be_pos_Call_ptr, call->cls_addr);
 
 	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
@@ -714,7 +713,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
 		assert(arg->reg != NULL);
 
-		be_set_constr_single_reg(low_call, be_pos_Call_first_arg + i, arg->reg);
+		be_set_constr_single_reg_in(low_call, be_pos_Call_first_arg + i,
+		                            arg->reg, 0);
 	}
 
 	/* Set the register constraints of the results. */
@@ -724,7 +724,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int                      pn   = get_Proj_proj(proj);
 
 		assert(arg->in_reg);
-		be_set_constr_single_reg(low_call, BE_OUT_POS(pn), arg->reg);
+		be_set_constr_single_reg_out(low_call, pn, arg->reg, 0);
 		arch_set_irn_register(proj, arg->reg);
 	}
 	obstack_free(obst, in);
@@ -755,14 +755,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			                           curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
-			be_set_constr_single_reg(low_call, BE_OUT_POS(curr_res_proj), reg);
+			be_set_constr_single_reg_out(low_call, curr_res_proj, reg, 0);
 			arch_set_irn_register(proj, reg);
-
-			/* a call can produce ignore registers, in this case set the flag and register for the Proj */
-			if (arch_register_type_is(reg, ignore)) {
-				be_node_set_flags(low_call, BE_OUT_POS(curr_res_proj),
-				                  arch_irn_flags_ignore);
-			}
 
 			set_irn_link(proj, (void*) reg);
 			obstack_ptr_grow(obst, proj);
@@ -782,7 +776,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		keep = be_new_Keep(NULL, irg, bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = get_irn_link(in[i]);
-			be_node_set_reg_class(keep, i, reg->reg_class);
+			be_node_set_reg_class_in(keep, i, reg->reg_class);
 		}
 		obstack_free(obst, in);
 	}
@@ -1246,50 +1240,6 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	return res;
 }
 
-#if 0
-static void create_register_perms(const arch_isa_t *isa, ir_graph *irg, ir_node *bl, pmap *regs)
-{
-	int i, j, n;
-	struct obstack obst;
-
-	obstack_init(&obst);
-
-	/* Create a Perm after the RegParams node to delimit it. */
-	for (i = 0, n = arch_isa_get_n_reg_class(isa); i < n; ++i) {
-		const arch_register_class_t *cls = arch_isa_get_reg_class(isa, i);
-		ir_node *perm;
-		ir_node **in;
-		int n_regs;
-
-		for (n_regs = 0, j = 0; j < cls->n_regs; ++j) {
-			const arch_register_t *reg = &cls->regs[j];
-			ir_node *irn = pmap_get(regs, (void *) reg);
-
-			if(irn && !arch_register_type_is(reg, ignore)) {
-				n_regs++;
-				obstack_ptr_grow(&obst, irn);
-				set_irn_link(irn, (void *) reg);
-			}
-		}
-
-		obstack_ptr_grow(&obst, NULL);
-		in = obstack_finish(&obst);
-		if (n_regs > 0) {
-			perm = be_new_Perm(cls, irg, bl, n_regs, in);
-			for (j = 0; j < n_regs; ++j) {
-				ir_node *arg = in[j];
-				arch_register_t *reg = get_irn_link(arg);
-				pmap_insert(regs, reg, arg);
-				be_set_constr_single_reg(perm, BE_OUT_POS(j), reg);
-			}
-		}
-		obstack_free(&obst, in);
-	}
-
-	obstack_free(&obst, NULL);
-}
-#endif
-
 typedef struct {
 	const arch_register_t *reg;
 	ir_node *irn;
@@ -1350,27 +1300,27 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	obstack_free(&env->obst, in);
 
 	for(n = 0; n < n_regs; ++n) {
-		const arch_register_t *reg = rm[n].reg;
-		int flags                  = 0;
-		int pos                    = BE_OUT_POS(n);
-		ir_node *proj;
+		ir_node                   *pred     = rm[n].irn;
+		const arch_register_t     *reg      = rm[n].reg;
+		arch_register_type_t       add_type = 0;
+		ir_node                   *proj;
 
-		proj = new_r_Proj(irg, bl, irn, get_irn_mode(rm[n].irn), n);
-		be_node_set_reg_class(irn, n, reg->reg_class);
+		/* stupid workaround for now... as not all nodes report register
+		 * requirements. */
+		if (!is_Phi(pred)) {
+			const arch_register_req_t *ireq = arch_get_register_req_out(pred);
+			if (ireq->type & arch_register_req_type_ignore)
+				add_type |= arch_register_req_type_ignore;
+			if (ireq->type & arch_register_req_type_produces_sp)
+				add_type |= arch_register_req_type_produces_sp;
+		}
+
+		proj = new_r_Proj(irg, bl, irn, get_irn_mode(pred), n);
+		be_node_set_reg_class_in(irn, n, reg->reg_class);
 		if (in_req)
-			be_set_constr_single_reg(irn, n, reg);
-		be_set_constr_single_reg(irn, pos, reg);
-		be_node_set_reg_class(irn, pos, reg->reg_class);
+			be_set_constr_single_reg_in(irn, n, reg, 0);
+		be_set_constr_single_reg_out(irn, n, reg, add_type);
 		arch_set_irn_register(proj, reg);
-
-		/* if the proj projects a ignore register or a node which is set to ignore, propagate this property. */
-		if (arch_register_type_is(reg, ignore) || arch_irn_is(in[n], ignore))
-			flags |= arch_irn_flags_ignore;
-
-		if (arch_irn_is(in[n], modify_sp))
-			flags |= arch_irn_flags_modify_sp;
-
-		be_node_set_flags(irn, pos, flags);
 
 		pmap_insert(regs, (void *) reg, proj);
 	}
@@ -1490,9 +1440,12 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	ret = be_new_Return(dbgi, env->birg->irg, bl, n_res, pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
-	for (i = 0; i < n; ++i)
-		if (regs[i])
-			be_node_set_reg_class(ret, i, regs[i]->reg_class);
+	for (i = 0; i < n; ++i) {
+		if (regs[i] == NULL)
+			continue;
+
+		be_node_set_reg_class_in(ret, i, regs[i]->reg_class);
+	}
 
 	/* Free the space of the Epilog's in array and the register <-> proj map. */
 	obstack_free(&env->obst, in);
@@ -1824,32 +1777,21 @@ static void modify_irg(be_abi_irg_t *env)
 
 	rm = reg_map_to_arr(&env->obst, env->regs);
 	for (i = 0, n = pmap_count(env->regs); i < n; ++i) {
-		arch_register_t *reg = (void *) rm[i].reg;
-		ir_mode *mode        = reg->reg_class->mode;
-		long nr              = i;
-		int pos              = BE_OUT_POS((int) nr);
-		int flags            = 0;
+		arch_register_t          *reg      = (void *) rm[i].reg;
+		ir_mode                  *mode     = reg->reg_class->mode;
+		long                      nr       = i;
+		arch_register_req_type_t  add_type = 0;
+		ir_node                  *proj;
 
-		ir_node *proj;
+		if (reg == sp)
+			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
 
 		assert(nr >= 0);
 		bitset_set(used_proj_nr, nr);
 		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
 		pmap_insert(env->regs, (void *) reg, proj);
-		be_set_constr_single_reg(env->reg_params, pos, reg);
+		be_set_constr_single_reg_out(env->reg_params, nr, reg, add_type);
 		arch_set_irn_register(proj, reg);
-
-		/*
-		 * If the register is an ignore register,
-		 * The Proj for that register shall also be ignored during register allocation.
-		 */
-		if (arch_register_type_is(reg, ignore))
-			flags |= arch_irn_flags_ignore;
-
-		if (reg == sp)
-			flags |= arch_irn_flags_modify_sp;
-
-		be_node_set_flags(env->reg_params, pos, flags);
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
 	}
@@ -1863,7 +1805,7 @@ static void modify_irg(be_abi_irg_t *env)
 	mem = new_mem_proj;
 
 	/* Generate the Prologue */
-	fp_reg  = call->cb->prologue(env->cb, &mem, env->regs, &env->frame.initial_bias);
+	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &env->frame.initial_bias);
 
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
@@ -2188,6 +2130,9 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	limited_bitset      = rbitset_obstack_alloc(&env->obst, env->sp_req.cls->n_regs);
 	rbitset_set(limited_bitset, arch_register_get_index(env->arch_env->sp));
 	env->sp_req.limited = limited_bitset;
+	if (env->arch_env->sp->type & arch_register_type_ignore) {
+		env->sp_req.type |= arch_register_req_type_ignore;
+	}
 
 	env->sp_cls_req.type  = arch_register_req_type_normal;
 	env->sp_cls_req.cls   = arch_register_get_class(env->arch_env->sp);
@@ -2310,12 +2255,17 @@ typedef struct fix_stack_walker_env_t {
  */
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
-	fix_stack_walker_env_t *env = data;
+	fix_stack_walker_env_t    *env = data;
+	const arch_register_req_t *req;
 
-	if (arch_irn_is(node, modify_sp)) {
-		assert(get_irn_mode(node) != mode_M && get_irn_mode(node) != mode_T);
-		ARR_APP1(ir_node*, env->sp_nodes, node);
-	}
+	if (get_irn_mode(node) == mode_T)
+		return;
+
+	req = arch_get_register_req_out(node);
+	if (! (req->type & arch_register_req_type_produces_sp))
+		return;
+
+	ARR_APP1(ir_node*, env->sp_nodes, node);
 }
 
 void be_abi_fix_stack_nodes(be_abi_irg_t *env)
@@ -2345,7 +2295,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes,
                                    ARR_LEN(walker_env.sp_nodes));
 	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes,
-	                              ARR_LEN(walker_env.sp_nodes));
+	                                    ARR_LEN(walker_env.sp_nodes));
 
 	if(lv != NULL) {
 		len = ARR_LEN(walker_env.sp_nodes);
@@ -2361,8 +2311,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	len = ARR_LEN(phis);
 	for(i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
-		be_set_phi_reg_req(phi, &env->sp_req);
-		be_set_phi_flags(phi, arch_irn_flags_ignore | arch_irn_flags_modify_sp);
+		be_set_phi_reg_req(phi, &env->sp_req, arch_register_req_type_produces_sp);
 		arch_set_irn_register(phi, env->arch_env->sp);
 	}
 	be_ssa_construction_destroy(&senv);

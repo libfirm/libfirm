@@ -302,11 +302,16 @@ static int get_reg_difference(trace_env_t *env, ir_node *irn) {
 	for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
 		ir_node *in = get_irn_n(irn, i);
 
-		if (mode_is_datab(get_irn_mode(in)) &&           /* must be data node */
-		    !arch_irn_is(in, ignore)        &&           /* ignore "ignore" nodes :) */
-		    !be_is_live_end(env->liveness, block, in)) { /* if the value lives outside of block: do not count */
-			num_in++;
-		}
+		if (!mode_is_datab(get_irn_mode(in)))
+			continue;
+
+		if (arch_irn_is_ignore(in))
+			continue;
+
+		if (be_is_live_end(env->liveness, block, in))
+			continue;
+
+		num_in++;
 	}
 
 	return num_out - num_in;

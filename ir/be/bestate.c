@@ -597,7 +597,6 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 		len = ARR_LEN(phis);
 		for(i = 0; i < len; ++i) {
 			ir_node *phi = phis[i];
-			be_set_phi_flags(phi, arch_irn_flags_ignore);
 			arch_set_irn_register(phi, env.reg);
 		}
 		be_ssa_construction_destroy(&senv);

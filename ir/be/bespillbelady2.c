@@ -503,7 +503,7 @@ static inline unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 	next_use_t *use            = get_current_use(bi, irn);
 	int flags                  = arch_irn_get_flags(irn);
 
-	assert(!(flags & arch_irn_flags_ignore));
+	assert(!arch_irn_is_ignore(irn));
 
 	/* We have to keep non-spillable nodes in the working set */
 	if(flags & arch_irn_flags_dont_spill)

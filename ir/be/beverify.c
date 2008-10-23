@@ -284,31 +284,28 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 
 static int should_be_scheduled(ir_node *node)
 {
-	if(is_Block(node))
-		return -1;
-
-	if(is_Proj(node))
-		return 0;
-
-	if(get_irn_mode(node) == mode_M) {
-		if(is_Phi(node) || is_Sync(node) || is_Pin(node))
-			return 0;
-	}
-	if(be_is_Keep(node) && get_irn_opcode(get_nodes_block(node)) == iro_Bad)
-		return 0;
-
 	switch(get_irn_opcode(node)) {
+	case iro_Bad:
+	case iro_Block:
 	case iro_End:
 	case iro_NoMem:
-	case iro_Bad:
+	case iro_Pin:
+	case iro_Proj:
+	case iro_Sync:
 	case iro_Unknown:
 		return 0;
+	case iro_Phi:
+		if (get_irn_mode(node) == mode_M)
+			return 0;
+		break;
 	default:
 		break;
 	}
 
-	if (arch_irn_get_flags(node) & arch_irn_flags_ignore)
-		return -1;
+	if (get_irn_mode(node) != mode_T) {
+		if (arch_irn_is_ignore(node))
+			return -1;
+	}
 
 	return 1;
 }
@@ -771,7 +768,7 @@ static void value_used(ir_node *node) {
 		return;
 
 	reg = arch_get_irn_register(node);
-	if (reg->type & arch_register_type_virtual)
+	if (reg == NULL || reg->type & arch_register_type_virtual)
 		return;
 
 	reg_node = registers[reg->index];
@@ -794,7 +791,7 @@ static void value_def(ir_node *node)
 		return;
 
 	reg = arch_get_irn_register(node);
-	if (reg->type & arch_register_type_virtual)
+	if (reg == NULL || reg->type & arch_register_type_virtual)
 		return;
 
 	reg_node = registers[reg->index];

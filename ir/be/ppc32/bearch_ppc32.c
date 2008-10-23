@@ -137,79 +137,12 @@ static const arch_register_req_t *ppc32_get_irn_reg_req(const ir_node *irn,
 	return arch_no_register_req;
 }
 
-static void ppc32_set_irn_reg(ir_node *irn, const arch_register_t *reg)
-{
-	int pos = 0;
-
-	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return;
-		}
-
-		pos = ppc32_translate_proj_pos(irn);
-		irn = skip_Proj(irn);
-	}
-
-	if (is_ppc32_irn(irn)) {
-		const arch_register_t **slots;
-
-		slots      = get_ppc32_slots(irn);
-		slots[pos] = reg;
-	}
-	else {
-		/* here we set the registers for the Phi nodes */
-		ppc32_set_firm_reg(irn, reg, cur_reg_set);
-	}
-}
-
-static const arch_register_t *ppc32_get_irn_reg(const ir_node *irn)
-{
-	int pos = 0;
-	const arch_register_t *reg = NULL;
-
-	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return NULL;
-		}
-
-		pos = ppc32_translate_proj_pos(irn);
-		irn = skip_Proj_const(irn);
-	}
-
-	if (is_ppc32_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_ppc32_slots(irn);
-		reg   = slots[pos];
-	}
-	else {
-		reg = ppc32_get_firm_reg(irn, cur_reg_set);
-	}
-
-	return reg;
-}
-
 static arch_irn_class_t ppc32_classify(const ir_node *irn)
 {
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
-	}
-
-	return 0;
-}
-
-static arch_irn_flags_t ppc32_get_flags(const ir_node *irn)
-{
-	irn = skip_Proj_const(irn);
-
-	if (is_ppc32_irn(irn)) {
-		return get_ppc32_flags(irn);
-	}
-	else if (is_Unknown(irn)) {
-		return arch_irn_flags_ignore;
 	}
 
 	return 0;
@@ -359,10 +292,7 @@ static const be_abi_callbacks_t ppc32_abi_callbacks = {
 
 static const arch_irn_ops_t ppc32_irn_ops = {
 	ppc32_get_irn_reg_req,
-	ppc32_set_irn_reg,
-	ppc32_get_irn_reg,
 	ppc32_classify,
-	ppc32_get_flags,
 	ppc32_get_frame_entity,
 	ppc32_set_frame_entity,
 	ppc32_set_stack_bias,
@@ -921,6 +851,7 @@ static int ppc32_is_valid_clobber(const void *self, const char *clobber)
 const arch_isa_if_t ppc32_isa_if = {
 	ppc32_init,
 	ppc32_done,
+	NULL,             /* handle intrinsics */
 	ppc32_get_n_reg_class,
 	ppc32_get_reg_class,
 	ppc32_get_reg_class_for_mode,

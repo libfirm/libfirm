@@ -157,33 +157,6 @@ static void mips_set_irn_reg(ir_node *irn, const arch_register_t *reg)
 	}
 }
 
-static const arch_register_t *mips_get_irn_reg(const ir_node *irn)
-{
-	int pos = 0;
-	const arch_register_t *reg = NULL;
-
-	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return NULL;
-		}
-
-		pos = mips_translate_proj_pos(irn);
-		irn = skip_Proj_const(irn);
-	}
-
-	if (is_mips_irn(irn)) {
-		const arch_register_t **slots;
-		slots = get_mips_slots(irn);
-		reg   = slots[pos];
-	}
-	else {
-		reg = mips_get_firm_reg(irn, cur_reg_set);
-	}
-
-	return reg;
-}
-
 static arch_irn_class_t mips_classify(const ir_node *irn)
 {
 	irn = skip_Proj_const(irn);
@@ -193,16 +166,6 @@ static arch_irn_class_t mips_classify(const ir_node *irn)
 	}
 
 	return 0;
-}
-
-static arch_irn_flags_t mips_get_flags(const ir_node *irn)
-{
-	irn = skip_Proj_const(irn);
-
-	if (!is_mips_irn(irn))
-		return 0;
-
-	return get_mips_flags(irn);
 }
 
 int mips_is_Load(const ir_node *node)
@@ -277,10 +240,7 @@ static int mips_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t mips_irn_ops = {
 	mips_get_irn_reg_req,
-	mips_set_irn_reg,
-	mips_get_irn_reg,
 	mips_classify,
-	mips_get_flags,
 	mips_get_frame_entity,
 	mips_set_frame_entity,
 	mips_set_frame_offset,
@@ -558,7 +518,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_rd_mips_addu(NULL, irg, block, sp,
 		                      mips_create_Immediate(initialstackframesize));
 		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
-		set_mips_flags(sp, arch_irn_flags_ignore);
+		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		/* TODO: where to get an edge with a0-a3
 		int i;
@@ -596,7 +556,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_rd_mips_addu(NULL, irg, block, sp,
 		                      mips_create_Immediate(-initialstackframesize));
 		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
-		set_mips_flags(sp, arch_irn_flags_ignore);
+		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 0);
@@ -608,7 +568,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	fp = new_rd_mips_addu(NULL, irg, block, sp,
 	                      mips_create_Immediate(-initialstackframesize));
 	mips_set_irn_reg(fp, &mips_gp_regs[REG_FP]);
-	set_mips_flags(fp, arch_irn_flags_ignore);
+	panic("FIXME Use IncSP or set register requirement with ignore");
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);
@@ -630,12 +590,12 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	// copy fp to sp
 	sp = new_rd_mips_or(NULL, irg, block, fp, mips_create_zero());
 	mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
-	set_mips_flags(sp, arch_irn_flags_ignore);
+	panic("FIXME Use be_Copy or set register requirement with ignore");
 
 	// 1. restore fp
 	load = new_rd_mips_lw(NULL, irg, block, sp, *mem, NULL,
 	                      fp_save_offset - initial_frame_size);
-	set_mips_flags(load, arch_irn_flags_ignore);
+	panic("FIXME register requirement with ignore");
 
 	fp = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_res);
 	*mem = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_M);
@@ -847,6 +807,7 @@ static int mips_is_valid_clobber(const void *self, const char *clobber)
 const arch_isa_if_t mips_isa_if = {
 	mips_init,
 	mips_done,
+	NULL,               /* handle intrinsics */
 	mips_get_n_reg_class,
 	mips_get_reg_class,
 	mips_get_reg_class_for_mode,

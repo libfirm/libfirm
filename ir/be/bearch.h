@@ -26,6 +26,8 @@
 #ifndef FIRM_BE_BEARCH_H
 #define FIRM_BE_BEARCH_H
 
+#include <stdbool.h>
+
 #include "firm_types.h"
 #include "bitset.h"
 #include "be.h"
@@ -68,11 +70,13 @@ typedef enum arch_register_type_t {
  * Different types of register allocation requirements.
  */
 typedef enum arch_register_req_type_t {
-	arch_register_req_type_none              = 0,  /**< No register requirement. */
-	arch_register_req_type_normal            = 1,  /**< All registers in the class are allowed. */
-	arch_register_req_type_limited           = 2,  /**< Only a real subset of the class is allowed. */
-	arch_register_req_type_should_be_same    = 4,  /**< The register should be equal to another one at the node. */
-	arch_register_req_type_must_be_different = 8,  /**< The register must be unequal from some other at the node. */
+	arch_register_req_type_none              = 0, /**< No register requirement. */
+	arch_register_req_type_normal            = 1U << 0, /**< All registers in the class are allowed. */
+	arch_register_req_type_limited           = 1U << 1, /**< Only a real subset of the class is allowed. */
+	arch_register_req_type_should_be_same    = 1U << 2, /**< The register should be equal to another one at the node. */
+	arch_register_req_type_must_be_different = 1U << 3, /**< The register must be unequal from some other at the node. */
+	arch_register_req_type_ignore            = 1U << 4, /**< ignore while allocating registers */
+	arch_register_req_type_produces_sp       = 1U << 5, /**< the output produces a new value for the stack pointer */
 } arch_register_req_type_t;
 
 extern const arch_register_req_t *arch_no_register_req;
@@ -105,9 +109,7 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flags_none             = 0,       /**< Node flags. */
 	arch_irn_flags_dont_spill       = 1U << 0, /**< This must not be spilled. */
 	arch_irn_flags_rematerializable = 1U << 1, /**< This can be replicated instead of spilled/reloaded. */
-	arch_irn_flags_ignore           = 1U << 2, /**< Ignore node during register allocation. */
-	arch_irn_flags_modify_sp        = 1U << 3, /**< I modify the stack pointer. */
-	arch_irn_flags_modify_flags     = 1U << 4  /**< I modify flags. */
+	arch_irn_flags_modify_flags     = 1U << 2  /**< I modify flags. */
 } arch_irn_flags_t;
 
 void arch_set_frame_offset(ir_node *irn, int bias);
@@ -168,6 +170,7 @@ const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
  * @return    The register allocated for this operand
  */
 const arch_register_t *arch_get_irn_register(const ir_node *irn);
+const arch_register_t *arch_irn_get_register(const ir_node *irn, int pos);
 
 /**
  * Set the register for a certain output operand.
@@ -175,6 +178,7 @@ const arch_register_t *arch_get_irn_register(const ir_node *irn);
  * @param reg The register.
  */
 void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
+void arch_irn_set_register(ir_node *irn, int pos, const arch_register_t *reg);
 
 /**
  * Classify a node.
@@ -192,10 +196,10 @@ arch_irn_class_t arch_irn_classify(const ir_node *irn);
  */
 arch_irn_flags_t arch_irn_get_flags(const ir_node *irn);
 
-#define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
+void arch_irn_set_flags(ir_node *node, arch_irn_flags_t flags);
+void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags);
 
-#define arch_irn_consider_in_reg_alloc(cls, irn) \
-	(arch_get_irn_reg_class_out(irn) == (cls) && !arch_irn_is(irn, ignore))
+#define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
 
 /**
  * Get the operations of an irn.

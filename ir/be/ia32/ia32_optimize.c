@@ -224,8 +224,8 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(test, reg);
+	reg = arch_irn_get_register(node, pn_ia32_Cmp_eflags);
+	arch_irn_set_register(test, pn_ia32_Test_eflags, reg);
 
 	foreach_out_edge_safe(node, edge, tmp) {
 		ir_node *const user = get_edge_src_irn(edge);
@@ -558,10 +558,12 @@ static void peephole_store_incsp(ir_node *store)
 	dbg_info *dbgi;
 	ir_node  *node;
 	ir_node  *block;
-	ir_node  *noref;
+	ir_node  *noreg;
 	ir_node  *mem;
 	ir_node  *push;
 	ir_node  *val;
+	ir_node  *base;
+	ir_node  *index;
 	ir_node  *am_base = get_irn_n(store, n_ia32_Store_base);
 	if (!be_is_IncSP(am_base)
 			|| get_nodes_block(am_base) != get_nodes_block(store))
@@ -610,7 +612,7 @@ static void peephole_store_incsp(ir_node *store)
 					 || get_ia32_op_type(node) == ia32_AddrModeD)) {
 				int      node_offset  = get_ia32_am_offs_int(node);
 				ir_mode *node_ls_mode = get_ia32_ls_mode(node);
-				int      node_size    = get_mode_size_bytes(node);
+				int      node_size    = get_mode_size_bytes(node_ls_mode);
 				/* overlapping with our position? abort */
 				if (node_offset < my_offset + my_store_size
 						&& node_offset + node_size >= my_offset)
@@ -628,7 +630,7 @@ static void peephole_store_incsp(ir_node *store)
 	dbgi  = get_irn_dbg_info(store);
 	block = get_nodes_block(store);
 	noreg = ia32_new_NoReg_gp(cg);
-	val   = get_ia32_
+	val   = get_irn_n(store, n_ia32_Store_val);
 
 	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem,
 
@@ -740,7 +742,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (loads[loadslot] != NULL)
 			break;
 
-		dreg = arch_get_irn_register(node);
+		dreg = arch_irn_get_register(node, pn_ia32_Load_res);
 		if (regmask & (1 << dreg->index)) {
 			/* this register is already used */
 			break;
@@ -782,10 +784,10 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		const arch_register_t *reg;
 
 		mem = get_irn_n(load, n_ia32_mem);
-		reg = arch_get_irn_register(load);
+		reg = arch_irn_get_register(load, pn_ia32_Load_res);
 
 		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
-		arch_set_irn_register(pop, reg);
+		arch_irn_set_register(pop, pn_ia32_Load_res, reg);
 
 		copy_mark(load, pop);
 

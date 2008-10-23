@@ -190,24 +190,3 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 	// walk schedule and remove non-marked nodes
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }
-
-static void *sched_irn_init(ir_phase *ph, const ir_node *irn, void *old)
-{
-	sched_info_t *info = old ? old : phase_alloc(ph, sizeof(*info));
-
-	info->idx  = get_irn_idx(irn);
-	INIT_LIST_HEAD(&info->list);
-	info->scheduled = 0;
-	info->time_step = 0;
-	return info;
-}
-
-void be_sched_init_phase(ir_graph *irg)
-{
-	init_irg_phase(irg, PHASE_BE_SCHED, 0, sched_irn_init);
-}
-
-void be_sched_free_phase(ir_graph *irg)
-{
-	free_irg_phase(irg, PHASE_BE_SCHED);
-}

@@ -452,10 +452,13 @@ int be_get_MemPerm_entity_arity(const ir_node *irn);
 /**
  * Impose a register constraint on a backend node.
  * @param irn The node.
- * @param pos The position of the argument/result. Results range from -1..-m and arguments form 0..n
+ * @param pos The position of the argument.
  * @param reg The register which is admissible for that node, argument/result and position.
  */
-void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg);
+void be_set_constr_single_reg_in(ir_node *irn, int pos,
+		const arch_register_t *reg, arch_register_req_type_t additional_flags);
+void be_set_constr_single_reg_out(ir_node *irn, int pos,
+		const arch_register_t *reg, arch_register_req_type_t additional_flags);
 
 /**
  * Impose register constraints on a backend node.
@@ -468,22 +471,13 @@ void be_set_constr_single_reg(ir_node *irn, int pos, const arch_register_t *reg)
 void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req);
 
 /**
- * Set the flags of a node.
- * @param irn The node itself.
- * @param pos The position (0..n) for arguments, (-1..-m) for results.
- * @param flags The flags to set for that node and position.
- */
-void be_node_set_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
-
-void be_node_add_flags(ir_node *irn, int pos, arch_irn_flags_t flags);
-
-/**
  * Set the register class of a node.
  * @param irn The node itself.
- * @param pos The position (0..n) for arguments, (-1..-m) for results.
+ * @param pos The position (0..n) for arguments
  * @param flags The register class to set for that node and position.
  */
-void be_node_set_reg_class(ir_node *irn, int pos, const arch_register_class_t *cls);
+void be_node_set_reg_class_in(ir_node *irn, int pos, const arch_register_class_t *cls);
+void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_t *cls);
 
 /**
  * Set the register requirement type of a node.
@@ -512,12 +506,8 @@ void be_phi_handler_reset(void);
 /**
  * Set the register requirements for a phi node.
  */
-void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
-
-/*
- * Set flags for a phi node
- */
-void be_set_phi_flags(ir_node *phi, arch_irn_flags_t flags);
+void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req,
+		arch_register_req_type_t additional_types);
 
 /**
  * irn handler for common be nodes and Phi's.

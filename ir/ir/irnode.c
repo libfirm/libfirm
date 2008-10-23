@@ -44,6 +44,8 @@
 #include "irhooks.h"
 #include "irtools.h"
 
+#include "beinfo.h"
+
 /* some constants fixing the positions of nodes predecessors
    in the in array */
 #define CALL_PARAM_OFFSET     2
@@ -179,6 +181,9 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 		edges_notify_edge(res, i - 1, res->in[i], NULL, irg);
 
 	hook_new_node(irg, res);
+	if (get_irg_phase_state(irg) == phase_backend) {
+		be_info_new_node(res);
+	}
 
 	return res;
 }

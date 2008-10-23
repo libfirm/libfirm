@@ -473,6 +473,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	edges_assure(irg);
 
 	set_irg_phase_state(irg, phase_backend);
+	be_info_init_irg(irg);
 
 	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
 }
@@ -567,11 +568,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	num_birgs = backend_irg_list ? ARR_LEN(backend_irg_list) : get_irp_n_irgs();
 	birgs     = ALLOCAN(be_irg_t, num_birgs + 1);
 
+	be_info_init();
+
 	/* First: initialize all birgs */
 	for(i = 0; i < num_birgs; ++i) {
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
 		initialize_birg(&birgs[i], irg, &env);
 	}
+	arch_env_handle_intrinsics(arch_env);
 	DEL_ARR_F(irg_list);
 
 	/*
@@ -603,8 +607,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
-
-		be_sched_init_phase(irg);
 
 		/* reset the phi handler. */
 		be_phi_handler_reset();
@@ -859,13 +861,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		);
 #undef LC_EMIT
 
-		be_sched_free_phase(irg);
-
 		be_free_birg(birg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
 	ir_profile_free();
 	be_done_env(&env);
+
+	be_info_free();
 }
 
 /* Main interface to the frontend. */

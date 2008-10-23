@@ -284,33 +284,6 @@ void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos);
 void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
- * Returns the register flag of an ia32 node.
- */
-arch_irn_flags_t get_ia32_flags(const ir_node *node);
-
-/**
- * Sets the register flag of an ia32 node.
- */
-void set_ia32_flags(ir_node *node, arch_irn_flags_t flags);
-
-void add_ia32_flags(ir_node *node, arch_irn_flags_t flags);
-
-/**
- * Returns the result register slots of an ia32 node.
- */
-const arch_register_t **get_ia32_slots(const ir_node *node);
-
-/**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_ia32_out_reg(const ir_node *node, int pos);
-
-/**
- * Returns the number of results.
- */
-int get_ia32_n_res(const ir_node *node);
-
-/**
  * Returns the condition code of a node.
  */
 long get_ia32_condcode(const ir_node *node);

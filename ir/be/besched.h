@@ -85,7 +85,4 @@ void    sched_remove(const ir_node *irn);
  */
 void be_remove_dead_nodes_from_schedule(be_irg_t *birg);
 
-void be_sched_init_phase(ir_graph *irg);
-void be_sched_free_phase(ir_graph *irg);
-
-#endif /* FIRM_BE_BESCHED_H */
+#endif

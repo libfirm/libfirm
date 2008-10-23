@@ -112,69 +112,12 @@ static const arch_register_req_t *TEMPLATE_get_irn_reg_req(const ir_node *node,
 	return arch_no_register_req;
 }
 
-static void TEMPLATE_set_irn_reg(ir_node *irn, const arch_register_t *reg)
-{
-	int pos = 0;
-
-	if (is_Proj(irn)) {
-		pos = TEMPLATE_translate_proj_pos(irn);
-		irn = skip_Proj(irn);
-	}
-
-	if (is_TEMPLATE_irn(irn)) {
-		const arch_register_t **slots;
-
-		slots      = get_TEMPLATE_slots(irn);
-		slots[pos] = reg;
-	}
-	else {
-		/* here we set the registers for the Phi nodes */
-		TEMPLATE_set_firm_reg(irn, reg, cur_reg_set);
-	}
-}
-
-static const arch_register_t *TEMPLATE_get_irn_reg(const ir_node *irn)
-{
-	int pos = 0;
-	const arch_register_t *reg = NULL;
-
-	if (is_Proj(irn)) {
-		pos = TEMPLATE_translate_proj_pos(irn);
-		irn = skip_Proj_const(irn);
-	}
-
-	if (is_TEMPLATE_irn(irn)) {
-		const arch_register_t * const *slots;
-		slots = get_TEMPLATE_slots_const(irn);
-		reg   = slots[pos];
-	}
-	else {
-		reg = TEMPLATE_get_firm_reg(irn, cur_reg_set);
-	}
-
-	return reg;
-}
-
 static arch_irn_class_t TEMPLATE_classify(const ir_node *irn)
 {
 	irn = skip_Proj_const(irn);
 
 	if (is_cfop(irn)) {
 		return arch_irn_class_branch;
-	}
-
-	return 0;
-}
-
-static arch_irn_flags_t TEMPLATE_get_flags(const ir_node *irn)
-{
-	irn = skip_Proj_const(irn);
-
-	if (is_TEMPLATE_irn(irn)) {
-		return get_TEMPLATE_flags(irn);
-	}
-	else if (is_Unknown(irn)) {
-		return arch_irn_flags_ignore;
 	}
 
 	return 0;
@@ -215,10 +158,7 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	TEMPLATE_get_irn_reg_req,
-	TEMPLATE_set_irn_reg,
-	TEMPLATE_get_irn_reg,
 	TEMPLATE_classify,
-	TEMPLATE_get_flags,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_entity,
 	TEMPLATE_set_frame_offset,
@@ -664,6 +604,7 @@ static int TEMPLATE_is_valid_clobber(const void *self, const char *clobber)
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_done,
+	NULL,                /* handle intrinsics */
 	TEMPLATE_get_n_reg_class,
 	TEMPLATE_get_reg_class,
 	TEMPLATE_get_reg_class_for_mode,

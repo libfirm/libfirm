@@ -396,7 +396,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 		/* build list of interfering neighbours */
 		len = 0;
 		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh) {
-			if (!arch_irn_is(neigh, ignore)) {
+			if (!arch_irn_is_ignore(neigh)) {
 				obstack_ptr_grow(phase_obst(ph), neigh);
 				++len;
 			}
@@ -552,10 +552,9 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 			if (an != NULL) {
 				neighb_t *neigh;
 				co_gs_foreach_neighb(an, neigh) {
-					const ir_node *m    = neigh->irn;
+					const ir_node *m = neigh->irn;
 
-					/* skip ignore nodes */
-					if (arch_irn_is(m, ignore))
+					if (arch_irn_is_ignore(m))
 						continue;
 
 					w += node_contains(c->n, m) ? neigh->costs : 0;
@@ -585,8 +584,7 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t
 		const ir_node *n = neigh->irn;
 		int           i;
 
-		/* skip ignore nodes */
-		if (arch_irn_is(n, ignore))
+		if (arch_irn_is_ignore(n))
 			continue;
 
 		/* check if the affinity neighbour interfere */
@@ -621,8 +619,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 		co_mst_irn_t    *n1;
 		affinity_node_t *an;
 
-		/* skip ignore nodes */
-		if (arch_irn_is(n, ignore))
+		if (arch_irn_is_ignore(n))
 			continue;
 
 		n1 = get_co_mst_irn(env, n);
@@ -645,7 +642,7 @@ static void build_affinity_chunks(co_mst_env_t *env) {
 					aff_edge_t   edge;
 
 					/* skip ignore nodes */
-					if (arch_irn_is(m, ignore))
+					if (arch_irn_is_ignore(m))
 						continue;
 
 					edge.src = n;
@@ -721,7 +718,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		int w = 0;
 		neighb_t *neigh;
 
-		if (arch_irn_is(irn, ignore))
+		if (arch_irn_is_ignore(irn))
 			continue;
 
 		if (an) {
@@ -747,9 +744,9 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		while (!pqueue_empty(grow)) {
 			ir_node *irn = pqueue_pop_front(grow);
 			affinity_node_t *an = get_affinity_info(env->co, irn);
-			neighb_t *neigh;
+			neighb_t        *neigh;
 
-			if (arch_irn_is(irn, ignore))
+			if (arch_irn_is_ignore(irn))
 				continue;
 
 			assert(i <= ARR_LEN(chunk->n));
@@ -802,8 +799,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 				int            m_idx = get_irn_idx(m);
 				co_mst_irn_t *n2;
 
-				/* skip ignore nodes */
-				if (arch_irn_is(m, ignore))
+				if (arch_irn_is_ignore(m))
 					continue;
 
 				n2 = get_co_mst_irn(env, m);
@@ -1046,8 +1042,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 
 			neigh = node->int_neighs[j];
 
-			/* skip ignore nodes */
-			if (arch_irn_is(neigh, ignore))
+			if (arch_irn_is_ignore(neigh))
 				continue;
 
 			nn = get_co_mst_irn(env, neigh);
@@ -1444,10 +1439,10 @@ int co_solve_heuristic_mst(copy_opt_t *co) {
 
 	/* apply coloring */
 	foreach_phase_irn(&mst_env.ph, irn) {
-		co_mst_irn_t *mirn;
+		co_mst_irn_t          *mirn;
 		const arch_register_t *reg;
 
-		if (arch_irn_is(irn, ignore))
+		if (arch_irn_is_ignore(irn))
 			continue;
 
 		mirn = get_co_mst_irn(&mst_env, irn);

@@ -642,10 +642,14 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 	ir_node *m;
 
 	be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
-		if (!bitset_contains_irn(seen, m) && !arch_irn_is(m, ignore)) {
-			bitset_add_irn(seen, m);
-			int_comp_rec(ifg, m, seen);
-		}
+		if (bitset_contains_irn(seen, m))
+			continue;
+
+		if (arch_get_register_req_out(m)->type & arch_register_req_type_ignore)
+			continue;
+
+		bitset_add_irn(seen, m);
+		int_comp_rec(ifg, m, seen);
 	}
 
 }
@@ -659,11 +663,15 @@ static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 	ir_node *n;
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
-		if (!bitset_contains_irn(seen, n) && !arch_irn_is(n, ignore)) {
-			++n_comp;
-			bitset_add_irn(seen, n);
-			int_comp_rec(ifg, n, seen);
-		}
+		if (bitset_contains_irn(seen, n))
+			continue;
+
+		if (arch_get_register_req_out(n)->type & arch_register_req_type_ignore)
+			continue;
+
+		++n_comp;
+		bitset_add_irn(seen, n);
+		int_comp_rec(ifg, n, seen);
 	}
 
 	free(seen);
