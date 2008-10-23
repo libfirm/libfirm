@@ -1410,23 +1410,12 @@ void be_phi_handler_reset(void)
 static void dump_node_req(FILE *f, int idx, const arch_register_req_t *req,
                           const ir_node *node)
 {
-	int did_something = 0;
-	char buf[16];
-	const char *prefix = buf;
+	char tmp[256];
 
-	snprintf(buf, sizeof(buf), "#%d ", idx);
-	buf[sizeof(buf) - 1] = '\0';
+	if (req->cls == NULL) return;
 
-	if(req->cls != 0) {
-		char tmp[256];
-		fprintf(f, prefix);
-		arch_register_req_format(tmp, sizeof(tmp), req, node);
-		fprintf(f, "%s", tmp);
-		did_something = 1;
-	}
-
-	if(did_something)
-		fprintf(f, "\n");
+	arch_register_req_format(tmp, sizeof(tmp), req, node);
+	fprintf(f, "#%d %s\n", idx, tmp);
 }
 
 /**
