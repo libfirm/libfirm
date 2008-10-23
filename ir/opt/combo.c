@@ -93,7 +93,6 @@
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
 
-
 /* allow optimization of non-strict programs */
 #define WITH_UNKNOWN
 
@@ -200,8 +199,9 @@ typedef struct environment_t {
 	pmap            *type2id_map;   /**< The type->id map. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
-	char            modified;       /**< Set, if the graph was modified. */
-	char            commutative;    /**< Set, if commutation nodes should be handled specially. */
+	unsigned        modified:1;     /**< Set, if the graph was modified. */
+	unsigned        commutative:1;  /**< Set, if commutation nodes should be handled specially. */
+	unsigned        unopt_cf:1;     /**< If set, control flow is not optimized due to Unknown. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
@@ -780,9 +780,10 @@ static void add_to_cprop(node_t *y, environment_t *env) {
 	/* Add y to y.partition.cprop. */
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
+		ir_node *irn   = y->node;
 
-		/* place Conds and its Proj nodes on the cprop_X list */
-		if (is_Cond(skip_Proj(y->node)))
+		/* place Conds and all its Projs on the cprop_X list */
+		if (is_Cond(skip_Proj(irn)))
 			list_add_tail(&y->cprop_list, &Y->cprop_X);
 		else
 			list_add_tail(&y->cprop_list, &Y->cprop);
@@ -2233,9 +2234,38 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 	 *
 	 * Note that this even happens with Click's original algorithm, if
 	 * Cmp(x, 0) is evaluated to True first and later changed to False
-	 * if x was Top first tiome and later Const ...
+	 * if x was Top first and later changed to a Const ...
 	 * It is unclear how Click solved that problem ...
+	 *
+	 * However, in rare cases even this does not help, if a Top reaches
+	 * a compare  through a Phi, than Proj(Cond) is evaluated changing
+	 * the type of the Phi to something other.
+	 * So, we take the last resort and bind the type to R once
+	 * it is calculated.
+	 *
+	 * (This might be even the way Click works around the whole problem).
+	 *
+	 * Finally, we may miss some optimization possibilities due to this:
+	 *
+	 * x = phi(Top, y)
+	 * if (x == 0)
+	 *
+	 * If Top reaches the if first, than we decide for != here.
+	 * If y later is evaluated to 0, we cannot revert this decision
+	 * and must live with both outputs enabled. If this happens,
+	 * we get an unresolved if (true) in the code ...
+	 *
+	 * In Click's version where this decision is done at the Cmp,
+	 * the Cmp is NOT optimized away than (if y evaluated to 1
+	 * for instance) and we get a if (1 == 0) here ...
+	 *
+	 * Both solutions are suboptimal.
+	 * At least, we could easily detect this problem and run
+	 * cf_opt() (or even combo) again :-(
 	 */
+	if (node->type.tv == tarval_reachable)
+		return;
+
 	if (get_irn_mode(sel) == mode_b) {
 		/* an IF */
 		if (pnc == pn_Cond_true) {
@@ -2247,8 +2277,12 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
+#ifdef WITH_UNKNOWN
 				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_unreachable;
+#else
+				node->type.tv = tarval_unreachable;
+#endif
 			}
 		} else {
 			assert(pnc == pn_Cond_false);
@@ -2261,8 +2295,12 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
+#ifdef WITH_UNKNOWN
 				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_reachable;
+#else
+				node->type.tv = tarval_unreachable;
+#endif
 			}
 		}
 	} else {
@@ -2270,10 +2308,12 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 		if (selector->type.tv == tarval_bottom) {
 			node->type.tv = tarval_reachable;
 		} else if (selector->type.tv == tarval_top) {
+#ifdef WITH_UNKNOWN
 			if (pnc == get_Cond_defaultProj(cond)) {
 				/* a switch based of Top is always "default" */
 				node->type.tv = tarval_reachable;
 			} else
+#endif
 				node->type.tv = tarval_unreachable;
 		} else {
 			long value = get_tarval_long(selector->type.tv);
@@ -2471,6 +2511,16 @@ static void compute(node_t *node) {
 	ir_node *irn = node->node;
 	compute_func func;
 
+#ifndef VERIFY_MONOTONE
+	/*
+	 * Once a node reaches bottom, the type cannot fall further
+	 * in the lattice and we can stop computation.
+	 * Do not take this exit if the monotony verifier is
+	 * enabled to catch errors.
+	 */
+	if (node->type.tv == tarval_bottom)
+		return;
+#endif
 	if (is_no_Block(irn)) {
 		/* for pinned nodes, check its control input */
 		if (get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
@@ -2946,6 +2996,29 @@ static ir_node *get_leader(node_t *node) {
 }  /* get_leader */
 
 /**
+ * Returns non-zero if a mode_T node has only one reachable output.
+ */
+static int only_one_reachable_proj(ir_node *n) {
+	int i, k = 0;
+
+	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
+		ir_node *proj = get_irn_out(n, i);
+		node_t  *node;
+
+		/* skip non-control flow Proj's */
+		if (get_irn_mode(proj) != mode_X)
+			continue;
+
+		node = get_irn_node(proj);
+		if (node->type.tv == tarval_reachable) {
+			if (++k > 1)
+				return 0;
+		}
+	}
+	return 1;
+}  /* only_one_reachable_proj */
+
+/**
  * Return non-zero if the control flow predecessor node pred
  * is the only reachable control flow exit of its block.
  *
@@ -2957,26 +3030,9 @@ static int can_exchange(ir_node *pred) {
 	else if (is_Jmp(pred))
 		return 1;
 	else if (get_irn_mode(pred) == mode_T) {
-		int i, k;
-
 		/* if the predecessor block has more than one
 		   reachable outputs we cannot remove the block */
-		k = 0;
-		for (i = get_irn_n_outs(pred) - 1; i >= 0; --i) {
-			ir_node *proj = get_irn_out(pred, i);
-			node_t  *node;
-
-			/* skip non-control flow Proj's */
-			if (get_irn_mode(proj) != mode_X)
-				continue;
-
-			node = get_irn_node(proj);
-			if (node->type.tv == tarval_reachable) {
-				if (++k > 1)
-					return 0;
-			}
-		}
-		return 1;
+		return only_one_reachable_proj(pred);
 	}
 	return 0;
 }  /* can_exchange */
@@ -3206,17 +3262,24 @@ static void apply_result(ir_node *irn, void *ctx) {
 				ir_node *cond = get_Proj_pred(irn);
 
 				if (is_Cond(cond)) {
-					node_t *sel = get_irn_node(get_Cond_selector(cond));
-
-					if (is_tarval(sel->type.tv) && tarval_is_constant(sel->type.tv)) {
-						/* Cond selector is a constant and the Proj is reachable, make a Jmp */
-						ir_node *jmp  = new_r_Jmp(current_ir_graph, block->node);
+					if (only_one_reachable_proj(cond)) {
+						ir_node *jmp = new_r_Jmp(current_ir_graph, block->node);
 						set_irn_node(jmp, node);
 						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
 						DBG_OPT_COMBO(irn, jmp, FS_OPT_COMBO_CF);
 						exchange(irn, jmp);
 						env->modified = 1;
+					} else {
+						node_t *sel = get_irn_node(get_Cond_selector(cond));
+						tarval *tv  = sel->type.tv;
+
+						if (is_tarval(tv) && tarval_is_constant(tv)) {
+							/* The selector is a constant, but more
+							 * than one output is active: An unoptimized
+							 * case found. */
+							env->unopt_cf = 1;
+						}
 					}
 				}
 			}
@@ -3381,6 +3444,7 @@ void combo(ir_graph *irg) {
 	env.lambda_input   = 0;
 	env.commutative    = 1;
 	env.modified       = 0;
+	env.unopt_cf       = 0;
 
 	assure_irg_outs(irg);
 	assure_cf_loop(irg);
@@ -3430,6 +3494,10 @@ void combo(ir_graph *irg) {
 	 * apply_cf(). */
 	apply_end(get_irg_end(irg), &env);
 	irg_walk_graph(irg, NULL, apply_result, &env);
+
+	if (env.unopt_cf) {
+		DB((dbg, LEVEL_1, "Unoptimized Control Flow left"));
+	}
 
 	if (env.modified) {
 		/* control flow might changed */
