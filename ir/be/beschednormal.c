@@ -144,7 +144,7 @@ static int normal_tree_cost(ir_node* irn)
 		irn_cost_pair* costs;
 		int            i;
 
-		fc = malloc(sizeof(*fc) + sizeof(*fc->costs) * arity);
+		fc = xmalloc(sizeof(*fc) + sizeof(*fc->costs) * arity);
 		fc->no_root = 0;
 		costs = fc->costs;
 
@@ -370,10 +370,12 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 
 	heights = heights_new(irg);
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, normal_cost_walker,  NULL, NULL);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
 	inc_irg_visited(irg);
 	irg_block_walk_graph(irg, normal_sched_block, NULL, heights);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	heights_free(heights);
 
