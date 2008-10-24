@@ -960,6 +960,8 @@ found_front:
 
 	new_size = arity - n_moved;
 	if(new_size == 0) {
+		sched_remove(perm);
+		kill_node(perm);
 		return 0;
 	}
 
