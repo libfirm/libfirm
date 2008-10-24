@@ -198,9 +198,9 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	cnt_clr(&f_Id);
 	cnt_clr(&f_normlized);
 
-	fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id", "normalized");
+	fprintf(dmp->f, "%-16s %-8s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id", "normalized");
 	foreach_pset(set, entry) {
-		fprintf(dmp->f, "%-16s %8u %8u %8u\n",
+		fprintf(dmp->f, "%-16s %8u %8u %8u %8u\n",
 			get_id_str(entry->op->name),
 			cnt_to_uint(&entry->cnt_alive),
 			cnt_to_uint(&entry->new_node),
