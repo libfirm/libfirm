@@ -42,8 +42,10 @@
 
 /** An instance of the normal scheduler. */
 typedef struct instance_t {
-	ir_graph*      irg;  /**< the IR graph of this instance */
-	struct obstack obst; /**< obstack for temporary data */
+	ir_graph*      irg;          /**< the IR graph of this instance */
+	heights_t*     heights;      /**< height for the graph of this instance */
+	struct obstack obst;         /**< obstack for temporary data */
+	ir_node***     block_lists;  /**< list of all block scheduling list */
 } instance_t;
 
 static int must_be_scheduled(const ir_node* const irn)
@@ -303,8 +305,9 @@ static int root_cmp(const void* a, const void* b)
 
 static void normal_sched_block(ir_node* block, void* env)
 {
-	heights_t*     heights = env;
-	ir_node**      roots   = get_irn_link(block);
+	instance_t*    inst  = env;
+	ir_node**      roots = get_irn_link(block);
+	heights_t*     heights;
 	int            root_count;
 	irn_cost_pair* root_costs;
 	int i;
@@ -321,6 +324,7 @@ static void normal_sched_block(ir_node* block, void* env)
 		return;
 	}
 
+	heights    = inst->heights;
 	root_count = ARR_LEN(roots);
 	NEW_ARR_A(irn_cost_pair, root_costs, root_count);
 	for (i = 0; i < root_count; ++i) {
@@ -350,8 +354,9 @@ static void normal_sched_block(ir_node* block, void* env)
 		assert(must_be_scheduled(irn));
 		sched = sched_node(sched, irn);
 	}
-	set_irn_link(block, sched);
 	DEL_ARR_F(roots);
+	set_irn_link(block, sched);
+	ARR_APP1(ir_node**, inst->block_lists, sched);
 
 #if defined NORMAL_DBG
 	{
@@ -373,42 +378,38 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 {
 	instance_t *inst = XMALLOC(instance_t);
 	ir_graph   *irg = be_get_birg_irg(birg);
-	heights_t  *heights;
 
 	(void)vtab;
 
-	inst->irg = irg;
-	obstack_init(&inst->obst);
-
 	be_clear_links(irg);
 
-	heights = heights_new(irg);
+	obstack_init(&inst->obst);
+	inst->irg         = irg;
+	inst->heights     = heights_new(irg);
+	inst->block_lists = NEW_ARR_F(ir_node**, 0);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, normal_cost_walker,  NULL, inst);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
 	inc_irg_visited(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
-	irg_block_walk_graph(irg, normal_sched_block, NULL, heights);
+	irg_block_walk_graph(irg, normal_sched_block, NULL, inst);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
-	heights_free(heights);
+	heights_free(inst->heights);
 
 	return inst;
-}
-
-
-static void *normal_init_block(void *graph_env, ir_node *block)
-{
-	(void)graph_env;
-	(void)block;
-
-	return NULL;
 }
 
 void normal_finish_graph(void *env)
 {
 	instance_t *inst = env;
+	int        i;
+
+	for (i = ARR_LEN(inst->block_lists) - 1; i >= 0; --i) {
+		DEL_ARR_F(inst->block_lists[i]);
+	}
+	DEL_ARR_F(inst->block_lists);
 
 	/* block uses the link field to store the schedule */
 	ir_free_resources(inst->irg, IR_RESOURCE_IRN_LINK);
@@ -418,7 +419,7 @@ void normal_finish_graph(void *env)
 
 const list_sched_selector_t normal_selector = {
 	normal_init_graph,
-	normal_init_block,
+	NULL,              /* init_block */
 	normal_select,
 	NULL,              /* to_appear_in_schedule */
 	NULL,              /* node_ready */
