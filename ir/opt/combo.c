@@ -93,9 +93,6 @@
 /* define this to check the consistency of partitions */
 #define CHECK_PARTITIONS
 
-/* allow optimization of non-strict programs */
-#define WITH_UNKNOWN
-
 typedef struct node_t            node_t;
 typedef struct partition_t       partition_t;
 typedef struct opcode_key_t      opcode_key_t;
@@ -199,8 +196,10 @@ typedef struct environment_t {
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
 	unsigned        modified:1;     /**< Set, if the graph was modified. */
-	unsigned        commutative:1;  /**< Set, if commutation nodes should be handled specially. */
 	unsigned        unopt_cf:1;     /**< If set, control flow is not optimized due to Unknown. */
+	/* options driving the optimization */
+	unsigned        commutative:1;  /**< Set, if commutation nodes should be handled specially. */
+	unsigned        opt_unknown:1;  /**< Set, if non-strict programs should be optimized. */
 #ifdef DEBUG_libfirm
 	partition_t     *dbg_list;      /**< List of all partitions. */
 #endif
@@ -226,12 +225,8 @@ DEBUG_ONLY(static const char *what_reason;)
 /** Next partition number. */
 DEBUG_ONLY(static unsigned part_nr = 0);
 
-/** The tarval returned by Unknown nodes. */
-#ifdef WITH_UNKNOWN
-#define tarval_UNKNOWN tarval_top
-#else
-#define tarval_UNKNOWN tarval_bad
-#endif
+/** The tarval returned by Unknown nodes: set to either tarval_bad OR tarval_top. */
+static tarval *tarval_UNKNOWN;
 
 /* forward */
 static node_t *identity(node_t *node);
@@ -1403,10 +1398,13 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 /**
  * Collect commutative nodes to the touched list.
  *
+ * @param X     the partition of the list
  * @param list  the list which contains the nodes that must be evaluated
  * @param env   the environment
  */
-static void collect_commutative_touched(list_head *list, environment_t *env) {
+static void collect_commutative_touched(partition_t *X, list_head *list, environment_t *env) {
+	int     first      = 1;
+	int     both_input = 0;
 	node_t  *x, *y;
 
 	list_for_each_entry(node_t, x, list, node_list) {
@@ -1445,7 +1443,21 @@ static void collect_commutative_touched(list_head *list, environment_t *env) {
 			/* Partitions of constants should not be split simply because their Nodes have unequal
 			   functions or incongruent inputs. */
 			if (type_is_neither_top_nor_const(y->type)) {
-				add_to_touched(y, env);
+				int    other_idx = edge->pos ^ 1;
+				node_t *other    = get_irn_node(get_irn_n(succ, other_idx));
+				int    equal     = X == other->part;
+
+				/*
+				 * Note: op(a, a) is NOT congruent to op(a, b).
+				 * So, either all touch nodes must have both inputs congruent,
+				 * or not. We decide this by the first occurred node.
+				 */
+				if (first) {
+					first      = 0;
+					both_input = equal;
+				}
+				if (both_input == equal)
+					add_to_touched(y, env);
 			}
 		}
 	}
@@ -1473,8 +1485,8 @@ static void cause_splits(environment_t *env) {
 		/* empty the touched set: already done, just clear the list */
 		env->touched = NULL;
 
-		collect_commutative_touched(&X->Leader, env);
-		collect_commutative_touched(&X->Follower, env);
+		collect_commutative_touched(X, &X->Leader, env);
+		collect_commutative_touched(X, &X->Follower, env);
 
 		for (Z = env->touched; Z != NULL; Z = N) {
 			node_t   *e;
@@ -2285,12 +2297,12 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
-#ifdef WITH_UNKNOWN
-				/* any condition based on Top is "!=" */
-				node->type.tv = tarval_unreachable;
-#else
-				node->type.tv = tarval_unreachable;
-#endif
+				if (tarval_UNKNOWN == tarval_top) {
+					/* any condition based on Top is "!=" */
+					node->type.tv = tarval_unreachable;
+				} else {
+					node->type.tv = tarval_unreachable;
+				}
 			}
 		} else {
 			assert(pnc == pn_Cond_false);
@@ -2303,12 +2315,12 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 				node->type.tv = tarval_reachable;
 			} else {
 				assert(selector->type.tv == tarval_top);
-#ifdef WITH_UNKNOWN
-				/* any condition based on Top is "!=" */
-				node->type.tv = tarval_reachable;
-#else
-				node->type.tv = tarval_unreachable;
-#endif
+				if (tarval_UNKNOWN == tarval_top) {
+					/* any condition based on Top is "!=" */
+					node->type.tv = tarval_reachable;
+				} else {
+					node->type.tv = tarval_unreachable;
+				}
 			}
 		}
 	} else {
@@ -2316,13 +2328,13 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 		if (selector->type.tv == tarval_bottom) {
 			node->type.tv = tarval_reachable;
 		} else if (selector->type.tv == tarval_top) {
-#ifdef WITH_UNKNOWN
-			if (pnc == get_Cond_defaultProj(cond)) {
+			if (tarval_UNKNOWN == tarval_top &&
+			    pnc == get_Cond_defaultProj(cond)) {
 				/* a switch based of Top is always "default" */
 				node->type.tv = tarval_reachable;
-			} else
-#endif
+			} else {
 				node->type.tv = tarval_unreachable;
+			}
 		} else {
 			long value = get_tarval_long(selector->type.tv);
 			if (pnc == get_Cond_defaultProj(cond)) {
@@ -3470,9 +3482,11 @@ void combo(ir_graph *irg) {
 	env.type2id_map    = pmap_create();
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
-	env.commutative    = 1;
 	env.modified       = 0;
 	env.unopt_cf       = 0;
+	/* options driving the optimization */
+	env.commutative    = 1;
+	env.opt_unknown    = 1;
 
 	assure_irg_outs(irg);
 	assure_cf_loop(irg);
@@ -3484,6 +3498,11 @@ void combo(ir_graph *irg) {
 	DEBUG_ONLY(part_nr = 0);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	if (env.opt_unknown)
+		tarval_UNKNOWN = tarval_top;
+	else
+		tarval_UNKNOWN = tarval_bad;
 
 	/* create the initial partition and place it on the work list */
 	env.initial = new_partition(&env);
