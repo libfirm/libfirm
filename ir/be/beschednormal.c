@@ -40,6 +40,11 @@
 //#define NORMAL_DBG
 #include "irprintf.h"
 
+/** An instance of the normal scheduler. */
+typedef struct instance_t {
+	ir_graph*      irg;  /**< the IR graph of this instance */
+	struct obstack obst; /**< obstack for temporary data */
+} instance_t;
 
 static int must_be_scheduled(const ir_node* const irn)
 {
@@ -124,7 +129,7 @@ static int count_result(const ir_node* irn)
 /* TODO high cost for store trees
  */
 
-static int normal_tree_cost(ir_node* irn)
+static int normal_tree_cost(ir_node* irn, instance_t *inst)
 {
 	flag_and_cost* fc;
 	int            arity;
@@ -138,7 +143,7 @@ static int normal_tree_cost(ir_node* irn)
 		return 0;
 
 	if (is_Proj(irn)) {
-		return normal_tree_cost(get_Proj_pred(irn));
+		return normal_tree_cost(get_Proj_pred(irn), inst);
 	}
 
 	arity = get_irn_arity(irn);
@@ -149,7 +154,7 @@ static int normal_tree_cost(ir_node* irn)
 		int            i;
 		ir_node*       block = get_nodes_block(irn);
 
-		fc = xmalloc(sizeof(*fc) + sizeof(*fc->costs) * arity);
+		fc = obstack_alloc(&inst->obst, sizeof(*fc) + sizeof(*fc->costs) * arity);
 		fc->no_root = 0;
 		costs = fc->costs;
 
@@ -165,7 +170,7 @@ static int normal_tree_cost(ir_node* irn)
 				flag_and_cost* pred_fc;
 				ir_node*       real_pred;
 
-				cost = normal_tree_cost(pred);
+				cost = normal_tree_cost(pred, inst);
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
 				if (!arch_irn_is_ignore(pred)) {
 					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
@@ -209,14 +214,14 @@ static int normal_tree_cost(ir_node* irn)
 
 static void normal_cost_walker(ir_node* irn, void* env)
 {
-	(void)env;
+	instance_t *inst = env;
 
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "cost walking node %+F\n", irn);
 #endif
 	if (is_Block(irn)) return;
 	if (!must_be_scheduled(irn)) return;
-	normal_tree_cost(irn);
+	normal_tree_cost(irn, inst);
 }
 
 
@@ -366,26 +371,30 @@ static void normal_sched_block(ir_node* block, void* env)
 static void *normal_init_graph(const list_sched_selector_t *vtab,
                                const be_irg_t *birg)
 {
-	ir_graph  *irg = be_get_birg_irg(birg);
-	heights_t *heights;
+	instance_t *inst = XMALLOC(instance_t);
+	ir_graph   *irg = be_get_birg_irg(birg);
+	heights_t  *heights;
 
 	(void)vtab;
+
+	inst->irg = irg;
+	obstack_init(&inst->obst);
 
 	be_clear_links(irg);
 
 	heights = heights_new(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_walk_graph(irg, normal_cost_walker,  NULL, NULL);
+	irg_walk_graph(irg, normal_cost_walker,  NULL, inst);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
 	inc_irg_visited(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	irg_block_walk_graph(irg, normal_sched_block, NULL, heights);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	heights_free(heights);
 
-	return NULL;
+	return inst;
 }
 
 
@@ -397,6 +406,15 @@ static void *normal_init_block(void *graph_env, ir_node *block)
 	return NULL;
 }
 
+void normal_finish_graph(void *env)
+{
+	instance_t *inst = env;
+
+	/* block uses the link field to store the schedule */
+	ir_free_resources(inst->irg, IR_RESOURCE_IRN_LINK);
+	obstack_free(&inst->obst, NULL);
+	xfree(inst);
+}
 
 const list_sched_selector_t normal_selector = {
 	normal_init_graph,
@@ -408,5 +426,5 @@ const list_sched_selector_t normal_selector = {
 	NULL,              /* exectime */
 	NULL,              /* latency */
 	NULL,              /* finish_block */
-	NULL               /* finish_graph */
+	normal_finish_graph
 };
