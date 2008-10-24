@@ -84,7 +84,6 @@ typedef struct irn_cost_pair {
 	int      cost;
 } irn_cost_pair;
 
-
 static int cost_cmp(const void* a, const void* b)
 {
 	const irn_cost_pair* const a1 = a;
@@ -103,6 +102,9 @@ typedef struct flag_and_cost {
 	int no_root;
 	irn_cost_pair costs[];
 } flag_and_cost;
+
+#define get_irn_fc(irn)     ((flag_and_cost*)get_irn_link(irn))
+#define set_irn_fc(irn, fc) set_irn_link(irn, fc)
 
 
 static int count_result(const ir_node* irn)
@@ -124,9 +126,8 @@ static int count_result(const ir_node* irn)
 
 static int normal_tree_cost(ir_node* irn)
 {
-	flag_and_cost* fc    = get_irn_link(irn);
-	ir_node*       block = get_nodes_block(irn);
-	int            arity = get_irn_arity(irn);
+	flag_and_cost* fc;
+	int            arity;
 	ir_node*       last;
 	int            n_res;
 	int            cost;
@@ -140,9 +141,13 @@ static int normal_tree_cost(ir_node* irn)
 		return normal_tree_cost(get_Proj_pred(irn));
 	}
 
+	arity = get_irn_arity(irn);
+	fc    = get_irn_fc(irn);
+
 	if (fc == NULL) {
 		irn_cost_pair* costs;
 		int            i;
+		ir_node*       block = get_nodes_block(irn);
 
 		fc = xmalloc(sizeof(*fc) + sizeof(*fc->costs) * arity);
 		fc->no_root = 0;
@@ -164,7 +169,7 @@ static int normal_tree_cost(ir_node* irn)
 				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
 				if (!arch_irn_is_ignore(pred)) {
 					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
-					pred_fc = get_irn_link(real_pred);
+					pred_fc = get_irn_fc(real_pred);
 					pred_fc->no_root = 1;
 #if defined NORMAL_DBG
 					ir_fprintf(stderr, "%+F says that %+F is no root\n", irn, real_pred);
@@ -224,7 +229,7 @@ static void collect_roots(ir_node* irn, void* env)
 	if (is_Block(irn)) return;
 	if (!must_be_scheduled(irn)) return;
 
-	is_root = be_is_Keep(irn) || !((flag_and_cost*)get_irn_link(irn))->no_root;
+	is_root = be_is_Keep(irn) || !get_irn_fc(irn)->no_root;
 
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "%+F is %sroot\n", irn, is_root ? "" : "no ");
@@ -244,16 +249,16 @@ static void collect_roots(ir_node* irn, void* env)
 
 static ir_node** sched_node(ir_node** sched, ir_node* irn)
 {
-	ir_node*       block = get_nodes_block(irn);
-	flag_and_cost* fc    = get_irn_link(irn);
-	irn_cost_pair* irns  = fc->costs;
-	int            arity = get_irn_arity(irn);
-	int            i;
-
 	if (irn_visited_else_mark(irn)) return sched;
 	if (is_End(irn))                return sched;
 
 	if (!is_Phi(irn) && !be_is_Keep(irn)) {
+		ir_node*       block = get_nodes_block(irn);
+		int            arity = get_irn_arity(irn);
+		flag_and_cost* fc    = get_irn_fc(irn);
+		irn_cost_pair* irns  = fc->costs;
+		int            i;
+
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = irns[i].irn;
 			if (get_nodes_block(pred) != block) continue;
