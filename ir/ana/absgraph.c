@@ -35,7 +35,7 @@
 static void *irg_cfg_succ_get_root(void *self)
 {
 	ir_graph *irg = self;
-	edges_activate_kind(irg, EDGE_KIND_BLOCK);
+	edges_assure_kind(irg, EDGE_KIND_BLOCK);
 	return get_irg_start_block(irg);
 }
 
