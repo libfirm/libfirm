@@ -374,8 +374,9 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 	irg_walk_graph(irg, normal_cost_walker,  NULL, NULL);
 	irg_walk_graph(irg, collect_roots, NULL, NULL);
 	inc_irg_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	irg_block_walk_graph(irg, normal_sched_block, NULL, heights);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	heights_free(heights);
 
