@@ -59,6 +59,7 @@ typedef enum {
 	HOOK_OPT_CONFIRM_C,   /**< a value was substituted by a const due to a Confirm */
 	HOOK_OPT_CONFIRM_E,   /**< a value was evaluated due to a Confirm */
 	HOOK_OPT_EXC_REM,     /**< a exception edge was removed due to a Confirmation prove */
+	HOOK_OPT_NORMALIZE,   /**< a commutative node was normalized */
 	HOOK_LOWERED,         /**< lowered */
 	HOOK_BACKEND,         /**< a backend transformation */
 	HOOK_OPT_LAST
@@ -103,6 +104,9 @@ typedef struct hook_entry {
 
 		/** This hook is called, before a node is changed into an Id node. */
 		void (*_hook_turn_into_id)(void *context, ir_node *node);
+
+		/** This hook is called, after a commutative node was normalized. */
+		void (*_hook_normalize)(void *context, ir_node *node);
 
 		/** This hook is called, after a new graph was created and before the first block
 		*  on this graph is build. */
@@ -187,6 +191,7 @@ typedef enum {
 	hook_set_irn_n,
 	hook_replace,
 	hook_turn_into_id,
+	hook_normalize,
 	hook_new_graph,
 	hook_free_graph,
 	hook_irg_walk,
@@ -248,6 +253,7 @@ extern hook_entry_t *hooks[hook_last];
   hook_exec(hook_set_irn_n, (ctx, src, pos, tgt, old_tgt))
 #define hook_replace(old, nw)             hook_exec(hook_replace, (ctx, old, nw))
 #define hook_turn_into_id(node)           hook_exec(hook_turn_into_id, (ctx, node))
+#define hook_normalize(node)              hook_exec(hook_normalize, (ctx, node))
 #define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (ctx, irg, ent))
 #define hook_free_graph(irg)              hook_exec(hook_free_graph, (ctx, irg))
 #define hook_irg_walk(irg, pre, post)     hook_exec(hook_irg_walk, (ctx, irg, pre, post))

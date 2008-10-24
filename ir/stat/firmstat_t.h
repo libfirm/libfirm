@@ -103,6 +103,7 @@ typedef struct _node_entry_t {
 	counter_t   cnt_alive;    /**< amount of nodes in this entry */
 	counter_t   new_node;     /**< amount of new nodes for this entry */
 	counter_t   into_Id;      /**< amount of nodes that turned into Id's for this entry */
+	counter_t   normalized;   /**< amount of nodes that normalized for this entry */
 	const ir_op *op;          /**< the op for this entry */
 } node_entry_t;
 

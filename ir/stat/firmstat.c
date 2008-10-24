@@ -210,6 +210,7 @@ static void opcode_clear_entry(node_entry_t *elem) {
 	cnt_clr(&elem->cnt_alive);
 	cnt_clr(&elem->new_node);
 	cnt_clr(&elem->into_Id);
+	cnt_clr(&elem->normalized);
 }  /* opcode_clear_entry */
 
 /**
@@ -1537,6 +1538,36 @@ static void stat_turn_into_id(void *ctx, ir_node *node) {
 }  /* stat_turn_into_id */
 
 /**
+ * Hook: A node is normalized
+ *
+ * @param ctx   the hook context
+ * @param node  the IR node that was normalized
+ */
+static void stat_normalize(void *ctx, ir_node *node) {
+	(void) ctx;
+	if (! status->stat_options)
+		return;
+
+	STAT_ENTER;
+	{
+		node_entry_t *entry;
+		graph_entry_t *graph;
+		ir_op *op = stat_get_irn_op(node);
+
+		/* increase global value */
+		graph = graph_get_entry(NULL, status->irg_hash);
+		entry = opcode_get_entry(op, graph->opcode_hash);
+		cnt_inc(&entry->normalized);
+
+		/* increase local value */
+		graph = graph_get_entry(current_ir_graph, status->irg_hash);
+		entry = opcode_get_entry(op, graph->opcode_hash);
+		cnt_inc(&entry->normalized);
+	}
+	STAT_LEAVE;
+}  /* stat_normalize */
+
+/**
  * Hook: A new graph was created
  *
  * @param ctx  the hook context
@@ -2204,6 +2235,7 @@ void firm_init_stat(unsigned enable_options)
 	HOOK(hook_free_ir_op,                         stat_free_ir_op);
 	HOOK(hook_new_node,                           stat_new_node);
 	HOOK(hook_turn_into_id,                       stat_turn_into_id);
+	HOOK(hook_normalize,                          stat_normalize);
 	HOOK(hook_new_graph,                          stat_new_graph);
 	HOOK(hook_free_graph,                         stat_free_graph);
 	HOOK(hook_irg_walk,                           stat_irg_walk);

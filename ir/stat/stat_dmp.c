@@ -61,6 +61,7 @@ static const struct {
 	{ HOOK_OPT_CONFIRM_C,    "Confirm-based optimization: replaced by const" },
 	{ HOOK_OPT_CONFIRM_E,    "Confirm-based optimization: evaluated" },
 	{ HOOK_OPT_EXC_REM,      "a exception edge was removed due to a Confirmation prove" },
+	{ HOOK_OPT_NORMALIZE,    "a commutative node was normalized" },
 	{ HOOK_LOWERED,          "Lowered" },
 	{ HOOK_BACKEND,          "Backend transformation" },
 	{ FS_OPT_NEUTRAL_0,      "algebraic simplification: a op 0 = 0 op a = a" },
@@ -190,29 +191,34 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 	counter_t f_alive;
 	counter_t f_new_node;
 	counter_t f_Id;
+	counter_t f_normlized;
 
 	cnt_clr(&f_alive);
 	cnt_clr(&f_new_node);
 	cnt_clr(&f_Id);
+	cnt_clr(&f_normlized);
 
-	fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id");
+	fprintf(dmp->f, "%-16s %-8s %-8s %-8s\n", "Opcode", "alive", "created", "->Id", "normalized");
 	foreach_pset(set, entry) {
 		fprintf(dmp->f, "%-16s %8u %8u %8u\n",
 			get_id_str(entry->op->name),
 			cnt_to_uint(&entry->cnt_alive),
 			cnt_to_uint(&entry->new_node),
-			cnt_to_uint(&entry->into_Id)
+			cnt_to_uint(&entry->into_Id),
+			cnt_to_uint(&entry->normalized)
 		);
 
-		cnt_add(&f_alive,    &entry->cnt_alive);
-		cnt_add(&f_new_node, &entry->new_node);
-		cnt_add(&f_Id,       &entry->into_Id);
+		cnt_add(&f_alive,     &entry->cnt_alive);
+		cnt_add(&f_new_node,  &entry->new_node);
+		cnt_add(&f_Id,        &entry->into_Id);
+		cnt_add(&f_normlized, &entry->normalized);
 	}  /* foreach_pset */
 	fprintf(dmp->f, "-------------------------------------------\n");
-	fprintf(dmp->f, "%-16s %8u %8u %8u\n", "Sum",
+	fprintf(dmp->f, "%-16s %8u %8u %8u %8u\n", "Sum",
 		cnt_to_uint(&f_alive),
 		cnt_to_uint(&f_new_node),
-		cnt_to_uint(&f_Id)
+		cnt_to_uint(&f_Id),
+		cnt_to_uint(&f_normlized)
 	);
 }  /* simple_dump_opcode_hash */
 

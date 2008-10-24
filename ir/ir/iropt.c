@@ -46,6 +46,7 @@
 #include "opt_confirms.h"
 #include "opt_polymorphy.h"
 #include "irtools.h"
+#include "irhooks.h"
 #include "array_t.h"
 
 /* Make types visible to allow most efficient access */
@@ -6047,6 +6048,7 @@ static void normalize_node(ir_node *n) {
 		if (!operands_are_normalized(l, r)) {
 			set_binop_left(n, r);
 			set_binop_right(n, l);
+			hook_normalize(n);
 		}
 	}
 }  /* normalize_node */
