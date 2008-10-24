@@ -395,6 +395,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			edge->kind      = kind;
 			edge->list.next = NULL;
 			edge->list.prev = NULL;
+			memset(((char*)edge) + sizeof(ir_edge_t), 0, edges_private_size);
 			DEBUG_ONLY(edge->src_nr = get_irn_node_nr(src));
 
 			new_edge = ir_edgeset_insert(edges, edge);
