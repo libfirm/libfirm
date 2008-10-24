@@ -584,6 +584,8 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 
 	visit.data = &w;
 
+	assert(!info->activated);
+
 	info->activated = 1;
 	edges_init_graph_kind(irg, kind);
 	if (kind == EDGE_KIND_DEP) {
@@ -891,11 +893,20 @@ void edges_deactivate(ir_graph *irg) {
 	edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 }
 
-int edges_assure(ir_graph *irg) {
-	int activated = edges_activated(irg);
+int edges_assure(ir_graph *irg)
+{
+	int activated = 0;
 
-	if (!activated)
-		edges_activate(irg);
+	if (edges_activated_kind(irg, EDGE_KIND_BLOCK)) {
+		activated = 1;
+	} else {
+		edges_activate_kind(irg, EDGE_KIND_BLOCK);
+	}
+	if (edges_activated_kind(irg, EDGE_KIND_NORMAL)) {
+		activated = 1;
+	} else {
+		edges_activate_kind(irg, EDGE_KIND_NORMAL);
+	}
 
 	return activated;
 }
