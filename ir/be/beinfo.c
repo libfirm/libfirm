@@ -34,16 +34,20 @@ static copy_attr_func  old_phi_copy_attr;
 
 void be_info_new_node(ir_node *node)
 {
+	struct obstack *obst;
+	backend_info_t *info;
+	sched_info_t   *sinfo;
+
 	if (is_Anchor(node))
 		return;
 
-	struct obstack *obst  = get_irg_obstack(current_ir_graph);
-	backend_info_t *info  = obstack_alloc(obst, sizeof(*info));
-	sched_info_t   *sinfo = &info->sched_info;
+	obst  = get_irg_obstack(current_ir_graph);
+	info  = obstack_alloc(obst, sizeof(*info));
+	sinfo = &info->sched_info;
 
 	memset(info, 0, sizeof(*info));
 
-	sinfo->idx  = get_irn_idx(node);
+	sinfo->idx = get_irn_idx(node);
 	INIT_LIST_HEAD(&sinfo->list);
 
 	if (is_Phi(node)) {
