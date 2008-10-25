@@ -1400,7 +1400,7 @@ Enter => {
 },
 
 Leave => {
-	reg_req   => { in => [ "ebp" ], out => [ "ebp", "esp:I|S" ] },
+	reg_req   => { in => [ "ebp" ], out => [ "ebp:I", "esp:I|S" ] },
 	emit      => '. leave',
 	outs      => [ "frame", "stack" ],
 	latency   => 3,
