@@ -1065,7 +1065,7 @@ static void emit_ia32_CMov(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
-	const arch_register_t *out          = arch_get_irn_register(node);
+	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
 	pn_Cmp                 pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
