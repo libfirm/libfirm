@@ -136,9 +136,12 @@ static tarval *computed_value_Sub(const ir_node *n) {
 	tarval  *ta;
 	tarval  *tb;
 
-	/* a - a */
-	if (a == b && !is_Bad(a))
-		return get_mode_null(mode);
+	/* NaN - NaN != 0 */
+	if (! mode_is_float(mode)) {
+		/* a - a = 0 */
+		if (a == b)
+			return get_mode_null(mode);
+	}
 
 	ta = value_of(a);
 	tb = value_of(b);
@@ -225,11 +228,14 @@ static tarval *computed_value_Mul(const ir_node *n) {
 	if (ta != tarval_bad && tb != tarval_bad) {
 		return tarval_mul(ta, tb);
 	} else {
-		/* a*0 = 0 or 0*b = 0 */
-		if (ta == get_mode_null(mode))
-			return ta;
-		if (tb == get_mode_null(mode))
-			return tb;
+		/* a * 0 != 0 if a == NaN or a == Inf */
+		if (!mode_is_float(mode)) {
+			/* a*0 = 0 or 0*b = 0 */
+			if (ta == get_mode_null(mode))
+				return ta;
+			if (tb == get_mode_null(mode))
+				return tb;
+		}
 	}
 	return tarval_bad;
 }  /* computed_value_Mul */
