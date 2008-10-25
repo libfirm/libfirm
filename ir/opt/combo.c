@@ -1834,12 +1834,6 @@ static void split_by(partition_t *X, environment_t *env) {
 static void default_compute(node_t *node) {
 	int     i;
 	ir_node *irn = node->node;
-	node_t  *block = get_irn_node(get_nodes_block(irn));
-
-	if (block->type.tv == tarval_unreachable) {
-		node->type.tv = tarval_top;
-		return;
-	}
 
 	/* if any of the data inputs have type top, the result is type top */
 	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
