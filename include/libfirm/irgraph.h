@@ -514,6 +514,7 @@ enum ir_resources_enum_t {
 	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
 	IR_RESOURCE_IRN_LINK      = 1 << 3,  /**< IR-node link fields are used. */
 	IR_RESOURCE_LOOP_LINK     = 1 << 4,  /**< IR-loop link fields are used. */
+	IR_RESOURCE_ENTITY_LINK   = 1 << 5   /**< IR-entity link fields are used. */
 };
 typedef unsigned ir_resources_t;
 
