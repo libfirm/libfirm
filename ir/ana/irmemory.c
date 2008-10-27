@@ -787,7 +787,8 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 
 		switch (get_irn_opcode(succ)) {
 		case iro_Load:
-			assert(irn == get_Load_ptr(succ));
+			/* beware: irn might be a Id node here */
+			assert(skip_Id(irn) == get_Load_ptr(succ));
 			res |= ir_usage_read;
 
 			/* check if this load is not a hidden conversion */
