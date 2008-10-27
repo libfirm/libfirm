@@ -2067,6 +2067,8 @@ ir_type *clone_frame_type(ir_type *type) {
 	int     i, n;
 
 	assert(is_frame_type(type));
+	/* the entity link resource should be allocated if this function is called */
+	assert(irp_resources_reserved(irp) & IR_RESOURCE_ENTITY_LINK);
 
 	res = new_type_frame(type->name);
 	for (i = 0, n = get_class_n_members(type); i < n; ++i) {

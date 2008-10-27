@@ -1017,6 +1017,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	/* -- Replicate local entities of the called_graph -- */
 	/* copy the entities. */
+	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 	called_frame = get_irg_frame_type(called_graph);
 	curr_frame   = get_irg_frame_type(irg);
 	for (i = 0, n = get_class_n_members(called_frame); i < n; ++i) {
@@ -1036,6 +1037,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	   entities. */
 	irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds_inline,
 	         get_irg_frame_type(called_graph));
+
+	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	/* Repair called_graph */
 	set_irg_visited(called_graph, get_irg_visited(irg));

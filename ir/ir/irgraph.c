@@ -488,6 +488,7 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 	res->value_table = new_identities();
 
 	/* clone the frame type here for safety */
+	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 	res->frame_type  = clone_frame_type(irg->frame_type);
 
 	res->phase_state = irg->phase_state;
@@ -520,6 +521,7 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 	res->estimated_node_count = irg->estimated_node_count;
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	return res;
 }

@@ -47,6 +47,8 @@ void opt_frame_irg(ir_graph *irg) {
 	if (n <= 0)
 		return;
 
+	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+
 	/* clear all entity links */
 	for (i = n - 1; i >= 0; --i) {
 		ent = get_class_member(frame_tp, i);
@@ -96,4 +98,5 @@ void opt_frame_irg(ir_graph *irg) {
 		/* we changed the frame type, it's layout should be redefined */
 		set_type_state(frame_tp, layout_undefined);
 	}
+	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 }
