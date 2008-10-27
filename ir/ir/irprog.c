@@ -65,7 +65,10 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->max_irg_idx    = 0;
 
 #ifdef DEBUG_libfirm
-	res->max_node_nr = 0;
+	res->max_node_nr    = 0;
+#endif
+#ifndef NDEBUG
+	res->reserved_resources = 0;
 #endif
 
 	return res;
@@ -430,3 +433,19 @@ ident *get_irp_asm(int pos) {
 	assert(pos <= 0 && pos < get_irp_n_asms());
 	return irp->global_asms[pos];
 }
+
+#ifndef NDEBUG
+void irp_reserve_resources(ir_prog *irp, ir_resources_t resources) {
+	assert((irp->reserved_resources & resources) == 0);
+	irp->reserved_resources |= resources;
+}
+
+void irp_free_resources(ir_prog *irp, ir_resources_t resources) {
+	assert((irp->reserved_resources & resources) == resources);
+	irp->reserved_resources &= ~resources;
+}
+
+ir_resources_t irp_resources_reserved(const ir_prog *irp) {
+	return irp->reserved_resources;
+}
+#endif

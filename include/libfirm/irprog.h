@@ -93,6 +93,16 @@ typedef struct ir_prog ir_prog;
  */
 extern ir_prog *irp;
 
+#ifndef NDEBUG
+void irp_reserve_resources(ir_prog *irp, ir_resources_t resources);
+void irp_free_resources(ir_prog *irp, ir_resources_t resources);
+ir_resources_t irp_resources_reserved(const ir_prog *irp);
+#else
+void irp_reserve_resources(irp, resources)
+void irp_free_resources(irp, resources)
+ir_resources_t irp_resources_reserved(irp)   0
+#endif
+
 /**
  * Returns the access points from where everything in the ir can be accessed.
  *

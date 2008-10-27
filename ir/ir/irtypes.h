@@ -509,7 +509,7 @@ struct ir_graph {
 #endif
 
 #ifndef NDEBUG
-	ir_resources_t  reserved_resources;/**< Bitset for tracking used resources. */
+	ir_resources_t reserved_resources; /**< Bitset for tracking used local resources. */
 #endif
 };
 
@@ -564,6 +564,9 @@ struct ir_prog {
 	int  max_irg_idx;                    /**< highest unused irg index */
 #ifdef DEBUG_libfirm
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
+#endif
+#ifndef NDEBUG
+	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
 #endif
 };
 
