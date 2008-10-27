@@ -268,36 +268,34 @@ int is_address_taken(ir_node *sel)
  *
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
- *
- * Uses the visited flag to mark already linked Sel nodes.
  */
-static void link_all_leave_sels(ir_entity *ent, ir_node *sel) {
-	int i, flag = 1;
+static int link_all_leave_sels(ir_entity *ent, ir_node *sel) {
+	int i, is_leave = 1;
 
 	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(sel, i);
 
 		if (is_Sel(succ)) {
+			/* the current leave has further Sel's, no leave */
+			is_leave = 0;
 			link_all_leave_sels(ent, succ);
-			flag = 0;
+		} else if (is_Id(succ)) {
+			is_leave &= link_all_leave_sels(ent, succ);
 		}
 	}
 
-	if (flag) {
-		/* if Sel nodes with memory inputs are used, a entity can be
-		 * visited more than once causing a ring here, so we use the
-		 * node flag to mark linked nodes
-		 */
-		if (irn_visited_else_mark(sel))
-			return;
+	if (is_leave) {
+		/* beware of Id's */
+		sel = skip_Id(sel);
 
 		/* we know we are at a leave, because this function is only
-		 * called if the address is NOT taken, so succ must be a Load
-		 * or a Store node
+		 * called if the address is NOT taken, so sel's successor(s)
+		 * must be Loads or Stores
 		 */
 		set_irn_link(sel, get_entity_link(ent));
 		set_entity_link(ent, sel);
 	}
+	return is_leave;
 }
 
 /* we need a special address that serves as an address taken marker */
@@ -323,9 +321,6 @@ static int find_possible_replacements(ir_graph *irg) {
 	ir_type *frame_tp;
 	int     i;
 	int     res = 0;
-
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(irg);
 
 	/*
 	 * First, clear the link field of all interesting entities.
@@ -368,7 +363,8 @@ static int find_possible_replacements(ir_graph *irg) {
 			/* we can handle arrays, structs and atomic types yet */
 			if (is_Array_type(ent_type) || is_Struct_type(ent_type) || is_atomic_type(ent_type)) {
 				if (is_address_taken(succ)) {
-					if (get_entity_link(ent)) /* killing one */
+					 /* killing one */
+					if (get_entity_link(ent))
 						--res;
 					set_entity_link(ent, ADDRESS_TAKEN);
 				} else {
@@ -381,7 +377,6 @@ static int find_possible_replacements(ir_graph *irg) {
 		}
 	}
 
-	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	return res;
 }
 
@@ -579,13 +574,14 @@ static void topologic_walker(ir_node *node, void *ctx) {
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
+		block = get_nodes_block(node);
+		set_cur_block(block);
+
 		/* Beware: A Store can contain a hidden conversion in Firm. */
 		val = get_Store_value(node);
 		if (get_irn_mode(val) != env->modes[vnum])
 			val = new_d_Conv(get_irn_dbg_info(node), val, env->modes[vnum]);
 
-		block = get_nodes_block(node);
-		set_cur_block(block);
 		set_value(vnum, val);
 
 		mem = get_Store_mem(node);
@@ -648,6 +644,10 @@ int scalar_replacement_opt(ir_graph *irg) {
 
 	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
+
+	/* we use the link firld to store the VNUM */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irp_reserve_resources(irp,  IR_RESOURCE_ENTITY_LINK);
 
 	/* Find possible scalar replacements */
 	if (find_possible_replacements(irg)) {
@@ -715,6 +715,9 @@ int scalar_replacement_opt(ir_graph *irg) {
 		del_set(set_ent);
 		DEL_ARR_F(modes);
 	}
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	current_ir_graph = rem;
 	return res;
