@@ -28,6 +28,8 @@
  * Two block are congruent, if they contains only equal calculations.
  */
 #include "config.h"
+#include "ircons.h"
+#include "irgmod.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
@@ -37,6 +39,8 @@
 typedef struct partition_t     partition_t;
 typedef struct block_t         block_t;
 typedef struct node_t          node_t;
+typedef struct pair_t          pair_t;
+typedef struct phi_t           phi_t;
 typedef struct opcode_key_t    opcode_key_t;
 typedef struct listmap_entry_t listmap_entry_t;
 typedef struct environment_t   environment_t;
@@ -68,22 +72,40 @@ struct block_t {
 	list_head  nodes;        /**< Wait-queue of nodes that must be checked for congruence. */
 	block_t    *next;        /**< Next block of a split list. */
 	ir_node    *block;       /**< Pointer to the associated IR-node block. */
-	node_t     **roots;      /**< The array of the root nodes. */
+	node_t     *roots;       /**< The list of all root nodes. */
+	pair_t     *input_pairs; /**< The list of inputs to this block. */
+	phi_t      *phis;        /**< The list of Phis in this block. */
 };
 
 /** A node. */
 struct node_t {
 	list_head  node_list;    /**< Double linked list of block inside a partition. */
 	ir_node    *node;        /**< Pointer to the associated IR-node or NULL for block inputs. */
+	node_t     *next;        /**< Link to the next node in the root set. */
 	char       is_input;     /**< Set if this node is an input from other block. */
 };
 
 /** The environment. */
-typedef struct environment_t {
+struct environment_t {
 	list_head       partitions;     /**< list of partitions. */
 	list_head       ready;          /**< list of ready partitions. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
 	struct obstack  obst;           /** obstack for temporary data */
+};
+
+/** A node, input index pair. */
+struct pair_t {
+	pair_t  *next;    /**< Points to the next pair entry. */
+	ir_node *irn;     /**< The IR-node. */
+	int     index;    /**< An input index. */
+	ir_node **ins;    /**< A new in array once allocated. */
+};
+
+/** A Phi, inputs pair. */
+struct phi_t {
+	phi_t   *next;    /**< Points to the next Phi pair entry. */
+	ir_node *phi;     /**< The Phi node. */
+	ir_node **ins;    /**< A new in array once allocated. */
 };
 
 /**
@@ -100,11 +122,6 @@ typedef struct listmap_t {
 	set             *map;    /**< Map id's to listmap_entry_t's */
 	listmap_entry_t *values; /**< List of all values in the map. */
 } listmap_t;
-
-#define get_irn_node(irn)         ((node_t *)get_irn_link(irn))
-#define set_irn_node(irn, node)   set_irn_link(irn, node)
-#define get_irn_block(irn)        ((block_t *)get_irn_link(irn))
-#define set_irn_block(irn, block) set_irn_link(irn, block)
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -248,10 +265,11 @@ static block_t *create_block(ir_node *block, environment_t *env) {
 	block_t *bl = obstack_alloc(&env->obst, sizeof(*bl));
 
 	INIT_LIST_HEAD(&bl->nodes);
-	bl->next  = NULL;
-	bl->block = block;
-	bl->roots = NULL;
-	set_irn_block(block, bl);
+	bl->next        = NULL;
+	bl->block       = block;
+	bl->roots       = NULL;
+	bl->input_pairs = NULL;
+	bl->phis        = NULL;
 	return bl;
 }  /* create_block */
 
@@ -276,6 +294,7 @@ static node_t *create_node(ir_node *irn, environment_t *env) {
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
 
 	node->node     = irn;
+	node->next     = NULL;
 	node->is_input = 0;
 	return node;
 }  /* create_node */
@@ -290,7 +309,45 @@ static void add_node(block_t *block, node_t *node) {
 	list_add_tail(&node->node_list, &block->nodes);
 }  /* add_node */
 
-/** creates an opcode */
+/**
+ * Add an input pair to a block.
+ *
+ * @param block  the block
+ * @param irn    the IR-node that has an block input
+ * @param idx    the index of the block input in node's predecessors
+ * @param env    the environment
+ */
+static void add_pair(block_t *block, ir_node *irn, int idx, environment_t *env) {
+	pair_t *pair = obstack_alloc(&env->obst, sizeof(*pair));
+
+	pair->next  = block->input_pairs;
+	pair->irn   = irn;
+	pair->index = idx;
+	pair->ins   = NULL;
+
+	block->input_pairs = pair;
+}  /* add_pair */
+
+/**
+ * Add a Phi to a block.
+ *
+ * @param block  the block
+ * @param phi    the Phi node
+ * @param env    the environment
+ */
+static void add_phi(block_t *block, ir_node *phi, environment_t *env) {
+	phi_t *node = obstack_alloc(&env->obst, sizeof(*node));
+
+	node->next = block->phis;
+	node->phi  = phi;
+	node->ins  = NULL;
+
+	block->phis = node;
+}  /** add_phi */
+
+/**
+ * Creates an opcode from a node.
+ */
 static opcode_key_t *opcode(const node_t *node, environment_t *env) {
 	opcode_key_t key, *entry;
 	ir_node      *irn = node->node;
@@ -388,7 +445,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 			bl->next     = ready_blocks;
 			ready_blocks = bl;
 			++n_ready;
-			DB((dbg, LEVEL_1, "Block %+F ready\n", bl->block));
+			DB((dbg, LEVEL_1, "Block %+F completely processed\n", bl->block));
 			continue;
 		}
 
@@ -412,11 +469,17 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 					p_node = create_node(pred, env);
 					p_node->is_input = 1;
 					add_node(bl, p_node);
+					if (! is_Phi(irn))
+						add_pair(bl, node->node, i, env);
 				} else if (! irn_visited_else_mark(pred)) {
 					/* not yet visited, ok */
 					p_node = create_node(pred, env);
-					set_irn_node(pred, p_node);
 					add_node(bl, p_node);
+
+					if (is_Phi(pred)) {
+						/* update the Phi list */
+						add_phi(bl, pred, env);
+					}
 				}
 			}
 		} else {
@@ -482,12 +545,155 @@ void propagate(environment_t *env) {
 	}
 }  /* propagate */
 
-void melt_end_blocks(ir_graph *irg) {
+/**
+ * Apply analysis results by replacing all blocks of a partition
+ * by one representative.
+ *
+ * Route all inputs from all block of the partition to the one
+ * representative.
+ * Enhance all existing Phis by combining them.
+ * Create new Phis for all previous input nodes.
+ *
+ * @param part  the partition to process
+ */
+static void apply(ir_graph *irg, partition_t *part) {
+	block_t *repr = list_entry(part->blocks.next, block_t, block_list);
+	block_t *bl;
+	ir_node *block, *end, *end_block;
+	ir_node **ins;
+	phi_t   *repr_phi, *phi;
+	pair_t  *repr_pair, *pair;
+	int     i, j, n, block_nr;
+
+	list_del(&repr->block_list);
+
+	/* prepare new in arrays for the block ... */
+	block = repr->block;
+	n     = get_Block_n_cfgpreds(block);
+	ins   = NEW_ARR_F(ir_node *, n);
+
+	for (i = 0; i < n; ++i)
+		ins[i] = get_Block_cfgpred(block, i);
+
+	/* ... for all existing Phis ... */
+	for (repr_phi = repr->phis; repr_phi != NULL; repr_phi = repr_phi->next) {
+		repr_phi->ins = NEW_ARR_F(ir_node *, n);
+
+		for (i = 0; i < n; ++i)
+			ins[i] = get_Phi_pred(repr_phi->phi, i);
+	}
+
+	/* ... and all newly created Phis */
+	for (repr_pair = repr->input_pairs; repr_pair != NULL; repr_pair = repr_pair->next) {
+		repr_pair->ins = NEW_ARR_F(ir_node *, part->n_blocks);
+		repr_pair->ins[0] = get_irn_n(repr_pair->irn, repr_pair->index);
+	}
+
+	/* collect new in arrays */
+	end = get_irg_end(irg);
+	block_nr = 0;
+	list_for_each_entry(block_t, bl, &part->blocks, block_list) {
+		block = bl->block;
+		++block_nr;
+
+		/* first step: kill any keep-alive from this block */
+		for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+			ir_node *ka = get_End_keepalive(end, i);
+
+			if (is_Block(ka)) {
+				if (ka == block)
+					remove_End_keepalive(end, ka);
+			} else {
+				if (get_nodes_block(ka) == block)
+					remove_End_keepalive(end, ka);
+			}
+		}
+
+		/* second step: update control flow */
+		n = get_Block_n_cfgpreds(block);
+		for (i = 0; i < n; ++i) {
+			ARR_APP1(ir_node *, ins, get_Block_cfgpred(block, i));
+		}
+
+		/* third step: update Phis */
+		for (repr_phi = repr->phis, phi = bl->phis;
+		     repr_phi != NULL;
+		     repr_phi = repr_phi->next, phi = phi->next) {
+			for (i = 0; i < n; ++i)
+				ARR_APP1(ir_node *, repr_phi->ins, get_Phi_pred(phi->phi, i));
+		}
+
+		/* fourth step: update inputs for new Phis */
+		for (repr_pair = repr->input_pairs, pair = bl->input_pairs;
+		     repr_pair != NULL;
+		     repr_pair = repr_pair->next, pair = pair->next) {
+			repr_pair->ins[block_nr] = get_irn_n(pair->irn, pair->index);
+		}
+	}
+
+
+	/* rewire block input ... */
+	n = ARR_LEN(ins);
+	block = repr->block;
+	set_irn_in(block, n, ins);
+	DEL_ARR_F(ins);
+
+	/* ... existing Phis ... */
+	for (repr_phi = repr->phis; repr_phi != NULL; repr_phi = repr_phi->next) {
+		set_irn_in(repr_phi->phi, n, repr_phi->ins);
+		DEL_ARR_F(repr_phi->ins);
+	}
+
+	/* ... and all inputs by creating new Phis ... */
+	n = part->n_blocks;
+	for (repr_pair = repr->input_pairs; repr_pair != NULL; repr_pair = repr_pair->next) {
+		ir_node *input = get_irn_n(repr_pair->irn, repr_pair->index);
+		ir_mode *mode  = get_irn_mode(input);
+		ir_node *phi   = new_r_Phi(current_ir_graph, block, n, repr_pair->ins, mode);
+
+		set_irn_n(repr_pair->irn, repr_pair->index, phi);
+		DEL_ARR_F(repr_pair->ins);
+	}
+
+	/* ... finally rewire the end block */
+	end_block = get_irg_end_block(irg);
+	n         = get_Block_n_cfgpreds(end_block);
+
+	ins = NEW_ARR_F(ir_node *, n);
+
+	for (i = j = 0; i < n; ++i) {
+		ir_node *out = get_Block_cfgpred(end_block, i);
+
+		list_for_each_entry(block_t, bl, &part->blocks, block_list) {
+			node_t *root;
+
+			for (root = bl->roots; root != NULL; root = root->next) {
+				if (root->node == out)
+					goto found;
+			}
+		}
+		ins[j++] = out;
+found:
+			;
+	}
+	set_irn_in(end_block, j, ins);
+	DEL_ARR_F(ins);
+
+	/* control flow changed */
+	set_irg_outs_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
+	/* Hmm, only the root loop is inconsistent */
+	set_irg_loopinfo_inconsistent(irg);
+}  /* apply */
+
+/* Combines congruent end blocks into one. */
+int melt_end_blocks(ir_graph *irg) {
 	ir_graph      *rem;
 	ir_node       *end;
 	environment_t env;
 	partition_t   *part;
-	int           i;
+	int           i, res;
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -496,9 +702,10 @@ void melt_end_blocks(ir_graph *irg) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
 	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
+	DEBUG_ONLY(part_nr = 0);
 	DB((dbg, LEVEL_1, "Melting end blocks for %+F\n", irg));
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
 	obstack_init(&env.obst);
@@ -527,9 +734,8 @@ void melt_end_blocks(ir_graph *irg) {
 		node  = create_node(ka, &env);
 		add_node(bl, node);
 
-		/* currently we support only one root */
-		bl->roots = NEW_ARR_D(node_t*, &env.obst, 1);
-		bl->roots[0] = node;
+		node->next = bl->roots;
+		bl->roots  = node;
 	}
 
 	/* collect normal blocks */
@@ -548,19 +754,23 @@ void melt_end_blocks(ir_graph *irg) {
 		node  = create_node(pred, &env);
 		add_node(bl, node);
 
-		/* currently we support only one root */
-		bl->roots = NEW_ARR_D(node_t*, &env.obst, 1);
-		bl->roots[0] = node;
+		node->next = bl->roots;
+		bl->roots  = node;
 	}
 
 	while (! list_empty(&env.partitions))
 		propagate(&env);
 
+	res = !list_empty(&env.ready);
+
 	list_for_each_entry(partition_t, part, &env.ready, part_list) {
 		dump_partition("Ready Partition", part);
+		apply(irg, part);
 	}
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
 	current_ir_graph = rem;
+
+	return res;
 }  /* melt_end_blocks */

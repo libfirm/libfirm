@@ -590,11 +590,20 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  *
- *  @param maxsize     Do not inline any calls if a method has more than
+ * @param maxsize      Do not inline any calls if a method has more than
  *                     maxsize firm nodes.  It may reach this limit by
  *                     inlineing.
  * @param threshold    inlining threshold
  */
 void inline_functions(unsigned maxsize, int inline_threshold);
+
+/**
+ * Combines congruent end blocks into one.
+ *
+ * @param irg   The IR-graph to optimize.
+ *
+ * @return non-zero if the graph was transformed
+ */
+int melt_end_blocks(ir_graph *irg);
 
 #endif
