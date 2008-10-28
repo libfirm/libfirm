@@ -2258,5 +2258,5 @@ int optimize_load_store(ir_graph *irg) {
 		have Bad() predecessors. */
 		set_irg_doms_inconsistent(irg);
 	}
-	return (int) env.changes;
+	return env.changes != 0;
 }  /* optimize_load_store */
