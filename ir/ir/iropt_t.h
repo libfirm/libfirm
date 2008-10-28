@@ -83,6 +83,14 @@ ir_node *identify_remember(pset *value_table, ir_node *n);
 /** Visit each node in the value table of a graph. */
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env);
 
+/**
+ * Normalize a node by putting constants (and operands with larger
+ * node index) on the right (operator side).
+ *
+ * @param n   The node to normalize
+ */
+void ir_normalize_node(ir_node *n);
+
 ir_node *optimize_node(ir_node *n);
 
 ir_node *optimize_in_place_2(ir_node *n);

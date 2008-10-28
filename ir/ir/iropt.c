@@ -6036,13 +6036,9 @@ void del_identities(pset *value_table) {
 	del_pset(value_table);
 }  /* del_identities */
 
-/**
- * Normalize a node by putting constants (and operands with larger
- * node index) on the right (operator side).
- *
- * @param n   The node to normalize
- */
-static void normalize_node(ir_node *n) {
+/* Normalize a node by putting constants (and operands with larger
+ * node index) on the right (operator side). */
+void ir_normalize_node(ir_node *n) {
 	if (is_op_commutative(get_irn_op(n))) {
 		ir_node *l = get_binop_left(n);
 		ir_node *r = get_binop_right(n);
@@ -6057,7 +6053,7 @@ static void normalize_node(ir_node *n) {
 			hook_normalize(n);
 		}
 	}
-}  /* normalize_node */
+}  /* ir_normalize_node */
 
 /**
  * Update the nodes after a match in the value table. If both nodes have
@@ -6123,7 +6119,7 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 
 	if (!value_table) return n;
 
-	normalize_node(n);
+	ir_normalize_node(n);
 	/* lookup or insert in hash table with given hash key. */
 	o = pset_insert(value_table, n, ir_node_hash(n));
 
