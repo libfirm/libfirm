@@ -83,7 +83,7 @@ void be_duplicate_deps(ir_node *old_node, ir_node *new_node) {
 	}
 }
 
-void be_dep_on_frame(ir_node *const node)
+void be_dep_on_frame(ir_node* node)
 {
 	ir_graph *const irg = current_ir_graph;
 

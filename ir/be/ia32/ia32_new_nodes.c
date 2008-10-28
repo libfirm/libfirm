@@ -982,7 +982,7 @@ init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 	attr->offset   = offset;
 }
 
-void init_ia32_call_attributes(ir_node *const res, unsigned const pop, ir_type *const call_tp)
+void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
 {
 	ia32_call_attr_t *attr = get_irn_generic_attr(res);
 
