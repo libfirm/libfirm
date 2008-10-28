@@ -700,7 +700,6 @@ int melt_end_blocks(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
-	firm_dbg_set_mask(dbg, SET_LEVEL_3);
 
 	DEBUG_ONLY(part_nr = 0);
 	DB((dbg, LEVEL_1, "Melting end blocks for %+F\n", irg));
