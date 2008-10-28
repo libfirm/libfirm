@@ -8,7 +8,7 @@ int test(int a, int b, int c) {
 		B = b;
 		return A + c;
 	case 2:
-		B = b;
+		B = c;
 		return c + A;
 	case 3:
 		return c + A;
