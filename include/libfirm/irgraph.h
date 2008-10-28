@@ -509,12 +509,20 @@ void         set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * if 2 parties try to use the flags.
  */
 enum ir_resources_enum_t {
+	/* local (irg) resources */
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */
 	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
 	IR_RESOURCE_IRN_LINK      = 1 << 3,  /**< IR-node link fields are used. */
 	IR_RESOURCE_LOOP_LINK     = 1 << 4,  /**< IR-loop link fields are used. */
-	IR_RESOURCE_ENTITY_LINK   = 1 << 5   /**< IR-entity link fields are used. */
+	IR_RESOURCE_PHI_LIST      = 1 << 5,  /**< Block Phi lists are used. */
+
+	/* global (irp) resources */
+	IR_RESOURCE_ENTITY_LINK   = 1 << 8,  /**< IR-entity link fields are used. */
+
+	/* masks */
+	IR_RESOURCE_LOCAL_MASK    = 0x00FF,  /**< Mask for all local resources. */
+	IR_RESOURCE_GLOBAL_MASK   = 0xFF00   /**< Mask for all global resources. */
 };
 typedef unsigned ir_resources_t;
 

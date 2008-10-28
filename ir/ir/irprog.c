@@ -436,6 +436,7 @@ ident *get_irp_asm(int pos) {
 
 #ifndef NDEBUG
 void irp_reserve_resources(ir_prog *irp, ir_resources_t resources) {
+	assert((resources & ~IR_RESOURCE_GLOBAL_MASK) == 0);
 	assert((irp->reserved_resources & resources) == 0);
 	irp->reserved_resources |= resources;
 }

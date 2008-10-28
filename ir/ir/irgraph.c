@@ -1053,6 +1053,7 @@ void *get_irg_loc_description(ir_graph *irg, int n) {
 
 #ifndef NDEBUG
 void ir_reserve_resources(ir_graph *irg, ir_resources_t resources) {
+	assert((resources & ~IR_RESOURCE_LOCAL_MASK) == 0);
 	assert((irg->reserved_resources & resources) == 0);
 	irg->reserved_resources |= resources;
 }
