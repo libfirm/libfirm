@@ -32,6 +32,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
+#include "trouts.h"
 #include "set.h"
 #include "debug.h"
 
@@ -696,6 +697,9 @@ found:
 	set_irg_doms_inconsistent(irg);
 	/* Hmm, only the root loop is inconsistent */
 	set_irg_loopinfo_inconsistent(irg);
+
+	/* Calls might be removed. */
+	set_trouts_inconsistent();
 }  /* apply */
 
 /* Combines congruent end blocks into one. */
