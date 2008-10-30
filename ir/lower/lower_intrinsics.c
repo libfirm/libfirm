@@ -119,11 +119,16 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
 
-		if (part_block_used)
+		if (part_block_used) {
+			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 			collect_phiprojs(irg);
+		}
 
 		wenv.nr_of_intrinsics = 0;
 		irg_walk_graph(irg, NULL, call_mapper, &wenv);
+
+		if (part_block_used)
+			ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 		if (wenv.nr_of_intrinsics > 0) {
 			/* Changes detected: we might have added/removed nodes. */
