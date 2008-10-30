@@ -3491,7 +3491,7 @@ void combo(ir_graph *irg) {
 	set_compute_functions();
 	DEBUG_ONLY(part_nr = 0);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	if (env.opt_unknown)
 		tarval_UNKNOWN = tarval_top;
@@ -3548,7 +3548,7 @@ void combo(ir_graph *irg) {
 		set_irg_loopinfo_inconsistent(irg);
 	}
 
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	/* remove the partition hook */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));

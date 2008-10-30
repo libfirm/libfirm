@@ -535,13 +535,13 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	compute_cdep(irg);
 	assure_doms(irg);
 
-	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
 	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
 	irg_block_walk_graph(irg, NULL, if_conv_walker, &p);
 
-	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
 	local_optimize_graph(irg);
 
