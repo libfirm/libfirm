@@ -466,10 +466,13 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 
 				if (block != bl->block) {
 					p_node = create_node(pred, env);
-					p_node->is_input = 1;
 					add_node(bl, p_node);
-					if (! is_Phi(irn))
-						add_pair(bl, irn, i, env);
+					/* do not threat Constants like live-ins */
+					if (! is_irn_constlike(irn)) {
+						p_node->is_input = 1;
+						if (! is_Phi(irn))
+							add_pair(bl, irn, i, env);
+					}
 				} else if (! irn_visited_else_mark(pred)) {
 					/* not yet visited, ok */
 					p_node = create_node(pred, env);
