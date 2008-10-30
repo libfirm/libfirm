@@ -29,7 +29,6 @@
  */
 #include "config.h"
 #include "ircons.h"
-#include "irgmod.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
@@ -458,7 +457,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 			ir_node *irn = node->node;
 			int     i;
 
-			DB((dbg, LEVEL_3, "  propagate %+F\n", node->node));
+			DB((dbg, LEVEL_3, "  propagate %+F\n", irn));
 			ir_normalize_node(node->node);
 			for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 				ir_node *pred  = get_irn_n(irn, i);
@@ -470,7 +469,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 					p_node->is_input = 1;
 					add_node(bl, p_node);
 					if (! is_Phi(irn))
-						add_pair(bl, node->node, i, env);
+						add_pair(bl, irn, i, env);
 				} else if (! irn_visited_else_mark(pred)) {
 					/* not yet visited, ok */
 					p_node = create_node(pred, env);
@@ -536,10 +535,10 @@ void propagate(environment_t *env) {
 	partition_t *part, *next;
 
 	list_for_each_entry_safe(partition_t, part, next, &env->partitions, part_list) {
-		if (part->n_blocks == 1) {
-			/* only one block left, move to ready */
+		if (part->n_blocks < 2) {
+			/* zero or one block left, kill this partition */
 			list_del(&part->part_list);
-			DB((dbg, LEVEL_1, "Partition %u contains only one block, killed\n", part->nr));
+			DB((dbg, LEVEL_1, "Partition %u contains less than 2 blocks, killed\n", part->nr));
 		} else
 			propagate_blocks(part, env);
 	}
@@ -572,21 +571,25 @@ static void apply(ir_graph *irg, partition_t *part) {
 	n     = get_Block_n_cfgpreds(block);
 	ins   = NEW_ARR_F(ir_node *, n);
 
-	for (i = 0; i < n; ++i)
+	for (i = 0; i < n; ++i) {
 		ins[i] = get_Block_cfgpred(block, i);
+	}
 
 	/* ... for all existing Phis ... */
 	for (repr_phi = repr->phis; repr_phi != NULL; repr_phi = repr_phi->next) {
 		repr_phi->ins = NEW_ARR_F(ir_node *, n);
 
 		for (i = 0; i < n; ++i)
-			ins[i] = get_Phi_pred(repr_phi->phi, i);
+			repr_phi->ins[i] = get_Phi_pred(repr_phi->phi, i);
 	}
 
 	/* ... and all newly created Phis */
 	for (repr_pair = repr->input_pairs; repr_pair != NULL; repr_pair = repr_pair->next) {
-		repr_pair->ins = NEW_ARR_F(ir_node *, part->n_blocks);
-		repr_pair->ins[0] = get_irn_n(repr_pair->irn, repr_pair->index);
+		ir_node *input = get_irn_n(repr_pair->irn, repr_pair->index);
+
+		repr_pair->ins = NEW_ARR_F(ir_node *, n);
+		for (i = 0; i < n; ++i)
+			repr_pair->ins[i] = input;
 	}
 
 	/* collect new in arrays */
@@ -612,22 +615,28 @@ static void apply(ir_graph *irg, partition_t *part) {
 		/* second step: update control flow */
 		n = get_Block_n_cfgpreds(block);
 		for (i = 0; i < n; ++i) {
-			ARR_APP1(ir_node *, ins, get_Block_cfgpred(block, i));
+			ir_node *pred = get_Block_cfgpred(block, i);
+			ARR_APP1(ir_node *, ins, pred);
 		}
 
 		/* third step: update Phis */
 		for (repr_phi = repr->phis, phi = bl->phis;
 		     repr_phi != NULL;
 		     repr_phi = repr_phi->next, phi = phi->next) {
-			for (i = 0; i < n; ++i)
-				ARR_APP1(ir_node *, repr_phi->ins, get_Phi_pred(phi->phi, i));
+			for (i = 0; i < n; ++i) {
+				ir_node *pred = get_Phi_pred(phi->phi, i);
+				ARR_APP1(ir_node *, repr_phi->ins, pred);
+			}
 		}
 
 		/* fourth step: update inputs for new Phis */
 		for (repr_pair = repr->input_pairs, pair = bl->input_pairs;
 		     repr_pair != NULL;
 		     repr_pair = repr_pair->next, pair = pair->next) {
-			repr_pair->ins[block_nr] = get_irn_n(pair->irn, pair->index);
+			ir_node *input = get_irn_n(pair->irn, pair->index);
+
+			for (i = 0; i < n; ++i)
+				ARR_APP1(ir_node *, repr_pair->ins, input);
 		}
 	}
 
@@ -645,7 +654,6 @@ static void apply(ir_graph *irg, partition_t *part) {
 	}
 
 	/* ... and all inputs by creating new Phis ... */
-	n = part->n_blocks;
 	for (repr_pair = repr->input_pairs; repr_pair != NULL; repr_pair = repr_pair->next) {
 		ir_node *input = get_irn_n(repr_pair->irn, repr_pair->index);
 		ir_mode *mode  = get_irn_mode(input);
