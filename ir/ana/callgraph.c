@@ -929,7 +929,7 @@ static void cgscc(ir_graph *n) {
 		/** This marks the backedge, but does it guarantee a correct loop tree? */
 		//if (m == n) { set_irg_callee_backedge(n, i); continue; }
 
-		cgscc (m);
+		cgscc(m);
 		if (irg_is_in_stack(m)) {
 			/* Uplink of m is smaller if n->m is a backedge.
 			   Propagate the uplink to mark the cfloop. */
@@ -1210,7 +1210,7 @@ static void compute_method_execution_frequency(ir_graph *irg, void *env) {
 
 /* Compute the backedges that represent recursions. */
 void find_callgraph_recursions(void) {
-	int i, n_irgs = get_irp_n_irgs();
+	int i, n_irgs;
 	struct obstack temp;
 
 	reset_isbe();
@@ -1231,6 +1231,7 @@ void find_callgraph_recursions(void) {
 
 	++master_cg_visited;
 	cgscc(outermost_ir_graph);
+	n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		if (!cg_irg_visited(irg) && get_irg_n_callers(irg) == 0)
