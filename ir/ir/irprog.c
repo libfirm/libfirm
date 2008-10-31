@@ -189,26 +189,28 @@ void add_irp_irg(ir_graph *irg) {
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg_from_list(ir_graph *irg){
-	int i, found = 0;
+	int i, l, found = 0;
 
 	assert(irg);
-	for (i = 0; i < (ARR_LEN (irp->graphs)); i++) {
+	l = ARR_LEN(irp->graphs);
+	for (i = 0; i < l; i++) {
 		if (irp->graphs[i] == irg) {
 			found = 1;
-			for(; i < (ARR_LEN (irp->graphs)) - 1; i++) {
+			for(; i < l - 1; i++) {
 				irp->graphs[i] = irp->graphs[i+1];
 			}
-			ARR_SETLEN(ir_graph*, irp->graphs, (ARR_LEN(irp->graphs)) - 1);
+			ARR_SETLEN(ir_graph*, irp->graphs, l - 1);
 			break;
 		}
 	}
 	if (!found) {
-		for (i = 0; i < (ARR_LEN (irp->pseudo_graphs)); i++) {
+		l = ARR_LEN(irp->pseudo_graphs);
+		for (i = 0; i < l; i++) {
 			if (irp->pseudo_graphs[i] == irg) {
-				for(; i < (ARR_LEN (irp->pseudo_graphs)) - 1; i++) {
+				for(; i < l - 1; i++) {
 					irp->pseudo_graphs[i] = irp->pseudo_graphs[i+1];
 				}
-				ARR_SETLEN(ir_graph*, irp->pseudo_graphs, (ARR_LEN(irp->pseudo_graphs)) - 1);
+				ARR_SETLEN(ir_graph*, irp->pseudo_graphs, l - 1);
 				break;
 			}
 		}
@@ -217,7 +219,6 @@ void remove_irp_irg_from_list(ir_graph *irg){
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg(ir_graph *irg){
-	assert(irg);
 	free_ir_graph(irg);
 	remove_irp_irg_from_list(irg);
 }
