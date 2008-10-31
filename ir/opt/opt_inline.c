@@ -2061,6 +2061,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	call_entry     *curr_call;
 	wenv_t         wenv;
 	pqueue_t       *pqueue;
+	ir_resources_t resources = 0;
 
 	if (env->n_call_nodes == 0)
 		return;
@@ -2170,7 +2171,10 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		}
 		if (! phiproj_computed) {
 			phiproj_computed = 1;
-			ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
+			if (resources == 0) {
+				resources = IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST;
+				ir_reserve_resources(current_ir_graph, resources);
+			}
 			collect_phiprojs(current_ir_graph);
 		}
 		did_inline = inline_method(call_node, callee);
@@ -2178,7 +2182,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 
 		/* call was inlined, Phi/Projs for current graph must be recomputed */
-		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 		phiproj_computed = 0;
 
 		/* remove it from the caller list */
@@ -2216,7 +2219,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		env->n_nodes += callee_env->n_nodes;
 		--callee_env->n_callers;
 	}
-
+	ir_free_resources(current_ir_graph, resources);
 	del_pqueue(pqueue);
 }
 
