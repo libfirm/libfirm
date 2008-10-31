@@ -36,19 +36,19 @@
 
 /* Returns the number of pseudo graphs in the program. */
 int get_irp_n_pseudo_irgs(void) {
-  assert (irp && irp->pseudo_graphs);
-  return ARR_LEN(irp->pseudo_graphs);
+	assert (irp && irp->pseudo_graphs);
+	return ARR_LEN(irp->pseudo_graphs);
 }
 
 /* Returns the pos'th  pseudo graph in the program. */
 ir_graph *get_irp_pseudo_irg(int pos) {
-  assert(0 <= pos && pos <= get_irp_n_pseudo_irgs());
-  return irp->pseudo_graphs[pos];
+	assert(0 <= pos && pos <= get_irp_n_pseudo_irgs());
+	return irp->pseudo_graphs[pos];
 }
 
 void add_irp_pseudo_irg(ir_graph *irg) {
-  assert (irp && irp->pseudo_graphs);
-  ARR_APP1(ir_graph *, irp->pseudo_graphs, irg);
+	assert (irp && irp->pseudo_graphs);
+	ARR_APP1(ir_graph *, irp->pseudo_graphs, irg);
 }
 
 
@@ -59,32 +59,32 @@ void add_irp_pseudo_irg(ir_graph *irg) {
  */
 ir_graph *
 new_pseudo_ir_graph(ir_entity *ent, int n_loc) {
-  ir_graph *res = new_r_ir_graph (ent, n_loc);
-  add_irp_pseudo_irg(res);          /* remember this graph global. */
-  return res;
+	ir_graph *res = new_r_ir_graph(ent, n_loc);
+	add_irp_pseudo_irg(res);          /* remember this graph global. */
+	return res;
 }
 
 /* Returns non-zero ir ir_graph is pseudo graph. */
-int is_pseudo_ir_graph(ir_graph *irg)
-{
-  int i, n_pseudo_irgs;
+int is_pseudo_ir_graph(ir_graph *irg) {
+	int i, n_pseudo_irgs;
 
-  assert(irg && "nothing here");
-  assert(is_ir_graph(irg) && "no ir_graph given");
+	assert(irg && "nothing here");
+	assert(is_ir_graph(irg) && "no ir_graph given");
 
-  n_pseudo_irgs = get_irp_n_pseudo_irgs();
-  for (i = 0; i < n_pseudo_irgs; ++i) {
-    if (irg == get_irp_pseudo_irg(i)) return 1;
-  }
-  return 0;
+	n_pseudo_irgs = get_irp_n_pseudo_irgs();
+	for (i = 0; i < n_pseudo_irgs; ++i) {
+		if (irg == get_irp_pseudo_irg(i))
+			return 1;
+	}
+	return 0;
 }
 
 static int visit_pseudo_irgs = 0;
 
 void set_visit_pseudo_irgs(int x) {
-  visit_pseudo_irgs = x;
+	visit_pseudo_irgs = x;
 }
 
 int get_visit_pseudo_irgs(void) {
-  return visit_pseudo_irgs;
+	return visit_pseudo_irgs;
 }
