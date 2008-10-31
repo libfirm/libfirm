@@ -164,7 +164,7 @@ static void clear_node_and_phis_links(ir_node *n, void *env) {
 }
 
 void collect_phiprojs(ir_graph *irg) {
-	assert(ir_resources_reserved(irg) & (IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST) ==
+	assert((ir_resources_reserved(irg) & (IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST)) ==
 		(IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST));
 	irg_walk_graph(irg, clear_node_and_phis_links, collect_phiprojs_walker, NULL);
 }

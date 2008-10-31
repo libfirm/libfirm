@@ -2170,6 +2170,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		}
 		if (! phiproj_computed) {
 			phiproj_computed = 1;
+			ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 			collect_phiprojs(current_ir_graph);
 		}
 		did_inline = inline_method(call_node, callee);
@@ -2177,6 +2178,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			continue;
 
 		/* call was inlined, Phi/Projs for current graph must be recomputed */
+		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 		phiproj_computed = 0;
 
 		/* remove it from the caller list */
