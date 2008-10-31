@@ -165,6 +165,8 @@ void free_firm(void) {
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
 		free_ir_graph(get_irp_irg(i));
+	for (i = get_irp_n_pseudo_irgs() - 1; i >= 0; --i)
+		free_ir_graph(get_irp_pseudo_irg(i));
 
 	free_type_entities(get_glob_type());
 	for (i = get_irp_n_types() - 1; i >= 0; --i)
