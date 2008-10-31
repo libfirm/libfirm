@@ -514,14 +514,14 @@ ir_timer_t *t_ra_other;
  */
 static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
-	int i;
-	be_main_env_t env;
-	char prof_filename[256];
 	static const char suffix[] = ".prof";
-	be_irg_t *birgs;
-	int num_birgs;
-	ir_graph **irg_list, **backend_irg_list;
-	arch_env_t *arch_env;
+
+	int           i, num_birgs, stat_active = 0;
+	be_main_env_t env;
+	char          prof_filename[256];
+	be_irg_t      *birgs;
+	ir_graph      **irg_list, **backend_irg_list;
+	arch_env_t    *arch_env;
 
 	be_timing = (be_options.timing == BE_TIME_ON);
 
@@ -597,6 +597,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	} else {
 		ir_profile_read(prof_filename);
 	}
+
+#ifdef FIRM_STATISTICS
+	stat_active = stat_is_active();
+#endif /* FIRM_STATISTICS */
 
 	/* For all graphs */
 	for (i = 0; i < num_birgs; ++i) {
@@ -862,6 +866,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 #undef LC_EMIT
 
 		be_free_birg(birg);
+
+        /* switched off due to statistics (statistic module needs all irgs) */
+#ifdef FIRM_STATISTICS
+		if (! stat_active)
+#endif /* FIRM_STATISTICS */
+			remove_irp_irg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
 	ir_profile_free();
