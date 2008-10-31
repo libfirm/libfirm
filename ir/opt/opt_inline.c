@@ -1325,6 +1325,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
 
 	if (! list_empty(&env.calls)) {
 		/* There are calls to inline */
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 		collect_phiprojs(irg);
 
 		list_for_each_entry(call_entry, entry, &env.calls, list) {
@@ -1341,6 +1342,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
 				inline_method(entry->call, callee);
 			}
 		}
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 	}
 	obstack_free(&env.obst, NULL);
 	current_ir_graph = rem;
@@ -1574,6 +1576,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 			current_ir_graph = get_irp_irg(i);
 			env              = get_irg_link(current_ir_graph);
 
+			ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 			list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
 				ir_graph            *callee;
 				irg_inline_property  prop;
@@ -1616,6 +1619,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					}
 				}
 			}
+			ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 		}
 	} while (did_inline);
 
@@ -1626,6 +1630,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 		current_ir_graph = get_irp_irg(i);
 		env              = get_irg_link(current_ir_graph);
+
+		ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
 		/* note that the list of possible calls is updated during the process */
 		list_for_each_entry_safe(call_entry, entry, next, &env->calls, list) {
@@ -1663,6 +1669,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					inline_irg_env *callee_env;
 					ir_graph       *copy;
 
+					ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
+
 					/*
 					 * No copy yet, create one.
 					 * Note that recursive methods are never leaves, so it is sufficient
@@ -1672,6 +1680,8 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 					/* create_irg_copy() destroys the Proj links, recompute them */
 					phiproj_computed = 0;
+
+					ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
 					/* allocate new environment */
 					callee_env = alloc_inline_irg_env();
@@ -1726,6 +1736,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 				}
 			}
 		}
+		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {
@@ -2061,7 +2072,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	call_entry     *curr_call;
 	wenv_t         wenv;
 	pqueue_t       *pqueue;
-	ir_resources_t resources = 0;
 
 	if (env->n_call_nodes == 0)
 		return;
@@ -2072,6 +2082,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 	}
 
 	current_ir_graph = irg;
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
 	/* put irgs into the pqueue */
 	pqueue = new_pqueue();
@@ -2136,6 +2147,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			if (benefice < inline_threshold)
 				continue;
 
+			ir_free_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
+
 			/*
 			 * No copy yet, create one.
 			 * Note that recursive methods are never leaves, so it is
@@ -2145,6 +2158,8 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 			/* create_irg_copy() destroys the Proj links, recompute them */
 			phiproj_computed = 0;
+
+			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 
 			/* allocate a new environment */
 			callee_env = alloc_inline_irg_env();
@@ -2171,10 +2186,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		}
 		if (! phiproj_computed) {
 			phiproj_computed = 1;
-			if (resources == 0) {
-				resources = IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST;
-				ir_reserve_resources(current_ir_graph, resources);
-			}
 			collect_phiprojs(current_ir_graph);
 		}
 		did_inline = inline_method(call_node, callee);
@@ -2219,7 +2230,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		env->n_nodes += callee_env->n_nodes;
 		--callee_env->n_callers;
 	}
-	ir_free_resources(current_ir_graph, resources);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 	del_pqueue(pqueue);
 }
 
