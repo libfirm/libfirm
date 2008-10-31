@@ -29,6 +29,7 @@
  */
 #include "config.h"
 #include "ircons.h"
+#include "iroptimize.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
@@ -137,12 +138,12 @@ static void dump_partition(const char *msg, const partition_t *part) {
 	const block_t *block;
 	int           first = 1;
 
-	DB((dbg, LEVEL_2, "%s part%u (%u) {\n  ", msg, part->nr, part->n_blocks));
+	DB((dbg, LEVEL_2, " %s part%u (%u blocks) {\n  ", msg, part->nr, part->n_blocks));
 	list_for_each_entry(block_t, block, &part->blocks, block_list) {
 		DB((dbg, LEVEL_2, "%s%+F", first ? "" : ", ", block->block));
 		first = 0;
 	}
-	DB((dbg, LEVEL_2, "\n}\n"));
+	DB((dbg, LEVEL_2, "\n }\n"));
 }  /* dump_partition */
 
 /**
@@ -152,12 +153,12 @@ static void dump_list(const char *msg, const block_t *block) {
 	const block_t *p;
 	int           first = 1;
 
-	DB((dbg, LEVEL_3, "%s = {\n  ", msg));
+	DB((dbg, LEVEL_3, "  %s = {\n   ", msg));
 	for (p = block; p != NULL; p = p->next) {
 		DB((dbg, LEVEL_3, "%s%+F", first ? "" : ", ", p->block));
 		first = 0;
 	}
-	DB((dbg, LEVEL_3, "\n}\n"));
+	DB((dbg, LEVEL_3, "\n  }\n"));
 }  /* do_dump_list */
 #else
 #define dump_partition(msg, part)
@@ -432,7 +433,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 	listmap_t       map;
 	listmap_entry_t *iter;
 
-	DB((dbg, LEVEL_2, "Propagate blocks on part%u\n", part->nr));
+	DB((dbg, LEVEL_2, " Propagate blocks on part%u\n", part->nr));
 
 	/* Let map be an empty mapping from the range of Opcodes to (local) list of Nodes. */
 	listmap_init(&map);
@@ -445,7 +446,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 			bl->next     = ready_blocks;
 			ready_blocks = bl;
 			++n_ready;
-			DB((dbg, LEVEL_1, "Block %+F completely processed\n", bl->block));
+			DB((dbg, LEVEL_2, " Block %+F completely processed\n", bl->block));
 			continue;
 		}
 
@@ -507,10 +508,10 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 		list_del(&Z->part_list);
 
 		if (Z->n_blocks > 1) {
-			DB((dbg, LEVEL_1, "Partition %u is ready\n", Z->nr));
+			DB((dbg, LEVEL_2, " Partition %u is ready\n", Z->nr));
 			list_add(&Z->part_list, &env->ready);
 		} else {
-			DB((dbg, LEVEL_1, "Partition %u contains only one block, killed\n", Z->nr));
+			DB((dbg, LEVEL_2, " Partition %u contains only one block, killed\n", Z->nr));
 		}
 	}
 
@@ -542,7 +543,7 @@ void propagate(environment_t *env) {
 		if (part->n_blocks < 2) {
 			/* zero or one block left, kill this partition */
 			list_del(&part->part_list);
-			DB((dbg, LEVEL_1, "Partition %u contains less than 2 blocks, killed\n", part->nr));
+			DB((dbg, LEVEL_2, " Partition %u contains less than 2 blocks, killed\n", part->nr));
 		} else
 			propagate_blocks(part, env);
 	}
@@ -596,12 +597,16 @@ static void apply(ir_graph *irg, partition_t *part) {
 			repr_pair->ins[i] = input;
 	}
 
+	DB((dbg, LEVEL_1, "Replacing "));
+
 	/* collect new in arrays */
 	end = get_irg_end(irg);
 	block_nr = 0;
 	list_for_each_entry(block_t, bl, &part->blocks, block_list) {
 		block = bl->block;
 		++block_nr;
+
+		DB((dbg, LEVEL_1, "%+F, ", block));
 
 		/* first step: kill any keep-alive from this block */
 		for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
@@ -644,6 +649,7 @@ static void apply(ir_graph *irg, partition_t *part) {
 		}
 	}
 
+	DB((dbg, LEVEL_1, "by %+F\n", repr->block));
 
 	/* rewire block input ... */
 	n = ARR_LEN(ins);
@@ -717,7 +723,10 @@ int melt_end_blocks(ir_graph *irg) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
 
 	DEBUG_ONLY(part_nr = 0);
-	DB((dbg, LEVEL_1, "Melting end blocks for %+F\n", irg));
+	DB((dbg, LEVEL_1, "Shaping blocks for %+F\n", irg));
+
+	/* works better, when returns are placed at the end of the blocks */
+	normalize_n_returns(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -771,6 +780,7 @@ int melt_end_blocks(ir_graph *irg) {
 		node->next = bl->roots;
 		bl->roots  = node;
 	}
+	dump_partition("Created", part);
 
 	while (! list_empty(&env.partitions))
 		propagate(&env);
