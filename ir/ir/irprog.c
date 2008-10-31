@@ -263,15 +263,15 @@ ir_graph *get_irp_allirg(int pos) {
 void add_irp_type(ir_type *typ) {
 	assert(typ != NULL);
 	assert(irp);
-	ARR_APP1 (ir_type *, irp->types, typ);
+	ARR_APP1(ir_type *, irp->types, typ);
 }
 
-/* Remove type form the list of types in irp. */
+/* Remove type from the list of types in irp. */
 void remove_irp_type(ir_type *typ) {
 	int i;
 	assert(typ);
 
-	for (i = ARR_LEN(irp->types) -1; i >= 0; i--) {
+	for (i = ARR_LEN(irp->types) - 1; i >= 0; i--) {
 		if (irp->types[i] == typ) {
 			for(; i < (ARR_LEN(irp->types)) - 1; i++) {
 				irp->types[i] = irp->types[i+1];
