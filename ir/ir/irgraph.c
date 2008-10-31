@@ -141,13 +141,6 @@ static void free_graph(ir_graph *irg) {
 	free(ptr - additional_graph_data_size);
 }
 
-#if USE_EXPLICIT_PHI_IN_STACK
-/* really defined in ircons.c */
-typedef struct Phi_in_stack Phi_in_stack;
-Phi_in_stack *new_Phi_in_stack();
-void free_Phi_in_stack(Phi_in_stack *s);
-#endif
-
 /**
  * Set the number of locals for a given graph.
  *
@@ -210,10 +203,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
 
-#if USE_EXPLICIT_PHI_IN_STACK
-	res->Phi_in_stack = new_Phi_in_stack();  /* A stack needed for automatic Phi
-	                                            generation */
-#endif
 	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
@@ -320,9 +309,6 @@ ir_graph *new_const_code_irg(void) {
 	res->n_loc = 1;         /* Only the memory. */
 	res->visited = 0;       /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-#if USE_EXPLICIT_PHI_IN_STACK
-	res->Phi_in_stack = NULL;
-#endif
 	res->obst       = XMALLOC(struct obstack);
 	obstack_init (res->obst);
 	res->extbb_obst = NULL;
@@ -471,9 +457,6 @@ ir_graph *create_irg_copy(ir_graph *irg) {
 	res->n_loc = 0;
 	res->visited = 0;       /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-#if USE_EXPLICIT_PHI_IN_STACK
-	res->Phi_in_stack = NULL;
-#endif
 	res->obst       = XMALLOC(struct obstack);
 	obstack_init(res->obst);
 	res->extbb_obst = NULL;
@@ -557,9 +540,6 @@ void free_ir_graph(ir_graph *irg) {
 	free_End(get_irg_end(irg));
 	obstack_free(irg->obst,NULL);
 	free(irg->obst);
-#if USE_EXPLICIT_PHI_IN_STACK
-	free_Phi_in_stack(irg->Phi_in_stack);
-#endif
 	if (irg->loc_descriptions)
 		free(irg->loc_descriptions);
 	irg->kind = k_BAD;

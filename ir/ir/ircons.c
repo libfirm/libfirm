@@ -44,16 +44,6 @@
 #include "iredges_t.h"
 #include "irflag_t.h"
 
-#if USE_EXPLICIT_PHI_IN_STACK
-/* A stack needed for the automatic Phi node construction in constructor
-   Phi_in. Redefinition in irgraph.c!! */
-struct Phi_in_stack {
-	ir_node **stack;
-	int       pos;
-};
-typedef struct Phi_in_stack Phi_in_stack;
-#endif
-
 /* when we need verifying */
 #ifdef NDEBUG
 # define IRN_VRFY_IRG(res, irg)

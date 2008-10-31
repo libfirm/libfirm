@@ -460,9 +460,6 @@ struct ir_graph {
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
 	/* -- Fields for construction -- */
-#if USE_EXPLICIT_PHI_IN_STACK
-	struct Phi_in_stack *Phi_in_stack; /**< Needed for automatic Phi construction. */
-#endif
 	int n_loc;                         /**< Number of local variables in this
 	                                        procedure including procedure parameters. */
 	void **loc_descriptions;           /**< Storage for local variable descriptions. */
@@ -480,11 +477,11 @@ struct ir_graph {
 	unsigned *caller_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
 	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
 	unsigned *callee_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
+	ir_loop   *l;                            /**< For callgraph analysis. */
 	int        callgraph_loop_depth;         /**< For callgraph analysis */
 	int        callgraph_recursion_depth;    /**< For callgraph analysis */
 	double     method_execution_frequency;   /**< For callgraph analysis */
 
-	ir_loop   *l;                            /**< For callgraph analysis. */
 
 	/* -- Fields for Walking the graph -- */
 	ir_visited_t visited;             /**< this flag is an identifier for
