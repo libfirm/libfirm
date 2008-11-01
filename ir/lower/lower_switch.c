@@ -99,7 +99,7 @@ static int casecmp(const void *a, const void *b)
 {
 	const case_data_t *cda = a;
 	const case_data_t *cdb = b;
-	return cda->value - cdb->value;
+	return (cda->value > cdb->value) - (cda->value < cdb->value);
 }
 
 /**
