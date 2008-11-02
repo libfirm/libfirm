@@ -55,7 +55,6 @@
 
 #elif defined(_MSC_VER)
 
-#define inline         __inline
 #define LC_FUNCNAME    "<unknown>"
 #define LC_UNUSED(x)   x
 #define LC_LONGLONG    __int64

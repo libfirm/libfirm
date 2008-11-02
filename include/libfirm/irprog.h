@@ -98,9 +98,9 @@ void irp_reserve_resources(ir_prog *irp, ir_resources_t resources);
 void irp_free_resources(ir_prog *irp, ir_resources_t resources);
 ir_resources_t irp_resources_reserved(const ir_prog *irp);
 #else
-void irp_reserve_resources(irp, resources)
-void irp_free_resources(irp, resources)
-ir_resources_t irp_resources_reserved(irp)   0
+#define irp_reserve_resources(irp, resources)
+#define irp_free_resources(irp, resources)
+#define irp_resources_reserved(irp)   0
 #endif
 
 /**
