@@ -69,14 +69,17 @@ typedef struct _be_abi_call_arg_t {
 } be_abi_call_arg_t;
 
 struct _be_abi_call_t {
-	be_abi_call_flags_t          flags;
-	int                          pop;
+	be_abi_call_flags_t          flags;  /**< Flags describing the ABI behavior on calls */
+	int                          pop;    /**< number of bytes the stack frame is shrinked by the callee on return. */
 	const be_abi_callbacks_t    *cb;
 	ir_type                     *between_type;
 	set                         *params;
-	const arch_register_class_t *cls_addr;
+	const arch_register_class_t *cls_addr; /**< register class of the call address */
 };
 
+/**
+ * The ABI information for the current birg.
+ */
 struct _be_abi_irg_t {
 	struct obstack       obst;
 	be_irg_t             *birg;         /**< The back end IRG. */
@@ -140,14 +143,13 @@ static int cmp_call_arg(const void *a, const void *b, size_t n)
 }
 
 /**
- * Get or set an ABI call object argument.
+ * Get  an ABI call object argument.
  *
  * @param call      the abi call
  * @param is_res    true for call results, false for call arguments
  * @param pos       position of the argument
- * @param do_insert true if the argument is set, false if it's retrieved
  */
-static be_abi_call_arg_t *get_or_set_call_arg(be_abi_call_t *call, int is_res, int pos, int do_insert)
+static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
 {
 	be_abi_call_arg_t arg;
 	unsigned hash;
@@ -158,21 +160,28 @@ static be_abi_call_arg_t *get_or_set_call_arg(be_abi_call_t *call, int is_res, i
 
 	hash = is_res * 128 + pos;
 
-	return do_insert
-		? set_insert(call->params, &arg, sizeof(arg), hash)
-		: set_find(call->params, &arg, sizeof(arg), hash);
+	return set_find(call->params, &arg, sizeof(arg), hash);
 }
 
 /**
- * Retrieve an ABI call object argument.
+ * Set an ABI call object argument.
  *
- * @param call      the ABI call object
+ * @param call      the abi call
  * @param is_res    true for call results, false for call arguments
  * @param pos       position of the argument
  */
-static inline be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
+static be_abi_call_arg_t *create_call_arg(be_abi_call_t *call, int is_res, int pos)
 {
-	return get_or_set_call_arg(call, is_res, pos, 0);
+	be_abi_call_arg_t arg;
+	unsigned hash;
+
+	memset(&arg, 0, sizeof(arg));
+	arg.is_res = is_res;
+	arg.pos    = pos;
+
+	hash = is_res * 128 + pos;
+
+	return set_insert(call->params, &arg, sizeof(arg), hash);
 }
 
 /* Set the flags for a call. */
@@ -182,6 +191,7 @@ void be_abi_call_set_flags(be_abi_call_t *call, be_abi_call_flags_t flags, const
 	call->cb    = cb;
 }
 
+/* Sets the number of bytes the stackframe is shrinked by the callee on return */
 void be_abi_call_set_pop(be_abi_call_t *call, int pop)
 {
 	assert(pop >= 0);
@@ -197,7 +207,7 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
 
 void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after)
 {
-	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 0, arg_pos, 1);
+	be_abi_call_arg_t *arg = create_call_arg(call, 0, arg_pos);
 	arg->on_stack     = 1;
 	arg->load_mode    = load_mode;
 	arg->alignment    = alignment;
@@ -208,14 +218,14 @@ void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, ir_mode *load_mod
 
 void be_abi_call_param_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg)
 {
-	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 0, arg_pos, 1);
+	be_abi_call_arg_t *arg = create_call_arg(call, 0, arg_pos);
 	arg->in_reg = 1;
 	arg->reg = reg;
 }
 
 void be_abi_call_res_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg)
 {
-	be_abi_call_arg_t *arg = get_or_set_call_arg(call, 1, arg_pos, 1);
+	be_abi_call_arg_t *arg = create_call_arg(call, 1, arg_pos);
 	arg->in_reg = 1;
 	arg->reg = reg;
 }
@@ -228,6 +238,8 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call)
 
 /**
  * Constructor for a new ABI call object.
+ *
+ * @param cls_addr  register class of the call address
  *
  * @return the new ABI call object
  */
@@ -2052,7 +2064,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 		/* calls can jump to relative addresses, so we can directly jump to
 		   the (relatively) known call address or the trampoline */
-		if (is_Call(node) && i == 1) {
+		if (i == 1 && is_Call(node)) {
 			ir_entity *trampoline;
 			ir_node   *trampoline_const;
 
@@ -2145,6 +2157,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	set_optimize(0);
 	env->init_sp = dummy  = new_r_Unknown(irg, env->arch_env->sp->reg_class->mode);
 	restore_optimization_state(&state);
+
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
 
 	env->calls = NEW_ARR_F(ir_node*, 0);

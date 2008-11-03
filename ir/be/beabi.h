@@ -121,7 +121,7 @@ void be_abi_call_set_pop(be_abi_call_t *call, int pop);
 void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls);
 
 /**
- * Describe the stack layout for a call parameter. Modifies the abi object.
+ * Record the that ABI transmits call argument pos on the stack. Modifies the abi object.
  *
  * @param call          the abi call object
  * @param pos           the parameter position
@@ -131,7 +131,23 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
  * @param space_after   size of allocated additional space after the parameter
  */
 void be_abi_call_param_stack(be_abi_call_t *call, int pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after);
+
+/**
+ * Record the that ABI transmits call argument pos in the given register.
+ *
+ * @param call          the abi call object
+ * @param pos           the parameter position
+ * @param reg           the register used
+ */
 void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
+
+/**
+ * Record the that ABI transmits return value pos in the given register.
+ *
+ * @param call          the abi call object
+ * @param pos           the return value position
+ * @param reg           the register used
+ */
 void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
 
 /**
