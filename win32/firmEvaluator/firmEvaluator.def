@@ -1,0 +1,12 @@
+LIBRARY   firmEvaluator
+DESCRIPTION "Implements Custom Evaluator for libFirm"
+EXPORTS
+
+firm_Evaluate   @1
+firm_ident_Evaluate @2
+firm_pset_Evaluate @3
+firm_set_Evaluate @4
+firm_arr_Evaluate @5
+firm_pdeq_Evaluate @6
+firm_bitset_Evaluate @7
+firm_op_Evaluate @8
