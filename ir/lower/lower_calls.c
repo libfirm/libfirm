@@ -178,9 +178,10 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 		set_method_first_variadic_param_index(lowered, first_variadic);
 
 	/* associate the lowered type with the original one for easier access */
-	if(changed) {
+	if (changed) {
 		set_method_calling_convention(lowered, get_method_calling_convention(mtp) | cc_compound_ret);
 	}
+
 	set_lowered_type(mtp, lowered);
 
 	return lowered;
@@ -207,6 +208,8 @@ typedef struct _wlk_env_t {
 	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
 	unsigned             dnr;              /**< The dummy index number. */
 	const lower_params_t *params;          /**< Lowering parameters. */
+	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
+	ir_type              *value_params;    /**< The value params type if any. */
 	unsigned             only_local_mem:1; /**< Set if only local memory access was found. */
 	unsigned             changed:1;        /**< Set if the current graph was changed. */
 } wlk_env;
@@ -294,6 +297,20 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 	ir_node *ptr;
 
 	switch (get_irn_opcode(n)) {
+	case iro_Sel:
+		if (env->lowered_mtp != NULL && env->value_params != NULL) {
+			ir_entity *ent = get_Sel_entity(n);
+
+			if (get_entity_owner(ent) == env->value_params) {
+				int pos = get_struct_member_index(env->value_params, ent) + env->arg_shift;
+				ir_entity *new_ent;
+
+				new_ent = get_method_value_param_ent(env->lowered_mtp, pos);
+				set_entity_ident(new_ent, get_entity_ident(ent));
+				set_Sel_entity(n, ent);
+			}
+		}
+		break;
 	case iro_Load:
 	case iro_Store:
 		if (env->only_local_mem) {
@@ -657,12 +674,15 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	} else {
 		/* we must only search for calls */
 		env.arg_shift = 0;
+		lowered_mtp   = NULL;
 	}
 	obstack_init(&env.obst);
 	env.cl_list        = NULL;
 	env.dummy_map      = pmap_create_ex(8);
 	env.dnr            = 0;
 	env.params         = lp;
+	env.lowered_mtp    = lowered_mtp;
+	env.value_params   = get_method_value_param_type(mtp);
 	env.only_local_mem = 1;
 	env.changed        = 0;
 
@@ -864,9 +884,6 @@ void lower_calls_with_compounds(const lower_params_t *params)
 	/* first step: Transform all graphs */
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
-
-		if (irg == get_const_code_irg())
-			continue;
 
 		transform_irg(&param, irg);
 	}
