@@ -438,6 +438,8 @@ ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity
 			res |= ir_sc_modifier_nottaken;
 	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
 		return ir_sc_malloced;
+	} else if (is_Const(irn)) {
+		return ir_sc_globaladdr;
 	}
 
 	return res;
@@ -603,6 +605,16 @@ static ir_alias_relation _get_alias_relation(
 
 			/* for some reason CSE didn't happen yet for the 2 SymConsts... */
 			return ir_may_alias;
+		} else if (class1 == ir_sc_globaladdr) {
+			tarval *tv  = get_Const_tarval(base1);
+			offset1    += get_tarval_long(tv);
+			tv          = get_Const_tarval(base2);
+			offset2    += get_tarval_long(tv);
+
+			if ((unsigned long)labs(offset2 - offset1) >= mode_size)
+				return ir_no_alias;
+			else
+				return ir_sure_alias;
 		}
 	}
 
