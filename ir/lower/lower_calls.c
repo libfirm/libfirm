@@ -307,7 +307,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
 
 				new_ent = get_method_value_param_ent(env->lowered_mtp, pos);
 				set_entity_ident(new_ent, get_entity_ident(ent));
-				set_Sel_entity(n, ent);
+				set_Sel_entity(n, new_ent);
 			}
 		}
 		break;
