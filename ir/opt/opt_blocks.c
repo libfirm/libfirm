@@ -62,6 +62,7 @@ struct partition_t {
 	list_head part_list;     /**< Double linked list of partitions. */
 	list_head blocks;        /**< List of blocks in this partition. */
 	unsigned  n_blocks;      /**< Number of block in this partition. */
+	ir_node   *meet_block;   /**< The control flow meet block of this partition. */
 #ifdef DEBUG_libfirm
 	unsigned  nr;            /**< For debugging: number of this partition. */
 #endif
@@ -244,25 +245,31 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 }  /* cmp_opcode */
 
 /**
- * Creates a new empty partition.
+ * Creates a new empty partition and put in on the
+ * partitions list.
+ *
+ * @param meet_block  the control flow meet block of thi partition
+ * @param env         the environment
  */
-static partition_t *create_partition(environment_t *env) {
+static partition_t *create_partition(ir_node *meet_block, environment_t *env) {
 	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
 
 	INIT_LIST_HEAD(&part->blocks);
-	part->n_blocks = 0;
+	part->meet_block = meet_block;
+	part->n_blocks   = 0;
 	DEBUG_ONLY(part->nr = part_nr++);
 	list_add_tail(&part->part_list, &env->partitions);
 	return part;
 }  /* create_partition */
 
 /**
- * Allocate a new block.
+ * Allocate a new block in the given partition.
  *
- * @param block  the IR-node
- * @param env    the environment
+ * @param block      the IR-node
+ * @param partition  the partition to add to
+ * @param env        the environment
  */
-static block_t *create_block(ir_node *block, environment_t *env) {
+static block_t *create_block(ir_node *block, partition_t *partition, environment_t *env) {
 	block_t *bl = obstack_alloc(&env->obst, sizeof(*bl));
 
 	INIT_LIST_HEAD(&bl->nodes);
@@ -271,44 +278,31 @@ static block_t *create_block(ir_node *block, environment_t *env) {
 	bl->roots       = NULL;
 	bl->input_pairs = NULL;
 	bl->phis        = NULL;
+
+	list_add_tail(&bl->block_list, &partition->blocks);
+	++partition->n_blocks;
+
 	return bl;
 }  /* create_block */
 
 /**
- * Adds a block to a partition.
- *
- * @param partition  the partition to add to
- * @param block      the block to add
- */
-static void add_block(partition_t *partition, block_t *block) {
-	list_add_tail(&block->block_list, &partition->blocks);
-	++partition->n_blocks;
-}  /* add_block */
-
-/**
- * Allocate a new node.
+ * Allocate a new node and add it to a blocks wait queue.
  *
  * @param irn    the IR-node
+ * @param block  the block to add to
  * @param env    the environment
  */
-static node_t *create_node(ir_node *irn, environment_t *env) {
+static node_t *create_node(ir_node *irn, block_t *block, environment_t *env) {
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
 
 	node->node     = irn;
 	node->next     = NULL;
 	node->is_input = 0;
+
+	list_add_tail(&node->node_list, &block->nodes);
+
 	return node;
 }  /* create_node */
-
-/**
- * Adds a node to a block wait queue.
- *
- * @param block  the block to add to
- * @param node   the node to add
- */
-static void add_node(block_t *block, node_t *node) {
-	list_add_tail(&node->node_list, &block->nodes);
-}  /* add_node */
 
 /**
  * Add an input pair to a block.
@@ -409,7 +403,7 @@ static partition_t *split(partition_t *Z, block_t *g, environment_t *env) {
 	Z->n_blocks -= n;
 
 	/* Move g to a new partition, Z'. */
-	Z_prime = create_partition(env);
+	Z_prime = create_partition(Z->meet_block, env);
 	for (block = g; block != NULL; block = block->next) {
 		list_add_tail(&block->block_list, &Z_prime->blocks);
 	}
@@ -467,8 +461,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 				node_t *p_node;
 
 				if (block != bl->block) {
-					p_node = create_node(pred, env);
-					add_node(bl, p_node);
+					p_node = create_node(pred, bl, env);
 					/* do not threat Constants like live-ins */
 					if (! is_irn_constlike(irn)) {
 						p_node->is_input = 1;
@@ -477,8 +470,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 					}
 				} else if (! irn_visited_else_mark(pred)) {
 					/* not yet visited, ok */
-					p_node = create_node(pred, env);
-					add_node(bl, p_node);
+					p_node = create_node(pred, bl, env);
 
 					if (is_Phi(pred)) {
 						/* update the Phi list */
@@ -744,13 +736,66 @@ found:
 	set_trouts_inconsistent();
 }  /* apply */
 
+/**
+ * Create a partition for a given meet block.
+ *
+ * @param block  the meet block
+ * @param env    the environment
+ */
+static void partition_for_block(ir_node *block, environment_t *env) {
+	partition_t *part = create_partition(block, env);
+	int         i;
+
+	/* collect normal blocks */
+	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		ir_node *block;
+		block_t *bl;
+		node_t  *node;
+
+		mark_irn_visited(pred);
+
+		block = get_nodes_block(pred);
+		bl    = create_block(block, part, env);
+		node  = create_node(pred, bl, env);
+
+		node->next = bl->roots;
+		bl->roots  = node;
+	}
+
+	if (block == get_irg_end_block(current_ir_graph)) {
+		/* collect all no-return blocks */
+		ir_node *end = get_irg_end(current_ir_graph);
+		for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+			ir_node *ka    = get_End_keepalive(end, i);
+			ir_node *block;
+			block_t *bl;
+			node_t  *node;
+
+			if (! is_Call(ka))
+				continue;
+			mark_irn_visited(ka);
+
+			/* found one */
+			block = get_nodes_block(ka);
+			bl    = create_block(block, part, env);
+			node  = create_node(ka, bl, env);
+
+			node->next = bl->roots;
+			bl->roots  = node;
+		}
+	}
+
+	dump_partition("Created", part);
+}  /* partition for block */
+
 /* Combines congruent end blocks into one. */
 int melt_end_blocks(ir_graph *irg) {
 	ir_graph      *rem;
-	ir_node       *end;
+	ir_node       *end_block;
 	environment_t env;
 	partition_t   *part;
-	int           i, res;
+	int           res;
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -772,52 +817,8 @@ int melt_end_blocks(ir_graph *irg) {
 	INIT_LIST_HEAD(&env.ready);
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 
-	part = create_partition(&env);
-
-	/* collect all no-return blocks */
-	end = get_irg_end(irg);
-	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
-		ir_node *ka    = get_End_keepalive(end, i);
-		ir_node *block;
-		block_t *bl;
-		node_t  *node;
-
-		if (! is_Call(ka))
-			continue;
-		mark_irn_visited(ka);
-
-		/* found one */
-		block = get_nodes_block(ka);
-		bl    = create_block(block, &env);
-		add_block(part, bl);
-		node  = create_node(ka, &env);
-		add_node(bl, node);
-
-		node->next = bl->roots;
-		bl->roots  = node;
-	}
-
-	/* collect normal blocks */
-	end = get_irg_end_block(irg);
-	for (i = get_Block_n_cfgpreds(end) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfgpred(end, i);
-		ir_node *block;
-		block_t *bl;
-		node_t  *node;
-
-		mark_irn_visited(pred);
-
-		block = get_nodes_block(pred);
-		bl    = create_block(block, &env);
-		add_block(part, bl);
-		node  = create_node(pred, &env);
-		add_node(bl, node);
-
-		node->next = bl->roots;
-		bl->roots  = node;
-	}
-	dump_partition("Created", part);
-
+	end_block = get_irg_end_block(irg);
+	partition_for_block(end_block, &env);
 	while (! list_empty(&env.partitions))
 		propagate(&env);
 
