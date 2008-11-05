@@ -653,6 +653,41 @@ static void apply(ir_graph *irg, partition_t *part) {
 
 	/* rewire block input ... */
 	n = ARR_LEN(ins);
+
+	/*
+	 * Some problem here. For:
+	 * if (x) y = 1; else y = 2;
+	 *
+	 * the following code is constructed:
+	 *
+	 * b0: if (x) goto b1; else goto b1;
+	 * b1: y = Phi(1,2)
+	 *
+	 * However, both predecessors of b1 are b0, making the Phi
+	 * "wrong".
+	 *
+	 * We solve this by fixing critical edges.
+	 */
+	for (i = 0; i < n; ++i) {
+		ir_node     *pred = ins[i];
+		const ir_op *cfop;
+
+		if (is_Bad(pred))
+			continue;
+
+		cfop = get_irn_op(skip_Proj(pred));
+		if (is_op_fragile(cfop)) {
+			/* ignore exception flow */
+			continue;
+		}
+		if (is_op_forking(cfop)) {
+			/* a critical edge */
+			ir_node *block = new_r_Block(irg, 1, &ins[i]);
+			ir_node *jmp   = new_r_Jmp(irg, block);
+			ins[i] = jmp;
+		}
+	}
+
 	block = repr->block;
 	set_irn_in(block, n, ins);
 	DEL_ARR_F(ins);
@@ -692,8 +727,9 @@ static void apply(ir_graph *irg, partition_t *part) {
 		}
 		ins[j++] = out;
 found:
-			;
+		;
 	}
+
 	set_irn_in(end_block, j, ins);
 	DEL_ARR_F(ins);
 
