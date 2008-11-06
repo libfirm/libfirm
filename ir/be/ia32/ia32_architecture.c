@@ -90,7 +90,7 @@ enum cpu_arch_features {
 enum cpu_support {
 	cpu_generic     = arch_generic32,
 
-	/* intel CPU's */
+	/* intel CPUs */
 	cpu_i386        = arch_i386,
 	cpu_i486        = arch_i486,
 	cpu_pentium     = arch_pentium,
@@ -104,7 +104,7 @@ enum cpu_support {
 	cpu_nocona      = arch_nocona | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
 	cpu_core2       = arch_core2 | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
 
-	/* AMD CPU's */
+	/* AMD CPUs */
 	cpu_k6          = arch_k6 | arch_mmx_insn,
 	cpu_k6_PLUS     = arch_k6 | arch_3DNow_insn,
 	cpu_geode       = arch_geode  | arch_sse1_insn | arch_3DNowE_insn,
@@ -114,7 +114,7 @@ enum cpu_support {
 	cpu_k8_sse3     = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
 	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
 
-	/* other CPU's */
+	/* other CPUs */
 	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
 	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
@@ -321,7 +321,7 @@ static const insn_const athlon_cost = {
 	7,   /* maximum skip for alignment of loops labels */
 };
 
-/* costs for the Opteron/K8/K10 */
+/* costs for the Opteron/K8 */
 static const insn_const k8_cost = {
 	1,   /* cost of an add instruction */
 	2,   /* cost of a lea instruction */
@@ -408,45 +408,20 @@ static void set_arch_costs(void)
 		return;
 	}
 	switch (opt_arch & arch_mask) {
-	case arch_i386:
-		arch_costs = &i386_cost;
-		break;
-	case arch_i486:
-		arch_costs = &i486_cost;
-		break;
-	case arch_pentium:
-		arch_costs = &pentium_cost;
-		break;
-	case arch_ppro:
-		arch_costs = &pentiumpro_cost;
-		break;
-	case arch_netburst:
-		arch_costs = &netburst_cost;
-		break;
-	case arch_nocona:
-		arch_costs = &nocona_cost;
-		break;
-	case arch_core2:
-		arch_costs = &core2_cost;
-		break;
-	case arch_k6:
-		arch_costs = &k6_cost;
-		break;
-	case arch_geode:
-		arch_costs = &geode_cost;
-		break;
-	case arch_athlon:
-		arch_costs = &athlon_cost;
-		break;
-	case arch_k8:
-		arch_costs = &k8_cost;
-		break;
-	case arch_k10:
-		arch_costs = &k10_cost;
-		break;
-	case arch_generic32:
+	case arch_i386:      arch_costs = &i386_cost;       break;
+	case arch_i486:      arch_costs = &i486_cost;       break;
+	case arch_pentium:   arch_costs = &pentium_cost;    break;
+	case arch_ppro:      arch_costs = &pentiumpro_cost; break;
+	case arch_netburst:  arch_costs = &netburst_cost;   break;
+	case arch_nocona:    arch_costs = &nocona_cost;     break;
+	case arch_core2:     arch_costs = &core2_cost;      break;
+	case arch_k6:        arch_costs = &k6_cost;         break;
+	case arch_geode:     arch_costs = &geode_cost;      break;
+	case arch_athlon:    arch_costs = &athlon_cost;     break;
+	case arch_k8:        arch_costs = &k8_cost;         break;
+	case arch_k10:       arch_costs = &k10_cost;        break;
 	default:
-		arch_costs = &generic32_cost;
+	case arch_generic32: arch_costs = &generic32_cost;  break;
 	}
 }
 
@@ -485,64 +460,53 @@ int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
 
 void ia32_setup_cg_config(void)
 {
-	memset(&ia32_cg_config, 0, sizeof(ia32_cg_config));
+	ia32_code_gen_config_t *const c = &ia32_cg_config;
+	memset(c, 0, sizeof(*c));
 
 	set_arch_costs();
 
-	ia32_cg_config.optimize_size        = opt_size != 0;
+	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster then leave although it has a
 	 * longer opcode */
-	ia32_cg_config.use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
+	c->use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
 	/* P4s don't like inc/decs because they only partially write the flags
 	   register which produces false dependencies */
-	ia32_cg_config.use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
-	ia32_cg_config.use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
-	ia32_cg_config.use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
-	ia32_cg_config.use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
-	/* valgrind can't cope with femms yet and the usefulness of the optimization is questionable anyway */
+	c->use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
+	c->use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
+	c->use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
+	c->use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
+	/* valgrind can't cope with femms yet and the usefulness of the optimization
+	 * is questionable anyway */
 #if 0
-	ia32_cg_config.use_femms            = FLAGS(opt_arch, arch_athlon_plus) &&
-	                                      FLAGS(arch, arch_feature_mmx | arch_all_amd);
+	c->use_femms            = FLAGS(opt_arch, arch_athlon_plus) &&
+		FLAGS(arch, arch_feature_mmx | arch_all_amd);
 #else
-	ia32_cg_config.use_femms            = 0;
+	c->use_femms            = 0;
 #endif
-	ia32_cg_config.use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
-	ia32_cg_config.use_cmov             = FLAGS(arch, arch_feature_p6_insn);
-	ia32_cg_config.use_modeD_moves      = FLAGS(opt_arch, arch_athlon_plus | arch_geode | arch_ppro |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32);
-	ia32_cg_config.use_add_esp_4        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32) &&
-	                                      !opt_size;
-	ia32_cg_config.use_add_esp_8        = FLAGS(opt_arch, arch_geode | arch_athlon_plus |
-	                                            arch_i386 | arch_i486 | arch_ppro | arch_netburst |
-	                                            arch_nocona | arch_core2 | arch_generic32) &&
-	                                      !opt_size;
-	ia32_cg_config.use_sub_esp_4        = FLAGS(opt_arch, arch_athlon_plus | arch_ppro |
-	                                            arch_netburst | arch_nocona | arch_core2 | arch_generic32) &&
-	                                      !opt_size;
-	ia32_cg_config.use_sub_esp_8        = FLAGS(opt_arch, arch_athlon_plus | arch_i386 | arch_i486 |
-	                                            arch_ppro | arch_netburst | arch_nocona | arch_core2 | arch_generic32) &&
-	                                      !opt_size;
-	ia32_cg_config.use_imul_mem_imm32   = !FLAGS(opt_arch, arch_k8 | arch_k10) || opt_size;
-	ia32_cg_config.use_pxor             = FLAGS(opt_arch, arch_netburst);
-	ia32_cg_config.use_mov_0            = FLAGS(opt_arch, arch_k6) && !opt_size;
-	ia32_cg_config.use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | arch_core2 | arch_generic32) && !opt_size;
-	ia32_cg_config.use_bt               = FLAGS(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
-	ia32_cg_config.use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
-	ia32_cg_config.optimize_cc          = opt_cc;
-	ia32_cg_config.use_unsafe_floatconv = opt_unsafe_floatconv;
+	c->use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
+	c->use_cmov             = FLAGS(arch, arch_feature_p6_insn);
+	c->use_modeD_moves      = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
+	c->use_add_esp_4        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
+	c->use_add_esp_8        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
+	c->use_sub_esp_4        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro)                                      && !opt_size;
+	c->use_sub_esp_8        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro |              arch_i386 | arch_i486) && !opt_size;
+	c->use_imul_mem_imm32   = !FLAGS(opt_arch, arch_k8 | arch_k10) || opt_size;
+	c->use_pxor             = FLAGS(opt_arch, arch_netburst);
+	c->use_mov_0            = FLAGS(opt_arch, arch_k6) && !opt_size;
+	c->use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | arch_core2 | arch_generic32) && !opt_size;
+	c->use_bt               = FLAGS(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
+	c->use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
+	c->optimize_cc          = opt_cc;
+	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 
-	ia32_cg_config.function_alignment       = arch_costs->function_alignment;
-	ia32_cg_config.label_alignment          = arch_costs->label_alignment;
-	ia32_cg_config.label_alignment_max_skip = arch_costs->label_alignment_max_skip;
+	c->function_alignment       = arch_costs->function_alignment;
+	c->label_alignment          = arch_costs->label_alignment;
+	c->label_alignment_max_skip = arch_costs->label_alignment_max_skip;
 
-	if (opt_arch & (arch_i386 | arch_i486) || opt_size) {
-		ia32_cg_config.label_alignment_factor = 0;
-	} else if (opt_arch & arch_all_amd) {
-		ia32_cg_config.label_alignment_factor = 3;
-	} else {
-		ia32_cg_config.label_alignment_factor = 2;
-	}
+	c->label_alignment_factor =
+		FLAGS(opt_arch, arch_i386 | arch_i486) || opt_size ? 0 :
+		opt_arch & arch_all_amd                            ? 3 :
+		2;
 }
 
 void ia32_init_architecture(void)
