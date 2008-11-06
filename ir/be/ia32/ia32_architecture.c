@@ -118,7 +118,7 @@ enum cpu_support {
 	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
 	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
-	cpu_c3_2        = arch_ppro | arch_sse1_insn,  /* really no 3DNow! */
+	cpu_c3_2        = arch_ppro | arch_feature_p6_insn | arch_sse1_insn, /* really no 3DNow! */
 };
 
 static int         opt_size             = 0;
