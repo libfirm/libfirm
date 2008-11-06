@@ -516,6 +516,7 @@ enum ir_resources_enum_t {
 	IR_RESOURCE_IRN_LINK      = 1 << 3,  /**< IR-node link fields are used. */
 	IR_RESOURCE_LOOP_LINK     = 1 << 4,  /**< IR-loop link fields are used. */
 	IR_RESOURCE_PHI_LIST      = 1 << 5,  /**< Block Phi lists are used. */
+	IR_RESOURCE_IRG_LINK      = 1 << 6,  /**< IR-graph link fields used. */
 
 	/* global (irp) resources */
 	IR_RESOURCE_ENTITY_LINK   = 1 << 8,  /**< IR-entity link fields are used. */
