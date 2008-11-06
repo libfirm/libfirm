@@ -30,10 +30,13 @@
 #include "config.h"
 #include "ircons.h"
 #include "iroptimize.h"
+#include "irgmod.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
+#include "array_t.h"
 #include "trouts.h"
+#include "irgwalk.h"
 #include "set.h"
 #include "debug.h"
 
@@ -74,16 +77,17 @@ struct block_t {
 	list_head  nodes;        /**< Wait-queue of nodes that must be checked for congruence. */
 	block_t    *next;        /**< Next block of a split list. */
 	ir_node    *block;       /**< Pointer to the associated IR-node block. */
-	node_t     *roots;       /**< The list of all root nodes. */
+	ir_node    **roots;      /**< An array of all root nodes. */
+	node_t     *cf_root;     /**< The control flow root node of this block. */
 	pair_t     *input_pairs; /**< The list of inputs to this block. */
 	phi_t      *phis;        /**< The list of Phis in this block. */
+	block_t    *all_next;    /**< links all craeted blocks. */
 };
 
 /** A node. */
 struct node_t {
 	list_head  node_list;    /**< Double linked list of block inside a partition. */
 	ir_node    *node;        /**< Pointer to the associated IR-node or NULL for block inputs. */
-	node_t     *next;        /**< Link to the next node in the root set. */
 	char       is_input;     /**< Set if this node is an input from other block. */
 };
 
@@ -92,6 +96,8 @@ struct environment_t {
 	list_head       partitions;     /**< list of partitions. */
 	list_head       ready;          /**< list of ready partitions. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
+	ir_node         **live_outs;    /**< Live out only nodes. */
+	block_t         *all_blocks;    /**< List of all created blocks. */
 	struct obstack  obst;           /** obstack for temporary data */
 };
 
@@ -124,6 +130,8 @@ typedef struct listmap_t {
 	set             *map;    /**< Map id's to listmap_entry_t's */
 	listmap_entry_t *values; /**< List of all values in the map. */
 } listmap_t;
+
+#define get_Block_entry(block)  ((block_t *)get_irn_link(block))
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -272,15 +280,23 @@ static partition_t *create_partition(ir_node *meet_block, environment_t *env) {
 static block_t *create_block(ir_node *block, partition_t *partition, environment_t *env) {
 	block_t *bl = obstack_alloc(&env->obst, sizeof(*bl));
 
+	set_irn_link(block, bl);
+
 	INIT_LIST_HEAD(&bl->nodes);
 	bl->next        = NULL;
 	bl->block       = block;
-	bl->roots       = NULL;
+	bl->roots       = NEW_ARR_F(ir_node *, 0);
+	bl->cf_root     = NULL;
 	bl->input_pairs = NULL;
 	bl->phis        = NULL;
 
+	/* put it into the list of partition blocks */
 	list_add_tail(&bl->block_list, &partition->blocks);
 	++partition->n_blocks;
+
+	/* put in into the list of all blocks */
+	bl->all_next    = env->all_blocks;
+	env->all_blocks = bl;
 
 	return bl;
 }  /* create_block */
@@ -296,7 +312,6 @@ static node_t *create_node(ir_node *irn, block_t *block, environment_t *env) {
 	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
 
 	node->node     = irn;
-	node->next     = NULL;
 	node->is_input = 0;
 
 	list_add_tail(&node->node_list, &block->nodes);
@@ -463,7 +478,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 				if (block != bl->block) {
 					p_node = create_node(pred, bl, env);
 					/* do not threat Constants like live-ins */
-					if (! is_irn_constlike(irn)) {
+					if (! is_irn_constlike(pred)) {
 						p_node->is_input = 1;
 						if (! is_Phi(irn))
 							add_pair(bl, irn, i, env);
@@ -555,11 +570,11 @@ void propagate(environment_t *env) {
 static void apply(ir_graph *irg, partition_t *part) {
 	block_t *repr = list_entry(part->blocks.next, block_t, block_list);
 	block_t *bl;
-	ir_node *block, *end, *end_block;
-	ir_node **ins;
+	ir_node *block, *end, *meet_block, *p, *next;
+	ir_node **ins, **phi_ins;
 	phi_t   *repr_phi, *phi;
 	pair_t  *repr_pair, *pair;
-	int     i, j, n, block_nr;
+	int     i, j, k, n, block_nr, n_phis;
 
 	list_del(&repr->block_list);
 
@@ -698,57 +713,79 @@ static void apply(ir_graph *irg, partition_t *part) {
 
 		set_irn_n(repr_pair->irn, repr_pair->index, phi);
 		DEL_ARR_F(repr_pair->ins);
+
+		/* might be optimized away */
+		if (is_Phi(phi))
+			add_Block_phi(block, phi);
 	}
 
-	/* ... finally rewire the end block */
-	end_block = get_irg_end_block(irg);
-	n         = get_Block_n_cfgpreds(end_block);
+	/* ... finally rewire the meet block and fix its Phi-nodes */
+	meet_block = part->meet_block;
+	n         = get_Block_n_cfgpreds(meet_block);
 
 	ins = NEW_ARR_F(ir_node *, n);
 
+	n_phis = 0;
+	for (p = get_Block_phis(meet_block); p != NULL; p = get_Phi_next(p)) {
+		++n_phis;
+	}
+
+	phi_ins = NEW_ARR_F(ir_node *, n_phis * n);
+
 	for (i = j = 0; i < n; ++i) {
-		ir_node *out = get_Block_cfgpred(end_block, i);
+		ir_node *pred = get_Block_cfgpred(meet_block, i);
 
 		list_for_each_entry(block_t, bl, &part->blocks, block_list) {
-			node_t *root;
-
-			for (root = bl->roots; root != NULL; root = root->next) {
-				if (root->node == out)
-					goto found;
-			}
+			if (bl->cf_root->node == pred)
+				goto continue_outer;
 		}
-		ins[j++] = out;
-found:
+		ins[j] = pred;
+
+		for (k = 0, p = get_Block_phis(meet_block); p != NULL; p = get_Phi_next(p), ++k) {
+			phi_ins[k * n + j] = get_Phi_pred(p, i);
+		}
+		++j;
+
+continue_outer:
 		;
 	}
 
-	set_irn_in(end_block, j, ins);
+	/* fix phis */
+	if (j == 1) {
+		for (k = 0, p = get_Block_phis(meet_block); p != NULL; p = next, ++k) {
+			next = get_Phi_next(p);
+
+			exchange(p, phi_ins[k * n]);
+		}
+		/* all Phis killed */
+		set_Block_phis(meet_block, NULL);
+	} else {
+		for (k = 0, p = get_Block_phis(meet_block); p != NULL; p = next, ++k) {
+			next = get_Phi_next(p);
+
+			set_irn_in(p, j, &phi_ins[k * n]);
+		}
+	}
+
+	/* fix inputs of the meet block */
+	set_irn_in(meet_block, j, ins);
 	DEL_ARR_F(ins);
-
-	/* control flow changed */
-	set_irg_outs_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_doms_inconsistent(irg);
-	/* Hmm, only the root loop is inconsistent */
-	set_irg_loopinfo_inconsistent(irg);
-
-	/* Calls might be removed. */
-	set_trouts_inconsistent();
 }  /* apply */
 
 /**
  * Create a partition for a given meet block.
  *
- * @param block  the meet block
- * @param env    the environment
+ * @param block    the meet block
+ * @param preds    array of candidate predecessors
+ * @param n_preds  number of elements in preds
+ * @param env      the environment
  */
-static void partition_for_block(ir_node *block, environment_t *env) {
+static void partition_for_block(ir_node *block, ir_node *preds[], int n_preds, environment_t *env) {
 	partition_t *part = create_partition(block, env);
 	int         i;
 
-	/* collect normal blocks */
-	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
+	for (i = n_preds - 1; i >= 0; --i) {
+		ir_node *pred = preds[i];
 		ir_node *block;
 		block_t *bl;
 		node_t  *node;
@@ -759,49 +796,243 @@ static void partition_for_block(ir_node *block, environment_t *env) {
 		bl    = create_block(block, part, env);
 		node  = create_node(pred, bl, env);
 
-		node->next = bl->roots;
-		bl->roots  = node;
-	}
-
-	if (block == get_irg_end_block(current_ir_graph)) {
-		/* collect all no-return blocks */
-		ir_node *end = get_irg_end(current_ir_graph);
-		for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
-			ir_node *ka    = get_End_keepalive(end, i);
-			ir_node *block;
-			block_t *bl;
-			node_t  *node;
-
-			if (! is_Call(ka))
-				continue;
-			mark_irn_visited(ka);
-
-			/* found one */
-			block = get_nodes_block(ka);
-			bl    = create_block(block, part, env);
-			node  = create_node(ka, bl, env);
-
-			node->next = bl->roots;
-			bl->roots  = node;
-		}
+		bl->cf_root = node;
 	}
 
 	dump_partition("Created", part);
-}  /* partition for block */
+}  /* partition_for_block */
+
+
+/**
+ * Create a partition for a the end block.
+ *
+ * @param end_block  the end block
+ * @param env        the environment
+ */
+static void partition_for_end_block(ir_node *end_block, environment_t *env) {
+	partition_t *part = create_partition(end_block, env);
+	ir_node     *end;
+	int         i;
+
+	/* collect normal blocks */
+	for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(end_block, i);
+		ir_node *block;
+		block_t *bl;
+		node_t  *node;
+
+		mark_irn_visited(pred);
+
+		block = get_nodes_block(pred);
+		bl    = create_block(block, part, env);
+		node  = create_node(pred, bl, env);
+
+		bl->cf_root = node;
+	}
+
+	/* collect all no-return blocks */
+	end = get_irg_end(current_ir_graph);
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+		ir_node *ka    = get_End_keepalive(end, i);
+		ir_node *block;
+		block_t *bl;
+		node_t  *node;
+
+		if (! is_Call(ka))
+			continue;
+		mark_irn_visited(ka);
+
+		/* found one */
+		block = get_nodes_block(ka);
+		bl    = create_block(block, part, env);
+		node  = create_node(ka, bl, env);
+
+		bl->cf_root = node;
+	}
+
+	dump_partition("Created", part);
+}  /* partition_for_end_block */
+
+/**
+ * Walker: clear the links of all block phi lists and normal
+ * links.
+ */
+static void clear_phi_links(ir_node *irn, void *env) {
+	if (is_Block(irn)) {
+		set_Block_phis(irn, NULL);
+		set_irn_link(irn, NULL);
+	}
+}  /* clear_phi_links */
+
+/**
+ * Walker, detect live-out only nodes.
+ */
+static void find_liveouts(ir_node *irn, void *ctx) {
+	environment_t *env        = ctx;
+	ir_node       **live_outs = env->live_outs;
+	ir_node       *this_block;
+	int           i;
+
+	if (is_Block(irn))
+		return;
+
+	/* ignore Keep-alives */
+	if (is_End(irn))
+		return;
+
+	this_block = get_nodes_block(irn);
+
+	if (is_Phi(irn)) {
+		/* update the Phi list */
+		add_Block_phi(this_block, irn);
+	}
+
+	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
+		ir_node *pred_block;
+		ir_node *pred = get_irn_n(irn, i);
+		int     idx   = get_irn_idx(pred);
+
+		if (live_outs[idx] == pred) {
+			/* referenced by other nodes inside this block */
+			return;
+		}
+
+		pred_block = get_nodes_block(pred);
+		if (this_block != pred_block) {
+			/* pred is a live-out */
+			live_outs[idx] = pred_block;
+		} else {
+			/* this node is referenced from inside this block */
+			live_outs[idx] = pred;
+		}
+	}
+}
+
+/**
+ * Check if the current block is the meet block of a its predecessors.
+ */
+static void check_for_cf_meet(ir_node *block, void *ctx) {
+	environment_t *env = ctx;
+	int           i, k, n;
+	ir_node       **preds;
+
+	if (block == get_irg_end_block(current_ir_graph)) {
+		/* always create a partition for the end block */
+		partition_for_end_block(block, env);
+		return;
+	}
+
+	n = get_Block_n_cfgpreds(block);
+	if (n <= 1) {
+		/* Must have at least two predecessors */
+		return;
+	}
+	NEW_ARR_A(ir_node *, preds, n);
+
+	k = 0;
+	for (i = n - 1; i >= 0; --i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+
+		/* pred must be a direct jump to us */
+		if (! is_Jmp(pred) && ! is_Raise(pred))
+			continue;
+		preds[k++] = pred;
+	}
+
+	if (k > 1)
+		partition_for_block(block, preds, k, env);
+}  /* check_for_cf_meet */
+
+/**
+ * Compare two nodes for root ordering.
+ */
+static int cmp_nodes(const void *a, const void *b) {
+	const ir_node *irn_a  = a;
+	const ir_node *irn_b  = b;
+	ir_opcode     code_a  = get_irn_opcode(irn_a);
+	ir_opcode     code_b  = get_irn_opcode(irn_b);
+	ir_mode       *mode_a, *mode_b;
+	unsigned      idx_a, idx_b;
+
+	/* try opcode first */
+	if (code_a != code_b)
+		return code_a - code_b;
+
+	/* try mode */
+	mode_a = get_irn_mode(irn_a);
+	mode_b = get_irn_mode(irn_b);
+
+	if (mode_a != mode_b)
+		return mode_a < mode_b ? -1 : +1;
+
+	/* last resort: index */
+	idx_a = get_irn_idx(irn_a);
+	idx_b = get_irn_idx(irn_b);
+
+	return (idx_a > idx_b) - (idx_a < idx_b);
+}  /* cmp_nodes */
+
+/**
+ * Add the roots to all blocks.
+ */
+static void add_roots(ir_graph *irg, environment_t *env) {
+	unsigned idx, n      = get_irg_last_idx(irg);
+	ir_node  **live_outs = env->live_outs;
+	block_t  *bl;
+
+	for (idx = 0; idx < n; ++idx) {
+		ir_node *block = live_outs[idx];
+
+		if (block != NULL && is_Block(block)) {
+			block_t *bl = get_Block_entry(block);
+
+			if (bl != NULL) {
+				ir_node *irn = get_idx_irn(irg, idx);
+
+				if (!irn_visited_else_mark(irn)) {
+					ARR_APP1(ir_node *, bl->roots, irn);
+				}
+			}
+		}
+	}
+	/*
+	 * Now sort the roots to normalize them as good as possible.
+     * Else, we will split identical blocks if we start which different roots
+	 */
+	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
+		int i, n = ARR_LEN(bl->roots);
+
+#if 1
+		/* TODO: is this really needed? The roots are already in
+		   idx-order by construction, which might be good enough. */
+		qsort(bl->roots, n, sizeof(bl->roots[0]), cmp_nodes);
+#endif
+
+		DB((dbg, LEVEL_2, " Adding Roots for block %+F\n  ", bl->block));
+		/* ok, add them sorted */
+		for (i = 0; i < n; ++i) {
+			DB((dbg, LEVEL_2, "%+F, ", bl->roots[i]));
+			create_node(bl->roots[i], bl, env);
+		}
+		DB((dbg, LEVEL_2, "\n"));
+		DEL_ARR_F(bl->roots);
+		bl->roots = NULL;
+	}
+}  /* add_roots */
 
 /* Combines congruent end blocks into one. */
-int melt_end_blocks(ir_graph *irg) {
+int shape_blocks(ir_graph *irg) {
 	ir_graph      *rem;
-	ir_node       *end_block;
 	environment_t env;
 	partition_t   *part;
-	int           res;
+	int           res, n;
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
+	firm_dbg_set_mask(dbg, 7);
 
 	DEBUG_ONLY(part_nr = 0);
 	DB((dbg, LEVEL_1, "Shaping blocks for %+F\n", irg));
@@ -809,16 +1040,36 @@ int melt_end_blocks(ir_graph *irg) {
 	/* works better, when returns are placed at the end of the blocks */
 	normalize_n_returns(irg);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(irg);
-
 	obstack_init(&env.obst);
 	INIT_LIST_HEAD(&env.partitions);
 	INIT_LIST_HEAD(&env.ready);
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 
-	end_block = get_irg_end_block(irg);
-	partition_for_block(end_block, &env);
+	n             = get_irg_last_idx(irg);
+	env.live_outs = NEW_ARR_F(ir_node *, n);
+	memset(env.live_outs, 0, sizeof(*env.live_outs) * n);
+
+	env.all_blocks = NULL;
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	/*
+	 * Detect, which nodes are live-out only: these are the roots of our blocks.
+	 * Build phi lists.
+	 */
+	irg_walk_graph(irg, clear_phi_links, find_liveouts, &env);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+
+	inc_irg_visited(irg);
+	/*
+	 * Detect all control flow meets and create partitions.
+	 */
+	irg_block_walk_graph(irg, NULL, check_for_cf_meet, &env);
+
+	/* add root nodes to the partition blocks */
+	add_roots(irg, &env);
+
 	while (! list_empty(&env.partitions))
 		propagate(&env);
 
@@ -828,10 +1079,23 @@ int melt_end_blocks(ir_graph *irg) {
 		dump_partition("Ready Partition", part);
 		apply(irg, part);
 	}
-	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	if (res) {
+		/* control flow changed */
+		set_irg_outs_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		/* Hmm, only the root loop is inconsistent */
+		set_irg_loopinfo_inconsistent(irg);
+
+		/* Calls might be removed. */
+		set_trouts_inconsistent();
+	}
+
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
 	current_ir_graph = rem;
 
 	return res;
-}  /* melt_end_blocks */
+}  /* shape_blocks */

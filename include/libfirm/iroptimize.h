@@ -598,12 +598,12 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 void inline_functions(unsigned maxsize, int inline_threshold);
 
 /**
- * Combines congruent end blocks into one.
+ * Combines congruent blocks into one.
  *
  * @param irg   The IR-graph to optimize.
  *
  * @return non-zero if the graph was transformed
  */
-int melt_end_blocks(ir_graph *irg);
+int shape_blocks(ir_graph *irg);
 
 #endif
