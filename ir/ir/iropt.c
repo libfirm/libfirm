@@ -1215,50 +1215,67 @@ restart:
 	if (n_mode == a_mode) { /* No Conv necessary */
 		if (get_Conv_strict(n)) {
 			ir_node *p = a;
-			ir_node *s = n;
 
 			/* neither Minus nor Abs nor Confirm change the precision,
 			   so we can "look-through" */
 			for (;;) {
 				if (is_Minus(p)) {
-					s = p;
 					p = get_Minus_op(p);
 				} else if (is_Abs(p)) {
-					s = p;
 					p = get_Abs_op(p);
 				} else if (is_Confirm(p)) {
-					s = p;
 					p = get_Confirm_value(p);
 				} else {
 					/* stop here */
 					break;
 				}
 			}
-			if (is_Conv(p)) {
-				/* special case: the predecessor is also a Conv */
-				if (! get_Conv_strict(p)) {
+			if (is_Conv(p) && get_Conv_strict(p)) {
+				/* we known already, that a_mode == n_mode, and neither
+				   Abs nor Minus change the mode, so the second Conv
+				   can be kicked */
+				assert(get_irn_mode(p) == n_mode);
+				n = a;
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+				return n;
+			}
+			if (is_Proj(p)) {
+				ir_node *pred = get_Proj_pred(p);
+				if (is_Load(pred)) {
+					/* Loads always return with the exact precision of n_mode */
+					assert(get_Load_mode(pred) == n_mode);
+					n = a;
+					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+					return n;
+				}
+				if (is_Proj(pred) && get_Proj_proj(pred) == pn_Start_T_args) {
+					pred = get_Proj_pred(pred);
+					if (is_Start(pred)) {
+						/* Arguments always return with the exact precision,
+						   as strictConv's are place before Call -- if the
+						   caller was compiled with the same setting.
+						   Otherwise, the semantics is probably still right. */
+						assert(get_irn_mode(p) == n_mode);
+						n = a;
+						DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+						return n;
+					}
+				}
+			}
+			if (is_Conv(a)) {
+				/* special case: the immediate predecessor is also a Conv */
+				if (! get_Conv_strict(a)) {
 					/* first one is not strict, kick it */
-					p = get_Conv_op(p);
+					a = get_Conv_op(a);
 					a_mode = get_irn_mode(a);
-					set_irn_n(s, 1, p);
+					set_Conv_op(n, a);
 					goto restart;
 				}
 				/* else both are strict conv, second is superfluous */
-			} else {
-				if (is_Proj(p)) {
-					ir_node *pred = get_Proj_pred(p);
-					if (is_Load(pred)) {
-						/* loads always return with the exact precision of n_mode */
-						assert(get_Load_mode(pred) == n_mode);
-						return a;
-					}
-				}
-				/* leave strict floating point Conv's */
-				return n;
+				n = a;
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
 			}
 		}
-		n = a;
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
 		ir_node *b      = get_Conv_op(a);
 		ir_mode *b_mode = get_irn_mode(b);
