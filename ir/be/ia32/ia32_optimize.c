@@ -1200,7 +1200,7 @@ make_shl:
 	goto exchange;
 
 exchange:
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(cg, node));
+	SET_IA32_ORIG_NODE(res, node);
 
 	/* add new ADD/SHL to schedule */
 	DBG_OPT_LEA2ADD(node, res);

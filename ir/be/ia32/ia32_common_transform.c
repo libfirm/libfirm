@@ -27,7 +27,6 @@
 #include "config.h"
 
 #include "error.h"
-#include "irargs_t.h"
 #include "ircons.h"
 #include "irprintf.h"
 #include "typerep.h"
@@ -202,16 +201,6 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 	return reg;
 }
-
-#ifndef NDEBUG
-const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn) {
-	const ia32_isa_t *isa = cg->isa;
-
-	lc_eoprintf(firm_get_arg_env(), isa->name_obst, "%+F", irn);
-	obstack_1grow(isa->name_obst, 0);
- 	return obstack_finish(isa->name_obst);
-}
-#endif /* NDEBUG */
 
 int ia32_mode_needs_gp_reg(ir_mode *mode) {
 	if(mode == mode_fpcw)
@@ -657,7 +646,7 @@ ir_node *gen_ASM(ir_node *node)
 	set_ia32_out_req_all(new_node, out_reg_reqs);
 	set_ia32_in_req_all(new_node, in_reg_reqs);
 
-	SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
+	SET_IA32_ORIG_NODE(new_node, node);
 
 	return new_node;
 }
@@ -718,7 +707,7 @@ ir_node *gen_CopyB(ir_node *node) {
 		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem, size);
 	}
 
-	SET_IA32_ORIG_NODE(res, ia32_get_old_node_name(env_cg, node));
+	SET_IA32_ORIG_NODE(res, node);
 
 	return res;
 }

@@ -69,13 +69,6 @@ ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val);
  */
 const arch_register_t *ia32_get_clobber_register(const char *clobber);
 
-#ifndef NDEBUG
-/**
- * Prints the old node name on cg obst and returns a pointer to it.
- */
-const char *ia32_get_old_node_name(ia32_code_gen_t *cg, ir_node *irn);
-#endif /* NDEBUG */
-
 /**
  * Return true if a mode can be stored in the GP register set.
  */

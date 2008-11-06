@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 
+#include "irargs_t.h"
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -49,6 +50,7 @@
 #include "../beinfo.h"
 
 #include "bearch_ia32_t.h"
+#include "ia32_common_transform.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
@@ -863,15 +865,27 @@ void set_ia32_exc_label_id(ir_node *node, ir_label_t id) {
 /**
  * Returns the name of the original ir node.
  */
-const char *get_ia32_orig_node(const ir_node *node) {
+const char *get_ia32_orig_node(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->orig_node;
+}
+
+static const char *ia32_get_old_node_name(const ir_node *irn)
+{
+	struct obstack *obst = env_cg->isa->name_obst;
+
+	lc_eoprintf(firm_get_arg_env(), obst, "%+F", irn);
+	obstack_1grow(obst, 0);
+	return obstack_finish(obst);
 }
 
 /**
  * Sets the name of the original ir node.
  */
-void set_ia32_orig_node(ir_node *node, const char *name) {
+void set_ia32_orig_node(ir_node *node, const ir_node *old)
+{
+	const char  *name = ia32_get_old_node_name(old);
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->orig_node   = name;
 }

@@ -1091,7 +1091,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 	reg = arch_get_irn_register(node);
 	arch_set_irn_register(proj, reg);
 
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(cg, node));
+	SET_IA32_ORIG_NODE(new_op, node);
 
 	exchange(node, proj);
 }
@@ -1148,7 +1148,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	set_ia32_frame_ent(store, ent);
 	set_ia32_use_frame(store);
 	set_ia32_is_spill(store);
-	SET_IA32_ORIG_NODE(store, ia32_get_old_node_name(cg, node));
+	SET_IA32_ORIG_NODE(store, node);
 	DBG_OPT_SPILL2ST(node, store);
 
 	if (sched_point) {

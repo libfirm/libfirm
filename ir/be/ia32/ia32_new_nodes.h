@@ -349,7 +349,7 @@ const char *get_ia32_orig_node(const ir_node *node);
 /**
  * Sets the name of the original ir node.
  */
-void set_ia32_orig_node(ir_node *node, const char *name);
+void set_ia32_orig_node(ir_node *node, const ir_node *old);
 
 #endif /* NDEBUG */
 
