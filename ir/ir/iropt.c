@@ -1214,19 +1214,39 @@ static ir_node *equivalent_node_Conv(ir_node *n) {
 restart:
 	if (n_mode == a_mode) { /* No Conv necessary */
 		if (get_Conv_strict(n)) {
-			/* special case: the predecessor might be a also a Conv */
-			if (is_Conv(a)) {
-				if (! get_Conv_strict(a)) {
+			ir_node *p = a;
+			ir_node *s = n;
+
+			/* neither Minus nor Abs nor Confirm change the precision,
+			   so we can "look-through" */
+			for (;;) {
+				if (is_Minus(p)) {
+					s = p;
+					p = get_Minus_op(p);
+				} else if (is_Abs(p)) {
+					s = p;
+					p = get_Abs_op(p);
+				} else if (is_Confirm(p)) {
+					s = p;
+					p = get_Confirm_value(p);
+				} else {
+					/* stop here */
+					break;
+				}
+			}
+			if (is_Conv(p)) {
+				/* special case: the predecessor is also a Conv */
+				if (! get_Conv_strict(p)) {
 					/* first one is not strict, kick it */
-					a = get_Conv_op(a);
+					p = get_Conv_op(p);
 					a_mode = get_irn_mode(a);
-					set_Conv_op(n, a);
+					set_irn_n(s, 1, p);
 					goto restart;
 				}
 				/* else both are strict conv, second is superfluous */
 			} else {
-				if (is_Proj(a)) {
-					ir_node *pred = get_Proj_pred(a);
+				if (is_Proj(p)) {
+					ir_node *pred = get_Proj_pred(p);
 					if (is_Load(pred)) {
 						/* loads always return with the exact precision of n_mode */
 						assert(get_Load_mode(pred) == n_mode);
