@@ -34,6 +34,7 @@
 #define FIRM_ANA_IRLOOP_H
 
 #include "firm_types.h"
+#include "firm_common.h"
 
 /* ------------------------------------------------------------------- */
 /*
