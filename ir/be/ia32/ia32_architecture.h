@@ -63,6 +63,8 @@ typedef struct {
 	unsigned use_pxor:1;
 	/** use mov reg, 0 instruction */
 	unsigned use_mov_0:1;
+	/** use cwtl/cltd, which are shorter, to sign extend ax/eax */
+	unsigned use_short_sex_eax:1;
 	/** pad Ret instructions that are destination of conditional jump or directly preceded
 	    by other jump instruction. */
 	unsigned use_pad_return:1;

@@ -1529,9 +1529,10 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 	assert(smaller_bits == 8 || smaller_bits == 16);
 
 	const arch_register_t *eax = &ia32_gp_regs[REG_EAX];
-	if (signed_mode                 &&
-			smaller_bits == 16          &&
-			eax == get_out_reg(node, 0) &&
+	if (signed_mode                      &&
+			smaller_bits == 16               &&
+			ia32_cg_config.use_short_sex_eax &&
+			eax == get_out_reg(node, 0)      &&
 			eax == arch_get_irn_register(get_irn_n(node, n_ia32_unary_op))) {
 		/* argument and result are both in EAX and signedness is ok: use the
 		 * smaller cwtl opcode */

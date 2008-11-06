@@ -1337,6 +1337,19 @@ static ir_node *transform_AM_mem(ir_graph *const irg, ir_node *const block,
 	}
 }
 
+static ir_node *create_sex_32_64(dbg_info *dbgi, ir_graph *irg, ir_node *block,
+                                 ir_node *val)
+{
+	if (ia32_cg_config.use_short_sex_eax) {
+		ir_node *pval = new_rd_ia32_ProduceVal(dbgi, irg, block);
+		be_dep_on_frame(pval);
+		return new_rd_ia32_Cltd(dbgi, irg, block, val, pval);
+	} else {
+		ir_node *imm31 = create_Immediate(NULL, 0, 31);
+		return new_rd_ia32_Sar(dbgi, irg, block, val, imm31);
+	}
+}
+
 /**
  * Generates an ia32 DivMod with additional infrastructure for the
  * register allocator if needed.
@@ -1389,14 +1402,9 @@ static ir_node *create_Div(ir_node *node)
 	new_mem = transform_AM_mem(irg, block, op2, mem, addr->mem);
 
 	if (mode_is_signed(mode)) {
-		ir_node *produceval = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
-		be_dep_on_frame(produceval);
-		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block, am.new_op1,
-		                                  produceval);
-
-		new_node = new_rd_ia32_IDiv(dbgi, irg, new_block, addr->base,
-		                            addr->index, new_mem, am.new_op2,
-		                            am.new_op1, sign_extension);
+		sign_extension = create_sex_32_64(dbgi, irg, new_block, am.new_op1);
+		new_node       = new_rd_ia32_IDiv(dbgi, irg, new_block, addr->base,
+				addr->index, new_mem, am.new_op2, am.new_op1, sign_extension);
 	} else {
 		sign_extension = new_rd_ia32_Const(dbgi, irg, new_block, NULL, 0, 0);
 		be_dep_on_frame(sign_extension);
@@ -1497,15 +1505,11 @@ static ir_node *gen_Shrs(ir_node *node)
 		long val = get_tarval_long(tv);
 		if (val == 31) {
 			/* this is a sign extension */
-			ir_graph *irg    = current_ir_graph;
 			dbg_info *dbgi   = get_irn_dbg_info(node);
 			ir_node  *block  = be_transform_node(get_nodes_block(node));
-			ir_node  *op     = left;
-			ir_node  *new_op = be_transform_node(op);
-			ir_node  *pval   = new_rd_ia32_ProduceVal(dbgi, irg, block);
+			ir_node  *new_op = be_transform_node(left);
 
-			be_dep_on_frame(pval);
-			return new_rd_ia32_Cltd(dbgi, irg, block, new_op, pval);
+			return create_sex_32_64(dbgi, current_ir_graph, block, new_op);
 		}
 	}
 
@@ -1724,7 +1728,7 @@ static ir_node *gen_Abs(ir_node *node)
 			SET_IA32_ORIG_NODE(new_node, ia32_get_old_node_name(env_cg, node));
 		}
 	} else {
-		ir_node *xor, *pval, *sign_extension;
+		ir_node *xor, *sign_extension;
 
 		if (get_mode_size_bits(mode) == 32) {
 			new_op = be_transform_node(op);
@@ -1732,12 +1736,8 @@ static ir_node *gen_Abs(ir_node *node)
 			new_op = create_I2I_Conv(mode, mode_Is, dbgi, block, op, node);
 		}
 
-		pval           = new_rd_ia32_ProduceVal(dbgi, irg, new_block);
-		sign_extension = new_rd_ia32_Cltd(dbgi, irg, new_block,
-		                                           new_op, pval);
-
-		be_dep_on_frame(pval);
-		SET_IA32_ORIG_NODE(sign_extension,ia32_get_old_node_name(env_cg, node));
+		sign_extension = create_sex_32_64(dbgi, irg, new_op, new_op);
+		SET_IA32_ORIG_NODE(sign_extension, ia32_get_old_node_name(env_cg, node));
 
 		xor = new_rd_ia32_Xor(dbgi, irg, new_block, noreg_gp, noreg_gp,
 		                      nomem, new_op, sign_extension);
