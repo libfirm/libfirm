@@ -1741,7 +1741,7 @@ static ir_node *gen_Abs(ir_node *node)
 			new_op = create_I2I_Conv(mode, mode_Is, dbgi, block, op, node);
 		}
 
-		sign_extension = create_sex_32_64(dbgi, irg, new_op, new_op, node);
+		sign_extension = create_sex_32_64(dbgi, irg, new_block, new_op, node);
 
 		xor = new_rd_ia32_Xor(dbgi, irg, new_block, noreg_gp, noreg_gp,
 		                      nomem, new_op, sign_extension);
