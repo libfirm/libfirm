@@ -392,13 +392,10 @@ typedef enum {
 	loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
 	loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
 
-	loopinfo_for_firmjni      = 16,      /**< A hack for firmjni:  all enums must differ as they
-	                                          are used in a switch. */
-
 	/** IntRAprocedural loop information constructed and valid. */
-	loopinfo_consistent         = loopinfo_constructed | loopinfo_for_firmjni | loopinfo_valid,
+	loopinfo_consistent         = loopinfo_constructed | loopinfo_valid,
 	/** IntRAprocedural loop information constructed and invalid. */
-	loopinfo_inconsistent       = loopinfo_constructed | loopinfo_for_firmjni,
+	loopinfo_inconsistent       = loopinfo_constructed,
 
 	/** IntERprocedural loop information constructed and valid. */
 	loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
