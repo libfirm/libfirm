@@ -2051,6 +2051,12 @@ static void ia32_mark_remat(const void *self, ir_node *node) {
 
 /**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
+ *
+ * @param sel        A selector of a Cond.
+ * @param phi_list   List of Phi nodes about to be converted (linked via get_Phi_next() field)
+ * @param i          First data predecessor involved in if conversion
+ * @param j          Second data predecessor involved in if conversion
+ *
  * @return 1 if allowed, 0 otherwise
  */
 static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
@@ -2058,7 +2064,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	ir_node *phi;
 	ir_node *cmp = NULL;
 
-	/* we can't handle psis with 64bit compares yet */
+	/* we can't handle Psis with 64bit compares yet */
 	if (is_Proj(sel)) {
 		cmp = get_Proj_pred(sel);
 		if (is_Cmp(cmp)) {
@@ -2108,7 +2114,15 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
 				ir_mode *mode = get_irn_mode(phi);
 
-				if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
+				if (mode_is_float(mode)) {
+					ir_node *t = get_Phi_pred(phi, i);
+					ir_node *f = get_Phi_pred(phi, j);
+
+					/* only abs or nabs supported */
+					if ((!is_Minus(t) || get_Minus_op(t) != f) &&
+						(!is_Minus(f) || get_Minus_op(f) != t))
+					return 0;
+				} else if (get_mode_size_bits(mode) > 32)
 					return 0;
 			}
 		}
@@ -2135,9 +2149,15 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			t = get_Phi_pred(phi, i);
 			f = get_Phi_pred(phi, j);
 
-			/* no floating point and no 64bit yet */
-			if (mode_is_float(mode) || get_mode_size_bits(mode) > 32)
+			if (mode_is_float(mode)) {
+				/* only abs or nabs supported */
+				if ((!is_Minus(t) || get_Minus_op(t) != f) &&
+					(!is_Minus(f) || get_Minus_op(f) != t))
 				return 0;
+			} else if (get_mode_size_bits(mode) > 32) {
+				/* no 64bit yet */
+				return 0;
+			}
 
 			if (is_Const(t) && is_Const(f)) {
 				if ((is_Const_null(t) && is_Const_one(f)) || (is_Const_one(t) && is_Const_null(f))) {
