@@ -40,6 +40,9 @@
 #include "set.h"
 #include "debug.h"
 
+/* define this for gneral block shaping (buggy yet) */
+#undef GENERAL_SHAPE
+
 typedef struct partition_t     partition_t;
 typedef struct block_t         block_t;
 typedef struct node_t          node_t;
@@ -766,42 +769,12 @@ continue_outer:
 			set_irn_in(p, j, &phi_ins[k * n]);
 		}
 	}
+	DEL_ARR_F(phi_ins);
 
 	/* fix inputs of the meet block */
 	set_irn_in(meet_block, j, ins);
 	DEL_ARR_F(ins);
 }  /* apply */
-
-/**
- * Create a partition for a given meet block.
- *
- * @param block    the meet block
- * @param preds    array of candidate predecessors
- * @param n_preds  number of elements in preds
- * @param env      the environment
- */
-static void partition_for_block(ir_node *block, ir_node *preds[], int n_preds, environment_t *env) {
-	partition_t *part = create_partition(block, env);
-	int         i;
-
-	for (i = n_preds - 1; i >= 0; --i) {
-		ir_node *pred = preds[i];
-		ir_node *block;
-		block_t *bl;
-		node_t  *node;
-
-		mark_irn_visited(pred);
-
-		block = get_nodes_block(pred);
-		bl    = create_block(block, part, env);
-		node  = create_node(pred, bl, env);
-
-		bl->cf_root = node;
-	}
-
-	dump_partition("Created", part);
-}  /* partition_for_block */
-
 
 /**
  * Create a partition for a the end block.
@@ -853,11 +826,43 @@ static void partition_for_end_block(ir_node *end_block, environment_t *env) {
 	dump_partition("Created", part);
 }  /* partition_for_end_block */
 
+#ifdef GENERAL_SHAPE
+/**
+ * Create a partition for a given meet block.
+ *
+ * @param block    the meet block
+ * @param preds    array of candidate predecessors
+ * @param n_preds  number of elements in preds
+ * @param env      the environment
+ */
+static void partition_for_block(ir_node *block, ir_node *preds[], int n_preds, environment_t *env) {
+	partition_t *part = create_partition(block, env);
+	int         i;
+
+	for (i = n_preds - 1; i >= 0; --i) {
+		ir_node *pred = preds[i];
+		ir_node *block;
+		block_t *bl;
+		node_t  *node;
+
+		mark_irn_visited(pred);
+
+		block = get_nodes_block(pred);
+		bl    = create_block(block, part, env);
+		node  = create_node(pred, bl, env);
+
+		bl->cf_root = node;
+	}
+
+	dump_partition("Created", part);
+}  /* partition_for_block */
+
 /**
  * Walker: clear the links of all block phi lists and normal
  * links.
  */
 static void clear_phi_links(ir_node *irn, void *env) {
+	(void) env;
 	if (is_Block(irn)) {
 		set_Block_phis(irn, NULL);
 		set_irn_link(irn, NULL);
@@ -947,12 +952,14 @@ static void check_for_cf_meet(ir_node *block, void *ctx) {
  * Compare two nodes for root ordering.
  */
 static int cmp_nodes(const void *a, const void *b) {
-	const ir_node *irn_a  = a;
-	const ir_node *irn_b  = b;
-	ir_opcode     code_a  = get_irn_opcode(irn_a);
-	ir_opcode     code_b  = get_irn_opcode(irn_b);
-	ir_mode       *mode_a, *mode_b;
-	unsigned      idx_a, idx_b;
+	ir_node *const *pa     = a;
+	ir_node *const *pb     = b;
+	const ir_node  *irn_a  = *pa;
+	const ir_node  *irn_b  = *pb;
+	ir_opcode      code_a  = get_irn_opcode(irn_a);
+	ir_opcode      code_b  = get_irn_opcode(irn_b);
+	ir_mode        *mode_a, *mode_b;
+	unsigned       idx_a, idx_b;
 
 	/* try opcode first */
 	if (code_a != code_b)
@@ -1019,6 +1026,7 @@ static void add_roots(ir_graph *irg, environment_t *env) {
 		bl->roots = NULL;
 	}
 }  /* add_roots */
+#endif /* GENERAL_SHAPE */
 
 /* Combines congruent end blocks into one. */
 int shape_blocks(ir_graph *irg) {
@@ -1032,7 +1040,6 @@ int shape_blocks(ir_graph *irg) {
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
-	firm_dbg_set_mask(dbg, 7);
 
 	DEBUG_ONLY(part_nr = 0);
 	DB((dbg, LEVEL_1, "Shaping blocks for %+F\n", irg));
@@ -1053,15 +1060,18 @@ int shape_blocks(ir_graph *irg) {
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
+#ifdef GENERAL_SHAPE
 	/*
 	 * Detect, which nodes are live-out only: these are the roots of our blocks.
 	 * Build phi lists.
 	 */
 	irg_walk_graph(irg, clear_phi_links, find_liveouts, &env);
+#endif
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	inc_irg_visited(irg);
+#ifdef GENERAL_SHAPE
 	/*
 	 * Detect all control flow meets and create partitions.
 	 */
@@ -1069,6 +1079,9 @@ int shape_blocks(ir_graph *irg) {
 
 	/* add root nodes to the partition blocks */
 	add_roots(irg, &env);
+#else
+	partition_for_end_block(get_irg_end_block(irg), &env);
+#endif
 
 	while (! list_empty(&env.partitions))
 		propagate(&env);
@@ -1093,6 +1106,7 @@ int shape_blocks(ir_graph *irg) {
 		set_trouts_inconsistent();
 	}
 
+	DEL_ARR_F(env.live_outs);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
 	current_ir_graph = rem;
