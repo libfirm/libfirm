@@ -31,7 +31,7 @@ typedef struct {
 	unsigned optimize_size:1;
 	/** use leave in function epilogue */
 	unsigned use_leave:1;
-	/** use inc, dec instead of add ,1 and add, -1 */
+	/** use inc, dec instead of add $1, reg and add $-1, reg */
 	unsigned use_incdec:1;
 	/** use sse2 instructions (instead of x87) */
 	unsigned use_sse2:1;
@@ -51,13 +51,13 @@ typedef struct {
 	unsigned use_modeD_moves:1;
 	/** use add esp, 4 instead of pop */
 	unsigned use_add_esp_4:1;
-	/** use add esp, 8 instead of 2 pop's */
+	/** use add esp, 8 instead of 2 pops */
 	unsigned use_add_esp_8:1;
 	/** use sub esp, 4 instead of push */
 	unsigned use_sub_esp_4:1;
-	/** use sub esp, 8 instead of 2 push's */
+	/** use sub esp, 8 instead of 2 pushs */
 	unsigned use_sub_esp_8:1;
-	/** use imul mem, imm32 instruction (slow on some cpu's */
+	/** use imul mem, imm32 instruction (slow on some CPUs) */
 	unsigned use_imul_mem_imm32:1;
 	/** use pxor instead xorps/xorpd */
 	unsigned use_pxor:1;
@@ -84,7 +84,7 @@ typedef struct {
 	unsigned label_alignment;
 	/** maximum skip alignment for labels (which are expected to be frequent jump targets) */
 	unsigned label_alignment_max_skip;
-	/** if a blocks execfreq is factor higher than it's predecessor then align
+	/** if a blocks execfreq is factor higher than its predecessor then align
 	 *  the blocks label (0 switches off label alignment) */
 	double label_alignment_factor;
 } ia32_code_gen_config_t;
