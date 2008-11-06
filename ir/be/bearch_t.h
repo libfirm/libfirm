@@ -379,7 +379,6 @@ struct arch_isa_if_t {
 	/**
 	 * Initialize the isa interface.
 	 * @param file_handle  the file handle to write the output to
-	 * @param main_env     the be main environment
 	 * @return a new isa instance
 	 */
 	arch_env_t *(*init)(FILE *file_handle);
@@ -389,6 +388,10 @@ struct arch_isa_if_t {
 	 */
 	void (*done)(void *self);
 
+	/**
+	 * Called directly after initialization. Backend should handle all
+	 * intrinsics here.
+	 */
 	void (*handle_intrinsics)(void);
 
 	/**
