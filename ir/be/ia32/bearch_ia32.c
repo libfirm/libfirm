@@ -2297,12 +2297,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_is_valid_clobber
 };
 
-void ia32_init_emitter(void);
-void ia32_init_finish(void);
-void ia32_init_optimize(void);
-void ia32_init_transform(void);
-void ia32_init_x87(void);
-
 void be_init_arch_ia32(void)
 {
 	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");

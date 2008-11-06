@@ -41,4 +41,9 @@
  */
 void x87_simulate_graph(be_irg_t *birg);
 
+/**
+ * Initializes the x87 simulator.
+ */
+void ia32_init_x87(void);
+
 #endif /* FIRM_BE_IA32_IA32_X87_H */

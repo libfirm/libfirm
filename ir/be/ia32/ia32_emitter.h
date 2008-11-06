@@ -51,4 +51,7 @@ void ia32_emit_x87_binop(const ir_node *node);
 
 void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
 
+/** Initializes the Emitter. */
+void ia32_init_emitter(void);
+
 #endif

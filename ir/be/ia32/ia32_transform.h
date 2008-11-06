@@ -29,7 +29,8 @@
 #include "bearch_ia32_t.h"
 
 /**
- * Transform firm nodes to x86 assembler nodes
+ * Transform firm nodes to x86 assembler nodes, ie
+ * do instruction selection.
  */
 void ia32_transform_graph(ia32_code_gen_t *cg);
 
@@ -57,5 +58,8 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg);
  * Skip all Down-Conv's on a given node and return the resulting node.
  */
 ir_node *ia32_skip_downconv(ir_node *node);
+
+/** Initialize the ia32 instruction selector. */
+void ia32_init_transform(void);
 
 #endif /* FIRM_BE_IA32_IA32_TRANSFORM_H */

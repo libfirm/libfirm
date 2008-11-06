@@ -50,4 +50,7 @@ void ia32_optimize_graph(ia32_code_gen_t *cg);
  */
 void ia32_peephole_optimization(ia32_code_gen_t *cg);
 
+/** Initialize the ia32 address mode initializer. */
+void ia32_init_optimize(void);
+
 #endif /* FIRM_BE_IA32_IA32_OPTIMIZE_H */
