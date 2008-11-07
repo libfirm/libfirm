@@ -38,6 +38,7 @@ $arch = "ia32";
 #   hash_func => "name of the hash function for this operation",
 #   latency   => "latency of this operation (can be float)"
 #   attr_type => "name of the attribute struct",
+#   modified_flags =>  [ "CF", ... ] # optional, list of modified flags
 # },
 #
 # ... # (all nodes you need to describe)
@@ -335,7 +336,7 @@ Asm => {
 	init_attr => "attr->asm_text = asm_text;\n".
 	             "\tattr->register_map = register_map;\n",
 	latency   => 10,
-	modified_flags => 1,
+	modified_flags => $status_flags,
 },
 
 # "allocates" a free register
