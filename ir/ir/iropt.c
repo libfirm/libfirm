@@ -4184,12 +4184,12 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 				ir_node *ll = get_binop_left(left);
 				ir_node *lr = get_binop_right(left);
 				if (is_Shr(ll) && is_Const(lr)) {
-					/* Cmp((x >> c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
+					/* Cmp((x >>u c1) & c2, c3) = Cmp(x & (c2 << c1), c3 << c1) */
 					ir_node *block = get_nodes_block(n);
 					ir_mode *mode = get_irn_mode(left);
 
 					ir_node *llr = get_Shr_right(ll);
-					if(is_Const(llr)) {
+					if (is_Const(llr)) {
 						ir_graph *irg = current_ir_graph;
 						dbg_info *dbg = get_irn_dbg_info(left);
 
