@@ -1472,6 +1472,7 @@ Call => {
 	am        => "source,unary",
 	units     => [ "BRANCH" ],
 	latency   => 4, # random number
+	modified_flags => $status_flags
 },
 
 #-----------------------------------------------------------------------------#
