@@ -400,12 +400,12 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 		if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp])
 		{
 			store = new_rd_ppc32_Stw(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph));
+				get_irn_n(node, 0), get_irn_n(node, 1), new_NoMem());
 		}
 		else if (regclass == &ppc32_reg_classes[CLASS_ppc32_fp])
 		{
 			store = new_rd_ppc32_Stfd(dbg, current_ir_graph, block,
-				get_irn_n(node, 0), get_irn_n(node, 1), new_rd_NoMem(current_ir_graph));
+				get_irn_n(node, 0), get_irn_n(node, 1), new_NoMem());
 		}
 		else panic("Spill for register class not supported yet!");
 

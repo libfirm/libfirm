@@ -1166,7 +1166,7 @@ static ir_node *gen_StackParam(ir_node *irn) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node   *new_op = NULL;
 	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node   *mem    = new_rd_NoMem(env->irg);
+	ir_node   *mem    = new_NoMem();
 	ir_node   *ptr    = get_irn_n(irn, 0);
 	ir_entity *ent    = be_get_frame_entity(irn);
 	ir_mode   *mode   = env->mode;

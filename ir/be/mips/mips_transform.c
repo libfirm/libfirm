@@ -660,7 +660,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 
 	la = new_rd_mips_la(dbg, irg, block);
 	add = new_rd_mips_addu(dbg, irg, block, sl, la);
-	load = new_rd_mips_load_r(dbg, irg, block, new_rd_NoMem(irg), add, mode_T);
+	load = new_rd_mips_load_r(dbg, irg, block, new_NoMem(), add, mode_T);
 	attr = get_mips_attr(load);
 	attr->modes.load_store_mode = mode_Iu;
 	attr->tv = new_tarval_from_long(0, mode_Iu);
@@ -1046,7 +1046,7 @@ static void mips_transform_Spill(mips_transform_env_t* env) {
 	ir_node   *node = env->irn;
 	ir_node   *sched_point = NULL;
 	ir_node   *store;
-	ir_node   *nomem = new_rd_NoMem(env->irg);
+	ir_node   *nomem = new_NoMem();
 	ir_node   *ptr   = get_irn_n(node, 0);
 	ir_node   *val   = get_irn_n(node, 1);
 	ir_entity *ent   = be_get_frame_entity(node);

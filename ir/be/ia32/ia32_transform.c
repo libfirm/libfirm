@@ -1651,7 +1651,7 @@ static ir_node *gen_Minus(ir_node *node)
 			 * several AM nodes... */
 			ir_node *noreg_gp  = ia32_new_NoReg_gp(env_cg);
 			ir_node *noreg_xmm = ia32_new_NoReg_xmm(env_cg);
-			ir_node *nomem     = new_rd_NoMem(irg);
+			ir_node *nomem     = new_NoMem();
 
 			new_node = new_rd_ia32_xXor(dbgi, irg, block, noreg_gp, noreg_gp,
 			                            nomem, new_op, noreg_xmm);
@@ -3299,7 +3299,7 @@ static ir_node *gen_Conv(ir_node *node)
 	int       src_bits  = get_mode_size_bits(src_mode);
 	int       tgt_bits  = get_mode_size_bits(tgt_mode);
 	ir_node  *noreg     = ia32_new_NoReg_gp(env_cg);
-	ir_node  *nomem     = new_rd_NoMem(irg);
+	ir_node  *nomem     = new_NoMem();
 	ir_node  *res       = NULL;
 
 	if (src_mode == mode_b) {

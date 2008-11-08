@@ -598,7 +598,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	mode     = get_irn_mode(irn);
 	irn_mode = get_irn_mode(irn);
 	noreg    = get_irn_n(irn, 0);
-	nomem    = new_r_NoMem(irg);
+	nomem    = new_NoMem();
 	dbg      = get_irn_dbg_info(irn);
 
 	/* initialize structure */
@@ -1107,7 +1107,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node) {
 	const ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
 	ir_mode *mode  = get_spill_mode(spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *nomem = new_rd_NoMem(irg);
+	ir_node *nomem = new_NoMem();
 	ir_node *ptr   = get_irg_frame(irg);
 	ir_node *val   = get_irn_n(node, be_pos_Spill_val);
 	ir_node *store;

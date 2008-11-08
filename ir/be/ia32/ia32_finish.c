@@ -68,7 +68,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 
 	noreg    = ia32_new_NoReg_gp(cg);
 	noreg_fp = ia32_new_NoReg_xmm(cg);
-	nomem    = new_rd_NoMem(cg->irg);
+	nomem    = new_NoMem();
 	in1      = get_irn_n(irn, n_ia32_binary_left);
 	in2      = get_irn_n(irn, n_ia32_binary_right);
 	in1_reg  = arch_get_irn_register(in1);
