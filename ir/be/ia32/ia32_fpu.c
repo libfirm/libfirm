@@ -93,10 +93,9 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 
 	/* we don't spill the fpcw in unsafe mode */
 	if(ia32_cg_config.use_unsafe_floatconv) {
-		ir_graph *irg = get_irn_irg(state);
 		ir_node *block = get_nodes_block(state);
 		if(force == 1 || !is_ia32_ChangeCW(state)) {
-			ir_node *spill = new_rd_ia32_FnstCWNOP(NULL, irg, block, state);
+			ir_node *spill = new_bd_ia32_FnstCWNOP(NULL, block, state);
 			sched_add_after(after, spill);
 			return spill;
 		}
@@ -110,7 +109,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		ir_node *nomem = new_NoMem();
 		ir_node *frame = get_irg_frame(irg);
 
-		spill = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, nomem, state);
+		spill = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
 		set_ia32_op_type(spill, ia32_AddrModeD);
 		/* use mode_Iu, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(spill, mode_Iu);
@@ -125,12 +124,11 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 static ir_node *create_fldcw_ent(ia32_code_gen_t *cg, ir_node *block,
                                  ir_entity *entity)
 {
-	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *nomem = new_NoMem();
 	ir_node  *noreg = ia32_new_NoReg_gp(cg);
 	ir_node  *reload;
 
-	reload = new_rd_ia32_FldCW(NULL, irg, block, noreg, noreg, nomem);
+	reload = new_bd_ia32_FldCW(NULL, block, noreg, noreg, nomem);
 	set_ia32_op_type(reload, ia32_AddrModeS);
 	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 	set_ia32_am_sc(reload, entity);
@@ -165,7 +163,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 	}
 
 	if(spill != NULL) {
-		reload = new_rd_ia32_FldCW(NULL, irg, block, frame, noreg, spill);
+		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, spill);
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 		set_ia32_use_frame(reload);
@@ -179,14 +177,14 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		ir_node *or_const;
 
 		assert(last_state != NULL);
-		cwstore = new_rd_ia32_FnstCW(NULL, irg, block, frame, noreg, nomem,
+		cwstore = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem,
 		                             last_state);
 		set_ia32_op_type(cwstore, ia32_AddrModeD);
 		set_ia32_ls_mode(cwstore, lsmode);
 		set_ia32_use_frame(cwstore);
 		sched_add_before(before, cwstore);
 
-		load = new_rd_ia32_Load(NULL, irg, block, frame, noreg, cwstore);
+		load = new_bd_ia32_Load(NULL, block, frame, noreg, cwstore);
 		set_ia32_op_type(load, ia32_AddrModeS);
 		set_ia32_ls_mode(load, lsmode);
 		set_ia32_use_frame(load);
@@ -195,21 +193,21 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		load_res = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
 
 		/* TODO: make the actual mode configurable in ChangeCW... */
-		or_const = new_rd_ia32_Immediate(NULL, irg, get_irg_start_block(irg),
+		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),
 		                                 NULL, 0, 3072);
 		arch_set_irn_register(or_const, &ia32_gp_regs[REG_GP_NOREG]);
-		or = new_rd_ia32_Or(NULL, irg, block, noreg, noreg, nomem, load_res,
+		or = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res,
 		                    or_const);
 		sched_add_before(before, or);
 
-		store = new_rd_ia32_Store(NULL, irg, block, frame, noreg, nomem, or);
+		store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, or);
 		set_ia32_op_type(store, ia32_AddrModeD);
 		/* use mode_Iu, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(store, mode_Iu);
 		set_ia32_use_frame(store);
 		sched_add_before(before, store);
 
-		fldcw = new_rd_ia32_FldCW(NULL, irg, block, frame, noreg, store);
+		fldcw = new_bd_ia32_FldCW(NULL, block, frame, noreg, store);
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
 		set_ia32_use_frame(fldcw);

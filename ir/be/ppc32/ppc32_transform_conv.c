@@ -119,11 +119,11 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 			ir_node *res;
 			if (mode_is_signed(to_mode))  // Float to integer
 			{
-				ir_node *fctiw = new_rd_ppc32_fCtiw(env->dbg, env->irg, env->block, op, from_mode);
-				ir_node *stfd = new_rd_ppc32_Stfd(env->dbg, env->irg, env->block, get_irg_frame(env->irg),
+				ir_node *fctiw = new_bd_ppc32_fCtiw(env->dbg, env->block, op, from_mode);
+				ir_node *stfd = new_bd_ppc32_Stfd(env->dbg, env->block, get_irg_frame(env->irg),
 					fctiw, memory);
 				ir_node *storememproj = new_rd_Proj(env->dbg, env->irg, env->block, stfd, mode_M, pn_Store_M);
-				ir_node *lwz = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, get_irg_frame(env->irg),
+				ir_node *lwz = new_bd_ppc32_Lwz(env->dbg, env->block, get_irg_frame(env->irg),
 					storememproj);
 				set_ppc32_frame_entity(stfd, memslot);
 				set_ppc32_offset_mode(stfd, ppc32_ao_Lo16);	// TODO: only allows a 16-bit offset on stack
@@ -323,9 +323,9 @@ static ir_node *gen_Const(ppc32_transform_env_t *env) {
 	ir_node *constant;
 
 	if (mode_is_float(env->mode))
-		constant = new_rd_ppc32_fConst(env->dbg, env->irg, env->block, env->mode);
+		constant = new_bd_ppc32_fConst(env->dbg, env->block, env->mode);
 	else
-		constant = new_rd_ppc32_Const(env->dbg, env->irg, env->block, env->mode);
+		constant = new_bd_ppc32_Const(env->dbg, env->block, env->mode);
 	set_ppc32_constant_tarval(constant, tv_const);
 	return constant;
 }
@@ -338,7 +338,7 @@ static ir_node *gen_Const(ppc32_transform_env_t *env) {
  */
 static ir_node *gen_SymConst(ppc32_transform_env_t *env) {
 	ir_node *symconst;
-	symconst = new_rd_ppc32_SymConst(env->dbg, env->irg, env->block, env->mode);
+	symconst = new_bd_ppc32_SymConst(env->dbg, env->block, env->mode);
 	set_ppc32_frame_entity(symconst, get_SymConst_entity(env->irn));
 	return symconst;
 }

@@ -149,19 +149,18 @@ static void peephole_be_IncSP(ir_node *node) {
  */
 static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbg   = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	int     cnt;
 	ir_node *ptr;
 
-	ptr = new_rd_arm_Add_i(dbg, irg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
+	ptr = new_bd_arm_Add_i(dbg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
 	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
-		ir_node *next = new_rd_arm_Add_i(dbg, irg, block, ptr, mode_Iu, value);
+		ir_node *next = new_bd_arm_Add_i(dbg, block, ptr, mode_Iu, value);
 		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
@@ -174,19 +173,18 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 */
 static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbg   = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	int     cnt;
 	ir_node *ptr;
 
-	ptr = new_rd_arm_Sub_i(dbg, irg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
+	ptr = new_bd_arm_Sub_i(dbg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
 	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
-		ir_node *next = new_rd_arm_Sub_i(dbg, irg, block, ptr, mode_Iu, value);
+		ir_node *next = new_bd_arm_Sub_i(dbg, block, ptr, mode_Iu, value);
 		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
@@ -229,14 +227,14 @@ static void peephole_be_Spill(ir_node *node) {
 	if (mode_is_float(mode)) {
 		if (USE_FPA(cg->isa)) {
 			/* transform into fpaStf */
-			store = new_rd_arm_fpaStf(dbg, irg, block, ptr, value, get_irg_no_mem(irg), mode);
+			store = new_bd_arm_fpaStf(dbg, block, ptr, value, get_irg_no_mem(irg), mode);
 			sched_add_before(node, store);
 		} else {
 			panic("peephole_be_Spill: spill not supported for this mode");
 		}
 	} else if (mode_is_dataM(mode)) {
 		 /* transform into Store */;
-		 store = new_rd_arm_Store(dbg, irg, block, ptr, value, get_irg_no_mem(irg));
+		 store = new_bd_arm_Store(dbg, block, ptr, value, get_irg_no_mem(irg));
 		 sched_add_before(node, store);
 	} else {
 		panic("peephole_be_Spill: spill not supported for this mode");
@@ -282,7 +280,7 @@ static void peephole_be_Reload(ir_node *node) {
 	if (mode_is_float(mode)) {
 		if (USE_FPA(cg->isa)) {
 			/* transform into fpaLdf */
-			load = new_rd_arm_fpaLdf(dbg, irg, block, ptr, mem, mode);
+			load = new_bd_arm_fpaLdf(dbg, block, ptr, mem, mode);
 			sched_add_before(node, load);
 			proj = new_rd_Proj(dbg, irg, block, load, mode, pn_arm_fpaLdf_res);
 			arch_set_irn_register(proj, reg);
@@ -291,7 +289,7 @@ static void peephole_be_Reload(ir_node *node) {
 		}
 	} else if (mode_is_dataM(mode)) {
 		/* transform into Store */;
-		load = new_rd_arm_Load(dbg, irg, block, ptr, mem);
+		load = new_bd_arm_Load(dbg, block, ptr, mem);
 		sched_add_before(node, load);
 		proj = new_rd_Proj(dbg, irg, block, load, mode_Iu, pn_arm_Load_res);
 		arch_set_irn_register(proj, reg);

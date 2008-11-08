@@ -169,8 +169,8 @@ ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block,
-	                                              symconst, symconst_sign, val);
+	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, symconst,
+			symconst_sign, val);
 	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
@@ -439,7 +439,6 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 
 ir_node *gen_ASM(ir_node *node)
 {
-	ir_graph                   *irg       = current_ir_graph;
 	ir_node                    *block = NULL;
 	ir_node                    *new_block = NULL;
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
@@ -527,7 +526,7 @@ ir_node *gen_ASM(ir_node *node)
 	}
 	++reg_map_size;
 
-	obst         = get_irg_obstack(irg);
+	obst         = get_irg_obstack(current_ir_graph);
 	register_map = NEW_ARR_D(ia32_asm_reg_t, obst, reg_map_size);
 	memset(register_map, 0, reg_map_size * sizeof(register_map[0]));
 
@@ -637,7 +636,7 @@ ir_node *gen_ASM(ir_node *node)
 		++out_idx;
 	}
 
-	new_node = new_rd_ia32_Asm(dbgi, irg, new_block, arity, in, out_arity,
+	new_node = new_bd_ia32_Asm(dbgi, new_block, arity, in, out_arity,
 	                           get_ASM_text(node), register_map);
 
 	if (arity == 0)
@@ -660,7 +659,6 @@ ir_node *gen_CopyB(ir_node *node) {
 	ir_node  *mem      = NULL;
 	ir_node  *new_mem  = NULL;
 	ir_node  *res      = NULL;
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
 	int      rem;
@@ -695,16 +693,16 @@ ir_node *gen_CopyB(ir_node *node) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
-		res = new_rd_ia32_Const(dbgi, irg, block, NULL, 0, size);
+		res = new_bd_ia32_Const(dbgi, block, NULL, 0, size);
 		be_dep_on_frame(res);
 
-		res = new_rd_ia32_CopyB(dbgi, irg, block, new_dst, new_src, res, new_mem, rem);
+		res = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, res, new_mem, rem);
 	} else {
 		if(size == 0) {
 			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
 			           node);
 		}
-		res = new_rd_ia32_CopyB_i(dbgi, irg, block, new_dst, new_src, new_mem, size);
+		res = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src, new_mem, size);
 	}
 
 	SET_IA32_ORIG_NODE(res, node);
@@ -714,7 +712,6 @@ ir_node *gen_CopyB(ir_node *node) {
 
 ir_node *gen_Proj_tls(ir_node *node) {
 	ir_node  *block = NULL;
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = NULL;
 	ir_node  *res   = NULL;
 
@@ -733,7 +730,7 @@ ir_node *gen_Proj_tls(ir_node *node) {
 		default: panic("invalid transformer");
 	}
 
-	res   = new_rd_ia32_LdTls(dbgi, irg, block, mode_Iu);
+	res = new_bd_ia32_LdTls(dbgi, block, mode_Iu);
 
 	return res;
 }
@@ -750,7 +747,7 @@ ir_node *gen_Unknown(ir_node *node)
 			ir_graph *irg   = current_ir_graph;
 			dbg_info *dbgi  = get_irn_dbg_info(node);
 			ir_node  *block = get_irg_start_block(irg);
-			ir_node  *ret   = new_rd_ia32_vfldz(dbgi, irg, block);
+			ir_node  *ret   = new_bd_ia32_vfldz(dbgi, block);
 
 			be_dep_on_frame(ret);
 			return ret;

@@ -496,7 +496,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 {
 	mips_abi_env_t *env = self;
 	ir_graph *irg = env->irg;
-	ir_node *block = get_irg_start_block(env->irg);
+	ir_node *block = get_irg_start_block(irg);
 	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
 	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	int initialstackframesize;
@@ -515,7 +515,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 24;
 
 		// - setup first part of stackframe
-		sp = new_rd_mips_addu(NULL, irg, block, sp,
+		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(initialstackframesize));
 		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
 		panic("FIXME Use IncSP or set register requirement with ignore");
@@ -524,7 +524,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		int i;
 		for(i = 0; i < 4; ++i) {
 			ir_node *reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_A0 + i]);
-			ir_node *store = new_rd_mips_store_r(dbg, irg, block, *mem, sp, reg, mode_T);
+			ir_node *store = new_bd_mips_store_r(dbg, block, *mem, sp, reg, mode_T);
 			attr = get_mips_attr(store);
 			attr->load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Is);
@@ -534,12 +534,12 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		*/
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
-		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 16);
+		store = new_bd_mips_sw(NULL, block, sp, reg, *mem, NULL, 16);
 
 		mm[4] = store;
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_RA]);
-		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 20);
+		store = new_bd_mips_sw(NULL, block, sp, reg, *mem, NULL, 20);
 
 		mm[5] = store;
 
@@ -553,19 +553,19 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		initialstackframesize = 4;
 
 		// save old framepointer
-		sp = new_rd_mips_addu(NULL, irg, block, sp,
+		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(-initialstackframesize));
 		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
 		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
-		store = new_rd_mips_sw(NULL, irg, block, sp, reg, *mem, NULL, 0);
+		store = new_bd_mips_sw(NULL, block, sp, reg, *mem, NULL, 0);
 
 		*mem = store;
 	}
 
 	// setup framepointer
-	fp = new_rd_mips_addu(NULL, irg, block, sp,
+	fp = new_bd_mips_addu(NULL, block, sp,
 	                      mips_create_Immediate(-initialstackframesize));
 	mips_set_irn_reg(fp, &mips_gp_regs[REG_FP]);
 	panic("FIXME Use IncSP or set register requirement with ignore");
@@ -588,12 +588,12 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	int fp_save_offset = env->debug ? 16 : 0;
 
 	// copy fp to sp
-	sp = new_rd_mips_or(NULL, irg, block, fp, mips_create_zero());
+	sp = new_bd_mips_or(NULL, block, fp, mips_create_zero());
 	mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
 	panic("FIXME Use be_Copy or set register requirement with ignore");
 
 	// 1. restore fp
-	load = new_rd_mips_lw(NULL, irg, block, sp, *mem, NULL,
+	load = new_bd_mips_lw(NULL, block, sp, *mem, NULL,
 	                      fp_save_offset - initial_frame_size);
 	panic("FIXME register requirement with ignore");
 

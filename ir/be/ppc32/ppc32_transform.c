@@ -245,9 +245,9 @@ static ir_node *gen_Add(ppc32_transform_env_t *env) {
 
 	switch(get_nice_modecode(env->mode)){
 		case irm_D:
-			return new_rd_ppc32_fAdd(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fAdd(env->dbg, env->block, op1, op2, env->mode);
 		case irm_F:
-			return new_rd_ppc32_fAdds(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fAdds(env->dbg, env->block, op1, op2, env->mode);
 		case irm_Is:
 		case irm_Iu:
 		case irm_Hs:
@@ -257,20 +257,20 @@ static ir_node *gen_Add(ppc32_transform_env_t *env) {
 		case irm_P:
 			if(is_16bit_signed_const(op1))
 			{
-				ir_node *addnode = new_rd_ppc32_Addi(env->dbg, env->irg, env->block, op2, env->mode);
+				ir_node *addnode = new_bd_ppc32_Addi(env->dbg, env->block, op2, env->mode);
 				set_ppc32_constant_tarval(addnode, get_ppc32_constant_tarval(op1));
 				set_ppc32_offset_mode(addnode, ppc32_ao_None);
 				return addnode;
 			}
 			if(is_16bit_signed_const(op2))
 			{
-				ir_node *addnode = new_rd_ppc32_Addi(env->dbg, env->irg, env->block, op1, env->mode);
+				ir_node *addnode = new_bd_ppc32_Addi(env->dbg, env->block, op1, env->mode);
 				set_ppc32_constant_tarval(addnode, get_ppc32_constant_tarval(op2));
 				set_ppc32_offset_mode(addnode, ppc32_ao_None);
 				return addnode;
 			}
 
-			return new_rd_ppc32_Add(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Add(env->dbg, env->block, op1, op2, env->mode);
 
 		default:
 			panic("Mode for Add not supported: %F", env->mode);
@@ -289,16 +289,16 @@ static ir_node *gen_Mul(ppc32_transform_env_t *env) {
 
 	switch(get_nice_modecode(env->mode)){
 		case irm_D:
-			return new_rd_ppc32_fMul(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fMul(env->dbg, env->block, op1, op2, env->mode);
 		case irm_F:
-			return new_rd_ppc32_fMuls(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fMuls(env->dbg, env->block, op1, op2, env->mode);
 		case irm_Is:
 		case irm_Iu:
 		case irm_Hs:
 		case irm_Hu:
 		case irm_Bs:
 		case irm_Bu:
-			return new_rd_ppc32_Mullw(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Mullw(env->dbg, env->block, op1, op2, env->mode);
 
 		case irm_P:
 		default:
@@ -320,12 +320,12 @@ static ir_node *gen_Mulh(ppc32_transform_env_t *env) {
 		case irm_Is:
 		case irm_Hs:
 		case irm_Bs:
-			return new_rd_ppc32_Mulhw(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Mulhw(env->dbg, env->block, op1, op2, env->mode);
 
 		case irm_Iu:
 		case irm_Hu:
 		case irm_Bu:
-			return new_rd_ppc32_Mulhwu(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Mulhwu(env->dbg, env->block, op1, op2, env->mode);
 
 		case irm_D:
 		case irm_F:
@@ -345,7 +345,7 @@ static ir_node *gen_And(ppc32_transform_env_t *env) {
 	ir_node *op1 = get_And_left(env->irn);
 	ir_node *op2 = get_And_right(env->irn);
 
-	return new_rd_ppc32_And(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_And(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -358,7 +358,7 @@ static ir_node *gen_Or(ppc32_transform_env_t *env) {
 	ir_node *op1 = get_Or_left(env->irn);
 	ir_node *op2 = get_Or_right(env->irn);
 
-	return new_rd_ppc32_Or(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Or(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -371,7 +371,7 @@ static ir_node *gen_Eor(ppc32_transform_env_t *env) {
 	ir_node *op1 = get_Eor_left(env->irn);
 	ir_node *op2 = get_Eor_right(env->irn);
 
-	return new_rd_ppc32_Xor(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Xor(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -386,9 +386,9 @@ static ir_node *gen_Sub(ppc32_transform_env_t *env) {
 
 	switch(get_nice_modecode(env->mode)){
 		case irm_D:
-			return new_rd_ppc32_fSub(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fSub(env->dbg, env->block, op1, op2, env->mode);
 		case irm_F:
-			return new_rd_ppc32_fSubs(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fSubs(env->dbg, env->block, op1, op2, env->mode);
 		case irm_Is:
 		case irm_Iu:
 		case irm_Hs:
@@ -396,7 +396,7 @@ static ir_node *gen_Sub(ppc32_transform_env_t *env) {
 		case irm_Bs:
 		case irm_Bu:
 		case irm_P:
-			return new_rd_ppc32_Sub(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Sub(env->dbg, env->block, op1, op2, env->mode);
 
 		default:
 			panic("Mode for Sub not supported: %F", env->mode);
@@ -415,9 +415,9 @@ static ir_node *gen_Quot(ppc32_transform_env_t *env) {
 
 	switch(get_nice_modecode(env->mode)){
 		case irm_D:
-			return new_rd_ppc32_fDiv(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fDiv(env->dbg, env->block, op1, op2, env->mode);
 		case irm_F:
-			return new_rd_ppc32_fDivs(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_fDivs(env->dbg, env->block, op1, op2, env->mode);
 
 		default:
 			panic("Mode for Quot not supported: %F", env->mode);
@@ -438,12 +438,12 @@ static ir_node *gen_Div(ppc32_transform_env_t *env) {
 		case irm_Is:
 		case irm_Hs:
 		case irm_Bs:
-			return new_rd_ppc32_Divw(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			return new_bd_ppc32_Divw(env->dbg, env->block, op1, op2, mode_T);
 
 		case irm_Iu:
 		case irm_Hu:
 		case irm_Bu:
-			return new_rd_ppc32_Divwu(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			return new_bd_ppc32_Divwu(env->dbg, env->block, op1, op2, mode_T);
 
 		default:
 			panic("Mode for Div not supported: %F", get_irn_mode(op1));
@@ -490,13 +490,13 @@ static ir_node *gen_DivMod(ppc32_transform_env_t *env) {
 		case irm_Is:
 		case irm_Hs:
 		case irm_Bs:
-			div_result = new_rd_ppc32_Divw(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			div_result = new_bd_ppc32_Divw(env->dbg, env->block, op1, op2, mode_T);
 			break;
 
 		case irm_Iu:
 		case irm_Hu:
 		case irm_Bu:
-			div_result = new_rd_ppc32_Divwu(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			div_result = new_bd_ppc32_Divwu(env->dbg, env->block, op1, op2, mode_T);
 			break;
 
 		default:
@@ -510,8 +510,8 @@ static ir_node *gen_DivMod(ppc32_transform_env_t *env) {
 		ir_node *mul_result;
 		ir_node *mod_result;
 
-		mul_result = new_rd_ppc32_Mullw(env->dbg, env->irg, env->block, proj_div, op2, res_mode);
-		mod_result = new_rd_ppc32_Sub(env->dbg, env->irg, env->block, op1, mul_result, res_mode);
+		mul_result = new_bd_ppc32_Mullw(env->dbg, env->block, proj_div, op2, res_mode);
+		mod_result = new_bd_ppc32_Sub(env->dbg, env->block, op1, mul_result, res_mode);
 
 		exchange(proj_mod, mod_result);
 	}
@@ -544,13 +544,13 @@ static ir_node *gen_Mod(ppc32_transform_env_t *env) {
 		case irm_Is:
 		case irm_Hs:
 		case irm_Bs:
-			div_result = new_rd_ppc32_Divw(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			div_result = new_bd_ppc32_Divw(env->dbg, env->block, op1, op2, mode_T);
 			break;
 
 		case irm_Iu:
 		case irm_Hu:
 		case irm_Bu:
-			div_result = new_rd_ppc32_Divwu(env->dbg, env->irg, env->block, op1, op2, mode_T);
+			div_result = new_bd_ppc32_Divwu(env->dbg, env->block, op1, op2, mode_T);
 			break;
 
 		default:
@@ -562,8 +562,8 @@ static ir_node *gen_Mod(ppc32_transform_env_t *env) {
 
 	proj_div = new_rd_Proj(env->dbg, env->irg, env->block, div_result, res_mode, pn_DivMod_res_div);
 
-	mul_result = new_rd_ppc32_Mullw(env->dbg, env->irg, env->block, proj_div, op2, res_mode);
-	mod_result = new_rd_ppc32_Sub(env->dbg, env->irg, env->block, op1, mul_result, res_mode);
+	mul_result = new_bd_ppc32_Mullw(env->dbg, env->block, proj_div, op2, res_mode);
+	mod_result = new_bd_ppc32_Sub(env->dbg, env->block, op1, mul_result, res_mode);
 
 	exchange(proj_mod, mod_result);
 
@@ -582,14 +582,14 @@ static ir_node *gen_Shl(ppc32_transform_env_t *env) {
 
 	if(is_ppc32_Const(op2))
 	{
-		ir_node *shift = new_rd_ppc32_Rlwinm(env->dbg, env->irg, env->block, op1, env->mode);
+		ir_node *shift = new_bd_ppc32_Rlwinm(env->dbg, env->block, op1, env->mode);
 		tarval *tv_const = get_ppc32_constant_tarval(op2);
 		int sh = get_tarval_long(tv_const);
 		assert(0<=sh && sh<=31);
 		set_ppc32_rlwimi_const(shift, sh, 0, 31-sh);
 		return shift;
 	}
-	return new_rd_ppc32_Slw(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Slw(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -604,14 +604,14 @@ static ir_node *gen_Shr(ppc32_transform_env_t *env) {
 
 	if(is_ppc32_Const(op2))
 	{
-		ir_node *shift = new_rd_ppc32_Rlwinm(env->dbg, env->irg, env->block, op1, env->mode);
+		ir_node *shift = new_bd_ppc32_Rlwinm(env->dbg, env->block, op1, env->mode);
 		tarval *tv_const = get_ppc32_constant_tarval(op2);
 		int sh = get_tarval_long(tv_const);
 		assert(0<=sh && sh<=31);
 		set_ppc32_rlwimi_const(shift, 32-sh, sh, 31);
 		return shift;
 	}
-	return new_rd_ppc32_Srw(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Srw(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -626,7 +626,7 @@ static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
 
 	if(is_ppc32_Const(op2))
 	{
-		ir_node *shift = new_rd_ppc32_Srawi(env->dbg, env->irg, env->block, op1, env->mode);
+		ir_node *shift = new_bd_ppc32_Srawi(env->dbg, env->block, op1, env->mode);
 		tarval *tv_const = get_ppc32_constant_tarval(op2);
 		int sh = get_tarval_long(tv_const);
 		assert(0<=sh && sh<=31);
@@ -635,7 +635,7 @@ static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
 		set_ppc32_offset_mode(shift, ppc32_ao_None);
 		return shift;
 	}
-	return new_rd_ppc32_Sraw(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Sraw(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -650,14 +650,14 @@ static ir_node *gen_Rotl(ppc32_transform_env_t *env) {
 
 	if(is_ppc32_Const(op2))
 	{
-		ir_node *rot = new_rd_ppc32_Rlwinm(env->dbg, env->irg, env->block, op1, env->mode);
+		ir_node *rot = new_bd_ppc32_Rlwinm(env->dbg, env->block, op1, env->mode);
 		tarval *tv_const = get_ppc32_constant_tarval(op2);
 		int sh = get_tarval_long(tv_const);
 		assert(0<=sh && sh<=31);
 		set_ppc32_rlwimi_const(rot, sh, 0, 31);
 		return rot;
 	}
-	return new_rd_ppc32_Rlwnm(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_ppc32_Rlwnm(env->dbg, env->block, op1, op2, env->mode);
 }
 
 /**
@@ -678,12 +678,12 @@ static ir_node *gen_Cmp(ppc32_transform_env_t *env) {
 	}
 
 	if(mode_is_float(env->mode))
-		return new_rd_ppc32_fCmpu(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		return new_bd_ppc32_fCmpu(env->dbg, env->block, op1, op2, env->mode);
 	else if(mode_is_signed(env->mode))
 	{
 		if(is_16bit_signed_const(op2))
 		{
-			ir_node *cmp = new_rd_ppc32_Cmpi(env->dbg, env->irg, env->block, op1, env->mode);
+			ir_node *cmp = new_bd_ppc32_Cmpi(env->dbg, env->block, op1, env->mode);
 			tarval *tv_const = get_ppc32_constant_tarval(op2);
 			set_ppc32_constant_tarval(cmp, tv_const);
 			set_ppc32_offset_mode(cmp, ppc32_ao_None);
@@ -691,14 +691,14 @@ static ir_node *gen_Cmp(ppc32_transform_env_t *env) {
 		}
 		else
 		{
-			return new_rd_ppc32_Cmp(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Cmp(env->dbg, env->block, op1, op2, env->mode);
 		}
 	}
 	else
 	{
 		if(is_16bit_unsigned_const(op2))
 		{
-			ir_node *cmp = new_rd_ppc32_Cmpli(env->dbg, env->irg, env->block, op1, env->mode);
+			ir_node *cmp = new_bd_ppc32_Cmpli(env->dbg, env->block, op1, env->mode);
 			tarval *tv_const = get_ppc32_constant_tarval(op2);
 			set_ppc32_constant_tarval(cmp, tv_const);
 			set_ppc32_offset_mode(cmp, ppc32_ao_None);
@@ -707,7 +707,7 @@ static ir_node *gen_Cmp(ppc32_transform_env_t *env) {
 		}
 		else
 		{
-			return new_rd_ppc32_Cmpl(env->dbg, env->irg, env->block, op1, op2, env->mode);
+			return new_bd_ppc32_Cmpl(env->dbg, env->block, op1, op2, env->mode);
 		}
 	}
 }
@@ -724,7 +724,7 @@ static ir_node *gen_Minus(ppc32_transform_env_t *env) {
 	switch(get_nice_modecode(env->mode)){
 		case irm_D:
 		case irm_F:
-			return new_rd_ppc32_fNeg(env->dbg, env->irg, env->block, op, env->mode);
+			return new_bd_ppc32_fNeg(env->dbg, env->block, op, env->mode);
 		case irm_Is:
 		case irm_Iu:
 		case irm_Hs:
@@ -732,7 +732,7 @@ static ir_node *gen_Minus(ppc32_transform_env_t *env) {
 		case irm_Bs:
 		case irm_Bu:
 		case irm_P:
-			return new_rd_ppc32_Neg(env->dbg, env->irg, env->block, op, env->mode);
+			return new_bd_ppc32_Neg(env->dbg, env->block, op, env->mode);
 
 		default:
 			panic("Mode for Neg not supported: %F", env->mode);
@@ -746,13 +746,13 @@ static ir_node *gen_Minus(ppc32_transform_env_t *env) {
  * @return the created ppc Not node
  */
 static ir_node *gen_Not(ppc32_transform_env_t *env) {
-	return new_rd_ppc32_Not(env->dbg, env->irg, env->block, get_Not_op(env->irn), env->mode);
+	return new_bd_ppc32_Not(env->dbg, env->block, get_Not_op(env->irn), env->mode);
 }
 
 
 static ir_node *own_gen_Andi_dot_lo16(ppc32_transform_env_t *env, ir_node *op, int mask)
 {
-	ir_node *andi = new_rd_ppc32_Andi_dot(env->dbg, env->irg, env->block, op, mode_T);
+	ir_node *andi = new_bd_ppc32_Andi_dot(env->dbg, env->block, op, mode_T);
 	ir_node* in[1];
 	set_ppc32_offset_mode(andi, ppc32_ao_Lo16);
 	set_ppc32_constant_tarval(andi, new_tarval_from_long(mask, mode_Is));
@@ -790,7 +790,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 			switch(to_mode)
 			{
 				case irm_F:
-					return new_rd_ppc32_fRsp(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_fRsp(env->dbg, env->block, op, env->mode);
 				default:
 					break;
 			}
@@ -801,11 +801,11 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 			switch(to_mode)
 			{
 				case irm_Hs:
-					return new_rd_ppc32_Extsh(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_Extsh(env->dbg, env->block, op, env->mode);
 				case irm_Hu:
 					return own_gen_Andi_dot_lo16(env, op, 0xffff);
 				case irm_Bs:
-					return new_rd_ppc32_Extsb(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_Extsb(env->dbg, env->block, op, env->mode);
 				case irm_Bu:
 					return own_gen_Andi_dot_lo16(env, op, 0xff);
 				case irm_Is:
@@ -827,11 +827,11 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 				case irm_Is:
 					SKIP;
 				case irm_Bs:
-					return new_rd_ppc32_Extsb(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_Extsb(env->dbg, env->block, op, env->mode);
 				case irm_Bu:
 					return own_gen_Andi_dot_lo16(env, op, 0xff);
 				case irm_Hs:
-					return new_rd_ppc32_Extsh(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_Extsh(env->dbg, env->block, op, env->mode);
 				default:
 					break;
 			}
@@ -850,7 +850,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 				case irm_Hs:
 					SKIP;
 				case irm_Bs:
-					return new_rd_ppc32_Extsb(env->dbg, env->irg, env->block, op, env->mode);
+					return new_bd_ppc32_Extsb(env->dbg, env->block, op, env->mode);
 				default:
 					break;
 			}
@@ -881,17 +881,17 @@ static ir_node *gen_Abs(ppc32_transform_env_t *env) {
 	{
 		case irm_F:
 		case irm_D:
-			return new_rd_ppc32_fAbs(env->dbg, env->irg, env->block, op, env->mode);
+			return new_bd_ppc32_fAbs(env->dbg, env->block, op, env->mode);
 		case irm_Is:
 			shift += 16;
 		case irm_Hs:
 			shift += 8;
 		case irm_Bs:
-			n1 = new_rd_ppc32_Srawi(env->dbg, env->irg, env->block, op, env->mode);
+			n1 = new_bd_ppc32_Srawi(env->dbg, env->block, op, env->mode);
 			set_ppc32_constant_tarval(n1, new_tarval_from_long(shift, mode_Is));
 			set_ppc32_offset_mode(n1, ppc32_ao_None);
-			n2 = new_rd_ppc32_Add(env->dbg, env->irg, env->block, op, n1, env->mode);
-			return new_rd_ppc32_Xor(env->dbg, env->irg, env->block, n2, n1, env->mode);
+			n2 = new_bd_ppc32_Add(env->dbg, env->block, op, n1, env->mode);
+			return new_bd_ppc32_Xor(env->dbg, env->block, n2, n1, env->mode);
 		default:
 			break;
 	}
@@ -911,16 +911,16 @@ static ir_node *gen_Cond(ppc32_transform_env_t *env) {
 	if(is_Proj(selector) && projmode==get_ppc32_mode_Cond())
 	{
 		int projnum = get_Proj_proj(selector);
-		ir_node *branch = new_rd_ppc32_Branch(env->dbg, env->irg, env->block, selector, env->mode);
+		ir_node *branch = new_bd_ppc32_Branch(env->dbg, env->block, selector, env->mode);
 		set_ppc32_proj_nr(branch, projnum);
 		return branch;
 	}
 	else
 	{
-		ir_node *unknown_gpr = new_rd_ppc32_Unknown(env->dbg, env->irg, env->block, mode_Is);
-		ir_node *unknown_cond = new_rd_ppc32_cUnknown(env->dbg, env->irg, env->block, get_ppc32_mode_Cond());
+		ir_node *unknown_gpr = new_bd_ppc32_Unknown(env->dbg, env->block, mode_Is);
+		ir_node *unknown_cond = new_bd_ppc32_cUnknown(env->dbg, env->block, get_ppc32_mode_Cond());
 
-		ir_node *switch_node = new_rd_ppc32_Switch(env->dbg, env->irg, env->block, selector,
+		ir_node *switch_node = new_bd_ppc32_Switch(env->dbg, env->block, selector,
 			unknown_gpr, unknown_cond, env->mode);
 		set_ppc32_proj_nr(switch_node, get_Cond_defaultProj(env->irn));
 
@@ -936,9 +936,9 @@ static ir_node *gen_Cond(ppc32_transform_env_t *env) {
  */
 static ir_node *gen_Unknown(ppc32_transform_env_t *env) {
 	if(mode_is_float(env->mode))
-		return new_rd_ppc32_fUnknown(env->dbg, env->irg, env->block, env->mode);
+		return new_bd_ppc32_fUnknown(env->dbg, env->block, env->mode);
 	else if (mode_is_int(env->mode))
-		return new_rd_ppc32_Unknown(env->dbg, env->irg, env->block, env->mode);
+		return new_bd_ppc32_Unknown(env->dbg, env->block, env->mode);
 	else
 		panic("Mode %F for unknown value not supported.", env->mode);
 }
@@ -950,7 +950,7 @@ static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32
 	if(is_ppc32_Const(ptr))
 	{
 		tv_const = get_ppc32_constant_tarval(ptr);
-		ptr = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, mode_P, ppc32_ao_Ha16, tv_const, NULL);
+		ptr = new_bd_ppc32_Addis_zero(env->dbg, env->block, mode_P, ppc32_ao_Ha16, tv_const, NULL);
 	}
 	else if(is_ppc32_SymConst(ptr))
 	{
@@ -958,7 +958,7 @@ static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32
 		if(is_direct_entity(ent))
 		{
 			id_symconst = get_entity_ident(ent);
-			ptr = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, mode_P, ppc32_ao_Ha16, NULL, id_symconst);
+			ptr = new_bd_ppc32_Addis_zero(env->dbg, env->block, mode_P, ppc32_ao_Ha16, NULL, id_symconst);
 		}
 	}
 	*ptv = tv_const;
@@ -983,37 +983,37 @@ static ir_node *gen_Load(ppc32_transform_env_t *env) {
 	loadptr = ldst_insert_const(loadptr, &tv_const, &id_symconst, env);
 	switch(get_nice_modecode(mode)){
 		case irm_Bu:
-			load = new_rd_ppc32_Lbz(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load = new_bd_ppc32_Lbz(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 
 		case irm_Bs:
 		{
 			ir_node *proj_load, *extsb_node;
-			load =  new_rd_ppc32_Lbz(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load =  new_bd_ppc32_Lbz(env->dbg, env->block, loadptr, get_Load_mem(node));
 			proj_load = new_rd_Proj(env->dbg, env->irg, env->block, load, mode, pn_Load_res);
-			extsb_node = new_rd_ppc32_Extsb(env->dbg, env->irg, env->block, proj_load, mode);
+			extsb_node = new_bd_ppc32_Extsb(env->dbg, env->block, proj_load, mode);
 			exchange(get_succ_Proj(env->irn, pn_Load_res), extsb_node);
 			break;
 		}
 
 
 		case irm_Hu:
-			load = new_rd_ppc32_Lhz(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load = new_bd_ppc32_Lhz(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 		case irm_Hs:
-			load =new_rd_ppc32_Lha(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load =new_bd_ppc32_Lha(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 		case irm_Is:
 		case irm_Iu:
 		case irm_P:
-			load = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load = new_bd_ppc32_Lwz(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 
 		case irm_D:
-			load = new_rd_ppc32_Lfd(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load = new_bd_ppc32_Lfd(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 		case irm_F:
-			load = new_rd_ppc32_Lfs(env->dbg, env->irg, env->block, loadptr, get_Load_mem(node));
+			load = new_bd_ppc32_Lfs(env->dbg, env->block, loadptr, get_Load_mem(node));
 			break;
 
 		default:
@@ -1055,24 +1055,24 @@ static ir_node *gen_Store(ppc32_transform_env_t *env) {
 	switch(get_nice_modecode(mode)){
 		case irm_Bu:
 		case irm_Bs:
-			store = new_rd_ppc32_Stb(env->dbg, env->irg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
+			store = new_bd_ppc32_Stb(env->dbg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
 			break;
 
 		case irm_Hu:
 		case irm_Hs:
-			store = new_rd_ppc32_Sth(env->dbg, env->irg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
+			store = new_bd_ppc32_Sth(env->dbg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
 			break;
 		case irm_Is:
 		case irm_Iu:
 		case irm_P:
-			store = new_rd_ppc32_Stw(env->dbg, env->irg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
+			store = new_bd_ppc32_Stw(env->dbg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
 			break;
 
 		case irm_D:
-			store = new_rd_ppc32_Stfd(env->dbg, env->irg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
+			store = new_bd_ppc32_Stfd(env->dbg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
 			break;
 		case irm_F:
-			store = new_rd_ppc32_Stfs(env->dbg, env->irg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
+			store = new_bd_ppc32_Stfs(env->dbg, env->block, storeptr, get_Store_value(node), get_Store_mem(node));
 			break;
 
 		default:
@@ -1113,26 +1113,26 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 		tarval *offset0 = new_tarval_from_long(0, mode_Is);
 		tarval *offset4 = new_tarval_from_long(4, mode_Is);
 
-		load = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, src, mem);
+		load = new_bd_ppc32_Lwz(env->dbg, env->block, src, mem);
 		set_ppc32_constant_tarval(load, offset0);
 		set_ppc32_offset_mode(load, ppc32_ao_None);
 		mem = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_M, pn_Load_M);
 		res = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Is, pn_Load_res);
 
-		store = new_rd_ppc32_Stw(env->dbg, env->irg, env->block, dest, res, mem);
+		store = new_bd_ppc32_Stw(env->dbg, env->block, dest, res, mem);
 		set_ppc32_constant_tarval(store, offset0);
 		set_ppc32_offset_mode(store, ppc32_ao_None);
 		mem = new_rd_Proj(env->dbg, env->irg, env->block, store, mode_M, pn_Store_M);
 
 		if(size/4==2)
 		{
-			load = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, src, mem);
+			load = new_bd_ppc32_Lwz(env->dbg, env->block, src, mem);
 			set_ppc32_constant_tarval(load, offset4);
 			set_ppc32_offset_mode(load, ppc32_ao_None);
 			mem = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_M, pn_Load_M);
 			res = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Is, pn_Load_res);
 
-			store = new_rd_ppc32_Stw(env->dbg, env->irg, env->block, dest, res, mem);
+			store = new_bd_ppc32_Stw(env->dbg, env->block, dest, res, mem);
 			set_ppc32_constant_tarval(store, offset4);
 			set_ppc32_offset_mode(store, ppc32_ao_None);
 			mem = new_rd_Proj(env->dbg, env->irg, env->block, store, mode_M, pn_Store_M);
@@ -1146,21 +1146,21 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 			assert(size/4-1<=0xffff);
 			if(size/4-1<0x8000)
 			{
-				ornode = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, mode_Is);
+				ornode = new_bd_ppc32_Addi_zero(env->dbg, env->block, mode_Is);
 				set_ppc32_offset_mode(ornode, ppc32_ao_None);
 			}
 			else
 			{
-				ir_node *zeroreg = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, mode_Is);
+				ir_node *zeroreg = new_bd_ppc32_Addi_zero(env->dbg, env->block, mode_Is);
 				set_ppc32_offset_mode(zeroreg, ppc32_ao_None);
 				set_ppc32_constant_tarval(zeroreg, new_tarval_from_long(0, mode_Is));
-				ornode = new_rd_ppc32_Ori(env->dbg, env->irg, env->block, zeroreg, mode_Is);
+				ornode = new_bd_ppc32_Ori(env->dbg, env->block, zeroreg, mode_Is);
 				set_ppc32_offset_mode(ornode, ppc32_ao_Lo16);
 			}
 
 			set_ppc32_constant_tarval(ornode, new_tarval_from_long(size/4-1, mode_Is));
-			mtctrnode = new_rd_ppc32_Mtctr(env->dbg, env->irg, env->block, ornode, mode_Is);
-			store = new_rd_ppc32_LoopCopy(env->dbg, env->irg, env->block, src, dest, mtctrnode, mem, mode_T);
+			mtctrnode = new_bd_ppc32_Mtctr(env->dbg, env->block, ornode, mode_Is);
+			store = new_bd_ppc32_LoopCopy(env->dbg, env->block, src, dest, mtctrnode, mem, mode_T);
 
 			in[0] = new_rd_Proj(env->dbg, env->irg, env->block, store, mode_Is, 1); // src
 			in[1] =	new_rd_Proj(env->dbg, env->irg, env->block, store, mode_Is, 2);	// dest
@@ -1179,13 +1179,13 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 	{
 		ir_node *res;
 		tarval* offset_tarval = new_tarval_from_long(offset, mode_Is);
-		load = new_rd_ppc32_Lhz(env->dbg, env->irg, env->block, src, mem);
+		load = new_bd_ppc32_Lhz(env->dbg, env->block, src, mem);
 		set_ppc32_constant_tarval(load, offset_tarval);
 		set_ppc32_offset_mode(load, ppc32_ao_None);
 		mem = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_M, pn_Load_M);
 		res = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Is, pn_Load_res);
 
-		store = new_rd_ppc32_Sth(env->dbg, env->irg, env->block, dest, res, mem);
+		store = new_bd_ppc32_Sth(env->dbg, env->block, dest, res, mem);
 		set_ppc32_constant_tarval(store, offset_tarval);
 		set_ppc32_offset_mode(store, ppc32_ao_None);
 		mem = new_rd_Proj(env->dbg, env->irg, env->block, store, mode_M, pn_Store_M);
@@ -1197,13 +1197,13 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 	{
 		ir_node *res;
 		tarval* offset_tarval = new_tarval_from_long(offset, mode_Is);
-		load = new_rd_ppc32_Lbz(env->dbg, env->irg, env->block, src, mem);
+		load = new_bd_ppc32_Lbz(env->dbg, env->block, src, mem);
 		set_ppc32_constant_tarval(load, offset_tarval);
 		set_ppc32_offset_mode(load, ppc32_ao_None);
 		mem = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_M, pn_Load_M);
 		res = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Is, pn_Load_res);
 
-		store = new_rd_ppc32_Stb(env->dbg, env->irg, env->block, dest, res, mem);
+		store = new_bd_ppc32_Stb(env->dbg, env->block, dest, res, mem);
 		set_ppc32_constant_tarval(store, offset_tarval);
 		set_ppc32_offset_mode(store, ppc32_ao_None);
 		// mem = new_rd_Proj(env->dbg, env->irg, env->block, store, mode_M, pn_Store_M);
@@ -1219,7 +1219,7 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
  */
 static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env) {
 	ir_node *op = get_irn_n(env->irn, 0);
-	ir_node *add = new_rd_ppc32_Addi(env->dbg, env->irg, env->block, op, mode_P);
+	ir_node *add = new_bd_ppc32_Addi(env->dbg, env->block, op, mode_P);
 	set_ppc32_frame_entity(add, be_get_frame_entity(env->irn));
 	return add;
 }
@@ -1432,7 +1432,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 		entry->ent = ent;
 	}				 // TODO: Wird nicht richtig in global type gesteckt, ppc32_gen_decls.c findet ihn nicht
 
-	symcnst = new_rd_ppc32_SymConst(env->dbg, env->irg, env->block, env->mode);
+	symcnst = new_bd_ppc32_SymConst(env->dbg, env->block, env->mode);
 	set_ppc32_frame_entity(symcnst, ent);
 	return symcnst;
 }
@@ -1458,10 +1458,10 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
 			unsigned char val1 = get_tarval_sub_bits(tv_const, 1);
 			if(val1&0x80)
 			{
-				ir_node *zeroreg = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, mode_Is);
+				ir_node *zeroreg = new_bd_ppc32_Addi_zero(env->dbg, env->block, mode_Is);
 				set_ppc32_constant_tarval(zeroreg, new_tarval_from_long(0, mode_Is));
 				set_ppc32_offset_mode(zeroreg, ppc32_ao_None);
-				node = new_rd_ppc32_Ori(env->dbg, env->irg, env->block, zeroreg, mode_Is);
+				node = new_bd_ppc32_Ori(env->dbg, env->block, zeroreg, mode_Is);
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				break;
 			}
@@ -1469,7 +1469,7 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
 		case irm_Bu:
 		case irm_Bs:
 		case irm_Hs:
-			node = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, env->mode);
+			node = new_bd_ppc32_Addi_zero(env->dbg, env->block, env->mode);
 			set_ppc32_offset_mode(node, ppc32_ao_None);
 			break;
 		case irm_Is:
@@ -1483,15 +1483,15 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
 				unsigned char val1 = get_tarval_sub_bits(tv_const, 1);
 				if(val1&0x80)
 				{
-					ir_node *zeroreg = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, mode_Is);
+					ir_node *zeroreg = new_bd_ppc32_Addi_zero(env->dbg, env->block, mode_Is);
 					set_ppc32_constant_tarval(zeroreg, new_tarval_from_long(0, mode_Is));
 					set_ppc32_offset_mode(zeroreg, ppc32_ao_None);
-					node = new_rd_ppc32_Ori(env->dbg, env->irg, env->block, zeroreg, mode_Is);
+					node = new_bd_ppc32_Ori(env->dbg, env->block, zeroreg, mode_Is);
 					set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				}
 				else
 				{
-					node = new_rd_ppc32_Addi_zero(env->dbg, env->irg, env->block, env->mode);
+					node = new_bd_ppc32_Addi_zero(env->dbg, env->block, env->mode);
 					set_ppc32_offset_mode(node, ppc32_ao_None);
 				}
 			}
@@ -1499,11 +1499,11 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
 			{
 				unsigned char val0 = get_tarval_sub_bits(tv_const,0);
 				unsigned char val1 = get_tarval_sub_bits(tv_const,1);
-				node = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, env->mode, ppc32_ao_Hi16, tv_const, NULL);
+				node = new_bd_ppc32_Addis_zero(env->dbg, env->block, env->mode, ppc32_ao_Hi16, tv_const, NULL);
 				if(val0 || val1)
 				{
 					set_ppc32_constant_tarval(node, tv_const);
-					node = new_rd_ppc32_Ori(env->dbg, env->irg, env->block, node, env->mode);
+					node = new_bd_ppc32_Ori(env->dbg, env->block, node, env->mode);
 					set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				}
 			}
@@ -1542,12 +1542,12 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 			if(is_direct_entity(ent))
 			{
 				ident *id_symconst = get_entity_ident(ent);
-				ir_node *node_addis = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, env->mode, ppc32_ao_Ha16, NULL, id_symconst);
+				ir_node *node_addis = new_bd_ppc32_Addis_zero(env->dbg, env->block, env->mode, ppc32_ao_Ha16, NULL, id_symconst);
 
 				if(mode==mode_D)
-					load = new_rd_ppc32_Lfd(env->dbg, env->irg, env->block, node_addis, new_NoMem());
+					load = new_bd_ppc32_Lfd(env->dbg, env->block, node_addis, new_NoMem());
 				else // mode_F
-					load = new_rd_ppc32_Lfs(env->dbg, env->irg, env->block, node_addis, new_NoMem());
+					load = new_bd_ppc32_Lfs(env->dbg, env->block, node_addis, new_NoMem());
 
 				set_ppc32_symconst_ident(load, id_symconst);
 				set_ppc32_offset_mode(load, ppc32_ao_Lo16);
@@ -1556,9 +1556,9 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 			{
 				addr = gen_ppc32_SymConst (env);
 				if(mode==mode_D)
-					load = new_rd_ppc32_Lfd(env->dbg, env->irg, env->block, addr, new_NoMem());
+					load = new_bd_ppc32_Lfd(env->dbg, env->block, addr, new_NoMem());
 				else // mode_F
-					load = new_rd_ppc32_Lfs(env->dbg, env->irg, env->block, addr, new_NoMem());
+					load = new_bd_ppc32_Lfs(env->dbg, env->block, addr, new_NoMem());
 			}
 			return new_rd_Proj(env->dbg, env->irg, env->block, load, mode, pn_Load_res);
 		}
@@ -1604,15 +1604,15 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
 		{
 			if (is_direct_entity(ent))
 			{
-				ir_node *node_addis = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, env->mode, ppc32_ao_Hi16, NULL, id_symconst);
-				node = new_rd_ppc32_Ori(env->dbg, env->irg, env->block, node_addis, env->mode);
+				ir_node *node_addis = new_bd_ppc32_Addis_zero(env->dbg, env->block, env->mode, ppc32_ao_Hi16, NULL, id_symconst);
+				node = new_bd_ppc32_Ori(env->dbg, env->block, node_addis, env->mode);
 				set_ppc32_symconst_ident(node, id_symconst);
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 			}
 			else
 			{
-				ir_node *node_addis = new_rd_ppc32_Addis_zero(env->dbg, env->irg, env->block, env->mode, ppc32_ao_Ha16, NULL, id_symconst);
-				node = new_rd_ppc32_Lwz(env->dbg, env->irg, env->block, node_addis, new_NoMem());
+				ir_node *node_addis = new_bd_ppc32_Addis_zero(env->dbg, env->block, env->mode, ppc32_ao_Ha16, NULL, id_symconst);
+				node = new_bd_ppc32_Lwz(env->dbg, env->block, node_addis, new_NoMem());
 				set_ppc32_symconst_ident(node, id_symconst);
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				node = new_rd_Proj(env->dbg, env->irg, env->block, node, env->mode, pn_Load_res);

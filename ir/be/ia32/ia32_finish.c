@@ -92,7 +92,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 
 		assert(get_irn_mode(irn) != mode_T);
 
-		res = new_rd_ia32_xXor(dbg, irg, block, noreg, noreg, nomem, in2, noreg_fp);
+		res = new_bd_ia32_xXor(dbg, block, noreg, noreg, nomem, in2, noreg_fp);
 		size = get_mode_size_bits(op_mode);
 		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, entity);
@@ -105,7 +105,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 		sched_add_before(irn, res);
 
 		/* generate the add */
-		res = new_rd_ia32_xAdd(dbg, irg, block, noreg, noreg, nomem, res, in1);
+		res = new_bd_ia32_xAdd(dbg, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 
 		/* exchange the add and the sub */
@@ -135,14 +135,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 		}
 
 		if (flags_proj == NULL) {
-			res = new_rd_ia32_Neg(dbg, irg, block, in2);
+			res = new_bd_ia32_Neg(dbg, block, in2);
 			arch_set_irn_register(res, in2_reg);
 
 			/* add to schedule */
 			sched_add_before(irn, res);
 
 			/* generate the add */
-			res = new_rd_ia32_Add(dbg, irg, block, noreg, noreg, nomem, res, in1);
+			res = new_bd_ia32_Add(dbg, block, noreg, noreg, nomem, res, in1);
 			arch_set_irn_register(res, out_reg);
 			set_ia32_commutative(res);
 
@@ -164,16 +164,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 			 *
 			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
 			 */
-			not = new_rd_ia32_Not(dbg, irg, block, in2);
+			not = new_bd_ia32_Not(dbg, block, in2);
 			arch_set_irn_register(not, in2_reg);
 			sched_add_before(irn, not);
 
-			stc = new_rd_ia32_Stc(dbg, irg, block);
+			stc = new_bd_ia32_Stc(dbg, block);
 			arch_set_irn_register(stc, &ia32_flags_regs[REG_EFLAGS]);
 			sched_add_before(irn, stc);
 
-			adc = new_rd_ia32_Adc(dbg, irg, block, noreg, noreg, nomem, not,
-			                      in1, stc);
+			adc = new_bd_ia32_Adc(dbg, block, noreg, noreg, nomem, not, in1, stc);
 			arch_set_irn_register(adc, out_reg);
 			sched_add_before(irn, adc);
 
@@ -181,7 +180,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 			adc_flags = new_r_Proj(irg, block, adc, mode_Iu, pn_ia32_Adc_flags);
 			arch_set_irn_register(adc_flags, &ia32_flags_regs[REG_EFLAGS]);
 
-			cmc = new_rd_ia32_Cmc(dbg, irg, block, adc_flags);
+			cmc = new_bd_ia32_Cmc(dbg, block, adc_flags);
 			arch_set_irn_register(cmc, &ia32_flags_regs[REG_EFLAGS]);
 			sched_add_before(irn, cmc);
 

@@ -478,7 +478,7 @@ static ir_node *x87_fxch_shuffle(x87_state *state, int pos, ir_node *block)
 	ir_node         *fxch;
 	ia32_x87_attr_t *attr;
 
-	fxch = new_rd_ia32_fxch(NULL, get_irn_irg(block), block);
+	fxch = new_bd_ia32_fxch(NULL, block);
 	attr = get_ia32_x87_attr(fxch);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -643,12 +643,11 @@ static ir_node *x87_create_fxch(x87_state *state, ir_node *n, int pos)
 {
 	ir_node         *fxch;
 	ia32_x87_attr_t *attr;
-	ir_graph        *irg = get_irn_irg(n);
 	ir_node         *block = get_nodes_block(n);
 
 	x87_fxch(state, pos);
 
-	fxch = new_rd_ia32_fxch(NULL, irg, block);
+	fxch = new_bd_ia32_fxch(NULL, block);
 	attr = get_ia32_x87_attr(fxch);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -676,7 +675,7 @@ static void x87_create_fpush(x87_state *state, ir_node *n, int pos, int op_idx)
 
 	x87_push_dbl(state, arch_register_get_index(out), pred);
 
-	fpush = new_rd_ia32_fpush(NULL, get_irn_irg(n), get_nodes_block(n));
+	fpush = new_bd_ia32_fpush(NULL, get_nodes_block(n));
 	attr  = get_ia32_x87_attr(fpush);
 	attr->x87[0] = &ia32_st_regs[pos];
 	attr->x87[2] = &ia32_st_regs[0];
@@ -705,9 +704,9 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 	while (num > 0) {
 		x87_pop(state);
 		if (ia32_cg_config.use_ffreep)
-			fpop = new_rd_ia32_ffreep(NULL, get_irn_irg(n), get_nodes_block(n));
+			fpop = new_bd_ia32_ffreep(NULL, get_nodes_block(n));
 		else
-			fpop = new_rd_ia32_fpop(NULL, get_irn_irg(n), get_nodes_block(n));
+			fpop = new_bd_ia32_fpop(NULL, get_nodes_block(n));
 		attr = get_ia32_x87_attr(fpop);
 		attr->x87[0] = &ia32_st_regs[0];
 		attr->x87[1] = &ia32_st_regs[0];
@@ -732,11 +731,10 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
  */
 static ir_node *x87_create_fldz(x87_state *state, ir_node *n, int regidx)
 {
-	ir_graph *irg = get_irn_irg(n);
 	ir_node *block = get_nodes_block(n);
 	ir_node *fldz;
 
-	fldz = new_rd_ia32_fldz(NULL, irg, block, mode_E);
+	fldz = new_bd_ia32_fldz(NULL, block, mode_E);
 
 	sched_add_before(n, fldz);
 	DB((dbg, LEVEL_1, "<<< %s\n", get_irn_opname(fldz)));
@@ -1263,8 +1261,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				x87_patch_insn(n, op_p);
 
 				block = get_nodes_block(n);
-				irg   = get_irn_irg(n);
-				vfld  = new_rd_ia32_vfld(NULL, irg, block, get_irn_n(n, 0), get_irn_n(n, 1), new_NoMem(), get_ia32_ls_mode(n));
+				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), new_NoMem(), get_ia32_ls_mode(n));
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
@@ -1275,6 +1272,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
 				set_ia32_ls_mode(vfld, get_ia32_ls_mode(n));
 
+				irg   = get_irn_irg(n);
 				rproj = new_r_Proj(irg, block, vfld, get_ia32_ls_mode(vfld), pn_ia32_vfld_res);
 				mproj = new_r_Proj(irg, block, vfld, mode_M, pn_ia32_vfld_M);
 				mem   = get_irn_Proj_for_mode(n, mode_M);
@@ -1745,12 +1743,11 @@ static void keep_float_node_alive(ir_node *node)
  */
 static ir_node *create_Copy(x87_state *state, ir_node *n)
 {
-	ir_graph *irg = get_irn_irg(n);
 	dbg_info *n_dbg = get_irn_dbg_info(n);
 	ir_mode *mode = get_irn_mode(n);
 	ir_node *block = get_nodes_block(n);
 	ir_node *pred = get_irn_n(n, 0);
-	ir_node *(*cnstr)(dbg_info *, ir_graph *, ir_node *, ir_mode *) = NULL;
+	ir_node *(*cnstr)(dbg_info *, ir_node *, ir_mode *) = NULL;
 	ir_node *res;
 	const arch_register_t *out;
 	const arch_register_t *op1;
@@ -1760,25 +1757,25 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 	switch (get_ia32_irn_opcode(pred)) {
 	case iro_ia32_Unknown_VFP:
 	case iro_ia32_fldz:
-		cnstr = new_rd_ia32_fldz;
+		cnstr = new_bd_ia32_fldz;
 		break;
 	case iro_ia32_fld1:
-		cnstr = new_rd_ia32_fld1;
+		cnstr = new_bd_ia32_fld1;
 		break;
 	case iro_ia32_fldpi:
-		cnstr = new_rd_ia32_fldpi;
+		cnstr = new_bd_ia32_fldpi;
 		break;
 	case iro_ia32_fldl2e:
-		cnstr = new_rd_ia32_fldl2e;
+		cnstr = new_bd_ia32_fldl2e;
 		break;
 	case iro_ia32_fldl2t:
-		cnstr = new_rd_ia32_fldl2t;
+		cnstr = new_bd_ia32_fldl2t;
 		break;
 	case iro_ia32_fldlg2:
-		cnstr = new_rd_ia32_fldlg2;
+		cnstr = new_bd_ia32_fldlg2;
 		break;
 	case iro_ia32_fldln2:
-		cnstr = new_rd_ia32_fldln2;
+		cnstr = new_bd_ia32_fldln2;
 		break;
 	default:
 		break;
@@ -1789,7 +1786,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 
 	if (cnstr != NULL) {
 		/* copy a constant */
-		res = (*cnstr)(n_dbg, irg, block, mode);
+		res = (*cnstr)(n_dbg, block, mode);
 
 		x87_push(state, arch_register_get_index(out), res);
 
@@ -1798,7 +1795,7 @@ static ir_node *create_Copy(x87_state *state, ir_node *n)
 	} else {
 		int op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
-		res = new_rd_ia32_fpushCopy(n_dbg, irg, block, pred, mode);
+		res = new_bd_ia32_fpushCopy(n_dbg, block, pred, mode);
 
 		x87_push(state, arch_register_get_index(out), res);
 
@@ -2132,7 +2129,7 @@ static int sim_Barrier(x87_state *state, ir_node *node)
 
 		/* create a zero */
 		block = get_nodes_block(node);
-		zero  = new_rd_ia32_fldz(NULL, current_ir_graph, block, mode_E);
+		zero  = new_bd_ia32_fldz(NULL, block, mode_E);
 		x87_push(state, arch_register_get_index(reg), zero);
 
 		attr = get_ia32_x87_attr(zero);
@@ -2187,10 +2184,10 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 			if (ia32_cg_config.use_femms || ia32_cg_config.use_emms) {
 				if (ia32_cg_config.use_femms) {
 					/* use FEMMS on AMD processors to clear all */
-					keep = new_rd_ia32_femms(NULL, get_irn_irg(block), block);
+					keep = new_bd_ia32_femms(NULL, block);
 				} else {
 					/* use EMMS to clear all */
-					keep = new_rd_ia32_emms(NULL, get_irn_irg(block), block);
+					keep = new_bd_ia32_emms(NULL, block);
 				}
 				sched_add_before(first_insn, keep);
 				keep_alive(keep);
@@ -2258,7 +2255,7 @@ static void fix_unknown_phis(x87_state *state, ir_node *block,
 		reg = arch_get_irn_register(node);
 
 		/* create a zero at end of pred block */
-		zero = new_rd_ia32_fldz(NULL, current_ir_graph, pred_block, mode_E);
+		zero = new_bd_ia32_fldz(NULL, pred_block, mode_E);
 		x87_push(state, arch_register_get_index(reg), zero);
 
 		attr = get_ia32_x87_attr(zero);

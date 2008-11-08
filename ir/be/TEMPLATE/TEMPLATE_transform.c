@@ -68,7 +68,7 @@ extern ir_op *get_op_Mulh(void);
  * @return the created TEMPLATE Add node
  */
 static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_Add(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_Add(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -85,10 +85,10 @@ static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  */
 static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	if (mode_is_float(env->mode)) {
-		return new_rd_TEMPLATE_fMul(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		return new_bd_TEMPLATE_fMul(env->dbg, env->block, op1, op2, env->mode);
 	}
 	else {
-		return new_rd_TEMPLATE_Mul(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		return new_bd_TEMPLATE_Mul(env->dbg, env->block, op1, op2, env->mode);
 	}
 }
 
@@ -105,7 +105,7 @@ static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @return the created TEMPLATE And node
  */
 static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_And(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_And(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -121,7 +121,7 @@ static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @return the created TEMPLATE Or node
  */
 static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_Or(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_Or(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -137,7 +137,7 @@ static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2
  * @return the created TEMPLATE Eor node
  */
 static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_Eor(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_Eor(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -154,10 +154,10 @@ static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  */
 static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
 	if (mode_is_float(env->mode)) {
-		return new_rd_TEMPLATE_fSub(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		return new_bd_TEMPLATE_fSub(env->dbg, env->block, op1, op2, env->mode);
 	}
 	else {
-		return new_rd_TEMPLATE_Sub(env->dbg, env->irg, env->block, op1, op2, env->mode);
+		return new_bd_TEMPLATE_Sub(env->dbg, env->block, op1, op2, env->mode);
 	}
 }
 
@@ -174,7 +174,7 @@ static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @return the created TEMPLATE fDiv node
  */
 static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_fDiv(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_fDiv(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -190,7 +190,7 @@ static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *o
  * @return the created TEMPLATE Shl node
  */
 static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_Shl(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_Shl(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -206,7 +206,7 @@ static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @return the created TEMPLATE Shr node
  */
 static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
-	return new_rd_TEMPLATE_Shr(env->dbg, env->irg, env->block, op1, op2, env->mode);
+	return new_bd_TEMPLATE_Shr(env->dbg, env->block, op1, op2, env->mode);
 }
 
 
@@ -223,9 +223,9 @@ static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  */
 static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op) {
 	if (mode_is_float(env->mode)) {
-		return new_rd_TEMPLATE_fMinus(env->dbg, env->irg, env->block, op, env->mode);
+		return new_bd_TEMPLATE_fMinus(env->dbg, env->block, op, env->mode);
 	}
-	return new_rd_TEMPLATE_Minus(env->dbg, env->irg, env->block, op, env->mode);
+	return new_bd_TEMPLATE_Minus(env->dbg, env->block, op, env->mode);
 }
 
 
@@ -241,7 +241,7 @@ static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op) {
  * @return the created TEMPLATE Not node
  */
 static ir_node *gen_Not(TEMPLATE_transform_env_t *env, ir_node *op) {
-	return new_rd_TEMPLATE_Not(env->dbg, env->irg, env->block, op, env->mode);
+	return new_bd_TEMPLATE_Not(env->dbg, env->block, op, env->mode);
 }
 
 
@@ -259,9 +259,9 @@ static ir_node *gen_Load(TEMPLATE_transform_env_t *env) {
 	ir_node *node = env->irn;
 
 	if (mode_is_float(env->mode)) {
-		return new_rd_TEMPLATE_fLoad(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+		return new_bd_TEMPLATE_fLoad(env->dbg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
 	}
-	return new_rd_TEMPLATE_Load(env->dbg, env->irg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
+	return new_bd_TEMPLATE_Load(env->dbg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
 }
 
 
@@ -279,9 +279,9 @@ static ir_node *gen_Store(TEMPLATE_transform_env_t *env) {
 	ir_node *node = env->irn;
 
 	if (mode_is_float(env->mode)) {
-		return new_rd_TEMPLATE_fStore(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+		return new_bd_TEMPLATE_fStore(env->dbg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
 	}
-	return new_rd_TEMPLATE_Store(env->dbg, env->irg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
+	return new_bd_TEMPLATE_Store(env->dbg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
 }
 
 

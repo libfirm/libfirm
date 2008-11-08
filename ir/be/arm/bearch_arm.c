@@ -300,7 +300,7 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
 		ir_graph *irg = current_ir_graph;
 		ir_node *conv;
 
-		conv = new_rd_arm_fpaDbl2GP(NULL, irg, bl, arg, mem);
+		conv = new_bd_arm_fpaDbl2GP(NULL, bl, arg, mem);
 		/* move high/low */
 		*resL = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_low);
 		*resH = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_high);
@@ -832,7 +832,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	ip = be_new_Copy(gp, irg, block, sp);
 	be_set_constr_single_reg_out(ip, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
 
-	store = new_rd_arm_StoreStackM4Inc(NULL, irg, block, sp, fp, ip, lr, pc, *mem);
+	store = new_bd_arm_StoreStackM4Inc(NULL, block, sp, fp, ip, lr, pc, *mem);
 
 	sp = new_r_Proj(irg, block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
 	arch_set_irn_register(sp, env->arch_env->sp);
@@ -842,7 +842,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	be_node_set_reg_class_in(keep, 1, gp);
 	be_set_constr_single_reg_out(keep, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
 
-	fp = new_rd_arm_Sub_i(NULL, irg, block, keep, get_irn_mode(fp), 4);
+	fp = new_bd_arm_Sub_i(NULL, block, keep, get_irn_mode(fp), 4);
 	arch_set_irn_register(fp, env->arch_env->bp);
 	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ have custom register requirements
 	be_set_constr_single_reg_out(fp, 0, env->arch_env->bp, 0);
@@ -878,11 +878,11 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 	} else {
 		ir_node *sub12_node;
 		ir_node *load_node;
-		sub12_node = new_rd_arm_Sub_i(NULL, env->irg, bl, curr_bp, mode_Iu, 12);
+		sub12_node = new_bd_arm_Sub_i(NULL, bl, curr_bp, mode_Iu, 12);
 		// FIXME
 		//set_arm_req_out_all(sub12_node, sub12_req);
 		arch_set_irn_register(sub12_node, env->arch_env->sp);
-		load_node = new_rd_arm_LoadStackM3( NULL, env->irg, bl, sub12_node, *mem );
+		load_node = new_bd_arm_LoadStackM3(NULL, bl, sub12_node, *mem);
 		// FIXME
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
 		//set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);

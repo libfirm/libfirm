@@ -68,8 +68,8 @@
  *
  ****************************************************************************************************/
 
-typedef ir_node *construct_binop_func(dbg_info *db, ir_graph *irg,
-	ir_node *block, ir_node *left, ir_node *right);
+typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
+		ir_node *left, ir_node *right);
 
 static inline int mode_needs_gp_reg(ir_mode *mode) {
 	return mode_is_int(mode) || mode_is_reference(mode);
@@ -83,8 +83,7 @@ ir_node *mips_create_Immediate(long val)
 	ir_node  *res;
 
 	assert(val >=  -32768 && val <= 32767);
-	res      = new_rd_mips_Immediate(NULL, irg, block, MIPS_IMM_CONST, NULL,
-	                                 val);
+	res      = new_bd_mips_Immediate(NULL, block, MIPS_IMM_CONST, NULL, val);
 	slots    = get_mips_slots(res);
 	slots[0] = &mips_gp_regs[REG_GP_NOREG];
 
@@ -95,7 +94,7 @@ ir_node* mips_create_zero(void)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = get_irg_start_block(irg);
-	ir_node  *zero  = new_rd_mips_zero(NULL, irg, block);
+	ir_node  *zero  = new_bd_mips_zero(NULL, block);
 	const arch_register_t **slots = get_mips_slots(zero);
 
 	slots[0] = &mips_gp_regs[REG_ZERO];
@@ -155,7 +154,6 @@ static void create_binop_operands(ir_node **new_left, ir_node **new_right,
 static ir_node *gen_binop(ir_node *node, ir_node *left, ir_node *right,
                           construct_binop_func func, int supports_immediate)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_node  *res;
@@ -172,7 +170,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *left, ir_node *right,
 		new_right = be_transform_node(right);
 	}
 
-	res = func(dbgi, irg, block, new_left, new_right);
+	res = func(dbgi, block, new_left, new_right);
 
 	return res;
 }
@@ -181,54 +179,53 @@ static ir_node *gen_Add(ir_node *node)
 {
 	/* TODO: match add(symconst, const) */
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_addu, 1);
+	                 new_bd_mips_addu, 1);
 }
 
 static ir_node *gen_Sub(ir_node *node)
 {
 	return gen_binop(node, get_Sub_left(node), get_Sub_right(node),
-	                 new_rd_mips_addu, 0);
+	                 new_bd_mips_addu, 0);
 }
 
 static ir_node *gen_And(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_and, 1);
+	                 new_bd_mips_and, 1);
 }
 
 static ir_node *gen_Or(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_or, 1);
+	                 new_bd_mips_or, 1);
 }
 
 static ir_node *gen_Eor(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_xor, 1);
+	                 new_bd_mips_xor, 1);
 }
 
 static ir_node *gen_Shl(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_sll, 1);
+	                 new_bd_mips_sll, 1);
 }
 
 static ir_node *gen_Shr(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_srl, 1);
+	                 new_bd_mips_srl, 1);
 }
 
 static ir_node *gen_Shrs(ir_node *node)
 {
 	return gen_binop(node, get_Add_left(node), get_Add_right(node),
-	                 new_rd_mips_sra, 1);
+	                 new_bd_mips_sra, 1);
 }
 
 static ir_node *gen_Not(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_node  *op    = get_Not_op(node);
@@ -239,20 +236,19 @@ static ir_node *gen_Not(ir_node *node)
 	/* we can transform not->or to nor */
 	if(is_Or(op)) {
 		return gen_binop(op, get_Or_left(op), get_Or_right(op),
-		                 new_rd_mips_nor, 1);
+		                 new_bd_mips_nor, 1);
 	}
 
 	/* construct (op < 1) */
 	one    = mips_create_Immediate(1);
 	new_op = be_transform_node(op);
-	res    = new_rd_mips_sltu(dbgi, irg, block, new_op, one);
+	res    = new_bd_mips_sltu(dbgi, block, new_op, one);
 
 	return res;
 }
 
 static ir_node *gen_Minus(ir_node *node)
 {
-	ir_graph *irg    = current_ir_graph;
 	dbg_info *dbgi   = get_irn_dbg_info(node);
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *op     = get_Minus_op(node);
@@ -262,14 +258,13 @@ static ir_node *gen_Minus(ir_node *node)
 
 	/* construct (0 - op) */
 	zero = mips_create_zero();
-	res  = new_rd_mips_subu(dbgi, irg, block, zero, new_op);
+	res  = new_bd_mips_subu(dbgi, block, zero, new_op);
 
 	return res;
 }
 
 static ir_node *gen_Abs(ir_node *node)
 {
-	ir_graph *irg    = current_ir_graph;
 	dbg_info *dbgi   = get_irn_dbg_info(node);
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *op     = get_Abs_op(node);
@@ -279,16 +274,15 @@ static ir_node *gen_Abs(ir_node *node)
 	/* TODO: support other bit sizes... */
 	assert(get_mode_size_bits(get_irn_mode(node)) == 32);
 	sra_const = mips_create_Immediate(31);
-	sra       = new_rd_mips_sra(dbgi, irg, block, new_op, sra_const);
-	add       = new_rd_mips_addu(dbgi, irg, block, new_op, sra);
-	xor       = new_rd_mips_xor(dbgi, irg, block, sra, add);
+	sra       = new_bd_mips_sra( dbgi, block, new_op, sra_const);
+	add       = new_bd_mips_addu(dbgi, block, new_op, sra);
+	xor       = new_bd_mips_xor( dbgi, block, sra, add);
 
 	return xor;
 }
 
 static ir_node* gen_Const(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	tarval   *tv    = get_Const_tarval(node);
@@ -310,22 +304,20 @@ static ir_node* gen_Const(ir_node *node)
 	if(upper == 0) {
 		upper_node = mips_create_zero();
 	} else {
-		upper_node = new_rd_mips_lui(dbgi, irg, block, MIPS_IMM_CONST, NULL,
-		                             upper);
+		upper_node = new_bd_mips_lui(dbgi, block, MIPS_IMM_CONST, NULL, upper);
 	}
 
 	if(lower == 0)
 		return upper_node;
 
 	or_const   = mips_create_Immediate(lower);
-	lower_node = new_rd_mips_or(dbgi, irg, block, upper_node, or_const);
+	lower_node = new_bd_mips_or(dbgi, block, upper_node, or_const);
 
 	return lower_node;
 }
 
 static ir_node* gen_SymConst(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_entity *entity;
@@ -338,11 +330,9 @@ static ir_node* gen_SymConst(ir_node *node)
 
 	entity = get_SymConst_entity(node);
 
-	lui            = new_rd_mips_lui(dbgi, irg, block, MIPS_IMM_SYMCONST_HI,
-	                                 entity, 0);
-	or_const       = new_rd_mips_Immediate(dbgi, irg, block,
-	                                       MIPS_IMM_SYMCONST_LO, entity, 0);
-	or             = new_rd_mips_or(dbgi, irg, block, lui, or_const);
+	lui      = new_bd_mips_lui(dbgi, block, MIPS_IMM_SYMCONST_HI, entity, 0);
+	or_const = new_bd_mips_Immediate(dbgi, block, MIPS_IMM_SYMCONST_LO, entity, 0);
+	or       = new_bd_mips_or(dbgi, block, lui, or_const);
 
 	slots    = get_mips_slots(or_const);
 	slots[0] = &mips_gp_regs[REG_GP_NOREG];
@@ -350,16 +340,14 @@ static ir_node* gen_SymConst(ir_node *node)
 	return or;
 }
 
-typedef ir_node* (*gen_load_func) (dbg_info *dbg, ir_graph *irg,
-                                   ir_node *block, ir_node *ptr, ir_node *mem,
-                                   ir_entity *entity, long offset);
+typedef ir_node* (*gen_load_func)(dbg_info *dbg, ir_node *block, ir_node *ptr,
+		ir_node *mem, ir_entity *entity, long offset);
 
 /**
  * Generates a mips node for a firm Load node
  */
 static ir_node *gen_Load(ir_node *node)
 {
-	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *mem     = get_Load_mem(node);
@@ -378,34 +366,32 @@ static ir_node *gen_Load(ir_node *node)
 
 	switch(get_mode_size_bits(mode)) {
 	case 32:
-		func = new_rd_mips_lw;
+		func = new_bd_mips_lw;
 		break;
 	case 16:
-		func = sign ? new_rd_mips_lh : new_rd_mips_lhu;
+		func = sign ? new_bd_mips_lh : new_bd_mips_lhu;
 		break;
 	case 8:
-		func = sign ? new_rd_mips_lb : new_rd_mips_lbu;
+		func = sign ? new_bd_mips_lb : new_bd_mips_lbu;
 		break;
 	default:
 		panic("mips backend only support 32, 16, 8 bit loads");
 	}
 
-	res = func(dbgi, irg, block, new_ptr, new_mem, NULL, 0);
+	res = func(dbgi, block, new_ptr, new_mem, NULL, 0);
 	set_irn_pinned(res, get_irn_pinned(node));
 
 	return res;
 }
 
-typedef ir_node* (*gen_store_func) (dbg_info *dbg, ir_graph *irg,
-                                    ir_node *block, ir_node *ptr, ir_node *val,
-                                    ir_node *mem, ir_entity *ent, long offset);
+typedef ir_node* (*gen_store_func)(dbg_info *dbg, ir_node *block, ir_node *ptr,
+		ir_node *val, ir_node *mem, ir_entity *ent, long offset);
 
 /**
  * Generates a mips node for a firm Store node
  */
 static ir_node *gen_Store(ir_node *node)
 {
-	ir_graph    *irg     = current_ir_graph;
 	dbg_info    *dbgi    = get_irn_dbg_info(node);
 	ir_node     *block   = be_transform_node(get_nodes_block(node));
 	ir_node     *mem     = get_Store_mem(node);
@@ -422,19 +408,19 @@ static ir_node *gen_Store(ir_node *node)
 
 	switch(get_mode_size_bits(mode)) {
 	case 32:
-		func = new_rd_mips_sw;
+		func = new_bd_mips_sw;
 		break;
 	case 16:
-		func = new_rd_mips_sh;
+		func = new_bd_mips_sh;
 		break;
 	case 8:
-		func = new_rd_mips_sb;
+		func = new_bd_mips_sb;
 		break;
 	default:
 		panic("store only supported for 32, 16, 8 bit values in mips backend");
 	}
 
-	res = func(dbgi, irg, block, new_ptr, new_val, new_mem, NULL, 0);
+	res = func(dbgi, block, new_ptr, new_val, new_mem, NULL, 0);
 	set_irn_pinned(res, get_irn_pinned(node));
 
 	return res;
@@ -461,7 +447,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 		case pn_Div_res:
 			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
 			                   pn_mips_div_lohi);
-			return new_rd_mips_mflo(dbgi, irg, block, proj);
+			return new_bd_mips_mflo(dbgi, block, proj);
 		default:
 			break;
 		}
@@ -473,7 +459,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 		case pn_Mod_res:
 			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
 			                   pn_mips_div_lohi);
-			return new_rd_mips_mfhi(dbgi, irg, block, proj);
+			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
 		}
@@ -486,11 +472,11 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 		case pn_DivMod_res_div:
 			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
 			                   pn_mips_div_lohi);
-			return new_rd_mips_mflo(dbgi, irg, block, proj);
+			return new_bd_mips_mflo(dbgi, block, proj);
 		case pn_DivMod_res_mod:
 			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
 			                   pn_mips_div_lohi);
-			return new_rd_mips_mfhi(dbgi, irg, block, proj);
+			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
 		}
@@ -632,7 +618,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 	if(minval != 0) {
 		minval_const = new_rd_Const(dbg, irg, block, selector_mode, new_tarval_from_long(minval, selector_mode));
 		minval_const = gen_node_for_Const(env, dbg, irg, block, minval_const);
-		sub = new_rd_mips_sub(dbg, irg, block, selector, minval_const);
+		sub = new_bd_mips_sub(dbg, block, selector, minval_const);
 	} else {
 		sub = selector;
 	}
@@ -645,10 +631,10 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 
 	max_const = new_rd_Const(dbg, irg, block, unsigned_mode, new_tarval_from_long(maxval - minval + 1, unsigned_mode));
 	max_const = gen_node_for_Const(env, dbg, irg, block, max_const);
-	sltu = new_rd_mips_slt(dbg, irg, block, sub, max_const);
+	sltu = new_bd_mips_slt(dbg, block, sub, max_const);
 
 	zero = gen_zero_node(env, dbg, irg, block);
-	beq = new_rd_mips_beq(dbg, irg, block, sltu, zero, mode_T);
+	beq = new_bd_mips_beq(dbg, block, sltu, zero, mode_T);
 
 	// attach defaultproj to beq now
 	set_irn_n(defaultproj, 0, beq);
@@ -656,18 +642,18 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 
 	two_const = new_rd_Const(dbg, irg, block, unsigned_mode, new_tarval_from_long(2, unsigned_mode));
 	two_const = gen_node_for_Const(env, dbg, irg, block, two_const);
-	sl = new_rd_mips_sl(dbg, irg, block, sub, two_const);
+	sl = new_bd_mips_sl(dbg, block, sub, two_const);
 
-	la = new_rd_mips_la(dbg, irg, block);
-	add = new_rd_mips_addu(dbg, irg, block, sl, la);
-	load = new_rd_mips_load_r(dbg, irg, block, new_NoMem(), add, mode_T);
+	la   = new_bd_mips_la(    dbg, block);
+	add  = new_bd_mips_addu(  dbg, block, sl, la);
+	load = new_bd_mips_load_r(dbg, block, new_NoMem(), add, mode_T);
 	attr = get_mips_attr(load);
 	attr->modes.load_store_mode = mode_Iu;
 	attr->tv = new_tarval_from_long(0, mode_Iu);
 
 	proj = new_rd_Proj(dbg, irg, block, load, mode_Iu, pn_Load_res);
 
-	switchjmp = new_rd_mips_SwitchJump(dbg, irg, block, proj, mode_T);
+	switchjmp = new_bd_mips_SwitchJump(dbg, block, proj, mode_T);
 	attr = get_mips_attr(switchjmp);
 	attr->switch_default_pn = defaultprojn;
 
@@ -684,7 +670,6 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *sel_proj  = get_Cond_selector(node);
@@ -707,35 +692,35 @@ static ir_node *gen_Cond(ir_node *node)
 		panic("mips backend can't handle unoptimized constant Cond");
 
 	case pn_Cmp_Eq:
-		res = new_rd_mips_beq(dbgi, irg, block, new_left, new_right);
+		res = new_bd_mips_beq(dbgi, block, new_left, new_right);
 		break;
 
 	case pn_Cmp_Lt:
 		zero = mips_create_zero();
-		slt  = new_rd_mips_slt(dbgi, irg, block, new_left, new_right);
-		res  = new_rd_mips_bne(dbgi, irg, block, slt, zero);
+		slt  = new_bd_mips_slt(dbgi, block, new_left, new_right);
+		res  = new_bd_mips_bne(dbgi, block, slt, zero);
 		break;
 
 	case pn_Cmp_Le:
 		zero = mips_create_zero();
-		slt  = new_rd_mips_slt(dbgi, irg, block, new_right, new_left);
-		res  = new_rd_mips_beq(dbgi, irg, block, slt, zero);
+		slt  = new_bd_mips_slt(dbgi, block, new_right, new_left);
+		res  = new_bd_mips_beq(dbgi, block, slt, zero);
 		break;
 
 	case pn_Cmp_Gt:
 		zero = mips_create_zero();
-		slt  = new_rd_mips_slt(dbgi, irg, block, new_right, new_left);
-		res  = new_rd_mips_bne(dbgi, irg, block, slt, zero);
+		slt  = new_bd_mips_slt(dbgi, block, new_right, new_left);
+		res  = new_bd_mips_bne(dbgi, block, slt, zero);
 		break;
 
 	case pn_Cmp_Ge:
 		zero = mips_create_zero();
-		slt  = new_rd_mips_slt(dbgi, irg, block, new_right, new_left);
-		res  = new_rd_mips_bne(dbgi, irg, block, slt, zero);
+		slt  = new_bd_mips_slt(dbgi, block, new_right, new_left);
+		res  = new_bd_mips_bne(dbgi, block, slt, zero);
 		break;
 
 	case pn_Cmp_Lg:
-		res = new_rd_mips_bne(dbgi, irg, block, new_left, new_right);
+		res = new_bd_mips_bne(dbgi, block, new_left, new_right);
 		break;
 
 	default:
@@ -747,7 +732,6 @@ static ir_node *gen_Cond(ir_node *node)
 
 static ir_node *gen_Conv(ir_node *node)
 {
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *op       = get_Conv_op(node);
@@ -769,9 +753,9 @@ static ir_node *gen_Conv(ir_node *node)
 
 	if(mode_is_signed(src_mode)) {
 		if(src_size == 8) {
-			res = new_rd_mips_seb(dbgi, irg, block, new_op);
+			res = new_bd_mips_seb(dbgi, block, new_op);
 		} else if(src_size == 16) {
-			res = new_rd_mips_seh(dbgi, irg, block, new_op);
+			res = new_bd_mips_seh(dbgi, block, new_op);
 		} else {
 			panic("invalid conv %+F", node);
 		}
@@ -785,7 +769,7 @@ static ir_node *gen_Conv(ir_node *node)
 		} else {
 			panic("invalid conv %+F", node);
 		}
-		res = new_rd_mips_and(dbgi, irg, block, new_op, and_const);
+		res = new_bd_mips_and(dbgi, block, new_op, and_const);
 	}
 
 	return res;
@@ -794,7 +778,6 @@ static ir_node *gen_Conv(ir_node *node)
 static ir_node *create_div(ir_node *node, ir_node *left, ir_node *right,
                            ir_mode *mode)
 {
-	ir_graph *irg       = current_ir_graph;
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *block     = be_transform_node(get_nodes_block(node));
 	ir_node  *new_left  = be_transform_node(left);
@@ -802,9 +785,9 @@ static ir_node *create_div(ir_node *node, ir_node *left, ir_node *right,
 	ir_node  *res;
 
 	if(mode_is_signed(mode)) {
-		res = new_rd_mips_div(dbgi, irg, block, new_left, new_right);
+		res = new_bd_mips_div(dbgi, block, new_left, new_right);
 	} else {
-		res = new_rd_mips_divu(dbgi, irg, block, new_left, new_right);
+		res = new_bd_mips_divu(dbgi, block, new_left, new_right);
 	}
 
 	set_irn_pinned(res, get_irn_pinned(node));
@@ -846,24 +829,23 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env) {
 	assert(get_mode_size_bits(get_irn_mode(op2)) == get_mode_size_bits(env->mode));
 
 	if(mode_is_signed(mode)) {
-		mul = new_rd_mips_mult(env->dbg, env->irg, env->block, get_Mul_left(node), get_Mul_right(node));
+		mul = new_bd_mips_mult(env->dbg, env->block, get_Mul_left(node), get_Mul_right(node));
 	} else {
-		mul = new_rd_mips_multu(env->dbg, env->irg, env->block, get_Mul_left(node), get_Mul_right(node));
+		mul = new_bd_mips_multu(env->dbg, env->block, get_Mul_left(node), get_Mul_right(node));
 	}
-	mflo = new_rd_mips_mflo(env->dbg, env->irg, env->block, mul);
+	mflo = new_bd_mips_mflo(env->dbg, env->block, mul);
 
 	return mflo;
 }
 
 static
 ir_node *gen_node_for_IJmp(mips_transform_env_t *env) {
-	ir_graph *irg    = env->irg;
 	ir_node  *node   = env->irn;
 	dbg_info *dbg    = get_irn_dbg_info(node);
 	ir_node  *block  = get_nodes_block(node);
 	ir_node  *target = get_IJmp_target(node);
 
-	return new_rd_mips_jr(dbg, irg, block, target);
+	return new_bd_mips_jr(dbg, block, target);
 }
 
 static
@@ -871,10 +853,10 @@ ir_node *gen_node_for_Rot(mips_transform_env_t *env) {
 	ir_node *node = env->irn;
 	ir_node *subu, *srlv, *sllv, *or;
 
-	subu = new_rd_mips_subuzero(env->dbg, env->irg, env->block, get_Rot_right(node));
-	srlv = new_rd_mips_srlv(env->dbg, env->irg, env->block, get_Rot_left(node), subu);
-	sllv = new_rd_mips_sllv(env->dbg, env->irg, env->block, get_Rot_left(node), get_Rot_right(node));
-	or = new_rd_mips_or(env->dbg, env->irg, env->block, sllv, srlv);
+	subu = new_bd_mips_subuzero(env->dbg, env->block, get_Rot_right(node));
+	srlv = new_bd_mips_srlv(env->dbg, env->block, get_Rot_left(node), subu);
+	sllv = new_bd_mips_sllv(env->dbg, env->block, get_Rot_left(node), get_Rot_right(node));
+	or   = new_bd_mips_or(env->dbg, env->block, sllv, srlv);
 
 	return or;
 }
@@ -962,7 +944,7 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node) {
 		for (i = 0; i < 4; ++i) {
 			ir_node *load;
 
-			load = new_rd_mips_load_r(dbg, irg, new_bl, mem_phi, src, mode_T);
+			load = new_bd_mips_load_r(dbg, new_bl, mem_phi, src, mode_T);
 			attr = get_mips_attr(load);
 			attr->modes.load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Iu);
@@ -974,7 +956,7 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node) {
 		for (i = 0; i < 4; ++i) {
 			ir_node *store;
 
-			store = new_rd_mips_store_r(dbg, irg, new_bl, mem_phi, dst, ld[i], mode_T);
+			store = new_bd_mips_store_r(dbg, new_bl, mem_phi, dst, ld[i], mode_T);
 			attr = get_mips_attr(store);
 			attr->modes.load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Iu);
@@ -1003,14 +985,14 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node) {
 			i -= 1;
 		}
 
-		load = new_rd_mips_load_r(dbg, irg, block, mem, src, mode_T);
+		load = new_bd_mips_load_r(dbg, block, mem, src, mode_T);
 		attr = get_mips_attr(load);
 		attr->modes.load_store_mode = mode;
 		attr->tv = new_tarval_from_long(offset, mode_Iu);
 
 		projv = new_rd_Proj(dbg, irg, block, load, mode, pn_Load_res);
 
-		store = new_rd_mips_store_r(dbg, irg, block, mem, dst, projv, mode_T);
+		store = new_bd_mips_store_r(dbg, block, mem, dst, projv, mode_T);
 		attr = get_mips_attr(store);
 		attr->modes.load_store_mode = mode;
 		attr->tv = new_tarval_from_long(offset, mode_Iu);
@@ -1055,8 +1037,7 @@ static void mips_transform_Spill(mips_transform_env_t* env) {
 		sched_point = sched_prev(node);
 	}
 
-	store = new_rd_mips_sw(env->dbg, env->irg, env->block, ptr, val, nomem,
-	                       ent, 0);
+	store = new_bd_mips_sw(env->dbg, env->block, ptr, val, nomem, ent, 0);
 
 	if (sched_point) {
 		sched_add_after(sched_point, store);
@@ -1079,7 +1060,7 @@ static void mips_transform_Reload(mips_transform_env_t* env) {
 		sched_point = sched_prev(node);
 	}
 
-	load = new_rd_mips_lw(env->dbg, env->irg, env->block, ptr, mem, ent, 0);
+	load = new_bd_mips_lw(env->dbg, env->block, ptr, mem, ent, 0);
 
 	proj = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Iu, pn_mips_lw_res);
 
@@ -1107,7 +1088,7 @@ static ir_node *gen_AddSP(ir_node *node)
 	op1 = get_irn_n(node, 0);
 	op2 = get_irn_n(node, 1);
 
-	add = new_rd_mips_addu(env->dbg, env->irg, env->block, op1, op2);
+	add = new_bd_mips_addu(env->dbg, env->block, op1, op2);
 
 	/* copy the register requirements from the old node to the new node */
 	reg = arch_get_irn_register(node);

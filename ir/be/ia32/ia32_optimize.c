@@ -181,7 +181,6 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	ir_node                     *right;
 	ia32_immediate_attr_t const *imm;
 	dbg_info                    *dbgi;
-	ir_graph                    *irg;
 	ir_node                     *block;
 	ir_node                     *noreg;
 	ir_node                     *nomem;
@@ -206,20 +205,19 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		return;
 
 	dbgi         = get_irn_dbg_info(node);
-	irg          = current_ir_graph;
 	block        = get_nodes_block(node);
 	noreg        = ia32_new_NoReg_gp(cg);
-	nomem        = get_irg_no_mem(irg);
+	nomem        = get_irg_no_mem(current_ir_graph);
 	op           = get_irn_n(node, n_ia32_Cmp_left);
 	attr         = get_irn_generic_attr(node);
 	ins_permuted = attr->data.ins_permuted;
 	cmp_unsigned = attr->data.cmp_unsigned;
 
 	if (is_ia32_Cmp(node)) {
-		test = new_rd_ia32_Test(dbgi, irg, block, noreg, noreg, nomem,
+		test = new_bd_ia32_Test(dbgi, block, noreg, noreg, nomem,
 		                        op, op, ins_permuted, cmp_unsigned);
 	} else {
-		test = new_rd_ia32_Test8Bit(dbgi, irg, block, noreg, noreg, nomem,
+		test = new_bd_ia32_Test8Bit(dbgi, block, noreg, noreg, nomem,
 		                            op, op, ins_permuted, cmp_unsigned);
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
@@ -518,7 +516,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		mem = get_irn_n(store, n_ia32_mem);
 		spreg = arch_get_irn_register(curr_sp);
 
-		push = new_rd_ia32_Push(get_irn_dbg_info(store), irg, block, noreg, noreg, mem, val, curr_sp);
+		push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg, mem, val, curr_sp);
 		copy_mark(store, push);
 
 		if (first_push == NULL)
@@ -632,7 +630,7 @@ static void peephole_store_incsp(ir_node *store)
 	noreg = ia32_new_NoReg_gp(cg);
 	val   = get_irn_n(store, n_ia32_Store_val);
 
-	push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, mem,
+	push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, mem,
 
 	create_push(dbgi, current_ir_graph, block, am_base, store);
 }
@@ -786,7 +784,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		mem = get_irn_n(load, n_ia32_mem);
 		reg = arch_irn_get_register(load, pn_ia32_Load_res);
 
-		pop = new_rd_ia32_Pop(get_irn_dbg_info(load), irg, block, mem, pred_sp);
+		pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
 		arch_irn_set_register(pop, pn_ia32_Load_res, reg);
 
 		copy_mark(load, pop);
@@ -855,7 +853,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	ir_node *val;
 	ir_node *in[1];
 
-	pop   = new_rd_ia32_Pop(dbgi, irg, block, new_NoMem(), stack);
+	pop   = new_bd_ia32_Pop(dbgi, block, new_NoMem(), stack);
 
 	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
@@ -891,7 +889,7 @@ static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 	ir_node *val   = ia32_new_Unknown_gp(cg);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *nomem = get_irg_no_mem(irg);
-	ir_node *push  = new_rd_ia32_Push(dbgi, irg, block, noreg, noreg, nomem, val, stack);
+	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
 	sched_add_before(schedpoint, push);
 
 	stack = new_r_Proj(irg, block, push, mode_Iu, pn_ia32_Push_stack);
@@ -969,7 +967,6 @@ static void peephole_ia32_Const(ir_node *node)
 {
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
 	const arch_register_t       *reg;
-	ir_graph                    *irg = current_ir_graph;
 	ir_node                     *block;
 	dbg_info                    *dbgi;
 	ir_node                     *produceval;
@@ -991,12 +988,12 @@ static void peephole_ia32_Const(ir_node *node)
 	/* create xor(produceval, produceval) */
 	block      = get_nodes_block(node);
 	dbgi       = get_irn_dbg_info(node);
-	produceval = new_rd_ia32_ProduceVal(dbgi, irg, block);
+	produceval = new_bd_ia32_ProduceVal(dbgi, block);
 	arch_set_irn_register(produceval, reg);
 
 	noreg = ia32_new_NoReg_gp(cg);
-	xor   = new_rd_ia32_Xor(dbgi, irg, block, noreg, noreg, new_NoMem(),
-	                        produceval, produceval);
+	xor   = new_bd_ia32_Xor(dbgi, block, noreg, noreg, new_NoMem(), produceval,
+			produceval);
 	arch_set_irn_register(xor, reg);
 
 	sched_add_before(node, produceval);
@@ -1015,8 +1012,8 @@ static ir_node *create_immediate_from_int(int val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_rd_ia32_Immediate(NULL, irg, start_block, NULL,
-	                                              0, val);
+	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, NULL, 0,
+			val);
 	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
@@ -1024,14 +1021,13 @@ static ir_node *create_immediate_from_int(int val)
 
 static ir_node *create_immediate_from_am(const ir_node *node)
 {
-	ir_graph  *irg     = get_irn_irg(node);
 	ir_node   *block   = get_nodes_block(node);
 	int        offset  = get_ia32_am_offs_int(node);
 	int        sc_sign = is_ia32_am_sc_sign(node);
 	ir_entity *entity  = get_ia32_am_sc(node);
 	ir_node   *res;
 
-	res = new_rd_ia32_Immediate(NULL, irg, block, entity, sc_sign, offset);
+	res = new_bd_ia32_Immediate(NULL, block, entity, sc_sign, offset);
 	arch_set_irn_register(res, &ia32_gp_regs[REG_GP_NOREG]);
 	return res;
 }
@@ -1057,7 +1053,6 @@ static int is_am_minus_one(const ir_node *node)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
-	ir_graph              *irg = current_ir_graph;
 	ir_node               *base;
 	ir_node               *index;
 	const arch_register_t *base_reg;
@@ -1166,14 +1161,14 @@ make_add_immediate:
 		if(is_am_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
-			res   = new_rd_ia32_Inc(dbgi, irg, block, op1);
+			res   = new_bd_ia32_Inc(dbgi, block, op1);
 			arch_set_irn_register(res, out_reg);
 			goto exchange;
 		}
 		if(is_am_minus_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
-			res   = new_rd_ia32_Dec(dbgi, irg, block, op1);
+			res   = new_bd_ia32_Dec(dbgi, block, op1);
 			arch_set_irn_register(res, out_reg);
 			goto exchange;
 		}
@@ -1185,7 +1180,7 @@ make_add:
 	block = get_nodes_block(node);
 	noreg = ia32_new_NoReg_gp(cg);
 	nomem = new_NoMem();
-	res   = new_rd_ia32_Add(dbgi, irg, block, noreg, noreg, nomem, op1, op2);
+	res   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	set_ia32_commutative(res);
 	goto exchange;
@@ -1195,7 +1190,7 @@ make_shl:
 	block = get_nodes_block(node);
 	noreg = ia32_new_NoReg_gp(cg);
 	nomem = new_NoMem();
-	res   = new_rd_ia32_Shl(dbgi, irg, block, op1, op2);
+	res   = new_bd_ia32_Shl(dbgi, block, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	goto exchange;
 

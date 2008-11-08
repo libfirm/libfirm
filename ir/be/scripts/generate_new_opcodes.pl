@@ -317,7 +317,7 @@ foreach my $op (keys(%nodes)) {
 		my $complete_args = "";
 		$temp             = "";
 
-		$temp = "ir_node *new_rd_$op(dbg_info *db, ir_graph *irg, ir_node *block";
+		$temp = "ir_node *new_bd_$op(dbg_info *db, ir_node *block";
 		if (!exists($n{"args"})) { # default args
 			if ($arity == $ARITY_VARIABLE) {
 				$complete_args = ", int arity, ir_node *in[]";
@@ -496,7 +496,7 @@ foreach my $op (keys(%nodes)) {
 
 			$temp .= "\t/* create node */\n";
 			$temp .= "\tassert(op != NULL);\n";
-			$temp .= "\tres = new_ir_node(db, irg, block, op, mode, arity, in);\n";
+			$temp .= "\tres = new_ir_node(db, current_ir_graph, block, op, mode, arity, in);\n";
 			$temp .= "\n";
 
 			$temp .= "\t/* init node attributes */\n";
@@ -518,7 +518,7 @@ foreach my $op (keys(%nodes)) {
 
 			$temp .= "\t/* optimize node */\n";
 			$temp .= "\tres = optimize_node(res);\n";
-			$temp .= "\tirn_vrfy_irg(res, irg);\n";
+			$temp .= "\tirn_vrfy_irg(res, current_ir_graph);\n";
 			$temp .= "\n";
 
 			$temp .= "\treturn res;\n";
