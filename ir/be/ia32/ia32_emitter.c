@@ -904,6 +904,12 @@ static int determine_final_pnc(const ir_node *node, int flags_pos,
 	return pnc;
 }
 
+static pn_Cmp ia32_get_negated_pnc(pn_Cmp pnc)
+{
+	ir_mode *mode = pnc & ia32_pn_Cmp_float ? mode_F : mode_Iu;
+	return get_negated_pnc(pnc, mode);
+}
+
 void ia32_emit_cmp_suffix_node(const ir_node *node,
                                int flags_pos)
 {
@@ -912,13 +918,8 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 	pn_Cmp pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
-	if (attr->data.ins_permuted) {
-		if (pnc & ia32_pn_Cmp_float) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
-	}
+	if (attr->data.ins_permuted)
+		pnc = ia32_get_negated_pnc(pnc);
 
 	ia32_emit_cmp_suffix(pnc);
 }
@@ -990,11 +991,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		if (pnc & ia32_pn_Cmp_float) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
+		pnc        = ia32_get_negated_pnc(pnc);
 	}
 
 	if (pnc & ia32_pn_Cmp_float) {
@@ -1081,13 +1078,8 @@ static void emit_ia32_CMov(const ir_node *node)
 		ia32_emitf(node, "\tmovl %R, %R\n", in_false, out);
 	}
 
-	if (ins_permuted) {
-		if (pnc & ia32_pn_Cmp_float) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
-	}
+	if (ins_permuted)
+		pnc = ia32_get_negated_pnc(pnc);
 
 	/* TODO: handling of Nans isn't correct yet */
 
