@@ -463,53 +463,41 @@ static void ia32_emit_cfop_target(const ir_node *node)
 }
 
 /*
- * coding of conditions
- */
-struct cmp2conditon_t {
-	const char *name;
-	int         num;
-};
-
-/*
  * positive conditions for signed compares
  */
-static const struct cmp2conditon_t cmp2condition_s[] = {
-	{ NULL,              pn_Cmp_False },  /* always false */
-	{ "e",               pn_Cmp_Eq },     /* == */
-	{ "l",               pn_Cmp_Lt },     /* < */
-	{ "le",              pn_Cmp_Le },     /* <= */
-	{ "g",               pn_Cmp_Gt },     /* > */
-	{ "ge",              pn_Cmp_Ge },     /* >= */
-	{ "ne",              pn_Cmp_Lg },     /* != */
-	{ NULL,              pn_Cmp_Leg},     /* always true */
+static const char *const cmp2condition_s[] = {
+	NULL, /* always false */
+	"e",  /* == */
+	"l",  /* <  */
+	"le", /* <= */
+	"g",  /* >  */
+	"ge", /* >= */
+	"ne", /* != */
+	NULL  /* always true */
 };
 
 /*
  * positive conditions for unsigned compares
  */
-static const struct cmp2conditon_t cmp2condition_u[] = {
-	{ NULL,              pn_Cmp_False },  /* always false */
-	{ "e",               pn_Cmp_Eq },     /* == */
-	{ "b",               pn_Cmp_Lt },     /* < */
-	{ "be",              pn_Cmp_Le },     /* <= */
-	{ "a",               pn_Cmp_Gt },     /* > */
-	{ "ae",              pn_Cmp_Ge },     /* >= */
-	{ "ne",              pn_Cmp_Lg },     /* != */
-	{ NULL,              pn_Cmp_Leg },   /* always true  */
+static const char *const cmp2condition_u[] = {
+	NULL, /* always false */
+	"e",  /* == */
+	"b",  /* <  */
+	"be", /* <= */
+	"a",  /* >  */
+	"ae", /* >= */
+	"ne", /* != */
+	NULL  /* always true */
 };
 
 static void ia32_emit_cmp_suffix(int pnc)
 {
 	const char *str;
 
-	if ((pnc & ia32_pn_Cmp_float) || (pnc & ia32_pn_Cmp_unsigned)) {
-		pnc = pnc & 7;
-		assert(cmp2condition_u[pnc].num == pnc);
-		str = cmp2condition_u[pnc].name;
+	if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
+		str = cmp2condition_u[pnc & 7];
 	} else {
-		pnc = pnc & 7;
-		assert(cmp2condition_s[pnc].num == pnc);
-		str = cmp2condition_s[pnc].name;
+		str = cmp2condition_s[pnc & 7];
 	}
 
 	be_emit_string(str);
