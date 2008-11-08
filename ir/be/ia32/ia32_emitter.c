@@ -1083,7 +1083,7 @@ static void emit_ia32_CMov(const ir_node *node)
 
 	/* TODO: handling of Nans isn't correct yet */
 
-	ia32_emitf(node, "\tcmov%P %AR, %#R\n", pnc, in_true, out);
+	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", pnc, in_true, out);
 }
 
 /*********************************************************
