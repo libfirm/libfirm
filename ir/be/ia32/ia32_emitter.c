@@ -1454,49 +1454,29 @@ static void emit_ia32_CopyB_i(const ir_node *node)
 /**
  * Emit code for conversions (I, FP), (FP, I) and (FP, FP).
  */
-static void emit_ia32_Conv_with_FP(const ir_node *node)
+static void emit_ia32_Conv_with_FP(const ir_node *node, const char* conv_f,
+		const char* conv_d)
 {
 	ir_mode            *ls_mode = get_ia32_ls_mode(node);
 	int                 ls_bits = get_mode_size_bits(ls_mode);
-	const char         *conv;
-
-	if (is_ia32_Conv_I2FP(node)) {
-		if (ls_bits == 32) {
-			conv = "si2ss";
-		} else {
-			conv = "si2sd";
-		}
-	} else if (is_ia32_Conv_FP2I(node)) {
-		if (ls_bits == 32) {
-			conv = "ss2si";
-		} else {
-			conv = "sd2si";
-		}
-	} else {
-		assert(is_ia32_Conv_FP2FP(node));
-		if (ls_bits == 32) {
-			conv = "sd2ss";
-		} else {
-			conv = "ss2sd";
-		}
-	}
+	const char         *conv    = ls_bits == 32 ? conv_f : conv_d;
 
 	ia32_emitf(node, "\tcvt%s %AS3, %D0\n", conv);
 }
 
 static void emit_ia32_Conv_I2FP(const ir_node *node)
 {
-	emit_ia32_Conv_with_FP(node);
+	emit_ia32_Conv_with_FP(node, "si2ss", "si2sd");
 }
 
 static void emit_ia32_Conv_FP2I(const ir_node *node)
 {
-	emit_ia32_Conv_with_FP(node);
+	emit_ia32_Conv_with_FP(node, "ss2si", "sd2si");
 }
 
 static void emit_ia32_Conv_FP2FP(const ir_node *node)
 {
-	emit_ia32_Conv_with_FP(node);
+	emit_ia32_Conv_with_FP(node, "sd2ss", "ss2sd");
 }
 
 /**
