@@ -1842,15 +1842,6 @@ ir_node *new_rd_Tuple  (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Id     (dbg_info *db, ir_graph *irg, ir_node *block,
 			ir_node *val, ir_mode *mode);
 
-/** Constructor for a Bad node.
- *
- * Returns the unique Bad node of the graph.  The same as
- * get_irg_bad().
- *
- * @param *irg    The IR graph the node belongs to.
- */
-ir_node *new_rd_Bad    (ir_graph *irg);
-
 /** Constructor for a Confirm node.
  *
  * Specifies constraints for a value.  To support dataflow analyses.
@@ -1931,15 +1922,6 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
  */
 ir_node *new_rd_Filter (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
 			ir_mode *mode, long proj);
-
-/** Constructor for a NoMem node.
- *
- * Returns the unique NoMem node of the graph.  The same as
- * get_irg_no_mem().
- *
- * @param *irg    The IR graph the node belongs to.
- */
-ir_node *new_rd_NoMem  (ir_graph *irg);
 
 /** Constructor for a Mux node.
  *
@@ -3472,13 +3454,6 @@ ir_node *new_d_Tuple  (dbg_info *db, int arity, ir_node *in[]);
  */
 ir_node *new_d_Id     (dbg_info *db, ir_node *val, ir_mode *mode);
 
-/** Constructor for a Bad node.
- *
- * Returns the unique Bad node of the graph.  The same as
- * get_irg_bad().
- */
-ir_node *new_d_Bad    (void);
-
 /** Constructor for a Confirm node.
  *
  * Constructor for a Confirm node. Adds the node to the block in current_ir_block.
@@ -3564,14 +3539,6 @@ ir_node *new_d_Break (dbg_info *db);
  * @param proj  The position in the tuple to project from.
  */
 ir_node *new_d_Filter (dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
-
-
-/** Constructor for a NoMem node.
- *
- * Returns the unique NoMem node of the graph.  The same as
- * get_irg_no_mem().
- */
-ir_node *new_d_NoMem  (void);
 
 /** Constructor for a Mux node.
  *

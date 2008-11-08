@@ -1255,11 +1255,6 @@ new_rd_Sync(dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node *in[
 }  /* new_rd_Sync */
 
 ir_node *
-new_rd_Bad(ir_graph *irg) {
-	return get_irg_bad(irg);
-}  /* new_rd_Bad */
-
-ir_node *
 new_rd_Confirm(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
@@ -1339,11 +1334,6 @@ new_rd_Filter(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode
 
 	return res;
 }  /* new_rd_Filter */
-
-ir_node *
-new_rd_NoMem(ir_graph *irg) {
-	return get_irg_no_mem(irg);
-}  /* new_rd_NoMem */
 
 ir_node *
 new_rd_Mux(dbg_info *db, ir_graph *irg, ir_node *block,
@@ -1620,7 +1610,7 @@ ir_node *new_r_Id(ir_graph *irg, ir_node *block,
 	return new_rd_Id(NULL, irg, block, val, mode);
 }
 ir_node *new_r_Bad(ir_graph *irg) {
-	return new_rd_Bad(irg);
+	return get_irg_bad(irg);
 }
 ir_node *new_r_Confirm(ir_graph *irg, ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_rd_Confirm(NULL, irg, block, val, bound, cmp);
@@ -1645,7 +1635,7 @@ ir_node *new_r_Filter(ir_graph *irg, ir_node *block, ir_node *arg,
 	return new_rd_Filter(NULL, irg, block, arg, mode, proj);
 }
 ir_node *new_r_NoMem(ir_graph *irg) {
-	return new_rd_NoMem(irg);
+	return get_irg_no_mem(irg);
 }
 ir_node *new_r_Mux(ir_graph *irg, ir_node *block,
                    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
@@ -2532,12 +2522,6 @@ new_d_Sync(dbg_info *db, int arity, ir_node *in[]) {
 	return new_rd_Sync(db, current_ir_graph, current_ir_graph->current_block, arity, in);
 }  /* new_d_Sync */
 
-
-ir_node *
-(new_d_Bad)(void) {
-	return _new_d_Bad();
-}  /* new_d_Bad */
-
 ir_node *
 new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_bd_Confirm(db, current_ir_graph->current_block,
@@ -2574,11 +2558,6 @@ new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode, long proj) {
 	return new_bd_Filter(db, current_ir_graph->current_block,
 	                     arg, mode, proj);
 }  /* new_d_Filter */
-
-ir_node *
-(new_d_NoMem)(void) {
-	return _new_d_NoMem();
-}  /* new_d_NoMem */
 
 ir_node *
 new_d_Mux(dbg_info *db, ir_node *sel, ir_node *ir_false,
@@ -3010,7 +2989,7 @@ ir_node *new_Id(ir_node *val, ir_mode *mode) {
 	return new_d_Id(NULL, val, mode);
 }
 ir_node *new_Bad(void) {
-	return new_d_Bad();
+	return get_irg_bad(current_ir_graph);
 }
 ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp) {
 	return new_d_Confirm(NULL, val, bound, cmp);
@@ -3034,7 +3013,7 @@ ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj) {
 	return new_d_Filter(NULL, arg, mode, proj);
 }
 ir_node *new_NoMem(void) {
-	return new_d_NoMem();
+	return get_irg_no_mem(current_ir_graph);
 }
 ir_node *new_Mux(ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
 	return new_d_Mux(NULL, sel, ir_false, ir_true, mode);

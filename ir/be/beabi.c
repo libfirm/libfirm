@@ -1898,7 +1898,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* the arg proj is not needed anymore now and should be only used by the anchor */
 	assert(get_irn_n_edges(arg_tuple) == 1);
 	kill_node(arg_tuple);
-	set_irg_args(irg, new_rd_Bad(irg));
+	set_irg_args(irg, new_r_Bad(irg));
 
 	/* All Return nodes hang on the End node, so look for them there. */
 	end = get_irg_end_block(irg);

@@ -80,20 +80,4 @@ void ssa_cons_start(ir_graph *irg, int n_loc);
  */
 void ssa_cons_finish(ir_graph *irg);
 
-/* inline functions */
-
-static inline ir_node *
-_new_d_Bad(void) {
-	return get_irg_bad(current_ir_graph);
-}
-
-static inline ir_node *
-_new_d_NoMem(void) {
-	return get_irg_no_mem(current_ir_graph);
-}
-
-
-#define new_d_Bad()               _new_d_Bad()
-#define new_d_NoMem()             _new_d_NoMem()
-
 #endif
