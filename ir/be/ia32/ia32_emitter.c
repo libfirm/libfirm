@@ -1262,7 +1262,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	/* parse modifiers */
 	switch(c) {
 	case 0:
-		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %\n", node);
+		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
 		be_emit_char('%');
 		return s + 1;
 	case '%':
@@ -1286,8 +1286,9 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	case '9':
 		break;
 	default:
-		ir_fprintf(stderr, "Warning: asm text (%+F) contains unknown modifier "
-		           "'%c' for asm op\n", node, c);
+		ir_fprintf(stderr,
+				"Warning: asm text (%+F) contains unknown modifier '%c' for asm op\n",
+				node, c);
 		++s;
 		break;
 	}
@@ -1302,9 +1303,10 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		s += p;
 	}
 
-	if (num < 0 || num >= ARR_LEN(asm_regs)) {
-		ir_fprintf(stderr, "Error: Custom assembler references invalid "
-		           "input/output (%+F)\n", node);
+	if (num < 0 || ARR_LEN(asm_regs) <= num) {
+		ir_fprintf(stderr,
+				"Error: Custom assembler references invalid input/output (%+F)\n",
+				node);
 		return s;
 	}
 	asm_reg = & asm_regs[num];
@@ -1324,8 +1326,9 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		reg = get_in_reg(node, asm_reg->inout_pos);
 	}
 	if (reg == NULL) {
-		ir_fprintf(stderr, "Warning: no register assigned for %d asm op "
-		           "(%+F)\n", num, node);
+		ir_fprintf(stderr,
+				"Warning: no register assigned for %d asm op (%+F)\n",
+				num, node);
 		return s;
 	}
 
