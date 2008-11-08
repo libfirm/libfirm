@@ -466,11 +466,11 @@ void ia32_setup_cg_config(void)
 	set_arch_costs();
 
 	c->optimize_size        = opt_size != 0;
-	/* on newer intel cpus mov, pop is often faster then leave although it has a
+	/* on newer intel cpus mov, pop is often faster than leave although it has a
 	 * longer opcode */
 	c->use_leave            = FLAGS(opt_arch, arch_i386 | arch_all_amd | arch_core2) || opt_size;
 	/* P4s don't like inc/decs because they only partially write the flags
-	   register which produces false dependencies */
+	 * register which produces false dependencies */
 	c->use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
 	c->use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
 	c->use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
