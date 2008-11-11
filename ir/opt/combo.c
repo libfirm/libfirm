@@ -3243,11 +3243,10 @@ static int all_users_are_dead(const ir_node *irn) {
 
 	for (i = 1; i <= n; ++i) {
 		const ir_node *succ  = irn->out[i].use;
-		const ir_node *block = get_nodes_block(succ);
-		const node_t  *bl    = get_irn_node(block);
+		const node_t  *block = get_irn_node(get_nodes_block(succ));
 		const node_t  *node;
 
-		if (bl->type.tv == tarval_unreachable) {
+		if (block->type.tv == tarval_unreachable) {
 			/* block is unreachable */
 			continue;
 		}
@@ -3262,16 +3261,13 @@ static int all_users_are_dead(const ir_node *irn) {
 }  /* all_user_are_dead */
 
 /**
- * Walker: Find reachable mode_M nose that have only
+ * Walker: Find reachable mode_M nodes that have only
  * unreachable users. These nodes must be kept later.
  */
 static void find_kept_memory(ir_node *irn, void *ctx) {
 	environment_t *env = ctx;
 	node_t        *node, *block;
 
-	if (is_Block(irn)) {
-		return;
-	}
 	if (get_irn_mode(irn) != mode_M)
 		return;
 
