@@ -732,11 +732,6 @@ int dump_node_opcode(FILE *F, ir_node *n)
 
 	/* implementation for default nodes */
 	switch (get_irn_opcode(n)) {
-
-	case iro_Const:
-		ir_fprintf(F, "%T", get_Const_tarval(n));
-		break;
-
 	case iro_SymConst:
 		switch (get_SymConst_kind(n)) {
 		case symconst_addr_name:
@@ -1097,6 +1092,10 @@ dump_node_nodeattr(FILE *F, ir_node *n)
 		if (0 && get_interprocedural_view()) {
 			fprintf(F, "%s ", get_ent_dump_name(get_irg_entity(current_ir_graph)));
 		}
+		break;
+
+	case iro_Const:
+		ir_fprintf(F, "%T ", get_Const_tarval(n));
 		break;
 
 	case iro_Proj:
