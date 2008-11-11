@@ -81,6 +81,7 @@
 #include "debug.h"
 #include "array_t.h"
 #include "error.h"
+#include "irnodeset.h"
 
 #include "tv_t.h"
 
@@ -193,6 +194,7 @@ typedef struct environment_t {
 	partition_t     *initial;       /**< The initial partition. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
 	pmap            *type2id_map;   /**< The type->id map. */
+	ir_node         **kept_memory;  /**< Array of memory nodes that must be kept. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
 	unsigned        modified:1;     /**< Set, if the graph was modified. */
@@ -208,8 +210,8 @@ typedef struct environment_t {
 /** Type of the what function. */
 typedef void *(*what_func)(const node_t *node, environment_t *env);
 
-#define get_irn_node(follower)         ((node_t *)get_irn_link(follower))
-#define set_irn_node(follower, node)   set_irn_link(follower, node)
+#define get_irn_node(irn)         ((node_t *)get_irn_link(irn))
+#define set_irn_node(irn, node)   set_irn_link(irn, node)
 
 /* we do NOT use tarval_unreachable here, instead we use Top for this purpose */
 #undef tarval_unreachable
@@ -3219,7 +3221,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 static void exchange_leader(ir_node *irn, ir_node *leader) {
 	ir_mode *mode = get_irn_mode(irn);
 	if (mode != get_irn_mode(leader)) {
-		/* The conv is a no-op, so we are fre to place in
+		/* The conv is a no-op, so we are free to place it
 		 * either in the block of the leader OR in irn's block.
 		 * Probably placing it into leaders block might reduce
 		 * the number of Conv due to CSE. */
@@ -3229,7 +3231,64 @@ static void exchange_leader(ir_node *irn, ir_node *leader) {
 		leader = new_rd_Conv(dbg, current_ir_graph, block, leader, mode);
 	}
 	exchange(irn, leader);
-}
+}  /* exchange_leader */
+
+/**
+ * Check, if all users of a mode_M node are dead. Use
+ * the Def-Use edges for this purpose, as they still
+ * reflect the situation.
+ */
+static int all_users_are_dead(const ir_node *irn) {
+	int i, n = get_irn_n_outs(irn);
+
+	for (i = 1; i <= n; ++i) {
+		const ir_node *succ  = irn->out[i].use;
+		const ir_node *block = get_nodes_block(succ);
+		const node_t  *bl    = get_irn_node(block);
+		const node_t  *node;
+
+		if (bl->type.tv == tarval_unreachable) {
+			/* block is unreachable */
+			continue;
+		}
+		node = get_irn_node(succ);
+		if (node->type.tv != tarval_top) {
+			/* found a reachable user */
+			return 0;
+		}
+	}
+	/* all users are unreachable */
+	return 1;
+}  /* all_user_are_dead */
+
+/**
+ * Walker: Find reachable mode_M nose that have only
+ * unreachable users. These nodes must be kept later.
+ */
+static void find_kept_memory(ir_node *irn, void *ctx) {
+	environment_t *env = ctx;
+	node_t        *node, *block;
+
+	if (is_Block(irn)) {
+		return;
+	}
+	if (get_irn_mode(irn) != mode_M)
+		return;
+
+	block = get_irn_node(get_nodes_block(irn));
+	if (block->type.tv == tarval_unreachable)
+		return;
+
+	node = get_irn_node(irn);
+	if (node->type.tv == tarval_top)
+		return;
+
+	/* ok, we found a live memory node. */
+	if (all_users_are_dead(irn)) {
+		DB((dbg, LEVEL_1, "%+F must be kept\n", irn));
+		ARR_APP1(ir_node *, env->kept_memory, irn);
+	}
+}  /* find_kept_memory */
 
 /**
  * Post-Walker, apply the analysis results;
@@ -3241,7 +3300,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {
 		/* blocks already handled, do not touch the End node */
 	} else {
-		node_t  *block = get_irn_node(get_nodes_block(irn));
+		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
 			ir_node *bad = get_irg_bad(current_ir_graph);
@@ -3448,14 +3507,38 @@ static void set_compute_functions(void) {
 		SET(Max);
 	if (op_Min != NULL)
 		SET(Min);
-
 }  /* set_compute_functions */
+
+/**
+ * Add memory keeps.
+ */
+static void add_memory_keeps(ir_node **kept_memory, int len) {
+	ir_node      *end = get_irg_end(current_ir_graph);
+	int          i;
+	ir_nodeset_t set;
+
+	ir_nodeset_init(&set);
+
+	/* check, if those nodes are already kept */
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i)
+		ir_nodeset_insert(&set, get_End_keepalive(end, i));
+
+	for (i = len - 1; i >= 0; --i) {
+		ir_node *ka = kept_memory[i];
+
+		if (! ir_nodeset_contains(&set, ka)) {
+			add_End_keepalive(end, ka);
+		}
+	}
+	ir_nodeset_destroy(&set);
+}  /* add_memory_keeps */
 
 void combo(ir_graph *irg) {
 	environment_t env;
 	ir_node       *initial_bl;
 	node_t        *start;
 	ir_graph      *rem = current_ir_graph;
+	int           len;
 
 	current_ir_graph = irg;
 
@@ -3474,6 +3557,7 @@ void combo(ir_graph *irg) {
 #endif
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
 	env.type2id_map    = pmap_create();
+	env.kept_memory    = NEW_ARR_F(ir_node *, 0);
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
 	env.modified       = 0;
@@ -3529,12 +3613,21 @@ void combo(ir_graph *irg) {
 #endif
 
 	/* apply the result */
+
+	/* check, which nodes must be kept */
+	irg_walk_graph(irg, NULL, find_kept_memory, &env);
+
+	/* kill unreachable control flow */
 	irg_block_walk_graph(irg, NULL, apply_cf, &env);
 	/* Kill keep-alives of dead blocks: this speeds up apply_result()
 	 * and fixes assertion because dead cf to dead blocks is NOT removed by
 	 * apply_cf(). */
 	apply_end(get_irg_end(irg), &env);
 	irg_walk_graph(irg, NULL, apply_result, &env);
+
+	len = ARR_LEN(env.kept_memory);
+	if (len > 0)
+		add_memory_keeps(env.kept_memory, len);
 
 	if (env.unopt_cf) {
 		DB((dbg, LEVEL_1, "Unoptimized Control Flow left"));
@@ -3553,6 +3646,7 @@ void combo(ir_graph *irg) {
 	/* remove the partition hook */
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));
 
+	DEL_ARR_F(env.kept_memory);
 	pmap_destroy(env.type2id_map);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
