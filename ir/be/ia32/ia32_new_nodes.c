@@ -1038,7 +1038,8 @@ init_ia32_condcode_attributes(ir_node *res, long pnc) {
  ***************************************************************************************/
 
 /* default compare operation to compare attributes */
-int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
+int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
+{
 	if (a->data.tp != b->data.tp)
 		return 1;
 
@@ -1058,9 +1059,6 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b) {
 
 	if (a->data.use_frame != b->data.use_frame
 	    || a->frame_ent != b->frame_ent)
-		return 1;
-
-	if (a->data.tp != b->data.tp)
 		return 1;
 
 	if (a->data.has_except_label != b->data.has_except_label)
