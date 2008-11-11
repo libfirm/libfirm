@@ -140,40 +140,6 @@ check_shift_amount:
 }
 
 /**
- * If the given node has not mode_T, creates a mode_T version (with a result Proj).
- *
- * @param node  the node to change
- *
- * @return the new mode_T node (if the mode was changed) or node itself
- */
-static ir_node *turn_into_mode_t(ir_node *node)
-{
-	ir_node               *block;
-	ir_node               *res_proj;
-	ir_node               *new_node;
-	const arch_register_t *reg;
-
-	if(get_irn_mode(node) == mode_T)
-		return node;
-
-	assert(get_irn_mode(node) == mode_Iu);
-
-	new_node = exact_copy(node);
-	set_irn_mode(new_node, mode_T);
-
-	block    = get_nodes_block(new_node);
-	res_proj = new_r_Proj(current_ir_graph, block, new_node, mode_Iu,
-	                      pn_ia32_res);
-
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(res_proj, reg);
-
-	sched_add_before(node, new_node);
-	be_peephole_exchange(node, res_proj);
-	return new_node;
-}
-
-/**
  * Replace Cmp(x, 0) by a Test(x, x)
  */
 static void peephole_ia32_Cmp(ir_node *const node)
@@ -315,7 +281,19 @@ static void peephole_ia32_Test(ir_node *node)
 				return;
 		}
 
-		left = turn_into_mode_t(left);
+		if (get_irn_mode(left) != mode_T) {
+			set_irn_mode(left, mode_T);
+
+			/* If there are other users, reroute them to result proj */
+			if (get_irn_n_edges(left) != 2) {
+				ir_node *res = new_r_Proj(current_ir_graph, block, left,
+						mode_Iu, pn_ia32_res);
+
+				edges_reroute(left, res, current_ir_graph);
+				/* Reattach the result proj to left */
+				set_Proj_pred(res, left);
+			}
+		}
 
 		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 		flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
