@@ -5048,10 +5048,11 @@ static ir_node *transform_node_shift(ir_node *n) {
 	/* beware: a simple replacement works only, if res < modulo shift */
 	if (!is_Rotl(n)) {
 		int modulo_shf = get_mode_modulo_shift(mode);
-		assert(modulo_shf >= (int) get_mode_size_bits(mode));
 		if (modulo_shf > 0) {
 			tarval *modulo = new_tarval_from_long(modulo_shf,
 			                                      get_tarval_mode(res));
+
+			assert(modulo_shf >= (int) get_mode_size_bits(mode));
 
 			/* shifting too much */
 			if (!(tarval_cmp(res, modulo) & pn_Cmp_Lt)) {
@@ -5059,7 +5060,8 @@ static ir_node *transform_node_shift(ir_node *n) {
 					ir_graph *irg   = get_irn_irg(n);
 					ir_node  *block = get_nodes_block(n);
 					dbg_info *dbgi  = get_irn_dbg_info(n);
-					ir_node  *cnst  = new_Const(mode_Iu, new_tarval_from_long(get_mode_size_bits(mode)-1, mode_Iu));
+					ir_mode  *smode  = get_irn_mode(right);
+					ir_node  *cnst  = new_Const(smode, new_tarval_from_long(get_mode_size_bits(mode) - 1, smode));
 					return new_rd_Shrs(dbgi, irg, block, get_binop_left(left),
 					                   cnst, mode);
 				}
