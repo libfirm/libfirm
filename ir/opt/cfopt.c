@@ -409,7 +409,7 @@ non_dispensable:
  */
 static void optimize_blocks(ir_node *b, void *ctx) {
 	int i, j, k, n, max_preds, n_preds, p_preds = -1;
-	ir_node *pred, *phi;
+	ir_node *pred, *phi, *next;
 	ir_node **in;
 	merge_env *env = ctx;
 
@@ -422,8 +422,9 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 	in = XMALLOCN(ir_node*, max_preds);
 
 	/*- Fix the Phi nodes of the current block -*/
-	for (phi = get_irn_link(b); phi; ) {
-		assert(get_irn_op(phi) == op_Phi);
+	for (phi = get_irn_link(b); phi != NULL; phi = next) {
+		assert(is_Phi(phi));
+		next = get_irn_link(phi);
 
 		/* Find the new predecessors for the Phi */
 		p_preds = 0;
@@ -442,7 +443,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 					if (! is_Bad(get_Block_cfgpred(pred, j))) {
 						if (get_nodes_block(phi_pred) == pred) {
 							/* case Phi 2a: */
-							assert(get_irn_op(phi_pred) == op_Phi);  /* Block is empty!! */
+							assert(is_Phi(phi_pred));  /* Block is empty!! */
 
 							in[p_preds++] = get_Phi_pred(phi_pred, j);
 						} else {
@@ -465,8 +466,6 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 		else
 			set_irn_in(phi, p_preds, in);
 		env->changed = 1;
-
-		phi = get_irn_link(phi);
 	}
 
 	/*- This happens only if merge between loop backedge and single loop entry.
@@ -778,8 +777,8 @@ restart:
 		NEW_ARR_A(ir_node *, in, n);
 
 	/* in rare cases a node may be kept alive more than once, use the visited flag to detect this */
-	inc_irg_visited(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {
