@@ -500,6 +500,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size, 1);
 	}
 
+	dbgi = get_irn_dbg_info(irn);
 	/* If there are some parameters which shall be passed on the stack. */
 	if (n_stack_params > 0) {
 		int curr_ofs      = 0;
@@ -523,7 +524,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			obstack_ptr_grow(obst, curr_mem);
 		}
 
-		dbgi = get_irn_dbg_info(irn);
 		for (i = 0; i < n_stack_params; ++i) {
 			int p                  = stack_param_idx[i];
 			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
