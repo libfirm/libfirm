@@ -445,15 +445,17 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int n_stack_params = 0;
 	int n_ins;
 
-	ir_node *low_call;
-	ir_node **in;
-	ir_node **res_projs;
-	int      n_reg_results = 0;
-	const arch_register_t *reg;
-	const ir_edge_t *edge;
-	int *reg_param_idxs;
-	int *stack_param_idx;
-	int i, n;
+	ir_node                *low_call;
+	ir_node               **in;
+	ir_node               **res_projs;
+	int                     n_reg_results = 0;
+	const arch_register_t  *reg;
+	const ir_edge_t        *edge;
+	int                    *reg_param_idxs;
+	int                    *stack_param_idx;
+	int                     i;
+	int                     n;
+	dbg_info               *dbgi;
 
 	/* Let the isa fill out the abi description for that call node. */
 	arch_env_get_call_abi(arch_env, call_tp, call);
@@ -521,6 +523,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			obstack_ptr_grow(obst, curr_mem);
 		}
 
+		dbgi = get_irn_dbg_info(irn);
 		for (i = 0; i < n_stack_params; ++i) {
 			int p                  = stack_param_idx[i];
 			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
@@ -559,7 +562,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (is_atomic_type(param_type)) {
 				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
-				store = new_r_Store(irg, bl, mem_input, addr, param);
+				store = new_rd_Store(dbgi, irg, bl, mem_input, addr, param);
 				mem = new_r_Proj(irg, bl, store, mode_M, pn_Store_M);
 			}
 
@@ -568,7 +571,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				ir_node *copy;
 
 				assert(mode_is_reference(get_irn_mode(param)));
-				copy = new_r_CopyB(irg, bl, curr_mem, addr, param, param_type);
+				copy = new_rd_CopyB(dbgi, irg, bl, curr_mem, addr, param, param_type);
 				mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
 			}
 
@@ -659,15 +662,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
-		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
-		                       curr_sp, curr_sp,
+		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, curr_sp,
 		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
 		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
-		low_call = be_new_Call(get_irn_dbg_info(irn), irg, bl, curr_mem,
-		                       curr_sp, call_ptr,
+		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, call_ptr,
 		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
 		                       n_ins, in, get_Call_type(irn));
 	}
