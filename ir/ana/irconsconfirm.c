@@ -397,6 +397,7 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 
 		if (get_Proj_proj(proj) != pn_Cond_true) {
 			/* it's the false branch */
+			mode = get_irn_mode(get_Cmp_left(cmp));
 			pnc = get_negated_pnc(pnc, mode);
 		}
 		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, cmp, pnc));
