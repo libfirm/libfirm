@@ -1226,7 +1226,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 		return;
 	}
 
-	mode = get_irn_mode(node);
+	mode = get_irn_mode(n);
 	if(mode == mode_M) {
 		print_vcg_color(F, ird_color_memory);
 		return;
