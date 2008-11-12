@@ -3076,6 +3076,16 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 	return new_node;
 }
 
+static ir_node *create_Conv_I2I(dbg_info *dbgi, ir_node *block, ir_node *base,
+		ir_node *index, ir_node *mem, ir_node *val, ir_mode *mode)
+{
+	ir_node *(*func)(dbg_info*, ir_node*, ir_node*, ir_node*, ir_node*, ir_node*, ir_mode*);
+
+	func = get_mode_size_bits(mode) == 8 ?
+		new_bd_ia32_Conv_I2I8Bit : new_bd_ia32_Conv_I2I;
+	return func(dbgi, block, base, index, mem, val, mode);
+}
+
 /**
  * Create a conversion from general purpose to x87 register
  */
@@ -3094,7 +3104,6 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	ir_node  *fild;
 	ir_node  *store;
 	ir_node  *new_node;
-	int       src_bits;
 
 	/* fild can use source AM if the operand is a signed 16bit or 32bit integer */
 	if (src_mode == mode_Is || src_mode == mode_Hs) {
@@ -3127,15 +3136,8 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	mode   = get_irn_mode(op);
 
 	/* first convert to 32 bit signed if necessary */
-	src_bits = get_mode_size_bits(src_mode);
-	if (src_bits == 8) {
-		new_op = new_bd_ia32_Conv_I2I8Bit(dbgi, block, noreg, noreg, nomem,
-		                                  new_op, src_mode);
-		SET_IA32_ORIG_NODE(new_op, node);
-		mode = mode_Is;
-	} else if (src_bits < 32) {
-		new_op = new_bd_ia32_Conv_I2I(dbgi, block, noreg, noreg, nomem,
-		                              new_op, src_mode);
+	if (get_mode_size_bits(src_mode) < 32) {
+		new_op = create_Conv_I2I(dbgi, block, noreg, noreg, nomem, new_op, src_mode);
 		SET_IA32_ORIG_NODE(new_op, node);
 		mode = mode_Is;
 	}
@@ -3192,22 +3194,17 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
                                 dbg_info *dbgi, ir_node *block, ir_node *op,
                                 ir_node *node)
 {
-	int       src_bits  = get_mode_size_bits(src_mode);
-	int       tgt_bits  = get_mode_size_bits(tgt_mode);
-	ir_node  *new_block = be_transform_node(block);
-	ir_node  *new_node;
-	ir_mode  *smaller_mode;
-	int       smaller_bits;
+	ir_node             *new_block = be_transform_node(block);
+	ir_node             *new_node;
+	ir_mode             *smaller_mode;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 
 	(void) node;
-	if (src_bits < tgt_bits) {
+	if (get_mode_size_bits(src_mode) < get_mode_size_bits(tgt_mode)) {
 		smaller_mode = src_mode;
-		smaller_bits = src_bits;
 	} else {
 		smaller_mode = tgt_mode;
-		smaller_bits = tgt_bits;
 	}
 
 #ifdef DEBUG_libfirm
@@ -3231,15 +3228,8 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 		return am.new_op2;
 	}
 
-	if (smaller_bits == 8) {
-		new_node = new_bd_ia32_Conv_I2I8Bit(dbgi, new_block, addr->base,
-		                                    addr->index, addr->mem, am.new_op2,
-		                                    smaller_mode);
-	} else {
-		new_node = new_bd_ia32_Conv_I2I(dbgi, new_block, addr->base,
-		                                addr->index, addr->mem, am.new_op2,
-		                                smaller_mode);
-	}
+	new_node = create_Conv_I2I(dbgi, new_block, addr->base, addr->index,
+			addr->mem, am.new_op2, smaller_mode);
 	set_am_attributes(new_node, &am);
 	/* match_arguments assume that out-mode = in-mode, this isn't true here
 	 * so fix it */
