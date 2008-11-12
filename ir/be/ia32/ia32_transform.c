@@ -2680,6 +2680,12 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_right), mode) ||
 				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_left),  mode);
 
+		case iro_ia32_Or:
+		case iro_ia32_Xor:
+			return
+				upper_bits_clean(get_irn_n(transformed_node, n_ia32_binary_right), mode) &&
+				upper_bits_clean(get_irn_n(transformed_node, n_ia32_binary_left),  mode);
+
 		case iro_ia32_Const:
 		case iro_ia32_Immediate: {
 			const ia32_immediate_attr_t *attr =
@@ -2695,7 +2701,6 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 		}
 
 		default:
-			/* TODO recurse on Or, Xor, ... if appropriate? */
 			return false;
 	}
 }
