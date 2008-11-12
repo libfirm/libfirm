@@ -1802,10 +1802,22 @@ CopyB_i => {
 
 # Conversions
 
+Cwtl => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "eax" ], out => [ "eax" ] },
+	ins       => [ "val" ],
+	outs      => [ "res" ],
+	emit      => '. cwtl',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+},
+
 Conv_I2I => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "gp", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
+	outs      => [ "res", "M" ],
 	am        => "source,unary",
 	units     => [ "GP" ],
 	latency   => 1,

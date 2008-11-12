@@ -1210,14 +1210,42 @@ static void peephole_ia32_Imul_split(ir_node *imul)
 /**
  * Replace xorps r,r and xorpd r,r by pxor r,r
  */
-static void peephole_ia32_xZero(ir_node *xor) {
+static void peephole_ia32_xZero(ir_node *xor)
+{
 	set_irn_op(xor, op_ia32_xPzero);
+}
+
+/**
+ * Replace 16bit sign extension from ax to eax by shorter cwtl
+ */
+static void peephole_ia32_Conv_I2I(ir_node *node)
+{
+	const arch_register_t *eax          = &ia32_gp_regs[REG_EAX];
+	ir_mode               *smaller_mode = get_ia32_ls_mode(node);
+	ir_node               *val          = get_irn_n(node, n_ia32_Conv_I2I_val);
+	dbg_info              *dbgi;
+	ir_node               *block;
+	ir_node               *cwtl;
+
+	if (get_mode_size_bits(smaller_mode) != 16 ||
+			!mode_is_signed(smaller_mode)          ||
+			eax != arch_get_irn_register(val)      ||
+			eax != arch_irn_get_register(node, pn_ia32_Conv_I2I_res))
+		return;
+
+	dbgi  = get_irn_dbg_info(node);
+	block = get_nodes_block(node);
+	cwtl  = new_bd_ia32_Cwtl(dbgi, block, val);
+	arch_set_irn_register(cwtl, eax);
+	sched_add_before(node, cwtl);
+	be_peephole_exchange(node, cwtl);
 }
 
 /**
  * Register a peephole optimisation function.
  */
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
+static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+{
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func)func;
 }
@@ -1241,6 +1269,8 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 		register_peephole_optimisation(op_ia32_IMul, peephole_ia32_Imul_split);
 	if (ia32_cg_config.use_pxor)
 		register_peephole_optimisation(op_ia32_xZero, peephole_ia32_xZero);
+	if (ia32_cg_config.use_short_sex_eax)
+		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
 
 	be_peephole_opt(cg->birg);
 }

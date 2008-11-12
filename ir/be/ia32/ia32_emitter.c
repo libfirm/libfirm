@@ -1485,25 +1485,12 @@ static void emit_ia32_Conv_FP2FP(const ir_node *node)
 static void emit_ia32_Conv_I2I(const ir_node *node)
 {
 	ir_mode *smaller_mode = get_ia32_ls_mode(node);
-	int      smaller_bits = get_mode_size_bits(smaller_mode);
 	int      signed_mode  = mode_is_signed(smaller_mode);
-	const arch_register_t *eax = &ia32_gp_regs[REG_EAX];
 
 	assert(!mode_is_float(smaller_mode));
-	assert(smaller_bits == 8 || smaller_bits == 16);
 
-	if (signed_mode                      &&
-			smaller_bits == 16               &&
-			ia32_cg_config.use_short_sex_eax &&
-			eax == get_out_reg(node, 0)      &&
-			eax == arch_get_irn_register(get_irn_n(node, n_ia32_unary_op))) {
-		/* argument and result are both in EAX and signedness is ok: use the
-		 * smaller cwtl opcode */
-		ia32_emitf(node, "\tcwtl\n");
-	} else {
-		const char *sign_suffix = signed_mode ? "s" : "z";
-		ia32_emitf(node, "\tmov%s%Ml %#AS3, %D0\n", sign_suffix);
-	}
+	const char *sign_suffix = signed_mode ? "s" : "z";
+	ia32_emitf(node, "\tmov%s%Ml %#AS3, %D0\n", sign_suffix);
 }
 
 /**
