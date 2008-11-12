@@ -1967,7 +1967,6 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	ia32_address_t      *addr = &am.addr;
 	memset(&am, 0, sizeof(am));
 
-	assert(flags & match_dest_am);
 	assert(flags & match_immediate); /* there is no destam node without... */
 	commutative = (flags & match_commutative) != 0;
 
@@ -2141,8 +2140,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_AddMem, new_bd_ia32_AddMem8Bit,
-		                         match_dest_am | match_commutative |
-		                         match_immediate);
+		                         match_commutative | match_immediate);
 		break;
 	case iro_Sub:
 		op1      = get_Sub_left(val);
@@ -2152,59 +2150,56 @@ static ir_node *try_create_dest_am(ir_node *node)
 		}
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SubMem, new_bd_ia32_SubMem8Bit,
-		                         match_dest_am | match_immediate);
+		                         match_immediate);
 		break;
 	case iro_And:
 		op1      = get_And_left(val);
 		op2      = get_And_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_AndMem, new_bd_ia32_AndMem8Bit,
-		                         match_dest_am | match_commutative |
-		                         match_immediate);
+		                         match_commutative | match_immediate);
 		break;
 	case iro_Or:
 		op1      = get_Or_left(val);
 		op2      = get_Or_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_OrMem, new_bd_ia32_OrMem8Bit,
-		                         match_dest_am | match_commutative |
-		                         match_immediate);
+		                         match_commutative | match_immediate);
 		break;
 	case iro_Eor:
 		op1      = get_Eor_left(val);
 		op2      = get_Eor_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_XorMem, new_bd_ia32_XorMem8Bit,
-		                         match_dest_am | match_commutative |
-		                         match_immediate);
+		                         match_commutative | match_immediate);
 		break;
 	case iro_Shl:
 		op1      = get_Shl_left(val);
 		op2      = get_Shl_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_ShlMem, new_bd_ia32_ShlMem,
-		                         match_dest_am | match_immediate);
+		                         match_immediate);
 		break;
 	case iro_Shr:
 		op1      = get_Shr_left(val);
 		op2      = get_Shr_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_ShrMem, new_bd_ia32_ShrMem,
-		                         match_dest_am | match_immediate);
+		                         match_immediate);
 		break;
 	case iro_Shrs:
 		op1      = get_Shrs_left(val);
 		op2      = get_Shrs_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_SarMem, new_bd_ia32_SarMem,
-		                         match_dest_am | match_immediate);
+		                         match_immediate);
 		break;
 	case iro_Rotl:
 		op1      = get_Rotl_left(val);
 		op2      = get_Rotl_right(val);
 		new_node = dest_am_binop(val, op1, op2, mem, ptr, mode,
 		                         new_bd_ia32_RolMem, new_bd_ia32_RolMem,
-		                         match_dest_am | match_immediate);
+		                         match_immediate);
 		break;
 	/* TODO: match ROR patterns... */
 	case iro_Mux:

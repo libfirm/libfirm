@@ -60,10 +60,9 @@ typedef enum {
 	match_16bit             = 1 << 7,   /**< supports 16bit modes natively */
 	match_mode_neutral      = 1 << 8,   /**< 16 and 8 bit modes can be emulated
 	                                         by 32 bit operations */
-	match_dest_am           = 1 << 9,
-	match_try_am            = 1 << 10,  /**< only try to produce AM node, don't
+	match_try_am            = 1 << 9,   /**< only try to produce AM node, don't
 	                                         do anything if AM isn't possible */
-	match_two_users         = 1 << 11   /**< the instruction uses a load two times ... */
+	match_two_users         = 1 << 10   /**< the instruction uses a load two times ... */
 } match_flags_t;
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;
