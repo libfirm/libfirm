@@ -214,7 +214,8 @@ static void opcode_clear_entry(node_entry_t *elem) {
 }  /* opcode_clear_entry */
 
 /**
- * Returns the associates node_entry_t for an ir_op
+ * Returns the associates node_entry_t for an ir_op (and allocates
+ * one if not yet available).
  *
  * @param op    the IR operation
  * @param hmap  a hash map containing ir_op* -> node_entry_t*
@@ -284,7 +285,7 @@ static void graph_clear_entry(graph_entry_t *elem, int all) {
 /**
  * Returns the associated graph_entry_t for an IR graph.
  *
- * @param irg   the IR graph
+ * @param irg   the IR graph, NULL for the global counter
  * @param hmap  the hash map containing ir_graph* -> graph_entry_t*
  */
 static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
@@ -2197,7 +2198,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 		stat_finish_pattern_history(fname);
 
-		/* clear the global counter here */
+		/* clear the global counters here */
 		{
 			node_entry_t *entry;
 
@@ -2205,7 +2206,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 				opcode_clear_entry(entry);
 			}  /* for */
 			/* clear all global counter */
-			graph_clear_entry(global, 1);
+			graph_clear_entry(global, /*all=*/1);
 		}
 	}
 	STAT_LEAVE;
