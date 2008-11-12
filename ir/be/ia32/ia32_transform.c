@@ -663,7 +663,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	assert(use_am || !(flags & match_16bit_am));
 
 	if ((mode_bits ==  8 && !(flags & match_8bit_am)) ||
-			(mode_bits == 16 && !(flags & match_8bit_am))) {
+			(mode_bits == 16 && !(flags & match_16bit_am))) {
 		use_am = 0;
 	}
 
@@ -3093,7 +3093,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	if (src_mode == mode_Is || src_mode == mode_Hs) {
 		ia32_address_mode_t am;
 
-		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am);
+		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am | match_16bit_am);
 		if (am.op_type == ia32_AddrModeS) {
 			ia32_address_t *addr = &am.addr;
 
