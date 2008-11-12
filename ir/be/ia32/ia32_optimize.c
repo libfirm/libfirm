@@ -1048,7 +1048,7 @@ static void peephole_ia32_Lea(ir_node *node)
 
 	assert(is_ia32_Lea(node));
 
-	/* we can only do this if are allowed to globber the flags */
+	/* we can only do this if it is allowed to clobber the flags */
 	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
 		return;
 
