@@ -2222,16 +2222,25 @@ static ir_node *try_create_dest_am(ir_node *node)
 	return new_node;
 }
 
+static bool possible_int_mode_for_fp(ir_mode *mode)
+{
+	unsigned size;
+
+	if (!mode_is_signed(mode))
+		return false;
+	size = get_mode_size_bits(mode);
+	if (size != 16 && size != 32)
+		return false;
+	return true;
+}
+
 static int is_float_to_int_conv(const ir_node *node)
 {
 	ir_mode  *mode = get_irn_mode(node);
-	unsigned  size = get_mode_size_bits(mode);
 	ir_node  *conv_op;
 	ir_mode  *conv_mode;
 
-	if (size != 16 && size != 32)
-		return 0;
-	if (!mode_is_signed(mode))
+	if (!possible_int_mode_for_fp(mode))
 		return 0;
 
 	if (!is_Conv(node))
@@ -3093,10 +3102,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	ir_node  *new_node;
 
 	/* fild can use source AM if the operand is a signed 16bit or 32bit integer */
-	if (mode_is_signed(src_mode) && (
-				get_mode_size_bits(src_mode) == 32 ||
-				get_mode_size_bits(src_mode) == 16
-			)) {
+	if (possible_int_mode_for_fp(src_mode)) {
 		ia32_address_mode_t am;
 
 		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am | match_16bit_am);
