@@ -1274,7 +1274,12 @@ restart:
 				/* else both are strict conv, second is superfluous */
 				n = a;
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+				return n;
 			}
+		} else {
+			n = a;
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CONV);
+			return n;
 		}
 	} else if (is_Conv(a)) { /* Conv(Conv(b)) */
 		ir_node *b      = get_Conv_op(a);
