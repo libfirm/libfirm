@@ -3132,8 +3132,10 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 
 	/* first convert to 32 bit signed if necessary */
 	if (get_mode_size_bits(src_mode) < 32) {
-		new_op = create_Conv_I2I(dbgi, block, noreg, noreg, nomem, new_op, src_mode);
-		SET_IA32_ORIG_NODE(new_op, node);
+		if (!upper_bits_clean(new_op, src_mode)) {
+			new_op = create_Conv_I2I(dbgi, block, noreg, noreg, nomem, new_op, src_mode);
+			SET_IA32_ORIG_NODE(new_op, node);
+		}
 		mode = mode_Is;
 	}
 
