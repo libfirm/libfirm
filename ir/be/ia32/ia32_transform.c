@@ -2674,12 +2674,13 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 			}
 
 		case iro_ia32_And:
-			if (mode_is_signed(mode))
-				return false; /* TODO handle signed modes */
-			return
-				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_right), mode) ||
-				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_left),  mode);
-
+			if (!mode_is_signed(mode)) {
+				return
+					upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_right), mode) ||
+					upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_left),  mode);
+			}
+			/* TODO if one is known to be zero extended, then || is sufficient */
+			/* FALLTHROUGH */
 		case iro_ia32_Or:
 		case iro_ia32_Xor:
 			return
