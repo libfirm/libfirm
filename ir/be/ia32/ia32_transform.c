@@ -2673,6 +2673,10 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 				return upper_bits_clean(get_irn_n(transformed_node, n_ia32_Shr_val), mode);
 			}
 
+		case iro_ia32_Sar:
+			/* TODO too conservative if shift amount is constant */
+			return upper_bits_clean(get_irn_n(transformed_node, n_ia32_Sar_val), mode);
+
 		case iro_ia32_And:
 			if (!mode_is_signed(mode)) {
 				return
