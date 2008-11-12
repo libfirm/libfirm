@@ -662,16 +662,9 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	assert(use_am || !(flags & match_8bit_am));
 	assert(use_am || !(flags & match_16bit_am));
 
-	if (mode_bits == 8) {
-		if (!(flags & match_8bit_am))
-			use_am = 0;
-		/* we don't automatically add upconvs yet */
-		assert((flags & match_mode_neutral) || (flags & match_8bit));
-	} else if (mode_bits == 16) {
-		if (!(flags & match_16bit_am))
-			use_am = 0;
-		/* we don't automatically add upconvs yet */
-		assert((flags & match_mode_neutral) || (flags & match_16bit));
+	if ((mode_bits ==  8 && !(flags & match_8bit_am)) ||
+			(mode_bits == 16 && !(flags & match_8bit_am))) {
+		use_am = 0;
 	}
 
 	/* we can simply skip downconvs for mode neutral nodes: the upper bits
@@ -2750,8 +2743,7 @@ static ir_node *gen_Cmp(ir_node *node)
 		match_arguments(&am, block, and_left, and_right, NULL,
 										match_commutative |
 										match_am | match_8bit_am | match_16bit_am |
-										match_am_and_immediates | match_immediate |
-										match_8bit | match_16bit);
+										match_am_and_immediates | match_immediate);
 
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (upper_bits_clean(am.new_op1, cmp_mode) &&
@@ -2772,7 +2764,7 @@ static ir_node *gen_Cmp(ir_node *node)
 		match_arguments(&am, block, left, right, NULL,
 		                match_commutative | match_am | match_8bit_am |
 		                match_16bit_am | match_am_and_immediates |
-		                match_immediate | match_8bit | match_16bit);
+		                match_immediate);
 		/* use 32bit compare mode if possible since the opcode is smaller */
 		if (upper_bits_clean(am.new_op1, cmp_mode) &&
 		    upper_bits_clean(am.new_op2, cmp_mode)) {
@@ -2808,7 +2800,6 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	ir_node             *val_true      = get_Mux_true(node);
 	ir_node             *val_false     = get_Mux_false(node);
 	ir_node             *new_node;
-	match_flags_t        match_flags;
 	ia32_address_mode_t  am;
 	ia32_address_t      *addr;
 
@@ -2817,10 +2808,8 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 
 	addr = &am.addr;
 
-	match_flags = match_commutative | match_am | match_16bit_am |
-	              match_mode_neutral;
-
-	match_arguments(&am, block, val_false, val_true, flags, match_flags);
+	match_arguments(&am, block, val_false, val_true, flags,
+			match_commutative | match_am | match_16bit_am | match_mode_neutral);
 
 	new_node = new_bd_ia32_CMov(dbgi, new_block, addr->base, addr->index,
 	                            addr->mem, am.new_op1, am.new_op2, new_flags,
@@ -3104,8 +3093,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	if (src_mode == mode_Is || src_mode == mode_Hs) {
 		ia32_address_mode_t am;
 
-		match_arguments(&am, src_block, NULL, op, NULL,
-		                match_am | match_try_am | match_16bit | match_16bit_am);
+		match_arguments(&am, src_block, NULL, op, NULL, match_am | match_try_am);
 		if (am.op_type == ia32_AddrModeS) {
 			ia32_address_t *addr = &am.addr;
 
@@ -3210,7 +3198,6 @@ static ir_node *create_I2I_Conv(ir_mode *src_mode, ir_mode *tgt_mode,
 #endif
 
 	match_arguments(&am, block, NULL, op, NULL,
-	                match_8bit | match_16bit |
 	                match_am | match_8bit_am | match_16bit_am);
 
 	if (upper_bits_clean(am.new_op2, smaller_mode)) {

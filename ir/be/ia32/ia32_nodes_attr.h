@@ -49,20 +49,18 @@ typedef enum {
 } ia32_am_type_t;
 
 typedef enum {
-	match_commutative       = 1 << 0,   /**< inputs are commutative */
-	match_am_and_immediates = 1 << 1,   /**< node supports AM and immediate at
-	                                         the same time */
-	match_am                = 1 << 2,   /**< node supports (32bit) source AM */
-	match_8bit_am           = 1 << 3,   /**< node supports 8bit source AM */
-	match_16bit_am          = 1 << 4,   /**< node supports 16bit source AM */
-	match_immediate         = 1 << 5,   /**< node supports immediates */
-	match_8bit              = 1 << 6,   /**< supports 8 bit modes natively */
-	match_16bit             = 1 << 7,   /**< supports 16bit modes natively */
-	match_mode_neutral      = 1 << 8,   /**< 16 and 8 bit modes can be emulated
-	                                         by 32 bit operations */
-	match_try_am            = 1 << 9,   /**< only try to produce AM node, don't
-	                                         do anything if AM isn't possible */
-	match_two_users         = 1 << 10   /**< the instruction uses a load two times ... */
+	match_commutative       = 1 << 0, /**< inputs are commutative */
+	match_am_and_immediates = 1 << 1, /**< node supports AM and immediate at
+	                                       the same time */
+	match_am                = 1 << 2, /**< node supports (32bit) source AM */
+	match_8bit_am           = 1 << 3, /**< node supports 8bit source AM */
+	match_16bit_am          = 1 << 4, /**< node supports 16bit source AM */
+	match_immediate         = 1 << 5, /**< node supports immediates */
+	match_mode_neutral      = 1 << 6, /**< 16 and 8 bit modes can be emulated
+	                                       by 32 bit operations */
+	match_try_am            = 1 << 7, /**< only try to produce AM node, don't
+	                                       do anything if AM isn't possible */
+	match_two_users         = 1 << 8  /**< the instruction uses a load two times ... */
 } match_flags_t;
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;
