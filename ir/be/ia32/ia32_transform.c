@@ -2682,7 +2682,7 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 					const ia32_immediate_attr_t *attr =
 						get_ia32_immediate_attr_const(right);
 					if (attr->symconst == 0 &&
-							(unsigned)attr->offset <= 0xFFFFFFFFU >> (32 - get_mode_size_bits(mode))) {
+							(unsigned)attr->offset >> get_mode_size_bits(mode) == 0) {
 						return true;
 					}
 				}
