@@ -3571,9 +3571,7 @@ static ir_node *gen_IJmp(ir_node *node)
 
 	assert(get_irn_mode(op) == mode_P);
 
-	match_arguments(&am, block, NULL, op, NULL,
-	                match_am | match_8bit_am | match_16bit_am |
-	                match_immediate | match_8bit | match_16bit);
+	match_arguments(&am, block, NULL, op, NULL, match_am | match_immediate);
 
 	new_node = new_bd_ia32_IJmp(dbgi, new_block, addr->base, addr->index,
 			addr->mem, am.new_op2);
