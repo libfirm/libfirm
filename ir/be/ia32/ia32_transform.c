@@ -2674,21 +2674,11 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 			}
 
 		case iro_ia32_And:
-			if (mode_is_signed(mode)) {
+			if (mode_is_signed(mode))
 				return false; /* TODO handle signed modes */
-			} else {
-				ir_node *right = get_irn_n(transformed_node, n_ia32_And_right);
-				if (is_ia32_Immediate(right) || is_ia32_Const(right)) {
-					const ia32_immediate_attr_t *attr =
-						get_ia32_immediate_attr_const(right);
-					if (attr->symconst == 0 &&
-							(unsigned)attr->offset >> get_mode_size_bits(mode) == 0) {
-						return true;
-					}
-				}
-				/* TODO recurse? */
-				return false;
-			}
+			return
+				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_right), mode) ||
+				upper_bits_clean(get_irn_n(transformed_node, n_ia32_And_left),  mode);
 
 		case iro_ia32_Const:
 		case iro_ia32_Immediate: {
