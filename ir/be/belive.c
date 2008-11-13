@@ -497,7 +497,7 @@ static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn, void *old)
  * Walker, collect all nodes for which we want calculate liveness info
  * on an obstack.
  */
-static void collect_nodes(ir_node *irn, void *data)
+static void collect_liveness_nodes(ir_node *irn, void *data)
 {
 	struct obstack *obst = data;
 	if (is_liveness_node(irn))
@@ -527,7 +527,7 @@ static void compute_liveness(be_lv_t *lv)
 
 	stat_ev_tim_push();
 	obstack_init(&obst);
-	irg_walk_graph(lv->irg, NULL, collect_nodes, &obst);
+	irg_walk_graph(lv->irg, NULL, collect_liveness_nodes, &obst);
 	n      = obstack_object_size(&obst) / sizeof(nodes[0]);
 	nodes  = obstack_finish(&obst);
 
@@ -595,7 +595,7 @@ be_lv_t *be_liveness(ir_graph *irg)
 
 	lv->irg  = irg;
 #ifdef USE_LIVE_CHK
-	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, lv->irg);
+	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, irg);
 	lv->lvc  = lv_chk_new(lv->irg, lv->dfs);
 #endif
 	lv->hook_info.context = lv;
