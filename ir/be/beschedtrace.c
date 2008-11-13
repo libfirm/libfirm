@@ -502,7 +502,7 @@ static trace_env_t *trace_init(const be_irg_t *birg) {
 
 	env->curr_time  = 0;
 	env->sched_info = NEW_ARR_F(trace_irn_t, nn);
-	env->liveness   = be_liveness(birg);
+	env->liveness   = be_liveness(irg);
 	FIRM_DBG_REGISTER(env->dbg, "firm.be.sched.trace");
 
 	be_liveness_assure_chk(env->liveness);

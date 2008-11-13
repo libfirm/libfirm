@@ -50,7 +50,6 @@ struct _be_lv_t {
 	ir_phase ph;
 	ir_graph *irg;
 	dfs_t *dfs;
-	const struct be_irg_t *birg;
 	bitset_t *nodes;
 	hook_entry_t hook_info;
 #ifdef USE_LIVE_CHK

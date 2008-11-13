@@ -589,12 +589,11 @@ void be_liveness_invalidate(be_lv_t *lv)
 }
 
 /* Compute the inter block liveness for a graph. */
-be_lv_t *be_liveness(const be_irg_t *birg)
+be_lv_t *be_liveness(ir_graph *irg)
 {
 	be_lv_t *lv = XMALLOCZ(be_lv_t);
 
-	lv->irg  = be_get_birg_irg(birg);
-	lv->birg = birg;
+	lv->irg  = irg;
 #ifdef USE_LIVE_CHK
 	lv->dfs  = dfs_new(&absgraph_irg_cfg_succ, lv->irg);
 	lv->lvc  = lv_chk_new(lv->irg, lv->dfs);
@@ -717,7 +716,7 @@ static void lv_check_walker(ir_node *bl, void *data)
 void be_liveness_check(be_lv_t *lv)
 {
 	lv_walker_t w;
-	be_lv_t *fresh = be_liveness(lv->birg);
+	be_lv_t *fresh = be_liveness(lv->irg);
 
 	w.lv   = lv;
 	w.data = fresh;

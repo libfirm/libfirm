@@ -122,7 +122,7 @@ int be_verify_register_pressure(const be_irg_t *birg,
                                 ir_graph *irg) {
 	be_verify_register_pressure_env_t env;
 
-	env.lv                  = be_liveness(birg);
+	env.lv                  = be_liveness(irg);
 	env.irg                 = irg;
 	env.cls                 = cls;
 	env.registers_available = env.cls->n_regs - be_put_ignore_regs(birg, env.cls, NULL);
@@ -869,7 +869,7 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 int be_verify_register_allocation(const be_irg_t *birg) {
 	arch_env      = be_get_birg_arch_env(birg);
 	irg           = be_get_birg_irg(birg);
-	lv            = be_liveness(birg);
+	lv            = be_liveness(irg);
 	problem_found = 0;
 
 	be_liveness_assure_sets(lv);

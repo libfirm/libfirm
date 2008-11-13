@@ -52,7 +52,7 @@ typedef struct _be_lv_info_t be_lv_info_t;
  * Compute the inter block liveness for a graph.
  * @param irg The graph.
  */
-be_lv_t *be_liveness(const struct be_irg_t *birg);
+be_lv_t *be_liveness(ir_graph *irg);
 
 /**
  * Check the given liveness information against a freshly computed one.

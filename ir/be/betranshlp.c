@@ -441,6 +441,6 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func)
 
 	if (birg->lv) {
 		be_liveness_free(birg->lv);
-		birg->lv = be_liveness(birg);
+		birg->lv = be_liveness(irg);
 	}
 }
