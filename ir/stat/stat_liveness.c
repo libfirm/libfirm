@@ -131,10 +131,13 @@ static void live_end_at_block(ir_node *def, ir_node *block) {
 /**
  * Walker: finds live-outs and calculate live-ins from that.
  */
-static void find_live_outs(ir_node *irn, void *ctx) {
+static void find_live_outs(ir_node *irn, void *ctx)
+{
 	ir_mode *mode = get_irn_mode(irn);
 	ir_node *block, *use_block;
 	int i;
+
+	(void)ctx;
 
 	/* only data nodes */
 	if (! mode_is_datab(mode))
