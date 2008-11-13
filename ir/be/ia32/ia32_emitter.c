@@ -1486,10 +1486,11 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 {
 	ir_mode *smaller_mode = get_ia32_ls_mode(node);
 	int      signed_mode  = mode_is_signed(smaller_mode);
+	const char *sign_suffix;
 
 	assert(!mode_is_float(smaller_mode));
 
-	const char *sign_suffix = signed_mode ? "s" : "z";
+	sign_suffix = signed_mode ? "s" : "z";
 	ia32_emitf(node, "\tmov%s%Ml %#AS3, %D0\n", sign_suffix);
 }
 
