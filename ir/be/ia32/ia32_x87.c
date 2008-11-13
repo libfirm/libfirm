@@ -380,7 +380,7 @@ static x87_state *x87_clone_state(x87_simulator *sim, const x87_state *src)
 {
 	x87_state *res = x87_alloc_state(sim);
 
-	memcpy(res, src, sizeof(*res));
+	*res = *src;
 	return res;
 }  /* x87_clone_state */
 
