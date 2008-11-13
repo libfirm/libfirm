@@ -3255,6 +3255,9 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_node  *nomem     = new_NoMem();
 	ir_node  *res       = NULL;
 
+	assert(!mode_is_int(src_mode) || src_bits <= 32);
+	assert(!mode_is_int(tgt_mode) || tgt_bits <= 32);
+
 	if (src_mode == mode_b) {
 		assert(mode_is_int(tgt_mode) || mode_is_reference(tgt_mode));
 		/* nothing to do, we already model bools as 0/1 ints */
