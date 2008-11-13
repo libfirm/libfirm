@@ -900,8 +900,6 @@ static void vfp_dump_live(vfp_liveness live)
 
 /* --------------------------------- simulators ---------------------------------------- */
 
-#define XCHG(a, b) do { int t = (a); (a) = (b); (b) = t; } while (0)
-
 /* Pseudocode:
 
 
