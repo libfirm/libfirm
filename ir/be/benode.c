@@ -1455,7 +1455,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 	switch(reason) {
 		case dump_node_opcode_txt:
-			fprintf(f, get_op_name(get_irn_op(irn)));
+			fputs(get_op_name(get_irn_op(irn)), f);
 			break;
 		case dump_node_mode_txt:
 			if(be_is_Perm(irn) || be_is_Copy(irn) || be_is_CopyKeep(irn)) {
