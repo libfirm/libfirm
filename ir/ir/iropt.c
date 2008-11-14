@@ -5244,7 +5244,10 @@ static ir_node *transform_node_shl_shr(ir_node *n) {
 		return n;
 	}
 
-	assert(get_tarval_mode(tv_shl) == get_tarval_mode(tv_shr));
+	if (get_tarval_mode(tv_shl) != get_tarval_mode(tv_shr)) {
+		tv_shl = tarval_convert_to(tv_shl, get_tarval_mode(tv_shr));
+	}
+
 	assert(tv_mask != tarval_bad);
 	assert(get_tarval_mode(tv_mask) == mode);
 
