@@ -234,7 +234,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	set_entity_irg(ent, res);
 
 	/*--  a class type so that it can contain "inner" methods as in Pascal. --*/
-	res->frame_type = new_type_frame(mangle(get_entity_ident(ent), frame_type_suffix));
+	res->frame_type = new_type_frame(id_mangle(get_entity_ident(ent), frame_type_suffix));
 
 	/* the Anchor node must be created first */
 	res->anchor = new_Anchor(res);

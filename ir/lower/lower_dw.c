@@ -1744,7 +1744,7 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 			}  /* if */
 		}  /* for */
 
-		id = mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
+		id = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
 		res = new_type_method(id, n_param, n_res);
 
 		/* set param types and result types */

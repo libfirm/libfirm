@@ -1166,7 +1166,7 @@ build_value_type(ident *name, int len, tp_ent_pair *tps) {
 
 		/* use the parameter name if specified */
 		if (! id)
-			id = mangle_u(name, get_type_ident(elt_type));
+			id = id_mangle_u(name, get_type_ident(elt_type));
 		tps[i].ent = new_entity(res, id, elt_type);
 		set_entity_allocation(tps[i].ent, allocation_parameter);
 	}
@@ -1212,7 +1212,7 @@ ir_type *clone_type_method(ir_type *tp, ident *prefix) {
 
 	name = tp->name;
 	if (prefix != NULL)
-		name = mangle(prefix, name);
+		name = id_mangle(prefix, name);
 
 	mode     = tp->mode;
 	n_params = tp->attr.ma.n_params;
@@ -1319,7 +1319,7 @@ ir_entity *get_method_value_param_ent(ir_type *method, int pos) {
 	if (!method->attr.ma.value_params) {
 		/* parameter value type not created yet, build */
 		method->attr.ma.value_params
-			= build_value_type(mangle_u(get_type_ident(method), value_params_suffix),
+			= build_value_type(id_mangle_u(get_type_ident(method), value_params_suffix),
 			get_method_n_params(method), method->attr.ma.params);
 	}
 	/*
@@ -1373,7 +1373,7 @@ ir_entity *get_method_value_res_ent(ir_type *method, int pos) {
 	if (!method->attr.ma.value_ress) {
 		/* result value type not created yet, build */
 		method->attr.ma.value_ress
-			= build_value_type(mangle_u(get_type_ident(method), value_ress_suffix),
+			= build_value_type(id_mangle_u(get_type_ident(method), value_ress_suffix),
 			get_method_n_ress(method), method->attr.ma.res_type);
 	}
 	/*
@@ -1603,7 +1603,7 @@ ir_type *new_d_type_array(ident *name, int n_dimensions, ir_type *element_type, 
 	current_ir_graph = rem;
 
 	res->attr.aa.element_type = element_type;
-	new_entity(res, mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
+	new_entity(res, id_mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
 	hook_new_type(res);
 	return res;
 }
@@ -2131,7 +2131,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment, i
 	frame_align = get_type_alignment_bytes(frame_type);
 	size = (size + frame_align - 1) & ~(frame_align - 1);
 
-	tp = new_type_array(mangle_u(get_type_ident(frame_type), name), 1, a_byte);
+	tp = new_type_array(id_mangle_u(get_type_ident(frame_type), name), 1, a_byte);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
 

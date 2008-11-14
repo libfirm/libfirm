@@ -222,7 +222,7 @@ _get_entity_ld_ident(ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	if (ent->ld_name == NULL)
-		ent->ld_name = mangle_entity(ent);
+		ent->ld_name = id_mangle_entity(ent);
 	return ent->ld_name;
 }
 

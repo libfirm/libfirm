@@ -212,7 +212,7 @@ static ident *get_clone_ident(ident *id, int pos, unsigned nr) {
 
 	snprintf(clone_postfix, sizeof(clone_postfix), "_cl_%d_%u", pos, nr);
 
-	return mangle(id, new_id_from_str(clone_postfix));
+	return id_mangle(id, new_id_from_str(clone_postfix));
 }
 
 /**

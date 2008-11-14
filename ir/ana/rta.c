@@ -60,38 +60,12 @@ static eset *_live_graphs    = NULL;
 */
 static ir_graph *get_implementing_graph (ir_entity *method)
 {
-#if 0
-  ir_graph *graph = get_entity_irg ((ir_entity*) method);
-
-  /* Search upwards in the overwrites graph. */
-  /* GL: this will not work for multiple inheritance */
-  if (NULL == graph) {
-    int i;
-    int n_over = get_entity_n_overwrites ((ir_entity*) method);
-
-    for (i = 0; (NULL == graph) && (i < n_over); i ++) {
-      ir_entity *over = get_entity_overwrites ((ir_entity*) method, i);
-      graph = get_implementing_graph (over);
-    }
-  }
-
-  /* GL   this is not valid in our remove irg algorithm ... which we removed by now ...  */
-  assert(get_entity_peculiarity(method) == peculiarity_description
-     || graph == get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method))));
-
-  /* we *must* always return a graph != NULL, *except* when we're used
-     inside remove_irg or force_description */
-  /* assert (graph && "no graph"); */
-
-  return (graph);
-#else
   ir_graph *graph = NULL;
 
   if (get_entity_peculiarity(method) != peculiarity_description)
     graph = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method)));
 
   return graph;
-#endif
 }
 
 /**
@@ -329,36 +303,6 @@ static int stats (void)
    abstract now.  Pretend that it wasn't there at all, and every
    entity that used to inherit this entity's graph is now abstract.
 */
-/* Since we *know* that this entity will not be called, this is OK. */
-static void force_description (ir_entity *ent, ir_entity *addr)
-{
-  int i, n_over = get_entity_n_overwrittenby (ent);
-
-  set_entity_peculiarity (ent, peculiarity_description);
-
-  for (i = 0; i < n_over; i ++) {
-    ir_entity *over = get_entity_overwrittenby (ent, i);
-
-    if (peculiarity_inherited == get_entity_peculiarity (over)) {
-      /* We rely on the fact that cse is performed on the const_code_irg. */
-      ir_entity *my_addr = get_SymConst_entity(get_atomic_ent_value(over));
-
-      if (addr == my_addr) {
-        force_description (over, addr);
-      }
-    } else if (peculiarity_existent == get_entity_peculiarity (over)) {
-      /* check whether 'over' forces 'inheritance' of *our* graph: */
-      ir_node *f_addr = get_atomic_ent_value (over);
-      ir_entity *impl_ent = get_SymConst_entity (f_addr);
-
-      assert(is_SymConst(f_addr) && "can't do complex addrs");
-      if (impl_ent == addr) {
-        assert (0 && "gibt's denn sowas");
-        force_description (over, addr);
-      }
-    }
-  }
-}
 
 /**
    Initialize the static data structures.

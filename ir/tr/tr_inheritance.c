@@ -42,7 +42,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /* ----------------------------------------------------------------------- */
 
 ident *default_mangle_inherited_name(ir_entity *super, ir_type *clss) {
-	return mangle_u(new_id_from_str("inh"), mangle_u(get_type_ident(clss), get_entity_ident(super)));
+	return id_mangle_u(new_id_from_str("inh"), id_mangle_u(get_type_ident(clss), get_entity_ident(super)));
 }
 
 /** Replicates all entities in all super classes that are not overwritten

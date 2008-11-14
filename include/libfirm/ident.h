@@ -184,21 +184,21 @@ void   firm_init_mangle (void);
 /** Computes a definite name for this entity by concatenating
    the name of the owner type and the name of the entity with
    a separating "_". */
-ident *mangle_entity (ir_entity *ent);
+ident *id_mangle_entity (ir_entity *ent);
 
 /** mangle underscore: Returns a new ident that represents first_scnd. */
-ident *mangle_u (ident *first, ident* scnd);
+ident *id_mangle_u (ident *first, ident* scnd);
 
 /** mangle dot: Returns a new ident that represents first.scnd. */
-ident *mangle_dot (ident *first, ident* scnd);
+ident *id_mangle_dot (ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
-ident *mangle   (ident *first, ident* scnd);
+ident *id_mangle   (ident *first, ident* scnd);
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-ident *mangle3 (const char *prefix, ident *middle, const char *suffix);
+ident *id_mangle3 (const char *prefix, ident *middle, const char *suffix);
 
 /** returns a mangled name for a Win32 function using it's calling convention */
-ident *decorate_win32_c_fkt(ir_entity *ent, ident *id);
+ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
 #endif

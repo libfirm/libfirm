@@ -1220,7 +1220,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	ir_entity **map;
 
 	*param_map = map = obstack_alloc(&env->obst, n * sizeof(ir_entity *));
-	res = new_type_struct(mangle_u(id, new_id_from_chars("arg_type", 8)));
+	res = new_type_struct(id_mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr);
@@ -1972,7 +1972,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 {
 	ir_type   *type   = get_entity_type(method);
 	ident     *old_id = get_entity_ld_ident(method);
-	ident     *id     = mangle3("L", old_id, "$stub");
+	ident     *id     = id_mangle3("L", old_id, "$stub");
 	ir_type   *parent = be->pic_trampolines_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
@@ -1999,7 +1999,7 @@ static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 {
 	ident     *old_id = get_entity_ld_ident(entity);
-	ident     *id     = mangle3("L", old_id, "$non_lazy_ptr");
+	ident     *id     = id_mangle3("L", old_id, "$non_lazy_ptr");
 	ir_type   *e_type = get_entity_type(entity);
 	ir_type   *type   = new_type_pointer(id, e_type, mode_P_data);
 	ir_type   *parent = be->pic_symbols_type;

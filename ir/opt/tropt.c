@@ -69,7 +69,7 @@ static ir_type *default_gen_pointer_type_to(ir_type *tp) {
 		} else {
 			ir_mode *mode = is_Method_type(tp) ? mode_P_code : mode_P_data;
 
-			res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode);
+			res = new_type_pointer(id_mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode);
 			/* Update trout for pointer types, so we can use it in next call. */
 			add_type_pointertype_to(tp, res);
 		}
@@ -77,7 +77,7 @@ static ir_type *default_gen_pointer_type_to(ir_type *tp) {
 	else {
 		res = find_pointer_type_to_type(tp);
 		if (res == firm_unknown_type)
-			res = new_type_pointer(mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode_P_data);
+			res = new_type_pointer(id_mangle_u(get_type_ident(tp), ptr_type_suffix), tp, mode_P_data);
 	}
 
 	return res;

@@ -59,7 +59,7 @@ static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignm
 	if (e)
 		res = e->value;
 	else {
-		res = new_type_pointer(mangle_u(get_type_ident(e_type), new_id_from_chars("Ptr", 3)), e_type, mode);
+		res = new_type_pointer(id_mangle_u(get_type_ident(e_type), new_id_from_chars("Ptr", 3)), e_type, mode);
 		set_type_alignment_bytes(res, alignment);
 		pmap_insert(type_map, e_type, res);
 	}
@@ -163,7 +163,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	}
 
 	/* create the new type */
-	id = mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
+	id = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
 	lowered = new_d_type_method(id, nn_params, nn_ress, get_type_dbg_info(mtp));
 
 	/* fill it */

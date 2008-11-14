@@ -44,7 +44,7 @@ static inline ident *mangle_type(ir_type *tp) {
 	return tp->name;
 }
 
-ident *mangle_entity(ir_entity *ent) {
+ident *id_mangle_entity(ir_entity *ent) {
 	ident *type_id;
 	char *cp;
 	int len;
@@ -63,7 +63,7 @@ ident *mangle_entity(ir_entity *ent) {
 
 
 /* Returns a new ident that represents 'firstscnd'. */
-ident *mangle(ident *first, ident *scnd) {
+ident *id_mangle(ident *first, ident *scnd) {
 	char *cp;
 	int len;
 	ident *res;
@@ -78,7 +78,7 @@ ident *mangle(ident *first, ident *scnd) {
 }
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
+ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix) {
 	char *cp;
 	int len;
 	ident *res;
@@ -94,7 +94,7 @@ ident *mangle3(const char *prefix, ident *scnd, const char *suffix) {
 }
 
 /** Returns a new ident that represents first<c>scnd. */
-static ident *mangle_3(ident *first, char c, ident* scnd) {
+static ident *id_mangle_3(ident *first, char c, ident* scnd) {
 	char *cp;
 	int len;
 	ident *res;
@@ -110,24 +110,24 @@ static ident *mangle_3(ident *first, char c, ident* scnd) {
 }
 
 /* Returns a new ident that represents first_scnd. */
-ident *mangle_u(ident *first, ident* scnd) {
-	return mangle_3(first, '_', scnd);
+ident *id_mangle_u(ident *first, ident* scnd) {
+	return id_mangle_3(first, '_', scnd);
 }
 
 /* Returns a new ident that represents first.scnd. */
-ident *mangle_dot(ident *first, ident* scnd) {
-	return mangle_3(first, '.', scnd);
+ident *id_mangle_dot(ident *first, ident* scnd) {
+	return id_mangle_3(first, '.', scnd);
 }
 
 /* returns a mangled name for a Win32 function using it's calling convention */
-ident *decorate_win32_c_fkt(ir_entity *ent, ident *id) {
+ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id) {
 	ir_type *tp      = get_entity_type(ent);
 	unsigned cc_mask = get_method_calling_convention(tp);
 	char buf[16];
 	int size, i;
 
 	if (IS_CDECL(cc_mask))
-		return mangle3("_", id, "");
+		return id_mangle3("_", id, "");
 	else if (IS_STDCALL(cc_mask)) {
 		size = 0;
 		for (i = get_method_n_params(tp) - 1; i >= 0; --i) {
@@ -137,9 +137,9 @@ ident *decorate_win32_c_fkt(ir_entity *ent, ident *id) {
 		snprintf(buf, sizeof(buf), "@%d", size);
 
 		if (cc_mask & cc_reg_param)
-			return mangle3("@", id, buf);
+			return id_mangle3("@", id, buf);
 		else
-			return mangle3("_", id, buf);
+			return id_mangle3("_", id, buf);
 	}
 	return id;
 }
