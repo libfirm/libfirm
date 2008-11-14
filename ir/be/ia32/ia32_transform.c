@@ -593,9 +593,10 @@ static int is_downconv(const ir_node *node)
 
 	src_mode  = get_irn_mode(get_Conv_op(node));
 	dest_mode = get_irn_mode(node);
-	return ia32_mode_needs_gp_reg(src_mode)
-		&& ia32_mode_needs_gp_reg(dest_mode)
-		&& get_mode_size_bits(dest_mode) < get_mode_size_bits(src_mode);
+	return
+		ia32_mode_needs_gp_reg(src_mode)  &&
+		ia32_mode_needs_gp_reg(dest_mode) &&
+		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
 /* Skip all Down-Conv's on a given node and return the resulting node. */
