@@ -49,9 +49,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* see comment in compute_liveness() */
-#define LV_COMPUTE_SORTED
 #define LV_STD_SIZE             64
+
+/* if defined, use binary search for already live nodes, else linear */
 #define LV_USE_BINARY_SEARCH
 #undef  LV_INTESIVE_CHECKS
 
@@ -334,38 +334,47 @@ static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 	register_node(lv, irn);
 }
 
+static struct {
+	be_lv_t  *lv;         /**< The liveness object. */
+	ir_node  *def;	      /**< The node (value). */
+	ir_node  *def_block;  /**< The block of def. */
+	bitset_t *visited;    /**< A set were all visited blocks are recorded. */
+} re;
+
 /**
  * Mark a node (value) live out at a certain block. Do this also
  * transitively, i.e. if the block is not the block of the value's
  * definition, all predecessors are also marked live.
- * @param def The node (value).
  * @param block The block to mark the value live out of.
- * @param visited A set were all visited blocks are recorded.
  * @param is_true_out Is the node real out there or only live at the end
  * of the block.
  */
-static void live_end_at_block(be_lv_t *lv, ir_node *def, ir_node *block, bitset_t *visited, int is_true_out)
+static void live_end_at_block(ir_node *block, int is_true_out)
 {
+	be_lv_t *lv  = re.lv;
+	ir_node *def = re.def;
+	bitset_t *visited;
+
 	mark_live_end(lv, block, def);
-	if(is_true_out)
+	if (is_true_out)
 		mark_live_out(lv, block, def);
 
-	if(!bitset_contains_irn(visited, block)) {
+	visited = re.visited;
+	if (!bitset_contains_irn(visited, block)) {
 		bitset_add_irn(visited, block);
 
 		/*
-		* If this block is not the definition block, we have to go up
-		* further.
-		*/
-		if(get_nodes_block(def) != block) {
-			int i, n;
+		 * If this block is not the definition block, we have to go up
+		 * further.
+		 */
+		if (re.def_block != block) {
+			int i;
 
 			mark_live_in(lv, block, def);
 
-			for(i = 0, n = get_Block_n_cfgpreds(block); i < n; ++i)
-				live_end_at_block(lv, def, get_Block_cfgpred_block(block, i), visited, 1);
+			for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
+				live_end_at_block(get_Block_cfgpred_block(block, i), 1);
 		}
-
 	}
 }
 
@@ -384,17 +393,17 @@ typedef struct lv_remove_walker_t {
  * Liveness analysis for a value.
  * Compute the set of all blocks a value is live in.
  * @param irn     The node (value).
- * @param walker  walker data
  */
-static void liveness_for_node(ir_node *irn, lv_walker_t *walker)
+static void liveness_for_node(ir_node *irn)
 {
-	be_lv_t         *lv      = walker->lv;
-	bitset_t        *visited = walker->data;
 	const ir_edge_t *edge;
 	ir_node *def_block;
 
-	bitset_clear_all(visited);
+	bitset_clear_all(re.visited);
 	def_block = get_nodes_block(irn);
+
+	re.def       = irn;
+	re.def_block = def_block;
 
 	/* Go over all uses of the value */
 	foreach_out_edge(irn, edge) {
@@ -421,7 +430,7 @@ static void liveness_for_node(ir_node *irn, lv_walker_t *walker)
 		 */
 		if (is_Phi(use)) {
 			ir_node *pred_block = get_Block_cfgpred_block(use_block, edge->pos);
-			live_end_at_block(lv, irn, pred_block, visited, 0);
+			live_end_at_block(pred_block, 0);
 		}
 
 		/*
@@ -429,13 +438,13 @@ static void liveness_for_node(ir_node *irn, lv_walker_t *walker)
 		 * out on the predecessors.
 		 */
 		else if (def_block != use_block) {
-			int i, n;
+			int i;
 
-			mark_live_in(lv, use_block, irn);
+			mark_live_in(re.lv, use_block, irn);
 
-			for (i = 0, n = get_Block_n_cfgpreds(use_block); i < n; ++i) {
+			for (i = get_Block_n_cfgpreds(use_block) - 1; i >= 0; --i) {
 				ir_node *pred_block = get_Block_cfgpred_block(use_block, i);
-				live_end_at_block(lv, irn, pred_block, visited, 1);
+				live_end_at_block(pred_block, 1);
 			}
 		}
 	}
@@ -499,56 +508,38 @@ static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn, void *old)
  */
 static void collect_liveness_nodes(ir_node *irn, void *data)
 {
-	struct obstack *obst = data;
+	ir_node **nodes = data;
 	if (is_liveness_node(irn))
-		obstack_ptr_grow(obst, irn);
+		nodes[get_irn_idx(irn)] = irn;
 }
-
-#ifdef LV_COMPUTE_SORTED
-/**
- * Compare two nodes by its node index.
- */
-static int node_idx_cmp(const void *a, const void *b)
-{
-	const ir_node *p = *(ir_node **) a;
-	const ir_node *q = *(ir_node **) b;
-	int ia = get_irn_idx(p);
-	int ib = get_irn_idx(q);
-	return ia - ib;
-}
-#endif /* LV_COMPUTE_SORTED */
 
 static void compute_liveness(be_lv_t *lv)
 {
-	struct obstack obst;
-	lv_walker_t w;
 	ir_node **nodes;
 	int i, n;
 
 	stat_ev_tim_push();
-	obstack_init(&obst);
-	irg_walk_graph(lv->irg, NULL, collect_liveness_nodes, &obst);
-	n      = obstack_object_size(&obst) / sizeof(nodes[0]);
-	nodes  = obstack_finish(&obst);
+	n = get_irg_last_idx(lv->irg);
+	nodes = NEW_ARR_F(ir_node *, n);
+	memset(nodes, 0, sizeof(nodes[0]) * n);
 
 	/*
 	 * inserting the variables sorted by their ID is probably
 	 * more efficient since the binary sorted set insertion
 	 * will not need to move around the data.
-	 * However, if sorting the variables a priori pays off
-	 * needs to be checked, hence the define.
 	 */
-#ifdef LV_COMPUTE_SORTED
-	qsort(nodes, n, sizeof(nodes[0]), node_idx_cmp);
-#endif
+	irg_walk_graph(lv->irg, NULL, collect_liveness_nodes, nodes);
 
-	w.lv   = lv;
-	w.data = bitset_obstack_alloc(&obst, get_irg_last_idx(lv->irg));
+	re.lv      = lv;
+	re.visited = bitset_malloc(n);
 
-	for (i = 0; i < n; ++i)
-		liveness_for_node(nodes[i], &w);
+	for (i = 0; i < n; ++i) {
+		if (nodes[i] != NULL)
+			liveness_for_node(nodes[i]);
+	}
 
-	obstack_free(&obst, NULL);
+	DEL_ARR_F(nodes);
+	free(re.visited);
 	register_hook(hook_node_info, &lv->hook_info);
 	stat_ev_tim_pop("be_lv_sets_cons");
 }
@@ -657,11 +648,10 @@ void be_liveness_introduce(be_lv_t *lv, ir_node *irn)
 {
 	/* Don't compute liveness information for non-data nodes. */
 	if (lv->nodes && is_liveness_node(irn)) {
-		lv_walker_t w;
-		w.lv   = lv;
-		w.data = bitset_malloc(get_irg_last_idx(lv->irg));
-		liveness_for_node(irn, &w);
-		bitset_free(w.data);
+		re.lv      = lv;
+		re.visited = bitset_malloc(get_irg_last_idx(lv->irg));
+		liveness_for_node(irn);
+		bitset_free(re.visited);
 	}
 }
 
