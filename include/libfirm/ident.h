@@ -44,7 +44,7 @@ typedef struct _ident_if_t {
   /**
    * Store a string and create an ident.
    * This function may be NULL, new_id_from_chars()
-   * is then used to emulate it's behavior.
+   * is then used to emulate its behavior.
    *
    * @param str - the string which shall be stored
    */
@@ -66,7 +66,7 @@ typedef struct _ident_if_t {
   /**
    * Returns the length of the string represented by an ident.
    * This function may be NULL, get_id_str() is then used
-   * to emulate it's behavior.
+   * to emulate its behavior.
    *
    * @param id - the ident
    */
@@ -198,7 +198,7 @@ ident *id_mangle   (ident *first, ident* scnd);
 /** Returns a new ident that represents 'prefixscndsuffix'. */
 ident *id_mangle3 (const char *prefix, ident *middle, const char *suffix);
 
-/** returns a mangled name for a Win32 function using it's calling convention */
+/** returns a mangled name for a Win32 function using its calling convention */
 ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
 #endif
