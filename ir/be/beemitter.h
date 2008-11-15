@@ -80,7 +80,7 @@ static inline void be_emit_string(const char *str)
  * @param str  the null-terminated string constant
  */
 #define be_emit_cstring(str) \
-	be_emit_string_len(str, sizeof(str) - 1);
+	be_emit_string_len(str, sizeof(str) - 1)
 
 /**
  * Initializes an emitter environment.
