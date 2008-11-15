@@ -211,7 +211,6 @@ void be_gas_emit_function_epilog(ir_entity *entity)
  * and even there NOT needed. So we might change it in the future.
  */
 typedef struct _be_gas_decl_env {
-	const be_main_env_t *main_env; /**< The main backend environment, used for it's debug handle. */
 	be_gas_section_t     section;
 	waitq               *worklist;           /**< A worklist we use to place not yet handled entities on. */
 } be_gas_decl_env_t;
@@ -1319,8 +1318,6 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 {
 	be_gas_decl_env_t env;
 	memset(&env, 0, sizeof(env));
-
-	env.main_env = main_env;
 
 	/* dump global type */
 	env.section = (be_gas_section_t) -1;
