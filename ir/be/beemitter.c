@@ -34,12 +34,10 @@
 
 FILE           *emit_file;
 struct obstack  emit_obst;
-int             emit_linelength;
 
 void be_emit_init(FILE *file)
 {
 	emit_file       = file;
-	emit_linelength = 0;
 	obstack_init(&emit_obst);
 }
 
@@ -83,19 +81,20 @@ void be_emit_irprintf(const char *fmt, ...)
 
 void be_emit_write_line(void)
 {
-	char *finished_line = obstack_finish(&emit_obst);
+	size_t  len  = obstack_object_size(&emit_obst);
+	char   *line = obstack_finish(&emit_obst);
 
-	fwrite(finished_line, emit_linelength, 1, emit_file);
-	emit_linelength = 0;
-	obstack_free(&emit_obst, finished_line);
+	fwrite(line, 1, len, emit_file);
+	obstack_free(&emit_obst, line);
 }
 
 void be_emit_pad_comment(void)
 {
-	while(emit_linelength <= 30) {
-		be_emit_char(' ');
-	}
-	be_emit_cstring("    ");
+	size_t len = obstack_object_size(&emit_obst);
+	if (len > 30)
+		len = 30;
+	/* 34 spaces */
+	be_emit_string_len("                                  ", 34 - len);
 }
 
 void be_emit_finish_line_gas(const ir_node *node)

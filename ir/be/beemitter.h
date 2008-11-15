@@ -38,7 +38,6 @@
 /* don't use the following vars directly, they're only here for the inlines */
 extern FILE           *emit_file;
 extern struct obstack  emit_obst;
-extern int             emit_linelength;
 
 /**
  * Emit a character to the (assembler) output.
@@ -48,7 +47,6 @@ extern int             emit_linelength;
 static inline void be_emit_char(char c)
 {
 	obstack_1grow(&emit_obst, c);
-	emit_linelength++;
 }
 
 /**
@@ -61,7 +59,6 @@ static inline void be_emit_char(char c)
 static inline void be_emit_string_len(const char *str, size_t l)
 {
 	obstack_grow(&emit_obst, str, l);
-	emit_linelength += l;
 }
 
 /**
