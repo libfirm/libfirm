@@ -2256,7 +2256,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 				current_ir_graph,
 				block,
 				a,
-				new_r_Const_long(current_ir_graph, mode, 2),
+				new_Const_long(mode, 2),
 				mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_A_A);
 			return n;
@@ -2563,7 +2563,7 @@ restart:
 						get_irn_dbg_info(n),
 						current_ir_graph, blk,
 						mb,
-						new_r_Const_long(current_ir_graph, mode, 1),
+						new_Const_long(mode, 1),
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
@@ -2578,7 +2578,7 @@ restart:
 						get_irn_dbg_info(n),
 						current_ir_graph, blk,
 						ma,
-						new_r_Const_long(current_ir_graph, mode, 1),
+						new_Const_long(mode, 1),
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
