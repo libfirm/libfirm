@@ -257,10 +257,9 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 }  /* new_bd_Phi */
 
 static ir_node *
-new_bd_Const_type(dbg_info *db, ir_node *block, ir_mode *mode, tarval *con, ir_type *tp) {
+new_bd_Const_type(dbg_info *db, ir_mode *mode, tarval *con, ir_type *tp) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
-	(void) block;
 
 	res = new_ir_node(db, irg, get_irg_start_block(irg), op_Const, mode, 0, NULL);
 	res->attr.con.tv = con;
@@ -273,17 +272,17 @@ new_bd_Const_type(dbg_info *db, ir_node *block, ir_mode *mode, tarval *con, ir_t
 }  /* new_bd_Const_type */
 
 static ir_node *
-new_bd_Const(dbg_info *db, ir_node *block, ir_mode *mode, tarval *con) {
+new_bd_Const(dbg_info *db, ir_mode *mode, tarval *con) {
 	ir_graph *irg = current_ir_graph;
 
-	return new_rd_Const_type (db, irg, block, mode, con, firm_unknown_type);
+	return new_rd_Const_type (db, irg, mode, con, firm_unknown_type);
 }  /* new_bd_Const */
 
 static ir_node *
-new_bd_Const_long(dbg_info *db, ir_node *block, ir_mode *mode, long value) {
+new_bd_Const_long(dbg_info *db, ir_mode *mode, long value) {
 	ir_graph *irg = current_ir_graph;
 
-	return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
+	return new_rd_Const(db, irg, mode, new_tarval_from_long(value, mode));
 }  /* new_bd_Const_long */
 
 static ir_node *
@@ -895,32 +894,32 @@ new_rd_Phi(dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in,
 }  /* new_rd_Phi */
 
 ir_node *
-new_rd_Const_type(dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con, ir_type *tp) {
+new_rd_Const_type(dbg_info *db, ir_graph *irg, ir_mode *mode, tarval *con, ir_type *tp) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Const_type(db, block, mode, con, tp);
+	res = new_bd_Const_type(db, mode, con, tp);
 	current_ir_graph = rem;
 
 	return res;
 }  /* new_rd_Const_type */
 
 ir_node *
-new_rd_Const(dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, tarval *con) {
+new_rd_Const(dbg_info *db, ir_graph *irg, ir_mode *mode, tarval *con) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Const_type(db, block, mode, con, firm_unknown_type);
+	res = new_bd_Const_type(db, mode, con, firm_unknown_type);
 	current_ir_graph = rem;
 
 	return res;
 }  /* new_rd_Const */
 
 ir_node *
-new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_node *block, ir_mode *mode, long value) {
-	return new_rd_Const(db, irg, block, mode, new_tarval_from_long(value, mode));
+new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode, long value) {
+	return new_rd_Const(db, irg, mode, new_tarval_from_long(value, mode));
 }  /* new_rd_Const_long */
 
 ir_node *
@@ -1445,17 +1444,15 @@ ir_node *new_r_Return(ir_graph *irg, ir_node *block,
                       ir_node *store, int arity, ir_node **in) {
 	return new_rd_Return(NULL, irg, block, store, arity, in);
 }
-ir_node *new_r_Const(ir_graph *irg, ir_node *block,
-                     ir_mode *mode, tarval *con) {
-	return new_rd_Const(NULL, irg, block, mode, con);
+ir_node *new_r_Const(ir_graph *irg, ir_mode *mode, tarval *con) {
+	return new_rd_Const(NULL, irg, mode, con);
 }
-ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
-                          ir_mode *mode, long value) {
-	return new_rd_Const_long(NULL, irg, block, mode, value);
+ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value) {
+	return new_rd_Const_long(NULL, irg, mode, value);
 }
-ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
+ir_node *new_r_Const_type(ir_graph *irg,
                           ir_mode *mode, tarval *con, ir_type *tp) {
-	return new_rd_Const_type(NULL, irg, block, mode, con, tp);
+	return new_rd_Const_type(NULL, irg, mode, con, tp);
 }
 ir_node *new_r_SymConst(ir_graph *irg, ir_node *block, ir_mode *mode,
                         symconst_symbol value, symconst_kind symkind) {
@@ -2260,17 +2257,17 @@ new_d_Phi(dbg_info *db, int arity, ir_node **in, ir_mode *mode) {
 
 ir_node *
 new_d_Const(dbg_info *db, ir_mode *mode, tarval *con) {
-	return new_bd_Const(db, get_irg_start_block(current_ir_graph), mode, con);
+	return new_bd_Const(db, mode, con);
 }  /* new_d_Const */
 
 ir_node *
 new_d_Const_long(dbg_info *db, ir_mode *mode, long value) {
-	return new_bd_Const_long(db, get_irg_start_block(current_ir_graph), mode, value);
+	return new_bd_Const_long(db, mode, value);
 }  /* new_d_Const_long */
 
 ir_node *
 new_d_Const_type(dbg_info *db, ir_mode *mode, tarval *con, ir_type *tp) {
-	return new_bd_Const_type(db, get_irg_start_block(current_ir_graph), mode, con, tp);
+	return new_bd_Const_type(db, mode, con, tp);
 }  /* new_d_Const_type */
 
 

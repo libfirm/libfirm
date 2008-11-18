@@ -108,7 +108,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
 				ir_mode *mode = get_irn_mode(irn);
 				ir_type *tp   = get_irn_type(irn);
 				tarval *tv    = new_tarval_from_long(nr, mode);
-				c = new_r_Const_type(current_ir_graph, block, mode, tv, tp);
+				c = new_r_Const_type(current_ir_graph, mode, tv, tp);
 			}
 
 			set_irn_n(succ, pos, c);

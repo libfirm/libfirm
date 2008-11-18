@@ -341,7 +341,6 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	tarval   *tv, *tv_l, *tv_h;
 	ir_node  *low, *high;
 	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node  *block = get_nodes_block(node);
 	int      idx;
 	ir_graph *irg = current_ir_graph;
 	ir_mode  *low_mode = env->params->low_unsigned;
@@ -349,10 +348,10 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	tv   = get_Const_tarval(node);
 
 	tv_l = tarval_convert_to(tv, low_mode);
-	low  = new_rd_Const(dbg, irg, block, low_mode, tv_l);
+	low  = new_rd_Const(dbg, irg, low_mode, tv_l);
 
 	tv_h = tarval_convert_to(tarval_shrs(tv, env->tv_mode_bits), mode);
-	high = new_rd_Const(dbg, irg, block, mode, tv_h);
+	high = new_rd_Const(dbg, irg, mode, tv_h);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
@@ -376,11 +375,11 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (env->params->little_endian) {
 		low  = adr;
 		high = new_r_Add(irg, block, adr,
-			new_r_Const(irg, block, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
 			get_irn_mode(adr));
 	} else {
 		low  = new_r_Add(irg, block, adr,
-			new_r_Const(irg, block, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
 			get_irn_mode(adr));
 		high = adr;
 	}  /* if */
@@ -456,11 +455,11 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (env->params->little_endian) {
 		low  = adr;
 		high = new_r_Add(irg, block, adr,
-			new_r_Const(irg, block, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
 			get_irn_mode(adr));
 	} else {
 		low  = new_r_Add(irg, block, adr,
-			new_r_Const(irg, block, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
 			get_irn_mode(adr));
 		high = adr;
 	}  /* if */
@@ -935,12 +934,12 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			idx = get_irn_idx(node);
 
 			if (shf_cnt > 0) {
-				c = new_r_Const_long(irg, block, env->params->low_unsigned, shf_cnt);
+				c = new_r_Const_long(irg, env->params->low_unsigned, shf_cnt);
 				env->entries[idx]->low_word = new_r_Shr(irg, block, left, c, mode);
 			} else {
 				env->entries[idx]->low_word = left;
 			}  /* if */
-			env->entries[idx]->high_word = new_r_Const(irg, block, mode, get_mode_null(mode));
+			env->entries[idx]->high_word = new_r_Const(irg, mode, get_mode_null(mode));
 
 			return;
 		}  /* if */
@@ -972,12 +971,12 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 			mode_l = env->params->low_unsigned;
 			if (shf_cnt > 0) {
-				c = new_r_Const_long(irg, block, mode_l, shf_cnt);
+				c = new_r_Const_long(irg, mode_l, shf_cnt);
 				env->entries[idx]->high_word = new_r_Shl(irg, block, left, c, mode);
 			} else {
 				env->entries[idx]->high_word = left;
 			}  /* if */
-			env->entries[idx]->low_word  = new_r_Const(irg, block, mode_l, get_mode_null(mode_l));
+			env->entries[idx]->low_word  = new_r_Const(irg, mode_l, get_mode_null(mode_l));
 
 			return;
 		}  /* if */
@@ -1010,7 +1009,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 			mode_l = env->params->low_unsigned;
 			if (shf_cnt > 0) {
-				c   = new_r_Const_long(irg, block, mode_l, shf_cnt);
+				c   = new_r_Const_long(irg, mode_l, shf_cnt);
 				low = new_r_Shrs(irg, block, left, c, mode);
 			} else {
 				low = left;
@@ -1018,7 +1017,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			/* low word is expected to have mode_l */
 			env->entries[idx]->low_word = new_r_Conv(irg, block, low, mode_l);
 
-			c = new_r_Const_long(irg, block, mode_l, get_mode_size_bits(mode) - 1);
+			c = new_r_Const_long(irg, mode_l, get_mode_size_bits(mode) - 1);
 			env->entries[idx]->high_word = new_r_Shrs(irg, block, left, c, mode);
 
 			return;

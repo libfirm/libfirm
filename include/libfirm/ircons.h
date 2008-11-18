@@ -1224,20 +1224,23 @@ ir_node *new_rd_Return (dbg_info *db, ir_graph *irg, ir_node *block,
 
 /** Constructor for a Const_type node.
  *
+ * Adds the node to the start block.
+ *
  * The constant represents a target value.  This constructor sets high
  * level type information for the constant value.
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table.
  * @param *tp    The type of the constant.
  */
-ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg, ir_node *block,
+ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg,
                             ir_mode *mode, tarval *con, ir_type *tp);
 
 /** Constructor for a Const node.
+ *
+ * Adds the node to the start block.
  *
  * Constructor for a Const node. The constant represents a target
  * value.  Sets the type information to type_unknown.  (No more
@@ -1245,11 +1248,10 @@ ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg, ir_node *block,
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table.
  */
-ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg, ir_node *block,
+ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg,
                         ir_mode *mode, tarval *con);
 
 /** Constructor for a SymConst_type node.
@@ -2105,6 +2107,8 @@ ir_node *new_r_Return (ir_graph *irg, ir_node *block,
 
 /** Constructor for a Const node.
  *
+ * Adds the node to the start block.
+ *
  * Constructor for a Const node. The constant represents a target
  * value.  Sets the type information to type_unknown.  (No more
  * supported: If tv is entity derives a somehow useful type.)
@@ -2114,35 +2118,37 @@ ir_node *new_r_Return (ir_graph *irg, ir_node *block,
  * @param *mode  The mode of the operands and the results.
  * @param *con   Points to an entry in the constant table.
  */
-ir_node *new_r_Const  (ir_graph *irg, ir_node *block,
+ir_node *new_r_Const  (ir_graph *irg,
 		       ir_mode *mode, tarval *con);
 
 /** Constructor for a Const node.
+ *
+ * Adds the node to the start block.
  *
  * Constructor for a Const node. The constant represents a target
  * value.  Sets the type information to type_unknown.  (No more
  * supported: If tv is entity derives a somehow useful type.)
  *
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  * @param *mode  The mode of the operands and the results.
  * @param value  A value from which the tarval is made.
  */
-ir_node *new_r_Const_long(ir_graph *irg, ir_node *block,
+ir_node *new_r_Const_long(ir_graph *irg,
 		       ir_mode *mode, long value);
 
 /** Constructor for a Const_type node.
+ *
+ * Adds the node to the start block.
  *
  * The constant represents a target value.  This constructor sets high
  * level type information for the constant value.
  *
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  * @param *mode  The mode of the operands and results.
  * @param *con   Points to an entry in the constant table.
  * @param *tp    The type of the constant.
  */
-ir_node *new_r_Const_type(ir_graph *irg, ir_node *block,
+ir_node *new_r_Const_type(ir_graph *irg,
            ir_mode *mode, tarval *con, ir_type *tp);
 
 /** Constructor for a SymConst node.
@@ -2932,7 +2938,7 @@ ir_node *new_d_Return (dbg_info *db, ir_node *store, int arity, ir_node *in[]);
 
 /** Constructor for a Const_type node.
  *
- * Adds the node to the block in current_ir_block.
+ * Adds the node to the start block.
  *
  * The constant represents a target value.  This constructor sets high
  * level type information for the constant value.

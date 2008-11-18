@@ -191,7 +191,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, irg, block, a_l, h_mode);
 			h_res = new_rd_Shl(dbg, irg, block, conv, cnt, h_mode);
-			l_res = new_rd_Const(dbg, irg, block, l_mode, get_mode_null(l_mode));
+			l_res = new_rd_Const(dbg, irg, l_mode, get_mode_null(l_mode));
 
 		} else {
 			/* h_res = SHLD a_h, a_l, cnt */
@@ -215,9 +215,9 @@ static int map_Shl(ir_node *call, void *ctx) {
 	l1 = new_bd_ia32_l_ShlDep(dbg, upper, a_l, cnt, h1, l_mode);
 
 	c_mode = get_irn_mode(cnt);
-	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -227,7 +227,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	h2      = new_rd_Conv(dbg, irg, n_block, l1, h_mode);
-	l2      = new_r_Const(irg, n_block, l_mode, get_mode_null(l_mode));
+	l2      = new_r_Const(irg, l_mode, get_mode_null(l_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -278,7 +278,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, irg, block, a_h, l_mode);
-			h_res = new_rd_Const(dbg, irg, block, h_mode, get_mode_null(h_mode));
+			h_res = new_rd_Const(dbg, irg, h_mode, get_mode_null(h_mode));
 			l_res = new_rd_Shr(dbg, irg, block, conv, cnt, l_mode);
 		} else {
 			/* l_res = SHRD a_h:a_l, cnt */
@@ -301,9 +301,9 @@ static int map_Shr(ir_node *call, void *ctx) {
 	h1 = new_bd_ia32_l_ShrDep(dbg, upper, a_h, cnt, l1, h_mode);
 
 	c_mode = get_irn_mode(cnt);
-	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -313,7 +313,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
-	h2      = new_r_Const(irg, n_block, h_mode, get_mode_null(h_mode));
+	h2      = new_r_Const(irg, h_mode, get_mode_null(h_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -366,7 +366,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 			ir_node *conv    = new_rd_Conv(dbg, irg, block, a_h, l_mode);
 			ir_mode *c_mode  = get_irn_mode(cnt);
 
-			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, block, c_mode, 31), h_mode);
+			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, c_mode, 31), h_mode);
 			l_res = new_rd_Shrs(dbg, irg, block, conv, cnt, l_mode);
 		} else {
 			/* l_res = SHRD a_h:a_l, cnt */
@@ -389,9 +389,9 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	h1 = new_bd_ia32_l_SarDep(dbg, upper, a_h, cnt, l1, h_mode);
 
 	c_mode = get_irn_mode(cnt);
-	irn    = new_r_Const_long(irg, upper, c_mode, 32);
+	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, upper, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -401,7 +401,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
-	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, block, c_mode, 31), h_mode);
+	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, c_mode, 31), h_mode);
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);

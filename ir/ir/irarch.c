@@ -448,12 +448,12 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 	case LEA:
 		l = build_graph(env, inst->in[0]);
 		r = build_graph(env, inst->in[1]);
-		c = new_r_Const(current_ir_graph, env->blk, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		c = new_r_Const(current_ir_graph, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
 		r = new_rd_Shl(env->dbg, current_ir_graph, env->blk, r, c, env->mode);
 		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
 	case SHIFT:
 		l = build_graph(env, inst->in[0]);
-		c = new_r_Const(current_ir_graph, env->blk, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		c = new_r_Const(current_ir_graph, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
 		return inst->irn = new_rd_Shl(env->dbg, current_ir_graph, env->blk, l, c, env->mode);
 	case SUB:
 		l = build_graph(env, inst->in[0]);
@@ -464,7 +464,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 		r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
 	case ZERO:
-		return inst->irn = new_r_Const(current_ir_graph, env->blk, env->mode, get_mode_null(env->mode));
+		return inst->irn = new_r_Const(current_ir_graph, env->mode, get_mode_null(env->mode));
 	default:
 		panic("Unsupported instruction kind");
 		return NULL;
@@ -822,7 +822,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 		struct ms mag = magic(tv);
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(current_ir_graph, block, mode, mag.M);
+		c = new_r_Const(current_ir_graph, mode, mag.M);
 		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
 		/* do we need an Add or Sub */
@@ -833,12 +833,12 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 
 		/* Do we need the shift */
 		if (mag.s > 0) {
-			c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
+			c = new_r_Const_long(current_ir_graph, mode_Iu, mag.s);
 			q    = new_rd_Shrs(dbg, current_ir_graph, block, q, c, mode);
 		}
 
 		/* final */
-		c = new_r_Const_long(current_ir_graph, block, mode_Iu, bits-1);
+		c = new_r_Const_long(current_ir_graph, mode_Iu, bits-1);
 		t = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
 
 		q = new_rd_Add(dbg, current_ir_graph, block, q, t, mode);
@@ -847,7 +847,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 		ir_node *c;
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(current_ir_graph, block, mode, mag.M);
+		c = new_r_Const(current_ir_graph, mode, mag.M);
 		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
 		if (mag.need_add) {
@@ -855,19 +855,19 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 				/* use the GM scheme */
 				t = new_rd_Sub(dbg, current_ir_graph, block, n, q, mode);
 
-				c = new_r_Const(current_ir_graph, block, mode_Iu, get_mode_one(mode_Iu));
+				c = new_r_Const(current_ir_graph, mode_Iu, get_mode_one(mode_Iu));
 				t = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
 
 				t = new_rd_Add(dbg, current_ir_graph, block, t, q, mode);
 
-				c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s-1);
+				c = new_r_Const_long(current_ir_graph, mode_Iu, mag.s-1);
 				q = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
 			} else {
 				/* use the default scheme */
 				q = new_rd_Add(dbg, current_ir_graph, block, q, n, mode);
 			}
 		} else if (mag.s > 0) { /* default scheme, shift needed */
-			c = new_r_Const_long(current_ir_graph, block, mode_Iu, mag.s);
+			c = new_r_Const_long(current_ir_graph, mode_Iu, mag.s);
 			q = new_rd_Shr(dbg, current_ir_graph, block, q, c, mode);
 		}
 	}
@@ -930,11 +930,11 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 				/* create the correction code for signed values only if there might be a remainder */
 				if (! is_Div_remainderless(irn)) {
 					if (k != 1) {
-						k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+						k_node = new_r_Const_long(current_ir_graph, mode_Iu, k - 1);
 						curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
 					}
 
-					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+					k_node = new_r_Const_long(current_ir_graph, mode_Iu, bits - k);
 					curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
 					curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
@@ -942,19 +942,19 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 					k_node = left;
 				}
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				k_node = new_r_Const_long(current_ir_graph, mode_Iu, k);
 				res    = new_rd_Shrs(dbg, current_ir_graph, block, curr, k_node, mode);
 
 				if (n_flag) { /* negate the result */
 					ir_node *k_node;
 
-					k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+					k_node = new_r_Const(current_ir_graph, mode, get_mode_null(mode));
 					res = new_rd_Sub(dbg, current_ir_graph, block, k_node, res, mode);
 				}
 			} else {      /* unsigned case */
 				ir_node *k_node;
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				k_node = new_r_Const_long(current_ir_graph, mode_Iu, k);
 				res    = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
 			}
 		} else {
@@ -1024,23 +1024,23 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 				ir_node *curr = left;
 
 				if (k != 1) {
-					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+					k_node = new_r_Const_long(current_ir_graph, mode_Iu, k - 1);
 					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
 				}
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+				k_node = new_r_Const_long(current_ir_graph, mode_Iu, bits - k);
 				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
 				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
+				k_node = new_r_Const_long(current_ir_graph, mode, (-1) << k);
 				curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
 				res    = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
 			} else {      /* unsigned case */
 				ir_node *k_node;
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
+				k_node = new_r_Const_long(current_ir_graph, mode, (1 << k) - 1);
 				res    = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
 			}
 		} else {
@@ -1118,37 +1118,37 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 				ir_node *curr = left;
 
 				if (k != 1) {
-					k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k - 1);
+					k_node = new_r_Const_long(current_ir_graph, mode_Iu, k - 1);
 					curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);
 				}
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, bits - k);
+				k_node = new_r_Const_long(current_ir_graph, mode_Iu, bits - k);
 				curr   = new_rd_Shr(dbg, current_ir_graph, block, curr, k_node, mode);
 
 				curr   = new_rd_Add(dbg, current_ir_graph, block, left, curr, mode);
 
-				c_k    = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				c_k    = new_r_Const_long(current_ir_graph, mode_Iu, k);
 
 				*div   = new_rd_Shrs(dbg, current_ir_graph, block, curr, c_k, mode);
 
 				if (n_flag) { /* negate the div result */
 					ir_node *k_node;
 
-					k_node = new_r_Const(current_ir_graph, block, mode, get_mode_null(mode));
+					k_node = new_r_Const(current_ir_graph, mode, get_mode_null(mode));
 					*div = new_rd_Sub(dbg, current_ir_graph, block, k_node, *div, mode);
 				}
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode, (-1) << k);
+				k_node = new_r_Const_long(current_ir_graph, mode, (-1) << k);
 				curr   = new_rd_And(dbg, current_ir_graph, block, curr, k_node, mode);
 
 				*mod   = new_rd_Sub(dbg, current_ir_graph, block, left, curr, mode);
 			} else {      /* unsigned case */
 				ir_node *k_node;
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode_Iu, k);
+				k_node = new_r_Const_long(current_ir_graph, mode_Iu, k);
 				*div   = new_rd_Shr(dbg, current_ir_graph, block, left, k_node, mode);
 
-				k_node = new_r_Const_long(current_ir_graph, block, mode, (1 << k) - 1);
+				k_node = new_r_Const_long(current_ir_graph, mode, (1 << k) - 1);
 				*mod   = new_rd_And(dbg, current_ir_graph, block, left, k_node, mode);
 			}
 		} else {

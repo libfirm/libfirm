@@ -111,7 +111,6 @@ static void
 instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 {
 	ir_graph *irg = get_irn_irg(bb);
-	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown;
 	ir_node  *cnst;
 
@@ -122,12 +121,12 @@ instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 		return;
 
 	unknown = new_r_Unknown(irg, mode_M);
-	cnst    = new_r_Const_long(irg, start_block, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
+	cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
 	offset  = new_r_Add(irg, bb, address, cnst, mode_P);
 	load    = new_r_Load(irg, bb, unknown, offset, mode_Iu);
 	projm   = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
 	proji   = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
-	cnst    = new_r_Const_long(irg, start_block, mode_Iu, 1);
+	cnst    = new_r_Const_long(irg, mode_Iu, 1);
 	add     = new_r_Add(irg, bb, proji, cnst, mode_Iu);
 	store   = new_r_Store(irg, bb, projm, offset, add);
 	projm   = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
@@ -244,7 +243,7 @@ gen_initializer_irg(ir_entity * ent_filename, ir_entity * bblock_id, ir_entity *
 	ins[1] = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
 	sym.entity_p = bblock_counts;
 	ins[2] = new_r_SymConst(irg, start_block, mode_P_data, sym, symconst_addr_ent);
-	ins[3] = new_r_Const_long(irg, start_block, mode_Iu, n_blocks);
+	ins[3] = new_r_Const_long(irg, mode_Iu, n_blocks);
 
 	call = new_r_Call(irg, bb, get_irg_initial_mem(irg), symconst, 4, ins, init_type);
 	ret = new_r_Return(irg, bb, new_r_Proj(irg, bb, call, mode_M, pn_Call_M_regular), 0, NULL);

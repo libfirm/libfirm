@@ -119,7 +119,7 @@ static void lower_sel(ir_node *sel) {
 
 				/* Size of the array element */
 				tv = new_tarval_from_long(get_type_size_bytes(basetyp), mode_Int);
-				last_size = new_rd_Const(dbg, irg, get_irg_start_block(irg), mode_Int, tv);
+				last_size = new_rd_Const(dbg, irg, mode_Int, tv);
 
 				/*
 				 * We compute the offset part of dimension d_i recursively
@@ -188,7 +188,7 @@ static void lower_sel(ir_node *sel) {
 
 				newn = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel),
 					new_rd_Mul(dbg, irg, bl, index,
-					new_r_Const(irg, get_irg_start_block(irg), idx_mode, tv),
+					new_r_Const(irg, idx_mode, tv),
 					idx_mode),
 					mode);
 			}
@@ -201,7 +201,7 @@ static void lower_sel(ir_node *sel) {
 
 			/* We need an additional load when accessing methods from a dispatch table. */
 			tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
-			cnst = new_rd_Const(dbg, irg, get_irg_start_block(irg), mode_Int, tv);
+			cnst = new_rd_Const(dbg, irg, mode_Int, tv);
 			add  = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel), cnst, mode);
 #ifdef DO_CACHEOPT  /* cacheopt version */
 			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), sel, ent_mode);
@@ -224,7 +224,7 @@ static void lower_sel(ir_node *sel) {
 				ir_mode *mode_UInt = get_reference_mode_unsigned_eq(mode);
 
 				tv = new_tarval_from_long(offset, mode_UInt);
-				cnst = new_r_Const(irg, get_irg_start_block(irg), mode_UInt, tv);
+				cnst = new_r_Const(irg, mode_UInt, tv);
 				newn = new_rd_Add(dbg, irg, bl, newn, cnst, mode);
 			}
 		} else {
@@ -259,9 +259,7 @@ static void lower_symconst(ir_node *symc) {
 		assert(get_type_state(tp) == layout_fixed);
 		mode = get_irn_mode(symc);
 		tv   = new_tarval_from_long(get_type_size_bytes(tp), mode);
-		newn = new_r_Const(current_ir_graph,
-		                   get_irg_start_block(current_ir_graph),
-		                   get_irn_mode(symc), tv);
+		newn = new_r_Const(current_ir_graph, get_irn_mode(symc), tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -273,9 +271,7 @@ static void lower_symconst(ir_node *symc) {
 		assert(get_type_state(tp) == layout_fixed);
 		mode = get_irn_mode(symc);
 		tv   = new_tarval_from_long(get_type_alignment_bytes(tp), mode);
-		newn = new_r_Const(current_ir_graph,
-		                   get_irg_start_block(current_ir_graph),
-		                   mode, tv);
+		newn = new_r_Const(current_ir_graph, mode, tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -293,9 +289,7 @@ static void lower_symconst(ir_node *symc) {
 		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 		mode = get_irn_mode(symc);
 		tv   = new_tarval_from_long(get_entity_offset(ent), mode);
-		newn = new_r_Const(current_ir_graph,
-		                   get_irg_start_block(current_ir_graph),
-		                   mode, tv);
+		newn = new_r_Const(current_ir_graph, mode, tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -306,9 +300,7 @@ static void lower_symconst(ir_node *symc) {
 		ec   = get_SymConst_enum(symc);
 		assert(get_type_state(get_enumeration_owner(ec)) == layout_fixed);
 		tv   = get_enumeration_value(ec);
-		newn = new_r_Const(current_ir_graph,
-				  get_irg_start_block(current_ir_graph),
-				  get_irn_mode(symc), tv);
+		newn = new_r_Const(current_ir_graph, get_irn_mode(symc), tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -405,11 +397,11 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 
 		if (shift_count_up) {
 			res = new_r_Shl(current_ir_graph, block, res,
-				new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(shift_count_up, mode_Iu)), mode);
+				new_r_Const(current_ir_graph, mode_Iu, new_tarval_from_long(shift_count_up, mode_Iu)), mode);
 		}
 		if (shift_count_down) {
 			res = new_r_Shrs(current_ir_graph, block, res,
-				new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(shift_count_down, mode_Iu)), mode);
+				new_r_Const(current_ir_graph, mode_Iu, new_tarval_from_long(shift_count_down, mode_Iu)), mode);
 		}
 	} else { /* unsigned */
 		int shift_count_down  = bit_offset;
@@ -417,11 +409,11 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 
 		if (shift_count_down) {
 			res = new_r_Shr(current_ir_graph, block, res,
-				new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(shift_count_down, mode_Iu)), mode);
+				new_r_Const(current_ir_graph, mode_Iu, new_tarval_from_long(shift_count_down, mode_Iu)), mode);
 		}
 		if (bits != bf_bits) {
 			res = new_r_And(current_ir_graph, block, res,
-				new_r_Const(current_ir_graph, block, mode, new_tarval_from_long(mask, mode)), mode);
+				new_r_Const(current_ir_graph, mode, new_tarval_from_long(mask, mode)), mode);
 		}
 	}
 
@@ -494,15 +486,15 @@ static void lower_bitfields_stores(ir_node *store) {
 		irn  = new_r_Proj(current_ir_graph, block, irn, mode, pn_Load_res);
 
 		irn = new_r_And(current_ir_graph, block, irn,
-			new_r_Const(current_ir_graph, block, mode, new_tarval_from_long(neg_mask, mode)), mode);
+			new_r_Const(current_ir_graph, mode, new_tarval_from_long(neg_mask, mode)), mode);
 
 		if (bit_offset > 0) {
 			value = new_r_Shl(current_ir_graph, block, value,
-				new_r_Const(current_ir_graph, block, mode_Iu, new_tarval_from_long(bit_offset, mode_Iu)), mode);
+				new_r_Const(current_ir_graph, mode_Iu, new_tarval_from_long(bit_offset, mode_Iu)), mode);
 		}
 
 		value = new_r_And(current_ir_graph, block, value,
-			new_r_Const(current_ir_graph, block, mode, new_tarval_from_long(mask, mode)), mode);
+			new_r_Const(current_ir_graph, mode, new_tarval_from_long(mask, mode)), mode);
 
 		value = new_r_Or(current_ir_graph, block, value, irn, mode);
 	}
