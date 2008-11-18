@@ -448,12 +448,12 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 	case LEA:
 		l = build_graph(env, inst->in[0]);
 		r = build_graph(env, inst->in[1]);
-		c = new_r_Const(current_ir_graph, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		c = new_Const(env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
 		r = new_rd_Shl(env->dbg, current_ir_graph, env->blk, r, c, env->mode);
 		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
 	case SHIFT:
 		l = build_graph(env, inst->in[0]);
-		c = new_r_Const(current_ir_graph, env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
+		c = new_Const(env->shf_mode, new_tarval_from_long(inst->shift_count, env->shf_mode));
 		return inst->irn = new_rd_Shl(env->dbg, current_ir_graph, env->blk, l, c, env->mode);
 	case SUB:
 		l = build_graph(env, inst->in[0]);
@@ -464,7 +464,7 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
 		r = build_graph(env, inst->in[1]);
 		return inst->irn = new_rd_Add(env->dbg, current_ir_graph, env->blk, l, r, env->mode);
 	case ZERO:
-		return inst->irn = new_r_Const(current_ir_graph, env->mode, get_mode_null(env->mode));
+		return inst->irn = new_Const(env->mode, get_mode_null(env->mode));
 	default:
 		panic("Unsupported instruction kind");
 		return NULL;
@@ -822,7 +822,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 		struct ms mag = magic(tv);
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(current_ir_graph, mode, mag.M);
+		c = new_Const(mode, mag.M);
 		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
 		/* do we need an Add or Sub */
@@ -847,7 +847,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 		ir_node *c;
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(current_ir_graph, mode, mag.M);
+		c = new_Const(mode, mag.M);
 		q = new_rd_Mulh(dbg, current_ir_graph, block, n, c, mode);
 
 		if (mag.need_add) {
@@ -855,7 +855,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 				/* use the GM scheme */
 				t = new_rd_Sub(dbg, current_ir_graph, block, n, q, mode);
 
-				c = new_r_Const(current_ir_graph, mode_Iu, get_mode_one(mode_Iu));
+				c = new_Const(mode_Iu, get_mode_one(mode_Iu));
 				t = new_rd_Shr(dbg, current_ir_graph, block, t, c, mode);
 
 				t = new_rd_Add(dbg, current_ir_graph, block, t, q, mode);
@@ -948,7 +948,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 				if (n_flag) { /* negate the result */
 					ir_node *k_node;
 
-					k_node = new_r_Const(current_ir_graph, mode, get_mode_null(mode));
+					k_node = new_Const(mode, get_mode_null(mode));
 					res = new_rd_Sub(dbg, current_ir_graph, block, k_node, res, mode);
 				}
 			} else {      /* unsigned case */
@@ -1134,7 +1134,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 				if (n_flag) { /* negate the div result */
 					ir_node *k_node;
 
-					k_node = new_r_Const(current_ir_graph, mode, get_mode_null(mode));
+					k_node = new_Const(mode, get_mode_null(mode));
 					*div = new_rd_Sub(dbg, current_ir_graph, block, k_node, *div, mode);
 				}
 

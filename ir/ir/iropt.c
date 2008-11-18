@@ -2297,7 +2297,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 				}
 				if (op == b) {
 					/* ~x + x = -1 */
-					n = new_r_Const(current_ir_graph, mode, get_mode_minus_one(mode));
+					n = new_Const(mode, get_mode_minus_one(mode));
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
 					return n;
 				}
@@ -2307,7 +2307,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 				if (op == a) {
 					/* x + ~x = -1 */
-					n = new_r_Const(current_ir_graph, mode, get_mode_minus_one(mode));
+					n = new_Const(mode, get_mode_minus_one(mode));
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
 					return n;
 				}
@@ -2626,7 +2626,7 @@ restart:
 			tv = tarval_add(tv, get_mode_one(mode));
 			if (tv != tarval_bad) {
 				ir_node *blk = get_nodes_block(n);
-				ir_node *c = new_r_Const(current_ir_graph, mode, tv);
+				ir_node *c = new_Const(mode, tv);
 				n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, get_Not_op(b), c, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_C_NOT_X);
 				return n;
@@ -3094,7 +3094,7 @@ static ir_node *transform_node_Quot(ir_node *n) {
 			if (tv != tarval_bad &&
 			    (tarval_ieee754_get_exact() || (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic) == 0)) {
 				ir_node *blk = get_nodes_block(n);
-				ir_node *c = new_r_Const(current_ir_graph, mode, tv);
+				ir_node *c = new_Const(mode, tv);
 				ir_node *a = get_Quot_left(n);
 				ir_node *m = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, a, c, mode);
 				ir_node *mem = get_Quot_mem(n);
@@ -3611,7 +3611,7 @@ static ir_node *transform_node_Minus(ir_node *n) {
 			ir_node *op   = get_Not_op(a);
 			tarval *tv    = get_mode_one(mode);
 			ir_node *blk  = get_nodes_block(n);
-			ir_node *c    = new_r_Const(current_ir_graph, mode, tv);
+			ir_node *c    = new_Const(mode, tv);
 			n = new_rd_Add(get_irn_dbg_info(n), current_ir_graph, blk, op, c, mode);
 			DBG_OPT_ALGSIM2(oldn, a, n, FS_OPT_MINUS_NOT);
 			return n;
@@ -4860,9 +4860,9 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 		block = get_irn_n(or, -1);
 
 		new_and = new_r_And(current_ir_graph, block,
-			value, new_r_Const(current_ir_graph, mode, tarval_and(tv4, tv2)), mode);
+			value, new_Const(mode, tarval_and(tv4, tv2)), mode);
 
-		new_const = new_r_Const(current_ir_graph, mode, tarval_or(tv3, tv1));
+		new_const = new_Const(mode, tarval_or(tv3, tv1));
 
 		set_Or_left(or, new_and);
 		set_Or_right(or, new_const);
@@ -5076,7 +5076,7 @@ static ir_node *transform_node_shift(ir_node *n) {
 	block = get_nodes_block(n);
 
 	in[0] = get_binop_left(left);
-	in[1] = new_r_Const(current_ir_graph, get_tarval_mode(res), res);
+	in[1] = new_Const(get_tarval_mode(res), res);
 
 	irn = new_ir_node(NULL, current_ir_graph, block, get_irn_op(n), mode, 2, in);
 

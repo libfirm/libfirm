@@ -517,7 +517,7 @@ static int reassoc_Shl(ir_node **node) {
 		return 0;
 
 	blk = get_nodes_block(n);
-	c   = new_r_Const(current_ir_graph, mode, tv);
+	c   = new_Const(mode, tv);
 	irn = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, x, c, mode);
 
 	if (irn != n) {
