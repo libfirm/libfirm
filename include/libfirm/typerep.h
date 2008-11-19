@@ -46,7 +46,9 @@
  *
  *   - owner:      A compound type this entity is a part of.
  *   - type:       The type of this entity.
- *   - name:       The string that represents this entity in the source program. *   - allocation: A flag saying whether the entity is dynamically or statically *                 allocated (values: dynamic_allocated,  static_allocated,
+ *   - name:       The string that represents this entity in the source program.
+ *   - allocation: A flag saying whether the entity is dynamically or statically
+ *                 allocated (values: dynamic_allocated,  static_allocated,
  *                 automatic_allocated).
  *   - visibility: A flag indicating the visibility of this entity (values: local,
  *                 external_visible,  external_allocated)
