@@ -1254,6 +1254,22 @@ ir_node *new_rd_Const_type (dbg_info *db, ir_graph *irg,
 ir_node *new_rd_Const  (dbg_info *db, ir_graph *irg,
                         ir_mode *mode, tarval *con);
 
+/** Constructor for a Const node.
+ *
+ * Adds the node to the start block.
+ *
+ * Constructor for a Const node. The constant represents a target
+ * value.  Sets the type information to type_unknown.  (No more
+ * supported: If tv is entity derives a somehow useful type.)
+ *
+ * @param *db    A pointer for debug information.
+ * @param *irg   The IR graph the node  belongs to.
+ * @param *mode  The mode of the operands and results.
+ * @param value  A value from which the tarval is made.
+ */
+ir_node *new_rd_Const_long (dbg_info *db, ir_graph *irg,
+		                    ir_mode *mode, long value);
+
 /** Constructor for a SymConst_type node.
  *
  *  This is the constructor for a symbolic constant.
