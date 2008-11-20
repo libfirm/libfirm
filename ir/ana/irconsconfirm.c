@@ -329,12 +329,11 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 	} else { /* not pn_Cmp_Eq cases */
 		ir_node *c = NULL;
 
-		for (edge = get_irn_out_edge_first(left); edge; edge = next) {
+		foreach_out_edge_safe(left, edge, next) {
 			ir_node *succ = get_edge_src_irn(edge);
 			int     pos   = get_edge_src_pos(edge);
 			ir_node *blk  = get_effective_use_block(succ, pos);
 
-			next = get_irn_out_edge_next(left, edge);
 			if (block_dominates(block, blk)) {
 				/*
 				 * Ok, we found a usage of left in a block
@@ -354,26 +353,32 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 
 		if (! is_Const(right)) {
 			/* also construct inverse Confirms */
-			c   = NULL;
-			pnc = get_inversed_pnc(pnc);
-			for (edge = get_irn_out_edge_first(right); edge; edge = next) {
-				ir_node *succ = get_edge_src_irn(edge);
-				int     pos   = get_edge_src_pos(edge);
-				ir_node *blk  = get_effective_use_block(succ, pos);
+			ir_node *rc = NULL;
 
-				next = get_irn_out_edge_next(left, edge);
+			pnc = get_inversed_pnc(pnc);
+			foreach_out_edge_safe(right, edge, next) {
+				ir_node *succ = get_edge_src_irn(edge);
+				int     pos;
+				ir_node *blk;
+
+				if (succ == c)
+					continue;
+
+				pos  = get_edge_src_pos(edge);
+				blk  = get_effective_use_block(succ, pos);
+
 				if (block_dominates(block, blk)) {
 					/*
 					 * Ok, we found a usage of right in a block
 					 * dominated by the branch block.
 					 * We can replace the input with a Confirm(right, pnc^-1, left).
 					 */
-					if (! c)
-						c = new_r_Confirm(current_ir_graph, block, right, left, pnc);
+					if (! rc)
+						rc = new_r_Confirm(current_ir_graph, block, right, left, pnc);
 
 					pos = get_edge_src_pos(edge);
-					set_irn_n(succ, pos, c);
-					DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, c));
+					set_irn_n(succ, pos, rc);
+					DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, rc));
 
 					env->num_confirms += 1;
 				}
