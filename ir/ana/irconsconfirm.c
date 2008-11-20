@@ -351,6 +351,34 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 				env->num_confirms += 1;
 			}
 		}
+
+		if (! is_Const(right)) {
+			/* also construct inverse Confirms */
+			c   = NULL;
+			pnc = get_inversed_pnc(pnc);
+			for (edge = get_irn_out_edge_first(right); edge; edge = next) {
+				ir_node *succ = get_edge_src_irn(edge);
+				int     pos   = get_edge_src_pos(edge);
+				ir_node *blk  = get_effective_use_block(succ, pos);
+
+				next = get_irn_out_edge_next(left, edge);
+				if (block_dominates(block, blk)) {
+					/*
+					 * Ok, we found a usage of right in a block
+					 * dominated by the branch block.
+					 * We can replace the input with a Confirm(right, pnc^-1, left).
+					 */
+					if (! c)
+						c = new_r_Confirm(current_ir_graph, block, right, left, pnc);
+
+					pos = get_edge_src_pos(edge);
+					set_irn_n(succ, pos, c);
+					DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, c));
+
+					env->num_confirms += 1;
+				}
+			}
+		}
 	}
 }  /* handle_if */
 
