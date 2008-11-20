@@ -212,7 +212,6 @@ int sc_get_highest_set_bit(const void *value);
 int sc_get_lowest_set_bit(const void *value);
 int sc_is_zero(const void *value);
 int sc_is_negative(const void *value);
-int sc_had_carry(void);
 
 /**
  * Return the bits of a tarval at a given byte-offset.
@@ -243,5 +242,11 @@ const char *sc_print(const void *val1, unsigned bits, enum base_t base, int sign
 void init_strcalc(int precision_in_bytes);
 void finish_strcalc(void);
 int sc_get_precision(void);
+
+/** Return the bit at a given position. */
+int sc_get_bit_at(const void *value, unsigned pos);
+
+/* Strange semantics */
+int sc_had_carry(void);
 
 #endif /* FIRM_TV_STRCALC_H */

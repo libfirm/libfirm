@@ -97,6 +97,9 @@ static struct set *tarvals = NULL;
 /** A set containing all existing values. */
 static struct set *values = NULL;
 
+/** The carry flag for SOME operations. -1 means UNDEFINED here */
+static int carry_flag = -1;
+
 /** The integer overflow mode. */
 static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 
@@ -697,8 +700,6 @@ tarval *get_tarval_minus_inf(ir_mode *mode) {
  * test if negative number, 1 means 'yes'
  */
 int tarval_is_negative(tarval *a) {
-	assert(a);
-
 	if (get_mode_n_vector_elems(a->mode) > 1)
 		panic("vector arithmetic not implemented yet");
 
@@ -753,8 +754,7 @@ int tarval_is_minus_one(tarval *a) {
  * comparison
  */
 pn_Cmp tarval_cmp(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
+	carry_flag = -1;
 
 	if (a == tarval_bad || b == tarval_bad) {
 		panic("Comparison with tarval_bad");
@@ -817,6 +817,8 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 	char                    *buffer;
 	fp_value                *res;
 	const ieee_descriptor_t *desc;
+
+	carry_flag = -1;
 
 	assert(src);
 	assert(dst_mode);
@@ -926,7 +928,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode) {
 tarval *tarval_not(tarval *a) {
 	char *buffer;
 
-	assert(a);
+	carry_flag = -1;
 
 	/* works for vector mode without changes */
 
@@ -956,8 +958,9 @@ tarval *tarval_not(tarval *a) {
 tarval *tarval_neg(tarval *a) {
 	char *buffer;
 
-	assert(a);
 	assert(mode_is_num(a->mode)); /* negation only for numerical values */
+
+	carry_flag = -1;
 
 	/* note: negation is allowed even for unsigned modes. */
 
@@ -991,8 +994,7 @@ tarval *tarval_neg(tarval *a) {
 tarval *tarval_add(tarval *a, tarval *b) {
 	char *buffer;
 
-	assert(a);
-	assert(b);
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1013,6 +1015,7 @@ tarval *tarval_add(tarval *a, tarval *b) {
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
 		sc_add(a->value, b->value, buffer);
+		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
@@ -1033,8 +1036,7 @@ tarval *tarval_add(tarval *a, tarval *b) {
 tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode) {
 	char    *buffer;
 
-	assert(a);
-	assert(b);
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1055,6 +1057,7 @@ tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode) {
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
 		buffer = alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
+		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
 	case irms_float_number:
@@ -1075,9 +1078,9 @@ tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode) {
 tarval *tarval_mul(tarval *a, tarval *b) {
 	char *buffer;
 
-	assert(a);
-	assert(b);
 	assert(a->mode == b->mode);
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1107,9 +1110,9 @@ tarval *tarval_mul(tarval *a, tarval *b) {
  * floating point division
  */
 tarval *tarval_quo(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert((a->mode == b->mode) && mode_is_float(a->mode));
+
+	carry_flag = -1;
 
 	if (no_float)
 		return tarval_bad;
@@ -1128,9 +1131,9 @@ tarval *tarval_quo(tarval *a, tarval *b) {
  * overflow is impossible, but look out for division by zero
  */
 tarval *tarval_div(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1149,9 +1152,9 @@ tarval *tarval_div(tarval *a, tarval *b) {
  * overflow is impossible, but look out for division by zero
  */
 tarval *tarval_mod(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1174,9 +1177,9 @@ tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod) {
 	char *div_res = alloca(len);
 	char *mod_res = alloca(len);
 
-	assert(a);
-	assert(b);
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1198,7 +1201,7 @@ tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod) {
 tarval *tarval_abs(tarval *a) {
 	char *buffer;
 
-	assert(a);
+	carry_flag = -1;
 	assert(mode_is_num(a->mode));
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
@@ -1236,11 +1239,10 @@ tarval *tarval_abs(tarval *a) {
  * bitwise and
  */
 tarval *tarval_and(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert(a->mode == b->mode);
 
 	/* works even for vector modes */
+	carry_flag = 0;
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
@@ -1260,11 +1262,10 @@ tarval *tarval_and(tarval *a, tarval *b) {
  * bitwise or
  */
 tarval *tarval_or(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert(a->mode == b->mode);
 
 	/* works even for vector modes */
+	carry_flag = 0;
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
@@ -1284,11 +1285,10 @@ tarval *tarval_or(tarval *a, tarval *b) {
  * bitwise exclusive or (xor)
  */
 tarval *tarval_eor(tarval *a, tarval *b) {
-	assert(a);
-	assert(b);
 	assert((a->mode == b->mode));
 
 	/* works even for vector modes */
+	carry_flag = 0;
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_internal_boolean:
@@ -1310,9 +1310,9 @@ tarval *tarval_eor(tarval *a, tarval *b) {
 tarval *tarval_shl(tarval *a, tarval *b) {
 	char *temp_val = NULL;
 
-	assert(a);
-	assert(b);
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1337,9 +1337,9 @@ tarval *tarval_shl(tarval *a, tarval *b) {
 tarval *tarval_shr(tarval *a, tarval *b) {
 	char *temp_val = NULL;
 
-	assert(a);
-	assert(b);
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1364,9 +1364,9 @@ tarval *tarval_shr(tarval *a, tarval *b) {
 tarval *tarval_shrs(tarval *a, tarval *b) {
 	char *temp_val = NULL;
 
-	assert(a);
-	assert(b);
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1391,9 +1391,9 @@ tarval *tarval_shrs(tarval *a, tarval *b) {
 tarval *tarval_rotl(tarval *a, tarval *b) {
 	char *temp_val = NULL;
 
-	assert(a);
-	assert(b);
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
+
+	carry_flag = -1;
 
 	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -1416,8 +1416,9 @@ tarval *tarval_rotl(tarval *a, tarval *b) {
  * carry flag of the last operation
  */
 int tarval_carry(void) {
-	panic("tarval_carry() requetsed: not implemented on all operations");
-	return sc_had_carry();
+	if (carry_flag == -1)
+		panic("Carry undefined for the last operation");
+	return carry_flag;
 }
 
 /*

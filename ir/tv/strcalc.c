@@ -1275,6 +1275,15 @@ int sc_get_lowest_set_bit(const void *value) {
 	return -1;
 }
 
+int sc_get_bit_at(const void *value, unsigned pos) {
+	const char *val = value;
+	unsigned nibble = pos >> 2;
+
+	if (and_table[val[nibble]][shift_table[pos & 3]] != SC_0)
+		return 1;
+	return 0;
+}
+
 int sc_is_zero(const void *value) {
 	const char* val = (const char *)value;
 	int counter;
