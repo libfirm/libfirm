@@ -685,13 +685,69 @@ static int map_Conv(ir_node *call, void *ctx) {
 
 		assert(mode_is_float(get_irn_mode(a_f)) && "unexpected Conv call");
 
-		float_to_ll = new_bd_ia32_l_FloattoLL(dbg, block, a_f);
+		if (mode_is_signed(h_res_mode)) {
+			/* convert from float to signed 64bit */
+			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, block, a_f);
 
-		l_res = new_r_Proj(irg, block, float_to_ll, l_res_mode,
-		                   pn_ia32_l_FloattoLL_res_low);
-		h_res = new_r_Proj(irg, block, float_to_ll, h_res_mode,
-		                   pn_ia32_l_FloattoLL_res_high);
+			l_res = new_r_Proj(irg, block, float_to_ll, l_res_mode,
+							   pn_ia32_l_FloattoLL_res_low);
+			h_res = new_r_Proj(irg, block, float_to_ll, h_res_mode,
+							   pn_ia32_l_FloattoLL_res_high);
+		} else {
+			/* convert from float to signed 64bit */
+			ir_mode *flt_mode = get_irn_mode(a_f);
+			tarval  *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
+			ir_node *flt_corr = new_Const(flt_mode, flt_tv);
+			ir_node *lower_blk = block;
+			ir_node *upper_blk;
+			ir_node *cmp, *proj, *cond, *blk, *int_phi, *flt_phi;
+			ir_node *in[2];
 
+			part_block(call);
+			upper_blk = get_nodes_block(call);
+
+			cmp   = new_rd_Cmp(dbg, irg, upper_blk, a_f, flt_corr);
+			proj  = new_r_Proj(irg, upper_blk, cmp, mode_b, pn_Cmp_Lt);
+			cond  = new_rd_Cond(dbg, irg, upper_blk, proj);
+			in[0] = new_r_Proj(irg, upper_blk, cond, mode_X, pn_Cond_true);
+			in[1] = new_r_Proj(irg, upper_blk, cond, mode_X, pn_Cond_false);
+			blk   = new_r_Block(irg, 1, &in[1]);
+			in[1] = new_r_Jmp(irg, blk);
+
+			set_irn_in(lower_blk, 2, in);
+
+			/* create to Phis */
+			in[0] = new_Const(h_res_mode, get_mode_null(h_res_mode));
+			in[1] = new_Const_long(h_res_mode, 0x80000000);
+
+			int_phi = new_r_Phi(irg, lower_blk, 2, in, h_res_mode);
+
+			in[0] = a_f;
+			in[1] = new_rd_Sub(dbg, irg, upper_blk, a_f, flt_corr, flt_mode);
+
+			flt_phi = new_r_Phi(irg, lower_blk, 2, in, flt_mode);
+
+			/* fix Phi links for next part_block() */
+			set_irn_link(lower_blk, int_phi);
+			set_irn_link(int_phi, flt_phi);
+			set_irn_link(flt_phi, NULL);
+
+			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
+
+			l_res = new_r_Proj(irg, lower_blk, float_to_ll, l_res_mode,
+							   pn_ia32_l_FloattoLL_res_low);
+			h_res = new_r_Proj(irg, lower_blk, float_to_ll, h_res_mode,
+							   pn_ia32_l_FloattoLL_res_high);
+
+			h_res = new_rd_Add(dbg, irg, lower_blk, h_res, int_phi, h_res_mode);
+
+			/* move the call and its Proj's to the lower block */
+			set_nodes_block(call, lower_blk);
+
+			for (proj = get_irn_link(call); proj != NULL; proj = get_irn_link(proj))
+				set_nodes_block(proj, lower_blk);
+			block = lower_blk;
+		}
 		/* lower the call */
 		resolve_call(call, l_res, h_res, irg, block);
 	} else if (n == 2) {
