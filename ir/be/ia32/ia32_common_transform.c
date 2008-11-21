@@ -244,6 +244,8 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case '=': break;
 		case '+': break;
 
+		case '&': break;
+
 		case '*':
 			++c;
 			break;
