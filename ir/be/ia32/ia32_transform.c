@@ -76,18 +76,21 @@
 #define SFP_ABS    "0x7FFFFFFF"
 #define DFP_ABS    "0x7FFFFFFFFFFFFFFF"
 #define DFP_INTMAX "9223372036854775807"
+#define ULL_BIAS   "18446744073709551616"
 
 #define TP_SFP_SIGN "ia32_sfp_sign"
 #define TP_DFP_SIGN "ia32_dfp_sign"
 #define TP_SFP_ABS  "ia32_sfp_abs"
 #define TP_DFP_ABS  "ia32_dfp_abs"
 #define TP_INT_MAX  "ia32_int_max"
+#define TP_ULL_BIAS "ia32_ull_bias"
 
-#define ENT_SFP_SIGN "IA32_SFP_SIGN"
-#define ENT_DFP_SIGN "IA32_DFP_SIGN"
-#define ENT_SFP_ABS  "IA32_SFP_ABS"
-#define ENT_DFP_ABS  "IA32_DFP_ABS"
-#define ENT_INT_MAX  "IA32_INT_MAX"
+#define ENT_SFP_SIGN ".LC_ia32_sfp_sign"
+#define ENT_DFP_SIGN ".LC_ia32_dfp_sign"
+#define ENT_SFP_ABS  ".LC_ia32_sfp_abs"
+#define ENT_DFP_ABS  ".LC_ia32_dfp_abs"
+#define ENT_INT_MAX  ".LC_ia32_int_max"
+#define ENT_ULL_BIAS ".LC_ia32_ull_bias"
 
 #define mode_vfp	(ia32_reg_classes[CLASS_ia32_vfp].mode)
 #define mode_xmm    (ia32_reg_classes[CLASS_ia32_xmm].mode)
@@ -366,14 +369,13 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN,   1, 16 },	/* ia32_DSIGN */
 		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS,    0, 16 },	/* ia32_SABS */
 		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS,    1, 16 },	/* ia32_DABS */
-		{ TP_INT_MAX,  ENT_INT_MAX,  DFP_INTMAX, 2, 4 }		/* ia32_INTMAX */
+		{ TP_INT_MAX,  ENT_INT_MAX,  DFP_INTMAX, 2, 4 },	/* ia32_INTMAX */
+		{ TP_ULL_BIAS, ENT_ULL_BIAS, ULL_BIAS,   3, 4 }     /* ia32_ULLBIAS */
 	};
 	static ir_entity *ent_cache[ia32_known_const_max];
 
 	const char    *tp_name, *ent_name, *cnst_str;
 	ir_type       *tp;
-	ir_node       *cnst;
-	ir_graph      *rem;
 	ir_entity     *ent;
 	tarval        *tv;
 	ir_mode       *mode;
@@ -393,6 +395,14 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		/* set the specified alignment */
 		set_type_alignment_bytes(tp, names[kct].align);
 
+		if (kct == ia32_ULLBIAS) {
+			/* we are in the backend, construct a fixed type here */
+			unsigned size = get_type_size_bytes(tp);
+			tp = new_type_array(new_id_from_str(tp_name), 1, tp);
+			set_type_alignment_bytes(tp, names[kct].align);
+			set_type_size_bytes(tp, 2 * size);
+			set_type_state(tp, layout_fixed);
+		}
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
@@ -400,14 +410,18 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		set_entity_variability(ent, variability_constant);
 		set_entity_allocation(ent, allocation_static);
 
-		/* we create a new entity here: It's initialization must resist on the
-		    const code irg */
-		rem = current_ir_graph;
-		current_ir_graph = get_const_code_irg();
-		cnst = new_Const(mode, tv);
-		current_ir_graph = rem;
+		if (kct == ia32_ULLBIAS) {
+			ir_initializer_t *initializer = create_initializer_compound(2);
 
-		set_atomic_ent_value(ent, cnst);
+			set_initializer_compound_value(initializer, 0,
+				create_initializer_tarval(get_tarval_null(mode)));
+			set_initializer_compound_value(initializer, 1,
+				create_initializer_tarval(tv));
+
+			set_entity_initializer(ent, initializer);
+		} else {
+			set_entity_initializer(ent, create_initializer_tarval(tv));
+		}
 
 		/* cache the entry */
 		ent_cache[kct] = ent;
@@ -3780,6 +3794,8 @@ static ir_node *gen_ia32_l_ShrD(ir_node *node)
 	return gen_lowered_64bit_shifts(node, high, low, count);
 }
 
+static ir_entity *get_ull2flt_array(void) {}
+
 static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 {
 	ir_node  *src_block    = get_nodes_block(node);
@@ -3794,13 +3810,11 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 	ir_node  *new_val_low  = be_transform_node(val_low);
 	ir_node  *new_val_high = be_transform_node(val_high);
 	ir_node  *in[2];
-	ir_node  *sync;
-	ir_node  *fild;
-	ir_node  *store_low;
-	ir_node  *store_high;
+	ir_node  *sync, *fild, *res;
+	ir_node  *store_low, *store_high;
 
-	if (!mode_is_signed(get_irn_mode(val_high))) {
-		panic("unsigned long long -> float not supported yet (%+F)", node);
+	if (ia32_cg_config.use_sse2) {
+		panic("ia32_l_LLtoFloat not implemented for SSE2");
 	}
 
 	/* do a store */
@@ -3832,7 +3846,40 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 	SET_IA32_ORIG_NODE(fild, node);
 
-	return new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+	res = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+
+	if (! mode_is_signed(get_irn_mode(val_high))) {
+		ia32_address_mode_t  am;
+
+		ir_node *count = create_Immediate(NULL, 0, 31);
+		ir_node *fadd;
+
+		am.addr.base          = ia32_new_NoReg_gp(env_cg);
+		am.addr.index         = new_bd_ia32_Shr(dbgi, block, new_val_high, count);
+		am.addr.mem           = nomem;
+		am.addr.offset        = 0;
+		am.addr.scale         = 2;
+		am.addr.symconst_ent  = ia32_gen_fp_known_const(ia32_ULLBIAS);
+		am.addr.use_frame     = 0;
+		am.addr.frame_entity  = NULL;
+		am.addr.symconst_sign = 0;
+		am.ls_mode            = mode_F;
+		am.mem_proj           = nomem;
+		am.op_type            = ia32_AddrModeS;
+		am.new_op1            = res;
+		am.new_op2            = ia32_new_NoReg_vfp(env_cg);
+		am.pinned             = op_pin_state_floats;
+		am.commutative        = 1;
+		am.ins_permuted       = 0;
+
+		fadd  = new_bd_ia32_vfadd(dbgi, block, am.addr.base, am.addr.index, am.addr.mem,
+			am.new_op1, am.new_op2, get_fpcw());
+		set_am_attributes(fadd, &am);
+
+		set_irn_mode(fadd, mode_T);
+		res = new_rd_Proj(NULL, irg, block, fadd, mode_vfp, pn_ia32_res);
+	}
+	return res;
 }
 
 static ir_node *gen_ia32_l_FloattoLL(ir_node *node)

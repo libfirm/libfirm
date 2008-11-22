@@ -44,6 +44,7 @@ typedef enum {
 	ia32_SABS,           /**< SSE2 single precision ABS mask */
 	ia32_DABS,           /**< SSE2 double precision ABS mask */
 	ia32_INTMAX,         /**< x87 single precision INTMAX */
+	ia32_ULLBIAS,        /**< x87 ULL->float bias */
 	ia32_known_const_max /**< last constant */
 } ia32_known_const_t;
 
