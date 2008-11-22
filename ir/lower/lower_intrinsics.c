@@ -329,7 +329,6 @@ int i_mapper_exp(ir_node *call, void *ctx) {
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* exp(0.0) = 1.0 */
-		ir_node *block = get_nodes_block(call);
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_Const(mode, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
@@ -366,7 +365,6 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason) {
 
 	if (is_Const(val) && is_Const_one(val)) {
 		/* acos(1.0) = 0.0 */
-		ir_node *block = get_nodes_block(call);
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_Const(mode, get_mode_null(mode));
 		ir_node *mem   = get_Call_mem(call);
@@ -412,7 +410,6 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) 
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* f(0.0) = 1.0 */
-		ir_node *block = get_nodes_block(call);
 		ir_mode *mode  = get_irn_mode(val);
 		ir_node *irn   = new_Const(mode, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
@@ -716,7 +713,6 @@ int i_mapper_strcmp(ir_node *call, void *ctx) {
 		/* a strcmp(s, s) ==> 0 */
 		ir_node *mem   = get_Call_mem(call);
 		ir_mode *mode  = get_type_mode(res_tp);
-		ir_node *block = get_nodes_block(call);
 
 		irn = new_Const(mode, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
@@ -794,7 +790,6 @@ int i_mapper_strncmp(ir_node *call, void *ctx) {
 		ir_type   *call_tp = get_entity_type(ent);
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
-		ir_node   *block   = get_nodes_block(call);
 
 		irn = new_Const(mode, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
