@@ -189,13 +189,13 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 		cls = & ia32_reg_classes[c];
 		for(r = 0; r < cls->n_regs; ++r) {
 			const arch_register_t *temp_reg = arch_register_for_index(cls, r);
-			if(strcmp(temp_reg->name, clobber) == 0
+			if (strcmp(temp_reg->name, clobber) == 0
 					|| (c == CLASS_ia32_gp && strcmp(temp_reg->name+1, clobber) == 0)) {
 				reg = temp_reg;
 				break;
 			}
 		}
-		if(reg != NULL)
+		if (reg != NULL)
 			break;
 	}
 
@@ -203,9 +203,9 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 }
 
 int ia32_mode_needs_gp_reg(ir_mode *mode) {
-	if(mode == mode_fpcw)
+	if (mode == mode_fpcw)
 		return 0;
-	if(get_mode_size_bits(mode) > 32)
+	if (get_mode_size_bits(mode) > 32)
 		return 0;
 	return mode_is_int(mode) || mode_is_reference(mode) || mode == mode_b;
 }
@@ -224,7 +224,7 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 	memset(constraint, 0, sizeof(constraint[0]));
 	constraint->same_as = -1;
 
-	if(*c == 0) {
+	if (*c == 0) {
 		/* a memory constraint: no need to do anything in backend about it
 		 * (the dependencies are already respected by the memory edge of
 		 * the node) */
@@ -383,7 +383,7 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 				panic("can only specify same constraint on input");
 
 			sscanf(c, "%d%n", &same_as, &p);
-			if(same_as >= 0) {
+			if (same_as >= 0) {
 				c += p;
 				continue;
 			}
@@ -419,7 +419,7 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		++c;
 	}
 
-	if(same_as >= 0) {
+	if (same_as >= 0) {
 		if (cls != NULL)
 			panic("same as and register constraint not supported");
 		if (immediate_type != '\0')
@@ -523,7 +523,7 @@ ir_node *gen_ASM(ir_node *node)
 	}
 	for (i = 0; i < arity; ++i) {
 		const ir_asm_constraint   *constraint = &in_constraints[i];
-		if(constraint->pos > reg_map_size)
+		if (constraint->pos > reg_map_size)
 			reg_map_size = constraint->pos;
 	}
 	++reg_map_size;
@@ -612,7 +612,7 @@ ir_node *gen_ASM(ir_node *node)
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
 				is_memory_op = 1;
-			} else if(parsed_constraint.memory_possible) {
+			} else if (parsed_constraint.memory_possible) {
 				/* TODO: match Load or Load/Store if memory possible is set */
 			}
 		}
@@ -700,7 +700,7 @@ ir_node *gen_CopyB(ir_node *node) {
 
 		res = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, res, new_mem, rem);
 	} else {
-		if(size == 0) {
+		if (size == 0) {
 			ir_fprintf(stderr, "Optimization warning copyb %+F with size <4\n",
 			           node);
 		}
@@ -822,7 +822,7 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 	arch_register_req_t   *req;
 	unsigned              *limited;
 
-	if(reg == NULL) {
+	if (reg == NULL) {
 		panic("Register '%s' mentioned in asm clobber is unknown", clobber);
 	}
 
@@ -893,46 +893,46 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	ir_node     *new_node;
 
 	mode = get_irn_mode(node);
-	if(!mode_is_int(mode) && !mode_is_reference(mode)) {
+	if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 		return NULL;
 	}
 
-	if(is_Minus(node)) {
+	if (is_Minus(node)) {
 		minus = 1;
 		node  = get_Minus_op(node);
 	}
 
-	if(is_Const(node)) {
+	if (is_Const(node)) {
 		cnst        = node;
 		symconst    = NULL;
 		offset_sign = minus;
-	} else if(is_SymConst(node)) {
+	} else if (is_SymConst(node)) {
 		cnst          = NULL;
 		symconst      = node;
 		symconst_sign = minus;
-	} else if(is_Add(node)) {
+	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		if(is_Const(left) && is_SymConst(right)) {
+		if (is_Const(left) && is_SymConst(right)) {
 			cnst          = left;
 			symconst      = right;
 			symconst_sign = minus;
 			offset_sign   = minus;
-		} else if(is_SymConst(left) && is_Const(right)) {
+		} else if (is_SymConst(left) && is_Const(right)) {
 			cnst          = right;
 			symconst      = left;
 			symconst_sign = minus;
 			offset_sign   = minus;
 		}
-	} else if(is_Sub(node)) {
+	} else if (is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
 		ir_node *right = get_Sub_right(node);
-		if(is_Const(left) && is_SymConst(right)) {
+		if (is_Const(left) && is_SymConst(right)) {
 			cnst          = left;
 			symconst      = right;
 			symconst_sign = !minus;
 			offset_sign   = minus;
-		} else if(is_SymConst(left) && is_Const(right)) {
+		} else if (is_SymConst(left) && is_Const(right)) {
 			cnst          = right;
 			symconst      = left;
 			symconst_sign = minus;
@@ -942,9 +942,9 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 		return NULL;
 	}
 
-	if(cnst != NULL) {
+	if (cnst != NULL) {
 		offset = get_Const_tarval(cnst);
-		if(tarval_is_long(offset)) {
+		if (tarval_is_long(offset)) {
 			val = get_tarval_long(offset);
 		} else {
 			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
@@ -952,27 +952,27 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 			return NULL;
 		}
 
-		if(!check_immediate_constraint(val, immediate_constraint_type))
+		if (!check_immediate_constraint(val, immediate_constraint_type))
 			return NULL;
 	}
-	if(symconst != NULL) {
-		if(immediate_constraint_type != 0) {
+	if (symconst != NULL) {
+		if (immediate_constraint_type != 0) {
 			/* we need full 32bits for symconsts */
 			return NULL;
 		}
 
 		/* unfortunately the assembler/linker doesn't support -symconst */
-		if(symconst_sign)
+		if (symconst_sign)
 			return NULL;
 
-		if(get_SymConst_kind(symconst) != symconst_addr_ent)
+		if (get_SymConst_kind(symconst) != symconst_addr_ent)
 			return NULL;
 		symconst_ent = get_SymConst_entity(symconst);
 	}
-	if(cnst == NULL && symconst == NULL)
+	if (cnst == NULL && symconst == NULL)
 		return NULL;
 
-	if(offset_sign && offset != NULL) {
+	if (offset_sign && offset != NULL) {
 		offset = tarval_neg(offset);
 	}
 
