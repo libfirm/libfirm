@@ -320,9 +320,7 @@ static void prepare_links(ir_node *node, void *env)
 	} else if (is_Phi(node)) {
 		/* link all Phi nodes to its block */
 		ir_node *block = get_nodes_block(node);
-
-		set_irn_link(node, get_irn_link(block));
-		set_irn_link(block, node);
+		add_Block_phi(block, node);
 	} else if (is_Block(node)) {
 		/* fill the Proj -> Block map */
 		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
@@ -2567,7 +2565,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		/* first step: link all nodes and allocate data */
 		lenv.flags = 0;
 		lenv.proj_2_block = pmap_create();
-		irg_walk_graph(irg, firm_clear_link, prepare_links_and_handle_rotl, &lenv);
+		irg_walk_graph(irg, firm_clear_node_and_phi_links, prepare_links_and_handle_rotl, &lenv);
 
 		if (lenv.flags & MUST_BE_LOWERED) {
 			DB((dbg, LEVEL_1, "Lowering graph %+F\n", irg));

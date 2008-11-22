@@ -728,9 +728,9 @@ static int map_Conv(ir_node *call, void *ctx) {
 			flt_phi = new_r_Phi(irg, lower_blk, 2, in, flt_mode);
 
 			/* fix Phi links for next part_block() */
-			set_irn_link(lower_blk, int_phi);
-			set_irn_link(int_phi, flt_phi);
-			set_irn_link(flt_phi, NULL);
+			set_Block_phis(lower_blk, int_phi);
+			set_Phi_next(int_phi, flt_phi);
+			set_Phi_next(flt_phi, NULL);
 
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
 
