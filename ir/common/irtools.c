@@ -39,6 +39,16 @@ void firm_clear_link(ir_node *n, void *env) {
 	set_irn_link(n, NULL);
 }
 
+/* the famous clear_node_and_phi_links() implementation. */
+void firm_clear_node_and_phi_links(ir_node *n, void *env) {
+	(void) env;
+	set_irn_link(n, NULL);
+	if (is_Block(n))
+		set_Block_phis(n, NULL);
+	else if (is_Phi(n))
+		set_Phi_next(n, NULL);
+}
+
 /*
  * Copies a node to a new irg. The Ins of the new node point to
  * the predecessors on the old irg.  n->link points to the new node.

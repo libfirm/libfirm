@@ -45,8 +45,8 @@ void exchange(ir_node *old, ir_node *nw);
  */
 void turn_into_tuple(ir_node *node, int arity);
 
-/** Walks over the passed ir graph and collects all Phi nodes as a
-  * list built with the link field in their corresponding block.
+/** Walks over the passed IR graph and collects all Phi nodes as a
+  * list in their corresponding block (using get_Block_phis() API).
   * Further it collects all Proj nodes in a list of the node producing
   * the tuple. In case of nested tuples the Projs are collected in the
   * node producing the outermost Tuple.
@@ -61,9 +61,9 @@ void collect_phiprojs(ir_graph *irg);
  * (old_block) of node.  Moves node and its predecessors from old_block to
  * new_block.  Moves all Projs that depend on moved nodes and are in old_block
  * to new_block. Moves all Phi nodes from old_block to new_block.  To achieve
- * this the routine assumes that all Phi nodes are in a list (using the link
- * field) in the link field of old_block.  Further it assumes that all Proj nodes
- * are accessible by the link field of the nodes producing the Tuple. This
+ * this the routine assumes that all Phi nodes are in the Phi list (see get_Block_phis())
+ * of old_block.  Further it assumes that all Proj nodes are accessible by the link field
+ * of the nodes producing the Tuple. This
  * can be established by collect_phiprojs().  part_block conserves this property.
  * Adds a Jmp node to new_block that jumps to old_block.
  * Assumes that node is contained in current_ir_graph.  Sets current_block in

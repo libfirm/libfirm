@@ -68,9 +68,18 @@ void firm_pset_dump(pset *set);
 
 /**
  * The famous clear_link() walker-function.
- * Do not implement it by yourself, use this one
+ * Sets all links fields of visited nodes to NULL.
+ * Do not implement it by yourself, use this one.
  */
 void firm_clear_link(ir_node *n, void *env);
+
+/**
+ * The famous clear_link_and_block_lists() walker-function.
+ * Sets all links fields of visited nodes to NULL.
+ * Additionally, clear all Phi-lists of visited blocks.
+ * Do not implement it by yourself, use this one
+ */
+void firm_clear_node_and_phi_links(ir_node *n, void *env);
 
 /**
  * Copies a node to a new irg. The Ins of the new node point to

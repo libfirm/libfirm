@@ -150,23 +150,10 @@ static void collect_phiprojs_walker(ir_node *n, void *env) {
 	}
 }
 
-/**
- * clear all links, including the Phi list of blocks and Phi nodes.
- */
-static void clear_node_and_phis_links(ir_node *n, void *env) {
-	(void) env;
-
-	set_irn_link(n, NULL);
-	if (is_Block(n))
-		set_Block_phis(n, NULL);
-	else if (is_Phi(n))
-		set_Phi_next(n, NULL);
-}
-
 void collect_phiprojs(ir_graph *irg) {
 	assert((ir_resources_reserved(irg) & (IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST)) ==
 		(IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST));
-	irg_walk_graph(irg, clear_node_and_phis_links, collect_phiprojs_walker, NULL);
+	irg_walk_graph(irg, firm_clear_node_and_phi_links, collect_phiprojs_walker, NULL);
 }
 
 /*--------------------------------------------------------------------*/
