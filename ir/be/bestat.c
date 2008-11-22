@@ -87,7 +87,9 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	if(max_live > env->max_pressure)
 		env->max_pressure = max_live;
 
+#ifdef FIRM_STATISTICS
 	stat_be_block_regpressure(irg, block, max_live, cls->name);
+#endif
 	ir_nodeset_destroy(&live_nodes);
 }
 
