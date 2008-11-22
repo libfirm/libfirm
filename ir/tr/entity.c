@@ -229,17 +229,21 @@ static void free_entity_attrs(ir_entity *ent) {
 		assert(ent->overwrittenby == NULL);
 	}
 	if (is_compound_entity(ent)) {
-		if (ent->attr.cmpd_attr.val_paths) {
-			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
-				if (ent->attr.cmpd_attr.val_paths[i]) {
-					/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
-					/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-					/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
-				}
-				ent->attr.cmpd_attr.val_paths = NULL;
+		if (ent->has_initializer) {
+			/* TODO: free initializers */
+		} else {
+			if (ent->attr.cmpd_attr.val_paths) {
+				for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
+					if (ent->attr.cmpd_attr.val_paths[i]) {
+						/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
+						/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+						/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
+					}
+					ent->attr.cmpd_attr.val_paths = NULL;
+			}
+			/* if (ent->attr.cmpd_attr.values) DEL_ARR_F(ent->attr.cmpd_attr.values); *//* @@@ warum nich? */
+			ent->attr.cmpd_attr.values = NULL;
 		}
-		/* if (ent->attr.cmpd_attr.values) DEL_ARR_F(ent->attr.cmpd_attr.values); *//* @@@ warum nich? */
-		ent->attr.cmpd_attr.values = NULL;
 	} else if (is_method_entity(ent)) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
