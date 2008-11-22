@@ -76,7 +76,7 @@ static ident *set_new_id_from_chars(void *handle, const char *str, int len)
 static ident *set_new_id_from_str(void *handle, const char *str)
 {
   assert(str);
-  return (ident *)set_new_id_from_chars(handle, str, strlen(str));
+  return set_new_id_from_chars(handle, str, strlen(str));
 }
 
 /**
