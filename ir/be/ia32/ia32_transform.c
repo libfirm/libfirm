@@ -3794,8 +3794,6 @@ static ir_node *gen_ia32_l_ShrD(ir_node *node)
 	return gen_lowered_64bit_shifts(node, high, low, count);
 }
 
-static ir_entity *get_ull2flt_array(void) {}
-
 static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 {
 	ir_node  *src_block    = get_nodes_block(node);
