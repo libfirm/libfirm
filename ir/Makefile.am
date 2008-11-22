@@ -405,6 +405,7 @@ ia32_sources = \
 	be/ia32/bearch_ia32.c \
 	be/ia32/ia32_architecture.c \
 	be/ia32/ia32_address_mode.c \
+	be/ia32/ia32_common_transform.c \
 	be/ia32/ia32_emitter.c \
 	be/ia32/ia32_finish.c \
 	be/ia32/ia32_fpu.c \
@@ -435,6 +436,7 @@ EXTRA_DIST += \
 	be/ia32/bearch_ia32_t.h \
 	be/ia32/ia32_architecture.h \
 	be/ia32/ia32_address_mode.h \
+	be/ia32/ia32_common_transform.h \
 	be/ia32/ia32_dbg_stat.h \
 	be/ia32/ia32_emitter.h \
 	be/ia32/ia32_finish.h \
