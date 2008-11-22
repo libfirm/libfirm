@@ -82,14 +82,12 @@
 #define TP_DFP_SIGN "ia32_dfp_sign"
 #define TP_SFP_ABS  "ia32_sfp_abs"
 #define TP_DFP_ABS  "ia32_dfp_abs"
-#define TP_INT_MAX  "ia32_int_max"
 #define TP_ULL_BIAS "ia32_ull_bias"
 
 #define ENT_SFP_SIGN ".LC_ia32_sfp_sign"
 #define ENT_DFP_SIGN ".LC_ia32_dfp_sign"
 #define ENT_SFP_ABS  ".LC_ia32_sfp_abs"
 #define ENT_DFP_ABS  ".LC_ia32_dfp_abs"
-#define ENT_INT_MAX  ".LC_ia32_int_max"
 #define ENT_ULL_BIAS ".LC_ia32_ull_bias"
 
 #define mode_vfp	(ia32_reg_classes[CLASS_ia32_vfp].mode)
@@ -369,8 +367,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN,   1, 16 },	/* ia32_DSIGN */
 		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS,    0, 16 },	/* ia32_SABS */
 		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS,    1, 16 },	/* ia32_DABS */
-		{ TP_INT_MAX,  ENT_INT_MAX,  DFP_INTMAX, 2, 4 },	/* ia32_INTMAX */
-		{ TP_ULL_BIAS, ENT_ULL_BIAS, ULL_BIAS,   3, 4 }     /* ia32_ULLBIAS */
+		{ TP_ULL_BIAS, ENT_ULL_BIAS, ULL_BIAS,   2, 4 }     /* ia32_ULLBIAS */
 	};
 	static ir_entity *ent_cache[ia32_known_const_max];
 
