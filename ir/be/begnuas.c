@@ -116,7 +116,7 @@ static const char *get_section_name(be_gas_section_t section) {
 }
 
 void be_gas_emit_switch_section(be_gas_section_t section) {
-	if(current_section == section)
+	if (current_section == section)
 		return;
 
 	be_emit_char('\t');
@@ -392,7 +392,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(init);
-			if(!is_entity_backend_marked(ent)) {
+			if (!is_entity_backend_marked(ent)) {
 				waitq_put(env->worklist, ent);
 				set_entity_backend_marked(ent, 1);
 			}
@@ -402,7 +402,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		case symconst_ofs_ent:
 			ent = get_SymConst_entity(init);
 #if 0       /* not needed, is it? */
-			if(!is_entity_backend_marked(ent)) {
+			if (!is_entity_backend_marked(ent)) {
 				waitq_put(env->worklist, ent);
 				set_entity_backend_marked(ent, 1);
 			}
@@ -528,20 +528,20 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 	size_t i, len;
 	int found_printable = 0;
 
-	if(initializer->kind != IR_INITIALIZER_COMPOUND)
+	if (initializer->kind != IR_INITIALIZER_COMPOUND)
 		return 0;
 
 	len = initializer->compound.n_initializers;
 	if (len < 1)
 		return 0;
-	for(i = 0; i < len; ++i) {
+	for (i = 0; i < len; ++i) {
 		int               c;
 		tarval           *tv;
 		ir_mode          *mode;
 		ir_initializer_t *sub_initializer
 			= initializer->compound.initializers[i];
 
-		if(sub_initializer->kind != IR_INITIALIZER_TARVAL)
+		if (sub_initializer->kind != IR_INITIALIZER_TARVAL)
 			return 0;
 
 		tv   = sub_initializer->tarval.value;
@@ -554,7 +554,7 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 		c = get_tarval_long(tv);
 		if (isgraph(c) || isspace(c))
 			found_printable = 1;
-		else if(c != 0)
+		else if (c != 0)
 			return 0;
 
 		if (i == len - 1 && c != '\0')
@@ -595,7 +595,7 @@ static int ent_is_string_const(ir_entity *ent)
 		|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
 		return 0;
 
-	if(ent->has_initializer) {
+	if (ent->has_initializer) {
 		/* TODO */
 		return 0;
 	} else {
@@ -610,7 +610,7 @@ static int ent_is_string_const(ir_entity *ent)
 
 			if (isgraph(c) || isspace(c))
 				found_printable = 1;
-			else if(c != 0)
+			else if (c != 0)
 				return 0;
 
 			if (i == n - 1 && c != '\0')
@@ -673,7 +673,7 @@ static void dump_string_cst(ir_entity *ent)
 	type_size       = get_type_size_bytes(type);
 	remaining_space = type_size - len;
 	assert(remaining_space >= 0);
-	if(remaining_space > 0) {
+	if (remaining_space > 0) {
 		be_emit_irprintf("\t.space\t%d\n", remaining_space);
 	}
 }
@@ -683,14 +683,14 @@ static void dump_string_initializer(const ir_initializer_t *initializer)
 	size_t i, len;
 
 	len = initializer->compound.n_initializers;
-	if(be_gas_flavour == GAS_FLAVOUR_MACH_O) {
+	if (be_gas_flavour == GAS_FLAVOUR_MACH_O) {
 		be_emit_cstring("\t.ascii \"");
 	} else {
 		be_emit_cstring("\t.string \"");
 		len -= 1;
 	}
 
-	for(i = 0; i < len; ++i) {
+	for (i = 0; i < len; ++i) {
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
@@ -740,7 +740,7 @@ static int is_type_variable_size(ir_type *type)
 static size_t get_initializer_size(const ir_initializer_t *initializer,
                                    ir_type *type)
 {
-	switch(get_initializer_kind(initializer)) {
+	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_TARVAL: {
 		assert(get_tarval_mode(get_initializer_tarval_value(initializer)) == get_type_mode(type));
 		return get_type_size_bytes(type);
@@ -749,14 +749,14 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 	case IR_INITIALIZER_NULL:
 		return get_type_size_bytes(type);
 	case IR_INITIALIZER_COMPOUND: {
-		if(!is_type_variable_size(type)) {
+		if (!is_type_variable_size(type)) {
 			return get_type_size_bytes(type);
 		} else {
 			unsigned n_entries
 				= get_initializer_compound_n_entries(initializer);
 			unsigned i;
 			unsigned initializer_size = get_type_size_bytes(type);
-			for(i = 0; i < n_entries; ++i) {
+			for (i = 0; i < n_entries; ++i) {
 				ir_entity *entity = get_compound_member(type, i);
 				ir_type   *type   = get_entity_type(entity);
 
@@ -766,7 +766,7 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 				unsigned offset = get_entity_offset(entity);
 				unsigned size   = get_initializer_size(sub_initializer, type);
 
-				if(offset + size > initializer_size) {
+				if (offset + size > initializer_size) {
 					initializer_size = offset + size;
 				}
 			}
@@ -793,7 +793,7 @@ static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	int            value_len;
 	int            j;
 
-	switch(get_initializer_kind(initializer)) {
+	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
 		return;
 	case IR_INITIALIZER_TARVAL:
@@ -801,7 +801,7 @@ static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 		break;
 	case IR_INITIALIZER_CONST: {
 		ir_node *node = get_initializer_const_value(initializer);
-		if(!is_Const(node)) {
+		if (!is_Const(node)) {
 			panic("bitfield initializer not a Const node");
 		}
 		tv = get_Const_tarval(node);
@@ -840,7 +840,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 {
 	assert((size_t) (vals - glob_vals) < max_vals);
 
-	switch(get_initializer_kind(initializer)) {
+	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
 		return;
 	case IR_INITIALIZER_TARVAL: {
@@ -850,7 +850,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 		vals->kind     = TARVAL;
 		vals->v.tarval = get_initializer_tarval_value(initializer);
 		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
-		for(i = 1; i < get_type_size_bytes(type); ++i) {
+		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].v.value = NULL;
 		}
@@ -862,7 +862,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 		assert(vals->kind != BITFIELD);
 		vals->kind    = NORMAL;
 		vals->v.value = get_initializer_const_value(initializer);
-		for(i = 1; i < get_type_size_bytes(type); ++i) {
+		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
 			vals[i].v.value = NULL;
 		}
@@ -872,16 +872,16 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 		size_t i = 0;
 		size_t n = get_initializer_compound_n_entries(initializer);
 
-		if(is_Array_type(type)) {
+		if (is_Array_type(type)) {
 			ir_type *element_type = get_array_element_type(type);
 			size_t   skip         = get_type_size_bytes(element_type);
 			size_t   alignment    = get_type_alignment_bytes(element_type);
 			size_t   misalign     = skip % alignment;
-			if(misalign != 0) {
+			if (misalign != 0) {
 				skip += alignment - misalign;
 			}
 
-			for(i = 0; i < n; ++i) {
+			for (i = 0; i < n; ++i) {
 				ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
@@ -893,7 +893,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 			size_t n_members, i;
 			assert(is_compound_type(type));
 			n_members = get_compound_n_members(type);
-			for(i = 0; i < n_members; ++i) {
+			for (i = 0; i < n_members; ++i) {
 				ir_entity        *member    = get_compound_member(type, i);
 				size_t            offset    = get_entity_offset(member);
 				ir_type          *subtype   = get_entity_type(member);
@@ -904,12 +904,12 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 				sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
-				if(mode != NULL) {
+				if (mode != NULL) {
 					size_t offset_bits
 						= get_entity_offset_bits_remainder(member);
 					size_t value_len   = get_mode_size_bits(mode);
 
-					if(offset_bits != 0 ||
+					if (offset_bits != 0 ||
 						(value_len != 8 && value_len != 16 && value_len != 32
 						 && value_len != 64)) {
 						dump_bitfield(&vals[offset], offset_bits,
@@ -936,7 +936,7 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 	size_t                  size;
 	size_t                  k;
 
-	if(initializer_is_string_const(initializer)) {
+	if (initializer_is_string_const(initializer)) {
 		dump_string_initializer(initializer);
 		return;
 	}
@@ -965,13 +965,13 @@ static void dump_initializer(be_gas_decl_env_t *env, ir_entity *entity)
 		int space     = 0;
 		int elem_size = 1;
 		if (vals[k].kind == NORMAL) {
-			if(vals[k].v.value != NULL) {
+			if (vals[k].v.value != NULL) {
 				dump_atomic_init(env, vals[k].v.value);
 				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
 	 		} else {
 	 			elem_size = 0;
 	 		}
-		} else if(vals[k].kind == TARVAL) {
+		} else if (vals[k].kind == TARVAL) {
 			tarval *tv   = vals[k].v.tarval;
 			size_t  size = get_mode_size_bytes(get_tarval_mode(tv));
 
@@ -1012,7 +1012,7 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 	int i, j, n;
 	unsigned k, last_ofs;
 
-	if(ent->has_initializer) {
+	if (ent->has_initializer) {
 		dump_initializer(env, ent);
 		return;
 	}
@@ -1088,7 +1088,7 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 	for (k = 0; k < last_ofs; ) {
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
-			if(vals[k].v.value != NULL) {
+			if (vals[k].v.value != NULL) {
 				dump_atomic_init(env, vals[k].v.value);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 	 		} else {
@@ -1163,7 +1163,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		section = GAS_SECTION_DATA;
 	}
 
-	if(!emit_as_common) {
+	if (!emit_as_common) {
 		be_gas_emit_switch_section(section);
 	}
 
@@ -1175,7 +1175,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		be_emit_ident(ld_ident);
 		be_emit_char('\n');
 		be_emit_write_line();
-	} else if(visibility == visibility_external_allocated) {
+	} else if (visibility == visibility_external_allocated) {
 		be_emit_cstring(".globl\t");
 		be_emit_ident(ld_ident);
 		be_emit_char('\n');
