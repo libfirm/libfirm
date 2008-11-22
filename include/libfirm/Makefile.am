@@ -68,11 +68,6 @@ libfirminclude_adt_HEADERS = \
 	adt/align.h \
 	adt/array.h \
 	adt/bipartite.h \
-	adt/bitfiddle.h \
-	adt/bitset.h \
-	adt/bitset_ia32.h \
-	adt/bitset_std.h \
-	adt/compiler.h \
 	adt/cpset.h \
 	adt/eset.h \
 	adt/fourcc.h \
