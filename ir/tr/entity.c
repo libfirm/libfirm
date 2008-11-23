@@ -229,6 +229,38 @@ static void free_entity_attrs(ir_entity *ent) {
 	}
 }  /* free_entity_attrs */
 
+/**
+ * Creates a deep copy of an entity.
+ */
+static ir_entity *deep_entity_copy(ir_entity *old)
+{
+	ir_entity *newe = XMALLOC(ir_entity);
+
+	memcpy(newe, old, sizeof(*newe));
+	if (is_compound_entity(old)) {
+		if (old->has_initializer) {
+			/* FIXME: the initializers are NOT copied */
+		} else {
+			newe->attr.cmpd_attr.values    = NULL;
+			newe->attr.cmpd_attr.val_paths = NULL;
+			if (old->attr.cmpd_attr.values)
+				newe->attr.cmpd_attr.values = DUP_ARR_F(ir_node *, old->attr.cmpd_attr.values);
+
+			/* FIXME: the compound graph paths are NOT copied */
+			if (old->attr.cmpd_attr.val_paths)
+				newe->attr.cmpd_attr.val_paths = DUP_ARR_F(compound_graph_path *, old->attr.cmpd_attr.val_paths);
+		}
+	} else if (is_method_entity(old)) {
+		/* do NOT copy them, reanalyze. This might be the best solution */
+		newe->attr.mtd_attr.param_access = NULL;
+		newe->attr.mtd_attr.param_weight = NULL;
+	}
+
+#ifdef DEBUG_libfirm
+	newe->nr = get_irp_new_node_nr();
+#endif
+	return newe;
+}
 /*
  * Copies the entity if the new_owner is different from the
  * owner of the old entity,  else returns the old entity.
@@ -240,20 +272,19 @@ copy_entity_own(ir_entity *old, ir_type *new_owner) {
 	assert(is_compound_type(new_owner));
 	assert(get_type_state(new_owner) != layout_fixed);
 
-	if (old->owner == new_owner) return old;
-	newe = XMALLOC(ir_entity);
-	memcpy(newe, old, sizeof(*newe));
+	if (old->owner == new_owner)
+		return old;
+
+	/* create a deep copy so we are safe of aliasing and double-freeing. */
+	newe = deep_entity_copy(old);
 	newe->owner = new_owner;
+
 	if (is_Class_type(new_owner)) {
 		newe->overwrites    = NEW_ARR_F(ir_entity *, 0);
 		newe->overwrittenby = NEW_ARR_F(ir_entity *, 0);
 	}
-#ifdef DEBUG_libfirm
-	newe->nr = get_irp_new_node_nr();
-#endif
 
 	insert_entity_in_owner(newe);
-
 	return newe;
 }  /* copy_entity_own */
 
@@ -263,23 +294,18 @@ copy_entity_name(ir_entity *old, ident *new_name) {
 	assert(old && old->kind == k_entity);
 
 	if (old->name == new_name) return old;
-	newe = XMALLOC(ir_entity);
-	memcpy(newe, old, sizeof(*newe));
+	newe = deep_entity_copy(old);
 	newe->name = new_name;
 	newe->ld_name = NULL;
+
 	if (is_Class_type(newe->owner)) {
 		newe->overwrites    = DUP_ARR_F(ir_entity *, old->overwrites);
 		newe->overwrittenby = DUP_ARR_F(ir_entity *, old->overwrittenby);
 	}
-#ifdef DEBUG_libfirm
-	newe->nr = get_irp_new_node_nr();
-#endif
-
 	insert_entity_in_owner(newe);
 
 	return newe;
 }  /* copy_entity_name */
-
 
 void
 free_entity(ir_entity *ent) {

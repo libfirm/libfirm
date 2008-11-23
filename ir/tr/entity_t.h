@@ -143,7 +143,7 @@ struct ir_entity {
 	unsigned align:1;              /**< Specifies alignment of entities content. */
 	unsigned stickyness:2;         /**< Specifies whether this entity is sticky.  */
 	unsigned peculiarity:3;        /**< The peculiarity of this entity. */
-	unsigned usage:4;              /**< flag indicating usage types of this entity. */
+	unsigned usage:4;              /**< flag indicating usage types of this entity, see ir_entity_usage. */
 	unsigned final:1;              /**< If set, this entity cannot be overridden. */
 	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
 	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
