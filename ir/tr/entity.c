@@ -46,34 +46,6 @@
 #include "callgraph.h"
 #include "error.h"
 
-/**
- * An interval initializer.
- */
-typedef struct interval_initializer interval_initializer;
-
-/**
- * A value initializer.
- */
-typedef struct value_initializer value_initializer;
-
-struct interval_initializer {
-	int                  first_index; /**< The first index of the initialized interval. */
-	int                  last_index;  /**< The last index of the initialized interval. */
-	interval_initializer *next;       /**< Points to the next interval initializer. */
-};
-
-struct value_initializer {
-	ir_entity *ent;           /**< The initialized entity. */
-	value_initializer *next;  /**< Points to the next value initializer. */
-};
-
-typedef union initializer {
-	ir_node              *value;     /**< The value of the initializer. */
-	ir_node              **values;   /**< The values of an interval. */
-	value_initializer    *val_init;  /**< Points the the head of the next value initializers. */
-	interval_initializer *int_init;  /**< Points to the head of the next value initializers. */
-} initializer;
-
 /*-----------------------------------------------------------------*/
 /** general                                                       **/
 /*-----------------------------------------------------------------*/
@@ -237,11 +209,12 @@ static void free_entity_attrs(ir_entity *ent) {
 					if (ent->attr.cmpd_attr.val_paths[i]) {
 						/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
 						/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-						/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
+						DEL_ARR_F(ent->attr.cmpd_attr.val_paths);
 					}
 					ent->attr.cmpd_attr.val_paths = NULL;
 			}
-			/* if (ent->attr.cmpd_attr.values) DEL_ARR_F(ent->attr.cmpd_attr.values); *//* @@@ warum nich? */
+			if (ent->attr.cmpd_attr.values)
+				DEL_ARR_F(ent->attr.cmpd_attr.values);
 			ent->attr.cmpd_attr.values = NULL;
 		}
 	} else if (is_method_entity(ent)) {
