@@ -236,7 +236,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 {
 	ir_entity *newe = XMALLOC(ir_entity);
 
-	memcpy(newe, old, sizeof(*newe));
+	*newe = *old;
 	if (is_compound_entity(old)) {
 		if (old->has_initializer) {
 			/* FIXME: the initializers are NOT copied */
