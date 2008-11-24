@@ -44,6 +44,12 @@
 #include <netdb.h>
 
 #include <unistd.h>
+
+/* solaris fix */
+#ifndef INADDR_NONE
+#define (in_addr_t)(-1)
+#endif
+
 #endif /* _WIN32 */
 
 #include <signal.h>
