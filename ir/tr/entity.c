@@ -209,12 +209,13 @@ static void free_entity_attrs(ir_entity *ent) {
 					if (ent->attr.cmpd_attr.val_paths[i]) {
 						/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
 						/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-						DEL_ARR_F(ent->attr.cmpd_attr.val_paths);
+						/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
 					}
 					ent->attr.cmpd_attr.val_paths = NULL;
 			}
-			if (ent->attr.cmpd_attr.values)
-				DEL_ARR_F(ent->attr.cmpd_attr.values);
+			if (ent->attr.cmpd_attr.values) {
+				/*DEL_ARR_F(ent->attr.cmpd_attr.values)*/;
+			}
 			ent->attr.cmpd_attr.values = NULL;
 		}
 	} else if (is_method_entity(ent)) {
