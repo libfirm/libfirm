@@ -269,9 +269,10 @@ void normalize_n_returns(ir_graph *irg) {
 	n_ret_vals = get_irn_arity(list);
 	in         = ALLOCAN(ir_node*, n_ret_vals);
 	while (list) {
-		ir_node *ret   = list;
-		ir_node *block = get_nodes_block(ret);
-		ir_node *phiM;
+		ir_node  *ret   = list;
+		ir_node  *block = get_nodes_block(ret);
+		dbg_info *dbgi  = get_irn_dbg_info(ret);
+		ir_node  *phiM;
 
 		list = get_irn_link(ret);
 		--n_rets;
@@ -294,7 +295,7 @@ void normalize_n_returns(ir_graph *irg) {
 				in[j] = (is_Phi(pred) && get_nodes_block(pred) == block) ? get_Phi_pred(pred, i) : pred;
 			}
 
-			new_ret = new_r_Return(irg, new_bl, in[0], n_ret_vals - 1, &in[1]);
+			new_ret = new_rd_Return(dbgi, irg, new_bl, in[0], n_ret_vals - 1, &in[1]);
 
 			if (! is_Bad(new_ret)) {
 				/*
