@@ -47,7 +47,7 @@
 
 /* solaris fix */
 #ifndef INADDR_NONE
-#define (in_addr_t)(-1)
+#define INADDR_NONE (in_addr_t)(-1)
 #endif
 
 #endif /* _WIN32 */
