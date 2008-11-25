@@ -2595,6 +2595,8 @@ void lower_dw_ops(const lwrdw_param_t *param)
 				set_irg_extblk_inconsistent(irg);
 				set_irg_loopinfo_inconsistent(irg);
 			}  /* if */
+		} else {
+			ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 		}  /* if */
 		pmap_destroy(lenv.proj_2_block);
 		DEL_ARR_F(lenv.entries);
