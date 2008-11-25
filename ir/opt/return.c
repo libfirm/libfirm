@@ -62,8 +62,9 @@ void normalize_one_return(ir_graph *irg) {
 	int i, j, k, n, last_idx, n_rets, n_ret_vals = -1;
 	unsigned char *returns;
 	ir_node **in, **retvals, **endbl_in;
-
 	ir_node *block;
+	int       filter_dbgi   = 0;
+	dbg_info *combined_dbgi = NULL;
 
 	/* look, if we have more than one return */
 	n = get_Block_n_cfgpreds(endbl);
@@ -79,6 +80,17 @@ void normalize_one_return(ir_graph *irg) {
 		ir_node *node = get_Block_cfgpred(endbl, i);
 
 		if (is_Return(node)) {
+			dbg_info *dbgi = get_irn_dbg_info(node);
+
+			if (dbgi != NULL && dbgi != combined_dbgi) {
+				if (filter_dbgi) {
+					combined_dbgi = NULL;
+				} else {
+					combined_dbgi = dbgi;
+					filter_dbgi   = 1;
+				}
+			}
+
 			++n_rets;
 
 			set_bit(i);
@@ -140,7 +152,7 @@ void normalize_one_return(ir_graph *irg) {
 			in[i] = new_r_Phi(irg, block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
 	}
 
-	endbl_in[last_idx++] = new_r_Return(irg, block, in[0], n_ret_vals-1, &in[1]);
+	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, irg, block, in[0], n_ret_vals-1, &in[1]);
 
 	set_irn_in(endbl, last_idx, endbl_in);
 
