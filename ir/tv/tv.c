@@ -1516,7 +1516,7 @@ int tarval_printf(tarval *tv) {
 
 	res = tarval_snprintf(buf, sizeof(buf), tv);
 	assert(res < (int) sizeof(buf) && "buffer to small for tarval_snprintf");
-	printf(buf);
+	printf("%s", buf);
 	return res;
 }
 
