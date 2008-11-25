@@ -64,6 +64,7 @@ struct opcode_key_t {
 		tarval          *tv;    /**< For Const nodes, its tarval */
 		symconst_symbol sym;    /**< For SymConst nodes, its symbol .*/
 		void            *addr;  /**< Alias all addresses. */
+		int             intVal; /**< For Conv/Div nodes: strict/remainderless. */
 	} u;
 };
 
@@ -250,6 +251,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
  * @return a hash value for the given opcode map entry
  */
 static unsigned opcode_hash(const opcode_key_t *entry) {
+	/* assume long >= int */
 	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.addr) + entry->arity;
 }  /* opcode_hash */
 
@@ -404,6 +406,12 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env) {
 	case iro_Const:
 		key.u.tv  = get_Const_tarval(irn);
 		break;
+	case iro_Conv:
+		key.u.intVal = get_Conv_strict(irn);
+		break;
+	case iro_Div:
+		key.u.intVal = is_Div_remainderless(irn);
+		break;
 	default:
 		break;
 	}
@@ -452,7 +460,7 @@ static partition_t *split(partition_t *Z, block_t *g, environment_t *env) {
 }  /* split */
 
 /**
- * Rteurn non-zero if pred should be tread as a input node.
+ * Return non-zero if pred should be tread as a input node.
  */
 static int is_input_node(ir_node *pred, ir_node *irn, int index) {
 	/* for now, do NOT turn direct calls into indirect one */

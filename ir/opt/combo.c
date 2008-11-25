@@ -112,6 +112,7 @@ struct opcode_key_t {
 	union {
 		long      proj;   /**< For Proj nodes, its proj number */
 		ir_entity *ent;   /**< For Sel Nodes, its entity */
+		int       intVal; /**< For Conv/Div Nodes: strict/remainderless */
 	} u;
 };
 
@@ -281,6 +282,12 @@ static void check_opcode(const partition_t *Z) {
 			case iro_Sel:
 				key.u.ent = get_Sel_entity(irn);
 				break;
+			case iro_Conv:
+				key.u.intVal = get_Conv_strict(irn);
+				break;
+			case iro_Div:
+				key.u.intVal = is_Div_remainderless(irn);
+				break;
 			default:
 				break;
 			}
@@ -296,6 +303,12 @@ static void check_opcode(const partition_t *Z) {
 				break;
 			case iro_Sel:
 				assert(key.u.ent == get_Sel_entity(irn));
+				break;
+			case iro_Conv:
+				assert(key.u.intVal == get_Conv_strict(irn));
+				break;
+			case iro_Div:
+				assert(key.u.intVal == is_Div_remainderless(irn));
 				break;
 			default:
 				break;
@@ -551,7 +564,8 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode ||
 	       o1->arity != o2->arity ||
-	       o1->u.proj != o2->u.proj || o1->u.ent != o2->u.ent;
+	       o1->u.proj != o2->u.proj || o1->u.ent != o2->u.ent ||
+		   o1->u.intVal != o2->u.intVal;
 }  /* cmp_opcode */
 
 /**
@@ -1637,6 +1651,12 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 		break;
 	case iro_Sel:
 		key.u.ent = get_Sel_entity(irn);
+		break;
+	case iro_Conv:
+		key.u.intVal = get_Conv_strict(irn);
+		break;
+	case iro_Div:
+		key.u.intVal = is_Div_remainderless(irn);
 		break;
 	default:
 		break;
