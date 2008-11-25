@@ -217,7 +217,7 @@ static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 
 	set_irn_in(block, i + 1, in);
 
-	for (phi = get_irn_link(block); phi; phi = get_irn_link(phi)) {
+	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
 		for (i = 0; i < arity; ++i)
 			in[i] = get_irn_n(phi, i);
 		in[i] = in[nr];
@@ -2151,9 +2151,8 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 	env->entries[idx]->high_word = phi_h = new_rd_Phi(dbg, irg, block, arity, inh, mode);
 
 	/* Don't forget to link the new Phi nodes into the block! */
-	set_irn_link(phi_l, get_irn_link(block));
-	set_irn_link(phi_h, phi_l);
-	set_irn_link(block, phi_h);
+	add_Block_phi(block, phi_l);
+	add_Block_phi(block, phi_h);
 
 	if (enq) {
 		/* not yet finished */
@@ -2565,6 +2564,9 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		/* first step: link all nodes and allocate data */
 		lenv.flags = 0;
 		lenv.proj_2_block = pmap_create();
+
+		ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
+
 		irg_walk_graph(irg, firm_clear_node_and_phi_links, prepare_links_and_handle_rotl, &lenv);
 
 		if (lenv.flags & MUST_BE_LOWERED) {
@@ -2581,6 +2583,8 @@ void lower_dw_ops(const lwrdw_param_t *param)
 
 				lower_ops(node, &lenv);
 			}  /* while */
+
+			ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 
 			/* outs are invalid, we changed the graph */
 			set_irg_outs_inconsistent(irg);
