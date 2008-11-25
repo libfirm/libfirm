@@ -1498,9 +1498,8 @@ static ir_node *gen_Shrs(ir_node *node)
 {
 	ir_node *left  = get_Shrs_left(node);
 	ir_node *right = get_Shrs_right(node);
-	ir_mode *mode  = get_irn_mode(node);
 
-	if (is_Const(right) && mode == mode_Is) {
+	if (is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
 		long val = get_tarval_long(tv);
 		if (val == 31) {
@@ -1514,7 +1513,7 @@ static ir_node *gen_Shrs(ir_node *node)
 	}
 
 	/* 8 or 16 bit sign extension? */
-	if (is_Const(right) && is_Shl(left) && mode == mode_Is) {
+	if (is_Const(right) && is_Shl(left)) {
 		ir_node *shl_left  = get_Shl_left(left);
 		ir_node *shl_right = get_Shl_right(left);
 		if (is_Const(shl_right)) {
