@@ -250,7 +250,16 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
  */
 void irg_block_edges_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post, void *env);
 
-void edges_reset_private_data(ir_graph *irg, int offset, size_t size);
+/**
+ * Reset the user's private data at offset 'offset'
+ * The user has to remember his offset and the size of his data!
+ * Caution: Using wrong values here can destroy other users private data!
+ *
+ * @param irg     the IR graph to operate on
+ * @param offset  offset of the private data inside the edge
+ * @param size    length of the private data inside the edge
+ */
+void edges_reset_private_data(ir_graph *irg, int offset, unsigned size);
 
 /************************************************************************/
 /* End Old Interface                                                    */

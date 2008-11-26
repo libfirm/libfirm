@@ -163,12 +163,12 @@ int edges_register_private_data(size_t n) {
 	return res;
 }
 
-/**
+/*
  * Reset the user's private data at offset 'offset'
  * The user has to remember his offset and the size of his data!
  * Caution: Using wrong values here can destroy other users private data!
  */
-void edges_reset_private_data(ir_graph *irg, int offset, size_t size) {
+void edges_reset_private_data(ir_graph *irg, int offset, unsigned size) {
 	irg_edge_info_t       *info = _get_irg_edge_info(irg, EDGE_KIND_NORMAL);
 	ir_edge_t             *edge;
 	ir_edgeset_iterator_t  iter;
