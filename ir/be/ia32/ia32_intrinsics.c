@@ -26,6 +26,7 @@
  */
 #include "config.h"
 
+#include "iredges.h"
 #include "irgmod.h"
 #include "irop.h"
 #include "irnode_t.h"
@@ -62,7 +63,38 @@ void ia32_handle_intrinsics(void) {
 #define BINOP_Right_High 3
 
 /**
+ * Reroute edges from the pn_Call_T_result proj of a call.
+ *
+ * @param proj   the pn_Call_T_result Proj
+ * @param l_res  the lower 32 bit result
+ * @param h_res  the upper 32 bit result or NULL
+ * @param irg    the graph to replace on
+ */
+static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_graph *irg) {
+	const ir_edge_t *edge, *next;
+
+	foreach_out_edge_safe(proj, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long    pn    = get_Proj_proj(proj);
+
+		if (pn == 0) {
+			edges_reroute(proj, l_res, irg);
+		} else if (pn == 1 && h_res != NULL) {
+			edges_reroute(proj, h_res, irg);
+		} else {
+			panic("Unsupported Result-Proj from Call found");
+		}
+	}
+}
+
+/**
  * Replace a call be a tuple of l_res, h_res.
+ *
+ * @param call   the call node to replace
+ * @param l_res  the lower 32 bit result
+ * @param h_res  the upper 32 bit result or NULL
+ * @param irg    the graph to replace on
+ * @param block  the block to replace on (always the call block)
  */
 static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block) {
 	ir_node *jmp, *res, *in[2];
@@ -70,29 +102,77 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 	ir_node *nomem = get_irg_no_mem(irg);
 	int     old_cse;
 
-	in[0] = l_res;
-	in[1] = h_res;
-	res = new_r_Tuple(irg, block, h_res == NULL ? 1 : 2, in);
+	if (edges_activated(irg)) {
+		/* use rerouting to prevent some warning in the backend */
+		const ir_edge_t *edge, *next;
 
-	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular,        nomem);
-	/*
-	 * Beware:
-	 * We do not check here if this call really has exception and regular Proj's.
-	 * new_r_Jmp might than be CSEd with the real exit jmp and then bad things happen
-	 * (in movgen.c from 186.crafty for example).
-	 * So be sure the newly created Jmp cannot CSE.
-	 */
-	old_cse = get_opt_cse();
-	set_opt_cse(0);
-	jmp = new_r_Jmp(irg, block);
-	set_opt_cse(old_cse);
+		foreach_out_edge_safe(call, edge, next) {
+			ir_node *proj = get_edge_src_irn(edge);
+			pn_Call pn    = get_Proj_proj(proj);
 
-	set_Tuple_pred(call, pn_Call_X_regular,        jmp);
-	set_Tuple_pred(call, pn_Call_X_except,         bad);
-	set_Tuple_pred(call, pn_Call_T_result,         res);
-	set_Tuple_pred(call, pn_Call_M_except,         nomem);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, bad);
+			switch (pn) {
+			case pn_Call_X_regular:
+				/* Beware:
+				 * We do not check here if this call really has exception and regular Proj's.
+				 * new_r_Jmp might than be CSEd with the real exit jmp and then bad things happen
+				 * (in movgen.c from 186.crafty for example).
+				 * So be sure the newly created Jmp cannot CSE.
+				 */
+				old_cse = get_opt_cse();
+				set_opt_cse(0);
+				jmp = new_r_Jmp(irg, block);
+				set_opt_cse(old_cse);
+				edges_reroute(proj, jmp, irg);
+				break;
+
+			case pn_Call_X_except:
+			case pn_Call_P_value_res_base:
+				/* should not happen here */
+				edges_reroute(proj, bad, irg);
+				break;
+			case pn_Call_M_except:
+				/* should not happen here */
+				edges_reroute(proj, nomem, irg);
+				break;
+			case pn_Call_T_result:
+				reroute_result(proj, l_res, h_res, irg);
+				break;
+			default:
+				panic("Wrong Proj from Call");
+			}
+			kill_node(proj);
+		}
+		kill_node(call);
+	} else {
+		/* no edges, build Tuple */
+		if (h_res == NULL)
+			res = l_res;
+		else {
+			in[0] = l_res;
+			in[1] = h_res;
+			res = new_r_Tuple(irg, block, 2, in);
+		}
+
+		turn_into_tuple(call, pn_Call_max);
+		set_Tuple_pred(call, pn_Call_M_regular,        nomem);
+		/*
+		 * Beware:
+		 * We do not check here if this call really has exception and regular Proj's.
+		 * new_r_Jmp might than be CSEd with the real exit jmp and then bad things happen
+		 * (in movgen.c from 186.crafty for example).
+		 * So be sure the newly created Jmp cannot CSE.
+		 */
+		old_cse = get_opt_cse();
+		set_opt_cse(0);
+		jmp = new_r_Jmp(irg, block);
+		set_opt_cse(old_cse);
+
+		set_Tuple_pred(call, pn_Call_X_regular,        jmp);
+		set_Tuple_pred(call, pn_Call_X_except,         bad);
+		set_Tuple_pred(call, pn_Call_T_result,         res);
+		set_Tuple_pred(call, pn_Call_M_except,         nomem);
+		set_Tuple_pred(call, pn_Call_P_value_res_base, bad);
+	}
 }
 
 /**
