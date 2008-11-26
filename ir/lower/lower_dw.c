@@ -2150,9 +2150,12 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 	env->entries[idx]->low_word  = phi_l = new_rd_Phi(dbg, irg, block, arity, inl, mode_l);
 	env->entries[idx]->high_word = phi_h = new_rd_Phi(dbg, irg, block, arity, inh, mode);
 
-	/* Don't forget to link the new Phi nodes into the block! */
-	add_Block_phi(block, phi_l);
-	add_Block_phi(block, phi_h);
+	/* Don't forget to link the new Phi nodes into the block.
+	 * Beware that some Phis might be optimized away. */
+	if (is_Phi(phi_l))
+		add_Block_phi(block, phi_l);
+	if (is_Phi(phi_h))
+		add_Block_phi(block, phi_h);
 
 	if (enq) {
 		/* not yet finished */
