@@ -107,15 +107,10 @@ ia32_code_gen_t *ia32_current_cg = NULL;
 static ia32_intrinsic_env_t intrinsic_env = {
 	NULL,    /* the isa */
 	NULL,    /* the irg, these entities belong to */
-	NULL,    /* entity for first div operand (move into FPU) */
-	NULL,    /* entity for second div operand (move into FPU) */
-	NULL,    /* entity for converts ll -> d */
-	NULL,    /* entity for converts d -> ll */
 	NULL,    /* entity for __divdi3 library call */
 	NULL,    /* entity for __moddi3 library call */
 	NULL,    /* entity for __udivdi3 library call */
 	NULL,    /* entity for __umoddi3 library call */
-	NULL,    /* bias value for conversion from float to unsigned 64 */
 };
 
 
