@@ -1677,9 +1677,6 @@ static int verify_node_Load(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET(op1mode == mode_M, "Load node", 0);
 	if (get_irg_phase_state(irg) != phase_backend) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Load node", 0 );
-	} else {
-		ASSERT_AND_RET(mode_is_reference(op2mode) ||
-			(mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "Load node", 0 );
 	}
 	ASSERT_AND_RET( mymode == mode_T, "Load node", 0 );
 
@@ -1715,9 +1712,6 @@ static int verify_node_Store(ir_node *n, ir_graph *irg) {
 	ASSERT_AND_RET(op1mode == mode_M && mode_is_datab(op3mode), "Store node", 0 );
 	if (get_irg_phase_state(irg) != phase_backend) {
 		ASSERT_AND_RET(mode_is_reference(op2mode), "Store node", 0 );
-	} else {
-		ASSERT_AND_RET(mode_is_reference(op2mode) ||
-			(mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "Store node", 0 );
 	}
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
@@ -1849,11 +1843,6 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
 	if (get_irg_phase_state(irg) != phase_backend) {
 		ASSERT_AND_RET(mode_is_reference(op2mode) && mode_is_reference(op3mode),
 			"CopyB node", 0 );
-	} else {
-		ASSERT_AND_RET(mode_is_reference(op2mode) ||
-			(mode_is_int(op2mode) && get_mode_size_bits(op2mode) == get_mode_size_bits(mode_P)), "CopyB node", 0 );
-		ASSERT_AND_RET(mode_is_reference(op3mode) ||
-			(mode_is_int(op3mode) && get_mode_size_bits(op3mode) == get_mode_size_bits(mode_P)), "CopyB node", 0 );
 	}
 
 	ASSERT_AND_RET(
