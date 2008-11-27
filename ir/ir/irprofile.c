@@ -517,7 +517,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 			set_compound_graph_path_node(path, 0, ent);
 			set_compound_graph_path_node(path, 1, loc_lineno);
 			tv = new_tarval_from_long(wd.locs[i].lineno, mode_Iu);
-			add_compound_ent_value_w_path(ent_locations, new_Const(mode_Iu, tv), path);
+			add_compound_ent_value_w_path(ent_locations, new_Const(tv), path);
 
 			/* name */
 			path = new_compound_graph_path(loc_type, 2);
@@ -528,7 +528,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 				sym.entity_p = wd.locs[i].fname;
 				n = new_SymConst(mode_P_data, sym, symconst_addr_ent);
 			} else {
-				n = new_Const(mode_P_data, get_mode_null(mode_P_data));
+				n = new_Const(get_mode_null(mode_P_data));
 			}
 			add_compound_ent_value_w_path(ent_locations, n, path);
 		}

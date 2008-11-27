@@ -108,7 +108,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
 				ir_mode *mode = get_irn_mode(irn);
 				ir_type *tp   = get_irn_type(irn);
 				tarval *tv    = new_tarval_from_long(nr, mode);
-				c = new_r_Const_type(current_ir_graph, mode, tv, tp);
+				c = new_r_Const_type(current_ir_graph, tv, tp);
 			}
 
 			set_irn_n(succ, pos, c);
@@ -146,7 +146,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			 * We can replace the input with true/false.
 			 */
 			if (con == NULL) {
-				con = new_Const(mode_b, pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
+				con = new_Const(pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
 			}
 			old = get_irn_n(user, pos);
 			set_irn_n(user, pos, con);
@@ -207,8 +207,8 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				NEW_ARR_A(ir_node *, in, n);
 				/* ok, ALL predecessors are either dominated by block OR other block */
 				if (c_b == NULL) {
-					ir_node *c_true  = new_Const(mode_b, tarval_b_true);
-					ir_node *c_false = new_Const(mode_b, tarval_b_false);
+					ir_node *c_true  = new_Const(tarval_b_true);
+					ir_node *c_false = new_Const(tarval_b_false);
 					c_b = new_r_Confirm(current_ir_graph, cond_block, selector,
 						pnc == pn_Cond_true ? c_true : c_false, pn_Cmp_Eq);
 					c_o = new_r_Confirm(current_ir_graph, cond_block, selector,
@@ -504,7 +504,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 			 */
 			if (c == NULL) {
 				ir_mode *mode = get_irn_mode(ptr);
-				c = new_Const(mode, get_mode_null(mode));
+				c = new_Const(get_mode_null(mode));
 
 				c = new_r_Confirm(current_ir_graph, block, ptr, c, pn_Cmp_Lg);
 			}

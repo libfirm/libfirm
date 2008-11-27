@@ -641,7 +641,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 	m = get_irn_mode(n);
 	switch (get_irn_opcode(n)) {
 	case iro_Const:
-		nn = new_d_Const_type(dbg, m, get_Const_tarval(n), get_Const_type(n));
+		nn = new_d_Const_type(dbg, get_Const_tarval(n), get_Const_type(n));
 		break;
 	case iro_SymConst:
 		nn = new_d_SymConst_type(dbg, get_irn_mode(n), get_SymConst_symbol(n), get_SymConst_kind(n),

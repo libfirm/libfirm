@@ -1650,8 +1650,8 @@ set_array_bounds_int(ir_type *array, int dimension, int lower_bound, int upper_b
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = get_const_code_irg();
 	set_array_bounds(array, dimension,
-	          new_Const(mode_Iu, new_tarval_from_long (lower_bound, mode_Iu)),
-	          new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu )));
+	          new_Const_long(mode_Iu, lower_bound),
+	          new_Const_long(mode_Iu, upper_bound));
 	current_ir_graph = rem;
 }
 
@@ -1666,7 +1666,7 @@ void set_array_lower_bound_int(ir_type *array, int dimension, int lower_bound) {
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = get_const_code_irg();
 	set_array_lower_bound(array, dimension,
-	     new_Const(mode_Iu, new_tarval_from_long (lower_bound, mode_Iu)));
+	     new_Const_long(mode_Iu, lower_bound));
 	current_ir_graph = rem;
 }
 void
@@ -1679,7 +1679,7 @@ void set_array_upper_bound_int(ir_type *array, int dimension, int upper_bound) {
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = get_const_code_irg();
 	set_array_upper_bound(array, dimension,
-	            new_Const(mode_Iu, new_tarval_from_long (upper_bound, mode_Iu)));
+	            new_Const_long(mode_Iu, upper_bound));
 	current_ir_graph = rem;
 }
 

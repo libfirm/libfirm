@@ -271,7 +271,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, irg, block, a_l, h_mode);
 			h_res = new_rd_Shl(dbg, irg, block, conv, cnt, h_mode);
-			l_res = new_rd_Const(dbg, irg, l_mode, get_mode_null(l_mode));
+			l_res = new_rd_Const(dbg, irg, get_mode_null(l_mode));
 
 		} else {
 			/* h_res = SHLD a_h, a_l, cnt */
@@ -297,7 +297,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -307,7 +307,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	h2      = new_rd_Conv(dbg, irg, n_block, l1, h_mode);
-	l2      = new_r_Const(irg, l_mode, get_mode_null(l_mode));
+	l2      = new_r_Const(irg, get_mode_null(l_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -358,7 +358,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, irg, block, a_h, l_mode);
-			h_res = new_rd_Const(dbg, irg, h_mode, get_mode_null(h_mode));
+			h_res = new_rd_Const(dbg, irg, get_mode_null(h_mode));
 			l_res = new_rd_Shr(dbg, irg, block, conv, cnt, l_mode);
 		} else {
 			/* l_res = SHRD a_h:a_l, cnt */
@@ -383,7 +383,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -393,7 +393,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
 	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
-	h2      = new_r_Const(irg, h_mode, get_mode_null(h_mode));
+	h2      = new_r_Const(irg, get_mode_null(h_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
 	set_irn_in(block, 2, in);
@@ -471,7 +471,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, irg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, c_mode, get_mode_null(c_mode)));
+	irn    = new_rd_Cmp(dbg, irg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
 	irn    = new_r_Proj(irg, upper, irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, irg, upper, irn);
 
@@ -777,7 +777,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 			/* convert from float to signed 64bit */
 			ir_mode *flt_mode = get_irn_mode(a_f);
 			tarval  *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
-			ir_node *flt_corr = new_Const(flt_mode, flt_tv);
+			ir_node *flt_corr = new_Const(flt_tv);
 			ir_node *lower_blk = block;
 			ir_node *upper_blk;
 			ir_node *cmp, *proj, *cond, *blk, *int_phi, *flt_phi;
@@ -797,7 +797,7 @@ static int map_Conv(ir_node *call, void *ctx) {
 			set_irn_in(lower_blk, 2, in);
 
 			/* create to Phis */
-			in[0] = new_Const(h_res_mode, get_mode_null(h_res_mode));
+			in[0] = new_Const(get_mode_null(h_res_mode));
 			in[1] = new_Const_long(h_res_mode, 0x80000000);
 
 			int_phi = new_r_Phi(irg, lower_blk, 2, in, h_res_mode);

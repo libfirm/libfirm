@@ -117,7 +117,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 	if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 			(pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x <|<=|== lo | x ==|>=|> hi -> false */
-		ir_node *const t = new_Const(mode_b, tarval_b_false);
+		ir_node *const t = new_Const(tarval_b_false);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
@@ -143,7 +143,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 				return p;
 			} else if (pnc_hi == pn_Cmp_Lt) {
 				/* x > c || x < c + 1 -> false */
-				ir_node *const t = new_Const(mode_b, tarval_b_false);
+				ir_node *const t = new_Const(tarval_b_false);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Le) {
 				/* x > c || x <= c + 1 -> x != c + 1 */
@@ -178,7 +178,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 	if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
 			(pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
 		/* x >=|>|!= lo | x <|<=|!= hi -> true */
-		ir_node *const t = new_Const(mode_b, tarval_b_true);
+		ir_node *const t = new_Const(tarval_b_true);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
@@ -204,7 +204,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 				return p;
 			} else if (pnc_hi == pn_Cmp_Ge) {
 				/* x <= c || x >= c + 1 -> true */
-				ir_node *const t = new_Const(mode_b, tarval_b_true);
+				ir_node *const t = new_Const(tarval_b_true);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Gt) {
 				/* x <= c || x > c + 1 -> x != c + 1 */

@@ -1132,7 +1132,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
-		return new_Const(get_tarval_mode(tv), tv);
+		return new_Const(tv);
 	}
 	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(rc));
 }

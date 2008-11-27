@@ -304,9 +304,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 
 			modes[i] = mode;
 			if (env->variants[i] == TR_ADD) {
-				set_value(i, new_Const(mode, get_mode_null(mode)));
+				set_value(i, new_Const(get_mode_null(mode)));
 			} else if (env->variants[i] == TR_MUL) {
-				set_value(i, new_Const(mode, get_mode_one(mode)));
+				set_value(i, new_Const(get_mode_one(mode)));
 			}
 		}
 		mature_immBlock(start_block);

@@ -76,7 +76,7 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	ir_node  *block  = get_nodes_block(node);
 	ir_mode  *mode   = config.lowered_mode;
 	tarval   *tv_one = get_tarval_one(mode);
-	ir_node  *one    = new_d_Const(dbgi, mode, tv_one);
+	ir_node  *one    = new_d_Const(dbgi, tv_one);
 
 	return new_rd_Eor(dbgi,	irg, block, node, one, mode);
 }
@@ -108,10 +108,10 @@ static ir_node *create_set(ir_node *node)
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = config.lowered_set_mode;
 	tarval   *tv_one  = get_tarval_one(mode);
-	ir_node  *one     = new_d_Const(dbgi, mode, tv_one);
+	ir_node  *one     = new_d_Const(dbgi, tv_one);
 	ir_node  *block   = get_nodes_block(node);
 	tarval   *tv_zero = get_tarval_null(mode);
-	ir_node  *zero    = new_d_Const(dbgi, mode, tv_zero);
+	ir_node  *zero    = new_d_Const(dbgi, tv_zero);
 
 	ir_node *set      = new_rd_Mux(dbgi, irg, block, node, zero, one, mode);
 
@@ -235,7 +235,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *pred     = get_Conv_op(node);
 		ir_mode *mode     = get_irn_mode(pred);
 		tarval  *tv_zeroc = get_tarval_null(mode);
-		ir_node *zero_cmp = new_d_Const(dbgi, mode, tv_zeroc);
+		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
 		ir_node *set;
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, irg, block, pred, zero_cmp);
@@ -288,7 +288,7 @@ static ir_node *lower_node(ir_node *node)
 				if(a != NULL) {
 					int      bits      = get_mode_size_bits(mode);
 					tarval  *tv        = new_tarval_from_long(bits-1, mode_Iu);
-					ir_node *shift_cnt = new_d_Const(dbgi, mode_Iu, tv);
+					ir_node *shift_cnt = new_d_Const(dbgi, tv);
 
 					if(cmp_mode != mode) {
 						a = new_rd_Conv(dbgi, irg, block, a, mode);
@@ -331,10 +331,10 @@ static ir_node *lower_node(ir_node *node)
 		tarval *tv = get_Const_tarval(node);
 		if(tv == get_tarval_b_true()) {
 			tarval  *tv_one  = get_tarval_one(mode);
-			res              = new_d_Const(dbgi, mode, tv_one);
+			res              = new_d_Const(dbgi, tv_one);
 		} else if(tv == get_tarval_b_false()) {
 			tarval  *tv_zero = get_tarval_null(mode);
-			res              = new_d_Const(dbgi, mode, tv_zero);
+			res              = new_d_Const(dbgi, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}

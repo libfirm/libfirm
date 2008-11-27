@@ -851,11 +851,11 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
 
 		mode = get_irn_mode(size);
 		tv   = new_tarval_from_long(stack_alignment-1, mode);
-		mask = new_r_Const(irg, mode, tv);
+		mask = new_r_Const(irg, tv);
 		size = new_rd_Add(dbg, irg, block, size, mask, mode);
 
 		tv   = new_tarval_from_long(-(long)stack_alignment, mode);
-		mask = new_r_Const(irg, mode, tv);
+		mask = new_r_Const(irg, tv);
 		size = new_rd_And(dbg, irg, block, size, mask, mode);
 	}
 	return size;
@@ -917,7 +917,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		ir_mode *mode = get_irn_mode(size);
 		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
 		                                     mode);
-		ir_node *cnst = new_rd_Const(dbg, irg, mode, tv);
+		ir_node *cnst = new_rd_Const(dbg, irg, tv);
 		size          = new_rd_Mul(dbg, irg, block, size, cnst, mode);
 	}
 
@@ -983,7 +983,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	/* we might need to multiply the size with the element size */
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
-		ir_node *cnst = new_rd_Const(dbg, irg, mode_Iu, tv);
+		ir_node *cnst = new_rd_Const(dbg, irg, tv);
 		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Free_size(free),
 		                          cnst, mode_Iu);
 		size = mul;

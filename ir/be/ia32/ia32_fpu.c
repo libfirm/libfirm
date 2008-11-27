@@ -73,7 +73,7 @@ static ir_entity *create_ent(int value, const char *name)
 	set_entity_allocation(ent, allocation_static);
 
 	cnst_irg = get_const_code_irg();
-	cnst     = new_r_Const(cnst_irg, mode, tv);
+	cnst     = new_r_Const(cnst_irg, tv);
 	set_atomic_ent_value(ent, cnst);
 
 	return ent;

@@ -341,7 +341,7 @@ static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q) {
 	arg        = get_irg_arg(get_entity_irg(q->ent), q->pos);
 	/* we will replace the argument in position "q->pos" by this constant. */
 	const_arg  = new_r_Const_type(
-		clone_irg, get_irn_mode(arg), q->tv,
+		clone_irg, q->tv,
 		get_method_param_type(get_entity_type(q->ent), q->pos));
 
 	/* args copy in the cloned graph will be the const. */

@@ -3179,7 +3179,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
 			/* this Phi is replaced by a constant */
 			tarval  *tv = node->type.tv;
-			ir_node *c  = new_Const(get_tarval_mode(tv), tv);
+			ir_node *c  = new_Const(tv);
 
 			set_irn_node(c, node);
 			node->node = c;
@@ -3402,7 +3402,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 				 */
 				if (! is_Const(irn) && get_irn_mode(irn) != mode_T) {
 					/* can be replaced by a constant */
-					ir_node *c = new_Const(get_tarval_mode(tv), tv);
+					ir_node *c = new_Const(tv);
 					set_irn_node(c, node);
 					node->node = c;
 					DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, c));

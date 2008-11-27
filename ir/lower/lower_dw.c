@@ -346,10 +346,10 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	tv   = get_Const_tarval(node);
 
 	tv_l = tarval_convert_to(tv, low_mode);
-	low  = new_rd_Const(dbg, irg, low_mode, tv_l);
+	low  = new_rd_Const(dbg, irg, tv_l);
 
 	tv_h = tarval_convert_to(tarval_shrs(tv, env->tv_mode_bits), mode);
-	high = new_rd_Const(dbg, irg, mode, tv_h);
+	high = new_rd_Const(dbg, irg, tv_h);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
@@ -373,11 +373,11 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (env->params->little_endian) {
 		low  = adr;
 		high = new_r_Add(irg, block, adr,
-			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, env->tv_mode_bytes),
 			get_irn_mode(adr));
 	} else {
 		low  = new_r_Add(irg, block, adr,
-			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, env->tv_mode_bytes),
 			get_irn_mode(adr));
 		high = adr;
 	}  /* if */
@@ -453,11 +453,11 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	if (env->params->little_endian) {
 		low  = adr;
 		high = new_r_Add(irg, block, adr,
-			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, env->tv_mode_bytes),
 			get_irn_mode(adr));
 	} else {
 		low  = new_r_Add(irg, block, adr,
-			new_r_Const(irg, get_tarval_mode(env->tv_mode_bytes), env->tv_mode_bytes),
+			new_r_Const(irg, env->tv_mode_bytes),
 			get_irn_mode(adr));
 		high = adr;
 	}  /* if */
@@ -937,7 +937,7 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			} else {
 				env->entries[idx]->low_word = left;
 			}  /* if */
-			env->entries[idx]->high_word = new_r_Const(irg, mode, get_mode_null(mode));
+			env->entries[idx]->high_word = new_r_Const(irg, get_mode_null(mode));
 
 			return;
 		}  /* if */
@@ -974,7 +974,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			} else {
 				env->entries[idx]->high_word = left;
 			}  /* if */
-			env->entries[idx]->low_word  = new_r_Const(irg, mode_l, get_mode_null(mode_l));
+			env->entries[idx]->low_word  = new_r_Const(irg, get_mode_null(mode_l));
 
 			return;
 		}  /* if */
@@ -1515,7 +1515,7 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op_conv,
 					new_Const_long(dst_mode_l, get_mode_size_bits(dst_mode_h) - 1), dst_mode_h);
 			} else {
-				env->entries[idx]->high_word = new_Const(dst_mode_h, get_mode_null(dst_mode_h));
+				env->entries[idx]->high_word = new_Const(get_mode_null(dst_mode_h));
 			}  /* if */
 		}  /* if */
 	} else {
@@ -1570,7 +1570,7 @@ static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
 				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op,
 					new_Const_long(dst_mode, get_mode_size_bits(dst_mode) - 1), dst_mode);
 			} else {
-				env->entries[idx]->high_word = new_Const(dst_mode, get_mode_null(dst_mode));
+				env->entries[idx]->high_word = new_Const(get_mode_null(dst_mode));
 			}  /* if */
 		}  /* if */
 	} else {

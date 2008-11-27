@@ -1423,7 +1423,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 		    const code irg */
 		rem = current_ir_graph;
 		current_ir_graph = get_const_code_irg();
-		cnst = new_Const(env->mode, key.tv);
+		cnst = new_Const(key.tv);
 		current_ir_graph = rem;
 
 		set_atomic_ent_value(ent, cnst);

@@ -176,7 +176,7 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		if (tv == tarval_bad) {
 			return place_conv(node, dest_mode);
 		} else {
-			return new_Const(dest_mode, tv);
+			return new_Const(tv);
 		}
 	}
 
