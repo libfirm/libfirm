@@ -1279,7 +1279,7 @@ int sc_get_bit_at(const void *value, unsigned pos) {
 	const char *val = value;
 	unsigned nibble = pos >> 2;
 
-	if (and_table[val[nibble]][shift_table[pos & 3]] != SC_0)
+	if (and_table[(int) val[nibble]][(int) shift_table[pos & 3]] != SC_0)
 		return 1;
 	return 0;
 }
