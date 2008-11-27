@@ -122,7 +122,7 @@ instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 
 	unknown = new_r_Unknown(irg, mode_M);
 	cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
-	offset  = new_r_Add(irg, bb, address, cnst, mode_P);
+	offset  = new_r_Add(irg, bb, address, cnst, get_modeP_data());
 	load    = new_r_Load(irg, bb, unknown, offset, mode_Iu);
 	projm   = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
 	proji   = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
@@ -216,8 +216,8 @@ gen_initializer_irg(ir_entity * ent_filename, ir_entity * bblock_id, ir_entity *
 	set_entity_ld_ident(ent, name);
 
 	uint    = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
-	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, mode_P);
-	string  = new_type_pointer(new_id_from_str("__charptr"), new_type_primitive(new_id_from_str("__char"), mode_Bs), mode_P);
+	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, get_modeP_data());
+	string  = new_type_pointer(new_id_from_str("__charptr"), new_type_primitive(new_id_from_str("__char"), mode_Bs), get_modeP_data());
 
 	set_method_param_type(init_type, 0, string);
 	set_method_param_type(init_type, 1, uintptr);
