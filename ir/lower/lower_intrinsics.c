@@ -40,6 +40,7 @@
 #include "pmap.h"
 #include "array_t.h"
 #include "iropt_dbg.h"
+#include "error.h"
 
 /** Walker environment. */
 typedef struct _walker_env {
@@ -214,7 +215,12 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 	(void) ctx;
 
 	if (mode_is_signed(get_irn_mode(op))) {
-		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode_Iu);
+		ir_mode *mode = get_irn_mode(op);
+		mode = find_unsigned_mode(mode);
+		if (mode == NULL) {
+			panic("Cannot find unsigned mode for %M", mode);
+		}
+		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
 	}
 
 	irn    = new_rd_Alloc(dbg, current_ir_graph, block, mem, op, firm_unknown_type, stack_alloc);
@@ -521,7 +527,7 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 	mode = get_type_mode(tp);
 
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
-	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
 	n = get_compound_ent_n_values(ent);
@@ -594,7 +600,7 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) 
 	mode = get_type_mode(tp);
 
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
-	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
 	tp = get_entity_type(right);
@@ -606,7 +612,7 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) 
 	mode = get_type_mode(tp);
 
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
-	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
 	n   = get_compound_ent_n_values(left);
@@ -673,7 +679,7 @@ static int is_empty_string(ir_entity *ent) {
 	mode = get_type_mode(tp);
 
 	/* FIXME: This is too restrict, as the type char might be more the 8bits */
-	if (!mode_is_int(mode) || get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return 0;
 
 	n = get_compound_ent_n_values(ent);
