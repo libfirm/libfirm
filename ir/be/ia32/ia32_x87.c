@@ -413,12 +413,12 @@ static ir_node *x87_patch_insn(ir_node *n, ir_op *op)
 				mode = get_irn_mode(proj);
 				if (mode_is_float(mode)) {
 					res = proj;
-					set_irn_mode(proj, mode_E);
+					set_irn_mode(proj, ia32_reg_classes[CLASS_ia32_st].mode);
 				}
 			}
 		}
 	} else if (mode_is_float(mode))
-		set_irn_mode(n, mode_E);
+		set_irn_mode(n, ia32_reg_classes[CLASS_ia32_st].mode);
 	return res;
 }  /* x87_patch_insn */
 
@@ -739,7 +739,7 @@ static ir_node *x87_create_fldz(x87_state *state, ir_node *n, int regidx)
 	ir_node *block = get_nodes_block(n);
 	ir_node *fldz;
 
-	fldz = new_bd_ia32_fldz(NULL, block, mode_E);
+	fldz = new_bd_ia32_fldz(NULL, block, ia32_reg_classes[CLASS_ia32_st].mode);
 
 	sched_add_before(n, fldz);
 	DB((dbg, LEVEL_1, "<<< %s\n", get_irn_opname(fldz)));
@@ -1234,13 +1234,14 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 
 	if (live_after_node) {
 		/*
-			Problem: fst doesn't support mode_E (spills), only fstp does
+			Problem: fst doesn't support 96bit modes (spills), only fstp does
+			         fist doesn't support 64bit mode, only fistp
 			Solution:
 				- stack not full: push value and fstp
 				- stack full: fstp value and load again
 			Note that we cannot test on mode_E, because floats might be 96bit ...
 		*/
-		if (get_mode_size_bits(mode) > 64 || mode == mode_Ls) {
+		if (get_mode_size_bits(mode) > 64 || (mode_is_int(mode) && get_mode_size_bits(mode) > 32)) {
 			if (depth < N_x87_REGS) {
 				/* ok, we have a free register: push + fstp */
 				x87_create_fpush(state, n, op2_idx, n_ia32_vfst_val);
@@ -1293,7 +1294,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 			if (op2_idx != 0)
 				x87_create_fxch(state, n, op2_idx);
 
-			/* mode != mode_E -> use normal fst */
+			/* mode size 64 or smaller -> use normal fst */
 			x87_patch_insn(n, op);
 		}
 	} else {
@@ -2150,7 +2151,7 @@ static int sim_Barrier(x87_state *state, ir_node *node)
 
 		/* create a zero */
 		block = get_nodes_block(node);
-		zero  = new_bd_ia32_fldz(NULL, block, mode_E);
+		zero  = new_bd_ia32_fldz(NULL, block, ia32_reg_classes[CLASS_ia32_st].mode);
 		x87_push(state, arch_register_get_index(reg), zero);
 
 		attr = get_ia32_x87_attr(zero);
@@ -2277,7 +2278,7 @@ static void fix_unknown_phis(x87_state *state, ir_node *block,
 		reg = arch_get_irn_register(phi);
 
 		/* create a zero at end of pred block */
-		zero = new_bd_ia32_fldz(NULL, pred_block, mode_E);
+		zero = new_bd_ia32_fldz(NULL, pred_block, ia32_reg_classes[CLASS_ia32_st].mode);
 		x87_push(state, arch_register_get_index(reg), zero);
 
 		attr = get_ia32_x87_attr(zero);
