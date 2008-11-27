@@ -2043,9 +2043,9 @@ static void ia32_mark_remat(const void *self, ir_node *node) {
 }
 
 /**
- * Check for Abs or Nabs.
+ * Check for Abs or -Abs.
  */
-static int is_Abs_or_Nabs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
+static int psi_is_Abs_or_Nabs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
 	ir_node *l, *r;
 	pn_Cmp  pnc;
 
@@ -2072,6 +2072,46 @@ static int is_Abs_or_Nabs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
 }
 
 /**
+ * Check for Abs only
+ */
+static int psi_is_Abs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
+	ir_node *l, *r;
+	pn_Cmp  pnc;
+
+	if (cmp == NULL)
+		return 0;
+
+	/* must be <, <=, >=, > */
+	pnc = get_Proj_proj(sel);
+	if (pnc != pn_Cmp_Ge && pnc != pn_Cmp_Gt &&
+		pnc != pn_Cmp_Le && pnc != pn_Cmp_Lt)
+		return 0;
+
+	l = get_Cmp_left(cmp);
+	r = get_Cmp_right(cmp);
+
+	/* must be x cmp 0 */
+	if ((l != t && l != f) || !is_Const(r) || !is_Const_null(r))
+		return 0;
+
+	if ((!is_Minus(t) || get_Minus_op(t) != f) &&
+		(!is_Minus(f) || get_Minus_op(f) != t))
+		return 0;
+
+	if (pnc & pn_Cmp_Gt) {
+		/* x >= 0 ? -x : x is NABS */
+		if (is_Minus(t))
+			return 0;
+	} else {
+		/* x < 0 ? x : -x is NABS */
+		if (is_Minus(f))
+			return 0;
+	}
+	return 1;
+}
+
+
+/**
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  *
  * @param sel        A selector of a Cond.
@@ -2092,8 +2132,17 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 		if (is_Cmp(cmp)) {
 			ir_node *left     = get_Cmp_left(cmp);
 			ir_mode *cmp_mode = get_irn_mode(left);
-			if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32)
-				return 0;
+			if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32) {
+				/* 64bit Abs IS supported */
+				for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
+					ir_node *t = get_Phi_pred(phi, i);
+					ir_node *f = get_Phi_pred(phi, j);
+
+					if (! psi_is_Abs(cmp, sel, t, f))
+						return 0;
+				}
+				return 1;
+			}
 		} else {
 			cmp = NULL;
 		}
@@ -2140,7 +2189,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 					ir_node *t = get_Phi_pred(phi, i);
 					ir_node *f = get_Phi_pred(phi, j);
 
-					if (! is_Abs_or_Nabs(cmp, sel, t, f))
+					if (! psi_is_Abs_or_Nabs(cmp, sel, t, f))
 						return 0;
 				} else if (get_mode_size_bits(mode) > 32)
 					return 0;
@@ -2171,7 +2220,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 
 			if (mode_is_float(mode)) {
 				/* only abs or nabs supported */
-				if (! is_Abs_or_Nabs(cmp, sel, t, f))
+				if (! psi_is_Abs_or_Nabs(cmp, sel, t, f))
 					return 0;
 			} else if (get_mode_size_bits(mode) > 32) {
 				/* no 64bit yet */
