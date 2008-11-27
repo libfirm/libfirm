@@ -2381,7 +2381,7 @@ restart:
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
 		return n;
 
-	if (is_Const(b) && get_irn_mode(b) != mode_P) {
+	if (is_Const(b) && !mode_is_reference(get_irn_mode(b))) {
 		/* a - C -> a + (-C) */
 		ir_node *cnst = const_negate(b);
 		if (cnst != NULL) {
@@ -2423,7 +2423,7 @@ restart:
 		ir_node  *s_left  = get_Sub_left(b);
 		ir_node  *s_right = get_Sub_right(b);
 		ir_mode  *s_mode  = get_irn_mode(b);
-		if (s_mode == mode_P) {
+		if (mode_is_reference(s_mode)) {
 			ir_node  *sub     = new_rd_Sub(s_dbg, irg, s_block, a, s_left, mode);
 			dbg_info *a_dbg   = get_irn_dbg_info(n);
 			ir_node  *a_block = get_nodes_block(n);
