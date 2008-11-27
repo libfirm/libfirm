@@ -1932,7 +1932,7 @@ static void ia32_emit_block_header(ir_node *block)
 	int           i, arity;
 	ir_exec_freq *exec_freq = cg->birg->exec_freq;
 
-	if (block == get_irg_end_block(irg) || block == get_irg_start_block(irg))
+	if (block == get_irg_end_block(irg))
 		return;
 
 	if (ia32_cg_config.label_alignment > 0) {
@@ -1977,12 +1977,16 @@ static void ia32_emit_block_header(ir_node *block)
 
 	/* emit list of pred blocks in comment */
 	arity = get_irn_arity(block);
-	for (i = 0; i < arity; ++i) {
-		ir_node *predblock = get_Block_cfgpred_block(block, i);
-		be_emit_irprintf(" %d", get_irn_node_nr(predblock));
+	if (arity <= 0) {
+		be_emit_cstring(" none");
+	} else {
+		for (i = 0; i < arity; ++i) {
+			ir_node *predblock = get_Block_cfgpred_block(block, i);
+			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
+		}
 	}
 	if (exec_freq != NULL) {
-		be_emit_irprintf(" freq: %f",
+		be_emit_irprintf(", freq: %f",
 		                 get_block_execfreq(exec_freq, block));
 	}
 	be_emit_cstring(" */\n");
