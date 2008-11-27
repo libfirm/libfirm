@@ -80,6 +80,14 @@ void    sched_remove(const ir_node *irn);
   sched_foreach_reverse_from(sched_last(block), irn)
 
 /**
+ * A shorthand macro for iterating over all Phi nodes of a schedule.
+ * @param block The block.
+ * @param phi A ir node pointer used as an iterator.
+ */
+#define sched_foreach_Phi(block,phi) \
+	for (phi = sched_first(block); is_Phi(phi); phi = sched_next(phi))
+
+/**
  * Removes dead nodes from schedule
  * @param irg  the graph
  */
