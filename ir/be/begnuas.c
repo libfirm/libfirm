@@ -547,8 +547,7 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 		tv   = sub_initializer->tarval.value;
 		mode = get_tarval_mode(tv);
 
-		if (!mode_is_int(mode)
-				|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 			return 0;
 
 		c = get_tarval_long(tv);
@@ -591,8 +590,7 @@ static int ent_is_string_const(ir_entity *ent)
 	/* and the mode of the element type is an int of
 	 * the same size as the byte mode */
 	mode = get_type_mode(element_type);
-	if (!mode_is_int(mode)
-		|| get_mode_size_bits(mode) != get_mode_size_bits(mode_Bs))
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return 0;
 
 	if (ent->has_initializer) {
