@@ -2500,8 +2500,8 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_res_type(unop_tp_s, 1, tp_s);
 	}  /* if */
 
-	lenv.tv_mode_bytes = new_tarval_from_long(get_mode_size_bytes(param->low_unsigned), mode_Iu);
-	lenv.tv_mode_bits  = new_tarval_from_long(get_mode_size_bits(param->low_unsigned), mode_Iu);
+	lenv.tv_mode_bytes = new_tarval_from_long(get_mode_size_bytes(param->low_unsigned), param->low_unsigned);
+	lenv.tv_mode_bits  = new_tarval_from_long(get_mode_size_bits(param->low_unsigned), param->low_unsigned);
 	lenv.waitq         = new_pdeq();
 	lenv.params        = param;
 
