@@ -29,10 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
+#include <string.h>
 
 #include "irouts.h"
 #include "irdump.h"

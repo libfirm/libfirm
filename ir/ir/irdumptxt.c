@@ -25,9 +25,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 #include <stdlib.h>
 #include <stdarg.h>
 

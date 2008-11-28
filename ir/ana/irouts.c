@@ -26,9 +26,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "xmalloc.h"
 #include "irouts.h"

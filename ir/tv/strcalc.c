@@ -28,9 +28,7 @@
 #include "config.h"
 
 #include <stdlib.h>
-#ifdef HAVE_STRING_H
-# include <string.h>  /* memset/memcmp */
-#endif
+#include <string.h>   /* memset/memcmp */
 #include <assert.h>   /* assertions */
 #include <stdio.h>    /* output for error messages */
 #include <limits.h>   /* definition of LONG_MIN, used in sc_get_val_from_long */

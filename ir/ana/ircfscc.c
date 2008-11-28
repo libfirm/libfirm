@@ -28,9 +28,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
 
 #include "irloop_t.h"
 #include "irnode_t.h"

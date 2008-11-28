@@ -39,9 +39,7 @@
 #ifdef HAVE_INTTYPES_H
 # include <inttypes.h>
 #endif
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

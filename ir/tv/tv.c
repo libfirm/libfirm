@@ -35,9 +35,7 @@
 
 #include <assert.h>         /* assertions */
 #include <stdlib.h>         /* atoi() */
-#ifdef HAVE_STRING_H
-# include <string.h>         /* nice things for strings */
-#endif
+#include <string.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #endif
