@@ -95,7 +95,8 @@ char *xstrdup(const char *str);
 #include <stdlib.h>
 #elif defined(_WIN32)
 #include <malloc.h>
-#else
+#endif
+#ifdef HAVE_ALLOCA_H
 #include <alloca.h>
 #endif
 
