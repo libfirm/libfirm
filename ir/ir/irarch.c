@@ -506,6 +506,9 @@ static int evaluate_insn(mul_env *env, instruction *inst) {
 	case ZERO:
 		inst->costs = costs = env->evaluate(inst->kind, NULL);
 		return costs;
+	case MUL:
+	case ROOT:
+		break;
 	}
 	panic("Unsupported instruction kind");
 }
