@@ -152,8 +152,6 @@ void init_firm(const firm_parameter_t *param)
 	arch_dep_init(arch_dep_default_factory);
 	arch_dep_set_opts(0);
 
-	firm_archops_init(def_params.arch_op_settings);
-
 #ifdef DEBUG_libfirm
 	/* integrated debugger extension */
 	firm_init_debugger();

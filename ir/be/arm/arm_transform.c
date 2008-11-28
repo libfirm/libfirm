@@ -45,7 +45,6 @@
 #include "bearch_arm_t.h"
 
 #include "arm_nodes_attr.h"
-#include "archop.h"
 #include "arm_transform.h"
 #include "arm_optimize.h"
 #include "arm_new_nodes.h"

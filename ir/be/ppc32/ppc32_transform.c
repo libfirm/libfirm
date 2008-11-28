@@ -42,7 +42,6 @@
 #include "bearch_ppc32_t.h"
 
 #include "ppc32_nodes_attr.h"
-#include "archop.h"
 #include "ppc32_transform.h"
 #include "ppc32_new_nodes.h"
 #include "ppc32_map_regs.h"

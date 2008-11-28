@@ -44,7 +44,6 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
-#include "archop.h"
 #include "error.h"
 #include "array_t.h"
 #include "height.h"

@@ -2304,13 +2304,12 @@ static const backend_params *ia32_get_libfirm_params(void) {
 
 		1,  /* allow Mulhs */
 		1,  /* allow Mulus */
-		32  /* Mulh allowed up to 32 bit */
+		32, /* Mulh allowed up to 32 bit */
 	};
 	static backend_params p = {
 		1,     /* need dword lowering */
 		1,     /* support inline assembly */
 		0,     /* no immediate floating point mode. */
-		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */

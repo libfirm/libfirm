@@ -38,7 +38,6 @@
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_nodes_attr.h"
-#include "archop.h"
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_new_nodes.h"
 #include "TEMPLATE_map_regs.h"

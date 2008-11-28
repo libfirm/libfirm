@@ -63,7 +63,6 @@
 #include <assert.h>
 
 #include "iroptimize.h"
-#include "archop.h"
 #include "irflag.h"
 #include "ircons.h"
 #include "list.h"
@@ -1026,10 +1025,6 @@ static int is_real_follower(const ir_node *irn, int input) {
 		if (is_tarval(pred->type.tv) && tarval_is_all_one(pred->type.tv))
 			return 0;
 		break;
-	case iro_Min:
-	case iro_Max:
-		/* all inputs are followers */
-		return 1;
 	default:
 		assert(!"opcode not implemented yet");
 		break;
@@ -2451,94 +2446,6 @@ static void compute_Confirm(node_t *node) {
 }  /* compute_Confirm */
 
 /**
- * (Re-)compute the type for a Max.
- *
- * @param node  the node
- */
-static void compute_Max(node_t *node) {
-	ir_node        *op = node->node;
-	node_t         *l  = get_irn_node(get_binop_left(op));
-	node_t         *r  = get_irn_node(get_binop_right(op));
-	lattice_elem_t a   = l->type;
-	lattice_elem_t b   = r->type;
-
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
-	} else if (is_con(a) && is_con(b)) {
-		/* both nodes are constants, we can probably do something */
-		if (a.tv == b.tv) {
-			/* this case handles SymConsts as well */
-			node->type = a;
-		} else {
-			ir_mode *mode   = get_irn_mode(op);
-			tarval  *tv_min = get_mode_min(mode);
-
-			if (a.tv == tv_min)
-				node->type = b;
-			else if (b.tv == tv_min)
-				node->type = a;
-			else if (is_tarval(a.tv) && is_tarval(b.tv)) {
-				if (tarval_cmp(a.tv, b.tv) & pn_Cmp_Gt)
-					node->type.tv = a.tv;
-				else
-					node->type.tv = b.tv;
-			} else {
-				node->type.tv = tarval_bad;
-			}
-		}
-	} else if (r->part == l->part) {
-		/* both nodes congruent, we can probably do something */
-		node->type = a;
-	} else {
-		node->type.tv = tarval_bottom;
-	}
-}  /* compute_Max */
-
-/**
- * (Re-)compute the type for a Min.
- *
- * @param node  the node
- */
-static void compute_Min(node_t *node) {
-	ir_node        *op = node->node;
-	node_t         *l  = get_irn_node(get_binop_left(op));
-	node_t         *r  = get_irn_node(get_binop_right(op));
-	lattice_elem_t a   = l->type;
-	lattice_elem_t b   = r->type;
-
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
-	} else if (is_con(a) && is_con(b)) {
-		/* both nodes are constants, we can probably do something */
-		if (a.tv == b.tv) {
-			/* this case handles SymConsts as well */
-			node->type = a;
-		} else {
-			ir_mode *mode   = get_irn_mode(op);
-			tarval  *tv_max = get_mode_max(mode);
-
-			if (a.tv == tv_max)
-				node->type = b;
-			else if (b.tv == tv_max)
-				node->type = a;
-			else if (is_tarval(a.tv) && is_tarval(b.tv)) {
-				if (tarval_cmp(a.tv, b.tv) & pn_Cmp_Gt)
-					node->type.tv = a.tv;
-				else
-					node->type.tv = b.tv;
-			} else {
-				node->type.tv = tarval_bad;
-			}
-		}
-	} else if (r->part == l->part) {
-		/* both nodes congruent, we can probably do something */
-		node->type = a;
-	} else {
-		node->type.tv = tarval_bottom;
-	}
-}  /* compute_Min */
-
-/**
  * (Re-)compute the type for a given node.
  *
  * @param node  the node
@@ -2750,54 +2657,6 @@ static node_t *identity_Mux(node_t *node) {
 }  /* identity_Mux */
 
 /**
- * Calculates the Identity for Min nodes.
- */
-static node_t *identity_Min(node_t *node) {
-	ir_node *op   = node->node;
-	node_t  *a    = get_irn_node(get_binop_left(op));
-	node_t  *b    = get_irn_node(get_binop_right(op));
-	ir_mode *mode = get_irn_mode(op);
-	tarval  *tv_max;
-
-	if (a->part == b->part) {
-		/* leader of multiple predecessors */
-		return a;
-	}
-
-	/* works even with NaN */
-	tv_max = get_mode_max(mode);
-	if (a->type.tv == tv_max)
-		return b;
-	if (b->type.tv == tv_max)
-		return a;
-	return node;
-}  /* identity_Min */
-
-/**
- * Calculates the Identity for Max nodes.
- */
-static node_t *identity_Max(node_t *node) {
-	ir_node *op   = node->node;
-	node_t  *a    = get_irn_node(get_binop_left(op));
-	node_t  *b    = get_irn_node(get_binop_right(op));
-	ir_mode *mode = get_irn_mode(op);
-	tarval  *tv_min;
-
-	if (a->part == b->part) {
-		/* leader of multiple predecessors */
-		return a;
-	}
-
-	/* works even with NaN */
-	tv_min = get_mode_min(mode);
-	if (a->type.tv == tv_min)
-		return b;
-	if (b->type.tv == tv_min)
-		return a;
-	return node;
-}  /* identity_Max */
-
-/**
  * Calculates the Identity for nodes.
  */
 static node_t *identity(node_t *node) {
@@ -2825,10 +2684,6 @@ static node_t *identity(node_t *node) {
 		return identity_Confirm(node);
 	case iro_Mux:
 		return identity_Mux(node);
-	case iro_Min:
-		return identity_Min(node);
-	case iro_Max:
-		return identity_Max(node);
 	default:
 		return node;
 	}
@@ -3518,11 +3373,6 @@ static void set_compute_functions(void) {
 	SET(Return);
 	SET(End);
 	SET(Call);
-
-	if (op_Max != NULL)
-		SET(Max);
-	if (op_Min != NULL)
-		SET(Min);
 }  /* set_compute_functions */
 
 /**

@@ -2480,7 +2480,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		shiftop_tp_s = new_type_method(IDENT("shiftop_s_intrinsic"), 3, 2);
 		set_method_param_type(shiftop_tp_s, 0, tp_u);
 		set_method_param_type(shiftop_tp_s, 1, tp_s);
-		/* beware: shift count is always mode_Iu */
 		set_method_param_type(shiftop_tp_s, 2, tp_u);
 		set_method_res_type(shiftop_tp_s, 0, tp_u);
 		set_method_res_type(shiftop_tp_s, 1, tp_s);

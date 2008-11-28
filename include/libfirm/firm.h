@@ -105,7 +105,6 @@ extern "C" {
 #include "irgwalk.h"        /* Support to walk ir */
 
 #include "irarch.h"        /* architecture dependent optimizations */
-#include "archop.h"        /* architecture dependent opcodes */
 
 #include "firmstat.h"      /* statistics */
 
@@ -158,12 +157,6 @@ struct _firm_parameter_t {
    * If not set, the default libFirm ident module (using hash sets).
    */
   ident_if_t *id_if;
-
-  /**
-   * The architecture dependent opcode settings.
-   * If not set, no architecture dependent operations will be used.
-   */
-  const arch_ops_info *arch_op_settings;
 
   /**
    * The default calling convention.

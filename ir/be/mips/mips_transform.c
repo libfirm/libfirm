@@ -49,7 +49,6 @@
 #include "bearch_mips_t.h"
 
 #include "mips_nodes_attr.h"
-#include "archop.h"
 #include "mips_transform.h"
 #include "mips_new_nodes.h"
 #include "mips_map_regs.h"

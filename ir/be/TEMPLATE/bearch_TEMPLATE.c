@@ -550,7 +550,6 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 		0,     /* no dword lowering */
 		0,     /* no inline assembly */
 		0,     /* no immediate floating point mode. */
-		NULL,  /* no additional opcodes */
 		NULL,  /* will be set later */
 		NULL,  /* no creator function */
 		NULL,  /* context for create_intrinsic_fkt */

@@ -2,7 +2,6 @@ libfirmincludedir=$(includedir)/libfirm
 libfirminclude_HEADERS = \
 	absgraph.h \
 	analyze_irg_args.h \
-	archop.h \
 	be.h \
 	callgraph.h \
 	cdep.h \

@@ -42,7 +42,6 @@
 #include "irhooks.h"
 #include "irarch.h"
 #include "hashptr.h"
-#include "archop.h"
 #include "opt_confirms.h"
 #include "opt_polymorphy.h"
 #include "irtools.h"
@@ -5649,7 +5648,8 @@ static ir_node *transform_node_Mux(ir_node *n) {
 			}
 		}
 	}
-	return arch_transform_node_Mux(n);
+
+	return n;
 }  /* transform_node_Mux */
 
 /**

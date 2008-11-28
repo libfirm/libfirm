@@ -32,7 +32,6 @@ extern "C" {
 
 #include <stdio.h>
 #include "irarch.h"
-#include "archop.h"
 #include "lowering.h"
 
 typedef enum {
@@ -60,9 +59,6 @@ typedef struct backend_params {
 	unsigned support_inline_asm:1;
 	/** If set, the target architecture use an immediate floating point mode. */
 	unsigned has_imm_fp_mode:1;
-
-	/** Additional opcodes settings. */
-	const arch_ops_info *arch_op_settings;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
