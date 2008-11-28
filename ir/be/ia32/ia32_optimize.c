@@ -947,9 +947,7 @@ static void peephole_ia32_Const(ir_node *node)
 	const arch_register_t       *reg;
 	ir_node                     *block;
 	dbg_info                    *dbgi;
-	ir_node                     *produceval;
 	ir_node                     *xor;
-	ir_node                     *noreg;
 
 	/* try to transform a mov 0, reg to xor reg reg */
 	if (attr->offset != 0 || attr->symconst != NULL)
@@ -964,17 +962,11 @@ static void peephole_ia32_Const(ir_node *node)
 	assert(be_peephole_get_reg_value(reg) == NULL);
 
 	/* create xor(produceval, produceval) */
-	block      = get_nodes_block(node);
-	dbgi       = get_irn_dbg_info(node);
-	produceval = new_bd_ia32_ProduceVal(dbgi, block);
-	arch_set_irn_register(produceval, reg);
-
-	noreg = ia32_new_NoReg_gp(cg);
-	xor   = new_bd_ia32_Xor(dbgi, block, noreg, noreg, new_NoMem(), produceval,
-			produceval);
+	block = get_nodes_block(node);
+	dbgi  = get_irn_dbg_info(node);
+	xor   = new_bd_ia32_Xor0(dbgi, block);
 	arch_set_irn_register(xor, reg);
 
-	sched_add_before(node, produceval);
 	sched_add_before(node, xor);
 
 	copy_mark(node, xor);

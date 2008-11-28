@@ -1339,9 +1339,13 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 
 	(void)orig;
 	if (ia32_cg_config.use_short_sex_eax) {
-		ir_node *pval = new_bd_ia32_ProduceVal(dbgi, block);
-		be_dep_on_frame(pval);
-		res = new_bd_ia32_Cltd(dbgi, block, val, pval);
+		const arch_register_class_t *reg_class = &ia32_reg_classes[CLASS_ia32_gp];
+		ir_node                     *in[2];
+
+		res = new_bd_ia32_Cltd(dbgi, block, val);
+		in[0] = res;
+		in[1] = val;
+		be_new_Keep(reg_class, current_ir_graph, block, 2, in);
 	} else {
 		ir_node *imm31 = create_Immediate(NULL, 0, 31);
 		res = new_bd_ia32_Sar(dbgi, block, val, imm31);
@@ -2877,7 +2881,7 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_mode  *mode  = get_irn_mode(psi);
-	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg, *tmpreg, *nomem;
+	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg, *nomem;
 	dbg_info *dbgi;
 
 	new_node = gen_binop(psi, a, b, new_bd_ia32_Sub,
@@ -2896,11 +2900,9 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 	eflags = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_Sub_flags);
 
 	dbgi   = get_irn_dbg_info(psi);
-	noreg  = ia32_new_NoReg_gp(env_cg);
-	tmpreg = new_bd_ia32_ProduceVal(dbgi, block);
-	nomem  = new_NoMem();
-	sbb    = new_bd_ia32_Sbb(dbgi, block, noreg, noreg, nomem, tmpreg, tmpreg, eflags);
+	sbb    = new_bd_ia32_Sbb0(dbgi, block, eflags);
 
+	noreg    = ia32_new_NoReg_gp(env_cg);
 	new_node = new_bd_ia32_And(dbgi, block, noreg, noreg, nomem, new_node, sbb);
 	set_ia32_commutative(new_node);
 	return new_node;

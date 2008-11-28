@@ -339,18 +339,6 @@ Asm => {
 	modified_flags => $status_flags,
 },
 
-# "allocates" a free register
-ProduceVal => {
-	op_flags  => "c",
-	irn_flags => "R",
-	reg_req   => { out => [ "gp" ] },
-	emit      => "",
-	units     => [ ],
-	latency   => 0,
-	mode      => $mode_gp,
-	cmp_attr  => "return 1;",
-},
-
 #-----------------------------------------------------------------#
 #  _       _                                         _            #
 # (_)     | |                                       | |           #
@@ -583,6 +571,18 @@ Xor => {
 	modified_flags => $status_flags
 },
 
+Xor0 => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
+	emit      => ". xor%M %D0, %D0",
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
 XorMem => {
 	irn_flags => "R",
 	state     => "exc_pinned",
@@ -656,6 +656,17 @@ Sbb => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	emit      => '. sbb%M %binop',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+Sbb0 => {
+	irn_flags => "R",
+	reg_req   => { in => [ "flags" ], out => [ "gp", "flags" ] },
+	outs      => [ "res", "flags" ],
+	emit      => ". sbb%M %D0, %D0",
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_gp,
@@ -1290,8 +1301,8 @@ FnstCWNOP => {
 
 Cltd => {
 	# we should not rematrialize this node. It has very strict constraints.
-	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
-	ins       => [ "val", "clobbered" ],
+	reg_req   => { in => [ "eax" ], out => [ "edx" ] },
+	ins       => [ "val" ],
 	emit      => '. cltd',
 	latency   => 1,
 	mode      => $mode_gp,
