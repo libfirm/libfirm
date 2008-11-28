@@ -157,7 +157,7 @@ void _firm_dbg_print(const firm_dbg_module_t *mod, unsigned mask, const char *fm
     ir_obst_vprintf(&dbg_obst, fmt, args);
     obstack_1grow(&dbg_obst, '\0');
     res = obstack_finish(&dbg_obst);
-    fprintf(mod->file, res);
+    fprintf(mod->file, "%s", res);
     obstack_free(&dbg_obst, res);
     va_end(args);
   }
