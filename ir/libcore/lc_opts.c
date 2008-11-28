@@ -20,12 +20,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-#if defined(__FreeBSD__)
-#include <stdlib.h>
-#elif defined(_WIN32)
+#ifdef _WIN32
 #include <malloc.h>
 #endif
 #ifdef HAVE_ALLOCA_H

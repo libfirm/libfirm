@@ -26,9 +26,7 @@
 
 #include "config.h"
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #include "array_t.h"
 #include "xmalloc.h"

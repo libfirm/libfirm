@@ -31,10 +31,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "entity_t.h"

@@ -29,9 +29,7 @@
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #include "irloop_t.h"
 #include "irprog_t.h"

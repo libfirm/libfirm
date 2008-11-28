@@ -28,9 +28,7 @@
 #ifdef FIRM_STATISTICS
 
 #include <stdio.h>
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #include "ident.h"
 #include "irop_t.h"

@@ -31,13 +31,9 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
 #endif
 
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
 #include <stdio.h>
 #include <signal.h>
 

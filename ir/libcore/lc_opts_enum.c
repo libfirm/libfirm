@@ -15,9 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__FreeBSD__)
-#include <stdlib.h>
-#elif defined(_WIN32)
+#ifdef _WIN32
 #include <malloc.h>
 #endif
 #ifdef HAVE_ALLOCA_H

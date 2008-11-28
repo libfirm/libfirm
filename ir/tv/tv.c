@@ -41,9 +41,7 @@
 #ifdef HAVE_STRINGS_H
 #include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
 #endif
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #include "tv_t.h"
 #include "set.h"            /* to store tarvals in */

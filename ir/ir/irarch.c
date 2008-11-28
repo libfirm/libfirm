@@ -29,10 +29,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-
+#include <stdlib.h>
 #include <assert.h>
 
 #include "irnode_t.h"

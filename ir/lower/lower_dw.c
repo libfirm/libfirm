@@ -29,10 +29,7 @@
 #ifdef HAVE_STRING_H
 # include <string.h>
 #endif
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
-
+#include <stdlib.h>
 #include <assert.h>
 
 #include "error.h"
