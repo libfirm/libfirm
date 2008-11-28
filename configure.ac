@@ -168,7 +168,7 @@ AC_CONFIG_FILES([
 AC_DEFINE([INLINE], [inline], [define inline to compiler inline keyword])
 
 BACKENDS=""
-if test "$enable_backend" == yes; then
+if test "$enable_backend" = yes; then
 	BACKENDS="arm ia32 mips ppc32"
 fi
 AC_SUBST([BACKENDS])
