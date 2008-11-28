@@ -26,9 +26,7 @@
  */
 #include "config.h"
 
-#ifdef HAVE_STDIO_H
-# include <stdio.h>
-#endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

@@ -30,9 +30,7 @@
 #endif
 
 #include <string.h>
-#ifdef HAVE_STDIO_H
-# include <stdio.h>
-#endif
+#include <stdio.h>
 
 #include "lc_opts.h"
 
