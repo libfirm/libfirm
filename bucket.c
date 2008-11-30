@@ -79,19 +79,37 @@ void node_bucket_insert(pbqp_node_bucket *bucket, pbqp_node *node)
 	ARR_APP1(pbqp_node *, *bucket, node);
 }
 
+pbqp_node *node_bucket_pop(pbqp_node_bucket *bucket)
+{
+	unsigned   bucket_len = node_bucket_get_length(*bucket);
+	pbqp_node *node;
+
+	assert(bucket_len > 0);
+
+	node = (*bucket)[bucket_len - 1];
+	assert(node);
+
+	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
+	node->bucket_index = UINT_MAX;
+
+	return node;
+}
+
 void node_bucket_remove(pbqp_node_bucket *bucket, pbqp_node *node)
 {
-	unsigned   last_bucket_index = node_bucket_get_length(*bucket) - 1;
+	unsigned   bucket_len = node_bucket_get_length(*bucket);
 	unsigned   node_index;
 	pbqp_node *other;
 
 	assert(node);
 	assert(node_bucket_contains(*bucket, node));
+	assert(bucket_len > 0);
 
 	node_index            = node->index;
-	other                 = (*bucket)[last_bucket_index];
+	other                 = (*bucket)[bucket_len - 1];
 	other->bucket_index   = node_index;
 	(*bucket)[node_index] = other;
 
-	ARR_SHRINKLEN(*bucket, last_bucket_index);
+	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
+	node->bucket_index = UINT_MAX;
 }

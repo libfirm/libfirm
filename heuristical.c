@@ -433,9 +433,7 @@ void apply_edge(pbqp *pbqp)
 
 void apply_RI(pbqp *pbqp)
 {
-	pbqp_node  **bucket     = node_buckets[1];
-	unsigned     bucket_len = node_bucket_get_length(bucket);
-	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_node   *node       = node_bucket_pop(&node_buckets[1]);
 	pbqp_edge   *edge       = node->edges[0];
 	pbqp_matrix *mat        = edge->costs;
 	int          is_src     = edge->src == node;
@@ -472,11 +470,9 @@ void apply_RI(pbqp *pbqp)
 		dump_node(pbqp, other_node);
 	}
 
-	/* Remove node from bucket... */
-	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
 	reorder_node(other_node);
 
-	/* ...and add it to back propagation list. */
+	/* Add node to back propagation list. */
 	node->bucket_index = node_bucket_get_length(reduced_bucket);
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
 }
