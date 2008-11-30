@@ -20,15 +20,12 @@ static int         buckets_filled = 0;
 
 static void insert_into_edge_bucket(pbqp_edge *edge)
 {
-	unsigned bucket_len = edge_bucket_get_length(edge_bucket);
-
-	if (edge->bucket_index < bucket_len && edge_bucket[edge->bucket_index]
-			== edge)
+	if (edge_bucket_contains(edge_bucket, edge)) {
 		/* Edge is already inserted. */
 		return;
+	}
 
-	edge->bucket_index = bucket_len;
-	ARR_APP1(pbqp_edge *, edge_bucket, edge);
+	edge_bucket_insert(&edge_bucket, edge);
 }
 
 static void init_buckets(void)
