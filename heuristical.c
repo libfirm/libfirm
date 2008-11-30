@@ -473,15 +473,12 @@ void apply_RI(pbqp *pbqp)
 	reorder_node(other_node);
 
 	/* Add node to back propagation list. */
-	node->bucket_index = node_bucket_get_length(reduced_bucket);
-	ARR_APP1(pbqp_node *, reduced_bucket, node);
+	node_bucket_insert(&reduced_bucket, node);
 }
 
 void apply_RII(pbqp *pbqp)
 {
-	pbqp_node  **bucket     = node_buckets[2];
-	unsigned     bucket_len = node_bucket_get_length(bucket);
-	pbqp_node   *node       = bucket[bucket_len - 1];
+	pbqp_node   *node       = node_bucket_pop(&node_buckets[2]);
 	pbqp_edge   *src_edge   = node->edges[0];
 	pbqp_edge   *tgt_edge   = node->edges[1];
 	int          src_is_src = src_edge->src == node;
@@ -586,12 +583,8 @@ void apply_RII(pbqp *pbqp)
 	disconnect_edge(src_node, src_edge);
 	disconnect_edge(tgt_node, tgt_edge);
 
-	/* Remove node from bucket... */
-	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
-
-	/* ...and add it to back propagation list. */
-	node->bucket_index = node_bucket_get_length(reduced_bucket);
-	ARR_APP1(pbqp_node *, reduced_bucket, node);
+	/* Add node to back propagation list. */
+	node_bucket_insert(&reduced_bucket, node);
 
 	if (edge == NULL) {
 		edge = alloc_edge(pbqp, src_node->index, tgt_node->index, mat);
