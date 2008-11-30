@@ -48,15 +48,11 @@ static void free_buckets(void)
 	int i;
 
 	for (i = 0; i < 4; ++i) {
-		DEL_ARR_F(node_buckets[i]);
-		node_buckets[i] = NULL;
+		node_bucket_free(&node_buckets[i]);
 	}
 
-	DEL_ARR_F(edge_bucket);
-	edge_bucket = NULL;
-
-	DEL_ARR_F(reduced_bucket);
-	reduced_bucket = NULL;
+	edge_bucket_free(&edge_bucket);
+	node_bucket_free(&reduced_bucket);
 
 	buckets_filled = 0;
 }
@@ -82,9 +78,7 @@ static void fill_node_buckets(pbqp *pbqp)
 			arity = 3;
 		}
 
-		node->bucket_index = node_bucket_get_length(node_buckets[arity]);
-
-		ARR_APP1(pbqp_node *, node_buckets[arity], node);
+		node_bucket_insert(&node_buckets[arity], node);
 	}
 
 	buckets_filled = 1;
