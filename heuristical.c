@@ -803,8 +803,5 @@ int node_is_reduced(pbqp_node *node)
 	assert(node);
 	if (ARR_LEN(node->edges) == 0) return 1;
 
-	unsigned bucket_length = node_bucket_get_length(reduced_bucket);
-	unsigned bucket_index  = node->bucket_index;
-
-	return bucket_index < bucket_length && reduced_bucket[bucket_index] == node;
+	return node_bucket_contains(reduced_bucket, node);
 }
