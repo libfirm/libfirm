@@ -20,7 +20,7 @@ static int         buckets_filled = 0;
 
 static void insert_into_edge_bucket(pbqp_edge *edge)
 {
-	unsigned bucket_len = ARR_LEN(edge_bucket);
+	unsigned bucket_len = edge_bucket_get_length(edge_bucket);
 
 	if (edge->bucket_index < bucket_len && edge_bucket[edge->bucket_index]
 			== edge)
@@ -363,7 +363,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	fill_node_buckets(pbqp);
 
 	for (;;) {
-		if (ARR_LEN(edge_bucket) > 0) {
+		if (edge_bucket_get_length(edge_bucket) > 0) {
 			apply_edge(pbqp);
 		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
 			apply_RI(pbqp);
@@ -426,7 +426,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 void apply_edge(pbqp *pbqp)
 {
-	unsigned   bucket_len = ARR_LEN(edge_bucket);
+	unsigned   bucket_len = edge_bucket_get_length(edge_bucket);
 	pbqp_edge *edge       = edge_bucket[bucket_len - 1];
 
 	ARR_SHRINKLEN(edge_bucket, (int)bucket_len - 1);
