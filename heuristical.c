@@ -35,11 +35,11 @@ static void init_buckets(void)
 {
 	int i;
 
-	edge_bucket = NEW_ARR_F(pbqp_edge *, 0);
-	reduced_bucket = NEW_ARR_F(pbqp_node *, 0);
+	edge_bucket_init(&edge_bucket);
+	node_bucket_init(&reduced_bucket);
 
 	for (i = 0; i < 4; ++i) {
-		node_buckets[i] = NEW_ARR_F(pbqp_node *, 0);
+		node_bucket_init(&node_buckets[i]);
 	}
 }
 
