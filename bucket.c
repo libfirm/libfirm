@@ -34,6 +34,21 @@ void edge_bucket_insert(pbqp_edge_bucket *bucket, pbqp_edge *edge)
 	ARR_APP1(pbqp_edge *, *bucket, edge);
 }
 
+pbqp_edge *edge_bucket_pop(pbqp_edge_bucket *bucket)
+{
+	unsigned   bucket_len = edge_bucket_get_length(*bucket);
+	pbqp_edge *edge;
+
+	assert(bucket_len > 0);
+
+	edge = (*bucket)[bucket_len - 1];
+
+	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
+	edge->bucket_index = UINT_MAX;
+
+	return edge;
+}
+
 int node_bucket_contains(pbqp_node_bucket bucket, pbqp_node *node)
 {
 	assert(node);

@@ -426,10 +426,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 void apply_edge(pbqp *pbqp)
 {
-	unsigned   bucket_len = edge_bucket_get_length(edge_bucket);
-	pbqp_edge *edge       = edge_bucket[bucket_len - 1];
-
-	ARR_SHRINKLEN(edge_bucket, (int)bucket_len - 1);
+	pbqp_edge *edge = edge_bucket_pop(&edge_bucket);
 
 	simplify_edge(pbqp, edge);
 }
