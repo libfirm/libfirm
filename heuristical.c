@@ -2,6 +2,7 @@
 #include "assert.h"
 #include "error.h"
 
+#include "bucket.h"
 #include "heuristical.h"
 #include "html_dumper.h"
 #include "kaps.h"
@@ -81,7 +82,7 @@ static void fill_node_buckets(pbqp *pbqp)
 			arity = 3;
 		}
 
-		node->bucket_index = ARR_LEN(node_buckets[arity]);
+		node->bucket_index = node_bucket_get_length(node_buckets[arity]);
 
 		ARR_APP1(pbqp_node *, node_buckets[arity], node);
 	}
@@ -229,12 +230,12 @@ static void reorder_node(pbqp_node *node)
 	/* Assume node lost one incident edge. */
 	old_arity        = arity + 1;
 	old_bucket       = node_buckets[old_arity];
-	old_bucket_len   = ARR_LEN(old_bucket);
+	old_bucket_len   = node_bucket_get_length(old_bucket);
 	old_bucket_index = node->bucket_index;
 
 	if (old_bucket_len <= old_bucket_index || old_bucket[old_bucket_index]
 			!= node) {
-		unsigned bucket_len = ARR_LEN(node_buckets[arity]);
+		unsigned bucket_len = node_bucket_get_length(node_buckets[arity]);
 
 		/* Old arity is new arity, so we have nothing to do. */
 		assert(old_bucket_index < bucket_len);
@@ -251,7 +252,7 @@ static void reorder_node(pbqp_node *node)
 	ARR_SHRINKLEN(node_buckets[old_arity], old_bucket_len - 1);
 
 	/* ..and add to new one. */
-	node->bucket_index = ARR_LEN(node_buckets[arity]);
+	node->bucket_index = node_bucket_get_length(node_buckets[arity]);
 	ARR_APP1(pbqp_node*, node_buckets[arity], node);
 }
 
@@ -364,11 +365,11 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	for (;;) {
 		if (ARR_LEN(edge_bucket) > 0) {
 			apply_edge(pbqp);
-		} else if (ARR_LEN(node_buckets[1]) > 0) {
+		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
 			apply_RI(pbqp);
-		} else if (ARR_LEN(node_buckets[2]) > 0) {
+		} else if (node_bucket_get_length(node_buckets[2]) > 0) {
 			apply_RII(pbqp);
-		} else if (ARR_LEN(node_buckets[3]) > 0) {
+		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
 			apply_RN(pbqp);
 		} else {
 			break;
@@ -381,7 +382,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	}
 
 	/* Solve trivial nodes and calculate solution. */
-	node_len = ARR_LEN(node_buckets[0]);
+	node_len = node_bucket_get_length(node_buckets[0]);
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		pbqp_node *node = node_buckets[0][node_index];
 		assert(node);
@@ -402,7 +403,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	}
 
 	/* Solve reduced nodes. */
-	node_len = ARR_LEN(reduced_bucket);
+	node_len = node_bucket_get_length(reduced_bucket);
 	for (node_index = node_len; node_index > 0; --node_index) {
 		pbqp_node *node = reduced_bucket[node_index - 1];
 		assert(node);
@@ -436,7 +437,7 @@ void apply_edge(pbqp *pbqp)
 void apply_RI(pbqp *pbqp)
 {
 	pbqp_node  **bucket     = node_buckets[1];
-	unsigned     bucket_len = ARR_LEN(bucket);
+	unsigned     bucket_len = node_bucket_get_length(bucket);
 	pbqp_node   *node       = bucket[bucket_len - 1];
 	pbqp_edge   *edge       = node->edges[0];
 	pbqp_matrix *mat        = edge->costs;
@@ -479,14 +480,14 @@ void apply_RI(pbqp *pbqp)
 	reorder_node(other_node);
 
 	/* ...and add it to back propagation list. */
-	node->bucket_index = ARR_LEN(reduced_bucket);
+	node->bucket_index = node_bucket_get_length(reduced_bucket);
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
 }
 
 void apply_RII(pbqp *pbqp)
 {
 	pbqp_node  **bucket     = node_buckets[2];
-	unsigned     bucket_len = ARR_LEN(bucket);
+	unsigned     bucket_len = node_bucket_get_length(bucket);
 	pbqp_node   *node       = bucket[bucket_len - 1];
 	pbqp_edge   *src_edge   = node->edges[0];
 	pbqp_edge   *tgt_edge   = node->edges[1];
@@ -596,7 +597,7 @@ void apply_RII(pbqp *pbqp)
 	ARR_SHRINKLEN(bucket, (int)bucket_len - 1);
 
 	/* ...and add it to back propagation list. */
-	node->bucket_index = ARR_LEN(reduced_bucket);
+	node->bucket_index = node_bucket_get_length(reduced_bucket);
 	ARR_APP1(pbqp_node *, reduced_bucket, node);
 
 	if (edge == NULL) {
@@ -623,7 +624,7 @@ void apply_RII(pbqp *pbqp)
 void apply_RN(pbqp *pbqp)
 {
 	pbqp_node  **bucket       = node_buckets[3];
-	unsigned     bucket_len   = ARR_LEN(bucket);
+	unsigned     bucket_len   = node_bucket_get_length(bucket);
 	unsigned     bucket_index;
 	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
@@ -825,7 +826,7 @@ int node_is_reduced(pbqp_node *node)
 	assert(node);
 	if (ARR_LEN(node->edges) == 0) return 1;
 
-	unsigned bucket_length = ARR_LEN(reduced_bucket);
+	unsigned bucket_length = node_bucket_get_length(reduced_bucket);
 	unsigned bucket_index  = node->bucket_index;
 
 	return bucket_index < bucket_length && reduced_bucket[bucket_index] == node;
