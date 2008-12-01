@@ -63,19 +63,19 @@ static void fill_node_buckets(pbqp *pbqp)
 	node_len = pbqp->num_nodes;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		unsigned   arity;
+		unsigned   degree;
 		pbqp_node *node = get_node(pbqp, node_index);
 
 		if (!node) continue;
 
-		arity = ARR_LEN(node->edges);
+		degree = pbqp_node_get_degree(node);
 
 		/* We have only one bucket for nodes with arity >= 3. */
-		if (arity > 3) {
-			arity = 3;
+		if (degree > 3) {
+			degree = 3;
 		}
 
-		node_bucket_insert(&node_buckets[arity], node);
+		node_bucket_insert(&node_buckets[degree], node);
 	}
 
 	buckets_filled = 1;
@@ -128,7 +128,7 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 
 			if (min == INF_COSTS) {
 				unsigned edge_index;
-				unsigned edge_len = ARR_LEN(src_node->edges);
+				unsigned edge_len = pbqp_node_get_degree(src_node);
 
 				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 					pbqp_edge *edge_candidate = src_node->edges[edge_index];
@@ -187,7 +187,7 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 			if (min == INF_COSTS) {
 				unsigned edge_index;
-				unsigned edge_len = ARR_LEN(tgt_node->edges);
+				unsigned edge_len = pbqp_node_get_degree(tgt_node);
 
 				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 					pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
@@ -202,32 +202,26 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 
 static void reorder_node(pbqp_node *node)
 {
-	unsigned    arity;
-	unsigned    old_arity;
+	unsigned    degree     = pbqp_node_get_degree(node);
+	/* Assume node lost one incident edge. */
+	unsigned    old_degree = degree + 1;
 
 	if (!buckets_filled) return;
 
-	assert(node);
-
-	arity = ARR_LEN(node->edges);
-
 	/* Same bucket as before */
-	if (arity > 2) return;
+	if (degree > 2) return;
 
-	/* Assume node lost one incident edge. */
-	old_arity = arity + 1;
-
-	if (!node_bucket_contains(node_buckets[old_arity], node)) {
+	if (!node_bucket_contains(node_buckets[old_degree], node)) {
 		/* Old arity is new arity, so we have nothing to do. */
-		assert(node_bucket_contains(node_buckets[arity], node));
+		assert(node_bucket_contains(node_buckets[degree], node));
 		return;
 	}
 
 	/* Delete node from old bucket... */
-	node_bucket_remove(&node_buckets[old_arity], node);
+	node_bucket_remove(&node_buckets[old_degree], node);
 
 	/* ..and add to new one. */
-	node_bucket_insert(&node_buckets[arity], node);
+	node_bucket_insert(&node_buckets[degree], node);
 }
 
 static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
@@ -421,7 +415,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		if (!node) continue;
 
 		edges = node->edges;
-		edge_len = ARR_LEN(edges);
+		edge_len = pbqp_node_get_degree(node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 			pbqp_edge *edge = edges[edge_index];
@@ -480,9 +474,8 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	node_len = node_bucket_get_length(reduced_bucket);
 	for (node_index = node_len; node_index > 0; --node_index) {
 		pbqp_node *node = reduced_bucket[node_index - 1];
-		assert(node);
 
-		switch (ARR_LEN(node->edges)) {
+		switch (pbqp_node_get_degree(node)) {
 			case 1:
 				back_propagate_RI(pbqp, node);
 				break;
@@ -704,7 +697,7 @@ void apply_RN(pbqp *pbqp)
 	/* Search for node with maximum degree. */
 	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
 		pbqp_node *candidate = bucket[bucket_index];
-		unsigned   degree    = ARR_LEN(candidate->edges);
+		unsigned   degree    = pbqp_node_get_degree(candidate);
 
 		if (degree > max_degree) {
 			node = candidate;
@@ -883,8 +876,7 @@ int node_is_reduced(pbqp_node *node)
 {
 	if (!reduced_bucket) return 0;
 
-	assert(node);
-	if (ARR_LEN(node->edges) == 0) return 1;
+	if (pbqp_node_get_degree(node) == 0) return 1;
 
 	return node_bucket_contains(reduced_bucket, node);
 }
