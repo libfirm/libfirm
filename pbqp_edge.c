@@ -64,3 +64,8 @@ void delete_edge(pbqp_edge *edge)
 	disconnect_edge(src_node, edge);
 	disconnect_edge(tgt_node, edge);
 }
+
+pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge)
+{
+	return alloc_edge(pbqp, edge->src->index, edge->tgt->index, edge->costs);
+}

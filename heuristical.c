@@ -764,6 +764,81 @@ void apply_RN(pbqp *pbqp)
 	}
 }
 
+void apply_Brute_Force(pbqp *pbqp)
+{
+	pbqp_node  **bucket       = node_buckets[3];
+	unsigned     bucket_len   = node_bucket_get_length(bucket);
+	unsigned     bucket_index;
+	pbqp_node   *node         = NULL;
+	pbqp_edge   *edge;
+	vector      *node_vec;
+	vector      *vec;
+	pbqp_matrix *mat;
+	unsigned     edge_index;
+	unsigned     max_degree   = 0;
+	unsigned     node_index;
+	unsigned     node_len;
+	unsigned     min_index    = 0;
+	num          min          = INF_COSTS;
+	int          is_src;
+
+	assert(pbqp);
+
+	/* Search for node with maximum degree. */
+	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
+		pbqp_node *candidate = bucket[bucket_index];
+		unsigned   degree    = pbqp_node_get_degree(candidate);
+
+		if (degree > max_degree) {
+			node = candidate;
+			max_degree = degree;
+		}
+	}
+	assert(node);
+	node_vec = node->costs;
+	node_len = node_vec->len;
+
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		num value = node_vec->entries[node_index].data;
+
+		/* TODO Copy PBQP */
+
+
+		if (value < min) {
+			min = value;
+			min_index = node_index;
+		}
+	}
+
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
+					node->index, min_index);
+		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %lld<br>\n",
+							min);
+	}
+
+	node->solution = min_index;
+
+	/* Now that we found the local minimum set all other costs to infinity. */
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		if (node_index != min_index) {
+			node_vec->entries[node_index].data = INF_COSTS;
+		}
+	}
+
+	/* Add all incident edges to edge bucket, since they are now independent. */
+	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
+		insert_into_edge_bucket(node->edges[edge_index]);
+	}
+}
+
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 {
 	pbqp_edge   *edge;

@@ -113,3 +113,19 @@ void node_bucket_remove(pbqp_node_bucket *bucket, pbqp_node *node)
 	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
 	node->bucket_index = UINT_MAX;
 }
+
+pbqp_node_bucket *node_bucket_deep_copy(pbqp_node_bucket bucket)
+{
+	pbqp_node_bucket *copy;
+	unsigned          bucket_index;
+	unsigned          bucket_length;
+
+	node_bucket_init(copy);
+	bucket_length = node_bucket_get_length(bucket);
+
+	for (bucket_index = 0; bucket_index < bucket_length; ++bucket_index) {
+		node_bucket_insert(copy, pbqp_node_deep_copy(bucket[bucket_index]));
+	}
+
+	return copy;
+}

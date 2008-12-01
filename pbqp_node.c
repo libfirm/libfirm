@@ -69,3 +69,22 @@ unsigned pbqp_node_get_degree(pbqp_node *node)
 	assert(node);
 	return ARR_LEN(node->edges);
 }
+
+pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
+{
+	unsigned   edge_index;
+	unsigned   edge_length = pbqp_node_get_degree(node);
+	pbqp_node *copy        = obstack_alloc(&pbqp->obstack, sizeof(*node));
+	assert(copy);
+
+	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
+		copy->edges[edge_index] = pbqp_edge_deep_copy(node->edges[edge_index]);
+	}
+	copy->edges        = NEW_ARR_F(pbqp_edge *, 0);
+	copy->costs        = vector_copy(pbqp, node->costs);
+	copy->bucket_index = node->bucket_index;
+	copy->solution     = node->solution;
+	copy->index   = node->index;
+
+	return node;
+}
