@@ -204,9 +204,6 @@ static void reorder_node(pbqp_node *node)
 {
 	unsigned    arity;
 	unsigned    old_arity;
-	unsigned    old_bucket_len;
-	unsigned    old_bucket_index;
-	pbqp_node **old_bucket;
 
 	if (!buckets_filled) return;
 
@@ -218,29 +215,19 @@ static void reorder_node(pbqp_node *node)
 	if (arity > 2) return;
 
 	/* Assume node lost one incident edge. */
-	old_arity        = arity + 1;
-	old_bucket       = node_buckets[old_arity];
-	old_bucket_len   = node_bucket_get_length(old_bucket);
-	old_bucket_index = node->bucket_index;
+	old_arity = arity + 1;
 
-	if (old_bucket_len <= old_bucket_index || old_bucket[old_bucket_index]
-			!= node) {
-		unsigned bucket_len = node_bucket_get_length(node_buckets[arity]);
-
+	if (!node_bucket_contains(node_buckets[old_arity], node)) {
 		/* Old arity is new arity, so we have nothing to do. */
-		assert(old_bucket_index < bucket_len);
-		assert(node_buckets[arity][old_bucket_index] == node);
+		assert(node_bucket_contains(node_buckets[arity], node));
 		return;
 	}
-
-	assert(old_bucket[old_bucket_index] == node);
 
 	/* Delete node from old bucket... */
 	node_bucket_remove(&node_buckets[old_arity], node);
 
 	/* ..and add to new one. */
-	node->bucket_index = node_bucket_get_length(node_buckets[arity]);
-	ARR_APP1(pbqp_node*, node_buckets[arity], node);
+	node_bucket_insert(&node_buckets[arity], node);
 }
 
 static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
