@@ -339,6 +339,18 @@ Asm => {
 	modified_flags => $status_flags,
 },
 
+# "allocates" a free register
+ProduceVal => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { out => [ "gp" ] },
+	emit      => "",
+	units     => [ ],
+	latency   => 0,
+	mode      => $mode_gp,
+	cmp_attr  => "return 1;",
+},
+
 #-----------------------------------------------------------------#
 #  _       _                                         _            #
 # (_)     | |                                       | |           #
@@ -1301,8 +1313,8 @@ FnstCWNOP => {
 
 Cltd => {
 	# we should not rematrialize this node. It has very strict constraints.
-	reg_req   => { in => [ "eax" ], out => [ "edx" ] },
-	ins       => [ "val" ],
+	reg_req   => { in => [ "eax", "edx" ], out => [ "edx" ] },
+	ins       => [ "val", "clobbered" ],
 	emit      => '. cltd',
 	latency   => 1,
 	mode      => $mode_gp,

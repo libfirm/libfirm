@@ -1339,13 +1339,9 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 
 	(void)orig;
 	if (ia32_cg_config.use_short_sex_eax) {
-		const arch_register_class_t *reg_class = &ia32_reg_classes[CLASS_ia32_gp];
-		ir_node                     *in[2];
-
-		res = new_bd_ia32_Cltd(dbgi, block, val);
-		in[0] = res;
-		in[1] = val;
-		be_new_Keep(reg_class, current_ir_graph, block, 2, in);
+		ir_node *pval = new_bd_ia32_ProduceVal(dbgi, block);
+		be_dep_on_frame(pval);
+		res = new_bd_ia32_Cltd(dbgi, block, val, pval);
 	} else {
 		ir_node *imm31 = create_Immediate(NULL, 0, 31);
 		res = new_bd_ia32_Sar(dbgi, block, val, imm31);
