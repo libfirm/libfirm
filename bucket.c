@@ -105,7 +105,7 @@ void node_bucket_remove(pbqp_node_bucket *bucket, pbqp_node *node)
 	assert(node_bucket_contains(*bucket, node));
 	assert(bucket_len > 0);
 
-	node_index            = node->index;
+	node_index            = node->bucket_index;
 	other                 = (*bucket)[bucket_len - 1];
 	other->bucket_index   = node_index;
 	(*bucket)[node_index] = other;
