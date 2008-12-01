@@ -867,11 +867,18 @@ static void ia32_before_abi(void *self) {
  * Transforms the standard firm graph into
  * an ia32 firm graph
  */
-static void ia32_prepare_graph(void *self) {
-	ia32_code_gen_t *cg = self;
+static void ia32_prepare_graph(void *self)
+{
+	ia32_code_gen_t *cg  = self;
+	ir_graph        *irg = cg->irg;
 
 	/* do local optimizations */
-	optimize_graph_df(cg->irg);
+	optimize_graph_df(irg);
+
+	/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
+	 * or critical edges in the backend */
+	optimize_cf(irg);
+	remove_critical_cf_edges(irg);
 
 	/* TODO: we often have dead code reachable through out-edges here. So for
 	 * now we rebuild edges (as we need correct user count for code selection)
