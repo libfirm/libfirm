@@ -207,7 +207,6 @@ static void reorder_node(pbqp_node *node)
 	unsigned    old_bucket_len;
 	unsigned    old_bucket_index;
 	pbqp_node **old_bucket;
-	pbqp_node  *other;
 
 	if (!buckets_filled) return;
 
@@ -237,10 +236,7 @@ static void reorder_node(pbqp_node *node)
 	assert(old_bucket[old_bucket_index] == node);
 
 	/* Delete node from old bucket... */
-	other                        = old_bucket[old_bucket_len - 1];
-	other->bucket_index          = old_bucket_index;
-	old_bucket[old_bucket_index] = other;
-	ARR_SHRINKLEN(node_buckets[old_arity], old_bucket_len - 1);
+	node_bucket_remove(&node_buckets[old_arity], node);
 
 	/* ..and add to new one. */
 	node->bucket_index = node_bucket_get_length(node_buckets[arity]);
