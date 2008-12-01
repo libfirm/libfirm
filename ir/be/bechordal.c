@@ -90,19 +90,19 @@ typedef struct _be_chordal_alloc_env_t {
 #if 0
 static void check_border_list(struct list_head *head)
 {
-  border_t *x;
-  list_for_each_entry(border_t, x, head, list) {
-    assert(x->magic == BORDER_FOURCC);
-  }
+	border_t *x;
+	list_for_each_entry(border_t, x, head, list) {
+		assert(x->magic == BORDER_FOURCC);
+	}
 }
 
 static void check_heads(be_chordal_env_t *env)
 {
-  pmap_entry *ent;
-  for(ent = pmap_first(env->border_heads); ent; ent = pmap_next(env->border_heads)) {
-    /* ir_printf("checking border list of block %+F\n", ent->key); */
-    check_border_list(ent->value);
-  }
+	pmap_entry *ent;
+	for (ent = pmap_first(env->border_heads); ent; ent = pmap_next(env->border_heads)) {
+		/* ir_printf("checking border list of block %+F\n", ent->key); */
+		check_border_list(ent->value);
+	}
 }
 #endif
 
@@ -124,7 +124,7 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 {
 	border_t *b;
 
-	if(!is_def) {
+	if (!is_def) {
 		border_t *def;
 
 		b = obstack_alloc(env->obst, sizeof(*b));
@@ -144,14 +144,12 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 
 		DEBUG_ONLY(b->magic = BORDER_FOURCC);
 		DEBUG_ONLY(def->magic = BORDER_FOURCC);
-	}
-
-	/*
-	 * If the def is encountered, the use was made and so was the
-	 * the def node (see the code above). It was placed into the
-	 * link field of the irn, so we can get it there.
-	 */
-	else {
+	} else {
+		/*
+		 * If the def is encountered, the use was made and so was the
+		 * the def node (see the code above). It was placed into the
+		 * link field of the irn, so we can get it there.
+		 */
 		b = get_irn_link(irn);
 
 		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered"));
@@ -192,24 +190,25 @@ static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1,
 {
 	bitset_t *res = bs;
 
-	if(!o1) {
+	if (!o1) {
 		bitset_copy(bs, o2->regs);
 		return bs;
 	}
 
-	if(!o2) {
+	if (!o2) {
 		bitset_copy(bs, o1->regs);
 		return bs;
 	}
 
 	assert(o1->req->cls == o2->req->cls || ! o1->req->cls || ! o2->req->cls);
 
-	if(bitset_contains(o1->regs, o2->regs))
+	if (bitset_contains(o1->regs, o2->regs)) {
 		bitset_copy(bs, o1->regs);
-	else if(bitset_contains(o2->regs, o1->regs))
+	} else if (bitset_contains(o2->regs, o1->regs)) {
 		bitset_copy(bs, o2->regs);
-	else
+	} else {
 		res = NULL;
+	}
 
 	return res;
 }
@@ -249,7 +248,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 
 		if (reg == NULL || !arch_register_type_is(reg, ignore))
 			continue;
-		if(arch_register_type_is(reg, joker))
+		if (arch_register_type_is(reg, joker))
 			continue;
 
 		if (!arch_register_req_is(req, limited))
@@ -266,23 +265,23 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
 	}
 
-    insn = chordal_scan_insn(env, irn);
+	insn = chordal_scan_insn(env, irn);
 
-	if(!insn->has_constraints)
+	if (!insn->has_constraints)
 		goto end;
 
 	/* insert copies for nodes that occur constrained more than once. */
-	for(i = insn->use_start; i < insn->n_ops; ++i) {
+	for (i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 
-		if(!op->has_constraints)
+		if (!op->has_constraints)
 			continue;
 
-		for(j = i + 1; j < insn->n_ops; ++j) {
+		for (j = i + 1; j < insn->n_ops; ++j) {
 			ir_node *copy;
 			be_operand_t *a_op = &insn->ops[j];
 
-			if(a_op->carrier != op->carrier || !a_op->has_constraints)
+			if (a_op->carrier != op->carrier || !a_op->has_constraints)
 				continue;
 
 			/* if the constraint is the same, no copy is necessary
@@ -303,17 +302,17 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 	}
 
 	/* collect all registers occurring in out constraints. */
-	for(i = 0; i < insn->use_start; ++i) {
+	for (i = 0; i < insn->use_start; ++i) {
 		be_operand_t *op = &insn->ops[i];
-		if(op->has_constraints)
+		if (op->has_constraints)
 			bitset_or(def_constr, op->regs);
 	}
 
 	/*
-		insert copies for all constrained arguments living through the node
-		and being constrained to a register which also occurs in out constraints.
-	*/
-	for(i = insn->use_start; i < insn->n_ops; ++i) {
+	 * insert copies for all constrained arguments living through the node
+	 * and being constrained to a register which also occurs in out constraints.
+	 */
+	for (i = insn->use_start; i < insn->n_ops; ++i) {
 		ir_node *copy;
 		be_operand_t *op = &insn->ops[i];
 
@@ -321,21 +320,21 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		bitset_and(tmp, def_constr);
 
 		/*
-			Check, if
-			1) the operand is constrained.
-			2) lives through the node.
-			3) is constrained to a register occurring in out constraints.
-		*/
-		if(!op->has_constraints ||
+		 * Check, if
+		 * 1) the operand is constrained.
+		 * 2) lives through the node.
+		 * 3) is constrained to a register occurring in out constraints.
+		 */
+		if (!op->has_constraints ||
 		   !values_interfere(birg, insn->irn, op->carrier) ||
 		   bitset_popcnt(tmp) == 0)
 			continue;
 
 		/*
-		   only create the copy if the operand is no copy.
-		   this is necessary since the assure constraints phase inserts
-		   Copies and Keeps for operands which must be different from the
-		   results. Additional copies here would destroy this.
+		 * only create the copy if the operand is no copy.
+		 * this is necessary since the assure constraints phase inserts
+		 * Copies and Keeps for operands which must be different from the
+		 * results. Additional copies here would destroy this.
 		 */
 		if (be_is_Copy(get_irn_n(insn->irn, op->pos)))
 			continue;
@@ -357,13 +356,14 @@ static void pre_spill_prepare_constr_walker(ir_node *bl, void *data)
 {
 	be_chordal_env_t *env = data;
 	ir_node *irn;
-	for(irn = sched_first(bl); !sched_is_end(irn);) {
+	for (irn = sched_first(bl); !sched_is_end(irn);) {
 		irn = prepare_constr_insn(env, irn);
 	}
 }
 
-void be_pre_spill_prepare_constr(be_chordal_env_t *cenv) {
-	irg_block_walk_graph(cenv->irg, pre_spill_prepare_constr_walker, NULL, (void *) cenv);
+void be_pre_spill_prepare_constr(be_chordal_env_t *cenv)
+{
+	irg_block_walk_graph(cenv->irg, pre_spill_prepare_constr_walker, NULL, cenv);
 }
 
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
@@ -374,8 +374,8 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	int                     j;
 
 	/*
-		For each out operand, try to find an in operand which can be assigned the
-		same register as the out operand.
+	 * For each out operand, try to find an in operand which can be assigned the
+	 * same register as the out operand.
 	*/
 	for (j = 0; j < insn->use_start; ++j) {
 		int smallest         = -1;
@@ -383,7 +383,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 		be_operand_t *out_op = &insn->ops[j];
 
 		/* Try to find an in operand which has ... */
-		for(i = insn->use_start; i < insn->n_ops; ++i) {
+		for (i = insn->use_start; i < insn->n_ops; ++i) {
 			int n_total;
 			const be_operand_t *op = &insn->ops[i];
 
@@ -405,8 +405,8 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 
 		if (smallest >= 0) {
 			be_operand_t *partner = &insn->ops[smallest];
-			for(i = insn->use_start; i < insn->n_ops; ++i) {
-				if(insn->ops[i].carrier == partner->carrier)
+			for (i = insn->use_start; i < insn->n_ops; ++i) {
+				if (insn->ops[i].carrier == partner->carrier)
 					insn->ops[i].partner = out_op;
 			}
 
@@ -430,25 +430,25 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 	assert(insn->has_constraints && "only do this for constrained nodes");
 
 	/*
-		Collect all registers that occur in output constraints.
-		This is necessary, since if the insn has one of these as an input constraint
-		and the corresponding operand interferes with the insn, the operand must
-		be copied.
-	*/
-	for(i = 0; i < insn->use_start; ++i) {
+	 * Collect all registers that occur in output constraints.
+	 * This is necessary, since if the insn has one of these as an input constraint
+	 * and the corresponding operand interferes with the insn, the operand must
+	 * be copied.
+	 */
+	for (i = 0; i < insn->use_start; ++i) {
 		be_operand_t *op = &insn->ops[i];
-		if(op->has_constraints)
+		if (op->has_constraints)
 			bitset_or(out_constr, op->regs);
 	}
 
 	/*
-		Make the Perm, recompute liveness and re-scan the insn since the
-		in operands are now the Projs of the Perm.
-	*/
+	 * Make the Perm, recompute liveness and re-scan the insn since the
+	 * in operands are now the Projs of the Perm.
+	 */
 	perm = insert_Perm_after(env->birg, env->cls, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
-	if(perm == NULL)
+	if (perm == NULL)
 		return NULL;
 
 	be_stat_ev("constr_perm", get_irn_arity(perm));
@@ -458,25 +458,25 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 	}
 
 	/*
-		We also have to re-build the insn since the input operands are now the Projs of
-		the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
-		the live sets may change.
-	*/
+	 * We also have to re-build the insn since the input operands are now the Projs of
+	 * the Perm. Recomputing liveness is also a good idea if a Perm is inserted, since
+	 * the live sets may change.
+	 */
 	obstack_free(env->obst, insn);
 	*the_insn = insn = chordal_scan_insn(env, insn->irn);
 
 	/*
-		Copy the input constraints of the insn to the Perm as output
-		constraints. Succeeding phases (coalescing) will need that.
-	*/
-	for(i = insn->use_start; i < insn->n_ops; ++i) {
+	 * Copy the input constraints of the insn to the Perm as output
+	 * constraints. Succeeding phases (coalescing) will need that.
+	 */
+	for (i = insn->use_start; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 		ir_node *proj = op->carrier;
 		/*
-			Note that the predecessor must not be a Proj of the Perm,
-			since ignore-nodes are not Perm'ed.
-		*/
-		if(op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
+		 * Note that the predecessor must not be a Proj of the Perm,
+		 * since ignore-nodes are not Perm'ed.
+		 */
+		if (op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
 			be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), op->req);
 		}
 	}
@@ -506,30 +506,30 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	be_irg_t *birg         = env->birg;
 	bipartite_t *bp;
 
-	if(insn->pre_colored) {
+	if (insn->pre_colored) {
 		int i;
-		for(i = 0; i < insn->use_start; ++i)
+		for (i = 0; i < insn->use_start; ++i)
 			pset_insert_ptr(alloc_env->pre_colored, insn->ops[i].carrier);
 	}
 
 	/*
-		If the current node is a barrier toggle the silent flag.
-		If we are in the start block, we are ought to be silent at the beginning,
-		so the toggling activates the constraint handling but skips the barrier.
-		If we are in the end block we handle the in requirements of the barrier
-		and set the rest to silent.
-	*/
-	if(be_is_Barrier(irn))
+	 * If the current node is a barrier toggle the silent flag.
+	 * If we are in the start block, we are ought to be silent at the beginning,
+	 * so the toggling activates the constraint handling but skips the barrier.
+	 * If we are in the end block we handle the in requirements of the barrier
+	 * and set the rest to silent.
+	 */
+	if (be_is_Barrier(irn))
 		*silent = !*silent;
 
-	if(be_silent)
+	if (be_silent)
 		goto end;
 
 	/*
-		Perms inserted before the constraint handling phase are considered to be
-		correctly precolored. These Perms arise during the ABI handling phase.
-	*/
-	if(!insn->has_constraints)
+	 * Perms inserted before the constraint handling phase are considered to be
+	 * correctly precolored. These Perms arise during the ABI handling phase.
+	 */
+	if (!insn->has_constraints)
 		goto end;
 
 	n_regs      = env->cls->n_regs;
@@ -541,43 +541,43 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	partners    = pmap_create();
 
 	/*
-		prepare the constraint handling of this node.
-		Perms are constructed and Copies are created for constrained values
-		interfering with the instruction.
-	*/
+	 * prepare the constraint handling of this node.
+	 * Perms are constructed and Copies are created for constrained values
+	 * interfering with the instruction.
+	 */
 	perm = pre_process_constraints(alloc_env, &insn);
 
 	/* find suitable in operands to the out operands of the node. */
 	pair_up_operands(alloc_env, insn);
 
 	/*
-		look at the in/out operands and add each operand (and its possible partner)
-		to a bipartite graph (left: nodes with partners, right: admissible colors).
-	*/
-	for(i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
+	 * look at the in/out operands and add each operand (and its possible partner)
+	 * to a bipartite graph (left: nodes with partners, right: admissible colors).
+	 */
+	for (i = 0, n_alloc = 0; i < insn->n_ops; ++i) {
 		be_operand_t *op = &insn->ops[i];
 
 		/*
-			If the operand has no partner or the partner has not been marked
-			for allocation, determine the admissible registers and mark it
-			for allocation by associating the node and its partner with the
-			set of admissible registers via a bipartite graph.
-		*/
-		if(!op->partner || !pmap_contains(partners, op->partner->carrier)) {
+		 * If the operand has no partner or the partner has not been marked
+		 * for allocation, determine the admissible registers and mark it
+		 * for allocation by associating the node and its partner with the
+		 * set of admissible registers via a bipartite graph.
+		 */
+		if (!op->partner || !pmap_contains(partners, op->partner->carrier)) {
 			ir_node *partner = op->partner ? op->partner->carrier : NULL;
 			int i;
 
 			pmap_insert(partners, op->carrier, partner);
-			if(partner != NULL)
+			if (partner != NULL)
 				pmap_insert(partners, partner, op->carrier);
 
 			/* don't insert a node twice */
-			for(i = 0; i < n_alloc; ++i) {
-				if(alloc_nodes[i] == op->carrier) {
+			for (i = 0; i < n_alloc; ++i) {
+				if (alloc_nodes[i] == op->carrier) {
 					break;
 				}
 			}
-			if(i < n_alloc)
+			if (i < n_alloc)
 				continue;
 
 			alloc_nodes[n_alloc] = op->carrier;
@@ -601,26 +601,26 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	}
 
 	/*
-		Put all nodes which live through the constrained instruction also to the
-		allocation bipartite graph. They are considered unconstrained.
-	*/
-	if(perm != NULL) {
+	 * Put all nodes which live through the constrained instruction also to the
+	 * allocation bipartite graph. They are considered unconstrained.
+	 */
+	if (perm != NULL) {
 		foreach_out_edge(perm, edge) {
 			int i;
 			ir_node *proj = get_edge_src_irn(edge);
 
 			assert(is_Proj(proj));
 
-			if(!values_interfere(birg, proj, irn) || pmap_contains(partners, proj))
+			if (!values_interfere(birg, proj, irn) || pmap_contains(partners, proj))
 				continue;
 
 			/* don't insert a node twice */
-			for(i = 0; i < n_alloc; ++i) {
-				if(alloc_nodes[i] == proj) {
+			for (i = 0; i < n_alloc; ++i) {
+				if (alloc_nodes[i] == proj) {
 					break;
 				}
 			}
-			if(i < n_alloc)
+			if (i < n_alloc)
 				continue;
 
 
@@ -651,7 +651,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 #endif
 
 	/* Assign colors obtained from the matching. */
-	for(i = 0; i < n_alloc; ++i) {
+	for (i = 0; i < n_alloc; ++i) {
 		const arch_register_t *reg;
 		ir_node *irn;
 
@@ -675,7 +675,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	}
 
 	/* Allocate the non-constrained Projs of the Perm. */
-	if(perm != NULL) {
+	if (perm != NULL) {
 		bitset_clear_all(bs);
 
 		/* Put the colors of all Projs in a bitset. */
@@ -683,7 +683,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			ir_node *proj              = get_edge_src_irn(edge);
 			const arch_register_t *reg = arch_get_irn_register(proj);
 
-			if(reg != NULL)
+			if (reg != NULL)
 				bitset_set(bs, reg->index);
 		}
 
@@ -694,7 +694,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 			DBG((dbg, LEVEL_2, "\tchecking reg of %+F: %s\n", proj, reg ? reg->name : "<none>"));
 
-			if(reg == NULL) {
+			if (reg == NULL) {
 				col = get_next_free_reg(alloc_env, bs);
 				reg = arch_register_for_index(env->cls, col);
 				bitset_set(bs, reg->index);
@@ -723,22 +723,20 @@ end:
  */
 static void constraints(ir_node *bl, void *data)
 {
-	be_chordal_alloc_env_t *env = data;
+	/*
+	 * Start silent in the start block.
+	 * The silence remains until the first barrier is seen.
+	 * Each other block is begun loud.
+	 */
+	int                     silent = bl == get_irg_start_block(get_irn_irg(bl));
+	be_chordal_alloc_env_t *env    = data;
+	ir_node                *irn;
 
 	/*
-		Start silent in the start block.
-		The silence remains until the first barrier is seen.
-		Each other block is begun loud.
-	*/
-	int silent                  = bl == get_irg_start_block(get_irn_irg(bl));
-	ir_node *irn;
-
-	/*
-		If the block is the start block search the barrier and
-		start handling constraints from there.
-	*/
-
-	for(irn = sched_first(bl); !sched_is_end(irn);) {
+	 * If the block is the start block search the barrier and
+	 * start handling constraints from there.
+	 */
+	for (irn = sched_first(bl); !sched_is_end(irn);) {
 		irn = handle_constraints(env, irn, &silent);
 	}
 }
@@ -786,7 +784,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	 */
 	be_lv_foreach(lv, block, be_lv_state_end, i) {
 		ir_node *irn = be_lv_get_irn(lv, block, i);
-		if(has_reg_class(env, irn)) {
+		if (has_reg_class(env, irn)) {
 			DBG((dbg, LEVEL_3, "\tMaking live: %+F/%d\n", irn, get_irn_idx(irn)));
 			bitset_set(live, get_irn_idx(irn));
 			border_use(irn, step, 0);
@@ -812,7 +810,7 @@ static void pressure(ir_node *block, void *env_ptr)
 				 * If the node defines some value, which can put into a
 				 * register of the current class, make a border for it.
 				 */
-				if(has_reg_class(env, proj)) {
+				if (has_reg_class(env, proj)) {
 					int nr = get_irn_idx(proj);
 
 					bitset_clear(live, nr);
@@ -825,7 +823,7 @@ static void pressure(ir_node *block, void *env_ptr)
 		 * If the node defines some value, which can put into a
 		 * register of the current class, make a border for it.
 		 */
-		if(has_reg_class(env, irn)) {
+		if (has_reg_class(env, irn)) {
 			int nr = get_irn_idx(irn);
 
 			bitset_clear(live, nr);
@@ -835,15 +833,15 @@ static void pressure(ir_node *block, void *env_ptr)
 		/*
 		 * If the node is no phi node we can examine the uses.
 		 */
-		if(!is_Phi(irn)) {
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		if (!is_Phi(irn)) {
+			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				ir_node *op = get_irn_n(irn, i);
 
-				if(has_reg_class(env, op)) {
+				if (has_reg_class(env, op)) {
 					int nr = get_irn_idx(op);
 					const char *msg = "-";
 
-					if(!bitset_is_set(live, nr)) {
+					if (!bitset_is_set(live, nr)) {
 						border_use(op, step, 1);
 						bitset_set(live, nr);
 						msg = "X";
@@ -895,7 +893,7 @@ static void assign(ir_node *block, void *env_ptr)
 	 */
 	be_lv_foreach(lv, block, be_lv_state_in, idx) {
 		irn = be_lv_get_irn(lv, block, idx);
-		if(has_reg_class(env, irn)) {
+		if (has_reg_class(env, irn)) {
 			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;
 
@@ -927,11 +925,11 @@ static void assign(ir_node *block, void *env_ptr)
 		 * Assign a color, if it is a local def. Global defs already have a
 		 * color.
 		 */
-		if(b->is_def && !be_is_live_in(lv, block, irn)) {
+		if (b->is_def && !be_is_live_in(lv, block, irn)) {
 			const arch_register_t *reg;
 			int col = NO_COLOR;
 
-			if(ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
+			if (ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
 				reg = arch_get_irn_register(irn);
 				col = reg->index;
 				assert(!bitset_is_set(colors, col) && "pre-colored register must be free");
@@ -949,10 +947,8 @@ static void assign(ir_node *block, void *env_ptr)
 
 			assert(!bitset_is_set(live, nr) && "Value's definition must not have been encountered");
 			bitset_set(live, nr);
-		}
-
-		/* Clear the color upon a use. */
-		else if(!b->is_def) {
+		} else if (!b->is_def) {
+			/* Clear the color upon a use. */
 			const arch_register_t *reg = arch_get_irn_register(irn);
 			int col;
 
@@ -960,7 +956,7 @@ static void assign(ir_node *block, void *env_ptr)
 
 			col = arch_register_get_index(reg);
 #ifndef NDEBUG
-			if(!arch_register_type_is(reg, ignore)) {
+			if (!arch_register_type_is(reg, ignore)) {
 				assert(bitset_is_set(live, nr) && "Cannot have a non live use");
 			}
 #endif
@@ -1000,7 +996,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	/* Handle register targeting constraints */
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
 
-	if(chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
 		be_dump(chordal_env->irg, buf, dump_ir_block_graph_sched);
 	}
@@ -1015,7 +1011,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	/* Assign the colors */
 	dom_tree_walk_irg(irg, assign, NULL, &env);
 
-	if(chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
+	if (chordal_env->opts->dump_flags & BE_CH_DUMP_TREE_INTV) {
 		plotter_t *plotter;
 		ir_snprintf(buf, sizeof(buf), "ifg_%s_%F.eps", chordal_env->cls->name, irg);
 		plotter = new_plotter_ps(buf);
