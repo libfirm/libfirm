@@ -11,6 +11,7 @@
 * Improvements to spill algorithm
 * fix endless loop problems
 * further improve inlining heuristics
+* improve peephole optimisations for x86
 * bugfixes
 
 ====== libFirm 1.13.0 (2008-07-31) ======
