@@ -181,12 +181,18 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 static double
 get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
-	double  sum = 0.0;
-	double  cur = 0.0;
-	const ir_node *pred = get_Block_cfgpred_block(bb, pos);
-	const ir_loop *pred_loop = get_irn_loop(pred);
-	int pred_depth = get_loop_depth(pred_loop);
+	double           sum = 0.0;
+	double           cur = 0.0;
+	const ir_node   *pred = get_Block_cfgpred_block(bb, pos);
+	const ir_loop   *pred_loop;
+	int              pred_depth;
 	const ir_edge_t *edge;
+
+	if (is_Bad(pred))
+		return 0;
+
+	pred_loop  = get_irn_loop(pred);
+	pred_depth = get_loop_depth(pred_loop);
 
 	cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
 
