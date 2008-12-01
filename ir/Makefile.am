@@ -68,7 +68,6 @@ libfirm_la_SOURCES = \
 	ana/rta.c \
 	ana/structure.c \
 	ana/trouts.c \
-	arch/archop.c \
 	be/beabi.c \
 	be/bearch.c \
 	be/beblocksched.c \
