@@ -1,4 +1,19 @@
-====== Libfirm 1.13.0 (2008-07-31) ======
+====== libFirm 1.15 (2008-12-01) ======
+* bugfixes
+
+====== libFirm 1.14 (2008-11-22) ======
+* Implementation of Clicks Combined Analysis/Optimisations
+* New switch lowering code
+* support for global asm statements
+* improved asm support
+* PIC support for Mac OS X
+* New register pressure minimizing scheduler
+* Improvements to spill algorithm
+* fix endless loop problems
+* further improve inlining heuristics
+* bugfixes
+
+====== libFirm 1.13.0 (2008-07-31) ======
 
 * VanDrunen's GVN-PRE fixed
 * operator strength reduce fixed and improved
@@ -18,12 +33,12 @@
 * ARM Backend: fixed frame access
 * support for special segments (like constructors, destructors)
 
-====== Libfirm 1.12.1 (2008-02-18) ======
+====== libFirm 1.12.1 (2008-02-18) ======
 
 * bugfixes for new style initializers with bitfield types
 * make lowerer look at constant initializers too
 
-====== Libfirm 1.12.0 (2008-02-14) ======
+====== libFirm 1.12.0 (2008-02-14) ======
 
 * dependency on libcore and libobstack dropped
 * there's an alternative easier to use way to construct compound initializers
@@ -32,7 +47,7 @@
 * speed improvements
 * optimisation of known libc functions
 
-====== Libfirm 1.11.0 (2008-11-05) ======
+====== libFirm 1.11.0 (2008-11-05) ======
 
 * Lots of bugfixes
 * Compilation speed improved
