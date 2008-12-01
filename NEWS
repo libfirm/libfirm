@@ -1,7 +1,7 @@
-====== libFirm 1.15 (2008-12-01) ======
+====== libFirm 1.15.0 (2008-12-01) ======
 * bugfixes
 
-====== libFirm 1.14 (2008-11-22) ======
+====== libFirm 1.14.0 (2008-11-22) ======
 * Implementation of Clicks Combined Analysis/Optimisations
 * New switch lowering code
 * support for global asm statements
