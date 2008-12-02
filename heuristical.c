@@ -450,7 +450,7 @@ num determine_solution(pbqp *pbqp)
 				node->costs->entries[node->solution].data);
 		if (pbqp->dump_file) {
 			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
-			dump_node(pbqp, node);
+			dump_node(pbqp->dump_file, node);
 		}
 	}
 
@@ -538,8 +538,8 @@ void apply_RI(pbqp *pbqp)
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp, node);
-		dump_node(pbqp, other_node);
+		dump_node(pbqp->dump_file, node);
+		dump_node(pbqp->dump_file, other_node);
 		dump_edge(pbqp, edge);
 	}
 
@@ -554,7 +554,7 @@ void apply_RI(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp, other_node);
+		dump_node(pbqp->dump_file, other_node);
 	}
 
 	reorder_node(other_node);
@@ -622,11 +622,11 @@ void apply_RII(pbqp *pbqp)
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
-		dump_node(pbqp, src_node);
+		dump_node(pbqp->dump_file, src_node);
 		dump_edge(pbqp, src_edge);
-		dump_node(pbqp, node);
+		dump_node(pbqp->dump_file, node);
 		dump_edge(pbqp, tgt_edge);
-		dump_node(pbqp, tgt_node);
+		dump_node(pbqp->dump_file, tgt_node);
 	}
 
 	src_mat = src_edge->costs;

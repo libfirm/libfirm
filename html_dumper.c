@@ -94,15 +94,14 @@ static void dump_edge_costs(pbqp *pbqp)
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_node(pbqp *pbqp, pbqp_node *node)
+void dump_node(FILE *file, pbqp_node *node)
 {
-	assert(pbqp);
-	assert(pbqp->dump_file);
+	assert(file);
 
 	if (node) {
-		fprintf(pbqp->dump_file, "\tc<sub>%d</sub> = ", node->index);
-		dump_vector(pbqp->dump_file, node->costs);
-		fputs("<br>\n", pbqp->dump_file);
+		fprintf(file, "\tc<sub>%d</sub> = ", node->index);
+		dump_vector(file, node->costs);
+		fputs("<br>\n", file);
 	}
 }
 
@@ -189,7 +188,7 @@ void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge)
 	assert(pbqp);
 	assert(pbqp->dump_file);
 
-	dump_node(pbqp, edge->src);
+	dump_node(pbqp->dump_file, edge->src);
 	dump_edge(pbqp, edge);
-	dump_node(pbqp, edge->tgt);
+	dump_node(pbqp->dump_file, edge->tgt);
 }
