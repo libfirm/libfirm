@@ -428,15 +428,15 @@ static void initial_simplify_edges(pbqp *pbqp)
 	}
 }
 
-num determine_solution(pbqp *pbqp)
+num determine_solution(FILE *file)
 {
 	unsigned node_index;
 	unsigned node_len;
 	num      solution;
 
-	if (pbqp->dump_file) {
-		dump_section(pbqp->dump_file, 1, "4. Determine Solution/Minimum");
-		dump_section(pbqp->dump_file, 2, "4.1. Trivial Solution");
+	if (file) {
+		dump_section(file, 1, "4. Determine Solution/Minimum");
+		dump_section(file, 2, "4.1. Trivial Solution");
 	}
 
 	/* Solve trivial nodes and calculate solution. */
@@ -448,9 +448,9 @@ num determine_solution(pbqp *pbqp)
 		node->solution = vector_get_min_index(node->costs);
 		solution       = pbqp_add(solution,
 				node->costs->entries[node->solution].data);
-		if (pbqp->dump_file) {
-			fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
-			dump_node(pbqp->dump_file, node);
+		if (file) {
+			fprintf(file, "node n%d is set to %d<br>\n", node->index, node->solution);
+			dump_node(file, node);
 		}
 	}
 
@@ -482,7 +482,7 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		}
 	}
 
-	pbqp->solution = determine_solution(pbqp);
+	pbqp->solution = determine_solution(pbqp->dump_file);
 
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Minimum");
