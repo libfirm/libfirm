@@ -389,7 +389,7 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	}
 }
 
-void solve_pbqp_heuristical(pbqp *pbqp)
+static void initial_simplify_edges(pbqp *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
@@ -426,8 +426,17 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 			simplify_edge(pbqp, edge);
 		}
 	}
+}
 
-	/* Put node into bucket representing their arity. */
+void solve_pbqp_heuristical(pbqp *pbqp)
+{
+	unsigned node_index;
+	unsigned node_len;
+
+	/* Reduce nodes degree ... */
+	initial_simplify_edges(pbqp);
+
+	/* ... and put node into bucket representing their degree. */
 	fill_node_buckets(pbqp);
 
 	for (;;) {
