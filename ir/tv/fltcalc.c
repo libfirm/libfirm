@@ -1034,10 +1034,11 @@ done:
 }
 
 fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result) {
-	char *temp;
-	int bias_res, bias_val, mant_val;
+	char    *temp;
+	int     bias_res, bias_val, mant_val;
 	value_t srcval;
-	UINT32 sign, exponent, mantissa0, mantissa1;
+	char    sign;
+	UINT32  exponent, mantissa0, mantissa1;
 
 	srcval.d = l;
 	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
