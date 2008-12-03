@@ -855,17 +855,11 @@ static void apply_brute_force_reductions(pbqp *pbqp)
 
 static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 {
-	pbqp_edge   *edge;
 	vector      *node_vec;
-	vector      *vec;
-	pbqp_matrix *mat;
-	unsigned     edge_index;
-	unsigned     max_degree   = 0;
 	unsigned     node_index;
 	unsigned     node_len;
 	unsigned     min_index    = 0;
 	num          min          = INF_COSTS;
-	int          is_src;
 
 	assert(pbqp);
 	assert(node);
@@ -895,6 +889,11 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 			min = value;
 			min_index = node_index;
 		}
+
+		/* Some node buckets and the edge bucket should still be empty. */
+		assert(node_bucket_get_length(node_buckets[1]) == 0);
+		assert(node_bucket_get_length(node_buckets[2]) == 0);
+		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
 		/* TODO Restore old PBQP state. */
 
