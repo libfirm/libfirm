@@ -4,6 +4,7 @@
 #include "pbqp_t.h"
 
 void solve_pbqp_heuristical(pbqp *pbqp);
+void solve_pbqp_brute_force(pbqp *pbqp);
 
 void apply_edge(pbqp *pbqp);
 
