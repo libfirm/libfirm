@@ -2,9 +2,10 @@
 
 #include "assert.h"
 
+#include "pbqp_edge.h"
+#include "pbqp_edge_t.h"
 #include "pbqp_node.h"
 #include "pbqp_node_t.h"
-#include "pbqp_edge_t.h"
 #include "vector.h"
 
 pbqp_node *alloc_node(pbqp *pbqp, unsigned node_index, vector *costs)
@@ -77,10 +78,10 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
 	pbqp_node *copy        = obstack_alloc(&pbqp->obstack, sizeof(*node));
 	assert(copy);
 
-	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
-		copy->edges[edge_index] = pbqp_edge_deep_copy(node->edges[edge_index]);
-	}
 	copy->edges        = NEW_ARR_F(pbqp_edge *, 0);
+	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
+		ARR_APP1(pbqp_edge *, copy->edges, pbqp_edge_deep_copy(pbqp, node->edges[edge_index]));
+	}
 	copy->costs        = vector_copy(pbqp, node->costs);
 	copy->bucket_index = node->bucket_index;
 	copy->solution     = node->solution;
