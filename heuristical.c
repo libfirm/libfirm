@@ -867,7 +867,10 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	node_len = node_vec->len;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		num value;
+		pbqp_node_bucket bucket_deg0;
+		pbqp_node_bucket bucket_deg3;
+		pbqp_node_bucket bucket_red;
+		num              value;
 
 		/* Some node buckets and the edge bucket should be empty. */
 		assert(node_bucket_get_length(node_buckets[1]) == 0);
@@ -875,9 +878,9 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
 		/* Save current PBQP state. */
-		pbqp_node_bucket *bucket_deg0 = node_bucket_deep_copy(node_buckets[0]);
-		pbqp_node_bucket *bucket_deg3 = node_bucket_deep_copy(node_buckets[3]);
-		pbqp_node_bucket *bucket_red  = node_bucket_deep_copy(reduced_bucket);
+		node_bucket_deep_copy(pbqp, &bucket_deg0, node_buckets[0]);
+		node_bucket_deep_copy(pbqp, &bucket_deg3, node_buckets[3]);
+		node_bucket_deep_copy(pbqp, &bucket_red, reduced_bucket);
 
 		/* Select alternative and solve PBQP recursively. */
 		select_alternative(node, node_index);
@@ -906,9 +909,9 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		node_bucket_copy(&reduced_bucket, bucket_red);
 
 		/* Free copies. */
-		node_bucket_free(bucket_deg0);
-		node_bucket_free(bucket_deg3);
-		node_bucket_free(bucket_red);
+		node_bucket_free(&bucket_deg0);
+		node_bucket_free(&bucket_deg3);
+		node_bucket_free(&bucket_red);
 	}
 
 	return min_index;

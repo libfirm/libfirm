@@ -2,6 +2,7 @@
 
 #include "bucket.h"
 #include "pbqp_edge_t.h"
+#include "pbqp_node.h"
 #include "pbqp_node_t.h"
 
 int edge_bucket_contains(pbqp_edge_bucket bucket, pbqp_edge *edge)
@@ -62,13 +63,13 @@ int node_bucket_contains(pbqp_node_bucket bucket, pbqp_node *node)
 			&& bucket[node->bucket_index] == node;
 }
 
-void node_bucket_copy(pbqp_node_bucket *dst, pbqp_node_bucket *src)
+void node_bucket_copy(pbqp_node_bucket *dst, pbqp_node_bucket src)
 {
 	unsigned src_index;
-	unsigned src_length = node_bucket_get_length(*src);
+	unsigned src_length = node_bucket_get_length(src);
 
 	for (src_index = 0; src_index < src_length; ++src_index) {
-		node_bucket_insert(dst, (*src)[src_index]);
+		node_bucket_insert(dst, src[src_index]);
 	}
 }
 
@@ -129,18 +130,15 @@ void node_bucket_remove(pbqp_node_bucket *bucket, pbqp_node *node)
 	node->bucket_index = UINT_MAX;
 }
 
-pbqp_node_bucket *node_bucket_deep_copy(pbqp_node_bucket bucket)
+void node_bucket_deep_copy(pbqp *pbqp, pbqp_node_bucket *dst, pbqp_node_bucket src)
 {
-	pbqp_node_bucket *copy;
 	unsigned          bucket_index;
 	unsigned          bucket_length;
 
-	node_bucket_init(copy);
-	bucket_length = node_bucket_get_length(bucket);
+	node_bucket_init(dst);
+	bucket_length = node_bucket_get_length(src);
 
 	for (bucket_index = 0; bucket_index < bucket_length; ++bucket_index) {
-		node_bucket_insert(copy, pbqp_node_deep_copy(bucket[bucket_index]));
+		node_bucket_insert(dst, pbqp_node_deep_copy(pbqp, src[bucket_index]));
 	}
-
-	return copy;
 }
