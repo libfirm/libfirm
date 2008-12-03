@@ -729,11 +729,29 @@ static void select_alternative(pbqp_node *node, unsigned selected_index)
 	}
 }
 
-void apply_RN(pbqp *pbqp)
+static pbqp_node *get_node_with_max_degree(void)
 {
 	pbqp_node  **bucket       = node_buckets[3];
 	unsigned     bucket_len   = node_bucket_get_length(bucket);
 	unsigned     bucket_index;
+	unsigned     max_degree   = 0;
+	pbqp_node   *result       = NULL;
+
+	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
+		pbqp_node *candidate = bucket[bucket_index];
+		unsigned   degree    = pbqp_node_get_degree(candidate);
+
+		if (degree > max_degree) {
+			result = candidate;
+			max_degree = degree;
+		}
+	}
+
+	return result;
+}
+
+void apply_RN(pbqp *pbqp)
+{
 	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
 	vector      *node_vec;
@@ -750,15 +768,9 @@ void apply_RN(pbqp *pbqp)
 	assert(pbqp);
 
 	/* Search for node with maximum degree. */
-	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
-		pbqp_node *candidate = bucket[bucket_index];
-		unsigned   degree    = pbqp_node_get_degree(candidate);
+	node = get_node_with_max_degree();
+	max_degree = pbqp_node_get_degree(node);
 
-		if (degree > max_degree) {
-			node = candidate;
-			max_degree = degree;
-		}
-	}
 	assert(node);
 	node_vec = node->costs;
 	node_len = node_vec->len;
@@ -810,9 +822,6 @@ void apply_RN(pbqp *pbqp)
 
 void apply_Brute_Force(pbqp *pbqp)
 {
-	pbqp_node  **bucket       = node_buckets[3];
-	unsigned     bucket_len   = node_bucket_get_length(bucket);
-	unsigned     bucket_index;
 	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
 	vector      *node_vec;
@@ -829,15 +838,9 @@ void apply_Brute_Force(pbqp *pbqp)
 	assert(pbqp);
 
 	/* Search for node with maximum degree. */
-	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
-		pbqp_node *candidate = bucket[bucket_index];
-		unsigned   degree    = pbqp_node_get_degree(candidate);
+	node = get_node_with_max_degree();
+	max_degree = pbqp_node_get_degree(node);
 
-		if (degree > max_degree) {
-			node = candidate;
-			max_degree = degree;
-		}
-	}
 	assert(node);
 	node_vec = node->costs;
 	node_len = node_vec->len;
