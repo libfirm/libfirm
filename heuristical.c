@@ -895,8 +895,20 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		assert(node_bucket_get_length(node_buckets[2]) == 0);
 		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
-		/* TODO Restore old PBQP state. */
+		/* Clear modified buckets... */
+		node_bucket_clear(&node_buckets[0]);
+		node_bucket_clear(&node_buckets[3]);
+		node_bucket_clear(&reduced_bucket);
 
+		/* ... and restore old PBQP state. */
+		node_bucket_copy(&node_buckets[0], bucket_deg0);
+		node_bucket_copy(&node_buckets[3], bucket_deg3);
+		node_bucket_copy(&reduced_bucket, bucket_red);
+
+		/* Free copies. */
+		node_bucket_free(bucket_deg0);
+		node_bucket_free(bucket_deg3);
+		node_bucket_free(bucket_red);
 	}
 
 	return min_index;
