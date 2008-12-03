@@ -454,14 +454,43 @@ num determine_solution(FILE *file)
 		}
 	}
 
+	if (file) {
+		dump_section(file, 2, "Minimum");
+		fprintf(file, "Minimum is equal to %lld.", solution);
+	}
+
 	return solution;
+}
+
+static void back_propagate(pbqp *pbqp)
+{
+	unsigned node_index;
+	unsigned node_len   = node_bucket_get_length(reduced_bucket);
+
+	assert(pbqp);
+	if (pbqp->dump_file) {
+		dump_section(pbqp->dump_file, 2, "Back Propagation");
+	}
+
+	for (node_index = node_len; node_index > 0; --node_index) {
+		pbqp_node *node = reduced_bucket[node_index - 1];
+
+		switch (pbqp_node_get_degree(node)) {
+			case 1:
+				back_propagate_RI(pbqp, node);
+				break;
+			case 2:
+				back_propagate_RII(pbqp, node);
+				break;
+			default:
+				panic("Only nodes with degree one or two should be in this bucket");
+				break;
+		}
+	}
 }
 
 void solve_pbqp_heuristical(pbqp *pbqp)
 {
-	unsigned node_index;
-	unsigned node_len;
-
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);
 
@@ -484,29 +513,8 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
-	if (pbqp->dump_file) {
-		dump_section(pbqp->dump_file, 2, "Minimum");
-		fprintf(pbqp->dump_file, "Minimum is equal to %lld.", pbqp->solution);
-		dump_section(pbqp->dump_file, 2, "Back Propagation");
-	}
-
 	/* Solve reduced nodes. */
-	node_len = node_bucket_get_length(reduced_bucket);
-	for (node_index = node_len; node_index > 0; --node_index) {
-		pbqp_node *node = reduced_bucket[node_index - 1];
-
-		switch (pbqp_node_get_degree(node)) {
-			case 1:
-				back_propagate_RI(pbqp, node);
-				break;
-			case 2:
-				back_propagate_RII(pbqp, node);
-				break;
-			default:
-				panic("Only nodes with degree one or two should be in this bucket");
-				break;
-		}
-	}
+	back_propagate(pbqp);
 
 	free_buckets();
 }
