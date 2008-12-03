@@ -750,9 +750,8 @@ static pbqp_node *get_node_with_max_degree(void)
 	return result;
 }
 
-void apply_RN(pbqp *pbqp)
+static unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 {
-	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
 	vector      *node_vec;
 	vector      *vec;
@@ -766,21 +765,9 @@ void apply_RN(pbqp *pbqp)
 	int          is_src;
 
 	assert(pbqp);
-
-	/* Search for node with maximum degree. */
-	node = get_node_with_max_degree();
-	max_degree = pbqp_node_get_degree(node);
-
 	assert(node);
 	node_vec = node->costs;
 	node_len = node_vec->len;
-
-	if (pbqp->dump_file) {
-		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
-		pbqp_dump_graph(pbqp);
-	}
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = node_vec->entries[node_index].data;
@@ -809,20 +796,40 @@ void apply_RN(pbqp *pbqp)
 		}
 	}
 
+	return min_index;
+}
+
+void apply_RN(pbqp *pbqp)
+{
+	pbqp_node   *node         = NULL;
+	unsigned     min_index    = 0;
+
+	assert(pbqp);
+
+	/* We want to reduce a node with maximum degree. */
+	node = get_node_with_max_degree();
+	assert(node);
+
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+
+	min_index = get_local_minimal_alternative(pbqp, node);
+
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
-		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %lld<br>\n",
-							min);
 	}
 
 	/* Now that we found the local minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
 }
 
-void apply_Brute_Force(pbqp *pbqp)
+static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 {
-	pbqp_node   *node         = NULL;
 	pbqp_edge   *edge;
 	vector      *node_vec;
 	vector      *vec;
@@ -836,21 +843,9 @@ void apply_Brute_Force(pbqp *pbqp)
 	int          is_src;
 
 	assert(pbqp);
-
-	/* Search for node with maximum degree. */
-	node = get_node_with_max_degree();
-	max_degree = pbqp_node_get_degree(node);
-
 	assert(node);
 	node_vec = node->costs;
 	node_len = node_vec->len;
-
-	if (pbqp->dump_file) {
-		char     txt[100];
-		sprintf(txt, "BF-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
-		pbqp_dump_graph(pbqp);
-	}
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = node_vec->entries[node_index].data;
@@ -863,12 +858,32 @@ void apply_Brute_Force(pbqp *pbqp)
 			min_index = node_index;
 		}
 	}
+	return 0;
+}
+
+void apply_Brute_Force(pbqp *pbqp)
+{
+	pbqp_node   *node         = NULL;
+	unsigned     min_index    = 0;
+
+	assert(pbqp);
+
+	/* We want to reduce a node with maximum degree. */
+	node = get_node_with_max_degree();
+	assert(node);
+
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "BF-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+
+	min_index = get_minimal_alternative(pbqp, node);
 
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
-		fprintf(pbqp->dump_file, "Minimal cost of BF reduction: %lld<br>\n",
-							min);
 	}
 
 	/* Now that we found the minimum set all other costs to infinity. */
