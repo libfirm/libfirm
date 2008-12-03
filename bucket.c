@@ -49,12 +49,27 @@ pbqp_edge *edge_bucket_pop(pbqp_edge_bucket *bucket)
 	return edge;
 }
 
+void node_bucket_clear(pbqp_node_bucket *bucket)
+{
+	ARR_SHRINKLEN(*bucket, 0);
+}
+
 int node_bucket_contains(pbqp_node_bucket bucket, pbqp_node *node)
 {
 	assert(node);
 
 	return node->bucket_index < node_bucket_get_length(bucket)
 			&& bucket[node->bucket_index] == node;
+}
+
+void node_bucket_copy(pbqp_node_bucket *dst, pbqp_node_bucket *src)
+{
+	unsigned src_index;
+	unsigned src_length = node_bucket_get_length(*src);
+
+	for (src_index = 0; src_index < src_length; ++src_index) {
+		node_bucket_insert(dst, (*src)[src_index]);
+	}
 }
 
 void node_bucket_free(pbqp_node_bucket *bucket)
