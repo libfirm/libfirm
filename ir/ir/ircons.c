@@ -44,6 +44,9 @@
 #include "iredges_t.h"
 #include "irflag_t.h"
 
+/* Uncomment to use original code instead of generated one */
+// #define USE_ORIGINAL
+
 /* when we need verifying */
 #ifdef NDEBUG
 # define IRN_VRFY_IRG(res, irg)
@@ -164,6 +167,9 @@ new_d_##instr(dbg_info *db, ir_node *op, ir_mode *mode) {                     \
   return new_bd_##instr(db, current_ir_graph->current_block, op, mode);       \
 }
 
+#ifndef USE_ORIGINAL
+#include "gen_ir_cons.c.inl"
+#else
 
 /**
  * Constructs a Block with a fixed number of predecessors.
@@ -219,6 +225,7 @@ new_bd_End(dbg_info *db, ir_node *block) {
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_End */
+#endif
 
 /**
  * Creates a Phi node with all predecessors.  Calling this constructor
@@ -256,6 +263,7 @@ new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 	return res;
 }  /* new_bd_Phi */
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Const_type(dbg_info *db, tarval *con, ir_type *tp) {
 	ir_node  *res;
@@ -270,6 +278,7 @@ new_bd_Const_type(dbg_info *db, tarval *con, ir_type *tp) {
 
 	return res;
 }  /* new_bd_Const_type */
+#endif
 
 static ir_node *
 new_bd_Const(dbg_info *db, tarval *con) {
@@ -285,6 +294,7 @@ new_bd_Const_long(dbg_info *db, ir_mode *mode, long value) {
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }  /* new_bd_Const_long */
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Id(dbg_info *db, ir_node *block, ir_node *val, ir_mode *mode) {
 	ir_node  *res;
@@ -314,6 +324,7 @@ new_bd_Proj(dbg_info *db, ir_node *block, ir_node *arg, ir_mode *mode,
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Proj */
+#endif
 
 static ir_node *
 new_bd_defaultProj(dbg_info *db, ir_node *block, ir_node *arg,
@@ -340,6 +351,7 @@ new_bd_Conv(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode, int strict
 	return res;
 }  /* new_bd_Conv */
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Cast(dbg_info *db, ir_node *block, ir_node *op, ir_type *to_tp) {
 	ir_node  *res;
@@ -366,13 +378,16 @@ new_bd_Tuple(dbg_info *db, ir_node *block, int arity, ir_node **in) {
 }  /* new_bd_Tuple */
 
 NEW_BD_BINOP(Add)
+#endif
 NEW_BD_BINOP(Sub)
 NEW_BD_UNOP(Minus)
 NEW_BD_BINOP(Mul)
 NEW_BD_BINOP(Mulh)
 NEW_BD_DIVOP(Quot)
 NEW_BD_DIVOP(DivMod)
+#ifdef USE_ORIGINAL
 NEW_BD_DIVOP(Div)
+#endif
 NEW_BD_DIVOP(Mod)
 NEW_BD_BINOP(And)
 NEW_BD_BINOP(Or)
@@ -405,6 +420,7 @@ static ir_node *new_bd_DivRL(dbg_info *db, ir_node *block,
 	return res;
 }
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2) {
 	ir_node  *in[2];
@@ -453,6 +469,7 @@ new_bd_Cond(dbg_info *db, ir_node *block, ir_node *c) {
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Cond */
+#endif
 
 static ir_node *
 new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
@@ -840,6 +857,7 @@ new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constr
 /* private interfaces, for professional use only */
 /* --------------------------------------------- */
 
+#ifdef USE_ORIGINAL
 /* Constructs a Block with a fixed number of predecessors.
    Does not set current_block.  Can not be used with automatic
    Phi node construction. */
@@ -878,6 +896,7 @@ new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block) {
 
 	return res;
 }  /* new_rd_End */
+#endif
 
 /* Creates a Phi node with all predecessors.  Calling this constructor
    is only allowed if the corresponding block is mature.  */
@@ -893,6 +912,7 @@ new_rd_Phi(dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in,
 	return res;
 }  /* new_rd_Phi */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con, ir_type *tp) {
 	ir_node  *res;
@@ -904,15 +924,20 @@ new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con, ir_type *tp) {
 
 	return res;
 }  /* new_rd_Const_type */
+#endif
 
 ir_node *
 new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con) {
 	ir_node  *res;
+#ifdef USE_ORIGINAL
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
 	res = new_bd_Const_type(db, con, firm_unknown_type);
 	current_ir_graph = rem;
+#else
+	res = new_rd_Const_type(db, irg, con, firm_unknown_type);
+#endif
 
 	return res;
 }  /* new_rd_Const */
@@ -922,6 +947,7 @@ new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode, long value) {
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }  /* new_rd_Const_long */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Id(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *val, ir_mode *mode) {
 	ir_node  *res;
@@ -946,6 +972,7 @@ new_rd_Proj(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode *
 
 	return res;
 }  /* new_rd_Proj */
+#endif
 
 ir_node *
 new_rd_defaultProj(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg,
@@ -972,6 +999,7 @@ new_rd_Conv(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *m
 	return res;
 }  /* new_rd_Conv */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Cast(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
 	ir_node  *res;
@@ -997,13 +1025,16 @@ new_rd_Tuple(dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **i
 }  /* new_rd_Tuple */
 
 NEW_RD_BINOP(Add)
+#endif
 NEW_RD_BINOP(Sub)
 NEW_RD_UNOP(Minus)
 NEW_RD_BINOP(Mul)
 NEW_RD_BINOP(Mulh)
 NEW_RD_DIVOP(Quot)
 NEW_RD_DIVOP(DivMod)
+#ifdef USE_ORIGINAL
 NEW_RD_DIVOP(Div)
+#endif
 NEW_RD_DIVOP(Mod)
 NEW_RD_BINOP(And)
 NEW_RD_BINOP(Or)
@@ -1029,6 +1060,7 @@ ir_node *new_rd_DivRL(dbg_info *db, ir_graph *irg, ir_node *block,
 	return res;
 }
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Cmp(dbg_info *db, ir_graph *irg, ir_node *block,
            ir_node *op1, ir_node *op2) {
@@ -1077,6 +1109,7 @@ new_rd_Cond(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c) {
 
 	return res;
 }  /* new_rd_Cond */
+#endif
 
 ir_node *
 new_rd_Call(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
@@ -1422,6 +1455,7 @@ ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block,
 }  /* new_rd_ASM */
 
 
+#ifdef USE_ORIGINAL
 ir_node *new_r_Block(ir_graph *irg,  int arity, ir_node **in) {
 	return new_rd_Block(NULL, irg, arity, in);
 }
@@ -1440,6 +1474,7 @@ ir_node *new_r_IJmp(ir_graph *irg, ir_node *block, ir_node *tgt) {
 ir_node *new_r_Cond(ir_graph *irg, ir_node *block, ir_node *c) {
 	return new_rd_Cond(NULL, irg, block, c);
 }
+#endif
 ir_node *new_r_Return(ir_graph *irg, ir_node *block,
                       ir_node *store, int arity, ir_node **in) {
 	return new_rd_Return(NULL, irg, block, store, arity, in);
@@ -1450,9 +1485,11 @@ ir_node *new_r_Const(ir_graph *irg, tarval *con) {
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value) {
 	return new_rd_Const_long(NULL, irg, mode, value);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp) {
 	return new_rd_Const_type(NULL, irg, con, tp);
 }
+#endif
 ir_node *new_r_SymConst(ir_graph *irg, ir_node *block, ir_mode *mode,
                         symconst_symbol value, symconst_kind symkind) {
 	return new_rd_SymConst(NULL, irg, block, mode, value, symkind);
@@ -1471,10 +1508,12 @@ ir_node *new_r_Call(ir_graph *irg, ir_node *block, ir_node *store,
                     ir_type *tp) {
 	return new_rd_Call(NULL, irg, block, store, callee, arity, in, tp);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Add(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_rd_Add(NULL, irg, block, op1, op2, mode);
 }
+#endif
 ir_node *new_r_Sub(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_rd_Sub(NULL, irg, block, op1, op2, mode);
@@ -1499,10 +1538,12 @@ ir_node *new_r_DivMod(ir_graph *irg, ir_node *block,
                       ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_DivMod(NULL, irg, block, memop, op1, op2, mode, state);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Div(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_Div(NULL, irg, block, memop, op1, op2, mode, state);
 }
+#endif
 ir_node *new_r_DivRL(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_DivRL(NULL, irg, block, memop, op1, op2, mode, state);
@@ -1555,17 +1596,21 @@ ir_node *new_r_Borrow(ir_graph *irg, ir_node *block,
                       ir_node *op, ir_node *k, ir_mode *mode) {
 	return new_rd_Borrow(NULL, irg, block, op, k, mode);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Cmp(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2) {
 	return new_rd_Cmp(NULL, irg, block, op1, op2);
 }
+#endif
 ir_node *new_r_Conv(ir_graph *irg, ir_node *block,
                     ir_node *op, ir_mode *mode) {
 	return new_rd_Conv(NULL, irg, block, op, mode);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Cast(ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
 	return new_rd_Cast(NULL, irg, block, op, to_tp);
 }
+#endif
 ir_node *new_r_Phi(ir_graph *irg, ir_node *block, int arity,
                    ir_node **in, ir_mode *mode) {
 	return new_rd_Phi(NULL, irg, block, arity, in, mode);
@@ -1589,14 +1634,17 @@ ir_node *new_r_Free(ir_graph *irg, ir_node *block, ir_node *store,
 ir_node *new_r_Sync(ir_graph *irg, ir_node *block, int arity, ir_node *in[]) {
 	return new_rd_Sync(NULL, irg, block, arity, in);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Proj(ir_graph *irg, ir_node *block, ir_node *arg,
                     ir_mode *mode, long proj) {
 	return new_rd_Proj(NULL, irg, block, arg, mode, proj);
 }
+#endif
 ir_node *new_r_defaultProj(ir_graph *irg, ir_node *block, ir_node *arg,
                            long max_proj) {
 	return new_rd_defaultProj(NULL, irg, block, arg, max_proj);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Tuple(ir_graph *irg, ir_node *block,
                      int arity, ir_node **in) {
 	return new_rd_Tuple(NULL, irg, block, arity, in );
@@ -1605,6 +1653,7 @@ ir_node *new_r_Id(ir_graph *irg, ir_node *block,
                   ir_node *val, ir_mode *mode) {
 	return new_rd_Id(NULL, irg, block, val, mode);
 }
+#endif
 ir_node *new_r_Bad(ir_graph *irg) {
 	return get_irg_bad(irg);
 }
@@ -1666,6 +1715,8 @@ ir_node *new_r_ASM(ir_graph *irg, ir_node *block,
 /** ********************/
 /** public interfaces  */
 /** construction tools */
+
+#ifdef USE_ORIGINAL
 
 /**
  *
@@ -1729,6 +1780,7 @@ new_d_Block(dbg_info *db, int arity, ir_node **in) {
 
 	return res;
 }  /* new_d_Block */
+#endif
 
 /* ***********************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
@@ -2264,6 +2316,7 @@ new_d_Const_long(dbg_info *db, ir_mode *mode, long value) {
 	return new_bd_Const_long(db, mode, value);
 }  /* new_d_Const_long */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp) {
 	return new_bd_Const_type(db, con, tp);
@@ -2279,6 +2332,7 @@ ir_node *
 new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj) {
 	return new_bd_Proj(db, current_ir_graph->current_block, arg, mode, proj);
 }  /* new_d_Proj */
+#endif
 
 ir_node *
 new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj) {
@@ -2301,6 +2355,7 @@ new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode) {
 	return new_bd_Conv(db, current_ir_graph->current_block, op, mode, 1);
 }  /* new_d_strictConv */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp) {
 	return new_bd_Cast(db, current_ir_graph->current_block, op, to_tp);
@@ -2312,6 +2367,7 @@ new_d_Tuple(dbg_info *db, int arity, ir_node **in) {
 }  /* new_d_Tuple */
 
 NEW_D_BINOP(Add)
+#endif
 NEW_D_BINOP(Sub)
 NEW_D_UNOP(Minus)
 NEW_D_BINOP(Mul)
@@ -2358,6 +2414,7 @@ new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *
 	return res;
 }  /* new_d_DivMod */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	ir_node *res;
@@ -2368,6 +2425,7 @@ new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mod
 
 	return res;
 }  /* new_d_Div */
+#endif
 
 ir_node *
 new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
@@ -2403,6 +2461,7 @@ NEW_D_UNOP(Abs)
 NEW_D_BINOP(Carry)
 NEW_D_BINOP(Borrow)
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Cmp(dbg_info *db, ir_node *op1, ir_node *op2) {
 	return new_bd_Cmp(db, current_ir_graph->current_block, op1, op2);
@@ -2422,6 +2481,7 @@ ir_node *
 new_d_Cond(dbg_info *db, ir_node *c) {
 	return new_bd_Cond(db, current_ir_graph->current_block, c);
 }  /* new_d_Cond */
+#endif
 
 ir_node *
 new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **in,
@@ -2826,7 +2886,7 @@ irp_finalize_cons(void) {
 	irp->phase_state = phase_high;
 }  /* irp_finalize_cons */
 
-
+#ifdef USE_ORIGINAL
 ir_node *new_Block(int arity, ir_node **in) {
 	return new_d_Block(NULL, arity, in);
 }
@@ -2845,6 +2905,7 @@ ir_node *new_IJmp(ir_node *tgt) {
 ir_node *new_Cond(ir_node *c) {
 	return new_d_Cond(NULL, c);
 }
+#endif
 ir_node *new_Return(ir_node *store, int arity, ir_node *in[]) {
 	return new_d_Return(NULL, store, arity, in);
 }
@@ -2856,9 +2917,11 @@ ir_node *new_Const_long(ir_mode *mode, long value) {
 	return new_d_Const_long(NULL, mode, value);
 }
 
+#ifdef USE_ORIGINAL
 ir_node *new_Const_type(tarval *con, ir_type *tp) {
 	return new_d_Const_type(NULL, con, tp);
 }
+#endif
 
 ir_node *new_SymConst_type(ir_mode *mode, symconst_symbol value, symconst_kind kind, ir_type *type) {
 	return new_d_SymConst_type(NULL, mode, value, kind, type);
@@ -2877,9 +2940,11 @@ ir_node *new_Call(ir_node *store, ir_node *callee, int arity, ir_node **in,
                   ir_type *tp) {
 	return new_d_Call(NULL, store, callee, arity, in, tp);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Add(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Add(NULL, op1, op2, mode);
 }
+#endif
 ir_node *new_Sub(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Sub(NULL, op1, op2, mode);
 }
@@ -2898,9 +2963,11 @@ ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_
 ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_DivMod(NULL, memop, op1, op2, mode, state);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Div(NULL, memop, op1, op2, mode, state);
 }
+#endif
 ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_DivRL(NULL, memop, op1, op2, mode, state);
 }
@@ -2940,18 +3007,22 @@ ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode) {
 ir_node *new_Borrow(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Borrow(NULL, op1, op2, mode);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Cmp(ir_node *op1, ir_node *op2) {
 	return new_d_Cmp(NULL, op1, op2);
 }
+#endif
 ir_node *new_Conv(ir_node *op, ir_mode *mode) {
 	return new_d_Conv(NULL, op, mode);
 }
 ir_node *new_strictConv(ir_node *op, ir_mode *mode) {
 	return new_d_strictConv(NULL, op, mode);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Cast(ir_node *op, ir_type *to_tp) {
 	return new_d_Cast(NULL, op, to_tp);
 }
+#endif
 ir_node *new_Phi(int arity, ir_node **in, ir_mode *mode) {
 	return new_d_Phi(NULL, arity, in, mode);
 }
@@ -2972,18 +3043,22 @@ ir_node *new_Free(ir_node *store, ir_node *ptr, ir_node *size,
 ir_node *new_Sync(int arity, ir_node *in[]) {
 	return new_d_Sync(NULL, arity, in);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Proj(ir_node *arg, ir_mode *mode, long proj) {
 	return new_d_Proj(NULL, arg, mode, proj);
 }
+#endif
 ir_node *new_defaultProj(ir_node *arg, long max_proj) {
 	return new_d_defaultProj(NULL, arg, max_proj);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Tuple(int arity, ir_node **in) {
 	return new_d_Tuple(NULL, arity, in);
 }
 ir_node *new_Id(ir_node *val, ir_mode *mode) {
 	return new_d_Id(NULL, val, mode);
 }
+#endif
 ir_node *new_Bad(void) {
 	return get_irg_bad(current_ir_graph);
 }
