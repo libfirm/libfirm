@@ -12,6 +12,6 @@ void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge);
 void dump_section(FILE *f, int level, char *txt);
 
 void dump_node(FILE *file, pbqp_node *node);
-void dump_edge(pbqp *pbqp, pbqp_edge *edge);
+void dump_edge(FILE *file, pbqp_edge *edge);
 
 #endif /* KAPS_HTML_DUMPER_H */

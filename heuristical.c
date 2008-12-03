@@ -540,7 +540,7 @@ void apply_RI(pbqp *pbqp)
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
 		dump_node(pbqp->dump_file, node);
 		dump_node(pbqp->dump_file, other_node);
-		dump_edge(pbqp, edge);
+		dump_edge(pbqp->dump_file, edge);
 	}
 
 	if (is_src) {
@@ -623,9 +623,9 @@ void apply_RII(pbqp *pbqp)
 		pbqp_dump_graph(pbqp);
 		fputs("<br>\nBefore reduction:<br>\n", pbqp->dump_file);
 		dump_node(pbqp->dump_file, src_node);
-		dump_edge(pbqp, src_edge);
+		dump_edge(pbqp->dump_file, src_edge);
 		dump_node(pbqp->dump_file, node);
-		dump_edge(pbqp, tgt_edge);
+		dump_edge(pbqp->dump_file, tgt_edge);
 		dump_node(pbqp->dump_file, tgt_node);
 	}
 
@@ -687,7 +687,7 @@ void apply_RII(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
-		dump_edge(pbqp, edge);
+		dump_edge(pbqp->dump_file, edge);
 	}
 
 	/* Edge has changed so we simplify it. */
