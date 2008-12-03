@@ -18,6 +18,9 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
+/* Forward declarations. */
+static void apply_Brute_Force(pbqp *pbqp);
+
 static void insert_into_edge_bucket(pbqp_edge *edge)
 {
 	if (edge_bucket_contains(edge_bucket, edge)) {
@@ -489,14 +492,8 @@ static void back_propagate(pbqp *pbqp)
 	}
 }
 
-void solve_pbqp_heuristical(pbqp *pbqp)
+static void apply_heuristic_reductions(pbqp *pbqp)
 {
-	/* Reduce nodes degree ... */
-	initial_simplify_edges(pbqp);
-
-	/* ... and put node into bucket representing their degree. */
-	fill_node_buckets(pbqp);
-
 	for (;;) {
 		if (edge_bucket_get_length(edge_bucket) > 0) {
 			apply_edge(pbqp);
@@ -507,9 +504,20 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
 			apply_RN(pbqp);
 		} else {
-			break;
+			return;
 		}
 	}
+}
+
+void solve_pbqp_heuristical(pbqp *pbqp)
+{
+	/* Reduce nodes degree ... */
+	initial_simplify_edges(pbqp);
+
+	/* ... and put node into bucket representing their degree. */
+	fill_node_buckets(pbqp);
+
+	apply_heuristic_reductions(pbqp);
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
@@ -828,6 +836,23 @@ void apply_RN(pbqp *pbqp)
 	select_alternative(node, min_index);
 }
 
+static void apply_brute_force_reductions(pbqp *pbqp)
+{
+	for (;;) {
+		if (edge_bucket_get_length(edge_bucket) > 0) {
+			apply_edge(pbqp);
+		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
+			apply_RI(pbqp);
+		} else if (node_bucket_get_length(node_buckets[2]) > 0) {
+			apply_RII(pbqp);
+		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
+			apply_Brute_Force(pbqp);
+		} else {
+			return;
+		}
+	}
+}
+
 static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 {
 	pbqp_edge   *edge;
@@ -861,6 +886,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		pbqp_node_bucket *bucket_red  = node_bucket_deep_copy(reduced_bucket);
 
 		/* TODO */
+		apply_brute_force_reductions(pbqp);
 
 		if (value < min) {
 			min = value;
@@ -897,6 +923,24 @@ void apply_Brute_Force(pbqp *pbqp)
 
 	/* Now that we found the minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
+}
+
+void solve_pbqp_brute_force(pbqp *pbqp)
+{
+	/* Reduce nodes degree ... */
+	initial_simplify_edges(pbqp);
+
+	/* ... and put node into bucket representing their degree. */
+	fill_node_buckets(pbqp);
+
+	apply_brute_force_reductions(pbqp);
+
+	pbqp->solution = determine_solution(pbqp->dump_file);
+
+	/* Solve reduced nodes. */
+	back_propagate(pbqp);
+
+	free_buckets();
 }
 
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
