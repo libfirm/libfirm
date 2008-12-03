@@ -2877,7 +2877,9 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_mode  *mode  = get_irn_mode(psi);
-	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg, *nomem;
+	ir_node  *nomem = new_NoMem();
+	ir_node  *new_node, *sub, *sbb, *eflags, *block, *noreg;
+
 	dbg_info *dbgi;
 
 	new_node = gen_binop(psi, a, b, new_bd_ia32_Sub,
