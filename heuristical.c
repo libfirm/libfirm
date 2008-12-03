@@ -873,7 +873,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	node_len = node_vec->len;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		num value = node_vec->entries[node_index].data;
+		num value;
 
 		/* Some node buckets and the edge bucket should be empty. */
 		assert(node_bucket_get_length(node_buckets[1]) == 0);
@@ -885,15 +885,22 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		pbqp_node_bucket *bucket_deg3 = node_bucket_deep_copy(node_buckets[3]);
 		pbqp_node_bucket *bucket_red  = node_bucket_deep_copy(reduced_bucket);
 
-		/* TODO */
+		/* Select alternative and solve PBQP recursively. */
+		select_alternative(node, node_index);
 		apply_brute_force_reductions(pbqp);
+
+		value = determine_solution(pbqp->dump_file);
 
 		if (value < min) {
 			min = value;
 			min_index = node_index;
 		}
+
+		/* TODO Restore old PBQP state. */
+
 	}
-	return 0;
+
+	return min_index;
 }
 
 void apply_Brute_Force(pbqp *pbqp)
