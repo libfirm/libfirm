@@ -702,6 +702,33 @@ void apply_RII(pbqp *pbqp)
 	simplify_edge(pbqp, edge);
 }
 
+static void select_alternative(pbqp_node *node, unsigned selected_index)
+{
+	unsigned  edge_index;
+	unsigned  node_index;
+	unsigned  node_len;
+	vector   *node_vec;
+	unsigned  max_degree = pbqp_node_get_degree(node);
+
+	assert(selected_index < max_degree);
+	assert(node);
+	node->solution = selected_index;
+	node_vec = node->costs;
+	node_len = node_vec->len;
+
+	/* Set all other costs to infinity. */
+	for (node_index = 0; node_index < node_len; ++node_index) {
+		if (node_index != selected_index) {
+			node_vec->entries[node_index].data = INF_COSTS;
+		}
+	}
+
+	/* Add all incident edges to edge bucket, since they are now independent. */
+	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
+		insert_into_edge_bucket(node->edges[edge_index]);
+	}
+}
+
 void apply_RN(pbqp *pbqp)
 {
 	pbqp_node  **bucket       = node_buckets[3];
@@ -777,19 +804,8 @@ void apply_RN(pbqp *pbqp)
 							min);
 	}
 
-	node->solution = min_index;
-
 	/* Now that we found the local minimum set all other costs to infinity. */
-	for (node_index = 0; node_index < node_len; ++node_index) {
-		if (node_index != min_index) {
-			node_vec->entries[node_index].data = INF_COSTS;
-		}
-	}
-
-	/* Add all incident edges to edge bucket, since they are now independent. */
-	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
-		insert_into_edge_bucket(node->edges[edge_index]);
-	}
+	select_alternative(node, min_index);
 }
 
 void apply_Brute_Force(pbqp *pbqp)
@@ -828,7 +844,7 @@ void apply_Brute_Force(pbqp *pbqp)
 
 	if (pbqp->dump_file) {
 		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		sprintf(txt, "BF-Reduction of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
@@ -848,23 +864,12 @@ void apply_Brute_Force(pbqp *pbqp)
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
-		fprintf(pbqp->dump_file, "Minimal cost of RN reduction: %lld<br>\n",
+		fprintf(pbqp->dump_file, "Minimal cost of BF reduction: %lld<br>\n",
 							min);
 	}
 
-	node->solution = min_index;
-
-	/* Now that we found the local minimum set all other costs to infinity. */
-	for (node_index = 0; node_index < node_len; ++node_index) {
-		if (node_index != min_index) {
-			node_vec->entries[node_index].data = INF_COSTS;
-		}
-	}
-
-	/* Add all incident edges to edge bucket, since they are now independent. */
-	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
-		insert_into_edge_bucket(node->edges[edge_index]);
-	}
+	/* Now that we found the minimum set all other costs to infinity. */
+	select_alternative(node, min_index);
 }
 
 void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
