@@ -850,8 +850,17 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = node_vec->entries[node_index].data;
 
-		/* TODO Copy PBQP */
+		/* Some node buckets and the edge bucket should be empty. */
+		assert(node_bucket_get_length(node_buckets[1]) == 0);
+		assert(node_bucket_get_length(node_buckets[2]) == 0);
+		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
+		/* Save current PBQP state. */
+		pbqp_node_bucket *bucket_deg0 = node_bucket_deep_copy(node_buckets[0]);
+		pbqp_node_bucket *bucket_deg3 = node_bucket_deep_copy(node_buckets[3]);
+		pbqp_node_bucket *bucket_red  = node_bucket_deep_copy(reduced_bucket);
+
+		/* TODO */
 
 		if (value < min) {
 			min = value;
