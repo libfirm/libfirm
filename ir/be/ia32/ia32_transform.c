@@ -77,12 +77,6 @@
 #define DFP_INTMAX "9223372036854775807"
 #define ULL_BIAS   "18446744073709551616"
 
-#define TP_SFP_SIGN "ia32_sfp_sign"
-#define TP_DFP_SIGN "ia32_dfp_sign"
-#define TP_SFP_ABS  "ia32_sfp_abs"
-#define TP_DFP_ABS  "ia32_dfp_abs"
-#define TP_ULL_BIAS "ia32_ull_bias"
-
 #define ENT_SFP_SIGN ".LC_ia32_sfp_sign"
 #define ENT_DFP_SIGN ".LC_ia32_dfp_sign"
 #define ENT_SFP_ABS  ".LC_ia32_sfp_abs"
@@ -352,25 +346,130 @@ static ir_node *gen_SymConst(ir_node *node)
 	return cnst;
 }
 
+/**
+ * Create a float type for the given mode and cache it.
+ *
+ * @param mode   the mode for the float type (might be integer mode for SSE2 types)
+ * @param align  alignment
+ */
+static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
+	char    buf[32];
+	ir_type *tp;
+
+	assert(align <= 16);
+
+	if (mode == mode_Iu) {
+		static ir_type *int_Iu[16] = {NULL, };
+
+		if (int_Iu[align] == NULL) {
+			snprintf(buf, sizeof(buf), "int_Iu_%u", align);
+			int_Iu[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			/* set the specified alignment */
+			set_type_alignment_bytes(tp, align);
+		}
+		return int_Iu[align];
+	} else if (mode == mode_Lu) {
+		static ir_type *int_Lu[16] = {NULL, };
+
+		if (int_Lu[align] == NULL) {
+			snprintf(buf, sizeof(buf), "int_Lu_%u", align);
+			int_Lu[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			/* set the specified alignment */
+			set_type_alignment_bytes(tp, align);
+		}
+		return int_Lu[align];
+	} else if (mode == mode_F) {
+		static ir_type *float_F[16] = {NULL, };
+
+		if (float_F[align] == NULL) {
+			snprintf(buf, sizeof(buf), "float_F_%u", align);
+			float_F[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			/* set the specified alignment */
+			set_type_alignment_bytes(tp, align);
+		}
+		return float_F[align];
+	} else if (mode == mode_D) {
+		static ir_type *float_D[16] = {NULL, };
+
+		if (float_D[align] == NULL) {
+			snprintf(buf, sizeof(buf), "float_D_%u", align);
+			float_D[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			/* set the specified alignment */
+			set_type_alignment_bytes(tp, align);
+		}
+		return float_D[align];
+	} else {
+		static ir_type *float_E[16] = {NULL, };
+
+		if (float_E[align] == NULL) {
+			snprintf(buf, sizeof(buf), "float_E_%u", align);
+			float_E[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			/* set the specified alignment */
+			set_type_alignment_bytes(tp, align);
+		}
+		return float_E[align];
+	}
+}
+
+/**
+ * Create a float[2] array type for the given atomic type.
+ *
+ * @param tp  the atomic type
+ */
+static ir_type *ia32_create_float_array(ir_type *tp) {
+	char     buf[32];
+	ir_mode  *mode = get_type_mode(tp);
+	unsigned align = get_type_alignment_bytes(tp);
+	ir_type  *arr;
+
+	assert(align <= 16);
+
+	if (mode == mode_F) {
+		static ir_type *float_F[16] = {NULL, };
+
+		if (float_F[align] != NULL)
+			return float_F[align];
+		snprintf(buf, sizeof(buf), "arr_float_F_%u", align);
+		arr = float_F[align] = new_type_array(new_id_from_str(buf), 1, tp);
+	} else if (mode == mode_D) {
+		static ir_type *float_D[16] = {NULL, };
+
+		if (float_D[align] != NULL)
+			return float_D[align];
+		snprintf(buf, sizeof(buf), "arr_float_D_%u", align);
+		arr = float_D[align] = new_type_array(new_id_from_str(buf), 1, tp);
+	} else {
+		static ir_type *float_E[16] = {NULL, };
+
+		if (float_E[align] != NULL)
+			return float_E[align];
+		snprintf(buf, sizeof(buf), "arr_float_E_%u", align);
+		arr = float_E[align] = new_type_array(new_id_from_str(buf), 1, tp);
+	}
+	set_type_alignment_bytes(arr, align);
+	set_type_size_bytes(arr, 2 * get_type_size_bytes(tp));
+	set_type_state(arr, layout_fixed);
+	return arr;
+}
+
 /* Generates an entity for a known FP const (used for FP Neg + Abs) */
 ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 {
 	static const struct {
-		const char *tp_name;
 		const char *ent_name;
 		const char *cnst_str;
 		char mode;
-		char align;
+		unsigned char align;
 	} names [ia32_known_const_max] = {
-		{ TP_SFP_SIGN, ENT_SFP_SIGN, SFP_SIGN,   0, 16 },	/* ia32_SSIGN */
-		{ TP_DFP_SIGN, ENT_DFP_SIGN, DFP_SIGN,   1, 16 },	/* ia32_DSIGN */
-		{ TP_SFP_ABS,  ENT_SFP_ABS,  SFP_ABS,    0, 16 },	/* ia32_SABS */
-		{ TP_DFP_ABS,  ENT_DFP_ABS,  DFP_ABS,    1, 16 },	/* ia32_DABS */
-		{ TP_ULL_BIAS, ENT_ULL_BIAS, ULL_BIAS,   2, 4 }     /* ia32_ULLBIAS */
+		{ ENT_SFP_SIGN, SFP_SIGN,   0, 16 }, /* ia32_SSIGN */
+		{ ENT_DFP_SIGN, DFP_SIGN,   1, 16 }, /* ia32_DSIGN */
+		{ ENT_SFP_ABS,  SFP_ABS,    0, 16 }, /* ia32_SABS */
+		{ ENT_DFP_ABS,  DFP_ABS,    1, 16 }, /* ia32_DABS */
+		{ ENT_ULL_BIAS, ULL_BIAS,   2, 4 }   /* ia32_ULLBIAS */
 	};
 	static ir_entity *ent_cache[ia32_known_const_max];
 
-	const char    *tp_name, *ent_name, *cnst_str;
+	const char    *ent_name, *cnst_str;
 	ir_type       *tp;
 	ir_entity     *ent;
 	tarval        *tv;
@@ -378,27 +477,18 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 
 	ent_name = names[kct].ent_name;
 	if (! ent_cache[kct]) {
-		tp_name  = names[kct].tp_name;
 		cnst_str = names[kct].cnst_str;
 
 		switch (names[kct].mode) {
 		case 0:  mode = mode_Iu; break;
 		case 1:  mode = mode_Lu; break;
-		default: mode = mode_F; break;
+		default: mode = mode_F;  break;
 		}
 		tv  = new_tarval_from_str(cnst_str, strlen(cnst_str), mode);
-		tp  = new_type_primitive(new_id_from_str(tp_name), mode);
-		/* set the specified alignment */
-		set_type_alignment_bytes(tp, names[kct].align);
+		tp  = ia32_create_float_type(mode, names[kct].align);
 
-		if (kct == ia32_ULLBIAS) {
-			/* we are in the backend, construct a fixed type here */
-			unsigned size = get_type_size_bytes(tp);
-			tp = new_type_array(new_id_from_str(tp_name), 1, tp);
-			set_type_alignment_bytes(tp, names[kct].align);
-			set_type_size_bytes(tp, 2 * size);
-			set_type_state(tp, layout_fixed);
-		}
+		if (kct == ia32_ULLBIAS)
+			tp = ia32_create_float_array(tp);
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
@@ -2907,6 +2997,65 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 }
 
 /**
+ * Create an const array of two float consts.
+ *
+ * @param c0        the first constant
+ * @param c1        the second constant
+ * @param new_mode  IN/OUT for the mode of the constants, if NULL
+ *                  smallest possible mode will be used
+ */
+static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **new_mode) {
+	ir_entity        *ent;
+	ir_mode          *mode = *new_mode;
+	ir_type          *tp;
+	ir_initializer_t *initializer;
+	tarval           *tv0 = get_Const_tarval(c0);
+	tarval           *tv1 = get_Const_tarval(c1);
+
+	if (mode == NULL) {
+		/* detect the best mode for the constants */
+		mode = get_tarval_mode(tv0);
+
+		if (mode != mode_F) {
+			if (tarval_ieee754_can_conv_lossless(tv0, mode_F) &&
+			    tarval_ieee754_can_conv_lossless(tv1, mode_F)) {
+				mode = mode_F;
+				tv0 = tarval_convert_to(tv0, mode);
+				tv1 = tarval_convert_to(tv1, mode);
+			} else if (mode != mode_D) {
+				if (tarval_ieee754_can_conv_lossless(tv0, mode_D) &&
+				    tarval_ieee754_can_conv_lossless(tv1, mode_D)) {
+					mode = mode_D;
+					tv0 = tarval_convert_to(tv0, mode);
+					tv1 = tarval_convert_to(tv1, mode);
+				}
+			}
+		}
+
+	}
+
+	tp = ia32_create_float_type(mode, get_mode_size_bytes(mode));
+	tp = ia32_create_float_array(tp);
+
+	ent = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
+
+	set_entity_ld_ident(ent, get_entity_ident(ent));
+	set_entity_visibility(ent, visibility_local);
+	set_entity_variability(ent, variability_constant);
+	set_entity_allocation(ent, allocation_static);
+
+	initializer = create_initializer_compound(2);
+
+	set_initializer_compound_value(initializer, 0, create_initializer_tarval(tv0));
+	set_initializer_compound_value(initializer, 1, create_initializer_tarval(tv1));
+
+	set_entity_initializer(ent, initializer);
+
+	*new_mode = mode;
+	return ent;
+}
+
+/**
  * Transforms a Mux node into CMov.
  *
  * @return The transformed node.
@@ -2920,6 +3069,8 @@ static ir_node *gen_Mux(ir_node *node)
 	ir_node  *mux_false   = get_Mux_false(node);
 	ir_node  *cond        = get_Mux_sel(node);
 	ir_mode  *mode        = get_irn_mode(node);
+	ir_node  *flags;
+	ir_node  *new_node;
 	pn_Cmp   pnc;
 
 	assert(get_irn_mode(cond) == mode_b);
@@ -2954,12 +3105,71 @@ static ir_node *gen_Mux(ir_node *node)
 				}
 			}
 		}
+		if (is_Const(mux_true) && is_Const(mux_false)) {
+			ia32_address_mode_t am;
+			ir_node             *noreg = ia32_new_NoReg_gp(env_cg);
+			ir_node             *nomem = new_NoMem();
+			ir_node             *load;
+			ir_mode             *new_mode;
+			unsigned            scale;
+
+			flags    = get_flags_node(cond, &pnc);
+			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/0);
+
+			if (ia32_cg_config.use_sse2) {
+				/* cannot load from different mode on SSE */
+				new_mode = mode;
+			} else {
+				/* x87 can load any mode */
+				new_mode = NULL;
+			}
+
+			am.addr.symconst_ent  = ia32_create_const_array(mux_false, mux_true, &new_mode);
+			am.ls_mode            = new_mode;
+			am.addr.base          = noreg;
+			am.addr.index         = new_node;
+			am.addr.mem           = nomem;
+			am.addr.offset        = 0;
+
+			switch (get_mode_size_bytes(new_mode)) {
+			case 4:
+				scale = 2;
+				break;
+			case 8:
+				scale = 3;
+				break;
+			case 16:
+				/* arg, shift 16 NOT supported */
+				scale = 3;
+				new_node = new_bd_ia32_Add(dbgi, new_block, noreg, noreg, nomem, new_node, new_node);
+				break;
+			default:
+				panic("Unsupported constant size");
+			}
+
+			am.addr.scale         = scale;
+			am.addr.use_frame     = 0;
+			am.addr.frame_entity  = NULL;
+			am.addr.symconst_sign = 0;
+			am.mem_proj           = am.addr.mem;
+			am.op_type            = ia32_AddrModeS;
+			am.new_op1            = NULL;
+			am.new_op2            = NULL;
+			am.pinned             = op_pin_state_floats;
+			am.commutative        = 1;
+			am.ins_permuted       = 0;
+
+			if (ia32_cg_config.use_sse2)
+				load = new_bd_ia32_xLoad(dbgi, block, am.addr.base, am.addr.index, am.addr.mem, new_mode);
+			else
+				load = new_bd_ia32_vfld(dbgi, block, am.addr.base, am.addr.index, am.addr.mem, new_mode);
+			set_am_attributes(load, &am);
+
+			return new_rd_Proj(NULL, current_ir_graph, block, load, mode_vfp, pn_ia32_res);
+		}
 		panic("cannot transform floating point Mux");
 
 	} else {
-		ir_node *flags;
-		ir_node *new_node;
-
 		assert(ia32_mode_needs_gp_reg(mode));
 
 		if (is_Proj(cond)) {
