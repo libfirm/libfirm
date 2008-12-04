@@ -3034,7 +3034,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **ne
 
 	}
 
-	tp = ia32_create_float_type(mode, get_mode_size_bytes(mode));
+	tp = ia32_create_float_type(mode, 4);
 	tp = ia32_create_float_array(tp);
 
 	ent = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
@@ -3124,12 +3124,7 @@ static ir_node *gen_Mux(ir_node *node)
 				new_mode = NULL;
 			}
 
-			am.addr.symconst_ent  = ia32_create_const_array(mux_false, mux_true, &new_mode);
-			am.ls_mode            = new_mode;
-			am.addr.base          = noreg;
-			am.addr.index         = new_node;
-			am.addr.mem           = nomem;
-			am.addr.offset        = 0;
+			am.addr.symconst_ent = ia32_create_const_array(mux_false, mux_true, &new_mode);
 
 			switch (get_mode_size_bytes(new_mode)) {
 			case 4:
@@ -3137,6 +3132,18 @@ static ir_node *gen_Mux(ir_node *node)
 				break;
 			case 8:
 				scale = 3;
+				break;
+			case 10:
+				/* use 2 * 5 */
+				scale = 1;
+				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+				set_ia32_am_scale(new_node, 2);
+				break;
+			case 12:
+				/* use 4 * 3 */
+				scale = 2;
+				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+				set_ia32_am_scale(new_node, 1);
 				break;
 			case 16:
 				/* arg, shift 16 NOT supported */
@@ -3147,6 +3154,11 @@ static ir_node *gen_Mux(ir_node *node)
 				panic("Unsupported constant size");
 			}
 
+			am.ls_mode            = new_mode;
+			am.addr.base          = noreg;
+			am.addr.index         = new_node;
+			am.addr.mem           = nomem;
+			am.addr.offset        = 0;
 			am.addr.scale         = scale;
 			am.addr.use_frame     = 0;
 			am.addr.frame_entity  = NULL;
