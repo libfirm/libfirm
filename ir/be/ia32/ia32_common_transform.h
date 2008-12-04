@@ -111,4 +111,12 @@ int prevents_AM(ir_node *const block, ir_node *const am_candidate,
 
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type);
 
+/**
+ * creates a unique ident by adding a number to a tag
+ *
+ * @param tag   the tag string, must contain a %d if a number
+ *              should be added
+ */
+ident *ia32_unique_id(const char *tag);
+
 #endif /* FIRM_BE_IA32_IA32_COMMON_TRANSFORM_H */

@@ -72,13 +72,8 @@ static int check_immediate_constraint(long val, char immediate_constraint_type)
 	}
 }
 
-/**
- * creates a unique ident by adding a number to a tag
- *
- * @param tag   the tag string, must contain a %d if a number
- *              should be added
- */
-static ident *unique_id(const char *tag)
+/* creates a unique ident by adding a number to a tag */
+ident *ia32_unique_id(const char *tag)
 {
 	static unsigned id = 0;
 	char str[256];
@@ -88,7 +83,7 @@ static ident *unique_id(const char *tag)
 }
 
 /**
- * Get a primitive type for a mode.
+ * Get a primitive type for a mode with alignment 16.
  */
 static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 {
@@ -99,6 +94,7 @@ static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 		char buf[64];
 		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
 		res = new_type_primitive(new_id_from_str(buf), mode);
+		/* FIXME: this is too much for most cases */
 		set_type_alignment_bytes(res, 16);
 		pmap_insert(types, mode, res);
 	}
@@ -143,7 +139,7 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 		} else
 			tp = ia32_get_prim_type(isa->types, mode);
 
-		res = new_entity(get_glob_type(), unique_id(".LC%u"), tp);
+		res = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
 
 		set_entity_ld_ident(res, get_entity_ident(res));
 		set_entity_visibility(res, visibility_local);
