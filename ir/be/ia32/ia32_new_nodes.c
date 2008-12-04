@@ -553,7 +553,7 @@ int is_ia32_am_sc_sign(const ir_node *node) {
 /**
  * Gets the addr mode const.
  */
-int get_ia32_am_scale(const ir_node *node) {
+unsigned get_ia32_am_scale(const ir_node *node) {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.am_scale;
 }
@@ -561,9 +561,9 @@ int get_ia32_am_scale(const ir_node *node) {
 /**
  * Sets the index register scale for address mode.
  */
-void set_ia32_am_scale(ir_node *node, int scale) {
+void set_ia32_am_scale(ir_node *node, unsigned scale) {
 	ia32_attr_t *attr = get_ia32_attr(node);
-	assert(0 <= scale && scale < 4 && "AM scale out of range");
+	assert(scale <= 3 && "AM scale out of range [0 ... 3]");
 	attr->data.am_scale = scale;
 }
 

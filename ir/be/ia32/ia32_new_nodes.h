@@ -157,12 +157,12 @@ int is_ia32_am_sc_sign(const ir_node *node);
 /**
  * Gets the addr mode const.
  */
-int get_ia32_am_scale(const ir_node *node);
+unsigned get_ia32_am_scale(const ir_node *node);
 
 /**
  * Sets the const for addr mode.
  */
-void set_ia32_am_scale(ir_node *node, int scale);
+void set_ia32_am_scale(ir_node *node, unsigned scale);
 
 /**
  * Sets the uses_frame flag.
