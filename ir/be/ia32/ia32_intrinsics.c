@@ -506,6 +506,9 @@ static int map_Shrs(ir_node *call, void *ctx) {
 	return 1;
 }
 
+/**
+ * Checks where node high is a sign extension of low.
+ */
 static int is_sign_extend(ir_node *low, ir_node *high)
 {
 	if (is_Shrs(high)) {
@@ -572,22 +575,19 @@ static int map_Mul(ir_node *call, void *ctx) {
 		mul   = new_bd_ia32_l_IMul(dbg, block, a_l, b_l);
 		h_res = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
 		l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+	} else {
+		/* note that zero extension is handled hare efficiently */
+		mul   = new_bd_ia32_l_Mul(dbg, block, a_l, b_l);
+		pEDX  = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
+		l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
-		goto end;
+		b_l   = new_rd_Conv(dbg, irg, block, b_l, h_mode);
+		mul   = new_rd_Mul( dbg, irg, block, a_h, b_l, h_mode);
+		add   = new_rd_Add( dbg, irg, block, mul, pEDX, h_mode);
+		a_l   = new_rd_Conv(dbg, irg, block, a_l, h_mode);
+		mul   = new_rd_Mul( dbg, irg, block, a_l, b_h, h_mode);
+		h_res = new_rd_Add( dbg, irg, block, add, mul, h_mode);
 	}
-
-	mul   = new_bd_ia32_l_Mul(dbg, block, a_l, b_l);
-	pEDX  = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
-	l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
-
-	b_l   = new_rd_Conv(dbg, irg, block, b_l, h_mode);
-	mul   = new_rd_Mul( dbg, irg, block, a_h, b_l, h_mode);
-	add   = new_rd_Add( dbg, irg, block, mul, pEDX, h_mode);
-	a_l   = new_rd_Conv(dbg, irg, block, a_l, h_mode);
-	mul   = new_rd_Mul( dbg, irg, block, a_l, b_h, h_mode);
-	h_res = new_rd_Add( dbg, irg, block, add, mul, h_mode);
-
-end:
 	resolve_call(call, l_res, h_res, irg, block);
 
 	return 1;
@@ -671,7 +671,7 @@ static int map_Abs(ir_node *call, void *ctx) {
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
 /**
- * Maps a Div. Change into a library call
+ * Maps a Div. Change into a library call.
  */
 static int map_Div(ir_node *call, void *ctx) {
 	ia32_intrinsic_env_t *env = ctx;
