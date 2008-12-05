@@ -2156,6 +2156,9 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			/* we do not support nodes without Cmp yet */
 			return 0;
 		}
+	} else {
+		/* we do not support nodes without Cmp yet */
+		return 0;
 	}
 
 	pn = get_Proj_proj(sel);
