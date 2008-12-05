@@ -429,7 +429,7 @@ int get_irp_n_asms(void) {
 
 /* Return the global asm include at position pos. */
 ident *get_irp_asm(int pos) {
-	assert(pos <= 0 && pos < get_irp_n_asms());
+	assert(0 <= pos && pos < get_irp_n_asms());
 	return irp->global_asms[pos];
 }
 
