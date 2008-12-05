@@ -1844,7 +1844,8 @@ new_rd_Phi_in(ir_graph *irg, ir_node *block, ir_mode *mode,
 	/* This loop checks whether the Phi has more than one predecessor.
 	   If so, it is a real Phi node and we break the loop.  Else the
 	   Phi node merges the same definition on several paths and therefore
-	   is not needed. Don't consider Bad nodes! */
+	   is not needed.
+	   Note: We MUST consider Bad nodes, else we might get data flow cycles in dead loops! */
 	known = res;
 	for (i = ins - 1; i >= 0; --i) 	{
 		assert(in[i]);
@@ -1856,7 +1857,7 @@ new_rd_Phi_in(ir_graph *irg, ir_node *block, ir_mode *mode,
 		if (phi0 && in[i] == phi0)
 			in[i] = res;
 
-		if (in[i] == res || in[i] == known || is_Bad(in[i]))
+		if (in[i] == res || in[i] == known)
 			continue;
 
 		if (known == res)
@@ -2138,9 +2139,9 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins) {
 	   exchange phi0, as this is done in mature_immBlock(). */
 	if (phi0 == NULL) {
 		phi0_all = block->attr.block.graph_arr[pos];
-		if (!(is_Phi(phi0_all) &&
-			(get_irn_arity(phi0_all) == 0)   &&
-			(get_nodes_block(phi0_all) == block)))
+		if (! is_Phi0(phi0_all)            ||
+		    get_irn_arity(phi0_all) != 0   ||
+		    get_nodes_block(phi0_all) != block)
 			phi0_all = NULL;
 	} else {
 		phi0_all = phi0;
