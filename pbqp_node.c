@@ -82,24 +82,28 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 	copy->edges        = NEW_ARR_F(pbqp_edge *, 0);
 	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
 		pbqp_edge *edge_copy;
-		pbqp_edge *edge      = node->edges[edge_index];
-		int        is_src    = edge->src == node;
+		pbqp_edge *edge        = node->edges[edge_index];
+		int        is_src      = edge->src == node;
 
 		if (is_src) {
-			if (node_bucket_contains(old_bucket, edge->tgt)) {
-				/* Edge isn't copied before */
-				edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
-			} else {
+			unsigned other_index = edge->tgt->bucket_index;
+			unsigned is_copied   = is_connected(old_bucket[other_index], edge);
+
+			if (is_copied) {
 				edge->src = copy;
 				edge_copy = edge;
+			} else {
+				edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
 			}
 		} else {
-			if (node_bucket_contains(old_bucket, edge->src)) {
-				/* Edge isn't copied before */
-				edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
-			} else {
+			unsigned other_index = edge->src->bucket_index;
+			unsigned is_copied   = is_connected(old_bucket[other_index], edge);
+
+			if (is_copied) {
 				edge->tgt = copy;
 				edge_copy = edge;
+			} else {
+				edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
 			}
 		}
 		ARR_APP1(pbqp_edge *, copy->edges, edge_copy);
