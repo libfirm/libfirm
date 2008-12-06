@@ -50,9 +50,9 @@ pbqp_edge *edge_bucket_pop(pbqp_edge_bucket *bucket)
 	return edge;
 }
 
-void node_bucket_clear(pbqp_node_bucket *bucket)
+void node_bucket_shrink(pbqp_node_bucket *bucket, unsigned len)
 {
-	ARR_SHRINKLEN(*bucket, 0);
+	ARR_SHRINKLEN(*bucket, len);
 }
 
 int node_bucket_contains(pbqp_node_bucket bucket, pbqp_node *node)

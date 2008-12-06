@@ -873,22 +873,22 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	bucket_index = node->bucket_index;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		pbqp_node_bucket bucket_deg0;
 		pbqp_node_bucket bucket_deg3;
-		pbqp_node_bucket bucket_red;
 		num              value;
+		unsigned         bucket_0_length;
+		unsigned         bucket_red_length;
 
 		/* Some node buckets and the edge bucket should be empty. */
 		assert(node_bucket_get_length(node_buckets[1]) == 0);
 		assert(node_bucket_get_length(node_buckets[2]) == 0);
 		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
-		char *tmp = obstack_finish(&pbqp->obstack);
+		/* char *tmp = obstack_finish(&pbqp->obstack); */
 
 		/* Save current PBQP state. */
-		node_bucket_deep_copy(pbqp, &bucket_deg0, node_buckets[0]);
 		node_bucket_deep_copy(pbqp, &bucket_deg3, node_buckets[3]);
-		node_bucket_deep_copy(pbqp, &bucket_red, reduced_bucket);
+		bucket_0_length   = node_bucket_get_length(node_buckets[0]);
+		bucket_red_length = node_bucket_get_length(reduced_bucket);
 
 		/* Select alternative and solve PBQP recursively. */
 		select_alternative(node_buckets[3][bucket_index], node_index);
@@ -907,20 +907,16 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
 		/* Clear modified buckets... */
-		node_bucket_clear(&node_buckets[0]);
-		node_bucket_clear(&node_buckets[3]);
-		node_bucket_clear(&reduced_bucket);
+		node_bucket_shrink(&node_buckets[3], 0);
 
 		/* ... and restore old PBQP state. */
-		node_bucket_copy(&node_buckets[0], bucket_deg0);
+		node_bucket_shrink(&node_buckets[0], bucket_0_length);
+		node_bucket_shrink(&reduced_bucket, bucket_red_length);
 		node_bucket_copy(&node_buckets[3], bucket_deg3);
-		node_bucket_copy(&reduced_bucket, bucket_red);
 
 		/* Free copies. */
-		obstack_free(&pbqp->obstack, tmp);
-		node_bucket_free(&bucket_deg0);
+		/* obstack_free(&pbqp->obstack, tmp); */
 		node_bucket_free(&bucket_deg3);
-		node_bucket_free(&bucket_red);
 	}
 
 	return min_index;
