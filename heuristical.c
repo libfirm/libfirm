@@ -864,11 +864,13 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	unsigned     node_len;
 	unsigned     min_index    = 0;
 	num          min          = INF_COSTS;
+	unsigned     bucket_index;
 
 	assert(pbqp);
 	assert(node);
-	node_vec = node->costs;
-	node_len = node_vec->len;
+	node_vec     = node->costs;
+	node_len     = node_vec->len;
+	bucket_index = node->bucket_index;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		pbqp_node_bucket bucket_deg0;
@@ -889,7 +891,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		node_bucket_deep_copy(pbqp, &bucket_red, reduced_bucket);
 
 		/* Select alternative and solve PBQP recursively. */
-		select_alternative(node, node_index);
+		select_alternative(node_buckets[3][bucket_index], node_index);
 		apply_brute_force_reductions(pbqp);
 
 		value = determine_solution(pbqp->dump_file);
