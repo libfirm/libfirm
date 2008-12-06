@@ -94,7 +94,7 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 				edge_copy = edge;
 			}
 		} else {
-			if (node_bucket_contains(old_bucket, edge->tgt)) {
+			if (node_bucket_contains(old_bucket, edge->src)) {
 				/* Edge isn't copied before */
 				edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
 			} else {
