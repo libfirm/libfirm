@@ -2,6 +2,7 @@
 
 #include "assert.h"
 
+#include "bucket.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
@@ -71,7 +72,7 @@ unsigned pbqp_node_get_degree(pbqp_node *node)
 	return ARR_LEN(node->edges);
 }
 
-pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
+pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_node *node)
 {
 	unsigned   edge_index;
 	unsigned   edge_length = pbqp_node_get_degree(node);
@@ -85,9 +86,21 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
 		int        is_src    = edge->src == node;
 
 		if (is_src) {
-			edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
+			if (node_bucket_contains(old_bucket, edge->tgt)) {
+				/* Edge isn't copied before */
+				edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
+			} else {
+				edge->src = copy;
+				edge_copy = edge;
+			}
 		} else {
-			edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
+			if (node_bucket_contains(old_bucket, edge->tgt)) {
+				/* Edge isn't copied before */
+				edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
+			} else {
+				edge->tgt = copy;
+				edge_copy = edge;
+			}
 		}
 		ARR_APP1(pbqp_edge *, copy->edges, edge_copy);
 	}
@@ -96,5 +109,5 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
 	copy->solution     = node->solution;
 	copy->index   = node->index;
 
-	return node;
+	return copy;
 }
