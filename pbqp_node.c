@@ -87,7 +87,7 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 
 		if (is_src) {
 			unsigned other_index = edge->tgt->bucket_index;
-			unsigned is_copied   = is_connected(old_bucket[other_index], edge);
+			unsigned is_copied   = other_index < node->bucket_index;
 
 			if (is_copied) {
 				edge->src = copy;
@@ -97,7 +97,7 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 			}
 		} else {
 			unsigned other_index = edge->src->bucket_index;
-			unsigned is_copied   = is_connected(old_bucket[other_index], edge);
+			unsigned is_copied   = other_index < node->bucket_index;
 
 			if (is_copied) {
 				edge->tgt = copy;
