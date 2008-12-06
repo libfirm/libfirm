@@ -542,6 +542,8 @@ void apply_RI(pbqp *pbqp)
 	int          is_src     = edge->src == node;
 	pbqp_node   *other_node;
 
+	assert(pbqp_node_get_degree(node) == 1);
+
 	if (is_src) {
 		other_node = edge->tgt;
 	} else {
@@ -602,6 +604,7 @@ void apply_RII(pbqp *pbqp)
 	unsigned     node_len;
 
 	assert(pbqp);
+	assert(pbqp_node_get_degree(node) == 2);
 
 	if (src_is_src) {
 		src_node = src_edge->tgt;
@@ -817,6 +820,7 @@ void apply_RN(pbqp *pbqp)
 	/* We want to reduce a node with maximum degree. */
 	node = get_node_with_max_degree();
 	assert(node);
+	assert(pbqp_node_get_degree(node) > 2);
 
 	if (pbqp->dump_file) {
 		char     txt[100];
@@ -877,6 +881,8 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		assert(node_bucket_get_length(node_buckets[2]) == 0);
 		assert(edge_bucket_get_length(edge_bucket)     == 0);
 
+		char *tmp = obstack_finish(&pbqp->obstack);
+
 		/* Save current PBQP state. */
 		node_bucket_deep_copy(pbqp, &bucket_deg0, node_buckets[0]);
 		node_bucket_deep_copy(pbqp, &bucket_deg3, node_buckets[3]);
@@ -909,6 +915,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		node_bucket_copy(&reduced_bucket, bucket_red);
 
 		/* Free copies. */
+		obstack_free(&pbqp->obstack, tmp);
 		node_bucket_free(&bucket_deg0);
 		node_bucket_free(&bucket_deg3);
 		node_bucket_free(&bucket_red);
@@ -927,6 +934,7 @@ void apply_Brute_Force(pbqp *pbqp)
 	/* We want to reduce a node with maximum degree. */
 	node = get_node_with_max_degree();
 	assert(node);
+	assert(pbqp_node_get_degree(node) > 2);
 
 	if (pbqp->dump_file) {
 		char     txt[100];
