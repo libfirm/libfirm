@@ -718,11 +718,11 @@ static void select_alternative(pbqp_node *node, unsigned selected_index)
 	vector   *node_vec;
 	unsigned  max_degree = pbqp_node_get_degree(node);
 
-	assert(selected_index < max_degree);
 	assert(node);
 	node->solution = selected_index;
 	node_vec = node->costs;
 	node_len = node_vec->len;
+	assert(selected_index < node_len);
 
 	/* Set all other costs to infinity. */
 	for (node_index = 0; node_index < node_len; ++node_index) {
