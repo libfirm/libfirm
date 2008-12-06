@@ -435,7 +435,7 @@ num determine_solution(FILE *file)
 {
 	unsigned node_index;
 	unsigned node_len;
-	num      solution;
+	num      solution   = 0;
 
 	if (file) {
 		dump_section(file, 1, "4. Determine Solution/Minimum");
