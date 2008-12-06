@@ -80,7 +80,16 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node *node)
 
 	copy->edges        = NEW_ARR_F(pbqp_edge *, 0);
 	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
-		ARR_APP1(pbqp_edge *, copy->edges, pbqp_edge_deep_copy(pbqp, node->edges[edge_index]));
+		pbqp_edge *edge_copy;
+		pbqp_edge *edge      = node->edges[edge_index];
+		int        is_src    = edge->src == node;
+
+		if (is_src) {
+			edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
+		} else {
+			edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
+		}
+		ARR_APP1(pbqp_edge *, copy->edges, edge_copy);
 	}
 	copy->costs        = vector_copy(pbqp, node->costs);
 	copy->bucket_index = node->bucket_index;

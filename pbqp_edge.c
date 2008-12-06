@@ -65,7 +65,20 @@ void delete_edge(pbqp_edge *edge)
 	disconnect_edge(tgt_node, edge);
 }
 
-pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge)
+pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge,
+		pbqp_node *src_node, pbqp_node *tgt_node)
 {
-	return alloc_edge(pbqp, edge->src->index, edge->tgt->index, edge->costs);
+	pbqp_edge *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy));
+	assert(copy);
+	assert(src_node);
+	assert(tgt_node);
+
+	copy->costs = pbqp_matrix_copy(pbqp, edge->costs);
+
+	/* Connect edge with incident nodes. */
+	copy->src = src_node;
+	copy->tgt = tgt_node;
+	copy->bucket_index = UINT_MAX;
+
+	return copy;
 }
