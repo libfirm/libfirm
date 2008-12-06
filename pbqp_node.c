@@ -72,7 +72,7 @@ unsigned pbqp_node_get_degree(pbqp_node *node)
 	return ARR_LEN(node->edges);
 }
 
-pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_node *node)
+pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket new_bucket, pbqp_node *node)
 {
 	unsigned   edge_index;
 	unsigned   edge_length = pbqp_node_get_degree(node);
@@ -90,8 +90,16 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 			unsigned is_copied   = other_index < node->bucket_index;
 
 			if (is_copied) {
-				edge->src = copy;
-				edge_copy = edge;
+				pbqp_node *other_copy = new_bucket[other_index];
+				unsigned degree = pbqp_node_get_degree(other_copy);
+				unsigned index;
+
+				for (index = 0; index < degree; ++index) {
+					if (other_copy->edges[index]->src == node) {
+						edge_copy = other_copy->edges[index];
+						break;
+					}
+				}
 			} else {
 				edge_copy = pbqp_edge_deep_copy(pbqp, edge, copy, edge->tgt);
 			}
@@ -100,8 +108,16 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket old_bucket, pbqp_nod
 			unsigned is_copied   = other_index < node->bucket_index;
 
 			if (is_copied) {
-				edge->tgt = copy;
-				edge_copy = edge;
+				pbqp_node *other_copy = new_bucket[other_index];
+				unsigned degree = pbqp_node_get_degree(other_copy);
+				unsigned index;
+
+				for (index = 0; index < degree; ++index) {
+					if (other_copy->edges[index]->tgt == node) {
+						edge_copy = other_copy->edges[index];
+						break;
+					}
+				}
 			} else {
 				edge_copy = pbqp_edge_deep_copy(pbqp, edge, edge->src, copy);
 			}

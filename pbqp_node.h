@@ -12,6 +12,7 @@ int is_connected(pbqp_node *node, pbqp_edge *edge);
 
 unsigned pbqp_node_get_degree(pbqp_node *node);
 
-pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket bucket, pbqp_node *node);
+pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket new_bucket,
+		pbqp_node *node);
 
 #endif /* KAPS_PBQP_NODE_H */
