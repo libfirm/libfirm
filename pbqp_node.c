@@ -96,7 +96,8 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket new_bucket, pbqp_nod
 
 				for (index = 0; index < degree; ++index) {
 					if (other_copy->edges[index]->src == node) {
-						edge_copy = other_copy->edges[index];
+						edge_copy      = other_copy->edges[index];
+						edge_copy->src = copy;
 						break;
 					}
 				}
@@ -114,7 +115,8 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket new_bucket, pbqp_nod
 
 				for (index = 0; index < degree; ++index) {
 					if (other_copy->edges[index]->tgt == node) {
-						edge_copy = other_copy->edges[index];
+						edge_copy      = other_copy->edges[index];
+						edge_copy->tgt = copy;
 						break;
 					}
 				}
