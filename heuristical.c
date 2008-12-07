@@ -521,6 +521,8 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
+	//printf("solution: %lld\n", pbqp->solution);
+
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
 
@@ -965,6 +967,8 @@ void solve_pbqp_brute_force(pbqp *pbqp)
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
+	//printf("solution: %lld\n", pbqp->solution);
+
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
 
@@ -990,10 +994,18 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 	if (is_src) {
 		other = edge->tgt;
 		assert(other);
+
+		/* Update pointer for brute force solver. */
+		other = pbqp->nodes[other->index];
+
 		vector_add_matrix_col(vec, mat, other->solution);
 	} else {
 		other = edge->src;
 		assert(other);
+
+		/* Update pointer for brute force solver. */
+		other = pbqp->nodes[other->index];
+
 		vector_add_matrix_row(vec, mat, other->solution);
 	}
 
@@ -1048,6 +1060,10 @@ void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 		src_is_src = src_edge->src == node;
 		tgt_is_src = tgt_edge->src == node;
 	}
+
+	/* Update pointer for brute force solver. */
+	src_node = pbqp->nodes[src_node->index];
+	tgt_node = pbqp->nodes[tgt_node->index];
 
 	src_mat = src_edge->costs;
 	tgt_mat = tgt_edge->costs;
