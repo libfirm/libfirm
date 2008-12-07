@@ -912,7 +912,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		/* ... and restore old PBQP state. */
 		node_bucket_shrink(&node_buckets[0], bucket_0_length);
 		node_bucket_shrink(&reduced_bucket, bucket_red_length);
-		node_bucket_copy(&node_buckets[3], bucket_deg3);
+		node_bucket_copy(pbqp, &node_buckets[3], bucket_deg3);
 
 		/* Free copies. */
 		/* obstack_free(&pbqp->obstack, tmp); */
@@ -942,6 +942,7 @@ void apply_Brute_Force(pbqp *pbqp)
 	}
 
 	min_index = get_minimal_alternative(pbqp, node);
+	node = pbqp->nodes[node->index];
 
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
