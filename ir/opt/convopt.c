@@ -115,10 +115,6 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return 1;
 	}
 
-	if (is_Conv(node) && is_downconv(mode, dest_mode)) {
-		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
-	}
-
 #if 0 // TODO
 	/* Take the minimum of the conversion costs for Phi predecessors as only one
 	 * branch is actually executed at a time */
@@ -138,7 +134,15 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 #endif
 
-	if (!mode_is_int(mode) || !is_optimizable_node(node)) {
+	if (!is_downconv(mode, dest_mode)) {
+		return 1;
+	}
+
+	if (is_Conv(node)) {
+		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
+	}
+
+	if (!is_optimizable_node(node)) {
 		return 1;
 	}
 
@@ -190,11 +194,15 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return place_conv(node, dest_mode);
 	}
 
-	if (is_Conv(node) && is_downconv(mode, dest_mode)) {
+	if (!is_downconv(mode, dest_mode)) {
+		return place_conv(node, dest_mode);
+	}
+
+	if (is_Conv(node)) {
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
-	if (!mode_is_int(mode) || !is_optimizable_node(node)) {
+	if (!is_optimizable_node(node)) {
 		return place_conv(node, dest_mode);
 	}
 
