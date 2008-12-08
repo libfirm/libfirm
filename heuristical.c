@@ -890,7 +890,10 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		/* char *tmp = obstack_finish(&pbqp->obstack); */
 
 		/* Save current PBQP state. */
-		node_bucket_deep_copy(pbqp, &bucket_deg3, node_buckets[3]);
+		node_bucket_copy(&bucket_deg3, node_buckets[3]);
+		node_bucket_shrink(&node_buckets[3], 0);
+		node_bucket_deep_copy(pbqp, &node_buckets[3], bucket_deg3);
+		node_bucket_update(pbqp, node_buckets[3]);
 		bucket_0_length   = node_bucket_get_length(node_buckets[0]);
 		bucket_red_length = node_bucket_get_length(reduced_bucket);
 
