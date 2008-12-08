@@ -1701,7 +1701,7 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
 		shift         = exp_val - mantissa_size;
 
-		mantissa_size += a->desc.explicit_one;
+		mantissa_size += 1;
 		if (shift > 0) {
 			sc_shlI(_mant(a),  shift, mantissa_size, 0, result);
 		} else {

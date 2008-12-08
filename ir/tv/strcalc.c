@@ -847,9 +847,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 		carry_flag = 1;
 
 	/* shift digits to the right with offset, carry and all */
-	if ((bitsize >> 2) > shift_nib) {
-		buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
-	}
+	buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
 	for (counter = 1; counter < ((bitsize + 3) >> 2) - shift_nib; counter++) {
 		shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
 		buffer[counter]     = shrs[0];
