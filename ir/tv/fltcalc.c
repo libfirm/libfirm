@@ -1690,6 +1690,7 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 		int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 		int shift, highest;
+		int mantissa_size;
 
 		if (a->sign && !mode_is_signed(dst_mode)) {
 			/* FIXME: for now we cannot convert this */
@@ -1697,12 +1698,14 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
 		}
 
 		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
-		shift = exp_val - (a->desc.mantissa_size + ROUNDING_BITS);
+		mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
+		shift         = exp_val - mantissa_size;
 
+		mantissa_size += a->desc.explicit_one;
 		if (shift > 0) {
-			sc_shlI(_mant(a),  shift, 64, 0, result);
+			sc_shlI(_mant(a),  shift, mantissa_size, 0, result);
 		} else {
-			sc_shrI(_mant(a), -shift, 64, 0, result);
+			sc_shrI(_mant(a), -shift, mantissa_size, 0, result);
 		}
 
 		/* check for overflow */

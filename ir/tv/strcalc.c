@@ -847,15 +847,13 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 		carry_flag = 1;
 
 	/* shift digits to the right with offset, carry and all */
-	counter = 0;
 	if ((bitsize >> 2) > shift_nib) {
-		buffer[counter] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
-		counter = 1;
+		buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
 	}
-	for (; counter < bitsize/4 - shift_nib; counter++) {
+	for (counter = 1; counter < ((bitsize + 3) >> 2) - shift_nib; counter++) {
 		shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
-		buffer[counter] = shrs[0];
-		buffer[counter-1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
+		buffer[counter]     = shrs[0];
+		buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
 	}
 
 	/* the last digit is special in regard of signed/unsigned shift */
