@@ -136,7 +136,6 @@ void node_bucket_deep_copy(pbqp *pbqp, pbqp_node_bucket *dst, pbqp_node_bucket s
 	unsigned          bucket_index;
 	unsigned          bucket_length;
 
-	node_bucket_init(dst);
 	bucket_length = node_bucket_get_length(src);
 
 	for (bucket_index = 0; bucket_index < bucket_length; ++bucket_index) {

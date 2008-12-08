@@ -880,6 +880,8 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		unsigned         bucket_0_length;
 		unsigned         bucket_red_length;
 
+		node_bucket_init(&bucket_deg3);
+
 		/* Some node buckets and the edge bucket should be empty. */
 		assert(node_bucket_get_length(node_buckets[1]) == 0);
 		assert(node_bucket_get_length(node_buckets[2]) == 0);
