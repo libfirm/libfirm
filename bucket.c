@@ -63,14 +63,23 @@ int node_bucket_contains(pbqp_node_bucket bucket, pbqp_node *node)
 			&& bucket[node->bucket_index] == node;
 }
 
-void node_bucket_copy(pbqp *pbqp, pbqp_node_bucket *dst, pbqp_node_bucket src)
+void node_bucket_copy(pbqp_node_bucket *dst, pbqp_node_bucket src)
 {
 	unsigned src_index;
 	unsigned src_length = node_bucket_get_length(src);
 
 	for (src_index = 0; src_index < src_length; ++src_index) {
 		node_bucket_insert(dst, src[src_index]);
-		pbqp->nodes[src[src_index]->index] = src[src_index];
+	}
+}
+
+void node_bucket_update(pbqp *pbqp, pbqp_node_bucket bucket)
+{
+	unsigned index;
+	unsigned length = node_bucket_get_length(bucket);
+
+	for (index = 0; index < length; ++index) {
+		pbqp->nodes[bucket[index]->index] = bucket[index];
 	}
 }
 
