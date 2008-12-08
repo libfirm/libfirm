@@ -2299,6 +2299,33 @@ static int ia32_is_valid_clobber(const void *self, const char *clobber)
 }
 
 /**
+ * Create the trampoline code.
+ */
+static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
+{
+	ir_graph *irg    = get_Block_irg(block);
+	ir_node  *st, *p = trampoline;
+	ir_mode *mode    = get_irn_mode(p);
+
+	/* mov  ecx,<env> */
+	st  = new_r_Store(irg, block, mem, p, new_Const_long(mode_Bu, 0xb9));
+	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 1), mode);
+	st  = new_r_Store(irg, block, mem, p, env);
+	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 4), mode);
+	/* jmp  <callee> */
+	st  = new_r_Store(irg, block, mem, p, new_Const_long(mode_Bu, 0xe9));
+	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 1), mode);
+	st  = new_r_Store(irg, block, mem, p, callee);
+	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 4), mode);
+
+	return mem;
+}
+
+/**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *ia32_get_libfirm_params(void) {
@@ -2319,12 +2346,13 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	static backend_params p = {
 		1,     /* need dword lowering */
 		1,     /* support inline assembly */
-		0,     /* no immediate floating point mode. */
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
 		NULL,  /* will be set below */
-		NULL   /* will be set below */
+		12,    /* size of trampoline code */
+		4,     /* alignment of trampoline code */
+		ia32_create_trampoline_fkt,
 	};
 
 	ia32_setup_cg_config();

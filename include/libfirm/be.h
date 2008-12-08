@@ -49,6 +49,18 @@ typedef enum {
 } asm_constraint_flags_t;
 
 /**
+ * Build a Trampoline for the closure.
+ * @param block       the block where to build the trampoline
+ * @param mem         memory
+ * @param trampoline  address of a trampoline region
+ * @param env         address of the environment
+ * @param callee      address of the function to call
+ *
+ * @return modified memory
+ */
+typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee);
+
+/**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
  */
@@ -57,8 +69,6 @@ typedef struct backend_params {
 	unsigned do_dw_lowering:1;
 	/** If set, the backend supports inline assembly. */
 	unsigned support_inline_asm:1;
-	/** If set, the target architecture use an immediate floating point mode. */
-	unsigned has_imm_fp_mode:1;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
@@ -72,9 +82,14 @@ typedef struct backend_params {
 	/** Backend settings for if-conversion. */
 	const ir_settings_if_conv_t *if_conv_info;
 
-	/** The immediate floating point mode. Temporaries are calculated using
-	 * this mode. */
-	ir_mode *imm_fp_mode;
+	/** Size of the trampoline code. */
+	unsigned trampoline_size;
+
+	/** Alignment of the trampoline code. */
+	unsigned trampoline_align;
+
+	/** If non-zero, build the trampoline. */
+	create_trampoline_fkt *build_trampoline;
 } backend_params;
 
 /**
