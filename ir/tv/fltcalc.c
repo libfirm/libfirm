@@ -1015,7 +1015,7 @@ done:
 	ieee_descriptor_t tmp_desc;
 	(void) len;
 
-#ifdef HAVE_LONG_DOUBLE
+#if defined(HAVE_LONG_DOUBLE) && !defined(__CYGWIN__)
 	val = strtold(str, NULL);
 	DEBUGPRINTF(("val_from_str(%s)\n", str));
 	tmp_desc.exponent_size = 15;
