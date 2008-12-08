@@ -811,7 +811,10 @@ static void _trunc(const fp_value *a, fp_value *result) {
 	/* and the mask and return the result */
 	sc_and(_mant(a), temp, _mant(result));
 
-	if (a != result) memcpy(_exp(result), _exp(a), value_size);
+	if (a != result) {
+		memcpy(_exp(result), _exp(a), value_size);
+		result->sign = a->sign;
+	}
 }
 
 /********
