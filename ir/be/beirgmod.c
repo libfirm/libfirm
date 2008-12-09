@@ -193,7 +193,7 @@ static void remove_empty_block(ir_node *block)
 	foreach_out_edge_safe(block, edge, next) {
 		node = get_edge_src_irn(edge);
 
-		if(node == jump)
+		if (node == jump)
 			continue;
 		if (is_Block(node)) {
 			/* a Block->Block edge: This should be the MacroBlock
@@ -215,6 +215,12 @@ static void remove_empty_block(ir_node *block)
 			continue;
 		}
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
+	}
+
+	if (has_Block_label(block)) {
+		/* move the label to the successor block */
+		ir_label_t label = get_Block_label(block);
+		set_Block_label(succ_block, label);
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
@@ -246,9 +252,9 @@ int be_remove_empty_blocks(ir_graph *irg)
 	remove_empty_block(get_irg_end_block(irg));
 	end   = get_irg_end(irg);
 	arity = get_irn_arity(end);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(end, i);
-		if(!is_Block(pred))
+		if (!is_Block(pred))
 			continue;
 		remove_empty_block(pred);
 	}
