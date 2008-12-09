@@ -224,8 +224,11 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
 
 	*changed |= remove_senseless_conds(block);
 
-	/* clear the block mark of all blocks */
-	set_Block_removable(block);
+	/* clear the block mark of all blocks that have NO label */
+	if (has_Block_label(block))
+		set_Block_removable(block);
+	else
+		set_Block_non_removable(block);
 }
 
 /**

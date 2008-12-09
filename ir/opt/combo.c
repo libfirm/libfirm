@@ -1878,8 +1878,8 @@ static void compute_Block(node_t *node) {
 	int     i;
 	ir_node *block = node->node;
 
-	if (block == get_irg_start_block(current_ir_graph)) {
-		/* start block is always reachable */
+	if (block == get_irg_start_block(current_ir_graph) || has_Block_label(block)) {
+		/* start block and labelled blocks are always reachable */
 		node->type.tv = tarval_reachable;
 		return;
 	}
@@ -2914,10 +2914,11 @@ static int only_one_reachable_proj(ir_node *n) {
  * Return non-zero if the control flow predecessor node pred
  * is the only reachable control flow exit of its block.
  *
- * @param pred  the control flow exit
+ * @param pred   the control flow exit
+ * @param block  the destination block
  */
-static int can_exchange(ir_node *pred) {
-	if (is_Start(pred))
+static int can_exchange(ir_node *pred, ir_node *block) {
+	if (is_Start(pred) || has_Block_label(block))
 		return 0;
 	else if (is_Jmp(pred))
 		return 1;
@@ -2983,7 +2984,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		/* only one predecessor combine */
 		ir_node *pred = skip_Proj(get_Block_cfgpred(block, 0));
 
-		if (can_exchange(pred)) {
+		if (can_exchange(pred, block)) {
 			ir_node *new_block = get_nodes_block(pred);
 			DB((dbg, LEVEL_1, "Fuse %+F with %+F\n", block, new_block));
 			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
@@ -3074,7 +3075,7 @@ static void apply_cf(ir_node *block, void *ctx) {
 		/* this Block has only one live predecessor */
 		ir_node *pred = skip_Proj(in_X[0]);
 
-		if (can_exchange(pred)) {
+		if (can_exchange(pred, block)) {
 			ir_node *new_block = get_nodes_block(pred);
 			DBG_OPT_COMBO(block, new_block, FS_OPT_COMBO_CF);
 			exchange(block, new_block);

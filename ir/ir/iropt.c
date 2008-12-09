@@ -757,8 +757,8 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	ir_node *oldn = n;
 	int     n_preds;
 
-	/* don't optimize dead blocks */
-	if (is_Block_dead(n))
+	/* don't optimize dead or labeled blocks */
+	if (is_Block_dead(n) || has_Block_label(n))
 		return n;
 
 	n_preds = get_Block_n_cfgpreds(n);
