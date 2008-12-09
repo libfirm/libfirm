@@ -68,11 +68,6 @@ lc_opt_entry_t *firm_opt_get_root(void) {
 	return grp;
 }
 
-void firm_init_options(const char *arg_prefix, int argc, const char **argv) {
-	/* parse commandline */
-	lc_opt_from_argv(firm_opt_get_root(), arg_prefix, argc, argv, NULL);
-}
-
 void init_firm(const firm_parameter_t *param)
 {
 	firm_parameter_t def_params;
@@ -179,14 +174,26 @@ void free_firm(void) {
 	firm_be_finish();
 }
 
-/* Returns the libFirm version number. */
-void firm_get_version(firm_version_t *version) {
-	version->major    = libfirm_VERSION_MAJOR;
-	version->minor    = libfirm_VERSION_MINOR;
+unsigned firm_get_version_major(void)
+{
+	return libfirm_VERSION_MAJOR;
+}
+
+unsigned firm_get_version_minor(void)
+{
+	return libfirm_VERSION_MINOR;
+}
+
+const char *firm_get_version_revision(void)
+{
 #ifdef libfirm_VERSION_REVISION
-	version->revision = libfirm_VERSION_REVISION;
+	return libfirm_VERSION_REVISION;
 #else
-	version->revision = "";
+	return "";
 #endif
-	version->build    = "";
+}
+
+const char *firm_get_version_build(void)
+{
+	return "";
 }

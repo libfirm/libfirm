@@ -171,25 +171,6 @@ struct _firm_parameter_t {
 
 typedef struct _firm_parameter_t firm_parameter_t;
 
-/* Set a version number if it has not been set in environment */
-#ifndef libfirm_VERSION_MAJOR
-#define libfirm_VERSION_MAJOR 1
-#endif
-
-#ifndef libfirm_VERSION_MINOR
-#define libfirm_VERSION_MINOR 4
-#endif
-
-/**
- * The Firm version number.
- */
-typedef struct _firm_version_t {
-  unsigned major;
-  unsigned minor;
-  const char *revision;
-  const char *build;
-} firm_version_t;
-
 /**
  * Initialize the firm library.
  *
@@ -208,16 +189,14 @@ void init_firm(const firm_parameter_t *params);
  */
 void free_firm(void);
 
-/**
- * Returns the libFirm version number.
- * If statically linked, always libFirm_VERSION_MAJOR, libFirm_VERSION_MINOR
- */
-void firm_get_version(firm_version_t *version);
-
-/**
- * Read initializations arguments from the .init file.
- */
-void firm_init_options(const char *arg_prefix, int argc, const char **argv);
+/** returns the libFirm major version number */
+unsigned firm_get_version_major(void);
+/** returns libFirm minor version number */
+unsigned firm_get_version_minor(void);
+/** returns string describing libFirm revision */
+const char *firm_get_version_revision(void);
+/** returns string describing libFirm build */
+const char *firm_get_version_build(void);
 
 #ifdef __cplusplus
 }
