@@ -182,21 +182,21 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * The parameter struct may be NULL. In that case, the original FIRM behavior
  * is conserved.
  */
-void init_firm(const firm_parameter_t *params);
+void ir_init(const firm_parameter_t *params);
 
 /**
  * Frees all memory occupied by the firm library.
  */
-void free_firm(void);
+void ir_finish(void);
 
 /** returns the libFirm major version number */
-unsigned firm_get_version_major(void);
+unsigned ir_get_version_major(void);
 /** returns libFirm minor version number */
-unsigned firm_get_version_minor(void);
+unsigned ir_get_version_minor(void);
 /** returns string describing libFirm revision */
-const char *firm_get_version_revision(void);
+const char *ir_get_version_revision(void);
 /** returns string describing libFirm build */
-const char *firm_get_version_build(void);
+const char *ir_get_version_build(void);
 
 #ifdef __cplusplus
 }

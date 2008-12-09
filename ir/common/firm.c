@@ -68,7 +68,7 @@ lc_opt_entry_t *firm_opt_get_root(void) {
 	return grp;
 }
 
-void init_firm(const firm_parameter_t *param)
+void ir_init(const firm_parameter_t *param)
 {
 	firm_parameter_t def_params;
 	unsigned int     size;
@@ -149,7 +149,8 @@ void init_firm(const firm_parameter_t *param)
 #endif
 }
 
-void free_firm(void) {
+void ir_finish(void)
+{
 	int i;
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
@@ -174,17 +175,17 @@ void free_firm(void) {
 	firm_be_finish();
 }
 
-unsigned firm_get_version_major(void)
+unsigned ir_get_version_major(void)
 {
 	return libfirm_VERSION_MAJOR;
 }
 
-unsigned firm_get_version_minor(void)
+unsigned ir_get_version_minor(void)
 {
 	return libfirm_VERSION_MINOR;
 }
 
-const char *firm_get_version_revision(void)
+const char *ir_get_version_revision(void)
 {
 #ifdef libfirm_VERSION_REVISION
 	return libfirm_VERSION_REVISION;
@@ -193,7 +194,7 @@ const char *firm_get_version_revision(void)
 #endif
 }
 
-const char *firm_get_version_build(void)
+const char *ir_get_version_build(void)
 {
 	return "";
 }
