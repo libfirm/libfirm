@@ -120,6 +120,8 @@ extern "C" {
 
 #include "iredges.h"
 
+#include "be.h"
+
 /**
  * libFirm initialization parameters.
  */

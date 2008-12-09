@@ -2770,6 +2770,8 @@ get_d_value(dbg_info *db, int pos, ir_mode *mode) {
 	inc_irg_visited(irg);
 	(void) db;
 
+	assert(pos >= 0);
+
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
 }  /* get_d_value */
 
@@ -2784,6 +2786,7 @@ void
 set_value(int pos, ir_node *value) {
 	ir_graph *irg = current_ir_graph;
 	assert(get_irg_phase_state(irg) == phase_building);
+	assert(pos >= 0);
 	assert(pos+1 < irg->n_loc);
 	assert(is_ir_node(value));
 	irg->current_block->attr.block.graph_arr[pos + 1] = value;
