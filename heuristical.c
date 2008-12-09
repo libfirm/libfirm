@@ -880,6 +880,8 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		unsigned         bucket_0_length;
 		unsigned         bucket_red_length;
 
+		char *tmp = obstack_finish(&pbqp->obstack);
+
 		node_bucket_init(&bucket_deg3);
 
 		/* Some node buckets and the edge bucket should be empty. */
@@ -925,6 +927,8 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		/* Free copies. */
 		/* obstack_free(&pbqp->obstack, tmp); */
 		node_bucket_free(&bucket_deg3);
+
+		obstack_free(&pbqp->obstack, tmp);
 	}
 
 	return min_index;
