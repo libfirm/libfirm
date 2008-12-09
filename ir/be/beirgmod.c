@@ -184,8 +184,21 @@ static void remove_empty_block(ir_node *block)
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
+		if (has_Block_label(succ_block) && has_Block_label(block)) {
+			/*
+			 * Currently we can add only one label for a block.
+			 * Therefore we cannot combine them if  both block already have one.
+			 */
+			goto check_preds;
+		}
 
 		set_irn_n(succ_block, pos, pred);
+	}
+
+	if (has_Block_label(block)) {
+		/* move the label to the successor block */
+		ir_label_t label = get_Block_label(block);
+		set_Block_label(succ_block, label);
 	}
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them
@@ -215,12 +228,6 @@ static void remove_empty_block(ir_node *block)
 			continue;
 		}
 		panic("Unexpected node %+F in block %+F with empty schedule", node, block);
-	}
-
-	if (has_Block_label(block)) {
-		/* move the label to the successor block */
-		ir_label_t label = get_Block_label(block);
-		set_Block_label(succ_block, label);
 	}
 
 	set_Block_cfgpred(block, 0, new_Bad());
