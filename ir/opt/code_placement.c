@@ -304,10 +304,8 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 	return dca;
 }
 
-/* FIXME: the name clashes here with the function from ana/field_temperature.c
- * please rename. */
-static inline int get_irn_loop_depth(ir_node *n) {
-	return get_loop_depth(get_irn_loop(n));
+static inline int get_block_loop_depth(ir_node *block) {
+	return get_loop_depth(get_irn_loop(block));
 }
 
 /**
@@ -331,7 +329,7 @@ static void move_out_of_loops(ir_node *n, ir_node *early) {
 	while (dca != early) {
 		dca = get_Block_idom(dca);
 		if (!dca || is_Bad(dca)) break; /* may be Bad if not reachable from Start */
-		if (get_irn_loop_depth(dca) < get_irn_loop_depth(best)) {
+		if (get_block_loop_depth(dca) < get_block_loop_depth(best)) {
 			best = dca;
 		}
 	}
