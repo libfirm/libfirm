@@ -631,13 +631,12 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	if (destroy_all_regs) {
-		/* even if destroyed all is specified, neither SP for FP are destroyed (else bad things will happen) */
+		/* even if destroyed all is specified, neither SP nor FP are destroyed (else bad things will happen) */
 		pset_new_remove(&destroyed_regs, arch_env->sp);
 		pset_new_remove(&destroyed_regs, arch_env->bp);
 	}
 
-
-	/* search the greatest result proj number */
+	/* search the largest result proj number */
 	res_projs = ALLOCANZ(ir_node*, n_res);
 
 	foreach_out_edge(irn, edge) {
