@@ -632,18 +632,19 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
 		for (i = j = 0; i < arity; i++) {
 			ir_node *pred = get_End_keepalive(end, i);
 
-			if (is_Block(pred)) {
-				if (Block_block_visited(pred))
+			if (!is_Block(pred)) {
+				pred = get_nodes_block(pred);
+				if (!is_Block(pred)) {
+					/* a node which has a bad block input: kill it */
 					continue;
-
-				/* we found an endless loop */
-				dec_irg_block_visited(irg);
-				irg_block_walk(pred, pre, NULL, &n_blocks);
+				}
 			}
+			dec_irg_block_visited(irg);
+			irg_block_walk(pred, pre, NULL, &n_blocks);
 			in[j++] = pred;
 		}
 		if (j != arity) {
-			/* we kill some Block keep-alives */
+			/* we kill some keep-alives */
 			set_End_keepalives(end, j, in);
 			set_irg_outs_inconsistent(irg);
 		}

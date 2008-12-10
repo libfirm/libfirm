@@ -574,13 +574,13 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
 	if (!Block_block_visited(node)) {
 		mark_Block_block_visited(node);
 
-		if(pre) pre(node, env);
+		if (pre) pre(node, env);
 
 		for(i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
 			/* find the corresponding predecessor block. */
 			ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
 			pred = get_nodes_block(pred);
-			if(get_irn_opcode(pred) == iro_Block) {
+			if (get_irn_opcode(pred) == iro_Block) {
 				/* recursion */
 				irg_block_walk_2(pred, pre, post, env);
 			}
@@ -589,7 +589,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
 			}
 		}
 
-		if(post) post(node, env);
+		if (post) post(node, env);
 	}
 }
 
@@ -606,7 +606,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 
 	assert(node);
 	assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
-					       * interleaves with irg_walk */
+	                                        * interleaves with irg_walk */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 	block = is_Block(node) ? node : get_nodes_block(node);
@@ -618,19 +618,16 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 		int arity = get_irn_arity(node);
 		for (i = 0; i < arity; i++) {
 			pred = get_irn_n(node, i);
-			if (is_Block(pred))
-				irg_block_walk_2(pred, pre, post, env);
-		}
-		/* Sometimes the blocks died, but are still reachable through Phis.
-		* Make sure the algorithms that try to remove these reach them. */
-		for (i = 0; i < arity; i++) {
-			pred = get_irn_n(node, i);
-			if (get_irn_op(pred) == op_Phi) {
-				ir_node *block = get_nodes_block(pred);
-
-				if (! is_Bad(block))
-					irg_block_walk_2(block, pre, post, env);
+			if (!is_Block(pred)) {
+				pred = get_nodes_block(pred);
+				if (!is_Block(pred)) {
+					/* if rare cases a kept node might have a bad block input */
+					continue;
+				}
 			}
+			/* Sometimes the blocks died, but are still reachable through kept nodes.
+			 * Make sure the algorithms that try to remove these reach them. */
+			irg_block_walk_2(pred, pre, post, env);
 		}
 	}
 
