@@ -2119,7 +2119,7 @@ static int psi_is_Abs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
 
 
 /**
- * Allows or disallows the creation of Psi nodes for the given Phi nodes.
+ * Allows or disallows the creation of Mux nodes for the given Phi nodes.
  *
  * @param sel        A selector of a Cond.
  * @param phi_list   List of Phi nodes about to be converted (linked via get_Phi_next() field)
@@ -2128,14 +2128,14 @@ static int psi_is_Abs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f) {
  *
  * @return 1 if allowed, 0 otherwise
  */
-static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
+static int ia32_is_mux_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 {
 	ir_node *phi;
 	ir_node *cmp;
 	pn_Cmp  pn;
 	ir_node *cl, *cr;
 
-	/* we can't handle Psis with 64bit compares yet */
+	/* we can't handle Muxs with 64bit compares yet */
 	if (is_Proj(sel)) {
 		cmp = get_Proj_pred(sel);
 		if (is_Cmp(cmp)) {
@@ -2179,10 +2179,10 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 					/* SSE2 supports Min & Max */
 					if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
 						if (cl == t && cr == f) {
-							/* Psi(a <=/>= b, a, b) => MIN, MAX */
+							/* Mux(a <=/>= b, a, b) => MIN, MAX */
 							continue;
 						} else if (cl == f && cr == t) {
-							/* Psi(a <=/>= b, b, a) => MAX, MIN */
+							/* Mux(a <=/>= b, b, a) => MAX, MIN */
 							continue;
 						}
 					}
@@ -2201,7 +2201,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 					ir_node *t = get_Phi_pred(phi, i);
 					ir_node *f = get_Phi_pred(phi, j);
 
-					/* always support Psi(!float, C1, C2) */
+					/* always support Mux(!float, C1, C2) */
 					if (is_Const(t) && is_Const(f) && !mode_is_float(get_irn_mode(cl)))
 						continue;
 					/* only abs or nabs supported */
@@ -2224,7 +2224,7 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 			f = get_Phi_pred(phi, j);
 
 			if (mode_is_float(mode)) {
-				/* always support Psi(!float, C1, C2) */
+				/* always support Mux(!float, C1, C2) */
 				if (is_Const(t) && is_Const(f) && !mode_is_float(get_irn_mode(cl)))
 					continue;
 				/* only abs or nabs supported */
@@ -2237,38 +2237,38 @@ static int ia32_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 
 			if (is_Const(t) && is_Const(f)) {
 				if ((is_Const_null(t) && is_Const_one(f)) || (is_Const_one(t) && is_Const_null(f))) {
-					/* always support Psi(x, C1, C2) */
+					/* always support Mux(x, C1, C2) */
 					continue;
 				}
 			} else if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
 #if 0
 				if (cl == t && cr == f) {
-					/* Psi(a <=/>= b, a, b) => Min, Max */
+					/* Mux(a <=/>= b, a, b) => Min, Max */
 					continue;
 				}
 				if (cl == f && cr == t) {
-					/* Psi(a <=/>= b, b, a) => Max, Min */
+					/* Mux(a <=/>= b, b, a) => Max, Min */
 					continue;
 				}
 #endif
 				if ((pn & pn_Cmp_Gt) && !mode_is_signed(mode) &&
 				    is_Const(f) && is_Const_null(f) && is_Sub(t) &&
 				    get_Sub_left(t) == cl && get_Sub_right(t) == cr) {
-					/* Psi(a >=u b, a - b, 0) unsigned Doz */
+					/* Mux(a >=u b, a - b, 0) unsigned Doz */
 					continue;
 				}
 				if ((pn & pn_Cmp_Lt) && !mode_is_signed(mode) &&
 				    is_Const(t) && is_Const_null(t) && is_Sub(f) &&
 				    get_Sub_left(f) == cl && get_Sub_right(f) == cr) {
-					/* Psi(a <=u b, 0, a - b) unsigned Doz */
+					/* Mux(a <=u b, 0, a - b) unsigned Doz */
 					continue;
 				}
 				if (is_Const(cr) && is_Const_null(cr)) {
 					if (cl == t && is_Minus(f) && get_Minus_op(f) == cl) {
-						/* Psi(a <=/>= 0 ? a : -a) Nabs/Abs */
+						/* Mux(a <=/>= 0 ? a : -a) Nabs/Abs */
 						continue;
 					} else if (cl == f && is_Minus(t) && get_Minus_op(t) == cl) {
-						/* Psi(a <=/>= 0 ? -a : a) Abs/Nabs */
+						/* Mux(a <=/>= 0 ? -a : a) Abs/Nabs */
 						continue;
 					}
 				}
@@ -2330,8 +2330,8 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
  */
 static const backend_params *ia32_get_libfirm_params(void) {
 	static const ir_settings_if_conv_t ifconv = {
-		4,                    /* maxdepth, doesn't matter for Psi-conversion */
-		ia32_is_psi_allowed   /* allows or disallows Psi creation for given selector */
+		4,                    /* maxdepth, doesn't matter for Mux-conversion */
+		ia32_is_mux_allowed   /* allows or disallows Mux creation for given selector */
 	};
 	static const ir_settings_arch_dep_t ad = {
 		1,                   /* also use subs */
