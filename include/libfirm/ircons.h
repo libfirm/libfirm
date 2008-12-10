@@ -1116,9 +1116,7 @@
 #ifndef FIRM_IR_IRCONS_H
 #define FIRM_IR_IRCONS_H
 
-#include "firm_common.h"
-#include "irnode.h"
-#include "irgraph.h"
+#include "firm_types.h"
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface                                                       */

@@ -521,30 +521,6 @@ ir_type  *get_Const_type(ir_node *node);
 /** Sets the source language type of a Const node. */
 void     set_Const_type(ir_node *node, ir_type *tp);
 
-/**  This enum names the three different kinds of symbolic Constants
-     represented by SymConst.  The content of the attribute type_or_id
-     depends on this tag.  Use the proper access routine after testing
-     this flag. */
-typedef enum {
-	symconst_type_tag,    /**< The SymConst is a type tag for the given type.
-	                           symconst_symbol is type *. */
-	symconst_type_size,   /**< The SymConst is the size of the given type.
-	                           symconst_symbol is type *. */
-	symconst_type_align,  /**< The SymConst is the alignment of the given type.
-	                           symconst_symbol is type *. */
-	symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
-	                           by the linker.  The pointer is represented by a string.
-	                           symconst_symbol is ident *. */
-	symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
-	                           by the linker.  The pointer is represented by an entity.
-	                           symconst_symbol is entity *. */
-	symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
-	                           owner type. */
-	symconst_enum_const,  /**< The SymConst is a enumeration constant of an
-	                           enumeration type. */
-	symconst_label        /**< The SymConst is a label address. */
-} symconst_kind;
-
 /** Returns non-zero if s symconst kind has a type attribute */
 #define SYMCONST_HAS_TYPE(kind) ((kind) <= symconst_type_align)
 
@@ -559,18 +535,6 @@ typedef enum {
 
 /** Returns non-zero if s symconst kind has a label attribute */
 #define SYMCONST_HAS_LABEL(kind) ((kind) == symconst_label)
-
-/** SymConst attribute.
- *
- *  This union contains the symbolic information represented by the node.
- */
-typedef union symconst_symbol {
-	ir_type       *type_p;    /**< The type of a SymConst. */
-	ident         *ident_p;   /**< The ident of a SymConst. */
-	ir_entity     *entity_p;  /**< The entity of a SymConst. */
-	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
-	ir_label_t    label;      /**< The label of a SymConst. */
-} symconst_symbol;
 
 /** Get the kind of the SymConst. */
 symconst_kind get_SymConst_kind(const ir_node *node);
@@ -840,34 +804,6 @@ void     set_Eor_right(ir_node *node, ir_node *right);
 ir_node *get_Not_op(const ir_node *node);
 void     set_Not_op(ir_node *node, ir_node *op);
 
-/**
- * Projection numbers for Cmp are defined several times.
- * The bit patterns are used for various tests, so don't change.
- * The "unordered" values are possible results of comparing
- * floating point numbers.
- * Note that the encoding is imported, so do NOT change the order.
- */
-typedef enum {
-	pn_Cmp_False = 0,                             /**< false */
-	pn_Cmp_Eq    = 1,                             /**< equal */
-	pn_Cmp_Lt    = 2,                             /**< less */
-	pn_Cmp_Le    = pn_Cmp_Eq|pn_Cmp_Lt,           /**< less or equal */
-	pn_Cmp_Gt    = 4,                             /**< greater */
-	pn_Cmp_Ge    = pn_Cmp_Eq|pn_Cmp_Gt,           /**< greater or equal */
-	pn_Cmp_Lg    = pn_Cmp_Lt|pn_Cmp_Gt,           /**< less or greater */
-	pn_Cmp_Leg   = pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt, /**< less, equal or greater = ordered */
-	pn_Cmp_Uo    = 8,                             /**< unordered */
-	pn_Cmp_Ue    = pn_Cmp_Uo|pn_Cmp_Eq,           /**< unordered or equal */
-	pn_Cmp_Ul    = pn_Cmp_Uo|pn_Cmp_Lt,           /**< unordered or less */
-	pn_Cmp_Ule   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Lt, /**< unordered, less or equal */
-	pn_Cmp_Ug    = pn_Cmp_Uo|pn_Cmp_Gt,           /**< unordered or greater */
-	pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
-	pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
-	pn_Cmp_True  = 15                             /**< true */
-	/* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for JNI interface */
-} pn_Cmp;   /* Projection numbers for Cmp */
-/* #define not_mask pn_Cmp_Leg */
-
 /** returns the pnc name from an pnc constant */
 const char *get_pnc_string(int pnc);
 
@@ -1038,12 +974,6 @@ void     set_Alloc_size(ir_node *node, ir_node *size);
 ir_type *get_Alloc_type(ir_node *node);
 void     set_Alloc_type(ir_node *node, ir_type *tp);
 
-/** The allocation place. */
-typedef enum {
-	stack_alloc,          /**< Alloc allocates the object on the stack. */
-	heap_alloc            /**< Alloc allocates the object on the heap. */
-} ir_where_alloc;
-
 ir_where_alloc get_Alloc_where(const ir_node *node);
 void           set_Alloc_where(ir_node *node, ir_where_alloc where);
 
@@ -1200,13 +1130,6 @@ void     set_Bound_upper(ir_node *bound, ir_node *upper);
 /** Return the operand of a Pin node. */
 ir_node *get_Pin_op(const ir_node *pin);
 void    set_Pin_op(ir_node *pin, ir_node *node);
-
-/** A input/output constraint attribute */
-typedef struct {
-	unsigned       pos;           /**< The inputs/output position for this constraint. */
-	ident          *constraint;   /**< The constraint for this input/output. */
-	ir_mode        *mode;         /**< The mode of the constraint. */
-} ir_asm_constraint;
 
 /** Return the assembler text of an ASM pseudo node. */
 ident *get_ASM_text(const ir_node *node);
