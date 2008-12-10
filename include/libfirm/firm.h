@@ -69,6 +69,8 @@ extern "C" {
 #include "irgraph.h"       /* graphs */
 #include "typerep.h"       /* type representation */
 #include "tv.h"            /* target values */
+#include "irnode.h"
+#include "irop.h"
 #include "ident.h"         /* source code identificators */
 
 /* Functionality */
@@ -80,6 +82,7 @@ extern "C" {
 #include "irgopt.h"         /* optimize ir */
 #include "iroptimize.h"     /* optimize ir by reassociation */
 #include "ircgopt.h"        /* Optimizations based on interprocedural graph */
+#include "iropt.h"
 
 /* Lowering */
 #include "lowering.h"         /* lowering of different calls parameters, intrinsic calls, double word types, high-level constructs */
