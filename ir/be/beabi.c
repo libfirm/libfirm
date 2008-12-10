@@ -44,6 +44,7 @@
 #include "irtools.h"
 #include "raw_bitset.h"
 #include "error.h"
+#include "pset_new.h"
 
 #include "be.h"
 #include "beabi.h"
@@ -427,9 +428,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int n_params               = get_method_n_params(call_tp);
 	ir_node *curr_mem          = get_Call_mem(irn);
 	ir_node *bl                = get_nodes_block(irn);
-	pset *results              = pset_new_ptr(8);
-	pset *caller_save          = pset_new_ptr(8);
-	pset *states               = pset_new_ptr(2);
 	int stack_size             = 0;
 	int stack_dir              = arch_env_stack_dir(arch_env);
 	const arch_register_t *sp  = arch_env_sp(arch_env);
@@ -445,6 +443,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int n_stack_params = 0;
 	int n_ins;
 
+	pset_new_t              destroyed_regs, states;
+	pset_new_iterator_t     iter;
 	ir_node                *low_call;
 	ir_node               **in;
 	ir_node               **res_projs;
@@ -453,9 +453,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
-	int                     i;
-	int                     n;
+	int                     i, n, destroy_all_regs;
 	dbg_info               *dbgi;
+
+	pset_new_init(&destroyed_regs);
+	pset_new_init(&states);
 
 	/* Let the isa fill out the abi description for that call node. */
 	arch_env_get_call_abi(arch_env, call_tp, call);
@@ -596,24 +598,46 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		obstack_free(obst, in);
 	}
 
-	/* Collect caller save registers */
+	/* check for the return_twice property */
+	destroy_all_regs = 0;
+	if (is_SymConst_addr_ent(call_ptr)) {
+		ir_entity *ent = get_SymConst_entity(call_ptr);
+
+		if (get_entity_additional_properties(ent) & mtp_property_returns_twice)
+			destroy_all_regs = 1;
+	} else {
+		ir_type *call_tp = get_Call_type(irn);
+
+		if (get_method_additional_properties(call_tp) & mtp_property_returns_twice)
+			destroy_all_regs = 1;
+	}
+
+	/* Put caller save into the destroyed set and state registers in the states set */
 	for (i = 0, n = arch_env_get_n_reg_class(arch_env); i < n; ++i) {
 		unsigned j;
 		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if (arch_register_type_is(reg, caller_save)) {
-				pset_insert_ptr(caller_save, (void *) reg);
+
+			if (destroy_all_regs || arch_register_type_is(reg, caller_save)) {
+				if (! arch_register_type_is(reg, ignore))
+					pset_new_insert(&destroyed_regs, (void *) reg);
 			}
 			if (arch_register_type_is(reg, state)) {
-				pset_insert_ptr(caller_save, (void*) reg);
-				pset_insert_ptr(states, (void*) reg);
+				pset_new_insert(&destroyed_regs, (void*) reg);
+				pset_new_insert(&states, (void*) reg);
 			}
 		}
 	}
 
-	/* search the greatest result proj number */
+	if (destroy_all_regs) {
+		/* even if destroyed all is specified, neither SP for FP are destroyed (else bad things will happen) */
+		pset_new_remove(&destroyed_regs, arch_env->sp);
+		pset_new_remove(&destroyed_regs, arch_env->bp);
+	}
 
+
+	/* search the greatest result proj number */
 	res_projs = ALLOCANZ(ir_node*, n_res);
 
 	foreach_out_edge(irn, edge) {
@@ -647,7 +671,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (i = 0; i < n_reg_params; ++i) {
 		obstack_ptr_grow(obst, get_Call_param(irn, reg_param_idxs[i]));
 	}
-	foreach_pset(states, reg) {
+
+	/* add state registers ins */
+	foreach_pset_new(&states, reg, iter) {
 		const arch_register_class_t *cls = arch_register_get_class(reg);
 #if 0
 		ir_node *regnode = be_abi_reg_map_get(env->regs, reg);
@@ -656,23 +682,26 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_node *regnode = new_rd_Unknown(irg, arch_register_class_mode(cls));
 		obstack_ptr_grow(obst, regnode);
 	}
-	n_ins = n_reg_params + pset_count(states);
+	n_ins = n_reg_params + pset_new_size(&states);
 
 	in = obstack_finish(obst);
 
+	/* ins collected, build the call */
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, curr_sp,
-		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
+		                       n_reg_results + pn_be_Call_first_res + pset_new_size(&destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, call_ptr,
-		                       n_reg_results + pn_be_Call_first_res + pset_count(caller_save),
+		                       n_reg_results + pn_be_Call_first_res + pset_new_size(&destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 	}
 	be_Call_set_pop(low_call, call->pop);
+
+	/* put the call into the list of all calls for later processing */
 	ARR_APP1(ir_node *, env->calls, low_call);
 
 	/* create new stack pointer */
@@ -682,6 +711,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 	arch_set_irn_register(curr_sp, sp);
 
+	/* now handle results */
 	for (i = 0; i < n_res; ++i) {
 		int pn;
 		ir_node           *proj = res_projs[i];
@@ -708,7 +738,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (arg->in_reg) {
-			pset_remove_ptr(caller_save, arg->reg);
+			pset_new_remove(&destroyed_regs, arg->reg);
 		}
 	}
 
@@ -750,22 +780,21 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
-	if (1 || pset_count(caller_save) + n_reg_results > 0) {
+	{
 		const arch_register_t *reg;
 		ir_node               **in, *keep;
 		int                   i;
 		int                   n = 0;
-		int                   curr_res_proj
-			= pn_be_Call_first_res + n_reg_results;
+		int                   curr_res_proj = pn_be_Call_first_res + n_reg_results;
+		pset_new_iterator_t   iter;
 
 		/* also keep the stack pointer */
 		++n;
 		set_irn_link(curr_sp, (void*) sp);
 		obstack_ptr_grow(obst, curr_sp);
 
-		for (reg = pset_first(caller_save); reg; reg = pset_next(caller_save), ++n) {
-			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode,
-			                           curr_res_proj);
+		foreach_pset_new(&destroyed_regs, reg, iter) {
+			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg_out(low_call, curr_res_proj, reg, 0);
@@ -773,7 +802,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			set_irn_link(proj, (void*) reg);
 			obstack_ptr_grow(obst, proj);
-			curr_res_proj++;
+			++curr_res_proj;
+			++n;
 		}
 
 		for (i = 0; i < n_reg_results; ++i) {
@@ -821,9 +851,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	be_abi_call_free(call);
 	obstack_free(obst, stack_param_idx);
-	del_pset(results);
-	del_pset(states);
-	del_pset(caller_save);
+
+	pset_new_destroy(&states);
+	pset_new_destroy(&destroyed_regs);
 
 	return curr_sp;
 }
