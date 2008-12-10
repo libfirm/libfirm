@@ -28,6 +28,7 @@
 #include "xmalloc.h"
 #include "tpop_t.h"
 #include "type_t.h"
+#include "ident.h"
 
 tp_op *type_class;         tp_op *get_tpop_class      (void) { return type_class;       }
 tp_op *type_struct;        tp_op *get_tpop_struct     (void) { return type_struct;      }

@@ -34,6 +34,7 @@
 #include "irgraph.h"
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
+#include "irextbb.h"
 #include "execution_frequency.h"
 #include "irmemory.h"
 #include "callgraph.h"

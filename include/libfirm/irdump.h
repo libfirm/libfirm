@@ -41,9 +41,9 @@
 #ifndef FIRM_IR_IRDUMP_H
 #define FIRM_IR_IRDUMP_H
 
-#include "irnode.h"
-#include "irgraph.h"
-#include "irloop.h"
+#include <stdio.h>
+
+#include "firm_types.h"
 
 /**
  * Symbolic names for the different dumping colors.

@@ -36,7 +36,6 @@
 #define FIRM_IR_IRMODE_H
 
 #include "firm_types.h"
-#include "ident.h"
 
 /* ********** Predefined modes ********** */
 

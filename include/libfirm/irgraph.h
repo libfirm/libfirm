@@ -29,10 +29,6 @@
 #include <stddef.h>
 
 #include "firm_types.h"
-#include "irop.h"
-#include "iropt.h"
-#include "irextbb.h"
-#include "typerep.h"
 
 /**
  * @page ir_graph   The struct ir_graph
