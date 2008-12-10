@@ -690,43 +690,49 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 			if (mask) {
 				fprintf(F, "\n%s  additional prop: ", prefix);
 
-				if (mask & mtp_property_const)    fprintf(F, "const_function, ");
-				if (mask & mtp_property_pure)     fprintf(F, "pure_function, ");
-				if (mask & mtp_property_noreturn) fprintf(F, "noreturn_function, ");
-				if (mask & mtp_property_nothrow)  fprintf(F, "nothrow_function, ");
-				if (mask & mtp_property_naked)    fprintf(F, "naked_function, ");
-				if (mask & mtp_property_weak)     fprintf(F, "weak_function, ");
+				if (mask & mtp_property_const)         fputs("const_function, ", F);
+				if (mask & mtp_property_pure)          fputs("pure_function, ", F);
+				if (mask & mtp_property_noreturn)      fputs("noreturn_function, ", F);
+				if (mask & mtp_property_nothrow)       fputs("nothrow_function, ", F);
+				if (mask & mtp_property_naked)         fputs("naked_function, ", F);
+				if (mask & mtp_property_malloc)        fputs("malloc_function, ", F);
+				if (mask & mtp_property_weak)          fputs("weak_function, ", F);
+				if (mask & mtp_property_returns_twice) fputs("weak_function, ", F);
+				if (mask & mtp_property_intrinsic)     fputs("intrinsic_function, ", F);
+				if (mask & mtp_property_runtime)       fputs("runtime_function, ", F);
+				if (mask & mtp_property_private)       fputs("private_function, ", F);
+				if (mask & mtp_property_has_loop)      fputs("has_loop_function, ", F);
 			}
 			fprintf(F, "\n%s  calling convention: ", prefix);
-			if (cc & cc_reg_param) fprintf(F, "regparam, ");
-			if (cc & cc_this_call) fprintf(F, "thiscall, ");
-			if (cc & cc_compound_ret) fprintf(F, "compound_ret, ");
-			if (cc & cc_frame_on_caller_stk) fprintf(F, "frame on caller's stack, ");
+			if (cc & cc_reg_param)           fputs("regparam, ", F);
+			if (cc & cc_this_call)           fputs("thiscall, ", F);
+			if (cc & cc_compound_ret)        fputs("compound_ret, ", F);
+			if (cc & cc_frame_on_caller_stk) fputs("frame on caller's stack, ", F);
 			cc &= ~(cc_compound_ret|cc_frame_on_caller_stk);
 			if (IS_CDECL(cc))
-				fprintf(F, "cdecl");
+				fputs("cdecl", F);
 			else if (IS_STDCALL(cc))
-				fprintf(F, "stdcall");
+				fputs("stdcall", F);
 			else {
-				fprintf(F, (cc & cc_last_on_top) ? "last param on top, " : "first param on top, ");
-				fprintf(F, (cc & cc_callee_clear_stk) ? "callee clear stack" : "caller clear stack");
+				fputs(cc & cc_last_on_top      ? "last param on top, " : "first param on top, ", F);
+				fputs(cc & cc_callee_clear_stk ? "callee clear stack" : "caller clear stack", F);
 			}
 			fprintf(F, "\n%s  vtable number:        %u", prefix, get_entity_vtable_number(ent));
 		}
 
-		fprintf(F, "\n");
+		fputc('\n', F);
 	} else {  /* no entattrs */
 		fprintf(F, "%s(%3d:%d) %-40s: %s", prefix,
 			get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
 			get_type_name(get_entity_type(ent)), get_entity_name(ent));
-		if (is_Method_type(get_entity_type(ent))) fprintf(F, "(...)");
+		if (is_Method_type(get_entity_type(ent))) fputs("(...)", F);
 
 		if (verbosity & dump_verbosity_accessStats) {
-			if (get_entity_allocation(ent) == allocation_static) fprintf(F, " (stat)");
-			if (get_entity_peculiarity(ent) == peculiarity_description) fprintf(F, " (desc)");
-			if (get_entity_peculiarity(ent) == peculiarity_inherited)   fprintf(F, " (inh)");
+			if (get_entity_allocation(ent) == allocation_static)        fputs(" (stat)", F);
+			if (get_entity_peculiarity(ent) == peculiarity_description) fputs(" (desc)", F);
+			if (get_entity_peculiarity(ent) == peculiarity_inherited)   fputs(" (inh)", F);
 		}
-		fprintf(F, "\n");
+		fputc('\n', F);
 	}
 
 	if (verbosity & dump_verbosity_entconsts) {
@@ -761,7 +767,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 					}
 				}
 			}
-			fprintf(F, "\n");
+			fputc('\n', F);
 		}
 	}
 
@@ -784,7 +790,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				fprintf(F, "\n%s  irg = NULL", prefix);
 			}
 		}
-		fprintf(F, "\n");
+		fputc('\n', F);
 	}
 
 	if (get_trouts_state()) {

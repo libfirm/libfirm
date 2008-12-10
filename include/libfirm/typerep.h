@@ -128,33 +128,35 @@ typedef enum {
  * of these may be discovered by analyses.
  */
 typedef enum {
-	mtp_no_property        = 0x00000000, /**< no additional properties, default */
-	mtp_property_const     = 0x00000001, /**< This method did not access memory and calculates
-	                                       its return values solely from its parameters.
-	                                       GCC: __attribute__((const)). */
-	mtp_property_pure      = 0x00000002, /**< This method did NOT write to memory and calculates
-	                                       its return values solely from its parameters and
-	                                       the memory they points to (or global vars).
-	                                       GCC: __attribute__((pure)). */
-	mtp_property_noreturn  = 0x00000004, /**< This method did not return due to an aborting system
-	                                       call.
-	                                       GCC: __attribute__((noreturn)). */
-	mtp_property_nothrow   = 0x00000008, /**< This method cannot throw an exception.
-	                                       GCC: __attribute__((nothrow)). */
-	mtp_property_naked     = 0x00000010, /**< This method is naked.
-	                                       GCC: __attribute__((naked)). */
-	mtp_property_malloc    = 0x00000020, /**< This method returns newly allocate memory.
-	                                       GCC: __attribute__((malloc)). */
-	mtp_property_weak      = 0x00000040, /**< This method is weak. It is expected that
-	                                       GCC: __attribute__((weak)). */
-	mtp_property_intrinsic = 0x00000080, /**< This method is intrinsic. It is expected that
-	                                       a lowering phase will remove all calls to it. */
-	mtp_property_runtime   = 0x00000100, /**< This method represents a runtime routine. */
-	mtp_property_private   = 0x00000200, /**< All method invocations are known, the backend is free to
-	                                       optimize the call in any possible way. */
-	mtp_property_has_loop  = 0x00000400, /**< Set, if this method contains one possible endless loop. */
-	mtp_property_inherited = (1<<31)     /**< Internal. Used only in irg's, means property is
-	                                       inherited from type. */
+	mtp_no_property            = 0x00000000, /**< no additional properties, default */
+	mtp_property_const         = 0x00000001, /**< This method did not access memory and calculates
+	                                              its return values solely from its parameters.
+	                                              GCC: __attribute__((const)). */
+	mtp_property_pure          = 0x00000002, /**< This method did NOT write to memory and calculates
+	                                              its return values solely from its parameters and
+	                                              the memory they points to (or global vars).
+	                                              GCC: __attribute__((pure)). */
+	mtp_property_noreturn      = 0x00000004, /**< This method did not return due to an aborting system
+	                                              call.
+	                                              GCC: __attribute__((noreturn)). */
+	mtp_property_nothrow       = 0x00000008, /**< This method cannot throw an exception.
+	                                              GCC: __attribute__((nothrow)). */
+	mtp_property_naked         = 0x00000010, /**< This method is naked.
+	                                              GCC: __attribute__((naked)). */
+	mtp_property_malloc        = 0x00000020, /**< This method returns newly allocate memory.
+	                                              GCC: __attribute__((malloc)). */
+	mtp_property_weak          = 0x00000040, /**< This method is weak. It is expected that
+	                                              GCC: __attribute__((weak)). */
+	mtp_property_returns_twice = 0x00000080, /**< This method can return more than one (typically setjmp).
+                                                  GCC: __attribute__((returns_twice)). */
+	mtp_property_intrinsic     = 0x00000100, /**< This method is intrinsic. It is expected that
+	                                              a lowering phase will remove all calls to it. */
+	mtp_property_runtime       = 0x00000200, /**< This method represents a runtime routine. */
+	mtp_property_private       = 0x00000400, /**< All method invocations are known, the backend is free to
+	                                              optimize the call in any possible way. */
+	mtp_property_has_loop      = 0x00000800, /**< Set, if this method contains one possible endless loop. */
+	mtp_property_inherited     = (1<<31)     /**< Internal. Used only in irg's, means property is
+	                                              inherited from type. */
 } mtp_additional_property;
 
 /**
