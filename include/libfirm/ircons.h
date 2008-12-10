@@ -4498,21 +4498,4 @@ void irp_finalize_cons(void);
 
 /* --- Initialization --- */
 
-/**
- * This function is called, whenever a local variable is used before definition
- *
- * @param irg       the IR graph on which this happens
- * @param mode      the mode of the local var
- * @param pos       position chosen be the frontend for this variable (n_loc)
- *
- * @return a firm node of mode @p mode that initializes the var at position pos
- *
- * @note
- *      Do not return NULL!
- *      If this function is not set, FIRM will create a const node with tarval BAD.
- *      Use set_irg_loc_description()/get_irg_loc_description() to assign additional
- *      informations to local variables.
- */
-typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
-
 #endif

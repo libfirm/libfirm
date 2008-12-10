@@ -37,7 +37,7 @@
 /**
  * The ident module interface.
  */
-typedef struct _ident_if_t {
+struct ident_if_t {
   /** The handle. */
   void *handle;
 
@@ -76,7 +76,7 @@ typedef struct _ident_if_t {
    * Finish the ident module and frees all idents, may be NULL.
    */
   void (*finish_ident)(void *handle);
-} ident_if_t;
+};
 
 /**
  *  Store a string and create an ident.

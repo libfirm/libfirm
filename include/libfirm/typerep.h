@@ -2555,12 +2555,12 @@ ir_type *mature_type_free_entities(ir_type *tp);
 /**
  * The interface type for the type identify module;
  */
-typedef struct _type_identify_if_t {
+struct type_identify_if_t {
 	compare_types_func_t *cmp;    /**< The function that should be used to compare two types.
 	                                   If NULL, compare_strict() will be used. */
 	hash_types_func_t *hash;      /**< The function that should be used to calculate a hash
 	                                   value of a type. If NULL, hash_name() will be used. */
-} type_identify_if_t;
+};
 
 /**
  * Initialise the type identifier module.

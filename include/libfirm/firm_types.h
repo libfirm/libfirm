@@ -51,6 +51,8 @@ typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
+typedef struct ident_if_t           ident_if_t;
+typedef struct type_identify_if_t   type_identify_if_t;
 
 typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 
@@ -75,6 +77,21 @@ typedef enum {
 	                       all still in the representation, but the graph is no more complete. */
 } ip_view_state;
 
-
+/**
+ * This function is called, whenever a local variable is used before definition
+ *
+ * @param irg       the IR graph on which this happens
+ * @param mode      the mode of the local var
+ * @param pos       position chosen be the frontend for this variable (n_loc)
+ *
+ * @return a firm node of mode @p mode that initializes the var at position pos
+ *
+ * @note
+ *      Do not return NULL!
+ *      If this function is not set, FIRM will create a const node with tarval BAD.
+ *      Use set_irg_loc_description()/get_irg_loc_description() to assign additional
+ *      informations to local variables.
+ */
+typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
 
 #endif
