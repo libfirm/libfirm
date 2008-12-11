@@ -797,7 +797,10 @@ unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode);
 /**
  * Enable/Disable floating point constant folding.
  */
-int tarval_enable_fp_ops(int enable);
+void tarval_enable_fp_ops(int enable);
+
+/** returns 0/1 if floating point folding is enable/disabled */
+int tarval_fp_ops_enabled(void);
 
 /**
  * Check if its the a floating point NaN.

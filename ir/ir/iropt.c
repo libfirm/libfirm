@@ -3075,7 +3075,7 @@ static ir_node *transform_node_Quot(ir_node *n) {
 		tarval *tv = value_of(b);
 
 		if (tv != tarval_bad) {
-			int rem;
+			int rem = tarval_fp_ops_enabled();
 
 			/*
 			 * Floating point constant folding might be disabled here to
@@ -3083,9 +3083,9 @@ static ir_node *transform_node_Quot(ir_node *n) {
 			 * However, as we check for exact result, doing it is safe.
 			 * Switch it on.
 			 */
-			rem = tarval_enable_fp_ops(1);
+			tarval_enable_fp_ops(1);
 			tv = tarval_quo(get_mode_one(mode), tv);
-			(void)tarval_enable_fp_ops(rem);
+			tarval_enable_fp_ops(rem);
 
 			/* Do the transformation if the result is either exact or we are not
 			   using strict rules. */
@@ -6341,7 +6341,9 @@ ir_node *optimize_node(ir_node *n) {
 		/* neither constants nor Tuple values can be evaluated */
 		if (iro != iro_Const && (get_irn_mode(n) != mode_T)) {
 			unsigned fp_model = get_irg_fp_model(current_ir_graph);
-			int old_fp_mode = tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
+			int old_fp_mode = tarval_fp_ops_enabled();
+
+			tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
 			/* try to evaluate */
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
@@ -6453,7 +6455,9 @@ ir_node *optimize_in_place_2(ir_node *n) {
 		/* neither constants nor Tuple values can be evaluated */
 		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
 			unsigned fp_model = get_irg_fp_model(current_ir_graph);
-			int old_fp_mode = tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
+			int old_fp_mode = tarval_fp_ops_enabled();
+
+			tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
 			/* try to evaluate */
 			tv = computed_value(n);
 			if (tv != tarval_bad) {

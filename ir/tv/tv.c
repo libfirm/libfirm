@@ -1686,11 +1686,12 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void) {
 }
 
 /* Enable/Disable floating point constant folding. */
-int tarval_enable_fp_ops(int enable) {
-	int old = !no_float;
-
+void tarval_enable_fp_ops(int enable) {
 	no_float = !enable;
-	return old;
+}
+
+int tarval_fp_ops_enabled(void) {
+	return !no_float;
 }
 
 /**
