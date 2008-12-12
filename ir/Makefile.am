@@ -397,6 +397,9 @@ EXTRA_DIST = \
 	be/scripts/generate_new_opcodes.pl \
 	be/scripts/generate_regalloc_if.pl
 
+EXTRA_DIST += libcore/do_bisonflex.sh \
+	libcore/lc_config_parser.y \
+	libcore/lc_config_lexer.l
 
 # ia32 backend
 
