@@ -732,7 +732,7 @@ ir_initializer_t *create_initializer_compound(unsigned n_entries)
 ir_node *get_initializer_const_value(const ir_initializer_t *initializer)
 {
 	assert(initializer->kind == IR_INITIALIZER_CONST);
-	return initializer->consti.value;
+	return skip_Id(initializer->consti.value);
 }
 
 tarval *get_initializer_tarval_value(const ir_initializer_t *initializer)
