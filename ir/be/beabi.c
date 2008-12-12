@@ -1202,7 +1202,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 	}
 
 	set_irn_link(bl, curr_sp);
-}  /* process_calls_in_block */
+}  /* process_ops_in_block */
 
 /**
  * Adjust all call nodes in the graph to the ABI conventions.
@@ -1648,38 +1648,32 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 	}
 }
 
-#if 1
 /**
  * The start block has no jump, instead it has an initial exec Proj.
  * The backend wants to handle all blocks the same way, so we replace
  * the out cfg edge with a real jump.
  */
-static void fix_start_block(ir_node *block, void *env) {
-	int      *done = env;
-	int      i;
-	ir_node  *start_block;
-	ir_graph *irg;
+static void fix_start_block(ir_graph *irg) {
+	ir_node         *initial_X   = get_irg_initial_exec(irg);
+	ir_node         *start_block = get_irg_start_block(irg);
+	const ir_edge_t *edge;
 
-	/* we processed the start block, return */
-	if (*done)
-		return;
+	assert(is_Proj(initial_X));
 
-	irg         = get_irn_irg(block);
-	start_block = get_irg_start_block(irg);
+	foreach_out_edge(initial_X, edge) {
+		ir_node *block = get_edge_src_irn(edge);
 
-	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
-		ir_node *pred       = get_Block_cfgpred(block, i);
-		ir_node *pred_block = get_nodes_block(pred);
+		if (is_Anchor(block))
+			continue;
+		if (block != start_block) {
+			ir_node *jmp = new_r_Jmp(irg, start_block);
 
-		/* ok, we are in the block, having start as cfg predecessor */
-		if (pred_block == start_block) {
-			ir_node *jump = new_r_Jmp(irg, pred_block);
-			set_Block_cfgpred(block, i, jump);
-			*done = 1;
+			set_Block_cfgpred(block, get_edge_src_pos(edge), jmp);
+			return;
 		}
 	}
+	panic("Initial exec has no follow block");
 }
-#endif
 
 /**
  * Modify the irg itself and the frame type.
@@ -1946,8 +1940,7 @@ static void modify_irg(be_abi_irg_t *env)
 	obstack_free(&env->obst, args);
 
 	/* handle start block here (place a jump in the block) */
-	i = 0;
-	irg_block_walk_graph(irg, fix_start_block, NULL, &i);
+	fix_start_block(irg);
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
