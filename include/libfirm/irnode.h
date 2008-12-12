@@ -443,7 +443,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
 /** Remove irn from the keep-alive set. */
 void remove_End_keepalive(ir_node *end, ir_node *irn);
 
-/* Remove Bads and doublets from the keep-alive set. */
+/* Remove Bads, NoMem and doublets from the keep-alive set. */
 void remove_End_Bads_and_doublets(ir_node *end);
 
 /** Some parts of the End node are allocated separately -- their memory

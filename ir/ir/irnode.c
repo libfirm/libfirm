@@ -923,7 +923,7 @@ found:
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 }
 
-/* remove Bads and doublets from the keep-alive set */
+/* remove Bads, NoMems and doublets from the keep-alive set */
 void remove_End_Bads_and_doublets(ir_node *end) {
 	pset_new_t keeps;
 	int        idx, n = get_End_n_keepalives(end);
@@ -938,7 +938,7 @@ void remove_End_Bads_and_doublets(ir_node *end) {
 	for (idx = n - 1; idx >= 0; --idx) {
 		ir_node *ka = get_End_keepalive(end, idx);
 
-		if (is_Bad(ka) || pset_new_contains(&keeps, ka)) {
+		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
 			/* remove the edge */
 			edges_notify_edge(end, idx, NULL, ka, irg);
 
