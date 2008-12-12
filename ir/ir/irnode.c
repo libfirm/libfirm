@@ -27,6 +27,7 @@
 
 #include <string.h>
 
+#include "pset_new.h"
 #include "ident.h"
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -918,11 +919,48 @@ found:
 		end->in[1 + END_KEEPALIVE_OFFSET + idx] = old;
 		edges_notify_edge(end, idx, old, NULL, irg);
 	}
+	/* now n - 1 keeps, 1 block input */
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 }
 
-void
-free_End(ir_node *end) {
+/* remove Bads and doublets from the keep-alive set */
+void remove_End_Bads_and_doublets(ir_node *end) {
+	pset_new_t keeps;
+	int        idx, n = get_End_n_keepalives(end);
+	ir_graph   *irg;
+
+	if (n <= 0)
+		return;
+
+	irg = get_irn_irg(end);
+	pset_new_init(&keeps);
+
+	for (idx = n - 1; idx >= 0; --idx) {
+		ir_node *ka = get_End_keepalive(end, idx);
+
+		if (is_Bad(ka) || pset_new_contains(&keeps, ka)) {
+			/* remove the edge */
+			edges_notify_edge(end, idx, NULL, ka, irg);
+
+			if (idx != n - 1) {
+				/* exchange with the last one */
+				ir_node *old = end->in[1 + END_KEEPALIVE_OFFSET + n - 1];
+				edges_notify_edge(end, n - 1, NULL, old, irg);
+				end->in[1 + END_KEEPALIVE_OFFSET + idx] = old;
+				edges_notify_edge(end, idx, old, NULL, irg);
+			}
+			--n;
+		} else {
+			pset_new_insert(&keeps, ka);
+		}
+	}
+	/* n keeps, 1 block input */
+	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
+
+	pset_new_destroy(&keeps);
+}
+
+void free_End(ir_node *end) {
 	assert(is_End(end));
 	end->kind = k_BAD;
 	DEL_ARR_F(end->in);
