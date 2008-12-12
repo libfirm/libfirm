@@ -692,7 +692,7 @@ static int handle_switch_cond(ir_node *cond) {
  * phase.
  */
 void optimize_cf(ir_graph *irg) {
-	int i, j, n;
+	int i, j, n, changed;
 	ir_node **in = NULL;
 	ir_node *cond, *end = get_irg_end(irg);
 	ir_graph *rem = current_ir_graph;
@@ -722,6 +722,7 @@ restart:
 	irg_block_walk_graph(irg, NULL, remove_unreachable_blocks_and_conds, &env.changed);
 
 	/* fix the keep-alives */
+	changed = 0;
 	for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
@@ -729,15 +730,19 @@ restart:
 			/* do NOT keep dead blocks */
 			if (is_Block_dead(ka) || get_Block_dom_depth(ka) < 0) {
 				set_End_keepalive(end, i, new_Bad());
-				env.changed = 1;
+				changed = 1;
 			}
-		} else if (is_Block_dead(get_nodes_block(ka)) ||
-		           get_Block_dom_depth(get_nodes_block(ka)) < 0) {
-			/* do NOT keep nodes in dead blocks */
-			set_End_keepalive(end, i, new_Bad());
-			env.changed = 1;
+		} else {
+			ir_node *block = get_nodes_block(ka);
+
+			if (is_Bad(block) || is_Block_dead(block) || get_Block_dom_depth(block) < 0) {
+				/* do NOT keep nodes in dead blocks */
+				set_End_keepalive(end, i, new_Bad());
+				changed = 1;
+			}
 		}
 	}
+	env.changed |= changed;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -771,44 +776,37 @@ restart:
 	/* Optimize the standard code. */
 	env.changed = 0;
 	assure_doms(irg);
-	irg_block_walk(get_irg_end_block(irg), optimize_blocks, remove_simple_blocks, &env);
-
-	/* Walk all keep alives, optimize them if block, add to new in-array
-	   for end if useful. */
-	n  = get_End_n_keepalives(end);
-	if (n > 0)
-		NEW_ARR_A(ir_node *, in, n);
+	irg_block_walk_graph(irg, optimize_blocks, remove_simple_blocks, &env);
 
 	/* in rare cases a node may be kept alive more than once, use the visited flag to detect this */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
-	/* fix the keep alive */
-	for (i = j = 0; i < n; i++) {
+	/* fix the keep-alives again */
+	changed = 0;
+	for (i = 0, n = get_End_n_keepalives(end); i < n; ++i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
-		if (!irn_visited(ka)) {
-			if (is_Block(ka)) {
-				if (!Block_block_visited(ka)) {
-					/* irg_block_walk() will increase the block visited flag, but we must visit only
-					   these blocks that are not visited yet, so decrease it first. */
-					set_irg_block_visited(irg, get_irg_block_visited(irg) - 1);
-					irg_block_walk(ka, optimize_blocks, remove_simple_blocks, &env.changed);
-					mark_irn_visited(ka);
-					in[j++] = ka;
-				}
-			} else {
-				mark_irn_visited(ka);
-				/* don't keep alive dead blocks */
-				if (!is_Bad(ka) && !is_Block_dead(get_nodes_block(ka)))
-					in[j++] = ka;
+		if (is_Block(ka)) {
+			/* do NOT keep dead blocks */
+			if (is_Block_dead(ka) || get_Block_dom_depth(ka) < 0) {
+				set_End_keepalive(end, i, new_Bad());
+				changed = 1;
+			}
+		} else {
+			ir_node *block = get_nodes_block(ka);
+
+			if (is_Bad(block) || is_Block_dead(block) || get_Block_dom_depth(block) < 0) {
+				/* do NOT keep nodes in dead blocks */
+				set_End_keepalive(end, i, new_Bad());
+				changed = 1;
 			}
 		}
 	}
-	if (j != n) {
-		set_End_keepalives(end, j, in);
-		env.changed = 1;
-	}
+	env.changed |= changed;
+
+	remove_End_Bads_and_doublets(end);
+
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_VISITED);
 
@@ -819,6 +817,7 @@ restart:
 		 */
 		n = get_End_n_keepalives(end);
 		if (n > 0) {
+			NEW_ARR_A(ir_node *, in, n);
 			if (env.changed) {
 				/* Handle graph state if was changed. */
 				set_irg_outs_inconsistent(irg);
