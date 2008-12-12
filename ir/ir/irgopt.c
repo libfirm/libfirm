@@ -168,7 +168,7 @@ int optimize_graph_df(ir_graph *irg) {
 	pdeq     *waitq = new_pdeq();
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;
-	int      i, state, n_ka, changed;
+	int      state, changed;
 
 	current_ir_graph = irg;
 
@@ -191,32 +191,8 @@ int optimize_graph_df(ir_graph *irg) {
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	end  = get_irg_end(irg);
-	n_ka = get_End_n_keepalives(end);
-
 	/* walk over the graph, but don't touch keep-alives */
-	irg_walk(get_irg_end_block(irg), NULL, opt_walker, waitq);
-
-	/*
-	 * Optimize keep-alives by removing superfluous ones.
-	 * Beware: the last transformation might add new keep-alives
-	 * that keep blocks that are where visited! So, check only the
-	 * "old" keep-alives, not the new ones!
-	 *
-	 * FIXME: it might be better to completely remove this
-	 * optimization here ...
-	 */
-	for (i = n_ka - 1; i >= 0; --i) {
-		ir_node *ka = get_End_keepalive(end, i);
-
-		if (irn_visited(ka) && !is_irn_keep(ka)) {
-			/* this node can be regularly visited, no need to keep it */
-			set_End_keepalive(end, i, get_irg_bad(irg));
-		}
-	}
-	/* now walk again and visit all not yet visited nodes */
-	set_irg_visited(current_ir_graph, get_irg_visited(irg) - 1);
-	irg_walk(get_irg_end(irg), NULL, opt_walker, waitq);
+	irg_walk_graph(irg, NULL, opt_walker, waitq);
 
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
@@ -235,6 +211,11 @@ int optimize_graph_df(ir_graph *irg) {
 
 	if (! state)
 		edges_deactivate(irg);
+
+	/* Finally kill BAD and doublets from the keep alives.
+	   Doing this AFTER edges where deactivated saves cycles */
+	end  = get_irg_end(irg);
+	remove_End_Bads_and_doublets(end);
 
 	current_ir_graph = rem;
 	return changed;
