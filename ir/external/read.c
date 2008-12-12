@@ -1308,6 +1308,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
   cond    = new_Cond (unknown);
 
   c_block   = new_immBlock ();  /* for the Phi after the branch(es) */
+  set_cur_block(c_block);
 
   ins = XMALLOCN(ir_node*, n_ins);
   for (i = 0; i < n_ins; i ++) {
@@ -1322,6 +1323,7 @@ static void create_abstract_join (ir_graph *irg, proc_t *proc, eff_t *eff)
 
     /* this also sets current_block, so the rest of the code ends up there: */
     s_block = new_immBlock ();
+    set_cur_block(s_block);
 
     add_immBlock_pred (s_block, projX);
     mature_immBlock (s_block);
@@ -1373,6 +1375,7 @@ static void create_abstract_raise (ir_graph *irg, proc_t *proc, eff_t *eff)
     ir_node *thrw  = NULL;
     eff_t *thrw_eff = NULL;
 
+	set_cur_block(b_exc);
     add_immBlock_pred (b_exc, projX);
 
     thrw_eff = find_valueid_in_proc_effects (eff->effect.raise.valref, proc);
@@ -1390,10 +1393,12 @@ static void create_abstract_raise (ir_graph *irg, proc_t *proc, eff_t *eff)
 
   /* one branch for 'non-exception' case */
   {
+  	ir_node *block;
     ir_node *projX = new_Proj (cond, mode_X, 0);
-    new_immBlock ();            /* also sets current_block */
-    add_immBlock_pred (get_cur_block (), projX);
-    mature_immBlock (get_cur_block ());
+    block = new_immBlock ();
+    set_cur_block(block);
+    add_immBlock_pred (block, projX);
+    mature_immBlock (block);
     /* continue building in current_block */
   }
 

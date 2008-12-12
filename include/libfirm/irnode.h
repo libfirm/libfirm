@@ -1437,6 +1437,11 @@ dbg_info *get_irn_dbg_info(const ir_node *n);
  */
 unsigned firm_default_hash(const ir_node *node);
 
+/**
+ * returns a descriptive name of a node (containing type+number)
+ */
+const char *gdb_node_helper(void *firm_object);
+
 /*@}*/ /* end of ir_node group definition */
 
 #endif

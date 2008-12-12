@@ -2682,7 +2682,6 @@ new_d_immBlock(dbg_info *db) {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	/* creates a new dynamic in-array as length of in is -1 */
 	res = new_ir_node(db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
-	current_ir_graph->current_block = res;
 
 	/* macroblock head */
 	res->in[0] = res;

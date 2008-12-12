@@ -345,12 +345,12 @@
  *    ir_node *new_immBlock (void)
  *    ----------------------------
  *
- *    Creates a new block.  Sets current_block to itself.  When a new block is
- *    created it cannot be known how many predecessors this block will have in the
- *    control flow graph. Therefore the list of inputs can not be fixed at
- *    creation.  Predecessors can be added with add_immBlock_pred (block, control flow
- *    operation).  With every added predecessor the number of inputs to Phi nodes
- *    also changes.
+ *    Creates a new block. When a new block is created it cannot be known how
+ *    many predecessors this block will have in the control flow graph.
+ *    Therefore the list of inputs can not be fixed at creation.  Predecessors
+ *    can be added with add_immBlock_pred (block, control flow operation).
+ *    With every added predecessor the number of inputs to Phi nodes also
+ *    changes.
  *
  *    The block can be completed by mature_immBlock(block) if all predecessors are
  *    known.  If several blocks are built at once, mature_immBlock can only be called
@@ -364,15 +364,18 @@
  *    Example for faulty IR construction:  (draw the graph on a paper and you'll
  *                                          get it ;-)
  *
- *      block_before_loop = new_block();
+ *      block_before_loop = new_immBlock();
+ *      set_cur_block(block_before_loop);
  *      set_value(x);
  *      mature_immBlock(block_before_loop);
  *      before2header = new_Jmp;
  *
- *      loop_header = new_block ();
+ *      loop_header = new_immBlock ();
+ *      set_cur_block(loop_header);
  *      header2body - new_Jmp();
  *
- *      loop_body = new_block ();
+ *      loop_body = new_immBlock ();
+ *      set_cur_block(loop_body);
  *      body2header = new_Jmp();
  *
  *      add_immBlock_pred(loop_header, before2header);
@@ -4389,10 +4392,9 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * can be added with add_immBlock_pred().  Once all predecessors are
  * added the block must be matured.
  *
- * Adds the block to the graph in current_ir_graph. Does set
- * current_block.  Can be used with automatic Phi node construction.
- * This constructor can only be used if the graph is in
- * state_building.
+ * Adds the block to the graph in current_ir_graph. Can be used with automatic
+ * Phi node construction.
+ * This constructor can only be used if the graph is in state_building.
  */
 ir_node *new_d_immBlock(dbg_info *db);
 ir_node *new_immBlock(void);

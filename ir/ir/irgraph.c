@@ -239,12 +239,14 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 
 	/*-- Nodes needed in every graph --*/
 	set_irg_end_block (res, new_immBlock());
+	set_cur_block(get_irg_end_block(res));
 	end               = new_End();
 	set_irg_end       (res, end);
 	set_irg_end_reg   (res, end);
 	set_irg_end_except(res, end);
 
 	start_block = new_immBlock();
+	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
 	set_irg_bad        (res, new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL));
 	set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
@@ -278,6 +280,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 
 	/*-- Make a block to start with --*/
 	first_block = new_immBlock();
+	set_cur_block(first_block);
 	add_immBlock_pred(first_block, projX);
 
 	res->method_execution_frequency = -1.0;
@@ -297,6 +300,7 @@ ir_graph *new_ir_graph(ir_entity *ent, int n_loc) {
 ir_graph *new_const_code_irg(void) {
 	ir_graph *res;
 	ir_node  *end, *start_block, *start, *projX;
+	ir_node  *body_block;
 
 	res = alloc_graph();
 
@@ -329,6 +333,7 @@ ir_graph *new_const_code_irg(void) {
 
 	/* -- The end block -- */
 	set_irg_end_block (res, new_immBlock());
+	set_cur_block(get_irg_end_block(res));
 	end = new_End();
 	set_irg_end       (res, end);
 	set_irg_end_reg   (res, end);
@@ -337,6 +342,7 @@ ir_graph *new_const_code_irg(void) {
 
 	/* -- The start block -- */
 	start_block        = new_immBlock();
+	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
 	set_irg_bad        (res, new_ir_node (NULL, res, start_block, op_Bad, mode_T, 0, NULL));
 	set_irg_no_mem     (res, new_ir_node (NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
@@ -349,8 +355,11 @@ ir_graph *new_const_code_irg(void) {
 	add_immBlock_pred(start_block, projX);
 	mature_immBlock  (start_block);  /* mature the start block */
 
-	add_immBlock_pred(new_immBlock(), projX);
-	mature_immBlock  (get_cur_block());   /* mature the 'body' block for expressions */
+
+	body_block = new_immBlock();
+	add_immBlock_pred(body_block, projX);
+	mature_immBlock  (body_block);   /* mature the 'body' block for expressions */
+	set_cur_block(body_block);
 
 	/* Set the visited flag high enough that the blocks will never be visited. */
 	set_irn_visited(get_cur_block(), -1);
