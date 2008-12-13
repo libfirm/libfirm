@@ -94,8 +94,9 @@ static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 		char buf[64];
 		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
 		res = new_type_primitive(new_id_from_str(buf), mode);
-		/* FIXME: this is too much for most cases */
-		set_type_alignment_bytes(res, 16);
+		if (get_mode_size_bits(mode) >= 10) {
+			set_type_alignment_bytes(res, 16);
+		}
 		pmap_insert(types, mode, res);
 	}
 	else
@@ -140,11 +141,6 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 			tp = ia32_get_prim_type(isa->types, mode);
 
 		res = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
-
-		/* align mode_E at 16 byte for faster access */
-		if (get_mode_size_bits(mode) >= 80) {
-			set_entity_align(res, 16);
-		}
 
 		set_entity_ld_ident(res, get_entity_ident(res));
 		set_entity_visibility(res, visibility_local);
