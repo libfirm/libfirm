@@ -272,15 +272,19 @@ static ir_node *gen_Const(ir_node *node)
 				res  = load;
 				set_ia32_ls_mode(load, mode);
 			} else {
-				floatent = create_float_const_entity(node);
+				ir_mode *ls_mode;
 
-				load     = new_bd_ia32_vfld(dbgi, block, noreg, noreg, nomem, mode);
+				floatent = create_float_const_entity(node);
+				/* create_float_const_ent is smart and sometimes creates
+				   smaller entities */
+				ls_mode  = get_type_mode(get_entity_type(floatent));
+
+				load     = new_bd_ia32_vfld(dbgi, block, noreg, noreg, nomem,
+				                            ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
 				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
 				res = new_r_Proj(current_ir_graph, block, load, mode_vfp, pn_ia32_vfld_res);
-				/* take the mode from the entity */
-				set_ia32_ls_mode(load, get_type_mode(get_entity_type(floatent)));
 			}
 		}
 end:
