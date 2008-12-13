@@ -1685,27 +1685,34 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result) {
 /*
  * convert a floating point value into an sc value ...
  */
-int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode) {
+int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
+{
 	if (a->desc.clss == NORMAL) {
 		int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 		int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 		int shift, highest;
 		int mantissa_size;
+		int tgt_bits;
 
 		if (a->sign && !mode_is_signed(dst_mode)) {
 			/* FIXME: for now we cannot convert this */
 			return 0;
 		}
 
+		tgt_bits = get_mode_size_bits(dst_mode);
+		if (mode_is_signed(dst_mode))
+			--tgt_bits;
+
 		assert(exp_val >= 0 && "floating point value not integral before fc_flt2int() call");
 		mantissa_size = a->desc.mantissa_size + ROUNDING_BITS;
 		shift         = exp_val - mantissa_size;
 
-		mantissa_size += 1;
+		if (tgt_bits < mantissa_size + 1)
+			tgt_bits = mantissa_size + 1;
 		if (shift > 0) {
-			sc_shlI(_mant(a),  shift, mantissa_size, 0, result);
+			sc_shlI(_mant(a),  shift, tgt_bits, 0, result);
 		} else {
-			sc_shrI(_mant(a), -shift, mantissa_size, 0, result);
+			sc_shrI(_mant(a), -shift, tgt_bits, 0, result);
 		}
 
 		/* check for overflow */
