@@ -3574,20 +3574,12 @@ static ir_node *gen_Conv(ir_node *node)
 				                            nomem, new_op);
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
+				unsigned int_mantissa   = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
+				unsigned float_mantissa = tarval_ieee754_get_mantissa_size(tgt_mode);
 				res = gen_x87_gp_to_fp(node, src_mode);
 
 				/* we need a strict-Conv, if the int mode has more bits than the
 				 * float mantissa */
-				size_t int_mantissa = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
-				size_t float_mantissa;
-				/* FIXME There is no way to get the mantissa size of a mode */
-				switch (get_mode_size_bits(tgt_mode)) {
-					case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
-					case 64: float_mantissa = 52 + 1; break;
-					case 80:
-					case 96: float_mantissa = 64;     break;
-					default: float_mantissa = 0;      break;
-				}
 				if (float_mantissa < int_mantissa) {
 					res = gen_x87_strict_conv(tgt_mode, res);
 					SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
