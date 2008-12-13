@@ -91,18 +91,15 @@ static int can_move(ir_node *node, ir_node *after)
 			assert(get_irn_n_edges_kind(out, EDGE_KIND_DEP) == 0);
 			foreach_out_edge(out, edge2) {
 				ir_node *out2 = get_edge_src_irn(edge2);
-				/* phi represents a usage at block end */
-				if(is_Phi(out2))
-					continue;
-				/* ignore End keeps */
-				if (is_End(out2))
+				/* Phi or End represents a usage at block end. */
+				if(is_Phi(out2) || is_End(out2))
 					continue;
 				if(is_Sync(out2)) {
 					const ir_edge_t *edge3;
 					foreach_out_edge(out2, edge3) {
 						ir_node *out3 = get_edge_src_irn(edge3);
-						/* phi represents a usage at block end */
-						if(is_Phi(out3))
+						/* Phi or End represents a usage at block end. */
+						if(is_Phi(out3) || is_End(out3))
 							continue;
 						assert(!is_Sync(out3));
 						if(sched_get_time_step(out3) <= sched_get_time_step(after)) {
