@@ -246,6 +246,9 @@ int sc_get_precision(void);
 /** Return the bit at a given position. */
 int sc_get_bit_at(const void *value, unsigned pos);
 
+/** Set the bit at the specified position. */
+void sc_set_bit_at(void *value, unsigned pos);
+
 /* Strange semantics */
 int sc_had_carry(void);
 

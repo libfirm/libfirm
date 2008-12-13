@@ -1276,6 +1276,14 @@ int sc_get_bit_at(const void *value, unsigned pos) {
 	return 0;
 }
 
+void sc_set_bit_at(void *value, unsigned pos)
+{
+	char *val = value;
+	unsigned nibble = pos >> 2;
+
+	val[nibble] = or_table[(int)val[nibble]][(int)shift_table[pos & 3]];
+}
+
 int sc_is_zero(const void *value) {
 	const char* val = (const char *)value;
 	int counter;

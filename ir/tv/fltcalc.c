@@ -1329,7 +1329,10 @@ fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result)
+{
+	char *mant;
+
 	if (result == NULL) result = calc_buffer;
 
 	result->desc.exponent_size = desc->exponent_size;
@@ -1341,7 +1344,11 @@ fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result) {
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
 
-	sc_val_from_ulong(0, _mant(result));
+	mant = _mant(result);
+	sc_val_from_ulong(0, mant);
+	if (desc->explicit_one) {
+		sc_set_bit_at(mant, result->desc.mantissa_size + ROUNDING_BITS);
+	}
 
 	return result;
 }
