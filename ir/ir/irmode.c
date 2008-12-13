@@ -745,7 +745,9 @@ void init_mode(void) {
 	newmode.name    = new_id_from_chars("E", 1);
 	newmode.code    = irm_E;
 	newmode.sign    = 1;
-	newmode.size    = 80;
+	/* note that the tarval module is calculating with 80 bits, but we use
+	 * 96 bits, as that is what will be stored to memory by most hardware */
+	newmode.size    = 96;
 
 	mode_E = register_mode(&newmode);
 
