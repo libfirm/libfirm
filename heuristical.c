@@ -18,7 +18,9 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
+#if KAPS_STATISTIC
 static int dump = 0;
+#endif
 
 /* Forward declarations. */
 static void apply_Brute_Force(pbqp *pbqp);
@@ -386,6 +388,12 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 			fputs("edge has been eliminated<br>\n", pbqp->dump_file);
 		}
 
+#if KAPS_STATISTIC
+		if (dump == 0) {
+			pbqp->num_edges++;
+		}
+#endif
+
 		delete_edge(edge);
 		reorder_node(src_node);
 		reorder_node(tgt_node);
@@ -433,11 +441,15 @@ static void initial_simplify_edges(pbqp *pbqp)
 	}
 }
 
-num determine_solution(FILE *file)
+static num determine_solution(pbqp *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
 	num      solution   = 0;
+	FILE     *file;
+
+	assert(pbqp);
+	file = pbqp->dump_file;
 
 	if (file) {
 		dump_section(file, 1, "4. Determine Solution/Minimum");
@@ -446,6 +458,13 @@ num determine_solution(FILE *file)
 
 	/* Solve trivial nodes and calculate solution. */
 	node_len = node_bucket_get_length(node_buckets[0]);
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		pbqp->num_r0 = node_len;
+	}
+#endif
+
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		pbqp_node *node = node_buckets[0][node_index];
 		assert(node);
@@ -519,17 +538,23 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	/* ... and put node into bucket representing their degree. */
 	fill_node_buckets(pbqp);
 
+#if KAPS_STATISTIC
 	FILE *fh = fopen("solutions.pb", "a");
 	fprintf(fh, "Solution");
 	fclose(fh);
+#endif
 
 	apply_heuristic_reductions(pbqp);
 
-	pbqp->solution = determine_solution(pbqp->dump_file);
+	pbqp->solution = determine_solution(pbqp);
 
+#if KAPS_STATISTIC
 	fh = fopen("solutions.pb", "a");
-	fprintf(fh, ": %lld\n", pbqp->solution);
+	fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RN/BF:%u\n", pbqp->solution,
+				pbqp->num_edges, pbqp->num_r0, pbqp->num_r1, pbqp->num_r2,
+				pbqp->num_rn);
 	fclose(fh);
+#endif
 
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
@@ -586,6 +611,12 @@ void apply_RI(pbqp *pbqp)
 	}
 
 	reorder_node(other_node);
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		pbqp->num_r1++;
+	}
+#endif
 
 	/* Add node to back propagation list. */
 	node_bucket_insert(&reduced_bucket, node);
@@ -698,6 +729,12 @@ void apply_RII(pbqp *pbqp)
 	/* Disconnect node. */
 	disconnect_edge(src_node, src_edge);
 	disconnect_edge(tgt_node, tgt_edge);
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		pbqp->num_r2++;
+	}
+#endif
 
 	/* Add node to back propagation list. */
 	node_bucket_insert(&reduced_bucket, node);
@@ -846,9 +883,14 @@ void apply_RN(pbqp *pbqp)
 					node->index, min_index);
 	}
 
-	FILE *fh = fopen("solutions.pb", "a");
-	fprintf(fh, "[%u]", min_index);
-	fclose(fh);
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "[%u]", min_index);
+		fclose(fh);
+		pbqp->num_rn++;
+	}
+#endif
 
 	/* Now that we found the local minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
@@ -915,7 +957,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 		select_alternative(node_buckets[3][bucket_index], node_index);
 		apply_brute_force_reductions(pbqp);
 
-		value = determine_solution(pbqp->dump_file);
+		value = determine_solution(pbqp);
 
 		if (value < min) {
 			min = value;
@@ -965,7 +1007,10 @@ void apply_Brute_Force(pbqp *pbqp)
 		pbqp_dump_graph(pbqp);
 	}
 
+#if KAPS_STATISTIC
 	dump++;
+#endif
+
 	min_index = get_minimal_alternative(pbqp, node);
 	node = pbqp->nodes[node->index];
 
@@ -974,12 +1019,15 @@ void apply_Brute_Force(pbqp *pbqp)
 					node->index, min_index);
 	}
 
+#if KAPS_STATISTIC
 	dump--;
 	if (dump == 0) {
 		FILE *fh = fopen("solutions.pb", "a");
 		fprintf(fh, "[%u]", min_index);
 		fclose(fh);
+		pbqp->num_bf++;
 	}
+#endif
 
 	/* Now that we found the minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
@@ -993,17 +1041,23 @@ void solve_pbqp_brute_force(pbqp *pbqp)
 	/* ... and put node into bucket representing their degree. */
 	fill_node_buckets(pbqp);
 
+#if KAPS_STATISTIC
 	FILE *fh = fopen("solutions.pb", "a");
 	fprintf(fh, "Solution");
 	fclose(fh);
+#endif
 
 	apply_brute_force_reductions(pbqp);
 
-	pbqp->solution = determine_solution(pbqp->dump_file);
+	pbqp->solution = determine_solution(pbqp);
 
+#if KAPS_STATISTIC
 	fh = fopen("solutions.pb", "a");
-	fprintf(fh, ": %lld\n", pbqp->solution);
+	fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RN/BF:%u\n", pbqp->solution,
+			pbqp->num_edges, pbqp->num_r0, pbqp->num_r1, pbqp->num_r2,
+			pbqp->num_bf);
 	fclose(fh);
+#endif
 
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
