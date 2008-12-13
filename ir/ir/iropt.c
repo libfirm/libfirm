@@ -6343,7 +6343,8 @@ ir_node *optimize_node(ir_node *n) {
 			unsigned fp_model = get_irg_fp_model(current_ir_graph);
 			int old_fp_mode = tarval_fp_ops_enabled();
 
-			tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
+			tarval_enable_fp_ops(! (fp_model & fp_no_float_fold));
+
 			/* try to evaluate */
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
