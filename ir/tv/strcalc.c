@@ -699,7 +699,7 @@ static void do_divmod(const char *rDividend, const char *divisor, char *quot, ch
 		goto end;
 
 	case -1: /* dividend < divisor */
-		memcpy(rem, rDividend, calc_buffer_size);
+		memcpy(rem, dividend, calc_buffer_size);
 		goto end;
 
 	default: /* unluckily division is necessary :( */
