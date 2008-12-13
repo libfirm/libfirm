@@ -3518,11 +3518,15 @@ static ir_node *gen_Conv(ir_node *node)
 		new_op = be_transform_node(op);
 		/* we convert from float ... */
 		if (mode_is_float(tgt_mode)) {
+#if 0
+			/* Matze: I'm a bit unsure what the following is for? seems wrong
+			 * to me... */
 			if (src_mode == mode_E && tgt_mode == mode_D
 					&& !get_Conv_strict(node)) {
 				DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
 				return new_op;
 			}
+#endif
 
 			/* ... to float */
 			if (ia32_cg_config.use_sse2) {
@@ -3532,9 +3536,18 @@ static ir_node *gen_Conv(ir_node *node)
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				if (get_Conv_strict(node)) {
-					res = gen_x87_strict_conv(tgt_mode, new_op);
-					SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
-					return res;
+					/* if fp_no_float_fold is not set then we assume that we
+					 * don't have any float operations in a non
+					 * mode_float_arithmetic mode and can skip strict upconvs */
+					if (src_bits < tgt_bits
+							&& !(get_irg_fp_model(current_ir_graph) & fp_no_float_fold)) {
+						DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
+						return new_op;
+					} else {
+						res = gen_x87_strict_conv(tgt_mode, new_op);
+						SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
+						return res;
+					}
 				}
 				DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 				return new_op;
@@ -3562,23 +3575,22 @@ static ir_node *gen_Conv(ir_node *node)
 				set_ia32_ls_mode(res, tgt_mode);
 			} else {
 				res = gen_x87_gp_to_fp(node, src_mode);
-				if (get_Conv_strict(node)) {
-					/* The strict-Conv is only necessary, if the int mode has more bits
-					 * than the float mantissa */
-					size_t int_mantissa = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
-					size_t float_mantissa;
-					/* FIXME There is no way to get the mantissa size of a mode */
-					switch (get_mode_size_bits(tgt_mode)) {
-						case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
-						case 64: float_mantissa = 52 + 1; break;
-						case 80:
-						case 96: float_mantissa = 64;     break;
-						default: float_mantissa = 0;      break;
-					}
-					if (float_mantissa < int_mantissa) {
-						res = gen_x87_strict_conv(tgt_mode, res);
-						SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
-					}
+
+				/* we need a strict-Conv, if the int mode has more bits than the
+				 * float mantissa */
+				size_t int_mantissa = get_mode_size_bits(src_mode) - (mode_is_signed(src_mode) ? 1 : 0);
+				size_t float_mantissa;
+				/* FIXME There is no way to get the mantissa size of a mode */
+				switch (get_mode_size_bits(tgt_mode)) {
+					case 32: float_mantissa = 23 + 1; break; // + 1 for implicit 1
+					case 64: float_mantissa = 52 + 1; break;
+					case 80:
+					case 96: float_mantissa = 64;     break;
+					default: float_mantissa = 0;      break;
+				}
+				if (float_mantissa < int_mantissa) {
+					res = gen_x87_strict_conv(tgt_mode, res);
+					SET_IA32_ORIG_NODE(get_Proj_pred(res), node);
 				}
 				return res;
 			}
