@@ -141,6 +141,11 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 
 		res = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
 
+		/* align mode_E at 16 byte for faster access */
+		if (get_mode_size_bits(mode) >= 80) {
+			set_entity_align(res, 16);
+		}
+
 		set_entity_ld_ident(res, get_entity_ident(res));
 		set_entity_visibility(res, visibility_local);
 		set_entity_variability(res, variability_constant);
