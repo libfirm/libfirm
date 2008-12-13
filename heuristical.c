@@ -18,6 +18,8 @@ static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
+static int dump = 0;
+
 /* Forward declarations. */
 static void apply_Brute_Force(pbqp *pbqp);
 
@@ -517,11 +519,17 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	/* ... and put node into bucket representing their degree. */
 	fill_node_buckets(pbqp);
 
+	FILE *fh = fopen("solutions.pb", "a");
+	fprintf(fh, "Solution");
+	fclose(fh);
+
 	apply_heuristic_reductions(pbqp);
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
-	//printf("solution: %lld\n", pbqp->solution);
+	fh = fopen("solutions.pb", "a");
+	fprintf(fh, ": %lld\n", pbqp->solution);
+	fclose(fh);
 
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
@@ -838,6 +846,10 @@ void apply_RN(pbqp *pbqp)
 					node->index, min_index);
 	}
 
+	FILE *fh = fopen("solutions.pb", "a");
+	fprintf(fh, "[%u]", min_index);
+	fclose(fh);
+
 	/* Now that we found the local minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
 }
@@ -953,12 +965,20 @@ void apply_Brute_Force(pbqp *pbqp)
 		pbqp_dump_graph(pbqp);
 	}
 
+	dump++;
 	min_index = get_minimal_alternative(pbqp, node);
 	node = pbqp->nodes[node->index];
 
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
+	}
+
+	dump--;
+	if (dump == 0) {
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "[%u]", min_index);
+		fclose(fh);
 	}
 
 	/* Now that we found the minimum set all other costs to infinity. */
@@ -973,11 +993,17 @@ void solve_pbqp_brute_force(pbqp *pbqp)
 	/* ... and put node into bucket representing their degree. */
 	fill_node_buckets(pbqp);
 
+	FILE *fh = fopen("solutions.pb", "a");
+	fprintf(fh, "Solution");
+	fclose(fh);
+
 	apply_brute_force_reductions(pbqp);
 
 	pbqp->solution = determine_solution(pbqp->dump_file);
 
-	//printf("solution: %lld\n", pbqp->solution);
+	fh = fopen("solutions.pb", "a");
+	fprintf(fh, ": %lld\n", pbqp->solution);
+	fclose(fh);
 
 	/* Solve reduced nodes. */
 	back_propagate(pbqp);
