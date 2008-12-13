@@ -135,6 +135,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
 		in[0] = new_Proj(cond, mode_X, pn_Cond_false);
 		neblock = new_Block(1, in);
+		set_cur_block(neblock);
 
 		/* second part: "else if(sel == val[1]) goto target[1] else goto default;" */
 		val  = new_Const_long(get_irn_mode(env->sel), curcases[1].value);
@@ -160,6 +161,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		set_cur_block(curblock);
 		in[0] = new_Proj(cond, mode_X, pn_Cond_false);
 		geblock = new_Block(1, in);
+		set_cur_block(geblock);
 
 		create_if_cascade(env, ltblock, curcases, midcase);
 		create_if_cascade(env, geblock, curcases + midcase, numcases - midcase);

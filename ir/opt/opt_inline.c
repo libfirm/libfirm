@@ -1167,7 +1167,9 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			}
 		}
 		if (n_exc > 0) {
-			new_Block(n_exc, cf_pred);      /* watch it: current_block is changed! */
+			ir_node *block = new_Block(n_exc, cf_pred);
+			set_cur_block(block);
+
 			set_Tuple_pred(call, pn_Call_X_except, new_Jmp());
 			/* The Phi for the memories with the exception objects */
 			n_exc = 0;

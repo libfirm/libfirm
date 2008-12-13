@@ -203,6 +203,7 @@ static ir_node * create_Block(int n, ir_node ** in) {
   ir_node * block;
   set_optimize(0);
   block = new_Block(n, in);
+  set_cur_block(block);
   set_optimize(rem_opt);
   return block;
 }
