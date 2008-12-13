@@ -2349,7 +2349,8 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
-		NULL,  /* will be set below */
+		NULL,  /* ifconv info will be set below */
+		NULL,  /* float arithmetic mode, will be set below */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
 		ia32_create_trampoline_fkt,
@@ -2361,8 +2362,9 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	 * is called... */
 	init_asm_constraints();
 
-	p.dep_param    = &ad;
-	p.if_conv_info = &ifconv;
+	p.dep_param             = &ad;
+	p.if_conv_info          = &ifconv;
+	p.mode_float_arithmetic = mode_E;
 	return &p;
 }
 

@@ -824,6 +824,7 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* no if conversion settings */
+		NULL,  /* no float arithmetic mode (TODO) */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL   /* no trampoline support: no trampoline builder */

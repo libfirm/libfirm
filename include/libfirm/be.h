@@ -82,6 +82,12 @@ typedef struct backend_params {
 	/** Backend settings for if-conversion. */
 	const ir_settings_if_conv_t *if_conv_info;
 
+	/**
+	 * some backends like x87 can only do arithmetic in a specific float
+	 * mode (but convert to/from other float modes).
+	 */
+	ir_mode *mode_float_arithmetic;
+
 	/** Size of the trampoline code. */
 	unsigned trampoline_size;
 

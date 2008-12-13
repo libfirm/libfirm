@@ -1123,7 +1123,8 @@ static const backend_params *arm_get_libfirm_params(void) {
 		NULL,  /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
-		NULL,  /* will be set below */
+		NULL,  /* ifconv_info will be set below */
+		NULL,  /* float arithmetic mode (TODO) */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL   /* no trampoline support: no trampoline builder */

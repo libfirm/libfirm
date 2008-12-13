@@ -553,6 +553,7 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 		NULL,  /* no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* parameter for if conversion */
+		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL   /* no trampoline support: no trampoline builder */
