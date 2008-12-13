@@ -1525,7 +1525,7 @@ int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc
 	if (0 < v && v < (1 << desc->exponent_size) - 1) {
 		/* exponent can be encoded, now check the mantissa */
 		v = value->desc.mantissa_size + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
-		return v < desc->mantissa_size;
+		return v <= desc->mantissa_size;
 	}
 	return 0;
 }
