@@ -297,22 +297,27 @@ ir_graph *new_ir_graph(ir_entity *ent, int n_loc) {
 
 /* Make a rudimentary IR graph for the constant code.
    Must look like a correct irg, spare everything else. */
-ir_graph *new_const_code_irg(void) {
-	ir_graph *res;
-	ir_node  *end, *start_block, *start, *projX;
+ir_graph *new_const_code_irg(void)
+{
+	ir_graph *res = alloc_graph();
+	ir_node  *bad;
 	ir_node  *body_block;
-
-	res = alloc_graph();
+	ir_node  *end;
+	ir_node  *end_block;
+	ir_node  *no_mem;
+	ir_node  *projX;
+	ir_node  *start_block;
+	ir_node  *start;
 
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, NULL);
 
-	current_ir_graph = res;
-	res->n_loc = 1;         /* Only the memory. */
-	res->visited = 0;       /* visited flag, for the ir walker */
+	current_ir_graph   = res;
+	res->n_loc         = 1; /* Only the memory. */
+	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
-	res->obst       = XMALLOC(struct obstack);
-	obstack_init (res->obst);
+	res->obst          = XMALLOC(struct obstack);
+	obstack_init(res->obst);
 	res->extbb_obst = NULL;
 
 	res->last_node_idx = 0;
@@ -322,52 +327,53 @@ ir_graph *new_const_code_irg(void) {
 	res->extblk_state     = ir_extblk_info_none;
 	res->fp_model         = fp_model_precise;
 
-	res->value_table = new_identities(); /* value table for global value
-					   numbering for optimizing use in
-					   iropt.c */
-	res->ent = NULL;
+	/* value table for global value numbering for optimizing use in iropt.c */
+	res->value_table = new_identities();
+	res->ent         = NULL;
 	res->frame_type  = NULL;
 
 	/* the Anchor node must be created first */
 	res->anchor = new_Anchor(res);
 
 	/* -- The end block -- */
-	set_irg_end_block (res, new_immBlock());
-	set_cur_block(get_irg_end_block(res));
+	end_block = new_immBlock();
+	set_irg_end_block(res, end_block);
+	set_cur_block(end_block);
 	end = new_End();
 	set_irg_end       (res, end);
 	set_irg_end_reg   (res, end);
 	set_irg_end_except(res, end);
-	mature_immBlock(get_cur_block());  /* mature the end block */
+	mature_immBlock(end_block);
 
 	/* -- The start block -- */
 	start_block        = new_immBlock();
 	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
-	set_irg_bad        (res, new_ir_node (NULL, res, start_block, op_Bad, mode_T, 0, NULL));
-	set_irg_no_mem     (res, new_ir_node (NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
-	start              = new_Start();
-	set_irg_start      (res, start);
+	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
+	set_irg_bad(res, bad);
+	no_mem = new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL);
+	set_irg_no_mem(res, no_mem);
+	start = new_Start();
+	set_irg_start(res, start);
 
 	/* Proj results of start node */
 	set_irg_initial_mem(res, new_Proj(start, mode_M, pn_Start_M));
 	projX = new_Proj(start, mode_X, pn_Start_X_initial_exec);
 	add_immBlock_pred(start_block, projX);
-	mature_immBlock  (start_block);  /* mature the start block */
-
+	mature_immBlock(start_block);
 
 	body_block = new_immBlock();
 	add_immBlock_pred(body_block, projX);
-	mature_immBlock  (body_block);   /* mature the 'body' block for expressions */
+	mature_immBlock(body_block); /* mature the 'body' block for expressions */
 	set_cur_block(body_block);
 
 	/* Set the visited flag high enough that the blocks will never be visited. */
-	set_irn_visited(get_cur_block(), -1);
-	set_Block_block_visited(get_cur_block(), -1);
+	set_irn_visited(body_block, -1);
+	set_Block_block_visited(body_block, -1);
 	set_Block_block_visited(start_block, -1);
 	set_irn_visited(start_block, -1);
-	set_irn_visited(get_irg_bad(res), -1);
-	set_irn_visited(get_irg_no_mem(res), -1);
+	set_irn_visited(bad, -1);
+	set_irn_visited(no_mem, -1);
 
 	res->phase_state = phase_high;
 
