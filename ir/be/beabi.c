@@ -564,7 +564,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (is_atomic_type(param_type)) {
 				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
-				store = new_rd_Store(dbgi, irg, bl, mem_input, addr, param);
+				store = new_rd_Store(dbgi, irg, bl, mem_input, addr, param, 0);
 				mem = new_r_Proj(irg, bl, store, mode_M, pn_Store_M);
 			}
 
@@ -1616,7 +1616,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 
 			/* the backing store itself */
 			store = new_r_Store(irg, first_bl, mem, addr,
-			                    new_r_Proj(irg, args_bl, args, mode, i));
+			                    new_r_Proj(irg, args_bl, args, mode, i), 0);
 		}
 		/* the new memory Proj gets the last Proj from store */
 		set_Proj_pred(nmem, store);
@@ -1890,8 +1890,7 @@ static void modify_irg(be_abi_irg_t *env)
 					ir_mode *mode      = get_type_mode(param_type);
 					ir_mode *load_mode = arg->load_mode;
 
-					ir_node *load = new_r_Load(irg, reg_params_bl, new_NoMem(), addr, load_mode);
-					set_irn_pinned(load, op_pin_state_floats);
+					ir_node *load = new_r_Load(irg, reg_params_bl, new_NoMem(), addr, load_mode, cons_floats);
 					repl = new_r_Proj(irg, reg_params_bl, load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
@@ -2126,9 +2125,8 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
 		   and need no memory input */
-		load     = new_r_Load(irg, block, new_NoMem(), add, mode);
+		load     = new_r_Load(irg, block, new_NoMem(), add, mode, cons_floats);
 		load_res = new_r_Proj(irg, block, load, mode, pn_Load_res);
-		set_irn_pinned(load, op_pin_state_floats);
 
 		set_irn_n(node, i, load_res);
 	}

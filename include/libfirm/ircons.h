@@ -295,8 +295,8 @@
  *    ir_node *new_Cast   (ir_node *op, ir_type *to_tp);
  *    ir_node *new_Carry  (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode);
- *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
+ *    ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags);
+ *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val, cons_flags flags);
  *    ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
  *                         where_alloc where);
  *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
@@ -853,7 +853,7 @@
  *    OPERATIONS TO MANAGE MEMORY EXPLICITLY
  *    --------------------------------------
  *
- *    ir_node *new_Load (ir_node *store, ir_node *addr, ir_mode *mode)
+ *    ir_node *new_Load (ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags)
  *    ----------------------------------------------------------------
  *
  *    The Load operation reads a value from memory.
@@ -862,6 +862,7 @@
  *    *store        The current memory.
  *    *addr         A pointer to the variable to be read in this memory.
  *    *mode         The mode of the value to be loaded.
+ *     flags        Additional flags for alignment, volatility and pin state.
  *
  *    Inputs:
  *      The memory and a pointer to a variable in this memory.
@@ -869,7 +870,7 @@
  *      A tuple of the memory, a control flow to be taken in case of
  *      an exception and the loaded value.
  *
- *    ir_node *new_Store (ir_node *store, ir_node *addr, ir_node *val)
+ *    ir_node *new_Store (ir_node *store, ir_node *addr, ir_node *val, cons_flags flags)
  *    ----------------------------------------------------------------
  *
  *    The Store operation writes a value to a variable in memory.
@@ -1120,6 +1121,13 @@
 #define FIRM_IR_IRCONS_H
 
 #include "firm_types.h"
+
+typedef enum cons_flags {
+	cons_none      = 0,
+	cons_volatile  = 1U << 0,
+	cons_unaligned = 1U << 1,
+	cons_floats    = 1U << 2
+} cons_flags;
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface                                                       */
@@ -1740,9 +1748,10 @@ ir_node *new_rd_Phi    (dbg_info *db, ir_graph *irg, ir_node *block, int arity,
  * @param *store The current memory
  * @param *adr   A pointer to the variable to be read in this memory.
  * @param *mode  The mode of the value to be loaded.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
 ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
-			ir_node *store, ir_node *adr, ir_mode *mode);
+			ir_node *store, ir_node *adr, ir_mode *mode, cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -1752,9 +1761,10 @@ ir_node *new_rd_Load   (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *store The current memory
  * @param *adr   A pointer to the variable to be read in this memory.
  * @param *val   The value to write to this variable.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
 ir_node *new_rd_Store  (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *adr, ir_node *val);
+               ir_node *store, ir_node *adr, ir_node *val, cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -2542,9 +2552,10 @@ ir_node *new_r_Phi    (ir_graph *irg, ir_node *block, int arity,
  * @param *store The current memory
  * @param *adr   A pointer to the variable to be read in this memory.
  * @param *mode  The mode of the value to be loaded.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
 ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
-               ir_node *store, ir_node *adr, ir_mode *mode);
+               ir_node *store, ir_node *adr, ir_mode *mode, cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -2553,9 +2564,10 @@ ir_node *new_r_Load   (ir_graph *irg, ir_node *block,
  * @param *store The current memory
  * @param *adr   A pointer to the variable to be read in this memory.
  * @param *val   The value to write to this variable.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
 ir_node *new_r_Store  (ir_graph *irg, ir_node *block,
-		       ir_node *store, ir_node *adr, ir_node *val);
+		       ir_node *store, ir_node *adr, ir_node *val, cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -3369,8 +3381,9 @@ ir_node *new_d_Phi    (dbg_info *db, int arity, ir_node *in[], ir_mode *mode);
  * @param *store The current memory
  * @param *addr  A pointer to the variable to be read in this memory.
  * @param *mode  The mode of the value to be loaded.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_d_Load   (dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode);
+ir_node *new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -3380,8 +3393,9 @@ ir_node *new_d_Load   (dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mod
  * @param *store The current memory
  * @param *addr  A pointer to the variable to be read in this memory.
  * @param *val   The value to write to this variable.
+ * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_d_Store  (dbg_info *db, ir_node *store, ir_node *addr, ir_node *val);
+ir_node *new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val, cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -4154,16 +4168,18 @@ ir_node *new_Phi    (int arity, ir_node *in[], ir_mode *mode);
  * @param *store  The current memory.
  * @param *addr   A pointer to the variable to be read in this memory.
  * @param *mode   The mode of the value to be loaded.
+ * @param  flags  Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode);
+ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags);
 
 /** Constructor for a Store node.
  *
  * @param *store  The current memory.
  * @param *addr   A pointer to the variable to be read in this memory.
  * @param *val    The value to write to this variable.
+ * @param  flags  Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val);
+ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val, cons_flags flags);
 
 /** Constructor for a Alloc node.
  *

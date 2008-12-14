@@ -123,12 +123,12 @@ instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 	unknown = new_r_Unknown(irg, mode_M);
 	cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
 	offset  = new_r_Add(irg, bb, address, cnst, get_modeP_data());
-	load    = new_r_Load(irg, bb, unknown, offset, mode_Iu);
+	load    = new_r_Load(irg, bb, unknown, offset, mode_Iu, 0);
 	projm   = new_r_Proj(irg, bb, load, mode_M, pn_Load_M);
 	proji   = new_r_Proj(irg, bb, load, mode_Iu, pn_Load_res);
 	cnst    = new_r_Const_long(irg, mode_Iu, 1);
 	add     = new_r_Add(irg, bb, proji, cnst, mode_Iu);
-	store   = new_r_Store(irg, bb, projm, offset, add);
+	store   = new_r_Store(irg, bb, projm, offset, add, 0);
 	projm   = new_r_Proj(irg, bb, store, mode_M, pn_Store_M);
 	set_irn_link(bb, projm);
 	set_irn_link(projm, load);

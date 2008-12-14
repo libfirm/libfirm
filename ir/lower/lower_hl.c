@@ -204,11 +204,11 @@ static void lower_sel(ir_node *sel) {
 			cnst = new_rd_Const(dbg, irg, tv);
 			add  = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel), cnst, mode);
 #ifdef DO_CACHEOPT  /* cacheopt version */
-			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), sel, ent_mode);
+			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), sel, ent_mode, 0);
 			cacheopt_map_addrs_register_node(newn);
 			set_Load_ptr(newn, add);
 #else /* normal code */
-			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), add, ent_mode);
+			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), add, ent_mode, 0);
 #endif
 			newn = new_r_Proj(irg, bl, newn, ent_mode, pn_Load_res);
 
@@ -478,7 +478,7 @@ static void lower_bitfields_stores(ir_node *store) {
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
-		irn  = new_r_Load(current_ir_graph, block, mem, ptr, mode);
+		irn  = new_r_Load(current_ir_graph, block, mem, ptr, mode, 0);
 		mem  = new_r_Proj(current_ir_graph, block, irn, mode_M, pn_Load_M);
 		irn  = new_r_Proj(current_ir_graph, block, irn, mode, pn_Load_res);
 

@@ -1107,7 +1107,7 @@ static void create_abstract_load(ir_graph *irg, proc_t *proc, eff_t *eff)
     sel = addr -> firmnode;
     mode = mode_ANY;
   }
-  load = new_Load(get_store(), sel, mode);
+  load = new_Load(get_store(), sel, mode, 0);
   set_store(new_Proj(load, mode_M, 0));
   eff -> firmnode = new_Proj(load, mode, 2);
 
@@ -1154,7 +1154,7 @@ static void create_abstract_store(ir_graph *irg, proc_t *proc, eff_t *eff)
   else {
     sel = addr -> firmnode;
   }
-  store = new_Store(get_store(), sel, val -> firmnode);
+  store = new_Store(get_store(), sel, val -> firmnode, 0);
   set_store(new_Proj(store, mode_M, 0));
   eff -> firmnode = store;
 }

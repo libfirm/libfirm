@@ -356,14 +356,16 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate a Load: create two.
  */
 static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_mode  *low_mode = env->params->low_unsigned;
-	ir_graph *irg = current_ir_graph;
-	ir_node  *adr = get_Load_ptr(node);
-	ir_node  *mem = get_Load_mem(node);
-	ir_node  *low, *high, *proj;
-	dbg_info *dbg;
-	ir_node  *block = get_nodes_block(node);
-	int      idx;
+	ir_mode    *low_mode = env->params->low_unsigned;
+	ir_graph   *irg = current_ir_graph;
+	ir_node    *adr = get_Load_ptr(node);
+	ir_node    *mem = get_Load_mem(node);
+	ir_node    *low, *high, *proj;
+	dbg_info   *dbg;
+	ir_node    *block = get_nodes_block(node);
+	int         idx;
+	cons_flags  volatility = get_Load_volatility(node) == volatility_is_volatile
+	                         ? cons_volatile : 0;
 
 	if (env->params->little_endian) {
 		low  = adr;
@@ -379,12 +381,9 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	/* create two loads */
 	dbg  = get_irn_dbg_info(node);
-	low  = new_rd_Load(dbg, irg, block, mem,  low,  low_mode);
+	low  = new_rd_Load(dbg, irg, block, mem,  low,  low_mode, volatility);
 	proj = new_r_Proj(irg, block, low, mode_M, pn_Load_M);
-	high = new_rd_Load(dbg, irg, block, proj, high, mode);
-
-	set_Load_volatility(low,  get_Load_volatility(node));
-	set_Load_volatility(high, get_Load_volatility(node));
+	high = new_rd_Load(dbg, irg, block, proj, high, mode, volatility);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
@@ -421,13 +420,14 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate a Store: create two.
  */
 static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_graph *irg;
-	ir_node  *block, *adr, *mem;
-	ir_node  *low, *high, *irn, *proj;
-	dbg_info *dbg;
-	int      idx;
+	ir_graph     *irg;
+	ir_node      *block, *adr, *mem;
+	ir_node      *low, *high, *irn, *proj;
+	dbg_info     *dbg;
+	int           idx;
 	node_entry_t *entry;
-	(void) node;
+	cons_flags    volatility = get_Store_volatility(node) == volatility_is_volatile
+	                           ? cons_volatile : 0;
 	(void) mode;
 
 	irn = get_Store_value(node);
@@ -459,12 +459,9 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	/* create two Stores */
 	dbg = get_irn_dbg_info(node);
-	low  = new_rd_Store(dbg, irg, block, mem, low,  entry->low_word);
+	low  = new_rd_Store(dbg, irg, block, mem, low,  entry->low_word, volatility);
 	proj = new_r_Proj(irg, block, low, mode_M, pn_Store_M);
-	high = new_rd_Store(dbg, irg, block, proj, high, entry->high_word);
-
-	set_Store_volatility(low,  get_Store_volatility(node));
-	set_Store_volatility(high, get_Store_volatility(node));
+	high = new_rd_Store(dbg, irg, block, proj, high, entry->high_word, volatility);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);

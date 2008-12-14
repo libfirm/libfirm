@@ -1627,7 +1627,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	}
 
 	/* fourth step: create the Store */
-	store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD);
+	store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD, 0);
 #ifdef DO_CACHEOPT
 	co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
@@ -1878,7 +1878,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 					ir_node *pred = get_Block_cfgpred_block(blk, pos);
 					ir_node *irn, *mem;
 
-					pe->load = irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode);
+					pe->load = irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
 					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(current_ir_graph, pred, irn, mode_M, pn_Load_M);

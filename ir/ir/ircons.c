@@ -516,7 +516,7 @@ new_bd_Return(dbg_info *db, ir_node *block,
 
 static ir_node *
 new_bd_Load(dbg_info *db, ir_node *block,
-        ir_node *store, ir_node *adr, ir_mode *mode) {
+        ir_node *store, ir_node *adr, ir_mode *mode, cons_flags flags) {
 	ir_node  *in[2];
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
@@ -524,10 +524,10 @@ new_bd_Load(dbg_info *db, ir_node *block,
 	in[0] = store;
 	in[1] = adr;
 	res = new_ir_node(db, irg, block, op_Load, mode_T, 2, in);
-	res->attr.load.exc.pin_state = op_pin_state_pinned;
+	res->attr.load.exc.pin_state = flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned;
 	res->attr.load.load_mode     = mode;
-	res->attr.load.volatility    = volatility_non_volatile;
-	res->attr.load.aligned       = align_is_aligned;
+	res->attr.load.volatility    = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
+	res->attr.load.aligned       = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
@@ -535,7 +535,7 @@ new_bd_Load(dbg_info *db, ir_node *block,
 
 static ir_node *
 new_bd_Store(dbg_info *db, ir_node *block,
-         ir_node *store, ir_node *adr, ir_node *val) {
+         ir_node *store, ir_node *adr, ir_node *val, cons_flags flags) {
 	ir_node  *in[3];
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
@@ -544,9 +544,10 @@ new_bd_Store(dbg_info *db, ir_node *block,
 	in[1] = adr;
 	in[2] = val;
 	res = new_ir_node(db, irg, block, op_Store, mode_T, 3, in);
-	res->attr.store.exc.pin_state = op_pin_state_pinned;
-	res->attr.store.volatility    = volatility_non_volatile;
-	res->attr.store.aligned       = align_is_aligned;
+	res->attr.store.exc.pin_state = flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned;
+	res->attr.store.volatility    = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
+	res->attr.store.aligned       = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
+
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
@@ -1139,12 +1140,12 @@ new_rd_Return(dbg_info *db, ir_graph *irg, ir_node *block,
 
 ir_node *
 new_rd_Load(dbg_info *db, ir_graph *irg, ir_node *block,
-            ir_node *store, ir_node *adr, ir_mode *mode) {
+            ir_node *store, ir_node *adr, ir_mode *mode, cons_flags flags) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Load(db, block, store, adr, mode);
+	res = new_bd_Load(db, block, store, adr, mode, flags);
 	current_ir_graph = rem;
 
 	return res;
@@ -1152,12 +1153,12 @@ new_rd_Load(dbg_info *db, ir_graph *irg, ir_node *block,
 
 ir_node *
 new_rd_Store(dbg_info *db, ir_graph *irg, ir_node *block,
-             ir_node *store, ir_node *adr, ir_node *val) {
+             ir_node *store, ir_node *adr, ir_node *val, cons_flags flags) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Store(db, block, store, adr, val);
+	res = new_bd_Store(db, block, store, adr, val, flags);
 	current_ir_graph = rem;
 
 	return res;
@@ -1616,12 +1617,12 @@ ir_node *new_r_Phi(ir_graph *irg, ir_node *block, int arity,
 	return new_rd_Phi(NULL, irg, block, arity, in, mode);
 }
 ir_node *new_r_Load(ir_graph *irg, ir_node *block,
-                    ir_node *store, ir_node *adr, ir_mode *mode) {
-	return new_rd_Load(NULL, irg, block, store, adr, mode);
+                    ir_node *store, ir_node *adr, ir_mode *mode, cons_flags flags) {
+	return new_rd_Load(NULL, irg, block, store, adr, mode, flags);
 }
 ir_node *new_r_Store(ir_graph *irg, ir_node *block,
-                     ir_node *store, ir_node *adr, ir_node *val) {
-	return new_rd_Store(NULL, irg, block, store, adr, val);
+                     ir_node *store, ir_node *adr, ir_node *val, cons_flags flags) {
+	return new_rd_Store(NULL, irg, block, store, adr, val, flags);
 }
 ir_node *new_r_Alloc(ir_graph *irg, ir_node *block, ir_node *store,
                      ir_node *size, ir_type *alloc_type, ir_where_alloc where) {
@@ -2503,10 +2504,10 @@ new_d_Return(dbg_info *db, ir_node* store, int arity, ir_node **in) {
 }  /* new_d_Return */
 
 ir_node *
-new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode) {
+new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags) {
 	ir_node *res;
 	res = new_bd_Load(db, current_ir_graph->current_block,
-	                  store, addr, mode);
+	                  store, addr, mode, flags);
 #if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);
 #endif
@@ -2515,10 +2516,10 @@ new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode) {
 }  /* new_d_Load */
 
 ir_node *
-new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val) {
+new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val, cons_flags flags) {
 	ir_node *res;
 	res = new_bd_Store(db, current_ir_graph->current_block,
-	                   store, addr, val);
+	                   store, addr, val, flags);
 #if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
 #endif
@@ -3028,11 +3029,11 @@ ir_node *new_Cast(ir_node *op, ir_type *to_tp) {
 ir_node *new_Phi(int arity, ir_node **in, ir_mode *mode) {
 	return new_d_Phi(NULL, arity, in, mode);
 }
-ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode) {
-	return new_d_Load(NULL, store, addr, mode);
+ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode, cons_flags flags) {
+	return new_d_Load(NULL, store, addr, mode, flags);
 }
-ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val) {
-	return new_d_Store(NULL, store, addr, val);
+ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val, cons_flags flags) {
+	return new_d_Store(NULL, store, addr, val, flags);
 }
 ir_node *new_Alloc(ir_node *store, ir_node *size, ir_type *alloc_type,
                    ir_where_alloc where) {

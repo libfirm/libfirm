@@ -752,7 +752,7 @@ replace_by_call:
 			mode  = get_type_mode(char_tp);
 
 			/* replace the strcmp by (*x) */
-			irn = new_rd_Load(dbg, current_ir_graph, block, mem, v, mode);
+			irn = new_rd_Load(dbg, current_ir_graph, block, mem, v, mode, 0);
 			mem = new_r_Proj(current_ir_graph, block, irn, mode_M, pn_Load_M);
 			exc = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_except);
 			reg = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_regular);
