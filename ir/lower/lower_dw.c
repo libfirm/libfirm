@@ -364,7 +364,7 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	dbg_info   *dbg;
 	ir_node    *block = get_nodes_block(node);
 	int         idx;
-	cons_flags  volatility = get_Load_volatility(node) == volatility_is_volatile
+	ir_cons_flags volatility = get_Load_volatility(node) == volatility_is_volatile
 	                         ? cons_volatile : 0;
 
 	if (env->params->little_endian) {
@@ -426,7 +426,7 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	dbg_info     *dbg;
 	int           idx;
 	node_entry_t *entry;
-	cons_flags    volatility = get_Store_volatility(node) == volatility_is_volatile
+	ir_cons_flags    volatility = get_Store_volatility(node) == volatility_is_volatile
 	                           ? cons_volatile : 0;
 	(void) mode;
 
