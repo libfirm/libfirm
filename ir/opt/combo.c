@@ -300,7 +300,7 @@ static void check_opcode(const partition_t *Z) {
 			}
 			first = 0;
 		} else {
-			assert(key.code  == get_irn_opcode(irn));
+			assert((unsigned)key.code  == get_irn_opcode(irn));
 			assert(key.mode  == get_irn_mode(irn));
 			assert(key.arity == get_irn_arity(irn));
 
