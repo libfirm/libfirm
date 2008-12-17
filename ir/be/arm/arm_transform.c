@@ -1508,8 +1508,6 @@ static inline ir_node *create_const(ir_node **place,
 	res = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
-
-	add_irn_dep(get_irg_end(env_cg->irg), res);
 	return res;
 }
 
