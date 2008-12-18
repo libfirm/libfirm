@@ -176,4 +176,9 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
                                      const ir_mode *imode, const ir_mode *omode,
                                      void *context);
 
+/**
+ * Return the stack entity that contains the return address.
+ */
+ir_entity *ia32_get_return_address_entity(void);
+
 #endif

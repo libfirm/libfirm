@@ -90,8 +90,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_node         *initial_fpcw = NULL;
 
-extern ir_op *get_op_Mulh(void);
-
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
         ir_node *base, ir_node *index, ir_node *mem, ir_node *op1,
         ir_node *op2);
@@ -4520,6 +4518,82 @@ static ir_node *gen_be_Call(ir_node *node)
 	return call;
 }
 
+/**
+ * Transform Builtin return_address
+ */
+static ir_node *gen_return_address(ir_node *node) {
+	ir_node *param = get_Builtin_param(node, 0);
+	ir_node *frame = get_Builtin_param(node, 1);
+	dbg_info *dbgi = get_irn_dbg_info(node);
+	tarval  *tv    = get_Const_tarval(param);
+	long    value  = get_tarval_long(tv);
+
+	ir_node *block = be_transform_node(get_nodes_block(node));
+
+	if (value == 0) {
+		/* the return address of the current function */
+		ir_node   *new_op = be_transform_node(frame);
+		ir_node   *noreg  = ia32_new_NoReg_gp(env_cg);
+		ir_node   *new_node;
+
+		new_node = new_bd_ia32_Load(dbgi, block, new_op, noreg, get_irg_no_mem(current_ir_graph));
+
+		set_irn_pinned(new_node, get_irn_pinned(node));
+		set_ia32_op_type(new_node, ia32_AddrModeS);
+		set_ia32_ls_mode(new_node, mode_Iu);
+
+		set_ia32_am_offs_int(new_node, 0);
+		set_ia32_use_frame(new_node);
+		set_ia32_frame_ent(new_node, ia32_get_return_address_entity());
+
+		if (get_irn_pinned(node) == op_pin_state_floats) {
+			assert(pn_ia32_xLoad_res == pn_ia32_vfld_res
+					&& pn_ia32_vfld_res == pn_ia32_Load_res
+					&& pn_ia32_Load_res == pn_ia32_res);
+			arch_irn_add_flags(new_node, arch_irn_flags_rematerializable);
+		}
+
+		SET_IA32_ORIG_NODE(new_node, node);
+		return new_rd_Proj(dbgi, current_ir_graph, block, new_node, mode_Iu, pn_ia32_Load_res);
+	}
+	panic("builtin_return_address(%ld) not supported in IA32", value);
+}
+
+/**
+ * Transform Builtin node.
+ */
+static ir_node *gen_Builtin(ir_node *node) {
+	ir_builtin_kind kind = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_return_address:
+		return gen_return_address(node);
+	case ir_bk_frame_addess:
+	case ir_bk_prefetch:
+		break;
+	}
+	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
+}
+
+/**
+ * Transform Proj(Builtin) node.
+ */
+static ir_node *gen_Proj_Builtin(ir_node *proj) {
+	ir_node         *node = get_Proj_pred(proj);
+	ir_node         *new_node = be_transform_node(node);
+	ir_builtin_kind kind      = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_return_address:
+	case ir_bk_frame_addess:
+		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
+		return new_node;
+	case ir_bk_prefetch:
+		break;
+	}
+	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
+}
+
 static ir_node *gen_be_IncSP(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
@@ -4725,6 +4799,8 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Load(node);
 	case iro_ASM:
 		return gen_Proj_ASM(node);
+	case iro_Builtin:
+		return gen_Proj_Builtin(node);
 	case iro_Div:
 	case iro_Mod:
 	case iro_DivMod:
@@ -4868,7 +4944,7 @@ static void register_transformers(void)
 	BAD(EndExcept);
 
 	/* handle builtins */
-	BAD(Builtin);
+	GEN(Builtin);
 
 	/* handle generic backend nodes */
 	GEN(be_FrameAddr);

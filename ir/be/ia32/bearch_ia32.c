@@ -101,6 +101,14 @@ static set *cur_reg_set = NULL;
 ir_mode         *mode_fpcw       = NULL;
 ia32_code_gen_t *ia32_current_cg = NULL;
 
+/** The current omit-fp state */
+static unsigned ia32_curr_fp_ommitted  = 0;
+static ir_type *omit_fp_between_type   = NULL;
+static ir_type *between_type           = NULL;
+static ir_entity *old_bp_ent           = NULL;
+static ir_entity *ret_addr_ent         = NULL;
+static ir_entity *omit_fp_ret_addr_ent = NULL;
+
 /**
  * The environment for the intrinsic mapping.
  */
@@ -337,6 +345,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 	ia32_code_gen_t  *cg       = ia32_current_cg;
 	const arch_env_t *arch_env = env->aenv;
 
+	ia32_curr_fp_ommitted = env->flags.try_omit_fp;
 	if (! env->flags.try_omit_fp) {
 		ir_graph *irg     = env->irg;
 		ir_node  *bl      = get_irg_start_block(irg);
@@ -464,23 +473,11 @@ static void ia32_abi_done(void *self) {
 }
 
 /**
- * Produces the type which sits between the stack args and the locals on the stack.
- * it will contain the return address and space to store the old base pointer.
- * @return The Firm type modeling the ABI between type.
+ * Build the between type and entities if not already build.
  */
-static ir_type *ia32_abi_get_between_type(void *self)
-{
+static void ia32_build_between_type(void) {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
-	static ir_type *omit_fp_between_type = NULL;
-	static ir_type *between_type         = NULL;
-
-	ia32_abi_env_t *env = self;
-
 	if (! between_type) {
-		ir_entity *old_bp_ent;
-		ir_entity *ret_addr_ent;
-		ir_entity *omit_fp_ret_addr_ent;
-
 		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_Iu);
 		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
 
@@ -500,9 +497,28 @@ static ir_type *ia32_abi_get_between_type(void *self)
 		set_type_size_bytes(omit_fp_between_type, get_type_size_bytes(ret_addr_type));
 		set_type_state(omit_fp_between_type, layout_fixed);
 	}
-
-	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
 #undef IDENT
+}
+
+/**
+ * Produces the type which sits between the stack args and the locals on the stack.
+ * it will contain the return address and space to store the old base pointer.
+ * @return The Firm type modeling the ABI between type.
+ */
+static ir_type *ia32_abi_get_between_type(void *self)
+{
+	ia32_abi_env_t *env = self;
+
+	ia32_build_between_type();
+	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
+}
+
+/**
+ * Return the stack entity that contains the return address.
+ */
+ir_entity *ia32_get_return_address_entity(void) {
+	ia32_build_between_type();
+	return ia32_curr_fp_ommitted ? omit_fp_ret_addr_ent : ret_addr_ent;
 }
 
 /**
