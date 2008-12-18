@@ -57,6 +57,7 @@ ir_op *op_Const;       ir_op *get_op_Const     (void) { return op_Const;     }
 ir_op *op_SymConst;    ir_op *get_op_SymConst  (void) { return op_SymConst;  }
 
 ir_op *op_Call;        ir_op *get_op_Call      (void) { return op_Call;      }
+ir_op *op_Builtin;     ir_op *get_op_Builtin   (void) { return op_Builtin;   }
 ir_op *op_Add;         ir_op *get_op_Add       (void) { return op_Add;       }
 ir_op *op_Sub;         ir_op *get_op_Sub       (void) { return op_Sub;       }
 ir_op *op_Minus;       ir_op *get_op_Minus     (void) { return op_Minus;     }
@@ -357,6 +358,7 @@ init_op(void)
 	op_Pin       = new_ir_op(iro_Pin,       "Pin",       op_pin_state_pinned, H,       oparity_unary,    -1, 0, NULL);
 
 	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|M, oparity_variable, -1, sizeof(asm_attr), NULL);
+	op_Builtin   = new_ir_op(iro_Builtin,   "Builtin",   op_pin_state_mem_pinned, M,   oparity_variable, -1, sizeof(builtin_attr), NULL);
 
 	op_Anchor    = new_ir_op(iro_Anchor,    "Anchor",    op_pin_state_pinned, N|NB,    oparity_variable, -1, 0, NULL);
 

@@ -210,11 +210,18 @@ typedef enum {
 	heap_alloc            /**< Alloc allocates the object on the heap. */
 } ir_where_alloc;
 
-/** A input/output constraint attribute */
+/** A input/output constraint attribute. */
 typedef struct {
 	unsigned       pos;           /**< The inputs/output position for this constraint. */
 	ident          *constraint;   /**< The constraint for this input/output. */
 	ir_mode        *mode;         /**< The mode of the constraint. */
 } ir_asm_constraint;
+
+/** Supported libFirm builtins. */
+typedef enum {
+	ir_bk_return_address,         /**< GCC __builtin_return_address() */
+	ir_bk_frame_addess,           /**< GCC __builtin_frame_address() */
+	ir_bk_prefetch,               /**< GCC __builtin_prefetch() */
+} ir_builtin_kind;
 
 #endif

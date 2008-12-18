@@ -479,7 +479,7 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 	int      r_arity;
 	ir_graph *irg = current_ir_graph;
 
-	r_arity = arity+2;
+	r_arity = arity + 2;
 	NEW_ARR_A(ir_node *, r_in, r_arity);
 	r_in[0] = store;
 	r_in[1] = callee;
@@ -495,6 +495,30 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Call */
+
+static ir_node *
+new_bd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
+               ir_builtin_kind kind, int arity, ir_node **in, ir_type *tp) {
+	ir_node  **r_in;
+	ir_node  *res;
+	int      r_arity;
+	ir_graph *irg = current_ir_graph;
+
+	r_arity = arity + 1;
+	NEW_ARR_A(ir_node *, r_in, r_arity);
+	r_in[0] = store;
+	memcpy(&r_in[1], in, sizeof(ir_node *) * arity);
+
+	res = new_ir_node(db, irg, block, op_Builtin, mode_T, r_arity, r_in);
+
+	assert((get_unknown_type() == tp) || is_Method_type(tp));
+	res->attr.builtin.exc.pin_state = op_pin_state_pinned;
+	res->attr.builtin.kind          = kind;
+	res->attr.builtin.builtin_tp    = tp;
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, irg);
+	return res;
+}  /* new_bd_Buildin */
 
 static ir_node *
 new_bd_Return(dbg_info *db, ir_node *block,
@@ -1126,6 +1150,19 @@ new_rd_Call(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 }  /* new_rd_Call */
 
 ir_node *
+new_rd_Builtin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
+               ir_builtin_kind kind, int arity, ir_node **in, ir_type *tp) {
+	ir_node  *res;
+	ir_graph *rem = current_ir_graph;
+
+	current_ir_graph = irg;
+	res = new_bd_Builtin(db, block, store, kind, arity, in, tp);
+	current_ir_graph = rem;
+
+	return res;
+}  /* new_rd_Builtin */
+
+ir_node *
 new_rd_Return(dbg_info *db, ir_graph *irg, ir_node *block,
               ir_node *store, int arity, ir_node **in) {
 	ir_node  *res;
@@ -1508,6 +1545,11 @@ ir_node *new_r_Call(ir_graph *irg, ir_node *block, ir_node *store,
                     ir_node *callee, int arity, ir_node **in,
                     ir_type *tp) {
 	return new_rd_Call(NULL, irg, block, store, callee, arity, in, tp);
+}
+ir_node *new_r_Builtin(ir_graph *irg, ir_node *block, ir_node *store,
+                       ir_builtin_kind kind, int arity, ir_node **in,
+                       ir_type *tp) {
+	return new_rd_Builtin(NULL, irg, block, store, kind, arity, in, tp);
 }
 #ifdef USE_ORIGINAL
 ir_node *new_r_Add(ir_graph *irg, ir_node *block,
@@ -2498,6 +2540,12 @@ new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **i
 }  /* new_d_Call */
 
 ir_node *
+new_d_Builtin(dbg_info *db, ir_node *store, ir_builtin_kind kind, int arity, ir_node **in,
+              ir_type *tp) {
+	return new_bd_Builtin(db, current_ir_graph->current_block, store, kind, arity, in, tp);
+}  /* new_d_Builtin */
+
+ir_node *
 new_d_Return(dbg_info *db, ir_node* store, int arity, ir_node **in) {
 	return new_bd_Return(db, current_ir_graph->current_block,
 	                     store, arity, in);
@@ -2942,6 +2990,10 @@ ir_node *new_Sel(ir_node *store, ir_node *objptr, int arity, ir_node **in,
 ir_node *new_Call(ir_node *store, ir_node *callee, int arity, ir_node **in,
                   ir_type *tp) {
 	return new_d_Call(NULL, store, callee, arity, in, tp);
+}
+ir_node *new_Builtin(ir_node *store, ir_builtin_kind kind, int arity, ir_node **in,
+                     ir_type *tp) {
+	return new_d_Builtin(NULL, store, kind, arity, in, tp);
 }
 #ifdef USE_ORIGINAL
 ir_node *new_Add(ir_node *op1, ir_node *op2, ir_mode *mode) {

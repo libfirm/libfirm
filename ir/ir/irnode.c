@@ -48,7 +48,7 @@
 /* some constants fixing the positions of nodes predecessors
    in the in array */
 #define CALL_PARAM_OFFSET     2
-#define FUNCCALL_PARAM_OFFSET 1
+#define BUILDIN_PARAM_OFFSET  1
 #define SEL_INDEX_OFFSET      2
 #define RETURN_RESULT_OFFSET  1  /* mem is not a result */
 #define END_KEEPALIVE_OFFSET  0
@@ -1343,18 +1343,6 @@ get_Call_n_params(const ir_node *node)  {
 	return (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
-int
-get_Call_arity(const ir_node *node) {
-	assert(is_Call(node));
-	return get_Call_n_params(node);
-}
-
-/* void
-set_Call_arity(ir_node *node, ir_node *arity) {
-	assert(is_Call(node));
-}
-*/
-
 ir_node *
 get_Call_param(const ir_node *node, int pos) {
 	assert(is_Call(node));
@@ -1379,6 +1367,80 @@ set_Call_type(ir_node *node, ir_type *tp) {
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
 	node->attr.call.cld_tp = tp;
 }
+
+ir_node *
+get_Builtin_mem(const ir_node *node) {
+	assert(is_Builtin(node));
+	return get_irn_n(node, 0);
+}
+
+void
+set_Builin_mem(ir_node *node, ir_node *mem) {
+	assert(is_Builtin(node));
+	set_irn_n(node, 0, mem);
+}
+
+ir_builtin_kind
+get_Builtin_kind(const ir_node *node) {
+	assert(is_Builtin(node));
+	return node->attr.builtin.kind;
+}
+
+void
+set_Builtin_kind(ir_node *node, ir_builtin_kind kind) {
+	assert(is_Builtin(node));
+	node->attr.builtin.kind = kind;
+}
+
+ir_node **
+get_Builtin_param_arr(ir_node *node) {
+	assert(is_Builtin(node));
+	return &get_irn_in(node)[BUILDIN_PARAM_OFFSET + 1];
+}
+
+int
+get_Builtin_n_params(const ir_node *node)  {
+	assert(is_Builtin(node));
+	return (get_irn_arity(node) - BUILDIN_PARAM_OFFSET);
+}
+
+ir_node *
+get_Builtin_param(const ir_node *node, int pos) {
+	assert(is_Builtin(node));
+	return get_irn_n(node, pos + BUILDIN_PARAM_OFFSET);
+}
+
+void
+set_Builtin_param(ir_node *node, int pos, ir_node *param) {
+	assert(is_Builtin(node));
+	set_irn_n(node, pos + BUILDIN_PARAM_OFFSET, param);
+}
+
+ir_type *
+get_Builtin_type(ir_node *node) {
+	assert(is_Builtin(node));
+	return node->attr.builtin.builtin_tp = skip_tid(node->attr.builtin.builtin_tp);
+}
+
+void
+set_Builtin_type(ir_node *node, ir_type *tp) {
+	assert(is_Builtin(node));
+	assert((get_unknown_type() == tp) || is_Method_type(tp));
+	node->attr.builtin.builtin_tp = tp;
+}
+
+/* Returns a human readable string for the ir_builtin_kind. */
+const char *get_builtin_kind_name(ir_builtin_kind kind) {
+#define X(a)    case a: return #a + 6;
+	switch (kind) {
+		X(ir_bk_return_address);
+		X(ir_bk_frame_addess);
+		X(ir_bk_prefetch);
+	}
+	return "<unknown>";
+#undef X
+}
+
 
 int Call_has_callees(const ir_node *node) {
 	assert(is_Call(node));
@@ -2769,6 +2831,12 @@ int
 int
 (is_Call)(const ir_node *node) {
 	return _is_Call(node);
+}
+
+/* returns true if node is a Builtin node. */
+int
+(is_Builtin)(const ir_node *node) {
+	return _is_Builtin(node);
 }
 
 /* returns true if node is a CallBegin node. */

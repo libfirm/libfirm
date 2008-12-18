@@ -620,8 +620,6 @@ void     set_Call_param(ir_node *node, int pos, ir_node *param);
 ir_type *get_Call_type(ir_node *node);
 /** Sets the type of a call. */
 void     set_Call_type(ir_node *node, ir_type *tp);
-/** Gets the arity of a call. Identical to get_Call_n_params(). */
-int      get_Call_arity(const ir_node *node);
 
 /**
  * Returns non-zero if a Call is surely a self-recursive Call.
@@ -655,6 +653,33 @@ ir_entity *get_Call_callee(const ir_node *node, int pos);
  *  The passed array is copied. Assumes current_ir_graph set properly! */
 void    set_Call_callee_arr(ir_node *node, const int n, ir_entity **arr);
 void    remove_Call_callee_arr(ir_node *node);
+
+/**
+ * Projection numbers for result of Builtin node: use for Proj nodes!
+ */
+typedef enum {
+	pn_Builtin_M        = pn_Generic_M_regular, /**< The memory result. */
+	pn_Builtin_T_result = pn_Generic_other,     /**< The tuple containing all (0, 1, 2, ...) results. */
+	pn_Builtin_max                              /**< number of projections from a Builtin */
+} pn_Builtin;   /* Projection numbers for Builtin. */
+
+ir_node         *get_Builtin_mem(const ir_node *node);
+void            set_Builtin_mem(ir_node *node, ir_node *mem);
+ir_builtin_kind get_Builtin_kind(const ir_node *node);
+void            set_Builtin_kind(ir_node *node, ir_builtin_kind kind);
+ir_node         **get_Builtin_param_arr(ir_node *node);
+/** Gets the number of parameters of a Builtin. */
+int             get_Builtin_n_params(const ir_node *node);
+/** Gets the Builtin parameter at position pos. */
+ir_node         *get_Builtin_param(const ir_node *node, int pos);
+/** Sets the Builtin parameter at position pos. */
+void            set_Builtin_param(ir_node *node, int pos, ir_node *param);
+/** Gets the type of a builtin. */
+ir_type         *get_Builtin_type(ir_node *node);
+/** Sets the type of a Builtin. */
+void            set_Builtin_type(ir_node *node, ir_type *tp);
+/** Returns a human readable string for the ir_builtin_kind. */
+const char *get_builtin_kind_name(ir_builtin_kind kind);
 
 ir_node  *get_CallBegin_ptr(const ir_node *node);
 void      set_CallBegin_ptr(ir_node *node, ir_node *ptr);
@@ -1237,6 +1262,8 @@ int      is_Unknown(const ir_node *node);
 int      is_Return(const ir_node *node);
 /** Returns true if node is a Call node. */
 int      is_Call(const ir_node *node);
+/** Returns true if node is a Builtin node. */
+int      is_Builtin(const ir_node *node);
 /** Returns true if node is a CallBegin node. */
 int      is_CallBegin(const ir_node *node);
 /** Returns true if node is a Sel node. */

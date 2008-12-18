@@ -1245,8 +1245,6 @@ static ir_node *bad_transform(ppc32_transform_env_t *env) {
  * Enters all transform functions into the generic pointer
  */
 void ppc32_register_transformers(void) {
-	ir_op *op_Max, *op_Min, *op_Mulh;
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
@@ -1256,6 +1254,7 @@ void ppc32_register_transformers(void) {
 
 	FIRM_OP(Add);
 	FIRM_OP(Mul);
+	FIRM_OP(Mulh);
 	FIRM_OP(And);
 	FIRM_OP(Or);
 	FIRM_OP(Eor);
@@ -1315,16 +1314,11 @@ void ppc32_register_transformers(void) {
 	BAD(EndReg);
 	BAD(EndExcept);
 
+	/* handle builtins */
+	BAD(Builtin);
+
+	/* handle generic backend nodes */
 	FIRM_OP(be_FrameAddr);
-	op_Mulh = get_op_Mulh();
-	if (op_Mulh)
-		FIRM_OP(Mulh);
-	op_Max = get_op_Max();
-	if (op_Max)
-		BAD(Max);
-	op_Min = get_op_Min();
-	if (op_Min)
-		BAD(Min);
 }
 
 typedef ir_node *(transform_func)(ppc32_transform_env_t *env);

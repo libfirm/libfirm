@@ -628,6 +628,12 @@ _is_Call(const ir_node *node) {
 }
 
 static inline int
+_is_Builtin(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Builtin);
+}
+
+static inline int
 _is_CallBegin(const ir_node *node) {
 	assert(node);
 	return (_get_irn_op(node) == op_CallBegin);
@@ -1037,6 +1043,7 @@ _is_arg_Proj(const ir_node *node) {
 #define is_Unknown(node)                      _is_Unknown(node)
 #define is_Return(node)                       _is_Return(node)
 #define is_Call(node)                         _is_Call(node)
+#define is_Builtin(node)                      _is_Builtin(node)
 #define is_CallBegin(node)                    _is_CallBegin(node)
 #define is_Sel(node)                          _is_Sel(node)
 #define is_Mul(node)                          _is_Mul(node)

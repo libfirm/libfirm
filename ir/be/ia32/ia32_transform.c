@@ -4790,8 +4790,6 @@ static ir_node *gen_Proj(ir_node *node)
  */
 static void register_transformers(void)
 {
-	ir_op *op_Mulh;
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
@@ -4801,6 +4799,7 @@ static void register_transformers(void)
 	GEN(Add);
 	GEN(Sub);
 	GEN(Mul);
+	GEN(Mulh);
 	GEN(And);
 	GEN(Or);
 	GEN(Eor);
@@ -4868,6 +4867,9 @@ static void register_transformers(void)
 	BAD(EndReg);
 	BAD(EndExcept);
 
+	/* handle builtins */
+	BAD(Builtin);
+
 	/* handle generic backend nodes */
 	GEN(be_FrameAddr);
 	GEN(be_Call);
@@ -4876,10 +4878,6 @@ static void register_transformers(void)
 	GEN(be_AddSP);
 	GEN(be_SubSP);
 	GEN(be_Copy);
-
-	op_Mulh = get_op_Mulh();
-	if (op_Mulh)
-		GEN(Mulh);
 
 #undef GEN
 #undef BAD

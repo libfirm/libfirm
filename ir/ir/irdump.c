@@ -828,6 +828,9 @@ int dump_node_opcode(FILE *F, ir_node *n)
 	case iro_DivMod:
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_DivMod_resmode(n), &bad));
 		break;
+	case iro_Builtin:
+		fprintf(F, "%s[%s]", get_irn_opname(n), get_builtin_kind_name(get_Builtin_kind(n)));
+		break;
 
 	default:
 default_case:

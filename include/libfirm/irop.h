@@ -95,7 +95,7 @@ typedef enum {
 	iro_NoMem, iro_Mux, iro_Min, iro_Max, iro_CopyB,
 	iro_InstOf, iro_Raise, iro_Bound,
 	iro_Pin,
-	iro_ASM,
+	iro_ASM, iro_Builtin,
 	iro_Anchor,
 	/* first not middleend node number */
 	iro_Last = iro_Anchor,
@@ -197,6 +197,7 @@ extern ir_op *op_Bound;           ir_op *get_op_Bound     (void);
 extern ir_op *op_Pin;             ir_op *get_op_Pin       (void);
 
 extern ir_op *op_ASM;             ir_op *get_op_ASM       (void);
+extern ir_op *op_Builtin;         ir_op *get_op_Builtin   (void);
 
 extern ir_op *op_Anchor;          ir_op *get_op_Anchor    (void);
 

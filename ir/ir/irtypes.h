@@ -194,6 +194,13 @@ typedef struct {
 	ir_entity ** callee_arr;      /**< result of callee analysis */
 } call_attr;
 
+/** Builtin attributes. */
+typedef struct {
+	except_attr     exc;           /**< the exception attribute. MUST be the first one. */
+	ir_builtin_kind kind;          /**< kind of the called builtin procedure */
+	ir_type         *builtin_tp;   /**< type of called builtin procedure */
+} builtin_attr;
+
 /** Alloc attributes. */
 typedef struct {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
@@ -305,7 +312,8 @@ typedef union {
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */
 	symconst_attr  symc;          /**< For SymConst. */
 	sel_attr       sel;           /**< For Sel. */
-	call_attr      call;          /**< For Call: pointer to the type of the method to call */
+	call_attr      call;          /**< For Call. */
+	builtin_attr   builtin;       /**< For Builtin. */
 	callbegin_attr callbegin;     /**< For CallBegin. */
 	alloc_attr     alloc;         /**< For Alloc. */
 	free_attr      free;          /**< For Free. */

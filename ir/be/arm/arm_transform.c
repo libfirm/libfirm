@@ -1601,8 +1601,6 @@ static inline void set_transformer(ir_op *op, be_transform_func arm_transform_fu
  * Enters all transform functions into the generic pointer
  */
 static void arm_register_transformers(void) {
-	ir_op *op_Max, *op_Min, *op_Mulh;
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
@@ -1612,6 +1610,7 @@ static void arm_register_transformers(void) {
 	GEN(Add);
 	GEN(Sub);
 	GEN(Mul);
+	BAD(Mulh);	/* unsupported yet */
 	GEN(And);
 	GEN(Or);
 	GEN(Eor);
@@ -1661,6 +1660,9 @@ static void arm_register_transformers(void) {
 	BAD(EndReg);
 	BAD(EndExcept);
 
+	/* handle builtins */
+	BAD(Builtin);
+
 	/* handle generic backend nodes */
 	GEN(be_FrameAddr);
 	//GEN(be_Call);
@@ -1671,16 +1673,6 @@ static void arm_register_transformers(void) {
 
 	/* set the register for all Unknown nodes */
 	GEN(Unknown);
-
-	op_Max = get_op_Max();
-	if (op_Max)
-		BAD(Max);	/* unsupported yet */
-	op_Min = get_op_Min();
-	if (op_Min)
-		BAD(Min);	/* unsupported yet */
-	op_Mulh = get_op_Mulh();
-	if (op_Mulh)
-		BAD(Mulh);	/* unsupported yet */
 
 #undef GEN
 #undef BAD
