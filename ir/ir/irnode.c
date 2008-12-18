@@ -2551,7 +2551,7 @@ skip_Tuple(ir_node *node) {
   ir_op   *op;
 
 restart:
-	if (get_irn_op(node) == op_Proj) {
+	if (is_Proj(node)) {
 	    pred = get_Proj_pred(node);
 	    op   = get_irn_op(pred);
 
@@ -2561,9 +2561,8 @@ restart:
 		 */
 		if (op == op_Proj) { /* nested Tuple ? */
 		    pred = skip_Tuple(pred);
-		    op   = get_irn_op(pred);
 
-			if (op == op_Tuple) {
+			if (is_Tuple(pred)) {
 				node = get_Tuple_pred(pred, get_Proj_proj(node));
 				goto restart;
 			}
