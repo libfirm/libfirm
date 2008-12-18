@@ -2550,8 +2550,6 @@ skip_Tuple(ir_node *node) {
   ir_node *pred;
   ir_op   *op;
 
-  if (!get_opt_normalize()) return node;
-
 restart:
 	if (get_irn_op(node) == op_Proj) {
 	    pred = get_Proj_pred(node);
