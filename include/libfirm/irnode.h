@@ -659,7 +659,7 @@ void    remove_Call_callee_arr(ir_node *node);
  */
 typedef enum {
 	pn_Builtin_M        = pn_Generic_M_regular, /**< The memory result. */
-	pn_Builtin_T_result = pn_Generic_other,     /**< The tuple containing all (0, 1, 2, ...) results. */
+	pn_Builtin_1_result = pn_Generic_other,     /**< first result. */
 	pn_Builtin_max                              /**< number of projections from a Builtin */
 } pn_Builtin;   /* Projection numbers for Builtin. */
 
