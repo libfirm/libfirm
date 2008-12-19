@@ -571,6 +571,11 @@ divmod_attr *get_irn_divmod_attr(ir_node *node) {
 	return &node->attr.divmod;
 }
 
+builtin_attr *get_irn_builtin_attr(ir_node *node) {
+	assert(is_Builtin(node));
+	return &node->attr.builtin;
+}
+
 void *(get_irn_generic_attr)(ir_node *node) {
 	assert(is_ir_node(node));
 	return _get_irn_generic_attr(node);

@@ -5943,8 +5943,18 @@ static int node_cmp_attr_Quot(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Confirm nodes. */
 static int node_cmp_attr_Confirm(ir_node *a, ir_node *b) {
+	/* no need to compare the bound, as this is a input */
 	return (get_Confirm_cmp(a) != get_Confirm_cmp(b));
 }  /* node_cmp_attr_Confirm */
+
+/** Compares the attributes of two Builtin nodes. */
+static int node_cmp_attr_Builtin(ir_node *a, ir_node *b) {
+	const builtin_attr *ma = get_irn_builtin_attr(a);
+	const builtin_attr *mb = get_irn_builtin_attr(b);
+
+	/* no need to compare the type, equal kind means equal type */
+	return ma->kind != mb->kind;
+}  /* node_cmp_attr_Builtin */
 
 /** Compares the attributes of two ASM nodes. */
 static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
@@ -6029,6 +6039,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Mod);
 	CASE(Quot);
 	CASE(Bound);
+	CASE(Builtin);
 	/* FIXME CopyB */
 	default:
 	  /* leave NULL */;

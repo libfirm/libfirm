@@ -112,6 +112,7 @@ struct opcode_key_t {
 		long      proj;   /**< For Proj nodes, its proj number */
 		ir_entity *ent;   /**< For Sel Nodes, its entity */
 		int       intVal; /**< For Conv/Div Nodes: strict/remainderless */
+		unsigned  uintVal;/**< for Builtin: the kind */
 		ir_node   *block; /**< for Block: itself */
 		void      *ptr;   /**< generic pointer for hash/cmp */
 	} u;
@@ -295,6 +296,9 @@ static void check_opcode(const partition_t *Z) {
 			case iro_Load:
 				key.mode = get_Load_mode(irn);
 				break;
+			case iro_Builtin:
+				key.u.uintVal = get_Builtin_kind(irn);
+				break;
 			default:
 				break;
 			}
@@ -322,6 +326,9 @@ static void check_opcode(const partition_t *Z) {
 				break;
 			case iro_Load:
 				assert(key.mode == get_Load_mode(irn));
+				break;
+			case iro_Builtin:
+				assert(key.u.uintVal == get_Builtin_kind(irn));
 				break;
 			default:
 				break;
@@ -578,7 +585,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 	return o1->code != o2->code || o1->mode != o2->mode ||
 	       o1->arity != o2->arity ||
 	       o1->u.proj != o2->u.proj ||
-	       o1->u.intVal != o2->u.intVal ||
+	       o1->u.intVal != o2->u.intVal || /* this already checks uIntVal */
 	       o1->u.ptr != o2->u.ptr;
 }  /* cmp_opcode */
 
@@ -1679,6 +1686,9 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 		break;
 	case iro_Load:
 		key.mode = get_Load_mode(irn);
+		break;
+	case iro_Builtin:
+		key.u.uintVal = get_Builtin_kind(irn);
 		break;
 	default:
 		break;
