@@ -4522,41 +4522,93 @@ static ir_node *gen_be_Call(ir_node *node)
  * Transform Builtin return_address
  */
 static ir_node *gen_return_address(ir_node *node) {
-	ir_node *param = get_Builtin_param(node, 0);
-	ir_node *frame = get_Builtin_param(node, 1);
-	dbg_info *dbgi = get_irn_dbg_info(node);
-	tarval  *tv    = get_Const_tarval(param);
-	long    value  = get_tarval_long(tv);
+	ir_node *param      = get_Builtin_param(node, 0);
+	ir_node *frame      = get_Builtin_param(node, 1);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	tarval  *tv         = get_Const_tarval(param);
+	unsigned long value = get_tarval_long(tv);
 
-	ir_node *block = be_transform_node(get_nodes_block(node));
+	ir_node *block  = be_transform_node(get_nodes_block(node));
+	ir_node *ptr    = be_transform_node(frame);
+	ir_node *noreg  = ia32_new_NoReg_gp(env_cg);
+	ir_node *load;
 
-	if (value == 0) {
-		/* the return address of the current function */
-		ir_node   *new_op = be_transform_node(frame);
-		ir_node   *noreg  = ia32_new_NoReg_gp(env_cg);
-		ir_node   *new_node;
-
-		new_node = new_bd_ia32_Load(dbgi, block, new_op, noreg, get_irg_no_mem(current_ir_graph));
-
-		set_irn_pinned(new_node, get_irn_pinned(node));
-		set_ia32_op_type(new_node, ia32_AddrModeS);
-		set_ia32_ls_mode(new_node, mode_Iu);
-
-		set_ia32_am_offs_int(new_node, 0);
-		set_ia32_use_frame(new_node);
-		set_ia32_frame_ent(new_node, ia32_get_return_address_entity());
-
-		if (get_irn_pinned(node) == op_pin_state_floats) {
-			assert(pn_ia32_xLoad_res == pn_ia32_vfld_res
-					&& pn_ia32_vfld_res == pn_ia32_Load_res
-					&& pn_ia32_Load_res == pn_ia32_res);
-			arch_irn_add_flags(new_node, arch_irn_flags_rematerializable);
-		}
-
-		SET_IA32_ORIG_NODE(new_node, node);
-		return new_rd_Proj(dbgi, current_ir_graph, block, new_node, mode_Iu, pn_ia32_Load_res);
+	if (value > 0) {
+		ir_node *cnt = new_bd_ia32_ProduceVal(dbgi, block);
+		ir_node *res = new_bd_ia32_ProduceVal(dbgi, block);
+		ptr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, cnt, res, value);
 	}
-	panic("builtin_return_address(%ld) not supported in IA32", value);
+
+	/* load the return address from this frame */
+	load = new_bd_ia32_Load(dbgi, block, ptr, noreg, get_irg_no_mem(current_ir_graph));
+
+	set_irn_pinned(load, get_irn_pinned(node));
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_ls_mode(load, mode_Iu);
+
+	set_ia32_am_offs_int(load, 0);
+	set_ia32_use_frame(load);
+	set_ia32_frame_ent(load, ia32_get_return_address_entity());
+
+	if (get_irn_pinned(node) == op_pin_state_floats) {
+		assert(pn_ia32_xLoad_res == pn_ia32_vfld_res
+				&& pn_ia32_vfld_res == pn_ia32_Load_res
+				&& pn_ia32_Load_res == pn_ia32_res);
+		arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+	}
+
+	SET_IA32_ORIG_NODE(load, node);
+	return new_rd_Proj(dbgi, current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+}
+
+/**
+ * Transform Builtin frame_address
+ */
+static ir_node *gen_frame_address(ir_node *node) {
+	ir_node *param      = get_Builtin_param(node, 0);
+	ir_node *frame      = get_Builtin_param(node, 1);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	tarval  *tv         = get_Const_tarval(param);
+	unsigned long value = get_tarval_long(tv);
+
+	ir_node *block  = be_transform_node(get_nodes_block(node));
+	ir_node *ptr    = be_transform_node(frame);
+	ir_node *noreg  = ia32_new_NoReg_gp(env_cg);
+	ir_node *load;
+	ir_entity *ent;
+
+	if (value > 0) {
+		ir_node *cnt = new_bd_ia32_ProduceVal(dbgi, block);
+		ir_node *res = new_bd_ia32_ProduceVal(dbgi, block);
+		ptr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, cnt, res, value);
+	}
+
+	/* load the return address from this frame */
+	load = new_bd_ia32_Load(dbgi, block, ptr, noreg, get_irg_no_mem(current_ir_graph));
+
+	set_irn_pinned(load, get_irn_pinned(node));
+	set_ia32_op_type(load, ia32_AddrModeS);
+	set_ia32_ls_mode(load, mode_Iu);
+
+	ent = ia32_get_frame_address_entity();
+	if (ent != NULL) {
+		set_ia32_am_offs_int(load, 0);
+		set_ia32_use_frame(load);
+		set_ia32_frame_ent(load, ent);
+	} else {
+		/* will fail anyway, but gcc does this: */
+		set_ia32_am_offs_int(load, 0);
+	}
+
+	if (get_irn_pinned(node) == op_pin_state_floats) {
+		assert(pn_ia32_xLoad_res == pn_ia32_vfld_res
+				&& pn_ia32_vfld_res == pn_ia32_Load_res
+				&& pn_ia32_Load_res == pn_ia32_res);
+		arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+	}
+
+	SET_IA32_ORIG_NODE(load, node);
+	return new_rd_Proj(dbgi, current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
 }
 
 /**
@@ -4569,6 +4621,7 @@ static ir_node *gen_Builtin(ir_node *node) {
 	case ir_bk_return_address:
 		return gen_return_address(node);
 	case ir_bk_frame_addess:
+		return gen_frame_address(node);
 	case ir_bk_prefetch:
 		break;
 	}

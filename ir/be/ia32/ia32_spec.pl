@@ -290,16 +290,20 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_x87_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
+	ia32_climbframe_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_climbframe_attributes(res, count);",
 );
 
 %compare_attr = (
 	ia32_asm_attr_t       => "ia32_compare_asm_attr",
-	ia32_attr_t           => "ia32_compare_nodes_attr",
-	ia32_call_attr_t      => "ia32_compare_call_attr",
-	ia32_condcode_attr_t  => "ia32_compare_condcode_attr",
-	ia32_copyb_attr_t     => "ia32_compare_copyb_attr",
-	ia32_immediate_attr_t => "ia32_compare_immediate_attr",
-	ia32_x87_attr_t       => "ia32_compare_x87_attr",
+	ia32_attr_t            => "ia32_compare_nodes_attr",
+	ia32_call_attr_t       => "ia32_compare_call_attr",
+	ia32_condcode_attr_t   => "ia32_compare_condcode_attr",
+	ia32_copyb_attr_t      => "ia32_compare_copyb_attr",
+	ia32_immediate_attr_t  => "ia32_compare_immediate_attr",
+	ia32_x87_attr_t        => "ia32_compare_x87_attr",
+	ia32_climbframe_attr_t => "ia32_compare_climbframe_attr",
 );
 
 %operands = (
@@ -1497,6 +1501,22 @@ Call => {
 	units     => [ "BRANCH" ],
 	latency   => 4, # random number
 	modified_flags => $status_flags
+},
+
+#
+# a Helper node for frame-climbing, needed for __builtin_(frame|return)_address
+#
+# PS: try gcc __builtin_frame_address(100000) :-)
+#
+ClimbFrame => {
+	reg_req   => { in => [ "gp", "gp", "gp"], out => [ "in_r3" ] },
+	ins       => [ "frame", "cnt", "tmp" ],
+	outs      => [ "res" ],
+	latency   => 4, # random number
+	attr_type => "ia32_climbframe_attr_t",
+	attr      => "unsigned count",
+	units     => [ "GP" ],
+	mode      => $mode_gp
 },
 
 #-----------------------------------------------------------------------------#

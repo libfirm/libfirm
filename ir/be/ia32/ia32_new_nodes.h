@@ -98,6 +98,12 @@ ia32_copyb_attr_t *get_ia32_copyb_attr(ir_node *node);
 const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node);
 
 /**
+ * Gets the ClimbFrame node attributes.
+ */
+ia32_climbframe_attr_t *get_ia32_climbframe_attr(ir_node *node);
+const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node);
+
+/**
  * Gets the type of an ia32 node.
  */
 ia32_op_type_t get_ia32_op_type(const ir_node *node);
@@ -409,6 +415,7 @@ void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
 void init_ia32_call_attributes(ir_node *res, unsigned pop, ir_type *call_tp);
 void init_ia32_copyb_attributes(ir_node *res, unsigned size);
 void init_ia32_condcode_attributes(ir_node *res, long pnc);
+void init_ia32_climbframe_attributes(ir_node *res, unsigned count);
 
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"

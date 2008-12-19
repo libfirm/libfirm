@@ -71,14 +71,15 @@ struct ia32_op_attr_t {
 
 #ifndef NDEBUG
 typedef enum {
-	IA32_ATTR_INVALID               = 0,
-	IA32_ATTR_ia32_attr_t           = 1 << 0,
-	IA32_ATTR_ia32_x87_attr_t       = 1 << 1,
-	IA32_ATTR_ia32_asm_attr_t       = 1 << 2,
-	IA32_ATTR_ia32_immediate_attr_t = 1 << 3,
-	IA32_ATTR_ia32_condcode_attr_t  = 1 << 4,
-	IA32_ATTR_ia32_copyb_attr_t     = 1 << 5,
-	IA32_ATTR_ia32_call_attr_t      = 1 << 6
+	IA32_ATTR_INVALID                = 0,
+	IA32_ATTR_ia32_attr_t            = 1 << 0,
+	IA32_ATTR_ia32_x87_attr_t        = 1 << 1,
+	IA32_ATTR_ia32_asm_attr_t        = 1 << 2,
+	IA32_ATTR_ia32_immediate_attr_t  = 1 << 3,
+	IA32_ATTR_ia32_condcode_attr_t   = 1 << 4,
+	IA32_ATTR_ia32_copyb_attr_t      = 1 << 5,
+	IA32_ATTR_ia32_call_attr_t       = 1 << 6,
+	IA32_ATTR_ia32_climbframe_attr_t = 1 << 7,
 } ia32_attr_type_t;
 #endif
 
@@ -201,6 +202,15 @@ struct ia32_asm_attr_t {
 	const ia32_asm_reg_t *register_map;
 };
 
+/**
+ * The attributes for the ClimbFrame node.
+ */
+typedef struct ia32_climbframe_attr_t ia32_climbframe_attr_t;
+struct ia32_climbframe_attr_t {
+	ia32_attr_t attr;      /**< generic attribute */
+	unsigned    count;     /**< number of frames to climb up */
+};
+
 /* the following union is necessary to indicate to the compiler that we might want to cast
  * the structs (we use them to simulate OO-inheritance) */
 union allow_casts_attr_t_ {
@@ -211,6 +221,7 @@ union allow_casts_attr_t_ {
 	ia32_x87_attr_t        x87_attr;
 	ia32_asm_attr_t        asm_attr;
 	ia32_immediate_attr_t  immediate_attr;
+	ia32_climbframe_attr_t climbframe_attr;
 };
 
 #ifndef NDEBUG

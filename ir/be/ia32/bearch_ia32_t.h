@@ -181,4 +181,9 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  */
 ir_entity *ia32_get_return_address_entity(void);
 
+/**
+ * Return the stack entity that contains the frame address.
+ */
+ir_entity *ia32_get_frame_address_entity(void);
+
 #endif

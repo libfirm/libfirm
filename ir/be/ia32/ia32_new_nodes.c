@@ -458,6 +458,20 @@ const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node) {
 	return copyb_attr;
 }
 
+ia32_climbframe_attr_t *get_ia32_climbframe_attr(ir_node *node) {
+	ia32_attr_t            *attr            = get_ia32_attr(node);
+	ia32_climbframe_attr_t *climbframe_attr = CAST_IA32_ATTR(ia32_climbframe_attr_t, attr);
+
+	return climbframe_attr;
+}
+
+const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node) {
+	const ia32_attr_t            *attr            = get_ia32_attr_const(node);
+	const ia32_climbframe_attr_t *climbframe_attr = CONST_CAST_IA32_ATTR(ia32_climbframe_attr_t, attr);
+
+	return climbframe_attr;
+}
+
 /**
  * Gets the type of an ia32 node.
  */
@@ -1027,6 +1041,16 @@ init_ia32_condcode_attributes(ir_node *res, long pnc) {
 	attr->pn_code = pnc;
 }
 
+void
+init_ia32_climbframe_attributes(ir_node *res, unsigned count) {
+	ia32_climbframe_attr_t *attr = get_irn_generic_attr(res);
+
+#ifndef NDEBUG
+	attr->attr.attr_type  |= IA32_ATTR_ia32_climbframe_attr_t;
+#endif
+	attr->count = count;
+}
+
 /***************************************************************************************
  *                  _                            _                   _
  *                 | |                          | |                 | |
@@ -1094,12 +1118,13 @@ int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
 	attr_a = get_ia32_condcode_attr_const(a);
 	attr_b = get_ia32_condcode_attr_const(b);
 
-	if(attr_a->pn_code != attr_b->pn_code)
+	if (attr_a->pn_code != attr_b->pn_code)
 		return 1;
 
 	return 0;
 }
 
+/** Compare node attributes for call nodes. */
 static int ia32_compare_call_attr(ir_node *a, ir_node *b)
 {
 	const ia32_call_attr_t *attr_a;
@@ -1133,7 +1158,7 @@ int ia32_compare_copyb_attr(ir_node *a, ir_node *b)
 	attr_a = get_ia32_copyb_attr_const(a);
 	attr_b = get_ia32_copyb_attr_const(b);
 
-	if(attr_a->size != attr_b->size)
+	if (attr_a->size != attr_b->size)
 		return 1;
 
 	return 0;
@@ -1147,7 +1172,7 @@ int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 	const ia32_asm_attr_t *attr_a;
 	const ia32_asm_attr_t *attr_b;
 
-	if(ia32_compare_nodes_attr(a, b))
+	if (ia32_compare_nodes_attr(a, b))
 		return 1;
 
 	attr_a = get_ia32_asm_attr_const(a);
@@ -1175,9 +1200,9 @@ int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 
-	if(attr_a->symconst != attr_b->symconst	||
-	   attr_a->sc_sign != attr_b->sc_sign ||
-	   attr_a->offset != attr_b->offset)
+	if (attr_a->symconst != attr_b->symconst ||
+	    attr_a->sc_sign != attr_b->sc_sign ||
+	    attr_a->offset != attr_b->offset)
 		return 1;
 
 	return 0;
@@ -1190,6 +1215,24 @@ int ia32_compare_x87_attr(ir_node *a, ir_node *b)
 	return ia32_compare_nodes_attr(a, b);
 }
 
+/** Compare node attributes for ClimbFrame nodes. */
+static
+int ia32_compare_climbframe_attr(ir_node *a, ir_node *b)
+{
+	const ia32_climbframe_attr_t *attr_a;
+	const ia32_climbframe_attr_t *attr_b;
+
+	if (ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_climbframe_attr_const(a);
+	attr_b = get_ia32_climbframe_attr_const(b);
+
+	if (attr_a->count != attr_b->count)
+		return 1;
+
+	return 0;
+}
 
 /* copies the ia32 attributes */
 static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)

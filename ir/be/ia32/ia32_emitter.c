@@ -79,6 +79,7 @@ static ir_node *get_prev_block_sched(const ir_node *block)
 	return get_irn_link(block);
 }
 
+/** Checks if the current block is a fall-through target. */
 static int is_fallthrough(const ir_node *cfgpred)
 {
 	ir_node *pred;
@@ -92,6 +93,10 @@ static int is_fallthrough(const ir_node *cfgpred)
 	return 1;
 }
 
+/**
+ * returns non-zero if the given block needs a label
+ * because of being a jump-target (and not a fall-through)
+ */
 static int block_needs_label(const ir_node *block)
 {
 	int need_label = 1;
@@ -505,7 +510,8 @@ static void ia32_emit_cmp_suffix(int pnc)
 
 typedef enum ia32_emit_mod_t {
 	EMIT_RESPECT_LS   = 1U << 0,
-	EMIT_ALTERNATE_AM = 1U << 1
+	EMIT_ALTERNATE_AM = 1U << 1,
+	EMIT_LONG         = 1U << 2
 } ia32_emit_mod_t;
 
 /**
@@ -524,10 +530,12 @@ typedef enum ia32_emit_mod_t {
  * %Sx  <node>                  source register x
  * %s   const char*             string
  * %u   unsigned int            unsigned int
+ * %d   signed int              signed int
  *
  * x starts at 0
  * # modifier for %ASx, %D and %S uses ls mode of node to alter register width
  * * modifier does not prefix immediates with $, but AM with *
+ * l modifier for %lu and %ld
  */
 static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 {
@@ -563,6 +571,11 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 		if (*fmt == '#') {
 			mod |= EMIT_RESPECT_LS;
+			++fmt;
+		}
+
+		if (*fmt == 'l') {
+			mod |= EMIT_LONG;
 			++fmt;
 		}
 
@@ -679,15 +692,29 @@ emit_S:
 				break;
 			}
 
-			case 'u': {
-				unsigned num = va_arg(ap, unsigned);
-				be_emit_irprintf("%u", num);
+			case 'u':
+				if (mod & EMIT_LONG) {
+					unsigned long num = va_arg(ap, unsigned long);
+					be_emit_irprintf("%lu", num);
+				} else {
+					unsigned num = va_arg(ap, unsigned);
+					be_emit_irprintf("%u", num);
+				}
 				break;
-			}
+
+			case 'd':
+				if (mod & EMIT_LONG) {
+					long num = va_arg(ap, long);
+					be_emit_irprintf("%ld", num);
+				} else {
+					int num = va_arg(ap, int);
+					be_emit_irprintf("%d", num);
+				}
+				break;
 
 			default:
 unknown:
-				panic("unknown conversion");
+				panic("unknown format conversion in ia32_emitf()");
 		}
 	}
 
@@ -1710,6 +1737,18 @@ static void emit_ia32_GetEIP(const ir_node *node)
 	ia32_emitf(node, "\tpopl %D0\n");
 }
 
+static void emit_ia32_ClimbFrame(const ir_node *node)
+{
+	const ia32_climbframe_attr_t *attr = get_ia32_climbframe_attr_const(node);
+
+	ia32_emitf(node, "\tmovl %S0, %D0\n");
+	ia32_emitf(node, "\tmovl %S1, $%u\n", attr->count);
+	ia32_emitf(NULL, BLOCK_PREFIX "%ld:\n", get_irn_node_nr(node));
+	ia32_emitf(node, "\tmovl (%D0), %D0\n");
+	ia32_emitf(node, "\tdec %S1\n");
+	ia32_emitf(node, "\tjnz " BLOCK_PREFIX "%ld\n", get_irn_node_nr(node));
+}
+
 static void emit_be_Return(const ir_node *node)
 {
 	unsigned pop = be_Return_get_pop(node);
@@ -1774,6 +1813,7 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(SwitchJmp);
+	IA32_EMIT(ClimbFrame);
 
 	/* benode emitter */
 	BE_EMIT(Copy);

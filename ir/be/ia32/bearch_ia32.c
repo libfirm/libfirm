@@ -522,6 +522,14 @@ ir_entity *ia32_get_return_address_entity(void) {
 }
 
 /**
+ * Return the stack entity that contains the frame address.
+ */
+ir_entity *ia32_get_frame_address_entity(void) {
+	ia32_build_between_type();
+	return ia32_curr_fp_ommitted ? NULL : old_bp_ent;
+}
+
+/**
  * Get the estimated cycle count for @p irn.
  *
  * @param self The this pointer.
