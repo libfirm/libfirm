@@ -1742,7 +1742,7 @@ static void emit_ia32_ClimbFrame(const ir_node *node)
 	const ia32_climbframe_attr_t *attr = get_ia32_climbframe_attr_const(node);
 
 	ia32_emitf(node, "\tmovl %S0, %D0\n");
-	ia32_emitf(node, "\tmovl %S1, $%u\n", attr->count);
+	ia32_emitf(node, "\tmovl $%u, %S1\n", attr->count);
 	ia32_emitf(NULL, BLOCK_PREFIX "%ld:\n", get_irn_node_nr(node));
 	ia32_emitf(node, "\tmovl (%D0), %D0\n");
 	ia32_emitf(node, "\tdec %S1\n");
