@@ -108,6 +108,7 @@ enum cpu_support {
 	cpu_k6          = arch_k6 | arch_mmx_insn,
 	cpu_k6_PLUS     = arch_k6 | arch_3DNow_insn,
 	cpu_geode       = arch_geode  | arch_sse1_insn | arch_3DNowE_insn,
+	cpu_athlon_old  = arch_athlon | arch_3DNowE_insn | arch_feature_p6_insn,
 	cpu_athlon      = arch_athlon | arch_sse1_insn | arch_3DNowE_insn | arch_feature_p6_insn,
 	cpu_athlon64    = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
 	cpu_k8          = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
@@ -156,7 +157,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "k6-2",         cpu_k6_PLUS },
 	{ "k6-3",         cpu_k6_PLUS },
 	{ "geode",        cpu_geode },
-	{ "athlon",       cpu_athlon },
+	{ "athlon",       cpu_athlon_old },
 	{ "athlon-tbird", cpu_athlon },
 	{ "athlon-4",     cpu_athlon },
 	{ "athlon-xp",    cpu_athlon },
@@ -497,6 +498,8 @@ void ia32_setup_cg_config(void)
 	c->use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | arch_core2 | arch_generic32) && !opt_size;
 	c->use_bt               = FLAGS(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
 	c->use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
+	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
+	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 

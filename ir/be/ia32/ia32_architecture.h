@@ -70,8 +70,12 @@ typedef struct {
 	unsigned use_pad_return:1;
 	/** use the bt instruction */
 	unsigned use_bt:1;
-	/** use fisttp instruction (requieres SSE3) */
+	/** use fisttp instruction (requires SSE3) */
 	unsigned use_fisttp:1;
+	/** use SSE prefetch instructions */
+	unsigned use_sse_prefetch:1;
+	/** use 3DNow! prefetch instructions */
+	unsigned use_3dnow_prefetch:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

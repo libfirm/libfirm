@@ -4558,7 +4558,7 @@ static ir_node *gen_return_address(ir_node *node) {
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
-	return new_rd_Proj(dbgi, current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+	return new_r_Proj(current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
 }
 
 /**
@@ -4608,7 +4608,96 @@ static ir_node *gen_frame_address(ir_node *node) {
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
-	return new_rd_Proj(dbgi, current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+	return new_r_Proj(current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+}
+
+/**
+ * Transform Builtin frame_address
+ */
+static ir_node *gen_prefetch(ir_node *node) {
+	dbg_info       *dbgi;
+	ir_node        *ptr, *block, *mem, *noreg, *base, *index;
+	ir_node        *param,  *new_node;
+	long           rw, locality;
+	tarval         *tv;
+	ia32_address_t addr;
+
+	if (!ia32_cg_config.use_sse_prefetch && !ia32_cg_config.use_3dnow_prefetch) {
+		/* no prefetch at all, route memory */
+		return be_transform_node(get_Builtin_mem(node));
+	}
+
+	param = get_Builtin_param(node, 1);
+	tv    = get_Const_tarval(param);
+	rw    = get_tarval_long(tv);
+
+	if (rw == 1 && !ia32_cg_config.use_3dnow_prefetch) {
+		/* only 3DNow! has prefetchw */
+		return be_transform_node(get_Builtin_mem(node));
+	}
+
+	/* construct load address */
+	memset(&addr, 0, sizeof(addr));
+	ptr = get_Builtin_param(node, 0);
+	ia32_create_address_mode(&addr, ptr, 0);
+	base  = addr.base;
+	index = addr.index;
+
+	noreg = ia32_new_NoReg_gp(env_cg);
+	if (base == NULL) {
+		base = noreg;
+	} else {
+		base = be_transform_node(base);
+	}
+
+	if (index == NULL) {
+		index = noreg;
+	} else {
+		index = be_transform_node(index);
+	}
+
+	dbgi     = get_irn_dbg_info(node);
+	block    = be_transform_node(get_nodes_block(node));
+	mem      = be_transform_node(get_Builtin_mem(node));
+
+	if (rw == 1) {
+		/* we have 3DNow!, this was already checked above */
+		new_node = new_bd_ia32_PrefetchW(dbgi, block, base, index, mem);
+	} else if (ia32_cg_config.use_sse_prefetch) {
+		param    = get_Builtin_param(node, 2);
+		tv       = get_Const_tarval(param);
+		locality = get_tarval_long(tv);
+
+		/* SSE style prefetch */
+		switch (locality) {
+		case 0:
+			new_node = new_bd_ia32_PrefetchNTA(dbgi, block, base, index, mem);
+			break;
+		case 1:
+			new_node = new_bd_ia32_Prefetch2(dbgi, block, base, index, mem);
+			break;
+		case 2:
+			new_node = new_bd_ia32_Prefetch1(dbgi, block, base, index, mem);
+			break;
+		default:
+			new_node = new_bd_ia32_Prefetch0(dbgi, block, base, index, mem);
+			break;
+		}
+	} else {
+		assert(ia32_cg_config.use_3dnow_prefetch);
+		/* 3DNow! style prefetch */
+		new_node = new_bd_ia32_Prefetch(dbgi, block, base, index, mem);
+	}
+
+	set_irn_pinned(new_node, get_irn_pinned(node));
+	set_ia32_op_type(new_node, ia32_AddrModeS);
+	set_ia32_ls_mode(new_node, mode_Bu);
+	set_address(new_node, &addr);
+
+	SET_IA32_ORIG_NODE(new_node, node);
+
+	be_dep_on_frame(new_node);
+	return new_r_Proj(current_ir_graph, block, new_node, mode_M, pn_ia32_Prefetch_M);
 }
 
 /**
@@ -4623,7 +4712,7 @@ static ir_node *gen_Builtin(ir_node *node) {
 	case ir_bk_frame_addess:
 		return gen_frame_address(node);
 	case ir_bk_prefetch:
-		break;
+		return gen_prefetch(node);
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
 }
@@ -4642,7 +4731,8 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
 		return new_node;
 	case ir_bk_prefetch:
-		break;
+		assert(get_Proj_proj(proj) == pn_Builtin_M);
+		return new_node;
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
 }

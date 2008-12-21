@@ -1519,6 +1519,78 @@ ClimbFrame => {
 	mode      => $mode_gp
 },
 
+#
+# Intel style prefetching
+#
+Prefetch0 => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetch0 %AM",
+	units     => [ "GP" ],
+},
+
+Prefetch1 => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetch1 %AM",
+	units     => [ "GP" ],
+},
+
+Prefetch2 => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetch2 %AM",
+	units     => [ "GP" ],
+},
+
+PrefetchNTA => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetchnta %AM",
+	units     => [ "GP" ],
+},
+
+#
+# 3DNow! prefetch instructions
+#
+Prefetch => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetch %AM",
+	units     => [ "GP" ],
+},
+
+PrefetchW => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "M" ],
+	latency   => 0,
+	emit      => ". prefetchw %AM",
+	units     => [ "GP" ],
+},
+
 #-----------------------------------------------------------------------------#
 #   _____ _____ ______    __ _             _                     _            #
 #  / ____/ ____|  ____|  / _| |           | |                   | |           #
