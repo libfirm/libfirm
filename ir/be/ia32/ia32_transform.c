@@ -4660,10 +4660,11 @@ static ir_node *gen_prefetch(ir_node *node) {
 	block    = be_transform_node(get_nodes_block(node));
 	mem      = be_transform_node(get_Builtin_mem(node));
 
-	if (rw == 1) {
+	if (rw == 1 && ia32_cg_config.use_3dnow_prefetch) {
 		/* we have 3DNow!, this was already checked above */
 		new_node = new_bd_ia32_PrefetchW(dbgi, block, base, index, mem);
 	} else if (ia32_cg_config.use_sse_prefetch) {
+		/* note: rw == 1 is IGNORED in that case */
 		param    = get_Builtin_param(node, 2);
 		tv       = get_Const_tarval(param);
 		locality = get_tarval_long(tv);
