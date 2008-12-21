@@ -4631,11 +4631,6 @@ static ir_node *gen_prefetch(ir_node *node) {
 	tv    = get_Const_tarval(param);
 	rw    = get_tarval_long(tv);
 
-	if (rw == 1 && !ia32_cg_config.use_3dnow_prefetch) {
-		/* only 3DNow! has prefetchw */
-		return be_transform_node(get_Builtin_mem(node));
-	}
-
 	/* construct load address */
 	memset(&addr, 0, sizeof(addr));
 	ptr = get_Builtin_param(node, 0);
