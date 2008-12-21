@@ -1529,7 +1529,7 @@ Prefetch0 => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 	latency   => 0,
-	emit      => ". prefetch0 %AM",
+	emit      => ". prefetcht0 %AM",
 	units     => [ "GP" ],
 },
 
@@ -1540,7 +1540,7 @@ Prefetch1 => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 	latency   => 0,
-	emit      => ". prefetch1 %AM",
+	emit      => ". prefetcht1 %AM",
 	units     => [ "GP" ],
 },
 
@@ -1551,7 +1551,7 @@ Prefetch2 => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "M" ],
 	latency   => 0,
-	emit      => ". prefetch2 %AM",
+	emit      => ". prefetcht2 %AM",
 	units     => [ "GP" ],
 },
 
