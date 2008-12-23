@@ -207,9 +207,7 @@ $arch = "ia32";
 	DB0 => "${arch}_emit_8bit_dest_register(node, 0);",
 	X0 => "${arch}_emit_x87_register(node, 0);",
 	X1 => "${arch}_emit_x87_register(node, 1);",
-	SE => "${arch}_emit_extend_suffix(get_ia32_ls_mode(node));",
-	ME => "if (get_mode_size_bits(get_ia32_ls_mode(node)) != 32)
-		ia32_emit_mode_suffix(node);",
+	EX => "${arch}_emit_extend_suffix(node);",
 	M  => "${arch}_emit_mode_suffix(node);",
 	XM => "${arch}_emit_x87_mode_suffix(node);",
 	XXM => "${arch}_emit_xmm_mode_suffix(node);",
@@ -1337,7 +1335,7 @@ Load => {
 	ins       => [ "base", "index", "mem" ],
 	outs      => [ "res", "M", "X_exc" ],
 	latency   => 0,
-	emit      => ". mov%SE%ME%.l %AM, %D0",
+	emit      => ". mov%EX%.l %AM, %D0",
 	units     => [ "GP" ],
 },
 

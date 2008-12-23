@@ -416,11 +416,13 @@ void ia32_emit_xmm_mode_suffix_s(const ir_node *node)
 	be_emit_char(get_xmm_mode_suffix(mode));
 }
 
-void ia32_emit_extend_suffix(const ir_mode *mode)
+void ia32_emit_extend_suffix(const ir_node *node)
 {
+	ir_mode *mode = get_ia32_ls_mode(node);
 	if (get_mode_size_bits(mode) == 32)
 		return;
 	be_emit_char(mode_is_signed(mode) ? 's' : 'z');
+	ia32_emit_mode_suffix_mode(mode);
 }
 
 void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
