@@ -1475,6 +1475,9 @@ LdTls => {
 	latency   => 1,
 },
 
+#
+# BT supports source address mode, but this is unused yet
+#
 Bt => {
 	irn_flags => "R",
 	state     => "exc_pinned",
@@ -1485,6 +1488,54 @@ Bt => {
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags  # only CF is set, but the other flags are undefined
+},
+
+Bsf => {
+	irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "gp", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "operand" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => '. bsf%M %unop3, %D0',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+Bsr => {
+	irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "gp", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "operand" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => '. bsr%M %unop3, %D0',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
+
+#
+# SSE4.2 or SSE4a popcnt instruction
+#
+Popcnt => {
+	irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "gp", "flags", "none" ] },
+	ins       => [ "base", "index", "mem", "operand" ],
+	outs      => [ "res", "flags", "M" ],
+	am        => "source,binary",
+	emit      => '. popcnt%M %unop3, %D0',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags
 },
 
 Call => {

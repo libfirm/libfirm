@@ -766,7 +766,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	assert(use_am || !(flags & match_16bit_am));
 
 	if ((mode_bits ==  8 && !(flags & match_8bit_am)) ||
-			(mode_bits == 16 && !(flags & match_16bit_am))) {
+	    (mode_bits == 16 && !(flags & match_16bit_am))) {
 		use_am = 0;
 	}
 
@@ -2945,7 +2945,6 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
                                  int ins_permuted)
 {
 	ir_node *noreg = ia32_new_NoReg_gp(env_cg);
-	ir_node *nomem = new_NoMem();
 	ir_mode *mode  = get_irn_mode(orig_node);
 	ir_node *new_node;
 
@@ -2954,6 +2953,7 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
 
 	/* we might need to conv the result up */
 	if (get_mode_size_bits(mode) > 8) {
+		ir_node *nomem = new_NoMem();
 		new_node = new_bd_ia32_Conv_I2I8Bit(dbgi, new_block, noreg, noreg,
 		                                    nomem, new_node, mode_Bu);
 		SET_IA32_ORIG_NODE(new_node, orig_node);
@@ -4697,6 +4697,234 @@ static ir_node *gen_prefetch(ir_node *node) {
 }
 
 /**
+ * Transform ...
+ */
+static ir_node *gen_unop_dest(ir_node *node, construct_binop_dest_func *func) {
+	ir_node *param     = get_Builtin_param(node, 0);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+
+	ia32_address_mode_t am;
+	ia32_address_t      *addr = &am.addr;
+	ir_node             *cnt;
+
+	match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am);
+
+	cnt = (*func)(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
+	set_am_attributes(cnt, &am);
+	set_ia32_ls_mode(cnt, get_irn_mode(param));
+
+	SET_IA32_ORIG_NODE(cnt, node);
+	return fix_mem_proj(cnt, &am);
+}
+
+/**
+ * Transform builtin ffs.
+ */
+static ir_node *gen_ffs(ir_node *node) {
+	ir_node  *bsf   = gen_unop_dest(node, new_bd_ia32_Bsf);
+	ir_node  *real  = skip_Proj(bsf);
+	dbg_info *dbgi  = get_irn_dbg_info(real);
+	ir_node  *block = get_nodes_block(real);
+	ir_node  *imm   = create_Immediate(NULL, 0, 31);
+	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *flag, *set, *conv, *neg, *or;
+
+	/* bsf x */
+	if (get_irn_mode(real) != mode_T) {
+		set_irn_mode(real, mode_T);
+		bsf = new_r_Proj(current_ir_graph, block, real, mode_Iu, pn_ia32_res);
+	}
+
+	flag = new_r_Proj(current_ir_graph, block, real, mode_b, pn_ia32_flags);
+
+	/* sete */
+	set = new_bd_ia32_Set(dbgi, block, flag, pn_Cmp_Eq, 0);
+	SET_IA32_ORIG_NODE(set, node);
+
+	/* conv to 32bit */
+	conv = new_bd_ia32_Conv_I2I8Bit(dbgi, block, noreg, noreg, nomem, set, mode_Bu);
+	SET_IA32_ORIG_NODE(conv, node);
+
+	/* neg */
+	neg = new_bd_ia32_Neg(dbgi, block, conv);
+
+	/* or */
+	or = new_bd_ia32_Or(dbgi, block, noreg, noreg, nomem, bsf, neg);
+	set_ia32_commutative(or);
+
+	/* add 1 */
+	return new_bd_ia32_Lea(dbgi, block, or, create_Immediate(NULL, 0, 1));
+}
+
+/**
+ * Transform builtin clz.
+ */
+static ir_node *gen_clz(ir_node *node) {
+	ir_node  *bsr   = gen_unop_dest(node, new_bd_ia32_Bsr);
+	ir_node  *real  = skip_Proj(bsr);
+	dbg_info *dbgi  = get_irn_dbg_info(real);
+	ir_node  *block = get_nodes_block(real);
+	ir_node  *imm   = create_Immediate(NULL, 0, 31);
+	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
+
+	return new_bd_ia32_Xor(dbgi, block, noreg, noreg, new_NoMem(), bsr, imm);
+}
+
+/**
+ * Transform builtin ctz.
+ */
+static ir_node *gen_ctz(ir_node *node) {
+	return gen_unop_dest(node, new_bd_ia32_Bsf);
+}
+
+/**
+ * Transform builtin parity.
+ */
+static ir_node *gen_parity(ir_node *node) {
+	ir_node *param      = get_Builtin_param(node, 0);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	ir_node *block      = get_nodes_block(node);
+
+	ir_node *new_block  = be_transform_node(block);
+	ir_node *noreg      = ia32_new_NoReg_gp(env_cg);
+	ir_node *imm, *cmp, *new_node;
+
+	ia32_address_mode_t am;
+	ia32_address_t      *addr = &am.addr;
+
+
+	/* cmp param, 0 */
+	match_arguments(&am, block, NULL, param, NULL, match_am);
+	imm = create_Immediate(NULL, 0, 0);
+	cmp = new_bd_ia32_Cmp(dbgi, new_block, addr->base, addr->index,
+	                      addr->mem, imm, am.new_op2, am.ins_permuted, 0);
+	set_am_attributes(cmp, &am);
+	set_ia32_ls_mode(cmp, mode_Iu);
+
+	SET_IA32_ORIG_NODE(cmp, node);
+
+	cmp = fix_mem_proj(cmp, &am);
+
+	/* setp */
+	new_node = new_bd_ia32_Set(dbgi, new_block, cmp, ia32_pn_Cmp_parity, 0);
+	SET_IA32_ORIG_NODE(new_node, node);
+
+	/* conv to 32bit */
+	new_node = new_bd_ia32_Conv_I2I8Bit(dbgi, new_block, noreg, noreg,
+	                                    new_NoMem(), new_node, mode_Bu);
+	SET_IA32_ORIG_NODE(new_node, node);
+	return new_node;
+}
+
+/**
+ * Transform builtin popcount
+ */
+static ir_node *gen_popcount(ir_node *node) {
+	ir_node *param     = get_Builtin_param(node, 0);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+
+	ir_node *noreg, *nomem, *new_param;
+	ir_node *imm, *simm, *m1, *s1, *s2, *s3, *s4, *s5, *m2, *m3, *m4, *m5, *m6, *m7, *m8, *m9, *m10, *m11, *m12, *m13;
+
+	/* check for SSE4.2 or SSE4a and use the popcnt instruction */
+	if (ia32_cg_config.use_popcnt) {
+		ia32_address_mode_t am;
+		ia32_address_t      *addr = &am.addr;
+		ir_node             *cnt;
+
+		match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am);
+
+		cnt = new_bd_ia32_Popcnt(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
+		set_am_attributes(cnt, &am);
+		set_ia32_ls_mode(cnt, get_irn_mode(param));
+
+		SET_IA32_ORIG_NODE(cnt, node);
+		return fix_mem_proj(cnt, &am);
+	}
+
+	noreg     = ia32_new_NoReg_gp(env_cg);
+	nomem     = new_NoMem();
+	new_param = be_transform_node(param);
+
+	/* do the standard popcount algo */
+
+	/* m1 = x & 0x55555555 */
+	imm = create_Immediate(NULL, 0, 0x55555555);
+	m1 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, new_param, imm);
+
+	/* s1 = x >> 1 */
+	simm = create_Immediate(NULL, 0, 1);
+	s1 = new_bd_ia32_Shl(dbgi, new_block, new_param, simm);
+
+	/* m2 = s1 & 0x55555555 */
+	m2 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s1, imm);
+
+	/* m3 = m1 + m2 */
+	m3 = new_bd_ia32_Lea(dbgi, new_block, m2, m1);
+
+	/* m4 = m3 & 0x33333333 */
+	imm = create_Immediate(NULL, 0, 0x33333333);
+	m4 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, m3, imm);
+
+	/* s2 = m3 >> 2 */
+	simm = create_Immediate(NULL, 0, 2);
+	s2 = new_bd_ia32_Shl(dbgi, new_block, m3, simm);
+
+	/* m5 = s2 & 0x33333333 */
+	m5 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s2, imm);
+
+	/* m6 = m4 + m5 */
+	m6 = new_bd_ia32_Lea(dbgi, new_block, m4, m5);
+
+	/* m7 = m6 & 0x0F0F0F0F */
+	imm = create_Immediate(NULL, 0, 0x0F0F0F0F);
+	m7 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, m6, imm);
+
+	/* s3 = m6 >> 4 */
+	simm = create_Immediate(NULL, 0, 4);
+	s3 = new_bd_ia32_Shl(dbgi, new_block, m6, simm);
+
+	/* m8 = s3 & 0x0F0F0F0F */
+	m8 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s3, imm);
+
+	/* m9 = m7 + m8 */
+	m9 = new_bd_ia32_Lea(dbgi, new_block, m7, m8);
+
+	/* m10 = m9 & 0x00FF00FF */
+	imm = create_Immediate(NULL, 0, 0x00FF00FF);
+	m10 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, m9, imm);
+
+	/* s4 = m9 >> 8 */
+	simm = create_Immediate(NULL, 0, 8);
+	s4 = new_bd_ia32_Shl(dbgi, new_block, m9, simm);
+
+	/* m11 = s4 & 0x00FF00FF */
+	m11 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s4, imm);
+
+	/* m12 = m10 + m11 */
+	m12 = new_bd_ia32_Lea(dbgi, new_block, m10, m11);
+
+	/* m13 = m12 & 0x0000FFFF */
+	imm = create_Immediate(NULL, 0, 0x0000FFFF);
+	m13 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, m12, imm);
+
+	/* s5 = m12 >> 16 */
+	simm = create_Immediate(NULL, 0, 16);
+	s5 = new_bd_ia32_Shl(dbgi, new_block, m12, simm);
+
+	/* res = m13 + s5 */
+	return new_bd_ia32_Lea(dbgi, new_block, m13, s5);
+}
+
+/**
  * Transform Builtin node.
  */
 static ir_node *gen_Builtin(ir_node *node) {
@@ -4709,6 +4937,16 @@ static ir_node *gen_Builtin(ir_node *node) {
 		return gen_frame_address(node);
 	case ir_bk_prefetch:
 		return gen_prefetch(node);
+	case ir_bk_ffs:
+		return gen_ffs(node);
+	case ir_bk_clz:
+		return gen_clz(node);
+	case ir_bk_ctz:
+		return gen_ctz(node);
+	case ir_bk_parity:
+		return gen_parity(node);
+	case ir_bk_popcount:
+		return gen_popcount(node);
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
 }
@@ -4724,6 +4962,11 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 	switch (kind) {
 	case ir_bk_return_address:
 	case ir_bk_frame_addess:
+	case ir_bk_ffs:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_parity:
+	case ir_bk_popcount:
 		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
 		return new_node;
 	case ir_bk_prefetch:

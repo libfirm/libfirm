@@ -499,6 +499,10 @@ static void ia32_emit_cmp_suffix(int pnc)
 {
 	const char *str;
 
+	if (pnc == ia32_pn_Cmp_parity) {
+		be_emit_char('p');
+		return;
+	}
 	if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
 		str = cmp2condition_u[pnc & 7];
 	} else {

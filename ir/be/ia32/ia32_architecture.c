@@ -70,12 +70,18 @@ enum cpu_arch_features {
 	arch_feature_3DNow    = 0x00100000, /**< 3DNow! instructions */
 	arch_feature_3DNowE   = 0x00200000, /**< Enhanced 3DNow! instructions */
 	arch_feature_64bit    = 0x00400000, /**< x86_64 support */
+	arch_feature_sse4_1   = 0x00800000, /**< SSE4.1 instructions */
+	arch_feature_sse4_2   = 0x01000000, /**< SSE4.2 instructions */
+	arch_feature_sse4a    = 0x02000000, /**< SSE4a instructions */
 
 	arch_mmx_insn     = arch_feature_mmx,                         /**< MMX instructions */
-	arch_sse1_insn    = arch_feature_sse1  | arch_mmx_insn,       /**< SSE1 instructions, include MMX */
-	arch_sse2_insn    = arch_feature_sse2  | arch_sse1_insn,      /**< SSE2 instructions, include SSE1 */
-	arch_sse3_insn    = arch_feature_sse3  | arch_sse2_insn,      /**< SSE3 instructions, include SSE2 */
-	arch_ssse3_insn   = arch_feature_ssse3 | arch_sse3_insn,      /**< SSSE3 instructions, include SSE3 */
+	arch_sse1_insn    = arch_feature_sse1   | arch_mmx_insn,      /**< SSE1 instructions, include MMX */
+	arch_sse2_insn    = arch_feature_sse2   | arch_sse1_insn,     /**< SSE2 instructions, include SSE1 */
+	arch_sse3_insn    = arch_feature_sse3   | arch_sse2_insn,     /**< SSE3 instructions, include SSE2 */
+	arch_ssse3_insn   = arch_feature_ssse3  | arch_sse3_insn,     /**< SSSE3 instructions, include SSE3 */
+	arch_sse4_1_insn  = arch_feature_sse4_1 | arch_ssse3_insn,    /**< SSE4.1 instructions, include SSSE3 */
+	arch_sse4_2_insn  = arch_feature_sse4_2 | arch_sse4_1_insn,   /**< SSE4.2 instructions, include SSE4.1 */
+	arch_sse4a_insn   = arch_feature_sse4a  | arch_ssse3_insn,    /**< SSE4a instructions, include SSSE3 */
 
 	arch_3DNow_insn   = arch_feature_3DNow | arch_feature_mmx,    /**< 3DNow! instructions, including MMX */
 	arch_3DNowE_insn  = arch_feature_3DNowE | arch_3DNow_insn,    /**< Enhanced 3DNow! instructions */
@@ -103,6 +109,7 @@ enum cpu_support {
 	cpu_prescott    = arch_nocona | arch_feature_p6_insn | arch_sse3_insn,
 	cpu_nocona      = arch_nocona | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
 	cpu_core2       = arch_core2 | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
+	cpu_penryn      = arch_core2 | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn,
 
 	/* AMD CPUs */
 	cpu_k6          = arch_k6 | arch_mmx_insn,
@@ -113,7 +120,7 @@ enum cpu_support {
 	cpu_athlon64    = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
 	cpu_k8          = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
 	cpu_k8_sse3     = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
-	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
+	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse4a_insn,
 
 	/* other CPUs */
 	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
@@ -152,6 +159,7 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "nocona",       cpu_nocona },
 	{ "merom",        cpu_core2 },
 	{ "core2",        cpu_core2 },
+	{ "penryn",       cpu_penryn },
 
 	{ "k6",           cpu_k6 },
 	{ "k6-2",         cpu_k6_PLUS },
@@ -500,6 +508,7 @@ void ia32_setup_cg_config(void)
 	c->use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
+	c->use_popcnt           = FLAGS(arch, (arch_feature_sse4_2 | arch_feature_sse4a));
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 

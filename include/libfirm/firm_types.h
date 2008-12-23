@@ -218,10 +218,16 @@ typedef struct {
 } ir_asm_constraint;
 
 /** Supported libFirm builtins. */
+/** Supported libFirm builtins. */
 typedef enum {
 	ir_bk_return_address,         /**< GCC __builtin_return_address() */
 	ir_bk_frame_addess,           /**< GCC __builtin_frame_address() */
 	ir_bk_prefetch,               /**< GCC __builtin_prefetch() */
+	ir_bk_ffs,                    /**< GCC __builtin_ffs(): find first (least) significant 1 bit */
+	ir_bk_clz,                    /**< GCC __builtin_clz(): count leading zero */
+	ir_bk_ctz,                    /**< GCC __builtin_ctz(): count trailing zero */
+	ir_bk_popcount,               /**< GCC __builtin_popcount(): population count */
+	ir_bk_parity,                 /**< GCC __builtin_parity(): parity */
 } ir_builtin_kind;
 
 #endif

@@ -34,6 +34,7 @@
 enum {
 	ia32_pn_Cmp_unsigned = 0x1000,
 	ia32_pn_Cmp_float    = 0x2000,
+	ia32_pn_Cmp_parity   = 0x4000
 };
 
 typedef enum {
