@@ -4730,7 +4730,6 @@ static ir_node *gen_ffs(ir_node *node)
 	ir_node  *real  = skip_Proj(bsf);
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
-	ir_node  *imm   = create_Immediate(NULL, 0, 31);
 	ir_node  *noreg = ia32_new_NoReg_gp(env_cg);
 	ir_node  *nomem = new_NoMem();
 	ir_node  *flag, *set, *conv, *neg, *or;
