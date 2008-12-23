@@ -4699,20 +4699,21 @@ static ir_node *gen_prefetch(ir_node *node) {
 /**
  * Transform ...
  */
-static ir_node *gen_unop_dest(ir_node *node, construct_binop_dest_func *func) {
+static ir_node *gen_unop_AM(ir_node *node, construct_binop_dest_func *func)
+{
 	ir_node *param     = get_Builtin_param(node, 0);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
 
-	ia32_address_mode_t am;
+	ia32_address_mode_t  am;
 	ia32_address_t      *addr = &am.addr;
 	ir_node             *cnt;
 
-	match_arguments(&am, block, NULL, param, NULL, match_am | match_16bit_am);
+	match_arguments(&am, block, NULL, param, NULL, match_am);
 
-	cnt = (*func)(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
+	cnt = func(dbgi, new_block, addr->base, addr->index, addr->mem, am.new_op2);
 	set_am_attributes(cnt, &am);
 	set_ia32_ls_mode(cnt, get_irn_mode(param));
 
@@ -4723,8 +4724,9 @@ static ir_node *gen_unop_dest(ir_node *node, construct_binop_dest_func *func) {
 /**
  * Transform builtin ffs.
  */
-static ir_node *gen_ffs(ir_node *node) {
-	ir_node  *bsf   = gen_unop_dest(node, new_bd_ia32_Bsf);
+static ir_node *gen_ffs(ir_node *node)
+{
+	ir_node  *bsf   = gen_unop_AM(node, new_bd_ia32_Bsf);
 	ir_node  *real  = skip_Proj(bsf);
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
@@ -4763,8 +4765,9 @@ static ir_node *gen_ffs(ir_node *node) {
 /**
  * Transform builtin clz.
  */
-static ir_node *gen_clz(ir_node *node) {
-	ir_node  *bsr   = gen_unop_dest(node, new_bd_ia32_Bsr);
+static ir_node *gen_clz(ir_node *node)
+{
+	ir_node  *bsr   = gen_unop_AM(node, new_bd_ia32_Bsr);
 	ir_node  *real  = skip_Proj(bsr);
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
@@ -4777,14 +4780,16 @@ static ir_node *gen_clz(ir_node *node) {
 /**
  * Transform builtin ctz.
  */
-static ir_node *gen_ctz(ir_node *node) {
-	return gen_unop_dest(node, new_bd_ia32_Bsf);
+static ir_node *gen_ctz(ir_node *node)
+{
+	return gen_unop_AM(node, new_bd_ia32_Bsf);
 }
 
 /**
  * Transform builtin parity.
  */
-static ir_node *gen_parity(ir_node *node) {
+static ir_node *gen_parity(ir_node *node)
+{
 	ir_node *param      = get_Builtin_param(node, 0);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 
