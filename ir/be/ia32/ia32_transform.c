@@ -4583,7 +4583,7 @@ static ir_node *gen_frame_address(ir_node *node) {
 		ptr = new_bd_ia32_ClimbFrame(dbgi, block, ptr, cnt, res, value);
 	}
 
-	/* load the return address from this frame */
+	/* load the frame address from this frame */
 	load = new_bd_ia32_Load(dbgi, block, ptr, noreg, get_irg_no_mem(current_ir_graph));
 
 	set_irn_pinned(load, get_irn_pinned(node));
@@ -5152,18 +5152,23 @@ static ir_node *gen_Proj_Bound(ir_node *node)
 
 static ir_node *gen_Proj_ASM(ir_node *node)
 {
-	ir_node *pred;
-	ir_node *new_pred;
-	ir_node *block;
+	ir_mode *mode     = get_irn_mode(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+	ir_node *block    = get_nodes_block(new_pred);
+	long     pos      = get_Proj_proj(node);
 
-	if (get_irn_mode(node) != mode_M)
-		return be_duplicate_node(node);
+	if (mode == mode_M) {
+		pos = arch_irn_get_n_outs(new_pred) + 1;
+	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
+		mode = mode_Iu;
+	} else if (mode_is_float(mode)) {
+		mode = mode_E;
+	} else {
+		panic("unexpected proj mode at ASM");
+	}
 
-	pred     = get_Proj_pred(node);
-	new_pred = be_transform_node(pred);
-	block    = get_nodes_block(new_pred);
-	return new_r_Proj(current_ir_graph, block, new_pred, mode_M,
-			arch_irn_get_n_outs(new_pred) + 1);
+	return new_r_Proj(current_ir_graph, block, new_pred, mode, pos);
 }
 
 /**
