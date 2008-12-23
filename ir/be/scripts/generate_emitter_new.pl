@@ -52,7 +52,7 @@ sub create_emitter {
 	our $arch;
 
 	my @tokens = ($template =~ m/[^\%]+|\%[a-zA-Z_][a-zA-Z0-9_]*|\%./g);
-	push(@{$result}, "${indent}be_emit_char('\t');\n");
+	push(@{$result}, "${indent}be_emit_char('\\t');\n");
 	for (@tokens) {
 		SWITCH: {
 			if (/%\./)      { last SWITCH; }
