@@ -208,8 +208,8 @@ $arch = "ia32";
 	X0 => "${arch}_emit_x87_register(node, 0);",
 	X1 => "${arch}_emit_x87_register(node, 1);",
 	SE => "${arch}_emit_extend_suffix(get_ia32_ls_mode(node));",
-	ME => "if(get_mode_size_bits(get_ia32_ls_mode(node)) != 32)\n
-	           ia32_emit_mode_suffix(node);",
+	ME => "if (get_mode_size_bits(get_ia32_ls_mode(node)) != 32)
+		ia32_emit_mode_suffix(node);",
 	M  => "${arch}_emit_mode_suffix(node);",
 	XM => "${arch}_emit_x87_mode_suffix(node);",
 	XXM => "${arch}_emit_xmm_mode_suffix(node);",
