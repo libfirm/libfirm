@@ -47,17 +47,15 @@ my $line;
 sub create_emitter {
 	my $result = shift;
 	my $indent = shift;
-	my $template = shift;
+	my $template = "\\t" . shift;
 	our %emit_templates;
 	our $arch;
 
-	my @tokens = ($template =~ m/[^\%]+|\%[a-zA-Z_][a-zA-Z0-9_]*|\%./g);
-	push(@{$result}, "${indent}be_emit_char('\\t');\n");
+	my @tokens = ($template =~ m/(?:[^%]|%%)+|\%[a-zA-Z_][a-zA-Z0-9_]*|%\./g);
 	for (@tokens) {
 		SWITCH: {
-			if (/%\./)      { last SWITCH; }
-			if (/%%/)       { push(@{$result}, "${indent}be_emit_char('%');\n"); last SWITCH; }
-			if (/%(.+)/)    {
+			if (/%\./)       { last SWITCH; }
+			if (/^%([^%]+)/) {
 				if(defined($emit_templates{$1})) {
 					push(@{$result}, "${indent}$emit_templates{$1}\n");
 				} else {
@@ -66,7 +64,12 @@ sub create_emitter {
 				}
 				last SWITCH;
 			}
-			push(@{$result}, "${indent}be_emit_cstring(\"$_\");\n");
+			$_ =~ s/%%/%/g;
+			if (length($_) == 1) {
+				push(@{$result}, "${indent}be_emit_char('$_');\n");
+			} else {
+				push(@{$result}, "${indent}be_emit_cstring(\"$_\");\n");
+			}
 		}
 	}
 	push(@{$result}, "${indent}${finish_line_template}\n");
