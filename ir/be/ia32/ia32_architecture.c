@@ -509,6 +509,7 @@ void ia32_setup_cg_config(void)
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
 	c->use_popcnt           = FLAGS(arch, (arch_feature_sse4_2 | arch_feature_sse4a));
+	c->use_i486             = (arch & arch_mask) >= arch_i486;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
 

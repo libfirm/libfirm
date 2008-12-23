@@ -38,6 +38,7 @@ void ia32_emit_8bit_dest_register(const ir_node *node, int pos);
 void ia32_emit_x87_register(const ir_node *node, int pos);
 void ia32_emit_source_register_or_immediate(const ir_node *node, int pos);
 void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos);
+void ia32_emit_8bit_high_source_register(const ir_node *node, int pos);
 void ia32_emit_mode_suffix(const ir_node *node);
 void ia32_emit_x87_mode_suffix(const ir_node *node);
 void ia32_emit_xmm_mode_suffix(const ir_node *node);
@@ -53,5 +54,4 @@ void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
 
 /** Initializes the Emitter. */
 void ia32_init_emitter(void);
-
 #endif

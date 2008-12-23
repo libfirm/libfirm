@@ -197,9 +197,11 @@ $arch = "ia32";
 	S1 => "${arch}_emit_source_register(node, 1);",
 	S2 => "${arch}_emit_source_register(node, 2);",
 	S3 => "${arch}_emit_source_register(node, 3);",
+	SB0 => "${arch}_emit_8bit_source_register_or_immediate(node, 0);",
 	SB1 => "${arch}_emit_8bit_source_register_or_immediate(node, 1);",
 	SB2 => "${arch}_emit_8bit_source_register_or_immediate(node, 2);",
 	SB3 => "${arch}_emit_8bit_source_register_or_immediate(node, 3);",
+	SH0 => "${arch}_emit_8bit_high_source_register(node, 0);",
 	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
 	SI3 => "${arch}_emit_source_register_or_immediate(node, 3);",
 	D0 => "${arch}_emit_dest_register(node, 0);",
@@ -1566,6 +1568,47 @@ ClimbFrame => {
 	attr      => "unsigned count",
 	units     => [ "GP" ],
 	mode      => $mode_gp
+},
+
+#
+# bswap
+#
+Bswap => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ],
+	               out => [ "in_r1" ] },
+	emit      => '. bswap%M %S0',
+	ins       => [ "val" ],
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+},
+
+#
+# bswap16, use xchg here
+#
+Bswap16 => {
+	irn_flags => "R",
+	reg_req   => { in => [ "eax ebx ecx edx" ],
+	               out => [ "in_r1" ] },
+	emit      => '. xchg %SB0, %SH0',
+	ins       => [ "val" ],
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+},
+
+#
+# BreakPoint
+#
+Breakpoint => {
+	state     => "pinned",
+	reg_req   => { in => [ "none" ], out => [ "none" ] },
+	ins       => [ "mem" ],
+	latency   => 0,
+	emit      => ". int3",
+	units     => [ "GP" ],
+	mode      => mode_M,
 },
 
 #

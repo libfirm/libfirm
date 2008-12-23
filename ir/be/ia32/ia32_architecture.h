@@ -78,6 +78,8 @@ typedef struct {
 	unsigned use_3dnow_prefetch:1;
 	/** use SSE4.2 or SSE4a popcnt instruction */
 	unsigned use_popcnt:1;
+	/** use i486 instructions */
+	unsigned use_i486:1;
 	/** optimize calling convention where possible */
 	unsigned optimize_cc:1;
 	/**

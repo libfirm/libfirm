@@ -211,6 +211,9 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
  * |_|                                       |_|
  *************************************************************/
 
+/**
+ * Emit the name of the 8bit low register
+ */
 static void emit_8bit_register(const arch_register_t *reg)
 {
 	const char *reg_name = arch_register_get_name(reg);
@@ -218,6 +221,18 @@ static void emit_8bit_register(const arch_register_t *reg)
 	be_emit_char('%');
 	be_emit_char(reg_name[1]);
 	be_emit_char('l');
+}
+
+/**
+ * Emit the name of the 8bit high register
+ */
+static void emit_8bit_register_high(const arch_register_t *reg)
+{
+	const char *reg_name = arch_register_get_name(reg);
+
+	be_emit_char('%');
+	be_emit_char(reg_name[1]);
+	be_emit_char('h');
 }
 
 static void emit_16bit_register(const arch_register_t *reg)
@@ -304,7 +319,7 @@ static void emit_ia32_Immediate(const ir_node *node)
 void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
 {
 	const arch_register_t *reg;
-	ir_node               *in = get_irn_n(node, pos);
+	const ir_node         *in = get_irn_n(node, pos);
 	if (is_ia32_Immediate(in)) {
 		emit_ia32_Immediate(in);
 		return;
@@ -312,6 +327,13 @@ void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
 
 	reg = get_in_reg(node, pos);
 	emit_8bit_register(reg);
+}
+
+void ia32_emit_8bit_high_source_register(const ir_node *node, int pos)
+{
+	const ir_node         *in = get_irn_n(node, pos);
+	const arch_register_t *reg = get_in_reg(node, pos);
+	emit_8bit_register_high(reg);
 }
 
 void ia32_emit_dest_register(const ir_node *node, int pos)

@@ -4519,6 +4519,17 @@ static ir_node *gen_be_Call(ir_node *node)
 }
 
 /**
+ * Transform Builtin trap
+ */
+static ir_node *gen_trap(ir_node *node) {
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node *block  = be_transform_node(get_nodes_block(node));
+	ir_node *mem    = be_transform_node(get_Builtin_mem(node));
+
+	return new_bd_ia32_Breakpoint(dbgi, block, mem);
+}
+
+/**
  * Transform Builtin return_address
  */
 static ir_node *gen_return_address(ir_node *node) {
@@ -4697,7 +4708,7 @@ static ir_node *gen_prefetch(ir_node *node) {
 }
 
 /**
- * Transform ...
+ * Transform bsf like node
  */
 static ir_node *gen_unop_AM(ir_node *node, construct_binop_dest_func *func)
 {
@@ -4929,12 +4940,59 @@ static ir_node *gen_popcount(ir_node *node) {
 }
 
 /**
+ * Transform builtin byte swap.
+ */
+static ir_node *gen_bswap(ir_node *node) {
+	ir_node *param     = be_transform_node(get_Builtin_param(node, 0));
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+	ir_mode *mode      = get_irn_mode(param);
+	unsigned size      = get_mode_size_bits(mode);
+	ir_node  *m1, *m2, *m3, *m4, *s1, *s2, *s3, *s4, *noreg, *nomem;
+
+	switch (size) {
+	case 32:
+		if (ia32_cg_config.use_i486) {
+			/* swap available */
+			return new_bd_ia32_Bswap(dbgi, new_block, param);
+		}
+		s1 = new_bd_ia32_Shl(dbgi, new_block, param, create_Immediate(NULL, 0, 24));
+		s2 = new_bd_ia32_Shl(dbgi, new_block, param, create_Immediate(NULL, 0, 8));
+
+		noreg = ia32_new_NoReg_gp(env_cg);
+		nomem = new_NoMem();
+
+		m1 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s2, create_Immediate(NULL, 0, 0xFF00));
+		m2 = new_bd_ia32_Lea(dbgi, new_block, s1, m1);
+
+		s3 = new_bd_ia32_Shr(dbgi, new_block, param, create_Immediate(NULL, 0, 8));
+
+		m3 = new_bd_ia32_And(dbgi, new_block, noreg, noreg, nomem, s3, create_Immediate(NULL, 0, 0xFF0000));
+		m4 = new_bd_ia32_Lea(dbgi, new_block, m2, m3);
+
+		s4 = new_bd_ia32_Shr(dbgi, new_block, param, create_Immediate(NULL, 0, 24));
+		return new_bd_ia32_Lea(dbgi, new_block, m4, s4);
+
+	case 16:
+		/* swap16 always available */
+		return new_bd_ia32_Bswap16(dbgi, new_block, param);
+
+	default:
+		panic("Invalid bswap size (%d)", size);
+	}
+}
+
+/**
  * Transform Builtin node.
  */
 static ir_node *gen_Builtin(ir_node *node) {
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
 	switch (kind) {
+	case ir_bk_trap:
+		return gen_trap(node);
 	case ir_bk_return_address:
 		return gen_return_address(node);
 	case ir_bk_frame_addess:
@@ -4951,6 +5009,8 @@ static ir_node *gen_Builtin(ir_node *node) {
 		return gen_parity(node);
 	case ir_bk_popcount:
 		return gen_popcount(node);
+	case ir_bk_bswap:
+		return gen_bswap(node);
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
 }
@@ -4971,8 +5031,10 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 	case ir_bk_ctz:
 	case ir_bk_parity:
 	case ir_bk_popcount:
+	case ir_bk_bswap:
 		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
 		return new_node;
+	case ir_bk_trap:
 	case ir_bk_prefetch:
 		assert(get_Proj_proj(proj) == pn_Builtin_M);
 		return new_node;
