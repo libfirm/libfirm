@@ -4757,7 +4757,7 @@ static ir_node *gen_ffs(ir_node *node) {
 	set_ia32_commutative(or);
 
 	/* add 1 */
-	return new_bd_ia32_Lea(dbgi, block, or, create_Immediate(NULL, 0, 1));
+	return new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, or, create_Immediate(NULL, 0, 1));
 }
 
 /**
