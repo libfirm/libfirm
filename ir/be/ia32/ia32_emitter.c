@@ -331,7 +331,6 @@ void ia32_emit_8bit_source_register_or_immediate(const ir_node *node, int pos)
 
 void ia32_emit_8bit_high_source_register(const ir_node *node, int pos)
 {
-	const ir_node         *in = get_irn_n(node, pos);
 	const arch_register_t *reg = get_in_reg(node, pos);
 	emit_8bit_register_high(reg);
 }
