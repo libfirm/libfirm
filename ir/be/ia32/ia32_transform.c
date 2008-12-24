@@ -3210,7 +3210,6 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_node         *block      = be_transform_node(get_nodes_block(node));
 	ir_node         *op         = get_Conv_op(node);
 	ir_node         *new_op     = be_transform_node(op);
-	ia32_code_gen_t *cg         = env_cg;
 	ir_graph        *irg        = current_ir_graph;
 	dbg_info        *dbgi       = get_irn_dbg_info(node);
 	ir_mode         *mode       = get_irn_mode(node);
