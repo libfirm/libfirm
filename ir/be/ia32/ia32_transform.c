@@ -4526,6 +4526,17 @@ static ir_node *gen_trap(ir_node *node) {
 	ir_node *block  = be_transform_node(get_nodes_block(node));
 	ir_node *mem    = be_transform_node(get_Builtin_mem(node));
 
+	return new_bd_ia32_UD2(dbgi, block, mem);
+}
+
+/**
+ * Transform Builtin debugbreak
+ */
+static ir_node *gen_debugbreak(ir_node *node) {
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node *block  = be_transform_node(get_nodes_block(node));
+	ir_node *mem    = be_transform_node(get_Builtin_mem(node));
+
 	return new_bd_ia32_Breakpoint(dbgi, block, mem);
 }
 
@@ -4993,6 +5004,8 @@ static ir_node *gen_Builtin(ir_node *node) {
 	switch (kind) {
 	case ir_bk_trap:
 		return gen_trap(node);
+	case ir_bk_debugbreak:
+		return gen_debugbreak(node);
 	case ir_bk_return_address:
 		return gen_return_address(node);
 	case ir_bk_frame_addess:
@@ -5035,6 +5048,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
 		return new_node;
 	case ir_bk_trap:
+	case ir_bk_debugbreak:
 	case ir_bk_prefetch:
 		assert(get_Proj_proj(proj) == pn_Builtin_M);
 		return new_node;

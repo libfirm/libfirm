@@ -1612,6 +1612,19 @@ Breakpoint => {
 },
 
 #
+# Undefined Instruction on ALL x86 CPU's
+#
+UD2 => {
+	state     => "pinned",
+	reg_req   => { in => [ "none" ], out => [ "none" ] },
+	ins       => [ "mem" ],
+	latency   => 0,
+	emit      => ". .value  0x0b0f",
+	units     => [ "GP" ],
+	mode      => mode_M,
+},
+
+#
 # Intel style prefetching
 #
 Prefetch0 => {

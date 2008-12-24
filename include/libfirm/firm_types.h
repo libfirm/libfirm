@@ -220,7 +220,8 @@ typedef struct {
 /** Supported libFirm builtins. */
 /** Supported libFirm builtins. */
 typedef enum {
-	ir_bk_trap,                   /**< GCC __builtin_trap(): insert debug break */
+	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
+	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */
 	ir_bk_return_address,         /**< GCC __builtin_return_address() */
 	ir_bk_frame_addess,           /**< GCC __builtin_frame_address() */
 	ir_bk_prefetch,               /**< GCC __builtin_prefetch() */
