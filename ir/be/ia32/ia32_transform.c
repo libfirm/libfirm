@@ -4511,7 +4511,7 @@ static ir_node *gen_return_address(ir_node *node) {
 	}
 
 	/* load the return address from this frame */
-	load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, get_irg_no_mem(current_ir_graph));
+	load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
 
 	set_irn_pinned(load, get_irn_pinned(node));
 	set_ia32_op_type(load, ia32_AddrModeS);
@@ -4554,7 +4554,7 @@ static ir_node *gen_frame_address(ir_node *node) {
 	}
 
 	/* load the frame address from this frame */
-	load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, get_irg_no_mem(current_ir_graph));
+	load = new_bd_ia32_Load(dbgi, block, ptr, noreg_GP, nomem);
 
 	set_irn_pinned(load, get_irn_pinned(node));
 	set_ia32_op_type(load, ia32_AddrModeS);
