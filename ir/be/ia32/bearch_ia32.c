@@ -138,9 +138,6 @@ static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	arch_set_irn_register(res, reg);
 	*place = res;
 
-	add_irn_dep(get_irg_end(cg->irg), res);
-	/* add_irn_dep(get_irg_start(cg->irg), res); */
-
 	return res;
 }
 
