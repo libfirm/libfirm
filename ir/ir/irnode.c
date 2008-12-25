@@ -1439,6 +1439,7 @@ const char *get_builtin_kind_name(ir_builtin_kind kind) {
 #define X(a)    case a: return #a + 6;
 	switch (kind) {
 		X(ir_bk_trap);
+		X(ir_bk_debugbreak);
 		X(ir_bk_return_address);
 		X(ir_bk_frame_addess);
 		X(ir_bk_prefetch);
