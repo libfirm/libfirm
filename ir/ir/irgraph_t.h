@@ -494,7 +494,7 @@ irg_kill_node(ir_graph *irg, ir_node *n) {
  * @note      The node you got might be dead.
  */
 static inline ir_node *
-get_idx_irn(ir_graph *irg, unsigned idx) {
+_get_idx_irn(ir_graph *irg, unsigned idx) {
 	assert(idx < (unsigned) ARR_LEN(irg->idx_irn_map));
 	return irg->idx_irn_map[idx];
 }
@@ -600,5 +600,6 @@ _get_interprocedural_view(void) {
 #define dec_irg_block_visited(irg)            _dec_irg_block_visited(irg)
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 #define get_irg_fp_model(irg)                 _get_irg_fp_model(irg)
+#define get_idx_irn(irg, idx)                 _get_idx_irn(irg, idx)
 
 #endif

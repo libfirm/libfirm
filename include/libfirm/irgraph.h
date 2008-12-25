@@ -287,6 +287,16 @@ long     get_irg_graph_nr(const ir_graph *irg);
  */
 int get_irg_idx(const ir_graph *irg);
 
+/**
+ * Get the node for an index.
+ * @param irg The graph.
+ * @param idx The index you want the node for.
+ * @return    The node with that index or NULL, if there is no node with that index.
+ * @note      The node you got might be dead.
+ */
+ir_node *get_idx_irn(ir_graph *irg, unsigned idx);
+
+
 /********************************************************************************/
 /* States of an ir_graph.                                                       */
 /********************************************************************************/

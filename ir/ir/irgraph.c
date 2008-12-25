@@ -584,6 +584,10 @@ int get_irg_idx(const ir_graph *irg) {
 	return irg->index;
 }
 
+ir_node *(get_idx_irn)(ir_graph *irg, unsigned idx) {
+	return _get_idx_irn(irg, idx);
+}
+
 ir_node *
 (get_irg_start_block)(const ir_graph *irg) {
 	return _get_irg_start_block(irg);
