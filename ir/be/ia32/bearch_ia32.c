@@ -124,6 +124,9 @@ static ia32_intrinsic_env_t intrinsic_env = {
 
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
 
+/**
+ * Used to create a Pseudo-Register or Unknown node.
+ */
 static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
@@ -2383,9 +2386,10 @@ static const backend_params *ia32_get_libfirm_params(void) {
 	 * is called... */
 	init_asm_constraints();
 
-	p.dep_param             = &ad;
-	p.if_conv_info          = &ifconv;
-	p.mode_float_arithmetic = mode_E;
+	p.dep_param    = &ad;
+	p.if_conv_info = &ifconv;
+	if (! ia32_cg_config.use_sse2)
+		p.mode_float_arithmetic = mode_E;
 	return &p;
 }
 
