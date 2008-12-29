@@ -1449,6 +1449,8 @@ const char *get_builtin_kind_name(ir_builtin_kind kind) {
 		X(ir_bk_popcount);
 		X(ir_bk_parity);
 		X(ir_bk_bswap);
+		X(ir_bk_inport);
+		X(ir_bk_outport);
 	}
 	return "<unknown>";
 #undef X

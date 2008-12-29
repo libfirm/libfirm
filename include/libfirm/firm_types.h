@@ -231,6 +231,8 @@ typedef enum {
 	ir_bk_popcount,               /**< GCC __builtin_popcount(): population count */
 	ir_bk_parity,                 /**< GCC __builtin_parity(): parity */
 	ir_bk_bswap,                  /**< byte swap */
+	ir_bk_inport,                 /**< in port */
+	ir_bk_outport,                /**< out port */
 } ir_builtin_kind;
 
 #endif
