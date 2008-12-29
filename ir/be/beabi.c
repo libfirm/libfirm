@@ -1505,7 +1505,8 @@ typedef struct lower_frame_sels_env_t {
  * value param type entities by FrameAddress.
  * Links all used entities.
  */
-static void lower_frame_sels_walker(ir_node *irn, void *data) {
+static void lower_frame_sels_walker(ir_node *irn, void *data)
+{
 	lower_frame_sels_env_t *ctx = data;
 
 	if (is_Sel(irn)) {
@@ -1546,7 +1547,8 @@ static void lower_frame_sels_walker(ir_node *irn, void *data) {
  * In the default case we move the entity to the frame type and create
  * a backing store into the first block.
  */
-static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_param_list) {
+static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_param_list)
+{
 	be_abi_call_t *call = env->call;
 	ir_graph *irg       = env->birg->irg;
 	ir_entity *ent, *next_ent, *new_list;
@@ -1653,7 +1655,8 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
  * The backend wants to handle all blocks the same way, so we replace
  * the out cfg edge with a real jump.
  */
-static void fix_start_block(ir_graph *irg) {
+static void fix_start_block(ir_graph *irg)
+{
 	ir_node         *initial_X   = get_irg_initial_exec(irg);
 	ir_node         *start_block = get_irg_start_block(irg);
 	const ir_edge_t *edge;
@@ -2264,7 +2267,8 @@ void be_abi_set_non_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *
 }
 
 /* Returns the stack layout from a abi environment. */
-const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi) {
+const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi)
+{
 	return &abi->frame;
 }
 
@@ -2491,6 +2495,7 @@ ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
  * Returns non-zero if the ABI has omitted the frame pointer in
  * the current graph.
  */
-int be_abi_omit_fp(const be_abi_irg_t *abi) {
+int be_abi_omit_fp(const be_abi_irg_t *abi)
+{
 	return abi->call->flags.bits.try_omit_fp;
 }
