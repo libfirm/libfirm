@@ -1710,7 +1710,6 @@ static void modify_irg(be_abi_irg_t *env)
 	lower_frame_sels_env_t ctx;
 	ir_entity **param_map;
 
-	bitset_t *used_proj_nr;
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
@@ -1741,9 +1740,8 @@ static void modify_irg(be_abi_irg_t *env)
 
 	env->regs  = pmap_create();
 
-	used_proj_nr = bitset_alloca(1024);
-	n_params     = get_method_n_params(method_type);
-	args         = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
+	n_params = get_method_n_params(method_type);
+	args     = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
 	memset(args, 0, n_params * sizeof(args[0]));
 
 	/* Check if a value parameter is transmitted as a register.
@@ -1783,7 +1781,6 @@ static void modify_irg(be_abi_irg_t *env)
 
 			/* For now, associate the register with the old Proj from Start representing that argument. */
 			pmap_insert(env->regs, (void *) arg->reg, args[i]);
-			bitset_set(used_proj_nr, i);
 			DBG((dbg, LEVEL_2, "\targ #%d -> reg %s\n", i, arg->reg->name));
 		}
 	}
@@ -1826,7 +1823,6 @@ static void modify_irg(be_abi_irg_t *env)
 			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
 
 		assert(nr >= 0);
-		bitset_set(used_proj_nr, nr);
 		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg_out(env->reg_params, nr, reg, add_type);
