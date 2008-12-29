@@ -202,10 +202,13 @@ $arch = "ia32";
 	SB2 => "${arch}_emit_8bit_source_register_or_immediate(node, 2);",
 	SB3 => "${arch}_emit_8bit_source_register_or_immediate(node, 3);",
 	SH0 => "${arch}_emit_8bit_high_source_register(node, 0);",
+	SS0 => "${arch}_emit_16bit_source_register_or_immediate(node, 0);",
+	SI0 => "${arch}_emit_source_register_or_immediate(node, 0);",
 	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
 	SI3 => "${arch}_emit_source_register_or_immediate(node, 3);",
 	D0 => "${arch}_emit_dest_register(node, 0);",
 	D1 => "${arch}_emit_dest_register(node, 1);",
+	DS0 => "${arch}_emit_dest_register_size(node, 0);",
 	DB0 => "${arch}_emit_8bit_dest_register(node, 0);",
 	X0 => "${arch}_emit_x87_register(node, 0);",
 	X1 => "${arch}_emit_x87_register(node, 1);",
@@ -1622,6 +1625,37 @@ UD2 => {
 	emit      => ". .value  0x0b0f",
 	units     => [ "GP" ],
 	mode      => mode_M,
+},
+
+#
+# outport
+#
+Outport => {
+	irn_flags => "R",
+	state     => "pinned",
+	reg_req   => { in => [ "edx", "eax", "none" ], out => [ "none" ] },
+	ins       => [ "port", "value", "mem" ],
+	emit      => '. out%M %SS0, %SI1',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => mode_M,
+	modified_flags => $status_flags
+},
+
+#
+# inport
+#
+Inport => {
+	irn_flags => "R",
+	state     => "pinned",
+	reg_req   => { in => [ "edx", "none" ], out => [ "eax", "none" ] },
+	ins       => [ "port", "mem" ],
+	outs      => [ "res", "M" ],
+	emit      => '. in%M %DS0, %SS0',
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => mode_T,
+	modified_flags => $status_flags
 },
 
 #

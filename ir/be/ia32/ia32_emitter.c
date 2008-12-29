@@ -243,6 +243,12 @@ static void emit_16bit_register(const arch_register_t *reg)
 	be_emit_string(reg_name);
 }
 
+/**
+ * emit a register, possible shortened by a mode
+ *
+ * @param reg   the register
+ * @param mode  the mode of the register or NULL for full register
+ */
 static void emit_register(const arch_register_t *reg, const ir_mode *mode)
 {
 	const char *reg_name;
@@ -335,11 +341,31 @@ void ia32_emit_8bit_high_source_register(const ir_node *node, int pos)
 	emit_8bit_register_high(reg);
 }
 
+void ia32_emit_16bit_source_register_or_immediate(const ir_node *node, int pos)
+{
+	const arch_register_t *reg;
+	const ir_node         *in = get_irn_n(node, pos);
+	if (is_ia32_Immediate(in)) {
+		emit_ia32_Immediate(in);
+		return;
+	}
+
+	reg = get_in_reg(node, pos);
+	emit_16bit_register(reg);
+}
+
 void ia32_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg  = get_out_reg(node, pos);
 
 	emit_register(reg, NULL);
+}
+
+void ia32_emit_dest_register_size(const ir_node *node, int pos)
+{
+	const arch_register_t *reg  = get_out_reg(node, pos);
+
+	emit_register(reg, get_ia32_ls_mode(node));
 }
 
 void ia32_emit_8bit_dest_register(const ir_node *node, int pos)
