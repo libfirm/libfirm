@@ -1580,7 +1580,6 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
 
 		if (arg->in_reg) {
-			ir_entity *ent = value_param_list[i].ent;
 			DBG((dbg, LEVEL_2, "\targ #%d need backing store\n", pos));
 			value_param_list[i].next = new_list;
 			new_list = &value_param_list[i];
