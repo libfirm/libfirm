@@ -1224,14 +1224,17 @@ static void process_calls(be_abi_irg_t *env)
  * Changes a possibly allocated value param type by moving
  * entities to the stack layout type.
  *
- * @param env          the ABI environment
- * @param call         the current call ABI
- * @param method_type  the method type
- * @param param_map    an array mapping method arguments to the stack layout type
+ * @param env           the ABI environment
+ * @param call          the current call ABI
+ * @param method_type   the method type
+ * @param val_param_tp  the value parameter type, will be destroyed
+ * @param param_map     an array mapping method arguments to the stack layout type
  *
  * @return the stack argument layout type
  */
-static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type *method_type, ir_entity ***param_map)
+static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
+								 ir_type *method_type, ir_type *val_param_tp,
+								 ir_entity ***param_map)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
 	int inc  = env->birg->main_env->arch_env->stack_dir * dir;
@@ -1242,7 +1245,6 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 	char buf[128];
 	ir_type *res;
 	int i;
-	ir_type *val_param_tp = get_method_value_param_type(method_type);
 	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
 	ir_entity **map;
 
@@ -1254,16 +1256,16 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call, ir_type
 
 		map[i] = NULL;
 		if (arg->on_stack) {
-			if (val_param_tp) {
-				/* the entity was already created, move it to the param type */
-				arg->stack_ent = get_method_value_param_ent(method_type, i);
-				remove_struct_member(val_param_tp, arg->stack_ent);
-				set_entity_owner(arg->stack_ent, res);
-				add_struct_member(res, arg->stack_ent);
+			if (val_param_tp != NULL) {
+				/* the entity was already created, create a copy in the param type */
+				ir_entity *val_ent = get_method_value_param_ent(method_type, i);
+				arg->stack_ent = copy_entity_own(val_ent, res);
+				set_entity_link(val_ent, arg->stack_ent);
+				set_entity_link(arg->stack_ent, NULL);
 				/* must be automatic to set a fixed layout */
 				set_entity_allocation(arg->stack_ent, allocation_automatic);
-			}
-			else {
+			} else {
+				/* create a new entity */
 				snprintf(buf, sizeof(buf), "param_%d", i);
 				arg->stack_ent = new_entity(res, new_id_from_str(buf), param_type);
 			}
@@ -1494,10 +1496,19 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	return ret;
 }
 
+typedef struct ent_pos_pair ent_pos_pair;
+struct ent_pos_pair {
+	ir_entity    *ent;   /**< a value param entity */
+	int          pos;    /**< its parameter number */
+	ent_pos_pair *next;  /**< for linking */
+};
+
 typedef struct lower_frame_sels_env_t {
-	be_abi_irg_t *env;
-	ir_entity    *value_param_list;  /**< the list of all value param entities */
-	ir_entity    *value_param_tail;  /**< the tail of the list of all value param entities */
+	ent_pos_pair *value_param_list;        /**< the list of all value param entities */
+	ir_node      *frame;                   /**< the current frame */
+	ir_node      *param_base;              /**< the current value parameter base */
+	const arch_register_class_t *sp_class; /**< register class of the stack pointer */
+	ir_type      *value_tp;                /**< the value type if any */
 } lower_frame_sels_env_t;
 
 /**
@@ -1510,27 +1521,34 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 	lower_frame_sels_env_t *ctx = data;
 
 	if (is_Sel(irn)) {
-		ir_graph *irg        = current_ir_graph;
-		ir_node  *frame      = get_irg_frame(irg);
-		ir_node  *param_base = get_irg_value_param_base(irg);
-		ir_node  *ptr        = get_Sel_ptr(irn);
+		ir_node *ptr = get_Sel_ptr(irn);
 
-		if (ptr == frame || ptr == param_base) {
-			be_abi_irg_t *env = ctx->env;
+		if (ptr == ctx->frame || ptr == ctx->param_base) {
 			ir_entity    *ent = get_Sel_entity(irn);
 			ir_node      *bl  = get_nodes_block(irn);
 			ir_node      *nw;
+			int          pos = 0;
 
-			nw = be_new_FrameAddr(env->arch_env->sp->reg_class, irg, bl, frame, ent);
+			if (ptr == ctx->param_base) {
+				/* replace by its copy from the argument type */
+				assert(get_entity_owner(ent) == ctx->value_tp);
+				pos = get_struct_member_index(ctx->value_tp, ent);
+				ent = get_entity_link(ent);
+			}
+
+			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
 			exchange(irn, nw);
 
 			/* check, if it's a param sel and if have not seen this entity before */
-			if (ptr == param_base &&
-			    ent != ctx->value_param_tail &&
-			    get_entity_link(ent) == NULL) {
+			if (ptr == ctx->param_base && get_entity_link(ent) == NULL) {
+				ent_pos_pair pair;
+
+				pair.ent  = ent;
+				pair.pos  = pos;
+				pair.next = NULL;
+				ARR_APP1(ent_pos_pair, ctx->value_param_list, pair);
+				/* just a mark */
 				set_entity_link(ent, ctx->value_param_list);
-				ctx->value_param_list = ent;
-				if (ctx->value_param_tail == NULL) ctx->value_param_tail = ent;
 			}
 		}
 	}
@@ -1547,27 +1565,28 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
  * In the default case we move the entity to the frame type and create
  * a backing store into the first block.
  */
-static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_param_list)
+static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *value_param_list)
 {
 	be_abi_call_t *call = env->call;
-	ir_graph *irg       = env->birg->irg;
-	ir_entity *ent, *next_ent, *new_list;
-	ir_type *frame_tp;
+	ir_graph      *irg  = env->birg->irg;
+	ent_pos_pair  *entry, *new_list;
+	ir_type       *frame_tp;
+	int           i, n = ARR_LEN(value_param_list);
 	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	new_list = NULL;
-	for (ent = value_param_list; ent; ent = next_ent) {
-		int i = get_struct_member_index(get_entity_owner(ent), ent);
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+	for (i = 0; i < n; ++i) {
+		int               pos  = value_param_list[i].pos;
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
 
-		next_ent = get_entity_link(ent);
 		if (arg->in_reg) {
-			DBG((dbg, LEVEL_2, "\targ #%d need backing store\n", i));
-			set_entity_link(ent, new_list);
-			new_list = ent;
+			ir_entity *ent = value_param_list[i].ent;
+			DBG((dbg, LEVEL_2, "\targ #%d need backing store\n", pos));
+			value_param_list[i].next = new_list;
+			new_list = &value_param_list[i];
 		}
 	}
-	if (new_list) {
+	if (new_list != NULL) {
 		/* ok, change the graph */
 		ir_node *start_bl = get_irg_start_block(irg);
 		ir_node *first_bl = NULL;
@@ -1604,14 +1623,14 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 		mem     = imem;
 		args    = get_irg_args(irg);
 		args_bl = get_nodes_block(args);
-		for (ent = new_list; ent; ent = get_entity_link(ent)) {
-			int     i     = get_struct_member_index(get_entity_owner(ent), ent);
-			ir_type *tp   = get_entity_type(ent);
+		for (entry = new_list; entry != NULL; entry = entry->next) {
+			int     i     = entry->pos;
+			ir_type *tp   = get_entity_type(entry->ent);
 			ir_mode *mode = get_type_mode(tp);
 			ir_node *addr;
 
 			/* address for the backing store */
-			addr = be_new_FrameAddr(env->arch_env->sp->reg_class, irg, first_bl, frame, ent);
+			addr = be_new_FrameAddr(env->arch_env->sp->reg_class, irg, first_bl, frame, entry->ent);
 
 			if (store)
 				mem = new_r_Proj(irg, first_bl, store, mode_M, pn_Store_M);
@@ -1631,7 +1650,8 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_entity *value_
 		/* we will add new entities: set the layout to undefined */
 		assert(get_type_state(frame_tp) == layout_fixed);
 		set_type_state(frame_tp, layout_undefined);
-		for (ent = new_list; ent; ent = get_entity_link(ent)) {
+		for (entry = new_list; entry != NULL; entry = entry->next) {
+			ir_entity *ent = entry->ent;
 			ir_type  *tp   = get_entity_type(ent);
 			unsigned align = get_type_alignment_bytes(tp);
 
@@ -1719,18 +1739,27 @@ static void modify_irg(be_abi_irg_t *env)
 	old_mem = get_irg_initial_mem(irg);
 
 	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+
 	/* set the links of all frame entities to NULL, we use it
 	   to detect if an entity is already linked in the value_param_list */
 	tp = get_method_value_param_type(method_type);
+	ctx.value_tp = tp;
 	if (tp != NULL) {
-		for (i = get_struct_n_members(tp) - 1; i >= 0; --i)
-			set_entity_link(get_struct_member(tp, i), NULL);
+		/* clear the links of the clone type, let the
+		   original entities point to its clones */
+		for (i = get_struct_n_members(tp) - 1; i >= 0; --i) {
+			ir_entity *mem  = get_struct_member(tp, i);
+			set_entity_link(mem, NULL);
+		}
 	}
 
+	arg_type = compute_arg_type(env, call, method_type, tp, &param_map);
+
 	/* Convert the Sel nodes in the irg to frame load/store/addr nodes. */
-	ctx.env              = env;
-	ctx.value_param_list = NULL;
-	ctx.value_param_tail = NULL;
+	ctx.value_param_list = NEW_ARR_F(ent_pos_pair, 0);
+	ctx.frame            = get_irg_frame(irg);
+	ctx.param_base       = get_irg_value_param_base(irg);
+	ctx.sp_class         = env->arch_env->sp->reg_class;
 	irg_walk_graph(irg, lower_frame_sels_walker, NULL, &ctx);
 
 	/* value_param_base anchor is not needed anymore now */
@@ -1755,6 +1784,7 @@ static void modify_irg(be_abi_irg_t *env)
 	 * a backing store into the first block.
 	 */
 	fix_address_of_parameter_access(env, ctx.value_param_list);
+	DEL_ARR_F(ctx.value_param_list);
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	/* Fill the argument vector */
@@ -1768,7 +1798,6 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
-	arg_type = compute_arg_type(env, call, method_type, &param_map);
 	bet_type = call->cb->get_between_type(env->cb);
 	stack_frame_init(&env->frame, arg_type, bet_type, get_irg_frame_type(irg), arch_env->stack_dir, param_map);
 
