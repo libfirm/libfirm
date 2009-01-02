@@ -1534,6 +1534,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 				assert(get_entity_owner(ent) == ctx->value_tp);
 				pos = get_struct_member_index(ctx->value_tp, ent);
 				ent = get_entity_link(ent);
+				assert(ent != NULL);
 			}
 
 			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
