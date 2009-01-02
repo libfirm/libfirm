@@ -74,8 +74,10 @@ void opt_frame_irg(ir_graph *irg) {
 		/* mark all used entities */
 		for (i = get_irn_n_outs(frame) - 1; i >= 0; --i) {
 			sel = get_irn_out(frame, i);
-			ent = get_Sel_entity(sel);
-			set_entity_link(ent, ent);
+			if (is_Sel(sel)) {
+				ent = get_Sel_entity(sel);
+				set_entity_link(ent, ent);
+			}
 		}
 	}
 
