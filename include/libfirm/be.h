@@ -96,6 +96,9 @@ typedef struct backend_params {
 
 	/** If non-zero, build the trampoline. */
 	create_trampoline_fkt *build_trampoline;
+
+	/** Alignment of stack parameters */
+	unsigned stack_param_align;
 } backend_params;
 
 /**

@@ -2378,6 +2378,7 @@ static const backend_params *ia32_get_libfirm_params(void) {
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
 		ia32_create_trampoline_fkt,
+		4      /* alignment of stack parameter */
 	};
 
 	ia32_setup_cg_config();

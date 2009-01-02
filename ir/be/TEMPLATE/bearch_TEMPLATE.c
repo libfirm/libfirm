@@ -556,7 +556,8 @@ static const backend_params *TEMPLATE_get_backend_params(void) {
 		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
-		NULL   /* no trampoline support: no trampoline builder */
+		NULL,  /* no trampoline support: no trampoline builder */
+		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
 }

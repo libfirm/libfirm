@@ -827,7 +827,8 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 		NULL,  /* no float arithmetic mode (TODO) */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
-		NULL   /* no trampoline support: no trampoline builder */
+		NULL,  /* no trampoline support: no trampoline builder */
+		4      /* alignment of stack parameter */
 	};
 
 	return &p;
