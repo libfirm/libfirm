@@ -78,8 +78,9 @@ static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignm
  */
 static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 {
-	ir_type *lowered, *ptr_tp;
+	ir_type *lowered, *ptr_tp, *value_type;
 	ir_type **params, **results, *res_tp;
+	int     *param_map;
 	ir_mode *modes[MAX_REGISTER_RET_VAL];
 	int n_ress, n_params, nn_ress, nn_params, i, first_variadic;
 	ident *id;
@@ -93,7 +94,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	}
 
 	lowered = get_associated_type(mtp);
-	if (lowered)
+	if (lowered != NULL)
 		return lowered;
 
 	n_ress   = get_method_n_ress(mtp);
@@ -101,6 +102,8 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 
 	n_params = get_method_n_params(mtp);
 	NEW_ARR_A(ir_type *, params, n_params + n_ress);
+
+	NEW_ARR_A(int, param_map, n_params + n_ress);
 
 	first_variadic = get_method_first_variadic_param_index(mtp);
 
@@ -128,42 +131,51 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 					/* this compound will be allocated on callers stack and its
 					   address will be transmitted as a hidden parameter. */
 					ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
-					params[nn_params++] = ptr_tp;
+					params[nn_params]    = ptr_tp;
+					param_map[nn_params] = -1 - i;
+					++nn_params;
 					changed++;
 					if (lp->flags & LF_RETURN_HIDDEN)
 						results[nn_ress++] = ptr_tp;
 				}
-			}
-			else
+			} else {
+				/* scalar result */
 				results[nn_ress++] = res_tp;
+			}
 		}
 
 		/* move the index of the first variadic parameter */
 		first_variadic += nn_params;
 
-		for (i = 0; i < n_params; ++i)
-			params[nn_params++] = get_method_param_type(mtp, i);
-	}
-	else {
+		for (i = 0; i < n_params; ++i, ++nn_params) {
+			params[nn_params]    = get_method_param_type(mtp, i);
+			param_map[nn_params] = i;
+		}
+	} else {
 		/* add hidden parameters last */
 		assert(get_method_variadicity(mtp) == variadicity_non_variadic &&
 			"Cannot add hidden parameters at end of variadic function");
 
-		for (nn_params = 0; nn_params < n_params; ++nn_params)
-			params[nn_params] = get_method_param_type(mtp, nn_params);
+		for (nn_params = 0; nn_params < n_params; ++nn_params) {
+			params[nn_params]    = get_method_param_type(mtp, nn_params);
+			param_map[nn_params] = nn_params;
+		}
 
 		for (nn_ress = i = 0; i < n_ress; ++i) {
 			res_tp = get_method_res_type(mtp, i);
 
-			if (is_compound_type(res_tp))
-				params[nn_params++] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
-			else
+			if (is_compound_type(res_tp)) {
+				params[nn_params] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
+				param_map[nn_params] = -1 - i;
+				++nn_params;
+			} else {
 				results[nn_ress++] = res_tp;
+			}
 		}
 	}
 
 	/* create the new type */
-	id = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
+	id      = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
 	lowered = new_d_type_method(id, nn_params, nn_ress, get_type_dbg_info(mtp));
 
 	/* fill it */
@@ -183,6 +195,30 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	}
 
 	set_lowered_type(mtp, lowered);
+
+	value_type = get_method_value_param_type(mtp);
+	if (value_type != NULL) {
+		/* set new param positions */
+		for (i = 0; i < nn_params; ++i) {
+			ir_entity *ent = get_method_value_param_ent(lowered, i);
+			int       pos  = param_map[i];
+			ident     *id;
+
+			set_entity_link(ent, INT_TO_PTR(pos));
+			if (pos < 0) {
+				/* formally return value, ignore for now */
+				continue;
+			}
+
+			id = get_method_param_ident(mtp, pos);
+			if (id != NULL) {
+				set_method_param_ident(lowered, i, id);
+				set_entity_ident(ent, id);
+			}
+		}
+
+		set_lowered_type(value_type, get_method_value_param_type(lowered));
+	}
 
 	return lowered;
 }

@@ -2288,7 +2288,10 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env) {
 static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env) {
 	ir_node *ptr = get_Sel_ptr(sel);
 
-	if (ptr == get_irg_value_param_base(current_ir_graph)) {
+	/* we must only lower value parameter sels if we change the
+	   value parameter type. */
+	if (env->value_param_tp != NULL &&
+	    ptr == get_irg_value_param_base(current_ir_graph)) {
 		ir_entity *ent = get_Sel_entity(sel);
 		int       pos  = PTR_TO_INT(get_entity_link(ent));
 
