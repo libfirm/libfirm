@@ -1509,6 +1509,7 @@ typedef struct lower_frame_sels_env_t {
 	ir_node      *param_base;              /**< the current value parameter base */
 	const arch_register_class_t *sp_class; /**< register class of the stack pointer */
 	ir_type      *value_tp;                /**< the value type if any */
+	ir_type      *frame_tp;                /**< the frame type */
 } lower_frame_sels_env_t;
 
 /**
@@ -1530,11 +1531,36 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			int          pos = 0;
 
 			if (ptr == ctx->param_base) {
+				ir_entity *argument_ent = get_entity_link(ent);
+
 				/* replace by its copy from the argument type */
 				assert(get_entity_owner(ent) == ctx->value_tp);
 				pos = get_struct_member_index(ctx->value_tp, ent);
-				ent = get_entity_link(ent);
-				assert(ent != NULL);
+
+				if (argument_ent == NULL) {
+					/* we have NO argument entity yet: This is bad, as we will
+					 * need one for backing store.
+					 * Create one here.
+				     */
+					ir_type *frame_tp = ctx->frame_tp;
+					unsigned offset   = get_type_size_bytes(frame_tp);
+					ir_type  *tp      = get_entity_type(ent);
+					unsigned align    = get_type_alignment_bytes(tp);
+
+					offset += align - 1;
+					offset &= ~(align - 1);
+
+					argument_ent = copy_entity_own(ent, frame_tp);
+
+					/* must be automatic to set a fixed layout */
+					set_entity_allocation(argument_ent, allocation_automatic);
+					set_entity_offset(argument_ent, offset);
+					offset += get_type_size_bytes(tp);
+
+					set_type_size_bytes(frame_tp, offset);
+					set_entity_link(ent, argument_ent);
+				}
+				ent = argument_ent;
 			}
 
 			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
@@ -1652,17 +1678,23 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		set_type_state(frame_tp, layout_undefined);
 		for (entry = new_list; entry != NULL; entry = entry->next) {
 			ir_entity *ent = entry->ent;
-			ir_type  *tp   = get_entity_type(ent);
-			unsigned align = get_type_alignment_bytes(tp);
 
-			offset += align - 1;
-			offset &= ~(align - 1);
-			set_entity_owner(ent, frame_tp);
-			add_class_member(frame_tp, ent);
-			/* must be automatic to set a fixed layout */
-			set_entity_allocation(ent, allocation_automatic);
-			set_entity_offset(ent, offset);
-			offset += get_type_size_bytes(tp);
+			/* If the entity is still on the argument type, move it to the frame type.
+			   This happens if the value_param type was build due to compound
+			   params. */
+			if (get_entity_owner(ent) != frame_tp) {
+				ir_type  *tp   = get_entity_type(ent);
+				unsigned align = get_type_alignment_bytes(tp);
+
+				offset += align - 1;
+				offset &= ~(align - 1);
+				set_entity_owner(ent, frame_tp);
+				add_class_member(frame_tp, ent);
+				/* must be automatic to set a fixed layout */
+				set_entity_allocation(ent, allocation_automatic);
+				set_entity_offset(ent, offset);
+				offset += get_type_size_bytes(tp);
+			}
 		}
 		set_type_size_bytes(frame_tp, offset);
 		/* fix the layout again */
@@ -1755,12 +1787,21 @@ static void modify_irg(be_abi_irg_t *env)
 
 	arg_type = compute_arg_type(env, call, method_type, tp, &param_map);
 
-	/* Convert the Sel nodes in the irg to frame load/store/addr nodes. */
+	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.value_param_list = NEW_ARR_F(ent_pos_pair, 0);
 	ctx.frame            = get_irg_frame(irg);
 	ctx.param_base       = get_irg_value_param_base(irg);
 	ctx.sp_class         = env->arch_env->sp->reg_class;
+	ctx.frame_tp         = get_irg_frame_type(irg);
+
+	/* we will possible add new entities to the frame: set the layout to undefined */
+	assert(get_type_state(ctx.frame_tp) == layout_fixed);
+	set_type_state(ctx.frame_tp, layout_undefined);
+
 	irg_walk_graph(irg, lower_frame_sels_walker, NULL, &ctx);
+
+	/* fix the frame type layout again */
+	set_type_state(ctx.frame_tp, layout_fixed);
 
 	/* value_param_base anchor is not needed anymore now */
 	value_param_base = get_irg_value_param_base(irg);
