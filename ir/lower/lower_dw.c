@@ -110,13 +110,19 @@ enum lower_flags {
 typedef struct _lower_env_t {
 	node_entry_t **entries;       /**< entries per node */
 	struct obstack obst;          /**< an obstack holding the temporary data */
+	ir_type  *l_mtp;              /**< lowered method type of the current method */
 	tarval   *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
 	tarval   *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
 	pdeq     *waitq;              /**< a wait queue of all nodes that must be handled later */
 	pmap     *proj_2_block;       /**< a map from ProjX to its destination blocks */
+	ident    *first_id;           /**< .l for little and .h for big endian */
+	ident    *next_id;            /**< .h for little and .l for big endian */
 	const lwrdw_param_t *params;  /**< transformation parameter */
 	unsigned flags;               /**< some flags */
 	int      n_entries;           /**< number of entries */
+#ifndef NDEBUG
+	ir_type  *value_param_tp;     /**< the old value param type */
+#endif
 } lower_env_t;
 
 /**
@@ -1692,11 +1698,16 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 /**
  * Lower the method type.
+ *
+ * @param mtp  the method type to lower
+ * @param ent  the lower environment
+ *
+ * @return the lowered type
  */
 static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 	pmap_entry *entry;
-	ident      *id;
-	ir_type    *res;
+	ident      *id, *lid;
+	ir_type    *res, *value_type;
 
 	if (is_lowered_type(mtp))
 		return mtp;
@@ -1733,7 +1744,7 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 			}  /* if */
 		}  /* for */
 
-		id = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
+		id  = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
 		res = new_type_method(id, n_param, n_res);
 
 		/* set param types and result types */
@@ -1777,6 +1788,44 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 		}  /* for */
 		set_lowered_type(mtp, res);
 		pmap_insert(lowered_type, mtp, res);
+
+		value_type = get_method_value_param_type(mtp);
+		if (value_type != NULL) {
+			/* this creates a new value parameter type */
+			(void)get_method_value_param_ent(res, 0);
+
+			/* set new param positions */
+			for (i = n_param = 0; i < n; ++i) {
+				ir_type   *tp  = get_method_param_type(mtp, i);
+				ident     *id  = get_method_param_ident(mtp, i);
+				ir_entity *ent = get_method_value_param_ent(mtp, i);
+
+				set_entity_link(ent, INT_TO_PTR(n_param));
+				if (is_Primitive_type(tp)) {
+					ir_mode *mode = get_type_mode(tp);
+
+					if (mode == env->params->high_signed || mode == env->params->high_unsigned) {
+						if (id != NULL) {
+							lid = id_mangle(id, env->first_id);
+							set_method_param_ident(res, n_param, lid);
+							set_entity_ident(get_method_value_param_ent(res, n_param), lid);
+							lid = id_mangle(id, env->next_id);
+							set_method_param_ident(res, n_param + 1, lid);
+							set_entity_ident(get_method_value_param_ent(res, n_param + 1), lid);
+						}  /* if */
+						n_param += 2;
+						continue;
+					}  /* if */
+				}  /* if */
+				if (id != NULL) {
+					set_method_param_ident(res, n_param, id);
+					set_entity_ident(get_method_value_param_ent(res, n_param), id);
+				}  /* if */
+				++n_param;
+			}  /* for */
+
+			set_lowered_type(value_type, get_method_value_param_type(res));
+		}  /* if */
 	} else {
 		res = entry->value;
 	}  /* if */
@@ -2201,8 +2250,10 @@ static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env) {
 	env->entries[idx]->high_word = new_rd_Mux(dbg, irg, block, sel, false_h, true_h, mode);
 }  /* lower_Mux */
 
-static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
-{
+/**
+ * Translate an ASM node.
+ */
+static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env) {
 	ir_mode *his = env->params->high_signed;
 	ir_mode *hiu = env->params->high_unsigned;
 	int      i;
@@ -2214,8 +2265,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
 		ir_mode *op_mode = get_irn_mode(get_irn_n(asmn, i));
 		if (op_mode == his || op_mode == hiu) {
 			panic("lowering ASM unimplemented");
-		}
-	}
+		}  /* if */
+	}  /* for */
 
 	for (n = asmn;;) {
 		ir_mode *proj_mode;
@@ -2227,9 +2278,26 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
 		proj_mode = get_irn_mode(n);
 		if (proj_mode == his || proj_mode == hiu) {
 			panic("lowering ASM unimplemented");
-		}
-	}
-}
+		}  /* if */
+	}  /* for */
+}  /* lower_ASM */
+
+/**
+ * Translate a Sel node.
+ */
+static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env) {
+	ir_node *ptr = get_Sel_ptr(sel);
+
+	if (ptr == get_irg_value_param_base(current_ir_graph)) {
+		ir_entity *ent = get_Sel_entity(sel);
+		int       pos  = PTR_TO_INT(get_entity_link(ent));
+
+		assert(get_entity_owner(ent) == env->value_param_tp);
+
+		ent = get_method_value_param_ent(env->l_mtp, pos);
+		set_Sel_entity(sel, ent);
+	}  /* if */
+}  /* lower_Sel */
 
 /**
  * check for opcodes that must always be lowered.
@@ -2243,6 +2311,7 @@ static int always_lower(ir_opcode code) {
 	case iro_Return:
 	case iro_Cond:
 	case iro_Conv:
+	case iro_Sel:
 		return 1;
 	default:
 		return 0;
@@ -2395,14 +2464,41 @@ static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
 	(void) size;
 
 	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
-}  /* static int cmp_conv_tp */
+}  /* cmp_conv_tp */
 
 /**
  * Enter a lowering function into an ir_op.
  */
 static void enter_lower_func(ir_op *op, lower_func func) {
 	op->ops.generic = (op_func)func;
-}
+}  /* enter_lower_func */
+
+/**
+ * Returns non-zero if a method type must be lowered.
+ *
+ * @param mtp  the method type
+ */
+static int mtp_must_to_lowered(ir_type *mtp, lower_env_t *env) {
+	int i, n_params;
+
+	n_params = get_method_n_params(mtp);
+	if (n_params <= 0)
+		return 0;
+
+	/* first check if we have parameters that must be fixed */
+	for (i = 0; i < n_params; ++i) {
+		ir_type *tp = get_method_param_type(mtp, i);
+
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
+
+			if (mode == env->params->high_signed ||
+				mode == env->params->high_unsigned)
+				return 1;
+		}  /* if */
+	}  /* for */
+	return 0;
+}  /* mtp_must_to_lowered */
 
 /*
  * Do the lowering.
@@ -2410,8 +2506,8 @@ static void enter_lower_func(ir_op *op, lower_func func) {
 void lower_dw_ops(const lwrdw_param_t *param)
 {
 	lower_env_t lenv;
-	int i;
-	ir_graph *rem;
+	int         i;
+	ir_graph    *rem;
 
 	if (! param)
 		return;
@@ -2495,6 +2591,8 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	lenv.tv_mode_bits  = new_tarval_from_long(get_mode_size_bits(param->low_unsigned), param->low_unsigned);
 	lenv.waitq         = new_pdeq();
 	lenv.params        = param;
+	lenv.first_id      = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
+	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
@@ -2531,6 +2629,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(DivMod);
 	LOWER(Div);
 	LOWER(Mod);
+	LOWER(Sel);
 	LOWER_UN(Abs);
 	LOWER_UN(Minus);
 
@@ -2544,7 +2643,9 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	/* transform all graphs */
 	rem = current_ir_graph;
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		ir_graph *irg = get_irp_irg(i);
+		ir_graph  *irg = get_irp_irg(i);
+		ir_entity *ent;
+		ir_type   *mtp;
 		int n_idx;
 
 		obstack_init(&lenv.obst);
@@ -2555,12 +2656,28 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		lenv.entries   = NEW_ARR_F(node_entry_t *, n_idx);
 		memset(lenv.entries, 0, n_idx * sizeof(lenv.entries[0]));
 
-		/* first step: link all nodes and allocate data */
-		lenv.flags = 0;
+		lenv.l_mtp        = NULL;
+		lenv.flags        = 0;
 		lenv.proj_2_block = pmap_create();
-
+#ifndef NDEBUG
+		lenv.value_param_tp = NULL;
+#endif
 		ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 
+		ent = get_irg_entity(irg);
+		mtp = get_entity_type(ent);
+
+		if (mtp_must_to_lowered(mtp, &lenv)) {
+			ir_type *ltp = lower_mtp(mtp, &lenv);
+			lenv.flags |= MUST_BE_LOWERED;
+			set_entity_type(ent, ltp);
+			lenv.l_mtp = ltp;
+#ifndef NDEBUG
+			lenv.value_param_tp = get_method_value_param_type(mtp);
+#endif
+		}  /* if */
+
+		/* first step: link all nodes and allocate data */
 		irg_walk_graph(irg, firm_clear_node_and_phi_links, prepare_links_and_handle_rotl, &lenv);
 
 		if (lenv.flags & MUST_BE_LOWERED) {
