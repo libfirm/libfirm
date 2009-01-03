@@ -64,8 +64,10 @@ void opt_frame_irg(ir_graph *irg) {
 		/* mark all used entities */
 		foreach_out_edge(frame, edge) {
 			sel = get_edge_src_irn(edge);
-			ent = get_Sel_entity(sel);
-			set_entity_link(ent, ent);
+			if (is_Sel(sel)) {
+				ent = get_Sel_entity(sel);
+				set_entity_link(ent, ent);
+			}
 		}
 	} else {
 		/* use traditionally out edges */
