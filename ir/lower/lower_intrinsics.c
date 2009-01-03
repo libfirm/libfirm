@@ -805,15 +805,35 @@ int i_mapper_strncmp(ir_node *call, void *ctx) {
 	return 0;
 }  /* i_mapper_strncmp */
 
+/* A mapper for strcpy */
+int i_mapper_strcpy(ir_node *call, void *ctx) {
+	ir_node *dst = get_Call_param(call, 0);
+	ir_node *src = get_Call_param(call, 1);
+	(void) ctx;
+
+	if (dst == src) {
+		/* a strcpy(d, s) ==> d */
+		ir_node *mem = get_Call_mem(call);
+		ir_node *dst = get_Call_param(call, 0);
+
+		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_STRCPY);
+		replace_call(dst, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}  /* i_mapper_strcpy */
+
 /* A mapper for memcpy */
 int i_mapper_memcpy(ir_node *call, void *ctx) {
+	ir_node *dst = get_Call_param(call, 0);
+	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
 	(void) ctx;
 
-	if (is_Const(len) && is_Const_null(len)) {
+	if (dst == src || (is_Const(len) && is_Const_null(len))) {
+		/* a memcpy(d, d, len) ==> d OR
 		/* a memcpy(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
-		ir_node *dst = get_Call_param(call, 0);
 
 		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMCPY);
 		replace_call(dst, call, mem, NULL, NULL);
@@ -821,6 +841,48 @@ int i_mapper_memcpy(ir_node *call, void *ctx) {
 	}
 	return 0;
 }  /* i_mapper_memcpy */
+
+/* A mapper for mempcpy */
+int i_mapper_mempcpy(ir_node *call, void *ctx) {
+	ir_node *dst = get_Call_param(call, 0);
+	ir_node *src = get_Call_param(call, 1);
+	ir_node *len = get_Call_param(call, 2);
+	(void) ctx;
+
+	if (dst == src || (is_Const(len) && is_Const_null(len))) {
+		/* a memcpy(d, d, len) ==> d + len OR
+		/* a memcpy(d, s, 0) ==> d + 0 */
+		dbg_info *dbg = get_irn_dbg_info(call);
+		ir_node *mem  = get_Call_mem(call);
+		ir_node *blk  = get_nodes_block(call);
+		ir_mode *mode = get_irn_mode(dst);
+		ir_node *res  = new_rd_Add(dbg, get_irn_irg(blk), blk, dst, len, mode);
+
+		DBG_OPT_ALGSIM0(call, res, FS_OPT_RTS_MEMPCPY);
+		replace_call(res, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}  /* i_mapper_mempcpy */
+
+/* A mapper for memmove */
+int i_mapper_memmove(ir_node *call, void *ctx) {
+	ir_node *dst = get_Call_param(call, 0);
+	ir_node *src = get_Call_param(call, 1);
+	ir_node *len = get_Call_param(call, 2);
+	(void) ctx;
+
+	if (dst == src || (is_Const(len) && is_Const_null(len))) {
+		/* a memmove(d, d, len) ==> d OR
+		/* a memmove(d, s, 0) ==> d */
+		ir_node *mem = get_Call_mem(call);
+
+		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMMOVE);
+		replace_call(dst, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}  /* i_mapper_memmove */
 
 /* A mapper for memset */
 int i_mapper_memset(ir_node *call, void *ctx) {
@@ -838,6 +900,32 @@ int i_mapper_memset(ir_node *call, void *ctx) {
 	}
 	return 0;
 }  /* i_mapper_memset */
+
+/* A mapper for memcmp */
+int i_mapper_memcmp(ir_node *call, void *ctx) {
+	ir_node *left  = get_Call_param(call, 0);
+	ir_node *right = get_Call_param(call, 1);
+	ir_node *len   = get_Call_param(call, 2);
+	ir_node *irn;
+	(void) ctx;
+
+	if (left == right || (is_Const(len) && is_Const_null(len))) {
+		/* a memcmp(s, s, len) ==> 0 OR
+		   a memcmp(a, b, 0) ==> 0 */
+		ir_node   *mem     = get_Call_mem(call);
+		ir_node   *adr     = get_Call_ptr(call);
+		ir_entity *ent     = get_SymConst_entity(adr);
+		ir_type   *call_tp = get_entity_type(ent);
+		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
+		ir_mode   *mode    = get_type_mode(res_tp);
+
+		irn = new_Const(get_mode_null(mode));
+		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
+		replace_call(irn, call, mem, NULL, NULL);
+		return 1;
+	}
+	return 0;
+}  /* i_mapper_memcmp */
 
 /**
  * Returns the result mode of a node.

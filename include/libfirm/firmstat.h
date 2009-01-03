@@ -140,9 +140,13 @@ enum firmstat_optimizations_t {
 	FS_OPT_RTS_SYMMETRIC,                     /**< RTS optimization: call to symmetric function f(-x) replaced by f(x) */
 	FS_OPT_RTS_STRCMP,                        /**< RTS optimization: call to strcmp() replaced */
 	FS_OPT_RTS_STRNCMP,                       /**< RTS optimization: call to strncmp() replaced */
-	FS_OPT_RTS_MEMCPY,                        /**< RTS optimization: call to memcpy() replaced */
-	FS_OPT_RTS_MEMSET,                        /**< RTS optimization: call to memset() replaced */
+	FS_OPT_RTS_STRCPY,                        /**< RTS optimization: call to strcpy() replaced */
 	FS_OPT_RTS_STRLEN,                        /**< RTS optimization: call to strlen() replaced */
+	FS_OPT_RTS_MEMCPY,                        /**< RTS optimization: call to memcpy() replaced */
+	FS_OPT_RTS_MEMPCPY,                       /**< RTS optimization: call to mempcpy() replaced */
+	FS_OPT_RTS_MEMMOVE,                       /**< RTS optimization: call to memmove() replaced */
+	FS_OPT_RTS_MEMSET,                        /**< RTS optimization: call to memset() replaced */
+	FS_OPT_RTS_MEMCMP,                        /**< RTS optimization: call to memcmp() replaced */
 	FS_BE_IA32_LEA,                           /**< Lea was created */
 	FS_BE_IA32_LOAD_LEA,                      /**< Load merged with a Lea */
 	FS_BE_IA32_STORE_LEA,                     /**< Store merged with a Lea */

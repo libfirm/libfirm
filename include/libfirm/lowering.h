@@ -437,6 +437,13 @@ int i_mapper_strcmp(ir_node *call, void *ctx);
 int i_mapper_strncmp(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the strcpy-Function: char pointer strcpy(char pointer a, char pointer b);
+ *
+ * @return 0 if the strcpy call was removed, 0 else.
+ */
+int i_mapper_strcpy(ir_node *call, void *ctx);
+
+/**
  * A mapper for the strlen-Function: inttype strlen(char pointer a);
  *
  * @return 0 if the strlen call was removed, 0 else.
@@ -451,11 +458,32 @@ int i_mapper_strlen(ir_node *call, void *ctx);
 int i_mapper_memcpy(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the mempcpy-Function: void pointer mempcpy(void pointer d, void pointer s, inttype c);
+ *
+ * @return 0 if the mempcpy call was removed, 0 else.
+ */
+int i_mapper_mempcpy(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the memmove-Function: void pointer memmove(void pointer d, void pointer s, inttype c);
+ *
+ * @return 0 if the memmove call was removed, 0 else.
+ */
+int i_mapper_memmove(ir_node *call, void *ctx);
+
+/**
  * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
  *
  * @return 0 if the memset call was removed, 0 else.
  */
 int i_mapper_memset(ir_node *call, void *ctx);
+
+/**
+ * A mapper for the strncmp-Function: inttype memcmp(void pointer a, void pointer b, inttype len);
+ *
+ * @return 0 if the strncmp call was removed, 0 else.
+ */
+int i_mapper_memcmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
