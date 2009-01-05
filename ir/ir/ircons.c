@@ -860,7 +860,6 @@ new_bd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[], ir_asm_constr
            int n_outs, ir_asm_constraint *outputs, int n_clobber, ident *clobber[], ident *asm_text) {
 	ir_node  *res;
 	ir_graph *irg = current_ir_graph;
-	(void) clobber;
 
 	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 	res->attr.assem.pin_state = op_pin_state_pinned;
@@ -2380,11 +2379,10 @@ new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj) {
 ir_node *
 new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj) {
 	ir_node *res;
-	(void) db;
 	assert(arg->op == op_Cond);
 	arg->attr.cond.kind = fragmentary;
 	arg->attr.cond.default_proj = max_proj;
-	res = new_Proj(arg, mode_X, max_proj);
+	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;
 }  /* new_d_defaultProj */
 
