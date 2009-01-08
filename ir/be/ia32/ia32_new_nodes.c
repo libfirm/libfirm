@@ -1242,9 +1242,7 @@ static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)
 	const ia32_attr_t *attr_old = get_ia32_attr_const(old_node);
 	ia32_attr_t       *attr_new = get_ia32_attr(new_node);
 	backend_info_t    *old_info = be_get_info(old_node);
-	backend_info_t    *new_info;
-
-	new_info = be_get_info(new_node);
+	backend_info_t    *new_info = be_get_info(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
