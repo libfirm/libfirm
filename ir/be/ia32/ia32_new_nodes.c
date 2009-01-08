@@ -207,7 +207,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			n_res = arch_irn_get_n_outs(n);
 			fprintf(F, "=== IA32 attr begin ===\n");
 
 			/* dump IN requirements */
@@ -216,14 +215,13 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				dump_reg_req(F, n, reqs, 0);
 			}
 
-			/* dump OUT requirements */
+			n_res = arch_irn_get_n_outs(n);
 			if (n_res > 0) {
+				/* dump OUT requirements */
 				reqs = get_ia32_out_req_all(n);
 				dump_reg_req(F, n, reqs, 1);
-			}
 
-			/* dump assigned registers */
-			if (n_res > 0) {
+				/* dump assigned registers */
 				for (i = 0; i < n_res; i++) {
 					const arch_register_t *reg = arch_irn_get_register(n, i);
 
@@ -291,12 +289,12 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			fprintf(F, "n_res = %d\n", arch_irn_get_n_outs(n));
-			fprintf(F, "use_frame = %d\n", is_ia32_use_frame(n));
-			fprintf(F, "commutative = %d\n", is_ia32_commutative(n));
+			fprintf(F, "n_res = %d\n",         n_res);
+			fprintf(F, "use_frame = %d\n",     is_ia32_use_frame(n));
+			fprintf(F, "commutative = %d\n",   is_ia32_commutative(n));
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
-			fprintf(F, "is reload = %d\n", is_ia32_is_reload(n));
-			fprintf(F, "latency = %d\n", get_ia32_latency(n));
+			fprintf(F, "is reload = %d\n",     is_ia32_is_reload(n));
+			fprintf(F, "latency = %d\n",       get_ia32_latency(n));
 
 			/* dump flags */
 			fprintf(F, "flags =");
