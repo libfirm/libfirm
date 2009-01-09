@@ -66,7 +66,6 @@
 static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
                          int inout)
 {
-	const mips_attr_t *attr = get_mips_attr_const(n);
 	char *dir = inout ? "out" : "in";
 	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
 	char  buf[1024];
