@@ -1727,7 +1727,7 @@ static void fix_start_block(ir_graph *irg)
 			return;
 		}
 	}
-	panic("Initial exec has no follow block");
+	panic("Initial exec has no follow block in %+F", irg);
 }
 
 /**
