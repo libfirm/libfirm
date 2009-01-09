@@ -94,7 +94,7 @@ static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 		char buf[64];
 		snprintf(buf, sizeof(buf), "prim_type_%s", get_mode_name(mode));
 		res = new_type_primitive(new_id_from_str(buf), mode);
-		if (get_mode_size_bits(mode) >= 10) {
+		if (get_mode_size_bits(mode) >= 80) {
 			set_type_alignment_bytes(res, 16);
 		}
 		pmap_insert(types, mode, res);
