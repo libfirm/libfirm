@@ -807,7 +807,7 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
  */
 static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias) {
 	arm_abi_env_t         *env = self;
-	ir_node               *keep, *store;
+	ir_node               *store;
 	ir_graph              *irg;
 	ir_node               *block;
 	arch_register_class_t *gp;
@@ -829,26 +829,39 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	irg   = env->irg;
 	block = get_irg_start_block(irg);
 
-	ip = be_new_Copy(gp, irg, block, sp);
-	be_set_constr_single_reg_out(ip, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
+	/* mark bp register as ignore */
+	be_set_constr_single_reg_out(get_Proj_pred(fp),
+	                             get_Proj_proj(fp), env->arch_env->bp,
+	                             arch_register_req_type_ignore);
 
+	/* copy SP to IP (so we can spill it */
+	ip = be_new_Copy(gp, irg, block, sp);
+	be_set_constr_single_reg_out(ip, 0, &arm_gp_regs[REG_R12], 0);
+
+	/* spill stuff */
 	store = new_bd_arm_StoreStackM4Inc(NULL, block, sp, fp, ip, lr, pc, *mem);
 
 	sp = new_r_Proj(irg, block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
 	arch_set_irn_register(sp, env->arch_env->sp);
 	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
-	keep = be_new_CopyKeep_single(gp, irg, block, ip, sp, get_irn_mode(ip));
-	be_node_set_reg_class_in(keep, 1, gp);
-	be_set_constr_single_reg_out(keep, 0, &arm_gp_regs[REG_R12], arch_register_req_type_produces_sp);
-
-	fp = new_bd_arm_Sub_i(NULL, block, keep, get_irn_mode(fp), 4);
+	/* frame pointer is ip-4 (because ip is our old sp value) */
+	fp = new_bd_arm_Sub_i(NULL, block, ip, get_irn_mode(fp), 4);
 	arch_set_irn_register(fp, env->arch_env->bp);
+
+	/* beware: we change the fp but the StoreStackM4Inc above wants the old
+	 * fp value. We are not allowed to spill or anything in the prolog, so we
+	 * have to enforce some order here. (scheduler/regalloc are too stupid
+	 * to extract this order from register requirements) */
+	add_irn_dep(fp, store);
+
 	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ have custom register requirements
-	be_set_constr_single_reg_out(fp, 0, env->arch_env->bp, 0);
+	be_set_constr_single_reg_out(fp, 0, env->arch_env->bp,
+	                             arch_register_req_type_ignore);
+	arch_set_irn_register(fp, env->arch_env->bp);
 
 	be_abi_reg_map_set(reg_map, env->arch_env->bp, fp);
-	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], keep);
+	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_R12], ip);
 	be_abi_reg_map_set(reg_map, env->arch_env->sp, sp);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_LR], lr);
 	be_abi_reg_map_set(reg_map, &arm_gp_regs[REG_PC], pc);
@@ -876,21 +889,14 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
 		be_set_constr_single_reg_out(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC], 0);
 	} else {
-		ir_node *sub12_node;
 		ir_node *load_node;
-		sub12_node = new_bd_arm_Sub_i(NULL, bl, curr_bp, mode_Iu, 12);
-		// FIXME
-		//set_arm_req_out_all(sub12_node, sub12_req);
-		arch_set_irn_register(sub12_node, env->arch_env->sp);
-		load_node = new_bd_arm_LoadStackM3(NULL, bl, sub12_node, *mem);
-		// FIXME
-		//set_arm_req_out(load_node, &arm_default_req_arm_gp_r11, 0);
-		//set_arm_req_out(load_node, &arm_default_req_arm_gp_sp, 1);
-		//set_arm_req_out(load_node, &arm_default_req_arm_gp_pc, 2);
-		curr_bp = new_r_Proj(env->irg, bl, load_node, env->arch_env->bp->reg_class->mode, pn_arm_LoadStackM3_res0);
-		curr_sp = new_r_Proj(env->irg, bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3_res1);
-		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3_res2);
-		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3_M);
+
+		load_node = new_bd_arm_LoadStackM3Epilogue(NULL, bl, curr_bp, *mem);
+
+		curr_bp = new_r_Proj(env->irg, bl, load_node, env->arch_env->bp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res0);
+		curr_sp = new_r_Proj(env->irg, bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res1);
+		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3Epilogue_res2);
+		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3Epilogue_M);
 		arch_set_irn_register(curr_bp, env->arch_env->bp);
 		arch_set_irn_register(curr_sp, env->arch_env->sp);
 		arch_set_irn_register(curr_pc, &arm_gp_regs[REG_PC]);

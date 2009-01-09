@@ -597,17 +597,17 @@ StoreStackM4Inc => {
 	irn_flags => "R",
 	state     => "exc_pinned",
 	comment   => "construct Store: Push 4 Registers = ST ptr,val",
-	reg_req   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "gp", "none" ] },
+	reg_req   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "sp:I|S", "none" ] },
 	emit      => '. stmfd %S0!, {%S1, %S2, %S3, %S4}',
 	outs      => [ "ptr", "M" ],
 },
 
-LoadStackM3 => {
+LoadStackM3Epilogue => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
 	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-	reg_req   => { "in" => [ "sp", "none" ], "out" => [ "gp", "gp", "gp", "none" ] },
+	reg_req   => { "in" => [ "sp", "none" ], "out" => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
 	emit      => '. ldmfd %S0, {%D0, %D1, %D2}',
 	outs      => [ "res0", "res1", "res2", "M" ],
 },
