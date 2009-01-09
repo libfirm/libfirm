@@ -132,31 +132,6 @@ arch_register_req_t *mips_get_irn_reg_req(const ir_node *node, int pos)
 	return arch_no_register_req;
 }
 
-static void mips_set_irn_reg(ir_node *irn, const arch_register_t *reg)
-{
-	int pos = 0;
-
-	if (is_Proj(irn)) {
-
-		if (get_irn_mode(irn) == mode_X) {
-			return;
-		}
-
-		pos = mips_translate_proj_pos(irn);
-		irn = skip_Proj(irn);
-	}
-
-	if (is_mips_irn(irn)) {
-		const arch_register_t **slots;
-
-		slots      = get_mips_slots(irn);
-		slots[pos] = reg;
-	} else {
-		/* here we set the registers for the Phi nodes */
-		mips_set_firm_reg(irn, reg, cur_reg_set);
-	}
-}
-
 static arch_irn_class_t mips_classify(const ir_node *irn)
 {
 	irn = skip_Proj_const(irn);
@@ -517,7 +492,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		// - setup first part of stackframe
 		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(initialstackframesize));
-		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
+		arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
 		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		/* TODO: where to get an edge with a0-a3
@@ -555,7 +530,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		// save old framepointer
 		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(-initialstackframesize));
-		mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
+		arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
 		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
@@ -567,7 +542,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	// setup framepointer
 	fp = new_bd_mips_addu(NULL, block, sp,
 	                      mips_create_Immediate(-initialstackframesize));
-	mips_set_irn_reg(fp, &mips_gp_regs[REG_FP]);
+	arch_set_irn_register(fp, &mips_gp_regs[REG_FP]);
 	panic("FIXME Use IncSP or set register requirement with ignore");
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
@@ -589,7 +564,7 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 
 	// copy fp to sp
 	sp = new_bd_mips_or(NULL, block, fp, mips_create_zero());
-	mips_set_irn_reg(sp, &mips_gp_regs[REG_SP]);
+	arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
 	panic("FIXME Use be_Copy or set register requirement with ignore");
 
 	// 1. restore fp

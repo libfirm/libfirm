@@ -31,12 +31,8 @@ typedef struct TEMPLATE_attr_t  TEMPLATE_attr_t;
 
 struct TEMPLATE_attr_t
 {
-	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
-
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
-
-	const arch_register_t **slots;       /**< register slots for assigned registers */
 };
 
 #endif

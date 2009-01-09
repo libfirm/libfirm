@@ -100,51 +100,6 @@ void set_arm_req_out_all(ir_node *node, const arch_register_req_t **reqs);
 void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
- * Returns the register flag of an arm node.
- */
-arch_irn_flags_t get_arm_flags(const ir_node *node);
-
-/**
- * Sets the register flag of an arm node.
- */
-void set_arm_flags(ir_node *node, arch_irn_flags_t flags);
-
-/**
- * Returns the result register slots of an arm node.
- */
-const arch_register_t **get_arm_slots(const ir_node *node);
-
-/**
- * Returns the name of the OUT register at position pos.
- */
-const char *get_arm_out_reg_name(const ir_node *node, int pos);
-
-/**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_arm_out_regnr(const ir_node *node, int pos);
-
-/**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_arm_out_reg(const ir_node *node, int pos);
-
-/**
- * Returns the number of results.
- */
-int get_arm_n_res(const ir_node *node);
-
-/**
- * Sets the flags for the n'th out.
- */
-void set_arm_out_flags(ir_node *node, arch_irn_flags_t flags, int pos);
-
-/**
- * Gets the flags for the n'th out.
- */
-arch_irn_flags_t get_arm_out_flags(const ir_node *node, int pos);
-
-/**
  * Returns the immediate value
  */
 long get_arm_imm_value(const ir_node *node);

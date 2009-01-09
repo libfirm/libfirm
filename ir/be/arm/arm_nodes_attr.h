@@ -103,7 +103,6 @@ enum fpa_immediates {
 /** Generic ARM node attributes. */
 typedef struct _arm_attr_t {
 	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
-	arch_irn_flags_t flags;              /**< indicating if spillable, rematerializeable ... etc. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
@@ -111,9 +110,6 @@ typedef struct _arm_attr_t {
 	ir_mode  *op_mode;                   /**< operation mode if different from node's mode */
 	unsigned instr_fl;                   /**< condition code, shift modifier */
 	long     imm_value;                  /**< immediate */
-	int      *out_flags;                 /**< flags for each produced value */
-
-	const arch_register_t **slots;       /**< register slots for assigned registers */
 } arm_attr_t;
 
 /** Attributes for a SymConst */

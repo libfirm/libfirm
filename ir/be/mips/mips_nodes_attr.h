@@ -32,14 +32,11 @@
 
 typedef struct mips_attr_t {
 	except_attr  exc;               /**< the exception attribute. MUST be the first one. */
-	arch_irn_flags_t flags;     /**< indicating if spillable, rematerializeable ... etc. */
 
 	int switch_default_pn;		/**< proj number of default case in switch */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
-
-	const arch_register_t **slots;     /**< register slots for assigned registers */
 } mips_attr_t;
 
 typedef enum mips_immediate_type_t {

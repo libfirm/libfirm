@@ -78,13 +78,11 @@ ir_node *mips_create_Immediate(long val)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = get_irg_start_block(irg);
-	const arch_register_t **slots;
 	ir_node  *res;
 
 	assert(val >=  -32768 && val <= 32767);
 	res      = new_bd_mips_Immediate(NULL, block, MIPS_IMM_CONST, NULL, val);
-	slots    = get_mips_slots(res);
-	slots[0] = &mips_gp_regs[REG_GP_NOREG];
+	arch_set_irn_register(res, &mips_gp_regs[REG_GP_NOREG]);
 
 	return res;
 }
@@ -94,9 +92,8 @@ ir_node* mips_create_zero(void)
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = get_irg_start_block(irg);
 	ir_node  *zero  = new_bd_mips_zero(NULL, block);
-	const arch_register_t **slots = get_mips_slots(zero);
 
-	slots[0] = &mips_gp_regs[REG_ZERO];
+	arch_set_irn_register(zero, &mips_gp_regs[REG_GP_NOREG]);
 
 	return zero;
 }
@@ -320,7 +317,6 @@ static ir_node* gen_SymConst(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_entity *entity;
-	const arch_register_t **slots;
 	ir_node *lui, *or_const, *or;
 
 	if(get_SymConst_kind(node) != symconst_addr_ent) {
@@ -333,8 +329,7 @@ static ir_node* gen_SymConst(ir_node *node)
 	or_const = new_bd_mips_Immediate(dbgi, block, MIPS_IMM_SYMCONST_LO, entity, 0);
 	or       = new_bd_mips_or(dbgi, block, lui, or_const);
 
-	slots    = get_mips_slots(or_const);
-	slots[0] = &mips_gp_regs[REG_GP_NOREG];
+	arch_set_irn_register(or_const, &mips_gp_regs[REG_GP_NOREG]);
 
 	return or;
 }

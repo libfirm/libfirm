@@ -75,41 +75,6 @@ void set_ppc32_req_out(ir_node *node, const arch_register_req_t *req, int pos);
  */
 void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
-/**
- * Returns the register flag of an ppc node.
- */
-arch_irn_flags_t get_ppc32_flags(const ir_node *node);
-
-/**
- * Sets the register flag of an ppc node.
- */
-void set_ppc32_flags(ir_node *node, arch_irn_flags_t flags);
-
-/**
- * Returns the result register slots of an ppc node.
- */
-const arch_register_t **get_ppc32_slots(const ir_node *node);
-
-/**
- * Returns the name of the OUT register at position pos.
- */
-const char *get_ppc32_out_reg_name(const ir_node *node, int pos);
-
-/**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_ppc32_out_regnr(const ir_node *node, int pos);
-
-/**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_ppc32_out_reg(const ir_node *node, int pos);
-
-/**
- * Returns the number of results.
- */
-int get_ppc32_n_res(const ir_node *node);
-
 ppc32_attr_content_type get_ppc32_type(const ir_node *node);
 
 void set_ppc32_constant_tarval(ir_node *node, tarval *const_tarval);

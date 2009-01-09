@@ -118,7 +118,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
     if (get_irn_mode(node) != mode_T) {
         reg = arch_get_irn_register(node);
     } else if (is_arm_irn(node)) {
-        reg = get_arm_out_reg(node, pos);
+        reg = arch_irn_get_register(node, pos);
     } else {
         const ir_edge_t *edge;
 

@@ -68,7 +68,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
 {
 	const mips_attr_t *attr = get_mips_attr_const(n);
 	char *dir = inout ? "out" : "in";
-	int   max = inout ? ARR_LEN(attr->slots) : get_irn_arity(n);
+	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
 	char  buf[1024];
 	int   i;
 
@@ -134,10 +134,8 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
  */
 static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	int          bad  = 0;
-	int          i;
-	const mips_attr_t *attr = get_mips_attr_const(n);
+	int          i, n_res, flags;
 	const arch_register_req_t **reqs;
-	const arch_register_t     **slots;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -178,7 +176,6 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			attr = get_mips_attr(n);
 			fprintf(F, "=== mips attr begin ===\n");
 
 			/* dump IN requirements */
@@ -187,43 +184,42 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				dump_reg_req(F, n, reqs, 0);
 			}
 
-			/* dump OUT requirements */
-			if (ARR_LEN(attr->slots) > 0) {
+			n_res = arch_irn_get_n_outs(n);
+			if (n_res > 0) {
+				/* dump OUT requirements */
 				reqs = get_mips_out_req_all(n);
 				dump_reg_req(F, n, reqs, 1);
-			}
 
-			/* dump assigned registers */
-			slots = get_mips_slots(n);
-			if (slots && ARR_LEN(attr->slots) > 0) {
-				for (i = 0; i < ARR_LEN(attr->slots); i++) {
-					if (slots[i]) {
-						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
-					}
-					else {
-						fprintf(F, "reg #%d = n/a\n", i);
-					}
+				/* dump assigned registers */
+				for (i = 0; i < n_res; i++) {
+					const arch_register_t *reg = arch_irn_get_register(n, i);
+
+					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
 				}
+				fprintf(F, "\n");
 			}
-			fprintf(F, "\n");
 
 			/* dump n_res */
-			fprintf(F, "n_res = %d\n", ARR_LEN(attr->slots));
+			fprintf(F, "n_res = %d\n", n_res);
 
 			/* dump flags */
 			fprintf(F, "flags =");
-			if (attr->flags == arch_irn_flags_none) {
+			flags = arch_irn_get_flags(n);
+			if (flags == arch_irn_flags_none) {
 				fprintf(F, " none");
 			}
 			else {
-				if (attr->flags & arch_irn_flags_dont_spill) {
+				if (flags & arch_irn_flags_dont_spill) {
 					fprintf(F, " unspillable");
 				}
-				if (attr->flags & arch_irn_flags_rematerializable) {
+				if (flags & arch_irn_flags_rematerializable) {
 					fprintf(F, " remat");
 				}
+				if (flags & arch_irn_flags_modify_flags) {
+					fprintf(F, " modify_flags");
+				}
 			}
-			fprintf(F, " (%d)\n", attr->flags);
+			fprintf(F, " (%d)\n", flags);
 
 			fprintf(F, "=== mips attr end ===\n");
 			/* end of: case dump_node_info_txt */
@@ -327,75 +323,6 @@ void set_mips_req_in(ir_node *node, const arch_register_req_t *req, int pos)
 }
 
 /**
- * Returns the register flag of an mips node.
- */
-arch_irn_flags_t get_mips_flags(const ir_node *node)
-{
-	const mips_attr_t *attr = get_mips_attr_const(node);
-	return attr->flags;
-}
-
-/**
- * Sets the register flag of an mips node.
- */
-void set_mips_flags(ir_node *node, arch_irn_flags_t flags)
-{
-	mips_attr_t *attr = get_mips_attr(node);
-	attr->flags      = flags;
-}
-
-/**
- * Returns the result register slots of an mips node.
- */
-const arch_register_t **get_mips_slots(const ir_node *node)
-{
-	const mips_attr_t *attr = get_mips_attr_const(node);
-	return attr->slots;
-}
-
-/**
- * Returns the name of the OUT register at position pos.
- */
-const char *get_mips_out_reg_name(const ir_node *node, int pos)
-{
-	const mips_attr_t *attr = get_mips_attr_const(node);
-
-	assert(is_mips_irn(node) && "Not an mips node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_name(attr->slots[pos]);
-}
-
-/**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_mips_out_regnr(const ir_node *node, int pos)
-{
-	const mips_attr_t *attr = get_mips_attr_const(node);
-
-	assert(is_mips_irn(node) && "Not an mips node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_index(attr->slots[pos]);
-}
-
-/**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_mips_out_reg(const ir_node *node, int pos)
-{
-	const mips_attr_t *attr = get_mips_attr_const(node);
-
-	assert(is_mips_irn(node) && "Not an mips node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return attr->slots[pos];
-}
-
-/**
  * Initializes the nodes attributes.
  */
 static void init_mips_attributes(ir_node *node, arch_irn_flags_t flags,
@@ -407,14 +334,16 @@ static void init_mips_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	mips_attr_t    *attr = get_mips_attr(node);
+	backend_info_t *info;
 	(void) execution_units;
 
-	attr->flags   = flags;
+	arch_irn_set_flags(node, flags);
 	attr->out_req = out_reqs;
 	attr->in_req  = in_reqs;
 
-	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	info            = be_get_info(node);
+	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
+	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
 static void init_mips_immediate_attributes(ir_node *node,
@@ -441,10 +370,6 @@ static int mips_compare_nodes_attr(ir_node *node_a, ir_node *node_b)
 	const mips_attr_t *a = get_mips_attr_const(node_a);
 	const mips_attr_t *b = get_mips_attr_const(node_b);
 
-	if(a->flags != b->flags)
-		return 1;
-	if(ARR_LEN(a->slots) != ARR_LEN(b->slots))
-		return 1;
 	if(a->switch_default_pn != b->switch_default_pn)
 		return 1;
 
@@ -456,8 +381,6 @@ static int mips_compare_immediate_attr(ir_node *node_a, ir_node *node_b)
 	const mips_immediate_attr_t *a = get_mips_immediate_attr_const(node_a);
 	const mips_immediate_attr_t *b = get_mips_immediate_attr_const(node_b);
 
-	if(a->attr.flags != b->attr.flags)
-		return 1;
 	if(a->val != b->val)
 		return 1;
 
@@ -485,12 +408,15 @@ static void mips_copy_attr(const ir_node *old_node , ir_node *new_node)
 	struct obstack    *obst     = get_irg_obstack(irg);
 	const mips_attr_t *attr_old = get_mips_attr_const(old_node);
 	mips_attr_t       *attr_new = get_mips_attr(new_node);
+	backend_info_t    *old_info = be_get_info(old_node);
+	backend_info_t    *new_info = be_get_info(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
 
-	/* copy register assignments */
-	attr_new->slots = DUP_ARR_D(arch_register_t*, obst, attr_old->slots);
+	/* copy out flags */
+	new_info->out_infos =
+		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 }
 
 /***************************************************************************************

@@ -65,7 +65,7 @@
 static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
                          int inout) {
 	char *dir = inout ? "out" : "in";
-	int   max = inout ? get_TEMPLATE_n_res(n) : get_irn_arity(n);
+	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
 	char  buf[1024];
 	int   i;
 
@@ -131,11 +131,9 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
  */
 static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
   	ir_mode     *mode = NULL;
-	int          bad  = 0;
-	int          i;
-	const TEMPLATE_attr_t *attr;
+	int         bad  = 0;
+	int         i, n_res, flags;
 	const arch_register_req_t **reqs;
-	const arch_register_t     **slots;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -161,7 +159,6 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			attr = get_TEMPLATE_attr_const(n);
 			fprintf(F, "=== TEMPLATE attr begin ===\n");
 
 			/* dump IN requirements */
@@ -170,43 +167,42 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				dump_reg_req(F, n, reqs, 0);
 			}
 
-			/* dump OUT requirements */
-			if (ARR_LEN(attr->slots) > 0) {
+			n_res = arch_irn_get_n_outs(n);
+			if (n_res > 0) {
+				/* dump OUT requirements */
 				reqs = get_TEMPLATE_out_req_all(n);
 				dump_reg_req(F, n, reqs, 1);
-			}
 
-			/* dump assigned registers */
-			slots = get_TEMPLATE_slots(n);
-			if (slots && ARR_LEN(attr->slots) > 0) {
-				for (i = 0; i < ARR_LEN(attr->slots); i++) {
-					if (slots[i]) {
-						fprintf(F, "reg #%d = %s\n", i, slots[i]->name);
-					}
-					else {
-						fprintf(F, "reg #%d = n/a\n", i);
-					}
+				/* dump assigned registers */
+				for (i = 0; i < n_res; i++) {
+					const arch_register_t *reg = arch_irn_get_register(n, i);
+
+					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
 				}
+				fprintf(F, "\n");
 			}
-			fprintf(F, "\n");
 
 			/* dump n_res */
-			fprintf(F, "n_res = %d\n", get_TEMPLATE_n_res(n));
+			fprintf(F, "n_res = %d\n", n_res);
 
 			/* dump flags */
 			fprintf(F, "flags =");
-			if (attr->flags == arch_irn_flags_none) {
+			flags = arch_irn_get_flags(n);
+			if (flags == arch_irn_flags_none) {
 				fprintf(F, " none");
 			}
 			else {
-				if (attr->flags & arch_irn_flags_dont_spill) {
+				if (flags & arch_irn_flags_dont_spill) {
 					fprintf(F, " unspillable");
 				}
-				if (attr->flags & arch_irn_flags_rematerializable) {
+				if (flags & arch_irn_flags_rematerializable) {
 					fprintf(F, " remat");
 				}
+				if (flags & arch_irn_flags_modify_flags) {
+					fprintf(F, " modify_flags");
+				}
 			}
-			fprintf(F, " (%d)\n", attr->flags);
+			fprintf(F, " (%d)\n", flags);
 
 			/* TODO: dump all additional attributes */
 
@@ -291,85 +287,6 @@ void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos)
 }
 
 /**
- * Returns the register flag of an TEMPLATE node.
- */
-arch_irn_flags_t get_TEMPLATE_flags(const ir_node *node) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return attr->flags;
-}
-
-/**
- * Sets the register flag of an TEMPLATE node.
- */
-void set_TEMPLATE_flags(ir_node *node, arch_irn_flags_t flags) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
-	attr->flags      = flags;
-}
-
-/**
- * Returns the result register slots of an TEMPLATE node.
- */
-const arch_register_t **get_TEMPLATE_slots(ir_node *node) {
-	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
-	return attr->slots;
-}
-
-/**
- * Returns the result register slots of an TEMPLATE node.
- */
-const arch_register_t * const *get_TEMPLATE_slots_const(const ir_node *node) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return attr->slots;
-}
-
-/**
- * Returns the name of the OUT register at position pos.
- */
-const char *get_TEMPLATE_out_reg_name(const ir_node *node, int pos) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-
-	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_name(attr->slots[pos]);
-}
-
-/**
- * Returns the index of the OUT register at position pos within its register class.
- */
-int get_TEMPLATE_out_regnr(const ir_node *node, int pos) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-
-	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return arch_register_get_index(attr->slots[pos]);
-}
-
-/**
- * Returns the OUT register at position pos.
- */
-const arch_register_t *get_TEMPLATE_out_reg(const ir_node *node, int pos) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-
-	assert(is_TEMPLATE_irn(node) && "Not an TEMPLATE node.");
-	assert(pos < ARR_LEN(attr->slots) && "Invalid OUT position.");
-	assert(attr->slots[pos]  && "No register assigned");
-
-	return attr->slots[pos];
-}
-
-/**
- * Returns the number of results.
- */
-int get_TEMPLATE_n_res(const ir_node *node) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return ARR_LEN(attr->slots);
-}
-
-/**
  * Initializes the nodes attributes.
  */
 void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
@@ -381,14 +298,16 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	backend_info_t  *info;
 	(void) execution_units;
 
-	attr->flags   = flags;
+	arch_irn_set_flags(node, flags);
 	attr->out_req = out_reqs;
 	attr->in_req  = in_reqs;
 
-	attr->slots = NEW_ARR_D(const arch_register_t*, obst, n_res);
-	memset(attr->slots, 0, n_res * sizeof(attr->slots[0]));
+	info            = be_get_info(node);
+	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
+	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
 /***************************************************************************************
@@ -406,9 +325,6 @@ int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
 	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);
-
-	if(attr_a->flags != attr_b->flags)
-		return 1;
 
 	return 0;
 }
