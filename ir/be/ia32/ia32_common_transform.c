@@ -162,7 +162,7 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 	return res;
 }
 
-ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val)
+ir_node *ia32_create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
@@ -973,7 +973,7 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 		offset = tarval_neg(offset);
 	}
 
-	new_node = create_Immediate(symconst_ent, symconst_sign, val);
+	new_node = ia32_create_Immediate(symconst_ent, symconst_sign, val);
 
 	return new_node;
 }

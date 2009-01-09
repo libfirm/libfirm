@@ -318,15 +318,15 @@ static void peephole_ia32_Test(ir_node *node)
 			if ((offset & 0xFFFFFF00) == 0) {
 				/* attr->am_offs += 0; */
 			} else if ((offset & 0xFFFF00FF) == 0) {
-				ir_node *imm = create_Immediate(NULL, 0, offset >>  8);
+				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >>  8);
 				set_irn_n(node, n_ia32_Test_right, imm);
 				attr->am_offs += 1;
 			} else if ((offset & 0xFF00FFFF) == 0) {
-				ir_node *imm = create_Immediate(NULL, 0, offset >> 16);
+				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >> 16);
 				set_irn_n(node, n_ia32_Test_right, imm);
 				attr->am_offs += 2;
 			} else if ((offset & 0x00FFFFFF) == 0) {
-				ir_node *imm = create_Immediate(NULL, 0, offset >> 24);
+				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >> 24);
 				set_irn_n(node, n_ia32_Test_right, imm);
 				attr->am_offs += 3;
 			} else {

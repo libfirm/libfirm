@@ -61,7 +61,7 @@ ir_entity *create_float_const_entity(ir_node *cnst);
  * @param symconst_sign  sign for the symconst
  * @param val            integer value for the immediate
  */
-ir_node *create_Immediate(ir_entity *symconst, int symconst_sign, long val);
+ir_node *ia32_create_Immediate(ir_entity *symconst, int symconst_sign, long val);
 
 /**
  * returns register by name (used for determining clobber specifications in
