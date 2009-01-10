@@ -1095,8 +1095,8 @@ be_node_get_irn_reg_req(const ir_node *irn, int pos)
    		 * For spills and reloads, we return "none" as requirement for frame
 		 * pointer, so every input is ok. Some backends need this (e.g. STA).
 		 */
-		if ((be_is_Spill(irn)  && pos == be_pos_Spill_frame) ||
-				(be_is_Reload(irn) && pos == be_pos_Reload_frame))
+		if ((pos == be_pos_Spill_frame && be_is_Spill(irn)) ||
+		    (pos == be_pos_Reload_frame && be_is_Reload(irn)))
 			return arch_no_register_req;
 
 		return get_in_reg_req(irn, pos);
