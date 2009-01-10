@@ -64,11 +64,7 @@
 
 typedef struct {
 	arch_register_req_t req;
-} be_req_t;
-
-typedef struct {
-	be_req_t req;
-	be_req_t in_req;
+	arch_register_req_t in_req;
 } be_reg_data_t;
 
 /** The generic be nodes attribute type. */
@@ -144,29 +140,20 @@ static const ir_op_ops be_node_op_ops;
 #define K   irop_flag_keep
 #define M   irop_flag_uses_memory
 
-static int be_reqs_equal(const be_req_t *req1, const be_req_t *req2)
-{
-	if(!reg_reqs_equal(&req1->req, &req2->req))
-		return 0;
-
-	return 1;
-}
-
 /**
  * Compare two be node attributes.
  *
  * @return zero if both attributes are identically
  */
 static int _node_cmp_attr(const be_node_attr_t *a, const be_node_attr_t *b) {
-	int i, len;
+	int i, len = ARR_LEN(a->reg_data);
 
-	if (ARR_LEN(a->reg_data) != ARR_LEN(b->reg_data))
+	if (len != ARR_LEN(b->reg_data))
 		return 1;
 
-	len = ARR_LEN(a->reg_data);
-	for (i = 0; i < len; ++i) {
-		if (!be_reqs_equal(&a->reg_data[i].in_req, &b->reg_data[i].in_req) ||
-			    !be_reqs_equal(&a->reg_data[i].req,    &b->reg_data[i].req))
+	for (i = len - 1; i >= 0; --i) {
+		if (!reg_reqs_equal(&a->reg_data[i].in_req, &b->reg_data[i].in_req) ||
+		    !reg_reqs_equal(&a->reg_data[i].req,    &b->reg_data[i].req))
 			return 1;
 	}
 
@@ -182,7 +169,7 @@ static int node_cmp_attr(ir_node *a, ir_node *b) {
 	const be_node_attr_t *a_attr = get_irn_attr_const(a);
 	const be_node_attr_t *b_attr = get_irn_attr_const(b);
 
-	if(_node_cmp_attr(a_attr, b_attr) != 0)
+	if (_node_cmp_attr(a_attr, b_attr) != 0)
 		return 1;
 
 	return !be_info_equal(a, b);
@@ -247,13 +234,13 @@ static int Call_cmp_attr(ir_node *a, ir_node *b) {
 	const be_call_attr_t *b_attr = get_irn_attr_const(b);
 
 	if (a_attr->ent != b_attr->ent ||
-			a_attr->call_tp != b_attr->call_tp)
+		a_attr->call_tp != b_attr->call_tp)
 		return 1;
 
 	return _node_cmp_attr(&a_attr->node_attr, &b_attr->node_attr);
 }
 
-static inline be_req_t *get_be_req(const ir_node *node, int pos)
+static inline arch_register_req_t *get_be_req(const ir_node *node, int pos)
 {
 	int idx;
 	const be_node_attr_t *attr;
@@ -262,7 +249,7 @@ static inline be_req_t *get_be_req(const ir_node *node, int pos)
 	assert(is_be_node(node));
 	attr = get_irn_attr_const(node);
 
-	if(pos < 0) {
+	if (pos < 0) {
 		idx = -(pos + 1);
 	} else {
 		idx = pos;
@@ -274,14 +261,8 @@ static inline be_req_t *get_be_req(const ir_node *node, int pos)
 	return pos < 0 ? &rd->req : &rd->in_req;
 }
 
-static inline arch_register_req_t *get_req(const ir_node *node, int pos)
-{
-	be_req_t *bereq = get_be_req(node, pos);
-	return &bereq->req;
-}
-
 /**
- * Initializes the generic attribute of all be nodes and return ir.
+ * Initializes the generic attribute of all be nodes and return it.
  */
 static void *init_node_attr(ir_node *node, int max_reg_data)
 {
@@ -499,7 +480,7 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *b
 	be_node_set_reg_class_in(res, 0, cls);
 	be_node_set_reg_class_out(res, 0, cls);
 
-	req = get_req(res, BE_OUT_POS(0));
+	req = get_be_req(res, BE_OUT_POS(0));
 	req->cls = cls;
 	req->type = arch_register_req_type_should_be_same;
 	req->other_same = 1U << 0;
@@ -930,7 +911,7 @@ static void set_req_single(struct obstack *obst, arch_register_req_t *req,
 void be_set_constr_single_reg_in(ir_node *node, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
-	arch_register_req_t *req = get_req(node, pos);
+	arch_register_req_t *req = get_be_req(node, pos);
 	ir_graph *irg = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 
@@ -940,7 +921,7 @@ void be_set_constr_single_reg_in(ir_node *node, int pos,
 void be_set_constr_single_reg_out(ir_node *node, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
-	arch_register_req_t *req = get_req(node, BE_OUT_POS(pos));
+	arch_register_req_t *req = get_be_req(node, BE_OUT_POS(pos));
 	ir_graph *irg = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 
@@ -957,7 +938,7 @@ void be_set_constr_limited(ir_node *node, int pos, const arch_register_req_t *re
 {
 	ir_graph *irg = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
-	arch_register_req_t *r = get_req(node, pos);
+	arch_register_req_t *r = get_be_req(node, pos);
 
 	assert(arch_register_req_is(req, limited));
 	assert(!(req->type & (arch_register_req_type_should_be_same | arch_register_req_type_must_be_different)));
@@ -967,7 +948,7 @@ void be_set_constr_limited(ir_node *node, int pos, const arch_register_req_t *re
 
 void be_node_set_reg_class_in(ir_node *irn, int pos, const arch_register_class_t *cls)
 {
-	arch_register_req_t *req = get_req(irn, pos);
+	arch_register_req_t *req = get_be_req(irn, pos);
 
 	req->cls = cls;
 
@@ -980,7 +961,7 @@ void be_node_set_reg_class_in(ir_node *irn, int pos, const arch_register_class_t
 
 void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_t *cls)
 {
-	arch_register_req_t *req = get_req(irn, BE_OUT_POS(pos));
+	arch_register_req_t *req = get_be_req(irn, BE_OUT_POS(pos));
 
 	req->cls = cls;
 
@@ -993,7 +974,7 @@ void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_
 
 void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
 {
-	arch_register_req_t *req = get_req(irn, pos);
+	arch_register_req_t *req = get_be_req(irn, pos);
 	req->type = type;
 }
 
@@ -1078,11 +1059,11 @@ arch_register_req_t *get_out_reg_req(const ir_node *irn, int out_pos)
 {
 	const be_node_attr_t *a = get_irn_attr_const(irn);
 
-	if(out_pos >= ARR_LEN(a->reg_data)) {
+	if (out_pos >= ARR_LEN(a->reg_data)) {
 		return arch_no_register_req;
 	}
 
-	return &a->reg_data[out_pos].req.req;
+	return &a->reg_data[out_pos].req;
 }
 
 static const
@@ -1090,10 +1071,10 @@ arch_register_req_t *get_in_reg_req(const ir_node *irn, int pos)
 {
 	const be_node_attr_t *a = get_irn_attr_const(irn);
 
-	if(pos >= get_irn_arity(irn) || pos >= ARR_LEN(a->reg_data))
+	if (pos >= get_irn_arity(irn) || pos >= ARR_LEN(a->reg_data))
 		return arch_no_register_req;
 
-	return &a->reg_data[pos].in_req.req;
+	return &a->reg_data[pos].in_req;
 }
 
 static const arch_register_req_t *
@@ -1428,19 +1409,19 @@ static void dump_node_reqs(FILE *f, ir_node *node)
 	int len = ARR_LEN(a->reg_data);
 
 	fprintf(f, "registers: \n");
-	for(i = 0; i < len; ++i) {
+	for (i = 0; i < len; ++i) {
 		const arch_register_t *reg = arch_irn_get_register(node, i);
 		fprintf(f, "#%d: %s\n", i, reg != NULL ? reg->name : "n/a");
 	}
 
 	fprintf(f, "in requirements:\n");
-	for(i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].in_req.req, node);
+	for (i = 0; i < len; ++i) {
+		dump_node_req(f, i, &a->reg_data[i].in_req, node);
 	}
 
 	fprintf(f, "\nout requirements:\n");
-	for(i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].req.req, node);
+	for (i = 0; i < len; ++i) {
+		dump_node_req(f, i, &a->reg_data[i].req, node);
 	}
 }
 
@@ -1576,15 +1557,15 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 		for(i = 0; i < len; ++i) {
 			const be_reg_data_t *rd = &old_attr->reg_data[i];
 			be_reg_data_t *newrd = &new_attr->reg_data[i];
-			if(arch_register_req_is(&rd->req.req, limited)) {
-				const arch_register_req_t *req = &rd->req.req;
-				arch_register_req_t *new_req = &newrd->req.req;
+			if (arch_register_req_is(&rd->req, limited)) {
+				const arch_register_req_t *req = &rd->req;
+				arch_register_req_t *new_req = &newrd->req;
 				new_req->limited
 					= rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
 			}
-			if(arch_register_req_is(&rd->in_req.req, limited)) {
-				const arch_register_req_t *req = &rd->in_req.req;
-				arch_register_req_t *new_req = &newrd->in_req.req;
+			if(arch_register_req_is(&rd->in_req, limited)) {
+				const arch_register_req_t *req = &rd->in_req;
+				arch_register_req_t *new_req = &newrd->in_req;
 				new_req->limited
 					= rbitset_duplicate_obstack_alloc(obst, req->limited, req->cls->n_regs);
 			}
