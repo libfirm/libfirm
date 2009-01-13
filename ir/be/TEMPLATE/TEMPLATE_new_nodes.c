@@ -325,6 +325,8 @@ int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
 	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);
+	(void) attr_a;
+	(void) attr_b;
 
 	return 0;
 }

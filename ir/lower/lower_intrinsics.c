@@ -832,7 +832,7 @@ int i_mapper_memcpy(ir_node *call, void *ctx) {
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memcpy(d, d, len) ==> d OR
-		/* a memcpy(d, s, 0) ==> d */
+		   a memcpy(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 
 		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMCPY);
@@ -851,7 +851,7 @@ int i_mapper_mempcpy(ir_node *call, void *ctx) {
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memcpy(d, d, len) ==> d + len OR
-		/* a memcpy(d, s, 0) ==> d + 0 */
+		   a memcpy(d, s, 0) ==> d + 0 */
 		dbg_info *dbg = get_irn_dbg_info(call);
 		ir_node *mem  = get_Call_mem(call);
 		ir_node *blk  = get_nodes_block(call);
@@ -874,7 +874,7 @@ int i_mapper_memmove(ir_node *call, void *ctx) {
 
 	if (dst == src || (is_Const(len) && is_Const_null(len))) {
 		/* a memmove(d, d, len) ==> d OR
-		/* a memmove(d, s, 0) ==> d */
+		   a memmove(d, s, 0) ==> d */
 		ir_node *mem = get_Call_mem(call);
 
 		DBG_OPT_ALGSIM0(call, dst, FS_OPT_RTS_MEMMOVE);
