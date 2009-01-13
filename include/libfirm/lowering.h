@@ -321,28 +321,28 @@ int i_mapper_abs(ir_node *call, void *ctx);
 /**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
- * @return 0 if the sqrt call was removed, 0 else.
+ * @return 1 if the sqrt call was removed, 0 else.
  */
 int i_mapper_sqrt(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point cbrt(v): floattype sqrt(floattype v);
  *
- * @return 0 if the cbrt call was removed, 0 else.
+ * @return 1 if the cbrt call was removed, 0 else.
  */
 int i_mapper_cbrt(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
- * @return 0 if the pow call was removed, 0 else.
+ * @return 1 if the pow call was removed, 0 else.
  */
 int i_mapper_pow(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point exp(a): floattype exp(floattype a);
  *
- * @return 0 if the exp call was removed, 0 else.
+ * @return 1 if the exp call was removed, 0 else.
  */
 int i_mapper_exp(ir_node *call, void *ctx);
 
@@ -352,7 +352,7 @@ int i_mapper_exp(ir_node *call, void *ctx);
 /**
  * A mapper for the floating point log(a): floattype log(floattype a);
  *
- * @return 0 if the log call was removed, 0 else.
+ * @return 1 if the log call was removed, 0 else.
  */
 int i_mapper_log(ir_node *call, void *ctx);
 
@@ -362,126 +362,126 @@ int i_mapper_log(ir_node *call, void *ctx);
 /**
  * A mapper for the floating point sin(a): floattype sin(floattype a);
  *
- * @return 0 if the sin call was removed, 0 else.
+ * @return 1 if the sin call was removed, 0 else.
  */
 int i_mapper_sin(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sin(a): floattype cos(floattype a);
  *
- * @return 0 if the cos call was removed, 0 else.
+ * @return 1 if the cos call was removed, 0 else.
  */
 int i_mapper_cos(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point tan(a): floattype tan(floattype a);
  *
- * @return 0 if the tan call was removed, 0 else.
+ * @return 1 if the tan call was removed, 0 else.
  */
 int i_mapper_tan(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point asin(a): floattype asin(floattype a);
  *
- * @return 0 if the asin call was removed, 0 else.
+ * @return 1 if the asin call was removed, 0 else.
  */
 int i_mapper_asin(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point acos(a): floattype acos(floattype a);
  *
- * @return 0 if the tan call was removed, 0 else.
+ * @return 1 if the tan call was removed, 0 else.
  */
 int i_mapper_acos(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point atan(a): floattype atan(floattype a);
  *
- * @return 0 if the atan call was removed, 0 else.
+ * @return 1 if the atan call was removed, 0 else.
  */
 int i_mapper_atan(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sinh(a): floattype sinh(floattype a);
  *
- * @return 0 if the sinh call was removed, 0 else.
+ * @return 1 if the sinh call was removed, 0 else.
  */
 int i_mapper_sinh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point cosh(a): floattype cosh(floattype a);
  *
- * @return 0 if the cosh call was removed, 0 else.
+ * @return 1 if the cosh call was removed, 0 else.
  */
 int i_mapper_cosh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point tanh(a): floattype tanh(floattype a);
  *
- * @return 0 if the tanh call was removed, 0 else.
+ * @return 1 if the tanh call was removed, 0 else.
  */
 int i_mapper_tanh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
- * @return 0 if the strcmp call was removed, 0 else.
+ * @return 1 if the strcmp call was removed, 0 else.
  */
 int i_mapper_strcmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strncmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
  *
- * @return 0 if the strncmp call was removed, 0 else.
+ * @return 1 if the strncmp call was removed, 0 else.
  */
 int i_mapper_strncmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcpy-Function: char pointer strcpy(char pointer a, char pointer b);
  *
- * @return 0 if the strcpy call was removed, 0 else.
+ * @return 1 if the strcpy call was removed, 0 else.
  */
 int i_mapper_strcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strlen-Function: inttype strlen(char pointer a);
  *
- * @return 0 if the strlen call was removed, 0 else.
+ * @return 1 if the strlen call was removed, 0 else.
  */
 int i_mapper_strlen(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
  *
- * @return 0 if the memcpy call was removed, 0 else.
+ * @return 1 if the memcpy call was removed, 0 else.
  */
 int i_mapper_memcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the mempcpy-Function: void pointer mempcpy(void pointer d, void pointer s, inttype c);
  *
- * @return 0 if the mempcpy call was removed, 0 else.
+ * @return 1 if the mempcpy call was removed, 0 else.
  */
 int i_mapper_mempcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memmove-Function: void pointer memmove(void pointer d, void pointer s, inttype c);
  *
- * @return 0 if the memmove call was removed, 0 else.
+ * @return 1 if the memmove call was removed, 0 else.
  */
 int i_mapper_memmove(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
  *
- * @return 0 if the memset call was removed, 0 else.
+ * @return 1 if the memset call was removed, 0 else.
  */
 int i_mapper_memset(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strncmp-Function: inttype memcmp(void pointer a, void pointer b, inttype len);
  *
- * @return 0 if the strncmp call was removed, 0 else.
+ * @return 1 if the strncmp call was removed, 0 else.
  */
 int i_mapper_memcmp(ir_node *call, void *ctx);
 
