@@ -420,7 +420,10 @@ static inline ir_graph *
 _get_entity_irg(const ir_entity *ent) {
 	ir_graph *irg;
 	assert(ent && ent->kind == k_entity);
-	assert(ent == unknown_entity || is_Method_type(ent->type));
+	if (!is_Method_type(ent->type) || ent == unknown_entity) {
+		return NULL;
+	}
+
 	irg = ent->attr.mtd_attr.irg;
 	if (irg != NULL && !get_visit_pseudo_irgs()	&& is_pseudo_ir_graph(irg))
 		return NULL;
