@@ -2288,6 +2288,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env) {
 static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env) {
 	ir_node *ptr = get_Sel_ptr(sel);
 
+	(void)mode;
+
 	/* we must only lower value parameter sels if we change the
 	   value parameter type. */
 	if (env->value_param_tp != NULL &&
