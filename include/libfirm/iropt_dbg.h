@@ -97,7 +97,7 @@
 
 /**
  * Merge the debug info due to an algebraic_simplification.
- * A node could be avaluated into a Constant.
+ * A node could be evaluated into a Constant.
  *
  * @param oldn  the node
  * @param n     the new constant holding the value
@@ -414,6 +414,18 @@
 	do {                                         \
 	  hook_merge_nodes(&n, 1, &oldn, 1, flag);   \
 	  __dbg_info_merge_pair(n, oldn, dbg_combo); \
+	} while(0)
+
+/**
+ * Merge the debug info due to a cond eval result.
+ *
+ * @param oldn  the old control flow node
+ * @param n     the new control flow node replacing oldn
+ */
+#define DBG_OPT_COND_EVAL(oldn, n)                         \
+	do {                                                   \
+	  hook_merge_nodes(&n, 1, &oldn, 1, FS_OPT_COND_EVAL); \
+	  __dbg_info_merge_pair(n, oldn, dbg_cond_eval);       \
 	} while(0)
 
 #endif
