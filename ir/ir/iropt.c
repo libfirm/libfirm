@@ -1178,10 +1178,10 @@ static ir_node *equivalent_node_And(ir_node *n) {
 	if (tv != get_tarval_bad()) {
 		ir_mode *mode = get_irn_mode(n);
 		if (!mode_is_signed(mode) && is_Conv(a)) {
-			ir_node *convop = get_Conv_op(a);
+			ir_node *convop     = get_Conv_op(a);
 			ir_mode *convopmode = get_irn_mode(convop);
 			if (!mode_is_signed(convopmode)) {
-				if (new_tarval_from_long(get_tarval_long(tv), convopmode) == get_mode_all_one(convopmode)) {
+				if (tarval_is_all_one(tarval_convert_to(tv, convopmode))) {
 					/* Conv(X) & all_one(mode(X)) = Conv(X) */
 					n = a;
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
