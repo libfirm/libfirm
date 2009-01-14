@@ -43,6 +43,7 @@
 #include "irgraph.h"
 #include "tv.h"
 #include "opt_confirms.h"
+#include "iropt_dbg.h"
 
 #undef AVOID_PHIB
 
@@ -80,7 +81,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	ir_node **in;
 
 	/* This is needed because we create bads sometimes */
-	if(is_Bad(block))
+	if (is_Bad(block))
 		return new_Bad();
 
 	/* the other defs can't be marked for cases where a user of the original
@@ -93,7 +94,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	}
 
 	/* already processed this block? */
-	if(irn_visited(block)) {
+	if (irn_visited(block)) {
 		ir_node *value = (ir_node*) get_irn_link(block);
 		return value;
 	}
@@ -103,7 +104,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 
 	/* a Block with only 1 predecessor needs no Phi */
 	n_cfgpreds = get_Block_n_cfgpreds(block);
-	if(n_cfgpreds == 1) {
+	if (n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		ir_node *value      = search_def_and_create_phis(pred_block, mode, 0);
 
@@ -172,7 +173,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 
 		DB((dbg, LEVEL_3, ">>> Fixing user %+F (pred %d == %+F)\n", user, j, get_irn_n(user, j)));
 
-		if(is_Phi(user)) {
+		if (is_Phi(user)) {
 			ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
 			newval = search_def_and_create_phis(pred_block, mode, 1);
 		} else {
@@ -221,7 +222,7 @@ static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
 	if (is_Phi(node)) {
 		copy = get_Phi_pred(node, j);
 		/* we might have to evaluate a Phi-cascade */
-		if(get_irn_visited(copy) >= env->visited_nr) {
+		if (get_irn_visited(copy) >= env->visited_nr) {
 			copy = get_irn_link(copy);
 		}
 	} else {
@@ -235,10 +236,10 @@ static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
 			ir_node *pred     = get_irn_n(copy, i);
 			ir_node *new_pred;
 
-			if(get_nodes_block(pred) != block)
+			if (get_nodes_block(pred) != block)
 				continue;
 
-			if(get_irn_visited(pred) >= env->visited_nr) {
+			if (get_irn_visited(pred) >= env->visited_nr) {
 				new_pred = get_irn_link(pred);
 			} else {
 				new_pred = copy_and_fix_node(env, block, copy_block, j, pred);
@@ -294,7 +295,7 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 				int pos             = get_edge_src_pos(edge);
 				ir_node *user_block = get_nodes_block(user);
 
-				if(user_block == block)
+				if (user_block == block)
 					continue;
 
 				cmp_copy = exact_copy(pred);
@@ -311,9 +312,9 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
 		/* we might hit values in blocks that have already been processed by a
 		 * recursive find_phi_with_const() call */
 		assert(get_irn_visited(copy) <= env->visited_nr);
-		if(get_irn_visited(copy) >= env->visited_nr) {
+		if (get_irn_visited(copy) >= env->visited_nr) {
 			ir_node *prev_copy = get_irn_link(copy);
-			if(prev_copy != NULL)
+			if (prev_copy != NULL)
 				set_irn_link(node, prev_copy);
 		}
 	}
@@ -436,11 +437,11 @@ static ir_node *find_const_or_confirm(condeval_env_t *env, ir_node *jump, ir_nod
 		return block;
 	}
 
-	if(is_Phi(value)) {
+	if (is_Phi(value)) {
 		int i, arity;
 
 		/* the Phi has to be in the same Block as the Jmp */
-		if(get_nodes_block(value) != block) {
+		if (get_nodes_block(value) != block) {
 			return NULL;
 		}
 
@@ -451,13 +452,13 @@ static ir_node *find_const_or_confirm(condeval_env_t *env, ir_node *jump, ir_nod
 			ir_node *cfgpred  = get_Block_cfgpred(block, i);
 
 			copy_block = find_const_or_confirm(env, cfgpred, phi_pred);
-			if(copy_block == NULL)
+			if (copy_block == NULL)
 				continue;
 
 			/* copy duplicated nodes in copy_block and fix SSA */
 			copy_and_fix(env, block, copy_block, i);
 
-			if(copy_block == get_nodes_block(cfgpred)) {
+			if (copy_block == get_nodes_block(cfgpred)) {
 				env->cnst_pred = block;
 				env->cnst_pos  = i;
 			}
@@ -501,11 +502,11 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 
 		return block;
 	}
-	if(is_Phi(value)) {
+	if (is_Phi(value)) {
 		int i, arity;
 
 		/* the Phi has to be in the same Block as the Jmp */
-		if(get_nodes_block(value) != block)
+		if (get_nodes_block(value) != block)
 			return NULL;
 
 		arity = get_irn_arity(value);
@@ -515,13 +516,13 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 			ir_node *cfgpred  = get_Block_cfgpred(block, i);
 
 			copy_block = find_candidate(env, cfgpred, phi_pred);
-			if(copy_block == NULL)
+			if (copy_block == NULL)
 				continue;
 
 			/* copy duplicated nodes in copy_block and fix SSA */
 			copy_and_fix(env, block, copy_block, i);
 
-			if(copy_block == get_nodes_block(cfgpred)) {
+			if (copy_block == get_nodes_block(cfgpred)) {
 				env->cnst_pred = block;
 				env->cnst_pos  = i;
 			}
@@ -530,12 +531,12 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 			return copy_block;
 		}
 	}
-	if(is_Proj(value)) {
+	if (is_Proj(value)) {
 		ir_node *left;
 		ir_node *right;
 		int      pnc;
 		ir_node *cmp = get_Proj_pred(value);
-		if(!is_Cmp(cmp))
+		if (!is_Cmp(cmp))
 			return NULL;
 
 		left  = get_Cmp_left(cmp);
@@ -544,7 +545,7 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 
 		/* we assume that the constant is on the right side, swap left/right
 		 * if needed */
-		if(is_Const(left)) {
+		if (is_Const(left)) {
 			ir_node *t = left;
 			left       = right;
 			right      = t;
@@ -552,15 +553,15 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
 			pnc        = get_inversed_pnc(pnc);
 		}
 
-		if(!is_Const(right))
+		if (!is_Const(right))
 			return 0;
 
-		if(get_nodes_block(left) != block) {
+		if (get_nodes_block(left) != block) {
 			return 0;
 		}
 
 		/* negate condition when we're looking for the false block */
-		if(env->tv == tarval_b_false) {
+		if (env->tv == tarval_b_false) {
 			pnc = get_negated_pnc(pnc, get_irn_mode(right));
 		}
 
@@ -598,10 +599,10 @@ static void cond_eval(ir_node* block, void* data)
 	ir_node *copy_block;
 	int      selector_evaluated;
 	const ir_edge_t *edge, *next;
-	ir_node* bad;
+	ir_node *bad;
 	size_t   cnst_pos;
 
-	if(get_Block_n_cfgpreds(block) != 1)
+	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
 	projx = get_Block_cfgpred(block, 0);
@@ -620,24 +621,24 @@ static void cond_eval(ir_node* block, void* data)
 
 	/* handle cases that can be immediately evaluated */
 	selector_evaluated = -1;
-	if(is_Proj(selector)) {
+	if (is_Proj(selector)) {
 		ir_node *cmp = get_Proj_pred(selector);
-		if(is_Cmp(cmp)) {
+		if (is_Cmp(cmp)) {
 			ir_node *left  = get_Cmp_left(cmp);
 			ir_node *right = get_Cmp_right(cmp);
-			if(is_Const(left) && is_Const(right)) {
+			if (is_Const(left) && is_Const(right)) {
 				int     pnc      = get_Proj_proj(selector);
 				tarval *tv_left  = get_Const_tarval(left);
 				tarval *tv_right = get_Const_tarval(right);
 
 				selector_evaluated = eval_cmp_tv(pnc, tv_left, tv_right);
-				if(selector_evaluated < 0)
+				if (selector_evaluated < 0)
 					return;
 			}
 		}
 	} else if (is_Const_or_Confirm(selector)) {
 		tarval *tv = get_Const_or_Confirm_tarval(selector);
-		if(tv == tarval_b_true) {
+		if (tv == tarval_b_true) {
 			selector_evaluated = 1;
 		} else {
 			assert(tv == tarval_b_false);
@@ -648,20 +649,21 @@ static void cond_eval(ir_node* block, void* data)
 	env.cnst_pred = NULL;
 	if (get_Proj_proj(projx) == pn_Cond_false) {
 		env.tv = tarval_b_false;
-		if(selector_evaluated >= 0)
+		if (selector_evaluated >= 0)
 			selector_evaluated = !selector_evaluated;
 	} else {
 		env.tv = tarval_b_true;
 	}
 
-	if(selector_evaluated == 0) {
+	if (selector_evaluated == 0) {
 		bad = new_Bad();
 		exchange(projx, bad);
 		*changed = 1;
 		return;
-	} else if(selector_evaluated == 1) {
+	} else if (selector_evaluated == 1) {
 		dbg_info *dbgi = get_irn_dbg_info(selector);
 		ir_node  *jmp  = new_rd_Jmp(dbgi, current_ir_graph, get_nodes_block(projx));
+		DBG_OPT_COND_EVAL(projx, jmp);
 		exchange(projx, jmp);
 		*changed = 1;
 		return;
@@ -686,7 +688,7 @@ static void cond_eval(ir_node* block, void* data)
 	foreach_out_edge_safe(env.cnst_pred, edge, next) {
 		ir_node *node = get_edge_src_irn(edge);
 
-		if(is_Phi(node))
+		if (is_Phi(node))
 			set_Phi_pred(node, cnst_pos, bad);
 	}
 
