@@ -334,6 +334,8 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
 			return have_no > 0 ? no_alias : sure_alias;
 		}
 	}
+#else
+	(void) different_index;
 #endif
 	return ir_may_alias;
 }  /* different_sel_offsets */
