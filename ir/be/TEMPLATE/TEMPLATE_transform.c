@@ -363,6 +363,7 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 		IGN(Abs);
 		IGN(Cond);
 		IGN(Mux);
+		IGN(Mulh);
 		IGN(CopyB);
 		IGN(Unknown);
 		IGN(Cmp);
@@ -398,13 +399,6 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 		BAD(EndExcept);
 
 		default:
-			if (get_irn_op(node) == get_op_Max() ||
-			    get_irn_op(node) == get_op_Min() ||
-			    is_Mulh(node))
-			{
-				/* TODO: implement */
-				/* ignore for now  */
-			}
 			break;
 bad:
 		fprintf(stderr, "Not implemented: %s\n", get_irn_opname(node));

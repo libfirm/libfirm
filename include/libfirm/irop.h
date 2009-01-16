@@ -186,8 +186,6 @@ extern ir_op *op_EndExcept;       ir_op *get_op_EndExcept (void);
 
 extern ir_op *op_NoMem;           ir_op *get_op_NoMem     (void);
 extern ir_op *op_Mux;             ir_op *get_op_Mux       (void);
-extern ir_op *op_Min;             ir_op *get_op_Min       (void);
-extern ir_op *op_Max;             ir_op *get_op_Max       (void);
 extern ir_op *op_CopyB;           ir_op *get_op_CopyB     (void);
 
 extern ir_op *op_InstOf;          ir_op *get_op_InstOf    (void);
