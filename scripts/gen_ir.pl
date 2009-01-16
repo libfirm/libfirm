@@ -179,6 +179,8 @@ foreach my $nodename (keys(%nodes)) {
 	push(@text_cons, ")\n{\n".
 		"\tir_node *res;\n");
 
+	push(@text_cons, "\tir_graph *rem = current_ir_graph;\n");
+
 	my $in_array = "NULL";
 	if ($arity eq $ARITY_VARIABLE) {
 		$in_array = "in";
@@ -191,6 +193,8 @@ foreach my $nodename (keys(%nodes)) {
 			push(@text_cons, "\tin[$idx] = ".$ins[$idx].";\n");
 		}
 	}
+
+	push(@text_cons, "\tcurrent_ir_graph = irg;\n");
 
 	push(@text_cons, "\tres = new_ir_node(db, irg, $block_name, op_$op_name, $mode_name, $arity, $in_array);\n");
 
@@ -217,6 +221,7 @@ foreach my $nodename (keys(%nodes)) {
 	}
 
 	push(@text_cons, "\tIRN_VRFY_IRG(res, irg);\n".
+		"\tcurrent_ir_graph = rem;\n".
 		"\treturn res;\n".
 		"}\n\n");
 
