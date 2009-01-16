@@ -1952,7 +1952,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
 		{
 			unsigned idx           = get_irn_idx(n);
 			ir_node *node_from_map = get_idx_irn(irg, idx);
-			ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0, ir_printf("node %+F node in map %+F(%p)", n, node_from_map, node_from_map));
+			ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
+				ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map));
 		}
 	}
 
