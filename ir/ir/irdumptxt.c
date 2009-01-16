@@ -184,11 +184,12 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (get_irn_loop(n)) {
+	if (get_irg_loopinfo_state(irg) & loopinfo_valid) {
 		ir_loop *loop = get_irn_loop(n);
-		assert(loop);
-		fprintf(F, "  in loop %d with depth %d\n",
-			get_loop_loop_nr(loop), get_loop_depth(loop));
+		if (loop != NULL) {
+			fprintf(F, "  in loop %d with depth %d\n",
+				get_loop_loop_nr(loop), get_loop_depth(loop));
+		}
 	}
 
 	/* Source types */
