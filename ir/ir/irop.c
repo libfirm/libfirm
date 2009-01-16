@@ -347,8 +347,6 @@ init_op(void)
 
 	op_NoMem     = new_ir_op(iro_NoMem,     "NoMem",     op_pin_state_pinned, N|NB|NI, oparity_zero,     -1, 0, NULL);
 	op_Mux       = new_ir_op(iro_Mux,       "Mux",       op_pin_state_floats, N,       oparity_trinary,  -1, 0, NULL);
-	op_Min       = new_ir_op(iro_Min,       "Min",       op_pin_state_floats, N,       oparity_binary,   -1, 0, NULL);
-	op_Max       = new_ir_op(iro_Max,       "Max",       op_pin_state_floats, N,       oparity_binary,   -1, 0, NULL);
 	op_CopyB     = new_ir_op(iro_CopyB,     "CopyB",     op_pin_state_mem_pinned, F|H|M, oparity_trinary,-1, sizeof(copyb_attr), NULL);
 
 	op_InstOf    = new_ir_op(iro_InstOf,    "InstOf",    op_pin_state_mem_pinned, H,   oparity_unary,    -1, sizeof(io_attr), NULL);

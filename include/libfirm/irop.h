@@ -92,7 +92,7 @@ typedef enum {
 	iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
 	iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
 	iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
-	iro_NoMem, iro_Mux, iro_Min, iro_Max, iro_CopyB,
+	iro_NoMem, iro_Mux, iro_CopyB,
 	iro_InstOf, iro_Raise, iro_Bound,
 	iro_Pin,
 	iro_ASM, iro_Builtin,
