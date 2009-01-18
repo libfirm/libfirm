@@ -1530,11 +1530,10 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			ir_node      *nw;
 			int          pos = 0;
 
-			if (ptr == ctx->param_base) {
+			if (get_entity_owner(ent) == ctx->value_tp) {
 				ir_entity *argument_ent = get_entity_link(ent);
 
 				/* replace by its copy from the argument type */
-				assert(get_entity_owner(ent) == ctx->value_tp);
 				pos = get_struct_member_index(ctx->value_tp, ent);
 
 				if (argument_ent == NULL) {
@@ -1567,7 +1566,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			exchange(irn, nw);
 
 			/* check, if it's a param sel and if have not seen this entity before */
-			if (ptr == ctx->param_base && get_entity_link(ent) == NULL) {
+			if (get_entity_owner(ent) == ctx->value_tp && get_entity_link(ent) == NULL) {
 				ent_pos_pair pair;
 
 				pair.ent  = ent;

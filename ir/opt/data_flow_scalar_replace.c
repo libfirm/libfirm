@@ -339,6 +339,7 @@ static void *ADDRESS_TAKEN = &_x;
 static int find_possible_replacements(ir_graph *irg)
 {
   ir_node *irg_frame = get_irg_frame(irg);
+  ir_type *frame_tp;
   int i, n;
   int res = 0;
 
@@ -347,19 +348,12 @@ static int find_possible_replacements(ir_graph *irg)
   n = get_irn_n_outs(irg_frame);
 
   /*
-   * First, clear the link field of all interestingentities.
-   * Note that we did not rely on the fact that there is only
-   * one Sel node per entity, so we might access one entity
-   * more than once here.
-   * That's why we have need two loops.
+   * First, clear the link field of all interesting entities.
    */
-  for (i = 0; i < n; ++i) {
-    ir_node *succ = get_irn_out(irg_frame, i);
-
-    if (is_Sel(succ)) {
-      ir_entity *ent = get_Sel_entity(succ);
-      set_entity_link(ent, NULL);
-    }
+  frame_tp = get_irg_frame_type(irg);
+  for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
+    ir_entity *ent = get_class_member(frame_tp, i);
+    set_entity_link(ent, NULL);
   }
 
   /*
@@ -374,7 +368,12 @@ static int find_possible_replacements(ir_graph *irg)
       ir_entity *ent = get_Sel_entity(succ);
       ir_type *ent_type;
 
-      if (get_entity_link(ent) == ADDRESS_TAKEN)
+      /* we are only interested in entities on the frame, NOT
+         on the value type */
+      if (get_entity_owner(ent) != frame_tp)
+        continue;
+
+     if (get_entity_link(ent) == ADDRESS_TAKEN)
         continue;
 
       /*

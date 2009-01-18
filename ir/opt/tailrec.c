@@ -419,10 +419,16 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 static int check_lifetime_of_locals(ir_graph *irg) {
 	ir_node *irg_frame, *irg_val_param_base;
 	int i;
+	ir_type *frame_tp = get_irg_frame_type(irg);
 
 	irg_frame = get_irg_frame(irg);
 	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irg_frame, i);
+
+		/* we are only interested in entities on the frame type
+		 * (locals), not on the value type */
+		if (get_entity_owner(get_Sel_entity(succ)) != frame_tp)
+			continue;
 
 		if (is_Sel(succ) && is_address_taken(succ))
 			return 0;

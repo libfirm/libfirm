@@ -344,6 +344,11 @@ static int find_possible_replacements(ir_graph *irg) {
 			ir_entity *ent = get_Sel_entity(succ);
 			ir_type *ent_type;
 
+			/* we are only interested in entities on the frame, NOT
+			   on the value type */
+			if (get_entity_owner(ent) != frame_tp)
+				continue;
+
 			if (get_entity_link(ent) == ADDRESS_TAKEN)
 				continue;
 
