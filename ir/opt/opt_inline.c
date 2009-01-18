@@ -861,17 +861,16 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	mtp = get_entity_type(ent);
 	ctp = get_Call_type(call);
 	if (get_method_n_params(mtp) > get_method_n_params(ctp)) {
-		/* this is a bad feature of C: without a prototype, we can can call a function with less
-		parameters than needed. Currently we don't support this, although it would be
-		to use Unknown than. */
+		/* this is a bad feature of C: without a prototype, we can
+		 * call a function with less parameters than needed. Currently
+		 * we don't support this, although we could use Unknown than. */
 		return 0;
 	}
 
 	/* Argh, compiling C has some bad consequences:
-	   the call type AND the method type might be different.
-	   It is implementation defendant what happens in that case.
-	   We support inlining, if the bitsize of the types matches AND
-	   the same arithmetic is used. */
+	 * It is implementation dependent what happens in that case.
+	 * We support inlining, if the bitsize of the types matches AND
+	 * the same arithmetic is used. */
 	n_params = get_method_n_params(mtp);
 	for (i = n_params - 1; i >= 0; --i) {
 		ir_type *param_tp = get_method_param_type(mtp, i);
