@@ -5031,12 +5031,15 @@ static ir_node *gen_inport(ir_node *node) {
  */
 static ir_node *gen_inner_trampoline(ir_node *node) {
 	ir_node  *ptr       = get_Builtin_param(node, 0);
-	ir_node  *callee    = be_transform_node(get_Builtin_param(node, 1));
+	ir_node  *callee    = get_Builtin_param(node, 1);
 	ir_node  *env       = be_transform_node(get_Builtin_param(node, 2));
 	ir_node  *mem       = get_Builtin_mem(node);
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	ir_node  *val;
+	ir_node  *store;
+	ir_node  *rel;
+	ir_node  *trampoline;
 	ir_node  *in[2];
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ia32_address_t addr;
@@ -5059,26 +5062,57 @@ static ir_node *gen_inner_trampoline(ir_node *node) {
 	addr.mem = be_transform_node(mem);
 
 	/* mov  ecx, <env> */
-	val = ia32_create_Immediate(NULL, 0, 0xB9);
-	addr.mem = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
-			                         addr.index, addr.mem, val);
-
+	val   = ia32_create_Immediate(NULL, 0, 0xB9);
+	store = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
+	                              addr.index, addr.mem, val);
+	set_irn_pinned(store, get_irn_pinned(node));
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_ls_mode(store, mode_Bu);
+	set_address(store, &addr);
+	addr.mem = store;
 	addr.offset += 1;
-	addr.mem = new_bd_ia32_Store(dbgi, new_block, addr.base,
-			                     addr.index, addr.mem, env);
+
+	store = new_bd_ia32_Store(dbgi, new_block, addr.base,
+	                          addr.index, addr.mem, env);
+	set_irn_pinned(store, get_irn_pinned(node));
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_ls_mode(store, mode_Iu);
+	set_address(store, &addr);
+	addr.mem = store;
 	addr.offset += 4;
 
-	/* jmp  <callee> */
-	val = ia32_create_Immediate(NULL, 0, 0xE9);
-	addr.mem = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
-			                         addr.index, addr.mem, val);
+	/* jmp rel <callee> */
+	val   = ia32_create_Immediate(NULL, 0, 0xE9);
+	store = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
+	                             addr.index, addr.mem, val);
+	set_irn_pinned(store, get_irn_pinned(node));
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_ls_mode(store, mode_Bu);
+	set_address(store, &addr);
+	addr.mem = store;
 	addr.offset += 1;
-	in[0] = new_bd_ia32_Store(dbgi, new_block, addr.base,
-		                      addr.index, addr.mem, callee);
 
-	in[1] = be_transform_node(ptr);
+	trampoline = be_transform_node(ptr);
 
-	return new_Tuple(2, in);
+	/* the callee is typically an immediate */
+	if (is_SymConst(callee)) {
+		rel = new_bd_ia32_Const(dbgi, new_block, get_SymConst_entity(callee), 0, -10);
+	} else {
+		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), ia32_create_Immediate(NULL, 0, -10));
+	}
+	rel = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP, nomem, rel, trampoline);
+
+	store = new_bd_ia32_Store(dbgi, new_block, addr.base,
+	                          addr.index, addr.mem, rel);
+	set_irn_pinned(store, get_irn_pinned(node));
+	set_ia32_op_type(store, ia32_AddrModeD);
+	set_ia32_ls_mode(store, mode_Iu);
+	set_address(store, &addr);
+
+	in[0] = store;
+	in[1] = trampoline;
+
+	return new_r_Tuple(current_ir_graph, new_block, 2, in);
 }
 
 /**
