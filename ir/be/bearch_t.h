@@ -538,18 +538,15 @@ struct arch_isa_if_t {
  */
 struct arch_env_t {
 	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;              /** The stack pointer register. */
-	const arch_register_t *bp;              /** The base pointer register. */
-	int                    stack_dir;       /** -1 for decreasing, 1 for increasing. */
-	int                    stack_alignment; /** power of 2 stack alignment */
-	const be_main_env_t   *main_env;        /** the be main environment */
-	int                    spill_cost;      /** cost for a be_Spill node */
-	int                    reload_cost;     /** cost for a be_Reload node */
+	const arch_register_t *sp;               /** The stack pointer register. */
+	const arch_register_t *bp;               /** The base pointer register. */
+	const arch_register_class_t *link_class; /** The static link pointer register class. */
+	int                    stack_dir;        /** -1 for decreasing, 1 for increasing. */
+	int                    stack_alignment;  /** power of 2 stack alignment */
+	const be_main_env_t   *main_env;         /** the be main environment */
+	int                    spill_cost;       /** cost for a be_Spill node */
+	int                    reload_cost;      /** cost for a be_Reload node */
 };
-
-#define arch_env_stack_dir(env)  ((env)->stack_dir)
-#define arch_env_sp(env)         ((env)->sp)
-#define arch_env_bp(env)         ((env)->bp)
 
 static inline unsigned arch_irn_get_n_outs(const ir_node *node)
 {

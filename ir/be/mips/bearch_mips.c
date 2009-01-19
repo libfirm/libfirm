@@ -366,6 +366,7 @@ static mips_isa_t mips_isa_template = {
 		&mips_isa_if,
 		&mips_gp_regs[REG_SP],
 		&mips_gp_regs[REG_FP],
+		&mips_reg_classes[CLASS_mips_gp],
 		-1,		/* stack direction */
 		2,      /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,	/* main environment */

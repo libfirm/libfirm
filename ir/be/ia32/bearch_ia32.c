@@ -1610,6 +1610,7 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_isa_if,            /* isa interface implementation */
 		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
 		&ia32_gp_regs[REG_EBP],  /* base pointer register */
+		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
 		-1,                      /* stack direction */
 		2,                       /* power of two stack alignment, 2^2 == 4 */
 		NULL,                    /* main environment */

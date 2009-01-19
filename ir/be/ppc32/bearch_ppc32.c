@@ -545,6 +545,7 @@ static ppc32_isa_t ppc32_isa_template = {
 		&ppc32_isa_if,           /* isa interface */
 		&ppc32_gp_regs[REG_R1],  /* stack pointer */
 		&ppc32_gp_regs[REG_R31], /* base pointer */
+		&ppc32_reg_classes[CLASS_ppc32_gp],  /* static link pointer class */
 		-1,                      /* stack is decreasing */
 		2,                       /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                    /* main environment */

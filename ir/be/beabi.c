@@ -342,7 +342,7 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
  * @param args      the stack argument layout type
  * @param between   the between layout type
  * @param locals    the method frame type
- * @param stack_dir the stack direction
+ * @param stack_dir the stack direction: < 0 decreasing, > 0 increasing addresses
  * @param param_map an array mapping method argument positions to the stack argument type
  *
  * @return the initialized stack layout
@@ -365,6 +365,8 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 		frame->order[2] = locals;
 	}
 	else {
+		/* typical decreasing stack: locals have the
+		 * lowest addresses, arguments the highest */
 		frame->order[0] = locals;
 		frame->order[2] = args;
 	}
@@ -429,8 +431,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_node *curr_mem          = get_Call_mem(irn);
 	ir_node *bl                = get_nodes_block(irn);
 	int stack_size             = 0;
-	int stack_dir              = arch_env_stack_dir(arch_env);
-	const arch_register_t *sp  = arch_env_sp(arch_env);
+	int stack_dir              = arch_env->stack_dir;
+	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
 	struct obstack *obst       = &env->obst;
@@ -1504,13 +1506,50 @@ struct ent_pos_pair {
 };
 
 typedef struct lower_frame_sels_env_t {
-	ent_pos_pair *value_param_list;        /**< the list of all value param entities */
-	ir_node      *frame;                   /**< the current frame */
-	const arch_register_class_t *sp_class; /**< register class of the stack pointer */
-	ir_type      *value_tp;                /**< the value type if any */
-	ir_type      *frame_tp;                /**< the frame type */
+	ent_pos_pair *value_param_list;          /**< the list of all value param entities */
+	ir_node      *frame;                     /**< the current frame */
+	const arch_register_class_t *sp_class;   /**< register class of the stack pointer */
+	const arch_register_class_t *link_class; /**< register class of the link pointer */
+	ir_type      *value_tp;                  /**< the value type if any */
+	ir_type      *frame_tp;                  /**< the frame type */
+	int          static_link_pos;            /**< argument number of the hidden static link */
 } lower_frame_sels_env_t;
 
+/**
+ * Return an entity from the backend for an value param entity.
+ *
+ * @param ent  an value param type entity
+ * @param ctx  context
+ */
+static ir_entity *get_argument_entity(ir_entity *ent, lower_frame_sels_env_t *ctx)
+{
+	ir_entity *argument_ent = get_entity_link(ent);
+
+	if (argument_ent == NULL) {
+		/* we have NO argument entity yet: This is bad, as we will
+		* need one for backing store.
+		* Create one here.
+		*/
+		ir_type *frame_tp = ctx->frame_tp;
+		unsigned offset   = get_type_size_bytes(frame_tp);
+		ir_type  *tp      = get_entity_type(ent);
+		unsigned align    = get_type_alignment_bytes(tp);
+
+		offset += align - 1;
+		offset &= ~(align - 1);
+
+		argument_ent = copy_entity_own(ent, frame_tp);
+
+		/* must be automatic to set a fixed layout */
+		set_entity_allocation(argument_ent, allocation_automatic);
+		set_entity_offset(argument_ent, offset);
+		offset += get_type_size_bytes(tp);
+
+		set_type_size_bytes(frame_tp, offset);
+		set_entity_link(ent, argument_ent);
+	}
+	return argument_ent;
+}
 /**
  * Walker: Replaces Sels of frame type and
  * value param type entities by FrameAddress.
@@ -1530,35 +1569,9 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			int          pos = 0;
 
 			if (get_entity_owner(ent) == ctx->value_tp) {
-				ir_entity *argument_ent = get_entity_link(ent);
-
 				/* replace by its copy from the argument type */
 				pos = get_struct_member_index(ctx->value_tp, ent);
-
-				if (argument_ent == NULL) {
-					/* we have NO argument entity yet: This is bad, as we will
-					 * need one for backing store.
-					 * Create one here.
-				     */
-					ir_type *frame_tp = ctx->frame_tp;
-					unsigned offset   = get_type_size_bytes(frame_tp);
-					ir_type  *tp      = get_entity_type(ent);
-					unsigned align    = get_type_alignment_bytes(tp);
-
-					offset += align - 1;
-					offset &= ~(align - 1);
-
-					argument_ent = copy_entity_own(ent, frame_tp);
-
-					/* must be automatic to set a fixed layout */
-					set_entity_allocation(argument_ent, allocation_automatic);
-					set_entity_offset(argument_ent, offset);
-					offset += get_type_size_bytes(tp);
-
-					set_type_size_bytes(frame_tp, offset);
-					set_entity_link(ent, argument_ent);
-				}
-				ent = argument_ent;
+				ent = get_argument_entity(ent, ctx);
 			}
 
 			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
@@ -1728,6 +1741,68 @@ static void fix_start_block(ir_graph *irg)
 	panic("Initial exec has no follow block in %+F", irg);
 }
 
+static void lower_outer_frame_sels(ir_node *irn, void *env) {
+	lower_frame_sels_env_t *ctx = env;
+	ir_node                *ptr, *bl, *nw;
+	ir_entity              *ent;
+	int                    pos = 0;
+
+	if (! is_Sel(irn))
+		return;
+	ptr = get_Sel_ptr(irn);
+	if (! is_arg_Proj(ptr))
+		return;
+	if (get_Proj_proj(ptr) != ctx->static_link_pos)
+		return;
+	ent   = get_Sel_entity(irn);
+
+	if (get_entity_owner(ent) == ctx->value_tp) {
+		/* replace by its copy from the argument type */
+		pos = get_struct_member_index(ctx->value_tp, ent);
+		ent = get_argument_entity(ent, ctx);
+	}
+	bl = get_nodes_block(irn);
+	nw = be_new_FrameAddr(ctx->link_class, current_ir_graph, bl, ptr, ent);
+	exchange(irn, nw);
+
+	/* check, if it's a param sel and if have not seen this entity before */
+	if (get_entity_owner(ent) == ctx->value_tp && get_entity_link(ent) == NULL) {
+		ent_pos_pair pair;
+
+		pair.ent  = ent;
+		pair.pos  = pos;
+		pair.next = NULL;
+		ARR_APP1(ent_pos_pair, ctx->value_param_list, pair);
+		/* just a mark */
+		set_entity_link(ent, ctx->value_param_list);
+	}
+}
+
+/**
+ * Fix access to outer local variables.
+ */
+static void fix_outer_variable_access(be_abi_irg_t *env, lower_frame_sels_env_t *ctx)
+{
+	int      i;
+	ir_graph *irg;
+
+	for (i = get_class_n_members(ctx->frame_tp) - 1; i >= 0; --i) {
+		ir_entity *ent = get_class_member(ctx->frame_tp, i);
+
+		if (! is_method_entity(ent))
+			continue;
+
+		/*
+		 * FIXME: find the number of the static link parameter
+		 * for now we assume 0 here
+		 */
+		ctx->static_link_pos = 0;
+
+		irg = get_entity_irg(ent);
+		irg_walk_graph(irg, NULL, lower_outer_frame_sels, ctx);
+	}
+}
+
 /**
  * Modify the irg itself and the frame type.
  */
@@ -1735,7 +1810,7 @@ static void modify_irg(be_abi_irg_t *env)
 {
 	be_abi_call_t *call       = env->call;
 	const arch_env_t *arch_env= env->birg->main_env->arch_env;
-	const arch_register_t *sp = arch_env_sp(arch_env);
+	const arch_register_t *sp = arch_env->sp;
 	ir_graph *irg             = env->birg->irg;
 	ir_node *start_bl;
 	ir_node *end;
@@ -1788,6 +1863,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ctx.value_param_list = NEW_ARR_F(ent_pos_pair, 0);
 	ctx.frame            = get_irg_frame(irg);
 	ctx.sp_class         = env->arch_env->sp->reg_class;
+	ctx.link_class       = env->arch_env->link_class;
 	ctx.frame_tp         = get_irg_frame_type(irg);
 
 	/* we will possible add new entities to the frame: set the layout to undefined */
@@ -1805,6 +1881,11 @@ static void modify_irg(be_abi_irg_t *env)
 	args     = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
 	memset(args, 0, n_params * sizeof(args[0]));
 
+	/*
+	 * for inner function we must now fix access to outer frame entities.
+	 */
+	fix_outer_variable_access(env, &ctx);
+
 	/* Check if a value parameter is transmitted as a register.
 	 * This might happen if the address of an parameter is taken which is
 	 * transmitted in registers.
@@ -1816,6 +1897,7 @@ static void modify_irg(be_abi_irg_t *env)
 	 * a backing store into the first block.
 	 */
 	fix_address_of_parameter_access(env, ctx.value_param_list);
+
 	DEL_ARR_F(ctx.value_param_list);
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
@@ -2438,7 +2520,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		   node.
 		 */
 		ir_entity *ent = arch_get_frame_entity(irn);
-		if (ent) {
+		if (ent != NULL) {
 			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(&env->frame, ent, bias);
 			arch_set_frame_offset(irn, offset);

@@ -652,6 +652,7 @@ static arm_isa_t arm_isa_template = {
 		&arm_isa_if,           /* isa interface */
 		&arm_gp_regs[REG_SP],  /* stack pointer */
 		&arm_gp_regs[REG_R11], /* base pointer */
+		&arm_reg_classes[CLASS_arm_gp],  /* static link pointer class */
 		-1,                    /* stack direction */
 		2,                     /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                  /* main environment */
