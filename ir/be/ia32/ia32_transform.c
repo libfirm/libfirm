@@ -5027,6 +5027,61 @@ static ir_node *gen_inport(ir_node *node) {
 }
 
 /**
+ * Transform a builtin inner trampoline
+ */
+static ir_node *gen_inner_trampoline(ir_node *node) {
+	ir_node  *ptr       = get_Builtin_param(node, 0);
+	ir_node  *callee    = be_transform_node(get_Builtin_param(node, 1));
+	ir_node  *env       = be_transform_node(get_Builtin_param(node, 2));
+	ir_node  *mem       = get_Builtin_mem(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *val;
+	ir_node  *in[2];
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ia32_address_t addr;
+
+	/* construct store address */
+	memset(&addr, 0, sizeof(addr));
+	ia32_create_address_mode(&addr, ptr, 0);
+
+	if (addr.base == NULL) {
+		addr.base = noreg_GP;
+	} else {
+		addr.base = be_transform_node(addr.base);
+	}
+
+	if (addr.index == NULL) {
+		addr.index = noreg_GP;
+	} else {
+		addr.index = be_transform_node(addr.index);
+	}
+	addr.mem = be_transform_node(mem);
+
+	/* mov  ecx, <env> */
+	val = ia32_create_Immediate(NULL, 0, 0xB9);
+	addr.mem = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
+			                         addr.index, addr.mem, val);
+
+	addr.offset += 1;
+	addr.mem = new_bd_ia32_Store(dbgi, new_block, addr.base,
+			                     addr.index, addr.mem, env);
+	addr.offset += 4;
+
+	/* jmp  <callee> */
+	val = ia32_create_Immediate(NULL, 0, 0xE9);
+	addr.mem = new_bd_ia32_Store8Bit(dbgi, new_block, addr.base,
+			                         addr.index, addr.mem, val);
+	addr.offset += 1;
+	in[0] = new_bd_ia32_Store(dbgi, new_block, addr.base,
+		                      addr.index, addr.mem, callee);
+
+	in[1] = be_transform_node(ptr);
+
+	return new_Tuple(2, in);
+}
+
+/**
  * Transform Builtin node.
  */
 static ir_node *gen_Builtin(ir_node *node) {
@@ -5059,6 +5114,8 @@ static ir_node *gen_Builtin(ir_node *node) {
 		return gen_outport(node);
 	case ir_bk_inport:
 		return gen_inport(node);
+	case ir_bk_inner_trampoline:
+		return gen_inner_trampoline(node);
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
 }
@@ -5096,6 +5153,13 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 			assert(get_Proj_proj(proj) == pn_Builtin_M);
 			return new_r_Proj(current_ir_graph, get_nodes_block(new_node),
 				new_node, mode_M, pn_ia32_Inport_M);
+		}
+	case ir_bk_inner_trampoline:
+		if (get_Proj_proj(proj) == pn_Builtin_1_result) {
+			return get_Tuple_pred(new_node, 1);
+		} else {
+			assert(get_Proj_proj(proj) == pn_Builtin_M);
+			return get_Tuple_pred(new_node, 0);
 		}
 	}
 	panic("Builtin %s not implemented in IA32", get_builtin_kind_name(kind));
