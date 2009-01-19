@@ -417,7 +417,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
  * @return non-zero if it's ok to do tail recursion
  */
 static int check_lifetime_of_locals(ir_graph *irg) {
-	ir_node *irg_frame, *irg_val_param_base;
+	ir_node *irg_frame;
 	int i;
 	ir_type *frame_tp = get_irg_frame_type(irg);
 
@@ -425,21 +425,16 @@ static int check_lifetime_of_locals(ir_graph *irg) {
 	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irg_frame, i);
 
-		/* we are only interested in entities on the frame type
-		 * (locals), not on the value type */
-		if (get_entity_owner(get_Sel_entity(succ)) != frame_tp)
-			continue;
+		if (is_Sel(succ)) {
+			/* Check if we have compound arguments.
+			   For now, we cannot handle them, */
+			if (get_entity_owner(get_Sel_entity(succ)) != frame_tp)
+				return 0;
 
-		if (is_Sel(succ) && is_address_taken(succ))
-			return 0;
+			if (is_address_taken(succ))
+				return 0;
+		}
 	}
-
-	/* Check if we have compound arguments.
-	   For now, we cannot handle them, */
-	irg_val_param_base = get_irg_value_param_base(irg);
-	if (get_irn_n_outs(irg_val_param_base) > 0)
-		return 0;
-
 	return 1;
 }
 

@@ -256,11 +256,6 @@ ir_node *get_irg_args(const ir_graph *irg);
 /** Sets the node that represents the argument pointer of the given IR graph. */
 void     set_irg_args(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the value parameter base pointer of the given IR graph. */
-ir_node *get_irg_value_param_base(const ir_graph *irg);
-/** Sets the node that represents the value parameter base pointer of the given IR graph. */
-void     set_irg_value_param_base(ir_graph *irg, ir_node *node);
-
 /** Returns the current block of an IR graph. */
 ir_node *get_irg_current_block(const ir_graph *irg);
 /** Sets the current block of an IR graph. */

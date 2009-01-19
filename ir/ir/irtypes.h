@@ -417,7 +417,6 @@ enum irg_anchors {
 	                              thread local data. */
 	anchor_initial_mem,      /**< initial memory of this graph */
 	anchor_args,             /**< methods arguments */
-	anchor_value_param_base, /**< method value param base */
 	anchor_bad,              /**< bad node of this ir_graph, the one and
 	                              only in this graph */
 	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */

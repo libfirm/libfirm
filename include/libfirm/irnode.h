@@ -319,8 +319,6 @@ typedef enum {
 	pn_Start_P_tls,            /**< Projection on the pointer to the thread local store
 	                                segment containing _all_thread local variables. */
 	pn_Start_T_args,           /**< Projection on all arguments. */
-	pn_Start_P_value_arg_base, /**< Pointer to region of compound value arguments as defined by
-	                                type of this method. */
 	pn_Start_max               /**< number of projections from a Start */
 } pn_Start; /* Projection numbers for Start. */
 
@@ -335,12 +333,6 @@ ir_type *is_frame_pointer(const ir_node *n);
  * Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
  * from Start.  If so returns tls type, else Null. */
 ir_type *is_tls_pointer(const ir_node *n);
-
-/** Test whether arbitrary node is value arg base.
- *
- * Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
- * from Start.   If so returns 1, else 0. */
-int is_value_arg_pointer(const ir_node *n);
 
 /* @@@ no more supported  */
 ir_node **get_Block_cfgpred_arr(ir_node *node);

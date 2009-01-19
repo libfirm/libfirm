@@ -138,10 +138,6 @@ static ir_type *find_type_for_Proj(ir_node *n) {
 		case pn_Start_P_tls:
 			tp = find_pointer_type_to(get_tls_type());
 			break;
-		case pn_Start_P_value_arg_base:
-			DB((dbg, SET_LEVEL_1, "Value arg base proj %ld from Start: unknown type\n", get_irn_node_nr(n)));
-			tp =  firm_unknown_type; /* find_pointer_type_to(get....(get_entity_type(get_irg_entity(get_irn_irg(pred))))); */
-			break;
 		default:
 			DB((dbg, SET_LEVEL_1, "Proj %ld %ld from Start: unknown type\n", get_Proj_proj(n), get_irn_node_nr(n)));
 			tp = firm_unknown_type;

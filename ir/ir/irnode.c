@@ -643,16 +643,6 @@ ir_type *is_tls_pointer(const ir_node *n) {
 	return NULL;
 }
 
-/* Test whether arbitrary node is value arg base, i.e. Proj(pn_Start_P_value_arg_base)
- * from Start.  If so returns 1, else 0. */
-int is_value_arg_pointer(const ir_node *n) {
-	if (is_Proj(n) &&
-		(get_Proj_proj(n) == pn_Start_P_value_arg_base) &&
-		is_Start(get_Proj_pred(n)))
-		return 1;
-	return 0;
-}
-
 /* Returns an array with the predecessors of the Block. Depending on
    the implementation of the graph data structure this can be a copy of
    the internal representation of predecessors as well as the internal

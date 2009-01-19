@@ -305,9 +305,7 @@ static int verify_node_Proj_Start(ir_node *n, ir_node *p) {
 			(proj == pn_Start_M         && mode == mode_M) ||
 			(proj == pn_Start_P_frame_base && mode_is_reference(mode)) ||
 			(proj == pn_Start_P_tls     && mode_is_reference(mode)) ||
-			(proj == pn_Start_T_args    && mode == mode_T) ||
-			(proj == pn_Start_P_value_arg_base && mode_is_reference(mode)) ||
-			(proj == pn_Start_P_value_arg_base && mode == mode_T)    /* FIXME: only one of those */
+			(proj == pn_Start_T_args    && mode == mode_T)
 		),
 		"wrong Proj from Start", 0,
 		show_proj_failure(p);
@@ -690,15 +688,6 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
 						show_proj_mode_failure(p, get_method_param_type(mt, proj));
 						);
 			}
-		} else if (nr == pn_Start_P_value_arg_base) {
-			ASSERT_AND_RET(
-				(proj >= 0 && mode_is_reference(mode)),
-				"wrong Proj from Proj from Start", 0
-				);
-			ASSERT_AND_RET(
-				(proj < get_method_n_params(mt)),
-				"More Projs for args than args in type", 0
-				);
 		}
 		break;
 

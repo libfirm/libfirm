@@ -219,16 +219,6 @@ _set_irg_args(ir_graph *irg, ir_node *node) {
 }
 
 static inline ir_node *
-_get_irg_value_param_base(const ir_graph *irg) {
-	return get_irn_intra_n(irg->anchor, anchor_value_param_base);
-}
-
-static inline void
-_set_irg_value_param_base(ir_graph *irg, ir_node *node) {
-	set_irn_n(irg->anchor, anchor_value_param_base, node);
-}
-
-static inline ir_node *
 _get_irg_bad(const ir_graph *irg) {
 	return get_irn_intra_n(irg->anchor, anchor_bad);
 }
@@ -557,8 +547,6 @@ _get_interprocedural_view(void) {
 #define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
 #define get_irg_args(irg)                     _get_irg_args(irg)
 #define set_irg_args(irg, node)               _set_irg_args(irg, node)
-#define get_irg_value_param_base(irg)         _get_irg_value_param_base(irg)
-#define set_irg_value_param_base(irg, node)   _set_irg_value_param_base(irg, node)
 #define get_irg_bad(irg)                      _get_irg_bad(irg)
 #define set_irg_bad(irg, node)                _set_irg_bad(irg, node)
 #define get_irg_no_mem(irg)                   _get_irg_no_mem(irg)

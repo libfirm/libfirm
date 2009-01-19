@@ -768,10 +768,16 @@ static void copy_preds_inline(ir_node *n, void *env) {
  */
 static void find_addr(ir_node *node, void *env) {
 	int *allow_inline = env;
-	if (is_Proj(node) &&
-			is_Start(get_Proj_pred(node)) &&
-			get_Proj_proj(node) == pn_Start_P_value_arg_base) {
-		*allow_inline = 0;
+	if (is_Sel(node)) {
+		ir_graph *irg = current_ir_graph;
+		if (get_Sel_ptr(node) == get_irg_frame(irg)) {
+			/* access to frame */
+			ir_entity *ent = get_Sel_entity(node);
+			if (get_entity_owner(ent) != get_irg_frame_type(irg)) {
+				/* access to value_type */
+				*allow_inline = 0;
+			}
+		}
 	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
 		/* From GCC:
 		 * Refuse to inline alloca call unless user explicitly forced so as this
@@ -977,9 +983,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	in[pn_Start_P_frame_base]     = get_irg_frame(irg);
 	in[pn_Start_P_tls]            = get_irg_tls(irg);
 	in[pn_Start_T_args]           = new_Tuple(n_params, args_in);
-	/* in[pn_Start_P_value_arg_base] = ??? */
-	assert(pn_Start_P_value_arg_base == pn_Start_max - 1 && "pn_Start_P_value_arg_base not supported, fix");
-	pre_call = new_Tuple(pn_Start_max - 1, in);
+	pre_call = new_Tuple(pn_Start_max, in);
 	post_call = call;
 
 	/* --

@@ -1506,7 +1506,6 @@ struct ent_pos_pair {
 typedef struct lower_frame_sels_env_t {
 	ent_pos_pair *value_param_list;        /**< the list of all value param entities */
 	ir_node      *frame;                   /**< the current frame */
-	ir_node      *param_base;              /**< the current value parameter base */
 	const arch_register_class_t *sp_class; /**< register class of the stack pointer */
 	ir_type      *value_tp;                /**< the value type if any */
 	ir_type      *frame_tp;                /**< the frame type */
@@ -1524,7 +1523,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 	if (is_Sel(irn)) {
 		ir_node *ptr = get_Sel_ptr(irn);
 
-		if (ptr == ctx->frame || ptr == ctx->param_base) {
+		if (ptr == ctx->frame) {
 			ir_entity    *ent = get_Sel_entity(irn);
 			ir_node      *bl  = get_nodes_block(irn);
 			ir_node      *nw;
@@ -1755,7 +1754,6 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *reg_params_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
-	ir_node *value_param_base;
 	const ir_edge_t *edge;
 	ir_type *arg_type, *bet_type, *tp;
 	lower_frame_sels_env_t ctx;
@@ -1789,7 +1787,6 @@ static void modify_irg(be_abi_irg_t *env)
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.value_param_list = NEW_ARR_F(ent_pos_pair, 0);
 	ctx.frame            = get_irg_frame(irg);
-	ctx.param_base       = get_irg_value_param_base(irg);
 	ctx.sp_class         = env->arch_env->sp->reg_class;
 	ctx.frame_tp         = get_irg_frame_type(irg);
 
@@ -1801,11 +1798,6 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* fix the frame type layout again */
 	set_type_state(ctx.frame_tp, layout_fixed);
-
-	/* value_param_base anchor is not needed anymore now */
-	value_param_base = get_irg_value_param_base(irg);
-	kill_node(value_param_base);
-	set_irg_value_param_base(irg, new_r_Bad(irg));
 
 	env->regs  = pmap_create();
 
