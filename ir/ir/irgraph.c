@@ -748,6 +748,13 @@ void
 	_set_irg_frame_type(irg, ftp);
 }
 
+/* Returns the value parameter type of an IR graph. */
+ir_type *get_irg_value_param_type(ir_graph *irg) {
+	ir_entity *ent = get_irg_entity(irg);
+	ir_type   *mtp = get_entity_type(ent);
+	return get_method_value_param_type(mtp);
+}
+
 int
 get_irg_n_locs(ir_graph *irg) {
 	if (get_opt_precise_exc_context())

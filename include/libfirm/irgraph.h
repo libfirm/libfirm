@@ -202,6 +202,9 @@ ir_type *get_irg_frame_type(ir_graph *irg);
 /** Sets the frame type of an IR graph. */
 void     set_irg_frame_type(ir_graph *irg, ir_type *ftp);
 
+/** Returns the value parameter type of an IR graph. */
+ir_type *get_irg_value_param_type(ir_graph *irg);
+
 /** Returns the start block of an IR graph. */
 ir_node *get_irg_start_block(const ir_graph *irg);
 /** Sets the start block of an IR graph. */
