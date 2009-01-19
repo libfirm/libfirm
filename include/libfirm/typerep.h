@@ -2593,8 +2593,6 @@ void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env);
    Then iterates to subclasses.  Executes post after return from
    subclass.
    Does not visit global type, frame types.
-
-   @bug ?? something is wrong with this.
 */
 void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
                           void *env);
