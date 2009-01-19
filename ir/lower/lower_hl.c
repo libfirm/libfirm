@@ -59,10 +59,10 @@ static void lower_sel(ir_node *sel) {
 	owner = get_entity_owner(ent);
 
 	/*
-	 * Cannot handle value param entities here.
+	 * Cannot handle value param entities or frame type entities here.
 	 * Must be lowered by the backend.
 	 */
-	if (is_value_param_type(owner))
+	if (is_value_param_type(owner) || is_frame_type(owner))
 		return;
 
 	dbg  = get_irn_dbg_info(sel);
