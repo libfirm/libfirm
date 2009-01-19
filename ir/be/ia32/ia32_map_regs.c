@@ -154,6 +154,9 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) 
 const arch_register_t *ia32_get_RegParam_reg(unsigned cc, size_t nr,
                                              const ir_mode *mode)
 {
+	if ((cc & cc_this_call) && nr == 0)
+		return gpreg_param_reg_this[0];
+
 	if (! (cc & cc_reg_param))
 		return NULL;
 

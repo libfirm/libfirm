@@ -1838,20 +1838,20 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
 
+	cc = get_method_calling_convention(method_type);
 	if (get_method_variadicity(method_type) == variadicity_variadic) {
 		/* pass all parameters of a variadic function on the stack */
-		cc = cc_cdecl_set;
+		cc = cc_cdecl_set | (cc & cc_this_call);
 	} else {
-		cc = get_method_calling_convention(method_type);
 		if (get_method_additional_properties(method_type) & mtp_property_private &&
 		    ia32_cg_config.optimize_cc) {
 			/* set the calling conventions to register parameter */
-			cc = (cc & ~cc_bits) | cc_reg_param;
+			cc = (cc & ~(cc_bits|cc_this_call)) | cc_reg_param;
 		}
 	}
 
 	/* we have to pop the shadow parameter ourself for compound calls */
-	if( (get_method_calling_convention(method_type) & cc_compound_ret)
+	if ( (get_method_calling_convention(method_type) & cc_compound_ret)
 			&& !(cc & cc_reg_param)) {
 		pop_amount += get_mode_size_bytes(mode_P_data);
 	}
