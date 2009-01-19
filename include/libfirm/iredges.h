@@ -93,13 +93,6 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last
 ir_node *get_edge_src_irn(const ir_edge_t *edge);
 
 /**
- * Get the number of edges pointing to a node.
- * @param irn The node.
- * @return The number of edges pointing to this node.
- */
-int get_irn_n_edges(const ir_node *irn);
-
-/**
  * Get the position of an edge.
  * @param edge The edge.
  * @return The position in the in array of that edges source.
