@@ -87,7 +87,8 @@ void opt_frame_irg(ir_graph *irg) {
 	list = NULL;
 	for (i = n - 1; i >= 0; --i) {
 		ent = get_class_member(frame_tp, i);
-		if (get_entity_link(ent) == NULL) {
+		/* beware of inner functions: those are NOT unused */
+		if (get_entity_link(ent) == NULL && !is_method_entity(ent)) {
 			set_entity_link(ent, list);
 			list = ent;
 		}
