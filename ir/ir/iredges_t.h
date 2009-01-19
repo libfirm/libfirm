@@ -78,7 +78,9 @@ struct _ir_edge_t {
 */
 static inline const ir_edge_t *_get_irn_out_edge_first_kind(const ir_node *irn, ir_edge_kind_t kind)
 {
-	const struct list_head *head = _get_irn_outs_head(irn, kind);
+	const struct list_head *head;
+	assert(edges_activated_kind(get_irn_irg(irn), kind));
+	head = _get_irn_outs_head(irn, kind);
 	return list_empty(head) ? NULL : list_entry(head->next, ir_edge_t, list);
 }
 
