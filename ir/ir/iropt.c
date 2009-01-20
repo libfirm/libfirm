@@ -5768,7 +5768,8 @@ static ir_node *transform_node_Call(ir_node *call) {
 	if (var == variadicity_variadic) {
 		set_method_first_variadic_param_index(ctp, get_method_first_variadic_param_index(mtp) + 1);
 	}
-	set_method_calling_convention(ctp, get_method_calling_convention(mtp));
+	/* When we resolve a trampoline, the function must be called by a this-call */
+	set_method_calling_convention(ctp, get_method_calling_convention(mtp) | cc_this_call);
 	set_method_additional_properties(ctp, get_method_additional_properties(mtp));
 
 	adr = get_Builtin_param(callee, 1);
