@@ -43,13 +43,15 @@
 #include "pset_new.h"
 #include "array.h"
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Walk over an interprocedural graph (callgraph).
  * Visits only graphs in irg_set.
  */
 static void irg_walk_cg(ir_node * node, ir_visited_t visited,
                         pset_new_t *irg_set, irg_walk_func *pre,
-                        irg_walk_func *post, void * env) {
+                        irg_walk_func *post, void * env)
+{
 	int i;
 	ir_graph * rem = current_ir_graph;
 	ir_node * pred;
@@ -117,7 +119,7 @@ static void irg_walk_cg(ir_node * node, ir_visited_t visited,
 
 	current_ir_graph = rem;
 }
-
+#endif
 
 /**
  * Insert all ir_graphs in irg_set, that are (transitive) reachable.
@@ -468,6 +470,7 @@ switch_irg(ir_node *n, int index) {
 	return old_current;
 }
 
+#ifdef INTERPROCEDURAL_VIEW
 static void
 cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
@@ -493,7 +496,6 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 	}
 }
 
-#ifdef INTERPROCEDURAL_VIEW
 /* Walks all irgs in interprocedural view.  Visits each node only once. */
 void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 	int i;
