@@ -214,8 +214,11 @@ static void remove_empty_block(ir_node *block)
 			assert(get_Block_MacroBlock(node) == block && "Wrong Block->Block edge");
 			continue;
 		}
+		/* we simply kill Pins, because there are some strange interactions
+		 * between condeval, which produce PhiMs with Pins, we simply kill
+		 * the pins here, everything is scheduled anyway */
 		if (is_Pin(node)) {
-			set_nodes_block(node, succ_block);
+			exchange(node, get_Pin_op(node));
 			continue;
 		}
 		if (is_Sync(node)) {
