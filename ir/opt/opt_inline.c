@@ -931,6 +931,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	set_irg_doms_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
+	set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 
 	/* -- Check preconditions -- */
 	assert(is_Call(call));
