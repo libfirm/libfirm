@@ -5708,7 +5708,79 @@ static ir_node *transform_node_Sync(ir_node *n) {
 	add_identities(current_ir_graph->value_table, n);
 
 	return n;
-}
+}  /* transform_node_Sync */
+
+/**
+ * optimize a trampoline Call into a direct Call
+ */
+static ir_node *transform_node_Call(ir_node *call) {
+	ir_node  *callee = get_Call_ptr(call);
+	ir_node  *adr, *mem, *res, *bl, **in;
+	ir_type  *ctp, *mtp, *tp;
+	ident    *id;
+	dbg_info *db;
+	int      i, n_res, n_param;
+	variadicity var;
+
+	if (! is_Proj(callee))
+		return call;
+	callee = get_Proj_pred(callee);
+	if (! is_Builtin(callee))
+		return call;
+	if (get_Builtin_kind(callee) != ir_bk_inner_trampoline)
+		return call;
+
+	mem = get_Call_mem(call);
+
+	if (skip_Proj(mem) == callee) {
+		/* memory is routed to the trampoline, skip */
+		mem = get_Builtin_mem(callee);
+	}
+
+	/* build a new call type */
+	mtp = get_Call_type(call);
+	id  = get_type_ident(mtp);
+	id  = id_mangle(new_id_from_chars("T_", 2), id);
+	db  = get_type_dbg_info(mtp);
+
+	n_res   = get_method_n_ress(mtp);
+	n_param = get_method_n_params(mtp);
+	ctp     = new_d_type_method(id, n_param + 1, n_res, db);
+
+	for (i = 0; i < n_res; ++i)
+		set_method_res_type(ctp, i, get_method_res_type(mtp, i));
+
+	NEW_ARR_A(ir_node *, in, n_param + 1);
+
+	/* FIXME: we don't need a new pointer type in every step */
+	tp = get_irg_frame_type(current_ir_graph);
+	id = id_mangle(get_type_ident(tp), new_id_from_chars("_ptr", 4));
+	tp = new_type_pointer(id, tp, mode_P_data);
+	set_method_param_type(ctp, 0, tp);
+
+	in[0] = get_Builtin_param(callee, 2);
+	for (i = 0; i < n_param; ++i) {
+		set_method_param_type(ctp, i + 1, get_method_param_type(mtp, i));
+		in[i + 1] = get_Call_param(call, i);
+	}
+	var = get_method_variadicity(mtp);
+	set_method_variadicity(ctp, var);
+	if (var == variadicity_variadic) {
+		set_method_first_variadic_param_index(ctp, get_method_first_variadic_param_index(mtp) + 1);
+	}
+	set_method_calling_convention(ctp, get_method_calling_convention(mtp));
+	set_method_additional_properties(ctp, get_method_additional_properties(mtp));
+
+	adr = get_Builtin_param(callee, 1);
+
+	db  = get_irn_dbg_info(call);
+	bl  = get_nodes_block(call);
+
+	res = new_rd_Call(db, current_ir_graph, bl, mem, adr, n_param + 1, in, ctp);
+	if (get_irn_pinned(call) == op_pin_state_floats)
+		set_irn_pinned(res, op_pin_state_floats);
+	return res;
+}  /* transform_node_Call */
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -5790,6 +5862,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(End);
 	CASE(Mux);
 	CASE(Sync);
+	CASE(Call);
 	default:
 	  /* leave NULL */;
 	}
