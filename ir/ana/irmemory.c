@@ -909,16 +909,19 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
  */
 static void analyse_irg_entity_usage(ir_graph *irg) {
 	ir_type *ft = get_irg_frame_type(irg);
-	ir_node *irg_frame;
-	int i;
+	ir_node *irg_frame, *args, *arg;
+	int i, j, k, static_link_arg;
 
 	/* set initial state to not_taken, as this is the "smallest" state */
 	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
-		ir_entity       *ent   = get_class_member(ft, i);
-		ir_entity_usage  flags =
-			get_entity_stickyness(ent) == stickyness_sticky ? ir_usage_unknown : 0;
+		ir_entity *ent = get_class_member(ft, i);
 
-		set_entity_usage(ent, flags);
+		/* methods can only be analyzed globally */
+		if (! is_method_entity(ent)) {
+			ir_entity_usage  flags =
+				get_entity_stickyness(ent) == stickyness_sticky ? ir_usage_unknown : 0;
+			set_entity_usage(ent, flags);
+		}
 	}
 
 	assure_irg_outs(irg);
@@ -938,6 +941,43 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 		flags |= determine_entity_usage(succ, entity);
 		set_entity_usage(entity, flags);
 	}
+
+	/* check inner functions accessing outer frame */
+	static_link_arg = 0;
+	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
+		ir_entity *ent = get_class_member(ft, i);
+
+		if (is_method_entity(ent)) {
+			ir_graph *inner_irg = get_entity_irg(ent);
+			ir_node  *args;
+
+			assure_irg_outs(inner_irg);
+			args = get_irg_args(inner_irg);
+			for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
+				ir_node *arg = get_irn_out(args, j);
+
+				if (get_Proj_proj(arg) == static_link_arg) {
+					for (k = get_irn_n_outs(arg) - 1; k >= 0; --k) {
+						ir_node *succ = get_irn_out(arg, k);
+
+						if (is_Sel(succ)) {
+							ir_entity *entity = get_Sel_entity(succ);
+
+							if (get_entity_owner(entity) == ft) {
+								/* found an access to the outer frame */
+								ir_entity_usage flags;
+
+								flags  = get_entity_usage(entity);
+								flags |= determine_entity_usage(succ, entity);
+								set_entity_usage(entity, flags);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 
 	/* now computed */
 	irg->entity_usage_state = ir_entity_usage_computed;

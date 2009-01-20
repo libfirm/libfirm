@@ -319,7 +319,7 @@ static void *ADDRESS_TAKEN = &_x;
 static int find_possible_replacements(ir_graph *irg) {
 	ir_node *irg_frame;
 	ir_type *frame_tp;
-	int     i;
+	int     i, j, k, static_link_arg;
 	int     res = 0;
 
 	/*
@@ -329,6 +329,38 @@ static int find_possible_replacements(ir_graph *irg) {
 	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(frame_tp, i);
 		set_entity_link(ent, NULL);
+	}
+
+	/* check for inner functions:
+	 * FIXME: need a way to get the argument position for the static link */
+	static_link_arg = 0;
+	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
+		ir_entity *ent = get_class_member(frame_tp, i);
+		if (is_method_entity(ent)) {
+			ir_graph *inner_irg = get_entity_irg(ent);
+			ir_node  *args;
+
+			assure_irg_outs(inner_irg);
+			args = get_irg_args(inner_irg);
+			for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
+				ir_node *arg = get_irn_out(args, j);
+
+				if (get_Proj_proj(arg) == static_link_arg) {
+					for (k = get_irn_n_outs(arg) - 1; k >= 0; --k) {
+						ir_node *succ = get_irn_out(arg, k);
+
+						if (is_Sel(succ)) {
+							ir_entity *ent = get_Sel_entity(succ);
+
+							if (get_entity_owner(ent) == frame_tp) {
+								/* found an access to the outer frame */
+								set_entity_link(ent, ADDRESS_TAKEN);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/*
@@ -652,11 +684,11 @@ int scalar_replacement_opt(ir_graph *irg) {
 
 	/* we use the link firld to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_reserve_resources(irp,  IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	/* Find possible scalar replacements */
 	if (find_possible_replacements(irg)) {
-		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %s\n", get_entity_name(get_irg_entity(irg))));
+		DB((dbg, SET_LEVEL_1, "Scalar Replacement: %+F\n", irg));
 
 		/* Insert in set the scalar replacements. */
 		irg_frame = get_irg_frame(irg);
