@@ -1792,6 +1792,8 @@ static void fix_outer_variable_access(be_abi_irg_t *env, lower_frame_sels_env_t 
 
 		if (! is_method_entity(ent))
 			continue;
+		if (get_entity_peculiarity(ent) == peculiarity_description)
+			continue;
 
 		/*
 		 * FIXME: find the number of the static link parameter
@@ -2658,7 +2660,7 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(frame_tp, i);
 
-		if (is_method_entity(ent)) {
+		if (is_method_entity(ent) && get_entity_peculiarity(ent) != peculiarity_description) {
 			ir_graph *irg = get_entity_irg(ent);
 
 			irg_walk_graph(irg, NULL, lower_outer_frame_sels, env);
