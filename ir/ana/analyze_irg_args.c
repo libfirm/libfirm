@@ -20,21 +20,19 @@
 /**
  * @file
  * @brief      read/write analyze of graph argument, which have mode reference.
- * @author     Beyhan Veliev, Michael Beck
+ * @author     Beyhan Veliev
  * @version    $Id$
  */
 #include "config.h"
 
 #include <stdlib.h>
 
-#include "adt/raw_bitset.h"
 #include "irouts.h"
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "array_t.h"
 #include "irprog.h"
 #include "entity_t.h"
-#include "irgwalk.h"
 
 #include "analyze_irg_args.h"
 
@@ -493,110 +491,6 @@ unsigned get_method_param_weight(ir_entity *ent, int pos)
 		return ent->attr.mtd_attr.param_weight[pos];
 	else
 		return null_weight;
-}
-
-typedef struct walk_env {
-	unsigned *marks;      /**< raw bitset for nodes that could be analysed */
-	unsigned *param_mask; /**< raw bitset of constant parameters */
-	unsigned mask_len;    /**< length of the parameter bitmask */
-	unsigned weight;      /**< the accumulated weight */
-} walk_env;
-
-/**
- * Walker, evaluates possible constant folding
- */
-static void evaluate_weight(ir_node *irn, void *ctx) {
-	walk_env *env = ctx;
-	int      i, n;
-	ir_node  *ptr;
-
-	if (is_arg_Proj(irn)) {
-		unsigned argnum = (unsigned)get_Proj_proj(irn);
-
-		if (argnum < env->mask_len) {
-			if (rbitset_is_set(env->param_mask, argnum)) {
-				/* is a constant parameter */
-				rbitset_set(env->marks, get_irn_idx(irn));
-			}
-		}
-		return;
-	}
-	if (is_irn_constlike(irn)) {
-		/* is a constant by itself */
-		rbitset_set(env->marks, get_irn_idx(irn));
-		return;
-	}
-
-	if (is_Block(irn))
-		return;
-
-	/* handle some special cases */
-	switch (get_irn_opcode(irn)) {
-	case iro_Div:
-	case iro_Quot:
-	case iro_Mod:
-	case iro_DivMod:
-		/* skip the memory input of these nodes */
-		assert(pn_Generic_M_regular == 0);
-		n = 1;
-		break;
-	case iro_Call:
-		ptr = get_Call_ptr(irn);
-		if (! is_SymConst(ptr) && rbitset_is_set(env->marks, get_irn_idx(ptr))) {
-			/* the arguments is used as an pointer input for a call,
-			we can probably change an indirect Call into a direct one. */
-			env->weight += indirect_call_weight;
-		}
-		n = 2;
-		break;
-	default:
-		n = 0;
-		break;
-	}
-	for (i = get_irn_arity(irn) - 1; i >= n; --i) {
-		ir_node *pred = get_irn_n(irn, i);
-
-		if (! rbitset_is_set(env->marks, get_irn_idx(pred))) {
-			/* not constant predecessor ... */
-			return;
-		}
-	}
-
-	/* all predecessors are constant, we probably can fold this node */
-	rbitset_set(env->marks, get_irn_idx(irn));
-
-	if (is_binop(irn)) {
-		env->weight += const_binop_weight;
-	} else if (is_unop(irn)) {
-		env->weight += const_binop_weight;
-	} else if (is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-		if (is_Cmp(pred)) {
-			env->weight += const_cmp_weight;
-		} else if (is_Cond(pred)) {
-			/* the argument is used for a SwitchCond, a big win */
-			env->weight += const_cmp_weight;
-		}
-	}
-}
-
-/**
- *
- */
-unsigned analyze_irg_param_weights(ir_graph *irg, unsigned *bitmask, unsigned len) {
-	unsigned nodes = get_irg_last_idx(irg);
-	unsigned *marks = rbitset_malloc(nodes);
-	walk_env env;
-
-	env.marks      = marks;
-	env.param_mask = bitmask;
-	env.mask_len   = len;
-	env.weight     = null_weight;
-
-	irg_walk_graph(irg, NULL, evaluate_weight, &env);
-
-	xfree(marks);
-	return env.weight;
 }
 
 /**

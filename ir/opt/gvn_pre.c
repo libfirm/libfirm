@@ -407,10 +407,9 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		if (trans == NULL)
 			trans = leader;
 
-		if (is_Phi(trans) && get_nodes_block(trans) == block) {
-			ir_node *trans_pred = get_Phi_pred(trans, pos);
-			set_irn_n(nn, i, trans_pred);
-		} else
+		if (is_Phi(trans) && get_nodes_block(trans) == block)
+			set_irn_n(nn, i, get_Phi_pred(trans, pos));
+		else
 			set_irn_n(nn, i, trans);
 	}
 	nn = optimize_node(nn);
