@@ -1741,9 +1741,12 @@ static void fix_start_block(ir_graph *irg)
 	panic("Initial exec has no follow block in %+F", irg);
 }
 
-static void lower_outer_frame_sels(ir_node *irn, void *env) {
+/**
+ * Update the entity of Sels to the outer value parameters.
+ */
+static void update_outer_frame_sels(ir_node *irn, void *env) {
 	lower_frame_sels_env_t *ctx = env;
-	ir_node                *ptr, *bl, *nw;
+	ir_node                *ptr;
 	ir_entity              *ent;
 	int                    pos = 0;
 
@@ -1760,21 +1763,19 @@ static void lower_outer_frame_sels(ir_node *irn, void *env) {
 		/* replace by its copy from the argument type */
 		pos = get_struct_member_index(ctx->value_tp, ent);
 		ent = get_argument_entity(ent, ctx);
-	}
-	bl = get_nodes_block(irn);
-	nw = be_new_FrameAddr(ctx->link_class, current_ir_graph, bl, ptr, ent);
-	exchange(irn, nw);
+		set_Sel_entity(irn, ent);
 
-	/* check, if it's a param sel and if have not seen this entity before */
-	if (get_entity_owner(ent) == ctx->value_tp && get_entity_link(ent) == NULL) {
-		ent_pos_pair pair;
+		/* check, if we have not seen this entity before */
+		if (get_entity_link(ent) == NULL) {
+			ent_pos_pair pair;
 
-		pair.ent  = ent;
-		pair.pos  = pos;
-		pair.next = NULL;
-		ARR_APP1(ent_pos_pair, ctx->value_param_list, pair);
-		/* just a mark */
-		set_entity_link(ent, ctx->value_param_list);
+			pair.ent  = ent;
+			pair.pos  = pos;
+			pair.next = NULL;
+			ARR_APP1(ent_pos_pair, ctx->value_param_list, pair);
+			/* just a mark */
+			set_entity_link(ent, ctx->value_param_list);
+		}
 	}
 }
 
@@ -1799,7 +1800,7 @@ static void fix_outer_variable_access(be_abi_irg_t *env, lower_frame_sels_env_t 
 		ctx->static_link_pos = 0;
 
 		irg = get_entity_irg(ent);
-		irg_walk_graph(irg, NULL, lower_outer_frame_sels, ctx);
+		irg_walk_graph(irg, NULL, update_outer_frame_sels, ctx);
 	}
 }
 
@@ -2598,9 +2599,45 @@ static void stack_bias_walker(ir_node *bl, void *data)
 	}
 }
 
+/**
+ * Walker: finally lower all Sels of outer frame or parameter
+ * entities.
+ */
+static void lower_outer_frame_sels(ir_node *sel, void *ctx) {
+	be_abi_irg_t *env = ctx;
+	ir_node      *ptr;
+	ir_entity    *ent;
+	ir_type      *owner;
+
+	if (! is_Sel(sel))
+		return;
+
+	ent   = get_Sel_entity(sel);
+	owner = get_entity_owner(ent);
+	ptr   = get_Sel_ptr(sel);
+
+	if (owner == env->frame.frame_type || owner == env->frame.arg_type) {
+		/* found access to outer frame or arguments */
+		int offset = get_stack_entity_offset(&env->frame, ent, 0);
+
+		if (offset != 0) {
+			ir_node  *bl   = get_nodes_block(sel);
+			dbg_info *dbgi = get_irn_dbg_info(sel);
+			ir_mode  *mode = get_irn_mode(sel);
+			ir_mode  *mode_UInt = get_reference_mode_unsigned_eq(mode);
+			ir_node  *cnst = new_r_Const_long(current_ir_graph, mode_UInt, offset);
+
+			ptr = new_rd_Add(dbgi, current_ir_graph, bl, ptr, cnst, mode);
+		}
+		exchange(sel, ptr);
+	}
+}
+
 void be_abi_fix_stack_bias(be_abi_irg_t *env)
 {
-	ir_graph          *irg   = env->birg->irg;
+	ir_graph          *irg = env->birg->irg;
+	ir_type           *frame_tp;
+	int               i;
 	struct bias_walk  bw;
 
 	stack_frame_compute_initial_offset(&env->frame);
@@ -2614,6 +2651,19 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	bw.env = env;
 	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
+
+	/* fix now inner functions: these still have Sel node to outer
+	   frame and parameter entities */
+	frame_tp = get_irg_frame_type(irg);
+	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
+		ir_entity *ent = get_class_member(frame_tp, i);
+
+		if (is_method_entity(ent)) {
+			ir_graph *irg = get_entity_irg(ent);
+
+			irg_walk_graph(irg, NULL, lower_outer_frame_sels, env);
+		}
+	}
 }
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg)
