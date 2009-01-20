@@ -5720,7 +5720,7 @@ static ir_node *transform_node_Call(ir_node *call) {
 	ident    *id;
 	dbg_info *db;
 	int      i, n_res, n_param;
-	variadicity var;
+	ir_variadicity var;
 
 	if (! is_Proj(callee))
 		return call;

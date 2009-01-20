@@ -1390,7 +1390,7 @@ ir_type *get_method_value_res_type(const ir_type *method) {
 }
 
 /* Returns the null-terminated name of this variadicity. */
-const char *get_variadicity_name(variadicity vari) {
+const char *get_variadicity_name(ir_variadicity vari) {
 #define X(a)    case a: return #a
 	switch (vari) {
 	X(variadicity_non_variadic);
@@ -1401,12 +1401,12 @@ const char *get_variadicity_name(variadicity vari) {
 #undef X
 }
 
-variadicity get_method_variadicity(const ir_type *method) {
+ir_variadicity get_method_variadicity(const ir_type *method) {
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.variadicity;
 }
 
-void set_method_variadicity(ir_type *method, variadicity vari) {
+void set_method_variadicity(ir_type *method, ir_variadicity vari) {
 	assert(method && (method->type_op == type_method));
 	method->attr.ma.variadicity = vari;
 }

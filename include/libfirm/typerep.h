@@ -1888,19 +1888,19 @@ ir_type *get_method_value_res_type(const ir_type *method);
  * variable amount of arguments (e.g. C's printf). Default is
  * non_variadic.
  */
-typedef enum variadicity {
-  variadicity_non_variadic, /**< non variadic */
-  variadicity_variadic      /**< variadic */
-} variadicity;
+typedef enum ir_variadicity {
+	variadicity_non_variadic, /**< non variadic */
+	variadicity_variadic      /**< variadic */
+} ir_variadicity;
 
 /** Returns the null-terminated name of this variadicity. */
-const char *get_variadicity_name(variadicity vari);
+const char *get_variadicity_name(ir_variadicity vari);
 
 /** Returns the variadicity of a method. */
-variadicity get_method_variadicity(const ir_type *method);
+ir_variadicity get_method_variadicity(const ir_type *method);
 
 /** Sets the variadicity of a method. */
-void set_method_variadicity(ir_type *method, variadicity vari);
+void set_method_variadicity(ir_type *method, ir_variadicity vari);
 
 /**
  * Returns the first variadic parameter index of a type.

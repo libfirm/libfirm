@@ -86,7 +86,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	ident *id;
 	add_hidden hidden_params;
 	int        changed = 0;
-	variadicity var;
+	ir_variadicity var;
 
 	if (is_lowered_type(mtp)) {
 		/* the type is already lowered. Not handled yet. */
