@@ -541,6 +541,7 @@ static void Detotalise(ir_graph* irg)
 #endif
 
 
+#if 0
 static void AddSyncPreds(ir_nodeset_t* preds, ir_node* sync)
 {
 	size_t n = get_Sync_n_preds(sync);
@@ -556,7 +557,6 @@ static void AddSyncPreds(ir_nodeset_t* preds, ir_node* sync)
 	}
 }
 
-#if 0
 static void NormaliseSync(ir_node* node, void* env)
 {
 	ir_nodeset_t preds;

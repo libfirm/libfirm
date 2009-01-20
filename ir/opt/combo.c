@@ -328,7 +328,7 @@ static void check_opcode(const partition_t *Z) {
 				assert(key.mode == get_Load_mode(irn));
 				break;
 			case iro_Builtin:
-				assert(key.u.intVal == get_Builtin_kind(irn));
+				assert(key.u.intVal == (int) get_Builtin_kind(irn));
 				break;
 			default:
 				break;
