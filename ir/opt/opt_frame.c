@@ -78,7 +78,9 @@ void opt_frame_irg(ir_graph *irg) {
 			sel = get_irn_out(frame, i);
 			if (is_Sel(sel)) {
 				ent = get_Sel_entity(sel);
-				set_entity_link(ent, ent);
+				/* only entities on the frame */
+				if (get_entity_owner(ent) == frame_tp)
+					set_entity_link(ent, ent);
 			}
 		}
 	}
