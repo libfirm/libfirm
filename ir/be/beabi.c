@@ -1782,10 +1782,12 @@ static void update_outer_frame_sels(ir_node *irn, void *env) {
 /**
  * Fix access to outer local variables.
  */
-static void fix_outer_variable_access(be_abi_irg_t *env, lower_frame_sels_env_t *ctx)
+static void fix_outer_variable_access(be_abi_irg_t *env,
+                                      lower_frame_sels_env_t *ctx)
 {
 	int      i;
 	ir_graph *irg;
+	(void) env;
 
 	for (i = get_class_n_members(ctx->frame_tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(ctx->frame_tp, i);
