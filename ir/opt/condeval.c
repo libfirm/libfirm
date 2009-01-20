@@ -727,6 +727,7 @@ void opt_cond_eval(ir_graph* irg)
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
+		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 
 		/* Dead code might be created. Optimize it away as it is dangerous
 		 * to call optimize_df() an dead code. */
