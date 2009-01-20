@@ -143,10 +143,10 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
 			free_loop_information(irg);
 		}
 		if ((get_entity_visibility(ent) == visibility_local) && (get_entity_link(ent) != MARK)) {
-			remove_irp_irg(irg);
-			set_entity_peculiarity(ent, peculiarity_description);
 
 			DB((dbg, LEVEL_1, "  freeing method %+F\n",	ent));
+			remove_irp_irg(irg);
+			set_entity_peculiarity(ent, peculiarity_description);
 		}
 		set_entity_link(ent, NULL);
 	}
