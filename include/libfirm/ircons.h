@@ -4481,6 +4481,12 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,
                  int n_clobber, ident *clobber[], ident *asm_text);
 
+/** Constructor for a Dummy node.
+ *
+ * @param *mode     The mode of the node.
+ */
+ir_node *new_Dummy(ir_mode *mode);
+
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
 /* Supports automatic Phi node construction.                           */

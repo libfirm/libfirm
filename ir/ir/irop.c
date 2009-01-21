@@ -113,6 +113,7 @@ ir_op *op_Bound;       ir_op *get_op_Bound     (void) { return op_Bound;     }
 ir_op *op_Pin;         ir_op *get_op_Pin       (void) { return op_Pin;       }
 
 ir_op *op_ASM;         ir_op *get_op_ASM       (void) { return op_ASM;       }
+ir_op *op_Dummy;       ir_op *get_op_Dummy     (void) { return op_Dummy;     }
 ir_op *op_Anchor;      ir_op *get_op_Anchor    (void) { return op_Anchor;    }
 
 /*
@@ -356,6 +357,8 @@ init_op(void)
 	op_ASM       = new_ir_op(iro_ASM,       "ASM",       op_pin_state_mem_pinned, K|M, oparity_variable, -1, sizeof(asm_attr), NULL);
 	op_Builtin   = new_ir_op(iro_Builtin,   "Builtin",   op_pin_state_mem_pinned, M,   oparity_variable, -1, sizeof(builtin_attr), NULL);
 
+	op_Dummy     = new_ir_op(iro_Dummy,     "Dummy",     op_pin_state_pinned, X|F|S|c|NB,oparity_zero,   -1, 0, NULL);
+
 	op_Anchor    = new_ir_op(iro_Anchor,    "Anchor",    op_pin_state_pinned, N|NB,    oparity_variable, -1, 0, NULL);
 
 #undef S
@@ -443,6 +446,7 @@ void finish_op(void) {
 
 	free_ir_op (op_Pin      ); op_Pin       = NULL;
 	free_ir_op (op_ASM      ); op_ASM       = NULL;
+	free_ir_op (op_Dummy    ); op_Dummy     = NULL;
 	free_ir_op (op_Anchor   ); op_Anchor    = NULL;
 }
 

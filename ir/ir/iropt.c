@@ -6091,6 +6091,12 @@ static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
 	return 0;
 }  /* node_cmp_attr_ASM */
 
+/** Compares the inexistent attributes of two Dummy nodes. */
+static int node_cmp_attr_Dummy(ir_node *a, ir_node *b)
+{
+	return 1;
+}
+
 /**
  * Set the default node attribute compare operation for an ir_op_ops.
  *
@@ -6129,6 +6135,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Quot);
 	CASE(Bound);
 	CASE(Builtin);
+	CASE(Dummy);
 	/* FIXME CopyB */
 	default:
 	  /* leave NULL */;

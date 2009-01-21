@@ -3157,6 +3157,10 @@ ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper)
 ir_node *new_Pin(ir_node *node) {
 	return new_d_Pin(NULL, node);
 }
+ir_node *new_Dummy(ir_mode *m) {
+	ir_graph *irg = current_ir_graph;
+	return new_ir_node(NULL, irg, get_irg_start_block(irg), op_Dummy, m, 0, NULL);
+}
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,
                  int n_clobber, ident *clobber[], ident *asm_text) {
