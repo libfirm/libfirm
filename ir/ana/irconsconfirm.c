@@ -209,10 +209,13 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				if (c_b == NULL) {
 					ir_node *c_true  = new_Const(tarval_b_true);
 					ir_node *c_false = new_Const(tarval_b_false);
-					c_b = new_r_Confirm(current_ir_graph, cond_block, selector,
-						pnc == pn_Cond_true ? c_true : c_false, pn_Cmp_Eq);
-					c_o = new_r_Confirm(current_ir_graph, cond_block, selector,
-						pnc == pn_Cond_false ? c_true : c_false, pn_Cmp_Eq);
+					if (pnc == pn_Cond_true) {
+						c_b = c_true;
+						c_o = c_false;
+					} else {
+						c_b = c_false;
+						c_o = c_true;
+					}
 				}
 				for (i = n - 1; i >= 0; --i) {
 					ir_node *pred_blk = get_Block_cfgpred_block(user_blk, i);
