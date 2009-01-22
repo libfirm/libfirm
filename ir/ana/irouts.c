@@ -262,8 +262,7 @@ void irg_out_block_walk(ir_node *node,
 
 		for (i = 0, n = get_irn_n_outs(node); i < n; ++i) {
 			ir_node *succ = get_irn_out(node, i);
-			if (get_irn_visited(succ) < get_irg_visited(current_ir_graph))
-				irg_out_walk_2(succ, pre, post, env);
+			irg_out_block_walk2(succ, pre, post, env);
 		}
 	}
 	else {
