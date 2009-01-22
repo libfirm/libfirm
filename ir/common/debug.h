@@ -33,20 +33,20 @@
 #include <stdio.h>
 
 enum firm_dbg_level_t {
-  LEVEL_DEFAULT = 0, /**< Prints always. Use with DBG(). */
-  LEVEL_1 = 1,
-  LEVEL_2 = 2,
-  LEVEL_3 = 4,
-  LEVEL_4 = 8,
-  LEVEL_5 = 16,
+	LEVEL_DEFAULT = 0, /**< Prints always. Use with DBG(). */
+	LEVEL_1 = 1,
+	LEVEL_2 = 2,
+	LEVEL_3 = 4,
+	LEVEL_4 = 8,
+	LEVEL_5 = 16,
 
-  SET_LEVEL_0 = 0,   /**< use with firm_dbg_set_mask(). */
-  SET_LEVEL_1 = 1,
-  SET_LEVEL_2 = 3,
-  SET_LEVEL_3 = 7,
-  SET_LEVEL_4 = 15,
-  SET_LEVEL_5 = 31,
-  SET_LEVEL_ALL = SET_LEVEL_5
+	SET_LEVEL_0 = 0,   /**< use with firm_dbg_set_mask(). */
+	SET_LEVEL_1 = 1,
+	SET_LEVEL_2 = 3,
+	SET_LEVEL_3 = 7,
+	SET_LEVEL_4 = 15,
+	SET_LEVEL_5 = 31,
+	SET_LEVEL_ALL = SET_LEVEL_5
 };
 
 typedef struct _firm_dbg_module_t firm_dbg_module_t;
