@@ -20,6 +20,9 @@ void pbqp_matrix_set(pbqp_matrix *mat, unsigned row, unsigned col, num value);
 num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *flags);
 num pbqp_matrix_get_row_min(pbqp_matrix *matrix, unsigned row_index, vector *flags);
 
+unsigned pbqp_matrix_get_col_min_index(pbqp_matrix *matrix, unsigned col_index, vector *flags);
+unsigned pbqp_matrix_get_row_min_index(pbqp_matrix *matrix, unsigned row_index, vector *flags);
+
 void pbqp_matrix_set_col_value(pbqp_matrix *mat, unsigned col, num value);
 void pbqp_matrix_set_row_value(pbqp_matrix *mat, unsigned row, num value);
 

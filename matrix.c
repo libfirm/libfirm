@@ -149,6 +149,34 @@ num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *fla
 	return min;
 }
 
+unsigned pbqp_matrix_get_col_min_index(pbqp_matrix *matrix, unsigned col_index, vector *flags)
+{
+	unsigned row_index;
+	unsigned min_index;
+	num min = INF_COSTS;
+
+	assert(matrix);
+	assert(flags);
+	assert(matrix->rows == flags->len);
+
+	unsigned col_len = matrix->cols;
+	unsigned row_len = matrix->rows;
+
+	for (row_index = 0; row_index < row_len; ++row_index) {
+		/* Ignore virtual deleted columns. */
+		if (flags->entries[row_index].data == INF_COSTS) continue;
+
+		num elem = matrix->entries[row_index * col_len + col_index];
+
+		if (elem < min) {
+			min = elem;
+			min_index = row_index;
+		}
+	}
+
+	return min_index;
+}
+
 void pbqp_matrix_sub_col_value(pbqp_matrix *matrix, unsigned col_index,
 		vector *flags, num value)
 {
@@ -199,6 +227,33 @@ num pbqp_matrix_get_row_min(pbqp_matrix *matrix, unsigned row_index, vector *fla
 	}
 
 	return min;
+}
+
+unsigned pbqp_matrix_get_row_min_index(pbqp_matrix *matrix, unsigned row_index, vector *flags)
+{
+	unsigned col_index;
+	unsigned min_index;
+	num min = INF_COSTS;
+
+	assert(matrix);
+	assert(flags);
+	assert(matrix->cols == flags->len);
+
+	unsigned len = flags->len;
+
+	for (col_index = 0; col_index < len; ++col_index) {
+		/* Ignore virtual deleted columns. */
+		if (flags->entries[col_index].data == INF_COSTS) continue;
+
+		num elem = matrix->entries[row_index * len + col_index];
+
+		if (elem < min) {
+			min = elem;
+			min_index = col_index;
+		}
+	}
+
+	return min_index;
 }
 
 void pbqp_matrix_sub_row_value(pbqp_matrix *matrix, unsigned row_index,
