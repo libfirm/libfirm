@@ -1088,7 +1088,7 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 		/* Update pointer for brute force solver. */
 		other = pbqp->nodes[other->index];
 
-		vector_add_matrix_col(vec, mat, other->solution);
+		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
 	} else {
 		other = edge->src;
 		assert(other);
@@ -1096,10 +1096,9 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 		/* Update pointer for brute force solver. */
 		other = pbqp->nodes[other->index];
 
-		vector_add_matrix_row(vec, mat, other->solution);
+		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
-	node->solution = vector_get_min_index(vec);
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
