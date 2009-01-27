@@ -80,7 +80,7 @@ int is_be_node(const ir_node *irn);
 /**
  * Create all BE specific opcodes.
  */
-void be_node_init(void);
+void be_init_op(void);
 
 /**
  * Position numbers for the be_Spill inputs.

@@ -38,6 +38,8 @@
 
 #include "xmalloc.h"
 
+void be_init_op(void);
+
 /** the available next opcode */
 static unsigned next_iro = iro_MaxOpcode;
 
@@ -372,6 +374,9 @@ init_op(void)
 #undef E
 #undef NB
 #undef NI
+
+	/* initialize backend opcodes */
+	be_init_op();
 }  /* init_op */
 
 

@@ -1599,14 +1599,8 @@ int is_be_node(const ir_node *irn)
 	return get_op_ops(get_irn_op(irn))->be_ops == &be_node_irn_ops;
 }
 
-void be_node_init(void) {
-	static int inited = 0;
-
-	if(inited)
-		return;
-
-	inited = 1;
-
+void be_init_op(void)
+{
 	/* Acquire all needed opcodes. */
 	op_be_Spill      = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Reload     = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
