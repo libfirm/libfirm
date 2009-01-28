@@ -1,5 +1,6 @@
-====== libFirm 1.16.0 (XXXX) ======
+====== libFirm 1.16.0 (2009-01-28) ======
 * bugfixes
+* support for builtin nodes
 
 ====== libFirm 1.15.0 (2008-12-01) ======
 * bugfixes

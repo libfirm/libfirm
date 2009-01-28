@@ -6094,6 +6094,8 @@ static int node_cmp_attr_ASM(ir_node *a, ir_node *b) {
 /** Compares the inexistent attributes of two Dummy nodes. */
 static int node_cmp_attr_Dummy(ir_node *a, ir_node *b)
 {
+	(void) a;
+	(void) b;
 	return 1;
 }
 
