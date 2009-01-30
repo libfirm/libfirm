@@ -313,7 +313,7 @@ static void check_ptr(ir_node *ptr, wlk_env *env) {
 
 	/* still alias free */
 	ptr = find_base_adr(ptr, &ent);
-	sc  = classify_pointer(current_ir_graph, ptr, ent);
+	sc  = GET_BASE_SC(classify_pointer(current_ir_graph, ptr, ent));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
 		env->only_local_mem = 0;

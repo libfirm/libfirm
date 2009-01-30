@@ -487,7 +487,7 @@ static ir_alias_relation _get_alias_relation(
 	ir_node               *orig_adr1 = adr1;
 	ir_node               *orig_adr2 = adr2;
 	unsigned              mode_size;
-	ir_storage_class_class_t class1, class2;
+	ir_storage_class_class_t class1, class2, mod1, mod2;
 	int                   have_const_offsets;
 
 	if (! get_opt_alias_analysis())
@@ -581,16 +581,19 @@ static ir_alias_relation _get_alias_relation(
 			return different_sel_offsets(adr1, adr2);
 	}
 
-	class1 = classify_pointer(irg, base1, ent1);
-	class2 = classify_pointer(irg, base2, ent2);
+	mod1 = classify_pointer(irg, base1, ent1);
+	mod2 = classify_pointer(irg, base2, ent2);
+
+	class1 = GET_BASE_SC(mod1);
+	class2 = GET_BASE_SC(mod2);
 
 	if (class1 == ir_sc_pointer) {
-		if (class2 & ir_sc_modifier_nottaken) {
+		if (mod2 & ir_sc_modifier_nottaken) {
 			/* a pointer and an object whose objects was never taken */
 			return ir_no_alias;
 		}
 	} else if (class2 == ir_sc_pointer) {
-		if (class1 & ir_sc_modifier_nottaken) {
+		if (mod1 & ir_sc_modifier_nottaken) {
 			/* a pointer and an object whose objects was never taken */
 			return ir_no_alias;
 		}

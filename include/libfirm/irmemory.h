@@ -69,6 +69,9 @@ typedef enum {
 	ir_sc_modifier_nottaken = 0x80  /**< if set, the address of the variable was not taken */
 } ir_storage_class_class_t;
 
+/** Get the base storage class (ignore modifier) */
+#define GET_BASE_SC(x) ((x) & ~ir_sc_modifier_nottaken)
+
 /**
  * A source language specific memory disambiguator function.
  * Called by get_alias_relation().
