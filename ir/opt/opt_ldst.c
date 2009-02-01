@@ -1347,7 +1347,6 @@ int opt_ldst(ir_graph *irg) {
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst");
-	firm_dbg_set_mask(dbg, SET_LEVEL_2);
 
 	DB((dbg, LEVEL_1, "\nDoing Load/Store optimization on %+F\n", irg));
 
