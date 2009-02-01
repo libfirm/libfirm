@@ -136,7 +136,7 @@ static ldst_env env;
  *
  * @param ldst environment
  */
-static dump_block_list(ldst_env *env) {
+static void dump_block_list(ldst_env *env) {
 	block_t *entry;
 	memop_t *op;
 	int     i;
@@ -201,7 +201,7 @@ static void dump_curr(block_t *bl, const char *s) {
  * @param post  post walker function
  * @param ctx   context parameter for the walker functions
  */
-static walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, void *ctx) {
+static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, void *ctx) {
 	int     i;
 	ir_mode *mode;
 
@@ -285,6 +285,7 @@ static void collect_backward(ir_node *block, void *ctx) {
 	block_t *entry = get_block_entry(block);
 	memop_t *last, *op;
 
+	(void) ctx;
 	entry->backward_next = env.backward;
 
 	/* create the list in inverse order */
@@ -504,6 +505,7 @@ static void collect_memops(ir_node *irn, void *ctx) {
 	ir_node  *block;
 	block_t  *entry;
 
+	(void) ctx;
 	if (is_Proj(irn)) {
 		/* we can safely ignore ProjM's except the initial memory */
 		if (irn != get_irg_initial_mem(current_ir_graph))
@@ -928,8 +930,6 @@ static int backward_antic(block_t *bl) {
 	ir_node *succ    = get_Block_cfg_out(bl->block, 0);
 	block_t *succ_bl = get_block_entry(succ);
 	int     n;
-	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
 
 	memcpy(env.curr_set,   succ_bl->anticL_in,  BYTE_SIZE(env.rbs_size));
 	memcpy(bl->id_2_memop, succ_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
@@ -1135,7 +1135,7 @@ static void calcAvail(void) {
 		memop_t **t = bl->id_2_memop_avail;
 
 		bl->id_2_memop_avail = bl->id_2_memop;
-		bl->id_2_memop       = bl->id_2_memop_avail;
+		bl->id_2_memop       = t;
 	}
 	DB((dbg, LEVEL_2, "Get avail set after %d iterations\n\n", i));
 }
