@@ -498,6 +498,16 @@ static void update_DivOp_memop(memop_t *m) {
 }
 
 /**
+ * Update a memop for a Phi.
+ *
+ * @param m  the memop
+ */
+static void update_Phi_memop(memop_t *m) {
+	/* the Phi is it's own mem */
+	m->mem = m->node;
+}
+
+/**
  * Memory walker: collect all memory ops and build topological lists.
  */
 static void collect_memops(ir_node *irn, void *ctx) {
@@ -517,6 +527,7 @@ static void collect_memops(ir_node *irn, void *ctx) {
 	entry = get_block_entry(block);
 
 	if (is_Phi(irn)) {
+		update_Phi_memop(op);
 		/* Phis must be always placed first */
 		op->next = entry->memop_forward;
 		entry->memop_forward = op;
@@ -1196,25 +1207,65 @@ static ir_node *find_last_memory(block_t *bl) {
 }
 
 /**
- * Reroute the memory. Reroute all users of old memory
+ * Reroute all memory users of old memory
  * to a new memory IR-node.
  *
  * @param omem  the old memory IR-node
  * @param nmem  the new memory IR-node
  */
-static void reroute_mem(ir_node *omem, ir_node *nmem) {
+static void reroute_all_mem_users(ir_node *omem, ir_node *nmem) {
 	int i;
 
 	for (i = get_irn_n_outs(omem) - 1; i >= 0; --i) {
 		int     n_pos;
-		ir_node *succ = get_irn_out_ex(omem, i, &n_pos);
+		ir_node *user = get_irn_out_ex(omem, i, &n_pos);
 
-		set_irn_n(succ, n_pos, nmem);
+		set_irn_n(user, n_pos, nmem);
 	}
 
-	/* all edges formally point to omem now point to nmem */
+	/* all edges previously point to omem now point to nmem */
 	nmem->out = omem->out;
 }
+
+/**
+ * Reroute memory users of old memory that are dominated by a given block
+ * to a new memory IR-node.
+ *
+ * @param omem     the old memory IR-node
+ * @param nmem     the new memory IR-node
+ * @param pass_bl  the block the memory must pass
+ */
+static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl) {
+	int             i, j, n = get_irn_n_outs(omem);
+	ir_def_use_edge *edges = NEW_ARR_D(ir_def_use_edge, &env.obst, n + 1);
+
+	for (i = j = 0; i < n; ++i) {
+		int     n_pos;
+		ir_node *user   = get_irn_out_ex(omem, i, &n_pos);
+		ir_node *use_bl = get_nodes_block(user);
+
+
+		if (is_Phi(user)) {
+			use_bl = get_Block_cfgpred_block(use_bl, n_pos);
+		}
+		if (block_dominates(pass_bl, use_bl)) {
+			/* found an user that is dominated */
+			++j;
+			edges[j].pos = n_pos;
+			edges[j].use = user;
+
+			set_irn_n(user, n_pos, nmem);
+		}
+	}
+
+	/* Modify the out structure: we create a new out edge array on our
+	   temporary obstack here. This should be no problem, as we invalidate the edges
+	   at the end either. */
+	/* first entry is used for the length */
+	edges[0].pos = j;
+	nmem->out = edges;
+}
+
 
 /**
  * insert
@@ -1276,6 +1327,7 @@ static void insert_Load(ir_node *block, void *ctx) {
 					ir_node  *load, *def;
 					memop_t  *new_op;
 
+					assert(last_mem != NULL);
 					load = new_rd_Load(db, current_ir_graph, pred, last_mem, op->value.address, mode, cons_none);
 					def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
 					DB((dbg, LEVEL_1, "Created new %+F for party redundant %+F\n", load, op->node));
@@ -1290,11 +1342,14 @@ static void insert_Load(ir_node *block, void *ctx) {
 					new_op->prev            = pred_bl->memop_backward;
 					pred_bl->memop_backward = new_op;
 
-					/* We have add a new last memory op in pred block.
-					   If pred had already a last mem, reroute all memory
-					   users. */
 					if (get_nodes_block(last_mem) == pred) {
-						reroute_mem(last_mem, new_op->mem);
+						/* We have add a new last memory op in pred block.
+						   If pred had already a last mem, reroute all memory
+						   users. */
+						reroute_all_mem_users(last_mem, new_op->mem);
+					} else {
+						/* reroute only those memory going through the pre block */
+						reroute_mem_through(last_mem, new_op->mem, pred);
 					}
 
 					/* we added this load at the end, so it will be avail anyway */
@@ -1432,7 +1487,9 @@ int opt_ldst(ir_graph *irg) {
 			do_replacements(bl);
 		}
 
-		set_irg_outs_inconsistent(irg);
+		/* not only invalidate but free them. We might allocate new out arrays
+		   on our obstack which will be deleted yet. */
+		free_irg_outs(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 	}
 end:
