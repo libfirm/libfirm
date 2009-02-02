@@ -194,6 +194,7 @@ static inline int rbitset_is_set(const unsigned *bitset, unsigned pos) {
  * Calculate the number of set bits (number of elements).
  *
  * @param bitset  the bitset
+ * @param size    size of the bitset
  */
 static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
 	unsigned pos;
@@ -201,7 +202,7 @@ static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
 	unsigned res = 0;
 	const unsigned *elem = bitset;
 
-	for(pos = 0; pos < n; ++pos) {
+	for (pos = 0; pos < n; ++pos) {
 		res += _bitset_inside_pop(elem);
 		elem++;
 	}
@@ -209,12 +210,26 @@ static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
 	return res;
 }
 
+/**
+ * Returns the position of the next bit starting from (and including)
+ * a given position.
+ *
+ * @param bitset  a bitset
+ * @param pos     the first position to check
+ * @param set     if 0 search for unset bit, else for set bit
+ *
+ * @return the first position where a matched bit was found
+ *
+ * @note Does NOT check the size of the bitset, so ensure that a bit
+ *       will be found or use a sentinel bit!
+ */
 static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int set) {
 	unsigned p;
 	unsigned elem_pos = pos / BITS_PER_ELEM;
 	unsigned bit_pos = pos % BITS_PER_ELEM;
 
 	unsigned elem = bitset[elem_pos];
+	unsigned mask = 0;
 
 	/*
 	 * Mask out the bits smaller than pos in the current unit.
@@ -222,94 +237,114 @@ static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int se
 	 */
 	unsigned in_elem_mask = (1 << bit_pos) - 1;
 
-	if(!set)
-		elem = ~elem;
+	if (!set)
+		mask = ~mask;
+	elem ^= mask;
 	p = _bitset_inside_ntz_value(elem & ~in_elem_mask);
 
 	/* If there is a bit set in the current elem, exit. */
-	if(p < BITS_PER_ELEM) {
+	if (p < BITS_PER_ELEM) {
 		return elem_pos * BITS_PER_ELEM + p;
 	}
 
 	/* Else search for set bits in the next units. */
-	while(1) {
+	while (1) {
 		elem_pos++;
-		elem = bitset[elem_pos];
-		if(!set)
-			elem = ~elem;
+		elem = bitset[elem_pos] ^ mask;
 
 		p = _bitset_inside_ntz_value(elem);
-		if(p < BITS_PER_ELEM) {
+		if (p < BITS_PER_ELEM) {
 			return elem_pos * BITS_PER_ELEM + p;
 		}
 	}
-
-	assert(0);
-	return 0xdeadbeef;
 }
 
 /**
  * Inplace Intersection of two sets.
+ *
+ * @param dst   the destination bitset and first operand
+ * @param src   the second bitset
+ * @param size  size of both bitsets
  */
-static inline void rbitset_and(unsigned *bitset1, const unsigned *bitset2,
-                               unsigned size)
+static inline void rbitset_and(unsigned *dst, const unsigned *src, unsigned size)
 {
 	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
-	for(i = 0; i < n; ++i) {
-		bitset1[i] &= bitset2[i];
+	for (i = 0; i < n; ++i) {
+		dst[i] &= src[i];
 	}
 }
 
 /**
  * Inplace Union of two sets.
+ *
+ * @param dst   the destination bitset and first operand
+ * @param src   the second bitset
+ * @param size  size of both bitsets
  */
-static inline void rbitset_or(unsigned *bitset1, const unsigned *bitset2,
-                              unsigned size)
+static inline void rbitset_or(unsigned *dst, const unsigned *src, unsigned size)
 {
 	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
-	for(i = 0; i < n; ++i) {
-		bitset1[i] |= bitset2[i];
+	for (i = 0; i < n; ++i) {
+		dst[i] |= src[i];
 	}
 }
 
 /**
- * Remove all bits in bitset2 from bitset 1.
+ * Remove all bits in src from dst.
+ *
+ * @param dst   the destination bitset and first operand
+ * @param src   the second bitset
+ * @param size  size of both bitsets
  */
-static inline void rbitset_andnot(unsigned *bitset1, const unsigned *bitset2,
-                                  unsigned size)
+static inline void rbitset_andnot(unsigned *dst, const unsigned *src, unsigned size)
 {
 	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
-	for(i = 0; i < n; ++i) {
-		bitset1[i] &= ~bitset2[i];
+	for (i = 0; i < n; ++i) {
+		dst[i] &= ~src[i];
 	}
 }
 
 /**
  * Xor of two bitsets.
+ *
+ * @param dst   the destination bitset and first operand
+ * @param src   the second bitset
+ * @param size  size of both bitsets
  */
-static inline void rbitset_xor(unsigned *bitset1, const unsigned *bitset2,
-                               unsigned size)
+static inline void rbitset_xor(unsigned *dst, const unsigned *src, unsigned size)
 {
 	unsigned i, n = BITSET_SIZE_ELEMS(size);
 
-	for(i = 0; i < n; ++i) {
-		bitset1[i] ^= bitset2[i];
+	for (i = 0; i < n; ++i) {
+		dst[i] ^= src[i];
 	}
 }
 
+/**
+ * Returns 1 of two bitsets are equal.
+ *
+ * @param bitset1  the first bitset
+ * @param bitset2  the second bitset
+ * @param size     size of both bitsets
+ */
 static inline int rbitset_equal(const unsigned *bitset1,
                                 const unsigned *bitset2, size_t size)
 {
-	unsigned i, n = BITSET_SIZE_ELEMS(size);
+	return memcmp(bitset1, bitset2, BITSET_SIZE_BYTES(size)) == 0;
+}
 
-	for(i = 0; i < n; ++i) {
-		if(bitset1[i] != bitset2[i])
-			return 0;
-	}
-	return 1;
+/**
+ * Copy a raw bitset into another.
+ *
+ * @param dst   the destination set
+ * @param src   the source set
+ * @param size  size of both bitsets
+ */
+static inline void rbitset_cpy(unsigned *dst, const unsigned *src, size_t size) {
+	memcpy(dst, src, BITSET_SIZE_BYTES(size));
 }
 
 /**
@@ -320,8 +355,8 @@ static inline int rbitset_equal(const unsigned *bitset1,
 static inline void rbitset_copy_to_bitset(const unsigned *rbitset, bitset_t *bitset) {
 	// TODO optimize me (or remove me)
 	unsigned i, n = bitset_size(bitset);
-	for(i = 0; i < n; ++i) {
-		if(rbitset_is_set(rbitset, i))
+	for (i = 0; i < n; ++i) {
+		if (rbitset_is_set(rbitset, i))
 			bitset_set(bitset, i);
 	}
 }
