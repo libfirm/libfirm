@@ -801,7 +801,7 @@ static int forward_avail(block_t *bl) {
 	ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
 	block_t *pred_bl = get_block_entry(pred);
 
-	memcpy(env.curr_set, pred_bl->avail_out, BYTE_SIZE(env.rbs_size));
+	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
 	n = get_Block_n_cfgpreds(bl->block);
 	if (n > 1) {
@@ -909,9 +909,9 @@ static int forward_avail(block_t *bl) {
 		}
 	}
 	dump_curr(bl, "Avail_out");
-	if (memcmp(bl->avail_out, env.curr_set, BYTE_SIZE(env.rbs_size)) != 0) {
+	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* changed */
-		memcpy(bl->avail_out, env.curr_set, env.rbs_size);
+		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
 		return 1;
 	}
 	return 0;
@@ -931,7 +931,7 @@ static int backward_antic(block_t *bl) {
 	block_t *succ_bl = get_block_entry(succ);
 	int     n;
 
-	memcpy(env.curr_set,   succ_bl->anticL_in,  BYTE_SIZE(env.rbs_size));
+	rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
 	memcpy(bl->id_2_memop, succ_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
 
 	n = get_Block_n_cfg_outs(bl->block);
@@ -997,9 +997,9 @@ static int backward_antic(block_t *bl) {
 		}
 	}
 	dump_curr(bl, "AnticL_in");
-	if (memcmp(bl->anticL_in, env.curr_set, BYTE_SIZE(env.rbs_size)) != 0) {
+	if (! rbitset_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
 		/* changed */
-		memcpy(bl->anticL_in, env.curr_set, env.rbs_size);
+		rbitset_cpy(bl->anticL_in, env.curr_set, env.rbs_size);
 		return 1;
 	}
 	return 0;
@@ -1017,7 +1017,7 @@ static void replace_load(memop_t *op) {
 	ir_mode *mode;
 
 	if (def != NULL)
-		DB((dbg, LEVEL_1, "Replacing %+F by definition %+F\n", load, def));
+		DB((dbg, LEVEL_1, "Replacing %+F by definition %+F\n", load, is_Proj(def) ? get_Proj_pred(def) : def));
 	else {
 		if (op->flags & FLAG_EXCEPTION) {
 			/* bad: this node is unused and executed for exception only */
@@ -1290,7 +1290,12 @@ static void insert_Load(ir_node *block, void *ctx) {
 					new_op->prev            = pred_bl->memop_backward;
 					pred_bl->memop_backward = new_op;
 
-					reroute_mem(last_mem, new_op->mem);
+					/* We have add a new last memory op in pred block.
+					   If pred had already a last mem, reroute all memory
+					   users. */
+					if (get_nodes_block(last_mem) == pred) {
+						reroute_mem(last_mem, new_op->mem);
+					}
 
 					/* we added this load at the end, so it will be avail anyway */
 					add_memop_avail(pred_bl, new_op);
@@ -1380,6 +1385,11 @@ int opt_ldst(ir_graph *irg) {
 	/* second step: find and sort all memory ops */
 	walk_memory_irg(irg, collect_memops, NULL, NULL);
 
+	if (env.n_mem_ops == 0) {
+		/* no memory ops */
+		goto end;
+	}
+
 	/* create the backward links */
 	irg_block_walk_graph(irg, NULL, collect_backward, NULL);
 
@@ -1425,6 +1435,7 @@ int opt_ldst(ir_graph *irg) {
 		set_irg_outs_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 	}
+end:
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	ir_nodemap_destroy(&env.adr_map);
