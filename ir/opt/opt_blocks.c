@@ -409,8 +409,14 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env) {
 	case iro_Conv:
 		key.u.intVal = get_Conv_strict(irn);
 		break;
+	case iro_Load:
+		key.mode = get_Load_mode(irn);
+		break;
 	case iro_Div:
 		key.u.intVal = is_Div_remainderless(irn);
+		break;
+	case iro_Builtin:
+		key.u.intVal = get_Builtin_kind(irn);
 		break;
 	default:
 		break;
