@@ -7643,8 +7643,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\ir\ir"
-						AdditionalDependencies="ir_spec.py"
+						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
 				</FileConfiguration>
@@ -7654,8 +7654,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\ir\ir"
-						AdditionalDependencies="ir_spec.py"
+						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
 				</FileConfiguration>
@@ -7665,8 +7665,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\ir\ir"
-						AdditionalDependencies="ir_spec.py"
+						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
 				</FileConfiguration>
