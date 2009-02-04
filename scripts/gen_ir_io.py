@@ -187,11 +187,11 @@ import_attrs_template = env.from_string('''
 def main(argv):
 	"""the main function"""
 
-	if len(argv) < 2:
-		print "usage: %s destdirectory" % argv[0]
+	if len(argv) < 3:
+		print "usage: %s specname(ignored) destdirectory" % argv[0]
 		sys.exit(1)
 
-	gendir = argv[1]
+	gendir = argv[2]
 
 	file = open(gendir + "/gen_irio_export.inl", "w");
 	for nodename, node in ir_spec.nodes.iteritems():
