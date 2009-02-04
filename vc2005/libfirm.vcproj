@@ -45,7 +45,7 @@
 				AdditionalOptions="/WL"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include"
+				AdditionalIncludeDirectories="../../obstack;../win32;../ir/adt;../ir/ana;../ir/common;../ir/debug;../ir/ident;../ir/ir;../ir/opt;../ir/stat;../ir/tr;../ir/tv;../ir/arch;../ir/lower;../ir/net;../ir/be;../ir/libcore;../include/libfirm;../include/libfirm/adt;../../ipd/include;../ir"
 				PreprocessorDefinitions="NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -620,45 +620,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="arch"
-				>
-				<File
-					RelativePath="..\ir\arch\archop.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\ir\arch\Makefile.in"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="be"
 				>
 				<File
@@ -1175,6 +1136,14 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\beilpsched.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beinfo.c"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\be\beinfo.h"
 					>
 				</File>
 				<File
@@ -1711,14 +1680,6 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\bespilloptions.h"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillremat.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bespillremat.h"
 					>
 				</File>
 				<File
@@ -4186,12 +4147,65 @@
 				Name="ir"
 				>
 				<File
+					RelativePath="..\ir\ir\gen_ir_cons.c.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ir\gen_irio_export.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ir\gen_irio_import.inl"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\ir\gen_irio_lex.inl"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\ir\instrument.c"
 					>
 				</File>
 				<File
 					RelativePath="..\ir\ir\instrument.h"
 					>
+				</File>
+				<File
+					RelativePath="..\ir\ir\ir_spec.pl"
+					>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Translate IR-Spec: $(InputPath)"
+							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
+							AdditionalDependencies="..\scripts\gen_ir.pl"
+							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Translate IR-Spec: $(InputPath)"
+							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
+							AdditionalDependencies="..\scripts\gen_ir.pl"
+							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="DebugJTEST|Win32"
+						>
+						<Tool
+							Name="VCCustomBuildTool"
+							Description="Translate IR-Spec: $(InputPath)"
+							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
+							AdditionalDependencies="..\scripts\gen_ir.pl"
+							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\ir\ir\irarch.c"
@@ -4654,6 +4668,10 @@
 							PreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\ir\ir\irio.c"
+					>
 				</File>
 				<File
 					RelativePath="..\ir\ir\irmode.c"
@@ -5369,6 +5387,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\opt\opt_ldst.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\opt\opt_osr.c"
 					>
 					<FileConfiguration
@@ -5879,6 +5901,10 @@
 				</File>
 				<File
 					RelativePath="..\ir\stat\stat_dmp.h"
+					>
+				</File>
+				<File
+					RelativePath="..\ir\stat\stat_liveness.c"
 					>
 				</File>
 				<File
@@ -7369,6 +7395,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libfirm\irio.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libfirm\irlivechk.h"
 				>
 			</File>
@@ -7596,6 +7626,55 @@
 					>
 				</File>
 			</Filter>
+		</Filter>
+		<Filter
+			Name="scripts"
+			>
+			<File
+				RelativePath="..\scripts\gen_ir.pl"
+				>
+			</File>
+			<File
+				RelativePath="..\scripts\gen_ir_io.py"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating I/O code: $(InputPath)"
+						CommandLine="$(InputPath) ..\ir\ir"
+						AdditionalDependencies="ir_spec.py"
+						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating I/O code: $(InputPath)"
+						CommandLine="$(InputPath) ..\ir\ir"
+						AdditionalDependencies="ir_spec.py"
+						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="DebugJTEST|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Generating I/O code: $(InputPath)"
+						CommandLine="$(InputPath) ..\ir\ir"
+						AdditionalDependencies="ir_spec.py"
+						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\scripts\ir_spec.py"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

@@ -116,6 +116,7 @@ extern "C" {
 #include "firm_ycomp.h"    /* ycomp debugging support */
 
 #include "irdump.h"
+#include "irio.h"
 #include "irprintf.h"
 #include "irvrfy.h"
 
