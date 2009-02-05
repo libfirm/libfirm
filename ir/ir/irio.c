@@ -29,6 +29,7 @@
 
 #include "irio.h"
 
+#include "irnode_t.h"
 #include "irprog.h"
 #include "irgraph_t.h"
 #include "ircons.h"
@@ -40,7 +41,7 @@
 #include "error.h"
 #include "adt/set.h"
 
-#define LEXERROR ((unsigned) ~0)
+#define SYMERROR ((unsigned) ~0)
 
 typedef struct io_env
 {
@@ -65,12 +66,12 @@ typedef enum typetag_t
 	tt_volatility
 } typetag_t;
 
-typedef struct lex_entry
+typedef struct symbol_t
 {
-	const char *str;
-	typetag_t   typetag;
-	unsigned    code;
-} lex_entry;
+	const char *str;      /**< The name of this symbol. */
+	typetag_t   typetag;  /**< The type tag of this symbol. */
+	unsigned    code;     /**< The value of this symbol. */
+} symbol_t;
 
 typedef struct id_entry
 {
@@ -78,19 +79,25 @@ typedef struct id_entry
 	void *elem;
 } id_entry;
 
-/** A set of lex_entry elements. */
-static set *lexset;
+/** The symbol table, a set of symbol_t elements. */
+static set *symtbl;
 
 
-static unsigned hash(const char *str, int len)
+/**
+ * Calculate a hash value for a string.
+ */
+static unsigned string_hash(const char *str, int len)
 {
 	return str[0] * 27893 ^ str[len-1] * 81 ^ str[len >> 1];
 }
 
-static int lex_cmp(const void *elt, const void *key, size_t size)
+/**
+ * Compare two symbol table entries.
+ */
+static int symbol_cmp(const void *elt, const void *key, size_t size)
 {
-	const lex_entry *entry = (const lex_entry *) elt;
-	const lex_entry *keyentry = (const lex_entry *) key;
+	const symbol_t *entry = (const symbol_t *) elt;
+	const symbol_t *keyentry = (const symbol_t *) key;
 	(void) size;
 	return strcmp(entry->str, keyentry->str);
 }
@@ -103,21 +110,22 @@ static int id_cmp(const void *elt, const void *key, size_t size)
 	return entry->id - keyentry->id;
 }
 
-/** Initializes the lexer. May be called more than once without problems. */
-static void init_lexer(void)
+/** Initializes the symbol table. May be called more than once without problems. */
+static void symtbl_init(void)
 {
-	lex_entry key;
+	symbol_t key;
 
 	/* Only initialize once */
-	if(lexset != NULL) return;
+	if(symtbl != NULL)
+		return;
 
-	lexset = new_set(lex_cmp, 32);
+	symtbl = new_set(symbol_cmp, 32);
 
 #define INSERT(s, tt, cod)                                       \
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(lexset, &key, sizeof(key), hash(s, sizeof(s)-1))
+	set_insert(symtbl, &key, sizeof(key), string_hash(s, sizeof(s)-1))
 
 #define INSERTENUM(tt, e) INSERT(#e, tt, e)
 
@@ -165,18 +173,18 @@ static void init_lexer(void)
 #undef INSERT
 }
 
-/** Returns the according enum entry for the given string and tag, or LEXERROR if none was found. */
-static unsigned lex(const char *str, typetag_t typetag)
+/** Returns the according symbol value for the given string and tag, or SYMERROR if none was found. */
+static unsigned symbol(const char *str, typetag_t typetag)
 {
-	lex_entry key, *entry;
+	symbol_t key, *entry;
 
 	key.str = str;
 
-	entry = set_find(lexset, &key, sizeof(key), hash(str, strlen(str)));
+	entry = set_find(symtbl, &key, sizeof(key), string_hash(str, strlen(str)));
 	if (entry && entry->typetag == typetag) {
 		return entry->code;
 	}
-	return LEXERROR;
+	return SYMERROR;
 }
 
 static void *get_id(io_env_t *env, long id)
@@ -287,7 +295,7 @@ static void export_type(io_env_t *env, ir_type *tp)
 			break;
 
 		case tpo_class:
-			// TODO: inheritance stuff not supported yet
+			/* TODO: inheritance stuff not supported yet */
 			printf("Inheritance of classes not supported yet!\n");
 			break;
 
@@ -304,13 +312,13 @@ static void export_type(io_env_t *env, ir_type *tp)
 static void export_entity(io_env_t *env, ir_entity *ent)
 {
 	ir_type *owner = get_entity_owner(ent);
-	fprintf(env->file, "\tentity %ld \"%s\" %ld %ld %d %d %s %s %s %s %s\n",
+	fprintf(env->file, "\tentity %ld \"%s\" %ld %ld %d %u %s %s %s %s %s\n",
 			get_entity_nr(ent),
 			get_entity_name(ent),
 			get_type_nr(get_entity_type(ent)),
 			get_type_nr(owner),
 			get_entity_offset(ent),
-			(int) get_entity_offset_bits_remainder(ent),
+			(unsigned) get_entity_offset_bits_remainder(ent),
 			get_allocation_name(get_entity_allocation(ent)),
 			get_visibility_name(get_entity_visibility(ent)),
 			get_variability_name(get_entity_variability(ent)),
@@ -349,7 +357,8 @@ static void export_node(ir_node *irn, void *ctx)
 	unsigned opcode = get_irn_opcode(irn);
 	char buf[1024];
 
-	if(env->ignoreblocks && opcode == iro_Block) return;
+	if(env->ignoreblocks && opcode == iro_Block)
+		return;
 
 	n = get_irn_arity(irn);
 
@@ -358,10 +367,13 @@ static void export_node(ir_node *irn, void *ctx)
 	for(i = -1; i < n; i++)
 	{
 		ir_node *pred = get_irn_n(irn, i);
-		if(!pred)
+		if(pred == NULL) {
+			/* Anchor node may ave NULL predecessors */
+			assert(is_Anchor(irn));
 			fputs("-1 ", env->file);
-		else
+		} else {
 			fprintf(env->file, "%ld ", get_irn_node_nr(pred));
+		}
 	}
 
 	fprintf(env->file, "] { ");
@@ -643,11 +655,15 @@ static const char *get_typetag_name(typetag_t typetag)
 	}
 }
 
+/**
+ * Read and decode an enum constant.
+ */
 static unsigned read_enum(io_env_t *env, typetag_t typetag)
 {
 	static char buf[128];
-	unsigned code = lex(read_str_to(env, buf, sizeof(buf)), typetag);
-	if(code != LEXERROR) return code;
+	unsigned code = symbol(read_str_to(env, buf, sizeof(buf)), typetag);
+	if(code != SYMERROR)
+		return code;
 
 	printf("Invalid %s: \"%s\" in %i:%i\n", get_typetag_name(typetag), buf, env->line, env->col);
 	return 0;
@@ -686,7 +702,7 @@ static void import_type(io_env_t *env)
 
 	ident         *id     = new_id_from_str(name);
 
-	switch(lex(tpop, tt_tpo))
+	switch(symbol(tpop, tt_tpo))
 	{
 		case tpo_primitive:
 		{
@@ -892,7 +908,7 @@ static int parse_graph(io_env_t *env)
 
 		EXPECT('{');
 
-		switch(lex(nodename, tt_iro))
+		switch(symbol(nodename, tt_iro))
 		{
 			case iro_End:
 			{
@@ -951,8 +967,7 @@ static int parse_graph(io_env_t *env)
 		if(!newnode)
 		{
 notsupported:
-			printf("Node type not supported yet: %s in line %i:%i\n", nodename, env->line, env->col);
-			assert(0 && "Invalid node type");
+			panic("Node type not supported yet: %s in line %i:%i\n", nodename, env->line, env->col);
 		}
 
 		if(node)
@@ -978,7 +993,7 @@ void ir_import(const char *filename)
 	io_env_t *env = &ioenv;
 	int i, n;
 
-	init_lexer();
+	symtbl_init();
 
 	memset(env, 0, sizeof(*env));
 	env->idset = new_set(id_cmp, 128);
