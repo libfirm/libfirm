@@ -234,7 +234,7 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
 void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
 /**
- * Additionally walk over all anchors. Do NOT increase the visit flag.
+ * Additionally walk over all anchors.
  * This function visits all anchor nodes that otherwise might not been visited in a
  * walk, for instance the Bad() node.
  *

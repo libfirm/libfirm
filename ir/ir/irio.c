@@ -129,9 +129,11 @@ static void symtbl_init(void)
 
 #define INSERTENUM(tt, e) INSERT(#e, tt, e)
 
-	INSERT("primitive", tt_tpo, tpo_primitive);
-	INSERT("method", tt_tpo, tpo_method);
 	INSERT("array", tt_tpo, tpo_array);
+	INSERT("class", tt_tpo, tpo_class);
+	INSERT("method", tt_tpo, tpo_method);
+	INSERT("pointer", tt_tpo, tpo_pointer);
+	INSERT("primitive", tt_tpo, tpo_primitive);
 	INSERT("struct", tt_tpo, tpo_struct);
 	INSERT("Unknown", tt_tpo, tpo_unknown);
 
@@ -273,6 +275,11 @@ static void export_type(io_env_t *env, ir_type *tp)
 			break;
 		}
 
+		case tpo_class:
+			/* TODO: inheritance stuff not supported yet */
+			printf("Inheritance of classes not supported yet!\n");
+			break;
+
 		case tpo_method:
 		{
 			int nparams = get_method_n_params(tp);
@@ -285,18 +292,16 @@ static void export_type(io_env_t *env, ir_type *tp)
 			break;
 		}
 
+		case tpo_pointer:
+			write_mode(env, get_type_mode(tp));
+			fprintf(f, "%ld ", get_type_nr(get_pointer_points_to_type(tp)));
+			break;
+
 		case tpo_primitive:
-		{
 			write_mode(env, get_type_mode(tp));
 			break;
-		}
 
 		case tpo_struct:
-			break;
-
-		case tpo_class:
-			/* TODO: inheritance stuff not supported yet */
-			printf("Inheritance of classes not supported yet!\n");
 			break;
 
 		case tpo_unknown:
@@ -312,9 +317,10 @@ static void export_type(io_env_t *env, ir_type *tp)
 static void export_entity(io_env_t *env, ir_entity *ent)
 {
 	ir_type *owner = get_entity_owner(ent);
-	fprintf(env->file, "\tentity %ld \"%s\" %ld %ld %d %u %s %s %s %s %s\n",
+	fprintf(env->file, "\tentity %ld \"%s\" \"%s\" %ld %ld %d %u %s %s %s %s %s ",
 			get_entity_nr(ent),
 			get_entity_name(ent),
+			ent->ld_name ? get_id_str(ent->ld_name) : "",
 			get_type_nr(get_entity_type(ent)),
 			get_type_nr(owner),
 			get_entity_offset(ent),
@@ -328,6 +334,29 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 	// TODO: inheritance stuff for class entities not supported yet
 	if(is_Class_type(owner) && owner != get_glob_type())
 		printf("Inheritance of class entities not supported yet!\n");
+
+	if(get_entity_variability(ent) != variability_uninitialized
+		&& get_entity_visibility(ent) != visibility_external_allocated)
+	{
+		if(is_compound_entity(ent))
+		{
+			int i, n = get_compound_ent_n_values(ent);
+			fprintf(env->file, "%d ", n);
+			for(i = 0; i < n; i++)
+			{
+				ir_entity *member = get_compound_ent_value_member(ent, i);
+				ir_node   *irn    = get_compound_ent_value(ent, i);
+				fprintf(env->file, "%ld %ld ", get_entity_nr(member), get_irn_node_nr(irn));
+			}
+		}
+		else
+		{
+			ir_node *irn = get_atomic_ent_value(ent);
+			fprintf(env->file, "%ld ", get_irn_node_nr(irn));
+		}
+	}
+
+	fputc('\n', env->file);
 }
 
 static void export_type_or_ent(type_or_ent tore, void *ctx)
@@ -362,13 +391,13 @@ static void export_node(ir_node *irn, void *ctx)
 
 	n = get_irn_arity(irn);
 
-	fprintf(env->file, "\n\t%s %ld [ ", get_irn_opname(irn), get_irn_node_nr(irn));
+	fprintf(env->file, "\t%s %ld [ ", get_irn_opname(irn), get_irn_node_nr(irn));
 
 	for(i = -1; i < n; i++)
 	{
 		ir_node *pred = get_irn_n(irn, i);
 		if(pred == NULL) {
-			/* Anchor node may ave NULL predecessors */
+			/* Anchor node may have NULL predecessors */
 			assert(is_Anchor(irn));
 			fputs("-1 ", env->file);
 		} else {
@@ -382,7 +411,45 @@ static void export_node(ir_node *irn, void *ctx)
 	{
 		#include "gen_irio_export.inl"
 	}
-	fputc('}', env->file);
+	fputs("}\n", env->file);
+}
+
+/** Exports the whole irp to the given file in a textual form. */
+void ir_export(const char *filename)
+{
+	io_env_t env;
+	int i, n_irgs = get_irp_n_irgs(), n_pseudoirgs = get_irp_n_pseudo_irgs();
+
+	env.file = fopen(filename, "wt");
+	if(!env.file)
+	{
+		perror(filename);
+		return;
+	}
+
+	fputs("typegraph {\n", env.file);
+
+	type_walk(NULL, export_type_or_ent, &env);
+	/* TODO: Visit frame types and "types for value params"? */
+
+	for(i = 0; i < n_irgs; i++)
+	{
+		ir_graph *irg = get_irp_irg(i);
+
+		fprintf(env.file, "}\n\nirg %ld {\n", get_entity_nr(get_irg_entity(irg)));
+
+		env.ignoreblocks = 0;
+		irg_block_walk_graph(irg, NULL, export_node, &env);
+
+		env.ignoreblocks = 1;
+		irg_walk_anchors(irg, NULL, export_node, &env);
+	}
+
+	fputs("}\n\nconstirg {\n", env.file);
+	walk_const_code(NULL, export_node, &env);
+	fputs("}\n", env.file);
+
+	fclose(env.file);
 }
 
 /** Exports the given irg to the given file. */
@@ -401,7 +468,7 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 
 	type_walk_irg(irg, NULL, export_type_or_ent, &env);
 
-	fprintf(env.file, "}\n\nirg %ld {", get_entity_nr(get_irg_entity(irg)));
+	fprintf(env.file, "}\n\nirg %ld {\n", get_entity_nr(get_irg_entity(irg)));
 
 	env.ignoreblocks = 0;
 	irg_block_walk_graph(irg, NULL, export_node, &env);
@@ -409,7 +476,10 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 	env.ignoreblocks = 1;
 	irg_walk_anchors(irg, NULL, export_node, &env);
 
-	fputs("\n}\n", env.file);
+	/* TODO: Only output needed constants */
+	fputs("}\n\nconstirg {\n", env.file);
+	walk_const_code(NULL, export_node, &env);
+	fputs("}\n", env.file);
 
 	fclose(env.file);
 }
@@ -704,12 +774,27 @@ static void import_type(io_env_t *env)
 
 	switch(symbol(tpop, tt_tpo))
 	{
-		case tpo_primitive:
+		case tpo_array:
 		{
-			ir_mode *mode = read_mode(env);
-			type = new_type_primitive(id, mode);
+			int ndims = (int) read_long(env);
+			long elemtypenr = read_long(env);
+			ir_type *elemtype = get_type(env, elemtypenr);
+
+			type = new_type_array(id, ndims, elemtype);
+			for(i = 0; i < ndims; i++)
+			{
+				long lowerbound = read_long(env);
+				long upperbound = read_long(env);
+				set_array_bounds_int(type, i, lowerbound, upperbound);
+			}
+			set_type_size_bytes(type, size);
 			break;
 		}
+
+		case tpo_class:
+			type = new_type_class(id);
+			set_type_size_bytes(type, size);
+			break;
 
 		case tpo_method:
 		{
@@ -735,27 +820,20 @@ static void import_type(io_env_t *env)
 			break;
 		}
 
-		case tpo_array:
+		case tpo_pointer:
 		{
-			int ndims = (int) read_long(env);
-			long elemtypenr = read_long(env);
-			ir_type *elemtype = get_type(env, elemtypenr);
-
-			type = new_type_array(id, ndims, elemtype);
-			for(i = 0; i < ndims; i++)
-			{
-				long lowerbound = read_long(env);
-				long upperbound = read_long(env);
-				set_array_bounds_int(type, i, lowerbound, upperbound);
-			}
-			set_type_size_bytes(type, size);
+			ir_mode *mode = read_mode(env);
+			ir_type *pointsto = get_type(env, read_long(env));
+			type = new_type_pointer(id, pointsto, mode);
 			break;
 		}
 
-		case tpo_class:
-			type = new_type_class(id);
-			set_type_size_bytes(type, size);
+		case tpo_primitive:
+		{
+			ir_mode *mode = read_mode(env);
+			type = new_type_primitive(id, mode);
 			break;
+		}
 
 		case tpo_struct:
 			type = new_type_struct(id);
@@ -790,9 +868,10 @@ static void import_type(io_env_t *env)
 /** Reads an entity description and remembers it by its id. */
 static void import_entity(io_env_t *env)
 {
-	char          buf[1024];
+	char          buf[1024], buf2[1024];
 	long          entnr       = read_long(env);
 	const char   *name        = read_qstr_to(env, buf, sizeof(buf));
+	const char   *ld_name     = read_qstr_to(env, buf, sizeof(buf2));
 	long          typenr      = read_long(env);
 	long          ownertypenr = read_long(env);
 
@@ -800,6 +879,7 @@ static void import_entity(io_env_t *env)
 	ir_type   *ownertype = !ownertypenr ? get_glob_type() : get_type(env, ownertypenr);
 	ir_entity *entity    = new_entity(ownertype, new_id_from_str(name), type);
 
+	if(*ld_name) set_entity_ld_ident(entity, new_id_from_str(ld_name));
 	set_entity_offset     (entity, (int) read_long(env));
 	set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
 	set_entity_allocation (entity, read_allocation(env));
@@ -807,6 +887,26 @@ static void import_entity(io_env_t *env)
 	set_entity_variability(entity, read_variability(env));
 	set_entity_peculiarity(entity, read_peculiarity(env));
 	set_entity_volatility (entity, read_volatility(env));
+
+	if(get_entity_variability(entity) != variability_uninitialized
+		&& get_entity_visibility(entity) != visibility_external_allocated)
+	{
+		if(is_compound_entity(entity))
+		{
+			int i, n = (int) read_long(env);
+			for(i = 0; i < n; i++)
+			{
+				ir_entity *member = get_entity(env, read_long(env));
+				ir_node   *irn    = get_node_or_dummy(env, read_long(env));
+				add_compound_ent_value(entity, irn, member);
+			}
+		}
+		else
+		{
+			ir_node *irn = get_node_or_dummy(env, read_long(env));
+			set_atomic_ent_value(entity, irn);
+		}
+	}
 
 	set_id(env, entnr, entity);
 	printf("Insert entity %s %ld\n", name, entnr);
@@ -875,7 +975,7 @@ static int read_node_header(io_env_t *env, long *nodenr, long **preds, const cha
 }
 
 /** Parses an IRG. */
-static int parse_graph(io_env_t *env)
+static int parse_graph(io_env_t *env, ir_graph *irg)
 {
 	long       *preds = NEW_ARR_F(long, 16);
 	ir_node   **prednodes = NEW_ARR_F(ir_node *, 16);
@@ -884,7 +984,7 @@ static int parse_graph(io_env_t *env)
 	const char *nodename;
 	ir_node    *node, *newnode;
 
-	current_ir_graph = new_ir_graph(get_entity(env, read_long(env)), 0);
+	current_ir_graph = irg;
 
 	EXPECT('{');
 
@@ -915,6 +1015,8 @@ static int parse_graph(io_env_t *env)
 				ir_node *newendblock = get_node(env, preds[0]);
 				newnode = get_irg_end(current_ir_graph);
 				exchange(get_nodes_block(newnode), newendblock);
+				for(i = 0; i < numpreds - 1; i++)
+					add_irn_n(newnode, prednodes[i]);
 				break;
 			}
 
@@ -1019,7 +1121,12 @@ void ir_import(const char *filename)
 		}
 		else if(!strcmp(str, "irg"))
 		{
-			if(!parse_graph(env)) break;
+			ir_graph *irg = new_ir_graph(get_entity(env, read_long(env)), 0);
+			if(!parse_graph(env, irg)) break;
+		}
+		else if(!strcmp(str, "constirg"))
+		{
+			if(!parse_graph(env, get_const_code_irg())) break;
 		}
 	}
 

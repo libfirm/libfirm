@@ -913,7 +913,7 @@ get_compound_ent_value(ir_entity *ent, int pos) {
 	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
 	assert(!ent->has_initializer);
 	assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.values));
-	return ent->attr.cmpd_attr.values[pos];
+	return skip_Id(ent->attr.cmpd_attr.values[pos]);
 }  /* get_compound_ent_value */
 
 compound_graph_path *

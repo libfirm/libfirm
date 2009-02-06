@@ -31,6 +31,15 @@
 #include "firm_types.h"
 
 /**
+ * Exports the whole irp to the given file in a textual form.
+ *
+ * @param filename  the name of the resulting file
+ *
+ * Exports all types, all ir graphs, and the constant graph.
+ */
+void ir_export(const char *filename);
+
+/**
  * Exports the given ir graph to the given file in a textual form.
  *
  * @param irg       the ir graph
