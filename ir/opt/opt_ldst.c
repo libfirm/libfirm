@@ -299,11 +299,19 @@ static void collect_backward(ir_node *block, void *ctx) {
 	block_t *entry = get_block_entry(block);
 	memop_t *last, *op;
 
-	(void) ctx;
-	entry->backward_next = env.backward;
+	(void)ctx;
 
-	/* create the list in inverse order */
-	env.backward = entry;
+	/*
+	 * Do NOT link in the end block yet. We want it to be
+	 * the first in the list. This is NOT guaranteed by the walker
+	 * if we have endless loops.
+	 */
+	if (block != env.end_bl) {
+		entry->backward_next = env.backward;
+
+		/* create the list in inverse order */
+		env.backward = entry;
+	}
 
 	/* create backward links for all memory ops */
 	last = NULL;
@@ -779,6 +787,17 @@ static void add_memop_avail(block_t *bl, memop_t *op) {
 }
 
 /**
+ * Add a Conv if needed.
+ */
+static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
+	if (get_irn_mode(irn) != mode) {
+		ir_node *block = get_nodes_block(irn);
+		return new_r_Conv(current_ir_graph, block, irn, mode);
+	}
+	return irn;
+}
+
+/**
  * build a phi definition for a value in the given block
  *
  * @param block  the block
@@ -790,6 +809,7 @@ static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
 	ir_node **in, *phi;
 	int     i, n;
 	memop_t *mop;
+	ir_mode *mode = value->mode;
 
 	/* no: we need a new Phi */
 	n = get_Block_n_cfgpreds(block);
@@ -797,9 +817,12 @@ static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
 	while (n == 1) {
 		block = get_Block_cfgpred_block(block, 0);
 		n     = get_Block_n_cfgpreds(block);
-		mop   = find_address(get_block_entry(block), value);
+		mop   = find_address_avail(get_block_entry(block), value);
 
-		assert(mop != NULL);
+		if (mop == NULL) {
+			/* this can only happen, if modes cannot be converted */
+			return NULL;
+		}
 		value = &mop->value;
 	}
 
@@ -808,16 +831,23 @@ static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
 		ir_node *pred_bl = get_Block_cfgpred_block(block, i);
 		ir_node *def_bl;
 
-		mop    = find_address(get_block_entry(pred_bl), value);
+		mop = find_address_avail(get_block_entry(pred_bl), value);
+		if (mop == NULL)
+			return NULL;
+
 		def_bl = get_nodes_block(mop->value.value);
 
 		if (block_dominates(def_bl, pred_bl))
-			in[i] = mop->value.value;
-		else
-			in[i] = build_phi_definition(pred_bl, &mop->value);
+			in[i] = conv_to(mop->value.value, mode);
+		else {
+			ir_node *def = build_phi_definition(pred_bl, &mop->value);
+			if (def == NULL)
+				return NULL;
+			in[i] = conv_to(def, mode);
+		}
 	}
 
-	phi = new_r_Phi(current_ir_graph, block, n, in, value->mode);
+	phi = new_r_Phi(current_ir_graph, block, n, in, mode);
 	DB((dbg, LEVEL_2, "Created new Phi %+F for value %+F in block %+F\n", phi, value->value, block));
 	return phi;
 }
@@ -829,7 +859,7 @@ static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
  * @param op     the memop: the definition must dominate it
  * @param value  the value
  *
- * @return the definition
+ * @return the definition or NULL if modes are different
  */
 static ir_node *find_definition(ir_node *block, const memop_t *op, const value_t *value) {
 	ir_node *def_block = get_nodes_block(value->value);
@@ -950,14 +980,21 @@ static int forward_avail(block_t *bl) {
 				memop_t *other = find_address(bl, &op->value);
 				if (other != NULL) {
 					def = find_definition(bl->block, op, &other->value);
-					if (is_Store(other->node)) {
-						/* RAW */
-						DB((dbg, LEVEL_1, "RAW %+F <- %+F(%+F)\n", op->node, def, other->node));
+					if (def != NULL) {
+#ifdef DEBUG_libfirm
+						if (is_Store(other->node)) {
+							/* RAW */
+							DB((dbg, LEVEL_1, "RAW %+F <- %+F(%+F)\n", op->node, def, other->node));
+						} else {
+							/* RAR */
+							DB((dbg, LEVEL_1, "RAR %+F <- %+F(%+F)\n", op->node, def, other->node));
+						}
+#endif
+						mark_replace_load(op, def);
 					} else {
-						/* RAR */
-						DB((dbg, LEVEL_1, "RAR %+F <- %+F(%+F)\n", op->node, def, other->node));
+						/* overwrite it */
+						add_memop(bl, op);
 					}
-					mark_replace_load(op, def);
 				} else {
 					/* add this value */
 					kill_stores(bl, &op->value);
@@ -1011,6 +1048,13 @@ static int forward_avail(block_t *bl) {
 			}
 		}
 	}
+
+	/*
+	 * Always copy the map as it might get updated.
+	 * However, an update is NOT recorded as a change, as the set of available addresses
+	 * is not modified.
+	 */
+	memcpy(bl->id_2_memop_avail, bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
 	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* changed */
 		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
@@ -1031,16 +1075,15 @@ static int forward_avail(block_t *bl) {
  */
 static int backward_antic(block_t *bl) {
 	memop_t *op;
-	ir_node *succ    = get_Block_cfg_out(bl->block, 0);
-	block_t *succ_bl = get_block_entry(succ);
-	int     n;
+	int     n = get_Block_n_cfg_outs(bl->block);
 
-	rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
-	memcpy(bl->id_2_memop, succ_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
-
-	n = get_Block_n_cfg_outs(bl->block);
-	if (n > 1) {
+	if (n >= 1) {
+		ir_node *succ    = get_Block_cfg_out(bl->block, 0);
+		block_t *succ_bl = get_block_entry(succ);
 		int i;
+
+		rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
+		memcpy(bl->id_2_memop, succ_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
 
 		for (i = n - 1; i > 0; --i) {
 			ir_node *succ    = get_Block_cfg_out(bl->block, i);
@@ -1048,6 +1091,9 @@ static int backward_antic(block_t *bl) {
 
 			rbitset_and(env.curr_set, succ_bl->anticL_in, env.rbs_size);
 		}
+	} else {
+		/* block ends with a noreturn call */
+		kill_all();
 	}
 
 #if 0
@@ -1233,14 +1279,6 @@ static void calcAvail(void) {
 		++i;
 	} while (need_iter);
 
-	/* copy the content of the id_2_memop map into the id_2_memop_avail map
-	   as it must be preserved for later use */
-	for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
-		memop_t **t = bl->id_2_memop_avail;
-
-		bl->id_2_memop_avail = bl->id_2_memop;
-		bl->id_2_memop       = t;
-	}
 	DB((dbg, LEVEL_2, "Get avail set after %d iterations\n\n", i));
 }
 
@@ -1569,6 +1607,11 @@ int opt_ldst(ir_graph *irg) {
 	/* create the backward links */
 	env.backward = NULL;
 	irg_block_walk_graph(irg, NULL, collect_backward, NULL);
+
+	/* link the end block in */
+	bl = get_block_entry(env.end_bl);
+	bl->backward_next = env.backward;
+	env.backward      = bl;
 
 	/* check that we really start with the start / end block */
 	assert(env.forward->block  == env.start_bl);
