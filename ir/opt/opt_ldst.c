@@ -735,21 +735,17 @@ static void add_memop_avail(block_t *bl, memop_t *op) {
 }
 
 /**
- * find a definition for a value in the given block.
+ * build a phi definition for a value in the given block
  *
  * @param block  the block
  * @param value  the value
  *
  * @return the definition
  */
-static ir_node *find_definition(ir_node *block, const value_t *value) {
-	ir_node *def_bl = get_nodes_block(value->value);
+static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
 	ir_node **in, *phi;
 	int     i, n;
 	memop_t *mop;
-
-	if (block_dominates(def_bl, block))
-		return value->value;
 
 	/* no: we need a new Phi */
 	n = get_Block_n_cfgpreds(block);
@@ -766,13 +762,52 @@ static ir_node *find_definition(ir_node *block, const value_t *value) {
 	NEW_ARR_A(ir_node *, in, n);
 	for (i = n - 1; i >= 0; --i) {
 		ir_node *pred_bl = get_Block_cfgpred_block(block, i);
-		mop   = find_address(get_block_entry(pred_bl), value);
-		in[i] = find_definition(pred_bl, &mop->value);
+		ir_node *def_bl;
+
+		mop    = find_address(get_block_entry(pred_bl), value);
+		def_bl = get_nodes_block(mop->value.value);
+
+		if (block_dominates(def_bl, pred_bl))
+			in[i] = mop->value.value;
+		else
+			in[i] = build_phi_definition(pred_bl, &mop->value);
 	}
 
 	phi = new_r_Phi(current_ir_graph, block, n, in, value->mode);
 	DB((dbg, LEVEL_2, "Created new Phi %+F for value %+F in block %+F\n", phi, value->value, block));
 	return phi;
+}
+
+/**
+ * find a definition for a value in the given block or above.
+ *
+ * @param block  the block
+ * @param op     the memop: the definition must dominate it
+ * @param value  the value
+ *
+ * @return the definition
+ */
+static ir_node *find_definition(ir_node *block, const memop_t *op, const value_t *value) {
+	ir_node *def_block = get_nodes_block(value->value);
+
+	if (def_block == block) {
+		/* the value is in our block: check, if it is above in the memory list */
+		const memop_t *p;
+
+		for (p = op->prev; p != NULL; p = p->prev) {
+			if (!(p->flags & FLAG_KILLED_NODE) &&
+			    p->value.address == value->address) {
+				/* found */
+				assert(p->value.value == value->value);
+				return p->value.value;
+			}
+		}
+	} else if (block_dominates(def_block, block)) {
+		/* strictly dominates */
+		return value->value;
+	}
+
+	return build_phi_definition(block, value);
 }
 
 /**
@@ -862,14 +897,14 @@ static int forward_avail(block_t *bl) {
 				/* do we have this already? */
 				memop_t *other = find_address(bl, &op->value);
 				if (other != NULL) {
+					def = find_definition(bl->block, op, &other->value);
 					if (is_Store(other->node)) {
 						/* RAW */
-						DB((dbg, LEVEL_1, "RAW %+F %+F\n", op->node, other->node));
+						DB((dbg, LEVEL_1, "RAW %+F <- %+F(%+F)\n", op->node, def, other->node));
 					} else {
 						/* RAR */
-						DB((dbg, LEVEL_1, "RAR %+F %+F\n", op->node, other->node));
+						DB((dbg, LEVEL_1, "RAR %+F <- %+F(%+F)\n", op->node, def, other->node));
 					}
-					def = find_definition(bl->block, &other->value);
 					mark_replace_load(op, def);
 				} else {
 					/* add this value */
@@ -883,14 +918,19 @@ static int forward_avail(block_t *bl) {
 				/* do we have this store already */
 				memop_t *other = find_address(bl, &op->value);
 				if (other != NULL) {
-					if (is_Store(other->node)) {
-						/* a WAW */
-						DB((dbg, LEVEL_1, "WAW %+F %+F\n", op->node, other->node));
+					if (is_Store(other->node) &&
+					    get_nodes_block(other->node) == get_nodes_block(op->node)) {
+						/*
+						 * A WAW in the same block we can kick the first store.
+						 * This is a shortcut: we know that the second Store will be anticipated
+						 * then in an case.
+						 */
+						DB((dbg, LEVEL_1, "WAW %+F <- %+F\n", op->node, other->node));
 						mark_remove_store(other);
 						/* FIXME: a Load might be get freed due to this killed store */
 					} else if (other->value.value == op->value.value) {
 						/* WAR */
-						DB((dbg, LEVEL_1, "WAR %+F %+F\n", op->node, other->node));
+						DB((dbg, LEVEL_1, "WAR %+F <- %+F\n", op->node, other->node));
 						mark_remove_store(op);
 					} else {
 						/* we overwrite the value that was loaded */
@@ -919,12 +959,13 @@ static int forward_avail(block_t *bl) {
 			}
 		}
 	}
-	dump_curr(bl, "Avail_out");
 	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* changed */
 		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
+		dump_curr(bl, "Avail_out*");
 		return 1;
 	}
+	dump_curr(bl, "Avail_out");
 	return 0;
 }
 
@@ -1412,6 +1453,8 @@ int opt_ldst(ir_graph *irg) {
 
 	/* we need landing pads */
 	remove_critical_cf_edges(irg);
+
+	dump_ir_block_graph(irg, "-XXX");
 
 	if (get_opt_alias_analysis()) {
 		assure_irg_entity_usage_computed(irg);
