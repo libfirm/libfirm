@@ -42,7 +42,7 @@
 #include "error.h"
 
 /**
- * Mapping an address to an densed ID.
+ * Mapping an address to an dense ID.
  */
 typedef struct address_entry_t {
 	unsigned id;          /**< The ID */
@@ -106,8 +106,6 @@ struct block_t {
 	memop_t  *avail;             /**< used locally for the avail map */
 };
 
-#define get_block_entry(block) ((block_t *)get_irn_link(block))
-
 /**
  * Metadata for this pass.
  */
@@ -117,6 +115,7 @@ typedef struct ldst_env_t {
 	block_t         *forward;     /**< Inverse post-order list of all blocks Start->End */
 	block_t         *backward;    /**< Inverse post-order list of all blocks End->Start */
 	ir_node         *start_bl;    /**< start block of the current graph */
+	ir_node         *end_bl;      /**< end block of the current graph */
 	unsigned        *curr_set;    /**< current set of addresses */
 	unsigned        curr_adr_id;  /**< number for address mapping */
 	unsigned        n_mem_ops;    /**< number of memory operations (Loads/Stores) */
@@ -192,6 +191,19 @@ static void dump_curr(block_t *bl, const char *s) {
 #define dump_block_list()
 #define dump_curr(bl, s)
 #endif /* DEBUG_libfirm */
+
+/** Get the block entry for a block node */
+static block_t *get_block_entry(const ir_node *block) {
+	assert(is_Block(block));
+
+	return get_irn_link(block);
+}
+
+/** Get the memop entry for a memory operation node */
+static memop_t *get_irn_memop(const ir_node *irn) {
+	assert(! is_Block(irn));
+	return get_irn_link(irn);
+}
 
 /**
  * Walk over the memory edges from definition to users.
@@ -275,7 +287,9 @@ static void prepare_blocks(ir_node *block, void *ctx) {
 	set_irn_link(block, entry);
 
 	/* create the list in inverse order */
-	env.forward = entry;
+	env.forward  = entry;
+	/* remember temporary the last one */
+	env.backward = entry;
 }
 
 /**
@@ -317,6 +331,7 @@ static memop_t *alloc_memop(ir_node *irn) {
 	m->next          = NULL;
 	m->flags         = 0;
 
+	set_irn_link(irn, m);
 	return m;
 }
 
@@ -326,7 +341,20 @@ static memop_t *alloc_memop(ir_node *irn) {
  * @param adr  the IR-node representing the address
  */
 static unsigned register_address(ir_node *adr) {
-	address_entry *entry = ir_nodemap_get(&env.adr_map, adr);
+	address_entry *entry;
+
+	/* skip Confirms and Casts */
+restart:
+	if (is_Confirm(adr)) {
+		adr = get_Confirm_value(adr);
+		goto restart;
+	}
+	if (is_Cast(adr)) {
+		adr = get_Cast_op(adr);
+		goto restart;
+	}
+
+	entry = ir_nodemap_get(&env.adr_map, adr);
 
 	if (entry == NULL) {
 		/* new address */
@@ -381,6 +409,10 @@ static void update_Load_memop(memop_t *m) {
 	for (i = get_irn_n_outs(load) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(load, i);
 
+		/* beware of keep edges */
+		if (is_End(proj))
+			continue;
+
 		switch (get_Proj_proj(proj)) {
 		case pn_Load_res:
 			m->value.value = proj;
@@ -428,6 +460,10 @@ static void update_Store_memop(memop_t *m) {
 	for (i = get_irn_n_outs(store) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(store, i);
 
+		/* beware of keep edges */
+		if (is_End(proj))
+			continue;
+
 		switch (get_Proj_proj(proj)) {
 		case pn_Store_X_except:
 			m->flags |= FLAG_EXCEPTION;
@@ -463,6 +499,10 @@ static void update_Call_memop(memop_t *m) {
 	for (i = get_irn_n_outs(call) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(call, i);
 
+		/* beware of keep edges */
+		if (is_End(proj))
+			continue;
+
 		switch (get_Proj_proj(proj)) {
 		case pn_Call_X_except:
 			m->flags |= FLAG_EXCEPTION;
@@ -485,6 +525,10 @@ static void update_DivOp_memop(memop_t *m) {
 
 	for (i = get_irn_n_outs(div) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(div, i);
+
+		/* beware of keep edges */
+		if (is_End(proj))
+			continue;
 
 		switch (get_Proj_proj(proj)) {
 		case pn_Generic_X_except:
@@ -855,10 +899,18 @@ static int forward_avail(block_t *bl) {
 
 		/* more than one predecessors, calculate the join */
 		for (i = n - 1; i > 0; --i) {
-			ir_node *pred    = get_Block_cfgpred_block(bl->block, i);
-			block_t *pred_bl = get_block_entry(pred);
+			ir_node *pred    = skip_Proj(get_Block_cfgpred(bl->block, i));
+			block_t *pred_bl = get_block_entry(get_nodes_block(pred));
 
 			rbitset_and(env.curr_set, pred_bl->avail_out, env.rbs_size);
+
+			if (is_Load(pred) || is_Store(pred)) {
+				/* We reached this block by an exception from a Load or Store:
+				 * the memop was NOT completed than, kill it
+				 */
+				memop_t *exc_op = get_irn_memop(pred);
+				rbitset_clear(env.curr_set, exc_op->value.id);
+			}
 
 		}
 		/* sure that all values are in the map */
@@ -1325,7 +1377,8 @@ static void insert_Load(ir_node *block, void *ctx) {
 
 	for (pos = rbitset_next(bl->anticL_in, pos, 1); pos != end; pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
 		memop_t *op = bl->id_2_memop[pos];
-		int     have_some;
+		int     have_some, all_same;
+		ir_node *first;
 
 		assert(is_Load(op->node));
 
@@ -1333,6 +1386,8 @@ static void insert_Load(ir_node *block, void *ctx) {
 			continue;
 
 		have_some  = 0;
+		all_same   = 1;
+		first      = 0;
 		for (i = n - 1; i >= 0; --i) {
 			ir_node *pred    = get_Block_cfgpred_block(block, i);
 			block_t *pred_bl = get_block_entry(pred);
@@ -1346,12 +1401,17 @@ static void insert_Load(ir_node *block, void *ctx) {
 					break;
 				}
 				pred_bl->avail = NULL;
+				all_same       = 0;
 			} else {
 				pred_bl->avail = e;
 				have_some      = 1;
+				if (first == NULL)
+					first = e->node;
+				else if (first != e->node)
+					all_same = 0;
 			}
 		}
-		if (have_some) {
+		if (have_some && !all_same) {
 			ir_mode *mode = op->value.mode;
 			ir_node **in, *phi;
 
@@ -1429,7 +1489,7 @@ static void insert_Loads_upwards(void) {
 	int i, need_iter;
 
 	/* calculate antic_out */
-	DB((dbg, LEVEL_2, "Inserting Loads"));
+	DB((dbg, LEVEL_2, "Inserting Loads\n"));
 	i = 0;
 	do {
 		DB((dbg, LEVEL_2, "Iteration %d:\n=========\n", i));
@@ -1470,6 +1530,7 @@ int opt_ldst(ir_graph *irg) {
 	env.n_mem_ops   = 0;
 	env.changed     = 0;
 	env.start_bl    = get_irg_start_block(irg);
+	env.end_bl      = get_irg_end_block(irg);
 
 	assure_doms(irg);
 	assure_irg_outs(irg);
@@ -1478,7 +1539,24 @@ int opt_ldst(ir_graph *irg) {
 
 	/* first step: allocate block entries: produces an
 	   inverse post-order list for the CFG */
+	set_irn_link(env.end_bl, NULL);
 	irg_out_block_walk(get_irg_start_block(irg), NULL, prepare_blocks, NULL);
+
+	if (get_block_entry(env.end_bl) == NULL) {
+		/*
+		 * The end block is NOT reachable due to endless loops
+		 * or no_return calls. Ensure that it is initialized.
+		 * Note that this places the entry for the end block first, so we must fix this.
+		 * env.backwards points to th last block for this purpose.
+		 */
+		prepare_blocks(env.end_bl, NULL);
+
+		bl               = env.forward;
+		env.forward      = bl->forward_next;
+		bl->forward_next = NULL;
+
+		env.backward->forward_next = bl;
+	}
 
 	/* second step: find and sort all memory ops */
 	walk_memory_irg(irg, collect_memops, NULL, NULL);
@@ -1489,11 +1567,12 @@ int opt_ldst(ir_graph *irg) {
 	}
 
 	/* create the backward links */
+	env.backward = NULL;
 	irg_block_walk_graph(irg, NULL, collect_backward, NULL);
 
 	/* check that we really start with the start / end block */
 	assert(env.forward->block  == env.start_bl);
-	assert(env.backward->block == get_irg_end_block(irg));
+	assert(env.backward->block == env.end_bl);
 
 	/* create address sets: we know that 2 * n_mem_ops - 1 is an upper bound for all possible addresses */
 	env.rbs_size = 2 * env.n_mem_ops;
