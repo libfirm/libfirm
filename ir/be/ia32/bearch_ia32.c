@@ -2227,8 +2227,21 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 					ir_node *f = get_Phi_pred(phi, j);
 
 					/* always support Mux(!float, C1, C2) */
-					if (is_Const(t) && is_Const(f) && !mode_is_float(get_irn_mode(cl)))
-						continue;
+					if (is_Const(t) && is_Const(f) && !mode_is_float(get_irn_mode(cl))) {
+						switch (be_transformer) {
+						case TRANSFORMER_DEFAULT:
+							/* always support Mux(!float, C1, C2) */
+							continue;
+#ifdef FIRM_GRGEN_BE
+						case TRANSFORMER_PBQP:
+						case TRANSFORMER_RAND:
+							/* no support for Mux(*, C1, C2) */
+							return 0;
+#endif
+						default:
+							panic("invalid transformer");
+						}
+					}
 					/* only abs or nabs supported */
 					if (! psi_is_Abs_or_Nabs(cmp, sel, t, f))
 						return 0;
