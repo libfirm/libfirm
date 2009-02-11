@@ -166,6 +166,36 @@ Rotl = dict(
 	is_a     = "binop"
 ),
 
+Div = dict(
+	ins   = [ "mem", "dividend", "divisor" ],
+	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs = [
+		dict(
+			type = "ir_mode*",
+			name = "resmode"
+		),
+		dict(
+			name = "state",
+			type = "op_pin_state"
+		)
+	]
+),
+
+DivMod = dict(
+	ins   = [ "mem", "dividend", "divisor" ],
+	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ],
+	attrs = [
+		dict(
+			type = "ir_mode*",
+			name = "resmode"
+		),
+		dict(
+			name = "state",
+			type = "op_pin_state"
+		)
+	]
+),
+
 Load = dict(
 	ins      = [ "mem", "ptr" ],
 	outs     = [ "M", "X_regular", "X_except", "res" ],

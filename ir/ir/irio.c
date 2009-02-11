@@ -212,7 +212,7 @@ static void write_mode(io_env_t *env, ir_mode *mode)
 	fputc(' ', env->file);
 }
 
-static void write_pinned(io_env_t *env, ir_node *irn)
+static void write_pin_state(io_env_t *env, ir_node *irn)
 {
 	fputs(get_op_pin_state_name(get_irn_pinned(irn)), env->file);
 	fputc(' ', env->file);
@@ -742,11 +742,30 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_align(env)       ((ir_align)       read_enum(env, tt_align))
 #define read_allocation(env)  ((ir_allocation)  read_enum(env, tt_allocation))
 #define read_peculiarity(env) ((ir_peculiarity) read_enum(env, tt_peculiarity))
-#define read_pinned(env)      ((op_pin_state)   read_enum(env, tt_pin_state))
+#define read_pin_state(env)   ((op_pin_state)   read_enum(env, tt_pin_state))
 #define read_type_state(env)  ((ir_type_state)  read_enum(env, tt_type_state))
 #define read_variability(env) ((ir_variability) read_enum(env, tt_variability))
 #define read_visibility(env)  ((ir_visibility)  read_enum(env, tt_visibility))
 #define read_volatility(env)  ((ir_volatility)  read_enum(env, tt_volatility))
+
+static ir_cons_flags get_cons_flags(io_env_t *env)
+{
+	ir_cons_flags flags = cons_none;
+
+	op_pin_state pinstate = read_pin_state(env);
+	switch(pinstate)
+	{
+		case op_pin_state_floats: flags |= cons_floats; break;
+		case op_pin_state_pinned: break;
+		default:
+			panic("Error in %i:%i: Invalid pinstate: %s", env->line, env->col, get_op_pin_state_name(pinstate));
+	}
+
+	if(read_volatility(env) == volatility_is_volatile) flags |= cons_volatile;
+	if(read_align(env) == align_non_aligned) flags |= cons_unaligned;
+
+	return flags;
+}
 
 static tarval *read_tv(io_env_t *env)
 {
@@ -1076,7 +1095,7 @@ notsupported:
 			exchange(node, newnode);
 		/* Always update hash entry to avoid more uses of id nodes */
 		set_id(env, nodenr, newnode);
-		printf("Insert %s %ld\n", nodename, nodenr);
+		//printf("Insert %s %ld\n", nodename, nodenr);
 	}
 
 endloop:
