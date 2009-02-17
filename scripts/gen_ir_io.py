@@ -30,10 +30,7 @@ env.filters['block']  = format_block
 def get_io_type(type, attrname, nodename):
 	if type == "tarval*":
 		importcmd = "tarval *%s = read_tv(env);" % attrname
-		exportcmd = """
-			write_mode(env, get_tarval_mode(%(val)s));
-			tarval_snprintf(buf, sizeof(buf), %(val)s);
-			fprintf(env->file, "%%s ", buf);"""
+		exportcmd = "write_tarval(env, %(val)s);";
 	elif type == "ir_mode*":
 		importcmd = "ir_mode *%s = read_mode(env);" % attrname
 		exportcmd = "write_mode(env, %(val)s);"

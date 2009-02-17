@@ -63,7 +63,8 @@ typedef enum typetag_t
 	tt_type_state,
 	tt_variability,
 	tt_visibility,
-	tt_volatility
+	tt_volatility,
+	tt_initializer
 } typetag_t;
 
 typedef struct symbol_t
@@ -171,6 +172,11 @@ static void symtbl_init(void)
 	INSERTENUM(tt_peculiarity, peculiarity_inherited);
 	INSERTENUM(tt_peculiarity, peculiarity_existent);
 
+	INSERTENUM(tt_initializer, IR_INITIALIZER_CONST);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_TARVAL);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
+
 #undef INSERTENUM
 #undef INSERT
 }
@@ -212,6 +218,15 @@ static void write_mode(io_env_t *env, ir_mode *mode)
 	fputc(' ', env->file);
 }
 
+static void write_tarval(io_env_t *env, tarval *tv)
+{
+	char buf[1024];
+	write_mode(env, get_tarval_mode(tv));
+	tarval_snprintf(buf, sizeof(buf), tv);
+	fputs(buf, env->file);
+	fputc(' ', env->file);
+}
+
 static void write_pin_state(io_env_t *env, ir_node *irn)
 {
 	fputs(get_op_pin_state_name(get_irn_pinned(irn)), env->file);
@@ -242,6 +257,40 @@ static void write_align(io_env_t *env, ir_node *irn)
 	fputc(' ', env->file);
 }
 
+static void write_initializer(io_env_t *env, ir_initializer_t *ini)
+{
+	FILE *f = env->file;
+	ir_initializer_kind_t ini_kind = get_initializer_kind(ini);
+	fputs(get_initializer_kind_name(ini_kind), f);
+	fputc(' ', f);
+
+	switch(ini_kind)
+	{
+		case IR_INITIALIZER_CONST:
+			fprintf(f, "%ld ", get_irn_node_nr(get_initializer_const_value(ini)));
+			break;
+
+		case IR_INITIALIZER_TARVAL:
+			write_tarval(env, get_initializer_tarval_value(ini));
+			break;
+
+		case IR_INITIALIZER_NULL:
+			break;
+
+		case IR_INITIALIZER_COMPOUND:
+		{
+			unsigned i, n = get_initializer_compound_n_entries(ini);
+			fprintf(f, "%d ", n);
+			for(i = 0; i < n; i++)
+				write_initializer(env, get_initializer_compound_value(ini, i));
+			break;
+		}
+
+		default:
+			panic("Unknown initializer kind");
+	}
+}
+
 static void export_type(io_env_t *env, ir_type *tp)
 {
 	FILE *f = env->file;
@@ -270,6 +319,7 @@ static void export_type(io_env_t *env, ir_type *tp)
 				else panic("Lower array bound is not constant");
 
 				if(is_Const(upper)) fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(upper)));
+				else if(is_Unknown(upper)) fputs("unknown ", f);
 				else panic("Upper array bound is not constant");
 			}
 			break;
@@ -340,13 +390,22 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 	{
 		if(is_compound_entity(ent))
 		{
-			int i, n = get_compound_ent_n_values(ent);
-			fprintf(env->file, "%d ", n);
-			for(i = 0; i < n; i++)
+			if(has_entity_initializer(ent))
 			{
-				ir_entity *member = get_compound_ent_value_member(ent, i);
-				ir_node   *irn    = get_compound_ent_value(ent, i);
-				fprintf(env->file, "%ld %ld ", get_entity_nr(member), get_irn_node_nr(irn));
+				fputs("initializer ", env->file);
+				write_initializer(env, get_entity_initializer(ent));
+			}
+			else
+			{
+				fputs("noninitializer ", env->file);
+				int i, n = get_compound_ent_n_values(ent);
+				fprintf(env->file, "%d ", n);
+				for(i = 0; i < n; i++)
+				{
+					ir_entity *member = get_compound_ent_value_member(ent, i);
+					ir_node   *irn    = get_compound_ent_value(ent, i);
+					fprintf(env->file, "%ld %ld ", get_entity_nr(member), get_irn_node_nr(irn));
+				}
 			}
 		}
 		else
@@ -802,9 +861,18 @@ static void import_type(io_env_t *env)
 			type = new_type_array(id, ndims, elemtype);
 			for(i = 0; i < ndims; i++)
 			{
-				long lowerbound = read_long(env);
-				long upperbound = read_long(env);
-				set_array_bounds_int(type, i, lowerbound, upperbound);
+				const char *str = read_str(env);
+				if(strcmp(str, "unknown"))
+				{
+					long lowerbound = strtol(str, NULL, 0);
+					set_array_lower_bound_int(type, i, lowerbound);
+				}
+				str = read_str(env);
+				if(strcmp(str, "unknown"))
+				{
+					long upperbound = strtol(str, NULL, 0);
+					set_array_upper_bound_int(type, i, upperbound);
+				}
 			}
 			set_type_size_bytes(type, size);
 			break;
@@ -890,7 +958,7 @@ static void import_entity(io_env_t *env)
 	char          buf[1024], buf2[1024];
 	long          entnr       = read_long(env);
 	const char   *name        = read_qstr_to(env, buf, sizeof(buf));
-	const char   *ld_name     = read_qstr_to(env, buf, sizeof(buf2));
+	const char   *ld_name     = read_qstr_to(env, buf2, sizeof(buf2));
 	long          typenr      = read_long(env);
 	long          ownertypenr = read_long(env);
 
@@ -912,12 +980,19 @@ static void import_entity(io_env_t *env)
 	{
 		if(is_compound_entity(entity))
 		{
-			int i, n = (int) read_long(env);
-			for(i = 0; i < n; i++)
+			if(!strcmp(read_str_to(env, buf2, sizeof(buf2)), "initializer"))
 			{
-				ir_entity *member = get_entity(env, read_long(env));
-				ir_node   *irn    = get_node_or_dummy(env, read_long(env));
-				add_compound_ent_value(entity, irn, member);
+				panic("moep");
+			}
+			else
+			{
+				int i, n = (int) read_long(env);
+				for(i = 0; i < n; i++)
+				{
+					ir_entity *member = get_entity(env, read_long(env));
+					ir_node   *irn    = get_node_or_dummy(env, read_long(env));
+					add_compound_ent_value(entity, irn, member);
+				}
 			}
 		}
 		else
@@ -940,6 +1015,8 @@ static int parse_typegraph(io_env_t *env)
 	EXPECT('{');
 
 	curfpos = ftell(env->file);
+
+	current_ir_graph = get_const_code_irg();
 
 	// parse all types first
 	while(1)
