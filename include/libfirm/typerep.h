@@ -444,6 +444,9 @@ typedef enum ir_initializer_kind_t {
 /** returns kind of an initializer */
 ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer);
 
+/** Return the name of the initializer kind. */
+const char *get_initializer_kind_name(ir_initializer_kind_t ini);
+
 /**
  * returns the null initializer (there's only one instance of it in a program )
  */
@@ -547,6 +550,9 @@ void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member, int
 
 /** Sets the new style initializers of an entity. */
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
+
+/** Returns true, if an entity has new style initializers. */
+int has_entity_initializer(const ir_entity *entity);
 
 /** Return the new style initializers of an entity. */
 ir_initializer_t *get_entity_initializer(const ir_entity *entity);

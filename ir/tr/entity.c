@@ -679,6 +679,20 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 	return nn;
 }  /* copy_const_value */
 
+/** Return the name of the initializer kind. */
+const char *get_initializer_kind_name(ir_initializer_kind_t ini)
+{
+#define X(a)    case a: return #a
+	switch (ini) {
+	X(IR_INITIALIZER_CONST);
+	X(IR_INITIALIZER_TARVAL);
+	X(IR_INITIALIZER_NULL);
+	X(IR_INITIALIZER_COMPOUND);
+    default: return "BAD VALUE";
+	}
+#undef X
+}
+
 static ir_initializer_t null_initializer = { IR_INITIALIZER_NULL };
 
 ir_initializer_t *get_initializer_null(void)
@@ -781,6 +795,11 @@ void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 	entity->attr.initializer = initializer;
 	entity->has_initializer  = 1;
 	check_entity_initializer(entity);
+}
+
+int has_entity_initializer(const ir_entity *entity)
+{
+	return entity->has_initializer;
 }
 
 ir_initializer_t *get_entity_initializer(const ir_entity *entity)
