@@ -43,7 +43,7 @@
 
 #define SYMERROR ((unsigned) ~0)
 
-typedef struct io_env
+typedef struct io_env_t
 {
 	FILE *file;
 	set *idset;               /**< id_entry set, which maps from file ids to new Firm elements */
@@ -51,6 +51,12 @@ typedef struct io_env
 	int line, col;
 	ir_type **fixedtypes;
 } io_env_t;
+
+typedef struct lex_state_t
+{
+	long offs;
+	int line, col;
+} lex_state_t;
 
 typedef enum typetag_t
 {
@@ -565,6 +571,20 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 	fclose(env.file);
 }
 
+static void save_lex_state(io_env_t *env, lex_state_t *state)
+{
+	state->offs = ftell(env->file);
+	state->line = env->line;
+	state->col  = env->col;
+}
+
+static void restore_lex_state(io_env_t *env, lex_state_t *state)
+{
+	fseek(env->file, state->offs, SEEK_SET);
+	env->line = state->line;
+	env->col  = state->col;
+}
+
 static int read_c(io_env_t *env)
 {
 	int ch = fgetc(env->file);
@@ -1073,11 +1093,11 @@ static void import_entity(io_env_t *env)
 static int parse_typegraph(io_env_t *env)
 {
 	const char *kind;
-	long curfpos;
+	lex_state_t oldstate;
 
 	EXPECT('{');
 
-	curfpos = ftell(env->file);
+	save_lex_state(env, &oldstate);
 
 	current_ir_graph = get_const_code_irg();
 
@@ -1094,7 +1114,8 @@ static int parse_typegraph(io_env_t *env)
 	}
 
 	// now parse rest
-	fseek(env->file, curfpos, SEEK_SET);
+	restore_lex_state(env, &oldstate);
+
 	while(1)
 	{
 		kind = read_str(env);
