@@ -359,7 +359,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	spillslot_unionfind = ALLOCAN(int,       spillcount);
 	spilllist           = ALLOCAN(spill_t*,  spillcount);
 
-	uf_init(spillslot_unionfind, 0, spillcount);
+	uf_init(spillslot_unionfind, spillcount);
 
 	DEBUG_ONLY(
 		memset(spilllist, 0, spillcount * sizeof(spilllist[0]));

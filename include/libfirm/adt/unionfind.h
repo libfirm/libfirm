@@ -37,13 +37,13 @@
  * Call this to initialize an array of @p count elements to be used by the
  * union find functions.
  *
- * @param data	The array (you have to allocate it yourself)
- * @param from	The first element that should be initialized
- * @param to	the index of the first element which is not initialized anymore
+ * @param data    The array (you have to allocate it yourself)
+ * @param n_elems number of elements handled by the datastructure
  */
-static inline void uf_init(int* data, int from, int to) {
-	int i;
-	for(i = from; i < to; ++i) {
+static inline void uf_init(int* data, size_t n_elems)
+{
+	size_t i;
+	for(i = 0; i < n_elems; ++i) {
 		data[i] = -1;
 	}
 }
@@ -58,15 +58,18 @@ static inline void uf_init(int* data, int from, int to) {
  * @return		0 if the new union set is represented by set1, 1 if it is
  *              represented by set2
  */
-static inline int uf_union(int* data, int set1, int set2) {
-	int d1 = data[set1];
-	int d2 = data[set2];
+static inline int uf_union(int* data, int set1, int set2)
+{
+	int d1;
+	int d2;
 	int newcount;
 
 	if(set1 == set2)
 		return 0;
 
 	/* need 2 set representatives */
+	d1 = data[set1];
+	d2 = data[set2];
 	assert(d1 < 0 && d2 < 0);
 
 	newcount = d1 + d2;
@@ -91,7 +94,8 @@ static inline int uf_union(int* data, int set1, int set2) {
  * @param e		The element
  * @return		The representative of the set that contains @p e
  */
-static inline int uf_find(int* data, int e) {
+static inline int uf_find(int* data, int e)
+{
 	/* go through list to find representative */
 	int repr = e;
 	while(data[repr] >= 0) {
@@ -108,4 +112,4 @@ static inline int uf_find(int* data, int e) {
 	return repr;
 }
 
-#endif /* FIRM_ADT_UNIONFIND_H */
+#endif
