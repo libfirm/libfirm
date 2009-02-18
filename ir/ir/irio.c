@@ -397,8 +397,8 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 			}
 			else
 			{
-				fputs("noninitializer ", env->file);
 				int i, n = get_compound_ent_n_values(ent);
+				fputs("noninitializer ", env->file);
 				fprintf(env->file, "%d ", n);
 				for(i = 0; i < n; i++)
 				{
@@ -443,7 +443,6 @@ static void export_node(ir_node *irn, void *ctx)
 	io_env_t *env = (io_env_t *) ctx;
 	int i, n;
 	unsigned opcode = get_irn_opcode(irn);
-	char buf[1024];
 
 	if(env->ignoreblocks && opcode == iro_Block)
 		return;
@@ -798,14 +797,15 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 	return 0;
 }
 
-#define read_align(env)       ((ir_align)       read_enum(env, tt_align))
-#define read_allocation(env)  ((ir_allocation)  read_enum(env, tt_allocation))
-#define read_peculiarity(env) ((ir_peculiarity) read_enum(env, tt_peculiarity))
-#define read_pin_state(env)   ((op_pin_state)   read_enum(env, tt_pin_state))
-#define read_type_state(env)  ((ir_type_state)  read_enum(env, tt_type_state))
-#define read_variability(env) ((ir_variability) read_enum(env, tt_variability))
-#define read_visibility(env)  ((ir_visibility)  read_enum(env, tt_visibility))
-#define read_volatility(env)  ((ir_volatility)  read_enum(env, tt_volatility))
+#define read_align(env)            ((ir_align)              read_enum(env, tt_align))
+#define read_allocation(env)       ((ir_allocation)         read_enum(env, tt_allocation))
+#define read_peculiarity(env)      ((ir_peculiarity)        read_enum(env, tt_peculiarity))
+#define read_pin_state(env)        ((op_pin_state)          read_enum(env, tt_pin_state))
+#define read_type_state(env)       ((ir_type_state)         read_enum(env, tt_type_state))
+#define read_variability(env)      ((ir_variability)        read_enum(env, tt_variability))
+#define read_visibility(env)       ((ir_visibility)         read_enum(env, tt_visibility))
+#define read_volatility(env)       ((ir_volatility)         read_enum(env, tt_volatility))
+#define read_initializer_kind(env) ((ir_initializer_kind_t) read_enum(env, tt_initializer))
 
 static ir_cons_flags get_cons_flags(io_env_t *env)
 {
@@ -833,6 +833,43 @@ static tarval *read_tv(io_env_t *env)
 	read_str_to(env, buf, sizeof(buf));
 	return new_tarval_from_str(buf, strlen(buf), tvmode);
 }
+
+static ir_initializer_t *read_initializer(io_env_t *env)
+{
+	FILE *f = env->file;
+	ir_initializer_kind_t ini_kind = read_initializer_kind(env);
+
+	switch(ini_kind)
+	{
+		case IR_INITIALIZER_CONST:
+		{
+			ir_node *irn = get_node_or_dummy(env, read_long(env));
+			return create_initializer_const(irn);
+		}
+
+		case IR_INITIALIZER_TARVAL:
+			return create_initializer_tarval(read_tv(env));
+
+		case IR_INITIALIZER_NULL:
+			return get_initializer_null();
+
+		case IR_INITIALIZER_COMPOUND:
+		{
+			unsigned i, n = (unsigned) read_long(env);
+			ir_initializer_t *ini = create_initializer_compound(n);
+			for(i = 0; i < n; i++)
+			{
+				ir_initializer_t *curini = read_initializer(env);
+				set_initializer_compound_value(ini, i, curini);
+			}
+			return ini;
+		}
+
+		default:
+			panic("Unknown initializer kind");
+	}
+}
+
 
 /** Reads a type description and remembers it by its id. */
 static void import_type(io_env_t *env)
@@ -982,7 +1019,7 @@ static void import_entity(io_env_t *env)
 		{
 			if(!strcmp(read_str_to(env, buf2, sizeof(buf2)), "initializer"))
 			{
-				panic("moep");
+				set_entity_initializer(entity, read_initializer(env));
 			}
 			else
 			{
