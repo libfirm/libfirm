@@ -487,7 +487,7 @@ void ir_export(const char *filename)
 
 	fputs("typegraph {\n", env.file);
 
-	type_walk(NULL, export_type_or_ent, &env);
+	type_walk_plus_frames(NULL, export_type_or_ent, &env);
 	/* TODO: Visit frame types and "types for value params"? */
 
 	for(i = 0; i < n_irgs; i++)

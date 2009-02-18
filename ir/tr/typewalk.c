@@ -276,6 +276,19 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
 	do_type_walk(cont, pre, post, env);
 }
 
+void type_walk_plus_frames(type_walk_func *pre, type_walk_func *post, void *env) {
+	int i, n_irgs = get_irp_n_irgs();
+	type_or_ent cont;
+
+	type_walk(pre, post, env);
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		cont.typ = get_irg_frame_type(irg);
+		do_type_walk(cont, pre, post, env);
+	}
+}
+
 void type_walk_irg(ir_graph *irg,
                    type_walk_func *pre,
                    type_walk_func *post,
