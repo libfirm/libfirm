@@ -1298,6 +1298,8 @@ int      is_IJmp(const ir_node *node);
 int      is_Raise(const ir_node *node);
 /** Returns true if a node is an ASM node. */
 int      is_ASM(const ir_node *node);
+/** Returns true if a node is an Dummy node. */
+int      is_Dummy(const ir_node *node);
 /** Returns true if node is a Proj node or a Filter node in INTRA-procedural view. */
 int      is_Proj(const ir_node *node);
 /** Returns true if node is a Filter node. */

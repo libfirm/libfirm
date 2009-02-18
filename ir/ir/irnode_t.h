@@ -754,6 +754,12 @@ _is_ASM(const ir_node *node) {
 }
 
 static inline int
+_is_Dummy(const ir_node *node) {
+	assert(node);
+	return (_get_irn_op(node) == op_Dummy);
+}
+
+static inline int
 _is_Anchor(const ir_node *node) {
 	return (_get_irn_op(node) == op_Anchor);
 }
@@ -1065,6 +1071,7 @@ _is_arg_Proj(const ir_node *node) {
 #define is_IJmp(node)                         _is_IJmp(node)
 #define is_Raise(node)                        _is_Raise(node)
 #define is_ASM(node)                          _is_ASM(node)
+#define is_Dummy(node)                        _is_Dummy(node)
 #define is_Anchor(node)                       _is_Anchor(node)
 #define is_Bad(node)                          _is_Bad(node)
 #define is_NoMem(node)                        _is_NoMem(node)

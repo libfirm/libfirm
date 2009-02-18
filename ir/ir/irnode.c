@@ -2955,6 +2955,12 @@ int
 	return _is_ASM(node);
 }
 
+/* returns true if a node is an Dummy node. */
+int
+(is_Dummy)(const ir_node *node) {
+	return _is_Dummy(node);
+}
+
 int
 (is_Proj)(const ir_node *node) {
 	return _is_Proj(node);
