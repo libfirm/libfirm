@@ -54,17 +54,18 @@ typedef struct io_env
 
 typedef enum typetag_t
 {
-	tt_iro,
-	tt_tpo,
 	tt_align,
 	tt_allocation,
+	tt_builtin,
+	tt_initializer,
+	tt_iro,
 	tt_peculiarity,
 	tt_pin_state,
+	tt_tpo,
 	tt_type_state,
 	tt_variability,
 	tt_visibility,
-	tt_volatility,
-	tt_initializer
+	tt_volatility
 } typetag_t;
 
 typedef struct symbol_t
@@ -120,7 +121,7 @@ static void symtbl_init(void)
 	if(symtbl != NULL)
 		return;
 
-	symtbl = new_set(symbol_cmp, 32);
+	symtbl = new_set(symbol_cmp, 256);
 
 #define INSERT(s, tt, cod)                                       \
 	key.str = (s);                                               \
@@ -176,6 +177,21 @@ static void symtbl_init(void)
 	INSERTENUM(tt_initializer, IR_INITIALIZER_TARVAL);
 	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
 	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
+
+	INSERTENUM(tt_builtin, ir_bk_trap);
+	INSERTENUM(tt_builtin, ir_bk_debugbreak);
+	INSERTENUM(tt_builtin, ir_bk_return_address);
+	INSERTENUM(tt_builtin, ir_bk_frame_addess);
+	INSERTENUM(tt_builtin, ir_bk_prefetch);
+	INSERTENUM(tt_builtin, ir_bk_ffs);
+	INSERTENUM(tt_builtin, ir_bk_clz);
+	INSERTENUM(tt_builtin, ir_bk_ctz);
+	INSERTENUM(tt_builtin, ir_bk_popcount);
+	INSERTENUM(tt_builtin, ir_bk_parity);
+	INSERTENUM(tt_builtin, ir_bk_bswap);
+	INSERTENUM(tt_builtin, ir_bk_inport);
+	INSERTENUM(tt_builtin, ir_bk_outport);
+	INSERTENUM(tt_builtin, ir_bk_inner_trampoline);
 
 #undef INSERTENUM
 #undef INSERT
@@ -257,10 +273,17 @@ static void write_align(io_env_t *env, ir_node *irn)
 	fputc(' ', env->file);
 }
 
+static void write_builtin_kind(io_env_t *env, ir_node *irn)
+{
+	fputs(get_builtin_kind_name(get_Builtin_kind(irn)), env->file);
+	fputc(' ', env->file);
+}
+
 static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 {
 	FILE *f = env->file;
 	ir_initializer_kind_t ini_kind = get_initializer_kind(ini);
+
 	fputs(get_initializer_kind_name(ini_kind), f);
 	fputc(' ', f);
 
@@ -769,12 +792,14 @@ static const char *get_typetag_name(typetag_t typetag)
 {
 	switch(typetag)
 	{
-		case tt_iro:         return "opcode";
-		case tt_tpo:         return "type";
 		case tt_align:       return "align";
 		case tt_allocation:  return "allocation";
+		case tt_builtin:     return "builtin kind";
+		case tt_initializer: return "initializer kind";
+		case tt_iro:         return "opcode";
 		case tt_peculiarity: return "peculiarity";
 		case tt_pin_state:   return "pin state";
+		case tt_tpo:         return "type";
 		case tt_type_state:  return "type state";
 		case tt_variability: return "variability";
 		case tt_visibility:  return "visibility";
@@ -806,6 +831,7 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_visibility(env)       ((ir_visibility)         read_enum(env, tt_visibility))
 #define read_volatility(env)       ((ir_volatility)         read_enum(env, tt_volatility))
 #define read_initializer_kind(env) ((ir_initializer_kind_t) read_enum(env, tt_initializer))
+#define read_builtin_kind(env)     ((ir_builtin_kind)       read_enum(env, tt_builtin))
 
 static ir_cons_flags get_cons_flags(io_env_t *env)
 {

@@ -1426,7 +1426,7 @@ set_Builtin_type(ir_node *node, ir_type *tp) {
 
 /* Returns a human readable string for the ir_builtin_kind. */
 const char *get_builtin_kind_name(ir_builtin_kind kind) {
-#define X(a)    case a: return #a + 6;
+#define X(a)    case a: return #a;
 	switch (kind) {
 		X(ir_bk_trap);
 		X(ir_bk_debugbreak);

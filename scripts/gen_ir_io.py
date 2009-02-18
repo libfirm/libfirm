@@ -59,6 +59,9 @@ def get_io_type(type, attrname, nodename):
 	elif type == "op_pin_state":
 		importcmd = "op_pin_state %s = read_pin_state(env);" % attrname
 		exportcmd = "write_pin_state(env, irn);"
+	elif type == "ir_builtin_kind":
+		importcmd = "ir_builtin_kind %s = read_builtin_kind(env);" % attrname
+		exportcmd = "write_builtin_kind(env, irn);"
 	else:
 		print "UNKNOWN TYPE: %s" % type
 		importcmd = """// BAD: %s %s
@@ -143,6 +146,13 @@ def preprocess_node(nodename, node):
 		arguments.append("prednodes[%i]" % i)
 		i += 1
 
+	# Special case for Builtin...
+	if nodename == "Builtin":
+		for attr in node["attrs"]:
+			if attr["name"] == "kind":
+				prepare_attr(nodename, attr)
+				arguments.append(attr["name"])
+
 	if node["arity"] == "variable" or node["arity"] == "dynamic":
 		arguments.append("numpreds - %i" % (i + 1))
 		arguments.append("prednodes + %i" % i)
@@ -151,6 +161,8 @@ def preprocess_node(nodename, node):
 		arguments.append("mode")
 
 	for attr in node["attrs"]:
+		if nodename == "Builtin" and attr["name"] == "kind":
+			continue
 		prepare_attr(nodename, attr)
 		arguments.append(attr["name"])
 

@@ -218,7 +218,6 @@ typedef struct {
 } ir_asm_constraint;
 
 /** Supported libFirm builtins. */
-/** Supported libFirm builtins. */
 typedef enum {
 	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
 	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */

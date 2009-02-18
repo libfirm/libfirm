@@ -164,6 +164,7 @@ libfirm_la_SOURCES = \
 	ir/irgwalk_blk.c \
 	ir/irgwalk.c \
 	ir/irhooks.c \
+	ir/irio.c \
 	ir/irlinkednodemap.c \
 	ir/irlinkednodeset.c \
 	ir/irmode.c \

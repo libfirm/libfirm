@@ -101,6 +101,22 @@ Call = dict(
 	]
 ),
 
+Builtin = dict(
+	ins      = [ "mem" ],
+	arity    = "variable",
+	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
+	attrs    = [
+		dict(
+			type = "ir_builtin_kind",
+			name = "kind"
+		),
+		dict(
+			type = "ir_type*",
+			name = "type"
+		)
+	]
+),
+
 binop = dict(
 	abstract = True,
 	ins      = [ "left", "right" ]
