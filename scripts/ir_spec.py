@@ -406,4 +406,15 @@ Free = dict(
 		)
 	]
 ),
+
+CopyB = dict(
+	ins   = [ "mem", "dst", "src" ],
+	outs  = [ "M", "X_regular", "X_except" ],
+	attrs = [
+		dict(
+			name = "type",
+			type = "ir_type*"
+		)
+	]
+),
 )
