@@ -374,7 +374,13 @@ Cmp = dict(
 ),
 
 Conv = dict(
-	is_a     = "unop"
+	is_a     = "unop",
+	attrs = [
+		dict(
+			name = "strict",
+			type = "int"
+		)
+	]
 ),
 
 Alloc = dict(

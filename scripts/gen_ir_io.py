@@ -62,6 +62,9 @@ def get_io_type(type, attrname, nodename):
 	elif type == "ir_builtin_kind":
 		importcmd = "ir_builtin_kind %s = read_builtin_kind(env);" % attrname
 		exportcmd = "write_builtin_kind(env, irn);"
+	elif type == "int":
+		importcmd = "int %s = (int) read_long(env);" % attrname
+		exportcmd = """fprintf(env->file, "%%d ", %(val)s);"""
 	else:
 		print "UNKNOWN TYPE: %s" % type
 		importcmd = """// BAD: %s %s

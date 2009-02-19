@@ -962,7 +962,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
 			int idx = get_irn_idx(left);
 
-			left = new_r_Conv(irg, block, env->entries[idx]->low_word, mode);
+			left = new_r_Conv(irg, block, env->entries[idx]->low_word, mode, 0);
 			idx = get_irn_idx(node);
 
 			mode_l = env->params->low_unsigned;
@@ -1011,7 +1011,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 				low = left;
 			}  /* if */
 			/* low word is expected to have mode_l */
-			env->entries[idx]->low_word = new_r_Conv(irg, block, low, mode_l);
+			env->entries[idx]->low_word = new_r_Conv(irg, block, low, mode_l, 0);
 
 			c = new_r_Const_long(irg, mode_l, get_mode_size_bits(mode) - 1);
 			env->entries[idx]->high_word = new_r_Shrs(irg, block, left, c, mode);
@@ -1317,8 +1317,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
 				/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
 				ir_mode *mode = env->params->low_unsigned;
-				ir_node *low  = new_r_Conv(irg, block, lentry->low_word, mode);
-				ir_node *high = new_r_Conv(irg, block, lentry->high_word, mode);
+				ir_node *low  = new_r_Conv(irg, block, lentry->low_word, mode, 0);
+				ir_node *high = new_r_Conv(irg, block, lentry->high_word, mode, 0);
 				ir_node *or   = new_rd_Or(dbg, irg, block, low, high, mode);
 				ir_node *cmp  = new_rd_Cmp(dbg, irg, block, or, new_Const_long(mode, 0));
 
@@ -1499,17 +1499,17 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 				pdeq_putr(env->waitq, node);
 				return;
 			}  /* if */
-			env->entries[idx]->low_word  = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->low_word,  dst_mode_l);
-			env->entries[idx]->high_word = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->high_word, dst_mode_h);
+			env->entries[idx]->low_word  = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->low_word,  dst_mode_l, 0);
+			env->entries[idx]->high_word = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->high_word, dst_mode_h, 0);
 		} else {
 			/* simple case: create a high word */
 			if (imode != dst_mode_l)
-				op = new_rd_Conv(dbg, irg, block, op, dst_mode_l);
+				op = new_rd_Conv(dbg, irg, block, op, dst_mode_l, 0);
 
 			env->entries[idx]->low_word  = op;
 
 			if (mode_is_signed(imode)) {
-				ir_node *op_conv = new_rd_Conv(dbg, irg, block, op, dst_mode_h);
+				ir_node *op_conv = new_rd_Conv(dbg, irg, block, op, dst_mode_h, 0);
 				env->entries[idx]->high_word = new_rd_Shrs(dbg, irg, block, op_conv,
 					new_Const_long(dst_mode_l, get_mode_size_bits(dst_mode_h) - 1), dst_mode_h);
 			} else {
@@ -1555,12 +1555,12 @@ static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
 				pdeq_putr(env->waitq, node);
 				return;
 			}  /* if */
-			env->entries[idx]->low_word  = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->low_word, dst_mode);
-			env->entries[idx]->high_word = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->high_word, dst_mode);
+			env->entries[idx]->low_word  = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->low_word, dst_mode, 0);
+			env->entries[idx]->high_word = new_rd_Conv(dbg, irg, block, env->entries[op_idx]->high_word, dst_mode, 0);
 		} else {
 			/* simple case: create a high word */
 			if (imode != dst_mode)
-				op = new_rd_Conv(dbg, irg, block, op, dst_mode);
+				op = new_rd_Conv(dbg, irg, block, op, dst_mode, 0);
 
 			env->entries[idx]->low_word  = op;
 
@@ -1611,7 +1611,7 @@ static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
 
 		/* simple case: create a high word */
 		if (omode != env->params->low_signed)
-			op = new_rd_Conv(dbg, irg, block, op, omode);
+			op = new_rd_Conv(dbg, irg, block, op, omode, 0);
 
 		set_Conv_op(node, op);
 	} else {
@@ -1655,7 +1655,7 @@ static void lower_Conv_from_Lu(ir_node *node, lower_env_t *env) {
 
 		/* simple case: create a high word */
 		if (omode != env->params->low_unsigned)
-			op = new_rd_Conv(dbg, irg, block, op, omode);
+			op = new_rd_Conv(dbg, irg, block, op, omode, 0);
 
 		set_Conv_op(node, op);
 	} else {

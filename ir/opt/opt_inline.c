@@ -967,7 +967,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		ir_mode *mode     = get_type_mode(param_tp);
 
 		if (mode != get_irn_mode(arg)) {
-			arg = new_r_Conv(irg, block, arg, mode);
+			arg = new_r_Conv(irg, block, arg, mode, 0);
 		}
 		args_in[i] = arg;
 	}

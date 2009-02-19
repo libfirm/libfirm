@@ -112,7 +112,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 
 	switch(from_modecode){
 		case irm_F:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_D);
+			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_D, 0);
 			// fall through
 		case irm_D:
 		{
@@ -144,7 +144,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 				case irm_Hs:
 				case irm_Bu:
 				case irm_Hu:
-					return new_rd_Conv(env->dbg, env->irg, env->block, res, to_mode);
+					return new_rd_Conv(env->dbg, env->irg, env->block, res, to_mode, 0);
 				case irm_Is:
 				case irm_Iu:
 					return res;
@@ -155,14 +155,14 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 		}
 		case irm_Hs:
 		case irm_Bs:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Is);
+			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Is, 0);
 		case irm_Is:
 			return own_gen_convert_call(env, op, (to_mode == mode_D) ? "conv_int_to_double" : "conv_int_to_single", mode_Is, to_mode);
 
 
 		case irm_Hu:
 		case irm_Bu:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Iu);
+			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Iu, 0);
 		case irm_Iu:
 			return own_gen_convert_call(env, op, (to_mode == mode_D) ? "conv_unsigned_int_to_double": "conv_unsigned_int_to_single", mode_Iu, to_mode);
 

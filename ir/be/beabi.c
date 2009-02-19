@@ -2041,7 +2041,7 @@ static void modify_irg(be_abi_irg_t *env)
 					repl = new_r_Proj(irg, reg_params_bl, load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
-						repl = new_r_Conv(irg, reg_params_bl, repl, mode);
+						repl = new_r_Conv(irg, reg_params_bl, repl, mode, 0);
 					}
 				} else {
 					/* The stack parameter is not primitive (it is a struct or array),
@@ -2057,7 +2057,7 @@ static void modify_irg(be_abi_irg_t *env)
 			   which may be wrong. Add Conv's then. */
 			mode = get_irn_mode(args[i]);
 			if (mode != get_irn_mode(repl)) {
-				repl = new_r_Conv(irg, get_irn_n(repl, -1), repl, mode);
+				repl = new_r_Conv(irg, get_irn_n(repl, -1), repl, mode, 0);
 			}
 			exchange(args[i], repl);
 		}

@@ -85,7 +85,7 @@ static ir_node *create_convb(ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = get_nodes_block(node);
-	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, mode_b);
+	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, mode_b, 0);
 
 	return conv;
 }
@@ -116,7 +116,7 @@ static ir_node *create_set(ir_node *node)
 	ir_node *set      = new_rd_Mux(dbgi, irg, block, node, zero, one, mode);
 
 	if (mode != config.lowered_mode) {
-		set = new_r_Conv(irg, block, set, config.lowered_mode);
+		set = new_r_Conv(irg, block, set, config.lowered_mode, 0);
 	}
 
 	return set;
@@ -291,8 +291,8 @@ static ir_node *lower_node(ir_node *node)
 					ir_node *shift_cnt = new_d_Const(dbgi, tv);
 
 					if(cmp_mode != mode) {
-						a = new_rd_Conv(dbgi, irg, block, a, mode);
-						b = new_rd_Conv(dbgi, irg, block, b, mode);
+						a = new_rd_Conv(dbgi, irg, block, a, mode, 0);
+						b = new_rd_Conv(dbgi, irg, block, b, mode, 0);
 					}
 
 					res = new_rd_Sub(dbgi, irg, block, a, b, mode);

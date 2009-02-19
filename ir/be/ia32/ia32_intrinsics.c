@@ -269,7 +269,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the lower bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			ir_node *conv = new_rd_Conv(dbg, irg, block, a_l, h_mode);
+			ir_node *conv = new_rd_Conv(dbg, irg, block, a_l, h_mode, 0);
 			h_res = new_rd_Shl(dbg, irg, block, conv, cnt, h_mode);
 			l_res = new_rd_Const(dbg, irg, get_mode_null(l_mode));
 
@@ -306,7 +306,7 @@ static int map_Shl(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	h2      = new_rd_Conv(dbg, irg, n_block, l1, h_mode);
+	h2      = new_rd_Conv(dbg, irg, n_block, l1, h_mode, 0);
 	l2      = new_r_Const(irg, get_mode_null(l_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
@@ -357,7 +357,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			ir_node *conv = new_rd_Conv(dbg, irg, block, a_h, l_mode);
+			ir_node *conv = new_rd_Conv(dbg, irg, block, a_h, l_mode, 0);
 			h_res = new_rd_Const(dbg, irg, get_mode_null(h_mode));
 			l_res = new_rd_Shr(dbg, irg, block, conv, cnt, l_mode);
 		} else {
@@ -392,7 +392,7 @@ static int map_Shr(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
+	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode, 0);
 	h2      = new_r_Const(irg, get_mode_null(h_mode));
 	in[1]   = new_r_Jmp(irg, n_block);
 
@@ -443,7 +443,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
-			ir_node *conv    = new_rd_Conv(dbg, irg, block, a_h, l_mode);
+			ir_node *conv    = new_rd_Conv(dbg, irg, block, a_h, l_mode, 0);
 			ir_mode *c_mode  = get_irn_mode(cnt);
 
 			h_res = new_rd_Shrs(dbg, irg, block, a_h, new_r_Const_long(irg, c_mode, 31), h_mode);
@@ -480,7 +480,7 @@ static int map_Shrs(ir_node *call, void *ctx) {
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
-	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode);
+	l2      = new_rd_Conv(dbg, irg, n_block, h1, l_mode, 0);
 	h2      = new_rd_Shrs(dbg, irg, n_block, a_h, new_r_Const_long(irg, c_mode, 31), h_mode);
 	in[1]   = new_r_Jmp(irg, n_block);
 
@@ -581,10 +581,10 @@ static int map_Mul(ir_node *call, void *ctx) {
 		pEDX  = new_rd_Proj(dbg, irg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
 		l_res = new_rd_Proj(dbg, irg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
 
-		b_l   = new_rd_Conv(dbg, irg, block, b_l, h_mode);
+		b_l   = new_rd_Conv(dbg, irg, block, b_l, h_mode, 0);
 		mul   = new_rd_Mul( dbg, irg, block, a_h, b_l, h_mode);
 		add   = new_rd_Add( dbg, irg, block, mul, pEDX, h_mode);
-		a_l   = new_rd_Conv(dbg, irg, block, a_l, h_mode);
+		a_l   = new_rd_Conv(dbg, irg, block, a_l, h_mode, 0);
 		mul   = new_rd_Mul( dbg, irg, block, a_l, b_h, h_mode);
 		h_res = new_rd_Add( dbg, irg, block, add, mul, h_mode);
 	}
@@ -654,7 +654,7 @@ static int map_Abs(ir_node *call, void *ctx) {
 
 	/* TODO: give a hint to the backend somehow to not create a cltd here... */
 	sign   = new_rd_Shrs(dbg, irg, block, a_h, new_Const_long(l_mode, 31), h_mode);
-	sign_l = new_rd_Conv(dbg, irg, block, sign, l_mode);
+	sign_l = new_rd_Conv(dbg, irg, block, sign, l_mode, 0);
 	sub_l  = new_rd_Eor(dbg, irg, block, a_l, sign_l, l_mode);
 	sub_h  = new_rd_Eor(dbg, irg, block, a_h, sign,   h_mode);
 

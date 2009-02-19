@@ -507,11 +507,11 @@ static void optimise_muxs_1(ir_node* mux, void* env)
 		tarval* tv_t = get_Const_tarval(t);
 		tarval* tv_f = get_Const_tarval(f);
 		if (tarval_is_one(tv_t) && tarval_is_null(tv_f)) {
-			ir_node* conv  = new_r_Conv(current_ir_graph, block, c, mode);
+			ir_node* conv  = new_r_Conv(current_ir_graph, block, c, mode, 0);
 			exchange(mux, conv);
 		} else if (tarval_is_null(tv_t) && tarval_is_one(tv_f)) {
 			ir_node* not_  = new_r_Not(current_ir_graph, block, c, mode_b);
-			ir_node* conv  = new_r_Conv(current_ir_graph, block, not_, mode);
+			ir_node* conv  = new_r_Conv(current_ir_graph, block, not_, mode, 0);
 			exchange(mux, conv);
 		}
 	}
