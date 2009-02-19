@@ -1228,6 +1228,12 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 		else
 			return fc_get_snan(desc, result);
 	}
+	else if(value->desc.clss == INF) {
+		if (value->sign == 0)
+			return fc_get_plusinf(desc, result);
+		else
+			return fc_get_minusinf(desc, result);
+	}
 
 	/* set the descriptor of the new value */
 	result->desc.exponent_size = desc->exponent_size;
