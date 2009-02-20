@@ -104,9 +104,12 @@ static unsigned string_hash(const char *str, int len)
  */
 static int symbol_cmp(const void *elt, const void *key, size_t size)
 {
+	int res;
 	const symbol_t *entry = (const symbol_t *) elt;
 	const symbol_t *keyentry = (const symbol_t *) key;
 	(void) size;
+	res = entry->typetag - keyentry->typetag;
+	if(res) return res;
 	return strcmp(entry->str, keyentry->str);
 }
 
@@ -133,7 +136,7 @@ static void symtbl_init(void)
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(symtbl, &key, sizeof(key), string_hash(s, sizeof(s)-1))
+	set_insert(symtbl, &key, sizeof(key), string_hash(s, sizeof(s)-1) + tt * 17)
 
 #define INSERTENUM(tt, e) INSERT(#e, tt, e)
 
@@ -209,12 +212,10 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	symbol_t key, *entry;
 
 	key.str = str;
+	key.typetag = typetag;
 
-	entry = set_find(symtbl, &key, sizeof(key), string_hash(str, strlen(str)));
-	if (entry && entry->typetag == typetag) {
-		return entry->code;
-	}
-	return SYMERROR;
+	entry = set_find(symtbl, &key, sizeof(key), string_hash(str, strlen(str)) + typetag * 17);
+	return entry ? entry->code : SYMERROR;
 }
 
 static void *get_id(io_env_t *env, long id)
