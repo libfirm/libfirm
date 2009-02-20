@@ -335,10 +335,10 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 
 	case irms_internal_boolean:
 		/* match [tT][rR][uU][eE]|[fF][aA][lL][sS][eE] */
-		if (strcasecmp(str, "true"))
+		if (!strcasecmp(str, "true"))
 			return tarval_b_true;
-		else if (strcasecmp(str, "false"))
-			return tarval_b_true;
+		else if (!strcasecmp(str, "false"))
+			return tarval_b_false;
 		else
 			/* XXX This is C semantics */
 			return atoi(str) ? tarval_b_true : tarval_b_false;
@@ -349,7 +349,9 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 		return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
 
 	case irms_reference:
-		/* same as integer modes */
+		if (!strcasecmp(str, "null"))
+			return get_tarval_null(mode);
+		/* fall through */
 	case irms_int_number:
 		sc_val_from_str(str, len, NULL, mode);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
