@@ -146,6 +146,7 @@ static void symtbl_init(void)
 	INSERT("pointer", tt_tpo, tpo_pointer);
 	INSERT("primitive", tt_tpo, tpo_primitive);
 	INSERT("struct", tt_tpo, tpo_struct);
+	INSERT("union", tt_tpo, tpo_union);
 	INSERT("Unknown", tt_tpo, tpo_unknown);
 
 #include "gen_irio_lex.inl"
@@ -364,7 +365,8 @@ static void export_type(io_env_t *env, ir_type *tp)
 		{
 			int nparams = get_method_n_params(tp);
 			int nresults = get_method_n_ress(tp);
-			fprintf(f, "%i %i ", nparams, nresults);
+			fprintf(f, "0x%X 0x%X %i %i ", get_method_calling_convention(tp),
+				get_method_additional_properties(tp), nparams, nresults);
 			for(i = 0; i < nparams; i++)
 				fprintf(f, "%ld ", get_type_nr(get_method_param_type(tp, i)));
 			for(i = 0; i < nresults; i++)
@@ -382,6 +384,9 @@ static void export_type(io_env_t *env, ir_type *tp)
 			break;
 
 		case tpo_struct:
+			break;
+
+		case tpo_union:
 			break;
 
 		case tpo_unknown:
@@ -969,8 +974,10 @@ static void import_type(io_env_t *env)
 
 		case tpo_method:
 		{
-			int nparams  = (int) read_long(env);
-			int nresults = (int) read_long(env);
+			unsigned callingconv = (unsigned) read_long(env);
+			unsigned addprops    = (unsigned) read_long(env);
+			int nparams          = (int)      read_long(env);
+			int nresults         = (int)      read_long(env);
 
 			type = new_type_method(id, nparams, nresults);
 
@@ -988,6 +995,9 @@ static void import_type(io_env_t *env)
 
 				set_method_res_type(type, i, restype);
 			}
+
+			set_method_calling_convention(type, callingconv);
+			set_method_additional_properties(type, addprops);
 			break;
 		}
 
