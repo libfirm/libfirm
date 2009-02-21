@@ -1330,8 +1330,20 @@ ir_entity *get_method_value_param_ent(ir_type *method, int pos) {
  * Sets the type that represents the copied value arguments.
  */
 void set_method_value_param_type(ir_type *method, ir_type *tp) {
+	int i, n;
+
 	assert(method && (method->type_op == type_method));
+	assert(is_value_param_type(tp));
+	assert(get_method_n_params(method) == get_struct_n_members(tp));
+
 	method->attr.ma.value_params = tp;
+
+	n = get_struct_n_members(tp);
+	for (i = 0; i < n; i++)
+	{
+		ir_entity *ent = get_struct_member(tp, i);
+		method->attr.ma.params[i].ent = ent;
+	}
 }
 
 /*
