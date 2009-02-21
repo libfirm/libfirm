@@ -233,7 +233,7 @@ ir_allocation get_entity_allocation(const ir_entity *ent);
 void set_entity_allocation(ir_entity *ent, ir_allocation al);
 
 /** Return the name of the allocation type. */
-const char *get_allocation_name(ir_allocation vis);
+const char *get_allocation_name(ir_allocation al);
 
 /** Returns the visibility of an entity. */
 ir_visibility get_entity_visibility(const ir_entity *ent);

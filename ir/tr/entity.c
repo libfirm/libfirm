@@ -390,10 +390,10 @@ void
 }  /* set_entity_allocation */
 
 /* return the name of the visibility */
-const char *get_allocation_name(ir_allocation all)
+const char *get_allocation_name(ir_allocation al)
 {
 #define X(a)    case a: return #a
-	switch (all) {
+	switch (al) {
 	X(allocation_automatic);
 	X(allocation_parameter);
 	X(allocation_dynamic);
