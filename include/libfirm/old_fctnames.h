@@ -87,6 +87,8 @@
 #define Ne    pn_Cmp_Ne
 #define True  pn_Cmp_True
 
+#define get_Cond_defaultProj(cond)  get_Cond_default_proj(cond)
+
 /* irmode.h */
 #define get_ident_of_mode        get_mode_ident
 #define get_size_of_mode         get_mode_size
