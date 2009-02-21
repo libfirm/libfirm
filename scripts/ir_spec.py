@@ -334,7 +334,6 @@ Unknown = dict(
 
 Confirm = dict(
 	ins      = [ "value", "bound" ],
-	block    = "get_nodes_block(value)",
 	mode     = "get_irn_mode(value)",
 	attrs    = [
 		dict(
