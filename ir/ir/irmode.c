@@ -49,6 +49,22 @@ static int num_modes = 0;
 /** The list of all currently existing modes. */
 static ir_mode **mode_list;
 
+const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
+{
+#define X(a)    case a: return #a
+	switch (ari) {
+		X(irma_uninitialized);
+		X(irma_none);
+		X(irma_twos_complement);
+		X(irma_ones_complement);
+		X(irma_int_BCD);
+		X(irma_ieee754);
+		X(irma_float_BCD);
+		default: return "<unknown>";
+	}
+#undef X
+}
+
 /**
  * Compare modes that don't need to have their code field
  * correctly set

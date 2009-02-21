@@ -68,6 +68,7 @@ typedef enum typetag_t
 	tt_initializer,
 	tt_iro,
 	tt_keyword,
+	tt_mode_arithmetic,
 	tt_peculiarity,
 	tt_pin_state,
 	tt_tpo,
@@ -83,6 +84,8 @@ typedef enum keyword_t
 	kw_entity,
 	kw_frametype,
 	kw_irg,
+	kw_mode,
+	kw_modes,
 	kw_valuetype,
 	kw_type,
 	kw_typegraph
@@ -168,6 +171,8 @@ static void symtbl_init(void)
 	INSERTKEYWORD(entity);
 	INSERTKEYWORD(frametype);
 	INSERTKEYWORD(irg);
+	INSERTKEYWORD(mode);
+	INSERTKEYWORD(modes);
 	INSERTKEYWORD(valuetype);
 	INSERTKEYWORD(type);
 	INSERTKEYWORD(typegraph);
@@ -209,6 +214,14 @@ static void symtbl_init(void)
 	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
 	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
 
+	INSERTENUM(tt_mode_arithmetic, irma_uninitialized);
+	INSERTENUM(tt_mode_arithmetic, irma_none);
+	INSERTENUM(tt_mode_arithmetic, irma_twos_complement);
+	INSERTENUM(tt_mode_arithmetic, irma_ones_complement);
+	INSERTENUM(tt_mode_arithmetic, irma_int_BCD);
+	INSERTENUM(tt_mode_arithmetic, irma_ieee754);
+	INSERTENUM(tt_mode_arithmetic, irma_float_BCD);
+
 	INSERTENUM(tt_peculiarity, peculiarity_description);
 	INSERTENUM(tt_peculiarity, peculiarity_inherited);
 	INSERTENUM(tt_peculiarity, peculiarity_existent);
@@ -233,7 +246,7 @@ static void symtbl_init(void)
 	INSERTENUM(tt_volatility, volatility_non_volatile);
 	INSERTENUM(tt_volatility, volatility_is_volatile);
 
-
+#undef INSERTKEYWORD
 #undef INSERTENUM
 #undef INSERT
 }
@@ -601,11 +614,45 @@ static void export_node(ir_node *irn, void *ctx)
 	fputs("}\n", env->file);
 }
 
+static void export_modes(io_env_t *env)
+{
+	int i, n_modes = get_irp_n_modes();
+
+	fputs("modes {\n", env->file);
+
+	for(i = 0; i < n_modes; i++)
+	{
+		ir_mode *mode = get_irp_mode(i);
+		switch(get_mode_sort(mode))
+		{
+			case irms_auxiliary:
+			case irms_control_flow:
+			case irms_memory:
+			case irms_internal_boolean:
+				// skip "internal" modes, which may not be user defined
+				continue;
+		}
+
+		fprintf(env->file, "\tmode \"%s\" 0x%X %d %d %s %d %d ", get_mode_name(mode),
+			get_mode_sort(mode), get_mode_size_bits(mode), get_mode_sign(mode),
+			get_mode_arithmetic_name(get_mode_arithmetic(mode)), get_mode_modulo_shift(mode),
+			get_mode_n_vector_elems(mode));
+		if(mode_is_reference(mode))
+		{
+			write_mode(env, get_reference_mode_signed_eq(mode));
+			write_mode(env, get_reference_mode_unsigned_eq(mode));
+		}
+		fputc('\n', env->file);
+	}
+
+	fputs("}\n\n", env->file);
+}
+
 /** Exports the whole irp to the given file in a textual form. */
 void ir_export(const char *filename)
 {
 	io_env_t env;
-	int i, n_irgs = get_irp_n_irgs(), n_pseudoirgs = get_irp_n_pseudo_irgs();
+	int i, n_irgs = get_irp_n_irgs();
 
 	env.file = fopen(filename, "wt");
 	if(!env.file)
@@ -613,6 +660,8 @@ void ir_export(const char *filename)
 		perror(filename);
 		return;
 	}
+
+	export_modes(&env);
 
 	fputs("typegraph {\n", env.file);
 
@@ -654,6 +703,8 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 		perror(filename);
 		return;
 	}
+
+	export_modes(&env);
 
 	fputs("typegraph {\n", env.file);
 
@@ -813,6 +864,12 @@ static const char *read_qstr_to(io_env_t *env, char *buf, size_t bufsize)
 	return buf;
 }
 
+static const char *read_qstr(io_env_t *env)
+{
+	static char buf[1024];
+	return read_qstr_to(env, buf, sizeof(buf));
+}
+
 static long read_long2(io_env_t *env, char **endptr)
 {
 	static char buf[1024];
@@ -952,6 +1009,7 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_cond_kind(env)          ((cond_kind)             read_enum(env, tt_cond_kind))
 #define read_cond_jmp_predicate(env) ((cond_jmp_predicate)    read_enum(env, tt_cond_jmp_predicate))
 #define read_initializer_kind(env)   ((ir_initializer_kind_t) read_enum(env, tt_initializer))
+#define read_mode_arithmetic(env)    ((ir_mode_arithmetic)    read_enum(env, tt_mode_arithmetic))
 #define read_peculiarity(env)        ((ir_peculiarity)        read_enum(env, tt_peculiarity))
 #define read_pin_state(env)          ((op_pin_state)          read_enum(env, tt_pin_state))
 #define read_type_state(env)         ((ir_type_state)         read_enum(env, tt_type_state))
@@ -1026,12 +1084,11 @@ static ir_initializer_t *read_initializer(io_env_t *env)
 /** Reads a type description and remembers it by its id. */
 static void import_type(io_env_t *env, keyword_t kwkind)
 {
-	char           buf[1024];
 	int            i;
 	ir_type       *type;
 	long           typenr = read_long(env);
 	const char    *tpop   = read_str(env);
-	const char    *name   = read_qstr_to(env, buf, sizeof(buf));
+	const char    *name   = read_qstr(env);
 	unsigned       size   = (unsigned) read_long(env);
 	unsigned       align  = (unsigned) read_long(env);
 	ir_type_state  state  = read_type_state(env);
@@ -1258,8 +1315,6 @@ static int parse_typegraph(io_env_t *env)
 	// parse all types first
 	while(1)
 	{
-		int isframetype = 0;
-
 		kind = read_str(env);
 		if(kind[0] == '}' && !kind[1]) break;
 
@@ -1439,6 +1494,47 @@ endloop:
 	return ret;
 }
 
+static int parse_modes(io_env_t *env)
+{
+	const char *kind;
+
+	EXPECT('{');
+
+	while(1)
+	{
+		kind = read_str(env);
+		if(kind[0] == '}' && !kind[1]) break;
+
+		keyword_t kwkind = (keyword_t) symbol(kind, tt_keyword);
+		switch(kwkind)
+		{
+			case kw_mode:
+			{
+				const char *name = read_qstr(env);
+				ir_mode_sort sort = (ir_mode_sort) read_long(env);
+				int size = read_long(env);
+				int sign = read_long(env);
+				ir_mode_arithmetic arith = read_mode_arithmetic(env);
+				unsigned modulo_shift = read_long(env);
+				int vector_elems = read_long(env);
+
+				ir_mode *mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
+
+				if(mode_is_reference(mode))
+				{
+					set_reference_mode_signed_eq(mode, read_mode(env));
+					set_reference_mode_unsigned_eq(mode, read_mode(env));
+				}
+				break;
+			}
+
+			default:
+				skip_to(env, '\n');
+				break;
+		}
+	}
+}
+
 /** Imports an previously exported textual representation of an (maybe partial) irp */
 void ir_import(const char *filename)
 {
@@ -1470,6 +1566,10 @@ void ir_import(const char *filename)
 		if(!*str) break;
 		switch(symbol(str, tt_keyword))
 		{
+			case kw_modes:
+				if(!parse_modes(env)) goto end;
+				break;
+
 			case kw_typegraph:
 				if(!parse_typegraph(env)) goto end;
 				break;

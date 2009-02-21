@@ -123,6 +123,8 @@ typedef enum ir_mode_arithmetic {
 	irma_max
 } ir_mode_arithmetic;
 
+/** Returns the name of the arithmetic type. */
+const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
 
 /* ********** Constructor for user defined modes **************** */
 /**
