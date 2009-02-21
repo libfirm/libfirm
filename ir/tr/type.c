@@ -1327,6 +1327,14 @@ ir_entity *get_method_value_param_ent(ir_type *method, int pos) {
 }
 
 /*
+ * Sets the type that represents the copied value arguments.
+ */
+void set_method_value_param_type(ir_type *method, ir_type *tp) {
+	assert(method && (method->type_op == type_method));
+	method->attr.ma.value_params = tp;
+}
+
+/*
  * Returns a type that represents the copied value arguments.
  */
 ir_type *get_method_value_param_type(const ir_type *method) {
@@ -2039,6 +2047,18 @@ int is_value_param_type(const ir_type *tp) {
 /* Checks, whether a type is a lowered type */
 int is_lowered_type(const ir_type *tp) {
 	return tp->flags & tf_lowered_type;
+}
+
+/* Makes a new value type. */
+ir_type *new_type_value(ident *name) {
+	ir_type *res = new_type_struct(name);
+
+	res->flags |= tf_value_param_type;
+
+	/* Remove type from type list.  Must be treated differently than other types. */
+	remove_irp_type(res);
+
+	return res;
 }
 
 /* Makes a new frame type. */

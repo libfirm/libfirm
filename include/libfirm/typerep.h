@@ -1859,6 +1859,10 @@ void set_method_param_type(ir_type *method, int pos, ir_type *tp);
    for compounds passed by value. This information is constructed only on demand. */
 ir_entity *get_method_value_param_ent(ir_type *method, int pos);
 /**
+ * Sets the type that represents the copied value arguments.
+ */
+void set_method_value_param_type(ir_type *method, ir_type *tp);
+/**
  * Returns a type that represents the copied value arguments if one
  * was allocated, else NULL.
  */
@@ -2374,6 +2378,13 @@ int is_value_param_type(const ir_type *tp);
 int is_lowered_type(const ir_type *tp);
 
 /**
+ * Makes a new value type. Value types are struct types,
+ * so all struct access functions work.
+ * Value types are not in the global list of types.
+ */
+ir_type *new_type_value(ident *name);
+
+/**
  * Makes a new frame type. Frame types are class types,
  * so all class access functions work.
  * Frame types are not in the global list of types.
@@ -2559,10 +2570,8 @@ typedef void class_walk_func(ir_type *clss, void *env);
  *  Does not touch frame types or types for value params ... */
 void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
 
-/** Touches every type, entity, and frame types in unspecified order.  If new
- *  types/entities are created during the traversal these will
- *  be visited, too.
- *  Does not touch types for value params ... (??) */
+/** Touches every type, entity, frame type, and value param type in
+ *  unspecified order. */
 void type_walk_plus_frames(type_walk_func *pre, type_walk_func *post, void *env);
 
 /** Walks over all type information reachable from an ir graph.

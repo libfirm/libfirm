@@ -65,6 +65,7 @@ typedef enum typetag_t
 	tt_builtin,
 	tt_initializer,
 	tt_iro,
+	tt_keyword,
 	tt_peculiarity,
 	tt_pin_state,
 	tt_tpo,
@@ -73,6 +74,17 @@ typedef enum typetag_t
 	tt_visibility,
 	tt_volatility
 } typetag_t;
+
+typedef enum keyword_t
+{
+	kw_constirg,
+	kw_entity,
+	kw_frametype,
+	kw_irg,
+	kw_valuetype,
+	kw_type,
+	kw_typegraph
+} keyword_t;
 
 typedef struct symbol_t
 {
@@ -139,6 +151,7 @@ static void symtbl_init(void)
 	set_insert(symtbl, &key, sizeof(key), string_hash(s, sizeof(s)-1) + tt * 17)
 
 #define INSERTENUM(tt, e) INSERT(#e, tt, e)
+#define INSERTKEYWORD(k) INSERT(#k, tt_keyword, kw_##k)
 
 	INSERT("array", tt_tpo, tpo_array);
 	INSERT("class", tt_tpo, tpo_class);
@@ -148,6 +161,14 @@ static void symtbl_init(void)
 	INSERT("struct", tt_tpo, tpo_struct);
 	INSERT("union", tt_tpo, tpo_union);
 	INSERT("Unknown", tt_tpo, tpo_unknown);
+
+	INSERTKEYWORD(constirg);
+	INSERTKEYWORD(entity);
+	INSERTKEYWORD(frametype);
+	INSERTKEYWORD(irg);
+	INSERTKEYWORD(valuetype);
+	INSERTKEYWORD(type);
+	INSERTKEYWORD(typegraph);
 
 #include "gen_irio_lex.inl"
 
@@ -326,7 +347,8 @@ static void export_type(io_env_t *env, ir_type *tp)
 {
 	FILE *f = env->file;
 	int i;
-	fprintf(f, "\ttype %ld %s \"%s\" %u %u %s %s ",
+	fprintf(f, "\t%s %ld %s \"%s\" %u %u %s %s ",
+			is_frame_type(tp) ? "frametype" : is_value_param_type(tp) ? "valuetype" : "type",
 			get_type_nr(tp),
 			get_type_tpop_name(tp),
 			get_type_name(tp),
@@ -528,8 +550,11 @@ void ir_export(const char *filename)
 	for(i = 0; i < n_irgs; i++)
 	{
 		ir_graph *irg = get_irp_irg(i);
+		ir_type *valuetype = get_irg_value_param_type(irg);
 
-		fprintf(env.file, "}\n\nirg %ld {\n", get_entity_nr(get_irg_entity(irg)));
+		fprintf(env.file, "}\n\nirg %ld %ld %ld {\n", get_entity_nr(get_irg_entity(irg)),
+			get_type_nr(get_irg_frame_type(irg)),
+			valuetype == NULL ? -1 : get_type_nr(valuetype));
 
 		env.ignoreblocks = 0;
 		irg_block_walk_graph(irg, NULL, export_node, &env);
@@ -924,7 +949,7 @@ static ir_initializer_t *read_initializer(io_env_t *env)
 
 
 /** Reads a type description and remembers it by its id. */
-static void import_type(io_env_t *env)
+static void import_type(io_env_t *env, keyword_t kwkind)
 {
 	char           buf[1024];
 	int            i;
@@ -939,101 +964,135 @@ static void import_type(io_env_t *env)
 
 	ident         *id     = new_id_from_str(name);
 
-	switch(symbol(tpop, tt_tpo))
+	const char    *kindstr;
+
+	if(kwkind == kw_frametype)
 	{
-		case tpo_array:
+		if(symbol(tpop, tt_tpo) != tpo_class)
 		{
-			int ndims = (int) read_long(env);
-			long elemtypenr = read_long(env);
-			ir_type *elemtype = get_type(env, elemtypenr);
-
-			type = new_type_array(id, ndims, elemtype);
-			for(i = 0; i < ndims; i++)
-			{
-				const char *str = read_str(env);
-				if(strcmp(str, "unknown"))
-				{
-					long lowerbound = strtol(str, NULL, 0);
-					set_array_lower_bound_int(type, i, lowerbound);
-				}
-				str = read_str(env);
-				if(strcmp(str, "unknown"))
-				{
-					long upperbound = strtol(str, NULL, 0);
-					set_array_upper_bound_int(type, i, upperbound);
-				}
-			}
-			set_type_size_bytes(type, size);
-			break;
-		}
-
-		case tpo_class:
-			type = new_type_class(id);
-			set_type_size_bytes(type, size);
-			break;
-
-		case tpo_method:
-		{
-			unsigned callingconv = (unsigned) read_long(env);
-			unsigned addprops    = (unsigned) read_long(env);
-			int nparams          = (int)      read_long(env);
-			int nresults         = (int)      read_long(env);
-
-			type = new_type_method(id, nparams, nresults);
-
-			for(i = 0; i < nparams; i++)
-			{
-				long     typenr = read_long(env);
-				ir_type *paramtype = get_type(env, typenr);
-
-				set_method_param_type(type, i, paramtype);
-			}
-			for(i = 0; i < nresults; i++)
-			{
-				long typenr = read_long(env);
-				ir_type *restype = get_type(env, typenr);
-
-				set_method_res_type(type, i, restype);
-			}
-
-			set_method_calling_convention(type, callingconv);
-			set_method_additional_properties(type, addprops);
-			break;
-		}
-
-		case tpo_pointer:
-		{
-			ir_mode *mode = read_mode(env);
-			ir_type *pointsto = get_type(env, read_long(env));
-			type = new_type_pointer(id, pointsto, mode);
-			break;
-		}
-
-		case tpo_primitive:
-		{
-			ir_mode *mode = read_mode(env);
-			type = new_type_primitive(id, mode);
-			break;
-		}
-
-		case tpo_struct:
-			type = new_type_struct(id);
-			set_type_size_bytes(type, size);
-			break;
-
-		case tpo_union:
-			type = new_type_union(id);
-			set_type_size_bytes(type, size);
-			break;
-
-		case tpo_unknown:
-			return;   // ignore unknown type
-
-		default:
-			if(typenr != 0)  // ignore global type
-				printf("Unknown type kind: \"%s\" in line %i:%i\n", tpop, env->line, env->col);
+			printf("Frame type must be a class type in line %i:%i\n", env->line, env->col);
 			skip_to(env, '\n');
 			return;
+		}
+
+		type = new_type_frame(id);
+		set_type_size_bytes(type, size);
+
+		kindstr = "frametype";
+	}
+	else if(kwkind == kw_valuetype)
+	{
+		if(symbol(tpop, tt_tpo) != tpo_struct)
+		{
+			printf("Value type must be a struct type in line %i:%i\n", env->line, env->col);
+			skip_to(env, '\n');
+			return;
+		}
+
+		type = new_type_value(id);
+		set_type_size_bytes(type, size);
+
+		kindstr = "valuetype";
+	}
+	else
+	{
+		switch(symbol(tpop, tt_tpo))
+		{
+			case tpo_array:
+			{
+				int ndims = (int) read_long(env);
+				long elemtypenr = read_long(env);
+				ir_type *elemtype = get_type(env, elemtypenr);
+
+				type = new_type_array(id, ndims, elemtype);
+				for(i = 0; i < ndims; i++)
+				{
+					const char *str = read_str(env);
+					if(strcmp(str, "unknown"))
+					{
+						long lowerbound = strtol(str, NULL, 0);
+						set_array_lower_bound_int(type, i, lowerbound);
+					}
+					str = read_str(env);
+					if(strcmp(str, "unknown"))
+					{
+						long upperbound = strtol(str, NULL, 0);
+						set_array_upper_bound_int(type, i, upperbound);
+					}
+				}
+				set_type_size_bytes(type, size);
+				break;
+			}
+
+			case tpo_class:
+				type = new_type_class(id);
+				set_type_size_bytes(type, size);
+				break;
+
+			case tpo_method:
+			{
+				unsigned callingconv = (unsigned) read_long(env);
+				unsigned addprops    = (unsigned) read_long(env);
+				int nparams          = (int)      read_long(env);
+				int nresults         = (int)      read_long(env);
+
+				type = new_type_method(id, nparams, nresults);
+
+				for(i = 0; i < nparams; i++)
+				{
+					long     typenr = read_long(env);
+					ir_type *paramtype = get_type(env, typenr);
+
+					set_method_param_type(type, i, paramtype);
+				}
+				for(i = 0; i < nresults; i++)
+				{
+					long typenr = read_long(env);
+					ir_type *restype = get_type(env, typenr);
+
+					set_method_res_type(type, i, restype);
+				}
+
+				set_method_calling_convention(type, callingconv);
+				set_method_additional_properties(type, addprops);
+				break;
+			}
+
+			case tpo_pointer:
+			{
+				ir_mode *mode = read_mode(env);
+				ir_type *pointsto = get_type(env, read_long(env));
+				type = new_type_pointer(id, pointsto, mode);
+				break;
+			}
+
+			case tpo_primitive:
+			{
+				ir_mode *mode = read_mode(env);
+				type = new_type_primitive(id, mode);
+				break;
+			}
+
+			case tpo_struct:
+				type = new_type_struct(id);
+				set_type_size_bytes(type, size);
+				break;
+
+			case tpo_union:
+				type = new_type_union(id);
+				set_type_size_bytes(type, size);
+				break;
+
+			case tpo_unknown:
+				return;   // ignore unknown type
+
+			default:
+				if(typenr != 0)  // ignore global type
+					printf("Unknown type kind: \"%s\" in line %i:%i\n", tpop, env->line, env->col);
+				skip_to(env, '\n');
+				return;
+		}
+		kindstr = "type";
 	}
 
 	set_type_alignment_bytes(type, align);
@@ -1043,7 +1102,7 @@ static void import_type(io_env_t *env)
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
 	set_id(env, typenr, type);
-	printf("Insert type %s %ld\n", name, typenr);
+	printf("Insert %s %s %ld\n", kindstr, name, typenr);
 }
 
 /** Reads an entity description and remembers it by its id. */
@@ -1115,13 +1174,24 @@ static int parse_typegraph(io_env_t *env)
 	// parse all types first
 	while(1)
 	{
+		int isframetype = 0;
+
 		kind = read_str(env);
 		if(kind[0] == '}' && !kind[1]) break;
 
-		if(!strcmp(kind, "type"))
-			import_type(env);
-		else
-			skip_to(env, '\n');
+		keyword_t kwkind = (keyword_t) symbol(kind, tt_keyword);
+		switch(kwkind)
+		{
+			case kw_type:
+			case kw_frametype:
+			case kw_valuetype:
+				import_type(env, kwkind);
+				break;
+
+			default:
+				skip_to(env, '\n');
+				break;
+		}
 	}
 
 	// now parse rest
@@ -1132,14 +1202,22 @@ static int parse_typegraph(io_env_t *env)
 		kind = read_str(env);
 		if(kind[0] == '}' && !kind[1]) break;
 
-		if(!strcmp(kind, "type"))
-			skip_to(env, '\n');
-		else if(!strcmp(kind, "entity"))
-			import_entity(env);
-		else
+		switch(symbol(kind, tt_keyword))
 		{
-			printf("Type graph element not supported yet: \"%s\"\n", kind);
-			skip_to(env, '\n');
+			case kw_type:
+			case kw_frametype:
+			case kw_valuetype:
+				skip_to(env, '\n');
+				break;
+
+			case kw_entity:
+				import_entity(env);
+				break;
+
+			default:
+				printf("Type graph element not supported yet: \"%s\"\n", kind);
+				skip_to(env, '\n');
+				break;
 		}
 	}
 	return 1;
@@ -1306,21 +1384,34 @@ void ir_import(const char *filename)
 	{
 		const char *str = read_str(env);
 		if(!*str) break;
-		if(!strcmp(str, "typegraph"))
+		switch(symbol(str, tt_keyword))
 		{
-			if(!parse_typegraph(env)) break;
-		}
-		else if(!strcmp(str, "irg"))
-		{
-			ir_graph *irg = new_ir_graph(get_entity(env, read_long(env)), 0);
-			if(!parse_graph(env, irg)) break;
-		}
-		else if(!strcmp(str, "constirg"))
-		{
-			if(!parse_graph(env, get_const_code_irg())) break;
+			case kw_typegraph:
+				if(!parse_typegraph(env)) goto end;
+				break;
+
+			case kw_irg:
+			{
+				ir_entity *irgent = get_entity(env, read_long(env));
+				long valuetypeid;
+				ir_graph *irg = new_ir_graph(irgent, 0);
+				set_irg_frame_type(irg, get_type(env, read_long(env)));
+				valuetypeid = read_long(env);
+				if(valuetypeid != -1)
+					set_method_value_param_type(get_entity_type(irgent),
+							get_type(env, valuetypeid));
+
+				if(!parse_graph(env, irg)) goto end;
+				break;
+			}
+
+			case kw_constirg:
+				if(!parse_graph(env, get_const_code_irg())) goto end;
+				break;
 		}
 	}
 
+end:
 	n = ARR_LEN(env->fixedtypes);
 	for(i = 0; i < n; i++)
 		set_type_state(env->fixedtypes[i], layout_fixed);
