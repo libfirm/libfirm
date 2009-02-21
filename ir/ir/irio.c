@@ -1304,6 +1304,7 @@ static void import_entity(io_env_t *env)
 static int parse_typegraph(io_env_t *env)
 {
 	const char *kind;
+	keyword_t kwkind;
 	lex_state_t oldstate;
 
 	EXPECT('{');
@@ -1318,7 +1319,7 @@ static int parse_typegraph(io_env_t *env)
 		kind = read_str(env);
 		if(kind[0] == '}' && !kind[1]) break;
 
-		keyword_t kwkind = (keyword_t) symbol(kind, tt_keyword);
+		kwkind = (keyword_t) symbol(kind, tt_keyword);
 		switch(kwkind)
 		{
 			case kw_type:
@@ -1497,6 +1498,7 @@ endloop:
 static int parse_modes(io_env_t *env)
 {
 	const char *kind;
+	keyword_t kwkind;
 
 	EXPECT('{');
 
@@ -1505,7 +1507,7 @@ static int parse_modes(io_env_t *env)
 		kind = read_str(env);
 		if(kind[0] == '}' && !kind[1]) break;
 
-		keyword_t kwkind = (keyword_t) symbol(kind, tt_keyword);
+		kwkind = (keyword_t) symbol(kind, tt_keyword);
 		switch(kwkind)
 		{
 			case kw_mode:
