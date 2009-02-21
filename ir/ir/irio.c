@@ -343,11 +343,9 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 	}
 }
 
-static void export_type(io_env_t *env, ir_type *tp)
+static void export_type_common(io_env_t *env, ir_type *tp)
 {
-	FILE *f = env->file;
-	int i;
-	fprintf(f, "\t%s %ld %s \"%s\" %u %u %s %s ",
+	fprintf(env->file, "\t%s %ld %s \"%s\" %u %u %s %s ",
 			is_frame_type(tp) ? "frametype" : is_value_param_type(tp) ? "valuetype" : "type",
 			get_type_nr(tp),
 			get_type_tpop_name(tp),
@@ -356,6 +354,68 @@ static void export_type(io_env_t *env, ir_type *tp)
 			get_type_alignment_bytes(tp),
 			get_type_state_name(get_type_state(tp)),
 			get_visibility_name(get_type_visibility(tp)));
+}
+
+static void export_type_pre(io_env_t *env, ir_type *tp)
+{
+	FILE *f = env->file;
+	int i;
+
+	// skip types to be handled by post walker
+	switch(get_type_tpop_code(tp))
+	{
+		case tpo_array:
+		case tpo_method:
+		case tpo_pointer:
+			return;
+	}
+
+	export_type_common(env, tp);
+
+	switch(get_type_tpop_code(tp))
+	{
+		case tpo_class:
+			/* TODO: inheritance stuff not supported yet */
+			printf("Inheritance of classes not supported yet!\n");
+			break;
+
+		case tpo_primitive:
+			write_mode(env, get_type_mode(tp));
+			break;
+
+		case tpo_struct:
+			break;
+
+		case tpo_union:
+			break;
+
+		case tpo_unknown:
+			break;
+
+		default:
+			printf("export_type_pre: Unknown type code \"%s\".\n", get_type_tpop_name(tp));
+			break;
+	}
+	fputc('\n', f);
+}
+
+static void export_type_post(io_env_t *env, ir_type *tp)
+{
+	FILE *f = env->file;
+	int i;
+
+	// skip types already handled by pre walker
+	switch(get_type_tpop_code(tp))
+	{
+		case tpo_class:
+		case tpo_primitive:
+		case tpo_struct:
+		case tpo_union:
+		case tpo_unknown:
+			return;
+	}
+
+	export_type_common(env, tp);
 
 	switch(get_type_tpop_code(tp))
 	{
@@ -378,11 +438,6 @@ static void export_type(io_env_t *env, ir_type *tp)
 			break;
 		}
 
-		case tpo_class:
-			/* TODO: inheritance stuff not supported yet */
-			printf("Inheritance of classes not supported yet!\n");
-			break;
-
 		case tpo_method:
 		{
 			int nparams = get_method_n_params(tp);
@@ -400,19 +455,6 @@ static void export_type(io_env_t *env, ir_type *tp)
 		case tpo_pointer:
 			write_mode(env, get_type_mode(tp));
 			fprintf(f, "%ld ", get_type_nr(get_pointer_points_to_type(tp)));
-			break;
-
-		case tpo_primitive:
-			write_mode(env, get_type_mode(tp));
-			break;
-
-		case tpo_struct:
-			break;
-
-		case tpo_union:
-			break;
-
-		case tpo_unknown:
 			break;
 
 		default:
@@ -476,7 +518,14 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 	fputc('\n', env->file);
 }
 
-static void export_type_or_ent(type_or_ent tore, void *ctx)
+static void export_type_or_ent_pre(type_or_ent tore, void *ctx)
+{
+	io_env_t *env = (io_env_t *) ctx;
+	if(get_kind(tore.typ) == k_type)
+		export_type_pre(env, tore.typ);
+}
+
+static void export_type_or_ent_post(type_or_ent tore, void *ctx)
 {
 	io_env_t *env = (io_env_t *) ctx;
 
@@ -487,11 +536,11 @@ static void export_type_or_ent(type_or_ent tore, void *ctx)
 			break;
 
 		case k_type:
-			export_type(env, tore.typ);
+			export_type_post(env, tore.typ);
 			break;
 
 		default:
-			printf("export_type_or_ent: Unknown type or entity.\n");
+			printf("export_type_or_ent_post: Unknown type or entity.\n");
 			break;
 	}
 }
@@ -545,7 +594,7 @@ void ir_export(const char *filename)
 
 	fputs("typegraph {\n", env.file);
 
-	type_walk_plus_frames(NULL, export_type_or_ent, &env);
+	type_walk_plus_frames(export_type_or_ent_pre, export_type_or_ent_post, &env);
 	/* TODO: Visit frame types and "types for value params"? */
 
 	for(i = 0; i < n_irgs; i++)
@@ -585,7 +634,7 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 
 	fputs("typegraph {\n", env.file);
 
-	type_walk_irg(irg, NULL, export_type_or_ent, &env);
+	type_walk_irg(irg, export_type_or_ent_pre, export_type_or_ent_post, &env);
 
 	fprintf(env.file, "}\n\nirg %ld {\n", get_entity_nr(get_irg_entity(irg)));
 
