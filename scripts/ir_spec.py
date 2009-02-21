@@ -366,6 +366,23 @@ Mux = dict(
 Cond = dict(
 	ins      = [ "selector" ],
 	outs     = [ "false", "true" ],
+	attrs    = [
+		dict(
+			name = "kind",
+			type = "cond_kind",
+			init = "dense"
+		),
+		dict(
+			name = "default_proj",
+			type = "long",
+			init = "0"
+		),
+		dict(
+			name = "jmp_pred",
+			type = "cond_jmp_predicate",
+			init = "COND_JMP_PRED_NONE"
+		)
+	]
 ),
 
 Cmp = dict(

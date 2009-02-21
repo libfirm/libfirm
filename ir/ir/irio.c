@@ -63,6 +63,8 @@ typedef enum typetag_t
 	tt_align,
 	tt_allocation,
 	tt_builtin,
+	tt_cond_kind,
+	tt_cond_jmp_predicate,
 	tt_initializer,
 	tt_iro,
 	tt_keyword,
@@ -180,6 +182,37 @@ static void symtbl_init(void)
 	INSERTENUM(tt_allocation, allocation_dynamic);
 	INSERTENUM(tt_allocation, allocation_static);
 
+	INSERTENUM(tt_builtin, ir_bk_trap);
+	INSERTENUM(tt_builtin, ir_bk_debugbreak);
+	INSERTENUM(tt_builtin, ir_bk_return_address);
+	INSERTENUM(tt_builtin, ir_bk_frame_addess);
+	INSERTENUM(tt_builtin, ir_bk_prefetch);
+	INSERTENUM(tt_builtin, ir_bk_ffs);
+	INSERTENUM(tt_builtin, ir_bk_clz);
+	INSERTENUM(tt_builtin, ir_bk_ctz);
+	INSERTENUM(tt_builtin, ir_bk_popcount);
+	INSERTENUM(tt_builtin, ir_bk_parity);
+	INSERTENUM(tt_builtin, ir_bk_bswap);
+	INSERTENUM(tt_builtin, ir_bk_inport);
+	INSERTENUM(tt_builtin, ir_bk_outport);
+	INSERTENUM(tt_builtin, ir_bk_inner_trampoline);
+
+	INSERTENUM(tt_cond_kind, dense);
+	INSERTENUM(tt_cond_kind, fragmentary);
+
+	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_NONE);
+	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_TRUE);
+	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_FALSE);
+
+	INSERTENUM(tt_initializer, IR_INITIALIZER_CONST);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_TARVAL);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
+	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
+
+	INSERTENUM(tt_peculiarity, peculiarity_description);
+	INSERTENUM(tt_peculiarity, peculiarity_inherited);
+	INSERTENUM(tt_peculiarity, peculiarity_existent);
+
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
 	INSERTENUM(tt_pin_state, op_pin_state_exc_pinned);
@@ -200,29 +233,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_volatility, volatility_non_volatile);
 	INSERTENUM(tt_volatility, volatility_is_volatile);
 
-	INSERTENUM(tt_peculiarity, peculiarity_description);
-	INSERTENUM(tt_peculiarity, peculiarity_inherited);
-	INSERTENUM(tt_peculiarity, peculiarity_existent);
-
-	INSERTENUM(tt_initializer, IR_INITIALIZER_CONST);
-	INSERTENUM(tt_initializer, IR_INITIALIZER_TARVAL);
-	INSERTENUM(tt_initializer, IR_INITIALIZER_NULL);
-	INSERTENUM(tt_initializer, IR_INITIALIZER_COMPOUND);
-
-	INSERTENUM(tt_builtin, ir_bk_trap);
-	INSERTENUM(tt_builtin, ir_bk_debugbreak);
-	INSERTENUM(tt_builtin, ir_bk_return_address);
-	INSERTENUM(tt_builtin, ir_bk_frame_addess);
-	INSERTENUM(tt_builtin, ir_bk_prefetch);
-	INSERTENUM(tt_builtin, ir_bk_ffs);
-	INSERTENUM(tt_builtin, ir_bk_clz);
-	INSERTENUM(tt_builtin, ir_bk_ctz);
-	INSERTENUM(tt_builtin, ir_bk_popcount);
-	INSERTENUM(tt_builtin, ir_bk_parity);
-	INSERTENUM(tt_builtin, ir_bk_bswap);
-	INSERTENUM(tt_builtin, ir_bk_inport);
-	INSERTENUM(tt_builtin, ir_bk_outport);
-	INSERTENUM(tt_builtin, ir_bk_inner_trampoline);
 
 #undef INSERTENUM
 #undef INSERT
@@ -272,24 +282,6 @@ static void write_tarval(io_env_t *env, tarval *tv)
 	fputc(' ', env->file);
 }
 
-static void write_pin_state(io_env_t *env, ir_node *irn)
-{
-	fputs(get_op_pin_state_name(get_irn_pinned(irn)), env->file);
-	fputc(' ', env->file);
-}
-
-static void write_volatility(io_env_t *env, ir_node *irn)
-{
-	ir_volatility vol;
-
-	if(is_Load(irn)) vol = get_Load_volatility(irn);
-	else if(is_Store(irn)) vol = get_Store_volatility(irn);
-	else assert(0 && "Invalid optype for write_volatility");
-
-	fputs(get_volatility_name(vol), env->file);
-	fputc(' ', env->file);
-}
-
 static void write_align(io_env_t *env, ir_node *irn)
 {
 	ir_align align;
@@ -305,6 +297,18 @@ static void write_align(io_env_t *env, ir_node *irn)
 static void write_builtin_kind(io_env_t *env, ir_node *irn)
 {
 	fputs(get_builtin_kind_name(get_Builtin_kind(irn)), env->file);
+	fputc(' ', env->file);
+}
+
+static void write_cond_kind(io_env_t *env, ir_node *irn)
+{
+	fputs(get_cond_kind_name(get_Cond_kind(irn)), env->file);
+	fputc(' ', env->file);
+}
+
+static void write_cond_jmp_predicate(io_env_t *env, ir_node *irn)
+{
+	fputs(get_cond_jmp_predicate_name(get_Cond_jmp_pred(irn)), env->file);
 	fputc(' ', env->file);
 }
 
@@ -341,6 +345,24 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 		default:
 			panic("Unknown initializer kind");
 	}
+}
+
+static void write_pin_state(io_env_t *env, ir_node *irn)
+{
+	fputs(get_op_pin_state_name(get_irn_pinned(irn)), env->file);
+	fputc(' ', env->file);
+}
+
+static void write_volatility(io_env_t *env, ir_node *irn)
+{
+	ir_volatility vol;
+
+	if(is_Load(irn)) vol = get_Load_volatility(irn);
+	else if(is_Store(irn)) vol = get_Store_volatility(irn);
+	else assert(0 && "Invalid optype for write_volatility");
+
+	fputs(get_volatility_name(vol), env->file);
+	fputc(' ', env->file);
 }
 
 static void export_type_common(io_env_t *env, ir_type *tp)
@@ -924,16 +946,18 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 	return 0;
 }
 
-#define read_align(env)            ((ir_align)              read_enum(env, tt_align))
-#define read_allocation(env)       ((ir_allocation)         read_enum(env, tt_allocation))
-#define read_peculiarity(env)      ((ir_peculiarity)        read_enum(env, tt_peculiarity))
-#define read_pin_state(env)        ((op_pin_state)          read_enum(env, tt_pin_state))
-#define read_type_state(env)       ((ir_type_state)         read_enum(env, tt_type_state))
-#define read_variability(env)      ((ir_variability)        read_enum(env, tt_variability))
-#define read_visibility(env)       ((ir_visibility)         read_enum(env, tt_visibility))
-#define read_volatility(env)       ((ir_volatility)         read_enum(env, tt_volatility))
-#define read_initializer_kind(env) ((ir_initializer_kind_t) read_enum(env, tt_initializer))
-#define read_builtin_kind(env)     ((ir_builtin_kind)       read_enum(env, tt_builtin))
+#define read_align(env)              ((ir_align)              read_enum(env, tt_align))
+#define read_allocation(env)         ((ir_allocation)         read_enum(env, tt_allocation))
+#define read_builtin_kind(env)       ((ir_builtin_kind)       read_enum(env, tt_builtin))
+#define read_cond_kind(env)          ((cond_kind)             read_enum(env, tt_cond_kind))
+#define read_cond_jmp_predicate(env) ((cond_jmp_predicate)    read_enum(env, tt_cond_jmp_predicate))
+#define read_initializer_kind(env)   ((ir_initializer_kind_t) read_enum(env, tt_initializer))
+#define read_peculiarity(env)        ((ir_peculiarity)        read_enum(env, tt_peculiarity))
+#define read_pin_state(env)          ((op_pin_state)          read_enum(env, tt_pin_state))
+#define read_type_state(env)         ((ir_type_state)         read_enum(env, tt_type_state))
+#define read_variability(env)        ((ir_variability)        read_enum(env, tt_variability))
+#define read_visibility(env)         ((ir_visibility)         read_enum(env, tt_visibility))
+#define read_volatility(env)         ((ir_volatility)         read_enum(env, tt_volatility))
 
 static ir_cons_flags get_cons_flags(io_env_t *env)
 {

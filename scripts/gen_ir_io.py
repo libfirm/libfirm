@@ -62,9 +62,18 @@ def get_io_type(type, attrname, nodename):
 	elif type == "ir_builtin_kind":
 		importcmd = "ir_builtin_kind %s = read_builtin_kind(env);" % attrname
 		exportcmd = "write_builtin_kind(env, irn);"
+	elif type == "cond_kind":
+		importcmd = "cond_kind %s = read_cond_kind(env);" % attrname
+		exportcmd = "write_cond_kind(env, irn);"
+	elif type == "cond_jmp_predicate":
+		importcmd = "cond_jmp_predicate %s = read_cond_jmp_predicate(env);" % attrname
+		exportcmd = "write_cond_jmp_predicate(env, irn);"
 	elif type == "int":
 		importcmd = "int %s = (int) read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%d ", %(val)s);"""
+	elif type == "long":
+		importcmd = "long %s = read_long(env);" % attrname
+		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
 	else:
 		print "UNKNOWN TYPE: %s" % type
 		importcmd = """// BAD: %s %s
@@ -144,6 +153,7 @@ def preprocess_node(nodename, node):
 
 	# construct node arguments
 	arguments = [ ]
+	initargs = [ ]
 	i = 0
 	for input in node["ins"]:
 		arguments.append("prednodes[%i]" % i)
@@ -167,13 +177,17 @@ def preprocess_node(nodename, node):
 		if nodename == "Builtin" and attr["name"] == "kind":
 			continue
 		prepare_attr(nodename, attr)
-		arguments.append(attr["name"])
+		if "init" in attr:
+			initargs.append(attr["name"])
+		else:
+			arguments.append(attr["name"])
 
 	for arg in node["constructor_args"]:
 		prepare_attr(nodename, arg)
 		arguments.append(arg["name"])
 
 	node["arguments"] = arguments
+	node["initargs"] = initargs
 
 export_attrs_template = env.from_string('''
 	case iro_{{nodename}}:
@@ -191,6 +205,8 @@ import_attrs_template = env.from_string('''
 		{% endfor %}
 		{% for attr in node.constructor_args %}{{attr.importcmd}}
 		{% endfor %}newnode = new_r_{{nodename}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
+		{% for initarg in node.initargs %}set_{{nodename}}_{{initarg}}(newnode, {{initarg}});
+		{% endfor %}
 		break;
 	}
 ''')
