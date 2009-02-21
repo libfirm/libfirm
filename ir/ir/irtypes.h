@@ -154,9 +154,9 @@ typedef struct {
 
 /** Cond attributes. */
 typedef struct {
-	cond_kind kind;           /**< flavor of Cond */
-	long default_proj;        /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
-	cond_jmp_predicate pred;  /**< only for binary Conds: The jump predication. */
+	cond_kind kind;              /**< flavor of Cond */
+	long default_proj;           /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
+	cond_jmp_predicate jmp_pred; /**< only for binary Conds: The jump predication. */
 } cond_attr;
 
 /** Const attributes. */

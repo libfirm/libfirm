@@ -916,12 +916,12 @@ static inline int _is_irn_machine_user(const ir_node *node, unsigned n) {
 
 static inline cond_jmp_predicate _get_Cond_jmp_pred(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Cond);
-	return node->attr.cond.pred;
+	return node->attr.cond.jmp_pred;
 }
 
 static inline void _set_Cond_jmp_pred(ir_node *node, cond_jmp_predicate pred) {
 	assert(_get_irn_op(node) == op_Cond);
-	node->attr.cond.pred = pred;
+	node->attr.cond.jmp_pred = pred;
 }
 
 static inline void *_get_irn_generic_attr(ir_node *node) {

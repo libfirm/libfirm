@@ -341,7 +341,7 @@ Cond => {
 		},
 		{
 			type => "cond_jmp_predicate",
-			name => "pred",
+			name => "jmp_pred",
 			init => "COND_JMP_PRED_NONE",
 			comment => "Only for binary Conds: The jump predication."
 		},
