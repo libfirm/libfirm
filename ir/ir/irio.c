@@ -393,6 +393,7 @@ static void export_type(io_env_t *env, ir_type *tp)
 				fprintf(f, "%ld ", get_type_nr(get_method_param_type(tp, i)));
 			for(i = 0; i < nresults; i++)
 				fprintf(f, "%ld ", get_type_nr(get_method_res_type(tp, i)));
+			fprintf(f, "%d ", get_method_first_variadic_param_index(tp));
 			break;
 		}
 
@@ -1035,6 +1036,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 				unsigned addprops    = (unsigned) read_long(env);
 				int nparams          = (int)      read_long(env);
 				int nresults         = (int)      read_long(env);
+				int variaindex;
 
 				type = new_type_method(id, nparams, nresults);
 
@@ -1051,6 +1053,14 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 					ir_type *restype = get_type(env, typenr);
 
 					set_method_res_type(type, i, restype);
+				}
+
+				variaindex = (int) read_long(env);
+				if(variaindex != -1)
+				{
+					set_method_variadicity(type, variadicity_variadic);
+					if(variaindex != nparams)
+						set_method_first_variadic_param_index(type, variaindex);
 				}
 
 				set_method_calling_convention(type, callingconv);
