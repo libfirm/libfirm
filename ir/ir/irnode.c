@@ -1006,6 +1006,18 @@ I don't want to choose 3) as 2a) seems to have advantages for
 dataflow analysis and 3) does not allow to convert the representation to
 2a).
 */
+
+const char *get_cond_kind_name(cond_kind kind)
+{
+#define X(a)    case a: return #a;
+	switch (kind) {
+		X(dense);
+		X(fragmentary);
+	}
+	return "<unknown>";
+#undef X
+}
+
 ir_node *
 get_Cond_selector(const ir_node *node) {
 	assert(is_Cond(node));
@@ -1031,9 +1043,14 @@ set_Cond_kind(ir_node *node, cond_kind kind) {
 }
 
 long
-get_Cond_defaultProj(const ir_node *node) {
+get_Cond_default_proj(const ir_node *node) {
 	assert(is_Cond(node));
 	return node->attr.cond.default_proj;
+}
+
+void set_Cond_default_proj(ir_node *node, long defproj) {
+	assert(is_Cond(node));
+	node->attr.cond.default_proj = defproj;
 }
 
 ir_node *
@@ -3089,12 +3106,14 @@ int (is_irn_machine_user)(const ir_node *node, unsigned n) {
 
 /* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred) {
+#define X(a)    case a: return #a;
 	switch (pred) {
-	default:
-	case COND_JMP_PRED_NONE:  return "no prediction";
-	case COND_JMP_PRED_TRUE:  return "true taken";
-	case COND_JMP_PRED_FALSE: return "false taken";
+		X(COND_JMP_PRED_NONE);
+		X(COND_JMP_PRED_TRUE);
+		X(COND_JMP_PRED_FALSE);
 	}
+	return "<unknown>";
+#undef X
 }
 
 /* Returns the conditional jump prediction of a Cond node. */

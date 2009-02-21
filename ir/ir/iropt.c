@@ -3954,7 +3954,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 				/* we have a constant switch */
 				long num = get_Proj_proj(proj);
 
-				if (num != get_Cond_defaultProj(n)) { /* we cannot optimize default Proj's yet */
+				if (num != get_Cond_default_proj(n)) { /* we cannot optimize default Proj's yet */
 					if (get_tarval_long(tb) == num) {
 						/* Do NOT create a jump here, or we will have 2 control flow ops
 						 * in a block. This case is optimized away in optimize_cf(). */

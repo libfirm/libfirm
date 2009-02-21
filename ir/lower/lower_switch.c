@@ -73,7 +73,7 @@ static int should_do_table_switch(ir_node *cond, unsigned spare_size)
 	if (get_irn_n_outs(cond) <= 4)
 		return 0;
 
-	default_pn = get_Cond_defaultProj(cond);
+	default_pn = get_Cond_default_proj(cond);
 
 	foreach_out_irn(cond, i, proj) {
 		long pn = get_Proj_proj(proj);
@@ -216,7 +216,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	numcases = get_irn_n_outs(cond) - 1;      // does not contain default case
 	NEW_ARR_A(case_data_t, cases, numcases);
 
-	default_pn = get_Cond_defaultProj(cond);
+	default_pn = get_Cond_default_proj(cond);
 	ifcas_env.sel = sel;
 	ifcas_env.defindex = 0;
 	NEW_ARR_A(ir_node*, ifcas_env.defusers, numcases);

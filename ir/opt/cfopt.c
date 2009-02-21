@@ -625,7 +625,7 @@ static int handle_switch_cond(ir_node *cond) {
 
 	if (proj2 == NULL) {
 		/* this Cond has only one Proj: must be the defProj */
-		assert(get_Cond_defaultProj(cond) == get_Proj_proj(proj1));
+		assert(get_Cond_default_proj(cond) == get_Proj_proj(proj1));
 		/* convert it into a Jmp */
 		jmp = new_r_Jmp(current_ir_graph, blk);
 		exchange(proj1, jmp);
@@ -638,7 +638,7 @@ static int handle_switch_cond(ir_node *cond) {
 		if (tv != tarval_bad) {
 			/* we have a constant switch */
 			long num     = get_tarval_long(tv);
-			long def_num = get_Cond_defaultProj(cond);
+			long def_num = get_Cond_default_proj(cond);
 
 			if (def_num == get_Proj_proj(proj1)) {
 				/* first one is the defProj */

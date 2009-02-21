@@ -244,7 +244,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	} break;
 	case iro_Cond: {
 		fprintf(F, "  condition kind: %s\n",  get_Cond_kind(n) == dense ? "dense" : "fragmentary");
-		fprintf(F, "  default ProjNr: %ld\n", get_Cond_defaultProj(n));
+		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
 		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE)
 			fprintf(F, "  jump prediction: %s\n", get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
 	} break;

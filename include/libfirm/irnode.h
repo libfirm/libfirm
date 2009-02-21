@@ -474,11 +474,15 @@ typedef enum {
 	                   Proj nodes mean default control flow, i.e., Proj(n). */
 } cond_kind;
 
+/** Gets the string representation of the Cond node kind. */
+const char *get_cond_kind_name(cond_kind kind);
+
 ir_node  *get_Cond_selector(const ir_node *node);
 void      set_Cond_selector(ir_node *node, ir_node *selector);
 cond_kind get_Cond_kind(const ir_node *node);
 void      set_Cond_kind(ir_node *node, cond_kind kind);
-long      get_Cond_defaultProj(const ir_node *node);
+long      get_Cond_default_proj(const ir_node *node);
+void      set_Cond_default_proj(ir_node *node, long defproj);
 
 /**
  * Projection numbers for conditions.
@@ -1381,7 +1385,7 @@ typedef enum {
 	COND_JMP_PRED_FALSE        /**< The False case is predicted. */
 } cond_jmp_predicate;
 
-/** Gets the string representation of the jump prediction .*/
+/** Gets the string representation of the jump prediction. */
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 
 /** Returns the conditional jump prediction of a Cond node. */

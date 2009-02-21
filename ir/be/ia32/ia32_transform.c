@@ -2600,7 +2600,7 @@ static ir_node *create_Switch(ir_node *node)
 	ir_node  *new_sel    = be_transform_node(sel);
 	long      switch_min = LONG_MAX;
 	long      switch_max = LONG_MIN;
-	long      default_pn = get_Cond_defaultProj(node);
+	long      default_pn = get_Cond_default_proj(node);
 	ir_node  *new_node;
 	const ir_edge_t *edge;
 

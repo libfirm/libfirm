@@ -769,7 +769,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		ir_node *pred = get_Proj_pred(n);
 
 		if (get_irn_opcode(pred) == iro_Cond
-			&& get_Proj_proj(n) == get_Cond_defaultProj(pred)
+			&& get_Proj_proj(n) == get_Cond_default_proj(pred)
 			&& get_irn_mode(get_Cond_selector(pred)) != mode_b)
 			fprintf(F, "defProj");
 		else

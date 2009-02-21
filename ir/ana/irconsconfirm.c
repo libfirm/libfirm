@@ -443,7 +443,7 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 		long proj_nr = get_Proj_proj(proj);
 
 		/* this is a CASE, but we cannot handle the default case */
-		if (proj_nr == get_Cond_defaultProj(cond))
+		if (proj_nr == get_Cond_default_proj(cond))
 			return;
 
 		handle_case(block, get_Cond_selector(cond), proj_nr, env);

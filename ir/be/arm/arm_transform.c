@@ -977,7 +977,7 @@ static ir_node *gen_Cond(ir_node *node) {
 
 		const_graph = create_const_graph_value(dbg, block, translation);
 		sub = new_bd_arm_Sub(dbg, block, new_op, const_graph, mode, ARM_SHF_NONE, 0);
-		return new_bd_arm_SwitchJmp(dbg, block, sub, n_projs, get_Cond_defaultProj(node) - translation);
+		return new_bd_arm_SwitchJmp(dbg, block, sub, n_projs, get_Cond_default_proj(node) - translation);
 	}
 }
 

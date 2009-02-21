@@ -2376,7 +2376,7 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 			node->type.tv = tarval_reachable;
 		} else if (selector->type.tv == tarval_top) {
 			if (tarval_UNKNOWN == tarval_top &&
-			    pnc == get_Cond_defaultProj(cond)) {
+			    pnc == get_Cond_default_proj(cond)) {
 				/* a switch based of Top is always "default" */
 				node->type.tv = tarval_reachable;
 			} else {
@@ -2384,7 +2384,7 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
 			}
 		} else {
 			long value = get_tarval_long(selector->type.tv);
-			if (pnc == get_Cond_defaultProj(cond)) {
+			if (pnc == get_Cond_default_proj(cond)) {
 				/* default switch, have to check ALL other cases */
 				int i;
 

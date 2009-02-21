@@ -921,7 +921,7 @@ static ir_node *gen_Cond(ppc32_transform_env_t *env) {
 
 		ir_node *switch_node = new_bd_ppc32_Switch(env->dbg, env->block, selector,
 			unknown_gpr, unknown_cond, env->mode);
-		set_ppc32_proj_nr(switch_node, get_Cond_defaultProj(env->irn));
+		set_ppc32_proj_nr(switch_node, get_Cond_default_proj(env->irn));
 
 		return switch_node;
 	}
