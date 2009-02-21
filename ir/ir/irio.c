@@ -613,7 +613,8 @@ void ir_export(const char *filename)
 		irg_walk_anchors(irg, NULL, export_node, &env);
 	}
 
-	fputs("}\n\nconstirg {\n", env.file);
+	fprintf(env.file, "}\n\nconstirg %ld {\n", get_irn_node_nr(get_const_code_irg()->current_block));
+
 	walk_const_code(NULL, export_node, &env);
 	fputs("}\n", env.file);
 
@@ -1465,8 +1466,13 @@ void ir_import(const char *filename)
 			}
 
 			case kw_constirg:
-				if(!parse_graph(env, get_const_code_irg())) goto end;
+			{
+				ir_graph *constirg = get_const_code_irg();
+				long bodyblockid = read_long(env);
+				set_id(env, bodyblockid, constirg->current_block);
+				if(!parse_graph(env, constirg)) goto end;
 				break;
+			}
 		}
 	}
 
