@@ -351,7 +351,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 	case irms_reference:
 		if (!strcasecmp(str, "null"))
 			return get_tarval_null(mode);
-		/* fall through */
+		/* FALLTHROUGH */
 	case irms_int_number:
 		sc_val_from_str(str, len, NULL, mode);
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
@@ -1439,7 +1439,7 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 	switch (get_mode_sort(tv->mode)) {
 	case irms_reference:
 		if (tv == tv->mode->null) return snprintf(buf, len, "NULL");
-		/* fall through */
+		/* FALLTHROUGH */
 	case irms_int_number:
 		switch (mode_info->mode_output) {
 
