@@ -1110,7 +1110,9 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 	if (dependent_on(n2, n1))
 		return 1;
 
-	return 0;
+	/* The nodes have no depth order, but we need a total order because qsort()
+	 * is not stable. */
+	return get_irn_idx(n1) - get_irn_idx(n2);
 }
 
 /**
