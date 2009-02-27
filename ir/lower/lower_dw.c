@@ -120,9 +120,7 @@ typedef struct _lower_env_t {
 	const lwrdw_param_t *params;  /**< transformation parameter */
 	unsigned flags;               /**< some flags */
 	int      n_entries;           /**< number of entries */
-#ifndef NDEBUG
 	ir_type  *value_param_tp;     /**< the old value param type */
-#endif
 } lower_env_t;
 
 /**
@@ -2661,9 +2659,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		lenv.l_mtp        = NULL;
 		lenv.flags        = 0;
 		lenv.proj_2_block = pmap_create();
-#ifndef NDEBUG
 		lenv.value_param_tp = NULL;
-#endif
 		ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 
 		ent = get_irg_entity(irg);
@@ -2674,9 +2670,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 			lenv.flags |= MUST_BE_LOWERED;
 			set_entity_type(ent, ltp);
 			lenv.l_mtp = ltp;
-#ifndef NDEBUG
 			lenv.value_param_tp = get_method_value_param_type(mtp);
-#endif
 		}  /* if */
 
 		/* first step: link all nodes and allocate data */
