@@ -544,6 +544,9 @@ static const char *const cmp2condition_u[] = {
 	NULL  /* always true */
 };
 
+/**
+ * Emit the suffix for a compare instruction.
+ */
 static void ia32_emit_cmp_suffix(int pnc)
 {
 	const char *str;
