@@ -164,15 +164,10 @@ static void copy_node(ir_node *n, void *env) {
 	}
 	copy_node_attr(n, nn);
 
-#ifdef DEBUG_libfirm
-	{
-		int copy_node_nr = env != NULL;
-		if (copy_node_nr) {
-			/* for easier debugging, we want to copy the node numbers too */
-			nn->node_nr = n->node_nr;
-		}
+	if (env != NULL) {
+		/* for easier debugging, we want to copy the node numbers too */
+		nn->node_nr = n->node_nr;
 	}
-#endif
 
 	set_new_node(n, nn);
 	hook_dead_node_elim_subst(current_ir_graph, n, nn);

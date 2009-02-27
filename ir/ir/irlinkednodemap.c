@@ -40,11 +40,7 @@ static ir_lnk_nodemap_entry_t null_nodemap_entry;
 #define ConstKeyType              const ir_node*
 #define GetKey(value)             (value).node
 #define InitData(self,value,key)  do { (value).node = (key); (value).list.next = NULL; (value).list.prev = NULL; } while(0)
-#ifdef DEBUG_libfirm
 #define Hash(self,key)            ((unsigned)((key)->node_nr))
-#else
-#define Hash(self,key)            HASH_PTR(key)
-#endif
 #define KeysEqual(self,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 #define EntrySetEmpty(value)      (value).node = NULL

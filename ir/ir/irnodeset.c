@@ -38,11 +38,7 @@
 #define ValueType                 ir_node*
 #define NullValue                 NULL
 #define DeletedValue              ((ir_node*)-1)
-#ifdef DEBUG_libfirm
 #define Hash(this,key)            ((unsigned)((key)->node_nr))
-#else
-#define Hash(this,key)            HASH_PTR(key)
-#endif
 #define KeysEqual(this,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 

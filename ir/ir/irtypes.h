@@ -366,6 +366,7 @@ struct ir_node {
 	void *link;              /**< To attach additional information to the node, e.g.
 	                              used during optimization to link to nodes that
 	                              shall replace a node. */
+	long node_nr;            /**< A globally unique node number for each node. */
 	/* ------- Fields for optimizations / analysis information ------- */
 	ir_def_use_edge *out;    /**< array of def-use edges. */
 	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
@@ -373,8 +374,6 @@ struct ir_node {
 #ifdef DEBUG_libfirm
 	unsigned out_valid : 1;
 	unsigned flags     : 31;
-	long node_nr;            /**< A unique node number for each node to make output
-	                              readable. */
 #endif
 	/* ------- For analyses -------- */
 	ir_loop *loop;           /**< the loop the node is in. Access routines in irloop.h */
@@ -567,9 +566,7 @@ struct ir_prog {
 	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
 	int  max_irg_idx;                    /**< highest unused irg index */
-#ifdef DEBUG_libfirm
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
-#endif
 #ifndef NDEBUG
 	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
 #endif

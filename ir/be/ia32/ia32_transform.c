@@ -5402,9 +5402,7 @@ static ir_node *gen_Proj(ir_node *node)
 				ir_node *block    = be_transform_node(get_nodes_block(node));
 				ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,
 											   mode_Iu, get_Proj_proj(node));
-#ifdef DEBUG_libfirm
 				new_proj->node_nr = node->node_nr;
-#endif
 				return new_proj;
 			}
 		}

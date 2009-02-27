@@ -163,13 +163,10 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 		memcpy(&res->in[1], in, sizeof(ir_node *) * arity);
 	}
 
-	res->in[0] = block;
+	res->in[0]   = block;
 	set_irn_dbg_info(res, db);
-	res->out = NULL;
-
-#ifdef DEBUG_libfirm
+	res->out     = NULL;
 	res->node_nr = get_irp_new_node_nr();
-#endif
 
 	for (i = 0; i < EDGE_KIND_LAST; ++i)
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
@@ -497,11 +494,7 @@ void set_irn_pinned(ir_node *node, op_pin_state state) {
 /* Outputs a unique number for this node */
 long get_irn_node_nr(const ir_node *node) {
 	assert(node);
-#ifdef DEBUG_libfirm
 	return node->node_nr;
-#else
-	return (long)PTR_TO_INT(node);
-#endif
 }
 
 const_attr *get_irn_const_attr(ir_node *node) {

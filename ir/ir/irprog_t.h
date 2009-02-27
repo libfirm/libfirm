@@ -118,14 +118,12 @@ _get_irp_opcode(int pos) {
 	return irp->opcodes[pos];
 }
 
-#ifdef DEBUG_libfirm
 /** Returns a new, unique number to number nodes or the like. */
 static inline long
 get_irp_new_node_nr(void) {
 	assert(irp);
 	return irp->max_node_nr++;
 }
-#endif /* DEBUG_libfirm */
 
 static inline int
 get_irp_new_irg_idx(void) {

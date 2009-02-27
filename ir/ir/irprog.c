@@ -61,10 +61,7 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->last_region_nr = 0;
 	res->last_label_nr  = 1;  /* 0 is reserved as non-label */
 	res->max_irg_idx    = 0;
-
-#ifdef DEBUG_libfirm
 	res->max_node_nr    = 0;
-#endif
 #ifndef NDEBUG
 	res->reserved_resources = 0;
 #endif

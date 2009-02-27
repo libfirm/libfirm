@@ -121,10 +121,7 @@ ir_node *be_duplicate_node(ir_node *node) {
 	copy_node_attr(node, new_node);
 	be_duplicate_deps(node, new_node);
 
-#ifdef DEBUG_libfirm
 	new_node->node_nr = node->node_nr;
-#endif
-
 	return new_node;
 }
 
@@ -346,9 +343,8 @@ static ir_node *gen_Block(ir_node *node) {
 	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
 	                    get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(node, block);
-#ifdef DEBUG_libfirm
 	block->node_nr = node->node_nr;
-#endif
+
 	if (node == macroblock) {
 		/* this node is a macroblock header */
 		set_Block_MacroBlock(block, block);
