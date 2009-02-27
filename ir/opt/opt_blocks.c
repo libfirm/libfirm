@@ -23,8 +23,7 @@
  * @author  Michael Beck
  * @version $Id$
  *
- * This phase find congruent blocks. Works currently for
- * predecessors of the end block only.
+ * This phase find congruent blocks.
  * Two block are congruent, if they contains only equal calculations.
  */
 #include "config.h"
@@ -40,7 +39,8 @@
 #include "set.h"
 #include "debug.h"
 
-/* define this for gneral block shaping */
+/* define this for general block shaping: congruent blocks
+   are found not only before the end block but anywhere in the graph */
 #define GENERAL_SHAPE
 
 typedef struct partition_t     partition_t;
@@ -550,7 +550,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
 			DB((dbg, LEVEL_3, "  propagate Input %+F\n", node->node));
 		}
 
-		/* Add bl to map[opcode(bl)]. */
+		/* Add bl to map[opcode(n)]. */
 		id          = opcode(node, env);
 		entry       = listmap_find(&map, id);
 		bl->next    = entry->list;
@@ -1140,7 +1140,7 @@ static void add_roots(ir_graph *irg, environment_t *env) {
 	}
 	/*
 	 * Now sort the roots to normalize them as good as possible.
-     * Else, we will split identical blocks if we start which different roots
+     * Else, we will split identical blocks if we start which different roots.
 	 */
 	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
 		int i, n = ARR_LEN(bl->roots);
