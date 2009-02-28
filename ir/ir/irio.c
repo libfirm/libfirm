@@ -408,6 +408,8 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 		case tpo_method:
 		case tpo_pointer:
 			return;
+		default:
+			break;
 	}
 
 	export_type_common(env, tp);
@@ -453,6 +455,8 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 		case tpo_union:
 		case tpo_unknown:
 			return;
+		default:
+			break;
 	}
 
 	export_type_common(env, tp);
@@ -627,6 +631,8 @@ static void export_modes(io_env_t *env)
 			case irms_internal_boolean:
 				/* skip "internal" modes, which may not be user defined */
 				continue;
+			default:
+				break;
 		}
 
 		fprintf(env->file, "\tmode \"%s\" 0x%X %d %d %s %d %d ", get_mode_name(mode),
@@ -1021,7 +1027,6 @@ static tarval *read_tv(io_env_t *env)
 
 static ir_initializer_t *read_initializer(io_env_t *env)
 {
-	FILE *f = env->file;
 	ir_initializer_kind_t ini_kind = read_initializer_kind(env);
 
 	switch (ini_kind)
