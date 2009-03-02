@@ -78,8 +78,8 @@ static const char *get_section_name(be_gas_section_t section) {
 			".section .rdata,\"dr\"",
 			".section\t.bss",
 			".section\t.tbss,\"awT\",@nobits",
-			".section\t.ctors,\"aw\",@progbits",
-			".section\t.dtors,\"aw\",@progbits",
+			".section\t.ctors,\"w\"",
+			".section\t.dtors,\"w\"",
 			NULL,
 			NULL,
 			NULL
