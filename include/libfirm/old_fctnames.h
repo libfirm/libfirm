@@ -88,6 +88,7 @@
 #define True  pn_Cmp_True
 
 #define get_Cond_defaultProj(cond)  get_Cond_default_proj(cond)
+#define is_Div_remainderless(div)   get_Div_no_remainder(div)
 
 /* irmode.h */
 #define get_ident_of_mode        get_mode_ident

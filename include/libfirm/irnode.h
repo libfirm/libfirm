@@ -774,7 +774,7 @@ ir_node *get_Div_mem(const ir_node *node);
 void     set_Div_mem(ir_node *node, ir_node *mem);
 ir_mode *get_Div_resmode(const ir_node *node);
 void     set_Div_resmode(ir_node *node, ir_mode *mode);
-int      is_Div_remainderless(const ir_node *node);
+int      get_Div_no_remainder(const ir_node *node);
 
 /**
  * Projection numbers for Div: use for Proj nodes!

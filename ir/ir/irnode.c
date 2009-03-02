@@ -1603,7 +1603,7 @@ BINOP(Cmp)
 UNOP(Conv)
 UNOP(Cast)
 
-int is_Div_remainderless(const ir_node *node) {
+int get_Div_no_remainder(const ir_node *node) {
 	assert(is_Div(node));
 	return node->attr.divmod.no_remainder;
 }

@@ -928,7 +928,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 				ir_node *curr = left;
 
 				/* create the correction code for signed values only if there might be a remainder */
-				if (! is_Div_remainderless(irn)) {
+				if (! get_Div_no_remainder(irn)) {
 					if (k != 1) {
 						k_node = new_Const_long(mode_Iu, k - 1);
 						curr   = new_rd_Shrs(dbg, current_ir_graph, block, left, k_node, mode);

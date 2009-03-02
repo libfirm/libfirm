@@ -413,7 +413,7 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env) {
 		key.mode = get_Load_mode(irn);
 		break;
 	case iro_Div:
-		key.u.intVal = is_Div_remainderless(irn);
+		key.u.intVal = get_Div_no_remainder(irn);
 		break;
 	case iro_Builtin:
 		key.u.intVal = get_Builtin_kind(irn);

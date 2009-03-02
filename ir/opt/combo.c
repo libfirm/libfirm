@@ -288,7 +288,7 @@ static void check_opcode(const partition_t *Z) {
 				key.u.intVal = get_Conv_strict(irn);
 				break;
 			case iro_Div:
-				key.u.intVal = is_Div_remainderless(irn);
+				key.u.intVal = get_Div_no_remainder(irn);
 				break;
 			case iro_Block:
 				key.u.block = irn;
@@ -319,7 +319,7 @@ static void check_opcode(const partition_t *Z) {
 				assert(key.u.intVal == get_Conv_strict(irn));
 				break;
 			case iro_Div:
-				assert(key.u.intVal == is_Div_remainderless(irn));
+				assert(key.u.intVal == get_Div_no_remainder(irn));
 				break;
 			case iro_Block:
 				assert(key.u.block == irn);
@@ -1673,7 +1673,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 		key.u.intVal = get_Conv_strict(irn);
 		break;
 	case iro_Div:
-		key.u.intVal = is_Div_remainderless(irn);
+		key.u.intVal = get_Div_no_remainder(irn);
 		break;
 	case iro_Block:
 		/*
