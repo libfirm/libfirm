@@ -208,6 +208,15 @@ Div = dict(
 		dict(
 			name = "state",
 			type = "op_pin_state"
+		),
+		dict(
+			name = "no_remainder",
+			type = "int",
+			init = "0",
+			special = dict(
+				suffix = "RL",
+				init = "1"
+			)
 		)
 	]
 ),
