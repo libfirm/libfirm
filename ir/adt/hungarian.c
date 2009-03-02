@@ -49,7 +49,6 @@ struct _hungarian_problem_t {
 	int      num_rows;          /**< number of rows */
 	int      num_cols;          /**< number of columns */
 	int      **cost;            /**< the cost matrix */
-	int      width;             /**< the width for cost matrix dumper */
 	int      max_cost;          /**< the maximal costs in the matrix */
 	int      match_type;        /**< PERFECT or NORMAL matching */
 	bitset_t *missing_left;     /**< left side nodes having no edge to the right side */
@@ -58,7 +57,7 @@ struct _hungarian_problem_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
-static inline void *get_init_mem(struct obstack *obst, long sz) {
+static inline void *get_init_mem(struct obstack *obst, size_t sz) {
 	void *p = obstack_alloc(obst, sz);
 	memset(p, 0, sz);
 	return p;
@@ -78,14 +77,14 @@ static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width) {
 	fprintf(f, "\n");
 }
 
-void hungarian_print_costmatrix(hungarian_problem_t *p) {
-	hungarian_dump_f(stderr, p->cost, p->num_rows, p->num_cols, p->width);
+void hungarian_print_costmatrix(hungarian_problem_t *p, int width) {
+	hungarian_dump_f(stderr, p->cost, p->num_rows, p->num_cols, width);
 }
 
 /**
  * Create the object and allocate memory for the data structures.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type) {
+hungarian_problem_t *hungarian_new(int rows, int cols, int match_type) {
 	int i;
 	hungarian_problem_t *p = XMALLOCZ(hungarian_problem_t);
 
@@ -102,7 +101,6 @@ hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type
 
 	p->num_rows   = rows;
 	p->num_cols   = cols;
-	p->width      = width;
 	p->match_type = match_type;
 
 	/*

@@ -47,13 +47,12 @@ typedef struct _hungarian_problem_t hungarian_problem_t;
  *
  * @param rows       Number of rows in the given matrix
  * @param cols       Number of cols in the given matrix
- * @param width      Element width for matrix dumping
  * @param match_type The type of matching:
  *                   HUNGARIAN_MATCH_PERFECT - every nodes matches another node
  *                   HUNGARIAN_MATCH_NORMAL  - matchings of nodes having no edge getting removed
  * @return The problem object.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int width, int match_type);
+hungarian_problem_t *hungarian_new(int rows, int cols, int match_type);
 
 /**
  * Adds an edge from left to right with some costs.
@@ -92,6 +91,6 @@ int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, in
  * Print the cost matrix.
  * @param p The hungarian object
  */
-void hungarian_print_costmatrix(hungarian_problem_t *p);
+void hungarian_print_costmatrix(hungarian_problem_t *p, int cost_width);
 
 #endif /* _HUNGARIAN_H_ */

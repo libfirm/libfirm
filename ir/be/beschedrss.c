@@ -1469,7 +1469,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 	if (pset_count(dvg->edges) == 0)
 		return NULL;
 
-	bp = hungarian_new(n, n, 1, HUNGARIAN_MATCH_NORMAL);
+	bp = hungarian_new(n, n, HUNGARIAN_MATCH_NORMAL);
 
 	/*
 		At first, we build an index map for the nodes in the DVG,
