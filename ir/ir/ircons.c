@@ -1023,6 +1023,18 @@ new_rd_Conv(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *m
 	return res;
 }  /* new_rd_Conv */
 
+ir_node *
+new_rd_strictConv(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_mode *mode) {
+	ir_node  *res;
+	ir_graph *rem = current_ir_graph;
+
+	current_ir_graph = irg;
+	res = new_bd_Conv(db, block, op, mode, 1);
+	current_ir_graph = rem;
+
+	return res;
+}  /* new_rd_strictConv */
+
 #ifdef USE_ORIGINAL
 ir_node *
 new_rd_Cast(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
@@ -1647,6 +1659,10 @@ ir_node *new_r_Cmp(ir_graph *irg, ir_node *block,
 ir_node *new_r_Conv(ir_graph *irg, ir_node *block,
                     ir_node *op, ir_mode *mode) {
 	return new_rd_Conv(NULL, irg, block, op, mode);
+}
+ir_node *new_r_strictConv(ir_graph *irg, ir_node *block,
+                    ir_node *op, ir_mode *mode) {
+	return new_rd_strictConv(NULL, irg, block, op, mode);
 }
 #ifdef USE_ORIGINAL
 ir_node *new_r_Cast(ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {

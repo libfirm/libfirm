@@ -1734,6 +1734,17 @@ ir_node *new_rd_Rotl    (dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
                ir_node *op, ir_mode *mode);
 
+/** Constructor for a strictConv node.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
+ */
+ir_node *new_rd_strictConv   (dbg_info *db, ir_graph *irg, ir_node *block,
+               ir_node *op, ir_mode *mode);
+
 /** Constructor for a Cast node.
  *
  * High level type cast.
@@ -2554,6 +2565,16 @@ ir_node *new_r_Rotl   (ir_graph *irg, ir_node *block,
  * @param   *mode  The mode of this the operand muss be converted .
  */
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
+               ir_node *op, ir_mode *mode);
+
+/** Constructor for a strict Conv node.
+ *
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
+ */
+ir_node *new_r_strictConv   (ir_graph *irg, ir_node *block,
                ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.

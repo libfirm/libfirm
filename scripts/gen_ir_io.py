@@ -154,6 +154,7 @@ def preprocess_node(nodename, node):
 	# construct node arguments
 	arguments = [ ]
 	initargs = [ ]
+	specialconstrs = [ ]
 	i = 0
 	for input in node["ins"]:
 		arguments.append("prednodes[%i]" % i)
@@ -173,11 +174,38 @@ def preprocess_node(nodename, node):
 	if "mode" not in node:
 		arguments.append("mode")
 
+	attrs_with_special = 0
 	for attr in node["attrs"]:
 		if nodename == "Builtin" and attr["name"] == "kind":
 			continue
 		prepare_attr(nodename, attr)
-		if "init" in attr:
+		if "special" in attr:
+			if not "init" in attr:
+				print "Node type %s has an attribute with a \"special\" entry but without \"init\"" % nodename
+				sys.exit(1)
+
+			if attrs_with_special != 0:
+				print "Node type %s has more than one attribute with a \"special\" entry" % nodename
+				sys.exit(1)
+
+			attrs_with_special += 1
+
+			if "prefix" in attr["special"]:
+				specialname = attr["special"]["prefix"] + nodename
+			elif "suffix" in attr["special"]:
+				specialname = nodename + attr["special"]["suffix"]
+			else:
+				print "Unknown special constructor type for node type %s" %nodename
+				sys.exit(1)
+
+			specialconstrs.append(
+				dict(
+					constrname = specialname,
+					attrname = attr["name"],
+					value = attr["special"]["init"]
+				)
+			)
+		elif "init" in attr:
 			initargs.append(attr["name"])
 		else:
 			arguments.append(attr["name"])
@@ -188,6 +216,7 @@ def preprocess_node(nodename, node):
 
 	node["arguments"] = arguments
 	node["initargs"] = initargs
+	node["special_constructors"] = specialconstrs
 
 export_attrs_template = env.from_string('''
 	case iro_{{nodename}}:
@@ -204,7 +233,11 @@ import_attrs_template = env.from_string('''
 		{% for attr in node.attrs %}{{attr.importcmd}}
 		{% endfor %}
 		{% for attr in node.constructor_args %}{{attr.importcmd}}
-		{% endfor %}newnode = new_r_{{nodename}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
+		{% endfor %}
+		{% for special in node.special_constructors %}if({{special.attrname}} == {{special.value}})
+			newnode = new_r_{{special.constrname}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
+		else{% endfor %}
+		newnode = new_r_{{nodename}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
 		{% for initarg in node.initargs %}set_{{nodename}}_{{initarg}}(newnode, {{initarg}});
 		{% endfor %}
 		break;

@@ -390,7 +390,18 @@ Cmp = dict(
 ),
 
 Conv = dict(
-	is_a     = "unop"
+	is_a     = "unop",
+	attrs = [
+		dict(
+			name = "strict",
+			type = "int",
+			init = "0",
+			special = dict(
+				prefix = "strict",
+				init = "1"
+			)
+		)
+	]
 ),
 
 Alloc = dict(
