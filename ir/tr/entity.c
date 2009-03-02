@@ -512,6 +512,16 @@ void
 	_set_entity_aligned(ent, a);
 }
 
+unsigned
+(get_entity_alignment)(const ir_entity *ent) {
+	return _get_entity_alignment(ent);
+}
+
+void
+(set_entity_alignment)(ir_entity *ent, unsigned alignment) {
+	_set_entity_alignment(ent, alignment);
+}
+
 /* Return the name of the alignment. */
 const char *get_align_name(ir_align a)
 {
