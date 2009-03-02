@@ -1116,9 +1116,20 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 
 static void emit_align(unsigned p2alignment)
 {
-	be_emit_irprintf("\t.p2align\t%u\n", p2alignment);
+	be_emit_irprintf("\t.p2align\t%u\n", log2_floor(p2alignment));
 	be_emit_write_line();
 }
+
+static unsigned get_effective_entity_alignment(ir_entity *entity)
+{
+	unsigned alignment = get_entity_alignment(entity);
+	if (alignment == 0) {
+		ir_type *type = get_entity_type(entity);
+		alignment     = get_type_alignment_bytes(type);
+	}
+	return alignment;
+}
+
 
 /**
  * Dump a global entity.
@@ -1130,7 +1141,7 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 {
 	ir_type          *type           = get_entity_type(ent);
 	ident            *ld_ident       = get_entity_ld_ident(ent);
-	unsigned          align          = get_type_alignment_bytes(type);
+	unsigned          alignment      = get_effective_entity_alignment(ent);
 	int               emit_as_common = 0;
 	be_gas_section_t  section        = env->section;
 	ir_variability    variability    = get_entity_variability(ent);
@@ -1178,13 +1189,12 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		/* we can return now... */
 		return;
 	}
-	if (!is_po2(align))
+	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
-	align = log2_floor(align);
 	/* alignment */
-	if (align > 1 && !emit_as_common && section != GAS_SECTION_PIC_TRAMPOLINES
+	if (alignment > 1 && !emit_as_common && section != GAS_SECTION_PIC_TRAMPOLINES
 			&& section != GAS_SECTION_PIC_SYMBOLS) {
-		emit_align(align);
+		emit_align(alignment);
 	}
 
 	if (visibility != visibility_external_allocated && !emit_as_common
@@ -1205,16 +1215,20 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 	if (variability == variability_uninitialized) {
 		if (emit_as_common) {
 			switch (be_gas_flavour) {
-			case GAS_FLAVOUR_ELF:
 			case GAS_FLAVOUR_MACH_O:
+				be_emit_irprintf("\t.comm %s,%u,%u\n",
+					get_id_str(ld_ident), get_type_size_bytes(type),
+					log2_floor(alignment));
+				break;
+			case GAS_FLAVOUR_ELF:
 			case GAS_FLAVOUR_YASM:
 				be_emit_irprintf("\t.comm %s,%u,%u\n",
-					get_id_str(ld_ident), get_type_size_bytes(type), align);
+					get_id_str(ld_ident), get_type_size_bytes(type), alignment);
 				be_emit_write_line();
 				break;
 			case GAS_FLAVOUR_MINGW:
 				be_emit_irprintf("\t.comm %s,%u # %u\n",
-					get_id_str(ld_ident), get_type_size_bytes(type), align);
+					get_id_str(ld_ident), get_type_size_bytes(type), alignment);
 				be_emit_write_line();
 				break;
 			}
