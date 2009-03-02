@@ -1725,25 +1725,24 @@ ir_node *new_rd_Rotl    (dbg_info *db, ir_graph *irg, ir_node *block,
 
 /** Constructor for a Conv node.
  *
- * @param   *db          A pointer for debug information.
- * @param   *irg         The IR graph the node belongs to.
- * @param   *block       The IR block the node belongs to.
- * @param   *op          The operand.
- * @param   *mode        The mode the operand must be converted to.
- * @param    strict_flag Whether the Conv is strict.
+ * @param   *db    A pointer for debug information.
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
  */
 ir_node *new_rd_Conv   (dbg_info *db, ir_graph *irg, ir_node *block,
-               ir_node *op, ir_mode *mode, int strict_flag);
+               ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *
  * High level type cast.
  *
  * @param   *db    A pointer for debug information.
- * @param   *irg   The IR graph the node belongs to.
+ * @param   *irg   The IR graph the node  belongs to.
  * @param   *block The IR block the node belongs to.
  * @param   *op    The operand.
- * @param   *to_tp The type of this the operand muss be casted.
+ * @param   *to_tp The type of this the operand muss be casted .
  */
 ir_node *new_rd_Cast   (dbg_info *db, ir_graph *irg, ir_node *block,
 			ir_node *op, ir_type *to_tp);
@@ -2549,14 +2548,13 @@ ir_node *new_r_Rotl   (ir_graph *irg, ir_node *block,
 
 /** Constructor for a Conv node.
  *
- * @param   *irg         The IR graph the node belongs to.
- * @param   *block       The IR block the node belongs to.
- * @param   *op          The operand.
- * @param   *mode        The mode the operand must be converted to.
- * @param    strict_flag Whether the Conv is strict.
+ * @param   *irg   The IR graph the node  belongs to.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op    The operand.
+ * @param   *mode  The mode of this the operand muss be converted .
  */
 ir_node *new_r_Conv   (ir_graph *irg, ir_node *block,
-               ir_node *op, ir_mode *mode, int strict_flag);
+               ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *

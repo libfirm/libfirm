@@ -3140,7 +3140,7 @@ static void exchange_leader(ir_node *irn, ir_node *leader) {
 		ir_node  *block = get_nodes_block(leader);
 		dbg_info *dbg   = get_irn_dbg_info(irn);
 
-		leader = new_rd_Conv(dbg, current_ir_graph, block, leader, mode, 0);
+		leader = new_rd_Conv(dbg, current_ir_graph, block, leader, mode);
 	}
 	exchange(irn, leader);
 }  /* exchange_leader */

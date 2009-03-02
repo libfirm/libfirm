@@ -266,15 +266,15 @@ static int reassoc_commutative(ir_node **node)
 				if (mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
 					/* get the bigger one */
 					if (get_mode_size_bits(mode_c1) > get_mode_size_bits(mode_c2))
-						c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1, 0);
+						c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
 					else if (get_mode_size_bits(mode_c1) < get_mode_size_bits(mode_c2))
-						c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2, 0);
+						c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
 					else {
 						/* Try to cast the real const */
 						if (c_c1 == REAL_CONSTANT)
-							c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2, 0);
+							c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
 						else
-							c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1, 0);
+							c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
 					}
 				}
 			}

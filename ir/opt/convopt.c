@@ -160,7 +160,7 @@ int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 static ir_node *place_conv(ir_node *node, ir_mode *dest_mode)
 {
 	ir_node *block = get_nodes_block(node);
-	ir_node *conv = new_r_Conv(current_ir_graph, block, node, dest_mode, 0);
+	ir_node *conv = new_r_Conv(current_ir_graph, block, node, dest_mode);
 	return conv;
 }
 

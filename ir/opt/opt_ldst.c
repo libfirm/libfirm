@@ -792,7 +792,7 @@ static void add_memop_avail(block_t *bl, memop_t *op) {
 static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 	if (get_irn_mode(irn) != mode) {
 		ir_node *block = get_nodes_block(irn);
-		return new_r_Conv(current_ir_graph, block, irn, mode, 0);
+		return new_r_Conv(current_ir_graph, block, irn, mode);
 	}
 	return irn;
 }
@@ -1189,7 +1189,7 @@ static void replace_load(memop_t *op) {
 				/* a hidden cast */
 				dbg_info *db    = get_irn_dbg_info(load);
 				ir_node  *block = get_nodes_block(proj);
-				def = new_rd_Conv(db, current_ir_graph, block, def, mode, 0);
+				def = new_rd_Conv(db, current_ir_graph, block, def, mode);
 			}
 			exchange(proj, def);
 			break;

@@ -141,12 +141,12 @@ static void lower_sel(ir_node *sel) {
 
 					assert(irg == current_ir_graph);
 					if (! is_Unknown(lb))
-						lb = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int, 0);
+						lb = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int);
 					else
 						lb = NULL;
 
 					if (! is_Unknown(ub))
-						ub = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int, 0);
+						ub = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int);
 					else
 						ub = NULL;
 
@@ -162,7 +162,7 @@ static void lower_sel(ir_node *sel) {
 						elms = new_rd_Sub(dbg, irg, bl, ub, lb, mode_Int);
 					}
 
-					ind = new_rd_Conv(dbg, irg, bl, get_Sel_index(sel, dim), mode_Int, 0);
+					ind = new_rd_Conv(dbg, irg, bl, get_Sel_index(sel, dim), mode_Int);
 
 					/*
 					 * Normalize index, id lower bound is set, also assume

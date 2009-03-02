@@ -877,7 +877,7 @@ static int try_load_after_store(ir_node *load,
 		/* add an convert if needed */
 		if (store_mode != load_mode) {
 			store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
-									 store_value, load_mode, 0);
+									 store_value, load_mode);
 		}
 	}
 
@@ -977,7 +977,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 
 					/* add an convert if needed */
 					if (get_Load_mode(pred) != load_mode) {
-						value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode, 0);
+						value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
 					}
 
 					exchange(info->projs[pn_Load_res], value);
@@ -1067,7 +1067,7 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
 
 			/* copy the value from the const code irg and cast it */
 			res = copy_const_value(dbg, c);
-			res = new_rd_Conv(dbg, current_ir_graph, block, res, l_mode, 0);
+			res = new_rd_Conv(dbg, current_ir_graph, block, res, l_mode);
 		}
 	} else {
 		/* copy the value from the const code irg */

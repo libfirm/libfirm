@@ -220,7 +220,7 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 		if (mode == NULL) {
 			panic("Cannot find unsigned mode for %M", mode);
 		}
-		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode, 0);
+		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
 	}
 
 	irn    = new_rd_Alloc(dbg, current_ir_graph, block, mem, op, firm_unknown_type, stack_alloc);
@@ -399,7 +399,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) 
 			dbg_info *dbg  = get_irn_dbg_info(val);
 
 			op = get_Minus_op(op);
-			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode, 0);
+			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
 			if (is_Conv(val)) {
 				/* still a Conv ? */
 				set_Conv_strict(val, 1);
@@ -760,7 +760,7 @@ replace_by_call:
 
 			/* conv to the result mode */
 			mode = get_type_mode(res_tp);
-			irn  = new_rd_Conv(dbg, current_ir_graph, block, irn, mode, 0);
+			irn  = new_rd_Conv(dbg, current_ir_graph, block, irn, mode);
 
 			if (v == right) {
 				/* negate in the ("", s) case */
