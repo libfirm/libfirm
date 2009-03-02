@@ -1114,12 +1114,9 @@ static void dump_compound_init(be_gas_decl_env_t *env, ir_entity *ent)
 	xfree(vals);
 }
 
-static void emit_align(unsigned alignment)
+static void emit_align(unsigned p2alignment)
 {
-	if (!is_po2(alignment))
-		panic("alignment not a power of 2");
-
-	be_emit_irprintf("\t.p2align\t%u\n", log2_floor(alignment));
+	be_emit_irprintf("\t.p2align\t%u\n", p2alignment);
 	be_emit_write_line();
 }
 
@@ -1181,6 +1178,9 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 		/* we can return now... */
 		return;
 	}
+	if (!is_po2(align))
+		panic("alignment not a power of 2");
+	align = log2_floor(align);
 	/* alignment */
 	if (align > 1 && !emit_as_common && section != GAS_SECTION_PIC_TRAMPOLINES
 			&& section != GAS_SECTION_PIC_SYMBOLS) {
