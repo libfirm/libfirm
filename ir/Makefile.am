@@ -126,7 +126,6 @@ libfirm_la_SOURCES = \
 	be/bespillslots.c \
 	be/bessaconstr.c \
 	be/bessadestr.c \
-	be/bessadestrsimple.c \
 	be/bestabs.c \
 	be/bestat.c \
 	be/bestate.c \
@@ -267,7 +266,6 @@ EXTRA_DIST = \
 	be/becopyopt_t.h \
 	be/beifg_t.h \
 	be/beblocksched.h \
-	be/bessadestrsimple.h \
 	be/becopyilp_t.h \
 	be/bemachine.h \
 	be/beverify.h \
