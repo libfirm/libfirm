@@ -442,14 +442,14 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 					/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
 					sched_add_after(sched_point, cpyxchg);
 
-					DBG((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
+					DB((dbg, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, cpyxchg, sched_point));
 
 					/* set the new scheduling point */
 					sched_point = res1;
 				} else {
 					ir_node *cpyxchg;
 
-					DBG((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+					DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 								irn, arg1, cycle.elems[i]->name, res2, cycle.elems[i + 1]->name));
 
 					cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
@@ -506,7 +506,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	if (arch_irn_is_ignore(other_different) ||
 			!mode_is_datab(get_irn_mode(other_different))) {
-		DBG((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
+		DB((dbg_constr, LEVEL_1, "ignore constraint for %+F because other_irn is ignore or not a datab node\n", irn));
 		return;
 	}
 
@@ -525,9 +525,9 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	if (! cpy) {
 		cpy = be_new_Copy(cls, irg, block, other_different);
 		arch_irn_set_flags(cpy, arch_irn_flags_dont_spill);
-		DBG((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
+		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
-		DBG((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
+		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
 	}
 
 	/* Add the Keep resp. CopyKeep and reroute the users */
@@ -543,7 +543,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		keep = be_new_Keep(cls, irg, block, 2, in);
 	}
 
-	DBG((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
+	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
 
 	/* insert copy and keep into schedule */
 	assert(sched_is_scheduled(irn) && "need schedule to assure constraints");
@@ -689,7 +689,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				ref_mode_T = skip_Proj(get_irn_n(ref, 1));
 				obstack_grow(&obst, &ref, sizeof(ref));
 
-				DBG((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
+				DB((dbg_constr, LEVEL_1, "Trying to melt %+F:\n", ref));
 
 				/* check for copykeeps pointing to the same mode_T node as the reference copykeep */
 				for (j = 0; j < num_ck; ++j) {
@@ -698,7 +698,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 					if (j != idx && cur_ck && skip_Proj(get_irn_n(cur_ck, 1)) == ref_mode_T) {
 						obstack_grow(&obst, &cur_ck, sizeof(cur_ck));
 						ir_nodeset_remove(&entry->copies, cur_ck);
-						DBG((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
+						DB((dbg_constr, LEVEL_1, "\t%+F\n", cur_ck));
 						ck_arr[j] = NULL;
 						++n_melt;
 						sched_remove(cur_ck);
@@ -708,7 +708,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 
 				/* check, if we found some candidates for melting */
 				if (n_melt == 1) {
-					DBG((dbg_constr, LEVEL_1, "\tno candidate found\n"));
+					DB((dbg_constr, LEVEL_1, "\tno candidate found\n"));
 					continue;
 				}
 
@@ -748,7 +748,7 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				} while (be_is_Keep(sched_pt) || be_is_CopyKeep(sched_pt));
 
 				sched_add_before(sched_pt, new_ck);
-				DBG((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
+				DB((dbg_constr, LEVEL_1, "created %+F, scheduled before %+F\n", new_ck, sched_pt));
 
 				/* finally: kill the reference copykeep */
 				kill_node(ref);
@@ -871,7 +871,7 @@ static int push_through_perm(ir_node *perm, lower_env_t *env)
 	const arch_register_class_t *cls      = arch_get_irn_reg_class_out(one_proj);
 	assert(is_Proj(one_proj));
 
-	DBG((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
+	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
 
 	/* Find the point in the schedule after which the
 	 * potentially movable nodes must be defined.
@@ -893,7 +893,7 @@ static int push_through_perm(ir_node *perm, lower_env_t *env)
 	}
 found_front:
 
-	DBG((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
+	DB((dbg_permmove, LEVEL_2, "\tfrontier: %+F\n", frontier));
 
 	node = sched_prev(perm);
 	n_moved = 0;
