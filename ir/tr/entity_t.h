@@ -140,7 +140,7 @@ struct ir_entity {
 	unsigned visibility:3;         /**< Specifies visibility to external program fragments. */
 	unsigned variability:3;        /**< Specifies variability of entities content. */
 	unsigned volatility:1;         /**< Specifies volatility of entities content. */
-	unsigned align:1;              /**< Specifies alignment of entities content. */
+	unsigned aligned:1;            /**< Specifies alignment of entities content. */
 	unsigned stickyness:2;         /**< Specifies whether this entity is sticky.  */
 	unsigned peculiarity:3;        /**< The peculiarity of this entity. */
 	unsigned usage:4;              /**< flag indicating usage types of this entity, see ir_entity_usage. */
@@ -150,6 +150,7 @@ struct ir_entity {
 	unsigned has_initializer:1;    /**< if set, this entity is initialized by new style initializers. */
 	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
 	                                    of owner is determined. */
+	unsigned alignment;            /**< entity alignment in bytes */
 	unsigned char offset_bit_remainder;
 	                               /**< If the entity is a bit field, this is the offset of
 	                                    the start of the bit field within the byte specified
@@ -286,16 +287,28 @@ _set_entity_volatility(ir_entity *ent, ir_volatility vol) {
 	ent->volatility = vol;
 }
 
-static inline ir_align
-_get_entity_align(const ir_entity *ent) {
+static inline unsigned
+_get_entity_alignment(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
-	return ent->align;
+	return ent->alignment;
 }
 
 static inline void
-_set_entity_align(ir_entity *ent, ir_align a) {
+_set_entity_alignment(ir_entity *ent, unsigned alignment) {
 	assert(ent && ent->kind == k_entity);
-	ent->align = a;
+	ent->alignment = alignment;
+}
+
+static inline ir_align
+_get_entity_aligned(const ir_entity *ent) {
+	assert(ent && ent->kind == k_entity);
+	return ent->aligned;
+}
+
+static inline void
+_set_entity_aligned(ir_entity *ent, ir_align a) {
+	assert(ent && ent->kind == k_entity);
+	ent->aligned = a;
 }
 
 static inline ir_peculiarity
@@ -491,6 +504,8 @@ _set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
 #define get_entity_variability(ent)              _get_entity_variability(ent)
 #define get_entity_volatility(ent)               _get_entity_volatility(ent)
 #define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
+#define set_entity_alignment(ent, alignment)     _set_entity_alignment(ent, alignment)
+#define get_entity_alignment(ent)                _get_entity_alignment(ent)
 #define get_entity_align(ent)                    _get_entity_align(ent)
 #define set_entity_align(ent, a)                 _set_entity_align(ent, a)
 #define get_entity_peculiarity(ent)              _get_entity_peculiarity(ent)

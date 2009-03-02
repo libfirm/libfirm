@@ -113,7 +113,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->allocation           = allocation_automatic;
 	res->visibility           = visibility_local;
 	res->volatility           = volatility_non_volatile;
-	res->align                = align_is_aligned;
+	res->aligned              = align_is_aligned;
 	res->stickyness           = stickyness_unsticky;
 	res->peculiarity          = peculiarity_existent;
 	res->usage                = ir_usage_unknown;
@@ -122,6 +122,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->backend_marked       = 0;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
+	res->alignment            = 0;
 	res->link                 = NULL;
 	res->repr_class           = NULL;
 
@@ -502,14 +503,14 @@ const char *get_volatility_name(ir_volatility var)
 }  /* get_volatility_name */
 
 ir_align
-(get_entity_align)(const ir_entity *ent) {
-	return _get_entity_align(ent);
-}  /* get_entity_align */
+(get_entity_aligned)(const ir_entity *ent) {
+	return _get_entity_aligned(ent);
+}
 
 void
-(set_entity_align)(ir_entity *ent, ir_align a) {
-	_set_entity_align(ent, a);
-}  /* set_entity_align */
+(set_entity_aligned)(ir_entity *ent, ir_align a) {
+	_set_entity_aligned(ent, a);
+}
 
 /* Return the name of the alignment. */
 const char *get_align_name(ir_align a)

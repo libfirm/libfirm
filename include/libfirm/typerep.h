@@ -279,17 +279,23 @@ void set_entity_volatility(ir_entity *ent, ir_volatility vol);
 /** Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var);
 
+/** Returns alignment of entity in bytes */
+unsigned get_entity_alignment(const ir_entity *entity);
+
+/** Sets alignment for entity in bytes */
+void set_entity_alignment(ir_entity *entity, unsigned alignment);
+
 /** This enumeration flags the align of Loads/Stores. */
 typedef enum {
 	align_non_aligned,    /**< The entity is not aligned. */
 	align_is_aligned      /**< The entity is aligned. Default */
 } ir_align;
 
-/** Returns the alignment of an entity. */
-ir_align get_entity_align(const ir_entity *ent);
+/** Returns indication wether entity is aligned in memory. */
+ir_align get_entity_aligned(const ir_entity *ent);
 
-/** Sets the alignment of an entity. */
-void  set_entity_align(ir_entity *ent, ir_align a);
+/** Sets indication wether entity is aligned in memory */
+void set_entity_aligned(ir_entity *ent, ir_align a);
 
 /** Return the name of the alignment. */
 const char *get_align_name(ir_align a);
