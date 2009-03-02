@@ -167,7 +167,7 @@ ir_node *ia32_create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, symconst,
-			symconst_sign, val);
+			symconst_sign, no_pic_adjust, val);
 	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
@@ -692,7 +692,7 @@ ir_node *gen_CopyB(ir_node *node) {
 		rem = size & 0x3; /* size % 4 */
 		size >>= 2;
 
-		res = new_bd_ia32_Const(dbgi, block, NULL, 0, size);
+		res = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, size);
 		be_dep_on_frame(res);
 
 		res = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, res, new_mem, rem);

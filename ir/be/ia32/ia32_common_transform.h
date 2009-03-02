@@ -45,6 +45,7 @@ struct constraint_t {
 
 extern ia32_code_gen_t *env_cg;
 extern heights_t *heights;
+extern int        no_pic_adjust;
 
 /**
  * Get an atomic entity that is initialized with a tarval forming

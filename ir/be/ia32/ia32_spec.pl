@@ -289,7 +289,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, offset);",
+		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, no_pic_adjust, offset);",
 	ia32_x87_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
@@ -327,7 +327,7 @@ Immediate => {
 	state     => "pinned",
 	op_flags  => "c",
 	reg_req   => { out => [ "gp_NOREG:I" ] },
-	attr      => "ir_entity *symconst, int symconst_sign, long offset",
+	attr      => "ir_entity *symconst, int symconst_sign, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	hash_func => "ia32_hash_Immediate",
 	latency   => 0,
@@ -1198,7 +1198,7 @@ Const => {
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
-	attr      => "ir_entity *symconst, int symconst_sign, long offset",
+	attr      => "ir_entity *symconst, int symconst_sign, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
 	latency   => 1,
 	mode      => $mode_gp,

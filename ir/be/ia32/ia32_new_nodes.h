@@ -401,7 +401,8 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 void init_ia32_x87_attributes(ir_node *node);
 void init_ia32_asm_attributes(ir_node *node);
 void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
-                                    int symconst_sign, long offset);
+                                    int symconst_sign, int no_pic_adjust,
+									long offset);
 void init_ia32_call_attributes(ir_node *res, unsigned pop, ir_type *call_tp);
 void init_ia32_copyb_attributes(ir_node *res, unsigned size);
 void init_ia32_condcode_attributes(ir_node *res, long pnc);

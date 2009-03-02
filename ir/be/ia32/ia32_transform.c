@@ -93,6 +93,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_node         *initial_fpcw = NULL;
+int                     no_pic_adjust;
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
         ir_node *base, ir_node *index, ir_node *mem, ir_node *op1,
@@ -238,7 +239,7 @@ static ir_node *gen_Const(ir_node *node)
 				               (get_tarval_sub_bits(tv, 1) << 8) |
 				               (get_tarval_sub_bits(tv, 2) << 16) |
 				               (get_tarval_sub_bits(tv, 3) << 24);
-				ir_node *cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
+				ir_node *cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, val);
 				load = new_bd_ia32_xMovd(dbgi, block, cnst);
 				set_ia32_ls_mode(load, mode);
 				res = load;
@@ -258,7 +259,7 @@ static ir_node *gen_Const(ir_node *node)
 							(get_tarval_sub_bits(tv, 5) << 8) |
 							(get_tarval_sub_bits(tv, 6) << 16) |
 							(get_tarval_sub_bits(tv, 7) << 24);
-						cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
+						cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, val);
 						load = new_bd_ia32_xMovd(dbgi, block, cnst);
 						set_ia32_ls_mode(load, mode);
 						psllq = new_bd_ia32_xPsllq(dbgi, block, load, imm32);
@@ -321,7 +322,7 @@ end:
 		}
 		val = get_tarval_long(tv);
 
-		cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, val);
+		cnst = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, val);
 		SET_IA32_ORIG_NODE(cnst, node);
 
 		be_dep_on_frame(cnst);
@@ -354,7 +355,7 @@ static ir_node *gen_SymConst(ir_node *node)
 			panic("backend only support symconst_addr_ent (at %+F)", node);
 		}
 		entity = get_SymConst_entity(node);
-		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0);
+		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0, 0);
 	}
 
 	SET_IA32_ORIG_NODE(cnst, node);
@@ -1199,7 +1200,7 @@ static ir_node *gen_Add(ir_node *node)
 	/* a constant? */
 	if (addr.base == NULL && addr.index == NULL) {
 		new_node = new_bd_ia32_Const(dbgi, new_block, addr.symconst_ent,
-		                             addr.symconst_sign, addr.offset);
+		                             addr.symconst_sign, 0, addr.offset);
 		be_dep_on_frame(new_node);
 		SET_IA32_ORIG_NODE(new_node, node);
 		return new_node;
@@ -1528,7 +1529,7 @@ static ir_node *create_Div(ir_node *node)
 		new_node       = new_bd_ia32_IDiv(dbgi, new_block, addr->base,
 				addr->index, new_mem, am.new_op2, am.new_op1, sign_extension);
 	} else {
-		sign_extension = new_bd_ia32_Const(dbgi, new_block, NULL, 0, 0);
+		sign_extension = new_bd_ia32_Const(dbgi, new_block, NULL, 0, 0, 0);
 		be_dep_on_frame(sign_extension);
 
 		new_node = new_bd_ia32_Div(dbgi, new_block, addr->base,
@@ -4471,6 +4472,7 @@ static ir_node *gen_be_Call(ir_node *node)
 	ir_node        *      edx       = noreg_GP;
 	unsigned        const pop       = be_Call_get_pop(node);
 	ir_type        *const call_tp   = be_Call_get_type(node);
+	int                   old_no_pic_adjust;
 
 	/* Run the x87 simulator if the call returns a float value */
 	if (get_method_n_ress(call_tp) > 0) {
@@ -4485,8 +4487,14 @@ static ir_node *gen_be_Call(ir_node *node)
 	/* We do not want be_Call direct calls */
 	assert(be_Call_get_entity(node) == NULL);
 
+	/* special case for PIC trampoline calls */
+	old_no_pic_adjust = no_pic_adjust;
+	no_pic_adjust     = env_cg->birg->main_env->options->pic;
+
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
 	                match_am | match_immediate);
+
+	no_pic_adjust = old_no_pic_adjust;
 
 	i    = get_irn_arity(node) - 1;
 	fpcw = be_transform_node(get_irn_n(node, i--));
@@ -5096,7 +5104,7 @@ static ir_node *gen_inner_trampoline(ir_node *node) {
 
 	/* the callee is typically an immediate */
 	if (is_SymConst(callee)) {
-		rel = new_bd_ia32_Const(dbgi, new_block, get_SymConst_entity(callee), 0, -10);
+		rel = new_bd_ia32_Const(dbgi, new_block, get_SymConst_entity(callee), 0, 0, -10);
 	} else {
 		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), ia32_create_Immediate(NULL, 0, -10));
 	}
@@ -5713,8 +5721,9 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 	int cse_last;
 
 	register_transformers();
-	env_cg       = cg;
-	initial_fpcw = NULL;
+	env_cg        = cg;
+	initial_fpcw  = NULL;
+	no_pic_adjust = 0;
 
 	BE_TIMER_PUSH(t_heights);
 	heights      = heights_new(cg->irg);

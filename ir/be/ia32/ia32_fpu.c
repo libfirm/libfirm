@@ -194,7 +194,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 
 		/* TODO: make the actual mode configurable in ChangeCW... */
 		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),
-		                                 NULL, 0, 3072);
+		                                 NULL, 0, 0, 3072);
 		arch_set_irn_register(or_const, &ia32_gp_regs[REG_GP_NOREG]);
 		or = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res,
 		                    or_const);

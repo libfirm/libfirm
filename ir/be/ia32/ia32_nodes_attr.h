@@ -96,6 +96,7 @@ struct ia32_attr_t {
 		unsigned am_scale:2;            /**< The address mode scale for index register. */
 		unsigned am_sc_sign:1;          /**< The sign bit of the address mode symconst. */
 
+		unsigned am_sc_no_pic_adjust : 1;/**< AM symconst can be relative to EIP */
 		unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
 		unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 
@@ -170,7 +171,8 @@ struct ia32_immediate_attr_t {
 	ia32_attr_t  attr;              /**< generic attribute */
 	ir_entity   *symconst;          /**< An entity if any. */
 	long         offset;            /**< An offset if any. */
-	unsigned     sc_sign:1;         /**< The sign bit of the symconst. */
+	unsigned     sc_sign : 1;       /**< The sign bit of the symconst. */
+	unsigned     no_pic_adjust : 1; /**< constant can be relative to EIP */
 };
 
 /**

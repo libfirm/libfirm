@@ -982,8 +982,8 @@ static ir_node *create_immediate_from_int(int val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
-	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, NULL, 0,
-			val);
+	ir_node  *immediate
+		= new_bd_ia32_Immediate(NULL, start_block, NULL, 0, 0, val);
 	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
 
 	return immediate;
@@ -994,10 +994,13 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 	ir_node   *block   = get_nodes_block(node);
 	int        offset  = get_ia32_am_offs_int(node);
 	int        sc_sign = is_ia32_am_sc_sign(node);
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	int        sc_no_pic_adjust = attr->data.am_sc_no_pic_adjust;
 	ir_entity *entity  = get_ia32_am_sc(node);
 	ir_node   *res;
 
-	res = new_bd_ia32_Immediate(NULL, block, entity, sc_sign, offset);
+	res = new_bd_ia32_Immediate(NULL, block, entity, sc_sign, sc_no_pic_adjust,
+	                            offset);
 	arch_set_irn_register(res, &ia32_gp_regs[REG_GP_NOREG]);
 	return res;
 }

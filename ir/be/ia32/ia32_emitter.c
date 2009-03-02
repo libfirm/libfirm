@@ -68,10 +68,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static const ia32_isa_t *isa;
 static ia32_code_gen_t  *cg;
-static int               do_pic;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
 static int               mark_spill_reload = 0;
+static int               do_pic;
 
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
@@ -291,8 +291,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 		}
 	}
 
-	if (!no_pic_adjust && do_pic) {
-		/* TODO: only do this when necessary */
+	if (do_pic && !no_pic_adjust) {
 		be_emit_char('-');
 		be_emit_string(pic_base_label);
 	}
@@ -305,7 +304,7 @@ static void emit_ia32_Immediate_no_prefix(const ir_node *node)
 	if (attr->symconst != NULL) {
 		if (attr->sc_sign)
 			be_emit_char('-');
-		ia32_emit_entity(attr->symconst, 0);
+		ia32_emit_entity(attr->symconst, attr->no_pic_adjust);
 	}
 	if (attr->symconst == NULL || attr->offset != 0) {
 		if (attr->symconst != NULL) {
@@ -571,6 +570,63 @@ typedef enum ia32_emit_mod_t {
 } ia32_emit_mod_t;
 
 /**
+ * Emits address mode.
+ */
+void ia32_emit_am(const ir_node *node)
+{
+	ir_entity *ent       = get_ia32_am_sc(node);
+	int        offs      = get_ia32_am_offs_int(node);
+	ir_node   *base      = get_irn_n(node, n_ia32_base);
+	int        has_base  = !is_ia32_NoReg_GP(base);
+	ir_node   *index     = get_irn_n(node, n_ia32_index);
+	int        has_index = !is_ia32_NoReg_GP(index);
+
+	/* just to be sure... */
+	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
+
+	/* emit offset */
+	if (ent != NULL) {
+		const ia32_attr_t *attr = get_ia32_attr_const(node);
+		if (is_ia32_am_sc_sign(node))
+			be_emit_char('-');
+		ia32_emit_entity(ent, attr->data.am_sc_no_pic_adjust);
+	}
+
+	/* also handle special case if nothing is set */
+	if (offs != 0 || (ent == NULL && !has_base && !has_index)) {
+		if (ent != NULL) {
+			be_emit_irprintf("%+d", offs);
+		} else {
+			be_emit_irprintf("%d", offs);
+		}
+	}
+
+	if (has_base || has_index) {
+		be_emit_char('(');
+
+		/* emit base */
+		if (has_base) {
+			const arch_register_t *reg = get_in_reg(node, n_ia32_base);
+			emit_register(reg, NULL);
+		}
+
+		/* emit index + scale */
+		if (has_index) {
+			const arch_register_t *reg = get_in_reg(node, n_ia32_index);
+			int scale;
+			be_emit_char(',');
+			emit_register(reg, NULL);
+
+			scale = get_ia32_am_scale(node);
+			if (scale > 0) {
+				be_emit_irprintf(",%d", 1 << scale);
+			}
+		}
+		be_emit_char(')');
+	}
+}
+
+/**
  * fmt  parameter               output
  * ---- ----------------------  ---------------------------------------------
  * %%                           %
@@ -645,6 +701,7 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 					case 'M':
 						if (mod & EMIT_ALTERNATE_AM)
 							be_emit_char('*');
+
 						ia32_emit_am(node);
 						break;
 
@@ -831,62 +888,6 @@ void ia32_emit_unop(const ir_node *node, int pos)
 	char fmt[] = "%ASx";
 	fmt[3] = '0' + pos;
 	ia32_emitf(node, fmt);
-}
-
-/**
- * Emits address mode.
- */
-void ia32_emit_am(const ir_node *node)
-{
-	ir_entity *ent       = get_ia32_am_sc(node);
-	int        offs      = get_ia32_am_offs_int(node);
-	ir_node   *base      = get_irn_n(node, n_ia32_base);
-	int        has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *index     = get_irn_n(node, n_ia32_index);
-	int        has_index = !is_ia32_NoReg_GP(index);
-
-	/* just to be sure... */
-	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
-
-	/* emit offset */
-	if (ent != NULL) {
-		if (is_ia32_am_sc_sign(node))
-			be_emit_char('-');
-		ia32_emit_entity(ent, 0);
-	}
-
-	/* also handle special case if nothing is set */
-	if (offs != 0 || (ent == NULL && !has_base && !has_index)) {
-		if (ent != NULL) {
-			be_emit_irprintf("%+d", offs);
-		} else {
-			be_emit_irprintf("%d", offs);
-		}
-	}
-
-	if (has_base || has_index) {
-		be_emit_char('(');
-
-		/* emit base */
-		if (has_base) {
-			const arch_register_t *reg = get_in_reg(node, n_ia32_base);
-			emit_register(reg, NULL);
-		}
-
-		/* emit index + scale */
-		if (has_index) {
-			const arch_register_t *reg = get_in_reg(node, n_ia32_index);
-			int scale;
-			be_emit_char(',');
-			emit_register(reg, NULL);
-
-			scale = get_ia32_am_scale(node);
-			if (scale > 0) {
-				be_emit_irprintf(",%d", 1 << scale);
-			}
-		}
-		be_emit_char(')');
-	}
 }
 
 static void emit_ia32_IMul(const ir_node *node)

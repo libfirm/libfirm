@@ -163,6 +163,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 						fputc('+', F);
 					}
 					fprintf(F, "%ld", attr->offset);
+					if (attr->no_pic_adjust) {
+						fputs("(no_pic_adjust)", F);
+					}
 				}
 			}
 			else {
@@ -176,6 +179,9 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 						fputc('-', F);
 					}
 					fputs(get_entity_name(attr->am_sc), F);
+					if(attr->data.am_sc_no_pic_adjust) {
+						fputs("(no_pic_adjust)", F);
+					}
 				}
 				if(attr->am_offs != 0) {
 					if(attr->am_offs > 0 && attr->am_sc != NULL) {
@@ -996,16 +1002,18 @@ init_ia32_asm_attributes(ir_node *res)
 
 void
 init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
-                               int symconst_sign, long offset)
+                               int symconst_sign, int no_pic_adjust,
+							   long offset)
 {
 	ia32_immediate_attr_t *attr = get_irn_generic_attr(res);
 
 #ifndef NDEBUG
 	attr->attr.attr_type  |= IA32_ATTR_ia32_immediate_attr_t;
 #endif
-	attr->symconst = symconst;
-	attr->sc_sign  = symconst_sign;
-	attr->offset   = offset;
+	attr->symconst      = symconst;
+	attr->sc_sign       = symconst_sign;
+	attr->no_pic_adjust = no_pic_adjust;
+	attr->offset        = offset;
 }
 
 void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
@@ -1069,6 +1077,7 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 	    || a->data.am_sc_sign != b->data.am_sc_sign
 	    || a->am_offs != b->am_offs
 	    || a->am_sc != b->am_sc
+		|| a->data.am_sc_no_pic_adjust != b->data.am_sc_no_pic_adjust
 	    || a->ls_mode != b->ls_mode)
 		return 1;
 
@@ -1198,10 +1207,12 @@ int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
 
-	if (attr_a->symconst != attr_b->symconst ||
-	    attr_a->sc_sign != attr_b->sc_sign ||
-	    attr_a->offset != attr_b->offset)
+	if (attr_a->symconst != attr_b->symconst
+		|| attr_a->sc_sign != attr_b->sc_sign
+		|| attr_a->no_pic_adjust != attr_b->no_pic_adjust
+		|| attr_a->offset != attr_b->offset) {
 		return 1;
+	}
 
 	return 0;
 }

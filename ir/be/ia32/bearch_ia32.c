@@ -125,7 +125,7 @@ static ia32_intrinsic_env_t intrinsic_env = {
 typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
 
 /**
- * Used to create a Pseudo-Register or Unknown node.
+ * Used to create per-graph unique pseudo nodes.
  */
 static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
                                     create_const_node_func func,
