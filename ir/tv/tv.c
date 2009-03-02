@@ -1451,8 +1451,9 @@ int tarval_snprintf(char *buf, size_t len, tarval *tv) {
 			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_OCT, 0);
 			break;
 
-		case TVO_HEX:
 		case TVO_NATIVE:
+			prefix = "0x";
+		case TVO_HEX:
 		default:
 			str = sc_print(tv->value, get_mode_size_bits(tv->mode), SC_HEX, 0);
 			break;

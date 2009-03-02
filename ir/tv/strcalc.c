@@ -1019,7 +1019,7 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 		case 'c':
 		case 'b':
 		case 'a':
-			if (base[0] > SC_9 || base[1] > SC_0) { /* (base > 10) */
+			if (base[0] > SC_A || base[1] > SC_0) { /* (base > 10) */
 				val[0] = _digit((*str)-'a'+10);
 			}
 			else
@@ -1032,7 +1032,7 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 		case 'C':
 		case 'B':
 		case 'A':
-			if (base[0] > SC_9 || base[1] > SC_0) { /* (base > 10) */
+			if (base[0] > SC_A || base[1] > SC_0) { /* (base > 10) */
 				val[0] = _digit((*str)-'A'+10);
 			}
 			else
@@ -1041,7 +1041,7 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 
 		case '9':
 		case '8':
-			if (base[0] > SC_7 || base[1] > SC_0) { /* (base > 8) */
+			if (base[0] > SC_8 || base[1] > SC_0) { /* (base > 8) */
 				val[0] = _digit((*str)-'0');
 			}
 			else
@@ -1372,7 +1372,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[bits & 3];
+			mask = zex_digit[(bits & 3) - 1];
 			x = and_table[_val(val[counter++])][mask];
 			*(--pos) = digits[_val(x)];
 		}
@@ -1399,7 +1399,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[bits & 3];
+			mask = zex_digit[(bits & 3) - 1];
 			x = and_table[_val(val[counter++])][mask];
 
 			pos -= 4;
@@ -1439,7 +1439,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 
 		/* last nibble must be masked */
 		if (bits & 3) {
-			mask = zex_digit[bits & 3];
+			mask = zex_digit[(bits & 3) - 1];
 			div1_res[counter] = and_table[_val(p[counter])][mask];
 			++counter;
 		}
