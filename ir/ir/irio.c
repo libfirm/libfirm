@@ -511,7 +511,7 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 static void export_entity(io_env_t *env, ir_entity *ent)
 {
 	ir_type *owner = get_entity_owner(ent);
-	fprintf(env->file, "\tentity %ld \"%s\" \"%s\" %ld %ld %d %u %s %s %s %s %s ",
+	fprintf(env->file, "\tentity %ld \"%s\" \"%s\" %ld %ld %d %u %d %s %s %s %s %s ",
 			get_entity_nr(ent),
 			get_entity_name(ent),
 			ent->ld_name ? get_id_str(ent->ld_name) : "",
@@ -519,6 +519,7 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 			get_type_nr(owner),
 			get_entity_offset(ent),
 			(unsigned) get_entity_offset_bits_remainder(ent),
+			is_entity_compiler_generated(ent),
 			get_allocation_name(get_entity_allocation(ent)),
 			get_visibility_name(get_entity_visibility(ent)),
 			get_variability_name(get_entity_variability(ent)),
@@ -665,8 +666,7 @@ void ir_export(const char *filename)
 
 	fputs("typegraph {\n", env.file);
 
-	type_walk_plus_frames(export_type_or_ent_pre, export_type_or_ent_post, &env);
-	/* TODO: Visit frame types and "types for value params"? */
+	type_walk_prog(export_type_or_ent_pre, export_type_or_ent_post, &env);
 
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
@@ -717,7 +717,7 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 	irg_walk_anchors(irg, NULL, export_node, &env);
 
 	/* TODO: Only output needed constants */
-	fputs("}\n\nconstirg {\n", env.file);
+	fprintf(env.file, "}\n\nconstirg %ld {\n", get_irn_node_nr(get_const_code_irg()->current_block));
 	walk_const_code(NULL, export_node, &env);
 	fputs("}\n", env.file);
 
@@ -1126,7 +1126,10 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 			}
 
 			case tpo_class:
-				type = new_type_class(id);
+				if(typenr == (long) IR_SEGMENT_GLOBAL)
+					type = get_glob_type();
+				else
+					type = new_type_class(id);
 				set_type_size_bytes(type, size);
 				break;
 
@@ -1181,7 +1184,10 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 			}
 
 			case tpo_struct:
-				type = new_type_struct(id);
+				if(typenr < (long) IR_SEGMENT_COUNT)
+					type = get_segment_type((ir_segment_t) typenr);
+				else
+					type = new_type_struct(id);
 				set_type_size_bytes(type, size);
 				break;
 
@@ -1230,6 +1236,7 @@ static void import_entity(io_env_t *env)
 		set_entity_ld_ident(entity, new_id_from_str(ld_name));
 	set_entity_offset     (entity, (int) read_long(env));
 	set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
+	set_entity_compiler_generated(entity, (int) read_long(env));
 	set_entity_allocation (entity, read_allocation(env));
 	set_entity_visibility (entity, read_visibility(env));
 	set_entity_variability(entity, read_variability(env));

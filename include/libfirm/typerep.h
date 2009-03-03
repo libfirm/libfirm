@@ -2577,8 +2577,8 @@ typedef void class_walk_func(ir_type *clss, void *env);
 void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
 
 /** Touches every type, entity, frame type, and value param type in
- *  unspecified order. */
-void type_walk_plus_frames(type_walk_func *pre, type_walk_func *post, void *env);
+ *  unspecified order (also all segment types). */
+void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env);
 
 /** Walks over all type information reachable from an ir graph.
  *

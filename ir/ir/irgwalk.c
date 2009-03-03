@@ -726,7 +726,8 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
 	my_env.env = env;
 
 	/* Walk all types that can contain constant entities.  */
-	walk_types_entities(get_glob_type(), &walk_entity, &my_env);
+	for (i = 0; i < IR_SEGMENT_COUNT; i++)
+		walk_types_entities(get_segment_type((ir_segment_t) i), &walk_entity, &my_env);
 	n_types = get_irp_n_types();
 	for (i = 0; i < n_types; i++)
 		walk_types_entities(get_irp_type(i), &walk_entity, &my_env);

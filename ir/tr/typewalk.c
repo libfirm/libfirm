@@ -276,7 +276,7 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
 	do_type_walk(cont, pre, post, env);
 }
 
-void type_walk_plus_frames(type_walk_func *pre, type_walk_func *post, void *env) {
+void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env) {
 	int i, n_irgs = get_irp_n_irgs();
 	type_or_ent cont;
 
@@ -288,6 +288,12 @@ void type_walk_plus_frames(type_walk_func *pre, type_walk_func *post, void *env)
 		do_type_walk(cont, pre, post, env);
 
 		cont.typ = get_method_value_param_type(get_entity_type(get_irg_entity(irg)));
+		if(cont.typ)
+			do_type_walk(cont, pre, post, env);
+	}
+
+	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
+		cont.typ = get_segment_type((ir_segment_t) i);
 		if(cont.typ)
 			do_type_walk(cont, pre, post, env);
 	}
