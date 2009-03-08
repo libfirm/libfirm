@@ -211,9 +211,13 @@ int is_address_taken(ir_node *sel)
 			break;
 
 		case iro_Sel: {
+			ir_entity* entity = get_Sel_entity(succ);
+			/* we can't handle unions correctly yet -> address taken */
+			if (is_Union_type(get_entity_owner(entity)))
+				return 1;
+
 			/* Check the Sel successor of Sel */
 			int res = is_address_taken(succ);
-
 			if (res)
 				return 1;
 			break;
@@ -682,7 +686,7 @@ int scalar_replacement_opt(ir_graph *irg) {
 	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
 
-	/* we use the link firld to store the VNUM */
+	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
