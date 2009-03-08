@@ -857,7 +857,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			ir_entity *entity = get_Sel_entity(succ);
 			/* this analyis can't handle unions correctly */
 			if (is_Union_type(get_entity_owner(entity))) {
-				red |= ir_usage_unknown;
+				res |= ir_usage_unknown;
 				break;
 			}
 			/* Check the successor of irn. */
