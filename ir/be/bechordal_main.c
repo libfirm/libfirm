@@ -207,7 +207,7 @@ static void memory_operand_walker(ir_node *irn, void *env)
 /**
  * Starts a walk for memory operands if supported by the backend.
  */
-static inline void check_for_memory_operands(ir_graph *irg)
+void check_for_memory_operands(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, memory_operand_walker, NULL);
 }
