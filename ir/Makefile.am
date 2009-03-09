@@ -105,6 +105,7 @@ libfirm_la_SOURCES = \
 	be/bemachnode.c \
 	be/bemain.c \
 	be/bemodule.c \
+	be/benewalloc.c \
 	be/benode.c \
 	be/bepeephole.c \
 	be/bepressurestat.c \
@@ -204,7 +205,6 @@ libfirm_la_SOURCES = \
 	opt/condeval.c \
 	opt/convopt.c \
 	opt/critical_edges.c \
-	opt/data_flow_scalar_replace.c \
 	opt/escape_ana.c \
 	opt/funccall.c \
 	opt/gvn_pre.c \
