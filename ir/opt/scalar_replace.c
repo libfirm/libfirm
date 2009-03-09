@@ -211,13 +211,14 @@ int is_address_taken(ir_node *sel)
 			break;
 
 		case iro_Sel: {
-			ir_entity* entity = get_Sel_entity(succ);
+			int       res;
+			ir_entity *entity = get_Sel_entity(succ);
 			/* we can't handle unions correctly yet -> address taken */
 			if (is_Union_type(get_entity_owner(entity)))
 				return 1;
 
 			/* Check the Sel successor of Sel */
-			int res = is_address_taken(succ);
+			res = is_address_taken(succ);
 			if (res)
 				return 1;
 			break;
