@@ -99,7 +99,7 @@ struct block_t {
 	unsigned *avail_out;         /**< out-set of available addresses */
 	memop_t  **id_2_memop_avail; /**< maps avail address ids to memops */
 	unsigned *anticL_in;         /**< in-set of anticipated Load addresses */
-	memop_t  **id_2_memop;       /**< maps address ids to memops */
+	memop_t  **id_2_memop_antic; /**< maps anticipated address ids to memops */
 	ir_node  *block;             /**< the associated block */
 	block_t  *forward_next;      /**< next block entry for forward iteration */
 	block_t  *backward_next;     /**< next block entry for backward iteration */
@@ -110,17 +110,18 @@ struct block_t {
  * Metadata for this pass.
  */
 typedef struct ldst_env_t {
-	struct obstack  obst;         /**< obstack for temporary data */
-	ir_nodemap_t    adr_map;      /**< Map addresses to */
-	block_t         *forward;     /**< Inverse post-order list of all blocks Start->End */
-	block_t         *backward;    /**< Inverse post-order list of all blocks End->Start */
-	ir_node         *start_bl;    /**< start block of the current graph */
-	ir_node         *end_bl;      /**< end block of the current graph */
-	unsigned        *curr_set;    /**< current set of addresses */
-	unsigned        curr_adr_id;  /**< number for address mapping */
-	unsigned        n_mem_ops;    /**< number of memory operations (Loads/Stores) */
-	unsigned        rbs_size;     /**< size of all bitsets in bytes */
-	int             changed;      /**< Flags for changed graph state */
+	struct obstack  obst;              /**< obstack for temporary data */
+	ir_nodemap_t    adr_map;           /**< Map addresses to */
+	block_t         *forward;          /**< Inverse post-order list of all blocks Start->End */
+	block_t         *backward;         /**< Inverse post-order list of all blocks End->Start */
+	ir_node         *start_bl;         /**< start block of the current graph */
+	ir_node         *end_bl;           /**< end block of the current graph */
+	unsigned        *curr_set;         /**< current set of addresses */
+	memop_t         **curr_id_2_memop; /**< current map of address ids to memops */
+	unsigned        curr_adr_id;       /**< number for address mapping */
+	unsigned        n_mem_ops;         /**< number of memory operations (Loads/Stores) */
+	unsigned        rbs_size;          /**< size of all bitsets in bytes */
+	int             changed;           /**< Flags for changed graph state */
 } ldst_env;
 
 #ifdef DEBUG_libfirm
@@ -176,7 +177,7 @@ static void dump_curr(block_t *bl, const char *s) {
 	DB((dbg, LEVEL_2, "%s[%+F] = {", s, bl->block));
 	i = 0;
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (i == 0) {
 			DB((dbg, LEVEL_2, "\n\t"));
@@ -279,7 +280,7 @@ static void prepare_blocks(ir_node *block, void *ctx) {
 	entry->avail_out        = NULL;
 	entry->id_2_memop_avail = NULL;
 	entry->anticL_in        = NULL;
-	entry->id_2_memop       = NULL;
+	entry->id_2_memop_antic = NULL;
 	entry->block            = block;
 	entry->forward_next     = env.forward;
 	entry->backward_next    = NULL;
@@ -340,6 +341,27 @@ static memop_t *alloc_memop(ir_node *irn) {
 	m->flags         = 0;
 
 	set_irn_link(irn, m);
+	return m;
+}
+
+/**
+ * Create a memop for a Phi-replacement.
+ *
+ * @param op   the memop to clone
+ * @param phi  the Phi-node representing the new value
+ */
+static memop_t *clone_memop_phi(memop_t *op, ir_node *phi) {
+	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
+
+	m->value         = op->value;
+	m->value.value   = phi;
+
+	m->node          = phi;
+	m->replace       = NULL;
+	m->next          = NULL;
+	m->flags         = 0;
+
+	set_irn_link(phi, m);
 	return m;
 }
 
@@ -641,7 +663,7 @@ static void collect_memops(ir_node *irn, void *ctx) {
  */
 static memop_t *find_address(const block_t *bl, const value_t *value) {
 	if (rbitset_is_set(env.curr_set, value->id)) {
-		memop_t *res = bl->id_2_memop[value->id];
+		memop_t *res = env.curr_id_2_memop[value->id];
 
 		if (res->value.mode == value->mode)
 			return res;
@@ -677,15 +699,13 @@ static memop_t *find_address_avail(const block_t *bl, const value_t *value) {
 
 /**
  * Kill all Loads from the current set.
- *
- * @param bl  the current block
  */
-static void kill_all_loads(block_t *bl) {
+static void kill_all_loads(void) {
 	unsigned pos = 0;
 	unsigned end = env.n_mem_ops * 2 - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (! is_Store(op->node))
 			rbitset_clear(env.curr_set, pos);
@@ -694,15 +714,13 @@ static void kill_all_loads(block_t *bl) {
 
 /**
  * Kill all Stores from the current set.
- *
- * @param bl  the current block
  */
-static void kill_all_stores(block_t *bl) {
+static void kill_all_stores(void) {
 	unsigned pos = 0;
 	unsigned end = env.n_mem_ops * 2 - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (is_Store(op->node))
 			rbitset_clear(env.curr_set, pos);
@@ -723,21 +741,20 @@ static void kill_all(void) {
 /**
  * Kill Stores that are not alias free due to a Load value from the current set.
  *
- * @param bl     the block
  * @param value  the Load value
  */
-static void kill_stores(block_t *bl, const value_t *value) {
+static void kill_stores(const value_t *value) {
 	unsigned pos = 0;
 	unsigned end = env.n_mem_ops * 2 - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (is_Store(op->node)) {
 			if (ir_no_alias != get_alias_relation(current_ir_graph, value->address, value->mode,
 			                                      op->value.address, op->value.mode)) {
 				rbitset_clear(env.curr_set, pos);
-				bl->id_2_memop[pos] = NULL;
+				env.curr_id_2_memop[pos] = NULL;
 			}
 		}
 	}
@@ -746,20 +763,19 @@ static void kill_stores(block_t *bl, const value_t *value) {
 /**
  * Kill memops that are not alias free due to a Store value from the current set.
  *
- * @param bl     the block
  * @param value  the Store value
  */
-static void kill_memops(block_t *bl, const value_t *value) {
+static void kill_memops(const value_t *value) {
 	unsigned pos = 0;
 	unsigned end = env.n_mem_ops * 2 - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (ir_no_alias != get_alias_relation(current_ir_graph, value->address, value->mode,
 			                                  op->value.address, op->value.mode)) {
 			rbitset_clear(env.curr_set, pos);
-			bl->id_2_memop[pos] = NULL;
+			env.curr_id_2_memop[pos] = NULL;
 		}
 	}
 }
@@ -767,12 +783,11 @@ static void kill_memops(block_t *bl, const value_t *value) {
 /**
  * Add the value of a memop to the current set.
  *
- * @param bl  the block
  * @param op  the memory op
  */
-static void add_memop(block_t *bl, memop_t *op) {
+static void add_memop(memop_t *op) {
 	rbitset_set(env.curr_set, op->value.id);
-	bl->id_2_memop[op->value.id] = op;
+	env.curr_id_2_memop[op->value.id] = op;
 }
 
 /**
@@ -784,6 +799,17 @@ static void add_memop(block_t *bl, memop_t *op) {
 static void add_memop_avail(block_t *bl, memop_t *op) {
 	rbitset_set(bl->avail_out, op->value.id);
 	bl->id_2_memop_avail[op->value.id] = op;
+}
+
+/**
+ * Update a value of a memop to the avail_out set.
+ *
+ * @param bl  the block
+ * @param op  the memory op
+ */
+static void update_memop_avail(block_t *bl, memop_t *op) {
+	if (rbitset_is_set(bl->avail_out, op->value.id))
+		bl->id_2_memop_avail[op->value.id] = op;
 }
 
 /**
@@ -905,66 +931,15 @@ static void mark_remove_store(memop_t *op) {
 	env.changed = 1;
 }
 
-#define BYTE_SIZE(x)  (((x) + 7) >> 3)
-
 /**
- * Do forward dataflow analysis on a given block to calculate the avail_out set.
+ * Do forward dataflow analysis on the given block and calculate the
+ * GEN and KILL in the current (avail) set.
  *
  * @param bl  the block
- *
- * @return non-zero if the set has changed since last iteration
  */
-static int forward_avail(block_t *bl) {
+static void calc_gen_kill_avail(block_t *bl) {
 	memop_t *op;
-	int     n;
 	ir_node *def;
-	ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
-	block_t *pred_bl = get_block_entry(pred);
-
-	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
-
-	n = get_Block_n_cfgpreds(bl->block);
-	if (n > 1) {
-		int i, pos;
-
-		/* more than one predecessors, calculate the join */
-		for (i = n - 1; i > 0; --i) {
-			ir_node *pred    = skip_Proj(get_Block_cfgpred(bl->block, i));
-			block_t *pred_bl = get_block_entry(get_nodes_block(pred));
-
-			rbitset_and(env.curr_set, pred_bl->avail_out, env.rbs_size);
-
-			if (is_Load(pred) || is_Store(pred)) {
-				/* We reached this block by an exception from a Load or Store:
-				 * the memop was NOT completed than, kill it
-				 */
-				memop_t *exc_op = get_irn_memop(pred);
-				rbitset_clear(env.curr_set, exc_op->value.id);
-			}
-
-		}
-		/* sure that all values are in the map */
-		for (pos = env.rbs_size - 1; pos >= 0; --pos) {
-			if (! rbitset_is_set(env.curr_set, pos))
-				bl->id_2_memop[pos] = NULL;
-			else {
-				for (i = n - 1; i >= 0; --i) {
-					ir_node *pred    = get_Block_cfgpred_block(bl->block, i);
-					block_t *pred_bl = get_block_entry(pred);
-
-					if (pred_bl->id_2_memop[pos] != NULL) {
-						bl->id_2_memop[pos] = pred_bl->id_2_memop[pos];
-						break;
-					}
-				}
-			}
-		}
-	} else {
-		/* only one predecessor, simply copy the map */
-		memcpy(bl->id_2_memop, pred_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
-	}
-
-	dump_curr(bl, "Avail_in");
 
 	for (op = bl->memop_forward; op != NULL; op = op->next) {
 		switch (get_irn_opcode(op->node)) {
@@ -993,12 +968,12 @@ static int forward_avail(block_t *bl) {
 						mark_replace_load(op, def);
 					} else {
 						/* overwrite it */
-						add_memop(bl, op);
+						add_memop(op);
 					}
 				} else {
 					/* add this value */
-					kill_stores(bl, &op->value);
-					add_memop(bl, op);
+					kill_stores(&op->value);
+					add_memop(op);
 				}
 			}
 			break;
@@ -1007,28 +982,29 @@ static int forward_avail(block_t *bl) {
 				/* do we have this store already */
 				memop_t *other = find_address(bl, &op->value);
 				if (other != NULL) {
-					if (is_Store(other->node) &&
-					    get_nodes_block(other->node) == get_nodes_block(op->node)) {
-						/*
-						 * A WAW in the same block we can kick the first store.
-						 * This is a shortcut: we know that the second Store will be anticipated
-						 * then in an case.
-						 */
-						DB((dbg, LEVEL_1, "WAW %+F <- %+F\n", op->node, other->node));
-						mark_remove_store(other);
-						/* FIXME: a Load might be get freed due to this killed store */
+					if (is_Store(other->node)) {
+						if (op != other && get_nodes_block(other->node) == get_nodes_block(op->node)) {
+							/*
+							 * A WAW in the same block we can kick the first store.
+							 * This is a shortcut: we know that the second Store will be anticipated
+							 * then in an case.
+							 */
+							DB((dbg, LEVEL_1, "WAW %+F <- %+F\n", op->node, other->node));
+							mark_remove_store(other);
+							/* FIXME: a Load might be get freed due to this killed store */
+						}
 					} else if (other->value.value == op->value.value) {
 						/* WAR */
 						DB((dbg, LEVEL_1, "WAR %+F <- %+F\n", op->node, other->node));
 						mark_remove_store(op);
 					} else {
 						/* we overwrite the value that was loaded */
-						add_memop(bl, op);
+						add_memop(op);
 					}
 				} else {
 					/* add this value */
-					kill_memops(bl, &op->value);
-					add_memop(bl, op);
+					kill_memops(&op->value);
+					add_memop(op);
 				}
 			}
 			break;
@@ -1038,31 +1014,33 @@ static int forward_avail(block_t *bl) {
 				kill_all();
 				break;
 			case FLAG_KILL_LOADS:
-				kill_all_loads(bl);
+				kill_all_loads();
 				break;
 			case FLAG_KILL_STORES:
-				kill_all_stores(bl);
+				kill_all_stores();
 				break;
 			case 0:
 				break;
 			}
 		}
 	}
+}
 
-	/*
-	 * Always copy the map as it might get updated.
-	 * However, an update is NOT recorded as a change, as the set of available addresses
-	 * is not modified.
-	 */
-	memcpy(bl->id_2_memop_avail, bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
-	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
-		/* changed */
-		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
-		dump_curr(bl, "Avail_out*");
-		return 1;
-	}
+#define BYTE_SIZE(x)  (((x) + 7) >> 3)
+
+/**
+ * Do forward dataflow analysis on a given block to calculate the avail_out set
+ * for this block only.
+ *
+ * @param block  the block
+ */
+static void forward_avail(block_t *bl) {
+	/* fill the data from the current block */
+	env.curr_id_2_memop = bl->id_2_memop_avail;
+	env.curr_set        = bl->avail_out;
+
+	calc_gen_kill_avail(bl);
 	dump_curr(bl, "Avail_out");
-	return 0;
 }
 
 /**
@@ -1083,7 +1061,7 @@ static int backward_antic(block_t *bl) {
 		int i;
 
 		rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
-		memcpy(bl->id_2_memop, succ_bl->id_2_memop, env.rbs_size * sizeof(bl->id_2_memop[0]));
+		memcpy(env.curr_id_2_memop, succ_bl->id_2_memop_antic, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 
 		for (i = n - 1; i > 0; --i) {
 			ir_node *succ    = get_Block_cfg_out(bl->block, i);
@@ -1121,13 +1099,13 @@ static int backward_antic(block_t *bl) {
 		case iro_Load:
 			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
 				/* always add it */
-				add_memop(bl, op);
+				add_memop(op);
 			}
 			break;
 		case iro_Store:
 			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
 				/* a Store: check which memops must be killed */
-				kill_memops(bl, &op->value);
+				kill_memops(&op->value);
 			}
 			break;
 		default:
@@ -1136,22 +1114,25 @@ static int backward_antic(block_t *bl) {
 				kill_all();
 				break;
 			case FLAG_KILL_LOADS:
-				kill_all_loads(bl);
+				kill_all_loads();
 				break;
 			case FLAG_KILL_STORES:
-				kill_all_stores(bl);
+				/*kill_all_stores();*/
 				break;
 			case 0:
 				break;
 			}
 		}
 	}
-	dump_curr(bl, "AnticL_in");
+
+	memcpy(bl->id_2_memop_antic, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 	if (! rbitset_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
 		/* changed */
 		rbitset_cpy(bl->anticL_in, env.curr_set, env.rbs_size);
+		dump_curr(bl, "AnticL_in*");
 		return 1;
 	}
+	dump_curr(bl, "AnticL_in");
 	return 0;
 }
 
@@ -1261,25 +1242,21 @@ static void do_replacements(block_t *bl) {
  * Calculate the Avail_out sets for all basic blocks.
  */
 static void calcAvail(void) {
-	int i, need_iter;
-	block_t *bl;
+	memop_t  **tmp_memop = env.curr_id_2_memop;
+	unsigned *tmp_set    = env.curr_set;
+	block_t  *bl;
 
 	/* calculate avail_out */
 	DB((dbg, LEVEL_2, "Calculate Avail_out\n"));
-	i = 0;
-	do {
-		DB((dbg, LEVEL_2, "Iteration %d:\n=========\n", i));
 
-		need_iter = 0;
+	/* interate over all blocks in in any order, skip the start block */
+	for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
+		forward_avail(bl);
+	}
 
-		/* over all blocks in reverse post order, skip the start block */
-		for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
-			need_iter |= forward_avail(bl);
-		}
-		++i;
-	} while (need_iter);
-
-	DB((dbg, LEVEL_2, "Get avail set after %d iterations\n\n", i));
+	/* restore the current sets */
+	env.curr_id_2_memop = tmp_memop;
+	env.curr_set        = tmp_set;
 }
 
 /**
@@ -1397,24 +1374,80 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl) 
 	nmem->out = edges;
 }
 
-
 /**
  * insert
  */
-static void insert_Load(ir_node *block, void *ctx) {
-	int     *new_stuff = ctx;
-	block_t *bl;
-	int     i, n = get_Block_n_cfgpreds(block);
+static int insert_Load(block_t *bl) {
+	ir_node  *block = bl->block;
+	int      i, n = get_Block_n_cfgpreds(block);
 	unsigned pos = 0;
 	unsigned end = env.n_mem_ops * 2 - 1;
+	int      res = 0;
+	ir_node  *pred    = get_Block_cfgpred_block(bl->block, 0);
+	block_t  *pred_bl = get_block_entry(pred);
+
+	DB((dbg, LEVEL_3, "processing %+F\n", block));
+
+	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
+
+	if (n > 1) {
+		int i, pos;
+
+		/* more than one predecessors, calculate the join for all avail_outs */
+		for (i = n - 1; i > 0; --i) {
+			ir_node *pred    = skip_Proj(get_Block_cfgpred(block, i));
+			block_t *pred_bl = get_block_entry(get_nodes_block(pred));
+
+			rbitset_and(env.curr_set, pred_bl->avail_out, env.rbs_size);
+
+			if (is_Load(pred) || is_Store(pred)) {
+				/* We reached this block by an exception from a Load or Store:
+				 * the memop creating the exception was NOT completed than, kill it
+				 */
+				memop_t *exc_op = get_irn_memop(pred);
+				rbitset_clear(env.curr_set, exc_op->value.id);
+			}
+
+		}
+		/* ensure that all values are in the map */
+		for (pos = env.rbs_size - 1; pos >= 0; --pos) {
+			if (! rbitset_is_set(env.curr_set, pos))
+				env.curr_id_2_memop[pos] = NULL;
+			else {
+				for (i = n - 1; i >= 0; --i) {
+					ir_node *pred    = get_Block_cfgpred_block(bl->block, i);
+					block_t *pred_bl = get_block_entry(pred);
+
+					if (pred_bl->id_2_memop_avail[pos] != NULL) {
+						env.curr_id_2_memop[pos] = pred_bl->id_2_memop_avail[pos];
+						break;
+					}
+				}
+			}
+		}
+	} else {
+		/* only one predecessor, simply copy the map */
+		memcpy(env.curr_id_2_memop, pred_bl->id_2_memop_avail, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
+	}
+
+
+	/* recalculate avail by gen and kill */
+	calc_gen_kill_avail(bl);
+
+	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
+		/* the avail set has changed */
+		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
+		memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+		dump_curr(bl, "Avail_out*");
+		res = 1;
+	}
 
 	if (n <= 1)
-		return;
+		return res;
 
-	bl = get_block_entry(block);
-
+	/* check for partly redundant values */
 	for (pos = rbitset_next(bl->anticL_in, pos, 1); pos != end; pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop[pos];
+		memop_t *op = bl->id_2_memop_antic[pos];
 		int     have_some, all_same;
 		ir_node *first;
 
@@ -1422,6 +1455,7 @@ static void insert_Load(ir_node *block, void *ctx) {
 
 		if (op->flags & FLAG_KILLED_NODE)
 			continue;
+		DB((dbg, LEVEL_3, "anticipated %+F\n", op->node));
 
 		have_some  = 0;
 		all_same   = 1;
@@ -1438,11 +1472,13 @@ static void insert_Load(ir_node *block, void *ctx) {
 					have_some = 0;
 					break;
 				}
+				DB((dbg, LEVEL_3, "%+F is not available in predecessor %+F\n", op->node, pred));
 				pred_bl->avail = NULL;
 				all_same       = 0;
 			} else {
 				pred_bl->avail = e;
 				have_some      = 1;
+				DB((dbg, LEVEL_3, "%+F is available for %+F in predecessor %+F\n", e->node, op->node, pred));
 				if (first == NULL)
 					first = e->node;
 				else if (first != e->node)
@@ -1469,7 +1505,7 @@ static void insert_Load(ir_node *block, void *ctx) {
 					assert(last_mem != NULL);
 					load = new_rd_Load(db, current_ir_graph, pred, last_mem, op->value.address, mode, cons_none);
 					def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
-					DB((dbg, LEVEL_1, "Created new %+F for party redundant %+F\n", load, op->node));
+					DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
 
 					new_op                = alloc_memop(load);
 					new_op->mem           = new_r_Proj(current_ir_graph, pred, load, mode_M, pn_Load_M);
@@ -1498,8 +1534,7 @@ static void insert_Load(ir_node *block, void *ctx) {
 				in[i] = pred_bl->avail->value.value;
 			}
 			phi = new_r_Phi(current_ir_graph, block, n, in, mode);
-			mark_replace_load(op, phi);
-			*new_stuff = 1;
+			DB((dbg, LEVEL_1, "Created new %+F in %+F for now redundant %+F\n", phi, block, op->node));
 
 			if (get_nodes_block(op->node) == block) {
 				/* The redundant node was in the current block:
@@ -1507,17 +1542,25 @@ static void insert_Load(ir_node *block, void *ctx) {
 				   avail although it is executed in this bLock, it is killed by a later
 				   instruction.
 				 */
-			} else {
-				/* The redundant node is NOT in the current block and anticipated.
-				   This can only happen IFF nothings kills the Load in the current block,
-				   so it will be avail in the next iteration.
-				 */
-				add_memop_avail(bl, op);
+				memop_t *phi_op = clone_memop_phi(op, phi);
 
-				/* TODO propagate it downwards */
+				update_memop_avail(bl, phi_op);
+
+				mark_replace_load(op, phi);
+			} else {
+				/* The redundant node is NOT in the current block and anticipated. */
+				memop_t *phi_op = clone_memop_phi(op, phi);
+
+				add_memop_avail(bl, phi_op);
+
+				/* propagate it downwards */
+				res = 1;
 			}
+			/* clear it so we do not found it the next iteration */
+			rbitset_clear(bl->anticL_in, pos);
 		}
 	}
+	return res;
 }
 
 /**
@@ -1525,17 +1568,24 @@ static void insert_Load(ir_node *block, void *ctx) {
  */
 static void insert_Loads_upwards(void) {
 	int i, need_iter;
+	block_t *bl;
 
-	/* calculate antic_out */
+	/* recalculate antic_out and insert Loads */
 	DB((dbg, LEVEL_2, "Inserting Loads\n"));
+
 	i = 0;
 	do {
 		DB((dbg, LEVEL_2, "Iteration %d:\n=========\n", i));
 
 		need_iter = 0;
-		dom_tree_walk_irg(current_ir_graph, insert_Load, NULL, &need_iter);
+
+		/* over all blocks in reverse post order, skip the start block */
+		for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
+			need_iter |= insert_Load(bl);
+		}
 		++i;
 	} while (need_iter);
+
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
 }
 
@@ -1546,6 +1596,7 @@ int opt_ldst(ir_graph *irg) {
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst");
+//	firm_dbg_set_mask(dbg, -1);
 
 	DB((dbg, LEVEL_1, "\nDoing Load/Store optimization on %+F\n", irg));
 
@@ -1623,6 +1674,8 @@ int opt_ldst(ir_graph *irg) {
 	/* create the current set */
 	env.curr_set = rbitset_obstack_alloc(&env.obst, env.rbs_size);
 	rbitset_set(env.curr_set, env.rbs_size - 1);
+	env.curr_id_2_memop = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
+	memset(env.curr_id_2_memop, 0, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 
 	for (bl = env.forward; bl != NULL; bl = bl->forward_next) {
 		/* set sentinel bits */
@@ -1630,13 +1683,13 @@ int opt_ldst(ir_graph *irg) {
 		rbitset_set(bl->avail_out, env.rbs_size - 1);
 
 		bl->id_2_memop_avail = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
-		memset(bl->id_2_memop_avail, 0, env.rbs_size * sizeof(bl->id_2_memop[0]));
+		memset(bl->id_2_memop_avail, 0, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
 
 		bl->anticL_in  = rbitset_obstack_alloc(&env.obst, env.rbs_size);
 		rbitset_set(bl->anticL_in, env.rbs_size - 1);
 
-		bl->id_2_memop = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
-		memset(bl->id_2_memop, 0, env.rbs_size * sizeof(bl->id_2_memop[0]));
+		bl->id_2_memop_antic = NEW_ARR_D(memop_t *, &env.obst, env.rbs_size);
+		memset(bl->id_2_memop_antic, 0, env.rbs_size * sizeof(bl->id_2_memop_antic[0]));
 	}
 
 //	dump_block_list(&env);
@@ -1662,6 +1715,8 @@ end:
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	ir_nodemap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
+
+	dump_ir_block_graph(irg, "-YYY");
 
 	current_ir_graph = rem;
 
