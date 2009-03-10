@@ -41,6 +41,9 @@
 #include "debug.h"
 #include "error.h"
 
+/* maximum number of output Proj's */
+#define MAX_PROJ (pn_Load_max > pn_Store_max ? pn_Load_max : pn_Store_max)
+
 /**
  * Mapping an address to an dense ID.
  */
@@ -87,6 +90,7 @@ struct memop_t {
 	memop_t  *next;      /**< links to the next memory op in the block in forward order. */
 	memop_t  *prev;      /**< links to the previous memory op in the block in forward order. */
 	unsigned flags;      /**< memop flags */
+	ir_node  *projs[MAX_PROJ]; /**< Projs of this memory op */
 };
 
 /**
@@ -340,6 +344,8 @@ static memop_t *alloc_memop(ir_node *irn) {
 	m->next          = NULL;
 	m->flags         = 0;
 
+	memset(m->projs, 0, sizeof(m->projs));
+
 	set_irn_link(irn, m);
 	return m;
 }
@@ -392,6 +398,8 @@ restart:
 
 		entry->id = env.curr_adr_id++;
 		ir_nodemap_insert(&env.adr_map, adr, entry);
+
+		DB((dbg, LEVEL_3, "ADDRESS %+F has ID %u\n", adr, entry->id));
 	}
 	return entry->id;
 }
@@ -438,12 +446,15 @@ static void update_Load_memop(memop_t *m) {
 
 	for (i = get_irn_n_outs(load) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(load, i);
+		long    pn;
 
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		pn = get_Proj_proj(proj);
+		m->projs[pn] = proj;
+		switch (pn) {
 		case pn_Load_res:
 			m->value.value = proj;
 			m->value.mode  = get_irn_mode(proj);
@@ -454,6 +465,10 @@ static void update_Load_memop(memop_t *m) {
 		case pn_Load_M:
 			m->mem = proj;
 			break;
+		case pn_Load_X_regular:
+			break;
+		default:
+			panic("Unsupported Proj from Load %+F", proj);
 		}
 	}
 
@@ -489,18 +504,25 @@ static void update_Store_memop(memop_t *m) {
 
 	for (i = get_irn_n_outs(store) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(store, i);
+		long    pn;
 
 		/* beware of keep edges */
 		if (is_End(proj))
 			continue;
 
-		switch (get_Proj_proj(proj)) {
+		pn = get_Proj_proj(proj);
+		m->projs[pn] = proj;
+		switch (pn) {
 		case pn_Store_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
 		case pn_Store_M:
 			m->mem = proj;
 			break;
+		case pn_Store_X_regular:
+			break;
+		default:
+			panic("Unsupported Proj from Store %+F", proj);
 		}
 	}
 	m->value.value = get_Store_value(store);
@@ -658,10 +680,9 @@ static void collect_memops(ir_node *irn, void *ctx) {
 /**
  * Find an address in the current set.
  *
- * @param bl     the block
  * @param value  the value to be searched for
  */
-static memop_t *find_address(const block_t *bl, const value_t *value) {
+static memop_t *find_address(const value_t *value) {
 	if (rbitset_is_set(env.curr_set, value->id)) {
 		memop_t *res = env.curr_id_2_memop[value->id];
 
@@ -816,98 +837,19 @@ static void update_memop_avail(block_t *bl, memop_t *op) {
  * Add a Conv if needed.
  */
 static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
-	if (get_irn_mode(irn) != mode) {
-		ir_node *block = get_nodes_block(irn);
-		return new_r_Conv(current_ir_graph, block, irn, mode);
+	ir_mode *other = get_irn_mode(irn);
+	if (other != mode) {
+		/* different modes: check if conversion is possible without changing the bits */
+		if (get_mode_arithmetic(mode) == irma_twos_complement &&
+		    get_mode_arithmetic(other) == irma_twos_complement &&
+			get_mode_size_bits(mode) == get_mode_size_bits(other)) {
+			ir_node *block = get_nodes_block(irn);
+			return new_r_Conv(current_ir_graph, block, irn, mode);
+		}
+		/* otherwise not possible ... yet */
+		return NULL;
 	}
 	return irn;
-}
-
-/**
- * build a phi definition for a value in the given block
- *
- * @param block  the block
- * @param value  the value
- *
- * @return the definition
- */
-static ir_node *build_phi_definition(ir_node *block, const value_t *value) {
-	ir_node **in, *phi;
-	int     i, n;
-	memop_t *mop;
-	ir_mode *mode = value->mode;
-
-	/* no: we need a new Phi */
-	n = get_Block_n_cfgpreds(block);
-
-	while (n == 1) {
-		block = get_Block_cfgpred_block(block, 0);
-		n     = get_Block_n_cfgpreds(block);
-		mop   = find_address_avail(get_block_entry(block), value);
-
-		if (mop == NULL) {
-			/* this can only happen, if modes cannot be converted */
-			return NULL;
-		}
-		value = &mop->value;
-	}
-
-	NEW_ARR_A(ir_node *, in, n);
-	for (i = n - 1; i >= 0; --i) {
-		ir_node *pred_bl = get_Block_cfgpred_block(block, i);
-		ir_node *def_bl;
-
-		mop = find_address_avail(get_block_entry(pred_bl), value);
-		if (mop == NULL)
-			return NULL;
-
-		def_bl = get_nodes_block(mop->value.value);
-
-		if (block_dominates(def_bl, pred_bl))
-			in[i] = conv_to(mop->value.value, mode);
-		else {
-			ir_node *def = build_phi_definition(pred_bl, &mop->value);
-			if (def == NULL)
-				return NULL;
-			in[i] = conv_to(def, mode);
-		}
-	}
-
-	phi = new_r_Phi(current_ir_graph, block, n, in, mode);
-	DB((dbg, LEVEL_2, "Created new Phi %+F for value %+F in block %+F\n", phi, value->value, block));
-	return phi;
-}
-
-/**
- * find a definition for a value in the given block or above.
- *
- * @param block  the block
- * @param op     the memop: the definition must dominate it
- * @param value  the value
- *
- * @return the definition or NULL if modes are different
- */
-static ir_node *find_definition(ir_node *block, const memop_t *op, const value_t *value) {
-	ir_node *def_block = get_nodes_block(value->value);
-
-	if (def_block == block) {
-		/* the value is in our block: check, if it is above in the memory list */
-		const memop_t *p;
-
-		for (p = op->prev; p != NULL; p = p->prev) {
-			if (!(p->flags & FLAG_KILLED_NODE) &&
-			    p->value.address == value->address) {
-				/* found */
-				assert(p->value.value == value->value);
-				return p->value.value;
-			}
-		}
-	} else if (block_dominates(def_block, block)) {
-		/* strictly dominates */
-		return value->value;
-	}
-
-	return build_phi_definition(block, value);
 }
 
 /**
@@ -952,9 +894,9 @@ static void calc_gen_kill_avail(block_t *bl) {
 		case iro_Load:
 			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
 				/* do we have this already? */
-				memop_t *other = find_address(bl, &op->value);
-				if (other != NULL) {
-					def = find_definition(bl->block, op, &other->value);
+				memop_t *other = find_address(&op->value);
+				if (other != NULL && other != op) {
+					def = conv_to(other->value.value, op->value.mode);
 					if (def != NULL) {
 #ifdef DEBUG_libfirm
 						if (is_Store(other->node)) {
@@ -980,7 +922,7 @@ static void calc_gen_kill_avail(block_t *bl) {
 		case iro_Store:
 			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
 				/* do we have this store already */
-				memop_t *other = find_address(bl, &op->value);
+				memop_t *other = find_address(&op->value);
 				if (other != NULL) {
 					if (is_Store(other->node)) {
 						if (op != other && get_nodes_block(other->node) == get_nodes_block(op->node)) {
@@ -1144,7 +1086,7 @@ static int backward_antic(block_t *bl) {
 static void replace_load(memop_t *op) {
 	ir_node *load = op->node;
 	ir_node *def  = skip_Id(op->replace);
-	int     i;
+	ir_node *proj;
 	ir_mode *mode;
 
 	if (def != NULL)
@@ -1157,32 +1099,29 @@ static void replace_load(memop_t *op) {
 		}
 		DB((dbg, LEVEL_1, "Killing unused %+F\n", load));
 	}
-	for (i = get_irn_n_outs(load) - 1; i >= 0; --i) {
-		ir_node *proj = get_irn_out(load, i);
 
-		switch (get_Proj_proj(proj)) {
-		case pn_Load_M:
-			exchange(proj, get_Load_mem(load));
-			break;
-		case pn_Load_res:
-			mode = get_irn_mode(proj);
-			if (get_irn_mode(def) != mode) {
-				/* a hidden cast */
-				dbg_info *db    = get_irn_dbg_info(load);
-				ir_node  *block = get_nodes_block(proj);
-				def = new_rd_Conv(db, current_ir_graph, block, def, mode);
-			}
-			exchange(proj, def);
-			break;
-		case pn_Load_X_except:
-			exchange(proj, new_Bad());
-			break;
-		case pn_Load_X_regular:
-			exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(load)));
-			break;
-		default:
-			panic("Unknown Proj from Load");
+	if (op->mem != NULL) {
+		/* in rare cases a Load might have NO memory */
+		exchange(op->mem, get_Load_mem(load));
+	}
+	proj = op->projs[pn_Load_res];
+	if (proj != NULL) {
+		mode = get_irn_mode(proj);
+		if (get_irn_mode(def) != mode) {
+			/* a hidden cast */
+			dbg_info *db    = get_irn_dbg_info(load);
+			ir_node  *block = get_nodes_block(proj);
+			def = new_rd_Conv(db, current_ir_graph, block, def, mode);
 		}
+		exchange(proj, def);
+	}
+	proj = op->projs[pn_Load_X_except];
+	if (proj != NULL) {
+		exchange(proj, new_Bad());
+	}
+	proj = op->projs[pn_Load_X_regular];
+	if (proj != NULL) {
+		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(load)));
 	}
 }
 
@@ -1193,25 +1132,21 @@ static void replace_load(memop_t *op) {
  */
 static void remove_store(memop_t *op) {
 	ir_node *store = op->node;
-	int     i;
+	ir_node *proj;
 
 	DB((dbg, LEVEL_1, "Removing %+F\n", store));
-	for (i = get_irn_n_outs(store) - 1; i >= 0; --i) {
-		ir_node *proj = get_irn_out(store, i);
 
-		switch (get_Proj_proj(proj)) {
-		case pn_Store_M:
-			exchange(proj, get_Store_mem(store));
-			break;
-		case pn_Store_X_except:
-			exchange(proj, new_Bad());
-			break;
-		case pn_Store_X_regular:
-			exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(store)));
-			break;
-		default:
-			panic("Unknown Proj from Store");
-		}
+	if (op->mem != NULL) {
+		/* in rare cases a Store might have no memory */
+		exchange(op->mem, get_Store_mem(store));
+	}
+	proj = op->projs[pn_Store_X_except];
+	if (proj != NULL) {
+		exchange(proj, new_Bad());
+	}
+	proj = op->projs[pn_Store_X_regular];
+	if (proj != NULL) {
+		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(store)));
 	}
 }
 
@@ -1249,7 +1184,7 @@ static void calcAvail(void) {
 	/* calculate avail_out */
 	DB((dbg, LEVEL_2, "Calculate Avail_out\n"));
 
-	/* interate over all blocks in in any order, skip the start block */
+	/* iterate over all blocks in in any order, skip the start block */
 	for (bl = env.forward->forward_next; bl != NULL; bl = bl->forward_next) {
 		forward_avail(bl);
 	}
@@ -1391,7 +1326,10 @@ static int insert_Load(block_t *bl) {
 	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
 	if (n > 1) {
-		int i, pos;
+		int     i, pos;
+		ir_node **ins;
+
+		NEW_ARR_A(ir_node *, ins, n);
 
 		/* more than one predecessors, calculate the join for all avail_outs */
 		for (i = n - 1; i > 0; --i) {
@@ -1409,19 +1347,63 @@ static int insert_Load(block_t *bl) {
 			}
 
 		}
-		/* ensure that all values are in the map */
-		for (pos = env.rbs_size - 1; pos >= 0; --pos) {
+		/*
+		 * Ensure that all values are in the map: build Phi's if necessary:
+		 * Note: the last bit is the sentinel and ALWAYS set, so start with -2.
+		 */
+		for (pos = env.rbs_size - 2; pos >= 0; --pos) {
 			if (! rbitset_is_set(env.curr_set, pos))
 				env.curr_id_2_memop[pos] = NULL;
 			else {
-				for (i = n - 1; i >= 0; --i) {
-					ir_node *pred    = get_Block_cfgpred_block(bl->block, i);
-					block_t *pred_bl = get_block_entry(pred);
+				ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
+				block_t *pred_bl = get_block_entry(pred);
+				int     need_phi = 0;
+				ir_mode *mode;
+				memop_t *first;
 
-					if (pred_bl->id_2_memop_avail[pos] != NULL) {
-						env.curr_id_2_memop[pos] = pred_bl->id_2_memop_avail[pos];
-						break;
+				first  = pred_bl->id_2_memop_avail[pos];
+				ins[0] = first->value.value;
+				mode = get_irn_mode(ins[0]);
+
+				for (i = 1; i < n; ++i) {
+					pred    = get_Block_cfgpred_block(bl->block, i);
+					pred_bl = get_block_entry(pred);
+
+					ins[i] = conv_to(pred_bl->id_2_memop_avail[pos]->value.value, mode);
+					if (ins[i] != ins[0]) {
+						need_phi = 1;
+						if (ins[i] == NULL) {
+							/* conversion failed */
+							need_phi = 2;
+							break;
+						}
 					}
+
+				}
+				switch (need_phi) {
+				case 0:
+					/* no Phi needed */
+					env.curr_id_2_memop[pos] = first;
+					break;
+				case 1: {
+					/* build a Phi  */
+					ir_node *phi = new_r_Phi(current_ir_graph, bl->block, n, ins, mode);
+					memop_t *phiop = alloc_memop(phi);
+
+					phiop->value = first->value;
+					phiop->value.value = phi;
+
+					/* no need to link it in, as it is a DATA phi */
+
+					env.curr_id_2_memop[pos] = phiop;
+
+					DB((dbg, LEVEL_3, "Created new %+F on merging value for address %+F\n", phi, first->value.address));
+					break;
+				}
+				default:
+					/* not possible because of different modes, delete the entry */
+					rbitset_clear(env.curr_set, pos);
+					break;
 				}
 			}
 		}
@@ -1514,8 +1496,14 @@ static int insert_Load(block_t *bl) {
 					new_op->value.mode    = mode;
 					new_op->value.value   = def;
 
+					new_op->projs[pn_Load_M]   = new_op->mem;
+					new_op->projs[pn_Load_res] = def;
+
 					new_op->prev            = pred_bl->memop_backward;
 					pred_bl->memop_backward = new_op;
+
+					if (pred_bl->memop_forward == NULL)
+						pred_bl->memop_forward = new_op;
 
 					if (get_nodes_block(last_mem) == pred) {
 						/* We have add a new last memory op in pred block.
