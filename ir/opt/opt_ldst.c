@@ -36,6 +36,8 @@
 #include "irouts.h"
 #include "irgraph.h"
 #include "irgopt.h"
+#include "iropt.h"
+#include "iroptimize.h"
 #include "irnodemap.h"
 #include "raw_bitset.h"
 #include "debug.h"
@@ -212,6 +214,7 @@ static memop_t *get_irn_memop(const ir_node *irn) {
 
 /**
  * Walk over the memory edges from definition to users.
+ * This ensures, that even operation without memory output are found.
  *
  * @param irn   start node
  * @param pre   pre walker function
@@ -340,6 +343,7 @@ static memop_t *alloc_memop(ir_node *irn) {
 	m->value.mode    = NULL;
 
 	m->node          = irn;
+	m->mem           = NULL;
 	m->replace       = NULL;
 	m->next          = NULL;
 	m->flags         = 0;
@@ -430,19 +434,484 @@ static unsigned get_Call_memory_properties(ir_node *call) {
 }
 
 /**
+ * Returns an entity if the address ptr points to a constant one.
+ *
+ * @param ptr  the address
+ *
+ * @return an entity or NULL
+ */
+static ir_entity *find_constant_entity(ir_node *ptr)
+{
+	for (;;) {
+		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+			return get_SymConst_entity(ptr);
+		} else if (is_Sel(ptr)) {
+			ir_entity *ent = get_Sel_entity(ptr);
+			ir_type   *tp  = get_entity_owner(ent);
+
+			/* Do not fiddle with polymorphism. */
+			if (is_Class_type(get_entity_owner(ent)) &&
+				((get_entity_n_overwrites(ent)    != 0) ||
+				(get_entity_n_overwrittenby(ent) != 0)   ) )
+				return NULL;
+
+			if (is_Array_type(tp)) {
+				/* check bounds */
+				int i, n;
+
+				for (i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
+					ir_node *bound;
+					tarval *tlower, *tupper;
+					ir_node *index = get_Sel_index(ptr, i);
+					tarval *tv     = computed_value(index);
+
+					/* check if the index is constant */
+					if (tv == tarval_bad)
+						return NULL;
+
+					bound  = get_array_lower_bound(tp, i);
+					tlower = computed_value(bound);
+					bound  = get_array_upper_bound(tp, i);
+					tupper = computed_value(bound);
+
+					if (tlower == tarval_bad || tupper == tarval_bad)
+						return NULL;
+
+					if (tarval_cmp(tv, tlower) & pn_Cmp_Lt)
+						return NULL;
+					if (tarval_cmp(tupper, tv) & pn_Cmp_Lt)
+						return NULL;
+
+					/* ok, bounds check finished */
+				}
+			}
+
+			if (variability_constant == get_entity_variability(ent))
+				return ent;
+
+			/* try next */
+			ptr = get_Sel_ptr(ptr);
+		} else if (is_Add(ptr)) {
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+
+			if (get_irn_mode(l) == get_irn_mode(ptr) && is_Const(r))
+				ptr = l;
+			else if (get_irn_mode(r) == get_irn_mode(ptr) && is_Const(l))
+				ptr = r;
+			else
+				return NULL;
+
+			/* for now, we support only one addition, reassoc should fold all others */
+			if (! is_SymConst(ptr) && !is_Sel(ptr))
+				return NULL;
+		} else if (is_Sub(ptr)) {
+			ir_node *l = get_Sub_left(ptr);
+			ir_node *r = get_Sub_right(ptr);
+
+			if (get_irn_mode(l) == get_irn_mode(ptr) &&	is_Const(r))
+				ptr = l;
+			else
+				return NULL;
+			/* for now, we support only one subtraction, reassoc should fold all others */
+			if (! is_SymConst(ptr) && !is_Sel(ptr))
+				return NULL;
+		} else
+			return NULL;
+	}
+}  /* find_constant_entity */
+
+/**
+ * Return the Selection index of a Sel node from dimension n
+ */
+static long get_Sel_array_index_long(ir_node *n, int dim) {
+	ir_node *index = get_Sel_index(n, dim);
+	assert(is_Const(index));
+	return get_tarval_long(get_Const_tarval(index));
+}  /* get_Sel_array_index_long */
+
+/**
+ * Returns the accessed component graph path for an
+ * node computing an address.
+ *
+ * @param ptr    the node computing the address
+ * @param depth  current depth in steps upward from the root
+ *               of the address
+ */
+static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
+	compound_graph_path *res = NULL;
+	ir_entity           *root, *field, *ent;
+	int                 path_len, pos, idx;
+	tarval              *tv;
+	ir_type             *tp;
+
+	if (is_SymConst(ptr)) {
+		/* a SymConst. If the depth is 0, this is an access to a global
+		 * entity and we don't need a component path, else we know
+		 * at least its length.
+		 */
+		assert(get_SymConst_kind(ptr) == symconst_addr_ent);
+		root = get_SymConst_entity(ptr);
+		res = (depth == 0) ? NULL : new_compound_graph_path(get_entity_type(root), depth);
+	} else if (is_Sel(ptr)) {
+		/* it's a Sel, go up until we find the root */
+		res = rec_get_accessed_path(get_Sel_ptr(ptr), depth+1);
+		if (res == NULL)
+			return NULL;
+
+		/* fill up the step in the path at the current position */
+		field    = get_Sel_entity(ptr);
+		path_len = get_compound_graph_path_length(res);
+		pos      = path_len - depth - 1;
+		set_compound_graph_path_node(res, pos, field);
+
+		if (is_Array_type(get_entity_owner(field))) {
+			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
+			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
+		}
+	} else if (is_Add(ptr)) {
+		ir_node *l    = get_Add_left(ptr);
+		ir_node *r    = get_Add_right(ptr);
+		ir_mode *mode = get_irn_mode(ptr);
+		tarval  *tmp;
+
+		if (is_Const(r) && get_irn_mode(l) == mode) {
+			ptr = l;
+			tv  = get_Const_tarval(r);
+		} else {
+			ptr = r;
+			tv  = get_Const_tarval(l);
+		}
+ptr_arith:
+		mode = get_tarval_mode(tv);
+		tmp  = tv;
+
+		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
+		if (is_Sel(ptr)) {
+			field = get_Sel_entity(ptr);
+		} else {
+			field = get_SymConst_entity(ptr);
+		}
+		idx = 0;
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index, *tlower, *tupper;
+			ir_node  *bound;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tmp, sz);
+			tmp      = tarval_mod(tmp, sz);
+
+			if (tv_index == tarval_bad || tmp == tarval_bad)
+				return NULL;
+
+			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
+			bound  = get_array_lower_bound(tp, 0);
+			tlower = computed_value(bound);
+			bound  = get_array_upper_bound(tp, 0);
+			tupper = computed_value(bound);
+
+			if (tlower == tarval_bad || tupper == tarval_bad)
+				return NULL;
+
+			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+				return NULL;
+			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+				return NULL;
+
+			/* ok, bounds check finished */
+			++idx;
+		}
+		if (! tarval_is_null(tmp)) {
+			/* access to some struct/union member */
+			return NULL;
+		}
+
+		/* should be at least ONE array */
+		if (idx == 0)
+			return NULL;
+
+		res = rec_get_accessed_path(ptr, depth + idx);
+		if (res == NULL)
+			return NULL;
+
+		path_len = get_compound_graph_path_length(res);
+		pos      = path_len - depth - idx;
+
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index;
+			long     index;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			set_compound_graph_path_node(res, pos, ent);
+
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tv, sz);
+			tv       = tarval_mod(tv, sz);
+
+			/* worked above, should work again */
+			assert(tv_index != tarval_bad && tv != tarval_bad);
+
+			/* bounds already checked above */
+			index = get_tarval_long(tv_index);
+			set_compound_graph_path_array_index(res, pos, index);
+			++pos;
+		}
+	} else if (is_Sub(ptr)) {
+		ir_node *l = get_Sub_left(ptr);
+		ir_node *r = get_Sub_right(ptr);
+
+		ptr = l;
+		tv  = get_Const_tarval(r);
+		tv  = tarval_neg(tv);
+		goto ptr_arith;
+	}
+	return res;
+}  /* rec_get_accessed_path */
+
+/**
+ * Returns an access path or NULL.  The access path is only
+ * valid, if the graph is in phase_high and _no_ address computation is used.
+ */
+static compound_graph_path *get_accessed_path(ir_node *ptr) {
+	compound_graph_path *gr = rec_get_accessed_path(ptr, 0);
+	return gr;
+}  /* get_accessed_path */
+
+typedef struct path_entry {
+	ir_entity         *ent;
+	struct path_entry *next;
+	long              index;
+} path_entry;
+
+static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
+	path_entry       entry, *p;
+	ir_entity        *ent, *field;
+	ir_initializer_t *initializer;
+	tarval           *tv;
+	ir_type          *tp;
+	unsigned         n;
+
+	entry.next = next;
+	if (is_SymConst(ptr)) {
+		/* found the root */
+		ent         = get_SymConst_entity(ptr);
+		initializer = get_entity_initializer(ent);
+		for (p = next; p != NULL;) {
+			if (initializer->kind != IR_INITIALIZER_COMPOUND)
+				return NULL;
+			n  = get_initializer_compound_n_entries(initializer);
+			tp = get_entity_type(ent);
+
+			if (is_Array_type(tp)) {
+				ent = get_array_element_entity(tp);
+				if (ent != p->ent) {
+					/* a missing [0] */
+					if (0 >= n)
+						return NULL;
+					initializer = get_initializer_compound_value(initializer, 0);
+					continue;
+				}
+			}
+			if (p->index >= (int) n)
+				return NULL;
+			initializer = get_initializer_compound_value(initializer, p->index);
+
+			ent = p->ent;
+			p   = p->next;
+		}
+		tp = get_entity_type(ent);
+		while (is_Array_type(tp)) {
+			ent = get_array_element_entity(tp);
+			tp = get_entity_type(ent);
+			/* a missing [0] */
+			n  = get_initializer_compound_n_entries(initializer);
+			if (0 >= n)
+				return NULL;
+			initializer = get_initializer_compound_value(initializer, 0);
+		}
+
+		switch (initializer->kind) {
+		case IR_INITIALIZER_CONST:
+			return get_initializer_const_value(initializer);
+		case IR_INITIALIZER_TARVAL:
+		case IR_INITIALIZER_NULL:
+		default:
+			return NULL;
+		}
+	} else if (is_Sel(ptr)) {
+		entry.ent = field = get_Sel_entity(ptr);
+		tp = get_entity_owner(field);
+		if (is_Array_type(tp)) {
+			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
+			entry.index = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
+		} else {
+			int i, n_members = get_compound_n_members(tp);
+			for (i = 0; i < n_members; ++i) {
+				if (get_compound_member(tp, i) == field)
+					break;
+			}
+			if (i >= n_members) {
+				/* not found: should NOT happen */
+				return NULL;
+			}
+			entry.index = i;
+		}
+		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
+	}  else if (is_Add(ptr)) {
+		ir_node  *l = get_Add_left(ptr);
+		ir_node  *r = get_Add_right(ptr);
+		ir_mode  *mode;
+		unsigned pos;
+
+		if (is_Const(r)) {
+			ptr = l;
+			tv  = get_Const_tarval(r);
+		} else {
+			ptr = r;
+			tv  = get_Const_tarval(l);
+		}
+ptr_arith:
+		mode = get_tarval_mode(tv);
+
+		/* ptr must be a Sel or a SymConst, this was checked in find_constant_entity() */
+		if (is_Sel(ptr)) {
+			field = get_Sel_entity(ptr);
+		} else {
+			field = get_SymConst_entity(ptr);
+		}
+
+		/* count needed entries */
+		pos = 0;
+		for (ent = field;;) {
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			++pos;
+		}
+		/* should be at least ONE entry */
+		if (pos == 0)
+			return NULL;
+
+		/* allocate the right number of entries */
+		NEW_ARR_A(path_entry, p, pos);
+
+		/* fill them up */
+		pos = 0;
+		for (ent = field;;) {
+			unsigned size;
+			tarval   *sz, *tv_index, *tlower, *tupper;
+			long     index;
+			ir_node  *bound;
+
+			tp = get_entity_type(ent);
+			if (! is_Array_type(tp))
+				break;
+			ent = get_array_element_entity(tp);
+			p[pos].ent  = ent;
+			p[pos].next = &p[pos + 1];
+
+			size = get_type_size_bytes(get_entity_type(ent));
+			sz   = new_tarval_from_long(size, mode);
+
+			tv_index = tarval_div(tv, sz);
+			tv       = tarval_mod(tv, sz);
+
+			if (tv_index == tarval_bad || tv == tarval_bad)
+				return NULL;
+
+			assert(get_array_n_dimensions(tp) == 1 && "multiarrays not implemented");
+			bound  = get_array_lower_bound(tp, 0);
+			tlower = computed_value(bound);
+			bound  = get_array_upper_bound(tp, 0);
+			tupper = computed_value(bound);
+
+			if (tlower == tarval_bad || tupper == tarval_bad)
+				return NULL;
+
+			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+				return NULL;
+			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+				return NULL;
+
+			/* ok, bounds check finished */
+			index = get_tarval_long(tv_index);
+			p[pos].index = index;
+			++pos;
+		}
+		if (! tarval_is_null(tv)) {
+			/* hmm, wrong access */
+			return NULL;
+		}
+		p[pos - 1].next = next;
+		return rec_find_compound_ent_value(ptr, p);
+	} else if (is_Sub(ptr)) {
+		ir_node *l = get_Sub_left(ptr);
+		ir_node *r = get_Sub_right(ptr);
+
+		ptr = l;
+		tv  = get_Const_tarval(r);
+		tv  = tarval_neg(tv);
+		goto ptr_arith;
+	}
+	return NULL;
+}  /* rec_find_compound_ent_value */
+
+static ir_node *find_compound_ent_value(ir_node *ptr) {
+	return rec_find_compound_ent_value(ptr, NULL);
+}  /* find_compound_ent_value */
+
+/**
+ * Mark a Load memop to be replace by a definition
+ *
+ * @param op  the Load memop
+ */
+static void mark_replace_load(memop_t *op, ir_node *def) {
+	op->replace = def;
+	op->flags |= FLAG_KILLED_NODE;
+	env.changed = 1;
+}  /* mark_replace_load */
+
+/**
+ * Mark a Store memop to be removed.
+ *
+ * @param op  the Store memop
+ */
+static void mark_remove_store(memop_t *op) {
+	op->flags |= FLAG_KILLED_NODE;
+	env.changed = 1;
+}  /* mark_remove_store */
+
+/**
  * Update a memop for a Load.
  *
  * @param m  the memop
  */
 static void update_Load_memop(memop_t *m) {
-	int     i;
-	ir_node *load = m->node;
-	ir_node *adr  = get_Load_ptr(load);
+	int       i;
+	ir_node   *load = m->node;
+	ir_node   *ptr;
+	ir_entity *ent;
 
 	if (get_Load_volatility(load) == volatility_is_volatile)
 		m->flags |= FLAG_IGNORE;
 
-	m->value.address = adr;
+	ptr = get_Load_ptr(load);
+
+	m->value.address = ptr;
 
 	for (i = get_irn_n_outs(load) - 1; i >= 0; --i) {
 		ir_node *proj = get_irn_out(load, i);
@@ -472,9 +941,66 @@ static void update_Load_memop(memop_t *m) {
 		}
 	}
 
+	/* check if we can determine the entity that will be loaded */
+	ent = find_constant_entity(ptr);
+
+	if (ent != NULL                                     &&
+		allocation_static == get_entity_allocation(ent) &&
+		visibility_external_allocated != get_entity_visibility(ent)) {
+		/* a static allocation that is not external: there should be NO exception
+		 * when loading even if we cannot replace the load itself. */
+		ir_node *value = NULL;
+
+		/* no exception, clear the m fields as it might be checked later again */
+		if (m->projs[pn_Load_X_except]) {
+			exchange(m->projs[pn_Load_X_except], new_Bad());
+			m->projs[pn_Load_X_except] = NULL;
+			m->flags &= ~FLAG_EXCEPTION;
+			env.changed = 1;
+		}
+		if (m->projs[pn_Load_X_regular]) {
+			exchange(m->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			m->projs[pn_Load_X_regular] = NULL;
+			env.changed = 1;
+		}
+
+		if (variability_constant == get_entity_variability(ent)) {
+			if (is_atomic_entity(ent)) {
+				/* Might not be atomic after lowering of Sels.  In this case we
+				 * could also load, but it's more complicated. */
+				/* more simpler case: we load the content of a constant value:
+				 * replace it by the constant itself */
+				value = get_atomic_ent_value(ent);
+			} else if (ent->has_initializer) {
+				/* new style initializer */
+				value = find_compound_ent_value(ptr);
+			} else {
+				/* old style initializer */
+				compound_graph_path *path = get_accessed_path(ptr);
+
+				if (path != NULL) {
+					assert(is_proper_compound_graph_path(path, get_compound_graph_path_length(path)-1));
+
+					value = get_compound_ent_value_by_path(ent, path);
+					DB((dbg, LEVEL_1, "  Constant access at %F%F resulted in %+F\n", ent, path, value));
+					free_compound_graph_path(path);
+				}
+			}
+			if (value != NULL)
+				value = can_replace_load_by_const(load, value);
+		}
+
+		if (value != NULL) {
+			/* we completely replace the load by this value */
+			DB((dbg, LEVEL_1, "Replacing Load %+F by constant %+F\n", m->node, value));
+			mark_replace_load(m, value);
+			return;
+		}
+	}
+
 	if (m->value.value != NULL && !(m->flags & FLAG_IGNORE)) {
 		/* only create an address if this node is NOT killed immediately or ignored */
-		m->value.id = register_address(adr);
+		m->value.id = register_address(ptr);
 		++env.n_mem_ops;
 	} else {
 		/* no user, KILL it */
@@ -834,15 +1360,25 @@ static void update_memop_avail(block_t *bl, memop_t *op) {
 }
 
 /**
+ * Check, if we can convert a value of one mode to another mode
+ * without changing the representation of bits.
+ */
+static int can_convert_to(const ir_mode *from, const ir_mode *to) {
+	if (get_mode_arithmetic(from) == irma_twos_complement &&
+	    get_mode_arithmetic(to) == irma_twos_complement &&
+	    get_mode_size_bits(from) == get_mode_size_bits(to))
+		return 1;
+	return 0;
+}
+
+/**
  * Add a Conv if needed.
  */
 static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 	ir_mode *other = get_irn_mode(irn);
 	if (other != mode) {
 		/* different modes: check if conversion is possible without changing the bits */
-		if (get_mode_arithmetic(mode) == irma_twos_complement &&
-		    get_mode_arithmetic(other) == irma_twos_complement &&
-			get_mode_size_bits(mode) == get_mode_size_bits(other)) {
+		if (can_convert_to(other, mode)) {
 			ir_node *block = get_nodes_block(irn);
 			return new_r_Conv(current_ir_graph, block, irn, mode);
 		}
@@ -850,27 +1386,6 @@ static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 		return NULL;
 	}
 	return irn;
-}
-
-/**
- * Mark a Load memop to be replace by a definition
- *
- * @param op  the Load memop
- */
-static void mark_replace_load(memop_t *op, ir_node *def) {
-	op->replace = def;
-	op->flags |= FLAG_KILLED_NODE;
-	env.changed = 1;
-}
-
-/**
- * Mark a Store memop to be removed.
- *
- * @param op  the Store memop
- */
-static void mark_remove_store(memop_t *op) {
-	op->flags |= FLAG_KILLED_NODE;
-	env.changed = 1;
 }
 
 /**
@@ -1310,7 +1825,7 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl) 
 }
 
 /**
- * insert
+ * insert Loads, making partly redundant Loads fully redundant
  */
 static int insert_Load(block_t *bl) {
 	ir_node  *block = bl->block;
@@ -1446,6 +1961,7 @@ static int insert_Load(block_t *bl) {
 			ir_node *pred    = get_Block_cfgpred_block(block, i);
 			block_t *pred_bl = get_block_entry(pred);
 			memop_t *e       = find_address_avail(pred_bl, &op->value);
+			ir_mode *mode    = op->value.mode;
 
 			if (e == NULL) {
 				ir_node *block = get_nodes_block(op->value.address);
@@ -1458,6 +1974,11 @@ static int insert_Load(block_t *bl) {
 				pred_bl->avail = NULL;
 				all_same       = 0;
 			} else {
+				if (e->value.mode != mode && !can_convert_to(e->value.mode, mode)) {
+					/* cannot create a Phi due to different modes */
+					have_some = 0;
+					break;
+				}
 				pred_bl->avail = e;
 				have_some      = 1;
 				DB((dbg, LEVEL_3, "%+F is available for %+F in predecessor %+F\n", e->node, op->node, pred));
@@ -1519,7 +2040,7 @@ static int insert_Load(block_t *bl) {
 					add_memop_avail(pred_bl, new_op);
 					pred_bl->avail = new_op;
 				}
-				in[i] = pred_bl->avail->value.value;
+				in[i] = conv_to(pred_bl->avail->value.value, mode);
 			}
 			phi = new_r_Phi(current_ir_graph, block, n, in, mode);
 			DB((dbg, LEVEL_1, "Created new %+F in %+F for now redundant %+F\n", phi, block, op->node));
