@@ -184,7 +184,7 @@ static void dump_block_list(ldst_env *env) {
  */
 static void dump_curr(block_t *bl, const char *s) {
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 	int      i;
 
 	DB((dbg, LEVEL_2, "%s[%+F] = {", s, bl->block));
@@ -1274,7 +1274,7 @@ static memop_t *find_address_avail(const block_t *bl, const value_t *value) {
  */
 static void kill_all_loads(void) {
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
@@ -1289,7 +1289,7 @@ static void kill_all_loads(void) {
  */
 static void kill_all_stores(void) {
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
@@ -1317,7 +1317,7 @@ static void kill_all(void) {
  */
 static void kill_stores(const value_t *value) {
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
@@ -1339,7 +1339,7 @@ static void kill_stores(const value_t *value) {
  */
 static void kill_memops(const value_t *value) {
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 
 	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
@@ -1856,7 +1856,7 @@ static int insert_Load(block_t *bl) {
 	ir_node  *block = bl->block;
 	int      i, n = get_Block_n_cfgpreds(block);
 	unsigned pos = 0;
-	unsigned end = env.n_mem_ops * 2 - 1;
+	unsigned end = env.rbs_size - 1;
 	int      res = 0;
 	ir_node  *pred    = get_Block_cfgpred_block(bl->block, 0);
 	block_t  *pred_bl = get_block_entry(pred);
