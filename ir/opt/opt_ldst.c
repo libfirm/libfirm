@@ -1858,10 +1858,18 @@ static int insert_Load(block_t *bl) {
 	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
 	int      res = 0;
-	ir_node  *pred    = get_Block_cfgpred_block(bl->block, 0);
-	block_t  *pred_bl = get_block_entry(pred);
+	ir_node  *pred;
+	block_t  *pred_bl;
 
 	DB((dbg, LEVEL_3, "processing %+F\n", block));
+
+	if (n == 0) {
+		/* might still happen for an unreachable block (end for instance) */
+		return res;
+	}
+
+	pred    = get_Block_cfgpred_block(bl->block, 0);
+	pred_bl = get_block_entry(pred);
 
 	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
