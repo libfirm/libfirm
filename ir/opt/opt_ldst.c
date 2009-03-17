@@ -95,6 +95,12 @@ struct memop_t {
 	ir_node  *projs[MAX_PROJ]; /**< Projs of this memory op */
 };
 
+enum block_flags {
+	BLK_FLAG_NONE      = 0,  /**< No flags */
+	BLK_FLAG_REACHABLE = 1,  /**< This block can be reached. */
+	BLK_FLAG_EVALUATED = 2,  /**< This block was evaluated once. */
+};
+
 /**
  * Additional data for every basic block.
  */
@@ -110,6 +116,7 @@ struct block_t {
 	block_t  *forward_next;      /**< next block entry for forward iteration */
 	block_t  *backward_next;     /**< next block entry for backward iteration */
 	memop_t  *avail;             /**< used locally for the avail map */
+	unsigned flags;              /**< additional flags */
 };
 
 /**
@@ -280,7 +287,7 @@ static void walk_memory_irg(ir_graph *irg, irg_walk_func pre, irg_walk_func post
 static void prepare_blocks(ir_node *block, void *ctx) {
 	block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
 
-	(void) ctx;
+	(void)ctx;
 
 	entry->memop_forward    = NULL;
 	entry->memop_backward   = NULL;
@@ -289,15 +296,29 @@ static void prepare_blocks(ir_node *block, void *ctx) {
 	entry->anticL_in        = NULL;
 	entry->id_2_memop_antic = NULL;
 	entry->block            = block;
-	entry->forward_next     = env.forward;
+	entry->forward_next     = NULL;
 	entry->backward_next    = NULL;
 	entry->avail            = NULL;
+	entry->flags            = BLK_FLAG_NONE;
 	set_irn_link(block, entry);
+}
+
+/**
+ * Block walker: creates the inverse post-order list for the CFG.
+ */
+static void inverse_post_order(ir_node *block, void *ctx) {
+	block_t *entry = get_block_entry(block);
+
+	(void)ctx;
 
 	/* create the list in inverse order */
-	env.forward  = entry;
-	/* remember temporary the last one */
-	env.backward = entry;
+	entry->forward_next = env.forward;
+	entry->flags       |= BLK_FLAG_REACHABLE;
+	env.forward         = entry;
+
+	/* remember the first visited (last in list) entry, needed for later */
+	if (env.backward == NULL)
+		env.backward = entry;
 }
 
 /**
@@ -308,6 +329,10 @@ static void collect_backward(ir_node *block, void *ctx) {
 	memop_t *last, *op;
 
 	(void)ctx;
+
+	/* ignore unreachable blocks */
+	if (!(entry->flags & BLK_FLAG_REACHABLE))
+		return;
 
 	/*
 	 * Do NOT link in the end block yet. We want it to be
@@ -2135,25 +2160,25 @@ int opt_ldst(ir_graph *irg) {
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	/* first step: allocate block entries: produces an
-	   inverse post-order list for the CFG */
-	set_irn_link(env.end_bl, NULL);
-	irg_out_block_walk(get_irg_start_block(irg), NULL, prepare_blocks, NULL);
+	/* first step: allocate block entries. Note that some blocks might be
+	   unreachable here. Using the normal walk ensures that ALL blocks are initialised. */
+	irg_block_walk_graph(irg, NULL, prepare_blocks, NULL);
 
-	if (get_block_entry(env.end_bl) == NULL) {
+	/* produce an inverse post-order list for the CFG: this links only reachable
+	   blocks */
+	irg_out_block_walk(get_irg_start_block(irg), NULL, inverse_post_order, NULL);
+
+	bl = get_block_entry(env.end_bl);
+	if (!(bl->flags & BLK_FLAG_REACHABLE)) {
 		/*
 		 * The end block is NOT reachable due to endless loops
-		 * or no_return calls. Ensure that it is initialized.
-		 * Note that this places the entry for the end block first, so we must fix this.
-		 * env.backwards points to th last block for this purpose.
+		 * or no_return calls.
+		 * Place the end block last.
+		 * env.backward points to the last block in the list for this purpose.
 		 */
-		prepare_blocks(env.end_bl, NULL);
-
-		bl               = env.forward;
-		env.forward      = bl->forward_next;
-		bl->forward_next = NULL;
-
 		env.backward->forward_next = bl;
+
+		bl->flags |= BLK_FLAG_REACHABLE;
 	}
 
 	/* second step: find and sort all memory ops */
@@ -2164,7 +2189,7 @@ int opt_ldst(ir_graph *irg) {
 		goto end;
 	}
 
-	/* create the backward links */
+	/* create the backward links. */
 	env.backward = NULL;
 	irg_block_walk_graph(irg, NULL, collect_backward, NULL);
 
@@ -2177,8 +2202,9 @@ int opt_ldst(ir_graph *irg) {
 	assert(env.forward->block  == env.start_bl);
 	assert(env.backward->block == env.end_bl);
 
-	/* create address sets: we know that 2 * n_mem_ops - 1 is an upper bound for all possible addresses */
-	env.rbs_size = 2 * env.n_mem_ops;
+	/* create address sets: for now, only the existing addresses are allowed plus one
+	   needed for the sentinel */
+	env.rbs_size = env.n_mem_ops + 1;
 
 	/* create the current set */
 	env.curr_set = rbitset_obstack_alloc(&env.obst, env.rbs_size);
