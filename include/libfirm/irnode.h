@@ -348,7 +348,7 @@ void      set_Block_cfgpred(ir_node *node, int pos, ir_node *pred);
  *    We walk from the predecessor to the next pinned node
  *    (skip_Proj) and return the block that node is in.
  *  - If we encounter the Bad node, this function does not return
- *    Start, but the Bad node.
+ *    Start block, but the Bad node.
  */
 ir_node  *get_Block_cfgpred_block(const ir_node *node, int pos);
 int       get_Block_matured(const ir_node *node);

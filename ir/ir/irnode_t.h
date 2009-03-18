@@ -798,7 +798,7 @@ _get_Block_cfgpred(const ir_node *node, int pos) {
  *    We walk from the predecessor to the next pinned node
  *    (skip_Proj) and return the block that node is in.
  *  - If we encounter the Bad node, this function does not return
- *    Start, but the Bad node.
+ *    the Start block, but the Bad node.
  */
 static inline ir_node  *
 _get_Block_cfgpred_block(const ir_node *node, int pos) {
