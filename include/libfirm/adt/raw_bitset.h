@@ -160,6 +160,18 @@ static inline void rbitset_set(unsigned *bitset, unsigned pos) {
 }
 
 /**
+ * Set all bits in a given bitset.
+ *
+ * @param bitset  the bitset
+ * @param size    number of bits in the bitset
+ */
+static inline void rbitset_set_all(unsigned *bitset, unsigned size) {
+	unsigned size_bytes = BITSET_SIZE_BYTES(size);
+	memset(bitset, ~0, size_bytes);
+}
+
+
+/**
  * Clear a bit at position pos.
  *
  * @param bitset  the bitset
