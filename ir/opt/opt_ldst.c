@@ -57,13 +57,10 @@ typedef struct address_entry_t {
  * Memop-flags.
  */
 enum memop_flags {
-	FLAG_KILL_LOADS  =  1, /**< KILL all Loads */
-	FLAG_KILL_STORES =  2, /**< KILL all Stores */
-	FLAG_KILLED_NODE =  4, /**< this node was killed */
-	FLAG_EXCEPTION   =  8, /**< this node has exception flow */
-	FLAG_IGNORE      = 16, /**< ignore this node (volatile or other) */
-	/** this memop KILLS all addresses */
-	FLAG_KILL_ALL    = FLAG_KILL_LOADS|FLAG_KILL_STORES
+	FLAG_KILL_ALL    = 1, /**< KILL all addresses */
+	FLAG_KILLED_NODE = 2, /**< this node was killed */
+	FLAG_EXCEPTION   = 4, /**< this node has exception flow */
+	FLAG_IGNORE      = 8, /**< ignore this node (volatile or other) */
 };
 
 /**
@@ -95,12 +92,6 @@ struct memop_t {
 	ir_node  *projs[MAX_PROJ]; /**< Projs of this memory op */
 };
 
-enum block_flags {
-	BLK_FLAG_NONE      = 0,  /**< No flags */
-	BLK_FLAG_REACHABLE = 1,  /**< This block can be reached. */
-	BLK_FLAG_EVALUATED = 2,  /**< This block was evaluated once. */
-};
-
 /**
  * Additional data for every basic block.
  */
@@ -116,7 +107,6 @@ struct block_t {
 	block_t  *forward_next;      /**< next block entry for forward iteration */
 	block_t  *backward_next;     /**< next block entry for backward iteration */
 	memop_t  *avail;             /**< used locally for the avail map */
-	unsigned flags;              /**< additional flags */
 };
 
 /**
@@ -134,7 +124,11 @@ typedef struct ldst_env_t {
 	unsigned        curr_adr_id;       /**< number for address mapping */
 	unsigned        n_mem_ops;         /**< number of memory operations (Loads/Stores) */
 	unsigned        rbs_size;          /**< size of all bitsets in bytes */
+	int             max_cfg_preds;     /**< maximum number of block cfg predecessors */
 	int             changed;           /**< Flags for changed graph state */
+#ifdef DEBUG_libfirm
+	ir_node         **id_2_address;    /**< maps an id to the used address */
+#endif
 } ldst_env;
 
 #ifdef DEBUG_libfirm
@@ -164,10 +158,8 @@ static void dump_block_list(ldst_env *env) {
 			}			DB((dbg, LEVEL_2, "%+F", op->node));
 			if ((op->flags & FLAG_KILL_ALL) == FLAG_KILL_ALL)
 				DB((dbg, LEVEL_2, "X"));
-			else if (op->flags & FLAG_KILL_LOADS)
-				DB((dbg, LEVEL_2, "L"));
-			else if (op->flags & FLAG_KILL_STORES)
-				DB((dbg, LEVEL_2, "S"));
+			else if (op->flags & FLAG_KILL_ALL)
+				DB((dbg, LEVEL_2, "K"));
 			DB((dbg, LEVEL_2, ", "));
 
 			i = (i + 1) & 3;
@@ -195,6 +187,7 @@ static void dump_curr(block_t *bl, const char *s) {
 		if (i == 0) {
 			DB((dbg, LEVEL_2, "\n\t"));
 		}
+
 		DB((dbg, LEVEL_2, "<%+F, %+F>, ", op->value.address, op->value.value));
 		i = (i + 1) & 3;
 	}
@@ -282,25 +275,48 @@ static void walk_memory_irg(ir_graph *irg, irg_walk_func pre, irg_walk_func post
 }
 
 /**
- * Block walker: allocate an block entry for every block.
+ * Walker: allocate an block entry for every block.
  */
 static void prepare_blocks(ir_node *block, void *ctx) {
-	block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
-
 	(void)ctx;
 
-	entry->memop_forward    = NULL;
-	entry->memop_backward   = NULL;
-	entry->avail_out        = NULL;
-	entry->id_2_memop_avail = NULL;
-	entry->anticL_in        = NULL;
-	entry->id_2_memop_antic = NULL;
-	entry->block            = block;
-	entry->forward_next     = NULL;
-	entry->backward_next    = NULL;
-	entry->avail            = NULL;
-	entry->flags            = BLK_FLAG_NONE;
-	set_irn_link(block, entry);
+	if (is_Block(block)) {
+		block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
+		int     n;
+
+		entry->memop_forward    = NULL;
+		entry->memop_backward   = NULL;
+		entry->avail_out        = NULL;
+		entry->id_2_memop_avail = NULL;
+		entry->anticL_in        = NULL;
+		entry->id_2_memop_antic = NULL;
+		entry->block            = block;
+		entry->forward_next     = NULL;
+		entry->backward_next    = NULL;
+		entry->avail            = NULL;
+		set_irn_link(block, entry);
+
+		set_Block_phis(block, NULL);
+
+		/* use block marks to track unreachable blocks */
+		set_Block_mark(block, 0);
+
+		n = get_Block_n_cfgpreds(block);
+		if (n > env.max_cfg_preds)
+			env.max_cfg_preds = n;
+	}
+}
+
+/**
+ * Post-Walker, link in all Phi's
+ */
+static void link_phis(ir_node *irn, void *ctx) {
+	(void)ctx;
+
+	if (is_Phi(irn)) {
+		ir_node *block = get_nodes_block(irn);
+		add_Block_phi(block, irn);
+	}
 }
 
 /**
@@ -311,9 +327,11 @@ static void inverse_post_order(ir_node *block, void *ctx) {
 
 	(void)ctx;
 
+	/* mark this block IS reachable from start */
+	set_Block_mark(block, 1);
+
 	/* create the list in inverse order */
 	entry->forward_next = env.forward;
-	entry->flags       |= BLK_FLAG_REACHABLE;
 	env.forward         = entry;
 
 	/* remember the first visited (last in list) entry, needed for later */
@@ -329,10 +347,6 @@ static void collect_backward(ir_node *block, void *ctx) {
 	memop_t *last, *op;
 
 	(void)ctx;
-
-	/* ignore unreachable blocks */
-	if (!(entry->flags & BLK_FLAG_REACHABLE))
-		return;
 
 	/*
 	 * Do NOT link in the end block yet. We want it to be
@@ -429,6 +443,9 @@ restart:
 		ir_nodemap_insert(&env.adr_map, adr, entry);
 
 		DB((dbg, LEVEL_3, "ADDRESS %+F has ID %u\n", adr, entry->id));
+#ifdef DEBUG_libfirm
+		ARR_APP1(ir_node *, env.id_2_address, adr);
+#endif
 	}
 	return entry->id;
 }
@@ -1029,7 +1046,7 @@ static void update_Load_memop(memop_t *m) {
 		++env.n_mem_ops;
 	} else {
 		/* no user, KILL it */
-		m->flags |= FLAG_KILLED_NODE;
+		mark_replace_load(m, NULL);
 	}
 }
 
@@ -1095,7 +1112,7 @@ static void update_Call_memop(memop_t *m) {
 		   can kick it from the list. */
 	} else if (prop & mtp_property_pure) {
 		/* pure calls READ memory */
-		m->flags = FLAG_KILL_STORES;
+		m->flags = 0;
 	} else
 		m->flags = FLAG_KILL_ALL;
 
@@ -1270,36 +1287,6 @@ static memop_t *find_address_avail(const block_t *bl, const value_t *value) {
 }
 
 /**
- * Kill all Loads from the current set.
- */
-static void kill_all_loads(void) {
-	unsigned pos = 0;
-	unsigned end = env.rbs_size - 1;
-
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = env.curr_id_2_memop[pos];
-
-		if (! is_Store(op->node))
-			rbitset_clear(env.curr_set, pos);
-	}
-}
-
-/**
- * Kill all Stores from the current set.
- */
-static void kill_all_stores(void) {
-	unsigned pos = 0;
-	unsigned end = env.rbs_size - 1;
-
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = env.curr_id_2_memop[pos];
-
-		if (is_Store(op->node))
-			rbitset_clear(env.curr_set, pos);
-	}
-}
-
-/**
  * Kill all addresses from the current set.
  */
 static void kill_all(void) {
@@ -1307,29 +1294,6 @@ static void kill_all(void) {
 
 	/* set sentinel */
 	rbitset_set(env.curr_set, env.rbs_size - 1);
-}
-
-
-/**
- * Kill Stores that are not alias free due to a Load value from the current set.
- *
- * @param value  the Load value
- */
-static void kill_stores(const value_t *value) {
-	unsigned pos = 0;
-	unsigned end = env.rbs_size - 1;
-
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op = env.curr_id_2_memop[pos];
-
-		if (is_Store(op->node)) {
-			if (ir_no_alias != get_alias_relation(current_ir_graph, value->address, value->mode,
-			                                      op->value.address, op->value.mode)) {
-				rbitset_clear(env.curr_set, pos);
-				env.curr_id_2_memop[pos] = NULL;
-			}
-		}
-	}
 }
 
 /**
@@ -1371,17 +1335,6 @@ static void add_memop(memop_t *op) {
 static void add_memop_avail(block_t *bl, memop_t *op) {
 	rbitset_set(bl->avail_out, op->value.id);
 	bl->id_2_memop_avail[op->value.id] = op;
-}
-
-/**
- * Update a value of a memop to the avail_out set.
- *
- * @param bl  the block
- * @param op  the memory op
- */
-static void update_memop_avail(block_t *bl, memop_t *op) {
-	if (rbitset_is_set(bl->avail_out, op->value.id))
-		bl->id_2_memop_avail[op->value.id] = op;
 }
 
 /**
@@ -1448,62 +1401,48 @@ static void calc_gen_kill_avail(block_t *bl) {
 						}
 #endif
 						mark_replace_load(op, def);
-					} else {
-						/* overwrite it */
-						add_memop(op);
+						/* do NOT change the memop table */
+						continue;
 					}
-				} else {
-					/* add this value */
-					kill_stores(&op->value);
-					add_memop(op);
 				}
+				/* add this value */
+				add_memop(op);
 			}
 			break;
 		case iro_Store:
-			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
+			if (! (op->flags & FLAG_KILLED_NODE)) {
 				/* do we have this store already */
 				memop_t *other = find_address(&op->value);
 				if (other != NULL) {
 					if (is_Store(other->node)) {
-						if (op != other && get_nodes_block(other->node) == get_nodes_block(op->node)) {
+						if (op != other && !(other->flags & FLAG_IGNORE) &&
+						    get_nodes_block(other->node) == get_nodes_block(op->node)) {
 							/*
 							 * A WAW in the same block we can kick the first store.
 							 * This is a shortcut: we know that the second Store will be anticipated
 							 * then in an case.
 							 */
-							DB((dbg, LEVEL_1, "WAW %+F <- %+F\n", op->node, other->node));
+							DB((dbg, LEVEL_1, "WAW %+F <- %+F\n", other->node, op->node));
 							mark_remove_store(other);
 							/* FIXME: a Load might be get freed due to this killed store */
 						}
-					} else if (other->value.value == op->value.value) {
+					} else if (other->value.value == op->value.value && !(op->flags & FLAG_IGNORE)) {
 						/* WAR */
 						DB((dbg, LEVEL_1, "WAR %+F <- %+F\n", op->node, other->node));
 						mark_remove_store(op);
-					} else {
-						/* we overwrite the value that was loaded */
-						add_memop(op);
+						/* do NOT change the memop table */
+						continue;
 					}
-				} else {
-					/* add this value */
-					kill_memops(&op->value);
-					add_memop(op);
 				}
+				/* KILL all possible aliases */
+				kill_memops(&op->value);
+				/* add this value */
+				add_memop(op);
 			}
 			break;
 		default:
-			switch (op->flags & (FLAG_KILL_LOADS|FLAG_KILL_STORES)) {
-			case FLAG_KILL_LOADS|FLAG_KILL_STORES:
+			if (op->flags & FLAG_KILL_ALL)
 				kill_all();
-				break;
-			case FLAG_KILL_LOADS:
-				kill_all_loads();
-				break;
-			case FLAG_KILL_STORES:
-				kill_all_stores();
-				break;
-			case 0:
-				break;
-			}
 		}
 	}
 }
@@ -1585,25 +1524,14 @@ static int backward_antic(block_t *bl) {
 			}
 			break;
 		case iro_Store:
-			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
+			if (! (op->flags & FLAG_KILLED_NODE)) {
 				/* a Store: check which memops must be killed */
 				kill_memops(&op->value);
 			}
 			break;
 		default:
-			switch (op->flags & (FLAG_KILL_LOADS|FLAG_KILL_STORES)) {
-			case FLAG_KILL_LOADS|FLAG_KILL_STORES:
+			if (op->flags & FLAG_KILL_ALL)
 				kill_all();
-				break;
-			case FLAG_KILL_LOADS:
-				kill_all_loads();
-				break;
-			case FLAG_KILL_STORES:
-				/*kill_all_stores();*/
-				break;
-			case 0:
-				break;
-			}
 		}
 	}
 
@@ -1857,7 +1785,6 @@ static int insert_Load(block_t *bl) {
 	int      i, n = get_Block_n_cfgpreds(block);
 	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
-	int      res = 0;
 	ir_node  *pred;
 	block_t  *pred_bl;
 
@@ -1865,7 +1792,7 @@ static int insert_Load(block_t *bl) {
 
 	if (n == 0) {
 		/* might still happen for an unreachable block (end for instance) */
-		return res;
+		return 0;
 	}
 
 	pred    = get_Block_cfgpred_block(bl->block, 0);
@@ -1879,11 +1806,16 @@ static int insert_Load(block_t *bl) {
 
 		NEW_ARR_A(ir_node *, ins, n);
 
-		/* more than one predecessors, calculate the join for all avail_outs */
-		for (i = n - 1; i > 0; --i) {
-			ir_node *pred    = skip_Proj(get_Block_cfgpred(block, i));
-			block_t *pred_bl = get_block_entry(get_nodes_block(pred));
+		rbitset_set_all(env.curr_set, env.rbs_size);
 
+		/* More than one predecessors, calculate the join for all avail_outs ignoring unevaluated
+		   Blocks. These put in Top anyway. */
+		for (i = n - 1; i >= 0; --i) {
+			ir_node *pred = skip_Proj(get_Block_cfgpred(block, i));
+			ir_node *blk  = get_nodes_block(pred);
+			block_t *pred_bl;
+
+			pred_bl = get_block_entry(blk);
 			rbitset_and(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
 			if (is_Load(pred) || is_Store(pred)) {
@@ -1906,34 +1838,37 @@ static int insert_Load(block_t *bl) {
 				ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
 				block_t *pred_bl = get_block_entry(pred);
 				int     need_phi = 0;
+				memop_t *first   = NULL;
 				ir_mode *mode;
-				memop_t *first;
 
-				first  = pred_bl->id_2_memop_avail[pos];
-				ins[0] = first->value.value;
-				mode = get_irn_mode(ins[0]);
+				for (i = 0; i < n; ++i) {
+					memop_t *mop;
 
-				for (i = 1; i < n; ++i) {
 					pred    = get_Block_cfgpred_block(bl->block, i);
 					pred_bl = get_block_entry(pred);
 
-					ins[i] = conv_to(pred_bl->id_2_memop_avail[pos]->value.value, mode);
-					if (ins[i] != ins[0]) {
-						need_phi = 1;
-						if (ins[i] == NULL) {
-							/* conversion failed */
-							need_phi = 2;
-							break;
+					mop = pred_bl->id_2_memop_avail[pos];
+					if (first == NULL) {
+						first = mop;
+						ins[0] = first->value.value;
+						mode = get_irn_mode(ins[0]);
+
+						/* no Phi needed so far */
+						env.curr_id_2_memop[pos] = first;
+					} else {
+						ins[i] = conv_to(mop->value.value, mode);
+						if (ins[i] != ins[0]) {
+							if (ins[i] == NULL) {
+								/* conversion failed */
+								env.curr_id_2_memop[pos] = NULL;
+								rbitset_clear(env.curr_set, pos);
+								break;
+							}
+							need_phi = 1;
 						}
 					}
-
 				}
-				switch (need_phi) {
-				case 0:
-					/* no Phi needed */
-					env.curr_id_2_memop[pos] = first;
-					break;
-				case 1: {
+				if (need_phi) {
 					/* build a Phi  */
 					ir_node *phi = new_r_Phi(current_ir_graph, bl->block, n, ins, mode);
 					memop_t *phiop = alloc_memop(phi);
@@ -1946,20 +1881,130 @@ static int insert_Load(block_t *bl) {
 					env.curr_id_2_memop[pos] = phiop;
 
 					DB((dbg, LEVEL_3, "Created new %+F on merging value for address %+F\n", phi, first->value.address));
-					break;
-				}
-				default:
-					/* not possible because of different modes, delete the entry */
-					rbitset_clear(env.curr_set, pos);
-					break;
 				}
 			}
 		}
 	} else {
 		/* only one predecessor, simply copy the map */
+		pred    = get_Block_cfgpred_block(bl->block, 0);
+		pred_bl = get_block_entry(pred);
+
+		rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
+
 		memcpy(env.curr_id_2_memop, pred_bl->id_2_memop_avail, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
 	}
 
+	if (n > 1) {
+		/* check for partly redundant values */
+		for (pos = rbitset_next(bl->anticL_in, pos, 1); pos != end; pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
+			memop_t *op = bl->id_2_memop_antic[pos];
+			int     have_some, all_same;
+			ir_node *first;
+
+			assert(is_Load(op->node));
+
+			/* ignore killed */
+			if (op->flags & FLAG_KILLED_NODE)
+				continue;
+			DB((dbg, LEVEL_3, "anticipated %+F\n", op->node));
+
+			have_some  = 0;
+			all_same   = 1;
+			first      = 0;
+			for (i = n - 1; i >= 0; --i) {
+				ir_node *pred    = get_Block_cfgpred_block(block, i);
+				block_t *pred_bl = get_block_entry(pred);
+				memop_t *e       = find_address_avail(pred_bl, &op->value);
+				ir_mode *mode    = op->value.mode;
+
+				if (e == NULL) {
+					ir_node *block = get_nodes_block(op->value.address);
+					if (! block_dominates(block, pred)) {
+						/* cannot place a copy here */
+						have_some = 0;
+						break;
+					}
+					DB((dbg, LEVEL_3, "%+F is not available in predecessor %+F\n", op->node, pred));
+					pred_bl->avail = NULL;
+					all_same       = 0;
+				} else {
+					if (e->value.mode != mode && !can_convert_to(e->value.mode, mode)) {
+						/* cannot create a Phi due to different modes */
+						have_some = 0;
+						break;
+					}
+					pred_bl->avail = e;
+					have_some      = 1;
+					DB((dbg, LEVEL_3, "%+F is available for %+F in predecessor %+F\n", e->node, op->node, pred));
+					if (first == NULL)
+						first = e->node;
+					else if (first != e->node)
+						all_same = 0;
+				}
+			}
+			if (have_some && !all_same) {
+				ir_mode *mode = op->value.mode;
+				ir_node **in, *phi;
+				memop_t *phi_op;
+
+				NEW_ARR_A(ir_node *, in, n);
+
+				for (i = n - 1; i >= 0; --i) {
+					ir_node *pred    = get_Block_cfgpred_block(block, i);
+					block_t *pred_bl = get_block_entry(pred);
+
+					if (pred_bl->avail == NULL) {
+						/* create a new Load here and make to make it fully redundant */
+						dbg_info *db       = get_irn_dbg_info(op->node);
+						ir_node  *last_mem = find_last_memory(pred_bl);
+						ir_node  *load, *def;
+						memop_t  *new_op;
+
+						assert(last_mem != NULL);
+						load = new_rd_Load(db, current_ir_graph, pred, last_mem, op->value.address, mode, cons_none);
+						def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
+						DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
+
+						new_op                = alloc_memop(load);
+						new_op->mem           = new_r_Proj(current_ir_graph, pred, load, mode_M, pn_Load_M);
+						new_op->value.address = op->value.address;
+						new_op->value.id      = op->value.id;
+						new_op->value.mode    = mode;
+						new_op->value.value   = def;
+
+						new_op->projs[pn_Load_M]   = new_op->mem;
+						new_op->projs[pn_Load_res] = def;
+
+						new_op->prev            = pred_bl->memop_backward;
+						pred_bl->memop_backward = new_op;
+
+						if (pred_bl->memop_forward == NULL)
+							pred_bl->memop_forward = new_op;
+
+						if (get_nodes_block(last_mem) == pred) {
+							/* We have add a new last memory op in pred block.
+							   If pred had already a last mem, reroute all memory
+							   users. */
+							reroute_all_mem_users(last_mem, new_op->mem);
+						} else {
+							/* reroute only those memory going through the pre block */
+							reroute_mem_through(last_mem, new_op->mem, pred);
+						}
+
+						/* we added this load at the end, so it will be avail anyway */
+						add_memop_avail(pred_bl, new_op);
+						pred_bl->avail = new_op;
+					}
+					in[i] = conv_to(pred_bl->avail->value.value, mode);
+				}
+				phi = new_r_Phi(current_ir_graph, block, n, in, mode);
+				DB((dbg, LEVEL_1, "Created new %+F in %+F for now redundant %+F\n", phi, block, op->node));
+
+				phi_op = clone_memop_phi(op, phi);
+				add_memop(phi_op);
+			}
+		}
+	}
 
 	/* recalculate avail by gen and kill */
 	calc_gen_kill_avail(bl);
@@ -1969,140 +2014,9 @@ static int insert_Load(block_t *bl) {
 		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
 		memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 		dump_curr(bl, "Avail_out*");
-		res = 1;
+		return 1;
 	}
-
-	if (n <= 1)
-		return res;
-
-	/* check for partly redundant values */
-	for (pos = rbitset_next(bl->anticL_in, pos, 1); pos != end; pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
-		memop_t *op = bl->id_2_memop_antic[pos];
-		int     have_some, all_same;
-		ir_node *first;
-
-		assert(is_Load(op->node));
-
-		if (op->flags & FLAG_KILLED_NODE)
-			continue;
-		DB((dbg, LEVEL_3, "anticipated %+F\n", op->node));
-
-		have_some  = 0;
-		all_same   = 1;
-		first      = 0;
-		for (i = n - 1; i >= 0; --i) {
-			ir_node *pred    = get_Block_cfgpred_block(block, i);
-			block_t *pred_bl = get_block_entry(pred);
-			memop_t *e       = find_address_avail(pred_bl, &op->value);
-			ir_mode *mode    = op->value.mode;
-
-			if (e == NULL) {
-				ir_node *block = get_nodes_block(op->value.address);
-				if (! block_dominates(block, pred)) {
-					/* cannot place a copy here */
-					have_some = 0;
-					break;
-				}
-				DB((dbg, LEVEL_3, "%+F is not available in predecessor %+F\n", op->node, pred));
-				pred_bl->avail = NULL;
-				all_same       = 0;
-			} else {
-				if (e->value.mode != mode && !can_convert_to(e->value.mode, mode)) {
-					/* cannot create a Phi due to different modes */
-					have_some = 0;
-					break;
-				}
-				pred_bl->avail = e;
-				have_some      = 1;
-				DB((dbg, LEVEL_3, "%+F is available for %+F in predecessor %+F\n", e->node, op->node, pred));
-				if (first == NULL)
-					first = e->node;
-				else if (first != e->node)
-					all_same = 0;
-			}
-		}
-		if (have_some && !all_same) {
-			ir_mode *mode = op->value.mode;
-			ir_node **in, *phi;
-
-			NEW_ARR_A(ir_node *, in, n);
-
-			for (i = n - 1; i >= 0; --i) {
-				ir_node *pred    = get_Block_cfgpred_block(block, i);
-				block_t *pred_bl = get_block_entry(pred);
-
-				if (pred_bl->avail == NULL) {
-					/* create a new Load here and make to make it fully redundant */
-					dbg_info *db       = get_irn_dbg_info(op->node);
-					ir_node  *last_mem = find_last_memory(pred_bl);
-					ir_node  *load, *def;
-					memop_t  *new_op;
-
-					assert(last_mem != NULL);
-					load = new_rd_Load(db, current_ir_graph, pred, last_mem, op->value.address, mode, cons_none);
-					def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
-					DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
-
-					new_op                = alloc_memop(load);
-					new_op->mem           = new_r_Proj(current_ir_graph, pred, load, mode_M, pn_Load_M);
-					new_op->value.address = op->value.address;
-					new_op->value.id      = op->value.id;
-					new_op->value.mode    = mode;
-					new_op->value.value   = def;
-
-					new_op->projs[pn_Load_M]   = new_op->mem;
-					new_op->projs[pn_Load_res] = def;
-
-					new_op->prev            = pred_bl->memop_backward;
-					pred_bl->memop_backward = new_op;
-
-					if (pred_bl->memop_forward == NULL)
-						pred_bl->memop_forward = new_op;
-
-					if (get_nodes_block(last_mem) == pred) {
-						/* We have add a new last memory op in pred block.
-						   If pred had already a last mem, reroute all memory
-						   users. */
-						reroute_all_mem_users(last_mem, new_op->mem);
-					} else {
-						/* reroute only those memory going through the pre block */
-						reroute_mem_through(last_mem, new_op->mem, pred);
-					}
-
-					/* we added this load at the end, so it will be avail anyway */
-					add_memop_avail(pred_bl, new_op);
-					pred_bl->avail = new_op;
-				}
-				in[i] = conv_to(pred_bl->avail->value.value, mode);
-			}
-			phi = new_r_Phi(current_ir_graph, block, n, in, mode);
-			DB((dbg, LEVEL_1, "Created new %+F in %+F for now redundant %+F\n", phi, block, op->node));
-
-			if (get_nodes_block(op->node) == block) {
-				/* The redundant node was in the current block:
-				   In that case, DO NOT update avail_out. If it was NOT
-				   avail although it is executed in this bLock, it is killed by a later
-				   instruction.
-				 */
-				memop_t *phi_op = clone_memop_phi(op, phi);
-
-				update_memop_avail(bl, phi_op);
-
-				mark_replace_load(op, phi);
-			} else {
-				/* The redundant node is NOT in the current block and anticipated. */
-				memop_t *phi_op = clone_memop_phi(op, phi);
-
-				add_memop_avail(bl, phi_op);
-
-				/* propagate it downwards */
-				res = 1;
-			}
-			/* clear it so we do not found it the next iteration */
-			rbitset_clear(bl->anticL_in, pos);
-		}
-	}
-	return res;
+	return 0;
 }
 
 /**
@@ -2131,6 +2045,100 @@ static void insert_Loads_upwards(void) {
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
 }
 
+/**
+ * kill unreachable control flow.
+ */
+static void kill_unreachable_blocks(ir_graph *irg) {
+	block_t *bl;
+	ir_node **ins;
+	int     changed = 0;
+
+	NEW_ARR_A(ir_node *, ins, env.max_cfg_preds);
+
+	for (bl = env.forward; bl != NULL; bl = bl->forward_next) {
+		ir_node *block = bl->block;
+		int     i, j, k, n;
+
+		assert(get_Block_mark(block));
+
+		n = get_Block_n_cfgpreds(block);
+
+		for (i = j = 0; i < n; ++i) {
+			ir_node *pred = get_Block_cfgpred(block, i);
+			ir_node *pred_bl;
+
+			if (is_Bad(pred))
+				continue;
+
+			pred_bl = get_nodes_block(skip_Proj(pred));
+			if (! get_Block_mark(pred_bl))
+				continue;
+
+			ins[j++] = pred;
+		}
+		if (j != n) {
+			ir_node *phi, *next;
+
+			/* some unreachable blocks detected */
+			changed = 1;
+
+			DB((dbg, LEVEL_1, "Killing dead block predecessors on %+F\n", block));
+
+			set_irn_in(block, j, ins);
+
+			/* shorten all Phi nodes */
+			for (phi = get_Block_phis(block); phi != NULL; phi = next) {
+				next = get_Phi_next(phi);
+
+				for (i = k = 0; i < n; ++i) {
+					ir_node *pred = get_Block_cfgpred_block(block, i);
+
+					if (is_Bad(pred))
+						continue;
+
+					if (! get_Block_mark(pred))
+						continue;
+
+					ins[k++] = get_Phi_pred(phi, i);
+				}
+				if (k == 1)
+					exchange(phi, ins[0]);
+				else
+					set_irn_in(phi, k, ins);
+			}
+		}
+
+	}
+
+	if (changed) {
+		/* kick keep alives */
+		ir_node *end = get_irg_end(irg);
+		int     i, j, n = get_End_n_keepalives(end);
+
+		NEW_ARR_A(ir_node *, ins, n);
+
+		for (i = j = 0; i < n; ++i) {
+			ir_node *ka = get_End_keepalive(end, i);
+			ir_node *ka_bl;
+
+			if (is_Bad(ka))
+				continue;
+			if (is_Block(ka))
+				ka_bl = ka;
+			else
+				ka_bl = get_nodes_block(skip_Proj(ka));
+			if (get_Block_mark(ka_bl))
+				ins[j++] = ka;
+		}
+		if (j != n)
+			set_End_keepalives(end, j, ins);
+
+		free_irg_outs(irg);
+
+		/* this transformation do NOT invalidate the dominance */
+	}
+}
+
 int opt_ldst(ir_graph *irg) {
 	block_t  *bl;
 	ir_graph *rem = current_ir_graph;
@@ -2155,42 +2163,54 @@ int opt_ldst(ir_graph *irg) {
 	obstack_init(&env.obst);
 	ir_nodemap_init(&env.adr_map);
 
-	env.forward     = NULL;
-	env.backward    = NULL;
-	env.curr_adr_id = 0;
-	env.n_mem_ops   = 0;
-	env.changed     = 0;
-	env.start_bl    = get_irg_start_block(irg);
-	env.end_bl      = get_irg_end_block(irg);
+	env.forward       = NULL;
+	env.backward      = NULL;
+	env.curr_adr_id   = 0;
+	env.n_mem_ops     = 0;
+	env.max_cfg_preds = 0;
+	env.changed       = 0;
+	env.start_bl      = get_irg_start_block(irg);
+	env.end_bl        = get_irg_end_block(irg);
+#ifdef DEBUG_libfirm
+	env.id_2_address  = NEW_ARR_F(ir_node *, 0);
+#endif
 
-	assure_doms(irg);
 	assure_irg_outs(irg);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 
 	/* first step: allocate block entries. Note that some blocks might be
-	   unreachable here. Using the normal walk ensures that ALL blocks are initialised. */
-	irg_block_walk_graph(irg, NULL, prepare_blocks, NULL);
+	   unreachable here. Using the normal walk ensures that ALL blocks are initialized. */
+	irg_walk_graph(irg, prepare_blocks, link_phis, NULL);
 
 	/* produce an inverse post-order list for the CFG: this links only reachable
 	   blocks */
 	irg_out_block_walk(get_irg_start_block(irg), NULL, inverse_post_order, NULL);
 
-	bl = get_block_entry(env.end_bl);
-	if (!(bl->flags & BLK_FLAG_REACHABLE)) {
+	if (! get_Block_mark(env.end_bl)) {
 		/*
 		 * The end block is NOT reachable due to endless loops
 		 * or no_return calls.
 		 * Place the end block last.
 		 * env.backward points to the last block in the list for this purpose.
 		 */
-		env.backward->forward_next = bl;
+		env.backward->forward_next = get_block_entry(env.end_bl);
 
-		bl->flags |= BLK_FLAG_REACHABLE;
+		set_Block_mark(env.end_bl, 1);
 	}
+
+	/* KILL unreachable blocks: these disturb the data flow analysis */
+	kill_unreachable_blocks(irg);
+
+	assure_doms(irg);
 
 	/* second step: find and sort all memory ops */
 	walk_memory_irg(irg, collect_memops, NULL, NULL);
+
+#ifdef DEBUG_libfirm
+	/* check that the backward map is correct */
+	assert((unsigned)ARR_LEN(env.id_2_address) == env.curr_adr_id);
+#endif
 
 	if (env.n_mem_ops == 0) {
 		/* no memory ops */
@@ -2255,13 +2275,16 @@ int opt_ldst(ir_graph *irg) {
 	}
 end:
 
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 	ir_nodemap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
 
 	dump_ir_block_graph(irg, "-YYY");
 
-	current_ir_graph = rem;
+#ifdef DEBUG_libfirm
+	DEL_ARR_F(env.id_2_address);
+#endif
 
+	current_ir_graph = rem;
 	return env.changed != 0;
 }
