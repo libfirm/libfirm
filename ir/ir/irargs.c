@@ -171,13 +171,19 @@ static int firm_emit(lc_appendable_t *app,
 					strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
 				snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
 					get_mode_name(get_irn_mode(X)), tv_buf);
-			}
-			else
+			} else if (is_SymConst_addr_ent(X)) {
+				snprintf(buf, sizeof(buf), "%s%s%s[%s]", A("irn"), get_irn_opname(X),
+				get_mode_name(get_irn_mode(X)), get_entity_name(get_SymConst_entity(X)));
+			} else if (is_Sel(X)) {
+				snprintf(buf, sizeof(buf), "%s%s%s[%s]", A("irn"), get_irn_opname(X),
+				get_mode_name(get_irn_mode(X)), get_entity_name(get_Sel_entity(X)));
+			} else {
 				snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
 				get_mode_name(get_irn_mode(X)));
-			snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
 			}
-			break;
+			snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
+		}
+		break;
 	case k_ir_mode:
 		snprintf(buf, sizeof(buf), "%s%s", A("mode"), get_mode_name(X));
 		break;
