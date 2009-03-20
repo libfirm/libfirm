@@ -1312,6 +1312,7 @@ static void kill_memops(const value_t *value) {
 			                                  op->value.address, op->value.mode)) {
 			rbitset_clear(env.curr_set, pos);
 			env.curr_id_2_memop[pos] = NULL;
+			DB((dbg, LEVEL_2, "KILLING %+F because of possible alias address %+F\n", op->node, value->address));
 		}
 	}
 }
@@ -1367,6 +1368,25 @@ static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 }
 
 /**
+ * Update the address of an value if this address was a load result
+ * and the load is killed now.
+ *
+ * @param value  the value whose address is updated
+ */
+static void update_address(value_t *value) {
+	if (is_Proj(value->address)) {
+		ir_node *load = get_Proj_pred(value->address);
+
+		if (is_Load(load)) {
+			const memop_t *op = get_irn_memop(load);
+
+			if (op->flags & FLAG_KILLED_NODE)
+				value->address = op->replace;
+		}
+	}
+}
+
+/**
  * Do forward dataflow analysis on the given block and calculate the
  * GEN and KILL in the current (avail) set.
  *
@@ -1387,7 +1407,10 @@ static void calc_gen_kill_avail(block_t *bl) {
 		case iro_Load:
 			if (! (op->flags & (FLAG_KILLED_NODE|FLAG_IGNORE))) {
 				/* do we have this already? */
-				memop_t *other = find_address(&op->value);
+				memop_t *other;
+
+				update_address(&op->value);
+				other = find_address(&op->value);
 				if (other != NULL && other != op) {
 					def = conv_to(other->value.value, op->value.mode);
 					if (def != NULL) {
@@ -1412,7 +1435,10 @@ static void calc_gen_kill_avail(block_t *bl) {
 		case iro_Store:
 			if (! (op->flags & FLAG_KILLED_NODE)) {
 				/* do we have this store already */
-				memop_t *other = find_address(&op->value);
+				memop_t *other;
+
+				update_address(&op->value);
+				other = find_address(&op->value);
 				if (other != NULL) {
 					if (is_Store(other->node)) {
 						if (op != other && !(other->flags & FLAG_IGNORE) &&
@@ -1494,18 +1520,6 @@ static int backward_antic(block_t *bl) {
 		/* block ends with a noreturn call */
 		kill_all();
 	}
-
-#if 0
-	/* cleanup: kill those Loads which address is not available */
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
-		memop_t *op     = succ_bl->id_2_memop[pos];
-		ir_node *ptr    = get_Load_ptr(op->node);
-		ir_node *ptr_bl = get_nodes_block(ptr);
-
-		if (!block_dominates(ptr_bl, bl->block))
-			rbitset_clear(env.curr_set, pos);
-	}
-#endif
 
 	dump_curr(bl, "AnticL_out");
 
@@ -1692,21 +1706,6 @@ static void calcAntic(void) {
  *
  * @param bl  the block
  */
-static ir_node *find_first_memory(block_t *bl) {
-	for (;;) {
-		if (bl->memop_forward != NULL) {
-			return bl->memop_forward->node;
-		}
-		/* if there is NO memory in this block, go to the post dominator */
-		bl = get_block_entry(get_Block_ipostdom(bl->block));
-	}
-}
-
-/**
- * Return the node representing the last memory in a block.
- *
- * @param bl  the block
- */
 static ir_node *find_last_memory(block_t *bl) {
 	for (;;) {
 		if (bl->memop_backward != NULL) {
@@ -1778,6 +1777,33 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl) 
 }
 
 /**
+ * translate an address through a Phi node into a given predecessor
+ * block.
+ *
+ * @param address  the address
+ * @param block    the block
+ * @param pos      the position of the predecessor in block
+ */
+static ir_node *phi_translate(ir_node *address, ir_node *block, int pos) {
+	if (is_Phi(address) && get_nodes_block(address) == block)
+		address = get_Phi_pred(address, pos);
+	return address;
+}
+
+/**
+ * Get the effective block of an address in the pos'th predecessor
+ * of the given block.
+ *
+ * @param address  the address
+ * @param block    the block
+ * @param pos      the position of the predecessor in block
+ */
+static ir_node *get_effective_block(ir_node *address, ir_node *block, int pos) {
+	address = phi_translate(address, block, pos);
+	return get_nodes_block(address);
+}
+
+/**
  * insert Loads, making partly redundant Loads fully redundant
  */
 static int insert_Load(block_t *bl) {
@@ -1785,8 +1811,6 @@ static int insert_Load(block_t *bl) {
 	int      i, n = get_Block_n_cfgpreds(block);
 	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
-	ir_node  *pred;
-	block_t  *pred_bl;
 
 	DB((dbg, LEVEL_3, "processing %+F\n", block));
 
@@ -1794,11 +1818,6 @@ static int insert_Load(block_t *bl) {
 		/* might still happen for an unreachable block (end for instance) */
 		return 0;
 	}
-
-	pred    = get_Block_cfgpred_block(bl->block, 0);
-	pred_bl = get_block_entry(pred);
-
-	rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
 	if (n > 1) {
 		int     i, pos;
@@ -1886,8 +1905,8 @@ static int insert_Load(block_t *bl) {
 		}
 	} else {
 		/* only one predecessor, simply copy the map */
-		pred    = get_Block_cfgpred_block(bl->block, 0);
-		pred_bl = get_block_entry(pred);
+		ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
+		block_t *pred_bl = get_block_entry(pred);
 
 		rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
@@ -1901,11 +1920,13 @@ static int insert_Load(block_t *bl) {
 			int     have_some, all_same;
 			ir_node *first;
 
+			if (rbitset_is_set(env.curr_set, pos)) {
+				/* already avail */
+				continue;
+			}
+
 			assert(is_Load(op->node));
 
-			/* ignore killed */
-			if (op->flags & FLAG_KILLED_NODE)
-				continue;
 			DB((dbg, LEVEL_3, "anticipated %+F\n", op->node));
 
 			have_some  = 0;
@@ -1918,10 +1939,11 @@ static int insert_Load(block_t *bl) {
 				ir_mode *mode    = op->value.mode;
 
 				if (e == NULL) {
-					ir_node *block = get_nodes_block(op->value.address);
-					if (! block_dominates(block, pred)) {
+					ir_node *ef_block = get_effective_block(op->value.address, block, i);
+					if (! block_dominates(ef_block, pred)) {
 						/* cannot place a copy here */
 						have_some = 0;
+						DB((dbg, LEVEL_3, "%+F is cannot be moved into predecessor %+F\n", op->node, pred));
 						break;
 					}
 					DB((dbg, LEVEL_3, "%+F is not available in predecessor %+F\n", op->node, pred));
@@ -1957,17 +1979,18 @@ static int insert_Load(block_t *bl) {
 						/* create a new Load here and make to make it fully redundant */
 						dbg_info *db       = get_irn_dbg_info(op->node);
 						ir_node  *last_mem = find_last_memory(pred_bl);
-						ir_node  *load, *def;
+						ir_node  *load, *def, *adr;
 						memop_t  *new_op;
 
 						assert(last_mem != NULL);
-						load = new_rd_Load(db, current_ir_graph, pred, last_mem, op->value.address, mode, cons_none);
+						adr  = phi_translate(op->value.address, block, i);
+						load = new_rd_Load(db, current_ir_graph, pred, last_mem, adr, mode, cons_none);
 						def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
 						DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
 
 						new_op                = alloc_memop(load);
 						new_op->mem           = new_r_Proj(current_ir_graph, pred, load, mode_M, pn_Load_M);
-						new_op->value.address = op->value.address;
+						new_op->value.address = adr;
 						new_op->value.id      = op->value.id;
 						new_op->value.mode    = mode;
 						new_op->value.value   = def;
@@ -1975,7 +1998,10 @@ static int insert_Load(block_t *bl) {
 						new_op->projs[pn_Load_M]   = new_op->mem;
 						new_op->projs[pn_Load_res] = def;
 
-						new_op->prev            = pred_bl->memop_backward;
+						new_op->prev = pred_bl->memop_backward;
+						if (pred_bl->memop_backward != NULL)
+							pred_bl->memop_backward->next = new_op;
+
 						pred_bl->memop_backward = new_op;
 
 						if (pred_bl->memop_forward == NULL)
@@ -2009,13 +2035,16 @@ static int insert_Load(block_t *bl) {
 	/* recalculate avail by gen and kill */
 	calc_gen_kill_avail(bl);
 
+	/* always update the map after gen/kill, as values might have been changed due to RAR/WAR/WAW */
+	memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
+
 	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* the avail set has changed */
 		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
-		memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 		dump_curr(bl, "Avail_out*");
 		return 1;
 	}
+	dump_curr(bl, "Avail_out");
 	return 0;
 }
 
@@ -2153,7 +2182,7 @@ int opt_ldst(ir_graph *irg) {
 	/* we need landing pads */
 	remove_critical_cf_edges(irg);
 
-	dump_ir_block_graph(irg, "-XXX");
+//	dump_ir_block_graph(irg, "-XXX");
 
 	if (get_opt_alias_analysis()) {
 		assure_irg_entity_usage_computed(irg);
@@ -2279,7 +2308,7 @@ end:
 	ir_nodemap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
 
-	dump_ir_block_graph(irg, "-YYY");
+//	dump_ir_block_graph(irg, "-YYY");
 
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);
