@@ -334,11 +334,28 @@ ir_type *is_frame_pointer(const ir_node *n);
  * from Start.  If so returns tls type, else Null. */
 ir_type *is_tls_pointer(const ir_node *n);
 
-/* @@@ no more supported  */
-ir_node **get_Block_cfgpred_arr(ir_node *node);
-int       get_Block_n_cfgpreds(const ir_node *node);
-ir_node  *get_Block_cfgpred(const ir_node *node, int pos);
-void      set_Block_cfgpred(ir_node *node, int pos, ir_node *pred);
+/** Return the number of control flow predecessors of a block. */
+int       get_Block_n_cfgpreds(const ir_node *block);
+/** Return the control flow predecessor of a block at a given position. */
+ir_node  *get_Block_cfgpred(const ir_node *block, int pos);
+/** Set the control flow predecessor of a block at a given position. */
+void      set_Block_cfgpred(ir_node *block, int pos, ir_node *pred);
+
+/**
+ * Return the position of the predecessor block pred in the inputs
+ * of the block block.
+ *
+ * @param block  the block
+ * @param pred   a predecessor block of block
+ *
+ * @return the position of pred in block or -1
+ *
+ * @note When using the old extended basic block form for blocks
+ * with exception exists, a predecessor block might have more
+ * than one position. In that case it is not specified, with is returned.
+ */
+int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred);
+
 /** Get the predecessor block.
  *
  *  Returns the block corresponding to the predecessor pos of block.
@@ -351,13 +368,16 @@ void      set_Block_cfgpred(ir_node *node, int pos, ir_node *pred);
  *    Start block, but the Bad node.
  */
 ir_node  *get_Block_cfgpred_block(const ir_node *node, int pos);
-int       get_Block_matured(const ir_node *node);
-void      set_Block_matured(ir_node *node, int matured);
+
+/** Return the matured flag of a block */
+int       get_Block_matured(const ir_node *block);
+/** set the matured flag of a block. */
+void      set_Block_matured(ir_node *block, int matured);
 
 /** A visited flag only for block nodes.
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
-ir_visited_t get_Block_block_visited(const ir_node *node);
-void         set_Block_block_visited(ir_node *node, ir_visited_t visit);
+ir_visited_t get_Block_block_visited(const ir_node *block);
+void         set_Block_block_visited(ir_node *block, ir_visited_t visit);
 
 /**
  * Marks a block as dead but do not replace it with a Bad node.

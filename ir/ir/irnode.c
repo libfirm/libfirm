@@ -636,10 +636,6 @@ ir_type *is_tls_pointer(const ir_node *n) {
 	return NULL;
 }
 
-/* Returns an array with the predecessors of the Block. Depending on
-   the implementation of the graph data structure this can be a copy of
-   the internal representation of predecessors as well as the internal
-   array itself. Therefore writing to this array might obstruct the ir. */
 ir_node **get_Block_cfgpred_arr(ir_node *node) {
 	assert(is_Block(node));
 	return (ir_node **)&(get_irn_in(node)[1]);
@@ -656,6 +652,16 @@ ir_node *(get_Block_cfgpred)(const ir_node *node, int pos) {
 void set_Block_cfgpred(ir_node *node, int pos, ir_node *pred) {
 	assert(is_Block(node));
 	set_irn_n(node, pos, pred);
+}
+
+int get_Block_cfgpred_pos(const ir_node *block, const ir_node *pred) {
+	int i;
+
+	for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+		if (get_Block_cfgpred_block(block, i) == pred)
+			return i;
+	}
+	return -1;
 }
 
 ir_node *(get_Block_cfgpred_block)(const ir_node *node, int pos) {

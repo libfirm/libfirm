@@ -454,16 +454,11 @@ static void compute_antic(ir_node *block, void *ctx) {
 
 		n_succ = get_Block_n_cfg_outs(block);
 		if (n_succ == 1) {
-			int i, pos = -1;
+			int pos = -1;
 
 			/* find blocks position in succ's block predecessors */
 			succ = get_Block_cfg_out(block, 0);
-			for (i = get_Block_n_cfgpreds(succ) - 1; i >= 0; --i) {
-				if (get_Block_cfgpred_block(succ, i) == block) {
-					pos = i;
-					break;
-				}
-			}
+			pos  = get_Block_cfgpred_pos(succ, block);
 			assert(pos >= 0);
 
 			succ_info = get_block_info(succ);

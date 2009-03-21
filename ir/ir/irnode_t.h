@@ -99,6 +99,14 @@ ir_op_ops *firm_set_default_get_type_attr(ir_opcode code, ir_op_ops *ops);
  */
 ir_op_ops *firm_set_default_get_entity_attr(ir_opcode code, ir_op_ops *ops);
 
+/**
+ * Returns an array with the predecessors of the Block. Depending on
+ * the implementation of the graph data structure this can be a copy of
+ * the internal representation of predecessors as well as the internal
+ * array itself. Therefore writing to this array might obstruct the IR.
+ */
+ir_node **get_Block_cfgpred_arr(ir_node *node);
+
 /*-------------------------------------------------------------------*/
 /*  These function are most used in libfirm.  Give them as static    */
 /*  functions so they can be inlined.                                */
