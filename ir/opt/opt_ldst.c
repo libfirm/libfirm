@@ -107,6 +107,7 @@ struct block_t {
 	block_t  *forward_next;      /**< next block entry for forward iteration */
 	block_t  *backward_next;     /**< next block entry for backward iteration */
 	memop_t  *avail;             /**< used locally for the avail map */
+	memop_t  **trans_results;    /**< used to cached translated nodes due antic calculation. */
 };
 
 /**
@@ -166,7 +167,7 @@ static void dump_block_list(ldst_env *env) {
 		}
 		DB((dbg, LEVEL_2, "\n}\n\n"));
 	}
-}
+}  /* dump_block_list */
 
 /**
  * Dumps the current set.
@@ -175,13 +176,13 @@ static void dump_block_list(ldst_env *env) {
  * @param s    name of the set
  */
 static void dump_curr(block_t *bl, const char *s) {
-	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
+	unsigned pos;
 	int      i;
 
 	DB((dbg, LEVEL_2, "%s[%+F] = {", s, bl->block));
 	i = 0;
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
+	for (pos = rbitset_next(env.curr_set, 0, 1); pos < end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (i == 0) {
@@ -192,7 +193,7 @@ static void dump_curr(block_t *bl, const char *s) {
 		i = (i + 1) & 3;
 	}
 	DB((dbg, LEVEL_2, "\n}\n"));
-}
+}  /* dump_curr */
 
 #else
 #define dump_block_list()
@@ -204,13 +205,13 @@ static block_t *get_block_entry(const ir_node *block) {
 	assert(is_Block(block));
 
 	return get_irn_link(block);
-}
+}  /* get_block_entry */
 
 /** Get the memop entry for a memory operation node */
 static memop_t *get_irn_memop(const ir_node *irn) {
 	assert(! is_Block(irn));
 	return get_irn_link(irn);
-}
+}  /* get_irn_memop */
 
 /**
  * Walk over the memory edges from definition to users.
@@ -250,7 +251,7 @@ static void walk_memory(ir_node *irn, irg_walk_func *pre, irg_walk_func *post, v
 	}
 	if (post)
 		post(irn, ctx);
-}
+}  /* walk_memory */
 
 /**
  * Walks over all memory nodes of a graph.
@@ -272,152 +273,14 @@ static void walk_memory_irg(ir_graph *irg, irg_walk_func pre, irg_walk_func post
 	walk_memory(get_irg_initial_mem(irg), pre, post, ctx);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-}
+}  /* walk_memory_irg */
 
 /**
- * Walker: allocate an block entry for every block.
- */
-static void prepare_blocks(ir_node *block, void *ctx) {
-	(void)ctx;
-
-	if (is_Block(block)) {
-		block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
-		int     n;
-
-		entry->memop_forward    = NULL;
-		entry->memop_backward   = NULL;
-		entry->avail_out        = NULL;
-		entry->id_2_memop_avail = NULL;
-		entry->anticL_in        = NULL;
-		entry->id_2_memop_antic = NULL;
-		entry->block            = block;
-		entry->forward_next     = NULL;
-		entry->backward_next    = NULL;
-		entry->avail            = NULL;
-		set_irn_link(block, entry);
-
-		set_Block_phis(block, NULL);
-
-		/* use block marks to track unreachable blocks */
-		set_Block_mark(block, 0);
-
-		n = get_Block_n_cfgpreds(block);
-		if (n > env.max_cfg_preds)
-			env.max_cfg_preds = n;
-	}
-}
-
-/**
- * Post-Walker, link in all Phi's
- */
-static void link_phis(ir_node *irn, void *ctx) {
-	(void)ctx;
-
-	if (is_Phi(irn)) {
-		ir_node *block = get_nodes_block(irn);
-		add_Block_phi(block, irn);
-	}
-}
-
-/**
- * Block walker: creates the inverse post-order list for the CFG.
- */
-static void inverse_post_order(ir_node *block, void *ctx) {
-	block_t *entry = get_block_entry(block);
-
-	(void)ctx;
-
-	/* mark this block IS reachable from start */
-	set_Block_mark(block, 1);
-
-	/* create the list in inverse order */
-	entry->forward_next = env.forward;
-	env.forward         = entry;
-
-	/* remember the first visited (last in list) entry, needed for later */
-	if (env.backward == NULL)
-		env.backward = entry;
-}
-
-/**
- * Block walker: create backward links for the memops of a block.
- */
-static void collect_backward(ir_node *block, void *ctx) {
-	block_t *entry = get_block_entry(block);
-	memop_t *last, *op;
-
-	(void)ctx;
-
-	/*
-	 * Do NOT link in the end block yet. We want it to be
-	 * the first in the list. This is NOT guaranteed by the walker
-	 * if we have endless loops.
-	 */
-	if (block != env.end_bl) {
-		entry->backward_next = env.backward;
-
-		/* create the list in inverse order */
-		env.backward = entry;
-	}
-
-	/* create backward links for all memory ops */
-	last = NULL;
-	for (op = entry->memop_forward; op != NULL; op = op->next) {
-		op->prev = last;
-		last     = op;
-	}
-	entry->memop_backward = last;
-}
-
-/**
- * Allocate a memop.
- *
- * @param irn  the IR-node representing the memop
- */
-static memop_t *alloc_memop(ir_node *irn) {
-	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
-
-	m->value.address = NULL;
-	m->value.value   = NULL;
-	m->value.mode    = NULL;
-
-	m->node          = irn;
-	m->mem           = NULL;
-	m->replace       = NULL;
-	m->next          = NULL;
-	m->flags         = 0;
-
-	memset(m->projs, 0, sizeof(m->projs));
-
-	set_irn_link(irn, m);
-	return m;
-}
-
-/**
- * Create a memop for a Phi-replacement.
- *
- * @param op   the memop to clone
- * @param phi  the Phi-node representing the new value
- */
-static memop_t *clone_memop_phi(memop_t *op, ir_node *phi) {
-	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
-
-	m->value         = op->value;
-	m->value.value   = phi;
-
-	m->node          = phi;
-	m->replace       = NULL;
-	m->next          = NULL;
-	m->flags         = 0;
-
-	set_irn_link(phi, m);
-	return m;
-}
-
-/**
- * Register an address and allocate an ID for it.
+ * Register an address and allocate a (sparse, 0..n) ID for it.
  *
  * @param adr  the IR-node representing the address
+ *
+ * @return the allocated id
  */
 static unsigned register_address(ir_node *adr) {
 	address_entry *entry;
@@ -448,7 +311,192 @@ restart:
 #endif
 	}
 	return entry->id;
-}
+}  /* register_address */
+
+
+/**
+ * translate an address through a Phi node into a given predecessor
+ * block.
+ *
+ * @param address  the address
+ * @param block    the block
+ * @param pos      the position of the predecessor in block
+ */
+static ir_node *phi_translate(ir_node *address, const ir_node *block, int pos) {
+	if (is_Phi(address) && get_nodes_block(address) == block)
+		address = get_Phi_pred(address, pos);
+	return address;
+}  /* phi_translate */
+
+/**
+ * Get the effective block of an address in the pos'th predecessor
+ * of the given block.
+ *
+ * @param address  the address
+ * @param block    the block
+ * @param pos      the position of the predecessor in block
+ */
+static ir_node *get_effective_block(ir_node *address, ir_node *block, int pos) {
+	address = phi_translate(address, block, pos);
+	return get_nodes_block(address);
+}  /* get_effective_block */
+
+/**
+ * Walker: allocate an block entry for every block
+ * and register all potential addresses.
+ */
+static void prepare_blocks(ir_node *irn, void *ctx) {
+	(void)ctx;
+
+	if (is_Block(irn)) {
+		block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
+		int     n;
+
+		entry->memop_forward    = NULL;
+		entry->memop_backward   = NULL;
+		entry->avail_out        = NULL;
+		entry->id_2_memop_avail = NULL;
+		entry->anticL_in        = NULL;
+		entry->id_2_memop_antic = NULL;
+		entry->block            = irn;
+		entry->forward_next     = NULL;
+		entry->backward_next    = NULL;
+		entry->avail            = NULL;
+		entry->trans_results    = NULL;
+		set_irn_link(irn, entry);
+
+		set_Block_phis(irn, NULL);
+
+		/* use block marks to track unreachable blocks */
+		set_Block_mark(irn, 0);
+
+		n = get_Block_n_cfgpreds(irn);
+		if (n > env.max_cfg_preds)
+			env.max_cfg_preds = n;
+	} else {
+		ir_mode *mode = get_irn_mode(irn);
+
+		if (mode_is_reference(mode)) {
+			/*
+			 * Register ALL possible addresses: this is overkill yet but
+			 * simpler then doing it for all possible translated addresses
+			 * (which would be sufficient in the moment.
+			 */
+			(void)register_address(irn);
+		}
+	}
+}  /* prepare_blocks */
+
+/**
+ * Post-Walker, link in all Phi's
+ */
+static void link_phis(ir_node *irn, void *ctx) {
+	(void)ctx;
+
+	if (is_Phi(irn)) {
+		ir_node *block = get_nodes_block(irn);
+		add_Block_phi(block, irn);
+	}
+}  /* link_phis */
+
+/**
+ * Block walker: creates the inverse post-order list for the CFG.
+ */
+static void inverse_post_order(ir_node *block, void *ctx) {
+	block_t *entry = get_block_entry(block);
+
+	(void)ctx;
+
+	/* mark this block IS reachable from start */
+	set_Block_mark(block, 1);
+
+	/* create the list in inverse order */
+	entry->forward_next = env.forward;
+	env.forward         = entry;
+
+	/* remember the first visited (last in list) entry, needed for later */
+	if (env.backward == NULL)
+		env.backward = entry;
+}  /* inverse_post_order */
+
+/**
+ * Block walker: create backward links for the memops of a block.
+ */
+static void collect_backward(ir_node *block, void *ctx) {
+	block_t *entry = get_block_entry(block);
+	memop_t *last, *op;
+
+	(void)ctx;
+
+	/*
+	 * Do NOT link in the end block yet. We want it to be
+	 * the first in the list. This is NOT guaranteed by the walker
+	 * if we have endless loops.
+	 */
+	if (block != env.end_bl) {
+		entry->backward_next = env.backward;
+
+		/* create the list in inverse order */
+		env.backward = entry;
+	}
+
+	/* create backward links for all memory ops */
+	last = NULL;
+	for (op = entry->memop_forward; op != NULL; op = op->next) {
+		op->prev = last;
+		last     = op;
+	}
+	entry->memop_backward = last;
+}  /* collect_backward */
+
+/**
+ * Allocate a memop.
+ *
+ * @param irn  the IR-node representing the memop or NULL
+ *             if this is a translated (virtual) memop
+ *
+ * @return the allocated memop
+ */
+static memop_t *alloc_memop(ir_node *irn) {
+	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
+
+	m->value.address = NULL;
+	m->value.value   = NULL;
+	m->value.mode    = NULL;
+
+	m->node          = irn;
+	m->mem           = NULL;
+	m->replace       = NULL;
+	m->next          = NULL;
+	m->flags         = 0;
+
+	memset(m->projs, 0, sizeof(m->projs));
+
+	if (irn != NULL)
+		set_irn_link(irn, m);
+	return m;
+}  /* alloc_memop */
+
+/**
+ * Create a memop for a Phi-replacement.
+ *
+ * @param op   the memop to clone
+ * @param phi  the Phi-node representing the new value
+ */
+static memop_t *clone_memop_phi(memop_t *op, ir_node *phi) {
+	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
+
+	m->value         = op->value;
+	m->value.value   = phi;
+
+	m->node          = phi;
+	m->replace       = NULL;
+	m->next          = NULL;
+	m->flags         = 0;
+
+	set_irn_link(phi, m);
+	return m;
+}  /* clone_memop_phi */
 
 /**
  * Return the memory properties of a call node.
@@ -473,7 +521,7 @@ static unsigned get_Call_memory_properties(ir_node *call) {
 		}
 	}
 	return prop & (mtp_property_const|mtp_property_pure);
-}
+}  /* get_Call_memory_properties */
 
 /**
  * Returns an entity if the address ptr points to a constant one.
@@ -482,8 +530,7 @@ static unsigned get_Call_memory_properties(ir_node *call) {
  *
  * @return an entity or NULL
  */
-static ir_entity *find_constant_entity(ir_node *ptr)
-{
+static ir_entity *find_constant_entity(ir_node *ptr) {
 	for (;;) {
 		if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
 			return get_SymConst_entity(ptr);
@@ -1048,7 +1095,7 @@ static void update_Load_memop(memop_t *m) {
 		/* no user, KILL it */
 		mark_replace_load(m, NULL);
 	}
-}
+}  /* update_Load_memop */
 
 /**
  * Update a memop for a Store.
@@ -1095,7 +1142,7 @@ static void update_Store_memop(memop_t *m) {
 	}
 	m->value.value = get_Store_value(store);
 	m->value.mode  = get_irn_mode(m->value.value);
-}
+}  /* update_Store_memop */
 
 /**
  * Update a memop for a Call.
@@ -1132,7 +1179,7 @@ static void update_Call_memop(memop_t *m) {
 			break;
 		}
 	}
-}
+}  /* update_Call_memop */
 
 /**
  * Update a memop for a Div/Mod/Quot/DivMod.
@@ -1159,7 +1206,7 @@ static void update_DivOp_memop(memop_t *m) {
 			break;
 		}
 	}
-}
+}  /* update_DivOp_memop */
 
 /**
  * Update a memop for a Phi.
@@ -1169,7 +1216,7 @@ static void update_DivOp_memop(memop_t *m) {
 static void update_Phi_memop(memop_t *m) {
 	/* the Phi is it's own mem */
 	m->mem = m->node;
-}
+}  /* update_Phi_memop */
 
 /**
  * Memory walker: collect all memory ops and build topological lists.
@@ -1243,12 +1290,16 @@ static void collect_memops(ir_node *irn, void *ctx) {
 			entry->memop_backward       = op;
 		}
 	}
-}
+}  /* collect_memops */
 
 /**
  * Find an address in the current set.
  *
  * @param value  the value to be searched for
+ *
+ * @return a memop for the value or NULL if the value does
+ *         not exists in the set or cannot be converted into
+ *         the requested mode
  */
 static memop_t *find_address(const value_t *value) {
 	if (rbitset_is_set(env.curr_set, value->id)) {
@@ -1263,7 +1314,7 @@ static memop_t *find_address(const value_t *value) {
 			return res;
 	}
 	return NULL;
-}
+}  /* find_address */
 
 /**
  * Find an address in the avail_out set.
@@ -1284,7 +1335,7 @@ static memop_t *find_address_avail(const block_t *bl, const value_t *value) {
 			return res;
 	}
 	return NULL;
-}
+}  /* find_address_avail */
 
 /**
  * Kill all addresses from the current set.
@@ -1294,7 +1345,7 @@ static void kill_all(void) {
 
 	/* set sentinel */
 	rbitset_set(env.curr_set, env.rbs_size - 1);
-}
+}  /* kill_all */
 
 /**
  * Kill memops that are not alias free due to a Store value from the current set.
@@ -1302,10 +1353,10 @@ static void kill_all(void) {
  * @param value  the Store value
  */
 static void kill_memops(const value_t *value) {
-	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
+	unsigned pos;
 
-	for (pos = rbitset_next(env.curr_set, pos, 1); pos != end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
+	for (pos = rbitset_next(env.curr_set, 0, 1); pos < end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
 
 		if (ir_no_alias != get_alias_relation(current_ir_graph, value->address, value->mode,
@@ -1315,7 +1366,7 @@ static void kill_memops(const value_t *value) {
 			DB((dbg, LEVEL_2, "KILLING %+F because of possible alias address %+F\n", op->node, value->address));
 		}
 	}
-}
+}  /* kill_memops */
 
 /**
  * Add the value of a memop to the current set.
@@ -1325,7 +1376,7 @@ static void kill_memops(const value_t *value) {
 static void add_memop(memop_t *op) {
 	rbitset_set(env.curr_set, op->value.id);
 	env.curr_id_2_memop[op->value.id] = op;
-}
+}  /* add_memop */
 
 /**
  * Add the value of a memop to the avail_out set.
@@ -1336,11 +1387,14 @@ static void add_memop(memop_t *op) {
 static void add_memop_avail(block_t *bl, memop_t *op) {
 	rbitset_set(bl->avail_out, op->value.id);
 	bl->id_2_memop_avail[op->value.id] = op;
-}
+}  /* add_memop_avail */
 
 /**
  * Check, if we can convert a value of one mode to another mode
  * without changing the representation of bits.
+ *
+ * @param from  the original mode
+ * @param to    the destination mode
  */
 static int can_convert_to(const ir_mode *from, const ir_mode *to) {
 	if (get_mode_arithmetic(from) == irma_twos_complement &&
@@ -1348,10 +1402,16 @@ static int can_convert_to(const ir_mode *from, const ir_mode *to) {
 	    get_mode_size_bits(from) == get_mode_size_bits(to))
 		return 1;
 	return 0;
-}
+}  /* can_convert_to */
 
 /**
- * Add a Conv if needed.
+ * Add a Conv to the requested mode if needed.
+ *
+ * @param irn   the IR-node to convert
+ * @param mode  the destination mode
+ *
+ * @return the possible converted node or NULL
+ *         if the conversion is not possible
  */
 static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 	ir_mode *other = get_irn_mode(irn);
@@ -1365,7 +1425,7 @@ static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 		return NULL;
 	}
 	return irn;
-}
+}  /* conv_to */
 
 /**
  * Update the address of an value if this address was a load result
@@ -1384,7 +1444,7 @@ static void update_address(value_t *value) {
 				value->address = op->replace;
 		}
 	}
-}
+}  /* update_address */
 
 /**
  * Do forward dataflow analysis on the given block and calculate the
@@ -1471,7 +1531,7 @@ static void calc_gen_kill_avail(block_t *bl) {
 				kill_all();
 		}
 	}
-}
+}  /* calc_gen_kill_avail */
 
 #define BYTE_SIZE(x)  (((x) + 7) >> 3)
 
@@ -1488,7 +1548,7 @@ static void forward_avail(block_t *bl) {
 
 	calc_gen_kill_avail(bl);
 	dump_curr(bl, "Avail_out");
-}
+}  /* forward_avail */
 
 /**
  * Do backward dataflow analysis on a given block to calculate the antic set
@@ -1500,16 +1560,71 @@ static void forward_avail(block_t *bl) {
  */
 static int backward_antic(block_t *bl) {
 	memop_t *op;
-	int     n = get_Block_n_cfg_outs(bl->block);
+	ir_node *block = bl->block;
+	int     n = get_Block_n_cfg_outs(block);
 
-	if (n >= 1) {
-		ir_node *succ    = get_Block_cfg_out(bl->block, 0);
+	if (n == 1) {
+		ir_node  *succ    = get_Block_cfg_out(block, 0);
+		block_t  *succ_bl = get_block_entry(succ);
+		int      pred_pos = get_Block_cfgpred_pos(succ, block);
+		unsigned end      = env.rbs_size;
+		unsigned pos;
+
+		kill_all();
+
+		if (bl->trans_results == NULL) {
+			/* allocate the translate cache */
+			unsigned size = env.curr_adr_id * sizeof(bl->trans_results[0]);
+			bl->trans_results = obstack_alloc(&env.obst, size);
+			memset(bl->trans_results, 0, size);
+		}
+
+		/* check for partly redundant values */
+		for (pos = rbitset_next(succ_bl->anticL_in, 0, 1);
+		     pos < end;
+		     pos = rbitset_next(succ_bl->anticL_in, pos + 1, 1)) {
+			/*
+			 * do Phi-translation here: Note that at this point the nodes are
+			 * not changed, so we can safely cache the results.
+			 * However: Loads of Load results ARE bad, because we have no way
+			  to translate them yet ...
+			 */
+			memop_t *op = bl->trans_results[pos];
+			if (op == NULL) {
+				/* not yet translated */
+				ir_node *adr, *trans_adr;
+
+				op  = succ_bl->id_2_memop_antic[pos];
+				adr = op->value.address;
+
+				trans_adr = phi_translate(adr, succ, pred_pos);
+				if (trans_adr != adr) {
+					/* create a new entry for the translated one */
+					memop_t *new_op;
+
+					new_op = alloc_memop(NULL);
+					new_op->value.address = trans_adr;
+					new_op->value.id      = register_address(trans_adr);
+					new_op->value.mode    = op->value.mode;
+					new_op->node          = op->node; /* we need the node to decide if Load/Store */
+					new_op->flags         = op->flags;
+
+					bl->trans_results[pos] = op;
+					op = new_op;
+				}
+			}
+			rbitset_set(env.curr_set, op->value.id);
+			env.curr_id_2_memop[pos] = op;
+		}
+	} else if (n > 1) {
+		ir_node *succ    = get_Block_cfg_out(block, 0);
 		block_t *succ_bl = get_block_entry(succ);
 		int i;
 
 		rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
 		memcpy(env.curr_id_2_memop, succ_bl->id_2_memop_antic, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 
+		/* Hmm: probably we want kill merges of Loads ans Stores here */
 		for (i = n - 1; i > 0; --i) {
 			ir_node *succ    = get_Block_cfg_out(bl->block, i);
 			block_t *succ_bl = get_block_entry(succ);
@@ -1558,7 +1673,7 @@ static int backward_antic(block_t *bl) {
 	}
 	dump_curr(bl, "AnticL_in");
 	return 0;
-}
+}  /* backward_antic */
 
 /**
  * Replace a Load memop by a already known value.
@@ -1605,7 +1720,7 @@ static void replace_load(memop_t *op) {
 	if (proj != NULL) {
 		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(load)));
 	}
-}
+}  /* replace_load */
 
 /**
  * Remove a Store memop.
@@ -1630,7 +1745,7 @@ static void remove_store(memop_t *op) {
 	if (proj != NULL) {
 		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(store)));
 	}
-}
+}  /* remove_store */
 
 
 /**
@@ -1653,7 +1768,7 @@ static void do_replacements(block_t *bl) {
 			}
 		}
 	}
-}
+}  /* do_replacements */
 
 /**
  * Calculate the Avail_out sets for all basic blocks.
@@ -1674,7 +1789,7 @@ static void calcAvail(void) {
 	/* restore the current sets */
 	env.curr_id_2_memop = tmp_memop;
 	env.curr_set        = tmp_set;
-}
+}  /* calcAvail */
 
 /**
  * Calculate the Antic_in sets for all basic blocks.
@@ -1699,7 +1814,7 @@ static void calcAntic(void) {
 		++i;
 	} while (need_iter);
 	DB((dbg, LEVEL_2, "Get anticipated Load set after %d iterations\n", i));
-}
+}  /* calcAntic */
 
 /**
  * Return the node representing the last memory in a block.
@@ -1714,7 +1829,7 @@ static ir_node *find_last_memory(block_t *bl) {
 		/* if there is NO memory in this block, go to the dominator */
 		bl = get_block_entry(get_Block_idom(bl->block));
 	}
-}
+}  /* find_last_memory */
 
 /**
  * Reroute all memory users of old memory
@@ -1735,7 +1850,7 @@ static void reroute_all_mem_users(ir_node *omem, ir_node *nmem) {
 
 	/* all edges previously point to omem now point to nmem */
 	nmem->out = omem->out;
-}
+}  /* reroute_all_mem_users */
 
 /**
  * Reroute memory users of old memory that are dominated by a given block
@@ -1774,34 +1889,7 @@ static void reroute_mem_through(ir_node *omem, ir_node *nmem, ir_node *pass_bl) 
 	/* first entry is used for the length */
 	edges[0].pos = j;
 	nmem->out = edges;
-}
-
-/**
- * translate an address through a Phi node into a given predecessor
- * block.
- *
- * @param address  the address
- * @param block    the block
- * @param pos      the position of the predecessor in block
- */
-static ir_node *phi_translate(ir_node *address, ir_node *block, int pos) {
-	if (is_Phi(address) && get_nodes_block(address) == block)
-		address = get_Phi_pred(address, pos);
-	return address;
-}
-
-/**
- * Get the effective block of an address in the pos'th predecessor
- * of the given block.
- *
- * @param address  the address
- * @param block    the block
- * @param pos      the position of the predecessor in block
- */
-static ir_node *get_effective_block(ir_node *address, ir_node *block, int pos) {
-	address = phi_translate(address, block, pos);
-	return get_nodes_block(address);
-}
+}  /* reroute_mem_through */
 
 /**
  * insert Loads, making partly redundant Loads fully redundant
@@ -1809,8 +1897,8 @@ static ir_node *get_effective_block(ir_node *address, ir_node *block, int pos) {
 static int insert_Load(block_t *bl) {
 	ir_node  *block = bl->block;
 	int      i, n = get_Block_n_cfgpreds(block);
-	unsigned pos = 0;
 	unsigned end = env.rbs_size - 1;
+	unsigned pos;
 
 	DB((dbg, LEVEL_3, "processing %+F\n", block));
 
@@ -1820,7 +1908,6 @@ static int insert_Load(block_t *bl) {
 	}
 
 	if (n > 1) {
-		int     i, pos;
 		ir_node **ins;
 
 		NEW_ARR_A(ir_node *, ins, n);
@@ -1915,7 +2002,9 @@ static int insert_Load(block_t *bl) {
 
 	if (n > 1) {
 		/* check for partly redundant values */
-		for (pos = rbitset_next(bl->anticL_in, pos, 1); pos != end; pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
+		for (pos = rbitset_next(bl->anticL_in, 0, 1);
+		     pos < end;
+		     pos = rbitset_next(bl->anticL_in, pos + 1, 1)) {
 			memop_t *op = bl->id_2_memop_antic[pos];
 			int     have_some, all_same;
 			ir_node *first;
@@ -2046,7 +2135,7 @@ static int insert_Load(block_t *bl) {
 	}
 	dump_curr(bl, "Avail_out");
 	return 0;
-}
+}  /* insert_Load */
 
 /**
  * Insert Loads upwards.
@@ -2072,10 +2161,12 @@ static void insert_Loads_upwards(void) {
 	} while (need_iter);
 
 	DB((dbg, LEVEL_2, "Finished Load inserting after %d iterations\n", i));
-}
+}  /* insert_Loads_upwards */
 
 /**
- * kill unreachable control flow.
+ * Kill unreachable control flow.
+ *
+ * @param irg  the graph to operate on
  */
 static void kill_unreachable_blocks(ir_graph *irg) {
 	block_t *bl;
@@ -2166,7 +2257,7 @@ static void kill_unreachable_blocks(ir_graph *irg) {
 
 		/* this transformation do NOT invalidate the dominance */
 	}
-}
+}  /* kill_unreachable_blocks */
 
 int opt_ldst(ir_graph *irg) {
 	block_t  *bl;
@@ -2316,4 +2407,4 @@ end:
 
 	current_ir_graph = rem;
 	return env.changed != 0;
-}
+}  /* opt_ldst */
