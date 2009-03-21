@@ -329,19 +329,6 @@ static ir_node *phi_translate(ir_node *address, const ir_node *block, int pos) {
 }  /* phi_translate */
 
 /**
- * Get the effective block of an address in the pos'th predecessor
- * of the given block.
- *
- * @param address  the address
- * @param block    the block
- * @param pos      the position of the predecessor in block
- */
-static ir_node *get_effective_block(ir_node *address, ir_node *block, int pos) {
-	address = phi_translate(address, block, pos);
-	return get_nodes_block(address);
-}  /* get_effective_block */
-
-/**
  * Walker: allocate an block entry for every block
  * and register all potential addresses.
  */
@@ -1320,18 +1307,17 @@ static memop_t *find_address(const value_t *value) {
  * Find an address in the avail_out set.
  *
  * @param bl     the block
- * @param value  the value to be searched for
  */
-static memop_t *find_address_avail(const block_t *bl, const value_t *value) {
-	if (rbitset_is_set(bl->avail_out, value->id)) {
-		memop_t *res = bl->id_2_memop_avail[value->id];
+static memop_t *find_address_avail(const block_t *bl, unsigned id, const ir_mode *mode) {
+	if (rbitset_is_set(bl->avail_out, id)) {
+		memop_t *res = bl->id_2_memop_avail[id];
 
-		if (res->value.mode == value->mode)
+		if (res->value.mode == mode)
 			return res;
 		/* allow hidden casts */
 		if (get_mode_arithmetic(res->value.mode) == irma_twos_complement &&
-		    get_mode_arithmetic(value->mode) == irma_twos_complement &&
-		    get_mode_size_bits(res->value.mode) == get_mode_size_bits(value->mode))
+		    get_mode_arithmetic(mode) == irma_twos_complement &&
+		    get_mode_size_bits(res->value.mode) == get_mode_size_bits(mode))
 			return res;
 	}
 	return NULL;
@@ -1567,7 +1553,7 @@ static int backward_antic(block_t *bl) {
 		ir_node  *succ    = get_Block_cfg_out(block, 0);
 		block_t  *succ_bl = get_block_entry(succ);
 		int      pred_pos = get_Block_cfgpred_pos(succ, block);
-		unsigned end      = env.rbs_size;
+		unsigned end      = env.rbs_size - 1;
 		unsigned pos;
 
 		kill_all();
@@ -1609,12 +1595,12 @@ static int backward_antic(block_t *bl) {
 					new_op->node          = op->node; /* we need the node to decide if Load/Store */
 					new_op->flags         = op->flags;
 
-					bl->trans_results[pos] = op;
+					bl->trans_results[pos] = new_op;
 					op = new_op;
 				}
 			}
+			env.curr_id_2_memop[op->value.id] = op;
 			rbitset_set(env.curr_set, op->value.id);
-			env.curr_id_2_memop[pos] = op;
 		}
 	} else if (n > 1) {
 		ir_node *succ    = get_Block_cfg_out(block, 0);
@@ -1909,6 +1895,7 @@ static int insert_Load(block_t *bl) {
 
 	if (n > 1) {
 		ir_node **ins;
+		int     pos;
 
 		NEW_ARR_A(ir_node *, ins, n);
 
@@ -2024,15 +2011,19 @@ static int insert_Load(block_t *bl) {
 			for (i = n - 1; i >= 0; --i) {
 				ir_node *pred    = get_Block_cfgpred_block(block, i);
 				block_t *pred_bl = get_block_entry(pred);
-				memop_t *e       = find_address_avail(pred_bl, &op->value);
 				ir_mode *mode    = op->value.mode;
+				memop_t *e;
+				ir_node *adr;
 
+				adr = phi_translate(op->value.address, block, i);
+				DB((dbg, LEVEL_3, ".. using address %+F in pred %d\n", adr, i));
+				e   = find_address_avail(pred_bl, register_address(adr), mode);
 				if (e == NULL) {
-					ir_node *ef_block = get_effective_block(op->value.address, block, i);
+					ir_node *ef_block = get_nodes_block(adr);
 					if (! block_dominates(ef_block, pred)) {
 						/* cannot place a copy here */
 						have_some = 0;
-						DB((dbg, LEVEL_3, "%+F is cannot be moved into predecessor %+F\n", op->node, pred));
+						DB((dbg, LEVEL_3, "%+F cannot be moved into predecessor %+F\n", op->node, pred));
 						break;
 					}
 					DB((dbg, LEVEL_3, "%+F is not available in predecessor %+F\n", op->node, pred));
@@ -2352,7 +2343,7 @@ int opt_ldst(ir_graph *irg) {
 
 	/* create address sets: for now, only the existing addresses are allowed plus one
 	   needed for the sentinel */
-	env.rbs_size = env.n_mem_ops + 1;
+	env.rbs_size = env.curr_adr_id + 1;
 
 	/* create the current set */
 	env.curr_set = rbitset_obstack_alloc(&env.obst, env.rbs_size);
