@@ -805,8 +805,9 @@ new_bd_InstOf(dbg_info *db, ir_node *block, ir_node *store,
 
 	in[0] = store;
 	in[1] = objptr;
-	res = new_ir_node(db, irg, block, op_Sel, mode_T, 2, in);
-	res->attr.instof.type = type;
+	res = new_ir_node(db, irg, block, op_InstOf, mode_T, 2, in);
+	res->attr.instof.exc.pin_state = op_pin_state_floats;
+	res->attr.instof.type          = type;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
