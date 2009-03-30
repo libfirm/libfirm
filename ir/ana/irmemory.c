@@ -597,6 +597,49 @@ static ir_alias_relation _get_alias_relation(
 			/* a pointer and an object whose objects was never taken */
 			return ir_no_alias;
 		}
+	} else if (class1 == ir_sc_argument) {
+		switch (class2) {
+		case ir_sc_argument:
+			/* both arguments may be alias free if specified in the options */
+			if (options & aa_opt_no_alias_args) {
+       	    	if (get_Proj_proj(base1) != get_Proj_proj(base2))
+ 					return ir_no_alias;
+				else {
+					/* missed CSE */
+					return ir_may_alias;
+				}
+			}
+			break;
+		case ir_sc_globalvar:
+		case ir_sc_tls:
+		case ir_sc_globaladdr:
+ 			/* if the address was never taken */
+			if (mod2 & ir_sc_modifier_nottaken)
+				return ir_no_alias;
+			/* or an argument and a global are alias free if specified */
+			if (options & aa_opt_no_alias_args_global)
+ 				return ir_no_alias;
+			break;
+		default:
+			/* two objects from different memory spaces */
+			return ir_no_alias;
+		}
+	} else if (class2 == ir_sc_argument) {
+		switch (class1) {
+		case ir_sc_globalvar:
+		case ir_sc_tls:
+		case ir_sc_globaladdr:
+ 			/* if the address was never taken */
+			if (mod1 & ir_sc_modifier_nottaken)
+				return ir_no_alias;
+			/* or an argument and a global are alias free if specified */
+			if (options & aa_opt_no_alias_args_global)
+ 				return ir_no_alias;
+			break;
+		default:
+			/* two objects from different memory spaces */
+			return ir_no_alias;
+		}
 	} else if (class1 != class2) {
 		/* two objects from different memory spaces */
 		return ir_no_alias;
@@ -654,8 +697,8 @@ leave_type_based_alias:;
 	}
 
 	/* do we have a language specific memory disambiguator? */
-	if (language_disambuigator) {
-		ir_alias_relation rel = (*language_disambuigator)(irg, orig_adr1, mode1, orig_adr2, mode2);
+	if (language_disambuigator != NULL) {
+		ir_alias_relation rel = language_disambuigator(irg, orig_adr1, mode1, orig_adr2, mode2);
 		if (rel != ir_may_alias)
 			return rel;
 	}
@@ -736,7 +779,7 @@ ir_alias_relation get_alias_relation_ex(
 	key.adr1 = adr1;
 	key.adr2 = adr2;
 	entry = set_find(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
-	if (entry)
+	if (entry != NULL)
 		return entry->result;
 
 	key.result = get_alias_relation(irg, adr1, mode1, adr2, mode2);
@@ -747,7 +790,7 @@ ir_alias_relation get_alias_relation_ex(
 
 /* Free the relation cache. */
 void mem_disambig_term(void) {
-	if (result_cache) {
+	if (result_cache != NULL) {
 		del_set(result_cache);
 		result_cache = NULL;
 	}
