@@ -46,12 +46,12 @@ def get_io_type(type, attrname, nodename):
 	elif type == "pn_Cmp" or type == "ir_where_alloc":
 		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
 		exportcmd = """fprintf(env->file, "%%ld ", (long) %(val)s);"""
-	elif type == "cons_flags" and nodename == "Store":
+	elif type == "ir_cons_flags" and nodename == "Store":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
 		exportcmd = """write_pin_state(env, irn);
 			write_volatility(env, irn);
 			write_align(env, irn);"""
-	elif type == "cons_flags" and nodename == "Load":
+	elif type == "ir_cons_flags" and nodename == "Load":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
 		exportcmd = """write_pin_state(env, irn);
 			write_volatility(env, irn);

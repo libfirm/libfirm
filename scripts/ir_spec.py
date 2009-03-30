@@ -3,8 +3,8 @@ Start = dict(
 	mode       = "mode_T",
 	op_flags   = "cfopcode",
 	state      = "pinned",
-	knownBlock = True,
 	noconstr   = True,
+	optimize   = False
 ),
 
 End = dict(
@@ -12,8 +12,8 @@ End = dict(
 	op_flags   = "cfopcode",
 	state      = "pinned",
 	arity      = "dynamic",
-	knownBlock = True,
 	noconstr   = True,
+	optimize   = False
 ),
 
 Phi = dict(
@@ -39,6 +39,7 @@ IJmp = dict(
 Const = dict(
 	mode       = "",
 	knownBlock = True,
+	attrs_name = "con",
 	attrs      = [
 		dict(
 			type = "tarval*",
@@ -51,7 +52,28 @@ Block = dict(
 	mode   = "mode_BB",
 	knownBlock = True,
 	noconstr   = True,
+	optimize   = False,
 	arity      = "variable",
+
+	init = '''
+	/* macroblock header */
+	res->in[0] = res;
+
+	res->attr.block.is_dead     = 0;
+	res->attr.block.is_mb_head  = 1;
+	res->attr.block.has_label   = 0;
+	res->attr.block.irg         = irg;
+	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
+	res->attr.block.in_cg       = NULL;
+	res->attr.block.cg_backedge = NULL;
+	res->attr.block.extblk      = NULL;
+	res->attr.block.mb_depth    = 0;
+	res->attr.block.label       = 0;
+
+	set_Block_matured(res, 1);
+	set_Block_block_visited(res, 0);
+	''',
+
 	java_add   = '''
 	public void addPred(Node node) {
 		binding_cons.add_immBlock_pred(ptr, node.ptr);
@@ -263,7 +285,7 @@ Load = dict(
 	],
 	constructor_args = [
 		dict(
-			type = "cons_flags",
+			type = "ir_cons_flags",
 			name = "flags",
 		),
 	],
@@ -274,7 +296,7 @@ Store = dict(
 	outs     = [ "M", "X_regular", "X_except" ],
 	constructor_args = [
 		dict(
-			type = "cons_flags",
+			type = "ir_cons_flags",
 			name = "flags",
 		),
 	],
@@ -329,6 +351,7 @@ Sel = dict(
 
 Sync = dict(
 	mode     = "mode_M",
+	optimize = False,
 	arity    = "dynamic"
 ),
 
