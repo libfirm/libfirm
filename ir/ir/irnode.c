@@ -1295,7 +1295,7 @@ set_Sel_index(ir_node *node, int pos, ir_node *index) {
 ir_entity *
 get_Sel_entity(const ir_node *node) {
 	assert(is_Sel(node));
-	return node->attr.sel.ent;
+	return node->attr.sel.entity;
 }
 
 /* need a version without const to prevent warning */
@@ -1306,7 +1306,7 @@ static ir_entity *_get_Sel_entity(ir_node *node) {
 void
 set_Sel_entity(ir_node *node, ir_entity *ent) {
 	assert(is_Sel(node));
-	node->attr.sel.ent = ent;
+	node->attr.sel.entity = ent;
 }
 
 

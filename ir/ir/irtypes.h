@@ -174,7 +174,7 @@ typedef struct {
 
 /** Sel attributes. */
 typedef struct {
-	ir_entity *ent;    /**< entity to select */
+	ir_entity *entity;    /**< entity to select */
 } sel_attr;
 
 /** Exception attributes. */

@@ -538,7 +538,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
     break;
   case iro_Sel:
     _tcsncat(pResult, "<", max);
-    if (format_entity(pHelper, nBase, n.attr.sel.ent, name, sizeof(name), 0) != S_OK)
+    if (format_entity(pHelper, nBase, n.attr.sel.entity, name, sizeof(name), 0) != S_OK)
       return E_FAIL;
     _tcsncat(pResult, name, max);
     _tcsncat(pResult, ">", max);

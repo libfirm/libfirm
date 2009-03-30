@@ -633,7 +633,7 @@ new_bd_Sel(dbg_info *db, ir_node *block, ir_node *store, ir_node *objptr,
 	 * Sel's can select functions which should be of mode mode_P_code.
 	 */
 	res = new_ir_node(db, irg, block, op_Sel, mode, r_arity, r_in);
-	res->attr.sel.ent = ent;
+	res->attr.sel.entity = ent;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
