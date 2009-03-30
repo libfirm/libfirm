@@ -16,6 +16,10 @@ End = dict(
 	optimize   = False
 ),
 
+Id = dict(
+	ins = [ "pred" ]
+),
+
 Phi = dict(
 	noconstr = True,
 	state    = "pinned",
@@ -49,8 +53,9 @@ Const = dict(
 ),
 
 Block = dict(
-	mode   = "mode_BB",
+	mode       = "mode_BB",
 	knownBlock = True,
+	block      = "NULL",
 	noconstr   = True,
 	optimize   = False,
 	arity      = "variable",
@@ -72,6 +77,30 @@ Block = dict(
 
 	set_Block_matured(res, 1);
 	set_Block_block_visited(res, 0);
+	''',
+
+	d_pre = '''
+	int i;
+	int has_unknown = 0;
+	''',
+
+	d_post = '''
+	/* Create and initialize array for Phi-node construction. */
+	if (get_irg_phase_state(current_ir_graph) == phase_building) {
+		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
+		                                      current_ir_graph->n_loc);
+		memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
+	}
+
+	for (i = arity - 1; i >= 0; i--)
+		if (is_Unknown(in[i])) {
+			has_unknown = 1;
+			break;
+		}
+
+	if (!has_unknown) res = optimize_node(res);
+
+	IRN_VRFY_IRG(res, current_ir_graph);
 	''',
 
 	java_add   = '''
@@ -289,6 +318,11 @@ Load = dict(
 			name = "flags",
 		),
 	],
+	d_post = '''
+#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);
+#endif
+	'''
 ),
 
 Store = dict(
@@ -300,6 +334,11 @@ Store = dict(
 			name = "flags",
 		),
 	],
+	d_post = '''
+#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
+#endif
+	'''
 ),
 
 Anchor = dict(
@@ -324,7 +363,7 @@ Bad = dict(
 
 Pin = dict(
 	ins      = [ "op" ],
-	mode     = "get_irn_mode(op);"
+	mode     = "get_irn_mode(irn_op)"
 ),
 
 Proj = dict(
@@ -332,7 +371,8 @@ Proj = dict(
 	attrs    = [
 		dict(
 			type = "long",
-			name = "proj"
+			name = "proj",
+			initname = ""
 		)
 	]
 ),
@@ -340,7 +380,7 @@ Proj = dict(
 Sel = dict(
 	ins    = [ "mem", "ptr" ],
 	arity  = "variable",
-	mode   = "mode_P",
+	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data",
 	attrs    = [
 		dict(
 			type = "ir_entity*",
@@ -361,12 +401,14 @@ Tuple = dict(
 ),
 
 Unknown = dict(
-	knownBlock = True
+	knownBlock = True,
+	block      = "get_irg_start_block(irg)",
+	nodbginfo  = True
 ),
 
 Confirm = dict(
 	ins      = [ "value", "bound" ],
-	mode     = "get_irn_mode(value)",
+	mode     = "get_irn_mode(irn_value)",
 	attrs    = [
 		dict(
 			name = "cmp",
