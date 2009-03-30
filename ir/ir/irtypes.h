@@ -242,7 +242,7 @@ typedef struct {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
     unsigned      volatility:1;   /**< The volatility of this Load operation. */
     unsigned      aligned:1;      /**< The align attribute of this Load operation. */
-	ir_mode       *load_mode;     /**< The mode of this Load operation. */
+	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
 /** Store attributes. */

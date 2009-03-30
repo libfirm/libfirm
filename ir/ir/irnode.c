@@ -1836,13 +1836,13 @@ set_Load_ptr(ir_node *node, ir_node *ptr) {
 ir_mode *
 get_Load_mode(const ir_node *node) {
 	assert(is_Load(node));
-	return node->attr.load.load_mode;
+	return node->attr.load.mode;
 }
 
 void
 set_Load_mode(ir_node *node, ir_mode *mode) {
 	assert(is_Load(node));
-	node->attr.load.load_mode = mode;
+	node->attr.load.mode = mode;
 }
 
 ir_volatility

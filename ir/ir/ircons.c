@@ -549,7 +549,7 @@ new_bd_Load(dbg_info *db, ir_node *block,
 	in[1] = adr;
 	res = new_ir_node(db, irg, block, op_Load, mode_T, 2, in);
 	res->attr.load.exc.pin_state = flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned;
-	res->attr.load.load_mode     = mode;
+	res->attr.load.mode          = mode;
 	res->attr.load.volatility    = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
 	res->attr.load.aligned       = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
 	res = optimize_node(res);
