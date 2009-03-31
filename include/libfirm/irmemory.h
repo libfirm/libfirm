@@ -62,17 +62,18 @@ typedef enum {
 typedef enum {
 	ir_sc_pointer           = 0x0,  /**< generic pointer, may be anything */
 	ir_sc_globalvar         = 0x1,  /**< an address of a global variable */
-	ir_sc_localvar          = 0x2,  /**< an address of a local variable */
-	ir_sc_argument          = 0x3,  /**< an method argument */
-	ir_sc_tls               = 0x4,  /**< an address of a thread local storage variable */
-	ir_sc_malloced          = 0x5,  /**< an allocated heap address */
-	ir_sc_globaladdr        = 0x6,  /**< a constant address of something */
+	ir_sc_localvar          = 0x2,  /**< an address of a local variable or method argument */
+	ir_sc_tls               = 0x3,  /**< an address of a thread local storage variable */
+	ir_sc_malloced          = 0x4,  /**< an allocated heap address */
+	ir_sc_globaladdr        = 0x5,  /**< a constant address of something */
 
-	ir_sc_modifier_nottaken = 0x80  /**< if set, the address of the variable was not taken */
+	ir_sc_modifier_nottaken = 0x80, /**< if set, the address of the variable was not taken */
+	ir_sc_modifier_argument = 0x40, /**< if set pointer was a function argument */
+	ir_sc_modifiers         = ir_sc_modifier_nottaken | ir_sc_modifier_argument
 } ir_storage_class_class_t;
 
 /** Get the base storage class (ignore modifier) */
-#define GET_BASE_SC(x) ((x) & ~ir_sc_modifier_nottaken)
+#define GET_BASE_SC(x) ((x) & ~ir_sc_modifiers)
 
 /**
  * A source language specific memory disambiguator function.

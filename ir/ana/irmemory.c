@@ -432,8 +432,6 @@ ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity
 		res = ir_sc_localvar;
 		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
-	} else if (is_arg_Proj(irn)) {
-		return ir_sc_argument;
 	} else if (irn == get_irg_tls(irg)) {
 		res = ir_sc_tls;
 		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
@@ -442,6 +440,8 @@ ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity
 		return ir_sc_malloced;
 	} else if (is_Const(irn)) {
 		return ir_sc_globaladdr;
+	} else if (is_arg_Proj(irn)) {
+		res |= ir_sc_modifier_argument;
 	}
 
 	return res;
@@ -587,58 +587,28 @@ static ir_alias_relation _get_alias_relation(
 	class1 = GET_BASE_SC(mod1);
 	class2 = GET_BASE_SC(mod2);
 
-	if (class1 == ir_sc_pointer) {
+	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
+		/* swap pointer class to class1 */
+		if (class2 == ir_sc_pointer) {
+			ir_storage_class_class_t temp = mod1;
+			mod1 = mod2;
+			mod2 = temp;
+			class1 = GET_BASE_SC(mod1);
+			class2 = GET_BASE_SC(mod2);
+		}
+		/* a pointer and an object whose address was never taken */
 		if (mod2 & ir_sc_modifier_nottaken) {
-			/* a pointer and an object whose objects was never taken */
 			return ir_no_alias;
 		}
-	} else if (class2 == ir_sc_pointer) {
-		if (mod1 & ir_sc_modifier_nottaken) {
-			/* a pointer and an object whose objects was never taken */
-			return ir_no_alias;
-		}
-	} else if (class1 == ir_sc_argument) {
-		switch (class2) {
-		case ir_sc_argument:
-			/* both arguments may be alias free if specified in the options */
-			if (options & aa_opt_no_alias_args) {
-       	    	if (get_Proj_proj(base1) != get_Proj_proj(base2))
- 					return ir_no_alias;
-				else {
-					/* missed CSE */
-					return ir_may_alias;
-				}
-			}
-			break;
-		case ir_sc_globalvar:
-		case ir_sc_tls:
-		case ir_sc_globaladdr:
- 			/* if the address was never taken */
-			if (mod2 & ir_sc_modifier_nottaken)
+		if (mod1 & ir_sc_modifier_argument) {
+			if ( (options & aa_opt_no_alias_args)
+					&& (mod2 & ir_sc_modifier_argument))
 				return ir_no_alias;
-			/* or an argument and a global are alias free if specified */
-			if (options & aa_opt_no_alias_args_global)
- 				return ir_no_alias;
-			break;
-		default:
-			/* two objects from different memory spaces */
-			return ir_no_alias;
-		}
-	} else if (class2 == ir_sc_argument) {
-		switch (class1) {
-		case ir_sc_globalvar:
-		case ir_sc_tls:
-		case ir_sc_globaladdr:
- 			/* if the address was never taken */
-			if (mod1 & ir_sc_modifier_nottaken)
+			if ( (options & aa_opt_no_alias_args_global)
+					&& (class2 == ir_sc_globalvar
+						|| class2 == ir_sc_tls
+						|| class2 == ir_sc_globaladdr))
 				return ir_no_alias;
-			/* or an argument and a global are alias free if specified */
-			if (options & aa_opt_no_alias_args_global)
- 				return ir_no_alias;
-			break;
-		default:
-			/* two objects from different memory spaces */
-			return ir_no_alias;
 		}
 	} else if (class1 != class2) {
 		/* two objects from different memory spaces */

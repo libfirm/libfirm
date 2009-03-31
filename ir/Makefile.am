@@ -148,6 +148,7 @@ libfirm_la_SOURCES = \
 	debug/seqnumbers.c \
 	ident/ident.c \
 	ident/mangle.c \
+	ir/gen_ir_cons.c.inl \
 	ir/instrument.c \
 	ir/irarch.c \
 	ir/irargs.c \
