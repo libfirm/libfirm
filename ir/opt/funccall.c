@@ -423,9 +423,8 @@ static unsigned max_property(unsigned a, unsigned b) {
  * the mtp_property.
  *
  * @return mtp_property_const if only calls of const functions are detected
- *         mtp_property_pure if only Loads and const/pure
- *         calls detected
- *         mtp_no_property else
+ *         mtp_property_pure  if only Loads and const/pure calls detected
+ *         mtp_no_property    else
  */
 static unsigned _follow_mem(ir_node *node) {
 	unsigned m, mode = mtp_property_const;
@@ -470,7 +469,7 @@ static unsigned _follow_mem(ir_node *node) {
 		case iro_Call:
 			/* A call is only tolerable if its either constant or pure. */
 			ptr = get_Call_ptr(node);
-			if (is_SymConst(ptr) && get_SymConst_kind(ptr) == symconst_addr_ent) {
+			if (is_SymConst_addr_ent(ptr)) {
 				ir_entity *ent = get_SymConst_entity(ptr);
 				ir_graph  *irg = get_entity_irg(ent);
 
@@ -548,8 +547,9 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 
 	current_ir_graph = irg;
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
-	/* mark the initial mem: recursion of follow_mem stops here */
+	/* mark the initial mem: recursion of follow_mem() stops here */
 	mark_irn_visited(get_irg_initial_mem(irg));
 
 	/* visit every Return */
@@ -611,6 +611,7 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
 	if (top)
 		SET_IRG_READY(irg);
 	CLEAR_IRG_BUSY(irg);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	current_ir_graph = rem;
 	return prop;
 }  /* check_const_or_pure_function */
@@ -634,15 +635,13 @@ static void handle_const_Calls(env_t *ctx) {
 		ctx->nonfloat_const_call_list = NULL;
 		ctx->pure_call_list           = NULL;
 		ctx->proj_list                = NULL;
+
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		irg_walk_graph(irg, NULL, collect_const_and_pure_calls, ctx);
 
-		if (ctx->float_const_call_list != NULL) {
+		if (ctx->float_const_call_list != NULL)
 			fix_const_call_lists(irg, ctx);
-
-			/* this graph was changed, invalidate analysis info */
-			set_irg_outs_inconsistent(irg);
-			set_irg_doms_inconsistent(irg);
-		}
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	}
 }  /* handle_const_Calls */
 
@@ -663,15 +662,13 @@ static void handle_nothrow_Calls(env_t *ctx) {
 
 		ctx->nothrow_call_list = NULL;
 		ctx->proj_list         = NULL;
+
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		irg_walk_graph(irg, NULL, collect_nothrow_calls, ctx);
 
-		if (ctx->nothrow_call_list) {
+		if (ctx->nothrow_call_list)
 			fix_nothrow_call_list(irg, ctx->nothrow_call_list, ctx->proj_list);
-
-			/* this graph was changed, invalidate analysis info */
-			set_irg_outs_inconsistent(irg);
-			set_irg_doms_inconsistent(irg);
-		}
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	}
 }
 
@@ -982,7 +979,7 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
 
 /**
  * When a function was detected as "const", it might be moved out of loops.
- * This might be dangerous if the graph might contain endless loops.
+ * This might be dangerous if the graph can contain endless loops.
  */
 static void check_for_possible_endless_loops(ir_graph *irg) {
 	ir_loop *root_loop;
@@ -1007,7 +1004,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 	is_alloc_entity = callback;
 
 	/* prepare: mark all graphs as not analyzed */
-	last_idx = get_irp_last_idx();
+	last_idx  = get_irp_last_idx();
 	ready_set = rbitset_malloc(last_idx);
 	busy_set  = rbitset_malloc(last_idx);
 
@@ -1075,5 +1072,4 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 /* initialize the funccall optimization */
 void firm_init_funccalls(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
-//	firm_dbg_set_mask(dbg, -1);
 }  /* firm_init_funccalls */
