@@ -1846,8 +1846,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	} else {
 		if (get_method_additional_properties(method_type) & mtp_property_private &&
 		    ia32_cg_config.optimize_cc) {
-			/* set the calling conventions to register parameter */
-			cc = (cc & ~(cc_bits|cc_this_call)) | cc_reg_param;
+			/* set the regparam calling conventions (allowing up to 3) */
+			cc = (cc & ~(cc_bits|cc_this_call)) | cc_reg_param | 3;
 		}
 	}
 
