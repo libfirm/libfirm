@@ -100,6 +100,8 @@ Block = dict(
 
 	if (!has_unknown) res = optimize_node(res);
 
+	current_ir_graph->current_block = res;
+
 	IRN_VRFY_IRG(res, current_ir_graph);
 	''',
 

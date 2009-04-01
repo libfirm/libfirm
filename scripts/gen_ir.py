@@ -4,9 +4,12 @@ from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
 import ir_spec
 
-def format_argdecls(node, first = False):
-	if not node.has_key("args"):
-		return ""
+def format_argdecls(node, first = False, voidwhenempty = False):
+	if not node.has_key("args") or len(node["args"]) == 0:
+		if voidwhenempty:
+			return "void"
+		else:
+			return ""
 
 	res = ""
 	if not first:
@@ -18,13 +21,18 @@ def format_argdecls(node, first = False):
 		comma = ", "
 	return res
 
-def format_args(node):
+def format_args(node, first = False):
 	if not node.has_key("args"):
 		return ""
 
 	res = ""
+	if not first:
+		comma = ", "
+	else:
+		comma = ""
 	for arg in node["args"]:
-		res = res + (", " + arg["name"])
+		res = res + (comma + arg["name"])
+		comma = ", "
 	return res
 
 def format_blockdecl(node):
@@ -266,6 +274,15 @@ ir_node *new_d_{{nodename}}({{node["dbdeclnocomma"]}}{{node|argdecls(node["nodbg
 	return res;
 }
 
+ir_node *new_{{nodename}}({{node|argdecls(True, True)}})
+{
+	{% if node["nodbginfo"] -%}
+		return new_d_{{nodename}}({{node|args(True)}});
+	{%- else -%}
+		return new_d_{{nodename}}(NULL{{node|args}});
+	{%- endif %}
+}
+
 ''')
 
 #############################
@@ -282,7 +299,7 @@ def main(argv):
 	# List of TODOs
 	niymap = ["Alloc", "Anchor", "ASM", "Bad", "Bound", "Break", "Builtin",
 		"Call", "CallBegin", "Cast", "Const", "Const_type", "Const_long", "CopyB",
-		"defaultProj", "Div", "DivRL", "DivMod", "EndReg", "EndExcept",
+		"defaultProj", "Div", "DivRL", "DivMod", "Dummy", "EndReg", "EndExcept",
 		"Filter", "InstOf", "Mod", "NoMem", "Phi", "Quot", "Raise",
 		"simpleSel", "strictConv", "SymConst", "SymConst_type", "Sync"]
 
