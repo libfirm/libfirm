@@ -113,25 +113,15 @@ def prepare_attr(attr):
 		return dict(type = attr["type"], name = attr["name"])
 
 def preprocess_node(nodename, node):
+	# set default attributes
 	if "is_a" in node:
 		parent = ir_spec.nodes[node["is_a"]]
 		node["ins"] = parent["ins"]
 		if "outs" in parent:
 			node["outs"] = parent["outs"]
-	if "ins" not in node:
-		node["ins"] = []
+
 	if "outs" in node:
 		node["mode"] = "mode_T"
-	if "arity" not in node:
-		node["arity"] = len(node["ins"])
-	if "attrs" not in node:
-		node["attrs"] = []
-	if "constructor_args" not in node:
-		node["constructor_args"] = []
-	if "attrs_name" not in node:
-		node["attrs_name"] = nodename.lower()
-	if "block" not in node:
-		node["block"] = "block"
 	if "nodbginfo" in node:
 		node["db"] = "NULL"
 		node["dbdecl"] = ""
@@ -141,15 +131,20 @@ def preprocess_node(nodename, node):
 		node["dbdecl"] = "dbg_info *db, "
 		node["dbdeclnocomma"] = "dbg_info *db"
 
+	node.setdefault("ins", [])
+	node.setdefault("arity", len(node["ins"]))
+	node.setdefault("attrs", [])
+	node.setdefault("constructor_args", [])
+	node.setdefault("attrs_name", nodename.lower())
+	node.setdefault("block", "block")
+
 	# construct node arguments
 	arguments = [ ]
 	initargs = [ ]
 	initattrs = [ ]
 	specialconstrs = [ ]
-	i = 0
 	for input in node["ins"]:
 		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
-		i += 1
 
 	# Special case for Builtin...
 	if nodename == "Builtin":
@@ -170,8 +165,7 @@ def preprocess_node(nodename, node):
 		if nodename == "Builtin" and attr["name"] == "kind":
 			continue
 
-		if "initname" not in attr:
-			attr["initname"] = "." + attr["name"]
+		attr.setdefault("initname", "." + attr["name"])
 
 		# "special" stuff does not work at all, yet
 		if "special" in attr:
@@ -190,7 +184,7 @@ def preprocess_node(nodename, node):
 			elif "suffix" in attr["special"]:
 				specialname = nodename + attr["special"]["suffix"]
 			else:
-				print "Unknown special constructor type for node type %s" %nodename
+				print "Unknown special constructor type for node type %s" % nodename
 				sys.exit(1)
 
 			specialconstrs.append(
