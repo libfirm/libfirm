@@ -168,7 +168,7 @@ new_d_##instr(dbg_info *db, ir_node *op, ir_mode *mode) {                     \
 }
 
 #ifndef USE_ORIGINAL
-#include "gen_ir_cons_py.c.inl"
+#include "gen_ir_cons.c.inl"
 #else
 
 /**

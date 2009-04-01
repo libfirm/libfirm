@@ -113,7 +113,6 @@ def prepare_attr(attr):
 		return dict(type = attr["type"], name = attr["name"])
 
 def preprocess_node(nodename, node):
-	print "nodename: " + nodename
 	if "is_a" in node:
 		parent = ir_spec.nodes[node["is_a"]]
 		node["ins"] = parent["ins"]
@@ -149,7 +148,6 @@ def preprocess_node(nodename, node):
 	specialconstrs = [ ]
 	i = 0
 	for input in node["ins"]:
-		print "ins: " + input
 		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
 		i += 1
 
@@ -169,7 +167,6 @@ def preprocess_node(nodename, node):
 
 	attrs_with_special = 0
 	for attr in node["attrs"]:
-		print "attr: " + attr["name"]
 		if nodename == "Builtin" and attr["name"] == "kind":
 			continue
 
@@ -303,7 +300,7 @@ def main(argv):
 		"Filter", "InstOf", "Mod", "NoMem", "Phi", "Quot", "Raise",
 		"simpleSel", "strictConv", "SymConst", "SymConst_type", "Sync"]
 
-	file = open(gendir + "/gen_ir_cons_py.c.inl", "w")
+	file = open(gendir + "/gen_ir_cons.c.inl", "w")
 	for nodename, node in do_dictsort(ir_spec.nodes):
 		if nodename in niymap:
 			continue
