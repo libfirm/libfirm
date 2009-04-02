@@ -722,6 +722,7 @@ new_bd_EndExcept(dbg_info *db, ir_node *block) {
 	return res;
 }  /* new_bd_EndExcept */
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Break(dbg_info *db, ir_node *block) {
 	ir_node  *res;
@@ -753,7 +754,6 @@ new_bd_Filter(dbg_info *db, ir_node *block, ir_node *arg, ir_mode *mode,
 	return res;
 }  /* new_bd_Filter */
 
-#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Mux(dbg_info *db, ir_node *block,
            ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
@@ -1390,6 +1390,7 @@ new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block) {
 	return res;
 }  /* new_rd_EndExcept */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Break(dbg_info *db, ir_graph *irg, ir_node *block) {
 	ir_node  *res;
@@ -1415,7 +1416,6 @@ new_rd_Filter(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *arg, ir_mode
 	return res;
 }  /* new_rd_Filter */
 
-#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Mux(dbg_info *db, ir_graph *irg, ir_node *block,
            ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
@@ -1729,6 +1729,7 @@ ir_node *new_r_EndReg(ir_graph *irg, ir_node *block) {
 ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block) {
 	return new_rd_EndExcept(NULL, irg, block);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Break(ir_graph *irg, ir_node *block) {
 	return new_rd_Break(NULL, irg, block);
 }
@@ -1736,6 +1737,7 @@ ir_node *new_r_Filter(ir_graph *irg, ir_node *block, ir_node *arg,
                       ir_mode *mode, long proj) {
 	return new_rd_Filter(NULL, irg, block, arg, mode, proj);
 }
+#endif
 ir_node *new_r_NoMem(ir_graph *irg) {
 	return get_irg_no_mem(irg);
 }
@@ -2678,6 +2680,7 @@ new_d_EndExcept(dbg_info *db) {
 	return new_bd_EndExcept(db, current_ir_graph->current_block);
 }  /* new_d_EndExcept */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Break(dbg_info *db) {
 	return new_bd_Break(db, current_ir_graph->current_block);
@@ -2689,7 +2692,6 @@ new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode, long proj) {
 	                     arg, mode, proj);
 }  /* new_d_Filter */
 
-#ifdef USE_ORIGINAL
 ir_node *
 new_d_Mux(dbg_info *db, ir_node *sel, ir_node *ir_false,
           ir_node *ir_true, ir_mode *mode) {
@@ -3157,12 +3159,14 @@ ir_node *new_EndReg(void) {
 ir_node *new_EndExcept(void) {
 	return new_d_EndExcept(NULL);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Break(void) {
 	return new_d_Break(NULL);
 }
 ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj) {
 	return new_d_Filter(NULL, arg, mode, proj);
 }
+#endif
 ir_node *new_NoMem(void) {
 	return get_irg_no_mem(current_ir_graph);
 }

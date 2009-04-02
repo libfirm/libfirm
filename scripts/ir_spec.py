@@ -149,6 +149,10 @@ Borrow = dict(
 	is_a     = "binop"
 ),
 
+Break = dict(
+	mode = "mode_X"
+),
+
 Builtin = dict(
 	ins      = [ "mem" ],
 	arity    = "variable",
@@ -288,6 +292,12 @@ CopyB = dict(
 	outs  = [ "M", "X_regular", "X_except" ],
 	attrs = [
 		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_pinned"
+		),
+		dict(
 			name = "type",
 			type = "ir_type*"
 		)
@@ -358,6 +368,20 @@ End = dict(
 
 Eor = dict(
 	is_a     = "binop"
+),
+
+Filter = dict(
+	ins   = [ "pred" ],
+	attrs = [
+		dict(
+			name = "proj",
+			type = "long"
+		)
+	]
+
+	# TODO: Broken asserts in original:
+	# assert(get_Proj_pred(res));
+	# assert(get_nodes_block(get_Proj_pred(res)));
 ),
 
 Free = dict(
