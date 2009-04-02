@@ -284,7 +284,7 @@ def main(argv):
 
 	# List of TODOs
 	niymap = ["Alloc", "Anchor", "ASM", "Bad", "Bound", "Break", "Builtin",
-		"Call", "CallBegin", "Const", "Const_type", "Const_long", "CopyB",
+		"CallBegin", "Const", "Const_type", "Const_long", "CopyB",
 		"defaultProj", "Dummy", "EndReg", "EndExcept",
 		"Filter", "InstOf", "NoMem", "Phi", "Raise",
 		"simpleSel", "SymConst", "SymConst_type", "Sync"]

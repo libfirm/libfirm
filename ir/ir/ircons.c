@@ -463,7 +463,6 @@ new_bd_Cond(dbg_info *db, ir_node *block, ir_node *c) {
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Cond */
-#endif
 
 static ir_node *
 new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
@@ -489,6 +488,7 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Call */
+#endif
 
 static ir_node *
 new_bd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
@@ -1144,7 +1144,6 @@ new_rd_Cond(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *c) {
 
 	return res;
 }  /* new_rd_Cond */
-#endif
 
 ir_node *
 new_rd_Call(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
@@ -1158,6 +1157,7 @@ new_rd_Call(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 	return res;
 }  /* new_rd_Call */
+#endif
 
 ir_node *
 new_rd_Builtin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
@@ -1562,12 +1562,12 @@ ir_node *new_r_Sel(ir_graph *irg, ir_node *block, ir_node *store,
                    ir_entity *ent) {
 	return new_rd_Sel(NULL, irg, block, store, objptr, n_index, index, ent);
 }
-#endif
 ir_node *new_r_Call(ir_graph *irg, ir_node *block, ir_node *store,
                     ir_node *callee, int arity, ir_node **in,
                     ir_type *tp) {
 	return new_rd_Call(NULL, irg, block, store, callee, arity, in, tp);
 }
+#endif
 ir_node *new_r_Builtin(ir_graph *irg, ir_node *block, ir_node *store,
                        ir_builtin_kind kind, int arity, ir_node **in,
                        ir_type *tp) {
@@ -2557,7 +2557,6 @@ ir_node *
 new_d_Cond(dbg_info *db, ir_node *c) {
 	return new_bd_Cond(db, current_ir_graph->current_block, c);
 }  /* new_d_Cond */
-#endif
 
 ir_node *
 new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **in,
@@ -2571,6 +2570,7 @@ new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **i
 
 	return res;
 }  /* new_d_Call */
+#endif
 
 ir_node *
 new_d_Builtin(dbg_info *db, ir_node *store, ir_builtin_kind kind, int arity, ir_node **in,
@@ -3031,11 +3031,11 @@ ir_node *new_Sel(ir_node *store, ir_node *objptr, int arity, ir_node **in,
                  ir_entity *ent) {
 	return new_d_Sel(NULL, store, objptr, arity, in, ent);
 }
-#endif
 ir_node *new_Call(ir_node *store, ir_node *callee, int arity, ir_node **in,
                   ir_type *tp) {
 	return new_d_Call(NULL, store, callee, arity, in, tp);
 }
+#endif
 ir_node *new_Builtin(ir_node *store, ir_builtin_kind kind, int arity, ir_node **in,
                      ir_type *tp) {
 	return new_d_Builtin(NULL, store, kind, arity, in, tp);

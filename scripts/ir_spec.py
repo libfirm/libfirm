@@ -162,8 +162,22 @@ Call = dict(
 		dict(
 			type = "ir_type*",
 			name = "type"
+		),
+		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_pinned"
 		)
-	]
+	],
+	init = '''
+	assert((get_unknown_type() == type) || is_Method_type(type));
+	''',
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
+	#endif
+	'''
 ),
 
 Carry = dict(

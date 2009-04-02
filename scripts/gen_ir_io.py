@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 from jinja2 import Environment, Template
+from jinja2.filters import do_dictsort
 import ir_spec
 
 def format_args(arglist):
@@ -206,7 +207,11 @@ def preprocess_node(nodename, node):
 				)
 			)
 		elif "init" in attr:
-			initargs.append(attr["name"])
+			if attr["type"] == "op_pin_state":
+				initfunc = "set_irn_pinned"
+			else:
+				initfunc = "set_" + nodename + "_" + attr["name"]
+			initargs.append((attr["name"], initfunc))
 		else:
 			arguments.append(attr["name"])
 
@@ -238,7 +243,7 @@ import_attrs_template = env.from_string('''
 			newnode = new_r_{{special.constrname}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
 		else{% endfor %}
 		newnode = new_r_{{nodename}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
-		{% for initarg in node.initargs %}set_{{nodename}}_{{initarg}}(newnode, {{initarg}});
+		{% for (initarg, initfunc) in node.initargs %}{{initfunc}}(newnode, {{initarg}});
 		{% endfor %}
 		break;
 	}
@@ -253,8 +258,10 @@ def main(argv):
 
 	gendir = argv[2]
 
+	sortednodes = do_dictsort(ir_spec.nodes)
+
 	file = open(gendir + "/gen_irio_export.inl", "w");
-	for nodename, node in ir_spec.nodes.iteritems():
+	for nodename, node in sortednodes:
 		preprocess_node(nodename, node)
 		if not "abstract" in node:
 			file.write(export_attrs_template.render(vars()))
@@ -262,7 +269,7 @@ def main(argv):
 	file.close()
 
 	file = open(gendir + "/gen_irio_import.inl", "w");
-	for nodename, node in ir_spec.nodes.iteritems():
+	for nodename, node in sortednodes:
 		if not "abstract" in node and nodename != "Start" and nodename != "End" and nodename != "Anchor" and nodename != "SymConst" and nodename != "Block":
 			file.write(import_attrs_template.render(vars()))
 	# TODO: SymConst
@@ -270,7 +277,7 @@ def main(argv):
 	file.close()
 
 	file = open(gendir + "/gen_irio_lex.inl", "w");
-	for nodename, node in ir_spec.nodes.iteritems():
+	for nodename, node in sortednodes:
 		if not "abstract" in node:
 			file.write("\tINSERT(\"" + nodename + "\", tt_iro, iro_" + nodename + ");\n");
 	file.close()
