@@ -349,6 +349,7 @@ new_bd_Conv(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode, int strict
 	return res;
 }  /* new_bd_Conv */
 
+#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Cast(dbg_info *db, ir_node *block, ir_node *op, ir_type *to_tp) {
 	ir_node  *res;
@@ -357,13 +358,12 @@ new_bd_Cast(dbg_info *db, ir_node *block, ir_node *op, ir_type *to_tp) {
 	assert(is_atomic_type(to_tp));
 
 	res = new_ir_node(db, irg, block, op_Cast, get_irn_mode(op), 1, &op);
-	res->attr.cast.totype = to_tp;
+	res->attr.cast.type = to_tp;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Cast */
 
-#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Tuple(dbg_info *db, ir_node *block, int arity, ir_node **in) {
 	ir_node  *res;
@@ -1044,6 +1044,7 @@ new_rd_strictConv(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_m
 	return res;
 }  /* new_rd_strictConv */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Cast(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
 	ir_node  *res;
@@ -1056,7 +1057,6 @@ new_rd_Cast(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *op, ir_type *t
 	return res;
 }  /* new_rd_Cast */
 
-#ifdef USE_ORIGINAL
 ir_node *
 new_rd_Tuple(dbg_info *db, ir_graph *irg, ir_node *block, int arity, ir_node **in) {
 	ir_node  *res;
@@ -1683,14 +1683,14 @@ ir_node *new_r_strictConv(ir_graph *irg, ir_node *block,
                     ir_node *op, ir_mode *mode) {
 	return new_rd_strictConv(NULL, irg, block, op, mode);
 }
-ir_node *new_r_Cast(ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
-	return new_rd_Cast(NULL, irg, block, op, to_tp);
-}
 ir_node *new_r_Phi(ir_graph *irg, ir_node *block, int arity,
                    ir_node **in, ir_mode *mode) {
 	return new_rd_Phi(NULL, irg, block, arity, in, mode);
 }
 #ifdef USE_ORIGINAL
+ir_node *new_r_Cast(ir_graph *irg, ir_node *block, ir_node *op, ir_type *to_tp) {
+	return new_rd_Cast(NULL, irg, block, op, to_tp);
+}
 ir_node *new_r_Load(ir_graph *irg, ir_node *block,
                     ir_node *store, ir_node *adr, ir_mode *mode, ir_cons_flags flags) {
 	return new_rd_Load(NULL, irg, block, store, adr, mode, flags);
@@ -2447,12 +2447,12 @@ new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode) {
 	return new_bd_Conv(db, current_ir_graph->current_block, op, mode, 1);
 }  /* new_d_strictConv */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp) {
 	return new_bd_Cast(db, current_ir_graph->current_block, op, to_tp);
 }  /* new_d_Cast */
 
-#ifdef USE_ORIGINAL
 ir_node *
 new_d_Tuple(dbg_info *db, int arity, ir_node **in) {
 	return new_bd_Tuple(db, current_ir_graph->current_block, arity, in);
@@ -3130,13 +3130,13 @@ ir_node *new_Conv(ir_node *op, ir_mode *mode) {
 ir_node *new_strictConv(ir_node *op, ir_mode *mode) {
 	return new_d_strictConv(NULL, op, mode);
 }
-ir_node *new_Cast(ir_node *op, ir_type *to_tp) {
-	return new_d_Cast(NULL, op, to_tp);
-}
 ir_node *new_Phi(int arity, ir_node **in, ir_mode *mode) {
 	return new_d_Phi(NULL, arity, in, mode);
 }
 #ifdef USE_ORIGINAL
+ir_node *new_Cast(ir_node *op, ir_type *to_tp) {
+	return new_d_Cast(NULL, op, to_tp);
+}
 ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags flags) {
 	return new_d_Load(NULL, store, addr, mode, flags);
 }

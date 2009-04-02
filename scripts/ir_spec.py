@@ -170,6 +170,18 @@ Carry = dict(
 	is_a     = "binop"
 ),
 
+Cast = dict(
+	ins      = [ "op" ],
+	mode     = "get_irn_mode(irn_op)",
+	attrs    = [
+		dict(
+			type = "ir_type*",
+			name = "type"
+		)
+	],
+	init     = "assert(is_atomic_type(type));"
+),
+
 Cmp = dict(
 	is_a     = "binop",
 	outs     = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ],

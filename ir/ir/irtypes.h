@@ -234,7 +234,7 @@ typedef struct {
 
 /** Cast attributes. */
 typedef struct {
-	ir_type *totype;              /**< Type of the casted node. */
+	ir_type *type;                /**< Type of the casted node. */
 } cast_attr;
 
 /** Load attributes. */

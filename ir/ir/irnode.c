@@ -1627,14 +1627,14 @@ void set_Conv_strict(ir_node *node, int strict_flag) {
 ir_type *
 get_Cast_type(ir_node *node) {
 	assert(is_Cast(node));
-	node->attr.cast.totype = skip_tid(node->attr.cast.totype);
-	return node->attr.cast.totype;
+	node->attr.cast.type = skip_tid(node->attr.cast.type);
+	return node->attr.cast.type;
 }
 
 void
 set_Cast_type(ir_node *node, ir_type *to_tp) {
 	assert(is_Cast(node));
-	node->attr.cast.totype = to_tp;
+	node->attr.cast.type = to_tp;
 }
 
 
