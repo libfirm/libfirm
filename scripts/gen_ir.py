@@ -150,6 +150,7 @@ def preprocess_node(nodename, node):
 	if nodename == "Builtin":
 		for attr in node["attrs"]:
 			if attr["name"] == "kind":
+				attr.setdefault("initname", "." + attr["name"])
 				arguments.append(prepare_attr(attr))
 
 	if node["arity"] == "variable":
@@ -283,7 +284,7 @@ def main(argv):
 	gendir = argv[2]
 
 	# List of TODOs
-	niymap = ["Alloc", "Anchor", "ASM", "Bad", "Bound", "Break", "Builtin",
+	niymap = ["Anchor", "ASM", "Bad", "Bound", "Break",
 		"CallBegin", "Const", "Const_type", "Const_long", "CopyB",
 		"defaultProj", "Dummy", "EndReg", "EndExcept",
 		"Filter", "InstOf", "NoMem", "Phi", "Raise",

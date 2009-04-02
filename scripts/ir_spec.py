@@ -29,6 +29,12 @@ Alloc = dict(
 	outs  = [ "M", "X_regular", "X_except", "res" ],
 	attrs = [
 		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_pinned"
+		),
+		dict(
 			name = "type",
 			type = "ir_type*"
 		),
@@ -36,7 +42,12 @@ Alloc = dict(
 			name = "where",
 			type = "ir_where_alloc"
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
+	#endif
+	'''
 ),
 
 Anchor = dict(
@@ -144,6 +155,12 @@ Builtin = dict(
 	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
 	attrs    = [
 		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_pinned"
+		),
+		dict(
 			type = "ir_builtin_kind",
 			name = "kind"
 		),
@@ -151,7 +168,12 @@ Builtin = dict(
 			type = "ir_type*",
 			name = "type"
 		)
-	]
+	],
+	init = '''
+	assert((get_unknown_type() == type) || is_Method_type(type));
+	'''
+
+	# TODO: No firm_alloc_frag_arr??
 ),
 
 Call = dict(
@@ -160,14 +182,14 @@ Call = dict(
 	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
 	attrs    = [
 		dict(
-			type = "ir_type*",
-			name = "type"
-		),
-		dict(
 			name = "state",
 			type = "op_pin_state",
 			initname = ".exc.pin_state",
 			init = "op_pin_state_pinned"
+		),
+		dict(
+			type = "ir_type*",
+			name = "type"
 		)
 	],
 	init = '''
