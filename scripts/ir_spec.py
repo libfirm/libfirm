@@ -261,6 +261,7 @@ CopyB = dict(
 Div = dict(
 	ins   = [ "mem", "dividend", "divisor" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs_name = "divmod",
 	attrs = [
 		dict(
 			type = "ir_mode*",
@@ -268,7 +269,8 @@ Div = dict(
 		),
 		dict(
 			name = "state",
-			type = "op_pin_state"
+			type = "op_pin_state",
+			initname = ".exc.pin_state"
 		),
 		dict(
 			name = "no_remainder",
@@ -279,12 +281,18 @@ Div = dict(
 				init = "1"
 			)
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
+	#endif
+	'''
 ),
 
 DivMod = dict(
 	ins   = [ "mem", "dividend", "divisor" ],
 	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ],
+	attrs_name = "divmod",
 	attrs = [
 		dict(
 			type = "ir_mode*",
@@ -292,9 +300,15 @@ DivMod = dict(
 		),
 		dict(
 			name = "state",
-			type = "op_pin_state"
+			type = "op_pin_state",
+			initname = ".exc.pin_state"
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
+	#endif
+	'''
 ),
 
 End = dict(
@@ -373,6 +387,7 @@ Minus = dict(
 Mod = dict(
 	ins   = [ "mem", "dividend", "divisor" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs_name = "divmod",
 	attrs = [
 		dict(
 			type = "ir_mode*",
@@ -380,9 +395,15 @@ Mod = dict(
 		),
 		dict(
 			name = "state",
-			type = "op_pin_state"
+			type = "op_pin_state",
+			initname = ".exc.pin_state"
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
+	#endif
+	'''
 ),
 
 Mul = dict(
@@ -435,6 +456,7 @@ Proj = dict(
 Quot = dict(
 	ins   = [ "mem", "dividend", "divisor" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs_name = "divmod",
 	attrs = [
 		dict(
 			type = "ir_mode*",
@@ -442,9 +464,15 @@ Quot = dict(
 		),
 		dict(
 			name = "state",
-			type = "op_pin_state"
+			type = "op_pin_state",
+			initname = ".exc.pin_state"
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
+	#endif
+	'''
 ),
 
 Return = dict(

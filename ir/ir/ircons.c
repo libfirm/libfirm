@@ -380,12 +380,10 @@ NEW_BD_BINOP(Sub)
 NEW_BD_UNOP(Minus)
 NEW_BD_BINOP(Mul)
 NEW_BD_BINOP(Mulh)
-#endif
 NEW_BD_DIVOP(Quot)
 NEW_BD_DIVOP(DivMod)
 NEW_BD_DIVOP(Div)
 NEW_BD_DIVOP(Mod)
-#ifdef USE_ORIGINAL
 NEW_BD_BINOP(And)
 NEW_BD_BINOP(Or)
 NEW_BD_BINOP(Eor)
@@ -1074,12 +1072,10 @@ NEW_RD_BINOP(Sub)
 NEW_RD_UNOP(Minus)
 NEW_RD_BINOP(Mul)
 NEW_RD_BINOP(Mulh)
-#endif
 NEW_RD_DIVOP(Quot)
 NEW_RD_DIVOP(DivMod)
 NEW_RD_DIVOP(Div)
 NEW_RD_DIVOP(Mod)
-#ifdef USE_ORIGINAL
 NEW_RD_BINOP(And)
 NEW_RD_BINOP(Or)
 NEW_RD_BINOP(Eor)
@@ -1604,7 +1600,6 @@ ir_node *new_r_Mulh(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_rd_Mulh(NULL, irg, block, op1, op2, mode);
 }
-#endif
 ir_node *new_r_Quot(ir_graph *irg, ir_node *block,
                     ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_Quot(NULL, irg, block, memop, op1, op2, mode, state);
@@ -1617,15 +1612,16 @@ ir_node *new_r_Div(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_Div(NULL, irg, block, memop, op1, op2, mode, state);
 }
+#endif
 ir_node *new_r_DivRL(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_DivRL(NULL, irg, block, memop, op1, op2, mode, state);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_r_Mod(ir_graph *irg, ir_node *block,
                    ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_rd_Mod(NULL, irg, block, memop, op1, op2, mode, state);
 }
-#ifdef USE_ORIGINAL
 ir_node *new_r_Abs(ir_graph *irg, ir_node *block,
                    ir_node *op, ir_mode *mode) {
 	return new_rd_Abs(NULL, irg, block, op, mode);
@@ -2484,6 +2480,7 @@ void firm_alloc_frag_arr(ir_node *irn, ir_op *op, ir_node ***frag_store) {
 	}
 }  /* firm_alloc_frag_arr */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	ir_node *res;
@@ -2516,6 +2513,7 @@ new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mod
 
 	return res;
 }  /* new_d_Div */
+#endif
 
 ir_node *
 new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
@@ -2528,6 +2526,7 @@ new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *m
 	return res;
 }  /* new_d_DivRL */
 
+#ifdef USE_ORIGINAL
 ir_node *
 new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	ir_node *res;
@@ -2539,7 +2538,6 @@ new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mod
 	return res;
 }  /* new_d_Mod */
 
-#ifdef USE_ORIGINAL
 NEW_D_BINOP(And)
 NEW_D_BINOP(Or)
 NEW_D_BINOP(Eor)
@@ -3070,7 +3068,6 @@ ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode) {
 ir_node *new_Mulh(ir_node *op1, ir_node *op2, ir_mode *mode) {
 	return new_d_Mulh(NULL, op1, op2, mode);
 }
-#endif
 ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Quot(NULL, memop, op1, op2, mode, state);
 }
@@ -3080,13 +3077,14 @@ ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, o
 ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Div(NULL, memop, op1, op2, mode, state);
 }
+#endif
 ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_DivRL(NULL, memop, op1, op2, mode, state);
 }
+#ifdef USE_ORIGINAL
 ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) {
 	return new_d_Mod(NULL, memop, op1, op2, mode, state);
 }
-#ifdef USE_ORIGINAL
 ir_node *new_Abs(ir_node *op, ir_mode *mode) {
 	return new_d_Abs(NULL, op, mode);
 }
