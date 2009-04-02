@@ -1430,14 +1430,14 @@ set_Builtin_param(ir_node *node, int pos, ir_node *param) {
 ir_type *
 get_Builtin_type(ir_node *node) {
 	assert(is_Builtin(node));
-	return node->attr.builtin.builtin_tp = skip_tid(node->attr.builtin.builtin_tp);
+	return node->attr.builtin.type = skip_tid(node->attr.builtin.type);
 }
 
 void
 set_Builtin_type(ir_node *node, ir_type *tp) {
 	assert(is_Builtin(node));
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
-	node->attr.builtin.builtin_tp = tp;
+	node->attr.builtin.type = tp;
 }
 
 /* Returns a human readable string for the ir_builtin_kind. */

@@ -198,7 +198,7 @@ typedef struct {
 typedef struct {
 	except_attr     exc;           /**< the exception attribute. MUST be the first one. */
 	ir_builtin_kind kind;          /**< kind of the called builtin procedure */
-	ir_type         *builtin_tp;   /**< type of called builtin procedure */
+	ir_type         *type;         /**< type of called builtin procedure */
 } builtin_attr;
 
 /** Alloc attributes. */

@@ -508,7 +508,7 @@ new_bd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
 	res->attr.builtin.exc.pin_state = op_pin_state_pinned;
 	res->attr.builtin.kind          = kind;
-	res->attr.builtin.builtin_tp    = tp;
+	res->attr.builtin.type          = tp;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
