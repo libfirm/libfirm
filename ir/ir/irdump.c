@@ -2054,17 +2054,22 @@ dump_type_info(type_or_ent tore, void *env) {
 				}
 			}
 			if (is_compound_entity(ent)) {
-				for (i = 0; i < get_compound_ent_n_values(ent); i++) {
-					value = get_compound_ent_value(ent, i);
-					if (value) {
-						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
-						dump_const_expression(F, value);
-						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
-						/*
-						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
-						get_compound_ent_value_member(ent, i), i);
-						*/
+				if (has_entity_initializer(ent)) {
+					/* new style initializers */
+				} else {
+					/* old style compound entity values */
+					for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+						value = get_compound_ent_value(ent, i);
+						if (value) {
+							print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
+							dump_const_expression(F, value);
+							print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
+							/*
+							fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+							ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
+							get_compound_ent_value_member(ent, i), i);
+							*/
+						}
 					}
 				}
 			}
