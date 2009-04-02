@@ -149,6 +149,25 @@ Borrow = dict(
 	is_a     = "binop"
 ),
 
+Bound = dict(
+	ins   = [ "mem", "index", "lower", "upper" ],
+	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs = [
+		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_pinned"
+		)
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
+	#endif
+	'''
+),
+
+
 Break = dict(
 	mode = "mode_X"
 ),
@@ -301,7 +320,12 @@ CopyB = dict(
 			name = "type",
 			type = "ir_type*"
 		)
-	]
+	],
+	d_post = '''
+	#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
+	#endif
+	'''
 ),
 
 Div = dict(
@@ -408,6 +432,25 @@ IJmp = dict(
 	op_flags = "cfopcode",
 	state    = "pinned",
 	ins      = [ "target" ],
+),
+
+InstOf = dict(
+	ins   = [ "store", "objptr" ],
+	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ],
+	attrs = [
+		dict(
+			name = "state",
+			type = "op_pin_state",
+			initname = ".exc.pin_state",
+			init = "op_pin_state_floats"
+		),
+		dict(
+			name = "type",
+			type = "ir_type*"
+		)
+	]
+
+	# TODO: No firm_alloc_frag_arr???
 ),
 
 Jmp = dict(
@@ -533,6 +576,11 @@ Quot = dict(
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
 	#endif
 	'''
+),
+
+Raise = dict(
+	ins   = [ "mem", "exo_ptr" ],
+	outs  = [ "M", "X" ]
 ),
 
 Return = dict(

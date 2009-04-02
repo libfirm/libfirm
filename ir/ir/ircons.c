@@ -772,7 +772,6 @@ new_bd_Mux(dbg_info *db, ir_node *block,
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Mux */
-#endif
 
 static ir_node *
 new_bd_CopyB(dbg_info *db, ir_node *block,
@@ -843,7 +842,6 @@ new_bd_Bound(dbg_info *db, ir_node *block,
 	return res;
 }  /* new_bd_Bound */
 
-#ifdef USE_ORIGINAL
 static ir_node *
 new_bd_Pin(dbg_info *db, ir_node *block, ir_node *node) {
 	ir_node  *res;
@@ -1428,7 +1426,6 @@ new_rd_Mux(dbg_info *db, ir_graph *irg, ir_node *block,
 
 	return res;
 }  /* new_rd_Mux */
-#endif
 
 ir_node *new_rd_CopyB(dbg_info *db, ir_graph *irg, ir_node *block,
                       ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
@@ -1479,7 +1476,6 @@ ir_node *new_rd_Bound(dbg_info *db, ir_graph *irg, ir_node *block,
 	return res;
 }  /* new_rd_Bound */
 
-#ifdef USE_ORIGINAL
 ir_node *new_rd_Pin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *node) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
@@ -1746,7 +1742,6 @@ ir_node *new_r_Mux(ir_graph *irg, ir_node *block,
                    ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
 	return new_rd_Mux(NULL, irg, block, sel, ir_false, ir_true, mode);
 }
-#endif
 ir_node *new_r_CopyB(ir_graph *irg, ir_node *block,
                      ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
 	return new_rd_CopyB(NULL, irg, block, store, dst, src, data_type);
@@ -1763,7 +1758,6 @@ ir_node *new_r_Bound(ir_graph *irg, ir_node *block,
                      ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
 	return new_rd_Bound(NULL, irg, block, store, idx, lower, upper);
 }
-#ifdef USE_ORIGINAL
 ir_node *new_r_Pin(ir_graph *irg, ir_node *block, ir_node *node) {
 	return new_rd_Pin(NULL, irg, block, node);
 }
@@ -2698,7 +2692,6 @@ new_d_Mux(dbg_info *db, ir_node *sel, ir_node *ir_false,
 	return new_bd_Mux(db, current_ir_graph->current_block,
 	                  sel, ir_false, ir_true, mode);
 }  /* new_d_Mux */
-#endif
 
 ir_node *new_d_CopyB(dbg_info *db,ir_node *store,
     ir_node *dst, ir_node *src, ir_type *data_type) {
@@ -2733,7 +2726,6 @@ ir_node *new_d_Bound(dbg_info *db,ir_node *store,
 	return res;
 }  /* new_d_Bound */
 
-#ifdef USE_ORIGINAL
 ir_node *
 new_d_Pin(dbg_info *db, ir_node *node) {
 	return new_bd_Pin(db, current_ir_graph->current_block, node);
@@ -3174,7 +3166,6 @@ ir_node *new_NoMem(void) {
 ir_node *new_Mux(ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode) {
 	return new_d_Mux(NULL, sel, ir_false, ir_true, mode);
 }
-#endif
 ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type) {
 	return new_d_CopyB(NULL, store, dst, src, data_type);
 }
@@ -3187,7 +3178,6 @@ ir_node *new_Raise(ir_node *store, ir_node *obj) {
 ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper) {
 	return new_d_Bound(NULL, store, idx, lower, upper);
 }
-#ifdef USE_ORIGINAL
 ir_node *new_Pin(ir_node *node) {
 	return new_d_Pin(NULL, node);
 }

@@ -284,10 +284,10 @@ def main(argv):
 	gendir = argv[2]
 
 	# List of TODOs
-	niymap = ["Anchor", "ASM", "Bad", "Bound",
-		"CallBegin", "Const", "Const_type", "Const_long", "CopyB",
+	niymap = ["Anchor", "ASM", "Bad",
+		"CallBegin", "Const", "Const_type", "Const_long",
 		"defaultProj", "Dummy", "EndReg", "EndExcept",
-		"InstOf", "NoMem", "Phi", "Raise",
+		"NoMem", "Phi",
 		"simpleSel", "SymConst", "SymConst_type", "Sync"]
 
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
