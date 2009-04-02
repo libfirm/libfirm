@@ -525,7 +525,7 @@ symconst_attr *get_irn_symconst_attr(ir_node *node) {
 
 ir_type *get_irn_call_attr(ir_node *node) {
 	assert(is_Call(node));
-	return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
+	return node->attr.call.type = skip_tid(node->attr.call.type);
 }
 
 sel_attr *get_irn_sel_attr(ir_node *node) {
@@ -1369,14 +1369,14 @@ set_Call_param(ir_node *node, int pos, ir_node *param) {
 ir_type *
 get_Call_type(ir_node *node) {
 	assert(is_Call(node));
-	return node->attr.call.cld_tp = skip_tid(node->attr.call.cld_tp);
+	return node->attr.call.type = skip_tid(node->attr.call.type);
 }
 
 void
 set_Call_type(ir_node *node, ir_type *tp) {
 	assert(is_Call(node));
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
-	node->attr.call.cld_tp = tp;
+	node->attr.call.type = tp;
 }
 
 ir_node *

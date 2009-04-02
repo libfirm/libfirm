@@ -190,7 +190,7 @@ typedef struct {
 /** Call attributes. */
 typedef struct {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
-	ir_type *cld_tp;              /**< type of called procedure */
+	ir_type *type;                /**< type of called procedure */
 	ir_entity ** callee_arr;      /**< result of callee analysis */
 } call_attr;
 
