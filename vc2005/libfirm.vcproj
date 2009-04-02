@@ -1405,6 +1405,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\ir\be\benewalloc.c"
+					>
+				</File>
+				<File
 					RelativePath="..\ir\be\benode.c"
 					>
 					<FileConfiguration
@@ -1731,14 +1735,6 @@
 				</File>
 				<File
 					RelativePath="..\ir\be\bessadestr.h"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bessadestrsimple.c"
-					>
-				</File>
-				<File
-					RelativePath="..\ir\be\bessadestrsimple.h"
 					>
 				</File>
 				<File
@@ -4178,10 +4174,10 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							Description="Translate IR-Spec: $(InputPath)"
-							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
-							AdditionalDependencies="..\scripts\gen_ir.pl"
-							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+							Description=""
+							CommandLine=""
+							AdditionalDependencies=""
+							Outputs=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -4189,10 +4185,10 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							Description="Translate IR-Spec: $(InputPath)"
-							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
-							AdditionalDependencies="..\scripts\gen_ir.pl"
-							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+							Description=""
+							CommandLine=""
+							AdditionalDependencies=""
+							Outputs=""
 						/>
 					</FileConfiguration>
 					<FileConfiguration
@@ -4200,10 +4196,10 @@
 						>
 						<Tool
 							Name="VCCustomBuildTool"
-							Description="Translate IR-Spec: $(InputPath)"
-							CommandLine="..\scripts\gen_ir.pl $(InputPath) ..\ir\ir"
-							AdditionalDependencies="..\scripts\gen_ir.pl"
-							Outputs="..\ir\ir\gen_ir_cons.c.inl"
+							Description=""
+							CommandLine=""
+							AdditionalDependencies=""
+							Outputs=""
 						/>
 					</FileConfiguration>
 				</File>
@@ -5082,37 +5078,6 @@
 				<File
 					RelativePath="..\ir\opt\critical_edges.c"
 					>
-				</File>
-				<File
-					RelativePath="..\ir\opt\data_flow_scalar_replace.c"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="DebugJTEST|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\ir\opt\escape_ana.c"
@@ -7635,6 +7600,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\scripts\gen_ir.py"
+				>
+			</File>
+			<File
 				RelativePath="..\scripts\gen_ir_io.py"
 				>
 				<FileConfiguration
@@ -7643,7 +7612,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						CommandLine="python $(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
 						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
@@ -7654,7 +7623,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						CommandLine="python $(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
 						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
@@ -7665,7 +7634,7 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="Generating I/O code: $(InputPath)"
-						CommandLine="$(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
+						CommandLine="python $(InputPath) ..\scripts\ir_spec.py ..\ir\ir"
 						AdditionalDependencies="..\scripts\ir_spec.py"
 						Outputs="..\ir\ir\gen_irio_import.inl;..\ir\ir\gen_irio_export.inl;..\ir\ir\gen_irio_lex.inl"
 					/>
@@ -7674,6 +7643,39 @@
 			<File
 				RelativePath="..\scripts\ir_spec.py"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Translate IR-Spec: $(InputPath)"
+						CommandLine="python ..\scripts\gen_ir.py $(InputPath) ..\ir\ir"
+						AdditionalDependencies="..\scripts\gen_ir.py"
+						Outputs="..\ir\ir\gen_ir_cons.c.inl"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Translate IR-Spec: $(InputPath)"
+						CommandLine="python ..\scripts\gen_ir.py $(InputPath) ..\ir\ir"
+						AdditionalDependencies="..\scripts\gen_ir.py"
+						Outputs="..\ir\ir\gen_ir_cons.c.inl"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="DebugJTEST|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						Description="Translate IR-Spec: $(InputPath)"
+						CommandLine="python ..\scripts\gen_ir.py $(InputPath) ..\ir\ir"
+						AdditionalDependencies="..\scripts\gen_ir.py"
+						Outputs="..\ir\ir\gen_ir_cons.c.inl"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

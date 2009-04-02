@@ -1,55 +1,61 @@
 nodes = dict(
-Start = dict(
-	mode       = "mode_T",
-	op_flags   = "cfopcode",
-	state      = "pinned",
-	noconstr   = True,
-	optimize   = False
+
+#
+# Abstract node types
+#
+unop = dict(
+	abstract = True,
+	ins      = [ "op" ]
 ),
 
-End = dict(
-	mode       = "mode_X",
-	op_flags   = "cfopcode",
-	state      = "pinned",
-	arity      = "dynamic",
-	noconstr   = True,
-	optimize   = False
+binop = dict(
+	abstract = True,
+	ins      = [ "left", "right" ]
 ),
 
-Id = dict(
-	ins = [ "pred" ]
+#
+# Real node types
+#
+Abs = dict(
+	is_a     = "unop"
 ),
 
-Phi = dict(
-	noconstr = True,
-	state    = "pinned",
-	arity    = "variable",
+Add = dict(
+	is_a     = "binop"
 ),
 
-Jmp = dict(
-	mode     = "mode_X",
-	op_flags = "cfopcode",
-	state    = "pinned",
-	ins      = [],
-),
-
-IJmp = dict(
-	mode     = "mode_X",
-	op_flags = "cfopcode",
-	state    = "pinned",
-	ins      = [ "target" ],
-),
-
-Const = dict(
-	mode       = "",
-	knownBlock = True,
-	attrs_name = "con",
-	attrs      = [
+Alloc = dict(
+	ins   = [ "mem", "size" ],
+	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs = [
 		dict(
-			type = "tarval*",
-			name = "tarval",
+			name = "type",
+			type = "ir_type*"
+		),
+		dict(
+			name = "where",
+			type = "ir_where_alloc"
 		)
-	],
+	]
+),
+
+Anchor = dict(
+	mode       = "mode_ANY",
+	ins        = [ "end_block", "start_block", "end", "start",
+	               "end_reg", "end_except", "initial_exec",
+				   "frame", "tls", "initial_mem", "args",
+				   "bad", "no_mem" ],
+	knownBlock = True,
+	noconstr   = True
+),
+
+And = dict(
+	is_a     = "binop"
+),
+
+Bad = dict(
+	mode       = "mode_Bad",
+	knownBlock = True,
 ),
 
 Block = dict(
@@ -128,30 +134,8 @@ Block = dict(
 	}''',
 ),
 
-SymConst = dict(
-	mode       = "mode_P",
-	knownBlock = True,
-	noconstr   = True,
-	attrs      = [
-		dict(
-			type = "ir_entity*",
-			name = "entity"
-		)
-	],
-),
-
-# SymConst
-
-Call = dict(
-	ins      = [ "mem", "ptr" ],
-	arity    = "variable",
-	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
-	attrs    = [
-		dict(
-			type = "ir_type*",
-			name = "type"
-		)
-	]
+Borrow = dict(
+	is_a     = "binop"
 ),
 
 Builtin = dict(
@@ -170,82 +154,94 @@ Builtin = dict(
 	]
 ),
 
-binop = dict(
-	abstract = True,
-	ins      = [ "left", "right" ]
-),
-
-Add = dict(
-	is_a     = "binop"
+Call = dict(
+	ins      = [ "mem", "ptr" ],
+	arity    = "variable",
+	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
+	attrs    = [
+		dict(
+			type = "ir_type*",
+			name = "type"
+		)
+	]
 ),
 
 Carry = dict(
 	is_a     = "binop"
 ),
 
-Sub = dict(
-	is_a     = "binop"
+Cmp = dict(
+	is_a     = "binop",
+	outs     = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ],
 ),
 
-Borrow = dict(
-	is_a     = "binop"
-),
-
-Mul = dict(
-	is_a     = "binop"
-),
-
-Mulh = dict(
-	is_a     = "binop"
-),
-
-Abs = dict(
-	is_a     = "unop"
-),
-
-And = dict(
-	is_a     = "binop"
-),
-
-Or = dict(
-	is_a     = "binop"
-),
-
-Eor = dict(
-	is_a     = "binop"
-),
-
-Not = dict(
-	is_a     = "unop"
-),
-
-Shl = dict(
-	is_a     = "binop"
-),
-
-Shr = dict(
-	is_a     = "binop"
-),
-
-Shrs = dict(
-	is_a     = "binop"
-),
-
-Rotl = dict(
-	is_a     = "binop"
-),
-
-Quot = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	attrs = [
+Cond = dict(
+	ins      = [ "selector" ],
+	outs     = [ "false", "true" ],
+	attrs    = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			name = "kind",
+			type = "cond_kind",
+			init = "dense"
 		),
 		dict(
-			name = "state",
-			type = "op_pin_state"
+			name = "default_proj",
+			type = "long",
+			init = "0"
+		),
+		dict(
+			name = "jmp_pred",
+			type = "cond_jmp_predicate",
+			init = "COND_JMP_PRED_NONE"
+		)
+	]
+),
+
+Confirm = dict(
+	ins      = [ "value", "bound" ],
+	mode     = "get_irn_mode(irn_value)",
+	attrs    = [
+		dict(
+			name = "cmp",
+			type = "pn_Cmp"
+		),
+	],
+),
+
+Const = dict(
+	mode       = "",
+	knownBlock = True,
+	attrs_name = "con",
+	attrs      = [
+		dict(
+			type = "tarval*",
+			name = "tarval",
+		)
+	],
+),
+
+Conv = dict(
+	is_a     = "unop",
+	attrs = [
+		dict(
+			name = "strict",
+			type = "int",
+			init = "0",
+			special = dict(
+				prefix = "strict",
+				init = "1"
+			)
+		)
+	]
+),
+
+CopyB = dict(
+	ins   = [ "mem", "dst", "src" ],
+	outs  = [ "M", "X_regular", "X_except" ],
+	attrs = [
+		dict(
+			name = "type",
+			type = "ir_type*"
 		)
 	]
 ),
@@ -289,19 +285,50 @@ DivMod = dict(
 	]
 ),
 
-Mod = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
+End = dict(
+	mode       = "mode_X",
+	op_flags   = "cfopcode",
+	state      = "pinned",
+	arity      = "dynamic",
+	noconstr   = True,
+	optimize   = False
+),
+
+Eor = dict(
+	is_a     = "binop"
+),
+
+Free = dict(
+	ins   = [ "mem", "ptr", "size" ],
+	mode  = "mode_M",
 	attrs = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			name = "type",
+			type = "ir_type*"
 		),
 		dict(
-			name = "state",
-			type = "op_pin_state"
+			name = "where",
+			type = "ir_where_alloc"
 		)
 	]
+),
+
+Id = dict(
+	ins = [ "pred" ]
+),
+
+IJmp = dict(
+	mode     = "mode_X",
+	op_flags = "cfopcode",
+	state    = "pinned",
+	ins      = [ "target" ],
+),
+
+Jmp = dict(
+	mode     = "mode_X",
+	op_flags = "cfopcode",
+	state    = "pinned",
+	ins      = [],
 ),
 
 Load = dict(
@@ -327,30 +354,35 @@ Load = dict(
 	'''
 ),
 
-Store = dict(
-	ins      = [ "mem", "ptr", "value" ],
-	outs     = [ "M", "X_regular", "X_except" ],
-	constructor_args = [
-		dict(
-			type = "ir_cons_flags",
-			name = "flags",
-		),
-	],
-	d_post = '''
-#if PRECISE_EXC_CONTEXT
-	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
-#endif
-	'''
+Minus = dict(
+	is_a     = "unop"
 ),
 
-Anchor = dict(
-	mode       = "mode_ANY",
-	ins        = [ "end_block", "start_block", "end", "start",
-	               "end_reg", "end_except", "initial_exec",
-				   "frame", "tls", "initial_mem", "args",
-				   "bad", "no_mem" ],
-	knownBlock = True,
-	noconstr   = True
+Mod = dict(
+	ins   = [ "mem", "dividend", "divisor" ],
+	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs = [
+		dict(
+			type = "ir_mode*",
+			name = "resmode"
+		),
+		dict(
+			name = "state",
+			type = "op_pin_state"
+		)
+	]
+),
+
+Mul = dict(
+	is_a     = "binop"
+),
+
+Mulh = dict(
+	is_a     = "binop"
+),
+
+Mux = dict(
+	ins      = [ "sel", "false", "true" ]
 ),
 
 NoMem = dict(
@@ -358,9 +390,18 @@ NoMem = dict(
 	knownBlock = True,
 ),
 
-Bad = dict(
-	mode       = "mode_Bad",
-	knownBlock = True,
+Not = dict(
+	is_a     = "unop"
+),
+
+Or = dict(
+	is_a     = "binop"
+),
+
+Phi = dict(
+	noconstr = True,
+	state    = "pinned",
+	arity    = "variable",
 ),
 
 Pin = dict(
@@ -379,6 +420,31 @@ Proj = dict(
 	]
 ),
 
+Quot = dict(
+	ins   = [ "mem", "dividend", "divisor" ],
+	outs  = [ "M", "X_regular", "X_except", "res" ],
+	attrs = [
+		dict(
+			type = "ir_mode*",
+			name = "resmode"
+		),
+		dict(
+			name = "state",
+			type = "op_pin_state"
+		)
+	]
+),
+
+Return = dict(
+	ins      = [ "mem" ],
+	arity    = "variable",
+	mode     = "mode_X"
+),
+
+Rotl = dict(
+	is_a     = "binop"
+),
+
 Sel = dict(
 	ins    = [ "mem", "ptr" ],
 	arity  = "variable",
@@ -389,6 +455,58 @@ Sel = dict(
 			name = "entity"
 		)
 	]
+),
+
+Shl = dict(
+	is_a     = "binop"
+),
+
+Shr = dict(
+	is_a     = "binop"
+),
+
+Shrs = dict(
+	is_a     = "binop"
+),
+
+Start = dict(
+	mode       = "mode_T",
+	op_flags   = "cfopcode",
+	state      = "pinned",
+	noconstr   = True,
+	optimize   = False
+),
+
+Store = dict(
+	ins      = [ "mem", "ptr", "value" ],
+	outs     = [ "M", "X_regular", "X_except" ],
+	constructor_args = [
+		dict(
+			type = "ir_cons_flags",
+			name = "flags",
+		),
+	],
+	d_post = '''
+#if PRECISE_EXC_CONTEXT
+	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
+#endif
+	'''
+),
+
+Sub = dict(
+	is_a     = "binop"
+),
+
+SymConst = dict(
+	mode       = "mode_P",
+	knownBlock = True,
+	noconstr   = True,
+	attrs      = [
+		dict(
+			type = "ir_entity*",
+			name = "entity"
+		)
+	],
 ),
 
 Sync = dict(
@@ -406,118 +524,5 @@ Unknown = dict(
 	knownBlock = True,
 	block      = "get_irg_start_block(irg)",
 	nodbginfo  = True
-),
-
-Confirm = dict(
-	ins      = [ "value", "bound" ],
-	mode     = "get_irn_mode(irn_value)",
-	attrs    = [
-		dict(
-			name = "cmp",
-			type = "pn_Cmp"
-		),
-	],
-),
-
-Return = dict(
-	ins      = [ "mem" ],
-	arity    = "variable",
-	mode     = "mode_X"
-),
-
-unop = dict(
-	abstract = True,
-	ins      = [ "op" ]
-),
-
-Minus = dict(
-	is_a     = "unop"
-),
-
-Mux = dict(
-	ins      = [ "sel", "false", "true" ]
-),
-
-Cond = dict(
-	ins      = [ "selector" ],
-	outs     = [ "false", "true" ],
-	attrs    = [
-		dict(
-			name = "kind",
-			type = "cond_kind",
-			init = "dense"
-		),
-		dict(
-			name = "default_proj",
-			type = "long",
-			init = "0"
-		),
-		dict(
-			name = "jmp_pred",
-			type = "cond_jmp_predicate",
-			init = "COND_JMP_PRED_NONE"
-		)
-	]
-),
-
-Cmp = dict(
-	is_a     = "binop",
-	outs     = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ],
-),
-
-Conv = dict(
-	is_a     = "unop",
-	attrs = [
-		dict(
-			name = "strict",
-			type = "int",
-			init = "0",
-			special = dict(
-				prefix = "strict",
-				init = "1"
-			)
-		)
-	]
-),
-
-Alloc = dict(
-	ins   = [ "mem", "size" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	attrs = [
-		dict(
-			name = "type",
-			type = "ir_type*"
-		),
-		dict(
-			name = "where",
-			type = "ir_where_alloc"
-		)
-	]
-),
-
-Free = dict(
-	ins   = [ "mem", "ptr", "size" ],
-	mode  = "mode_M",
-	attrs = [
-		dict(
-			name = "type",
-			type = "ir_type*"
-		),
-		dict(
-			name = "where",
-			type = "ir_where_alloc"
-		)
-	]
-),
-
-CopyB = dict(
-	ins   = [ "mem", "dst", "src" ],
-	outs  = [ "M", "X_regular", "X_except" ],
-	attrs = [
-		dict(
-			name = "type",
-			type = "ir_type*"
-		)
-	]
 ),
 )
