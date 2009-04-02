@@ -274,7 +274,7 @@ typedef struct {
 /** CopyB attribute. */
 typedef struct {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
-	ir_type        *data_type;    /**< Type of the copied entity. */
+	ir_type        *type;         /**< Type of the copied entity. */
 } copyb_attr;
 
 /** Bound attribute. */

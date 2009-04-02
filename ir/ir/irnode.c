@@ -2352,12 +2352,12 @@ void set_CopyB_src(ir_node *node, ir_node *src) {
 
 ir_type *get_CopyB_type(ir_node *node) {
 	assert(is_CopyB(node));
-	return node->attr.copyb.data_type = skip_tid(node->attr.copyb.data_type);
+	return node->attr.copyb.type = skip_tid(node->attr.copyb.type);
 }
 
 void set_CopyB_type(ir_node *node, ir_type *data_type) {
 	assert(is_CopyB(node) && data_type);
-	node->attr.copyb.data_type = data_type;
+	node->attr.copyb.type = data_type;
 }
 
 

@@ -788,7 +788,7 @@ new_bd_CopyB(dbg_info *db, ir_node *block,
 	res = new_ir_node(db, irg, block, op_CopyB, mode_T, 3, in);
 
 	res->attr.copyb.exc.pin_state = op_pin_state_pinned;
-	res->attr.copyb.data_type     = data_type;
+	res->attr.copyb.type          = data_type;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);
 	return res;
