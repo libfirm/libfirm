@@ -134,13 +134,13 @@ def preprocess_node(nodename, node):
 	node.setdefault("ins", [])
 	node.setdefault("arity", len(node["ins"]))
 	node.setdefault("attrs", [])
+	node.setdefault("constrname", nodename);
 	node.setdefault("constructor_args", [])
 	node.setdefault("attrs_name", nodename.lower())
 	node.setdefault("block", "block")
 
 	# construct node arguments
 	arguments = [ ]
-	initargs = [ ]
 	initattrs = [ ]
 	specialconstrs = [ ]
 	for input in node["ins"]:
@@ -167,7 +167,6 @@ def preprocess_node(nodename, node):
 
 		attr.setdefault("initname", "." + attr["name"])
 
-		# "special" stuff does not work at all, yet
 		if "special" in attr:
 			if not "init" in attr:
 				print "Node type %s has an attribute with a \"special\" entry but without \"init\"" % nodename
@@ -190,13 +189,10 @@ def preprocess_node(nodename, node):
 			specialconstrs.append(
 				dict(
 					constrname = specialname,
-					attrname = attr["name"],
-					value = attr["special"]["init"]
+					attr = attr
 				)
 			)
-		elif "init" in attr:
-			initargs.append(attr["name"])
-		else:
+		elif not "init" in attr:
 			arguments.append(prepare_attr(attr))
 
 	for arg in node["constructor_args"]:
@@ -211,14 +207,13 @@ def preprocess_node(nodename, node):
 				init = name + " & cons_unaligned ? align_non_aligned : align_is_aligned"))
 
 	node["args"] = arguments
-	node["initargs"] = initargs
 	node["initattrs"] = initattrs
 	node["special_constructors"] = specialconstrs
 
 #############################
 
 node_template = env.from_string('''
-ir_node *new_rd_{{nodename}}({{node["dbdecl"]}}ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
+ir_node *new_rd_{{node["constrname"]}}({{node["dbdecl"]}}ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
 {
 	ir_node *res;
 	ir_graph *rem = current_ir_graph;
@@ -243,34 +238,34 @@ ir_node *new_rd_{{nodename}}({{node["dbdecl"]}}ir_graph *irg{{node|blockdecl}}{{
 	return res;
 }
 
-ir_node *new_r_{{nodename}}(ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
+ir_node *new_r_{{node["constrname"]}}(ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
 {
 	{% if node["nodbginfo"] -%}
-		return new_rd_{{nodename}}(irg{{node|block}}{{node|args}});
+		return new_rd_{{node["constrname"]}}(irg{{node|block}}{{node|args}});
 	{%- else -%}
-		return new_rd_{{nodename}}(NULL, irg{{node|block}}{{node|args}});
+		return new_rd_{{node["constrname"]}}(NULL, irg{{node|block}}{{node|args}});
 	{%- endif %}
 }
 
-ir_node *new_d_{{nodename}}({{node["dbdeclnocomma"]}}{{node|argdecls(node["nodbginfo"])}})
+ir_node *new_d_{{node["constrname"]}}({{node["dbdeclnocomma"]}}{{node|argdecls(node["nodbginfo"])}})
 {
 	ir_node *res;
 	{{ node["d_pre"] }}
 	{% if node["nodbginfo"] -%}
-		res = new_rd_{{nodename}}(current_ir_graph{{node|curblock}}{{node|args}});
+		res = new_rd_{{node["constrname"]}}(current_ir_graph{{node|curblock}}{{node|args}});
 	{%- else -%}
-		res = new_rd_{{nodename}}(db, current_ir_graph{{node|curblock}}{{node|args}});
+		res = new_rd_{{node["constrname"]}}(db, current_ir_graph{{node|curblock}}{{node|args}});
 	{%- endif %}
 	{{ node["d_post"] }}
 	return res;
 }
 
-ir_node *new_{{nodename}}({{node|argdecls(True, True)}})
+ir_node *new_{{node["constrname"]}}({{node|argdecls(True, True)}})
 {
 	{% if node["nodbginfo"] -%}
-		return new_d_{{nodename}}({{node|args(True)}});
+		return new_d_{{node["constrname"]}}({{node|args(True)}});
 	{%- else -%}
-		return new_d_{{nodename}}(NULL{{node|args}});
+		return new_d_{{node["constrname"]}}(NULL{{node|args}});
 	{%- endif %}
 }
 
@@ -290,9 +285,9 @@ def main(argv):
 	# List of TODOs
 	niymap = ["Alloc", "Anchor", "ASM", "Bad", "Bound", "Break", "Builtin",
 		"Call", "CallBegin", "Const", "Const_type", "Const_long", "CopyB",
-		"defaultProj", "DivRL", "Dummy", "EndReg", "EndExcept",
+		"defaultProj", "Dummy", "EndReg", "EndExcept",
 		"Filter", "InstOf", "NoMem", "Phi", "Raise",
-		"simpleSel", "strictConv", "SymConst", "SymConst_type", "Sync"]
+		"simpleSel", "SymConst", "SymConst_type", "Sync"]
 
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
 	for nodename, node in do_dictsort(ir_spec.nodes):
@@ -301,6 +296,12 @@ def main(argv):
 		preprocess_node(nodename, node)
 		if not "abstract" in node:
 			file.write(node_template.render(vars()))
+
+			if "special_constructors" in node:
+				for special in node["special_constructors"]:
+					node["constrname"] = special["constrname"]
+					special["attr"]["init"] = special["attr"]["special"]["init"]
+					file.write(node_template.render(vars()))
 	file.write("\n")
 	file.close()
 
