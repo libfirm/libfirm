@@ -1577,12 +1577,12 @@ BINOP_MEM(OP)                                           \
                                                         \
 ir_mode *get_##OP##_resmode(const ir_node *node) {      \
   assert(is_##OP(node));                                \
-  return node->attr.divmod.res_mode;                    \
+  return node->attr.divmod.resmode;                     \
 }                                                       \
                                                         \
 void set_##OP##_resmode(ir_node *node, ir_mode *mode) { \
   assert(is_##OP(node));                                \
-  node->attr.divmod.res_mode = mode;                    \
+  node->attr.divmod.resmode = mode;                     \
 }
 
 

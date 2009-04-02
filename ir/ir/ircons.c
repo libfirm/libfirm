@@ -104,7 +104,7 @@ new_bd_##instr(dbg_info *db, ir_node *block,                    \
   in[2] = op2;                                                  \
   res = new_ir_node(db, irg, block, op_##instr, mode_T, 3, in); \
   res->attr.divmod.exc.pin_state = state;                       \
-  res->attr.divmod.res_mode = mode;                             \
+  res->attr.divmod.resmode = mode;                              \
   res->attr.divmod.no_remainder = 0;                            \
   res = optimize_node(res);                                     \
   IRN_VRFY_IRG(res, irg);                                       \
@@ -411,7 +411,7 @@ static ir_node *new_bd_DivRL(dbg_info *db, ir_node *block,
 	in[2] = op2;
 	res = new_ir_node(db, irg, block, op_Div, mode_T, 3, in);
 	res->attr.divmod.exc.pin_state = state;
-	res->attr.divmod.res_mode = mode;
+	res->attr.divmod.resmode = mode;
 	res->attr.divmod.no_remainder = 1;
 	res = optimize_node(res);
 	IRN_VRFY_IRG(res, irg);

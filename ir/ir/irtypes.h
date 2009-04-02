@@ -290,7 +290,7 @@ typedef struct {
 /** Div/Mod/DivMod/Quot attribute. */
 typedef struct {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
-	ir_mode        *res_mode;     /**< Result mode for the division. */
+	ir_mode        *resmode;      /**< Result mode for the division. */
 	char           no_remainder;  /**< Set, if known that a division can be done without a remainder. */
 } divmod_attr;
 

@@ -6002,7 +6002,7 @@ static int node_cmp_attr_Div(ir_node *a, ir_node *b) {
 	const divmod_attr *ma = get_irn_divmod_attr(a);
 	const divmod_attr *mb = get_irn_divmod_attr(b);
 	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->res_mode      != mb->res_mode ||
+		   ma->resmode       != mb->resmode ||
 		   ma->no_remainder  != mb->no_remainder;
 }  /* node_cmp_attr_Div */
 
@@ -6011,7 +6011,7 @@ static int node_cmp_attr_DivMod(ir_node *a, ir_node *b) {
 	const divmod_attr *ma = get_irn_divmod_attr(a);
 	const divmod_attr *mb = get_irn_divmod_attr(b);
 	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->res_mode      != mb->res_mode;
+		   ma->resmode       != mb->resmode;
 }  /* node_cmp_attr_DivMod */
 
 /** Compares the attributes of two Mod nodes. */
@@ -6019,7 +6019,7 @@ static int node_cmp_attr_Mod(ir_node *a, ir_node *b) {
 	const divmod_attr *ma = get_irn_divmod_attr(a);
 	const divmod_attr *mb = get_irn_divmod_attr(b);
 	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->res_mode      != mb->res_mode;
+		   ma->resmode       != mb->resmode;
 }  /* node_cmp_attr_Mod */
 
 /** Compares the attributes of two Quot nodes. */
@@ -6027,7 +6027,7 @@ static int node_cmp_attr_Quot(ir_node *a, ir_node *b) {
 	const divmod_attr *ma = get_irn_divmod_attr(a);
 	const divmod_attr *mb = get_irn_divmod_attr(b);
 	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->res_mode      != mb->res_mode;
+		   ma->resmode       != mb->resmode;
 }  /* node_cmp_attr_Quot */
 
 /** Compares the attributes of two Confirm nodes. */
