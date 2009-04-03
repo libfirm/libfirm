@@ -139,13 +139,15 @@ typedef union {
 
 /** Additional type flags. */
 enum type_flags {
-	tf_none             =  0, /**< No flags. */
-	tf_frame_type       =  1, /**< Set if this is a frame type. */
-	tf_value_param_type =  2, /**< Set if this is a value param type. */
-	tf_lowered_type     =  4, /**< Set if this is a lowered type. */
-	tf_layout_fixed     =  8, /**< Set if the layout of a type is fixed */
-	tf_global_type      = 16, /**< Set only for the global type */
-	tf_tls_type         = 32, /**< Set only for the tls type */
+	tf_none             =   0, /**< No flags. */
+	tf_frame_type       =   1, /**< Set if this is a frame type. */
+	tf_value_param_type =   2, /**< Set if this is a value param type. */
+	tf_lowered_type     =   4, /**< Set if this is a lowered type. */
+	tf_layout_fixed     =   8, /**< Set if the layout of a type is fixed */
+	tf_global_type      =  16, /**< Set only for the global type */
+	tf_tls_type         =  32, /**< Set only for the tls type */
+	tf_constructors     =  64, /**< Set only for the constructors segment type */
+	tf_destructors      = 128, /**< Set only for the destructors segment type */
 };
 
 /**

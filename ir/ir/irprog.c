@@ -92,13 +92,14 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
 	/* Set these flags for debugging. */
 	irp->segment_types[IR_SEGMENT_GLOBAL]->flags       |= tf_global_type;
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]->flags |= tf_tls_type;
+	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]->flags |= tf_constructors;
+	irp->segment_types[IR_SEGMENT_DESTRUCTORS]->flags  |= tf_destructors;
 
 	/* The global type is a class, but we cannot derive from it, so set
 	   the final property to assist optimizations that checks for it. */
 	set_class_final(irp->segment_types[IR_SEGMENT_GLOBAL], 1);
 
-	irp->const_code_irg   = new_const_code_irg();
-
+	irp->const_code_irg             = new_const_code_irg();
 	irp->phase_state                = phase_building;
 	irp->outs_state                 = outs_none;
 	irp->ip_outedges                = NULL;
