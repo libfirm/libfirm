@@ -484,10 +484,7 @@ tarval *get_mode_NAN(ir_mode *mode) {
 }
 
 int is_mode(const void *thing) {
-	if (get_kind(thing) == k_ir_mode)
-		return 1;
-	else
-		return 0;
+	return get_kind(thing) == k_ir_mode;
 }
 
 int (mode_is_signed)(const ir_mode *mode) {
@@ -588,7 +585,7 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm) {
 		break;
 
 	case irms_reference:
-		/* do exist machines out there with different pointer lenghts ?*/
+		/* do exist machines out there with different pointer lengths ?*/
 		return 0;
 
 	case irms_internal_boolean:
