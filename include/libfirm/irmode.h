@@ -185,7 +185,7 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
  * @return
  *     true if the thing is a mode, else false
  */
-int is_mode(void *thing);
+int is_mode(const void *thing);
 
 /* ********** Access methods to read mode information *********** */
 

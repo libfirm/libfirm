@@ -114,7 +114,7 @@ void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s) {
     irp->typeinfo_state = ir_typeinfo_inconsistent;
 }
 
-ir_typeinfo_state get_irg_typeinfo_state(ir_graph *irg) {
+ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg) {
   assert(is_ir_graph(irg));
   return irg->typeinfo_state;
 }
@@ -145,7 +145,7 @@ void set_irp_typeinfo_inconsistent(void) {
  * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
-ir_type *get_irn_typeinfo_type(ir_node *n) {
+ir_type *get_irn_typeinfo_type(const ir_node *n) {
   ir_type *res = initial_type;
   pmap_entry *entry;
   assert(get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||

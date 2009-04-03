@@ -483,7 +483,7 @@ tarval *get_mode_NAN(ir_mode *mode) {
 	return get_tarval_nan(mode);
 }
 
-int is_mode(void *thing) {
+int is_mode(const void *thing) {
 	if (get_kind(thing) == k_ir_mode)
 		return 1;
 	else
