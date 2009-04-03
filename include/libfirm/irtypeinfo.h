@@ -61,20 +61,13 @@ void free_irtypeinfo(void);
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
-/*
-#define irg_typeinfo_none         ir_typeinfo_none
-#define irg_typeinfo_consistent   ir_typeinfo_consistent
-#define irg_typeinfo_inconsistent ir_typeinfo_inconsistent
-#define irg_typeinfo_state        ir_typeinfo_state
-*/
-
 typedef enum {
-  ir_typeinfo_none,         /**< No typeinfo computed, calls to set/get_irn_typeinfo_type()
-  				  are invalid. */
-  ir_typeinfo_consistent,   /**< Type info valid, calls to set/get_irn_typeinfo_type() return
-				  the proper type. */
-  ir_typeinfo_inconsistent  /**< Type info can be accessed, but it can be invalid
-				  because of other transformations. */
+	ir_typeinfo_none,        /**< No typeinfo computed, calls to set/get_irn_typeinfo_type()
+	                              are invalid. */
+	ir_typeinfo_consistent,  /**< Type info valid, calls to set/get_irn_typeinfo_type() return
+	                              the proper type. */
+	ir_typeinfo_inconsistent /**< Type info can be accessed, but it can be invalid
+	                              because of other transformations. */
 } ir_typeinfo_state;
 
 void              set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s);
