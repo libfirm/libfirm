@@ -68,55 +68,52 @@ ir_type *initial_type = NULL;
  *  in the order of MIN(<calls to set_irn_type>, #irnodes).
  */
 void init_irtypeinfo(void) {
-  int i, n;
+	int i;
 
-  if (!initial_type)
-    initial_type = new_type_class(new_id_from_str("initial_type"));
+	if (initial_type == NULL)
+		initial_type = new_type_class(new_id_from_str("initial_type"));
 
-  /* We need a new, empty map. */
-  if (type_node_map) pmap_destroy(type_node_map);
-  type_node_map = pmap_create();
+	/* We need a new, empty map. */
+	if (type_node_map != NULL)
+		pmap_destroy(type_node_map);
+	type_node_map = pmap_create();
 
-  n = get_irp_n_irgs();
-  for (i = 0; i < n; ++i)
-    set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+		set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
 void free_irtypeinfo(void) {
-  int i, n;
+	int i;
 
-  if (initial_type) {
-    free_type(initial_type);
-    initial_type = NULL;
-  }
-  //else assert(0 && "call init_type_info before freeing");
+	if (initial_type != NULL) {
+		free_type(initial_type);
+		initial_type = NULL;
+	}
 
-  if (type_node_map) {
-    pmap_destroy(type_node_map);
-    type_node_map = NULL;
-  }
-  //else assert(0 && "call init_type_info before freeing");
+	if (type_node_map != NULL) {
+		pmap_destroy(type_node_map);
+		type_node_map = NULL;
+	}
 
-  n = get_irp_n_irgs();
-  for (i = 0; i < n; ++i)
-    set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+		set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
 void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s) {
-  assert(is_ir_graph(irg));
-  irg->typeinfo_state = s;
-  if ((irg->typeinfo_state == ir_typeinfo_consistent) &&
-      (irp->typeinfo_state == ir_typeinfo_consistent) &&
-      (s                   != ir_typeinfo_consistent)   )
-    irp->typeinfo_state = ir_typeinfo_inconsistent;
+	assert(is_ir_graph(irg));
+	irg->typeinfo_state = s;
+	if ((irg->typeinfo_state == ir_typeinfo_consistent) &&
+	    (irp->typeinfo_state == ir_typeinfo_consistent) &&
+	    (s                   != ir_typeinfo_consistent)   )
+		irp->typeinfo_state = ir_typeinfo_inconsistent;
 }
 
 ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg) {
-  assert(is_ir_graph(irg));
-  return irg->typeinfo_state;
+	assert(is_ir_graph(irg));
+	return irg->typeinfo_state;
 }
 
 
@@ -127,15 +124,15 @@ ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg) {
  * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
  */
 ir_typeinfo_state get_irp_typeinfo_state(void) {
-  return irp->typeinfo_state;
+	return irp->typeinfo_state;
 }
 void set_irp_typeinfo_state(ir_typeinfo_state s) {
-  irp->typeinfo_state = s;
+	irp->typeinfo_state = s;
 }
 /* If typeinfo is consistent, sets it to inconsistent. */
 void set_irp_typeinfo_inconsistent(void) {
-  if (irp->typeinfo_state == ir_typeinfo_consistent)
-    irp->typeinfo_state = ir_typeinfo_inconsistent;
+	if (irp->typeinfo_state == ir_typeinfo_consistent)
+		irp->typeinfo_state = ir_typeinfo_inconsistent;
 }
 
 
@@ -146,21 +143,20 @@ void set_irp_typeinfo_inconsistent(void) {
  * assume current_ir_graph set properly.
  */
 ir_type *get_irn_typeinfo_type(const ir_node *n) {
-  ir_type *res = initial_type;
-  pmap_entry *entry;
-  assert(get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
-	 get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  );
+	ir_type *res = initial_type;
+	pmap_entry *entry;
 
-  entry = pmap_find(type_node_map, n);
-  if (entry)
-    res = entry->value;
+	assert(get_irg_typeinfo_state(get_irn_irg(n)) != ir_typeinfo_none);
 
-  return res;
+	entry = pmap_find(type_node_map, n);
+	if (entry != NULL)
+		res = entry->value;
+
+	return res;
 }
 
 void set_irn_typeinfo_type(ir_node *n, ir_type *tp) {
-  assert(get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
-  	 get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent  );
+	assert(get_irg_typeinfo_state(current_ir_graph) != ir_typeinfo_none);
 
-  pmap_insert(type_node_map, (void *)n, (void *)tp);
+	pmap_insert(type_node_map, (void *)n, (void *)tp);
 }
