@@ -253,7 +253,7 @@ void dump_block_marker_in_title(int flag) {
  * returns the name of a mode or ERROR_TXT if mode is NOT a mode object.
  * in the later case, sets bad.
  */
-const char *get_mode_name_ex(ir_mode *mode, int *bad) {
+const char *get_mode_name_ex(const ir_mode *mode, int *bad) {
 	if (is_mode(mode))
 		return get_mode_name(mode);
 	*bad |= 1;
@@ -264,7 +264,7 @@ const char *get_mode_name_ex(ir_mode *mode, int *bad) {
  * returns the name of a type or <ERROR> if mode is NOT a mode object.
  * in the later case, sets bad
  */
-const char *get_type_name_ex(ir_type *tp, int *bad) {
+const char *get_type_name_ex(const ir_type *tp, int *bad) {
 	if (is_type(tp))
 		return get_type_name(tp);
 	*bad |= 1;
@@ -276,6 +276,7 @@ static const char *color_names[ird_color_count];
 static const char *color_rgb[ird_color_count];
 static struct obstack color_obst;
 
+/** define a custom color. */
 static void custom_color(int num, const char *rgb_def)
 {
 	assert(num < ird_color_count);
@@ -286,6 +287,7 @@ static void custom_color(int num, const char *rgb_def)
 	color_names[num] = obstack_finish(&color_obst);
 }
 
+/** Define a named color. */
 static void named_color(int num, const char *name)
 {
 	assert(num < ird_color_count);
@@ -293,10 +295,11 @@ static void named_color(int num, const char *name)
 	color_names[num] = name;
 }
 
+/** Initializes the used colors. */
 static void init_colors(void)
 {
 	static int initialized = 0;
-	if(initialized)
+	if (initialized)
 		return;
 
 	obstack_init(&color_obst);
@@ -331,7 +334,7 @@ static void print_vcg_color(FILE *F, ird_color_t color) {
  * Prints the edge from a type S to a type T with additional info fmt, ...
  * to the file F.
  */
-static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fmt, ...)
+static void print_type_type_edge(FILE *F, const ir_type *S, const ir_type *T, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -344,26 +347,26 @@ static void print_type_type_edge(FILE *F, ir_type *S, ir_type *T, const char *fm
 }
 
 /**
- * Prints the edge from a type T to an entity E with additional info fmt, ...
+ * Prints the edge from a type tp to an entity ent with additional info fmt, ...
  * to the file F.
  */
-static void print_type_ent_edge(FILE *F, ir_type *T, ir_entity *E, const char *fmt, ...)
+static void print_type_ent_edge(FILE *F, const ir_type *tp, const ir_entity *ent, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(T);
-	fprintf(F, " targetname: \""); PRINT_ENTID(E); fprintf(F, "\"");
+	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(tp);
+	fprintf(F, " targetname: \""); PRINT_ENTID(ent); fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
 	fprintf(F, "}\n");
 	va_end(ap);
 }
 
 /**
- * Prints the edge from an entity E to an entity T with additional info fmt, ...
+ * Prints the edge from an entity ent1 to an entity ent2 with additional info fmt, ...
  * to the file F.
  */
-static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge, ird_color_t color, const char *fmt, ...)
+static void print_ent_ent_edge(FILE *F, const ir_entity *ent1, const ir_entity *ent2, int backedge, ird_color_t color, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -372,8 +375,8 @@ static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge
 		fprintf(F, "backedge: { sourcename: \"");
 	else
 		fprintf(F, "edge: { sourcename: \"");
-	PRINT_ENTID(E);
-	fprintf(F, "\" targetname: \""); PRINT_ENTID(T);  fprintf(F, "\"");
+	PRINT_ENTID(ent1);
+	fprintf(F, "\" targetname: \""); PRINT_ENTID(ent2);  fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
 	fprintf(F, " ");
 	if (color != (ird_color_t) -1)
@@ -383,48 +386,48 @@ static void print_ent_ent_edge(FILE *F, ir_entity *E, ir_entity *T, int backedge
 }
 
 /**
- * Prints the edge from an entity E to a type T with additional info fmt, ...
+ * Prints the edge from an entity ent to a type tp with additional info fmt, ...
  * to the file F.
  */
-static void print_ent_type_edge(FILE *F, ir_entity *E, ir_type *T, const char *fmt, ...)
+static void print_ent_type_edge(FILE *F, const ir_entity *ent, const ir_type *tp, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
-	fprintf(F, "\" targetname: "); PRINT_TYPEID(T);
+	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(ent);
+	fprintf(F, "\" targetname: "); PRINT_TYPEID(tp);
 	vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
 }
 
 /**
- * Prints the edge from a node N to a type T with additional info fmt, ...
+ * Prints the edge from a node irn to a type tp with additional info fmt, ...
  * to the file F.
  */
-static void print_node_type_edge(FILE *F, const ir_node *N, ir_type *T, const char *fmt, ...)
+static void print_node_type_edge(FILE *F, const ir_node *irn, ir_type *tp, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(N);
-	fprintf(F, "\" targetname: "); PRINT_TYPEID(T);
+	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(irn);
+	fprintf(F, "\" targetname: "); PRINT_TYPEID(tp);
 	vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
 }
 
 /**
- * Prints the edge from a node N to an entity E with additional info fmt, ...
+ * Prints the edge from a node irn to an entity ent with additional info fmt, ...
  * to the file F.
  */
-static void print_node_ent_edge(FILE *F, const ir_node *N, ir_entity *E, const char *fmt, ...)
+static void print_node_ent_edge(FILE *F, const ir_node *irn, const ir_entity *ent, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(N);
-	fprintf(F, "\" targetname: \""); PRINT_ENTID(E);
+	fprintf(F, "edge: { sourcename: \""); PRINT_NODEID(irn);
+	fprintf(F, "\" targetname: \""); PRINT_ENTID(ent);
 	fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
@@ -432,32 +435,32 @@ static void print_node_ent_edge(FILE *F, const ir_node *N, ir_entity *E, const c
 }
 
 /**
- * Prints the edge from an entity E to a node N with additional info fmt, ...
+ * Prints the edge from an entity ent to a node irn with additional info fmt, ...
  * to the file F.
  */
-static void print_ent_node_edge(FILE *F, ir_entity *E, const ir_node *N, const char *fmt, ...)
+static void print_ent_node_edge(FILE *F, const ir_entity *ent, const ir_node *irn, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(E);
-	fprintf(F, "\" targetname: \""); PRINT_NODEID(N); fprintf(F, "\"");
+	fprintf(F, "edge: { sourcename: \""); PRINT_ENTID(ent);
+	fprintf(F, "\" targetname: \""); PRINT_NODEID(irn); fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
 }
 
 /**
- * Prints the edge from a type E to an enumeration item item with additional info fmt, ...
+ * Prints the edge from a type tp to an enumeration item item with additional info fmt, ...
  * to the file F.
  */
-static void print_enum_item_edge(FILE *F, ir_type *E, int item, const char *fmt, ...)
+static void print_enum_item_edge(FILE *F, const ir_type *tp, int item, const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
-	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(E);
-	fprintf(F, " targetname: \""); PRINT_ITEMID(E, item); fprintf(F, "\" ");
+	fprintf(F, "edge: { sourcename: "); PRINT_TYPEID(tp);
+	fprintf(F, " targetname: \""); PRINT_ITEMID(tp, item); fprintf(F, "\" ");
 	vfprintf(F, fmt, ap);
 	fprintf(F,"}\n");
 	va_end(ap);
@@ -498,48 +501,51 @@ static void init_irdump(void) {
 /**
  * Returns the private link field.
  */
-static void *ird_get_irn_link(ir_node *n) {
+static void *ird_get_irn_link(const ir_node *n) {
 	void *res = NULL;
-	if (!irdump_link_map) return NULL;
+	if (irdump_link_map == NULL)
+		return NULL;
 
-	if (pmap_contains(irdump_link_map, (void *)n))
-		res = pmap_get(irdump_link_map, (void *)n);
+	if (pmap_contains(irdump_link_map, n))
+		res = pmap_get(irdump_link_map, n);
 	return res;
 }
 
 /**
  * Sets the private link field.
  */
-static void ird_set_irn_link(ir_node *n, void *x) {
-	if (!irdump_link_map)
+static void ird_set_irn_link(const ir_node *n, void *x) {
+	if (irdump_link_map == NULL)
 		init_irdump();
-	pmap_insert(irdump_link_map, (void *)n, x);
+	pmap_insert(irdump_link_map, n, x);
 }
 
 /**
  * Gets the private link field of an irg.
  */
-static void *ird_get_irg_link(ir_graph *irg) {
+static void *ird_get_irg_link(const ir_graph *irg) {
 	void *res = NULL;
-	if (!irdump_link_map) return NULL;
+	if (irdump_link_map == NULL)
+		return NULL;
 
-	if (pmap_contains(irdump_link_map, (void *)irg))
-		res = pmap_get(irdump_link_map, (void *)irg);
+	if (pmap_contains(irdump_link_map, irg))
+		res = pmap_get(irdump_link_map, irg);
 	return res;
 }
 
 /**
  * Sets the private link field of an irg.
  */
-static void ird_set_irg_link(ir_graph *irg, void *x) {
-	if (!irdump_link_map) init_irdump();
-	pmap_insert(irdump_link_map, (void *)irg, x);
+static void ird_set_irg_link(const ir_graph *irg, void *x) {
+	if (irdump_link_map == NULL)
+		init_irdump();
+	pmap_insert(irdump_link_map, irg, x);
 }
 
 /**
  * Walker, clears the private link field.
  */
-static void clear_link(ir_node * node, void * env) {
+static void clear_link(ir_node *node, void *env) {
 	(void) env;
 	ird_set_irn_link(node, NULL);
 }
@@ -548,12 +554,13 @@ static void clear_link(ir_node * node, void * env) {
  * If the entity has a ld_name, returns it if the dump_ld_name is set,
  * else returns the name of the entity.
  */
-static const char *_get_ent_dump_name(ir_entity *ent, int dump_ld_name) {
-	if (!ent)
+static const char *_get_ent_dump_name(const ir_entity *ent, int dump_ld_name) {
+	if (ent == NULL)
 		return "<NULL entity>";
 	if (dump_ld_name) {
 		/* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
-		if (ent->ld_name) return get_id_str(ent->ld_name);
+		if (ent->ld_name != NULL)
+			return get_id_str(ent->ld_name);
 	}
 	return get_id_str(ent->name);
 }
@@ -562,12 +569,12 @@ static const char *_get_ent_dump_name(ir_entity *ent, int dump_ld_name) {
  * If the entity has a ld_name, returns it if the option dump_ld_name is set,
  * else returns the name of the entity.
  */
-const char *get_ent_dump_name(ir_entity *ent) {
+const char *get_ent_dump_name(const ir_entity *ent) {
 	return _get_ent_dump_name(ent, dump_ld_name);
 }
 
 /* Returns the name of an IRG. */
-const char *get_irg_dump_name(ir_graph *irg) {
+const char *get_irg_dump_name(const ir_graph *irg) {
 	/* Don't use get_entity_ld_ident (ent) as it computes the mangled name! */
 	return _get_ent_dump_name(get_irg_entity(irg), 1);
 }
@@ -575,7 +582,7 @@ const char *get_irg_dump_name(ir_graph *irg) {
 /**
  * Returns non-zero if a node is in floating state.
  */
-static int node_floats(ir_node *n) {
+static int node_floats(const ir_node *n) {
 	return ((get_irn_pinned(n) == op_pin_state_floats) &&
 	        (get_irg_pinned(current_ir_graph) == op_pin_state_floats));
 }
@@ -594,7 +601,7 @@ static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *pos
 /**
  * Walker, allocates an array for all blocks and puts it's nodes non-floating nodes into this array.
  */
-static void collect_node(ir_node * node, void *env) {
+static void collect_node(ir_node *node, void *env) {
 	(void) env;
 	if (is_Block(node)
 	    || node_floats(node)
@@ -660,7 +667,7 @@ static ir_node **construct_block_lists(ir_graph *irg) {
 	set_interprocedural_view(rem_view);
 #endif
 
-	if(walk_flag) {
+	if (walk_flag) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	}
 
@@ -846,9 +853,10 @@ default_case:
  */
 static int dump_node_mode(FILE *F, ir_node *n)
 {
-	int bad = 0;
+	int             bad = 0;
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
-	ir_opcode iro;
+	ir_opcode       iro;
+	ir_mode         *mode;
 
 	/* call the dump_node operation if available */
 	if (ops->dump_node)
@@ -866,15 +874,13 @@ static int dump_node_mode(FILE *F, ir_node *n)
 	case iro_Jmp:
 	case iro_NoMem:
 		break;
-	default: {
-		ir_mode *mode = get_irn_mode(n);
+	default:
+		mode = get_irn_mode(n);
 
-		if (mode && mode != mode_BB && mode != mode_ANY && mode != mode_BAD &&
+		if (mode != NULL && mode != mode_BB && mode != mode_ANY && mode != mode_BAD &&
 			(mode != mode_T || iro == iro_Proj))
 			fprintf(F, "%s", get_mode_name_ex(mode, &bad));
 	}
-	}
-
 	return bad;
 }
 
@@ -2020,9 +2026,15 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 	fprintf(F, "\n info1: \"value: %s\"}\n", buf);
 }
 
-/* dumps a type or entity and it's edges. */
-static void
-dump_type_info(type_or_ent tore, void *env) {
+/**
+ * Dumps a new style initializer.
+ */
+static void dump_entity_initializer(FILE *F, const ir_entity *ent) {
+
+}
+
+/** Dumps a type or entity and it's edges. */
+static void dump_type_info(type_or_ent tore, void *env) {
 	FILE *F = env;
 	int i = 0;  /* to shutup gcc */
 
@@ -2040,7 +2052,7 @@ dump_type_info(type_or_ent tore, void *env) {
 		ENT_OWN_EDGE_ATTR "}\n", ent, get_entity_owner(ent));*/
 		print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
 		if (is_Class_type(get_entity_owner(ent))) {
-			for(i = 0; i < get_entity_n_overwrites(ent); i++)
+			for (i = get_entity_n_overwrites(ent) - 1; i >= 0; --i)
 				print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, -1, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		/* attached subgraphs */
@@ -2056,9 +2068,10 @@ dump_type_info(type_or_ent tore, void *env) {
 			if (is_compound_entity(ent)) {
 				if (has_entity_initializer(ent)) {
 					/* new style initializers */
+					dump_entity_initializer(F, ent);
 				} else {
 					/* old style compound entity values */
-					for (i = 0; i < get_compound_ent_n_values(ent); i++) {
+					for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
 						value = get_compound_ent_value(ent, i);
 						if (value) {
 							print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
@@ -2082,29 +2095,29 @@ dump_type_info(type_or_ent tore, void *env) {
 		/* and now the edges */
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
-			for (i=0; i < get_class_n_supertypes(tp); i++)
-				print_type_type_edge(F, tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
-			for (i=0; i < get_class_n_members(tp); i++)
-				print_type_ent_edge(F,tp,get_class_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+			for (i = get_class_n_supertypes(tp) - 1; i >= 0; --i)
+				print_type_type_edge(F, tp, get_class_supertype(tp, i), TYPE_SUPER_EDGE_ATTR);
+			for (i = get_class_n_members(tp) - 1; i >= 0; --i)
+				print_type_ent_edge(F, tp, get_class_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
 			break;
 		case tpo_struct:
-			for (i=0; i < get_struct_n_members(tp); i++)
-				print_type_ent_edge(F,tp,get_struct_member(tp, i),TYPE_MEMBER_EDGE_ATTR);
+			for (i = get_struct_n_members(tp) - 1; i >= 0; --i)
+				print_type_ent_edge(F, tp, get_struct_member(tp, i), TYPE_MEMBER_EDGE_ATTR);
 			break;
 		case tpo_method:
-			for (i = 0; i < get_method_n_params(tp); i++)
-				print_type_type_edge(F,tp,get_method_param_type(tp, i),METH_PAR_EDGE_ATTR,i);
-			for (i = 0; i < get_method_n_ress(tp); i++)
-				print_type_type_edge(F,tp,get_method_res_type(tp, i),METH_RES_EDGE_ATTR,i);
+			for (i = get_method_n_params(tp) - 1; i >= 0; --i)
+				print_type_type_edge(F, tp, get_method_param_type(tp, i), METH_PAR_EDGE_ATTR,i);
+			for (i = get_method_n_ress(tp) - 1; i >= 0; --i)
+				print_type_type_edge(F, tp, get_method_res_type(tp, i), METH_RES_EDGE_ATTR,i);
 			break;
 		case tpo_union:
-			for (i = 0; i < get_union_n_members(tp); i++)
-				print_type_ent_edge(F,tp,get_union_member(tp, i),UNION_EDGE_ATTR);
+			for (i = get_union_n_members(tp) - 1; i >= 0; --i)
+				print_type_ent_edge(F, tp, get_union_member(tp, i), UNION_EDGE_ATTR);
 			break;
 		case tpo_array:
-			print_type_type_edge(F,tp,get_array_element_type(tp),ARR_ELT_TYPE_EDGE_ATTR);
-			print_type_ent_edge(F,tp,get_array_element_entity(tp),ARR_ENT_EDGE_ATTR);
-			for (i = 0; i < get_array_n_dimensions(tp); i++) {
+			print_type_type_edge(F, tp, get_array_element_type(tp), ARR_ELT_TYPE_EDGE_ATTR);
+			print_type_ent_edge(F, tp, get_array_element_entity(tp), ARR_ENT_EDGE_ATTR);
+			for (i = get_array_n_dimensions(tp) - 1; i >= 0; --i) {
 				ir_node *upper = get_array_upper_bound(tp, i);
 				ir_node *lower = get_array_lower_bound(tp, i);
 				print_node_type_edge(F, upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
@@ -2114,13 +2127,13 @@ dump_type_info(type_or_ent tore, void *env) {
 			}
 			break;
 		case tpo_enumeration:
-			for (i = 0; i < get_enumeration_n_enums(tp); ++i) {
+			for (i = get_enumeration_n_enums(tp) - 1; i >= 0; --i) {
 				dump_enum_item(F, tp, i);
 				print_enum_item_edge(F, tp, i, "label: \"item %d\"", i);
 			}
 			break;
 		case tpo_pointer:
-			print_type_type_edge(F,tp,get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
+			print_type_type_edge(F, tp, get_pointer_points_to_type(tp), PTR_PTS_TO_EDGE_ATTR);
 			break;
 		case tpo_primitive:
 			break;
@@ -2160,8 +2173,8 @@ dump_class_hierarchy_node(type_or_ent tore, void *ctx) {
 			/* The node */
 			dump_entity_node(F, ent);
 			/* The edges */
-			print_type_ent_edge(F,get_entity_owner(ent),ent,TYPE_MEMBER_EDGE_ATTR);
-			for(i = 0; i < get_entity_n_overwrites(ent); i++)
+			print_type_ent_edge(F, get_entity_owner(ent), ent, TYPE_MEMBER_EDGE_ATTR);
+			for (i = get_entity_n_overwrites(ent) - 1; i >= 0; --i)
 				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, -1, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		break;
@@ -2174,7 +2187,7 @@ dump_class_hierarchy_node(type_or_ent tore, void *ctx) {
 		case tpo_class:
 			dump_type_node(F, tp);
 			/* and now the edges */
-			for (i=0; i < get_class_n_supertypes(tp); i++) {
+			for (i = get_class_n_supertypes(tp) - 1; i >= 0; --i) {
 				print_type_type_edge(F,tp,get_class_supertype(tp, i),TYPE_SUPER_EDGE_ATTR);
 			}
 			break;
@@ -2196,12 +2209,13 @@ static void
 dump_out_edge(ir_node *n, void *env) {
 	FILE *F = env;
 	int i;
-	for (i = 0; i < get_irn_n_outs(n); i++) {
-		assert(get_irn_out(n, i));
+	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
+		ir_node *succ = get_irn_out(n, i);
+		assert(succ);
 		fprintf(F, "edge: {sourcename: \"");
 		PRINT_NODEID(n);
 		fprintf(F, "\" targetname: \"");
-		PRINT_NODEID(get_irn_out(n, i));
+		PRINT_NODEID(succ);
 		fprintf(F, "\" color: red linestyle: dashed");
 		fprintf(F, "}\n");
 	}
@@ -2263,11 +2277,11 @@ void dump_loops(FILE *F, ir_loop *loop) {
 
 	/* dump edges to nodes in loop -- only if it is a real loop */
 	if (get_loop_depth(loop) != 0) {
-		for (i = 0; i < get_loop_n_nodes(loop); i++) {
+		for (i = get_loop_n_nodes(loop) - 1; i >= 0; --i) {
 			dump_loop_node_edge(F, loop, i);
 		}
 	}
-	for (i = 0; i < get_loop_n_sons(loop); i++) {
+	for (i = get_loop_n_sons(loop) - 1; i >= 0; --i) {
 		dump_loops(F, get_loop_son(loop, i));
 		dump_loop_son_edge(F, loop, i);
 	}
@@ -2275,12 +2289,16 @@ void dump_loops(FILE *F, ir_loop *loop) {
 
 static inline
 void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg) {
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
+	ir_loop *loop = get_irg_loop(irg);
 
-	if (get_irg_loop(irg)) dump_loops(F, get_irg_loop(irg));
+	if (loop != NULL) {
+		ir_graph *rem = current_ir_graph;
+		current_ir_graph = irg;
 
-	current_ir_graph = rem;
+		dump_loops(F, loop);
+
+		current_ir_graph = rem;
+	}
 }
 
 
@@ -2348,7 +2366,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
  * @param suffix1 first filename suffix
  * @param suffix2 second filename suffix
  */
-FILE *vcg_open(ir_graph *irg, const char * suffix1, const char *suffix2) {
+FILE *vcg_open(ir_graph *irg, const char *suffix1, const char *suffix2) {
 	FILE *F;
 	const char *nm = get_irg_dump_name(irg);
 	int len = strlen(nm), i, j;
@@ -2383,7 +2401,7 @@ FILE *vcg_open(ir_graph *irg, const char * suffix1, const char *suffix2) {
 	if (!F) {
 		perror(fname);
 	}
-	free(fname);
+	xfree(fname);
 
 	return F;
 }
@@ -2425,7 +2443,7 @@ FILE *vcg_open_name(const char *name, const char *suffix) {
 	if (!F) {
 		perror(fname);
 	}
-	free(fname);
+	xfree(fname);
 
 	return F;
 }
@@ -2698,7 +2716,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 		dump_irnode_to_file(F, block);
 
 		/* Check whether we have bad predecessors to color the block. */
-		for (i = 0; i < get_Block_n_cfgpreds(block); ++i)
+		for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
 			if ((fl = is_Bad(get_Block_cfgpred(block, i))))
 				break;
 
@@ -2712,7 +2730,7 @@ dump_block_to_cfg(ir_node *block, void *env) {
 
 		fprintf(F, "}\n");
 		/* Dump the edges */
-		for ( i = 0; i < get_Block_n_cfgpreds(block); i++)
+		for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
 			if (!is_Bad(skip_Proj(get_Block_cfgpred(block, i)))) {
 				pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
 				fprintf(F, "edge: { sourcename: \"");
@@ -2783,7 +2801,8 @@ void dump_cfg(ir_graph *irg, const char *suffix)
 
 
 static void descend_and_dump(FILE *F, ir_node *n, int depth, pset *mark_set) {
-	if (pset_find_ptr(mark_set, n)) return;
+	if (pset_find_ptr(mark_set, n))
+		return;
 
 	pset_insert_ptr(mark_set, n);
 
@@ -2920,7 +2939,7 @@ void
 dump_all_types(const char *suffix)
 {
 	FILE *f = vcg_open_name("All_types", suffix);
-	if (f) {
+	if (f != NULL) {
 		dump_vcg_header(f, "All_types", "Hierarchic", NULL);
 		type_walk(dump_type_info, NULL, f);
 		inc_irg_visited(get_const_code_irg());
@@ -3050,7 +3069,8 @@ void dump_loop_tree(ir_graph *irg, const char *suffix)
 	FILE *f;
 
 	/* if a filter is set, dump only the irg's that match the filter */
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg)))) return;
+	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
+		return;
 
 	f = vcg_open(irg, suffix, "-looptree");
 	if (f != NULL) {

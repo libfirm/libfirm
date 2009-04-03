@@ -95,12 +95,12 @@ FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
 FILE *vcg_open_name (const char *name, const char *suffix);
 void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *orientation);
 void dump_vcg_footer(FILE *F);
-const char *get_irg_dump_name(ir_graph *irg);
+const char *get_irg_dump_name(const ir_graph *irg);
 
 
-const char *get_ent_dump_name(ir_entity *ent);
-const char *get_type_name_ex(ir_type *tp, int *bad);
-const char *get_mode_name_ex(ir_mode *mode, int *bad);
+const char *get_ent_dump_name(const ir_entity *ent);
+const char *get_type_name_ex(const ir_type *tp, int *bad);
+const char *get_mode_name_ex(const ir_mode *mode, int *bad);
 /**
  * dump the name of a node n to the File F.
  */
