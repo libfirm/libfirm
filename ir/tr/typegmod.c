@@ -30,7 +30,7 @@
 #include "irmode.h"
 
 void exchange_types(ir_type *old_type, ir_type *new_type) {
-	unsigned flags = old_type->flags & (tf_frame_type | tf_value_param_type | tf_global_type | tf_tls_type);
+	unsigned flags = old_type->flags & ~(tf_lowered_type | tf_layout_fixed);
 	/* Deallocate datastructures not directly contained in the
 	   old type.  We must do this now as it is the latest point
 	   where we know the original kind of type.
@@ -51,7 +51,7 @@ void exchange_types(ir_type *old_type, ir_type *new_type) {
 
 	/* Exchange the types */
 	old_type->type_op = type_id;
-	old_type->mode = (ir_mode *) new_type;
+	old_type->assoc_type = new_type;
 	/* ensure that the frame, value param, global and tls flags
 	   are set right if these types are exchanged */
 	new_type->flags |= flags;
@@ -60,6 +60,6 @@ void exchange_types(ir_type *old_type, ir_type *new_type) {
 ir_type *skip_tid(ir_type *tp) {
 	/* @@@ implement the self cycle killing trick of skip_id(ir_node *) */
 	while (tp->type_op == type_id)
-		tp = (ir_type *) tp->mode;
+		tp = tp->assoc_type;
 	return tp;
 }
