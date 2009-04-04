@@ -62,20 +62,20 @@ void set_irp_callgraph_state(irp_callgraph_state s) {
 }
 
 /* Returns the number of procedures that call the given irg. */
-int get_irg_n_callers(ir_graph *irg) {
+int get_irg_n_callers(const ir_graph *irg) {
 	if (irg->callers) return ARR_LEN(irg->callers);
 	return -1;
 }
 
 /* Returns the caller at position pos. */
-ir_graph *get_irg_caller(ir_graph *irg, int pos) {
+ir_graph *get_irg_caller(const ir_graph *irg, int pos) {
 	assert(pos >= 0 && pos < get_irg_n_callers(irg));
 	if (irg->callers) return irg->callers[pos];
 	return NULL;
 }
 
 /* Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
-int is_irg_caller_backedge(ir_graph *irg, int pos) {
+int is_irg_caller_backedge(const ir_graph *irg, int pos) {
 	assert(pos >= 0 && pos < get_irg_n_callers(irg));
 	return irg->caller_isbe != NULL ? rbitset_is_set(irg->caller_isbe, pos) : 0;
 }
@@ -96,7 +96,7 @@ static void set_irg_caller_backedge(ir_graph *irg, ir_graph *caller) {
 }
 
 /* Returns non-zero if the irg has a backedge caller. */
-int has_irg_caller_backedge(ir_graph *irg) {
+int has_irg_caller_backedge(const ir_graph *irg) {
 	int i, n_callers = get_irg_n_callers(irg);
 
 	if (irg->caller_isbe != NULL) {
@@ -112,7 +112,7 @@ int has_irg_caller_backedge(ir_graph *irg) {
  * Given the position pos_caller of an caller of irg, return
  * irg's callee position on that caller.
  */
-static int reverse_pos(ir_graph *callee, int pos_caller) {
+static int reverse_pos(const ir_graph *callee, int pos_caller) {
 	ir_graph *caller = get_irg_caller(callee, pos_caller);
 	/* search the other relation for the corresponding edge. */
 	int pos_callee = -1;
@@ -130,7 +130,7 @@ static int reverse_pos(ir_graph *callee, int pos_caller) {
 }
 
 /* Returns the maximal loop depth of call nodes that call along this edge. */
-int get_irg_caller_loop_depth(ir_graph *irg, int pos) {
+int get_irg_caller_loop_depth(const ir_graph *irg, int pos) {
 	ir_graph *caller     = get_irg_caller(irg, pos);
 	int       pos_callee = reverse_pos(irg, pos);
 
@@ -139,26 +139,26 @@ int get_irg_caller_loop_depth(ir_graph *irg, int pos) {
 
 
 /* Returns the number of procedures that are called by the given irg. */
-int get_irg_n_callees(ir_graph *irg) {
+int get_irg_n_callees(const ir_graph *irg) {
 	if (irg->callees) return ARR_LEN(irg->callees);
 	return -1;
 }
 
 /* Returns the callee at position pos. */
-ir_graph *get_irg_callee(ir_graph *irg, int pos) {
+ir_graph *get_irg_callee(const ir_graph *irg, int pos) {
 	assert(pos >= 0 && pos < get_irg_n_callees(irg));
 	if (irg->callees) return irg->callees[pos]->irg;
 	return NULL;
 }
 
 /* Returns non-zero if the callee at position pos is "a backedge", i.e. a recursion. */
-int is_irg_callee_backedge(ir_graph *irg, int pos) {
+int is_irg_callee_backedge(const ir_graph *irg, int pos) {
 	assert(pos >= 0 && pos < get_irg_n_callees(irg));
 	return irg->callee_isbe != NULL ? rbitset_is_set(irg->callee_isbe, pos) : 0;
 }
 
 /* Returns non-zero if the irg has a backedge callee. */
-int has_irg_callee_backedge(ir_graph *irg) {
+int has_irg_callee_backedge(const ir_graph *irg) {
 	int i, n_callees = get_irg_n_callees(irg);
 
 	if (irg->callee_isbe != NULL) {
@@ -183,14 +183,14 @@ static void set_irg_callee_backedge(ir_graph *irg, int pos) {
 }
 
 /* Returns the maximal loop depth of call nodes that call along this edge. */
-int get_irg_callee_loop_depth(ir_graph *irg, int pos) {
+int get_irg_callee_loop_depth(const ir_graph *irg, int pos) {
 	assert(pos >= 0 && pos < get_irg_n_callees(irg));
 	if (irg->callees) return irg->callees[pos]->max_depth;
 	return -1;
 }
 
 
-double get_irg_callee_execution_frequency(ir_graph *irg, int pos) {
+double get_irg_callee_execution_frequency(const ir_graph *irg, int pos) {
 	ir_node **arr = irg->callees[pos]->call_list;
 	int i, n_Calls = ARR_LEN(arr);
 	double freq = 0.0;
@@ -201,14 +201,14 @@ double get_irg_callee_execution_frequency(ir_graph *irg, int pos) {
 	return freq;
 }
 
-double get_irg_callee_method_execution_frequency(ir_graph *irg, int pos) {
+double get_irg_callee_method_execution_frequency(const ir_graph *irg, int pos) {
 	double call_freq = get_irg_callee_execution_frequency(irg, pos);
 	double meth_freq = get_irg_method_execution_frequency(irg);
 	return call_freq * meth_freq;
 }
 
 
-double get_irg_caller_method_execution_frequency(ir_graph *irg, int pos) {
+double get_irg_caller_method_execution_frequency(const ir_graph *irg, int pos) {
 	ir_graph *caller     = get_irg_caller(irg, pos);
 	int       pos_callee = reverse_pos(irg, pos);
 
@@ -1133,7 +1133,7 @@ static void compute_rec_depth(ir_graph *irg, void *env) {
 /* ----------------------------------------------------------------------------------- */
 
 /* Returns the method execution frequency of a graph. */
-double get_irg_method_execution_frequency(ir_graph *irg) {
+double get_irg_method_execution_frequency(const ir_graph *irg) {
 	return irg->method_execution_frequency;
 }
 
@@ -1337,7 +1337,7 @@ void compute_performance_estimates(void) {
 
 /* Returns the maximal loop depth of all paths from an external visible method to
    this irg. */
-int  get_irg_loop_depth(ir_graph *irg) {
+int  get_irg_loop_depth(const ir_graph *irg) {
 	assert(irp->callgraph_state == irp_callgraph_consistent ||
 		irp->callgraph_state == irp_callgraph_and_calltree_consistent);
 	return  irg->callgraph_loop_depth;
@@ -1345,7 +1345,7 @@ int  get_irg_loop_depth(ir_graph *irg) {
 
 /* Returns the maximal recursion depth of all paths from an external visible method to
    this irg. */
-int get_irg_recursion_depth(ir_graph *irg) {
+int get_irg_recursion_depth(const ir_graph *irg) {
 	assert(irp->callgraph_state == irp_callgraph_and_calltree_consistent);
 	return irg->callgraph_recursion_depth;
 }

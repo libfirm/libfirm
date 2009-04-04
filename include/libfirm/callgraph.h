@@ -57,45 +57,45 @@ irp_callgraph_state get_irp_callgraph_state(void);
 void                set_irp_callgraph_state(irp_callgraph_state s);
 
 /** Returns the number of procedures that call the given irg. */
-int       get_irg_n_callers(ir_graph *irg);
+int       get_irg_n_callers(const ir_graph *irg);
 
 /** Returns the caller at position pos. */
-ir_graph *get_irg_caller(ir_graph *irg, int pos);
+ir_graph *get_irg_caller(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
-int       is_irg_caller_backedge(ir_graph *irg, int pos);
+int       is_irg_caller_backedge(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the irg has a backedge caller. */
-int       has_irg_caller_backedge(ir_graph *irg);
+int       has_irg_caller_backedge(const ir_graph *irg);
 
 /** Returns the maximal loop depth of call nodes that call along this edge. */
-int       get_irg_caller_loop_depth(ir_graph *irg, int pos);
+int       get_irg_caller_loop_depth(const ir_graph *irg, int pos);
 
 /** Returns the number of procedures that are called by the given irg. */
-int       get_irg_n_callees(ir_graph *irg);
+int       get_irg_n_callees(const ir_graph *irg);
 
 /** Returns the callee at position pos. */
-ir_graph *get_irg_callee(ir_graph *irg, int pos);
+ir_graph *get_irg_callee(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the callee at position pos is "a backedge", i.e. a recursion. */
-int       is_irg_callee_backedge(ir_graph *irg, int pos);
+int       is_irg_callee_backedge(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the irg has a backedge callee. */
-int       has_irg_callee_backedge(ir_graph *irg);
+int       has_irg_callee_backedge(const ir_graph *irg);
 
 /** Returns the maximal loop depth of call nodes that call along this edge. */
-int       get_irg_callee_loop_depth(ir_graph *irg, int pos);
+int       get_irg_callee_loop_depth(const ir_graph *irg, int pos);
 
 /** Returns the maximal loop depth of all paths from an external visible method to
     this irg. */
-int       get_irg_loop_depth(ir_graph *irg);
+int       get_irg_loop_depth(const ir_graph *irg);
 
 /** Returns the maximal recursion depth of all paths from an external visible method to
     this irg. */
-int       get_irg_recursion_depth(ir_graph *irg);
+int       get_irg_recursion_depth(const ir_graph *irg);
 
 /** Returns the method execution frequency of a graph. */
-double get_irg_method_execution_frequency(ir_graph *irg);
+double get_irg_method_execution_frequency(const ir_graph *irg);
 
 /**
  * Construct the callgraph. Expects callee information, i.e.,
