@@ -47,7 +47,7 @@ static void do_finalization(type_or_ent tore, void *env) {
 			return;
 		if (get_class_n_subtypes(cls) == 0) {
 			/* Note that we set the final property even for the
-			   frame/tls types this way. Should not made any problems. */
+			   frame/global types this way. Should not made any problems. */
 			set_class_final(cls, 1);
 			DB((dbg, LEVEL_1, " made final Class %s\n",
 				get_type_name(cls)));
