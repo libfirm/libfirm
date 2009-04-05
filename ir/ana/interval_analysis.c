@@ -49,27 +49,39 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /* block is not in blocks loop. */
 /*------------------------------------------------------------------*/
 
+/** The attributes of a region. */
 typedef struct {
-	void *reg;
-	void **in_array;
-	void **op_array;
-	int n_outs;
-	int n_exc_outs;
+	void *reg;        /**< The region: A block or a loop. */
+	void **in_array;  /**< New in-array for this region, may contain NULL (to be synchronized with block inputs). */
+	void **op_array;  /**< If reg is a loop, the control flow operations leading to this loop. */
+	int n_outs;       /**< The number of out edges of this region. */
+	int n_exc_outs;   /**< The number of exception out edges of this region. */
 } region_attr;
 
+/** A Hashset containing the region attributes. */
 static set *region_attr_set = NULL;
 
-int region_attr_cmp(const void *e1, const void *e2, size_t size) {
+/**
+ * Compare two region attributes for identical regions.
+ */
+static int region_attr_cmp(const void *e1, const void *e2, size_t size) {
 	region_attr *ra1 = (region_attr *)e1;
 	region_attr *ra2 = (region_attr *)e2;
 	(void) size;
 	return (ra1->reg != ra2->reg);
 }
 
+/** Hash a region attribute (the region only). */
 static inline int attr_set_hash(region_attr *a) {
 	return HASH_PTR(a->reg);
 }
 
+/**
+ * Return the region attribute for a given region.
+ * Allocate one if not exists.
+ *
+ * @param region  the region
+ */
 static inline region_attr *get_region_attr(void *region) {
 	region_attr r_attr, *res;
 	r_attr.reg = region;
@@ -121,13 +133,21 @@ void *get_loop_cfop(void *region, int pos) {
 	return ((get_region_attr(region)->op_array)[pos]);
 }
 
+/** Add a control flow op to a loop region. */
 static inline void add_loop_cfop(void *region, void *cfop) {
 	assert(cfop);
 	ARR_APP1(void *, get_region_attr(region)->op_array, cfop);
 }
 
+/**
+ * Increase the number of exception outputs if a control flow
+ * operation (that is inside the given region) is a fragile operation.
+ *
+ * @param reg   a region
+ * @param cfop  a control flow operation leaving this region
+ */
 static inline void exc_outs(void *reg, ir_node *cfop) {
-	if (is_fragile_op(cfop) || (is_fragile_Proj(cfop)))
+	if (is_fragile_op(cfop) || is_fragile_Proj(cfop))
 		inc_region_n_exc_outs(reg);
 }
 
@@ -136,12 +156,22 @@ static inline void exc_outs(void *reg, ir_node *cfop) {
 /* Walk a loop and add all edges.  Walk inner loops by recursion. */
 /*------------------------------------------------------------------*/
 
-/* return non-zero if outer can be reached from inner via the outer loop relation */
-static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *b, ir_node *cfop) {
+/**
+ * Check if the loop of a given block is the outer loop of the current one.
+ * If yes, add an edge from the block to the region of the current loop.
+ *
+ * @param inner  the current (possible inner) loop
+ * @param outer  the loop of blk
+ * @param blk    a block
+ * @param cfop   the control flow op leaving blk
+ *
+ * @return  non-zero if outer can be reached from inner via the outer loop relation
+ */
+static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *blk, ir_node *cfop) {
 	if (get_loop_outer_loop(inner) == outer) {
-		add_region_in(inner, b);
+		add_region_in(inner, blk);
 		add_loop_cfop(inner, cfop);
-		exc_outs(b, cfop);
+		exc_outs(blk, cfop);
 		return 1;
 	}
 	return 0;
@@ -176,10 +206,15 @@ static int test_loop_nest(ir_node *blk, ir_loop *loop) {
 }
 
 /**
+ * Check if pred is a block from an inner loop jumping via cfop to the block blk.
+ * If yes, add an edge from pred's loop to the region blk.
+
  * @param blk   a block
  * @param l     the loop of blk
  * @param pred  a predecessor block of blk
  * @param cfop  the control flow op from pred to blk
+ *
+ * @return non-zero if pred is from an inner loop
  */
 static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfop) {
 	int i, n_elems = get_loop_n_elements(l);
@@ -189,15 +224,17 @@ static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfo
 		loop_element e = get_loop_element(l, i);
 		switch (*e.kind) {
 		case k_ir_node:
-			if (e.node == blk)
+			if (e.node == blk) {
+				/* stop the search if we reach blk, pred cannot be found
+				   later in the loop */
 				return 0;
+			}
 			break;
 		case k_ir_loop:
 			found = test_loop_nest(pred, e.son);
 			if (found) {
 				add_region_in(blk, e.son);
 				exc_outs(e.son, cfop);
-				//if (is_fragile_op(cfop)) inc_region_n_exc_outs(b);
 				return found;
 			}
 			break;
@@ -208,7 +245,18 @@ static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfo
 	return found;
 }
 
-
+/**
+ * Check if a predecessor block pred_b is from a previous loop of the
+ * block b.
+ *
+ * @param l       the loop of the block b
+ * @param pred_l  the loop of the block pred_b
+ * @param b       the block
+ * @param pred_b  the predecessor block
+ * @param cfop    the control flow node leaving pred_b for b
+ *
+ * @return non-zero if pred is from an previous loop
+ */
 static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
                               ir_node *pred_b, ir_node *cfop)
 {
@@ -225,9 +273,9 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
 			found = test_loop_nest(pred_b, k);
 			if (found) {
 				add_region_in(l, k);
-				//if (is_fragile_op(cfop)) inc_region_n_exc_outs(k);
 				exc_outs(k, cfop);
 				add_loop_cfop(l, cfop);
+				/* placeholder: the edge is in the loop region */
 				add_region_in(b, NULL);
 			}
 		}
@@ -278,8 +326,15 @@ static void construct_interval_block(ir_node *blk, ir_loop *l) {
 
 		cfop = get_Block_cfgpred(blk, i);
 		if (is_Proj(cfop)) {
-			if (!is_Cond(get_Proj_pred(cfop))) {
-				cfop = skip_Proj(cfop);
+			ir_node *op = skip_Proj(cfop);
+			if (is_fragile_op(op) && get_Proj_proj(cfop) == pn_Generic_X_except) {
+				/*
+				 * Skip the Proj for the exception flow only, leave the
+				 * not exception flow Proj's intact.
+				 * If the old semantic is used (only one exception Proj) this
+				 * should lead to the same representation as before.
+				 */
+				cfop = op;
 			} else {
 				assert(get_nodes_block(cfop) == get_nodes_block(skip_Proj(cfop)));
 			}
@@ -290,34 +345,38 @@ static void construct_interval_block(ir_node *blk, ir_loop *l) {
 		assert(!is_Bad(pred) && !is_Bad(skip_Proj(get_Block_cfgpred(blk, i))));
 		pred_l = get_irn_loop(pred);
 		if (pred_l == l) {
+			/* first case: both blocks are in the same loop */
 			add_region_in(blk, pred);
-			//if (is_fragile_op(cfop)) inc_region_n_exc_outs(blk);
 			exc_outs(pred, cfop);
 		} else {
+			/* check for the second case: pred is from an inner loop */
 			int found = find_inner_loop(blk, l, pred, cfop);
 			if (!found) {
 				if (blk != get_loop_element(l, 0).node) {
 					DB((dbg, LEVEL_1, "Loop entry not at loop position 0. %+F\n", blk));
 				}
+				/* check for the third case: pred is in an outer loop */
 				found = find_outer_loop(l, pred_l, pred, cfop);
-				if (found)
-					add_region_in(blk, NULL);  /* placeholder */
-			}
-			if (!found) {
-				found = find_previous_loop(l, pred_l, blk, pred, cfop);
-			}
-			if (!found) {
-				assert(is_backedge(blk, i));
-				assert(found && "backedge from inner loop");
+				if (found) {
+					  /* placeholder: the edge is added to the loop region */
+					add_region_in(blk, NULL);
+				} else {
+					/* fourth case: pred is from the previous loop */
+					found = find_previous_loop(l, pred_l, blk, pred, cfop);
+
+					assert(found && "decomposition failed");
+				}
 			}
 		}
 
+#ifdef DEBUG_libfirm
 		if (blk != get_loop_element(l, 0).node) {
-			/* Check for improper region */
+			/* Check for improper region. But these can happen, so what? */
 			if (has_backedges(blk)) {
-				ir_fprintf(stderr, "Improper Region!!!!!! %+F\n", blk);
+				DB((dbg, LEVEL_1, "Improper Region %+F\n", blk));
 			}
 		}
+#endif
 	}
 }
 
@@ -344,13 +403,14 @@ static void construct_interval_edges(ir_loop *l) {
 }
 
 void construct_intervals(ir_graph *irg) {
-	ir_loop *l;
+	ir_loop  *l;
 	ir_graph *rem = current_ir_graph;
+
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.ana.interval");
 
-	if (!region_attr_set)
+	if (region_attr_set == NULL)
 		region_attr_set = new_set(region_attr_cmp, 256);
 
 	construct_cf_backedges(current_ir_graph);
@@ -363,15 +423,19 @@ void construct_intervals(ir_graph *irg) {
 }
 
 void free_intervals(void) {
-	//void **ins;
-	if (!region_attr_set) return;
-	/* @@@ mem leak
-	for (ins = (void **)pmap_first(region_in_map);
-		ins;
-		ins = (void **)pmap_next(region_in_map)) {
-		DEL_ARR_F(ins);
+	region_attr *res;
+
+	if (region_attr_set == NULL)
+		return;
+
+	for (res = set_first(region_attr_set);
+	     res != NULL;
+	     res = set_next(region_attr_set)) {
+		DEL_ARR_F(res->in_array);
+		if (res->op_array != NULL)
+			DEL_ARR_F(res->op_array);
 	}
-	*/
+
 	del_set(region_attr_set);
 	region_attr_set = NULL;
 }
@@ -384,16 +448,19 @@ void free_intervals(void) {
 void dump_region_edges(FILE *F, void *reg) {
 	int i, n_ins = get_region_n_ins(reg);
 
-	if (is_ir_node(reg) && get_Block_n_cfgpreds((ir_node *)reg) > get_region_n_ins(reg)) {
-		for (i = n_ins; i < get_Block_n_cfgpreds((ir_node *)reg); ++i) {
-			if (is_backedge((ir_node *)reg, i))
-				fprintf (F, "backedge: { sourcename: \"");
-			else
-				fprintf (F, "edge: { sourcename: \"");
-			PRINT_NODEID(((ir_node *)reg));
-			fprintf (F, "\" targetname: \"");
-			PRINT_NODEID(get_nodes_block(skip_Proj(get_Block_cfgpred((ir_node *)reg, i))));
-			fprintf (F, "\" " BLOCK_EDGE_ATTR "}\n");
+	if (is_ir_node(reg)) {
+		ir_node *irn = reg;
+		if (get_Block_n_cfgpreds(irn) > get_region_n_ins(reg)) {
+			for (i = n_ins; i < get_Block_n_cfgpreds(irn); ++i) {
+				if (is_backedge(irn, i))
+					fprintf(F, "backedge: { sourcename: \"");
+				else
+					fprintf(F, "edge: { sourcename: \"");
+				PRINT_NODEID(irn);
+				fprintf(F, "\" targetname: \"");
+				PRINT_NODEID(get_nodes_block(skip_Proj(get_Block_cfgpred(irn, i))));
+				fprintf(F, "\" " BLOCK_EDGE_ATTR "}\n");
+			}
 		}
 	}
 
@@ -401,41 +468,42 @@ void dump_region_edges(FILE *F, void *reg) {
 		void *target = get_region_in(reg, i);
 
 		if (is_ir_node(reg)) {
-			if (get_Block_n_cfgpreds((ir_node *)reg) != get_region_n_ins(reg)) {
-				ir_printf("n_cfgpreds = %d, n_ins = %d\n %+F\n", get_Block_n_cfgpreds((ir_node *)reg), get_region_n_ins(reg), (ir_node*) reg);
+			ir_node *irn = reg;
+			if (get_Block_n_cfgpreds(irn) != get_region_n_ins(reg)) {
+				ir_printf("n_cfgpreds = %d, n_ins = %d\n %+F\n", get_Block_n_cfgpreds(irn), get_region_n_ins(reg), irn);
 			}
 		}
 
 		if ((!target || (is_ir_node(reg) && !is_ir_node(target))) && i < get_Block_n_cfgpreds((ir_node *)reg)) {
 			assert(is_ir_node(reg));
 			if (is_backedge((ir_node *)reg, i))
-				fprintf (F, "backedge: { sourcename: \"");
+				fprintf(F, "backedge: { sourcename: \"");
 			else
-				fprintf (F, "edge: { sourcename: \"");
+				fprintf(F, "edge: { sourcename: \"");
 			PRINT_NODEID(((ir_node *)reg));
-			fprintf (F, "\" targetname: \"");
+			fprintf(F, "\" targetname: \"");
 			PRINT_NODEID(get_nodes_block(skip_Proj(get_Block_cfgpred((ir_node *)reg, i))));
-			fprintf (F, "\" " BLOCK_EDGE_ATTR "}\n");
+			fprintf(F, "\" " BLOCK_EDGE_ATTR "}\n");
 
 			if (!target) continue;
 		}
 
-		fprintf (F, "edge: { sourcename: \"");
+		fprintf(F, "edge: { sourcename: \"");
 		if (is_ir_node(reg)) {
 			PRINT_NODEID(((ir_node *)reg));
 		} else {
 			PRINT_LOOPID(((ir_loop *)reg));
 		}
-		fprintf (F, "\" targetname: \"");
+		fprintf(F, "\" targetname: \"");
 		if (is_ir_node(target)) {
 			PRINT_NODEID(((ir_node *)target));
 		} else {
 			PRINT_LOOPID(((ir_loop *)target));
 		}
-		fprintf (F, "\"");
+		fprintf(F, "\"");
 		if (is_ir_node(reg) && is_fragile_op(skip_Proj(get_Block_cfgpred(reg, i))))
 			fprintf(F, EXC_CF_EDGE_ATTR);
-		fprintf (F, "}\n");
+		fprintf(F, "}\n");
 	}
 }
 
@@ -444,19 +512,19 @@ void dump_region_edges(FILE *F, void *reg) {
 static void dump_interval_block(FILE *F, ir_node *block) {
 	int i, fl;
 	/* This is a block. Dump a node for the block. */
-	fprintf (F, "node: {title: \""); PRINT_NODEID(block);
-	fprintf (F, "\" label: \"");
+	fprintf(F, "node: {title: \""); PRINT_NODEID(block);
+	fprintf(F, "\" label: \"");
 	if (block == get_irg_start_block(get_irn_irg(block)))
 		fprintf(F, "Start ");
 	if (block == get_irg_end_block(get_irn_irg(block)))
 		fprintf(F, "End ");
 
-	fprintf (F, "%s ", get_op_name(get_irn_op(block)));
+	fprintf(F, "%s ", get_op_name(get_irn_op(block)));
 	PRINT_NODEID(block);
 	fprintf(F, " freq: %9.4lf", get_region_exec_freq(block));
 	fprintf(F, " n_outs: %d", get_region_n_outs(block));
 	fprintf(F, " n_exc_outs: %d", get_region_n_exc_outs(block));
-	fprintf (F, "\" ");
+	fprintf(F, "\" ");
 	fprintf(F, "info1:\"");
 	if (dump_dominator_information_flag)
 		fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
@@ -475,7 +543,7 @@ static void dump_interval_block(FILE *F, ir_node *block) {
 	if (fl)
 		fprintf(F, "\n");
 
-	fprintf (F, "\"");  /* closing quote of info */
+	fprintf(F, "\"");  /* closing quote of info */
 
 	if ((block == get_irg_start_block(get_irn_irg(block))) ||
 		(block == get_irg_end_block(get_irn_irg(block)))     )
@@ -483,7 +551,7 @@ static void dump_interval_block(FILE *F, ir_node *block) {
 	else if (fl)
 		fprintf(F, " color:yellow ");
 
-	fprintf (F, "}\n");
+	fprintf(F, "}\n");
 }
 
 static void dump_interval_loop(FILE *F, ir_loop *l) {
@@ -517,7 +585,8 @@ static void dump_interval_loop(FILE *F, ir_loop *l) {
 
 
 void dump_interval_graph(ir_graph *irg, const char *suffix) {
-	FILE *f;
+	FILE     *f;
+	ir_graph *rem;
 
 	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
 		return;
@@ -525,10 +594,13 @@ void dump_interval_graph(ir_graph *irg, const char *suffix) {
 	f = vcg_open(irg, suffix, "-intervals");
 	dump_vcg_header(f, get_irg_dump_name(irg), NULL, NULL);
 
+	rem              = current_ir_graph;
 	current_ir_graph = irg;
 
-	dump_interval_loop(f, get_irg_loop(current_ir_graph));
+	dump_interval_loop(f, get_irg_loop(irg));
 
 	dump_vcg_footer(f);
 	fclose(f);
+
+	current_ir_graph = rem;
 }
