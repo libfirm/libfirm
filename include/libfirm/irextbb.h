@@ -75,7 +75,7 @@ void free_extbb(ir_graph *irg);
  *
  * @param node  the node
  */
-ir_extblk *get_nodes_extbb(ir_node *node);
+ir_extblk *get_nodes_extbb(const ir_node *node);
 
 /**
  * Gets the visited counter of an extended block.
@@ -143,14 +143,14 @@ int get_extbb_n_blocks(const ir_extblk *blk);
  * @param blk  the extended basic block
  * @param pos  the position
  */
-ir_node *get_extbb_block(ir_extblk *blk, int pos);
+ir_node *get_extbb_block(const ir_extblk *blk, int pos);
 
 /**
  * Return the leader basic block of an extended block.
  *
  * @param blk  the extended basic block
  */
-ir_node *get_extbb_leader(ir_extblk *blk);
+ir_node *get_extbb_leader(const ir_extblk *blk);
 
 /**
  * Return the node number of an extended block.
@@ -158,7 +158,7 @@ ir_node *get_extbb_leader(ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-long get_extbb_node_nr(ir_extblk *blk);
+long get_extbb_node_nr(const ir_extblk *blk);
 
 /**
  * Walks only over Extended Basic Block nodes in the graph.

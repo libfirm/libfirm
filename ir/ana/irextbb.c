@@ -275,8 +275,8 @@ void free_extbb(ir_graph *irg) {
 }
 
 /* Return the extended block of a node. */
-ir_extblk *get_nodes_extbb(ir_node *node) {
-	ir_node *block = is_Block(node) ? node : get_irn_n(node, -1);
+ir_extblk *get_nodes_extbb(const ir_node *node) {
+	const ir_node *block = is_Block(node) ? node : get_nodes_block(node);
 	return get_Block_extbb(block);
 }
 
@@ -321,17 +321,17 @@ int (get_extbb_n_blocks)(const ir_extblk *blk) {
 }
 
 /* Return the i'th basic block of an extended block */
-ir_node *(get_extbb_block)(ir_extblk *blk, int pos) {
+ir_node *(get_extbb_block)(const ir_extblk *blk, int pos) {
 	return _get_extbb_block(blk, pos);
 }
 
 /* Return the leader basis block of an extended block. */
-ir_node *(get_extbb_leader)(ir_extblk *blk) {
+ir_node *(get_extbb_leader)(const ir_extblk *blk) {
 	return _get_extbb_leader(blk);
 }
 
 /* Return the node number of an extended block. */
-long get_extbb_node_nr(ir_extblk *blk) {
+long get_extbb_node_nr(const ir_extblk *blk) {
 	return get_irn_node_nr(get_extbb_leader(blk));
 }
 

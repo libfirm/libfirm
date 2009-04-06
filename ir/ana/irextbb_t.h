@@ -35,10 +35,10 @@
  * An extended block.
  */
 struct _ir_extblk {
-  firm_kind kind;        /**< k_ir_extblk */
-  ir_visited_t visited;  /**< visited flag */
-  ir_node  **blks;       /**< blocks belonging to this extended block */
-  void *link;            /**< private link field */
+	firm_kind kind;        /**< k_ir_extblk */
+	ir_visited_t visited;  /**< visited flag */
+	ir_node  **blks;       /**< blocks belonging to this extended block */
+	void *link;            /**< private link field */
 };
 
 /**
@@ -46,8 +46,8 @@ struct _ir_extblk {
  * Intern version for libFirm.
  */
 static inline int
-_is_ir_extbb (const void *thing) {
-  return (get_kind(thing) == k_ir_extblk);
+_is_ir_extbb(const void *thing) {
+	return (get_kind(thing) == k_ir_extblk);
 }
 
 /**
@@ -56,8 +56,8 @@ _is_ir_extbb (const void *thing) {
  */
 static inline ir_visited_t
 _get_extbb_visited(const ir_extblk *blk) {
-  assert(blk);
-  return blk->visited;
+	assert(blk);
+	return blk->visited;
 }
 
 /**
@@ -66,8 +66,8 @@ _get_extbb_visited(const ir_extblk *blk) {
  */
 static inline void
 _set_extbb_visited(ir_extblk *blk, ir_visited_t visited) {
-  assert(blk);
-  blk->visited = visited;
+	assert(blk);
+	blk->visited = visited;
 }
 
 /**
@@ -76,8 +76,8 @@ _set_extbb_visited(ir_extblk *blk, ir_visited_t visited) {
  */
 static inline void
 _mark_extbb_visited(ir_extblk *blk) {
-  assert(blk);
-  blk->visited = current_ir_graph->block_visited;
+	assert(blk);
+	blk->visited = current_ir_graph->block_visited;
 }
 
 /**
@@ -86,8 +86,8 @@ _mark_extbb_visited(ir_extblk *blk) {
  */
 static inline int
 _extbb_visited(const ir_extblk *blk) {
-  assert(blk);
-  return blk->visited >= current_ir_graph->block_visited;
+	assert(blk);
+	return blk->visited >= current_ir_graph->block_visited;
 }
 
 /**
@@ -96,8 +96,8 @@ _extbb_visited(const ir_extblk *blk) {
  */
 static inline int
 _extbb_not_visited(const ir_extblk *blk) {
-  assert(blk);
-  return blk->visited < current_ir_graph->block_visited;
+	assert(blk);
+	return blk->visited < current_ir_graph->block_visited;
 }
 
 /**
@@ -106,8 +106,8 @@ _extbb_not_visited(const ir_extblk *blk) {
  */
 static inline void *
 _get_extbb_link(const ir_extblk *blk) {
-  assert(blk);
-  return blk->link;
+	assert(blk);
+	return blk->link;
 }
 
 /**
@@ -116,8 +116,8 @@ _get_extbb_link(const ir_extblk *blk) {
  */
 static inline void
 _set_extbb_link(ir_extblk *blk, void *link) {
-  assert(blk);
-  blk->link = link;
+	assert(blk);
+	blk->link = link;
 }
 
 /**
@@ -125,27 +125,27 @@ _set_extbb_link(ir_extblk *blk, void *link) {
  */
 static inline int
 _get_extbb_n_blocks(const ir_extblk *blk) {
-  assert(blk);
-  return ARR_LEN(blk->blks);
+	assert(blk);
+	return ARR_LEN(blk->blks);
 }
 
 /**
  * Return the i'th basis block of an extended block
  */
 static inline ir_node *
-_get_extbb_block(ir_extblk *blk, int pos)
+_get_extbb_block(const ir_extblk *blk, int pos)
 {
-  assert(blk && 0 <= pos && pos < _get_extbb_n_blocks(blk));
-  return blk->blks[pos];
+	assert(blk && 0 <= pos && pos < _get_extbb_n_blocks(blk));
+	return blk->blks[pos];
 }
 
 /**
  * Return the leader basis block of an extended block
  */
 static inline ir_node *
-_get_extbb_leader(ir_extblk *blk)
+_get_extbb_leader(const ir_extblk *blk)
 {
-  return blk->blks[0];
+	return blk->blks[0];
 }
 
 #define is_ir_extbb(thing)        _is_ir_extbb(thing)
