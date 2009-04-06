@@ -993,7 +993,7 @@ ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity* static_ent)
  *
  *  Returns an ident that consists of the name of type followed by an
  *  underscore and the name (not ld_name) of the entity. */
-ident *default_mangle_inherited_name(ir_entity *ent, ir_type *clss);
+ident *default_mangle_inherited_name(const ir_entity *ent, const ir_type *clss);
 
 /** Type of argument functions for inheritance resolver.
  *

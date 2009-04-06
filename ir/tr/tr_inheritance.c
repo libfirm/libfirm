@@ -41,7 +41,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
 
-ident *default_mangle_inherited_name(ir_entity *super, ir_type *clss) {
+ident *default_mangle_inherited_name(const ir_entity *super, const ir_type *clss) {
 	return id_mangle_u(new_id_from_str("inh"), id_mangle_u(get_type_ident(clss), get_entity_ident(super)));
 }
 
@@ -615,6 +615,9 @@ typedef struct ccs_env {
 	ir_class_cast_state worst_situation;
 } ccs_env;
 
+/**
+ * Walker: check Casts.
+ */
 static void verify_irn_class_cast_state(ir_node *n, void *env) {
 	ccs_env             *ccs = (ccs_env *)env;
 	ir_class_cast_state this_state = ir_class_casts_any;
