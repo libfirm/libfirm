@@ -1002,7 +1002,7 @@ ident *default_mangle_inherited_name(const ir_entity *ent, const ir_type *clss);
  *                used.
  * @param clss    The class type in which the new entity will be placed.
  */
-typedef ident *mangle_inherited_name_func(ir_entity *ent, ir_type *clss);
+typedef ident *mangle_inherited_name_func(const ir_entity *ent, const ir_type *clss);
 
 /** Resolve implicit inheritance.
  *
