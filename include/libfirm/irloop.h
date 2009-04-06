@@ -79,7 +79,7 @@ int      is_ir_loop(const void *thing);
 void     set_irg_loop(ir_graph *irg, ir_loop *l);
 
 /* Returns the root loop info (if exists) for an irg. */
-ir_loop *get_irg_loop(ir_graph *irg);
+ir_loop *get_irg_loop(const ir_graph *irg);
 
 /** Returns the loop n is contained in.  NULL if node is in no loop. */
 ir_loop *get_irn_loop(const ir_node *n);
@@ -98,11 +98,11 @@ Returns NULL if there is not a pos`th loop_node. */
 ir_loop *get_loop_son(ir_loop *loop, int pos);
 
 /** Returns the number of nodes contained in loop.  */
-int      get_loop_n_nodes(ir_loop *loop);
+int      get_loop_n_nodes(const ir_loop *loop);
 
 /** Returns the pos`th ir_node of a loop.
 Returns NULL if there is not a pos`th ir_node. */
-ir_node *get_loop_node(ir_loop *loop, int pos);
+ir_node *get_loop_node(const ir_loop *loop, int pos);
 
 /** Returns the number of elements contained in loop.  */
 int      get_loop_n_elements(const ir_loop *loop);

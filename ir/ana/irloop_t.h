@@ -121,7 +121,7 @@ _set_irg_loop(ir_graph *irg, ir_loop *loop) {
 }
 
 static inline ir_loop *
-_get_irg_loop(ir_graph *irg) {
+_get_irg_loop(const ir_graph *irg) {
 	assert(irg);
 	return irg->loop;
 }

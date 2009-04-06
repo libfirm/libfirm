@@ -60,6 +60,9 @@ void add_loop_irg(ir_loop *loop, ir_graph *irg) {
 
 /**
  * Mature all loops by removing the flexible arrays of a loop.
+ *
+ * @param loop  the loop to mature
+ * @param obst  an obstack, where the new arrays are allocated on
  */
 void mature_loops(ir_loop *loop, struct obstack *obst) {
 	loop_element *new_children = DUP_ARR_D(loop_element, obst, loop->children);
@@ -113,7 +116,7 @@ ir_loop *get_loop_son(ir_loop *loop, int pos) {
 }
 
 /* Returns the number of nodes in the loop */
-int get_loop_n_nodes(ir_loop *loop) {
+int get_loop_n_nodes(const ir_loop *loop) {
 	assert(loop); assert(loop->kind == k_ir_loop);
 	return loop->n_nodes;
 }
@@ -121,7 +124,7 @@ int get_loop_n_nodes(ir_loop *loop) {
 /* Returns the pos'th ir_node-child                *
  * TODO: This method isn't very efficient !        *
  * Returns NULL if there isn't a pos'th ir_node   */
-ir_node *get_loop_node(ir_loop *loop, int pos) {
+ir_node *get_loop_node(const ir_loop *loop, int pos) {
 	int child_nr, node_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
@@ -174,7 +177,6 @@ void set_irn_loop(ir_node *n, ir_loop *loop) {
 	n->loop = loop;
 }
 
-/* Uses temporary information to get the loop */
 ir_loop *(get_irn_loop)(const ir_node *n) {
 	return _get_irn_loop(n);
 }
@@ -209,7 +211,7 @@ void (set_irg_loop)(ir_graph *irg, ir_loop *loop) {
 }
 
 /* Returns the root loop info (if exists) for an irg. */
-ir_loop *(get_irg_loop)(ir_graph *irg) {
+ir_loop *(get_irg_loop)(const ir_graph *irg) {
 	return _get_irg_loop(irg);
 }
 
