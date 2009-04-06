@@ -48,10 +48,9 @@
 
 /**
  * Initialise the RTA data structures and perform RTA.
- *
- * @param do_verbose If == 1, print statistics, if > 1, chatter about every detail
+ * Expects that all allocations are done by Alloc nodes.
  */
-void rta_init(int do_verbose);
+void rta_init(void);
 
 /**
  * Delete all graphs that have been found to be dead.

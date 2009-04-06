@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief    Interprocedural analysis to improve the call graph estimate.
- * @author   Florian
+ * @author   Florian Liekweg
  * @version  09.06.2002
  * @version  $Id$
  */
@@ -39,33 +39,34 @@
 #include "irgmod.h"
 #include "irvrfy.h"
 #include "irprintf.h"
+#include "debug.h"
+#include "error.h"
 
 # ifndef TRUE
 #  define TRUE 1
 #  define FALSE 0
 # endif /* not defined TRUE */
 
-/* flags */
-static int verbose     = 0;
-
+/** The debug handle. */
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /* base data */
-static eset *_live_classes   = NULL;
+static eset *_live_classes = NULL;
 
 /* cache computed results */
-static eset *_live_graphs    = NULL;
+static eset *_live_graphs  = NULL;
 
 /**
-   Given a method, find the firm graph that implements that method.
-*/
-static ir_graph *get_implementing_graph (ir_entity *method)
+ * Given a method, find the firm graph that implements that method.
+ */
+static ir_graph *get_implementing_graph(ir_entity *method)
 {
-  ir_graph *graph = NULL;
+	ir_graph *graph = NULL;
 
-  if (get_entity_peculiarity(method) != peculiarity_description)
-    graph = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method)));
+	if (get_entity_peculiarity(method) != peculiarity_description)
+		graph = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method)));
 
-  return graph;
+	return graph;
 }
 
 /**
@@ -75,18 +76,16 @@ static ir_graph *get_implementing_graph (ir_entity *method)
  * @return non-zero if the graph was added, zero
  *         if it was already in the live set
  */
-static int add_graph (ir_graph *graph)
+static int add_graph(ir_graph *graph)
 {
-  if (!eset_contains (_live_graphs, graph)) {
-    if (verbose > 1) {
-      ir_fprintf(stdout, "RTA:        new graph of %+F\n", graph);
-    }
+	if (!eset_contains(_live_graphs, graph)) {
+		DB((dbg, LEVEL_2, "RTA:        new graph of %+F\n", graph));
 
-    eset_insert (_live_graphs, graph);
-    return (TRUE);
-  }
+		eset_insert(_live_graphs, graph);
+		return TRUE;
+	}
 
-  return (FALSE);
+	return FALSE;
 }
 
 /**
@@ -96,18 +95,16 @@ static int add_graph (ir_graph *graph)
  * @return non-zero if the graph was added, zero
  *         if it was already in the live set
  */
-static int add_class (ir_type *clazz)
+static int add_class(ir_type *clazz)
 {
-  if (!eset_contains (_live_classes, clazz)) {
-    if (verbose > 1) {
-      ir_fprintf(stdout, "RTA:        new class: %+F\n", clazz);
-    }
+	if (!eset_contains(_live_classes, clazz)) {
+		DB((dbg, LEVEL_2, "RTA:        new class: %+F\n", clazz));
 
-    eset_insert (_live_classes, clazz);
-    return (TRUE);
-  }
+		eset_insert(_live_classes, clazz);
+		return TRUE;
+	}
 
-  return (FALSE);
+	return FALSE;
 }
 
 /** Given an entity, add all implementing graphs that belong to live classes
@@ -115,186 +112,170 @@ static int add_class (ir_type *clazz)
  *
  *  Iff additions occurred, return TRUE, else FALSE.
 */
-static int add_implementing_graphs (ir_entity *method)
+static int add_implementing_graphs(ir_entity *method)
 {
-  int i;
-  int n_over = get_entity_n_overwrittenby (method);
-  ir_graph *graph = get_entity_irg (method);
-  int change = FALSE;
+	int i;
+	int n_over = get_entity_n_overwrittenby(method);
+	ir_graph *graph = get_entity_irg(method);
+	int change = FALSE;
 
-  if (NULL == graph) {
-    graph = get_implementing_graph (method);
-  }
+	if (NULL == graph)
+		graph = get_implementing_graph(method);
 
-  if (verbose > 1) {
-    ir_fprintf(stdout, "RTA:        new call to %+F\n", method);
-  }
+	DB((dbg, LEVEL_2, "RTA:        new call to %+F\n", method));
 
-  if (rta_is_alive_class (get_entity_owner (method))) {
-    if (NULL != graph) {
-      change = add_graph (graph);
-    }
-  }
+	if (rta_is_alive_class(get_entity_owner(method))) {
+		if (NULL != graph)
+			change = add_graph(graph);
+	}
 
-  for (i = 0; i < n_over; i ++) {
-    ir_entity *over = get_entity_overwrittenby (method, i);
-    change |= add_implementing_graphs (over);
-  }
+	for (i = 0; i < n_over; ++i) {
+		ir_entity *over = get_entity_overwrittenby(method, i);
+		change |= add_implementing_graphs(over);
+	}
 
-  return (change);
+	return change;
 }
 
-/** Enter all method accesses and all class allocations into
- *  our tables.
+/**
+ * Walker: Enter all method accesses and all class allocations into
+ * our tables.
  *
- *  Set *(int*)env to true iff (possibly) new graphs have been found.
+ * Set *(int*)env to true iff (possibly) new graphs have been found.
  */
-static void rta_act (ir_node *node, void *env)
+static void rta_act(ir_node *node, void *env)
 {
-  int *change = (int*) env;
-  ir_opcode op = get_irn_opcode (node);
+	int *change = (int *)env;
+	ir_opcode op = get_irn_opcode(node);
 
-  if (iro_Call == op) {         /* CALL */
-    ir_entity *ent = NULL;
+	if (iro_Call == op) {         /* CALL */
+		ir_entity *ent = NULL;
 
-    ir_node *ptr = get_Call_ptr (node);
+		ir_node *ptr = get_Call_ptr(node);
 
-    /* CALL SEL */
-    if (iro_Sel == get_irn_opcode (ptr)) {
-      ent = get_Sel_entity (ptr);
-      *change |= add_implementing_graphs (ent);
+		/* CALL SEL */
+		if (iro_Sel == get_irn_opcode(ptr)) {
+			ent = get_Sel_entity(ptr);
+			*change |= add_implementing_graphs(ent);
 
-      /* CALL SYMCONST */
-    } else if (iro_SymConst == get_irn_opcode (ptr)) {
-      if (get_SymConst_kind(ptr) == symconst_addr_ent) {
-        ir_graph *graph;
+			/* CALL SYMCONST */
+		} else if (iro_SymConst == get_irn_opcode(ptr)) {
+			if (get_SymConst_kind(ptr) == symconst_addr_ent) {
+				ir_graph *graph;
 
-        ent = get_SymConst_entity (ptr);
-        graph = get_entity_irg (ent);
-        if (graph) {
-          *change |= add_graph (graph);
-        } else {
-          /* it's an external allocated thing. */
-        }
-      } else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-	    /* Entities of kind addr_name may not be allocated in this compilation unit.
-	       If so, the frontend built faulty Firm.  So just ignore. */
-	    /* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-        assert (ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
-      } else {
-        /* other symconst. */
-        assert(0 && "This SymConst can not be an address for a method call.");
-      }
+				ent = get_SymConst_entity(ptr);
+				graph = get_entity_irg(ent);
+				if (graph) {
+					*change |= add_graph(graph);
+				} else {
+					/* it's an external allocated thing. */
+				}
+			} else if (get_SymConst_kind(ptr) == symconst_addr_name) {
+				/* Entities of kind addr_name may not be allocated in this compilation unit.
+				If so, the frontend built faulty Firm.  So just ignore. */
+				/* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
+				assert(ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
+			} else {
+				/* other symconst. */
+				panic("This SymConst can not be an address for a method call.");
+			}
 
-      /* STRANGE */
-    } else {
-      assert(0 && "Unexpected address expression: can not analyse, therefore can not do correct rta!");
-    }
+			/* STRANGE */
+		} else {
+			panic("Unexpected address expression: can not analyse, therefore can not do correct rta!");
+		}
+	} else if (iro_Alloc == op) { /* ALLOC */
+		ir_type *type = get_Alloc_type(node);
 
-  } else if (iro_Alloc == op) { /* ALLOC */
-    ir_type *type = get_Alloc_type (node);
-
-    *change |= add_class (type);
-  }
+		*change |= add_class(type);
+	}
 }
 
 /**
    Traverse the given graph to collect method accesses and
    object allocations.
 */
-static int rta_fill_graph (ir_graph* graph)
+static int rta_fill_graph(ir_graph* graph)
 {
-  int change = FALSE;
-  irg_walk_graph (graph, rta_act, NULL, &change);
-  return change;
+	int change = FALSE;
+	irg_walk_graph(graph, rta_act, NULL, &change);
+	return change;
 }
 
-/** Traverse all graphs to collect method accesses and object allocations.
+/**
+ * Traverse all graphs to collect method accesses and object allocations.
  */
-static int rta_fill_incremental (void)
+static int rta_fill_incremental(void)
 {
-  int i;
-  int n_runs = 0;
-  int rerun  = TRUE;
+	int i;
+	int n_runs = 0;
+	int rerun  = TRUE;
 #ifdef INTERPROCEDURAL_VIEW
-  int old_ip_view = get_interprocedural_view();
+	int old_ip_view = get_interprocedural_view();
 
-  set_interprocedural_view(0);     /* save this for later */
+	set_interprocedural_view(0);     /* save this for later */
 #endif
 
-  /* init_tables has added main_irg to _live_graphs */
+	/* init_tables has added main_irg to _live_graphs */
 
-  /* Need to take care of graphs that are externally
-     visible or sticky. Pretend that they are called: */
+	/* Need to take care of graphs that are externally
+	   visible or sticky. Pretend that they are called: */
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph *graph = get_irp_irg(i);
+		ir_entity *ent = get_irg_entity(graph);
 
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    ir_graph *graph = get_irp_irg (i);
-    ir_entity *ent = get_irg_entity (graph);
+		if ((visibility_external_visible == get_entity_visibility(ent)) ||
+		    (stickyness_sticky == get_entity_stickyness(ent))) {
+			eset_insert(_live_graphs, graph);
+		}
+	}
 
-    if ((visibility_external_visible == get_entity_visibility (ent)) ||
-        (stickyness_sticky == get_entity_stickyness (ent))) {
-      eset_insert (_live_graphs, graph);
-      // printf("external visible: "); DDMG(graph);
-    }
-  }
+	while (rerun) {
+		ir_graph *graph;
 
-  while (rerun) {
-    ir_graph *graph;
+		/* start off new */
+		eset *live_graphs = _live_graphs;
+		_live_graphs = eset_create();
 
-    /* start off new */
-    eset *live_graphs = _live_graphs;
-    _live_graphs = eset_create ();
+		DB((dbg, LEVEL_2, "RTA: RUN %i\n", n_runs));
 
-    if (verbose > 1) {
-      fprintf(stdout, "RTA: RUN %i\n", n_runs);
-    }
+		/* collect what we have found previously */
+		eset_insert_all(_live_graphs, live_graphs);
 
-    /* collect what we have found previously */
-    eset_insert_all (_live_graphs, live_graphs);
-
-    rerun = FALSE;
-    for (graph = eset_first (live_graphs);
-         graph;
-         graph = eset_next (live_graphs)) {
-
-      if (verbose > 1) {
-        ir_fprintf(stdout, "RTA: RUN %i: considering graph of %+F\n", n_runs,
-		        graph);
-      }
-
-      rerun |= rta_fill_graph (graph);
-    }
-
-    eset_destroy (live_graphs);
-
-    n_runs ++;
-  }
+		rerun = FALSE;
+		for (graph = eset_first(live_graphs);
+		     graph != NULL;
+		     graph = eset_next(live_graphs)) {
+			DB((dbg, LEVEL_2, "RTA: RUN %i: considering graph of %+F\n", n_runs, graph));
+			rerun |= rta_fill_graph(graph);
+		}
+		eset_destroy(live_graphs);
+		++n_runs;
+	}
 
 #ifdef INTERPROCEDURAL_VIEW
-  set_interprocedural_view(old_ip_view); /* cover up our traces */
+	set_interprocedural_view(old_ip_view); /* cover up our traces */
 #endif
 
-  return (n_runs);
+	return n_runs;
 }
 
 /**
  * Count the number of graphs that we have found to be live.
  */
-static int stats (void)
+static int stats(void)
 {
-  int i;
-  int n_live_graphs = 0;
-  int n_graphs = get_irp_n_irgs();
+	int i;
+	int n_live_graphs = 0;
 
-  for (i = 0; i < n_graphs; i++) {
-    ir_graph *graph = get_irp_irg(i);
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph *graph = get_irp_irg(i);
 
-    if (rta_is_alive_graph (graph)) {
-      n_live_graphs ++;
-    }
-  }
+		if (rta_is_alive_graph(graph))
+			++n_live_graphs;
+	}
 
-  return (n_live_graphs);
+	return n_live_graphs;
 }
 
 /* remove a graph, part I */
@@ -307,84 +288,82 @@ static int stats (void)
 /**
    Initialize the static data structures.
 */
-static void init_tables (void)
+static void init_tables(void)
 {
-  ir_type *tp;
-  int i, n;
+	ir_type  *tp;
+	int      i, n;
+	ir_graph *irg;
 
-  _live_classes = eset_create ();
-  _live_graphs  = eset_create ();
+	_live_classes = eset_create();
+	_live_graphs  = eset_create();
 
-  if (get_irp_main_irg ()) {
-    eset_insert (_live_graphs, get_irp_main_irg ());
-  }
+	irg = get_irp_main_irg();
+	if (irg != NULL) {
+		/* add the main irg to the live set if one is specified */
+		eset_insert(_live_graphs, irg);
+	}
 
-  /* Find static allocated classes */
-  tp = get_glob_type();
-  n = get_class_n_members(tp);
-  for (i = 0; i < n; ++i) {
-    ir_type *member_type = get_entity_type(get_class_member(tp, i));
-    if (is_Class_type(member_type))
-      eset_insert(_live_classes, member_type);
-  }
+	/* Find static allocated classes */
+	tp = get_glob_type();
+	n  = get_class_n_members(tp);
+	for (i = 0; i < n; ++i) {
+		ir_type *member_type = get_entity_type(get_class_member(tp, i));
+		if (is_Class_type(member_type))
+			eset_insert(_live_classes, member_type);
+	}
 
-  tp = get_tls_type();
-  n = get_struct_n_members(tp);
-  for (i = 0; i < n; ++i) {
-    ir_type *member_type = get_entity_type(get_struct_member(tp, i));
-    if (is_Class_type(member_type))
-      eset_insert(_live_classes, member_type);
-  }
+	tp = get_tls_type();
+	n  = get_struct_n_members(tp);
+	for (i = 0; i < n; ++i) {
+		ir_type *member_type = get_entity_type(get_struct_member(tp, i));
+		if (is_Class_type(member_type))
+			eset_insert(_live_classes, member_type);
+	}
+
+	/** @FIXME: add constructors/destructors */
 }
 
 /*
  * Initialize the RTA data structures, and perform RTA.
- * do_verbose If == 1, print statistics, if > 1, chatter about every detail
  */
-void rta_init (int do_verbose)
+void rta_init(void)
 {
-  int n_runs = 0;
+	int n_runs = 0;
+	int rem_vpi = get_visit_pseudo_irgs();
+	set_visit_pseudo_irgs(1);
 
-  int rem_vpi = get_visit_pseudo_irgs();
-  set_visit_pseudo_irgs(1);
-
-# ifdef DEBUG_libfirm
-  {
-    int i, n;
-    n = get_irp_n_irgs();
-    for (i = 0; i < n; i++) {
-      irg_vrfy (get_irp_irg(i));
-	}
-    tr_vrfy ();
-  }
-# endif /* defined DEBUG_libfirm */
-
-  verbose = do_verbose;
-
-  init_tables ();
-
-  n_runs = rta_fill_incremental ();
-
-  if (verbose) {
-    int n_live_graphs = stats ();
-
-    printf ("RTA: n_graphs      = %i\n", get_irp_n_irgs ());
-    printf ("RTA: n_live_graphs = %i\n", n_live_graphs);
-    printf ("RTA: n_runs        = %i\n", n_runs);
-  }
+	FIRM_DBG_REGISTER(dbg, "firm.ana.rta");
 
 # ifdef DEBUG_libfirm
-  {
-    int i, n;
-    n = get_irp_n_irgs();
-    for (i = 0; i < n; i++) {
-      irg_vrfy (get_irp_irg(i));
+	{
+		int i;
+		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+			irg_vrfy(get_irp_irg(i));
+		}
+		tr_vrfy();
 	}
-    tr_vrfy ();
-  }
 # endif /* defined DEBUG_libfirm */
 
-  set_visit_pseudo_irgs(rem_vpi);
+	init_tables();
+
+	n_runs = rta_fill_incremental();
+
+	DB((dbg, LEVEL_1, "RTA: n_graphs      = %i\n", get_irp_n_irgs()));
+	DB((dbg, LEVEL_1, "RTA: n_live_graphs = %i\n", stats()));
+	DB((dbg, LEVEL_1, "RTA: n_runs        = %i\n", n_runs));
+
+# ifdef DEBUG_libfirm
+	{
+		int i;
+
+		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+			irg_vrfy(get_irp_irg(i));
+		}
+		tr_vrfy();
+	}
+# endif /* defined DEBUG_libfirm */
+
+	set_visit_pseudo_irgs(rem_vpi);
 }
 
 /**
@@ -394,117 +373,116 @@ void rta_init (int do_verbose)
  * dead graphs to peculiarity_description.
  */
 static void make_entity_to_description(type_or_ent tore, void *env) {
-  (void) env;
-  if (is_entity(tore.ent)) {
-    ir_entity *ent = tore.ent;
+	(void) env;
+	if (is_entity(tore.ent)) {
+		ir_entity *ent = tore.ent;
 
-    if ((is_Method_type(get_entity_type(ent)))                        &&
-        (get_entity_peculiarity(ent) != peculiarity_description)      &&
-        (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
-      ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
-      if (!eset_contains (_live_graphs, irg)) {
-        set_entity_peculiarity(ent, peculiarity_description);
-        set_entity_irg(ent, NULL);
-      }
-    }
-  }
+		if ((is_Method_type(get_entity_type(ent)))                        &&
+		    (get_entity_peculiarity(ent) != peculiarity_description)      &&
+		    (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
+			ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
+			if (! eset_contains(_live_graphs, irg)) {
+				set_entity_peculiarity(ent, peculiarity_description);
+				set_entity_irg(ent, NULL);
+			}
+		}
+	}
 }
 
 /* Delete all graphs that we have found to be dead from the program
    If verbose == 1, print statistics, if > 1, chatter about every detail
 */
-void rta_delete_dead_graphs (void)
+void rta_delete_dead_graphs(void)
 {
-  int i;
-  int n_graphs = get_irp_n_irgs ();
-  ir_graph *graph = NULL;
-  int n_dead_graphs = 0;
-  ir_graph **dead_graphs;
+	int      i, n_dead_irgs, n_graphs = get_irp_n_irgs();
+	ir_graph *irg, *next_irg, *dead_irgs;
 
-  int rem_vpi = get_visit_pseudo_irgs();
-  set_visit_pseudo_irgs(1);
+	int rem_vpi = get_visit_pseudo_irgs();
+	set_visit_pseudo_irgs(1);
 
-  dead_graphs = XMALLOCN(ir_graph*, get_irp_n_irgs());
+	irp_reserve_resources(irp, IR_RESOURCE_IRG_LINK);
 
-  for (i = 0; i < n_graphs; i++) {
-    graph = get_irp_irg(i);
+	n_dead_irgs = 0;
+	dead_irgs = NULL;
+	for (i = n_graphs - 1; i >= 0; --i) {
+		irg = get_irp_irg(i);
 
-    if (rta_is_alive_graph (graph)) {
-      /* do nothing (except some debugging fprintf`s :-) */
-    } else {
+		if (! rta_is_alive_graph(irg)) {
 #ifndef NDEBUG
-      ir_entity *ent = get_irg_entity (graph);
-      assert (visibility_external_visible != get_entity_visibility (ent));
+			ir_entity *ent = get_irg_entity(irg);
+			assert(visibility_external_visible != get_entity_visibility(ent));
 #endif
+			set_irg_link(irg, dead_irgs);
+			dead_irgs = irg;
+			++n_dead_irgs;
+		}
+	}
 
-      dead_graphs[n_dead_graphs] = graph;
-      n_dead_graphs ++;
-    }
-  }
+	/* Hmm, probably we need to run this only if dead_irgs is non-NULL */
+	type_walk(make_entity_to_description, NULL, NULL);
+	for (irg = dead_irgs; irg != NULL; irg = next_irg) {
+		next_irg = get_irg_link(irg);
+		remove_irp_irg(irg);
+	}
 
-  type_walk(make_entity_to_description, NULL, NULL);
-  for (i = 0; i < n_dead_graphs; ++i) {
-    remove_irp_irg (dead_graphs[i]);
-  }
+	DB((dbg, LEVEL_1, "RTA: dead methods = %i\n", n_dead_irgs));
 
-  if (verbose) {
-    printf ("RTA: n_dead_graphs = %i\n", n_dead_graphs);
-  }
-
-  set_visit_pseudo_irgs(rem_vpi);
-
-  free(dead_graphs);
+	irp_free_resources(irp, IR_RESOURCE_IRG_LINK);
+	set_visit_pseudo_irgs(rem_vpi);
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */
-void rta_cleanup (void)
+void rta_cleanup(void)
 {
 # ifdef DEBUG_libfirm
-  int i;
-    for (i = 0; i < get_irp_n_irgs(); i++) {
-      irg_vrfy (get_irp_irg(i));
-    }
-    tr_vrfy ();
+	int i;
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		irg_vrfy(get_irp_irg(i));
+	}
+	tr_vrfy();
 # endif /* defined DEBUG_libfirm */
 
-  if (_live_classes) {
-    eset_destroy (_live_classes);
-    _live_classes = NULL;
-  }
+	if (_live_classes != NULL) {
+		eset_destroy(_live_classes);
+		_live_classes = NULL;
+	}
 
-  if (_live_graphs) {
-    eset_destroy (_live_graphs);
-    _live_graphs = NULL;
-  }
+	if (_live_graphs != NULL) {
+		eset_destroy(_live_graphs);
+		_live_graphs = NULL;
+	}
 }
 
 /* Say whether this class might be instantiated at any point in the program: */
-int  rta_is_alive_class  (ir_type   *clazz)
+int rta_is_alive_class(ir_type *clazz)
 {
-  return (eset_contains (_live_classes, clazz));
+	return eset_contains(_live_classes, clazz);
 }
 
 /* Say whether this graph might be run at any time in the program: */
-int  rta_is_alive_graph (ir_graph *graph)
+int rta_is_alive_graph(ir_graph *graph)
 {
-  return eset_contains (_live_graphs, graph);
+	return eset_contains(_live_graphs, graph);
 }
 
 /* dump our opinion */
-void rta_report (void)
+void rta_report(void)
 {
-  int i;
+	int i, n;
 
-  for (i = 0; i < get_irp_n_types(); ++i) {
-    ir_type *tp = get_irp_type(i);
-    if (is_Class_type(tp) && rta_is_alive_class(tp)) {
-      ir_fprintf(stdout, "RTA: considered allocated: %+F\n", tp);
-    }
-  }
+	n = get_irp_n_types();
+	for (i = 0; i < n; ++i) {
+		ir_type *tp = get_irp_type(i);
+		if (is_Class_type(tp) && rta_is_alive_class(tp)) {
+			ir_printf("RTA: considered allocated: %+F\n", tp);
+		}
+	}
 
-  for (i = 0; i < get_irp_n_irgs(); i++) {
-    if (rta_is_alive_graph (get_irp_irg(i))) {
-      ir_fprintf(stdout, "RTA: considered called: graph of %+F\n", get_irp_irg(i));
-    }
-  }
+	n = get_irp_n_irgs();
+	for (i = 0; i < n; i++) {
+		ir_graph *irg = get_irp_irg(i);
+		if (rta_is_alive_graph(irg)) {
+			ir_printf("RTA: considered called: graph of %+F\n", irg);
+		}
+	}
 }
