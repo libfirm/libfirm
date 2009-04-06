@@ -493,52 +493,44 @@ static ir_entity *get_Sel_accessed_entity(const ir_node *sel) {
 
 /** An addr node is a SymConst or a Sel. */
 static int get_addr_n_entities(const ir_node *addr) {
-	int n_ents;
-
 	switch (get_irn_opcode(addr)) {
 	case iro_Sel:
 		/* Treat jack array sels? */
-		n_ents = get_Sel_n_accessed_entities(addr);
-		break;
+		return get_Sel_n_accessed_entities(addr);
 	case iro_SymConst:
-		if (get_SymConst_kind(addr) == symconst_addr_ent) {
-			n_ents = 1;
-			break;
-		}
+		if (get_SymConst_kind(addr) == symconst_addr_ent)
+			return 1;
+		return 0;
 	default:
-		//assert(0 && "unexpected address expression");
-		n_ents = 0;
+		return 0;
 	}
-
-	return n_ents;
 }
 
 /** An addr node is a SymConst or a Sel.
     If Sel follow to outermost of compound. */
 static ir_entity *get_addr_entity(const ir_node *addr, int pos) {
-	ir_entity *ent;
+	ir_node *ptr;
 	(void) pos;
 
 	switch (get_irn_opcode(addr)) {
 	case iro_Sel:
 		/* Treat jack array sels? They are compounds!  Follow to outermost entity.  */
-		while (is_Sel(get_Sel_ptr(addr))) {
-			addr = get_Sel_ptr(addr);
+		ptr = get_Sel_ptr(addr);
+		while (is_Sel(ptr)) {
+			addr = ptr;
+			ptr  = get_Sel_ptr(addr);
 		}
-		assert (0 <= pos && pos < get_Sel_n_accessed_entities(addr));
-		ent = get_Sel_accessed_entity(addr);
-		break;
+		assert(0 <= pos && pos < get_Sel_n_accessed_entities(addr));
+		return get_Sel_accessed_entity(addr);
 	case iro_SymConst:
 		if (get_SymConst_kind(addr) == symconst_addr_ent) {
 			assert(pos == 0);
-			ent = get_SymConst_entity(addr);
-			break;
+			return get_SymConst_entity(addr);
 		}
+		return NULL;
 	default:
-		ent = NULL;
+		return NULL;
 	}
-
-	return ent;
 }
 
 static void chain_accesses(ir_node *n, void *env) {
@@ -593,7 +585,7 @@ irg_outs_state get_trouts_state(void) {
 	return irp->trouts_state;
 }
 
-void           set_trouts_inconsistent(void) {
+void set_trouts_inconsistent(void) {
 	if (irp->trouts_state == outs_consistent)
 		irp->trouts_state = outs_inconsistent;
 }

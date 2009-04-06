@@ -553,7 +553,8 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
  *
  * Returns the dynamically referenced entity if the static entity and the
  * dynamic type are given.
- * Search downwards in overwritten tree. */
+ * Search downwards in overwritten tree.
+ */
 ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent) {
 	ir_entity *res;
 	assert(static_ent && is_entity(static_ent));
@@ -573,11 +574,12 @@ ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 /* - State handling. ----------------------------------------- */
 
 void set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s) {
-	if (get_irp_class_cast_state() > s) set_irp_class_cast_state(s);
+	if (get_irp_class_cast_state() > s)
+		set_irp_class_cast_state(s);
 	irg->class_cast_state = s;
 }
 
-ir_class_cast_state get_irg_class_cast_state(ir_graph *irg) {
+ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg) {
 	return irg->class_cast_state;
 }
 
@@ -594,7 +596,7 @@ ir_class_cast_state get_irp_class_cast_state(void) {
 	return irp->class_cast_state;
 }
 
-char *get_class_cast_state_string(ir_class_cast_state s) {
+const char *get_class_cast_state_string(ir_class_cast_state s) {
 #define X(a)    case a: return #a
 	switch(s) {
 	X(ir_class_casts_any);
@@ -613,7 +615,7 @@ typedef struct ccs_env {
 	ir_class_cast_state worst_situation;
 } ccs_env;
 
-void verify_irn_class_cast_state(ir_node *n, void *env) {
+static void verify_irn_class_cast_state(ir_node *n, void *env) {
 	ccs_env             *ccs = (ccs_env *)env;
 	ir_class_cast_state this_state = ir_class_casts_any;
 	ir_type             *fromtype, *totype;

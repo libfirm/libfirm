@@ -211,13 +211,13 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
 }
 
 void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
-	int i, n_irgs = get_irp_n_irgs();
+	int i;
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
 
 	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
 		simple_analyse_types();
 
-	for (i = 0; i < n_irgs; ++i) {
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		pure_normalize_irg_class_casts(get_irp_irg(i));
 	}
 
@@ -239,13 +239,17 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
  *  (T3)(T2)x<T1> -> (T3)x<T1>
  *
  * if possible.
+ *
+ * @param cast  the Cast node
+ *
+ * @return 1 if the cast was changed
  */
-static void cancel_out_casts(ir_node *cast) {
+static int cancel_out_casts(ir_node *cast) {
 	ir_node *orig, *pred = get_Cast_op(cast);
 	ir_type *tp_cast, *tp_pred, *tp_orig;
 	int ref_depth = 0;
 
-	if (!is_Cast(pred)) return;
+	if (!is_Cast(pred)) return 0;
 	orig = get_Cast_op(pred);
 
 	tp_cast = get_Cast_type(cast);
@@ -253,97 +257,125 @@ static void cancel_out_casts(ir_node *cast) {
 	tp_orig = get_irn_typeinfo_type(orig);
 
 	while (is_Pointer_type(tp_cast) &&
-		is_Pointer_type(tp_pred) &&
-		is_Pointer_type(tp_orig)   ) {
-			tp_cast = get_pointer_points_to_type(tp_cast);
-			tp_pred = get_pointer_points_to_type(tp_pred);
-			tp_orig = get_pointer_points_to_type(tp_orig);
-			ref_depth++;
+	      is_Pointer_type(tp_pred) &&
+	      is_Pointer_type(tp_orig)   ) {
+		tp_cast = get_pointer_points_to_type(tp_cast);
+		tp_pred = get_pointer_points_to_type(tp_pred);
+		tp_orig = get_pointer_points_to_type(tp_orig);
+		ref_depth++;
 	}
 
-	if (!is_Class_type(tp_cast)) return;
-	if (!is_Class_type(tp_pred)) return;
-	if (!is_Class_type(tp_orig)) return;
+	if (!is_Class_type(tp_cast) || !is_Class_type(tp_pred) || !is_Class_type(tp_orig))
+		return 0;
 
 	if (is_SubClass_of(tp_pred, tp_cast) && get_opt_suppress_downcast_optimization())
-		return;
+		return 0;
 
 	if (tp_cast == tp_orig) {
 		exchange(cast, orig);
 		n_casts_removed += 2;
-		return;
+		return 1;
 	}
 
 	if (!(is_SubClass_of  (tp_cast, tp_orig) || is_SubClass_of  (tp_orig, tp_cast))) {
 		/* Avoid (B2)(A)(new B1()) --> (B2)(new B1())
 		* if B1 =!> B2  and  B2 =!> B1
 		*/
-		return;
+		return 0;
 	}
 
 	if ((is_SubClass_of  (tp_cast, tp_pred) && is_SuperClass_of(tp_pred, tp_orig)) ||
-		(is_SuperClass_of(tp_cast, tp_pred) && is_SubClass_of  (tp_pred, tp_orig))) {
-			/* Cast --> Pred --> Orig */
-			set_Cast_op(cast, orig);
-			n_casts_removed ++;
+	    (is_SuperClass_of(tp_cast, tp_pred) && is_SubClass_of  (tp_pred, tp_orig))) {
+		/* Cast --> Pred --> Orig */
+		set_Cast_op(cast, orig);
+		++n_casts_removed;
+		return 1;
 	}
+	return 0;
 }
 
-static void concretize_selected_entity(ir_node *sel) {
-	ir_node *cast, *ptr = get_Sel_ptr(sel);
-	ir_type *orig_tp, *cast_tp;
+/**
+ * Optimize Sel(Cast(type, ptr), ent) into Sel(ptr_type, ent_type)
+ *
+ * @param sel  the Sel node
+ *
+ * @return 1 if Cast's where removed
+ */
+static int concretize_selected_entity(ir_node *sel) {
+	ir_node   *cast, *ptr = get_Sel_ptr(sel);
+	ir_type   *orig_tp, *cast_tp;
 	ir_entity *new_ent, *sel_ent;
+	int       res = 0;
 
 	sel_ent = get_Sel_entity(sel);
-	cast = get_Sel_ptr(sel);
+	cast    = get_Sel_ptr(sel);
 
 	while (is_Cast(cast)) {
 		cast_tp = get_Cast_type(cast);
-		ptr = get_Cast_op(cast);
+		ptr     = get_Cast_op(cast);
 		orig_tp = get_irn_typeinfo_type(ptr);
 
-		if (!is_Pointer_type(orig_tp)) return;
-		if (!is_Pointer_type(cast_tp)) return;
+		/* we handle only classes */
+		if (!is_Pointer_type(orig_tp)|| !is_Pointer_type(cast_tp))
+			return res;
 		orig_tp = get_pointer_points_to_type(orig_tp);
 		cast_tp = get_pointer_points_to_type(cast_tp);
-		if (!is_Class_type(orig_tp)) return;
-		if (!is_Class_type(cast_tp)) return;
+		if (!is_Class_type(orig_tp) || !is_Class_type(cast_tp))
+			return res;
 
 		/* We only want to concretize, but not generalize. */
-		if (!is_SuperClass_of(cast_tp, orig_tp)) return;
+		if (!is_SuperClass_of(cast_tp, orig_tp))
+			return res;
 
-		/* Hmm, we are not properly typed. */
-		if (get_class_member_index(cast_tp, sel_ent) == -1) return;
+		/* The sel entity should be a member of the cast_tp, else
+		   the graph was not properly typed. */
+		if (get_class_member_index(cast_tp, sel_ent) == -1)
+			return res;
 
 		new_ent = resolve_ent_polymorphy(orig_tp, sel_ent);
 
 		/* New ent must be member of orig_tp. */
-		if (get_class_member_index(orig_tp, new_ent) == -1) return;
+		if (get_class_member_index(orig_tp, new_ent) == -1)
+			return res;
 
+		/* all checks done, we can remove the Cast and update the Sel */
 		set_Sel_entity(sel, new_ent);
 		set_Sel_ptr(sel, ptr);
-		n_sels_concretized++;
+		++n_sels_concretized;
 
 		sel_ent = new_ent;
-		cast = ptr;
+		cast    = ptr;
+		res     = 1;
 	}
+	return res;
 }
 
-static void concretize_Phi_type(ir_node *phi)
+/**
+ * Move Casts of the same type through a Phi node, i.e.
+ * Phi(Cast(type, x_0), ..., Cast(type, x_n)) -> Cast(type, Phi(x_0, ..., x_n))
+ *
+ * @param phi  the Phi node
+ *
+ * @return 1 if Cast's where moved
+ */
+static int concretize_Phi_type(ir_node *phi)
 {
 	int       n_preds = get_Phi_n_preds(phi);
 	ir_node **pred    = ALLOCAN(ir_node*, n_preds);
-	ir_node  *nn;
+	ir_node  *nn, *blk;
 	ir_type  *totype;
 	ir_type  *fromtype;
 	int       i;
 
-	if (n_preds == 0) return;
+	if (n_preds == 0)
+		return 0;
 	pred[0] = get_Phi_pred(phi, 0);
 
-	if (!is_Cast(pred[0])) return;
+	if (!is_Cast(pred[0]))
+		return 0;
 
-	if (!is_Cast_upcast(pred[0])) return;
+	if (!is_Cast_upcast(pred[0]))
+		return 0;
 
 	fromtype = get_irn_typeinfo_type(get_Cast_op(pred[0]));
 	totype   = get_Cast_type(pred[0]);
@@ -351,41 +383,59 @@ static void concretize_Phi_type(ir_node *phi)
 	pred[0] = get_Cast_op(pred[0]);
 	for (i = 1; i < n_preds; ++i) {
 		pred[i] = get_Phi_pred(phi, i);
-		if (!is_Cast(pred[i])) return;
-		if (get_irn_typeinfo_type(get_Cast_op(pred[i])) != fromtype) return;
+		if (!is_Cast(pred[i]))
+			return 0;
+		if (get_irn_typeinfo_type(get_Cast_op(pred[i])) != fromtype)
+			return 0;
 		pred[i] = get_Cast_op(pred[i]);
 	}
 
 	/* Transform Phi */
-	set_cur_block(get_nodes_block(phi));
-	nn = new_Phi(n_preds, pred, get_irn_mode(phi));
+	blk = get_nodes_block(phi);
+	nn  = new_r_Phi(current_ir_graph, blk, n_preds, pred, get_irn_mode(phi));
 	set_irn_typeinfo_type(nn, fromtype);
-	nn = new_Cast(nn, totype);
+	nn  = new_r_Cast(current_ir_graph, blk, nn, totype);
 	set_irn_typeinfo_type(nn, totype);
 	exchange(phi, nn);
+	return 1;
 }
 
-void remove_Cmp_Null_cast(ir_node *cmp) {
+/**
+ * Remove Casted null checks, i.e.
+ *
+ * Cmp(Cast(type, x_orig), NULL_type) -> Cmp(x_orig, NULL_orig)
+ *
+ * @param cmp  the Cmp node
+ *
+ * @return 1 if Cast's where removed
+ */
+static int remove_Cmp_Null_cast(ir_node *cmp) {
 	ir_node *cast, *null, *new_null;
-	int cast_pos, null_pos;
+	int     cast_pos, null_pos;
 	ir_type *fromtype;
+	ir_mode *mode;
 
 	cast = get_Cmp_left(cmp);
-	cast_pos = 0;
 	if (!is_Cast(cast)) {
-		null = cast;
-		null_pos = cast_pos;
-		cast = get_Cmp_right(cmp);
+		null     = cast;
+		null_pos = 0;
+		cast     = get_Cmp_right(cmp);
 		cast_pos = 1;
-		if (!is_Cast(cast)) return;
+		if (!is_Cast(cast))
+			return 0;
 	} else {
 		null = get_Cmp_right(cmp);
+		cast_pos = 0;
 		null_pos = 1;
 	}
 
-	if (! is_Const(null)) return;
-	if (!mode_is_reference(get_irn_mode(null))) return;
-	if (get_Const_tarval(null) != get_mode_null(get_irn_mode(null))) return;
+	if (! is_Const(null))
+		return 0;
+	mode = get_irn_mode(null);
+	if (!mode_is_reference(mode))
+		return 0;
+	if (get_Const_tarval(null) != get_mode_null(mode))
+		return 0;
 
 	/* Transform Cmp */
 	set_irn_n(cmp, cast_pos, get_Cast_op(cast));
@@ -393,35 +443,42 @@ void remove_Cmp_Null_cast(ir_node *cmp) {
 	new_null = new_Const_type(get_Const_tarval(null), fromtype);
 	set_irn_typeinfo_type(new_null, fromtype);
 	set_irn_n(cmp, null_pos, new_null);
-	n_casts_removed ++;
+	++n_casts_removed;
+	return 1;
 }
 
 /**
- * Post-Walker:
+ * Post-Walker: Optimize class casts (mostly by trying to remove them)
  */
 static void irn_optimize_class_cast(ir_node *n, void *env) {
-	(void) env;
+	int *changed = env;
+
 	if (is_Cast(n))
-		cancel_out_casts(n);
+		*changed |= cancel_out_casts(n);
 	else if (is_Sel(n))
-		concretize_selected_entity(n);
+		*changed |= concretize_selected_entity(n);
 	else if (is_Phi(n))
-		concretize_Phi_type(n);
+		*changed |= concretize_Phi_type(n);
 	else if (is_Cmp(n))
-		remove_Cmp_Null_cast(n);
+		*changed |= remove_Cmp_Null_cast(n);
 }
 
 void optimize_class_casts(void) {
-	int i, n_irgs = get_irp_n_irgs();
+	int changed;
 
 	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
 		simple_analyse_types();
 
-	all_irg_walk(NULL, irn_optimize_class_cast, NULL);
+	changed = 0;
+	all_irg_walk(NULL, irn_optimize_class_cast, &changed);
 
-	set_trouts_inconsistent();
-	for (i = 0; i < n_irgs; ++i)
-		set_irg_outs_inconsistent(get_irp_irg(i));
+	if (changed) {
+		int i;
+
+		set_trouts_inconsistent();
+		for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+			set_irg_outs_inconsistent(get_irp_irg(i));
+	}
 
 	DB((dbg, SET_LEVEL_1, " Cast optimization: %d Casts removed, %d Sels concretized.\n",
 		n_casts_removed, n_sels_concretized));
