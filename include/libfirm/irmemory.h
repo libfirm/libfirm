@@ -80,9 +80,9 @@ typedef enum {
  * Called by get_alias_relation().
  */
 typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2);
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2);
 
 /**
  * Classify a base pointer.
@@ -91,7 +91,7 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
  * @param irn  the node representing the base address
  * @param ent  the base entity of the base address iff any
  */
-ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent);
+ir_storage_class_class_t classify_pointer(const ir_graph *irg, const ir_node *irn, const ir_entity *ent);
 
 /**
  * Returns a human readable name for an alias relation.
@@ -133,9 +133,9 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * interrogated to detect the alias relation.
  */
 ir_alias_relation get_alias_relation(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2);
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2);
 
 /**
  * Set a source language specific memory disambiguator function.
@@ -162,9 +162,9 @@ void mem_disambig_init(void);
  * @see get_alias_relation()
  */
 ir_alias_relation get_alias_relation_ex(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2);
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2);
 
 /**
  * Free the relation cache.
@@ -220,7 +220,7 @@ void assure_irp_globals_entity_usage_computed(void);
  *
  * @param irg  the graph
  */
-unsigned get_irg_memory_disambiguator_options(ir_graph *irg);
+unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
 
 /**
  * Set the memory disambiguator options for a graph.

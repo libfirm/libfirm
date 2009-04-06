@@ -68,7 +68,7 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel) {
 }
 
 /* Get the memory disambiguator options for a graph. */
-unsigned get_irg_memory_disambiguator_options(ir_graph *irg) {
+unsigned get_irg_memory_disambiguator_options(const ir_graph *irg) {
 	unsigned opt = irg->mem_disambig_opt;
 	if (opt & aa_opt_inherited)
 		return global_mem_disamgig_opt;
@@ -93,7 +93,7 @@ void set_irp_memory_disambiguator_options(unsigned options) {
  *
  * @return the base address.
  */
-static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
+static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt) {
 	ir_node *ptr = get_Sel_ptr(sel);
 
 	while (is_Sel(ptr)) {
@@ -112,7 +112,7 @@ static ir_node *find_base_adr(ir_node *sel, ir_entity **pEnt) {
  *
  * @return ir_no_alias if the Const is greater, ir_may_alias else
  */
-static ir_alias_relation check_const(ir_node *cns, int size) {
+static ir_alias_relation check_const(const ir_node *cns, int size) {
 	tarval *tv = get_Const_tarval(cns);
 	tarval *tv_size;
 
@@ -133,7 +133,7 @@ static ir_alias_relation check_const(ir_node *cns, int size) {
  *         ir_no_alias iff they ALWAYS differ more than size
  *         ir_may_alias else
  */
-static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size) {
+static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx2, int size) {
 	if (idx1 == idx2)
 		return ir_sure_alias;
 	if (is_Const(idx1) && is_Const(idx2)) {
@@ -292,7 +292,7 @@ static ir_alias_relation different_index(ir_node *idx1, ir_node *idx2, int size)
  * @param adr1  The first address.
  * @param adr2  The second address.
  */
-static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
+static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_node *sel2) {
 	/* seems to be broken */
 	(void) sel1;
 	(void) sel2;
@@ -347,7 +347,7 @@ static ir_alias_relation different_sel_offsets(ir_node *sel1, ir_node *sel2) {
  * @param adr1    The first address.
  * @param adr2    The second address.
  */
-static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
+static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr2)
 {
 	ir_entity *ent1 = NULL, *ent2 = NULL;
 
@@ -395,7 +395,7 @@ static ir_alias_relation different_types(ir_node *adr1, ir_node *adr2)
  *
  * @param node  the Proj node to test
  */
-static int is_malloc_Result(ir_node *node) {
+static int is_malloc_Result(const ir_node *node) {
 	node = get_Proj_pred(node);
 	if (! is_Proj(node))
 		return 0;
@@ -420,7 +420,7 @@ static int is_malloc_Result(ir_node *node) {
  * @param irn  the node representing the base address
  * @param ent  the base entity of the base address iff any
  */
-ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity *ent)
+ir_storage_class_class_t classify_pointer(const ir_graph *irg, const ir_node *irn, const ir_entity *ent)
 {
 	ir_storage_class_class_t res = ir_sc_pointer;
 	if (is_Global(irn)) {
@@ -450,7 +450,7 @@ ir_storage_class_class_t classify_pointer(ir_graph *irg, ir_node *irn, ir_entity
 /**
  * If adr represents a Bitfield Sel, skip it
  */
-static ir_node *skip_Bitfield_Sels(ir_node *adr) {
+static const ir_node *skip_Bitfield_Sels(const ir_node *adr) {
 	if (is_Sel(adr)) {
 		ir_entity *ent     = get_Sel_entity(adr);
 		ir_type   *bf_type = get_entity_type(ent);
@@ -474,18 +474,18 @@ static ir_node *skip_Bitfield_Sels(ir_node *adr) {
  * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2)
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2)
 {
 	ir_entity             *ent1, *ent2;
 	unsigned              options;
 	long                  offset1 = 0;
 	long                  offset2 = 0;
-	ir_node               *base1;
-	ir_node               *base2;
-	ir_node               *orig_adr1 = adr1;
-	ir_node               *orig_adr2 = adr2;
+	const ir_node         *base1;
+	const ir_node         *base2;
+	const ir_node         *orig_adr1 = adr1;
+	const ir_node         *orig_adr2 = adr2;
 	unsigned              mode_size;
 	ir_storage_class_class_t class1, class2, mod1, mod2;
 	int                   have_const_offsets;
@@ -681,9 +681,9 @@ leave_type_based_alias:;
  * Determine the alias relation between two addresses.
  */
 ir_alias_relation get_alias_relation(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2)
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2)
 {
 	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
@@ -700,8 +700,10 @@ static set *result_cache = NULL;
 
 /** An entry in the relation cache. */
 typedef struct mem_disambig_entry {
-	ir_node	          *adr1;    /**< The first address. */
-	ir_node	          *adr2;    /**< The second address. */
+	const ir_node	  *adr1;    /**< The first address. */
+	const ir_mode	  *mode1;   /**< The first address mode. */
+	const ir_node	  *adr2;    /**< The second address. */
+	const ir_mode	  *mode2;   /**< The second address mode. */
 	ir_alias_relation result;   /**< The alias relation result. */
 } mem_disambig_entry;
 
@@ -715,7 +717,8 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 	const mem_disambig_entry *p2 = key;
 	(void) size;
 
-	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2;
+	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2 &&
+	       p1->mode1 == p2->mode1 && p1->mode2 == p2->mode2;
 }  /* cmp_mem_disambig_entry */
 
 /**
@@ -729,9 +732,9 @@ void mem_disambig_init(void) {
  * Determine the alias relation between two addresses.
  */
 ir_alias_relation get_alias_relation_ex(
-	ir_graph *irg,
-	ir_node *adr1, ir_mode *mode1,
-	ir_node *adr2, ir_mode *mode2)
+	const ir_graph *irg,
+	const ir_node *adr1, const ir_mode *mode1,
+	const ir_node *adr2, const ir_mode *mode2)
 {
 	mem_disambig_entry key, *entry;
 
@@ -741,13 +744,15 @@ ir_alias_relation get_alias_relation_ex(
 		return ir_may_alias;
 
 	if (get_irn_opcode(adr1) > get_irn_opcode(adr2)) {
-		ir_node *t = adr1;
+		const ir_node *t = adr1;
 		adr1 = adr2;
 		adr2 = t;
 	}
 
-	key.adr1 = adr1;
-	key.adr2 = adr2;
+	key.adr1  = adr1;
+	key.adr2  = adr2;
+	key.mode1 = mode1;
+	key.mode2 = mode2;
 	entry = set_find(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	if (entry != NULL)
 		return entry->result;
@@ -785,7 +790,7 @@ void mem_disambig_term(void) {
  *
  * @return non-zero if the Load/Store is a hidden cast, zero else
  */
-static int is_hidden_cast(ir_mode *mode, ir_mode *ent_mode) {
+static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode) {
 	if (ent_mode == NULL)
 		return false;
 
@@ -868,7 +873,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			break;
 		case iro_Sel: {
 			ir_entity *entity = get_Sel_entity(succ);
-			/* this analyis can't handle unions correctly */
+			/* this analysis can't handle unions correctly */
 			if (is_Union_type(get_entity_owner(entity))) {
 				res |= ir_usage_unknown;
 				break;
@@ -958,7 +963,7 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 		ir_entity      *entity;
 		ir_entity_usage flags;
 
-	    if (!is_Sel(succ))
+		if (!is_Sel(succ))
 			continue;
 
 		entity = get_Sel_entity(succ);
@@ -1030,7 +1035,7 @@ void assure_irg_entity_usage_computed(ir_graph *irg) {
 /**
  * Initialize the entity_usage flag for a global type like type.
  */
-static void init_entity_usage(ir_type * tp) {
+static void init_entity_usage(ir_type *tp) {
 	int i;
 
 	/* We have to be conservative: All external visible entities are unknown */
@@ -1169,7 +1174,7 @@ static void print_entity_usage_flags(ir_type *tp) {
 /**
  * Post-walker: check for global entity address
  */
-static void check_global_address(ir_node *irn, void *env) {
+static void check_global_address(const ir_node *irn, void *env) {
 	ir_node *tls = env;
 	ir_entity *ent;
 	ir_entity_usage flags;
