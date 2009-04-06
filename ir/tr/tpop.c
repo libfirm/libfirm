@@ -30,21 +30,20 @@
 #include "type_t.h"
 #include "ident.h"
 
-tp_op *type_class;         tp_op *get_tpop_class      (void) { return type_class;       }
-tp_op *type_struct;        tp_op *get_tpop_struct     (void) { return type_struct;      }
-tp_op *type_method;        tp_op *get_tpop_method     (void) { return type_method;      }
-tp_op *type_union;         tp_op *get_tpop_union      (void) { return type_union;       }
-tp_op *type_array;         tp_op *get_tpop_array      (void) { return type_array;       }
-tp_op *type_enumeration;   tp_op *get_tpop_enumeration(void) { return type_enumeration; }
-tp_op *type_pointer;       tp_op *get_tpop_pointer    (void) { return type_pointer;     }
-tp_op *type_primitive;     tp_op *get_tpop_primitive  (void) { return type_primitive;   }
-tp_op *type_id;            tp_op *get_tpop_id         (void) { return type_id;          }
-tp_op *tpop_none;          tp_op *get_tpop_none       (void) { return tpop_none;        }
-tp_op *tpop_unknown;       tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
+const tp_op *type_class;         const tp_op *get_tpop_class      (void) { return type_class;       }
+const tp_op *type_struct;        const tp_op *get_tpop_struct     (void) { return type_struct;      }
+const tp_op *type_method;        const tp_op *get_tpop_method     (void) { return type_method;      }
+const tp_op *type_union;         const tp_op *get_tpop_union      (void) { return type_union;       }
+const tp_op *type_array;         const tp_op *get_tpop_array      (void) { return type_array;       }
+const tp_op *type_enumeration;   const tp_op *get_tpop_enumeration(void) { return type_enumeration; }
+const tp_op *type_pointer;       const tp_op *get_tpop_pointer    (void) { return type_pointer;     }
+const tp_op *type_primitive;     const tp_op *get_tpop_primitive  (void) { return type_primitive;   }
+const tp_op *type_id;            const tp_op *get_tpop_id         (void) { return type_id;          }
+const tp_op *tpop_none;          const tp_op *get_tpop_none       (void) { return tpop_none;        }
+const tp_op *tpop_unknown;       const tp_op *get_tpop_unknown    (void) { return tpop_unknown;     }
 
-tp_op *
-new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size,
-         const tp_op_ops *ops)
+const tp_op *
+new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp_op_ops *ops)
 {
 	tp_op *res = XMALLOC(tp_op);
 	res->code          = code;
@@ -61,8 +60,8 @@ new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size,
 }
 
 void
-free_tpop(tp_op *tpop) {
-	free(tpop);
+free_tpop(const tp_op *tpop) {
+	xfree((void *)tpop);
 }
 
 static const tp_op_ops
@@ -199,7 +198,7 @@ void finish_tpop(void) {
 	free_tpop(type_id         ); type_id          = NULL;
 	free_tpop(tpop_none       ); tpop_none        = NULL;
 	free_tpop(tpop_unknown    ); tpop_unknown     = NULL;
-	}
+}
 
 /* Returns the string for the tp_opcode. */
 const char  *get_tpop_name(const tp_op *op) {

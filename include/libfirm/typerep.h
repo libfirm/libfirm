@@ -816,8 +816,8 @@ ident *get_tpop_ident(const tp_op *op);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_class;
-tp_op *get_tpop_class(void);
+extern const tp_op *type_class;
+const tp_op *get_tpop_class(void);
 
 /**
  * This type opcode marks that the corresponding type is a compound type
@@ -828,8 +828,8 @@ tp_op *get_tpop_class(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_struct;
-tp_op *get_tpop_struct(void);
+extern const tp_op *type_struct;
+const tp_op *get_tpop_struct(void);
 
 /**
  * This type opcode marks that the corresponding type is a method type.
@@ -838,8 +838,8 @@ tp_op *get_tpop_struct(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_method;
-tp_op *get_tpop_method(void);
+extern const tp_op *type_method;
+const tp_op *get_tpop_method(void);
 
 /**
  * This type opcode marks that the corresponding type is a union type.
@@ -848,8 +848,8 @@ tp_op *get_tpop_method(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_union;
-tp_op *get_tpop_union(void);
+extern const tp_op *type_union;
+const tp_op *get_tpop_union(void);
 
 /**
  * This type opcode marks that the corresponding type is an array type.
@@ -859,8 +859,8 @@ tp_op *get_tpop_union(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_array;
-tp_op *get_tpop_array(void);
+extern const tp_op *type_array;
+const tp_op *get_tpop_array(void);
 
 /**
  * This type opcode marks that the corresponding type is an enumeration type.
@@ -871,8 +871,8 @@ tp_op *get_tpop_array(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_enumeration;
-tp_op *get_tpop_enumeration(void);
+extern const tp_op *type_enumeration;
+const tp_op *get_tpop_enumeration(void);
 
 /**
  * This type opcode marks that the corresponding type is a pointer type.
@@ -881,8 +881,8 @@ tp_op *get_tpop_enumeration(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_pointer;
-tp_op *get_tpop_pointer(void);
+extern const tp_op *type_pointer;
+const tp_op *get_tpop_pointer(void);
 
 /**
  * This type opcode marks that the corresponding type is a primitive type.
@@ -892,8 +892,8 @@ tp_op *get_tpop_pointer(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_primitive;
-tp_op *get_tpop_primitive(void);
+extern const tp_op *type_primitive;
+const tp_op *get_tpop_primitive(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support transformations
@@ -912,8 +912,8 @@ tp_op *get_tpop_primitive(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-extern tp_op *type_id;
-tp_op *get_tpop_id(void);
+extern const tp_op *type_id;
+const tp_op *get_tpop_id(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
@@ -923,8 +923,8 @@ tp_op *get_tpop_id(void);
  * contain a type or that are initialized for an analysis. There exists exactly
  * one type with this opcode.
  */
-extern tp_op *tpop_none;
-tp_op *get_tpop_none(void);
+extern const tp_op *tpop_none;
+const tp_op *get_tpop_none(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
@@ -934,8 +934,8 @@ tp_op *get_tpop_none(void);
  * yet) or to represent the top of a lattice (could not be determined).  There exists
  * exactly one type with this opcode.
  */
-extern tp_op *tpop_unknown;
-tp_op *get_tpop_unknown(void);
+extern const tp_op *tpop_unknown;
+const tp_op *get_tpop_unknown(void);
 
 /* ----------------------------------------------------------------------- */
 /* Classify pairs of types/entities in the inheritance relations.          */

@@ -113,7 +113,7 @@ void (inc_master_type_visited)(void)             { _inc_master_type_visited(); }
  * Creates a new type representation.
  */
 ir_type *
-new_type(tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
+new_type(const tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
 	ir_type *res;
 	int node_size;
 

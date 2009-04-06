@@ -101,13 +101,12 @@ struct tp_op {
  * @param ops         the tp_op operations for this type
  * @return A new type opcode.
  */
-tp_op *new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size,
-                 const tp_op_ops *ops);
+const tp_op *new_tpop (tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp_op_ops *ops);
 
 /**
- * Free a tpop datastructure.
+ * Free a tpop data structure.
  */
-void free_tpop(tp_op *tpop);
+void free_tpop(const tp_op *tpop);
 
 /**
  * Initialize the tpop module.
@@ -118,7 +117,7 @@ void free_tpop(tp_op *tpop);
  * Allocates opcodes for classes, struct, method, union, array,
  * enumeration, pointer and primitive and sets the according values.
  */
-void init_tpop (void);
+void init_tpop(void);
 
 /**
  * Finalize the tpop module.
