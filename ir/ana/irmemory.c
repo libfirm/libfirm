@@ -1174,7 +1174,7 @@ static void print_entity_usage_flags(ir_type *tp) {
 /**
  * Post-walker: check for global entity address
  */
-static void check_global_address(const ir_node *irn, void *env) {
+static void check_global_address(ir_node *irn, void *env) {
 	ir_node *tls = env;
 	ir_entity *ent;
 	ir_entity_usage flags;
