@@ -327,7 +327,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		 */
 		if (!op->has_constraints ||
 		   !values_interfere(birg, insn->irn, op->carrier) ||
-		   bitset_popcnt(tmp) == 0)
+		   bitset_is_empty(tmp))
 			continue;
 
 		/*
@@ -397,7 +397,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			bitset_and(bs, out_op->regs);
 			n_total = bitset_popcnt(op->regs) + bitset_popcnt(out_op->regs);
 
-			if (bitset_popcnt(bs) > 0 && n_total < smallest_n_regs) {
+			if (!bitset_is_empty(bs) && n_total < smallest_n_regs) {
 				smallest = i;
 				smallest_n_regs = n_total;
 			}

@@ -384,7 +384,7 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
 	bitset_pos_t pos;
-	int max, next, curr_weight, best_weight = 0;
+	int next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
 	 * safe: node has no interference, hence it is in every max stable set.
@@ -438,7 +438,7 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
 		/* Exact Algorithm: Brute force */
 		curr = bitset_alloca(unsafe_count);
 		bitset_set_all(curr);
-		while ((max = bitset_popcnt(curr)) != 0) {
+		while (!bitset_is_empty(curr)) {
 			/* check if curr is a stable set */
 			for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (o=bitset_next_set(curr, i); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to ou_max_ind_set_costs(): NOT (curr, i+1) */
