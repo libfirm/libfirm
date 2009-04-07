@@ -1569,8 +1569,11 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			ir_node      *bl  = get_nodes_block(irn);
 			ir_node      *nw;
 			int          pos = 0;
+			int          is_value_param = 0;
 
 			if (get_entity_owner(ent) == ctx->value_tp) {
+				is_value_param = 1;
+
 				/* replace by its copy from the argument type */
 				pos = get_struct_member_index(ctx->value_tp, ent);
 				ent = get_argument_entity(ent, ctx);
@@ -1579,8 +1582,8 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
 			exchange(irn, nw);
 
-			/* check, if it's a param sel and if have not seen this entity before */
-			if (get_entity_owner(ent) == ctx->value_tp && get_entity_link(ent) == NULL) {
+			/* check, if it's a param Sel and if have not seen this entity before */
+			if (is_value_param && get_entity_link(ent) == NULL) {
 				ent_pos_pair pair;
 
 				pair.ent  = ent;
