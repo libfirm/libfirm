@@ -1834,7 +1834,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
-	call_flags.bits.call_has_imm          = 0;  /* No call immediates, we handle this by ourselves */
+	call_flags.bits.call_has_imm          = 0;  /* No call immediate, we handle this by ourselves */
 
 	/* set parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ia32_abi_callbacks);
@@ -1846,8 +1846,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	} else {
 		if (get_method_additional_properties(method_type) & mtp_property_private &&
 		    ia32_cg_config.optimize_cc) {
-			/* set the regparam calling conventions (allowing up to 3) */
-			cc = (cc & ~(cc_bits|cc_this_call)) | cc_reg_param | 3;
+			/* set the fast calling conventions (allowing up to 3) */
+			cc = SET_FASTCALL(cc) | 3;
 		}
 	}
 
