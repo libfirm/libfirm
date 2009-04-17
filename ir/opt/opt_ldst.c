@@ -132,12 +132,12 @@ typedef struct ldst_env_t {
 #endif
 } ldst_env;
 
+/* the one and only environment */
+static ldst_env env;
+
 #ifdef DEBUG_libfirm
 
 static firm_dbg_module_t *dbg;
-
-/* the one and only environment */
-static ldst_env env;
 
 /**
  * Dumps the block list.
