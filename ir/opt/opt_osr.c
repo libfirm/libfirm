@@ -1236,12 +1236,17 @@ static void lftr(ir_graph *irg, iv_env *env) {
  */
 static void clear_and_fix(ir_node *irn, void *env)
 {
-	(void) env;
+	int *moved = env;
 	set_irn_link(irn, NULL);
 
 	if (is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-		set_nodes_block(irn, get_nodes_block(pred));
+		ir_node *pred       = get_Proj_pred(irn);
+		ir_node *pred_block = get_nodes_block(pred);
+
+		if (get_nodes_block(irn) != pred_block) {
+			set_nodes_block(irn, pred_block);
+			*moved = 1;
+		}
 	}
 }
 
@@ -1250,6 +1255,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	iv_env   env;
 	ir_graph *rem;
 	int      edges;
+	int      projs_moved;
 
 	if (! get_opt_strength_red()) {
 		/* only kill Phi cycles  */
@@ -1280,17 +1286,22 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	   the same block as it's predecessors.
 	   This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+	projs_moved = 0;
+	irg_walk_graph(irg, NULL, clear_and_fix, &projs_moved);
+	if (projs_moved)
+		set_irg_outs_inconsistent(irg);
 
 	/* we need dominance */
 	assure_doms(irg);
 
 	edges = edges_assure(irg);
 
-	/* calculate the post order number for blocks. */
+	/* calculate the post order number for blocks by walking the out edges. */
+	assure_irg_outs(irg);
 	irg_block_edges_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	do_dfs(irg, &env);
 
 	if (env.replaced) {
@@ -1301,6 +1312,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 	}
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	del_set(env.lftr_edges);
 	del_set(env.quad_map);
@@ -1317,6 +1329,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 void remove_phi_cycles(ir_graph *irg) {
 	iv_env   env;
 	ir_graph *rem;
+	int      projs_moved;
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
@@ -1341,7 +1354,10 @@ void remove_phi_cycles(ir_graph *irg) {
 	   the same block as it's predecessors.
 	   This can improve the placement of new nodes.
 	 */
-	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
+	projs_moved = 0;
+	irg_walk_graph(irg, NULL, clear_and_fix, &projs_moved);
+	if (projs_moved)
+		set_irg_outs_inconsistent(irg);
 
 	/* we need outs for calculating the post order */
 	assure_irg_outs(irg);
@@ -1350,7 +1366,9 @@ void remove_phi_cycles(ir_graph *irg) {
 	irg_out_block_walk(get_irg_start_block(irg), NULL, assign_po, &env);
 
 	/* calculate the SCC's and drive OSR. */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	do_dfs(irg, &env);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (env.replaced) {
 		set_irg_outs_inconsistent(irg);
