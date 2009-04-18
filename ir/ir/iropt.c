@@ -6667,7 +6667,6 @@ static unsigned hash_Const(const ir_node *node) {
 
 	/* special value for const, as they only differ in their tarval. */
 	h = HASH_PTR(node->attr.con.tv);
-	h = 9*h + HASH_PTR(get_irn_mode(node));
 
 	return h;
 }  /* hash_Const */
@@ -6679,8 +6678,12 @@ static unsigned hash_SymConst(const ir_node *node) {
 	unsigned h;
 
 	/* special value for const, as they only differ in their symbol. */
-	h = HASH_PTR(node->attr.symc.sym.type_p);
-	h = 9*h + HASH_PTR(get_irn_mode(node));
+	if (node->attr.symc.kind == symconst_label)
+		h = (unsigned)node->attr.symc.sym.label;
+	else {
+		/* all others are pointers */
+		h = HASH_PTR(node->attr.symc.sym.type_p);
+	}
 
 	return h;
 }  /* hash_SymConst */
