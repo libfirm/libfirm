@@ -27,8 +27,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,14,0,30
- PRODUCTVERSION 1,14,0,30
+ FILEVERSION 1,15,0,31
+ PRODUCTVERSION 1,15,0,31
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x21L
@@ -45,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Michael Beck"
             VALUE "FileDescription", "firmEvaluator -- libFirm debug Extension for Developer Studio 6/7/8"
-            VALUE "FileVersion", "1, 14, 0, 30"
+            VALUE "FileVersion", "1, 15, 0, 31"
             VALUE "InternalName", "firmEvaluator"
-            VALUE "LegalCopyright", "Copyright © 2005-2008 Michael Beck"
+            VALUE "LegalCopyright", "Copyright © 2005-2009 Michael Beck"
             VALUE "OriginalFilename", "firmEvaluator.dll"
             VALUE "ProductName", "firmEvaluator -- libFirm debug Extension for Developer Studio 6/7/8"
-            VALUE "ProductVersion", "1, 14, 0, 30"
+            VALUE "ProductVersion", "1, 15, 0, 31"
             VALUE "SpecialBuild", "Licensed for IPD Goos"
         END
     END
