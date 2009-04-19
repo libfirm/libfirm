@@ -545,7 +545,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
     break;
   case iro_Cast:
     _tcsncat(pResult, "<", max);
-    if (format_type(pHelper, nBase, n.attr.cast.totype, name, sizeof(name), 0) != S_OK)
+    if (format_type(pHelper, nBase, n.attr.cast.type, name, sizeof(name), 0) != S_OK)
       return E_FAIL;
     _tcsncat(pResult, name, max);
     _tcsncat(pResult, ">", max);
@@ -570,7 +570,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
     break;
   case iro_CopyB:
     _tcsncat(pResult, "<", max);
-    if (format_type(pHelper, nBase, n.attr.copyb.data_type, name, sizeof(name), 0) != S_OK)
+    if (format_type(pHelper, nBase, n.attr.copyb.type, name, sizeof(name), 0) != S_OK)
       return E_FAIL;
     _tcsncat(pResult, name, max);
     _tcsncat(pResult, ">", max);
