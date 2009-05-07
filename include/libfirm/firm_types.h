@@ -222,7 +222,7 @@ typedef enum {
 	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
 	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */
 	ir_bk_return_address,         /**< GCC __builtin_return_address() */
-	ir_bk_frame_addess,           /**< GCC __builtin_frame_address() */
+	ir_bk_frame_address,          /**< GCC __builtin_frame_address() */
 	ir_bk_prefetch,               /**< GCC __builtin_prefetch() */
 	ir_bk_ffs,                    /**< GCC __builtin_ffs(): find first (least) significant 1 bit */
 	ir_bk_clz,                    /**< GCC __builtin_clz(): count leading zero */

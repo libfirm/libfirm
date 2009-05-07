@@ -727,6 +727,11 @@ void     set_Carry_left(ir_node *node, ir_node *left);
 ir_node *get_Carry_right(const ir_node *node);
 void     set_Carry_right(ir_node *node, ir_node *right);
 
+ir_node *get_Borrow_left(const ir_node *node);
+void     set_Borrow_left(ir_node *node, ir_node *left);
+ir_node *get_Borrow_right(const ir_node *node);
+void     set_Borrow_right(ir_node *node, ir_node *right);
+
 ir_node *get_Sub_left(const ir_node *node);
 void     set_Sub_left(ir_node *node, ir_node *left);
 ir_node *get_Sub_right(const ir_node *node);
@@ -795,6 +800,7 @@ void     set_Div_mem(ir_node *node, ir_node *mem);
 ir_mode *get_Div_resmode(const ir_node *node);
 void     set_Div_resmode(ir_node *node, ir_mode *mode);
 int      get_Div_no_remainder(const ir_node *node);
+void     set_Div_no_remainder(ir_node *node, int no_remainder);
 
 /**
  * Projection numbers for Div: use for Proj nodes!

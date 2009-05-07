@@ -491,7 +491,7 @@ new_bd_Call(dbg_info *db, ir_node *block, ir_node *store,
 
 static ir_node *
 new_bd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
-               ir_builtin_kind kind, int arity, ir_node **in, ir_type *tp) {
+               int arity, ir_node **in, ir_builtin_kind kind, ir_type *tp) {
 	ir_node  **r_in;
 	ir_node  *res;
 	int      r_arity;
@@ -1154,12 +1154,12 @@ new_rd_Call(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
 
 ir_node *
 new_rd_Builtin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-               ir_builtin_kind kind, int arity, ir_node **in, ir_type *tp) {
+               int arity, ir_node **in, ir_builtin_kind kind, ir_type *tp) {
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	res = new_bd_Builtin(db, block, store, kind, arity, in, tp);
+	res = new_bd_Builtin(db, block, store, arity, in, kind, tp);
 	current_ir_graph = rem;
 
 	return res;
@@ -1556,9 +1556,9 @@ ir_node *new_r_Call(ir_graph *irg, ir_node *block, ir_node *store,
 	return new_rd_Call(NULL, irg, block, store, callee, arity, in, tp);
 }
 ir_node *new_r_Builtin(ir_graph *irg, ir_node *block, ir_node *store,
-                       ir_builtin_kind kind, int arity, ir_node **in,
+                       int arity, ir_node **in, ir_builtin_kind kind,
                        ir_type *tp) {
-	return new_rd_Builtin(NULL, irg, block, store, kind, arity, in, tp);
+	return new_rd_Builtin(NULL, irg, block, store, arity, in, kind, tp);
 }
 ir_node *new_r_Add(ir_graph *irg, ir_node *block,
                    ir_node *op1, ir_node *op2, ir_mode *mode) {
@@ -2556,9 +2556,9 @@ new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node **i
 }  /* new_d_Call */
 
 ir_node *
-new_d_Builtin(dbg_info *db, ir_node *store, ir_builtin_kind kind, int arity, ir_node **in,
-              ir_type *tp) {
-	return new_bd_Builtin(db, current_ir_graph->current_block, store, kind, arity, in, tp);
+new_d_Builtin(dbg_info *db, ir_node *store, int arity, ir_node **in,
+              ir_builtin_kind kind, ir_type *tp) {
+	return new_bd_Builtin(db, current_ir_graph->current_block, store, arity, in, tp, kind);
 }  /* new_d_Builtin */
 
 ir_node *

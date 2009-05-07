@@ -135,7 +135,12 @@ Block = dict(
 
 	public void markBlockVisited() {
 		binding.mark_Block_block_visited(ptr);
-	}''',
+	}
+
+	public boolean isBad() {
+		return binding.is_Bad(ptr) != 0;
+	}
+	''',
 ),
 
 Borrow = dict(
@@ -304,7 +309,7 @@ CopyB = dict(
 ),
 
 Div = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
+	ins   = [ "mem", "left", "right" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
 	attrs_name = "divmod",
 	attrs = [
@@ -331,7 +336,7 @@ Div = dict(
 ),
 
 DivMod = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
+	ins   = [ "mem", "left", "right" ],
 	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ],
 	attrs_name = "divmod",
 	attrs = [
@@ -402,7 +407,7 @@ IJmp = dict(
 ),
 
 InstOf = dict(
-	ins   = [ "store", "objptr" ],
+	ins   = [ "store", "obj" ],
 	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ],
 	attrs = [
 		dict(
@@ -449,7 +454,7 @@ Minus = dict(
 ),
 
 Mod = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
+	ins   = [ "mem", "left", "right" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
 	attrs_name = "divmod",
 	attrs = [
@@ -514,7 +519,7 @@ Proj = dict(
 ),
 
 Quot = dict(
-	ins   = [ "mem", "dividend", "divisor" ],
+	ins   = [ "mem", "left", "right" ],
 	outs  = [ "M", "X_regular", "X_except", "res" ],
 	attrs_name = "divmod",
 	attrs = [

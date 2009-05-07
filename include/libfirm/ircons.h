@@ -1468,13 +1468,13 @@ ir_node *new_rd_Call   (dbg_info *db, ir_graph *irg, ir_node *block, ir_node *st
  * @param   *irg    The IR graph the node  belongs to.
  * @param   *block  The IR block the node belongs to.
  * @param   *store  The current memory state.
- * @param   kind    The kind of the called builtin.
  * @param   arity   The number of procedure parameters.
  * @param   *in[]   An array with the procedure parameters. The constructor copies this array.
+ * @param   kind    The kind of the called builtin.
  * @param   *tp     Type information of the procedure called.
  */
 ir_node *new_rd_Builtin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *store,
-			            ir_builtin_kind kind, int arity, ir_node *in[], ir_type *tp);
+			            int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -2321,13 +2321,13 @@ ir_node *new_r_Call   (ir_graph *irg, ir_node *block, ir_node *store,
  * @param   *irg    The IR graph the node  belongs to.
  * @param   *block  The IR block the node belongs to.
  * @param   *store  The actual store.
- * @param   kind    The kind of the called builtin.
  * @param   arity   The number of procedure parameters.
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
+ * @param   kind    The kind of the called builtin.
  * @param   *tp     Type information of the procedure called.
  */
 ir_node *new_r_Builtin(ir_graph *irg, ir_node *block, ir_node *store,
-                       ir_builtin_kind kind, int arity, ir_node *in[], ir_type *tp);
+                       int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -3168,13 +3168,12 @@ ir_node *new_d_Call   (dbg_info *db, ir_node *store, ir_node *callee, int arity,
  *
  * @param   *db     A pointer for debug information.
  * @param   *store  The actual store.
- * @param   kind    The kind of the called builtin.
  * @param   arity   The number of procedure parameters.
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
+ * @param   kind    The kind of the called builtin.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_d_Builtin(dbg_info *db, ir_node *store, ir_builtin_kind kind, int arity, ir_node *in[],
-                       ir_type *tp);
+ir_node *new_d_Builtin(dbg_info *db, ir_node *store, int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -3997,8 +3996,8 @@ ir_node *new_Call   (ir_node *store, ir_node *callee, int arity, ir_node *in[],
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_Builtin(ir_node *store, ir_builtin_kind kind, int arity, ir_node *in[],
-                     ir_type *tp);
+ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
+                     ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a CallBegin node.
  *

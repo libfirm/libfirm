@@ -5136,7 +5136,7 @@ static ir_node *gen_Builtin(ir_node *node) {
 		return gen_debugbreak(node);
 	case ir_bk_return_address:
 		return gen_return_address(node);
-	case ir_bk_frame_addess:
+	case ir_bk_frame_address:
 		return gen_frame_address(node);
 	case ir_bk_prefetch:
 		return gen_prefetch(node);
@@ -5172,7 +5172,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 
 	switch (kind) {
 	case ir_bk_return_address:
-	case ir_bk_frame_addess:
+	case ir_bk_frame_address:
 	case ir_bk_ffs:
 	case ir_bk_clz:
 	case ir_bk_ctz:

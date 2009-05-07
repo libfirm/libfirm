@@ -1447,7 +1447,7 @@ const char *get_builtin_kind_name(ir_builtin_kind kind) {
 		X(ir_bk_trap);
 		X(ir_bk_debugbreak);
 		X(ir_bk_return_address);
-		X(ir_bk_frame_addess);
+		X(ir_bk_frame_address);
 		X(ir_bk_prefetch);
 		X(ir_bk_ffs);
 		X(ir_bk_clz);
@@ -1587,6 +1587,7 @@ void set_##OP##_resmode(ir_node *node, ir_mode *mode) { \
 
 
 BINOP(Add)
+BINOP(Borrow)
 BINOP(Carry)
 BINOP(Sub)
 UNOP(Minus)
@@ -1612,6 +1613,11 @@ UNOP(Cast)
 int get_Div_no_remainder(const ir_node *node) {
 	assert(is_Div(node));
 	return node->attr.divmod.no_remainder;
+}
+
+void set_Div_no_remainder(ir_node *node, int no_remainder) {
+	assert(is_Div(node));
+	node->attr.divmod.no_remainder = no_remainder;
 }
 
 int get_Conv_strict(const ir_node *node) {

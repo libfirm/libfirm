@@ -127,13 +127,6 @@ def preprocess_node(nodename, node):
 		arguments.append("prednodes[%i]" % i)
 		i += 1
 
-	# Special case for Builtin...
-	if nodename == "Builtin":
-		for attr in node["attrs"]:
-			if attr["name"] == "kind":
-				prepare_attr(nodename, attr)
-				arguments.append(attr["name"])
-
 	if node["arity"] == "variable" or node["arity"] == "dynamic":
 		arguments.append("numpreds - %i" % (i + 1))
 		arguments.append("prednodes + %i" % i)
@@ -143,8 +136,6 @@ def preprocess_node(nodename, node):
 
 	attrs_with_special = 0
 	for attr in node["attrs"]:
-		if nodename == "Builtin" and attr["name"] == "kind":
-			continue
 		prepare_attr(nodename, attr)
 		if "special" in attr:
 			if not "init" in attr:

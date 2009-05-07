@@ -190,7 +190,7 @@ static void symtbl_init(void)
 	INSERTENUM(tt_builtin, ir_bk_trap);
 	INSERTENUM(tt_builtin, ir_bk_debugbreak);
 	INSERTENUM(tt_builtin, ir_bk_return_address);
-	INSERTENUM(tt_builtin, ir_bk_frame_addess);
+	INSERTENUM(tt_builtin, ir_bk_frame_address);
 	INSERTENUM(tt_builtin, ir_bk_prefetch);
 	INSERTENUM(tt_builtin, ir_bk_ffs);
 	INSERTENUM(tt_builtin, ir_bk_clz);

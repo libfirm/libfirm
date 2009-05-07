@@ -151,13 +151,6 @@ def preprocess_node(nodename, node):
 	for input in node["ins"]:
 		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
 
-	# Special case for Builtin...
-	if nodename == "Builtin":
-		for attr in node["attrs"]:
-			if attr["name"] == "kind":
-				attr.setdefault("initname", "." + attr["name"])
-				arguments.append(prepare_attr(attr))
-
 	if node["arity"] == "variable":
 		arguments.append(dict(type = "int", name = "arity"))
 		arguments.append(dict(type = "ir_node **", name = "in"))
@@ -168,9 +161,6 @@ def preprocess_node(nodename, node):
 
 	attrs_with_special = 0
 	for attr in node["attrs"]:
-		if nodename == "Builtin" and attr["name"] == "kind":
-			continue
-
 		attr.setdefault("initname", "." + attr["name"])
 
 		if "special" in attr:
