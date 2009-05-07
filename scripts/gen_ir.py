@@ -2,6 +2,7 @@
 import sys
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
+from spec_util import is_dynamic_pinned, verify_node
 import ir_spec
 
 def format_argdecls(node, first = False, voidwhenempty = False):
@@ -138,6 +139,10 @@ def preprocess_node(nodename, node):
 	node.setdefault("constructor_args", [])
 	node.setdefault("attrs_name", nodename.lower())
 	node.setdefault("block", "block")
+	node.setdefault("pinned", "no")
+
+	verify_node(node)
+
 
 	# construct node arguments
 	arguments = [ ]
@@ -195,6 +200,25 @@ def preprocess_node(nodename, node):
 			)
 		elif not "init" in attr:
 			arguments.append(prepare_attr(attr))
+
+	# dynamic pin state means more constructor arguments
+	if is_dynamic_pinned(node):
+		if "pinned_init" in node:
+			initattrs.append(dict(
+				initname = ".exc.pin_state",
+				init     = "op_pin_state_" + node["pinned_init"]
+			))
+		else:
+			node["constructor_args"].append(
+				dict(
+					name = "pin_state",
+					type = "op_pin_state"
+				)
+			)
+			initattrs.append(dict(
+				initname = ".exc.pin_state",
+				init     = "pin_state"
+			))
 
 	for arg in node["constructor_args"]:
 		arguments.append(prepare_attr(arg))

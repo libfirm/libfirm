@@ -29,12 +29,6 @@ Alloc = dict(
 	outs  = [ "M", "X_regular", "X_except", "res" ],
 	attrs = [
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_pinned"
-		),
-		dict(
 			name = "type",
 			type = "ir_type*"
 		),
@@ -43,6 +37,8 @@ Alloc = dict(
 			type = "ir_where_alloc"
 		)
 	],
+	pinned      = "exception",
+	pinned_init = "pinned",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
@@ -52,10 +48,7 @@ Alloc = dict(
 
 Anchor = dict(
 	mode       = "mode_ANY",
-	ins        = [ "end_block", "start_block", "end", "start",
-	               "end_reg", "end_except", "initial_exec",
-				   "frame", "tls", "initial_mem", "args",
-				   "bad", "no_mem" ],
+	arity      = "variable",
 	knownBlock = True,
 	noconstr   = True
 ),
@@ -150,16 +143,10 @@ Borrow = dict(
 ),
 
 Bound = dict(
-	ins   = [ "mem", "index", "lower", "upper" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	attrs = [
-		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_pinned"
-		)
-	],
+	ins    = [ "mem", "index", "lower", "upper" ],
+ 	outs   = [ "M", "X_regular", "X_except", "res" ],
+	pinned = "exception",
+	pinned_init = "pinned",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
@@ -178,12 +165,6 @@ Builtin = dict(
 	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
 	attrs    = [
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_pinned"
-		),
-		dict(
 			type = "ir_builtin_kind",
 			name = "kind"
 		),
@@ -192,7 +173,9 @@ Builtin = dict(
 			name = "type"
 		)
 	],
-	init = '''
+	pinned      = "memory",
+	pinned_init = "pinned",
+	init   = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 
@@ -205,16 +188,12 @@ Call = dict(
 	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
 	attrs    = [
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_pinned"
-		),
-		dict(
 			type = "ir_type*",
 			name = "type"
 		)
 	],
+	pinned      = "memory",
+	pinned_init = "pinned",
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	''',
@@ -311,16 +290,12 @@ CopyB = dict(
 	outs  = [ "M", "X_regular", "X_except" ],
 	attrs = [
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_pinned"
-		),
-		dict(
 			name = "type",
 			type = "ir_type*"
 		)
 	],
+	pinned      = "memory",
+	pinned_init = "pinned",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
@@ -338,11 +313,6 @@ Div = dict(
 			name = "resmode"
 		),
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state"
-		),
-		dict(
 			name = "no_remainder",
 			type = "int",
 			init = "0",
@@ -352,6 +322,7 @@ Div = dict(
 			)
 		)
 	],
+	pinned = "exception",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
@@ -368,12 +339,8 @@ DivMod = dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state"
-		)
 	],
+	pinned = "exception",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
@@ -384,7 +351,7 @@ DivMod = dict(
 End = dict(
 	mode       = "mode_X",
 	op_flags   = "cfopcode",
-	state      = "pinned",
+	pinned     = "yes",
 	arity      = "dynamic",
 	noconstr   = True,
 	optimize   = False
@@ -430,7 +397,7 @@ Id = dict(
 IJmp = dict(
 	mode     = "mode_X",
 	op_flags = "cfopcode",
-	state    = "pinned",
+	pinned   = "yes",
 	ins      = [ "target" ],
 ),
 
@@ -439,24 +406,18 @@ InstOf = dict(
 	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ],
 	attrs = [
 		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state",
-			init = "op_pin_state_floats"
-		),
-		dict(
 			name = "type",
 			type = "ir_type*"
 		)
-	]
-
-	# TODO: No firm_alloc_frag_arr???
+	],
+	pinned      = "memory",
+	pinned_init = "floats",
 ),
 
 Jmp = dict(
 	mode     = "mode_X",
 	op_flags = "cfopcode",
-	state    = "pinned",
+	pinned   = "yes",
 	ins      = [],
 ),
 
@@ -496,12 +457,8 @@ Mod = dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state"
-		)
 	],
+	pinned = "exception",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
@@ -536,7 +493,7 @@ Or = dict(
 
 Phi = dict(
 	noconstr = True,
-	state    = "pinned",
+	pinned   = "yes",
 	arity    = "variable",
 ),
 
@@ -565,12 +522,8 @@ Quot = dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-		dict(
-			name = "state",
-			type = "op_pin_state",
-			initname = ".exc.pin_state"
-		)
 	],
+	pinned = "exception",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
@@ -620,7 +573,7 @@ Shrs = dict(
 Start = dict(
 	mode       = "mode_T",
 	op_flags   = "cfopcode",
-	state      = "pinned",
+	pinned     = "yes",
 	noconstr   = True,
 	optimize   = False
 ),

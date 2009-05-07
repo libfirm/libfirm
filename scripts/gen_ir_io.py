@@ -2,6 +2,7 @@
 import sys
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
+from spec_util import is_dynamic_pinned, verify_node
 import ir_spec
 
 def format_args(arglist):
@@ -82,54 +83,6 @@ def get_io_type(type, attrname, nodename):
 		exportcmd = "// BAD: %s" % type
 	return (importcmd, exportcmd)
 
-"""	if type == "ir_type*":
-		java_type    = "firm.Type"
-		wrap_type    = "Pointer"
-		to_wrapper   = "%s.ptr"
-		from_wrapper = "firm.Type.createWrapper(%s)"
-	elif type == "ir_mode*":
-		java_type    = "firm.Mode"
-		wrap_type    = "Pointer"
-		to_wrapper   = "%s.ptr"
-		from_wrapper = "new firm.Mode(%s)"
-	elif type == "tarval*":
-		java_type    = "firm.TargetValue"
-		wrap_type    = "Pointer"
-		to_wrapper   = "%s.ptr"
-		from_wrapper = "new firm.TargetValue(%s)"
-	elif type == "pn_Cmp":
-		java_type    = "int"
-		wrap_type    = "int"
-		to_wrapper   = "%s"
-		from_wrapper = "%s"
-	elif type == "long":
-		java_type    = "int"
-		wrap_type    = "com.sun.jna.NativeLong"
-		to_wrapper   = "new com.sun.jna.NativeLong(%s)"
-		from_wrapper = "%s.intValue()"
-	elif type == "cons_flags":
-		java_type    = "firm.bindings.binding_ircons.ir_cons_flags"
-		wrap_type    = "int"
-		to_wrapper   = "%s.val"
-		from_wrapper = "firm.bindings.binding_ircons.ir_cons_flags.getEnum(%s)"
-	elif type == "ir_where_alloc":
-		java_type    = "firm.bindings.binding_ircons.ir_where_alloc"
-		wrap_type    = "int"
-		to_wrapper   = "%s.val"
-		from_wrapper = "firm.bindings.binding_ircons.ir_where_alloc.getEnum(%s)"
-	elif type == "ir_entity*":
-		java_type    = "firm.Entity"
-		wrap_type    = "Pointer"
-		to_wrapper   = "%s.ptr"
-		from_wrapper = "new firm.Entity(%s)"
-	else:
-		print "UNKNOWN TYPE"
-		java_type    = "BAD"
-		wrap_type    = "BAD"
-		to_wrapper   = "BAD"
-		from_wrapper = "BAD"
-	return (java_type,wrap_type,to_wrapper,from_wrapper)"""
-
 def prepare_attr(nodename, attr):
 	(importcmd,exportcmd) = get_io_type(attr["type"], attr["name"], nodename)
 	attr["importcmd"] = importcmd
@@ -151,6 +104,19 @@ def preprocess_node(nodename, node):
 		node["attrs"] = []
 	if "constructor_args" not in node:
 		node["constructor_args"] = []
+	if "pinned" not in node:
+		node["pinned"] = "no"
+	# dynamic pin state means, we have to im/export that
+	if is_dynamic_pinned(node):
+		newattr = dict(
+			name = "state",
+			type = "op_pin_state"
+		)
+		if "pinned_init" in node:
+			newattr["init"] = node["pinned_init"]
+		node["attrs"].append(newattr)
+
+	verify_node(node)
 
 	# construct node arguments
 	arguments = [ ]
