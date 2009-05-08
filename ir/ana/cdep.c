@@ -45,7 +45,7 @@ static cdep_info *cdep_data;
 
 /* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block) {
-	return pmap_get(cdep_data->cdep_map, (void *)block);
+	return pmap_get(cdep_data->cdep_map, block);
 }
 
 /* Replace the control dependence info of old by the info of nw. */
@@ -94,8 +94,7 @@ typedef struct cdep_env {
  */
 static void cdep_pre(ir_node *node, void *ctx) {
 	cdep_env *env = ctx;
-	unsigned int n;
-	unsigned int i;
+	int i;
 
 	/* special case:
 	 * start and end block have no control dependency
@@ -103,8 +102,7 @@ static void cdep_pre(ir_node *node, void *ctx) {
 	if (node == env->start_block) return;
 	if (node == env->end_block) return;
 
-	n = get_Block_n_cfgpreds(node);
-	for (i = 0; i < n; i++) {
+	for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred_block(node, i);
 		ir_node *pdom;
 		ir_node *dependee;
@@ -152,7 +150,7 @@ static int cdep_edge_hook(FILE *F, ir_node *block)
 
 /* Compute the control dependence graph for a graph. */
 void compute_cdep(ir_graph *irg) {
-	ir_node *start_block, *rem;
+	ir_node *rem;
 	cdep_env env;
 
 	free_cdep(irg);
@@ -167,12 +165,12 @@ void compute_cdep(ir_graph *irg) {
 	   the ipdom of the startblock is the end block.
 	   Firm does NOT add the phantom edge from Start to End.
 	 */
-	start_block = get_irg_start_block(irg);
-	rem = get_Block_ipostdom(start_block);
-	set_Block_ipostdom(start_block, get_irg_end_block(irg));
-
 	env.start_block = get_irg_start_block(irg);
 	env.end_block   = get_irg_end_block(irg);
+
+	rem = get_Block_ipostdom(env.start_block);
+	set_Block_ipostdom(env.start_block, env.end_block);
+
 	irg_block_walk_graph(irg, cdep_pre, NULL, &env);
 
 #if 0
@@ -184,7 +182,7 @@ void compute_cdep(ir_graph *irg) {
 #endif
 
 	/* restore the post dominator relation */
-	set_Block_ipostdom(start_block, rem);
+	set_Block_ipostdom(env.start_block, rem);
 }
 
 /* Free the control dependence info. */
