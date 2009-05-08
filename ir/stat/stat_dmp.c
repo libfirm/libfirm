@@ -99,6 +99,8 @@ static const struct {
 	{ FS_OPT_CONV,           "algebraic simplification: Conv could be removed" },
 	{ FS_OPT_CAST,           "algebraic simplification: a Cast could be removed" },
 	{ FS_OPT_MIN_MAX_EQ,     "algebraic simplification: Min(a,a) = Max(a,a) = a" },
+	{ FS_OPT_MUX_COMBINE,    "boolean simplification: two Mux nodes where combined into one" },
+	{ FS_OPT_MUX_CONV,       "boolean simplification: MuxI(sel, 1, 0) = (I)sel" },
 	{ FS_OPT_MUX_BOOL,       "boolean simplification: Muxb(sel, true, false) = sel" },
 	{ FS_OPT_MUX_NOT_BOOL,   "boolean simplification: Muxb(sel, false, true) = Not(sel)" },
 	{ FS_OPT_MUX_OR_BOOL,    "boolean simplification: Muxb(sel, true, x) = Or(sel, x)" },

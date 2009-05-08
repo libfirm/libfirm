@@ -1744,24 +1744,44 @@ static ir_node *equivalent_node_Id(ir_node *n) {
 static ir_node *equivalent_node_Mux(ir_node *n)
 {
 	ir_node *oldn = n, *sel = get_Mux_sel(n);
+	ir_node *n_t, *n_f;
 	tarval *ts = value_of(sel);
 
 	/* Mux(true, f, t) == t */
 	if (ts == tarval_b_true) {
 		n = get_Mux_true(n);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_C);
+		return n;
 	}
 	/* Mux(false, f, t) == f */
-	else if (ts == tarval_b_false) {
+	if (ts == tarval_b_false) {
 		n = get_Mux_false(n);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_C);
+		return n;
 	}
-	/* Mux(v, x, x) == x */
-	else if (get_Mux_false(n) == get_Mux_true(n)) {
-		n = get_Mux_true(n);
+	n_t = get_Mux_true(n);
+	n_f = get_Mux_false(n);
+
+	/* Mux(v, x, T) == x */
+	if (is_Unknown(n_f)) {
+		n = n_t;
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
+		return n;
 	}
-	else if (is_Proj(sel) && !mode_honor_signed_zeros(get_irn_mode(n))) {
+	/* Mux(v, T, x) == x */
+	if (is_Unknown(n_t)) {
+		n = n_f;
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
+		return n;
+	}
+
+	/* Mux(v, x, x) == x */
+	if (n_t == n_f) {
+		n = n_t;
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_EQ);
+		return n;
+	}
+	if (is_Proj(sel) && !mode_honor_signed_zeros(get_irn_mode(n))) {
 		ir_node *cmp = get_Proj_pred(sel);
 		long proj_nr = get_Proj_proj(sel);
 		ir_node *f   = get_Mux_false(n);
@@ -5470,6 +5490,60 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	ir_node  *f   = get_Mux_false(n);
 	ir_graph *irg = current_ir_graph;
 
+	if (is_Mux(t)) {
+		ir_node*  block = get_nodes_block(n);
+		ir_node*  c0    = sel;
+		ir_node*  c1    = get_Mux_sel(t);
+		ir_node*  t1    = get_Mux_true(t);
+		ir_node*  f1    = get_Mux_false(t);
+		if (f == f1) {
+			/* Mux(c0, Mux(c1, x, y), y) -> typical if (c0 && c1) x else y */
+			ir_node* and_    = new_r_And(irg, block, c0, c1, mode_b);
+			ir_node* new_mux = new_r_Mux(irg, block, and_, f1, t1, mode);
+			n   = new_mux;
+			sel = and_;
+			f   = f1;
+			t   = t1;
+			DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+		} else if (f == t1) {
+			/* Mux(c0, Mux(c1, x, y), x) */
+			ir_node* not_c1  = new_r_Not(irg, block, c1, mode_b);
+			ir_node* and_    = new_r_And(irg, block, c0, not_c1, mode_b);
+			ir_node* new_mux = new_r_Mux(irg, block, and_, t1, f1, mode);
+			n   = new_mux;
+			sel = and_;
+			f   = t1;
+			t   = f1;
+			DBG_OPT_ALGSIM0(oldn, t, FS_OPT_MUX_COMBINE);
+		}
+	} else if (is_Mux(f)) {
+		ir_node*  block = get_nodes_block(n);
+		ir_node*  c0    = sel;
+		ir_node*  c1    = get_Mux_sel(f);
+		ir_node*  t1    = get_Mux_true(f);
+		ir_node*  f1    = get_Mux_false(f);
+		if (t == t1) {
+			/* Mux(c0, x, Mux(c1, x, y)) -> typical if (c0 || c1) x else y */
+			ir_node* or_     = new_r_Or(irg, block, c0, c1, mode_b);
+			ir_node* new_mux = new_r_Mux(irg, block, or_, f1, t1, mode);
+			n   = new_mux;
+			sel = or_;
+			f   = f1;
+			t   = t1;
+			DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+		} else if (t == f1) {
+			/* Mux(c0, x, Mux(c1, y, x)) */
+			ir_node* not_c1  = new_r_Not(irg, block, c1, mode_b);
+			ir_node* or_     = new_r_Or(irg, block, c0, not_c1, mode_b);
+			ir_node* new_mux = new_r_Mux(irg, block, or_, t1, f1, mode);
+			n   = new_mux;
+			sel = or_;
+			f   = t1;
+			t   = f1;
+			DBG_OPT_ALGSIM0(oldn, f, FS_OPT_MUX_COMBINE);
+		}
+	}
+
 	/* first normalization step: move a possible zero to the false case */
 	if (is_Proj(sel)) {
 		ir_node *cmp = get_Proj_pred(sel);
@@ -5536,6 +5610,24 @@ static ir_node *transform_node_Mux(ir_node *n) {
 		tarval *null = get_tarval_null(mode);
 		tarval *diff, *min;
 
+		if (get_opt_allow_conv_b()) {
+			if (tarval_is_one(a) && tarval_is_null(b)) {
+				ir_node *block = get_nodes_block(n);
+				ir_node *conv  = new_r_Conv(current_ir_graph, block, sel, mode);
+				n = conv;
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
+				return n;
+			} else if (tarval_is_null(a) && tarval_is_one(b)) {
+				ir_node *block = get_nodes_block(n);
+				ir_node *not_  = new_r_Not(current_ir_graph, block, sel, mode_b);
+				ir_node *conv  = new_r_Conv(current_ir_graph, block, not_, mode);
+				n = conv;
+				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
+				return n;
+			}
+		}
+		/* TODO: it's not really clear if that helps in general or should be moved
+		 * to backend, especially with the MUX->Conv transformation above */
 		if (tarval_cmp(a, b) & pn_Cmp_Gt) {
 			diff = tarval_sub(a, b, NULL);
 			min  = b;
@@ -5544,10 +5636,9 @@ static ir_node *transform_node_Mux(ir_node *n) {
 			min  = a;
 		}
 
-		if (diff == get_tarval_one(mode) && min != null) {
+		if (diff == get_tarval_one(mode)) {
 			dbg_info *dbg   = get_irn_dbg_info(n);
 			ir_node  *block = get_nodes_block(n);
-			ir_graph *irg   = current_ir_graph;
 			ir_node  *t     = new_Const(tarval_sub(a, min, NULL));
 			ir_node  *f     = new_Const(tarval_sub(b, min, NULL));
 			n = new_rd_Mux(dbg, irg, block, sel, f, t, mode);

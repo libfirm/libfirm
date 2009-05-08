@@ -82,6 +82,8 @@ enum firmstat_optimizations_t {
 	FS_OPT_CONV,                              /**< a Conv could be removed */
 	FS_OPT_CAST,                              /**< a Cast could be removed */
 	FS_OPT_MIN_MAX_EQ,                        /**< Min(a,a) = Max(a,a) = a */
+	FS_OPT_MUX_COMBINE,                       /**< two Mux nodes where combined into one */
+	FS_OPT_MUX_CONV,                          /**< MuxI(sel, 1, 0) = (I)sel */
 	FS_OPT_MUX_BOOL,                          /**< Muxb(sel, true, false) = sel */
 	FS_OPT_MUX_NOT_BOOL,                      /**< Muxb(sel, false, true) = Not(sel) */
 	FS_OPT_MUX_OR_BOOL,                       /**< Muxb(sel, true, x) = Or(sel, x) */

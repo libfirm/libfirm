@@ -253,6 +253,12 @@ void set_opt_auto_create_sync(int value);
  */
 void set_opt_normalize(int value);
 
+/**
+ * Enable/Disable ConvB() nodes with a "semantic behavior", i.e. a real
+ * operation that must be executed.
+ */
+void set_opt_allow_conv_b(int value);
+
 /** Enable/Disable precise exception context.
  *
  * If enabled, all exceptions form a barrier for values, as in the

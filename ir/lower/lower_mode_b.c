@@ -32,6 +32,7 @@
 
 #include "irnode_t.h"
 #include "ircons_t.h"
+#include "irflag.h"
 #include "irgwalk.h"
 #include "irtools.h"
 #include "iredges.h"
@@ -406,6 +407,7 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
+	set_opt_allow_conv_b(0);
 	irg_walk_graph(irg, clear_links, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
 

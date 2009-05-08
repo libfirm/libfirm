@@ -75,6 +75,8 @@ E_FLAG(dyn_meth_dispatch                  , 11, ON)
  */
 I_FLAG(normalize                          , 12, ON)
 
+I_FLAG(allow_conv_b                       , 13, ON)
+
 /** precise exception context */
 I_FLAG(precise_exc_context                , 15, ON)
 

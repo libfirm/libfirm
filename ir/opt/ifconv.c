@@ -32,7 +32,6 @@
 #include "irnode_t.h"
 #include "cdep.h"
 #include "ircons.h"
-#include "irdom.h"
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irgwalk.h"
@@ -43,9 +42,19 @@
 #include "irdump.h"
 #include "debug.h"
 
+/**
+ * Environment for if-conversion.
+ */
+typedef struct walker_env {
+	const ir_settings_if_conv_t *params; /**< Conversion parameter. */
+	int                         changed; /**< Set if the graph was changed. */
+} walker_env;
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-/** allow every Mux to be created. */
+/**
+ * Default callback for Mux creation: allows every Mux to be created.
+ */
 static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
 {
 	(void) sel;
@@ -65,12 +74,23 @@ static const ir_settings_if_conv_t default_info = {
 
 /**
  * Returns non-zero if a Block can be emptied.
+ *
+ * @param block  the block
  */
 static int can_empty_block(ir_node *block) {
 	return get_Block_mark(block) == 0;
 }
 
-
+/**
+ * Find the ProjX node leading from block dependency to block start.
+ *
+ * @param start       a block that is control depended on dependency
+ * @param dependency  the block that decides whether start is executed
+ *
+ * @return a ProjX node that represent the decision control flow or
+ *         NULL is start is not dependent at all or a block on the way
+ *         cannot be emptied
+ */
 static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 {
 	int arity;
@@ -83,18 +103,21 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 	arity = get_irn_arity(start);
 	for (i = 0; i < arity; ++i) {
 		ir_node* pred = get_irn_n(start, i);
-		ir_node* pred_block = get_nodes_block(pred);
+		ir_node* pred_block = get_nodes_block(skip_Proj(pred));
 
 		if (pred_block == dependency) {
 			if (is_Proj(pred)) {
 				assert(get_irn_mode(pred) == mode_X);
+				/* we found it */
 				return pred;
 			}
+			/* Not a Proj? Should not happen. */
 			return NULL;
 		}
 
 		if (is_Proj(pred)) {
 			assert(get_irn_mode(pred) == mode_X);
+			/* another Proj but not from the control block */
 			return NULL;
 		}
 
@@ -107,22 +130,37 @@ static ir_node* walk_to_projx(ir_node* start, const ir_node* dependency)
 
 
 /**
- * Copies the DAG starting at node to the ith predecessor block of src_block
- * -if the node isn't in the src_block, this is a nop and the node is returned
- * -if the node is a phi in the src_block, the ith predecessor of the phi is
- *   returned
- * otherwise returns the copy of the passed node
+ * Recursively copies the DAG starting at node to the i-th predecessor
+ * block of src_block
+ * - if node isn't in the src_block, recursion ends and node is returned
+ * - if node is a Phi in the src_block, the i-th predecessor of this Phi is
+ *   returned and recursion ends
+ * otherwise returns a copy of the passed node created in the i-th predecessor of
+ * src_block.
+ *
+ * @param node       a root of a DAG
+ * @param src_block  the block of the DAG
+ * @param i          the position of the predecessor the DAG
+ *                   is moved to
+ *
+ * @return  the root of the copied DAG
  */
 static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 {
 	ir_node* dst_block;
 	ir_node* copy;
-	int arity;
 	int j;
 
-	if (get_nodes_block(node) != src_block) return node;
-	if (get_irn_op(node) == op_Phi) return get_irn_n(node, i);
+	if (get_nodes_block(node) != src_block) {
+		/* already outside src_block, do not copy */
+		return node;
+	}
+	if (is_Phi(node)) {
+		/* move through the Phi to the i-th predecessor */
+		return get_irn_n(node, i);
+	}
 
+	/* else really need a copy */
 	copy = exact_copy(node);
 	dst_block = get_nodes_block(get_irn_n(src_block, i));
 	set_nodes_block(copy, dst_block);
@@ -130,8 +168,8 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 	DB((dbg, LEVEL_1, "Copying node %+F to block %+F, copy is %+F\n",
 		node, dst_block, copy));
 
-	arity = get_irn_arity(node);
-	for (j = 0; j < arity; ++j) {
+	/* move recursively all predecessors */
+	for (j = get_irn_arity(node) - 1; j >= 0; --j) {
 		set_irn_n(copy, j, copy_to(get_irn_n(node, j), src_block, i));
 		DB((dbg, LEVEL_2, "-- pred %d is %+F\n", j, get_irn_n(copy, j)));
 	}
@@ -140,7 +178,13 @@ static ir_node* copy_to(ir_node* node, ir_node* src_block, int i)
 
 
 /**
- * Remove predecessors i and j from node and add predecessor new_pred
+ * Remove predecessors i and j (i < j) from a node and
+ * add an additional predecessor new_pred.
+ *
+ * @param node      the node whose inputs are changed
+ * @param i         the first index to remove
+ * @param j         the second index to remove
+ * @param new_pred  a node that is added as a new input to node
  */
 static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 {
@@ -162,7 +206,7 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 
 
 /**
- * Remove the jth predecessors from the ith predecessor of block and add it to block
+ * Remove the j-th predecessors from the i-th predecessor of block and add it to block
  */
 static void split_block(ir_node* block, int i, int j)
 {
@@ -242,10 +286,12 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 	}
 }
 
-
-static void if_conv_walker(ir_node* block, void* env)
+/**
+ * Block walker: Search for diamonds and do the if conversion.
+ */
+static void if_conv_walker(ir_node *block, void *ctx)
 {
-	ir_settings_if_conv_t* opt_info = env;
+	walker_env *env = ctx;
 	int arity;
 	int i;
 
@@ -291,12 +337,14 @@ restart:
 				if (projx1 == NULL) continue;
 
 				phi = get_Block_phis(block);
-				if (!opt_info->allow_ifconv(get_Cond_selector(cond), phi, i, j)) continue;
+				if (!env->params->allow_ifconv(get_Cond_selector(cond), phi, i, j))
+					continue;
 
 				DB((dbg, LEVEL_1, "Found Cond %+F with proj %+F and %+F\n",
 					cond, projx0, projx1
 				));
 
+				env->changed = 1;
 				prepare_path(block, i, dependency);
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
@@ -340,7 +388,6 @@ restart:
 					} else {
 						rewire(phi, i, j, mux);
 					}
-
 					phi = next_phi;
 				} while (phi != NULL);
 
@@ -378,7 +425,7 @@ restart:
 }
 
 /**
- * Block walker: clear block mark and Phi list
+ * Block walker: clear block marks and Phi lists.
  */
 static void init_block_link(ir_node *block, void *env)
 {
@@ -389,7 +436,7 @@ static void init_block_link(ir_node *block, void *env)
 
 
 /**
- * Daisy-chain all phis in a block
+ * Daisy-chain all Phis in a block.
  * If a non-movable node is encountered set the has_pinned flag in its block.
  */
 static void collect_phis(ir_node *node, void *env) {
@@ -402,10 +449,9 @@ static void collect_phis(ir_node *node, void *env) {
 	} else {
 		if (is_no_Block(node) && get_irn_pinned(node) == op_pin_state_pinned) {
 			/*
-			 * Ignore control flow nodes, these will be removed.
-			 * This ignores Raise. That is surely bad. FIXME.
+			 * Ignore control flow nodes (except Raise), these will be removed.
 			 */
-			if (!is_cfop(node)) {
+			if (!is_cfop(node) && !is_Raise(node)) {
 				ir_node *block = get_nodes_block(node);
 
 				DB((dbg, LEVEL_2, "Node %+F in block %+F is unmovable\n", node, block));
@@ -415,115 +461,13 @@ static void collect_phis(ir_node *node, void *env) {
 	}
 }
 
-static void optimise_muxs_0(ir_node* mux, void* env)
-{
-	ir_node* t;
-	ir_node* f;
-
-	(void) env;
-
-	if (!is_Mux(mux)) return;
-
-	t = get_Mux_true(mux);
-	f = get_Mux_false(mux);
-
-	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", mux, t, f));
-
-	if (is_Unknown(t)) {
-		DB((dbg, LEVEL_3, "Replace Mux with unknown operand by %+F\n", f));
-		exchange(mux, f);
-		return;
-	}
-	if (is_Unknown(f)) {
-		DB((dbg, LEVEL_3, "Replace Mux with unknown operand by %+F\n", t));
-		exchange(mux, t);
-		return;
-	}
-
-	if (is_Mux(t)) {
-		ir_graph* irg   = current_ir_graph;
-		ir_node*  block = get_nodes_block(mux);
-		ir_mode*  mode  = get_irn_mode(mux);
-		ir_node*  c0    = get_Mux_sel(mux);
-		ir_node*  c1    = get_Mux_sel(t);
-		ir_node*  t1    = get_Mux_true(t);
-		ir_node*  f1    = get_Mux_false(t);
-		if (f == f1) {
-			/* Mux(c0, Mux(c1, x, y), y) -> typical if (c0 && c1) x else y */
-			ir_node* and_    = new_r_And(irg, block, c0, c1, mode_b);
-			ir_node* new_mux = new_r_Mux(irg, block, and_, f1, t1, mode);
-			exchange(mux, new_mux);
-		} else if (f == t1) {
-			/* Mux(c0, Mux(c1, x, y), x) */
-			ir_node* not_c1 = new_r_Not(irg, block, c1, mode_b);
-			ir_node* and_   = new_r_And(irg, block, c0, not_c1, mode_b);
-			ir_node* new_mux = new_r_Mux(irg, block, and_, t1, f1, mode);
-			exchange(mux, new_mux);
-		}
-	} else if (is_Mux(f)) {
-		ir_graph* irg   = current_ir_graph;
-		ir_node*  block = get_nodes_block(mux);
-		ir_mode*  mode  = get_irn_mode(mux);
-		ir_node*  c0    = get_Mux_sel(mux);
-		ir_node*  c1    = get_Mux_sel(f);
-		ir_node*  t1    = get_Mux_true(f);
-		ir_node*  f1    = get_Mux_false(f);
-		if (t == t1) {
-			/* Mux(c0, x, Mux(c1, x, y)) -> typical if (c0 || c1) x else y */
-			ir_node* or_     = new_r_Or(irg, block, c0, c1, mode_b);
-			ir_node* new_mux = new_r_Mux(irg, block, or_, f1, t1, mode);
-			exchange(mux, new_mux);
-		} else if (t == f1) {
-			/* Mux(c0, x, Mux(c1, y, x)) */
-			ir_node* not_c1  = new_r_Not(irg, block, c1, mode_b);
-			ir_node* or_     = new_r_Or(irg, block, c0, not_c1, mode_b);
-			ir_node* new_mux = new_r_Mux(irg, block, or_, t1, f1, mode);
-			exchange(mux, new_mux);
-		}
-	}
-}
-
-
-static void optimise_muxs_1(ir_node* mux, void* env)
-{
-	ir_node* t;
-	ir_node* f;
-	ir_mode* mode;
-
-	(void) env;
-
-	if (!is_Mux(mux)) return;
-
-	t = get_Mux_true(mux);
-	f = get_Mux_false(mux);
-
-	DB((dbg, LEVEL_3, "Simplify %+F T=%+F F=%+F\n", mux, t, f));
-
-	mode = get_irn_mode(mux);
-
-	if (is_Const(t) && is_Const(f) && (mode_is_int(mode))) {
-		ir_node* block = get_nodes_block(mux);
-		ir_node* c     = get_Mux_sel(mux);
-		tarval* tv_t = get_Const_tarval(t);
-		tarval* tv_f = get_Const_tarval(f);
-		if (tarval_is_one(tv_t) && tarval_is_null(tv_f)) {
-			ir_node* conv  = new_r_Conv(current_ir_graph, block, c, mode);
-			exchange(mux, conv);
-		} else if (tarval_is_null(tv_t) && tarval_is_one(tv_f)) {
-			ir_node* not_  = new_r_Not(current_ir_graph, block, c, mode_b);
-			ir_node* conv  = new_r_Conv(current_ir_graph, block, not_, mode);
-			exchange(mux, conv);
-		}
-	}
-}
-
-
 void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 {
-	ir_settings_if_conv_t p;
+	walker_env env;
 
 	/* get the parameters */
-	p = (params != NULL ? *params : default_info);
+	env.params  = (params != NULL ? params : &default_info);
+	env.changed = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
@@ -533,28 +477,24 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	remove_critical_cf_edges(irg);
 
 	compute_cdep(irg);
-	assure_doms(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
 	irg_block_walk_graph(irg, init_block_link, NULL, NULL);
 	irg_walk_graph(irg, collect_phis, NULL, NULL);
-	irg_block_walk_graph(irg, NULL, if_conv_walker, &p);
+	irg_block_walk_graph(irg, NULL, if_conv_walker, &env);
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 
-	local_optimize_graph(irg);
+	if (env.changed) {
+		local_optimize_graph(irg);
 
-	irg_walk_graph(irg, NULL, optimise_muxs_0, NULL);
-#if 1
-	irg_walk_graph(irg, NULL, optimise_muxs_1, NULL);
-#endif
-
-	/* TODO: graph might be changed, handle more graceful */
-	set_irg_outs_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
-	free_dom(irg);
+		/* graph has changed, invalidate analysis info */
+		set_irg_outs_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+	}
 
 	free_cdep(irg);
 }
