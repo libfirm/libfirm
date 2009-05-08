@@ -1932,11 +1932,16 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
 		 * do NOT check placement in interprocedural view, as we don't always know
 		 * the "right" graph ...
 		 */
+
+#ifndef NDEBUG
+		/* this seems to be an expensive check in VS compile (9% over all runtime),
+		   so do NOT run it in release mode */
 		ASSERT_AND_RET_DBG(
 			node_is_in_irgs_storage(irg, n),
 			"Node is not stored on proper IR graph!", 0,
 			show_node_on_graph(irg, n);
 		);
+#endif
 		assert(get_irn_irg(n) == irg);
 		{
 			unsigned idx           = get_irn_idx(n);
