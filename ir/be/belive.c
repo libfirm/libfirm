@@ -113,10 +113,10 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 	int lo       = 0;
 	int hi       = n;
 
-	if(n == 0)
+	if (n == 0)
 		return 0;
 
-	while(lo < hi) {
+	do {
 		int md          = lo + ((hi - lo) >> 1);
 		unsigned md_idx = payload[md].u.node.idx;
 
@@ -131,12 +131,12 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 		}
 
 		res = lo;
-	}
+	} while (lo < hi);
 
 #ifdef LV_INTESIVE_CHECKS
 	{
 		unsigned i;
-		for(i = res; i < n; ++i)
+		for (i = res; i < n; ++i)
 			assert(payload[i].u.node.idx >= idx);
 
 		for(i = 0; i < res; ++i)
