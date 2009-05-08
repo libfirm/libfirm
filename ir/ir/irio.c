@@ -1481,14 +1481,14 @@ static int parse_modes(io_env_t *env)
 				ir_mode_arithmetic arith = read_mode_arithmetic(env);
 				unsigned modulo_shift = read_long(env);
 				int vector_elems = read_long(env);
+				ir_mode *mode;
+
 				if (vector_elems != 1) {
 					panic("no support for import of vector modes yes");
 				}
 
-				ir_mode *mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
-
-				if (mode_is_reference(mode))
-				{
+				mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
+				if (mode_is_reference(mode)) {
 					set_reference_mode_signed_eq(mode, read_mode(env));
 					set_reference_mode_unsigned_eq(mode, read_mode(env));
 				}
