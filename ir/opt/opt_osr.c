@@ -992,8 +992,8 @@ static void dfs(ir_node *irn, iv_env *env)
  */
 static void do_dfs(ir_graph *irg, iv_env *env) {
 	ir_graph *rem = current_ir_graph;
-	ir_node *end = get_irg_end(irg);
-	int i, n;
+	ir_node  *end = get_irg_end(irg);
+	int i;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
@@ -1004,8 +1004,7 @@ static void do_dfs(ir_graph *irg, iv_env *env) {
 	dfs(end, env);
 
 	/* visit the keep-alives */
-	n = get_End_n_keepalives(end);
-	for (i = 0; i < n; ++i) {
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
 		ir_node *ka = get_End_keepalive(end, i);
 
 		if (!irn_visited(ka))
