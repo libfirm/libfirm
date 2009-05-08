@@ -110,7 +110,7 @@ struct environment_t {
 	struct obstack  obst;           /** obstack for temporary data */
 };
 
-/** A node, input index pair. */
+/** A (node, input index) pair. */
 struct pair_t {
 	pair_t  *next;    /**< Points to the next pair entry. */
 	ir_node *irn;     /**< The IR-node. */
@@ -272,7 +272,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
  * Creates a new empty partition and put in on the
  * partitions list.
  *
- * @param meet_block  the control flow meet block of thi partition
+ * @param meet_block  the control flow meet block of this partition
  * @param env         the environment
  */
 static partition_t *create_partition(ir_node *meet_block, environment_t *env) {
@@ -485,7 +485,7 @@ static int is_input_node(ir_node *pred, ir_node *irn, int index) {
  * @param part  the partition
  * @param env   the environment
  */
-void propagate_blocks(partition_t *part, environment_t *env) {
+static void propagate_blocks(partition_t *part, environment_t *env) {
 	block_t         *ready_blocks = NULL;
 	unsigned        n_ready       = 0;
 	block_t         *bl, *next;
@@ -596,7 +596,7 @@ void propagate_blocks(partition_t *part, environment_t *env) {
  *
  * @param env    the environment
  */
-void propagate(environment_t *env) {
+static void propagate(environment_t *env) {
 	partition_t *part, *next;
 
 	list_for_each_entry_safe(partition_t, part, next, &env->partitions, part_list) {
@@ -1169,6 +1169,7 @@ int shape_blocks(ir_graph *irg) {
 	ir_graph      *rem;
 	environment_t env;
 	partition_t   *part;
+	block_t       *bl;
 	int           res, n;
 
 	rem = current_ir_graph;
@@ -1244,6 +1245,10 @@ int shape_blocks(ir_graph *irg) {
 		set_trouts_inconsistent();
 
 	//	dump_ir_block_graph(irg, "-after");
+	}
+
+	for (bl = env.all_blocks; bl != NULL; bl = bl->all_next) {
+		DEL_ARR_F(bl->roots);
 	}
 
 	DEL_ARR_F(env.live_outs);
