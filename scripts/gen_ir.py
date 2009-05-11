@@ -92,6 +92,8 @@ def format_arity_and_ins(node):
 		return `arity` + ", in"
 
 def format_arity(node):
+	if "arity_override" in node:
+		return node["arity_override"]
 	arity = node['arity']
 	if arity == "dynamic":
 		return "oparity_dynamic"

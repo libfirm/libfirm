@@ -422,6 +422,7 @@ Div = dict(
 	attr_struct = "divmod_attr",
 	pinned      = "exception",
 	op_index    = 1,
+	arity_override = "oparity_binary",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
@@ -443,6 +444,7 @@ DivMod = dict(
 	attr_struct = "divmod_attr",
 	pinned      = "exception",
 	op_index    = 1,
+	arity_override = "oparity_binary",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
@@ -604,6 +606,7 @@ Mod = dict(
 	attr_struct = "divmod_attr",
 	pinned      = "exception",
 	op_index    = 1,
+	arity_override = "oparity_binary",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
@@ -690,6 +693,7 @@ Quot = dict(
 	attr_struct = "divmod_attr",
 	pinned      = "exception",
 	op_index    = 1,
+	arity_override = "oparity_binary",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
