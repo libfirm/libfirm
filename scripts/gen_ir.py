@@ -180,6 +180,8 @@ def preprocess_node(nodename, node):
 		node["ins"] = parent["ins"]
 		if "op_index" in parent:
 			node["op_index"] = parent["op_index"]
+		if "pinned" in parent:
+			node["pinned"] = parent["pinned"]
 		if "outs" in parent:
 			node["outs"] = parent["outs"]
 
@@ -199,11 +201,9 @@ def preprocess_node(nodename, node):
 	node.setdefault("constructor_args", [])
 	node.setdefault("attrs_name", nodename.lower())
 	node.setdefault("block", "block")
-	node.setdefault("pinned", "no")
 	node.setdefault("flags", "none")
 
-	verify_node(node)
-
+	verify_node(nodename, node)
 
 	# construct node arguments
 	arguments = [ ]
@@ -257,7 +257,7 @@ def preprocess_node(nodename, node):
 		if "pinned_init" in node:
 			initattrs.append(dict(
 				initname = ".exc.pin_state",
-				init     = "op_pin_state_" + node["pinned_init"]
+				init     = node["pinned_init"]
 			))
 		else:
 			node["constructor_args"].append(

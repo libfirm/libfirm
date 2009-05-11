@@ -116,7 +116,7 @@ def preprocess_node(nodename, node):
 			newattr["init"] = node["pinned_init"]
 		node["attrs"].append(newattr)
 
-	verify_node(node)
+	verify_node(nodename, node)
 
 	# construct node arguments
 	arguments = [ ]

@@ -7,12 +7,14 @@ unop = dict(
 	abstract = True,
 	ins      = [ "op" ],
 	op_index = 0,
+	pinned   = "no",
 ),
 
 binop = dict(
 	abstract = True,
 	ins      = [ "left", "right" ],
 	op_index = 0,
+	pinned   = "no",
 ),
 
 #
@@ -43,6 +45,7 @@ Alloc = dict(
 		)
 	],
 	pinned      = "yes",
+	attr_struct = "alloc_attr",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
@@ -54,6 +57,7 @@ Anchor = dict(
 	mode        = "mode_ANY",
 	arity       = "variable",
 	flags       = "dump_noblock",
+	pinned      = "yes",
 	knownBlock  = True,
 	singleton   = True,
 ),
@@ -69,7 +73,7 @@ ASM = dict(
 	flags         = "keep, uses_memory",
 	attr_struct   = "asm_attr",
 	pinned        = "memory",
-	pinned_init   = "pinned",
+	pinned_init   = "op_pin_state_pinned",
 	attrs = [
 		dict(
 			name = "input_constraints",
@@ -102,6 +106,7 @@ ASM = dict(
 Bad = dict(
 	mode       = "mode_Bad",
 	flags      = "cfopcode, fragile, start_block, dump_noblock",
+	pinned     = "yes",
 	knownBlock = True,
 	singleton  = True,
 ),
@@ -110,6 +115,7 @@ Block = dict(
 	mode        = "mode_BB",
 	knownBlock  = True,
 	block       = "NULL",
+	pinned      = "yes",
 	optimize    = False,
 	arity       = "variable",
 	flags       = "labeled",
@@ -199,7 +205,7 @@ Bound = dict(
  	outs   = [ "M", "X_regular", "X_except", "res" ],
  	flags  = "fragile, highlevel",
 	pinned = "exception",
-	pinned_init = "pinned",
+	pinned_init = "op_pin_state_pinned",
 	attr_struct = "bound_attr",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
@@ -209,8 +215,9 @@ Bound = dict(
 ),
 
 Break = dict(
-	mode  = "mode_X",
-	flags = "cfopcode",
+	mode   = "mode_X",
+	flags  = "cfopcode",
+	pinned = "yes",
 ),
 
 Builtin = dict(
@@ -229,7 +236,8 @@ Builtin = dict(
 		)
 	],
 	pinned      = "memory",
-	pinned_init = "pinned",
+	pinned_init = "op_pin_state_pinned",
+	attr_struct = "builtin_attr",
 	init   = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
@@ -250,7 +258,7 @@ Call = dict(
 	],
 	attr_struct = "call_attr",
 	pinned      = "memory",
-	pinned_init = "pinned",
+	pinned_init = "op_pin_state_pinned",
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	''',
@@ -265,6 +273,7 @@ CallBegin = dict(
 	ins   = [ "ptr" ],
 	outs  = [ "" ], # TODO
 	flags         = "cfopcode, ip_cfopcode",
+	pinned        = "yes",
 	# TODO: attribute with call...
 	attr_struct   = "callbegin_attr",
 	java_noconstr = True,
@@ -282,6 +291,7 @@ Cast = dict(
 	ins      = [ "op" ],
 	mode     = "get_irn_mode(irn_op)",
 	flags    = "highlevel",
+	pinned   = "no",
 	attrs    = [
 		dict(
 			type = "ir_type*",
@@ -302,6 +312,7 @@ Cond = dict(
 	ins      = [ "selector" ],
 	outs     = [ "false", "true" ],
 	flags    = "cfopcode, forking",
+	pinned   = "yes",
 	attrs    = [
 		dict(
 			name = "kind",
@@ -326,6 +337,7 @@ Confirm = dict(
 	ins      = [ "value", "bound" ],
 	mode     = "get_irn_mode(irn_value)",
 	flags    = "highlevel",
+	pinned   = "yes",
 	attrs    = [
 		dict(
 			name = "cmp",
@@ -339,6 +351,7 @@ Const = dict(
 	mode       = "",
 	flags      = "constlike, start_block",
 	knownBlock = True,
+	pinned     = "no",
 	attrs_name = "con",
 	attrs      = [
 		dict(
@@ -378,7 +391,7 @@ CopyB = dict(
 	],
 	attr_struct = "copyb_attr",
 	pinned      = "memory",
-	pinned_init = "pinned",
+	pinned_init = "op_pin_state_pinned",
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
@@ -441,6 +454,7 @@ Dummy = dict(
 	ins   = [],
 	flags = "cfopcode, fragile, start_block, constlike, dump_noblock",
 	knownBlock = True,
+	pinned     = "yes",
 	block      = "get_irg_start_block(irg)",
 ),
 
@@ -482,6 +496,7 @@ Filter = dict(
 			type = "long"
 		)
 	],
+	pinned      = "yes",
 	attr_struct = "filter_attr",
 	java_noconstr = True
 
@@ -491,10 +506,11 @@ Filter = dict(
 ),
 
 Free = dict(
-	ins   = [ "mem", "ptr", "size" ],
-	mode  = "mode_M",
-	flags = "uses_memory",
-	attrs = [
+	ins    = [ "mem", "ptr", "size" ],
+	mode   = "mode_M",
+	flags  = "uses_memory",
+	pinned = "yes",
+	attrs  = [
 		dict(
 			name = "type",
 			type = "ir_type*"
@@ -508,8 +524,9 @@ Free = dict(
 ),
 
 Id = dict(
-	ins   = [ "pred" ],
-	flags = "none",
+	ins    = [ "pred" ],
+	pinned = "no",
+	flags  = "none",
 ),
 
 IJmp = dict(
@@ -531,7 +548,7 @@ InstOf = dict(
 	],
 	attr_struct = "io_attr",
 	pinned      = "memory",
-	pinned_init = "floats",
+	pinned_init = "op_pin_state_floats",
 ),
 
 Jmp = dict(
@@ -545,6 +562,8 @@ Load = dict(
 	ins      = [ "mem", "ptr" ],
 	outs     = [ "M", "X_regular", "X_except", "res" ],
 	flags    = "fragile, uses_memory",
+	pinned   = "exception",
+	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned",
 	attrs    = [
 		dict(
 			type = "ir_mode*",
@@ -603,13 +622,15 @@ Mulh = dict(
 ),
 
 Mux = dict(
-	ins   = [ "sel", "false", "true" ],
-	flags = "none",
+	ins    = [ "sel", "false", "true" ],
+	flags  = "none",
+	pinned = "no",
 ),
 
 NoMem = dict(
 	mode       = "mode_M",
 	flags      = "dump_noblock, dump_noinput",
+	pinned     = "yes",
 	knownBlock = True,
 	singleton  = True,
 ),
@@ -637,11 +658,13 @@ Pin = dict(
 	ins      = [ "op" ],
 	mode     = "get_irn_mode(irn_op)",
 	flags    = "highlevel",
+	pinned   = "yes",
 ),
 
 Proj = dict(
 	ins      = [ "pred" ],
 	flags    = "none",
+	pinned   = "no",
 	attrs    = [
 		dict(
 			type = "long",
@@ -675,9 +698,10 @@ Quot = dict(
 ),
 
 Raise = dict(
-	ins   = [ "mem", "exo_ptr" ],
-	outs  = [ "M", "X" ],
-	flags = "highlevel, cfopcode",
+	ins    = [ "mem", "exo_ptr" ],
+	outs   = [ "M", "X" ],
+	flags  = "highlevel, cfopcode",
+	pinned = "yes",
 ),
 
 Return = dict(
@@ -685,6 +709,7 @@ Return = dict(
 	arity    = "variable",
 	mode     = "mode_X",
 	flags    = "cfopcode",
+	pinned   = "yes",
 ),
 
 Rotl = dict(
@@ -697,7 +722,8 @@ Sel = dict(
 	arity  = "variable",
 	flags  = "none",
 	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data",
-	attrs    = [
+	pinned = "no",
+	attrs  = [
 		dict(
 			type = "ir_entity*",
 			name = "entity"
@@ -732,7 +758,9 @@ Store = dict(
 	ins      = [ "mem", "ptr", "value" ],
 	outs     = [ "M", "X_regular", "X_except" ],
 	flags    = "fragile, uses_memory",
+	pinned   = "exception",
 	attr_struct = "store_attr",
+	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned",
 	constructor_args = [
 		dict(
 			type = "ir_cons_flags",
@@ -755,6 +783,7 @@ SymConst = dict(
 	mode       = "mode_P",
 	flags      = "constlike, start_block",
 	knownBlock = True,
+	pinned     = "no",
 	attrs      = [
 		dict(
 			type = "ir_entity*",
@@ -768,19 +797,22 @@ SymConst = dict(
 Sync = dict(
 	mode     = "mode_M",
 	flags    = "none",
+	pinned   = "no",
 	optimize = False,
 	arity    = "dynamic"
 ),
 
 Tuple = dict(
-	arity = "variable",
-	mode  = "mode_T",
-	flags = "labeled",
+	arity  = "variable",
+	mode   = "mode_T",
+	pinned = "no",
+	flags  = "labeled",
 	java_noconstr = True
 ),
 
 Unknown = dict(
 	knownBlock = True,
+	pinned     = "yes",
 	block      = "get_irg_start_block(irg)",
 	flags      = "cfopcode, fragile, start_block, constlike, dump_noblock",
 ),
