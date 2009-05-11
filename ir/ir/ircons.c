@@ -204,6 +204,7 @@ new_bd_Block(dbg_info *db, int arity, ir_node **in) {
 	return res;
 }  /* new_bd_Block */
 
+#endif
 static ir_node *
 new_bd_Start(dbg_info *db, ir_node *block) {
 	ir_node  *res;
@@ -225,7 +226,6 @@ new_bd_End(dbg_info *db, ir_node *block) {
 	IRN_VRFY_IRG(res, irg);
 	return res;
 }  /* new_bd_End */
-#endif
 
 /**
  * Creates a Phi node with all predecessors.  Calling this constructor
@@ -896,6 +896,8 @@ new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node **in) {
 	return res;
 }  /* new_rd_Block */
 
+#endif
+
 ir_node *
 new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block) {
 	ir_graph *rem = current_ir_graph;
@@ -919,7 +921,6 @@ new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block) {
 
 	return res;
 }  /* new_rd_End */
-#endif
 
 /* Creates a Phi node with all predecessors.  Calling this constructor
    is only allowed if the corresponding block is mature.  */
@@ -1507,12 +1508,6 @@ ir_node *new_rd_ASM(dbg_info *db, ir_graph *irg, ir_node *block,
 ir_node *new_r_Block(ir_graph *irg,  int arity, ir_node **in) {
 	return new_rd_Block(NULL, irg, arity, in);
 }
-ir_node *new_r_Start(ir_graph *irg, ir_node *block) {
-	return new_rd_Start(NULL, irg, block);
-}
-ir_node *new_r_End(ir_graph *irg, ir_node *block) {
-	return new_rd_End(NULL, irg, block);
-}
 ir_node *new_r_Jmp(ir_graph *irg, ir_node *block) {
 	return new_rd_Jmp(NULL, irg, block);
 }
@@ -1527,6 +1522,12 @@ ir_node *new_r_Return(ir_graph *irg, ir_node *block,
 	return new_rd_Return(NULL, irg, block, store, arity, in);
 }
 #endif
+ir_node *new_r_Start(ir_graph *irg, ir_node *block) {
+	return new_rd_Start(NULL, irg, block);
+}
+ir_node *new_r_End(ir_graph *irg, ir_node *block) {
+	return new_rd_End(NULL, irg, block);
+}
 ir_node *new_r_Const(ir_graph *irg, tarval *con) {
 	return new_rd_Const(NULL, irg, con);
 }
@@ -1783,29 +1784,6 @@ ir_node *new_r_ASM(ir_graph *irg, ir_node *block,
  *
  *
  */
-ir_node *
-new_d_Start(dbg_info *db) {
-	ir_node *res;
-
-	res = new_ir_node(db, current_ir_graph, current_ir_graph->current_block,
-	                  op_Start, mode_T, 0, NULL);
-
-	res = optimize_node(res);
-	IRN_VRFY_IRG(res, current_ir_graph);
-	return res;
-}  /* new_d_Start */
-
-ir_node *
-new_d_End(dbg_info *db) {
-	ir_node *res;
-	res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
-	                  op_End, mode_X, -1, NULL);
-	res = optimize_node(res);
-	IRN_VRFY_IRG(res, current_ir_graph);
-
-	return res;
-}  /* new_d_End */
-
 /* Constructs a Block with a fixed number of predecessors.
    Does set current_block.  Can be used with automatic Phi
    node construction. */
@@ -1843,6 +1821,29 @@ new_d_Block(dbg_info *db, int arity, ir_node **in) {
 	return res;
 }  /* new_d_Block */
 #endif
+
+ir_node *
+new_d_Start(dbg_info *db) {
+	ir_node *res;
+
+	res = new_ir_node(db, current_ir_graph, current_ir_graph->current_block,
+	                  op_Start, mode_T, 0, NULL);
+
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, current_ir_graph);
+	return res;
+}  /* new_d_Start */
+
+ir_node *
+new_d_End(dbg_info *db) {
+	ir_node *res;
+	res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
+	                  op_End, mode_X, -1, NULL);
+	res = optimize_node(res);
+	IRN_VRFY_IRG(res, current_ir_graph);
+
+	return res;
+}  /* new_d_End */
 
 /* ***********************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
@@ -2964,12 +2965,6 @@ irp_finalize_cons(void) {
 ir_node *new_Block(int arity, ir_node **in) {
 	return new_d_Block(NULL, arity, in);
 }
-ir_node *new_Start(void) {
-	return new_d_Start(NULL);
-}
-ir_node *new_End(void) {
-	return new_d_End(NULL);
-}
 ir_node *new_Jmp(void) {
 	return new_d_Jmp(NULL);
 }
@@ -2983,6 +2978,12 @@ ir_node *new_Return(ir_node *store, int arity, ir_node *in[]) {
 	return new_d_Return(NULL, store, arity, in);
 }
 #endif
+ir_node *new_Start(void) {
+	return new_d_Start(NULL);
+}
+ir_node *new_End(void) {
+	return new_d_End(NULL);
+}
 ir_node *new_Const(tarval *con) {
 	return new_d_Const(NULL, con);
 }
@@ -3182,9 +3183,14 @@ ir_node *new_Pin(ir_node *node) {
 	return new_d_Pin(NULL, node);
 }
 #endif
-ir_node *new_Dummy(ir_mode *m) {
-	ir_graph *irg = current_ir_graph;
-	return new_ir_node(NULL, irg, get_irg_start_block(irg), op_Dummy, m, 0, NULL);
+ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode) {
+	return new_ir_node(db, irg, get_irg_start_block(irg), op_Dummy, mode, 0, NULL);
+}
+ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode) {
+	return new_rd_Dummy(NULL, irg, mode);
+}
+ir_node *new_Dummy(ir_mode *mode) {
+	return new_r_Dummy(current_ir_graph, mode);
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,

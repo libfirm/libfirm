@@ -1179,7 +1179,7 @@ void     set_Bound_upper(ir_node *bound, ir_node *upper);
 
 /** Return the operand of a Pin node. */
 ir_node *get_Pin_op(const ir_node *pin);
-void    set_Pin_op(ir_node *pin, ir_node *node);
+void     set_Pin_op(ir_node *pin, ir_node *node);
 
 /** Return the assembler text of an ASM pseudo node. */
 ident *get_ASM_text(const ir_node *node);

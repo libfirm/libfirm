@@ -680,7 +680,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_node *regnode = be_abi_reg_map_get(env->regs, reg);
 		ir_fprintf(stderr, "Adding %+F\n", regnode);
 #endif
-		ir_node *regnode = new_rd_Unknown(irg, arch_register_class_mode(cls));
+		ir_node *regnode = new_r_Unknown(irg, arch_register_class_mode(cls));
 		obstack_ptr_grow(obst, regnode);
 	}
 	n_ins = n_reg_params + pset_new_size(&states);

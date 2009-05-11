@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import sys
+import re
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
 from spec_util import is_dynamic_pinned, verify_node
-import ir_spec
+from ir_spec import nodes
 
 def format_argdecls(node, first = False, voidwhenempty = False):
 	if not node.has_key("args") or len(node["args"]) == 0:
@@ -90,6 +91,54 @@ def format_arity_and_ins(node):
 	else:
 		return `arity` + ", in"
 
+def format_arity(node):
+	arity = node['arity']
+	if arity == "dynamic":
+		return "oparity_dynamic"
+	if arity == "variable":
+		return "oparity_variable"
+	if arity == 0:
+		return "oparity_zero"
+	if arity == 1:
+		return "oparity_unary"
+	if arity == 2:
+		return "oparity_binary"
+	if arity == 3:
+		return "oparity_trinary"
+	return "oparity_any"
+
+def format_pinned(node):
+	pinned = node["pinned"]
+	if pinned == "yes":
+		return "op_pin_state_pinned"
+	if pinned == "no":
+		return "op_pin_state_floats"
+	if pinned == "exception":
+		return "op_pin_state_exc_pinned"
+	if pinned == "memory":
+		return "op_pin_state_mem_pinned"
+	print "WARNING: Unknown pinned state %s in format pined" % pinned
+	return ""
+
+def format_flags(node):
+	flags = node['flags']
+	flags = re.split("\s*,\s*", flags)
+	flags = map(lambda x : "irop_flag_" + x, flags)
+	return " | ".join(flags)
+
+def format_attr_size(node):
+	if "attr_struct" not in node:
+		return "0"
+	return "sizeof(%s)" % node['attr_struct']
+
+def filter_isnot(list, flag):
+	result = []
+	for nodename, node in list:
+		if flag in node:
+			continue
+		result.append((nodename, node))
+	return result
+
 env = Environment()
 env.filters['argdecls']  = format_argdecls
 env.filters['args']      = format_args
@@ -98,6 +147,11 @@ env.filters['block']     = format_block
 env.filters['curblock']  = format_curblock
 env.filters['insdecl']       = format_insdecl
 env.filters['arity_and_ins'] = format_arity_and_ins
+env.filters['arity']         = format_arity
+env.filters['pinned']        = format_pinned
+env.filters['flags']         = format_flags
+env.filters['attr_size']     = format_attr_size
+env.filters['isnot']         = filter_isnot
 
 def add_attr(list, type, name, init = None, initname = None):
 	if initname == None:
@@ -116,21 +170,19 @@ def prepare_attr(attr):
 def preprocess_node(nodename, node):
 	# set default attributes
 	if "is_a" in node:
-		parent = ir_spec.nodes[node["is_a"]]
+		parent = nodes[node["is_a"]]
 		node["ins"] = parent["ins"]
 		if "outs" in parent:
 			node["outs"] = parent["outs"]
 
 	if "outs" in node:
 		node["mode"] = "mode_T"
-	if "nodbginfo" in node:
-		node["db"] = "NULL"
-		node["dbdecl"] = ""
-		node["dbdeclnocomma"] = ""
-	else:
-		node["db"] = "db"
-		node["dbdecl"] = "dbg_info *db, "
-		node["dbdeclnocomma"] = "dbg_info *db"
+	node["db"] = "db"
+	node["dbdecl"] = "dbg_info *db, "
+	node["dbdeclnocomma"] = "dbg_info *db"
+
+	if "flags" not in node and "abstract" not in node:
+		print "WARNING: no flags specified for %s (you should say at least 'none')\n" % nodename
 
 	node.setdefault("ins", [])
 	node.setdefault("arity", len(node["ins"]))
@@ -140,6 +192,7 @@ def preprocess_node(nodename, node):
 	node.setdefault("attrs_name", nodename.lower())
 	node.setdefault("block", "block")
 	node.setdefault("pinned", "no")
+	node.setdefault("flags", "none")
 
 	verify_node(node)
 
@@ -151,7 +204,7 @@ def preprocess_node(nodename, node):
 	for input in node["ins"]:
 		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
 
-	if node["arity"] == "variable":
+	if node["arity"] == "variable" or node["arity"] == "dynamic":
 		arguments.append(dict(type = "int", name = "arity"))
 		arguments.append(dict(type = "ir_node **", name = "in"))
 
@@ -227,7 +280,8 @@ def preprocess_node(nodename, node):
 
 #############################
 
-node_template = env.from_string('''
+constructor_template = env.from_string('''
+
 ir_node *new_rd_{{node["constrname"]}}({{node["dbdecl"]}}ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
 {
 	ir_node *res;
@@ -243,7 +297,7 @@ ir_node *new_rd_{{node["constrname"]}}({{node["dbdecl"]}}ir_graph *irg{{node|blo
 	{% endfor %}
 	{%- for attr in node["initattrs"] -%}
 		res->attr.{{node["attrs_name"]}}{{attr["initname"]}} = {{ attr["init"] -}};
-	{% endfor %}
+	{%- endfor %}
 	{{- node["init"] }}
 	{% if node["optimize"] != False -%}
 		res = optimize_node(res);
@@ -283,7 +337,55 @@ ir_node *new_{{node["constrname"]}}({{node|argdecls(True, True)}})
 		return new_d_{{node["constrname"]}}(NULL{{node|args}});
 	{%- endif %}
 }
+''')
 
+irnode_h_template = env.from_string('''
+/* Warning: automatically generated code */
+
+{% for nodename, node in nodes|isnot('custom_is') %}
+static inline int _is_{{nodename}}(const ir_node *node)
+{
+	assert(node != NULL);
+	return _get_irn_op(node) == op_{{nodename}};
+}
+{% endfor %}
+
+{% for nodename, node in nodes %}
+#define is_{{nodename}}(node)    _is_{{nodename}}(node)
+{%- endfor %}
+''')
+
+irnode_template = env.from_string('''
+/* Warning: automatically generated code */
+{% for nodename, node in nodes %}
+int (is_{{nodename}})(const ir_node *node)
+{
+	return _is_{{nodename}}(node);
+}
+{% endfor %}
+''')
+
+irop_template = env.from_string('''
+/* Warning: automatically generated code */
+{% for nodename, node in nodes %}
+ir_op *op_{{nodename}}; ir_op *get_op_{{nodename}}(void) { return op_{{nodename}}; }
+{%- endfor %}
+
+void init_op(void)
+{
+	{% for nodename, node in nodes %}
+	op_{{nodename}} = new_ir_op(iro_{{nodename}}, "{{nodename}}", {{node|pinned}}, {{node|flags}}, {{node|arity}}, -1, {{node|attr_size}}, NULL);
+	{%- endfor %}
+
+	be_init_op();
+}
+
+void finish_op(void)
+{
+	{% for nodename, node in nodes %}
+	free_ir_op(op_{{nodename}}); op_{{nodename}} = NULL;
+	{%- endfor %}
+}
 ''')
 
 #############################
@@ -298,26 +400,43 @@ def main(argv):
 	gendir = argv[2]
 
 	# List of TODOs
-	niymap = ["Anchor", "ASM", "Bad",
-		"CallBegin", "Const", "Const_type", "Const_long",
-		"defaultProj", "Dummy", "EndReg", "EndExcept",
-		"NoMem", "Phi",
-		"simpleSel", "SymConst", "SymConst_type", "Sync"]
+	niymap = ["ASM", "CallBegin", "Const", "Const_type", "Const_long",
+		"defaultProj", "Dummy", "Phi", "simpleSel", "SymConst", "SymConst_type",
+		"Sync"]
 
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
-	for nodename, node in do_dictsort(ir_spec.nodes):
+	for nodename, node in do_dictsort(nodes):
+		preprocess_node(nodename, node)
 		if nodename in niymap:
 			continue
-		preprocess_node(nodename, node)
-		if not "abstract" in node:
-			file.write(node_template.render(vars()))
+		if "abstract" not in node and "singleton" not in node:
+			file.write(constructor_template.render(vars()))
 
 			if "special_constructors" in node:
 				for special in node["special_constructors"]:
 					node["constrname"] = special["constrname"]
 					special["attr"]["init"] = special["attr"]["special"]["init"]
-					file.write(node_template.render(vars()))
+					file.write(constructor_template.render(vars()))
 	file.write("\n")
+	file.close()
+
+	real_nodes = dict()
+	for nodename, node in nodes.iteritems():
+		if "abstract" in node:
+			continue
+		real_nodes[nodename] = node
+	real_nodes = do_dictsort(real_nodes)
+
+	file = open(gendir + "/gen_irnode.h", "w")
+	file.write(irnode_h_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir + "/gen_irnode.c.inl", "w")
+	file.write(irnode_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir + "/gen_irop.c.inl", "w")
+	file.write(irop_template.render(nodes = real_nodes))
 	file.close()
 
 if __name__ == "__main__":

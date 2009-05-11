@@ -214,28 +214,34 @@ def main(argv):
 		sys.exit(1)
 
 	gendir = argv[2]
-
 	sortednodes = do_dictsort(ir_spec.nodes)
+	# these nodes don't work correctly yet for some reasons...
+	niynodes = [ "EndExcept", "EndReg", "ASM" ]
+	# these have custom im-/export code
+	customcode = [ "Start", "End", "Anchor", "SymConst", "Block" ]
 
 	file = open(gendir + "/gen_irio_export.inl", "w");
 	for nodename, node in sortednodes:
+		if nodename in niynodes:
+			continue
+
 		preprocess_node(nodename, node)
-		if not "abstract" in node:
+		if "abstract" not in node:
 			file.write(export_attrs_template.render(vars()))
 	file.write("\n")
 	file.close()
 
 	file = open(gendir + "/gen_irio_import.inl", "w");
 	for nodename, node in sortednodes:
-		if not "abstract" in node and nodename != "Start" and nodename != "End" and nodename != "Anchor" and nodename != "SymConst" and nodename != "Block":
-			file.write(import_attrs_template.render(vars()))
-	# TODO: SymConst
+		if "abstract" in node or nodename in customcode or nodename in niynodes:
+			continue
+		file.write(import_attrs_template.render(vars()))
 	file.write("\n")
 	file.close()
 
 	file = open(gendir + "/gen_irio_lex.inl", "w");
 	for nodename, node in sortednodes:
-		if not "abstract" in node:
+		if "abstract" not in node and nodename not in niynodes:
 			file.write("\tINSERT(\"" + nodename + "\", tt_iro, iro_" + nodename + ");\n");
 	file.close()
 

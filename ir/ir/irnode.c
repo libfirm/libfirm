@@ -1739,11 +1739,6 @@ set_binop_right(ir_node *node, ir_node *right) {
 	set_irn_n(node, node->op->op_index + 1, right);
 }
 
-int
-(is_Phi)(const ir_node *n) {
-	return _is_Phi(n);
-}
-
 int is_Phi0(const ir_node *n) {
 	assert(n);
 
@@ -2691,143 +2686,8 @@ void skip_Id_and_store(ir_node **node) {
 }
 
 int
-(is_Bad)(const ir_node *node) {
-	return _is_Bad(node);
-}
-
-int
-(is_NoMem)(const ir_node *node) {
-	return _is_NoMem(node);
-}
-
-int
-(is_Minus)(const ir_node *node) {
-	return _is_Minus(node);
-}
-
-int
-(is_Abs)(const ir_node *node) {
-	return _is_Abs(node);
-}
-
-int
-(is_Mod)(const ir_node *node) {
-	return _is_Mod(node);
-}
-
-int
-(is_Div)(const ir_node *node) {
-	return _is_Div(node);
-}
-
-int
-(is_DivMod)(const ir_node *node) {
-	return _is_DivMod(node);
-}
-
-int
-(is_Quot)(const ir_node *node) {
-	return _is_Quot(node);
-}
-
-int
-(is_Add)(const ir_node *node) {
-	return _is_Add(node);
-}
-
-int
-(is_Carry)(const ir_node *node) {
-	return _is_Carry(node);
-}
-
-int
-(is_And)(const ir_node *node) {
-	return _is_And(node);
-}
-
-int
-(is_Or)(const ir_node *node) {
-	return _is_Or(node);
-}
-
-int
-(is_Eor)(const ir_node *node) {
-	return _is_Eor(node);
-}
-
-int
-(is_Sub)(const ir_node *node) {
-	return _is_Sub(node);
-}
-
-int
-(is_Shl)(const ir_node *node) {
-	return _is_Shl(node);
-}
-
-int
-(is_Shr)(const ir_node *node) {
-	return _is_Shr(node);
-}
-
-int
-(is_Shrs)(const ir_node *node) {
-	return _is_Shrs(node);
-}
-
-int
-(is_Rotl)(const ir_node *node) {
-	return _is_Rotl(node);
-}
-
-int
-(is_Not)(const ir_node *node) {
-	return _is_Not(node);
-}
-
-int
-(is_Id)(const ir_node *node) {
-	return _is_Id(node);
-}
-
-int
-(is_Tuple)(const ir_node *node) {
-	return _is_Tuple(node);
-}
-
-int
-(is_Bound)(const ir_node *node) {
-	return _is_Bound(node);
-}
-
-int
-(is_Start)(const ir_node *node) {
-  return _is_Start(node);
-}
-
-int
-(is_End)(const ir_node *node) {
-	return _is_End(node);
-}
-
-int
-(is_Const)(const ir_node *node) {
-	return _is_Const(node);
-}
-
-int
-(is_Conv)(const ir_node *node) {
-	return _is_Conv(node);
-}
-
-int
 (is_strictConv)(const ir_node *node) {
 	return _is_strictConv(node);
-}
-
-int
-(is_Cast)(const ir_node *node) {
-	return _is_Cast(node);
 }
 
 int
@@ -2835,163 +2695,10 @@ int
 	return _is_no_Block(node);
 }
 
-int
-(is_Block)(const ir_node *node) {
-	return _is_Block(node);
-}
-
-/* returns true if node is an Unknown node. */
-int
-(is_Unknown)(const ir_node *node) {
-	return _is_Unknown(node);
-}
-
-/* returns true if node is a Return node. */
-int
-(is_Return)(const ir_node *node) {
-	return _is_Return(node);
-}
-
-/* returns true if node is a Call node. */
-int
-(is_Call)(const ir_node *node) {
-	return _is_Call(node);
-}
-
-/* returns true if node is a Builtin node. */
-int
-(is_Builtin)(const ir_node *node) {
-	return _is_Builtin(node);
-}
-
-/* returns true if node is a CallBegin node. */
-int
-(is_CallBegin)(const ir_node *node) {
-	return _is_CallBegin(node);
-}
-
-/* returns true if node is a Sel node. */
-int
-(is_Sel)(const ir_node *node) {
-	return _is_Sel(node);
-}
-
-/* returns true if node is a Mux node. */
-int
-(is_Mux)(const ir_node *node) {
-	return _is_Mux(node);
-}
-
-/* returns true if node is a Load node. */
-int
-(is_Load)(const ir_node *node) {
-	return _is_Load(node);
-}
-
-/* returns true if node is a Load node. */
-int
-(is_Store)(const ir_node *node) {
-	return _is_Store(node);
-}
-
-/* returns true if node is a Sync node. */
-int
-(is_Sync)(const ir_node *node) {
-	return _is_Sync(node);
-}
-
-/* Returns true if node is a Confirm node. */
-int
-(is_Confirm)(const ir_node *node) {
-	return _is_Confirm(node);
-}
-
-/* Returns true if node is a Pin node. */
-int
-(is_Pin)(const ir_node *node) {
-	return _is_Pin(node);
-}
-
-/* Returns true if node is a SymConst node. */
-int
-(is_SymConst)(const ir_node *node) {
-	return _is_SymConst(node);
-}
-
 /* Returns true if node is a SymConst node with kind symconst_addr_ent. */
 int
 (is_SymConst_addr_ent)(const ir_node *node) {
 	return _is_SymConst_addr_ent(node);
-}
-
-/* Returns true if node is a Cond node. */
-int
-(is_Cond)(const ir_node *node) {
-	return _is_Cond(node);
-}
-
-int
-(is_CopyB)(const ir_node *node) {
-	return _is_CopyB(node);
-}
-
-/* returns true if node is a Cmp node. */
-int
-(is_Cmp)(const ir_node *node) {
-	return _is_Cmp(node);
-}
-
-/* returns true if node is an Alloc node. */
-int
-(is_Alloc)(const ir_node *node) {
-	return _is_Alloc(node);
-}
-
-/* returns true if node is a Free node. */
-int
-(is_Free)(const ir_node *node) {
-	return _is_Free(node);
-}
-
-/* returns true if a node is a Jmp node. */
-int
-(is_Jmp)(const ir_node *node) {
-	return _is_Jmp(node);
-}
-
-/* returns true if a node is a IJmp node. */
-int
-(is_IJmp)(const ir_node *node) {
-	return _is_IJmp(node);
-}
-
-/* returns true if a node is a Raise node. */
-int
-(is_Raise)(const ir_node *node) {
-	return _is_Raise(node);
-}
-
-/* returns true if a node is an ASM node. */
-int
-(is_ASM)(const ir_node *node) {
-	return _is_ASM(node);
-}
-
-/* returns true if a node is an Dummy node. */
-int
-(is_Dummy)(const ir_node *node) {
-	return _is_Dummy(node);
-}
-
-int
-(is_Proj)(const ir_node *node) {
-	return _is_Proj(node);
-}
-
-/* Returns true if node is a Filter node. */
-int
-(is_Filter)(const ir_node *node) {
-	return _is_Filter(node);
 }
 
 /* Returns true if the operation manipulates control flow. */
@@ -3258,3 +2965,6 @@ unsigned firm_default_hash(const ir_node *node) {
 
 	return h;
 }  /* firm_default_hash */
+
+/* include generated code */
+#include "gen_irnode.c.inl"

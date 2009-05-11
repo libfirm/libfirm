@@ -1948,7 +1948,7 @@ ir_node *new_rd_Confirm (dbg_info *db, ir_graph *irg, ir_node *block,
  * @param *irg    The IR graph the node  belongs to.
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_rd_Unknown(ir_graph *irg, ir_mode *m);
+ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
 
 /** Constructor for a CallBegin node.
  *
@@ -3602,7 +3602,7 @@ ir_node *new_d_Confirm (dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
  *
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_d_Unknown(ir_mode *m);
+ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
 
 /** Constructor for a CallBegin node.
  *
@@ -4506,6 +4506,10 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * @param *mode     The mode of the node.
  */
 ir_node *new_Dummy(ir_mode *mode);
+
+ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode);
+
+ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

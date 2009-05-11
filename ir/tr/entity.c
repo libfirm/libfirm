@@ -454,7 +454,7 @@ set_entity_variability(ir_entity *ent, ir_variability var)
 	if ((is_atomic_type(ent->type)) &&
 		(ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
 		/* Set default constant value. */
-		ent->value = new_rd_Unknown(get_const_code_irg(), get_type_mode(ent->type));
+		ent->value = new_r_Unknown(get_const_code_irg(), get_type_mode(ent->type));
 	}
 
 	if ((is_compound_type(ent->type)) &&
@@ -681,7 +681,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
 	case iro_Conv:
 		nn = new_d_Conv(dbg, copy_const_value(dbg, get_Conv_op(n)), m); break;
 	case iro_Unknown:
-		nn = new_d_Unknown(m); break;
+		nn = new_Unknown(m); break;
 	default:
 		assert(0 && "opcode invalid or not implemented");
 		nn = NULL;
