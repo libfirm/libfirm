@@ -311,27 +311,25 @@ void add_irp_mode(ir_mode *mode) {
 
 /* Adds opcode to the list of opcodes in irp. */
 void add_irp_opcode(ir_op *opcode) {
+	int    len;
+	size_t code;
 	assert(opcode != NULL);
 	assert(irp);
-	assert(opcode->code == (unsigned) ARR_LEN(irp->opcodes) && "new_ir_op() called in wrong order");
-	ARR_APP1(ir_op *, irp->opcodes, opcode);
+	len  = ARR_LEN(irp->opcodes);
+	code = opcode->code;
+	if (code >= len) {
+		ARR_RESIZE(ir_op*, irp->opcodes, code+1);
+		memset(&irp->opcodes[len], 0, (code-len+1) * sizeof(irp->opcodes[0]));
+	}
+
+	assert(irp->opcodes[code] == NULL && "opcode registered twice");
+	irp->opcodes[code] = opcode;
 }
 
 /* Removes opcode from the list of opcodes and shrinks the list by one. */
 void remove_irp_opcode(ir_op *opcode) {
-	int i;
-
-	assert(opcode);
-	for (i = ARR_LEN(irp->opcodes) -1; i >= 0; i--) {
-		if (irp->opcodes[i] != opcode)
-			continue;
-		for (; i < (ARR_LEN(irp->opcodes)) - 1; i++) {
-			irp->opcodes[i] = irp->opcodes[i+1];
-		}
-		ARR_SETLEN(ir_op *, irp->opcodes, (ARR_LEN(irp->opcodes)) - 1);
-		return;
-	}
-	panic("Deleting unknown opcode");
+	assert(opcode->code < ARR_LEN(irp->opcodes));
+	irp->opcodes[opcode->code] = NULL;
 }
 
 /* Returns the number of all opcodes in the irp. */

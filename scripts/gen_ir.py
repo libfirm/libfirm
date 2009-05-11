@@ -131,6 +131,11 @@ def format_attr_size(node):
 		return "0"
 	return "sizeof(%s)" % node['attr_struct']
 
+def format_opindex(node):
+	if "op_index" in node:
+		return node["op_index"]
+	return "-1"
+
 def filter_isnot(list, flag):
 	result = []
 	for nodename, node in list:
@@ -140,11 +145,11 @@ def filter_isnot(list, flag):
 	return result
 
 env = Environment()
-env.filters['argdecls']  = format_argdecls
-env.filters['args']      = format_args
-env.filters['blockdecl'] = format_blockdecl
-env.filters['block']     = format_block
-env.filters['curblock']  = format_curblock
+env.filters['argdecls']      = format_argdecls
+env.filters['args']          = format_args
+env.filters['blockdecl']     = format_blockdecl
+env.filters['block']         = format_block
+env.filters['curblock']      = format_curblock
 env.filters['insdecl']       = format_insdecl
 env.filters['arity_and_ins'] = format_arity_and_ins
 env.filters['arity']         = format_arity
@@ -152,6 +157,7 @@ env.filters['pinned']        = format_pinned
 env.filters['flags']         = format_flags
 env.filters['attr_size']     = format_attr_size
 env.filters['isnot']         = filter_isnot
+env.filters['opindex']       = format_opindex
 
 def add_attr(list, type, name, init = None, initname = None):
 	if initname == None:
@@ -172,6 +178,8 @@ def preprocess_node(nodename, node):
 	if "is_a" in node:
 		parent = nodes[node["is_a"]]
 		node["ins"] = parent["ins"]
+		if "op_index" in parent:
+			node["op_index"] = parent["op_index"]
 		if "outs" in parent:
 			node["outs"] = parent["outs"]
 
@@ -374,7 +382,7 @@ ir_op *op_{{nodename}}; ir_op *get_op_{{nodename}}(void) { return op_{{nodename}
 void init_op(void)
 {
 	{% for nodename, node in nodes %}
-	op_{{nodename}} = new_ir_op(iro_{{nodename}}, "{{nodename}}", {{node|pinned}}, {{node|flags}}, {{node|arity}}, -1, {{node|attr_size}}, NULL);
+	op_{{nodename}} = new_ir_op(iro_{{nodename}}, "{{nodename}}", {{node|pinned}}, {{node|flags}}, {{node|arity}}, {{node|opindex}}, {{node|attr_size}}, NULL);
 	{%- endfor %}
 
 	be_init_op();

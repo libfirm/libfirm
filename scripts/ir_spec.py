@@ -5,12 +5,14 @@ nodes = dict(
 #
 unop = dict(
 	abstract = True,
-	ins      = [ "op" ]
+	ins      = [ "op" ],
+	op_index = 0,
 ),
 
 binop = dict(
 	abstract = True,
-	ins      = [ "left", "right" ]
+	ins      = [ "left", "right" ],
+	op_index = 0,
 ),
 
 #
@@ -52,7 +54,6 @@ Anchor = dict(
 	mode        = "mode_ANY",
 	arity       = "variable",
 	flags       = "dump_noblock",
-	attr_struct = "block_attr",
 	knownBlock  = True,
 	singleton   = True,
 ),
@@ -106,12 +107,13 @@ Bad = dict(
 ),
 
 Block = dict(
-	mode       = "mode_BB",
-	knownBlock = True,
-	block      = "NULL",
-	optimize   = False,
-	arity      = "variable",
-	flags      = "labeled",
+	mode        = "mode_BB",
+	knownBlock  = True,
+	block       = "NULL",
+	optimize    = False,
+	arity       = "variable",
+	flags       = "labeled",
+	attr_struct = "block_attr",
 	java_noconstr = True,
 
 	init = '''
@@ -405,7 +407,8 @@ Div = dict(
 		)
 	],
 	attr_struct = "divmod_attr",
-	pinned = "exception",
+	pinned      = "exception",
+	op_index    = 1,
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
@@ -425,7 +428,8 @@ DivMod = dict(
 		),
 	],
 	attr_struct = "divmod_attr",
-	pinned = "exception",
+	pinned      = "exception",
+	op_index    = 1,
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
@@ -579,7 +583,8 @@ Mod = dict(
 		),
 	],
 	attr_struct = "divmod_attr",
-	pinned = "exception",
+	pinned      = "exception",
+	op_index    = 1,
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
@@ -660,7 +665,8 @@ Quot = dict(
 		),
 	],
 	attr_struct = "divmod_attr",
-	pinned = "exception",
+	pinned      = "exception",
+	op_index    = 1,
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
