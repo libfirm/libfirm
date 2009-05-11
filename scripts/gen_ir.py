@@ -363,6 +363,7 @@ static inline int _is_{{nodename}}(const ir_node *node)
 {% for nodename, node in nodes %}
 #define is_{{nodename}}(node)    _is_{{nodename}}(node)
 {%- endfor %}
+
 ''')
 
 irnode_template = env.from_string('''
