@@ -451,6 +451,7 @@ struct ir_graph {
 	unsigned additional_properties;          /**< Additional graph properties. */
 
 	/* -- Fields indicating different states of irgraph -- */
+	unsigned        state;
 	irg_phase_state phase_state;       /**< Compiler phase. */
 	op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
 	irg_outs_state outs_state;         /**< Out edges. */

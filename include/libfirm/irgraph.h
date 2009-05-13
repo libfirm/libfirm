@@ -538,6 +538,21 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #define ir_resources_reserved(irg)           0
 #endif
 
+/**
+ * Graph State
+ */
+typedef enum {
+	IR_GRAPH_STATE_KEEP_MUX = 1 << 0,  /**< should perform no further optimisations on Mux nodes */
+	IR_GRAPH_STATE_ARCH_DEP = 1 << 1,  /**< should not construct more nodes which irarch potentially breaks down */
+} ir_graph_state_t;
+
+/** set some state flags on the graph (this does not clear the other flags) */
+void set_irg_state(ir_graph *irg, ir_graph_state_t state);
+/** clear some state flags of the graph */
+void clear_irg_state(ir_graph *irg, ir_graph_state_t state);
+/** query wether a set of graph state flags are activated */
+int is_irg_state(const ir_graph *irg, ir_graph_state_t state);
+
 /** Normalization: Move Proj nodes into the same block as its predecessors */
 void normalize_proj_nodes(ir_graph *irg);
 

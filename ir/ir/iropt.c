@@ -2282,7 +2282,8 @@ static ir_node *transform_node_Add(ir_node *n) {
 
 	if (mode_is_num(mode)) {
 		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
-		if (!is_arch_dep_running() && a == b && mode_is_int(mode)) {
+		if (!is_irg_state(current_ir_graph, IR_GRAPH_STATE_ARCH_DEP)
+				&& a == b && mode_is_int(mode)) {
 			ir_node *block = get_nodes_block(n);
 
 			n = new_rd_Mul(
@@ -5491,6 +5492,9 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	ir_node  *f   = get_Mux_false(n);
 	ir_graph *irg = current_ir_graph;
 
+	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
+		return n;
+
 	if (is_Mux(t)) {
 		ir_node*  block = get_nodes_block(n);
 		ir_node*  c0    = sel;
@@ -5608,7 +5612,6 @@ static ir_node *transform_node_Mux(ir_node *n) {
 	if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
 		tarval *a = get_Const_tarval(t);
 		tarval *b = get_Const_tarval(f);
-		tarval *null = get_tarval_null(mode);
 		tarval *diff, *min;
 
 		if (tarval_is_one(a) && tarval_is_null(b)) {
@@ -5889,7 +5892,7 @@ static ir_node *transform_node(ir_node *n) {
 	 */
 	do {
 		oldn = n;
-		if (n->op->ops.transform_node)
+		if (n->op->ops.transform_node != NULL)
 			n = n->op->ops.transform_node(n);
 	} while (oldn != n);
 

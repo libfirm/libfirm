@@ -446,6 +446,21 @@ _get_irg_fp_model(const ir_graph *irg) {
 	return irg->fp_model;
 }
 
+static inline void _set_irg_state(ir_graph *irg, ir_graph_state_t state)
+{
+	irg->state |= state;
+}
+
+static inline void _clear_irg_state(ir_graph *irg, ir_graph_state_t state)
+{
+	irg->state &= ~state;
+}
+
+static inline int _is_irg_state(const ir_graph *irg, ir_graph_state_t state)
+{
+	return (irg->state & state) == state;
+}
+
 /**
  * Allocates a new idx in the irg for the node and adds the irn to the idx -> irn map.
  * @param irg The graph.
@@ -589,5 +604,8 @@ _get_interprocedural_view(void) {
 #define get_irg_estimated_node_cnt(irg)       _get_irg_estimated_node_cnt(irg)
 #define get_irg_fp_model(irg)                 _get_irg_fp_model(irg)
 #define get_idx_irn(irg, idx)                 _get_idx_irn(irg, idx)
+#define set_irg_state(irg, state)             _set_irg_state(irg, state)
+#define clear_irg_state(irg, state)           _clear_irg_state(irg, state)
+#define is_irg_state(irg, state)              _is_irg_state(irg, state)
 
 #endif

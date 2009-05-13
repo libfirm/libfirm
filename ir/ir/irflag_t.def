@@ -115,6 +115,3 @@ I_FLAG(closed_world                       , 31, OFF)
 
 /** This flag is set while the reassociation optimizations are running */
 R_FLAG(reassoc                            , 0)
-
-/** This flag is set while architecture dependent optimizations are running */
-R_FLAG(arch_dep                           , 0)

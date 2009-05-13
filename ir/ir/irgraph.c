@@ -1080,3 +1080,18 @@ size_t register_additional_graph_data(size_t size) {
 
 	return additional_graph_data_size += size;
 }
+
+void (set_irg_state)(ir_graph *irg, ir_graph_state_t state)
+{
+	_set_irg_state(irg, state);
+}
+
+void (clear_irg_state)(ir_graph *irg, ir_graph_state_t state)
+{
+	_clear_irg_state(irg, state);
+}
+
+int (is_irg_state)(const ir_graph *irg, ir_graph_state_t state)
+{
+	return _is_irg_state(irg, state);
+}

@@ -559,42 +559,50 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
 
 /* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
-	ir_node *res = irn;
+	ir_graph *irg;
+	ir_node *res  = irn;
 	ir_mode *mode = get_irn_mode(irn);
+	ir_node *left;
+	ir_node *right;
+	ir_node *operand;
+	tarval  *tv;
+
 
 	/* If the architecture dependent optimizations were not initialized
 	   or this optimization was not enabled. */
 	if (params == NULL || (opts & arch_dep_mul_to_shift) == 0)
 		return irn;
 
-	set_arch_dep_running(1);
-	{
-		if (is_Mul(irn) && mode_is_int(mode)) {
-			ir_node *left    = get_binop_left(irn);
-			ir_node *right   = get_binop_right(irn);
-			tarval *tv       = NULL;
-			ir_node *operand = NULL;
+	if (!is_Mul(irn) || !mode_is_int(mode))
+		return res;
 
-			/* Look, if one operand is a constant. */
-			if (is_Const(left)) {
-				tv = get_Const_tarval(left);
-				operand = right;
-			} else if (is_Const(right)) {
-				tv = get_Const_tarval(right);
-				operand = left;
-			}
+	/* we should never do the reverse transformations again
+	   (like x+x -> 2*x) */
+	irg = get_irn_irg(irn);
+	set_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP);
 
-			if (tv != NULL) {
-				res = do_decomposition(irn, operand, tv);
+	left    = get_binop_left(irn);
+	right   = get_binop_right(irn);
+	tv      = NULL;
+	operand = NULL;
 
-				if (res != irn) {
-					hook_arch_dep_replace_mul_with_shifts(irn);
-					exchange(irn, res);
-				}
-			}
+	/* Look, if one operand is a constant. */
+	if (is_Const(left)) {
+		tv = get_Const_tarval(left);
+		operand = right;
+	} else if (is_Const(right)) {
+		tv = get_Const_tarval(right);
+		operand = left;
+	}
+
+	if (tv != NULL) {
+		res = do_decomposition(irn, operand, tv);
+
+		if (res != irn) {
+			hook_arch_dep_replace_mul_with_shifts(irn);
+			exchange(irn, res);
 		}
 	}
-	//set_arch_dep_running(0);
 
 	return res;
 }
