@@ -48,6 +48,7 @@
 #include "irmemory.h"
 #include "irphase_t.h"
 #include "irgopt.h"
+#include "set.h"
 #include "debug.h"
 
 /** The debug handle. */
@@ -1696,7 +1697,6 @@ typedef struct scc {
 typedef struct node_entry {
 	unsigned DFSnum;    /**< the DFS number of this node */
 	unsigned low;       /**< the low number of this node */
-	ir_node  *header;   /**< the header of this node */
 	int      in_stack;  /**< flag, set if the node is on the stack */
 	ir_node  *next;     /**< link to the next node the the same scc */
 	scc      *pscc;     /**< the scc of this node */
@@ -1784,6 +1784,32 @@ struct phi_entry {
 };
 
 /**
+ * An entry in the avail set.
+ */
+typedef struct avail_entry_t {
+	ir_node *ptr;   /**< the address pointer */
+	ir_mode *mode;  /**< the load mode */
+	ir_node *load;  /**< the associated Load */
+} avail_entry_t;
+
+/**
+ * Compare two avail entries.
+ */
+static int cmp_avail_entry(const void *elt, const void *key, size_t size) {
+	const avail_entry_t *a = elt;
+	const avail_entry_t *b = key;
+
+	return a->ptr != b->ptr || a->mode != b->mode;
+}  /* cmp_avail_entry */
+
+/**
+ * Calculate the hash value of an avail entry.
+ */
+static unsigned hash_cache_entry(const avail_entry_t *entry) {
+	return get_irn_idx(entry->ptr) * 9 + HASH_PTR(entry->mode);
+}  /* hash_cache_entry */
+
+/**
  * Move loops out of loops if possible.
  *
  * @param pscc   the loop described by an SCC
@@ -1794,6 +1820,9 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 	ir_entity *ent;
 	int       j;
 	phi_entry *phi_list = NULL;
+	set       *avail;
+
+	avail = new_set(cmp_avail_entry, 8);
 
 	/* collect all outer memories */
 	for (phi = pscc->head; phi != NULL; phi = next) {
@@ -1804,7 +1833,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 		if (! is_Phi(phi))
 			continue;
 
-		assert(get_irn_mode(phi) == mode_M && "DFS geturn non-memory Phi");
+		assert(get_irn_mode(phi) == mode_M && "DFS return non-memory Phi");
 
 		for (j = get_irn_arity(phi) - 1; j >= 0; --j) {
 			ir_node    *pred = get_irn_n(phi, j);
@@ -1824,6 +1853,10 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 	/* no Phis no fun */
 	assert(phi_list != NULL && "DFS found a loop without Phi");
 
+	/* for now, we cannot handle more than one input (only reducible cf) */
+	if (phi_list->next != NULL)
+		return;
+
 	for (load = pscc->head; load; load = next) {
 		ir_mode *load_mode;
 		node_entry *ne = get_irn_ne(load, env);
@@ -1837,10 +1870,10 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 			if (info->projs[pn_Load_res] == NULL || info->projs[pn_Load_X_regular] != NULL || info->projs[pn_Load_X_except] != NULL)
 				continue;
 
-			/* for now, we can only handle Load(Global) */
+			/* for now, we can only move Load(Global) */
 			if (! is_Global(ptr))
 				continue;
-			ent = get_Global_entity(ptr);
+			ent       = get_Global_entity(ptr);
 			load_mode = get_Load_mode(load);
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);
@@ -1856,16 +1889,12 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 					if (rel != ir_no_alias)
 						break;
 				}
-				/* only pure Calls are allowed here, so ignore them */
+				/* only Phis and pure Calls are allowed here, so ignore them */
 			}
 			if (other == NULL) {
 				ldst_info_t *ninfo;
 				phi_entry   *pe;
 				dbg_info    *db;
-
-				/* for now, we cannot handle more than one input */
-				if (phi_list->next != NULL)
-					return;
 
 				/* yep, no aliasing Store found, Load can be moved */
 				DB((dbg, LEVEL_1, "  Found a Load that could be moved: %+F\n", load));
@@ -1877,16 +1906,26 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 					ir_node *blk  = get_nodes_block(phi);
 					ir_node *pred = get_Block_cfgpred_block(blk, pos);
 					ir_node *irn, *mem;
+					avail_entry_t entry, *res;
 
-					pe->load = irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
+					entry.ptr  = ptr;
+					entry.mode = load_mode;
+					res = set_find(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
+					if (res != NULL) {
+						irn = res->load;
+					} else {
+						irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
+						entry.load = irn;
+						set_insert(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
+						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
+					}
+					pe->load = irn;
 					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(current_ir_graph, pred, irn, mode_M, pn_Load_M);
 					set_Phi_pred(phi, pos, mem);
 
 					ninfo->projs[pn_Load_res] = new_r_Proj(current_ir_graph, pred, irn, load_mode, pn_Load_res);
-
-					DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
 				}
 
 				/* now kill the old Load */
@@ -1897,6 +1936,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 			}
 		}
 	}
+	del_set(avail);
 }  /* move_loads_out_of_loops */
 
 /**
@@ -1919,13 +1959,12 @@ static void process_loop(scc *pscc, loop_env *env) {
 		next = e->next;
 		b = get_irn_ne(block, env);
 
-		if (header) {
+		if (header != NULL) {
 			if (h->POnum < b->POnum) {
 				header = block;
 				h      = b;
 			}
-		}
-		else {
+		} else {
 			header = block;
 			h      = b;
 		}
@@ -1980,10 +2019,12 @@ static void process_loop(scc *pscc, loop_env *env) {
 						/* not a memory loop */
 						goto fail;
 					}
-					if (! out_rc) {
+					if (out_rc == NULL) {
+						/* first region constant */
 						out_rc = pred;
 						++num_outside;
 					} else if (out_rc != pred) {
+						/* another region constant */
 						++num_outside;
 					}
 				}
@@ -2003,22 +2044,20 @@ static void process_loop(scc *pscc, loop_env *env) {
 		for (irn = pscc->head; irn; irn = next) {
 			node_entry *e = get_irn_ne(irn, env);
 			next = e->next;
-			e->header = NULL;
 			exchange(irn, out_rc);
 		}
 		env->changes |= DF_CHANGED;
 		return;
 	}
 
-	/* set the header for every node in this scc */
+#ifdef DEBUG_libfirm
 	for (irn = pscc->head; irn; irn = next) {
 		node_entry *e = get_irn_ne(irn, env);
-		e->header = header;
 		next = e->next;
 		DB((dbg, LEVEL_2, " %+F,", irn));
 	}
 	DB((dbg, LEVEL_2, "\n"));
-
+#endif
 	move_loads_out_of_loops(pscc, env);
 
 fail:
