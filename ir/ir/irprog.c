@@ -78,14 +78,16 @@ static ir_prog *new_incomplete_ir_prog(void)
 static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
 	int i;
 
+#define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
+
 	irp->name = new_id_from_str(module_name);
-	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(new_id_from_str("GlobalType"));
+	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
-		= new_type_struct(new_id_from_str("ThreadLocal"));
+		= new_type_struct(IDENT("ThreadLocal"));
 	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]
-		= new_type_struct(new_id_from_str("Constructors"));
+		= new_type_struct(IDENT("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
-		= new_type_struct(new_id_from_str("Destructors"));
+		= new_type_struct(IDENT("Destructors"));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
 	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
@@ -111,6 +113,7 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 
 	return irp;
+#undef IDENT
 }
 
 /* initializes ir_prog. Constructs only the basic lists. */
@@ -125,8 +128,8 @@ void init_irprog_2(void) {
 
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
-ir_prog *new_ir_prog(void) {
-	return complete_ir_prog(new_incomplete_ir_prog(), INITAL_PROG_NAME);
+ir_prog *new_ir_prog(const char *name) {
+	return complete_ir_prog(new_incomplete_ir_prog(), name);
 }
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
