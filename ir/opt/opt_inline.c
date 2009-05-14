@@ -861,10 +861,15 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 
 	mtp = get_entity_type(ent);
 	ctp = get_Call_type(call);
-	if (get_method_n_params(mtp) > get_method_n_params(ctp)) {
+	n_params = get_method_n_params(mtp);
+	n_res    = get_method_n_ress(mtp);
+	if (n_params > get_method_n_params(ctp)) {
 		/* this is a bad feature of C: without a prototype, we can
 		 * call a function with less parameters than needed. Currently
 		 * we don't support this, although we could use Unknown than. */
+		return 0;
+	}
+	if (n_res != get_method_n_ress(ctp)) {
 		return 0;
 	}
 
@@ -872,7 +877,6 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	 * It is implementation dependent what happens in that case.
 	 * We support inlining, if the bitsize of the types matches AND
 	 * the same arithmetic is used. */
-	n_params = get_method_n_params(mtp);
 	for (i = n_params - 1; i >= 0; --i) {
 		ir_type *param_tp = get_method_param_type(mtp, i);
 		ir_type *arg_tp   = get_method_param_type(ctp, i);
@@ -888,6 +892,22 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			if (get_mode_arithmetic(pmode) != get_mode_arithmetic(amode))
 				return 0;
 			/* otherwise we can simply "reinterpret" the bits */
+		}
+	}
+	for (i = n_res - 1; i >= 0; --i) {
+		ir_type *decl_res_tp = get_method_res_type(mtp, i);
+		ir_type *used_res_tp = get_method_res_type(ctp, i);
+
+		if (decl_res_tp != used_res_tp) {
+			ir_mode *decl_mode = get_type_mode(decl_res_tp);
+			ir_mode *used_mode = get_type_mode(used_res_tp);
+			if (decl_mode == NULL || used_mode == NULL)
+				return 0;
+			if (get_mode_size_bits(decl_mode) != get_mode_size_bits(used_mode))
+				return 0;
+			if (get_mode_arithmetic(decl_mode) != get_mode_arithmetic(used_mode))
+				return 0;
+			/* otherwise we can "reinterpret" the bits */
 		}
 	}
 
@@ -1115,11 +1135,18 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 	/* Now the real results */
 	if (n_res > 0) {
 		for (j = 0; j < n_res; j++) {
+			ir_type *res_type = get_method_res_type(ctp, j);
+			ir_mode *res_mode = get_type_mode(res_type);
 			n_ret = 0;
 			for (i = 0; i < arity; i++) {
 				ret = get_Block_cfgpred(end_bl, i);
 				if (is_Return(ret)) {
-					cf_pred[n_ret] = get_Return_res(ret, j);
+					ir_node *res = get_Return_res(ret, j);
+					if (get_irn_mode(res) != res_mode) {
+						ir_node *block = get_nodes_block(res);
+						res = new_r_Conv(irg, block, res, res_mode);
+					}
+					cf_pred[n_ret] = res;
 					n_ret++;
 				}
 			}
