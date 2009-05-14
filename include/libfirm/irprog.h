@@ -112,10 +112,8 @@ ir_prog *get_irp(void);
 /**
  * Creates a new ir_prog (a module or compilation unit),
  * returns it and sets irp with it.
- *
- * @param module_name  the name of this irp (module)
  */
-ir_prog *new_ir_prog(const char *name);
+ir_prog *new_ir_prog(void);
 
 /** frees all memory used by irp.  Types in type list and irgs in irg
  *  list must be freed by hand before. */

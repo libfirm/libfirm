@@ -79,13 +79,13 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
 	int i;
 
 	irp->name = new_id_from_str(module_name);
-	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
+	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(new_id_from_str("GlobalType"));
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
-		= new_type_struct(IDENT("ThreadLocal"));
+		= new_type_struct(new_id_from_str("ThreadLocal"));
 	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]
-		= new_type_struct(IDENT("Constructors"));
+		= new_type_struct(new_id_from_str("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
-		= new_type_struct(IDENT("Destructors"));
+		= new_type_struct(new_id_from_str("Destructors"));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
 	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
@@ -126,7 +126,7 @@ void init_irprog_2(void) {
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
 ir_prog *new_ir_prog(void) {
-	return complete_ir_prog(new_incomplete_ir_prog());
+	return complete_ir_prog(new_incomplete_ir_prog(), INITAL_PROG_NAME);
 }
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
