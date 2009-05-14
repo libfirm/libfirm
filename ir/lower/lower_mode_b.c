@@ -114,9 +114,6 @@ static ir_node *create_set(ir_node *node)
 	tarval   *tv_zero = get_tarval_null(mode);
 	ir_node  *zero    = new_d_Const(dbgi, tv_zero);
 
-	/* ensure no optimisation touches muxes anymore */
-	set_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX);
-
 	ir_node *set      = new_rd_Mux(dbgi, irg, block, node, zero, one, mode);
 
 	if (mode != config.lowered_mode) {
@@ -407,6 +404,9 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 {
 	config        = *nconfig;
 	lowered_nodes = new_pdeq();
+
+	/* ensure no optimisation touches muxes anymore */
+	set_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
