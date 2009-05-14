@@ -370,7 +370,7 @@ void copystat_dump(ir_graph *irg) {
 	char buf[1024];
 	FILE *out;
 
-	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	snprintf(buf, sizeof(buf), "%s__%s", get_irp_name(), get_entity_name(get_irg_entity(irg)));
 	buf[sizeof(buf) - 1] = '\0';
 	out = be_ffopen(buf, "stat", "wt");
 
@@ -394,7 +394,7 @@ void copystat_dump_pretty(ir_graph *irg) {
 	char buf[1024];
 	FILE *out;
 
-	snprintf(buf, sizeof(buf), "%s__%s", get_irp_prog_name(), get_entity_name(get_irg_entity(irg)));
+	snprintf(buf, sizeof(buf), "%s__%s", get_irp_name(), get_entity_name(get_irg_entity(irg)));
 	buf[sizeof(buf) - 1] = '\0';
 	out = be_ffopen(buf, "pstat", "wt");
 

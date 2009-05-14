@@ -65,31 +65,29 @@ typedef enum ir_segment_t {
 } ir_segment_t;
 
 /**
- * Datastructure that holds central information about a program
- *
- * Preliminary documentation ;-)
+ * Data structure that holds central information about a program
+ * or a module.
+ * One irp is created by libFirm on construction, so irp should never be NULL.
  *
  * - main_irg:  The ir graph that is the entry point to the program.
- *              (Anything not reachable from here may be optimized away.
- *              If we want to translate libraries or the like correctly
- *              we must replace this by a list.)
- * - irg:       List of all ir graphs in the program.
+ *              (Anything not reachable from here may be optimized away
+ *              if this irp represents a whole program.
+ * - irg:       List of all ir graphs in the program or module.
  * - type:      A list containing all types known to the translated program.
  *              Some types can have several entries in this list (as a result of
  *              using exchange_types()).
- * - glob_type: The unique global type that is owner of all global entities.
- *
+ * - glob_type: The unique global type that is owner of all global entities
+ *              of this module.
  */
 typedef struct ir_prog ir_prog;
 
 /**
- * A variable from where everything in the ir can be accessed.
- * This variable contains the irp, the "immediate representation program".
+ * A variable pointing to the current irp (program or module).
  * This variable should be considered constant. Moreover, one should use get_irp()
  * to get access the the irp.
  *
  * @note
- * 	Think of the irp as the "handle" of libFirm.
+ * 	Think of the irp as the "handle" of a program.
  */
 extern ir_prog *irp;
 
@@ -104,15 +102,20 @@ ir_resources_t irp_resources_reserved(const ir_prog *irp);
 #endif
 
 /**
- * Returns the access points from where everything in the ir can be accessed.
+ * Returns the current irp from where everything in the current module
+ * can be accessed.
  *
  * @see irp
  */
 ir_prog *get_irp(void);
 
-/** Creates a new ir_prog, returns it and sets irp with it.
- *  Automatically called by init_firm() through init_irprog. */
-ir_prog *new_ir_prog(void);
+/**
+ * Creates a new ir_prog (a module or compilation unit),
+ * returns it and sets irp with it.
+ *
+ * @param module_name  the name of this irp (module)
+ */
+ir_prog *new_ir_prog(const char *name);
 
 /** frees all memory used by irp.  Types in type list and irgs in irg
  *  list must be freed by hand before. */
@@ -125,13 +128,11 @@ void set_irp_prog_name(ident *name);
 /** Returns true if the user ever set a program name */
 int irp_prog_name_is_set(void);
 
-/** Gets the file name / executable name or the like.
- */
-ident *get_irp_prog_ident(void);
+/** Gets the name of the current irp. */
+ident *get_irp_ident(void);
 
-/** Gets the file name / executable name or the like.
- */
-const char *get_irp_prog_name (void);
+/** Gets the name of the current irp. */
+const char *get_irp_name(void);
 
 /** Gets the main routine of the compiled program. */
 ir_graph *get_irp_main_irg(void);
@@ -139,7 +140,7 @@ ir_graph *get_irp_main_irg(void);
 /** Sets the main routine of the compiled program. */
 void set_irp_main_irg(ir_graph *main_irg);
 
-/** Adds irg to the list of ir graphs in irp. */
+/** Adds irg to the list of ir graphs in the current irp. */
 void add_irp_irg(ir_graph *irg);
 
 /** Removes irg from the list of irgs and
@@ -169,7 +170,9 @@ int get_irp_n_allirgs(void);
 ir_graph *get_irp_allirg(int pos);
 
 /**
- * returns the type containing the entities for a segment
+ * Returns the type containing the entities for a segment.
+ *
+ * @param segment  the segment
  */
 ir_type *get_segment_type(ir_segment_t segment);
 
@@ -225,7 +228,7 @@ ir_op *get_irp_opcode(int pos);
 void clear_irp_opcodes_generic_func(void);
 
 
-/**  Return the graph for global constants.
+/**  Return the graph for global constants of the current irp.
  *
  *   Returns an irgraph that only contains constant expressions for
  *   constant entities.  Do not use any access function for this

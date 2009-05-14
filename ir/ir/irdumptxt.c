@@ -1384,7 +1384,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 	FILE *F, *CSV = NULL;
 	int i, n_types = get_irp_n_types();
 
-	basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextTypes";
+	basename = irp_prog_name_is_set() ? get_irp_name() : "TextTypes";
 	F = text_open(basename, suffix, "-types", ".txt");
 
 	if (verbosity & dump_verbosity_csv) {
@@ -1416,7 +1416,7 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix) {
 	ir_type *g = get_glob_type();
 	int i, n_mems = get_class_n_members(g);
 
-	basename = irp_prog_name_is_set() ? get_irp_prog_name() : "TextGlobals";
+	basename = irp_prog_name_is_set() ? get_irp_name() : "TextGlobals";
 	F = text_open (basename, suffix, "-globals", ".txt");
 
 	if (verbosity & dump_verbosity_csv) {

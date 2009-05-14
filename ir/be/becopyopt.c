@@ -198,7 +198,7 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 	co->cls       = chordal_env->cls;
 	co->get_costs = get_costs;
 
-	s1 = get_irp_prog_name();
+	s1 = get_irp_name();
 	s2 = get_entity_name(get_irg_entity(co->irg));
 	s3 = chordal_env->cls->name;
 	len = strlen(s1) + strlen(s2) + strlen(s3) + 5;

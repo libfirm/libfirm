@@ -69,13 +69,16 @@ static ir_prog *new_incomplete_ir_prog(void)
 	return res;
 }
 
-/** Completes an incomplete irprog. */
-static ir_prog *complete_ir_prog(ir_prog *irp) {
+/**
+ * Completes an incomplete irprog.
+ *
+ * @param irp          the (yet incomplete) irp
+ * @param module_name  the (module) name for this irp
+ */
+static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
 	int i;
-#define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 
-	irp->name              = IDENT(INITAL_PROG_NAME);
-
+	irp->name = new_id_from_str(module_name);
 	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
 		= new_type_struct(IDENT("ThreadLocal"));
@@ -108,7 +111,6 @@ static ir_prog *complete_ir_prog(ir_prog *irp) {
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 
 	return irp;
-#undef IDENT
 }
 
 /* initializes ir_prog. Constructs only the basic lists. */
@@ -118,7 +120,7 @@ void init_irprog_1(void) {
 
 /* Completes ir_prog. */
 void init_irprog_2(void) {
-	complete_ir_prog(irp);
+	(void)complete_ir_prog(irp, INITAL_PROG_NAME);
 }
 
 /* Create a new ir prog. Automatically called by init_firm through
@@ -359,10 +361,10 @@ void   set_irp_prog_name(ident *name) {
 int irp_prog_name_is_set(void) {
 	return irp->name != new_id_from_str(INITAL_PROG_NAME);
 }
-ident *get_irp_prog_ident(void) {
+ident *get_irp_ident(void) {
 	return irp->name;
 }
-const char  *get_irp_prog_name(void) {
+const char  *get_irp_name(void) {
 	return get_id_str(irp->name);
 }
 
