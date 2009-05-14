@@ -30,6 +30,7 @@
 #include "ircons.h"
 #include "irprintf.h"
 #include "typerep.h"
+#include "bitset.h"
 
 #include "../betranshlp.h"
 #include "../beirg_t.h"
@@ -436,6 +437,18 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 	constraint->immediate_type        = immediate_type;
 }
 
+static bool can_match(const arch_register_req_t *in,
+                      const arch_register_req_t *out)
+{
+	if (in->cls != out->cls)
+		return false;
+	if ( (in->type & arch_register_req_type_limited) == 0
+		|| (out->type & arch_register_req_type_limited) == 0 )
+		return true;
+
+	return (*in->limited & *out->limited) != 0;
+}
+
 ir_node *gen_ASM(ir_node *node)
 {
 	ir_node                    *block = NULL;
@@ -633,6 +646,114 @@ ir_node *gen_ASM(ir_node *node)
 		req = parse_clobber(c);
 		out_reg_reqs[out_idx] = req;
 		++out_idx;
+	}
+
+	/* Attempt to make ASM node register pressure faithfull.
+	 * (This does not work for complicated cases yet!)
+	 *
+	 * Algorithm: Check if there are fewer inputs or outputs (I will call this
+	 * the smaller list). Then try to match each constraint of the smaller list
+	 * to 1 of the other list. If we can't match it, then we have to add a dummy
+	 * input/output to the other list
+	 *
+	 * FIXME: This is still broken in lots of cases. But at least better than
+	 *        before...
+	 * FIXME: need to do this per register class...
+	 */
+	if (out_arity <= arity) {
+		int       orig_arity = arity;
+		int       in_size    = arity;
+		int       o;
+		bitset_t *used_ins = bitset_alloca(arity);
+		for (o = 0; o < out_arity; ++o) {
+			int   i;
+			const arch_register_req_t *outreq = out_reg_reqs[o];
+
+			if (outreq->cls == NULL) {
+				continue;
+			}
+
+			for (i = 0; i < orig_arity; ++i) {
+				const arch_register_req_t *inreq;
+				if (bitset_is_set(used_ins, i))
+					continue;
+				inreq = in_reg_reqs[i];
+				if (!can_match(outreq, inreq))
+					continue;
+				bitset_set(used_ins, i);
+				break;
+			}
+			/* did we find any match? */
+			if (i < orig_arity)
+				continue;
+
+			/* we might need more space in the input arrays */
+			if (arity >= in_size) {
+				const arch_register_req_t **new_in_reg_reqs;
+				ir_node             **new_in;
+
+				in_size *= 2;
+				new_in_reg_reqs
+					= obstack_alloc(obst, in_size*sizeof(in_reg_reqs[0]));
+				memcpy(new_in_reg_reqs, in_reg_reqs, arity * sizeof(new_in_reg_reqs[0]));
+				new_in = ALLOCANZ(ir_node*, in_size);
+				memcpy(new_in, in, arity*sizeof(new_in[0]));
+
+				in_reg_reqs = new_in_reg_reqs;
+				in          = new_in;
+			}
+
+			/* add a new (dummy) input which occupies the register */
+			assert(outreq->type & arch_register_req_type_limited);
+			in_reg_reqs[arity] = outreq;
+			in[arity]          = new_bd_ia32_ProduceVal(NULL, block);
+			be_dep_on_frame(in[arity]);
+			++arity;
+		}
+	} else {
+		int       i;
+		bitset_t *used_outs = bitset_alloca(out_arity);
+		int       orig_out_arity = out_arity;
+		int       out_size       = out_arity;
+		for (i = 0; i < arity; ++i) {
+			int   o;
+			const arch_register_req_t *inreq = in_reg_reqs[i];
+
+			if (inreq->cls == NULL) {
+				continue;
+			}
+
+			for (o = 0; o < orig_out_arity; ++o) {
+				const arch_register_req_t *outreq;
+				if (bitset_is_set(used_outs, o))
+					continue;
+				outreq = out_reg_reqs[o];
+				if (!can_match(outreq, inreq))
+					continue;
+				bitset_set(used_outs, i);
+				break;
+			}
+			/* did we find any match? */
+			if (o < orig_out_arity)
+				continue;
+
+			/* we might need more space in the output arrays */
+			if (out_arity >= out_size) {
+				const arch_register_req_t **new_out_reg_reqs;
+
+				out_size *= 2;
+				new_out_reg_reqs
+					= obstack_alloc(obst, out_size*sizeof(out_reg_reqs[0]));
+				memcpy(new_out_reg_reqs, out_reg_reqs,
+				       out_arity * sizeof(new_out_reg_reqs[0]));
+				out_reg_reqs = new_out_reg_reqs;
+			}
+
+			/* add a new (dummy) output which occupies the register */
+			assert(inreq->type & arch_register_req_type_limited);
+			out_reg_reqs[out_arity] = inreq;
+			++out_arity;
+		}
 	}
 
 	new_node = new_bd_ia32_Asm(dbgi, new_block, arity, in, out_arity,
