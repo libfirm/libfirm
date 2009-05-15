@@ -53,12 +53,12 @@ FIRM_IMPL1(sched_prev, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_is_scheduled, int, const ir_node *)
 FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
 FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
-FIRM_IMPL2_VOID(sched_add_after, const ir_node *, const ir_node *)
-FIRM_IMPL2_VOID(sched_add_before, const ir_node *, const ir_node *)
-FIRM_IMPL1_VOID(sched_init_block, const ir_node *)
-FIRM_IMPL1_VOID(sched_reset, const ir_node *)
+FIRM_IMPL2_VOID(sched_add_after, ir_node *, ir_node *)
+FIRM_IMPL2_VOID(sched_add_before, ir_node *, ir_node *)
+FIRM_IMPL1_VOID(sched_init_block, ir_node *)
+FIRM_IMPL1_VOID(sched_remove, ir_node *)
+FIRM_IMPL1_VOID(sched_reset, ir_node *)
 FIRM_IMPL2(sched_comes_after, int, const ir_node *, const ir_node *)
-FIRM_IMPL1_VOID(sched_remove, const ir_node *)
 
 size_t sched_irn_data_offset = 0;
 

@@ -39,10 +39,9 @@ typedef unsigned int sched_timestep_t;
  * every block schedule list is the Block list.
  */
 typedef struct sched_info_t {
-	struct list_head list;         /**< The list head to list the nodes in a schedule. */
-	unsigned idx;                  /**< The node index of the nodes this schedule info belongs to. */
-	sched_timestep_t time_step;    /**< If a is after b in a schedule, its time step is larger than b's. */
-	unsigned scheduled : 1;        /**< 1, if the node is in the schedule of the block, 0 else. */
+	ir_node          *next;
+	ir_node          *prev;
+	sched_timestep_t  time_step;    /**< If a is after b in a schedule, its time step is larger than b's. */
 } sched_info_t;
 
 typedef struct reg_out_info_t {

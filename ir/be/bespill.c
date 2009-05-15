@@ -445,7 +445,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 		after = skip_keeps_phis(after);
 
 		spill->spill = be_spill(block, to_spill);
-		sched_add_after(after, spill->spill);
+		sched_add_after(skip_Proj(after), spill->spill);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 #ifdef FIRM_STATISTICS
 		env->spill_count++;

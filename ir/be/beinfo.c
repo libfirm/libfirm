@@ -46,9 +46,8 @@ void be_info_new_node(ir_node *node)
 	sinfo = &info->sched_info;
 
 	memset(info, 0, sizeof(*info));
-
-	sinfo->idx = get_irn_idx(node);
-	INIT_LIST_HEAD(&sinfo->list);
+	sinfo->next = NULL;
+	sinfo->prev = NULL;
 
 	if (is_Phi(node)) {
 		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);

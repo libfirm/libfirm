@@ -500,7 +500,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		if (first_push == NULL)
 			first_push = push;
 
-		sched_add_after(curr_sp, push);
+		sched_add_after(skip_Proj(curr_sp), push);
 
 		/* create stackpointer Proj */
 		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);

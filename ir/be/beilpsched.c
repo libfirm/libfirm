@@ -702,7 +702,7 @@ static inline void notified_sched_add_before(be_ilpsched_env_t *env,
 	const ir_node *before, const ir_node *irn, unsigned cycle)
 {
 	be_ilp_sched_node_scheduled(env->sel, irn, cycle, env->block_env);
-	sched_add_before(before, irn);
+	sched_add_before((ir_node*) before, (ir_node*) irn);
 }
 
 /**
@@ -754,15 +754,13 @@ static void add_to_sched(be_ilpsched_env_t *env, const ir_node *block, const ir_
 static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
-	sched_info_t          *info       = get_irn_sched_info(block);
 	be_ilpsched_irn_t     **sched_nodes;
 	unsigned              i, l;
 	ir_node               *cfop, *irn;
 	const ir_edge_t       *edge;
 
 	/* init block schedule list */
-	INIT_LIST_HEAD(&info->list);
-	info->scheduled = 1;
+	sched_init_block(block);
 
 	/* collect nodes and their scheduling time step */
 	sched_nodes = NEW_ARR_F(be_ilpsched_irn_t *, 0);

@@ -115,7 +115,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		set_ia32_ls_mode(spill, mode_Iu);
 		set_ia32_use_frame(spill);
 
-		sched_add_after(after, spill);
+		sched_add_after(skip_Proj(after), spill);
 	}
 
 	return spill;
