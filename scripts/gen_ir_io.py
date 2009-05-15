@@ -5,13 +5,21 @@ from jinja2.filters import do_dictsort
 from spec_util import is_dynamic_pinned, verify_node
 import ir_spec
 
+def error(msg):
+	"""writes an error message to stderr"""
+	sys.stderr.write("Error: " + msg + "\n");
+
+def warning(msg):
+	"""writes a warning message to stderr"""
+	sys.stderr.write("Warning: " + msg + "\n");
+
 def format_args(arglist):
 	#argstrings = map(lambda arg : arg["name"], arglist)
 	#return ", ".join(argstrings)
 	s = ", ".join(arglist)
 	if len(s) == 0:
-	  return "";
-	return ", " + s;
+	  return ""
+	return ", " + s
 
 def format_ifnset(string, node, key):
 	if key in node:
@@ -77,7 +85,7 @@ def get_io_type(type, attrname, nodename):
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
 	else:
-		print "UNKNOWN TYPE: %s" % type
+		error("cannot generate import/export for node %s: unsupported attribute type: %s" % (nodename, type))
 		importcmd = """// BAD: %s %s
 			%s %s = (%s) 0;""" % (type, attrname, type, attrname, type)
 		exportcmd = "// BAD: %s" % type
@@ -139,11 +147,11 @@ def preprocess_node(nodename, node):
 		prepare_attr(nodename, attr)
 		if "special" in attr:
 			if not "init" in attr:
-				print "Node type %s has an attribute with a \"special\" entry but without \"init\"" % nodename
+				warning("Node type %s has an attribute with a \"special\" entry but without \"init\"" % nodename)
 				sys.exit(1)
 
 			if attrs_with_special != 0:
-				print "Node type %s has more than one attribute with a \"special\" entry" % nodename
+				warning("Node type %s has more than one attribute with a \"special\" entry" % nodename)
 				sys.exit(1)
 
 			attrs_with_special += 1
@@ -153,7 +161,7 @@ def preprocess_node(nodename, node):
 			elif "suffix" in attr["special"]:
 				specialname = nodename + attr["special"]["suffix"]
 			else:
-				print "Unknown special constructor type for node type %s" %nodename
+				error("Unknown special constructor type for node type %s" % nodename)
 				sys.exit(1)
 
 			specialconstrs.append(
