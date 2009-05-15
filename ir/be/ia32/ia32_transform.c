@@ -1001,7 +1001,7 @@ static ir_node *get_fpcw(void)
 static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
                                     construct_binop_float_func *func)
 {
-	ir_mode             *mode  = get_irn_mode(node);
+	ir_mode             *mode = get_irn_mode(node);
 	dbg_info            *dbgi;
 	ir_node             *block, *new_block, *new_node;
 	ia32_address_mode_t  am;
@@ -1010,6 +1010,10 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	/* All operations are considered commutative, because there are reverse
 	 * variants */
 	match_flags_t        flags = match_commutative;
+
+	/* happens for div nodes... */
+	if (mode == mode_T)
+		mode = get_divop_resmod(node);
 
 	/* cannot use address mode with long double on x87 */
 	if (get_mode_size_bits(mode) <= 64)
