@@ -1,3 +1,13 @@
+====== libFirm 1.17.0 (2009-05-15) ======
+* bugfixes
+* advanced load/store optimisation which hoists loads out of loops
+* Internal restruturing: Alot of node structures are automatically generated
+   from a specification file now.
+* Add support for multiple calling conventions
+* New experimental support for reading and writing programgraphs to disk
+* Support and optimisations for trampolines
+* fix PIC support
+
 ====== libFirm 1.16.0 (2009-01-28) ======
 * bugfixes
 * support for builtin nodes
