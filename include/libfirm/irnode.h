@@ -621,9 +621,13 @@ typedef enum {
 } pn_Call;   /* Projection numbers for Call. */
 #define pn_Call_M pn_Call_M_regular
 
+/** Retrieve the memory input of a Call. */
 ir_node *get_Call_mem(const ir_node *node);
+/** Set the memory input of a Call. */
 void     set_Call_mem(ir_node *node, ir_node *mem);
+/** Retrieve the call address of a Call. */
 ir_node *get_Call_ptr(const ir_node *node);
+/** Set the call address of a Call. */
 void     set_Call_ptr(ir_node *node, ir_node *ptr);
 ir_node **get_Call_param_arr(ir_node *node);
 /** Gets the number of parameters of a call. */
@@ -697,9 +701,13 @@ void            set_Builtin_type(ir_node *node, ir_type *tp);
 /** Returns a human readable string for the ir_builtin_kind. */
 const char *get_builtin_kind_name(ir_builtin_kind kind);
 
+/** Retrieve the call address of a CallBegin. */
 ir_node  *get_CallBegin_ptr(const ir_node *node);
+/** Set the call address of a CallBegin. */
 void      set_CallBegin_ptr(ir_node *node, ir_node *ptr);
+/** Retrieve the original Call node of a CallBegin. */
 ir_node  *get_CallBegin_call(const ir_node *node);
+/** Set the original Call node of a CallBegin. */
 void      set_CallBegin_call(ir_node *node, ir_node *call);
 
 /* For unary and binary arithmetic operations the access to the
