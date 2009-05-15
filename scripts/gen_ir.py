@@ -411,9 +411,7 @@ def main(argv):
 	gendir = argv[2]
 
 	# List of TODOs
-	niymap = ["ASM", "CallBegin", "Const", "Const_type", "Const_long",
-		"defaultProj", "Dummy", "Phi", "simpleSel", "SymConst", "SymConst_type",
-		"Sync"]
+	niymap = [ "ASM", "Const", "defaultProj", "Phi", "SymConst", "Sync"]
 
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
 	for nodename, node in do_dictsort(nodes):

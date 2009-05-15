@@ -1962,7 +1962,7 @@ ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
  * @param *block  The block the node belong to.
  * @param *callee The call node visible in the intra procedural view.
  */
-ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *callee);
+ir_node *new_rd_CallBegin(dbg_info *db, ir_graph *irg, ir_node *block, ir_node *ptr, ir_node *call);
 
 /** Constructor for a EndReg node.
  *
@@ -2790,7 +2790,7 @@ ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
  * @param *block  The block the node belong to.
  * @param *callee The call node visible in the  intra procedural view.
  */
-ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *callee);
+ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *ptr, ir_node *call);
 
 /** Constructor for a EndReg node.
  *
@@ -3614,7 +3614,7 @@ ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
  * @param *db     A pointer for debug information.
  * @param *callee The call node visible in the  intra procedural view.
  */
-ir_node *new_d_CallBegin(dbg_info *db, ir_node *callee);
+ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
 
 /** Constructor for an EndReg node.
  *
@@ -4008,7 +4008,7 @@ ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
  *
  * @param   *callee A pointer to the called procedure.
  */
-ir_node *new_CallBegin(ir_node *callee);
+ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
 
 /** Constructor for a Add node.
  *

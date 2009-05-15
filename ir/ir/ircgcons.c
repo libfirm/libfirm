@@ -625,7 +625,7 @@ static void construct_call(ir_node * call) {
 	              get_Block_cfgpred_arr(post_block)); /* block vor dem Aufruf (mit CallBegin) */
   except_block = NULL;
   jmp = new_Break(); /* Sprung für intraprozedurale Darstellung (in	* pre_block) */
-  call_begin = new_CallBegin(call); /* (in pre_block) */
+  call_begin = new_CallBegin(get_Call_ptr(call), call); /* (in pre_block) */
   /* CallBegin might be entry to endless recursion. */
   add_End_keepalive(get_irg_end(get_irn_irg(pre_block)), pre_block);
 

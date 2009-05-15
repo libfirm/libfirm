@@ -276,10 +276,13 @@ CallBegin = dict(
 	pinned        = "yes",
 	# TODO: attribute with call...
 	attr_struct   = "callbegin_attr",
+	attrs         = [
+		dict(
+			type = "ir_node*",
+			name = "call"
+		)
+	],
 	java_noconstr = True,
-	init = '''
-	res->attr.callbegin.call = call;
-	''',
 ),
 
 Carry = dict(
