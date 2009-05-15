@@ -35,6 +35,7 @@ libfirminclude_HEADERS = \
 	irgraph.h \
 	irgwalk.h \
 	irhooks.h \
+	irio.h \
 	irlivechk.h \
 	irloop.h \
 	irmemory.h \
@@ -78,8 +79,8 @@ libfirminclude_adt_HEADERS = \
 	adt/impl.h \
 	adt/iterator.h \
 	adt/list.h \
-	adt/obst.h \
 	adt/obstack.h \
+	adt/obst.h \
 	adt/offset.h \
 	adt/pdeq.h \
 	adt/plist.h \
