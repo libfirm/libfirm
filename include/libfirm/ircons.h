@@ -2799,7 +2799,7 @@ ir_node *new_r_CallBegin(ir_graph *irg, ir_node *block, ir_node *ptr, ir_node *c
  * @param *irg    The IR graph the node belong to.
  * @param *block  The block the node belong to.
  */
-ir_node *new_r_EndReg (ir_graph *irg, ir_node *block);
+ir_node *new_r_EndReg(ir_graph *irg, ir_node *block);
 
 /** Constructor for a EndExcept node.
  *
