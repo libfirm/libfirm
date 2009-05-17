@@ -311,6 +311,7 @@ static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node) {
 	return fpa_attr;
 }
 
+#ifndef NDEBUG
 static int is_arm_CondJmp(const ir_node *node) {
 	int code = get_arm_irn_opcode(node);
 
@@ -318,6 +319,7 @@ static int is_arm_CondJmp(const ir_node *node) {
 	        code == iro_arm_fpaCnfBra || iro_arm_fpaCmfeBra ||
 	        code == iro_arm_fpaCnfeBra);
 }
+#endif
 
 /* Returns the attributes of a CondJmp node. */
 arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node) {

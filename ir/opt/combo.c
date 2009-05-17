@@ -352,6 +352,8 @@ static void check_all_partitions(environment_t *env) {
 			assert(leader != node && leader->part == node->part);
 		}
 	}
+#else
+	(void) env;
 #endif
 }
 
@@ -359,13 +361,19 @@ static void check_all_partitions(environment_t *env) {
  * Check list.
  */
 static void do_check_list(const node_t *list, int ofs, const partition_t *Z) {
-	const node_t *e;
 
+#ifndef NDEBUG
+	const node_t *e;
 #define NEXT(e)  *((const node_t **)((char *)(e) + (ofs)))
 	for (e = list; e != NULL; e = NEXT(e)) {
 		assert(e->part == Z);
 	}
 #undef NEXT
+#else
+	(void) list;
+	(void) ofs;
+	(void) Z;
+#endif
 }  /* ido_check_list */
 
 /**

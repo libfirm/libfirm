@@ -203,12 +203,12 @@ static int firm_emit(lc_appendable_t *app,
 		for (i = 0; i < n; ++i) {
 			ent = get_compound_graph_path_node(X, i);
 
-			strncat(buf, ".", sizeof(buf));
-			strncat(buf, get_entity_name(ent), sizeof(buf));
+			strncat(buf, ".", sizeof(buf)-1);
+			strncat(buf, get_entity_name(ent), sizeof(buf)-1);
 			if (is_Array_type(get_entity_owner(ent))) {
 				snprintf(add, sizeof(add), "[%d]",
 					get_compound_graph_path_array_index(X, i));
-				strncat(buf, add, sizeof(buf));
+				strncat(buf, add, sizeof(buf)-1);
 			}
 		}
 		add[0] = '\0';
@@ -225,7 +225,7 @@ static int firm_emit(lc_appendable_t *app,
 	}
 
 	if (occ->flag_plus)
-		strncat(buf, add, sizeof(buf));
+		strncat(buf, add, sizeof(buf)-1);
 
 	return lc_arg_append(app, occ, buf, strlen(buf));
 

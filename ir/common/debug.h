@@ -154,17 +154,17 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 /* DEBUG OUTPUT IS COMPLETELY DISABLED */
 
-#define DBG(x)
-#define DB(x)
+#define DBG(x)   (void)0
+#define DB(x)    (void)0
 
 /** create a debug handle in release mode */
-#define FIRM_DBG_REGISTER(handle, name)
+#define FIRM_DBG_REGISTER(handle, name)  (void)0
 #define DEBUG_ONLY(code)
 #define RELEASE_ONLY(code) code
 
-#define firm_dbg_set_mask(module, mask)
-#define firm_dbg_get_mask(module)
-#define firm_dbg_set_file(module, file)
+#define firm_dbg_set_mask(module, mask)  (void)0
+#define firm_dbg_get_mask(module)        (void)0
+#define firm_dbg_set_file(module, file)  (void)0
 
 #endif /* DEBUG_libfirm */
 

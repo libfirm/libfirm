@@ -533,8 +533,8 @@ void ir_reserve_resources(ir_graph *irg, ir_resources_t resources);
 void ir_free_resources(ir_graph *irg, ir_resources_t resources);
 ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #else
-#define ir_reserve_resources(irg,resources)
-#define ir_free_resources(irg,resources)
+#define ir_reserve_resources(irg,resources)  (void)0
+#define ir_free_resources(irg,resources)     (void)0
 #define ir_resources_reserved(irg)           0
 #endif
 

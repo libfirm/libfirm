@@ -260,6 +260,7 @@ static int rta_fill_incremental(void)
 	return n_runs;
 }
 
+#ifdef DEBUG_libfirm
 /**
  * Count the number of graphs that we have found to be live.
  */
@@ -277,6 +278,7 @@ static int stats(void)
 
 	return n_live_graphs;
 }
+#endif
 
 /* remove a graph, part I */
 /*

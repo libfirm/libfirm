@@ -102,11 +102,13 @@ static spill_env_t                 *senv;
 static size_t                       n_regs;
 static size_t                       max_register_pressure;
 static bool                         tentative_mode;
-static bool                         should_have_reached_fixpoint;
 static bool                         do_push_unused_livethroughs;
 /** Execution frequency for the current graph. */
 static ir_exec_freq                *exec_freq;
 static ir_visited_t                 worklist_visited;
+#ifdef DEBUG_LIBFIRM
+static bool                         should_have_reached_fixpoint;
+#endif
 
 static worklist_t *new_worklist(void)
 {
@@ -556,7 +558,7 @@ static bool fill_start_worklist(worklist_t *new_worklist, ir_node *block)
 	double           best_execfreq   = -1;
 	worklist_t      *best_worklist   = NULL;
 	ir_node         *best_succ_block = NULL;
-	int              best_pos;
+	int              best_pos        = -1;
 	const ir_edge_t *edge;
 
 	/* construct worklist */

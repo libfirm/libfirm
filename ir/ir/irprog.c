@@ -322,7 +322,7 @@ void add_irp_opcode(ir_op *opcode) {
 	assert(irp);
 	len  = ARR_LEN(irp->opcodes);
 	code = opcode->code;
-	if (code >= len) {
+	if ((int) code >= len) {
 		ARR_RESIZE(ir_op*, irp->opcodes, code+1);
 		memset(&irp->opcodes[len], 0, (code-len+1) * sizeof(irp->opcodes[0]));
 	}

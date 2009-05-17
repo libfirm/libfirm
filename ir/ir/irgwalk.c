@@ -119,7 +119,6 @@ static void irg_walk_cg(ir_node * node, ir_visited_t visited,
 
 	current_ir_graph = rem;
 }
-#endif
 
 /**
  * Insert all ir_graphs in irg_set, that are (transitive) reachable.
@@ -137,6 +136,7 @@ static void collect_irgs(ir_node * node, pset_new_t *irg_set) {
 		}
 	}
 }
+#endif
 
 /**
  * specialized version of irg_walk_2, called if only pre callback exists

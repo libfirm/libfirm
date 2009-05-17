@@ -217,9 +217,9 @@ void dump_irg_grgen(ir_graph *irg, char *suffix)
 {
   char filename[100] = "";
 
-  strncat(filename, get_entity_name(get_irg_entity(irg)), 100);
-  strncat(filename, suffix, 100);
-  strncat(filename, ".grg", 100);
+  strncat(filename, get_entity_name(get_irg_entity(irg)), sizeof(filename)-1);
+  strncat(filename, suffix, sizeof(filename)-1);
+  strncat(filename, ".grg", sizeof(filename)-1);
 
   dump_irg_grgen_file(irg, filename, 0);
 }

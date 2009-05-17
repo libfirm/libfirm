@@ -2030,7 +2030,9 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
  * Dumps a new style initializer.
  */
 static void dump_entity_initializer(FILE *F, const ir_entity *ent) {
-
+	/* TODO */
+	(void) F;
+	(void) ent;
 }
 
 /** Dumps a type or entity and it's edges. */
