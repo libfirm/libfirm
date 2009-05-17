@@ -106,7 +106,7 @@ static bool                         do_push_unused_livethroughs;
 /** Execution frequency for the current graph. */
 static ir_exec_freq                *exec_freq;
 static ir_visited_t                 worklist_visited;
-#ifdef DEBUG_LIBFIRM
+#ifdef DEBUG_libfirm
 static bool                         should_have_reached_fixpoint;
 #endif
 
