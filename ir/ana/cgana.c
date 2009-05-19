@@ -405,9 +405,6 @@ static void free_mark(ir_node *node, eset * set) {
 			if (is_method_entity(ent)) {
 				eset_insert(set, ent);
 			}
-		} else {
-			assert(get_SymConst_kind(node) == symconst_addr_name);
-			/* nothing: SymConst points to extern method */
 		}
 		break;
 
