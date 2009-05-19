@@ -674,7 +674,7 @@ int scalar_replacement_opt(ir_graph *irg) {
 	ir_mode   **modes;
 	set       *set_ent;
 	pset      *sels;
-	ir_type   *ent_type;
+	ir_type   *ent_type, *frame_tp;
 	ir_graph  *rem;
 	int       res = 0;
 
@@ -697,16 +697,22 @@ int scalar_replacement_opt(ir_graph *irg) {
 
 		/* Insert in set the scalar replacements. */
 		irg_frame = get_irg_frame(irg);
-		nvals = 0;
-		modes = NEW_ARR_F(ir_mode *, 16);
-		set_ent = new_set(ent_cmp, 8);
-		sels    = pset_new_ptr(8);
+		nvals     = 0;
+		modes     = NEW_ARR_F(ir_mode *, 16);
+		set_ent   = new_set(ent_cmp, 8);
+		sels      = pset_new_ptr(8);
+		frame_tp  = get_irg_frame_type(irg);
 
 		for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
 			ir_node *succ = get_irn_out(irg_frame, i);
 
 			if (is_Sel(succ)) {
 				ir_entity *ent = get_Sel_entity(succ);
+
+				/* we are only interested in entities on the frame, NOT
+				   on the value type */
+				if (get_entity_owner(ent) != frame_tp)
+					continue;
 
 				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
 					continue;
