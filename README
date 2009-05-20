@@ -54,8 +54,7 @@ some unfinished backends for MIPS, ARM, PPC32.
 
 2. Building and Installation
 
-These are instruction for the gcc compiler on unix variants or cygwin. You need
-to have the libcore library and pkg-config installed.
+These are instruction for the gcc compiler on unix variants or cygwin.
 
  1. Change into the directory containing libfirms source
 
