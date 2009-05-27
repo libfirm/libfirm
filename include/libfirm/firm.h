@@ -113,7 +113,6 @@ extern "C" {
 
 #include "dbginfo.h"       /* debug support */
 #include "seqnumbers.h"    /* debug support */
-#include "firm_ycomp.h"    /* ycomp debugging support */
 
 #include "irdump.h"
 #include "irio.h"
