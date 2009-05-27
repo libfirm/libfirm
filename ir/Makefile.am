@@ -22,6 +22,7 @@ INCLUDES += \
 	-I$(top_srcdir)/ir/tr \
 	-I$(top_srcdir)/ir/tv
 
+libfirm_la_LDFLAGS = -no-undefined
 libfirm_la_SOURCES = \
 	adt/array.c \
 	adt/bipartite.c \

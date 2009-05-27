@@ -26,6 +26,9 @@ AC_DEFINE([libfirm_VERSION_MAJOR], [firm_major_version], [Firms major version nu
 AC_DEFINE([libfirm_VERSION_MINOR], [firm_minor_version], [Firms minor version number])
 AC_DEFINE([libfirm_VERSION_MICRO], [firm_micro_version], [Firms micro version number])
 
+dnl enable libtool
+LT_INIT([win32-dll])
+
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
 
@@ -106,7 +109,6 @@ dnl ====================
 dnl check for a C compiler
 dnl ----------------------
 AC_PROG_CC
-AC_PROG_LIBTOOL
 
 AC_PATH_PROGS(PERL, perl perl5)
 
