@@ -1121,12 +1121,12 @@ static int cmp_call_dependency(const void *c1, const void *c2)
  */
 static void link_ops_in_block_walker(ir_node *irn, void *data)
 {
-	ir_opcode code = get_irn_opcode(irn);
+	be_abi_irg_t *env  = data;
+	ir_opcode     code = get_irn_opcode(irn);
 
 	if (code == iro_Call ||
 	   (code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
 	   (code == iro_Free && get_Free_where(irn) == stack_alloc)) {
-		be_abi_irg_t *env = data;
 		ir_node *bl       = get_nodes_block(irn);
 		void *save        = get_irn_link(bl);
 
@@ -1135,6 +1135,16 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
 
 		set_irn_link(irn, save);
 		set_irn_link(bl, irn);
+	}
+
+	if (code == iro_Builtin && get_Builtin_kind(irn) == ir_bk_return_address) {
+		ir_node       *param = get_Builtin_param(irn, 0);
+		tarval        *tv    = get_Const_tarval(param);
+		unsigned long  value = get_tarval_long(tv);
+		/* use ebp, so the climbframe algo works... */
+		if (value > 0) {
+			env->call->flags.bits.try_omit_fp = 0;
+		}
 	}
 }
 
