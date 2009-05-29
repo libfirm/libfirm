@@ -2820,7 +2820,6 @@ static ir_node *transform_node_Div(ir_node *n) {
 	ir_node *a = get_Div_left(n);
 	ir_node *b = get_Div_right(n);
 	ir_node *value;
-	tarval  *tv;
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
@@ -2848,36 +2847,26 @@ static ir_node *transform_node_Div(ir_node *n) {
 	}
 
 	value = n;
-	tv = value_of(n);
-	if (tv != tarval_bad) {
-		value = new_Const(tv);
 
+	const ir_node *dummy;
+	if (a == b && value_not_zero(a, &dummy)) {
+		/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
+		value = new_Const(get_mode_one(mode));
 		DBG_OPT_CSTEVAL(n, value);
 		goto make_tuple;
 	} else {
-		ir_node       *a = get_Div_left(n);
-		ir_node       *b = get_Div_right(n);
-		const ir_node *dummy;
+		if (mode_is_signed(mode) && is_Const(b)) {
+			tarval *tv = get_Const_tarval(b);
 
-		if (a == b && value_not_zero(a, &dummy)) {
-			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
-			value = new_Const(get_mode_one(mode));
-			DBG_OPT_CSTEVAL(n, value);
-			goto make_tuple;
-		} else {
-			if (mode_is_signed(mode) && is_Const(b)) {
-				tarval *tv = get_Const_tarval(b);
-
-				if (tv == get_mode_minus_one(mode)) {
-					/* a / -1 */
-					value = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, mode);
-					DBG_OPT_CSTEVAL(n, value);
-					goto make_tuple;
-				}
+			if (tv == get_mode_minus_one(mode)) {
+				/* a / -1 */
+				value = new_rd_Minus(get_irn_dbg_info(n), current_ir_graph, get_nodes_block(n), a, mode);
+				DBG_OPT_CSTEVAL(n, value);
+				goto make_tuple;
 			}
-			/* Try architecture dependent optimization */
-			value = arch_dep_replace_div_by_const(n);
 		}
+		/* Try architecture dependent optimization */
+		value = arch_dep_replace_div_by_const(n);
 	}
 
 	if (value != n) {
