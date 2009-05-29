@@ -205,6 +205,24 @@ int i_mapper_abs(ir_node *call, void *ctx) {
 	return 1;
 }  /* i_mapper_abs */
 
+/* A mapper for the integer bswap. */
+int i_mapper_bswap(ir_node *call, void *ctx) {
+	ir_node *mem   = get_Call_mem(call);
+	ir_node *block = get_nodes_block(call);
+	ir_node *op    = get_Call_param(call, 0);
+	ir_type *tp    = get_Call_type(call);
+	dbg_info *dbg  = get_irn_dbg_info(call);
+	ir_node *irn;
+	(void) ctx;
+
+	irn = new_rd_Builtin(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
+	set_irn_pinned(irn, op_pin_state_floats);
+	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ABS);
+	irn = new_r_Proj(current_ir_graph, block, irn, get_irn_mode(op), pn_Builtin_1_result);
+	replace_call(irn, call, mem, NULL, NULL);
+	return 1;
+}  /* i_mapper_bswap */
+
 /* A mapper for the alloca() function. */
 int i_mapper_alloca(ir_node *call, void *ctx) {
 	ir_node *mem   = get_Call_mem(call);

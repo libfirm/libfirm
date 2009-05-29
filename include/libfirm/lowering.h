@@ -319,6 +319,14 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
 int i_mapper_abs(ir_node *call, void *ctx);
 
 /**
+ * A mapper for the integer byte swap value: type bswap(type v).
+ * Replaces the call by a builtin[ir_bk_bswap] node.
+ *
+ * @return always 1
+ */
+int i_mapper_bswap(ir_node *call, void *ctx);
+
+/**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the sqrt call was removed, 0 else.
