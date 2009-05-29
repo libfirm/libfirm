@@ -107,6 +107,4 @@ get_node_verification_mode(void) {
 #define get_opt_optimize_class_casts()           _get_opt_optimize_class_casts()
 #define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()
 
-extern void firm_init_flags(void);
-
 #endif
