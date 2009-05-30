@@ -1443,6 +1443,7 @@ static unsigned optimize_store(ir_node *store) {
 	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
 		ldst_info_t *info = get_irn_link(store);
 		if (info->projs[pn_Store_X_except] == NULL) {
+			DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", store, entity));
 			exchange(info->projs[pn_Store_M], get_Store_mem(store));
 			kill_node(store);
 			reduce_adr_usage(ptr);
@@ -1796,6 +1797,8 @@ typedef struct avail_entry_t {
  * Compare two avail entries.
  */
 static int cmp_avail_entry(const void *elt, const void *key, size_t size) {
+	(void) size;
+
 	const avail_entry_t *a = elt;
 	const avail_entry_t *b = key;
 
