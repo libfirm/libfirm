@@ -1325,6 +1325,8 @@ void remove_phi_cycles(ir_graph *irg) {
  * Post-walker: fix Add and Sub nodes that where results of I<->P conversions.
  */
 static void fix_adds_and_subs(ir_node *irn, void *ctx) {
+	(void) ctx;
+
 	if (is_Add(irn)) {
 		ir_mode *mode = get_irn_mode(irn);
 
@@ -1433,7 +1435,8 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 			irg_walk_graph(irg, NULL, fix_adds_and_subs, &env);
 
 		/* try linear function test replacements */
-		lftr(irg, &env);
+		//lftr(irg, &env); // currently buggy :-(
+		(void)lftr;
 
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
