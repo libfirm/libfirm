@@ -644,7 +644,7 @@ static int check_users_for_reg_pressure(ir_node *iv, iv_env *env) {
 	 *
 	 * For now our capabilities for doing linear function test
 	 * are limited, so check if the iv has the right form: Only ONE
-	 * phi, only one Add/Sub with a Const
+	 * Phi, only one Add/Sub with a Const.
 	 */
 	if (! is_counter_iv(iv, env))
 		return 0;
@@ -1059,26 +1059,6 @@ static void assign_po(ir_node *block, void *ctx) {
 }  /* assign_po */
 
 /**
- * Follows the LFTR edges and return the last node in the chain.
- *
- * @param irn  the node that should be followed
- * @param env  the IV environment
- *
- * @note
- * In the current implementation only the last edge is stored, so
- * only one chain exists. That's why we might miss some opportunities.
- */
-static ir_node *followEdges(ir_node *irn, iv_env *env) {
-	for (;;) {
-		LFTR_edge *e = LFTR_find(irn, env);
-		if (e)
-			irn = e->dst;
-		else
-			return irn;
-	}
-}  /* followEdges */
-
-/**
  * Apply one LFTR edge operation.
  * Return NULL if the transformation cannot be done safely without
  * an Overflow.
@@ -1108,6 +1088,11 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 
 		/* overflow can only be decided for Consts */
 		if (! is_Const(e->rc)) {
+			if (e->code == iro_Add && mode_is_reference(get_irn_mode(e->rc))) {
+				/* However we allow ONE Pointer Add, as pointer arithmetic with wrap
+				   around is undefined anyway */
+				return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->rc));
+			}
 			DB((dbg, LEVEL_4, " = UNKNOWN (%+F)", e->rc));
 			return NULL;
 		}
@@ -1165,7 +1150,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 		}
 		return new_Const(tv);
 	}
-	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(rc));
+	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->dst));
 }  /* applyOneEdge */
 
 /**
@@ -1174,14 +1159,16 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
  * Return NULL if the transformation cannot be done safely without
  * an Overflow.
  *
- * @param iv   the IV node that starts the LFTR edge chain
+ * @param pIV  points to the IV node that starts the LFTR edge chain
+ *             after translation points to the new IV
  * @param rc   the region constant that should be translated
  * @param env  the IV environment
  *
  * @return the translated region constant or NULL
  *         if the translation was not possible
  */
-static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
+static ir_node *applyEdges(ir_node **pIV, ir_node *rc, iv_env *env) {
+	ir_node *iv = *pIV;
 	if (env->osr_flags & osr_flag_lftr_with_ov_check) {
 		/* overflow can only be decided for Consts */
 		if (! is_counter_iv(iv, env)) {
@@ -1197,14 +1184,14 @@ static ir_node *applyEdges(ir_node *iv, ir_node *rc, iv_env *env) {
 
 	for (; rc;) {
 		LFTR_edge *e = LFTR_find(iv, env);
-		if (e) {
+		if (e != NULL) {
 			rc = applyOneEdge(iv, rc, e, env);
 			iv = e->dst;
-		}
-		else
+		} else
 			break;
 	}
 	DB((dbg, LEVEL_3, "\n"));
+	*pIV = iv;
 	return rc;
 }  /* applyEdges */
 
@@ -1229,18 +1216,14 @@ static void do_lftr(ir_node *cmp, void *ctx) {
 	if (liv && is_rc(right, liv)) {
 		iv = left; rc = right;
 
-		nright = applyEdges(iv, rc, env);
-		if (nright && nright != rc) {
-			nleft = followEdges(iv, env);
-		}
+		nright = applyEdges(&iv, rc, env);
+		nleft  = iv;
 	}
 	else if (riv && is_rc(left, riv)) {
 		iv = right; rc = left;
 
-		nleft = applyEdges(iv, rc, env);
-		if (nleft && nleft != rc) {
-			nright = followEdges(iv, env);
-		}
+		nleft  = applyEdges(&iv, rc, env);
+		nright = iv;
 	}
 
 	if (nleft && nright) {
@@ -1407,7 +1390,6 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
-	firm_dbg_set_mask(dbg, SET_LEVEL_4);
 
 	DB((dbg, LEVEL_1, "Doing Operator Strength Reduction for %+F\n", irg));
 
@@ -1447,12 +1429,11 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	do_dfs(irg, &env);
 
 	if (env.replaced) {
-		/* try linear function test replacements */
-		//lftr(irg, &env); // currently buggy :-(
-		(void) lftr;
-
 		if (env.need_postpass)
 			irg_walk_graph(irg, NULL, fix_adds_and_subs, &env);
+
+		/* try linear function test replacements */
+		lftr(irg, &env);
 
 		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
