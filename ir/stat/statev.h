@@ -55,22 +55,20 @@
 #include <stdio.h>
 #include "stat_timing.h"
 
-extern void               stat_ev_printf(char ev_type, const char *key, const char *fmt, ...);
+extern void           stat_ev_printf(char ev_type, const char *key, const char *fmt, ...);
 
-extern int                stat_ev_enabled;
-extern int                stat_ev_timer_sp;
-extern timing_ticks_t     stat_ev_timer_elapsed[];
-extern timing_ticks_t     stat_ev_timer_start[];
-extern timing_sched_env_t stat_ev_sched_rt;
-extern timing_sched_env_t stat_ev_sched_normal;
+extern int            stat_ev_enabled;
+extern int            stat_ev_timer_sp;
+extern timing_ticks_t stat_ev_timer_elapsed[];
+extern timing_ticks_t stat_ev_timer_start[];
 
 static inline __attribute__((unused)) void stat_ev_tim_push(void) {
 	timing_ticks_t temp;
 	int sp = stat_ev_timer_sp++;
 	timing_ticks(temp);
-	if (sp == 0)
-		timing_sched_set(&stat_ev_sched_rt);
-	else {
+	if (sp == 0) {
+		timing_enter_max_prio();
+	} else {
 		timing_ticks_sub(temp, stat_ev_timer_start[sp - 1]);
 		timing_ticks_add(stat_ev_timer_elapsed[sp - 1], temp);
 	}
@@ -87,10 +85,11 @@ static inline __attribute__((unused)) void stat_ev_tim_pop(const char *name) {
 	timing_ticks_add(stat_ev_timer_elapsed[sp], temp);
 	if (name != NULL && stat_ev_enabled)
 		stat_ev_printf('E', name, "%g", timing_ticks_dbl(stat_ev_timer_elapsed[sp]));
-	if (sp == 0)
-		timing_sched_set(&stat_ev_sched_normal);
-	else
+	if (sp == 0) {
+		timing_leave_max_prio();
+	} else {
 		timing_ticks(stat_ev_timer_start[sp - 1]);
+	}
 }
 
 #define stat_ev_ctx_push_fmt(key, fmt, value) \

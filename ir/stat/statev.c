@@ -63,12 +63,10 @@ static FILE*       stat_ev_file  = NULL;
 
 #endif /* FIRM_HAVE_LIBZ */
 
-int                stat_ev_enabled = 0;
-int                stat_ev_timer_sp = 0;
-timing_ticks_t     stat_ev_timer_elapsed[MAX_TIMER];
-timing_ticks_t     stat_ev_timer_start[MAX_TIMER];
-timing_sched_env_t stat_ev_sched_rt;
-timing_sched_env_t stat_ev_sched_normal;
+int            stat_ev_enabled = 0;
+int            stat_ev_timer_sp = 0;
+timing_ticks_t stat_ev_timer_elapsed[MAX_TIMER];
+timing_ticks_t stat_ev_timer_start[MAX_TIMER];
 
 #ifdef FIRM_HAVE_REGEX
 #include <regex.h>
@@ -139,8 +137,6 @@ void stat_ev_begin(const char *prefix, const char *filt)
 	}
 
 	stat_ev_enabled = stat_ev_file != NULL;
-	timing_sched_get(&stat_ev_sched_normal);
-	timing_sched_prepare_max_prio(&stat_ev_sched_rt);
 }
 
 void stat_ev_end(void)
