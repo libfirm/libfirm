@@ -822,6 +822,7 @@ ir_entity *create_Block_entity(ir_node *block) {
 		nr = get_irp_next_label_nr();
 		set_entity_label(entity, nr);
 		set_entity_compiler_generated(entity, 1);
+		set_entity_allocation(entity, allocation_static);
 
 		block->attr.block.entity = entity;
 	}

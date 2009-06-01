@@ -1139,6 +1139,9 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
 		return;
 	}
+	if (type == firm_code_type) {
+		return;
+	}
 
 	if (section != (be_gas_section_t) -1) {
 		emit_as_common = 0;

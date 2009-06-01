@@ -144,7 +144,6 @@ static void do_type_walk(type_or_ent tore,
 	case k_type:
 		mark_type_visited(tp);
 		switch (get_type_tpop_code(tp)) {
-
 		case tpo_class:
 			n_types = get_class_n_supertypes(tp);
 			for (i = 0; i < n_types; ++i) {
@@ -208,13 +207,15 @@ static void do_type_walk(type_or_ent tore,
 			do_type_walk(cont, pre, post, env);
 			break;
 
+		case tpo_code:
 		case tpo_primitive:
 		case tpo_id:
 		case tpo_none:
 		case tpo_unknown:
 			/* a leave. */
 			break;
-		default:
+		case tpo_uninitialized:
+		case tpo_max:
 			assert(0 && "Faulty type");
 			break;
 		}
