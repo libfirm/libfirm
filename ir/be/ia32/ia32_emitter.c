@@ -102,6 +102,9 @@ static int block_needs_label(const ir_node *block)
 	int need_label = 1;
 	int  n_cfgpreds = get_Block_n_cfgpreds(block);
 
+	if (has_Block_entity(block))
+		return 1;
+
 	if (n_cfgpreds == 0) {
 		need_label = 0;
 	} else if (n_cfgpreds == 1) {
@@ -277,11 +280,8 @@ void ia32_emit_source_register(const ir_node *node, int pos)
 
 static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 {
-	ident *id;
-
 	set_entity_backend_marked(entity, 1);
-	id = get_entity_ld_ident(entity);
-	be_emit_ident(id);
+	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
 		if (get_entity_visibility(entity) == visibility_external_allocated) {
@@ -497,9 +497,9 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
  */
 static void ia32_emit_block_name(const ir_node *block)
 {
-	if (has_Block_label(block)) {
-		be_emit_string(be_gas_block_label_prefix());
-		be_emit_irprintf("%lu", get_Block_label(block));
+	if (has_Block_entity(block)) {
+		ir_entity *entity = get_Block_entity(block);
+		be_gas_emit_entity(entity);
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);
 		be_emit_irprintf("%ld", get_irn_node_nr(block));
@@ -2058,7 +2058,7 @@ static void ia32_emit_block_header(ir_node *block)
 		}
 	}
 
-	if (need_label || has_Block_label(block)) {
+	if (need_label) {
 		ia32_emit_block_name(block);
 		be_emit_char(':');
 

@@ -225,7 +225,7 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
 	*changed |= remove_senseless_conds(block);
 
 	/* clear the block mark of all non labeled blocks */
-	if (has_Block_label(block))
+	if (has_Block_entity(block))
 		set_Block_non_removable(block);
 	else
 		set_Block_removable(block);
@@ -244,7 +244,7 @@ static void collect_nodes(ir_node *n, void *ctx) {
 
 	if (code == iro_Block) {
 		/* mark the block as non-removable if it is labeled */
-		if (has_Block_label(n))
+		if (has_Block_entity(n))
 			set_Block_non_removable(n);
 	} else {
 		ir_node *b = get_nodes_block(n);
@@ -562,7 +562,7 @@ static void optimize_blocks(ir_node *b, void *ctx) {
 			/* case 1: Do nothing */
 		} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 			/* case 2: It's an empty block and not yet visited. */
-			assert(get_Block_n_cfgpreds(b) > 1 || has_Block_label(b));
+			assert(get_Block_n_cfgpreds(b) > 1 || has_Block_entity(b));
 			/* Else it should be optimized by equivalent_node. */
 			for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
 				ir_node *pred_X = get_Block_cfgpred(pred, j);

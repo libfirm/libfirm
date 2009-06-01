@@ -146,6 +146,8 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 		res->value       = NULL;
 		res->attr.cmpd_attr.values    = NULL;
 		res->attr.cmpd_attr.val_paths = NULL;
+	} else if (is_code_type(type)) {
+		res->attr.code_attr.label = (ir_label_t) -1;
 	} else {
 		res->variability = variability_uninitialized;
 		res->value       = NULL;
@@ -533,6 +535,17 @@ const char *get_align_name(ir_align a)
 	}
 #undef X
 }  /* get_align_name */
+
+void
+set_entity_label(ir_entity *ent, ir_label_t label)
+{
+	ent->attr.code_attr.label = label;
+}
+
+ir_label_t get_entity_label(const ir_entity *ent)
+{
+	return ent->attr.code_attr.label;
+}
 
 ir_peculiarity
 (get_entity_peculiarity)(const ir_entity *ent) {

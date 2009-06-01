@@ -293,11 +293,15 @@ const char *be_gas_insn_label_prefix(void) {
 	return ".LE";
 }
 
-/**
- * Dump a label.
- */
-static void dump_label(ir_label_t label) {
-	be_emit_irprintf("%s%lu", be_gas_block_label_prefix(), label);
+void be_gas_emit_entity(ir_entity *entity)
+{
+	if (entity->type == firm_code_type) {
+		ir_label_t label = get_entity_label(entity);
+		be_emit_string(be_gas_block_label_prefix());
+		be_emit_irprintf("%lu", label);
+	} else {
+		be_emit_ident(get_entity_ld_ident(entity));
+	}
 }
 
 /**
@@ -339,9 +343,6 @@ static tarval *get_atomic_init_tv(ir_node *init)
 			case symconst_enum_const:
 				return get_enumeration_value(get_SymConst_enum(init));
 
-			case symconst_label:
-				return NULL;
-
 			default:
 				return NULL;
 			}
@@ -363,7 +364,6 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 	tarval *tv;
-	ir_label_t label;
 	ir_entity *ent;
 
 	init = skip_Id(init);
@@ -396,17 +396,11 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 				waitq_put(env->worklist, ent);
 				set_entity_backend_marked(ent, 1);
 			}
-			be_emit_ident(get_entity_ld_ident(ent));
+			be_gas_emit_entity(ent);
 			break;
 
 		case symconst_ofs_ent:
 			ent = get_SymConst_entity(init);
-#if 0       /* not needed, is it? */
-			if (!is_entity_backend_marked(ent)) {
-				waitq_put(env->worklist, ent);
-				set_entity_backend_marked(ent, 1);
-			}
-#endif
 			be_emit_irprintf("%d", get_entity_offset(ent));
 			break;
 
@@ -421,11 +415,6 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		case symconst_enum_const:
 			tv = get_enumeration_value(get_SymConst_enum(init));
 			dump_arith_tarval(tv, bytes);
-			break;
-
-		case symconst_label:
-			label = get_SymConst_label(init);
-			dump_label(label);
 			break;
 
 		default:

@@ -423,9 +423,9 @@ const char* mips_get_block_label(const ir_node* block)
  */
 static void mips_emit_block_label(const ir_node *block)
 {
-	if (has_Block_label(block)) {
-		be_emit_string(be_gas_block_label_prefix());
-		be_emit_irprintf("%lu", get_Block_label(block));
+	if (has_Block_entity(block)) {
+		ir_entity *entity = get_Block_entity(block);
+		be_gas_emit_entity(entity);
 	} else {
 		be_emit_cstring(BLOCK_PREFIX);
 		be_emit_irprintf("%ld", get_irn_node_nr(block));

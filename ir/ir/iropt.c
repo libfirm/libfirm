@@ -758,7 +758,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	int     n_preds;
 
 	/* don't optimize dead or labeled blocks */
-	if (is_Block_dead(n) || has_Block_label(n))
+	if (is_Block_dead(n) || has_Block_entity(n))
 		return n;
 
 	n_preds = get_Block_n_cfgpreds(n);
@@ -6759,13 +6759,8 @@ static unsigned hash_Const(const ir_node *node) {
 static unsigned hash_SymConst(const ir_node *node) {
 	unsigned h;
 
-	/* special value for const, as they only differ in their symbol. */
-	if (node->attr.symc.kind == symconst_label)
-		h = (unsigned)node->attr.symc.sym.label;
-	else {
-		/* all others are pointers */
-		h = HASH_PTR(node->attr.symc.sym.type_p);
-	}
+	/* all others are pointers */
+	h = HASH_PTR(node->attr.symc.sym.type_p);
 
 	return h;
 }  /* hash_SymConst */

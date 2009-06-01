@@ -117,6 +117,11 @@ typedef struct method_ent_attr {
 	                                    with a high weight are good candidates for procedure cloning. */
 } method_ent_attr;
 
+/** additional attributes for code entities */
+typedef struct code_ent_attr {
+	ir_label_t  label;       /** label of the basic block */
+} code_ent_attr;
+
 
 /**
  * An abstract data type to represent program entities.
@@ -173,6 +178,8 @@ struct ir_entity {
 		compound_ent_attr cmpd_attr;
 		/* ------------- fields for method entities ---------------- */
 		method_ent_attr   mtd_attr;
+		/* fields for code entities */
+		code_ent_attr     code_attr;
 		/* entity initializer */
 		ir_initializer_t *initializer;
 	} attr; /**< type specific attributes */

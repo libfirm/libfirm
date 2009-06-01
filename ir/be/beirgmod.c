@@ -184,7 +184,7 @@ static void remove_empty_block(ir_node *block)
 
 		assert(succ_block == NULL);
 		succ_block = get_edge_src_irn(edge);
-		if (has_Block_label(succ_block) && has_Block_label(block)) {
+		if (has_Block_entity(succ_block) && has_Block_entity(block)) {
 			/*
 			 * Currently we can add only one label for a block.
 			 * Therefore we cannot combine them if  both block already have one.
@@ -195,10 +195,10 @@ static void remove_empty_block(ir_node *block)
 		set_irn_n(succ_block, pos, pred);
 	}
 
-	if (has_Block_label(block)) {
+	if (has_Block_entity(block)) {
 		/* move the label to the successor block */
-		ir_label_t label = get_Block_label(block);
-		set_Block_label(succ_block, label);
+		ir_entity *entity = get_Block_entity(block);
+		set_Block_entity(succ_block, entity);
 	}
 
 	/* there can be some non-scheduled Pin nodes left in the block, move them

@@ -1284,7 +1284,6 @@ new_d_immBlock(dbg_info *db) {
 	res->attr.block.is_matured  = 0;
 	res->attr.block.is_dead     = 0;
 	res->attr.block.is_mb_head  = 1;
-	res->attr.block.has_label   = 0;
 	res->attr.block.irg         = current_ir_graph;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
@@ -1292,7 +1291,7 @@ new_d_immBlock(dbg_info *db) {
 	res->attr.block.extblk      = NULL;
 	res->attr.block.region      = NULL;
 	res->attr.block.mb_depth    = 0;
-	res->attr.block.label       = 0;
+	res->attr.block.entity      = NULL;
 
 	set_Block_block_visited(res, 0);
 

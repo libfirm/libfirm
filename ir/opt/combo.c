@@ -1922,7 +1922,7 @@ static void compute_Block(node_t *node) {
 	int     i;
 	ir_node *block = node->node;
 
-	if (block == get_irg_start_block(current_ir_graph) || has_Block_label(block)) {
+	if (block == get_irg_start_block(current_ir_graph) || has_Block_entity(block)) {
 		/* start block and labelled blocks are always reachable */
 		node->type.tv = tarval_reachable;
 		return;
@@ -2962,7 +2962,7 @@ static int only_one_reachable_proj(ir_node *n) {
  * @param block  the destination block
  */
 static int can_exchange(ir_node *pred, ir_node *block) {
-	if (is_Start(pred) || has_Block_label(block))
+	if (is_Start(pred) || has_Block_entity(block))
 		return 0;
 	else if (is_Jmp(pred))
 		return 1;

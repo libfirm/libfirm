@@ -808,20 +808,41 @@ ir_graph *get_Block_irg(const ir_node *block) {
 	return block->attr.block.irg;
 }
 
-int has_Block_label(const ir_node *block) {
+ir_entity *create_Block_entity(ir_node *block) {
+	ir_entity *entity;
 	assert(is_Block(block));
-	return block->attr.block.has_label;
+
+	entity = block->attr.block.entity;
+	if (entity == NULL) {
+		ir_label_t  nr;
+		ir_type   *glob;
+
+		glob = get_glob_type();
+		entity = new_entity(glob, id_unique("block_%u"), get_code_type());
+		nr = get_irp_next_label_nr();
+		set_entity_label(entity, nr);
+		set_entity_compiler_generated(entity, 1);
+
+		block->attr.block.entity = entity;
+	}
+	return entity;
 }
 
-ir_label_t get_Block_label(const ir_node *block) {
+ir_entity *get_Block_entity(const ir_node *block) {
 	assert(is_Block(block));
-	return block->attr.block.label;
+	return block->attr.block.entity;
 }
 
-void set_Block_label(ir_node *block, ir_label_t label) {
+void set_Block_entity(ir_node *block, ir_entity *entity)
+{
 	assert(is_Block(block));
-	block->attr.block.has_label = 1;
-	block->attr.block.label = label;
+	assert(get_entity_type(entity) == get_code_type());
+	block->attr.block.entity = entity;
+}
+
+int has_Block_entity(const ir_node *block)
+{
+	return block->attr.block.entity != NULL;
 }
 
 ir_node *(get_Block_phis)(const ir_node *block) {
@@ -1216,16 +1237,6 @@ void
 set_SymConst_symbol(ir_node *node, union symconst_symbol sym) {
 	assert(is_SymConst(node));
 	node->attr.symc.sym = sym;
-}
-
-ir_label_t get_SymConst_label(const ir_node *node) {
-	assert(is_SymConst(node) && SYMCONST_HAS_LABEL(get_SymConst_kind(node)));
-	return node->attr.symc.sym.label;
-}
-
-void set_SymConst_label(ir_node *node, ir_label_t label) {
-	assert(is_SymConst(node) && SYMCONST_HAS_LABEL(get_SymConst_kind(node)));
-	node->attr.symc.sym.label = label;
 }
 
 ir_type *

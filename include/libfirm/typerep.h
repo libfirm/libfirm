@@ -360,6 +360,11 @@ int is_entity_final(const ir_entity *ent);
 /** Sets/resets the final flag of an entity. */
 void set_entity_final(ir_entity *ent, int final);
 
+/** Set label number of an entity with code type */
+void set_entity_label(ir_entity *ent, ir_label_t label);
+/** Return label number of an entity with code type */
+ir_label_t get_entity_label(const ir_entity *ent);
+
 /** Checks if an entity is compiler generated. */
 int is_entity_compiler_generated(const ir_entity *ent);
 
@@ -767,6 +772,7 @@ typedef enum {
 	tpo_pointer,             /**< A pointer type. */
 	tpo_primitive,           /**< A primitive type. */
 	tpo_id,                  /**< Special Id tag used for type replacement. */
+	tpo_code,                /**< a piece of code (a basic block) */
 	tpo_none,                /**< Special type for the None type. */
 	tpo_unknown,             /**< Special code for the Unknown type. */
 	tpo_max                  /* not a type opcode */
@@ -914,6 +920,12 @@ const tp_op *get_tpop_primitive(void);
  */
 extern const tp_op *type_id;
 const tp_op *get_tpop_id(void);
+
+/**
+ * The code type is used to mark pieces of code (basic blocks)
+ */
+extern const tp_op *tpop_code;
+const tp_op *get_tpop_code_type(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
@@ -2295,8 +2307,13 @@ void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
 /** A variable that contains the only none type. */
 extern ir_type *firm_none_type;
 
+/** A variable that contains the only code type. */
+extern ir_type *firm_code_type;
+
 /** Returns the none type. */
 ir_type *get_none_type(void);
+/** Returns the code type. */
+ir_type *get_code_type(void);
 
 /**
  * @page unknown_type  The Unknown type
@@ -2367,6 +2384,11 @@ int get_compound_member_index(const ir_type *tp, ir_entity *member);
  * @return true if the type is class, structure, union or array type.
  */
 int is_compound_type(const ir_type *tp);
+
+/**
+ * Checks wether a type is a code type.
+ */
+int is_code_type(const ir_type *tp);
 
 /**
  * Checks, whether a type is a frame type.

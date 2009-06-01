@@ -195,8 +195,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	/* Source types */
 	switch (get_irn_opcode(n)) {
 	case iro_Block: {
-		if (has_Block_label(n))
-			fprintf(F, "  Label: %lu\n", get_Block_label(n));
+		if (has_Block_entity(n))
+			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
 		ir_fprintf(F, "  macro Block: %+F\n", get_Block_MacroBlock(n));
 		fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
@@ -343,10 +343,6 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		case symconst_enum_const:
 			fprintf(F, "  kind: enumeration\n");
 			fprintf(F, "  name: %s\n", get_enumeration_name(get_SymConst_enum(n)));
-			break;
-		case symconst_label:
-			fprintf(F, "  kind: label\n");
-			fprintf(F, "  label: %lu\n", get_SymConst_label(n));
 			break;
 		}
 		fprintf(F, "  type of value: %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));

@@ -160,9 +160,8 @@ typedef enum {
 	                           symconst_symbol is entity *. */
 	symconst_ofs_ent,     /**< The SymConst is the offset of its entity in the entities
 	                           owner type. */
-	symconst_enum_const,  /**< The SymConst is a enumeration constant of an
+	symconst_enum_const   /**< The SymConst is a enumeration constant of an
 	                           enumeration type. */
-	symconst_label        /**< The SymConst is a label address. */
 } symconst_kind;
 
 /** SymConst attribute.
@@ -174,7 +173,6 @@ typedef union symconst_symbol {
 	ident         *ident_p;   /**< The ident of a SymConst. */
 	ir_entity     *entity_p;  /**< The entity of a SymConst. */
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
-	ir_label_t    label;      /**< The label of a SymConst. */
 } symconst_symbol;
 
 /**

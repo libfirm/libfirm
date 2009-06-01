@@ -199,7 +199,7 @@ static int can_move_ret(ir_node *ret) {
 	/* check, that predecessors are Jmps */
 	n = get_Block_n_cfgpreds(retbl);
 	/* we cannot move above a labeled block, as this might kill the block */
-	if (n <= 1 || has_Block_label(retbl))
+	if (n <= 1 || has_Block_entity(retbl))
 		return 0;
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(retbl, i);

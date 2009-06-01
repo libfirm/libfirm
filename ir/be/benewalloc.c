@@ -357,9 +357,11 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	/* give should_be_same boni */
 	info = get_allocation_info(node);
 	req  = arch_get_register_req_out(node);
+
+	ir_node *in_node = skip_Proj(node);
 	if (req->type & arch_register_req_type_should_be_same) {
 		float weight = get_block_execfreq(execfreqs, block);
-		int   arity  = get_irn_arity(node);
+		int   arity  = get_irn_arity(in_node);
 		int   i;
 
 		assert(arity <= (int) sizeof(req->other_same) * 8);
@@ -370,7 +372,7 @@ static void assign_reg(const ir_node *block, ir_node *node)
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
 
-			in  = get_irn_n(node, i);
+			in  = get_irn_n(in_node, i);
 			reg = arch_get_irn_register(in);
 			assert(reg != NULL);
 			r = arch_register_get_index(reg);

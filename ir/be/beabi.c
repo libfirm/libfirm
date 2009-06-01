@@ -2210,8 +2210,7 @@ static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
  */
 static int can_address_relative(ir_entity *entity)
 {
-	return get_entity_variability(entity) == variability_initialized
-		&& get_entity_visibility(entity) != visibility_external_allocated;
+	return get_entity_visibility(entity) != visibility_external_allocated;
 }
 
 /** patches SymConsts to work in position independent code */

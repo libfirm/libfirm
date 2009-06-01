@@ -303,9 +303,6 @@ static void lower_symconst(ir_node *symc) {
 		hook_lower(symc);
 		exchange(symc, newn);
 		break;
-	case symconst_label:
-		/* leave */
-		break;
 
 	default:
 		assert(!"unknown SymConst kind");

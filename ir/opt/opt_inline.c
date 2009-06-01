@@ -216,7 +216,7 @@ static void copy_preds(ir_node *n, void *env) {
 		   in array contained Bads.  Now it's possible.
 		   We don't call optimize_in_place as it requires
 		   that the fields in ir_graph are set properly. */
-		if (!has_Block_label(nn) &&
+		if (!has_Block_entity(nn) &&
 		    get_opt_control_flow_straightening() &&
 		    get_Block_n_cfgpreds(nn) == 1 &&
 		    is_Jmp(get_Block_cfgpred(nn, 0))) {

@@ -419,12 +419,14 @@ void set_Block_MacroBlock(ir_node *block, ir_node *mbh);
 ir_node *get_irn_MacroBlock(const ir_node *n);
 /** Returns the ir_graph this Block belongs to. */
 ir_graph *get_Block_irg(const ir_node *block);
-/** Returns non-zero if the block has an assigned label. */
-int has_Block_label(const ir_node *block);
-/** Returns the label of a Block. */
-ir_label_t get_Block_label(const ir_node *block);
-/** Sets a label to a block. */
-void set_Block_label(ir_node *block, ir_label_t label);
+/** Returns non-zero if the block has an entity assigned */
+int has_Block_entity(const ir_node *block);
+/** Returns the entity for a Block */
+ir_entity *get_Block_entity(const ir_node *block);
+/** Returns the entity for a Block (creating it if necessary) */
+ir_entity *create_Block_entity(ir_node *block);
+/** Set a new entity for a block */
+void set_Block_entity(ir_node *block, ir_entity *entity);
 /** Gets the head of the Phi list for this block. */
 ir_node *get_Block_phis(const ir_node *block);
 /** Sets the head of the Phi list for this block. */
@@ -552,9 +554,6 @@ void     set_Const_type(ir_node *node, ir_type *tp);
 /** Returns non-zero if s symconst kind has an enum_const attribute */
 #define SYMCONST_HAS_ENUM(kind) ((kind) == symconst_enum_const)
 
-/** Returns non-zero if s symconst kind has a label attribute */
-#define SYMCONST_HAS_LABEL(kind) ((kind) == symconst_label)
-
 /** Get the kind of the SymConst. */
 symconst_kind get_SymConst_kind(const ir_node *node);
 /** Set the kind of the SymConst. */
@@ -582,11 +581,6 @@ void           set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 union symconst_symbol get_SymConst_symbol(const ir_node *node);
 void                  set_SymConst_symbol(ir_node *node,
                                           union symconst_symbol sym);
-
-/** Only to access SymConst of kind symconst_label.  Else assertion: */
-ir_label_t get_SymConst_label(const ir_node *node);
-void       set_SymConst_label(ir_node *node, ir_label_t label);
-
 
 /** Access the type of the value represented by the SymConst.
  *

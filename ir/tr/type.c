@@ -69,6 +69,7 @@
 /*-----------------------------------------------------------------*/
 
 ir_type *firm_none_type;    ir_type *get_none_type(void)    { return firm_none_type;    }
+ir_type *firm_code_type;    ir_type *get_code_type(void)    { return firm_code_type;    }
 ir_type *firm_unknown_type; ir_type *get_unknown_type(void) { return firm_unknown_type; }
 
 
@@ -95,6 +96,11 @@ void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask) {
 	set_type_size_bytes(firm_none_type, 0);
 	set_type_state (firm_none_type, layout_fixed);
 	remove_irp_type(firm_none_type);
+
+	firm_code_type    = new_type(tpop_code, mode_ANY, new_id_from_str("type_code"), builtin_db);
+	set_type_size_bytes(firm_code_type, 0);
+	set_type_state(firm_code_type, layout_fixed);
+	remove_irp_type(firm_code_type);
 
 	firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"), builtin_db);
 	set_type_size_bytes(firm_unknown_type, 0);
@@ -148,7 +154,8 @@ new_type(const tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db) {
 void free_type(ir_type *tp) {
 	const tp_op *op = get_type_tpop(tp);
 
-	if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown))
+	if ((get_type_tpop(tp) == tpop_none) || (get_type_tpop(tp) == tpop_unknown)
+			|| (get_type_tpop(tp) == tpop_code))
 		return;
 	/* Remove from list of all types */
 	remove_irp_type(tp);
@@ -2044,6 +2051,11 @@ int get_compound_member_index(const ir_type *tp, ir_entity *member) {
 int is_compound_type(const ir_type *tp) {
 	assert(tp && tp->kind == k_type);
 	return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
+}
+
+int is_code_type(const ir_type *tp) {
+	assert(tp && tp->kind == k_type);
+	return tp->type_op == tpop_code;
 }
 
 /* Checks, whether a type is a frame type */

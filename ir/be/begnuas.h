@@ -72,6 +72,11 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
                        int only_emit_marked_entities);
 
 /**
+ * Emit an entity (the entities name or a block label)
+ */
+void be_gas_emit_entity(ir_entity *entity);
+
+/**
  * Switch the current output section to the given out.
  *
  * @param section  the new output section
