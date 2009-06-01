@@ -21,23 +21,18 @@ class EmitBase:
 		for x in cols.iterkeys():
 			sorted[cols[x]] = x
 		for x in sorted:
-			create += (", '%s' %s" % (x, type))
+			create += (", `%s` %s" % (x, type))
 		create += ');'
 		return create
 
 class EmitMysqlInfile(EmitBase):
 	tmpfile_mode = stat.S_IREAD | stat.S_IROTH | stat.S_IWUSR
 
-	def ex(self, args, tab, fname):
-		res = os.fork()
-		if res == 0:
-			stmt = """load data infile '%s' into table %s fields terminated by ';'""" % (fname, tab)
-			conn = MySQLdb.connect(**args)
-			c = conn.cursor()
-			c.execute(stmt)
-			conn.commit()
-			sys.exit(0)
-		return res
+	def execute(self, query):
+		c = self.conn.cursor()
+		print query + "\n";
+		c.execute(query);
+		self.conn.commit()
 
 	def __init__(self, options, tables, ctxcols, evcols):
 		import MySQLdb
@@ -68,55 +63,53 @@ class EmitMysqlInfile(EmitBase):
 		os.chmod(self.evfifo,  self.tmpfile_mode)
 		os.chmod(self.ctxfifo, self.tmpfile_mode)
 
-		c = self.conn.cursor()
-		c.execute('drop table if exists ' + self.evtab)
-		c.execute('drop table if exists ' + self.ctxtab)
-		table_ctx = self.create_table(self.ctxcols, self.ctxtab, 'char(80)', 'unique')
-		c.execute(table_ctx)
+		self.execute('drop table if exists ' + self.evtab)
+		self.execute('drop table if exists ' + self.ctxtab)
+		table_ctx = self.create_table(self.ctxcols, self.ctxtab, 'char(80)', '')
+		self.execute(table_ctx)
 		table_ev = self.create_table(self.evcols, self.evtab, 'double default null', '')
-		c.execute(table_ev)
-		self.conn.commit()
+		self.execute(table_ev)
 
 		if options.verbose:
 			print 'go for gold'
 
-		self.pidev  = self.ex(args, self.evtab, self.evfifo)
-		self.pidctx = self.ex(args, self.ctxtab, self.ctxfifo)
-
-		if options.verbose:
-			print "forked two mysql leechers: %d, %d" % (self.pidev, self.pidctx)
-
-		self.evfile   = open(self.evfifo, 'w+t')
-		self.ctxfile  = open(self.ctxfifo, 'w+t')
-
-		if options.verbose:
-			print 'fifo:  %s, %o' % (self.evfile.name, os.stat(self.evfile.name).st_mode)
-			print 'fifo:  %s, %o' % (self.ctxfile.name, os.stat(self.ctxfile.name).st_mode)
+		n = max(len(ctxcols), len(evcols)) + 1
+		q = []
+		self.quests = []
+		for i in xrange(0, n):
+			self.quests.append(','.join(q))
+			q.append('%s')
 
 	def ev(self, curr_id, evitems):
-		field = ['\N'] * len(self.evcols)
-		for key, val in evitems.iteritems():
-			index = self.evcols[key]
-			field[index] = val
-		print >> self.evfile, ('%d;' % curr_id) + ';'.join(field)
+		keys = ""
+		first = True
+		for key in evitems.keys():
+			if first:
+				first = False
+			else:
+				keys += ", "
+			keys += "`%s`" % (key)
+
+		stmt = "insert into `%s` (id, %s) values (%s)" % (self.evtab, keys, self.quests[len(evitems)+1])
+		c = self.conn.cursor()
+		c.execute(stmt, (curr_id,) + tuple(evitems.values()))
 
 	def ctx(self, curr_id, ctxitems):
- 		field = ['\N'] * len(self.ctxcols)
- 		for key, val in ctxitems.iteritems():
- 			index = self.ctxcols[key]
- 			field[index] = val
- 		print >> self.ctxfile, ('%d;' % curr_id) + ';'.join(field)
+		keys = ""
+		first = True
+		for key in ctxitems.keys():
+			if first:
+				first = False
+			else:
+				keys += ", "
+			keys += "`%s`" % (key)
+
+		stmt = "insert into `%s` (id, %s) values (%s)" % (self.ctxtab, keys, self.quests[len(ctxitems)+1])
+		c = self.conn.cursor()
+		c.execute(stmt, (curr_id,) + tuple(ctxitems.values()))
 
 	def commit(self):
-		self.evfile.close()
-		self.ctxfile.close()
-
-		os.waitpid(self.pidev, 0)
-		os.waitpid(self.pidctx, 0)
-
-		os.unlink(self.evfile.name)
-		os.unlink(self.ctxfile.name)
-
+		self.conn.commit()
 
 class EmitSqlite3(EmitBase):
 	def __init__(self, options, tables, ctxcols, evcols):
@@ -154,9 +147,9 @@ class EmitSqlite3(EmitBase):
 				first = False
 			else:
 				keys += ", "
-			keys += "'%s'" % (key)
+			keys += "`%s`" % (key)
 
-		stmt = "insert into '%s' (id, %s) values (%s)" % (self.evtab, keys, self.quests[len(evitems)])
+		stmt = "insert into `%s` (id, %s) values (%s)" % (self.evtab, keys, self.quests[len(evitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(evitems.values()))
 
 	def ctx(self, curr_id, ctxitems):
@@ -167,9 +160,9 @@ class EmitSqlite3(EmitBase):
 				first = False
 			else:
 				keys += ", "
-			keys += "'%s'" % (key)
+			keys += "`%s`" % (key)
 
-		stmt = "insert into '%s' (id, %s) values (%s)" % (self.ctxtab, keys, self.quests[len(ctxitems)])
+		stmt = "insert into `%s` (id, %s) values (%s)" % (self.ctxtab, keys, self.quests[len(ctxitems)])
 		self.conn.execute(stmt, (curr_id,) + tuple(ctxitems.values()))
 
 	def commit(self):
