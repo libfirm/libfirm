@@ -29,12 +29,12 @@
  * Only a proof of concept at this moment...
  *
  * The idea is to allocate registers in 2 passes:
- * 1. A first pass to determine "prefered" registers for live-ranges. This
+ * 1. A first pass to determine "preferred" registers for live-ranges. This
  *    calculates for each register and each live-range a value indicating
- *    the usefullness. (You can roughly think of the value as the negative
+ *    the usefulness. (You can roughly think of the value as the negative
  *    costs needed for copies when the value is in the specific registers...)
  *
- * 2. Walk blocks and assigns registers in a greedy fashion. Prefering registers
+ * 2. Walk blocks and assigns registers in a greedy fashion. Preferring registers
  *    with high preferences. When register constraints are not met, add copies
  *    and split live-ranges.
  *
@@ -342,6 +342,7 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	allocation_info_t         *info;
 	const arch_register_req_t *req;
 	reg_pref_t                *reg_prefs;
+	ir_node                   *in_node;
 	unsigned                  i;
 
 	assert(arch_irn_consider_in_reg_alloc(cls, node));
@@ -358,7 +359,7 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	info = get_allocation_info(node);
 	req  = arch_get_register_req_out(node);
 
-	ir_node *in_node = skip_Proj(node);
+	in_node = skip_Proj(node);
 	if (req->type & arch_register_req_type_should_be_same) {
 		float weight = get_block_execfreq(execfreqs, block);
 		int   arity  = get_irn_arity(in_node);
