@@ -2820,6 +2820,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 	ir_node *a = get_Div_left(n);
 	ir_node *b = get_Div_right(n);
 	ir_node *value;
+	const ir_node *dummy;
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
@@ -2848,7 +2849,6 @@ static ir_node *transform_node_Div(ir_node *n) {
 
 	value = n;
 
-	const ir_node *dummy;
 	if (a == b && value_not_zero(a, &dummy)) {
 		/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
 		value = new_Const(get_mode_one(mode));

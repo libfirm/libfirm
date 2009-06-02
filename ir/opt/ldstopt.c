@@ -1797,10 +1797,9 @@ typedef struct avail_entry_t {
  * Compare two avail entries.
  */
 static int cmp_avail_entry(const void *elt, const void *key, size_t size) {
-	(void) size;
-
 	const avail_entry_t *a = elt;
 	const avail_entry_t *b = key;
+	(void) size;
 
 	return a->ptr != b->ptr || a->mode != b->mode;
 }  /* cmp_avail_entry */
