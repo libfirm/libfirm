@@ -30,4 +30,19 @@ void ppc32_register_transformers(void);
 void ppc32_transform_node(ir_node *node, void *env);
 void ppc32_transform_const(ir_node *node, void *env);
 
+typedef enum {
+	irm_Bs,
+	irm_Bu,
+	irm_Hs,
+	irm_Hu,
+	irm_Is,
+	irm_Iu,
+	irm_F,
+	irm_D,
+	irm_P,
+	irm_max
+} ppc32_modecode;
+
+ppc32_modecode get_nice_modecode(ir_mode *irmode);
+
 #endif

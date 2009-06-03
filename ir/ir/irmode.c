@@ -43,9 +43,6 @@
 /** Obstack to hold all modes. */
 static struct obstack modes;
 
-/** Number of defined modes. */
-static int num_modes = 0;
-
 /** The list of all currently existing modes. */
 static ir_mode **mode_list;
 
@@ -258,10 +255,6 @@ static ir_mode *register_mode(const ir_mode *new_mode) {
 	ARR_APP1(ir_mode*, mode_list, mode);
 
 	mode->kind = k_ir_mode;
-	if (num_modes >= irm_max)  {
-		mode->code = num_modes;
-	}
-	num_modes++;
 
 	/* add the new mode to the irp list of modes */
 	add_irp_mode(mode);
@@ -367,10 +360,6 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
 }
 
 /* Functions for the direct access to all attributes of an ir_mode */
-ir_modecode (get_mode_modecode)(const ir_mode *mode) {
-	return _get_mode_modecode(mode);
-}
-
 ident *(get_mode_ident)(const ir_mode *mode) {
 	return _get_mode_ident(mode);
 }
@@ -422,7 +411,6 @@ void (set_mode_link)(ir_mode *mode, void *l) {
 
 tarval *get_mode_min(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->min;
@@ -430,7 +418,6 @@ tarval *get_mode_min(ir_mode *mode) {
 
 tarval *get_mode_max(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->max;
@@ -438,7 +425,6 @@ tarval *get_mode_max(ir_mode *mode) {
 
 tarval *get_mode_null(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 
 	return mode->null;
@@ -446,7 +432,6 @@ tarval *get_mode_null(ir_mode *mode) {
 
 tarval *get_mode_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 
 	return mode->one;
@@ -454,7 +439,6 @@ tarval *get_mode_one(ir_mode *mode) {
 
 tarval *get_mode_minus_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
@@ -462,14 +446,12 @@ tarval *get_mode_minus_one(ir_mode *mode) {
 
 tarval *get_mode_all_one(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_datab(mode));
 	return mode->all_one;
 }
 
 tarval *get_mode_infinite(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_plus_inf(mode);
@@ -477,7 +459,6 @@ tarval *get_mode_infinite(ir_mode *mode) {
 
 tarval *get_mode_NAN(ir_mode *mode) {
 	assert(mode);
-	assert(get_mode_modecode(mode) < (ir_modecode) num_modes);
 	assert(mode_is_float(mode));
 
 	return get_tarval_nan(mode);
@@ -663,7 +644,6 @@ void init_mode(void) {
 	obstack_init(&modes);
 	mode_list = NEW_ARR_F(ir_mode*, 0);
 
-	num_modes  =  0;
 	/* initialize predefined modes */
 
 	/* Internal Modes */
@@ -682,54 +662,40 @@ void init_mode(void) {
 
 	/* Basic Block */
 	newmode.name    = new_id_from_chars("BB", 2);
-	newmode.code    = irm_BB;
-
-	mode_BB = register_mode(&newmode);
+	mode_BB         = register_mode(&newmode);
 
 	/* eXecution */
 	newmode.name    = new_id_from_chars("X", 1);
-	newmode.code    = irm_X;
-
-	mode_X = register_mode(&newmode);
+	mode_X          = register_mode(&newmode);
 
 	/* Memory Modes */
 	newmode.sort    = irms_memory;
 
 	/* Memory */
 	newmode.name    = new_id_from_chars("M", 1);
-	newmode.code    = irm_M;
-
-	mode_M = register_mode(&newmode);
+	mode_M          = register_mode(&newmode);
 
 	/* Auxiliary Modes */
 	newmode.sort    = irms_auxiliary,
 
 	/* Tuple */
 	newmode.name    = new_id_from_chars("T", 1);
-	newmode.code    = irm_T;
-
-	mode_T = register_mode(&newmode);
+	mode_T          = register_mode(&newmode);
 
 	/* ANY */
 	newmode.name    = new_id_from_chars("ANY", 3);
-	newmode.code    = irm_ANY;
-
-	mode_ANY = register_mode(&newmode);
+	mode_ANY        = register_mode(&newmode);
 
 	/* BAD */
 	newmode.name    = new_id_from_chars("BAD", 3);
-	newmode.code    = irm_BAD;
-
-	mode_BAD = register_mode(&newmode);
+	mode_BAD        = register_mode(&newmode);
 
 	/* Internal Boolean Modes */
 	newmode.sort    = irms_internal_boolean;
 
 	/* boolean */
 	newmode.name    = new_id_from_chars("b", 1);
-	newmode.code    = irm_b;
-
-	mode_b = register_mode(&newmode);
+	mode_b          = register_mode(&newmode);
 
 	/* Data Modes */
 	newmode.vector_elem = 1;
@@ -740,29 +706,23 @@ void init_mode(void) {
 
 	/* float */
 	newmode.name    = new_id_from_chars("F", 1);
-	newmode.code    = irm_F;
 	newmode.sign    = 1;
 	newmode.size    = 32;
-
-	mode_F = register_mode(&newmode);
+	mode_F          = register_mode(&newmode);
 
 	/* double */
 	newmode.name    = new_id_from_chars("D", 1);
-	newmode.code    = irm_D;
 	newmode.sign    = 1;
 	newmode.size    = 64;
-
-	mode_D = register_mode(&newmode);
+	mode_D          = register_mode(&newmode);
 
 	/* extended */
 	newmode.name    = new_id_from_chars("E", 1);
-	newmode.code    = irm_E;
 	newmode.sign    = 1;
 	/* note that the tarval module is calculating with 80 bits, but we use
 	 * 96 bits, as that is what will be stored to memory by most hardware */
 	newmode.size    = 96;
-
-	mode_E = register_mode(&newmode);
+	mode_E          = register_mode(&newmode);
 
 	/* Integer Number Modes */
 	newmode.sort         = irms_int_number;
@@ -770,94 +730,74 @@ void init_mode(void) {
 
 	/* signed byte */
 	newmode.name         = new_id_from_chars("Bs", 2);
-	newmode.code         = irm_Bs;
 	newmode.sign         = 1;
 	newmode.size         = 8;
 	newmode.modulo_shift = 32;
-
-	mode_Bs = register_mode(&newmode);
+	mode_Bs              = register_mode(&newmode);
 
 	/* unsigned byte */
 	newmode.name         = new_id_from_chars("Bu", 2);
-	newmode.code         = irm_Bu;
 	newmode.arithmetic   = irma_twos_complement;
 	newmode.sign         = 0;
 	newmode.size         = 8;
 	newmode.modulo_shift = 32;
-
-	mode_Bu = register_mode(&newmode);
+	mode_Bu              = register_mode(&newmode);
 
 	/* signed short integer */
 	newmode.name         = new_id_from_chars("Hs", 2);
-	newmode.code         = irm_Hs;
 	newmode.sign         = 1;
 	newmode.size         = 16;
 	newmode.modulo_shift = 32;
-
-	mode_Hs = register_mode(&newmode);
+	mode_Hs              = register_mode(&newmode);
 
 	/* unsigned short integer */
 	newmode.name         = new_id_from_chars("Hu", 2);
-	newmode.code         = irm_Hu;
 	newmode.sign         = 0;
 	newmode.size         = 16;
 	newmode.modulo_shift = 32;
-
-	mode_Hu = register_mode(&newmode);
+	mode_Hu              = register_mode(&newmode);
 
 	/* signed integer */
 	newmode.name         = new_id_from_chars("Is", 2);
-	newmode.code         = irm_Is;
 	newmode.sign         = 1;
 	newmode.size         = 32;
 	newmode.modulo_shift = 32;
-
-	mode_Is = register_mode(&newmode);
+	mode_Is              = register_mode(&newmode);
 
 	/* unsigned integer */
 	newmode.name         = new_id_from_chars("Iu", 2);
-	newmode.code         = irm_Iu;
 	newmode.sign         = 0;
 	newmode.size         = 32;
 	newmode.modulo_shift = 32;
-
-	mode_Iu = register_mode(&newmode);
+	mode_Iu              = register_mode(&newmode);
 
 	/* signed long integer */
 	newmode.name         = new_id_from_chars("Ls", 2);
-	newmode.code         = irm_Ls;
 	newmode.sign         = 1;
 	newmode.size         = 64;
 	newmode.modulo_shift = 64;
-
-	mode_Ls = register_mode(&newmode);
+	mode_Ls              = register_mode(&newmode);
 
 	/* unsigned long integer */
 	newmode.name         = new_id_from_chars("Lu", 2);
-	newmode.code         = irm_Lu;
 	newmode.sign         = 0;
 	newmode.size         = 64;
 	newmode.modulo_shift = 64;
-
-	mode_Lu = register_mode(&newmode);
+	mode_Lu              = register_mode(&newmode);
 
 	/* signed long long integer */
 	newmode.name         = new_id_from_chars("LLs", 3);
-	newmode.code         = irm_LLs;
 	newmode.sign         = 1;
 	newmode.size         = 128;
 	newmode.modulo_shift = 128;
-
-	mode_LLs = register_mode(&newmode);
+	mode_LLs             = register_mode(&newmode);
 
 	/* unsigned long long integer */
 	newmode.name         = new_id_from_chars("LLu", 3);
-	newmode.code         = irm_LLu;
 	newmode.sign         = 0;
 	newmode.size         = 128;
 	newmode.modulo_shift = 128;
-
-	mode_LLu = register_mode(&newmode);
+	mode_LLu             = register_mode(&newmode);
 
 	/* Reference Mode */
 	newmode.sort       = irms_reference;
@@ -865,14 +805,12 @@ void init_mode(void) {
 
 	/* pointer */
 	newmode.name         = new_id_from_chars("P", 1);
-	newmode.code         = irm_P;
 	newmode.sign         = 0;
 	newmode.size         = 32;
 	newmode.modulo_shift = 0;
 	newmode.eq_signed    = mode_Is;
 	newmode.eq_unsigned  = mode_Iu;
-
-	mode_P = register_mode(&newmode);
+	mode_P               = register_mode(&newmode);
 
 	/* set the machine specific modes to the predefined ones */
 	mode_P_code = mode_P;

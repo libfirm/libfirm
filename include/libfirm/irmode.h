@@ -39,34 +39,6 @@
 
 /* ********** Predefined modes ********** */
 
-/**
- * Predefined mode according to tech report 1999-14.
- */
-typedef enum ir_modecode { /* irm is short for `ir mode' */
-	irm_BB,                       /**< basic block */
-	irm_X,                        /**< execution */
-	irm_F,                        /**< float(32) */
-	irm_D,                        /**< double(64) */
-	irm_E,                        /**< extended(80) */
-	irm_Bs,                       /**< signed byte(8) */
-	irm_Bu,                       /**< unsigned byte(8) */
-	irm_Hs,                       /**< signed short(16) */
-	irm_Hu,                       /**< unsigned short(16) */
-	irm_Is,                       /**< signed int(32) */
-	irm_Iu,                       /**< unsigned int(32) */
-	irm_Ls,                       /**< signed long(64) */
-	irm_Lu,                       /**< unsigned long(64) */
-	irm_LLs,                      /**< signed long long(128) */
-	irm_LLu,                      /**< unsigned long long(128) */
-	irm_P,                        /**< pointer */
-	irm_b,                        /**< internal boolean */
-	irm_M,                        /**< memory */
-	irm_T,                        /**< tuple */
-	irm_ANY,                      /**< undefined mode */
-	irm_BAD,                      /**< bad mode */
-	irm_max                       /**< maximum value for ir_modecode */
-} ir_modecode;
-
 /** Helper values for ir_mode_sort. */
 enum ir_mode_sort_helper {
 	irmsh_is_num   = 0x10, /**< mode represents a number */
@@ -188,9 +160,6 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
 int is_mode(const void *thing);
 
 /* ********** Access methods to read mode information *********** */
-
-/** Returns the classification of the mode */
-ir_modecode get_mode_modecode(const ir_mode *mode);
 
 /** Returns the ident* of the mode */
 ident      *get_mode_ident(const ir_mode *mode);
@@ -383,7 +352,7 @@ void set_modeP_data(ir_mode *p);
 
 /*@{*/
 /**
-   Functions to check, whether a ir_modecode is signed, float, int, character,
+   Functions to check, whether a mode is signed, float, int, character,
    reference, num, data, datab or dataM.
 
    For more exact definitions read the corresponding pages

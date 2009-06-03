@@ -241,7 +241,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 		ir_node *n = (ir_node *) entry->key;
 
 		// Dump node
-		if(get_irn_opcode(n) == iro_Proj && get_irn_modecode(n) == irm_M)
+		if(get_irn_opcode(n) == iro_Proj && get_irn_mode(n) == mode_M)
 			uses_memory = 1;
 		dump_grg_node(n, dump_info, fp);
 		dump_grgen_mode(n, dump_info, fp, NULL);
@@ -391,22 +391,21 @@ static void dump_grgen_mode(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp, i
 
 static char *dump_grgen_mode_node(ir_mode *irn_mode, grgen_dumpinfo_t *dump_info, FILE *fp)
 {
-	ir_modecode mode_code = get_mode_modecode(irn_mode);
 	const char *mode_name =  get_mode_name(irn_mode);
 	char *mode_node_name;
 
-	if(!pmap_contains(dump_info -> mode_name_map, (void *) mode_code))
+	if(!pmap_contains(dump_info -> mode_name_map, irn_mode))
 	{
 		// No, create a new mode-node
 		mode_node_name = obstack_alloc(&(dump_info -> mode_names), MAX_NODENAME_LEN);
 		sprintf(mode_node_name, "mode_%s_node", mode_name);
-		pmap_insert(dump_info -> mode_name_map, (void *) mode_code, mode_node_name);
+		pmap_insert(dump_info -> mode_name_map, irn_mode, mode_node_name);
 		fprintf(fp, "%s%s : Mode_%s;\n", indent, mode_node_name, mode_name);
 		return(mode_node_name);
 	}
 	else
 	{
-		return((char *) pmap_get(dump_info -> mode_name_map, (void *) mode_code));
+		return((char *) pmap_get(dump_info -> mode_name_map, irn_mode));
 	}
 
 }

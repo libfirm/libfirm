@@ -42,9 +42,6 @@ _get_modeP_code(void) { return mode_P_code; }
 static inline ir_mode *
 _get_modeP_data(void) { return mode_P_data; }
 
-static inline ir_modecode
-_get_mode_modecode(const ir_mode *mode) { return mode->code; }
-
 static inline ident *
 _get_mode_ident(const ir_mode *mode) { return mode->name; }
 
@@ -79,7 +76,7 @@ _get_mode_link(const ir_mode *mode) { return mode->link; }
 static inline void
 _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
 
-/* Functions to check, whether a ir_modecode is signed, float, int, num, data,
+/* Functions to check, whether a mode is signed, float, int, num, data,
    datab or dataM. For more exact definitions read the corresponding pages
    in the firm documentation or the following enumeration
 
@@ -174,7 +171,6 @@ void finish_mode(void);
 
 #define get_modeP_code()               _get_modeP_code()
 #define get_modeP_data()               _get_modeP_data()
-#define get_mode_modecode(mode)        _get_mode_modecode(mode)
 #define get_mode_ident(mode)           _get_mode_ident(mode)
 #define get_mode_sort(mode)            _get_mode_sort(mode)
 #define get_mode_size_bits(mode)       _get_mode_size_bits(mode)

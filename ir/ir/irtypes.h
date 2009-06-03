@@ -72,7 +72,6 @@ struct ir_op {
  * and comparisons of values of a such described mode.
  *
  * ATTRIBUTES:
- *  -  ir_modecode code:        An unambiguous int (enum) for the mode
  *  -  ident *name:             Name of this mode. Two modes are different if the name is different.
  *  -  ir_mode_sort sort:       sort of mode specifying possible usage categories
  *  -  int    size:             size of the mode in Bits.
@@ -87,7 +86,6 @@ struct ir_op {
  */
 struct ir_mode {
 	firm_kind         kind;       /**< distinguishes this node from others */
-	ir_modecode       code;       /**< unambiguous identifier of a mode */
 	ident             *name;      /**< Name ident of this mode */
 
 	/* ----------------------------------------------------------------------- */

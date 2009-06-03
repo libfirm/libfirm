@@ -404,11 +404,6 @@ void (set_irn_mode)(ir_node *node, ir_mode *mode) {
 	_set_irn_mode(node, mode);
 }
 
-ir_modecode get_irn_modecode(const ir_node *node) {
-	assert(node);
-	return node->mode->code;
-}
-
 /** Gets the string representation of the mode .*/
 const char *get_irn_modename(const ir_node *node) {
 	assert(node);

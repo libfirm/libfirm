@@ -43,6 +43,7 @@
 #include "ppc32_nodes_attr.h"
 //#include "../arch/archop.h"     /* we need this for Min and Max nodes */
 #include "ppc32_transform_conv.h"
+#include "ppc32_transform.h"
 #include "ppc32_new_nodes.h"
 #include "ppc32_map_regs.h"
 
@@ -107,8 +108,8 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 	ir_mode *from_mode = get_irn_mode(get_irn_n(env->irn,0));
 	ir_mode *to_mode = env->mode;
-	ir_modecode from_modecode=get_mode_modecode(from_mode);
-	ir_modecode to_modecode=get_mode_modecode(to_mode);
+	ppc32_modecode from_modecode=get_nice_modecode(from_mode);
+	ppc32_modecode to_modecode=get_nice_modecode(to_mode);
 
 	switch(from_modecode){
 		case irm_F:
@@ -382,8 +383,8 @@ void ppc32_conv_walk(ir_node *node, void *env) {
 
 	if (code == iro_Conv)
 	{
-		ir_modecode from_mode=get_mode_modecode(get_irn_mode(get_irn_n(node,0)));
-		ir_modecode to_mode=get_mode_modecode(get_irn_mode(node));
+		ppc32_modecode from_mode=get_nice_modecode(get_irn_mode(get_irn_n(node,0)));
+		ppc32_modecode to_mode=get_nice_modecode(get_irn_mode(node));
 		cw_block_attr *attr;
 
 		if(from_mode == to_mode) return;

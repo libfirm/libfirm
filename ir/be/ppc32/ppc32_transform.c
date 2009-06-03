@@ -81,11 +81,11 @@ ir_mode *get_ppc32_mode_Cond(void) {
 }
 
 /**
- * Calculates the ir_modecode with size, sort and signed attributes
+ * Calculates the ppc32_modecode with size, sort and signed attributes
  */
-ir_modecode get_nice_modecode(ir_mode *irmode)
+ppc32_modecode get_nice_modecode(ir_mode *irmode)
 {
-	ir_modecode mode = irm_max;
+	ppc32_modecode mode = irm_max;
 	int sign = mode_is_signed(irmode);
 	int bits = get_mode_size_bits(irmode);
 	if(mode_is_int(irmode))
@@ -768,8 +768,8 @@ static ir_node *own_gen_Andi_dot_lo16(ppc32_transform_env_t *env, ir_node *op, i
  */
 static ir_node *gen_Conv(ppc32_transform_env_t *env) {
 	ir_node *op = get_Conv_op(env->irn);
-	ir_modecode from_mode=get_nice_modecode(get_irn_mode(op));
-	ir_modecode to_mode=get_nice_modecode(env->mode);
+	ppc32_modecode from_mode=get_nice_modecode(get_irn_mode(op));
+	ppc32_modecode to_mode=get_nice_modecode(env->mode);
 
 #define SKIP return op
 

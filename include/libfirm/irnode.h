@@ -185,8 +185,6 @@ void del_Sync_n(ir_node *n, int i);
 void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Gets the mode struct of a node.  */
 ir_mode *get_irn_mode(const ir_node *node);
-/** Gets the mode-enum ir_modecode. */
-ir_modecode get_irn_modecode(const ir_node *node);
 /** Gets the ident for a string representation of the mode .*/
 ident *get_irn_modeident(const ir_node *node);
 /** Gets the string representation of the mode .*/
