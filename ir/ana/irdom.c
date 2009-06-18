@@ -503,7 +503,11 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
 	/* Iterate */
 	for (i = get_Block_n_cfg_outs_ka(bl) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfg_out_ka(bl, i);
-		assert(is_Block(pred));
+		/* can happen for half-optimized dead code (I've seen this in student
+		   projects */
+		if (!is_Block(pred))
+			continue;
+
 		init_tmp_dom_info(pred, tdi, tdi_list, used, n_blocks);
 	}
 }
