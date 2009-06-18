@@ -1355,6 +1355,12 @@ ir_mode *get_divop_resmod(const ir_node *node);
  *  operation: Cond. */
 int is_irn_forking(const ir_node *node);
 
+/**
+ * Copies all attributes stored in the old node  to the new node.
+ * Assumes both have the same opcode and sufficient size.
+ */
+void copy_node_attr(const ir_node *old_node, ir_node *new_node);
+
 /** Return the type associated with the value produced by n
  *  if the node remarks this type as it is the case for
  *  Cast, Const, SymConst and some Proj nodes or unknown_type. */

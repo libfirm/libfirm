@@ -140,7 +140,7 @@ _set_irn_op(ir_node *node, ir_op *op) {
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
 static inline void
-copy_node_attr(const ir_node *old_node, ir_node *new_node) {
+_copy_node_attr(const ir_node *old_node, ir_node *new_node) {
 	ir_op *op = _get_irn_op(old_node);
 
 	/* must always exist */
@@ -741,6 +741,7 @@ _is_arg_Proj(const ir_node *node) {
 #define is_Const_one(node)                    _is_Const_one(node)
 #define is_Const_all_one(node)                _is_Const_all_one(node)
 #define is_irn_forking(node)                  _is_irn_forking(node)
+#define copy_node_attr(oldn,newn)             _copy_node_attr(oldn,newn)
 #define get_irn_type(node)                    _get_irn_type(node)
 #define get_irn_type_attr(node)               _get_irn_type_attr(node)
 #define get_irn_entity_attr(node)             _get_irn_entity_attr(node)

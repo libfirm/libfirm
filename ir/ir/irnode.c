@@ -2769,6 +2769,10 @@ int (is_irn_forking)(const ir_node *node) {
 	return _is_irn_forking(node);
 }
 
+void (copy_node_attr)(const ir_node *old_node, ir_node *new_node) {
+	return _copy_node_attr(old_node, new_node);
+}
+
 /* Return the type associated with the value produced by n
  * if the node remarks this type as it is the case for
  * Cast, Const, SymConst and some Proj nodes. */

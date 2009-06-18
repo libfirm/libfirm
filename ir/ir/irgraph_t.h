@@ -250,7 +250,7 @@ _set_irg_current_block(ir_graph *irg, ir_node *node) {
 
 static inline ir_entity *
 _get_irg_entity(const ir_graph *irg) {
-	assert(irg && irg->ent);
+	assert(irg);
 	return irg->ent;
 }
 
