@@ -420,32 +420,6 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
 	return free;
 }
 
-
-/**
- * We want that the out of ProjX from Start contains the next block at
- * position 0, the Start block at position 1.  This is necessary for
- * the out block walker.
- */
-static inline void fix_start_proj(ir_graph *irg) {
-	ir_node *startbl = get_irg_start_block(irg);
-
-	if (get_Block_n_cfg_outs(startbl)) {
-		ir_node *proj = get_irg_initial_exec(irg);
-		ir_node *irn;
-		int     block_pos, other_pos;
-
-		if (get_irn_n_outs(proj) == 2) {
-			if (get_irn_out_ex(proj, 0, &block_pos) == startbl) {
-				irn = get_irn_out_ex(proj, 1, &other_pos);
-				set_irn_out(proj, 0, irn, other_pos);
-				set_irn_out(proj, 1, startbl, block_pos);
-			}
-		} else {
-			assert(get_irg_phase_state(irg) == phase_backend);
-		}
-	}
-}
-
 /* compute the outs for a given graph */
 void compute_irg_outs(ir_graph *irg) {
 	ir_graph        *rem = current_ir_graph;
@@ -476,11 +450,6 @@ void compute_irg_outs(ir_graph *irg) {
 
 	/* Check how much memory we have used */
 	assert (end == (irg->outs + n_out_edges));
-
-	/* We want that the out of ProjX from Start contains the next block at
-	   position 0, the Start block at position 1.  This is necessary for
-	   code placement (place_early() ONLY if started GCSE on graphs with dead blocks) */
-	fix_start_proj(irg);
 
 	current_ir_graph->outs_state = outs_consistent;
 	current_ir_graph = rem;

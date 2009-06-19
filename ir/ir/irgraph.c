@@ -262,7 +262,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	initial_mem             = new_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 
-	add_immBlock_pred(start_block, projX);
 	set_store(initial_mem);
 
 	res->index       = get_irp_new_irg_idx();
@@ -270,11 +269,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	res->graph_nr    = get_irp_new_node_nr();
 #endif
 
-	/*
-	 * The code generation needs it. leave it in now.
-	 * Use of this edge is matter of discussion, unresolved. Also possible:
-	 * add_immBlock_pred(res->start_block, res->start_block), but invalid typed.
-	 */
 	mature_immBlock(res->current_block);
 
 	/*-- Make a block to start with --*/
@@ -358,7 +352,6 @@ ir_graph *new_const_code_irg(void)
 	/* Proj results of start node */
 	set_irg_initial_mem(res, new_Proj(start, mode_M, pn_Start_M));
 	projX = new_Proj(start, mode_X, pn_Start_X_initial_exec);
-	add_immBlock_pred(start_block, projX);
 	mature_immBlock(start_block);
 
 	body_block = new_immBlock();
