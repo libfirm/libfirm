@@ -3567,14 +3567,16 @@ static ir_node *transform_node_Not(ir_node *n) {
 	HANDLE_UNOP_PHI(tarval_not,a,c);
 
 	/* check for a boolean Not */
-	if (mode == mode_b &&
-			is_Proj(a) &&
-			is_Cmp(get_Proj_pred(a))) {
-		/* We negate a Cmp. The Cmp has the negated result anyways! */
-		n = new_r_Proj(current_ir_graph, get_nodes_block(n), get_Proj_pred(a),
-				mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
-		return n;
+	if (mode == mode_b && is_Proj(a)) {
+		ir_node *a_pred = get_Proj_pred(a);
+		if (is_Cmp(a_pred)) {
+			ir_node *cmp_block = get_nodes_block(a_pred);
+			/* We negate a Cmp. The Cmp has the negated result anyways! */
+			n = new_r_Proj(current_ir_graph, cmp_block, get_Proj_pred(a),
+			               mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
+			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
+			return n;
+		}
 	}
 	if  (is_Eor(a)) {
 		ir_node *eor_b = get_Eor_right(a);
