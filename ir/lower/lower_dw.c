@@ -1421,7 +1421,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 			newbl_eq = new_r_Block(irg, 1, &projHF);
 
-			irn = new_r_Proj(irg, newbl_eq, cmpH, mode_b, pn_Cmp_Eq);
+			irn = new_r_Proj(irg, block, cmpH, mode_b, pn_Cmp_Eq);
 			irn = new_rd_Cond(dbg, irg, newbl_eq, irn);
 
 			proj = new_r_Proj(irg, newbl_eq, irn, mode_X, pn_Cond_false);

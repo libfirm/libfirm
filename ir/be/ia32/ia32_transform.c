@@ -4244,12 +4244,13 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	 */
 	if (is_Load(pred) && proj == pn_Load_M && get_irn_n_edges(pred) > 1) {
 		ir_node *res;
+		ir_node *old_block = get_nodes_block(node);
 
 		/* this is needed, because sometimes we have loops that are only
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
-		res = new_rd_Proj(dbgi, irg, block, pred, mode_M, pn_Load_M);
+		res = new_rd_Proj(dbgi, irg, old_block, pred, mode_M, pn_Load_M);
 		set_Proj_proj(res, pn_ia32_mem);
 		return res;
 	}

@@ -1648,13 +1648,10 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		unsigned offset;
 
 		foreach_block_succ(start_bl, edge) {
-			ir_node *succ = get_edge_src_irn(edge);
-			if (start_bl != succ) {
-				first_bl = succ;
-				break;
-			}
+			first_bl = get_edge_src_irn(edge);
+			break;
 		}
-		assert(first_bl);
+		assert(first_bl && first_bl != start_bl);
 		/* we had already removed critical edges, so the following
 		   assertion should be always true. */
 		assert(get_Block_n_cfgpreds(first_bl) == 1);
@@ -1665,7 +1662,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 
 		save_optimization_state(&state);
 		set_optimize(0);
-		nmem = new_r_Proj(irg, first_bl, get_irg_start(irg), mode_M, pn_Start_M);
+		nmem = new_r_Proj(irg, start_bl, get_irg_start(irg), mode_M, pn_Start_M);
 		restore_optimization_state(&state);
 
 		/* reroute all edges to the new memory source */

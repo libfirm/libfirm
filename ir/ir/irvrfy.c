@@ -829,10 +829,10 @@ static int
 verify_node_Proj(ir_node *p, ir_graph *irg) {
 	ir_node *pred;
 	ir_op *op;
-	(void) irg;
 
 	pred = skip_Id(get_Proj_pred(p));
 	ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
+	ASSERT_AND_RET(get_irg_pinned(irg) == op_pin_state_floats || get_nodes_block(pred) == get_nodes_block(p), "Proj must be in same block as its predecessor", 0);
 
 	op = get_irn_op(pred);
 
