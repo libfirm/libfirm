@@ -112,6 +112,10 @@ struct reg_pref_t {
 	float    pref;
 };
 
+/**
+ * Get the allocation info for a node.
+ * The info is allocated on the first visit of a node.
+ */
 static allocation_info_t *get_allocation_info(ir_node *node)
 {
 	allocation_info_t *info;
@@ -128,6 +132,14 @@ static allocation_info_t *get_allocation_info(ir_node *node)
 	return info;
 }
 
+/**
+ * Link the allocation info of a node to a copy.
+ * Afterwards, both nodes uses the same allocation info.
+ * Copy must not have an allocation info assigned yet.
+ *
+ * @param copy   the node the gets the allocation info assigned
+ * @param value  the original node
+ */
 static void link_to(ir_node *copy, ir_node *value)
 {
 	allocation_info_t *info = get_allocation_info(value);
@@ -136,6 +148,14 @@ static void link_to(ir_node *copy, ir_node *value)
 	mark_irn_visited(copy);
 }
 
+/**
+ * Calculate the penalties for every register on a node and its live neighbors.
+ *
+ * @param live_nodes   the set of live nodes at the current position, may be NULL
+ * @param penalty      the penalty to subtract from
+ * @param limited      a raw bitset containing the limited set for the node
+ * @param node         the node
+ */
 static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
                                       float penalty, const unsigned* limited,
 									  ir_node *node)
@@ -177,6 +197,15 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 	}
 }
 
+/**
+ * Calculate the preferences of a definition for the current register class.
+ * If the definition uses a limited set of registers, reduce the preferences
+ * for the limited register on the node and its neighbors.
+ *
+ * @param live_nodes  the set of live nodes at the current node
+ * @param weight      the weight
+ * @param node        the current node
+ */
 static void check_defs(const ir_nodeset_t *live_nodes, float weight,
                        ir_node *node)
 {
@@ -227,6 +256,10 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 	}
 }
 
+/**
+ * Walker: Runs an a block calculates the preferences for any
+ * node and every register from the considered register class.
+ */
 static void analyze_block(ir_node *block, void *data)
 {
 	float         weight = get_block_execfreq(execfreqs, block);
@@ -293,6 +326,12 @@ static void analyze_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
+/**
+ * Assign register reg to the given node.
+ *
+ * @param node  the node
+ * @param reg   the register
+ */
 static void use_reg(ir_node *node, const arch_register_t *reg)
 {
 	unsigned      r          = arch_register_get_index(reg);
@@ -308,6 +347,9 @@ static void use_reg(ir_node *node, const arch_register_t *reg)
 	arch_set_irn_register(node, reg);
 }
 
+/**
+ * Compare two register preferences in decreasing order.
+ */
 static int compare_reg_pref(const void *e1, const void *e2)
 {
 	const reg_pref_t *rp1 = (const reg_pref_t*) e1;
@@ -429,6 +471,9 @@ static void free_reg_of_value(ir_node *node)
 	info->current_assignment = NULL;
 }
 
+/**
+ * Return the index of the currently assigned register of a node.
+ */
 static unsigned get_current_reg(ir_node *node)
 {
 	allocation_info_t *info       = get_allocation_info(node);
@@ -436,12 +481,23 @@ static unsigned get_current_reg(ir_node *node)
 	return assignment - assignments;
 }
 
+/**
+ * Return the currently assigned assignment of a node.
+ */
 static assignment_t *get_current_assignment(ir_node *node)
 {
 	allocation_info_t *info = get_allocation_info(node);
 	return info->current_assignment;
 }
 
+/**
+ * Add an permutation in front of a node and change the assignments
+ * due to this permutation.
+ *
+ * @param live_nodes   the set of live nodes, updated due to live range split
+ * @param before       the node before we add the permutation
+ * @param permutation  the permutation array (map indexes to indexes)
+ */
 static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
                              unsigned *permutation)
 {
@@ -502,7 +558,12 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 }
 
-/* free regs for values last used */
+/**
+ * Free regs for values last used.
+ *
+ * @param live_nodes   set of live nodes, will be updated
+ * @param node         the node to consider
+ */
 static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
 	allocation_info_t *info  = get_allocation_info(node);
@@ -511,6 +572,7 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 	for (i = 0; i < arity; ++i) {
 		ir_node *op;
 
+		/* check if one operand is the last use */
 		if (!rbitset_is_set(&info->last_uses, i))
 			continue;
 
@@ -520,6 +582,12 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 	}
 }
 
+/**
+ * Enforce constraints at a node by live range splits.
+ *
+ * @param live_nodes  the set of live nodes, might be changed
+ * @param node        the current node
+ */
 static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 {
 	int arity = get_irn_arity(node);
@@ -539,6 +607,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
+		/* are there any limitations for the i'th operand? */
 		req = arch_get_register_req(node, i);
 		if ((req->type & arch_register_req_type_limited) == 0)
 			continue;
@@ -546,6 +615,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		limited = req->limited;
 		r       = get_current_reg(op);
 		if (!rbitset_is_set(limited, r)) {
+			/* found an assignement outside the limited set */
 			good = false;
 			break;
 		}
@@ -612,6 +682,10 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	permutate_values(live_nodes, node, assignment);
 }
 
+/**
+ * Walker: assign registers to all nodes of a block that
+ * needs registers from the currently considered register class.
+ */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
 	int                   i;
@@ -712,7 +786,10 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-void be_straight_alloc_cls(void)
+/**
+ * Run the register allocator for the current register class.
+ */
+static void be_straight_alloc_cls(void)
 {
 	n_regs         = arch_register_class_n_regs(cls);
 	lv             = be_assure_liveness(birg);
@@ -730,6 +807,9 @@ void be_straight_alloc_cls(void)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 }
 
+/**
+ * Run the spiller on the current graph.
+ */
 static void spill(void)
 {
 	/* TODO: rewrite pre_spill_prepare to work without chordal_env... */
@@ -750,6 +830,9 @@ static void spill(void)
 	check_for_memory_operands(irg);
 }
 
+/**
+ * The straight register allocator for a whole procedure.
+ */
 static void be_straight_alloc(be_irg_t *new_birg)
 {
 	const arch_env_t *arch_env = new_birg->main_env->arch_env;
@@ -808,6 +891,9 @@ static be_ra_t be_ra_straight = {
 	be_straight_alloc,
 };
 
+/**
+ * Initializes this module.
+ */
 void be_init_straight_alloc(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.straightalloc");
