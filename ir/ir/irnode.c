@@ -2769,7 +2769,7 @@ int (is_irn_forking)(const ir_node *node) {
 }
 
 void (copy_node_attr)(const ir_node *old_node, ir_node *new_node) {
-	return _copy_node_attr(old_node, new_node);
+	_copy_node_attr(old_node, new_node);
 }
 
 /* Return the type associated with the value produced by n
