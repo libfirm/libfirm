@@ -798,9 +798,8 @@ ir_node *get_irn_MacroBlock(const ir_node *n) {
 }
 
 /* returns the graph of a Block. */
-ir_graph *get_Block_irg(const ir_node *block) {
-	assert(is_Block(block));
-	return block->attr.block.irg;
+ir_graph *(get_Block_irg)(const ir_node *block) {
+	return _get_Block_irg(block);
 }
 
 ir_entity *create_Block_entity(ir_node *block) {

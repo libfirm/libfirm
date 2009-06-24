@@ -535,6 +535,12 @@ _is_Block_dead(const ir_node *block) {
 	}
 }
 
+static ir_graph *
+_get_Block_irg(const ir_node *block) {
+	assert(is_Block(block));
+	return block->attr.block.irg;
+}
+
 static inline tarval *_get_Const_tarval(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Const);
 	return node->attr.con.tv;
@@ -736,6 +742,7 @@ _is_arg_Proj(const ir_node *node) {
 #define Block_block_visited(node)             _Block_block_visited(node)
 #define set_Block_dead(block)                 _set_Block_dead(block)
 #define is_Block_dead(block)                  _is_Block_dead(block)
+#define get_Block_irg(block)                  _get_Block_irg(block)
 #define get_Const_tarval(node)                _get_Const_tarval(node)
 #define is_Const_null(node)                   _is_Const_null(node)
 #define is_Const_one(node)                    _is_Const_one(node)
