@@ -2539,10 +2539,8 @@ get_irn_irg(const ir_node *node) {
 	 */
 	if (! is_Block(node))
 		node = get_irn_n(node, -1);
-	if (is_Bad(node))  /* sometimes bad is predecessor of nodes instead of block: in case of optimization */
-		node = get_irn_n(node, -1);
-	assert(is_Block(node));
-	return node->attr.block.irg;
+	/* note that get_Block_irg() can handle Bad nodes */
+	return get_Block_irg(node);
 }
 
 

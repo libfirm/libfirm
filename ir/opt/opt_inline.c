@@ -726,14 +726,15 @@ static void copy_node_inline(ir_node *n, void *env) {
 
 	copy_node(n, NULL);
 	if (is_Sel(n)) {
-		nn = get_new_node (n);
+		nn = get_new_node(n);
 		assert(is_Sel(nn));
+		/* use copied entities from the new frame */
 		if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
 			set_Sel_entity(nn, get_entity_link(get_Sel_entity(n)));
 		}
 	} else if (is_Block(n)) {
-		nn = get_new_node (n);
-		nn->attr.block.irg = current_ir_graph;
+		nn = get_new_node(n);
+		nn->attr.block.irg.irg = current_ir_graph;
 	}
 }
 

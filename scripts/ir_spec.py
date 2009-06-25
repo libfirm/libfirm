@@ -104,11 +104,15 @@ ASM = dict(
 ),
 
 Bad = dict(
-	mode       = "mode_Bad",
-	flags      = "cfopcode, fragile, start_block, dump_noblock",
-	pinned     = "yes",
-	knownBlock = True,
-	singleton  = True,
+	mode        = "mode_Bad",
+	flags       = "cfopcode, fragile, start_block, dump_noblock",
+	pinned      = "yes",
+	attr_struct = "irg_attr",
+	knownBlock  = True,
+	singleton   = True,
+	init = '''
+	res->attr.irg.irg = irg;
+	''',
 ),
 
 Block = dict(
@@ -128,7 +132,7 @@ Block = dict(
 
 	res->attr.block.is_dead     = 0;
 	res->attr.block.is_mb_head  = 1;
-	res->attr.block.irg         = irg;
+	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;

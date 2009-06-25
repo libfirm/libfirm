@@ -116,7 +116,7 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg) {
 
 	/* fix the irg for blocks */
 	if (is_Block(nn)) {
-		nn->attr.block.irg = irg;
+		nn->attr.block.irg.irg = irg;
 
 		/* we cannot allow blocks WITHOUT macroblock input */
 		set_Block_MacroBlock(nn, get_Block_MacroBlock(n));

@@ -178,7 +178,7 @@ void irg_set_nloc(ir_graph *res, int n_loc) {
 ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	ir_graph *res;
 	ir_node  *first_block;
-	ir_node  *end, *start, *start_block, *initial_mem, *projX;
+	ir_node  *end, *start, *start_block, *initial_mem, *projX, *bad;
 
 	res = alloc_graph();
 
@@ -205,8 +205,8 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 
 	res->last_node_idx = 0;
 
-	res->value_table = new_identities (); /* value table for global value
-	                                         numbering for optimizing use in iropt.c */
+	res->value_table = new_identities(); /* value table for global value
+	                                        numbering for optimizing use in iropt.c */
 	res->outs = NULL;
 
 	res->inline_property       = irg_inline_any;
@@ -248,7 +248,9 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	start_block = new_immBlock();
 	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
-	set_irg_bad        (res, new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL));
+	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
+	bad->attr.irg.irg = res;
+	set_irg_bad        (res, bad);
 	set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
 	start = new_Start();
 	set_irg_start      (res, start);
@@ -343,6 +345,7 @@ ir_graph *new_const_code_irg(void)
 	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
+	bad->attr.irg.irg = res;
 	set_irg_bad(res, bad);
 	no_mem = new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL);
 	set_irg_no_mem(res, no_mem);
@@ -400,9 +403,10 @@ static void copy_all_nodes(ir_node *n, void *env) {
 	new_backedge_info(nn);
 	set_irn_link(n, nn);
 
-	/* fix the irg for blocks */
+	/* fix the irg for Blocks: as Bad nodes are NOT copied, no
+	   need t fix them */
 	if (is_Block(nn))
-		nn->attr.block.irg = irg;
+		nn->attr.block.irg.irg = irg;
 
 	/* fix access to entities on the stack frame */
 	if (is_Sel(nn)) {

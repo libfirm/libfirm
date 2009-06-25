@@ -115,12 +115,17 @@ struct ir_mode {
 	const void        *tv_priv;     /**< tarval module will save private data here */
 };
 
-/** ir node attributes **/
+/* ir node attributes */
+
+/** first attribute of Bad and Block nodes */
+typedef struct {
+	ir_graph *irg;              /**< The graph this block like node belongs to. */
+} irg_attr;
 
 /** Block attributes */
 typedef struct {
 	/* General attributes */
-	ir_graph *irg;              /**< The graph this block belongs to. */
+	irg_attr     irg;           /**< The graph this block belongs to. */
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
@@ -304,6 +309,7 @@ typedef struct {
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
+	irg_attr       irg;           /**< For Blocks and Bad: its belonging irg */
 	block_attr     block;         /**< For Block: Fields needed to construct it */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */
