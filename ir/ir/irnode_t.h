@@ -535,7 +535,7 @@ _is_Block_dead(const ir_node *block) {
 	}
 }
 
-static ir_graph *
+static inline ir_graph *
 _get_Block_irg(const ir_node *block) {
 	assert(is_Block(block) || is_Bad(block));
 	return block->attr.irg.irg;
