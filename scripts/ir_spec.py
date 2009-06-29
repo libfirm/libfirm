@@ -1,39 +1,35 @@
-nodes = dict(
+from spec_util import abstract, setnodedefaults
 
-#
-# Abstract node types
-#
-unop = dict(
-	abstract = True,
-	ins      = [ "op" ],
-	op_index = 0,
-	pinned   = "no",
-),
+class Op(object):
+	"Base class for firm nodes"
+abstract(Op)
 
-binop = dict(
-	abstract = True,
-	ins      = [ "left", "right" ],
-	op_index = 0,
-	pinned   = "no",
-),
+class Unop(Op):
+	"Unary nodes have exactly 1 input"
+	name     = "unop"
+	ins      = [ "op" ]
+	op_index = 0
+	pinned   = "no"
+abstract(Unop)
 
-#
-# Real node types
-#
-Abs = dict(
-	is_a     = "unop",
-	flags    = "none",
-),
+class Binop(Op):
+	"Binary nodes have exactly 2 inputs"
+	name     = "binop"
+	ins      = [ "left", "right" ]
+	op_index = 0
+	pinned   = "no"
+abstract(Binop)
 
-Add = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Abs(Unop):
+	flags = []
 
-Alloc = dict(
-	ins   = [ "mem", "size" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	flags = "fragile, uses_memory",
+class Add(Binop):
+	flags = ["commutative"]
+
+class Alloc(Op):
+	ins   = [ "mem", "size" ]
+	outs  = [ "M", "X_regular", "X_except", "res" ]
+	flags = [ "fragile", "uses_memory" ]
 	attrs = [
 		dict(
 			name = "type",
@@ -43,37 +39,33 @@ Alloc = dict(
 			name = "where",
 			type = "ir_where_alloc"
 		)
-	],
-	pinned      = "yes",
-	attr_struct = "alloc_attr",
+	]
+	pinned      = "yes"
+	attr_struct = "alloc_attr"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
 	#endif
 	'''
-),
 
-Anchor = dict(
-	mode        = "mode_ANY",
-	arity       = "variable",
-	flags       = "dump_noblock",
-	pinned      = "yes",
-	knownBlock  = True,
-	singleton   = True,
-),
+class Anchor(Op):
+	mode        = "mode_ANY"
+	arity       = "variable"
+	flags       = [ "dump_noblock" ]
+	pinned      = "yes"
+	knownBlock  = True
+	singleton   = True
 
-And = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class And(Binop):
+	flags    = [ "commutative" ]
 
-ASM = dict(
-	mode          = "mode_T",
-	arity         = "variable",
-	flags         = "keep, uses_memory",
-	attr_struct   = "asm_attr",
-	pinned        = "memory",
-	pinned_init   = "op_pin_state_pinned",
+class ASM(Op):
+	mode          = "mode_T"
+	arity         = "variable"
+	flags         = [ "keep", "uses_memory" ]
+	attr_struct   = "asm_attr"
+	pinned        = "memory"
+	pinned_init   = "op_pin_state_pinned"
 	attrs = [
 		dict(
 			name = "input_constraints",
@@ -99,32 +91,29 @@ ASM = dict(
 			name = "text",
 			type = "ident*",
 		),
-	],
-	java_noconstr = True,
-),
+	]
+	java_noconstr = True
 
-Bad = dict(
-	mode        = "mode_Bad",
-	flags       = "cfopcode, fragile, start_block, dump_noblock",
-	pinned      = "yes",
-	attr_struct = "irg_attr",
-	knownBlock  = True,
-	singleton   = True,
+class Bad(Op):
+	mode       = "mode_Bad"
+	flags      = [ "cfopcode", "fragile", "start_block", "dump_noblock" ]
+	pinned     = "yes"
+	knownBlock = True
+	singleton  = True
 	init = '''
 	res->attr.irg.irg = irg;
-	''',
-),
+	'''
 
-Block = dict(
-	mode        = "mode_BB",
-	knownBlock  = True,
-	block       = "NULL",
-	pinned      = "yes",
-	optimize    = False,
-	arity       = "variable",
-	flags       = "labeled",
-	attr_struct = "block_attr",
-	java_noconstr = True,
+class Block(Op):
+	mode        = "mode_BB"
+	knownBlock  = True
+	block       = "NULL"
+	pinned      = "yes"
+	optimize    = False
+	arity       = "variable"
+	flags       = [ "labeled" ]
+	attr_struct = "block_attr"
+	java_noconstr = True
 
 	init = '''
 	/* macroblock header */
@@ -142,12 +131,12 @@ Block = dict(
 
 	set_Block_matured(res, 1);
 	set_Block_block_visited(res, 0);
-	''',
+	'''
 
 	d_pre = '''
 	int i;
 	int has_unknown = 0;
-	''',
+	'''
 
 	d_post = '''
 	/* Create and initialize array for Phi-node construction. */
@@ -168,7 +157,7 @@ Block = dict(
 	current_ir_graph->current_block = res;
 
 	IRN_VRFY_IRG(res, current_ir_graph);
-	''',
+	'''
 
 	java_add   = '''
 	public void addPred(Node node) {
@@ -195,39 +184,34 @@ Block = dict(
 	public boolean isBad() {
 		return binding.is_Bad(ptr) != 0;
 	}
-	''',
-),
+	'''
 
-Borrow = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Borrow(Binop):
+	flags = []
 
-Bound = dict(
-	ins    = [ "mem", "index", "lower", "upper" ],
- 	outs   = [ "M", "X_regular", "X_except", "res" ],
- 	flags  = "fragile, highlevel",
-	pinned = "exception",
-	pinned_init = "op_pin_state_pinned",
-	attr_struct = "bound_attr",
+class Bound(Op):
+	ins    = [ "mem", "index", "lower", "upper" ]
+ 	outs   = [ "M", "X_regular", "X_except", "res" ]
+ 	flags  = [ "fragile", "highlevel" ]
+	pinned = "exception"
+	pinned_init = "op_pin_state_pinned"
+	attr_struct = "bound_attr"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
 	#endif
 	'''
-),
 
-Break = dict(
-	mode   = "mode_X",
-	flags  = "cfopcode",
-	pinned = "yes",
-),
+class Break(Op):
+	mode   = "mode_X"
+	flags  = [ "cfopcode" ]
+	pinned = "yes"
 
-Builtin = dict(
-	ins      = [ "mem" ],
-	arity    = "variable",
-	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
-	flags    = "uses_memory",
+class Builtin(Op):
+	ins      = [ "mem" ]
+	arity    = "variable"
+	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ]
+	flags    = [ "uses_memory" ]
 	attrs    = [
 		dict(
 			type = "ir_builtin_kind",
@@ -237,88 +221,78 @@ Builtin = dict(
 			type = "ir_type*",
 			name = "type"
 		)
-	],
-	pinned      = "memory",
-	pinned_init = "op_pin_state_pinned",
-	attr_struct = "builtin_attr",
+	]
+	pinned      = "memory"
+	pinned_init = "op_pin_state_pinned"
+	attr_struct = "builtin_attr"
 	init   = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 
-	# TODO: No firm_alloc_frag_arr??
-),
-
-Call = dict(
-	ins      = [ "mem", "ptr" ],
-	arity    = "variable",
-	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ],
-	flags    = "fragile, uses_memory",
+class Call(Op):
+	ins      = [ "mem", "ptr" ]
+	arity    = "variable"
+	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ]
+	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
 		dict(
 			type = "ir_type*",
 			name = "type"
 		)
-	],
-	attr_struct = "call_attr",
-	pinned      = "memory",
-	pinned_init = "op_pin_state_pinned",
+	]
+	attr_struct = "call_attr"
+	pinned      = "memory"
+	pinned_init = "op_pin_state_pinned"
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
-	''',
+	'''
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
 	#endif
 	'''
-),
 
-CallBegin = dict(
-	ins   = [ "ptr" ],
-	outs  = [ "" ], # TODO
-	flags         = "cfopcode, ip_cfopcode",
-	pinned        = "yes",
+class CallBegin(Op):
+	ins   = [ "ptr" ]
+	outs  = [ "" ] # TODO
+	flags         = [ "cfopcode", "ip_cfopcode" ]
+	pinned        = "yes"
 	# TODO: attribute with call...
-	attr_struct   = "callbegin_attr",
+	attr_struct   = "callbegin_attr"
 	attrs         = [
 		dict(
 			type = "ir_node*",
 			name = "call"
 		)
-	],
-	java_noconstr = True,
-),
+	]
+	java_noconstr = True
 
-Carry = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Carry(Binop):
+	flags = [ "commutative" ]
 
-Cast = dict(
-	ins      = [ "op" ],
-	mode     = "get_irn_mode(irn_op)",
-	flags    = "highlevel",
-	pinned   = "no",
+class Cast(Op):
+	ins      = [ "op" ]
+	mode     = "get_irn_mode(irn_op)"
+	flags    = [ "highlevel" ]
+	pinned   = "no"
 	attrs    = [
 		dict(
 			type = "ir_type*",
 			name = "type"
 		)
-	],
-	attr_struct = "cast_attr",
+	]
+	attr_struct = "cast_attr"
 	init     = "assert(is_atomic_type(type));"
-),
 
-Cmp = dict(
-	is_a     = "binop",
-	outs     = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ],
-	flags    = "none",
-),
+class Cmp(Binop):
+	outs  = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ]
+	flags = []
 
-Cond = dict(
-	ins      = [ "selector" ],
-	outs     = [ "false", "true" ],
-	flags    = "cfopcode, forking",
-	pinned   = "yes",
+class Cond(Op):
+	ins      = [ "selector" ]
+	outs     = [ "false", "true" ]
+	flags    = [ "cfopcode", "forking" ]
+	pinned   = "yes"
 	attrs    = [
 		dict(
 			name = "kind",
@@ -335,42 +309,38 @@ Cond = dict(
 			type = "cond_jmp_predicate",
 			init = "COND_JMP_PRED_NONE"
 		)
-	],
+	]
 	attr_struct = "cond_attr"
-),
 
-Confirm = dict(
-	ins      = [ "value", "bound" ],
-	mode     = "get_irn_mode(irn_value)",
-	flags    = "highlevel",
-	pinned   = "yes",
+class Confirm(Op):
+	ins      = [ "value", "bound" ]
+	mode     = "get_irn_mode(irn_value)"
+	flags    = [ "highlevel" ]
+	pinned   = "yes"
 	attrs    = [
 		dict(
 			name = "cmp",
 			type = "pn_Cmp"
 		),
-	],
-	attr_struct = "confirm_attr",
-),
+	]
+	attr_struct = "confirm_attr"
 
-Const = dict(
-	mode       = "",
-	flags      = "constlike, start_block",
-	knownBlock = True,
-	pinned     = "no",
-	attrs_name = "con",
+class Const(Op):
+	mode       = ""
+	flags      = [ "constlike", "start_block" ]
+	knownBlock = True
+	pinned     = "no"
+	attrs_name = "con"
 	attrs      = [
 		dict(
 			type = "tarval*",
 			name = "tarval",
 		)
-	],
-	attr_struct = "const_attr",
-),
+	]
+	attr_struct = "const_attr"
 
-Conv = dict(
-	is_a     = "unop",
-	flags    = "none",
+class Conv(Unop):
+	flags = []
 	attrs = [
 		dict(
 			name = "strict",
@@ -381,35 +351,33 @@ Conv = dict(
 				init = "1"
 			)
 		)
-	],
-	attr_struct = "conv_attr",
-),
+	]
+	attr_struct = "conv_attr"
 
-CopyB = dict(
-	ins   = [ "mem", "dst", "src" ],
-	outs  = [ "M", "X_regular", "X_except" ],
-	flags = "fragile, highlevel, uses_memory",
+class CopyB(Op):
+	ins   = [ "mem", "dst", "src" ]
+	outs  = [ "M", "X_regular", "X_except" ]
+	flags = [ "fragile", "highlevel", "uses_memory" ]
 	attrs = [
 		dict(
 			name = "type",
 			type = "ir_type*"
 		)
-	],
-	attr_struct = "copyb_attr",
-	pinned      = "memory",
-	pinned_init = "op_pin_state_pinned",
+	]
+	attr_struct = "copyb_attr"
+	pinned      = "memory"
+	pinned_init = "op_pin_state_pinned"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
 	#endif
 	'''
-),
 
-Div = dict(
-	ins   = [ "mem", "left", "right" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	flags = "fragile, uses_memory",
-	attrs_name = "divmod",
+class Div(Op):
+	ins   = [ "mem", "left", "right" ]
+	outs  = [ "M", "X_regular", "X_except", "res" ]
+	flags = [ "fragile", "uses_memory" ]
+	attrs_name = "divmod"
 	attrs = [
 		dict(
 			type = "ir_mode*",
@@ -424,100 +392,88 @@ Div = dict(
 				init = "1"
 			)
 		)
-	],
-	attr_struct = "divmod_attr",
-	pinned      = "exception",
-	op_index    = 1,
-	arity_override = "oparity_binary",
+	]
+	attr_struct = "divmod_attr"
+	pinned      = "exception"
+	op_index    = 1
+	arity_override = "oparity_binary"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
 	#endif
 	'''
-),
 
-DivMod = dict(
-	ins   = [ "mem", "left", "right" ],
-	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ],
-	flags = "fragile, uses_memory",
-	attrs_name = "divmod",
+class DivMod(Op):
+	ins   = [ "mem", "left", "right" ]
+	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ]
+	flags = [ "fragile", "uses_memory" ]
+	attrs_name = "divmod"
 	attrs = [
 		dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-	],
-	attr_struct = "divmod_attr",
-	pinned      = "exception",
-	op_index    = 1,
-	arity_override = "oparity_binary",
+	]
+	attr_struct = "divmod_attr"
+	pinned      = "exception"
+	op_index    = 1
+	arity_override = "oparity_binary"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
 	#endif
 	'''
-),
 
-Dummy = dict(
-	ins   = [],
-	flags = "cfopcode, fragile, start_block, constlike, dump_noblock",
-	knownBlock = True,
-	pinned     = "yes",
-	block      = "get_irg_start_block(irg)",
-),
+class Dummy(Op):
+	ins   = []
+	flags = [ "cfopcode", "fragile", "start_block", "constlike",
+	          "dump_noblock" ]
+	knownBlock = True
+	pinned     = "yes"
+	block      = "get_irg_start_block(irg)"
 
-End = dict(
-	mode       = "mode_X",
-	pinned     = "yes",
-	arity      = "dynamic",
-	flags      = "cfopcode",
-	singleton  = True,
-),
+class End(Op):
+	mode       = "mode_X"
+	pinned     = "yes"
+	arity      = "dynamic"
+	flags      = [ "cfopcode" ]
+	singleton  = True
 
-EndExcept = dict(
-	mode      = "mode_X",
-	pinned    = "yes",
-	arity     = "dynamic",
-	flags     = "cfopcode, ip_cfopcode",
+class EndExcept(Op):
+	mode      = "mode_X"
+	pinned    = "yes"
+	arity     = "dynamic"
+	flags     = [ "cfopcode", "ip_cfopcode" ]
 	singleton = True
-),
 
-EndReg = dict(
-	mode      = "mode_X",
-	pinned    = "yes",
-	arity     = "dynamic",
-	flags     = "cfopcode, ip_cfopcode",
+class EndReg(Op):
+	mode      = "mode_X"
+	pinned    = "yes"
+	arity     = "dynamic"
+	flags     = [ "cfopcode", "ip_cfopcode" ]
 	singleton = True
-),
 
-Eor = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Eor(Binop):
+	flags    = [ "commutative" ]
 
-Filter = dict(
-	ins   = [ "pred" ],
-	flags = "none",
+class Filter(Op):
+	ins   = [ "pred" ]
+	flags = []
 	attrs = [
 		dict(
 			name = "proj",
 			type = "long"
 		)
-	],
-	pinned      = "yes",
-	attr_struct = "filter_attr",
+	]
+	pinned      = "yes"
+	attr_struct = "filter_attr"
 	java_noconstr = True
 
-	# TODO: Broken asserts in original:
-	# assert(get_Proj_pred(res));
-	# assert(get_nodes_block(get_Proj_pred(res)));
-),
-
-Free = dict(
-	ins    = [ "mem", "ptr", "size" ],
-	mode   = "mode_M",
-	flags  = "uses_memory",
-	pinned = "yes",
+class Free(Op):
+	ins    = [ "mem", "ptr", "size" ]
+	mode   = "mode_M"
+	flags  = [ "uses_memory" ]
+	pinned = "yes"
 	attrs  = [
 		dict(
 			name = "type",
@@ -527,310 +483,283 @@ Free = dict(
 			name = "where",
 			type = "ir_where_alloc"
 		)
-	],
-	attr_struct = "free_attr",
-),
+	]
+	attr_struct = "free_attr"
 
-Id = dict(
-	ins    = [ "pred" ],
-	pinned = "no",
-	flags  = "none",
-),
+class Id(Op):
+	ins    = [ "pred" ]
+	pinned = "no"
+	flags  = []
 
-IJmp = dict(
-	mode     = "mode_X",
-	pinned   = "yes",
-	ins      = [ "target" ],
-	flags    = "cfopcode, forking, keep",
-),
+class IJmp(Op):
+	mode     = "mode_X"
+	pinned   = "yes"
+	ins      = [ "target" ]
+	flags    = [ "cfopcode", "forking", "keep" ]
 
-InstOf = dict(
-	ins   = [ "store", "obj" ],
-	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ],
-	flags = "highlevel",
+class InstOf(Op):
+	ins   = [ "store", "obj" ]
+	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ]
+	flags = [ "highlevel" ]
 	attrs = [
 		dict(
 			name = "type",
 			type = "ir_type*"
 		)
-	],
-	attr_struct = "io_attr",
-	pinned      = "memory",
-	pinned_init = "op_pin_state_floats",
-),
+	]
+	attr_struct = "io_attr"
+	pinned      = "memory"
+	pinned_init = "op_pin_state_floats"
 
-Jmp = dict(
-	mode     = "mode_X",
-	pinned   = "yes",
-	ins      = [],
-	flags    = "cfopcode",
-),
+class Jmp(Op):
+	mode     = "mode_X"
+	pinned   = "yes"
+	ins      = []
+	flags    = [ "cfopcode" ]
 
-Load = dict(
-	ins      = [ "mem", "ptr" ],
-	outs     = [ "M", "X_regular", "X_except", "res" ],
-	flags    = "fragile, uses_memory",
-	pinned   = "exception",
-	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned",
+class Load(Op):
+	ins      = [ "mem", "ptr" ]
+	outs     = [ "M", "X_regular", "X_except", "res" ]
+	flags    = [ "fragile", "uses_memory" ]
+	pinned   = "exception"
+	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	attrs    = [
 		dict(
 			type = "ir_mode*",
 			name = "mode",
 			java_name = "load_mode"
 		),
-	],
-	attr_struct = "load_attr",
+	]
+	attr_struct = "load_attr"
 	constructor_args = [
 		dict(
 			type = "ir_cons_flags",
 			name = "flags",
 		),
-	],
+	]
 	d_post = '''
 #if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);
 #endif
 	'''
-),
 
-Minus = dict(
-	is_a     = "unop",
-	flags    = "none",
-),
+class Minus(Unop):
+	flags = []
 
-Mod = dict(
-	ins   = [ "mem", "left", "right" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	flags = "fragile, uses_memory",
-	attrs_name = "divmod",
+class Mod(Op):
+	ins   = [ "mem", "left", "right" ]
+	outs  = [ "M", "X_regular", "X_except", "res" ]
+	flags = [ "fragile", "uses_memory" ]
+	attrs_name = "divmod"
 	attrs = [
 		dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-	],
-	attr_struct = "divmod_attr",
-	pinned      = "exception",
-	op_index    = 1,
-	arity_override = "oparity_binary",
+	]
+	attr_struct = "divmod_attr"
+	pinned      = "exception"
+	op_index    = 1
+	arity_override = "oparity_binary"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
 	#endif
 	'''
-),
 
-Mul = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Mul(Binop):
+	flags = [ "commutative" ]
 
-Mulh = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Mulh(Binop):
+	flags = [ "commutative" ]
 
-Mux = dict(
-	ins    = [ "sel", "false", "true" ],
-	flags  = "none",
-	pinned = "no",
-),
+class Mux(Op):
+	ins    = [ "sel", "false", "true" ]
+	flags  = []
+	pinned = "no"
 
-NoMem = dict(
-	mode       = "mode_M",
-	flags      = "dump_noblock, dump_noinput",
-	pinned     = "yes",
-	knownBlock = True,
-	singleton  = True,
-),
+class NoMem(Op):
+	mode       = "mode_M"
+	flags      = [ "dump_noblock", "dump_noinput" ]
+	pinned     = "yes"
+	knownBlock = True
+	singleton  = True
 
-Not = dict(
-	is_a     = "unop",
-	flags    = "none",
-),
+class Not(Unop):
+	flags = []
 
-Or = dict(
-	is_a     = "binop",
-	flags    = "commutative",
-),
+class Or(Binop):
+	flags = [ "commutative" ]
 
-Phi = dict(
-	pinned      = "yes",
-	arity       = "variable",
-	flags       = "none",
-	attr_struct = "phi_attr",
-	custom_is   = True,
-	java_noconstr = True,
-
+class Phi(Op):
+	pinned      = "yes"
+	arity       = "variable"
+	flags       = []
+	attr_struct = "phi_attr"
+	custom_is   = True
+	java_noconstr = True
 	init = '''
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
    	if (is_Phi(res) && mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), res);
 	'''
-),
 
-Pin = dict(
-	ins      = [ "op" ],
-	mode     = "get_irn_mode(irn_op)",
-	flags    = "highlevel",
-	pinned   = "yes",
-),
+class Pin(Op):
+	ins      = [ "op" ]
+	mode     = "get_irn_mode(irn_op)"
+	flags    = [ "highlevel" ]
+	pinned   = "yes"
 
-Proj = dict(
-	ins      = [ "pred" ],
-	flags    = "none",
-	pinned   = "no",
+class Proj(Op):
+	ins      = [ "pred" ]
+	flags    = []
+	pinned   = "no"
 	attrs    = [
 		dict(
 			type = "long",
 			name = "proj",
 			initname = ""
 		)
-	],
-	attr_struct = "long",
-	custom_is   = True,
-),
+	]
+	attr_struct = "long"
+	custom_is   = True
 
-Quot = dict(
-	ins   = [ "mem", "left", "right" ],
-	outs  = [ "M", "X_regular", "X_except", "res" ],
-	flags = "fragile, uses_memory",
-	attrs_name = "divmod",
+class Quot(Op):
+	ins   = [ "mem", "left", "right" ]
+	outs  = [ "M", "X_regular", "X_except", "res" ]
+	flags = [ "fragile", "uses_memory" ]
+	attrs_name = "divmod"
 	attrs = [
 		dict(
 			type = "ir_mode*",
 			name = "resmode"
 		),
-	],
-	attr_struct = "divmod_attr",
-	pinned      = "exception",
-	op_index    = 1,
-	arity_override = "oparity_binary",
+	]
+	attr_struct = "divmod_attr"
+	pinned      = "exception"
+	op_index    = 1
+	arity_override = "oparity_binary"
 	d_post = '''
 	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
 	#endif
 	'''
-),
 
-Raise = dict(
-	ins    = [ "mem", "exo_ptr" ],
-	outs   = [ "M", "X" ],
-	flags  = "highlevel, cfopcode",
-	pinned = "yes",
-),
+class Raise(Op):
+	ins    = [ "mem", "exo_ptr" ]
+	outs   = [ "M", "X" ]
+	flags  = [ "highlevel", "cfopcode" ]
+	pinned = "yes"
 
-Return = dict(
-	ins      = [ "mem" ],
-	arity    = "variable",
-	mode     = "mode_X",
-	flags    = "cfopcode",
-	pinned   = "yes",
-),
+class Return(Op):
+	ins      = [ "mem" ]
+	arity    = "variable"
+	mode     = "mode_X"
+	flags    = [ "cfopcode" ]
+	pinned   = "yes"
 
-Rotl = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Rotl(Binop):
+	flags    = []
 
-Sel = dict(
-	ins    = [ "mem", "ptr" ],
-	arity  = "variable",
-	flags  = "none",
-	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data",
-	pinned = "no",
+class Sel(Op):
+	ins    = [ "mem", "ptr" ]
+	arity  = "variable"
+	flags  = []
+	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
+	pinned = "no"
 	attrs  = [
 		dict(
 			type = "ir_entity*",
 			name = "entity"
 		)
-	],
-	attr_struct = "sel_attr",
-),
+	]
+	attr_struct = "sel_attr"
 
-Shl = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Shl(Binop):
+	flags = []
 
-Shr = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Shr(Binop):
+	flags = []
 
-Shrs = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Shrs(Binop):
+	flags = []
 
-Start = dict(
-	mode       = "mode_T",
-	pinned     = "yes",
-	flags      = "cfopcode",
-	singleton  = True,
-),
+class Start(Op):
+	mode       = "mode_T"
+	pinned     = "yes"
+	flags      = [ "cfopcode" ]
+	singleton  = True
 
-Store = dict(
-	ins      = [ "mem", "ptr", "value" ],
-	outs     = [ "M", "X_regular", "X_except" ],
-	flags    = "fragile, uses_memory",
-	pinned   = "exception",
-	attr_struct = "store_attr",
-	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned",
+class Store(Op):
+	ins      = [ "mem", "ptr", "value" ]
+	outs     = [ "M", "X_regular", "X_except" ]
+	flags    = [ "fragile", "uses_memory" ]
+	pinned   = "exception"
+	attr_struct = "store_attr"
+	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	constructor_args = [
 		dict(
 			type = "ir_cons_flags",
 			name = "flags",
 		),
-	],
+	]
 	d_post = '''
 #if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
 #endif
 	'''
-),
 
-Sub = dict(
-	is_a     = "binop",
-	flags    = "none",
-),
+class Sub(Binop):
+	flags = []
 
-SymConst = dict(
-	mode       = "mode_P",
-	flags      = "constlike, start_block",
-	knownBlock = True,
-	pinned     = "no",
+class SymConst(Op):
+	mode       = "mode_P"
+	flags      = [ "constlike", "start_block" ]
+	knownBlock = True
+	pinned     = "no"
 	attrs      = [
 		dict(
 			type = "ir_entity*",
 			name = "entity"
 		)
-	],
-	attr_struct = "symconst_attr",
-	java_noconstr = True,
-),
-
-Sync = dict(
-	mode     = "mode_M",
-	flags    = "none",
-	pinned   = "no",
-	optimize = False,
-	arity    = "dynamic"
-),
-
-Tuple = dict(
-	arity  = "variable",
-	mode   = "mode_T",
-	pinned = "no",
-	flags  = "labeled",
+	]
+	attr_struct = "symconst_attr"
 	java_noconstr = True
-),
 
-Unknown = dict(
-	knownBlock = True,
-	pinned     = "yes",
-	block      = "get_irg_start_block(irg)",
-	flags      = "cfopcode, fragile, start_block, constlike, dump_noblock",
-),
-)
+class Sync(Op):
+	mode     = "mode_M"
+	flags    = []
+	pinned   = "no"
+	optimize = False
+	arity    = "dynamic"
+
+class Tuple(Op):
+	arity  = "variable"
+	mode   = "mode_T"
+	pinned = "no"
+	flags  = [ "labeled" ]
+	java_noconstr = True
+
+class Unknown(Op):
+	knownBlock = True
+	pinned     = "yes"
+	block      = "get_irg_start_block(irg)"
+	flags      = [ "cfopcode", "fragile", "start_block", "constlike",
+	               "dump_noblock" ]
+
+# Prepare node list
+
+def getOpList(namespace):
+	nodes = []
+	for t in namespace.values():
+		if type(t) != type:
+			continue
+
+		if issubclass(t, Op):
+			setnodedefaults(t)
+			nodes.append(t)
+	return nodes
+
+nodes = getOpList(globals())
+nodes = sorted(nodes, lambda x,y: cmp(x.name, y.name))

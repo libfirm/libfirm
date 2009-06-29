@@ -2,7 +2,7 @@
 import sys
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
-from spec_util import is_dynamic_pinned, verify_node
+from spec_util import is_dynamic_pinned, verify_node, isAbstract
 import ir_spec
 
 def error(msg):
@@ -14,20 +14,18 @@ def warning(msg):
 	sys.stderr.write("Warning: " + msg + "\n");
 
 def format_args(arglist):
-	#argstrings = map(lambda arg : arg["name"], arglist)
-	#return ", ".join(argstrings)
 	s = ", ".join(arglist)
 	if len(s) == 0:
 	  return ""
 	return ", " + s
 
 def format_ifnset(string, node, key):
-	if key in node:
+	if hasattr(node, key):
 		return ""
 	return string
 
 def format_block(node):
-	if node.get("knownBlock"):
+	if hasattr(node, "knownBlock"):
 		return ""
 	else:
 		return ", get_node(env, preds[0])"
@@ -37,7 +35,7 @@ env.filters['args']   = format_args
 env.filters['ifnset'] = format_ifnset
 env.filters['block']  = format_block
 
-def get_io_type(type, attrname, nodename):
+def get_io_type(type, attrname, node):
 	if type == "tarval*":
 		importcmd = "tarval *%s = read_tv(env);" % attrname
 		exportcmd = "write_tarval(env, %(val)s);";
@@ -50,18 +48,18 @@ def get_io_type(type, attrname, nodename):
 	elif type == "ir_type*":
 		importcmd = "ir_type *%s = read_type(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", get_type_nr(%(val)s));"""
-	elif type == "long" and nodename == "Proj":
+	elif type == "long" and node.name == "Proj":
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
 	elif type == "pn_Cmp" or type == "ir_where_alloc":
 		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
 		exportcmd = """fprintf(env->file, "%%ld ", (long) %(val)s);"""
-	elif type == "ir_cons_flags" and nodename == "Store":
+	elif type == "ir_cons_flags" and node.name == "Store":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
 		exportcmd = """write_pin_state(env, irn);
 			write_volatility(env, irn);
 			write_align(env, irn);"""
-	elif type == "ir_cons_flags" and nodename == "Load":
+	elif type == "ir_cons_flags" and node.name == "Load":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
 		exportcmd = """write_pin_state(env, irn);
 			write_volatility(env, irn);
@@ -85,83 +83,67 @@ def get_io_type(type, attrname, nodename):
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
 	else:
-		error("cannot generate import/export for node %s: unsupported attribute type: %s" % (nodename, type))
+		error("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
 		importcmd = """// BAD: %s %s
 			%s %s = (%s) 0;""" % (type, attrname, type, attrname, type)
 		exportcmd = "// BAD: %s" % type
 	return (importcmd, exportcmd)
 
-def prepare_attr(nodename, attr):
-	(importcmd,exportcmd) = get_io_type(attr["type"], attr["name"], nodename)
+def prepare_attr(node, attr):
+	(importcmd,exportcmd) = get_io_type(attr["type"], attr["name"], node)
 	attr["importcmd"] = importcmd
-	attr["exportcmd"] = exportcmd % {"val": "get_%s_%s(irn)" % (nodename, attr["name"])}
+	attr["exportcmd"] = exportcmd % {"val": "get_%s_%s(irn)" % (node.name, attr["name"])}
 
-def preprocess_node(nodename, node):
-	if "is_a" in node:
-		parent = ir_spec.nodes[node["is_a"]]
-		node["ins"] = parent["ins"]
-		if "outs" in parent:
-			node["outs"] = parent["outs"]
-	if "ins" not in node:
-		node["ins"] = []
-	if "outs" in node:
-		node["mode"] = "mode_T"
-	if "arity" not in node:
-		node["arity"] = len(node["ins"])
-	if "attrs" not in node:
-		node["attrs"] = []
-	if "constructor_args" not in node:
-		node["constructor_args"] = []
-	if "pinned" not in node:
-		node["pinned"] = "no"
+
+def preprocess_node(node):
 	# dynamic pin state means, we have to im/export that
 	if is_dynamic_pinned(node):
 		newattr = dict(
 			name = "state",
 			type = "op_pin_state"
 		)
-		if "pinned_init" in node:
-			newattr["init"] = node["pinned_init"]
-		node["attrs"].append(newattr)
+		if hasattr(node, "pinned_init"):
+			newattr["init"] = node.pinned_init
+		node.attrs.append(newattr)
 
-	verify_node(nodename, node)
+	verify_node(node)
 
 	# construct node arguments
 	arguments = [ ]
 	initargs = [ ]
 	specialconstrs = [ ]
 	i = 0
-	for input in node["ins"]:
+	for input in node.ins:
 		arguments.append("prednodes[%i]" % i)
 		i += 1
 
-	if node["arity"] == "variable" or node["arity"] == "dynamic":
+	if node.arity == "variable" or node.arity == "dynamic":
 		arguments.append("numpreds - %i" % (i + 1))
 		arguments.append("prednodes + %i" % i)
 
-	if "mode" not in node:
+	if not hasattr(node, "mode"):
 		arguments.append("mode")
 
 	attrs_with_special = 0
-	for attr in node["attrs"]:
-		prepare_attr(nodename, attr)
+	for attr in node.attrs:
+		prepare_attr(node, attr)
 		if "special" in attr:
 			if not "init" in attr:
-				warning("Node type %s has an attribute with a \"special\" entry but without \"init\"" % nodename)
+				warning("Node type %s has an attribute with a \"special\" entry but without \"init\"" % node.name)
 				sys.exit(1)
 
 			if attrs_with_special != 0:
-				warning("Node type %s has more than one attribute with a \"special\" entry" % nodename)
+				warning("Node type %s has more than one attribute with a \"special\" entry" % node.name)
 				sys.exit(1)
 
 			attrs_with_special += 1
 
 			if "prefix" in attr["special"]:
-				specialname = attr["special"]["prefix"] + nodename
+				specialname = attr["special"]["prefix"] + node.name
 			elif "suffix" in attr["special"]:
-				specialname = nodename + attr["special"]["suffix"]
+				specialname = node.name + attr["special"]["suffix"]
 			else:
-				error("Unknown special constructor type for node type %s" % nodename)
+				error("Unknown special constructor type for node type %s" % node.name)
 				sys.exit(1)
 
 			specialconstrs.append(
@@ -175,21 +157,21 @@ def preprocess_node(nodename, node):
 			if attr["type"] == "op_pin_state":
 				initfunc = "set_irn_pinned"
 			else:
-				initfunc = "set_" + nodename + "_" + attr["name"]
+				initfunc = "set_" + node.name + "_" + attr["name"]
 			initargs.append((attr["name"], initfunc))
 		else:
 			arguments.append(attr["name"])
 
-	for arg in node["constructor_args"]:
-		prepare_attr(nodename, arg)
+	for arg in node.constructor_args:
+		prepare_attr(node, arg)
 		arguments.append(arg["name"])
 
-	node["arguments"] = arguments
-	node["initargs"] = initargs
-	node["special_constructors"] = specialconstrs
+	node.arguments = arguments
+	node.initargs = initargs
+	node.special_constructors = specialconstrs
 
 export_attrs_template = env.from_string('''
-	case iro_{{nodename}}:
+	case iro_{{node.name}}:
 		{{"write_mode(env, get_irn_mode(irn));"|ifnset(node,"mode")}}
 		{% for attr in node.attrs %}{{attr.exportcmd}}
 		{% endfor %}
@@ -197,7 +179,7 @@ export_attrs_template = env.from_string('''
 		{% endfor %}break;''')
 
 import_attrs_template = env.from_string('''
-	case iro_{{nodename}}:
+	case iro_{{node.name}}:
 	{
 		{{"ir_mode *mode = read_mode(env);"|ifnset(node,"mode")}}
 		{% for attr in node.attrs %}{{attr.importcmd}}
@@ -205,9 +187,9 @@ import_attrs_template = env.from_string('''
 		{% for attr in node.constructor_args %}{{attr.importcmd}}
 		{% endfor %}
 		{% for special in node.special_constructors %}if({{special.attrname}} == {{special.value}})
-			newnode = new_r_{{special.constrname}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
+			newnode = new_r_{{special.constrname}}(current_ir_graph{{node|block}}{{node.arguments|args}});
 		else{% endfor %}
-		newnode = new_r_{{nodename}}(current_ir_graph{{node|block}}{{node["arguments"]|args}});
+		newnode = new_r_{{node.name}}(current_ir_graph{{node|block}}{{node.arguments|args}});
 		{% for (initarg, initfunc) in node.initargs %}{{initfunc}}(newnode, {{initarg}});
 		{% endfor %}
 		break;
@@ -222,36 +204,40 @@ def main(argv):
 		sys.exit(1)
 
 	gendir = argv[2]
-	sortednodes = do_dictsort(ir_spec.nodes)
 	# these nodes don't work correctly yet for some reasons...
 	niynodes = [ "EndExcept", "EndReg", "ASM" ]
 	# these have custom im-/export code
 	customcode = [ "Start", "End", "Anchor", "SymConst", "Block" ]
 
+	real_nodes = []
+	for node in ir_spec.nodes:
+		if isAbstract(node):
+			continue
+		real_nodes.append(node)
+
 	file = open(gendir + "/gen_irio_export.inl", "w");
-	for nodename, node in sortednodes:
-		if nodename in niynodes:
+	for node in real_nodes:
+		if node.__name__ in niynodes:
 			continue
 
-		preprocess_node(nodename, node)
-		if "abstract" not in node:
-			file.write(export_attrs_template.render(vars()))
+		preprocess_node(node)
+		file.write(export_attrs_template.render(vars()))
 	file.write("\n")
 	file.close()
 
 	file = open(gendir + "/gen_irio_import.inl", "w");
-	for nodename, node in sortednodes:
-		if "abstract" in node or nodename in customcode or nodename in niynodes:
+	for node in real_nodes:
+		if node.name in customcode or node.name in niynodes:
 			continue
 		file.write(import_attrs_template.render(vars()))
 	file.write("\n")
 	file.close()
 
 	file = open(gendir + "/gen_irio_lex.inl", "w");
-	for nodename, node in sortednodes:
-		if "abstract" not in node and nodename not in niynodes:
-			file.write("\tINSERT(\"" + nodename + "\", tt_iro, iro_" + nodename + ");\n");
+	for node in real_nodes:
+		if node.name in niynodes:
+			continue
+		file.write("\tINSERT(\"" + node.name + "\", tt_iro, iro_" + node.name + ");\n");
 	file.close()
 
-if __name__ == "__main__":
-	main(sys.argv)
+main(sys.argv)
