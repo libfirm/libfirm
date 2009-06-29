@@ -31,7 +31,6 @@
 #include "irtypes.h"
 #include "pseudo_irg.h"
 #include "ircgcons.h"
-#include "firm_common_t.h"
 #include "irtypeinfo.h"
 #include "irmemory.h"
 

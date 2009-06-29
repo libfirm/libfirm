@@ -29,7 +29,6 @@
 #include "debug.h"
 #include "interval_analysis.h"
 #include "execution_frequency.h"
-#include "firm_common_t.h"
 #include "set.h"
 #include "array.h"
 

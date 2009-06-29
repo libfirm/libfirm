@@ -33,7 +33,6 @@
 
 #include "gaussseidel.h"
 
-#include "firm_common_t.h"
 #include "set.h"
 #include "hashptr.h"
 #include "debug.h"

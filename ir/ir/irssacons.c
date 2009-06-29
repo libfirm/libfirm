@@ -46,7 +46,6 @@ static void prepare_nodes(ir_node *irn, void *env) {
 		memset(irn->attr.block.graph_arr, 0, sizeof(ir_node *) * current_ir_graph->n_loc);
 		irn->attr.block.phis       = NULL;
 		break;
-#if PRECISE_EXC_CONTEXT
 	/* note that the frag array must be cleared first, else firm_alloc_frag_arr()
 	   will not allocate new memory. */
 	case iro_Quot:
@@ -89,7 +88,6 @@ static void prepare_nodes(ir_node *irn, void *env) {
 		irn->attr.bound.exc.frag_arr = NULL;
 		firm_alloc_frag_arr(irn, op_Bound, &irn->attr.bound.exc.frag_arr);
 		break;
-#endif
 	default:
 		;
 	}

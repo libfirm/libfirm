@@ -27,7 +27,6 @@
 #define FIRM_IR_IRDEFS_H
 
 #include "firm_types.h"
-#include "firm_common_t.h"
 #include "irdom_t.h"
 #include "irmode.h"
 #include "irnode.h"
@@ -184,9 +183,7 @@ typedef struct {
 	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
 									 If it's know that no exception will be generated, could be set to
 									 op_pin_state_floats. */
-#if PRECISE_EXC_CONTEXT
 	struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
-#endif
 } except_attr;
 
 /** Call attributes. */

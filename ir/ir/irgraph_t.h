@@ -29,7 +29,6 @@
 #include "firm_types.h"
 #include "irgraph.h"
 
-#include "firm_common_t.h"
 #include "irtypes.h"
 #include "irprog.h"
 #include "pseudo_irg.h"

@@ -28,8 +28,6 @@
 
 #include <assert.h>
 
-#include "firm_common_t.h"
-
 #include "typerep.h"
 #include "type_t.h"
 #include "ident.h"

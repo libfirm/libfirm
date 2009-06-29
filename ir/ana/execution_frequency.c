@@ -28,7 +28,6 @@
 
 #include "execution_frequency.h"
 
-#include "firm_common_t.h"
 #include "set.h"
 #include "pdeq.h"
 #include "hashptr.h"

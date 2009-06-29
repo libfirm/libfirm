@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-#include "firm_common_t.h"
-
 #include "xmalloc.h"
 #include "entity_t.h"
 #include "array.h"

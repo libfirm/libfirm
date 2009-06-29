@@ -324,7 +324,6 @@ EXTRA_DIST = \
 	common/error.h \
 	common/irtools.h \
 	common/firmwalk.h \
-	common/firm_common_t.h \
 	common/debug.h \
 	debug/dbginfo_t.h \
 	debug/debugger.h \

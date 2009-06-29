@@ -32,7 +32,6 @@
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "ircons_t.h"
-#include "firm_common_t.h"
 #include "irvrfy.h"
 #include "irop_t.h"
 #include "iropt_t.h"
@@ -766,7 +765,6 @@ new_rd_Phi_in(ir_graph *irg, ir_node *block, ir_mode *mode,
 static ir_node *
 get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
 
-#if PRECISE_EXC_CONTEXT
 static ir_node *
 phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
@@ -884,7 +882,6 @@ get_r_frag_value_internal(ir_node *block, ir_node *cfOp, int pos, ir_mode *mode)
 	}
 	return res;
 }  /* get_r_frag_value_internal */
-#endif /* PRECISE_EXC_CONTEXT */
 
 /**
  * Check whether a control flownode  cf_pred represents an exception flow.
@@ -960,14 +957,12 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins) {
 		} else {
 			phi0 = new_rd_Phi0(irg, block, mode);
 			block->attr.block.graph_arr[pos] = phi0;
-#if PRECISE_EXC_CONTEXT
 			if (get_opt_precise_exc_context()) {
 				/* Set graph_arr for fragile ops.  Also here we should break recursion.
 				   We could choose a cyclic path through an cfop.  But the recursion would
 				   break at some point. */
 				set_frag_value(block->attr.block.graph_arr, pos, phi0);
 			}
-#endif
 		}
 	}
 
@@ -987,12 +982,10 @@ phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins) {
 		prevBlock = prevCfOp->in[0]; /* go past control flow op to prev block */
 		assert(prevBlock);
 		if (!is_Bad(prevBlock)) {
-#if PRECISE_EXC_CONTEXT
 			if (get_opt_precise_exc_context() && is_exception_flow(cf_pred, prevCfOp)) {
 				assert(get_r_frag_value_internal(prevBlock, prevCfOp, pos, mode));
 				nin[i-1] = get_r_frag_value_internal(prevBlock, prevCfOp, pos, mode);
 			} else
-#endif
 				nin[i-1] = get_r_value_internal(prevBlock, pos, mode);
 		} else {
 			nin[i-1] = new_Bad();

@@ -280,7 +280,7 @@ ir_node *new_r_{{node.constrname}}(ir_graph *irg{{node|blockdecl}}{{node|argdecl
 	return new_rd_{{node.constrname}}(NULL, irg{{node|block}}{{node|args}});
 }
 
-ir_node *new_d_{{node.constrname}}(dbg_info *dbgi{{node|argdecls(node.nodbginfo)}})
+ir_node *new_d_{{node.constrname}}(dbg_info *dbgi{{node|argdecls}})
 {
 	ir_node *res;
 	{{ node.d_pre }}
@@ -291,11 +291,7 @@ ir_node *new_d_{{node.constrname}}(dbg_info *dbgi{{node|argdecls(node.nodbginfo)
 
 ir_node *new_{{node.constrname}}({{node|argdecls(True, True)}})
 {
-	{% if node.nodbginfo -%}
-		return new_d_{{node.constrname}}({{node|args(True)}});
-	{%- else -%}
-		return new_d_{{node.constrname}}(NULL{{node|args}});
-	{%- endif %}
+	return new_d_{{node.constrname}}(NULL{{node|args}});
 }
 ''')
 

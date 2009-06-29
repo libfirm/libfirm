@@ -43,9 +43,7 @@ class Alloc(Op):
 	pinned      = "yes"
 	attr_struct = "alloc_attr"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
-	#endif
 	'''
 
 class Anchor(Op):
@@ -198,9 +196,7 @@ class Bound(Op):
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "bound_attr"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
-	#endif
 	'''
 
 class Break(Op):
@@ -248,9 +244,7 @@ class Call(Op):
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
-	#endif
 	'''
 
 class CallBegin(Op):
@@ -369,9 +363,7 @@ class CopyB(Op):
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
-	#endif
 	'''
 
 class Div(Op):
@@ -399,9 +391,7 @@ class Div(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
-	#endif
 	'''
 
 class DivMod(Op):
@@ -420,9 +410,7 @@ class DivMod(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
-	#endif
 	'''
 
 class Dummy(Op):
@@ -539,9 +527,7 @@ class Load(Op):
 		),
 	]
 	d_post = '''
-#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);
-#endif
 	'''
 
 class Minus(Unop):
@@ -563,9 +549,7 @@ class Mod(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
-	#endif
 	'''
 
 class Mul(Binop):
@@ -642,9 +626,7 @@ class Quot(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 	d_post = '''
-	#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
-	#endif
 	'''
 
 class Raise(Op):
@@ -706,9 +688,7 @@ class Store(Op):
 		),
 	]
 	d_post = '''
-#if PRECISE_EXC_CONTEXT
 	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
-#endif
 	'''
 
 class Sub(Binop):

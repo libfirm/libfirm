@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "firm_common_t.h"
-
 #include "list.h"
 
 #include "irnode_t.h"

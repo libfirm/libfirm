@@ -32,8 +32,6 @@
 #include "irdump_t.h"
 #include "irgraph_t.h"
 
-#include "firm_common_t.h"
-
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "trouts.h"

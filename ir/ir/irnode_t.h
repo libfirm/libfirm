@@ -31,7 +31,6 @@
 #include "irop_t.h"
 #include "irgraph_t.h"
 #include "irflag_t.h"
-#include "firm_common_t.h"
 #include "array.h"
 
 /**
