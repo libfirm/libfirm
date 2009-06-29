@@ -95,11 +95,12 @@ class ASM(Op):
 	java_noconstr = True
 
 class Bad(Op):
-	mode       = "mode_Bad"
-	flags      = [ "cfopcode", "fragile", "start_block", "dump_noblock" ]
-	pinned     = "yes"
-	knownBlock = True
-	singleton  = True
+	mode        = "mode_Bad"
+	flags       = [ "cfopcode", "fragile", "start_block", "dump_noblock" ]
+	pinned      = "yes"
+	knownBlock  = True
+	singleton   = True
+	attr_struct = "irg_attr"
 	init = '''
 	res->attr.irg.irg = irg;
 	'''
