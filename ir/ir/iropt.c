@@ -5057,7 +5057,6 @@ static ir_node *transform_node_shift(ir_node *n) {
 			/* shifting too much */
 			if (!(tarval_cmp(res, modulo) & pn_Cmp_Lt)) {
 				if (is_Shrs(n)) {
-					ir_graph *irg   = get_irn_irg(n);
 					ir_node  *block = get_nodes_block(n);
 					dbg_info *dbgi  = get_irn_dbg_info(n);
 					ir_mode  *smode  = get_irn_mode(right);

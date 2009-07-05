@@ -792,7 +792,6 @@ void do_gvn_pre(ir_graph *irg)
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.gvn_pre");
-	firm_dbg_set_mask(dbg, 3);
 
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);

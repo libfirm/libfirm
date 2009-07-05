@@ -288,7 +288,6 @@ static void get_perm_cycle(perm_cycle_t *const cycle,
 static void lower_perm_node(ir_node *irn, lower_env_t *env)
 {
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	ir_graph                    *const irg         = get_irn_irg(irn);
 	ir_node                     *const block       = get_nodes_block(irn);
 	int                          const arity       = get_irn_arity(irn);
 	reg_pair_t                  *const pairs       = ALLOCAN(reg_pair_t, arity);
@@ -642,8 +641,6 @@ static void assure_constraints_walker(ir_node *block, void *walk_env) {
  * (or Projs of the same node), copying the same operand.
  */
 static void melt_copykeeps(constraint_env_t *cenv) {
-	be_irg_t *birg = cenv->birg;
-	ir_graph *irg  = be_get_birg_irg(birg);
 	ir_nodemap_iterator_t map_iter;
 	ir_nodemap_entry_t    map_entry;
 

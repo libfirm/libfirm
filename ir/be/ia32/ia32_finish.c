@@ -247,10 +247,8 @@ static int get_first_same(const arch_register_req_t* req)
  * is not fulfilled.
  * Transform Sub into Neg -- Add if IN2 == OUT
  */
-static void assure_should_be_same_requirements(ia32_code_gen_t *cg,
-                                               ir_node *node)
+static void assure_should_be_same_requirements(ir_node *node)
 {
-	ir_graph                   *irg      = cg->irg;
 	const arch_register_req_t **reqs;
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
@@ -458,8 +456,6 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 	}
 
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
-		ia32_code_gen_t *cg = env;
-
 		next = sched_next(irn);
 
 		/* check if there is a sub which need to be transformed */
@@ -475,7 +471,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 			/* some nodes are just a bit less efficient, but need no fixing if the
 			 * should be same requirement is not fulfilled */
 			if (need_constraint_copy(irn))
-				assure_should_be_same_requirements(cg, irn);
+				assure_should_be_same_requirements(irn);
 		}
 	}
 }

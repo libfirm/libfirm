@@ -556,7 +556,6 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 {
 	mips_abi_env_t   *env = self;
 
-	ir_graph *irg = env->irg;
 	ir_node *sp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_SP]);
 	ir_node *fp = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 	ir_node *load;

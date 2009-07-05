@@ -1240,7 +1240,6 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
  */
 static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 {
-	ir_graph        *irg   = get_irn_irg(node);
 	ir_node         *block = get_nodes_block(node);
 	ir_node         *sp    = be_abi_get_ignore_irn(cg->birg->abi, &ia32_gp_regs[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);

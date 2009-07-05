@@ -3845,7 +3845,6 @@ static ir_node *gen_Bound(ir_node *node)
 	if (is_Const_0(lower)) {
 		/* typical case for Java */
 		ir_node  *sub, *res, *flags, *block;
-		ir_graph *irg  = current_ir_graph;
 
 		res = gen_binop(node, get_Bound_index(node), get_Bound_upper(node),
 			new_bd_ia32_Sub, match_mode_neutral	| match_am | match_immediate);
@@ -4206,7 +4205,6 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node)
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
@@ -4451,7 +4449,6 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 static ir_node *gen_be_Call(ir_node *node)
 {
 	dbg_info       *const dbgi      = get_irn_dbg_info(node);
-	ir_graph       *const irg       = current_ir_graph;
 	ir_node        *const src_block = get_nodes_block(node);
 	ir_node        *const block     = be_transform_node(src_block);
 	ir_node        *const src_mem   = get_irn_n(node, be_pos_Call_mem);
@@ -5220,7 +5217,6 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	ir_node  *block       = be_transform_node(get_nodes_block(node));
 	ir_node  *call        = get_Proj_pred(node);
 	ir_node  *new_call    = be_transform_node(call);
-	ir_graph *irg         = current_ir_graph;
 	dbg_info *dbgi        = get_irn_dbg_info(node);
 	long      proj        = get_Proj_proj(node);
 	ir_mode  *mode        = get_irn_mode(node);

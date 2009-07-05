@@ -85,7 +85,6 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 {
 	be_lv_t *lv     = birg->lv;
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
-	ir_graph *irg   = get_irn_irg(bl);
 	ir_nodeset_t          live;
 	ir_nodeset_iterator_t iter;
 

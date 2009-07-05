@@ -297,7 +297,6 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
 		panic("Unimplemented convert_dbl_to_int() case");
 	}
 	else {
-		ir_graph *irg = current_ir_graph;
 		ir_node *conv;
 
 		conv = new_bd_arm_fpaDbl2GP(NULL, bl, arg, mem);

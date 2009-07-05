@@ -422,7 +422,6 @@ static ir_node *gen_Store(ir_node *node)
 
 static ir_node *gen_Proj_DivMod(ir_node *node)
 {
-	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *divmod  = get_Proj_pred(node);

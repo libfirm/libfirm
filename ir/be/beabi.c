@@ -1333,7 +1333,6 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
  */
 static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
 {
-	ir_graph *irg = env->birg->irg;
 	int n_regs    = pmap_count(regs);
 	int n;
 	ir_node *irn;
