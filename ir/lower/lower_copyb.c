@@ -99,17 +99,17 @@ static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes) {
 			ir_node *store_mem;
 
 			addr_const = new_r_Const_long(irg, mode_Iu, offset);
-			add        = new_r_Add(irg, block, addr_src, addr_const, addr_mode);
+			add        = new_r_Add(block, addr_src, addr_const, addr_mode);
 
-			load     = new_r_Load(irg, block, mem, add, mode, 0);
-			load_res = new_r_Proj(irg, block, load, mode, pn_Load_res);
-			load_mem = new_r_Proj(irg, block, load, mode_M, pn_Load_M);
+			load     = new_r_Load(block, mem, add, mode, 0);
+			load_res = new_r_Proj(block, load, mode, pn_Load_res);
+			load_mem = new_r_Proj(block, load, mode_M, pn_Load_M);
 
 			addr_const = new_r_Const_long(irg, mode_Iu, offset);
-			add        = new_r_Add(irg, block, addr_dst, addr_const, addr_mode);
+			add        = new_r_Add(block, addr_dst, addr_const, addr_mode);
 
-			store     = new_r_Store(irg, block, load_mem, add, load_res, 0);
-			store_mem = new_r_Proj(irg, block, store, mode_M, pn_Store_M);
+			store     = new_r_Store(block, load_mem, add, load_res, 0);
+			store_mem = new_r_Proj(block, store, mode_M, pn_Store_M);
 
 			mem = store_mem;
 		}

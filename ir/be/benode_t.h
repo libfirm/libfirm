@@ -94,7 +94,7 @@ enum {
  * Make a new Spill node.
  */
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
-	ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill);
+	ir_node *bl, ir_node *frame, ir_node *to_spill);
 
 /**
  * Position numbers for the be_Reload inputs.
@@ -108,7 +108,7 @@ enum {
  * Make a new Reload node.
  */
 ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
-	ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *mem, ir_mode *mode);
+	ir_node *bl, ir_node *frame, ir_node *mem, ir_mode *mode);
 
 /**
  * Position numbers for the be_Copy inputs.
@@ -120,7 +120,7 @@ enum {
 /**
  * Make a new Copy node.
  */
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *block, ir_node *in);
+ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
 /** Sets the Copy Argument. */
@@ -129,7 +129,7 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op);
 /**
  * Make a new Perm node.
  */
-ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
+ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *bl, int arity, ir_node *in[]);
 
 /**
  * Reduce a Perm.
@@ -147,8 +147,8 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map);
 /**
  * Create a new MemPerm node.
  */
-ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
-ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int arity, ir_node *in[]);
+ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Keep(const arch_register_class_t *cls, ir_node *bl, int arity, ir_node *in[]);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
 
@@ -160,7 +160,7 @@ enum {
 };
 
 /** Create a new FrameAddr node. */
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent);
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, ir_node *frame, ir_entity *ent);
 
 /** Return the frame input of a FrameAddr node. */
 ir_node *be_get_FrameAddr_frame(const ir_node *node);
@@ -189,13 +189,12 @@ enum {
  * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
  * given by a constant but an ordinary Firm node.
  * @param sp     The stack pointer register.
- * @param irg    The graph.
  * @param bl     The block.
  * @param old_sp The node representing the old stack pointer value.
  * @param sz     The node expressing the size by which the stack pointer shall be grown.
  * @return       A new AddSP node.
  */
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
+ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz);
 
 /**
  * Position numbers for the be_SubSP inputs
@@ -218,18 +217,16 @@ enum {
  * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
  * given by a constant but an ordinary Firm node.
  * @param sp     The stack pointer register.
- * @param irg    The graph.
  * @param bl     The block.
  * @param old_sp The node representing the old stack pointer value.
  * @param sz     The node expressing the size by which the stack pointer shall be grown.
  * @return       A new DecSP node.
  */
-ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz);
+ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz);
 
 /**
  * Make a stack pointer increase/decrease node.
- * @param sp     The stack pointer register.
- * @param irg    The graph to insert the node to.
+ * @param sp     The stack pointer register. * @param irg    The graph to insert the node to.
  * @param bl     The block to insert the node into.
  * @param old_sp The node defining the former stack pointer.
  * @param amount The mount of bytes the stack shall be expanded/shrinked (see set_IncSP_offset)
@@ -238,7 +235,7 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
  * @return       A new stack pointer increment/decrement node.
  * @note         This node sets a register constraint to the @p sp register on its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
                       ir_node *old_sp, int offset, int align);
 
 /** Returns the previous node that computes the stack pointer. */
@@ -357,9 +354,9 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
 
-ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_out);
+ir_node *be_new_RegParams(ir_node *bl, int n_out);
 
-ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[]);
 
 /**
  * Appends a node to a barrier, returns the result proj of the node
@@ -389,8 +386,8 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 enum {
 	be_pos_CopyKeep_op = 0
 };
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode);
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode);
+ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode);
+ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode);
 ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
@@ -406,12 +403,11 @@ enum {
  * Construct a new be_Unwind.
  *
  * @param dbg    debug info
- * @param irg    the graph where the new node will be placed
  * @param bl     the block where the new node will be placed
  * @param mem    the memory input
  * @param sp     the stack pointer input
  */
-ir_node *be_new_Unwind(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp);
+ir_node *be_new_Unwind(dbg_info *dbg, ir_node *bl, ir_node *mem, ir_node *sp);
 
 ir_node *be_get_Unwind_mem(const ir_node *irn);
 ir_node *be_get_Unwind_sp(const ir_node *irn);

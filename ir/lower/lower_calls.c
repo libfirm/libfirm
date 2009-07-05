@@ -518,7 +518,6 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
 		}
 	}
 	return new_r_simpleSel(
-		irg,
 		block,
 		get_irg_no_mem(irg),
 		get_irg_frame(irg),
@@ -569,7 +568,7 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 		turn_into_tuple(p, pn_CopyB_max);
 		set_Tuple_pred(p, pn_CopyB_M_regular, mem);
 		set_Tuple_pred(p, pn_CopyB_M_except,  get_irg_bad(irg));
-		set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(irg, blk));
+		set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(p, pn_CopyB_X_except,  get_irg_bad(irg));
 		++n_args;
 	}
@@ -769,7 +768,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
 			if (is_compound_type(tp)) {
 				ir_node *arg = get_irg_args(irg);
-				arg = new_r_Proj(irg, get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
+				arg = new_r_Proj(get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
 				++k;
 
 				if (is_Unknown(pred)) {
@@ -790,13 +789,13 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 						++n_cr_opt;
 					} else { /* copy-return optimization is impossible, do the copy. */
 						copy = new_r_CopyB(
-							irg, bl,
+							bl,
 							mem,
 							arg,
 							pred,
 							tp
 							);
-						mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
+						mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M_regular);
 					}
 				}
 				if (lp->flags & LF_RETURN_HIDDEN) {

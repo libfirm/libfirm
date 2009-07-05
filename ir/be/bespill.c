@@ -492,7 +492,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	/* override or replace spills list... */
 	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
 	spill->after  = skip_keeps_phis(phi);
-	spill->spill  = new_r_Phi(irg, block, arity, ins, mode_M);
+	spill->spill  = new_r_Phi(block, arity, ins, mode_M);
 	spill->next   = NULL;
 
 	spillinfo->spills = spill;

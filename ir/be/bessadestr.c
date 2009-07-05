@@ -106,7 +106,6 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 	insert_all_perms_env_t *env = data;
 	be_chordal_env_t *chordal_env = env->chordal_env;
 	pmap *perm_map = env->perm_map;
-	ir_graph *irg = chordal_env->irg;
 	be_lv_t *lv = chordal_env->birg->lv;
 	int i, n;
 
@@ -166,7 +165,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			for(pp = set_first(arg_set); pp; pp = set_next(arg_set))
 				in[pp->pos] = pp->arg;
 
-			perm = be_new_Perm(chordal_env->cls, irg, pred_bl, n_projs, in);
+			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
 			be_stat_ev("phi_perm", n_projs);
 
 			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, NULL);
@@ -179,7 +178,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			 */
 			insert_after = perm;
 			for(pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
-				ir_node *proj = new_r_Proj(irg, pred_bl, perm, get_irn_mode(pp->arg), pp->pos);
+				ir_node *proj = new_r_Proj(pred_bl, perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(get_reg(pp->arg));
 				set_reg(proj, get_reg(pp->arg));
@@ -267,7 +266,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 					insert it into schedule,
 					pin it
 				*/
-				ir_node *dupl  = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
+				ir_node *dupl  = be_new_Copy(cls, arg_block, arg);
 
 				/* this is commented out because it will fail in case of unknown float */
 #if 0
@@ -336,8 +335,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 					insert it into schedule,
 					pin it
 				*/
-				ir_node *perm     = get_Proj_pred(arg);
-				ir_node *dupl     = be_new_Copy(cls, chordal_env->irg, arg_block, arg);
+				ir_node *perm = get_Proj_pred(arg);
+				ir_node *dupl = be_new_Copy(cls, arg_block, arg);
 				ir_node *ins;
 
 				/* this is commented out because it will fail in case of unknown float */

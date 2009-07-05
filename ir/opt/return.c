@@ -116,7 +116,7 @@ void normalize_one_return(ir_graph *irg) {
 			ir_node *block = get_nodes_block(ret);
 
 			/* create a new Jmp for every Ret and place the in in */
-			in[j] = new_r_Jmp(irg, block);
+			in[j] = new_r_Jmp(block);
 
 			/* save the return values and shuffle them */
 			for (k = 0; k < n_ret_vals; ++k)
@@ -149,10 +149,10 @@ void normalize_one_return(ir_graph *irg) {
 		if (first)
 			in[i] = first;
 		else
-			in[i] = new_r_Phi(irg, block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
+			in[i] = new_r_Phi(block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
 	}
 
-	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, irg, block, in[0], n_ret_vals-1, &in[1]);
+	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, block, in[0], n_ret_vals-1, &in[1]);
 
 	set_irn_in(endbl, last_idx, endbl_in);
 
@@ -209,7 +209,7 @@ static int can_move_ret(ir_node *ret) {
 			/* simply place a new block here */
 			ir_graph *irg  = get_irn_irg(retbl);
 			ir_node *block = new_r_Block(irg, 1, &pred);
-			ir_node *jmp   = new_r_Jmp(irg, block);
+			ir_node *jmp   = new_r_Jmp(block);
 			set_Block_cfgpred(retbl, i, jmp);
 		}
 	}
@@ -308,7 +308,7 @@ void normalize_n_returns(ir_graph *irg) {
 				in[j] = (is_Phi(pred) && get_nodes_block(pred) == block) ? get_Phi_pred(pred, i) : pred;
 			}
 
-			new_ret = new_rd_Return(dbgi, irg, new_bl, in[0], n_ret_vals - 1, &in[1]);
+			new_ret = new_rd_Return(dbgi, new_bl, in[0], n_ret_vals - 1, &in[1]);
 
 			if (! is_Bad(new_ret)) {
 				/*

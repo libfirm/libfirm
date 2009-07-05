@@ -115,7 +115,7 @@ ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
                     ir_node *link_with)
 {
 	int i, n_preds = get_Block_n_cfgpreds(block);
-	ir_graph *irg = get_irn_irg(block);
+	ir_graph *irg = get_Block_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n_preds);
 	ir_node  *phi;
 
@@ -124,7 +124,7 @@ ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 	for(i = 0; i < n_preds; ++i) {
 		ins[i] = new_r_Unknown(irg, env->mode);
 	}
-	phi = new_r_Phi(irg, block, n_preds, ins, env->mode);
+	phi = new_r_Phi(block, n_preds, ins, env->mode);
 	if(env->new_phis != NULL) {
 		ARR_APP1(ir_node*, env->new_phis, phi);
 	}

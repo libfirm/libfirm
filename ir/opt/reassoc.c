@@ -171,8 +171,8 @@ static int reassoc_Sub(ir_node **in)
 		dbi  = get_irn_dbg_info(n);
 
 		/* Beware of SubP(P, Is) */
-		irn = new_rd_Minus(dbi, current_ir_graph, block, right, rmode);
-		irn = new_rd_Add(dbi, current_ir_graph, block, left, irn, mode);
+		irn = new_rd_Minus(dbi, block, right, rmode);
+		irn = new_rd_Add(dbi, block, left, irn, mode);
 
 		DBG((dbg, LEVEL_5, "Applied: %n - %n => %n + (-%n)\n",
 			get_Sub_left(n), right, get_Sub_left(n), right));
@@ -266,15 +266,15 @@ static int reassoc_commutative(ir_node **node)
 				if (mode_is_int(mode_c1) && mode_is_int(mode_c2)) {
 					/* get the bigger one */
 					if (get_mode_size_bits(mode_c1) > get_mode_size_bits(mode_c2))
-						c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
+						c2 = new_r_Conv(block, c2, mode_c1);
 					else if (get_mode_size_bits(mode_c1) < get_mode_size_bits(mode_c2))
-						c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
+						c1 = new_r_Conv(block, c1, mode_c2);
 					else {
 						/* Try to cast the real const */
 						if (c_c1 == REAL_CONSTANT)
-							c1 = new_r_Conv(current_ir_graph, block, c1, mode_c2);
+							c1 = new_r_Conv(block, c1, mode_c2);
 						else
-							c2 = new_r_Conv(current_ir_graph, block, c2, mode_c1);
+							c2 = new_r_Conv(block, c2, mode_c1);
 					}
 				}
 			}
@@ -467,8 +467,8 @@ static int reassoc_Mul(ir_node **node)
 
 		/* we can only multiplication rules on integer arithmetic */
 		if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
-			in[0] = new_rd_Mul(NULL, current_ir_graph, block, c, t1, mode);
-			in[1] = new_rd_Mul(NULL, current_ir_graph, block, c, t2, mode);
+			in[0] = new_rd_Mul(NULL, block, c, t1, mode);
+			in[1] = new_rd_Mul(NULL, block, c, t2, mode);
 
 			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
 
@@ -518,7 +518,7 @@ static int reassoc_Shl(ir_node **node) {
 
 	blk = get_nodes_block(n);
 	c   = new_Const(tv);
-	irn = new_rd_Mul(get_irn_dbg_info(n), current_ir_graph, blk, x, c, mode);
+	irn = new_rd_Mul(get_irn_dbg_info(n), blk, x, c, mode);
 
 	if (irn != n) {
 		exchange(n, irn);
@@ -725,16 +725,16 @@ transform:
 	mode = get_irn_mode(n);
 
 	if (is_Add(n))
-		irn = new_rd_Add(dbg, current_ir_graph, blk, a, b, mode);
+		irn = new_rd_Add(dbg, blk, a, b, mode);
 	else
-		irn = new_rd_Sub(dbg, current_ir_graph, blk, a, b, mode);
+		irn = new_rd_Sub(dbg, blk, a, b, mode);
 
 	blk  = earliest_block(irn, x, curr_blk);
 
 	if (op == op_Mul)
-		irn = new_rd_Mul(dbg, current_ir_graph, blk, irn, x, mode);
+		irn = new_rd_Mul(dbg, blk, irn, x, mode);
 	else
-		irn = new_rd_Shl(dbg, current_ir_graph, blk, irn, x, mode);
+		irn = new_rd_Shl(dbg, blk, irn, x, mode);
 
 	exchange(n, irn);
 	*node = irn;

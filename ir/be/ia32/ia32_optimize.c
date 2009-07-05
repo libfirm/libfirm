@@ -286,8 +286,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 			/* If there are other users, reroute them to result proj */
 			if (get_irn_n_edges(left) != 2) {
-				ir_node *res = new_r_Proj(current_ir_graph, block, left,
-						mode_Iu, pn_ia32_res);
+				ir_node *res = new_r_Proj(block, left, mode_Iu, pn_ia32_res);
 
 				edges_reroute(left, res, current_ir_graph);
 				/* Reattach the result proj to left */
@@ -296,8 +295,7 @@ static void peephole_ia32_Test(ir_node *node)
 		}
 
 		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-		flags_proj = new_r_Proj(current_ir_graph, block, left, flags_mode,
-				pn_ia32_flags);
+		flags_proj = new_r_Proj(block, left, flags_mode, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);
@@ -503,11 +501,11 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		sched_add_after(skip_Proj(curr_sp), push);
 
 		/* create stackpointer Proj */
-		curr_sp = new_r_Proj(irg, block, push, spmode, pn_ia32_Push_stack);
+		curr_sp = new_r_Proj(block, push, spmode, pn_ia32_Push_stack);
 		arch_set_irn_register(curr_sp, spreg);
 
 		/* create memory Proj */
-		mem_proj = new_r_Proj(irg, block, push, mode_M, pn_ia32_Push_M);
+		mem_proj = new_r_Proj(block, push, mode_M, pn_ia32_Push_M);
 
 		/* use the memproj now */
 		be_peephole_exchange(store, mem_proj);
@@ -748,7 +746,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	block = get_nodes_block(irn);
 	irg   = cg->irg;
 	if (inc_ofs > 0) {
-		pred_sp = be_new_IncSP(esp, irg, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
+		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);
 	}
 
@@ -768,7 +766,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
-		pred_sp = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
+		pred_sp = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_stack);
 		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
@@ -813,7 +811,6 @@ static const arch_register_t *get_free_gp_reg(void)
  * Creates a Pop instruction before the given schedule point.
  *
  * @param dbgi        debug info
- * @param irg         the graph
  * @param block       the block
  * @param stack       the previous stack value
  * @param schedpoint  the new node is added before this node
@@ -821,7 +818,7 @@ static const arch_register_t *get_free_gp_reg(void)
  *
  * @return the new stack value
  */
-static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
+static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
                            ir_node *stack, ir_node *schedpoint,
                            const arch_register_t *reg)
 {
@@ -833,15 +830,15 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
 
 	pop   = new_bd_ia32_Pop(dbgi, block, new_NoMem(), stack);
 
-	stack = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_stack);
+	stack = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
-	val   = new_r_Proj(irg, block, pop, mode_Iu, pn_ia32_Pop_res);
+	val   = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_res);
 	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);
 
 	in[0] = val;
-	keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
+	keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], block, 1, in);
 	sched_add_before(schedpoint, keep);
 
 	return stack;
@@ -851,7 +848,6 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
  * Creates a Push instruction before the given schedule point.
  *
  * @param dbgi        debug info
- * @param irg         the graph
  * @param block       the block
  * @param stack       the previous stack value
  * @param schedpoint  the new node is added before this node
@@ -859,18 +855,18 @@ static ir_node *create_pop(dbg_info *dbgi, ir_graph *irg, ir_node *block,
  *
  * @return the new stack value
  */
-static ir_node *create_push(dbg_info *dbgi, ir_graph *irg, ir_node *block,
+static ir_node *create_push(dbg_info *dbgi, ir_node *block,
                             ir_node *stack, ir_node *schedpoint)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
 
 	ir_node *val   = ia32_new_Unknown_gp(cg);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *nomem = get_irg_no_mem(irg);
+	ir_node *nomem = new_NoMem();
 	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
 	sched_add_before(schedpoint, push);
 
-	stack = new_r_Proj(irg, block, push, mode_Iu, pn_ia32_Push_stack);
+	stack = new_r_Proj(block, push, mode_Iu, pn_ia32_Push_stack);
 	arch_set_irn_register(stack, esp);
 
 	return stack;
@@ -883,7 +879,6 @@ static void peephole_be_IncSP(ir_node *node)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
 	const arch_register_t *reg;
-	ir_graph              *irg = current_ir_graph;
 	dbg_info              *dbgi;
 	ir_node               *block;
 	ir_node               *stack;
@@ -919,19 +914,19 @@ static void peephole_be_IncSP(ir_node *node)
 		block = get_nodes_block(node);
 		stack = be_get_IncSP_pred(node);
 
-		stack = create_pop(dbgi, irg, block, stack, node, reg);
+		stack = create_pop(dbgi, block, stack, node, reg);
 
 		if (offset == -8) {
-			stack = create_pop(dbgi, irg, block, stack, node, reg);
+			stack = create_pop(dbgi, block, stack, node, reg);
 		}
 	} else {
 		dbgi  = get_irn_dbg_info(node);
 		block = get_nodes_block(node);
 		stack = be_get_IncSP_pred(node);
-		stack = create_push(dbgi, irg, block, stack, node);
+		stack = create_push(dbgi, block, stack, node);
 
 		if (offset == +8) {
-			stack = create_push(dbgi, irg, block, stack, node);
+			stack = create_push(dbgi, block, stack, node);
 		}
 	}
 

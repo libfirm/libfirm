@@ -190,7 +190,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_use_frame(load);
 		sched_add_before(before, load);
 
-		load_res = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
+		load_res = new_r_Proj(block, load, mode_Iu, pn_ia32_Load_res);
 
 		/* TODO: make the actual mode configurable in ChangeCW... */
 		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),

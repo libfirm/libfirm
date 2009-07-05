@@ -77,8 +77,8 @@ static void lower_sel(ir_node *sel) {
 		sym.entity_p = ent;
 		bl = get_nodes_block(sel);
 
-		cnst = new_rd_SymConst(dbg, irg, bl, mode, sym, symconst_addr_ent);
-		newn = new_rd_Add(dbg, irg, bl, ptr, cnst, mode);
+		cnst = new_rd_SymConst(dbg, irg, mode, sym, symconst_addr_ent);
+		newn = new_rd_Add(dbg, bl, ptr, cnst, mode);
 	} else {
 		/* not TLS */
 
@@ -141,12 +141,12 @@ static void lower_sel(ir_node *sel) {
 
 					assert(irg == current_ir_graph);
 					if (! is_Unknown(lb))
-						lb = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int);
+						lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int);
 					else
 						lb = NULL;
 
 					if (! is_Unknown(ub))
-						ub = new_rd_Conv(dbg, irg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int);
+						ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int);
 					else
 						ub = NULL;
 
@@ -159,35 +159,35 @@ static void lower_sel(ir_node *sel) {
 						assert(ub != NULL && "upper bound has to be set in multi-dim array");
 
 						/* Elements in one Dimension */
-						elms = new_rd_Sub(dbg, irg, bl, ub, lb, mode_Int);
+						elms = new_rd_Sub(dbg, bl, ub, lb, mode_Int);
 					}
 
-					ind = new_rd_Conv(dbg, irg, bl, get_Sel_index(sel, dim), mode_Int);
+					ind = new_rd_Conv(dbg, bl, get_Sel_index(sel, dim), mode_Int);
 
 					/*
 					 * Normalize index, id lower bound is set, also assume
 					 * lower bound == 0
 					 */
 					if (lb != NULL)
-						ind = new_rd_Sub(dbg, irg, bl, ind, lb, mode_Int);
+						ind = new_rd_Sub(dbg, bl, ind, lb, mode_Int);
 
-					n = new_rd_Mul(dbg, irg, bl, ind, last_size, mode_Int);
+					n = new_rd_Mul(dbg, bl, ind, last_size, mode_Int);
 
 					/*
 					 * see comment above.
 					 */
 					if (i > 0)
-						last_size = new_rd_Mul(dbg, irg, bl, last_size, elms, mode_Int);
+						last_size = new_rd_Mul(dbg, bl, last_size, elms, mode_Int);
 
-					newn = new_rd_Add(dbg, irg, bl, newn, n, mode);
+					newn = new_rd_Add(dbg, bl, newn, n, mode);
 				}
 			} else {
 				/* no array type */
 				ir_mode *idx_mode = get_irn_mode(index);
 				tarval *tv = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
 
-				newn = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel),
-					new_rd_Mul(dbg, irg, bl, index,
+				newn = new_rd_Add(dbg, bl, get_Sel_ptr(sel),
+					new_rd_Mul(dbg, bl, index,
 					new_r_Const(irg, tv),
 					idx_mode),
 					mode);
@@ -202,15 +202,15 @@ static void lower_sel(ir_node *sel) {
 			/* We need an additional load when accessing methods from a dispatch table. */
 			tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
 			cnst = new_rd_Const(dbg, irg, tv);
-			add  = new_rd_Add(dbg, irg, bl, get_Sel_ptr(sel), cnst, mode);
+			add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
 #ifdef DO_CACHEOPT  /* cacheopt version */
-			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), sel, ent_mode, 0);
+			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), sel, ent_mode, 0);
 			cacheopt_map_addrs_register_node(newn);
 			set_Load_ptr(newn, add);
 #else /* normal code */
-			newn = new_rd_Load(dbg, irg, bl, get_Sel_mem(sel), add, ent_mode, 0);
+			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, 0);
 #endif
-			newn = new_r_Proj(irg, bl, newn, ent_mode, pn_Load_res);
+			newn = new_r_Proj(bl, newn, ent_mode, pn_Load_res);
 
 		} else if (get_entity_owner(ent) != get_glob_type()) {
 			int offset;
@@ -225,11 +225,11 @@ static void lower_sel(ir_node *sel) {
 
 				tv = new_tarval_from_long(offset, mode_UInt);
 				cnst = new_r_Const(irg, tv);
-				newn = new_rd_Add(dbg, irg, bl, newn, cnst, mode);
+				newn = new_rd_Add(dbg, bl, newn, cnst, mode);
 			}
 		} else {
 			/* global_type */
-			newn = new_rd_SymConst_addr_ent(NULL, current_ir_graph, mode, ent, firm_unknown_type);
+			newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent, firm_unknown_type);
 		}
 	}
 	/* run the hooks */
@@ -373,7 +373,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	/* abandon bitfield sel */
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, current_ir_graph, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
+	ptr = new_rd_Add(db, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
 
 	set_Load_ptr(load, ptr);
 	set_Load_mode(load, mode);
@@ -382,7 +382,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 	/* create new proj, switch off CSE or we may get the old one back */
 	old_cse = get_opt_cse();
 	set_opt_cse(0);
-	res = n_proj = new_r_Proj(current_ir_graph, block, load, mode, pn_Load_res);
+	res = n_proj = new_r_Proj(block, load, mode, pn_Load_res);
 	set_opt_cse(old_cse);
 
 	if (mode_is_signed(mode)) { /* signed */
@@ -390,24 +390,20 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
 		int shift_count_down  = bits - bf_bits;
 
 		if (shift_count_up) {
-			res = new_r_Shl(current_ir_graph, block, res,
-				new_Const_long(mode_Iu, shift_count_up), mode);
+			res = new_r_Shl(block, res,	new_Const_long(mode_Iu, shift_count_up), mode);
 		}
 		if (shift_count_down) {
-			res = new_r_Shrs(current_ir_graph, block, res,
-				new_Const_long(mode_Iu, shift_count_down), mode);
+			res = new_r_Shrs(block, res, new_Const_long(mode_Iu, shift_count_down), mode);
 		}
 	} else { /* unsigned */
 		int shift_count_down  = bit_offset;
 		unsigned mask = ((unsigned)-1) >> (bits - bf_bits);
 
 		if (shift_count_down) {
-			res = new_r_Shr(current_ir_graph, block, res,
-				new_Const_long(mode_Iu, shift_count_down), mode);
+			res = new_r_Shr(block, res,	new_Const_long(mode_Iu, shift_count_down), mode);
 		}
 		if (bits != bf_bits) {
-			res = new_r_And(current_ir_graph, block, res,
-				new_Const_long(mode, mask), mode);
+			res = new_r_And(block, res, new_Const_long(mode, mask), mode);
 		}
 	}
 
@@ -471,26 +467,23 @@ static void lower_bitfields_stores(ir_node *store) {
 	/* abandon bitfield sel */
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, current_ir_graph, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
+	ptr = new_rd_Add(db, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
-		irn  = new_r_Load(current_ir_graph, block, mem, ptr, mode, 0);
-		mem  = new_r_Proj(current_ir_graph, block, irn, mode_M, pn_Load_M);
-		irn  = new_r_Proj(current_ir_graph, block, irn, mode, pn_Load_res);
+		irn  = new_r_Load( block, mem, ptr, mode, 0);
+		mem  = new_r_Proj( block, irn, mode_M, pn_Load_M);
+		irn  = new_r_Proj( block, irn, mode, pn_Load_res);
 
-		irn = new_r_And(current_ir_graph, block, irn,
-			new_Const_long(mode, neg_mask), mode);
+		irn = new_r_And(block, irn, new_Const_long(mode, neg_mask), mode);
 
 		if (bit_offset > 0) {
-			value = new_r_Shl(current_ir_graph, block, value,
-				new_Const_long(mode_Iu, bit_offset), mode);
+			value = new_r_Shl(block, value, new_Const_long(mode_Iu, bit_offset), mode);
 		}
 
-		value = new_r_And(current_ir_graph, block, value,
-			new_Const_long(mode, mask), mode);
+		value = new_r_And(block, value, new_Const_long(mode, mask), mode);
 
-		value = new_r_Or(current_ir_graph, block, value, irn, mode);
+		value = new_r_Or(block, value, irn, mode);
 	}
 
 	set_Store_mem(store, mem);

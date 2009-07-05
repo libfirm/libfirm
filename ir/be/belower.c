@@ -418,14 +418,14 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 					DBG((dbg, LEVEL_1, "%+F                        (%+F, %s) and (%+F, %s)\n",
 								irn, res1, cycle.elems[i]->name, res2, cycle.elems[i + 1]->name));
 
-					cpyxchg = be_new_Perm(reg_class, irg, block, 2, in);
+					cpyxchg = be_new_Perm(reg_class, block, 2, in);
 
 					if (i > 0) {
 						/* cycle is not done yet */
 						int pidx = get_pairidx_for_in_regidx(pairs, n, cycle.elems[i]->index);
 
 						/* create intermediate proj */
-						res1 = new_r_Proj(irg, block, cpyxchg, get_irn_mode(res1), 0);
+						res1 = new_r_Proj(block, cpyxchg, get_irn_mode(res1), 0);
 
 						/* set as in for next Perm */
 						pairs[pidx].in_node = res1;
@@ -452,7 +452,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 					DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 								irn, arg1, cycle.elems[i]->name, res2, cycle.elems[i + 1]->name));
 
-					cpyxchg = be_new_Copy(reg_class, irg, block, arg1);
+					cpyxchg = be_new_Copy(reg_class, block, arg1);
 					arch_set_irn_register(cpyxchg, cycle.elems[i + 1]);
 
 					/* exchange copy node and proj */
@@ -523,7 +523,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* check if already exists such a copy in the schedule immediately before */
 	cpy = find_copy(skip_Proj(irn), other_different);
 	if (! cpy) {
-		cpy = be_new_Copy(cls, irg, block, other_different);
+		cpy = be_new_Copy(cls, block, other_different);
 		arch_irn_set_flags(cpy, arch_irn_flags_dont_spill);
 		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
@@ -533,14 +533,14 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
 	if (has_irn_users(other_different)) {
-		keep = be_new_CopyKeep_single(cls, irg, block, cpy, irn, get_irn_mode(other_different));
+		keep = be_new_CopyKeep_single(cls, block, cpy, irn, get_irn_mode(other_different));
 		be_node_set_reg_class_in(keep, 1, cls);
 	} else {
 		ir_node *in[2];
 
 		in[0] = irn;
 		in[1] = cpy;
-		keep = be_new_Keep(cls, irg, block, 2, in);
+		keep = be_new_Keep(cls, block, 2, in);
 	}
 
 	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
@@ -728,10 +728,10 @@ static void melt_copykeeps(constraint_env_t *cenv) {
 				}
 
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-				new_ck = be_new_CopyKeep(entry->cls, irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
+				new_ck = be_new_CopyKeep(entry->cls, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
 				keep_alive(new_ck);
 #else
-				new_ck = be_new_CopyKeep(entry->cls, irg, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
+				new_ck = be_new_CopyKeep(entry->cls, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 				/* set register class for all kept inputs */
@@ -819,7 +819,7 @@ void assure_constraints(be_irg_t *birg) {
 				int                          n   = get_irn_arity(cp);
 				ir_node                     *keep;
 
-				keep = be_new_Keep(cls, irg, get_nodes_block(cp), n, get_irn_in(cp) + 1);
+				keep = be_new_Keep(cls, get_nodes_block(cp), n, get_irn_in(cp) + 1);
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */

@@ -1275,7 +1275,6 @@ static ir_type *clone_type_and_cache(ir_type *tp) {
 
 	res = clone_type_method(tp, prefix);
 	pmap_insert(mtp_map, tp, res);
-	DB((dbgcall, LEVEL_2, "cloned type %+F into %+F\n", tp, res));
 
 	return res;
 }  /* clone_type_and_cache */
@@ -1298,7 +1297,7 @@ static void update_calls_to_private(ir_node *call, void *env) {
 					ctp = clone_type_and_cache(ctp);
 					set_method_additional_property(ctp, mtp_property_private);
 					set_Call_type(call, ctp);
-					DB((dbgcall, LEVEL_1, "changed call to private method %+F\n", ent));
+					DB((dbgcall, LEVEL_1, "changed call to private method %+F using cloned type %+F\n", ent, ctp));
 				}
 			}
 		}
@@ -1332,8 +1331,9 @@ void mark_private_methods(void) {
 			if ((get_method_additional_properties(mtp) & mtp_property_private) == 0) {
 				/* need a new type */
 				mtp = clone_type_and_cache(mtp);
-				set_entity_type(ent, mtp);
 				set_method_additional_property(mtp, mtp_property_private);
+				set_entity_type(ent, mtp);
+				DB((dbgcall, LEVEL_2, "changed entity type of %+F to %+F\n", ent, mtp));
 				changed = 1;
 			}
 		}

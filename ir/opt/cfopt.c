@@ -102,7 +102,7 @@ static int remove_senseless_conds(ir_node *bl) {
 				ir_node *cond_j = skip_Proj(pred_j);
 
 				if (cond_j == cond_i) {
-					ir_node *jmp = new_r_Jmp(current_ir_graph, get_nodes_block(cond_i));
+					ir_node *jmp = new_r_Jmp(get_nodes_block(cond_i));
 					set_irn_n(bl, i, jmp);
 					set_irn_n(bl, j, new_Bad());
 
@@ -627,7 +627,7 @@ static int handle_switch_cond(ir_node *cond) {
 		/* this Cond has only one Proj: must be the defProj */
 		assert(get_Cond_default_proj(cond) == get_Proj_proj(proj1));
 		/* convert it into a Jmp */
-		jmp = new_r_Jmp(current_ir_graph, blk);
+		jmp = new_r_Jmp(blk);
 		exchange(proj1, jmp);
 		return 1;
 	} else if (get_irn_link(proj2) == NULL) {
@@ -643,7 +643,7 @@ static int handle_switch_cond(ir_node *cond) {
 			if (def_num == get_Proj_proj(proj1)) {
 				/* first one is the defProj */
 				if (num == get_Proj_proj(proj2)) {
-					jmp = new_r_Jmp(current_ir_graph, blk);
+					jmp = new_r_Jmp(blk);
 					exchange(proj2, jmp);
 					exchange(proj1, new_Bad());
 					return 1;
@@ -651,7 +651,7 @@ static int handle_switch_cond(ir_node *cond) {
 			} else if (def_num == get_Proj_proj(proj2)) {
 				/* second one is the defProj */
 				if (num == get_Proj_proj(proj1)) {
-					jmp = new_r_Jmp(current_ir_graph, blk);
+					jmp = new_r_Jmp(blk);
 					exchange(proj1, jmp);
 					exchange(proj2, new_Bad());
 					return 1;
@@ -659,12 +659,12 @@ static int handle_switch_cond(ir_node *cond) {
 			} else {
 				/* neither: strange, Cond was not optimized so far */
 				if (num == get_Proj_proj(proj1)) {
-					jmp = new_r_Jmp(current_ir_graph, blk);
+					jmp = new_r_Jmp(blk);
 					exchange(proj1, jmp);
 					exchange(proj2, new_Bad());
 					return 1;
 				} else if (num == get_Proj_proj(proj2)) {
-					jmp = new_r_Jmp(current_ir_graph, blk);
+					jmp = new_r_Jmp(blk);
 					exchange(proj2, jmp);
 					exchange(proj1, new_Bad());
 					return 1;

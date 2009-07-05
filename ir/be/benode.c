@@ -329,11 +329,12 @@ static int redir_proj(const ir_node **node)
 }
 
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
-	ir_graph *irg, ir_node *bl, ir_node *frame, ir_node *to_spill)
+	ir_node *bl, ir_node *frame, ir_node *to_spill)
 {
 	be_frame_attr_t *a;
 	ir_node         *in[2];
 	ir_node         *res;
+	ir_graph        *irg = get_Block_irg(bl);
 
 	in[0]     = frame;
 	in[1]     = to_spill;
@@ -348,11 +349,12 @@ ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_clas
 }
 
 ir_node *be_new_Reload(const arch_register_class_t *cls,
-		const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *block,
+		const arch_register_class_t *cls_frame, ir_node *block,
 		ir_node *frame, ir_node *mem, ir_mode *mode)
 {
-	ir_node *in[2];
-	ir_node *res;
+	ir_node  *in[2];
+	ir_node  *res;
+	ir_graph *irg = get_Block_irg(block);
 
 	in[0] = frame;
 	in[1] = mem;
@@ -389,13 +391,14 @@ ir_node *be_get_Spill_frame(const ir_node *irn)
 	return get_irn_n(irn, be_pos_Spill_frame);
 }
 
-ir_node *be_new_Perm(const arch_register_class_t *cls, ir_graph *irg,
-		ir_node *block, int n, ir_node *in[])
+ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block, int n, ir_node *in[])
 {
-	int i;
+	int      i;
+	ir_graph *irg = get_Block_irg(block);
+
 	ir_node *irn = new_ir_node(NULL, irg, block, op_be_Perm, mode_T, n, in);
 	init_node_attr(irn, n);
-	for(i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		be_node_set_reg_class_in(irn, i, cls);
 		be_node_set_reg_class_out(irn, i, cls);
 	}
@@ -434,8 +437,9 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 	set_irn_in(perm, new_size, new_in);
 }
 
-ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node *in[])
 {
+	ir_graph                     *irg       = get_Block_irg(bl);
 	ir_node                      *frame     = get_irg_frame(irg);
 	const arch_register_class_t  *cls_frame = arch_get_irn_reg_class_out(frame);
 	const arch_register_t        *sp        = arch_env->sp;
@@ -468,11 +472,12 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_graph *irg, ir_node *bl, 
 }
 
 
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *op)
+ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *bl, ir_node *op)
 {
 	ir_node *in[1];
 	ir_node *res;
 	arch_register_req_t *req;
+	ir_graph *irg = get_Block_irg(bl);
 
 	in[0] = op;
 	res   = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op), 1, in);
@@ -496,10 +501,11 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op) {
 	set_irn_n(cpy, be_pos_Copy_op, op);
 }
 
-ir_node *be_new_Keep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_Keep(const arch_register_class_t *cls, ir_node *bl, int n, ir_node *in[])
 {
 	int i;
 	ir_node *res;
+	ir_graph *irg = get_Block_irg(bl);
 
 	res = new_ir_node(NULL, irg, bl, op_be_Keep, mode_ANY, -1, NULL);
 	init_node_attr(res, -1);
@@ -641,12 +647,13 @@ int be_Return_append_node(ir_node *ret, ir_node *node) {
 	return pos;
 }
 
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
                       ir_node *old_sp, int offset, int align)
 {
 	be_incsp_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
+	ir_graph *irg = get_Block_irg(bl);
 
 	in[0]     = old_sp;
 	irn       = new_ir_node(NULL, irg, bl, op_be_IncSP, sp->reg_class->mode,
@@ -662,16 +669,18 @@ ir_node *be_new_IncSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl,
 	return irn;
 }
 
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz)
+ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz)
 {
 	be_node_attr_t *a;
 	ir_node *irn;
 	ir_node *in[be_pos_AddSP_last];
 	const arch_register_class_t *cls;
+	ir_graph *irg;
 
 	in[be_pos_AddSP_old_sp] = old_sp;
 	in[be_pos_AddSP_size]   = sz;
 
+	irg = get_Block_irg(bl);
 	irn = new_ir_node(NULL, irg, bl, op_be_AddSP, mode_T, be_pos_AddSP_last, in);
 	a   = init_node_attr(irn, be_pos_AddSP_last);
 
@@ -685,15 +694,17 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	return irn;
 }
 
-ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_node *old_sp, ir_node *sz)
+ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz)
 {
 	be_node_attr_t *a;
 	ir_node *irn;
 	ir_node *in[be_pos_SubSP_last];
+	ir_graph *irg;
 
 	in[be_pos_SubSP_old_sp] = old_sp;
 	in[be_pos_SubSP_size]   = sz;
 
+	irg = get_Block_irg(bl);
 	irn = new_ir_node(NULL, irg, bl, op_be_SubSP, mode_T, be_pos_SubSP_last, in);
 	a   = init_node_attr(irn, be_pos_SubSP_last);
 
@@ -705,10 +716,11 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_graph *irg, ir_node *bl, ir_
 	return irn;
 }
 
-ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
+ir_node *be_new_RegParams(ir_node *bl, int n_outs)
 {
 	ir_node *res;
 	int i;
+	ir_graph *irg = get_Block_irg(bl);
 
 	res = new_ir_node(NULL, irg, bl, op_be_RegParams, mode_T, 0, NULL);
 	init_node_attr(res, -1);
@@ -718,11 +730,12 @@ ir_node *be_new_RegParams(ir_graph *irg, ir_node *bl, int n_outs)
 	return res;
 }
 
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_graph *irg, ir_node *bl, ir_node *frame, ir_entity *ent)
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, ir_node *frame, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 	ir_node *irn;
 	ir_node *in[1];
+	ir_graph *irg = get_Block_irg(bl);
 
 	in[0]  = frame;
 	irn    = new_ir_node(NULL, irg, bl, op_be_FrameAddr, get_irn_mode(frame), 1, in);
@@ -746,10 +759,11 @@ ir_entity *be_get_FrameAddr_entity(const ir_node *node)
 	return attr->ent;
 }
 
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
+ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
 {
 	ir_node  *irn;
 	ir_node **in = ALLOCAN(ir_node*, n + 1);
+	ir_graph *irg = get_Block_irg(bl);
 
 	in[0] = src;
 	memcpy(&in[1], in_keep, n * sizeof(in[0]));
@@ -761,9 +775,9 @@ ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_graph *irg, ir_nod
 	return irn;
 }
 
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_graph *irg, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode)
+ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode)
 {
-	return be_new_CopyKeep(cls, irg, bl, src, 1, &keep, mode);
+	return be_new_CopyKeep(cls, bl, src, 1, &keep, mode);
 }
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy) {
@@ -774,10 +788,11 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op) {
 	set_irn_n(cpy, be_pos_CopyKeep_op, op);
 }
 
-ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[])
 {
 	ir_node *res;
 	int i;
+	ir_graph *irg = get_Block_irg(bl);
 
 	res = new_ir_node(NULL, irg, bl, op_be_Barrier, mode_T, -1, NULL);
 	init_node_attr(res, -1);
@@ -791,23 +806,23 @@ ir_node *be_new_Barrier(ir_graph *irg, ir_node *bl, int n, ir_node *in[])
 
 ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
 {
-	ir_graph *irg = get_irn_irg(barrier);
 	ir_node *block = get_nodes_block(barrier);
 	ir_mode *mode = get_irn_mode(node);
 	int n = add_irn_n(barrier, node);
 
-	ir_node *proj = new_r_Proj(irg, block, barrier, mode, n);
+	ir_node *proj = new_r_Proj(block, barrier, mode, n);
 	add_register_req(barrier);
 
 	return proj;
 }
 
 /* Construct a new be_Unwind. */
-ir_node *be_new_Unwind(dbg_info *dbg, ir_graph *irg, ir_node *block,
+ir_node *be_new_Unwind(dbg_info *dbg, ir_node *block,
 					   ir_node *mem, ir_node *sp)
 {
 	ir_node *res;
 	ir_node *in[2];
+	ir_graph *irg = get_Block_irg(block);
 
 	in[be_pos_Unwind_mem] = mem;
 	in[be_pos_Unwind_sp]  = sp;
@@ -1011,13 +1026,13 @@ int be_get_IncSP_align(const ir_node *irn)
 
 ir_node *be_spill(ir_node *block, ir_node *irn)
 {
-	ir_graph                    *irg       = get_irn_irg(block);
+	ir_graph                    *irg       = get_Block_irg(block);
 	ir_node                     *frame     = get_irg_frame(irg);
 	const arch_register_class_t *cls       = arch_get_irn_reg_class_out(irn);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
 	ir_node                     *spill;
 
-	spill = be_new_Spill(cls, cls_frame, irg, block, frame, irn);
+	spill = be_new_Spill(cls, cls_frame, block, frame, irn);
 	return spill;
 }
 
@@ -1025,13 +1040,13 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 {
 	ir_node  *reload;
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
-	ir_graph *irg   = get_irn_irg(bl);
+	ir_graph *irg   = get_Block_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
 	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
-	reload = be_new_Reload(cls, cls_frame, irg, bl, frame, spill, mode);
+	reload = be_new_Reload(cls, cls_frame, bl, frame, spill, mode);
 
 	if (is_Block(insert)) {
 		insert = sched_skip(insert, 0, sched_skip_cf_predicator, NULL);

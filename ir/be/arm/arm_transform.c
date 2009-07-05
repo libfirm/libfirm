@@ -855,8 +855,8 @@ static ir_node *gen_Load(ir_node *node) {
 		ir_graph *irg = current_ir_graph;
 
 		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(irg, block, new_load, mode_Iu, pn_arm_Load_res);
-		be_new_Keep(arch_get_irn_reg_class_out(proj), irg, block, 1, &proj);
+		ir_node *proj = new_r_Proj(block, new_load, mode_Iu, pn_arm_Load_res);
+		be_new_Keep(arch_get_irn_reg_class_out(proj), block, 1, &proj);
 	}
 
 	return new_load;
@@ -1111,8 +1111,8 @@ static ir_node *gen_CopyB(ir_node *node) {
 	ir_node  *src_copy;
 	ir_node  *dst_copy;
 
-	src_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], irg, block, new_src);
-	dst_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], irg, block, new_dst);
+	src_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], block, new_src);
+	dst_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], block, new_dst);
 
  	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
 			new_bd_arm_EmptyReg(dbg, block, mode_Iu),
@@ -1274,7 +1274,6 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
@@ -1287,17 +1286,17 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	case iro_arm_Loadhs:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_load, mode_Iu, pn_arm_Load_res);
+			return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_arm_Load_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_load, mode_M, pn_arm_Load_M);
+			return new_rd_Proj(dbgi, block, new_load, mode_M, pn_arm_Load_M);
 		}
 		break;
 	case iro_arm_fpaLdf:
 		if (proj == pn_Load_res) {
 			ir_mode *mode = get_Load_mode(load);
-			return new_rd_Proj(dbgi, irg, block, new_load, mode, pn_arm_fpaLdf_res);
+			return new_rd_Proj(dbgi, block, new_load, mode, pn_arm_fpaLdf_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_load, mode_M, pn_arm_fpaLdf_M);
+			return new_rd_Proj(dbgi, block, new_load, mode_M, pn_arm_fpaLdf_M);
 		}
 		break;
 	default:
@@ -1313,14 +1312,13 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch(proj) {
 	case pn_CopyB_M_regular:
 		if (is_arm_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_CopyB_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_CopyB_M);
 		}
 		break;
 	default:
@@ -1336,7 +1334,6 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
@@ -1344,24 +1341,24 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 	switch (proj) {
 	case pn_Quot_M:
 		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaDvf_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaDvf_M);
 		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaRdf_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaRdf_M);
 		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFdv_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaFdv_M);
 		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_fpaFrd_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaFrd_M);
 		}
 		break;
 	case pn_Quot_res:
 		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaDvf_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaDvf_res);
 		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaRdf_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaRdf_res);
 		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFdv_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaFdv_res);
 		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode, pn_arm_fpaFrd_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaFrd_res);
 		}
 		break;
 	default:
@@ -1377,20 +1374,18 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_AddSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
 		                           pn_arm_SubSPandCopy_stack);
 		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if(proj == pn_be_AddSP_res) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
-		                   pn_arm_SubSPandCopy_addr);
+		return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_arm_SubSPandCopy_addr);
 	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_SubSPandCopy_M);
+		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_SubSPandCopy_M);
 	}
 	panic("Unsupported Proj from AddSP");
 }
@@ -1402,17 +1397,16 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_SubSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
 		                           pn_arm_AddSP_stack);
 		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_arm_AddSP_M);
+		return new_rd_Proj(dbgi,  block, new_pred, mode_M, pn_arm_AddSP_M);
 	}
 	panic("Unsupported Proj from SubSP");
 }
@@ -1470,7 +1464,7 @@ static ir_node *gen_Proj(ir_node *node) {
 
 			/* we exchange the ProjX with a jump */
 			block = be_transform_node(block);
-			jump  = new_rd_Jmp(dbgi, irg, block);
+			jump  = new_rd_Jmp(dbgi, block);
 			return jump;
 		}
 		if (node == get_irg_anchor(irg, anchor_tls)) {
@@ -1481,7 +1475,7 @@ static ir_node *gen_Proj(ir_node *node) {
 		ir_mode *mode     = get_irn_mode(node);
 		if (mode_needs_gp_reg(mode)) {
 			ir_node *block    = be_transform_node(get_nodes_block(node));
-			ir_node *new_proj = new_r_Proj(irg, block, new_pred, mode_Iu,
+			ir_node *new_proj = new_r_Proj(block, new_pred, mode_Iu,
 			                               get_Proj_proj(node));
 			new_proj->node_nr = node->node_nr;
 			return new_proj;

@@ -983,7 +983,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		ir_mode *mode     = get_type_mode(param_tp);
 
 		if (mode != get_irn_mode(arg)) {
-			arg = new_r_Conv(irg, block, arg, mode);
+			arg = new_r_Conv(block, arg, mode);
 		}
 		args_in[i] = arg;
 	}
@@ -1108,7 +1108,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		ir_node *ret;
 		ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
-			cf_pred[n_ret] = new_r_Jmp(irg, get_nodes_block(ret));
+			cf_pred[n_ret] = new_r_Jmp(get_nodes_block(ret));
 			n_ret++;
 		}
 	}
@@ -1145,7 +1145,7 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 					ir_node *res = get_Return_res(ret, j);
 					if (get_irn_mode(res) != res_mode) {
 						ir_node *block = get_nodes_block(res);
-						res = new_r_Conv(irg, block, res, res_mode);
+						res = new_r_Conv(block, res, res_mode);
 					}
 					cf_pred[n_ret] = res;
 					n_ret++;
@@ -1204,14 +1204,14 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 				ir_node *ret;
 				ret = skip_Proj(get_Block_cfgpred(end_bl, i));
 				if (is_Call(ret)) {
-					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 3);
+					cf_pred[n_exc] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 3);
 					n_exc++;
 				} else if (is_fragile_op(ret)) {
 					/* We rely that all cfops have the memory output at the same position. */
-					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 0);
+					cf_pred[n_exc] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 0);
 					n_exc++;
 				} else if (is_Raise(ret)) {
-					cf_pred[n_exc] = new_r_Proj(irg, get_nodes_block(ret), ret, mode_M, 1);
+					cf_pred[n_exc] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 1);
 					n_exc++;
 				}
 			}
@@ -1245,8 +1245,8 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 		for (i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_except,  new_Bad());
-		set_Tuple_pred(call, pn_Call_M_except,  new_Bad());
+		set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+		set_Tuple_pred(call, pn_Call_M_except, new_Bad());
 		free(end_preds);
 	}
 	free(res_pred);

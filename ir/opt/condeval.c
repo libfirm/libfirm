@@ -118,7 +118,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	for(i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);
 
-	phi = new_r_Phi(irg, block, n_cfgpreds, in, mode);
+	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);
 	mark_irn_visited(block);
 
@@ -196,7 +196,7 @@ static void split_critical_edge(ir_node *block, int pos) {
 
 	in[0] = get_Block_cfgpred(block, pos);
 	new_block = new_r_Block(irg, 1, in);
-	new_jmp = new_r_Jmp(irg, new_block);
+	new_jmp = new_r_Jmp(new_block);
 	set_Block_cfgpred(block, pos, new_jmp);
 }
 
@@ -662,7 +662,7 @@ static void cond_eval(ir_node* block, void* data)
 		return;
 	} else if (selector_evaluated == 1) {
 		dbg_info *dbgi = get_irn_dbg_info(selector);
-		ir_node  *jmp  = new_rd_Jmp(dbgi, current_ir_graph, get_nodes_block(projx));
+		ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(projx));
 		DBG_OPT_COND_EVAL(projx, jmp);
 		exchange(projx, jmp);
 		*changed = 1;

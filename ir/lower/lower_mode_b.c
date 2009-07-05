@@ -73,20 +73,18 @@ static void maybe_kill_node(ir_node *node)
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
-	ir_graph *irg    = current_ir_graph;
 	ir_node  *block  = get_nodes_block(node);
 	ir_mode  *mode   = config.lowered_mode;
 	tarval   *tv_one = get_tarval_one(mode);
 	ir_node  *one    = new_d_Const(dbgi, tv_one);
 
-	return new_rd_Eor(dbgi,	irg, block, node, one, mode);
+	return new_rd_Eor(dbgi,	block, node, one, mode);
 }
 
 static ir_node *create_convb(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = get_nodes_block(node);
-	ir_node  *conv  = new_rd_Conv(NULL, irg, block, node, mode_b);
+	ir_node  *conv  = new_rd_Conv(NULL, block, node, mode_b);
 
 	return conv;
 }
@@ -105,7 +103,6 @@ static ir_type *create_lowered_type(void)
  */
 static ir_node *create_set(ir_node *node)
 {
-	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = config.lowered_set_mode;
 	tarval   *tv_one  = get_tarval_one(mode);
@@ -114,10 +111,10 @@ static ir_node *create_set(ir_node *node)
 	tarval   *tv_zero = get_tarval_null(mode);
 	ir_node  *zero    = new_d_Const(dbgi, tv_zero);
 
-	ir_node *set      = new_rd_Mux(dbgi, irg, block, node, zero, one, mode);
+	ir_node *set      = new_rd_Mux(dbgi, block, node, zero, one, mode);
 
 	if (mode != config.lowered_mode) {
-		set = new_r_Conv(irg, block, set, config.lowered_mode);
+		set = new_r_Conv(block, set, config.lowered_mode);
 	}
 
 	return set;
@@ -148,7 +145,6 @@ static void adjust_method_type(ir_type *method_type)
 
 static ir_node *lower_node(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_mode *mode   = config.lowered_mode;
@@ -173,7 +169,7 @@ static ir_node *lower_node(ir_node *node)
 		for(i = 0; i < arity; ++i) {
 			in[i] = unknown;
 		}
-		new_phi = new_r_Phi(irg, block, arity, in, config.lowered_mode);
+		new_phi = new_r_Phi(block, arity, in, config.lowered_mode);
 		set_irn_link(node, new_phi);
 		pdeq_putr(lowered_nodes, node);
 
@@ -223,10 +219,10 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *v_false     = get_Mux_false(node);
 		ir_node *low_v_false = lower_node(v_false);
 
-		ir_node *and0     = new_rd_And(dbgi, irg, block, low_cond, low_v_true, mode);
+		ir_node *and0     = new_rd_And(dbgi, block, low_cond, low_v_true, mode);
 		ir_node *not_cond = create_not(dbgi, low_cond);
-		ir_node *and1     = new_rd_And(dbgi, irg, block, not_cond, low_v_false, mode);
-		ir_node *or       = new_rd_Or(dbgi, irg, block, and0, and1, mode);
+		ir_node *and1     = new_rd_And(dbgi, block, not_cond, low_v_false, mode);
+		ir_node *or       = new_rd_Or(dbgi, block, and0, and1, mode);
 
 		set_irn_link(node, or);
 		pdeq_putr(lowered_nodes, node);
@@ -239,9 +235,8 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
 		ir_node *set;
 
-		ir_node *cmp      = new_rd_Cmp(dbgi, irg, block, pred, zero_cmp);
-		ir_node *proj     = new_rd_Proj(dbgi, irg, block, cmp, mode_b,
-		                                pn_Cmp_Lg);
+		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
+		ir_node *proj     = new_rd_Proj(dbgi, block, cmp, mode_b, pn_Cmp_Lg);
 		set = create_set(proj);
 
 		set_irn_link(node, set);
@@ -292,15 +287,15 @@ static ir_node *lower_node(ir_node *node)
 					ir_node *shift_cnt = new_d_Const(dbgi, tv);
 
 					if(cmp_mode != mode) {
-						a = new_rd_Conv(dbgi, irg, block, a, mode);
-						b = new_rd_Conv(dbgi, irg, block, b, mode);
+						a = new_rd_Conv(dbgi, block, a, mode);
+						b = new_rd_Conv(dbgi, block, b, mode);
 					}
 
-					res = new_rd_Sub(dbgi, irg, block, a, b, mode);
+					res = new_rd_Sub(dbgi, block, a, b, mode);
 					if(need_not) {
-						res = new_rd_Not(dbgi, irg, block, res, mode);
+						res = new_rd_Not(dbgi, block, res, mode);
 					}
-					res = new_rd_Shr(dbgi, irg, block, res, shift_cnt, mode);
+					res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
 
 					set_irn_link(node, res);
 					pdeq_putr(lowered_nodes, node);
@@ -319,7 +314,7 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_mode(node, mode);
 			return node;
 		} else if(is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
-			ir_entity *entity = get_irg_entity(irg);
+			ir_entity *entity = get_irg_entity(current_ir_graph);
 			ir_type   *type   = get_entity_type(entity);
 			adjust_method_type(type);
 			set_irn_mode(node, mode);

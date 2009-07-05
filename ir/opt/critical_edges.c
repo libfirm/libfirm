@@ -85,7 +85,7 @@ insert:
 				/* set predecessor of new block */
 				block = new_r_Block(irg, 1, &pre);
 				/* insert new jmp node to new block */
-				jmp = new_r_Jmp(irg, block);
+				jmp = new_r_Jmp(block);
 				/* set successor of new block */
 				set_irn_n(n, i, jmp);
 				cenv->changed = 1;

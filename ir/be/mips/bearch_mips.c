@@ -522,7 +522,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		/* Note: ideally we would route these mem edges directly towards the
 		 * epilogue, but this is currently not supported so we sync all mems
 		 * together */
-		sync = new_r_Sync(irg, block, 2, mm+4);
+		sync = new_r_Sync(block, 2, mm+4);
 		*mem = sync;
 	} else {
 		ir_node *reg, *store;
@@ -573,8 +573,8 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	                      fp_save_offset - initial_frame_size);
 	panic("FIXME register requirement with ignore");
 
-	fp = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_res);
-	*mem = new_r_Proj(irg, block, load, mode_Iu, pn_mips_lw_M);
+	fp = new_r_Proj(block, load, mode_Iu, pn_mips_lw_res);
+	*mem = new_r_Proj(block, load, mode_Iu, pn_mips_lw_M);
 	arch_set_irn_register(fp, &mips_gp_regs[REG_FP]);
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);

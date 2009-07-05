@@ -225,7 +225,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 					else
 						in[i] = c_o;
 				}
-				phi = new_r_Phi(current_ir_graph, user_blk, n, in, mode_b);
+				phi = new_r_Phi(user_blk, n, in, mode_b);
 				set_irn_n(user, pos, phi);
 			}
 		}
@@ -344,7 +344,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 				 * We can replace the input with a Confirm(left, pnc, right).
 				 */
 				if (! c)
-					c = new_r_Confirm(current_ir_graph, block, left, right, pnc);
+					c = new_r_Confirm(block, left, right, pnc);
 
 				pos = get_edge_src_pos(edge);
 				set_irn_n(succ, pos, c);
@@ -377,7 +377,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 					 * We can replace the input with a Confirm(right, pnc^-1, left).
 					 */
 					if (! rc)
-						rc = new_r_Confirm(current_ir_graph, block, right, left, pnc);
+						rc = new_r_Confirm(block, right, left, pnc);
 
 					pos = get_edge_src_pos(edge);
 					set_irn_n(succ, pos, rc);
@@ -509,7 +509,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 				ir_mode *mode = get_irn_mode(ptr);
 				c = new_Const(get_mode_null(mode));
 
-				c = new_r_Confirm(current_ir_graph, block, ptr, c, pn_Cmp_Lg);
+				c = new_r_Confirm(block, ptr, c, pn_Cmp_Lg);
 			}
 
 			set_irn_n(succ, pos, c);

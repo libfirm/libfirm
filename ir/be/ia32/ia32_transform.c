@@ -275,7 +275,7 @@ static ir_node *gen_Const(ir_node *node)
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
 				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
-				res = new_r_Proj(current_ir_graph, block, load, mode_xmm, pn_ia32_xLoad_res);
+				res = new_r_Proj(block, load, mode_xmm, pn_ia32_xLoad_res);
 			}
 		} else {
 			if (is_Const_null(node)) {
@@ -299,7 +299,7 @@ static ir_node *gen_Const(ir_node *node)
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
 				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
-				res = new_r_Proj(current_ir_graph, block, load, mode_vfp, pn_ia32_vfld_res);
+				res = new_r_Proj(block, load, mode_vfp, pn_ia32_vfld_res);
 			}
 		}
 #ifdef CONSTRUCT_SSE_CONST
@@ -881,7 +881,7 @@ static ir_node *fix_mem_proj(ir_node *node, ia32_address_mode_t *am)
 
 	if (mode != mode_T) {
 		set_irn_mode(node, mode_T);
-		return new_rd_Proj(NULL, current_ir_graph, get_nodes_block(node), node, mode, pn_ia32_res);
+		return new_rd_Proj(NULL, get_nodes_block(node), node, mode, pn_ia32_res);
 	} else {
 		return node;
 	}
@@ -1297,12 +1297,10 @@ static ir_node *gen_Mulh(ir_node *node)
 
 	if (mode_is_signed(mode)) {
 		new_node = gen_binop(node, op1, op2, new_bd_ia32_IMul1OP, match_commutative | match_am);
-		proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
-	                            mode_Iu, pn_ia32_IMul1OP_res_high);
+		proj_res_high = new_rd_Proj(dbgi, new_block, new_node, mode_Iu, pn_ia32_IMul1OP_res_high);
 	} else {
 		new_node = gen_binop(node, op1, op2, new_bd_ia32_Mul, match_commutative | match_am);
-		proj_res_high = new_rd_Proj(dbgi, current_ir_graph, new_block, new_node,
-	                            mode_Iu, pn_ia32_Mul_res_high);
+		proj_res_high = new_rd_Proj(dbgi, new_block, new_node, mode_Iu, pn_ia32_Mul_res_high);
 	}
 	return proj_res_high;
 }
@@ -1406,7 +1404,7 @@ static ir_node *gen_Sub(ir_node *node)
 			| match_am | match_immediate);
 }
 
-static ir_node *transform_AM_mem(ir_graph *const irg, ir_node *const block,
+static ir_node *transform_AM_mem(ir_node *const block,
                                  ir_node  *const src_val,
                                  ir_node  *const src_mem,
                                  ir_node  *const am_mem)
@@ -1442,13 +1440,13 @@ static ir_node *transform_AM_mem(ir_graph *const irg, ir_node *const block,
 
 		ins[n++] = am_mem;
 
-		return new_r_Sync(irg, block, n, ins);
+		return new_r_Sync(block, n, ins);
 	} else {
 		ir_node *ins[2];
 
 		ins[0] = be_transform_node(src_mem);
 		ins[1] = am_mem;
-		return new_r_Sync(irg, block, 2, ins);
+		return new_r_Sync(block, 2, ins);
 	}
 }
 
@@ -1526,7 +1524,7 @@ static ir_node *create_Div(ir_node *node)
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	   is the memory of the consumed address. We can have only the second op as address
 	   in Div nodes, so check only op2. */
-	new_mem = transform_AM_mem(current_ir_graph, block, op2, mem, addr->mem);
+	new_mem = transform_AM_mem(block, op2, mem, addr->mem);
 
 	if (mode_is_signed(mode)) {
 		sign_extension = create_sex_32_64(dbgi, new_block, am.new_op1, node);
@@ -2118,7 +2116,7 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	dbgi    = get_irn_dbg_info(node);
 	block   = be_transform_node(src_block);
-	new_mem = transform_AM_mem(current_ir_graph, block, am.am_node, mem, addr->mem);
+	new_mem = transform_AM_mem(block, am.am_node, mem, addr->mem);
 
 	if (get_mode_size_bits(mode) == 8) {
 		new_node = func8bit(dbgi, block, addr->base, addr->index, new_mem, new_op);
@@ -2158,7 +2156,7 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 	dbgi     = get_irn_dbg_info(node);
 	block    = be_transform_node(src_block);
-	new_mem  = transform_AM_mem(current_ir_graph, block, am.am_node, mem, addr->mem);
+	new_mem  = transform_AM_mem(block, am.am_node, mem, addr->mem);
 	new_node = func(dbgi, block, addr->base, addr->index, new_mem);
 	set_address(new_node, addr);
 	set_ia32_op_type(new_node, ia32_AddrModeD);
@@ -2442,7 +2440,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 	} while (size != 0);
 
 	if (i > 1) {
-		return new_rd_Sync(dbgi, current_ir_graph, new_block, i, ins);
+		return new_rd_Sync(dbgi, new_block, i, ins);
 	} else {
 		return ins[0];
 	}
@@ -2451,7 +2449,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 /**
  * Generate a vfist or vfisttp instruction.
  */
-static ir_node *gen_vfist(dbg_info *dbgi, ir_graph *irg, ir_node *block, ir_node *base, ir_node *index,
+static ir_node *gen_vfist(dbg_info *dbgi, ir_node *block, ir_node *base, ir_node *index,
                           ir_node *mem,  ir_node *val, ir_node **fist)
 {
 	ir_node *new_node;
@@ -2461,10 +2459,10 @@ static ir_node *gen_vfist(dbg_info *dbgi, ir_graph *irg, ir_node *block, ir_node
 		if other users exists */
 		const arch_register_class_t *reg_class = &ia32_reg_classes[CLASS_ia32_vfp];
 		ir_node *vfisttp = new_bd_ia32_vfisttp(dbgi, block, base, index, mem, val);
-		ir_node *value   = new_r_Proj(irg, block, vfisttp, mode_E, pn_ia32_vfisttp_res);
-		be_new_Keep(reg_class, irg, block, 1, &value);
+		ir_node *value   = new_r_Proj(block, vfisttp, mode_E, pn_ia32_vfisttp_res);
+		be_new_Keep(reg_class, block, 1, &value);
 
-		new_node = new_r_Proj(irg, block, vfisttp, mode_M, pn_ia32_vfisttp_M);
+		new_node = new_r_Proj(block, vfisttp, mode_M, pn_ia32_vfisttp_M);
 		*fist    = vfisttp;
 	} else {
 		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
@@ -2546,7 +2544,7 @@ static ir_node *gen_general_Store(ir_node *node)
 			val = op;
 		}
 		new_val  = be_transform_node(val);
-		new_node = gen_vfist(dbgi, current_ir_graph, new_block, addr.base, addr.index, addr.mem, new_val, &store);
+		new_node = gen_vfist(dbgi, new_block, addr.base, addr.index, addr.mem, new_val, &store);
 	} else {
 		new_val = create_immediate_or_transform(val, 0);
 		assert(mode != mode_b);
@@ -2999,7 +2997,6 @@ static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
  */
 static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 {
-	ir_graph *irg   = current_ir_graph;
 	ir_mode  *mode  = get_irn_mode(psi);
 	ir_node  *new_node, *sub, *sbb, *eflags, *block;
 
@@ -3016,9 +3013,9 @@ static ir_node *create_Doz(ir_node *psi, ir_node *a, ir_node *b)
 	} else {
 		sub = new_node;
 		set_irn_mode(sub, mode_T);
-		new_node = new_rd_Proj(NULL, irg, block, sub, mode, pn_ia32_res);
+		new_node = new_rd_Proj(NULL, block, sub, mode, pn_ia32_res);
 	}
-	eflags = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_Sub_flags);
+	eflags = new_rd_Proj(NULL, block, sub, mode_Iu, pn_ia32_Sub_flags);
 
 	dbgi   = get_irn_dbg_info(psi);
 	sbb    = new_bd_ia32_Sbb0(dbgi, block, eflags);
@@ -3207,7 +3204,7 @@ static ir_node *gen_Mux(ir_node *node)
 				load = new_bd_ia32_vfld(dbgi, block, am.addr.base, am.addr.index, am.addr.mem, new_mode);
 			set_am_attributes(load, &am);
 
-			return new_rd_Proj(NULL, current_ir_graph, block, load, mode_vfp, pn_ia32_res);
+			return new_rd_Proj(NULL, block, load, mode_vfp, pn_ia32_res);
 		}
 		panic("cannot transform floating point Mux");
 
@@ -3270,7 +3267,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	ir_mode         *mode       = get_irn_mode(node);
 	ir_node         *fist, *load, *mem;
 
-	mem = gen_vfist(dbgi, irg, block, get_irg_frame(irg), noreg_GP, nomem, new_op, &fist);
+	mem = gen_vfist(dbgi, block, get_irg_frame(irg), noreg_GP, nomem, new_op, &fist);
 	set_irn_pinned(fist, op_pin_state_floats);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -3301,7 +3298,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 	}
 	SET_IA32_ORIG_NODE(load, node);
 
-	return new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
+	return new_r_Proj(block, load, mode_Iu, pn_ia32_Load_res);
 }
 
 /**
@@ -3310,7 +3307,7 @@ static ir_node *gen_x87_fp_to_gp(ir_node *node)
 static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 {
 	ir_node  *block    = get_nodes_block(node);
-	ir_graph *irg      = current_ir_graph;
+	ir_graph *irg      = get_Block_irg(block);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *frame    = get_irg_frame(irg);
 	ir_node  *store, *load;
@@ -3326,7 +3323,7 @@ static ir_node *gen_x87_strict_conv(ir_mode *tgt_mode, ir_node *node)
 	set_ia32_op_type(load, ia32_AddrModeS);
 	SET_IA32_ORIG_NODE(load, node);
 
-	new_node = new_r_Proj(irg, block, load, mode_E, pn_ia32_vfld_res);
+	new_node = new_r_Proj(block, load, mode_E, pn_ia32_vfld_res);
 	return new_node;
 }
 
@@ -3347,7 +3344,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 {
 	ir_node  *src_block = get_nodes_block(node);
 	ir_node  *block     = be_transform_node(src_block);
-	ir_graph *irg       = current_ir_graph;
+	ir_graph *irg       = get_Block_irg(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *op        = get_Conv_op(node);
 	ir_node  *new_op    = NULL;
@@ -3366,7 +3363,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 			ia32_address_t *addr = &am.addr;
 
 			fild     = new_bd_ia32_vfild(dbgi, block, addr->base, addr->index, addr->mem);
-			new_node = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+			new_node = new_r_Proj(block, fild, mode_vfp, pn_ia32_vfild_res);
 
 			set_am_attributes(fild, &am);
 			SET_IA32_ORIG_NODE(fild, node);
@@ -3417,7 +3414,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 		in[0] = zero_store;
 		in[1] = store;
 
-		store      = new_rd_Sync(dbgi, irg, block, 2, in);
+		store      = new_rd_Sync(dbgi, block, 2, in);
 		store_mode = mode_Ls;
 	} else {
 		store_mode = mode_Is;
@@ -3430,7 +3427,7 @@ static ir_node *gen_x87_gp_to_fp(ir_node *node, ir_mode *src_mode)
 	set_ia32_op_type(fild, ia32_AddrModeS);
 	set_ia32_ls_mode(fild, store_mode);
 
-	new_node = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+	new_node = new_r_Proj(block, fild, mode_vfp, pn_ia32_vfild_res);
 
 	return new_node;
 }
@@ -3718,8 +3715,8 @@ static ir_node *gen_be_Return(ir_node *node)
 	set_ia32_op_type(fld, ia32_AddrModeS);
 	set_ia32_use_frame(fld);
 
-	mproj = new_r_Proj(irg, block, fld, mode_M, pn_ia32_vfld_M);
-	fld   = new_r_Proj(irg, block, fld, mode_vfp, pn_ia32_vfld_res);
+	mproj = new_r_Proj(block, fld, mode_M, pn_ia32_vfld_M);
+	fld   = new_r_Proj(block, fld, mode_vfp, pn_ia32_vfld_res);
 
 	/* create a new barrier */
 	arity = get_irn_arity(barrier);
@@ -3857,11 +3854,11 @@ static ir_node *gen_Bound(ir_node *node)
 		if (! is_Proj(res)) {
 			sub = res;
 			set_irn_mode(sub, mode_T);
-			res = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_res);
+			res = new_rd_Proj(NULL, block, sub, mode_Iu, pn_ia32_res);
 		} else {
 			sub = get_Proj_pred(res);
 		}
-		flags = new_rd_Proj(NULL, irg, block, sub, mode_Iu, pn_ia32_Sub_flags);
+		flags = new_rd_Proj(NULL, block, sub, mode_Iu, pn_ia32_Sub_flags);
 		new_node = new_bd_ia32_Jcc(dbgi, block, flags, pn_Cmp_Lt | ia32_pn_Cmp_unsigned);
 		SET_IA32_ORIG_NODE(new_node, node);
 	} else {
@@ -4065,7 +4062,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 	in[0] = store_low;
 	in[1] = store_high;
-	sync  = new_rd_Sync(dbgi, irg, block, 2, in);
+	sync  = new_rd_Sync(dbgi, block, 2, in);
 
 	/* do a fild */
 	fild = new_bd_ia32_vfild(dbgi, block, frame, noreg_GP, sync);
@@ -4076,7 +4073,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 
 	SET_IA32_ORIG_NODE(fild, node);
 
-	res = new_r_Proj(irg, block, fild, mode_vfp, pn_ia32_vfild_res);
+	res = new_r_Proj(block, fild, mode_vfp, pn_ia32_vfild_res);
 
 	if (! mode_is_signed(get_irn_mode(val_high))) {
 		ia32_address_mode_t  am;
@@ -4107,7 +4104,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		set_am_attributes(fadd, &am);
 
 		set_irn_mode(fadd, mode_T);
-		res = new_rd_Proj(NULL, irg, block, fadd, mode_vfp, pn_ia32_res);
+		res = new_rd_Proj(NULL, block, fadd, mode_vfp, pn_ia32_res);
 	}
 	return res;
 }
@@ -4116,14 +4113,14 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 {
 	ir_node  *src_block  = get_nodes_block(node);
 	ir_node  *block      = be_transform_node(src_block);
-	ir_graph *irg        = current_ir_graph;
+	ir_graph *irg        = get_Block_irg(block);
 	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node  *frame      = get_irg_frame(irg);
 	ir_node  *val        = get_irn_n(node, n_ia32_l_FloattoLL_val);
 	ir_node  *new_val    = be_transform_node(val);
 	ir_node  *fist, *mem;
 
-	mem = gen_vfist(dbgi, irg, block, frame, noreg_GP, nomem, new_val, &fist);
+	mem = gen_vfist(dbgi, block, frame, noreg_GP, nomem, new_val, &fist);
 	SET_IA32_ORIG_NODE(fist, node);
 	set_ia32_use_frame(fist);
 	set_ia32_op_type(fist, ia32_AddrModeD);
@@ -4143,8 +4140,8 @@ static ir_node *bad_transform(ir_node *node)
 
 static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 {
-	ir_graph *irg      = current_ir_graph;
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_graph *irg      = get_Block_irg(block);
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 	ir_node  *frame    = get_irg_frame(irg);
@@ -4170,7 +4167,7 @@ static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 		assert(pn == pn_ia32_l_FloattoLL_res_low);
 	}
 
-	proj = new_r_Proj(irg, block, load, mode_Iu, pn_ia32_Load_res);
+	proj = new_r_Proj(block, load, mode_Iu, pn_ia32_Load_res);
 
 	return proj;
 }
@@ -4183,20 +4180,19 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_AddSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
 		                           pn_ia32_SubSP_stack);
 		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_AddSP_res) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		return new_rd_Proj(dbgi, block, new_pred, mode_Iu,
 		                   pn_ia32_SubSP_addr);
 	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_SubSP_M);
+		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_SubSP_M);
 	}
 
 	panic("No idea how to transform proj->AddSP");
@@ -4215,12 +4211,12 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_SubSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
 		                           pn_ia32_AddSP_stack);
 		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_AddSP_M);
+		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_AddSP_M);
 	}
 
 	panic("No idea how to transform proj->SubSP");
@@ -4234,7 +4230,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node  *new_pred;
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
@@ -4250,7 +4245,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		   reachable through the ProjM */
 		be_enqueue_preds(node);
 		/* do it in 2 steps, to silence firm verifier */
-		res = new_rd_Proj(dbgi, irg, old_block, pred, mode_M, pn_Load_M);
+		res = new_rd_Proj(dbgi, old_block, pred, mode_M, pn_Load_M);
 		set_Proj_proj(res, pn_ia32_mem);
 		return res;
 	}
@@ -4260,15 +4255,15 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	if (is_ia32_Load(new_pred)) {
 		switch (proj) {
 		case pn_Load_res:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Load_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_Load_res);
 		case pn_Load_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Load_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_Load_M);
 		case pn_Load_X_regular:
-			return new_rd_Jmp(dbgi, irg, block);
+			return new_rd_Jmp(dbgi, block);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Load_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_Load_X_exc);
 		default:
 			break;
 		}
@@ -4276,37 +4271,37 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	           is_ia32_Conv_I2I8Bit(new_pred)) {
 		set_irn_mode(new_pred, mode_T);
 		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_mem);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_mem);
 		}
 	} else if (is_ia32_xLoad(new_pred)) {
 		switch (proj) {
 		case pn_Load_res:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_xmm, pn_ia32_xLoad_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_xmm, pn_ia32_xLoad_res);
 		case pn_Load_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_xLoad_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_xLoad_M);
 		case pn_Load_X_regular:
-			return new_rd_Jmp(dbgi, irg, block);
+			return new_rd_Jmp(dbgi, block);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
 		default:
 			break;
 		}
 	} else if (is_ia32_vfld(new_pred)) {
 		switch (proj) {
 		case pn_Load_res:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp, pn_ia32_vfld_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_vfp, pn_ia32_vfld_res);
 		case pn_Load_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_vfld_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_vfld_M);
 		case pn_Load_X_regular:
-			return new_rd_Jmp(dbgi, irg, block);
+			return new_rd_Jmp(dbgi, block);
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
 		default:
 			break;
 		}
@@ -4320,7 +4315,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		if (proj != pn_Load_M) {
 			panic("internal error: transformed node not a Load");
 		}
-		return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, 1);
+		return new_rd_Proj(dbgi, block, new_pred, mode_M, 1);
 	}
 
 	panic("No idea how to transform proj");
@@ -4334,7 +4329,6 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
@@ -4344,14 +4338,14 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Div:
 		switch (proj) {
 		case pn_Div_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Div_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_Div_M);
 		case pn_Div_res:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
 		case pn_Div_X_regular:
-			return new_rd_Jmp(dbgi, irg, block);
+			return new_rd_Jmp(dbgi, block);
 		case pn_Div_X_except:
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
@@ -4359,12 +4353,12 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Mod:
 		switch (proj) {
 		case pn_Mod_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Div_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_Div_M);
 		case pn_Mod_res:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
 		case pn_Mod_X_except:
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
@@ -4372,16 +4366,16 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_DivMod:
 		switch (proj) {
 		case pn_DivMod_M:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_Div_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_Div_M);
 		case pn_DivMod_res_div:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_Div_div_res);
 		case pn_DivMod_res_mod:
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_ia32_Div_mod_res);
 		case pn_DivMod_X_regular:
-			return new_rd_Jmp(dbgi, irg, block);
+			return new_rd_Jmp(dbgi, block);
 		case pn_DivMod_X_except:
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_X, pn_ia32_Div_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_Div_X_exc);
 		default:
 			break;
 		}
@@ -4401,16 +4395,15 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
 	case pn_CopyB_M_regular:
 		if (is_ia32_CopyB_i(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_CopyB_i_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_CopyB_i_M);
 		} else if (is_ia32_CopyB(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_CopyB_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_CopyB_M);
 		}
 		break;
 	default:
@@ -4428,23 +4421,22 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	ir_graph *irg      = current_ir_graph;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
 	case pn_Quot_M:
 		if (is_ia32_xDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_xDiv_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_xDiv_M);
 		} else if (is_ia32_vfdiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_M, pn_ia32_vfdiv_M);
+			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_ia32_vfdiv_M);
 		}
 		break;
 	case pn_Quot_res:
 		if (is_ia32_xDiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_xmm, pn_ia32_xDiv_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_xmm, pn_ia32_xDiv_res);
 		} else if (is_ia32_vfdiv(new_pred)) {
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_vfp, pn_ia32_vfdiv_res);
+			return new_rd_Proj(dbgi, block, new_pred, mode_vfp, pn_ia32_vfdiv_res);
 		}
 		break;
 	case pn_Quot_X_regular:
@@ -4518,7 +4510,7 @@ static ir_node *gen_be_Call(ir_node *node)
 		}
 	}
 
-	mem  = transform_AM_mem(irg, block, src_ptr, src_mem, addr->mem);
+	mem  = transform_AM_mem(block, src_ptr, src_mem, addr->mem);
 	call = new_bd_ia32_Call(dbgi, block, addr->base, addr->index, mem,
 	                        am.new_op2, sp, fpcw, eax, ecx, edx, pop, call_tp);
 	set_am_attributes(call, &am);
@@ -4599,7 +4591,7 @@ static ir_node *gen_return_address(ir_node *node) {
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
-	return new_r_Proj(current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+	return new_r_Proj(block, load, mode_Iu, pn_ia32_Load_res);
 }
 
 /**
@@ -4648,7 +4640,7 @@ static ir_node *gen_frame_address(ir_node *node) {
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
-	return new_r_Proj(current_ir_graph, block, load, mode_Iu, pn_ia32_Load_res);
+	return new_r_Proj(block, load, mode_Iu, pn_ia32_Load_res);
 }
 
 /**
@@ -4732,7 +4724,7 @@ static ir_node *gen_prefetch(ir_node *node) {
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	be_dep_on_frame(new_node);
-	return new_r_Proj(current_ir_graph, block, new_node, mode_M, pn_ia32_Prefetch_M);
+	return new_r_Proj(block, new_node, mode_M, pn_ia32_Prefetch_M);
 }
 
 /**
@@ -4774,10 +4766,10 @@ static ir_node *gen_ffs(ir_node *node)
 	/* bsf x */
 	if (get_irn_mode(real) != mode_T) {
 		set_irn_mode(real, mode_T);
-		bsf = new_r_Proj(current_ir_graph, block, real, mode_Iu, pn_ia32_res);
+		bsf = new_r_Proj(block, real, mode_Iu, pn_ia32_res);
 	}
 
-	flag = new_r_Proj(current_ir_graph, block, real, mode_b, pn_ia32_flags);
+	flag = new_r_Proj(block, real, mode_b, pn_ia32_flags);
 
 	/* sete */
 	set = new_bd_ia32_Set(dbgi, block, flag, pn_Cmp_Eq, 0);
@@ -5125,7 +5117,7 @@ static ir_node *gen_inner_trampoline(ir_node *node) {
 	in[0] = store;
 	in[1] = trampoline;
 
-	return new_r_Tuple(current_ir_graph, new_block, 2, in);
+	return new_r_Tuple(new_block, 2, in);
 }
 
 /**
@@ -5194,11 +5186,11 @@ static ir_node *gen_Proj_Builtin(ir_node *proj) {
 		return new_node;
 	case ir_bk_inport:
 		if (get_Proj_proj(proj) == pn_Builtin_1_result) {
-			return new_r_Proj(current_ir_graph, get_nodes_block(new_node),
+			return new_r_Proj(get_nodes_block(new_node),
 			                  new_node, get_irn_mode(proj), pn_ia32_Inport_res);
 		} else {
 			assert(get_Proj_proj(proj) == pn_Builtin_M);
-			return new_r_Proj(current_ir_graph, get_nodes_block(new_node),
+			return new_r_Proj(get_nodes_block(new_node),
 				new_node, mode_M, pn_ia32_Inport_M);
 		}
 	case ir_bk_inner_trampoline:
@@ -5235,7 +5227,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	ir_node  *res;
 
 	if (proj == pn_be_Call_M_regular) {
-		return new_rd_Proj(dbgi, irg, block, new_call, mode_M, n_ia32_Call_mem);
+		return new_rd_Proj(dbgi, block, new_call, mode_M, n_ia32_Call_mem);
 	}
 	/* transform call modes */
 	if (mode_is_data(mode)) {
@@ -5270,7 +5262,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		assert(i < n_outs);
 	}
 
-	res = new_rd_Proj(dbgi, irg, block, new_call, mode, proj);
+	res = new_rd_Proj(dbgi, block, new_call, mode, proj);
 
 	/* TODO arch_set_irn_register() only operates on Projs, need variant with index */
 	switch (proj) {
@@ -5310,11 +5302,11 @@ static ir_node *gen_Proj_Bound(ir_node *node)
 	case pn_Bound_X_regular:
 		new_node = be_transform_node(pred);
 		block    = get_nodes_block(new_node);
-		return new_r_Proj(current_ir_graph, block, new_node, mode_X, pn_ia32_Jcc_true);
+		return new_r_Proj(block, new_node, mode_X, pn_ia32_Jcc_true);
 	case pn_Bound_X_except:
 		new_node = be_transform_node(pred);
 		block    = get_nodes_block(new_node);
-		return new_r_Proj(current_ir_graph, block, new_node, mode_X, pn_ia32_Jcc_false);
+		return new_r_Proj(block, new_node, mode_X, pn_ia32_Jcc_false);
 	case pn_Bound_res:
 		return be_transform_node(get_Bound_index(pred));
 	default:
@@ -5340,7 +5332,7 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 		panic("unexpected proj mode at ASM");
 	}
 
-	return new_r_Proj(current_ir_graph, block, new_pred, mode, pos);
+	return new_r_Proj(block, new_pred, mode, pos);
 }
 
 /**
@@ -5391,7 +5383,7 @@ static ir_node *gen_Proj(ir_node *node)
 				ir_node  *new_block = be_transform_node(block);
 				dbg_info *dbgi      = get_irn_dbg_info(node);
 				/* we exchange the ProjX with a jump */
-				ir_node  *jump      = new_rd_Jmp(dbgi, current_ir_graph, new_block);
+				ir_node  *jump      = new_rd_Jmp(dbgi, new_block);
 
 				return jump;
 			}
@@ -5413,7 +5405,7 @@ static ir_node *gen_Proj(ir_node *node)
 			if (ia32_mode_needs_gp_reg(mode)) {
 				ir_node *new_pred = be_transform_node(pred);
 				ir_node *block    = be_transform_node(get_nodes_block(node));
-				ir_node *new_proj = new_r_Proj(current_ir_graph, block, new_pred,
+				ir_node *new_proj = new_r_Proj(block, new_pred,
 											   mode_Iu, get_Proj_proj(node));
 				new_proj->node_nr = node->node_nr;
 				return new_proj;
@@ -5604,12 +5596,11 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		}
 
 		block = get_nodes_block(node);
-		in[0] = new_r_Proj(current_ir_graph, block, node,
-		                   arch_register_class_mode(cls), i);
+		in[0] = new_r_Proj(block, node, arch_register_class_mode(cls), i);
 		if (last_keep != NULL) {
 			be_Keep_add_node(last_keep, cls, in[0]);
 		} else {
-			last_keep = be_new_Keep(cls, current_ir_graph, block, 1, in);
+			last_keep = be_new_Keep(cls, block, 1, in);
 			if (sched_is_scheduled(node)) {
 				sched_add_after(node, last_keep);
 			}
@@ -5692,7 +5683,7 @@ static void postprocess_fp_call_results(void) {
 						ir_node  *block    = get_nodes_block(call);
 						ir_node  *frame    = get_irg_frame(current_ir_graph);
 						ir_node  *old_mem  = be_get_Proj_for_pn(call, pn_ia32_Call_M);
-						ir_node  *call_mem = new_r_Proj(current_ir_graph, block, call, mode_M, pn_ia32_Call_M);
+						ir_node  *call_mem = new_r_Proj(block, call, mode_M, pn_ia32_Call_M);
 						ir_node  *vfst, *xld, *new_mem;
 
 						/* store st(0) on stack */
@@ -5705,8 +5696,8 @@ static void postprocess_fp_call_results(void) {
 						set_ia32_op_type(xld, ia32_AddrModeS);
 						set_ia32_use_frame(xld);
 
-						new_res = new_r_Proj(current_ir_graph, block, xld, mode, pn_ia32_xLoad_res);
-						new_mem = new_r_Proj(current_ir_graph, block, xld, mode_M, pn_ia32_xLoad_M);
+						new_res = new_r_Proj(block, xld, mode, pn_ia32_xLoad_res);
+						new_mem = new_r_Proj(block, xld, mode_M, pn_ia32_xLoad_M);
 
 						if (old_mem != NULL) {
 							edges_reroute(old_mem, new_mem, current_ir_graph);

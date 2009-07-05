@@ -377,7 +377,7 @@ restart:
 							f = val_i;
 						}
 
-						mux = new_rd_Mux(cond_dbg, current_ir_graph, mux_block, sel, f, t, get_irn_mode(phi));
+						mux = new_rd_Mux(cond_dbg, mux_block, sel, f, t, get_irn_mode(phi));
 						DB((dbg, LEVEL_2, "Generating %+F for %+F\n", mux, phi));
 					}
 
@@ -416,7 +416,7 @@ restart:
 #endif
 					return;
 				} else {
-					rewire(block, i, j, new_r_Jmp(current_ir_graph, mux_block));
+					rewire(block, i, j, new_r_Jmp(mux_block));
 					goto restart;
 				}
 			}

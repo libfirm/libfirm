@@ -302,9 +302,9 @@ static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
 
 		conv = new_bd_arm_fpaDbl2GP(NULL, bl, arg, mem);
 		/* move high/low */
-		*resL = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_low);
-		*resH = new_r_Proj(irg, bl, conv, mode_Is, pn_arm_fpaDbl2GP_high);
-		mem   = new_r_Proj(irg, bl, conv, mode_M,  pn_arm_fpaDbl2GP_M);
+		*resL = new_r_Proj(bl, conv, mode_Is, pn_arm_fpaDbl2GP_low);
+		*resH = new_r_Proj(bl, conv, mode_Is, pn_arm_fpaDbl2GP_high);
+		mem   = new_r_Proj(bl, conv, mode_M,  pn_arm_fpaDbl2GP_M);
 	}
 	return mem;
 }
@@ -836,15 +836,15 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	                             arch_register_req_type_ignore);
 
 	/* copy SP to IP (so we can spill it */
-	ip = be_new_Copy(gp, irg, block, sp);
+	ip = be_new_Copy(gp, block, sp);
 	be_set_constr_single_reg_out(ip, 0, &arm_gp_regs[REG_R12], 0);
 
 	/* spill stuff */
 	store = new_bd_arm_StoreStackM4Inc(NULL, block, sp, fp, ip, lr, pc, *mem);
 
-	sp = new_r_Proj(irg, block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
+	sp = new_r_Proj(block, store, env->arch_env->sp->reg_class->mode, pn_arm_StoreStackM4Inc_ptr);
 	arch_set_irn_register(sp, env->arch_env->sp);
-	*mem = new_r_Proj(irg, block, store, mode_M, pn_arm_StoreStackM4Inc_M);
+	*mem = new_r_Proj(block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	/* frame pointer is ip-4 (because ip is our old sp value) */
 	fp = new_bd_arm_Sub_i(NULL, block, ip, get_irn_mode(fp), 4);
@@ -856,7 +856,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	 * to extract this order from register requirements) */
 	add_irn_dep(fp, store);
 
-	fp = be_new_Copy(gp, irg, block, fp); // XXX Gammelfix: only be_ have custom register requirements
+	fp = be_new_Copy(gp, block, fp); // XXX Gammelfix: only be_ have custom register requirements
 	be_set_constr_single_reg_out(fp, 0, env->arch_env->bp,
 	                             arch_register_req_type_ignore);
 	arch_set_irn_register(fp, env->arch_env->bp);
@@ -882,22 +882,22 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 	// TODO: Activate Omit fp in epilogue
 	if (env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->arch_env->sp, env->irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = be_new_IncSP(env->arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 
-		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
+		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
 		be_set_constr_single_reg_out(curr_lr, 0, &arm_gp_regs[REG_LR], 0);
 
-		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], env->irg, bl, curr_lr );
+		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], bl, curr_lr );
 		be_set_constr_single_reg_out(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC], 0);
 	} else {
 		ir_node *load_node;
 
 		load_node = new_bd_arm_LoadStackM3Epilogue(NULL, bl, curr_bp, *mem);
 
-		curr_bp = new_r_Proj(env->irg, bl, load_node, env->arch_env->bp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res0);
-		curr_sp = new_r_Proj(env->irg, bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res1);
-		curr_pc = new_r_Proj(env->irg, bl, load_node, mode_Iu, pn_arm_LoadStackM3Epilogue_res2);
-		*mem    = new_r_Proj(env->irg, bl, load_node, mode_M, pn_arm_LoadStackM3Epilogue_M);
+		curr_bp = new_r_Proj(bl, load_node, env->arch_env->bp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res0);
+		curr_sp = new_r_Proj(bl, load_node, env->arch_env->sp->reg_class->mode, pn_arm_LoadStackM3Epilogue_res1);
+		curr_pc = new_r_Proj(bl, load_node, mode_Iu, pn_arm_LoadStackM3Epilogue_res2);
+		*mem    = new_r_Proj(bl, load_node, mode_M, pn_arm_LoadStackM3Epilogue_M);
 		arch_set_irn_register(curr_bp, env->arch_env->bp);
 		arch_set_irn_register(curr_sp, env->arch_env->sp);
 		arch_set_irn_register(curr_pc, &arm_gp_regs[REG_PC]);

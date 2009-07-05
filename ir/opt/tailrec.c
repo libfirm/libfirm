@@ -195,7 +195,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 		ir_node *block = get_nodes_block(p);
 
 		n = get_irn_link(p);
-		in[i++] = new_r_Jmp(irg, block);
+		in[i++] = new_r_Jmp(block);
 
 		// exchange(p, new_r_Bad(irg));
 
@@ -206,7 +206,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 
 	/* create a new block at start */
 	block = new_r_Block(irg, env->n_tail_calls + 1, in);
-	jmp   = new_r_Jmp(irg, block);
+	jmp   = new_r_Jmp(block);
 
 	/* the old first block is now the second one */
 	set_Block_cfgpred(data.block, data.blk_idx, jmp);
@@ -216,7 +216,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 
 	/* build the memory phi */
 	i = 0;
-	in[i] = new_r_Proj(irg, get_irg_start_block(irg), get_irg_start(irg), mode_M, pn_Start_M);
+	in[i] = new_r_Proj(get_irg_start_block(irg), get_irg_start(irg), mode_M, pn_Start_M);
 	set_irg_initial_mem(irg, in[i]);
 	++i;
 
@@ -226,7 +226,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 	}
 	assert(i == env->n_tail_calls + 1);
 
-	phis[0] = new_r_Phi(irg, block, env->n_tail_calls + 1, in, mode_M);
+	phis[0] = new_r_Phi(block, env->n_tail_calls + 1, in, mode_M);
 
 	/* build the data Phi's */
 	if (n_params > 0) {
@@ -248,11 +248,11 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 		for (i = 0; i < n_params; ++i) {
 			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 
-			in[0] = new_r_Proj(irg, args_bl, args, mode, i);
+			in[0] = new_r_Proj(args_bl, args, mode, i);
 			for (j = 0; j < env->n_tail_calls; ++j)
 				in[j + 1] = call_params[j][i];
 
-			phis[i + 1] = new_r_Phi(irg, block, env->n_tail_calls + 1, in, mode);
+			phis[i + 1] = new_r_Phi(block, env->n_tail_calls + 1, in, mode);
 		}
 	}
 

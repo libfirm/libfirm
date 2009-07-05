@@ -826,7 +826,7 @@ static void apply(ir_graph *irg, partition_t *part) {
 		if (is_op_forking(cfop)) {
 			/* a critical edge */
 			ir_node *block = new_r_Block(irg, 1, &ins[i]);
-			ir_node *jmp   = new_r_Jmp(irg, block);
+			ir_node *jmp   = new_r_Jmp(block);
 			ins[i] = jmp;
 		}
 	}
@@ -845,7 +845,7 @@ static void apply(ir_graph *irg, partition_t *part) {
 	for (repr_pair = repr->input_pairs; repr_pair != NULL; repr_pair = repr_pair->next) {
 		ir_node *input = get_irn_n(repr_pair->irn, repr_pair->index);
 		ir_mode *mode  = get_irn_mode(input);
-		ir_node *phi   = new_r_Phi(current_ir_graph, block, n, repr_pair->ins, mode);
+		ir_node *phi   = new_r_Phi(block, n, repr_pair->ins, mode);
 
 		set_irn_n(repr_pair->irn, repr_pair->index, phi);
 		DEL_ARR_F(repr_pair->ins);
@@ -1088,8 +1088,8 @@ static void check_for_cf_meet(ir_node *block, void *ctx) {
  * Compare two nodes for root ordering.
  */
 static int cmp_nodes(const void *a, const void *b) {
-	ir_node *const *pa     = a;
-	ir_node *const *pb     = b;
+	const ir_node *const *pa = a;
+	const ir_node *const *pb = b;
 	const ir_node  *irn_a  = *pa;
 	const ir_node  *irn_b  = *pb;
 	ir_opcode      code_a  = get_irn_opcode(irn_a);

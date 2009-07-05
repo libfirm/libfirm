@@ -805,11 +805,11 @@ static void walker(ir_node *proj, void *env)
 			in[i++] = p;
 		}
 		assert(i == n);
-		sync = new_r_Sync(irg, block, n, in);
+		sync = new_r_Sync(block, n, in);
 		exchange(proj, sync);
 
 		assert(pn_Load_M == pn_Store_M);
-		proj = new_r_Proj(irg, block, mem_op, mode_M, pn_Load_M);
+		proj = new_r_Proj(block, mem_op, mode_M, pn_Load_M);
 		set_Sync_pred(sync, 0, proj);
 
 		n = ir_nodeset_size(&pi.this_mem);
@@ -826,7 +826,7 @@ static void walker(ir_node *proj, void *env)
 				in[i++] = p;
 			}
 			assert(i == n);
-			sync = new_r_Sync(irg, block, n, in);
+			sync = new_r_Sync(block, n, in);
 		}
 		set_memop_mem(mem_op, sync);
 	}

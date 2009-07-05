@@ -713,7 +713,7 @@ static void create_memperms(be_fec_env_t *env)
 			nodes[i] = arg;
 		}
 
-		mempermnode = be_new_MemPerm(arch_env, irg, memperm->block,
+		mempermnode = be_new_MemPerm(arch_env, memperm->block,
 		                             memperm->entrycount, nodes);
 
 		/* insert node into schedule */

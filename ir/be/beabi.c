@@ -501,7 +501,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	 * to adjust stack alignment for the call.
 	 */
 	if (stack_dir < 0 && !do_seq && !no_alloc) {
-		curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, stack_size, 1);
+		curr_sp = be_new_IncSP(sp, bl, curr_sp, stack_size, 1);
 	}
 
 	dbgi = get_irn_dbg_info(irn);
@@ -544,7 +544,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 */
 			if (do_seq) {
 				curr_ofs = 0;
-				addr = curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, param_size + arg->space_before, 0);
+				addr = curr_sp = be_new_IncSP(sp, bl, curr_sp, param_size + arg->space_before, 0);
 				add_irn_dep(curr_sp, curr_mem);
 			}
 			else {
@@ -558,7 +558,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 						constmode = mode_Is;
 					}
 					addr = new_r_Const_long(irg, constmode, curr_ofs);
-					addr = new_r_Add(irg, bl, curr_sp, addr, mach_mode);
+					addr = new_r_Add(bl, curr_sp, addr, mach_mode);
 				}
 			}
 
@@ -566,8 +566,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (is_atomic_type(param_type)) {
 				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
-				store = new_rd_Store(dbgi, irg, bl, mem_input, addr, param, 0);
-				mem = new_r_Proj(irg, bl, store, mode_M, pn_Store_M);
+				store = new_rd_Store(dbgi, bl, mem_input, addr, param, 0);
+				mem = new_r_Proj(bl, store, mode_M, pn_Store_M);
 			}
 
 			/* Make a mem copy for compound arguments. */
@@ -575,8 +575,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				ir_node *copy;
 
 				assert(mode_is_reference(get_irn_mode(param)));
-				copy = new_rd_CopyB(dbgi, irg, bl, curr_mem, addr, param, param_type);
-				mem = new_r_Proj(irg, bl, copy, mode_M, pn_CopyB_M_regular);
+				copy = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
+				mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M_regular);
 			}
 
 			curr_ofs += param_size;
@@ -592,7 +592,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		/* We need the sync only, if we didn't build the stores sequentially. */
 		if (! do_seq) {
 			if (n_stack_params >= 1) {
-				curr_mem = new_r_Sync(irg, bl, n_stack_params + 1, in);
+				curr_mem = new_r_Sync(bl, n_stack_params + 1, in);
 			} else {
 				curr_mem = get_Call_mem(irn);
 			}
@@ -706,8 +706,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ARR_APP1(ir_node *, env->calls, low_call);
 
 	/* create new stack pointer */
-	curr_sp = new_r_Proj(irg, bl, low_call, get_irn_mode(curr_sp),
-	                     pn_be_Call_sp);
+	curr_sp = new_r_Proj(bl, low_call, get_irn_mode(curr_sp), pn_be_Call_sp);
 	be_set_constr_single_reg_out(low_call, pn_be_Call_sp, sp,
 			arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 	arch_set_irn_register(curr_sp, sp);
@@ -731,7 +730,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		if (proj == NULL) {
 			ir_type *res_type = get_method_res_type(call_tp, i);
 			ir_mode *mode     = get_type_mode(res_type);
-			proj              = new_r_Proj(irg, bl, low_call, mode, pn);
+			proj              = new_r_Proj(bl, low_call, mode, pn);
 			res_projs[i]      = proj;
 		} else {
 			set_Proj_pred(proj, low_call);
@@ -795,7 +794,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		obstack_ptr_grow(obst, curr_sp);
 
 		foreach_pset_new(&destroyed_regs, reg, iter) {
-			ir_node *proj = new_r_Proj(irg, bl, low_call, reg->reg_class->mode, curr_res_proj);
+			ir_node *proj = new_r_Proj(bl, low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg_out(low_call, curr_res_proj, reg, 0);
@@ -817,7 +816,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		/* create the Keep for the caller save registers */
 		in   = (ir_node **) obstack_finish(obst);
-		keep = be_new_Keep(NULL, irg, bl, n, in);
+		keep = be_new_Keep(NULL, bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = get_irn_link(in[i]);
 			be_node_set_reg_class_in(keep, i, reg->reg_class);
@@ -841,13 +840,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (! mem_proj) {
-			mem_proj = new_r_Proj(irg, bl, low_call, mode_M, pn_be_Call_M_regular);
+			mem_proj = new_r_Proj(bl, low_call, mode_M, pn_be_Call_M_regular);
 			keep_alive(mem_proj);
 		}
 	}
 	/* Clean up the stack frame or revert alignment fixes if we allocated it */
 	if (! no_alloc) {
-		curr_sp = be_new_IncSP(sp, irg, bl, curr_sp, -stack_size, 0);
+		curr_sp = be_new_IncSP(sp, bl, curr_sp, -stack_size, 0);
 	}
 
 	be_abi_call_free(call);
@@ -864,30 +863,31 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
  *
  * @param alignment  the minimum stack alignment
  * @param size       the node containing the non-aligned size
- * @param irg        the irg where new nodes are allocated on
- * @param irg        the block where new nodes are allocated on
+ * @param block      the block where new nodes are allocated on
  * @param dbg        debug info for new nodes
  *
  * @return a node representing the aligned size
  */
 static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
-                                  ir_graph *irg, ir_node *block, dbg_info *dbg)
+                                  ir_node *block, dbg_info *dbg)
 {
 	if (stack_alignment > 1) {
-		ir_mode *mode;
-		tarval  *tv;
-		ir_node *mask;
+		ir_mode  *mode;
+		tarval   *tv;
+		ir_node  *mask;
+		ir_graph *irg;
 
 		assert(is_po2(stack_alignment));
 
 		mode = get_irn_mode(size);
 		tv   = new_tarval_from_long(stack_alignment-1, mode);
+		irg  = get_Block_irg(block);
 		mask = new_r_Const(irg, tv);
-		size = new_rd_Add(dbg, irg, block, size, mask, mode);
+		size = new_rd_Add(dbg, block, size, mask, mode);
 
 		tv   = new_tarval_from_long(-(long)stack_alignment, mode);
 		mask = new_r_Const(irg, tv);
-		size = new_rd_And(dbg, irg, block, size, mask, mode);
+		size = new_rd_And(dbg, block, size, mask, mode);
 	}
 	return size;
 }
@@ -911,7 +911,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	assert(get_Alloc_where(alloc) == stack_alloc);
 
 	block = get_nodes_block(alloc);
-	irg = get_irn_irg(block);
+	irg   = get_Block_irg(block);
 	alloc_mem = NULL;
 	alloc_res = NULL;
 	type = get_Alloc_type(alloc);
@@ -949,7 +949,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
 		                                     mode);
 		ir_node *cnst = new_rd_Const(dbg, irg, tv);
-		size          = new_rd_Mul(dbg, irg, block, size, cnst, mode);
+		size          = new_rd_Mul(dbg, block, size, cnst, mode);
 	}
 
 	/* The stack pointer will be modified in an unknown manner.
@@ -957,21 +957,21 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	env->call->flags.bits.try_omit_fp = 0;
 
 	stack_alignment = 1 << env->arch_env->stack_alignment;
-	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
-	new_alloc       = be_new_AddSP(env->arch_env->sp, irg, block, curr_sp, size);
+	size            = adjust_alloc_size(stack_alignment, size, block, dbg);
+	new_alloc       = be_new_AddSP(env->arch_env->sp, block, curr_sp, size);
 	set_irn_dbg_info(new_alloc, dbg);
 
 	if (alloc_mem != NULL) {
 		ir_node *addsp_mem;
 		ir_node *sync;
 
-		addsp_mem = new_r_Proj(irg, block, new_alloc, mode_M, pn_be_AddSP_M);
+		addsp_mem = new_r_Proj(block, new_alloc, mode_M, pn_be_AddSP_M);
 
 		/* We need to sync the output mem of the AddSP with the input mem
 		   edge into the alloc node. */
 		ins[0] = get_Alloc_mem(alloc);
 		ins[1] = addsp_mem;
-		sync = new_r_Sync(irg, block, 2, ins);
+		sync = new_r_Sync(block, 2, ins);
 
 		exchange(alloc_mem, sync);
 	}
@@ -982,7 +982,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	set_Proj_proj(alloc_res, pn_be_AddSP_res);
 
 	addr    = alloc_res;
-	curr_sp = new_r_Proj(irg, block, new_alloc,  get_irn_mode(curr_sp),
+	curr_sp = new_r_Proj(block, new_alloc,  get_irn_mode(curr_sp),
 	                     pn_be_AddSP_sp);
 
 	return curr_sp;
@@ -1015,7 +1015,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
 		ir_node *cnst = new_rd_Const(dbg, irg, tv);
-		ir_node *mul = new_rd_Mul(dbg, irg, block, get_Free_size(free),
+		ir_node *mul = new_rd_Mul(dbg, block, get_Free_size(free),
 		                          cnst, mode_Iu);
 		size = mul;
 	} else {
@@ -1023,21 +1023,21 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	}
 
 	stack_alignment = 1 << env->arch_env->stack_alignment;
-	size            = adjust_alloc_size(stack_alignment, size, irg, block, dbg);
+	size            = adjust_alloc_size(stack_alignment, size, block, dbg);
 
 	/* The stack pointer will be modified in an unknown manner.
 	   We cannot omit it. */
 	env->call->flags.bits.try_omit_fp = 0;
-	subsp = be_new_SubSP(env->arch_env->sp, irg, block, curr_sp, size);
+	subsp = be_new_SubSP(env->arch_env->sp, block, curr_sp, size);
 	set_irn_dbg_info(subsp, dbg);
 
-	mem = new_r_Proj(irg, block, subsp, mode_M, pn_be_SubSP_M);
-	res = new_r_Proj(irg, block, subsp, sp_mode, pn_be_SubSP_sp);
+	mem = new_r_Proj(block, subsp, mode_M, pn_be_SubSP_M);
+	res = new_r_Proj(block, subsp, sp_mode, pn_be_SubSP_sp);
 
 	/* we need to sync the memory */
 	in[0] = get_Free_mem(free);
 	in[1] = mem;
-	sync = new_r_Sync(irg, block, 2, in);
+	sync = new_r_Sync(block, 2, in);
 
 	/* and make the AddSP dependent on the former memory */
 	add_irn_dep(subsp, get_Free_mem(free));
@@ -1209,8 +1209,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 		if (curr_sp != env->init_sp &&
 		    !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
 			nodes[0] = curr_sp;
-			keep     = be_new_Keep(env->arch_env->sp->reg_class,
-			                       get_irn_irg(bl), bl, 1, nodes);
+			keep     = be_new_Keep(env->arch_env->sp->reg_class, bl, 1, nodes);
 			pmap_insert(env->keep_map, bl, keep);
 		}
 	}
@@ -1352,7 +1351,7 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	}
 
 	in = (ir_node **) obstack_finish(&env->obst);
-	irn = be_new_Barrier(irg, bl, n, in);
+	irn = be_new_Barrier(bl, n, in);
 	obstack_free(&env->obst, in);
 
 	for (n = 0; n < n_regs; ++n) {
@@ -1371,7 +1370,7 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 				add_type |= arch_register_req_type_produces_sp;
 		}
 
-		proj = new_r_Proj(irg, bl, irn, get_irn_mode(pred), n);
+		proj = new_r_Proj(bl, irn, get_irn_mode(pred), n);
 		be_node_set_reg_class_in(irn, n, reg->reg_class);
 		if (in_req)
 			be_set_constr_single_reg_in(irn, n, reg, 0);
@@ -1382,7 +1381,7 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	}
 
 	if (mem) {
-		*mem = new_r_Proj(irg, bl, irn, mode_M, n);
+		*mem = new_r_Proj(bl, irn, mode_M, n);
 	}
 
 	obstack_free(&env->obst, rm);
@@ -1589,7 +1588,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 				ent = get_argument_entity(ent, ctx);
 			}
 
-			nw = be_new_FrameAddr(ctx->sp_class, current_ir_graph, bl, ctx->frame, ent);
+			nw = be_new_FrameAddr(ctx->sp_class, bl, ctx->frame, ent);
 			exchange(irn, nw);
 
 			/* check, if it's a param Sel and if have not seen this entity before */
@@ -1662,7 +1661,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 
 		save_optimization_state(&state);
 		set_optimize(0);
-		nmem = new_r_Proj(irg, start_bl, get_irg_start(irg), mode_M, pn_Start_M);
+		nmem = new_r_Proj(start_bl, get_irg_start(irg), mode_M, pn_Start_M);
 		restore_optimization_state(&state);
 
 		/* reroute all edges to the new memory source */
@@ -1679,14 +1678,14 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 			ir_node *addr;
 
 			/* address for the backing store */
-			addr = be_new_FrameAddr(env->arch_env->sp->reg_class, irg, first_bl, frame, entry->ent);
+			addr = be_new_FrameAddr(env->arch_env->sp->reg_class, first_bl, frame, entry->ent);
 
 			if (store)
-				mem = new_r_Proj(irg, first_bl, store, mode_M, pn_Store_M);
+				mem = new_r_Proj(first_bl, store, mode_M, pn_Store_M);
 
 			/* the backing store itself */
-			store = new_r_Store(irg, first_bl, mem, addr,
-			                    new_r_Proj(irg, args_bl, args, mode, i), 0);
+			store = new_r_Store(first_bl, mem, addr,
+			                    new_r_Proj(args_bl, args, mode, i), 0);
 		}
 		/* the new memory Proj gets the last Proj from store */
 		set_Proj_pred(nmem, store);
@@ -1744,7 +1743,7 @@ static void fix_start_block(ir_graph *irg)
 		if (is_Anchor(block))
 			continue;
 		if (block != start_block) {
-			ir_node *jmp = new_r_Jmp(irg, start_block);
+			ir_node *jmp = new_r_Jmp(start_block);
 
 			set_Block_cfgpred(block, get_edge_src_pos(edge), jmp);
 			return;
@@ -1960,7 +1959,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pmap_insert(env->regs, (void *) sp, NULL);
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	reg_params_bl   = get_irg_start_block(irg);
-	env->reg_params = be_new_RegParams(irg, reg_params_bl, pmap_count(env->regs));
+	env->reg_params = be_new_RegParams(reg_params_bl, pmap_count(env->regs));
 	add_irn_dep(env->reg_params, get_irg_start(irg));
 
 	/*
@@ -1983,7 +1982,7 @@ static void modify_irg(be_abi_irg_t *env)
 			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
 
 		assert(nr >= 0);
-		proj = new_r_Proj(irg, reg_params_bl, env->reg_params, mode, nr);
+		proj = new_r_Proj(reg_params_bl, env->reg_params, mode, nr);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg_out(env->reg_params, nr, reg, add_type);
 		arch_set_irn_register(proj, reg);
@@ -1994,7 +1993,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
-	new_mem_proj = new_r_Proj(irg, get_nodes_block(old_mem),
+	new_mem_proj = new_r_Proj(get_nodes_block(old_mem),
 	                          new_r_Unknown(irg, mode_T), mode_M,
 	                          get_Proj_proj(old_mem));
 	mem = new_mem_proj;
@@ -2006,7 +2005,7 @@ static void modify_irg(be_abi_irg_t *env)
 	   might be added before it */
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	start_bl     = get_irg_start_block(irg);
-	env->init_sp = be_new_IncSP(sp, irg, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
+	env->init_sp = be_new_IncSP(sp, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
 	create_barrier(env, start_bl, &mem, env->regs, 0);
@@ -2042,18 +2041,18 @@ static void modify_irg(be_abi_irg_t *env)
 			if (arg->in_reg) {
 				repl = pmap_get(env->regs, (void *) arg->reg);
 			} else if (arg->on_stack) {
-				ir_node *addr = be_new_FrameAddr(sp->reg_class, irg, reg_params_bl, frame_pointer, arg->stack_ent);
+				ir_node *addr = be_new_FrameAddr(sp->reg_class, reg_params_bl, frame_pointer, arg->stack_ent);
 
 				/* For atomic parameters which are actually used, we create a Load node. */
 				if (is_atomic_type(param_type) && get_irn_n_edges(args[i]) > 0) {
 					ir_mode *mode      = get_type_mode(param_type);
 					ir_mode *load_mode = arg->load_mode;
 
-					ir_node *load = new_r_Load(irg, reg_params_bl, new_NoMem(), addr, load_mode, cons_floats);
-					repl = new_r_Proj(irg, reg_params_bl, load, load_mode, pn_Load_res);
+					ir_node *load = new_r_Load(reg_params_bl, new_NoMem(), addr, load_mode, cons_floats);
+					repl = new_r_Proj(reg_params_bl, load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
-						repl = new_r_Conv(irg, reg_params_bl, repl, mode);
+						repl = new_r_Conv(reg_params_bl, repl, mode);
 					}
 				} else {
 					/* The stack parameter is not primitive (it is a struct or array),
@@ -2069,7 +2068,7 @@ static void modify_irg(be_abi_irg_t *env)
 			   which may be wrong. Add Conv's then. */
 			mode = get_irn_mode(args[i]);
 			if (mode != get_irn_mode(repl)) {
-				repl = new_r_Conv(irg, get_irn_n(repl, -1), repl, mode);
+				repl = new_r_Conv(get_nodes_block(repl), repl, mode);
 			}
 			exchange(args[i], repl);
 		}
@@ -2264,7 +2263,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 		/* all ok now for locally constructed stuff */
 		if (can_address_relative(entity)) {
-			ir_node *add = new_r_Add(irg, block, pic_base, pred, mode);
+			ir_node *add = new_r_Add(block, pic_base, pred, mode);
 
 			/* make sure the walker doesn't visit this add again */
 			mark_irn_visited(add);
@@ -2277,14 +2276,14 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		pic_symbol   = get_pic_symbol(be, entity);
 		pic_symconst = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
  		                                        pic_symbol, NULL);
-		add = new_r_Add(irg, block, pic_base, pic_symconst, mode);
+		add = new_r_Add(block, pic_base, pic_symconst, mode);
 		mark_irn_visited(add);
 
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
 		   and need no memory input */
-		load     = new_r_Load(irg, block, new_NoMem(), add, mode, cons_floats);
-		load_res = new_r_Proj(irg, block, load, mode, pn_Load_res);
+		load     = new_r_Load(block, new_NoMem(), add, mode, cons_floats);
+		load_res = new_r_Proj(block, load, mode, pn_Load_res);
 
 		set_irn_n(node, i, load_res);
 	}
@@ -2642,7 +2641,7 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx) {
 			ir_mode  *mode_UInt = get_reference_mode_unsigned_eq(mode);
 			ir_node  *cnst = new_r_Const_long(current_ir_graph, mode_UInt, offset);
 
-			ptr = new_rd_Add(dbgi, current_ir_graph, bl, ptr, cnst, mode);
+			ptr = new_rd_Add(dbgi, bl, ptr, cnst, mode);
 		}
 		exchange(sel, ptr);
 	}

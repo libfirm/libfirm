@@ -26,9 +26,9 @@ def format_ifnset(string, node, key):
 
 def format_block(node):
 	if hasattr(node, "knownBlock"):
-		return ""
+		return "current_ir_graph"
 	else:
-		return ", get_node(env, preds[0])"
+		return "get_node(env, preds[0])"
 
 env = Environment()
 env.filters['args']   = format_args
@@ -187,9 +187,9 @@ import_attrs_template = env.from_string('''
 		{% for attr in node.constructor_args %}{{attr.importcmd}}
 		{% endfor %}
 		{% for special in node.special_constructors %}if({{special.attrname}} == {{special.value}})
-			newnode = new_r_{{special.constrname}}(current_ir_graph{{node|block}}{{node.arguments|args}});
+			newnode = new_r_{{special.constrname}}({{node|block}}{{node.arguments|args}});
 		else{% endfor %}
-		newnode = new_r_{{node.name}}(current_ir_graph{{node|block}}{{node.arguments|args}});
+		newnode = new_r_{{node.name}}({{node|block}}{{node.arguments|args}});
 		{% for (initarg, initfunc) in node.initargs %}{{initfunc}}(newnode, {{initarg}});
 		{% endfor %}
 		break;

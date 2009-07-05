@@ -392,9 +392,9 @@ static int concretize_Phi_type(ir_node *phi)
 
 	/* Transform Phi */
 	blk = get_nodes_block(phi);
-	nn  = new_r_Phi(current_ir_graph, blk, n_preds, pred, get_irn_mode(phi));
+	nn  = new_r_Phi(blk, n_preds, pred, get_irn_mode(phi));
 	set_irn_typeinfo_type(nn, fromtype);
-	nn  = new_r_Cast(current_ir_graph, blk, nn, totype);
+	nn  = new_r_Cast(blk, nn, totype);
 	set_irn_typeinfo_type(nn, totype);
 	exchange(phi, nn);
 	return 1;

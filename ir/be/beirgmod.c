@@ -114,7 +114,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	}
 	ir_nodeset_destroy(&live);
 
-	perm = be_new_Perm(cls, irg, bl, n, nodes);
+	perm = be_new_Perm(cls, bl, n, nodes);
 	sched_add_after(pos, perm);
 	free(nodes);
 
@@ -125,7 +125,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 		be_ssa_construction_env_t senv;
 
 		ir_mode *mode = get_irn_mode(perm_op);
-		ir_node *proj = new_r_Proj(irg, bl, perm, mode, i);
+		ir_node *proj = new_r_Proj(bl, perm, mode, i);
 		arch_set_irn_register(proj, reg);
 
 		curr = proj;

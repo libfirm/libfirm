@@ -146,8 +146,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	if(get_irn_mode(copy) == mode_T) {
 		ir_node *block = get_nodes_block(copy);
 		ir_mode *mode  = flag_class->mode;
-		value = new_rd_Proj(NULL, current_ir_graph, block,
-							copy, mode, pn);
+		value = new_rd_Proj(NULL, block, copy, mode, pn);
 	} else {
 		value = copy;
 	}

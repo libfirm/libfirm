@@ -235,7 +235,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx) {
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);
 			exc_changed = 1;
-			exchange(proj, new_r_Jmp(irg, block));
+			exchange(proj, new_r_Jmp(block));
 			break;
 		}
 		default:
@@ -374,7 +374,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);
 			exc_changed = 1;
-			exchange(proj, new_r_Jmp(irg, block));
+			exchange(proj, new_r_Jmp(block));
 			break;
 		}
 		default:

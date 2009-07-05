@@ -119,7 +119,7 @@ static ir_node *add(ir_node *e, ir_node *v)
 
 		if (v_pred != pred) {
 			/* must create a new value here */
-			v = new_r_Proj(current_ir_graph, get_nodes_block(v_pred), v_pred, get_irn_mode(v), get_Proj_proj(v));
+			v = new_r_Proj(get_nodes_block(v_pred), v_pred, get_irn_mode(v), get_Proj_proj(v));
 		}
 	}
 	v = identify_remember(value_table, v);
@@ -681,7 +681,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 				}
 				in[pos] = pred_info->avail;
 			}  /* for */
-			phi = new_r_Phi(current_ir_graph, block, arity, in, mode);
+			phi = new_r_Phi(block, arity, in, mode);
 			l = lookup(expr);
 			if (l == NULL) {
 				l = add(expr, value);

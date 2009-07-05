@@ -190,7 +190,7 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = new_r_Phi(irg, block, arity, in, mode_M);
+	spill_info->spill = new_r_Phi(block, arity, in, mode_M);
 
 	if(spill_to_kill != NULL) {
 		exchange(spill_to_kill, spill_info->spill);

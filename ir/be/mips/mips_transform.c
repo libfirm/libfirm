@@ -436,11 +436,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Div:
 		switch(pn) {
 		case pn_Div_M:
-			return new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_M);
+			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_Div_res:
-			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mflo(dbgi, block, proj);
 		default:
 			break;
@@ -448,11 +446,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Mod:
 		switch(pn) {
 		case pn_Mod_M:
-			return new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_M);
+			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_Mod_res:
-			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
@@ -461,15 +457,12 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_DivMod:
 		switch(pn) {
 		case pn_Div_M:
-			return new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_M);
+			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_DivMod_res_div:
-			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mflo(dbgi, block, proj);
 		case pn_DivMod_res_mod:
-			proj = new_rd_Proj(dbgi, irg, block, new_div, mode_M,
-			                   pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
@@ -483,16 +476,17 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 
 static ir_node *gen_Proj_Start(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	long      pn    = get_Proj_proj(node);
+	ir_graph *irg;
 
 	if(pn == pn_Start_X_initial_exec) {
 		/* we exchange the projx with a jump */
-		ir_node *jump = new_rd_Jmp(dbgi, irg, block);
+		ir_node *jump = new_rd_Jmp(dbgi, block);
 		return jump;
 	}
+	irg = get_irn_irg(node);
 	if(node == get_irg_anchor(irg, anchor_tls)) {
 		/* TODO... */
 		return be_duplicate_node(node);
@@ -502,7 +496,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj(ir_node *node)
 {
-	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);
 
@@ -526,7 +519,7 @@ static ir_node *gen_Proj(ir_node *node)
 			ir_node *block    = be_transform_node(get_nodes_block(node));
 			long     pn       = get_Proj_proj(node);
 
-			return new_rd_Proj(dbgi, irg, block, new_pred, mode_Iu, pn);
+			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn);
 		}
 		break;
 	}
@@ -536,9 +529,9 @@ static ir_node *gen_Proj(ir_node *node)
 
 static ir_node *gen_Phi(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_graph *irg   = get_Block_irg(block);
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *phi;
 
@@ -610,7 +603,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 	// subtract minval from the switch value
 
 	if(minval != 0) {
-		minval_const = new_rd_Const(dbg, irg, block, selector_mode, new_tarval_from_long(minval, selector_mode));
+		minval_const = new_rd_Const(dbg, irg, selector_mode, new_tarval_from_long(minval, selector_mode));
 		minval_const = gen_node_for_Const(env, dbg, irg, block, minval_const);
 		sub = new_bd_mips_sub(dbg, block, selector, minval_const);
 	} else {
@@ -623,7 +616,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 			get_mode_sort(selector_mode), get_mode_size_bits(selector_mode),
 			0, get_mode_arithmetic(selector_mode), get_mode_modulo_shift(selector_mode));
 
-	max_const = new_rd_Const(dbg, irg, block, unsigned_mode, new_tarval_from_long(maxval - minval + 1, unsigned_mode));
+	max_const = new_rd_Const(dbg, irg, unsigned_mode, new_tarval_from_long(maxval - minval + 1, unsigned_mode));
 	max_const = gen_node_for_Const(env, dbg, irg, block, max_const);
 	sltu = new_bd_mips_slt(dbg, block, sub, max_const);
 
@@ -645,7 +638,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 	attr->modes.load_store_mode = mode_Iu;
 	attr->tv = new_tarval_from_long(0, mode_Iu);
 
-	proj = new_rd_Proj(dbg, irg, block, load, mode_Iu, pn_Load_res);
+	proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_Load_res);
 
 	switchjmp = new_bd_mips_SwitchJump(dbg, block, proj, mode_T);
 	attr = get_mips_attr(switchjmp);
@@ -1056,7 +1049,7 @@ static void mips_transform_Reload(mips_transform_env_t* env) {
 
 	load = new_bd_mips_lw(env->dbg, env->block, ptr, mem, ent, 0);
 
-	proj = new_rd_Proj(env->dbg, env->irg, env->block, load, mode_Iu, pn_mips_lw_res);
+	proj = new_rd_Proj(env->dbg, env->block, load, mode_Iu, pn_mips_lw_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, load);

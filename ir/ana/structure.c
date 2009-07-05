@@ -114,7 +114,7 @@ ir_region *get_irn_region(ir_node *n) {
 }
 
 /**
- * Return non-if a given firm thing is a region.
+ * Return non-zero if a given firm thing is a region.
  */
 int is_region(const void *thing) {
 	const firm_kind *kind = thing;
@@ -122,7 +122,7 @@ int is_region(const void *thing) {
 }
 
 /**
- * Return the number of predecessors in a region.
+ * Return the number of predecessors of a region.
  */
 int get_region_n_preds(const ir_region *reg) {
 	return ARR_LEN(reg->pred);
@@ -171,13 +171,13 @@ void set_region_succ(ir_region *reg, int pos, ir_region *n) {
 
 /** Walker environment. */
 typedef struct walk_env {
-	struct obstack *obst;  /**< an obstack to allocate from. */
+	struct obstack *obst;  /**< An obstack to allocate from. */
 	ir_region **post;      /**< The list of all currently existent top regions. */
-	unsigned l_post;       /**< length of the allocated regions array. */
+	unsigned l_post;       /**< The length of the allocated regions array. */
 	unsigned premax;       /**< maximum pre counter */
 	unsigned postmax;      /**< maximum post counter */
-	ir_node *start_block;  /**< the start block of the graph. */
-	ir_node *end_block;    /**< the end block of the graph. */
+	ir_node *start_block;  /**< The start block of the graph. */
+	ir_node *end_block;    /**< The end block of the graph. */
 } walk_env;
 
 /**
@@ -248,7 +248,7 @@ static void wrap_BasicBlocks(ir_node *block, void *ctx) {
 }  /* wrap_BasicBlocks */
 
 /**
- * Create the pred and succ edges for Block wrapper.
+ * Post-walker: Create the pred and succ edges for Block wrapper.
  * Kill edges to the Start and End blocks.
  */
 static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
@@ -257,7 +257,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 	int i, j, len;
 
 	if (blk == env->start_block) {
-		/* handle Firm's self loop */
+		/* handle Firm's self loop: Start block has no predecessors */
 		reg->pred = NEW_ARR_D(ir_region *, env->obst, 0);
 	} else {
 		len = get_Block_n_cfgpreds(blk);
@@ -278,7 +278,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 	ARR_SHRINKLEN(reg->succ, j);
 }  /* update_BasicBlock_regions */
 
-/** Allocate a new region of a obstack */
+/** Allocate a new region on an obstack */
 #define ALLOC_REG(obst, reg, tp) \
 	do { \
 		(reg)          = obstack_alloc((obst), sizeof(*(reg))); \
@@ -597,14 +597,14 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head) {
 }  /* new_NaturalLoop */
 
 /**
- * Return true if a is an ancestor of b in DFS search.
+ * Return true if region a is an ancestor of region b in DFS search.
  */
 static int is_ancestor(const ir_region *a, const ir_region *b) {
 	return (a->prenum <= b->prenum && a->postnum > b->postnum);
 }
 
 /**
- *  Return true if region pred is a predecessor of region n.
+ * Return true if region pred is a predecessor of region n.
  */
 static int pred_of(const ir_region *pred, const ir_region *n) {
 	int i;
@@ -616,7 +616,7 @@ static int pred_of(const ir_region *pred, const ir_region *n) {
 }
 
 /**
- *  Return true if region succ is a successor of region n.
+ * Return true if region succ is a successor of region n.
  */
 static int succ_of(const ir_region *succ, const ir_region *n) {
 	int i;
@@ -628,7 +628,7 @@ static int succ_of(const ir_region *succ, const ir_region *n) {
 }
 
 /**
- *  Reverse linked list.
+ * Reverse a linked list of regions.
  */
 static struct ir_region *reverse_list(ir_region *n) {
 	ir_region *prev = NULL, *next;
@@ -719,7 +719,7 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node) {
 }
 
 /**
- * Clear all links on a list. Needed, because we expect cleared links-
+ * Clear all links on a list. Needed, because we expect cleared links.
  */
 static void clear_list(ir_region *list) {
 	ir_region *next;
@@ -977,7 +977,7 @@ static void reduce(walk_env *env, ir_region *reg) {
 		replace_pred(succ, reg);
 	}
 
-	/* second third: replace all succs in predessors */
+	/* third step: replace all succs in predessors */
 	for (i = get_region_n_preds(reg) - 1; i >= 0; --i) {
 		ir_region *pred = get_region_pred(reg, i);
 
@@ -1038,7 +1038,7 @@ ir_reg_tree *construct_region_tree(ir_graph *irg) {
 		do {
 			ir_region *reg, *n = env.post[postctr];
 			do {
-				if (n->parent) {
+				if (n->parent != NULL) {
 					/* already folded */
 					break;
 				}

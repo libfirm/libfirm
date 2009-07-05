@@ -705,7 +705,7 @@ static void handle_load_update(ir_node *load) {
 		/* a Load whose value is neither used nor exception checked, remove it */
 		exchange(info->projs[pn_Load_M], mem);
 		if (info->projs[pn_Load_X_regular])
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 		kill_node(load);
 		reduce_adr_usage(ptr);
 	}
@@ -871,14 +871,13 @@ static int try_load_after_store(ir_node *load,
 
 			/* FIXME: only true for little endian */
 			cnst        = new_Const_long(mode_Iu, delta * 8);
-			store_value = new_r_Shr(current_ir_graph, get_nodes_block(load),
+			store_value = new_r_Shr(get_nodes_block(load),
 									store_value, cnst, store_mode);
 		}
 
 		/* add an convert if needed */
 		if (store_mode != load_mode) {
-			store_value = new_r_Conv(current_ir_graph, get_nodes_block(load),
-									 store_value, load_mode);
+			store_value = new_r_Conv(get_nodes_block(load), store_value, load_mode);
 		}
 	}
 
@@ -895,7 +894,7 @@ static int try_load_after_store(ir_node *load,
 		res |= CF_CHANGED;
 	}
 	if (info->projs[pn_Load_X_regular]) {
-		exchange( info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+		exchange( info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 		res |= CF_CHANGED;
 	}
 
@@ -972,13 +971,13 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 				if (info->projs[pn_Load_res]) {
 					if (pred_info->projs[pn_Load_res] == NULL) {
 						/* create a new Proj again */
-						pred_info->projs[pn_Load_res] = new_r_Proj(current_ir_graph, get_nodes_block(pred), pred, get_Load_mode(pred), pn_Load_res);
+						pred_info->projs[pn_Load_res] = new_r_Proj(get_nodes_block(pred), pred, get_Load_mode(pred), pn_Load_res);
 					}
 					value = pred_info->projs[pn_Load_res];
 
 					/* add an convert if needed */
 					if (get_Load_mode(pred) != load_mode) {
-						value = new_r_Conv(current_ir_graph, get_nodes_block(load), value, load_mode);
+						value = new_r_Conv(get_nodes_block(load), value, load_mode);
 					}
 
 					exchange(info->projs[pn_Load_res], value);
@@ -993,7 +992,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
 					res |= CF_CHANGED;
 				}
 				if (info->projs[pn_Load_X_regular]) {
-					exchange( info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+					exchange( info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 					res |= CF_CHANGED;
 				}
 
@@ -1068,7 +1067,7 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
 
 			/* copy the value from the const code irg and cast it */
 			res = copy_const_value(dbg, c);
-			res = new_rd_Conv(dbg, current_ir_graph, block, res, l_mode);
+			res = new_rd_Conv(dbg, block, res, l_mode);
 		}
 	} else {
 		/* copy the value from the const code irg */
@@ -1119,7 +1118,7 @@ static unsigned optimize_load(ir_node *load)
 			 */
 			exchange(info->projs[pn_Load_X_except], new_Bad());
 			info->projs[pn_Load_X_except] = NULL;
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 			info->projs[pn_Load_X_regular] = NULL;
 			res |= CF_CHANGED;
 		}
@@ -1134,7 +1133,7 @@ static unsigned optimize_load(ir_node *load)
 
 		if (info->projs[pn_Load_X_regular]) {
 			/* should not happen, but if it does, remove it */
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 			res |= CF_CHANGED;
 		}
 		kill_node(load);
@@ -1162,7 +1161,7 @@ static unsigned optimize_load(ir_node *load)
 				res |= CF_CHANGED;
 			}
 			if (info->projs[pn_Load_X_regular]) {
-				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+				exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 				info->projs[pn_Load_X_regular] = NULL;
 				res |= CF_CHANGED;
 			}
@@ -1202,7 +1201,7 @@ static unsigned optimize_load(ir_node *load)
 			res |= CF_CHANGED;
 		}
 		if (info->projs[pn_Load_X_regular]) {
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 			info->projs[pn_Load_X_regular] = NULL;
 			res |= CF_CHANGED;
 		}
@@ -1612,10 +1611,10 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	block = get_nodes_block(phi);
 
 	/* second step: create a new memory Phi */
-	phiM = new_rd_Phi(get_irn_dbg_info(phi), current_ir_graph, block, n, inM, mode_M);
+	phiM = new_rd_Phi(get_irn_dbg_info(phi), block, n, inM, mode_M);
 
 	/* third step: create a new data Phi */
-	phiD = new_rd_Phi(get_irn_dbg_info(phi), current_ir_graph, block, n, inD, mode);
+	phiD = new_rd_Phi(get_irn_dbg_info(phi), block, n, inD, mode);
 
 	/* rewire memory and kill the node */
 	for (i = n - 1; i >= 0; --i) {
@@ -1629,19 +1628,19 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	}
 
 	/* fourth step: create the Store */
-	store = new_rd_Store(db, current_ir_graph, block, phiM, ptr, phiD, 0);
+	store = new_rd_Store(db, block, phiM, ptr, phiD, 0);
 #ifdef DO_CACHEOPT
 	co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
 
-	projM = new_rd_Proj(NULL, current_ir_graph, block, store, mode_M, pn_Store_M);
+	projM = new_rd_Proj(NULL, block, store, mode_M, pn_Store_M);
 
 	info = get_ldst_info(store, &wenv->obst);
 	info->projs[pn_Store_M] = projM;
 
 	/* fifths step: repair exception flow */
 	if (exc) {
-		ir_node *projX = new_rd_Proj(NULL, current_ir_graph, block, store, mode_X, pn_Store_X_except);
+		ir_node *projX = new_rd_Proj(NULL, block, store, mode_X, pn_Store_X_except);
 
 		info->projs[pn_Store_X_except] = projX;
 		info->exc_block                = exc;
@@ -1916,7 +1915,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 					if (res != NULL) {
 						irn = res->load;
 					} else {
-						irn = new_rd_Load(db, current_ir_graph, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
+						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
 						entry.load = irn;
 						set_insert(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
@@ -1924,10 +1923,10 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
 					pe->load = irn;
 					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
-					ninfo->projs[pn_Load_M] = mem = new_r_Proj(current_ir_graph, pred, irn, mode_M, pn_Load_M);
+					ninfo->projs[pn_Load_M] = mem = new_r_Proj(pred, irn, mode_M, pn_Load_M);
 					set_Phi_pred(phi, pos, mem);
 
-					ninfo->projs[pn_Load_res] = new_r_Proj(current_ir_graph, pred, irn, load_mode, pn_Load_res);
+					ninfo->projs[pn_Load_res] = new_r_Proj(pred, irn, load_mode, pn_Load_res);
 				}
 
 				/* now kill the old Load */

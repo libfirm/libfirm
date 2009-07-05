@@ -1035,7 +1035,7 @@ static void update_Load_memop(memop_t *m) {
 			env.changed = 1;
 		}
 		if (m->projs[pn_Load_X_regular]) {
-			exchange(m->projs[pn_Load_X_regular], new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+			exchange(m->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 			m->projs[pn_Load_X_regular] = NULL;
 			env.changed = 1;
 		}
@@ -1405,7 +1405,7 @@ static ir_node *conv_to(ir_node *irn, ir_mode *mode) {
 		/* different modes: check if conversion is possible without changing the bits */
 		if (can_convert_to(other, mode)) {
 			ir_node *block = get_nodes_block(irn);
-			return new_r_Conv(current_ir_graph, block, irn, mode);
+			return new_r_Conv(block, irn, mode);
 		}
 		/* otherwise not possible ... yet */
 		return NULL;
@@ -1694,7 +1694,7 @@ static void replace_load(memop_t *op) {
 			/* a hidden cast */
 			dbg_info *db    = get_irn_dbg_info(load);
 			ir_node  *block = get_nodes_block(proj);
-			def = new_rd_Conv(db, current_ir_graph, block, def, mode);
+			def = new_rd_Conv(db, block, def, mode);
 		}
 		exchange(proj, def);
 	}
@@ -1704,7 +1704,7 @@ static void replace_load(memop_t *op) {
 	}
 	proj = op->projs[pn_Load_X_regular];
 	if (proj != NULL) {
-		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(load)));
+		exchange(proj, new_r_Jmp(get_nodes_block(load)));
 	}
 }  /* replace_load */
 
@@ -1729,7 +1729,7 @@ static void remove_store(memop_t *op) {
 	}
 	proj = op->projs[pn_Store_X_regular];
 	if (proj != NULL) {
-		exchange(proj, new_r_Jmp(current_ir_graph, get_nodes_block(store)));
+		exchange(proj, new_r_Jmp(get_nodes_block(store)));
 	}
 }  /* remove_store */
 
@@ -1963,7 +1963,7 @@ static int insert_Load(block_t *bl) {
 				}
 				if (need_phi) {
 					/* build a Phi  */
-					ir_node *phi = new_r_Phi(current_ir_graph, bl->block, n, ins, mode);
+					ir_node *phi = new_r_Phi(bl->block, n, ins, mode);
 					memop_t *phiop = alloc_memop(phi);
 
 					phiop->value = first->value;
@@ -2064,12 +2064,12 @@ static int insert_Load(block_t *bl) {
 
 						assert(last_mem != NULL);
 						adr  = phi_translate(op->value.address, block, i);
-						load = new_rd_Load(db, current_ir_graph, pred, last_mem, adr, mode, cons_none);
-						def  = new_r_Proj(current_ir_graph, pred, load, mode, pn_Load_res);
+						load = new_rd_Load(db, pred, last_mem, adr, mode, cons_none);
+						def  = new_r_Proj(pred, load, mode, pn_Load_res);
 						DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
 
 						new_op                = alloc_memop(load);
-						new_op->mem           = new_r_Proj(current_ir_graph, pred, load, mode_M, pn_Load_M);
+						new_op->mem           = new_r_Proj(pred, load, mode_M, pn_Load_M);
 						new_op->value.address = adr;
 						new_op->value.id      = op->value.id;
 						new_op->value.mode    = mode;
@@ -2103,7 +2103,7 @@ static int insert_Load(block_t *bl) {
 					}
 					in[i] = conv_to(pred_bl->avail->value.value, mode);
 				}
-				phi = new_r_Phi(current_ir_graph, block, n, in, mode);
+				phi = new_r_Phi(block, n, in, mode);
 				DB((dbg, LEVEL_1, "Created new %+F in %+F for now redundant %+F\n", phi, block, op->node));
 
 				phi_op = clone_memop_phi(op, phi);

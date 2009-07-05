@@ -347,8 +347,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 	ia32_curr_fp_ommitted = env->flags.try_omit_fp;
 	if (! env->flags.try_omit_fp) {
-		ir_graph *irg     = env->irg;
-		ir_node  *bl      = get_irg_start_block(irg);
+		ir_node  *bl      = get_irg_start_block(env->irg);
 		ir_node  *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
 		ir_node  *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
 		ir_node  *noreg   = ia32_new_NoReg_gp(cg);
@@ -360,8 +359,8 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		/* push ebp */
 		push    = new_bd_ia32_Push(NULL, bl, noreg, noreg, *mem, curr_bp, curr_sp);
-		curr_sp = new_r_Proj(irg, bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
-		*mem    = new_r_Proj(irg, bl, push, mode_M, pn_ia32_Push_M);
+		curr_sp = new_r_Proj(bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
+		*mem    = new_r_Proj(bl, push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
 		arch_set_irn_register(curr_sp, arch_env->sp);
@@ -370,12 +369,12 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		*stack_bias -= 4;
 
 		/* move esp to ebp */
-		curr_bp = be_new_Copy(arch_env->bp->reg_class, irg, bl, curr_sp);
+		curr_bp = be_new_Copy(arch_env->bp->reg_class, bl, curr_sp);
 		be_set_constr_single_reg_out(curr_bp, 0, arch_env->bp,
 		                             arch_register_req_type_ignore);
 
 		/* beware: the copy must be done before any other sp use */
-		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, irg, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
 		be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
 				                     arch_register_req_type_produces_sp);
 
@@ -404,11 +403,10 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	const arch_env_t *arch_env = env->aenv;
 	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, arch_env->sp);
 	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, arch_env->bp);
-	ir_graph         *irg      = env->irg;
 
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(arch_env->sp, irg, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = be_new_IncSP(arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 	} else {
 		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
 
@@ -417,8 +415,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* leave */
 			leave   = new_bd_ia32_Leave(NULL, bl, curr_bp);
-			curr_bp = new_r_Proj(irg, bl, leave, mode_bp, pn_ia32_Leave_frame);
-			curr_sp = new_r_Proj(irg, bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
+			curr_bp = new_r_Proj(bl, leave, mode_bp, pn_ia32_Leave_frame);
+			curr_sp = new_r_Proj(bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 		} else {
 			ir_node *pop;
 
@@ -427,17 +425,17 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			kill_node(curr_sp);
 
 			/* copy ebp to esp */
-			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], irg, bl, curr_bp);
+			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], bl, curr_bp);
 			arch_set_irn_register(curr_sp, arch_env->sp);
 			be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
 				                         arch_register_req_type_ignore);
 
 			/* pop ebp */
 			pop     = new_bd_ia32_PopEbp(NULL, bl, *mem, curr_sp);
-			curr_bp = new_r_Proj(irg, bl, pop, mode_bp, pn_ia32_Pop_res);
-			curr_sp = new_r_Proj(irg, bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
+			curr_bp = new_r_Proj(bl, pop, mode_bp, pn_ia32_Pop_res);
+			curr_sp = new_r_Proj(bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
 
-			*mem = new_r_Proj(irg, bl, pop, mode_M, pn_ia32_Pop_M);
+			*mem = new_r_Proj(bl, pop, mode_M, pn_ia32_Pop_M);
 		}
 		arch_set_irn_register(curr_sp, arch_env->sp);
 		arch_set_irn_register(curr_bp, arch_env->bp);
@@ -951,7 +949,6 @@ static void ia32_prepare_graph(void *self)
 
 ir_node *turn_back_am(ir_node *node)
 {
-	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *base  = get_irn_n(node, n_ia32_base);
@@ -960,7 +957,7 @@ ir_node *turn_back_am(ir_node *node)
 	ir_node  *noreg;
 
 	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, index, mem);
-	ir_node  *load_res = new_rd_Proj(dbgi, irg, block, load, mode_Iu, pn_ia32_Load_res);
+	ir_node  *load_res = new_rd_Proj(dbgi, block, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
@@ -1104,7 +1101,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node) {
 
 	DBG_OPT_RELOAD2LD(node, new_op);
 
-	proj = new_rd_Proj(dbg, irg, block, new_op, mode, pn_ia32_Load_res);
+	proj = new_rd_Proj(dbg, block, new_op, mode, pn_ia32_Load_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
@@ -1206,7 +1203,7 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_graph *irg = get_irn_irg(node);
+	ir_graph *irg  = get_irn_irg(node);
 	ir_node *frame = get_irg_frame(irg);
 
 	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg, new_NoMem(), sp);
@@ -1224,14 +1221,13 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 
 static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
-	ir_graph *irg = get_irn_irg(node);
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
 	ir_mode *spmode = mode_Iu;
 	const arch_register_t *spreg = &ia32_gp_regs[REG_ESP];
 	ir_node *sp;
 
-	sp = new_rd_Proj(dbg, irg, block, pred, spmode, pos);
+	sp = new_rd_Proj(dbg, block, pred, spmode, pos);
 	arch_set_irn_register(sp, spreg);
 
 	return sp;
@@ -1310,7 +1306,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 	}
 
 	in[0] = sp;
-	keep  = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], irg, block, 1, in);
+	keep  = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], block, 1, in);
 	sched_add_before(node, keep);
 
 	/* exchange memprojs */
@@ -2355,24 +2351,23 @@ static int ia32_is_valid_clobber(const void *self, const char *clobber)
  */
 static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
 {
-	ir_graph *irg    = get_Block_irg(block);
 	ir_node  *st, *p = trampoline;
 	ir_mode *mode    = get_irn_mode(p);
 
 	/* mov  ecx,<env> */
-	st  = new_r_Store(irg, block, mem, p, new_Const_long(mode_Bu, 0xb9), 0);
-	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
-	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 1), mode);
-	st  = new_r_Store(irg, block, mem, p, env, 0);
-	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
-	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 4), mode);
+	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xb9), 0);
+	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
+	st  = new_r_Store(block, mem, p, env, 0);
+	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
 	/* jmp  <callee> */
-	st  = new_r_Store(irg, block, mem, p, new_Const_long(mode_Bu, 0xe9), 0);
-	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
-	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 1), mode);
-	st  = new_r_Store(irg, block, mem, p, callee, 0);
-	mem = new_r_Proj(irg, block, st, mode_M, pn_Store_M);
-	p   = new_r_Add(irg, block, p, new_Const_long(mode_Iu, 4), mode);
+	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xe9), 0);
+	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
+	st  = new_r_Store(block, mem, p, callee, 0);
+	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
 
 	return mem;
 }

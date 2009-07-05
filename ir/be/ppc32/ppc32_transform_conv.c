@@ -88,11 +88,11 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 
 	method_ent   = new_entity(get_glob_type(), new_id_from_str(funcname), method_type);
 	callee       = new_rd_SymConst_addr_ent(env->dbg, env->irg, mode_P_code, method_ent, method_type);
-	call         = new_rd_Call(env->dbg, env->irg, env->block, memory, callee, 1, in, method_type);
-	call_results = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_T, pn_Call_T_result);
-	memory       = new_rd_Proj(env->dbg, env->irg, env->block, call, mode_M, pn_Call_M_regular);
+	call         = new_rd_Call(env->dbg, env->block, memory, callee, 1, in, method_type);
+	call_results = new_rd_Proj(env->dbg, env->block, call, mode_T, pn_Call_T_result);
+	memory       = new_rd_Proj(env->dbg, env->block, call, mode_M, pn_Call_M_regular);
 
-	return new_rd_Proj(env->dbg, env->irg, env->block, call_results, to_mode, 0);
+	return new_rd_Proj(env->dbg, env->block, call_results, to_mode, 0);
 }
 
 /**
@@ -113,7 +113,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 
 	switch(from_modecode){
 		case irm_F:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_D);
+			op = new_rd_Conv(env->dbg, env->block, op, mode_D);
 			// fall through
 		case irm_D:
 		{
@@ -123,15 +123,15 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 				ir_node *fctiw = new_bd_ppc32_fCtiw(env->dbg, env->block, op, from_mode);
 				ir_node *stfd = new_bd_ppc32_Stfd(env->dbg, env->block, get_irg_frame(env->irg),
 					fctiw, memory);
-				ir_node *storememproj = new_rd_Proj(env->dbg, env->irg, env->block, stfd, mode_M, pn_Store_M);
+				ir_node *storememproj = new_rd_Proj(env->dbg, env->block, stfd, mode_M, pn_Store_M);
 				ir_node *lwz = new_bd_ppc32_Lwz(env->dbg, env->block, get_irg_frame(env->irg),
 					storememproj);
 				set_ppc32_frame_entity(stfd, memslot);
 				set_ppc32_offset_mode(stfd, ppc32_ao_Lo16);	// TODO: only allows a 16-bit offset on stack
 				set_ppc32_frame_entity(lwz, memslot);
 				set_ppc32_offset_mode(stfd, ppc32_ao_Lo16);	// TODO: only allows a 16-bit offset on stack
-				memory = new_rd_Proj(env->dbg, env->irg, env->block, lwz, mode_M, pn_Store_M);
-				res = new_rd_Proj(env->dbg, env->irg, env->block, lwz, to_mode, pn_Load_res);
+				memory = new_rd_Proj(env->dbg, env->block, lwz, mode_M, pn_Store_M);
+				res = new_rd_Proj(env->dbg, env->block, lwz, to_mode, pn_Load_res);
 
 			}
 			else
@@ -145,7 +145,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 				case irm_Hs:
 				case irm_Bu:
 				case irm_Hu:
-					return new_rd_Conv(env->dbg, env->irg, env->block, res, to_mode);
+					return new_rd_Conv(env->dbg, env->block, res, to_mode);
 				case irm_Is:
 				case irm_Iu:
 					return res;
@@ -156,14 +156,14 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
 		}
 		case irm_Hs:
 		case irm_Bs:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Is);
+			op = new_rd_Conv(env->dbg, env->block, op, mode_Is);
 		case irm_Is:
 			return own_gen_convert_call(env, op, (to_mode == mode_D) ? "conv_int_to_double" : "conv_int_to_single", mode_Is, to_mode);
 
 
 		case irm_Hu:
 		case irm_Bu:
-			op = new_rd_Conv(env->dbg, env->irg, env->block, op, mode_Iu);
+			op = new_rd_Conv(env->dbg, env->block, op, mode_Iu);
 		case irm_Iu:
 			return own_gen_convert_call(env, op, (to_mode == mode_D) ? "conv_unsigned_int_to_double": "conv_unsigned_int_to_single", mode_Iu, to_mode);
 

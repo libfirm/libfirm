@@ -114,7 +114,6 @@ static int allowed_arm_immediate(int offset, arm_vals *result) {
  * Fix an IncSP node if the offset gets too big
  */
 static void peephole_be_IncSP(ir_node *node) {
-	ir_graph *irg;
 	ir_node  *block;
 	int      offset, cnt, align, sign = 1;
 	arm_vals v;
@@ -133,12 +132,11 @@ static void peephole_be_IncSP(ir_node *node) {
 
 	be_set_IncSP_offset(node, (int)arm_rol(v.values[0], v.shifts[0]) * sign);
 
-	irg   = current_ir_graph;
 	block = get_nodes_block(node);
 	align = be_get_IncSP_align(node);
 	for (cnt = 1; cnt < v.ops; ++cnt) {
 		int value = (int)arm_rol(v.values[cnt], v.shifts[cnt]);
-		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], irg, block, node, value * sign, align);
+		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], block, node, value * sign, align);
 		sched_add_after(node, next);
 		node = next;
 	}
@@ -252,7 +250,6 @@ static void peephole_be_Reload(ir_node *node) {
 	ir_node   *block, *ptr, *frame, *load, *mem, *proj;
 	ir_mode   *mode;
 	dbg_info  *dbg;
-	ir_graph  *irg;
 	arm_vals  v;
 	const arch_register_t *reg;
 
@@ -273,7 +270,6 @@ static void peephole_be_Reload(ir_node *node) {
 	reg   = arch_get_irn_register(node);
 	mem   = be_get_Reload_mem(node);
 	mode  = get_irn_mode(node);
-	irg   = current_ir_graph;
 	dbg   = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
 
@@ -282,7 +278,7 @@ static void peephole_be_Reload(ir_node *node) {
 			/* transform into fpaLdf */
 			load = new_bd_arm_fpaLdf(dbg, block, ptr, mem, mode);
 			sched_add_before(node, load);
-			proj = new_rd_Proj(dbg, irg, block, load, mode, pn_arm_fpaLdf_res);
+			proj = new_rd_Proj(dbg, block, load, mode, pn_arm_fpaLdf_res);
 			arch_set_irn_register(proj, reg);
 		} else {
 			panic("peephole_be_Spill: spill not supported for this mode");
@@ -291,7 +287,7 @@ static void peephole_be_Reload(ir_node *node) {
 		/* transform into Store */;
 		load = new_bd_arm_Load(dbg, block, ptr, mem);
 		sched_add_before(node, load);
-		proj = new_rd_Proj(dbg, irg, block, load, mode_Iu, pn_arm_Load_res);
+		proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_arm_Load_res);
 		arch_set_irn_register(proj, reg);
 	} else {
 		panic("peephole_be_Spill: spill not supported for this mode");

@@ -3148,7 +3148,7 @@ static void exchange_leader(ir_node *irn, ir_node *leader) {
 		ir_node  *block = get_nodes_block(leader);
 		dbg_info *dbg   = get_irn_dbg_info(irn);
 
-		leader = new_rd_Conv(dbg, current_ir_graph, block, leader, mode);
+		leader = new_rd_Conv(dbg, block, leader, mode);
 	}
 	exchange(irn, leader);
 }  /* exchange_leader */
@@ -3271,7 +3271,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 
 				if (is_Cond(cond)) {
 					if (only_one_reachable_proj(cond)) {
-						ir_node *jmp = new_r_Jmp(current_ir_graph, block->node);
+						ir_node *jmp = new_r_Jmp(block->node);
 						set_irn_node(jmp, node);
 						node->node = jmp;
 						DB((dbg, LEVEL_1, "%+F is replaced by %+F\n", irn, jmp));
@@ -3313,7 +3313,7 @@ static void apply_result(ir_node *irn, void *ctx) {
 			} else if (is_entity(node->type.sym.entity_p)) {
 				if (! is_SymConst(irn)) {
 					/* can be replaced by a SymConst */
-					ir_node *symc = new_r_SymConst(current_ir_graph, block->node, get_irn_mode(irn), node->type.sym, symconst_addr_ent);
+					ir_node *symc = new_r_SymConst(current_ir_graph, get_irn_mode(irn), node->type.sym, symconst_addr_ent);
 					set_irn_node(symc, node);
 					node->node = symc;
 

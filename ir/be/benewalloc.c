@@ -529,7 +529,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 	}
 
 	block = get_nodes_block(before);
-	perm  = be_new_Perm(cls, irg, block, i, in);
+	perm  = be_new_Perm(cls, block, i, in);
 
 	sched_add_before(before, perm);
 
@@ -546,7 +546,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		value = in[i];
 		mode  = get_irn_mode(value);
-		proj  = new_r_Proj(irg, block, perm, mode, i);
+		proj  = new_r_Proj(block, perm, mode, i);
 
 		reg = arch_register_for_index(cls, new_reg);
 

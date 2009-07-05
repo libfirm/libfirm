@@ -460,7 +460,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos) {
 	ir_node *bl = get_nodes_block(call);
 
 	sym.entity_p = new_entity;
-	callee = new_r_SymConst(irg, bl, mode_P_code, sym, symconst_addr_ent);
+	callee = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 
 	mtp      = get_entity_type(new_entity);
 	n_params = get_Call_n_params(call);
@@ -473,7 +473,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos) {
 			in[new_params++] = get_Call_param(call, i);
 	}
 	/* Create and return the new Call. */
-	return new_r_Call(irg, bl, get_Call_mem(call),
+	return new_r_Call(bl, get_Call_mem(call),
 		callee, n_params - 1, in, get_entity_type(new_entity));
 }
 

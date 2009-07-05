@@ -31,21 +31,27 @@ def format_args(node, first = False):
 
 def format_blockdecl(node):
 	if hasattr(node, "knownBlock"):
+		return "ir_graph *irg"
+	else:
+		return "ir_node *block"
+
+def format_irgassign(node):
+	if hasattr(node, "knownBlock"):
 		return ""
 	else:
-		return ", ir_node *block"
+		return "ir_graph *irg = get_Block_irg(block);\n"
 
 def format_block(node):
 	if hasattr(node, "knownBlock"):
-		return ""
+		return "irg"
 	else:
-		return ", block"
+		return "block"
 
 def format_curblock(node):
 	if hasattr(node, "knownBlock"):
-		return ""
+		return "current_ir_graph"
 	else:
-		return ", current_ir_graph->current_block"
+		return "current_ir_graph->current_block"
 
 def format_insdecl(node):
 	arity = node.arity
@@ -142,6 +148,7 @@ env = Environment()
 env.filters['argdecls']      = format_argdecls
 env.filters['args']          = format_args
 env.filters['blockdecl']     = format_blockdecl
+env.filters['irgassign']     = format_irgassign
 env.filters['block']         = format_block
 env.filters['curblock']      = format_curblock
 env.filters['insdecl']       = format_insdecl
@@ -250,10 +257,11 @@ def preprocess_node(node):
 
 constructor_template = env.from_string('''
 
-ir_node *new_rd_{{node.constrname}}(dbg_info *dbgi, ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
+ir_node *new_rd_{{node.constrname}}(dbg_info *dbgi, {{node|blockdecl}}{{node|argdecls}})
 {
 	ir_node *res;
 	ir_graph *rem = current_ir_graph;
+	{{node|irgassign}}
 	{{node|insdecl}}
 	current_ir_graph = irg;
 	res = new_ir_node(dbgi, irg, {{node.block}}, op_{{node.name}}, {{node.mode}}, {{node|arity_and_ins}});
@@ -275,16 +283,16 @@ ir_node *new_rd_{{node.constrname}}(dbg_info *dbgi, ir_graph *irg{{node|blockdec
 	return res;
 }
 
-ir_node *new_r_{{node.constrname}}(ir_graph *irg{{node|blockdecl}}{{node|argdecls}})
+ir_node *new_r_{{node.constrname}}({{node|blockdecl}}{{node|argdecls}})
 {
-	return new_rd_{{node.constrname}}(NULL, irg{{node|block}}{{node|args}});
+	return new_rd_{{node.constrname}}(NULL, {{node|block}}{{node|args}});
 }
 
 ir_node *new_d_{{node.constrname}}(dbg_info *dbgi{{node|argdecls}})
 {
 	ir_node *res;
 	{{ node.d_pre }}
-	res = new_rd_{{node.constrname}}(dbgi, current_ir_graph{{node|curblock}}{{node|args}});
+	res = new_rd_{{node.constrname}}(dbgi, {{node|curblock}}{{node|args}});
 	{{ node.d_post }}
 	return res;
 }

@@ -175,11 +175,11 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 		/* Beware: do we need here a protection against CSE? Better we do it. */
 		int old_cse = get_opt_cse();
 		set_opt_cse(0);
-		reg_jmp = new_r_Jmp(current_ir_graph, block);
+		reg_jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
 		exc_jmp = new_Bad();
 	}
-	irn = new_r_Tuple(current_ir_graph, block, 1, &irn);
+	irn = new_r_Tuple(block, 1, &irn);
 
 	turn_into_tuple(call, pn_Call_max);
 	set_Tuple_pred(call, pn_Call_M_regular, mem);
@@ -199,7 +199,7 @@ int i_mapper_abs(ir_node *call, void *ctx) {
 	dbg_info *dbg  = get_irn_dbg_info(call);
 	(void) ctx;
 
-	irn = new_rd_Abs(dbg, current_ir_graph, block, op, get_irn_mode(op));
+	irn = new_rd_Abs(dbg, block, op, get_irn_mode(op));
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ABS);
 	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
@@ -215,10 +215,10 @@ int i_mapper_bswap(ir_node *call, void *ctx) {
 	ir_node *irn;
 	(void) ctx;
 
-	irn = new_rd_Builtin(dbg, current_ir_graph, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
+	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
 	set_irn_pinned(irn, op_pin_state_floats);
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ABS);
-	irn = new_r_Proj(current_ir_graph, block, irn, get_irn_mode(op), pn_Builtin_1_result);
+	irn = new_r_Proj(block, irn, get_irn_mode(op), pn_Builtin_1_result);
 	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
 }  /* i_mapper_bswap */
@@ -238,14 +238,14 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 		if (mode == NULL) {
 			panic("Cannot find unsigned mode for %M", mode);
 		}
-		op = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
+		op = new_rd_Conv(dbg, block, op, mode);
 	}
 
-	irn    = new_rd_Alloc(dbg, current_ir_graph, block, mem, op, firm_unknown_type, stack_alloc);
-	mem    = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_M, pn_Alloc_M);
-	no_exc = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_X, pn_Alloc_X_regular);
-	exc    = new_rd_Proj(dbg, current_ir_graph, block, irn, mode_X, pn_Alloc_X_except);
-	irn    = new_rd_Proj(dbg, current_ir_graph, block, irn, get_modeP_data(), pn_Alloc_res);
+	irn    = new_rd_Alloc(dbg, block, mem, op, firm_unknown_type, stack_alloc);
+	mem    = new_rd_Proj(dbg, block, irn, mode_M, pn_Alloc_M);
+	no_exc = new_rd_Proj(dbg, block, irn, mode_X, pn_Alloc_X_regular);
+	exc    = new_rd_Proj(dbg, block, irn, mode_X, pn_Alloc_X_except);
+	irn    = new_rd_Proj(dbg, block, irn, get_modeP_data(), pn_Alloc_res);
 
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
 	replace_call(irn, call, mem, no_exc, exc);
@@ -335,11 +335,11 @@ int i_mapper_pow(ir_node *call, void *ctx) {
 		ir_node *quot;
 
 		irn  = new_Const(get_mode_one(mode));
-		quot = new_rd_Quot(dbg, current_ir_graph, block, mem, irn, left, mode, op_pin_state_pinned);
-		mem  = new_r_Proj(current_ir_graph, block, quot, mode_M, pn_Quot_M);
-		irn  = new_r_Proj(current_ir_graph, block, quot, mode, pn_Quot_res);
-		reg_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_regular);
-		exc_jmp = new_r_Proj(current_ir_graph, block, quot, mode_X, pn_Quot_X_except);
+		quot = new_rd_Quot(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
+		mem  = new_r_Proj(block, quot, mode_M, pn_Quot_M);
+		irn  = new_r_Proj(block, quot, mode, pn_Quot_res);
+		reg_jmp = new_r_Proj(block, quot, mode_X, pn_Quot_X_regular);
+		exc_jmp = new_r_Proj(block, quot, mode_X, pn_Quot_X_except);
 	}
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
 	replace_call(irn, call, mem, reg_jmp, exc_jmp);
@@ -417,7 +417,7 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) 
 			dbg_info *dbg  = get_irn_dbg_info(val);
 
 			op = get_Minus_op(op);
-			val = new_rd_Conv(dbg, current_ir_graph, block, op, mode);
+			val = new_rd_Conv(dbg, block, op, mode);
 			if (is_Conv(val)) {
 				/* still a Conv ? */
 				set_Conv_strict(val, 1);
@@ -770,19 +770,19 @@ replace_by_call:
 			mode  = get_type_mode(char_tp);
 
 			/* replace the strcmp by (*x) */
-			irn = new_rd_Load(dbg, current_ir_graph, block, mem, v, mode, 0);
-			mem = new_r_Proj(current_ir_graph, block, irn, mode_M, pn_Load_M);
-			exc = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_except);
-			reg = new_r_Proj(current_ir_graph, block, irn, mode_X, pn_Load_X_regular);
-			irn = new_r_Proj(current_ir_graph, block, irn, mode, pn_Load_res);
+			irn = new_rd_Load(dbg, block, mem, v, mode, 0);
+			mem = new_r_Proj(block, irn, mode_M, pn_Load_M);
+			exc = new_r_Proj(block, irn, mode_X, pn_Load_X_except);
+			reg = new_r_Proj(block, irn, mode_X, pn_Load_X_regular);
+			irn = new_r_Proj(block, irn, mode, pn_Load_res);
 
 			/* conv to the result mode */
 			mode = get_type_mode(res_tp);
-			irn  = new_rd_Conv(dbg, current_ir_graph, block, irn, mode);
+			irn  = new_rd_Conv(dbg, block, irn, mode);
 
 			if (v == right) {
 				/* negate in the ("", s) case */
-				irn = new_rd_Minus(dbg, current_ir_graph, block, irn, mode);
+				irn = new_rd_Minus(dbg, block, irn, mode);
 			}
 		}
 	}
@@ -874,7 +874,7 @@ int i_mapper_mempcpy(ir_node *call, void *ctx) {
 		ir_node *mem  = get_Call_mem(call);
 		ir_node *blk  = get_nodes_block(call);
 		ir_mode *mode = get_irn_mode(dst);
-		ir_node *res  = new_rd_Add(dbg, get_irn_irg(blk), blk, dst, len, mode);
+		ir_node *res  = new_rd_Add(dbg, blk, dst, len, mode);
 
 		DBG_OPT_ALGSIM0(call, res, FS_OPT_RTS_MEMPCPY);
 		replace_call(res, call, mem, NULL, NULL);
@@ -1040,12 +1040,12 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 
 	/* step 1: create the call */
 	sym.entity_p = rt->ent;
-	addr = new_r_SymConst(irg, bl, mode_P_code, sym, symconst_addr_ent);
-	call = new_rd_Call(get_irn_dbg_info(node), irg, bl, mem, addr, n_param, in, mtp);
+	addr = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
+	call = new_rd_Call(get_irn_dbg_info(node), bl, mem, addr, n_param, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
 
 	if (n_res > 0)
-		res_proj = new_r_Proj(irg, bl, call, mode_T, pn_Call_T_result);
+		res_proj = new_r_Proj(bl, call, mode_T, pn_Call_T_result);
 	else
 		res_proj = NULL;
 
@@ -1058,29 +1058,29 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 		for (i = 0; i < n_proj; ++i)
 			set_Tuple_pred(node, i, new_r_Bad(irg));
 		if (rt->mem_proj_nr >= 0)
-			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_regular));
+			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M_regular));
 		if (!is_NoMem(mem)) {
 			/* Exceptions can only be handled with real memory */
 			if (rt->regular_proj_nr >= 0)
-				set_Tuple_pred(node, rt->regular_proj_nr, new_r_Proj(irg, bl, call, mode_X, pn_Call_X_regular));
+				set_Tuple_pred(node, rt->regular_proj_nr, new_r_Proj(bl, call, mode_X, pn_Call_X_regular));
 			if (rt->exc_proj_nr >= 0)
-				set_Tuple_pred(node, rt->exc_proj_nr, new_r_Proj(irg, bl, call, mode_X, pn_Call_X_except));
+				set_Tuple_pred(node, rt->exc_proj_nr, new_r_Proj(bl, call, mode_X, pn_Call_X_except));
 			if (rt->exc_mem_proj_nr >= 0)
-				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(irg, bl, call, mode_M, pn_Call_M_except));
+				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M_except));
 		}
 
 		if (rt->res_proj_nr >= 0)
 			for (i = 0; i < n_res; ++i)
 				set_Tuple_pred(node, rt->res_proj_nr + i,
-				new_r_Proj(irg, bl, res_proj, get_type_mode(get_method_res_type(mtp, i)), i));
+				new_r_Proj(bl, res_proj, get_type_mode(get_method_res_type(mtp, i)), i));
 			return 1;
 	} else {
 		/* only one return value supported */
 		if (n_res > 0) {
 			ir_mode *mode = get_type_mode(get_method_res_type(mtp, 0));
 
-			res_proj = new_r_Proj(irg, bl, call, mode_T, pn_Call_T_result);
-			res_proj = new_r_Proj(irg, bl, res_proj, mode, 0);
+			res_proj = new_r_Proj(bl, call, mode_T, pn_Call_T_result);
+			res_proj = new_r_Proj(bl, res_proj, mode, 0);
 
 			exchange(node, res_proj);
 			return 1;

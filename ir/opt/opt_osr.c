@@ -303,19 +303,18 @@ static ir_node *find_location(ir_node *block1, ir_node *block2) {
  * @return the newly created node
  */
 static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {
-	ir_graph *irg = current_ir_graph;
 	ir_node *result;
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
 
 	switch (code) {
 	case iro_Mul:
-		result = new_rd_Mul(db, irg, block, op1, op2, mode);
+		result = new_rd_Mul(db, block, op1, op2, mode);
 		break;
 	case iro_Add:
-		result = new_rd_Add(db, irg, block, op1, op2, mode);
+		result = new_rd_Add(db, block, op1, op2, mode);
 		break;
 	case iro_Sub:
-		result = new_rd_Sub(db, irg, block, op1, op2, mode);
+		result = new_rd_Sub(db, block, op1, op2, mode);
 		break;
 	default:
 		panic("Unsupported opcode");
@@ -1337,14 +1336,14 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx) {
 			if (get_irn_mode(pred) != mode) {
 				ir_node *block = get_nodes_block(pred);
 
-				pred = new_r_Conv(current_ir_graph, block, pred, mode);
+				pred = new_r_Conv(block, pred, mode);
 				set_Add_left(irn, pred);
 			}
 			pred = get_Add_right(irn);
 			if (get_irn_mode(pred) != mode) {
 				ir_node *block = get_nodes_block(pred);
 
-				pred = new_r_Conv(current_ir_graph, block, pred, mode);
+				pred = new_r_Conv(block, pred, mode);
 				set_Add_right(irn, pred);
 			}
 		}
@@ -1361,13 +1360,13 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx) {
 				if (l_mode != mode) {
 					ir_node *block = get_nodes_block(left);
 
-					left = new_r_Conv(current_ir_graph, block, left, mode);
+					left = new_r_Conv(block, left, mode);
 					set_Sub_left(irn, left);
 				}
 				if (r_mode != mode) {
 					ir_node *block = get_nodes_block(right);
 
-					right = new_r_Conv(current_ir_graph, block, right, mode);
+					right = new_r_Conv(block, right, mode);
 					set_Sub_right(irn, right);
 				}
 			}

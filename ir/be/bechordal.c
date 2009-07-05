@@ -257,7 +257,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if (rbitset_is_set(req->limited, reg->index))
 			continue;
 
-		copy = be_new_Copy(env->cls, env->irg, bl, op);
+		copy = be_new_Copy(env->cls, bl, op);
 		be_stat_ev("constr_copy", 1);
 
 		sched_add_before(irn, copy);
@@ -292,7 +292,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 			if (be_is_Copy(get_irn_n(insn->irn, a_op->pos)))
 				continue;
 
-			copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+			copy = be_new_Copy(env->cls, bl, op->carrier);
 			be_stat_ev("constr_copy", 1);
 
 			sched_add_before(insn->irn, copy);
@@ -339,7 +339,7 @@ static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
 		if (be_is_Copy(get_irn_n(insn->irn, op->pos)))
 			continue;
 
-		copy = be_new_Copy(env->cls, env->irg, bl, op->carrier);
+		copy = be_new_Copy(env->cls, bl, op->carrier);
 
 		sched_add_before(insn->irn, copy);
 		set_irn_n(insn->irn, op->pos, copy);

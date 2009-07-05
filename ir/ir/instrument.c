@@ -80,16 +80,16 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent) {
 
 	if (need_new_block) {
 		ir_node *blk = new_r_Block(irg, 1, &initial_exec);
-		set_Block_cfgpred(first_block, idx, new_r_Jmp(irg, blk));
+		set_Block_cfgpred(first_block, idx, new_r_Jmp(blk));
 		first_block = blk;
 	}
 
 	/* place the call */
 	sym.entity_p = ent;
-	adr = new_r_SymConst(irg, start_block, mode_P_code, sym, symconst_addr_ent);
+	adr = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 
-	call    = new_r_Call(irg, first_block, get_irg_no_mem(irg), adr, 0, NULL, get_entity_type(ent));
-	new_mem = new_r_Proj(irg, first_block, call, mode_M, pn_Call_M_regular);
+	call    = new_r_Call(first_block, get_irg_no_mem(irg), adr, 0, NULL, get_entity_type(ent));
+	new_mem = new_r_Proj(first_block, call, mode_M, pn_Call_M_regular);
 
 	initial_mem = get_irg_initial_mem(irg);
 	edges_reroute(initial_mem, new_mem, irg);

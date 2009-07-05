@@ -583,6 +583,9 @@ static void export_type_or_ent_post(type_or_ent tore, void *ctx)
 	}
 }
 
+/**
+ * Walker: exports every node.
+ */
 static void export_node(ir_node *irn, void *ctx)
 {
 	io_env_t *env = (io_env_t *) ctx;
@@ -592,10 +595,9 @@ static void export_node(ir_node *irn, void *ctx)
 	if (env->ignoreblocks && opcode == iro_Block)
 		return;
 
-	n = get_irn_arity(irn);
-
 	fprintf(env->file, "\t%s %ld [ ", get_irn_opname(irn), get_irn_node_nr(irn));
 
+	n = get_irn_arity(irn);
 	for (i = -1; i < n; i++) {
 		ir_node *pred = get_irn_n(irn, i);
 		if (pred == NULL) {
@@ -609,8 +611,7 @@ static void export_node(ir_node *irn, void *ctx)
 
 	fprintf(env->file, "] { ");
 
-	switch (opcode)
-	{
+	switch (opcode)	{
 		#include "gen_irio_export.inl"
 	}
 	fputs("}\n", env->file);
@@ -650,7 +651,7 @@ static void export_modes(io_env_t *env)
 	fputs("}\n\n", env->file);
 }
 
-/** Exports the whole irp to the given file in a textual form. */
+/* Exports the whole irp to the given file in a textual form. */
 void ir_export(const char *filename)
 {
 	io_env_t env;
@@ -691,7 +692,7 @@ void ir_export(const char *filename)
 	fclose(env.file);
 }
 
-/** Exports the given irg to the given file. */
+/* Exports the given irg to the given file. */
 void ir_export_irg(ir_graph *irg, const char *filename)
 {
 	io_env_t env;
