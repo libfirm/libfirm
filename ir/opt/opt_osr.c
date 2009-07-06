@@ -1076,7 +1076,7 @@ static void assign_po(ir_node *block, void *ctx) {
  */
 static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env) {
 	if (env->osr_flags & osr_flag_lftr_with_ov_check) {
-		tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr;
+		tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr, *tv_end;
 		tarval_int_overflow_mode_t ovmode;
 		scc *pscc;
 
@@ -1135,15 +1135,15 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 		}
 
 		if (pscc->code == iro_Add) {
-			tv = tarval_add(tv, tv_incr);
+			tv_end = tarval_add(tv, tv_incr);
 		} else {
 			assert(pscc->code == iro_Sub);
-			tv = tarval_sub(tv, tv_incr, NULL);
+			tv_end = tarval_sub(tv, tv_incr, NULL);
 		}
 
 		tarval_set_integer_overflow_mode(ovmode);
 
-		if (tv == tarval_bad || tv_init == tarval_bad) {
+		if (tv == tarval_bad || tv_init == tarval_bad || tv_end == tarval_bad) {
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
@@ -1434,7 +1434,7 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 			irg_walk_graph(irg, NULL, fix_adds_and_subs, &env);
 
 		/* try linear function test replacements */
-		//lftr(irg, &env); // currently buggy :-(
+		lftr(irg, &env);
 		(void)lftr;
 
 		set_irg_outs_inconsistent(irg);
