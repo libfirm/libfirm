@@ -45,11 +45,11 @@
 void optimize_cf(ir_graph *irg);
 
 /**
- * Perform partial conditional evaluation on the given graph.
+ * Perform path-sensitive jump threading on the given graph.
  *
  * @param irg  the graph
  */
-void opt_cond_eval(ir_graph* irg);
+void opt_jumpthreading(ir_graph* irg);
 
 /**
  * Try to simplify boolean expression in the given ir graph.

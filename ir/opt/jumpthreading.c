@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief   Partial condition evaluation
+ * @brief   Path-Sensitive Jump Threading
  * @date    10. Sep. 2006
  * @author  Christoph Mallon, Matthias Braun
  * @version $Id$
@@ -200,7 +200,7 @@ static void split_critical_edge(ir_node *block, int pos) {
 	set_Block_cfgpred(block, pos, new_jmp);
 }
 
-typedef struct condeval_env_t {
+typedef struct jumpthreading_env_t {
 	ir_node       *true_block;
 	ir_node       *cmp;        /**< The Compare node that might be partial evaluated */
 	pn_Cmp         pnc;        /**< The Compare mode of the Compare node. */
@@ -211,10 +211,12 @@ typedef struct condeval_env_t {
 	ir_node       *cnst_pred;   /**< the block before the constant */
 	int            cnst_pos;    /**< the pos to the constant block (needed to
 	                                  kill that edge later) */
-} condeval_env_t;
+} jumpthreading_env_t;
 
-static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
-                                  ir_node *copy_block, int j, ir_node *node) {
+static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
+                                  ir_node *block, ir_node *copy_block, int j,
+                                  ir_node *node)
+{
 	int      i, arity;
 	ir_node *copy;
 
@@ -255,8 +257,9 @@ static ir_node *copy_and_fix_node(const condeval_env_t *env, ir_node *block,
 	return copy;
 }
 
-static void copy_and_fix(const condeval_env_t *env, ir_node *block,
-                         ir_node *copy_block, int j) {
+static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
+                         ir_node *copy_block, int j)
+{
 	const ir_edge_t *edge;
 
 	/* Look at all nodes in the cond_block and copy them into pred */
@@ -354,7 +357,8 @@ static void copy_and_fix(const condeval_env_t *env, ir_node *block,
  * @param tv_left   the left tarval
  * @param tv_right  the right tarval
  */
-static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right) {
+static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right)
+{
 	pn_Cmp cmp_result = tarval_cmp(tv_left, tv_right);
 
 	/* does the compare evaluate to true? */
@@ -373,7 +377,8 @@ static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right) {
  * @param env      the environment
  * @param cand     the candidate node, either a Const or a Confirm
  */
-static int eval_cmp(condeval_env_t *env, ir_node *cand) {
+static int eval_cmp(jumpthreading_env_t *env, ir_node *cand)
+{
 	if (is_Const(cand)) {
 		tarval *tv_cand   = get_Const_tarval(cand);
 		tarval *tv_cmp    = get_Const_tarval(env->cnst);
@@ -391,7 +396,8 @@ static int eval_cmp(condeval_env_t *env, ir_node *cand) {
 /**
  * Check for Const or Confirm with Const.
  */
-static int is_Const_or_Confirm(const ir_node *node) {
+static int is_Const_or_Confirm(const ir_node *node)
+{
 	if (is_Confirm(node))
 		node = get_Confirm_bound(node);
 	return is_Const(node);
@@ -400,7 +406,8 @@ static int is_Const_or_Confirm(const ir_node *node) {
 /**
  * get the tarval of a Const or Confirm with
  */
-static tarval *get_Const_or_Confirm_tarval(const ir_node *node) {
+static tarval *get_Const_or_Confirm_tarval(const ir_node *node)
+{
 	if (is_Confirm(node)) {
 		if (get_Confirm_bound(node))
 			node = get_Confirm_bound(node);
@@ -408,7 +415,8 @@ static tarval *get_Const_or_Confirm_tarval(const ir_node *node) {
 	return get_Const_tarval(node);
 }
 
-static ir_node *find_const_or_confirm(condeval_env_t *env, ir_node *jump, ir_node *value)
+static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
+                                      ir_node *value)
 {
 	ir_node *block = get_nodes_block(jump);
 
@@ -471,7 +479,7 @@ static ir_node *find_const_or_confirm(condeval_env_t *env, ir_node *jump, ir_nod
 	return NULL;
 }
 
-static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
+static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
                                ir_node *value)
 {
 	ir_node *block = get_nodes_block(jump);
@@ -589,9 +597,9 @@ static ir_node *find_candidate(condeval_env_t *env, ir_node *jump,
  *        /
  *     Block
  */
-static void cond_eval(ir_node* block, void* data)
+static void thread_jumps(ir_node* block, void* data)
 {
-	condeval_env_t env;
+	jumpthreading_env_t env;
 	int *changed = data;
 	ir_node *selector;
 	ir_node *projx;
@@ -698,16 +706,15 @@ static void cond_eval(ir_node* block, void* data)
 	*changed = 1;
 }
 
-void opt_cond_eval(ir_graph* irg)
+void opt_jumpthreading(ir_graph* irg)
 {
 	int changed, rerun;
 
-	FIRM_DBG_REGISTER(dbg, "firm.opt.condeval");
+	FIRM_DBG_REGISTER(dbg, "firm.opt.jumpthreading");
 
-	DB((dbg, LEVEL_1, "===> Performing condition evaluation on %+F\n", irg));
+	DB((dbg, LEVEL_1, "===> Performing jumpthreading on %+F\n", irg));
 
 	remove_critical_cf_edges(irg);
-	normalize_proj_nodes(irg);
 
 	edges_assure(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
@@ -715,7 +722,7 @@ void opt_cond_eval(ir_graph* irg)
 	changed = 0;
 	do {
 		rerun = 0;
-		irg_block_walk_graph(irg, cond_eval, NULL, &rerun);
+		irg_block_walk_graph(irg, thread_jumps, NULL, &rerun);
 		changed |= rerun;
 	} while (rerun);
 
