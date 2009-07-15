@@ -5068,7 +5068,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\ir\opt\condeval.c"
+					RelativePath="..\ir\opt\jumpthreading.c"
 					>
 				</File>
 				<File

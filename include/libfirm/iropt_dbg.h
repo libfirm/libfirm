@@ -417,15 +417,15 @@
 	} while(0)
 
 /**
- * Merge the debug info due to a cond eval result.
+ * Merge the debug info due to a jump threading result.
  *
  * @param oldn  the old control flow node
  * @param n     the new control flow node replacing oldn
  */
-#define DBG_OPT_COND_EVAL(oldn, n)                         \
+#define DBG_OPT_JUMPTHREADING(oldn, n)                         \
 	do {                                                   \
-	  hook_merge_nodes(&n, 1, &oldn, 1, FS_OPT_COND_EVAL); \
-	  __dbg_info_merge_pair(n, oldn, dbg_cond_eval);       \
+	  hook_merge_nodes(&n, 1, &oldn, 1, FS_OPT_JUMPTHREADING); \
+	  __dbg_info_merge_pair(n, oldn, dbg_jumpthreading);       \
 	} while(0)
 
 #endif

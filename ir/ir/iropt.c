@@ -429,7 +429,7 @@ static tarval *computed_value_Mux(const ir_node *n) {
 static tarval *computed_value_Confirm(const ir_node *n) {
 	/*
 	 * Beware: we might produce Phi(Confirm(x == true), Confirm(x == false)).
-	 * Do NOT optimize them away (CondEval wants them), so wait until
+	 * Do NOT optimize them away (jump threading wants them), so wait until
 	 * remove_confirm is activated.
 	 */
 	if (get_opt_remove_confirm()) {

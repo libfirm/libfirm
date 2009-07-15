@@ -430,7 +430,7 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 
 		DB((
 			dbg, LEVEL_1,
-			"> Found condition evaluation candidate %+F->%+F\n",
+			"> Found jump threading candidate %+F->%+F\n",
 			env->true_block, block
 		));
 
@@ -496,7 +496,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 
 		DB((
 			dbg, LEVEL_1,
-			"> Found condition evaluation candidate %+F->%+F\n",
+			"> Found jump threading candidate %+F->%+F\n",
 			env->true_block, block
 		));
 
@@ -671,7 +671,7 @@ static void thread_jumps(ir_node* block, void* data)
 	} else if (selector_evaluated == 1) {
 		dbg_info *dbgi = get_irn_dbg_info(selector);
 		ir_node  *jmp  = new_rd_Jmp(dbgi, get_nodes_block(projx));
-		DBG_OPT_COND_EVAL(projx, jmp);
+		DBG_OPT_JUMPTHREADING(projx, jmp);
 		exchange(projx, jmp);
 		*changed = 1;
 		return;

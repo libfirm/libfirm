@@ -203,7 +203,7 @@ libfirm_la_SOURCES = \
 	opt/cfopt.c \
 	opt/code_placement.c \
 	opt/combo.c \
-	opt/condeval.c \
+	opt/jumpthreading.c \
 	opt/convopt.c \
 	opt/critical_edges.c \
 	opt/escape_ana.c \

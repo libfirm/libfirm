@@ -123,7 +123,7 @@ enum firmstat_optimizations_t {
 	FS_OPT_COMBO_CF,                          /**< Combo: removed conditional control flow */
 	FS_OPT_COMBO_FOLLOWER,                    /**< Combo: replaced a follower */
 	FS_OPT_COMBO_CONGRUENT,                   /**< Combo: replaced by congruent */
-	FS_OPT_COND_EVAL,                         /**< Conditional evaluation: removed conditional control flow */
+	FS_OPT_JUMPTHREADING,                     /**< Jump threading: removed conditional control flow */
 	FS_OPT_RTS_ABS,                           /**< RTS optimization: call to abs() replaced */
 	FS_OPT_RTS_ALLOCA,                        /**< RTS optimization: call to alloca() replaced */
 	FS_OPT_RTS_SQRT,                          /**< RTS optimization: call to sqrt() replaced */

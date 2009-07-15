@@ -1964,7 +1964,7 @@ static void compute_Unknown(node_t *node) {
 	 * It would be safe to compute Top IF it can be assured, that only Cmp
 	 * nodes are inputs to Conds. We check that first.
 	 * This is the way Frontends typically build Firm, but some optimizations
-	 * (cond_eval for instance) might replace them by Phib's...
+	 * (jump threading for instance) might replace them by Phib's...
 	 */
 	node->type.tv = tarval_UNKNOWN;
 }  /* compute_Unknown */

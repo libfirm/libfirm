@@ -91,7 +91,7 @@ ir\opt\proc_cloning.h
 ir\opt\opt_confirms.h
 ir\opt\opt_frame.h
 ir\opt\opt_osr.h
-ir\opt\condeval.h
+ir\opt\jumpthreading.h
 
 ir\tr\entity.h
 ir\tr\mangle.h

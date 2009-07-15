@@ -214,8 +214,8 @@ static void remove_empty_block(ir_node *block)
 			continue;
 		}
 		/* we simply kill Pins, because there are some strange interactions
-		 * between condeval, which produce PhiMs with Pins, we simply kill
-		 * the pins here, everything is scheduled anyway */
+		 * between jump threading, which produce PhiMs with Pins, we simply
+		 * kill the pins here, everything is scheduled anyway */
 		if (is_Pin(node)) {
 			exchange(node, get_Pin_op(node));
 			continue;

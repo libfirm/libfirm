@@ -5,17 +5,17 @@
 # TARGTYPE "Win32 (x86) Static Library" 0x0104
 
 CFG=libfirm - Win32 Debug
-!MESSAGE Dies ist kein gültiges Makefile. Zum Erstellen dieses Projekts mit NMAKE
-!MESSAGE verwenden Sie den Befehl "Makefile exportieren" und führen Sie den Befehl
+!MESSAGE Dies ist kein gï¿½ltiges Makefile. Zum Erstellen dieses Projekts mit NMAKE
+!MESSAGE verwenden Sie den Befehl "Makefile exportieren" und fï¿½hren Sie den Befehl
 !MESSAGE 
 !MESSAGE NMAKE /f "libfirm.mak".
 !MESSAGE 
-!MESSAGE Sie können beim Ausführen von NMAKE eine Konfiguration angeben
+!MESSAGE Sie kï¿½nnen beim Ausfï¿½hren von NMAKE eine Konfiguration angeben
 !MESSAGE durch Definieren des Makros CFG in der Befehlszeile. Zum Beispiel:
 !MESSAGE 
 !MESSAGE NMAKE /f "libfirm.mak" CFG="libfirm - Win32 Debug"
 !MESSAGE 
-!MESSAGE Für die Konfiguration stehen zur Auswahl:
+!MESSAGE Fï¿½r die Konfiguration stehen zur Auswahl:
 !MESSAGE 
 !MESSAGE "libfirm - Win32 Release" (basierend auf  "Win32 (x86) Static Library")
 !MESSAGE "libfirm - Win32 Debug" (basierend auf  "Win32 (x86) Static Library")
@@ -2091,7 +2091,7 @@ SOURCE=..\ir\opt\code_placement.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\ir\opt\condeval.c
+SOURCE=..\ir\opt\jumpthreading.c
 # End Source File
 # Begin Source File
 

@@ -87,7 +87,7 @@ typedef enum {
 	dbg_opt_confirm,              /**< A Firm subgraph was replace because of a Confirmation. */
 	dbg_gvn_pre,                  /**< A Firm node was replace because of the GVN-PRE algorithm. */
 	dbg_combo,                    /**< A Firm node was replace because of the combo algorithm. */
-	dbg_cond_eval,                /**< A Firm node was replace because of the conditional evaluation algorithm. */
+	dbg_jumpthreading,            /**< A Firm node was replace because of the jumpthreading algorithm. */
 	dbg_backend,                  /**< A Firm subgraph was replaced because of a Backend transformation */
 	dbg_max                       /**< Maximum value. */
 } dbg_action;
