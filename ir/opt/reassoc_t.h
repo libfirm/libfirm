@@ -37,8 +37,6 @@
 #ifndef REASSOC_T_H
 #define REASSOC_T_H
 
-#include "iroptimize.h"
-
 /**
  * Sets the default reassociation operation for an ir_op_ops.
  *
