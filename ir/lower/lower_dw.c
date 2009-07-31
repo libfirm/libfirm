@@ -492,12 +492,11 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * @param op      the emulated ir_op
  * @param imode   the input mode of the emulated opcode
  * @param omode   the output mode of the emulated opcode
- * @param block   where the new mode is created
  * @param env     the lower environment
  */
 static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
                                       ir_mode *imode, ir_mode *omode,
-                                      ir_node *block, lower_env_t *env) {
+                                      lower_env_t *env) {
 	symconst_symbol sym;
 	ir_entity *ent;
 	op_mode_entry_t key, *entry;
@@ -567,7 +566,7 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
 	opmode = get_irn_op_mode(node);
-	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, env);
 	call = new_rd_Call(dbg, block, get_Div_mem(node), irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
 	irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
@@ -644,7 +643,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
 	opmode = get_irn_op_mode(node);
-	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, env);
 	call = new_rd_Call(dbg, block, get_Mod_mem(node), irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
 	irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
@@ -737,7 +736,7 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
 	if (flags & 1) {
 		opmode = get_irn_op_mode(node);
-		irn = get_intrinsic_address(mtp, op_Div, opmode, opmode, block, env);
+		irn = get_intrinsic_address(mtp, op_Div, opmode, opmode, env);
 		callDiv = new_rd_Call(dbg, block, mem, irn, 4, in, mtp);
 		set_irn_pinned(callDiv, get_irn_pinned(node));
 		resDiv = new_r_Proj(block, callDiv, mode_T, pn_Call_T_result);
@@ -746,7 +745,7 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		if (flags & 1)
 			mem = new_r_Proj(block, callDiv, mode_M, pn_Call_M);
 		opmode = get_irn_op_mode(node);
-		irn = get_intrinsic_address(mtp, op_Mod, opmode, opmode, block, env);
+		irn = get_intrinsic_address(mtp, op_Mod, opmode, opmode, env);
 		callMod = new_rd_Call(dbg, block, mem, irn, 4, in, mtp);
 		set_irn_pinned(callMod, get_irn_pinned(node));
 		resMod = new_r_Proj(block, callMod, mode_T, pn_Call_T_result);
@@ -829,7 +828,7 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	irg   = current_ir_graph;
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 4, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
@@ -876,7 +875,7 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	irg  = current_ir_graph;
 
 	mtp = mode_is_signed(mode) ? shiftop_tp_s : shiftop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 3, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
@@ -1112,7 +1111,7 @@ static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 	block = get_nodes_block(node);
 
 	mtp = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
-	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, block, env);
+	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 2, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
@@ -1495,7 +1494,7 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 		ir_mode *omode = env->params->high_signed;
 		ir_type *mtp = get_conv_type(imode, omode, env);
 
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
@@ -1551,7 +1550,7 @@ static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
 		ir_type *mtp = get_conv_type(imode, omode, env);
 
 		/* do an intrinsic call */
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
@@ -1593,7 +1592,7 @@ static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
 		ir_mode *imode = env->params->high_signed;
 		ir_type *mtp = get_conv_type(imode, omode, env);
 
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
 		in[0] = env->entries[idx]->low_word;
 		in[1] = env->entries[idx]->high_word;
 
@@ -1637,7 +1636,7 @@ static void lower_Conv_from_Lu(ir_node *node, lower_env_t *env) {
 		ir_mode *imode = env->params->high_unsigned;
 		ir_type *mtp = get_conv_type(imode, omode, env);
 
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, block, env);
+		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
 		in[0] = env->entries[idx]->low_word;
 		in[1] = env->entries[idx]->high_word;
 
@@ -1958,7 +1957,6 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
  * Translate a Call.
  */
 static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
-	ir_graph *irg = current_ir_graph;
 	ir_type  *tp = get_Call_type(node);
 	ir_type  *call_tp;
 	ir_node  **in, *proj, *results;
