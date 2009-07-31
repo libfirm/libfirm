@@ -355,7 +355,8 @@ static inline int rbitset_equal(const unsigned *bitset1,
  * @param src   the source set
  * @param size  size of both bitsets
  */
-static inline void rbitset_cpy(unsigned *dst, const unsigned *src, size_t size) {
+static inline void rbitset_copy(unsigned *dst, const unsigned *src, size_t size)
+{
 	memcpy(dst, src, BITSET_SIZE_BYTES(size));
 }
 

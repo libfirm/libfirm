@@ -1607,7 +1607,7 @@ static int backward_antic(block_t *bl) {
 		block_t *succ_bl = get_block_entry(succ);
 		int i;
 
-		rbitset_cpy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
+		rbitset_copy(env.curr_set, succ_bl->anticL_in, env.rbs_size);
 		memcpy(env.curr_id_2_memop, succ_bl->id_2_memop_antic, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 
 		/* Hmm: probably we want kill merges of Loads ans Stores here */
@@ -1653,7 +1653,7 @@ static int backward_antic(block_t *bl) {
 	memcpy(bl->id_2_memop_antic, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 	if (! rbitset_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
 		/* changed */
-		rbitset_cpy(bl->anticL_in, env.curr_set, env.rbs_size);
+		rbitset_copy(bl->anticL_in, env.curr_set, env.rbs_size);
 		dump_curr(bl, "AnticL_in*");
 		return 1;
 	}
@@ -1982,7 +1982,7 @@ static int insert_Load(block_t *bl) {
 		ir_node *pred    = get_Block_cfgpred_block(bl->block, 0);
 		block_t *pred_bl = get_block_entry(pred);
 
-		rbitset_cpy(env.curr_set, pred_bl->avail_out, env.rbs_size);
+		rbitset_copy(env.curr_set, pred_bl->avail_out, env.rbs_size);
 
 		memcpy(env.curr_id_2_memop, pred_bl->id_2_memop_avail, env.rbs_size * sizeof(bl->id_2_memop_avail[0]));
 	}
