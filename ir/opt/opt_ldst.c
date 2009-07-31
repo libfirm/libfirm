@@ -2120,7 +2120,7 @@ static int insert_Load(block_t *bl) {
 
 	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* the avail set has changed */
-		rbitset_cpy(bl->avail_out, env.curr_set, env.rbs_size);
+		rbitset_copy(bl->avail_out, env.curr_set, env.rbs_size);
 		dump_curr(bl, "Avail_out*");
 		return 1;
 	}
@@ -2367,6 +2367,7 @@ int opt_ldst(ir_graph *irg) {
 	}
 
 //	dump_block_list(&env);
+	(void) dump_block_list;
 
 	calcAvail();
 	calcAntic();
