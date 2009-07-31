@@ -243,6 +243,13 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 int optimize_load_store(ir_graph *irg);
 
 /**
+ * New experimental alternative to optimize_load_store.
+ * Based on a dataflow analysis, so load/stores are moved out of loops
+ * where possible
+ */
+int opt_ldst(ir_graph *irg);
+
+/**
  * Do Loop unrolling in the given graph.
  */
 void optimize_loop_unrolling(ir_graph *irg);
