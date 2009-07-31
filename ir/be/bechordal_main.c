@@ -238,7 +238,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
 
 	BE_TIMER_PUSH(t_ra_constr);
-	be_pre_spill_prepare_constr(chordal_env);
+	be_pre_spill_prepare_constr(chordal_env->birg, chordal_env->cls);
 	BE_TIMER_POP(t_ra_constr);
 
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);

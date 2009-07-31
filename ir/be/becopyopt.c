@@ -167,7 +167,7 @@ static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const 
 	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(env->birg, a, b);
+		return be_values_interfere(env->birg->lv, a, b);
 }
 
 

@@ -812,17 +812,8 @@ static void be_straight_alloc_cls(void)
  */
 static void spill(void)
 {
-	/* TODO: rewrite pre_spill_prepare to work without chordal_env... */
-	be_chordal_env_t  cenv;
-	memset(&cenv, 0, sizeof(cenv));
-	cenv.obst          = &obst;
-	cenv.irg           = irg;
-	cenv.birg          = birg;
-	cenv.cls           = cls;
-	cenv.ignore_colors = ignore_regs;
-
 	/* make sure all nodes show their real register pressure */
-	be_pre_spill_prepare_constr(&cenv);
+	be_pre_spill_prepare_constr(birg, cls);
 
 	/* spill */
 	be_do_spill(birg, cls);

@@ -43,6 +43,4 @@ void be_register_allocator(const char *name, be_ra_t *allocator);
  */
 void be_allocate_registers(be_irg_t *birg);
 
-int (values_interfere)(const be_irg_t *birg, const ir_node *a, const ir_node *b);
-
-#endif /* FIRM_BE_BERA_H */
+#endif

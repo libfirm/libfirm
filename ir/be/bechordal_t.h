@@ -121,8 +121,6 @@ struct be_ra_chordal_opts_t {
 	char ilp_solver[128];
 };
 
-void be_pre_spill_prepare_constr(be_chordal_env_t *cenv);
-
 void check_for_memory_operands(ir_graph *irg);
 
 #endif /* FIRM_BE_BECHORDAL_T_H */

@@ -93,7 +93,7 @@ static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a,
 	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
 	else
-		return values_interfere(env->birg, a, b);
+		return be_values_interfere(env->birg->lv, a, b);
 }
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {

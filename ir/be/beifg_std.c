@@ -60,7 +60,7 @@ static void ifg_std_free(void *self)
 static int ifg_std_connected(const void *self, const ir_node *a, const ir_node *b)
 {
 	const ifg_std_t *ifg = self;
-	return values_interfere(ifg->env->birg, a, b);
+	return be_values_interfere(ifg->env->birg->lv, a, b);
 }
 
 typedef struct _nodes_iter_t {

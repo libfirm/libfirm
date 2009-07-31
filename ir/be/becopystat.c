@@ -244,7 +244,7 @@ static void stat_phi_node(be_chordal_env_t *chordal_env, ir_node *phi)
 static void stat_copy_node(be_chordal_env_t *chordal_env, ir_node *root) {
 	curr_vals[I_CPY_CNT]++;
 	curr_vals[I_COPIES_MAX]++;
-	if (values_interfere(chordal_env->birg, root, get_Perm_src(root))) {
+	if (be_values_interfere(chordal_env->birg->lv, root, get_Perm_src(root))) {
 		curr_vals[I_COPIES_IF]++;
 		assert(0 && "A Perm pair (in/out) should never interfere!");
 	}
@@ -280,7 +280,7 @@ static void stat_phi_class(be_chordal_env_t *chordal_env, ir_node **pc) {
 	curr_vals[I_CLS_IF_MAX] += size * (size - 1) / 2;
 	for (if_free = 1, i = 0; i < size - 1; ++i)
 		for (o = i + 1; o < size; ++o)
-			if (values_interfere(chordal_env->birg, pc[i], pc[o])) {
+			if (be_values_interfere(chordal_env->birg->lv, pc[i], pc[o])) {
 				if_free = 0;
 				curr_vals[I_CLS_IF_CNT]++;
 			}

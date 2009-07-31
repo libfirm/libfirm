@@ -223,149 +223,6 @@ static be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 	return be_scan_insn(&ie, irn);
 }
 
-static ir_node *prepare_constr_insn(be_chordal_env_t *env, ir_node *irn)
-{
-	bitset_t *tmp          = bitset_alloca(env->cls->n_regs);
-	bitset_t *def_constr   = bitset_alloca(env->cls->n_regs);
-	ir_node *bl            = get_nodes_block(irn);
-	const be_irg_t *birg   = env->birg;
-	be_lv_t *lv            = birg->lv;
-
-	be_insn_t *insn;
-	int i, j;
-
-	for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
-		ir_node *op = get_irn_n(irn, i);
-		ir_node *copy;
-		const arch_register_t *reg;
-		const arch_register_req_t *req;
-
-		req = arch_get_register_req(irn, i);
-		if (req->cls != env->cls)
-			continue;
-
-		reg = arch_get_irn_register(op);
-
-		if (reg == NULL || !arch_register_type_is(reg, ignore))
-			continue;
-		if (arch_register_type_is(reg, joker))
-			continue;
-
-		if (!arch_register_req_is(req, limited))
-			continue;
-
-		if (rbitset_is_set(req->limited, reg->index))
-			continue;
-
-		copy = be_new_Copy(env->cls, bl, op);
-		be_stat_ev("constr_copy", 1);
-
-		sched_add_before(irn, copy);
-		set_irn_n(irn, i, copy);
-		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, irn, i));
-	}
-
-	insn = chordal_scan_insn(env, irn);
-
-	if (!insn->has_constraints)
-		goto end;
-
-	/* insert copies for nodes that occur constrained more than once. */
-	for (i = insn->use_start; i < insn->n_ops; ++i) {
-		be_operand_t *op = &insn->ops[i];
-
-		if (!op->has_constraints)
-			continue;
-
-		for (j = i + 1; j < insn->n_ops; ++j) {
-			ir_node *copy;
-			be_operand_t *a_op = &insn->ops[j];
-
-			if (a_op->carrier != op->carrier || !a_op->has_constraints)
-				continue;
-
-			/* if the constraint is the same, no copy is necessary
-			 * TODO generalise unequal but overlapping constraints */
-			if (a_op->req == op->req)
-				continue;
-
-			if (be_is_Copy(get_irn_n(insn->irn, a_op->pos)))
-				continue;
-
-			copy = be_new_Copy(env->cls, bl, op->carrier);
-			be_stat_ev("constr_copy", 1);
-
-			sched_add_before(insn->irn, copy);
-			set_irn_n(insn->irn, a_op->pos, copy);
-			DBG((dbg, LEVEL_3, "inserting multiple constr copy %+F for %+F pos %d\n", copy, insn->irn, a_op->pos));
-		}
-	}
-
-	/* collect all registers occurring in out constraints. */
-	for (i = 0; i < insn->use_start; ++i) {
-		be_operand_t *op = &insn->ops[i];
-		if (op->has_constraints)
-			bitset_or(def_constr, op->regs);
-	}
-
-	/*
-	 * insert copies for all constrained arguments living through the node
-	 * and being constrained to a register which also occurs in out constraints.
-	 */
-	for (i = insn->use_start; i < insn->n_ops; ++i) {
-		ir_node *copy;
-		be_operand_t *op = &insn->ops[i];
-
-		bitset_copy(tmp, op->regs);
-		bitset_and(tmp, def_constr);
-
-		/*
-		 * Check, if
-		 * 1) the operand is constrained.
-		 * 2) lives through the node.
-		 * 3) is constrained to a register occurring in out constraints.
-		 */
-		if (!op->has_constraints ||
-		   !values_interfere(birg, insn->irn, op->carrier) ||
-		   bitset_is_empty(tmp))
-			continue;
-
-		/*
-		 * only create the copy if the operand is no copy.
-		 * this is necessary since the assure constraints phase inserts
-		 * Copies and Keeps for operands which must be different from the
-		 * results. Additional copies here would destroy this.
-		 */
-		if (be_is_Copy(get_irn_n(insn->irn, op->pos)))
-			continue;
-
-		copy = be_new_Copy(env->cls, bl, op->carrier);
-
-		sched_add_before(insn->irn, copy);
-		set_irn_n(insn->irn, op->pos, copy);
-		DBG((dbg, LEVEL_3, "inserting constr copy %+F for %+F pos %d\n", copy, insn->irn, op->pos));
-		be_liveness_update(lv, op->carrier);
-	}
-
-end:
-	obstack_free(env->obst, insn);
-	return insn->next_insn;
-}
-
-static void pre_spill_prepare_constr_walker(ir_node *bl, void *data)
-{
-	be_chordal_env_t *env = data;
-	ir_node *irn;
-	for (irn = sched_first(bl); !sched_is_end(irn);) {
-		irn = prepare_constr_insn(env, irn);
-	}
-}
-
-void be_pre_spill_prepare_constr(be_chordal_env_t *cenv)
-{
-	irg_block_walk_graph(cenv->irg, pre_spill_prepare_constr_walker, NULL, cenv);
-}
-
 static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t *insn)
 {
 	const be_chordal_env_t *env = alloc_env->chordal_env;
@@ -389,7 +246,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 
 			if (op->partner != NULL)
 				continue;
-			if (values_interfere(env->birg, op->irn, op->carrier))
+			if (be_values_interfere(env->birg->lv, op->irn, op->carrier))
 				continue;
 
 			bitset_clear_all(bs);
@@ -503,7 +360,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
 	int be_silent          = *silent;
-	be_irg_t *birg         = env->birg;
 	bipartite_t *bp;
 
 	if (insn->pre_colored) {
@@ -611,7 +467,8 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 			assert(is_Proj(proj));
 
-			if (!values_interfere(birg, proj, irn) || pmap_contains(partners, proj))
+			if (!be_values_interfere(env->birg->lv, proj, irn)
+					|| pmap_contains(partners, proj))
 				continue;
 
 			/* don't insert a node twice */

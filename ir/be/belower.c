@@ -882,7 +882,7 @@ static int push_through_perm(ir_node *perm, lower_env_t *env)
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
 			if (arch_irn_consider_in_reg_alloc(cls, op) &&
-			    !values_interfere(env->birg, op, one_proj)) {
+			    !be_values_interfere(env->birg->lv, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
 			}

@@ -109,7 +109,7 @@ static inline int _value_strictly_dominates(const ir_node *a, const ir_node *b)
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
  */
-static inline int _lv_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
+static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const ir_node *b)
 {
 	int a2b = _value_dominates(a, b);
 	int b2a = _value_dominates(b, a);
@@ -265,7 +265,6 @@ static inline int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn,
 
 #define value_dominates_intrablock(a, b)         _value_dominates_intrablock(a, b)
 #define value_dominates(a, b)                    _value_dominates(a, b)
-#define values_interfere(birg, a, b)             _lv_values_interfere(be_get_birg_liveness(birg), a, b)
 #define dominates_use(a, e)                      _dominates_use(a, e)
 #define strictly_dominates_use(a, e)             _strictly_dominates_use(a, e)
 #define be_lv_chk_before_irn(birg, a, b)         _be_lv_chk_before_irn(birg, a, b)
