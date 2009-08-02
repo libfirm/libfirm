@@ -196,8 +196,13 @@ static void dump_curr(block_t *bl, const char *s) {
 }  /* dump_curr */
 
 #else
-#define dump_block_list()
-#define dump_curr(bl, s)
+static void dump_block_list(ldst_env *env) {
+	(void) env;
+}
+static void dump_curr(block_t *bl, const char *s) {
+	(void) bl;
+	(void) s;
+}
 #endif /* DEBUG_libfirm */
 
 /** Get the block entry for a block node */
@@ -1932,7 +1937,7 @@ static int insert_Load(block_t *bl) {
 				block_t *pred_bl = get_block_entry(pred);
 				int     need_phi = 0;
 				memop_t *first   = NULL;
-				ir_mode *mode;
+				ir_mode *mode    = NULL;
 
 				for (i = 0; i < n; ++i) {
 					memop_t *mop;
