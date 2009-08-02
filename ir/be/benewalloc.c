@@ -137,7 +137,7 @@ static allocation_info_t *get_allocation_info(ir_node *node)
  * Afterwards, both nodes uses the same allocation info.
  * Copy must not have an allocation info assigned yet.
  *
- * @param copy   the node the gets the allocation info assigned
+ * @param copy   the node that gets the allocation info assigned
  * @param value  the original node
  */
 static void link_to(ir_node *copy, ir_node *value)
@@ -334,8 +334,8 @@ static void analyze_block(ir_node *block, void *data)
  */
 static void use_reg(ir_node *node, const arch_register_t *reg)
 {
-	unsigned      r          = arch_register_get_index(reg);
-	assignment_t *assignment = &assignments[r];
+	unsigned           r          = arch_register_get_index(reg);
+	assignment_t      *assignment = &assignments[r];
 	allocation_info_t *info;
 
 	assert(assignment->value == NULL);
@@ -445,7 +445,9 @@ static void assign_reg(const ir_node *block, ir_node *node)
 		/* already used? TODO: It might be better to copy the value occupying the register around here, find out when... */
 		if (assignments[r].value != NULL)
 			continue;
-		use_reg(node, arch_register_for_index(cls, r));
+		reg = arch_register_for_index(cls, r);
+		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
+		use_reg(node, reg);
 		break;
 	}
 }
@@ -501,13 +503,14 @@ static assignment_t *get_current_assignment(ir_node *node)
 static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
                              unsigned *permutation)
 {
-	ir_node *block, *perm;
-	ir_node **in = ALLOCAN(ir_node*, n_regs);
-	size_t    r;
+	ir_node  *block;
+	ir_node **srcs   = ALLOCANZ(ir_node*, n_regs);
+	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
+	unsigned  r;
 
-	int i = 0;
+	/* create a list of values which really need to be "permed" */
 	for (r = 0; r < n_regs; ++r) {
-		unsigned     new_reg = permutation[r];
+		unsigned      new_reg = permutation[r];
 		assignment_t *assignment;
 		ir_node      *value;
 
@@ -522,39 +525,55 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 			continue;
 		}
 
-		in[i++] = value;
+		assert(srcs[new_reg] == NULL);
+		srcs[new_reg] = value;
+		n_used[r]++;
 
 		free_reg_of_value(value);
 		ir_nodeset_remove(live_nodes, value);
 	}
 
 	block = get_nodes_block(before);
-	perm  = be_new_Perm(cls, block, i, in);
 
-	sched_add_before(before, perm);
-
-	i = 0;
-	for (r = 0; r < n_regs; ++r) {
-		unsigned new_reg = permutation[r];
-		ir_node  *value;
-		ir_mode  *mode;
-		ir_node  *proj;
+	/* step1: create copies where immediately possible */
+	for (r = 0; r < n_regs; /* empty */) {
+		ir_node *copy;
+		ir_node *src = srcs[r];
+		unsigned old_r;
 		const arch_register_t *reg;
 
-		if (new_reg == r)
+		if (src == NULL || n_used[r] > 0) {
+			++r;
 			continue;
+		}
 
-		value = in[i];
-		mode  = get_irn_mode(value);
-		proj  = new_r_Proj(block, perm, mode, i);
+		/* create a copy */
+		copy = be_new_Copy(cls, block, src);
+		reg = arch_register_for_index(cls, r);
+		DB((dbg, LEVEL_2, "Copy %+F (from %+F) -> %s\n", copy, src, reg->name));
+		link_to(copy, src);
+		use_reg(copy, reg);
+		sched_add_before(before, copy);
 
-		reg = arch_register_for_index(cls, new_reg);
+		/* old register has 1 user less */
+		reg = arch_get_irn_register(src);
+		old_r = arch_register_get_index(reg);
+		assert(n_used[old_r] > 0);
+		--n_used[old_r];
+		srcs[r] = NULL;
 
-		link_to(proj, value);
-		use_reg(proj, reg);
-		ir_nodeset_insert(live_nodes, proj);
+		/* advance */
+		if (old_r < r)
+			r = old_r;
+		else
+			++r;
+	}
 
-		++i;
+	/* create perms with the rest */
+	for (r = 0; r < n_regs; ++r) {
+		if (srcs[r] != NULL) {
+			assert (false && "perm creation not implemented yet");
+		}
 	}
 }
 
@@ -693,13 +712,16 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	ir_nodeset_iterator_t iter;
 	ir_node               *node, *start;
 
+	DB((dbg, LEVEL_2, "Allocating in block %+F\n",
+		block));
+
 	/* clear assignments */
 	memset(assignments, 0, n_regs * sizeof(assignments[0]));
+	ir_nodeset_init(&live_nodes);
 
 	(void) data;
 
 	/* collect live-in nodes and preassigned values */
-	ir_nodeset_init(&live_nodes);
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
 		const arch_register_t *reg;
 
@@ -707,9 +729,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
+		/* remember that this node is live at the beginning of the block */
 		ir_nodeset_insert(&live_nodes, node);
 
-		/* fill in regs already assigned */
+		/* if the node already has a register assigned use it */
+		/* TODO: the value could already be copied away at this point and be in
+		   another register */
 		reg = arch_get_irn_register(node);
 		if (reg != NULL) {
 			use_reg(node, reg);
@@ -737,6 +762,11 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* assign regs for live-in values */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
+		const arch_register_t *reg;
+		reg = arch_get_irn_register(node);
+		if (reg != NULL)
+			continue;
+
 		assign_reg(block, node);
 	}
 
@@ -801,8 +831,10 @@ static void be_straight_alloc_cls(void)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
-	irg_block_walk_graph(irg, analyze_block, NULL, NULL);
-	irg_block_walk_graph(irg, allocate_coalesce_block, NULL, NULL);
+	DB((dbg, LEVEL_2, "=== Registers in %s ===\n", cls->name));
+
+	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
+	irg_block_walk_graph(irg, NULL, allocate_coalesce_block, NULL);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 }
@@ -813,12 +845,18 @@ static void be_straight_alloc_cls(void)
 static void spill(void)
 {
 	/* make sure all nodes show their real register pressure */
+	BE_TIMER_PUSH(t_ra_constr);
 	be_pre_spill_prepare_constr(birg, cls);
+	BE_TIMER_POP(t_ra_constr);
 
 	/* spill */
+	BE_TIMER_PUSH(t_ra_spill);
 	be_do_spill(birg, cls);
+	BE_TIMER_POP(t_ra_spill);
 
+	BE_TIMER_PUSH(t_ra_spill_apply);
 	check_for_memory_operands(irg);
+	BE_TIMER_POP(t_ra_spill_apply);
 }
 
 /**

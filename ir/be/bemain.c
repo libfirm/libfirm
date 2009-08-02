@@ -485,6 +485,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 int be_timing;
 ir_timer_t *t_abi;
 ir_timer_t *t_codegen;
+ir_timer_t *t_ra_preparation;
 ir_timer_t *t_sched;
 ir_timer_t *t_constr;
 ir_timer_t *t_finish;
@@ -530,6 +531,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	if (be_timing) {
 		t_abi        = ir_timer_register("bemain_time_beabi",       "be abi introduction");
 		t_codegen    = ir_timer_register("bemain_time_codegen",     "codegeneration");
+		t_ra_preparation = ir_timer_register("bemain_time_ra_preparation", "ra preparation");
 		t_sched      = ir_timer_register("bemain_time_sched",       "scheduling");
 		t_constr     = ir_timer_register("bemain_time_constr",      "assure constraints");
 		t_finish     = ir_timer_register("bemain_time_finish",      "graph finish");
@@ -736,9 +738,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
 
 		/* stuff needs to be done after scheduling but before register allocation */
-		BE_TIMER_PUSH(t_codegen);
+		BE_TIMER_PUSH(t_ra_preparation);
 		arch_code_generator_before_ra(birg->cg);
-		BE_TIMER_POP(t_codegen);
+		BE_TIMER_POP(t_ra_preparation);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		BE_TIMER_PUSH(t_abi);
@@ -844,6 +846,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			}
 			LC_EMIT(t_abi);
 			LC_EMIT(t_codegen);
+			LC_EMIT(t_ra_preparation);
 			LC_EMIT(t_sched);
 			LC_EMIT(t_live);
 			LC_EMIT(t_heights);
