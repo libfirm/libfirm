@@ -496,39 +496,67 @@ static assignment_t *get_current_assignment(ir_node *node)
  * Add an permutation in front of a node and change the assignments
  * due to this permutation.
  *
+ * To understand this imagine a permutation like this:
+ *
+ * 1 -> 2
+ * 2 -> 3
+ * 3 -> 1, 5
+ * 4 -> 6
+ * 5
+ * 6
+ * 7 -> 7
+ *
+ * First we count how many destinations a single value has. At the same time
+ * we can be sure that each destination register has at most 1 source register
+ * (it can have 0 which means we don't care what value is in it).
+ * We ignore all fullfilled permuations (like 7->7)
+ * In a first pass we create as much copy instructions as possible as they
+ * are generally cheaper than exchanges. We do this by counting into how many
+ * destinations a register has to be copied (in the example it's 2 for register
+ * 3, or 1 for the registers 1,2,4 and 7).
+ * We can then create a copy into every destination register when the usecount
+ * of that register is 0 (= noone else needs the value in the register).
+ *
+ * After this step we should have cycles left. We implement a cyclic permutation
+ * of n registers with n-1 transpositions.
+ *
  * @param live_nodes   the set of live nodes, updated due to live range split
  * @param before       the node before we add the permutation
- * @param permutation  the permutation array (map indexes to indexes)
+ * @param permutation  the permutation array indices are the destination
+ *                     registers, the values in the array are the source
+ *                     registers.
  */
 static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
                              unsigned *permutation)
 {
-	ir_node  *block;
-	ir_node **srcs   = ALLOCANZ(ir_node*, n_regs);
-	unsigned *n_used = ALLOCANZ(unsigned, n_regs);
-	unsigned  r;
+	ir_node   *block;
+	ir_node  **ins    = ALLOCANZ(ir_node*, n_regs);
+	unsigned  *n_used = ALLOCANZ(unsigned, n_regs);
+	unsigned   r;
 
-	/* create a list of values which really need to be "permed" */
+	/* create a list of permutations. Leave out fix points. */
 	for (r = 0; r < n_regs; ++r) {
-		unsigned      new_reg = permutation[r];
+		unsigned      old_reg = permutation[r];
 		assignment_t *assignment;
 		ir_node      *value;
 
-		if (new_reg == r)
+		/* no need to do anything for a fixpoint */
+		if (old_reg == r)
 			continue;
 
-		assignment = &assignments[r];
+		assignment = &assignments[old_reg];
 		value      = assignment->value;
 		if (value == NULL) {
-			/* nothing to do here, reg is not live */
+			/* nothing to do here, reg is not live. Mark it as fixpoint
+			 * so we ignore it in the next steps */
 			permutation[r] = r;
 			continue;
 		}
 
-		assert(srcs[new_reg] == NULL);
-		srcs[new_reg] = value;
-		n_used[r]++;
+		ins[old_reg] = value;
+		++n_used[old_reg];
 
+		/* free occupation infos, we'll add the values back later */
 		free_reg_of_value(value);
 		ir_nodeset_remove(live_nodes, value);
 	}
@@ -538,16 +566,19 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 	/* step1: create copies where immediately possible */
 	for (r = 0; r < n_regs; /* empty */) {
 		ir_node *copy;
-		ir_node *src = srcs[r];
-		unsigned old_r;
+		ir_node *src;
 		const arch_register_t *reg;
+		unsigned               old_r = permutation[r];
 
-		if (src == NULL || n_used[r] > 0) {
+		/* - no need to do anything for fixed points.
+		   - we can't copy if the value in the dest reg is still needed */
+		if (old_r == r || n_used[r] > 0) {
 			++r;
 			continue;
 		}
 
 		/* create a copy */
+		src = ins[old_r];
 		copy = be_new_Copy(cls, block, src);
 		reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Copy %+F (from %+F) -> %s\n", copy, src, reg->name));
@@ -555,26 +586,81 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		use_reg(copy, reg);
 		sched_add_before(before, copy);
 
-		/* old register has 1 user less */
-		reg = arch_get_irn_register(src);
-		old_r = arch_register_get_index(reg);
+		/* old register has 1 user less, permutation is resolved */
+		assert(arch_register_get_index(arch_get_irn_register(src)) == old_r);
 		assert(n_used[old_r] > 0);
 		--n_used[old_r];
-		srcs[r] = NULL;
+		permutation[r] = r;
 
-		/* advance */
-		if (old_r < r)
+		/* advance or jump back (this copy could have enabled another copy) */
+		if (old_r < r && n_used[old_r] == 0) {
 			r = old_r;
-		else
+		} else {
 			++r;
-	}
-
-	/* create perms with the rest */
-	for (r = 0; r < n_regs; ++r) {
-		if (srcs[r] != NULL) {
-			assert (false && "perm creation not implemented yet");
 		}
 	}
+
+	/* at this point we only have "cycles" left which we have to resolve with
+	 * perm instructions
+	 * TODO: if we have free registers left, then we should really use copy
+	 * instructions for any cycle longer than 2 registers...
+	 * (this is probably architecture dependent, there might be archs where
+	 *  copies are preferable even for 2 cycles)
+	 */
+
+	/* create perms with the rest */
+	for (r = 0; r < n_regs; /* empty */) {
+		const arch_register_t *reg;
+		unsigned  old_r = permutation[r];
+		unsigned  r2;
+		ir_node  *in[2];
+		ir_node  *perm;
+		ir_node  *proj0;
+		ir_node  *proj1;
+
+		if (old_r == r) {
+			++r;
+			continue;
+		}
+
+		/* we shouldn't have copies from 1 value to multiple destinations left*/
+		assert(n_used[old_r] == 1);
+
+		/* exchange old_r and r2; after that old_r is a fixed point */
+		r2 = permutation[old_r];
+
+		in[0] = ins[r2];
+		in[1] = ins[old_r];
+		perm = be_new_Perm(cls, block, 2, in);
+
+		proj0 = new_r_Proj(block, perm, get_irn_mode(in[0]), 0);
+		link_to(proj0, in[0]);
+		reg = arch_register_for_index(cls, old_r);
+		use_reg(proj0, reg);
+
+		proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
+
+		/* 1 value is now in the correct register */
+		permutation[old_r] = old_r;
+		/* the source of r changed to r2 */
+		permutation[r] = r2;
+		ins[r2] = in[1];
+		reg = arch_register_for_index(cls, r2);
+		if (r == r2) {
+			/* if we have reached a fixpoint update data structures */
+			link_to(proj1, in[1]);
+			use_reg(proj1, reg);
+		} else {
+			arch_set_irn_register(proj1, reg);
+		}
+	}
+
+#ifdef DEBUG_libfirm
+	/* now we should only have fixpoints left */
+	for (r = 0; r < n_regs; ++r) {
+		assert(permutation[r] == r);
+	}
+#endif
 }
 
 /**
