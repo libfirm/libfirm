@@ -34,9 +34,9 @@
  *    the usefulness. (You can roughly think of the value as the negative
  *    costs needed for copies when the value is in the specific registers...)
  *
- * 2. Walk blocks and assigns registers in a greedy fashion. Preferring registers
- *    with high preferences. When register constraints are not met, add copies
- *    and split live-ranges.
+ * 2. Walk blocks and assigns registers in a greedy fashion. Preferring
+ *    registers with high preferences. When register constraints are not met,
+ *    add copies and split live-ranges.
  *
  * TODO:
  *  - output constraints are not ensured. The algorithm fails to copy values
@@ -70,6 +70,7 @@
 #include "besched_t.h"
 #include "beirg_t.h"
 #include "benode_t.h"
+#include "bespill.h"
 #include "bespilloptions.h"
 #include "beverify.h"
 
@@ -92,25 +93,39 @@ static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
 static bitset_t                    *ignore_regs;
 
-typedef struct assignment_t assignment_t;
+/** info about the current assignment for a register */
 struct assignment_t {
 	ir_node *value;            /**< currently assigned value */
 };
+typedef struct assignment_t assignment_t;
 
+/** currently active assignments (while processing a basic block) */
 static assignment_t *assignments;
 
-typedef struct allocation_info_t allocation_info_t;
+/**
+ * allocation information: last_uses, register preferences
+ * the information is per firm-node.
+ */
 struct allocation_info_t {
 	unsigned      last_uses;   /**< bitset indicating last uses (input pos) */
 	assignment_t *current_assignment;
 	float         prefs[0];    /**< register preferences */
 };
+typedef struct allocation_info_t allocation_info_t;
 
-typedef struct reg_pref_t reg_pref_t;
+/** helper datastructure used when sorting register preferences */
 struct reg_pref_t {
 	unsigned num;
 	float    pref;
 };
+typedef struct reg_pref_t reg_pref_t;
+
+/** per basic-block information */
+struct block_info_t {
+	int          processed;       /**< indicate wether block is processed */
+	assignment_t assignments[0];  /**< register assignments at end of block */
+};
+typedef struct block_info_t block_info_t;
 
 /**
  * Get the allocation info for a node.
@@ -120,13 +135,34 @@ static allocation_info_t *get_allocation_info(ir_node *node)
 {
 	allocation_info_t *info;
 	if (!irn_visited(node)) {
-		size_t size = sizeof(info[0]) + n_regs * sizeof(float);
+		size_t size = sizeof(info[0]) + n_regs * sizeof(info->prefs[0]);
 		info = obstack_alloc(&obst, size);
 		memset(info, 0, size);
 		set_irn_link(node, info);
 		mark_irn_visited(node);
 	} else {
 		info = get_irn_link(node);
+	}
+
+	return info;
+}
+
+/**
+ * Get allocation information for a basic block
+ */
+static block_info_t *get_block_info(ir_node *block)
+{
+	block_info_t *info;
+
+	assert(is_Block(block));
+	if (!irn_visited(block)) {
+		size_t size = sizeof(info[0]) + n_regs * sizeof(info->assignments[0]);
+		info = obstack_alloc(&obst, size);
+		memset(info, 0, size);
+		set_irn_link(block, info);
+		mark_irn_visited(block);
+	} else {
+		info = get_irn_link(block);
 	}
 
 	return info;
@@ -378,6 +414,9 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 	qsort(regprefs, n_regs, sizeof(regprefs[0]), compare_reg_pref);
 }
 
+/**
+ * Determine and assign a register for node @p node
+ */
 static void assign_reg(const ir_node *block, ir_node *node)
 {
 	const arch_register_t     *reg;
@@ -557,8 +596,10 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		++n_used[old_reg];
 
 		/* free occupation infos, we'll add the values back later */
-		free_reg_of_value(value);
-		ir_nodeset_remove(live_nodes, value);
+		if (live_nodes != NULL) {
+			free_reg_of_value(value);
+			ir_nodeset_remove(live_nodes, value);
+		}
 	}
 
 	block = get_nodes_block(before);
@@ -787,25 +828,157 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	permutate_values(live_nodes, node, assignment);
 }
 
+/** test wether a node @p n is a copy of the value of node @p of */
+static int is_copy_of(ir_node *n, ir_node *of)
+{
+	allocation_info_t *of_info;
+
+	if (n == NULL)
+		return 0;
+
+	if (n == of)
+		return 1;
+
+	of_info = get_allocation_info(of);
+	if (!irn_visited(n))
+		return 0;
+
+	return of_info == get_irn_link(n);
+}
+
+/** find a value in the end-assignment of a basic block
+ * @returns the index into the assignment array if found
+ *          -1 if not found
+ */
+static int find_value_in_block_info(block_info_t *info, ir_node *value)
+{
+	unsigned      r;
+	assignment_t *assignments = info->assignments;
+	for (r = 0; r < n_regs; ++r) {
+		const assignment_t *assignment = &assignments[r];
+		if (is_copy_of(assignment->value, value))
+			return (int) r;
+	}
+
+	return -1;
+}
+
+/**
+ * Create the necessary permutations at the end of a basic block to fullfill
+ * the register assignment for phi-nodes in the next block
+ */
+static void add_phi_permutations(ir_node *block, int p)
+{
+	unsigned  r;
+	unsigned *permutation;
+	assignment_t *old_assignments;
+	int       need_permutation;
+	ir_node  *node;
+	ir_node  *pred = get_Block_cfgpred_block(block, p);
+
+	block_info_t *pred_info = get_block_info(pred);
+
+	/* predecessor not processed yet? nothing to do */
+	if (!pred_info->processed)
+		return;
+
+	permutation = ALLOCAN(unsigned, n_regs);
+	for (r = 0; r < n_regs; ++r) {
+		permutation[r] = r;
+	}
+
+	/* check phi nodes */
+	need_permutation = 0;
+	node = sched_first(block);
+	for ( ; is_Phi(node); node = sched_next(node)) {
+		const arch_register_t *reg;
+		int                    regn;
+		int                    a;
+		ir_node               *op;
+
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+
+		op = get_Phi_pred(node, p);
+		a = find_value_in_block_info(pred_info, op);
+		assert(a >= 0);
+
+		reg = arch_get_irn_register(node);
+		regn = arch_register_get_index(reg);
+		if (regn != a) {
+			permutation[regn] = a;
+			need_permutation = 1;
+		}
+	}
+
+	old_assignments = assignments;
+	assignments     = pred_info->assignments;
+	permutate_values(NULL, be_get_end_of_block_insertion_point(pred),
+	                 permutation);
+	assignments     = old_assignments;
+
+	node = sched_first(block);
+	for ( ; is_Phi(node); node = sched_next(node)) {
+		int                    a;
+		ir_node               *op;
+
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+
+		op = get_Phi_pred(node, p);
+		/* TODO: optimize */
+		a = find_value_in_block_info(pred_info, op);
+		assert(a >= 0);
+
+		op = pred_info->assignments[a].value;
+		set_Phi_pred(node, p, op);
+	}
+}
+
 /**
  * Walker: assign registers to all nodes of a block that
  * needs registers from the currently considered register class.
  */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
-	int                   i;
-	ir_nodeset_t          live_nodes;
-	ir_nodeset_iterator_t iter;
+	int                    i;
+	unsigned               r;
+	ir_nodeset_t           live_nodes;
+	ir_nodeset_iterator_t  iter;
 	ir_node               *node, *start;
+	int                    n_preds;
+	block_info_t          *block_info;
+	block_info_t         **pred_block_infos;
 
+	(void) data;
 	DB((dbg, LEVEL_2, "Allocating in block %+F\n",
 		block));
 
 	/* clear assignments */
-	memset(assignments, 0, n_regs * sizeof(assignments[0]));
+	block_info  = get_block_info(block);
+	assignments = block_info->assignments;
+
+	for (r = 0; r < n_regs; ++r) {
+		assignment_t       *assignment = &assignments[r];
+		ir_node            *value      = assignment->value;
+		allocation_info_t  *info;
+
+		if (value == NULL)
+			continue;
+
+		info                     = get_allocation_info(value);
+		info->current_assignment = assignment;
+	}
+
 	ir_nodeset_init(&live_nodes);
 
-	(void) data;
+	/* gather regalloc infos of predecessor blocks */
+	n_preds = get_Block_n_cfgpreds(block);
+	pred_block_infos = ALLOCAN(block_info_t*, n_preds);
+	for (i = 0; i < n_preds; ++i) {
+		ir_node *pred = get_Block_cfgpred_block(block, i);
+		pred_block_infos[i] = get_block_info(pred);
+	}
 
 	/* collect live-in nodes and preassigned values */
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
@@ -819,10 +992,13 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		ir_nodeset_insert(&live_nodes, node);
 
 		/* if the node already has a register assigned use it */
-		/* TODO: the value could already be copied away at this point and be in
-		   another register */
 		reg = arch_get_irn_register(node);
 		if (reg != NULL) {
+			/* TODO: consult pred-block infos here. The value could be copied
+			   away in some/all predecessor blocks. We need to construct
+			   phi-nodes in this case.
+			   We even need to construct some Phi_0 like constructs in cases
+			   where the predecessor allocation is not determined yet. */
 			use_reg(node, reg);
 		}
 	}
@@ -842,6 +1018,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		} else {
 			/* TODO: give boni for registers already assigned at the
 			   predecessors */
+			assign_reg(block, node);
 		}
 	}
 	start = node;
@@ -854,6 +1031,14 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			continue;
 
 		assign_reg(block, node);
+	}
+
+	/* permutate values at end of predecessor blocks in case of phi-nodes */
+	if (n_preds > 1) {
+		int p;
+		for (p = 0; p < n_preds; ++p) {
+			add_phi_permutations(block, p);
+		}
 	}
 
 	/* assign instructions in the block */
@@ -895,11 +1080,24 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		}
 	}
 
-	foreach_ir_nodeset(&live_nodes, node, iter) {
-		free_reg_of_value(node);
-	}
-
 	ir_nodeset_destroy(&live_nodes);
+	assignments = NULL;
+
+	block_info->processed = 1;
+
+	/* if we have exactly 1 successor then we might be able to produce phi
+	   copies now */
+	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) == 1) {
+		const ir_edge_t *edge
+			= get_irn_out_edge_first_kind(block, EDGE_KIND_BLOCK);
+		ir_node      *succ      = get_edge_src_irn(edge);
+		int           p         = get_edge_src_pos(edge);
+		block_info_t *succ_info = get_block_info(succ);
+
+		if (succ_info->processed) {
+			add_phi_permutations(succ, p);
+		}
+	}
 }
 
 /**
@@ -912,12 +1110,12 @@ static void be_straight_alloc_cls(void)
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 
-	assignments = obstack_alloc(&obst, n_regs * sizeof(assignments[0]));
+	assignments = NULL;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
-	DB((dbg, LEVEL_2, "=== Registers in %s ===\n", cls->name));
+	DB((dbg, LEVEL_2, "=== Allocating registers of %s ===\n", cls->name));
 
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
 	irg_block_walk_graph(irg, NULL, allocate_coalesce_block, NULL);
@@ -1002,15 +1200,15 @@ static void be_straight_alloc(be_irg_t *new_birg)
 	obstack_free(&obst, NULL);
 }
 
-static be_ra_t be_ra_straight = {
-	be_straight_alloc,
-};
-
 /**
  * Initializes this module.
  */
 void be_init_straight_alloc(void)
 {
+	static be_ra_t be_ra_straight = {
+		be_straight_alloc,
+	};
+
 	FIRM_DBG_REGISTER(dbg, "firm.be.straightalloc");
 
 	be_register_allocator("straight", &be_ra_straight);

@@ -467,12 +467,12 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	BE_TIMER_POP(t_ra_other);
 }
 
-static be_ra_t be_ra_chordal_allocator = {
-	be_ra_chordal_main,
-};
-
 void be_init_chordal_main(void)
 {
+	static be_ra_t be_ra_chordal_allocator = {
+		be_ra_chordal_main,
+	};
+
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
