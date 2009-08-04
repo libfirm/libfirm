@@ -689,14 +689,11 @@ static int                          problem_found;
 static const arch_register_class_t *regclass;
 static ir_node                    **registers;
 
-static void check_register_constraints(ir_node *node)
+static void check_output_constraints(ir_node *node)
 {
-	const arch_register_t *reg;
-	int                   i, arity;
-
 	/* verify output register */
-	if (arch_get_irn_reg_class_out(node) != NULL) {
-		reg = arch_get_irn_register(node);
+	if (arch_get_irn_reg_class_out(node) == regclass) {
+		const arch_register_t *reg = arch_get_irn_register(node);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 					node, get_nodes_block(node), get_irg_dump_name(irg));
@@ -707,6 +704,12 @@ static void check_register_constraints(ir_node *node)
 			problem_found = 1;
 		}
 	}
+}
+
+static void check_input_constraints(ir_node *node)
+{
+	const arch_register_t *reg;
+	int                    i, arity;
 
 	/* verify input register */
 	arity = get_irn_arity(node);
@@ -810,8 +813,8 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 
 	nregclasses = arch_env_get_n_reg_class(arch_env);
 	for (i = 0; i < nregclasses; ++i) {
-		ir_node               *node;
-		int                   idx, i2, n_regs;
+		ir_node *node;
+		int      idx, i2, n_regs;
 
 		regclass = arch_env_get_reg_class(arch_env, i);
 
@@ -833,19 +836,22 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 				foreach_out_edge(node, edge) {
 					ir_node *def = get_edge_src_irn(edge);
 					value_def(def);
+					check_output_constraints(def);
 				}
 			} else {
 				value_def(node);
+				check_output_constraints(node);
 			}
 
-			check_register_constraints(node);
-			if (is_Phi(node))
-				continue;
+			check_input_constraints(node);
 
-			arity = get_irn_arity(node);
-			for (i2 = 0; i2 < arity; ++i2) {
-				ir_node *use = get_irn_n(node, i2);
-				value_used(use);
+			/* process uses. (Phi inputs are no real uses) */
+			if (!is_Phi(node)) {
+				arity = get_irn_arity(node);
+				for (i2 = 0; i2 < arity; ++i2) {
+					ir_node *use = get_irn_n(node, i2);
+					value_used(use);
+				}
 			}
 		}
 
