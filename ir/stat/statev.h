@@ -62,7 +62,7 @@ extern int            stat_ev_timer_sp;
 extern timing_ticks_t stat_ev_timer_elapsed[];
 extern timing_ticks_t stat_ev_timer_start[];
 
-static inline __attribute__((unused)) void stat_ev_tim_push(void) {
+static inline void stat_ev_tim_push(void) {
 	timing_ticks_t temp;
 	int sp = stat_ev_timer_sp++;
 	timing_ticks(temp);
@@ -76,7 +76,7 @@ static inline __attribute__((unused)) void stat_ev_tim_push(void) {
 	timing_ticks(stat_ev_timer_start[sp]);
 }
 
-static inline __attribute__((unused)) void stat_ev_tim_pop(const char *name) {
+static inline void stat_ev_tim_pop(const char *name) {
 	int sp;
 	timing_ticks_t temp;
 	timing_ticks(temp);

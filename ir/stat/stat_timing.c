@@ -79,7 +79,8 @@ void timing_enter_max_prio(void)
 	if (res < 0)
 		return;
 	new_scheduler = SCHED_FIFO;
-	sched_params.sched_priority = sched_get_priority_max(new_scheduler);
+	new_sched_params = sched_params;
+	new_sched_params.sched_priority = sched_get_priority_max(new_scheduler);
 	sched_setscheduler(0, new_scheduler, &new_sched_params);
 	if (res < 0)
 		return;

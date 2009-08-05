@@ -53,7 +53,7 @@ static __inline timing_ticks_t __timing_ticks(void) { __asm { rdtsc } }
 
 typedef struct timeval timing_ticks_t;
 #define timing_ticks(t)              (gettimeofday(&(t), NULL))
-#define timing_ticks_init(t)         ((t).tv_sec = 0, (t).tv_usec = 0)
+#define timing_ticks_init(t)         memset((t), 0, sizeof(t))
 
 /*
  * This shamelessly stolen and modified from glibc's
