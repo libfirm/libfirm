@@ -28,7 +28,7 @@
 #define BEPEEPHOLE_H
 
 #include "beirg.h"
-#include "bearch_t.h"
+#include "bearch.h"
 
 extern ir_node ***register_values;
 

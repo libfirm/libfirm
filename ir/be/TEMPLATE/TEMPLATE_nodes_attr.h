@@ -25,7 +25,7 @@
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_NODES_ATTR_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_NODES_ATTR_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 typedef struct TEMPLATE_attr_t  TEMPLATE_attr_t;
 

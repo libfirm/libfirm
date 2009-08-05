@@ -38,7 +38,7 @@
 
 #include "bera.h"
 #include "beutil.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "belive_t.h"
 #include "bemodule.h"
 

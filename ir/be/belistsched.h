@@ -31,10 +31,9 @@
 #include "irnodeset.h"
 
 #include "be.h"
+#include "be_types.h"
 #include "bearch.h"
 #include "beirg.h"
-
-typedef struct _list_sched_selector_t list_sched_selector_t;
 
 /**
  * A selector interface which is used by the list schedule framework.

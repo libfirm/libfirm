@@ -26,11 +26,8 @@
 #ifndef FIRM_BE_BEINFO_H
 #define FIRM_BE_BEINFO_H
 
-#include "bearch.h"
-#include "irphase_t.h"
-#include "irphases_t.h"
-
-typedef unsigned int sched_timestep_t;
+#include "be_types.h"
+#include "irnode_t.h"
 
 /**
  * The schedule structure which is present at each ir node.
@@ -38,23 +35,23 @@ typedef unsigned int sched_timestep_t;
  * Currently, only basic blocks are scheduled. The list head of
  * every block schedule list is the Block list.
  */
-typedef struct sched_info_t {
+struct sched_info_t {
 	ir_node          *next;
 	ir_node          *prev;
 	sched_timestep_t  time_step;    /**< If a is after b in a schedule, its time step is larger than b's. */
-} sched_info_t;
+};
 
-typedef struct reg_out_info_t {
+struct reg_out_info_t {
 	const arch_register_t     *reg;
 	const arch_register_req_t *req;
-} reg_out_info_t;
+};
 
-typedef struct backend_info_t {
+struct backend_info_t {
 	sched_info_t                sched_info;
 	const arch_register_req_t **in_reqs;
 	reg_out_info_t             *out_infos;
 	arch_irn_flags_t            flags;
-} backend_info_t;
+};
 
 static inline backend_info_t *be_get_info(const ir_node *node)
 {

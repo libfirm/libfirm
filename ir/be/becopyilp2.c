@@ -56,7 +56,7 @@
 #include "irgwalk.h"
 #include "becopyilp_t.h"
 #include "beifg_t.h"
-#include "besched_t.h"
+#include "besched.h"
 
 #define DEBUG_LVL 1
 

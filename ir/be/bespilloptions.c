@@ -37,10 +37,10 @@
 #include "bemodule.h"
 #include "be.h"
 #include "belive_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "bearch.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "bera.h"
 #include "beintlive_t.h"
 

@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_MIPS_MIPS_NODES_ATTR_H
 #define FIRM_BE_MIPS_MIPS_NODES_ATTR_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "irmode_t.h"
 #include "irnode_t.h"
 

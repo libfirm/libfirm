@@ -51,13 +51,13 @@
 #include "execfreq.h"
 #include "irprofile.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "be_t.h"
 #include "bemodule.h"
 #include "beutil.h"
 #include "benode_t.h"
 #include "beirgmod.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "belistsched.h"
 #include "belive_t.h"
 #include "bera.h"
@@ -73,7 +73,7 @@
 #include "bestat.h"
 #include "beverify.h"
 #include "be_dbgout.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 #define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 

@@ -52,7 +52,7 @@
 #include "becopyopt.h"
 #include "becopyopt_t.h"
 #include "bechordal_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 #define DUMP_BEFORE 1
 #define DUMP_AFTER  2

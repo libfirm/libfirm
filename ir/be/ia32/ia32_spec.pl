@@ -2632,7 +2632,7 @@ fistp => {
 	latency   => 2,
 },
 
-# SSE3 firsttp instruction
+# SSE3 fisttp instruction
 fisttp => {
 	state     => "exc_pinned",
 	rd_constructor => "NONE",

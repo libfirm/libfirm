@@ -39,7 +39,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"

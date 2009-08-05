@@ -31,7 +31,7 @@
 #include "firm_types.h"
 #include "pset.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 
 #ifdef _MSC_VER
 typedef          __int64 long64;

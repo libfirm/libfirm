@@ -31,7 +31,7 @@
 #include "irargs_t.h"
 #include "debug.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 #include "bearch_arm_t.h"
 

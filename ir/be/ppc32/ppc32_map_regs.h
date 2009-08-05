@@ -29,7 +29,7 @@
 #include "irnode.h"
 #include "set.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "ppc32_nodes_attr.h"
 
 int  ppc32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len);

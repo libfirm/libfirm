@@ -27,9 +27,10 @@
 
 #include "mips_scheduler.h"
 
-#include "../besched_t.h"
+#include "../besched.h"
 #include "be.h"
 #include "../beabi.h"
+#include "../belistsched.h"
 #include "iredges.h"
 #include "ircons.h"
 #include "gen_mips_regalloc_if.h"

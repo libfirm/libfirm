@@ -40,12 +40,12 @@
 #include "be_t.h"
 #include "beutil.h"
 #include "bechordal_t.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "belive_t.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "bestatevent.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "beintlive_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

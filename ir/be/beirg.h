@@ -27,28 +27,58 @@
 #ifndef FIRM_BE_BEIRG_H
 #define FIRM_BE_BEIRG_H
 
-#include "belive.h"
-#include "bedomfront.h"
-
-typedef struct be_irg_t be_irg_t;
-
-ir_graph *be_get_birg_irg(const be_irg_t *birg);
+#include "be.h"
+#include "be_types.h"
+#include "be_t.h"
 
 be_lv_t *be_assure_liveness(be_irg_t *birg);
-be_lv_t *be_get_birg_liveness(const be_irg_t *birg);
 
 void be_assure_dom_front(be_irg_t *birg);
 void be_invalidate_dom_front(be_irg_t *birg);
-be_dom_front_info_t *be_get_birg_dom_front(const be_irg_t *birg);
-
-const arch_env_t *be_get_birg_arch_env(const be_irg_t *birg);
-
-ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg);
 
 /**
  * frees all memory allocated by birg structures (liveness, dom_front, ...).
  * The memory of the birg structure itself is not freed.
  */
 void be_free_birg(be_irg_t *birg);
+
+/**
+ * An ir_graph with additional analysis data about this irg. Also includes some
+ * backend structures
+ */
+struct be_irg_t {
+	ir_graph               *irg;
+	be_main_env_t          *main_env;
+	be_abi_irg_t           *abi;
+	arch_code_generator_t  *cg;
+	ir_exec_freq           *exec_freq;
+	be_dom_front_info_t    *dom_front;
+	be_lv_t                *lv;
+};
+
+static inline be_lv_t *
+be_get_birg_liveness(const be_irg_t *birg) {
+	return birg->lv;
+}
+
+static inline ir_exec_freq *
+be_get_birg_exec_freq(const be_irg_t *birg) {
+	return birg->exec_freq;
+}
+
+static inline be_dom_front_info_t *
+be_get_birg_dom_front(const be_irg_t *birg) {
+	return birg->dom_front;
+}
+
+static inline ir_graph *
+be_get_birg_irg(const be_irg_t *birg) {
+	return birg->irg;
+}
+
+static inline const arch_env_t *
+be_get_birg_arch_env(const be_irg_t *birg) {
+	return birg->main_env->arch_env;
+}
 
 #endif /* FIRM_BE_BEIRG_H */

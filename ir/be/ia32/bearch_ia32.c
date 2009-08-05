@@ -52,10 +52,10 @@
 #include "instrument.h"
 
 #include "../beabi.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../benode_t.h"
 #include "../belower.h"
-#include "../besched_t.h"
+#include "../besched.h"
 #include "be.h"
 #include "../be_t.h"
 #include "../beirgmod.h"
@@ -69,6 +69,7 @@
 #include "../bestate.h"
 #include "../beflags.h"
 #include "../betranshlp.h"
+#include "../belistsched.h"
 
 #include "bearch_ia32_t.h"
 

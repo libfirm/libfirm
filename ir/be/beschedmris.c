@@ -45,10 +45,11 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "irbitset.h"
+#include "irnodeset.h"
 #include "height.h"
 
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beschedmris.h"
 #include "beirg.h"
 
@@ -84,54 +85,6 @@ static void *mris_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 	INIT_LIST_HEAD(&mi->lineage_list);
 	return mi;
 }
-
-#if 0
-static int compute_height(mris_env_t *env, ir_node *irn, ir_visited_t visited)
-{
-	mris_irn_t *mi = get_mris_irn(env, irn);
-
-	if(get_irn_visited(irn) >= visited) {
-		DBG((env->dbg, LEVEL_3, "\theight of %+F = %d\n", irn, mi->height));
-		return mi->height;
-	}
-
-	else {
-		const ir_edge_t *edge;
-
-		set_irn_visited(irn, visited);
-		mi->height  = 0;
-
-		foreach_out_edge(irn, edge) {
-			ir_node *dep = get_edge_src_irn(edge);
-
-			if(!is_Block(dep) && get_nodes_block(dep) == env->bl) {
-				int dep_height = compute_height(env, dep, visited);
-				mi->height     = MAX(mi->height, dep_height);
-			}
-		}
-
-		mi->height++;
-		DBG((env->dbg, LEVEL_3, "\tsetting height of %+F = %d\n", irn, mi->height));
-	}
-
-	return mi->height;
-}
-
-static void compute_heights(mris_env_t *env)
-{
-	const ir_edge_t *edge;
-	ir_visited_t visited;
-
-	visited = get_irg_visited(env->irg) + 1;
-	set_irg_visited(env->irg, visited);
-
-	foreach_out_edge(env->bl, edge) {
-		ir_node *dep = get_edge_src_irn(edge);
-		if(to_appear(env, dep))
-			compute_height(env, dep, visited);
-	}
-}
-#endif
 
 #define valid_node(env, dep) (to_appear(env, dep) && !be_is_Keep(dep))
 
@@ -205,71 +158,10 @@ static ir_node *put_lowest_in_front(mris_env_t *env, ir_node **in)
 	return in[0];
 }
 
-#if 0
-static void reaches_walker(mris_env_t *env, ir_node *irn, ir_node *tgt, int *found, ir_visited_t visited)
-{
-	if(get_irn_visited(irn) < visited && get_nodes_block(irn) == env->bl) {
-
-		set_irn_visited(irn, visited);
-
-		if(irn == tgt)
-			*found = 1;
-		else {
-			int i, n;
-
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				ir_node *op = get_irn_n(irn, i);
-				if(!*found)
-					reaches_walker(env, op, tgt, found, visited);
-			}
-		}
-	}
-}
-
-static int reaches(mris_env_t *env, ir_node *src, ir_node *tgt)
-{
-	int found = 0;
-	ir_visited_t visited = get_irg_visited(env->irg) + 1;
-
-	set_irg_visited(env->irg, visited);
-	reaches_walker(env, src, tgt, &found, visited);
-	return found;
-}
-#endif
-
 static inline ir_node *skip_Projs(ir_node *irn)
 {
 	return is_Proj(irn) ? skip_Projs(get_Proj_pred(irn)) : irn;
 }
-
-#if 0
-static void replace_tuple_by_repr_proj(mris_env_t *env, ir_node **in)
-{
-	int i;
-
-	for(i = 0; in[i]; ++i) {
-		if(get_irn_mode(in[i]) == mode_T) {
-			const ir_edge_t *edge;
-			ir_node *proj  = NULL;
-			ir_node *first = NULL;
-
-			foreach_out_edge(in[i], edge) {
-				ir_node *desc = get_edge_src_irn(edge);
-
-				first = first ? first : desc;
-				if(get_irn_mode(desc) == mode_M) {
-					proj = desc;
-					break;
-				}
-			}
-
-			proj = proj ? proj : first;
-			assert(proj);
-			in[i] = proj;
-		}
-	}
-}
-#endif
 
 static void lineage_formation(mris_env_t *env)
 {

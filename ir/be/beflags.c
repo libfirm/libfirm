@@ -46,10 +46,11 @@
 #include "error.h"
 
 #include "beflags.h"
-#include "bearch_t.h"
-#include "beirg_t.h"
-#include "besched_t.h"
+#include "bearch.h"
+#include "beirg.h"
+#include "besched.h"
 #include "benode_t.h"
+#include "belive.h"
 
 static const arch_register_class_t *flag_class = NULL;
 static const arch_register_t       *flags_reg  = NULL;

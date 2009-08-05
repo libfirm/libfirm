@@ -29,7 +29,7 @@
 #include "irnode.h"
 #include "debug.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "../beemitter.h"
 
 #include "bearch_TEMPLATE_t.h"

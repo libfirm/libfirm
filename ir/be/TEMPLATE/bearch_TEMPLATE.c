@@ -34,14 +34,15 @@
 #include "bitset.h"
 #include "debug.h"
 
-#include "../bearch_t.h"
+#include "be.h"
+#include "../bearch.h"
 #include "../benode_t.h"
 #include "../belower.h"
-#include "../besched_t.h"
-#include "be.h"
+#include "../besched.h"
 #include "../beabi.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
+#include "../belistsched.h"
 
 #include "bearch_TEMPLATE_t.h"
 

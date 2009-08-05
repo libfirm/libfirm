@@ -38,9 +38,9 @@
 
 #include "belive_t.h"
 #include "bechordal_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "bechordal_draw.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 typedef struct {
 	be_chordal_env_t *env;

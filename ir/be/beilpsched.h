@@ -34,9 +34,7 @@
 
 #include "irgraph.h"
 #include "irnode.h"
-
-typedef struct _ilp_sched_selector_t    ilp_sched_selector_t;
-typedef struct _ilp_sched_selector_if_t ilp_sched_selector_if_t;
+#include "be_types.h"
 
 /**
  * A selector interface which is used by the ILP schedule framework.

@@ -41,14 +41,14 @@
 #include "array.h"
 
 #include "../beirgmod.h"
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "../besched.h"
 #include "../beabi.h"
 #include "../benode_t.h"
 #include "../bestate.h"
 #include "../beutil.h"
 #include "../bessaconstr.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 
 static ir_entity *fpcw_round    = NULL;
 static ir_entity *fpcw_truncate = NULL;

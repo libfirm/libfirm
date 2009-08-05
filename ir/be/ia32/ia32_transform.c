@@ -52,7 +52,7 @@
 #include "../besched.h"
 #include "../beabi.h"
 #include "../beutil.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../betranshlp.h"
 #include "../be_t.h"
 

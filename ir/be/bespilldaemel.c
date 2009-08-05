@@ -48,10 +48,11 @@
 #include "bespill.h"
 #include "bemodule.h"
 #include "besched.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "be_t.h"
 #include "benode_t.h"
 #include "beirg.h"
+#include "belive.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

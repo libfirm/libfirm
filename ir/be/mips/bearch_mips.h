@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_MIPS_BEARCH_MIPS_H
 #define FIRM_BE_MIPS_BEARCH_MIPS_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 typedef struct mips_code_gen_t  mips_code_gen_t;
 

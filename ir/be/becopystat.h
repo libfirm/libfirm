@@ -28,7 +28,7 @@
 #define FIRM_BE_BECOPYSTAT_H
 
 #include "firm_types.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "bechordal_t.h"
 
 void copystat_add_max_costs(int costs);

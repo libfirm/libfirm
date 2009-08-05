@@ -34,11 +34,11 @@
 #include "irgmod.h"
 #include "error.h"
 
-#include "beirg_t.h"
+#include "beirg.h"
 #include "belive_t.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "bemodule.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

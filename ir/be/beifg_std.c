@@ -36,13 +36,13 @@
 #include "irgwalk.h"
 #include "irtools.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "be_t.h"
 #include "belive_t.h"
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "beintlive_t.h"
 
 typedef struct _ifg_std_t ifg_std_t;

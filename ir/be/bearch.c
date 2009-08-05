@@ -27,7 +27,7 @@
 
 #include <string.h>
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "benode_t.h"
 #include "beinfo.h"
 #include "ircons_t.h"

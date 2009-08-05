@@ -18,8 +18,8 @@
 
 #include "statev.h"
 
-#include "beirg_t.h"
-#include "besched_t.h"
+#include "beirg.h"
+#include "besched.h"
 #include "belive_t.h"
 
 /**

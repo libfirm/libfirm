@@ -30,7 +30,7 @@
 
 #include "firm_types.h"
 #include "beirg.h"
-#include "bearch_t.h"
+#include "bearch.h"
 
 /**
  * Callback that should create a spill for a certain value. Can return NULL

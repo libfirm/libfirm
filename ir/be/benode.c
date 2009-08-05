@@ -53,9 +53,9 @@
 
 #include "be_t.h"
 #include "belive_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "benode_t.h"
-#include "bearch_t.h"
+#include "bearch.h"
 
 #include "beirgmod.h"
 

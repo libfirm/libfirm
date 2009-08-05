@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_MIPS_MIPS_SCHEDULER_H
 #define FIRM_BE_MIPS_MIPS_SCHEDULER_H
 
-#include "../besched_t.h"
+#include "../besched.h"
 
 const list_sched_selector_t *mips_get_list_sched_selector(const void *self, list_sched_selector_t *selector);
 const ilp_sched_selector_t *mips_get_ilp_sched_selector(const void *self);

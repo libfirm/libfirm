@@ -45,7 +45,7 @@
 
 #include "../besched.h"
 #include "../beblocksched.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../begnuas.h"
 #include "../be_dbgout.h"
 

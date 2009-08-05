@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_PPC32_BEARCH_PPC32_H
 #define FIRM_BE_PPC32_BEARCH_PPC32_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 extern const arch_isa_if_t ppc32_isa_if;
 

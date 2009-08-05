@@ -46,7 +46,7 @@
 
 #include "becopystat.h"
 #include "becopyopt.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "bemodule.h"
 
 /** Defines values for the ifg performance test */

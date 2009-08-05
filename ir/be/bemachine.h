@@ -27,9 +27,7 @@
 #ifndef FIRM_BE_BEMACHINE_H
 #define FIRM_BE_BEMACHINE_H
 
-typedef struct _be_execution_unit_type_t be_execution_unit_type_t;
-typedef struct _be_execution_unit_t      be_execution_unit_t;
-typedef struct _be_machine_t             be_machine_t;
+#include "be_types.h"
 
 struct _be_execution_unit_t {
 	be_execution_unit_type_t *tp;

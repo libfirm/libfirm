@@ -53,9 +53,9 @@
 
 #include "bessaconstr.h"
 #include "bemodule.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beintlive_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "be_t.h"
 
 #include "debug.h"

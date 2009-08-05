@@ -43,8 +43,8 @@
 
 #include "beutil.h"
 #include "belive_t.h"
-#include "beirg_t.h"
-#include "besched_t.h"
+#include "beirg.h"
+#include "besched.h"
 #include "bemodule.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

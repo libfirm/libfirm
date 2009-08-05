@@ -27,8 +27,10 @@
 #include "config.h"
 
 #include "execfreq.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "absgraph.h"
+#include "belive.h"
+#include "bedomfront.h"
 
 be_lv_t *be_assure_liveness(be_irg_t *birg)
 {
@@ -68,29 +70,4 @@ void be_free_birg(be_irg_t *birg)
 		be_liveness_free(birg->lv);
 		birg->lv = NULL;
 	}
-}
-
-ir_graph *(be_get_birg_irg)(const be_irg_t *birg)
-{
-	return _be_get_birg_irg(birg);
-}
-
-ir_exec_freq *(be_get_birg_exec_freq)(const be_irg_t *birg)
-{
-	return _be_get_birg_exec_freq(birg);
-}
-
-be_lv_t *(be_get_birg_liveness)(const be_irg_t *birg)
-{
-	return _be_get_birg_liveness(birg);
-}
-
-be_dom_front_info_t *(be_get_birg_dom_front)(const be_irg_t *birg)
-{
-	return _be_get_birg_dom_front(birg);
-}
-
-const arch_env_t *(be_get_birg_arch_env)(const be_irg_t *birg)
-{
-	return _be_get_birg_arch_env(birg);
 }

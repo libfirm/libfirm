@@ -28,11 +28,7 @@
 #define FIRM_BE_BEDOMFRONT_H
 
 #include "firm_types.h"
-
-/*
- * Forward type declaration.
- */
-typedef struct _be_dom_front_info_t be_dom_front_info_t;
+#include "be_types.h"
 
 /**
  * Compute the dominance frontiers for a given graph.

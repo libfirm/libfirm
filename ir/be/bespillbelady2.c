@@ -54,15 +54,15 @@
 #include "dfs_t.h"
 
 #include "beutil.h"
-#include "bearch_t.h"
-#include "besched_t.h"
+#include "bearch.h"
+#include "besched.h"
 #include "beirgmod.h"
 #include "belive_t.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
 #include "bespilloptions.h"
 #include "beloopana.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "bespill.h"
 

@@ -41,9 +41,9 @@
 
 #include "beverify.h"
 #include "belive.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "benode_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "beintlive_t.h"
 
 static int my_values_interfere(const ir_node *a, const ir_node *b);

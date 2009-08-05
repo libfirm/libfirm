@@ -37,8 +37,8 @@
 #include "statev.h"
 #include "error.h"
 
-#include "bearch_t.h"
-#include "beirg_t.h"
+#include "bearch.h"
+#include "beirg.h"
 #include "bestat.h"
 #include "belive_t.h"
 #include "besched.h"

@@ -27,7 +27,7 @@
 #define FIRM_BE_PPC32_PPC32_NODES_ATTR_H
 
 #include "irnode_t.h"
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 typedef struct
 {

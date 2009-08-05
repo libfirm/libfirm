@@ -42,7 +42,7 @@
 #include "../be_t.h"
 #include "../beabi.h"
 #include "../benode_t.h"
-#include "../besched_t.h"
+#include "../besched.h"
 #include "../bepeephole.h"
 
 #include "ia32_new_nodes.h"

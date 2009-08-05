@@ -41,9 +41,9 @@
 #include "irnodemap.h"
 #include "adt/cpset.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "beuses.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "belive_t.h"
 #include "bemodule.h"
 #include "benode_t.h"

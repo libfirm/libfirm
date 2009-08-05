@@ -28,7 +28,7 @@
 
 #include "firm_types.h"
 #include "irnode_t.h"
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 /**
  * Possible ARM register shift types.

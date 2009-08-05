@@ -48,7 +48,7 @@
 #include "bespill.h"
 #include "beutil.h"
 #include "bespilloptions.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "be_t.h"
 
 #ifndef NDEBUG

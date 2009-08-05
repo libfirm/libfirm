@@ -39,11 +39,12 @@
  *    add copies and split live-ranges.
  *
  * TODO:
+ *  - make use of free registers in the permutate_values code
  *  - output constraints are not ensured. The algorithm fails to copy values
  *    away, so the registers for constrained outputs are free.
  *  - must_be_different constraint is not respected
- *  - No parallel copies at basic block borders are created, no additional phis
- *    created after copies have been inserted.
+ *  - We have to pessimistically construct Phi_0s when not all predecessors
+ *    of a block are known.
  *  - Phi color assignment should give bonus points towards registers already
  *    assigned at predecessors.
  *  - think about a smarter sequence of visiting the blocks. Sorted by
@@ -67,8 +68,8 @@
 #include "belive_t.h"
 #include "bemodule.h"
 #include "bechordal_t.h"
-#include "besched_t.h"
-#include "beirg_t.h"
+#include "besched.h"
+#include "beirg.h"
 #include "benode_t.h"
 #include "bespill.h"
 #include "bespilloptions.h"
@@ -481,7 +482,8 @@ static void assign_reg(const ir_node *block, ir_node *node)
 		unsigned r = reg_prefs[i].num;
 		/* ignores should be last and we should have a non-ignore left */
 		assert(!bitset_is_set(ignore_regs, r));
-		/* already used? TODO: It might be better to copy the value occupying the register around here, find out when... */
+		/* already used?
+           TODO: It might be better to copy the value occupying the register around here, find out when... */
 		if (assignments[r].value != NULL)
 			continue;
 		reg = arch_register_for_index(cls, r);
@@ -1025,8 +1027,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* assign regs for live-in values */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
-		const arch_register_t *reg;
-		reg = arch_get_irn_register(node);
+		const arch_register_t *reg = arch_get_irn_register(node);
 		if (reg != NULL)
 			continue;
 
@@ -1063,6 +1064,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			}
 		}
 
+		/* free registers of values last used at this instruction */
 		free_last_uses(&live_nodes, node);
 
 		/* assign output registers */
@@ -1192,10 +1194,17 @@ static void be_straight_alloc(be_irg_t *new_birg)
 
 		bitset_free(ignore_regs);
 
-		/* TODO: dump intermediate results */
-
 		stat_ev_ctx_pop("bestraight_cls");
 	}
+
+	BE_TIMER_PUSH(t_verify);
+	if (birg->main_env->options->vrfy_option == BE_CH_VRFY_WARN) {
+		be_verify_register_allocation(birg);
+	} else if(birg->main_env->options->vrfy_option == BE_CH_VRFY_ASSERT) {
+		assert(be_verify_register_allocation(birg)
+				&& "Register allocation invalid");
+	}
+	BE_TIMER_POP(t_verify);
 
 	obstack_free(&obst, NULL);
 }

@@ -38,10 +38,10 @@
 #include "irgwalk.h"
 #include "array_t.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "belower.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "bestat.h"
 #include "bessaconstr.h"
 #include "beintlive_t.h"

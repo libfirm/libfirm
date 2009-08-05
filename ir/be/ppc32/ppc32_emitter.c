@@ -38,7 +38,7 @@
 #include "irargs_t.h"
 #include "error.h"
 
-#include "../besched_t.h"
+#include "../besched.h"
 #include "../benode_t.h"
 
 #include "ppc32_emitter.h"

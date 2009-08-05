@@ -44,7 +44,7 @@
 #include "error.h"
 
 #include "../belive_t.h"
-#include "../besched_t.h"
+#include "../besched.h"
 #include "../benode_t.h"
 #include "bearch_ia32_t.h"
 #include "ia32_new_nodes.h"

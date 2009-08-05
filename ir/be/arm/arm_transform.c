@@ -39,7 +39,7 @@
 #include "error.h"
 
 #include "../benode_t.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../beutil.h"
 #include "../betranshlp.h"
 #include "bearch_arm_t.h"

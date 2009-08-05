@@ -45,9 +45,9 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beirgmod.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "beuses.h"
 
 #define SCAN_INTERBLOCK_USES

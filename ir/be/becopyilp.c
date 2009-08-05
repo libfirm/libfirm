@@ -30,7 +30,7 @@
 #include "irprintf.h"
 
 #include "bestatevent.h"
-#include "beirg_t.h"
+#include "beirg.h"
 #include "bemodule.h"
 #include "error.h"
 

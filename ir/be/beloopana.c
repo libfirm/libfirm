@@ -34,7 +34,7 @@
 #include "error.h"
 #include "debug.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "belive.h"
 #include "besched.h"
 #include "beloopana.h"

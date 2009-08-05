@@ -28,7 +28,7 @@
 
 #include <stdlib.h>
 
-#include "besched_t.h"
+#include "besched.h"
 #include "belistsched.h"
 
 /**

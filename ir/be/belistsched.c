@@ -49,15 +49,15 @@
 #include "irtools.h"
 
 #include "bemodule.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beutil.h"
 #include "belive_t.h"
 #include "belistsched.h"
 #include "beschedmris.h"
 #include "beschedrss.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "bestat.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"

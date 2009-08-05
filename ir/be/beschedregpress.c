@@ -32,7 +32,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 
-#include "besched_t.h"
+#include "besched.h"
 #include "belistsched.h"
 #include "benode_t.h"
 

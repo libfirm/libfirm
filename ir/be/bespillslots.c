@@ -45,8 +45,8 @@
 #include "bespilloptions.h"
 #include "bemodule.h"
 #include "beintlive_t.h"
-#include "beirg_t.h"
-#include "bearch_t.h"
+#include "beirg.h"
+#include "bearch.h"
 
 #define DBG_COALESCING		1
 #define DBG_INTERFERENCES	2

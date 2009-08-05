@@ -30,9 +30,10 @@
 
 #include "iredges_t.h"
 
-#include "besched_t.h"
+#include "besched.h"
 #include "belistsched.h"
 #include "benode_t.h"
+#include "belive.h"
 
 /* we need a special mark */
 static char _mark;

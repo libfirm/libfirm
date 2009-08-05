@@ -40,7 +40,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 #include "ppc32_nodes_attr.h"
 #include "ppc32_new_nodes.h"

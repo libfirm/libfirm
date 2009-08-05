@@ -34,7 +34,7 @@
 #include "irgraph_t.h"
 #include "irgwalk.h"
 
-#include "bearch_t.h"
+#include "bearch.h"
 #include "be_t.h"
 #include "bera.h"
 #include "beifg_t.h"

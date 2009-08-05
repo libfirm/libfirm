@@ -34,8 +34,7 @@
 #include "pmap.h"
 
 #include "be.h"
-#include "bearch_t.h"
-#include "beirg.h"
+#include "be_types.h"
 
 #define DUMP_NONE       0
 #define DUMP_INITIAL    (1 << 0)

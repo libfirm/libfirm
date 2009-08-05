@@ -37,18 +37,19 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../bearch_t.h"                /* the general register allocator interface */
+#include "../bearch.h"                /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
-#include "../besched_t.h"
+#include "../besched.h"
 #include "be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../bemodule.h"
 #include "../bespillslots.h"
 #include "../beblocksched.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../begnuas.h"
+#include "../belistsched.h"
 
 #include "pset.h"
 

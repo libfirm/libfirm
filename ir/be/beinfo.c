@@ -25,7 +25,7 @@
 #include "config.h"
 
 #include "beinfo.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "error.h"

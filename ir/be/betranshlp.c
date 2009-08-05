@@ -39,8 +39,9 @@
 #include "cgana.h"
 #include "debug.h"
 
-#include "beirg_t.h"
+#include "beirg.h"
 #include "betranshlp.h"
+#include "belive.h"
 
 typedef struct be_transform_env_t {
 	ir_graph *irg;         /**< The irg, the node should be created in */

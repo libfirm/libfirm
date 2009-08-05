@@ -40,7 +40,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 #include "mips_nodes_attr.h"
 #include "mips_new_nodes.h"

@@ -48,13 +48,13 @@
 
 #include "be_t.h"
 #include "belive_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beirgmod.h"
-#include "bearch_t.h"
+#include "bearch.h"
 #include "benode_t.h"
 #include "beutil.h"
 #include "bespill.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 #define MAXPRESSURE 128
 

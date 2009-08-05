@@ -28,8 +28,8 @@
 #define FIRM_BE_BE_DBGOUT_T_H
 
 #include "obst.h"
-#include "beabi_t.h"
 #include "firm_types.h"
+#include "be_types.h"
 
 typedef struct dbg_handle dbg_handle;
 

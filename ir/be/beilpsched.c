@@ -62,11 +62,13 @@
 
 #include "be.h"
 #include "benode_t.h"
-#include "besched_t.h"
+#include "besched.h"
 #include "beilpsched.h"
 #include "beutil.h"
 #include "bestat.h"
-#include "beirg_t.h"
+#include "beirg.h"
+#include "bemachine.h"
+#include "belistsched.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;

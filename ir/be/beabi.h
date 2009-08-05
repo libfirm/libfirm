@@ -35,7 +35,7 @@
 #include "be.h"
 #include "beirg.h"
 #include "bearch.h"
-#include "beabi_t.h"
+#include "beabi.h"
 
 struct _be_abi_call_flags_bits_t {
 	unsigned left_to_right          : 1;  /**< Arguments are from left to right. */

@@ -34,8 +34,8 @@
 #include "pdeq.h"
 #include "error.h"
 
-#include "../bearch_t.h"
-#include "../besched_t.h"
+#include "../bearch.h"
+#include "../besched.h"
 #include "../benode_t.h"
 
 #include "bearch_ia32_t.h"

@@ -43,8 +43,8 @@
 #include "../benode_t.h"
 #include "../beabi.h"
 #include "../besched.h"
-#include "../besched_t.h"
-#include "../beirg_t.h"
+#include "../besched.h"
+#include "../beirg.h"
 #include "../betranshlp.h"
 #include "bearch_mips_t.h"
 

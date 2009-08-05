@@ -37,6 +37,7 @@
 #include "irgwalk.h"
 
 #include "../benode_t.h"
+#include "../belive.h"
 
 #define AGGRESSIVE_AM
 

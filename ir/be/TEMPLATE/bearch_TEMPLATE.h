@@ -25,7 +25,7 @@
 #ifndef FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
 #define FIRM_BE_TEMPLATE_BEARCH_TEMPLATE_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 extern const arch_isa_if_t TEMPLATE_isa_if;
 

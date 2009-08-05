@@ -33,7 +33,8 @@
 #include "bitset.h"
 
 #include "../betranshlp.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
+#include "../beabi.h"
 
 #include "ia32_architecture.h"
 #include "ia32_common_transform.h"

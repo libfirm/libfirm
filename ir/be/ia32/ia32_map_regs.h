@@ -30,7 +30,7 @@
 #include "irmode.h"
 #include "set.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "bearch_ia32_t.h"
 #include "gen_ia32_regalloc_if.h"
 

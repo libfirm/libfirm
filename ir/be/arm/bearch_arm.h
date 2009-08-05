@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_ARM_BEARCH_ARM_H
 #define FIRM_BE_ARM_BEARCH_ARM_H
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 
 extern const arch_isa_if_t arm_isa_if;
 

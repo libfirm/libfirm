@@ -29,6 +29,8 @@
 
 #include <stdio.h>
 
+#include "be_types.h"
+
 #include "firm_types.h"
 #include "pset.h"
 
@@ -43,10 +45,6 @@ typedef enum {
 	be_lv_state_end = 2,
 	be_lv_state_out = 4,
 } be_lv_state_t;
-
-typedef struct _be_lv_t be_lv_t;
-
-typedef struct _be_lv_info_t be_lv_info_t;
 
 /**
  * Compute the inter block liveness for a graph.

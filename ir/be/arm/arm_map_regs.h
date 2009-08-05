@@ -29,7 +29,7 @@
 #include "irnode.h"
 #include "set.h"
 
-#include "../bearch_t.h"
+#include "../bearch.h"
 #include "arm_nodes_attr.h"
 
 const arch_register_t *arm_get_RegParam_reg(int n);

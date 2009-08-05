@@ -42,7 +42,7 @@
 #include "becopyopt_t.h"
 #include "becopystat.h"
 #include "beintlive_t.h"
-#include "beirg_t.h"
+#include "beirg.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

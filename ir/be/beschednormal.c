@@ -26,7 +26,7 @@
 
 #include <stdlib.h>
 
-#include "besched_t.h"
+#include "besched.h"
 #include "belistsched.h"
 #include "belive_t.h"
 #include "beutil.h"

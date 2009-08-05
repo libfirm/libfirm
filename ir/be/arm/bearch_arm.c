@@ -44,18 +44,19 @@
 #include "array_t.h"
 #include "irtools.h"
 
-#include "../bearch_t.h"                /* the general register allocator interface */
+#include "../bearch.h"                /* the general register allocator interface */
 #include "../benode_t.h"
 #include "../belower.h"
-#include "../besched_t.h"
+#include "../besched.h"
 #include "be.h"
 #include "../beabi.h"
 #include "../bemachine.h"
 #include "../beilpsched.h"
 #include "../bemodule.h"
-#include "../beirg_t.h"
+#include "../beirg.h"
 #include "../bespillslots.h"
 #include "../begnuas.h"
+#include "../belistsched.h"
 
 #include "bearch_arm_t.h"
 
