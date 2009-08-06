@@ -82,64 +82,9 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-/**
- * Return register requirements for a mips node.
- * If the node returns a tuple (mode_T) then the proj's
- * will be asked for this information.
- */
-static const
-arch_register_req_t *mips_get_irn_reg_req(const ir_node *node, int pos)
-{
-	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(node);
-
-	if (is_Block(node) || mode == mode_X || mode == mode_M) {
-		return arch_no_register_req;
-	}
-
-	if (mode == mode_T && pos < 0) {
-		return arch_no_register_req;
-	}
-
-	if (is_Proj(node)) {
-		/* in case of a proj, we need to get the correct OUT slot */
-		/* of the node corresponding to the proj number */
-		if (pos == -1) {
-			node_pos = mips_translate_proj_pos(node);
-		}
-		else {
-			node_pos = pos;
-		}
-
-		node = skip_Proj_const(node);
-	}
-
-	/* get requirements for our own nodes */
-	if (is_mips_irn(node)) {
-		const arch_register_req_t *req;
-		if (pos >= 0) {
-			req = get_mips_in_req(node, pos);
-		} else {
-			req = get_mips_out_req(node, node_pos);
-		}
-
-		return req;
-	}
-
-	/* unknown should be translated by now */
-	assert(!is_Unknown(node));
-
-	return arch_no_register_req;
-}
-
 static arch_irn_class_t mips_classify(const ir_node *irn)
 {
-	irn = skip_Proj_const(irn);
-
-	if (is_cfop(irn)) {
-		return arch_irn_class_branch;
-	}
-
+	(void) irn;
 	return 0;
 }
 
@@ -214,7 +159,8 @@ static int mips_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t mips_irn_ops = {
-	mips_get_irn_reg_req,
+	get_mips_in_req,
+	get_mips_out_req,
 	mips_classify,
 	mips_get_frame_entity,
 	mips_set_frame_entity,

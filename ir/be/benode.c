@@ -301,33 +301,6 @@ static void add_register_req(ir_node *node)
 	ARR_APP1(reg_out_info_t, info->out_infos, out_info);
 }
 
-/**
- * Skip Proj nodes and return their Proj numbers.
- *
- * If *node is a Proj or Proj(Proj) node, skip it.
- *
- * @param node  points to the node to be skipped
- *
- * @return 0 if *node was no Proj node, its Proj number else.
- */
-static int redir_proj(const ir_node **node)
-{
-	const ir_node *n = *node;
-
-	if(is_Proj(n)) {
-		ir_node *irn;
-
-		*node = irn = get_Proj_pred(n);
-		if(is_Proj(irn)) {
-			assert(get_irn_mode(irn) == mode_T);
-			*node = get_Proj_pred(irn);
-		}
-		return get_Proj_proj(n);
-	}
-
-	return 0;
-}
-
 ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
 	ir_node *bl, ir_node *frame, ir_node *to_spill)
 {
@@ -345,6 +318,15 @@ ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_clas
 
 	be_node_set_reg_class_in(res, be_pos_Spill_frame, cls_frame);
 	be_node_set_reg_class_in(res, be_pos_Spill_val, cls);
+
+	/*
+	 * For spills and reloads, we return "none" as requirement for frame
+	 * pointer, so every input is ok. Some backends need this (e.g. STA).
+	 * Matze: we should investigate if this is really needed, this solution
+	 *        looks very hacky to me
+	 */
+	be_node_set_reg_class_in(res, be_pos_Spill_frame, NULL);
+
 	return res;
 }
 
@@ -364,6 +346,15 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	be_node_set_reg_class_out(res, 0, cls);
 	be_node_set_reg_class_in(res, be_pos_Reload_frame, cls_frame);
 	arch_irn_set_flags(res, arch_irn_flags_rematerializable);
+
+	/*
+	 * For spills and reloads, we return "none" as requirement for frame
+	 * pointer, so every input is ok. Some backends need this (e.g. STA).
+	 * Matze: we should investigate if this is really needed, this solution
+	 *        looks very hacky to me
+	 */
+	be_node_set_reg_class_in(res, be_pos_Reload_frame, NULL);
+
 	return res;
 }
 
@@ -1069,78 +1060,39 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 */
 
 
-static const
-arch_register_req_t *get_out_reg_req(const ir_node *irn, int out_pos)
+static const arch_register_req_t *be_node_get_out_reg_req(
+		const ir_node *irn, int pos)
 {
 	const be_node_attr_t *a = get_irn_attr_const(irn);
 
-	if (out_pos >= ARR_LEN(a->reg_data)) {
+	assert(pos >= 0);
+	if (pos >= ARR_LEN(a->reg_data)) {
 		return arch_no_register_req;
 	}
 
-	return &a->reg_data[out_pos].req;
+	return &a->reg_data[pos].req;
 }
 
-static const
-arch_register_req_t *get_in_reg_req(const ir_node *irn, int pos)
+static const arch_register_req_t *be_node_get_in_reg_req(
+		const ir_node *irn, int pos)
 {
 	const be_node_attr_t *a = get_irn_attr_const(irn);
 
+	assert(pos >= 0);
 	if (pos >= get_irn_arity(irn) || pos >= ARR_LEN(a->reg_data))
 		return arch_no_register_req;
 
 	return &a->reg_data[pos].in_req;
 }
 
-static const arch_register_req_t *
-be_node_get_irn_reg_req(const ir_node *irn, int pos)
-{
-	int out_pos = pos;
-
-	if (pos < 0) {
-		if (get_irn_mode(irn) == mode_T)
-			return arch_no_register_req;
-
-		assert(pos == -1);
-		out_pos = redir_proj((const ir_node **)&irn);
-		assert(is_be_node(irn));
-		return get_out_reg_req(irn, out_pos);
-	} else if (is_be_node(irn)) {
-		/*
-   		 * For spills and reloads, we return "none" as requirement for frame
-		 * pointer, so every input is ok. Some backends need this (e.g. STA).
-		 */
-		if ((pos == be_pos_Spill_frame && be_is_Spill(irn)) ||
-		    (pos == be_pos_Reload_frame && be_is_Reload(irn)))
-			return arch_no_register_req;
-
-		return get_in_reg_req(irn, pos);
-	}
-
-	return arch_no_register_req;
-}
-
 static arch_irn_class_t be_node_classify(const ir_node *irn)
 {
-restart:
 	switch (get_irn_opcode(irn)) {
-#define XXX(a,b) case a: return b
-		XXX(beo_Spill, arch_irn_class_spill);
-		XXX(beo_Reload, arch_irn_class_reload);
-		XXX(beo_Perm, arch_irn_class_perm);
-		XXX(beo_Copy, arch_irn_class_copy);
-		XXX(beo_Return, arch_irn_class_branch);
-#undef XXX
-		case iro_Proj:
-			irn = get_Proj_pred(irn);
-			if (is_Proj(irn)) {
-				assert(get_irn_mode(irn) == mode_T);
-				irn = get_Proj_pred(irn);
-			}
-			goto restart;
-
-		default:
-			return 0;
+		case beo_Spill:  return arch_irn_class_spill;
+		case beo_Reload: return arch_irn_class_reload;
+		case beo_Perm:   return arch_irn_class_perm;
+		case beo_Copy:   return arch_irn_class_copy;
+		default:         return 0;
 	}
 }
 
@@ -1161,10 +1113,13 @@ static void be_node_set_frame_entity(ir_node *irn, ir_entity *ent)
 
 static void be_node_set_frame_offset(ir_node *irn, int offset)
 {
-	if(be_has_frame_entity(irn)) {
-		be_frame_attr_t *a = get_irn_attr(irn);
-		a->offset = offset;
-	}
+	be_frame_attr_t *a;
+
+	if(!be_has_frame_entity(irn))
+		return;
+
+	a = get_irn_attr(irn);
+	a->offset = offset;
 }
 
 static int be_node_get_sp_bias(const ir_node *irn)
@@ -1186,8 +1141,10 @@ static int be_node_get_sp_bias(const ir_node *irn)
 
 */
 
+/* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
-	be_node_get_irn_reg_req,
+	be_node_get_in_reg_req,
+	be_node_get_out_reg_req,
 	be_node_classify,
 	be_node_get_frame_entity,
 	be_node_set_frame_entity,
@@ -1197,6 +1154,61 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
+};
+
+static const arch_register_req_t *dummy_reg_req(
+		const ir_node *node, int pos)
+{
+	(void) node;
+	(void) pos;
+	return arch_no_register_req;
+}
+
+static arch_irn_class_t dummy_classify(const ir_node *node)
+{
+	(void) node;
+	return 0;
+}
+
+static ir_entity* dummy_get_frame_entity(const ir_node *node)
+{
+	(void) node;
+	return NULL;
+}
+
+static void dummy_set_frame_entity(ir_node *node, ir_entity *entity)
+{
+	(void) node;
+	(void) entity;
+	panic("dummy_set_frame_entity() should not be called");
+}
+
+static void dummy_set_frame_offset(ir_node *node, int bias)
+{
+	(void) node;
+	(void) bias;
+	panic("dummy_set_frame_offset() should not be called");
+}
+
+static int dummy_get_sp_bias(const ir_node *node)
+{
+	(void) node;
+	return 0;
+}
+
+/* for "middleend" nodes */
+static const arch_irn_ops_t dummy_be_irn_ops = {
+	dummy_reg_req,
+	dummy_reg_req,
+	dummy_classify,
+	dummy_get_frame_entity,
+	dummy_set_frame_entity,
+	dummy_set_frame_offset,
+	dummy_get_sp_bias,
+	NULL,      /* get_inverse           */
+	NULL,      /* get_op_estimated_cost */
+	NULL,      /* possible_memory_operand */
+	NULL,      /* perform_memory_operand */
 };
 
 /*
@@ -1326,45 +1338,14 @@ void be_set_phi_flags(ir_node *node, arch_irn_flags_t flags)
 	attr->flags = flags;
 }
 
-static arch_irn_class_t phi_classify(const ir_node *irn)
-{
-	(void) irn;
-	return 0;
-}
-
-static ir_entity *phi_get_frame_entity(const ir_node *irn)
-{
-	(void) irn;
-	return NULL;
-}
-
-static void phi_set_frame_entity(ir_node *irn, ir_entity *ent)
-{
-	(void) irn;
-	(void) ent;
-	panic("phi_set_frame_entity() should not be called");
-}
-
-static void phi_set_frame_offset(ir_node *irn, int bias)
-{
-	(void) irn;
-	(void) bias;
-	panic("phi_set_frame_offset() should not be called");
-}
-
-static int phi_get_sp_bias(const ir_node *irn)
-{
-	(void) irn;
-	return 0;
-}
-
 static const arch_irn_ops_t phi_irn_ops = {
 	phi_get_irn_reg_req,
-	phi_classify,
-	phi_get_frame_entity,
-	phi_set_frame_entity,
-	phi_set_frame_offset,
-	phi_get_sp_bias,
+	phi_get_irn_reg_req,
+	dummy_classify,
+	dummy_get_frame_entity,
+	dummy_set_frame_entity,
+	dummy_set_frame_offset,
+	dummy_get_sp_bias,
 	NULL,    /* get_inverse             */
 	NULL,    /* get_op_estimated_cost   */
 	NULL,    /* possible_memory_operand */
@@ -1390,6 +1371,9 @@ void be_phi_handler_reset(void)
 		pmap_destroy(phi_handler.phi_attrs);
 	phi_handler.phi_attrs = pmap_create();
 }
+
+
+
 
 /*
   _   _           _        ____                        _
@@ -1616,6 +1600,8 @@ int is_be_node(const ir_node *irn)
 
 void be_init_op(void)
 {
+	ir_opcode opc;
+
 	/* Acquire all needed opcodes. */
 	op_be_Spill      = new_ir_op(beo_Spill,     "be_Spill",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Reload     = new_ir_op(beo_Reload,    "be_Reload",    op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_frame_attr_t),   &be_node_op_ops);
@@ -1650,4 +1636,11 @@ void be_init_op(void)
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	op_be_Barrier->ops.node_cmp_attr   = node_cmp_attr;
 	op_be_Unwind->ops.node_cmp_attr    = node_cmp_attr;
+
+	/* attach out dummy_ops to middle end nodes */
+	for (opc = iro_First; opc <= iro_Last; ++opc) {
+		ir_op *op = get_irp_opcode(opc);
+		assert(op->ops.be_ops == NULL);
+		op->ops.be_ops = &dummy_be_irn_ops;
+	}
 }

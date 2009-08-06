@@ -570,13 +570,13 @@ static int map_Mul(ir_node *call, void *ctx) {
 	/* handle the often used case of 32x32=64 mul */
 	if (is_sign_extend(a_l, a_h) && is_sign_extend(b_l, b_h)) {
 		mul   = new_bd_ia32_l_IMul(dbg, block, a_l, b_l);
-		h_res = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
-		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+		h_res = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_IMul_res_high);
+		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_IMul_res_low);
 	} else {
 		/* note that zero extension is handled hare efficiently */
 		mul   = new_bd_ia32_l_Mul(dbg, block, a_l, b_l);
-		pEDX  = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_Mul_EDX);
-		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_Mul_EAX);
+		pEDX  = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_Mul_res_high);
+		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_Mul_res_low);
 
 		b_l   = new_rd_Conv(dbg, block, b_l, h_mode);
 		mul   = new_rd_Mul( dbg, block, a_h, b_l, h_mode);

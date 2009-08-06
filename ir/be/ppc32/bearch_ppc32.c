@@ -80,72 +80,9 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-/**
- * Return register requirements for a ppc node.
- * If the node returns a tuple (mode_T) then the proj's
- * will be asked for this information.
- */
-static const arch_register_req_t *ppc32_get_irn_reg_req(const ir_node *irn,
-                                                        int pos)
-{
-	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(irn);
-	FIRM_DBG_REGISTER(firm_dbg_module_t *mod, DEBUG_MODULE);
-
-	if (is_Block(irn) || mode == mode_X || mode == mode_M) {
-		DBG((mod, LEVEL_1, "ignoring block, mode_X or mode_M node %+F\n", irn));
-		return arch_no_register_req;
-	}
-
-	if (mode == mode_T && pos < 0) {
-		DBG((mod, LEVEL_1, "ignoring request for OUT requirements at %+F", irn));
-		return arch_no_register_req;
-	}
-
-	DBG((mod, LEVEL_1, "get requirements at pos %d for %+F ... ", pos, irn));
-
-	if (is_Proj(irn)) {
-		/* in case of a proj, we need to get the correct OUT slot */
-		/* of the node corresponding to the proj number */
-		if (pos == -1) {
-			node_pos = ppc32_translate_proj_pos(irn);
-		} else {
-			node_pos = pos;
-		}
-
-		irn = skip_Proj_const(irn);
-
-		DB((mod, LEVEL_1, "skipping Proj, going to %+F at pos %d ... ", irn, node_pos));
-	}
-
-	/* get requirements for our own nodes */
-	if (is_ppc32_irn(irn)) {
-		const arch_register_req_t *req;
-		if (pos >= 0) {
-			req = get_ppc32_in_req(irn, pos);
-		} else {
-			req = get_ppc32_out_req(irn, node_pos);
-		}
-
-		DB((mod, LEVEL_1, "returning reqs for %+F at pos %d\n", irn, pos));
-		return req;
-	}
-
-	/* unknowns should be transformed by now */
-	assert(!is_Unknown(irn));
-
-	DB((mod, LEVEL_1, "returning NULL for %+F (node not supported)\n", irn));
-	return arch_no_register_req;
-}
-
 static arch_irn_class_t ppc32_classify(const ir_node *irn)
 {
-	irn = skip_Proj_const(irn);
-
-	if (is_cfop(irn)) {
-		return arch_irn_class_branch;
-	}
-
+	(void) irn;
 	return 0;
 }
 
@@ -292,7 +229,8 @@ static const be_abi_callbacks_t ppc32_abi_callbacks = {
 /* fill register allocator interface */
 
 static const arch_irn_ops_t ppc32_irn_ops = {
-	ppc32_get_irn_reg_req,
+	get_ppc32_in_req,
+	get_ppc32_out_req,
 	ppc32_classify,
 	ppc32_get_frame_entity,
 	ppc32_set_frame_entity,

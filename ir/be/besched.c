@@ -105,7 +105,7 @@ void sched_renumber(const ir_node *block)
 int sched_skip_cf_predicator(const ir_node *irn, void *data)
 {
 	(void)data;
-	return arch_irn_class_is(irn, branch);
+	return is_cfop(irn);
 }
 
 int sched_skip_phi_predicator(const ir_node *irn, void *data) {

@@ -2622,8 +2622,8 @@ static ir_node *create_Switch(ir_node *node)
 			switch_max = pn;
 	}
 
-	if ((unsigned long) (switch_max - switch_min) > 256000) {
-		panic("Size of switch %+F bigger than 256000", node);
+	if ((unsigned long) (switch_max - switch_min) > 128000) {
+		panic("Size of switch %+F bigger than 128000", node);
 	}
 
 	if (switch_min != 0) {
@@ -4299,7 +4299,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case pn_Load_X_except:
 			/* This Load might raise an exception. Mark it. */
 			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_xLoad_X_exc);
+			return new_rd_Proj(dbgi, block, new_pred, mode_X, pn_ia32_vfld_X_exc);
 		default:
 			break;
 		}
@@ -5319,7 +5319,7 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	long     pos      = get_Proj_proj(node);
 
 	if (mode == mode_M) {
-		pos = arch_irn_get_n_outs(new_pred) + 1;
+		pos = arch_irn_get_n_outs(new_pred)-1;
 	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
 		mode = mode_Iu;
 	} else if (mode_is_float(mode)) {

@@ -47,7 +47,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 	/* assure that branches and constants are executed last */
 	ir_nodeset_iterator_init(&iter, ready_set);
 	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
-		if (!arch_irn_class_is(irn, branch)) {
+		if (!is_cfop(irn)) {
 			only_branches_left = 0;
 			break;
 		}
@@ -69,7 +69,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 				}
 				++i;
 			}
-		} while (arch_irn_class_is(irn, branch));
+		} while (is_cfop(irn));
 	}
 
 	return irn;

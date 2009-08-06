@@ -472,6 +472,7 @@ ir_node *gen_ASM(ir_node *node)
 	ident                     **clobbers;
 	int                         clobbers_flags = 0;
 	unsigned                    clobber_bits[N_CLASSES];
+	int                         out_size;
 
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
@@ -544,7 +545,8 @@ ir_node *gen_ASM(ir_node *node)
 	memset(register_map, 0, reg_map_size * sizeof(register_map[0]));
 
 	/* construct output constraints */
-	out_reg_reqs = obstack_alloc(obst, out_arity * sizeof(out_reg_reqs[0]));
+	out_size = out_arity + 1;
+	out_reg_reqs = obstack_alloc(obst, out_size * sizeof(out_reg_reqs[0]));
 
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint   *constraint = &out_constraints[out_idx];
@@ -715,7 +717,6 @@ ir_node *gen_ASM(ir_node *node)
 		int       i;
 		bitset_t *used_outs = bitset_alloca(out_arity);
 		int       orig_out_arity = out_arity;
-		int       out_size       = out_arity;
 		for (i = 0; i < arity; ++i) {
 			int   o;
 			const arch_register_req_t *inreq = in_reg_reqs[i];
@@ -756,6 +757,22 @@ ir_node *gen_ASM(ir_node *node)
 			++out_arity;
 		}
 	}
+
+	/* append none register requirement for the memory output */
+	if (out_arity + 1 >= out_size) {
+		const arch_register_req_t **new_out_reg_reqs;
+
+		out_size = out_arity + 1;
+		new_out_reg_reqs
+			= obstack_alloc(obst, out_size*sizeof(out_reg_reqs[0]));
+		memcpy(new_out_reg_reqs, out_reg_reqs,
+			   out_arity * sizeof(new_out_reg_reqs[0]));
+		out_reg_reqs = new_out_reg_reqs;
+	}
+
+	/* add a new (dummy) output which occupies the register */
+	out_reg_reqs[out_arity] = arch_no_register_req;
+	++out_arity;
 
 	new_node = new_bd_ia32_Asm(dbgi, new_block, arity, in, out_arity,
 	                           get_ASM_text(node), register_map);

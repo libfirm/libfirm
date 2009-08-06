@@ -86,15 +86,14 @@ extern const arch_register_req_t *arch_no_register_req;
 extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req, const ir_node *node);
 
 /**
- * Certain node classes which are relevant for the register allocator.
+ * Node classification. Mainly used for statistics.
  */
 typedef enum arch_irn_class_t {
-	arch_irn_class_spill      = 1 << 0,
-	arch_irn_class_reload     = 1 << 1,
-	arch_irn_class_remat      = 1 << 2,
-	arch_irn_class_copy       = 1 << 3,
-	arch_irn_class_perm       = 1 << 4,
-	arch_irn_class_branch     = 1 << 5
+	arch_irn_class_spill  = 1 << 0,
+	arch_irn_class_reload = 1 << 1,
+	arch_irn_class_remat  = 1 << 2,
+	arch_irn_class_copy   = 1 << 3,
+	arch_irn_class_perm   = 1 << 4
 } arch_irn_class_t;
 
 void arch_set_frame_offset(ir_node *irn, int bias);
@@ -116,8 +115,7 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsign
  *            operand was no register operand.
  */
 const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
-
-#define arch_get_register_req_out(irn) arch_get_register_req(irn, -1)
+const arch_register_req_t *arch_get_register_req_out(const ir_node *irn);
 
 /**
  * Put all registers which shall not be ignored by the register
@@ -300,7 +298,7 @@ _arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
  * Expresses requirements to register allocation for an operand.
  */
 struct arch_register_req_t {
-	arch_register_req_type_t type;      /**< The type of the constraint. */
+	arch_register_req_type_t     type;  /**< The type of the constraint. */
 	const arch_register_class_t *cls;   /**< The register class this constraint belongs to. */
 
 	const unsigned *limited;            /**< allowed register bitset */
@@ -355,13 +353,22 @@ struct arch_irn_ops_t {
 
 	/**
   	 * Get the register requirements for a given operand.
-	 * @param self The self pointer.
 	 * @param irn The node.
-	 * @param pos The operand's position (0..n for the input operands).
+	 * @param pos The operand's position
 	 * @return    The register requirements for the selected operand.
 	 *            The pointer returned is never NULL.
 	 */
-	const arch_register_req_t *(*get_irn_reg_req)(const ir_node *irn, int pos);
+	const arch_register_req_t *(*get_irn_reg_req_in)(const ir_node *irn, int pos);
+
+	/**
+  	 * Get the register requirements for values produced by a node
+	 * @param irn The node.
+	 * @param pos The operand's position (0 for most nodes,
+	 *                                    0..n for mode_T nodes)
+	 * @return    The register requirements for the selected operand.
+	 *            The pointer returned is never NULL.
+	 */
+	const arch_register_req_t *(*get_irn_reg_req_out)(const ir_node *irn, int pos);
 
 	/**
 	 * Classify the node.
@@ -372,7 +379,6 @@ struct arch_irn_ops_t {
 
 	/**
 	 * Get the entity on the stack frame this node depends on.
-	 * @param self The this pointer.
 	 * @param irn  The node in question.
 	 * @return The entity on the stack frame or NULL, if the node does not have a
 	 *         stack frame entity.
@@ -381,7 +387,6 @@ struct arch_irn_ops_t {
 
 	/**
 	 * Set the entity on the stack frame this node depends on.
-	 * @param self The this pointer.
 	 * @param irn  The node in question.
 	 * @param ent  The entity to set
 	 */
@@ -389,7 +394,6 @@ struct arch_irn_ops_t {
 
 	/**
 	 * Set the offset of a node carrying an entity on the stack frame.
-	 * @param self The this pointer.
 	 * @param irn  The node.
 	 * @param offset The offset of the node's stack frame entity.
 	 */
@@ -402,7 +406,6 @@ struct arch_irn_ops_t {
 	 * A positive value stands for an expanding stack area, a negative value for
 	 * a shrinking one.
 	 *
-	 * @param self      The this pointer
 	 * @param irn       The node
 	 * @return          0 if the stackpointer is not modified with a constant
 	 *                  value, otherwise the increment/decrement value
@@ -413,7 +416,6 @@ struct arch_irn_ops_t {
 	 * Returns an inverse operation which yields the i-th argument
 	 * of the given node as result.
 	 *
-	 * @param self      The this pointer.
 	 * @param irn       The original operation
 	 * @param i         Index of the argument we want the inverse operation to yield
 	 * @param inverse   struct to be filled with the resulting inverse op
@@ -425,7 +427,6 @@ struct arch_irn_ops_t {
 	/**
 	 * Get the estimated cycle count for @p irn.
 	 *
-	 * @param self The this pointer.
 	 * @param irn  The node.
 	 *
 	 * @return     The estimated cycle count for this operation
@@ -435,7 +436,6 @@ struct arch_irn_ops_t {
 	/**
 	 * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
 	 *
-	 * @param self The this pointer.
 	 * @param irn  The node.
 	 * @param i    Index of the argument we would like to know whether @p irn can load it form memory internally
 	 *
@@ -446,7 +446,6 @@ struct arch_irn_ops_t {
 	/**
 	 * Ask the backend to assimilate @p reload of operand @p i into @p irn.
 	 *
-	 * @param self   The this pointer.
 	 * @param irn    The node.
 	 * @param spill  The spill.
 	 * @param i      The position of the reload.

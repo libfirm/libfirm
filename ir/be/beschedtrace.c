@@ -429,7 +429,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block) {
 	for (cur_pos = 0, curr = root; curr; curr = get_irn_link(curr), cur_pos++) {
 		sched_timestep_t d;
 
-		if (arch_irn_class_is(curr, branch)) {
+		if (is_cfop(curr)) {
 			/* assure, that branches can be executed last */
 			d = 0;
 		}
@@ -533,7 +533,7 @@ static ir_node *basic_selection(ir_nodeset_t *ready_set)
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (!arch_irn_class_is(irn, branch)) {
+		if (!is_cfop(irn)) {
 			return irn;
 		}
 	}
@@ -585,7 +585,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 		if (cnt == 1) {
 			irn = get_nodeset_node(&ecands);
 
-			if (arch_irn_class_is(irn, branch)) {
+			if (is_cfop(irn)) {
 				/* BEWARE: don't select a JUMP if others are still possible */
 				goto force_mcands;
 			}
@@ -661,7 +661,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 	/* priority based selection, heuristic inspired by mueller diss */
 	foreach_ir_nodeset(ns, irn, iter) {
 		/* make sure that branches are scheduled last */
-		if (!arch_irn_class_is(irn, branch)) {
+		if (!is_cfop(irn)) {
 			int rdiff = get_irn_reg_diff(trace_env, irn);
 			int sign  = rdiff < 0;
 			int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;

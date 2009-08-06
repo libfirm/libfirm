@@ -50,7 +50,7 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {
-		if (!arch_irn_class_is(irn, branch)) {
+		if (!is_cfop(irn)) {
 			return irn;
 		}
 	}

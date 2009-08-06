@@ -408,7 +408,7 @@ static void *normal_init_block(void *graph_env, ir_node *block)
 	   The link field is used anyway. */
 	for (i = ARR_LEN(sched) - 1; i >= 0; --i) {
 		ir_node* irn = sched[i];
-		if (!arch_irn_class_is(irn, branch)) {
+		if (!is_cfop(irn)) {
 			set_irn_link(irn, first);
 			first = irn;
 		}

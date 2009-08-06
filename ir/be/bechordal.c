@@ -674,17 +674,17 @@ static void pressure(ir_node *block, void *env_ptr)
 					border_def(proj, step, 1);
 				}
 			}
-		}
+		} else {
+			/*
+			 * If the node defines some value, which can put into a
+			 * register of the current class, make a border for it.
+			 */
+			if (has_reg_class(env, irn)) {
+				int nr = get_irn_idx(irn);
 
-		/*
-		 * If the node defines some value, which can put into a
-		 * register of the current class, make a border for it.
-		 */
-		if (has_reg_class(env, irn)) {
-			int nr = get_irn_idx(irn);
-
-			bitset_clear(live, nr);
-			border_def(irn, step, 1);
+				bitset_clear(live, nr);
+				border_def(irn, step, 1);
+			}
 		}
 
 		/*

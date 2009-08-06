@@ -80,7 +80,8 @@ typedef enum {
 
 /** The opcodes of the libFirm predefined operations. */
 typedef enum {
-	iro_Block,
+	iro_First,
+	iro_Block = iro_First,
 	iro_Start, iro_End, iro_Jmp, iro_IJmp, iro_Cond, iro_Return,
 	iro_Const, iro_SymConst,
 	iro_Sel,

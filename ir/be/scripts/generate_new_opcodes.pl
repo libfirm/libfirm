@@ -695,7 +695,6 @@ void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
 	ir_op_ops  ops;
 	int        cur_opcode;
 	static int run_once = 0;
-	int        i;
 ENDOFMAIN
 
 	if (defined($default_op_attr_type)) {
@@ -707,13 +706,6 @@ print OUT<<ENDOFMAIN;
 	if (run_once)
 		return;
 	run_once = 1;
-
-	/* we handle all middleend nodes as well that have no other handler */
-	for (i = 0; i <= iro_Last; ++i) {
-		ir_op *op      = get_irp_opcode(i);
-		if (op->ops.be_ops == NULL)
-			op->ops.be_ops = be_ops;
-	}
 
 	cur_opcode = get_next_ir_opcodes(iro_$arch\_last);
 

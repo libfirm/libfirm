@@ -83,62 +83,9 @@ static set *cur_reg_set = NULL;
  *           |___/
  **************************************************/
 
-/**
- * Return register requirements for a arm node.
- * If the node returns a tuple (mode_T) then the proj's
- * will be asked for this information.
- */
-static const arch_register_req_t *arm_get_irn_reg_req(const ir_node *node,
-                                                      int pos)
-{
-	long               node_pos = pos == -1 ? 0 : pos;
-	ir_mode           *mode     = get_irn_mode(node);
-
-	if (is_Block(node) || mode == mode_X) {
-		return arch_no_register_req;
-	}
-
-	if (mode == mode_T && pos < 0) {
-		return arch_no_register_req;
-	}
-
-	if (is_Proj(node)) {
-		if(mode == mode_M)
-			return arch_no_register_req;
-
-		if(pos >= 0) {
-			return arch_no_register_req;
-		}
-
-		node_pos = (pos == -1) ? get_Proj_proj(node) : pos;
-		node     = skip_Proj_const(node);
-	}
-
-	/* get requirements for our own nodes */
-	if (is_arm_irn(node)) {
-		const arch_register_req_t *req;
-		if (pos >= 0) {
-			req = get_arm_in_req(node, pos);
-		} else {
-			req = get_arm_out_req(node, node_pos);
-		}
-
-		return req;
-	}
-
-	/* unknown should be transformed by now */
-	assert(!is_Unknown(node));
-	return arch_no_register_req;
-}
-
 static arch_irn_class_t arm_classify(const ir_node *irn)
 {
-	irn = skip_Proj_const(irn);
-
-	if (is_cfop(irn)) {
-		return arch_irn_class_branch;
-	}
-
+	(void) irn;
 	return 0;
 }
 
@@ -175,7 +122,8 @@ static int arm_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t arm_irn_ops = {
-	arm_get_irn_reg_req,
+	get_arm_in_req,
+	get_arm_out_req,
 	arm_classify,
 	arm_get_frame_entity,
 	arm_set_frame_entity,
