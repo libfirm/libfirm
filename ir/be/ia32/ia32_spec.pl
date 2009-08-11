@@ -1177,7 +1177,8 @@ Jcc => {
 SwitchJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp" ],
+	               out => [ ] },
 	mode      => "mode_T",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "long pnc",
