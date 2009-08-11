@@ -32,6 +32,7 @@
 #include "bitset.h"
 #include "obst.h"
 #include "raw_bitset.h"
+#include "irop_t.h"
 
 #include "be_types.h"
 #include "beinfo.h"
@@ -109,6 +110,10 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsign
 
 /**
  * Get the register requirements for a node.
+ * @note Deprecated API! Preferably use
+ *       arch_get_in_register_req and
+ *       arch_get_out_register_req.
+ *
  * @param irn The node.
  * @param pos The position of the operand you're interested in.
  * @return    A pointer to the register requirements.  If NULL is returned, the
@@ -738,6 +743,34 @@ static inline bool arch_irn_is_ignore(const ir_node *irn)
 {
 	const arch_register_req_t *req = arch_get_register_req_out(irn);
 	return !!(req->type & arch_register_req_type_ignore);
+}
+
+static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)
+{
+	const ir_op          *ops    = get_irn_op(node);
+	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
+	assert(!is_Proj(node));
+	return be_ops;
+}
+
+/**
+ * Get register constraints for an operand at position @p
+ */
+static inline const arch_register_req_t *arch_get_in_register_req(
+		const ir_node *node, int pos)
+{
+	const arch_irn_ops_t *ops = get_irn_ops_simple(node);
+	return ops->get_irn_reg_req_in(node, pos);
+}
+
+/**
+ * Get register constraint for a produced result (the @p pos result)
+ */
+static inline const arch_register_req_t *arch_get_out_register_req(
+		const ir_node *node, int pos)
+{
+	const arch_irn_ops_t *ops = get_irn_ops_simple(node);
+	return ops->get_irn_reg_req_out(node, pos);
 }
 
 #endif /* FIRM_BE_BEARCH_H */

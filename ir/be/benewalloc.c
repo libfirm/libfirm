@@ -72,7 +72,7 @@
 #include "beirg.h"
 #include "benode_t.h"
 #include "bespill.h"
-#include "bespilloptions.h"
+#include "bespillutil.h"
 #include "beverify.h"
 
 #include "bipartite.h"
@@ -731,6 +731,41 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 }
 
 /**
+ * Create a bitset of registers occupied with value living through an
+ * instruction
+ */
+static void determine_live_through_regs(unsigned *bitset, ir_node *node)
+{
+	const allocation_info_t *info = get_allocation_info(node);
+	unsigned r;
+	int i;
+	int arity;
+
+	/* mark all used registers as potentially live-through */
+	for (r = 0; r < n_regs; ++r) {
+		const assignment_t *assignment = &assignments[r];
+		if (assignment->value == NULL)
+			continue;
+
+		rbitset_set(bitset, r);
+	}
+
+	/* remove registers of value dying at the instruction */
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node               *op;
+		const arch_register_t *reg;
+
+		if (!rbitset_is_set(&info->last_uses, i))
+			continue;
+
+		op  = get_irn_n(node, i);
+		reg = arch_get_irn_register(op);
+		rbitset_clear(bitset, arch_register_get_index(reg));
+	}
+}
+
+/**
  * Enforce constraints at a node by live range splits.
  *
  * @param live_nodes  the set of live nodes, might be changed
@@ -769,8 +804,61 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		}
 	}
 
+	/* construct a list of register occupied by live-through values */
+	unsigned *live_through_regs = NULL;
+	unsigned *output_regs       = NULL;
+
+	/* is any of the live-throughs using a constrainted output register? */
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			const arch_register_req_t *req;
+
+			if (!arch_irn_consider_in_reg_alloc(cls, proj))
+				continue;
+
+			req = arch_get_register_req_out(proj);
+			if (! (req->type & arch_register_req_type_limited))
+				continue;
+
+			if (live_through_regs == NULL) {
+				rbitset_alloca(live_through_regs, n_regs);
+				determine_live_through_regs(live_through_regs, node);
+
+				rbitset_alloca(output_regs, n_regs);
+			}
+
+			rbitset_or(output_regs, req->limited, n_regs);
+			if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
+				good = false;
+				break;
+			}
+		}
+	} else {
+		if (arch_irn_consider_in_reg_alloc(cls, node)) {
+			const arch_register_req_t *req = arch_get_register_req_out(node);
+			if (req->type & arch_register_req_type_limited) {
+				rbitset_alloca(live_through_regs, n_regs);
+				determine_live_through_regs(live_through_regs, node);
+				if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
+					good = false;
+
+					rbitset_alloca(output_regs, n_regs);
+					rbitset_or(output_regs, req->limited, n_regs);
+				}
+			}
+		}
+	}
+
 	if (good)
 		return;
+
+	if (live_through_regs == NULL) {
+		rbitset_alloca(live_through_regs, n_regs);
+		rbitset_alloca(output_regs, n_regs);
+	}
 
 	/* swap values around */
 	bp = hungarian_new(n_regs, n_regs, HUNGARIAN_MATCH_PERFECT);
@@ -784,6 +872,10 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 		for (r = 0; r < n_regs; ++r) {
 			if (bitset_is_set(ignore_regs, r))
+				continue;
+			/* livethrough values may not use constrainted output registers */
+			if (rbitset_is_set(live_through_regs, l)
+					&& rbitset_is_set(output_regs, r))
 				continue;
 
 			hungarian_add(bp, l, r, l == r ? 90 : 89);

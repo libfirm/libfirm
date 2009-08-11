@@ -72,7 +72,7 @@
 #include "beirg.h"
 
 #include "bespillslots.h"
-#include "bespilloptions.h"
+#include "bespill.h"
 #include "belower.h"
 
 #include "becopystat.h"

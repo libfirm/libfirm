@@ -39,10 +39,10 @@
 
 #include "benode_t.h"
 #include "besched.h"
+#include "bespill.h"
 #include "bespillslots.h"
 #include "bechordal_t.h"
 #include "bestatevent.h"
-#include "bespilloptions.h"
 #include "bemodule.h"
 #include "beintlive_t.h"
 #include "beirg.h"

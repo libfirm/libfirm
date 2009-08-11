@@ -44,8 +44,8 @@
 #include "error.h"
 
 #include "beirg.h"
-#include "bespilloptions.h"
 #include "bespill.h"
+#include "bespillutil.h"
 #include "bemodule.h"
 #include "besched.h"
 #include "bearch.h"

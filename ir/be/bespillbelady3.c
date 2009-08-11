@@ -47,7 +47,7 @@
 #include "bemodule.h"
 #include "bespill.h"
 #include "beutil.h"
-#include "bespilloptions.h"
+#include "bespillutil.h"
 #include "besched.h"
 #include "be_t.h"
 

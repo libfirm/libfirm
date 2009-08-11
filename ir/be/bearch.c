@@ -32,6 +32,7 @@
 #include "beinfo.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
+#include "irop_t.h"
 
 #include "bitset.h"
 #include "pset.h"
@@ -65,7 +66,6 @@ static inline const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	ops    = get_irn_op(irn);
 	be_ops = get_op_ops(ops)->be_ops;
 
-	assert(be_ops);
 	return be_ops;
 }
 
@@ -78,7 +78,7 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
 		pos = -1-get_Proj_proj(irn);
 		irn = get_Proj_pred(irn);
 	}
-	ops = get_irn_ops(irn);
+	ops = get_irn_ops_simple(irn);
 	if (pos < 0) {
 		return ops->get_irn_reg_req_out(irn, -pos-1);
 	} else {

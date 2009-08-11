@@ -60,11 +60,11 @@
 #include "belive_t.h"
 #include "benode_t.h"
 #include "bechordal_t.h"
-#include "bespilloptions.h"
+#include "bespill.h"
 #include "beloopana.h"
 #include "beirg.h"
 #include "bemodule.h"
-#include "bespill.h"
+#include "bespillutil.h"
 
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
