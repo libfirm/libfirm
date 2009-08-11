@@ -349,6 +349,26 @@ static inline int rbitset_equal(const unsigned *bitset1,
 }
 
 /**
+ * Tests wether 2 bitsets wether at least 1 bit is set in both.
+ *
+ * @param bitset1  the first bitset
+ * @param bitset2  the second bitset
+ * @param size     size of both bitsets
+ */
+static inline int rbitsets_have_common(const unsigned *bitset1,
+                                       const unsigned *bitset2, size_t size)
+{
+	unsigned i;
+	unsigned n = BITSET_SIZE_ELEMS(size);
+
+	for (i = 0; i < n; ++i) {
+		if ((bitset1[i] & bitset2[i]) != 0)
+			return 1;
+	}
+	return 0;
+}
+
+/**
  * Copy a raw bitset into another.
  *
  * @param dst   the destination set
