@@ -135,12 +135,11 @@ typedef struct block_info_t block_info_t;
 static allocation_info_t *get_allocation_info(ir_node *node)
 {
 	allocation_info_t *info;
-	if (!irn_visited(node)) {
+	if (!irn_visited_else_mark(node)) {
 		size_t size = sizeof(info[0]) + n_regs * sizeof(info->prefs[0]);
 		info = obstack_alloc(&obst, size);
 		memset(info, 0, size);
 		set_irn_link(node, info);
-		mark_irn_visited(node);
 	} else {
 		info = get_irn_link(node);
 	}
@@ -156,12 +155,11 @@ static block_info_t *get_block_info(ir_node *block)
 	block_info_t *info;
 
 	assert(is_Block(block));
-	if (!irn_visited(block)) {
+	if (!irn_visited_else_mark(block)) {
 		size_t size = sizeof(info[0]) + n_regs * sizeof(info->assignments[0]);
 		info = obstack_alloc(&obst, size);
 		memset(info, 0, size);
 		set_irn_link(block, info);
-		mark_irn_visited(block);
 	} else {
 		info = get_irn_link(block);
 	}
@@ -224,7 +222,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 		if (neighbor == node)
 			continue;
 
-	   	neighbor_info = get_allocation_info(neighbor);
+		neighbor_info = get_allocation_info(neighbor);
 		for (r = 0; r < n_regs; ++r) {
 			if (!rbitset_is_set(limited, r))
 				continue;
@@ -276,7 +274,7 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 		float factor = 1.0f / rbitset_popcnt(&req->other_same, arity);
 		for (i = 0; i < arity; ++i) {
 			ir_node           *op;
-			unsigned          r;
+			unsigned           r;
 			allocation_info_t *op_info;
 
 			if (!rbitset_is_set(&req->other_same, i))
@@ -309,7 +307,7 @@ static void analyze_block(ir_node *block, void *data)
 
 	sched_foreach_reverse(block, node) {
 		allocation_info_t *info;
-		int               i, arity;
+		int                i, arity;
 
 		if (is_Phi(node)) {
 			/* TODO: handle constrained phi-nodes */
@@ -349,7 +347,7 @@ static void analyze_block(ir_node *block, void *data)
 				continue;
 
 			req = arch_get_register_req(node, i);
-			if ((req->type & arch_register_req_type_limited) == 0)
+			if (!(req->type & arch_register_req_type_limited))
 				continue;
 
 			/* TODO: give penalties to neighbors for precolored nodes! */
@@ -792,7 +790,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 		/* are there any limitations for the i'th operand? */
 		req = arch_get_register_req(node, i);
-		if ((req->type & arch_register_req_type_limited) == 0)
+		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
 		limited = req->limited;
@@ -820,7 +818,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 				continue;
 
 			req = arch_get_register_req_out(proj);
-			if (! (req->type & arch_register_req_type_limited))
+			if (!(req->type & arch_register_req_type_limited))
 				continue;
 
 			if (live_through_regs == NULL) {
@@ -892,7 +890,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		req = arch_get_register_req(node, i);
-		if ((req->type & arch_register_req_type_limited) == 0)
+		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
 		limited     = req->limited;
@@ -1031,7 +1029,7 @@ static void add_phi_permutations(ir_node *block, int p)
 
 /**
  * Walker: assign registers to all nodes of a block that
- * needs registers from the currently considered register class.
+ * need registers from the currently considered register class.
  */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
@@ -1045,8 +1043,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	block_info_t         **pred_block_infos;
 
 	(void) data;
-	DB((dbg, LEVEL_2, "Allocating in block %+F\n",
-		block));
+	DB((dbg, LEVEL_2, "Allocating in block %+F\n", block));
 
 	/* clear assignments */
 	block_info  = get_block_info(block);
@@ -1199,8 +1196,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
  */
 static void be_straight_alloc_cls(void)
 {
-	n_regs         = arch_register_class_n_regs(cls);
-	lv             = be_assure_liveness(birg);
+	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 
@@ -1262,7 +1258,7 @@ static void be_straight_alloc(be_irg_t *new_birg)
 
 		stat_ev_ctx_push_str("bestraight_cls", cls->name);
 
-		n_regs      = cls->n_regs;
+		n_regs      = arch_register_class_n_regs(cls);
 		ignore_regs = bitset_malloc(n_regs);
 		be_put_ignore_regs(birg, cls, ignore_regs);
 
