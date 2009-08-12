@@ -39,7 +39,6 @@
 #include "irgopt.h"
 #include "irgraph.h"
 #include "irdump.h"
-#include "phiclass.h"
 #include "irdom_t.h"
 #include "iredges_t.h"
 #include "irloop_t.h"
