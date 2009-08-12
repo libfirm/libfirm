@@ -88,7 +88,8 @@ do { \
  *
  * @return the new bitset
  */
-static inline unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned size) {
+static inline unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned size)
+{
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	unsigned *res = obstack_alloc(obst, size_bytes);
 	memset(res, 0, size_bytes);
@@ -105,7 +106,8 @@ static inline unsigned *rbitset_obstack_alloc(struct obstack *obst, unsigned siz
  *
  * @return the new bitset
  */
-static inline unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst, unsigned size) {
+static inline unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst, unsigned size)
+{
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	unsigned *res = obstack_alloc(obst, size_bytes + sizeof(unsigned));
 	*res = size;
@@ -142,10 +144,14 @@ unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
 /**
  * Check if a bitset is empty, ie all bits cleared.
  */
-static inline int rbitset_is_empty(unsigned *bitset, unsigned size) {
-	unsigned i, size_bytes = BITSET_SIZE_BYTES(size);
+static inline int rbitset_is_empty(unsigned *bitset, unsigned size)
+{
+	unsigned size_bytes = BITSET_SIZE_ELEMS(size);
+	unsigned i;
 	for (i = 0; i < size_bytes; ++i)
-		if (bitset[i]) return 0;
+		if (bitset[i] != 0)
+			return 0;
+
 	return 1;
 }
 
@@ -155,7 +161,8 @@ static inline int rbitset_is_empty(unsigned *bitset, unsigned size) {
  * @param bitset  the bitset
  * @param pos     the position of the bit to be set
  */
-static inline void rbitset_set(unsigned *bitset, unsigned pos) {
+static inline void rbitset_set(unsigned *bitset, unsigned pos)
+{
 	BITSET_ELEM(bitset,pos) |= 1 << (pos % BITS_PER_ELEM);
 }
 
@@ -165,7 +172,8 @@ static inline void rbitset_set(unsigned *bitset, unsigned pos) {
  * @param bitset  the bitset
  * @param size    number of bits in the bitset
  */
-static inline void rbitset_set_all(unsigned *bitset, unsigned size) {
+static inline void rbitset_set_all(unsigned *bitset, unsigned size)
+{
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	memset(bitset, ~0, size_bytes);
 }
@@ -177,7 +185,8 @@ static inline void rbitset_set_all(unsigned *bitset, unsigned size) {
  * @param bitset  the bitset
  * @param pos     the position of the bit to be clear
  */
-static inline void rbitset_clear(unsigned *bitset, unsigned pos) {
+static inline void rbitset_clear(unsigned *bitset, unsigned pos)
+{
 	BITSET_ELEM(bitset, pos) &= ~(1 << (pos % BITS_PER_ELEM));
 }
 
@@ -187,7 +196,8 @@ static inline void rbitset_clear(unsigned *bitset, unsigned pos) {
  * @param bitset  the bitset
  * @param size    number of bits in the bitset
  */
-static inline void rbitset_clear_all(unsigned *bitset, unsigned size) {
+static inline void rbitset_clear_all(unsigned *bitset, unsigned size)
+{
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	memset(bitset, 0, size_bytes);
 }
@@ -198,7 +208,8 @@ static inline void rbitset_clear_all(unsigned *bitset, unsigned size) {
  * @param bitset  the bitset
  * @param pos     the position of the bit to check
  */
-static inline int rbitset_is_set(const unsigned *bitset, unsigned pos) {
+static inline int rbitset_is_set(const unsigned *bitset, unsigned pos)
+{
 	return BITSET_ELEM(bitset, pos) & (1 << (pos % BITS_PER_ELEM));
 }
 
@@ -208,7 +219,8 @@ static inline int rbitset_is_set(const unsigned *bitset, unsigned pos) {
  * @param bitset  the bitset
  * @param size    size of the bitset
  */
-static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
+static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size)
+{
 	unsigned pos;
 	unsigned n = BITSET_SIZE_ELEMS(size);
 	unsigned res = 0;
@@ -235,7 +247,8 @@ static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size) {
  * @note Does NOT check the size of the bitset, so ensure that a bit
  *       will be found or use a sentinel bit!
  */
-static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int set) {
+static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int set)
+{
 	unsigned p;
 	unsigned elem_pos = pos / BITS_PER_ELEM;
 	unsigned bit_pos = pos % BITS_PER_ELEM;
@@ -385,7 +398,8 @@ static inline void rbitset_copy(unsigned *dst, const unsigned *src, size_t size)
  *
  * @deprecated
  */
-static inline void rbitset_copy_to_bitset(const unsigned *rbitset, bitset_t *bitset) {
+static inline void rbitset_copy_to_bitset(const unsigned *rbitset, bitset_t *bitset)
+{
 	// TODO optimize me (or remove me)
 	unsigned i, n = bitset_size(bitset);
 	for (i = 0; i < n; ++i) {
