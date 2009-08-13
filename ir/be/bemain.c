@@ -406,8 +406,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
 	env->arch_env = arch_env_init(isa_if, file_handle, env);
 
-	be_phi_handler_new();
-
 	be_dbg_open();
 	return env;
 }
@@ -419,7 +417,6 @@ static void be_done_env(be_main_env_t *env)
 {
 	arch_env_done(env->arch_env);
 	be_dbg_close();
-	be_phi_handler_free();
 
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
@@ -615,9 +612,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
-		/* reset the phi handler. */
-		be_phi_handler_reset();
-
 		stat_ev_if {
 			stat_ev_ctx_push_fobj("bemain_irg", irg);
 			be_stat_ev("bemain_insns_start", be_count_insns(irg));
@@ -666,9 +660,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		BE_TIMER_PUSH(t_codegen);
 		arch_code_generator_prepare_graph(birg->cg);
 		BE_TIMER_POP(t_codegen);
-
-		/* reset the phi handler. */
-		be_phi_handler_reset();
 
 		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
 

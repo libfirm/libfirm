@@ -78,13 +78,12 @@ typedef enum arch_register_req_type_t {
 extern const arch_register_req_t *arch_no_register_req;
 
 /**
- * Format a register requirements information into a string.
- * @param buf The string where to put it to.
- * @param len The size of @p buf.
+ * Print information about a register requirement in human readable form
+ * @param F   output stream/file
  * @param req The requirements structure to format.
- * @return    A pointer to buf.
  */
-extern char *arch_register_req_format(char *buf, size_t len, const arch_register_req_t *req, const ir_node *node);
+void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
+                            const ir_node *node);
 
 /**
  * Node classification. Mainly used for statistics.

@@ -73,44 +73,7 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs, 
 	if (reqs) {
 		for (i = 0; i < max; i++) {
 			fprintf(F, "%sreq #%d =", dir, i);
-
-			if (reqs[i]->type == arch_register_req_type_none) {
-				fprintf(F, " n/a");
-			}
-
-			if (reqs[i]->type & arch_register_req_type_normal) {
-				fprintf(F, " %s", reqs[i]->cls->name);
-			}
-
-			if (reqs[i]->type & arch_register_req_type_limited) {
-				fprintf(F, " %s",
-				        arch_register_req_format(buf, sizeof(buf), reqs[i], n));
-			}
-
-			if (reqs[i]->type & arch_register_req_type_should_be_same) {
-				const unsigned other = reqs[i]->other_same;
-				int i;
-
-				ir_fprintf(F, " same as");
-				for (i = 0; 1U << i <= other; ++i) {
-					if (other & (1U << i)) {
-						ir_fprintf(F, " %+F", get_irn_n(n, i));
-					}
-				}
-			}
-
-			if (reqs[i]->type & arch_register_req_type_must_be_different) {
-				const unsigned other = reqs[i]->other_different;
-				int i;
-
-				ir_fprintf(F, " different from");
-				for (i = 0; 1U << i <= other; ++i) {
-					if (other & (1U << i)) {
-						ir_fprintf(F, " %+F", get_irn_n(n, i));
-					}
-				}
-			}
-
+			arch_dump_register_req(F, reqs[i], n);
 			fprintf(F, "\n");
 		}
 

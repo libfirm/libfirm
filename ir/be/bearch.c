@@ -277,23 +277,25 @@ void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags)
 	info->flags |= flags;
 }
 
-extern char *arch_register_req_format(char *buf, size_t len,
-                                      const arch_register_req_t *req,
-                                      const ir_node *node)
+void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
+                            const ir_node *node)
 {
-	char tmp[128];
-	snprintf(buf, len, "class: %s", req->cls->name);
+	if (req == NULL || req->type == arch_register_req_type_none) {
+		fprintf(F, "n/a");
+		return;
+	}
+
+	fprintf(F, "%s", req->cls->name);
 
 	if(arch_register_req_is(req, limited)) {
 		unsigned n_regs = req->cls->n_regs;
 		unsigned i;
 
-		strncat(buf, " limited:", len);
+		fprintf(F, " limited to");
 		for(i = 0; i < n_regs; ++i) {
 			if(rbitset_is_set(req->limited, i)) {
 				const arch_register_t *reg = &req->cls->regs[i];
-				strncat(buf, " ", len);
-				strncat(buf, reg->name, len);
+				fprintf(F, " %s", reg->name);
 			}
 		}
 	}
@@ -302,11 +304,10 @@ extern char *arch_register_req_format(char *buf, size_t len,
 		const unsigned other = req->other_same;
 		int i;
 
-		ir_snprintf(tmp, sizeof(tmp), " same to:");
+		fprintf(F, " same as");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_snprintf(tmp, sizeof(tmp), " %+F", get_irn_n(skip_Proj_const(node), i));
-				strncat(buf, tmp, len);
+				ir_fprintf(F, " %+F", get_irn_n(skip_Proj_const(node), i));
 			}
 		}
 	}
@@ -315,23 +316,20 @@ extern char *arch_register_req_format(char *buf, size_t len,
 		const unsigned other = req->other_different;
 		int i;
 
-		ir_snprintf(tmp, sizeof(tmp), " different from:");
+		fprintf(F, " different from");
 		for (i = 0; 1U << i <= other; ++i) {
 			if (other & (1U << i)) {
-				ir_snprintf(tmp, sizeof(tmp), " %+F", get_irn_n(skip_Proj_const(node), i));
-				strncat(buf, tmp, len);
+				ir_fprintf(F, " %+F", get_irn_n(skip_Proj_const(node), i));
 			}
 		}
 	}
 
 	if (arch_register_req_is(req, ignore)) {
-		strncat(buf, " ignore", len);
+		fprintf(F, " ignore");
 	}
 	if (arch_register_req_is(req, produces_sp)) {
-		strncat(buf, " produces_sp", len);
+		fprintf(F, " produces_sp");
 	}
-
-	return buf;
 }
 
 static const arch_register_req_t no_requirement = {

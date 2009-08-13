@@ -24,8 +24,11 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "beinfo.h"
 #include "bearch.h"
+#include "benode_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "error.h"
@@ -97,16 +100,20 @@ static void init_walker(ir_node *node, void *data)
 	be_info_new_node(node);
 }
 
-static int initialized = 0;
+static bool initialized = false;
 
 void be_info_init(void)
 {
-	if (initialized == 1)
+	if (initialized)
 		panic("double initialization of be_info");
 
 	old_phi_copy_attr = op_Phi->ops.copy_attr;
 	op_Phi->ops.copy_attr = new_Phi_copy_attr;
-	initialized = 1;
+	initialized = true;
+
+	/* phis have register and register requirements now which we want to dump */
+	assert(op_Phi->ops.dump_node == NULL);
+	op_Phi->ops.dump_node = be_dump_phi_reg_reqs;
 }
 
 void be_info_init_irg(ir_graph *irg)
@@ -121,7 +128,10 @@ void be_info_free(void)
 
 	assert(op_Phi->ops.copy_attr == new_Phi_copy_attr);
 	op_Phi->ops.copy_attr = old_phi_copy_attr;
-	initialized = 0;
+	initialized = false;
+
+	assert(op_Phi->ops.dump_node == be_dump_phi_reg_reqs);
+	op_Phi->ops.dump_node = NULL;
 }
 
 int be_info_initialized(const ir_graph *irg)

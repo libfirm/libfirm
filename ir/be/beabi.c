@@ -106,8 +106,7 @@ struct _be_abi_irg_t {
 
 	ir_node              **calls;       /**< flexible array containing all be_Call nodes */
 
-	arch_register_req_t  sp_req;
-	arch_register_req_t  sp_cls_req;
+	arch_register_req_t  *sp_req;
 
 	be_stack_layout_t    frame;         /**< The stack frame model. */
 
@@ -2298,6 +2297,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	ir_node *dummy;
 	optimization_state_t state;
 	unsigned *limited_bitset;
+	arch_register_req_t *sp_req;
 
 	be_omit_fp      = birg->main_env->options->omit_fp;
 	be_omit_leaf_fp = birg->main_env->options->omit_leaf_fp;
@@ -2314,17 +2314,20 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->dce_survivor = new_survive_dce();
 	env->birg         = birg;
 
-	env->sp_req.type    = arch_register_req_type_limited;
-	env->sp_req.cls     = arch_register_get_class(env->arch_env->sp);
-	limited_bitset      = rbitset_obstack_alloc(&env->obst, env->sp_req.cls->n_regs);
-	rbitset_set(limited_bitset, arch_register_get_index(env->arch_env->sp));
-	env->sp_req.limited = limited_bitset;
-	if (env->arch_env->sp->type & arch_register_type_ignore) {
-		env->sp_req.type |= arch_register_req_type_ignore;
-	}
+	sp_req = obstack_alloc(&env->obst, sizeof(*sp_req));
+	memset(sp_req, 0, sizeof(*sp_req));
+	env->sp_req = sp_req;
 
-	env->sp_cls_req.type  = arch_register_req_type_normal;
-	env->sp_cls_req.cls   = arch_register_get_class(env->arch_env->sp);
+	sp_req->type = arch_register_req_type_limited
+	             | arch_register_req_type_produces_sp;
+	sp_req->cls  = arch_register_get_class(env->arch_env->sp);
+
+	limited_bitset = rbitset_obstack_alloc(&env->obst, sp_req->cls->n_regs);
+	rbitset_set(limited_bitset, arch_register_get_index(env->arch_env->sp));
+	sp_req->limited = limited_bitset;
+	if (env->arch_env->sp->type & arch_register_type_ignore) {
+		sp_req->type |= arch_register_req_type_ignore;
+	}
 
 	/* Beware: later we replace this node by the real one, ensure it is not CSE'd
 	   to another Unknown or the stack pointer gets used */
@@ -2502,7 +2505,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	len = ARR_LEN(phis);
 	for (i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
-		be_set_phi_reg_req(phi, &env->sp_req, arch_register_req_type_produces_sp);
+		be_set_phi_reg_req(phi, env->sp_req);
 		arch_set_irn_register(phi, env->arch_env->sp);
 	}
 	be_ssa_construction_destroy(&senv);

@@ -1220,39 +1220,11 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
 
 */
 
-typedef struct {
-	const arch_register_t *reg;
-	arch_register_req_t    req;
-	arch_irn_flags_t       flags;
-} phi_attr_t;
-
-static struct {
-	pmap *phi_attrs;
-} phi_handler;
-
-#define get_phi_handler_from_ops(h)      container_of(h, phi_handler_t, irn_ops)
-
-static inline
-phi_attr_t *get_Phi_attr(const ir_node *phi)
-{
-	phi_attr_t *attr = pmap_get(phi_handler.phi_attrs, (void*) phi);
-	if(attr == NULL) {
-		ir_graph *irg = get_irn_irg(phi);
-		struct obstack *obst = get_irg_obstack(irg);
-		attr = obstack_alloc(obst, sizeof(attr[0]));
-		memset(attr, 0, sizeof(attr[0]));
-		pmap_insert(phi_handler.phi_attrs, phi, attr);
-	}
-
-	return attr;
-}
-
 /**
- * Get register class of a Phi.
+ * Guess correct register class of a phi node by looking at its arguments
  */
-static
-const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
-                                                     pset **visited)
+static const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
+                                                            pset **visited)
 {
 	int n = get_irn_arity(phi);
 	ir_node *op;
@@ -1289,53 +1261,95 @@ const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
 	return NULL;
 }
 
-static
-const arch_register_req_t *phi_get_irn_reg_req(const ir_node *irn, int pos)
+static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
+                                                      int pos)
 {
-	phi_attr_t *attr;
+	backend_info_t            *info = be_get_info(node);
+	const arch_register_req_t *req  = info->out_infos[0].req;
 	(void) pos;
 
-	if(!mode_is_datab(get_irn_mode(irn)))
-		return arch_no_register_req;
+	if (req == NULL) {
+		if (!mode_is_datab(get_irn_mode(node))) {
+			req = arch_no_register_req;
+		} else {
+			pset           *visited = NULL;
+			ir_graph       *irg     = get_irn_irg(node);
+			struct obstack *obst    = get_irg_obstack(irg);
 
-	attr = get_Phi_attr(irn);
+			req = get_Phi_reg_req_recursive(node, &visited);
+			assert(req->cls != NULL);
 
-	if(attr->req.type == arch_register_req_type_none) {
-		pset *visited = NULL;
-		const arch_register_req_t *req;
-		req = get_Phi_reg_req_recursive(irn, &visited);
+			if (req->type != arch_register_req_type_normal) {
+				arch_register_req_t *nreq = obstack_alloc(obst, sizeof(*nreq));
+				*nreq = *req;
+				nreq->type = arch_register_req_type_normal;
+				req = nreq;
+			}
 
-		attr->req = *req;
-		assert(attr->req.cls != NULL);
-		attr->req.type = arch_register_req_type_normal;
-
-		if(visited != NULL)
-			del_pset(visited);
+			if (visited != NULL)
+				del_pset(visited);
+		}
+		info->out_infos[0].req = req;
 	}
 
-	return &attr->req;
+	return req;
 }
 
-void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req,
-	arch_register_req_type_t additional_types)
+void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 {
-	phi_attr_t *attr;
+	backend_info_t *info = be_get_info(node);
+	info->out_infos[0].req = req;
 
 	assert(mode_is_datab(get_irn_mode(node)));
-
-	attr            = get_Phi_attr(node);
-	attr->req       = *req;
-	attr->req.type |= additional_types;
 }
 
-void be_set_phi_flags(ir_node *node, arch_irn_flags_t flags)
+int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 {
-	phi_attr_t *attr;
+	backend_info_t *info;
+	int i;
+	int arity;
 
-	assert(mode_is_datab(get_irn_mode(node)));
+	switch(reason) {
+	case dump_node_opcode_txt:
+		fputs(get_op_name(get_irn_op(node)), F);
+		break;
+	case dump_node_mode_txt:
+		fprintf(F, "%s", get_mode_name(get_irn_mode(node)));
+		break;
+	case dump_node_nodeattr_txt:
+		break;
+	case dump_node_info_txt:
+		info = be_get_info(node);
 
-	attr = get_Phi_attr(node);
-	attr->flags = flags;
+		/* we still have a little problem with the initialisation order. This
+		   dump function is attached to the Phi ops before we can be sure
+		   that all backend infos have been constructed... */
+		if (info != NULL) {
+			const arch_register_req_t *req = info->out_infos[0].req;
+			const arch_register_t     *reg = arch_irn_get_register(node, 0);
+
+			arity = get_irn_arity(node);
+			for (i = 0; i < arity; ++i) {
+				fprintf(F, "inreq #%d = ", i);
+				arch_dump_register_req(F, req, node);
+				fputs("\n", F);
+			}
+			fprintf(F, "outreq #0 = ");
+			arch_dump_register_req(F, req, node);
+			fputs("\n", F);
+
+			fputs("\n", F);
+
+			fprintf(F, "reg #0 = %s\n", reg != NULL ? reg->name : "n/a");
+		}
+
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
 }
 
 static const arch_irn_ops_t phi_irn_ops = {
@@ -1352,29 +1366,6 @@ static const arch_irn_ops_t phi_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
-void be_phi_handler_new(void)
-{
-	phi_handler.phi_attrs = pmap_create();
-	op_Phi->ops.be_ops    = &phi_irn_ops;
-}
-
-void be_phi_handler_free(void)
-{
-	pmap_destroy(phi_handler.phi_attrs);
-	phi_handler.phi_attrs = NULL;
-	op_Phi->ops.be_ops    = NULL;
-}
-
-void be_phi_handler_reset(void)
-{
-	if(phi_handler.phi_attrs)
-		pmap_destroy(phi_handler.phi_attrs);
-	phi_handler.phi_attrs = pmap_create();
-}
-
-
-
-
 /*
   _   _           _        ____                        _
  | \ | | ___   __| | ___  |  _ \ _   _ _ __ ___  _ __ (_)_ __   __ _
@@ -1385,42 +1376,37 @@ void be_phi_handler_reset(void)
 */
 
 /**
- * Dumps a register requirement to a file.
- */
-static void dump_node_req(FILE *f, int idx, const arch_register_req_t *req,
-                          const ir_node *node)
-{
-	char tmp[256];
-
-	if (req->cls == NULL) return;
-
-	arch_register_req_format(tmp, sizeof(tmp), req, node);
-	fprintf(f, "#%d %s\n", idx, tmp);
-}
-
-/**
  * Dumps node register requirements to a file.
  */
-static void dump_node_reqs(FILE *f, ir_node *node)
+static void dump_node_reqs(FILE *F, ir_node *node)
 {
 	int i;
 	be_node_attr_t *a = get_irn_attr(node);
 	int len = ARR_LEN(a->reg_data);
 
-	fprintf(f, "registers: \n");
+	for (i = 0; i < len; ++i) {
+		const arch_register_req_t *req = &a->reg_data[i].in_req;
+		if (req->cls == NULL)
+			continue;
+		fprintf(F, "inreq #%d = ", i);
+		arch_dump_register_req(F, req, node);
+		fputs("\n", F);
+	}
+
+	for (i = 0; i < len; ++i) {
+		const arch_register_req_t *req = &a->reg_data[i].req;
+		if (req->cls == NULL)
+			continue;
+		fprintf(F, "outreq #%d = ", i);
+		arch_dump_register_req(F, req, node);
+		fputs("\n", F);
+	}
+
+	fputs("\n", F);
+
 	for (i = 0; i < len; ++i) {
 		const arch_register_t *reg = arch_irn_get_register(node, i);
-		fprintf(f, "#%d: %s\n", i, reg != NULL ? reg->name : "n/a");
-	}
-
-	fprintf(f, "in requirements:\n");
-	for (i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].in_req, node);
-	}
-
-	fprintf(f, "\nout requirements:\n");
-	for (i = 0; i < len; ++i) {
-		dump_node_req(f, i, &a->reg_data[i].req, node);
+		fprintf(F, "reg #%d = %s\n", i, reg != NULL ? reg->name : "n/a");
 	}
 }
 
@@ -1643,4 +1629,6 @@ void be_init_op(void)
 		assert(op->ops.be_ops == NULL);
 		op->ops.be_ops = &dummy_be_irn_ops;
 	}
+
+	op_Phi->ops.be_ops = &phi_irn_ops;
 }

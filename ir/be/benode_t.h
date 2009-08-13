@@ -484,26 +484,11 @@ void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_
 void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type);
 
 /**
- * Initialize the Phi handler.
- */
-void be_phi_handler_new(void);
-
-/**
- * Destroy the Phi handler.
- */
-void be_phi_handler_free(void);
-
-/**
- * Reset the register data in the Phi handler.
- * This should be called on each new graph and deletes the register information of the current graph.
- */
-void be_phi_handler_reset(void);
-
-/**
  * Set the register requirements for a phi node.
  */
-void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req,
-		arch_register_req_type_t additional_types);
+void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
+
+int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason);
 
 /**
  * irn handler for common be nodes and Phi's.
