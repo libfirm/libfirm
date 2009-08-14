@@ -763,7 +763,7 @@ static void check_input_constraints(ir_node *node)
 	}
 }
 
-static void value_used(ir_node *node) {
+static void value_used(ir_node *block, ir_node *node) {
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
@@ -777,7 +777,7 @@ static void value_used(ir_node *node) {
 	reg_node = registers[reg->index];
 	if (reg_node != NULL && reg_node != node) {
 		ir_fprintf(stderr, "Verify warning: Register %s assigned more than once in block %+F(%s) (nodes %+F %+F)\n",
-			       reg->name, get_nodes_block(node), get_irg_dump_name(irg),
+			       reg->name, block, get_irg_dump_name(irg),
 			       node, reg_node);
 		problem_found = 1;
 	}
@@ -825,7 +825,7 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 
 		be_lv_foreach(lv, block, be_lv_state_end, idx) {
 			ir_node *node = be_lv_get_irn(lv, block, idx);
-			value_used(node);
+			value_used(block, node);
 		}
 
 		sched_foreach_reverse(block, node) {
@@ -850,7 +850,7 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 				arity = get_irn_arity(node);
 				for (i2 = 0; i2 < arity; ++i2) {
 					ir_node *use = get_irn_n(node, i2);
-					value_used(use);
+					value_used(block, use);
 				}
 			}
 		}
