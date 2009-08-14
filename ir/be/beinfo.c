@@ -44,6 +44,9 @@ void be_info_new_node(ir_node *node)
 	if (is_Anchor(node))
 		return;
 
+	if (is_Proj(node)) // Projs need no be info, their tuple holds all information
+		return;
+
 	obst  = get_irg_obstack(current_ir_graph);
 	info  = obstack_alloc(obst, sizeof(*info));
 	sinfo = &info->sched_info;
