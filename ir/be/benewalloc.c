@@ -59,6 +59,7 @@
 #include "iredges_t.h"
 #include "ircons.h"
 #include "irgwalk.h"
+#include "irdom.h"
 #include "execfreq.h"
 #include "error.h"
 
@@ -77,10 +78,11 @@
 #include "bipartite.h"
 #include "hungarian.h"
 
-#define USE_FACTOR       1.0f
-#define DEF_FACTOR       1.0f
-#define NEIGHBOR_FACTOR  0.2f
-#define SHOULD_BE_SAME   1.0f
+#define USE_FACTOR         1.0f
+#define DEF_FACTOR         1.0f
+#define NEIGHBOR_FACTOR    0.2f
+#define AFF_SHOULD_BE_SAME 1.0f
+#define AFF_PHI            1.0f
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -198,16 +200,24 @@ static const arch_register_req_t *get_default_req_current_cls(void)
  */
 static void mark_as_copy_of(ir_node *copy, ir_node *value)
 {
+	ir_node           *original;
 	allocation_info_t *info      = get_allocation_info(value);
 	allocation_info_t *copy_info = get_allocation_info(copy);
 
-	/* value must be an original value (not a copy) */
-	assert(info->original_value == value);
+	/* find original value */
+	original = info->original_value;
+	if (original != value) {
+		info = get_allocation_info(original);
+	}
+
+	assert(info->original_value == original);
 	info->current_value = copy;
 
 	/* the copy should not be linked to something else yet */
 	assert(copy_info->original_value == copy);
-	copy_info->original_value = value;
+	/* copy over allocation preferences */
+	memcpy(copy_info->prefs, info->prefs, n_regs * sizeof(copy_info->prefs[0]));
+	copy_info->original_value = original;
 }
 
 /**
@@ -486,7 +496,7 @@ static void assign_reg(const ir_node *block, ir_node *node)
 			r = arch_register_get_index(reg);
 			if (bitset_is_set(ignore_regs, r))
 				continue;
-			info->prefs[r] += weight * SHOULD_BE_SAME;
+			info->prefs[r] += weight * AFF_SHOULD_BE_SAME;
 		}
 	}
 
@@ -528,6 +538,7 @@ static void free_reg_of_value(ir_node *node)
 	reg               = arch_get_irn_register(node);
 	r                 = arch_register_get_index(reg);
 	assignment        = &assignments[r];
+	assert(assignment->value == node);
 	assignment->value = NULL;
 }
 
@@ -594,10 +605,10 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		ins[old_reg] = value;
 		++n_used[old_reg];
+		free_reg_of_value(value);
 
 		/* free occupation infos, we'll add the values back later */
 		if (live_nodes != NULL) {
-			free_reg_of_value(value);
 			ir_nodeset_remove(live_nodes, value);
 		}
 	}
@@ -638,7 +649,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		--n_used[old_r];
 		permutation[r] = r;
 
-		/* advance or jump back (this copy could have enabled another copy) */
+		/* advance or jump back (if this copy enabled another copy) */
 		if (old_r < r && n_used[old_r] == 0) {
 			r = old_r;
 		} else {
@@ -651,8 +662,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 	 * TODO: if we have free registers left, then we should really use copy
 	 * instructions for any cycle longer than 2 registers...
 	 * (this is probably architecture dependent, there might be archs where
-	 *  copies are preferable even for 2 cycles)
-	 */
+	 *  copies are preferable even for 2-cycles) */
 
 	/* create perms with the rest */
 	for (r = 0; r < n_regs; /* empty */) {
@@ -848,7 +858,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			rbitset_or(output_regs, req->limited, n_regs);
 			if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
 				good = false;
-				break;
 			}
 		}
 	} else {
@@ -870,6 +879,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	if (good)
 		return;
 
+	/* create these arrays if we haven't yet */
 	if (output_regs == NULL) {
 		if (live_through_regs == NULL) {
 			rbitset_alloca(live_through_regs, n_regs);
@@ -877,13 +887,14 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		rbitset_alloca(output_regs, n_regs);
 	}
 
-	/* swap values around */
+	/* at this point we have to construct a bipartite matching problem to see
+	   which values should go to which registers */
 	bp = hungarian_new(n_regs, n_regs, HUNGARIAN_MATCH_PERFECT);
 
 	/* add all combinations, then remove not allowed ones */
 	for (l = 0; l < n_regs; ++l) {
 		if (bitset_is_set(ignore_regs, l)) {
-			hungarian_add(bp, l, l, 90);
+			hungarian_add(bp, l, l, 1);
 			continue;
 		}
 
@@ -895,7 +906,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 					&& rbitset_is_set(output_regs, r))
 				continue;
 
-			hungarian_add(bp, l, r, l == r ? 90 : 89);
+			hungarian_add(bp, l, r, l == r ? 9 : 8);
 		}
 	}
 
@@ -904,7 +915,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		const arch_register_t     *reg;
 		const arch_register_req_t *req;
 		const unsigned            *limited;
-		unsigned                  current_reg;
+		unsigned                   current_reg;
 
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
@@ -923,16 +934,16 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		}
 	}
 
-	//hungarian_print_costmatrix(bp, 1);
+	hungarian_print_costmatrix(bp, 1);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	assignment = ALLOCAN(unsigned, n_regs);
 	res = hungarian_solve(bp, (int*) assignment, &dummy, 0);
 	assert(res == 0);
 
-#if 0
+#if 1
 	printf("Swap result:");
-	for (i = 0; i < n_regs; ++i) {
+	for (i = 0; i < (int) n_regs; ++i) {
 		printf(" %d", assignment[i]);
 	}
 	printf("\n");
@@ -944,24 +955,21 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 }
 
 /** test wether a node @p n is a copy of the value of node @p of */
-static bool is_copy_of(ir_node *n, ir_node *of)
+static bool is_copy_of(ir_node *value, ir_node *test_value)
 {
-	allocation_info_t *of_info;
+	allocation_info_t *test_info;
 
-	if (n == NULL)
+	if (value == NULL)
 		return false;
-
-	if (n == of)
+	if (value == test_value)
 		return true;
 
-	of_info = get_allocation_info(of);
-	if (!irn_visited(n))
-		return false;
-
-	return of_info == get_irn_link(n);
+	test_info = get_allocation_info(test_value);
+	return test_info->original_value == value;
 }
 
-/** find a value in the end-assignment of a basic block
+/**
+ * find a value in the end-assignment of a basic block
  * @returns the index into the assignment array if found
  *          -1 if not found
  */
@@ -1045,11 +1053,37 @@ static void add_phi_permutations(ir_node *block, int p)
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
-		op = get_Phi_pred(node, p);
-		a = arch_register_get_index(arch_get_irn_register(node));
-
+		/* we have permutated all values into the correct registers so we can
+		   simply query which value occupies the phis register in the
+		   predecessor */
+		a  = arch_register_get_index(arch_get_irn_register(node));
 		op = pred_info->assignments[a].value;
 		set_Phi_pred(node, p, op);
+	}
+}
+
+static void handle_phi_prefs(ir_node *phi)
+{
+	int i;
+	int arity = get_irn_arity(phi);
+	ir_node           *block = get_nodes_block(phi);
+	allocation_info_t *info  = get_allocation_info(phi);
+
+	for (i = 0; i < arity; ++i) {
+		ir_node               *op  = get_irn_n(phi, i);
+		const arch_register_t *reg = arch_get_irn_register(op);
+		ir_node               *pred;
+		float                  weight;
+		unsigned               r;
+
+		if (reg == NULL)
+			continue;
+
+		/* give bonus for already assigned register */
+		pred   = get_Block_cfgpred_block(block, i);
+		weight = get_block_execfreq(execfreqs, pred);
+		r      = arch_register_get_index(reg);
+		info->prefs[r] += weight * AFF_PHI;
 	}
 }
 
@@ -1060,7 +1094,6 @@ static void add_phi_permutations(ir_node *block, int p)
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
 	int                    i;
-	unsigned               r;
 	ir_nodeset_t           live_nodes;
 	ir_nodeset_iterator_t  iter;
 	ir_node               *node, *start;
@@ -1071,7 +1104,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	bool                   all_preds_processed;
 
 	(void) data;
-	DB((dbg, LEVEL_2, "Allocating in block %+F\n", block));
+	DB((dbg, LEVEL_2, "* Block %+F\n", block));
 
 	/* clear assignments */
 	block_info  = get_block_info(block);
@@ -1096,11 +1129,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		}
 	}
 
-	/* we create Phi0s (=SSA construction) if not all preds are known */
-	if (!all_preds_processed) {
-		block->attr.block.is_matured = 0;
-	}
-
 	/* collect live-in nodes and preassigned values */
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
 		const arch_register_t *reg;
@@ -1109,25 +1137,23 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
-		/* if the node already has a register assigned use it */
-		reg = arch_get_irn_register(node);
-		if (reg != NULL) {
-			/* TODO: consult pred-block infos here. The value could be copied
-			   away in some/all predecessor blocks. We need to construct
-			   phi-nodes in this case.
-			   We even need to construct some Phi_0 like constructs in cases
-			   where the predecessor allocation is not determined yet. */
-			use_reg(node, reg);
-		}
-
 		/* if we don't know all predecessors, then we have no idea which values
 		   are copied, so we have to pessimistically construct phi-nodes for all
 		   of them */
 		if (!all_preds_processed) {
 			ir_mode                   *mode = get_irn_mode(node);
-			ir_node                   *phi  = new_r_Phi(block, 0, NULL, mode);
+			ir_node                   **ins = ALLOCAN(ir_node*, n_preds);
 			const arch_register_req_t *req  = get_default_req_current_cls();
+			ir_node                   *phi;
+			int                        i2;
+
+			for (i2 = 0; i2 < n_preds; ++i2) {
+				ins[i2] = node;
+			}
+			phi = new_r_Phi(block, n_preds, ins, mode);
 			be_set_phi_reg_req(phi, req);
+
+			DB((dbg, LEVEL_3, "Pessimistic Phi %+F (for %+F)\n", phi, node));
 
 			/* TODO: if node had a register assigned use that as a strong
 			   preference */
@@ -1138,7 +1164,17 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		} else {
 			/* check wether the value is the same in all predecessors,
 			   if not construct a phi node */
+		}
 
+		/* if the node already has a register assigned use it */
+		reg = arch_get_irn_register(node);
+		if (reg != NULL) {
+			/* TODO: consult pred-block infos here. The value could be copied
+			   away in some/all predecessor blocks. We need to construct
+			   phi-nodes in this case.
+			   We even need to construct some Phi_0 like constructs in cases
+			   where the predecessor allocation is not determined yet. */
+			use_reg(node, reg);
 		}
 
 		/* remember that this node is live at the beginning of the block */
@@ -1160,6 +1196,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		} else {
 			/* TODO: give boni for registers already assigned at the
 			   predecessors */
+			handle_phi_prefs(node);
 			assign_reg(block, node);
 		}
 	}
@@ -1172,14 +1209,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			continue;
 
 		assign_reg(block, node);
-	}
-
-	/* permutate values at end of predecessor blocks in case of phi-nodes */
-	if (n_preds > 1) {
-		int p;
-		for (p = 0; p < n_preds; ++p) {
-			add_phi_permutations(block, p);
-		}
 	}
 
 	/* assign instructions in the block */
@@ -1227,6 +1256,14 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	block_info->processed = true;
 
+	/* permutate values at end of predecessor blocks in case of phi-nodes */
+	if (n_preds > 1) {
+		int p;
+		for (p = 0; p < n_preds; ++p) {
+			add_phi_permutations(block, p);
+		}
+	}
+
 	/* if we have exactly 1 successor then we might be able to produce phi
 	   copies now */
 	if (get_irn_n_edges_kind(block, EDGE_KIND_BLOCK) == 1) {
@@ -1251,15 +1288,15 @@ static void be_straight_alloc_cls(void)
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 
-	assignments = NULL;
-
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 
 	DB((dbg, LEVEL_2, "=== Allocating registers of %s ===\n", cls->name));
 
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
-	irg_block_walk_graph(irg, NULL, allocate_coalesce_block, NULL);
+	/* we need some dominance pre-order walk to ensure we see all
+	 *  definitions/create copies before we encounter their users */
+	dom_tree_walk_irg(irg, allocate_coalesce_block, NULL, NULL);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 }
@@ -1319,7 +1356,7 @@ static void be_straight_alloc(be_irg_t *new_birg)
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
 
-		stat_ev_ctx_push_str("bestraight_cls", cls->name);
+		stat_ev_ctx_push_str("regcls", cls->name);
 
 		n_regs      = arch_register_class_n_regs(cls);
 		ignore_regs = bitset_malloc(n_regs);
@@ -1345,7 +1382,7 @@ static void be_straight_alloc(be_irg_t *new_birg)
 
 		bitset_free(ignore_regs);
 
-		stat_ev_ctx_pop("bestraight_cls");
+		stat_ev_ctx_pop("regcls");
 	}
 
 	BE_TIMER_PUSH(t_verify);

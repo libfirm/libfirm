@@ -103,7 +103,7 @@ $arch = "ia32";
 #   0 - no special type
 #   1 - caller save (register must be saved by the caller of a function)
 #   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not assign this register)
+#   4 - ignore (do not automatically assign this register)
 #   8 - emitter can choose an arbitrary register of this class
 #  16 - the register is a virtual one
 #  32 - register represents a state
