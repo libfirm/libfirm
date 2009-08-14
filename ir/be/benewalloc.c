@@ -40,9 +40,6 @@
  *
  * TODO:
  *  - make use of free registers in the permutate_values code
- *  - output constraints are not ensured. The algorithm fails to copy values
- *    away, so the registers for constrained outputs are free.
- *  - must_be_different constraint is not respected
  *  - We have to pessimistically construct Phi_0s when not all predecessors
  *    of a block are known.
  *  - Phi color assignment should give bonus points towards registers already
@@ -54,6 +51,7 @@
 #include "config.h"
 
 #include <float.h>
+#include <stdbool.h>
 
 #include "obst.h"
 #include "irnode_t.h"
@@ -62,6 +60,7 @@
 #include "ircons.h"
 #include "irgwalk.h"
 #include "execfreq.h"
+#include "error.h"
 
 #include "be.h"
 #include "bera.h"
@@ -89,6 +88,7 @@ static struct obstack               obst;
 static be_irg_t                    *birg;
 static ir_graph                    *irg;
 static const arch_register_class_t *cls;
+static const arch_register_req_t   *default_cls_req;
 static be_lv_t                     *lv;
 static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
@@ -108,9 +108,10 @@ static assignment_t *assignments;
  * the information is per firm-node.
  */
 struct allocation_info_t {
-	unsigned      last_uses;   /**< bitset indicating last uses (input pos) */
-	assignment_t *current_assignment;
-	float         prefs[0];    /**< register preferences */
+	unsigned  last_uses;      /**< bitset indicating last uses (input pos) */
+	ir_node  *current_value;  /**< copy of the value that should be used */
+	ir_node  *original_value; /**< for copies point to original value */
+	float     prefs[0];       /**< register preferences */
 };
 typedef struct allocation_info_t allocation_info_t;
 
@@ -123,7 +124,7 @@ typedef struct reg_pref_t reg_pref_t;
 
 /** per basic-block information */
 struct block_info_t {
-	int          processed;       /**< indicate wether block is processed */
+	bool         processed;       /**< indicate wether block is processed */
 	assignment_t assignments[0];  /**< register assignments at end of block */
 };
 typedef struct block_info_t block_info_t;
@@ -139,6 +140,8 @@ static allocation_info_t *get_allocation_info(ir_node *node)
 		size_t size = sizeof(info[0]) + n_regs * sizeof(info->prefs[0]);
 		info = obstack_alloc(&obst, size);
 		memset(info, 0, size);
+		info->current_value  = node;
+		info->original_value = node;
 		set_irn_link(node, info);
 	} else {
 		info = get_irn_link(node);
@@ -168,6 +171,24 @@ static block_info_t *get_block_info(ir_node *block)
 }
 
 /**
+ * Get default register requirement for the current register class
+ */
+static const arch_register_req_t *get_default_req_current_cls(void)
+{
+	if (default_cls_req == NULL) {
+		struct obstack      *obst = get_irg_obstack(irg);
+		arch_register_req_t *req  = obstack_alloc(obst, sizeof(*req));
+		memset(req, 0, sizeof(*req));
+
+		req->type = arch_register_req_type_normal;
+		req->cls  = cls;
+
+		default_cls_req = req;
+	}
+	return default_cls_req;
+}
+
+/**
  * Link the allocation info of a node to a copy.
  * Afterwards, both nodes uses the same allocation info.
  * Copy must not have an allocation info assigned yet.
@@ -175,25 +196,31 @@ static block_info_t *get_block_info(ir_node *block)
  * @param copy   the node that gets the allocation info assigned
  * @param value  the original node
  */
-static void link_to(ir_node *copy, ir_node *value)
+static void mark_as_copy_of(ir_node *copy, ir_node *value)
 {
-	allocation_info_t *info = get_allocation_info(value);
-	assert(!irn_visited(copy));
-	set_irn_link(copy, info);
-	mark_irn_visited(copy);
+	allocation_info_t *info      = get_allocation_info(value);
+	allocation_info_t *copy_info = get_allocation_info(copy);
+
+	/* value must be an original value (not a copy) */
+	assert(info->original_value == value);
+	info->current_value = copy;
+
+	/* the copy should not be linked to something else yet */
+	assert(copy_info->original_value == copy);
+	copy_info->original_value = value;
 }
 
 /**
  * Calculate the penalties for every register on a node and its live neighbors.
  *
- * @param live_nodes   the set of live nodes at the current position, may be NULL
- * @param penalty      the penalty to subtract from
- * @param limited      a raw bitset containing the limited set for the node
- * @param node         the node
+ * @param live_nodes  the set of live nodes at the current position, may be NULL
+ * @param penalty     the penalty to subtract from
+ * @param limited     a raw bitset containing the limited set for the node
+ * @param node        the node
  */
 static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
                                       float penalty, const unsigned* limited,
-									  ir_node *node)
+                                      ir_node *node)
 {
 	ir_nodeset_iterator_t iter;
 	unsigned              r;
@@ -307,21 +334,25 @@ static void analyze_block(ir_node *block, void *data)
 
 	sched_foreach_reverse(block, node) {
 		allocation_info_t *info;
-		int                i, arity;
+		int                i;
+		int                arity;
 
-		if (is_Phi(node)) {
-			/* TODO: handle constrained phi-nodes */
+		if (is_Phi(node))
 			break;
-		}
 
 		/* TODO give/take penalties for should_be_same/different) */
 		check_defs(&live_nodes, weight, node);
 
 		/* mark last uses */
 		arity = get_irn_arity(node);
-		/* I was lazy, and only allocated 1 unsigned
-		   => maximum of 32 uses per node (rewrite if necessary) */
-		assert(arity <= (int) sizeof(unsigned) * 8);
+
+		/* the allocation info node currently only uses 1 unsigned value
+		   to mark last used inputs. So we will fail for a node with more than
+		   32 inputs. */
+		if (arity >= (int) sizeof(unsigned) * 8) {
+			panic("Node with more than %d inputs not supported yet",
+					(int) sizeof(unsigned) * 8);
+		}
 
 		info = get_allocation_info(node);
 		for (i = 0; i < arity; ++i) {
@@ -369,15 +400,11 @@ static void analyze_block(ir_node *block, void *data)
  */
 static void use_reg(ir_node *node, const arch_register_t *reg)
 {
-	unsigned           r          = arch_register_get_index(reg);
-	assignment_t      *assignment = &assignments[r];
-	allocation_info_t *info;
+	unsigned      r          = arch_register_get_index(reg);
+	assignment_t *assignment = &assignments[r];
 
 	assert(assignment->value == NULL);
 	assignment->value = node;
-
-	info = get_allocation_info(node);
-	info->current_assignment = assignment;
 
 	arch_set_irn_register(node, reg);
 }
@@ -463,9 +490,6 @@ static void assign_reg(const ir_node *block, ir_node *node)
 		}
 	}
 
-	/* TODO: handle must_be_different */
-
-	/*  */
 	DB((dbg, LEVEL_2, "Candidates for %+F:", node));
 	reg_prefs = alloca(n_regs * sizeof(reg_prefs[0]));
 	fill_sort_candidates(reg_prefs, info);
@@ -478,10 +502,11 @@ static void assign_reg(const ir_node *block, ir_node *node)
 
 	for (i = 0; i < n_regs; ++i) {
 		unsigned r = reg_prefs[i].num;
-		/* ignores should be last and we should have a non-ignore left */
+		/* ignores are last and we should have at least 1 non-ignore left */
 		assert(!bitset_is_set(ignore_regs, r));
 		/* already used?
-           TODO: It might be better to copy the value occupying the register around here, find out when... */
+		   TODO: It might be better to copy the value occupying the register
+		   around here instead of trying the next one, find out when... */
 		if (assignments[r].value != NULL)
 			continue;
 		reg = arch_register_for_index(cls, r);
@@ -493,42 +518,17 @@ static void assign_reg(const ir_node *block, ir_node *node)
 
 static void free_reg_of_value(ir_node *node)
 {
-	allocation_info_t *info;
-	assignment_t      *assignment;
-	unsigned          r;
+	assignment_t          *assignment;
+	const arch_register_t *reg;
+	unsigned               r;
 
 	if (!arch_irn_consider_in_reg_alloc(cls, node))
 		return;
 
-	info       = get_allocation_info(node);
-	assignment = info->current_assignment;
-
-	assert(assignment != NULL);
-
-	r = assignment - assignments;
-	DB((dbg, LEVEL_2, "Value %+F ended, freeing %s\n",
-		node, arch_register_for_index(cls, r)->name));
-	assignment->value        = NULL;
-	info->current_assignment = NULL;
-}
-
-/**
- * Return the index of the currently assigned register of a node.
- */
-static unsigned get_current_reg(ir_node *node)
-{
-	allocation_info_t *info       = get_allocation_info(node);
-	assignment_t      *assignment = info->current_assignment;
-	return assignment - assignments;
-}
-
-/**
- * Return the currently assigned assignment of a node.
- */
-static assignment_t *get_current_assignment(ir_node *node)
-{
-	allocation_info_t *info = get_allocation_info(node);
-	return info->current_assignment;
+	reg               = arch_get_irn_register(node);
+	r                 = arch_register_get_index(reg);
+	assignment        = &assignments[r];
+	assignment->value = NULL;
 }
 
 /**
@@ -621,11 +621,16 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		/* create a copy */
 		src = ins[old_r];
 		copy = be_new_Copy(cls, block, src);
-		reg = arch_register_for_index(cls, r);
-		DB((dbg, LEVEL_2, "Copy %+F (from %+F) -> %s\n", copy, src, reg->name));
-		link_to(copy, src);
-		use_reg(copy, reg);
 		sched_add_before(before, copy);
+		reg = arch_register_for_index(cls, r);
+		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",
+		    copy, src, before, reg->name));
+		mark_as_copy_of(copy, src);
+		use_reg(copy, reg);
+
+		if (live_nodes != NULL) {
+			ir_nodeset_insert(live_nodes, copy);
+		}
 
 		/* old register has 1 user less, permutation is resolved */
 		assert(arch_register_get_index(arch_get_irn_register(src)) == old_r);
@@ -673,11 +678,17 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		in[0] = ins[r2];
 		in[1] = ins[old_r];
 		perm = be_new_Perm(cls, block, 2, in);
+		sched_add_before(before, perm);
+		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
+		    perm, in[0], in[1], before));
 
 		proj0 = new_r_Proj(block, perm, get_irn_mode(in[0]), 0);
-		link_to(proj0, in[0]);
+		mark_as_copy_of(proj0, in[0]);
 		reg = arch_register_for_index(cls, old_r);
 		use_reg(proj0, reg);
+		if (live_nodes != NULL) {
+			ir_nodeset_insert(live_nodes, proj0);
+		}
 
 		proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
 
@@ -689,8 +700,11 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		reg = arch_register_for_index(cls, r2);
 		if (r == r2) {
 			/* if we have reached a fixpoint update data structures */
-			link_to(proj1, in[1]);
+			mark_as_copy_of(proj1, in[1]);
 			use_reg(proj1, reg);
+			if (live_nodes != NULL) {
+				ir_nodeset_insert(live_nodes, proj1);
+			}
 		} else {
 			arch_set_irn_register(proj1, reg);
 		}
@@ -712,14 +726,15 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
  */
 static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	allocation_info_t *info  = get_allocation_info(node);
-	int                arity = get_irn_arity(node);
+	allocation_info_t *info      = get_allocation_info(node);
+	const unsigned    *last_uses = &info->last_uses;
+	int                arity     = get_irn_arity(node);
 	int                i;
 	for (i = 0; i < arity; ++i) {
 		ir_node *op;
 
 		/* check if one operand is the last use */
-		if (!rbitset_is_set(&info->last_uses, i))
+		if (!rbitset_is_set(last_uses, i))
 			continue;
 
 		op = get_irn_n(node, i);
@@ -774,13 +789,14 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	int arity = get_irn_arity(node);
 	int i, dummy, res;
 	hungarian_problem_t *bp;
-	unsigned l, r, p;
+	unsigned l, r;
 	unsigned *assignment;
 
 	/* see if any use constraints are not met */
 	bool good = true;
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *op = get_irn_n(node, i);
+		const arch_register_t     *reg;
 		const arch_register_req_t *req;
 		const unsigned            *limited;
 		unsigned                  r;
@@ -794,7 +810,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		limited = req->limited;
-		r       = get_current_reg(op);
+		reg     = arch_get_irn_register(op);
+		r       = arch_register_get_index(reg);
 		if (!rbitset_is_set(limited, r)) {
 			/* found an assignement outside the limited set */
 			good = false;
@@ -853,8 +870,10 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	if (good)
 		return;
 
-	if (live_through_regs == NULL) {
-		rbitset_alloca(live_through_regs, n_regs);
+	if (output_regs == NULL) {
+		if (live_through_regs == NULL) {
+			rbitset_alloca(live_through_regs, n_regs);
+		}
 		rbitset_alloca(output_regs, n_regs);
 	}
 
@@ -882,6 +901,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *op = get_irn_n(node, i);
+		const arch_register_t     *reg;
 		const arch_register_req_t *req;
 		const unsigned            *limited;
 		unsigned                  current_reg;
@@ -894,7 +914,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		limited     = req->limited;
-		current_reg = get_current_reg(op);
+		reg         = arch_get_irn_register(op);
+		current_reg = arch_register_get_index(reg);
 		for (r = 0; r < n_regs; ++r) {
 			if (rbitset_is_set(limited, r))
 				continue;
@@ -902,18 +923,20 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		}
 	}
 
-	hungarian_print_costmatrix(bp, 1);
+	//hungarian_print_costmatrix(bp, 1);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	assignment = ALLOCAN(unsigned, n_regs);
 	res = hungarian_solve(bp, (int*) assignment, &dummy, 0);
 	assert(res == 0);
 
+#if 0
 	printf("Swap result:");
-	for (p = 0; p < n_regs; ++p) {
-		printf(" %d", assignment[p]);
+	for (i = 0; i < n_regs; ++i) {
+		printf(" %d", assignment[i]);
 	}
 	printf("\n");
+#endif
 
 	hungarian_free(bp);
 
@@ -921,19 +944,19 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 }
 
 /** test wether a node @p n is a copy of the value of node @p of */
-static int is_copy_of(ir_node *n, ir_node *of)
+static bool is_copy_of(ir_node *n, ir_node *of)
 {
 	allocation_info_t *of_info;
 
 	if (n == NULL)
-		return 0;
+		return false;
 
 	if (n == of)
-		return 1;
+		return true;
 
 	of_info = get_allocation_info(of);
 	if (!irn_visited(n))
-		return 0;
+		return false;
 
 	return of_info == get_irn_link(n);
 }
@@ -964,7 +987,7 @@ static void add_phi_permutations(ir_node *block, int p)
 	unsigned  r;
 	unsigned *permutation;
 	assignment_t *old_assignments;
-	int       need_permutation;
+	bool      need_permutation;
 	ir_node  *node;
 	ir_node  *pred = get_Block_cfgpred_block(block, p);
 
@@ -980,7 +1003,7 @@ static void add_phi_permutations(ir_node *block, int p)
 	}
 
 	/* check phi nodes */
-	need_permutation = 0;
+	need_permutation = false;
 	node = sched_first(block);
 	for ( ; is_Phi(node); node = sched_next(node)) {
 		const arch_register_t *reg;
@@ -999,28 +1022,31 @@ static void add_phi_permutations(ir_node *block, int p)
 		regn = arch_register_get_index(reg);
 		if (regn != a) {
 			permutation[regn] = a;
-			need_permutation = 1;
+			need_permutation = true;
 		}
 	}
 
+	if (!need_permutation)
+		return;
+
+	/* permutate values at end of predecessor */
 	old_assignments = assignments;
 	assignments     = pred_info->assignments;
 	permutate_values(NULL, be_get_end_of_block_insertion_point(pred),
 	                 permutation);
-	assignments     = old_assignments;
+	assignments = old_assignments;
 
+	/* change phi nodes to use the copied values */
 	node = sched_first(block);
 	for ( ; is_Phi(node); node = sched_next(node)) {
-		int                    a;
-		ir_node               *op;
+		int      a;
+		ir_node *op;
 
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
 		op = get_Phi_pred(node, p);
-		/* TODO: optimize */
-		a = find_value_in_block_info(pred_info, op);
-		assert(a >= 0);
+		a = arch_register_get_index(arch_get_irn_register(node));
 
 		op = pred_info->assignments[a].value;
 		set_Phi_pred(node, p, op);
@@ -1040,7 +1066,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	ir_node               *node, *start;
 	int                    n_preds;
 	block_info_t          *block_info;
+	block_info_t          *processed_pred_info;
 	block_info_t         **pred_block_infos;
+	bool                   all_preds_processed;
 
 	(void) data;
 	DB((dbg, LEVEL_2, "Allocating in block %+F\n", block));
@@ -1049,26 +1077,28 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	block_info  = get_block_info(block);
 	assignments = block_info->assignments;
 
-	for (r = 0; r < n_regs; ++r) {
-		assignment_t       *assignment = &assignments[r];
-		ir_node            *value      = assignment->value;
-		allocation_info_t  *info;
-
-		if (value == NULL)
-			continue;
-
-		info                     = get_allocation_info(value);
-		info->current_assignment = assignment;
-	}
-
 	ir_nodeset_init(&live_nodes);
 
 	/* gather regalloc infos of predecessor blocks */
-	n_preds = get_Block_n_cfgpreds(block);
-	pred_block_infos = ALLOCAN(block_info_t*, n_preds);
+	n_preds             = get_Block_n_cfgpreds(block);
+	pred_block_infos    = ALLOCAN(block_info_t*, n_preds);
+	all_preds_processed = true;
 	for (i = 0; i < n_preds; ++i) {
-		ir_node *pred = get_Block_cfgpred_block(block, i);
-		pred_block_infos[i] = get_block_info(pred);
+		ir_node      *pred      = get_Block_cfgpred_block(block, i);
+		block_info_t *pred_info = get_block_info(pred);
+		pred_block_infos[i]     = pred_info;
+
+		if (!pred_info->processed) {
+			all_preds_processed = false;
+		} else {
+			/* we need 1 (arbitrary) processed predecessor */
+			processed_pred_info = pred_info;
+		}
+	}
+
+	/* we create Phi0s (=SSA construction) if not all preds are known */
+	if (!all_preds_processed) {
+		block->attr.block.is_matured = 0;
 	}
 
 	/* collect live-in nodes and preassigned values */
@@ -1078,9 +1108,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		node = be_lv_get_irn(lv, block, i);
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
-
-		/* remember that this node is live at the beginning of the block */
-		ir_nodeset_insert(&live_nodes, node);
 
 		/* if the node already has a register assigned use it */
 		reg = arch_get_irn_register(node);
@@ -1092,6 +1119,30 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			   where the predecessor allocation is not determined yet. */
 			use_reg(node, reg);
 		}
+
+		/* if we don't know all predecessors, then we have no idea which values
+		   are copied, so we have to pessimistically construct phi-nodes for all
+		   of them */
+		if (!all_preds_processed) {
+			ir_mode                   *mode = get_irn_mode(node);
+			ir_node                   *phi  = new_r_Phi(block, 0, NULL, mode);
+			const arch_register_req_t *req  = get_default_req_current_cls();
+			be_set_phi_reg_req(phi, req);
+
+			/* TODO: if node had a register assigned use that as a strong
+			   preference */
+			mark_as_copy_of(phi, node);
+			sched_add_after(block, phi);
+
+			node = phi;
+		} else {
+			/* check wether the value is the same in all predecessors,
+			   if not construct a phi node */
+
+		}
+
+		/* remember that this node is live at the beginning of the block */
+		ir_nodeset_insert(&live_nodes, node);
 	}
 
 	/* handle phis... */
@@ -1141,15 +1192,15 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		/* exchange values to copied values where needed */
 		for (i = 0; i < arity; ++i) {
-			ir_node      *op = get_irn_n(node, i);
-			assignment_t *assignment;
+			ir_node           *op = get_irn_n(node, i);
+			allocation_info_t *info;
 
 			if (!arch_irn_consider_in_reg_alloc(cls, op))
 				continue;
-			assignment = get_current_assignment(op);
-			assert(assignment != NULL);
-			if (op != assignment->value) {
-				set_irn_n(node, i, assignment->value);
+
+			info = get_allocation_info(op);
+			if (info->current_value != op) {
+				set_irn_n(node, i, info->current_value);
 			}
 		}
 
@@ -1174,7 +1225,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 	assignments = NULL;
 
-	block_info->processed = 1;
+	block_info->processed = true;
 
 	/* if we have exactly 1 successor then we might be able to produce phi
 	   copies now */
@@ -1213,6 +1264,13 @@ static void be_straight_alloc_cls(void)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 }
 
+static void dump(int mask, ir_graph *irg, const char *suffix,
+                 void (*dumper)(ir_graph *, const char *))
+{
+	if(birg->main_env->options->dump_flags & mask)
+		be_dump(irg, suffix, dumper);
+}
+
 /**
  * Run the spiller on the current graph.
  */
@@ -1223,6 +1281,8 @@ static void spill(void)
 	be_pre_spill_prepare_constr(birg, cls);
 	BE_TIMER_POP(t_ra_constr);
 
+	dump(DUMP_RA, irg, "-spillprepare", dump_ir_block_graph_sched);
+
 	/* spill */
 	BE_TIMER_PUSH(t_ra_spill);
 	be_do_spill(birg, cls);
@@ -1231,6 +1291,8 @@ static void spill(void)
 	BE_TIMER_PUSH(t_ra_spill_apply);
 	check_for_memory_operands(irg);
 	BE_TIMER_POP(t_ra_spill_apply);
+
+	dump(DUMP_RA, irg, "-spill", dump_ir_block_graph_sched);
 }
 
 /**
@@ -1252,7 +1314,8 @@ static void be_straight_alloc(be_irg_t *new_birg)
 	 * statistics, time measurements, etc. and use them here too */
 
 	for (c = 0; c < n_cls; ++c) {
-		cls = arch_env_get_reg_class(arch_env, c);
+		cls             = arch_env_get_reg_class(arch_env, c);
+		default_cls_req = NULL;
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
 
