@@ -607,7 +607,6 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		ins[old_reg] = value;
 		++n_used[old_reg];
-		//free_reg_of_value(value);
 
 		/* free occupation infos, we'll add the values back later */
 		if (live_nodes != NULL) {
@@ -647,9 +646,13 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		/* old register has 1 user less, permutation is resolved */
 		assert(arch_register_get_index(arch_get_irn_register(src)) == old_r);
+		permutation[r] = r;
+
 		assert(n_used[old_r] > 0);
 		--n_used[old_r];
-		permutation[r] = r;
+		if (n_used[old_r] == 0) {
+			free_reg_of_value(src);
+		}
 
 		/* advance or jump back (if this copy enabled another copy) */
 		if (old_r < r && n_used[old_r] == 0) {
