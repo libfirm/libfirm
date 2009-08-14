@@ -1167,8 +1167,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 			if (!pred_info->processed) {
 				/* use node for now, it will get fixed later */
-				phi_ins[p]   = node;
-				need_phi = true;
+				phi_ins[p] = node;
+				need_phi   = true;
 			} else {
 				int a = find_value_in_block_info(pred_info, node);
 
@@ -1197,6 +1197,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 			node = phi;
 		} else {
+			allocation_info_t *info = get_allocation_info(node);
+			info->current_value = phi_ins[0];
+
 			/* Grab 1 of the inputs we constructed (might not be the same as
 			 * "node" as we could see the same copy of the value in all
 			 * predecessors */
