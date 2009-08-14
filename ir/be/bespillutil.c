@@ -197,7 +197,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	spill_t      *s;
 	spill_t      *last;
 
-	assert(!arch_irn_is(to_spill, dont_spill));
+	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F after %+F\n", to_spill, after));
 
 	/* Just for safety make sure that we do not insert the spill in front of a phi */
@@ -263,7 +263,7 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	spill_info_t *info;
 	reloader_t *rel;
 
-	assert(!arch_irn_is(to_spill, dont_spill));
+	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -585,11 +585,7 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 static int is_remat_node(const ir_node *node)
 {
 	assert(!be_is_Spill(node));
-
-	if (arch_irn_is(node, rematerializable))
-		return 1;
-
-	return 0;
+	return arch_irn_is(skip_Proj_const(node), rematerializable);
 }
 
 /**
@@ -624,7 +620,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	 * (would be better to test wether the flags are actually live at point
 	 * reloader...)
 	 */
-	if (arch_irn_is(spilled, modify_flags)) {
+	if (arch_irn_is(skip_Proj_const(spilled), modify_flags)) {
 		return REMAT_COST_INFINITE;
 	}
 
@@ -783,7 +779,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	if(spillinfo->spill_costs >= 0)
 		return;
 
-	assert(!arch_irn_is(to_spill, dont_spill));
+	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
 	assert(!be_is_Reload(to_spill));
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled

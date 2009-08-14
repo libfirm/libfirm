@@ -203,7 +203,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		req = arch_get_register_req(node, i);
 		if (req->cls != cls)
 			continue;
-		if (! (req->type & arch_register_req_type_limited))
+		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
 		in = get_irn_n(node, i);
