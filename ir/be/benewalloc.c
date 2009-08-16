@@ -580,7 +580,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 	ir_node   *block;
 	unsigned   r;
 
-	/* create a list of permutations. Leave out fix points. */
+	/* determine how often each source register needs to be read */
 	for (r = 0; r < n_regs; ++r) {
 		unsigned  old_reg = permutation[r];
 		ir_node  *value;
@@ -594,15 +594,6 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 
 		++n_used[old_reg];
-
-		/* no need to do anything for a fixpoint */
-		if (old_reg == r)
-			continue;
-
-		/* free occupation infos, we'll add the values back later */
-		if (live_nodes != NULL) {
-			ir_nodeset_remove(live_nodes, value);
-		}
 	}
 
 	block = get_nodes_block(before);
@@ -642,6 +633,9 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		assert(n_used[old_r] > 0);
 		--n_used[old_r];
 		if (n_used[old_r] == 0) {
+			if (live_nodes != NULL) {
+				ir_nodeset_remove(live_nodes, src);
+			}
 			free_reg_of_value(src);
 		}
 
@@ -692,9 +686,6 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		mark_as_copy_of(proj0, in[0]);
 		reg = arch_register_for_index(cls, old_r);
 		use_reg(proj0, reg);
-		if (live_nodes != NULL) {
-			ir_nodeset_insert(live_nodes, proj0);
-		}
 
 		proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
 		mark_as_copy_of(proj1, in[1]);
@@ -707,7 +698,10 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		permutation[r] = r2;
 
 		/* if we have reached a fixpoint update data structures */
-		if (live_nodes != NULL && r == r2) {
+		if (live_nodes != NULL) {
+			ir_nodeset_remove(live_nodes, in[0]);
+			ir_nodeset_remove(live_nodes, in[1]);
+			ir_nodeset_remove(live_nodes, proj0);
 			ir_nodeset_insert(live_nodes, proj1);
 		}
 	}
@@ -746,6 +740,28 @@ static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 }
 
 /**
+ * change inputs of a node to the current value (copies/perms)
+ */
+static void rewire_inputs(ir_node *node)
+{
+	int i;
+	int arity = get_irn_arity(node);
+
+	for (i = 0; i < arity; ++i) {
+		ir_node           *op = get_irn_n(node, i);
+		allocation_info_t *info;
+
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+
+		info = get_allocation_info(op);
+		if (info->current_value != op) {
+			set_irn_n(node, i, info->current_value);
+		}
+	}
+}
+
+/**
  * Create a bitset of registers occupied with value living through an
  * instruction
  */
@@ -761,6 +777,8 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 		const assignment_t *assignment = &assignments[r];
 		if (assignment->value == NULL)
 			continue;
+		if (!rbitset_is_set(normal_regs, r))
+			continue;
 
 		rbitset_set(bitset, r);
 	}
@@ -775,6 +793,7 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 			continue;
 
 		op  = get_irn_n(node, i);
+		op  = get_allocation_info(op)->current_value;
 		reg = arch_get_irn_register(op);
 		rbitset_clear(bitset, arch_register_get_index(reg));
 	}
@@ -880,7 +899,11 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	}
 
 	/* at this point we have to construct a bipartite matching problem to see
-	   which values should go to which registers */
+	 * which values should go to which registers
+	 * Note: We're building the matrix in "reverse" - source registers are
+	 *       right, destinations at l because this will produce the solution
+	 *       in the format required for permutate_values.
+	 */
 	bp = hungarian_new(n_regs, n_regs, HUNGARIAN_MATCH_PERFECT);
 
 	/* add all combinations, then remove not allowed ones */
@@ -917,6 +940,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		limited     = req->limited;
+		op          = get_allocation_info(op)->current_value;
 		reg         = arch_get_irn_register(op);
 		current_reg = arch_register_get_index(reg);
 		for (r = 0; r < n_regs; ++r) {
@@ -934,11 +958,11 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	assert(res == 0);
 
 #if 0
-	printf("Swap result:");
+	fprintf(stderr, "Swap result:");
 	for (i = 0; i < (int) n_regs; ++i) {
-		printf(" %d", assignment[i]);
+		fprintf(stderr, " %d", assignment[i]);
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 #endif
 
 	hungarian_free(bp);
@@ -1079,28 +1103,6 @@ static void handle_phi_prefs(ir_node *phi)
 		weight = get_block_execfreq(execfreqs, pred);
 		r      = arch_register_get_index(reg);
 		info->prefs[r] += weight * AFF_PHI;
-	}
-}
-
-/**
- * change inputs of a node to the current value (copies/perms)
- */
-static void rewire_inputs(ir_node *node)
-{
-	int i;
-	int arity = get_irn_arity(node);
-
-	for (i = 0; i < arity; ++i) {
-		ir_node           *op = get_irn_n(node, i);
-		allocation_info_t *info;
-
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
-
-		info = get_allocation_info(op);
-		if (info->current_value != op) {
-			set_irn_n(node, i, info->current_value);
-		}
 	}
 }
 
@@ -1399,11 +1401,10 @@ static void be_straight_alloc(be_irg_t *new_birg)
 		 * now */
 		/* TODO: test liveness_introduce */
 		be_liveness_invalidate(lv);
+		free(normal_regs);
 
 		stat_ev_ctx_pop("regcls");
 	}
-
-	free(normal_regs);
 
 	BE_TIMER_PUSH(t_ra_spill_apply);
 	be_abi_fix_stack_nodes(birg->abi);
