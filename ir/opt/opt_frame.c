@@ -33,6 +33,7 @@
 #include "type_t.h"
 #include "irouts.h"
 #include "iredges.h"
+#include "irtools.h"
 
 /*
  * Optimize the frame type of an irg by removing
@@ -106,4 +107,9 @@ void opt_frame_irg(ir_graph *irg) {
 		set_type_state(frame_tp, layout_undefined);
 	}
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+}
+
+ir_graph_pass_t *opt_frame_irg_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "opt_frame_irg", verify, dump, opt_frame_irg);
 }

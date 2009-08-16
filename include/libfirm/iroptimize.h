@@ -287,6 +287,17 @@ ir_graph_pass_t *opt_if_conv_pass(
 
 void opt_sync(ir_graph *irg);
 
+/**
+ * Creates an ir_graph pass for opt_sync().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_sync_pass(const char *name, int verify, int dump);
+
 /*
  * Check if we can replace the load by a given const from
  * the const code irg.
@@ -330,6 +341,17 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 int optimize_load_store(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for optimize_load_store().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *optimize_load_store_pass(const char *name, int verify, int dump);
+
+/**
  * New experimental alternative to optimize_load_store.
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible
@@ -337,9 +359,31 @@ int optimize_load_store(ir_graph *irg);
 int opt_ldst(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for opt_ldst().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_ldst_pass(const char *name, int verify, int dump);
+
+/**
  * Do Loop unrolling in the given graph.
  */
 void optimize_loop_unrolling(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for optimize_loop_unrolling().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *optimize_loop_unrolling_pass(const char *name, int verify, int dump);
 
 /**
  * Optimize the frame type of an irg by removing
@@ -352,6 +396,17 @@ void optimize_loop_unrolling(ir_graph *irg);
  * if entities were removed.
  */
 void opt_frame_irg(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for opt_frame_irg().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_frame_irg_pass(const char *name, int verify, int dump);
 
 /** Possible flags for the Operator Scalar Replacement. */
 typedef enum osr_flags {
@@ -429,6 +484,18 @@ typedef enum osr_flags {
 void opt_osr(ir_graph *irg, unsigned flags);
 
 /**
+ * Creates an ir_graph pass for remove_phi_cycles().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param flags    set of osr_flags
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_osr_pass(const char *name, int verify, int dump, unsigned flags);
+
+/**
  * Removes useless Phi cycles, i.e cycles of Phi nodes with only one
  * non-Phi node.
  * This is automatically done in opt_osr(), so there is no need to call it
@@ -439,6 +506,19 @@ void opt_osr(ir_graph *irg, unsigned flags);
  * This algorithm destroys the link field of nodes.
  */
 void remove_phi_cycles(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for remove_phi_cycles().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param params   The parameters for the if conversion.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *remove_phi_cycles_pass(const char *name, int verify, int dump);
+
 
 /** A default threshold. */
 #define DEFAULT_CLONE_THRESHOLD 300

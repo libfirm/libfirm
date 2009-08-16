@@ -42,6 +42,7 @@
 #include "raw_bitset.h"
 #include "debug.h"
 #include "error.h"
+#include "irtools.h"
 
 /* maximum number of output Proj's */
 #define MAX_PROJ (pn_Load_max > pn_Store_max ? pn_Load_max : pn_Store_max)
@@ -2405,3 +2406,8 @@ end:
 	current_ir_graph = rem;
 	return env.changed != 0;
 }  /* opt_ldst */
+
+ir_graph_pass_t *opt_ldst_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "ldst_df", verify, dump, opt_ldst);
+}  /* opt_ldst_pass */

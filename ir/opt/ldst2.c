@@ -41,6 +41,7 @@
 #include "irdump.h"
 #include "irflag_t.h"
 #include "irprintf.h"
+#include "irtools.h"
 
 #if +0
 #define OPTIMISE_LOAD_AFTER_LOAD
@@ -844,4 +845,9 @@ void opt_sync(ir_graph *irg)
 	irg_walk_graph(irg, NULL, walker, NULL);
 	//optimize_graph_df(irg);
 	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
+}
+
+ir_graph_pass_t *opt_sync_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "opt_sync", verify, dump, opt_sync);
 }

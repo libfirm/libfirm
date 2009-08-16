@@ -51,6 +51,7 @@
 #include "array.h"
 #include "firmstat.h"
 #include "error.h"
+#include "irpass_t.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -1320,6 +1321,11 @@ void remove_phi_cycles(ir_graph *irg) {
 	current_ir_graph = rem;
 }  /* remove_phi_cycles */
 
+ir_graph_pass_t *remove_phi_cycles_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "remove_phi_cycles", verify, dump, remove_phi_cycles);
+}  /* remove_phi_cycles_pass */
+
 /**
  * Post-walker: fix Add and Sub nodes that where results of I<->P conversions.
  */
@@ -1452,3 +1458,35 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 
 	current_ir_graph = rem;
 }  /* opt_osr */
+
+struct pass_t {
+	ir_graph_pass_t pass;
+	unsigned        flags;
+};
+
+/**
+* Wrapper for running opt_osr() as an ir_graph pass.
+*/
+static int pass_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+	opt_osr(irg, pass->flags);
+	return 0;
+}  /* pass_wrapper */
+
+ir_graph_pass_t *opt_osr_pass(const char *name, int verify, int dump, unsigned flags)
+{
+	struct pass_t *pass = xmalloc(sizeof(*pass));
+
+	pass->pass.kind       = k_ir_prog_pass;
+	pass->pass.run_on_irg = pass_wrapper;
+	pass->pass.context    = pass;
+	pass->pass.name       = name ? name : "osr";
+	pass->pass.verify     = verify != 0;
+	pass->pass.dump       = dump != 0;
+
+	pass->flags = flags;
+
+	INIT_LIST_HEAD(&pass->pass.list);
+
+	return &pass->pass;
+}  /* opt_osr_pass */

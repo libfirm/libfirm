@@ -522,7 +522,7 @@ ir_graph_pass_t *opt_if_conv_pass(
 	pass->pass.kind       = k_ir_prog_pass;
 	pass->pass.run_on_irg = pass_wrapper;
 	pass->pass.context    = pass;
-	pass->pass.name       = name;
+	pass->pass.name       = name ? name : "if_conv";
 	pass->pass.verify     = verify != 0;
 	pass->pass.dump       = dump != 0;
 
