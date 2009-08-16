@@ -807,6 +807,10 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	unsigned l, r;
 	unsigned *assignment;
 
+	/* construct a list of register occupied by live-through values */
+	unsigned *live_through_regs = NULL;
+	unsigned *output_regs       = NULL;
+
 	/* see if any use constraints are not met */
 	bool good = true;
 	for (i = 0; i < arity; ++i) {
@@ -828,17 +832,13 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		reg     = arch_get_irn_register(op);
 		r       = arch_register_get_index(reg);
 		if (!rbitset_is_set(limited, r)) {
-			/* found an assignement outside the limited set */
+			/* found an assignment outside the limited set */
 			good = false;
 			break;
 		}
 	}
 
-	/* construct a list of register occupied by live-through values */
-	unsigned *live_through_regs = NULL;
-	unsigned *output_regs       = NULL;
-
-	/* is any of the live-throughs using a constrainted output register? */
+	/* is any of the live-throughs using a constrained output register? */
 	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 
@@ -1156,6 +1156,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
 		const arch_register_t *reg;
 		int                    p;
+		bool                   need_phi = false;
 
 		node = be_lv_get_irn(lv, block, i);
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
@@ -1164,7 +1165,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		/* check all predecessors for this value, if it is not everywhere the
 		   same or unknown then we have to construct a phi
 		   (we collect the potential phi inputs here) */
-		bool need_phi = false;
 		for (p = 0; p < n_preds; ++p) {
 			block_info_t *pred_info = pred_block_infos[p];
 
