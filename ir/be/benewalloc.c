@@ -412,12 +412,8 @@ static void analyze_block(ir_node *block, void *data)
  */
 static void use_reg(ir_node *node, const arch_register_t *reg)
 {
-	unsigned      r          = arch_register_get_index(reg);
-	assignment_t *assignment = &assignments[r];
-
-	//assert(assignment->value == NULL);
-	assignment->value = node;
-
+	unsigned r = arch_register_get_index(reg);
+	assignments[r].value = node;
 	arch_set_irn_register(node, reg);
 }
 
@@ -581,23 +577,16 @@ static void free_reg_of_value(ir_node *node)
 static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
                              unsigned *permutation)
 {
-	ir_node  **ins    = ALLOCANZ(ir_node*, n_regs);
 	unsigned  *n_used = ALLOCANZ(unsigned, n_regs);
 	ir_node   *block;
 	unsigned   r;
 
 	/* create a list of permutations. Leave out fix points. */
 	for (r = 0; r < n_regs; ++r) {
-		unsigned      old_reg = permutation[r];
-		assignment_t *assignment;
-		ir_node      *value;
+		unsigned  old_reg = permutation[r];
+		ir_node  *value;
 
-		/* no need to do anything for a fixpoint */
-		if (old_reg == r)
-			continue;
-
-		assignment = &assignments[old_reg];
-		value      = assignment->value;
+		value = assignments[old_reg].value;
 		if (value == NULL) {
 			/* nothing to do here, reg is not live. Mark it as fixpoint
 			 * so we ignore it in the next steps */
@@ -605,8 +594,11 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 			continue;
 		}
 
-		ins[old_reg] = value;
 		++n_used[old_reg];
+
+		/* no need to do anything for a fixpoint */
+		if (old_reg == r)
+			continue;
 
 		/* free occupation infos, we'll add the values back later */
 		if (live_nodes != NULL) {
@@ -631,7 +623,7 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 
 		/* create a copy */
-		src = ins[old_r];
+		src  = assignments[old_r].value;
 		copy = be_new_Copy(cls, block, src);
 		sched_add_before(before, copy);
 		reg = arch_register_for_index(cls, r);
@@ -690,8 +682,8 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		/* exchange old_r and r2; after that old_r is a fixed point */
 		r2 = permutation[old_r];
 
-		in[0] = ins[r2];
-		in[1] = ins[old_r];
+		in[0] = assignments[r2].value;
+		in[1] = assignments[old_r].value;
 		perm = be_new_Perm(cls, block, 2, in);
 		sched_add_before(before, perm);
 		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
@@ -706,22 +698,18 @@ static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 
 		proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
+		mark_as_copy_of(proj1, in[1]);
+		reg = arch_register_for_index(cls, r2);
+		use_reg(proj1, reg);
 
 		/* 1 value is now in the correct register */
 		permutation[old_r] = old_r;
 		/* the source of r changed to r2 */
 		permutation[r] = r2;
-		ins[r2] = in[1];
-		reg = arch_register_for_index(cls, r2);
-		if (r == r2) {
-			/* if we have reached a fixpoint update data structures */
-			mark_as_copy_of(proj1, in[1]);
-			use_reg(proj1, reg);
-			if (live_nodes != NULL) {
-				ir_nodeset_insert(live_nodes, proj1);
-			}
-		} else {
-			arch_set_irn_register(proj1, reg);
+
+		/* if we have reached a fixpoint update data structures */
+		if (live_nodes != NULL && r == r2) {
+			ir_nodeset_insert(live_nodes, proj1);
 		}
 	}
 
@@ -939,14 +927,14 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		}
 	}
 
-	hungarian_print_costmatrix(bp, 1);
+	//hungarian_print_costmatrix(bp, 1);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	assignment = ALLOCAN(unsigned, n_regs);
 	res = hungarian_solve(bp, (int*) assignment, &dummy, 0);
 	assert(res == 0);
 
-#if 1
+#if 0
 	printf("Swap result:");
 	for (i = 0; i < (int) n_regs; ++i) {
 		printf(" %d", assignment[i]);
