@@ -50,7 +50,7 @@
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.
  */
-static void optimize_in_place_wrapper (ir_node *n, void *env) {
+static void optimize_in_place_wrapper(ir_node *n, void *env) {
 	ir_node *optimized = optimize_in_place_2(n);
 	(void) env;
 

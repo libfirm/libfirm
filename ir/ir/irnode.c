@@ -269,11 +269,11 @@ void set_irn_in(ir_node *node, int arity, ir_node **in) {
 }
 
 ir_node *(get_irn_intra_n)(const ir_node *node, int n) {
-	return _get_irn_intra_n (node, n);
+	return _get_irn_intra_n(node, n);
 }
 
 ir_node *(get_irn_inter_n)(const ir_node *node, int n) {
-	return _get_irn_inter_n (node, n);
+	return _get_irn_inter_n(node, n);
 }
 
 ir_node *(*_get_irn_n)(const ir_node *node, int n) = _get_irn_intra_n;
