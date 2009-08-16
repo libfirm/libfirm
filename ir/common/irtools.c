@@ -32,6 +32,7 @@
 #include "irbackedge_t.h"
 #include "irtools.h"
 #include "irprintf.h"
+#include "irpass_t.h"
 
 /* the famous clear_link implementation. */
 void firm_clear_link(ir_node *n, void *env) {
@@ -165,3 +166,58 @@ void firm_pset_dump(pset *set) {
 		ir_fprintf(stderr, "%+F\n", obj);
 	}
 }
+
+/**
+ * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
+ */
+static int void_pass_wrapper(ir_graph *irg, void *context) {
+	void (*function)(ir_graph *irg) = context;
+	function(irg);
+	return 0;
+}  /* void_pass_wrapper */
+
+/* Creates an ir_graph pass for running void function(ir_graph *irg). */
+ir_graph_pass_t *def_graph_pass(
+	const char *name, int verify, int dump,
+	void (*function)(ir_graph *irg))
+{
+	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
+
+	pass->kind       = k_ir_prog_pass;
+	pass->run_on_irg = void_pass_wrapper;
+	pass->context    = function;
+	pass->name       = name;
+	pass->verify     = verify != 0;
+	pass->dump       = dump != 0;
+
+	INIT_LIST_HEAD(&pass->list);
+
+	return pass;
+}  /* def_graph_pass */
+
+/**
+ * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
+ */
+static int int_pass_wrapper(ir_graph *irg, void *context) {
+	int (*function)(ir_graph *irg) = context;
+	return function(irg);
+}  /* int_pass_wrapper */
+
+/* Creates an ir_graph pass for running void function(ir_graph *irg). */
+ir_graph_pass_t *def_graph_pass_ret(
+	const char *name, int verify, int dump,
+	int (*function)(ir_graph *irg))
+{
+	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
+
+	pass->kind       = k_ir_prog_pass;
+	pass->run_on_irg = int_pass_wrapper;
+	pass->context    = function;
+	pass->name       = name;
+	pass->verify     = verify != 0;
+	pass->dump       = dump != 0;
+
+	INIT_LIST_HEAD(&pass->list);
+
+	return pass;
+}  /* def_graph_pass_ret */

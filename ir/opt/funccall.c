@@ -39,6 +39,7 @@
 #include "irloop_t.h"
 #include "ircons.h"
 #include "iredges_t.h"
+#include "irpass_t.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
 #include "debug.h"
@@ -1073,3 +1074,40 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 void firm_init_funccalls(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
 }  /* firm_init_funccalls */
+
+struct pass_t {
+	ir_prog_pass_t          pass;
+	int                     force_run;
+	check_alloc_entity_func callback;
+};
+
+/**
+ * Wrapper for running optimize_funccalls() as an ir_prog pass.
+ */
+static int pass_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+	optimize_funccalls(pass->force_run, pass->callback);
+	return 0;
+}  /* pass_wrapper */
+
+/* Creates an ir_prog pass for optimize_funccalls. */
+ir_prog_pass_t *optimize_funccalls_pass(
+	const char *name, int verify, int dump,
+	int force_run, check_alloc_entity_func callback)
+{
+	struct pass_t *pass = xmalloc(sizeof(*pass));
+
+	pass->pass.kind          = k_ir_prog_pass;
+	pass->pass.run_on_irprog = pass_wrapper;
+	pass->pass.context       = pass;
+	pass->pass.name          = name ? name : "funccalls";
+	pass->pass.verify        = verify != 0;
+	pass->pass.dump          = dump != 0;
+
+	INIT_LIST_HEAD(&pass->pass.list);
+
+	pass->force_run = force_run;
+	pass->callback  = callback;
+
+	return &pass->pass;
+}  /* optimize_funccalls_pass */

@@ -45,11 +45,33 @@
 void optimize_cf(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for optimize_cf().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *optimize_cf_pass(const char *name, int verify, int dump);
+
+/**
  * Perform path-sensitive jump threading on the given graph.
  *
  * @param irg  the graph
  */
 void opt_jumpthreading(ir_graph* irg);
+
+/**
+ * Creates an ir_graph pass for opt_jumpthreading().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_jumpthreading_pass(const char *name, int verify, int dump);
 
 /**
  * Try to simplify boolean expression in the given ir graph.
@@ -60,6 +82,17 @@ void opt_jumpthreading(ir_graph* irg);
 void opt_bool(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for opt_bool().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_bool_pass(const char *name, int verify, int dump);
+
+/**
  * Try to reduce the number of conv nodes in the given ir graph.
  *
  * @param irg  the graph
@@ -67,6 +100,17 @@ void opt_bool(ir_graph *irg);
  * @return non-zero if the optimization could be applied, 0 else
  */
 int conv_opt(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for conv_opt().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *conv_opt_pass(const char *name, int verify, int dump);
 
 /**
  * Do the scalar replacement optimization.
@@ -154,6 +198,25 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback);
 void optimize_funccalls(int force_run, check_alloc_entity_func callback);
 
 /**
+ * Creates an ir_prog pass for optimize_funccalls().
+ *
+ * @param name       the name of this pass or NULL
+ * @param verify     should this pass be verified?
+ * @param dump       should this pass result be dumped?
+ * @param force_run  if non-zero, an optimization run is started even
+ *                   if no const function graph was detected.
+ *                   Else calls are only optimized if at least one
+ *                   const function graph was detected.
+ * @param callback   a callback function to check whether a
+ *                   given entity is a allocation call
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *optimize_funccalls_pass(
+	const char *name, int verify, int dump,
+	int force_run, check_alloc_entity_func callback);
+
+/**
  * Does Partial Redundancy Elimination combined with
  * Global Value Numbering.
  * Can be used to replace place_code() completely.
@@ -163,6 +226,17 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback);
  * @param irg  the graph
  */
 void do_gvn_pre(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for do_gvn_pre().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *do_gvn_pre_pass(const char *name, int verify, int dump);
 
 /**
  * This function is called to evaluate, if a mux can build
@@ -197,6 +271,19 @@ struct ir_settings_if_conv_t {
  * flow optimization.
  */
 void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
+
+/**
+ * Creates an ir_graph pass for opt_if_conv().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param params   The parameters for the if conversion.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_if_conv_pass(
+	const char *name, int verify, int dump, const ir_settings_if_conv_t *params);
 
 void opt_sync(ir_graph *irg);
 

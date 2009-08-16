@@ -105,4 +105,36 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg);
  */
 ir_node *exact_copy(const ir_node *n);
 
+/**
+ * Creates an ir_graph pass for running void function(ir_graph *irg).
+ * Uses the default verifier and dumper.
+ * The pass returns always 0.
+ *
+ * @param name     the name of this pass
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param params   The parameters for the if conversion.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *def_graph_pass(
+	const char *name, int verify, int dump,
+	void (*function)(ir_graph *irg));
+
+/**
+ * Creates an ir_graph pass for running int function(ir_graph *irg).
+ * Uses the default verifier and dumper.
+ * The pass returns the return value of function.
+ *
+ * @param name     the name of this pass
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param params   The parameters for the if conversion.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *def_graph_pass_ret(
+	const char *name, int verify, int dump,
+	int (*function)(ir_graph *irg));
+
 #endif

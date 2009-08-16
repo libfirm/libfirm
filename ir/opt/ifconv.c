@@ -37,6 +37,7 @@
 #include "irgwalk.h"
 #include "irtools.h"
 #include "array_t.h"
+#include "irpass_t.h"
 
 // debug
 #include "irdump.h"
@@ -497,4 +498,37 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	}
 
 	free_cdep(irg);
+}
+
+struct pass_t {
+	ir_graph_pass_t             pass;
+	const ir_settings_if_conv_t *params;
+};
+
+/**
+ * Wrapper for running opt_if_conv() as an ir_graph pass.
+ */
+static int pass_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+	opt_if_conv(irg, pass->params);
+	return 0;
+}  /* pass_wrapper */
+
+ir_graph_pass_t *opt_if_conv_pass(
+	const char *name, int verify, int dump, const ir_settings_if_conv_t *params)
+{
+	struct pass_t *pass = xmalloc(sizeof(*pass));
+
+	pass->pass.kind       = k_ir_prog_pass;
+	pass->pass.run_on_irg = pass_wrapper;
+	pass->pass.context    = pass;
+	pass->pass.name       = name;
+	pass->pass.verify     = verify != 0;
+	pass->pass.dump       = dump != 0;
+
+	pass->params = params;
+
+	INIT_LIST_HEAD(&pass->pass.list);
+
+	return &pass->pass;
 }

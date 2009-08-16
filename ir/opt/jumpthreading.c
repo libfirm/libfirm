@@ -44,6 +44,7 @@
 #include "tv.h"
 #include "opt_confirms.h"
 #include "iropt_dbg.h"
+#include "irtools.h"
 
 #undef AVOID_PHIB
 
@@ -741,3 +742,9 @@ void opt_jumpthreading(ir_graph* irg)
 		optimize_cf(irg);
 	}
 }
+
+/* Creates an ir_graph pass for opt_jumpthreading. */
+ir_graph_pass_t *opt_jumpthreading_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "jumpthreading", verify, dump, opt_jumpthreading);
+}  /* opt_jumpthreading_pass */

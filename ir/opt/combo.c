@@ -72,7 +72,6 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "irpass_t.h"
 #include "irgwalk.h"
 #include "irop.h"
 #include "irouts.h"
@@ -82,7 +81,7 @@
 #include "array_t.h"
 #include "error.h"
 #include "irnodeset.h"
-
+#include "irtools.h"
 #include "tv_t.h"
 
 #include "irprintf.h"
@@ -3569,28 +3568,8 @@ void combo(ir_graph *irg) {
 	current_ir_graph = rem;
 }  /* combo */
 
-/**
- * Wrapper for running combo() as an ir_graph pass.
- */
-static int pass_wrapper(ir_graph *irg, void *context) {
-	(void)context;
-	combo(irg);
-	/* combo is a fix-point iteration */
-	return 0;
-}  /* pass_wrapper */
-
 /* Creates an ir_graph pass for combo. */
-ir_graph_pass_t *combo_pass(const char *name, int verify, int dump) {
-	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
-
-	pass->kind       = k_ir_prog_pass;
-	pass->run_on_irg = pass_wrapper;
-	pass->context    = pass;
-	pass->name       = name ? name : "combo";
-	pass->verify     = verify != 0;
-	pass->dump       = dump != 0;
-
-	INIT_LIST_HEAD(&pass->list);
-
-	return pass;
+ir_graph_pass_t *combo_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "combo", verify, dump, combo);
 }  /* combo_pass */

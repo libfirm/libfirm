@@ -222,26 +222,8 @@ int optimize_graph_df(ir_graph *irg) {
 	return changed;
 }
 
-/**
- * Wrapper for running optimize_graph_df() as an ir_graph pass.
- */
-static int pass_wrapper(ir_graph *irg, void *context) {
-	(void)context;
-	return optimize_graph_df(irg);
-}  /* pass_wrapper */
-
 /* Creates an ir_graph pass for optimize_graph_df. */
-ir_graph_pass_t *optimize_graph_df_pass(const char *name, int verify, int dump) {
-	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
-
-	pass->kind       = k_ir_prog_pass;
-	pass->run_on_irg = pass_wrapper;
-	pass->context    = pass;
-	pass->name       = name ? name : "optimize_graph_df";
-	pass->verify     = verify != 0;
-	pass->dump       = dump != 0;
-
-	INIT_LIST_HEAD(&pass->list);
-
-	return pass;
-}  /* combo_pass */
+ir_graph_pass_t *optimize_graph_df_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass_ret(name ? name : "optimize_graph_df", verify, dump, optimize_graph_df);
+}  /* optimize_graph_df_pass */

@@ -35,6 +35,7 @@
 #include "irprintf.h"
 #include "irnode_t.h"
 #include "tv.h"
+#include "irtools.h"
 
 typedef struct cond_pair {
 	ir_node *cmp_lo;
@@ -455,3 +456,9 @@ void opt_bool(ir_graph *const irg)
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
 }
+
+/* Creates an ir_graph pass for opt_bool. */
+ir_graph_pass_t *opt_bool_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "opt_bool", verify, dump, opt_bool);
+}  /* opt_bool_pass */

@@ -44,6 +44,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
+#include "irtools.h"
 
 /** Additional info we need for every block. */
 typedef struct block_info {
@@ -894,3 +895,9 @@ void do_gvn_pre(ir_graph *irg)
 		set_irg_loopinfo_inconsistent(irg);
 	}
 }  /* do_gvn_pre */
+
+/* Creates an ir_graph pass for do_gvn_pre. */
+ir_graph_pass_t *do_gvn_pre_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "gvn_pre", verify, dump, do_gvn_pre);
+}  /* do_gvn_pre_pass */

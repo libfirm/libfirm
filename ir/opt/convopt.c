@@ -49,6 +49,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
+#include "irtools.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
@@ -300,3 +301,9 @@ int conv_opt(ir_graph *irg)
 	}
 	return invalidate;
 }
+
+/* Creates an ir_graph pass for conv_opt. */
+ir_graph_pass_t *conv_opt_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass_ret(name ? name : "conv_opt", verify, dump, conv_opt);
+}  /* conv_opt_pass */
