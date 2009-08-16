@@ -146,11 +146,12 @@ unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
  */
 static inline int rbitset_is_empty(unsigned *bitset, unsigned size)
 {
-	unsigned size_bytes = BITSET_SIZE_ELEMS(size);
+	unsigned n = BITSET_SIZE_ELEMS(size);
 	unsigned i;
-	for (i = 0; i < size_bytes; ++i)
+	for (i = 0; i < n; ++i) {
 		if (bitset[i] != 0)
 			return 0;
+	}
 
 	return 1;
 }
