@@ -168,7 +168,7 @@ struct pass_t {
 };
 
 /**
- * Wrapper for running lower_intrinsics() as an irprog pass.
+ * Wrapper for running lower_intrinsics() as an ir_prog pass.
  */
 static int pass_wrapper(ir_prog *irp, void *context)
 {
@@ -179,7 +179,7 @@ static int pass_wrapper(ir_prog *irp, void *context)
 }  /* pass_wrapper */
 
 /**
- * Creates an irprog pass for lower_intrinsics.
+ * Creates an ir_prog pass for lower_intrinsics.
  *
  * @param name             the name of this pass or NULL
  * @param verify           should this pass be verified?
@@ -192,7 +192,7 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
 	int verify,
 	int dump,
-	i_record *list, int length)
+	i_record *list, int length, int part_block_used)
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
 
@@ -205,6 +205,10 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	pass->pass.dump          = dump != 0;
 
 	INIT_LIST_HEAD(&pass->pass.list);
+
+	memcpy(pass->list, list, sizeof(list[0]) * length);
+	pass->length          = length;
+	pass->part_block_used = part_block_used;
 
 	return &pass->pass;
 }  /* lower_intrinsics_pass*/

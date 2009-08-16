@@ -550,6 +550,17 @@ void optimize_class_casts(void);
  */
 void combo(ir_graph *irg);
 
+/**
+ * Creates an ir_graph pass for combo.
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *combo_pass(const char *name, int verify, int dump);
+
 /** Inlines all small methods at call sites where the called address comes
  *  from a SymConst node that references the entity representing the called
  *  method.

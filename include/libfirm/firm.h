@@ -83,6 +83,7 @@ extern "C" {
 #include "iroptimize.h"     /* optimize ir by reassociation */
 #include "ircgopt.h"        /* Optimizations based on interprocedural graph */
 #include "iropt.h"
+#include "irpass.h"         /* Pass management */
 
 /* Lowering */
 #include "lowering.h"         /* lowering of different calls parameters, intrinsic calls, double word types, high-level constructs */

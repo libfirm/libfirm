@@ -324,7 +324,7 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
 	int verify,
 	int dump,
-	i_record *list, int length);
+	i_record *list, int length, int part_block_used);
 
 /**
  * A mapper for the integer/float absolute value: type abs(type v).
