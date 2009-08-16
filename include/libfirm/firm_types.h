@@ -40,6 +40,7 @@ typedef struct tarval               tarval,              *ir_tarval_ptr;
 typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
 typedef struct ir_type              ir_type,             *ir_type_ptr;
 typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
+typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
 typedef struct ir_reg_tree          ir_reg_tree,         *ir_reg_tree_ptr;
@@ -53,6 +54,11 @@ typedef struct sn_entry             *seqno_t;
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
 typedef struct ident_if_t           ident_if_t;
 typedef struct type_identify_if_t   type_identify_if_t;
+typedef struct ir_graph_pass_t      ir_graph_pass_t;
+typedef struct ir_prog_pass_t       ir_prog_pass_t;
+
+typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
+typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
 
 typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 
