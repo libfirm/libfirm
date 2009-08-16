@@ -45,6 +45,7 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "ircons_t.h"
+#include "irtools.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
@@ -702,6 +703,11 @@ int opt_tail_rec_irg(ir_graph *irg) {
 	return n_tail_calls;
 }
 
+ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass_ret(name ? name : "tailrec", verify, dump, opt_tail_rec_irg);
+}
+
 /*
  * optimize tail recursion away
  */
@@ -726,4 +732,9 @@ void opt_tail_recursion(void) {
 
 	DB((dbg, LEVEL_1, "Performed tail recursion for %d of %d graphs\n",
 	    n_opt_applications, get_irp_n_irgs()));
+}
+
+ir_prog_pass_t *opt_tail_recursion_pass(const char *name, int verify, int dump)
+{
+	return def_prog_pass(name ? name : "tailrec", verify, dump, opt_tail_recursion);
 }

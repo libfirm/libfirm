@@ -94,6 +94,15 @@ void ir_prog_pass_mgr_add_graph_mgr(
 	ir_prog_pass_manager_t *mgr, ir_graph_pass_manager_t *graph_mgr);
 
 /**
+ * Add an ir_graph_pass as a pass to an ir_prog pass manager.
+ *
+ * @param mgr   the ir_prog pass manager
+ * @param pass  the ir_graph pass to be added
+ */
+void ir_prog_pass_mgr_add_graph_pass(
+	ir_prog_pass_manager_t *mgr, ir_graph_pass_t *pass);
+
+/**
  * Run all passes of an ir_prog pass manager.
  *
  * @param mgr   the manager

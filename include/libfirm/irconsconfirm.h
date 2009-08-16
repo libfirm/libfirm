@@ -52,11 +52,33 @@
 void construct_confirms(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for construct_confirms().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *construct_confirms_pass(const char *name, int verify, int dump);
+
+/**
  * Remove all Confirm nodes from a graph.
  *
  * Note that local_optimize() can handle this if
  * the remove Confirm node setting is on (set_opt_remove_Confirm(1)).
  */
 void remove_confirms(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for remove_confirms().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *remove_confirms_pass(const char *name, int verify, int dump);
 
 #endif

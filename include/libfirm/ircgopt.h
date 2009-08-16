@@ -43,4 +43,16 @@
  * Frees all interprocedural loop information. */
 void gc_irgs(int n_keep, ir_entity *keep_arr[]);
 
+/**
+ * Creates an ir_prog pass for gc_irgs().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ * @param params   The parameters for the if conversion.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_prog_pass_t *gc_irgs_pass(const char *name, int verify, int dump);
+
 #endif

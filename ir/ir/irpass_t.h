@@ -111,6 +111,7 @@ struct ir_prog_pass_t {
 
 	unsigned verify:1;     /**< Set if this pass should be verified. */
 	unsigned dump:1;       /**< Set if this pass should be dumped. */
+	unsigned is_wrapper:1; /**< set if this is a wrapper pass. */
 };
 
 /**

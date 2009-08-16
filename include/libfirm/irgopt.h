@@ -175,6 +175,19 @@ int inline_method(ir_node *call, ir_graph *called_graph);
  */
 void place_code(ir_graph *irg);
 
+/**
+ * Creates an ir_graph pass for place_code().
+ * This pass enables GCSE, runs optimize_graph_df() and finally
+ * place_code();
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *place_code_pass(const char *name, int verify, int dump);
+
 /** Places an empty basic block on critical control flow edges thereby
  * removing them.
  *

@@ -84,10 +84,21 @@ static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
 	(void)idx;
 }
 
-/* Add an ir_graph_pass_manager as a pass to an irprog pass manager. */
-void ir_prog_pass_mgr_add_graph_mgr(
-	ir_prog_pass_manager_t *mgr, ir_graph_pass_manager_t *graph_mgr)
+/**
+ * Term warpper for a wrapped ir_graph pass manager.
+ */
+static void term_wrapper(void *context)
 {
+	ir_graph_pass_manager_t *mgr = context;
+	term_graph_pass_mgr(mgr);
+}
+
+/**
+ * Create a wrapper ir_prog pass for an ir_graph manager.
+ */
+static ir_prog_pass_t *create_wrapper_pass(ir_graph_pass_manager_t *graph_mgr)
+{
+	/* create a wrapper pass */
 	ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
 
 	pass->run_on_irprog = run_wrapper;
@@ -99,9 +110,45 @@ void ir_prog_pass_mgr_add_graph_mgr(
 	pass->dump_irprog   = no_dump;
 	pass->dump          = 0;
 	pass->verify        = 0;
+	pass->is_wrapper    = 1;
 
 	pass->add_to_mgr   = NULL;
-	pass->rem_from_mgr = NULL;
+	pass->rem_from_mgr = term_wrapper;
+
+	return pass;
+}
+
+/* Add an ir_graph_pass as a pass to an ir_prog pass manager. */
+void ir_prog_pass_mgr_add_graph_pass(
+	ir_prog_pass_manager_t *mgr, ir_graph_pass_t *pass)
+{
+	ir_graph_pass_manager_t *graph_mgr;
+	ir_prog_pass_t          *wrapper;
+
+	/* check if the last pass is a graph_pass wrapper */
+	if (! list_empty(&mgr->passes)) {
+		wrapper = list_entry(mgr->passes.prev, ir_prog_pass_t, list);
+		if (wrapper->is_wrapper) {
+			graph_mgr = wrapper->context;
+
+			ir_graph_pass_mgr_add(graph_mgr, pass);
+			return;
+		}
+	}
+
+	/* not found, create a new wrapper */
+	graph_mgr = new_graph_pass_mgr("wrapper", mgr->verify_all, mgr->dump_all);
+	ir_graph_pass_mgr_add(graph_mgr, pass);
+
+	wrapper = create_wrapper_pass(graph_mgr);
+	ir_prog_pass_mgr_add(mgr, wrapper);
+}
+
+/* Add an ir_graph_pass_manager as a pass to an ir_prog pass manager. */
+void ir_prog_pass_mgr_add_graph_mgr(
+	ir_prog_pass_manager_t *mgr, ir_graph_pass_manager_t *graph_mgr)
+{
+	ir_prog_pass_t *pass = create_wrapper_pass(graph_mgr);
 
 	if (mgr->dump_all)
 		graph_mgr->dump_all = 1;
@@ -172,7 +219,7 @@ static int irp_verify_irgs(ir_prog *irp, int flags) {
 	return res;
 }
 
-/* Run all passes of an irprog pass manager. */
+/* Run all passes of an ir_prog pass manager. */
 int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 {
 	ir_prog_pass_t *pass;
@@ -202,7 +249,11 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 				dump_all_ir_graphs(dump_ir_block_graph, suffix);
 			}
 		}
-		++idx;
+		if (pass->is_wrapper) {
+			ir_graph_pass_manager_t *graph_mgr = pass->context;
+			idx += graph_mgr->n_passes;
+		} else
+			++idx;
 	}
 	return res;
 }
@@ -237,7 +288,7 @@ ir_prog_pass_manager_t *new_prog_pass_mgr(
 	return res;
 }
 
-/* Terminate a graph pass manager and all owned passes. */
+/* Terminate an ir_graph pass manager and all owned passes. */
 void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr)
 {
 	ir_graph_pass_t *pass, *next;

@@ -170,11 +170,11 @@ void firm_pset_dump(pset *set) {
 /**
  * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
  */
-static int void_pass_wrapper(ir_graph *irg, void *context) {
+static int void_graph_wrapper(ir_graph *irg, void *context) {
 	void (*function)(ir_graph *irg) = context;
 	function(irg);
 	return 0;
-}  /* void_pass_wrapper */
+}  /* void_graph_wrapper */
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass(
@@ -183,8 +183,8 @@ ir_graph_pass_t *def_graph_pass(
 {
 	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
 
-	pass->kind       = k_ir_prog_pass;
-	pass->run_on_irg = void_pass_wrapper;
+	pass->kind       = k_ir_graph_pass;
+	pass->run_on_irg = void_graph_wrapper;
 	pass->context    = function;
 	pass->name       = name;
 	pass->verify     = verify != 0;
@@ -198,10 +198,10 @@ ir_graph_pass_t *def_graph_pass(
 /**
  * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
  */
-static int int_pass_wrapper(ir_graph *irg, void *context) {
+static int int_graph_wrapper(ir_graph *irg, void *context) {
 	int (*function)(ir_graph *irg) = context;
 	return function(irg);
-}  /* int_pass_wrapper */
+}  /* int_graph_wrapper */
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass_ret(
@@ -210,8 +210,8 @@ ir_graph_pass_t *def_graph_pass_ret(
 {
 	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
 
-	pass->kind       = k_ir_prog_pass;
-	pass->run_on_irg = int_pass_wrapper;
+	pass->kind       = k_ir_graph_pass;
+	pass->run_on_irg = int_graph_wrapper;
 	pass->context    = function;
 	pass->name       = name;
 	pass->verify     = verify != 0;
@@ -221,3 +221,33 @@ ir_graph_pass_t *def_graph_pass_ret(
 
 	return pass;
 }  /* def_graph_pass_ret */
+
+/**
+ * Wrapper for running void function(void) as an ir_prog pass.
+ */
+static int void_prog_wrapper(ir_prog *irp, void *context) {
+	void (*function)(void) = context;
+
+	(void)irp;
+	function();
+	return 0;
+}  /* void_graph_wrapper */
+
+/* Creates an ir_prog pass for running void function(void). */
+ir_prog_pass_t *def_prog_pass(
+	const char *name, int verify, int dump,
+	void (*function)(void))
+{
+	struct ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
+
+	pass->kind          = k_ir_prog_pass;
+	pass->run_on_irprog = void_prog_wrapper;
+	pass->context       = function;
+	pass->name          = name;
+	pass->verify        = verify != 0;
+	pass->dump          = dump != 0;
+
+	INIT_LIST_HEAD(&pass->list);
+
+	return pass;
+}  /* def_prog_pass */

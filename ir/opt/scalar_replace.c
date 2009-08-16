@@ -771,6 +771,10 @@ int scalar_replacement_opt(ir_graph *irg) {
 	return res;
 }
 
+ir_graph_pass_t *scalar_replacement_opt_pass(const char *name, int verify, int dump) {
+	return def_graph_pass(name ? name : "scalar_rep", verify, dump, scalar_replacement_opt);
+}
+
 void firm_init_scalar_replace(void) {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.scalar_replace");
 }

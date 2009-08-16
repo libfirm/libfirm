@@ -228,12 +228,21 @@ void lower_highlevel(int lower_bitfields);
  */
 void lower_const_code(void);
 
+/**
+ * Creates an ir_prog pass for lower_const_code().
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_prog_pass_t *lower_const_code_pass(const char *name);
+
 typedef struct lower_mode_b_config_t {
 	/* mode that is used to transport 0/1 values */
 	ir_mode *lowered_mode;
 	/* preferred mode for the "set" operations (a psi that produces a 0 or 1) */
 	ir_mode *lowered_set_mode;
-	/* wether direct Cond -> Cmps should also be lowered */
+	/* whether direct Cond -> Cmps should also be lowered */
 	int lower_direct_cmp;
 } lower_mode_b_config_t;
 

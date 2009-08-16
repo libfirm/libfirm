@@ -166,6 +166,12 @@ void normalize_one_return(ir_graph *irg) {
 	set_irg_loopinfo_inconsistent(irg);
 }
 
+/* Create a graph pass. */
+ir_graph_pass_t *normalize_one_return_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "one_ret", verify, dump, normalize_one_return);
+}
+
 /**
  * Check, whether a Return can be moved on block upwards.
  *
@@ -372,4 +378,10 @@ void normalize_n_returns(ir_graph *irg) {
 	set_irg_extblk_inconsistent(irg);  /* may not be needed */
 	set_irg_outs_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(current_ir_graph);
+}
+
+/* Create a graph pass. */
+ir_graph_pass_t *normalize_n_returns_pass(const char *name, int verify, int dump)
+{
+	return def_graph_pass(name ? name : "n_rets", verify, dump, normalize_n_returns);
 }

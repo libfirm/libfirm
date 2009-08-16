@@ -40,6 +40,7 @@
 #include "irloop.h"
 #include "pdeq.h"
 #include "debug.h"
+#include "irtools.h"
 
 //#define NEW_REASSOC
 
@@ -931,6 +932,11 @@ int optimize_reassociation(ir_graph *irg)
 	current_ir_graph = rem;
 	return env.changes;
 }  /* optimize_reassociation */
+
+/* create a pass for the reassociation */
+ir_graph_pass_t *optimize_reassociation_pass(const char *name, int verify, int dump) {
+	return def_graph_pass_ret(name ? name : "reassoc", verify, dump, optimize_reassociation);
+}  /* optimize_reassociation_pass */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
 ir_op_ops *firm_set_default_reassoc(ir_opcode code, ir_op_ops *ops)

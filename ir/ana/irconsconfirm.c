@@ -600,6 +600,11 @@ void construct_confirms(ir_graph *irg) {
 		edges_deactivate(irg);
 }  /* construct_confirms */
 
+/* Construct a pass. */
+ir_graph_pass_t *construct_confirms_pass(const char *name, int verify, int dump) {
+	return def_graph_pass(name ? name : "confirm", verify, dump, construct_confirms);
+}  /* construct_confirms_pass */
+
 #if 0
 /**
  * Post-walker: Remove Confirm nodes
@@ -631,3 +636,8 @@ void remove_confirms(ir_graph *irg) {
 	optimize_graph_df(irg);
 	set_opt_remove_confirm(rem);
 }  /* remove_confirms */
+
+/* Construct a pass. */
+ir_graph_pass_t *remove_confirms_pass(const char *name, int verify, int dump) {
+	return def_graph_pass(name ? name : "rem_confirm", verify, dump, remove_confirms);
+}  /* remove_confirms_pass */

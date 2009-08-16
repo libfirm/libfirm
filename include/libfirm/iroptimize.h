@@ -555,6 +555,17 @@ void proc_cloning(float threshold);
 int optimize_reassociation(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for optimize_reassociation().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *optimize_reassociation_pass(const char *name, int verify, int dump);
+
+/**
  * Normalize the Returns of a graph by creating a new End block
  * with One Return(Phi).
  * This is the preferred input for the if-conversion.
@@ -575,6 +586,17 @@ int optimize_reassociation(ir_graph *irg);
  * return res;
  */
 void normalize_one_return(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for normalize_one_return().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *normalize_one_return_pass(const char *name, int verify, int dump);
 
 /**
  * Normalize the Returns of a graph by moving
@@ -599,6 +621,17 @@ void normalize_one_return(ir_graph *irg);
 void normalize_n_returns(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for normalize_n_returns().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *normalize_n_returns_pass(const char *name, int verify, int dump);
+
+/**
  * Do the scalar replacement optimization.
  * Replace local compound entities (like structures and arrays)
  * with atomic values if possible. Does not handle classes yet.
@@ -608,6 +641,17 @@ void normalize_n_returns(ir_graph *irg);
  * @return non-zero, if at least one entity was replaced
  */
 int scalar_replacement_opt(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for scalar_replacement_opt().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *scalar_replacement_opt_pass(const char *name, int verify, int dump);
 
 /** Performs strength reduction for the passed graph. */
 void reduce_strength(ir_graph *irg);
@@ -631,6 +675,17 @@ void reduce_strength(ir_graph *irg);
 int opt_tail_rec_irg(ir_graph *irg);
 
 /**
+ * Creates an ir_graph pass for opt_tail_rec_irg().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name, int verify, int dump);
+
+/**
  * Optimize tail-recursion calls for all IR-Graphs.
  * Can currently handle:
  * - direct return value, i.e. return func().
@@ -642,6 +697,17 @@ int opt_tail_rec_irg(ir_graph *irg);
  * removed by optimize_funccalls().
  */
 void opt_tail_recursion(void);
+
+/**
+ * Creates an ir_prog pass for opt_tail_recursion().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *opt_tail_recursion_pass(const char *name, int verify, int dump);
 
 /** This is the type for a method, that returns a pointer type to
  *  tp.  This is needed in the normalization. */
@@ -674,7 +740,6 @@ typedef ir_type *(*gen_pointer_type_to_func)(ir_type *tp);
  */
 void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
 
-
 /**  Insert Casts so that class type casts conform exactly with the type hierarchy
  *   in given graph.
  *
@@ -683,7 +748,6 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
  *  This transformation requires that type information is computed. @see irtypeinfo.h.
  */
 void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct);
-
 
 /** Optimize casting between class types.
  *

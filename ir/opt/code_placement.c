@@ -31,6 +31,7 @@
 #include "irnode_t.h"
 #include "irouts.h"
 #include "irgopt.h"
+#include "irtools.h"
 
 /**
  * Returns non-zero, is a block is not reachable from Start.
@@ -536,4 +537,18 @@ void place_code(ir_graph *irg) {
 	set_irg_loopinfo_inconsistent(irg);
 	del_waitq(worklist);
 	current_ir_graph = rem;
+}
+
+/**
+ * Wrapper for place_code() inside the place_code pass.
+ */
+static void place_code_wrapper(ir_graph *irg) {
+	set_opt_global_cse(1);
+	optimize_graph_df(irg);
+	place_code(irg);
+	set_opt_global_cse(0);
+}
+
+ir_graph_pass_t *place_code_pass(const char *name, int verify, int dump) {
+	return def_graph_pass(name ? name : "place", verify, dump, place_code_wrapper);
 }

@@ -583,6 +583,10 @@ void lower_const_code(void) {
 	walk_const_code(NULL, lower_irnode, NULL);
 }  /* lower_const_code */
 
+ir_prog_pass_t *lower_const_code_pass(const char *name) {
+	return def_prog_pass(name ? name : "lower_const_code", 0, 0, lower_const_code);
+}
+
 /*
  * Replaces SymConsts by a real constant if possible.
  * Replace Sel nodes by address computation.  Also resolves array access.
