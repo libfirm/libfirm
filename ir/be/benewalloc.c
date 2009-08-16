@@ -63,6 +63,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "obst.h"
+#include "raw_bitset.h"
 
 #include "beabi.h"
 #include "bechordal_t.h"
@@ -77,7 +78,6 @@
 #include "bespillutil.h"
 #include "beverify.h"
 
-#include "bipartite.h"
 #include "hungarian.h"
 
 #define USE_FACTOR         1.0f
@@ -96,7 +96,7 @@ static const arch_register_req_t   *default_cls_req;
 static be_lv_t                     *lv;
 static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
-static bitset_t                    *ignore_regs;
+static unsigned                    *normal_regs;
 
 /** info about the current assignment for a register */
 struct assignment_t {
@@ -322,8 +322,6 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 			op      = get_irn_n(insn, i);
 			op_info = get_allocation_info(op);
 			for (r = 0; r < n_regs; ++r) {
-				if (bitset_is_set(ignore_regs, r))
-					continue;
 				op_info->prefs[r] += info->prefs[r] * factor;
 			}
 		}
@@ -438,9 +436,6 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 
 	for (r = 0; r < n_regs; ++r) {
 		float pref = info->prefs[r];
-		if (bitset_is_set(ignore_regs, r)) {
-			pref = -10000;
-		}
 		regprefs[r].num  = r;
 		regprefs[r].pref = pref;
 	}
@@ -458,7 +453,8 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	const arch_register_req_t *req;
 	reg_pref_t                *reg_prefs;
 	ir_node                   *in_node;
-	unsigned                  i;
+	unsigned                   i;
+	const unsigned            *allowed_regs;
 
 	assert(arch_irn_consider_in_reg_alloc(cls, node));
 
@@ -492,8 +488,6 @@ static void assign_reg(const ir_node *block, ir_node *node)
 			reg = arch_get_irn_register(in);
 			assert(reg != NULL);
 			r = arch_register_get_index(reg);
-			if (bitset_is_set(ignore_regs, r))
-				continue;
 			info->prefs[r] += weight * AFF_SHOULD_BE_SAME;
 		}
 	}
@@ -508,14 +502,19 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	}
 	DB((dbg, LEVEL_2, "\n"));
 
+	allowed_regs = normal_regs;
+	if (req->type & arch_register_req_type_limited) {
+		allowed_regs = req->limited;
+	}
+
 	for (i = 0; i < n_regs; ++i) {
 		unsigned r = reg_prefs[i].num;
-		/* ignores are last and we should have at least 1 non-ignore left */
-		assert(!bitset_is_set(ignore_regs, r));
 		/* already used?
 		   TODO: It might be better to copy the value occupying the register
 		   around here instead of trying the next one, find out when... */
 		if (assignments[r].value != NULL)
+			continue;
+		if (!rbitset_is_set(allowed_regs, r))
 			continue;
 		reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
@@ -886,13 +885,13 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* add all combinations, then remove not allowed ones */
 	for (l = 0; l < n_regs; ++l) {
-		if (bitset_is_set(ignore_regs, l)) {
+		if (!rbitset_is_set(normal_regs, l)) {
 			hungarian_add(bp, l, l, 1);
 			continue;
 		}
 
 		for (r = 0; r < n_regs; ++r) {
-			if (bitset_is_set(ignore_regs, r))
+			if (!rbitset_is_set(normal_regs, r))
 				continue;
 			/* livethrough values may not use constrainted output registers */
 			if (rbitset_is_set(live_through_regs, l)
@@ -1375,8 +1374,8 @@ static void be_straight_alloc(be_irg_t *new_birg)
 		stat_ev_ctx_push_str("regcls", cls->name);
 
 		n_regs      = arch_register_class_n_regs(cls);
-		ignore_regs = bitset_malloc(n_regs);
-		be_put_ignore_regs(birg, cls, ignore_regs);
+		normal_regs = rbitset_malloc(n_regs);
+		be_abi_set_non_ignore_regs(birg->abi, cls, normal_regs);
 
 		spill();
 
@@ -1401,10 +1400,10 @@ static void be_straight_alloc(be_irg_t *new_birg)
 		/* TODO: test liveness_introduce */
 		be_liveness_invalidate(lv);
 
-		bitset_free(ignore_regs);
-
 		stat_ev_ctx_pop("regcls");
 	}
+
+	free(normal_regs);
 
 	BE_TIMER_PUSH(t_ra_spill_apply);
 	be_abi_fix_stack_nodes(birg->abi);
