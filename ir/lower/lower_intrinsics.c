@@ -39,6 +39,7 @@
 #include "irvrfy.h"
 #include "pmap.h"
 #include "array_t.h"
+#include "irpass_t.h"
 #include "iropt_dbg.h"
 #include "error.h"
 
@@ -157,6 +158,56 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
 
 	return nr_of_intrinsics;
 }  /* lower_intrinsics */
+
+struct pass_t {
+	ir_prog_pass_t pass;
+
+	int part_block_used;
+	int      length;
+	i_record list[1];
+};
+
+/**
+ * Wrapper for running lower_intrinsics() as an irprog pass.
+ */
+static int pass_wrapper(ir_prog *irp, void *context)
+{
+	struct pass_t *pass = context;
+	lower_intrinsics(pass->list, pass->length, pass->part_block_used);
+	/* probably this pass should not run again */
+	return 0;
+}  /* pass_wrapper */
+
+/**
+ * Creates an irprog pass for lower_intrinsics.
+ *
+ * @param name             the name of this pass or NULL
+ * @param verify           should this pass be verified?
+ * @param dump             should this pass result be dumped?
+ * @param list             an array of intrinsic map records
+ * @param length           the length of the array
+ * @param part_block_used  set to true if part_block() must be using during lowering
+ */
+ir_prog_pass_t *lower_intrinsics_pass(
+	const char *name,
+	int verify,
+	int dump,
+	i_record *list, int length)
+{
+	struct pass_t *pass = xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
+
+	memset(&pass->pass, 0, sizeof(pass->pass));
+	pass->pass.kind          = k_ir_prog_pass;
+	pass->pass.run_on_irprog = pass_wrapper;
+	pass->pass.context       = pass;
+	pass->pass.name          = name ? name : "lower_intrinsics";
+	pass->pass.verify        = verify != 0;
+	pass->pass.dump          = dump != 0;
+
+	INIT_LIST_HEAD(&pass->pass.list);
+
+	return &pass->pass;
+}  /* lower_intrinsics_pass*/
 
 /**
  * Helper function, replace the call by the given node.

@@ -311,6 +311,22 @@ typedef union _i_record {
 unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
 
 /**
+ * Creates an irprog pass for lower_intrinsics.
+ *
+ * @param name             the name of this pass or NULL
+ * @param verify           should this pass be verified?
+ * @param dump             should this pass result be dumped?
+ * @param list             an array of intrinsic map records
+ * @param length           the length of the array
+ * @param part_block_used  set to true if part_block() must be using during lowering
+ */
+ir_prog_pass_t *lower_intrinsics_pass(
+	const char *name,
+	int verify,
+	int dump,
+	i_record *list, int length);
+
+/**
  * A mapper for the integer/float absolute value: type abs(type v).
  * Replaces the call by a Abs node.
  *
