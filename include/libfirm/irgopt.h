@@ -56,6 +56,17 @@ void local_optimize_graph(ir_graph *irg);
  */
 int optimize_graph_df(ir_graph *irg);
 
+/**
+ * Creates an ir_graph pass for optimize_graph_df().
+ *
+ * @param name     the name of this pass or NULL
+ * @param verify   should this pass be verified?
+ * @param dump     should this pass result be dumped?
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *optimize_graph_df_pass(const char *name, int verify, int dump);
+
 /** Performs dead node elimination by copying the ir graph to a new obstack.
  *
  *  The major intention of this pass is to free memory occupied by
