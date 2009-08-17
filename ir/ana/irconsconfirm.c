@@ -601,8 +601,8 @@ void construct_confirms(ir_graph *irg) {
 }  /* construct_confirms */
 
 /* Construct a pass. */
-ir_graph_pass_t *construct_confirms_pass(const char *name, int verify, int dump) {
-	return def_graph_pass(name ? name : "confirm", verify, dump, construct_confirms);
+ir_graph_pass_t *construct_confirms_pass(const char *name) {
+	return def_graph_pass(name ? name : "confirm", construct_confirms);
 }  /* construct_confirms_pass */
 
 #if 0
@@ -638,6 +638,6 @@ void remove_confirms(ir_graph *irg) {
 }  /* remove_confirms */
 
 /* Construct a pass. */
-ir_graph_pass_t *remove_confirms_pass(const char *name, int verify, int dump) {
-	return def_graph_pass(name ? name : "rem_confirm", verify, dump, remove_confirms);
+ir_graph_pass_t *remove_confirms_pass(const char *name) {
+	return def_graph_pass(name ? name : "rem_confirm", remove_confirms);
 }  /* remove_confirms_pass */

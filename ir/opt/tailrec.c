@@ -703,9 +703,9 @@ int opt_tail_rec_irg(ir_graph *irg) {
 	return n_tail_calls;
 }
 
-ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "tailrec", verify, dump, opt_tail_rec_irg);
+	return def_graph_pass_ret(name ? name : "tailrec", opt_tail_rec_irg);
 }
 
 /*
@@ -734,7 +734,7 @@ void opt_tail_recursion(void) {
 	    n_opt_applications, get_irp_n_irgs()));
 }
 
-ir_prog_pass_t *opt_tail_recursion_pass(const char *name, int verify, int dump)
+ir_prog_pass_t *opt_tail_recursion_pass(const char *name)
 {
-	return def_prog_pass(name ? name : "tailrec", verify, dump, opt_tail_recursion);
+	return def_prog_pass(name ? name : "tailrec", opt_tail_recursion);
 }

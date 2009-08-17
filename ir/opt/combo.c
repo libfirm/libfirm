@@ -3569,7 +3569,7 @@ void combo(ir_graph *irg) {
 }  /* combo */
 
 /* Creates an ir_graph pass for combo. */
-ir_graph_pass_t *combo_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *combo_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "combo", verify, dump, combo);
+	return def_graph_pass(name ? name : "combo", combo);
 }  /* combo_pass */

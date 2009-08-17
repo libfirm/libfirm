@@ -1321,9 +1321,9 @@ void remove_phi_cycles(ir_graph *irg) {
 	current_ir_graph = rem;
 }  /* remove_phi_cycles */
 
-ir_graph_pass_t *remove_phi_cycles_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *remove_phi_cycles_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "remove_phi_cycles", verify, dump, remove_phi_cycles);
+	return def_graph_pass(name ? name : "remove_phi_cycles", remove_phi_cycles);
 }  /* remove_phi_cycles_pass */
 
 /**
@@ -1473,7 +1473,7 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 	return 0;
 }  /* pass_wrapper */
 
-ir_graph_pass_t *opt_osr_pass(const char *name, int verify, int dump, unsigned flags)
+ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags)
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass));
 
@@ -1481,8 +1481,6 @@ ir_graph_pass_t *opt_osr_pass(const char *name, int verify, int dump, unsigned f
 	pass->pass.run_on_irg = pass_wrapper;
 	pass->pass.context    = pass;
 	pass->pass.name       = name ? name : "osr";
-	pass->pass.verify     = verify != 0;
-	pass->pass.dump       = dump != 0;
 
 	pass->flags = flags;
 

@@ -172,7 +172,7 @@ static void pass_wrapper(void)
     free(keep_methods);
 }
 
-ir_prog_pass_t *gc_irgs_pass(const char *name, int verify, int dump)
+ir_prog_pass_t *gc_irgs_pass(const char *name)
 {
-	return def_prog_pass(name ? name : "cgana", verify, dump, pass_wrapper);
+	return def_prog_pass(name ? name : "cgana", pass_wrapper);
 }

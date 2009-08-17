@@ -303,7 +303,7 @@ int conv_opt(ir_graph *irg)
 }
 
 /* Creates an ir_graph pass for conv_opt. */
-ir_graph_pass_t *conv_opt_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *conv_opt_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "conv_opt", verify, dump, conv_opt);
+	return def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
 }  /* conv_opt_pass */

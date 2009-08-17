@@ -515,7 +515,7 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 }  /* pass_wrapper */
 
 ir_graph_pass_t *opt_if_conv_pass(
-	const char *name, int verify, int dump, const ir_settings_if_conv_t *params)
+	const char *name, const ir_settings_if_conv_t *params)
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass));
 
@@ -523,8 +523,6 @@ ir_graph_pass_t *opt_if_conv_pass(
 	pass->pass.run_on_irg = pass_wrapper;
 	pass->pass.context    = pass;
 	pass->pass.name       = name ? name : "if_conv";
-	pass->pass.verify     = verify != 0;
-	pass->pass.dump       = dump != 0;
 
 	pass->params = params;
 

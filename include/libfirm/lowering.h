@@ -205,12 +205,25 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
  *
- * @param irg  the graph to lower
+ * @param irg               the graph to lower
+ * @param lower_bitfields   the graph contains old-style bitfield
+ *                          constructs
  *
  * @note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
 void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
+
+/**
+ * Creates an ir_graph pass for lower_highlevel_graph().
+ *
+ * @param name              the name of this pass or NULL
+ * @param lower_bitfields   the graph contains old-style bitfield
+ *                          constructs
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -323,16 +336,12 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
  * Creates an irprog pass for lower_intrinsics.
  *
  * @param name             the name of this pass or NULL
- * @param verify           should this pass be verified?
- * @param dump             should this pass result be dumped?
  * @param list             an array of intrinsic map records
  * @param length           the length of the array
  * @param part_block_used  set to true if part_block() must be using during lowering
  */
 ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
-	int verify,
-	int dump,
 	i_record *list, int length, int part_block_used);
 
 /**

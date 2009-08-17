@@ -35,6 +35,8 @@
 #include "irhooks.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irtools.h"
+#include "irpass_t.h"
 
 /**
  * Lower a Sel node. Do not touch Sels accessing entities on the frame type.
@@ -576,6 +578,36 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
 }  /* lower_highlevel_graph */
 
+struct pass_t {
+	ir_graph_pass_t pass;
+	int            lower_bitfields;
+};
+
+/**
+ * Wrapper for running lower_highlevel_graph() as an ir_graph pass.
+ */
+static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+
+	lower_highlevel_graph(irg, pass->lower_bitfields);
+	return 0;
+}  /* lower_highlevel_graph_wrapper */
+
+ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	pass->pass.kind       = k_ir_graph_pass;
+	pass->pass.run_on_irg = lower_highlevel_graph_wrapper;
+	pass->pass.context    = pass;
+	pass->pass.name       = name;
+
+	INIT_LIST_HEAD(&pass->pass.list);
+
+	pass->lower_bitfields = lower_bitfields;
+
+	return &pass->pass;
+}  /* lower_highlevel_graph_pass */
+
 /*
  * does the same as lower_highlevel() for all nodes on the const code irg
  */
@@ -584,7 +616,7 @@ void lower_const_code(void) {
 }  /* lower_const_code */
 
 ir_prog_pass_t *lower_const_code_pass(const char *name) {
-	return def_prog_pass(name ? name : "lower_const_code", 0, 0, lower_const_code);
+	return def_prog_pass(name ? name : "lower_const_code", lower_const_code);
 }
 
 /*

@@ -458,7 +458,7 @@ void opt_bool(ir_graph *const irg)
 }
 
 /* Creates an ir_graph pass for opt_bool. */
-ir_graph_pass_t *opt_bool_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *opt_bool_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "opt_bool", verify, dump, opt_bool);
+	return def_graph_pass(name ? name : "opt_bool", opt_bool);
 }  /* opt_bool_pass */

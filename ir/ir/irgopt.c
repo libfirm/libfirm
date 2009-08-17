@@ -223,7 +223,7 @@ int optimize_graph_df(ir_graph *irg) {
 }
 
 /* Creates an ir_graph pass for optimize_graph_df. */
-ir_graph_pass_t *optimize_graph_df_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *optimize_graph_df_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "optimize_graph_df", verify, dump, optimize_graph_df);
+	return def_graph_pass_ret(name ? name : "optimize_graph_df", optimize_graph_df);
 }  /* optimize_graph_df_pass */

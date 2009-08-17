@@ -549,6 +549,6 @@ static void place_code_wrapper(ir_graph *irg) {
 	set_opt_global_cse(0);
 }
 
-ir_graph_pass_t *place_code_pass(const char *name, int verify, int dump) {
-	return def_graph_pass(name ? name : "place", verify, dump, place_code_wrapper);
+ir_graph_pass_t *place_code_pass(const char *name) {
+	return def_graph_pass(name ? name : "place", place_code_wrapper);
 }

@@ -2301,7 +2301,7 @@ int optimize_load_store(ir_graph *irg) {
 	return env.changes != 0;
 }  /* optimize_load_store */
 
-ir_graph_pass_t *optimize_load_store_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "ldst", verify, dump, optimize_load_store);
+	return def_graph_pass(name ? name : "ldst", optimize_load_store);
 }  /* optimize_load_store_pass */

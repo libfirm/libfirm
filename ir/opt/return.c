@@ -381,7 +381,7 @@ void normalize_n_returns(ir_graph *irg) {
 }
 
 /* Create a graph pass. */
-ir_graph_pass_t *normalize_n_returns_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *normalize_n_returns_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "n_rets", verify, dump, normalize_n_returns);
+	return def_graph_pass(name ? name : "n_rets", normalize_n_returns);
 }

@@ -66,12 +66,10 @@ void opt_jumpthreading(ir_graph* irg);
  * Creates an ir_graph pass for opt_jumpthreading().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_jumpthreading_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
  * Try to simplify boolean expression in the given ir graph.
@@ -85,12 +83,10 @@ void opt_bool(ir_graph *irg);
  * Creates an ir_graph pass for opt_bool().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_bool_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_bool_pass(const char *name);
 
 /**
  * Try to reduce the number of conv nodes in the given ir graph.
@@ -105,12 +101,10 @@ int conv_opt(ir_graph *irg);
  * Creates an ir_graph pass for conv_opt().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *conv_opt_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *conv_opt_pass(const char *name);
 
 /**
  * Do the scalar replacement optimization.
@@ -201,8 +195,6 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback);
  * Creates an ir_prog pass for optimize_funccalls().
  *
  * @param name       the name of this pass or NULL
- * @param verify     should this pass be verified?
- * @param dump       should this pass result be dumped?
  * @param force_run  if non-zero, an optimization run is started even
  *                   if no const function graph was detected.
  *                   Else calls are only optimized if at least one
@@ -213,7 +205,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback);
  * @return  the newly created ir_prog pass
  */
 ir_prog_pass_t *optimize_funccalls_pass(
-	const char *name, int verify, int dump,
+	const char *name,
 	int force_run, check_alloc_entity_func callback);
 
 /**
@@ -230,13 +222,11 @@ void do_gvn_pre(ir_graph *irg);
 /**
  * Creates an ir_graph pass for do_gvn_pre().
  *
- * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
  * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *do_gvn_pre_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *do_gvn_pre_pass(const char *name);
 
 /**
  * This function is called to evaluate, if a mux can build
@@ -276,14 +266,12 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
  * Creates an ir_graph pass for opt_if_conv().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  * @param params   The parameters for the if conversion.
  *
  * @return  the newly created ir_graph pass
  */
 ir_graph_pass_t *opt_if_conv_pass(
-	const char *name, int verify, int dump, const ir_settings_if_conv_t *params);
+	const char *name, const ir_settings_if_conv_t *params);
 
 void opt_sync(ir_graph *irg);
 
@@ -291,12 +279,10 @@ void opt_sync(ir_graph *irg);
  * Creates an ir_graph pass for opt_sync().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_sync_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_sync_pass(const char *name);
 
 /*
  * Check if we can replace the load by a given const from
@@ -344,12 +330,10 @@ int optimize_load_store(ir_graph *irg);
  * Creates an ir_graph pass for optimize_load_store().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *optimize_load_store_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *optimize_load_store_pass(const char *name);
 
 /**
  * New experimental alternative to optimize_load_store.
@@ -362,12 +346,10 @@ int opt_ldst(ir_graph *irg);
  * Creates an ir_graph pass for opt_ldst().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_ldst_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_ldst_pass(const char *name);
 
 /**
  * Do Loop unrolling in the given graph.
@@ -378,12 +360,10 @@ void optimize_loop_unrolling(ir_graph *irg);
  * Creates an ir_graph pass for optimize_loop_unrolling().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *optimize_loop_unrolling_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *optimize_loop_unrolling_pass(const char *name);
 
 /**
  * Optimize the frame type of an irg by removing
@@ -401,12 +381,10 @@ void opt_frame_irg(ir_graph *irg);
  * Creates an ir_graph pass for opt_frame_irg().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_frame_irg_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_frame_irg_pass(const char *name);
 
 /** Possible flags for the Operator Scalar Replacement. */
 typedef enum osr_flags {
@@ -487,13 +465,11 @@ void opt_osr(ir_graph *irg, unsigned flags);
  * Creates an ir_graph pass for remove_phi_cycles().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  * @param flags    set of osr_flags
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_osr_pass(const char *name, int verify, int dump, unsigned flags);
+ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
 
 /**
  * Removes useless Phi cycles, i.e cycles of Phi nodes with only one
@@ -511,13 +487,10 @@ void remove_phi_cycles(ir_graph *irg);
  * Creates an ir_graph pass for remove_phi_cycles().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
- * @param params   The parameters for the if conversion.
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *remove_phi_cycles_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 
 
 /** A default threshold. */
@@ -558,12 +531,10 @@ int optimize_reassociation(ir_graph *irg);
  * Creates an ir_graph pass for optimize_reassociation().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *optimize_reassociation_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *optimize_reassociation_pass(const char *name);
 
 /**
  * Normalize the Returns of a graph by creating a new End block
@@ -591,12 +562,10 @@ void normalize_one_return(ir_graph *irg);
  * Creates an ir_graph pass for normalize_one_return().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *normalize_one_return_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *normalize_one_return_pass(const char *name);
 
 /**
  * Normalize the Returns of a graph by moving
@@ -624,12 +593,10 @@ void normalize_n_returns(ir_graph *irg);
  * Creates an ir_graph pass for normalize_n_returns().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *normalize_n_returns_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *normalize_n_returns_pass(const char *name);
 
 /**
  * Do the scalar replacement optimization.
@@ -646,12 +613,10 @@ int scalar_replacement_opt(ir_graph *irg);
  * Creates an ir_graph pass for scalar_replacement_opt().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *scalar_replacement_opt_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
 
 /** Performs strength reduction for the passed graph. */
 void reduce_strength(ir_graph *irg);
@@ -678,12 +643,10 @@ int opt_tail_rec_irg(ir_graph *irg);
  * Creates an ir_graph pass for opt_tail_rec_irg().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
 
 /**
  * Optimize tail-recursion calls for all IR-Graphs.
@@ -702,12 +665,10 @@ void opt_tail_recursion(void);
  * Creates an ir_prog pass for opt_tail_recursion().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *opt_tail_recursion_pass(const char *name, int verify, int dump);
+ir_prog_pass_t *opt_tail_recursion_pass(const char *name);
 
 /** This is the type for a method, that returns a pointer type to
  *  tp.  This is needed in the normalization. */
@@ -785,12 +746,10 @@ void combo(ir_graph *irg);
  * Creates an ir_graph pass for combo.
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *combo_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *combo_pass(const char *name);
 
 /** Inlines all small methods at call sites where the called address comes
  *  from a SymConst node that references the entity representing the called

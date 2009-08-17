@@ -178,8 +178,7 @@ static int void_graph_wrapper(ir_graph *irg, void *context) {
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass(
-	const char *name, int verify, int dump,
-	void (*function)(ir_graph *irg))
+	const char *name, void (*function)(ir_graph *irg))
 {
 	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
 
@@ -187,8 +186,6 @@ ir_graph_pass_t *def_graph_pass(
 	pass->run_on_irg = void_graph_wrapper;
 	pass->context    = function;
 	pass->name       = name;
-	pass->verify     = verify != 0;
-	pass->dump       = dump != 0;
 
 	INIT_LIST_HEAD(&pass->list);
 
@@ -214,8 +211,6 @@ ir_graph_pass_t *def_graph_pass_ret(
 	pass->run_on_irg = int_graph_wrapper;
 	pass->context    = function;
 	pass->name       = name;
-	pass->verify     = verify != 0;
-	pass->dump       = dump != 0;
 
 	INIT_LIST_HEAD(&pass->list);
 
@@ -235,7 +230,7 @@ static int void_prog_wrapper(ir_prog *irp, void *context) {
 
 /* Creates an ir_prog pass for running void function(void). */
 ir_prog_pass_t *def_prog_pass(
-	const char *name, int verify, int dump,
+	const char *name,
 	void (*function)(void))
 {
 	struct ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
@@ -244,8 +239,6 @@ ir_prog_pass_t *def_prog_pass(
 	pass->run_on_irprog = void_prog_wrapper;
 	pass->context       = function;
 	pass->name          = name;
-	pass->verify        = verify != 0;
-	pass->dump          = dump != 0;
 
 	INIT_LIST_HEAD(&pass->list);
 

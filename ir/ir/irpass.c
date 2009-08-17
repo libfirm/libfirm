@@ -108,8 +108,6 @@ static ir_prog_pass_t *create_wrapper_pass(ir_graph_pass_manager_t *graph_mgr)
 	/* do not verify nor dump: this is handled by the graph manager */
 	pass->verify_irprog = no_verify;
 	pass->dump_irprog   = no_dump;
-	pass->dump          = 0;
-	pass->verify        = 0;
 	pass->is_wrapper    = 1;
 
 	pass->add_to_mgr   = NULL;
@@ -184,7 +182,7 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 			if (pass_res != 0)
 				res = 1;
 			/* verify is necessary */
-			if (mgr->verify_all || pass->verify) {
+			if (mgr->verify_all) {
 				if (pass->verify_irg) {
 					pass->verify_irg(irg, pass->context);
 				} else {
@@ -192,7 +190,7 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 				}
 			}
 			/* dump */
-			if (mgr->dump_all || pass->dump) {
+			if (mgr->dump_all) {
 				if (pass->dump_irg) {
 					pass->dump_irg(irg, pass->context, idx);
 				} else {
@@ -232,7 +230,7 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 		if (pass_res != 0)
 			res = 1;
 		/* verify is necessary */
-		if (mgr->verify_all || pass->verify) {
+		if (mgr->verify_all) {
 			if (pass->verify_irprog) {
 				pass->verify_irprog(irp, pass->context);
 			} else {
@@ -240,7 +238,7 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 			}
 		}
 		/* dump */
-		if (mgr->dump_all || pass->dump) {
+		if (mgr->dump_all) {
 			if (pass->dump_irprog) {
 				pass->dump_irprog(irp, pass->context, idx);
 			} else {

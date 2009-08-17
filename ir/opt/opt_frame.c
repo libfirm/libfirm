@@ -109,7 +109,7 @@ void opt_frame_irg(ir_graph *irg) {
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 }
 
-ir_graph_pass_t *opt_frame_irg_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *opt_frame_irg_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "opt_frame_irg", verify, dump, opt_frame_irg);
+	return def_graph_pass(name ? name : "opt_frame_irg", opt_frame_irg);
 }

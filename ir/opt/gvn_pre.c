@@ -897,7 +897,7 @@ void do_gvn_pre(ir_graph *irg)
 }  /* do_gvn_pre */
 
 /* Creates an ir_graph pass for do_gvn_pre. */
-ir_graph_pass_t *do_gvn_pre_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *do_gvn_pre_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "gvn_pre", verify, dump, do_gvn_pre);
+	return def_graph_pass(name ? name : "gvn_pre", do_gvn_pre);
 }  /* do_gvn_pre_pass */

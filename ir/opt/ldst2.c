@@ -847,7 +847,7 @@ void opt_sync(ir_graph *irg)
 	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 }
 
-ir_graph_pass_t *opt_sync_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *opt_sync_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "opt_sync", verify, dump, opt_sync);
+	return def_graph_pass(name ? name : "opt_sync", opt_sync);
 }

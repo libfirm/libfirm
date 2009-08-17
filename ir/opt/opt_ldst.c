@@ -2407,7 +2407,7 @@ end:
 	return env.changed != 0;
 }  /* opt_ldst */
 
-ir_graph_pass_t *opt_ldst_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *opt_ldst_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "ldst_df", verify, dump, opt_ldst);
+	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
 }  /* opt_ldst_pass */

@@ -1094,7 +1094,7 @@ static int pass_wrapper(ir_prog *irp, void *context) {
 
 /* Creates an ir_prog pass for optimize_funccalls. */
 ir_prog_pass_t *optimize_funccalls_pass(
-	const char *name, int verify, int dump,
+	const char *name,
 	int force_run, check_alloc_entity_func callback)
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass));
@@ -1103,8 +1103,6 @@ ir_prog_pass_t *optimize_funccalls_pass(
 	pass->pass.run_on_irprog = pass_wrapper;
 	pass->pass.context       = pass;
 	pass->pass.name          = name ? name : "funccalls";
-	pass->pass.verify        = verify != 0;
-	pass->pass.dump          = dump != 0;
 
 	INIT_LIST_HEAD(&pass->pass.list);
 

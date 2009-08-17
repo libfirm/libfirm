@@ -181,12 +181,10 @@ void place_code(ir_graph *irg);
  * place_code();
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *place_code_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *place_code_pass(const char *name);
 
 /** Places an empty basic block on critical control flow edges thereby
  * removing them.

@@ -56,7 +56,7 @@ typedef void (*DUMP_ON_IRPROG_FUNC)(ir_prog *irg, void *ctx, unsigned idx);
 typedef void (*INIT_TERM_FUNC)(void *ctx);
 
 /**
- * A graph pass.
+ * An ir_sgraph pass.
  */
 struct ir_graph_pass_t {
 	/** The firm kind. */
@@ -80,12 +80,11 @@ struct ir_graph_pass_t {
 	/** Links all passes. */
 	list_head          list;
 
-	unsigned verify:1;     /**< Set if this pass should be verified. */
-	unsigned dump:1;       /**< Set if this pass should be dumped. */
+	unsigned run_parallel:1;       /**< if set this pass can run parallel on all graphs. */
 };
 
 /**
- * A irprog pass.
+ * An ir_prog pass.
  */
 struct ir_prog_pass_t {
 	/** The firm kind. */
@@ -109,13 +108,11 @@ struct ir_prog_pass_t {
 	/** Links all passes */
 	list_head           list;
 
-	unsigned verify:1;     /**< Set if this pass should be verified. */
-	unsigned dump:1;       /**< Set if this pass should be dumped. */
 	unsigned is_wrapper:1; /**< set if this is a wrapper pass. */
 };
 
 /**
- * A graph pass manager.
+ * An ir_graph pass manager.
  */
 struct ir_graph_pass_manager_t {
 	firm_kind  kind;           /**< The firm kind. */
@@ -128,7 +125,7 @@ struct ir_graph_pass_manager_t {
 };
 
 /**
- * A irprog pass manager.
+ * An ir_prog pass manager.
  */
 struct ir_prog_pass_manager_t {
 	firm_kind  kind;           /**< The firm kind. */

@@ -876,7 +876,7 @@ restart:
 }
 
 /* Creates an ir_graph pass for optimize_cf. */
-ir_graph_pass_t *optimize_cf_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *optimize_cf_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "optimize_cf", verify, dump, optimize_cf);
+	return def_graph_pass(name ? name : "optimize_cf", optimize_cf);
 }  /* optimize_cf_pass */

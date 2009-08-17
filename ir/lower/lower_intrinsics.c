@@ -182,16 +182,12 @@ static int pass_wrapper(ir_prog *irp, void *context)
  * Creates an ir_prog pass for lower_intrinsics.
  *
  * @param name             the name of this pass or NULL
- * @param verify           should this pass be verified?
- * @param dump             should this pass result be dumped?
  * @param list             an array of intrinsic map records
  * @param length           the length of the array
  * @param part_block_used  set to true if part_block() must be using during lowering
  */
 ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
-	int verify,
-	int dump,
 	i_record *list, int length, int part_block_used)
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
@@ -201,8 +197,6 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	pass->pass.run_on_irprog = pass_wrapper;
 	pass->pass.context       = pass;
 	pass->pass.name          = name ? name : "lower_intrinsics";
-	pass->pass.verify        = verify != 0;
-	pass->pass.dump          = dump != 0;
 
 	INIT_LIST_HEAD(&pass->pass.list);
 
