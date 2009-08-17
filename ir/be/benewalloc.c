@@ -1076,6 +1076,11 @@ static void add_phi_permutations(ir_node *block, int p)
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
+		op = get_Phi_pred(node, p);
+		/* no need to do anything for Unknown inputs */
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+
 		/* we have permutated all values into the correct registers so we can
 		   simply query which value occupies the phis register in the
 		   predecessor */
