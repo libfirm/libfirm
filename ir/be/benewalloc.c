@@ -535,7 +535,9 @@ static void free_reg_of_value(ir_node *node)
 	reg               = arch_get_irn_register(node);
 	r                 = arch_register_get_index(reg);
 	assignment        = &assignments[r];
-	assert(assignment->value == node);
+	/* assignment->value may be NULL if a value is used at 2 inputs
+	   so it gets freed twice. */
+	assert(assignment->value == node || assignment->value == NULL);
 	assignment->value = NULL;
 }
 
