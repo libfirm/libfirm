@@ -52,6 +52,7 @@
 #include "pdeq.h"
 #include "irdump.h"
 #include "array_t.h"
+#include "irpass_t.h"
 
 /** A map from mode to a primitive type. */
 static pmap *prim_types;
@@ -2684,6 +2685,30 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	del_pdeq(lenv.waitq);
 	current_ir_graph = rem;
 }  /* lower_dw_ops */
+
+struct pass_t {
+	ir_prog_pass_t      pass;
+	const lwrdw_param_t *param;
+};
+
+/**
+ * Creates a wrapper around lower_dw_ops().
+ */
+static int pass_wrapper(ir_prog *irp, void *context) {
+	struct pass_t *pass = context;
+
+	(void)irp;
+	lower_dw_ops(pass->param);
+	return 0;
+}  /* pass_wrapper */
+
+ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	pass->param = param;
+	return def_prog_pass_constructor(
+		&pass->pass, name ? name : "lower_dw", pass_wrapper);
+}  /* lower_dw_ops_pass */
 
 /* Default implementation. */
 ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,

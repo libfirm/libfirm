@@ -193,19 +193,12 @@ ir_prog_pass_t *lower_intrinsics_pass(
 {
 	struct pass_t *pass = xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
 
-	memset(&pass->pass, 0, sizeof(pass->pass));
-	pass->pass.kind          = k_ir_prog_pass;
-	pass->pass.run_on_irprog = pass_wrapper;
-	pass->pass.context       = pass;
-	pass->pass.name          = name ? name : "lower_intrinsics";
-
-	INIT_LIST_HEAD(&pass->pass.list);
-
 	memcpy(pass->list, list, sizeof(list[0]) * length);
 	pass->length          = length;
 	pass->part_block_used = part_block_used;
 
-	return &pass->pass;
+	return def_prog_pass_constructor(
+		&pass->pass, name ? name : "lower_intrinsics", pass_wrapper);
 }  /* lower_intrinsics_pass*/
 
 /**

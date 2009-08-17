@@ -433,3 +433,22 @@ ir_prog_pass_t *def_prog_pass(
 
 	return pass;
 }  /* def_prog_pass */
+
+/* Creates an ir_prog pass for running void function(void). */
+ir_prog_pass_t *def_prog_pass_constructor(
+	ir_prog_pass_t *pass,
+	const char *name,
+	void (*function)(ir_prog *irp, void *context))
+{
+	if (pass == NULL)
+		pass = XMALLOCZ(ir_prog_pass_t);
+
+	pass->kind          = k_ir_prog_pass;
+	pass->run_on_irprog = function;
+	pass->context       = pass;
+	pass->name          = name;
+
+	INIT_LIST_HEAD(&pass->list);
+
+	return pass;
+}  /* def_prog_pass_constructor */

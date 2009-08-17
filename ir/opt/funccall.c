@@ -1097,17 +1097,11 @@ ir_prog_pass_t *optimize_funccalls_pass(
 	const char *name,
 	int force_run, check_alloc_entity_func callback)
 {
-	struct pass_t *pass = xmalloc(sizeof(*pass));
-
-	pass->pass.kind          = k_ir_prog_pass;
-	pass->pass.run_on_irprog = pass_wrapper;
-	pass->pass.context       = pass;
-	pass->pass.name          = name ? name : "funccalls";
-
-	INIT_LIST_HEAD(&pass->pass.list);
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->force_run = force_run;
 	pass->callback  = callback;
 
-	return &pass->pass;
+	return def_prog_pass_constructor(
+		&pass->pass, name ? name : "funccall", pass_wrapper);
 }  /* optimize_funccalls_pass */

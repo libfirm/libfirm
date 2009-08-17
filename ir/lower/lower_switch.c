@@ -34,6 +34,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irouts.h"
+#include "irpass_t.h"
 
 #define foreach_out_irn(irn, i, outirn) for(i = get_irn_n_outs(irn) - 1;\
 	i >= 0 && (outirn = get_irn_out(irn, i)); --i)
@@ -278,4 +279,28 @@ void lower_switch(ir_graph *irg, unsigned spare_size)
 		set_irg_loopinfo_inconsistent(irg);
 	}
 	current_ir_graph = rem;
+}
+
+struct pass_t {
+	ir_graph_pass_t pass;
+	unsigned        spare_size;
+};
+
+/**
+ * Wrapper for running lower_switch() as a pass.
+ */
+static int pass_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+
+	lower_switch(irg, pass->spare_size);
+	return 0;
+}
+
+/* creates a pass for lower_switch */
+ir_graph_pass_t *lower_switch_pass(const char *name, unsigned spare_size) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	pass->spare_size = spare_size;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "lower_switch", pass_wrapper);
 }

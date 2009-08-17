@@ -160,6 +160,17 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
 void lower_switch(ir_graph *irg, unsigned spare_size);
 
 /**
+ * Creates an ir_graph pass for lower_switch().
+ *
+ * @param name       the name of this pass or NULL
+ * @param spare_size Allowed spare size for table switches in machine words.
+ *                   (Default in edgfe: 128)
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *lower_switch_pass(const char *name, unsigned spare_size);
+
+/**
  * A callback type for creating an intrinsic entity for a given opcode.
  *
  * @param method   the method type of the emulation function entity
@@ -190,8 +201,20 @@ typedef struct _lwrdw_param_t {
 
 /**
  * Lower all double word operations.
+ *
+ * @param param  parameter for lowering
  */
 void lower_dw_ops(const lwrdw_param_t *param);
+
+/**
+ * Creates an ir_prog pass for lower_dw_ops().
+ *
+ * @param name   the name of this pass or NULL
+ * @param param  parameter for lowering
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param);
 
 /**
  * Default implementation. Context is unused.
@@ -231,7 +254,7 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfield
  * Handle bit fields by added And/Or calculations.
  * Lowers all graphs.
  *
- * @Note: There is NO lowering ob objects oriented types. This is highly compiler
+ * @Note: There is NO lowering of objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
 void lower_highlevel(int lower_bitfields);
@@ -246,7 +269,7 @@ void lower_const_code(void);
  *
  * @param name     the name of this pass or NULL
  *
- * @return  the newly created ir_graph pass
+ * @return  the newly created ir_prog pass
  */
 ir_prog_pass_t *lower_const_code_pass(const char *name);
 
@@ -266,10 +289,21 @@ typedef struct lower_mode_b_config_t {
  *
  * Example: Psi(a < 0, 1, 0) => a >> 31
  *
- * @param irg            the firm graph to lower
- * @param config         configuration for mode_b lowerer
+ * @param irg      the firm graph to lower
+ * @param config   configuration for mode_b lowerer
  */
 void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *config);
+
+/**
+ * Creates an ir_graph pass for ir_lower_mode_b().
+ *
+ * @param name     the name of this pass or NULL
+ * @param config   configuration for mode_b lowerer
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *ir_lower_mode_b_pass(
+	const char *name, const lower_mode_b_config_t *config);
 
 /**
  * An intrinsic mapper function.

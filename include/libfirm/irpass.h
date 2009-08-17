@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -171,5 +171,20 @@ ir_graph_pass_t *def_graph_pass_constructor(
  */
 ir_prog_pass_t *def_prog_pass(
 	const char *name, void (*function)(void));
+
+/**
+ * Creates an ir_prog pass for running void function().
+ * Uses the default verifier and dumper.
+ * The pass returns always 0.
+ *
+ * @param memory    if non-NULL, an already allocated ir_prog_pass_t
+ * @param name      the name of this pass
+ * @param function  the function to run
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_prog_pass_t *def_prog_pass_constructor(
+	ir_prog_pass_t *memory,
+	const char *name, void (*function)(ir_prog *irp, void *context));
 
 #endif
