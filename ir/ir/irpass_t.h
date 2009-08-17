@@ -23,7 +23,7 @@
  * @file
  * @brief     Manager for optimization passes. Private Header
  * @author    Michael Beck
- * @version   $Id: $
+ * @version   $Id$
  */
 #include "firm_types.h"
 #include "firm_common.h"

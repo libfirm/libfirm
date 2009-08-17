@@ -21,7 +21,7 @@
  * @file
  * @brief     Manager for optimization passes.
  * @author    Michael Beck
- * @version   $Id: $
+ * @version   $Id$
  */
 #include "config.h"
 

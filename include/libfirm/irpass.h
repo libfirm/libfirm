@@ -21,7 +21,7 @@
  * @file
  * @brief     Manager for transformation passes.
  * @author    Michael Beck
- * @version   $Id: $
+ * @version   $Id$
  */
 #ifndef FIRM_IR_PASS_H
 #define FIRM_IR_PASS_H
