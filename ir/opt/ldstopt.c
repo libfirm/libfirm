@@ -2303,5 +2303,5 @@ int optimize_load_store(ir_graph *irg) {
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "ldst", optimize_load_store);
+	return def_graph_pass_ret(name ? name : "ldst", optimize_load_store);
 }  /* optimize_load_store_pass */

@@ -356,7 +356,7 @@ void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 	/* The root of the dominator tree should be the Start block. */
 	ir_node *root = get_irg_start_block(irg);
 
-  assert(irg->dom_state == dom_consistent
+	assert(irg->dom_state == dom_consistent
 			&& "The dominators of the irg must be consistent");
 	assert(root && "The start block of the graph is NULL?");
 	assert(get_dom_info(root)->idom == NULL

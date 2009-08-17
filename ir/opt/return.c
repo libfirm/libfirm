@@ -30,6 +30,7 @@
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irgmod.h"
+#include "irtools.h"
 
 #define set_bit(n)      (returns[(n) >> 3] |= 1 << ((n) & 7))
 #define get_bit(n)      (returns[(n) >> 3] & (1 << ((n) & 7)))
@@ -167,9 +168,9 @@ void normalize_one_return(ir_graph *irg) {
 }
 
 /* Create a graph pass. */
-ir_graph_pass_t *normalize_one_return_pass(const char *name, int verify, int dump)
+ir_graph_pass_t *normalize_one_return_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "one_ret", verify, dump, normalize_one_return);
+	return def_graph_pass(name ? name : "one_ret", normalize_one_return);
 }
 
 /**

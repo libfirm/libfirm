@@ -202,8 +202,7 @@ static int int_graph_wrapper(ir_graph *irg, void *context) {
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass_ret(
-	const char *name, int verify, int dump,
-	int (*function)(ir_graph *irg))
+		const char *name, int (*function)(ir_graph *irg))
 {
 	struct ir_graph_pass_t *pass = XMALLOCZ(ir_graph_pass_t);
 

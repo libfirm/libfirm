@@ -53,7 +53,7 @@ void optimize_cf(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *optimize_cf_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *optimize_cf_pass(const char *name);
 
 /**
  * Perform path-sensitive jump threading on the given graph.

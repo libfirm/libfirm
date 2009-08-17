@@ -2409,5 +2409,5 @@ end:
 
 ir_graph_pass_t *opt_ldst_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "ldst_df", opt_ldst);
+	return def_graph_pass_ret(name ? name : "ldst_df", opt_ldst);
 }  /* opt_ldst_pass */

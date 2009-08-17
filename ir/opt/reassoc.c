@@ -934,8 +934,8 @@ int optimize_reassociation(ir_graph *irg)
 }  /* optimize_reassociation */
 
 /* create a pass for the reassociation */
-ir_graph_pass_t *optimize_reassociation_pass(const char *name, int verify, int dump) {
-	return def_graph_pass_ret(name ? name : "reassoc", verify, dump, optimize_reassociation);
+ir_graph_pass_t *optimize_reassociation_pass(const char *name) {
+	return def_graph_pass_ret(name ? name : "reassoc", optimize_reassociation);
 }  /* optimize_reassociation_pass */
 
 /* Sets the default reassociation operation for an ir_op_ops. */

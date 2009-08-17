@@ -65,7 +65,7 @@ int optimize_graph_df(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *optimize_graph_df_pass(const char *name, int verify, int dump);
+ir_graph_pass_t *optimize_graph_df_pass(const char *name);
 
 /** Performs dead node elimination by copying the ir graph to a new obstack.
  *

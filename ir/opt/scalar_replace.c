@@ -772,7 +772,8 @@ int scalar_replacement_opt(ir_graph *irg) {
 }
 
 ir_graph_pass_t *scalar_replacement_opt_pass(const char *name) {
-	return def_graph_pass(name ? name : "scalar_rep", scalar_replacement_opt);
+	return def_graph_pass_ret(name ? name : "scalar_rep",
+	                          scalar_replacement_opt);
 }
 
 void firm_init_scalar_replace(void) {
