@@ -755,6 +755,7 @@ static void rewire_inputs(ir_node *node)
 			continue;
 
 		info = get_allocation_info(op);
+		info = get_allocation_info(info->original_value);
 		if (info->current_value != op) {
 			set_irn_n(node, i, info->current_value);
 		}
@@ -793,7 +794,6 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 			continue;
 
 		op  = get_irn_n(node, i);
-		op  = get_allocation_info(op)->current_value;
 		reg = arch_get_irn_register(op);
 		rbitset_clear(bitset, arch_register_get_index(reg));
 	}
@@ -940,7 +940,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		limited     = req->limited;
-		op          = get_allocation_info(op)->current_value;
 		reg         = arch_get_irn_register(op);
 		current_reg = arch_register_get_index(reg);
 		for (r = 0; r < n_regs; ++r) {
@@ -1245,6 +1244,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* assign instructions in the block */
 	for (node = start; !sched_is_end(node); node = sched_next(node)) {
+
+		rewire_inputs(node);
+
 		/* enforce use constraints */
 		enforce_constraints(&live_nodes, node);
 
