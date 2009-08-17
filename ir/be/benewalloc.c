@@ -1044,6 +1044,9 @@ static void add_phi_permutations(ir_node *block, int p)
 			continue;
 
 		op = get_Phi_pred(node, p);
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+
 		a  = find_value_in_block_info(pred_info, op);
 		assert(a >= 0);
 
