@@ -596,16 +596,9 @@ static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context) {
 ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields) {
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
-	pass->pass.kind       = k_ir_graph_pass;
-	pass->pass.run_on_irg = lower_highlevel_graph_wrapper;
-	pass->pass.context    = pass;
-	pass->pass.name       = name;
-
-	INIT_LIST_HEAD(&pass->pass.list);
-
 	pass->lower_bitfields = lower_bitfields;
-
-	return &pass->pass;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "lower_hl", lower_highlevel_graph_wrapper);
 }  /* lower_highlevel_graph_pass */
 
 /*

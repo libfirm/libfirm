@@ -118,4 +118,58 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr);
  */
 void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
 
+/**
+ * Creates an ir_graph pass for running void function(ir_graph *irg).
+ * Uses the default verifier and dumper.
+ * The pass returns always 0.
+ *
+ * @param name      the name of this pass
+ * @param function  the function to run
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *def_graph_pass(
+	const char *name, void (*function)(ir_graph *irg));
+
+/**
+ * Creates an ir_graph pass for running int function(ir_graph *irg).
+ * Uses the default verifier and dumper.
+ * The pass returns the return value of function.
+ *
+ * @param name      the name of this pass
+ * @param function  the function to run
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *def_graph_pass_ret(
+	const char *name, int (*function)(ir_graph *irg));
+
+/**
+ * Creates an ir_graph pass for running int function(ir_graph *irg).
+ * Uses the default verifier and dumper.
+ * The pass returns the return value of function.
+ *
+ * @param memory    if non-NULL, an already allocated ir_graph_pass_t
+ * @param name      the name of this pass
+ * @param function  the function to run
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *def_graph_pass_constructor(
+	ir_graph_pass_t *memory,
+	const char *name, int (*function)(ir_graph *irg, void *context));
+
+/**
+ * Creates an ir_prog pass for running void function().
+ * Uses the default verifier and dumper.
+ * The pass returns always 0.
+ *
+ * @param name      the name of this pass
+ * @param function  the function to run
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_prog_pass_t *def_prog_pass(
+	const char *name, void (*function)(void));
+
 #endif

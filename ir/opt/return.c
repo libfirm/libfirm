@@ -30,7 +30,7 @@
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irgmod.h"
-#include "irtools.h"
+#include "irpass.h"
 
 #define set_bit(n)      (returns[(n) >> 3] |= 1 << ((n) & 7))
 #define get_bit(n)      (returns[(n) >> 3] & (1 << ((n) & 7)))

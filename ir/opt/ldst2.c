@@ -41,7 +41,7 @@
 #include "irdump.h"
 #include "irflag_t.h"
 #include "irprintf.h"
-#include "irtools.h"
+#include "irpass.h"
 
 #if +0
 #define OPTIMISE_LOAD_AFTER_LOAD

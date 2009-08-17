@@ -50,7 +50,7 @@
 
 #include "irflag_t.h"
 #include "firmstat.h"
-#include "irtools.h"
+#include "irpass.h"
 
 #include "iropt_dbg.h"
 

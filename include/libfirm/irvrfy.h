@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -58,13 +58,16 @@ int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string
  * Flags for irg_verify().
  */
 typedef enum _irg_verify_flags_t {
-  VRFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
-  VRFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
+	VRFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
+	VRFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
 } irg_verify_flags_t;
 
 /**
  * Calls irn_vrfy() for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
+ *
+ * @param irg    the IR-graph t check
+ * @param flags  one of irg_verify_flags_t
  *
  * @return
  * 	NON-zero on success.
@@ -77,13 +80,23 @@ int irg_verify(ir_graph *irg, unsigned flags);
 #define irg_vrfy(irg) irg_verify(irg, 0)
 
 /**
+ * Creates an ir_graph pass for irg_verify().
+ *
+ * @param name   the name of this pass or NULL
+ * @param flags  one of irg_verify_flags_t
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags);
+
+/**
  * Possible flags for irg_vrfy_bads().
  */
 enum verify_bad_flags_t {
-  BAD_CF      = 1,	/**< Bad nodes are allowed as predecessors of Blocks and Phis. */
-  BAD_DF      = 2,	/**< Bad nodes are allowed as dataflow predecessors. */
-  BAD_BLOCK   = 4,	/**< Bad nodes are allowed as Block input. */
-  TUPLE       = 8	/**< Tuple nodes are allowed. */
+	BAD_CF      = 1,    /**< Bad nodes are allowed as predecessors of Blocks and Phis. */
+	BAD_DF      = 2,    /**< Bad nodes are allowed as dataflow predecessors. */
+	BAD_BLOCK   = 4,    /**< Bad nodes are allowed as Block input. */
+	TUPLE       = 8     /**< Tuple nodes are allowed. */
 };
 
 /**

@@ -49,7 +49,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
-#include "irtools.h"
+#include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 

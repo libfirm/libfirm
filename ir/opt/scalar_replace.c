@@ -40,6 +40,7 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irnode_t.h"
+#include "irpass.h"
 #include "irtools.h"
 #include "xmalloc.h"
 #include "debug.h"

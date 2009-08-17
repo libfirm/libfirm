@@ -40,11 +40,11 @@
 #include "iredges.h"
 #include "iropt_dbg.h"
 #include "debug.h"
+#include "irpass.h"
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "iropt_t.h"
-#include "irtools.h"
 
 /** Additional info we need for every block. */
 typedef struct block_info {

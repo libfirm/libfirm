@@ -33,7 +33,7 @@
 #include "type_t.h"
 #include "irouts.h"
 #include "iredges.h"
-#include "irtools.h"
+#include "irpass.h"
 
 /*
  * Optimize the frame type of an irg by removing

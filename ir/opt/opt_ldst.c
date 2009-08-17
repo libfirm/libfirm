@@ -42,7 +42,7 @@
 #include "raw_bitset.h"
 #include "debug.h"
 #include "error.h"
-#include "irtools.h"
+#include "irpass.h"
 
 /* maximum number of output Proj's */
 #define MAX_PROJ (pn_Load_max > pn_Store_max ? pn_Load_max : pn_Store_max)

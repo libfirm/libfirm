@@ -45,7 +45,7 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "ircons_t.h"
-#include "irtools.h"
+#include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 

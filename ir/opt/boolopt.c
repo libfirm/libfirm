@@ -35,7 +35,7 @@
 #include "irprintf.h"
 #include "irnode_t.h"
 #include "tv.h"
-#include "irtools.h"
+#include "irpass.h"
 
 typedef struct cond_pair {
 	ir_node *cmp_lo;

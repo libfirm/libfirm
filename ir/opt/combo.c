@@ -81,7 +81,7 @@
 #include "array_t.h"
 #include "error.h"
 #include "irnodeset.h"
-#include "irtools.h"
+#include "irpass.h"
 #include "tv_t.h"
 
 #include "irprintf.h"

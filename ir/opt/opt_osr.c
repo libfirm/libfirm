@@ -1475,16 +1475,9 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 
 ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags)
 {
-	struct pass_t *pass = xmalloc(sizeof(*pass));
-
-	pass->pass.kind       = k_ir_prog_pass;
-	pass->pass.run_on_irg = pass_wrapper;
-	pass->pass.context    = pass;
-	pass->pass.name       = name ? name : "osr";
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->flags = flags;
-
-	INIT_LIST_HEAD(&pass->pass.list);
-
-	return &pass->pass;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "osr", pass_wrapper);
 }  /* opt_osr_pass */

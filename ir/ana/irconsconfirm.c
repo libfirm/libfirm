@@ -35,6 +35,7 @@
 #include "irgwalk.h"
 #include "irprintf.h"
 #include "irgopt.h"
+#include "irpass.h"
 #include "irtools.h"
 #include "array_t.h"
 #include "debug.h"

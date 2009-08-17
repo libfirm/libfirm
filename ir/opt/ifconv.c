@@ -517,16 +517,9 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 ir_graph_pass_t *opt_if_conv_pass(
 	const char *name, const ir_settings_if_conv_t *params)
 {
-	struct pass_t *pass = xmalloc(sizeof(*pass));
-
-	pass->pass.kind       = k_ir_prog_pass;
-	pass->pass.run_on_irg = pass_wrapper;
-	pass->pass.context    = pass;
-	pass->pass.name       = name ? name : "if_conv";
-
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
 	pass->params = params;
 
-	INIT_LIST_HEAD(&pass->pass.list);
-
-	return &pass->pass;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "ifconv", pass_wrapper);
 }

@@ -48,8 +48,6 @@ void optimize_cf(ir_graph *irg);
  * Creates an ir_graph pass for optimize_cf().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */

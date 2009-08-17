@@ -43,6 +43,7 @@
 #include "ircons.h"
 #include "cgana.h"
 #include "irtools.h"
+#include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 

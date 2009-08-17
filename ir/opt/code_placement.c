@@ -31,7 +31,7 @@
 #include "irnode_t.h"
 #include "irouts.h"
 #include "irgopt.h"
-#include "irtools.h"
+#include "irpass.h"
 
 /**
  * Returns non-zero, is a block is not reachable from Start.

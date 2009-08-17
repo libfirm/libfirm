@@ -40,7 +40,7 @@
 #include "irloop.h"
 #include "pdeq.h"
 #include "debug.h"
-#include "irtools.h"
+#include "irpass.h"
 
 //#define NEW_REASSOC
 

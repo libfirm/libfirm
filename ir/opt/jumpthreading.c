@@ -44,7 +44,7 @@
 #include "tv.h"
 #include "opt_confirms.h"
 #include "iropt_dbg.h"
-#include "irtools.h"
+#include "irpass.h"
 
 #undef AVOID_PHIB
 

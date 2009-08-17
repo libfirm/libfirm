@@ -36,6 +36,7 @@
 #include "irprintf.h"
 #include "irouts.h"
 #include "irflag_t.h"
+#include "irpass_t.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int vrfy_entities = 0;
@@ -2062,6 +2063,30 @@ int irg_verify(ir_graph *irg, unsigned flags) {
 #endif /* DEBUG_libfirm */
 
 	return res;
+}
+
+struct pass_t {
+	ir_graph_pass_t pass;
+	unsigned        flags;
+};
+
+/**
+ * Wrapper to irg_verify to be run as an ir_graph pass.
+ */
+static int irg_verify_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+	irg_verify(irg, pass->flags);
+	/* do NOT rerun the pass if verify is ok :-) */
+	return 0;
+}
+
+/* Creates an ir_graph pass for irg_verify(). */
+ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	pass->flags = flags;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "irg_verify", irg_verify_wrapper);
 }
 
 int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string) {

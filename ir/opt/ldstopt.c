@@ -43,7 +43,7 @@
 #include "array_t.h"
 #include "irhooks.h"
 #include "iredges.h"
-#include "irtools.h"
+#include "irpass.h"
 #include "opt_polymorphy.h"
 #include "irmemory.h"
 #include "irphase_t.h"
