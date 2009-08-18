@@ -39,7 +39,7 @@
  *    add copies and split live-ranges.
  *
  * TODO:
- *  - make use of free registers in the permutate_values code
+ *  - make use of free registers in the permute_values code
  *  - We have to pessimistically construct Phi_0s when not all predecessors
  *    of a block are known.
  *  - Phi color assignment should give bonus points towards registers already
@@ -575,7 +575,7 @@ static void free_reg_of_value(ir_node *node)
  *                     registers, the values in the array are the source
  *                     registers.
  */
-static void permutate_values(ir_nodeset_t *live_nodes, ir_node *before,
+static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
                              unsigned *permutation)
 {
 	unsigned  *n_used = ALLOCANZ(unsigned, n_regs);
@@ -904,7 +904,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 	 * which values should go to which registers
 	 * Note: We're building the matrix in "reverse" - source registers are
 	 *       right, destinations at l because this will produce the solution
-	 *       in the format required for permutate_values.
+	 *       in the format required for permute_values.
 	 */
 	bp = hungarian_new(n_regs, n_regs, HUNGARIAN_MATCH_PERFECT);
 
@@ -968,7 +968,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 	hungarian_free(bp);
 
-	permutate_values(live_nodes, node, assignment);
+	permute_values(live_nodes, node, assignment);
 }
 
 /** test wether a node @p n is a copy of the value of node @p of */
@@ -1059,10 +1059,10 @@ static void add_phi_permutations(ir_node *block, int p)
 	}
 
 	if (need_permutation) {
-		/* permutate values at end of predecessor */
+		/* permute values at end of predecessor */
 		old_assignments = assignments;
 		assignments     = pred_info->assignments;
-		permutate_values(NULL, be_get_end_of_block_insertion_point(pred),
+		permute_values(NULL, be_get_end_of_block_insertion_point(pred),
 						 permutation);
 		assignments = old_assignments;
 	}
@@ -1081,7 +1081,7 @@ static void add_phi_permutations(ir_node *block, int p)
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
-		/* we have permutated all values into the correct registers so we can
+		/* we have permuted all values into the correct registers so we can
 		   simply query which value occupies the phis register in the
 		   predecessor */
 		a  = arch_register_get_index(arch_get_irn_register(node));
@@ -1285,7 +1285,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	block_info->processed = true;
 
-	/* permutate values at end of predecessor blocks in case of phi-nodes */
+	/* permute values at end of predecessor blocks in case of phi-nodes */
 	if (n_preds > 1) {
 		int p;
 		for (p = 0; p < n_preds; ++p) {
