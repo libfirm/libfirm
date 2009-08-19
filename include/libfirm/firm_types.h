@@ -40,6 +40,7 @@ typedef struct tarval               tarval,              *ir_tarval_ptr;
 typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
 typedef struct ir_type              ir_type,             *ir_type_ptr;
 typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
+typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
 typedef struct ir_reg_tree          ir_reg_tree,         *ir_reg_tree_ptr;
@@ -55,23 +56,6 @@ typedef struct ident_if_t           ident_if_t;
 typedef struct type_identify_if_t   type_identify_if_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
-
-/**
- * Data structure that holds central information about a program
- * or a module.
- * One irp is created by libFirm on construction, so irp should never be NULL.
- *
- * - main_irg:  The ir graph that is the entry point to the program.
- *              (Anything not reachable from here may be optimized away
- *              if this irp represents a whole program.
- * - irg:       List of all ir graphs in the program or module.
- * - type:      A list containing all types known to the translated program.
- *              Some types can have several entries in this list (as a result of
- *              using exchange_types()).
- * - glob_type: The unique global type that is owner of all global entities
- *              of this module.
- */
-typedef struct ir_prog ir_prog, *ir_prog_ptr;
 
 typedef struct ir_graph_pass_manager_t      ir_graph_pass_manager_t;
 typedef struct ir_prog_pass_manager_t       ir_prog_pass_manager_t;
