@@ -209,11 +209,12 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 /**
  * Verify all graphs on the given ir_prog.
  */
-static int irp_verify_irgs(ir_prog *irp, int flags) {
+static int irp_verify_irgs(void)
+{
 	int i, res = 1;
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
-		res &= irg_verify(get_irp_irg(i), flags);
+		res &= irg_verify(get_irp_irg(i), 0);
 	return res;
 }
 
@@ -234,7 +235,7 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 			if (pass->verify_irprog) {
 				pass->verify_irprog(irp, pass->context);
 			} else {
-				irp_verify_irgs(irp, 0);
+				irp_verify_irgs();
 			}
 		}
 		/* dump */
