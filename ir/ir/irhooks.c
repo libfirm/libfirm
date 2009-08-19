@@ -57,10 +57,3 @@ void unregister_hook(hook_type_t hook, hook_entry_t *entry) {
     entry->next = NULL;
   }
 }
-
-int firm_init_hooks(void) {
-  /* this strange code assures that both functions are available
-     in a shared library even if none of them is called.
-     Meanwhile not needed anymore but ... */
-  return (int)register_hook + (int)unregister_hook;
-}

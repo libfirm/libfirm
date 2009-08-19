@@ -285,7 +285,4 @@ extern hook_entry_t *hooks[hook_last];
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
 #define hook_node_info(F, node)           hook_exec(hook_node_info, (ctx, F, node))
 
-/* the initializer, move to hooks_t.h some day */
-int firm_init_hooks(void);
-
 #endif
