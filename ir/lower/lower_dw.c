@@ -2694,12 +2694,12 @@ struct pass_t {
 /**
  * Creates a wrapper around lower_dw_ops().
  */
-static int pass_wrapper(ir_prog *irp, void *context) {
+static void pass_wrapper(ir_prog *irp, void *context)
+{
 	struct pass_t *pass = context;
 
 	(void)irp;
 	lower_dw_ops(pass->param);
-	return 0;
 }  /* pass_wrapper */
 
 ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param) {

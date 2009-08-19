@@ -1084,12 +1084,12 @@ struct pass_t {
 /**
  * Wrapper for running optimize_funccalls() as an ir_prog pass.
  */
-static int pass_wrapper(ir_prog *irp, void *context) {
+static void pass_wrapper(ir_prog *irp, void *context)
+{
 	struct pass_t *pass = context;
 
 	(void)irp;
 	optimize_funccalls(pass->force_run, pass->callback);
-	return 0;
 }  /* pass_wrapper */
 
 /* Creates an ir_prog pass for optimize_funccalls. */

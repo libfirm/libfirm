@@ -170,13 +170,12 @@ struct pass_t {
 /**
  * Wrapper for running lower_intrinsics() as an ir_prog pass.
  */
-static int pass_wrapper(ir_prog *irp, void *context)
+static void pass_wrapper(ir_prog *irp, void *context)
 {
 	struct pass_t *pass = context;
 	(void) irp; /* TODO: set current irp, or remove parameter */
 	lower_intrinsics(pass->list, pass->length, pass->part_block_used);
 	/* probably this pass should not run again */
-	return 0;
 }  /* pass_wrapper */
 
 /**
