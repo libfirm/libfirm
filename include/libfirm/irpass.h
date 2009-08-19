@@ -185,6 +185,6 @@ ir_prog_pass_t *def_prog_pass(
  */
 ir_prog_pass_t *def_prog_pass_constructor(
 	ir_prog_pass_t *memory,
-	const char *name, void (*function)(ir_prog *irp, void *context));
+	const char *name, int (*function)(ir_prog *irp, void *context));
 
 #endif

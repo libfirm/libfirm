@@ -439,7 +439,7 @@ ir_prog_pass_t *def_prog_pass(
 ir_prog_pass_t *def_prog_pass_constructor(
 	ir_prog_pass_t *pass,
 	const char *name,
-	void (*function)(ir_prog *irp, void *context))
+	int (*function)(ir_prog *irp, void *context))
 {
 	if (pass == NULL)
 		pass = XMALLOCZ(ir_prog_pass_t);
