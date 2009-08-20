@@ -44,6 +44,7 @@
 #include "debug.h"
 #include "error.h"
 #include "typerep.h"
+#include "irpass.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -1344,3 +1345,8 @@ void mark_private_methods(void) {
 
 	pmap_destroy(mtp_map);
 }  /* mark_private_methods */
+
+/* create a pass for mark_private_methods() */
+ir_prog_pass_t *mark_private_methods_pass(const char *name) {
+	return def_prog_pass(name ? name : "mark_private_methods", mark_private_methods);
+}  /* mark_private_methods_pass */

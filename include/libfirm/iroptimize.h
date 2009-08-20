@@ -749,48 +749,80 @@ void combo(ir_graph *irg);
  */
 ir_graph_pass_t *combo_pass(const char *name);
 
-/** Inlines all small methods at call sites where the called address comes
- *  from a SymConst node that references the entity representing the called
- *  method.
+/**
+ * Inlines all small methods at call sites where the called address comes
+ * from a SymConst node that references the entity representing the called
+ * method.
  *
- *  The size argument is a rough measure for the code size of the method:
- *  Methods where the obstack containing the firm graph is smaller than
- *  size are inlined.  Further only a limited number of calls are inlined.
- *  If the method contains more than 1024 inlineable calls none will be
- *  inlined.
- *  Inlining is only performed if flags `optimize' and `inlineing' are set.
- *  The graph may not be in state phase_building.
- *  It is recommended to call local_optimize_graph() after inlining as this
- *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
- *  combination as control flow operation.
+ * @param size   maximum function size
+ *
+ * The size argument is a rough measure for the code size of the method:
+ * Methods where the obstack containing the firm graph is smaller than
+ * size are inlined.  Further only a limited number of calls are inlined.
+ * If the method contains more than 1024 inlineable calls none will be
+ * nlined.
+ * Inlining is only performed if flags `optimize' and `inlineing' are set.
+ * The graph may not be in state phase_building.
+ * It is recommended to call local_optimize_graph() after inlining as this
+ * function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
+ * combination as control flow operation.
  */
 void inline_small_irgs(ir_graph *irg, int size);
 
+/**
+ * Creates an ir_graph pass for inline_small_irgs().
+ *
+ * @param name   the name of this pass or NULL
+ * @param size   maximum function size
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
 
-/** Inlineing with a different heuristic than inline_small_irgs().
+/**
+ * Inlineing with a different heuristic than inline_small_irgs().
  *
- *  Inlines leave functions.  If inlinening creates new leave
- *  function inlines these, too. (If g calls f, and f calls leave h,
- *  h is first inlined in f and then f in g.)
+ * Inlines leave functions.  If inlinening creates new leave
+ * function inlines these, too. (If g calls f, and f calls leave h,
+ * h is first inlined in f and then f in g.)
  *
- *  Then inlines all small functions (this is not recursive).
+ * Then inlines all small functions (this is not recursive).
  *
- *  For a heuristic this inlineing uses firm node counts.  It does
- *  not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
- *  If the ignore_runtime flag is set, calls to functions marked with the
- *  mtp_property_runtime property are ignored.
+ * For a heuristic this inlineing uses firm node counts.  It does
+ * not count auxiliary nodes as Proj, Tuple, End, Start, Id, Sync.
+ * If the ignore_runtime flag is set, calls to functions marked with the
+ * mtp_property_runtime property are ignored.
  *
- *  @param maxsize         Do not inline any calls if a method has more than
- *                         maxsize firm nodes.  It may reach this limit by
- *                         inlineing.
- *  @param leavesize       Inline leave functions if they have less than leavesize
- *                         nodes.
- *  @param size            Inline all function smaller than size.
- *  @param ignore_runtime  count a function only calling runtime functions as
- *                         leave
+ * @param maxsize         Do not inline any calls if a method has more than
+ *                        maxsize firm nodes.  It may reach this limit by
+ *                        inlineing.
+ * @param leavesize       Inline leave functions if they have less than leavesize
+ *                        nodes.
+ * @param size            Inline all function smaller than size.
+ * @param ignore_runtime  count a function only calling runtime functions as
+ *                        leave
  */
 void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		unsigned size, int ignore_runtime);
+
+/**
+ * Creates an ir_prog pass for inline_leave_functions().
+ *
+ * @param name            the name of this pass or NULL
+ * @param maxsize         Do not inline any calls if a method has more than
+ *                        maxsize firm nodes.  It may reach this limit by
+ *                        inlineing.
+ * @param leavesize       Inline leave functions if they have less than leavesize
+ *                        nodes.
+ * @param size            Inline all function smaller than size.
+ * @param ignore_runtime  count a function only calling runtime functions as
+ *                        leave
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *inline_leave_functions_pass(
+	const char *name, unsigned maxsize, unsigned leavesize,
+	unsigned size, int ignore_runtime);
 
 /**
  * Heuristic inliner. Calculates a benefice value for every call and inlines
@@ -802,6 +834,20 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
  * @param threshold    inlining threshold
  */
 void inline_functions(unsigned maxsize, int inline_threshold);
+
+/**
+ * Creates an ir_prog pass for inline_functions().
+ *
+ * @param name         the name of this pass or NULL
+ * @param maxsize      Do not inline any calls if a method has more than
+ *                     maxsize firm nodes.  It may reach this limit by
+ *                     inlineing.
+ * @param threshold    inlining threshold
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *inline_functions_pass(
+	const char *name, unsigned maxsize, int inline_threshold);
 
 /**
  * Combines congruent blocks into one.

@@ -244,4 +244,13 @@ void set_irp_memory_disambiguator_options(unsigned options);
  */
 void mark_private_methods(void);
 
+/**
+ * Creates an ir_prog pass for mark_private_methods().
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *mark_private_methods_pass(const char *name);
+
 #endif /* FIRM_ANA_IRMEMORY_H */

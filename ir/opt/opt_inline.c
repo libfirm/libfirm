@@ -61,6 +61,7 @@
 #include "irhooks.h"
 #include "irtools.h"
 #include "iropt_dbg.h"
+#include "irpass_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -1378,6 +1379,31 @@ void inline_small_irgs(ir_graph *irg, int size) {
 	current_ir_graph = rem;
 }
 
+struct inline_small_irgs_pass_t {
+	ir_graph_pass_t pass;
+	int            size;
+};
+
+/**
+ * Wrapper to run inline_small_irgs() as a pass.
+ */
+static int inline_small_irgs_wrapper(ir_graph *irg, void *context) {
+	struct inline_small_irgs_pass_t *pass = context;
+
+	inline_small_irgs(irg, pass->size);
+	return 0;
+}
+
+/* create a pass for inline_small_irgs() */
+ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size) {
+	struct inline_small_irgs_pass_t *pass =
+		XMALLOCZ(struct inline_small_irgs_pass_t);
+
+	pass->size = size;
+	return def_graph_pass_constructor(
+		&pass->pass, name ? name : "inline_small_irgs", inline_small_irgs_wrapper);
+}
+
 /**
  * Environment for inlining irgs.
  */
@@ -1797,6 +1823,45 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
+}
+
+struct inline_leave_functions_pass_t {
+	ir_prog_pass_t pass;
+	unsigned       maxsize;
+	unsigned       leavesize;
+	unsigned       size;
+	int            ignore_runtime;
+};
+
+/**
+ * Wrapper to run inline_leave_functions() as a ir_prog pass.
+ */
+static int inline_leave_functions_wrapper(ir_prog *irp, void *context) {
+	struct inline_leave_functions_pass_t *pass = context;
+
+	(void)irp;
+	inline_leave_functions(
+		pass->maxsize, pass->leavesize,
+		pass->size, pass->ignore_runtime);
+	return 0;
+}
+
+/* create a pass for inline_leave_functions() */
+ir_prog_pass_t *inline_leave_functions_pass(
+	const char *name, unsigned maxsize, unsigned leavesize,
+	unsigned size, int ignore_runtime) {
+	struct inline_leave_functions_pass_t *pass =
+		XMALLOCZ(struct inline_leave_functions_pass_t);
+
+	pass->maxsize        = maxsize;
+	pass->leavesize      = leavesize;
+	pass->size           = size;
+	pass->ignore_runtime = ignore_runtime;
+
+	return def_prog_pass_constructor(
+		&pass->pass,
+		name ? name : "inline_leave_functions",
+		inline_leave_functions_wrapper);
 }
 
 /**
@@ -2352,6 +2417,37 @@ void inline_functions(unsigned maxsize, int inline_threshold) {
 
 	obstack_free(&temp_obst, NULL);
 	current_ir_graph = rem;
+}
+
+struct inline_functions_pass_t {
+	ir_prog_pass_t pass;
+	unsigned       maxsize;
+	int            inline_threshold;
+};
+
+/**
+ * Wrapper to run inline_functions() as a ir_prog pass.
+ */
+static int inline_functions_wrapper(ir_prog *irp, void *context) {
+	struct inline_functions_pass_t *pass = context;
+
+	(void)irp;
+	inline_functions(pass->maxsize, pass->inline_threshold);
+	return 0;
+}
+
+/* create a ir_prog pass for inline_functions */
+ir_prog_pass_t *inline_functions_pass(
+	  const char *name, unsigned maxsize, int inline_threshold) {
+	struct inline_functions_pass_t *pass =
+		XMALLOCZ(struct inline_functions_pass_t);
+
+	pass->maxsize          = maxsize;
+	pass->inline_threshold = inline_threshold;
+
+	return def_prog_pass_constructor(
+		&pass->pass, name ? name : "inline_functions",
+		inline_functions_wrapper);
 }
 
 void firm_init_inline(void) {
