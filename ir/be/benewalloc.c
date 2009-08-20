@@ -1090,7 +1090,11 @@ static void add_phi_permutations(ir_node *block, int p)
 	}
 }
 
-static void handle_phi_prefs(ir_node *phi)
+/**
+ * Set preferences for a phis register based on the registers used on the
+ * phi inputs.
+ */
+static void adapt_phi_prefs(ir_node *phi)
 {
 	int i;
 	int arity = get_irn_arity(phi);
@@ -1112,6 +1116,37 @@ static void handle_phi_prefs(ir_node *phi)
 		weight = get_block_execfreq(execfreqs, pred);
 		r      = arch_register_get_index(reg);
 		info->prefs[r] += weight * AFF_PHI;
+	}
+}
+
+/**
+ * After a phi has been assigned a register propagate preference inputs
+ * to the phi inputs.
+ */
+static void propagate_phi_register(ir_node *phi)
+{
+	int                    i;
+	ir_node               *block = get_nodes_block(phi);
+	int                    arity = get_irn_arity(phi);
+	const arch_register_t *reg   = arch_get_irn_register(phi);
+	unsigned               r     = arch_register_get_index(reg);
+
+	for (i = 0; i < arity; ++i) {
+		ir_node           *op   = get_Phi_pred(phi, i);
+		allocation_info_t *info = get_allocation_info(op);
+		ir_node           *pred;
+		float              weight;
+
+		/* already a register assigned? then we can't influence it anyway */
+		/* TODO: what about splits which we might still do... */
+		if (arch_get_irn_register(op) != NULL)
+			continue;
+
+		pred   = get_Block_cfgpred_block(block, i);
+		weight = get_block_execfreq(execfreqs, pred);
+
+		/* promote the prefered register */
+		info->prefs[r] += AFF_PHI * weight;
 	}
 }
 
@@ -1235,10 +1270,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (reg != NULL) {
 			use_reg(node, reg);
 		} else {
-			/* TODO: give boni for registers already assigned at the
-			   predecessors */
-			handle_phi_prefs(node);
+			adapt_phi_prefs(node);
 			assign_reg(block, node);
+			propagate_phi_register(node);
 		}
 	}
 	start = node;
@@ -1250,6 +1284,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			continue;
 
 		assign_reg(block, node);
+		/* shouldn't happen if we color in dominance order */
+		assert (!is_Phi(node));
+#if 0
+		if (is_Phi(node))
+			propagate_phi_register(node);
+#endif
 	}
 
 	/* assign instructions in the block */
