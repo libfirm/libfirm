@@ -137,4 +137,14 @@ struct ir_prog_pass_manager_t {
 	unsigned   dump_all:1;     /**< Set if every pass should be dumped. */
 };
 
+/**
+ * Ensure that no verifier is run an ir_prog pass.
+ */
+int ir_prog_no_verify(ir_prog *prog, void *ctx);
+
+/**
+ * Ensure that no dumper is run from an ir_prog pass.
+ */
+void ir_prog_no_dump(ir_prog *prog, void *ctx, unsigned idx);
+
 #endif

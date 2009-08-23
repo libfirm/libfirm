@@ -38,6 +38,7 @@
 #include "irop.h"
 
 #include "irdump_t.h"
+#include "irpass_t.h"
 
 #include "irgwalk.h"
 #include "tv_t.h"
@@ -2363,7 +2364,7 @@ void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *
  * @param suffix1 first filename suffix
  * @param suffix2 second filename suffix
  */
-FILE *vcg_open(ir_graph *irg, const char *suffix1, const char *suffix2) {
+FILE *vcg_open(const ir_graph *irg, const char *suffix1, const char *suffix2) {
 	FILE *F;
 	const char *nm = get_irg_dump_name(irg);
 	int len = strlen(nm), i, j;
@@ -2978,6 +2979,39 @@ void dump_all_ir_graphs(dump_graph_func *dmp_grph, const char *suffix) {
 		dmp_grph(get_irp_irg(i), suffix);
 }
 
+struct pass_t {
+	ir_prog_pass_t  pass;
+	dump_graph_func *dump_graph;
+	char            suffix[1];
+};
+
+/**
+ * Wrapper around dump_all_ir_graphs().
+ */
+static int dump_all_ir_graphs_wrapper(ir_prog *irp, void *context) {
+	struct pass_t *pass = context;
+
+	(void)irp;
+	dump_all_ir_graphs(pass->dump_graph, pass->suffix);
+	return 0;
+}
+
+ir_prog_pass_t *dump_all_ir_graph_pass(
+	const char *name, dump_graph_func *dump_graph, const char *suffix) {
+	size_t         len   = strlen(suffix);
+	struct pass_t  *pass = xmalloc(sizeof(*pass) + len);
+	ir_prog_pass_t *res  = def_prog_pass_constructor(
+		&pass->pass, name ? name : "dump_all_graphs", dump_all_ir_graphs_wrapper);
+
+	/* this pass does not change anything, so neither dump nor verify is needed. */
+	res->dump_irprog   = ir_prog_no_dump;
+	res->verify_irprog = ir_prog_no_verify;
+
+	pass->dump_graph = dump_graph;
+	strcpy(pass->suffix, suffix);
+
+	return res;
+}
 
 /*--------------------------------------------------------------------------------*
  * Dumps a stand alone loop graph with firm nodes which belong to one loop node   *

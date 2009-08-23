@@ -239,6 +239,15 @@ void            set_irp_phase_state(irg_phase_state s);
 irg_outs_state get_irp_ip_outs_state(void);
 void           set_irp_ip_outs_inconsistent(void);
 
+/**
+ * Creates an ir_prog pass for set_irp_phase_state().
+ *
+ * @param name   the name of this pass or NULL
+ * @param state  the state to set
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state);
 
 irg_callee_info_state get_irp_callee_info_state(void);
 void                  set_irp_callee_info_state(irg_callee_info_state s);

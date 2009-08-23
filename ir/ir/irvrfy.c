@@ -2084,11 +2084,18 @@ static int irg_verify_wrapper(ir_graph *irg, void *context) {
 ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags) {
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
-	pass->flags = flags;
-	return def_graph_pass_constructor(
+	def_graph_pass_constructor(
 		&pass->pass, name ? name : "irg_verify", irg_verify_wrapper);
+
+	/* neither dump for verify */
+	pass->pass.dump_irg   = (DUMP_ON_IRG_FUNC)ir_prog_no_dump;
+	pass->pass.verify_irg = (RUN_ON_IRG_FUNC)ir_prog_no_verify;
+
+	pass->flags = flags;
+	return &pass->pass;
 }
 
+/* create a verify pass */
 int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string) {
 	int res;
 	firm_verification_t old = get_node_verification_mode();

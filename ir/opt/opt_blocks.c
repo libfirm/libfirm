@@ -37,6 +37,7 @@
 #include "trouts.h"
 #include "irgwalk.h"
 #include "set.h"
+#include "irpass.h"
 #include "debug.h"
 
 /* define this for general block shaping: congruent blocks
@@ -1258,3 +1259,7 @@ int shape_blocks(ir_graph *irg) {
 
 	return res;
 }  /* shape_blocks */
+
+ir_graph_pass_t *shape_blocks_pass(const char *name) {
+	return def_graph_pass_ret(name ? name : "shape_blocks", shape_blocks);
+}  /* shape_blocks_pass */

@@ -60,8 +60,6 @@ int optimize_graph_df(ir_graph *irg);
  * Creates an ir_graph pass for optimize_graph_df().
  *
  * @param name     the name of this pass or NULL
- * @param verify   should this pass be verified?
- * @param dump     should this pass result be dumped?
  *
  * @return  the newly created ir_graph pass
  */
@@ -86,6 +84,15 @@ ir_graph_pass_t *optimize_graph_df_pass(const char *name);
  * @param irg  The graph to be optimized.
  */
 void dead_node_elimination(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for dead_node_elimination().
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *dead_node_elimination_pass(const char *name);
 
 typedef struct _survive_dce_t survive_dce_t;
 

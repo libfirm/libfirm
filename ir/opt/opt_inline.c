@@ -492,6 +492,10 @@ void dead_node_elimination(ir_graph *irg) {
 #endif
 }
 
+ir_graph_pass_t *dead_node_elimination_pass(const char *name) {
+	return def_graph_pass(name ? name : "dce", dead_node_elimination);
+}
+
 /**
  * Relink bad predecessors of a block and store the old in array to the
  * link field. This function is called by relink_bad_predecessors().

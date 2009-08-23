@@ -37,7 +37,7 @@
 /*Add a graph pass to a graph pass manager. */
 void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr, ir_graph_pass_t *pass)
 {
-	list_add(&pass->list, &mgr->passes);
+	list_add_tail(&pass->list, &mgr->passes);
 	++mgr->n_passes;
 	if (pass->add_to_mgr)
 		pass->add_to_mgr(pass->context);
@@ -46,7 +46,7 @@ void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr, ir_graph_pass_t *pass)
 /* Add an irprog pass to an irprog pass manager. */
 void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr, ir_prog_pass_t *pass)
 {
-	list_add(&pass->list, &mgr->passes);
+	list_add_tail(&pass->list, &mgr->passes);
 	++mgr->n_passes;
 	if (pass->add_to_mgr)
 		pass->add_to_mgr(pass->context);
@@ -64,20 +64,16 @@ static int run_wrapper(ir_prog *prog, void *ctx)
 	return ir_graph_pass_mgr_run(mgr);
 }
 
-/**
- * Ensure that no verifier is run from the wrapper.
- */
-static int no_verify(ir_prog *prog, void *ctx)
+/* Ensure that no verifier is run an ir_prog pass. */
+int ir_prog_no_verify(ir_prog *prog, void *ctx)
 {
 	(void)prog;
 	(void)ctx;
 	return 0;
 }
 
-/**
- * Ensure that no dumper is run from the wrapper.
- */
-static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
+/* Ensure that no dumper is run from an ir_prog pass. */
+void ir_prog_no_dump(ir_prog *prog, void *ctx, unsigned idx)
 {
 	(void)prog;
 	(void)ctx;
@@ -85,7 +81,7 @@ static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
 }
 
 /**
- * Term warpper for a wrapped ir_graph pass manager.
+ * Term wrapper for a wrapped ir_graph pass manager.
  */
 static void term_wrapper(void *context)
 {
@@ -106,8 +102,8 @@ static ir_prog_pass_t *create_wrapper_pass(ir_graph_pass_manager_t *graph_mgr)
 	pass->name          = graph_mgr->name;
 
 	/* do not verify nor dump: this is handled by the graph manager */
-	pass->verify_irprog = no_verify;
-	pass->dump_irprog   = no_dump;
+	pass->verify_irprog = ir_prog_no_verify;
+	pass->dump_irprog   = ir_prog_no_dump;
 	pass->is_wrapper    = 1;
 
 	pass->add_to_mgr   = NULL;
@@ -130,12 +126,16 @@ void ir_prog_pass_mgr_add_graph_pass(
 			graph_mgr = wrapper->context;
 
 			ir_graph_pass_mgr_add(graph_mgr, pass);
+			++mgr->n_passes;
 			return;
 		}
 	}
 
 	/* not found, create a new wrapper */
-	graph_mgr = new_graph_pass_mgr("wrapper", mgr->verify_all, mgr->dump_all);
+	graph_mgr = new_graph_pass_mgr(
+		"graph_pass_wrapper", mgr->verify_all, mgr->dump_all);
+	graph_mgr->run_idx = mgr->n_passes;
+
 	ir_graph_pass_mgr_add(graph_mgr, pass);
 
 	wrapper = create_wrapper_pass(graph_mgr);
@@ -261,9 +261,10 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 ir_graph_pass_manager_t *new_graph_pass_mgr(
 	const char *name, int verify_all, int dump_all)
 {
-	ir_graph_pass_manager_t *res = xmalloc(sizeof(res));
+	ir_graph_pass_manager_t *res = XMALLOCZ(ir_graph_pass_manager_t);
 
 	INIT_LIST_HEAD(&res->passes);
+	res->kind       = k_ir_graph_pass_mgr;
 	res->name       = name;
 	res->run_idx    = 0;
 	res->verify_all = verify_all != 0;
@@ -276,9 +277,10 @@ ir_graph_pass_manager_t *new_graph_pass_mgr(
 ir_prog_pass_manager_t *new_prog_pass_mgr(
 	const char *name, int verify_all, int dump_all)
 {
-	ir_prog_pass_manager_t *res = xmalloc(sizeof(res));
+	ir_prog_pass_manager_t *res = XMALLOCZ(ir_prog_pass_manager_t);
 
 	INIT_LIST_HEAD(&res->passes);
+	res->kind       = k_ir_prog_pass_mgr;
 	res->name       = name;
 	res->run_idx    = 0;
 	res->verify_all = verify_all != 0;
@@ -323,7 +325,7 @@ void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr)
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
  */
-void ir_graph_pass_manager_set_run_idx(
+void ir_graph_pass_mgr_set_run_idx(
 	ir_graph_pass_manager_t *mgr, unsigned run_idx)
 {
 	mgr->run_idx = run_idx;
@@ -396,6 +398,8 @@ ir_graph_pass_t *def_graph_pass_constructor(
 	const char *name, int (*function)(ir_graph *irg, void *context)) {
 	if (pass == NULL)
 		pass = XMALLOCZ(ir_graph_pass_t);
+	else
+		memset(pass, 0, sizeof(ir_graph_pass_t));
 	pass->kind       = k_ir_graph_pass;
 	pass->run_on_irg = function;
 	pass->context    = pass;
@@ -443,6 +447,8 @@ ir_prog_pass_t *def_prog_pass_constructor(
 {
 	if (pass == NULL)
 		pass = XMALLOCZ(ir_prog_pass_t);
+	else
+		memset(pass, 0, sizeof(ir_prog_pass_t));
 
 	pass->kind          = k_ir_prog_pass;
 	pass->run_on_irprog = function;
@@ -453,3 +459,37 @@ ir_prog_pass_t *def_prog_pass_constructor(
 
 	return pass;
 }  /* def_prog_pass_constructor */
+
+struct pass_t {
+	ir_prog_pass_t pass;
+	void           *context;
+	void (*function)(void *context);
+};
+
+/**
+ * Wrapper for the call_function pass.
+ */
+static int call_function_wrapper(ir_prog *irp, void *context) {
+	struct pass_t *pass = context;
+
+	(void)irp;
+	pass->function(pass->context);
+	return 0;
+}  /* call_function_wrapper */
+
+ir_prog_pass_t *call_function_pass(
+	const char *name, void (*function)(void *context), void *context) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	def_prog_pass_constructor(
+		&pass->pass, name ? name : "set_function", call_function_wrapper);
+
+	pass->pass.verify_irprog = ir_prog_no_verify;
+	pass->pass.dump_irprog   = ir_prog_no_dump;
+	pass->pass.context       = pass;
+
+	pass->function = function;
+	pass->context  = context;
+
+	return &pass->pass;
+}  /* call_function_pass */

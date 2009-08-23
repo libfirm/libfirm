@@ -91,8 +91,8 @@ extern int dump_dominator_information_flag;
 extern int opt_dump_pointer_values_to_info;
 extern int opt_dump_analysed_type_info;
 
-FILE *vcg_open (ir_graph *irg, const char * suffix1, const char *suffix2);
-FILE *vcg_open_name (const char *name, const char *suffix);
+FILE *vcg_open(const ir_graph *irg, const char * suffix1, const char *suffix2);
+FILE *vcg_open_name(const char *name, const char *suffix);
 void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *orientation);
 void dump_vcg_footer(FILE *F);
 const char *get_irg_dump_name(const ir_graph *irg);

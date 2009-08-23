@@ -119,6 +119,15 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr);
 void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
 
 /**
+ * Set the run index for an irgraph pass manager.
+ *
+ * @param mgr      the manager
+ * @param run_idx  the index for the first pass of this manager
+ */
+void ir_graph_pass_mgr_set_run_idx(
+	ir_graph_pass_manager_t *mgr, unsigned run_idx);
+
+/**
  * Creates an ir_graph pass for running void function(ir_graph *irg).
  * Uses the default verifier and dumper.
  * The pass returns always 0.
@@ -181,10 +190,23 @@ ir_prog_pass_t *def_prog_pass(
  * @param name      the name of this pass
  * @param function  the function to run
  *
- * @return  the newly created ir_graph pass
+ * @return  the newly created ir_prog pass
  */
 ir_prog_pass_t *def_prog_pass_constructor(
 	ir_prog_pass_t *memory,
 	const char *name, int (*function)(ir_prog *irp, void *context));
+
+/**
+ * Create a pass that calls some function.
+ * This pass calls the given function, but has no dump nor verify.
+ *
+ * @param name      the name of this pass
+ * @param function  the function to run
+ * @param context   context parameter
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *call_function_gpass(
+	const char *name, void (*function)(void *context), void *context);
 
 #endif

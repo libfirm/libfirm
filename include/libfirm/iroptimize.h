@@ -508,6 +508,16 @@ ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 void proc_cloning(float threshold);
 
 /**
+ * Creates an ir_prog pass for proc_cloning().
+ *
+ * @param name        the name of this pass or NULL
+ * @param threshold   the threshold for cloning
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
+
+/**
  * Reassociation.
  *
  * Applies Reassociation rules to integer expressions.
@@ -857,5 +867,14 @@ ir_prog_pass_t *inline_functions_pass(
  * @return non-zero if the graph was transformed
  */
 int shape_blocks(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for shape_blocks().
+ *
+ * @param name   the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *shape_blocks_pass(const char *name);
 
 #endif

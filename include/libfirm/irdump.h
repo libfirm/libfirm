@@ -170,8 +170,8 @@ DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph (ir_graph *irg, const char *suffix);
-void dump_ir_graph_file (ir_graph *irg, FILE *out);
+void dump_ir_graph(ir_graph *irg, const char *suffix);
+void dump_ir_graph_file(ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes.
  *
@@ -190,8 +190,8 @@ void dump_ir_graph_file (ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph (ir_graph *irg, const char *suffix);
-void dump_ir_block_graph_file (ir_graph *irg, FILE *out);
+void dump_ir_block_graph(ir_graph *irg, const char *suffix);
+void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes but grouped in extended blocks.
  *
@@ -209,8 +209,8 @@ void dump_ir_block_graph_file (ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_extblock_graph (ir_graph *irg, const char *suffix);
-void dump_ir_extblock_graph_file (ir_graph *irg, FILE *out);
+void dump_ir_extblock_graph(ir_graph *irg, const char *suffix);
+void dump_ir_extblock_graph_file(ir_graph *irg, FILE *out);
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs<suffix>.vcg.
  *
@@ -233,8 +233,8 @@ void dump_all_cg_block_graph(const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph_w_types (ir_graph *irg, const char *suffix);
-void dump_ir_graph_w_types_file (ir_graph *irg, FILE *out);
+void dump_ir_graph_w_types(ir_graph *irg, const char *suffix);
+void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
@@ -252,7 +252,7 @@ void dump_ir_graph_w_types_file (ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph_w_types (ir_graph *irg, const char *suffix);
+void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix);
 
 /** The type of a dump function that is called for each graph.
  *
@@ -280,8 +280,19 @@ typedef void dump_graph_func(ir_graph *irg, const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
+void dump_all_ir_graphs(dump_graph_func *dump_graph, const char *suffix);
 
+/**
+ * Creates an ir_prog pass for dump_all_ir_graphs().
+ *
+ * @param name          the name of this pass or NULL
+ * @param dump_graph    The dumper to be used for dumping.
+ * @param suffix        A suffix for the file name.
+ *
+ * @return  the newly created ir_prog pass
+ */
+ir_prog_pass_t *dump_all_ir_graph_pass(
+	const char *name, dump_graph_func *dump_graph, const char *suffix);
 
 /**
  * Dump the control flow graph of a procedure.
@@ -299,7 +310,7 @@ void dump_all_ir_graphs (dump_graph_func *dump_graph, const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_cfg (ir_graph *irg, const char *suffix);
+void dump_cfg(ir_graph *irg, const char *suffix);
 
 /**
  * Dump a node and its predecessors forming a subgraph to a vcg file.
@@ -316,7 +327,7 @@ void dump_cfg (ir_graph *irg, const char *suffix);
  * @return
  *      A file containing the subgraph in vcg format.
  */
-void dump_subgraph (ir_node *root, int depth, const char *suffix);
+void dump_subgraph(ir_node *root, int depth, const char *suffix);
 
 /* **************************************************************************** */
 /*                              CALLGRAPH DUMPERS                               */
@@ -353,7 +364,7 @@ void dump_callgraph(const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_type_graph (ir_graph *irg, const char *suffix);
+void dump_type_graph(ir_graph *irg, const char *suffix);
 
 /**
  * Dumps all type information.
@@ -370,7 +381,7 @@ void dump_type_graph (ir_graph *irg, const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_types (const char *suffix);
+void dump_all_types(const char *suffix);
 
 /**
  * Dumps the class hierarchy with or without entities.
@@ -389,7 +400,7 @@ void dump_all_types (const char *suffix);
  * is dumped along with the entities.
  * Dumps to a file class_hierarchy.vcg
  */
-void dump_class_hierarchy (int entities, const char *suffix);
+void dump_class_hierarchy(int entities, const char *suffix);
 
 /* **************************************************************************** */
 /*                              LOOPTREE DUMPERS                                */
@@ -416,7 +427,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix);
  * @param l       Dump the loop tree for this loop.
  * @param suffix  A suffix for the file name.
  */
-void dump_loop (ir_loop *l, const char *suffix);
+void dump_loop(ir_loop *l, const char *suffix);
 
 /** Dumps the loop tree over the call graph.
  *
@@ -435,11 +446,11 @@ void dump_callgraph_loop_tree(const char *suffix);
 
 /** Write the irnode and all its attributes to the file passed.
  * */
-int dump_irnode_to_file (FILE *f, ir_node *n);
+int dump_irnode_to_file(FILE *f, ir_node *n);
 
 /** Write the irnode and all its attributes to stdout.
  *  */
-void dump_irnode (ir_node *n);
+void dump_irnode(ir_node *n);
 
 /** Write the graph and all its attributes to the file passed.
  *  Does not write the nodes.
@@ -507,20 +518,20 @@ typedef enum {
 
 /** Write the entity and all its attributes to the passed file.
  *  */
-void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity);
+void    dump_entity_to_file(FILE *F, ir_entity *ent, unsigned verbosity);
 
 /** Write the entity and all its attributes to the stdout.
  *
  *  Calls dump_entity_to_file().  */
-void    dump_entity (ir_entity *ent);
+void    dump_entity(ir_entity *ent);
 
 /** Write the type and all its attributes to the file passed.
  * */
-void    dump_type_to_file (FILE *f, ir_type *tp, dump_verbosity verbosity);
+void    dump_type_to_file(FILE *f, ir_type *tp, dump_verbosity verbosity);
 
 /** Write the type and all its attributes to stdout.
  *  */
-void    dump_type (ir_type *tp);
+void    dump_type(ir_type *tp);
 
 
 /** Dump type information as text.
