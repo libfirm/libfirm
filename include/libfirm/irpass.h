@@ -209,4 +209,13 @@ ir_prog_pass_t *def_prog_pass_constructor(
 ir_prog_pass_t *call_function_pass(
 	const char *name, void (*function)(void *context), void *context);
 
+/**
+ * Set the run index for an irprog pass manager.
+ *
+ * @param mgr      the manager
+ * @param run_idx  the index for the first pass of this manager
+ */
+void ir_prog_pass_mgr_set_run_idx(
+	ir_prog_pass_manager_t *mgr, unsigned run_idx);
+
 #endif

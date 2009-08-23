@@ -134,7 +134,7 @@ void ir_prog_pass_mgr_add_graph_pass(
 	/* not found, create a new wrapper */
 	graph_mgr = new_graph_pass_mgr(
 		"graph_pass_wrapper", mgr->verify_all, mgr->dump_all);
-	graph_mgr->run_idx = mgr->n_passes;
+	graph_mgr->run_idx = mgr->run_idx + mgr->n_passes;
 
 	ir_graph_pass_mgr_add(graph_mgr, pass);
 
@@ -337,7 +337,7 @@ void ir_graph_pass_mgr_set_run_idx(
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
  */
-void ir_prog_pass_manager_set_run_idx(
+void ir_prog_pass_mgr_set_run_idx(
 	ir_prog_pass_manager_t *mgr, unsigned run_idx)
 {
 	mgr->run_idx = run_idx;
