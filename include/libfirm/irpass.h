@@ -206,7 +206,7 @@ ir_prog_pass_t *def_prog_pass_constructor(
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *call_function_gpass(
+ir_prog_pass_t *call_function_pass(
 	const char *name, void (*function)(void *context), void *context);
 
 #endif
