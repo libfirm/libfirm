@@ -83,8 +83,9 @@
 #define USE_FACTOR         1.0f
 #define DEF_FACTOR         1.0f
 #define NEIGHBOR_FACTOR    0.2f
-#define AFF_SHOULD_BE_SAME 1.0f
+#define AFF_SHOULD_BE_SAME 0.5f
 #define AFF_PHI            1.0f
+#define SPLIT_DELTA        1.0f
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -319,7 +320,15 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
 
-			op      = get_irn_n(insn, i);
+			op = get_irn_n(insn, i);
+
+			/* if we the value at the should_be_same input doesn't die at the
+			 * node, then it is no use to propagate the constraints (since a
+			 * copy will emerge anyway) */
+			if (ir_nodeset_contains(live_nodes, op)) {
+				continue;
+			}
+
 			op_info = get_allocation_info(op);
 			for (r = 0; r < n_regs; ++r) {
 				op_info->prefs[r] += info->prefs[r] * factor;
@@ -415,6 +424,24 @@ static void use_reg(ir_node *node, const arch_register_t *reg)
 	arch_set_irn_register(node, reg);
 }
 
+static void free_reg_of_value(ir_node *node)
+{
+	assignment_t          *assignment;
+	const arch_register_t *reg;
+	unsigned               r;
+
+	if (!arch_irn_consider_in_reg_alloc(cls, node))
+		return;
+
+	reg        = arch_get_irn_register(node);
+	r          = arch_register_get_index(reg);
+	assignment = &assignments[r];
+	/* assignment->value may be NULL if a value is used at 2 inputs
+	   so it gets freed twice. */
+	assert(assignment->value == node || assignment->value == NULL);
+	assignment->value = NULL;
+}
+
 /**
  * Compare two register preferences in decreasing order.
  */
@@ -441,6 +468,57 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 	}
 	/* TODO: use a stable sort here to avoid unnecessary register jumping */
 	qsort(regprefs, n_regs, sizeof(regprefs[0]), compare_reg_pref);
+}
+
+static bool try_optimistic_split(ir_node *to_split, ir_node *before,
+                                 float pref, float pref_delta)
+{
+#if 1
+	const arch_register_t *reg;
+	ir_node               *block;
+	ir_node               *copy;
+	unsigned               r;
+	unsigned               i;
+	allocation_info_t     *info = get_allocation_info(to_split);
+
+	(void) pref;
+
+	/* find the best free position where we could move to */
+	reg_pref_t *prefs = ALLOCAN(reg_pref_t, n_regs);
+	fill_sort_candidates(prefs, info);
+	for (i = 0; i < n_regs; ++i) {
+		r = prefs[i].num;
+		if (!rbitset_is_set(normal_regs, r))
+			continue;
+		if (assignments[r].value == NULL)
+			break;
+	}
+	if (i >= n_regs) {
+		return false;
+	}
+	/* TODO: use execfreq somehow... */
+	float delta = pref_delta + prefs[i].pref;
+	if (delta < SPLIT_DELTA) {
+		DB((dbg, LEVEL_3, "Not doing optimistical split, win %f too low\n",
+		    delta));
+		return false;
+	}
+
+	reg   = arch_register_for_index(cls, r);
+	block = get_nodes_block(before);
+	copy = be_new_Copy(cls, block, to_split);
+	mark_as_copy_of(copy, to_split);
+	free_reg_of_value(to_split);
+	use_reg(copy, reg);
+	sched_add_before(before, copy);
+
+	DB((dbg, LEVEL_3,
+	    "Optimistic live-range split %+F move %+F -> %s before %+F (win %f)\n",
+	    copy, to_split, reg->name, before, delta));
+	return true;
+#else
+	return false;
+#endif
 }
 
 /**
@@ -497,6 +575,9 @@ static void assign_reg(const ir_node *block, ir_node *node)
 	fill_sort_candidates(reg_prefs, info);
 	for (i = 0; i < n_regs; ++i) {
 		unsigned               num = reg_prefs[i].num;
+		if (!rbitset_is_set(normal_regs, num))
+			continue;
+
 		const arch_register_t *reg = arch_register_for_index(cls, num);
 		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[i].pref));
 	}
@@ -507,38 +588,33 @@ static void assign_reg(const ir_node *block, ir_node *node)
 		allowed_regs = req->limited;
 	}
 
+	unsigned r;
 	for (i = 0; i < n_regs; ++i) {
-		unsigned r = reg_prefs[i].num;
+		r = reg_prefs[i].num;
+		if (!rbitset_is_set(allowed_regs, r))
+			continue;
+		if (assignments[r].value == NULL)
+			break;
 		/* already used?
 		   TODO: It might be better to copy the value occupying the register
 		   around here instead of trying the next one, find out when... */
-		if (assignments[r].value != NULL)
-			continue;
-		if (!rbitset_is_set(allowed_regs, r))
-			continue;
-		reg = arch_register_for_index(cls, r);
-		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
-		use_reg(node, reg);
-		break;
+		if (!is_Phi(node)) {
+			float    pref   = reg_prefs[i].pref;
+			float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
+			ir_node *before = skip_Proj(node);
+			bool     res    = try_optimistic_split(assignments[r].value, before,
+			                                       pref, delta);
+			if (res)
+				break;
+		}
 	}
-}
+	if (i >= n_regs) {
+		panic("No allowed register free for %+F\n", node);
+	}
 
-static void free_reg_of_value(ir_node *node)
-{
-	assignment_t          *assignment;
-	const arch_register_t *reg;
-	unsigned               r;
-
-	if (!arch_irn_consider_in_reg_alloc(cls, node))
-		return;
-
-	reg               = arch_get_irn_register(node);
-	r                 = arch_register_get_index(reg);
-	assignment        = &assignments[r];
-	/* assignment->value may be NULL if a value is used at 2 inputs
-	   so it gets freed twice. */
-	assert(assignment->value == node || assignment->value == NULL);
-	assignment->value = NULL;
+	reg = arch_register_for_index(cls, r);
+	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
+	use_reg(node, reg);
 }
 
 /**
@@ -1105,10 +1181,19 @@ static void adapt_phi_prefs(ir_node *phi)
 		ir_node               *op  = get_irn_n(phi, i);
 		const arch_register_t *reg = arch_get_irn_register(op);
 		ir_node               *pred;
+		ir_node               *pred_block;
+		block_info_t          *pred_block_info;
 		float                  weight;
 		unsigned               r;
 
 		if (reg == NULL)
+			continue;
+		/* we only give the bonus if the predecessor already has register
+		 * assigned, otherwise we only see a dummy value
+		 * and any conclusions about its register are useless */
+		pred_block = get_Block_cfgpred_block(block, i);
+		pred_block_info = get_block_info(pred_block);
+		if (!pred_block_info->processed)
 			continue;
 
 		/* give bonus for already assigned register */
@@ -1222,12 +1307,18 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			ir_mode                   *mode = get_irn_mode(node);
 			const arch_register_req_t *req  = get_default_req_current_cls();
 			ir_node                   *phi;
+			int                        i;
 
 			phi = new_r_Phi(block, n_preds, phi_ins, mode);
 			be_set_phi_reg_req(phi, req);
 
-			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F)\n", phi, node));
-
+			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
+#ifdef DEBUG_libfirm
+			for (i = 0; i < n_preds; ++i) {
+				DB((dbg, LEVEL_3, " %+F", phi_ins[i]));
+			}
+			DB((dbg, LEVEL_3, "\n"));
+#endif
 			mark_as_copy_of(phi, node);
 			sched_add_after(block, phi);
 
