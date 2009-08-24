@@ -40,10 +40,6 @@
  *
  * TODO:
  *  - make use of free registers in the permute_values code
- *  - We have to pessimistically construct Phi_0s when not all predecessors
- *    of a block are known.
- *  - Phi color assignment should give bonus points towards registers already
- *    assigned at predecessors.
  *  - think about a smarter sequence of visiting the blocks. Sorted by
  *    execfreq might be good, or looptree from inner to outermost loops going
  *    over blocks in a reverse postorder
@@ -359,7 +355,6 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		/* TODO give/take penalties for should_be_same/different) */
 		check_defs(&live_nodes, weight, node);
 
 		/* mark last uses */
@@ -399,8 +394,6 @@ static void analyze_block(ir_node *block, void *data)
 			req = arch_get_register_req(node, i);
 			if (!(req->type & arch_register_req_type_limited))
 				continue;
-
-			/* TODO: give penalties to neighbors for precolored nodes! */
 
 			limited = req->limited;
 			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, limited,
@@ -471,9 +464,9 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 }
 
 static bool try_optimistic_split(ir_node *to_split, ir_node *before,
-                                 float pref, float pref_delta)
+                                 float pref, float pref_delta,
+                                 unsigned *output_regs)
 {
-#if 1
 	const arch_register_t *reg;
 	ir_node               *block;
 	ir_node               *copy;
@@ -489,6 +482,8 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	for (i = 0; i < n_regs; ++i) {
 		r = prefs[i].num;
 		if (!rbitset_is_set(normal_regs, r))
+			continue;
+		if (rbitset_is_set(output_regs, r))
 			continue;
 		if (assignments[r].value == NULL)
 			break;
@@ -516,15 +511,13 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	    "Optimistic live-range split %+F move %+F -> %s before %+F (win %f)\n",
 	    copy, to_split, reg->name, before, delta));
 	return true;
-#else
-	return false;
-#endif
 }
 
 /**
  * Determine and assign a register for node @p node
  */
-static void assign_reg(const ir_node *block, ir_node *node)
+static void assign_reg(const ir_node *block, ir_node *node,
+                       unsigned *output_regs)
 {
 	const arch_register_t     *reg;
 	allocation_info_t         *info;
@@ -570,11 +563,12 @@ static void assign_reg(const ir_node *block, ir_node *node)
 		}
 	}
 
+	/* create list of register candidates and sort by their preference */
 	DB((dbg, LEVEL_2, "Candidates for %+F:", node));
 	reg_prefs = alloca(n_regs * sizeof(reg_prefs[0]));
 	fill_sort_candidates(reg_prefs, info);
 	for (i = 0; i < n_regs; ++i) {
-		unsigned               num = reg_prefs[i].num;
+		unsigned num = reg_prefs[i].num;
 		if (!rbitset_is_set(normal_regs, num))
 			continue;
 
@@ -595,21 +589,19 @@ static void assign_reg(const ir_node *block, ir_node *node)
 			continue;
 		if (assignments[r].value == NULL)
 			break;
-		/* already used?
-		   TODO: It might be better to copy the value occupying the register
-		   around here instead of trying the next one, find out when... */
 		if (!is_Phi(node)) {
 			float    pref   = reg_prefs[i].pref;
 			float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
 			ir_node *before = skip_Proj(node);
 			bool     res    = try_optimistic_split(assignments[r].value, before,
-			                                       pref, delta);
+			                                       pref, delta,
+			                                       output_regs);
 			if (res)
 				break;
 		}
 	}
 	if (i >= n_regs) {
-		panic("No allowed register free for %+F\n", node);
+		panic("No register left for %+F\n", node);
 	}
 
 	reg = arch_register_for_index(cls, r);
@@ -800,10 +792,11 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
  */
 static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	allocation_info_t *info      = get_allocation_info(node);
-	const unsigned    *last_uses = &info->last_uses;
-	int                arity     = get_irn_arity(node);
-	int                i;
+	allocation_info_t     *info      = get_allocation_info(node);
+	const unsigned        *last_uses = &info->last_uses;
+	int                    arity     = get_irn_arity(node);
+	int                    i;
+
 	for (i = 0; i < arity; ++i) {
 		ir_node *op;
 
@@ -883,7 +876,8 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
  * @param  live_nodes  the set of live nodes, might be changed
  * @param  node        the current node
  */
-static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
+static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
+                                unsigned *output_regs)
 {
 	int arity = get_irn_arity(node);
 	int i, dummy, res;
@@ -893,7 +887,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* construct a list of register occupied by live-through values */
 	unsigned *live_through_regs = NULL;
-	unsigned *output_regs       = NULL;
 
 	/* see if any use constraints are not met */
 	bool good = true;
@@ -940,8 +933,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 			if (live_through_regs == NULL) {
 				rbitset_alloca(live_through_regs, n_regs);
 				determine_live_through_regs(live_through_regs, node);
-
-				rbitset_alloca(output_regs, n_regs);
 			}
 
 			rbitset_or(output_regs, req->limited, n_regs);
@@ -957,8 +948,6 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 				determine_live_through_regs(live_through_regs, node);
 				if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
 					good = false;
-
-					rbitset_alloca(output_regs, n_regs);
 					rbitset_or(output_regs, req->limited, n_regs);
 				}
 			}
@@ -969,17 +958,14 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node)
 		return;
 
 	/* create these arrays if we haven't yet */
-	if (output_regs == NULL) {
-		if (live_through_regs == NULL) {
-			rbitset_alloca(live_through_regs, n_regs);
-		}
-		rbitset_alloca(output_regs, n_regs);
+	if (live_through_regs == NULL) {
+		rbitset_alloca(live_through_regs, n_regs);
 	}
 
 	/* at this point we have to construct a bipartite matching problem to see
 	 * which values should go to which registers
 	 * Note: We're building the matrix in "reverse" - source registers are
-	 *       right, destinations at l because this will produce the solution
+	 *       right, destinations left because this will produce the solution
 	 *       in the format required for permute_values.
 	 */
 	bp = hungarian_new(n_regs, n_regs, HUNGARIAN_MATCH_PERFECT);
@@ -1249,6 +1235,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	block_info_t          *block_info;
 	block_info_t         **pred_block_infos;
 	ir_node              **phi_ins;
+	unsigned              *output_regs; /**< collects registers which must not
+										     be used for optimistic splits */
 
 	(void) data;
 	DB((dbg, LEVEL_2, "* Block %+F\n", block));
@@ -1348,6 +1336,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		ir_nodeset_insert(&live_nodes, node);
 	}
 
+	rbitset_alloca(output_regs, n_regs);
+
 	/* handle phis... */
 	node = sched_first(block);
 	for ( ; is_Phi(node); node = sched_next(node)) {
@@ -1362,7 +1352,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			use_reg(node, reg);
 		} else {
 			adapt_phi_prefs(node);
-			assign_reg(block, node);
+			assign_reg(block, node, output_regs);
 			propagate_phi_register(node);
 		}
 	}
@@ -1374,22 +1364,25 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		if (reg != NULL)
 			continue;
 
-		assign_reg(block, node);
+		assign_reg(block, node, output_regs);
 		/* shouldn't happen if we color in dominance order */
 		assert (!is_Phi(node));
-#if 0
-		if (is_Phi(node))
-			propagate_phi_register(node);
-#endif
 	}
 
 	/* assign instructions in the block */
 	for (node = start; !sched_is_end(node); node = sched_next(node)) {
+		unsigned r;
 
 		rewire_inputs(node);
 
 		/* enforce use constraints */
-		enforce_constraints(&live_nodes, node);
+		rbitset_clear_all(output_regs, n_regs);
+		enforce_constraints(&live_nodes, node, output_regs);
+		/* we may not use registers occupied here for optimistic splits */
+		for (r = 0; r < n_regs; ++r) {
+			if (assignments[r].value != NULL)
+				rbitset_set(output_regs, r);
+		}
 
 		rewire_inputs(node);
 
@@ -1404,10 +1397,10 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))
 					continue;
-				assign_reg(block, proj);
+				assign_reg(block, proj, output_regs);
 			}
 		} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
-			assign_reg(block, node);
+			assign_reg(block, node, output_regs);
 		}
 	}
 
