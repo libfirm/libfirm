@@ -1451,7 +1451,7 @@ ir_node *new_rd_Sel(dbg_info *db, ir_node *block, ir_node *store,
 ir_node *new_rd_Call(dbg_info *db, ir_node *block, ir_node *store,
                      ir_node *callee, int arity, ir_node *in[], ir_type *tp);
 
-/** Constructor for a ´Builtin node.
+/** Constructor for a ï¿½Builtin node.
  *
  * Represents a call of a backend-specific builtin..
  *
@@ -1895,6 +1895,7 @@ ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
  *
  * Represents an arbitrary value.  Places the node in the start block.
  *
+ * @param *db     A pointer for debug information.
  * @param *irg    The IR graph the node  belongs to.
  * @param *m      The mode of the unknown value.
  */
@@ -2130,7 +2131,6 @@ ir_node *new_r_Return(ir_node *block, ir_node *store, int arity, ir_node *in[]);
  * Derives mode from passed tarval.
  *
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  * @param *con   Points to an entry in the constant table.
  */
 ir_node *new_r_Const(ir_graph *irg, tarval *con);
@@ -2279,7 +2279,6 @@ ir_node *new_r_Sub(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
- * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  * @param *op    The operand.
  * @param *mode  The mode of the operand and the result.
@@ -2288,7 +2287,6 @@ ir_node *new_r_Minus(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Mul node.
  *
- * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  * @param *op1   The first operand.
  * @param *op2   The second operand.
@@ -2298,7 +2296,6 @@ ir_node *new_r_Mul(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mulh node.
  *
- * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  * @param *op1   The first operand.
  * @param *op2   The second operand.
@@ -3460,6 +3457,7 @@ ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
  * Represents an arbitrary value.  Places the node in
  * the start block.
  *
+ * @param *db     A pointer for debug information.
  * @param *m      The mode of the unknown value.
  */
 ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
