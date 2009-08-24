@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @breif  Declares different kind of edges between nodes
+ * @brief  Declares different kind of edges between nodes
  * @date   29.08.2006
  * @author Sebastian Hack
  */
