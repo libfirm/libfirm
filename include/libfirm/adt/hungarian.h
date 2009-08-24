@@ -15,7 +15,7 @@
  ** "Stanford GraphGase", but I made changes to this code.
  ** As asked by  the copyright node of the "Stanford GraphGase",
  ** I hereby proclaim that this file are *NOT* part of the
- ** "Stanford GraphGase" distrubition!
+ ** "Stanford GraphGase" distribution!
  **
  ** This file is distributed in the hope that it will be useful,
  ** but WITHOUT ANY WARRANTY; without even the implied
@@ -65,7 +65,7 @@ void hungarian_add(hungarian_problem_t *p, int left, int right, int cost);
 void hungarian_remv(hungarian_problem_t *p, int left, int right);
 
 /**
- * Prepares the cost matrix, dependend on the given mode.
+ * Prepares the cost matrix dependent on the given mode.
  *
  * @param p     The hungarian object
  * @param mode  HUNGARIAN_MODE_MAXIMIZE_UTIL or HUNGARIAN_MODE_MINIMIZE_COST (default)
@@ -89,7 +89,8 @@ int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, in
 
 /**
  * Print the cost matrix.
- * @param p The hungarian object
+ * @param p          The hungarian object
+ * @param cost_width The minimum field width of the costs
  */
 void hungarian_print_costmatrix(hungarian_problem_t *p, int cost_width);
 

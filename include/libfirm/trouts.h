@@ -77,9 +77,9 @@ int get_type_n_casts(const ir_type *tp);
 /** Cast node that cast a pointer to this type. */
 ir_node *get_type_cast(const ir_type *tp, int pos);
 void add_type_cast(const ir_type *tp, ir_node *cast);
-/** Return number of upcasts. O(#casts). */
+/** Return number of upcasts. O(\#casts). */
 int get_class_n_upcasts(const ir_type *clss);
-/** Return number of downcasts. O(#casts). */
+/** Return number of downcasts. O(\#casts). */
 int get_class_n_downcasts(const ir_type *clss);
 
 /* Access all pointer types that point to tp. */

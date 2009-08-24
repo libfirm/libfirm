@@ -83,7 +83,7 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
  * Creates a new pset.
  *
  * @param func    The compare function of this pset.
- * @param slots   Initial number of collision chains.  I.e., #slots
+ * @param slots   Initial number of collision chains.  I.e., \#slots
  *                different keys can be hashed without collisions.
  *
  * @returns

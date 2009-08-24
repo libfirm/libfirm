@@ -1074,7 +1074,7 @@ inh_transitive_closure_state get_irp_inh_transitive_closure_state(void);
 /** Compute transitive closure of the subclass/superclass and
  * overwrites/overwrittenby relation.
  *
- * This function walks over the ir (O(#types+#entities)) to compute the
+ * This function walks over the ir (O(\#types+\#entities)) to compute the
  * transitive closure.    */
 void compute_inh_transitive_closure(void);
 
@@ -2260,7 +2260,7 @@ ir_type *get_pointer_points_to_type(ir_type *pointer);
 int is_Pointer_type(const ir_type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
- *  Not efficient: O(#types).
+ *  Not efficient: O(\#types).
  *  If not found returns firm_unknown_type. */
 ir_type *find_pointer_type_to_type(ir_type *tp);
 

@@ -220,7 +220,7 @@ void do_gvn_pre(ir_graph *irg);
 /**
  * Creates an ir_graph pass for do_gvn_pre().
  *
- * @param dump     should this pass result be dumped?
+ * @param name     the name of this pass or NULL
  *
  * @return  the newly created ir_graph pass
  */
@@ -764,13 +764,14 @@ ir_graph_pass_t *combo_pass(const char *name);
  * from a SymConst node that references the entity representing the called
  * method.
  *
- * @param size   maximum function size
+ * @param irg  the graph
+ * @param size maximum function size
  *
  * The size argument is a rough measure for the code size of the method:
  * Methods where the obstack containing the firm graph is smaller than
  * size are inlined.  Further only a limited number of calls are inlined.
  * If the method contains more than 1024 inlineable calls none will be
- * nlined.
+ * inlined.
  * Inlining is only performed if flags `optimize' and `inlineing' are set.
  * The graph may not be in state phase_building.
  * It is recommended to call local_optimize_graph() after inlining as this
@@ -838,21 +839,21 @@ ir_prog_pass_t *inline_leave_functions_pass(
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  *
- * @param maxsize      Do not inline any calls if a method has more than
- *                     maxsize firm nodes.  It may reach this limit by
- *                     inlineing.
- * @param threshold    inlining threshold
+ * @param maxsize             Do not inline any calls if a method has more than
+ *                            maxsize firm nodes.  It may reach this limit by
+ *                            inlining.
+ * @param inline_threshold    inlining threshold
  */
 void inline_functions(unsigned maxsize, int inline_threshold);
 
 /**
  * Creates an ir_prog pass for inline_functions().
  *
- * @param name         the name of this pass or NULL
- * @param maxsize      Do not inline any calls if a method has more than
- *                     maxsize firm nodes.  It may reach this limit by
- *                     inlineing.
- * @param threshold    inlining threshold
+ * @param name               the name of this pass or NULL
+ * @param maxsize            Do not inline any calls if a method has more than
+ *                           maxsize firm nodes.  It may reach this limit by
+       *                     inlineing.
+ * @param inline_threshold   inlining threshold
  *
  * @return  the newly created ir_prog pass
  */

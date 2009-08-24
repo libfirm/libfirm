@@ -162,6 +162,7 @@ int get_region_n_preds(const ir_region *reg);
  * Return the predecessor region at position pos.
  *
  * @param reg  the region
+ * @param pos  the position number
  */
 ir_region *get_region_pred(const ir_region *reg, int pos);
 

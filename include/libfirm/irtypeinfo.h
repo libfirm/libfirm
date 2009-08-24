@@ -54,7 +54,7 @@ extern ir_type *initial_type;
  *  Initializes the type information module.
  *  Generates a type inititial_type and sets the type of all nodes to this type.
  *  Calling set/get_irn_typeinfo_type() is invalid before calling init. Requires memory
- *  in the order of MIN(<calls to set_irn_typeinfo_type>, #irnodes).
+ *  in the order of MIN(\<calls to set_irn_typeinfo_type\>, \#irnodes).
  */
 void init_irtypeinfo(void);
 void free_irtypeinfo(void);

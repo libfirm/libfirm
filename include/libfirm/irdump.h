@@ -212,7 +212,7 @@ void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
 void dump_ir_extblock_graph(ir_graph *irg, const char *suffix);
 void dump_ir_extblock_graph_file(ir_graph *irg, FILE *out);
 
-/** Dumps all graphs in interprocedural view to a file named All_graphs<suffix>.vcg.
+/** Dumps all graphs in interprocedural view to a file named All_graphs\<suffix\>.vcg.
  *
  * @param suffix  A suffix for the file name.
  */
@@ -321,7 +321,7 @@ void dump_cfg(ir_graph *irg, const char *suffix);
  *
  * Dumps the graph to a file.  The file name is constructed from the
  * name of the entity describing the procedure the passed node is
- * in, suffix and the ending -subg_<nr>.vcg.  nr is a unique number
+ * in, suffix and the ending -subg_\<nr\>.vcg.  nr is a unique number
  * for each graph dumped. Eventually overwrites existing files.
  *
  * @return
@@ -336,7 +336,7 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix);
 
 /** Dump the call graph.
  *
- * Dumps the callgraph to a file "Callgraph"<suffix>".vcg".
+ * Dumps the callgraph to a file "Callgraph"\<suffix\>".vcg".
  *
  * @param suffix A suffix for the file name.
  *
@@ -409,7 +409,7 @@ void dump_class_hierarchy(int entities, const char *suffix);
 /**
  * Dump a standalone loop tree, which contains the loop nodes and the firm nodes
  * belonging to one loop packed together in one subgraph.  Dumps to file
- * <name of irg><suffix>-looptree.vcg
+ * \<name of irg\>\<suffix\>-looptree.vcg
  * Turns on edge labels by default.
  *
  * Implementing this dumper was stimulated by Florian Liekwegs similar dumper.
@@ -422,7 +422,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix);
 /** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
  *
  * Dumps the loop nodes if dump_loop_information() is set.
- * The name of the file is loop_<loop_nr><suffix>.vcg.
+ * The name of the file is loop_<loop_nr>\<suffix\>.vcg.
  *
  * @param l       Dump the loop tree for this loop.
  * @param suffix  A suffix for the file name.
@@ -432,7 +432,7 @@ void dump_loop(ir_loop *l, const char *suffix);
 /** Dumps the loop tree over the call graph.
  *
  * See for yourself what you can use this for.
- * The filename is "Callgraph_looptree<suffix>.vcg".
+ * The filename is "Callgraph_looptree\<suffix\>.vcg".
  *
  * @param suffix  A suffix for the file name.
  */
@@ -470,7 +470,7 @@ void dump_graph(ir_graph *g);
  *  but the relations between the nodes only implicitly.
  *
  *  The file name is the graph name (get_entity_name()), appended by
- *  <suffix>.txt.
+ *  \<suffix\>.txt.
  */
 void dump_graph_as_text(ir_graph *irg, const char *suffix);
 
@@ -543,7 +543,7 @@ void    dump_type(ir_type *tp);
  *  the global type nor frame types or the like.
  *
  *  The file name is the program name (get_irp_name()), or 'TextTypes'
- *  if the program name is not set, appended by <suffix>-types.txt.
+ *  if the program name is not set, appended by \<suffix\>-types.txt.
  *  For verbosity see the documentation of the verbosity flags above.
  */
 void dump_types_as_text(unsigned verbosity, const char *suffix);
@@ -555,7 +555,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
  * Dumps a text representation of the entities in the global type.
  *
  * The file name is the program name (get_irp_name()), or 'TextTypes'
- * if the program name is not set, appended by <suffix>-globals.txt.
+ * if the program name is not set, appended by \<suffix\>-globals.txt.
  * For verbosity see the documentation of the verbosity flags above.
  */
 void dump_globals_as_text(unsigned verbosity, const char *suffix);

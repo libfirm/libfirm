@@ -609,7 +609,7 @@ tarval *tarval_shrs(tarval *a, tarval *b);
  * @param a  the first tarval
  * @param b  the second tarval
  *
- * @return a <<L>> b or tarval_bad
+ * @return a \<\<L\>\> b or tarval_bad
  */
 tarval *tarval_rotl(tarval *a, tarval *b);
 
@@ -770,7 +770,7 @@ int tarval_ieee754_get_exponent(tarval *tv);
  * precision loss.
  *
  * @param tv    the tarval
- * param  mode  the mode to convert to
+ * @param mode  the mode to convert to
  */
 int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode);
 

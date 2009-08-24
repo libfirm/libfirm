@@ -169,7 +169,7 @@ enum firmstat_optimizations_t {
  * Never called from libFirm should be called from user.
  *
  * @param fname  base name of the statistic output file
- * @param phase  a phase name. Prefix will be firmstat-<phase>-
+ * @param phase  a phase name. Prefix will be firmstat-\<phase\>-
  */
 void stat_dump_snapshot(const char *fname, const char *phase);
 
@@ -178,7 +178,7 @@ void stat_dump_snapshot(const char *fname, const char *phase);
  *
  * @param name    the name of this pass or NULL
  * @param fname   base name of the statistic output file
- * @param phase   a phase name. Prefix will be firmstat-<phase>-
+ * @param phase   a phase name. Prefix will be firmstat-\<phase\>-
  *
  * @return  the newly created ir_prog pass
  */

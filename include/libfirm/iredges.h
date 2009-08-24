@@ -65,6 +65,7 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last
  * @param irn  The node.
  * @param edge An ir_edge_t pointer which shall be set to the current edge.
  * @param ne   The next edge, enables alteration safe edge processing.
+ * @param kind The kind of the edge.
  */
 #define foreach_out_edge_kind_safe(irn, edge, ne, kind) \
 	for((edge) = (get_irn_out_edge_first_kind(irn, kind)), (ne) = ((edge) ? (get_irn_out_edge_next(irn, edge)) : NULL); \
@@ -101,9 +102,10 @@ int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
  * Get the edge object of an outgoing edge at a node.
- * @param   irg The graph, the node is in.
- * @param   irn The node at which the edge originates.
- * @param   pos The position of the edge.
+ * @param  irg  The graph, the node is in.
+ * @param  irn  The node at which the edge originates.
+ * @param  pos  The position of the edge.
+ * @param  kind The kind of the edge.
  * @return      The corresponding edge object or NULL,
  *              if no such edge exists.
  */

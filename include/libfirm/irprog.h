@@ -96,7 +96,7 @@ ir_prog *get_irp(void);
  * Creates a new ir_prog (a module or compilation unit),
  * returns it and sets irp with it.
  *
- * @param module_name  the name of this irp (module)
+ * @param name  the name of this irp (module)
  */
 ir_prog *new_ir_prog(const char *name);
 

@@ -226,14 +226,14 @@ unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
  * Set the memory disambiguator options for a graph.
  *
  * @param irg      the graph
- * @param option   a set of options
+ * @param options  a set of options
  */
 void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options);
 
 /**
  * Set the global disambiguator options for all graphs not having local options.
  *
- * @param option   a set of options
+ * @param options  a set of options
  */
 void set_irp_memory_disambiguator_options(unsigned options);
 
