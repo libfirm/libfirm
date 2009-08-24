@@ -22,7 +22,7 @@
  * @brief   Procedure cloning.
  * @author  Beyhan Veliev, Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *
  * The purpose is first to find and analyze functions, that are called
  * with constant parameter(s).

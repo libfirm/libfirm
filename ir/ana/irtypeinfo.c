@@ -23,7 +23,7 @@
  * @author    Goetz Lindenmaier
  * @date      28.8.2003
  * @version   $Id$
- * @summary
+ * @brief
  *  Data structure to hold type information for nodes.
  *
  *  This module defines a field "type" of type "type *" for each ir node.

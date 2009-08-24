@@ -22,7 +22,7 @@
  * @date    21.04.2007
  * @author  Sebastian Hack
  * @version $Id$
- * @summary
+ * @brief
  *
  * Liveness checks as developed by Benoit Boissinot, Fabrice Rastello and myself.
  *

@@ -22,7 +22,7 @@
  * @brief   Optimize polymorphic Sel and Load nodes.
  * @author  Goetz Lindenmaier, Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *  This file subsumes optimization code from cgana.
  */
 #include "config.h"

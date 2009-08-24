@@ -23,7 +23,7 @@
  * @date     2003
  * @author   Mathias Heil
  * @version  $Id$
- * @summary
+ * @brief
  *
  * The module uses a string to represent values, and provides operations
  * to perform calculations with these values.

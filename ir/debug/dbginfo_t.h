@@ -23,7 +23,7 @@
  * @author     Goetz Lindenmaier
  * @date       2001
  * @version    $Id$
- * @summary
+ * @brief
  *  dbginfo: This is a empty implementation of the Firm interface to
  *  debugging support.  It only guarantees that the Firm library compiles
  *  and runs without any real debugging support.

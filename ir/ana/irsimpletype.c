@@ -23,7 +23,7 @@
  * @author    Goetz Lindenmaier
  * @date      22.8.2003
  * @version   $Id$
- * @summary
+ * @brief
  *  Runs most simple type analyses.
  *
  *  We compute type information for each node.  It is derived from the

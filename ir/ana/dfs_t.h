@@ -22,7 +22,7 @@
  * @author  Sebastian Hack
  * @date    21.04.2007
  * @version $Id$
- * @summary
+ * @brief
  *
  * depth first search internal stuff.
  */

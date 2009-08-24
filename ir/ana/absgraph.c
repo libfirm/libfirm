@@ -22,7 +22,7 @@
  * @author  Sebastian Hack
  * @date    20.04.2007
  * @version $Id$
- * @summary
+ * @brief
  *
  * Abstract graph implementations for the CFG of a ir_graph.
  */

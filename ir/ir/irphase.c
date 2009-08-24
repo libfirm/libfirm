@@ -22,7 +22,7 @@
  * @brief    Phase information handling using node indexes.
  * @author   Sebastian Hack
  * @version  $Id$
- * @summary
+ * @brief
  *  A phase contains a link to private data for each node in an ir graph.
  *  A phase is independent from the globally visible link field of ir nodes.
  */

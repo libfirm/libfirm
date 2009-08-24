@@ -24,7 +24,7 @@
  * @date     2003
  * @author   Mathias Heil
  * @version  $Id$
- * @summary
+ * @brief
  *
  * Values are stored in a format depending upon chosen arithmetic
  * module. Default uses strcalc and fltcalc.

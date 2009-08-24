@@ -23,7 +23,7 @@
  * @author  Sebastian Hack, Michael Beck, Andreas Schoesser
  * @date    14.1.2005
  * @version $Id$
- * @summary
+ * @brief
  *   This are out-edges (also called def-use edges) that are dynamically
  *   updated as the graph changes.
  */

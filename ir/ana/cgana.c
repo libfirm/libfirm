@@ -23,7 +23,7 @@
  * @author     Hubert Schmid
  * @date       09.06.2002
  * @version    $Id$
- * @summary
+ * @brief
  *  Interprocedural analysis to estimate the calling relation.
  *
  *  This analysis computes all entities representing methods that
@@ -118,13 +118,13 @@ static void collect_impls(ir_entity *method, eset *set, int *size, int *open) {
 		collect_impls(get_entity_overwrittenby(method, i), set, size, open);
 }
 
-/** Alle Methoden bestimmen, die die übergebene Methode überschreiben
- *  (und implementieren). In der zurückgegebenen Reihung kommt jede
- *  Methode nur einmal vor. Der Wert 'NULL' steht für unbekannte
- *  (externe) Methoden. Die zurückgegebene Reihung muß vom Aufrufer
- *  wieder freigegeben werden (siehe "DEL_ARR_F"). Gibt es überhaupt
- *  keine Methoden, die "method" überschreiben, so gibt die Methode
- *  "NULL" zurück.
+/** Alle Methoden bestimmen, die die ï¿½bergebene Methode ï¿½berschreiben
+ *  (und implementieren). In der zurï¿½ckgegebenen Reihung kommt jede
+ *  Methode nur einmal vor. Der Wert 'NULL' steht fï¿½r unbekannte
+ *  (externe) Methoden. Die zurï¿½ckgegebene Reihung muï¿½ vom Aufrufer
+ *  wieder freigegeben werden (siehe "DEL_ARR_F"). Gibt es ï¿½berhaupt
+ *  keine Methoden, die "method" ï¿½berschreiben, so gibt die Methode
+ *  "NULL" zurï¿½ck.
  *
  *  @param method
  */
@@ -139,7 +139,7 @@ static ir_entity ** get_impl_methods(ir_entity * method) {
 
 	/* Vorgaenger einfuegen. */
 	if (size == 0 && !open) {
-		/* keine implementierte überschriebene Methode */
+		/* keine implementierte ï¿½berschriebene Methode */
 		arr = NULL;
 	} else if (open) {
 		ir_entity * ent;
@@ -298,7 +298,7 @@ static ir_entity ** get_Sel_arr(ir_node * sel) {
 		return arr;
 	} else {
 		/* "NULL" zeigt an, dass keine Implementierung existiert. Dies
-		 * kann für polymorphe (abstrakte) Methoden passieren. */
+		 * kann fï¿½r polymorphe (abstrakte) Methoden passieren. */
 		if (!NULL_ARRAY) {
 			NULL_ARRAY = NEW_ARR_F(ir_entity *, 0);
 		}
@@ -456,7 +456,7 @@ static void free_ana_walker(ir_node *node, void *env) {
 		}
 		break;
 	default:
-		/* other nodes: Alle anderen Knoten nehmen wir als Verräter an, bis
+		/* other nodes: Alle anderen Knoten nehmen wir als Verrï¿½ter an, bis
 		 * jemand das Gegenteil implementiert. */
 		set_irn_link(node, MARK);
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
@@ -569,9 +569,9 @@ static void add_method_address(ir_entity *ent, eset *set)
  * returns a list of 'free' methods, i.e., the methods that can be called
  * from external or via function pointers.
  *
- * Die Datenstrukturen für sel-Methoden (sel_methods) muß vor dem
+ * Die Datenstrukturen fï¿½r sel-Methoden (sel_methods) muï¿½ vor dem
  * Aufruf von "get_free_methods" aufgebaut sein. Die (internen)
- * SymConst(name)-Operationen müssen in passende SymConst(ent)-Operationen
+ * SymConst(name)-Operationen mï¿½ssen in passende SymConst(ent)-Operationen
  * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
  * auf eine echt externe Methode.
  */
@@ -648,7 +648,7 @@ static void callee_ana_proj(ir_node *node, long n, eset *methods) {
 	case iro_Proj: {
 		/* proj_proj: in einem "sinnvollen" Graphen kommt jetzt ein
 		 * op_Tuple oder ein Knoten, der eine "freie Methode"
-		 * zurückgibt. */
+		 * zurï¿½ckgibt. */
 		ir_node *pred = get_Proj_pred(node);
 		if (get_irn_link(pred) != MARK) {
 			if (is_Tuple(pred)) {

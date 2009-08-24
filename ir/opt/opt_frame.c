@@ -23,7 +23,7 @@
  * @date    15.03.2006
  * @author  Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *   Optimize the frame type by removing unused type members.
  */
 #include "config.h"

@@ -22,7 +22,7 @@
  * @brief   Representation of types.
  * @author  Goetz Lindenmaier, Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *
  *  Implementation of the datastructure to hold
  *  type information.

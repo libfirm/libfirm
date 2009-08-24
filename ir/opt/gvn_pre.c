@@ -23,7 +23,7 @@
  *          (VanDrunen Hosking 2004)
  * @author  Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  */
 #include "config.h"
 

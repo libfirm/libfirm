@@ -22,7 +22,7 @@
  * @brief   Functionality to modify the type graph.
  * @author  Goetz Lindenmaier
  * @version $Id$
- * @summary
+ * @brief
  *
  * Traverse the type information.  The walker walks the whole ir graph
  * to find the distinct type trees in the type graph forest.
