@@ -168,7 +168,7 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
  *
  * @param irn        A node.
  * @param handle_phi 1 if Phis should be handled different
- * @return The first block dominating all users of @irn
+ * @return The first block dominating all users of @p irn
  */
 ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi);
 
