@@ -221,7 +221,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		cand_node = candidate->node;
 		++cand_idx;
 
-		if (arch_irn_is(cand_node, dont_spill))
+		if (arch_irn_is(skip_Proj_const(cand_node), dont_spill))
 			continue;
 
 		/* make sure the node is not an argument of the instruction */
