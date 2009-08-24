@@ -60,8 +60,9 @@ typedef struct cpset_iterator_t cpset_iterator_t;
 /**
  * Initializes a cpset
  *
- * @param cpset        Pointer to allocated space for the cpset
- * @param cmp_function The compare function to use
+ * @param cpset           Pointer to allocated space for the cpset
+ * @param hash_function   The hash function to use
+ * @param cmp_function    The compare function to use
  */
 void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
                 cpset_cmp_function cmp_function);
@@ -69,9 +70,10 @@ void cpset_init(cpset_t *cpset, cpset_hash_function hash_function,
 /**
  * Initializes a cpset
  *
- * @param cpset               Pointer to allocated space for the cpset
- * @param cmp_function        The compare function to use
- * @param expected_elements   Number of elements expected in the cpset (roughly)
+ * @param cpset              Pointer to allocated space for the cpset
+ * @param hash_function      The hash function to use
+ * @param cmp_function       The compare function to use
+ * @param expected_elements  Number of elements expected in the cpset (roughly)
  */
 void cpset_init_size(cpset_t *cpset, cpset_hash_function hash_function,
                      cpset_cmp_function cmp_function,
