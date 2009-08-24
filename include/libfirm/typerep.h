@@ -16,6 +16,11 @@
  * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE.
  */
+
+/**
+ * @file
+ * This module supplies routines that support changing the type graph.
+ */
 #ifndef FIRM_TYPEREP_H
 #define FIRM_TYPEREP_H
 
@@ -1209,12 +1214,6 @@ int tr_vrfy(void);
 #else
 #define TR_VRFY()	tr_vrfy()
 #endif
-
-/**
- *
- * @file typegmod.h
- *  This module supplies routines that support changing the type graph.
- */
 
 /** Replaces one type by the other.
  *
