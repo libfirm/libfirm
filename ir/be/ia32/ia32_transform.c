@@ -3141,7 +3141,7 @@ static ir_node *gen_Mux(ir_node *node)
 			unsigned            scale;
 
 			flags    = get_flags_node(cond, &pnc);
-			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/0);
+			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_permuted=*/0);
 
 			if (ia32_cg_config.use_sse2) {
 				/* cannot load from different mode on SSE */
