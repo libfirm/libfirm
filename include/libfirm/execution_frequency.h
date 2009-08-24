@@ -23,7 +23,7 @@
  * @author   Goetz Lindenmaier
  * @date     5.11.2004
  * @version  $Id$
- * @summary
+ * @brief
  * We assume the start block of a procedure is executed once.  Based on this we
  * compute the execution freqency of all blocks.
  *

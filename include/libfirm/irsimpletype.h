@@ -23,7 +23,7 @@
  * @author   Goetz Lindenmaier
  * @date     22.8.2003
  * @version  $Id$
- * @summary
+ * @brief
  *  We compute type information for each node.  It is derived from the
  *  types of the origines of values, e.g. parameter types can be derived
  *  from the method type.

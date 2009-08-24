@@ -22,7 +22,7 @@
  * @brief    Traverse an ir graph
  * @author   Boris Boesler, Goetz Lindenmaier
  * @version  $Id$
- * @summary
+ * @brief
  *  Traverse an ir graph:
  *  - execute the pre function before recursion
  *  - execute the post function after recursion

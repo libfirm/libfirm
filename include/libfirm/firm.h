@@ -22,7 +22,7 @@
  * @brief     Central firm header.
  * @author    Martin Trapp, Christian Schaefer, Goetz Lindenmaier
  * @version   $Id$
- * @summary
+ * @brief
  *  Central FIRM header.
  *
  *  FIRM is a full graph based intermediate representation in SSA Form

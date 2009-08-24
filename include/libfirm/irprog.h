@@ -23,7 +23,7 @@
  * @author  Goetz Lindenmaier
  * @date    2000
  * @version $Id$
- * @summary
+ * @brief
  *  Intermediate Representation (IR) of a program.
  *
  *  This file defines a construct that keeps all information about a

@@ -23,10 +23,10 @@
  * @author  Hubert Schmid
  * @date    09.06.2002
  * @version $Id$
- * @summary
+ * @brief
  *  (TODO: translate to english)
  *  Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
- *  der nicht erreichbaren Methoden wird aus der Abschätzung der
+ *  der nicht erreichbaren Methoden wird aus der Abschï¿½tzung der
  *  Aufrufrelation bestimmt.
  */
 #ifndef FIRM_IR_ICGOPT_H

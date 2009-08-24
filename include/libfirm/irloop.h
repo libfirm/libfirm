@@ -23,7 +23,7 @@
  * @author   Goetz Lindenmaier
  * @date     7.2002
  * @version  $Id$
- * @summary
+ * @brief
  *  Computes backedges in the control and data flow.
  *
  * @note

@@ -23,8 +23,7 @@
  * @author      Hubert Schmid
  * @date        09.06.2002
  * @version     $Id$
- * @summary
- * @summary
+ * @brief
  *  Interprocedural analysis to estimate the calling relation.
  *
  *  This analysis computes all entities representing methods that

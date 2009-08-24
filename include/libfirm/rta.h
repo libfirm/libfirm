@@ -23,10 +23,10 @@
  * @author   Florian
  * @date     09.06.2002
  * @version  $Id$
- * @summary
+ * @brief
  * (TODO translate to english)
- * Intraprozedurale Analyse zur Abschätzung der Aufrufrelation. Es wird
- * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschätzung
+ * Intraprozedurale Analyse zur Abschï¿½tzung der Aufrufrelation. Es wird
+ * die Menge der instantiierten Klassen bestimmt, und daraus eine Abschï¿½tzung
  * der aufgerufenen Methoden.
  *
  * Voraussetzung ist, dass das Programm keine Methodenzeiger handhaben kann.

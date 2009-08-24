@@ -22,7 +22,7 @@
  * @author  Sebastian Hack
  * @date    22.04.2007
  * @version $Id$
- * @summary
+ * @brief
  *
  * Live in/end checks whose only precomputation concerns the structure of the CFG.
  * Hence, nothing has to be updated if the program is modified unless the CFG is touched.

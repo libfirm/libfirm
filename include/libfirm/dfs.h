@@ -22,7 +22,7 @@
  * @author  Sebastian Hack
  * @date    20.04.2007
  * @version $Id$
- * @summary
+ * @brief
  *
  * Primitive depth-first search on the CFG.
  */

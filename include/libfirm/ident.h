@@ -22,7 +22,7 @@
  * @brief    Data type for unique names.
  * @author   Goetz Lindenmaier
  * @version  $Id$
- * @summary
+ * @brief
  *  Declarations for identifiers in the firm library
  *
  *  Identifiers are used in the firm library. This is the interface to it.

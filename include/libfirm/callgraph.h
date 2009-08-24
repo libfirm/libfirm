@@ -23,7 +23,7 @@
  * @author      Goetz Lindenmaier
  * @date        21.7.2004
  * @version     $Id$
- * @summary
+ * @brief
  *  This file contains the representation of the callgraph.
  *  The nodes of the call graph are ir_graphs.  The edges between
  *  the nodes are calling relations.  I.e., if method a calls method

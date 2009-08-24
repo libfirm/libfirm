@@ -23,7 +23,7 @@
  * @author    Goetz Lindenmaier
  * @date      2.2002
  * @version   $Id$
- * @summary
+ * @brief
  *   This file contains routines to construct and access dominator information.
  *
  *   The dominator information is stored in three fields of block nodes:

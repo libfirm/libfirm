@@ -22,7 +22,7 @@
  * @author Kimon Hoffmann
  * @date   14.07.2005
  * @cvs-id $Id$
- * @summary Simple, non circular, double linked pointer list.
+ * @brief   Simple, non circular, double linked pointer list.
  *          Created because the properties of the standard circular list were
  *          not very well suited for the interference graph implementation.
  *          This list uses an obstack and a free-list to efficiently manage its

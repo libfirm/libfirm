@@ -22,7 +22,7 @@
  * @brief   Representation of opcode of intermediate operation.
  * @author  Christian Schaefer, Goetz Lindenmaier, Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *  Operators of firm nodes.
  *
  *  This module specifies the opcodes possible for ir nodes.  Their

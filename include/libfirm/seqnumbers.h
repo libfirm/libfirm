@@ -23,7 +23,7 @@
  * @author   Michael Beck
  * @date     2005
  * @version  $Id$
- * @summary
+ * @brief
  *  Sequence numbers for Firm.
  *
  *  A sequence number is an unique number representing a filename

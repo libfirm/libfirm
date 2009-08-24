@@ -24,7 +24,7 @@
  * @date     2003
  * @author   Mathias Heil
  * @version  $Id$
- * @summary
+ * @brief
  *   Tarvals represent target machine values.  They are typed by modes.
  *   Tarvals only represent values of mode_sort:
  *    - int_number,

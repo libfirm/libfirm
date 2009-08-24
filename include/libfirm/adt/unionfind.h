@@ -22,7 +22,7 @@
  * @brief      Union-Find datastructure
  * @author     Matthias Braun
  * @version    $Id$
- * @summary
+ * @brief
  *  Union-Find datastructure
  *
  *  This implementation uses weighted sets and path compression which results

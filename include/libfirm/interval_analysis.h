@@ -23,7 +23,7 @@
  * @author     Goetz Lindenmaier
  * @date       5.11.2004
  * @version    $Id$
- * @summary
+ * @brief
  *  Decompost control flow graph into acylic, hierarchic intervals.
  *
  *  The analysis is based on the control flow looptree.  An intervall

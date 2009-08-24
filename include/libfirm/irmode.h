@@ -23,7 +23,7 @@
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Mathias Heil,
  *          Michael Beck
  * @version $Id$
- * @summary
+ * @brief
  *  This module specifies the modes that type the firm nodes.  It defines
  *  a datasturcture that describes a mode and implements constructors and
  *  access routines to this datastructure. Further it defines a set of

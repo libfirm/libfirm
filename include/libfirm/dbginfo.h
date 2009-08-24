@@ -23,7 +23,7 @@
  * @author    Goetz Lindenmaier, Michael Beck
  * @date      2001
  * @version   $Id$
- * @summary
+ * @brief
  *  Firm requires a debugging module fulfilling this interface, else no
  *  debugging information is passed to the backend.
  *  The interface requires a datatype representing the debugging
