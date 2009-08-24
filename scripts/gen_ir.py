@@ -351,6 +351,7 @@ void finish_op(void)
 	free_ir_op(op_{{node.name}}); op_{{node.name}} = NULL;
 	{%- endfor %}
 }
+
 ''')
 
 #############################
