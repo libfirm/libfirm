@@ -19,9 +19,9 @@
 
 /**
  * @file
- * @brief  Specialized implementation for perfect bipartite matching.
- * @author Sebastian Hack
- * @cvs-id $Id$
+ * @brief   Specialized implementation for perfect bipartite matching.
+ * @author  Sebastian Hack
+ * @version $Id$
  */
 #include "config.h"
 

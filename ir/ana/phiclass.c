@@ -19,10 +19,10 @@
 
 /**
  * @file
- * @brief  Implementation of phiclass analysis
- * @author Daniel Grund, Christian Wuerdig
- * @cvsid  $Id$
- * @date   09.08.2005
+ * @brief   Implementation of phiclass analysis
+ * @author  Daniel Grund, Christian Wuerdig
+ * @version $Id$
+ * @date    09.08.2005
  */
 #include "config.h"
 
