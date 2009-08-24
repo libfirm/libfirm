@@ -638,7 +638,7 @@ int is_entity(const void *thing);
 /** Returns true if the type of the entity is a primitive, pointer
  * enumeration or method type.
  *
- * @Note This is a different classification than from is_primitive_type().
+ * @note This is a different classification than from is_primitive_type().
  */
 int is_atomic_entity(ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,

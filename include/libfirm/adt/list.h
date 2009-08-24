@@ -96,7 +96,7 @@ static inline void __list_del(struct list_head * prev, struct list_head * next)
  * list_del - deletes entry from list.
  * @param entry  the element to delete from the list.
  *
- * @Note
+ * @note
  *   list_empty on entry does not return true after this, the entry is
  *   in an undefined state.
  */

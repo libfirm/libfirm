@@ -254,8 +254,8 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfield
  * Handle bit fields by added And/Or calculations.
  * Lowers all graphs.
  *
- * @Note: There is NO lowering of objects oriented types. This is highly compiler
- *        and ABI specific and should be placed directly in the compiler.
+ * @note There is NO lowering of objects oriented types. This is highly compiler
+ *       and ABI specific and should be placed directly in the compiler.
  */
 void lower_highlevel(int lower_bitfields);
 
