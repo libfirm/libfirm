@@ -303,11 +303,6 @@ void      set_nodes_block (ir_node *node, ir_node *block);
 ir_node  *get_nodes_MacroBlock(const ir_node *node);
 
 /**
- * @function get_irn_block()
- * @see get_nodes_block()
- */
-
-/**
  * Projection numbers for result of Start node: use for Proj nodes!
  */
 typedef enum {
