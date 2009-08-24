@@ -19,7 +19,7 @@
 
 /**
  * @file
- * This module supplies routines that support changing the type graph.
+ * Declarations for functions and datastructures to represent types
  */
 #ifndef FIRM_TYPEREP_H
 #define FIRM_TYPEREP_H
