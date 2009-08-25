@@ -321,9 +321,8 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 			/* if we the value at the should_be_same input doesn't die at the
 			 * node, then it is no use to propagate the constraints (since a
 			 * copy will emerge anyway) */
-			if (ir_nodeset_contains(live_nodes, op)) {
+			if (ir_nodeset_contains(live_nodes, op))
 				continue;
-			}
 
 			op_info = get_allocation_info(op);
 			for (r = 0; r < n_regs; ++r) {
@@ -559,6 +558,12 @@ static void assign_reg(const ir_node *block, ir_node *node,
 			reg = arch_get_irn_register(in);
 			assert(reg != NULL);
 			r = arch_register_get_index(reg);
+
+			/* if the value didn't die here then we should not propagate the
+			 * should_be_same info */
+			if (assignments[r].value == in)
+				continue;
+
 			info->prefs[r] += weight * AFF_SHOULD_BE_SAME;
 		}
 	}
