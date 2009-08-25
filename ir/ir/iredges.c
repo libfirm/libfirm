@@ -208,9 +208,10 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind) {
 
 /**
  * Get the edge object of an outgoing edge at a node.
- * @param   irg The graph, the node is in.
- * @param   src The node at which the edge originates.
- * @param   pos The position of the edge.
+ * @param  irg  The graph, the node is in.
+ * @param  src  The node at which the edge originates.
+ * @param  pos  The position of the edge.
+ * @param  kind The kind of the edge.
  * @return      The corresponding edge object or NULL,
  *              if no such edge exists.
  */
