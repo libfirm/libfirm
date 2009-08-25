@@ -95,14 +95,9 @@ static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
 static unsigned                    *normal_regs;
 
-/** info about the current assignment for a register */
-struct assignment_t {
-	ir_node *value;            /**< currently assigned value */
-};
-typedef struct assignment_t assignment_t;
-
-/** currently active assignments (while processing a basic block) */
-static assignment_t *assignments;
+/** currently active assignments (while processing a basic block)
+ * maps registers to values(their current copies) */
+static ir_node **assignments;
 
 /**
  * allocation information: last_uses, register preferences
@@ -125,8 +120,8 @@ typedef struct reg_pref_t reg_pref_t;
 
 /** per basic-block information */
 struct block_info_t {
-	bool         processed;       /**< indicate wether block is processed */
-	assignment_t assignments[0];  /**< register assignments at end of block */
+	bool     processed;       /**< indicate wether block is processed */
+	ir_node *assignments[0];  /**< register assignments at end of block */
 };
 typedef struct block_info_t block_info_t;
 
@@ -412,13 +407,12 @@ static void analyze_block(ir_node *block, void *data)
 static void use_reg(ir_node *node, const arch_register_t *reg)
 {
 	unsigned r = arch_register_get_index(reg);
-	assignments[r].value = node;
+	assignments[r] = node;
 	arch_set_irn_register(node, reg);
 }
 
 static void free_reg_of_value(ir_node *node)
 {
-	assignment_t          *assignment;
 	const arch_register_t *reg;
 	unsigned               r;
 
@@ -427,11 +421,10 @@ static void free_reg_of_value(ir_node *node)
 
 	reg        = arch_get_irn_register(node);
 	r          = arch_register_get_index(reg);
-	assignment = &assignments[r];
 	/* assignment->value may be NULL if a value is used at 2 inputs
 	   so it gets freed twice. */
-	assert(assignment->value == node || assignment->value == NULL);
-	assignment->value = NULL;
+	assert(assignments[r] == node || assignments[r] == NULL);
+	assignments[r] = NULL;
 }
 
 /**
@@ -484,7 +477,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 			continue;
 		if (rbitset_is_set(output_regs, r))
 			continue;
-		if (assignments[r].value == NULL)
+		if (assignments[r] == NULL)
 			break;
 	}
 	if (i >= n_regs) {
@@ -561,7 +554,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 
 			/* if the value didn't die here then we should not propagate the
 			 * should_be_same info */
-			if (assignments[r].value == in)
+			if (assignments[r] == in)
 				continue;
 
 			info->prefs[r] += weight * AFF_SHOULD_BE_SAME;
@@ -592,13 +585,13 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		r = reg_prefs[i].num;
 		if (!rbitset_is_set(allowed_regs, r))
 			continue;
-		if (assignments[r].value == NULL)
+		if (assignments[r] == NULL)
 			break;
 		if (!is_Phi(node)) {
 			float    pref   = reg_prefs[i].pref;
 			float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
 			ir_node *before = skip_Proj(node);
-			bool     res    = try_optimistic_split(assignments[r].value, before,
+			bool     res    = try_optimistic_split(assignments[r], before,
 			                                       pref, delta,
 			                                       output_regs);
 			if (res)
@@ -660,7 +653,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		unsigned  old_reg = permutation[r];
 		ir_node  *value;
 
-		value = assignments[old_reg].value;
+		value = assignments[old_reg];
 		if (value == NULL) {
 			/* nothing to do here, reg is not live. Mark it as fixpoint
 			 * so we ignore it in the next steps */
@@ -688,7 +681,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		}
 
 		/* create a copy */
-		src  = assignments[old_r].value;
+		src  = assignments[old_r];
 		copy = be_new_Copy(cls, block, src);
 		sched_add_before(before, copy);
 		reg = arch_register_for_index(cls, r);
@@ -750,8 +743,8 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		/* exchange old_r and r2; after that old_r is a fixed point */
 		r2 = permutation[old_r];
 
-		in[0] = assignments[r2].value;
-		in[1] = assignments[old_r].value;
+		in[0] = assignments[r2];
+		in[1] = assignments[old_r];
 		perm = be_new_Perm(cls, block, 2, in);
 		sched_add_before(before, perm);
 		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
@@ -851,8 +844,7 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 
 	/* mark all used registers as potentially live-through */
 	for (r = 0; r < n_regs; ++r) {
-		const assignment_t *assignment = &assignments[r];
-		if (assignment->value == NULL)
+		if (assignments[r] == NULL)
 			continue;
 		if (!rbitset_is_set(normal_regs, r))
 			continue;
@@ -1059,11 +1051,10 @@ static bool is_copy_of(ir_node *value, ir_node *test_value)
  */
 static int find_value_in_block_info(block_info_t *info, ir_node *value)
 {
-	unsigned      r;
-	assignment_t *assignments = info->assignments;
+	unsigned   r;
+	ir_node  **assignments = info->assignments;
 	for (r = 0; r < n_regs; ++r) {
-		const assignment_t *assignment = &assignments[r];
-		ir_node            *a_value    = assignment->value;
+		ir_node *a_value = assignments[r];
 
 		if (a_value == NULL)
 			continue;
@@ -1080,12 +1071,12 @@ static int find_value_in_block_info(block_info_t *info, ir_node *value)
  */
 static void add_phi_permutations(ir_node *block, int p)
 {
-	unsigned  r;
-	unsigned *permutation;
-	assignment_t *old_assignments;
-	bool      need_permutation;
-	ir_node  *node;
-	ir_node  *pred = get_Block_cfgpred_block(block, p);
+	unsigned   r;
+	unsigned  *permutation;
+	ir_node  **old_assignments;
+	bool       need_permutation;
+	ir_node   *node;
+	ir_node   *pred = get_Block_cfgpred_block(block, p);
 
 	block_info_t *pred_info = get_block_info(pred);
 
@@ -1152,7 +1143,7 @@ static void add_phi_permutations(ir_node *block, int p)
 		   simply query which value occupies the phis register in the
 		   predecessor */
 		a  = arch_register_get_index(arch_get_irn_register(node));
-		op = pred_info->assignments[a].value;
+		op = pred_info->assignments[a];
 		set_Phi_pred(node, p, op);
 	}
 }
@@ -1288,7 +1279,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 				/* must live out of predecessor */
 				assert(a >= 0);
-				phi_ins[p] = pred_info->assignments[a].value;
+				phi_ins[p] = pred_info->assignments[a];
 				/* different value from last time? then we need a phi */
 				if (p > 0 && phi_ins[p-1] != phi_ins[p]) {
 					need_phi = true;
@@ -1385,7 +1376,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		enforce_constraints(&live_nodes, node, output_regs);
 		/* we may not use registers occupied here for optimistic splits */
 		for (r = 0; r < n_regs; ++r) {
-			if (assignments[r].value != NULL)
+			if (assignments[r] != NULL)
 				rbitset_set(output_regs, r);
 		}
 
