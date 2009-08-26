@@ -54,7 +54,7 @@ struct _be_insn_t {
 	                                    [use_start-n_ops) uses */
 	ir_node *next_insn;            /**< next instruction in schedule */
 	ir_node *irn;                  /**< ir_node of the instruction */
-	unsigned in_constraints  : 1;  /**< instruction has input contraints */
+	unsigned in_constraints  : 1;  /**< instruction has input constraints */
 	unsigned out_constraints : 1;  /**< instruction has output constraints */
 	unsigned has_constraints : 1;  /**< in_constraints or out_constraints true */
 	unsigned pre_colored     : 1;  /**< all defined values already have a register assigned */
