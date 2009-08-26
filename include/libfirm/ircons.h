@@ -1451,7 +1451,7 @@ ir_node *new_rd_Sel(dbg_info *db, ir_node *block, ir_node *store,
 ir_node *new_rd_Call(dbg_info *db, ir_node *block, ir_node *store,
                      ir_node *callee, int arity, ir_node *in[], ir_type *tp);
 
-/** Constructor for a �Builtin node.
+/** Constructor for a Builtin node.
  *
  * Represents a call of a backend-specific builtin..
  *
