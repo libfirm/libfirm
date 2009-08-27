@@ -147,7 +147,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
 			 * create one. The only restriction is, that the phi argument
 			 * may not be live in at the current block, since this argument
 			 * interferes with the phi and must thus not be member of a
-			 * Perm. A copy will be inserted for this argument alter on.
+			 * Perm. A copy will be inserted for this argument later on.
 			 */
 			if(!pp && !be_is_live_in(lv, bl, arg)) {
 				templ.pos = n_projs++;
@@ -405,7 +405,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	DBG((dbg, LEVEL_1, "Setting regs and placing dupls...\n"));
 	irg_block_walk_graph(irg, set_regs_or_place_dupls_walker, NULL, chordal_env);
 
-	/* TODO: unfortunaltely updating doesn't work yet. */
+	/* TODO: unfortunately updating doesn't work yet. */
 	be_liveness_invalidate(lv);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
