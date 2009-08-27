@@ -1190,13 +1190,11 @@ static void adapt_phi_prefs(ir_node *phi)
  * After a phi has been assigned a register propagate preference inputs
  * to the phi inputs.
  */
-static void propagate_phi_register(ir_node *phi)
+static void propagate_phi_register(ir_node *phi, unsigned r)
 {
 	int                    i;
 	ir_node               *block = get_nodes_block(phi);
 	int                    arity = get_irn_arity(phi);
-	const arch_register_t *reg   = arch_get_irn_register(phi);
-	unsigned               r     = arch_register_get_index(reg);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node           *op   = get_Phi_pred(phi, i);
@@ -1204,16 +1202,17 @@ static void propagate_phi_register(ir_node *phi)
 		ir_node           *pred;
 		float              weight;
 
-		/* already a register assigned? then we can't influence it anyway */
-		/* TODO: what about splits which we might still do... */
-		if (arch_get_irn_register(op) != NULL)
-			continue;
-
 		pred   = get_Block_cfgpred_block(block, i);
 		weight = get_block_execfreq(execfreqs, pred);
+		weight *= AFF_PHI;
+
+		if (info->prefs[r] >= weight)
+			continue;
 
 		/* promote the prefered register */
 		info->prefs[r] += AFF_PHI * weight;
+		if (is_Phi(op))
+			propagate_phi_register(op, r);
 	}
 }
 
@@ -1349,7 +1348,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		} else {
 			adapt_phi_prefs(node);
 			assign_reg(block, node, output_regs);
-			propagate_phi_register(node);
+
+			reg = arch_get_irn_register(node);
+			propagate_phi_register(node, arch_register_get_index(reg));
 		}
 	}
 	start = node;
