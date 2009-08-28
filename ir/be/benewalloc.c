@@ -465,11 +465,13 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	unsigned               r;
 	unsigned               i;
 	allocation_info_t     *info = get_allocation_info(to_split);
+	reg_pref_t            *prefs;
+	float                  delta;
 
 	(void) pref;
 
 	/* find the best free position where we could move to */
-	reg_pref_t *prefs = ALLOCAN(reg_pref_t, n_regs);
+	prefs = ALLOCAN(reg_pref_t, n_regs);
 	fill_sort_candidates(prefs, info);
 	for (i = 0; i < n_regs; ++i) {
 		r = prefs[i].num;
@@ -484,7 +486,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 		return false;
 	}
 	/* TODO: use execfreq somehow... */
-	float delta = pref_delta + prefs[i].pref;
+	delta = pref_delta + prefs[i].pref;
 	if (delta < SPLIT_DELTA) {
 		DB((dbg, LEVEL_3, "Not doing optimistical split, win %f too low\n",
 		    delta));
@@ -518,6 +520,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	ir_node                   *in_node;
 	unsigned                   i;
 	const unsigned            *allowed_regs;
+	unsigned                   r;
 
 	assert(arch_irn_consider_in_reg_alloc(cls, node));
 
@@ -567,10 +570,12 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	fill_sort_candidates(reg_prefs, info);
 	for (i = 0; i < n_regs; ++i) {
 		unsigned num = reg_prefs[i].num;
+		const arch_register_t *reg;
+
 		if (!rbitset_is_set(normal_regs, num))
 			continue;
 
-		const arch_register_t *reg = arch_register_for_index(cls, num);
+		reg = arch_register_for_index(cls, num);
 		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[i].pref));
 	}
 	DB((dbg, LEVEL_2, "\n"));
@@ -580,7 +585,6 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		allowed_regs = req->limited;
 	}
 
-	unsigned r;
 	for (i = 0; i < n_regs; ++i) {
 		r = reg_prefs[i].num;
 		if (!rbitset_is_set(allowed_regs, r))
