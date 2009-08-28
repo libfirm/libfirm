@@ -149,23 +149,21 @@ pdeq *pdeq_putl(pdeq *dq, const void *x);
 pdeq *pdeq_putr(pdeq *dq, const void *x);
 
 /**
- * Retrieve a pointer from the left site of a double ended pointer list.
+ * Retrieve (and remove) a pointer from the left site of a double ended pointer
+ * list.
  *
  * @param dq   The list
- *
  * @return The pointer element.
- *
  * @remark This function will fail if the list is empty.
  */
 void *pdeq_getl(pdeq *dq);
 
 /**
- * Retrieve a pointer from the right site of a double ended pointer list.
+ * Retrieve (and remove) a pointer from the right site of a double ended pointer
+ * list.
  *
  * @param dq   The list
- *
  * @return The pointer element.
- *
  * @remark This function will fail if the list is empty.
  */
 void *pdeq_getr(pdeq *dq);
