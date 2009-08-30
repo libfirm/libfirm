@@ -1439,13 +1439,10 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
 /**
  * Collect commutative nodes to the touched list.
  *
- * @param X     the partition of the list
  * @param list  the list which contains the nodes that must be evaluated
  * @param env   the environment
  */
-static void collect_commutative_touched(partition_t *X, list_head *list, environment_t *env) {
-	int     first      = 1;
-	int     both_input = 0;
+static void collect_commutative_touched(list_head *list, environment_t *env) {
 	node_t  *x, *y;
 
 	list_for_each_entry(node_t, x, list, node_list) {
@@ -1484,21 +1481,7 @@ static void collect_commutative_touched(partition_t *X, list_head *list, environ
 			/* Partitions of constants should not be split simply because their Nodes have unequal
 			   functions or incongruent inputs. */
 			if (type_is_neither_top_nor_const(y->type)) {
-				int    other_idx = edge->pos ^ 1;
-				node_t *other    = get_irn_node(get_irn_n(succ, other_idx));
-				int    equal     = X == other->part;
-
-				/*
-				 * Note: op(a, a) is NOT congruent to op(a, b).
-				 * So, either all touch nodes must have both inputs congruent,
-				 * or not. We decide this by the first occurred node.
-				 */
-				if (first) {
-					first      = 0;
-					both_input = equal;
-				}
-				if (both_input == equal)
-					add_to_touched(y, env);
+				add_to_touched(y, env);
 			}
 		}
 	}
@@ -1526,13 +1509,16 @@ static void cause_splits(environment_t *env) {
 		/* empty the touched set: already done, just clear the list */
 		env->touched = NULL;
 
-		collect_commutative_touched(X, &X->Leader, env);
-		collect_commutative_touched(X, &X->Follower, env);
+		collect_commutative_touched(&X->Leader, env);
+		collect_commutative_touched(&X->Follower, env);
 
 		for (Z = env->touched; Z != NULL; Z = N) {
-			node_t   *e;
-			node_t   *touched  = Z->touched;
-			unsigned n_touched = Z->n_touched;
+			node_t   *e, *n;
+			node_t   *touched     = Z->touched;
+			node_t   *touched_aa  = NULL;
+			node_t   *touched_ab  = NULL;
+			unsigned n_touched_aa = 0;
+			unsigned n_touched_ab = 0;
 
 			assert(Z->touched != NULL);
 
@@ -1543,18 +1529,45 @@ static void cause_splits(environment_t *env) {
 			Z->on_touched = 0;
 
 			/* Empty local Z.touched. */
-			for (e = touched; e != NULL; e = e->next) {
+			for (e = touched; e != NULL; e = n) {
+				node_t *left  = get_irn_node(get_irn_n(e->node, 0));
+				node_t *right = get_irn_node(get_irn_n(e->node, 1));
+
 				assert(e->is_follower == 0);
 				e->on_touched = 0;
+				n = e->next;
+
+				/*
+				 * Note: op(a, a) is NOT congruent to op(a, b).
+				 * So, we must split the touched list.
+				 */
+				if (left->part == right->part) {
+					e->next = touched_aa;
+					touched_aa = e;
+					++n_touched_aa;
+				} else {
+					e->next = touched_ab;
+					touched_ab = e;
+					++n_touched_ab;
+				}
 			}
+			assert(n_touched_aa + n_touched_ab == Z->n_touched);
 			Z->touched   = NULL;
 			Z->n_touched = 0;
 
-			if (0 < n_touched && n_touched < Z->n_leader) {
-				DB((dbg, LEVEL_2, "Split part%d by touched\n", Z->nr));
-				split(&Z, touched, env);
+			if (0 < n_touched_aa && n_touched_aa < Z->n_leader) {
+				partition_t *Z_prime = Z;
+				DB((dbg, LEVEL_2, "Split part%d by touched_aa\n", Z_prime->nr));
+				split(&Z_prime, touched_aa, env);
 			} else
-				assert(n_touched <= Z->n_leader);
+				assert(n_touched_aa <= Z->n_leader);
+
+			if (0 < n_touched_ab && n_touched_ab < Z->n_leader) {
+				partition_t *Z_prime = Z;
+				DB((dbg, LEVEL_2, "Split part%d by touched_ab\n", Z_prime->nr));
+				split(&Z_prime, touched_ab, env);
+			} else
+				assert(n_touched_ab <= Z->n_leader);
 		}
 	}
 
