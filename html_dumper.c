@@ -28,7 +28,7 @@ static void dump_vector(FILE *f, vector *vec)
 	unsigned len = vec->len;
 	assert(len > 0);
 	for (index = 0; index < len; ++index) {
-#if EXT_GRS_DEBUG
+#if KAPS_ENABLE_VECTOR_NAMES
 		fprintf(f, "<span title=\"%s\">%s</span> ",
 				vec->entries[index].name, cost2a(vec->entries[index].data));
 #else

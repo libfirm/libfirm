@@ -1,15 +1,13 @@
 #ifndef KAPS_VECTOR_T_H
 #define KAPS_VECTOR_T_H
 
-#include "../debug.h"
-
 #include "pbqp_t.h"
 
 typedef struct vec_elem vec_elem;
 
 struct vec_elem {
 	num data;
-#if EXT_GRS_DEBUG
+#if KAPS_ENABLE_VECTOR_NAMES
 	char *name;
 #endif
 };

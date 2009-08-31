@@ -49,7 +49,9 @@ pbqp *alloc_pbqp(unsigned number_nodes)
 
 	pbqp->solution = 0;
 	pbqp->num_nodes = number_nodes;
+#if	KAPS_DUMP
 	pbqp->dump_file = NULL;
+#endif
 	pbqp->nodes = obstack_alloc(&pbqp->obstack, number_nodes
 			* sizeof(*pbqp->nodes));
 	memset(pbqp->nodes, 0, number_nodes * sizeof(*pbqp->nodes));
@@ -114,8 +116,10 @@ num get_solution(pbqp *pbqp)
 	return pbqp->solution;
 }
 
+#if	KAPS_DUMP
 void set_dumpfile(pbqp *pbqp, FILE *f)
 {
 	assert(pbqp);
 	pbqp->dump_file = f;
 }
+#endif

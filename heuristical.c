@@ -4,7 +4,9 @@
 
 #include "bucket.h"
 #include "heuristical.h"
+#if	KAPS_DUMP
 #include "html_dumper.h"
+#endif
 #include "kaps.h"
 #include "matrix.h"
 #include "pbqp_edge.h"
@@ -231,6 +233,7 @@ static void reorder_node(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
+#if 0
 static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
@@ -328,6 +331,7 @@ static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 		panic("Hurray");
 	}
 }
+#endif
 
 static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 {
@@ -351,11 +355,13 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	if (!is_connected(src_node, edge) || !is_connected(tgt_node, edge))
 		return;
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
 		dump_section(pbqp->dump_file, 3, txt);
 	}
+#endif
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
@@ -370,23 +376,29 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	mat = edge->costs;
 	assert(mat);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("Input:<br>\n", pbqp->dump_file);
 		dump_simplifyedge(pbqp, edge);
 	}
+#endif
 
 	normalize_towards_source(pbqp, edge);
 	normalize_towards_target(pbqp, edge);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nOutput:<br>\n", pbqp->dump_file);
 		dump_simplifyedge(pbqp, edge);
 	}
+#endif
 
 	if (pbqp_matrix_is_zero(mat, src_vec, tgt_vec)) {
+#if	KAPS_DUMP
 		if (pbqp->dump_file) {
 			fputs("edge has been eliminated<br>\n", pbqp->dump_file);
 		}
+#endif
 
 #if KAPS_STATISTIC
 		if (dump == 0) {
@@ -397,8 +409,6 @@ static void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 		delete_edge(edge);
 		reorder_node(src_node);
 		reorder_node(tgt_node);
-	} else {
-		//check_melting_possibility(pbqp, edge);
 	}
 }
 
@@ -409,10 +419,12 @@ static void initial_simplify_edges(pbqp *pbqp)
 
 	assert(pbqp);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		pbqp_dump_input(pbqp);
 		dump_section(pbqp->dump_file, 1, "2. Simplification of Cost Matrices");
 	}
+#endif
 
 	node_len = pbqp->num_nodes;
 
@@ -446,15 +458,20 @@ static num determine_solution(pbqp *pbqp)
 	unsigned node_index;
 	unsigned node_len;
 	num      solution   = 0;
+#if	KAPS_DUMP
 	FILE     *file;
+#endif
 
 	assert(pbqp);
+
+#if	KAPS_DUMP
 	file = pbqp->dump_file;
 
 	if (file) {
 		dump_section(file, 1, "4. Determine Solution/Minimum");
 		dump_section(file, 2, "4.1. Trivial Solution");
 	}
+#endif
 
 	/* Solve trivial nodes and calculate solution. */
 	node_len = node_bucket_get_length(node_buckets[0]);
@@ -472,16 +489,21 @@ static num determine_solution(pbqp *pbqp)
 		node->solution = vector_get_min_index(node->costs);
 		solution       = pbqp_add(solution,
 				node->costs->entries[node->solution].data);
+
+#if	KAPS_DUMP
 		if (file) {
 			fprintf(file, "node n%d is set to %d<br>\n", node->index, node->solution);
 			dump_node(file, node);
 		}
+#endif
 	}
 
+#if	KAPS_DUMP
 	if (file) {
 		dump_section(file, 2, "Minimum");
 		fprintf(file, "Minimum is equal to %lld.", solution);
 	}
+#endif
 
 	return solution;
 }
@@ -492,9 +514,12 @@ static void back_propagate(pbqp *pbqp)
 	unsigned node_len   = node_bucket_get_length(reduced_bucket);
 
 	assert(pbqp);
+
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
+#endif
 
 	for (node_index = node_len; node_index > 0; --node_index) {
 		pbqp_node *node = reduced_bucket[node_index - 1];
@@ -585,6 +610,7 @@ void apply_RI(pbqp *pbqp)
 		other_node = edge->src;
 	}
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RI-Reduction of Node n%d", node->index);
@@ -595,6 +621,7 @@ void apply_RI(pbqp *pbqp)
 		dump_node(pbqp->dump_file, other_node);
 		dump_edge(pbqp->dump_file, edge);
 	}
+#endif
 
 	if (is_src) {
 		pbqp_matrix_add_to_all_cols(mat, node->costs);
@@ -605,10 +632,12 @@ void apply_RI(pbqp *pbqp)
 	}
 	disconnect_edge(other_node, edge);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
 		dump_node(pbqp->dump_file, other_node);
 	}
+#endif
 
 	reorder_node(other_node);
 
@@ -676,6 +705,7 @@ void apply_RII(pbqp *pbqp)
 		tgt_is_src = tgt_edge->src == node;
 	}
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RII-Reduction of Node n%d", node->index);
@@ -688,6 +718,7 @@ void apply_RII(pbqp *pbqp)
 		dump_edge(pbqp->dump_file, tgt_edge);
 		dump_node(pbqp->dump_file, tgt_node);
 	}
+#endif
 
 	src_mat = src_edge->costs;
 	tgt_mat = tgt_edge->costs;
@@ -751,10 +782,12 @@ void apply_RII(pbqp *pbqp)
 		reorder_node(tgt_node);
 	}
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
 		dump_edge(pbqp->dump_file, edge);
 	}
+#endif
 
 	/* Edge has changed so we simplify it. */
 	simplify_edge(pbqp, edge);
@@ -869,19 +902,23 @@ void apply_RN(pbqp *pbqp)
 	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RN-Reduction of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
+#endif
 
 	min_index = get_local_minimal_alternative(pbqp, node);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
 	}
+#endif
 
 #if KAPS_STATISTIC
 	if (dump == 0) {
@@ -1000,12 +1037,14 @@ void apply_Brute_Force(pbqp *pbqp)
 	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "BF-Reduction of Node n%d", node->index);
 		dump_section(pbqp->dump_file, 2, txt);
 		pbqp_dump_graph(pbqp);
 	}
+#endif
 
 #if KAPS_STATISTIC
 	dump++;
@@ -1014,10 +1053,12 @@ void apply_Brute_Force(pbqp *pbqp)
 	min_index = get_minimal_alternative(pbqp, node);
 	node = pbqp->nodes[node->index];
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
 	}
+#endif
 
 #if KAPS_STATISTIC
 	dump--;
@@ -1099,9 +1140,11 @@ void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
+#endif
 }
 
 void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
@@ -1177,9 +1220,12 @@ void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 	}
 
 	node->solution = vector_get_min_index(vec);
+
+#if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
+#endif
 
 	obstack_free(&pbqp->obstack, vec);
 }

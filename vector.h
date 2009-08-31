@@ -15,7 +15,7 @@ void vector_add(vector *sum, vector *summand);
 
 void vector_set(vector *vec, unsigned index, num value);
 
-#if EXT_GRS_DEBUG
+#if KAPS_ENABLE_VECTOR_NAMES
 void vector_set_description(vector *vec, unsigned index, char *name);
 #endif
 
