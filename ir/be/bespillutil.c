@@ -192,12 +192,13 @@ void be_delete_spill_env(spill_env_t *env)
 
 void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 {
-	spill_info_t *spill_info = get_spillinfo(env, to_spill);
-	spill_t      *spill;
-	spill_t      *s;
-	spill_t      *last;
+	spill_info_t  *spill_info = get_spillinfo(env, to_spill);
+	const ir_node *insn       = skip_Proj_const(to_spill);
+	spill_t       *spill;
+	spill_t       *s;
+	spill_t       *last;
 
-	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
+	assert(!arch_irn_is(insn, dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F after %+F\n", to_spill, after));
 
 	/* Just for safety make sure that we do not insert the spill in front of a phi */
@@ -260,10 +261,11 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		ir_node *can_spill_after, const arch_register_class_t *reload_cls,
 		int allow_remat)
 {
-	spill_info_t *info;
-	reloader_t *rel;
+	spill_info_t  *info;
+	reloader_t    *rel;
+	const ir_node *insn = skip_Proj_const(to_spill);
 
-	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
+	assert(!arch_irn_is(insn, dont_spill));
 
 	info = get_spillinfo(env, to_spill);
 
@@ -421,7 +423,8 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo);
  */
 static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 {
-	ir_node *to_spill = spillinfo->to_spill;
+	ir_node       *to_spill = spillinfo->to_spill;
+	const ir_node *insn     = skip_Proj_const(to_spill);
 	spill_t *spill;
 
 	/* determine_spill_costs must have been run before */
@@ -429,7 +432,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled
 	 * and simply always available. */
-	if(!sched_is_scheduled(to_spill)) {
+	if(!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
 		spillinfo->spills->spill = new_NoMem();
 		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
@@ -556,19 +559,13 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 	if(is_Unknown(arg) || arg == new_NoMem())
 		return 1;
 
-	if(be_is_Spill(arg))
+	if(be_is_Spill(skip_Proj_const(arg)))
 		return 1;
 
 	if(arg == get_irg_frame(env->irg))
 		return 1;
 
-#if 0
-	/* hack for now (happens when command should be inserted at end of block) */
-	if(is_Block(reloader))
-		return 0;
-#else
 	(void)reloader;
-#endif
 
 	/*
 	 * Ignore registers are always available
@@ -577,15 +574,6 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 		return 1;
 
  	return 0;
-}
-
-/**
- * Checks whether the node can principally be rematerialized
- */
-static int is_remat_node(const ir_node *node)
-{
-	assert(!be_is_Spill(node));
-	return arch_irn_is(skip_Proj_const(node), rematerializable);
 }
 
 /**
@@ -604,14 +592,16 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	int i, arity;
 	int argremats;
 	int costs = 0;
+	const ir_node *insn = skip_Proj_const(spilled);
 
-	if (!is_remat_node(spilled))
+	assert(!be_is_Spill(insn));
+	if (!arch_irn_is(insn, rematerializable))
 		return REMAT_COST_INFINITE;
 
-	if(be_is_Reload(spilled)) {
+	if(be_is_Reload(insn)) {
 		costs += 2;
 	} else {
-		costs += arch_get_op_estimated_cost(spilled);
+		costs += arch_get_op_estimated_cost(insn);
 	}
 	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;
@@ -620,25 +610,24 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	 * (would be better to test wether the flags are actually live at point
 	 * reloader...)
 	 */
-	if (arch_irn_is(skip_Proj_const(spilled), modify_flags)) {
+	if (arch_irn_is(insn, modify_flags)) {
 		return REMAT_COST_INFINITE;
 	}
 
 	argremats = 0;
-	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
-		ir_node *arg = get_irn_n(spilled, i);
+	for(i = 0, arity = get_irn_arity(insn); i < arity; ++i) {
+		ir_node *arg = get_irn_n(insn, i);
 
 		if(is_value_available(env, arg, reloader))
 			continue;
 
 		/* we have to rematerialize the argument as well */
-		if(argremats >= 1) {
+		++argremats;
+		if(argremats > 1) {
 			/* we only support rematerializing 1 argument at the moment,
-			 * so that we don't have to care about register pressure
-			 */
+			 * as multiple arguments could increase register pressure */
 			return REMAT_COST_INFINITE;
 		}
-		argremats++;
 
 		costs += check_remat_conditions_costs(env, arg, reloader,
 		                                      parentcosts + costs);
@@ -770,24 +759,25 @@ double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
  */
 static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 {
-	ir_node *to_spill = spillinfo->to_spill;
-	ir_node *spill_block;
-	spill_t *spill;
-	double   spill_execfreq;
+	ir_node       *to_spill = spillinfo->to_spill;
+	const ir_node *insn     = skip_Proj_const(to_spill);
+	ir_node       *spill_block;
+	spill_t       *spill;
+	double         spill_execfreq;
 
 	/* already calculated? */
 	if(spillinfo->spill_costs >= 0)
 		return;
 
-	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
-	assert(!be_is_Reload(to_spill));
+	assert(!arch_irn_is(insn, dont_spill));
+	assert(!be_is_Reload(insn));
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled
 	 * and simply always available.
 	 * TODO: this is kinda hairy, the NoMem is correct for an Unknown as Phi
 	 * predecessor (of a PhiM) but this test might match other things too...
 	 */
-	if(!sched_is_scheduled(to_spill)) {
+	if(!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
 		spill_t *spill = obstack_alloc(&env->obst, sizeof(spill[0]));
 		spill->after = NULL;
@@ -801,7 +791,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 	}
 
-	spill_block    = get_nodes_block(to_spill);
+	spill_block    = get_nodes_block(insn);
 	spill_execfreq = get_block_execfreq(env->exec_freq, spill_block);
 
 	if (is_Phi(to_spill) && ir_nodeset_contains(&env->mem_phis, to_spill)) {
