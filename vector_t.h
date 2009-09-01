@@ -8,7 +8,7 @@ typedef struct vec_elem vec_elem;
 struct vec_elem {
 	num data;
 #if KAPS_ENABLE_VECTOR_NAMES
-	char *name;
+	const char *name;
 #endif
 };
 

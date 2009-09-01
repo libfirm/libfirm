@@ -69,7 +69,7 @@ void vector_set(vector *vec, unsigned index, num value)
 }
 
 #if KAPS_ENABLE_VECTOR_NAMES
-void vector_set_description(vector *vec, unsigned index, char *name)
+void vector_set_description(vector *vec, unsigned index, const char *name)
 {
 	assert(index < vec->len);
 	vec->entries[index].name = name;
