@@ -7,6 +7,10 @@
 
 #include "adt/obstack.h"
 
+#define KAPS_DUMP 1
+#define KAPS_ENABLE_VECTOR_NAMES 1
+#define KAPS_STATISTIC 0
+
 typedef intmax_t num;
 
 #include "matrix_t.h"
@@ -17,10 +21,6 @@ typedef struct pbqp_node pbqp_node;
 typedef struct pbqp      pbqp;
 
 static const num INF_COSTS = INTMAX_MAX;
-
-#define KAPS_DUMP 0
-#define KAPS_ENABLE_VECTOR_NAMES 0
-#define KAPS_STATISTIC 0
 
 struct pbqp {
 	struct obstack obstack;            /* Obstack. */

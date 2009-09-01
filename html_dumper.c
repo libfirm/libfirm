@@ -6,7 +6,6 @@
 #include "heuristical.h"
 #include "html_dumper.h"
 #include "kaps.h"
-#include "pbqp_t.h"
 
 /* Caution: Due to static buffer use only once per statement */
 static const char *cost2a(num const cost)

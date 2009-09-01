@@ -2,7 +2,6 @@
 
 #include "adt/array.h"
 
-#include "pbqp_t.h"
 #include "vector.h"
 
 num pbqp_add(num x, num y)
