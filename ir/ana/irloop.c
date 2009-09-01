@@ -190,8 +190,6 @@ int get_loop_loop_nr(const ir_loop *loop) {
 #endif
 }
 
-/** A field to connect additional information to a loop.  Only valid
-    if libfirm_debug is set. */
 void set_loop_link(ir_loop *loop, void *link) {
 	assert(loop && loop->kind == k_ir_loop);
 	loop->link = link;

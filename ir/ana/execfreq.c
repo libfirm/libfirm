@@ -182,24 +182,38 @@ get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
 	double           sum = 0.0;
 	double           cur = 0.0;
+	double           inv_loop_weight = 1./loop_weight;
 	const ir_node   *pred = get_Block_cfgpred_block(bb, pos);
 	const ir_loop   *pred_loop;
 	int              pred_depth;
 	const ir_edge_t *edge;
+	const ir_loop   *loop;
+	int              depth;
+	int              d;
 
 	if (is_Bad(pred))
 		return 0;
 
+	loop       = get_irn_loop(bb);
+	depth      = get_loop_depth(loop);
 	pred_loop  = get_irn_loop(pred);
 	pred_depth = get_loop_depth(pred_loop);
 
-	cur = get_loop_depth(get_irn_loop(bb)) < get_loop_depth(get_irn_loop(pred)) ? 1.0 : loop_weight;
+	cur = 1.0;
+	for (d = depth; d < pred_depth; ++d) {
+		cur *= inv_loop_weight;
+	}
 
 	foreach_block_succ(pred, edge) {
-		const ir_node *block = get_edge_src_irn(edge);
-		const ir_loop *loop = get_irn_loop(block);
-		int depth = get_loop_depth(loop);
-		sum += depth < pred_depth ? 1.0 : loop_weight;
+		const ir_node *succ       = get_edge_src_irn(edge);
+		const ir_loop *succ_loop  = get_irn_loop(succ);
+		int            succ_depth = get_loop_depth(succ_loop);
+
+		double         fac = 1.0;
+		for (d = succ_depth; d < pred_depth; ++d) {
+			fac *= inv_loop_weight;
+		}
+		sum += fac;
 	}
 
 	return cur/sum;
