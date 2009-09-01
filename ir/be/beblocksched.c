@@ -69,14 +69,13 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef enum _blocksched_algos_t {
-	BLOCKSCHED_NAIV, BLOCKSCHED_EXTBB, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
+	BLOCKSCHED_NAIV, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
 } blocksched_algos_t;
 
 static int algo = BLOCKSCHED_GREEDY;
 
 static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
 	{ "naiv",	BLOCKSCHED_NAIV },
-	{ "extbb",	BLOCKSCHED_EXTBB },
 	{ "greedy", BLOCKSCHED_GREEDY },
 #ifdef WITH_ILP
 	{ "ilp",    BLOCKSCHED_ILP },
@@ -102,28 +101,35 @@ static const lc_opt_table_entry_t be_blocksched_options[] = {
  *                            |___/
  */
 
-typedef struct _blocksched_entry_t {
-	ir_node *block;
-	struct _blocksched_entry_t *next;
-	struct _blocksched_entry_t *prev;
-} blocksched_entry_t;
+typedef struct blocksched_entry_t blocksched_entry_t;
+struct blocksched_entry_t {
+	ir_node            *block;
+	blocksched_entry_t *next;
+	blocksched_entry_t *prev;
+};
 
-typedef struct _edge_t {
+typedef struct edge_t edge_t;
+struct edge_t {
 	ir_node *block;             /**< source block */
 	int     pos;                /**< number of cfg predecessor (target) */
 	double  execfreq;           /**< the frequency */
-	int     highest_execfreq;   /**< flag that indicates whether this edge is the edge with the highest
-	                                 execfreq pointing away from this block */
-} edge_t;
+	double  outedge_penalty_freq; /**< for edges leaving the loop this is the
+	                                   penality when we make them a
+	                                   fallthrough. */
+	int     highest_execfreq;   /**< flag that indicates whether this edge is
+	                                 the edge with the highest execfreq pointing
+	                                 away from this block */
+};
 
-typedef struct _blocksched_env_t {
+typedef struct blocksched_env_t blocksched_env_t;
+struct blocksched_env_t {
 	ir_graph       *irg;
 	struct obstack *obst;
 	ir_exec_freq   *execfreqs;
 	edge_t         *edges;
 	pdeq           *worklist;
 	int            blockcount;
-} blocksched_env_t;
+};
 
 /**
  * Collect cfg frequencies of all edges between blocks.
@@ -135,25 +141,40 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	int                arity;
 	edge_t             edge;
 	blocksched_entry_t *entry;
+	ir_loop            *loop;
 
-	entry        = obstack_alloc(env->obst, sizeof(entry[0]));
+	memset(&edge, 0, sizeof(edge));
+
+	entry = obstack_alloc(env->obst, sizeof(entry[0]));
+	memset(entry, 0, sizeof(*entry));
 	entry->block = block;
-	entry->next  = NULL;
-	entry->prev  = NULL;
 	set_irn_link(block, entry);
+
+	loop = get_irn_loop(block);
 
 	arity = get_Block_n_cfgpreds(block);
 
 	if (arity == 0) {
+		/* must be the start block (or end-block for endless loops),
+		 * everything else is dead code and should be removed by now */
 		assert(block == get_irg_start_block(env->irg)
 				|| block == get_irg_end_block(env->irg));
-		/* must be the start block (or end-block for endless loops), nothing to
-		 * do here */
+		/* nothing to do here */
 		return;
 	} else if (arity == 1) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
+		ir_loop *pred_loop  = get_irn_loop(pred_block);
+		float    freq       = get_block_execfreq(env->execfreqs, block);
+
+		/* is it an edge leaving a loop */
+		if (get_loop_depth(pred_loop) > get_loop_depth(loop)) {
+			float pred_freq = get_block_execfreq(env->execfreqs, pred_block);
+			edge.outedge_penalty_freq = -(pred_freq - freq);
+		}
+
 		edge.block            = block;
 		edge.pos              = 0;
-		edge.execfreq         = get_block_execfreq(env->execfreqs, block);
+		edge.execfreq         = freq;
 		edge.highest_execfreq = 1;
 		ARR_APP1(edge_t, env->edges, edge);
 	} else {
@@ -192,14 +213,40 @@ static int cmp_edges(const void *d1, const void *d2)
 	return QSORT_CMP(e2->execfreq, e1->execfreq);
 }
 
+static int cmp_edges_outedge_penalty(const void *d1, const void *d2)
+{
+	const edge_t *e1 = d1;
+	const edge_t *e2 = d2;
+	/* reverse sorting as penalties are negative */
+	return QSORT_CMP(e1->outedge_penalty_freq, e2->outedge_penalty_freq);
+}
+
+static void clear_loop_links(ir_loop *loop)
+{
+	int i, n;
+
+	set_loop_link(loop, NULL);
+	n = get_loop_n_elements(loop);
+	for (i = 0; i < n; ++i) {
+		loop_element elem = get_loop_element(loop, i);
+		if (*elem.kind == k_ir_loop) {
+			clear_loop_links(elem.son);
+		}
+	}
+}
+
 static void coalesce_blocks(blocksched_env_t *env)
 {
 	int i;
 	int edge_count = ARR_LEN(env->edges);
+	edge_t *edges = env->edges;
+
+	/* sort interblock edges by execution frequency */
+	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges);
 
 	/* run1: only look at jumps */
 	for (i = 0; i < edge_count; ++i) {
-		const edge_t *edge  = &env->edges[i];
+		const edge_t *edge  = &edges[i];
 		ir_node      *block = edge->block;
 		int           pos   = edge->pos;
 		ir_node      *pred_block;
@@ -225,26 +272,73 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		/* schedule the 2 blocks behind each other */
-		DBG((dbg, LEVEL_1, "Coalesce (Jump) %+F -> %+F (%.3g)\n",
+		DB((dbg, LEVEL_1, "Coalesce (Jump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
 		entry->prev      = pred_entry;
 	}
 
-	/* run2: remaining edges */
+	/* run2: pick loop fallthroughs */
+	clear_loop_links(get_irg_loop(env->irg));
+
+	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges_outedge_penalty);
 	for (i = 0; i < edge_count; ++i) {
-		const edge_t *edge  = &env->edges[i];
+		const edge_t *edge  = &edges[i];
+		ir_node      *block = edge->block;
+		int           pos   = edge->pos;
+		ir_node      *pred_block;
+		blocksched_entry_t *entry, *pred_entry;
+		ir_loop      *loop;
+		ir_loop      *outer_loop;
+
+		/* already seen all loop outedges? */
+		if (edge->outedge_penalty_freq == 0)
+			break;
+
+		/* the block might have been removed already... */
+		if (is_Bad(get_Block_cfgpred(block, pos)))
+			continue;
+
+		pred_block = get_Block_cfgpred_block(block, pos);
+		entry      = get_irn_link(block);
+		pred_entry = get_irn_link(pred_block);
+
+		if (pred_entry->next != NULL || entry->prev != NULL)
+			continue;
+
+		/* we want at most 1 outedge fallthrough per loop */
+		loop = get_irn_loop(pred_block);
+		if (get_loop_link(loop) != NULL)
+			continue;
+
+		/* schedule the 2 blocks behind each other */
+		DB((dbg, LEVEL_1, "Coalesce (Loop Outedge) %+F -> %+F (%.3g)\n",
+		           pred_entry->block, entry->block, edge->execfreq));
+		pred_entry->next = entry;
+		entry->prev      = pred_entry;
+
+		/* all loops left have an outedge now */
+		outer_loop = get_irn_loop(block);
+		do {
+			/* we set loop link to loop to mark it */
+			set_loop_link(loop, loop);
+			loop = get_loop_outer_loop(loop);
+		} while (loop != outer_loop);
+	}
+
+	/* sort interblock edges by execution frequency */
+	qsort(edges, ARR_LEN(edges), sizeof(edges[0]), cmp_edges);
+
+	/* run3: remaining edges */
+	for (i = 0; i < edge_count; ++i) {
+		const edge_t *edge  = &edges[i];
 		ir_node      *block = edge->block;
 		int           pos   = edge->pos;
 		ir_node      *pred_block;
 		blocksched_entry_t *entry, *pred_entry;
 
 		/* the block might have been removed already... */
-		if (is_Bad(get_Block_cfgpred(block, 0)))
-			continue;
-
-		/* we can't do fallthroughs in backedges */
-		if (is_backedge(block, pos))
+		if (is_Bad(get_Block_cfgpred(block, pos)))
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
@@ -256,7 +350,7 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		/* schedule the 2 blocks behind each other */
-		DBG((dbg, LEVEL_1, "Coalesce (CondJump) %+F -> %+F (%.3g)\n",
+		DB((dbg, LEVEL_1, "Coalesce (CondJump) %+F -> %+F (%.3g)\n",
 		           pred_entry->block, entry->block, edge->execfreq));
 		pred_entry->next = entry;
 		entry->prev      = pred_entry;
@@ -276,7 +370,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 	env->blockcount++;
 
-	DBG((dbg, LEVEL_1, "Pick succ of %+F\n", block));
+	DB((dbg, LEVEL_1, "Pick succ of %+F\n", block));
 
 	/* put all successors into the worklist */
 	foreach_block_succ(block, edge) {
@@ -301,7 +395,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (irn_visited(succ_entry->block))
 			continue;
 
-		DBG((dbg, LEVEL_1, "Put %+F into worklist\n", succ_entry->block));
+		DB((dbg, LEVEL_1, "Put %+F into worklist\n", succ_entry->block));
 		pdeq_putr(env->worklist, succ_entry->block);
 	}
 
@@ -310,7 +404,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		return;
 	}
 
-	DBG((dbg, LEVEL_1, "deciding...\n"));
+	DB((dbg, LEVEL_1, "deciding...\n"));
 	best_succ_execfreq = -1;
 
 	/* no successor yet: pick the successor block with the highest execution
@@ -335,11 +429,11 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 	}
 
 	if (succ == NULL) {
-		DBG((dbg, LEVEL_1, "pick from worklist\n"));
+		DB((dbg, LEVEL_1, "pick from worklist\n"));
 
 		do {
 			if (pdeq_empty(env->worklist)) {
-				DBG((dbg, LEVEL_1, "worklist empty\n"));
+				DB((dbg, LEVEL_1, "worklist empty\n"));
 				return;
 			}
 			succ = pdeq_getl(env->worklist);
@@ -381,12 +475,12 @@ static ir_node **create_blocksched_array(blocksched_env_t *env, blocksched_entry
 	(void) env;
 
 	block_list = NEW_ARR_D(ir_node *, obst, count);
-	DBG((dbg, LEVEL_1, "Blockschedule:\n"));
+	DB((dbg, LEVEL_1, "Blockschedule:\n"));
 
 	for (entry = first; entry != NULL; entry = entry->next) {
 		assert(i < count);
 		block_list[i++] = entry->block;
-		DBG((dbg, LEVEL_1, "\t%+F\n", entry->block));
+		DB((dbg, LEVEL_1, "\t%+F\n", entry->block));
 	}
 	assert(i == count);
 
@@ -409,11 +503,13 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 	env.worklist   = NULL;
 	env.blockcount = 0;
 
+	/* make sure loopinfo is up-to-date */
+	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+		construct_cf_backedges(irg);
+	}
+
 	// collect edge execution frequencies
 	irg_block_walk_graph(irg, collect_egde_frequency, NULL, &env);
-
-	// sort interblock edges by execution frequency
-	qsort(env.edges, ARR_LEN(env.edges), sizeof(env.edges[0]), cmp_edges);
 
 	(void)be_remove_empty_blocks(irg);
 
@@ -544,7 +640,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 		pred  = get_Block_cfgpred_block(block, edge->pos);
 		entry = get_irn_link(pred);
 
-		DBG((dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
+		DB((dbg, LEVEL_1, "Adding out cst to %+F from %+F,%d\n",
 				  pred, block, edge->pos));
 		lpp_set_factor_fast(env->lpp, entry->out_cst, edge->ilpvar, 1.0);
 	}
@@ -629,105 +725,6 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 #endif /* WITH_ILP */
 
 /*
- *  _____      _   ____  ____
- * | ____|_  _| |_| __ )| __ )
- * |  _| \ \/ / __|  _ \|  _ \
- * | |___ >  <| |_| |_) | |_) |
- * |_____/_/\_\\__|____/|____/
- *
- */
-
-/** A simple forward single linked list. */
-typedef struct {
-	ir_node  *start;   /**< start of the list */
-	ir_node  *end;     /**< last block in the list */
-	unsigned n_blks;  /**< number of blocks in the list */
-} anchor;
-
-static void add_block(anchor *list, ir_node *block) {
-	if (list->start == NULL) {
-		list->start = block;
-		list->end   = block;
-	} else {
-		set_irn_link(list->end, block);
-		list->end = block;
-	}
-
-	list->n_blks++;
-}
-
-static void create_block_list(ir_node *leader_block, anchor *list) {
-	int             i;
-	const ir_edge_t *edge;
-	ir_node         *block = NULL;
-	ir_extblk       *extbb = get_Block_extbb(leader_block);
-
-	if (extbb_visited(extbb))
-		return;
-	mark_extbb_visited(extbb);
-
-	for (i = 0; i < get_extbb_n_blocks(extbb); ++i) {
-		block = get_extbb_block(extbb, i);
-		add_block(list, block);
-	}
-
-	assert(block != NULL);
-
-	/* pick successor extbbs */
-	foreach_block_succ(block, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		create_block_list(succ, list);
-	}
-
-	for (i = 0; i < get_extbb_n_blocks(extbb) - 1; ++i) {
-		block = get_extbb_block(extbb, i);
-
-		foreach_block_succ(block, edge) {
-			ir_node *succ = get_edge_src_irn(edge);
-			create_block_list(succ, list);
-		}
-	}
-}
-
-void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
-
-/*
- * Calculates a block schedule. The schedule is stored as a linked
- * list starting at the start_block of the irg.
- */
-static ir_node **create_extbb_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
-{
-	anchor list;
-	ir_node **blk_list, *b, *n;
-	unsigned i;
-
-	/* schedule extended basic blocks */
-	compute_extbb_execfreqs(irg, execfreqs);
-	//compute_extbb(irg);
-
-	list.start  = NULL;
-	list.end    = NULL;
-	list.n_blks = 0;
-
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
-	inc_irg_block_visited(irg);
-
-	create_block_list(get_irg_start_block(irg), &list);
-
-	/** create an array, so we can go forward and backward */
-	blk_list = NEW_ARR_D(ir_node *, irg->obst,list.n_blks);
-
-	for (i = 0, b = list.start; b; b = n, ++i) {
-		n = get_irn_link(b);
-		blk_list[i] = b;
-	}
-
-	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED | IR_RESOURCE_IRN_LINK);
-
-	return blk_list;
-}
-
-/*
  *  __  __       _
  * |  \/  | __ _(_)_ __
  * | |\/| |/ _` | | '_ \
@@ -753,8 +750,6 @@ ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 	case BLOCKSCHED_GREEDY:
 	case BLOCKSCHED_NAIV:
 		return create_block_schedule_greedy(irg, execfreqs);
-	case BLOCKSCHED_EXTBB:
-		return create_extbb_block_schedule(irg, execfreqs);
 #ifdef WITH_ILP
 	case BLOCKSCHED_ILP:
 		return create_block_schedule_ilp(irg, execfreqs);
