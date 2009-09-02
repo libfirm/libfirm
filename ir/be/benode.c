@@ -1281,9 +1281,10 @@ static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
 
 			if (req->type != arch_register_req_type_normal) {
 				arch_register_req_t *nreq = obstack_alloc(obst, sizeof(*nreq));
-				*nreq = *req;
+				memset(nreq, 0, sizeof(*nreq));
 				nreq->type = arch_register_req_type_normal;
-				req = nreq;
+				nreq->cls  = req->cls;
+				req        = nreq;
 			}
 
 			if (visited != NULL)
