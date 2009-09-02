@@ -326,9 +326,9 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 
 		pair           = &pairs[n++];
 		pair->in_node  = in;
-		pair->in_reg   = arch_get_irn_register(in);
+		pair->in_reg   = in_reg;
 		pair->out_node = out;
-		pair->out_reg  = arch_get_irn_register(out);
+		pair->out_reg  = out_reg;
 		pair->checked  = 0;
 	}
 
