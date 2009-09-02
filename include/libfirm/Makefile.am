@@ -15,7 +15,6 @@ libfirminclude_HEADERS = \
 	firm.h \
 	firmstat.h \
 	firm_types.h \
-	firm_ycomp.h \
 	height.h \
 	ident.h \
 	interval_analysis.h \

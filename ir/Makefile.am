@@ -103,7 +103,6 @@ libfirm_la_SOURCES = \
 	be/beloopana.c \
 	be/belower.c \
 	be/bemachine.c \
-	be/bemachnode.c \
 	be/bemain.c \
 	be/bemodule.c \
 	be/benewalloc.c \
@@ -124,7 +123,6 @@ libfirm_la_SOURCES = \
 	be/bespillbelady.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
-	be/bespilloptions.c \
 	be/bespillslots.c \
 	be/bessaconstr.c \
 	be/bessadestr.c \
@@ -139,13 +137,10 @@ libfirm_la_SOURCES = \
 	common/error.c \
 	common/firm.c \
 	common/firm_common.c \
-	common/firmwalk.c \
 	common/irtools.c \
-	common/statistics.c \
 	common/timing.c \
 	debug/dbginfo.c \
 	debug/debugger.c \
-	debug/firm_ycomp.c \
 	debug/seqnumbers.c \
 	ident/ident.c \
 	ident/mangle.c \
@@ -196,7 +191,6 @@ libfirm_la_SOURCES = \
 	lower/lower_intrinsics.c \
 	lower/lower_mode_b.c \
 	lower/lower_switch.c \
-	net/firmnet.c \
 	obstack/obstack.c \
 	obstack/obstack_printf.c \
 	opt/boolopt.c \
@@ -291,7 +285,6 @@ EXTRA_DIST = \
 	be/beloopana.h \
 	be/becopyopt.h \
 	be/beilpsched.h \
-	be/bemachnode.h \
 	be/bepressurestat.h \
 	be/bestat.h \
 	be/beabi_t.h \
@@ -299,7 +292,6 @@ EXTRA_DIST = \
 	be/bestate.h \
 	be/bearch_t.h \
 	be/bera.h \
-	be/bespilloptions.h \
 	be/beirg_t.h \
 	be/beirgmod.h \
 	be/betranshlp.h \
@@ -320,10 +312,8 @@ EXTRA_DIST = \
 	be/bechordal.h \
 	be/bearch.h \
 	be/beirg.h \
-	common/statistics.h \
 	common/error.h \
 	common/irtools.h \
-	common/firmwalk.h \
 	common/debug.h \
 	debug/dbginfo_t.h \
 	debug/debugger.h \
@@ -370,8 +360,6 @@ EXTRA_DIST = \
 	libcore/lc_opts_enum.h \
 	libcore/lc_config.h \
 	libcore/lc_opts_t.h \
-	net/firmnet.h \
-	net/firmnet_t.h \
 	opt/scalar_replace.h \
 	opt/tropt.h \
 	opt/reassoc_t.h \
