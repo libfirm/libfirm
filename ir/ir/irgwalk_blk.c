@@ -82,7 +82,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(&ctx->obst, sizeof(*elem));
+	elem = OALLOC(&ctx->obst, block_entry_t);
 
 	elem->block      = block;
 	elem->phi_list   = NEW_ARR_F(ir_node *, 0);

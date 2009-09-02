@@ -306,7 +306,7 @@ restart:
 
 	if (entry == NULL) {
 		/* new address */
-		entry = obstack_alloc(&env.obst, sizeof(*entry));
+		entry = OALLOC(&env.obst, address_entry);
 
 		entry->id = env.curr_adr_id++;
 		ir_nodemap_insert(&env.adr_map, adr, entry);
@@ -342,7 +342,7 @@ static void prepare_blocks(ir_node *irn, void *ctx) {
 	(void)ctx;
 
 	if (is_Block(irn)) {
-		block_t *entry = obstack_alloc(&env.obst, sizeof(*entry));
+		block_t *entry = OALLOC(&env.obst, block_t);
 		int     n;
 
 		entry->memop_forward    = NULL;
@@ -451,7 +451,7 @@ static void collect_backward(ir_node *block, void *ctx) {
  * @return the allocated memop
  */
 static memop_t *alloc_memop(ir_node *irn) {
-	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
+	memop_t *m = OALLOC(&env.obst, memop_t);
 
 	m->value.address = NULL;
 	m->value.value   = NULL;
@@ -477,7 +477,7 @@ static memop_t *alloc_memop(ir_node *irn) {
  * @param phi  the Phi-node representing the new value
  */
 static memop_t *clone_memop_phi(memop_t *op, ir_node *phi) {
-	memop_t *m = obstack_alloc(&env.obst, sizeof(*m));
+	memop_t *m = OALLOC(&env.obst, memop_t);
 
 	m->value         = op->value;
 	m->value.value   = phi;
@@ -1566,9 +1566,7 @@ static int backward_antic(block_t *bl) {
 
 		if (bl->trans_results == NULL) {
 			/* allocate the translate cache */
-			unsigned size = env.curr_adr_id * sizeof(bl->trans_results[0]);
-			bl->trans_results = obstack_alloc(&env.obst, size);
-			memset(bl->trans_results, 0, size);
+			bl->trans_results = OALLOCNZ(&env.obst, memop_t*, env.curr_adr_id);
 		}
 
 		/* check for partly redundant values */

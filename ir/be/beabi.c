@@ -1260,7 +1260,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
 	ir_entity **map;
 
-	*param_map = map = obstack_alloc(&env->obst, n * sizeof(ir_entity *));
+	*param_map = map = OALLOCN(&env->obst, ir_entity*, n);
 	res = new_type_struct(id_mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
@@ -1315,7 +1315,7 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 	pmap_entry *ent;
 	int n = pmap_count(reg_map);
 	int i = 0;
-	reg_node_map_t *res = obstack_alloc(obst, n * sizeof(res[0]));
+	reg_node_map_t *res = OALLOCN(obst, reg_node_map_t, n);
 
 	foreach_pmap(reg_map, ent) {
 		res[i].reg = ent->key;
@@ -1410,7 +1410,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	ir_node **in;
 	ir_node *stack;
 	const arch_register_t **regs;
-	pmap_entry *ent ;
+	pmap_entry *ent;
 
 	/*
 		get the valid stack node in this block.
@@ -1453,8 +1453,8 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	*/
 	in_max = pmap_count(reg_map) + n_res + 2;
 
-	in   = obstack_alloc(&env->obst, in_max * sizeof(in[0]));
-	regs = obstack_alloc(&env->obst, in_max * sizeof(regs[0]));
+	in   = OALLOCN(&env->obst, ir_node*,               in_max);
+	regs = OALLOCN(&env->obst, arch_register_t const*, in_max);
 
 	in[0]   = mem;
 	in[1]   = be_abi_reg_map_get(reg_map, arch_env->sp);
@@ -1892,8 +1892,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->regs  = pmap_create();
 
 	n_params = get_method_n_params(method_type);
-	args     = obstack_alloc(&env->obst, n_params * sizeof(args[0]));
-	memset(args, 0, n_params * sizeof(args[0]));
+	args     = OALLOCNZ(&env->obst, ir_node*, n_params);
 
 	/*
 	 * for inner function we must now fix access to outer frame entities.
@@ -2314,8 +2313,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->dce_survivor = new_survive_dce();
 	env->birg         = birg;
 
-	sp_req = obstack_alloc(&env->obst, sizeof(*sp_req));
-	memset(sp_req, 0, sizeof(*sp_req));
+	sp_req = OALLOCZ(&env->obst, arch_register_req_t);
 	env->sp_req = sp_req;
 
 	sp_req->type = arch_register_req_type_limited

@@ -112,8 +112,7 @@ static bool                         should_have_reached_fixpoint;
 
 static worklist_t *new_worklist(void)
 {
-	worklist_t *worklist = obstack_alloc(&obst, sizeof(worklist[0]));
-	memset(worklist, 0, sizeof(worklist[0]));
+	worklist_t *worklist = OALLOCZ(&obst, worklist_t);
 
 	INIT_LIST_HEAD(&worklist->live_values);
 	worklist->n_live_values    = 0;
@@ -137,8 +136,7 @@ static block_info_t *get_block_info(ir_node *block)
 	if (info != NULL)
 		return info;
 
-	info = obstack_alloc(&obst, sizeof(info[0]));
-	memset(info, 0, sizeof(info[0]));
+	info = OALLOCZ(&obst, block_info_t);
 	set_irn_link(block, info);
 	return info;
 }
@@ -200,8 +198,7 @@ static void fill_and_activate_worklist(worklist_t *new_worklist,
 		if (irn_visited_else_mark(value))
 			continue;
 
-		new_entry = obstack_alloc(&obst, sizeof(new_entry[0]));
-		memset(new_entry, 0, sizeof(new_entry[0]));
+		new_entry = OALLOCZ(&obst, worklist_entry_t);
 
 		new_entry->value = value;
 		if (reload_point != NULL) {
@@ -223,15 +220,13 @@ static worklist_t *duplicate_worklist(const worklist_t *worklist)
 	worklist_t       *new_worklist;
 	struct list_head *entry;
 
-	new_worklist = obstack_alloc(&obst, sizeof(new_worklist[0]));
-	memset(new_worklist, 0, sizeof(new_worklist[0]));
+	new_worklist = OALLOCZ(&obst, worklist_t);
 	INIT_LIST_HEAD(&new_worklist->live_values);
 	new_worklist->n_live_values = worklist->n_live_values;
 
 	list_for_each(entry, &worklist->live_values) {
 		worklist_entry_t *wl_entry  = list_entry(entry, worklist_entry_t, head);
-		worklist_entry_t *new_entry
-			= obstack_alloc(&obst, sizeof(new_entry[0]));
+		worklist_entry_t *new_entry	= OALLOC(&obst, worklist_entry_t);
 
 		memcpy(new_entry, wl_entry, sizeof(new_entry[0]));
 		list_add_tail(&new_entry->head, &new_worklist->live_values);
@@ -283,8 +278,7 @@ static loop_info_t *get_loop_info(ir_loop *loop)
 	if (info != NULL)
 		return info;
 
-	info = obstack_alloc(&obst, sizeof(info[0]));
-	memset(info, 0, sizeof(info[0]));
+	info = OALLOCZ(&obst, loop_info_t);
 	info->loop = loop;
 	loop->link = info;
 	return info;
@@ -330,8 +324,7 @@ static void construct_loop_edges(ir_node *block, void *data)
 		do {
 			loop_info_t *l_info = get_loop_info(l);
 
-			edge = obstack_alloc(&obst, sizeof(edge[0]));
-			memset(edge, 0, sizeof(edge[0]));
+			edge = OALLOCZ(&obst, loop_edge_t);
 			edge->block = block;
 			edge->pos   = i;
 
@@ -410,9 +403,7 @@ static void val_used(worklist_t *worklist, ir_node *value, ir_node *sched_point)
 		list_del(&entry->head);
 	} else {
 		if (entry == NULL) {
-			entry        = obstack_alloc(&obst, sizeof(entry[0]));
-			memset(entry, 0, sizeof(entry[0]));
-
+			entry        = OALLOCZ(&obst, worklist_entry_t);
 			entry->value = value;
 			set_irn_link(value, entry);
 		}
@@ -747,9 +738,7 @@ static void worklist_append(worklist_t *worklist, ir_node *value,
 	}
 #endif
 
-	entry = obstack_alloc(&obst, sizeof(*entry));
-	memset(entry, 0, sizeof(entry[0]));
-
+	entry = OALLOCZ(&obst, worklist_entry_t);
 	entry->value                   = value;
 	entry->reload_point            = reload_point;
 	entry->unused_livethrough_loop = unused_livethrough_loop;

@@ -281,9 +281,7 @@ static void prepare_links(ir_node *node, void *env)
 	if (mode == lenv->params->high_signed ||
 		mode == lenv->params->high_unsigned) {
 		/* ok, found a node that will be lowered */
-		link = obstack_alloc(&lenv->obst, sizeof(*link));
-
-		memset(link, 0, sizeof(*link));
+		link = OALLOCZ(&lenv->obst, node_entry_t);
 
 		idx = get_irn_idx(node);
 		if (idx >= lenv->n_entries) {

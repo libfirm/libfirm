@@ -133,9 +133,7 @@ static allocation_info_t *get_allocation_info(ir_node *node)
 {
 	allocation_info_t *info;
 	if (!irn_visited_else_mark(node)) {
-		size_t size = sizeof(info[0]) + n_regs * sizeof(info->prefs[0]);
-		info = obstack_alloc(&obst, size);
-		memset(info, 0, size);
+		info = OALLOCFZ(&obst, allocation_info_t, prefs, n_regs);
 		info->current_value  = node;
 		info->original_value = node;
 		set_irn_link(node, info);
@@ -155,9 +153,7 @@ static block_info_t *get_block_info(ir_node *block)
 
 	assert(is_Block(block));
 	if (!irn_visited_else_mark(block)) {
-		size_t size = sizeof(info[0]) + n_regs * sizeof(info->assignments[0]);
-		info = obstack_alloc(&obst, size);
-		memset(info, 0, size);
+		info = OALLOCFZ(&obst, block_info_t, assignments, n_regs);
 		set_irn_link(block, info);
 	} else {
 		info = get_irn_link(block);
@@ -173,8 +169,7 @@ static const arch_register_req_t *get_default_req_current_cls(void)
 {
 	if (default_cls_req == NULL) {
 		struct obstack      *obst = get_irg_obstack(irg);
-		arch_register_req_t *req  = obstack_alloc(obst, sizeof(*req));
-		memset(req, 0, sizeof(*req));
+		arch_register_req_t *req  = OALLOCZ(obst, arch_register_req_t);
 
 		req->type = arch_register_req_type_normal;
 		req->cls  = cls;

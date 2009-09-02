@@ -131,7 +131,7 @@ static int default_evaluate(insn_kind kind, tarval *tv) {
  * emit a LEA (or an Add) instruction
  */
 static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsigned shift) {
-	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = shift > 0 ? LEA : ADD;
 	res->in[0] = a;
 	res->in[1] = b;
@@ -145,7 +145,7 @@ static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsig
  * emit a SHIFT (or an Add or a Zero) instruction
  */
 static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift) {
-	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	instruction *res = OALLOC(&env->obst, instruction);
 	if (shift == env->bits) {
 		/* a 2^bits with bits resolution is a zero */
 		res->kind = ZERO;
@@ -172,7 +172,7 @@ static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift) {
  * emit a SUB instruction
  */
 static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b) {
-	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = SUB;
 	res->in[0] = a;
 	res->in[1] = b;
@@ -186,7 +186,7 @@ static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b) {
  * emit the ROOT instruction
  */
 static instruction *emit_ROOT(mul_env *env, ir_node *root_op) {
-	instruction *res = obstack_alloc(&env->obst, sizeof(*res));
+	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = ROOT;
 	res->in[0] = NULL;
 	res->in[1] = NULL;

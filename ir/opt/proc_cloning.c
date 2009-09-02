@@ -142,7 +142,7 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap) {
 			if (! hmap->map)
 				hmap->map = new_pset(entry_cmp, 8);
 
-			key = obstack_alloc(&hmap->obst, sizeof(*key));
+			key = OALLOC(&hmap->obst, entry_t);
 
 			key->q.ent   = callee;
 			key->q.pos   = i;

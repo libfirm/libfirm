@@ -752,7 +752,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 
 	/* if we did not find n2 in n1's neighbourhood insert it */
 	if (allocnew) {
-		nbr        = obstack_alloc(&co->obst, sizeof(*nbr));
+		nbr        = OALLOC(&co->obst, neighb_t);
 		nbr->irn   = n2;
 		nbr->costs = 0;
 		nbr->next  = node->neighbours;

@@ -64,7 +64,7 @@ static void add_cdep(ir_node *node, ir_node *dep_on) {
 #endif
 
 	if (dep == NULL) {
-		ir_cdep *newdep = obstack_alloc(&cdep_data->obst, sizeof(*newdep));
+		ir_cdep *newdep = OALLOC(&cdep_data->obst, ir_cdep);
 
 		newdep->node = dep_on;
 		newdep->next = NULL;
@@ -77,7 +77,7 @@ static void add_cdep(ir_node *node, ir_node *dep_on) {
 			if (dep->next == NULL) break;
 			dep = dep->next;
 		}
-		newdep = obstack_alloc(&cdep_data->obst, sizeof(*newdep));
+		newdep = OALLOC(&cdep_data->obst, ir_cdep);
 		newdep->node = dep_on;
 		newdep->next = NULL;
 		dep->next = newdep;

@@ -108,7 +108,7 @@ static distrib_entry_t *distrib_get_entry(distrib_tbl_t *tbl, const void *object
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(&tbl->cnts, sizeof(*elem));
+	elem = OALLOC(&tbl->cnts, distrib_entry_t);
 
 	/* clear counter */
 	cnt_clr(&elem->cnt);

@@ -648,9 +648,7 @@ static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set) {
 	unsigned len = buf_lenght(buf);
 	unsigned hash;
 
-	key = obstack_alloc(&status->obst, offsetof(pattern_entry_t, buf) + len);
-	assert(key);
-
+	key = OALLOCF(&status->obst, pattern_entry_t, buf, len);
 	key->len = len;
 	memcpy(key->buf, buf_content(buf), len);
 

@@ -156,7 +156,7 @@ static void find_copyb_nodes(ir_node *irn, void *ctx) {
 		return;
 
 	/* ok, link it in */
-	entry = obstack_alloc(&env->obst, sizeof(*entry));
+	entry = OALLOC(&env->obst, entry_t);
 	entry->copyb = irn;
 	INIT_LIST_HEAD(&entry->list);
 	set_irn_link(irn, entry);

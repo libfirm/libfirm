@@ -228,7 +228,7 @@ static void wrap_BasicBlocks(ir_node *block, void *ctx) {
 	ir_region *reg;
 
 	/* Allocate a Block wrapper */
-	reg          = obstack_alloc(env->obst, sizeof(*reg));
+	reg          = OALLOC(env->obst, ir_region);
 	reg->kind    = k_ir_region;
 	reg->type    = ir_rk_BasicBlock;
 	reg->parent  = NULL;
@@ -281,7 +281,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 /** Allocate a new region on an obstack */
 #define ALLOC_REG(obst, reg, tp) \
 	do { \
-		(reg)          = obstack_alloc((obst), sizeof(*(reg))); \
+		(reg)          = OALLOC((obst), ir_region); \
 		(reg)->kind    = k_ir_region; \
 		(reg)->type    = tp; \
 		(reg)->parent  = NULL; \

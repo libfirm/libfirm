@@ -48,7 +48,7 @@ static plist_element_t *allocate_element(plist_t* list) {
 		new_element->next        = NULL;
 	}
 	else {
-		new_element = obstack_alloc(list->obst, sizeof(*new_element));
+		new_element = OALLOC(list->obst, plist_element_t);
 	}
 
 	return new_element;
@@ -69,7 +69,7 @@ plist_t *plist_new(void) {
 }
 
 plist_t *plist_obstack_new(struct obstack *obst) {
-	plist_t *list = obstack_alloc(obst, sizeof(*list));
+	plist_t *list = OALLOC(obst, plist_t);
 
 	list->obst               = obst;
 	list->foreign_obstack    = 1;

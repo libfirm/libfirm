@@ -91,7 +91,7 @@ static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t 
 	usage_stats_t *us = get_irn_link(irn);
 
 	if(!us) {
-		us                   = obstack_alloc(&env->obst, sizeof(us[0]));
+		us                   = OALLOC(&env->obst, usage_stats_t);
 		us->irn              = irn;
 		us->already_consumed = 0;
 		us->max_hops         = INT_MAX;

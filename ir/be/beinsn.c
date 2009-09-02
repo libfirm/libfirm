@@ -85,8 +85,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	int i, n;
 	int pre_colored = 0;
 
-	insn = obstack_alloc(obst, sizeof(insn[0]));
-	memset(insn, 0, sizeof(insn[0]));
+	insn = OALLOCZ(obst, be_insn_t);
 
 	insn->irn       = irn;
 	insn->next_insn = sched_next(irn);

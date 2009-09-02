@@ -83,7 +83,7 @@ static void create_node(ifg_list_t *ifg, ir_node *irn)
 	adj_head = ifg->adj_heads[irn->node_idx];
 	if (!adj_head)
 	{
-		adj_head = obstack_alloc(&ifg->obst, sizeof(*adj_head));
+		adj_head = OALLOC(&ifg->obst, adj_head_t);
 		adj_head->irn = irn;
 		adj_head->first_adj_element = NULL;
 		adj_head->degree = 0;
@@ -95,7 +95,7 @@ static adj_element_t *create_adj_element(ifg_list_t *ifg, ir_node *irn)
 {
 	adj_element_t *element = NULL;
 
-	element = obstack_alloc(&ifg->obst, sizeof(*element));
+	element = OALLOC(&ifg->obst, adj_element_t);
 	element->next_adj_element = NULL;
 	element->neighbour = irn;
 

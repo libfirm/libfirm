@@ -56,7 +56,7 @@ static block_entry_t *get_block_entry(ir_node *block) {
 	block_entry_t *entry = get_irn_link(block);
 
 	if (entry == NULL) {
-		entry = obstack_alloc(&env->obst, sizeof(*entry));
+		entry = OALLOC(&env->obst, block_entry_t);
 
 		entry->live_ins  = NEW_ARR_F(ir_node *, 0);
 		entry->live_outs = NEW_ARR_F(ir_node *, 0);

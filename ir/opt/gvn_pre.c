@@ -160,7 +160,7 @@ static block_info *get_block_info(ir_node *block) {
  * @param env     the environment
  */
 static void alloc_blk_info(ir_node *block, pre_env *env) {
-	block_info *info = obstack_alloc(env->obst, sizeof(*info));
+	block_info *info = OALLOC(env->obst, block_info);
 
 	set_irn_link(block, info);
 	info->exp_gen   = ir_valueset_new(16);
@@ -719,7 +719,7 @@ static void eliminate(ir_node *irn, void *ctx) {
 			ir_node *expr = ir_valueset_lookup(bl->avail_out, value);
 
 			if (expr != NULL && expr != irn) {
-				elim_pair *p = obstack_alloc(env->obst, sizeof(*p));
+				elim_pair *p = OALLOC(env->obst, elim_pair);
 
 				p->old_node = irn;
 				p->new_node = expr;

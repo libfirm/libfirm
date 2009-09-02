@@ -206,10 +206,7 @@ SET *
 
   /* Make segments */
   for (i = 0;  i < nslots;  ++i) {
-    table->dir[i] = (Segment *)obstack_alloc (&table->obst,
-					      sizeof (Segment) * SEGMENT_SIZE);
-
-    memset(table->dir[i], 0, sizeof (Segment) * SEGMENT_SIZE);
+    table->dir[i] = OALLOCNZ(&table->obst, Segment, SEGMENT_SIZE);
     table->nseg++;
   }
 
@@ -357,10 +354,7 @@ expand_table (SET *table)
     NewSegmentDir   = NewAddress >> SEGMENT_SIZE_SHIFT;
     NewSegmentIndex = NewAddress & (SEGMENT_SIZE-1);
     if (NewSegmentIndex == 0) {
-      table->dir[NewSegmentDir] =
-	(Segment *)obstack_alloc (&table->obst,
-				  sizeof(Segment) * SEGMENT_SIZE);
-      memset(table->dir[NewSegmentDir], 0, sizeof(Segment) * SEGMENT_SIZE);
+      table->dir[NewSegmentDir] = OALLOCNZ(&table->obst, Segment, SEGMENT_SIZE);
       table->nseg++;
     }
     NewSegment = table->dir[NewSegmentDir];
@@ -443,7 +437,7 @@ MANGLE(_,_search) (SET *table,
       q = table->free_list;
       table->free_list = table->free_list->chain;
     } else {
-      q = obstack_alloc (&table->obst, sizeof (Element));
+      q = OALLOC(&table->obst, Element);
     }
     q->entry.dptr = (void *)key;
 #else

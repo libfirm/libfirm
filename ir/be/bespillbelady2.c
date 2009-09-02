@@ -157,21 +157,15 @@ static inline void workset_print(const workset_t *w)
  * Alloc a new workset on obstack @p ob with maximum size @p max
  */
 static inline workset_t *new_workset(belady_env_t *env, struct obstack *ob) {
-	workset_t *res;
-	size_t size = sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]);
-	res = obstack_alloc(ob, size);
-	memset(res, 0, size);
-	return res;
+	return OALLOCFZ(ob, workset_t, vals, env->n_regs);
 }
 
 /**
  * Alloc a new instance on obstack and make it equal to @param ws
  */
 static inline workset_t *workset_clone(belady_env_t *env, struct obstack *ob, workset_t *ws) {
-	workset_t *res;
-	size_t size = sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]);
-	res = obstack_alloc(ob, size);
-	memcpy(res, ws, size);
+	workset_t *res = OALLOCF(ob, workset_t, vals, env->n_regs);
+	memcpy(res, ws, sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]));
 	return res;
 }
 
@@ -296,13 +290,12 @@ typedef struct _block_info_t {
 static inline void *new_block_info(belady_env_t *bel, int id)
 {
 	ir_node      *bl  = bel->blocks[id];
-	block_info_t *res = obstack_alloc(&bel->ob, sizeof(*res));
-	memset(res, 0, sizeof(res[0]));
+	block_info_t *res = OALLOCZ(&bel->ob, block_info_t);
 	res->first_non_in = NULL;
-	res->last_ins = NULL;
-	res->bel = bel;
-	res->bl  = bl;
-	res->id  = id;
+	res->last_ins     = NULL;
+	res->bel          = bel;
+	res->bl           = bl;
+	res->id           = id;
 	res->exec_freq    = get_block_execfreq(bel->ef, bl);
 	res->reload_cost  = bel->arch->reload_cost * res->exec_freq;
 	res->free_at_jump = bel->n_regs;
@@ -442,8 +435,7 @@ struct _bring_in_t {
 
 static inline bring_in_t *new_bring_in(block_info_t *bi, ir_node *irn, const next_use_t *use)
 {
-	bring_in_t *br    = obstack_alloc(&bi->bel->ob, sizeof(br[0]));
-
+	bring_in_t *br      = OALLOC(&bi->bel->ob, bring_in_t);
 	br->irn             = irn;
 	br->bi              = bi;
 	br->first_use       = use->irn;
@@ -831,7 +823,7 @@ static inline const workset_t *get_end_state(global_end_state_t *ges, block_info
 static block_state_t *new_block_state(global_end_state_t *ges, block_info_t *bi)
 {
 	block_state_t *bs = get_block_state(ges, bi);
-	block_state_t *nw = obstack_alloc(&ges->obst, sizeof(nw[0]));
+	block_state_t *nw = OALLOC(&ges->obst, block_state_t);
 
 	nw->next_intern = bs;
 	nw->next        = ges->bs_top;
@@ -854,7 +846,7 @@ static block_state_t *new_block_state(global_end_state_t *ges, block_info_t *bi)
 
 static irn_action_t *new_irn_action(global_end_state_t *ges, ir_node *irn, const ir_node *bl)
 {
-	irn_action_t *ia = obstack_alloc(&ges->obst, sizeof(ia[0]));
+	irn_action_t *ia = OALLOC(&ges->obst, irn_action_t);
 
 	ia->irn  = irn;
 	ia->bl   = bl;
@@ -1414,8 +1406,8 @@ static void global_assign(belady_env_t *env)
 	ges.version      = ver_make_newer(ver_oldest);
 	ges.succ_phis    = bitset_irg_obstack_alloc(&ges.obst, env->irg);
 	ges.committed    = bitset_obstack_alloc(&ges.obst, env->n_blocks);
-	ges.bs_tops      = obstack_alloc(&ges.obst, sizeof(ges.bs_tops[0])      * env->n_blocks);
-	ges.bs_tops_vers = obstack_alloc(&ges.obst, sizeof(ges.bs_tops_vers[0]) * env->n_blocks);
+	ges.bs_tops      = OALLOCN(&ges.obst, block_state_t*, env->n_blocks);
+	ges.bs_tops_vers = OALLOCN(&ges.obst, unsigned,       env->n_blocks);
 
 	/* invalidate all state stack pointer versions */
 	for (i = 0; i < env->n_blocks; ++i) {

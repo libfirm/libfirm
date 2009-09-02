@@ -109,7 +109,7 @@ static int is_arg(ir_node *node)
  * Allocate a new DAG entry.
  */
 static dag_entry_t *new_dag_entry(dag_env_t *dag_env, ir_node *node) {
-	dag_entry_t *entry = obstack_alloc(&dag_env->obst, sizeof(*entry));
+	dag_entry_t *entry = OALLOC(&dag_env->obst, dag_entry_t);
 
 	entry->num_nodes       = 1;
 	entry->num_roots       = 1;

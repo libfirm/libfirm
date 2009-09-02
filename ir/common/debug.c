@@ -114,7 +114,7 @@ typedef struct _msg_info_t {
 static void *make_msg_info(const firm_dbg_module_t *mod, const char *fmt, va_list args)
 {
   static const char msg_header[] = "%s(%d) %s: ";
-  msg_info_t *res = obstack_alloc(&dbg_obst, sizeof(*res));
+  msg_info_t *res = OALLOC(&dbg_obst, msg_info_t);
 
   obstack_grow(&dbg_obst, msg_header, sizeof(msg_header) - 1);
   ir_obst_vprintf(&dbg_obst, fmt, args);

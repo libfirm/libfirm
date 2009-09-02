@@ -113,8 +113,7 @@ static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst) {
 	ldst_info_t *info = get_irn_link(node);
 
 	if (! info) {
-		info = obstack_alloc(obst, sizeof(*info));
-		memset(info, 0, sizeof(*info));
+		info = OALLOCZ(obst, ldst_info_t);
 		set_irn_link(node, info);
 	}
 	return info;
@@ -127,8 +126,7 @@ static block_info_t *get_block_info(ir_node *node, struct obstack *obst) {
 	block_info_t *info = get_irn_link(node);
 
 	if (! info) {
-		info = obstack_alloc(obst, sizeof(*info));
-		memset(info, 0, sizeof(*info));
+		info = OALLOCZ(obst, block_info_t);
 		set_irn_link(node, info);
 	}
 	return info;

@@ -703,7 +703,7 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place) {
 	if (*place != NULL) {
 		ir_node *irn      = *place;
 		survive_dce_list_t *curr = pmap_get(sd->places, irn);
-		survive_dce_list_t *nw   = obstack_alloc(&sd->obst, sizeof(nw[0]));
+		survive_dce_list_t *nw   = OALLOC(&sd->obst, survive_dce_list_t);
 
 		nw->next  = curr;
 		nw->place = place;
@@ -1318,7 +1318,7 @@ static void collect_calls(ir_node *call, void *env) {
 		if (called_irg != NULL) {
 			/* The Call node calls a locally defined method.  Remember to inline. */
 			inline_env_t *ienv  = env;
-			call_entry   *entry = obstack_alloc(&ienv->obst, sizeof(*entry));
+			call_entry   *entry = OALLOC(&ienv->obst, call_entry);
 			entry->call       = call;
 			entry->callee     = called_irg;
 			entry->loop_depth = 0;
@@ -1430,7 +1430,7 @@ typedef struct {
  * Allocate a new environment for inlining.
  */
 static inline_irg_env *alloc_inline_irg_env(void) {
-	inline_irg_env *env    = obstack_alloc(&temp_obst, sizeof(*env));
+	inline_irg_env *env    = OALLOC(&temp_obst, inline_irg_env);
 	INIT_LIST_HEAD(&env->calls);
 	env->local_weights     = NULL;
 	env->n_nodes           = -2; /* do not count count Start, End */
@@ -1503,7 +1503,7 @@ static void collect_calls2(ir_node *call, void *ctx) {
 			x->recursive = 1;
 
 		/* link it in the list of possible inlinable entries */
-		entry = obstack_alloc(&temp_obst, sizeof(*entry));
+		entry = OALLOC(&temp_obst, call_entry);
 		entry->call       = call;
 		entry->callee     = callee;
 		entry->loop_depth = get_irn_loop(get_nodes_block(call))->depth;
@@ -1543,7 +1543,7 @@ inline static int is_smaller(ir_graph *callee, unsigned size) {
  */
 static call_entry *duplicate_call_entry(const call_entry *entry,
                                         ir_node *new_call, int loop_depth_delta) {
-	call_entry *nentry = obstack_alloc(&temp_obst, sizeof(*nentry));
+	call_entry *nentry = OALLOC(&temp_obst, call_entry);
 	nentry->call       = new_call;
 	nentry->callee     = entry->callee;
 	nentry->benefice   = entry->benefice;

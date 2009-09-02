@@ -226,7 +226,7 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 		}
 	}
 
-	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
+	spill         = OALLOC(&env->obst, spill_t);
 	spill->after  = after;
 	spill->next   = spill_info->spills;
 	spill->spill  = NULL;
@@ -243,7 +243,7 @@ void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	spill_info = get_spillinfo(env, to_spill);
 
 	/* add the remat information */
-	reloader                   = obstack_alloc(&env->obst, sizeof(reloader[0]));
+	reloader                   = OALLOC(&env->obst, reloader_t);
 	reloader->next             = spill_info->reloaders;
 	reloader->reloader         = before;
 	reloader->rematted_node    = rematted_node;
@@ -282,7 +282,7 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 	assert(!is_Proj(before) && !be_is_Keep(before));
 
 	/* put reload into list */
-	rel                   = obstack_alloc(&env->obst, sizeof(rel[0]));
+	rel                   = OALLOC(&env->obst, reloader_t);
 	rel->next             = info->reloaders;
 	rel->reloader         = before;
 	rel->rematted_node    = NULL;
@@ -493,7 +493,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	/* override or replace spills list... */
-	spill         = obstack_alloc(&env->obst, sizeof(spill[0]));
+	spill         = OALLOC(&env->obst, spill_t);
 	spill->after  = skip_keeps_phis(phi);
 	spill->spill  = new_r_Phi(block, arity, ins, mode_M);
 	spill->next   = NULL;
@@ -779,7 +779,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	 */
 	if(!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
-		spill_t *spill = obstack_alloc(&env->obst, sizeof(spill[0]));
+		spill_t *spill = OALLOC(&env->obst, spill_t);
 		spill->after = NULL;
 		spill->next  = NULL;
 		spill->spill = new_NoMem();
@@ -828,7 +828,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	}
 
 	/* override spillinfos or create a new one */
-	spill        = obstack_alloc(&env->obst, sizeof(spill[0]));
+	spill        = OALLOC(&env->obst, spill_t);
 	spill->after = skip_keeps_phis(to_spill);
 	spill->next  = NULL;
 	spill->spill = NULL;

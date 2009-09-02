@@ -249,7 +249,7 @@ static void ana_Call(ir_node *n, void *env) {
 				ARR_APP1(ir_node *, arr, n);
 				found->call_list = arr;
 			} else { /* New node, add Call node and init nesting. */
-				found = (cg_callee_entry *)obstack_alloc(irg->obst, sizeof(*found));
+				found = OALLOC(irg->obst, cg_callee_entry);
 				found->irg = callee;
 				found->call_list = NEW_ARR_F(ir_node *, 1);
 				found->call_list[0] = n;
@@ -428,9 +428,7 @@ typedef struct scc_info {
  * allocates a new scc_info on the obstack
  */
 static inline scc_info *new_scc_info(struct obstack *obst) {
-	scc_info *info = obstack_alloc(obst, sizeof(*info));
-	memset(info, 0, sizeof(*info));
-	return info;
+	return OALLOCZ(obst, scc_info);
 }
 
 /**

@@ -52,6 +52,7 @@
 #include "lc_parser_t.h"
 #include "hashptr.h"
 #include "lc_printf.h"
+#include "xmalloc.h"
 
 #define ERR_STRING "In argument \"%s\": "
 
@@ -221,7 +222,7 @@ lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name)
 	lc_opt_entry_t *ent = lc_opt_find_grp(parent, name, NULL);
 
 	if(!ent) {
-		ent = obstack_alloc(&obst, sizeof(*ent));
+		ent = OALLOC(&obst, lc_opt_entry_t);
 		init_entry(ent, parent, name, "");
 		init_grp(ent, NULL);
 	}
@@ -242,7 +243,7 @@ lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *parent,
 		lc_opt_entry_t *ent = lc_opt_find_opt(parent, name, NULL);
 
 		if(!ent) {
-			res = obstack_alloc(&obst, sizeof(*ent));
+			res = OALLOC(&obst, lc_opt_entry_t);
 			init_entry(res, parent, name, desc);
 			init_opt(res, type, value, length, cb, dump, dump_vals, err);
 		} else

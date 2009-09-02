@@ -553,7 +553,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* insert the other different and it's copies into the map */
 	entry = ir_nodemap_get(op_set, other_different);
 	if (! entry) {
-		entry      = obstack_alloc(&env->obst, sizeof(*entry));
+		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;
 		ir_nodeset_init(&entry->copies);
 

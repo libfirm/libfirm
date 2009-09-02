@@ -666,7 +666,7 @@ static inline void add_to_worklist(partition_t *X, environment_t *env) {
  * @return a newly allocated partition
  */
 static inline partition_t *new_partition(environment_t *env) {
-	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
+	partition_t *part = OALLOC(&env->obst, partition_t);
 
 	INIT_LIST_HEAD(&part->Leader);
 	INIT_LIST_HEAD(&part->Follower);
@@ -725,7 +725,7 @@ static inline lattice_elem_t get_partition_type(const partition_t *X) {
  */
 static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
 	/* create a partition node and place it in the partition */
-	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	node_t *node = OALLOC(&env->obst, node_t);
 
 	INIT_LIST_HEAD(&node->node_list);
 	INIT_LIST_HEAD(&node->cprop_list);

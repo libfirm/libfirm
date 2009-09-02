@@ -1058,7 +1058,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 				if (get_nodes_block(pred) != block_node->irn && consider_for_sched(env->arch_env, pred)) {
 					be_ilpsched_set_type_info(env, pred, var_obst);
 					if (! na->is_dummy_node) {
-						ilp_livein_node_t *entry = obstack_alloc(var_obst, sizeof(*entry));
+						ilp_livein_node_t *entry = OALLOC(var_obst, ilp_livein_node_t);
 						entry->irn = pred;
 						entry->a   = NULL;
 						pset_insert(ba->livein_nodes, entry, (unsigned)get_irn_idx(pred));

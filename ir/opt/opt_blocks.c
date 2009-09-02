@@ -277,7 +277,7 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
  * @param env         the environment
  */
 static partition_t *create_partition(ir_node *meet_block, environment_t *env) {
-	partition_t *part = obstack_alloc(&env->obst, sizeof(*part));
+	partition_t *part = OALLOC(&env->obst, partition_t);
 
 	INIT_LIST_HEAD(&part->blocks);
 	part->meet_block = meet_block;
@@ -296,7 +296,7 @@ static partition_t *create_partition(ir_node *meet_block, environment_t *env) {
  * @param env        the environment
  */
 static block_t *create_block(ir_node *block, int meet_input, partition_t *partition, environment_t *env) {
-	block_t *bl = obstack_alloc(&env->obst, sizeof(*bl));
+	block_t *bl = OALLOC(&env->obst, block_t);
 
 	set_irn_link(block, bl);
 
@@ -328,7 +328,7 @@ static block_t *create_block(ir_node *block, int meet_input, partition_t *partit
  * @param env    the environment
  */
 static node_t *create_node(ir_node *irn, block_t *block, environment_t *env) {
-	node_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	node_t *node = OALLOC(&env->obst, node_t);
 
 	node->node     = irn;
 	node->is_input = 0;
@@ -347,7 +347,7 @@ static node_t *create_node(ir_node *irn, block_t *block, environment_t *env) {
  * @param env    the environment
  */
 static void add_pair(block_t *block, ir_node *irn, int idx, environment_t *env) {
-	pair_t *pair = obstack_alloc(&env->obst, sizeof(*pair));
+	pair_t *pair = OALLOC(&env->obst, pair_t);
 
 	pair->next  = block->input_pairs;
 	pair->irn   = irn;
@@ -365,7 +365,7 @@ static void add_pair(block_t *block, ir_node *irn, int idx, environment_t *env) 
  * @param env    the environment
  */
 static void add_phi(block_t *block, ir_node *phi, environment_t *env) {
-	phi_t *node = obstack_alloc(&env->obst, sizeof(*node));
+	phi_t *node = OALLOC(&env->obst, phi_t);
 
 	node->next = block->phis;
 	node->phi  = phi;

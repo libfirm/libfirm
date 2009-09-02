@@ -881,7 +881,7 @@ static void build_kill_edges(rss_t *rss, pset *epk) {
 
 		foreach_plist(rirn->pkiller_list, k_el) {
 			ir_node    *pkiller = plist_element_get_value(k_el);
-			rss_edge_t *ke      = obstack_alloc(phase_obst(&rss->ph), sizeof(*ke));
+			rss_edge_t *ke      = OALLOC(phase_obst(&rss->ph), rss_edge_t);
 
 			ke->src  = irn;
 			ke->tgt  = pkiller;
@@ -950,7 +950,7 @@ static void compute_bipartite_decomposition(rss_t *rss) {
 
 		DBG((rss->dbg, LEVEL_2, "\t\t%+F choosen:\n", u_irn));
 
-		cbc     = obstack_alloc(phase_obst(&rss->ph), sizeof(*cbc));
+		cbc     = OALLOC(phase_obst(&rss->ph), cbc_t);
 		cbc->nr = cur_num++;
 
 		/* initialize S_cb */
@@ -1184,8 +1184,7 @@ static void compute_killing_function(rss_t *rss) {
 
 		/* while X not empty */
 		while (ir_nodeset_size(&x) > 0) {
-			child_t *t = obstack_alloc(&obst, sizeof(*t));
-			memset(t, 0, sizeof(*t));
+			child_t *t = OALLOCZ(&obst, child_t);
 
 			t = select_child_max_cost(rss, &x, &y, t, cbc);
 
@@ -1265,7 +1264,7 @@ static inline void add_dvg_edge(rss_t *rss, dvg_t *dvg, const ir_node *src, cons
 	key.tgt = (ir_node *) tgt;
 	if (NULL != pset_find(dvg->edges, &key, HASH_RSS_EDGE(&key))) {
 		/* add the edge to the DVG */
-		dvg_edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*dvg_edge));
+		dvg_edge = OALLOC(phase_obst(&rss->ph), rss_edge_t);
 
 		dvg_edge->src  = (ir_node *) src;
 		dvg_edge->tgt  = (ir_node *) tgt;
@@ -1314,7 +1313,7 @@ static void compute_dvg(rss_t *rss, dvg_t *dvg) {
 				There is an edge (u, v) in the DVG iff v is a descendant of the killer(u).
 			*/
 			if (BSEARCH_IRN_ARR(v_irn, u_kill->descendants)) {
-				rss_edge_t *dvg_edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*dvg_edge));
+				rss_edge_t *dvg_edge = OALLOC(phase_obst(&rss->ph), rss_edge_t);
 				rss_edge_t key;
 
 				/* insert the user into the DVG and append it to the user list of u */
@@ -1579,7 +1578,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 			int       xj      = idx_map[j];
 			ir_node   *xj_irn = get_idx_irn(rss->irg, xj);
 			rss_irn_t *xj_rss = get_rss_irn(rss, xj_irn);
-			chain_t   *c      = obstack_alloc(phase_obst(&rss->ph), sizeof(*c));
+			chain_t   *c      = OALLOC(phase_obst(&rss->ph), chain_t);
 			int       source;
 
 			/* there was no source for j -> we have a source of a new chain */
@@ -1991,7 +1990,7 @@ static void perform_value_serialization_heuristic(rss_t *rss) {
 	sat_vals  = compute_maximal_antichain(rss, &dvg, iteration++);
 	while (sat_vals && (ir_nodeset_size(sat_vals) > available_regs)) {
 		serialization_t *ser, best_ser;
-		rss_edge_t      *edge = obstack_alloc(phase_obst(&rss->ph), sizeof(*edge));
+		rss_edge_t      *edge = OALLOC(phase_obst(&rss->ph), rss_edge_t);
 		ir_node         *dep_src, *dep_tgt;
 
 		best_ser.edge = edge;

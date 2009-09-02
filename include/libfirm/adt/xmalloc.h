@@ -71,13 +71,13 @@ char *xstrdup(const char *str);
 /**
  * Allocate an object with n elements of a flexible array member
  */
-#define XMALLOCF(type, member, n) ((type*)xmalloc(offsetof(type, member) + sizeof(((type*)0)->member) * (n)))
+#define XMALLOCF(type, member, n) ((type*)xmalloc(offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
 
 /**
  * Allocate an object with n elements of a flexible array member and zero the
  * whole object
  */
-#define XMALLOCFZ(type, member, n) ((type*)memset(xmalloc(offsetof(type, member) + sizeof(((type*)0)->member) * (n)), 0, offsetof(type, member) + sizeof(((type*)0)->member) * (n)))
+#define XMALLOCFZ(type, member, n) ((type*)memset(XMALLOCF(type, member, (n)), 0, offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
 
 /**
  * Allocate n objects of a certain type on the stack
@@ -88,6 +88,38 @@ char *xstrdup(const char *str);
  * Allocate n objects of a certain type on the stack and zero them
  */
 #define ALLOCANZ(type, n) ((type*)memset((type*)alloca(sizeof(type) * (n)), 0, sizeof(type) * (n)))
+
+/**
+ * Allocate n objects of a certain type on the given obstack
+ */
+#define OALLOCN(obst, type, n) ((type*)obstack_alloc((obst), sizeof(type) * (n)))
+
+/**
+ * Allocate n objects of a certain type on the given obstack and zero them
+ */
+#define OALLOCNZ(obst, type, n) ((type*)memset(OALLOCN((obst), type, (n)), 0, sizeof(type) * (n)))
+
+/**
+ * Allocate one object of a certain type on the given obstack
+ */
+#define OALLOC(obst, type) OALLOCN(obst, type, 1)
+
+/**
+ * Allocate one object of a certain type on the given obstack and zero it
+ */
+#define OALLOCZ(obst, type) OALLOCNZ(obst, type, 1)
+
+/**
+ * Allocate an object with n elements of a flexible array member on the given
+ * obstck
+ */
+#define OALLOCF(obst, type, member, n) ((type*)obstack_alloc((obst), offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
+
+/**
+ * Allocate an object with n elements of a flexible array member on the given
+ * obstack and zero the whole object
+ */
+#define OALLOCFZ(obst, type, member, n) ((type*)memset(OALLOCF((obst), type, member, (n)), 0, offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
 
 
 /* Includes for alloca() */

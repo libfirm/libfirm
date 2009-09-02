@@ -154,7 +154,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 		int            i;
 		ir_node*       block = get_nodes_block(irn);
 
-		fc = obstack_alloc(&inst->obst, sizeof(*fc) + sizeof(*fc->costs) * arity);
+		fc = OALLOCF(&inst->obst, flag_and_cost, costs, arity);
 		fc->no_root = 0;
 		costs = fc->costs;
 

@@ -52,7 +52,7 @@ int (is_ir_extbb)(const void *thing) {
  * allocate a new extended block header.
  */
 static void allocate_extblk(ir_node *block, env_t *env) {
-	ir_extblk *extblk = obstack_alloc(env->obst, sizeof(*extblk));
+	ir_extblk *extblk = OALLOC(env->obst, ir_extblk);
 
 	extblk->kind    = k_ir_extblk;
 	extblk->visited = 1;

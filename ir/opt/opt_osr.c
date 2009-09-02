@@ -175,8 +175,7 @@ static node_entry *get_irn_ne(ir_node *irn, iv_env *env) {
 	node_entry *e = get_irn_link(irn);
 
 	if (e == NULL) {
-		e = obstack_alloc(&env->obst, sizeof(*e));
-		memset(e, 0, sizeof(*e));
+		e = OALLOCZ(&env->obst, node_entry);
 		set_irn_link(irn, e);
 	}
 	return e;
@@ -480,8 +479,7 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env) {
 		exchange(irn, result);
 		e = get_irn_ne(result, env);
 		if (e->pscc == NULL) {
-			e->pscc = obstack_alloc(&env->obst, sizeof(*e->pscc));
-			memset(e->pscc, 0, sizeof(*e->pscc));
+			e->pscc = OALLOCZ(&env->obst, scc);
 			update_scc(result, e, env);
 		}
 		++env->replaced;
@@ -997,10 +995,9 @@ static void dfs(ir_node *irn, iv_env *env) {
 				node->low = MIN(o->DFSnum, node->low);
 		}
 		if (node->low == node->DFSnum) {
-			scc *pscc = obstack_alloc(&env->obst, sizeof(*pscc));
+			scc *pscc = OALLOCZ(&env->obst, scc);
 			ir_node *x;
 
-			memset(pscc, 0, sizeof(*pscc));
 			do {
 				node_entry *e;
 

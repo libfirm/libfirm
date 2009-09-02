@@ -94,14 +94,13 @@ static void *ptr_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 
 static ptr_element_t *ptr_get_new_element(ifg_pointer_t *ifg)
 {
-	ptr_element_t *new_element = obstack_alloc(&ifg->obst, sizeof(ptr_element_t));
-	memset(new_element, 0, sizeof(*new_element));
+	ptr_element_t *new_element = OALLOCZ(&ifg->obst, ptr_element_t);
 	return new_element;
 }
 
 static ptr_head_t *ptr_get_new_head(ifg_pointer_t *ifg)
 {
-	ptr_head_t *new_element = obstack_alloc(&ifg->obst, sizeof(*new_element));
+	ptr_head_t *new_element = OALLOC(&ifg->obst, ptr_head_t);
 	INIT_LIST_HEAD(&new_element->list);
 	return new_element;
 }

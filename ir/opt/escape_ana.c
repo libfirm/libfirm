@@ -560,7 +560,7 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
   obstack_init(&obst);
   elist = NULL;
 
-  env = obstack_alloc(&obst, sizeof(*env));
+  env = OALLOC(&obst, walk_env_t);
   env->found_allocs = NULL;
   env->dead_allocs  = NULL;
   env->callback     = callback;
@@ -586,7 +586,7 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
 
       elist = env;
 
-      env = obstack_alloc(&obst, sizeof(*env));
+      env = OALLOC(&obst, walk_env_t);
       env->found_allocs = NULL;
       env->dead_allocs  = NULL;
       env->callback     = callback;

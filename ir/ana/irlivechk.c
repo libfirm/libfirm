@@ -260,8 +260,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
 	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
-	res->map           = obstack_alloc(obst, res->n_blocks * sizeof(res->map[0]));
-	memset(res->map, 0, res->n_blocks * sizeof(res->map[0]));
+	res->map           = OALLOCNZ(obst, bl_info_t*, res->n_blocks);
 
 #if 0
 	{

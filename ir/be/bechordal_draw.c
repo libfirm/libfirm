@@ -263,10 +263,9 @@ static void block_dims_walker(ir_node *block, void *data)
 	draw_chordal_env_t        *env  = data;
 	struct list_head          *head = get_block_border_head(env->chordal_env, block);
 	const draw_chordal_opts_t *opts = env->opts;
-	struct block_dims         *dims = obstack_alloc(&env->obst, sizeof(*dims));
+	struct block_dims         *dims = OALLOCZ(&env->obst, struct block_dims);
 	border_t                  *b;
 
-	memset(dims, 0, sizeof(*dims));
 	dims->min_step = INT_MAX;
 
 	list_for_each_entry_reverse(border_t, b, head, list) {

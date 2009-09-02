@@ -145,8 +145,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 
 	memset(&edge, 0, sizeof(edge));
 
-	entry = obstack_alloc(env->obst, sizeof(entry[0]));
-	memset(entry, 0, sizeof(*entry));
+	entry = OALLOCZ(env->obst, blocksched_entry_t);
 	entry->block = block;
 	set_irn_link(block, entry);
 
@@ -585,7 +584,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	snprintf(name, sizeof(name), "block_out_constr_%ld", get_irn_node_nr(block));
 	out_count = get_irn_n_edges_kind(block, EDGE_KIND_BLOCK);
 
-	entry          = obstack_alloc(env->env.obst, sizeof(entry[0]));
+	entry          = OALLOC(env->env.obst, blocksched_ilp_entry_t);
 	entry->block   = block;
 	entry->next    = NULL;
 	entry->prev    = NULL;

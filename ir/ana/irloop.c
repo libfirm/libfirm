@@ -220,8 +220,7 @@ ir_loop *(get_irg_loop)(const ir_graph *irg) {
 ir_loop *alloc_loop(ir_loop *father, struct obstack *obst) {
 	ir_loop *son;
 
-	son = obstack_alloc(obst, sizeof(*son));
-	memset(son, 0, sizeof(*son));
+	son = OALLOCZ(obst, ir_loop);
 	son->kind     = k_ir_loop;
 	son->children = NEW_ARR_F(loop_element, 0);
 	son->n_nodes  = 0;

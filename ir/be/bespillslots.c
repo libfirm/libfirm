@@ -182,7 +182,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 		}
 
 		/* add an affinity edge */
-		affinty_edge           = obstack_alloc(&env->obst, sizeof(affinty_edge[0]));
+		affinty_edge           = OALLOC(&env->obst, affinity_edge_t);
 		affinty_edge->affinity = get_block_execfreq(exec_freq, get_nodes_block(arg));
 		affinty_edge->slot1    = res->spillslot;
 		affinty_edge->slot2    = arg_spill->spillslot;
@@ -643,7 +643,7 @@ static void assign_spillslots(be_fec_env_t *env)
 
 					memperm = get_memperm(env, predblock);
 
-					entry = obstack_alloc(&env->obst, sizeof(entry[0]));
+					entry = OALLOC(&env->obst, memperm_entry_t);
 					entry->node = node;
 					entry->pos = i;
 					entry->in = argslot->entity;

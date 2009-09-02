@@ -261,7 +261,7 @@ typedef struct _wlk_env_t {
 static cl_entry *get_Call_entry(ir_node *call, wlk_env *env) {
 	cl_entry *res = get_irn_link(call);
 	if (res == NULL) {
-		cl_entry *res = obstack_alloc(&env->obst, sizeof(*res));
+		cl_entry *res = OALLOC(&env->obst, cl_entry);
 		res->next  = env->cl_list;
 		res->call  = call;
 		res->copyb = NULL;

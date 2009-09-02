@@ -127,11 +127,10 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	if (!is_def) {
 		border_t *def;
 
-		b = obstack_alloc(env->obst, sizeof(*b));
+		b = OALLOC(env->obst, border_t);
 
 		/* also allocate the def and tie it to the use. */
-		def = obstack_alloc(env->obst, sizeof(*def));
-		memset(def, 0, sizeof(*def));
+		def = OALLOCZ(env->obst, border_t);
 		b->other_end = def;
 		def->other_end = b;
 
@@ -630,7 +629,7 @@ static void pressure(ir_node *block, void *env_ptr)
 	bitset_clear_all(live);
 
 	/* Set up the border list in the block info */
-	head = obstack_alloc(env->obst, sizeof(*head));
+	head = OALLOC(env->obst, struct list_head);
 	INIT_LIST_HEAD(head);
 	assert(pmap_get(env->border_heads, block) == NULL);
 	pmap_insert(env->border_heads, block, head);

@@ -88,9 +88,7 @@ typedef struct scc_info {
  * Allocates a new SCC info on the given obstack.
  */
 static inline scc_info *new_scc_info(struct obstack *obst) {
-	scc_info *info = obstack_alloc(obst, sizeof(*info));
-	memset(info, 0, sizeof(*info));
-	return info;
+	return OALLOCZ(obst, scc_info);
 }
 
 /**

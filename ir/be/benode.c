@@ -453,11 +453,8 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node 
 	}
 
 	attr = get_irn_attr(irn);
-
-	attr->in_entities = obstack_alloc(irg->obst, n * sizeof(attr->in_entities[0]));
-	memset(attr->in_entities, 0, n * sizeof(attr->in_entities[0]));
-	attr->out_entities = obstack_alloc(irg->obst, n*sizeof(attr->out_entities[0]));
-	memset(attr->out_entities, 0, n*sizeof(attr->out_entities[0]));
+	attr->in_entities  = OALLOCNZ(irg->obst, ir_entity*, n);
+	attr->out_entities = OALLOCNZ(irg->obst, ir_entity*, n);
 
 	return irn;
 }
@@ -1280,8 +1277,7 @@ static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
 			assert(req->cls != NULL);
 
 			if (req->type != arch_register_req_type_normal) {
-				arch_register_req_t *nreq = obstack_alloc(obst, sizeof(*nreq));
-				memset(nreq, 0, sizeof(*nreq));
+				arch_register_req_t *nreq = OALLOCZ(obst, arch_register_req_t);
 				nreq->type = arch_register_req_type_normal;
 				nreq->cls  = req->cls;
 				req        = nreq;

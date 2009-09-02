@@ -226,8 +226,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap) 
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(&status->cnts, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(&status->cnts, node_entry_t);
 
 	/* clear counter */
 	opcode_clear_entry(elem);
@@ -303,8 +302,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 	}  /* if */
 
 	/* allocate a new one */
-	elem = obstack_alloc(&status->cnts, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(&status->cnts, graph_entry_t);
 	obstack_init(&elem->recalc_cnts);
 
 	/* clear counter */
@@ -349,8 +347,7 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(&status->cnts, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(&status->cnts, opt_entry_t);
 
 	/* clear new counter */
 	opt_clear_entry(elem);
@@ -387,8 +384,7 @@ static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(obst, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(obst, block_entry_t);
 
 	/* clear new counter */
 	block_clear_entry(elem);
@@ -434,8 +430,7 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(obst, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(obst, be_block_entry_t);
 
 	/* clear new counter */
 	be_block_clear_entry(elem);
@@ -473,8 +468,7 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(obst, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(obst, perm_class_entry_t);
 
 	/* clear new counter */
 	perm_class_clear_entry(elem);
@@ -515,8 +509,7 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 	if (elem)
 		return elem;
 
-	elem = obstack_alloc(obst, sizeof(*elem));
-	memset(elem, 0, sizeof(*elem));
+	elem = OALLOCZ(obst, perm_stat_entry_t);
 
 	/* clear new counter */
 	perm_stat_clear_entry(elem);
@@ -1973,8 +1966,7 @@ void stat_be_block_regpressure(ir_graph *irg, ir_node *block, int pressure, cons
 		reg_pressure_entry_t *rp_ent;
 
 		block_ent = be_block_get_entry(&status->be_data, get_irn_node_nr(block), graph->be_block_hash);
-		rp_ent    = obstack_alloc(&status->be_data, sizeof(*rp_ent));
-		memset(rp_ent, 0, sizeof(*rp_ent));
+		rp_ent    = OALLOCZ(&status->be_data, reg_pressure_entry_t);
 
 		rp_ent->class_name = class_name;
 		rp_ent->pressure   = pressure;

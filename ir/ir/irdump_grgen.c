@@ -290,7 +290,7 @@ static void dump_grg_node(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 
 	// Else generate new node name and dump the node
 
-	node_name = obstack_alloc(&(dump_info -> node_names), MAX_NODENAME_LEN);
+	node_name = OALLOCN(&dump_info->node_names, char, MAX_NODENAME_LEN);
 
 	sprintf(node_name, "%s%ld", get_op_name(get_irn_op(n)), get_irn_node_nr(n));
 	fprintf(fp, "%s%s : %s;\n", indent, node_name, get_op_name(get_irn_op(n)));
@@ -321,8 +321,8 @@ static void dump_grg_egde(ir_node *n, int n_edge, grgen_dumpinfo_t *dump_info, F
 
 	if((nodes_edge_names = pmap_get(dump_info -> edge_name_map, n)) == NULL)
 	{
-		nodes_edge_names = (char **) obstack_alloc(&(dump_info->node_names), (get_irn_arity(n) + 1) * sizeof(char *));
-		memset(nodes_edge_names, 0, (get_irn_arity(n) + 1) * sizeof(char *));
+		size_t const count = get_irn_arity(n) + 1;
+		nodes_edge_names = OALLOCNZ(&dump_info->node_names, char*, count);
 		pmap_insert(dump_info->edge_name_map, n, nodes_edge_names);
 	}
 
@@ -336,7 +336,7 @@ static void dump_grg_egde(ir_node *n, int n_edge, grgen_dumpinfo_t *dump_info, F
 	char edge_name[50], *edge_name_obst;
 
 	sprintf(edge_name, "pos%d_%d", n_edge + 1, edge_counter++);
-	edge_name_obst = obstack_alloc(&(dump_info->node_names), strlen(edge_name) + 1);
+	edge_name_obst = OALLOCN(&dump_info->node_names, char, strlen(edge_name) + 1);
 	strcpy(edge_name_obst, edge_name);
 	nodes_edge_names[n_edge + 1] = edge_name_obst;
 
@@ -374,7 +374,7 @@ static void dump_grgen_mode(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp, i
 
 	if(pmap_get(dump_info->mode_edge_map, n) == NULL)
 	{
-		char *edge_name_obst = obstack_alloc(&(dump_info->node_names), strlen(edge_name) + 1);
+		char *edge_name_obst = OALLOCN(&dump_info->node_names, char, strlen(edge_name) + 1);
 		strcpy(edge_name_obst, edge_name);
 		pmap_insert(dump_info->mode_edge_map, n, edge_name_obst);
 	}
@@ -397,7 +397,7 @@ static char *dump_grgen_mode_node(ir_mode *irn_mode, grgen_dumpinfo_t *dump_info
 	if(!pmap_contains(dump_info -> mode_name_map, irn_mode))
 	{
 		// No, create a new mode-node
-		mode_node_name = obstack_alloc(&(dump_info -> mode_names), MAX_NODENAME_LEN);
+		mode_node_name = OALLOCN(&dump_info->mode_names, char, MAX_NODENAME_LEN);
 		sprintf(mode_node_name, "mode_%s_node", mode_name);
 		pmap_insert(dump_info -> mode_name_map, irn_mode, mode_node_name);
 		fprintf(fp, "%s%s : Mode_%s;\n", indent, mode_node_name, mode_name);

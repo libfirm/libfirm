@@ -57,12 +57,6 @@ struct _hungarian_problem_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
-static inline void *get_init_mem(struct obstack *obst, size_t sz) {
-	void *p = obstack_alloc(obst, sz);
-	memset(p, 0, sz);
-	return p;
-}
-
 static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width) {
 	int i, j;
 
@@ -116,9 +110,9 @@ hungarian_problem_t *hungarian_new(int rows, int cols, int match_type) {
 	}
 
 	/* allocate space for cost matrix */
-	p->cost = (int **)get_init_mem(&p->obst, rows * sizeof(p->cost[0]));
+	p->cost = OALLOCNZ(&p->obst, int*, rows);
 	for (i = 0; i < p->num_rows; i++)
-		p->cost[i] = (int *)get_init_mem(&p->obst, cols * sizeof(p->cost[0][0]));
+		p->cost[i] = OALLOCNZ(&p->obst, int, cols);
 
 	return p;
 }

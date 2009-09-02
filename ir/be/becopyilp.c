@@ -144,7 +144,7 @@ void sr_remove(size_red_t *sr) {
 
 			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
 				if (sr_is_simplicial(sr, irn)) {
-					coloring_suffix_t *cs = obstack_alloc(&sr->ob, sizeof(*cs));
+					coloring_suffix_t *cs = OALLOC(&sr->ob, coloring_suffix_t);
 
 					cs->irn = irn;
 					cs->next = sr->col_suff;

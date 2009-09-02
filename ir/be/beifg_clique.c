@@ -79,7 +79,7 @@ static cli_head_t *get_new_cli_head(ifg_clique_t *ifg)
 
 	if (ifg->cli_root == NULL)
 	{
-		new_cli_head = obstack_alloc(&ifg->obst, sizeof(*new_cli_head));
+		new_cli_head = OALLOC(&ifg->obst, cli_head_t);
 		INIT_LIST_HEAD(&new_cli_head->list);
 		ifg->cli_root = new_cli_head;
 	}
@@ -90,7 +90,7 @@ static cli_head_t *get_new_cli_head(ifg_clique_t *ifg)
 		{
 			cli_head = cli_head->next_cli_head;
 		}
-		new_cli_head = obstack_alloc(&ifg->obst, sizeof(*new_cli_head));
+		new_cli_head = OALLOC(&ifg->obst, cli_head_t);
 		INIT_LIST_HEAD(&new_cli_head->list);
 		cli_head->next_cli_head = new_cli_head;
 	}
@@ -107,7 +107,7 @@ static cli_element_t *get_new_cli_element(ifg_clique_t *ifg)
 {
 	cli_element_t *cli_element;
 
-	cli_element = obstack_alloc(&ifg->obst, sizeof(*cli_element));
+	cli_element = OALLOC(&ifg->obst, cli_element_t);
 	INIT_LIST_HEAD(&cli_element->list);
 
 	return cli_element;

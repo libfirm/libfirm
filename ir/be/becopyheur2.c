@@ -986,18 +986,13 @@ static void process_cloud(co2_cloud_t *cloud)
 		int n_childs = ci->mst_n_childs;
 		int j;
 
-		ci->col_costs       = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->col_costs[0]));
-		ci->tmp_coloring    = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->tmp_coloring[0]));
-		ci->fronts          = obstack_alloc(&cloud->obst, n_regs * n_childs * sizeof(ci->fronts[0]));
-		ci->color_badness   = obstack_alloc(&cloud->obst, n_regs * sizeof(ci->fronts[0]));
-		memset(ci->color_badness, 0, n_regs * sizeof(ci->color_badness[0]));
-		memset(ci->col_costs,     0, n_regs * sizeof(ci->col_costs[0]));
-		memset(ci->tmp_coloring,  0, n_regs * sizeof(ci->tmp_coloring[0]));
-		memset(ci->fronts,        0, n_regs * n_childs * sizeof(ci->fronts[0]));
+		ci->col_costs       = OALLOCNZ(&cloud->obst, int,             n_regs);
+		ci->tmp_coloring    = OALLOCNZ(&cloud->obst, col_cost_pair_t, n_regs);
+		ci->fronts          = OALLOCNZ(&cloud->obst, int,             n_regs * n_childs);
+		ci->color_badness   = OALLOCNZ(&cloud->obst, int,             n_regs);
 
 		for(j = 0; j < env->n_regs; j++)
 			ci->col_costs[j] = INT_MAX;
-
 	}
 
 	determine_color_badness(cloud->mst_root, 0);

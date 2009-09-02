@@ -39,7 +39,6 @@ void be_info_new_node(ir_node *node)
 {
 	struct obstack *obst;
 	backend_info_t *info;
-	sched_info_t   *sinfo;
 
 	if (is_Anchor(node))
 		return;
@@ -48,12 +47,7 @@ void be_info_new_node(ir_node *node)
 		return;
 
 	obst  = get_irg_obstack(current_ir_graph);
-	info  = obstack_alloc(obst, sizeof(*info));
-	sinfo = &info->sched_info;
-
-	memset(info, 0, sizeof(*info));
-	sinfo->next = NULL;
-	sinfo->prev = NULL;
+	info  = OALLOCZ(obst, backend_info_t);
 
 	if (is_Phi(node)) {
 		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);

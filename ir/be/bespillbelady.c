@@ -132,12 +132,7 @@ void workset_print(const workset_t *w)
  */
 static workset_t *new_workset(void)
 {
-	workset_t *res;
-	size_t     size = sizeof(*res) + n_regs * sizeof(res->vals[0]);
-
-	res  = obstack_alloc(&obst, size);
-	memset(res, 0, size);
-	return res;
+	return OALLOCFZ(&obst, workset_t, vals, n_regs);
 }
 
 /**
@@ -145,10 +140,8 @@ static workset_t *new_workset(void)
  */
 static workset_t *workset_clone(workset_t *workset)
 {
-	workset_t *res;
-	size_t size = sizeof(*res) + n_regs * sizeof(res->vals[0]);
-	res = obstack_alloc(&obst, size);
-	memcpy(res, workset, size);
+	workset_t *res = OALLOCF(&obst, workset_t, vals, n_regs);
+	memcpy(res, workset, sizeof(*res) + n_regs * sizeof(res->vals[0]));
 	return res;
 }
 
@@ -262,12 +255,9 @@ typedef struct _block_info_t
 } block_info_t;
 
 
-static void *new_block_info(void)
+static block_info_t *new_block_info(void)
 {
-	block_info_t *res = obstack_alloc(&obst, sizeof(res[0]));
-	memset(res, 0, sizeof(res[0]));
-
-	return res;
+	return OALLOCZ(&obst, block_info_t);
 }
 
 #define get_block_info(block)        ((block_info_t *)get_irn_link(block))
