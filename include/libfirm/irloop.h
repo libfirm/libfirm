@@ -49,7 +49,7 @@
 /* ------------------------------------------------------------------- */
 
 #ifdef INTERPROCEDURAL_VIEW
-/** Returns true if the predecessor pos is a backedge in the interprozeduralem view. */
+/** Returns true if the predecessor pos is a backedge in the interprocedural view. */
 int  is_inter_backedge(ir_node *n, int pos);
 /** Returns true if the predecessor pos is a backedge in the intraprocedural view. */
 int  is_intra_backedge(ir_node *n, int pos);
