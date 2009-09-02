@@ -55,8 +55,7 @@ static inline void uf_init(int* data, size_t n_elems)
  * @param data	The union find data
  * @param set1	Representative of set1
  * @param set2	Representative of set2
- * @return		0 if the new union set is represented by set1, 1 if it is
- *              represented by set2
+ * @return      the new representative of the set (which is set1 or set2)
  */
 static inline int uf_union(int* data, int set1, int set2)
 {
@@ -65,7 +64,7 @@ static inline int uf_union(int* data, int set1, int set2)
 	int newcount;
 
 	if(set1 == set2)
-		return 0;
+		return set1;
 
 	/* need 2 set representatives */
 	d1 = data[set1];
@@ -76,11 +75,11 @@ static inline int uf_union(int* data, int set1, int set2)
 	if(d1 > d2) {
 		data[set1] = set2;
 		data[set2] = newcount;
-		return 1;
+		return set2;
 	} else {
 		data[set2] = set1;
 		data[set1] = newcount;
-		return 0;
+		return set1;
 	}
 }
 

@@ -117,9 +117,7 @@ void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const
 
 void be_clear_links(ir_graph *irg)
 {
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 static void count_num_reachable_nodes(ir_node *irn, void *env)

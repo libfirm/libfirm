@@ -60,6 +60,7 @@
 #include "irnode_t.h"
 #include "obst.h"
 #include "raw_bitset.h"
+#include "unionfind.h"
 
 #include "beabi.h"
 #include "bechordal_t.h"
@@ -94,6 +95,7 @@ static be_lv_t                     *lv;
 static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
 static unsigned                    *normal_regs;
+static int                         *congruence_classes;
 
 /** currently active assignments (while processing a basic block)
  * maps registers to values(their current copies) */
@@ -131,14 +133,12 @@ typedef struct block_info_t block_info_t;
  */
 static allocation_info_t *get_allocation_info(ir_node *node)
 {
-	allocation_info_t *info;
-	if (!irn_visited_else_mark(node)) {
+	allocation_info_t *info = get_irn_link(node);
+	if (info == NULL) {
 		info = OALLOCFZ(&obst, allocation_info_t, prefs, n_regs);
 		info->current_value  = node;
 		info->original_value = node;
 		set_irn_link(node, info);
-	} else {
-		info = get_irn_link(node);
 	}
 
 	return info;
@@ -149,14 +149,12 @@ static allocation_info_t *get_allocation_info(ir_node *node)
  */
 static block_info_t *get_block_info(ir_node *block)
 {
-	block_info_t *info;
+	block_info_t *info = get_irn_link(block);
 
 	assert(is_Block(block));
-	if (!irn_visited_else_mark(block)) {
+	if (info == NULL) {
 		info = OALLOCFZ(&obst, block_info_t, assignments, n_regs);
 		set_irn_link(block, info);
-	} else {
-		info = get_irn_link(block);
 	}
 
 	return info;
@@ -392,6 +390,113 @@ static void analyze_block(ir_node *block, void *data)
 
 	ir_nodeset_destroy(&live_nodes);
 }
+
+static void create_congurence_class(ir_node *node, void *data)
+{
+	(void) data;
+	if (is_Phi(node)) {
+		int      i;
+		int      arity   = get_irn_arity(node);
+		unsigned phi_idx = get_irn_idx(node);
+		phi_idx     = uf_find(congruence_classes, phi_idx);
+		for (i = 0; i < arity; ++i) {
+			ir_node *op     = get_Phi_pred(node, i);
+			int      op_idx = get_irn_idx(op);
+			op_idx  = uf_find(congruence_classes, op_idx);
+			phi_idx = uf_union(congruence_classes, phi_idx, op_idx);
+		}
+		return;
+	}
+	/* should be same constraint? */
+	if (is_Proj(node)) {
+		const arch_register_req_t *req = arch_get_register_req_out(node);
+		if (req->type & arch_register_req_type_should_be_same) {
+			ir_node *pred  = get_Proj_pred(node);
+			int      arity = get_irn_arity(pred);
+			int      i;
+			unsigned node_idx = get_irn_idx(node);
+			node_idx          = uf_find(congruence_classes, node_idx);
+
+			for (i = 0; i < arity; ++i) {
+				ir_node *op;
+				unsigned op_idx;
+
+				if (!rbitset_is_set(&req->other_same, i))
+					continue;
+
+				op     = get_irn_n(pred, i);
+				op_idx = get_irn_idx(op);
+				op_idx = uf_find(congruence_classes, op_idx);
+				node_idx = uf_union(congruence_classes, node_idx, op_idx);
+			}
+		}
+		return;
+	}
+}
+
+static void merge_congruence_prefs(ir_node *node, void *data)
+{
+	allocation_info_t *info;
+	allocation_info_t *head_info;
+	unsigned node_idx = get_irn_idx(node);
+	unsigned node_set = uf_find(congruence_classes, node_idx);
+	unsigned r;
+
+	(void) data;
+
+	/* head of congruence class or not in any class */
+	if (node_set == node_idx)
+		return;
+
+	if (!arch_irn_consider_in_reg_alloc(cls, node))
+		return;
+
+	head_info = get_allocation_info(get_idx_irn(irg, node_set));
+	info      = get_allocation_info(node);
+
+	for (r = 0; r < n_regs; ++r) {
+		head_info->prefs[r] += info->prefs[r];
+	}
+}
+
+static void set_congruence_prefs(ir_node *node, void *data)
+{
+	allocation_info_t *info;
+	allocation_info_t *head_info;
+	unsigned node_idx = get_irn_idx(node);
+	unsigned node_set = uf_find(congruence_classes, node_idx);
+
+	(void) data;
+
+	/* head of congruence class or not in any class */
+	if (node_set == node_idx)
+		return;
+
+	if (!arch_irn_consider_in_reg_alloc(cls, node))
+		return;
+
+	head_info = get_allocation_info(get_idx_irn(irg, node_set));
+	info      = get_allocation_info(node);
+
+	memcpy(info->prefs, head_info->prefs, n_regs * sizeof(info->prefs[0]));
+}
+
+static void combine_congruence_classes(void)
+{
+	size_t n = get_irg_last_idx(irg);
+	congruence_classes = XMALLOCN(int, n);
+	uf_init(congruence_classes, n);
+
+	/* create congruence classes */
+	irg_walk_graph(irg, create_congurence_class, NULL, NULL);
+	/* merge preferences */
+	irg_walk_graph(irg, merge_congruence_prefs, NULL, NULL);
+	irg_walk_graph(irg, set_congruence_prefs, NULL, NULL);
+}
+
+
+
+
 
 /**
  * Assign register reg to the given node.
@@ -1161,7 +1266,6 @@ static void adapt_phi_prefs(ir_node *phi)
 	for (i = 0; i < arity; ++i) {
 		ir_node               *op  = get_irn_n(phi, i);
 		const arch_register_t *reg = arch_get_irn_register(op);
-		ir_node               *pred;
 		ir_node               *pred_block;
 		block_info_t          *pred_block_info;
 		float                  weight;
@@ -1169,7 +1273,7 @@ static void adapt_phi_prefs(ir_node *phi)
 
 		if (reg == NULL)
 			continue;
-		/* we only give the bonus if the predecessor already has register
+		/* we only give the bonus if the predecessor already has registers
 		 * assigned, otherwise we only see a dummy value
 		 * and any conclusions about its register are useless */
 		pred_block = get_Block_cfgpred_block(block, i);
@@ -1178,8 +1282,7 @@ static void adapt_phi_prefs(ir_node *phi)
 			continue;
 
 		/* give bonus for already assigned register */
-		pred   = get_Block_cfgpred_block(block, i);
-		weight = get_block_execfreq(execfreqs, pred);
+		weight = get_block_execfreq(execfreqs, pred_block);
 		r      = arch_register_get_index(reg);
 		info->prefs[r] += weight * AFF_PHI;
 	}
@@ -1437,17 +1540,18 @@ static void be_straight_alloc_cls(void)
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(irg);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	DB((dbg, LEVEL_2, "=== Allocating registers of %s ===\n", cls->name));
 
+	be_clear_links(irg);
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
+	combine_congruence_classes();
 	/* we need some dominance pre-order walk to ensure we see all
 	 *  definitions/create copies before we encounter their users */
 	dom_tree_walk_irg(irg, allocate_coalesce_block, NULL, NULL);
 
-	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
 static void dump(int mask, ir_graph *irg, const char *suffix,

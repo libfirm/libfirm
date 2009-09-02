@@ -222,7 +222,7 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	/* merge spillslots and interferences */
 	res = uf_union(spillslot_unionfind, s1, s2);
 	/* we assume that we always merge s2 to s1 so swap s1, s2 if necessary */
-	if(res != 0) {
+	if(res != s1) {
 		int t = s1;
 		s1 = s2;
 		s2 = t;
