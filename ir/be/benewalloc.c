@@ -1299,20 +1299,17 @@ static void propagate_phi_register(ir_node *phi, unsigned r)
 	int                    arity = get_irn_arity(phi);
 
 	for (i = 0; i < arity; ++i) {
-		ir_node           *op   = get_Phi_pred(phi, i);
-		allocation_info_t *info = get_allocation_info(op);
-		ir_node           *pred;
-		float              weight;
-
-		pred   = get_Block_cfgpred_block(block, i);
-		weight = get_block_execfreq(execfreqs, pred);
-		weight *= AFF_PHI;
+		ir_node           *op         = get_Phi_pred(phi, i);
+		allocation_info_t *info       = get_allocation_info(op);
+		ir_node           *pred_block = get_Block_cfgpred_block(block, i);
+		float              weight
+			= get_block_execfreq(execfreqs, pred_block) * AFF_PHI;
 
 		if (info->prefs[r] >= weight)
 			continue;
 
 		/* promote the prefered register */
-		info->prefs[r] += AFF_PHI * weight;
+		info->prefs[r] = AFF_PHI * weight;
 		if (is_Phi(op))
 			propagate_phi_register(op, r);
 	}
