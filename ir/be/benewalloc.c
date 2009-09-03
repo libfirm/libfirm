@@ -562,7 +562,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
                                  unsigned *output_regs)
 {
 	const arch_register_t *reg;
-	ir_node               *insn;
+	ir_node               *original_insn;
 	ir_node               *block;
 	ir_node               *copy;
 	unsigned               r;
@@ -576,8 +576,8 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	/* stupid hack: don't optimisticallt split don't spill nodes...
 	 * (so we don't split away the values produced because of
 	 *  must_be_different constraints) */
-	insn = skip_Proj(to_split);
-	if (arch_irn_get_flags(insn) & arch_irn_flags_dont_spill)
+	original_insn = skip_Proj(info->original_value);
+	if (arch_irn_get_flags(original_insn) & arch_irn_flags_dont_spill)
 		return false;
 
 	/* find the best free position where we could move to */
