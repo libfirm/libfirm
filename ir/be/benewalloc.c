@@ -570,6 +570,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	allocation_info_t     *info = get_allocation_info(to_split);
 	reg_pref_t            *prefs;
 	float                  delta;
+	float                  split_threshold;
 
 	(void) pref;
 
@@ -596,15 +597,16 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 		return false;
 	}
 	/* TODO: use execfreq somehow... */
+	block = get_nodes_block(before);
 	delta = pref_delta + prefs[i].pref;
-	if (delta < SPLIT_DELTA) {
+	split_threshold = get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
+	if (delta < split_threshold) {
 		DB((dbg, LEVEL_3, "Not doing optimistical split, win %f too low\n",
 		    delta));
 		return false;
 	}
 
 	reg   = arch_register_for_index(cls, r);
-	block = get_nodes_block(before);
 	copy = be_new_Copy(cls, block, to_split);
 	mark_as_copy_of(copy, to_split);
 	free_reg_of_value(to_split);
