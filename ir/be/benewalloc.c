@@ -109,6 +109,7 @@ struct allocation_info_t {
 	unsigned  last_uses;      /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
+	unsigned char should_be_same[2];
 	float     prefs[0];       /**< register preferences */
 };
 typedef struct allocation_info_t allocation_info_t;
@@ -202,9 +203,10 @@ static void mark_as_copy_of(ir_node *copy, ir_node *value)
 
 	/* the copy should not be linked to something else yet */
 	assert(copy_info->original_value == copy);
+	copy_info->original_value = original;
+
 	/* copy over allocation preferences */
 	memcpy(copy_info->prefs, info->prefs, n_regs * sizeof(copy_info->prefs[0]));
-	copy_info->original_value = original;
 }
 
 /**
@@ -560,6 +562,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
                                  unsigned *output_regs)
 {
 	const arch_register_t *reg;
+	ir_node               *insn;
 	ir_node               *block;
 	ir_node               *copy;
 	unsigned               r;
@@ -569,6 +572,13 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	float                  delta;
 
 	(void) pref;
+
+	/* stupid hack: don't optimisticallt split don't spill nodes...
+	 * (so we don't split away the values produced because of
+	 *  must_be_different constraints) */
+	insn = skip_Proj(to_split);
+	if (arch_irn_get_flags(insn) & arch_irn_flags_dont_spill)
+		return false;
 
 	/* find the best free position where we could move to */
 	prefs = ALLOCAN(reg_pref_t, n_regs);
