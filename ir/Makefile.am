@@ -124,6 +124,7 @@ libfirm_la_SOURCES = \
 	be/bespill.c \
 	be/bespilldaemel.c \
 	be/bespillslots.c \
+	be/bespillutil.c \
 	be/bessaconstr.c \
 	be/bessadestr.c \
 	be/bestabs.c \
@@ -169,6 +170,7 @@ libfirm_la_SOURCES = \
 	ir/irnodeset.c \
 	ir/irop.c \
 	ir/iropt.c \
+	ir/irpass.c \
 	ir/irphase.c \
 	ir/irprintf.c \
 	ir/irprofile.c \
@@ -278,6 +280,7 @@ EXTRA_DIST = \
 	be/bechordal_draw.h \
 	be/beflags.h \
 	be/bespillslots.h \
+	be/bespillutil.h \
 	be/beifg.h \
 	be/besched_t.h \
 	be/beschedmris.h \

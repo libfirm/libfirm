@@ -45,6 +45,7 @@ libfirminclude_HEADERS = \
 	iropt.h \
 	iroptimize.h \
 	irouts.h \
+	irpass.h \
 	irprintf.h \
 	irprog.h \
 	irsimpletype.h \
