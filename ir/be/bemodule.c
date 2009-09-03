@@ -109,7 +109,6 @@ void be_init_modules(void)
 	be_init_spillbelady();
 	be_init_spillbelady2();
 	be_init_spillbelady3();
-//	be_init_spilllinearscan();
 	be_init_daemelspill();
 	be_init_ssaconstr();
 	be_init_straight_alloc();

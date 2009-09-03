@@ -1836,6 +1836,7 @@ static void modify_irg(be_abi_irg_t *env)
 	int n_params;
 	int i, n;
 	unsigned j;
+	unsigned frame_size;
 
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
@@ -1888,6 +1889,11 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* fix the frame type layout again */
 	set_type_state(ctx.frame_tp, layout_fixed);
+	/* align stackframe to 4 byte */
+	frame_size = get_type_size_bytes(ctx.frame_tp);
+	if (frame_size % 4 != 0) {
+		set_type_size_bytes(ctx.frame_tp, frame_size + 4 - (frame_size % 4));
+	}
 
 	env->regs  = pmap_create();
 
