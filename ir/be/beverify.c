@@ -251,13 +251,13 @@ static void verify_schedule_walker(ir_node *block, void *data) {
 			env->problem_found = 1;
 		}
 
-		if(be_is_Keep(node)) {
+		if(be_is_Keep(node) || be_is_CopyKeep(node)) {
 			/* at least 1 of the keep arguments has to be it schedule
 			 * predecessor */
 			int      arity   = get_irn_arity(node);
 			int      problem = 1;
 			ir_node *prev    = sched_prev(node);
-			while(be_is_Keep(prev))
+			while(be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
 			for(i = 0; i < arity; ++i) {

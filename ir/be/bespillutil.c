@@ -324,7 +324,7 @@ static ir_node *skip_keeps_phis(ir_node *node)
 {
 	while(true) {
 		ir_node *next = sched_next(node);
-		if(!is_Phi(next) && !be_is_Keep(next))
+		if(!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
 			break;
 		node = next;
 	}
