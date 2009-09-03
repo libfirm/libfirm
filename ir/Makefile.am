@@ -56,8 +56,8 @@ libfirm_la_SOURCES = \
 	ana/ircfscc.c \
 	ana/irconsconfirm.c \
 	ana/irdom.c \
-	ana/irextbb2.c \
 	ana/irextbb.c \
+	ana/irextbb2.c \
 	ana/irlivechk.c \
 	ana/irloop.c \
 	ana/irmemory.c \
@@ -75,12 +75,12 @@ libfirm_la_SOURCES = \
 	be/bechordal.c \
 	be/bechordal_draw.c \
 	be/bechordal_main.c \
+	be/becopyheur.c \
 	be/becopyheur2.c \
 	be/becopyheur4.c \
-	be/becopyheur.c \
+	be/becopyilp.c \
 	be/becopyilp1.c \
 	be/becopyilp2.c \
-	be/becopyilp.c \
 	be/becopyopt.c \
 	be/becopystat.c \
 	be/bedbgout.c \
@@ -118,10 +118,10 @@ libfirm_la_SOURCES = \
 	be/beschedrss.c \
 	be/beschedtrace.c \
 	be/beschedtrivial.c \
+	be/bespill.c \
+	be/bespillbelady.c \
 	be/bespillbelady2.c \
 	be/bespillbelady3.c \
-	be/bespillbelady.c \
-	be/bespill.c \
 	be/bespilldaemel.c \
 	be/bespillslots.c \
 	be/bespillutil.c \
@@ -158,8 +158,8 @@ libfirm_la_SOURCES = \
 	ir/irgmod.c \
 	ir/irgopt.c \
 	ir/irgraph.c \
-	ir/irgwalk_blk.c \
 	ir/irgwalk.c \
+	ir/irgwalk_blk.c \
 	ir/irhooks.c \
 	ir/irio.c \
 	ir/irlinkednodemap.c \
@@ -199,7 +199,6 @@ libfirm_la_SOURCES = \
 	opt/cfopt.c \
 	opt/code_placement.c \
 	opt/combo.c \
-	opt/jumpthreading.c \
 	opt/convopt.c \
 	opt/critical_edges.c \
 	opt/escape_ana.c \
@@ -207,6 +206,7 @@ libfirm_la_SOURCES = \
 	opt/gvn_pre.c \
 	opt/ifconv.c \
 	opt/ircgopt.c \
+	opt/jumpthreading.c \
 	opt/ldst2.c \
 	opt/ldstopt.c \
 	opt/opt_blocks.c \
@@ -229,183 +229,184 @@ libfirm_la_SOURCES = \
 	stat/pattern.c \
 	stat/pattern_dmp.c \
 	stat/stat_dmp.c \
-	stat/statev.c \
 	stat/stat_liveness.c \
 	stat/stat_timing.c \
+	stat/statev.c \
 	tr/entity.c \
 	tr/tpop.c \
 	tr/tr_inheritance.c \
 	tr/trvrfy.c \
 	tr/type.c \
 	tr/type_finalization.c \
-	tr/typegmod.c \
 	tr/type_identify.c \
+	tr/typegmod.c \
 	tr/typewalk.c \
 	tv/fltcalc.c \
 	tv/strcalc.c \
 	tv/tv.c
 
 EXTRA_DIST = \
-	adt/bitset.h \
 	adt/array_t.h \
+	adt/bitfiddle.h \
+	adt/bitset.h \
 	adt/bitset_ia32.h \
 	adt/bitset_std.h \
 	adt/compiler.h \
-	adt/bitfiddle.h \
+	ana/dfs_t.h \
 	ana/irbackedge_t.h \
 	ana/irdom_t.h \
-	ana/dfs_t.h \
+	ana/irextbb_t.h \
 	ana/irloop_t.h \
 	ana/irmemory_t.h \
-	ana/irextbb_t.h \
-	be/beifg_impl.h \
-	be/belive_t.h \
-	be/beifg_t.h \
-	be/bepeephole.h \
+	be/be_dbgout.h \
 	be/be_dbgout_t.h \
-	be/bessaconstr.h \
-	be/beblocksched.h \
-	be/becopyopt_t.h \
-	be/becopyilp_t.h \
-	be/bemachine.h \
-	be/beverify.h \
-	be/bechordal_t.h \
-	be/beemitter.h \
-	be/begnuas.h \
-	be/bemodule.h \
 	be/be_t.h \
-	be/bessadestr.h \
-	be/belistsched.h \
 	be/beabi.h \
-	be/bechordal_draw.h \
-	be/beflags.h \
-	be/bespillslots.h \
-	be/bespillutil.h \
-	be/beifg.h \
-	be/besched_t.h \
-	be/beschedmris.h \
-	be/besched.h \
-	be/beloopana.h \
-	be/becopyopt.h \
-	be/beilpsched.h \
-	be/bepressurestat.h \
-	be/bestat.h \
 	be/beabi_t.h \
-	be/beuses.h \
-	be/bestate.h \
+	be/bearch.h \
 	be/bearch_t.h \
-	be/bera.h \
+	be/beblocksched.h \
+	be/bechordal.h \
+	be/bechordal_draw.h \
+	be/bechordal_t.h \
+	be/becopyilp_t.h \
+	be/becopyopt.h \
+	be/becopyopt_t.h \
+	be/becopystat.h \
+	be/bedomfront.h \
+	be/beemitter.h \
+	be/beflags.h \
+	be/begnuas.h \
+	be/beifg.h \
+	be/beifg_impl.h \
+	be/beifg_t.h \
+	be/beilpsched.h \
+	be/beinfo.h \
+	be/beinsn_t.h \
+	be/beintlive_t.h \
+	be/beirg.h \
 	be/beirg_t.h \
 	be/beirgmod.h \
-	be/betranshlp.h \
-	be/beinsn_t.h \
+	be/belistsched.h \
 	be/belive.h \
-	be/bestatevent.h \
-	be/beutil.h \
-	be/bedomfront.h \
-	be/be_dbgout.h \
-	be/bespill.h \
-	be/beintlive_t.h \
+	be/belive_t.h \
+	be/beloopana.h \
 	be/belower.h \
-	be/beinfo.h \
+	be/bemachine.h \
+	be/bemodule.h \
 	be/bemodule_t.h \
-	be/becopystat.h \
 	be/benode_t.h \
+	be/bepeephole.h \
+	be/bepressurestat.h \
+	be/bera.h \
+	be/besched.h \
+	be/besched_t.h \
+	be/beschedmris.h \
 	be/beschedrss.h \
-	be/bechordal.h \
-	be/bearch.h \
-	be/beirg.h \
+	be/bespill.h \
+	be/bespillslots.h \
+	be/bespillutil.h \
+	be/bessaconstr.h \
+	be/bessadestr.h \
+	be/bestat.h \
+	be/bestate.h \
+	be/bestatevent.h \
+	be/betranshlp.h \
+	be/beuses.h \
+	be/beutil.h \
+	be/beverify.h \
+	be/scripts/generate_emitter.pl \
+	be/scripts/generate_emitter_new.pl \
+	be/scripts/generate_machine.pl \
+	be/scripts/generate_new_opcodes.pl \
+	be/scripts/generate_regalloc_if.pl \
+	common/debug.h \
 	common/error.h \
 	common/irtools.h \
-	common/debug.h \
 	debug/dbginfo_t.h \
 	debug/debugger.h \
 	ident/ident_t.h \
-	ir/irphases_t.h \
-	ir/irnodeset.h \
-	ir/irop_t.h \
-	ir/irmode_t.h \
-	ir/instrument.h \
-	ir/irvrfy_t.h \
-	ir/iredges_t.h \
-	ir/iredgeset.h \
-	ir/irdump_grgen.h \
-	ir/irphase_t.h \
-	ir/ircons_t.h \
-	ir/irdump_t.h \
-	ir/irflag_t.def \
-	ir/irprog_t.h \
-	ir/irprofile.h \
-	ir/irprintf_t.h \
-	ir/irtypes.h \
-	ir/irnode_t.h \
-	ir/irargs_t.h \
-	ir/irlinkednodemap.h \
-	ir/irnodemap.h \
-	ir/irgraph_t.h \
-	ir/iropt_t.h \
-	ir/irphaselist.h \
-	ir/irbitset.h \
-	ir/irlinkednodeset.h \
-	ir/irflag_t.h \
-	ir/gen_irnode.h \
-	ir/valueset.h \
 	ir/gen_ir.h \
-	libcore/lc_defines.h \
-	libcore/lc_common_t.h \
-	libcore/lc_parser_t.h \
-	libcore/do_bisonflex.sh \
-	libcore/lc_opts.h \
-	libcore/lc_appendable.h \
-	libcore/lc_config_parser.h \
-	libcore/lc_printf_arg_types.def \
-	libcore/lc_printf.h \
-	libcore/lc_opts_enum.h \
-	libcore/lc_config.h \
-	libcore/lc_opts_t.h \
-	opt/scalar_replace.h \
-	opt/tropt.h \
-	opt/reassoc_t.h \
-	opt/opt_confirms.h \
-	opt/funccall_t.h \
-	opt/opt_polymorphy.h \
-	opt/opt_inline_t.h \
-	stat/statev.h \
-	stat/stat_dmp.h \
-	stat/pattern_dmp.h \
-	stat/pattern.h \
-	stat/firmstat_t.h \
-	stat/dags.h \
-	stat/stat_timing.h \
-	stat/counter.h \
-	tr/entity_t.h \
-	tr/type_t.h \
-	tr/tpop_t.h \
-	tv/strcalc.h \
-	tv/tv_t.h \
-	tv/fltcalc.h \
+	ir/gen_ir_cons.c.inl \
 	ir/gen_irio_export.inl \
 	ir/gen_irio_import.inl \
 	ir/gen_irio_lex.inl \
-	ir/gen_ir_cons.c.inl \
 	ir/gen_irnode.c.inl \
+	ir/gen_irnode.h \
 	ir/gen_irop.c.inl \
-	be/scripts/generate_emitter_new.pl \
-	be/scripts/generate_emitter.pl \
-	be/scripts/generate_machine.pl \
-	be/scripts/generate_new_opcodes.pl \
-	be/scripts/generate_regalloc_if.pl
+	ir/instrument.h \
+	ir/irargs_t.h \
+	ir/irbitset.h \
+	ir/ircons_t.h \
+	ir/irdump_grgen.h \
+	ir/irdump_t.h \
+	ir/iredges_t.h \
+	ir/iredgeset.h \
+	ir/irflag_t.def \
+	ir/irflag_t.h \
+	ir/irgraph_t.h \
+	ir/irlinkednodemap.h \
+	ir/irlinkednodeset.h \
+	ir/irmode_t.h \
+	ir/irnode_t.h \
+	ir/irnodemap.h \
+	ir/irnodeset.h \
+	ir/irop_t.h \
+	ir/iropt_t.h \
+	ir/irphase_t.h \
+	ir/irphaselist.h \
+	ir/irphases_t.h \
+	ir/irprintf_t.h \
+	ir/irprofile.h \
+	ir/irprog_t.h \
+	ir/irtypes.h \
+	ir/irvrfy_t.h \
+	ir/valueset.h \
+	libcore/do_bisonflex.sh \
+	libcore/lc_appendable.h \
+	libcore/lc_common_t.h \
+	libcore/lc_config.h \
+	libcore/lc_config_parser.h \
+	libcore/lc_defines.h \
+	libcore/lc_opts.h \
+	libcore/lc_opts_enum.h \
+	libcore/lc_opts_t.h \
+	libcore/lc_parser_t.h \
+	libcore/lc_printf.h \
+	libcore/lc_printf_arg_types.def \
+	opt/funccall_t.h \
+	opt/opt_confirms.h \
+	opt/opt_inline_t.h \
+	opt/opt_polymorphy.h \
+	opt/reassoc_t.h \
+	opt/scalar_replace.h \
+	opt/tropt.h \
+	stat/counter.h \
+	stat/dags.h \
+	stat/firmstat_t.h \
+	stat/pattern.h \
+	stat/pattern_dmp.h \
+	stat/stat_dmp.h \
+	stat/stat_timing.h \
+	stat/statev.h \
+	tr/entity_t.h \
+	tr/tpop_t.h \
+	tr/type_t.h \
+	tv/fltcalc.h \
+	tv/strcalc.h \
+	tv/tv_t.h
 
-EXTRA_DIST += libcore/do_bisonflex.sh \
-	libcore/lc_config_parser.y \
-	libcore/lc_config_lexer.l
+EXTRA_DIST += \
+	libcore/do_bisonflex.sh \
+	libcore/lc_config_lexer.l \
+	libcore/lc_config_parser.y
 
 # ia32 backend
 
 ia32_sources = \
 	be/ia32/bearch_ia32.c \
-	be/ia32/ia32_architecture.c \
 	be/ia32/ia32_address_mode.c \
+	be/ia32/ia32_architecture.c \
 	be/ia32/ia32_common_transform.c \
 	be/ia32/ia32_emitter.c \
 	be/ia32/ia32_finish.c \
@@ -423,20 +424,18 @@ ia32_built_sources = \
 	be/ia32/gen_ia32_emitter.h \
 	be/ia32/gen_ia32_machine.c \
 	be/ia32/gen_ia32_machine.h \
-	be/ia32/gen_ia32_regalloc_if.c \
-	be/ia32/gen_ia32_regalloc_if.h \
 	be/ia32/gen_ia32_new_nodes.c.inl \
-	be/ia32/gen_ia32_new_nodes.h
+	be/ia32/gen_ia32_new_nodes.h \
+	be/ia32/gen_ia32_regalloc_if.c \
+	be/ia32/gen_ia32_regalloc_if.h
 MAINTAINERCLEANFILES = $(ia32_built_sources)
 BUILT_SOURCES        = $(ia32_built_sources)
 libfirm_la_SOURCES  += $(ia32_sources) $(ia32_built_sources)
 
 EXTRA_DIST += \
-	be/ia32/ia32_spec.pl \
-	be/ia32/ia32_simd_spec.pl \
 	be/ia32/bearch_ia32_t.h \
-	be/ia32/ia32_architecture.h \
 	be/ia32/ia32_address_mode.h \
+	be/ia32/ia32_architecture.h \
 	be/ia32/ia32_common_transform.h \
 	be/ia32/ia32_dbg_stat.h \
 	be/ia32/ia32_emitter.h \
@@ -446,6 +445,8 @@ EXTRA_DIST += \
 	be/ia32/ia32_new_nodes.h \
 	be/ia32/ia32_nodes_attr.h \
 	be/ia32/ia32_optimize.h \
+	be/ia32/ia32_simd_spec.pl \
+	be/ia32/ia32_spec.pl \
 	be/ia32/ia32_transform.h \
 	be/ia32/ia32_util.h \
 	be/ia32/ia32_x87.h
@@ -469,33 +470,33 @@ $(srcdir)/be/ia32/gen_ia32_regalloc_if.c $(srcdir)/be/ia32/gen_ia32_regalloc_if.
 # arm backend
 
 arm_sources = \
-	be/arm/bearch_arm.c \
 	be/arm/arm_emitter.c \
 	be/arm/arm_map_regs.c \
 	be/arm/arm_new_nodes.c \
 	be/arm/arm_optimize.c \
-	be/arm/arm_transform.c
+	be/arm/arm_transform.c \
+	be/arm/bearch_arm.c
 arm_built_sources = \
 	be/arm/gen_arm_emitter.c \
 	be/arm/gen_arm_emitter.h \
 	be/arm/gen_arm_machine.c \
 	be/arm/gen_arm_machine.h \
-	be/arm/gen_arm_regalloc_if.c \
-	be/arm/gen_arm_regalloc_if.h \
 	be/arm/gen_arm_new_nodes.c.inl \
-	be/arm/gen_arm_new_nodes.h
+	be/arm/gen_arm_new_nodes.h \
+	be/arm/gen_arm_regalloc_if.c \
+	be/arm/gen_arm_regalloc_if.h
 MAINTAINERCLEANFILES += $(arm_built_sources)
 BUILT_SOURCES += $(arm_built_sources)
 libfirm_la_SOURCES += $(arm_sources) $(arm_built_sources)
 
 
 EXTRA_DIST += \
-	be/arm/arm_spec.pl \
 	be/arm/arm_emitter.h \
 	be/arm/arm_map_regs.h \
 	be/arm/arm_new_nodes.h \
 	be/arm/arm_nodes_attr.h \
 	be/arm/arm_optimize.h \
+	be/arm/arm_spec.pl \
 	be/arm/arm_transform.h \
 	be/arm/bearch_arm.h \
 	be/arm/bearch_arm_t.h
@@ -530,16 +531,15 @@ mips_built_sources = \
 	be/mips/gen_mips_emitter.h \
 	be/mips/gen_mips_machine.c \
 	be/mips/gen_mips_machine.h \
-	be/mips/gen_mips_regalloc_if.c \
-	be/mips/gen_mips_regalloc_if.h \
 	be/mips/gen_mips_new_nodes.c.inl \
-	be/mips/gen_mips_new_nodes.h
+	be/mips/gen_mips_new_nodes.h \
+	be/mips/gen_mips_regalloc_if.c \
+	be/mips/gen_mips_regalloc_if.h
 MAINTAINERCLEANFILES += $(mips_built_sources)
 BUILT_SOURCES += $(mips_built_sources)
 libfirm_la_SOURCES += $(mips_sources) $(mips_built_sources)
 
 EXTRA_DIST += \
-	be/mips/mips_spec.pl \
 	be/mips/bearch_mips.h \
 	be/mips/bearch_mips_t.h \
 	be/mips/mips_emitter.h \
@@ -547,6 +547,7 @@ EXTRA_DIST += \
 	be/mips/mips_new_nodes.h \
 	be/mips/mips_nodes_attr.h \
 	be/mips/mips_scheduler.h \
+	be/mips/mips_spec.pl \
 	be/mips/mips_transform.h \
 	be/mips/mips_util.h
 
@@ -580,24 +581,24 @@ ppc32_built_sources = \
 	be/ppc32/gen_ppc32_emitter.h \
 	be/ppc32/gen_ppc32_machine.c \
 	be/ppc32/gen_ppc32_machine.h \
-	be/ppc32/gen_ppc32_regalloc_if.c \
-	be/ppc32/gen_ppc32_regalloc_if.h \
 	be/ppc32/gen_ppc32_new_nodes.c.inl \
-	be/ppc32/gen_ppc32_new_nodes.h
+	be/ppc32/gen_ppc32_new_nodes.h \
+	be/ppc32/gen_ppc32_regalloc_if.c \
+	be/ppc32/gen_ppc32_regalloc_if.h
 MAINTAINERCLEANFILES += $(ppc32_built_sources)
 BUILT_SOURCES += $(ppc32_built_sources)
 libfirm_la_SOURCES += $(ppc32_sources) $(ppc32_built_sources)
 
 EXTRA_DIST += \
-	be/ppc32/ppc32_spec.pl \
 	be/ppc32/bearch_ppc32.h \
 	be/ppc32/bearch_ppc32_t.h \
 	be/ppc32/ppc32_emitter.h \
 	be/ppc32/ppc32_map_regs.h \
 	be/ppc32/ppc32_new_nodes.h \
 	be/ppc32/ppc32_nodes_attr.h \
-	be/ppc32/ppc32_transform_conv.h \
-	be/ppc32/ppc32_transform.h
+	be/ppc32/ppc32_spec.pl \
+	be/ppc32/ppc32_transform.h \
+	be/ppc32/ppc32_transform_conv.h
 
 $(srcdir)/be/ppc32/gen_ppc32_new_nodes.c.inl $(srcdir)/be/ppc32/gen_ppc32_new_nodes.h: \
 		be/ppc32/ppc32_spec.pl be/scripts/generate_new_opcodes.pl
@@ -618,33 +619,33 @@ $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.c $(srcdir)/be/ppc32/gen_ppc32_regalloc
 # TEMPLATE backend
 
 TEMPLATE_sources = \
-	be/TEMPLATE/bearch_TEMPLATE.c \
 	be/TEMPLATE/TEMPLATE_emitter.c \
 	be/TEMPLATE/TEMPLATE_map_regs.c \
 	be/TEMPLATE/TEMPLATE_new_nodes.c \
 	be/TEMPLATE/TEMPLATE_transform.c
+	be/TEMPLATE/bearch_TEMPLATE.c \
 TEMPLATE_built_sources = \
 	be/TEMPLATE/gen_TEMPLATE_emitter.c \
 	be/TEMPLATE/gen_TEMPLATE_emitter.h \
 	be/TEMPLATE/gen_TEMPLATE_machine.c \
 	be/TEMPLATE/gen_TEMPLATE_machine.h \
-	be/TEMPLATE/gen_TEMPLATE_regalloc_if.c \
-	be/TEMPLATE/gen_TEMPLATE_regalloc_if.h \
 	be/TEMPLATE/gen_TEMPLATE_new_nodes.c.inl \
-	be/TEMPLATE/gen_TEMPLATE_new_nodes.h
+	be/TEMPLATE/gen_TEMPLATE_new_nodes.h \
+	be/TEMPLATE/gen_TEMPLATE_regalloc_if.c \
+	be/TEMPLATE/gen_TEMPLATE_regalloc_if.h
 MAINTAINERCLEANFILES += $(TEMPLATE_built_sources)
 BUILT_SOURCES += $(TEMPLATE_built_sources)
 libfirm_la_SOURCES += $(TEMPLATE_sources) $(TEMPLATE_built_sources)
 
 EXTRA_DIST += \
-	be/TEMPLATE/TEMPLATE_spec.pl \
-	be/TEMPLATE/bearch_TEMPLATE.h \
-	be/TEMPLATE/bearch_TEMPLATE_t.h \
 	be/TEMPLATE/TEMPLATE_emitter.h \
 	be/TEMPLATE/TEMPLATE_map_regs.h \
 	be/TEMPLATE/TEMPLATE_new_nodes.h \
 	be/TEMPLATE/TEMPLATE_nodes_attr.h \
-	be/TEMPLATE/TEMPLATE_transform.h
+	be/TEMPLATE/TEMPLATE_spec.pl \
+	be/TEMPLATE/TEMPLATE_transform.h \
+	be/TEMPLATE/bearch_TEMPLATE.h \
+	be/TEMPLATE/bearch_TEMPLATE_t.h
 
 $(srcdir)/be/TEMPLATE/gen_TEMPLATE_new_nodes.c.inl $(srcdir)/be/TEMPLATE/gen_TEMPLATE_new_nodes.h: \
 		be/TEMPLATE/TEMPLATE_spec.pl be/scripts/generate_new_opcodes.pl

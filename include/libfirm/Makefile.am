@@ -11,18 +11,18 @@ libfirminclude_HEADERS = \
 	execfreq.h \
 	execution_frequency.h \
 	field_temperature.h \
-	firm_common.h \
 	firm.h \
-	firmstat.h \
+	firm_common.h \
 	firm_types.h \
+	firmstat.h \
 	height.h \
 	ident.h \
 	interval_analysis.h \
 	irarch.h \
 	ircgcons.h \
 	ircgopt.h \
-	irconsconfirm.h \
 	ircons.h \
+	irconsconfirm.h \
 	irdom.h \
 	irdump.h \
 	iredgekinds.h \
@@ -41,8 +41,8 @@ libfirminclude_HEADERS = \
 	irmode.h \
 	irnode.h \
 	irop.h \
-	iropt_dbg.h \
 	iropt.h \
+	iropt_dbg.h \
 	iroptimize.h \
 	irouts.h \
 	irpass.h \
@@ -79,8 +79,8 @@ libfirminclude_adt_HEADERS = \
 	adt/impl.h \
 	adt/iterator.h \
 	adt/list.h \
-	adt/obstack.h \
 	adt/obst.h \
+	adt/obstack.h \
 	adt/offset.h \
 	adt/pdeq.h \
 	adt/plist.h \
