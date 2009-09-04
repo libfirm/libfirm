@@ -182,7 +182,9 @@ int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	//solve_pbqp_brute_force(pbqp_problem);
 	num solution = get_solution(pbqp_problem);
 
-	printf("Solution (%s): %d\n",co->name, (int)solution);
+	assert(solution != INF_COSTS && "No PBQP solution found");
+
+	// printf("Solution (%s): %d\n",co->name, (int)solution);
 
 	// coloring ifg
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
