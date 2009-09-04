@@ -177,11 +177,14 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 	return x;
 }
 
+/*
+ * Determine probability that predecessor pos takes this cf edge.
+ */
 static double
 get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
 	double           sum = 0.0;
-	double           cur = 0.0;
+	double           cur = 1.0;
 	double           inv_loop_weight = 1./loop_weight;
 	const ir_node   *pred = get_Block_cfgpred_block(bb, pos);
 	const ir_loop   *pred_loop;
@@ -199,7 +202,6 @@ get_cf_probability(ir_node *bb, int pos, double loop_weight)
 	pred_loop  = get_irn_loop(pred);
 	pred_depth = get_loop_depth(pred_loop);
 
-	cur = 1.0;
 	for (d = depth; d < pred_depth; ++d) {
 		cur *= inv_loop_weight;
 	}
@@ -299,19 +301,21 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		freq = set_insert_freq(freqs, bb);
 		freq->idx = idx;
 
+		/* Sum of (execution frequency of predecessor * probability of cf edge) ... */
 		for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
 			ir_node *pred = get_Block_cfgpred_block(bb, i);
 			int pred_idx  = size - dfs_get_post_num(dfs, pred) - 1;
 
 			gs_matrix_set(mat, idx, pred_idx, get_cf_probability(bb, i, loop_weight));
 		}
+		/* ... equals my execution frequency */
 		gs_matrix_set(mat, idx, idx, -1.0);
 	}
 
 	dfs_free(dfs);
 
 	/*
-	 * Add a loop from end to start.
+	 * Add an edge from end to start.
 	 * The problem is then an eigenvalue problem:
 	 * Solve A*x = 1*x => (A-I)x = 0
 	 */
