@@ -58,6 +58,7 @@ enum {
 	CO_ALGO_HEUR3,
 	CO_ALGO_HEUR4,
 	CO_ALGO_ILP,
+	CO_ALGO_PBQP,
 	CO_ALGO_LAST
 };
 
@@ -245,6 +246,8 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit);
  * Dependency of the OU structure can be removed
  */
 int co_solve_ilp2(copy_opt_t *co);
+
+int co_solve_heuristic_pbqp(copy_opt_t *co);
 
 /**
  * Checks if a node is optimizable, viz has something to do with coalescing.

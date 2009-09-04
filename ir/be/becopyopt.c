@@ -104,6 +104,7 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 	{ "heur3",  CO_ALGO_HEUR3 },
 	{ "heur4",  CO_ALGO_HEUR4 },
 	{ "ilp",    CO_ALGO_ILP   },
+	{ "pbqp",   CO_ALGO_PBQP  },
 	{ NULL,     0 }
 };
 
@@ -1118,6 +1119,7 @@ static co_algo_info_t algos[] = {
 #else
 	{ NULL,                    "ilp",   1 },
 #endif
+	{ co_solve_heuristic_pbqp, "pbqp",  0 },
 	{ NULL,                    "",      0 }
 };
 
