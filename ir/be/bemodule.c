@@ -39,7 +39,7 @@ void be_init_listsched(void);
 void be_init_schedrss(void);
 void be_init_chordal(void);
 void be_init_chordal_main(void);
-void be_init_copycoal(void);
+void be_init_copyopt(void);
 void be_init_copyheur2(void);
 void be_init_copyheur4(void);
 void be_init_copyheur5(void);
@@ -98,7 +98,7 @@ void be_init_modules(void)
 	be_init_schedrss();
 	be_init_chordal_main();
 	be_init_chordal();
-	be_init_copycoal();
+	be_init_copyopt();
 	be_init_copyheur2();
 	be_init_copyheur4();
 //	be_init_copyheur5();

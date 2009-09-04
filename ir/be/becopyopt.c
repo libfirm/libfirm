@@ -101,10 +101,11 @@ static const lc_opt_enum_mask_items_t algo_items[] = {
 	{ "none",   CO_ALGO_NONE  },
 	{ "heur",   CO_ALGO_HEUR  },
 	{ "heur2",  CO_ALGO_HEUR2 },
-	{ "heur3",  CO_ALGO_HEUR3 },
 	{ "heur4",  CO_ALGO_HEUR4 },
 	{ "ilp",    CO_ALGO_ILP   },
+#ifdef FIRM_KAPS
 	{ "pbqp",   CO_ALGO_PBQP  },
+#endif
 	{ NULL,     0 }
 };
 
@@ -139,16 +140,11 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_ENUM_MASK     ("dump",    "dump ifg before or after copy optimization",              &dump_var),
 	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
 	LC_OPT_ENT_BOOL          ("stats",   "dump statistics after each optimization",                 &do_stats),
-	LC_OPT_ENT_BOOL          ("improve", "run heur3 before if algo can exploit start solutions",    &improve),
+	LC_OPT_ENT_BOOL          ("improve", "run heur1 before if algo can exploit start solutions",    &improve),
 	LC_OPT_LAST
 };
 
-/* Insert additional options registration functions here. */
-extern void be_co_ilp_register_options(lc_opt_entry_t *grp);
-extern void be_co2_register_options(lc_opt_entry_t *grp);
-extern void be_co3_register_options(lc_opt_entry_t *grp);
-
-void be_init_copycoal(void)
+void be_init_copyopt(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
@@ -1104,15 +1100,10 @@ typedef struct {
 	int        can_improve_existing;
 } co_algo_info_t;
 
-static co_algo_info_t algos[] = {
+static const co_algo_info_t algos[] = {
 	{ void_algo,               "none",  0 },
 	{ co_solve_heuristic,      "heur1", 0 },
 	{ co_solve_heuristic_new,  "heur2", 0 },
-#ifdef WITH_JVM
-	{ co_solve_heuristic_java, "heur3", 0 },
-#else
-	{ NULL,                    "heur3", 0 },
-#endif
 	{ co_solve_heuristic_mst,  "heur4", 0 },
 #ifdef WITH_ILP
 	{ co_solve_ilp2,           "ilp",   1 },
@@ -1193,27 +1184,17 @@ void co_driver(be_chordal_env_t *cenv)
 		fclose(f);
 	}
 
-	/* if the algo can improve results, provide an initial solution with heur3 */
+	/* if the algo can improve results, provide an initial solution with heur1 */
 	if (improve && algos[algo].can_improve_existing) {
 		co_complete_stats_t stats;
 
 		/* produce a heuristic solution */
-#ifdef WITH_JVM
-		co_solve_heuristic_java(co);
-#else
 		co_solve_heuristic(co);
-#endif /* WITH_JVM */
 
 		/* do the stats and provide the current costs */
 		co_complete_stats(co, &stats);
 		be_stat_ev_ull("co_prepare_costs", stats.costs);
 	}
-
-#ifdef WITH_JVM
-	/* start the JVM here so that it does not tamper the timing. */
-	if (algo == CO_ALGO_HEUR3)
-		be_java_coal_start_jvm();
-#endif /* WITH_JVM */
 
 	algo_func = algos[algo].algo;
 
