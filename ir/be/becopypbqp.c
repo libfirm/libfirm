@@ -4,6 +4,8 @@
  *  Created on: Aug 28, 2009
  *      Author: bersch
  */
+#include "config.h"
+
 #ifdef FIRM_KAPS
 
 #include "kaps.h"
