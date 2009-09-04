@@ -4,6 +4,7 @@
  *  Created on: Aug 28, 2009
  *      Author: bersch
  */
+#ifdef FIRM_KAPS
 
 #include "kaps.h"
 #include "pbqp_t.h"
@@ -213,3 +214,5 @@ int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	return 0;
 }
+
+#endif

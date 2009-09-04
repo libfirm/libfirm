@@ -1119,7 +1119,9 @@ static co_algo_info_t algos[] = {
 #else
 	{ NULL,                    "ilp",   1 },
 #endif
+#ifdef FIRM_KAPS
 	{ co_solve_heuristic_pbqp, "pbqp",  0 },
+#endif
 	{ NULL,                    "",      0 }
 };
 
