@@ -151,6 +151,13 @@ unsigned get_num_reachable_nodes(ir_graph *irg);
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
 
 /**
+ * Returns an array (an ARR_F) of the programs blocks in reverse postorder
+ * (note: caller has to free the memory with DEL_ARR_F after use;
+ *  of course you can use ARR_LEN on the array too.)
+ */
+ir_node **be_get_cfgpostorder(ir_graph *irg);
+
+/**
  * Opens a file named base.ext with the mode mode.
  */
 FILE *be_ffopen(const char *base, const char *ext, const char *mode);

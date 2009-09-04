@@ -59,7 +59,6 @@ void be_init_ra(void);
 void be_init_spillbelady(void);
 void be_init_spillbelady2(void);
 void be_init_spillbelady3(void);
-//void be_init_spilllinearscan(void);
 void be_init_ssaconstr(void);
 void be_init_stabs(void);
 void be_init_straight_alloc(void);

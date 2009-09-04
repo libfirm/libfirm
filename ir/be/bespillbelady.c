@@ -944,12 +944,6 @@ static void fix_block_borders(ir_node *block, void *data)
 	}
 }
 
-static void add_block(ir_node *block, void *data)
-{
-	(void) data;
-	ARR_APP1(ir_node*, blocklist, block);
-}
-
 static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 {
 	int i;
@@ -980,8 +974,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	uses      = be_begin_uses(irg, lv);
 	loop_ana  = be_new_loop_pressure(birg, cls);
 	senv      = be_new_spill_env(birg);
-	blocklist = NEW_ARR_F(ir_node*, 0);
-	irg_block_edges_walk(get_irg_start_block(irg), NULL, add_block, NULL);
+	blocklist = be_get_cfgpostorder(irg);
 	stat_ev_tim_pop("belady_time_init");
 
 	stat_ev_tim_push();

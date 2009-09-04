@@ -163,3 +163,25 @@ FILE *be_ffopen(const char *base, const char *ext, const char *mode) {
 	}
 	return out;
 }
+
+static void add_to_postorder(ir_node *block, void *data)
+{
+	ir_node ***list = (ir_node***) data;
+	ARR_APP1(ir_node*, *list, block);
+}
+
+ir_node **be_get_cfgpostorder(ir_graph *irg)
+{
+	ir_node **list      = NEW_ARR_F(ir_node*, 0);
+	ir_node  *end_block = get_irg_end_block(irg);
+
+	/* end block may be unreachable in case of endless loops */
+	if (get_Block_n_cfgpreds(end_block) == 0)
+		ARR_APP1(ir_node*, list, end_block);
+
+	/* walk blocks */
+	irg_block_edges_walk(get_irg_start_block(irg), NULL, add_to_postorder,
+	                     &list);
+
+	return list;
+}

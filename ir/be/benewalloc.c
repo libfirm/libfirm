@@ -58,9 +58,12 @@
 #include "irgraph_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irprintf.h"
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"
+#include "pdeq.h"
+#include "hungarian.h"
 
 #include "beabi.h"
 #include "bechordal_t.h"
@@ -74,8 +77,7 @@
 #include "bespill.h"
 #include "bespillutil.h"
 #include "beverify.h"
-
-#include "hungarian.h"
+#include "beutil.h"
 
 #define USE_FACTOR         1.0f
 #define DEF_FACTOR         1.0f
@@ -96,6 +98,8 @@ static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
 static unsigned                    *normal_regs;
 static int                         *congruence_classes;
+static ir_node                    **block_order;
+static int                          n_block_order;
 
 /** currently active assignments (while processing a basic block)
  * maps registers to values(their current copies) */
@@ -1540,11 +1544,129 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	}
 }
 
+typedef struct block_costs_t block_costs_t;
+struct block_costs_t {
+	float costs;   /**< costs of the block */
+	int   dfs_num; /**< depth first search number (to detect backedges) */
+};
+
+static int cmp_block_costs(const void *d1, const void *d2)
+{
+	const ir_node       * const *block1 = d1;
+	const ir_node       * const *block2 = d2;
+	const block_costs_t *info1  = get_irn_link(*block1);
+	const block_costs_t *info2  = get_irn_link(*block2);
+	return QSORT_CMP(info2->costs, info1->costs);
+}
+
+static void determine_block_order(void)
+{
+	int i;
+	ir_node **blocklist = be_get_cfgpostorder(irg);
+	int       n_blocks  = ARR_LEN(blocklist);
+	int       dfs_num   = 0;
+
+	/* clear block links... */
+	for (i = 0; i < n_blocks; ++i) {
+		ir_node *block = blocklist[i];
+		set_irn_link(block, NULL);
+	}
+
+	/* walk blocks in reverse postorder, the costs for each block are the
+	 * sum of the costs of its predecessors (excluding the costs on backedges
+	 * which we can't determine) */
+	for (i = n_blocks-1; i >= 0; --i) {
+		block_costs_t *cost_info;
+		ir_node *block = blocklist[i];
+
+		float execfreq   = get_block_execfreq(execfreqs, block);
+		float costs      = execfreq;
+		int   n_cfgpreds = get_Block_n_cfgpreds(block);
+		int   p;
+		for (p = 0; p < n_cfgpreds; ++p) {
+			ir_node       *pred_block = get_Block_cfgpred_block(block, p);
+			block_costs_t *pred_costs = get_irn_link(pred_block);
+			/* we don't have any info for backedges */
+			if (pred_costs == NULL)
+				continue;
+			costs += pred_costs->costs;
+		}
+
+		cost_info          = OALLOCZ(&obst, block_costs_t);
+		cost_info->costs   = costs;
+		cost_info->dfs_num = dfs_num++;
+		set_irn_link(block, cost_info);
+	}
+
+	/* sort array by block costs */
+	qsort(blocklist, n_blocks, sizeof(blocklist[0]), cmp_block_costs);
+
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+	inc_irg_block_visited(irg);
+
+	pdeq     *worklist = new_pdeq();
+	ir_node **order    = XMALLOCN(ir_node*, n_blocks);
+	int       order_p  = 0;
+	for (i = 0; i < n_blocks; ++i) {
+		ir_node       *block = blocklist[i];
+		if (Block_block_visited(block))
+			continue;
+
+		/* continually add predecessors with highest costs to worklist
+		 * (without using backedges) */
+		do {
+			block_costs_t *info       = get_irn_link(block);
+			ir_node       *best_pred  = NULL;
+			float          best_costs = -1;
+			int            n_cfgpred  = get_Block_n_cfgpreds(block);
+			int            i;
+
+			pdeq_putr(worklist, block);
+			mark_Block_block_visited(block);
+			for (i = 0; i < n_cfgpred; ++i) {
+				ir_node       *pred_block = get_Block_cfgpred_block(block, i);
+				block_costs_t *pred_info  = get_irn_link(pred_block);
+
+				/* ignore backedges */
+				if (pred_info->dfs_num > info->dfs_num)
+					continue;
+
+				if (info->costs > best_costs) {
+					best_costs = info->costs;
+					best_pred  = pred_block;
+				}
+			}
+			block = best_pred;
+		} while(block != NULL && !Block_block_visited(block));
+
+		/* now put all nodes in the worklist in our final order */
+		while (!pdeq_empty(worklist)) {
+			ir_node *pblock = pdeq_getr(worklist);
+			assert(order_p < n_blocks);
+			order[order_p++] = pblock;
+		}
+	}
+	assert(order_p == n_blocks);
+	del_pdeq(worklist);
+
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
+
+	DEL_ARR_F(blocklist);
+
+	obstack_free(&obst, NULL);
+	obstack_init(&obst);
+
+	block_order   = order;
+	n_block_order = n_blocks;
+}
+
 /**
  * Run the register allocator for the current register class.
  */
 static void be_straight_alloc_cls(void)
 {
+	int i;
+
 	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
@@ -1556,9 +1678,11 @@ static void be_straight_alloc_cls(void)
 	be_clear_links(irg);
 	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
 	combine_congruence_classes();
-	/* we need some dominance pre-order walk to ensure we see all
-	 *  definitions/create copies before we encounter their users */
-	dom_tree_walk_irg(irg, allocate_coalesce_block, NULL, NULL);
+
+	for (i = 0; i < n_block_order; ++i) {
+		ir_node *block = block_order[i];
+		allocate_coalesce_block(block, NULL);
+	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
@@ -1609,8 +1733,8 @@ static void be_straight_alloc(be_irg_t *new_birg)
 	irg       = be_get_birg_irg(birg);
 	execfreqs = birg->exec_freq;
 
-	/* TODO: extract some of the stuff from bechordal allocator, like
-	 * statistics, time measurements, etc. and use them here too */
+	/* determine a good coloring order */
+	determine_block_order();
 
 	for (c = 0; c < n_cls; ++c) {
 		cls             = arch_env_get_reg_class(arch_env, c);
