@@ -92,6 +92,6 @@ int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, in
  * @param p          The hungarian object
  * @param cost_width The minimum field width of the costs
  */
-void hungarian_print_costmatrix(hungarian_problem_t *p, int cost_width);
+void hungarian_print_cost_matrix(hungarian_problem_t *p, int cost_width);
 
 #endif /* _HUNGARIAN_H_ */

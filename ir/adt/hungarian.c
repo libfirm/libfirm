@@ -71,7 +71,7 @@ static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width) {
 	fprintf(f, "\n");
 }
 
-void hungarian_print_costmatrix(hungarian_problem_t *p, int width) {
+void hungarian_print_cost_matrix(hungarian_problem_t *p, int width) {
 	hungarian_dump_f(stderr, p->cost, p->num_rows, p->num_cols, width);
 }
 
@@ -441,7 +441,8 @@ done:
 	xfree(unchosen_row);
 	xfree(col_mate);
 
-	*final_cost = cost;
+	if (final_cost != NULL)
+		*final_cost = cost;
 
 	return 0;
 }
