@@ -49,6 +49,7 @@
 
 #include <float.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include "error.h"
 #include "execfreq.h"
@@ -113,7 +114,6 @@ struct allocation_info_t {
 	unsigned  last_uses;      /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
-	unsigned char should_be_same[2];
 	float     prefs[0];       /**< register preferences */
 };
 typedef struct allocation_info_t allocation_info_t;
@@ -397,46 +397,143 @@ static void analyze_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-static void create_congurence_class(ir_node *node, void *data)
+static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	(void) data;
-	if (is_Phi(node)) {
-		int      i;
-		int      arity   = get_irn_arity(node);
-		unsigned phi_idx = get_irn_idx(node);
-		phi_idx     = uf_find(congruence_classes, phi_idx);
-		for (i = 0; i < arity; ++i) {
-			ir_node *op     = get_Phi_pred(node, i);
-			int      op_idx = get_irn_idx(op);
-			op_idx  = uf_find(congruence_classes, op_idx);
-			phi_idx = uf_union(congruence_classes, phi_idx, op_idx);
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+		foreach_out_edge(node, edge) {
+			ir_node *def = get_edge_src_irn(edge);
+			congruence_def(live_nodes, def);
 		}
 		return;
 	}
-	/* should be same constraint? */
-	if (is_Proj(node)) {
-		const arch_register_req_t *req = arch_get_register_req_out(node);
-		if (req->type & arch_register_req_type_should_be_same) {
-			ir_node *pred  = get_Proj_pred(node);
-			int      arity = get_irn_arity(pred);
-			int      i;
-			unsigned node_idx = get_irn_idx(node);
-			node_idx          = uf_find(congruence_classes, node_idx);
 
-			for (i = 0; i < arity; ++i) {
-				ir_node *op;
-				unsigned op_idx;
-
-				if (!rbitset_is_set(&req->other_same, i))
-					continue;
-
-				op     = get_irn_n(pred, i);
-				op_idx = get_irn_idx(op);
-				op_idx = uf_find(congruence_classes, op_idx);
-				node_idx = uf_union(congruence_classes, node_idx, op_idx);
-			}
-		}
+	if (!arch_irn_consider_in_reg_alloc(cls, node))
 		return;
+
+	/* should be same constraint? */
+	const arch_register_req_t *req = arch_get_register_req_out(node);
+	if (req->type & arch_register_req_type_should_be_same) {
+		ir_node *insn  = skip_Proj(node);
+		int      arity = get_irn_arity(insn);
+		int      i;
+		unsigned node_idx = get_irn_idx(node);
+		node_idx          = uf_find(congruence_classes, node_idx);
+
+		for (i = 0; i < arity; ++i) {
+			ir_node               *live;
+			ir_node               *op;
+			int                    op_idx;
+			ir_nodeset_iterator_t  iter;
+
+			if (!rbitset_is_set(&req->other_same, i))
+				continue;
+
+			op     = get_irn_n(insn, i);
+			op_idx = get_irn_idx(op);
+			op_idx = uf_find(congruence_classes, op_idx);
+
+			/* do we interfere with the value */
+			bool interferes = false;
+			foreach_ir_nodeset(live_nodes, live, iter) {
+				int lv_idx = get_irn_idx(live);
+				lv_idx     = uf_find(congruence_classes, lv_idx);
+				if (lv_idx == op_idx) {
+					interferes = true;
+					break;
+				}
+			}
+			/* don't put in same affinity class if we interfere */
+			if (interferes)
+				continue;
+
+			node_idx = uf_union(congruence_classes, node_idx, op_idx);
+			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
+			    node, op));
+			/* one should_be_same is enough... */
+			break;
+		}
+	}
+}
+
+static void create_congurence_class(ir_node *block, void *data)
+{
+	ir_nodeset_t  live_nodes;
+	ir_node      *node;
+
+	(void) data;
+	ir_nodeset_init(&live_nodes);
+	be_liveness_end_of_block(lv, cls, block, &live_nodes);
+
+	/* check should be same constraints */
+	sched_foreach_reverse(block, node) {
+		if (is_Phi(node))
+			break;
+
+		congruence_def(&live_nodes, node);
+		be_liveness_transfer(cls, node, &live_nodes);
+	}
+
+	/* check phi congruence classes */
+	sched_foreach_reverse_from(node, node) {
+		int i;
+		int arity;
+		int node_idx;
+		assert(is_Phi(node));
+
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+
+		node_idx = get_irn_idx(node);
+		node_idx = uf_find(congruence_classes, node_idx);
+
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_nodeset_iterator_t  iter;
+			ir_node *live;
+			ir_node *phi;
+			ir_node *op     = get_Phi_pred(node, i);
+			int      op_idx = get_irn_idx(op);
+			op_idx = uf_find(congruence_classes, op_idx);
+
+			/* do we interfere with the value */
+			bool interferes = false;
+			foreach_ir_nodeset(&live_nodes, live, iter) {
+				int lv_idx = get_irn_idx(live);
+				lv_idx     = uf_find(congruence_classes, lv_idx);
+				if (lv_idx == op_idx) {
+					interferes = true;
+					break;
+				}
+			}
+			/* don't put in same affinity class if we interfere */
+			if (interferes)
+				continue;
+			/* any other phi has the same input? */
+			sched_foreach(block, phi) {
+				ir_node *oop;
+				int      oop_idx;
+				if (!is_Phi(phi))
+					break;
+				if (!arch_irn_consider_in_reg_alloc(cls, phi))
+					continue;
+				oop = get_Phi_pred(phi, i);
+				if (oop == op)
+					continue;
+				oop_idx = get_irn_idx(oop);
+				oop_idx = uf_find(congruence_classes, oop_idx);
+				if (oop_idx == op_idx) {
+					interferes = true;
+					break;
+				}
+			}
+			if (interferes)
+				continue;
+
+			node_idx = uf_union(congruence_classes, node_idx, op_idx);
+			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
+			    node, op));
+		}
 	}
 }
 
@@ -494,7 +591,7 @@ static void combine_congruence_classes(void)
 	uf_init(congruence_classes, n);
 
 	/* create congruence classes */
-	irg_walk_graph(irg, create_congurence_class, NULL, NULL);
+	irg_block_walk_graph(irg, create_congurence_class, NULL, NULL);
 	/* merge preferences */
 	irg_walk_graph(irg, merge_congruence_prefs, NULL, NULL);
 	irg_walk_graph(irg, set_congruence_prefs, NULL, NULL);
@@ -997,7 +1094,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
                                 unsigned *output_regs)
 {
 	int arity = get_irn_arity(node);
-	int i, dummy, res;
+	int i, res;
 	hungarian_problem_t *bp;
 	unsigned l, r;
 	unsigned *assignment;
@@ -1130,11 +1227,11 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		}
 	}
 
-	//hungarian_print_costmatrix(bp, 1);
+	//hungarian_print_cost_matrix(bp, 1);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	assignment = ALLOCAN(unsigned, n_regs);
-	res = hungarian_solve(bp, (int*) assignment, &dummy, 0);
+	res = hungarian_solve(bp, (int*) assignment, NULL, 0);
 	assert(res == 0);
 
 #if 0
@@ -1331,6 +1428,91 @@ static void propagate_phi_register(ir_node *phi, unsigned r)
 	}
 }
 
+static void assign_phi_registers(ir_node *block)
+{
+	int                  n_phis = 0;
+	int                  n;
+	int                  res;
+	int                 *assignment;
+	ir_node             *node;
+	hungarian_problem_t *bp;
+
+	/* count phi nodes */
+	sched_foreach(block, node) {
+		if (!is_Phi(node))
+			break;
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+		++n_phis;
+	}
+
+	if (n_phis == 0)
+		return;
+
+	/* build a bipartite matching problem for all phi nodes */
+	bp = hungarian_new(n_phis, n_regs, HUNGARIAN_MATCH_PERFECT);
+	n  = 0;
+	sched_foreach(block, node) {
+		unsigned r;
+
+		allocation_info_t *info;
+		if (!is_Phi(node))
+			break;
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+
+		/* give boni for predecessor colorings */
+		adapt_phi_prefs(node);
+		/* add stuff to bipartite problem */
+		info = get_allocation_info(node);
+		DB((dbg, LEVEL_3, "Prefs for %+F: ", node));
+		for (r = 0; r < n_regs; ++r) {
+			float costs;
+
+			if (!rbitset_is_set(normal_regs, r))
+				continue;
+
+			costs = info->prefs[r];
+			costs = costs < 0 ? -logf(-costs+1) : logf(costs+1);
+			costs *= 100;
+			costs += 10000;
+			hungarian_add(bp, n, r, costs);
+			DB((dbg, LEVEL_3, " %s(%f)", arch_register_for_index(cls, r)->name,
+						info->prefs[r]));
+		}
+		DB((dbg, LEVEL_3, "\n"));
+		++n;
+	}
+
+	//hungarian_print_cost_matrix(bp, 7);
+	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
+
+	assignment = ALLOCAN(int, n_regs);
+	res        = hungarian_solve(bp, assignment, NULL, 0);
+	assert(res == 0);
+
+	/* apply results */
+	n = 0;
+	sched_foreach(block, node) {
+		unsigned               r;
+		const arch_register_t *reg;
+
+		if (!is_Phi(node))
+			break;
+		if (!arch_irn_consider_in_reg_alloc(cls, node))
+			continue;
+
+		r   = assignment[n++];
+		assert(rbitset_is_set(normal_regs, r));
+		reg = arch_register_for_index(cls, r);
+		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
+		use_reg(node, reg);
+
+		/* adapt preferences for phi inputs */
+		propagate_phi_register(node, r);
+	}
+}
+
 /**
  * Walker: assign registers to all nodes of a block that
  * need registers from the currently considered register class.
@@ -1340,7 +1522,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	int                    i;
 	ir_nodeset_t           live_nodes;
 	ir_nodeset_iterator_t  iter;
-	ir_node               *node, *start;
+	ir_node               *node;
 	int                    n_preds;
 	block_info_t          *block_info;
 	block_info_t         **pred_block_infos;
@@ -1449,26 +1631,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	rbitset_alloca(output_regs, n_regs);
 
 	/* handle phis... */
-	node = sched_first(block);
-	for ( ; is_Phi(node); node = sched_next(node)) {
-		const arch_register_t *reg;
-
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
-			continue;
-
-		/* fill in regs already assigned */
-		reg = arch_get_irn_register(node);
-		if (reg != NULL) {
-			use_reg(node, reg);
-		} else {
-			adapt_phi_prefs(node);
-			assign_reg(block, node, output_regs);
-
-			reg = arch_get_irn_register(node);
-			propagate_phi_register(node, arch_register_get_index(reg));
-		}
-	}
-	start = node;
+	assign_phi_registers(block);
 
 	/* assign regs for live-in values */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
@@ -1482,8 +1645,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	}
 
 	/* assign instructions in the block */
-	for (node = start; !sched_is_end(node); node = sched_next(node)) {
+	sched_foreach(block, node) {
 		unsigned r;
+
+		/* phis are already assigned */
+		if (is_Phi(node))
+			continue;
 
 		rewire_inputs(node);
 

@@ -179,7 +179,8 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 	}
 }
 
-int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg)
+int arch_reg_is_allocatable(const ir_node *irn, int pos,
+                            const arch_register_t *reg)
 {
 	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
@@ -187,7 +188,8 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
 		return 0;
 
 	if(arch_register_req_is(req, limited)) {
-		assert(arch_register_get_class(reg) == req->cls);
+		if (arch_register_get_class(reg) != req->cls)
+			return 0;
 		return rbitset_is_set(req->limited, arch_register_get_index(reg));
 	}
 
