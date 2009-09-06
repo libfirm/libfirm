@@ -63,12 +63,27 @@ enum {
 	CO_ALGO_LAST
 };
 
-/** The driver for copy minimization. */
-void co_driver(be_chordal_env_t *cenv);
-
 typedef struct _copy_opt_t copy_opt_t;
 
 typedef int(*cost_fct_t)(const copy_opt_t *, ir_node *, ir_node *, int);
+
+typedef struct {
+	int (*copyopt)(copy_opt_t *co); /**< function ptr to run copyopt */
+	int        can_improve_existing;
+} co_algo_info;
+
+
+/**
+ * Register a new copy optimazation algorithm.
+ *
+ * @param name     the name of the copy optimazation algorithm,
+ *                 used to select it
+ * @param spiller  a copy optimazation entry
+ */
+void be_register_copyopt(const char *name, co_algo_info *copyopt);
+
+/** The driver for copy minimization. */
+void co_driver(be_chordal_env_t *cenv);
 
 /** A coalescing algorithm. */
 typedef int (co_algo_t)(copy_opt_t *);
@@ -158,11 +173,6 @@ void co_solve_park_moon(copy_opt_t *co);
 int co_solve_heuristic_new(copy_opt_t *co);
 
 /**
- * This is the pure C implementation of co_solve_heuristic_java().
- */
-int co_solve_heuristic_mst(copy_opt_t *co);
-
-/**
  * Returns the maximal costs possible, i.e. the costs if all
  * pairs would be assigned different registers.
  * Uses the OU data structure
@@ -240,8 +250,6 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit);
  * Dependency of the OU structure can be removed
  */
 int co_solve_ilp2(copy_opt_t *co);
-
-int co_solve_heuristic_pbqp(copy_opt_t *co);
 
 /**
  * Checks if a node is optimizable, viz has something to do with coalescing.

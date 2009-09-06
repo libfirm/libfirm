@@ -43,6 +43,7 @@
 #include "becopystat.h"
 #include "beintlive_t.h"
 #include "beirg.h"
+#include "bemodule.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -616,9 +617,12 @@ static void ou_optimize(unit_t *ou) {
 		free_qnode(curr);
 }
 
+/**
+ * Solves the problem using a heuristic approach
+ * Uses the OU data structure
+ */
 int co_solve_heuristic(copy_opt_t *co) {
 	unit_t *curr;
-	FIRM_DBG_REGISTER(dbg, "ir.be.copyoptheur");
 
 	ASSERT_OU_AVAIL(co);
 
@@ -630,3 +634,15 @@ int co_solve_heuristic(copy_opt_t *co) {
 	del_pset(pinned_global);
 	return 0;
 }
+
+void be_init_copyheur(void)
+{
+	static co_algo_info copyheur = {
+		co_solve_heuristic, 0
+	};
+
+	be_register_copyopt("heur1", &copyheur);
+	FIRM_DBG_REGISTER(dbg, "ir.be.copyoptheur");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur);

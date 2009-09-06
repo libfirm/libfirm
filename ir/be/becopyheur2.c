@@ -84,18 +84,6 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_LAST
 };
 
-void be_init_copyheur2(void)
-{
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
-	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
-	lc_opt_entry_t *co2_grp = lc_opt_get_grp(chordal_grp, "co2");
-
-	lc_opt_add_table(co2_grp, options);
-}
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);
-
 /*
   ____  _             _
  / ___|| |_ __ _ _ __| |_
@@ -1236,7 +1224,6 @@ static be_ifg_dump_dot_cb_t ifg_dot_cb = {
 	ifg_dump_at_end
 };
 
-
 int co_solve_heuristic_new(copy_opt_t *co)
 {
 	char  buf[256];
@@ -1277,3 +1264,21 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	phase_free(&env.ph);
 	return 0;
 }
+
+void be_init_copyheur2(void)
+{
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *co2_grp = lc_opt_get_grp(chordal_grp, "co2");
+
+	lc_opt_add_table(co2_grp, options);
+
+	static co_algo_info copyheur = {
+		co_solve_heuristic_new, 0
+	};
+
+	be_register_copyopt("heur2", &copyheur);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);

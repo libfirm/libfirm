@@ -57,6 +57,7 @@
 #include "becopyilp_t.h"
 #include "beifg_t.h"
 #include "besched.h"
+#include "bemodule.h"
 
 #define DEBUG_LVL 1
 
@@ -538,6 +539,17 @@ static void ilp2_apply(ilp_env_t *ienv) {
 	copystat_add_ilp_iter(lpp_get_iter_cnt(pi->curr_lp));
 #endif
 }
+
+void be_init_copyilp2(void)
+{
+	static co_algo_info copyheur = {
+		co_solve_ilp2, 1
+	};
+
+	be_register_copyopt("ilp", &copyheur);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2);
 
 int co_solve_ilp2(copy_opt_t *co) {
 	lpp_sol_state_t sol_state;

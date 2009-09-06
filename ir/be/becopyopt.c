@@ -77,7 +77,6 @@ static unsigned   dump_flags  = 0;
 static unsigned   style_flags = 0;
 static unsigned   do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
-static unsigned   algo        = CO_ALGO_HEUR4;
 static int        improve     = 1;
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
@@ -97,18 +96,6 @@ static const lc_opt_enum_mask_items_t style_items[] = {
 	{ NULL,      0 }
 };
 
-static const lc_opt_enum_mask_items_t algo_items[] = {
-	{ "none",   CO_ALGO_NONE  },
-	{ "heur",   CO_ALGO_HEUR  },
-	{ "heur2",  CO_ALGO_HEUR2 },
-	{ "heur4",  CO_ALGO_HEUR4 },
-	{ "ilp",    CO_ALGO_ILP   },
-#ifdef FIRM_KAPS
-	{ "pbqp",   CO_ALGO_PBQP  },
-#endif
-	{ NULL,     0 }
-};
-
 typedef int (*opt_funcptr)(void);
 
 static const lc_opt_enum_func_ptr_items_t cost_func_items[] = {
@@ -126,16 +113,11 @@ static lc_opt_enum_mask_var_t style_var = {
 	&style_flags, style_items
 };
 
-static lc_opt_enum_mask_var_t algo_var = {
-	&algo, algo_items
-};
-
 static lc_opt_enum_func_ptr_var_t cost_func_var = {
 	(opt_funcptr*) &cost_func, cost_func_items
 };
 
 static const lc_opt_table_entry_t options[] = {
-	LC_OPT_ENT_ENUM_INT      ("algo",    "select copy optimization algo",                           &algo_var),
 	LC_OPT_ENT_ENUM_FUNC_PTR ("cost",    "select a cost function",                                  &cost_func_var),
 	LC_OPT_ENT_ENUM_MASK     ("dump",    "dump ifg before or after copy optimization",              &dump_var),
 	LC_OPT_ENT_ENUM_MASK     ("style",   "dump style for ifg dumping",                              &style_var),
@@ -143,6 +125,16 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL          ("improve", "run heur1 before if algo can exploit start solutions",    &improve),
 	LC_OPT_LAST
 };
+
+static be_module_list_entry_t *copyopts = NULL;
+static const co_algo_info *selected_copyopt = NULL;
+
+void be_register_copyopt(const char *name, co_algo_info *copyopt)
+{
+	if (selected_copyopt == NULL)
+		selected_copyopt = copyopt;
+	be_add_module_to_list(&copyopts, name, copyopt);
+}
 
 void be_init_copyopt(void)
 {
@@ -152,9 +144,28 @@ void be_init_copyopt(void)
 	lc_opt_entry_t *co_grp = lc_opt_get_grp(chordal_grp, "co");
 
 	lc_opt_add_table(co_grp, options);
+	be_add_module_list_opt(co_grp, "algo", "select copy optimization algo",
+		                       &copyopts, (void**) &selected_copyopt);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copycoal);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyopt);
+
+static int void_algo(copy_opt_t *co)
+{
+	(void) co;
+	return 0;
+}
+
+void be_init_copynone(void)
+{
+	static co_algo_info copyheur = {
+		void_algo, 0
+	};
+
+	be_register_copyopt("none", &copyheur);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copynone);
 
 #undef QUICK_AND_DIRTY_HACK
 
@@ -1079,43 +1090,6 @@ void co_solve_park_moon(copy_opt_t *opt)
 	(void) opt;
 }
 
-static int void_algo(copy_opt_t *co)
-{
-	(void) co;
-	return 0;
-}
-
-/*
-		_    _                  _ _   _
-	   / \  | | __ _  ___  _ __(_) |_| |__  _ __ ___  ___
-	  / _ \ | |/ _` |/ _ \| '__| | __| '_ \| '_ ` _ \/ __|
-	 / ___ \| | (_| | (_) | |  | | |_| | | | | | | | \__ \
-	/_/   \_\_|\__, |\___/|_|  |_|\__|_| |_|_| |_| |_|___/
-			   |___/
-*/
-
-typedef struct {
-	co_algo_t  *algo;
-	const char *name;
-	int        can_improve_existing;
-} co_algo_info_t;
-
-static const co_algo_info_t algos[] = {
-	{ void_algo,               "none",  0 },
-	{ co_solve_heuristic,      "heur1", 0 },
-	{ co_solve_heuristic_new,  "heur2", 0 },
-	{ co_solve_heuristic_mst,  "heur4", 0 },
-#ifdef WITH_ILP
-	{ co_solve_ilp2,           "ilp",   1 },
-#else
-	{ NULL,                    "ilp",   1 },
-#endif
-#ifdef FIRM_KAPS
-	{ co_solve_heuristic_pbqp, "pbqp",  0 },
-#endif
-	{ NULL,                    "",      0 }
-};
-
 /*
     __  __       _         ____       _
    |  \/  | __ _(_)_ __   |  _ \ _ __(_)_   _____ _ __
@@ -1155,11 +1129,9 @@ void co_driver(be_chordal_env_t *cenv)
 	ir_timer_t          *timer = ir_timer_register("firm.be.copyopt", "runtime");
 	co_complete_stats_t before, after;
 	copy_opt_t          *co;
-	co_algo_t           *algo_func;
 	int                 was_optimal = 0;
 
-	if (algo >= CO_ALGO_LAST)
-		return;
+	assert(selected_copyopt);
 
 	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));
 
@@ -1185,7 +1157,7 @@ void co_driver(be_chordal_env_t *cenv)
 	}
 
 	/* if the algo can improve results, provide an initial solution with heur1 */
-	if (improve && algos[algo].can_improve_existing) {
+	if (improve && selected_copyopt->can_improve_existing) {
 		co_complete_stats_t stats;
 
 		/* produce a heuristic solution */
@@ -1196,11 +1168,9 @@ void co_driver(be_chordal_env_t *cenv)
 		be_stat_ev_ull("co_prepare_costs", stats.costs);
 	}
 
-	algo_func = algos[algo].algo;
-
 	/* perform actual copy minimization */
 	ir_timer_reset_and_start(timer);
-	was_optimal = algo_func(co);
+	was_optimal = selected_copyopt->copyopt(co);
 	ir_timer_stop(timer);
 
 	be_stat_ev("co_time", ir_timer_elapsed_msec(timer));

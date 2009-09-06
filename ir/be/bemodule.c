@@ -40,9 +40,11 @@ void be_init_schedrss(void);
 void be_init_chordal(void);
 void be_init_chordal_main(void);
 void be_init_copyopt(void);
+void be_init_copyheur(void);
 void be_init_copyheur2(void);
 void be_init_copyheur4(void);
-void be_init_copyheur5(void);
+void be_init_copyilp2(void);
+void be_init_copypbqp(void);
 void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_dbgout(void);
@@ -99,9 +101,16 @@ void be_init_modules(void)
 	be_init_chordal_main();
 	be_init_chordal();
 	be_init_copyopt();
-	be_init_copyheur2();
 	be_init_copyheur4();
-//	be_init_copyheur5();
+	be_init_copyheur();
+	be_init_copyheur2();
+#ifdef WITH_ILP
+	be_init_copyilp2();
+#endif
+#ifdef FIRM_KAPS
+	be_init_copypbqp();
+#endif
+	be_init_copynone();
 	be_init_copystat();
 	be_init_peephole();
 	be_init_ra();

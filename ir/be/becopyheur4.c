@@ -1381,7 +1381,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Main driver for mst safe coalescing algorithm.
  */
-int co_solve_heuristic_mst(copy_opt_t *co) {
+static int co_solve_heuristic_mst(copy_opt_t *co) {
 	unsigned     n_regs       = co->cls->n_regs;
 	bitset_t     *ignore_regs = bitset_alloca(n_regs);
 	unsigned     i, j, k;
@@ -1482,8 +1482,14 @@ void be_init_copyheur4(void) {
 	lc_opt_entry_t *heur4_grp = lc_opt_get_grp(co_grp, "heur4");
 
 	lc_opt_add_table(heur4_grp, options);
+
+	static co_algo_info copyheur = {
+		co_solve_heuristic_mst, 0
+	};
+
+	be_register_copyopt("heur4", &copyheur);
+
 	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");
 }
-
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur4);

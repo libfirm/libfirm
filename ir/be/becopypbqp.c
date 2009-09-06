@@ -19,6 +19,7 @@
 #include "becopyopt_t.h"
 #include "beifg.h"
 #include "beifg_t.h"
+#include "bemodule.h"
 #include "irprintf_t.h"
 
 #include "error.h"
@@ -49,7 +50,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	return result;
 }
 
-int co_solve_heuristic_pbqp(copy_opt_t *co) {
+static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	void *nodes_it  = be_ifg_nodes_iter_alloca(co->cenv->ifg);
 	void *neigh_it  = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
 	ir_node *ifg_node, *if_neighb_node;
@@ -216,5 +217,16 @@ int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	return 0;
 }
+
+void be_init_copypbqp(void)
+{
+	static co_algo_info copyheur = {
+		co_solve_heuristic_pbqp, 0
+	};
+
+	be_register_copyopt("pbqp", &copyheur);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copypbqp);
 
 #endif
