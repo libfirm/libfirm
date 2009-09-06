@@ -399,6 +399,8 @@ static void analyze_block(ir_node *block, void *data)
 
 static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 {
+	const arch_register_req_t *req;
+
 	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
@@ -412,7 +414,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 		return;
 
 	/* should be same constraint? */
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	req = arch_get_register_req_out(node);
 	if (req->type & arch_register_req_type_should_be_same) {
 		ir_node *insn  = skip_Proj(node);
 		int      arity = get_irn_arity(insn);
@@ -425,6 +427,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 			ir_node               *op;
 			int                    op_idx;
 			ir_nodeset_iterator_t  iter;
+			bool                   interferes = false;
 
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
@@ -434,7 +437,6 @@ static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 			op_idx = uf_find(congruence_classes, op_idx);
 
 			/* do we interfere with the value */
-			bool interferes = false;
 			foreach_ir_nodeset(live_nodes, live, iter) {
 				int lv_idx = get_irn_idx(live);
 				lv_idx     = uf_find(congruence_classes, lv_idx);
@@ -489,7 +491,8 @@ static void create_congurence_class(ir_node *block, void *data)
 
 		arity = get_irn_arity(node);
 		for (i = 0; i < arity; ++i) {
-			ir_nodeset_iterator_t  iter;
+			bool                  interferes = false;
+			ir_nodeset_iterator_t iter;
 			ir_node *live;
 			ir_node *phi;
 			ir_node *op     = get_Phi_pred(node, i);
@@ -497,7 +500,6 @@ static void create_congurence_class(ir_node *block, void *data)
 			op_idx = uf_find(congruence_classes, op_idx);
 
 			/* do we interfere with the value */
-			bool interferes = false;
 			foreach_ir_nodeset(&live_nodes, live, iter) {
 				int lv_idx = get_irn_idx(live);
 				lv_idx     = uf_find(congruence_classes, lv_idx);
@@ -1732,6 +1734,9 @@ static void determine_block_order(void)
 	ir_node **blocklist = be_get_cfgpostorder(irg);
 	int       n_blocks  = ARR_LEN(blocklist);
 	int       dfs_num   = 0;
+	pdeq     *worklist  = new_pdeq();
+	ir_node **order     = XMALLOCN(ir_node*, n_blocks);
+	int       order_p   = 0;
 
 	/* clear block links... */
 	for (i = 0; i < n_blocks; ++i) {
@@ -1771,9 +1776,6 @@ static void determine_block_order(void)
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 
-	pdeq     *worklist = new_pdeq();
-	ir_node **order    = XMALLOCN(ir_node*, n_blocks);
-	int       order_p  = 0;
 	for (i = 0; i < n_blocks; ++i) {
 		ir_node       *block = blocklist[i];
 		if (Block_block_visited(block))
