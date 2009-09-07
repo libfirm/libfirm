@@ -45,6 +45,7 @@ void be_init_copyheur2(void);
 void be_init_copyheur4(void);
 void be_init_copyilp2(void);
 void be_init_copypbqp(void);
+void be_init_copynone(void);
 void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_dbgout(void);
