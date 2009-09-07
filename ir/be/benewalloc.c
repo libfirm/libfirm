@@ -227,6 +227,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 {
 	ir_nodeset_iterator_t iter;
 	unsigned              r;
+	unsigned              n_allowed;
 	allocation_info_t     *info = get_allocation_info(node);
 	ir_node               *neighbor;
 
@@ -242,8 +243,12 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 	if (live_nodes == NULL)
 		return;
 
-	/* TODO: reduce penalty if there are multiple allowed registers... */
-	penalty *= NEIGHBOR_FACTOR;
+	penalty   *= NEIGHBOR_FACTOR;
+	n_allowed  = rbitset_popcnt(limited, n_regs);
+	if (n_allowed > 1) {
+		/* only create a very weak penalty if multiple regs are allowed */
+		penalty = (penalty * 0.8) / n_allowed;
+	}
 	foreach_ir_nodeset(live_nodes, neighbor, iter) {
 		allocation_info_t *neighbor_info;
 
@@ -1407,7 +1412,7 @@ static void adapt_phi_prefs(ir_node *phi)
  * After a phi has been assigned a register propagate preference inputs
  * to the phi inputs.
  */
-static void propagate_phi_register(ir_node *phi, unsigned r)
+static void propagate_phi_register(ir_node *phi, unsigned assigned_r)
 {
 	int                    i;
 	ir_node               *block = get_nodes_block(phi);
@@ -1417,16 +1422,24 @@ static void propagate_phi_register(ir_node *phi, unsigned r)
 		ir_node           *op         = get_Phi_pred(phi, i);
 		allocation_info_t *info       = get_allocation_info(op);
 		ir_node           *pred_block = get_Block_cfgpred_block(block, i);
+		unsigned           r;
 		float              weight
 			= get_block_execfreq(execfreqs, pred_block) * AFF_PHI;
 
-		if (info->prefs[r] >= weight)
+		if (info->prefs[assigned_r] >= weight)
 			continue;
 
 		/* promote the prefered register */
-		info->prefs[r] = AFF_PHI * weight;
+		for (r = 0; r < n_regs; ++r) {
+			if (r == assigned_r) {
+				info->prefs[r] = AFF_PHI * weight;
+			} else {
+				info->prefs[r] -= AFF_PHI * weight;
+			}
+		}
+
 		if (is_Phi(op))
-			propagate_phi_register(op, r);
+			propagate_phi_register(op, assigned_r);
 	}
 }
 
