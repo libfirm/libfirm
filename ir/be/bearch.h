@@ -726,6 +726,9 @@ struct arch_env_t {
 static inline unsigned arch_irn_get_n_outs(const ir_node *node)
 {
 	backend_info_t *info = be_get_info(node);
+	if (info->out_infos == NULL)
+		return 0;
+
 	return ARR_LEN(info->out_infos);
 }
 
