@@ -80,12 +80,13 @@
 #include "beverify.h"
 #include "beutil.h"
 
-#define USE_FACTOR         1.0f
-#define DEF_FACTOR         1.0f
-#define NEIGHBOR_FACTOR    0.2f
-#define AFF_SHOULD_BE_SAME 0.5f
-#define AFF_PHI            1.0f
-#define SPLIT_DELTA        1.0f
+#define USE_FACTOR                     1.0f
+#define DEF_FACTOR                     1.0f
+#define NEIGHBOR_FACTOR                0.2f
+#define AFF_SHOULD_BE_SAME             0.5f
+#define AFF_PHI                        1.0f
+#define SPLIT_DELTA                    1.0f
+#define MAX_OPTIMISTIC_SPLIT_RECURSION 2
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -667,13 +668,15 @@ static void fill_sort_candidates(reg_pref_t *regprefs,
 
 static bool try_optimistic_split(ir_node *to_split, ir_node *before,
                                  float pref, float pref_delta,
-                                 unsigned *output_regs)
+                                 unsigned *forbidden_regs, int recursion)
 {
+	const arch_register_t *from_reg;
 	const arch_register_t *reg;
 	ir_node               *original_insn;
 	ir_node               *block;
 	ir_node               *copy;
 	unsigned               r;
+	unsigned               from_r;
 	unsigned               i;
 	allocation_info_t     *info = get_allocation_info(to_split);
 	reg_pref_t            *prefs;
@@ -689,41 +692,85 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	if (arch_irn_get_flags(original_insn) & arch_irn_flags_dont_spill)
 		return false;
 
+	from_reg        = arch_get_irn_register(to_split);
+	from_r          = arch_register_get_index(from_reg);
+	block           = get_nodes_block(before);
+	split_threshold = get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
+
+	if (pref_delta < split_threshold*0.5)
+		return false;
+
 	/* find the best free position where we could move to */
 	prefs = ALLOCAN(reg_pref_t, n_regs);
 	fill_sort_candidates(prefs, info);
 	for (i = 0; i < n_regs; ++i) {
+		float apref;
+		float apref_delta;
+		bool  res;
+		bool  old_source_state;
+
+		/* we need a normal register which is not an output register
+		   an different from the current register of to_split */
 		r = prefs[i].num;
 		if (!rbitset_is_set(normal_regs, r))
 			continue;
-		if (rbitset_is_set(output_regs, r))
+		if (rbitset_is_set(forbidden_regs, r))
 			continue;
+		if (r == from_r)
+			continue;
+
+		/* is the split worth it? */
+		delta = pref_delta + prefs[i].pref;
+		if (delta < split_threshold) {
+			DB((dbg, LEVEL_3, "Not doing optimistical split of %+F (depth %d), win %f too low\n",
+				to_split, recursion, delta));
+			return false;
+		}
+
+		/* if the register is free then we can do the split */
 		if (assignments[r] == NULL)
 			break;
-	}
-	if (i >= n_regs) {
-		return false;
-	}
-	/* TODO: use execfreq somehow... */
-	block = get_nodes_block(before);
-	delta = pref_delta + prefs[i].pref;
-	split_threshold = get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
-	if (delta < split_threshold) {
-		DB((dbg, LEVEL_3, "Not doing optimistical split, win %f too low\n",
-		    delta));
-		return false;
-	}
 
-	reg   = arch_register_for_index(cls, r);
+		/* otherwise we might try recursively calling optimistic_split */
+		if (recursion+1 > MAX_OPTIMISTIC_SPLIT_RECURSION)
+			continue;
+
+		apref        = prefs[i].pref;
+		apref_delta  = i+1 < n_regs ? apref - prefs[i+1].pref : 0;
+		apref_delta += pref_delta - split_threshold;
+
+		/* our source register isn't a usefull destination for recursive
+		   splits */
+		old_source_state = rbitset_is_set(forbidden_regs, from_r);
+		rbitset_set(forbidden_regs, from_r);
+		/* try recursive split */
+		res = try_optimistic_split(assignments[r], before, apref,
+		                           apref_delta, forbidden_regs, recursion+1);
+		/* restore our destination */
+		if (old_source_state) {
+			rbitset_set(forbidden_regs, from_r);
+		} else {
+			rbitset_clear(forbidden_regs, from_r);
+		}
+
+		if (res)
+			break;
+	}
+	if (i >= n_regs)
+		return false;
+
+	reg  = arch_register_for_index(cls, r);
 	copy = be_new_Copy(cls, block, to_split);
 	mark_as_copy_of(copy, to_split);
-	free_reg_of_value(to_split);
+	/* hacky, but correct here */
+	if (assignments[arch_register_get_index(from_reg)] == to_split)
+		free_reg_of_value(to_split);
 	use_reg(copy, reg);
 	sched_add_before(before, copy);
 
 	DB((dbg, LEVEL_3,
-	    "Optimistic live-range split %+F move %+F -> %s before %+F (win %f)\n",
-	    copy, to_split, reg->name, before, delta));
+	    "Optimistic live-range split %+F move %+F(%s) -> %s before %+F (win %f, depth %d)\n",
+	    copy, to_split, from_reg->name, reg->name, before, delta, recursion));
 	return true;
 }
 
@@ -731,7 +778,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
  * Determine and assign a register for node @p node
  */
 static void assign_reg(const ir_node *block, ir_node *node,
-                       unsigned *output_regs)
+                       unsigned *forbidden_regs)
 {
 	const arch_register_t     *reg;
 	allocation_info_t         *info;
@@ -742,6 +789,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	const unsigned            *allowed_regs;
 	unsigned                   r;
 
+	assert(!is_Phi(node));
 	assert(arch_irn_consider_in_reg_alloc(cls, node));
 
 	/* preassigned register? */
@@ -811,16 +859,13 @@ static void assign_reg(const ir_node *block, ir_node *node,
 			continue;
 		if (assignments[r] == NULL)
 			break;
-		if (!is_Phi(node)) {
-			float    pref   = reg_prefs[i].pref;
-			float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
-			ir_node *before = skip_Proj(node);
-			bool     res    = try_optimistic_split(assignments[r], before,
-			                                       pref, delta,
-			                                       output_regs);
-			if (res)
-				break;
-		}
+		float    pref   = reg_prefs[i].pref;
+		float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
+		ir_node *before = skip_Proj(node);
+		bool     res    = try_optimistic_split(assignments[r], before,
+											   pref, delta, forbidden_regs, 0);
+		if (res)
+			break;
 	}
 	if (i >= n_regs) {
 		panic("No register left for %+F\n", node);
@@ -1098,7 +1143,7 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
  * @param  node        the current node
  */
 static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
-                                unsigned *output_regs)
+                                unsigned *forbidden_regs)
 {
 	int arity = get_irn_arity(node);
 	int i, res;
@@ -1156,7 +1201,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				determine_live_through_regs(live_through_regs, node);
 			}
 
-			rbitset_or(output_regs, req->limited, n_regs);
+			rbitset_or(forbidden_regs, req->limited, n_regs);
 			if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
 				good = false;
 			}
@@ -1169,7 +1214,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				determine_live_through_regs(live_through_regs, node);
 				if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
 					good = false;
-					rbitset_or(output_regs, req->limited, n_regs);
+					rbitset_or(forbidden_regs, req->limited, n_regs);
 				}
 			}
 		}
@@ -1203,7 +1248,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 				continue;
 			/* livethrough values may not use constrainted output registers */
 			if (rbitset_is_set(live_through_regs, l)
-					&& rbitset_is_set(output_regs, r))
+					&& rbitset_is_set(forbidden_regs, r))
 				continue;
 
 			hungarian_add(bp, r, l, l == r ? 9 : 8);
@@ -1329,7 +1374,7 @@ static void add_phi_permutations(ir_node *block, int p)
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
-		a  = find_value_in_block_info(pred_info, op);
+		a = find_value_in_block_info(pred_info, op);
 		assert(a >= 0);
 
 		reg  = arch_get_irn_register(node);
@@ -1542,8 +1587,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	block_info_t          *block_info;
 	block_info_t         **pred_block_infos;
 	ir_node              **phi_ins;
-	unsigned              *output_regs; /**< collects registers which must not
-										     be used for optimistic splits */
+	unsigned              *forbidden_regs; /**< collects registers which must
+	                                        not be used for optimistic splits */
 
 	(void) data;
 	DB((dbg, LEVEL_2, "* Block %+F\n", block));
@@ -1631,11 +1676,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		/* if the node already has a register assigned use it */
 		reg = arch_get_irn_register(node);
 		if (reg != NULL) {
-			/* TODO: consult pred-block infos here. The value could be copied
-			   away in some/all predecessor blocks. We need to construct
-			   phi-nodes in this case.
-			   We even need to construct some Phi_0 like constructs in cases
-			   where the predecessor allocation is not determined yet. */
 			use_reg(node, reg);
 		}
 
@@ -1643,25 +1683,23 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		ir_nodeset_insert(&live_nodes, node);
 	}
 
-	rbitset_alloca(output_regs, n_regs);
+	rbitset_alloca(forbidden_regs, n_regs);
 
 	/* handle phis... */
 	assign_phi_registers(block);
 
-	/* assign regs for live-in values */
+	/* all live-ins must have a register */
+#ifdef DEBUG_libfirm
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		const arch_register_t *reg = arch_get_irn_register(node);
-		if (reg != NULL)
-			continue;
-
-		assign_reg(block, node, output_regs);
-		/* shouldn't happen if we color in dominance order */
-		assert (!is_Phi(node));
+		assert(reg != NULL);
 	}
+#endif
 
 	/* assign instructions in the block */
 	sched_foreach(block, node) {
-		unsigned r;
+		int i;
+		int arity;
 
 		/* phis are already assigned */
 		if (is_Phi(node))
@@ -1670,15 +1708,22 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		rewire_inputs(node);
 
 		/* enforce use constraints */
-		rbitset_clear_all(output_regs, n_regs);
-		enforce_constraints(&live_nodes, node, output_regs);
-		/* we may not use registers occupied here for optimistic splits */
-		for (r = 0; r < n_regs; ++r) {
-			if (assignments[r] != NULL)
-				rbitset_set(output_regs, r);
-		}
+		rbitset_clear_all(forbidden_regs, n_regs);
+		enforce_constraints(&live_nodes, node, forbidden_regs);
 
 		rewire_inputs(node);
+
+		/* we may not use registers used for inputs for optimistic splits */
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *op = get_irn_n(node, i);
+			const arch_register_t *reg;
+			if (!arch_irn_consider_in_reg_alloc(cls, op))
+				continue;
+
+			reg = arch_get_irn_register(op);
+			rbitset_set(forbidden_regs, arch_register_get_index(reg));
+		}
 
 		/* free registers of values last used at this instruction */
 		free_last_uses(&live_nodes, node);
@@ -1691,10 +1736,10 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))
 					continue;
-				assign_reg(block, proj, output_regs);
+				assign_reg(block, proj, forbidden_regs);
 			}
 		} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
-			assign_reg(block, node, output_regs);
+			assign_reg(block, node, forbidden_regs);
 		}
 	}
 
