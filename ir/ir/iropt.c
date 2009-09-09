@@ -3295,7 +3295,7 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 			n = trans_func(n);
 			n = new_r_Conv(blk, n, get_irn_mode(oldn));
 
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
 			return n;
 		}
 	}
