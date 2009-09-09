@@ -166,7 +166,7 @@ static void node_stat_walker(ir_node *irn, void *data)
 		} else {
 			(*stats)[BE_STAT_PHIS]++;
 		}
-	} else {
+	} else if (!is_Proj(irn)) {
 		arch_irn_class_t classify = arch_irn_classify(irn);
 
 		if(classify & arch_irn_class_spill)
