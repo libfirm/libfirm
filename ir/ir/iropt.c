@@ -2775,6 +2775,28 @@ static ir_node *transform_node_Mul(ir_node *n) {
 			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_MINUS);
 			return n;
 		}
+	} else if (is_Shl(a)) {
+		ir_node *const shl_l = get_Shl_left(a);
+		if (is_Const(shl_l) && is_Const_one(shl_l)) {
+			/* (1 << x) * b -> b << x */
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			ir_node  *const shl_r = get_Shl_right(a);
+			n = new_rd_Shl(dbgi, block, b, shl_r, mode);
+			// TODO add me DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_SHIFT);
+			return n;
+		}
+	} else if (is_Shl(b)) {
+		ir_node *const shl_l = get_Shl_left(b);
+		if (is_Const(shl_l) && is_Const_one(shl_l)) {
+			/* a * (1 << x) -> a << x */
+			dbg_info *const dbgi  = get_irn_dbg_info(n);
+			ir_node  *const block = get_nodes_block(n);
+			ir_node  *const shl_r = get_Shl_right(b);
+			n = new_rd_Shl(dbgi, block, a, shl_r, mode);
+			// TODO add me DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_MUL_SHIFT);
+			return n;
+		}
 	}
 	if (get_mode_arithmetic(mode) == irma_ieee754) {
 		if (is_Const(a)) {
