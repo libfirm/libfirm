@@ -46,6 +46,7 @@
 #include "irloop.h"
 #include "irgwalk.h"
 #include "iredges.h"
+#include "irouts.h"
 #include "irprintf.h"
 #include "irtools.h"
 #include "irhooks.h"
@@ -260,9 +261,11 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 {
 	gs_matrix_t  *mat;
 	int           size;
+	int           n_keepalives;
 	int           idx;
 	freq_t       *freq, *s, *e;
 	ir_exec_freq *ef;
+	ir_node      *end = get_irg_end(irg);
 	set          *freqs;
 	dfs_t        *dfs;
 	double       *x;
@@ -320,9 +323,27 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	 * Solve A*x = 1*x => (A-I)x = 0
 	 */
 	s = set_find_freq(freqs, get_irg_start_block(irg));
+
 	e = set_find_freq(freqs, get_irg_end_block(irg));
 	if (e->idx >= 0)
 		gs_matrix_set(mat, s->idx, e->idx, 1.0);
+
+	/*
+	 * Also add an edge for each kept block to start.
+	 *
+	 * This avoid strange results for e.g. an irg containing a exit()-call
+	 * which block has no cfg successor.
+	 */
+	n_keepalives = get_End_n_keepalives(end);
+	for (idx = n_keepalives - 1; idx >= 0; --idx) {
+		ir_node *keep = get_End_keepalive(end, idx);
+
+		if (is_Block(keep) && get_Block_n_cfg_outs(keep) == 0) {
+			freq_t *k = set_find_freq(freqs, keep);
+			if (k->idx >= 0)
+				gs_matrix_set(mat, s->idx, k->idx, 1.0);
+		}
+	}
 
 	/* solve the system and delete the matrix */
 	solve_lgs(mat, x, size);
