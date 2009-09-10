@@ -651,7 +651,7 @@ ir_node *gen_ASM(ir_node *node)
 		++out_idx;
 	}
 
-	/* Attempt to make ASM node register pressure faithfull.
+	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)
 	 *
 	 * Algorithm: Check if there are fewer inputs or outputs (I will call this

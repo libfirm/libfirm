@@ -75,7 +75,7 @@ typedef struct pre_env {
 	struct obstack *obst;   /**< The obstack to allocate on. */
 	ir_node *start_block;   /**< The start block of the current graph. */
 	ir_node *end_block;     /**< The end block of the current graph */
-	block_info *list;       /**< Links all block info entires for easier recovery. */
+	block_info *list;       /**< Links all block info entries for easier recovery. */
 	elim_pair *pairs;       /**< A list of node pairs that must be eliminated. */
 	unsigned last_idx;      /**< last node index of "old" nodes, all higher indexes are newly created once. */
 	char changes;           /**< Non-zero, if calculation of Antic_in has changed. */
@@ -780,7 +780,7 @@ static void eliminate_nodes(elim_pair *pairs) {
  * references the origin. These nodes are translated again and again...
  *
  * The current fix is to use post-dominance. This simple ignores
- * endless loops, ie we cannot optimize them.
+ * endless loops, i.e. we cannot optimize them.
  */
 void do_gvn_pre(ir_graph *irg)
 {
