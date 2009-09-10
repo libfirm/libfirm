@@ -364,7 +364,8 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		check_defs(&live_nodes, weight, node);
+		if (create_preferences)
+			check_defs(&live_nodes, weight, node);
 
 		/* mark last uses */
 		arity = get_irn_arity(node);
@@ -391,22 +392,24 @@ static void analyze_block(ir_node *block, void *data)
 
 		be_liveness_transfer(cls, node, &live_nodes);
 
-		/* update weights based on usage constraints */
-		for (i = 0; i < arity; ++i) {
-			const arch_register_req_t *req;
-			const unsigned            *limited;
-			ir_node                   *op = get_irn_n(node, i);
+		if (create_preferences) {
+			/* update weights based on usage constraints */
+			for (i = 0; i < arity; ++i) {
+				const arch_register_req_t *req;
+				const unsigned            *limited;
+				ir_node                   *op = get_irn_n(node, i);
 
-			if (!arch_irn_consider_in_reg_alloc(cls, op))
-				continue;
+				if (!arch_irn_consider_in_reg_alloc(cls, op))
+					continue;
 
-			req = arch_get_register_req(node, i);
-			if (!(req->type & arch_register_req_type_limited))
-				continue;
+				req = arch_get_register_req(node, i);
+				if (!(req->type & arch_register_req_type_limited))
+					continue;
 
-			limited = req->limited;
-			give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, limited,
-			                          op);
+				limited = req->limited;
+				give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, limited,
+										  op);
+			}
 		}
 	}
 
@@ -1915,8 +1918,7 @@ static void be_straight_alloc_cls(void)
 
 	be_clear_links(irg);
 
-	if (create_preferences)
-		irg_block_walk_graph(irg, NULL, analyze_block, NULL);
+	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
 	if (create_congruence_classes)
 		combine_congruence_classes();
 
