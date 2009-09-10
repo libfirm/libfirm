@@ -86,7 +86,7 @@
 #define AFF_SHOULD_BE_SAME             0.5f
 #define AFF_PHI                        1.0f
 #define SPLIT_DELTA                    1.0f
-#define MAX_OPTIMISTIC_SPLIT_RECURSION 2
+#define MAX_OPTIMISTIC_SPLIT_RECURSION 0
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -1470,9 +1470,9 @@ static void adapt_phi_prefs(ir_node *phi)
  */
 static void propagate_phi_register(ir_node *phi, unsigned assigned_r)
 {
-	int                    i;
-	ir_node               *block = get_nodes_block(phi);
-	int                    arity = get_irn_arity(phi);
+	int      i;
+	ir_node *block = get_nodes_block(phi);
+	int      arity = get_irn_arity(phi);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node           *op         = get_Phi_pred(phi, i);
@@ -1487,12 +1487,11 @@ static void propagate_phi_register(ir_node *phi, unsigned assigned_r)
 
 		/* promote the prefered register */
 		for (r = 0; r < n_regs; ++r) {
-			if (r == assigned_r) {
-				info->prefs[r] = AFF_PHI * weight;
-			} else {
-				info->prefs[r] -= AFF_PHI * weight;
+			if (info->prefs[r] > -weight) {
+				info->prefs[r] = -weight;
 			}
 		}
+		info->prefs[assigned_r] = weight;
 
 		if (is_Phi(op))
 			propagate_phi_register(op, assigned_r);
