@@ -102,9 +102,9 @@ static unsigned                    *normal_regs;
 static int                         *congruence_classes;
 static ir_node                    **block_order;
 static int                          n_block_order;
-static bool                         create_preferences        = true;
-static bool                         create_congruence_classes = true;
-static bool                         propagate_phi_registers   = true;
+static int                          create_preferences        = true;
+static int                          create_congruence_classes = true;
+static int                          propagate_phi_registers   = true;
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL("prefs", "use preference based coloring", &create_preferences),
