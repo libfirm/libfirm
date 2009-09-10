@@ -102,6 +102,16 @@ static unsigned                    *normal_regs;
 static int                         *congruence_classes;
 static ir_node                    **block_order;
 static int                          n_block_order;
+static bool                         create_preferences        = true;
+static bool                         create_congruence_classes = true;
+static bool                         propagate_phi_registers   = true;
+
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_BOOL("prefs", "use preference based coloring", &create_preferences),
+	LC_OPT_ENT_BOOL("congruences", "create congruence classes", &create_congruence_classes),
+	LC_OPT_ENT_BOOL("prop_phi", "propagate phi registers", &propagate_phi_registers),
+	LC_OPT_LAST
+};
 
 /** currently active assignments (while processing a basic block)
  * maps registers to values(their current copies) */
@@ -603,6 +613,7 @@ static void combine_congruence_classes(void)
 	/* merge preferences */
 	irg_walk_graph(irg, merge_congruence_prefs, NULL, NULL);
 	irg_walk_graph(irg, set_congruence_prefs, NULL, NULL);
+	free(congruence_classes);
 }
 
 
@@ -1569,7 +1580,8 @@ static void assign_phi_registers(ir_node *block)
 		use_reg(node, reg);
 
 		/* adapt preferences for phi inputs */
-		propagate_phi_register(node, r);
+		if (propagate_phi_registers)
+			propagate_phi_register(node, r);
 	}
 }
 
@@ -1903,8 +1915,11 @@ static void be_straight_alloc_cls(void)
 	DB((dbg, LEVEL_2, "=== Allocating registers of %s ===\n", cls->name));
 
 	be_clear_links(irg);
-	irg_block_walk_graph(irg, NULL, analyze_block, NULL);
-	combine_congruence_classes();
+
+	if (create_preferences)
+		irg_block_walk_graph(irg, NULL, analyze_block, NULL);
+	if (create_congruence_classes)
+		combine_congruence_classes();
 
 	for (i = 0; i < n_block_order; ++i) {
 		ir_node *block = block_order[i];
@@ -2026,10 +2041,12 @@ void be_init_straight_alloc(void)
 	static be_ra_t be_ra_straight = {
 		be_straight_alloc,
 	};
-
-	FIRM_DBG_REGISTER(dbg, "firm.be.straightalloc");
+	lc_opt_entry_t *be_grp              = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *straightalloc_group = lc_opt_get_grp(be_grp, "straightalloc");
+	lc_opt_add_table(straightalloc_group, options);
 
 	be_register_allocator("straight", &be_ra_straight);
+	FIRM_DBG_REGISTER(dbg, "firm.be.straightalloc");
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_straight_alloc);
