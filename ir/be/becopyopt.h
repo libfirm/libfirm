@@ -74,11 +74,11 @@ typedef struct {
 
 
 /**
- * Register a new copy optimazation algorithm.
+ * Register a new copy optimization algorithm.
  *
  * @param name     the name of the copy optimazation algorithm,
  *                 used to select it
- * @param spiller  a copy optimazation entry
+ * @param copyopt  a copy optimazation entry
  */
 void be_register_copyopt(const char *name, co_algo_info *copyopt);
 
