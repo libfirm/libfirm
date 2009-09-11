@@ -119,7 +119,6 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsign
  *            operand was no register operand.
  */
 const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
-const arch_register_req_t *arch_get_register_req_out(const ir_node *irn);
 
 /**
  * Put all registers which shall not be ignored by the register
@@ -732,13 +731,28 @@ static inline unsigned arch_irn_get_n_outs(const ir_node *node)
 	return ARR_LEN(info->out_infos);
 }
 
-static inline bool arch_irn_consider_in_reg_alloc(
-		const arch_register_class_t *cls, const ir_node *node)
+static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
-	return
-		req->cls == cls &&
-		!(req->type & arch_register_req_type_ignore);
+	const ir_op          *ops    = get_irn_op(node);
+	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
+	assert(!is_Proj(node));
+	return be_ops;
+}
+
+static inline const arch_register_req_t *arch_get_register_req_out(
+		const ir_node *irn)
+{
+	int                   pos = 0;
+	const arch_irn_ops_t *ops;
+
+	if (is_Proj(irn)) {
+		pos = get_Proj_proj(irn);
+		irn = get_Proj_pred(irn);
+	} else if (get_irn_mode(irn) == mode_T) {
+		return arch_no_register_req;
+	}
+	ops = get_irn_ops_simple(irn);
+	return ops->get_irn_reg_req_out(irn, pos);
 }
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
@@ -747,12 +761,13 @@ static inline bool arch_irn_is_ignore(const ir_node *irn)
 	return !!(req->type & arch_register_req_type_ignore);
 }
 
-static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)
+static inline bool arch_irn_consider_in_reg_alloc(
+		const arch_register_class_t *cls, const ir_node *node)
 {
-	const ir_op          *ops    = get_irn_op(node);
-	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
-	assert(!is_Proj(node));
-	return be_ops;
+	const arch_register_req_t *req = arch_get_register_req_out(node);
+	return
+		req->cls == cls &&
+		!(req->type & arch_register_req_type_ignore);
 }
 
 /**

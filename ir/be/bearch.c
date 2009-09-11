@@ -86,21 +86,6 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
 	}
 }
 
-const arch_register_req_t *arch_get_register_req_out(const ir_node *irn)
-{
-	int                   pos = 0;
-	const arch_irn_ops_t *ops;
-
-	if (is_Proj(irn)) {
-		pos = get_Proj_proj(irn);
-		irn = get_Proj_pred(irn);
-	} else if (get_irn_mode(irn) == mode_T) {
-		return arch_no_register_req;
-	}
-	ops = get_irn_ops(irn);
-	return ops->get_irn_reg_req_out(irn, pos);
-}
-
 void arch_set_frame_offset(ir_node *irn, int offset)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
