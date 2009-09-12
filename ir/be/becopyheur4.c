@@ -1481,12 +1481,11 @@ void be_init_copyheur4(void) {
 	lc_opt_entry_t *co_grp = lc_opt_get_grp(chordal_grp, "co");
 	lc_opt_entry_t *heur4_grp = lc_opt_get_grp(co_grp, "heur4");
 
-	lc_opt_add_table(heur4_grp, options);
-
 	static co_algo_info copyheur = {
 		co_solve_heuristic_mst, 0
 	};
 
+	lc_opt_add_table(heur4_grp, options);
 	be_register_copyopt("heur4", &copyheur);
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.co.heur4");

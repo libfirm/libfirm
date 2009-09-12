@@ -258,7 +258,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 	n_allowed  = rbitset_popcnt(limited, n_regs);
 	if (n_allowed > 1) {
 		/* only create a very weak penalty if multiple regs are allowed */
-		penalty = (penalty * 0.8) / n_allowed;
+		penalty = (penalty * 0.8f) / n_allowed;
 	}
 	foreach_ir_nodeset(live_nodes, neighbor, iter) {
 		allocation_info_t *neighbor_info;
@@ -868,16 +868,20 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	}
 
 	for (i = 0; i < n_regs; ++i) {
+		float   pref, delta;
+		ir_node *before;
+		bool    res;
+
 		r = reg_prefs[i].num;
 		if (!rbitset_is_set(allowed_regs, r))
 			continue;
 		if (assignments[r] == NULL)
 			break;
-		float    pref   = reg_prefs[i].pref;
-		float    delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
-		ir_node *before = skip_Proj(node);
-		bool     res    = try_optimistic_split(assignments[r], before,
-											   pref, delta, forbidden_regs, 0);
+		pref   = reg_prefs[i].pref;
+		delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
+		before = skip_Proj(node);
+		res    = try_optimistic_split(assignments[r], before,
+		                              pref, delta, forbidden_regs, 0);
 		if (res)
 			break;
 	}

@@ -1272,12 +1272,11 @@ void be_init_copyheur2(void)
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 	lc_opt_entry_t *co2_grp = lc_opt_get_grp(chordal_grp, "co2");
 
-	lc_opt_add_table(co2_grp, options);
-
 	static co_algo_info copyheur = {
 		co_solve_heuristic_new, 0
 	};
 
+	lc_opt_add_table(co2_grp, options);
 	be_register_copyopt("heur2", &copyheur);
 }
 
