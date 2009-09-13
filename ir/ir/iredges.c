@@ -40,6 +40,7 @@
 #include "set.h"
 #include "bitset.h"
 #include "error.h"
+#include "irpass_t.h"
 
 #include "iredgeset.h"
 #include "hashptr.h"
@@ -75,8 +76,15 @@
  */
 typedef void (set_edge_func_t)(ir_node *src, int pos, ir_node *tgt);
 
+/**
+ * A function that returns the "arity" of a given edge kind
+ * for a node.
+ */
 typedef int (get_edge_src_arity_func_t)(const ir_node *src);
 
+/**
+ * A function that returns the pos'th edge of a given edge kind for a node.
+ */
 typedef ir_node *(get_edge_src_n_func_t)(const ir_node *src, int pos);
 
 /**
@@ -93,9 +101,9 @@ typedef struct {
 /**
  * Get the predecessor block.
  */
-static ir_node *get_block_n(const ir_node *irn, int pos) {
-	if (is_Block(irn))
-		return get_Block_cfgpred_block(irn, pos);
+static ir_node *get_block_n(const ir_node *block, int pos) {
+	if (is_Block(block))
+		return get_Block_cfgpred_block(block, pos);
 	/* might be a Bad */
 	return NULL;
 }
@@ -135,6 +143,9 @@ static int edges_dbg = 0;
 static long last_edge_num = -1;
 #endif
 
+/**
+ * Returns an ID for the given edge.
+ */
 static inline long edge_get_id(const ir_edge_t *e) {
 #ifdef DEBUG_libfirm
 	return e->edge_nr;
@@ -869,6 +880,37 @@ int edges_verify(ir_graph *irg) {
 	irg_walk_anchors(irg, NULL, verify_edge_counter, &w);
 
 	return problem_found ? 1 : w.problem_found;
+}
+
+struct pass_t {
+	ir_graph_pass_t pass;
+	unsigned        assert_on_problem;
+};
+
+/**
+ * Wrapper to edges_verify to be run as an ir_graph pass.
+ */
+static int edges_verify_wrapper(ir_graph *irg, void *context) {
+	struct pass_t *pass = context;
+	int problems_found = edges_verify(irg);
+	/* do NOT rerun the pass if verify is ok :-) */
+	assert(problems_found && pass->assert_on_problem);
+	return 0;
+}
+
+/* Creates an ir_graph pass for edges_verify(). */
+ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem) {
+	struct pass_t *pass = XMALLOCZ(struct pass_t);
+
+	def_graph_pass_constructor(
+		&pass->pass, name ? name : "edges_verify", edges_verify_wrapper);
+
+	/* neither dump nor verify */
+	pass->pass.dump_irg   = (DUMP_ON_IRG_FUNC)ir_prog_no_dump;
+	pass->pass.verify_irg = (RUN_ON_IRG_FUNC)ir_prog_no_verify;
+
+	pass->assert_on_problem = assert_on_problem;
+	return &pass->pass;
 }
 
 void init_edges(void) {

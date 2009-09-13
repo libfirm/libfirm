@@ -166,6 +166,16 @@ int edges_verify(ir_graph *irg);
  */
 void edges_init_dbg(int do_dbg);
 
+/**
+ * Creates an ir_graph pass for edges_verify().
+ *
+ * @param name                the name of this pass or NULL
+ * @param assert_on_problem   assert if problems were found
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem);
+
 /************************************************************************/
 /* Begin Old Interface                                                  */
 /************************************************************************/
