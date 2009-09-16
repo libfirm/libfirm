@@ -226,6 +226,7 @@ gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bb
 	irg = new_ir_graph(ent, 0);
 	empty_frame_type = get_irg_frame_type(irg);
 	set_type_size_bytes(empty_frame_type, 0);
+	set_type_state(empty_frame_type, layout_fixed);
 
 	bb = get_cur_block();
 
