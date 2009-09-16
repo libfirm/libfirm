@@ -160,6 +160,11 @@ static allocation_info_t *get_allocation_info(ir_node *node)
 	return info;
 }
 
+static allocation_info_t *try_get_allocation_info(const ir_node *node)
+{
+	return (allocation_info_t*) get_irn_link(node);
+}
+
 /**
  * Get allocation information for a basic block
  */
@@ -1105,12 +1110,11 @@ static void rewire_inputs(ir_node *node)
 
 	for (i = 0; i < arity; ++i) {
 		ir_node           *op = get_irn_n(node, i);
-		allocation_info_t *info;
+		allocation_info_t *info = try_get_allocation_info(op);
 
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
+		if (info == NULL)
 			continue;
 
-		info = get_allocation_info(op);
 		info = get_allocation_info(info->original_value);
 		if (info->current_value != op) {
 			set_irn_n(node, i, info->current_value);
@@ -1599,7 +1603,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 {
 	int                    i;
 	ir_nodeset_t           live_nodes;
-	ir_nodeset_iterator_t  iter;
 	ir_node               *node;
 	int                    n_preds;
 	block_info_t          *block_info;
@@ -1665,17 +1668,19 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			ir_mode                   *mode = get_irn_mode(node);
 			const arch_register_req_t *req  = get_default_req_current_cls();
 			ir_node                   *phi;
-			int                        i;
 
 			phi = new_r_Phi(block, n_preds, phi_ins, mode);
 			be_set_phi_reg_req(phi, req);
 
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm
-			for (i = 0; i < n_preds; ++i) {
-				DB((dbg, LEVEL_3, " %+F", phi_ins[i]));
+			{
+				int i;
+				for (i = 0; i < n_preds; ++i) {
+					DB((dbg, LEVEL_3, " %+F", phi_ins[i]));
+				}
+				DB((dbg, LEVEL_3, "\n"));
 			}
-			DB((dbg, LEVEL_3, "\n"));
 #endif
 			mark_as_copy_of(phi, node);
 			sched_add_after(block, phi);
@@ -1708,9 +1713,12 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* all live-ins must have a register */
 #ifdef DEBUG_libfirm
-	foreach_ir_nodeset(&live_nodes, node, iter) {
-		const arch_register_t *reg = arch_get_irn_register(node);
-		assert(reg != NULL);
+	{
+		ir_nodeset_iterator_t  iter;
+		foreach_ir_nodeset(&live_nodes, node, iter) {
+			const arch_register_t *reg = arch_get_irn_register(node);
+			assert(reg != NULL);
+		}
 	}
 #endif
 
@@ -1914,7 +1922,6 @@ static void be_straight_alloc_cls(void)
 
 	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
-	be_liveness_assure_chk(lv);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
