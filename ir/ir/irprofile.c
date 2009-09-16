@@ -148,12 +148,12 @@ fix_ssa(ir_node * bb, void * data)
 	ir_node *mem;
 	int     arity = get_Block_n_cfgpreds(bb);
 
-	/* start and end block are not instrumented, skip! */
+	/* end block are not instrumented, skip! */
 	if (bb == env->end_block)
 		return;
 
 	if (bb == get_irg_start_block(get_irn_irg(bb))) {
-		mem = new_NoMem();
+		mem = get_irg_initial_mem(get_irn_irg(bb));
 	} else if (arity == 1) {
 		mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
 	} else {
