@@ -756,7 +756,7 @@ static ir_node *own_gen_Andi_dot_lo16(ppc32_transform_env_t *env, ir_node *op, i
 	set_ppc32_offset_mode(andi, ppc32_ao_Lo16);
 	set_ppc32_constant_tarval(andi, new_tarval_from_long(mask, mode_Is));
 	in[0] = new_rd_Proj(env->dbg, env->block, andi, env->mode,1);
-	be_new_Keep(&ppc32_reg_classes[CLASS_ppc32_condition], env->block, 1, in);
+	be_new_Keep(env->block, 1, in);
 	return new_rd_Proj(env->dbg, env->block, andi, env->mode,0);
 }
 
@@ -1164,9 +1164,9 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
 			in[0] = new_rd_Proj(env->dbg, env->block, store, mode_Is, 1); // src
 			in[1] =	new_rd_Proj(env->dbg, env->block, store, mode_Is, 2);	// dest
 			in[2] =	new_rd_Proj(env->dbg, env->block, store, mode_Is, 4);	// temp
-			be_new_Keep(&ppc32_reg_classes[CLASS_ppc32_gp], env->block, 3, in);
+			be_new_Keep(env->block, 3, in);
 			in[0] = new_rd_Proj(env->dbg, env->block, store, mode_Is, 3); // ctr
-			be_new_Keep(&ppc32_reg_classes[CLASS_ppc32_count], env->block, 1, in);
+			be_new_Keep(env->block, 1, in);
 
 			mem = new_rd_Proj(env->dbg, env->block, store, mode_M, 0);
 

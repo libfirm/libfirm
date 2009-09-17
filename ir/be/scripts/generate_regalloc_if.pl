@@ -89,15 +89,14 @@ sub translate_reg_type {
 }
 
 # stacks for output
-my @obst_regtypes_def; # stack for the register type variables definitions
-my @obst_regtypes_decl;# stack for the register type variables declarations
-my @obst_regclasses;   # stack for the register class variables
-my @obst_classdef;     # stack to define a name for a class index
-my @obst_regdef;       # stack to define a name for a register index
-my @obst_reginit;      # stack for the register type inits
-my @obst_req;          # stack for the register requirements
-my @obst_limit_func;   # stack for functions to return a subset of a register class
-my @obst_header_all;   # stack for some extern struct defs needed for bearch_$arch include
+my $regtypes_def; # stack for the register type variables definitions
+my $regtypes_decl;# stack for the register type variables declarations
+my @regclasses;   # stack for the register class variables
+my $classdef;     # stack to define a name for a class index
+my $regdef;       # stack to define a name for a register index
+my $reginit;      # stack for the register type inits
+my $single_constraints_decls;
+my $single_constraints;
 
 my $numregs;
 my $class_ptr;
@@ -105,12 +104,58 @@ my $class_idx = 0;
 
 my $tmp;
 
-my %reg2class;
-my %regclass2len;
+my %regclass2len = ();
+my %reg2class = ();
 
-push(@obst_classdef, "enum reg_classes {\n");
+$classdef .= "enum reg_classes {\n";
 
 my $class_mode;
+
+foreach my $class_name (keys(%reg_classes)) {
+	my @class = @{ $reg_classes{"$class_name"} };
+
+	my $idx = 0;
+	foreach (@class) {
+		if (defined($_->{name})) {
+			$reg2class{$_->{name}} = {
+				"class" => $class_name,
+				"index" => $idx
+			};
+		}
+		$idx++;
+	}
+	$regclass2len{$class_name} = $idx;
+}
+
+sub get_limited_array {
+	my $reg      = shift;
+	my $regclass = $reg2class{"$reg"}{"class"};
+	my $ucname   = uc($reg);
+	my $result   = "{ ";
+
+	my $limitedbitsetlen = $regclass2len{$regclass};
+	my $arraylen         = ($limitedbitsetlen+31) / 32;
+	my $first            = 1;
+	for (my $i = 0; $i < $arraylen; ++$i) {
+		if ($first) {
+			$first = 0;
+		} else {
+			$result .= ", ";
+		}
+
+		my $index = $reg2class{"$reg"}{"index"};
+		if ($index >= $i*32 && $index < ($i+1)*32) {
+			if ($i > 0) {
+				$result .= "(1 << (REG_${ucname} % 32))";
+			} else {
+				$result .= "(1 << REG_${ucname})";
+			}
+		} else {
+			$result .= "0";
+		}
+	}
+	$result .= " }";
+}
 
 # generate register type and class variable, init function and default requirements
 foreach my $class_name (keys(%reg_classes)) {
@@ -139,48 +184,74 @@ foreach my $class_name (keys(%reg_classes)) {
 		$flags_prepared = "0";
 	}
 
-	push(@obst_regtypes_decl, "extern const arch_register_t ${class_name}_regs[$numregs];\n");
+	$single_constraints_decls .= <<EOF;
+static const arch_register_req_t ${arch}_class_reg_req_${old_classname};
+EOF
 
-	push(@obst_classdef, "\tCLASS_$class_name = $class_idx,\n");
-	push(@obst_regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared }");
+	$single_constraints .= <<EOF;
+static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
+	arch_register_req_type_normal,
+	&${arch}_reg_classes[CLASS_${arch}_${old_classname}],
+	NULL,
+	0,
+	0
+};
+EOF
+
+	$regtypes_decl .= "extern const arch_register_t ${class_name}_regs[$numregs];\n";
+
+	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
+	push(@regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared, &${arch}_class_reg_req_${old_classname} }");
 
 	my $idx = 0;
-	push(@obst_reginit, "\t/* set largest possible mode for '$class_name' */\n");
-	push(@obst_reginit, "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n\n");
-	push(@obst_regtypes_def, "const arch_register_t ${class_name}_regs[$numregs] = {\n");
+	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
+	$regtypes_def .= "const arch_register_t ${class_name}_regs[$numregs] = {\n";
 
-	push(@obst_regdef, "enum reg_${class_name}_indices {\n");
+	$regdef .= "enum reg_${class_name}_indices {\n";
 	foreach (@class) {
-		my $ucname = uc($_->{"name"});
+		my $name = $_->{"name"};
+		my $ucname = uc($name);
 		my $type = translate_reg_type($_->{"type"});
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};
 
+		$regdef .= "\tREG_${ucname},\n";
 
-		$reg2class{$_->{"name"}} = { "class" => $old_classname, "index" => $idx }; # remember reg to class for later use
-		push(@obst_regdef, "\tREG_${ucname},\n");
+		$regtypes_def .= <<EOF;
+	{
+		"${realname}",
+		${class_ptr},
+		REG_${ucname},
+		${type},
+		&${arch}_single_reg_req_${old_classname}_${name}
+	},
+EOF
 
-		push(@obst_regtypes_def, "\t{\n");
-		push(@obst_regtypes_def, "\t\t\"$realname\",\n");
-		push(@obst_regtypes_def, "\t\t$class_ptr,\n");
-		push(@obst_regtypes_def, "\t\tREG_${ucname},\n");
-		push(@obst_regtypes_def, "\t\t$type\n");
-		push(@obst_regtypes_def, "\t},\n");
+		my $limitedarray = get_limited_array($name);
+		$single_constraints .= <<EOF;
+static const unsigned ${arch}_limited_${old_classname}_${name}[] = ${limitedarray};
+static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
+	arch_register_req_type_limited,
+	${class_ptr},
+	${arch}_limited_${old_classname}_${name},
+	0,
+	0
+};
+EOF
 
 		$idx++;
 	}
-	push(@obst_regtypes_def, "};\n");
+	$regtypes_def .= "};\n";
 
-	$regclass2len{$old_classname} = $idx;
-	push(@obst_regdef, "\t$numregs = $idx\n");
-	push(@obst_regdef, "};\n\n");
+	$regdef .= "\t$numregs = $idx\n";
+	$regdef .= "};\n\n";
 
 	$class_idx++;
 }
 
-push(@obst_classdef, "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n");
-push(@obst_classdef, "};\n\n");
+$classdef .= "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n";
+$classdef .= "};\n\n";
 
 $tmp = uc($arch);
 
@@ -204,24 +275,18 @@ print OUT<<EOF;
 #include "../bearch.h"
 #include "${arch}_nodes_attr.h"
 
+${regdef}
+${classdef}
+${regtypes_decl}
+
+extern arch_register_class_t ${arch}_reg_classes[N_CLASSES];
+
+void ${arch}_register_init(void);
+unsigned ${arch}_get_n_regs(void);
+
+#endif
 EOF
-
-print OUT @obst_regdef, "\n";
-
-print OUT @obst_classdef, "\n";
-
-print OUT @obst_regtypes_decl, "\n";
-
-print OUT "extern arch_register_class_t $arch\_reg_classes[N_CLASSES];\n\n";
-
-print OUT "void ".$arch."_register_init(void);\n\n";
-
-print OUT @obst_header_all, "\n";
-
-print OUT "\n#endif\n";
-
 close(OUT);
-
 
 
 # generate c file
@@ -248,20 +313,20 @@ print OUT<<EOF;
 #include "${arch}_map_regs.h"
 #include "irmode.h"
 
+${single_constraints_decls}
 EOF
 
-print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @obst_regclasses)."\n};\n\n";
+print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @regclasses)."\n};\n\n";
 
-print OUT @obst_regtypes_def, "\n";
+print OUT<<EOF;
+${single_constraints}
+${regtypes_def}
 
-print OUT "void ${arch}_register_init(void) {\n";
-print OUT @obst_reginit;
-print OUT "}\n\n";
-
-print OUT @obst_limit_func;
-
-print OUT @obst_req;
-
+void ${arch}_register_init(void)
+{
+${reginit}
+}
+EOF
 close(OUT);
 
 ###

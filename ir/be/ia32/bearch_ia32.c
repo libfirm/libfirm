@@ -887,8 +887,7 @@ static void ia32_before_abi(void *self)
  */
 static void ia32_prepare_graph(void *self)
 {
-	ia32_code_gen_t *cg  = self;
-	ir_graph        *irg = cg->irg;
+	ia32_code_gen_t *cg = self;
 
 	switch (be_transformer) {
 	case TRANSFORMER_DEFAULT:
@@ -1287,7 +1286,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 	}
 
 	in[0] = sp;
-	keep  = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], block, 1, in);
+	keep  = be_new_Keep(block, 1, in);
 	sched_add_before(node, keep);
 
 	/* exchange memprojs */
@@ -1457,7 +1456,11 @@ static void ia32_codegen(void *self)
 	ia32_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
-	ia32_gen_routine(cg, irg);
+	if (ia32_cg_config.emit_machcode) {
+		ia32_gen_binary_routine(cg, irg);
+	} else {
+		ia32_gen_routine(cg, irg);
+	}
 
 	cur_reg_set = NULL;
 
@@ -1764,19 +1767,16 @@ static void ia32_done(void *self)
  *  - the virtual floating point registers
  *  - the SSE vector register set
  */
-static unsigned ia32_get_n_reg_class(const void *self)
+static unsigned ia32_get_n_reg_class(void)
 {
-	(void) self;
 	return N_CLASSES;
 }
 
 /**
  * Return the register class for index i.
  */
-static const arch_register_class_t *ia32_get_reg_class(const void *self,
-                                                       unsigned i)
+static const arch_register_class_t *ia32_get_reg_class(unsigned i)
 {
-	(void) self;
 	assert(i < N_CLASSES);
 	return &ia32_reg_classes[i];
 }
@@ -1787,11 +1787,8 @@ static const arch_register_class_t *ia32_get_reg_class(const void *self,
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *ia32_get_reg_class_for_mode(const void *self,
-		const ir_mode *mode)
+const arch_register_class_t *ia32_get_reg_class_for_mode(const ir_mode *mode)
 {
-	(void) self;
-
 	if (mode_is_float(mode)) {
 		return ia32_cg_config.use_sse2 ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
 	}
@@ -1971,12 +1968,10 @@ static const ilp_sched_selector_t *ia32_get_ilp_sched_selector(const void *self)
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int ia32_get_reg_class_alignment(const void *self,
-                                        const arch_register_class_t *cls)
+static int ia32_get_reg_class_alignment(const arch_register_class_t *cls)
 {
 	ir_mode *mode = arch_register_class_mode(cls);
 	int bytes     = get_mode_size_bytes(mode);
-	(void) self;
 
 	if (mode_is_float(mode) && bytes > 8)
 		return 16;
@@ -1984,7 +1979,7 @@ static int ia32_get_reg_class_alignment(const void *self,
 }
 
 static const be_execution_unit_t ***ia32_get_allowed_execution_units(
-		const void *self, const ir_node *irn)
+		const ir_node *irn)
 {
 	static const be_execution_unit_t *_allowed_units_BRANCH[] = {
 		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH1],
@@ -2018,7 +2013,6 @@ static const be_execution_unit_t ***ia32_get_allowed_execution_units(
 		NULL
 	};
 	const be_execution_unit_t ***ret;
-	(void) self;
 
 	if (is_ia32_irn(irn)) {
 		ret = get_ia32_exec_units(irn);
@@ -2057,9 +2051,8 @@ static ir_graph **ia32_get_irg_list(const void *self, ir_graph ***irg_list)
 	return NULL;
 }
 
-static void ia32_mark_remat(const void *self, ir_node *node)
+static void ia32_mark_remat(ir_node *node)
 {
-	(void) self;
 	if (is_ia32_irn(node)) {
 		set_ia32_is_remat(node);
 	}
@@ -2326,9 +2319,8 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
 	return 0;
 }
 
-static asm_constraint_flags_t ia32_parse_asm_constraint(const void *self, const char **c)
+static asm_constraint_flags_t ia32_parse_asm_constraint(const char **c)
 {
-	(void) self;
 	(void) c;
 
 	/* we already added all our simple flags to the flags modifier list in
@@ -2336,10 +2328,8 @@ static asm_constraint_flags_t ia32_parse_asm_constraint(const void *self, const 
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static int ia32_is_valid_clobber(const void *self, const char *clobber)
+static int ia32_is_valid_clobber(const char *clobber)
 {
-	(void) self;
-
 	return ia32_get_clobber_register(clobber) != NULL;
 }
 

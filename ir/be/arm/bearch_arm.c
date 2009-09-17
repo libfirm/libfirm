@@ -669,17 +669,14 @@ static void arm_done(void *self) {
  * here to speed up register allocation (and makes dumps
  * smaller and more readable).
  */
-static unsigned arm_get_n_reg_class(const void *self) {
-	(void) self;
+static unsigned arm_get_n_reg_class(void) {
 	return N_CLASSES;
 }
 
 /**
  * Return the register class with requested index.
  */
-static const arch_register_class_t *arm_get_reg_class(const void *self,
-                                                      unsigned i) {
-	(void) self;
+static const arch_register_class_t *arm_get_reg_class(unsigned i) {
 	assert(i < N_CLASSES);
 	return &arm_reg_classes[i];
 }
@@ -690,8 +687,7 @@ static const arch_register_class_t *arm_get_reg_class(const void *self,
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *arm_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
-	(void) self;
+const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode) {
 	if (mode_is_float(mode))
 		return &arm_reg_classes[CLASS_arm_fpa];
 	else
@@ -970,15 +966,14 @@ static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) 
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int arm_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
-	(void) self;
+static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
+{
 	(void) cls;
 	/* ARM is a 32 bit CPU, no need for other alignment */
 	return 4;
 }
 
-static const be_execution_unit_t ***arm_get_allowed_execution_units(const void *self, const ir_node *irn) {
-	(void) self;
+static const be_execution_unit_t ***arm_get_allowed_execution_units(const ir_node *irn) {
 	(void) irn;
 	/* TODO */
 	panic("Unimplemented arm_get_allowed_execution_units()");
@@ -1040,17 +1035,15 @@ static int arm_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j) {
 	return 1;
 }
 
-static asm_constraint_flags_t arm_parse_asm_constraint(const void *self, const char **c)
+static asm_constraint_flags_t arm_parse_asm_constraint(const char **c)
 {
 	/* asm not supported */
-	(void) self;
 	(void) c;
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static int arm_is_valid_clobber(const void *self, const char *clobber)
+static int arm_is_valid_clobber(const char *clobber)
 {
-	(void) self;
 	(void) clobber;
 	return 0;
 }

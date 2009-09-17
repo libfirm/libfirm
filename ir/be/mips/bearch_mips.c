@@ -364,16 +364,13 @@ static void mips_done(void *self)
 	free(isa);
 }
 
-static unsigned mips_get_n_reg_class(const void *self)
+static unsigned mips_get_n_reg_class(void)
 {
-	(void) self;
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *mips_get_reg_class(const void *self,
-                                                       unsigned i)
+static const arch_register_class_t *mips_get_reg_class(unsigned i)
 {
-	(void) self;
 	assert(i < N_CLASSES);
 	return &mips_reg_classes[i];
 }
@@ -386,10 +383,8 @@ static const arch_register_class_t *mips_get_reg_class(const void *self,
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *mips_get_reg_class_for_mode(const void *self,
-                                                         const ir_mode *mode)
+const arch_register_class_t *mips_get_reg_class_for_mode(const ir_mode *mode)
 {
-	(void) self;
 	(void) mode;
 	ASSERT_NO_FLOAT(mode);
 	return &mips_reg_classes[CLASS_mips_gp];
@@ -657,18 +652,15 @@ static const arch_code_generator_if_t *mips_get_code_generator_if(void *self)
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int mips_get_reg_class_alignment(const void *self,
-                                        const arch_register_class_t *cls)
+static int mips_get_reg_class_alignment(const arch_register_class_t *cls)
 {
 	ir_mode *mode = arch_register_class_mode(cls);
-	(void) self;
 	return get_mode_size_bytes(mode);
 }
 
 static const be_execution_unit_t ***mips_get_allowed_execution_units(
-		const void *self, const ir_node *irn)
+		const ir_node *irn)
 {
-	(void) self;
 	(void) irn;
 	/* TODO */
 	panic("Unimplemented mips_get_allowed_execution_units()");
@@ -712,17 +704,14 @@ static const backend_params *mips_get_libfirm_params(void) {
 	return &p;
 }
 
-static asm_constraint_flags_t mips_parse_asm_constraint(const void *self,
-                                                        const char **c)
+static asm_constraint_flags_t mips_parse_asm_constraint(const char **c)
 {
-	(void) self;
 	(void) c;
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static int mips_is_valid_clobber(const void *self, const char *clobber)
+static int mips_is_valid_clobber(const char *clobber)
 {
-	(void) self;
 	(void) clobber;
 	return 0;
 }

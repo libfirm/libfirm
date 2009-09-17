@@ -815,7 +815,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		/* create the Keep for the caller save registers */
 		in   = (ir_node **) obstack_finish(obst);
-		keep = be_new_Keep(NULL, bl, n, in);
+		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = get_irn_link(in[i]);
 			be_node_set_reg_class_in(keep, i, reg->reg_class);
@@ -1208,7 +1208,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 		if (curr_sp != env->init_sp &&
 		    !(is_Proj(curr_sp) && be_is_Call(get_Proj_pred(curr_sp)))) {
 			nodes[0] = curr_sp;
-			keep     = be_new_Keep(env->arch_env->sp->reg_class, bl, 1, nodes);
+			keep     = be_new_Keep(bl, 1, nodes);
 			pmap_insert(env->keep_map, bl, keep);
 		}
 	}
@@ -1353,10 +1353,10 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 	obstack_free(&env->obst, in);
 
 	for (n = 0; n < n_regs; ++n) {
-		ir_node                   *pred     = rm[n].irn;
-		const arch_register_t     *reg      = rm[n].reg;
-		arch_register_type_t       add_type = 0;
-		ir_node                   *proj;
+		ir_node               *pred     = rm[n].irn;
+		const arch_register_t *reg      = rm[n].reg;
+		arch_register_type_t   add_type = 0;
+		ir_node               *proj;
 
 		/* stupid workaround for now... as not all nodes report register
 		 * requirements. */

@@ -119,9 +119,8 @@ typedef enum {
 	beo_RegParams,
 	beo_FrameAddr,
 	beo_Barrier,
-	beo_Unwind,
 	/* last backend node number */
-	beo_Last = beo_Unwind,
+	beo_Last = beo_Barrier,
 	/* first unfixed number. Dynamic node numbers start here */
 	iro_MaxOpcode
 } ir_opcode;

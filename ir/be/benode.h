@@ -56,7 +56,6 @@ extern ir_op *op_be_SubSP;
 extern ir_op *op_be_RegParams;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
-extern ir_op *op_be_Unwind;
 
 /**
  * A "symbolic constant" for the size of the stack frame to use with IncSP nodes.
@@ -141,7 +140,7 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map);
  * Create a new MemPerm node.
  */
 ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node *in[]);
-ir_node *be_new_Keep(const arch_register_class_t *cls, ir_node *bl, int arity, ir_node *in[]);
+ir_node *be_new_Keep(ir_node *block, int arity, ir_node *in[]);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
 
@@ -385,27 +384,6 @@ ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
 /**
- * Position numbers for the be_Unwind inputs.
- */
-enum {
-	be_pos_Unwind_mem  = 0,     /**< memory input of a be_Unwind node */
-	be_pos_Unwind_sp   = 1,     /**< stack pointer input of a be_Unwind node */
-};
-
-/**
- * Construct a new be_Unwind.
- *
- * @param dbg    debug info
- * @param bl     the block where the new node will be placed
- * @param mem    the memory input
- * @param sp     the stack pointer input
- */
-ir_node *be_new_Unwind(dbg_info *dbg, ir_node *bl, ir_node *mem, ir_node *sp);
-
-ir_node *be_get_Unwind_mem(const ir_node *irn);
-ir_node *be_get_Unwind_sp(const ir_node *irn);
-
-/**
  * Get the backend opcode of a backend node.
  * @param irn The node.
  * @return The backend opcode.
@@ -457,7 +435,8 @@ void be_set_constr_single_reg_out(ir_node *irn, int pos,
  * @param pos The position (@see be_set_constr_single_reg()).
  * @param req The register requirements which shall be transferred.
  */
-void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req);
+void be_set_constr_in(ir_node *irn, int pos, const arch_register_req_t *req);
+void be_set_constr_out(ir_node *irn, int pos, const arch_register_req_t *req);
 
 /**
  * Set the register class of a node.
@@ -495,6 +474,5 @@ static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_RegParams(const ir_node *irn) { return get_irn_opcode(irn) == beo_RegParams; }
 static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
 static inline int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
-static inline int be_is_Unwind   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Unwind   ; }
 
 #endif /* FIRM_BE_BENODE_T_H */

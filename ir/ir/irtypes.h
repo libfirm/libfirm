@@ -507,6 +507,7 @@ struct ir_graph {
 
 	int index;                         /**< a unique number for each graph */
 	ir_phase *phases[PHASE_LAST];      /**< Phase information. */
+	void     *be_data;                 /**< backend can put in private data here */
 #ifdef DEBUG_libfirm
 	int   n_outs;                      /**< Size wasted for outs */
 	long graph_nr;                     /**< a unique graph number for each

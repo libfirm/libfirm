@@ -1098,7 +1098,7 @@ CHECK_REQS: foreach (@regs) {
 		push(@obst_limit_func, "static const unsigned " . $limit_name . "[] = { ");
 		my $first = 1;
 		my $limitbitsetlen = $regclass2len{$class};
-		my $limitarraylen = $limitbitsetlen / 32 + ($limitbitsetlen % 32 > 0 ? 1 : 0);
+		my $limitarraylen = ($limitbitsetlen+31) / 32;
 		for(my $i = 0; $i < $limitarraylen; $i++) {
 
 			my $limitarraypart = $limit_array[$i];

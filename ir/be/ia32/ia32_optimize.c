@@ -838,7 +838,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 	sched_add_before(schedpoint, pop);
 
 	in[0] = val;
-	keep = be_new_Keep(&ia32_reg_classes[CLASS_ia32_gp], block, 1, in);
+	keep  = be_new_Keep(block, 1, in);
 	sched_add_before(schedpoint, keep);
 
 	return stack;

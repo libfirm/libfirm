@@ -70,4 +70,7 @@ void be_free_birg(be_irg_t *birg)
 		be_liveness_free(birg->lv);
 		birg->lv = NULL;
 	}
+
+	obstack_free(&birg->obst, NULL);
+	birg->irg->be_data = NULL;
 }

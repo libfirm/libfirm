@@ -215,8 +215,9 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
 struct arch_register_t {
 	const char                  *name;        /**< The name of the register. */
 	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-	unsigned                    index;        /**< The index of the register in the class. */
-	arch_register_type_t        type;         /**< The type of the register. */
+	unsigned                     index;       /**< The index of the register in the class. */
+	arch_register_type_t         type;        /**< The type of the register. */
+	const arch_register_req_t   *single_req;
 };
 
 static inline const arch_register_class_t *
@@ -237,9 +238,9 @@ const char *_arch_register_get_name(const arch_register_t *reg)
 	return reg->name;
 }
 
-#define arch_register_get_class(reg)      _arch_register_get_class(reg)
-#define arch_register_get_index(reg)      _arch_register_get_index(reg)
-#define arch_register_get_name(reg)       _arch_register_get_name(reg)
+#define arch_register_get_class(reg)        _arch_register_get_class(reg)
+#define arch_register_get_index(reg)        _arch_register_get_index(reg)
+#define arch_register_get_name(reg)         _arch_register_get_name(reg)
 
 /**
  * Convenience macro to check for register type.
@@ -255,13 +256,14 @@ const char *_arch_register_get_name(const arch_register_t *reg)
  * Like general purpose or floating point.
  */
 struct arch_register_class_t {
-	unsigned                     index;  /**< index of this register class */
-	const char                  *name;   /**< The name of the register class.*/
-	unsigned                     n_regs; /**< Number of registers in this
-	                                          class. */
-	ir_mode                     *mode;   /**< The mode of the register class.*/
-	const arch_register_t       *regs;   /**< The array of registers. */
-	arch_register_class_flags_t  flags;  /**< register class flags. */
+	unsigned                     index;   /**< index of this register class */
+	const char                  *name;    /**< The name of the register class.*/
+	unsigned                     n_regs;  /**< Number of registers in this
+	                                           class. */
+	ir_mode                     *mode;    /**< The mode of the register class.*/
+	const arch_register_t       *regs;    /**< The array of registers. */
+	arch_register_class_flags_t  flags;   /**< register class flags. */
+	const arch_register_req_t   *class_req;
 };
 
 /** return the number of registers in this register class */
@@ -572,14 +574,14 @@ struct arch_isa_if_t {
 	 * Get the the number of register classes in the isa.
 	 * @return The number of register classes.
 	 */
-	unsigned (*get_n_reg_class)(const void *self);
+	unsigned (*get_n_reg_class)(void);
 
 	/**
 	 * Get the i-th register class.
 	 * @param i The number of the register class.
 	 * @return The register class.
 	 */
-	const arch_register_class_t *(*get_reg_class)(const void *self, unsigned i);
+	const arch_register_class_t *(*get_reg_class)(unsigned i);
 
 	/**
 	 * Get the register class which shall be used to store a value of a given mode.
@@ -587,7 +589,7 @@ struct arch_isa_if_t {
 	 * @param mode The mode in question.
 	 * @return A register class which can hold values of the given mode.
 	 */
-	const arch_register_class_t *(*get_reg_class_for_mode)(const void *self, const ir_mode *mode);
+	const arch_register_class_t *(*get_reg_class_for_mode)(const ir_mode *mode);
 
 	/**
 	 * Get the ABI restrictions for procedure calls.
@@ -627,7 +629,7 @@ struct arch_isa_if_t {
 	 * @param cls   The register class.
 	 * @return      The alignment in bytes.
 	 */
-	int (*get_reg_class_alignment)(const void *self, const arch_register_class_t *cls);
+	int (*get_reg_class_alignment)(const arch_register_class_t *cls);
 
 	/**
 	 * A "static" function, returns the frontend settings
@@ -650,7 +652,7 @@ struct arch_isa_if_t {
 	 *                       NULL
 	 *                     };
 	 */
-	const be_execution_unit_t ***(*get_allowed_execution_units)(const void *self, const ir_node *irn);
+	const be_execution_unit_t ***(*get_allowed_execution_units)(const ir_node *irn);
 
 	/**
 	 * Return the abstract machine for this isa.
@@ -671,41 +673,41 @@ struct arch_isa_if_t {
 	/**
 	 * mark node as rematerialized
 	 */
-	void (*mark_remat)(const void *self, ir_node *node);
+	void (*mark_remat)(ir_node *node);
 
 	/**
 	 * parse an assembler constraint part and set flags according to its nature
 	 * advances the *c pointer to point to the last parsed character (so if you
 	 * parse a single character don't advance c)
 	 */
-	asm_constraint_flags_t (*parse_asm_constraint)(const void *self, const char **c);
+	asm_constraint_flags_t (*parse_asm_constraint)(const char **c);
 
 	/**
 	 * returns true if the string is a valid clobbered (register) in this
 	 * backend
 	 */
-	int (*is_valid_clobber)(const void *self, const char *clobber);
+	int (*is_valid_clobber)(const char *clobber);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
 #define arch_env_handle_intrinsics(env)                \
 	do { if((env)->impl->handle_intrinsics != NULL) (env)->impl->handle_intrinsics(); } while(0)
-#define arch_env_get_n_reg_class(env)                  ((env)->impl->get_n_reg_class(env))
-#define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(env, i))
-#define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((env), (mode)))
+#define arch_env_get_n_reg_class(env)                  ((env)->impl->get_n_reg_class())
+#define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(i))
+#define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((mode)))
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
 #define arch_env_get_code_generator_if(env)            ((env)->impl->get_code_generator_if((env)))
 #define arch_env_get_list_sched_selector(env,selector) ((env)->impl->get_list_sched_selector((env), (selector)))
 #define arch_env_get_ilp_sched_selector(env)           ((env)->impl->get_ilp_sched_selector(env))
-#define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((env), (cls)))
+#define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())
-#define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((env), (irn)))
+#define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((irn)))
 #define arch_env_get_machine(env)                      ((env)->impl->get_machine(env))
 #define arch_env_get_backend_irg_list(env,irgs)        ((env)->impl->get_backend_irg_list((env), (irgs)))
-#define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((env), (c))
-#define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((env), (clobber))
+#define arch_env_parse_asm_constraint(env,c)           ((env)->impl->parse_asm_constraint((c))
+#define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \
-	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((env), (node)); } while(0)
+	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)
 
 /**
  * ISA base class.

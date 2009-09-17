@@ -88,6 +88,9 @@ typedef struct {
 	 * rounding mode
 	 */
 	unsigned use_unsafe_floatconv:1;
+	/** emit machine code instead of assembler */
+	unsigned emit_machcode:1;
+
 	/** function alignment (a power of two in bytes) */
 	unsigned function_alignment;
 	/** alignment for labels (which are expected to be frequent jump targets) */

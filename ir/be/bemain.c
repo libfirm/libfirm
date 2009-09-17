@@ -264,7 +264,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 			if (tflags != 0) {
 				flags |= tflags;
 			} else {
-				flags |= isa_if->parse_asm_constraint(isa_if, &c);
+				flags |= isa_if->parse_asm_constraint(&c);
 			}
 			break;
 		}
@@ -300,7 +300,7 @@ int be_is_valid_clobber(const char *clobber)
 	if (strcmp(clobber, "cc") == 0)
 		return 1;
 
-	return isa_if->is_valid_clobber(isa_if, clobber);
+	return isa_if->is_valid_clobber(clobber);
 }
 
 void be_register_isa_if(const char *name, const arch_isa_if_t *isa)
@@ -448,6 +448,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	memset(birg, 0, sizeof(*birg));
 	birg->irg = irg;
 	birg->main_env = env;
+	obstack_init(&birg->obst);
 
 	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_activate_kind(irg, EDGE_KIND_DEP);
@@ -573,6 +574,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	/* First: initialize all birgs */
 	for(i = 0; i < num_birgs; ++i) {
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
+		irg->be_data = &birgs[i];
 		initialize_birg(&birgs[i], irg, &env);
 	}
 	arch_env_handle_intrinsics(arch_env);

@@ -1734,15 +1734,12 @@ static int sim_Keep(x87_state *state, ir_node *node)
  */
 static void keep_float_node_alive(ir_node *node)
 {
-	ir_node                     *block  = get_nodes_block(node);
-	const arch_register_class_t *cls    = arch_get_irn_reg_class_out(node);
-	ir_node                     *keep;
-
-	keep = be_new_Keep(cls, block, 1, &node);
+	ir_node *block = get_nodes_block(node);
+	ir_node *keep  = be_new_Keep(block, 1, &node);
 
 	assert(sched_is_scheduled(node));
 	sched_add_after(node, keep);
-}  /* keep_float_node_alive */
+}
 
 /**
  * Create a copy of a node. Recreate the node if it's a constant.

@@ -2457,10 +2457,9 @@ static ir_node *gen_vfist(dbg_info *dbgi, ir_node *block, ir_node *base, ir_node
 	if (ia32_cg_config.use_fisttp) {
 		/* Note: fisttp ALWAYS pop the tos. We have to ensure here that the value is copied
 		if other users exists */
-		const arch_register_class_t *reg_class = &ia32_reg_classes[CLASS_ia32_vfp];
 		ir_node *vfisttp = new_bd_ia32_vfisttp(dbgi, block, base, index, mem, val);
 		ir_node *value   = new_r_Proj(block, vfisttp, mode_E, pn_ia32_vfisttp_res);
-		be_new_Keep(reg_class, block, 1, &value);
+		be_new_Keep(block, 1, &value);
 
 		new_node = new_r_Proj(block, vfisttp, mode_M, pn_ia32_vfisttp_M);
 		*fist    = vfisttp;
@@ -5596,7 +5595,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		if (last_keep != NULL) {
 			be_Keep_add_node(last_keep, cls, in[0]);
 		} else {
-			last_keep = be_new_Keep(cls, block, 1, in);
+			last_keep = be_new_Keep(block, 1, in);
 			if (sched_is_scheduled(node)) {
 				sched_add_after(node, last_keep);
 			}

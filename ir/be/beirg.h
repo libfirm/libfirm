@@ -30,6 +30,7 @@
 #include "be.h"
 #include "be_types.h"
 #include "be_t.h"
+#include "irtypes.h"
 
 be_lv_t *be_assure_liveness(be_irg_t *birg);
 
@@ -54,31 +55,46 @@ struct be_irg_t {
 	ir_exec_freq           *exec_freq;
 	be_dom_front_info_t    *dom_front;
 	be_lv_t                *lv;
+	struct obstack          obst; /**< birg obstack (mainly used to keep
+	                                   register constraints which we can't keep
+	                                   in the irg obst, because it gets replace
+	                                   during code selection) */
 };
 
-static inline be_lv_t *
-be_get_birg_liveness(const be_irg_t *birg) {
+static inline be_lv_t *be_get_birg_liveness(const be_irg_t *birg)
+{
 	return birg->lv;
 }
 
-static inline ir_exec_freq *
-be_get_birg_exec_freq(const be_irg_t *birg) {
+static inline ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg)
+{
 	return birg->exec_freq;
 }
 
-static inline be_dom_front_info_t *
-be_get_birg_dom_front(const be_irg_t *birg) {
+static inline be_dom_front_info_t *be_get_birg_dom_front(const be_irg_t *birg)
+{
 	return birg->dom_front;
 }
 
-static inline ir_graph *
-be_get_birg_irg(const be_irg_t *birg) {
+static inline ir_graph *be_get_birg_irg(const be_irg_t *birg)
+{
 	return birg->irg;
 }
 
-static inline const arch_env_t *
-be_get_birg_arch_env(const be_irg_t *birg) {
+static inline const arch_env_t *be_get_birg_arch_env(const be_irg_t *birg)
+{
 	return birg->main_env->arch_env;
+}
+
+static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
+{
+	return (be_irg_t*) irg->be_data;
+}
+
+static inline struct obstack *be_get_birg_obst(const ir_graph *irg)
+{
+	be_irg_t *birg = be_birg_from_irg(irg);
+	return &birg->obst;
 }
 
 #endif /* FIRM_BE_BEIRG_H */

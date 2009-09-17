@@ -575,14 +575,13 @@ static void ppc32_done(void *self) {
 
 
 
-static unsigned ppc32_get_n_reg_class(const void *self) {
-	(void) self;
+static unsigned ppc32_get_n_reg_class(void)
+{
 	return N_CLASSES;
 }
 
-static const arch_register_class_t *ppc32_get_reg_class(const void *self,
-                                                        unsigned i) {
-	(void) self;
+static const arch_register_class_t *ppc32_get_reg_class(unsigned i)
+{
 	assert(i < N_CLASSES && "Invalid ppc register class requested.");
 	return &ppc32_reg_classes[i];
 }
@@ -595,8 +594,8 @@ static const arch_register_class_t *ppc32_get_reg_class(const void *self,
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *ppc32_get_reg_class_for_mode(const void *self, const ir_mode *mode) {
-	(void) self;
+const arch_register_class_t *ppc32_get_reg_class_for_mode(const ir_mode *mode)
+{
 	if (mode_is_float(mode))
 		return &ppc32_reg_classes[CLASS_ppc32_fp];
 	else
@@ -722,15 +721,13 @@ static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
-static int ppc32_get_reg_class_alignment(const void *self, const arch_register_class_t *cls) {
+static int ppc32_get_reg_class_alignment(const arch_register_class_t *cls)
+{
 	ir_mode *mode = arch_register_class_mode(cls);
-	(void) self;
-
 	return get_mode_size_bytes(mode);
 }
 
-static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const void *self, const ir_node *irn) {
-	(void) self;
+static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const ir_node *irn) {
 	(void) irn;
 	/* TODO */
 	panic("Unimplemented ppc32_get_allowed_execution_units()");
@@ -774,18 +771,16 @@ static const backend_params *ppc32_get_libfirm_params(void) {
 	return &p;
 }
 
-static asm_constraint_flags_t ppc32_parse_asm_constraint(const void *self, const char **c)
+static asm_constraint_flags_t ppc32_parse_asm_constraint(const char **c)
 {
 	/* no asm support yet */
-	(void) self;
 	(void) c;
 	return ASM_CONSTRAINT_FLAG_INVALID;
 }
 
-static int ppc32_is_valid_clobber(const void *self, const char *clobber)
+static int ppc32_is_valid_clobber(const char *clobber)
 {
 	/* no asm support yet */
-	(void) self;
 	(void) clobber;
 	return 0;
 }

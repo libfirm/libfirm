@@ -330,8 +330,6 @@ static ir_node *gen_Block(ir_node *node) {
 	ir_node  *macroblock      = get_Block_MacroBlock(node);
 	ir_node  *block;
 
-	/* we use the old blocks for now, because jumps allow cycles in the graph
-	 * we have to fix this later */
 	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
 	                    get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(node, block);

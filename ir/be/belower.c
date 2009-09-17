@@ -539,7 +539,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 		in[0] = irn;
 		in[1] = cpy;
-		keep = be_new_Keep(cls, block, 2, in);
+		keep = be_new_Keep(block, 2, in);
 	}
 
 	DB((dbg_constr, LEVEL_1, "created %+F(%+F, %+F)\n\n", keep, irn, cpy));
@@ -812,11 +812,10 @@ void assure_constraints(be_irg_t *birg) {
 		/* so we transform unnecessary ones into Keeps.       */
 		foreach_ir_nodeset(&entry->copies, cp, iter) {
 			if (be_is_CopyKeep(cp) && get_irn_n_edges(cp) < 1) {
-				const arch_register_class_t *cls = arch_get_irn_reg_class_out(cp);
-				int                          n   = get_irn_arity(cp);
-				ir_node                     *keep;
+				int      n   = get_irn_arity(cp);
+				ir_node *keep;
 
-				keep = be_new_Keep(cls, get_nodes_block(cp), n, get_irn_in(cp) + 1);
+				keep = be_new_Keep(get_nodes_block(cp), n, get_irn_in(cp) + 1);
 				sched_add_before(cp, keep);
 
 				/* Set all ins (including the block) of the CopyKeep BAD to keep the verifier happy. */

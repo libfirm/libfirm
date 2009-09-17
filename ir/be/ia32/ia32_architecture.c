@@ -130,6 +130,7 @@ enum cpu_support {
 };
 
 static int         opt_size             = 0;
+static int         emit_machcode        = 0;
 static cpu_support arch                 = cpu_generic;
 static cpu_support opt_arch             = cpu_generic;
 static int         use_sse2             = 0;
@@ -220,6 +221,8 @@ static const lc_opt_table_entry_t ia32_architecture_options[] = {
 	                  &opt_cc, 1),
 	LC_OPT_ENT_BIT("unsafe_floatconv", "do unsafe floating point controlword "
 	               "optimisations", &opt_unsafe_floatconv, 1),
+	LC_OPT_ENT_BOOL("machcode", "output machine code instead of assembler",
+	                &emit_machcode),
 	LC_OPT_LAST
 };
 
@@ -512,6 +515,7 @@ void ia32_setup_cg_config(void)
 	c->use_i486             = (arch & arch_mask) >= arch_i486;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
+	c->emit_machcode        = emit_machcode;
 
 	c->function_alignment       = arch_costs->function_alignment;
 	c->label_alignment          = arch_costs->label_alignment;

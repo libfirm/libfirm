@@ -46,8 +46,8 @@ void be_info_new_node(ir_node *node)
 	if (is_Proj(node)) // Projs need no be info, their tuple holds all information
 		return;
 
-	obst  = get_irg_obstack(current_ir_graph);
-	info  = OALLOCZ(obst, backend_info_t);
+	obst = be_get_birg_obst(current_ir_graph);
+	info = OALLOCZ(obst, backend_info_t);
 
 	if (is_Phi(node)) {
 		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
@@ -59,36 +59,39 @@ void be_info_new_node(ir_node *node)
 
 static void new_Phi_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
-	struct obstack *obst  = get_irg_obstack(get_irn_irg(new_node));
 	backend_info_t *old_info = be_get_info(old_node);
 	backend_info_t *new_info = be_get_info(new_node);
 
+	*new_info = *old_info;
+
 	old_phi_copy_attr(old_node, new_node);
-	new_info->out_infos = DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 }
 
-int be_info_equal(const ir_node *node1, const ir_node *node2)
+int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2)
 {
-	backend_info_t *info1 = be_get_info(node1);
-	backend_info_t *info2 = be_get_info(node2);
 	int             len   = ARR_LEN(info1->out_infos);
 	int             i;
 
 	if (ARR_LEN(info2->out_infos) != len)
-		return 0;
+		return false;
 
 	for (i = 0; i < len; ++i) {
 		const reg_out_info_t *out1 = &info1->out_infos[i];
 		const reg_out_info_t *out2 = &info2->out_infos[i];
 		if (out1->reg != out2->reg)
-			return 0;
+			return false;
 		if (!reg_reqs_equal(out1->req, out2->req))
-			return 0;
+			return false;
 	}
 
-	/* TODO: in reqs */
+	return true;
+}
 
-	return 1;
+int be_nodes_equal(const ir_node *node1, const ir_node *node2)
+{
+	backend_info_t *info1 = be_get_info(node1);
+	backend_info_t *info2 = be_get_info(node2);
+	return be_infos_equal(info1, info2);
 }
 
 static void init_walker(ir_node *node, void *data)

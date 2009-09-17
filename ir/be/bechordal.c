@@ -333,7 +333,7 @@ static ir_node *pre_process_constraints(be_chordal_alloc_env_t *alloc_env,
 		 * since ignore-nodes are not Perm'ed.
 		 */
 		if (op->has_constraints &&  is_Proj(proj) && get_Proj_pred(proj) == perm) {
-			be_set_constr_limited(perm, BE_OUT_POS(get_Proj_proj(proj)), op->req);
+			be_set_constr_out(perm, get_Proj_proj(proj), op->req);
 		}
 	}
 

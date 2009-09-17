@@ -58,9 +58,6 @@ typedef unsigned long long ulong64;
  */
 pset *be_empty_set(void);
 
-/** Undefine this to disable debugging mode. */
-#define BE_DEBUG 1
-
 /**
  * Convenient block getter.
  * Works also, if the given node is a block.
@@ -78,11 +75,6 @@ static inline const ir_node *get_block_const(const ir_node *irn)
 	return is_Block(irn) ? irn : get_nodes_block(irn);
 }
 
-static inline int is_firm_be_mode(const ir_mode *mode)
-{
-	return mode_is_data(mode);
-}
-
 /**
  * Check, if a node produces or consumes a data value.
  * If it does, it is significant for scheduling and register allocation.
@@ -96,13 +88,13 @@ static inline int is_data_node(const ir_node *irn)
 	int i, n;
 
 	/* If the node produces a data value, return immediately. */
-	if (is_firm_be_mode(get_irn_mode(irn)))
+	if (mode_is_data(get_irn_mode(irn)))
 		return 1;
 
 	/* else check, if it takes a data value, if that is so, return */
 	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
-		if (is_firm_be_mode(get_irn_mode(op)))
+		if (mode_is_data(get_irn_mode(op)))
 			return 1;
 	}
 
