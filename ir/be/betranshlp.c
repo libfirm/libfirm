@@ -327,17 +327,8 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 static ir_node *gen_Block(ir_node *node) {
 	ir_graph *irg             = current_ir_graph;
 	dbg_info *dbgi            = get_irn_dbg_info(node);
-	ir_node  *old_start_block = get_irn_n(env.old_anchor, anchor_start_block);
 	ir_node  *macroblock      = get_Block_MacroBlock(node);
 	ir_node  *block;
-
-	/*
-	 * We replace the ProjX from the start node with a jump,
-	 * so the startblock has no preds anymore now
-	 */
-	if (node == old_start_block) {
-		return new_rd_Block(dbgi, irg, 0, NULL);
-	}
 
 	/* we use the old blocks for now, because jumps allow cycles in the graph
 	 * we have to fix this later */
