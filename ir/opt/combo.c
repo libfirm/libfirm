@@ -196,7 +196,6 @@ typedef struct environment_t {
 	partition_t     *touched;       /**< the touched set. */
 	partition_t     *initial;       /**< The initial partition. */
 	set             *opcode2id_map; /**< The opcodeMode->id map. */
-	pmap            *type2id_map;   /**< The type->id map. */
 	ir_node         **kept_memory;  /**< Array of memory nodes that must be kept. */
 	int             end_idx;        /**< -1 for local and 0 for global congruences. */
 	int             lambda_input;   /**< Captured argument for lambda_partition(). */
@@ -3480,7 +3479,6 @@ void combo(ir_graph *irg) {
 	env.dbg_list       = NULL;
 #endif
 	env.opcode2id_map  = new_set(cmp_opcode, iro_Last * 4);
-	env.type2id_map    = pmap_create();
 	env.kept_memory    = NEW_ARR_F(ir_node *, 0);
 	env.end_idx        = get_opt_global_cse() ? 0 : -1;
 	env.lambda_input   = 0;
@@ -3572,7 +3570,6 @@ void combo(ir_graph *irg) {
 	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));
 
 	DEL_ARR_F(env.kept_memory);
-	pmap_destroy(env.type2id_map);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
 
