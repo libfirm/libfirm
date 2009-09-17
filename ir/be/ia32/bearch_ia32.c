@@ -890,25 +890,6 @@ static void ia32_prepare_graph(void *self)
 	ia32_code_gen_t *cg  = self;
 	ir_graph        *irg = cg->irg;
 
-	/* do local optimizations */
-	optimize_graph_df(irg);
-
-	/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
-	 * or critical edges in the backend */
-	optimize_cf(irg);
-	remove_critical_cf_edges(irg);
-
-	/* TODO: we often have dead code reachable through out-edges here. So for
-	 * now we rebuild edges (as we need correct user count for code selection)
-	 */
-#if 1
-	edges_deactivate(cg->irg);
-	edges_activate(cg->irg);
-#endif
-
-	if (cg->dump)
-		be_dump(cg->irg, "-pre_transform", dump_ir_block_graph_sched);
-
 	switch (be_transformer) {
 	case TRANSFORMER_DEFAULT:
 		/* transform remaining nodes into assembler instructions */

@@ -648,6 +648,22 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
 
+		/* do local optimizations */
+		optimize_graph_df(irg);
+
+		/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
+		 * or critical edges in the backend */
+		optimize_cf(irg);
+		remove_critical_cf_edges(irg);
+
+		/* TODO: we often have dead code reachable through out-edges here. So for
+		 * now we rebuild edges (as we need correct user count for code selection)
+		 */
+		edges_deactivate(irg);
+		edges_activate(irg);
+
+		dump(DUMP_PREPARED, irg, "-pre_transform", dump_ir_block_graph_sched);
+
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
 			be_verify_out_edges(irg);
