@@ -236,6 +236,10 @@ ir_exec_freq *create_execfreq(ir_graph *irg)
 	execfreq->set = new_set(cmp_freq, 32);
 
 	memset(&execfreq->hook, 0, sizeof(execfreq->hook));
+
+	// set reasonable values to convert double execfreq to ulong execfreq
+	execfreq->m = 1.0;
+
 	execfreq->hook.context = execfreq;
 	execfreq->hook.hook._hook_node_info = exec_freq_node_info;
 	register_hook(hook_node_info, &execfreq->hook);
