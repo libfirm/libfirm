@@ -445,6 +445,8 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
+	irg->be_data = birg;
+
 	memset(birg, 0, sizeof(*birg));
 	birg->irg = irg;
 	birg->main_env = env;
@@ -574,7 +576,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	/* First: initialize all birgs */
 	for(i = 0; i < num_birgs; ++i) {
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
-		irg->be_data = &birgs[i];
 		initialize_birg(&birgs[i], irg, &env);
 	}
 	arch_env_handle_intrinsics(arch_env);
