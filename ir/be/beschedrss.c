@@ -55,7 +55,7 @@
 
 #include "beabi.h"
 #include "bemodule.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "beirg.h"
 #include "belive.h"

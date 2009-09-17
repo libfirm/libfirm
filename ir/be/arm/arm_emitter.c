@@ -57,7 +57,7 @@
 #include "arm_map_regs.h"
 #include "gen_arm_regalloc_if.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 
 #define BLOCK_PREFIX ".L"
 

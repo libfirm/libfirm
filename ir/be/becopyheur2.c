@@ -48,7 +48,7 @@
 
 #include "bemodule.h"
 #include "beabi.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "becopyopt.h"
 #include "becopyopt_t.h"
 #include "bechordal_t.h"

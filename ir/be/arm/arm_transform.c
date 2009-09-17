@@ -38,7 +38,7 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../beirg.h"
 #include "../beutil.h"
 #include "../betranshlp.h"

@@ -34,7 +34,7 @@
 
 #include "besched.h"
 #include "belistsched.h"
-#include "benode_t.h"
+#include "benode.h"
 
 
 typedef struct _usage_stats_t {

@@ -40,7 +40,7 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../beabi.h"
 #include "../besched.h"
 #include "../besched.h"

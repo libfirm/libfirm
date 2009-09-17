@@ -42,7 +42,7 @@
 #include "bechordal_t.h"
 #include "bearch.h"
 #include "belive_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "bestatevent.h"
 #include "beirg.h"

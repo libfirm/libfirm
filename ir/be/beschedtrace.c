@@ -32,7 +32,7 @@
 
 #include "besched.h"
 #include "belistsched.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "belive.h"
 
 /* we need a special mark */

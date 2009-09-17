@@ -58,7 +58,7 @@
 #include "besched.h"
 #include "beirgmod.h"
 #include "belive_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bechordal_t.h"
 #include "bespill.h"
 #include "beloopana.h"

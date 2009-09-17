@@ -40,7 +40,7 @@
 
 #include "bearch.h"
 #include "belower.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "bestat.h"
 #include "bessaconstr.h"

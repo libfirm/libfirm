@@ -72,7 +72,7 @@
 #include "beirg.h"
 #include "belive_t.h"
 #include "bemodule.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bera.h"
 #include "besched.h"
 #include "bespill.h"

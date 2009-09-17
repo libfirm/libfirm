@@ -61,7 +61,7 @@
 #include "lc_opts_enum.h"
 
 #include "be.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "beilpsched.h"
 #include "beutil.h"

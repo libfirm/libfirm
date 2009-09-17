@@ -49,7 +49,7 @@
 #include "be.h"
 #include "beabi.h"
 #include "bearch.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "belive_t.h"
 #include "besched.h"
 #include "beirg.h"

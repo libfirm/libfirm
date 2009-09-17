@@ -39,7 +39,7 @@
 #include "error.h"
 
 #include "../besched.h"
-#include "../benode_t.h"
+#include "../benode.h"
 
 #include "ppc32_emitter.h"
 #include "gen_ppc32_emitter.h"

@@ -60,7 +60,7 @@
 #include "bearch.h"
 #include "besched.h"
 #include "belive_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beutil.h"
 #include "beinsn_t.h"
 #include "bessaconstr.h"

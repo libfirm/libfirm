@@ -42,7 +42,7 @@
 #include "bestat.h"
 #include "belive_t.h"
 #include "besched.h"
-#include "benode_t.h"
+#include "benode.h"
 
 
 

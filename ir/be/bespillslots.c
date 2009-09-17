@@ -37,7 +37,7 @@
 #include "unionfind.h"
 #include "irdump_t.h"
 
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "bespill.h"
 #include "bespillslots.h"

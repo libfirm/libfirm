@@ -44,7 +44,7 @@
 #include "../bearch.h"
 #include "../besched.h"
 #include "../beabi.h"
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../bestate.h"
 #include "../beutil.h"
 #include "../bessaconstr.h"

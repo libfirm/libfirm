@@ -48,7 +48,7 @@
 #include "array_t.h"
 #include "height.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../besched.h"
 #include "../beabi.h"
 #include "../beutil.h"

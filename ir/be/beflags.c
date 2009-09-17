@@ -49,7 +49,7 @@
 #include "bearch.h"
 #include "beirg.h"
 #include "besched.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "belive.h"
 
 static const arch_register_class_t *flag_class = NULL;

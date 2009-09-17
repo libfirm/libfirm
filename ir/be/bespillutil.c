@@ -52,7 +52,7 @@
 #include "bespill.h"
 #include "bespillutil.h"
 #include "belive_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bechordal_t.h"
 #include "bestatevent.h"
 #include "bessaconstr.h"

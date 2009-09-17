@@ -54,7 +54,7 @@
 #include "be_t.h"
 #include "belive_t.h"
 #include "besched.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bearch.h"
 
 #include "beirgmod.h"
@@ -973,12 +973,6 @@ void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_
 	} else if (req->type == arch_register_req_type_none) {
 		req->type = arch_register_req_type_normal;
 	}
-}
-
-void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type)
-{
-	arch_register_req_t *req = get_be_req(irn, pos);
-	req->type = type;
 }
 
 ir_node *be_get_IncSP_pred(ir_node *irn) {

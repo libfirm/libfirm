@@ -43,7 +43,7 @@
 #include "debug.h"
 
 #include "../bearch.h"
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../belower.h"
 #include "../besched.h"
 #include "../beblocksched.h"

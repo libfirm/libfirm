@@ -45,7 +45,7 @@
 #include "lc_opts.h"
 
 #include "../besched.h"
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../beabi.h"
 #include "../be_dbgout.h"
 #include "../beemitter.h"

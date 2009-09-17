@@ -52,7 +52,7 @@
 #include "besched.h"
 #include "besched.h"
 #include "belive_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bearch.h"
 #include "beirgmod.h"
 #include "beifg.h"

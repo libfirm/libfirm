@@ -28,7 +28,7 @@
 
 #include "beinfo.h"
 #include "bearch.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "error.h"

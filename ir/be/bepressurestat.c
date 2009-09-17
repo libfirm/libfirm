@@ -50,7 +50,7 @@
 #include "besched.h"
 #include "beirgmod.h"
 #include "bearch.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beutil.h"
 #include "bespill.h"
 #include "beirg.h"

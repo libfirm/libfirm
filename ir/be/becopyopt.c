@@ -48,7 +48,7 @@
 
 #include "bemodule.h"
 #include "bearch.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beutil.h"
 #include "beifg_t.h"
 #include "beintlive_t.h"

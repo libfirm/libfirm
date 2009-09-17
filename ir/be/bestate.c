@@ -46,7 +46,7 @@
 #include "besched.h"
 #include "belive_t.h"
 #include "bemodule.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bessaconstr.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

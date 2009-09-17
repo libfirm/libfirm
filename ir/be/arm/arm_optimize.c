@@ -29,7 +29,7 @@
 #include "ircons.h"
 #include "error.h"
 
-#include "benode_t.h"
+#include "benode.h"
 #include "bepeephole.h"
 #include "besched.h"
 

@@ -37,7 +37,7 @@
 #include "irnodeset.h"
 
 #include "bechordal_t.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beutil.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"

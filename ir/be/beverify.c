@@ -42,7 +42,7 @@
 #include "beverify.h"
 #include "belive.h"
 #include "besched.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beirg.h"
 #include "beintlive_t.h"
 

@@ -58,13 +58,6 @@ extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
 extern ir_op *op_be_Unwind;
 
-/** Not used yet. */
-typedef enum {
-	be_frame_flag_spill = 1,
-	be_frame_flag_local = 2,
-	be_frame_flag_arg   = 4
-} be_frame_flag_t;
-
 /**
  * A "symbolic constant" for the size of the stack frame to use with IncSP nodes.
  * It gets back-patched to the real size as soon it is known.
@@ -474,14 +467,6 @@ void be_set_constr_limited(ir_node *irn, int pos, const arch_register_req_t *req
  */
 void be_node_set_reg_class_in(ir_node *irn, int pos, const arch_register_class_t *cls);
 void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_t *cls);
-
-/**
- * Set the register requirement type of a node.
- * @param irn The node itself.
- * @param pos The position (0..n) for arguments, (-1..-m) for results.
- * @param flags The register requirement type to set for that node and position.
- */
-void be_node_set_req_type(ir_node *irn, int pos, arch_register_req_type_t type);
 
 /**
  * Set the register requirements for a phi node.

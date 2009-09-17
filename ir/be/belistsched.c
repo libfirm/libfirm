@@ -31,7 +31,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "benode_t.h"
+#include "benode.h"
 #include "be_t.h"
 
 #include "obst.h"

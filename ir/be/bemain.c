@@ -54,7 +54,7 @@
 #include "be_t.h"
 #include "bemodule.h"
 #include "beutil.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "beirgmod.h"
 #include "besched.h"
 #include "belistsched.h"

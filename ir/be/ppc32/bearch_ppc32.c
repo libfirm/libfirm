@@ -38,7 +38,7 @@
 #include "error.h"
 
 #include "../bearch.h"                /* the general register allocator interface */
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../belower.h"
 #include "../besched.h"
 #include "be.h"

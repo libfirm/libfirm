@@ -48,7 +48,7 @@
 #include "irnodeset.h"
 #include "height.h"
 
-#include "benode_t.h"
+#include "benode.h"
 #include "besched.h"
 #include "beschedmris.h"
 #include "beirg.h"

@@ -38,7 +38,7 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 #include "bearch_ppc32_t.h"
 
 #include "ppc32_nodes_attr.h"

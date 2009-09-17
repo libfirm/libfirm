@@ -34,7 +34,7 @@
 #include "iropt_t.h"
 #include "debug.h"
 
-#include "../benode_t.h"
+#include "../benode.h"
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_nodes_attr.h"

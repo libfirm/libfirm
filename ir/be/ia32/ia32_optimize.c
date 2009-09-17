@@ -41,7 +41,7 @@
 
 #include "../be_t.h"
 #include "../beabi.h"
-#include "../benode_t.h"
+#include "../benode.h"
 #include "../besched.h"
 #include "../bepeephole.h"
 

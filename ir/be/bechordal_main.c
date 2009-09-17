@@ -63,7 +63,7 @@
 #include "bearch.h"
 #include "beifg_t.h"
 #include "beifg_impl.h"
-#include "benode_t.h"
+#include "benode.h"
 #include "bestatevent.h"
 #include "bestat.h"
 #include "bemodule.h"
@@ -79,7 +79,7 @@
 #include "becopyopt.h"
 #include "bessadestr.h"
 #include "beverify.h"
-#include "benode_t.h"
+#include "benode.h"
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
