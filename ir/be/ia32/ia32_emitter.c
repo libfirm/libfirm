@@ -2223,6 +2223,530 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 	LC_OPT_LAST
 };
 
+/* ==== Experimental binary emitter ==== */
+
+static unsigned char reg_map[N_ia32_gp_REGS];
+
+static void build_reg_map(void)
+{
+	reg_map[REG_EAX] = 0x0;
+	reg_map[REG_ECX] = 0x1;
+	reg_map[REG_EDX] = 0x2;
+	reg_map[REG_EBX] = 0x3;
+	reg_map[REG_ESP] = 0x4;
+	reg_map[REG_EBP] = 0x5;
+	reg_map[REG_ESI] = 0x6;
+	reg_map[REG_EDI] = 0x7;
+}
+
+/* Node: The following routines are supposed to append bytes, words, dwords
+   to the output stream.
+   Currently the implementation is stupid in that it still creates output
+   for an "assembler" in the form of .byte, .long
+   We will change this when enough infrastructure is there to create complete
+   machine code in memory/object files */
+
+static void bemit8(const unsigned char byte)
+{
+	be_emit_irprintf("\t.byte 0x%x\n", byte);
+	be_emit_write_line();
+}
+
+static void bemit16(const unsigned u16)
+{
+	be_emit_irprintf("\t.word 0x%x\n", u16);
+	be_emit_write_line();
+}
+
+static void bemit32(const unsigned u32)
+{
+	be_emit_irprintf("\t.long 0x%x\n", u32);
+	be_emit_write_line();
+}
+
+static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
+                         bool is_relative)
+{
+	if (entity == NULL) {
+		bemit32(offset);
+		return;
+	}
+
+	/* the final version should remember the position in the bytestream
+	   and patch it with the correct address at linktime... */
+	be_emit_cstring("\t.long ");
+	if (entity_sign)
+		be_emit_char('-');
+	set_entity_backend_marked(entity, 1);
+	be_gas_emit_entity(entity);
+
+	if (is_relative) {
+		be_emit_cstring("-.");
+	}
+
+	if (offset != 0) {
+		be_emit_irprintf("%+d", offset);
+	}
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
+/* end emit routines, all emitters following here should only use the functions
+   above. */
+
+static void bemit_modrr(const arch_register_t *op1_dest,
+                        const arch_register_t *op2)
+{
+	unsigned char modrm = 0xC0;
+	modrm |= reg_map[op1_dest->index];
+	modrm |= reg_map[op2->index] << 3;
+	bemit8(modrm);
+}
+
+static void bemit_modru(const arch_register_t *dest, unsigned val)
+{
+	assert(val <= 7);
+	unsigned char modrm = 0xC0;
+	modrm |= reg_map[dest->index];
+	modrm |= val << 3;
+	bemit8(modrm);
+}
+
+static unsigned get_imm_size(ir_entity *entity, int offset)
+{
+	if (entity != NULL)
+		return 32;
+	if (offset >= -127 && offset < 128) {
+		return 8;
+	} else if (offset >= -32768 && offset < 32767) {
+		return 16;
+	} else {
+		return 32;
+	}
+}
+
+static void bemit_binop_with_imm(const ir_node *node, unsigned opimm8,
+                                 unsigned opimm32, unsigned ruval)
+{
+	const arch_register_t       *reg  = get_out_reg(node, 0);
+	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
+	unsigned size = get_imm_size(attr->symconst, attr->offset);
+
+	switch (size) {
+	case 8:
+		bemit8(opimm8);
+		bemit_modru(reg, ruval);
+		bemit8(attr->offset);
+		return;
+	case 16:
+	case 32:
+		bemit8(opimm32);
+		bemit_modru(reg, ruval);
+		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
+		return;
+	}
+	panic("invalid imm size?!?");
+}
+
+static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
+{
+	ir_entity *ent       = get_ia32_am_sc(node);
+	int        offs      = get_ia32_am_offs_int(node);
+	ir_node   *base      = get_irn_n(node, n_ia32_base);
+	int        has_base  = !is_ia32_NoReg_GP(base);
+	ir_node   *index     = get_irn_n(node, n_ia32_index);
+	int        has_index = !is_ia32_NoReg_GP(index);
+	unsigned   modrm     = 0;
+	unsigned   sib       = 0;
+	unsigned   emitoffs  = 0;
+	bool       emitsib   = false;
+
+	/* set the mod part depending on displacement */
+	if (ent != NULL) {
+		modrm |= 0x80;
+		emitoffs = 32;
+	} else if (offs == 0) {
+		emitoffs = 0;
+	} else if (offs >= -127 && offs <= 128) {
+		modrm |= 0x40;
+		emitoffs = 8;
+	} else {
+		modrm |= 0x80;
+		emitoffs = 32;
+	}
+
+	/* determine if we need a SIB byte */
+	if (has_index) {
+		const arch_register_t *reg_index = arch_get_irn_register(index);
+		assert(reg_index->index != REG_ESP);
+		sib |= reg_map[reg_index->index] << 3;
+
+		if (has_base) {
+			const arch_register_t *reg = arch_get_irn_register(base);
+			sib |= reg_map[reg->index];
+		} else {
+			sib |= 0x05;
+		}
+
+		int scale = get_ia32_am_scale(node);
+		assert(scale < 4);
+		sib |= scale << 6;
+		emitsib = true;
+	}
+
+	/* determine modrm byte */
+	if (emitsib) {
+		modrm |= 0x04;
+	} else if (has_base) {
+		const arch_register_t *reg = arch_get_irn_register(base);
+		/* we are forced to emit a sib when base is ESP */
+		if (reg->index == REG_ESP) {
+			sib     = 0x24;
+			emitsib = true;
+
+		/* we are forced to emit a 32bit offset as EBP base without
+		   offset is a special case for displacement without base */
+		} else if (reg->index == REG_EBP && emitoffs == 0) {
+			assert( (modrm & 0xC0) == 0);
+			emitoffs  = 8;
+			modrm    |= 0x40;
+		}
+		modrm |= reg_map[reg->index];
+	} else {
+		modrm    = 0x05;
+		emitoffs = 32;
+	}
+
+	modrm |= dest_reg << 3;
+
+	bemit8(modrm);
+	if (emitsib)
+		bemit8(sib);
+
+	/* emit displacement */
+	if (emitoffs == 8) {
+		bemit8((unsigned) offs);
+	} else if (emitoffs == 32) {
+		bemit_entity(ent, is_ia32_am_sc_sign(node), offs, false);
+	}
+}
+
+static void bemit_binop(const ir_node *node, unsigned modrr, unsigned am)
+{
+	const arch_register_t *out = get_in_reg(node, n_ia32_binary_left);
+	if (get_ia32_op_type(node) == ia32_AddrModeS) {
+		bemit8(am);
+		bemit_modsourceam(reg_map[out->index], node);
+	} else {
+		const arch_register_t *op2 = get_in_reg(node, n_ia32_binary_right);
+		assert(get_ia32_op_type(node) == ia32_Normal);
+		bemit8(modrr);
+		bemit_modrr(out, op2);
+	}
+}
+
+static void bemit_immediate(const ir_node *node, bool relative)
+{
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(node);
+	bemit_entity(attr->symconst, attr->sc_sign, attr->offset, relative);
+}
+
+static void bemit_copy(const ir_node *copy)
+{
+	const ir_node *op = be_get_Copy_op(copy);
+	const arch_register_t *in  = arch_get_irn_register(op);
+	const arch_register_t *out = arch_get_irn_register(copy);
+
+	if (in == out || is_unknown_reg(in))
+		return;
+	/* copies of vf nodes aren't real... */
+	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
+		return;
+
+	if (get_irn_mode(copy) == mode_E) {
+		panic("NIY");
+	} else {
+		assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
+		bemit8(0x89);
+		bemit_modrr(out, in);
+	}
+}
+
+static void bemit_xor0(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+	bemit8(0x31);
+	bemit_modrr(out, out);
+}
+
+static void bemit_const(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+	bemit8(0xB8 + reg_map[out->index]);
+	bemit_immediate(node, false);
+}
+
+static void bemit_add(const ir_node *node)
+{
+	ir_node *right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		/* TODO: there's a shorter variant with DEST=EAX */
+		bemit_binop_with_imm(node, 0x83, 0x81, 0);
+	} else {
+		bemit_binop(node, 0x01, 0x03);
+	}
+}
+
+static void bemit_sub(const ir_node *node)
+{
+	ir_node *right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		/* TODO: there's a shorter variant with DEST=EAX */
+		bemit_binop_with_imm(node, 0x83, 0x81, 5);
+	} else {
+		bemit_binop(node, 0x29, 0x2B);
+	}
+}
+
+static void bemit_xor(const ir_node *node)
+{
+	ir_node *right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		/* TODO: there's a shorter variant with DEST=EAX */
+		bemit_binop_with_imm(node, 0x83, 0x81, 6);
+	} else {
+		bemit_binop(node, 0x31, 0x33);
+	}
+}
+
+static void bemit_not(const ir_node *node)
+{
+	const arch_register_t *reg = get_out_reg(node, 0);
+	bemit8(0xF7);
+	bemit_modru(reg, 2);
+}
+
+static void bemit_lea(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+	bemit8(0x8D);
+	bemit_modsourceam(reg_map[out->index], node);
+}
+
+static void bemit_cltd(const ir_node *node)
+{
+	(void) node;
+	bemit8(0x99);
+}
+
+static void bemit_load(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+
+	/* TODO: load from constant address to EAX can be encoded
+	   as 0xA1 [offset] */
+	bemit8(0x8B);
+	bemit_modsourceam(reg_map[out->index], node);
+}
+
+static void bemit_store(const ir_node *node)
+{
+	const ir_node *value = get_irn_n(node, n_ia32_Store_val);
+
+	if (is_ia32_Immediate(value)) {
+		bemit8(0xC7);
+		bemit_modsourceam(0, node);
+		bemit_immediate(value, false);
+	} else {
+		/* TODO: store to constant address from EAX can be encoded as
+		   0xA3 [offset]*/
+		const arch_register_t *in = get_in_reg(node, n_ia32_Store_val);
+		bemit8(0x89);
+		bemit_modsourceam(reg_map[in->index], node);
+	}
+}
+
+static void bemit_push(const ir_node *node)
+{
+	const ir_node *value = get_irn_n(node, n_ia32_Push_val);
+
+	if (is_ia32_Immediate(value)) {
+		const ia32_immediate_attr_t *attr
+			= get_ia32_immediate_attr_const(value);
+		unsigned size = get_imm_size(attr->symconst, attr->offset);
+		/* TODO: check for bitsizes different from 32... */
+		switch (size) {
+		case 8:
+			bemit8(0x6A);
+			bemit8(attr->offset);
+			break;
+		case 16:
+		case 32:
+			bemit8(0x68);
+			bemit_immediate(value, false);
+			break;
+		}
+	} else {
+		bemit8(0xFF);
+		bemit_modsourceam(6, node);
+	}
+}
+
+static void bemit_pop(const ir_node *node)
+{
+	const arch_register_t *reg = get_out_reg(node, pn_ia32_Pop_res);
+	/* TODO: check for AM pop */
+	bemit8(0x58 + reg_map[reg->index]);
+}
+
+static void bemit_call(const ir_node *node)
+{
+	ir_node *proc = get_irn_n(node, n_ia32_Call_addr);
+
+	if (is_ia32_Immediate(proc)) {
+		bemit8(0xE8);
+		bemit_immediate(proc, true);
+	} else {
+		panic("indirect call NIY");
+	}
+}
+
+static void bemit_return(const ir_node *node)
+{
+	unsigned pop = be_Return_get_pop(node);
+	if (pop > 0 || be_Return_get_emit_pop(node)) {
+		bemit8(0xC2);
+		assert(pop <= 0xffff);
+		bemit16(pop);
+	} else {
+		bemit8(0xC3);
+	}
+}
+
+static void bemit_incsp(const ir_node *node)
+{
+	const arch_register_t *reg  = get_out_reg(node, 0);
+	int                    offs = be_get_IncSP_offset(node);
+	unsigned               size = get_imm_size(NULL, offs);
+
+	if (offs > 0) {
+		bemit8(size == 8 ? 0x83 : 0x81);
+		bemit_modru(reg, 5); /* sub */
+		if (size == 8) {
+			bemit8(offs);
+		} else {
+			bemit32(offs);
+		}
+	} else if (offs < 0) {
+		bemit8(size == 8 ? 0x83 : 0x81);
+		bemit_modru(reg, 0); /* add */
+		if (size == 8) {
+			bemit8(-offs);
+		} else {
+			bemit32(-offs);
+		}
+	}
+}
+
+/**
+ * The type of a emitter function.
+ */
+typedef void (*emit_func) (const ir_node *);
+
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static void register_emitter(ir_op *op, emit_func func)
+{
+	op->ops.generic = (op_func) func;
+}
+
+static void ia32_register_binary_emitters(void)
+{
+	/* first clear the generic function pointer for all ops */
+	clear_irp_opcodes_generic_func();
+
+	/* benode emitter */
+	register_emitter(op_be_Copy, bemit_copy);
+	register_emitter(op_be_Return, bemit_return);
+	register_emitter(op_be_IncSP, bemit_incsp);
+	register_emitter(op_ia32_Add, bemit_add);
+	register_emitter(op_ia32_Call, bemit_call);
+	register_emitter(op_ia32_Cltd, bemit_cltd);
+	register_emitter(op_ia32_Sub, bemit_sub);
+	register_emitter(op_ia32_Xor0, bemit_xor0);
+	register_emitter(op_ia32_Xor, bemit_xor);
+	register_emitter(op_ia32_Const, bemit_const);
+	register_emitter(op_ia32_Lea, bemit_lea);
+	register_emitter(op_ia32_Load, bemit_load);
+	register_emitter(op_ia32_Not, bemit_not);
+	register_emitter(op_ia32_Push, bemit_push);
+	register_emitter(op_ia32_Pop, bemit_pop);
+	register_emitter(op_ia32_Store, bemit_store);
+
+	/* ignore the following nodes */
+	register_emitter(op_ia32_ProduceVal, emit_Nothing);
+	register_emitter(op_be_Barrier, emit_Nothing);
+	register_emitter(op_be_Keep, emit_Nothing);
+	register_emitter(op_be_RegParams, emit_Nothing);
+	register_emitter(op_Phi, emit_Nothing);
+	register_emitter(op_Start, emit_Nothing);
+}
+
+static void gen_binary_block(ir_node *block)
+{
+	ir_node *node;
+
+	ia32_emit_block_header(block);
+
+	/* emit the contents of the block */
+	sched_foreach(block, node) {
+		ia32_emit_node(node);
+	}
+}
+
+void ia32_gen_binary_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
+{
+	ir_entity *entity     = get_irg_entity(irg);
+	int i, n;
+
+	cg  = ia32_cg;
+	isa = cg->isa;
+
+	ia32_register_binary_emitters();
+
+	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
+
+	/* we use links to point to target blocks */
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
+
+	/* initialize next block links */
+	n = ARR_LEN(cg->blk_sched);
+	for (i = 0; i < n; ++i) {
+		ir_node *block = cg->blk_sched[i];
+		ir_node *prev  = i > 0 ? cg->blk_sched[i-1] : NULL;
+
+		set_irn_link(block, prev);
+	}
+
+	for (i = 0; i < n; ++i) {
+		ir_node *block = cg->blk_sched[i];
+		gen_binary_block(block);
+	}
+
+	be_gas_emit_function_epilog(entity);
+	be_dbg_method_end();
+	be_emit_char('\n');
+	be_emit_write_line();
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+}
+
+
+
+
 void ia32_init_emitter(void)
 {
 	lc_opt_entry_t *be_grp;
@@ -2232,6 +2756,8 @@ void ia32_init_emitter(void)
 	ia32_grp = lc_opt_get_grp(be_grp, "ia32");
 
 	lc_opt_add_table(ia32_grp, ia32_emitter_options);
+
+	build_reg_map();
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.emitter");
 }
