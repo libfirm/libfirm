@@ -70,11 +70,6 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node);
 const arch_register_req_t **get_arm_in_req_all(const ir_node *node);
 
 /**
- * Returns the result register requirements of an arm node.
- */
-const arch_register_req_t **get_arm_out_req_all(const ir_node *node);
-
-/**
  * Returns the argument register requirements of an arm node.
  */
 const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
@@ -83,16 +78,6 @@ const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
  * Returns the result register requirements of an arm node.
  */
 const arch_register_req_t *get_arm_out_req(const ir_node *node, int pos);
-
-/**
- * Sets the OUT register requirements at position pos.
- */
-void set_arm_req_out(ir_node *node, const arch_register_req_t *req, int pos);
-
-/**
- * Sets the complete OUT requirements of node.
- */
-void set_arm_req_out_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
  * Sets the IN register requirements at position pos.

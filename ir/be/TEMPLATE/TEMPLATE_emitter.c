@@ -42,7 +42,6 @@
 #include "gen_TEMPLATE_emitter.h"
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
-#include "TEMPLATE_map_regs.h"
 
 #define SNPRINTF_BUF_LEN 128
 

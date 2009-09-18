@@ -473,6 +473,7 @@ ir_node *gen_ASM(ir_node *node)
 	int                         clobbers_flags = 0;
 	unsigned                    clobber_bits[N_CLASSES];
 	int                         out_size;
+	backend_info_t             *info;
 
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
 
@@ -780,7 +781,10 @@ ir_node *gen_ASM(ir_node *node)
 	if (arity == 0)
 		be_dep_on_frame(new_node);
 
-	set_ia32_out_req_all(new_node, out_reg_reqs);
+	info = be_get_info(new_node);
+	for (i = 0; i < out_arity; ++i) {
+		info->out_infos[i].req = out_reg_reqs[i];
+	}
 	set_ia32_in_req_all(new_node, in_reg_reqs);
 
 	SET_IA32_ORIG_NODE(new_node, node);

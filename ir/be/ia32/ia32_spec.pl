@@ -273,28 +273,28 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
 	ia32_asm_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);".
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_attr_t     =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);",
 	ia32_call_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, pnc);",
 	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, no_pic_adjust, offset);",
 	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_climbframe_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_climbframe_attributes(res, count);",
 );
 
@@ -455,8 +455,10 @@ l_Mul => {
 	# very strict constraints
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
+	reg_req   => { in => [ "none", "none" ],
+	               out => [ "none", "none", "none", "none" ] },
+	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
-	arity     => 2
 },
 
 IMul => {
@@ -492,8 +494,10 @@ IMul1OP => {
 l_IMul => {
 	op_flags  => "C",
 	cmp_attr  => "return 1;",
+	reg_req   => { in => [ "none", "none" ],
+	               out => [ "none", "none", "none", "none" ] },
+	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
-	arity     => 2
 },
 
 And => {
@@ -757,8 +761,8 @@ ShlMem => {
 
 l_ShlDep => {
 	cmp_attr => "return 1;",
+	reg_req  => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins      => [ "val", "count", "dep" ],
-	arity    => 3
 },
 
 ShlD => {
@@ -776,8 +780,8 @@ ShlD => {
 
 l_ShlD => {
 	cmp_attr  => "return 1;",
+	reg_req  => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "val_high", "val_low", "count" ],
-	arity     => 3,
 },
 
 Shr => {
@@ -807,8 +811,8 @@ ShrMem => {
 
 l_ShrDep => {
 	cmp_attr  => "return 1;",
+	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "val", "count", "dep" ],
-	arity     => 3
 },
 
 ShrD => {
@@ -826,7 +830,7 @@ ShrD => {
 
 l_ShrD => {
 	cmp_attr  => "return 1;",
-	arity     => 3,
+	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "val_high", "val_low", "count" ],
 },
 
@@ -858,7 +862,7 @@ SarMem => {
 l_SarDep => {
 	cmp_attr  => "return 1;",
 	ins       => [ "val", "count", "dep" ],
-	arity     => 3
+	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 },
 
 Ror => {
@@ -2008,8 +2012,9 @@ xStore => {
 xStoreSimple => {
 	op_flags => "L|F",
 	state    => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ] },
+	reg_req  => { in => [ "gp", "gp", "none", "xmm" ], out => [ "none" ] },
 	ins      => [ "base", "index", "mem", "val" ],
+	outs     => [ "M" ],
 	emit     => '. mov%XXM %S3, %AM',
 	latency  => 0,
 	units    => [ "SSE" ],
@@ -2045,6 +2050,7 @@ l_LLtoFloat => {
 	op_flags => "L|F",
 	cmp_attr => "return 1;",
 	ins      => [ "val_high", "val_low" ],
+	reg_req  => { in => [ "none", "none" ], out => [ "none" ] }
 },
 
 l_FloattoLL => {
@@ -2052,6 +2058,7 @@ l_FloattoLL => {
 	cmp_attr => "return 1;",
 	ins      => [ "val" ],
 	outs     => [ "res_high", "res_low" ],
+	reg_req  => { in => [ "none" ], out => [ "none", "none" ] }
 },
 
 # CopyB
@@ -2294,8 +2301,9 @@ vfild => {
 
 vfist => {
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
+	outs      => [ "M" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	mode      => "mode_M",
@@ -2748,7 +2756,7 @@ fldl2e => {
 
 fxch => {
 	op_flags  => "R|K",
-	reg_req   => { },
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fxch %X0',
 	attr_type => "ia32_x87_attr_t",
@@ -2758,7 +2766,7 @@ fxch => {
 
 fpush => {
 	op_flags  => "R|K",
-	reg_req   => {},
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fld %X0',
 	attr_type => "ia32_x87_attr_t",
@@ -2776,7 +2784,7 @@ fpushCopy => {
 
 fpop => {
 	op_flags  => "K",
-	reg_req   => { },
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. fstp %X0',
 	attr_type => "ia32_x87_attr_t",
@@ -2786,7 +2794,7 @@ fpop => {
 
 ffreep => {
 	op_flags  => "K",
-	reg_req   => { },
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. ffreep %X0',
 	attr_type => "ia32_x87_attr_t",
@@ -2796,7 +2804,7 @@ ffreep => {
 
 emms => {
 	op_flags  => "K",
-	reg_req   => { },
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. emms',
 	attr_type => "ia32_x87_attr_t",
@@ -2806,7 +2814,7 @@ emms => {
 
 femms => {
 	op_flags  => "K",
-	reg_req   => { },
+	reg_req   => { out => [ "none" ] },
 	cmp_attr  => "return 1;",
 	emit      => '. femms',
 	attr_type => "ia32_x87_attr_t",

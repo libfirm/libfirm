@@ -59,125 +59,45 @@
  ***********************************************************************************/
 
 /**
- * Dumps the register requirements for either in or out.
- */
-static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
-                         int inout) {
-	char *dir = inout ? "out" : "in";
-	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
-	char  buf[1024];
-	int   i;
-
-	memset(buf, 0, sizeof(buf));
-
-	if (reqs) {
-		for (i = 0; i < max; i++) {
-			fprintf(F, "%sreq #%d =", dir, i);
-			arch_dump_register_req(F, reqs[i], n);
-			fprintf(F, "\n");
-		}
-
-		fprintf(F, "\n");
-	} else {
-		fprintf(F, "%sreq = N/A\n", dir);
-	}
-}
-
-
-/**
  * Dumper interface for dumping TEMPLATE nodes in vcg.
  * @param n        the node to dump
  * @param F        the output file
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
-  	ir_mode     *mode = NULL;
-	int         bad  = 0;
-	int         i, n_res, flags;
-	const arch_register_req_t **reqs;
+static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
+{
+  	ir_mode *mode = NULL;
 
 	switch (reason) {
-		case dump_node_opcode_txt:
-			fprintf(F, "%s", get_irn_opname(n));
-			break;
+	case dump_node_opcode_txt:
+		fprintf(F, "%s", get_irn_opname(n));
+		break;
 
-		case dump_node_mode_txt:
-			mode = get_irn_mode(n);
+	case dump_node_mode_txt:
+		mode = get_irn_mode(n);
 
-			if (mode) {
-				fprintf(F, "[%s]", get_mode_name(mode));
-			}
-			else {
-				fprintf(F, "[?NOMODE?]");
-			}
-			break;
+		if (mode) {
+			fprintf(F, "[%s]", get_mode_name(mode));
+		} else {
+			fprintf(F, "[?NOMODE?]");
+		}
+		break;
 
-		case dump_node_nodeattr_txt:
+	case dump_node_nodeattr_txt:
 
-			/* TODO: dump some attributes which should show up */
-			/* in node name in dump (e.g. consts or the like)  */
+		/* TODO: dump some attributes which should show up */
+		/* in node name in dump (e.g. consts or the like)  */
 
-			break;
+		break;
 
-		case dump_node_info_txt:
-			fprintf(F, "=== TEMPLATE attr begin ===\n");
-
-			/* dump IN requirements */
-			if (get_irn_arity(n) > 0) {
-				reqs = get_TEMPLATE_in_req_all(n);
-				dump_reg_req(F, n, reqs, 0);
-			}
-
-			n_res = arch_irn_get_n_outs(n);
-			if (n_res > 0) {
-				/* dump OUT requirements */
-				reqs = get_TEMPLATE_out_req_all(n);
-				dump_reg_req(F, n, reqs, 1);
-
-				/* dump assigned registers */
-				for (i = 0; i < n_res; i++) {
-					const arch_register_t *reg = arch_irn_get_register(n, i);
-
-					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
-				}
-				fprintf(F, "\n");
-			}
-
-			/* dump n_res */
-			fprintf(F, "n_res = %d\n", n_res);
-
-			/* dump flags */
-			fprintf(F, "flags =");
-			flags = arch_irn_get_flags(n);
-			if (flags == arch_irn_flags_none) {
-				fprintf(F, " none");
-			}
-			else {
-				if (flags & arch_irn_flags_dont_spill) {
-					fprintf(F, " unspillable");
-				}
-				if (flags & arch_irn_flags_rematerializable) {
-					fprintf(F, " remat");
-				}
-				if (flags & arch_irn_flags_modify_flags) {
-					fprintf(F, " modify_flags");
-				}
-			}
-			fprintf(F, " (%d)\n", flags);
-
-			/* TODO: dump all additional attributes */
-
-			fprintf(F, "=== TEMPLATE attr end ===\n");
-			/* end of: case dump_node_info_txt */
-			break;
+	case dump_node_info_txt:
+		arch_dump_reqs_and_registers(F, n);
+		break;
 	}
 
-
-	return bad;
+	return 0;
 }
-
-
 
 /***************************************************************************************************
  *        _   _                   _       __        _                    _   _               _
@@ -190,12 +110,14 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
  *                                       |___/
  ***************************************************************************************************/
 
-const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node) {
+const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node)
+{
 	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
 	return (const TEMPLATE_attr_t *)get_irn_generic_attr_const(node);
 }
 
-TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node) {
+TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node)
+{
 	assert(is_TEMPLATE_irn(node) && "need TEMPLATE node to get attributes");
 	return (TEMPLATE_attr_t *)get_irn_generic_attr(node);
 }
@@ -203,23 +125,17 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node) {
 /**
  * Returns the argument register requirements of a TEMPLATE node.
  */
-const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node) {
+const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node)
+{
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->in_req;
 }
 
 /**
- * Returns the result register requirements of an TEMPLATE node.
- */
-const arch_register_req_t **get_TEMPLATE_out_req_all(const ir_node *node) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return attr->out_req;
-}
-
-/**
  * Returns the argument register requirement at position pos of an TEMPLATE node.
  */
-const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos)
+{
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	return attr->in_req[pos];
 }
@@ -227,23 +143,17 @@ const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos) {
 /**
  * Returns the result register requirement at position pos of an TEMPLATE node.
  */
-const arch_register_req_t *get_TEMPLATE_out_req(const ir_node *node, int pos) {
-	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
-	return attr->out_req[pos];
-}
-
-/**
- * Sets the OUT register requirements at position pos.
- */
-void set_TEMPLATE_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
-	TEMPLATE_attr_t *attr   = get_TEMPLATE_attr(node);
-	attr->out_req[pos] = req;
+const arch_register_req_t *get_TEMPLATE_out_req(const ir_node *node, int pos)
+{
+	const backend_info_t *info = be_get_info(node);
+	return info->out_infos[pos].req;
 }
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos)
+{
 	TEMPLATE_attr_t *attr  = get_TEMPLATE_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -253,7 +163,6 @@ void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos)
  */
 void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
                               const arch_register_req_t **in_reqs,
-                              const arch_register_req_t **out_reqs,
                               const be_execution_unit_t ***execution_units,
                               int n_res)
 {
@@ -264,7 +173,6 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	(void) execution_units;
 
 	arch_irn_set_flags(node, flags);
-	attr->out_req = out_reqs;
 	attr->in_req  = in_reqs;
 
 	info            = be_get_info(node);
@@ -282,8 +190,7 @@ void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
  *
  ***************************************************************************************/
 
-static
-int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
+static int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
 	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);

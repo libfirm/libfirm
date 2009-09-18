@@ -242,6 +242,16 @@ static int get_first_same(const arch_register_req_t* req)
 	return 32;
 }
 
+static inline bool is_unknown_reg(const arch_register_t *reg)
+{
+	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
+			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
+			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
+		return true;
+
+	return false;
+}
+
 /**
  * Insert copies for all ia32 nodes where the should_be_same requirement
  * is not fulfilled.
@@ -249,12 +259,10 @@ static int get_first_same(const arch_register_req_t* req)
  */
 static void assure_should_be_same_requirements(ir_node *node)
 {
-	const arch_register_req_t **reqs;
 	const arch_register_t      *out_reg, *in_reg;
 	int                         n_res, i;
 	ir_node                    *in_node, *block;
 
-	reqs  = get_ia32_out_req_all(node);
 	n_res = arch_irn_get_n_outs(node);
 	block = get_nodes_block(node);
 
@@ -267,7 +275,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		ir_node                     *perm_proj0;
 		ir_node                     *perm_proj1;
 		ir_node                     *uses_out_reg;
-		const arch_register_req_t   *req = reqs[i];
+		const arch_register_req_t   *req = arch_get_out_register_req(node, i);
 		const arch_register_class_t *cls;
 		int                         uses_out_reg_pos;
 
@@ -277,9 +285,9 @@ static void assure_should_be_same_requirements(ir_node *node)
 		same_pos = get_first_same(req);
 
 		/* get in and out register */
-		out_reg  = arch_irn_get_register(node, i);
-		in_node  = get_irn_n(node, same_pos);
-		in_reg   = arch_get_irn_register(in_node);
+		out_reg = arch_irn_get_register(node, i);
+		in_node = get_irn_n(node, same_pos);
+		in_reg  = arch_get_irn_register(in_node);
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
@@ -392,7 +400,6 @@ static void assure_should_be_same_requirements(ir_node *node)
  */
 static void fix_am_source(ir_node *irn)
 {
-	const arch_register_req_t **reqs;
 	int                         n_res, i;
 
 	/* check only ia32 nodes with source address mode */
@@ -402,22 +409,22 @@ static void fix_am_source(ir_node *irn)
 	if (get_ia32_am_support(irn) != ia32_am_binary)
 		return;
 
-	reqs  = get_ia32_out_req_all(irn);
 	n_res = arch_irn_get_n_outs(irn);
 
 	for (i = 0; i < n_res; i++) {
-		const arch_register_t *out_reg;
-		int                    same_pos;
-		ir_node               *same_node;
-		const arch_register_t *same_reg;
-		ir_node               *load_res;
+		const arch_register_req_t *req = arch_get_out_register_req(irn, i);
+		const arch_register_t     *out_reg;
+		int                        same_pos;
+		ir_node                   *same_node;
+		const arch_register_t     *same_reg;
+		ir_node                   *load_res;
 
-		if (!arch_register_req_is(reqs[i], should_be_same))
+		if (!arch_register_req_is(req, should_be_same))
 			continue;
 
 		/* get in and out register */
 		out_reg   = arch_irn_get_register(irn, i);
-		same_pos  = get_first_same(reqs[i]);
+		same_pos  = get_first_same(req);
 		same_node = get_irn_n(irn, same_pos);
 		same_reg  = arch_get_irn_register(same_node);
 

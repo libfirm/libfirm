@@ -1269,10 +1269,6 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 
 int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 {
-	backend_info_t *info;
-	int i;
-	int arity;
-
 	switch(reason) {
 	case dump_node_opcode_txt:
 		fputs(get_op_name(get_irn_op(node)), F);
@@ -1283,30 +1279,7 @@ int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 	case dump_node_nodeattr_txt:
 		break;
 	case dump_node_info_txt:
-		info = be_get_info(node);
-
-		/* we still have a little problem with the initialisation order. This
-		   dump function is attached to the Phi ops before we can be sure
-		   that all backend infos have been constructed... */
-		if (info != NULL) {
-			const arch_register_req_t *req = info->out_infos[0].req;
-			const arch_register_t     *reg = arch_irn_get_register(node, 0);
-
-			arity = get_irn_arity(node);
-			for (i = 0; i < arity; ++i) {
-				fprintf(F, "inreq #%d = ", i);
-				arch_dump_register_req(F, req, node);
-				fputs("\n", F);
-			}
-			fprintf(F, "outreq #0 = ");
-			arch_dump_register_req(F, req, node);
-			fputs("\n", F);
-
-			fputs("\n", F);
-
-			fprintf(F, "reg #0 = %s\n", reg != NULL ? reg->name : "n/a");
-		}
-
+		arch_dump_reqs_and_registers(F, node);
 		break;
 
 	default:

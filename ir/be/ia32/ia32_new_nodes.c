@@ -67,32 +67,6 @@
  ***********************************************************************************/
 
 /**
- * Dumps the register requirements for either in or out.
- */
-static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
-                         int inout) {
-	char *dir = inout ? "out" : "in";
-	int   max = inout ? (int) arch_irn_get_n_outs(n) : get_irn_arity(n);
-	char  buf[1024];
-	int   i;
-
-	memset(buf, 0, sizeof(buf));
-
-	if (reqs) {
-		for (i = 0; i < max; i++) {
-			fprintf(F, "%sreq #%d =", dir, i);
-			arch_dump_register_req(F, reqs[i], n);
-			fprintf(F, "\n");
-		}
-
-		fprintf(F, "\n");
-	}
-	else {
-		fprintf(F, "%sreq = N/A\n", dir);
-	}
-}
-
-/**
  * Dumper interface for dumping ia32 nodes in vcg.
  * @param n        the node to dump
  * @param F        the output file
@@ -102,8 +76,6 @@ static void dump_reg_req(FILE *F, ir_node *n, const arch_register_req_t **reqs,
 static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 	ir_mode     *mode = NULL;
 	int          bad  = 0;
-	int          i, n_res, flags;
-	const arch_register_req_t **reqs;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -175,28 +147,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			break;
 
 		case dump_node_info_txt:
-			fprintf(F, "=== IA32 attr begin ===\n");
-
-			/* dump IN requirements */
-			if (get_irn_arity(n) > 0) {
-				reqs = get_ia32_in_req_all(n);
-				dump_reg_req(F, n, reqs, 0);
-			}
-
-			n_res = arch_irn_get_n_outs(n);
-			if (n_res > 0) {
-				/* dump OUT requirements */
-				reqs = get_ia32_out_req_all(n);
-				dump_reg_req(F, n, reqs, 1);
-
-				/* dump assigned registers */
-				for (i = 0; i < n_res; i++) {
-					const arch_register_t *reg = arch_irn_get_register(n, i);
-
-					fprintf(F, "reg #%d = %s\n", i, reg ? arch_register_get_name(reg) : "n/a");
-				}
-				fprintf(F, "\n");
-			}
+			arch_dump_reqs_and_registers(F, n);
 
 			/* dump op type */
 			fprintf(F, "op = ");
@@ -257,31 +208,11 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
 			}
 
-			fprintf(F, "n_res = %d\n",         n_res);
 			fprintf(F, "use_frame = %d\n",     is_ia32_use_frame(n));
 			fprintf(F, "commutative = %d\n",   is_ia32_commutative(n));
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
 			fprintf(F, "is reload = %d\n",     is_ia32_is_reload(n));
 			fprintf(F, "latency = %d\n",       get_ia32_latency(n));
-
-			/* dump flags */
-			fprintf(F, "flags =");
-			flags = arch_irn_get_flags(n);
-			if (flags == arch_irn_flags_none) {
-				fprintf(F, " none");
-			}
-			else {
-				if (flags & arch_irn_flags_dont_spill) {
-					fprintf(F, " unspillable");
-				}
-				if (flags & arch_irn_flags_rematerializable) {
-					fprintf(F, " remat");
-				}
-				if (flags & arch_irn_flags_modify_flags) {
-					fprintf(F, " modify_flags");
-				}
-			}
-			fprintf(F, " (%d)\n", flags);
 
 			/* dump frame entity */
 			fprintf(F, "frame entity = ");
@@ -315,8 +246,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason) {
 			fprintf(F, "\n");
 #endif /* NDEBUG */
 
-			fprintf(F, "=== IA32 attr end ===\n");
-			/* end of: case dump_node_info_txt */
 			break;
 	}
 
@@ -716,22 +645,6 @@ void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs) {
 }
 
 /**
- * Returns the result register requirements of an ia32 node.
- */
-const arch_register_req_t **get_ia32_out_req_all(const ir_node *node) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->out_req;
-}
-
-/**
- * Sets the result register requirements of an ia32 node.
- */
-void set_ia32_out_req_all(ir_node *node, const arch_register_req_t **reqs) {
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->out_req     = reqs;
-}
-
-/**
  * Returns the argument register requirement at position pos of an ia32 node.
  */
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
@@ -745,26 +658,17 @@ const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos) {
 /**
  * Returns the result register requirement at position pos of an ia32 node.
  */
-const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos) {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	if(attr->out_req == NULL)
-		return arch_no_register_req;
-
-	return attr->out_req[pos];
-}
-
-/**
- * Sets the OUT register requirements at position pos.
- */
-void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos) {
-	ia32_attr_t *attr  = get_ia32_attr(node);
-	attr->out_req[pos] = req;
+const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos)
+{
+	backend_info_t *info = be_get_info(node);
+	return info->out_infos[pos].req;
 }
 
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos)
+{
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -799,7 +703,8 @@ unsigned get_ia32_copyb_size(const ir_node *node)
 /**
  * Get the list of available execution units.
  */
-const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
+const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->exec_units;
 }
@@ -807,7 +712,8 @@ const be_execution_unit_t ***get_ia32_exec_units(const ir_node *node) {
 /**
  * Get the exception label attribute.
  */
-unsigned get_ia32_exc_label(const ir_node *node) {
+unsigned get_ia32_exc_label(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 	return attr->data.has_except_label;
 }
@@ -815,7 +721,8 @@ unsigned get_ia32_exc_label(const ir_node *node) {
 /**
  * Set the exception label attribute.
  */
-void set_ia32_exc_label(ir_node *node, unsigned flag) {
+void set_ia32_exc_label(ir_node *node, unsigned flag)
+{
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->data.has_except_label = flag;
 }
@@ -823,7 +730,8 @@ void set_ia32_exc_label(ir_node *node, unsigned flag) {
 /**
  * Return the exception label id.
  */
-ir_label_t get_ia32_exc_label_id(const ir_node *node) {
+ir_label_t get_ia32_exc_label_id(const ir_node *node)
+{
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
 
 	assert(attr->data.has_except_label);
@@ -833,7 +741,8 @@ ir_label_t get_ia32_exc_label_id(const ir_node *node) {
 /**
  * Assign the exception label id.
  */
-void set_ia32_exc_label_id(ir_node *node, ir_label_t id) {
+void set_ia32_exc_label_id(ir_node *node, ir_label_t id)
+{
 	ia32_attr_t *attr = get_ia32_attr(node);
 
 	assert(attr->data.has_except_label);
@@ -916,7 +825,6 @@ void ia32_swap_left_right(ir_node *node)
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const arch_register_req_t **in_reqs,
-                          const arch_register_req_t **out_reqs,
                           const be_execution_unit_t ***execution_units,
                           int n_res)
 {
@@ -927,7 +835,6 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 
 	arch_irn_set_flags(node, flags);
 	set_ia32_in_req_all(node, in_reqs);
-	set_ia32_out_req_all(node, out_reqs);
 
 	attr->exec_units  = execution_units;
 #ifndef NDEBUG

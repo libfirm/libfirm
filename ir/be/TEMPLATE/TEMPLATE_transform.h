@@ -25,6 +25,8 @@
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_TRANSFORM_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_TRANSFORM_H
 
+void TEMPLATE_init_transform(void);
+
 void TEMPLATE_transform_node(ir_node *node, void *env);
 
 #endif

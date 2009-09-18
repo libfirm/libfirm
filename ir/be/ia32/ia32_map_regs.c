@@ -36,80 +36,8 @@
 #include "gen_ia32_regalloc_if.h"
 #include "bearch_ia32_t.h"
 
-#define MAXNUM_GPREG_ARGS     3
-#define MAXNUM_SSE_ARGS       8
-
 /* this is the order of the assigned registers used for parameter passing */
 
-static const arch_register_t *gpreg_param_reg_fastcall[] = {
-	&ia32_gp_regs[REG_ECX],
-	&ia32_gp_regs[REG_EDX],
-	NULL
-};
-
-static const arch_register_t *gpreg_param_reg_regparam[] = {
-	&ia32_gp_regs[REG_EAX],
-	&ia32_gp_regs[REG_EDX],
-	&ia32_gp_regs[REG_ECX]
-};
-
-static const arch_register_t *gpreg_param_reg_this[] = {
-	&ia32_gp_regs[REG_ECX],
-	NULL,
-	NULL
-};
-
-static const arch_register_t *fpreg_sse_param_reg_std[] = {
-	&ia32_xmm_regs[REG_XMM0],
-	&ia32_xmm_regs[REG_XMM1],
-	&ia32_xmm_regs[REG_XMM2],
-	&ia32_xmm_regs[REG_XMM3],
-	&ia32_xmm_regs[REG_XMM4],
-	&ia32_xmm_regs[REG_XMM5],
-	&ia32_xmm_regs[REG_XMM6],
-	&ia32_xmm_regs[REG_XMM7]
-};
-
-static const arch_register_t *fpreg_sse_param_reg_this[] = {
-	NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
-};
-
-
-/* Mapping to store registers in firm nodes */
-
-struct ia32_irn_reg_assoc {
-	const ir_node *irn;
-	const arch_register_t *reg;
-};
-
-int ia32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
-	const struct ia32_irn_reg_assoc *x = a;
-	const struct ia32_irn_reg_assoc *y = b;
-	(void) len;
-
-	return x->irn != y->irn;
-}
-
-static struct ia32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
-	struct ia32_irn_reg_assoc templ;
-	unsigned int hash;
-
-	templ.irn = irn;
-	templ.reg = NULL;
-	hash      = hash_irn(irn);
-
-	return set_insert(reg_set, &templ, sizeof(templ), hash);
-}
-
-void ia32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set) {
-	struct ia32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
-	assoc->reg = reg;
-}
-
-const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set) {
-	struct ia32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
-	return assoc->reg;
-}
 
 void ia32_build_16bit_reg_map(pmap *reg_map) {
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "ax");
@@ -146,51 +74,4 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) 
 	}
 
 	return e->value;
-}
-
-/**
- * Returns the register for parameter nr.
- */
-const arch_register_t *ia32_get_RegParam_reg(unsigned cc, size_t nr,
-                                             const ir_mode *mode)
-{
-	if ((cc & cc_this_call) && nr == 0)
-		return gpreg_param_reg_this[0];
-
-	if (! (cc & cc_reg_param))
-		return NULL;
-
-	if (mode_is_float(mode)) {
-		if (!ia32_cg_config.use_sse2 || (cc & cc_fpreg_param) == 0)
-			return NULL;
-		if (nr >= MAXNUM_SSE_ARGS)
-			return NULL;
-
-		if (cc & cc_this_call) {
-			return fpreg_sse_param_reg_this[nr];
-		}
-		return fpreg_sse_param_reg_std[nr];
-	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
-		unsigned num_regparam;
-
-		if (get_mode_size_bits(mode) > 32)
-			return NULL;
-
-		if (nr >= MAXNUM_GPREG_ARGS)
-			return NULL;
-
-		if (cc & cc_this_call) {
-			return gpreg_param_reg_this[nr];
-		}
-		num_regparam = cc & ~cc_bits;
-		if (num_regparam == 0) {
-			/* default fastcall */
-			return gpreg_param_reg_fastcall[nr];
-		}
-		if (nr < num_regparam)
-			return gpreg_param_reg_regparam[nr];
-		return NULL;
-	}
-
-	panic("unknown argument mode");
 }

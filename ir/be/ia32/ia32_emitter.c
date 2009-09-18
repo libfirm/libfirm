@@ -1618,6 +1618,16 @@ static void emit_be_IncSP(const ir_node *node)
 	}
 }
 
+static inline bool is_unknown_reg(const arch_register_t *reg)
+{
+	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
+			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
+			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
+		return true;
+
+	return false;
+}
+
 /**
  * Emits code for Copy/CopyKeep.
  */

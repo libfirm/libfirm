@@ -40,23 +40,10 @@
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_new_nodes.h"
-#include "TEMPLATE_map_regs.h"
 
 #include "gen_TEMPLATE_regalloc_if.h"
 
-extern ir_op *get_op_Mulh(void);
-
-
-
-/****************************************************************************************************
- *                  _        _                        __                           _   _
- *                 | |      | |                      / _|                         | | (_)
- *  _ __   ___   __| | ___  | |_ _ __ __ _ _ __  ___| |_ ___  _ __ _ __ ___   __ _| |_ _  ___  _ __
- * | '_ \ / _ \ / _` |/ _ \ | __| '__/ _` | '_ \/ __|  _/ _ \| '__| '_ ` _ \ / _` | __| |/ _ \| '_ \
- * | | | | (_) | (_| |  __/ | |_| | | (_| | | | \__ \ || (_) | |  | | | | | | (_| | |_| | (_) | | | |
- * |_| |_|\___/ \__,_|\___|  \__|_|  \__,_|_| |_|___/_| \___/|_|  |_| |_| |_|\__,_|\__|_|\___/|_| |_|
- *
- ****************************************************************************************************/
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
  * Creates an TEMPLATE Add.
@@ -66,7 +53,8 @@ extern ir_op *get_op_Mulh(void);
  * @param op2   second operator
  * @return the created TEMPLATE Add node
  */
-static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_Add(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -82,11 +70,11 @@ static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE Mul node
  */
-static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	if (mode_is_float(env->mode)) {
 		return new_bd_TEMPLATE_fMul(env->dbg, env->block, op1, op2, env->mode);
-	}
-	else {
+	} else {
 		return new_bd_TEMPLATE_Mul(env->dbg, env->block, op1, op2, env->mode);
 	}
 }
@@ -103,7 +91,8 @@ static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE And node
  */
-static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_And(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -119,7 +108,8 @@ static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE Or node
  */
-static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_Or(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -135,7 +125,8 @@ static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2
  * @param mode      node mode
  * @return the created TEMPLATE Eor node
  */
-static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_Eor(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -151,11 +142,11 @@ static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE Sub node
  */
-static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	if (mode_is_float(env->mode)) {
 		return new_bd_TEMPLATE_fSub(env->dbg, env->block, op1, op2, env->mode);
-	}
-	else {
+	} else {
 		return new_bd_TEMPLATE_Sub(env->dbg, env->block, op1, op2, env->mode);
 	}
 }
@@ -172,7 +163,8 @@ static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE fDiv node
  */
-static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_fDiv(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -188,7 +180,8 @@ static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *o
  * @param mode      node mode
  * @return the created TEMPLATE Shl node
  */
-static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_Shl(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -204,7 +197,8 @@ static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode      node mode
  * @return the created TEMPLATE Shr node
  */
-static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+{
 	return new_bd_TEMPLATE_Shr(env->dbg, env->block, op1, op2, env->mode);
 }
 
@@ -220,7 +214,8 @@ static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op
  * @param mode    node mode
  * @return the created TEMPLATE Minus node
  */
-static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op) {
+static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op)
+{
 	if (mode_is_float(env->mode)) {
 		return new_bd_TEMPLATE_fMinus(env->dbg, env->block, op, env->mode);
 	}
@@ -239,7 +234,8 @@ static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op) {
  * @param mode    node mode
  * @return the created TEMPLATE Not node
  */
-static ir_node *gen_Not(TEMPLATE_transform_env_t *env, ir_node *op) {
+static ir_node *gen_Not(TEMPLATE_transform_env_t *env, ir_node *op)
+{
 	return new_bd_TEMPLATE_Not(env->dbg, env->block, op, env->mode);
 }
 
@@ -254,7 +250,8 @@ static ir_node *gen_Not(TEMPLATE_transform_env_t *env, ir_node *op) {
  * @param mode    node mode
  * @return the created TEMPLATE Load node
  */
-static ir_node *gen_Load(TEMPLATE_transform_env_t *env) {
+static ir_node *gen_Load(TEMPLATE_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 
 	if (mode_is_float(env->mode)) {
@@ -274,7 +271,8 @@ static ir_node *gen_Load(TEMPLATE_transform_env_t *env) {
  * @param mode    node mode
  * @return the created TEMPLATE Store node
  */
-static ir_node *gen_Store(TEMPLATE_transform_env_t *env) {
+static ir_node *gen_Store(TEMPLATE_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 
 	if (mode_is_float(env->mode)) {
@@ -304,10 +302,8 @@ static ir_node *gen_Store(TEMPLATE_transform_env_t *env) {
  * @param node    the firm node
  * @param env     the debug module
  */
-void TEMPLATE_transform_node(ir_node *node, void *env) {
-#ifdef DEBUG_libfirm
-	TEMPLATE_code_gen_t *cgenv = (TEMPLATE_code_gen_t *)env;
-#endif
+void TEMPLATE_transform_node(ir_node *node, void *env)
+{
 	ir_opcode code             = get_irn_opcode(node);
 	ir_node *asm_node          = NULL;
 	TEMPLATE_transform_env_t tenv;
@@ -320,9 +316,6 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 	tenv.dbg      = get_irn_dbg_info(node);
 	tenv.irg      = current_ir_graph;
 	tenv.irn      = node;
-#ifdef DEBUG_libfirm
-	tenv.mod      = cgenv->mod;
-#endif
 	tenv.mode     = get_irn_mode(node);
 
 #define UNOP(a)        case iro_##a: asm_node = gen_##a(&tenv, get_##a##_op(node)); break
@@ -331,7 +324,7 @@ void TEMPLATE_transform_node(ir_node *node, void *env) {
 #define IGN(a)         case iro_##a: break
 #define BAD(a)         case iro_##a: goto bad
 
-	DBG((tenv.mod, LEVEL_1, "check %+F ... ", node));
+	DBG((dbg, LEVEL_1, "check %+F ... ", node));
 
 	switch (code) {
 		BINOP(Add);
@@ -407,9 +400,14 @@ bad:
 
 	if (asm_node) {
 		exchange(node, asm_node);
-		DB((tenv.mod, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
+		DB((dbg, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
 	}
 	else {
-		DB((tenv.mod, LEVEL_1, "ignored\n"));
+		DB((dbg, LEVEL_1, "ignored\n"));
 	}
+}
+
+void TEMPLATE_init_transform(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.TEMPLATE.transform");
 }

@@ -35,21 +35,6 @@
 #include "gen_ia32_regalloc_if.h"
 
 /**
- * Set compare function
- */
-int  ia32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len);
-
-/**
- * Assigns a register to a firm node.
- */
-void ia32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set);
-
-/**
- * Gets the register assigned to a firm node.
- */
-const arch_register_t *ia32_get_firm_reg(const ir_node *irn, set *reg_set);
-
-/**
  * Enters for each general purpose register the corresponding 16bit
  * name into a pmap.
  */
@@ -67,20 +52,4 @@ void ia32_build_8bit_reg_map_high(pmap *reg_map);
  */
 const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
 
-/**
- * Returns the register for parameter nr.
- */
-const arch_register_t *ia32_get_RegParam_reg(unsigned cc, size_t nr,
-                                             const ir_mode *mode);
-
-static inline int is_unknown_reg(const arch_register_t *reg)
-{
-	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
-			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
-			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
-		return 1;
-
-	return 0;
-}
-
-#endif /* FIRM_BE_IA32_IA32_MAP_REGS_H */
+#endif

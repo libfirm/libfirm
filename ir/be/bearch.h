@@ -85,6 +85,9 @@ extern const arch_register_req_t *arch_no_register_req;
 void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
                             const ir_node *node);
 
+void arch_dump_register_reqs(FILE *F, const ir_node *node);
+void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
+
 /**
  * Node classification. Mainly used for statistics.
  */

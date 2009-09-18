@@ -36,7 +36,6 @@ typedef struct mips_attr_t {
 	int switch_default_pn;		/**< proj number of default case in switch */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-	const arch_register_req_t **out_req; /**< register requirements for results */
 } mips_attr_t;
 
 typedef enum mips_immediate_type_t {

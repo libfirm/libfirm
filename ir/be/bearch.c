@@ -319,6 +319,50 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 	}
 }
 
+void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
+{
+	int              n_ins  = get_irn_arity(node);
+	int              n_outs = arch_irn_get_n_outs(node);
+	arch_irn_flags_t flags  = arch_irn_get_flags(node);
+	int              i;
+
+	for (i = 0; i < n_ins; ++i) {
+		const arch_register_req_t *req = arch_get_in_register_req(node, i);
+		fprintf(F, "inreq #%d = ", i);
+		arch_dump_register_req(F, req, node);
+		fputs("\n", F);
+	}
+	for (i = 0; i < n_outs; ++i) {
+		const arch_register_req_t *req = arch_get_out_register_req(node, i);
+		fprintf(F, "outreq #%d = ", i);
+		arch_dump_register_req(F, req, node);
+		fputs("\n", F);
+	}
+	for (i = 0; i < n_outs; ++i) {
+		const arch_register_t     *reg = arch_irn_get_register(node, i);
+		const arch_register_req_t *req = arch_get_out_register_req(node, i);
+		if (req->cls == NULL)
+			continue;
+		fprintf(F, "reg #%d = %s\n", i, reg != NULL ? reg->name : "n/a");
+	}
+
+	fprintf(F, "flags =");
+	if (flags == arch_irn_flags_none) {
+		fprintf(F, " none");
+	} else {
+		if (flags & arch_irn_flags_dont_spill) {
+			fprintf(F, " unspillable");
+		}
+		if (flags & arch_irn_flags_rematerializable) {
+			fprintf(F, " remat");
+		}
+		if (flags & arch_irn_flags_modify_flags) {
+			fprintf(F, " modify_flags");
+		}
+	}
+	fprintf(F, " (%d)\n", flags);
+}
+
 static const arch_register_req_t no_requirement = {
 	arch_register_req_type_none,
 	NULL,

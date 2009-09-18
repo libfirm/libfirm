@@ -96,9 +96,6 @@ transformer_t be_transformer = TRANSFORMER_DEFAULT;
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/* TODO: ugly */
-static set *cur_reg_set = NULL;
-
 ir_mode         *mode_fpcw       = NULL;
 ia32_code_gen_t *ia32_current_cg = NULL;
 
@@ -1462,8 +1459,6 @@ static void ia32_codegen(void *self)
 		ia32_gen_routine(cg, irg);
 	}
 
-	cur_reg_set = NULL;
-
 	/* remove it from the isa */
 	cg->isa->cg = NULL;
 
@@ -1471,7 +1466,6 @@ static void ia32_codegen(void *self)
 	ia32_current_cg = NULL;
 
 	/* de-allocate code generator */
-	del_set(cg->reg_set);
 	free(cg);
 }
 
@@ -1518,7 +1512,6 @@ static void *ia32_cg_init(be_irg_t *birg)
 
 	cg->impl      = &ia32_code_gen_if;
 	cg->irg       = birg->irg;
-	cg->reg_set   = new_set(ia32_cmp_irn_reg_assoc, 1024);
 	cg->isa       = isa;
 	cg->birg      = birg;
 	cg->blk_sched = NULL;
@@ -1539,8 +1532,6 @@ static void *ia32_cg_init(be_irg_t *birg)
 		obstack_init(isa->name_obst);
 	}
 #endif /* NDEBUG */
-
-	cur_reg_set = cg->reg_set;
 
 	assert(ia32_current_cg == NULL);
 	ia32_current_cg = cg;
@@ -1794,6 +1785,88 @@ const arch_register_class_t *ia32_get_reg_class_for_mode(const ir_mode *mode)
 	}
 	else
 		return &ia32_reg_classes[CLASS_ia32_gp];
+}
+
+/**
+ * Returns the register for parameter nr.
+ */
+static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
+                                                    const ir_mode *mode)
+{
+	static const arch_register_t *gpreg_param_reg_fastcall[] = {
+		&ia32_gp_regs[REG_ECX],
+		&ia32_gp_regs[REG_EDX],
+		NULL
+	};
+	static const unsigned MAXNUM_GPREG_ARGS = 3;
+
+	static const arch_register_t *gpreg_param_reg_regparam[] = {
+		&ia32_gp_regs[REG_EAX],
+		&ia32_gp_regs[REG_EDX],
+		&ia32_gp_regs[REG_ECX]
+	};
+
+	static const arch_register_t *gpreg_param_reg_this[] = {
+		&ia32_gp_regs[REG_ECX],
+		NULL,
+		NULL
+	};
+
+	static const arch_register_t *fpreg_sse_param_reg_std[] = {
+		&ia32_xmm_regs[REG_XMM0],
+		&ia32_xmm_regs[REG_XMM1],
+		&ia32_xmm_regs[REG_XMM2],
+		&ia32_xmm_regs[REG_XMM3],
+		&ia32_xmm_regs[REG_XMM4],
+		&ia32_xmm_regs[REG_XMM5],
+		&ia32_xmm_regs[REG_XMM6],
+		&ia32_xmm_regs[REG_XMM7]
+	};
+
+	static const arch_register_t *fpreg_sse_param_reg_this[] = {
+		NULL,  /* in case of a "this" pointer, the first parameter must not be a float */
+	};
+	static const unsigned MAXNUM_SSE_ARGS = 8;
+
+	if ((cc & cc_this_call) && nr == 0)
+		return gpreg_param_reg_this[0];
+
+	if (! (cc & cc_reg_param))
+		return NULL;
+
+	if (mode_is_float(mode)) {
+		if (!ia32_cg_config.use_sse2 || (cc & cc_fpreg_param) == 0)
+			return NULL;
+		if (nr >= MAXNUM_SSE_ARGS)
+			return NULL;
+
+		if (cc & cc_this_call) {
+			return fpreg_sse_param_reg_this[nr];
+		}
+		return fpreg_sse_param_reg_std[nr];
+	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
+		unsigned num_regparam;
+
+		if (get_mode_size_bits(mode) > 32)
+			return NULL;
+
+		if (nr >= MAXNUM_GPREG_ARGS)
+			return NULL;
+
+		if (cc & cc_this_call) {
+			return gpreg_param_reg_this[nr];
+		}
+		num_regparam = cc & ~cc_bits;
+		if (num_regparam == 0) {
+			/* default fastcall */
+			return gpreg_param_reg_fastcall[nr];
+		}
+		if (nr < num_regparam)
+			return gpreg_param_reg_regparam[nr];
+		return NULL;
+	}
+
+	panic("unknown argument mode");
 }
 
 /**

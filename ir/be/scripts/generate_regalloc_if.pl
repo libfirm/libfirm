@@ -310,7 +310,6 @@ print OUT<<EOF;
 #include "gen_${arch}_regalloc_if.h"
 #include "gen_${arch}_machine.h"
 #include "bearch_${arch}_t.h"
-#include "${arch}_map_regs.h"
 #include "irmode.h"
 
 ${single_constraints_decls}

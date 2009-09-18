@@ -54,11 +54,6 @@ const mips_load_store_attr_t *get_mips_load_store_attr_const(
 const arch_register_req_t **get_mips_in_req_all(const ir_node *node);
 
 /**
- * Returns the result register requirements of an mips node.
- */
-const arch_register_req_t **get_mips_out_req_all(const ir_node *node);
-
-/**
  * Returns the argument register requirements of an mips node.
  */
 const arch_register_req_t *get_mips_in_req(const ir_node *node, int pos);

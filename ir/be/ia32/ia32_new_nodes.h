@@ -260,29 +260,10 @@ const arch_register_req_t **get_ia32_in_req_all(const ir_node *node);
 void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
- * Returns the result register requirements of an ia32 node.
- */
-const arch_register_req_t **get_ia32_out_req_all(const ir_node *node);
-
-/**
- * Sets the result register requirements of an ia32 node.
- */
-void set_ia32_out_req_all(ir_node *node, const arch_register_req_t **reqs);
-
-/**
  * Returns the argument register requirements of an ia32 node.
  */
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
-
-/**
- * Returns the result register requirements of an ia32 node.
- */
 const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
-
-/**
- * Sets the OUT register requirements at position pos.
- */
-void set_ia32_req_out(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
  * Sets the IN register requirements at position pos.
@@ -394,7 +375,6 @@ void ia32_swap_left_right(ir_node *node);
  */
 void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
                           const arch_register_req_t **in_reqs,
-                          const arch_register_req_t **out_reqs,
                           const be_execution_unit_t ***execution_units,
                           int n_res);
 

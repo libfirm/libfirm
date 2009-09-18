@@ -69,7 +69,7 @@ if(!defined($default_attr_type)) {
 }
 if(!defined(%init_attr)) {
 	%init_attr = (
-		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, out_reqs, exec_units, n_res);",
+		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, exec_units, n_res);",
 	);
 }
 if(!defined($default_cmp_attr)) {
@@ -360,42 +360,63 @@ foreach my $op (keys(%nodes)) {
 
 		# emit constructor code
 		if (!exists($n{"rd_constructor"})) { # default constructor
-			$temp  = "\tir_node  *res;\n";
-			$temp .= "\tir_op    *op      = op_${op};\n";
-			$temp .= "\tint       flags   = 0;\n";
+			$temp = <<EOF;
+	ir_node        *res;
+	ir_op          *op      = op_${op};
+	int             flags   = 0;
+	backend_info_t *info;
+EOF
 
 			if($arity == $ARITY_DYNAMIC) {
-				$temp .= "\tint        arity   = -1;\n";
-				$temp .= "\tir_node  **in      = NULL;\n";
+				$temp .= <<EOF;
+	int             arity   = -1;
+	ir_node       **in      = NULL;
+EOF
 			} elsif($arity == $ARITY_VARIABLE) {
 			} else {
-				$temp .= "\tint       arity   = $arity;\n";
+				$temp .= <<EOF;
+	int             arity   = $arity;
+EOF
 				if($arity > 0) {
-					$temp .= "\tir_node  *in[$arity];\n";
+					$temp .= <<EOF;
+	ir_node        *in[$arity];
+EOF
 				} else {
-					$temp .= "\tir_node **in    = NULL;\n";
+					$temp .= <<EOF;
+	ir_node       **in    = NULL;
+EOF
 				}
 			}
 			if($out_arity == $ARITY_DYNAMIC) {
-				$temp .= "\tint       n_res   = -1;\n";
+				$temp .= <<EOF;
+	int             n_res   = -1;
+EOF
 			} elsif($out_arity == $ARITY_VARIABLE) {
 			} else {
-				$temp .= "\tint       n_res   = ${out_arity};\n";
+				$temp .= <<EOF;
+	int             n_res   = ${out_arity};
+EOF
 			}
 
 			if (defined($known_mode)) {
-				$temp .= "\tir_mode  *mode    = ${known_mode};\n";
+				$temp .= <<EOF;
+	ir_mode        *mode    = ${known_mode};
+EOF
 			}
 
 			# set up static variables for cpu execution unit assigments
 			if (exists($n{"units"})) {
 				$temp .= gen_execunit_list_initializer($n{"units"});
 			} else {
-				$temp .= "\tstatic const be_execution_unit_t ***exec_units = NULL;\n";
+				$temp .= <<EOF;
+	static const be_execution_unit_t ***exec_units = NULL;
+EOF
 			}
 
 			undef my $in_req_var;
 			undef my $out_req_var;
+
+			my $set_out_reqs = "";
 
 			# set up static variables for requirements and registers
 			if (exists($n{"reg_req"})) {
@@ -441,23 +462,20 @@ foreach my $op (keys(%nodes)) {
 						die "Fatal error: Out-Arity and number of out requirements don't match for ${op}\n";
 					}
 
-					$temp .= "\tstatic const arch_register_req_t *out_reqs[] =\n";
-					$temp .= "\t{\n";
 					for ($idx = 0; $idx <= $#out; $idx++) {
 						my $req = $out[$idx];
 						my $reqstruct = generate_requirements($req, \%n, $op, $idx, 0);
-						$temp .= "\t\t& ${reqstruct},\n";
+						$set_out_reqs .= <<EOF;
+	info->out_infos[${idx}].req = &${reqstruct};
+EOF
 					}
-					$temp .= "\t};\n";
 				} else {
 					if($out_arity > 0) {
 						die "Fatal error: need out requirements for ${op}\n";
 					}
-					$temp .= "\tstatic const arch_register_req_t **out_reqs = NULL;\n";
 				}
 			} else {
 				$temp .= "\tstatic const arch_register_req_t **in_reqs = NULL;\n";
-				$temp .= "\tstatic const arch_register_req_t **out_reqs = NULL;\n";
 			}
 			if(exists($n{"init_attr"})) {
 				$temp .= "\t${attr_type} *attr;\n";
@@ -494,34 +512,41 @@ foreach my $op (keys(%nodes)) {
 				$temp .= "\n";
 			}
 
-			$temp .= "\t/* create node */\n";
-			$temp .= "\tassert(op != NULL);\n";
-			$temp .= "\tres = new_ir_node(db, current_ir_graph, block, op, mode, arity, in);\n";
-			$temp .= "\n";
-
-			$temp .= "\t/* init node attributes */\n";
 			# lookup init function
 			my $attr_init_code = $init_attr{$attr_type};
 			if(!defined($attr_init_code)) {
 				die "Fatal error: Couldn't find attribute initialisation code for type '${attr_type}'";
 			}
-			$temp .= "${attr_init_code}\n";
+			my $custominit = "";
 			if(defined($custom_init_attr_func)) {
-				$temp .= &$custom_init_attr_func(\%n, $op);
+				$custominit .= &$custom_init_attr_func(\%n, $op);
 			}
-			$temp .= "\n";
+
+			$temp .= <<EOF;
+	/* create node */
+	assert(op != NULL);
+	res = new_ir_node(db, current_ir_graph, block, op, mode, arity, in);
+
+	/* init node attributes */
+	${attr_init_code}
+	${custominit}
+	info = be_get_info(res);
+	${set_out_reqs}
+
+EOF
 
 			if (exists($n{"init_attr"})) {
 				$temp .= "\tattr = get_irn_generic_attr(res);\n";
 				$temp .= "\t".$n{"init_attr"}."\n";
 			}
 
-			$temp .= "\t/* optimize node */\n";
-			$temp .= "\tres = optimize_node(res);\n";
-			$temp .= "\tirn_vrfy_irg(res, current_ir_graph);\n";
-			$temp .= "\n";
+			$temp .= <<EOF;
+	/* optimize node */
+	res = optimize_node(res);
+	irn_vrfy_irg(res, current_ir_graph);
 
-			$temp .= "\treturn res;\n";
+	return res;
+EOF
 
 			push(@obst_constructor, $temp);
 		}

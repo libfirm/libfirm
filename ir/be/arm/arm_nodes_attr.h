@@ -105,7 +105,6 @@ typedef struct _arm_attr_t {
 	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-	const arch_register_req_t **out_req; /**< register requirements for results */
 
 	ir_mode  *op_mode;                   /**< operation mode if different from node's mode */
 	unsigned instr_fl;                   /**< condition code, shift modifier */

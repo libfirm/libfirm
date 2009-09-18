@@ -50,10 +50,8 @@
 #include "gen_TEMPLATE_regalloc_if.h"
 #include "TEMPLATE_transform.h"
 #include "TEMPLATE_emitter.h"
-#include "TEMPLATE_map_regs.h"
 
-/* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
-static set *cur_reg_set = NULL;
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**************************************************
  *                         _ _              _  __
@@ -134,7 +132,8 @@ static const arch_irn_ops_t TEMPLATE_irn_ops = {
  * Transforms the standard firm graph into
  * a TEMLPATE firm graph
  */
-static void TEMPLATE_prepare_graph(void *self) {
+static void TEMPLATE_prepare_graph(void *self)
+{
 	TEMPLATE_code_gen_t *cg = self;
 
 	irg_walk_blkwise_graph(cg->irg, NULL, TEMPLATE_transform_node, cg);
@@ -145,7 +144,8 @@ static void TEMPLATE_prepare_graph(void *self) {
 /**
  * Called immediatly before emit phase.
  */
-static void TEMPLATE_finish_irg(void *self) {
+static void TEMPLATE_finish_irg(void *self)
+{
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph            *irg = cg->irg;
 
@@ -153,12 +153,14 @@ static void TEMPLATE_finish_irg(void *self) {
 }
 
 
-static void TEMPLATE_before_ra(void *self) {
+static void TEMPLATE_before_ra(void *self)
+{
 	(void) self;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
-static void TEMPLATE_after_ra(void *self) {
+static void TEMPLATE_after_ra(void *self)
+{
 	(void) self;
 	/* Some stuff you need to do immediatly after register allocation */
 }
@@ -169,16 +171,14 @@ static void TEMPLATE_after_ra(void *self) {
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void TEMPLATE_emit_and_done(void *self) {
+static void TEMPLATE_emit_and_done(void *self)
+{
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
 
 	TEMPLATE_gen_routine(cg, irg);
 
-	cur_reg_set = NULL;
-
 	/* de-allocate code generator */
-	del_set(cg->reg_set);
 	free(cg);
 }
 
@@ -199,19 +199,16 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *TEMPLATE_cg_init(be_irg_t *birg) {
+static void *TEMPLATE_cg_init(be_irg_t *birg)
+{
 	const arch_env_t    *arch_env = be_get_birg_arch_env(birg);
 	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
 	TEMPLATE_code_gen_t *cg       = XMALLOC(TEMPLATE_code_gen_t);
 
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
-	cg->reg_set  = new_set(TEMPLATE_cmp_irn_reg_assoc, 1024);
 	cg->isa      = isa;
 	cg->birg     = birg;
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.TEMPLATE.cg");
-
-	cur_reg_set = cg->reg_set;
 
 	return (arch_code_generator_t *)cg;
 }
@@ -228,6 +225,7 @@ static void *TEMPLATE_cg_init(be_irg_t *birg) {
  *
  *****************************************************************/
 
+const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	{
 		&TEMPLATE_isa_if,             /* isa interface implementation */
@@ -245,7 +243,8 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *TEMPLATE_init(FILE *outfile) {
+static arch_env_t *TEMPLATE_init(FILE *outfile)
+{
 	static int run_once = 0;
 	TEMPLATE_isa_t *isa;
 
@@ -269,7 +268,8 @@ static arch_env_t *TEMPLATE_init(FILE *outfile) {
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void TEMPLATE_done(void *self) {
+static void TEMPLATE_done(void *self)
+{
 	TEMPLATE_isa_t *isa = self;
 
 	/* emit now all global declarations */
@@ -567,6 +567,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 void be_init_arch_TEMPLATE(void)
 {
 	be_register_isa_if("TEMPLATE", &TEMPLATE_isa_if);
+	FIRM_DBG_REGISTER(dbg, "firm.be.TEMPLATE.cg");
+	TEMPLATE_init_transform();
 }
-
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);
