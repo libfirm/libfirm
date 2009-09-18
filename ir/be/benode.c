@@ -1279,8 +1279,13 @@ int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 	case dump_node_nodeattr_txt:
 		break;
 	case dump_node_info_txt:
-		arch_dump_reqs_and_registers(F, node);
+	{
+		backend_info_t *info = be_get_info(node);
+		if (info != NULL && info->out_infos[0].req != NULL) {
+			arch_dump_reqs_and_registers(F, node);
+		}
 		break;
+	}
 
 	default:
 		break;
@@ -1311,42 +1316,6 @@ static const arch_irn_ops_t phi_irn_ops = {
  |_| \_|\___/ \__,_|\___| |____/ \__,_|_| |_| |_| .__/|_|_| |_|\__, |
                                                 |_|            |___/
 */
-
-/**
- * Dumps node register requirements to a file.
- */
-static void dump_node_reqs(FILE *F, ir_node *node)
-{
-	int i;
-	be_node_attr_t *a = get_irn_attr(node);
-	int len = ARR_LEN(a->reg_data);
-	const backend_info_t *info = be_get_info(node);
-
-	for (i = 0; i < len; ++i) {
-		const arch_register_req_t *req = a->reg_data[i].in_req;
-		if (req->cls == NULL)
-			continue;
-		fprintf(F, "inreq #%d = ", i);
-		arch_dump_register_req(F, req, node);
-		fputs("\n", F);
-	}
-
-	for (i = 0; i < len; ++i) {
-		const arch_register_req_t *req = info->out_infos[i].req;
-		if (req->cls == NULL)
-			continue;
-		fprintf(F, "outreq #%d = ", i);
-		arch_dump_register_req(F, req, node);
-		fputs("\n", F);
-	}
-
-	fputs("\n", F);
-
-	for (i = 0; i < len; ++i) {
-		const arch_register_t *reg = arch_irn_get_register(node, i);
-		fprintf(F, "reg #%d = %s\n", i, reg != NULL ? reg->name : "n/a");
-	}
-}
 
 /**
  * ir_op-Operation: dump a be node to file
@@ -1384,7 +1353,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 			}
 			break;
 		case dump_node_info_txt:
-			dump_node_reqs(f, irn);
+			arch_dump_reqs_and_registers(f, irn);
 
 			if (be_has_frame_entity(irn)) {
 				be_frame_attr_t *a = (be_frame_attr_t *) at;
