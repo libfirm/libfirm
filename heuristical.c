@@ -15,6 +15,8 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
+#include "plist.h"
+
 static pbqp_edge **edge_bucket;
 static pbqp_node **node_buckets[4];
 static pbqp_node **reduced_bucket = NULL;
@@ -555,6 +557,25 @@ static void apply_heuristic_reductions(pbqp *pbqp)
 	}
 }
 
+static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
+{
+	for (;;) {
+		if (edge_bucket_get_length(edge_bucket) > 0) {
+			apply_edge(pbqp);
+		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
+			apply_RI(pbqp);
+//			apply_RN_co(pbqp, rpeo);
+		} else if (node_bucket_get_length(node_buckets[2]) > 0) {
+			apply_RII(pbqp);
+//			apply_RN_co(pbqp, rpeo);
+		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
+			apply_RN_co(pbqp, rpeo);
+		} else {
+			return;
+		}
+	}
+}
+
 void solve_pbqp_heuristical(pbqp *pbqp)
 {
 	/* Reduce nodes degree ... */
@@ -585,6 +606,37 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	back_propagate(pbqp);
 
 	free_buckets();
+}
+
+void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo) {
+	/* Reduce nodes degree ... */
+		initial_simplify_edges(pbqp);
+
+		/* ... and put node into bucket representing their degree. */
+		fill_node_buckets(pbqp);
+
+	#if KAPS_STATISTIC
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "Solution");
+		fclose(fh);
+	#endif
+
+		apply_heuristic_reductions_co(pbqp, rpeo);
+
+		pbqp->solution = determine_solution(pbqp);
+
+	#if KAPS_STATISTIC
+		fh = fopen("solutions.pb", "a");
+		fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RN/BF:%u\n", pbqp->solution,
+					pbqp->num_edges, pbqp->num_r0, pbqp->num_r1, pbqp->num_r2,
+					pbqp->num_rn);
+		fclose(fh);
+	#endif
+
+		/* Solve reduced nodes. */
+		back_propagate(pbqp);
+
+		free_buckets();
 }
 
 void apply_edge(pbqp *pbqp)
@@ -892,6 +944,8 @@ static unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 
 void apply_RN(pbqp *pbqp)
 {
+//	printf("### ---- RN\n");
+
 	pbqp_node   *node         = NULL;
 	unsigned     min_index    = 0;
 
@@ -931,6 +985,62 @@ void apply_RN(pbqp *pbqp)
 
 	/* Now that we found the local minimum set all other costs to infinity. */
 	select_alternative(node, min_index);
+}
+
+void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
+{
+//	printf("### ---- RN\n");
+
+	pbqp_node   *node         = NULL;
+	unsigned     min_index    = 0;
+
+	assert(pbqp);
+
+	/* We want to reduce the first node in reverse perfect elimination order. */
+	do {
+		/* get first element from reverse perfect elimination order */
+		node = plist_first(rpeo)->data;
+		/* remove element from reverse perfect elimination order */
+		plist_erase(rpeo, plist_first(rpeo));
+	} while(node_is_reduced(node));
+
+//	node = plist_first(rpeo)->data;
+//	plist_erase(rpeo, plist_first(rpeo));
+
+	assert(node);
+	assert(pbqp_node_get_degree(node) > 2);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+#endif
+
+	min_index = get_local_minimal_alternative(pbqp, node);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
+					node->index, min_index);
+	}
+#endif
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "[%u]", min_index);
+		fclose(fh);
+		pbqp->num_rn++;
+	}
+#endif
+
+	/* Now that we found the local minimum set all other costs to infinity. */
+	select_alternative(node, min_index);
+
+
 }
 
 static void apply_brute_force_reductions(pbqp *pbqp)
