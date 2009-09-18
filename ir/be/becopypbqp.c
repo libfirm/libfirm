@@ -8,6 +8,8 @@
 
 #ifdef FIRM_KAPS
 
+#include "becopypbqp.h"
+
 #include "kaps.h"
 #include "pbqp_t.h"
 #include "vector.h"
@@ -26,6 +28,16 @@
 #include "bitset.h"
 #include "pmap.h"
 
+#include "irdom.h"
+#include "besched.h"
+#include "irgwalk.h"
+#include "plist.h"
+
+#include "bearch.h"
+#include "iredges.h"
+
+
+#if KAPS_DUMP
 static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
 {
 	FILE *result;
@@ -49,45 +61,79 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 	return result;
 }
+#endif
+
+static void insert_into_reverse_peo(ir_node *block, void *data) {
+	pbqp_co_t *pbqp_co;
+	ir_node   *irn;
+
+	pbqp_co = data;
+
+	sched_foreach(block, irn) {
+		pbqp_node *node;
+
+		if (get_irn_mode(irn) == mode_T) {
+			const ir_edge_t *edge;
+
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, proj))
+					continue;
+
+				// get related pbqp_node and insert into reverse peo
+//				node = pmap_find(pbqp_co->map,proj)->value;
+				assert(node && "No corresponding PBQP-Node found!");
+				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(proj)));
+			}
+		} else {
+			if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, irn))
+				continue;
+
+			// get related pbqp_node and insert into reverse peo
+//			node = pmap_find(pbqp_co->map,irn)->value;
+			assert(node && "No corresponding PBQP-Node found!");
+			plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(irn)));
+		}
+	}
+}
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	void *nodes_it  = be_ifg_nodes_iter_alloca(co->cenv->ifg);
 	void *neigh_it  = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
-	ir_node *ifg_node, *if_neighb_node;
+	ir_node *ifg_node;
+	ir_node *if_neighb_node;
 
-	pbqp *pbqp_problem;
+	pbqp_co_t pbqp_co;
+
 	unsigned number_registers = co->cls->n_regs;
-	unsigned number_nodes = 0;
-	unsigned int nodeIdx = 0;
+	unsigned number_nodes = get_irg_last_idx(co->irg);
+	unsigned nodeIdx = 0;
 
-	bitset_t *ignore_registers;
-	pmap *map;
+//	// count nodes in ifg
+//	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+//		number_nodes++;
+//	}
 
-	// count nodes in ifg
-	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
-		number_nodes++;
-	}
+	// create and initialize data structure for pbqp copy min. optimization
+	pbqp_co.cls = co->cls;
+	pbqp_co.rpeo = plist_new();;
+	pbqp_co.map = pmap_create_ex(number_nodes);
+	pbqp_co.pbqp = alloc_pbqp(number_nodes);
+	pbqp_co.ignore_reg = bitset_malloc(number_registers);
 
-	// create empty PBQP instance
-	pbqp_problem = alloc_pbqp(number_nodes);
-
-	//
-	ignore_registers = bitset_malloc(number_registers);
-	be_put_ignore_regs(co->cenv->birg, co->cls, ignore_registers);
-
-	// create map
-	map = pmap_create_ex(number_nodes);
+	// get ignored registers
+	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
 
 	// add costs vector to nodes
-	nodeIdx = 0;
+//	nodeIdx = 0;
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
 		// create costs vector
-		struct vector *costs_vector = vector_alloc(pbqp_problem, number_registers);
+		struct vector *costs_vector = vector_alloc(pbqp_co.pbqp, number_registers);
 
 		// set costs
 		unsigned int cnt;
 		for(cnt = 0; cnt < costs_vector->len; cnt++) {
-			if (bitset_is_set(ignore_registers,cnt)) {
+			if (bitset_is_set(pbqp_co.ignore_reg,cnt)) {
 				vector_set(costs_vector, cnt, INF_COSTS);
 			}
 			else {
@@ -99,31 +145,33 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 					vector_set(costs_vector, cnt, 0);
 				}
 			}
-
+#if KAPS_ENABLE_VECTOR_NAMES
 			// add description
 			vector_set_description(costs_vector, cnt, arch_register_for_index(co->cls, cnt)->name);
+#endif
 		}
 
 		// add costs vector to node
-		add_node_costs(pbqp_problem, nodeIdx, costs_vector);
+		add_node_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), costs_vector);
 
 		// insert ir_node and pbqp_node into map
-		pmap_insert(map, ifg_node, get_node(pbqp_problem,nodeIdx));
+		pmap_insert(pbqp_co.map, ifg_node, get_node(pbqp_co.pbqp, get_irn_idx(ifg_node)));
 
-		// increment nodeIndex
-		nodeIdx++;
+//		// increment nodeIndex
+//		nodeIdx++;
 	}
 
+	// add pbqp edges and cost matrix
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
-		pbqp_node *src_node = pmap_find(map,ifg_node)->value;
-		unsigned int srcNodeIdx = src_node->index;
+//		pbqp_node *src_node = pmap_find(pbqp_co.map,ifg_node)->value;
+//		unsigned int srcNodeIdx = src_node->index;
 
 		// add costs matrix between nodes (interference edge)
 		be_ifg_foreach_neighbour(co->cenv->ifg, neigh_it, ifg_node, if_neighb_node) {
-			pbqp_node *trg_node = pmap_find(map,if_neighb_node)->value;
-			if(get_edge(pbqp_problem, srcNodeIdx, trg_node->index) == NULL) {
+//			pbqp_node *trg_node = pmap_find(pbqp_co.map,if_neighb_node)->value;
+			if(get_edge(pbqp_co.pbqp,get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
 				// create costs matrix
-				struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_problem, number_registers, number_registers);
+				struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 
 				// set costs
 				unsigned row, col;
@@ -133,25 +181,30 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 							pbqp_matrix_set(matrix, row, col, INF_COSTS);
 						}
 						else {
-							pbqp_matrix_set(matrix, row, col, 2);
+							pbqp_matrix_set(matrix, row, col, 0);
 						}
 					}
 				}
 
 				// add costs matrix to interference edge
-				add_edge_costs(pbqp_problem, srcNodeIdx, trg_node->index , matrix);
+				add_edge_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node) , matrix);
 			}
 		}
 
-		// add costs matrix between nodes (affinety edge)
+		// add costs matrix between nodes (affinity edge)
 		affinity_node_t *aff_node = get_affinity_info(co, ifg_node);
 		neighb_t *aff_neighb_node;
 		if(aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
-				pbqp_node *trg_node = pmap_find(map,aff_neighb_node->irn)->value;
-				if(get_edge(pbqp_problem, srcNodeIdx, trg_node->index) == NULL) {
+				pmap_entry *ptr_pbqp_node = pmap_find(pbqp_co.map,aff_neighb_node->irn);
+				// ignore Unknowns
+				if(ptr_pbqp_node == NULL) {
+					continue;
+				}
+//				pbqp_node *trg_node = ptr_pbqp_node->value;
+				if(get_edge(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
 					// create costs matrix
-					struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_problem, number_registers, number_registers);
+					struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 
 					// set costs
 					unsigned row, col;
@@ -167,53 +220,55 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 					}
 
 					// add costs matrix to interference edge
-					add_edge_costs(pbqp_problem, srcNodeIdx, trg_node->index , matrix);
+					add_edge_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node) , matrix);
 				}
 			}
 		}
 	}
 
+	// create reverse perfect elimination order
+	assure_doms(co->irg);
+	dom_tree_walk_irg(co->irg, insert_into_reverse_peo, NULL, &pbqp_co);
+
 #if KAPS_DUMP
 	// dump graph before solving pbqp
 	FILE *file_before = my_open(co->cenv, "", "-before.html");
-	set_dumpfile(pbqp_problem, file_before);
-	pbqp_dump_input(pbqp_problem);
+	set_dumpfile(pbqp_co.pbqp, file_before);
+	pbqp_dump_input(pbqp_co.pbqp);
 #endif
 
 
 	// solve pbqp problem
-	solve_pbqp_heuristical(pbqp_problem);
-	//solve_pbqp_brute_force(pbqp_problem);
-	num solution = get_solution(pbqp_problem);
+	solve_pbqp_heuristical_co(pbqp_co.pbqp, pbqp_co.rpeo);
+    num solution = get_solution(pbqp_co.pbqp);
 
-	assert(solution != INF_COSTS && "No PBQP solution found");
+    assert(solution != INF_COSTS && "No PBQP solution found");
 
-	// printf("Solution (%s): %d\n",co->name, (int)solution);
-
-	// coloring ifg
-	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
-		pbqp_node *node = pmap_find(map,ifg_node)->value;
-		num index = get_node_solution(pbqp_problem, node->index);
-		const arch_register_t *reg = arch_register_for_index(co->cls, index);
-		arch_set_irn_register(ifg_node, reg);
-	}
 
 #if KAPS_DUMP
 	// dump graph after solving pbqp
 	FILE *file_after = my_open(co->cenv, "", "-after.html");
-	set_dumpfile(pbqp_problem, file_after);
-	pbqp_dump_input(pbqp_problem);
+	set_dumpfile(pbqp_co.pbqp, file_after);
+	pbqp_dump_input(pbqp_co.pbqp);
 #endif
 
+	// coloring ifg
+	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+//		pbqp_node *node = pmap_find(pbqp_co.map,ifg_node)->value;
+		num index = get_node_solution(pbqp_co.pbqp, get_irn_idx(ifg_node));
+		const arch_register_t *reg = arch_register_for_index(co->cls, index);
+		arch_set_irn_register(ifg_node, reg);
+	}
 
 	// free pbqp resources
 #if KAPS_DUMP
 	fclose(file_before);
 	fclose(file_after);
 #endif
-	bitset_free(ignore_registers);
-	pmap_destroy(map);
-	free_pbqp(pbqp_problem);
+	bitset_free(pbqp_co.ignore_reg);
+	pmap_destroy(pbqp_co.map);
+	plist_free(pbqp_co.rpeo);
+	free_pbqp(pbqp_co.pbqp);
 
 	return 0;
 }
