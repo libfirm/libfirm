@@ -53,7 +53,7 @@ extern ir_op *op_be_Return;
 extern ir_op *op_be_IncSP;
 extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
-extern ir_op *op_be_RegParams;
+extern ir_op *op_be_Start;
 extern ir_op *op_be_FrameAddr;
 extern ir_op *op_be_Barrier;
 
@@ -346,7 +346,7 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
 
-ir_node *be_new_RegParams(ir_node *bl, int n_out);
+ir_node *be_new_Start(ir_node *block, int n_out);
 
 ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[]);
 
@@ -455,6 +455,12 @@ void be_set_phi_reg_req(ir_node *phi, const arch_register_req_t *req);
 int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason);
 
 /**
+ * Creates a new phi with associated backend informations
+ */
+ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
+                    const arch_register_class_t *cls);
+
+/**
  * irn handler for common be nodes and Phi's.
  */
 const void *be_node_get_irn_ops(const ir_node *irn);
@@ -471,7 +477,7 @@ static inline int be_is_Return   (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_IncSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_IncSP    ; }
 static inline int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_AddSP    ; }
 static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
-static inline int be_is_RegParams(const ir_node *irn) { return get_irn_opcode(irn) == beo_RegParams; }
+static inline int be_is_Start    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Start; }
 static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
 static inline int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
 

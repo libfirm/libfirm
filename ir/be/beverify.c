@@ -298,6 +298,8 @@ static int should_be_scheduled(ir_node *node)
 		if (get_irn_mode(node) == mode_M)
 			return 0;
 		break;
+	case iro_Start:
+	case iro_Jmp:
 	case beo_Return:
 		return 1;
 	default:

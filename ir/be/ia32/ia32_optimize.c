@@ -369,7 +369,7 @@ static void peephole_ia32_Return(ir_node *node) {
 			/* the return node itself, ignore */
 			continue;
 		case iro_Start:
-		case beo_RegParams:
+		case beo_Start:
 		case beo_Barrier:
 			/* ignore no code generated */
 			continue;

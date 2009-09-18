@@ -675,12 +675,11 @@ void mips_register_emitters(void)
 	register_emitter(op_be_Keep, mips_emit_nothing);
 	register_emitter(op_be_Barrier, mips_emit_nothing);
 	register_emitter(op_be_Return, mips_emit_Return);
-	register_emitter(op_be_RegParams, mips_emit_nothing);
+	register_emitter(op_be_Start, mips_emit_nothing);
 	register_emitter(op_be_Spill, mips_emit_this_shouldnt_happen);
 	register_emitter(op_be_Reload, mips_emit_this_shouldnt_happen);
 	register_emitter(op_be_Perm, mips_emit_Perm);
 
-	register_emitter(op_Start, mips_emit_nothing);
 	register_emitter(op_Proj, mips_emit_nothing);
 	register_emitter(op_SymConst, mips_emit_this_shouldnt_happen);
 	register_emitter(op_Const, mips_emit_this_shouldnt_happen);

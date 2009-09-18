@@ -56,11 +56,6 @@ const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node);
 const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos);
 
 /**
- * Returns the result register requirements of an TEMPLATE node.
- */
-const arch_register_req_t *get_TEMPLATE_out_req(const ir_node *node, int pos);
-
-/**
  * Sets the IN register requirements at position pos.
  */
 void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos);

@@ -281,7 +281,10 @@ static ir_node *gen_Store(TEMPLATE_transform_env_t *env)
 	return new_bd_TEMPLATE_Store(env->dbg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
 }
 
-
+static ir_node *gen_Jmp(TEMPLATE_transform_env_t *env)
+{
+	return new_bd_TEMPLATE_Jmp(env->dbg, env->block);
+}
 
 /*********************************************************
  *                  _             _      _
@@ -344,6 +347,7 @@ void TEMPLATE_transform_node(ir_node *node, void *env)
 
 		GEN(Load);
 		GEN(Store);
+		GEN(Jmp);
 
 		/* TODO: implement these nodes */
 		IGN(Shrs);
@@ -373,7 +377,6 @@ void TEMPLATE_transform_node(ir_node *node, void *env)
 		IGN(NoMem);
 		IGN(Phi);
 		IGN(IJmp);
-		IGN(Jmp);
 		IGN(Break);
 		IGN(Sync);
 

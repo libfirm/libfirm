@@ -1037,12 +1037,11 @@ static void arm_register_emitters(void) {
 
 	/* noisy stuff */
 #ifdef SILENCER
-	SILENCE(Start);
 	SILENCE(Proj);
 	SILENCE(Phi);
 	SILENCE(be_Keep);
 	SILENCE(be_CopyKeep);
-	SILENCE(be_RegParams);
+	SILENCE(be_Start);
 	SILENCE(be_Barrier);
 	SILENCE(be_Return);
 #endif

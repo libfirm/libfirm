@@ -57,6 +57,7 @@
 #include "beintlive_t.h"
 #include "beirg.h"
 #include "be_t.h"
+#include "benode.h"
 
 #include "debug.h"
 #include "error.h"
@@ -74,8 +75,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * blocks as visited. Sets the link fields of the blocks in the dominance
  * frontier to the block itself.
  */
-static
-void mark_iterated_dominance_frontiers(const be_ssa_construction_env_t *env)
+static void mark_iterated_dominance_frontiers(
+		const be_ssa_construction_env_t *env)
 {
 	stat_ev_cnt_decl(blocks);
 	DBG((dbg, LEVEL_3, "Dominance Frontier:"));
@@ -106,13 +107,11 @@ void mark_iterated_dominance_frontiers(const be_ssa_construction_env_t *env)
 	DBG((dbg, LEVEL_3, "\n"));
 }
 
-static
-ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
-                                 ir_node *block);
+static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
+                                        ir_node *block);
 
-static
-ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
-                    ir_node *link_with)
+static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
+                           ir_node *link_with)
 {
 	int i, n_preds = get_Block_n_cfgpreds(block);
 	ir_graph *irg = get_Block_irg(block);
@@ -124,7 +123,7 @@ ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 	for(i = 0; i < n_preds; ++i) {
 		ins[i] = new_r_Unknown(irg, env->mode);
 	}
-	phi = new_r_Phi(block, n_preds, ins, env->mode);
+	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_cls);
 	if(env->new_phis != NULL) {
 		ARR_APP1(ir_node*, env->new_phis, phi);
 	}
@@ -147,16 +146,15 @@ ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 	return phi;
 }
 
-static
-ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
+static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
 {
 	ir_node *dom = get_Block_idom(block);
 	assert(dom != NULL);
 	return search_def_end_of_block(env, dom);
 }
 
-static
-ir_node *search_def_end_of_block(be_ssa_construction_env_t *env, ir_node *block)
+static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
+                                        ir_node *block)
 {
 	if(irn_visited(block)) {
 		assert(get_irn_link(block) != NULL);
@@ -171,8 +169,7 @@ ir_node *search_def_end_of_block(be_ssa_construction_env_t *env, ir_node *block)
 	}
 }
 
-static
-ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
+static ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 {
 	ir_node *block = get_nodes_block(at);
 	ir_node *node;
@@ -217,8 +214,7 @@ ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
  * sorted by dominance. A non-visited block means no definition has been
  * inserted yet.
  */
-static
-void introduce_def_at_block(ir_node *block, ir_node *def)
+static void introduce_def_at_block(ir_node *block, ir_node *def)
 {
 	if (irn_visited_else_mark(block)) {
 		ir_node *node = block;
@@ -297,7 +293,8 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 	assert(env->iterated_domfront_calculated == 0);
 
 	if(env->mode == NULL) {
-		env->mode = get_irn_mode(copy);
+		env->mode    = get_irn_mode(copy);
+		env->phi_cls = arch_get_irn_reg_class_out(copy);
 	} else {
 		assert(env->mode == get_irn_mode(copy));
 	}
@@ -318,11 +315,12 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 	assert(env->iterated_domfront_calculated == 0);
 
 	if(env->mode == NULL) {
-		env->mode = get_irn_mode(copies[0]);
+		env->mode    = get_irn_mode(copies[0]);
+		env->phi_cls = arch_get_irn_reg_class_out(copies[0]);
 	}
 
 	for(i = 0; i < copies_len; ++i) {
-		ir_node *copy = copies[i];
+		ir_node *copy  = copies[i];
 		ir_node *block = get_nodes_block(copy);
 
 		assert(env->mode == get_irn_mode(copy));

@@ -56,11 +56,6 @@ const arch_register_req_t **get_ppc32_in_req_all(const ir_node *node);
 const arch_register_req_t *get_ppc32_in_req(const ir_node *node, int pos);
 
 /**
- * Returns the result register requirements of an ppc node.
- */
-const arch_register_req_t *get_ppc32_out_req(const ir_node *node, int pos);
-
-/**
  * Sets the IN register requirements at position pos.
  */
 void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos);

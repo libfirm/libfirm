@@ -160,7 +160,6 @@ static int mips_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t mips_irn_ops = {
 	get_mips_in_req,
-	get_mips_out_req,
 	mips_classify,
 	mips_get_frame_entity,
 	mips_set_frame_entity,

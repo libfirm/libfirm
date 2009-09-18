@@ -2102,7 +2102,7 @@ static void process_block(ir_node *block, void *env) {
 			*/
 			if (is_Proj(irn)) {
 				ir_node *pred = get_Proj_pred(irn);
-				if (be_is_Barrier(pred) || is_Start(pred))
+				if (be_is_Barrier(pred) || be_is_Start(pred))
 					continue;
 			}
 

@@ -833,7 +833,7 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 			case iro_Phi:
 				add_to_sched(env, block, irn, 0);
 				break;
-			case iro_Start:
+			case beo_Start:
 			case iro_End:
 			case iro_Proj:
 			case iro_Bad:
@@ -1672,7 +1672,7 @@ static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilps
 	foreach_linked_irns(ba->head_ilp_nodes, cur_irn) {
 		switch (get_irn_opcode(cur_irn)) {
 			case iro_Phi:
-			case iro_Start:
+			case beo_Start:
 			case iro_End:
 			case iro_Proj:
 			case iro_Bad:

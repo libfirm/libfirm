@@ -138,7 +138,6 @@ static inline int _sched_get_time_step(const ir_node *irn)
 static inline int to_appear_in_schedule(const ir_node *irn)
 {
 	switch(get_irn_opcode(irn)) {
-		case iro_Start:
 		case iro_Jmp:
 		case iro_Break:
 			return 1;

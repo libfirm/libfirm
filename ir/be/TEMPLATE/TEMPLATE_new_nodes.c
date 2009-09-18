@@ -141,15 +141,6 @@ const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos)
 }
 
 /**
- * Returns the result register requirement at position pos of an TEMPLATE node.
- */
-const arch_register_req_t *get_TEMPLATE_out_req(const ir_node *node, int pos)
-{
-	const backend_info_t *info = be_get_info(node);
-	return info->out_infos[pos].req;
-}
-
-/**
  * Sets the IN register requirements at position pos.
  */
 void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos)

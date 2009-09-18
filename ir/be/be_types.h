@@ -46,7 +46,7 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flags_none             = 0,       /**< Node flags. */
 	arch_irn_flags_dont_spill       = 1U << 0, /**< This must not be spilled. */
 	arch_irn_flags_rematerializable = 1U << 1, /**< This can be replicated instead of spilled/reloaded. */
-	arch_irn_flags_modify_flags     = 1U << 2  /**< I modify flags. */
+	arch_irn_flags_modify_flags     = 1U << 2, /**< I modify flags. */
 } arch_irn_flags_t;
 
 typedef struct _be_lv_t                  be_lv_t;

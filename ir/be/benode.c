@@ -120,7 +120,7 @@ ir_op *op_be_Return;
 ir_op *op_be_IncSP;
 ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
-ir_op *op_be_RegParams;
+ir_op *op_be_Start;
 ir_op *op_be_FrameAddr;
 ir_op *op_be_Barrier;
 
@@ -328,14 +328,15 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
 
 	be_node_set_reg_class_in(res, be_pos_Spill_frame, cls_frame);
 	be_node_set_reg_class_in(res, be_pos_Spill_val, cls);
-
 	/*
 	 * For spills and reloads, we return "none" as requirement for frame
-	 * pointer, so every input is ok. Some backends need this (e.g. STA).
+	 * pointer, so every input is ok. Some backends need this (STA).
 	 * Matze: we should investigate if this is really needed, this solution
 	 *        looks very hacky to me
 	 */
 	be_set_constr_in(res, be_pos_Spill_frame, arch_no_register_req);
+
+	arch_set_out_register_req(res, 0, arch_no_register_req);
 
 	return res;
 }
@@ -352,8 +353,9 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	in[1] = mem;
 	res   = new_ir_node(NULL, irg, block, op_be_Reload, mode, 2, in);
 
-	init_node_attr(res, 2, 2);
+	init_node_attr(res, 2, 1);
 	be_node_set_reg_class_out(res, 0, cls);
+
 	be_node_set_reg_class_in(res, be_pos_Reload_frame, cls_frame);
 	arch_irn_set_flags(res, arch_irn_flags_rematerializable);
 
@@ -717,13 +719,13 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 	return irn;
 }
 
-ir_node *be_new_RegParams(ir_node *bl, int n_outs)
+ir_node *be_new_Start(ir_node *bl, int n_outs)
 {
 	ir_node *res;
 	int i;
 	ir_graph *irg = get_Block_irg(bl);
 
-	res = new_ir_node(NULL, irg, bl, op_be_RegParams, mode_T, 0, NULL);
+	res = new_ir_node(NULL, irg, bl, op_be_Start, mode_T, 0, NULL);
 	init_node_attr(res, 0, -1);
 	for (i = 0; i < n_outs; ++i) {
 		add_register_req_out(res);
@@ -1037,14 +1039,6 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 */
 
 
-static const arch_register_req_t *be_node_get_out_reg_req(
-		const ir_node *irn, int pos)
-{
-	const backend_info_t *info = be_get_info(irn);
-	assert(pos < ARR_LEN(info->out_infos));
-	return info->out_infos[pos].req;
-}
-
 static const arch_register_req_t *be_node_get_in_reg_req(
 		const ir_node *irn, int pos)
 {
@@ -1116,7 +1110,6 @@ static int be_node_get_sp_bias(const ir_node *irn)
 /* for be nodes */
 static const arch_irn_ops_t be_node_irn_ops = {
 	be_node_get_in_reg_req,
-	be_node_get_out_reg_req,
 	be_node_classify,
 	be_node_get_frame_entity,
 	be_node_set_frame_entity,
@@ -1171,7 +1164,6 @@ static int dummy_get_sp_bias(const ir_node *node)
 /* for "middleend" nodes */
 static const arch_irn_ops_t dummy_be_irn_ops = {
 	dummy_reg_req,
-	dummy_reg_req,
 	dummy_classify,
 	dummy_get_frame_entity,
 	dummy_set_frame_entity,
@@ -1191,6 +1183,25 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
  |_|   |_| |_|_| |___|_| \_\_| \_| |_| |_|\__,_|_| |_|\__,_|_|\___|_|
 
 */
+
+ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
+                    const arch_register_class_t *cls)
+{
+	struct obstack *obst = be_get_birg_obst(get_irn_irg(block));
+	backend_info_t *info;
+
+	ir_node *phi = new_r_Phi(block, n_ins, ins, mode);
+	info = be_get_info(phi);
+	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
+	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
+	if (cls == NULL) {
+		info->out_infos[0].req = arch_no_register_req;
+	} else {
+		info->out_infos[0].req = cls->class_req;
+	}
+
+	return phi;
+}
 
 /**
  * Guess correct register class of a phi node by looking at its arguments
@@ -1295,7 +1306,6 @@ int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 }
 
 static const arch_irn_ops_t phi_irn_ops = {
-	phi_get_irn_reg_req,
 	phi_get_irn_reg_req,
 	dummy_classify,
 	dummy_get_frame_entity,
@@ -1431,8 +1441,7 @@ static void copy_attr(const ir_node *old_node, ir_node *new_node)
 	if (old_info->out_infos != NULL) {
 		unsigned n_outs = ARR_LEN(old_info->out_infos);
 		/* need dyanmic out infos? */
-		if (be_is_RegParams(new_node) || be_is_Barrier(new_node)
-				|| be_is_Perm(new_node)) {
+		if (be_is_Barrier(new_node)	|| be_is_Perm(new_node)) {
 			new_info->out_infos = NEW_ARR_F(reg_out_info_t, n_outs);
 		} else {
 			new_info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outs);
@@ -1502,7 +1511,7 @@ void be_init_op(void)
 	op_be_AddSP      = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP      = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_IncSP      = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_pinned, N,   oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
-	op_be_RegParams  = new_ir_op(beo_RegParams, "be_RegParams", op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
+	op_be_Start      = new_ir_op(beo_Start,     "be_Start",     op_pin_state_pinned, N,   oparity_zero,     0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_FrameAddr  = new_ir_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, N,   oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
 	op_be_Barrier    = new_ir_op(beo_Barrier,   "be_Barrier",   op_pin_state_pinned, N,   oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 
@@ -1518,7 +1527,7 @@ void be_init_op(void)
 	op_be_AddSP->ops.node_cmp_attr     = node_cmp_attr;
 	op_be_SubSP->ops.node_cmp_attr     = node_cmp_attr;
 	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;
-	op_be_RegParams->ops.node_cmp_attr = node_cmp_attr;
+	op_be_Start->ops.node_cmp_attr     = node_cmp_attr;
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
 	op_be_Barrier->ops.node_cmp_attr   = node_cmp_attr;
 

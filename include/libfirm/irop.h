@@ -116,7 +116,7 @@ typedef enum {
 	beo_AddSP,
 	beo_SubSP,
 	beo_IncSP,
-	beo_RegParams,
+	beo_Start,
 	beo_FrameAddr,
 	beo_Barrier,
 	/* last backend node number */

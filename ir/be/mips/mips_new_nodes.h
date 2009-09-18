@@ -59,11 +59,6 @@ const arch_register_req_t **get_mips_in_req_all(const ir_node *node);
 const arch_register_req_t *get_mips_in_req(const ir_node *node, int pos);
 
 /**
- * Returns the result register requirements of an mips node.
- */
-const arch_register_req_t *get_mips_out_req(const ir_node *node, int pos);
-
-/**
  * Sets the OUT register requirements at position pos.
  */
 void set_mips_req_out(ir_node *node, const arch_register_req_t *req, int pos);

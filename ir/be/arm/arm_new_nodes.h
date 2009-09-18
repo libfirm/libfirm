@@ -75,11 +75,6 @@ const arch_register_req_t **get_arm_in_req_all(const ir_node *node);
 const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
 
 /**
- * Returns the result register requirements of an arm node.
- */
-const arch_register_req_t *get_arm_out_req(const ir_node *node, int pos);
-
-/**
  * Sets the IN register requirements at position pos.
  */
 void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);

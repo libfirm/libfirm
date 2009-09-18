@@ -805,7 +805,6 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
 	get_ia32_in_req,
-	get_ia32_out_req,
 	ia32_classify,
 	ia32_get_frame_entity,
 	ia32_set_frame_entity,
@@ -826,7 +825,6 @@ static const arch_irn_ops_t ia32_SwitchJmp_irn_ops = {
 	   This is because the bearch API has a conceptual problem at the moment.
 	   Querying for negative proj numbers which can happen for switchs
 	   isn't possible and will result in inputs getting queried */
-	get_ia32_SwitchJmp_out_req,
 	get_ia32_SwitchJmp_out_req,
 	ia32_classify,
 	ia32_get_frame_entity,

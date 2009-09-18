@@ -123,7 +123,6 @@ static int arm_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t arm_irn_ops = {
 	get_arm_in_req,
-	get_arm_out_req,
 	arm_classify,
 	arm_get_frame_entity,
 	arm_set_frame_entity,

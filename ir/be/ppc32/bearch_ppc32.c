@@ -230,7 +230,6 @@ static const be_abi_callbacks_t ppc32_abi_callbacks = {
 
 static const arch_irn_ops_t ppc32_irn_ops = {
 	get_ppc32_in_req,
-	get_ppc32_out_req,
 	ppc32_classify,
 	ppc32_get_frame_entity,
 	ppc32_set_frame_entity,

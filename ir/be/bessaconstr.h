@@ -58,13 +58,14 @@
 #include "pdeq.h"
 
 typedef struct be_ssa_construction_env_t {
-	ir_graph                  *irg;
-	const be_dom_front_info_t *domfronts;
-	ir_mode                   *mode;
-	waitq                     *worklist;
-	const ir_nodeset_t        *ignore_uses;
-	ir_node                   **new_phis;
-	int                       iterated_domfront_calculated;
+	ir_graph                    *irg;
+	const be_dom_front_info_t   *domfronts;
+	ir_mode                     *mode;
+	const arch_register_class_t *phi_cls;
+	waitq                       *worklist;
+	const ir_nodeset_t          *ignore_uses;
+	ir_node                    **new_phis;
+	int                          iterated_domfront_calculated;
 } be_ssa_construction_env_t;
 
 /**

@@ -40,21 +40,26 @@ void be_info_new_node(ir_node *node)
 	struct obstack *obst;
 	backend_info_t *info;
 
-	if (is_Anchor(node))
-		return;
-
-	if (is_Proj(node)) // Projs need no be info, their tuple holds all information
+	/* Projs need no be info, their tuple holds all information */
+ 	if (is_Proj(node))
 		return;
 
 	obst = be_get_birg_obst(current_ir_graph);
 	info = OALLOCZ(obst, backend_info_t);
 
-	if (is_Phi(node)) {
-		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
-		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
-	}
 	assert(node->backend_info == NULL);
 	node->backend_info = info;
+
+	/* Hack! We still have middle end nodes in the backend (which was probably
+	   a bad decision back then), which have no register constraints.
+	   Set some none_requirements here.
+	 */
+	if (get_irn_mode(node) != mode_T
+			&& get_irn_opcode(node) <= iro_Last) {
+		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
+		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
+		info->out_infos[0].req = arch_no_register_req;
+	}
 }
 
 static void new_Phi_copy_attr(const ir_node *old_node, ir_node *new_node)

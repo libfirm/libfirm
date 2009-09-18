@@ -369,16 +369,6 @@ struct arch_irn_ops_t {
 	const arch_register_req_t *(*get_irn_reg_req_in)(const ir_node *irn, int pos);
 
 	/**
-  	 * Get the register requirements for values produced by a node
-	 * @param irn The node.
-	 * @param pos The operand's position (0 for most nodes,
-	 *                                    0..n for mode_T nodes)
-	 * @return    The register requirements for the selected operand.
-	 *            The pointer returned is never NULL.
-	 */
-	const arch_register_req_t *(*get_irn_reg_req_out)(const ir_node *irn, int pos);
-
-	/**
 	 * Classify the node.
 	 * @param irn The node.
 	 * @return A classification.
@@ -747,17 +737,21 @@ static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)
 static inline const arch_register_req_t *arch_get_register_req_out(
 		const ir_node *irn)
 {
-	int                   pos = 0;
-	const arch_irn_ops_t *ops;
+	int             pos = 0;
+	backend_info_t *info;
 
 	if (is_Proj(irn)) {
 		pos = get_Proj_proj(irn);
 		irn = get_Proj_pred(irn);
 	} else if (get_irn_mode(irn) == mode_T) {
+		/* TODO: find out who does this and fix the caller! */
 		return arch_no_register_req;
 	}
-	ops = get_irn_ops_simple(irn);
-	return ops->get_irn_reg_req_out(irn, pos);
+	info = be_get_info(irn);
+	if (info->out_infos == NULL)
+		return arch_no_register_req;
+
+	return info->out_infos[pos].req;
 }
 
 static inline bool arch_irn_is_ignore(const ir_node *irn)
@@ -791,8 +785,18 @@ static inline const arch_register_req_t *arch_get_in_register_req(
 static inline const arch_register_req_t *arch_get_out_register_req(
 		const ir_node *node, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops_simple(node);
-	return ops->get_irn_reg_req_out(node, pos);
+	const backend_info_t *info = be_get_info(node);
+	if (info->out_infos == NULL)
+		return arch_no_register_req;
+	return info->out_infos[pos].req;
 }
 
-#endif /* FIRM_BE_BEARCH_H */
+static inline void arch_set_out_register_req(ir_node *node, int pos,
+		const arch_register_req_t *req)
+{
+	backend_info_t *info = be_get_info(node);
+	assert(pos < (int) arch_irn_get_n_outs(node));
+	info->out_infos[pos].req = req;
+}
+
+#endif

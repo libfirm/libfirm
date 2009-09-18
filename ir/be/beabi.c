@@ -93,7 +93,7 @@ struct _be_abi_irg_t {
 	ir_node              *init_sp;      /**< The node representing the stack pointer
 	                                         at the start of the function. */
 
-	ir_node              *reg_params;   /**< The reg params node. */
+	ir_node              *start;        /**< The be_Start params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
 	                                         their Projs to the RegParams node. */
 
@@ -1357,10 +1357,12 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 		const arch_register_t *reg      = rm[n].reg;
 		arch_register_type_t   add_type = 0;
 		ir_node               *proj;
+		const backend_info_t  *info;
 
 		/* stupid workaround for now... as not all nodes report register
 		 * requirements. */
-		if (!is_Phi(pred)) {
+		info = be_get_info(skip_Proj(pred));
+		if (info != NULL && info->out_infos != NULL) {
 			const arch_register_req_t *ireq = arch_get_register_req_out(pred);
 			if (ireq->type & arch_register_req_type_ignore)
 				add_type |= arch_register_req_type_ignore;
@@ -1742,8 +1744,8 @@ static void fix_start_block(ir_graph *irg)
 			continue;
 		if (block != start_block) {
 			ir_node *jmp = new_r_Jmp(start_block);
-
 			set_Block_cfgpred(block, get_edge_src_pos(edge), jmp);
+			set_irg_initial_exec(irg, jmp);
 			return;
 		}
 	}
@@ -1826,7 +1828,6 @@ static void modify_irg(be_abi_irg_t *env)
 	const arch_env_t *arch_env= env->birg->main_env->arch_env;
 	const arch_register_t *sp = arch_env->sp;
 	ir_graph *irg             = env->birg->irg;
-	ir_node *start_bl;
 	ir_node *end;
 	ir_node *old_mem;
 	ir_node *new_mem_proj;
@@ -1841,7 +1842,7 @@ static void modify_irg(be_abi_irg_t *env)
 	reg_node_map_t *rm;
 	const arch_register_t *fp_reg;
 	ir_node *frame_pointer;
-	ir_node *reg_params_bl;
+	ir_node *start_bl;
 	ir_node **args;
 	ir_node *arg_tuple;
 	const ir_edge_t *edge;
@@ -1959,11 +1960,13 @@ static void modify_irg(be_abi_irg_t *env)
 		}
 	}
 
+	/* handle start block here (place a jump in the block) */
+	fix_start_block(irg);
+
 	pmap_insert(env->regs, (void *) sp, NULL);
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
-	reg_params_bl   = get_irg_start_block(irg);
-	env->reg_params = be_new_RegParams(reg_params_bl, pmap_count(env->regs));
-	add_irn_dep(env->reg_params, get_irg_start(irg));
+	start_bl   = get_irg_start_block(irg);
+	env->start = be_new_Start(start_bl, pmap_count(env->regs) + 1);
 
 	/*
 	 * make proj nodes for the callee save registers.
@@ -1985,9 +1988,9 @@ static void modify_irg(be_abi_irg_t *env)
 			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
 
 		assert(nr >= 0);
-		proj = new_r_Proj(reg_params_bl, env->reg_params, mode, nr);
+		proj = new_r_Proj(start_bl, env->start, mode, nr + 1);
 		pmap_insert(env->regs, (void *) reg, proj);
-		be_set_constr_single_reg_out(env->reg_params, nr, reg, add_type);
+		be_set_constr_single_reg_out(env->start, nr + 1, reg, add_type);
 		arch_set_irn_register(proj, reg);
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
@@ -1996,10 +1999,10 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
-	new_mem_proj = new_r_Proj(get_nodes_block(old_mem),
-	                          new_r_Unknown(irg, mode_T), mode_M,
-	                          get_Proj_proj(old_mem));
+	arch_set_out_register_req(env->start, 0, arch_no_register_req);
+	new_mem_proj = new_r_Proj(start_bl, env->start, mode_M, 0);
 	mem = new_mem_proj;
+	set_irg_initial_mem(irg, mem);
 
 	/* Generate the Prologue */
 	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &env->frame.initial_bias);
@@ -2007,7 +2010,6 @@ static void modify_irg(be_abi_irg_t *env)
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	start_bl     = get_irg_start_block(irg);
 	env->init_sp = be_new_IncSP(sp, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
@@ -2021,7 +2023,6 @@ static void modify_irg(be_abi_irg_t *env)
 	pset_insert_ptr(env->ignore_regs, fp_reg);
 
 	/* rewire old mem users to new mem */
-	set_Proj_pred(new_mem_proj, get_Proj_pred(old_mem));
 	exchange(old_mem, mem);
 
 	set_irg_initial_mem(irg, mem);
@@ -2044,18 +2045,18 @@ static void modify_irg(be_abi_irg_t *env)
 			if (arg->in_reg) {
 				repl = pmap_get(env->regs, (void *) arg->reg);
 			} else if (arg->on_stack) {
-				ir_node *addr = be_new_FrameAddr(sp->reg_class, reg_params_bl, frame_pointer, arg->stack_ent);
+				ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
 
 				/* For atomic parameters which are actually used, we create a Load node. */
 				if (is_atomic_type(param_type) && get_irn_n_edges(args[i]) > 0) {
 					ir_mode *mode      = get_type_mode(param_type);
 					ir_mode *load_mode = arg->load_mode;
 
-					ir_node *load = new_r_Load(reg_params_bl, new_NoMem(), addr, load_mode, cons_floats);
-					repl = new_r_Proj(reg_params_bl, load, load_mode, pn_Load_res);
+					ir_node *load = new_r_Load(start_bl, new_NoMem(), addr, load_mode, cons_floats);
+					repl = new_r_Proj(start_bl, load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
-						repl = new_r_Conv(reg_params_bl, repl, mode);
+						repl = new_r_Conv(start_bl, repl, mode);
 					}
 				} else {
 					/* The stack parameter is not primitive (it is a struct or array),
@@ -2098,9 +2099,6 @@ static void modify_irg(be_abi_irg_t *env)
 	   the code is dead and will never be executed. */
 
 	obstack_free(&env->obst, args);
-
-	/* handle start block here (place a jump in the block) */
-	fix_start_block(irg);
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
@@ -2453,10 +2451,15 @@ typedef struct fix_stack_walker_env_t {
  */
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
+	ir_node                   *insn = node;
 	fix_stack_walker_env_t    *env = data;
 	const arch_register_req_t *req;
 
-	if (get_irn_mode(node) == mode_T)
+	if (is_Proj(node)) {
+		insn = get_Proj_pred(node);
+	}
+
+	if (arch_irn_get_n_outs(insn) == 0)
 		return;
 
 	req = arch_get_register_req_out(node);

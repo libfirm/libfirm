@@ -483,7 +483,7 @@ static void trace_node_ready(void *data, ir_node *irn, ir_node *pred) {
  */
 static void trace_update_time(void *data, ir_node *irn) {
 	trace_env_t *env = data;
-	if (is_Phi(irn) || get_irn_opcode(irn) == iro_Start) {
+	if (is_Phi(irn) || get_irn_opcode(irn) == beo_Start) {
 		env->curr_time += get_irn_etime(env, irn);
 	}
 	else {

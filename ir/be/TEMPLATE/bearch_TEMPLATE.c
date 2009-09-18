@@ -105,7 +105,6 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	get_TEMPLATE_in_req,
-	get_TEMPLATE_out_req,
 	TEMPLATE_classify,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_entity,

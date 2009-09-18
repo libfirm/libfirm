@@ -3774,6 +3774,7 @@ static ir_node *gen_be_SubSP(ir_node *node)
  */
 static ir_node *gen_Phi(ir_node *node)
 {
+	const arch_register_req_t *req;
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -3785,12 +3786,17 @@ static ir_node *gen_Phi(ir_node *node)
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
 		mode = mode_Iu;
+		req  = ia32_reg_classes[CLASS_ia32_gp].class_req;
 	} else if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
 			mode = mode_xmm;
+			req  = ia32_reg_classes[CLASS_ia32_xmm].class_req;
 		} else {
 			mode = mode_vfp;
+			req  = ia32_reg_classes[CLASS_ia32_vfp].class_req;
 		}
+	} else {
+		req = arch_no_register_req;
 	}
 
 	/* phi nodes allow loops, so we use the old arguments for now
@@ -3800,9 +3806,24 @@ static ir_node *gen_Phi(ir_node *node)
 	copy_node_attr(node, phi);
 	be_duplicate_deps(node, phi);
 
+	arch_set_out_register_req(phi, 0, req);
+
 	be_enqueue_preds(node);
 
 	return phi;
+}
+
+static ir_node *gen_Jmp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *new_node;
+
+	new_node = new_bd_ia32_Jmp(dbgi, new_block);
+	SET_IA32_ORIG_NODE(new_node, node);
+
+	return new_node;
 }
 
 /**
@@ -5244,7 +5265,8 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		assert(req->type & arch_register_req_type_limited);
 
 		for (i = 0; i < n_outs; ++i) {
-			arch_register_req_t const *const new_req = get_ia32_out_req(new_call, i);
+			arch_register_req_t const *const new_req
+				= arch_get_out_register_req(new_call, i);
 
 			if (!(new_req->type & arch_register_req_type_limited) ||
 			    new_req->cls      != req->cls                     ||
@@ -5455,6 +5477,7 @@ static void register_transformers(void)
 	GEN(Mux);
 	GEN(Proj);
 	GEN(Phi);
+	GEN(Jmp);
 	GEN(IJmp);
 	GEN(Bound);
 
@@ -5581,7 +5604,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		req = get_ia32_out_req(node, i);
+		req = arch_get_out_register_req(node, i);
 		cls = req->cls;
 		if (cls == NULL) {
 			continue;

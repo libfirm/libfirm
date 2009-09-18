@@ -1305,7 +1305,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(const ir_node *node)
+static void emit_ia32_Jmp(const ir_node *node)
 {
 	ir_node *block;
 
@@ -1883,6 +1883,7 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(ClimbFrame);
+	IA32_EMIT(Jmp);
 
 	/* benode emitter */
 	BE_EMIT(Copy);
@@ -1893,12 +1894,10 @@ static void ia32_register_emitters(void)
 
 	BE_IGN(Barrier);
 	BE_IGN(Keep);
-	BE_IGN(RegParams);
+	BE_IGN(Start);
 
 	/* firm emitter */
-	EMIT(Jmp);
 	IGN(Phi);
-	IGN(Start);
 
 #undef BE_EMIT
 #undef EMIT
@@ -2699,7 +2698,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_ProduceVal, emit_Nothing);
 	register_emitter(op_be_Barrier, emit_Nothing);
 	register_emitter(op_be_Keep, emit_Nothing);
-	register_emitter(op_be_RegParams, emit_Nothing);
+	register_emitter(op_be_Start, emit_Nothing);
 	register_emitter(op_Phi, emit_Nothing);
 	register_emitter(op_Start, emit_Nothing);
 }

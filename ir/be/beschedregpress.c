@@ -188,7 +188,7 @@ static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void
 	if(sel->to_appear_in_schedule)
 		res = sel->to_appear_in_schedule(block_env, irn);
 
-	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn));
+	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_Start(irn));
 }
 
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)

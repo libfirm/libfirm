@@ -263,7 +263,6 @@ void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs);
  * Returns the argument register requirements of an ia32 node.
  */
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
-const arch_register_req_t *get_ia32_out_req(const ir_node *node, int pos);
 
 /**
  * Sets the IN register requirements at position pos.

@@ -1181,14 +1181,23 @@ Jcc => {
 SwitchJmp => {
 	state     => "pinned",
 	op_flags  => "L|X|Y",
-	reg_req   => { in => [ "gp" ],
-	               out => [ ] },
+	reg_req   => { in => [ "gp" ] },
 	mode      => "mode_T",
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "long pnc",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 	modified_flags => $status_flags,
+	init_attr => "info->out_infos = NULL;",
+},
+
+Jmp => {
+	state    => "pinned",
+	op_flags => "X",
+	reg_req  => { out => [ "none" ] },
+	latency  => 1,
+	units    => [ "BRANCH" ],
+	mode     => "mode_X",
 },
 
 IJmp => {

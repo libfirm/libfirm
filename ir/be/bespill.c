@@ -139,12 +139,6 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			if (rbitset_equal(req->limited, req2->limited, cls->n_regs))
 				continue;
 
-#if 0
-			/* Matze: looks fishy to me disabled it for now */
-			if (be_is_Copy(get_irn_n(insn->irn, a_op->pos)))
-				continue;
-#endif
-
 			copy = be_new_Copy(cls, block, in);
 			stat_ev_int("constr_copy", 1);
 

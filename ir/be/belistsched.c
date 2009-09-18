@@ -64,7 +64,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
-#define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_RegParams(irn))
+#define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_Start(irn))
 
 enum {
 	BE_SCHED_SELECT_TRIVIAL,
