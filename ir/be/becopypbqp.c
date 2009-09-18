@@ -202,7 +202,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 					continue;
 				}
 //				pbqp_node *trg_node = ptr_pbqp_node->value;
-				if(get_edge(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
+				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
 					// create costs matrix
 					struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 
@@ -220,7 +220,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 					}
 
 					// add costs matrix to interference edge
-					add_edge_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node) , matrix);
+					add_edge_costs(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn) , matrix);
 				}
 			}
 		}
