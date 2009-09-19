@@ -230,7 +230,7 @@ EOF
 
 		my $limitedarray = get_limited_array($name);
 		$single_constraints .= <<EOF;
-static const unsigned ${arch}_limited_${old_classname}_${name}[] = ${limitedarray};
+static const unsigned ${arch}_limited_${old_classname}_${name} [] = ${limitedarray};
 static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name} = {
 	arch_register_req_type_limited,
 	${class_ptr},
