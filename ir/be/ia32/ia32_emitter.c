@@ -2314,8 +2314,8 @@ static void bemit_modrr(const arch_register_t *op1_dest,
 
 static void bemit_modru(const arch_register_t *dest, unsigned val)
 {
-	assert(val <= 7);
 	unsigned char modrm = 0xC0;
+	assert(val <= 7);
 	modrm |= reg_map[dest->index];
 	modrm |= val << 3;
 	bemit8(modrm);
@@ -2387,6 +2387,7 @@ static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
 
 	/* determine if we need a SIB byte */
 	if (has_index) {
+		int scale;
 		const arch_register_t *reg_index = arch_get_irn_register(index);
 		assert(reg_index->index != REG_ESP);
 		sib |= reg_map[reg_index->index] << 3;
@@ -2398,7 +2399,7 @@ static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
 			sib |= 0x05;
 		}
 
-		int scale = get_ia32_am_scale(node);
+		scale = get_ia32_am_scale(node);
 		assert(scale < 4);
 		sib |= scale << 6;
 		emitsib = true;
