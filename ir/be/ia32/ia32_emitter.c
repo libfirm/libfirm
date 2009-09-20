@@ -2234,19 +2234,49 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 
 /* ==== Experimental binary emitter ==== */
 
-static unsigned char reg_map[N_ia32_gp_REGS];
+static unsigned char reg_gp_map[N_ia32_gp_REGS];
+static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
+static unsigned char reg_sse_map[N_ia32_xmm_REGS];
 
 static void build_reg_map(void)
 {
-	reg_map[REG_EAX] = 0x0;
-	reg_map[REG_ECX] = 0x1;
-	reg_map[REG_EDX] = 0x2;
-	reg_map[REG_EBX] = 0x3;
-	reg_map[REG_ESP] = 0x4;
-	reg_map[REG_EBP] = 0x5;
-	reg_map[REG_ESI] = 0x6;
-	reg_map[REG_EDI] = 0x7;
+	reg_gp_map[REG_EAX] = 0x0;
+	reg_gp_map[REG_ECX] = 0x1;
+	reg_gp_map[REG_EDX] = 0x2;
+	reg_gp_map[REG_EBX] = 0x3;
+	reg_gp_map[REG_ESP] = 0x4;
+	reg_gp_map[REG_EBP] = 0x5;
+	reg_gp_map[REG_ESI] = 0x6;
+	reg_gp_map[REG_EDI] = 0x7;
 }
+
+/** The mod encoding of the ModR/M */
+enum Mod {
+	MOD_IND          = 0x00, /**< [reg1] */
+	MOD_IND_BYTE_OFS = 0x40, /**< [reg1 + byte ofs] */
+	MOD_IND_WORD_OFS = 0x80, /**< [reg1 + word ofs] */
+	MOD_REG          = 0xC0  /**< reg1 */
+};
+
+#define GET_MODE(code) ((code) & 0xC0)
+
+/** Sign extension bit values for binops */
+enum SignExt {
+	UNSIGNED_IMM = 0,  /**< unsigned immediate */
+	SIGNEXT_IMM  = 2,  /**< sign extended immediate */
+};
+
+/** create R/M encoding for ModR/M */
+#define ENC_RM(x) (x)
+/** create REG encoding for ModR/M */
+#define ENC_REG(x) ((x) << 3)
+
+/** create Base encoding for SIB */
+#define ENC_BASE(x) (x)
+/** create Index encoding for SIB */
+#define ENC_INDEX(x) ((x) << 3)
+/** create Scale encoding for SIB */
+#define ENC_SCALE(x) ((x) << 6)
 
 /* Node: The following routines are supposed to append bytes, words, dwords
    to the output stream.
@@ -2303,62 +2333,111 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 /* end emit routines, all emitters following here should only use the functions
    above. */
 
-static void bemit_modrr(const arch_register_t *op1_dest,
-                        const arch_register_t *op2)
+/** Create a ModR/M byte for src1,src2 registers */
+static void bemit_modrr(const arch_register_t *src1,
+                        const arch_register_t *src2)
 {
-	unsigned char modrm = 0xC0;
-	modrm |= reg_map[op1_dest->index];
-	modrm |= reg_map[op2->index] << 3;
+	unsigned char modrm = MOD_REG;
+	modrm |= ENC_RM(reg_gp_map[src1->index]);
+	modrm |= ENC_REG(reg_gp_map[src2->index]);
 	bemit8(modrm);
 }
 
-static void bemit_modru(const arch_register_t *dest, unsigned val)
+/** Create a ModR/M byte for one register and extension */
+static void bemit_modru(const arch_register_t *reg, unsigned ext)
 {
-	unsigned char modrm = 0xC0;
-	assert(val <= 7);
-	modrm |= reg_map[dest->index];
-	modrm |= val << 3;
+	unsigned char modrm = MOD_REG;
+	assert(ext <= 7);
+	modrm |= ENC_RM(reg_gp_map[reg->index]);
+	modrm |= ENC_REG(ext);
 	bemit8(modrm);
 }
 
-static unsigned get_imm_size(ir_entity *entity, int offset)
+/**
+ * Calculate the size of an (unsigned) immediate in bytes.
+ *
+ * @param offset  an offset
+ */
+static unsigned get_unsigned_imm_size(unsigned offset)
 {
-	if (entity != NULL)
-		return 32;
-	if (offset >= -127 && offset < 128) {
-		return 8;
-	} else if (offset >= -32768 && offset < 32767) {
-		return 16;
+	if (offset < 256) {
+		return 1;
+	} else if (offset < 65536) {
+		return 2;
 	} else {
-		return 32;
+		return 4;
 	}
 }
 
-static void bemit_binop_with_imm(const ir_node *node, unsigned opimm8,
-                                 unsigned opimm32, unsigned ruval)
+/**
+ * Calculate the size of an signed immediate in bytes.
+ *
+ * @param offset  an offset
+ */
+static unsigned get_signed_imm_size(int offset)
+{
+	if (offset >= -127 && offset < 128) {
+		return 1;
+	} else if (offset >= -32768 && offset < 32767) {
+		return 2;
+	} else {
+		return 4;
+	}
+}
+
+/**
+ * Emit a binop with a immediate operand.
+ *
+ * @param node        the node to emit
+ * @param opcode_eax  the opcode for the op eax, imm variant
+ * @param opcode      the opcode for the reg, imm variant
+ * @param ruval       the opcode extension for opcode
+ */
+static void bemit_binop_with_imm(
+	const ir_node *node,
+	unsigned char opcode_ax,
+	unsigned char opcode, unsigned char ruval)
 {
 	const arch_register_t       *reg  = get_out_reg(node, 0);
 	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
-	unsigned size = get_imm_size(attr->symconst, attr->offset);
+	unsigned                    size;
+
+	if (attr->symconst != NULL)
+		size = 4;
+	else {
+		/* check for sign extension */
+		size = get_signed_imm_size(attr->offset);
+	}
 
 	switch (size) {
-	case 8:
-		bemit8(opimm8);
+	case 1:
+		bemit8(opcode | SIGNEXT_IMM);
 		bemit_modru(reg, ruval);
-		bemit8(attr->offset);
+		bemit8((unsigned char)attr->offset);
 		return;
-	case 16:
-	case 32:
-		bemit8(opimm32);
-		bemit_modru(reg, ruval);
+	case 2:
+	case 4:
+		/* check for eax variant: this variant is shorter for 32bit immediates only */
+		if (reg->index == REG_EAX) {
+			bemit8(opcode_ax);
+		} else {
+			bemit8(opcode);
+			bemit_modru(reg, ruval);
+		}
 		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
 		return;
 	}
 	panic("invalid imm size?!?");
 }
 
-static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
+/**
+ * Emit an address mode.
+ *
+ * @param reg   content of the reg field: either a register index or an opcode extension
+ * @param node  the node
+ */
+static void bemit_mod_am(unsigned reg, const ir_node *node)
 {
 	ir_entity *ent       = get_ia32_am_sc(node);
 	int        offs      = get_ia32_am_offs_int(node);
@@ -2373,15 +2452,16 @@ static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
 
 	/* set the mod part depending on displacement */
 	if (ent != NULL) {
-		modrm |= 0x80;
+		modrm |= MOD_IND_WORD_OFS;
 		emitoffs = 32;
 	} else if (offs == 0) {
+		modrm |= MOD_IND;
 		emitoffs = 0;
 	} else if (offs >= -127 && offs <= 128) {
-		modrm |= 0x40;
+		modrm |= MOD_IND_BYTE_OFS;
 		emitoffs = 8;
 	} else {
-		modrm |= 0x80;
+		modrm |= MOD_IND_WORD_OFS;
 		emitoffs = 32;
 	}
 
@@ -2390,45 +2470,52 @@ static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
 		int scale;
 		const arch_register_t *reg_index = arch_get_irn_register(index);
 		assert(reg_index->index != REG_ESP);
-		sib |= reg_map[reg_index->index] << 3;
+		sib |= ENC_INDEX(reg_gp_map[reg_index->index]);
 
 		if (has_base) {
 			const arch_register_t *reg = arch_get_irn_register(base);
-			sib |= reg_map[reg->index];
+			sib |= ENC_BASE(reg_gp_map[reg->index]);
 		} else {
+			/* use the EBP encoding if NO base register */
 			sib |= 0x05;
 		}
 
 		scale = get_ia32_am_scale(node);
 		assert(scale < 4);
-		sib |= scale << 6;
+		sib |= ENC_SCALE(scale);
 		emitsib = true;
 	}
 
 	/* determine modrm byte */
 	if (emitsib) {
-		modrm |= 0x04;
+		/* R/M set to ESP means SIB in 32bit mode */
+		modrm |= ENC_RM(0x04);
 	} else if (has_base) {
 		const arch_register_t *reg = arch_get_irn_register(base);
-		/* we are forced to emit a sib when base is ESP */
 		if (reg->index == REG_ESP) {
-			sib     = 0x24;
+			/* for the above reason we are forced to emit a sib
+			   when base is ESP. Only the base is used */
+			sib     = ENC_BASE(0x04);
 			emitsib = true;
 
-		/* we are forced to emit a 32bit offset as EBP base without
-		   offset is a special case for displacement without base */
+		/* we are forced to emit a 8bit offset as EBP base without
+		   offset is a special case for SIB without base register */
 		} else if (reg->index == REG_EBP && emitoffs == 0) {
-			assert( (modrm & 0xC0) == 0);
+			assert(GET_MODE(modrm) == MOD_IND);
 			emitoffs  = 8;
-			modrm    |= 0x40;
+			modrm    |= MOD_IND_BYTE_OFS;
 		}
-		modrm |= reg_map[reg->index];
+		modrm |= ENC_RM(reg_gp_map[reg->index]);
 	} else {
-		modrm    = 0x05;
-		emitoffs = 32;
+		/* only displacement: Use EBP + disp encoding in 32bit mode */
+		if (emitoffs == 0) {
+			emitoffs = 8;
+			modrm    = MOD_IND_BYTE_OFS;
+		}
+		modrm |= ENC_RM(0x05);
 	}
 
-	modrm |= dest_reg << 3;
+	modrm |= ENC_REG(reg);
 
 	bemit8(modrm);
 	if (emitsib)
@@ -2442,17 +2529,65 @@ static void bemit_modsourceam(unsigned dest_reg, const ir_node *node)
 	}
 }
 
-static void bemit_binop(const ir_node *node, unsigned modrr, unsigned am)
+/**
+ * Emits a binop.
+ */
+static void bemit_binop_2(const ir_node *node, unsigned code)
 {
-	const arch_register_t *out = get_in_reg(node, n_ia32_binary_left);
-	if (get_ia32_op_type(node) == ia32_AddrModeS) {
-		bemit8(am);
-		bemit_modsourceam(reg_map[out->index], node);
-	} else {
-		const arch_register_t *op2 = get_in_reg(node, n_ia32_binary_right);
-		assert(get_ia32_op_type(node) == ia32_Normal);
-		bemit8(modrr);
+	const arch_register_t *out    = get_in_reg(node, n_ia32_binary_left);
+	ia32_op_type_t        am_type = get_ia32_op_type(node);
+	unsigned char         d       = 0;
+	const arch_register_t *op2;
+
+	switch (am_type) {
+	case ia32_AddrModeS:
+		d = 2;
+		/*fallthrough*/
+	case ia32_AddrModeD:
+		bemit8(code | d);
+		bemit_mod_am(reg_gp_map[out->index], node);
+		return;
+	case ia32_Normal:
+		bemit8(code);
+		op2 = get_in_reg(node, n_ia32_binary_right);
 		bemit_modrr(out, op2);
+		return;
+	}
+	panic("invalid address mode");
+}
+
+/**
+ * Emit a binop.
+ */
+static void bemit_binop(const ir_node *node, const unsigned char opcodes[4])
+{
+	ir_node *right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		/* there's a shorter variant with DEST=EAX */
+		const arch_register_t *reg = get_out_reg(node, 0);
+		if (reg->index == REG_EAX)
+
+		bemit_binop_with_imm(node, opcodes[1], opcodes[2], opcodes[3]);
+	} else {
+		bemit_binop_2(node, opcodes[0]);
+	}
+}
+
+/**
+ * Emit an unop.
+ */
+static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ext)
+{
+	ia32_op_type_t am_type = get_ia32_op_type(node);
+
+	bemit8(code);
+	if (am_type == ia32_AddrModeD) {
+		bemit8(code);
+		bemit_mod_am(ext, node);
+	} else {
+		const arch_register_t *out = get_out_reg(node, 0);
+		assert(am_type == ia32_Normal);
+		bemit_modru(out, ext);
 	}
 }
 
@@ -2490,58 +2625,42 @@ static void bemit_xor0(const ir_node *node)
 	bemit_modrr(out, out);
 }
 
-static void bemit_const(const ir_node *node)
+static void bemit_mov_const(const ir_node *node)
 {
 	const arch_register_t *out = get_out_reg(node, 0);
-	bemit8(0xB8 + reg_map[out->index]);
+	bemit8(0xB8 + reg_gp_map[out->index]);
 	bemit_immediate(node, false);
 }
 
-static void bemit_add(const ir_node *node)
-{
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		/* TODO: there's a shorter variant with DEST=EAX */
-		bemit_binop_with_imm(node, 0x83, 0x81, 0);
-	} else {
-		bemit_binop(node, 0x01, 0x03);
-	}
+#define BINOP(op, op0, op1, op2, op3)                                 \
+static void bemit_ ## op(const ir_node *node) {                       \
+	static const unsigned char op ## _codes[] = {op0, op1, op2, op3}; \
+	bemit_binop(node, op ## _codes);                                  \
 }
 
-static void bemit_sub(const ir_node *node)
-{
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		/* TODO: there's a shorter variant with DEST=EAX */
-		bemit_binop_with_imm(node, 0x83, 0x81, 5);
-	} else {
-		bemit_binop(node, 0x29, 0x2B);
-	}
+/*   insn  def  eax,imm   imm  */
+BINOP(add, 0x01, 0x05, 0x81, 0 )
+BINOP(or,  0x09, 0x0D, 0x81, 1 )
+BINOP(adc, 0x11, 0x15, 0x81, 2 )
+BINOP(sbb, 0x19, 0x1D, 0x81, 3 )
+BINOP(and, 0x21, 0x25, 0x81, 4 )
+BINOP(sub, 0x29, 0x2D, 0x81, 5 )
+BINOP(xor, 0x31, 0x35, 0x81, 6 )
+BINOP(cmp, 0x39, 0x3D, 0x81, 7 )
+
+#define UNOP(op, code, ext)                     \
+static void bemit_ ## op(const ir_node *node) { \
+	bemit_unop(node, code, ext);                \
 }
 
-static void bemit_xor(const ir_node *node)
-{
-	ir_node *right = get_irn_n(node, n_ia32_binary_right);
-	if (is_ia32_Immediate(right)) {
-		/* TODO: there's a shorter variant with DEST=EAX */
-		bemit_binop_with_imm(node, 0x83, 0x81, 6);
-	} else {
-		bemit_binop(node, 0x31, 0x33);
-	}
-}
-
-static void bemit_not(const ir_node *node)
-{
-	const arch_register_t *reg = get_out_reg(node, 0);
-	bemit8(0xF7);
-	bemit_modru(reg, 2);
-}
+UNOP(not, 0xF7, 2)
+UNOP(neg, 0xF7, 3)
 
 static void bemit_lea(const ir_node *node)
 {
 	const arch_register_t *out = get_out_reg(node, 0);
 	bemit8(0x8D);
-	bemit_modsourceam(reg_map[out->index], node);
+	bemit_mod_am(reg_gp_map[out->index], node);
 }
 
 static void bemit_cltd(const ir_node *node)
@@ -2557,7 +2676,7 @@ static void bemit_load(const ir_node *node)
 	/* TODO: load from constant address to EAX can be encoded
 	   as 0xA1 [offset] */
 	bemit8(0x8B);
-	bemit_modsourceam(reg_map[out->index], node);
+	bemit_mod_am(reg_gp_map[out->index], node);
 }
 
 static void bemit_store(const ir_node *node)
@@ -2566,17 +2685,20 @@ static void bemit_store(const ir_node *node)
 
 	if (is_ia32_Immediate(value)) {
 		bemit8(0xC7);
-		bemit_modsourceam(0, node);
+		bemit_mod_am(0, node);
 		bemit_immediate(value, false);
 	} else {
 		/* TODO: store to constant address from EAX can be encoded as
 		   0xA3 [offset]*/
 		const arch_register_t *in = get_in_reg(node, n_ia32_Store_val);
 		bemit8(0x89);
-		bemit_modsourceam(reg_map[in->index], node);
+		bemit_mod_am(reg_gp_map[in->index], node);
 	}
 }
 
+/**
+ * Emit a Push.
+ */
 static void bemit_push(const ir_node *node)
 {
 	const ir_node *value = get_irn_n(node, n_ia32_Push_val);
@@ -2584,30 +2706,38 @@ static void bemit_push(const ir_node *node)
 	if (is_ia32_Immediate(value)) {
 		const ia32_immediate_attr_t *attr
 			= get_ia32_immediate_attr_const(value);
-		unsigned size = get_imm_size(attr->symconst, attr->offset);
-		/* TODO: check for bitsizes different from 32... */
+		unsigned size = get_unsigned_imm_size(attr->offset);
+		if (attr->symconst)
+			size = 4;
 		switch (size) {
-		case 8:
+		case 1:
 			bemit8(0x6A);
-			bemit8(attr->offset);
+			bemit8((unsigned char)attr->offset);
 			break;
-		case 16:
-		case 32:
+		case 2:
+		case 4:
 			bemit8(0x68);
 			bemit_immediate(value, false);
 			break;
 		}
 	} else {
 		bemit8(0xFF);
-		bemit_modsourceam(6, node);
+		bemit_mod_am(6, node);
 	}
 }
 
+/**
+ * Emit a Pop.
+ */
 static void bemit_pop(const ir_node *node)
 {
 	const arch_register_t *reg = get_out_reg(node, pn_ia32_Pop_res);
-	/* TODO: check for AM pop */
-	bemit8(0x58 + reg_map[reg->index]);
+	if (get_ia32_op_type(node) == ia32_Normal)
+		bemit8(0x58 + reg_gp_map[reg->index]);
+	else {
+		bemit8(0x8F);
+		bemit_mod_am(0, node);
+	}
 }
 
 static void bemit_call(const ir_node *node)
@@ -2638,10 +2768,12 @@ static void bemit_incsp(const ir_node *node)
 {
 	const arch_register_t *reg  = get_out_reg(node, 0);
 	int                    offs = be_get_IncSP_offset(node);
-	unsigned               size = get_imm_size(NULL, offs);
+	unsigned               size = get_signed_imm_size(offs);
+	unsigned char          w    = size == 1 ? 2 : 0;
 
+	bemit8(0x81 | w);
 	if (offs > 0) {
-		bemit8(size == 8 ? 0x83 : 0x81);
+
 		bemit_modru(reg, 5); /* sub */
 		if (size == 8) {
 			bemit8(offs);
@@ -2649,7 +2781,6 @@ static void bemit_incsp(const ir_node *node)
 			bemit32(offs);
 		}
 	} else if (offs < 0) {
-		bemit8(size == 8 ? 0x83 : 0x81);
 		bemit_modru(reg, 0); /* add */
 		if (size == 8) {
 			bemit8(-offs);
@@ -2682,15 +2813,21 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_be_Return, bemit_return);
 	register_emitter(op_be_IncSP, bemit_incsp);
 	register_emitter(op_ia32_Add, bemit_add);
+	register_emitter(op_ia32_Adc, bemit_adc);
+	register_emitter(op_ia32_And, bemit_and);
+	register_emitter(op_ia32_Or, bemit_or);
+	register_emitter(op_ia32_Cmp, bemit_cmp);
 	register_emitter(op_ia32_Call, bemit_call);
 	register_emitter(op_ia32_Cltd, bemit_cltd);
 	register_emitter(op_ia32_Sub, bemit_sub);
+	register_emitter(op_ia32_Sbb, bemit_sbb);
 	register_emitter(op_ia32_Xor0, bemit_xor0);
 	register_emitter(op_ia32_Xor, bemit_xor);
-	register_emitter(op_ia32_Const, bemit_const);
+	register_emitter(op_ia32_Const, bemit_mov_const);
 	register_emitter(op_ia32_Lea, bemit_lea);
 	register_emitter(op_ia32_Load, bemit_load);
 	register_emitter(op_ia32_Not, bemit_not);
+	register_emitter(op_ia32_Neg, bemit_neg);
 	register_emitter(op_ia32_Push, bemit_push);
 	register_emitter(op_ia32_Pop, bemit_pop);
 	register_emitter(op_ia32_Store, bemit_store);
