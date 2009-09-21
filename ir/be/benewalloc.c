@@ -482,7 +482,7 @@ static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
 	}
 }
 
-static void create_congurence_class(ir_node *block, void *data)
+static void create_congruence_class(ir_node *block, void *data)
 {
 	ir_nodeset_t  live_nodes;
 	ir_node      *node;
@@ -517,11 +517,15 @@ static void create_congurence_class(ir_node *block, void *data)
 		for (i = 0; i < arity; ++i) {
 			bool                  interferes = false;
 			ir_nodeset_iterator_t iter;
-			ir_node *live;
-			ir_node *phi;
-			ir_node *op     = get_Phi_pred(node, i);
-			int      op_idx = get_irn_idx(op);
+			unsigned              r;
+			int                   old_node_idx;
+			ir_node              *live;
+			ir_node              *phi;
+			ir_node              *op     = get_Phi_pred(node, i);
+			int                   op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
+			allocation_info_t    *head_info;
+			allocation_info_t    *other_info;
 
 			/* do we interfere with the value */
 			foreach_ir_nodeset(&live_nodes, live, iter) {
@@ -556,35 +560,19 @@ static void create_congurence_class(ir_node *block, void *data)
 			if (interferes)
 				continue;
 
+			/* merge the 2 congruence classes and sum up their preferences */
+			old_node_idx = node_idx;
 			node_idx = uf_union(congruence_classes, node_idx, op_idx);
 			DB((dbg, LEVEL_3, "Merge %+F and %+F congruence classes\n",
 			    node, op));
+
+			old_node_idx = node_idx == old_node_idx ? op_idx : old_node_idx;
+			head_info  = get_allocation_info(get_idx_irn(irg, node_idx));
+			other_info = get_allocation_info(get_idx_irn(irg, old_node_idx));
+			for (r = 0; r < n_regs; ++r) {
+				head_info->prefs[r] += other_info->prefs[r];
+			}
 		}
-	}
-}
-
-static void merge_congruence_prefs(ir_node *node, void *data)
-{
-	allocation_info_t *info;
-	allocation_info_t *head_info;
-	unsigned node_idx = get_irn_idx(node);
-	unsigned node_set = uf_find(congruence_classes, node_idx);
-	unsigned r;
-
-	(void) data;
-
-	/* head of congruence class or not in any class */
-	if (node_set == node_idx)
-		return;
-
-	if (!arch_irn_consider_in_reg_alloc(cls, node))
-		return;
-
-	head_info = get_allocation_info(get_idx_irn(irg, node_set));
-	info      = get_allocation_info(node);
-
-	for (r = 0; r < n_regs; ++r) {
-		head_info->prefs[r] += info->prefs[r];
 	}
 }
 
@@ -617,9 +605,8 @@ static void combine_congruence_classes(void)
 	uf_init(congruence_classes, n);
 
 	/* create congruence classes */
-	irg_block_walk_graph(irg, create_congurence_class, NULL, NULL);
+	irg_block_walk_graph(irg, create_congruence_class, NULL, NULL);
 	/* merge preferences */
-	irg_walk_graph(irg, merge_congruence_prefs, NULL, NULL);
 	irg_walk_graph(irg, set_congruence_prefs, NULL, NULL);
 	free(congruence_classes);
 }
