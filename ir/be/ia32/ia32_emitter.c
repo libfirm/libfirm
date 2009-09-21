@@ -2361,6 +2361,7 @@ static void bemit_jmp_destination(const ir_node *dest_block)
 	be_emit_cstring("\t.long ");
 	ia32_emit_block_name(dest_block);
 	be_emit_cstring(" - . - 4\n");
+	be_emit_write_line();
 }
 
 /* end emit routines, all emitters following here should only use the functions
@@ -2461,6 +2462,13 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 		if (has_base) {
 			const arch_register_t *base_reg = arch_get_irn_register(base);
+			/* we are forced to emit a 8bit offset as EBP base without
+			   offset is a special case for SIB without base register */
+			if (base_reg->index == REG_EBP && emitoffs == 0) {
+				assert(GET_MODE(modrm) == MOD_IND);
+				emitoffs  = 8;
+				modrm    |= MOD_IND_BYTE_OFS;
+			}
 			sib |= ENC_BASE(reg_gp_map[base_reg->index]);
 		} else {
 			/* use the EBP encoding if NO base register */
@@ -2471,10 +2479,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		assert(scale < 4);
 		sib |= ENC_SCALE(scale);
 		emitsib = true;
-	}
 
-	/* determine modrm byte */
-	if (emitsib) {
 		/* R/M set to ESP means SIB in 32bit mode */
 		modrm |= ENC_RM(0x04);
 	} else if (has_base) {
