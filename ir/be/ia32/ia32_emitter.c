@@ -2570,10 +2570,6 @@ static void bemit_binop(const ir_node *node, const unsigned char opcodes[4])
 {
 	ir_node *right = get_irn_n(node, n_ia32_binary_right);
 	if (is_ia32_Immediate(right)) {
-		/* there's a shorter variant with DEST=EAX */
-		const arch_register_t *reg = get_out_reg(node, 0);
-		if (reg->index == REG_EAX)
-
 		bemit_binop_with_imm(node, opcodes[1], opcodes[2], opcodes[3]);
 	} else {
 		bemit_binop_2(node, opcodes[0]);
