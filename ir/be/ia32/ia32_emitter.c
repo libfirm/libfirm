@@ -2845,27 +2845,32 @@ static void bemit_return(const ir_node *node)
 
 static void bemit_incsp(const ir_node *node)
 {
-	const arch_register_t *reg  = get_out_reg(node, 0);
-	int                    offs = be_get_IncSP_offset(node);
-	unsigned               size = get_signed_imm_size(offs);
-	unsigned char          w    = size == 1 ? 2 : 0;
+	int                    offs;
+	const arch_register_t *reg;
+	unsigned               size;
+	unsigned               ext;
 
-	bemit8(0x81 | w);
+	offs = be_get_IncSP_offset(node);
+	if (offs == 0)
+		return;
+
 	if (offs > 0) {
+		ext = 5; /* sub */
+	} else {
+		ext = 0; /* add */
+		offs = -offs;
+	}
 
-		bemit_modru(reg, 5); /* sub */
-		if (size == 8) {
-			bemit8(offs);
-		} else {
-			bemit32(offs);
-		}
-	} else if (offs < 0) {
-		bemit_modru(reg, 0); /* add */
-		if (size == 8) {
-			bemit8(-offs);
-		} else {
-			bemit32(-offs);
-		}
+	size = get_signed_imm_size(offs);
+	bemit8(size == 1 ? 0x83 : 0x81);
+
+	reg  = get_out_reg(node, 0);
+	bemit_modru(reg, ext);
+
+	if (size == 1) {
+		bemit8(offs);
+	} else {
+		bemit32(offs);
 	}
 }
 
