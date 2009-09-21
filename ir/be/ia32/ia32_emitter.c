@@ -2251,19 +2251,21 @@ static void build_reg_map(void)
 	reg_gp_map[REG_ESI] = 0x6;
 	reg_gp_map[REG_EDI] = 0x7;
 
-	pnc_map_signed[pn_Cmp_Eq] = 0x04;
-	pnc_map_signed[pn_Cmp_Lt] = 0x0C;
-	pnc_map_signed[pn_Cmp_Le] = 0x0E;
-	pnc_map_signed[pn_Cmp_Gt] = 0x0F;
-	pnc_map_signed[pn_Cmp_Ge] = 0x0D;
-	pnc_map_signed[pn_Cmp_Ne] = 0x05;
+	pnc_map_signed[pn_Cmp_False] = 0xFF;
+	pnc_map_signed[pn_Cmp_Eq]    = 0x04;
+	pnc_map_signed[pn_Cmp_Lt]    = 0x0C;
+	pnc_map_signed[pn_Cmp_Le]    = 0x0E;
+	pnc_map_signed[pn_Cmp_Gt]    = 0x0F;
+	pnc_map_signed[pn_Cmp_Ge]    = 0x0D;
+	pnc_map_signed[pn_Cmp_Lg]    = 0x05;
 
-	pnc_map_unsigned[pn_Cmp_Eq] = 0x04;
-	pnc_map_unsigned[pn_Cmp_Lt] = 0x02;
-	pnc_map_unsigned[pn_Cmp_Le] = 0x06;
-	pnc_map_unsigned[pn_Cmp_Gt] = 0x07;
-	pnc_map_unsigned[pn_Cmp_Ge] = 0x03;
-	pnc_map_unsigned[pn_Cmp_Ne] = 0x05;
+	pnc_map_unsigned[pn_Cmp_False] = 0xFF;
+	pnc_map_unsigned[pn_Cmp_Eq]    = 0x04;
+	pnc_map_unsigned[pn_Cmp_Lt]    = 0x02;
+	pnc_map_unsigned[pn_Cmp_Le]    = 0x06;
+	pnc_map_unsigned[pn_Cmp_Gt]    = 0x07;
+	pnc_map_unsigned[pn_Cmp_Ge]    = 0x03;
+	pnc_map_unsigned[pn_Cmp_Lg]    = 0x05;
 }
 
 #define GET_MODE(code) ((code) & 0xC0)
@@ -2944,6 +2946,7 @@ static void bemit_jcc(int pnc, const ir_node *dest_block)
 			cc = pnc_map_signed[pnc & 0x07];
 		}
 	}
+	assert(cc != 0xFF);
 
 	bemit8(0x0F);
 	bemit8(0x80 + cc);
