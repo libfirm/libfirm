@@ -2376,7 +2376,7 @@ static unsigned get_unsigned_imm_size(unsigned offset)
  */
 static unsigned get_signed_imm_size(int offset)
 {
-	if (offset >= -127 && offset < 128) {
+	if (-128 <= offset && offset < 128) {
 		return 1;
 	} else if (offset >= -32768 && offset < 32767) {
 		return 2;
@@ -2457,7 +2457,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	} else if (offs == 0) {
 		modrm |= MOD_IND;
 		emitoffs = 0;
-	} else if (offs >= -127 && offs <= 128) {
+	} else if (-128 <= offs && offs < 128) {
 		modrm |= MOD_IND_BYTE_OFS;
 		emitoffs = 8;
 	} else {
