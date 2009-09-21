@@ -2542,7 +2542,7 @@ static void bemit_binop_2(const ir_node *node, unsigned code)
 	switch (am_type) {
 	case ia32_AddrModeS:
 		d = 2;
-		/*fallthrough*/
+		/* FALLTHROUGH */
 	case ia32_AddrModeD:
 		bemit8(code | d);
 		bemit_mod_am(reg_gp_map[out->index], node);
