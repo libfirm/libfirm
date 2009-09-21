@@ -330,6 +330,19 @@ static void print_vcg_color(FILE *F, ird_color_t color) {
 }
 
 /**
+ * Prints the edge kind of a given IR node.
+ *
+ * Projs should be dumped near their predecessor, so they get "nearedge".
+ */
+static void print_node_edge_kind(FILE *F, ir_node *node) {
+	if (is_Proj(node)) {
+		fprintf(F, "nearedge: ");
+	} else {
+		fprintf(F, "edge: ");
+	}
+}
+
+/**
  * Prints the edge from a type S to a type T with additional info fmt, ...
  * to the file F.
  */
@@ -1577,7 +1590,8 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 		ir_node *dep = get_irn_dep(n, i);
 
 		if (dep) {
-			fprintf(F, "edge: {sourcename: \"");
+			print_node_edge_kind(F, n);
+			fprintf(F, "{sourcename: \"");
 			PRINT_NODEID(n);
 			fprintf(F, "\" targetname: ");
 			if ((get_opt_dump_const_local()) && is_constlike_node(dep)) {
@@ -1602,8 +1616,10 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)  {
 
 		if (dump_backedge_information_flag && is_backedge(n, i))
 			fprintf(F, "backedge: {sourcename: \"");
-		else
-			fprintf(F, "edge: {sourcename: \"");
+		else {
+			print_node_edge_kind(F, n);
+			fprintf(F, "{sourcename: \"");
+		}
 		PRINT_NODEID(n);
 		fprintf(F, "\" targetname: ");
 		if ((get_opt_dump_const_local()) && is_constlike_node(pred)) {
@@ -1638,7 +1654,8 @@ dump_ir_edges(FILE *F, ir_node *n) {
 	foreach_out_edge(n, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
-		fprintf(F, "edge: {sourcename: \"");
+		print_node_edge_kind(F, succ);
+		fprintf(F, "{sourcename: \"");
 		PRINT_NODEID(n);
 		fprintf(F, "\" targetname: \"");
 		PRINT_NODEID(succ);
@@ -2210,7 +2227,8 @@ dump_out_edge(ir_node *n, void *env) {
 	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(n, i);
 		assert(succ);
-		fprintf(F, "edge: {sourcename: \"");
+		print_node_edge_kind(F, succ);
+		fprintf(F, "{sourcename: \"");
 		PRINT_NODEID(n);
 		fprintf(F, "\" targetname: \"");
 		PRINT_NODEID(succ);
