@@ -2303,12 +2303,20 @@ static void bemit32(const unsigned u32)
 	be_emit_write_line();
 }
 
+/**
+ * Emit address of an entity. If @p is_relative is true then a relative
+ * offset from behind the address to the entity is created.
+ */
 static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
                          bool is_relative)
 {
 	if (entity == NULL) {
 		bemit32(offset);
 		return;
+	}
+
+	if (is_relative) {
+		offset -= 4;
 	}
 
 	/* the final version should remember the position in the bytestream
