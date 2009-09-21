@@ -2237,6 +2237,8 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 static unsigned char reg_gp_map[N_ia32_gp_REGS];
 static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
 static unsigned char reg_sse_map[N_ia32_xmm_REGS];
+static unsigned char pnc_map_signed[8];
+static unsigned char pnc_map_unsigned[8];
 
 static void build_reg_map(void)
 {
@@ -2248,6 +2250,20 @@ static void build_reg_map(void)
 	reg_gp_map[REG_EBP] = 0x5;
 	reg_gp_map[REG_ESI] = 0x6;
 	reg_gp_map[REG_EDI] = 0x7;
+
+	pnc_map_signed[pn_Cmp_Eq] = 0x04;
+	pnc_map_signed[pn_Cmp_Lt] = 0x0C;
+	pnc_map_signed[pn_Cmp_Le] = 0x0E;
+	pnc_map_signed[pn_Cmp_Gt] = 0x0F;
+	pnc_map_signed[pn_Cmp_Ge] = 0x0D;
+	pnc_map_signed[pn_Cmp_Ne] = 0x05;
+
+	pnc_map_unsigned[pn_Cmp_Eq] = 0x04;
+	pnc_map_unsigned[pn_Cmp_Lt] = 0x02;
+	pnc_map_unsigned[pn_Cmp_Le] = 0x06;
+	pnc_map_unsigned[pn_Cmp_Gt] = 0x07;
+	pnc_map_unsigned[pn_Cmp_Ge] = 0x03;
+	pnc_map_unsigned[pn_Cmp_Ne] = 0x05;
 }
 
 #define GET_MODE(code) ((code) & 0xC0)
@@ -2336,6 +2352,13 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 	}
 	be_emit_char('\n');
 	be_emit_write_line();
+}
+
+static void bemit_jmp_destination(const ir_node *dest_block)
+{
+	be_emit_cstring("\t.long ");
+	ia32_emit_block_name(dest_block);
+	be_emit_cstring(" - . - 4");
 }
 
 /* end emit routines, all emitters following here should only use the functions
@@ -2672,6 +2695,15 @@ UNOP(idiv,    0xF7, 7, n_ia32_unary_op)
 
 UNOP(ijmp,    0xFF, 4, n_ia32_unary_op)
 
+#if 0
+/* Matze: doesn't seem to work this way... */
+UNOP(rol,     0xD3, 0, n_ia32_Rol_val)
+UNOP(ror,     0xD3, 1, n_ia32_Ror_val)
+UNOP(shl,     0xD3, 4, n_ia32_Shl_val)
+UNOP(shr,     0xD3, 5, n_ia32_Shr_val)
+UNOP(sar,     0xD3, 7, n_ia32_Sar_val)
+#endif
+
 /**
  * Emit a Lea.
  */
@@ -2836,6 +2868,125 @@ static void bemit_call(const ir_node *node)
 	}
 }
 
+static void bemit_jmp(const ir_node *dest_block)
+{
+	bemit8(0xE9);
+	bemit_jmp_destination(dest_block);
+}
+
+static void bemit_jump(const ir_node *node)
+{
+	if (can_be_fallthrough(node))
+		return;
+
+	bemit_jmp(get_cfop_target_block(node));
+}
+
+static void bemit_jcc(int pnc, const ir_node *dest_block)
+{
+	unsigned char cc;
+
+	if (pnc == ia32_pn_Cmp_parity) {
+		cc = 0x0A;
+	} else {
+		if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
+			cc = pnc_map_unsigned[pnc & 0x07];
+		} else {
+			cc = pnc_map_signed[pnc & 0x07];
+		}
+	}
+
+	bemit8(0x0F);
+	bemit8(0x80 + cc);
+	bemit_jmp_destination(dest_block);
+}
+
+static void bemit_ia32_jcc(const ir_node *node)
+{
+	int            pnc = get_ia32_condcode(node);
+	int            need_parity_label = 0;
+	const ir_node *proj_true;
+	const ir_node *proj_false;
+	const ir_node *dest_true;
+	const ir_node *dest_false;
+	const ir_node *block;
+
+	pnc = determine_final_pnc(node, 0, pnc);
+
+	/* get both Projs */
+	proj_true = get_proj(node, pn_ia32_Jcc_true);
+	assert(proj_true && "Jcc without true Proj");
+
+	proj_false = get_proj(node, pn_ia32_Jcc_false);
+	assert(proj_false && "Jcc without false Proj");
+
+	block = get_nodes_block(node);
+
+	if (can_be_fallthrough(proj_true)) {
+		/* exchange both proj's so the second one can be omitted */
+		const ir_node *t = proj_true;
+
+		proj_true  = proj_false;
+		proj_false = t;
+		pnc        = ia32_get_negated_pnc(pnc);
+	}
+
+	dest_true  = get_cfop_target_block(proj_true);
+	dest_false = get_cfop_target_block(proj_false);
+
+	if (pnc & ia32_pn_Cmp_float) {
+		panic("Float jump NIY");
+		/* Some floating point comparisons require a test of the parity flag,
+		 * which indicates that the result is unordered */
+		switch (pnc & 15) {
+			case pn_Cmp_Uo: {
+				ia32_emitf(proj_true, "\tjp %L\n");
+				break;
+			}
+
+			case pn_Cmp_Leg:
+				ia32_emitf(proj_true, "\tjnp %L\n");
+				break;
+
+			case pn_Cmp_Eq:
+			case pn_Cmp_Lt:
+			case pn_Cmp_Le:
+				/* we need a local label if the false proj is a fallthrough
+				 * as the falseblock might have no label emitted then */
+				if (can_be_fallthrough(proj_false)) {
+					need_parity_label = 1;
+					ia32_emitf(proj_false, "\tjp 1f\n");
+				} else {
+					ia32_emitf(proj_false, "\tjp %L\n");
+				}
+				goto emit_jcc;
+
+			case pn_Cmp_Ug:
+			case pn_Cmp_Uge:
+			case pn_Cmp_Ne:
+				ia32_emitf(proj_true, "\tjp %L\n");
+				goto emit_jcc;
+
+			default:
+				goto emit_jcc;
+		}
+	} else {
+emit_jcc:
+		bemit_jcc(pnc, dest_true);
+	}
+
+	if (need_parity_label) {
+		panic("parity label NIY");
+	}
+
+	/* the second Proj might be a fallthrough */
+	if (can_be_fallthrough(proj_false)) {
+		/* it's a fallthrough */
+	} else {
+		bemit_jmp(dest_false);
+	}
+}
+
 /**
  * Emits a return.
  */
@@ -2902,37 +3053,39 @@ static void ia32_register_binary_emitters(void)
 
 	/* benode emitter */
 	register_emitter(op_be_Copy, bemit_copy);
-	register_emitter(op_be_Return, bemit_return);
 	register_emitter(op_be_IncSP, bemit_incsp);
-	register_emitter(op_ia32_Add, bemit_add);
+	register_emitter(op_be_Return, bemit_return);
 	register_emitter(op_ia32_Adc, bemit_adc);
+	register_emitter(op_ia32_Add, bemit_add);
 	register_emitter(op_ia32_And, bemit_and);
-	register_emitter(op_ia32_Or, bemit_or);
-	register_emitter(op_ia32_Cmp, bemit_cmp);
+	register_emitter(op_ia32_Breakpoint, bemit_int3);
 	register_emitter(op_ia32_Call, bemit_call);
 	register_emitter(op_ia32_Cltd, bemit_cltd);
 	register_emitter(op_ia32_Cmc, bemit_cmc);
-	register_emitter(op_ia32_Stc, bemit_stc);
-	register_emitter(op_ia32_RepPrefix, bemit_rep);
-	register_emitter(op_ia32_Breakpoint, bemit_int3);
-	register_emitter(op_ia32_Sahf, bemit_sahf);
-	register_emitter(op_ia32_Sub, bemit_sub);
-	register_emitter(op_ia32_Sbb, bemit_sbb);
-	register_emitter(op_ia32_Xor0, bemit_xor0);
-	register_emitter(op_ia32_Xor, bemit_xor);
+	register_emitter(op_ia32_Cmp, bemit_cmp);
 	register_emitter(op_ia32_Const, bemit_mov_const);
-	register_emitter(op_ia32_Lea, bemit_lea);
-	register_emitter(op_ia32_Load, bemit_load);
-	register_emitter(op_ia32_Not, bemit_not);
-	register_emitter(op_ia32_Neg, bemit_neg);
-	register_emitter(op_ia32_Push, bemit_push);
-	register_emitter(op_ia32_Pop, bemit_pop);
-	register_emitter(op_ia32_Store, bemit_store);
-	register_emitter(op_ia32_Mul, bemit_mul);
-	register_emitter(op_ia32_IMul1OP, bemit_imul1op);
 	register_emitter(op_ia32_Div, bemit_div);
 	register_emitter(op_ia32_IDiv, bemit_idiv);
 	register_emitter(op_ia32_IJmp, bemit_ijmp);
+	register_emitter(op_ia32_IMul1OP, bemit_imul1op);
+	register_emitter(op_ia32_Jcc, bemit_ia32_jcc);
+	register_emitter(op_ia32_Jmp, bemit_jump);
+	register_emitter(op_ia32_Lea, bemit_lea);
+	register_emitter(op_ia32_Load, bemit_load);
+	register_emitter(op_ia32_Mul, bemit_mul);
+	register_emitter(op_ia32_Neg, bemit_neg);
+	register_emitter(op_ia32_Not, bemit_not);
+	register_emitter(op_ia32_Or, bemit_or);
+	register_emitter(op_ia32_Pop, bemit_pop);
+	register_emitter(op_ia32_Push, bemit_push);
+	register_emitter(op_ia32_RepPrefix, bemit_rep);
+	register_emitter(op_ia32_Sahf, bemit_sahf);
+	register_emitter(op_ia32_Sbb, bemit_sbb);
+	register_emitter(op_ia32_Stc, bemit_stc);
+	register_emitter(op_ia32_Store, bemit_store);
+	register_emitter(op_ia32_Sub, bemit_sub);
+	register_emitter(op_ia32_Xor0, bemit_xor0);
+	register_emitter(op_ia32_Xor, bemit_xor);
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal, emit_Nothing);
