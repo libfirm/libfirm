@@ -2493,9 +2493,10 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	} else if (has_base) {
 		const arch_register_t *reg = arch_get_irn_register(base);
 		if (reg->index == REG_ESP) {
-			/* for the above reason we are forced to emit a sib
-			   when base is ESP. Only the base is used */
-			sib     = ENC_BASE(0x04);
+			/* for the above reason we are forced to emit a sib when base is
+			 * ESP. Only the base is used, index must be ESP too, which means no
+			 * index. */
+			sib     = ENC_BASE(0x04) | ENC_INDEX(0x04);
 			emitsib = true;
 
 		/* we are forced to emit a 8bit offset as EBP base without
