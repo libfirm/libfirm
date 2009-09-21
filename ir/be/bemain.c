@@ -842,7 +842,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 #define LC_EMIT(timer)  \
 		stat_ev_if {    \
-			stat_ev_dbl(ir_timer_get_name(timer), ir_timer_elapsed_msec(timer));  \
+			stat_ev_dbl(ir_timer_get_name(timer), ir_timer_elapsed_usec(timer));  \
 		} else { \
 			printf("%-20s: %8.3lf msec\n", ir_timer_get_description(timer), (double)ir_timer_elapsed_usec(timer) / 1000.0); \
 		} \
