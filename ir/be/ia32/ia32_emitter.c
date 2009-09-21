@@ -2640,9 +2640,8 @@ static void bemit_immediate(const ir_node *node, bool relative)
 
 static void bemit_copy(const ir_node *copy)
 {
-	const ir_node *op = be_get_Copy_op(copy);
-	const arch_register_t *in  = arch_get_irn_register(op);
-	const arch_register_t *out = arch_get_irn_register(copy);
+	const arch_register_t *in  = get_in_reg(copy, 0);
+	const arch_register_t *out = get_out_reg(copy, 0);
 
 	if (in == out || is_unknown_reg(in))
 		return;
@@ -2701,14 +2700,15 @@ static void bemit_ ## op(const ir_node *node) { \
 	bemit_unop(node, code, ext, input);         \
 }
 
-UNOP(not,     0xF7, 2, n_ia32_unary_op)
-UNOP(neg,     0xF7, 3, n_ia32_unary_op)
-UNOP(mul,     0xF7, 4, n_ia32_binary_right)
-UNOP(imul1op, 0xF7, 5, n_ia32_binary_right)
-UNOP(div,     0xF7, 6, n_ia32_unary_op)
-UNOP(idiv,    0xF7, 7, n_ia32_unary_op)
+UNOP(not,     0xF7, 2, n_ia32_Not_val)
+UNOP(neg,     0xF7, 3, n_ia32_Neg_val)
+UNOP(mul,     0xF7, 4, n_ia32_Mul_right)
+UNOP(imul1op, 0xF7, 5, n_ia32_IMul1OP_right)
+UNOP(div,     0xF7, 6, n_ia32_Div_divisor)
+UNOP(idiv,    0xF7, 7, n_ia32_IDiv_divisor)
 
-UNOP(ijmp,    0xFF, 4, n_ia32_unary_op)
+/* TODO: am support for IJmp */
+UNOP(ijmp,    0xFF, 4, n_ia32_IJmp_target)
 
 #define SHIFT(op, ext) \
 static void bemit_##op(const ir_node *node) \
@@ -2876,9 +2876,12 @@ static void bemit_push(const ir_node *node)
 			bemit_immediate(value, false);
 			break;
 		}
-	} else {
+	} else if (is_ia32_NoReg_GP(value)) {
 		bemit8(0xFF);
 		bemit_mod_am(6, node);
+	} else {
+		const arch_register_t *reg = get_in_reg(node, n_ia32_Push_val);
+		bemit8(0x50 + reg_gp_map[reg->index]);
 	}
 }
 
@@ -2888,12 +2891,13 @@ static void bemit_push(const ir_node *node)
 static void bemit_pop(const ir_node *node)
 {
 	const arch_register_t *reg = get_out_reg(node, pn_ia32_Pop_res);
-	if (get_ia32_op_type(node) == ia32_Normal)
-		bemit8(0x58 + reg_gp_map[reg->index]);
-	else {
-		bemit8(0x8F);
-		bemit_mod_am(0, node);
-	}
+	bemit8(0x58 + reg_gp_map[reg->index]);
+}
+
+static void bemit_popmem(const ir_node *node)
+{
+	bemit8(0x8F);
+	bemit_mod_am(0, node);
 }
 
 static void bemit_call(const ir_node *node)
@@ -3098,6 +3102,7 @@ static void ia32_register_binary_emitters(void)
 
 	/* benode emitter */
 	register_emitter(op_be_Copy, bemit_copy);
+	register_emitter(op_be_CopyKeep, bemit_copy);
 	register_emitter(op_be_IncSP, bemit_incsp);
 	register_emitter(op_be_Return, bemit_return);
 	register_emitter(op_ia32_Adc, bemit_adc);
@@ -3124,6 +3129,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Not, bemit_not);
 	register_emitter(op_ia32_Or, bemit_or);
 	register_emitter(op_ia32_Pop, bemit_pop);
+	register_emitter(op_ia32_PopEbp, bemit_pop);
+	register_emitter(op_ia32_PopMem, bemit_popmem);
 	register_emitter(op_ia32_Push, bemit_push);
 	register_emitter(op_ia32_RepPrefix, bemit_rep);
 	register_emitter(op_ia32_Rol, bemit_rol);
