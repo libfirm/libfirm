@@ -2250,20 +2250,20 @@ static void build_reg_map(void)
 	reg_gp_map[REG_EDI] = 0x7;
 }
 
-/** The mod encoding of the ModR/M */
-enum Mod {
-	MOD_IND          = 0x00, /**< [reg1] */
-	MOD_IND_BYTE_OFS = 0x40, /**< [reg1 + byte ofs] */
-	MOD_IND_WORD_OFS = 0x80, /**< [reg1 + word ofs] */
-	MOD_REG          = 0xC0  /**< reg1 */
-};
-
 #define GET_MODE(code) ((code) & 0xC0)
 
 /** Sign extension bit values for binops */
 enum SignExt {
 	UNSIGNED_IMM = 0,  /**< unsigned immediate */
 	SIGNEXT_IMM  = 2,  /**< sign extended immediate */
+};
+
+/** The mod encoding of the ModR/M */
+enum Mod {
+	MOD_IND          = 0x00, /**< [reg1] */
+	MOD_IND_BYTE_OFS = 0x40, /**< [reg1 + byte ofs] */
+	MOD_IND_WORD_OFS = 0x80, /**< [reg1 + word ofs] */
+	MOD_REG          = 0xC0  /**< reg1 */
 };
 
 /** create R/M encoding for ModR/M */
@@ -2481,8 +2481,8 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		sib |= ENC_INDEX(reg_gp_map[reg_index->index]);
 
 		if (has_base) {
-			const arch_register_t *reg = arch_get_irn_register(base);
-			sib |= ENC_BASE(reg_gp_map[reg->index]);
+			const arch_register_t *base_reg = arch_get_irn_register(base);
+			sib |= ENC_BASE(reg_gp_map[base_reg->index]);
 		} else {
 			/* use the EBP encoding if NO base register */
 			sib |= 0x05;
@@ -2499,8 +2499,8 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		/* R/M set to ESP means SIB in 32bit mode */
 		modrm |= ENC_RM(0x04);
 	} else if (has_base) {
-		const arch_register_t *reg = arch_get_irn_register(base);
-		if (reg->index == REG_ESP) {
+		const arch_register_t *base_reg = arch_get_irn_register(base);
+		if (base_reg->index == REG_ESP) {
 			/* for the above reason we are forced to emit a sib when base is
 			 * ESP. Only the base is used, index must be ESP too, which means no
 			 * index. */
@@ -2509,19 +2509,17 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 		/* we are forced to emit a 8bit offset as EBP base without
 		   offset is a special case for SIB without base register */
-		} else if (reg->index == REG_EBP && emitoffs == 0) {
+		} else if (base_reg->index == REG_EBP && emitoffs == 0) {
 			assert(GET_MODE(modrm) == MOD_IND);
 			emitoffs  = 8;
 			modrm    |= MOD_IND_BYTE_OFS;
 		}
-		modrm |= ENC_RM(reg_gp_map[reg->index]);
+
+		modrm |= ENC_RM(reg_gp_map[base_reg->index]);
 	} else {
 		/* only displacement: Use EBP + disp encoding in 32bit mode */
-		if (emitoffs == 0) {
-			emitoffs = 8;
-			modrm    = MOD_IND_BYTE_OFS;
-		}
-		modrm |= ENC_RM(0x05);
+		emitoffs = 32;
+		modrm    = ENC_RM(0x05);
 	}
 
 	modrm |= ENC_REG(reg);
