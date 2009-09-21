@@ -2435,7 +2435,9 @@ static void bemit_binop_with_imm(
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
 	unsigned                    size;
 
-	if (attr->symconst != NULL)
+	/* Some instructions (test) have no short form with 32bit value + 8bit
+	 * immediate. */
+	if (attr->symconst != NULL || opcode & SIGNEXT_IMM)
 		size = 4;
 	else {
 		/* check for sign extension */
@@ -2669,15 +2671,16 @@ static void bemit_ ## op(const ir_node *node) {                           \
 	bemit_binop(node, op ## _codes);                                      \
 }
 
-/*   insn  def  eax,imm   imm  */
-BINOP(add, 0x01, 0x05, 0x81, 0 )
-BINOP(or,  0x09, 0x0D, 0x81, 1 )
-BINOP(adc, 0x11, 0x15, 0x81, 2 )
-BINOP(sbb, 0x19, 0x1D, 0x81, 3 )
-BINOP(and, 0x21, 0x25, 0x81, 4 )
-BINOP(sub, 0x29, 0x2D, 0x81, 5 )
-BINOP(xor, 0x31, 0x35, 0x81, 6 )
-BINOP(cmp, 0x39, 0x3D, 0x81, 7 )
+/*    insn  def  eax,imm   imm */
+BINOP(add,  0x01, 0x05, 0x81, 0)
+BINOP(or,   0x09, 0x0D, 0x81, 1)
+BINOP(adc,  0x11, 0x15, 0x81, 2)
+BINOP(sbb,  0x19, 0x1D, 0x81, 3)
+BINOP(and,  0x21, 0x25, 0x81, 4)
+BINOP(sub,  0x29, 0x2D, 0x81, 5)
+BINOP(xor,  0x31, 0x35, 0x81, 6)
+BINOP(cmp,  0x39, 0x3D, 0x81, 7)
+BINOP(test, 0x85, 0xA9, 0xF7, 0)
 
 /**
  * Creates a function for an Unop with code /ext encoding.
@@ -3122,6 +3125,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Stc, bemit_stc);
 	register_emitter(op_ia32_Store, bemit_store);
 	register_emitter(op_ia32_Sub, bemit_sub);
+	register_emitter(op_ia32_Test, bemit_test);
 	register_emitter(op_ia32_Xor, bemit_xor);
 	register_emitter(op_ia32_Xor0, bemit_xor0);
 
