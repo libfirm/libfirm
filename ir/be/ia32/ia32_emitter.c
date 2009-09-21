@@ -2378,7 +2378,7 @@ static unsigned get_signed_imm_size(int offset)
 {
 	if (-128 <= offset && offset < 128) {
 		return 1;
-	} else if (offset >= -32768 && offset < 32767) {
+	} else if (-32768 <= offset && offset < 32768) {
 		return 2;
 	} else {
 		return 4;
