@@ -2358,7 +2358,7 @@ static void bemit_jmp_destination(const ir_node *dest_block)
 {
 	be_emit_cstring("\t.long ");
 	ia32_emit_block_name(dest_block);
-	be_emit_cstring(" - . - 4");
+	be_emit_cstring(" - . - 4\n");
 }
 
 /* end emit routines, all emitters following here should only use the functions
