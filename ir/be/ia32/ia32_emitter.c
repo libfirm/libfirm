@@ -2695,14 +2695,32 @@ UNOP(idiv,    0xF7, 7, n_ia32_unary_op)
 
 UNOP(ijmp,    0xFF, 4, n_ia32_unary_op)
 
-#if 0
-/* Matze: doesn't seem to work this way... */
-UNOP(rol,     0xD3, 0, n_ia32_Rol_val)
-UNOP(ror,     0xD3, 1, n_ia32_Ror_val)
-UNOP(shl,     0xD3, 4, n_ia32_Shl_val)
-UNOP(shr,     0xD3, 5, n_ia32_Shr_val)
-UNOP(sar,     0xD3, 7, n_ia32_Sar_val)
-#endif
+#define SHIFT(op, ext) \
+static void bemit_##op(const ir_node *node) \
+{ \
+	const arch_register_t *reg   = get_out_reg(node, 0); \
+	ir_node               *count = get_irn_n(node, 1); \
+	if (is_ia32_Immediate(count)) { \
+		int offset = get_ia32_immediate_attr_const(count)->offset; \
+		if (offset == 1) { \
+			bemit8(0xD1); \
+			bemit_modru(reg, ext); \
+		} else { \
+			bemit8(0xC1); \
+			bemit_modru(reg, ext); \
+			bemit8(offset); \
+		} \
+	} else { \
+		bemit8(0xD3); \
+		bemit_modru(reg, ext); \
+	} \
+}
+
+SHIFT(rol, 0)
+SHIFT(ror, 1)
+SHIFT(shl, 4)
+SHIFT(shr, 5)
+SHIFT(sar, 7)
 
 /**
  * Emit a Lea.
@@ -3079,13 +3097,18 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Pop, bemit_pop);
 	register_emitter(op_ia32_Push, bemit_push);
 	register_emitter(op_ia32_RepPrefix, bemit_rep);
+	register_emitter(op_ia32_Rol, bemit_rol);
+	register_emitter(op_ia32_Ror, bemit_ror);
 	register_emitter(op_ia32_Sahf, bemit_sahf);
+	register_emitter(op_ia32_Sar, bemit_sar);
 	register_emitter(op_ia32_Sbb, bemit_sbb);
+	register_emitter(op_ia32_Shl, bemit_shl);
+	register_emitter(op_ia32_Shr, bemit_shr);
 	register_emitter(op_ia32_Stc, bemit_stc);
 	register_emitter(op_ia32_Store, bemit_store);
 	register_emitter(op_ia32_Sub, bemit_sub);
-	register_emitter(op_ia32_Xor0, bemit_xor0);
 	register_emitter(op_ia32_Xor, bemit_xor);
+	register_emitter(op_ia32_Xor0, bemit_xor0);
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal, emit_Nothing);
