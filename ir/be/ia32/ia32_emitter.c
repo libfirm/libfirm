@@ -2698,21 +2698,21 @@ UNOP(ijmp,    0xFF, 4, n_ia32_unary_op)
 #define SHIFT(op, ext) \
 static void bemit_##op(const ir_node *node) \
 { \
-	const arch_register_t *reg   = get_out_reg(node, 0); \
+	const arch_register_t *out   = get_out_reg(node, 0); \
 	ir_node               *count = get_irn_n(node, 1); \
 	if (is_ia32_Immediate(count)) { \
 		int offset = get_ia32_immediate_attr_const(count)->offset; \
 		if (offset == 1) { \
 			bemit8(0xD1); \
-			bemit_modru(reg, ext); \
+			bemit_modru(out, ext); \
 		} else { \
 			bemit8(0xC1); \
-			bemit_modru(reg, ext); \
+			bemit_modru(out, ext); \
 			bemit8(offset); \
 		} \
 	} else { \
 		bemit8(0xD3); \
-		bemit_modru(reg, ext); \
+		bemit_modru(out, ext); \
 	} \
 }
 
@@ -2721,6 +2721,18 @@ SHIFT(ror, 1)
 SHIFT(shl, 4)
 SHIFT(shr, 5)
 SHIFT(sar, 7)
+
+static void bemit_dec(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, pn_ia32_Dec_res);
+	bemit8(0x48 + reg_gp_map[out->index]);
+}
+
+static void bemit_inc(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, pn_ia32_Inc_res);
+	bemit8(0x40 + reg_gp_map[out->index]);
+}
 
 /**
  * Emit a Lea.
@@ -3082,10 +3094,12 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Cmc, bemit_cmc);
 	register_emitter(op_ia32_Cmp, bemit_cmp);
 	register_emitter(op_ia32_Const, bemit_mov_const);
+	register_emitter(op_ia32_Dec, bemit_dec);
 	register_emitter(op_ia32_Div, bemit_div);
 	register_emitter(op_ia32_IDiv, bemit_idiv);
 	register_emitter(op_ia32_IJmp, bemit_ijmp);
 	register_emitter(op_ia32_IMul1OP, bemit_imul1op);
+	register_emitter(op_ia32_Inc, bemit_inc);
 	register_emitter(op_ia32_Jcc, bemit_ia32_jcc);
 	register_emitter(op_ia32_Jmp, bemit_jump);
 	register_emitter(op_ia32_Lea, bemit_lea);
