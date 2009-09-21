@@ -2429,7 +2429,8 @@ static void bemit_binop_with_imm(
 	unsigned char opcode_ax,
 	unsigned char opcode, unsigned char ruval)
 {
-	const arch_register_t       *reg  = get_out_reg(node, 0);
+	/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
+	const arch_register_t       *reg  = get_in_reg(node, n_ia32_binary_left);
 	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
 	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
 	unsigned                    size;
