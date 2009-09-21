@@ -2417,55 +2417,6 @@ static unsigned get_signed_imm_size(int offset)
 }
 
 /**
- * Emit a binop with a immediate operand.
- *
- * @param node        the node to emit
- * @param opcode_eax  the opcode for the op eax, imm variant
- * @param opcode      the opcode for the reg, imm variant
- * @param ruval       the opcode extension for opcode
- */
-static void bemit_binop_with_imm(
-	const ir_node *node,
-	unsigned char opcode_ax,
-	unsigned char opcode, unsigned char ruval)
-{
-	/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
-	const arch_register_t       *reg  = get_in_reg(node, n_ia32_binary_left);
-	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
-	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
-	unsigned                    size;
-
-	/* Some instructions (test) have no short form with 32bit value + 8bit
-	 * immediate. */
-	if (attr->symconst != NULL || opcode & SIGNEXT_IMM)
-		size = 4;
-	else {
-		/* check for sign extension */
-		size = get_signed_imm_size(attr->offset);
-	}
-
-	switch (size) {
-	case 1:
-		bemit8(opcode | SIGNEXT_IMM);
-		bemit_modru(reg, ruval);
-		bemit8((unsigned char)attr->offset);
-		return;
-	case 2:
-	case 4:
-		/* check for eax variant: this variant is shorter for 32bit immediates only */
-		if (reg->index == REG_EAX) {
-			bemit8(opcode_ax);
-		} else {
-			bemit8(opcode);
-			bemit_modru(reg, ruval);
-		}
-		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
-		return;
-	}
-	panic("invalid imm size?!?");
-}
-
-/**
  * Emit an address mode.
  *
  * @param reg   content of the reg field: either a register index or an opcode extension
@@ -2560,6 +2511,66 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	} else if (emitoffs == 32) {
 		bemit_entity(ent, is_ia32_am_sc_sign(node), offs, false);
 	}
+}
+
+/**
+ * Emit a binop with a immediate operand.
+ *
+ * @param node        the node to emit
+ * @param opcode_eax  the opcode for the op eax, imm variant
+ * @param opcode      the opcode for the reg, imm variant
+ * @param ruval       the opcode extension for opcode
+ */
+static void bemit_binop_with_imm(
+	const ir_node *node,
+	unsigned char opcode_ax,
+	unsigned char opcode, unsigned char ruval)
+{
+	/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
+	const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
+	const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
+	unsigned                     size;
+
+	/* Some instructions (test) have no short form with 32bit value + 8bit
+	 * immediate. */
+	if (attr->symconst != NULL || opcode & SIGNEXT_IMM) {
+		size = 4;
+	} else {
+		/* check for sign extension */
+		size = get_signed_imm_size(attr->offset);
+	}
+
+	switch (size) {
+	case 1:
+		bemit8(opcode | SIGNEXT_IMM);
+		/* cmp has this special mode */
+		if (get_ia32_op_type(node) == ia32_AddrModeS) {
+			bemit_mod_am(ruval, node);
+		} else {
+			const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
+			bemit_modru(reg, ruval);
+		}
+		bemit8((unsigned char)attr->offset);
+		return;
+	case 2:
+	case 4:
+		/* check for eax variant: this variant is shorter for 32bit immediates only */
+		if (get_ia32_op_type(node) == ia32_AddrModeS) {
+			bemit8(opcode);
+			bemit_mod_am(ruval, node);
+		} else {
+			const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
+			if (reg->index == REG_EAX) {
+				bemit8(opcode_ax);
+			} else {
+				bemit8(opcode);
+				bemit_modru(reg, ruval);
+			}
+		}
+		bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
+		return;
+	}
+	panic("invalid imm size?!?");
 }
 
 /**
