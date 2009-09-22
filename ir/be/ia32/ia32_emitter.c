@@ -2289,12 +2289,8 @@ enum Mod {
 /** create REG encoding for ModR/M */
 #define ENC_REG(x) ((x) << 3)
 
-/** create Base encoding for SIB */
-#define ENC_BASE(x) (x)
-/** create Index encoding for SIB */
-#define ENC_INDEX(x) ((x) << 3)
-/** create Scale encoding for SIB */
-#define ENC_SCALE(x) ((x) << 6)
+/** create encoding for a SIB byte */
+#define ENC_SIB(scale, index, base) ((scale) << 6 | (index) << 3 | (base))
 
 /* Node: The following routines are supposed to append bytes, words, dwords
    to the output stream.
@@ -2437,6 +2433,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	unsigned   sib       = 0;
 	unsigned   emitoffs  = 0;
 	bool       emitsib   = false;
+	unsigned   base_enc;
 
 	/* set the mod part depending on displacement */
 	if (ent != NULL) {
@@ -2453,57 +2450,41 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		emitoffs = 32;
 	}
 
-	/* determine if we need a SIB byte */
-	if (has_index) {
-		int scale;
-		const arch_register_t *reg_index = arch_get_irn_register(index);
-		assert(reg_index->index != REG_ESP);
-		sib |= ENC_INDEX(reg_gp_map[reg_index->index]);
-
-		if (has_base) {
-			const arch_register_t *base_reg = arch_get_irn_register(base);
-			/* we are forced to emit a 8bit offset as EBP base without
-			   offset is a special case for SIB without base register */
-			if (base_reg->index == REG_EBP && emitoffs == 0) {
-				assert(GET_MODE(modrm) == MOD_IND);
-				emitoffs  = 8;
-				modrm    |= MOD_IND_BYTE_OFS;
-			}
-			sib |= ENC_BASE(reg_gp_map[base_reg->index]);
-		} else {
-			/* use the EBP encoding if NO base register */
-			sib |= 0x05;
-		}
-
-		scale = get_ia32_am_scale(node);
-		assert(scale < 4);
-		sib |= ENC_SCALE(scale);
-		emitsib = true;
-
-		/* R/M set to ESP means SIB in 32bit mode */
-		modrm |= ENC_RM(0x04);
-	} else if (has_base) {
+	if (has_base) {
 		const arch_register_t *base_reg = arch_get_irn_register(base);
-		if (base_reg->index == REG_ESP) {
-			/* for the above reason we are forced to emit a sib when base is
-			 * ESP. Only the base is used, index must be ESP too, which means no
-			 * index. */
-			sib     = ENC_BASE(0x04) | ENC_INDEX(0x04);
-			emitsib = true;
-
-		/* we are forced to emit a 8bit offset as EBP base without
-		   offset is a special case for SIB without base register */
-		} else if (base_reg->index == REG_EBP && emitoffs == 0) {
-			assert(GET_MODE(modrm) == MOD_IND);
-			emitoffs  = 8;
-			modrm    |= MOD_IND_BYTE_OFS;
-		}
-
-		modrm |= ENC_RM(reg_gp_map[base_reg->index]);
+		base_enc = reg_gp_map[base_reg->index];
 	} else {
-		/* only displacement: Use EBP + disp encoding in 32bit mode */
+		/* Use the EBP encoding + MOD_IND if NO base register. There is
+		 * always a 32bit offset present in this case. */
+		modrm    = MOD_IND;
+		base_enc = 0x05;
 		emitoffs = 32;
-		modrm    = ENC_RM(0x05);
+	}
+
+	/* Determine if we need a SIB byte. */
+	if (has_index) {
+		const arch_register_t *reg_index = arch_get_irn_register(index);
+		int                    scale     = get_ia32_am_scale(node);
+		assert(scale < 4);
+		/* R/M set to ESP means SIB in 32bit mode. */
+		modrm   |= ENC_RM(0x04);
+		sib      = ENC_SIB(scale, reg_gp_map[reg_index->index], base_enc);
+		emitsib = true;
+	} else if (base_enc == 0x04) {
+		/* for the above reason we are forced to emit a SIB when base is ESP.
+		 * Only the base is used, index must be ESP too, which means no index.
+		 */
+		modrm   |= ENC_RM(0x04);
+		sib      = ENC_SIB(0, 0x04, 0x04);
+		emitsib  = true;
+	} else {
+		modrm |= ENC_RM(base_enc);
+		/* We are forced to emit an 8bit offset as EBP base without offset is a
+		 * special case for SIB without base register. */
+		if (base_enc == 0x05 && emitoffs == 0) {
+			modrm    |= MOD_IND_BYTE_OFS;
+			emitoffs  = 8;
+		}
 	}
 
 	modrm |= ENC_REG(reg);
