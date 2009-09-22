@@ -32,6 +32,7 @@
 #include "besched.h"
 #include "irgwalk.h"
 #include "plist.h"
+#include "pqueue.h"
 
 #include "bearch.h"
 #include "iredges.h"
@@ -64,10 +65,11 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 #endif
 
 static void insert_into_reverse_peo(ir_node *block, void *data) {
-	pbqp_co_t *pbqp_co;
+	pbqp_co_t *pbqp_co = data;
+	pqueue_t *queue = new_pqueue();
 	ir_node   *irn;
 
-	pbqp_co = data;
+//	int cnt = 0;
 
 	sched_foreach(block, irn) {
 		pbqp_node *node;
@@ -83,7 +85,16 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 				// get related pbqp_node and insert into reverse peo
 //				node = pmap_find(pbqp_co->map,proj)->value;
 				assert(node && "No corresponding PBQP-Node found!");
-				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(proj)));
+
+				// insert proj into ordered list
+				pqueue_put(queue,proj, be_ifg_degree(pbqp_co->ifg,proj));
+//				cnt++;
+//				printf("(%d) Index: %d NodeNr: %ld\n", cnt, get_irn_idx(proj), proj->node_nr);
+			}
+
+			while(!pqueue_empty(queue)) {
+				// copy proj from ordered list (ordered by their node degree in ifg) into reverse perfect elimination order
+				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(queue))));
 			}
 		} else {
 			if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, irn))
@@ -93,8 +104,17 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 //			node = pmap_find(pbqp_co->map,irn)->value;
 			assert(node && "No corresponding PBQP-Node found!");
 			plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(irn)));
+//			cnt++;
+//			printf("(%d) Index: %d NodeNr: %ld\n", cnt, get_irn_idx(irn), irn->node_nr);
 		}
 	}
+
+//	while(pqueue_length(queue) > 0) {
+//		ir_node *node = pqueue_pop_front(queue);
+//		printf("Node: %d IFG-Degree: %d\n", get_irn_idx(node), be_ifg_degree(pbqp_co->ifg,node));
+//	}
+
+	del_pqueue(queue);
 }
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co) {
@@ -107,7 +127,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	unsigned number_registers = co->cls->n_regs;
 	unsigned number_nodes = get_irg_last_idx(co->irg);
-	unsigned nodeIdx = 0;
+//	unsigned nodeIdx = 0;
 
 //	// count nodes in ifg
 //	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
@@ -120,6 +140,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	pbqp_co.map = pmap_create_ex(number_nodes);
 	pbqp_co.pbqp = alloc_pbqp(number_nodes);
 	pbqp_co.ignore_reg = bitset_malloc(number_registers);
+	pbqp_co.ifg = co->cenv->ifg;
 
 	// get ignored registers
 	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
@@ -226,9 +247,14 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		}
 	}
 
+
+//	printf("S %d ------- -------- %s ---------\n",pmap_count(pbqp_co.map), co->name);
+
 	// create reverse perfect elimination order
 	assure_doms(co->irg);
 	dom_tree_walk_irg(co->irg, insert_into_reverse_peo, NULL, &pbqp_co);
+
+//	printf("E ------- -------- %s ---------\n", co->name);
 
 #if KAPS_DUMP
 	// dump graph before solving pbqp
