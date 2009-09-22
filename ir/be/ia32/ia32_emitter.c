@@ -2729,6 +2729,35 @@ BINOP(xor,  0x31, 0x35, 0x81, 6)
 BINOP(cmp,  0x39, 0x3D, 0x81, 7)
 BINOP(test, 0x85, 0xA9, 0xF7, 0)
 
+#define BINOPMEM(op, ext) \
+static void bemit_##op(const ir_node *node) \
+{ \
+	ir_node *val = get_irn_n(node, n_ia32_unary_op); \
+	if (is_ia32_Immediate(val)) { \
+		const ia32_immediate_attr_t *attr   = get_ia32_immediate_attr_const(val); \
+		int                          offset = attr->offset; \
+		if (attr->symconst == 0 && get_signed_imm_size(offset) == 1) { \
+			bemit8(0x83); \
+			bemit_mod_am(ext, node); \
+			bemit8(offset); \
+		} else { \
+			bemit8(0x81); \
+			bemit_mod_am(ext, node); \
+			bemit_entity(attr->symconst, attr->sc_sign, offset, false); \
+		} \
+	} else { \
+		bemit8(ext << 3 | 1); \
+		bemit_mod_am(reg_gp_map[get_out_reg(val, 0)->index], node); \
+	} \
+}
+
+BINOPMEM(addmem,  0)
+BINOPMEM(ormem,   1)
+BINOPMEM(andmem,  4)
+BINOPMEM(submem,  5)
+BINOPMEM(xormem,  6)
+
+
 /**
  * Creates a function for an Unop with code /ext encoding.
  */
@@ -3242,7 +3271,9 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_be_Return,         bemit_return);
 	register_emitter(op_ia32_Adc,          bemit_adc);
 	register_emitter(op_ia32_Add,          bemit_add);
+	register_emitter(op_ia32_AddMem,       bemit_addmem);
 	register_emitter(op_ia32_And,          bemit_and);
+	register_emitter(op_ia32_AndMem,       bemit_andmem);
 	register_emitter(op_ia32_Breakpoint,   bemit_int3);
 	register_emitter(op_ia32_Call,         bemit_call);
 	register_emitter(op_ia32_Cltd,         bemit_cltd);
@@ -3272,6 +3303,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Not,          bemit_not);
 	register_emitter(op_ia32_NotMem,       bemit_notmem);
 	register_emitter(op_ia32_Or,           bemit_or);
+	register_emitter(op_ia32_OrMem,        bemit_ormem);
 	register_emitter(op_ia32_Pop,          bemit_pop);
 	register_emitter(op_ia32_PopEbp,       bemit_pop);
 	register_emitter(op_ia32_PopMem,       bemit_popmem);
@@ -3289,9 +3321,11 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Store8Bit,    bemit_store);
 	register_emitter(op_ia32_Store,        bemit_store);
 	register_emitter(op_ia32_Sub,          bemit_sub);
+	register_emitter(op_ia32_SubMem,       bemit_submem);
 	register_emitter(op_ia32_Test,         bemit_test);
 	register_emitter(op_ia32_Xor0,         bemit_xor0);
 	register_emitter(op_ia32_Xor,          bemit_xor);
+	register_emitter(op_ia32_XorMem,       bemit_xormem);
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal,   emit_Nothing);
