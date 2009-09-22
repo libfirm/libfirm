@@ -2479,12 +2479,13 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 		emitsib  = true;
 	} else {
 		modrm |= ENC_RM(base_enc);
-		/* We are forced to emit an 8bit offset as EBP base without offset is a
-		 * special case for SIB without base register. */
-		if (base_enc == 0x05 && emitoffs == 0) {
-			modrm    |= MOD_IND_BYTE_OFS;
-			emitoffs  = 8;
-		}
+	}
+
+	/* We are forced to emit an 8bit offset as EBP base without offset is a
+	 * special case for SIB without base register. */
+	if (base_enc == 0x05 && emitoffs == 0) {
+		modrm    |= MOD_IND_BYTE_OFS;
+		emitoffs  = 8;
 	}
 
 	modrm |= ENC_REG(reg);
