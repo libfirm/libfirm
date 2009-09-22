@@ -3273,6 +3273,21 @@ static void bemit_incsp(const ir_node *node)
 	}
 }
 
+static void bemit_copybi(const ir_node *node)
+{
+	unsigned size = get_ia32_copyb_size(node);
+	if (size & 1)
+		bemit8(0xA4); // movsb
+	if (size & 2) {
+		bemit8(0x66);
+		bemit8(0xA5); // movsw
+	}
+	size >>= 2;
+	while (size--) {
+		bemit8(0xA5); // movsl
+	}
+}
+
 /**
  * The type of a emitter function.
  */
@@ -3313,6 +3328,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Const,        bemit_mov_const);
 	register_emitter(op_ia32_Conv_I2I8Bit, bemit_conv_i2i);
 	register_emitter(op_ia32_Conv_I2I,     bemit_conv_i2i);
+	register_emitter(op_ia32_CopyB_i,      bemit_copybi);
 	register_emitter(op_ia32_Cwtl,         bemit_cwtl);
 	register_emitter(op_ia32_Dec,          bemit_dec);
 	register_emitter(op_ia32_DecMem,       bemit_decmem);
