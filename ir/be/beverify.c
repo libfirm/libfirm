@@ -759,8 +759,11 @@ static void check_input_constraints(ir_node *node)
 			const arch_register_t *pred_reg = arch_get_irn_register(pred);
 
 			if (reg != pred_reg && !arch_register_type_is(pred_reg, joker)) {
+				const char *pred_name = pred_reg != NULL ? pred_reg->name : "(null)";
+				const char *reg_name  = reg != NULL ? reg->name : "(null)";
 				ir_fprintf(stderr, "Verify warning: Input %d of %+F in block %+F(%s) uses register %s instead of %s\n",
-				           i, node, get_nodes_block(node), get_irg_dump_name(irg), pred_reg->name, reg->name);
+				           i, node, get_nodes_block(node),
+				           get_irg_dump_name(irg), pred_name, reg_name);
 				problem_found = 1;
 			}
 		}
