@@ -2577,26 +2577,14 @@ static void bemit_binop_with_imm(
  */
 static void bemit_binop_2(const ir_node *node, unsigned code)
 {
-	const arch_register_t *out    = get_in_reg(node, n_ia32_binary_left);
-	ia32_op_type_t        am_type = get_ia32_op_type(node);
-	unsigned char         d       = 0;
-	const arch_register_t *op2;
-
-	switch (am_type) {
-	case ia32_AddrModeS:
-		d = 2;
-		/* FALLTHROUGH */
-	case ia32_AddrModeD:
-		bemit8(code | d);
+	const arch_register_t *out = get_in_reg(node, n_ia32_binary_left);
+	bemit8(code);
+	if (get_ia32_op_type(node) == ia32_Normal) {
+		const arch_register_t *op2 = get_in_reg(node, n_ia32_binary_right);
+		bemit_modrr(op2, out);
+	} else {
 		bemit_mod_am(reg_gp_map[out->index], node);
-		return;
-	case ia32_Normal:
-		bemit8(code);
-		op2 = get_in_reg(node, n_ia32_binary_right);
-		bemit_modrr(out, op2);
-		return;
 	}
-	panic("invalid address mode");
 }
 
 /**
@@ -2722,14 +2710,14 @@ static void bemit_ ## op(const ir_node *node) {                           \
 }
 
 /*    insn  def  eax,imm   imm */
-BINOP(add,  0x01, 0x05, 0x81, 0)
-BINOP(or,   0x09, 0x0D, 0x81, 1)
-BINOP(adc,  0x11, 0x15, 0x81, 2)
-BINOP(sbb,  0x19, 0x1D, 0x81, 3)
-BINOP(and,  0x21, 0x25, 0x81, 4)
-BINOP(sub,  0x29, 0x2D, 0x81, 5)
-BINOP(xor,  0x31, 0x35, 0x81, 6)
-BINOP(cmp,  0x39, 0x3D, 0x81, 7)
+BINOP(add,  0x03, 0x05, 0x81, 0)
+BINOP(or,   0x0B, 0x0D, 0x81, 1)
+BINOP(adc,  0x13, 0x15, 0x81, 2)
+BINOP(sbb,  0x1B, 0x1D, 0x81, 3)
+BINOP(and,  0x23, 0x25, 0x81, 4)
+BINOP(sub,  0x2B, 0x2D, 0x81, 5)
+BINOP(xor,  0x33, 0x35, 0x81, 6)
+BINOP(cmp,  0x3B, 0x3D, 0x81, 7)
 BINOP(test, 0x85, 0xA9, 0xF7, 0)
 
 #define BINOPMEM(op, ext) \
