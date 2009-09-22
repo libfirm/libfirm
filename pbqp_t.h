@@ -7,8 +7,8 @@
 
 #include "adt/obstack.h"
 
-#define KAPS_DUMP 1
-#define KAPS_ENABLE_VECTOR_NAMES 1
+#define KAPS_DUMP 0
+#define KAPS_ENABLE_VECTOR_NAMES 0
 #define KAPS_STATISTIC 0
 
 typedef intmax_t num;
