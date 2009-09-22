@@ -2315,7 +2315,7 @@ static void bemit8(const unsigned char byte)
 	be_emit_write_line();
 }
 
-static void bemit16(const unsigned u16)
+static void bemit16(const unsigned short u16)
 {
 	be_emit_irprintf("\t.word 0x%x\n", u16);
 	be_emit_write_line();
@@ -2905,11 +2905,23 @@ static void bemit_load(const ir_node *node)
 static void bemit_store(const ir_node *node)
 {
 	const ir_node *value = get_irn_n(node, n_ia32_Store_val);
+	unsigned       size  = get_mode_size_bits(get_ia32_ls_mode(node));
 
 	if (is_ia32_Immediate(value)) {
-		bemit8(0xC7);
-		bemit_mod_am(0, node);
-		bemit_immediate(value, false);
+		if (size == 8) {
+			bemit8(0xC6);
+			bemit_mod_am(0, node);
+			bemit8(get_ia32_immediate_attr_const(value)->offset);
+		} else if (size == 16) {
+			bemit8(0x66);
+			bemit8(0xC7);
+			bemit_mod_am(0, node);
+			bemit16(get_ia32_immediate_attr_const(value)->offset);
+		} else {
+			bemit8(0xC7);
+			bemit_mod_am(0, node);
+			bemit_immediate(value, false);
+		}
 	} else {
 		const arch_register_t *in = get_in_reg(node, n_ia32_Store_val);
 
@@ -2923,13 +2935,26 @@ static void bemit_store(const ir_node *node)
 
 			if (ent == NULL && !has_base && !has_index) {
 				/* store to constant address from EAX can be encoded as
-				   0xA3 [offset]*/
-				bemit8(0xA3);
+				 * 0xA2/0xA3 [offset]*/
+				if (size == 8) {
+					bemit8(0xA2);
+				} else {
+					if (size == 16)
+						bemit8(0x66);
+					bemit8(0xA3);
+				}
 				bemit_entity(NULL, 0, offs, false);
 				return;
 			}
 		}
-		bemit8(0x89);
+
+		if (size == 8) {
+			bemit8(0x88);
+		} else {
+			if (size == 16)
+				bemit8(0x66);
+			bemit8(0x89);
+		}
 		bemit_mod_am(reg_gp_map[in->index], node);
 	}
 }
