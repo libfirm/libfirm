@@ -2770,8 +2770,16 @@ static void bemit_inc(const ir_node *node)
 
 static void bemit_set(const ir_node *node)
 {
+	pn_Cmp pnc;
+
 	bemit8(0x0F);
-	bemit8(0x90 + pnc2cc(get_ia32_condcode(node)));
+
+	pnc = get_ia32_condcode(node);
+	pnc = determine_final_pnc(node, n_ia32_Set_eflags, pnc);
+	if (get_ia32_attr_const(node)->data.ins_permuted)
+		pnc = ia32_get_negated_pnc(pnc);
+
+	bemit8(0x90 + pnc2cc(pnc));
 	bemit_modru(get_out_reg(node, pn_ia32_Set_res), 2);
 }
 
