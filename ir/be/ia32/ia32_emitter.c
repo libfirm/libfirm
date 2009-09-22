@@ -2634,7 +2634,10 @@ static void bemit_unop_reg(const ir_node *node, unsigned char code, int input)
 
 static void bemit_unop_mem(const ir_node *node, unsigned char code, unsigned char ext)
 {
-	bemit8(code);
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node));
+	if (size == 16)
+		bemit8(0x66);
+	bemit8(size == 8 ? code : code + 1);
 	bemit_mod_am(ext, node);
 }
 
@@ -2906,10 +2909,10 @@ static void bemit_##op(const ir_node *node) \
 	bemit_unop_mem(node, code, ext); \
 }
 
-UNOPMEM(notmem, 0xF7, 2)
-UNOPMEM(negmem, 0xF7, 3)
-UNOPMEM(incmem, 0xFF, 0)
-UNOPMEM(decmem, 0xFF, 1)
+UNOPMEM(notmem, 0xF6, 2)
+UNOPMEM(negmem, 0xF6, 3)
+UNOPMEM(incmem, 0xFE, 0)
+UNOPMEM(decmem, 0xFE, 1)
 
 static void bemit_set(const ir_node *node)
 {
