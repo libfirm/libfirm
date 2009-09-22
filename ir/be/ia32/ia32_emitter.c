@@ -3195,6 +3195,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Call,         bemit_call);
 	register_emitter(op_ia32_Cltd,         bemit_cltd);
 	register_emitter(op_ia32_Cmc,          bemit_cmc);
+	register_emitter(op_ia32_Cmp8Bit,      bemit_cmp);
 	register_emitter(op_ia32_Cmp,          bemit_cmp);
 	register_emitter(op_ia32_Const,        bemit_mov_const);
 	register_emitter(op_ia32_Conv_I2I8Bit, bemit_conv_i2i);
