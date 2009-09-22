@@ -2776,21 +2776,24 @@ SHIFT(sar, 7)
 
 static void bemit_cmp8bit(const ir_node *node)
 {
-	const arch_register_t *out   = get_in_reg(node, n_ia32_Cmp_left);
-	ir_node               *right = get_irn_n(node, n_ia32_binary_right);
+	ir_node *right = get_irn_n(node, n_ia32_binary_right);
 	if (is_ia32_Immediate(right)) {
-		if (get_ia32_op_type(node) != ia32_Normal) {
-			bemit8(0x80);
-			bemit_mod_am(7, node);
-		} else if (out->index == REG_EAX) {
-			bemit8(0x3C);
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			const arch_register_t *out = get_in_reg(node, n_ia32_Cmp_left);
+			if (out->index == REG_EAX) {
+				bemit8(0x3C);
+			} else {
+				bemit8(0x80);
+				bemit_modru(out, 7);
+			}
 		} else {
 			bemit8(0x80);
-			bemit_modru(out, 7);
+			bemit_mod_am(7, node);
 		}
 		bemit8(get_ia32_immediate_attr_const(right)->offset);
 	} else {
 		bemit8(0x3A);
+		const arch_register_t *out = get_in_reg(node, n_ia32_Cmp_left);
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *in = get_in_reg(node, n_ia32_Cmp_right);
 			bemit_modrr(out, in);
