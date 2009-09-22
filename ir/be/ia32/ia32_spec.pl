@@ -1188,7 +1188,7 @@ SwitchJmp => {
 	latency   => 3,
 	units     => [ "BRANCH" ],
 	modified_flags => $status_flags,
-	init_attr => "info->out_infos = NULL;",
+	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Jmp => {
@@ -1210,6 +1210,7 @@ IJmp => {
 	latency   => 1,
 	units     => [ "BRANCH" ],
 	mode      => "mode_X",
+	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Const => {
