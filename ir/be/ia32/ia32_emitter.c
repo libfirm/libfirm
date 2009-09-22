@@ -2892,12 +2892,7 @@ static void bemit_call(const ir_node *node)
 		bemit8(0xE8);
 		bemit_immediate(proc, true);
 	} else {
-		bemit8(0xFF);
-		if (get_ia32_op_type(node) == ia32_Normal) {
-			bemit_modru(get_in_reg(node, n_ia32_unary_op), 2);
-		} else {
-			bemit_mod_am(2, node);
-		}
+		bemit_unop(node, 0xFF, 2, n_ia32_Call_addr);
 	}
 }
 
