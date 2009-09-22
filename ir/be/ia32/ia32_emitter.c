@@ -2814,21 +2814,22 @@ static void bemit_##op(const ir_node *node) \
  \
 static void bemit_##op##mem(const ir_node *node) \
 { \
-	if (get_mode_size_bits(get_ia32_ls_mode(node)) == 16) \
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
+	if (size == 16) \
 		bemit8(0x66); \
 	ir_node *count = get_irn_n(node, 1); \
 	if (is_ia32_Immediate(count)) { \
 		int offset = get_ia32_immediate_attr_const(count)->offset; \
 		if (offset == 1) { \
-			bemit8(0xD1); \
+			bemit8(size == 1 ? 0xD0 : 0xD1); \
 			bemit_mod_am(ext, node); \
 		} else { \
-			bemit8(0xC1); \
+			bemit8(size == 1 ? 0xC0 : 0xC1); \
 			bemit_mod_am(ext, node); \
 			bemit8(offset); \
 		} \
 	} else { \
-		bemit8(0xD3); \
+		bemit8(size == 1 ? 0xD2 : 0xD3); \
 		bemit_mod_am(ext, node); \
 	} \
 }
