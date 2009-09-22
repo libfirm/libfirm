@@ -2726,6 +2726,25 @@ SHIFT(shl, 4)
 SHIFT(shr, 5)
 SHIFT(sar, 7)
 
+static void bemit_imul(const ir_node *node)
+{
+	ir_node *right = get_irn_n(node, n_ia32_IMul_right);
+	/* Do we need the immediate form? */
+	if (is_ia32_Immediate(right)) {
+		int imm = get_ia32_immediate_attr_const(right)->offset;
+		if (get_signed_imm_size(imm) == 1) {
+			bemit_unop_reg(node, 0x6B, n_ia32_IMul_left);
+			bemit8(imm);
+		} else {
+			bemit_unop_reg(node, 0x69, n_ia32_IMul_left);
+			bemit32(imm);
+		}
+	} else {
+		bemit8(0x0F);
+		bemit_unop_reg(node, 0xAF, n_ia32_IMul_right);
+	}
+}
+
 static void bemit_dec(const ir_node *node)
 {
 	const arch_register_t *out = get_out_reg(node, pn_ia32_Dec_res);
@@ -3123,6 +3142,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_IDiv,         bemit_idiv);
 	register_emitter(op_ia32_IJmp,         bemit_ijmp);
 	register_emitter(op_ia32_IMul1OP,      bemit_imul1op);
+	register_emitter(op_ia32_IMul,         bemit_imul);
 	register_emitter(op_ia32_Inc,          bemit_inc);
 	register_emitter(op_ia32_Jcc,          bemit_ia32_jcc);
 	register_emitter(op_ia32_Jmp,          bemit_jump);
