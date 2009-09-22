@@ -2658,6 +2658,37 @@ static void bemit_copy(const ir_node *copy)
 	}
 }
 
+static void bemit_perm(const ir_node *node)
+{
+	const arch_register_t       *in0  = arch_get_irn_register(get_irn_n(node, 0));
+	const arch_register_t       *in1  = arch_get_irn_register(get_irn_n(node, 1));
+	const arch_register_class_t *cls0 = arch_register_get_class(in0);
+
+	assert(cls0 == arch_register_get_class(in1) && "Register class mismatch at Perm");
+
+	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
+		if (in0->index == REG_EAX) {
+			bemit8(0x90 + reg_gp_map[in1->index]);
+		} else if (in1->index == REG_EAX) {
+			bemit8(0x90 + reg_gp_map[in0->index]);
+		} else {
+			bemit8(0x87);
+			bemit_modrr(in0, in1);
+		}
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_xmm]) {
+		panic("unimplemented"); // TODO implement
+		//ia32_emitf(NULL, "\txorpd %R, %R\n", in1, in0);
+		//ia32_emitf(NULL, "\txorpd %R, %R\n", in0, in1);
+		//ia32_emitf(node, "\txorpd %R, %R\n", in1, in0);
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_vfp]) {
+		/* is a NOP */
+	} else if (cls0 == &ia32_reg_classes[CLASS_ia32_st]) {
+		/* is a NOP */
+	} else {
+		panic("unexpected register class in be_Perm (%+F)", node);
+	}
+}
+
 static void bemit_xor0(const ir_node *node)
 {
 	const arch_register_t *out = get_out_reg(node, 0);
@@ -3138,6 +3169,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_be_Copy,           bemit_copy);
 	register_emitter(op_be_CopyKeep,       bemit_copy);
 	register_emitter(op_be_IncSP,          bemit_incsp);
+	register_emitter(op_be_Perm,           bemit_perm);
 	register_emitter(op_be_Return,         bemit_return);
 	register_emitter(op_ia32_Adc,          bemit_adc);
 	register_emitter(op_ia32_Add,          bemit_add);
