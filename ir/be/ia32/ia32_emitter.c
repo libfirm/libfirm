@@ -2735,7 +2735,8 @@ BINOP(test, 0x85, 0xA9, 0xF7, 0)
 #define BINOPMEM(op, ext) \
 static void bemit_##op(const ir_node *node) \
 { \
-	if (get_mode_size_bits(get_ia32_ls_mode(node)) == 16) \
+	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
+	if (size == 16) \
 		bemit8(0x66); \
 	ir_node *val = get_irn_n(node, n_ia32_unary_op); \
 	if (is_ia32_Immediate(val)) { \
@@ -2748,7 +2749,11 @@ static void bemit_##op(const ir_node *node) \
 		} else { \
 			bemit8(0x81); \
 			bemit_mod_am(ext, node); \
-			bemit_entity(attr->symconst, attr->sc_sign, offset, false); \
+			if (size == 16) { \
+				bemit16(offset); \
+			} else { \
+				bemit_entity(attr->symconst, attr->sc_sign, offset, false); \
+			} \
 		} \
 	} else { \
 		bemit8(ext << 3 | 1); \
