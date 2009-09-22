@@ -2762,7 +2762,7 @@ static void bemit_ ## op(const ir_node *node) { \
 //EMIT_SINGLEOP(aaa,  0x37)
 //EMIT_SINGLEOP(aas,  0x3F)
 //EMIT_SINGLEOP(nop,  0x90)
-//EMIT_SINGLEOP(cwde, 0x98)
+EMIT_SINGLEOP(cwtl, 0x98)
 EMIT_SINGLEOP(cltd, 0x99)
 //EMIT_SINGLEOP(fwait, 0x9B)
 EMIT_SINGLEOP(sahf, 0x9E)
@@ -3117,6 +3117,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Const,        bemit_mov_const);
 	register_emitter(op_ia32_Conv_I2I,     bemit_conv_i2i);
 	register_emitter(op_ia32_Conv_I2I8Bit, bemit_conv_i2i);
+	register_emitter(op_ia32_Cwtl,         bemit_cwtl);
 	register_emitter(op_ia32_Dec,          bemit_dec);
 	register_emitter(op_ia32_Div,          bemit_div);
 	register_emitter(op_ia32_IDiv,         bemit_idiv);
