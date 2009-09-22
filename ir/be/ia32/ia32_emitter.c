@@ -2606,16 +2606,12 @@ static void bemit_binop(const ir_node *node, const unsigned char opcodes[4])
  */
 static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ext, int input)
 {
-	ia32_op_type_t am_type = get_ia32_op_type(node);
-
 	bemit8(code);
-	if (am_type == ia32_AddrModeD) {
-		bemit8(code);
-		bemit_mod_am(ext, node);
-	} else {
+	if (get_ia32_op_type(node) == ia32_Normal) {
 		const arch_register_t *in = get_in_reg(node, input);
-		assert(am_type == ia32_Normal);
 		bemit_modru(in, ext);
+	} else {
+		bemit_mod_am(ext, node);
 	}
 }
 
