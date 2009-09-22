@@ -228,9 +228,9 @@ const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	{
 		&TEMPLATE_isa_if,             /* isa interface implementation */
-		&TEMPLATE_general_purpose_regs[REG_SP],  /* stack pointer register */
-		&TEMPLATE_general_purpose_regs[REG_BP],  /* base pointer register */
-		&TEMPLATE_reg_classes[CLASS_TEMPLATE_general_purpose],  /* link pointer register class */
+		&TEMPLATE_gp_regs[REG_SP],  /* stack pointer register */
+		&TEMPLATE_gp_regs[REG_BP],  /* base pointer register */
+		&TEMPLATE_reg_classes[CLASS_TEMPLATE_gp],  /* link pointer register class */
 		-1,                          /* stack direction */
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
@@ -301,9 +301,9 @@ static const arch_register_class_t *TEMPLATE_get_reg_class(unsigned i)
 const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_floating_point];
+		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_fp];
 	else
-		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_general_purpose];
+		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp];
 }
 
 
@@ -429,7 +429,7 @@ void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &TEMPLATE_floating_point_regs[REG_F0] : &TEMPLATE_general_purpose_regs[REG_R0]);
+			mode_is_float(mode) ? &TEMPLATE_fp_regs[REG_F0] : &TEMPLATE_gp_regs[REG_R0]);
 	}
 }
 

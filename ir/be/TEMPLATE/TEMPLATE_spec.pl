@@ -2,8 +2,6 @@
 # $Id$
 # This is a template specification for the Firm-Backend
 
-$new_emit_syntax = 1;
-
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "TEMPLATE";
@@ -100,7 +98,7 @@ $arch = "TEMPLATE";
 #   4 - ignore (do not assign this register)
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
-	general_purpose => [
+	gp => [
 		{ name => "r0", type => 1 },
 		{ name => "r1", type => 1 },
 		{ name => "r2", type => 1 },
@@ -115,11 +113,11 @@ $arch = "TEMPLATE";
 		{ name => "r11", type => 2 },
 		{ name => "r12", type => 2 },
 		{ name => "r13", type => 2 },
-		{ name => "sp", realname => "r14", type => 4 },  # this is our stackpointer
-		{ name => "bp", realname => "r15", type => 4 },  # this is out basepointer
+		{ name => "sp", realname => "r14", type => 4 },  # stackpointer
+		{ name => "bp", realname => "r15", type => 4 },  # basepointer
 		{ mode => "mode_Iu" }
 	],
-	floating_point  => [
+	fp => [
 		{ name => "f0", type => 1 },
 		{ name => "f1", type => 1 },
 		{ name => "f2", type => 1 },
@@ -138,7 +136,7 @@ $arch = "TEMPLATE";
 		{ name => "f15", type => 1 },
 		{ mode => "mode_D" }
 	]
-); # %reg_classes
+);
 
 %emit_templates = (
 	S1 => "${arch}_emit_source_register(node, 0);",
@@ -156,209 +154,159 @@ $arch = "TEMPLATE";
 	C  => "${arch}_emit_immediate(node);"
 );
 
-#--------------------------------------------------#
-#                        _                         #
-#                       (_)                        #
-#  _ __   _____      __  _ _ __    ___  _ __  ___  #
-# | '_ \ / _ \ \ /\ / / | | '__|  / _ \| '_ \/ __| #
-# | | | |  __/\ V  V /  | | |    | (_) | |_) \__ \ #
-# |_| |_|\___| \_/\_/   |_|_|     \___/| .__/|___/ #
-#                                      | |         #
-#                                      |_|         #
-#--------------------------------------------------#
-
 %nodes = (
 
-#-----------------------------------------------------------------#
-#  _       _                                         _            #
-# (_)     | |                                       | |           #
-#  _ _ __ | |_ ___  __ _  ___ _ __   _ __   ___   __| | ___  ___  #
-# | | '_ \| __/ _ \/ _` |/ _ \ '__| | '_ \ / _ \ / _` |/ _ \/ __| #
-# | | | | | ||  __/ (_| |  __/ |    | | | | (_) | (_| |  __/\__ \ #
-# |_|_| |_|\__\___|\__, |\___|_|    |_| |_|\___/ \__,_|\___||___/ #
-#                   __/ |                                         #
-#                  |___/                                          #
-#-----------------------------------------------------------------#
-
-# commutative operations
+# Integer nodes
 
 Add => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. add %S1, %S2, %D1'
 },
 
 Add_i => {
 	irn_flags => "R",
-	comment   => "construct Add: Add(a, const) = Add(const, a) = a + const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. add %S1, %C, %D1'
 },
 
 Mul => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      =>'. mul %S1, %S2, %D1'
 },
 
 Mul_i => {
 	irn_flags => "R",
-	comment   => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. mul %S1, %C, %D1'
 },
 
 And => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. and %S1, %S2, %D1'
 },
 
 And_i => {
 	irn_flags => "R",
-	comment   => "construct And: And(a, const) = And(const, a) = a AND const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. and %S1, %C, %D1'
 },
 
 Or => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. or %S1, %S2, %D1'
 },
 
 Or_i => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. or %S1, %C, %D1'
 },
 
 Eor => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. xor %S1, %S2, %D1'
 },
 
 Eor_i => {
 	irn_flags => "R",
-	comment   => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. xor %S1, %C, %D1'
 },
 
-# not commutative operations
-
 Sub => {
 	irn_flags => "R",
-	comment   => "construct Sub: Sub(a, b) = a - b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sub %S1, %S2, %D1'
 },
 
 Sub_i => {
 	irn_flags => "R",
-	comment   => "construct Sub: Sub(a, const) = a - const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. subl %S1, %C, %D1'
 },
 
 Shl => {
 	irn_flags => "R",
-	comment   => "construct Shl: Shl(a, b) = a << b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. shl %S1, %S2, %D1'
 },
 
 Shl_i => {
 	irn_flags => "R",
-	comment   => "construct Shl: Shl(a, const) = a << const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. shl %S1, %C, %D1'
 },
 
 Shr => {
 	irn_flags => "R",
-	comment   => "construct Shr: Shr(a, b) = a >> b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "in_r1" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
 	emit      => '. shr %S2, %D1'
 },
 
 Shr_i => {
 	irn_flags => "R",
-	comment   => "construct Shr: Shr(a, const) = a >> const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. shr %S1, %C, %D1'
 },
 
 RotR => {
 	irn_flags => "R",
-	comment   => "construct RotR: RotR(a, b) = a ROTR b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. ror %S1, %S2, %D1'
 },
 
 RotL => {
 	irn_flags => "R",
-	comment   => "construct RotL: RotL(a, b) = a ROTL b",
-	reg_req   => { in => [ "general_purpose", "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. rol %S1, %S2, %D1'
 },
 
 RotL_i => {
 	irn_flags => "R",
-	comment   => "construct RotL: RotL(a, const) = a ROTL const",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. rol %S1, %C, %D1'
 },
 
 Minus => {
 	irn_flags => "R",
-	comment   => "construct Minus: Minus(a) = -a",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. neg %S1, %D1'
 },
 
 Inc => {
 	irn_flags => "R",
-	comment   => "construct Increment: Inc(a) = a++",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. inc %S1, %D1'
 },
 
 Dec => {
 	irn_flags => "R",
-	comment   => "construct Decrement: Dec(a) = a--",
-	reg_req   => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. dec %S1, %D1'
 },
 
 Not => {
 	arity       => 1,
 	remat       => 1,
-	comment     => "construct Not: Not(a) = !a",
-	reg_req     => { in => [ "general_purpose" ], out => [ "general_purpose" ] },
+	reg_req     => { in => [ "gp" ], out => [ "gp" ] },
 	emit        => '. not %S1, %D1'
 },
-
-# other operations
 
 Const => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "represents an integer constant",
-	reg_req   => { out => [ "general_purpose" ] },
+	reg_req   => { out => [ "gp" ] },
 	emit      => '. mov %C, %D1',
 	cmp_attr  =>
 '
@@ -366,6 +314,8 @@ Const => {
     return 1;
 '
 },
+
+# Control Flow
 
 Jmp => {
 	state    => "pinned",
@@ -380,8 +330,7 @@ Load => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-	reg_req   => { in => [ "general_purpose", "none" ], out => [ "general_purpose" ] },
+	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
 	emit      => '. mov (%S1), %D1'
 },
 
@@ -389,82 +338,60 @@ Store => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-	reg_req   => { in => [ "general_purpose", "general_purpose", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ] },
 	emit      => '. movl %S2, (%S1)'
 },
 
-#--------------------------------------------------------#
-#    __ _             _                     _            #
-#   / _| |           | |                   | |           #
-#  | |_| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
-#  |  _| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
-#  | | | | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
-#  |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
-#--------------------------------------------------------#
-
-# commutative operations
+# Floating Point operations
 
 fAdd => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fadd %S1, %S2, %D1'
 },
 
 fMul => {
 	op_flags  => "C",
-	comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fmul %S1, %S2, %D1'
 },
 
 fMax => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FP Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fmax %S1, %S2, %D1'
 },
 
 fMin => {
 	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FP Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fmin %S1, %S2, %D1'
 },
 
-# not commutative operations
-
 fSub => {
 	irn_flags => "R",
-	comment   => "construct FP Sub: Sub(a, b) = a - b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fsub %S1, %S2, %D1'
 },
 
 fDiv => {
-	comment   => "construct FP Div: Div(a, b) = a / b",
-	reg_req   => { in => [ "floating_point", "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fdiv %S1, %S2, %D1'
 },
 
 fMinus => {
 	irn_flags => "R",
-	comment   => "construct FP Minus: Minus(a) = -a",
-	reg_req   => { in => [ "floating_point" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      => '. fneg %S1, %D1'
 },
-
-# other operations
 
 fConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "represents a FP constant",
-	reg_req   => { out => [ "floating_point" ] },
+	reg_req   => { out => [ "fp" ] },
 	emit      => '. fmov %C, %D1',
 	cmp_attr  =>
 '
@@ -479,8 +406,7 @@ fLoad => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct FP Load: Load(ptr, mem) = LD ptr",
-	reg_req   => { in => [ "general_purpose", "none" ], out => [ "floating_point" ] },
+	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
 	emit      => '. fmov (%S1), %D1'
 },
 
@@ -488,9 +414,8 @@ fStore => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-	reg_req   => { in => [ "general_purpose", "floating_point", "none" ] },
+	reg_req   => { in => [ "gp", "fp", "none" ] },
 	emit      => '. fmov %S2, (%S1)'
 },
 
-); # end of %nodes
+);
