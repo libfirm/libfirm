@@ -14,6 +14,8 @@
 #include "pbqp_t.h"
 #include "bitset.h"
 #include "bechordal.h"
+#include "pqueue.h"
+#include "beifg.h"
 
 typedef struct _pbqp_co_t pbqp_co_t;
 
@@ -24,6 +26,7 @@ struct _pbqp_co_t {
 	pmap *map;							// contains relation between irn and pbqp node
 	pbqp *pbqp;
 	bitset_t *ignore_reg;
+	be_ifg_t *ifg;
 };
 
 #endif /* BECOPYPBQP_H_ */
