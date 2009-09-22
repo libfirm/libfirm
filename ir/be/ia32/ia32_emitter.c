@@ -3231,6 +3231,17 @@ static void bemit_return(const ir_node *node)
 	}
 }
 
+static void bemit_subsp(const ir_node *node)
+{
+	const arch_register_t *out;
+	/* sub %in, %esp */
+	bemit_sub(node);
+	/* mov %esp, %out */
+	bemit8(0x8B);
+	out = get_out_reg(node, 1);
+	bemit8(MOD_REG | ENC_REG(reg_gp_map[out->index]) | ENC_RM(0x04));
+}
+
 static void bemit_incsp(const ir_node *node)
 {
 	int                    offs;
@@ -3288,28 +3299,28 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_be_Return,         bemit_return);
 	register_emitter(op_ia32_Adc,          bemit_adc);
 	register_emitter(op_ia32_Add,          bemit_add);
-	register_emitter(op_ia32_AddMem,       bemit_addmem);
 	register_emitter(op_ia32_AddMem8Bit,   bemit_addmem8bit);
+	register_emitter(op_ia32_AddMem,       bemit_addmem);
 	register_emitter(op_ia32_And,          bemit_and);
-	register_emitter(op_ia32_AndMem,       bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,   bemit_andmem8bit);
+	register_emitter(op_ia32_AndMem,       bemit_andmem);
 	register_emitter(op_ia32_Breakpoint,   bemit_int3);
 	register_emitter(op_ia32_Call,         bemit_call);
 	register_emitter(op_ia32_Cltd,         bemit_cltd);
 	register_emitter(op_ia32_Cmc,          bemit_cmc);
-	register_emitter(op_ia32_Cmp,          bemit_cmp);
 	register_emitter(op_ia32_Cmp8Bit,      bemit_cmp8bit);
+	register_emitter(op_ia32_Cmp,          bemit_cmp);
 	register_emitter(op_ia32_Const,        bemit_mov_const);
-	register_emitter(op_ia32_Conv_I2I,     bemit_conv_i2i);
 	register_emitter(op_ia32_Conv_I2I8Bit, bemit_conv_i2i);
+	register_emitter(op_ia32_Conv_I2I,     bemit_conv_i2i);
 	register_emitter(op_ia32_Cwtl,         bemit_cwtl);
 	register_emitter(op_ia32_Dec,          bemit_dec);
 	register_emitter(op_ia32_DecMem,       bemit_decmem);
 	register_emitter(op_ia32_Div,          bemit_div);
 	register_emitter(op_ia32_IDiv,         bemit_idiv);
 	register_emitter(op_ia32_IJmp,         bemit_ijmp);
-	register_emitter(op_ia32_IMul,         bemit_imul);
 	register_emitter(op_ia32_IMul1OP,      bemit_imul1op);
+	register_emitter(op_ia32_IMul,         bemit_imul);
 	register_emitter(op_ia32_Inc,          bemit_inc);
 	register_emitter(op_ia32_IncMem,       bemit_incmem);
 	register_emitter(op_ia32_Jcc,          bemit_ia32_jcc);
@@ -3322,8 +3333,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Not,          bemit_not);
 	register_emitter(op_ia32_NotMem,       bemit_notmem);
 	register_emitter(op_ia32_Or,           bemit_or);
-	register_emitter(op_ia32_OrMem,        bemit_ormem);
 	register_emitter(op_ia32_OrMem8Bit,    bemit_ormem8bit);
+	register_emitter(op_ia32_OrMem,        bemit_ormem);
 	register_emitter(op_ia32_Pop,          bemit_pop);
 	register_emitter(op_ia32_PopEbp,       bemit_pop);
 	register_emitter(op_ia32_PopMem,       bemit_popmem);
@@ -3343,16 +3354,17 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Shr,          bemit_shr);
 	register_emitter(op_ia32_ShrMem,       bemit_shrmem);
 	register_emitter(op_ia32_Stc,          bemit_stc);
-	register_emitter(op_ia32_Store,        bemit_store);
 	register_emitter(op_ia32_Store8Bit,    bemit_store);
+	register_emitter(op_ia32_Store,        bemit_store);
 	register_emitter(op_ia32_Sub,          bemit_sub);
-	register_emitter(op_ia32_SubMem,       bemit_submem);
 	register_emitter(op_ia32_SubMem8Bit,   bemit_submem8bit);
+	register_emitter(op_ia32_SubMem,       bemit_submem);
+	register_emitter(op_ia32_SubSP,        bemit_subsp);
 	register_emitter(op_ia32_Test,         bemit_test);
-	register_emitter(op_ia32_Xor,          bemit_xor);
 	register_emitter(op_ia32_Xor0,         bemit_xor0);
-	register_emitter(op_ia32_XorMem,       bemit_xormem);
+	register_emitter(op_ia32_Xor,          bemit_xor);
 	register_emitter(op_ia32_XorMem8Bit,   bemit_xormem8bit);
+	register_emitter(op_ia32_XorMem,       bemit_xormem);
 
 	/* ignore the following nodes */
 	register_emitter(op_ia32_ProduceVal,   emit_Nothing);
