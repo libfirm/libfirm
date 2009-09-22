@@ -2251,7 +2251,6 @@ static void build_reg_map(void)
 	reg_gp_map[REG_ESI] = 0x6;
 	reg_gp_map[REG_EDI] = 0x7;
 
-	pnc_map_signed[pn_Cmp_False] = 0xFF;
 	pnc_map_signed[pn_Cmp_Eq]    = 0x04;
 	pnc_map_signed[pn_Cmp_Lt]    = 0x0C;
 	pnc_map_signed[pn_Cmp_Le]    = 0x0E;
@@ -2259,7 +2258,6 @@ static void build_reg_map(void)
 	pnc_map_signed[pn_Cmp_Ge]    = 0x0D;
 	pnc_map_signed[pn_Cmp_Lg]    = 0x05;
 
-	pnc_map_unsigned[pn_Cmp_False] = 0xFF;
 	pnc_map_unsigned[pn_Cmp_Eq]    = 0x04;
 	pnc_map_unsigned[pn_Cmp_Lt]    = 0x02;
 	pnc_map_unsigned[pn_Cmp_Le]    = 0x06;
@@ -2268,7 +2266,19 @@ static void build_reg_map(void)
 	pnc_map_unsigned[pn_Cmp_Lg]    = 0x05;
 }
 
-#define GET_MODE(code) ((code) & 0xC0)
+static unsigned char pnc2cc(int pnc)
+{
+	unsigned char cc;
+	if (pnc == ia32_pn_Cmp_parity) {
+		cc = 0x0A;
+	} else if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
+		cc = pnc_map_unsigned[pnc & 0x07];
+	} else {
+		cc = pnc_map_signed[pnc & 0x07];
+	}
+	assert(cc != 0);
+	return cc;
+}
 
 /** Sign extension bit values for binops */
 enum SignExt {
@@ -2758,6 +2768,13 @@ static void bemit_inc(const ir_node *node)
 	bemit8(0x40 + reg_gp_map[out->index]);
 }
 
+static void bemit_set(const ir_node *node)
+{
+	bemit8(0x0F);
+	bemit8(0x90 + pnc2cc(get_ia32_condcode(node)));
+	bemit_modru(get_out_reg(node, pn_ia32_Set_res), 2);
+}
+
 /**
  * Emit a Lea.
  */
@@ -2769,7 +2786,7 @@ static void bemit_lea(const ir_node *node)
 }
 
 /**
- * Emit a single optcode.
+ * Emit a single opcode.
  */
 #define EMIT_SINGLEOP(op, code)                 \
 static void bemit_ ## op(const ir_node *node) { \
@@ -2953,19 +2970,7 @@ static void bemit_jump(const ir_node *node)
 
 static void bemit_jcc(int pnc, const ir_node *dest_block)
 {
-	unsigned char cc;
-
-	if (pnc == ia32_pn_Cmp_parity) {
-		cc = 0x0A;
-	} else {
-		if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
-			cc = pnc_map_unsigned[pnc & 0x07];
-		} else {
-			cc = pnc_map_signed[pnc & 0x07];
-		}
-	}
-	assert(cc != 0xFF);
-
+	unsigned char cc = pnc2cc(pnc);
 	bemit8(0x0F);
 	bemit8(0x80 + cc);
 	bemit_jmp_destination(dest_block);
@@ -3142,8 +3147,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Div,          bemit_div);
 	register_emitter(op_ia32_IDiv,         bemit_idiv);
 	register_emitter(op_ia32_IJmp,         bemit_ijmp);
-	register_emitter(op_ia32_IMul1OP,      bemit_imul1op);
 	register_emitter(op_ia32_IMul,         bemit_imul);
+	register_emitter(op_ia32_IMul1OP,      bemit_imul1op);
 	register_emitter(op_ia32_Inc,          bemit_inc);
 	register_emitter(op_ia32_Jcc,          bemit_ia32_jcc);
 	register_emitter(op_ia32_Jmp,          bemit_jump);
@@ -3163,6 +3168,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Sahf,         bemit_sahf);
 	register_emitter(op_ia32_Sar,          bemit_sar);
 	register_emitter(op_ia32_Sbb,          bemit_sbb);
+	register_emitter(op_ia32_Set,          bemit_set);
 	register_emitter(op_ia32_Shl,          bemit_shl);
 	register_emitter(op_ia32_Shr,          bemit_shr);
 	register_emitter(op_ia32_Stc,          bemit_stc);

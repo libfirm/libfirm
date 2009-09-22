@@ -1123,6 +1123,7 @@ Set => {
 	#irn_flags => "R",
 	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },
 	ins       => [ "eflags" ],
+	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "pn_Cmp pnc, int ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
