@@ -2880,18 +2880,17 @@ static void bemit_load(const ir_node *node)
 	const arch_register_t *out = get_out_reg(node, 0);
 
 	if (out->index == REG_EAX) {
-		ir_entity *ent       = get_ia32_am_sc(node);
-		int        offs      = get_ia32_am_offs_int(node);
 		ir_node   *base      = get_irn_n(node, n_ia32_base);
 		int        has_base  = !is_ia32_NoReg_GP(base);
 		ir_node   *index     = get_irn_n(node, n_ia32_index);
 		int        has_index = !is_ia32_NoReg_GP(index);
-
-		if (ent == NULL && !has_base && !has_index) {
+		if (!has_base && !has_index) {
+			ir_entity *ent  = get_ia32_am_sc(node);
+			int        offs = get_ia32_am_offs_int(node);
 			/* load from constant address to EAX can be encoded
 			   as 0xA1 [offset] */
 			bemit8(0xA1);
-			bemit_entity(NULL, 0, offs, false);
+			bemit_entity(ent, 0, offs, false);
 			return;
 		}
 	}
@@ -2926,14 +2925,13 @@ static void bemit_store(const ir_node *node)
 		const arch_register_t *in = get_in_reg(node, n_ia32_Store_val);
 
 		if (in->index == REG_EAX) {
-			ir_entity *ent       = get_ia32_am_sc(node);
-			int        offs      = get_ia32_am_offs_int(node);
 			ir_node   *base      = get_irn_n(node, n_ia32_base);
 			int        has_base  = !is_ia32_NoReg_GP(base);
 			ir_node   *index     = get_irn_n(node, n_ia32_index);
 			int        has_index = !is_ia32_NoReg_GP(index);
-
-			if (ent == NULL && !has_base && !has_index) {
+			if (!has_base && !has_index) {
+				ir_entity *ent  = get_ia32_am_sc(node);
+				int        offs = get_ia32_am_offs_int(node);
 				/* store to constant address from EAX can be encoded as
 				 * 0xA2/0xA3 [offset]*/
 				if (size == 8) {
@@ -2943,7 +2941,7 @@ static void bemit_store(const ir_node *node)
 						bemit8(0x66);
 					bemit8(0xA3);
 				}
-				bemit_entity(NULL, 0, offs, false);
+				bemit_entity(ent, 0, offs, false);
 				return;
 			}
 		}
