@@ -2615,6 +2615,11 @@ static void bemit_unop(const ir_node *node, unsigned char code, unsigned char ex
 	}
 }
 
+static void bemit_unop_reg(const ir_node *node, unsigned char code, int input)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+	bemit_unop(node, code, reg_gp_map[out->index], input);
+}
 
 static void bemit_immediate(const ir_node *node, bool relative)
 {
@@ -2834,6 +2839,22 @@ static void bemit_store(const ir_node *node)
 		bemit8(0x89);
 		bemit_mod_am(reg_gp_map[in->index], node);
 	}
+}
+
+static void bemit_conv_i2i(const ir_node *node)
+{
+	ir_mode  *smaller_mode = get_ia32_ls_mode(node);
+	unsigned  opcode;
+
+	bemit8(0x0F);
+	/*        8 16 bit source
+	 * movzx B6 B7
+	 * movsx BE BF
+	 */
+	opcode = 0xB6;
+	if (mode_is_signed(smaller_mode))           opcode |= 0x08;
+	if (get_mode_size_bits(smaller_mode) == 16) opcode |= 0x01;
+	bemit_unop_reg(node, opcode, n_ia32_Conv_I2I_val);
 }
 
 /**
@@ -3081,59 +3102,61 @@ static void ia32_register_binary_emitters(void)
 	clear_irp_opcodes_generic_func();
 
 	/* benode emitter */
-	register_emitter(op_be_Copy, bemit_copy);
-	register_emitter(op_be_CopyKeep, bemit_copy);
-	register_emitter(op_be_IncSP, bemit_incsp);
-	register_emitter(op_be_Return, bemit_return);
-	register_emitter(op_ia32_Adc, bemit_adc);
-	register_emitter(op_ia32_Add, bemit_add);
-	register_emitter(op_ia32_And, bemit_and);
-	register_emitter(op_ia32_Breakpoint, bemit_int3);
-	register_emitter(op_ia32_Call, bemit_call);
-	register_emitter(op_ia32_Cltd, bemit_cltd);
-	register_emitter(op_ia32_Cmc, bemit_cmc);
-	register_emitter(op_ia32_Cmp, bemit_cmp);
-	register_emitter(op_ia32_Const, bemit_mov_const);
-	register_emitter(op_ia32_Dec, bemit_dec);
-	register_emitter(op_ia32_Div, bemit_div);
-	register_emitter(op_ia32_IDiv, bemit_idiv);
-	register_emitter(op_ia32_IJmp, bemit_ijmp);
-	register_emitter(op_ia32_IMul1OP, bemit_imul1op);
-	register_emitter(op_ia32_Inc, bemit_inc);
-	register_emitter(op_ia32_Jcc, bemit_ia32_jcc);
-	register_emitter(op_ia32_Jmp, bemit_jump);
-	register_emitter(op_ia32_Lea, bemit_lea);
-	register_emitter(op_ia32_Load, bemit_load);
-	register_emitter(op_ia32_Mul, bemit_mul);
-	register_emitter(op_ia32_Neg, bemit_neg);
-	register_emitter(op_ia32_Not, bemit_not);
-	register_emitter(op_ia32_Or, bemit_or);
-	register_emitter(op_ia32_Pop, bemit_pop);
-	register_emitter(op_ia32_PopEbp, bemit_pop);
-	register_emitter(op_ia32_PopMem, bemit_popmem);
-	register_emitter(op_ia32_Push, bemit_push);
-	register_emitter(op_ia32_RepPrefix, bemit_rep);
-	register_emitter(op_ia32_Rol, bemit_rol);
-	register_emitter(op_ia32_Ror, bemit_ror);
-	register_emitter(op_ia32_Sahf, bemit_sahf);
-	register_emitter(op_ia32_Sar, bemit_sar);
-	register_emitter(op_ia32_Sbb, bemit_sbb);
-	register_emitter(op_ia32_Shl, bemit_shl);
-	register_emitter(op_ia32_Shr, bemit_shr);
-	register_emitter(op_ia32_Stc, bemit_stc);
-	register_emitter(op_ia32_Store, bemit_store);
-	register_emitter(op_ia32_Sub, bemit_sub);
-	register_emitter(op_ia32_Test, bemit_test);
-	register_emitter(op_ia32_Xor, bemit_xor);
-	register_emitter(op_ia32_Xor0, bemit_xor0);
+	register_emitter(op_be_Copy,           bemit_copy);
+	register_emitter(op_be_CopyKeep,       bemit_copy);
+	register_emitter(op_be_IncSP,          bemit_incsp);
+	register_emitter(op_be_Return,         bemit_return);
+	register_emitter(op_ia32_Adc,          bemit_adc);
+	register_emitter(op_ia32_Add,          bemit_add);
+	register_emitter(op_ia32_And,          bemit_and);
+	register_emitter(op_ia32_Breakpoint,   bemit_int3);
+	register_emitter(op_ia32_Call,         bemit_call);
+	register_emitter(op_ia32_Cltd,         bemit_cltd);
+	register_emitter(op_ia32_Cmc,          bemit_cmc);
+	register_emitter(op_ia32_Cmp,          bemit_cmp);
+	register_emitter(op_ia32_Const,        bemit_mov_const);
+	register_emitter(op_ia32_Conv_I2I,     bemit_conv_i2i);
+	register_emitter(op_ia32_Conv_I2I8Bit, bemit_conv_i2i);
+	register_emitter(op_ia32_Dec,          bemit_dec);
+	register_emitter(op_ia32_Div,          bemit_div);
+	register_emitter(op_ia32_IDiv,         bemit_idiv);
+	register_emitter(op_ia32_IJmp,         bemit_ijmp);
+	register_emitter(op_ia32_IMul1OP,      bemit_imul1op);
+	register_emitter(op_ia32_Inc,          bemit_inc);
+	register_emitter(op_ia32_Jcc,          bemit_ia32_jcc);
+	register_emitter(op_ia32_Jmp,          bemit_jump);
+	register_emitter(op_ia32_Lea,          bemit_lea);
+	register_emitter(op_ia32_Load,         bemit_load);
+	register_emitter(op_ia32_Mul,          bemit_mul);
+	register_emitter(op_ia32_Neg,          bemit_neg);
+	register_emitter(op_ia32_Not,          bemit_not);
+	register_emitter(op_ia32_Or,           bemit_or);
+	register_emitter(op_ia32_Pop,          bemit_pop);
+	register_emitter(op_ia32_PopEbp,       bemit_pop);
+	register_emitter(op_ia32_PopMem,       bemit_popmem);
+	register_emitter(op_ia32_Push,         bemit_push);
+	register_emitter(op_ia32_RepPrefix,    bemit_rep);
+	register_emitter(op_ia32_Rol,          bemit_rol);
+	register_emitter(op_ia32_Ror,          bemit_ror);
+	register_emitter(op_ia32_Sahf,         bemit_sahf);
+	register_emitter(op_ia32_Sar,          bemit_sar);
+	register_emitter(op_ia32_Sbb,          bemit_sbb);
+	register_emitter(op_ia32_Shl,          bemit_shl);
+	register_emitter(op_ia32_Shr,          bemit_shr);
+	register_emitter(op_ia32_Stc,          bemit_stc);
+	register_emitter(op_ia32_Store,        bemit_store);
+	register_emitter(op_ia32_Sub,          bemit_sub);
+	register_emitter(op_ia32_Test,         bemit_test);
+	register_emitter(op_ia32_Xor,          bemit_xor);
+	register_emitter(op_ia32_Xor0,         bemit_xor0);
 
 	/* ignore the following nodes */
-	register_emitter(op_ia32_ProduceVal, emit_Nothing);
-	register_emitter(op_be_Barrier, emit_Nothing);
-	register_emitter(op_be_Keep, emit_Nothing);
-	register_emitter(op_be_Start, emit_Nothing);
-	register_emitter(op_Phi, emit_Nothing);
-	register_emitter(op_Start, emit_Nothing);
+	register_emitter(op_ia32_ProduceVal,   emit_Nothing);
+	register_emitter(op_be_Barrier,        emit_Nothing);
+	register_emitter(op_be_Keep,           emit_Nothing);
+	register_emitter(op_be_Start,          emit_Nothing);
+	register_emitter(op_Phi,               emit_Nothing);
+	register_emitter(op_Start,             emit_Nothing);
 }
 
 static void gen_binary_block(ir_node *block)
