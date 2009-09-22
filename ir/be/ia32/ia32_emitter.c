@@ -2394,22 +2394,6 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 }
 
 /**
- * Calculate the size of an (unsigned) immediate in bytes.
- *
- * @param offset  an offset
- */
-static unsigned get_unsigned_imm_size(unsigned offset)
-{
-	if (offset < 256) {
-		return 1;
-	} else if (offset < 65536) {
-		return 2;
-	} else {
-		return 4;
-	}
-}
-
-/**
  * Calculate the size of an signed immediate in bytes.
  *
  * @param offset  an offset
@@ -3074,7 +3058,7 @@ static void bemit_push(const ir_node *node)
 	if (is_ia32_Immediate(value)) {
 		const ia32_immediate_attr_t *attr
 			= get_ia32_immediate_attr_const(value);
-		unsigned size = get_unsigned_imm_size(attr->offset);
+		unsigned size = get_signed_imm_size(attr->offset);
 		if (attr->symconst)
 			size = 4;
 		switch (size) {
