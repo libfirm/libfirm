@@ -2634,8 +2634,8 @@ static void bemit_copy(const ir_node *copy)
 		panic("NIY");
 	} else {
 		assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
-		bemit8(0x89);
-		bemit_modrr(out, in);
+		bemit8(0x8B);
+		bemit_modrr(in, out);
 	}
 }
 
