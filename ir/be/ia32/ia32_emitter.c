@@ -2820,6 +2820,38 @@ SHIFT(shl, 4)
 SHIFT(shr, 5)
 SHIFT(sar, 7)
 
+static void bemit_shld(const ir_node *node)
+{
+	const arch_register_t *in  = get_in_reg(node, n_ia32_ShlD_val_low);
+	const arch_register_t *out = get_out_reg(node, pn_ia32_ShlD_res);
+	ir_node *count = get_irn_n(node, n_ia32_ShlD_count);
+	bemit8(0x0F);
+	if (is_ia32_Immediate(count)) {
+		bemit8(0xA4);
+		bemit_modrr(out, in);
+		bemit8(get_ia32_immediate_attr_const(count)->offset);
+	} else {
+		bemit8(0xA5);
+		bemit_modrr(out, in);
+	}
+}
+
+static void bemit_shrd(const ir_node *node)
+{
+	const arch_register_t *in  = get_in_reg(node, n_ia32_ShrD_val_low);
+	const arch_register_t *out = get_out_reg(node, pn_ia32_ShrD_res);
+	ir_node *count = get_irn_n(node, n_ia32_ShrD_count);
+	bemit8(0x0F);
+	if (is_ia32_Immediate(count)) {
+		bemit8(0xAC);
+		bemit_modrr(out, in);
+		bemit8(get_ia32_immediate_attr_const(count)->offset);
+	} else {
+		bemit8(0xAD);
+		bemit_modrr(out, in);
+	}
+}
+
 static void bemit_cmp8bit(const ir_node *node)
 {
 	ir_node *right = get_irn_n(node, n_ia32_binary_right);
@@ -3721,8 +3753,10 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Sbb,           bemit_sbb);
 	register_emitter(op_ia32_Set,           bemit_set);
 	register_emitter(op_ia32_Shl,           bemit_shl);
+	register_emitter(op_ia32_ShlD,          bemit_shld);
 	register_emitter(op_ia32_ShlMem,        bemit_shlmem);
 	register_emitter(op_ia32_Shr,           bemit_shr);
+	register_emitter(op_ia32_ShrD,          bemit_shrd);
 	register_emitter(op_ia32_ShrMem,        bemit_shrmem);
 	register_emitter(op_ia32_Stc,           bemit_stc);
 	register_emitter(op_ia32_Store,         bemit_store);
