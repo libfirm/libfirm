@@ -3555,6 +3555,11 @@ static void bemit_fsubr(const ir_node *node)
 	bemit_fbinop(node, 5, 4);
 }
 
+static void bemit_fsubrp(const ir_node *node)
+{
+	bemit_fbinopp(node, 0xE0);
+}
+
 static void bemit_fnstcw(const ir_node *node)
 {
 	bemit8(0xD9); // fnstcw
@@ -3733,6 +3738,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fsub,          bemit_fsub);
 	register_emitter(op_ia32_fsubp,         bemit_fsubp);
 	register_emitter(op_ia32_fsubr,         bemit_fsubr);
+	register_emitter(op_ia32_fsubrp,        bemit_fsubrp);
 	register_emitter(op_ia32_fxch,          bemit_fxch);
 
 	/* ignore the following nodes */
