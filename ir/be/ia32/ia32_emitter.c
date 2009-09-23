@@ -2852,6 +2852,47 @@ static void bemit_shrd(const ir_node *node)
 	}
 }
 
+static void bemit_cmov(const ir_node *node)
+{
+	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
+	int                    ins_permuted = attr->data.ins_permuted;
+	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
+	pn_Cmp                 pnc          = get_ia32_condcode(node);
+	const arch_register_t *in_true;
+	const arch_register_t *in_false;
+
+	pnc = determine_final_pnc(node, n_ia32_CMov_eflags, pnc);
+
+	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_true));
+	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_false));
+
+	/* should be same constraint fullfilled? */
+	if (out == in_false) {
+		/* yes -> nothing to do */
+	} else if (out == in_true) {
+		assert(get_ia32_op_type(node) == ia32_Normal);
+		ins_permuted = !ins_permuted;
+		in_true      = in_false;
+	} else {
+		/* we need a mov */
+		bemit8(0x8B); // mov %in_false, %out
+		bemit_modrr(in_false, out);
+	}
+
+	if (ins_permuted)
+		pnc = ia32_get_negated_pnc(pnc);
+
+	/* TODO: handling of Nans isn't correct yet */
+
+	bemit8(0x0F);
+	bemit8(0x40 + pnc2cc(pnc));
+	if (get_ia32_op_type(node) == ia32_Normal) {
+		bemit_modrr(in_true, out);
+	} else {
+		bemit_mod_am(reg_gp_map[out->index], node);
+	}
+}
+
 static void bemit_cmp8bit(const ir_node *node)
 {
 	ir_node *right = get_irn_n(node, n_ia32_binary_right);
@@ -3700,6 +3741,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_AndMem,        bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
 	register_emitter(op_ia32_Breakpoint,    bemit_int3);
+	register_emitter(op_ia32_CMov,          bemit_cmov);
 	register_emitter(op_ia32_Call,          bemit_call);
 	register_emitter(op_ia32_Cltd,          bemit_cltd);
 	register_emitter(op_ia32_Cmc,           bemit_cmc);
