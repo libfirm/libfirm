@@ -2922,6 +2922,35 @@ static void bemit_cmp8bit(const ir_node *node)
 	}
 }
 
+static void bemit_test8bit(const ir_node *node)
+{
+	ir_node *right = get_irn_n(node, n_ia32_Test8Bit_right);
+	if (is_ia32_Immediate(right)) {
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			const arch_register_t *out = get_in_reg(node, n_ia32_Test8Bit_left);
+			if (out->index == REG_EAX) {
+				bemit8(0xA8);
+			} else {
+				bemit8(0xF6);
+				bemit_modru(out, 0);
+			}
+		} else {
+			bemit8(0xF6);
+			bemit_mod_am(0, node);
+		}
+		bemit8(get_ia32_immediate_attr_const(right)->offset);
+	} else {
+		bemit8(0x84);
+		const arch_register_t *out = get_in_reg(node, n_ia32_Test8Bit_left);
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			const arch_register_t *in = get_in_reg(node, n_ia32_Test8Bit_right);
+			bemit_modrr(out, in);
+		} else {
+			bemit_mod_am(reg_gp_map[out->index], node);
+		}
+	}
+}
+
 static void bemit_imul(const ir_node *node)
 {
 	ir_node *right = get_irn_n(node, n_ia32_IMul_right);
@@ -3808,6 +3837,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_SubMem8Bit,    bemit_submem8bit);
 	register_emitter(op_ia32_SubSP,         bemit_subsp);
 	register_emitter(op_ia32_Test,          bemit_test);
+	register_emitter(op_ia32_Test8Bit,      bemit_test8bit);
 	register_emitter(op_ia32_Xor,           bemit_xor);
 	register_emitter(op_ia32_Xor0,          bemit_xor0);
 	register_emitter(op_ia32_XorMem,        bemit_xormem);
