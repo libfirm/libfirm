@@ -2906,6 +2906,20 @@ static void bemit_set(const ir_node *node)
 	bemit_modru(get_out_reg(node, pn_ia32_Set_res), 2);
 }
 
+static void bemit_ldtls(const ir_node *node)
+{
+	const arch_register_t *out = get_out_reg(node, 0);
+
+	bemit8(0x65); // gs:
+	if (out->index == REG_EAX) {
+		bemit8(0xA1); // movl 0, %eax
+	} else {
+		bemit8(0x8B); // movl 0, %reg
+		bemit8(MOD_IND | ENC_REG(out->index) | ENC_RM(0x05));
+	}
+	bemit32(0);
+}
+
 /**
  * Emit a Lea.
  */
@@ -3681,6 +3695,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_IncMem,        bemit_incmem);
 	register_emitter(op_ia32_Jcc,           bemit_ia32_jcc);
 	register_emitter(op_ia32_Jmp,           bemit_jump);
+	register_emitter(op_ia32_LdTls,         bemit_ldtls);
 	register_emitter(op_ia32_Lea,           bemit_lea);
 	register_emitter(op_ia32_Load,          bemit_load);
 	register_emitter(op_ia32_Mul,           bemit_mul);
