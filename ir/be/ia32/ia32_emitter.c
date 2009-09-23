@@ -3513,6 +3513,14 @@ static void bemit_fbinopp(const ir_node *node, unsigned const code)
 	bemit8(code + out->index);
 }
 
+static void bemit_fabs(const ir_node *node)
+{
+	(void)node;
+
+	bemit8(0xD9);
+	bemit8(0xE1);
+}
+
 static void bemit_fadd(const ir_node *node)
 {
 	bemit_fbinop(node, 0, 0);
@@ -3924,6 +3932,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Xor0,          bemit_xor0);
 	register_emitter(op_ia32_XorMem,        bemit_xormem);
 	register_emitter(op_ia32_XorMem8Bit,    bemit_xormem8bit);
+	register_emitter(op_ia32_fabs,          bemit_fabs);
 	register_emitter(op_ia32_fadd,          bemit_fadd);
 	register_emitter(op_ia32_faddp,         bemit_faddp);
 	register_emitter(op_ia32_fchs,          bemit_fchs);
