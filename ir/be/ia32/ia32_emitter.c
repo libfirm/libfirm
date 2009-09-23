@@ -2701,7 +2701,6 @@ BINOP(sbb,  0x1B, 0x1D, 0x81, 3)
 BINOP(and,  0x23, 0x25, 0x81, 4)
 BINOP(sub,  0x2B, 0x2D, 0x81, 5)
 BINOP(xor,  0x33, 0x35, 0x81, 6)
-BINOP(cmp,  0x3B, 0x3D, 0x81, 7)
 BINOP(test, 0x85, 0xA9, 0xF7, 0)
 
 #define BINOPMEM(op, ext) \
@@ -2890,6 +2889,75 @@ static void bemit_cmov(const ir_node *node)
 		bemit_modrr(in_true, out);
 	} else {
 		bemit_mod_am(reg_gp_map[out->index], node);
+	}
+}
+
+static void bemit_cmp(const ir_node *node)
+{
+	unsigned  ls_size = get_mode_size_bits(get_ia32_ls_mode(node));
+	ir_node  *right;
+
+	if (ls_size == 16)
+		bemit8(0x66);
+
+	right = get_irn_n(node, n_ia32_binary_right);
+	if (is_ia32_Immediate(right)) {
+		/* Use in-reg, because some instructions (cmp, test) have no out-reg. */
+		const ir_node               *op   = get_irn_n(node, n_ia32_binary_right);
+		const ia32_immediate_attr_t *attr = get_ia32_immediate_attr_const(op);
+		unsigned                     size;
+
+		if (attr->symconst != NULL) {
+			size = 4;
+		} else {
+			/* check for sign extension */
+			size = get_signed_imm_size(attr->offset);
+		}
+
+		switch (size) {
+			case 1:
+				bemit8(0x81 | SIGNEXT_IMM);
+				/* cmp has this special mode */
+				if (get_ia32_op_type(node) == ia32_AddrModeS) {
+					bemit_mod_am(7, node);
+				} else {
+					const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
+					bemit_modru(reg, 7);
+				}
+				bemit8((unsigned char)attr->offset);
+				return;
+			case 2:
+			case 4:
+				/* check for eax variant: this variant is shorter for 32bit immediates only */
+				if (get_ia32_op_type(node) == ia32_AddrModeS) {
+					bemit8(0x81);
+					bemit_mod_am(7, node);
+				} else {
+					const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
+					if (reg->index == REG_EAX) {
+						bemit8(0x3D);
+					} else {
+						bemit8(0x81);
+						bemit_modru(reg, 7);
+					}
+				}
+				if (ls_size == 16) {
+					bemit16(attr->offset);
+				} else {
+					bemit_entity(attr->symconst, attr->sc_sign, attr->offset, false);
+				}
+				return;
+		}
+		panic("invalid imm size?!?");
+	} else {
+		const arch_register_t *out = get_in_reg(node, n_ia32_binary_left);
+		bemit8(0x3B);
+		if (get_ia32_op_type(node) == ia32_Normal) {
+			const arch_register_t *op2 = get_in_reg(node, n_ia32_binary_right);
+			bemit_modrr(op2, out);
+		} else {
+			bemit_mod_am(reg_gp_map[out->index], node);
+		}
 	}
 }
 
