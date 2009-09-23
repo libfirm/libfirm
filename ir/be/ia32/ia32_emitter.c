@@ -3356,6 +3356,11 @@ static void bemit_fdivp(const ir_node *node)
 	bemit_fbinopp(node, 0xF8);
 }
 
+static void bemit_fdivr(const ir_node *node)
+{
+	bemit_fbinop(node, 7, 6);
+}
+
 static void bemit_fdivrp(const ir_node *node)
 {
 	bemit_fbinopp(node, 0xF0);
@@ -3721,6 +3726,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fchs,          bemit_fchs);
 	register_emitter(op_ia32_fdiv,          bemit_fdiv);
 	register_emitter(op_ia32_fdivp,         bemit_fdivp);
+	register_emitter(op_ia32_fdivr,         bemit_fdivr);
 	register_emitter(op_ia32_fdivrp,        bemit_fdivrp);
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
