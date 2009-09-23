@@ -1191,12 +1191,12 @@ typedef struct _branch_t {
 
 /* jump table for switch generation */
 typedef struct _jmp_tbl_t {
-	ir_node  *defProj;         /**< default target */
-	long      min_value;       /**< smallest switch case */
-	long      max_value;       /**< largest switch case */
-	long      num_branches;    /**< number of jumps */
-	char     *label;           /**< label of the jump table */
-	branch_t *branches;        /**< jump array */
+	ir_node  *defProj;                 /**< default target */
+	long      min_value;               /**< smallest switch case */
+	long      max_value;               /**< largest switch case */
+	long      num_branches;            /**< number of jumps */
+	char      label[SNPRINTF_BUF_LEN]; /**< label of the jump table */
+	branch_t *branches;                /**< jump array */
 } jmp_tbl_t;
 
 /**
@@ -1229,8 +1229,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 	const ir_edge_t    *edge;
 
 	/* fill the table structure */
-	tbl.label        = XMALLOCN(char, SNPRINTF_BUF_LEN);
-	tbl.label        = get_unique_label(tbl.label, SNPRINTF_BUF_LEN, ".TBL_");
+	get_unique_label(tbl.label, SNPRINTF_BUF_LEN, ".TBL_");
 	tbl.defProj      = NULL;
 	tbl.num_branches = get_irn_n_edges(node) - 1;
 	tbl.branches     = XMALLOCNZ(branch_t, tbl.num_branches);
@@ -1296,10 +1295,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 		ia32_emitf(tbl.branches[0].target, "\tjmp %L\n");
 	}
 
-	if (tbl.label)
-		free(tbl.label);
-	if (tbl.branches)
-		free(tbl.branches);
+	free(tbl.branches);
 }
 
 /**
