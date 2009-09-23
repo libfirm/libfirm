@@ -3346,6 +3346,21 @@ static void bemit_fchs(const ir_node *node)
 	bemit8(0xE0);
 }
 
+static void bemit_fdiv(const ir_node *node)
+{
+	bemit_fbinop(node, 6, 7);
+}
+
+static void bemit_fdivp(const ir_node *node)
+{
+	bemit_fbinopp(node, 0xF8);
+}
+
+static void bemit_fdivrp(const ir_node *node)
+{
+	bemit_fbinopp(node, 0xF0);
+}
+
 static void bemit_fild(const ir_node *node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
@@ -3687,6 +3702,9 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fadd,          bemit_fadd);
 	register_emitter(op_ia32_faddp,         bemit_faddp);
 	register_emitter(op_ia32_fchs,          bemit_fchs);
+	register_emitter(op_ia32_fdiv,          bemit_fdiv);
+	register_emitter(op_ia32_fdivp,         bemit_fdivp);
+	register_emitter(op_ia32_fdivrp,        bemit_fdivrp);
 	register_emitter(op_ia32_fild,          bemit_fild);
 	register_emitter(op_ia32_fist,          bemit_fist);
 	register_emitter(op_ia32_fistp,         bemit_fistp);
