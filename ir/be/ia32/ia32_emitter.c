@@ -3369,6 +3369,29 @@ static void bemit_fild(const ir_node *node)
 	}
 }
 
+static void bemit_fistp(const ir_node *node)
+{
+	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
+		case 16:
+			bemit8(0xDF); // fistps
+			bemit_mod_am(3, node);
+			return;
+
+		case 32:
+			bemit8(0xDB); // fistpl
+			bemit_mod_am(3, node);
+			return;
+
+		case 64:
+			bemit8(0xDF); // fistpll
+			bemit_mod_am(7, node);
+			return;
+
+		default:
+			panic("invalid mode size");
+	}
+}
+
 static void bemit_fld(const ir_node *node)
 {
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
@@ -3398,6 +3421,12 @@ static void bemit_fld1(const ir_node *node)
 	(void)node;
 	bemit8(0xD9);
 	bemit8(0xE8); // fld1
+}
+
+static void bemit_fldcw(const ir_node *node)
+{
+	bemit8(0xD9); // fldcw
+	bemit_mod_am(5, node);
 }
 
 static void bemit_fldz(const ir_node *node)
@@ -3480,6 +3509,12 @@ static void bemit_fsubp(const ir_node *node)
 static void bemit_fsubr(const ir_node *node)
 {
 	bemit_fbinop(node, 5, 4);
+}
+
+static void bemit_fnstcw(const ir_node *node)
+{
+	bemit8(0xD9); // fnstcw
+	bemit_mod_am(7, node);
 }
 
 static void bemit_fnstsw(void)
@@ -3578,6 +3613,8 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Dec,           bemit_dec);
 	register_emitter(op_ia32_DecMem,        bemit_decmem);
 	register_emitter(op_ia32_Div,           bemit_div);
+	register_emitter(op_ia32_FldCW,         bemit_fldcw);
+	register_emitter(op_ia32_FnstCW,        bemit_fnstcw);
 	register_emitter(op_ia32_FtstFnstsw,    bemit_ftstfnstsw);
 	register_emitter(op_ia32_FucomFnstsw,   bemit_fucomfnstsw);
 	register_emitter(op_ia32_FucompFnstsw,  bemit_fucompfnstsw);
@@ -3634,6 +3671,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_faddp,         bemit_faddp);
 	register_emitter(op_ia32_fchs,          bemit_fchs);
 	register_emitter(op_ia32_fild,          bemit_fild);
+	register_emitter(op_ia32_fistp,         bemit_fistp);
 	register_emitter(op_ia32_fld,           bemit_fld);
 	register_emitter(op_ia32_fld1,          bemit_fld1);
 	register_emitter(op_ia32_fldz,          bemit_fldz);
