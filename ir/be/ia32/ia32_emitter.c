@@ -3770,10 +3770,22 @@ static void bemit_ftstfnstsw(const ir_node *node)
 	bemit_fnstsw();
 }
 
+static void bemit_fucomi(const ir_node *node)
+{
+	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
+	bemit8(0xDB); // fucomi
+	bemit8(0xE8 + attr->x87[1]->index);
+}
+
+static void bemit_fucomip(const ir_node *node)
+{
+	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
+	bemit8(0xDF); // fucomip
+	bemit8(0xE8 + attr->x87[1]->index);
+}
+
 static void bemit_fucomfnstsw(const ir_node *node)
 {
-	(void)node;
-
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(0xDD); // fucom
 	bemit8(0xE0 + attr->x87[1]->index);
@@ -3782,8 +3794,6 @@ static void bemit_fucomfnstsw(const ir_node *node)
 
 static void bemit_fucompfnstsw(const ir_node *node)
 {
-	(void)node;
-
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
 	bemit8(0xDD); // fucomp
 	bemit8(0xE8 + attr->x87[1]->index);
@@ -3856,7 +3866,9 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_FnstCW,        bemit_fnstcw);
 	register_emitter(op_ia32_FtstFnstsw,    bemit_ftstfnstsw);
 	register_emitter(op_ia32_FucomFnstsw,   bemit_fucomfnstsw);
+	register_emitter(op_ia32_Fucomi,        bemit_fucomi);
 	register_emitter(op_ia32_FucompFnstsw,  bemit_fucompfnstsw);
+	register_emitter(op_ia32_Fucompi,       bemit_fucomip);
 	register_emitter(op_ia32_FucomppFnstsw, bemit_fucomppfnstsw);
 	register_emitter(op_ia32_IDiv,          bemit_idiv);
 	register_emitter(op_ia32_IJmp,          bemit_ijmp);
