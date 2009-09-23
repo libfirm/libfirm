@@ -3394,11 +3394,11 @@ static void bemit_fist(const ir_node *node)
 	switch (get_mode_size_bits(get_ia32_ls_mode(node))) {
 		case 16:
 			bemit8(0xDF); // fists
-			return;
+			break;
 
 		case 32:
 			bemit8(0xDB); // fistl
-			return;
+			break;
 
 		default:
 			panic("invalid mode size");
