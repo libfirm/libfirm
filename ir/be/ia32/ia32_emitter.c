@@ -3485,6 +3485,13 @@ static void bemit_fpop(const ir_node *node)
 	bemit8(0xD8 + attr->x87[0]->index);
 }
 
+static void bemit_fpush(const ir_node *node)
+{
+	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
+	bemit8(0xD9);
+	bemit8(0xC0 + attr->x87[0]->index);
+}
+
 static void bemit_fpushcopy(const ir_node *node)
 {
 	const ia32_x87_attr_t *attr = get_ia32_x87_attr_const(node);
@@ -3714,6 +3721,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_fmul,          bemit_fmul);
 	register_emitter(op_ia32_fmulp,         bemit_fmulp);
 	register_emitter(op_ia32_fpop,          bemit_fpop);
+	register_emitter(op_ia32_fpush,         bemit_fpush);
 	register_emitter(op_ia32_fpushCopy,     bemit_fpushcopy);
 	register_emitter(op_ia32_fst,           bemit_fst);
 	register_emitter(op_ia32_fstp,          bemit_fstp);
