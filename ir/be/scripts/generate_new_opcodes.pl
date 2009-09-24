@@ -505,6 +505,8 @@ EOF
 						$temp .= "\tflags |= arch_irn_flags_rematerializable;\n";
 					} elsif ($flag eq "N") {
 						$temp .= "\tflags |= arch_irn_flags_dont_spill;\n";
+					} elsif ($flag eq "J") {
+						$temp .= "\t flags |= arch_irn_flags_simple_jump;\n";
 					} else {
 						die "Fatal error: unknown flag $flag for ${op}\n";
 					}

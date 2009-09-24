@@ -5,7 +5,6 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "mips";
-$new_emit_syntax = 1;
 
 # register types:
 #   0 - no special type

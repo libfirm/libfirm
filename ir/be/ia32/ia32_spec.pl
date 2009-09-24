@@ -4,7 +4,6 @@
 
 use File::Basename;
 
-$new_emit_syntax = 1;
 my $myname = $0;
 
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
@@ -1193,12 +1192,13 @@ SwitchJmp => {
 },
 
 Jmp => {
-	state    => "pinned",
-	op_flags => "X",
-	reg_req  => { out => [ "none" ] },
-	latency  => 1,
-	units    => [ "BRANCH" ],
-	mode     => "mode_X",
+	state     => "pinned",
+	irn_flags => "J",
+	op_flags  => "X",
+	reg_req   => { out => [ "none" ] },
+	latency   => 1,
+	units     => [ "BRANCH" ],
+	mode      => "mode_X",
 },
 
 IJmp => {

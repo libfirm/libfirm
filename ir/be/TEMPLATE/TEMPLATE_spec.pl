@@ -2,8 +2,6 @@
 # $Id$
 # This is a template specification for the Firm-Backend
 
-$new_emit_syntax = 1;
-
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "TEMPLATE";
@@ -320,10 +318,11 @@ Const => {
 # Control Flow
 
 Jmp => {
-	state    => "pinned",
-	op_flags => "X",
-	reg_req  => { out => [ "none" ] },
-	mode     => "mode_X",
+	state     => "pinned",
+	op_flags  => "X",
+	irn_flags => "J",
+	reg_req   => { out => [ "none" ] },
+	mode      => "mode_X",
 },
 
 # Load / Store

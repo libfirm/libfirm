@@ -37,7 +37,7 @@ our $arch;
 our $comment_string = "/*";
 our $comment_string_end = "*/" ;
 our %nodes;
-our $new_emit_syntax = 0;
+our $new_emit_syntax = 1;
 
 # include spec file
 
