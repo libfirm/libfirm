@@ -363,7 +363,8 @@ arm_shift_modifier get_arm_shift_modifier(const ir_node *node) {
 static void init_arm_attributes(ir_node *node, int flags,
                          const arch_register_req_t ** in_reqs,
                          const be_execution_unit_t ***execution_units,
-						 int n_res) {
+						 int n_res)
+{
 	ir_graph       *irg  = get_irn_irg(node);
 	struct obstack *obst = get_irg_obstack(irg);
 	arm_attr_t     *attr = get_arm_attr(node);
@@ -378,6 +379,15 @@ static void init_arm_attributes(ir_node *node, int flags,
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
+}
+
+void init_arm_load_store_attributes(ir_node *res, ir_entity *entity,
+                                    int entity_sign, long offset)
+{
+	arm_load_store_attr_t *attr = get_irn_generic_attr(res);
+	attr->entity      = entity;
+	attr->entity_sign = entity_sign;
+	attr->offset      = offset;
 }
 
 /************************************************
@@ -471,6 +481,29 @@ static int cmp_attr_arm_fpaConst(ir_node *a, ir_node *b) {
 	attr_b = get_arm_fpaConst_attr_const(b);
 
 	return attr_a->tv != attr_b->tv;
+}
+
+arm_load_store_attr_t *get_arm_load_store_attr(ir_node *node)
+{
+	return (arm_load_store_attr_t*) get_irn_generic_attr(node);
+}
+
+static int cmp_attr_arm_load_store(ir_node *a, ir_node *b)
+{
+	const arm_load_store_attr_t *attr_a;
+	const arm_load_store_attr_t *attr_b;
+
+	if (cmp_attr_arm(a, b))
+		return 1;
+
+	attr_a = get_arm_load_store_attr(a);
+	attr_b = get_arm_load_store_attr(b);
+	if (attr_a->entity != attr_b->entity
+			|| attr_a->entity_sign != attr_b->entity_sign
+			|| attr_a->offset != attr_b->offset)
+		return 1;
+
+	return 0;
 }
 
 /** copies the ARM attributes of a node. */

@@ -5,7 +5,6 @@
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "arm";
-$new_emit_syntax = 1;
 
 # the number of additional opcodes you want to register
 #$additional_opcodes = 0;
@@ -27,38 +26,38 @@ $state       = 32; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ "name" => "r0", "type"  => $caller_save },
-		{ "name" => "r1", "type"  => $caller_save },
-		{ "name" => "r2", "type"  => $caller_save },
-		{ "name" => "r3", "type"  => $caller_save },
-		{ "name" => "r4", "type"  => $callee_save },
-		{ "name" => "r5", "type"  => $callee_save },
-		{ "name" => "r6", "type"  => $callee_save },
-		{ "name" => "r7", "type"  => $callee_save },
-		{ "name" => "r8", "type"  => $callee_save },
-		{ "name" => "r9", "type"  => $callee_save },
-		{ "name" => "r10", "type" => $callee_save },
-		{ "name" => "r11", "type" => $callee_save },
-		{ "name" => "r12", "type" => $ignore | $callee_save }, # reserved for linker
-		{ "name" => "sp", "type"  => $ignore | $callee_save }, # this is our stack pointer
-		{ "name" => "lr", "type"  => $callee_save | $caller_save }, # this is our return address
-		{ "name" => "pc", "type"  => $ignore | $callee_save }, # this is our program counter
+		{ name => "r0",  type => $caller_save },
+		{ name => "r1",  type => $caller_save },
+		{ name => "r2",  type => $caller_save },
+		{ name => "r3",  type => $caller_save },
+		{ name => "r4",  type => $callee_save },
+		{ name => "r5",  type => $callee_save },
+		{ name => "r6",  type => $callee_save },
+		{ name => "r7",  type => $callee_save },
+		{ name => "r8",  type => $callee_save },
+		{ name => "r9",  type => $callee_save },
+		{ name => "r10", type => $callee_save },
+		{ name => "r11", type => $callee_save },
+		{ name => "r12", type => $ignore | $callee_save }, # reserved for linker
+		{ name => "sp",  type => $ignore | $callee_save }, # this is our stack pointer
+		{ name => "lr",  type => $callee_save | $caller_save }, # this is our return address
+		{ name => "pc",  type => $ignore | $callee_save }, # this is our program counter
 		{ name => "gp_UKNWN", type => $ignore | $arbitrary | $virtual },  # we need a dummy register for Unknown nodes
-		{ "mode" => $mode_gp }
+		{ mode => $mode_gp }
 	],
 	fpa  => [
-		{ "name" => "f0", "type" => 1 },
-		{ "name" => "f1", "type" => 1 },
-		{ "name" => "f2", "type" => 1 },
-		{ "name" => "f3", "type" => 1 },
-		{ "name" => "f4", "type" => 1 },
-		{ "name" => "f5", "type" => 1 },
-		{ "name" => "f6", "type" => 1 },
-		{ "name" => "f7", "type" => 1 },
-		{ name => "fpa_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
-		{ "mode" => $mode_fpa }
+		{ name => "f0", type => $caller_save },
+		{ name => "f1", type => $caller_save },
+		{ name => "f2", type => $caller_save },
+		{ name => "f3", type => $caller_save },
+		{ name => "f4", type => $caller_save },
+		{ name => "f5", type => $caller_save },
+		{ name => "f6", type => $caller_save },
+		{ name => "f7", type => $caller_save },
+		{ name => "fpa_UKNWN", type => $ignore | $arbitrary | $virtual },  # we need a dummy register for Unknown nodes
+		{ mode => $mode_fpa }
 	]
-); # %reg_classes
+);
 
 %emit_templates = (
 	M  => "${arch}_emit_mode(node);",
@@ -95,14 +94,18 @@ $default_copy_attr = "arm_copy_attr";
 	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_fpaConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
+	arm_load_store_attr_t =>
+		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_arm_load_store_attributes(res, entity, entity_sign, offset);",
 );
 
 %compare_attr = (
-	arm_attr_t           => "cmp_attr_arm",
-	arm_SymConst_attr_t  => "cmp_attr_arm_SymConst",
-	arm_CondJmp_attr_t   => "cmp_attr_arm_CondJmp",
-	arm_SwitchJmp_attr_t => "cmp_attr_arm_SwitchJmp",
-	arm_fpaConst_attr_t  => "cmp_attr_arm_fpaConst",
+	arm_attr_t            => "cmp_attr_arm",
+	arm_SymConst_attr_t   => "cmp_attr_arm_SymConst",
+	arm_CondJmp_attr_t    => "cmp_attr_arm_CondJmp",
+	arm_SwitchJmp_attr_t  => "cmp_attr_arm_SwitchJmp",
+	arm_fpaConst_attr_t   => "cmp_attr_arm_fpaConst",
+	arm_load_store_attr_t => "cmp_attr_arm_load_store",
 );
 
 #%operands = (
@@ -171,7 +174,6 @@ Add => {
 	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. add %D0, %S0, %S1%X'
 },
@@ -181,7 +183,6 @@ Add_i => {
 	comment   => "construct Add: Add(a, const) = Add(const, a) = a + const",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. add %D0, %S0, %C'
 },
@@ -226,7 +227,6 @@ And => {
 	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. and %D0, %S0, %S1%X'
 },
@@ -238,7 +238,6 @@ And_i => {
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. and %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Or => {
@@ -247,7 +246,6 @@ Or => {
 	comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. orr %D0, %S0, %S1%X'
 },
@@ -258,7 +256,6 @@ Or_i => {
 	attr      => "long imm",
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	emit      => '. orr %D0, %S0, %C'
 },
 
@@ -268,7 +265,6 @@ Eor => {
 	comment   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. eor %D0, %S0, %S1%X'
 },
@@ -279,7 +275,6 @@ Eor_i => {
 	attr      => "long imm",
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	emit      => '. eor %D0, %S0, %C'
 },
 
@@ -290,7 +285,6 @@ Bic => {
 	comment   => "construct Bic: Bic(a, b) = a AND ~b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. bic %D0, %S0, %S1%X'
 },
@@ -302,7 +296,6 @@ Bic_i => {
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. bic %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Sub => {
@@ -310,7 +303,6 @@ Sub => {
 	comment   => "construct Sub: Sub(a, b) = a - b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. sub %D0, %S0, %S1%X'
 },
@@ -320,7 +312,6 @@ Sub_i => {
 	comment   => "construct Sub: Sub(a, const) = a - const",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. sub %D0, %S0, %C',
 },
@@ -330,7 +321,6 @@ Rsb => {
 	comment   => "construct Rsb: Rsb(a, b) = b - a",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
 	emit      => '. rsb %D0, %S0, %S1%X'
 },
@@ -342,7 +332,6 @@ Rsb_i => {
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. rsb %D0, %S0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Shl => {
@@ -392,7 +381,6 @@ Mov => {
 	comment   => "construct Mov: a = b",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. mov %D0, %S0%X'
 },
@@ -404,7 +392,6 @@ Mov_i => {
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "gp" ] },
 	emit      => '. mov %D0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 Mvn => {
@@ -412,7 +399,6 @@ Mvn => {
 	comment   => "construct Not: Not(a) = !a",
 	attr      => "arm_shift_modifier mod, long shf",
 	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	cmp_attr  => 'return (attr_a->instr_fl != attr_b->instr_fl) || (attr_a->imm_value != attr_b->imm_value);',
 	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
 	emit      => '. mvn %D0, %S0%X'
 },
@@ -422,7 +408,6 @@ Mvn_i => {
 	comment   => "represents a negated integer constant",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "out" => [ "gp" ] },
 	emit      => '. mvn %D0, %C',
 },
@@ -461,7 +446,6 @@ CopyB => {
 	comment   => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
 	attr      => "long imm",
 	init_attr => 'attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
 	outs      => [ "M" ],
 },
@@ -498,6 +482,14 @@ TstBra => {
 	attr_type => "arm_CondJmp_attr_t",
 },
 
+Jmp => {
+	state     => "pinned",
+	op_flags  => "X",
+	irn_flags => "J",
+	reg_req   => { out => [ "none" ] },
+	mode      => "mode_X",
+},
+
 SwitchJmp => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
@@ -512,84 +504,95 @@ SwitchJmp => {
 
 # Load / Store
 
-Load => {
+Ldr => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. ldr %D0, [%S0, #0]',
-	outs      => [ "res", "M" ],
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Loadb => {
+Ldrb => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. ldrb %D0, [%S0, #0]',
-	outs      => [ "res", "M" ],
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Loadbs => {
+Ldrbs => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. ldrsb %D0, [%S0, #0]',
-	outs      => [ "res", "M" ],
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Loadh => {
+Ldrh => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. ldrh %D0, [%S0, #0]',
-	outs      => [ "res", "M" ],
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Loadhs => {
+Ldrhs => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
 	emit      => '. ldrsh %D0, [%S0, #0]',
-	outs      => [ "res", "M" ],
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Storeb => {
+Strb => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "mem" ],
 	reg_req   => { "in" => [ "gp", "gp", "none" ], "out" => [ "none" ] },
 	emit      => '. strb %S1, [%S0, #0]',
 	mode      => "mode_M",
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Storeh => {
+Strh => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "mem" ],
 	reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
 	emit      => '. strh %S1, [%S0, #0]',
 	mode      => "mode_M",
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
-Store => {
+Str => {
 	op_flags  => "L|F",
-	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "mem" ],
 	reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
 	emit      => '. str %S1, [%S0, #0]',
 	mode      => "mode_M",
+	attr_type => "arm_load_store_attr_t",
+	attr      => "ir_entity *entity, int entity_sign, long offset",
 },
 
 StoreStackM4Inc => {
@@ -639,7 +642,6 @@ fpaAdf_i => {
 	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. adf%M %D0, %S0, %C',
 },
@@ -657,7 +659,6 @@ fpaMuf_i => {
 	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. muf%M %D0, %S0, %C',
 },
@@ -700,7 +701,6 @@ fpaSuf_i => {
 	comment   => "construct FPA Sub: Sub(a, b) = a - b",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. suf%M %D0, %S0, %C'
 },
@@ -717,7 +717,6 @@ fpaRsf_i => {
 	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
 	attr      => "long imm",
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
 	emit      => '. rsf%M %D0, %S0, %C'
 },
@@ -735,7 +734,6 @@ fpaDvf_i => {
 	comment   => "construct FPA Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode, long imm",
 	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. dvf%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -754,7 +752,6 @@ fpaRdf_i => {
 	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode, long imm",
 	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. rdf%M %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
@@ -773,7 +770,6 @@ fpaFdv_i => {
 	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode, long imm",
 	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. fdv%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -792,7 +788,6 @@ fpaFrd_i => {
 	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode, long imm",
 	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;',
 	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
 	emit      =>'. frd%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
@@ -812,7 +807,6 @@ fpaMvf_i => {
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
 	emit      => '. mvf%M %D0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 fpaMnf => {
@@ -829,7 +823,6 @@ fpaMnf_i => {
 	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
 	reg_req   => { "out" => [ "fpa" ] },
 	emit      => '. mnf%M %D0, %C',
-	cmp_attr  => 'return attr_a->imm_value != attr_b->imm_value;'
 },
 
 fpaAbs => {

@@ -140,6 +140,9 @@ void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
  */
 arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
 
+void init_arm_load_store_attributes(ir_node *res, ir_entity *entity,
+                                    int entity_sign, long offset);
+
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 

@@ -186,10 +186,41 @@ static void arm_before_ra(void *self)
 	/* Some stuff you need to do immediately after register allocation */
 }
 
-/**
- * We transform Spill and Reload here. This needs to be done before
- * stack biasing otherwise we would miss the corrected offset for these nodes.
- */
+#if 0
+static void transform_Reload(ir_node *node)
+{
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
+	ir_entity *entity = be_get_frame_entity(node);
+	ir_node   *load;
+
+	ir_node  *sched_point = sched_prev(node);
+
+	load = new_bd_arm_Ldr(dbgi, block, ptr, mem, entity, false, 0);
+}
+
+static void after_ra_walker(ir_node *block, void *data)
+{
+	ir_node *node, *prev;
+	(void) data;
+
+	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
+		prev = sched_prev(node);
+
+		if (be_is_Reload(node)) {
+			transform_Reload(node);
+		} else if (be_is_Spill(node)) {
+			transform_Spill(node);
+		} else if (be_is_MemPerm(node)) {
+			panic("memperm not implemented yet");
+		}
+	}
+}
+#endif
+
 static void arm_after_ra(void *self)
 {
 	arm_code_gen_t *cg = self;
@@ -632,6 +663,8 @@ static arch_env_t *arm_init(FILE *file_handle) {
 	arm_create_opcodes(&arm_irn_ops);
 	arm_handle_intrinsics();
 
+	be_gas_emit_types = false;
+
 	/* needed for the debug support */
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 	be_emit_cstring(".Ltext0:\n");
@@ -816,7 +849,8 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 /**
  * Builds the ARM epilogue
  */
-static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map) {
+static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
+{
 	arm_abi_env_t *env = self;
 	ir_node *curr_sp = be_abi_reg_map_get(reg_map, env->arch_env->sp);
 	ir_node *curr_bp = be_abi_reg_map_get(reg_map, env->arch_env->bp);
@@ -825,13 +859,8 @@ static void arm_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_m
 
 	// TODO: Activate Omit fp in epilogue
 	if (env->flags.try_omit_fp) {
-		curr_sp = be_new_IncSP(env->arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
-
-		curr_lr = be_new_CopyKeep_single(&arm_reg_classes[CLASS_arm_gp], bl, curr_lr, curr_sp, get_irn_mode(curr_lr));
-		be_set_constr_single_reg_out(curr_lr, 0, &arm_gp_regs[REG_LR], 0);
-
-		curr_pc = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], bl, curr_lr );
-		be_set_constr_single_reg_out(curr_pc, BE_OUT_POS(0), &arm_gp_regs[REG_PC], 0);
+		ir_node *incsp = be_new_IncSP(env->arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		curr_sp = incsp;
 	} else {
 		ir_node *load_node;
 

@@ -111,6 +111,13 @@ typedef struct _arm_attr_t {
 	long     imm_value;                  /**< immediate */
 } arm_attr_t;
 
+typedef struct arm_load_store_attr_t {
+	arm_attr_t  attr;
+	ir_entity  *entity;
+	long        offset;
+	bool        entity_sign : 1;
+} arm_load_store_attr_t;
+
 /** Attributes for a SymConst */
 typedef struct _arm_SymConst_attr_t {
 	arm_attr_t  attr;                   /**< base attributes */

@@ -231,9 +231,10 @@ static void peephole_be_Spill(ir_node *node) {
 			panic("peephole_be_Spill: spill not supported for this mode");
 		}
 	} else if (mode_is_dataM(mode)) {
-		 /* transform into Store */;
-		 store = new_bd_arm_Store(dbg, block, ptr, value, get_irg_no_mem(irg));
-		 sched_add_before(node, store);
+		/* transform into Store */;
+		store = new_bd_arm_Str(dbg, block, ptr, value, get_irg_no_mem(irg),
+		                       NULL, 0, 0);
+		sched_add_before(node, store);
 	} else {
 		panic("peephole_be_Spill: spill not supported for this mode");
 	}
@@ -285,9 +286,9 @@ static void peephole_be_Reload(ir_node *node) {
 		}
 	} else if (mode_is_dataM(mode)) {
 		/* transform into Store */;
-		load = new_bd_arm_Load(dbg, block, ptr, mem);
+		load = new_bd_arm_Ldr(dbg, block, ptr, mem, NULL, 0, 0);
 		sched_add_before(node, load);
-		proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_arm_Load_res);
+		proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_arm_Ldr_res);
 		arch_set_irn_register(proj, reg);
 	} else {
 		panic("peephole_be_Spill: spill not supported for this mode");

@@ -339,6 +339,7 @@ static ir_node *gen_Add(ir_node *node) {
 			return new_bd_arm_Mla(dbg, block, new_op1, new_op2, new_op3, mode);
 		}
 
+#if 0
 		/* is the first a shifter */
 		v = is_shifter_operand(new_op1, &mod);
 		if (v) {
@@ -351,6 +352,7 @@ static ir_node *gen_Add(ir_node *node) {
 			new_op2 = get_irn_n(new_op2, 0);
 			return new_bd_arm_Add(dbg, block, new_op1, new_op2, mode, mod, v);
 		}
+#endif
 
 		/* normal ADD */
 		return new_bd_arm_Add(dbg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0);
@@ -820,13 +822,16 @@ static ir_node *gen_Load(ir_node *node) {
 			/* sign extended loads */
 			switch (get_mode_size_bits(mode)) {
 			case 8:
-				new_load = new_bd_arm_Loadbs(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldrbs(dbg, block, new_ptr, new_mem, NULL,
+				                            0, 0);
 				break;
 			case 16:
-				new_load = new_bd_arm_Loadhs(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldrhs(dbg, block, new_ptr, new_mem, NULL,
+				                            0, 0);
 				break;
 			case 32:
-				new_load = new_bd_arm_Load(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldr(dbg, block, new_ptr, new_mem, NULL,
+				                          0, 0);
 				break;
 			default:
 				panic("mode size not supported");
@@ -835,13 +840,16 @@ static ir_node *gen_Load(ir_node *node) {
 			/* zero extended loads */
 			switch (get_mode_size_bits(mode)) {
 			case 8:
-				new_load = new_bd_arm_Loadb(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldrb(dbg, block, new_ptr, new_mem, NULL,
+				                           0, 0);
 				break;
 			case 16:
-				new_load = new_bd_arm_Loadh(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldrh(dbg, block, new_ptr, new_mem, NULL,
+				                           0, 0);
 				break;
 			case 32:
-				new_load = new_bd_arm_Load(dbg, block, new_ptr, new_mem);
+				new_load = new_bd_arm_Ldr(dbg, block, new_ptr, new_mem, NULL,
+				                          0, 0);
 				break;
 			default:
 				panic("mode size not supported");
@@ -853,7 +861,7 @@ static ir_node *gen_Load(ir_node *node) {
 	/* check for special case: the loaded value might not be used */
 	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
 		/* add a result proj and a Keep to produce a pseudo use */
-		ir_node *proj = new_r_Proj(block, new_load, mode_Iu, pn_arm_Load_res);
+		ir_node *proj = new_r_Proj(block, new_load, mode_Iu, pn_arm_Ldr_res);
 		be_new_Keep(block, 1, &proj);
 	}
 
@@ -865,7 +873,8 @@ static ir_node *gen_Load(ir_node *node) {
  *
  * @return the created ARM Store node
  */
-static ir_node *gen_Store(ir_node *node) {
+static ir_node *gen_Store(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Store_ptr(node);
 	ir_node  *new_ptr  = be_transform_node(ptr);
@@ -891,15 +900,32 @@ static ir_node *gen_Store(ir_node *node) {
 		assert(mode_is_data(mode) && "unsupported mode for Store");
 		switch (get_mode_size_bits(mode)) {
 		case 8:
-			new_store = new_bd_arm_Storeb(dbg, block, new_ptr, new_val, new_mem);
+			new_store = new_bd_arm_Strb(dbg, block, new_ptr, new_val, new_mem,
+			                            NULL, 0, 0);
+			break;
 		case 16:
-			new_store = new_bd_arm_Storeh(dbg, block, new_ptr, new_val, new_mem);
+			new_store = new_bd_arm_Strh(dbg, block, new_ptr, new_val, new_mem,
+			                            NULL, 0, 0);
+			break;
+		case 32:
+			new_store = new_bd_arm_Str(dbg, block, new_ptr, new_val, new_mem,
+			                           NULL, 0, 0);
+			break;
 		default:
-			new_store = new_bd_arm_Store(dbg, block, new_ptr, new_val, new_mem);
+			panic("unsupported store size %d bits\n", get_mode_size_bits(mode));
 		}
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
+}
+
+static ir_node *gen_Jmp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	return new_bd_arm_Jmp(dbgi, new_block);
 }
 
 /**
@@ -1276,16 +1302,16 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 
 	/* renumber the proj */
 	switch (get_arm_irn_opcode(new_load)) {
-	case iro_arm_Load:
-	case iro_arm_Loadb:
-	case iro_arm_Loadbs:
-	case iro_arm_Loadh:
-	case iro_arm_Loadhs:
+	case iro_arm_Ldr:
+	case iro_arm_Ldrb:
+	case iro_arm_Ldrbs:
+	case iro_arm_Ldrh:
+	case iro_arm_Ldrhs:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (proj == pn_Load_res) {
-			return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_arm_Load_res);
+			return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_arm_Ldr_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, block, new_load, mode_M, pn_arm_Load_M);
+			return new_rd_Proj(dbgi, block, new_load, mode_M, pn_arm_Ldr_M);
 		}
 		break;
 	case iro_arm_fpaLdf:
@@ -1536,7 +1562,9 @@ static ir_node *gen_Unknown(ir_node *node) {
 /**
  * Change some phi modes
  */
-static ir_node *gen_Phi(ir_node *node) {
+static ir_node *gen_Phi(ir_node *node)
+{
+	const arch_register_req_t *req;
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_graph *irg   = current_ir_graph;
 	dbg_info *dbgi  = get_irn_dbg_info(node);
@@ -1548,13 +1576,19 @@ static ir_node *gen_Phi(ir_node *node) {
 		assert(get_mode_size_bits(mode) <= 32);
 		/* all integer operations are on 32bit registers now */
 		mode = mode_Iu;
+		req  = arm_reg_classes[CLASS_arm_gp].class_req;
+	} else {
+		req = arch_no_register_req;
 	}
 
 	/* phi nodes allow loops, so we use the old arguments for now
 	 * and fix this later */
-	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node), get_irn_in(node) + 1);
+	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node),
+	                  get_irn_in(node) + 1);
 	copy_node_attr(node, phi);
 	be_duplicate_deps(node, phi);
+
+	arch_set_out_register_req(phi, 0, req);
 
 	be_enqueue_preds(node);
 
@@ -1624,6 +1658,7 @@ static void arm_register_transformers(void) {
 	GEN(Load);
 	GEN(Store);
 	GEN(Cond);
+	GEN(Jmp);
 
 	BAD(ASM);	/* unsupported yet */
 	GEN(CopyB);

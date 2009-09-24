@@ -23,8 +23,6 @@
  * @author  Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
-#define SILENCER
-
 #include "config.h"
 
 #include <limits.h>
@@ -60,7 +58,6 @@
 #include "../benode.h"
 
 #define BLOCK_PREFIX ".L"
-
 #define SNPRINTF_BUF_LEN 128
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -439,7 +436,7 @@ static void emit_arm_CmpBra(const ir_node *irn) {
 			be_emit_cstring(" */");
 			be_emit_finish_line_gas(proj_false);
 		} else {
-			be_emit_cstring("b ");
+			be_emit_cstring("\tb ");
 			arm_emit_cfop_target(proj_false);
 			be_emit_finish_line_gas(proj_false);
 		}
@@ -765,17 +762,27 @@ static void emit_arm_SwitchJmp(const ir_node *irn) {
 /* emit_be                                                              */
 /************************************************************************/
 
-static void emit_be_Call(const ir_node *irn) {
-	ir_entity *ent = be_Call_get_entity(irn);
+static void arm_emit_entity(ir_entity *entity)
+{
+	set_entity_backend_marked(entity, 1);
+	be_emit_ident(get_entity_ld_ident(entity));
+}
 
-	be_emit_cstring("\tbl ");
-	if (ent) {
-		set_entity_backend_marked(ent, 1);
-		be_emit_ident(get_entity_ld_ident(ent));
+static void emit_be_Call(const ir_node *irn)
+{
+	ir_entity *entity = be_Call_get_entity(irn);
+
+	if (entity != NULL) {
+		be_emit_cstring("\tbl ");
+		arm_emit_entity(entity);
+		be_emit_finish_line_gas(irn);
 	} else {
+		be_emit_cstring("\tmov lr, pc");
+		be_emit_finish_line_gas(irn);
+		be_emit_cstring("\tmov pc, ");
 		arm_emit_source_register(irn, be_pos_Call_ptr);
+		be_emit_finish_line_gas(irn);
 	}
-	be_emit_finish_line_gas(irn);
 }
 
 /** Emit an IncSP node */
@@ -893,7 +900,8 @@ static void emit_be_Reload(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_be_Perm(const ir_node *irn) {
+static void emit_be_Perm(const ir_node *irn)
+{
 	be_emit_cstring("\teor ");
 	arm_emit_source_register(irn, 0);
 	be_emit_cstring(", ");
@@ -919,11 +927,61 @@ static void emit_be_Perm(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
+static void emit_be_MemPerm(const ir_node *node)
+{
+	int i;
+	int memperm_arity;
+	int sp_change = 0;
+
+	/* TODO: this implementation is slower than necessary.
+	   The longterm goal is however to avoid the memperm node completely */
+
+	memperm_arity = be_get_MemPerm_entity_arity(node);
+	if (memperm_arity > 12)
+		panic("memperm with more than 12 inputs not supported yet");
+
+	for (i = 0; i < memperm_arity; ++i) {
+		int offset;
+		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
+
+		/* spill register */
+		be_emit_irprintf("\tstr r%d, [sp, #-4]!", i);
+		be_emit_finish_line_gas(node);
+		sp_change += 4;
+		/* load from entity */
+		offset = get_entity_offset(entity) + sp_change;
+		be_emit_irprintf("\tldr r%d, [sp, #%d]", i, offset);
+		be_emit_finish_line_gas(node);
+	}
+
+	for (i = memperm_arity-1; i >= 0; --i) {
+		int        offset;
+		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
+
+		/* store to new entity */
+		offset = get_entity_offset(entity) + sp_change;
+		be_emit_irprintf("\tstr r%d, [sp, #%d]", i, offset);
+		be_emit_finish_line_gas(node);
+		/* restore register */
+		be_emit_irprintf("\tldr r%d, [sp], #4", i);
+		sp_change -= 4;
+		be_emit_finish_line_gas(node);
+	}
+	assert(sp_change == 0);
+}
+
+static void emit_be_Return(const ir_node *node)
+{
+	be_emit_cstring("\tmov pc, lr");
+	be_emit_finish_line_gas(node);
+}
+
 /************************************************************************/
 /* emit                                                                 */
 /************************************************************************/
 
-static void emit_Jmp(const ir_node *node) {
+static void emit_arm_Jmp(const ir_node *node)
+{
 	ir_node *block, *next_block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -976,9 +1034,9 @@ static void emit_arm_LdTls(const ir_node *irn) {
  *
  ***********************************************************************************/
 
-static void emit_silence(const ir_node *irn) {
+static void emit_nothing(const ir_node *irn)
+{
 	(void) irn;
-	/* Do nothing. */
 }
 
 /**
@@ -989,7 +1047,8 @@ typedef void (emit_func)(const ir_node *irn);
 /**
  * Set a node emitter. Make it a bit more type safe.
  */
-static inline void set_emitter(ir_op *op, emit_func arm_emit_node) {
+static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
+{
 	op->ops.generic = (op_func)arm_emit_node;
 }
 
@@ -997,59 +1056,40 @@ static inline void set_emitter(ir_op *op, emit_func arm_emit_node) {
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
-static void arm_register_emitters(void) {
-
-#define ARM_EMIT(a)  set_emitter(op_arm_##a, emit_arm_##a)
-#define EMIT(a)      set_emitter(op_##a, emit_##a)
-#define BE_EMIT(a)   set_emitter(op_be_##a, emit_be_##a)
-#define SILENCE(a)   set_emitter(op_##a, emit_silence)
-
+static void arm_register_emitters(void)
+{
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	arm_register_spec_emitters();
 
-	/* other emitter functions */
-	ARM_EMIT(CmpBra);
-	ARM_EMIT(TstBra);
-	ARM_EMIT(fpaCmfBra);
-	ARM_EMIT(fpaCmfeBra);
-	ARM_EMIT(CopyB);
-// 	ARM_EMIT(CopyB_i);
-//	ARM_EMIT(Const);
-	ARM_EMIT(SymConst);
-	ARM_EMIT(SwitchJmp);
-	ARM_EMIT(fpaDbl2GP);
-	ARM_EMIT(fpaConst);
-	ARM_EMIT(LdTls);
+	/* custom emitter */
+	set_emitter(op_arm_CmpBra,     emit_arm_CmpBra);
+	set_emitter(op_arm_CopyB,      emit_arm_CopyB);
+	set_emitter(op_arm_fpaCmfBra,  emit_arm_fpaCmfBra);
+	set_emitter(op_arm_fpaCmfeBra, emit_arm_fpaCmfeBra);
+	set_emitter(op_arm_fpaConst,   emit_arm_fpaConst);
+	set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
+	set_emitter(op_arm_Jmp,        emit_arm_Jmp);
+	set_emitter(op_arm_LdTls,      emit_arm_LdTls);
+	set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
+	set_emitter(op_arm_SymConst,   emit_arm_SymConst);
+	set_emitter(op_arm_TstBra,     emit_arm_TstBra);
+	set_emitter(op_be_Call,        emit_be_Call);
+	set_emitter(op_be_Copy,        emit_be_Copy);
+	set_emitter(op_be_IncSP,       emit_be_IncSP);
+	set_emitter(op_be_MemPerm,     emit_be_MemPerm);
+	set_emitter(op_be_Perm,        emit_be_Perm);
+	set_emitter(op_be_Reload,      emit_be_Reload);
+	set_emitter(op_be_Return,      emit_be_Return);
+	set_emitter(op_be_Spill,       emit_be_Spill);
 
-	/* benode emitter */
- 	BE_EMIT(Call);
- 	BE_EMIT(IncSP);
-	BE_EMIT(Copy);
-	BE_EMIT(Spill);
-	BE_EMIT(Reload);
-	BE_EMIT(Perm);
-
-	/* firm emitter */
-	EMIT(Jmp);
-
-	/* noisy stuff */
-#ifdef SILENCER
-	SILENCE(Proj);
-	SILENCE(Phi);
-	SILENCE(be_Keep);
-	SILENCE(be_CopyKeep);
-	SILENCE(be_Start);
-	SILENCE(be_Barrier);
-	SILENCE(be_Return);
-#endif
-
-#undef ARM_EMIT
-#undef BE_EMIT
-#undef EMIT
-#undef SILENCE
+	/* no need to emit anything for the following nodes */
+	set_emitter(op_Phi,            emit_nothing);
+	set_emitter(op_be_Keep,        emit_nothing);
+	set_emitter(op_be_Start,       emit_nothing);
+	set_emitter(op_be_Barrier,     emit_nothing);
 }
 
 /**
@@ -1063,8 +1103,8 @@ static void arm_emit_node(const ir_node *irn) {
 		be_dbg_set_dbg_info(get_irn_dbg_info(irn));
 		(*emit)(irn);
 	} else {
-		be_emit_cstring("\t/* TODO */");
-		be_emit_finish_line_gas(irn);
+		panic("Error: No emit handler for node %+F (graph %+F)\n",
+		      irn, current_ir_graph);
 	}
 }
 
