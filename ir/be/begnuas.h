@@ -27,6 +27,7 @@
 #ifndef FIRM_BE_BEGNUAS_H
 #define FIRM_BE_BEGNUAS_H
 
+#include <stdbool.h>
 #include "be.h"
 #include "beemitter.h"
 
@@ -60,6 +61,7 @@ typedef enum asm_flavour_t {
 
 /** The variable where the GAS dialect is stored. */
 extern be_gas_flavour_t be_gas_flavour;
+extern bool             be_gas_emit_types;
 
 /**
  * Generate all entities.

@@ -46,7 +46,8 @@
 #include "be_dbgout.h"
 
 /** by default, we generate assembler code for the Linux gas */
-be_gas_flavour_t be_gas_flavour = GAS_FLAVOUR_ELF;
+be_gas_flavour_t be_gas_flavour    = GAS_FLAVOUR_ELF;
+bool             be_gas_emit_types = true;
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 
@@ -466,7 +467,7 @@ static void dump_size_type(size_t size) {
 		break;
 
 	case 2:
-		be_emit_cstring("\t.word\t");
+		be_emit_cstring("\t.short\t");
 		break;
 
 	case 4:
@@ -1190,7 +1191,8 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 	}
 
 	if (visibility != visibility_external_allocated && !emit_as_common
-			&& be_gas_flavour == GAS_FLAVOUR_ELF) {
+			&& be_gas_flavour == GAS_FLAVOUR_ELF
+			&& be_gas_emit_types) {
 		be_emit_cstring("\t.type\t");
 		be_emit_ident(ld_ident);
 		be_emit_cstring(", @object\n\t.size\t");
