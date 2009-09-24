@@ -445,27 +445,21 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node 
 {
 	ir_graph                     *irg       = get_Block_irg(bl);
 	ir_node                      *frame     = get_irg_frame(irg);
-	const arch_register_class_t  *cls_frame = arch_get_irn_reg_class_out(frame);
 	const arch_register_t        *sp        = arch_env->sp;
 	ir_node                      *irn;
 	be_memperm_attr_t            *attr;
 	ir_node                     **real_in;
-	int                           i;
 
 	real_in = ALLOCAN(ir_node*, n + 1);
 	real_in[0] = frame;
 	memcpy(&real_in[1], in, n * sizeof(real_in[0]));
 
-	irn =  new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n+1, real_in);
+	irn = new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n+1, real_in);
 
-	init_node_attr(irn, n + 1, n + 1);
+	init_node_attr(irn, n + 1, n);
 	be_node_set_reg_class_in(irn, 0, sp->reg_class);
-	for (i = 0; i < n; ++i) {
-		be_node_set_reg_class_in(irn, i + 1, cls_frame);
-		be_node_set_reg_class_out(irn, i, cls_frame);
-	}
 
-	attr = get_irn_attr(irn);
+	attr               = get_irn_attr(irn);
 	attr->in_entities  = OALLOCNZ(irg->obst, ir_entity*, n);
 	attr->out_entities = OALLOCNZ(irg->obst, ir_entity*, n);
 

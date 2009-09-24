@@ -36,8 +36,6 @@
 #include "irnode_t.h"
 #include "bearch.h"
 
-#define BE_OUT_POS(p) (-((p) + 1))
-
 /**
  * The benode op's.  Must be available to register emitter function.
  */
