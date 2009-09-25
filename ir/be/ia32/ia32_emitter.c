@@ -3081,7 +3081,7 @@ static void bemit_ldtls(const ir_node *node)
 		bemit8(0xA1); // movl 0, %eax
 	} else {
 		bemit8(0x8B); // movl 0, %reg
-		bemit8(MOD_IND | ENC_REG(out->index) | ENC_RM(0x05));
+		bemit8(MOD_IND | ENC_REG(reg_gp_map[out->index]) | ENC_RM(0x05));
 	}
 	bemit32(0);
 }
