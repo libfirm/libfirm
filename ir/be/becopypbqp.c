@@ -63,6 +63,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 static void insert_into_reverse_peo(ir_node *block, void *data) {
 	pqueue_t  *queue = new_pqueue();
+	pqueue_t  *constatQueue = new_pqueue();
 	pbqp_co_t *pbqp_co = data;
 	ir_node   *irn;
 
@@ -81,14 +82,24 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 				assert(node && "No corresponding PBQP-Node found!");
 
 				// insert proj node into priority queue (descending by their degree in ifg)
-				pqueue_put(queue,proj, be_ifg_degree(pbqp_co->ifg,proj));
+				if(bitset_is_set(pbqp_co->constatNodes, get_irn_idx(proj))) {
+					pqueue_put(constatQueue,proj, be_ifg_degree(pbqp_co->ifg,proj));
+				}
+				else {
+					pqueue_put(queue,proj, be_ifg_degree(pbqp_co->ifg,proj));
+				}
+			}
+
+			/* first insert all constat nodes */
+			while(!pqueue_empty(constatQueue)) {
+				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(constatQueue))));
 			}
 
 			/* insert proj nodes into reverse perfect elimination order (descending by their degree in ifg) */
 			while(!pqueue_empty(queue)) {
-
 				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(queue))));
 			}
+
 		} else {
 			if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, irn))
 				continue;
@@ -99,8 +110,9 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 		}
 	}
 
-	/* free priority queue */
+	/* free priority queues */
 	del_pqueue(queue);
+	del_pqueue(constatQueue);
 }
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co) {
@@ -120,6 +132,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	pbqp_co.map = pmap_create_ex(number_nodes);
 	pbqp_co.pbqp = alloc_pbqp(number_nodes);
 	pbqp_co.ignore_reg = bitset_malloc(number_registers);
+	pbqp_co.constatNodes = bitset_malloc(number_nodes);
 	pbqp_co.ifg = co->cenv->ifg;
 
 	/* get ignored registers */
@@ -127,6 +140,8 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	/* add costs vector to nodes */
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+		int cntFreeChoosableRegs = 0;
+
 		/* create costs vector */
 		struct vector *costs_vector = vector_alloc(pbqp_co.pbqp, number_registers);
 
@@ -143,6 +158,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 				}
 				else {
 					vector_set(costs_vector, cnt, 0);
+					cntFreeChoosableRegs++;
 				}
 			}
 #if KAPS_ENABLE_VECTOR_NAMES
@@ -156,6 +172,16 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 		/* insert ir_node and pbqp_node into map */
 		pmap_insert(pbqp_co.map, ifg_node, get_node(pbqp_co.pbqp, get_irn_idx(ifg_node)));
+
+		if(cntFreeChoosableRegs > 4) {
+			// node is constat
+			bitset_set(pbqp_co.constatNodes, get_irn_idx(ifg_node));
+		}
+		else
+		{
+			bitset_clear(pbqp_co.constatNodes, get_irn_idx(ifg_node));
+		}
+
 	}
 
 	/* add pbqp edges and cost matrix */
@@ -237,7 +263,6 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
     num solution = get_solution(pbqp_co.pbqp);
 
     assert(solution != INF_COSTS && "No PBQP solution found");
-
 
 #if KAPS_DUMP
 	/* dump graph after solving pbqp */
