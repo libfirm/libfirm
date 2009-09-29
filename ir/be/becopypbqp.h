@@ -26,6 +26,7 @@ struct _pbqp_co_t {
 	pmap *map;							// contains relation between irn and pbqp node
 	pbqp *pbqp;
 	bitset_t *ignore_reg;
+	bitset_t *constatNodes;
 	be_ifg_t *ifg;
 };
 
