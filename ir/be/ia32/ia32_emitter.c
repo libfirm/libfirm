@@ -2343,10 +2343,6 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 		return;
 	}
 
-	if (is_relative) {
-		offset -= 4;
-	}
-
 	/* the final version should remember the position in the bytestream
 	   and patch it with the correct address at linktime... */
 	be_emit_cstring("\t.long ");
@@ -2357,6 +2353,7 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 
 	if (is_relative) {
 		be_emit_cstring("-.");
+		offset -= 4;
 	}
 
 	if (offset != 0) {
