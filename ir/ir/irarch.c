@@ -24,7 +24,7 @@
  * @author  Sebastian Hack, Michael Beck
  * @version $Id$
  *
- * Implements "Strenght Reduction of Multiplications by Integer Constants" by Youfeng Wu.
+ * Implements "Strength Reduction of Multiplications by Integer Constants" by Youfeng Wu.
  * Implements Division and Modulo by Consts from "Hackers Delight",
  */
 #include "config.h"
