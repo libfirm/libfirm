@@ -3104,6 +3104,109 @@ static void bemit_lea(const ir_node *node)
 	bemit_mod_am(reg_gp_map[out->index], node);
 }
 
+/* helper function for bemit_minus64bit */
+static void bemit_helper_mov(const arch_register_t *src, const arch_register_t *dst)
+{
+	bemit8(0x8B); // movl %src, %dst
+	bemit_modrr(src, dst);
+}
+
+/* helper function for bemit_minus64bit */
+static void bemit_helper_neg(const arch_register_t *reg)
+{
+	bemit8(0xF7); // negl %reg
+	bemit_modru(reg, 3);
+}
+
+/* helper function for bemit_minus64bit */
+static void bemit_helper_sbb0(const arch_register_t *reg)
+{
+	bemit8(0x83); // sbbl $0, %reg
+	bemit_modru(reg, 3);
+	bemit8(0);
+}
+
+/* helper function for bemit_minus64bit */
+static void bemit_helper_sbb(const arch_register_t *src, const arch_register_t *dst)
+{
+	bemit8(0x1B); // sbbl %src, %dst
+	bemit_modrr(src, dst);
+}
+
+/* helper function for bemit_minus64bit */
+static void bemit_helper_xchg(const arch_register_t *src, const arch_register_t *dst)
+{
+	if (src->index == REG_EAX) {
+		bemit8(0x90 + reg_gp_map[dst->index]); // xchgl %eax, %dst
+	} else if (dst->index == REG_EAX) {
+		bemit8(0x90 + reg_gp_map[src->index]); // xchgl %src, %eax
+	} else {
+		bemit8(0x87); // xchgl %src, %dst
+		bemit_modrr(src, dst);
+	}
+}
+
+/* helper function for bemit_minus64bit */
+static void bemit_helper_zero(const arch_register_t *reg)
+{
+	bemit8(0x33); // xorl %reg, %reg
+	bemit_modrr(reg, reg);
+}
+
+static void bemit_minus64bit(const ir_node *node)
+{
+	const arch_register_t *in_lo  = get_in_reg(node, 0);
+	const arch_register_t *in_hi  = get_in_reg(node, 1);
+	const arch_register_t *out_lo = get_out_reg(node, 0);
+	const arch_register_t *out_hi = get_out_reg(node, 1);
+
+	if (out_lo == in_lo) {
+		if (out_hi != in_hi) {
+			/* a -> a, b -> d */
+			goto zero_neg;
+		} else {
+			/* a -> a, b -> b */
+			goto normal_neg;
+		}
+	} else if (out_lo == in_hi) {
+		if (out_hi == in_lo) {
+			/* a -> b, b -> a */
+			bemit_helper_xchg(in_lo, in_hi);
+			goto normal_neg;
+		} else {
+			/* a -> b, b -> d */
+			bemit_helper_mov(in_hi, out_hi);
+			bemit_helper_mov(in_lo, out_lo);
+			goto normal_neg;
+		}
+	} else {
+		if (out_hi == in_lo) {
+			/* a -> c, b -> a */
+			bemit_helper_mov(in_lo, out_lo);
+			goto zero_neg;
+		} else if (out_hi == in_hi) {
+			/* a -> c, b -> b */
+			bemit_helper_mov(in_lo, out_lo);
+			goto normal_neg;
+		} else {
+			/* a -> c, b -> d */
+			bemit_helper_mov(in_lo, out_lo);
+			goto zero_neg;
+		}
+	}
+
+normal_neg:
+	bemit_helper_neg( out_hi);
+	bemit_helper_neg( out_lo);
+	bemit_helper_sbb0(out_hi);
+	return;
+
+zero_neg:
+	bemit_helper_zero(out_hi);
+	bemit_helper_neg( out_lo);
+	bemit_helper_sbb( in_hi, out_hi);
+}
+
 /**
  * Emit a single opcode.
  */
@@ -3956,6 +4059,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Lea,           bemit_lea);
 	register_emitter(op_ia32_Leave,         bemit_leave);
 	register_emitter(op_ia32_Load,          bemit_load);
+	register_emitter(op_ia32_Minus64Bit,    bemit_minus64bit);
 	register_emitter(op_ia32_Mul,           bemit_mul);
 	register_emitter(op_ia32_Neg,           bemit_neg);
 	register_emitter(op_ia32_NegMem,        bemit_negmem);
