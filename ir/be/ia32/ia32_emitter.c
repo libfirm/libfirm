@@ -2804,15 +2804,15 @@ static void bemit_##op##mem(const ir_node *node) \
 	if (is_ia32_Immediate(count)) { \
 		int offset = get_ia32_immediate_attr_const(count)->offset; \
 		if (offset == 1) { \
-			bemit8(size == 1 ? 0xD0 : 0xD1); \
+			bemit8(size == 8 ? 0xD0 : 0xD1); \
 			bemit_mod_am(ext, node); \
 		} else { \
-			bemit8(size == 1 ? 0xC0 : 0xC1); \
+			bemit8(size == 8 ? 0xC0 : 0xC1); \
 			bemit_mod_am(ext, node); \
 			bemit8(offset); \
 		} \
 	} else { \
-		bemit8(size == 1 ? 0xD2 : 0xD3); \
+		bemit8(size == 8 ? 0xD2 : 0xD3); \
 		bemit_mod_am(ext, node); \
 	} \
 }
