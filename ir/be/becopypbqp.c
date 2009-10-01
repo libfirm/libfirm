@@ -82,7 +82,7 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 				assert(node && "No corresponding PBQP-Node found!");
 
 				// insert proj node into priority queue (descending by their degree in ifg)
-				if(bitset_is_set(pbqp_co->constatNodes, get_irn_idx(proj))) {
+				if(bitset_is_set(pbqp_co->restricted_nodes, get_irn_idx(proj))) {
 					pqueue_put(constatQueue,proj, be_ifg_degree(pbqp_co->ifg,proj));
 				}
 				else {
@@ -90,7 +90,7 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 				}
 			}
 
-			/* first insert all constat nodes */
+			/* first insert all restricted nodes */
 			while(!pqueue_empty(constatQueue)) {
 				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(constatQueue))));
 			}
@@ -132,7 +132,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	pbqp_co.map = pmap_create_ex(number_nodes);
 	pbqp_co.pbqp = alloc_pbqp(number_nodes);
 	pbqp_co.ignore_reg = bitset_malloc(number_registers);
-	pbqp_co.constatNodes = bitset_malloc(number_nodes);
+	pbqp_co.restricted_nodes = bitset_malloc(number_nodes);
 	pbqp_co.ifg = co->cenv->ifg;
 
 	/* get ignored registers */
@@ -173,13 +173,14 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		/* insert ir_node and pbqp_node into map */
 		pmap_insert(pbqp_co.map, ifg_node, get_node(pbqp_co.pbqp, get_irn_idx(ifg_node)));
 
-		if(cntFreeChoosableRegs > 4) {
-			// node is constat
-			bitset_set(pbqp_co.constatNodes, get_irn_idx(ifg_node));
+		if(cntFreeChoosableRegs <= 4) {
+			/* node is restricted */
+			bitset_set(pbqp_co.restricted_nodes, get_irn_idx(ifg_node));
 		}
 		else
 		{
-			bitset_clear(pbqp_co.constatNodes, get_irn_idx(ifg_node));
+			/* node is not restricted */
+			bitset_clear(pbqp_co.restricted_nodes, get_irn_idx(ifg_node));
 		}
 
 	}
