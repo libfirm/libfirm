@@ -569,7 +569,8 @@ static void assign_spill_entity(ir_node *node, ir_entity *entity)
 		return;
 	}
 
-	/* beware: we might have Stores with Memory Proj's, ia32 fisttp for instance */
+	/* beware: we might have Stores with Memory Proj's, ia32 fisttp for
+	   instance */
 	node = skip_Proj(node);
 	assert(arch_get_frame_entity(node) == NULL);
 	arch_set_frame_entity(node, entity);

@@ -2239,8 +2239,8 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 /* ==== Experimental binary emitter ==== */
 
 static unsigned char reg_gp_map[N_ia32_gp_REGS];
-static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
-static unsigned char reg_sse_map[N_ia32_xmm_REGS];
+//static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
+//static unsigned char reg_sse_map[N_ia32_xmm_REGS];
 static unsigned char pnc_map_signed[8];
 static unsigned char pnc_map_unsigned[8];
 

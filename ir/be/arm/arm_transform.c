@@ -54,87 +54,46 @@
 
 #include <limits.h>
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /** hold the current code generator during transformation */
 static arm_code_gen_t *env_cg;
 
-extern ir_op *get_op_Mulh(void);
-
-
-/****************************************************************************************************
- *                  _        _                        __                           _   _
- *                 | |      | |                      / _|                         | | (_)
- *  _ __   ___   __| | ___  | |_ _ __ __ _ _ __  ___| |_ ___  _ __ _ __ ___   __ _| |_ _  ___  _ __
- * | '_ \ / _ \ / _` |/ _ \ | __| '__/ _` | '_ \/ __|  _/ _ \| '__| '_ ` _ \ / _` | __| |/ _ \| '_ \
- * | | | | (_) | (_| |  __/ | |_| | | (_| | | | \__ \ || (_) | |  | | | | | | (_| | |_| | (_) | | | |
- * |_| |_|\___/ \__,_|\___|  \__|_|  \__,_|_| |_|___/_| \___/|_|  |_| |_| |_|\__,_|\__|_|\___/|_| |_|
- *
- ****************************************************************************************************/
-
-static inline int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode)
+{
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
 /**
- * Creates a arm_Const node.
- */
-static ir_node *create_mov_node(dbg_info *dbg, ir_node *block, long value) {
-	ir_mode *mode  = mode_Iu;
-	ir_node *res;
-
-	if (mode_needs_gp_reg(mode))
-		mode = mode_Iu;
-	res = new_bd_arm_Mov_i(dbg, block, mode, value);
-	be_dep_on_frame(res);
-	return res;
-}
-
-/**
- * Creates a arm_Const_Neg node.
- */
-static ir_node *create_mvn_node(dbg_info *dbg, ir_node *block, long value) {
-	ir_mode *mode = mode_Iu;
-	ir_node *res;
-
-	if (mode_needs_gp_reg(mode))
-		mode = mode_Iu;
-	res = new_bd_arm_Mvn_i(dbg, block, mode, value);
-	be_dep_on_frame(res);
-	return res;
-}
-
-#define NEW_BINOP_NODE(opname, env, op1, op2) new_bd_arm_##opname(env->dbg, current_ir_graph, env->block, op1, op2, env->mode)
-
-/**
  * Creates a possible DAG for an constant.
  */
-static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned int value) {
+static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
+                                         unsigned int value)
+{
 	ir_node *result;
 	arm_vals v, vn;
 	int cnt;
-	ir_mode *mode = mode_Iu;
 
 	arm_gen_vals_from_word(value, &v);
 	arm_gen_vals_from_word(~value, &vn);
 
 	if (vn.ops < v.ops) {
 		/* remove bits */
-		result = create_mvn_node(dbg, block, arm_encode_imm_w_shift(vn.shifts[0], vn.values[0]));
+		result = new_bd_arm_Mvn_imm(dbgi, block, vn.values[0], vn.rors[0]);
+		be_dep_on_frame(result);
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
-			long value = arm_encode_imm_w_shift(vn.shifts[cnt], vn.values[cnt]);
-			ir_node *bic_i_node = new_bd_arm_Bic_i(dbg, block, result, mode, value);
-			result = bic_i_node;
+			result = new_bd_arm_Bic_imm(dbgi, block, result,
+			                            vn.values[cnt], vn.rors[cnt]);
 		}
-	}
-	else {
+	} else {
 		/* add bits */
-		result = create_mov_node(dbg, block, arm_encode_imm_w_shift(v.shifts[0], v.values[0]));
+		result = new_bd_arm_Mov_imm(dbgi, block, v.values[0], v.rors[0]);
+		be_dep_on_frame(result);
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
-			long value = arm_encode_imm_w_shift(v.shifts[cnt], v.values[cnt]);
-			ir_node *orr_i_node = new_bd_arm_Or_i(dbg, block, result, mode, value);
-			result = orr_i_node;
+			result = new_bd_arm_Or_imm(dbgi, block, result,
+			                           v.values[cnt], v.rors[cnt]);
 		}
 	}
 	return result;
@@ -145,10 +104,11 @@ static ir_node *create_const_graph_value(dbg_info *dbg, ir_node *block, unsigned
  *
  * @param irn  a Firm const
  */
-static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
+static ir_node *create_const_graph(ir_node *irn, ir_node *block)
+{
 	tarval  *tv = get_Const_tarval(irn);
 	ir_mode *mode = get_tarval_mode(tv);
-	int     value;
+	unsigned value;
 
 	if (mode_is_reference(mode)) {
 		/* ARM is 32bit, so we can safely convert a reference tarval into Iu */
@@ -162,21 +122,58 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block) {
 /**
  * Create an And that will mask all upper bits
  */
-static ir_node *gen_zero_extension(dbg_info *dbg, ir_node *block, ir_node *op, int result_bits) {
-	unsigned mask_bits = (1 << result_bits) - 1;
-	ir_node *mask_node = create_const_graph_value(dbg, block, mask_bits);
-	return new_bd_arm_And(dbg, block, op, mask_node, mode_Iu, ARM_SHF_NONE, 0);
+static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	if (src_bits == 8) {
+		return new_bd_arm_And_imm(dbgi, block, op, 0xFF, 0);
+	} else if (src_bits == 16) {
+		ir_node *lshift = new_bd_arm_Mov_reg_shift_imm(dbgi, block, op, ARM_SHF_LSL_IMM, 16);
+		ir_node *rshift = new_bd_arm_Mov_reg_shift_imm(dbgi, block, lshift, ARM_SHF_LSR_IMM, 16);
+		return rshift;
+	} else {
+		panic("zero extension only supported for 8 and 16 bits");
+	}
 }
 
 /**
  * Generate code for a sign extension.
  */
-static ir_node *gen_sign_extension(dbg_info *dbg, ir_node *block, ir_node *op, int result_bits) {
-	int shift_width = 32 - result_bits;
-	ir_node *shift_const_node = create_const_graph_value(dbg, block, shift_width);
-	ir_node *lshift_node = new_bd_arm_Shl(dbg, block, op, shift_const_node, mode_Iu);
-	ir_node *rshift_node = new_bd_arm_Shrs(dbg, block, lshift_node, shift_const_node, mode_Iu);
+static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	int shift_width = 32 - src_bits;
+	ir_node *lshift_node = new_bd_arm_Mov_reg_shift_imm(dbgi, block, op, ARM_SHF_LSL_IMM, shift_width);
+	ir_node *rshift_node = new_bd_arm_Mov_reg_shift_imm(dbgi, block, lshift_node, ARM_SHF_ASR_IMM, shift_width);
 	return rshift_node;
+}
+
+static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                              ir_mode *orig_mode)
+{
+	int bits = get_mode_size_bits(orig_mode);
+	if (bits == 32)
+		return op;
+
+	if (mode_is_signed(orig_mode)) {
+		return gen_sign_extension(dbgi, block, op, bits);
+	} else {
+		return gen_zero_extension(dbgi, block, op, bits);
+	}
+}
+
+/**
+ * returns true if it is assured, that the upper bits of a node are "clean"
+ * which means for a 16 or 8 bit value, that the upper bits in the register
+ * are 0 for unsigned and a copy of the last significant bit for signed
+ * numbers.
+ */
+static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+{
+	(void) transformed_node;
+	(void) mode;
+	/* TODO */
+	return false;
 }
 
 /**
@@ -213,71 +210,163 @@ static ir_node *gen_Conv(ir_node *node) {
 				/* from int to float */
 				return new_bd_arm_fpaFlt(dbg, block, new_op, dst_mode);
 			}
-		}
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			panic("VFP not supported yet");
 			return NULL;
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 			return NULL;
 		}
-	}
-	else { /* complete in gp registers */
+	} else { /* complete in gp registers */
 		int src_bits = get_mode_size_bits(src_mode);
 		int dst_bits = get_mode_size_bits(dst_mode);
 		int min_bits;
 		ir_mode *min_mode;
 
-		if (is_Load(skip_Proj(op))) {
-			if (src_bits == dst_bits) {
-				/* kill unneccessary conv */
-				return new_op;
-			}
-			/* after a load, the bit size is already converted */
-			src_bits = 32;
-		}
-
 		if (src_bits == dst_bits) {
 			/* kill unneccessary conv */
 			return new_op;
-		} else if (dst_bits <= 32 && src_bits <= 32) {
-			if (src_bits < dst_bits) {
-				min_bits = src_bits;
-				min_mode = src_mode;
-			} else {
-				min_bits = dst_bits;
-				min_mode = dst_mode;
-			}
-			if (mode_is_signed(min_mode)) {
-				return gen_sign_extension(dbg, block, new_op, min_bits);
-			} else {
-				return gen_zero_extension(dbg, block, new_op, min_bits);
-			}
+		}
+
+		if (src_bits < dst_bits) {
+			min_bits = src_bits;
+			min_mode = src_mode;
 		} else {
-			panic("Cannot handle Conv %+F->%+F with %d->%d bits", src_mode, dst_mode,
-				src_bits, dst_bits);
-			return NULL;
+			min_bits = dst_bits;
+			min_mode = dst_mode;
+		}
+
+		if (upper_bits_clean(new_op, min_mode)) {
+			return new_op;
+		}
+
+		if (mode_is_signed(min_mode)) {
+			return gen_sign_extension(dbg, block, new_op, min_bits);
+		} else {
+			return gen_zero_extension(dbg, block, new_op, min_bits);
 		}
 	}
 }
 
-/**
- * Return true if an operand is a shifter operand
- */
-static int is_shifter_operand(ir_node *n, arm_shift_modifier *pmod) {
-	arm_shift_modifier mod = ARM_SHF_NONE;
+typedef struct {
+	unsigned char  imm_8;
+	unsigned char  rot;
+} arm_immediate_t;
 
-	if (is_arm_Mov(n))
-		mod = get_arm_shift_modifier(n);
+static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
+{
+	unsigned val;
 
-	*pmod = mod;
-	if (mod != ARM_SHF_NONE) {
-		long v = get_arm_imm_value(n);
-		if (v < 32)
-			return (int)v;
+	if (!is_Const(node))
+		return false;
+
+	val = get_tarval_long(get_Const_tarval(node));
+
+	if (val == 0) {
+		res->imm_8 = 0;
+		res->rot   = 0;
+		return true;
 	}
-	return 0;
+	if (val <= 0xff) {
+		res->imm_8 = val;
+		res->rot   = 0;
+		return true;
+	}
+	/* arm allows to use to rotate an 8bit immediate value by a multiple of 2
+	   (= 0, 2, 4, 6, ...).
+	   So we determine the smallest even position with a bit set
+	   and the highest even position with no bit set anymore.
+	   If the difference between these 2 is <= 8, then we can encode the value
+	   as immediate.
+	 */
+	unsigned low_pos  = ntz(val) & ~1u;
+	unsigned high_pos = (32-nlz(val)+1) & ~1u;
+
+	if (high_pos - low_pos <= 8) {
+		res->imm_8 = val >> low_pos;
+		res->rot   = 32 - low_pos;
+		return true;
+	}
+
+	if (high_pos > 24) {
+		res->rot = 34 - high_pos;
+		val      = val >> (32-res->rot) | val << (res->rot);
+		if (val <= 0xff) {
+			res->imm_8 = val;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static int is_downconv(const ir_node *node)
+{
+	ir_mode *src_mode;
+	ir_mode *dest_mode;
+
+	if (!is_Conv(node))
+		return 0;
+
+	/* we only want to skip the conv when we're the only user
+	 * (not optimal but for now...)
+	 */
+	if (get_irn_n_edges(node) > 1)
+		return 0;
+
+	src_mode  = get_irn_mode(get_Conv_op(node));
+	dest_mode = get_irn_mode(node);
+	return
+		mode_needs_gp_reg(src_mode)  &&
+		mode_needs_gp_reg(dest_mode) &&
+		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
+}
+
+static ir_node *arm_skip_downconv(ir_node *node)
+{
+	while (is_downconv(node))
+		node = get_Conv_op(node);
+	return node;
+}
+
+typedef enum {
+	MATCH_NONE         = 0,
+	MATCH_COMMUTATIVE  = 1 << 0,
+	MATCH_SIZE_NEUTRAL = 1 << 1,
+} match_flags_t;
+
+typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
+typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, unsigned char imm8, unsigned char imm_rot);
+
+static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
+		new_binop_reg_func new_reg, new_binop_imm_func new_imm)
+{
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *op1     = get_binop_left(node);
+	ir_node  *new_op1;
+	ir_node  *op2     = get_binop_right(node);
+	ir_node  *new_op2;
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	arm_immediate_t imm;
+
+	if (flags & MATCH_SIZE_NEUTRAL) {
+		op1 = arm_skip_downconv(op1);
+		op2 = arm_skip_downconv(op2);
+	} else {
+		assert(get_mode_size_bits(get_irn_mode(node)) == 32);
+	}
+
+	if (try_encode_as_immediate(op2, &imm)) {
+		ir_node *new_op1 = be_transform_node(op1);
+		return new_imm(dbgi, block, new_op1, imm.imm_8, imm.rot);
+	}
+	new_op2 = be_transform_node(op2);
+    if ((flags & MATCH_COMMUTATIVE) && try_encode_as_immediate(op1, &imm)) {
+		return new_imm(dbgi, block, new_op2, imm.imm_8, imm.rot);
+	}
+	new_op1 = be_transform_node(op1);
+
+	return new_reg(dbgi, block, new_op1, new_op2);
 }
 
 /**
@@ -285,26 +374,26 @@ static int is_shifter_operand(ir_node *n, arm_shift_modifier *pmod) {
  *
  * @return the created arm Add node
  */
-static ir_node *gen_Add(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Add_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Add_right(node);
-	ir_node  *new_op2 = be_transform_node(op2);
+static ir_node *gen_Add(ir_node *node)
+{
 	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *new_op3;
-	int v;
-	arm_shift_modifier mod;
-	dbg_info *dbg = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
+		ir_node  *block   = be_transform_node(get_nodes_block(node));
+		ir_node  *op1     = get_Add_left(node);
+		ir_node  *op2     = get_Add_right(node);
+		dbg_info *dbgi    = get_irn_dbg_info(node);
+		ir_node  *new_op1 = be_transform_node(op1);
+		ir_node  *new_op2 = be_transform_node(op2);
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
+#if 0
 			if (is_arm_fpaMvf_i(new_op1))
-				return new_bd_arm_fpaAdf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
+				return new_bd_arm_fpaAdf_i(dbgi, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_fpaMvf_i(new_op2))
-				return new_bd_arm_fpaAdf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
-			return new_bd_arm_fpaAdf(dbg, block, new_op1, new_op2, mode);
+				return new_bd_arm_fpaAdf_i(dbgi, block, new_op1, mode, get_arm_imm_value(new_op2));
+#endif
+			return new_bd_arm_fpaAdf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -315,47 +404,26 @@ static ir_node *gen_Add(ir_node *node) {
 			return NULL;
 		}
 	} else {
-		assert(mode_is_data(mode));
-		mode = mode_Iu;
-
-		if (is_arm_Mov_i(new_op1))
-			return new_bd_arm_Add_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
-		if (is_arm_Mov_i(new_op2))
-			return new_bd_arm_Add_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
-
+#if 0
 		/* check for MLA */
 		if (is_arm_Mul(new_op1) && get_irn_n_edges(op1) == 1) {
 			new_op3 = new_op2;
 			new_op2 = get_irn_n(new_op1, 1);
 			new_op1 = get_irn_n(new_op1, 0);
 
-			return new_bd_arm_Mla(dbg, block, new_op1, new_op2, new_op3, mode);
+			return new_bd_arm_Mla(dbgi, block, new_op1, new_op2, new_op3);
 		}
 		if (is_arm_Mul(new_op2) && get_irn_n_edges(op2) == 1) {
 			new_op3 = new_op1;
 			new_op1 = get_irn_n(new_op2, 0);
 			new_op2 = get_irn_n(new_op2, 1);
 
-			return new_bd_arm_Mla(dbg, block, new_op1, new_op2, new_op3, mode);
-		}
-
-#if 0
-		/* is the first a shifter */
-		v = is_shifter_operand(new_op1, &mod);
-		if (v) {
-			new_op1 = get_irn_n(new_op1, 0);
-			return new_bd_arm_Add(dbg, block, new_op2, new_op1, mode, mod, v);
-		}
-		/* is the second a shifter */
-		v = is_shifter_operand(new_op2, &mod);
-		if (v) {
-			new_op2 = get_irn_n(new_op2, 0);
-			return new_bd_arm_Add(dbg, block, new_op1, new_op2, mode, mod, v);
+			return new_bd_arm_Mla(dbgi, block, new_op1, new_op2, new_op3);
 		}
 #endif
 
-		/* normal ADD */
-		return new_bd_arm_Add(dbg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0);
+		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+				new_bd_arm_Add_reg, new_bd_arm_Add_imm);
 	}
 }
 
@@ -376,10 +444,12 @@ static ir_node *gen_Mul(ir_node *node) {
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
+#if 0
 			if (is_arm_Mov_i(new_op1))
 				return new_bd_arm_fpaMuf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_Mov_i(new_op2))
 				return new_bd_arm_fpaMuf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
+#endif
 			return new_bd_arm_fpaMuf(dbg, block, new_op1, new_op2, mode);
 		}
 		else if (USE_VFP(env_cg->isa)) {
@@ -393,8 +463,7 @@ static ir_node *gen_Mul(ir_node *node) {
 		}
 	}
 	assert(mode_is_data(mode));
-	mode = mode_Iu;
-	return new_bd_arm_Mul(dbg, block, new_op1, new_op2, mode);
+	return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
 }
 
 /**
@@ -416,10 +485,12 @@ static ir_node *gen_Quot(ir_node *node) {
 
 	env_cg->have_fp_insn = 1;
 	if (USE_FPA(env_cg->isa)) {
+#if 0
 		if (is_arm_Mov_i(new_op1))
 			return new_bd_arm_fpaRdf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
 		if (is_arm_Mov_i(new_op2))
 			return new_bd_arm_fpaDvf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
+#endif
 		return new_bd_arm_fpaDvf(dbg, block, new_op1, new_op2, mode);
 	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
@@ -431,43 +502,15 @@ static ir_node *gen_Quot(ir_node *node) {
 	}
 }
 
-#define GEN_INT_OP(op) \
-	ir_node  *block   = be_transform_node(get_nodes_block(node)); \
-	ir_node  *op1     = get_ ## op ## _left(node); \
-	ir_node  *new_op1 = be_transform_node(op1); \
-	ir_node  *op2     = get_ ## op ## _right(node); \
-	ir_node  *new_op2 = be_transform_node(op2); \
-	ir_mode  *mode    = mode_Iu; \
-	dbg_info *dbg     = get_irn_dbg_info(node); \
-	int      v; \
-	arm_shift_modifier mod; \
- \
-	if (is_arm_Mov_i(new_op1)) \
-		return new_bd_arm_ ## op ## _i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1)); \
-	if (is_arm_Mov_i(new_op2)) \
-		return new_bd_arm_ ## op ## _i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2)); \
-	/* is the first a shifter */ \
-	v = is_shifter_operand(new_op1, &mod); \
-	if (v) { \
-		new_op1 = get_irn_n(new_op1, 0); \
-		return new_bd_arm_ ## op(dbg, block, new_op2, new_op1, mode, mod, v); \
-	} \
-	/* is the second a shifter */ \
-	v = is_shifter_operand(new_op2, &mod); \
-	if (v) { \
-		new_op2 = get_irn_n(new_op2, 0); \
-		return new_bd_arm_ ## op(dbg, block, new_op1, new_op2, mode, mod, v); \
-	} \
-	/* Normal op */ \
-	return new_bd_arm_ ## op(dbg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0) \
-
 /**
  * Creates an ARM And.
  *
  * @return the created arm And node
  */
-static ir_node *gen_And(ir_node *node) {
-	GEN_INT_OP(And);
+static ir_node *gen_And(ir_node *node)
+{
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+			new_bd_arm_And_reg, new_bd_arm_And_imm);
 }
 
 /**
@@ -476,8 +519,10 @@ static ir_node *gen_And(ir_node *node) {
  * @param env   The transformation environment
  * @return the created arm Or node
  */
-static ir_node *gen_Or(ir_node *node) {
-	GEN_INT_OP(Or);
+static ir_node *gen_Or(ir_node *node)
+{
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+			new_bd_arm_Or_reg, new_bd_arm_Or_imm);
 }
 
 /**
@@ -485,8 +530,10 @@ static ir_node *gen_Or(ir_node *node) {
  *
  * @return the created arm Eor node
  */
-static ir_node *gen_Eor(ir_node *node) {
-	GEN_INT_OP(Eor);
+static ir_node *gen_Eor(ir_node *node)
+{
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+			new_bd_arm_Eor_reg, new_bd_arm_Eor_imm);
 }
 
 /**
@@ -494,59 +541,57 @@ static ir_node *gen_Eor(ir_node *node) {
  *
  * @return the created arm Sub node
  */
-static ir_node *gen_Sub(ir_node *node) {
+static ir_node *gen_Sub(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_Sub_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_Sub_right(node);
 	ir_node  *new_op2 = be_transform_node(op2);
 	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbg     = get_irn_dbg_info(node);
-	int      v;
-	arm_shift_modifier mod;
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
+#if 0
 			if (is_arm_Mov_i(new_op1))
-				return new_bd_arm_fpaRsf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
+				return new_bd_arm_fpaRsf_i(dbgi, block, new_op2, mode, get_arm_imm_value(new_op1));
 			if (is_arm_Mov_i(new_op2))
-				return new_bd_arm_fpaSuf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
-			return new_bd_arm_fpaSuf(dbg, block, new_op1, new_op2, mode);
+				return new_bd_arm_fpaSuf_i(dbgi, block, new_op1, mode, get_arm_imm_value(new_op2));
+#endif
+			return new_bd_arm_fpaSuf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 			return NULL;
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 			return NULL;
 		}
+	} else {
+		return gen_int_binop(node, MATCH_SIZE_NEUTRAL,
+				new_bd_arm_Sub_reg, new_bd_arm_Sub_imm);
 	}
-	else {
-		assert(mode_is_data(mode) && "unknown mode for Sub");
-		mode = mode_Iu;
+}
 
-		if (is_arm_Mov_i(new_op1))
-			return new_bd_arm_Rsb_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
-		if (is_arm_Mov_i(new_op2))
-			return new_bd_arm_Sub_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
+static ir_node *make_shift(ir_node *node, match_flags_t flags,
+		arm_shift_modifier shift_modifier)
+{
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *op1     = get_binop_left(node);
+	ir_node  *op2     = get_binop_right(node);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *new_op1;
+	ir_node  *new_op2;
 
-		/* is the first a shifter */
-		v = is_shifter_operand(new_op1, &mod);
-		if (v) {
-			new_op1 = get_irn_n(new_op1, 0);
-			return new_bd_arm_Rsb(dbg, block, new_op2, new_op1, mode, mod, v);
-		}
-		/* is the second a shifter */
-		v = is_shifter_operand(new_op2, &mod);
-		if (v) {
-			new_op2 = get_irn_n(new_op2, 0);
-			return new_bd_arm_Sub(dbg, block, new_op1, new_op2, mode, mod, v);
-		}
-		/* normal sub */
-		return new_bd_arm_Sub(dbg, block, new_op1, new_op2, mode, ARM_SHF_NONE, 0);
+	if (flags & MATCH_SIZE_NEUTRAL) {
+		op1 = arm_skip_downconv(op1);
+		op2 = arm_skip_downconv(op2);
 	}
+	new_op1 = be_transform_node(op1);
+	new_op2 = be_transform_node(op2);
+	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2, shift_modifier);
 }
 
 /**
@@ -554,19 +599,9 @@ static ir_node *gen_Sub(ir_node *node) {
  *
  * @return the created ARM Shl node
  */
-static ir_node *gen_Shl(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Shl_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Shl_right(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = mode_Iu;
-	dbg_info *dbg     = get_irn_dbg_info(node);
-
-	if (is_arm_Mov_i(new_op2)) {
-		return new_bd_arm_Mov(dbg, block, new_op1, mode, ARM_SHF_LSL, get_arm_imm_value(new_op2));
-	}
-	return new_bd_arm_Shl(dbg, block, new_op1, new_op2, mode);
+static ir_node *gen_Shl(ir_node *node)
+{
+	return make_shift(node, MATCH_SIZE_NEUTRAL, ARM_SHF_LSL_REG);
 }
 
 /**
@@ -574,19 +609,9 @@ static ir_node *gen_Shl(ir_node *node) {
  *
  * @return the created ARM Shr node
  */
-static ir_node *gen_Shr(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Shr_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Shr_right(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = mode_Iu;
-	dbg_info *dbg     = get_irn_dbg_info(node);
-
-	if (is_arm_Mov_i(new_op2)) {
-		return new_bd_arm_Mov(dbg, block, new_op1, mode, ARM_SHF_LSR, get_arm_imm_value(new_op2));
-	}
-	return new_bd_arm_Shr(dbg, block, new_op1, new_op2, mode);
+static ir_node *gen_Shr(ir_node *node)
+{
+	return make_shift(node, MATCH_NONE, ARM_SHF_LSR_REG);
 }
 
 /**
@@ -594,19 +619,9 @@ static ir_node *gen_Shr(ir_node *node) {
  *
  * @return the created ARM Shrs node
  */
-static ir_node *gen_Shrs(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Shrs_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Shrs_right(node);
-	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = mode_Iu;
-	dbg_info *dbg     = get_irn_dbg_info(node);
-
-	if (is_arm_Mov_i(new_op2)) {
-		return new_bd_arm_Mov(dbg, block, new_op1, mode, ARM_SHF_ASR, get_arm_imm_value(new_op2));
-	}
-	return new_bd_arm_Shrs(dbg, block, new_op1, new_op2, mode);
+static ir_node *gen_Shrs(ir_node *node)
+{
+	return make_shift(node, MATCH_NONE, ARM_SHF_ASR_REG);
 }
 
 /**
@@ -614,17 +629,15 @@ static ir_node *gen_Shrs(ir_node *node) {
  *
  * @return the created ARM Ror node
  */
-static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op1 = be_transform_node(op1);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = mode_Iu;
-	dbg_info *dbg     = get_irn_dbg_info(node);
 
-	if (is_arm_Mov_i(new_op2)) {
-		return new_bd_arm_Mov(dbg, block, new_op1, mode, ARM_SHF_ROR, get_arm_imm_value(new_op2));
-	}
-	return new_bd_arm_Ror(dbg, block, new_op1, new_op2, mode);
+	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
+	                                    ARM_SHF_ROR_REG);
 }
 
 /**
@@ -634,15 +647,16 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2) {
  *
  * Note: there is no Rol on arm, we have to use Ror
  */
-static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2) {
+static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op1 = be_transform_node(op1);
-	ir_mode  *mode    = mode_Iu;
-	dbg_info *dbg     = get_irn_dbg_info(node);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *new_op2 = be_transform_node(op2);
 
-	new_op2 = new_bd_arm_Rsb_i(dbg, block, new_op2, mode, 32);
-	return new_bd_arm_Ror(dbg, block, new_op1, new_op2, mode);
+	new_op2 = new_bd_arm_Rsb_imm(dbgi, block, new_op2, 32, 0);
+	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
+	                                    ARM_SHF_ROR_REG);
 }
 
 /**
@@ -650,7 +664,8 @@ static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2) {
  *
  * @return the created ARM Ror node
  */
-static ir_node *gen_Rotl(ir_node *node) {
+static ir_node *gen_Rotl(ir_node *node)
+{
 	ir_node *rotate = NULL;
 	ir_node *op1    = get_Rotl_left(node);
 	ir_node *op2    = get_Rotl_right(node);
@@ -687,19 +702,18 @@ static ir_node *gen_Rotl(ir_node *node) {
 				rotate = gen_Ror(node, op1, right);
 		}
 	} else if (is_Const(op2)) {
-			tarval  *tv   = get_Const_tarval(op2);
-			ir_mode *mode = get_irn_mode(node);
-			long     bits = get_mode_size_bits(mode);
+		tarval  *tv   = get_Const_tarval(op2);
+		ir_mode *mode = get_irn_mode(node);
+		long     bits = get_mode_size_bits(mode);
 
-			if (tarval_is_long(tv) && bits == 32) {
-				ir_node  *block   = be_transform_node(get_nodes_block(node));
-				ir_node  *new_op1 = be_transform_node(op1);
-				ir_mode  *mode    = mode_Iu;
-				dbg_info *dbg     = get_irn_dbg_info(node);
+		if (tarval_is_long(tv) && bits == 32) {
+			ir_node  *block   = be_transform_node(get_nodes_block(node));
+			ir_node  *new_op1 = be_transform_node(op1);
+			dbg_info *dbgi    = get_irn_dbg_info(node);
 
-				bits = (bits - get_tarval_long(tv)) & 31;
-				rotate = new_bd_arm_Mov(dbg, block, new_op1, mode, ARM_SHF_ROR, bits);
-			}
+			bits = (bits - get_tarval_long(tv)) & 31;
+			rotate = new_bd_arm_Mov_reg_shift_imm(dbgi, block, new_op1, ARM_SHF_ROR_IMM, bits);
+		}
 	}
 
 	if (rotate == NULL) {
@@ -714,19 +728,16 @@ static ir_node *gen_Rotl(ir_node *node) {
  *
  * @return the created ARM Not node
  */
-static ir_node *gen_Not(ir_node *node) {
+static ir_node *gen_Not(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op      = get_Not_op(node);
 	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbg     = get_irn_dbg_info(node);
-	ir_mode  *mode    = mode_Iu;
-	arm_shift_modifier mod = ARM_SHF_NONE;
-	int      v        = is_shifter_operand(new_op, &mod);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 
-	if (v) {
-		new_op = get_irn_n(new_op, 0);
-	}
-	return new_bd_arm_Mvn(dbg, block, new_op, mode, mod, v);
+	/* TODO: we could do alot more here with all the Mvn variations */
+
+	return new_bd_arm_Mvn_reg(dbgi, block, new_op);
 }
 
 /**
@@ -735,17 +746,18 @@ static ir_node *gen_Not(ir_node *node) {
  * @param env   The transformation environment
  * @return the created ARM Abs node
  */
-static ir_node *gen_Abs(ir_node *node) {
+static ir_node *gen_Abs(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op      = get_Abs_op(node);
 	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbg     = get_irn_dbg_info(node);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa))
-			return new_bd_arm_fpaAbs(dbg, block, new_op, mode);
+			return new_bd_arm_fpaAbs(dbgi, block, new_op, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -755,8 +767,7 @@ static ir_node *gen_Abs(ir_node *node) {
 		}
 	}
 	assert(mode_is_data(mode));
-	mode = mode_Iu;
-	return new_bd_arm_Abs(dbg, block, new_op, mode);
+	return new_bd_arm_Abs(dbgi, block, new_op);
 }
 
 /**
@@ -764,17 +775,18 @@ static ir_node *gen_Abs(ir_node *node) {
  *
  * @return the created ARM Minus node
  */
-static ir_node *gen_Minus(ir_node *node) {
+static ir_node *gen_Minus(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op      = get_Minus_op(node);
 	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbg     = get_irn_dbg_info(node);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa))
-			return new_bd_arm_fpaMvf(dbg, block, op, mode);
+			return new_bd_arm_fpaMvf(dbgi, block, op, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -784,8 +796,7 @@ static ir_node *gen_Minus(ir_node *node) {
 		}
 	}
 	assert(mode_is_data(mode));
-	mode = mode_Iu;
-	return new_bd_arm_Rsb_i(dbg, block, new_op, mode, 0);
+	return new_bd_arm_Rsb_imm(dbgi, block, new_op, 0, 0);
 }
 
 /**
@@ -800,61 +811,23 @@ static ir_node *gen_Load(ir_node *node) {
 	ir_node  *mem      = get_Load_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	ir_mode  *mode     = get_Load_mode(node);
-	dbg_info *dbg      = get_irn_dbg_info(node);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_load = NULL;
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa))
-			new_load = new_bd_arm_fpaLdf(dbg, block, new_ptr, new_mem, mode);
+			new_load = new_bd_arm_fpaLdf(dbgi, block, new_ptr, new_mem, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
-	}
-	else {
+	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Load");
 
-		if (mode_is_signed(mode)) {
-			/* sign extended loads */
-			switch (get_mode_size_bits(mode)) {
-			case 8:
-				new_load = new_bd_arm_Ldrbs(dbg, block, new_ptr, new_mem, NULL,
-				                            0, 0);
-				break;
-			case 16:
-				new_load = new_bd_arm_Ldrhs(dbg, block, new_ptr, new_mem, NULL,
-				                            0, 0);
-				break;
-			case 32:
-				new_load = new_bd_arm_Ldr(dbg, block, new_ptr, new_mem, NULL,
-				                          0, 0);
-				break;
-			default:
-				panic("mode size not supported");
-			}
-		} else {
-			/* zero extended loads */
-			switch (get_mode_size_bits(mode)) {
-			case 8:
-				new_load = new_bd_arm_Ldrb(dbg, block, new_ptr, new_mem, NULL,
-				                           0, 0);
-				break;
-			case 16:
-				new_load = new_bd_arm_Ldrh(dbg, block, new_ptr, new_mem, NULL,
-				                           0, 0);
-				break;
-			case 32:
-				new_load = new_bd_arm_Ldr(dbg, block, new_ptr, new_mem, NULL,
-				                          0, 0);
-				break;
-			default:
-				panic("mode size not supported");
-			}
-		}
+		new_load = new_bd_arm_Ldr(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -883,13 +856,14 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node  *val      = get_Store_value(node);
 	ir_node  *new_val  = be_transform_node(val);
 	ir_mode  *mode     = get_irn_mode(val);
-	dbg_info *dbg      = get_irn_dbg_info(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node *new_store = NULL;
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa))
-			new_store = new_bd_arm_fpaStf(dbg, block, new_ptr, new_val, new_mem, mode);
+			new_store = new_bd_arm_fpaStf(dbgi, block, new_ptr, new_val,
+			                              new_mem, mode);
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -898,22 +872,8 @@ static ir_node *gen_Store(ir_node *node)
 		}
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Store");
-		switch (get_mode_size_bits(mode)) {
-		case 8:
-			new_store = new_bd_arm_Strb(dbg, block, new_ptr, new_val, new_mem,
-			                            NULL, 0, 0);
-			break;
-		case 16:
-			new_store = new_bd_arm_Strh(dbg, block, new_ptr, new_val, new_mem,
-			                            NULL, 0, 0);
-			break;
-		case 32:
-			new_store = new_bd_arm_Str(dbg, block, new_ptr, new_val, new_mem,
-			                           NULL, 0, 0);
-			break;
-		default:
-			panic("unsupported store size %d bits\n", get_mode_size_bits(mode));
-		}
+		new_store = new_bd_arm_Str(dbgi, block, new_ptr, new_val, new_mem, mode,
+		                           NULL, 0, 0, false);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
@@ -928,114 +888,144 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_bd_arm_Jmp(dbgi, new_block);
 }
 
+static ir_node *gen_be_Call(ir_node *node)
+{
+	ir_node *res = be_duplicate_node(node);
+	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
+
+	return res;
+}
+
+static ir_node *gen_SwitchJmp(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *selector = get_Cond_selector(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node *new_op = be_transform_node(selector);
+	ir_node *const_graph;
+	ir_node *sub;
+
+	ir_node *proj;
+	const ir_edge_t *edge;
+	int min = INT_MAX;
+	int max = INT_MIN;
+	int translation;
+	int pn;
+	int n_projs;
+
+	foreach_out_edge(node, edge) {
+		proj = get_edge_src_irn(edge);
+		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
+
+		pn = get_Proj_proj(proj);
+
+		min = pn<min ? pn : min;
+		max = pn>max ? pn : max;
+	}
+	translation = min;
+	n_projs = max - translation + 1;
+
+	foreach_out_edge(node, edge) {
+		proj = get_edge_src_irn(edge);
+		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
+
+		pn = get_Proj_proj(proj) - translation;
+		set_Proj_proj(proj, pn);
+	}
+
+	const_graph = create_const_graph_value(dbgi, block, translation);
+	sub = new_bd_arm_Sub_reg(dbgi, block, new_op, const_graph);
+	return new_bd_arm_SwitchJmp(dbgi, block, sub, n_projs, get_Cond_default_proj(node) - translation);
+}
+
+static ir_node *gen_Cmp(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *op1      = get_Cmp_left(node);
+	ir_node  *op2      = get_Cmp_right(node);
+	ir_mode  *cmp_mode = get_irn_mode(op1);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *new_op1;
+	ir_node  *new_op2;
+	bool      is_unsigned;
+
+	if (mode_is_float(cmp_mode)) {
+		/* TODO: revivie this code */
+		panic("FloatCmp NIY");
+#if 0
+		ir_node *new_op2  = be_transform_node(op2);
+		/* floating point compare */
+		pn_Cmp pnc = get_Proj_proj(selector);
+
+		if (pnc & pn_Cmp_Uo) {
+			/* check for unordered, need cmf */
+			return new_bd_arm_fpaCmfBra(dbgi, block, new_op1, new_op2, pnc);
+		}
+		/* Hmm: use need cmfe */
+		return new_bd_arm_fpaCmfeBra(dbgi, block, new_op1, new_op2, pnc);
+#endif
+	}
+
+	assert(get_irn_mode(op2) == cmp_mode);
+	is_unsigned = !mode_is_signed(cmp_mode);
+
+	/* compare with 0 can be done with Tst */
+	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
+		new_op1 = be_transform_node(op1);
+		new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
+		return new_bd_arm_Tst_reg(dbgi, block, new_op1, new_op1, false,
+		                          is_unsigned);
+	}
+	if (is_Const(op1) && tarval_is_null(get_Const_tarval(op1))) {
+		new_op2 = be_transform_node(op2);
+		new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
+		return new_bd_arm_Tst_reg(dbgi, block, new_op2, new_op2, true,
+		                          is_unsigned);
+	}
+
+	/* integer compare, TODO: use shifer_op in all its combinations */
+	new_op1 = be_transform_node(op1);
+	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
+	new_op2 = be_transform_node(op2);
+	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
+	return new_bd_arm_Cmp_reg(dbgi, block, new_op1, new_op2, false,
+	                          is_unsigned);
+}
+
 /**
  * Transforms a Cond.
  *
  * @return the created ARM Cond node
  */
-static ir_node *gen_Cond(ir_node *node) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
+static ir_node *gen_Cond(ir_node *node)
+{
 	ir_node  *selector = get_Cond_selector(node);
-	dbg_info *dbg      = get_irn_dbg_info(node);
 	ir_mode  *mode     = get_irn_mode(selector);
+	ir_node  *block;
+	ir_node  *flag_node;
+	dbg_info *dbgi;
 
-	if (mode == mode_b) {
-		/* an conditional jump */
-		ir_node *cmp_node = get_Proj_pred(selector);
-		ir_node *op1      = get_Cmp_left(cmp_node);
-		ir_node *new_op1  = be_transform_node(op1);
-		ir_node *op2      = get_Cmp_right(cmp_node);
-
-		if (mode_is_float(get_irn_mode(op1))) {
-			ir_node *new_op2  = be_transform_node(op2);
-			/* floating point compare */
-			pn_Cmp pnc = get_Proj_proj(selector);
-
-			if (pnc & pn_Cmp_Uo) {
-				/* check for unordered, need cmf */
-				return new_bd_arm_fpaCmfBra(dbg, block, new_op1, new_op2, pnc);
-			}
-			/* Hmm: use need cmfe */
-			return new_bd_arm_fpaCmfeBra(dbg, block, new_op1, new_op2, pnc);
-		} else if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
-			/* compare with 0 */
-			return new_bd_arm_TstBra(dbg, block, new_op1, new_op1, get_Proj_proj(selector));
-		} else {
-			/* integer compare */
-			ir_node *new_op2  = be_transform_node(op2);
-			return new_bd_arm_CmpBra(dbg, block, new_op1, new_op2, get_Proj_proj(selector));
-		}
-	} else {
-		/* SwitchJmp */
-		ir_node *new_op = be_transform_node(selector);
-		ir_node *const_graph;
-		ir_node *sub;
-
-		ir_node *proj;
-		const ir_edge_t *edge;
-		int min = INT_MAX;
-		int max = INT_MIN;
-		int translation;
-		int pn;
-		int n_projs;
-
-		foreach_out_edge(node, edge) {
-			proj = get_edge_src_irn(edge);
-			assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-			pn = get_Proj_proj(proj);
-
-			min = pn<min ? pn : min;
-			max = pn>max ? pn : max;
-		}
-		translation = min;
-		n_projs = max - translation + 1;
-
-		foreach_out_edge(node, edge) {
-			proj = get_edge_src_irn(edge);
-			assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-			pn = get_Proj_proj(proj) - translation;
-			set_Proj_proj(proj, pn);
-		}
-
-		const_graph = create_const_graph_value(dbg, block, translation);
-		sub = new_bd_arm_Sub(dbg, block, new_op, const_graph, mode, ARM_SHF_NONE, 0);
-		return new_bd_arm_SwitchJmp(dbg, block, sub, n_projs, get_Cond_default_proj(node) - translation);
+	if (mode != mode_b) {
+		return gen_SwitchJmp(node);
 	}
-}
+	assert(is_Proj(selector));
 
-/**
- * Returns the name of a SymConst.
- * @param symc  the SymConst
- * @return name of the SymConst
- */
-static ident *get_sc_ident(ir_node *symc) {
-	ir_entity *ent;
+	block     = be_transform_node(get_nodes_block(node));
+	dbgi      = get_irn_dbg_info(node);
+	flag_node = be_transform_node(get_Proj_pred(selector));
 
-	switch (get_SymConst_kind(symc)) {
-		case symconst_addr_name:
-			return get_SymConst_name(symc);
-
-		case symconst_addr_ent:
-			ent = get_SymConst_entity(symc);
-			set_entity_backend_marked(ent, 1);
-			return get_entity_ld_ident(ent);
-
-		default:
-			assert(0 && "Unsupported SymConst");
-	}
-
-	return NULL;
+	return new_bd_arm_B(dbgi, block, flag_node, get_Proj_proj(selector));
 }
 
 static tarval *fpa_imm[3][fpa_max];
 
+#if 0
 /**
  * Check, if a floating point tarval is an fpa immediate, i.e.
  * one of 0, 1, 2, 3, 4, 5, 10, or 0.5.
  */
-static int is_fpa_immediate(tarval *tv) {
+static int is_fpa_immediate(tarval *tv)
+{
 	ir_mode *mode = get_tarval_mode(tv);
 	int i, j, res = 1;
 
@@ -1061,6 +1051,7 @@ static int is_fpa_immediate(tarval *tv) {
 	}
 	return fpa_max;
 }
+#endif
 
 /**
  * Transforms a Const node.
@@ -1076,6 +1067,7 @@ static ir_node *gen_Const(ir_node *node) {
 		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			tarval *tv = get_Const_tarval(node);
+#if 0
 			int imm = is_fpa_immediate(tv);
 
 			if (imm != fpa_max) {
@@ -1084,6 +1076,8 @@ static ir_node *gen_Const(ir_node *node) {
 				else
 					node = new_bd_arm_fpaMnf_i(dbg, block, mode, -imm);
 			} else {
+#endif
+			{
 				node = new_bd_arm_fpaConst(dbg, block, tv);
 			}
 			be_dep_on_frame(node);
@@ -1105,15 +1099,16 @@ static ir_node *gen_Const(ir_node *node) {
  *
  * @return The transformed ARM node.
  */
-static ir_node *gen_SymConst(ir_node *node) {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_mode  *mode  = mode_Iu;
-	dbg_info *dbg   = get_irn_dbg_info(node);
-	ir_node  *res;
+static ir_node *gen_SymConst(ir_node *node)
+{
+	ir_node   *block  = be_transform_node(get_nodes_block(node));
+	ir_entity *entity = get_SymConst_entity(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *new_node;
 
-	res = new_bd_arm_SymConst(dbg, block, mode, get_sc_ident(node));
-	be_dep_on_frame(res);
-	return res;
+	new_node = new_bd_arm_SymConst(dbgi, block, entity);
+	be_dep_on_frame(new_node);
+	return new_node;
 }
 
 /**
@@ -1138,104 +1133,26 @@ static ir_node *gen_CopyB(ir_node *node) {
 	dst_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], block, new_dst);
 
  	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
-			new_bd_arm_EmptyReg(dbg, block, mode_Iu),
-			new_bd_arm_EmptyReg(dbg, block, mode_Iu),
-			new_bd_arm_EmptyReg(dbg, block, mode_Iu),
+			new_bd_arm_EmptyReg(dbg, block),
+			new_bd_arm_EmptyReg(dbg, block),
+			new_bd_arm_EmptyReg(dbg, block),
 			new_mem, size);
 }
-
-
-/********************************************
- *  _                          _
- * | |                        | |
- * | |__   ___ _ __   ___   __| | ___  ___
- * | '_ \ / _ \ '_ \ / _ \ / _` |/ _ \/ __|
- * | |_) |  __/ | | | (_) | (_| |  __/\__ \
- * |_.__/ \___|_| |_|\___/ \__,_|\___||___/
- *
- ********************************************/
-
-/**
- * Return an expanding stack offset.
- * Note that function is called in the transform phase
- * where the stack offsets are still relative regarding
- * the first (frame allocating) IncSP.
- * However this is exactly what we want because frame
- * access must be done relative the the fist IncSP ...
- */
-static int get_sp_expand_offset(ir_node *inc_sp) {
-	int offset = be_get_IncSP_offset(inc_sp);
-
-	if (offset == BE_STACK_FRAME_SIZE_EXPAND)
-		return 0;
-
-	return offset;
-}
-
-#if 0
-static ir_node *gen_StackParam(ir_node *irn) {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node   *new_op = NULL;
-	ir_node   *noreg  = ia32_new_NoReg_gp(env->cg);
-	ir_node   *mem    = new_NoMem();
-	ir_node   *ptr    = get_irn_n(irn, 0);
-	ir_entity *ent    = be_get_frame_entity(irn);
-	ir_mode   *mode   = env->mode;
-
-//	/* If the StackParam has only one user ->     */
-//	/* put it in the Block where the user resides */
-//	if (get_irn_n_edges(node) == 1) {
-//		env->block = get_nodes_block(get_edge_src_irn(get_irn_out_edge_first(node)));
-//	}
-
-	if (mode_is_float(mode)) {
-		if (USE_SSE2(env->cg))
-			new_op = new_rd_ia32_fLoad(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
-		else {
-			env->cg->used_x87 = 1;
-			new_op = new_rd_ia32_vfld(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
-		}
-	}
-	else {
-		new_op = new_rd_ia32_Load(env->dbg, env->irg, block, ptr, noreg, mem, mode_T);
-	}
-
-	set_ia32_frame_ent(new_op, ent);
-	set_ia32_use_frame(new_op);
-
-	set_ia32_am_support(new_op, ia32_am_Source);
-	set_ia32_op_type(new_op, ia32_AddrModeS);
-	set_ia32_am_flavour(new_op, ia32_B);
-	set_ia32_ls_mode(new_op, mode);
-
-	SET_IA32_ORIG_NODE(new_op, ia32_get_old_node_name(env->cg, env->irn));
-
-	return new_rd_Proj(env->dbg, env->irg, block, new_op, mode, 0);
-}
-#endif
 
 /**
  * Transforms a FrameAddr into an ARM Add.
  */
-static ir_node *gen_be_FrameAddr(ir_node *node) {
+static ir_node *gen_be_FrameAddr(ir_node *node)
+{
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
 	ir_entity *ent    = be_get_frame_entity(node);
-	int       offset  = get_entity_offset(ent);
-	ir_node   *op     = be_get_FrameAddr_frame(node);
-	ir_node   *new_op = be_transform_node(op);
-	dbg_info  *dbg    = get_irn_dbg_info(node);
-	ir_mode   *mode   = mode_Iu;
-	ir_node   *cnst;
+	ir_node   *fp     = be_get_FrameAddr_frame(node);
+	ir_node   *new_fp = be_transform_node(fp);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *new_node;
 
-	if (be_is_IncSP(op)) {
-		/* BEWARE: we get an offset which is absolute from an offset that
-		   is relative. Both must be merged */
-		offset += get_sp_expand_offset(op);
-	}
-	cnst = create_const_graph_value(dbg, block, (unsigned)offset);
-	if (is_arm_Mov_i(cnst))
-		return new_bd_arm_Add_i(dbg, block, new_op, mode, get_arm_imm_value(cnst));
-	return new_bd_arm_Add(dbg, block, new_op, cnst, mode, ARM_SHF_NONE, 0);
+	new_node = new_bd_arm_FrameAddr(dbgi, block, new_fp, ent);
+	return new_node;
 }
 
 /**
@@ -1303,10 +1220,6 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 	/* renumber the proj */
 	switch (get_arm_irn_opcode(new_load)) {
 	case iro_arm_Ldr:
-	case iro_arm_Ldrb:
-	case iro_arm_Ldrbs:
-	case iro_arm_Ldrh:
-	case iro_arm_Ldrhs:
 		/* handle all gp loads equal: they have the same proj numbers. */
 		if (proj == pn_Load_res) {
 			return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_arm_Ldr_res);
@@ -1363,24 +1276,24 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 
 	switch (proj) {
 	case pn_Quot_M:
-		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
+		if (is_arm_fpaDvf(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaDvf_M);
-		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
+		} else if (is_arm_fpaRdf(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaRdf_M);
-		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
+		} else if (is_arm_fpaFdv(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaFdv_M);
-		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
+		} else if (is_arm_fpaFrd(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_fpaFrd_M);
 		}
 		break;
 	case pn_Quot_res:
-		if (is_arm_fpaDvf(new_pred) || is_arm_fpaDvf_i(new_pred)) {
+		if (is_arm_fpaDvf(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaDvf_res);
-		} else if (is_arm_fpaRdf(new_pred) || is_arm_fpaRdf_i(new_pred)) {
+		} else if (is_arm_fpaRdf(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaRdf_res);
-		} else if (is_arm_fpaFdv(new_pred) || is_arm_fpaFdv_i(new_pred)) {
+		} else if (is_arm_fpaFdv(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaFdv_res);
-		} else if (is_arm_fpaFrd(new_pred) || is_arm_fpaFrd_i(new_pred)) {
+		} else if (is_arm_fpaFrd(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode, pn_arm_fpaFrd_res);
 		}
 		break;
@@ -1526,37 +1439,24 @@ static inline ir_node *create_const(ir_node **place,
 	return res;
 }
 
-static ir_node *arm_new_Unknown_gp(void) {
-	return create_const(&env_cg->unknown_gp, new_bd_arm_Unknown_GP,
-	                    &arm_gp_regs[REG_GP_UKNWN]);
-}
+static ir_node *gen_Unknown(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
 
-static ir_node *arm_new_Unknown_fpa(void) {
-	return create_const(&env_cg->unknown_fpa, new_bd_arm_Unknown_FPA,
-	                    &arm_fpa_regs[REG_FPA_UKNWN]);
-}
-
-/**
- * This function just sets the register for the Unknown node
- * as this is not done during register allocation because Unknown
- * is an "ignore" node.
- */
-static ir_node *gen_Unknown(ir_node *node) {
+	/* just produce a 0 */
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa))
-			return arm_new_Unknown_fpa();
-		else if (USE_VFP(env_cg->isa))
-			panic("VFP not supported yet");
-		else
-			panic("Softfloat not supported yet");
+		tarval *tv = get_mode_null(mode);
+		ir_node *node = new_bd_arm_fpaConst(dbgi, new_block, tv);
+		be_dep_on_frame(node);
+		return node;
 	} else if (mode_needs_gp_reg(mode)) {
-		return arm_new_Unknown_gp();
-	} else {
-		assert(0 && "unsupported Unknown-Mode");
+		return create_const_graph_value(dbgi, new_block, 0);
 	}
 
-	return NULL;
+	panic("Unexpected Unknown mode");
 }
 
 /**
@@ -1595,111 +1495,79 @@ static ir_node *gen_Phi(ir_node *node)
 	return phi;
 }
 
-/*********************************************************
- *                  _             _      _
- *                 (_)           | |    (_)
- *  _ __ ___   __ _ _ _ __     __| |_ __ ___   _____ _ __
- * | '_ ` _ \ / _` | | '_ \   / _` | '__| \ \ / / _ \ '__|
- * | | | | | | (_| | | | | | | (_| | |  | |\ V /  __/ |
- * |_| |_| |_|\__,_|_|_| |_|  \__,_|_|  |_| \_/ \___|_|
- *
- *********************************************************/
-
 /**
  * the BAD transformer.
  */
-static ir_node *bad_transform(ir_node *irn) {
+static ir_node *bad_transform(ir_node *irn)
+{
 	panic("ARM backend: Not implemented: %+F", irn);
-	return irn;
 }
 
 /**
  * Set a node emitter. Make it a bit more type safe.
  */
-static inline void set_transformer(ir_op *op, be_transform_func arm_transform_func) {
+static void set_transformer(ir_op *op, be_transform_func arm_transform_func)
+{
 	op->ops.generic = (op_func)arm_transform_func;
 }
 
 /**
  * Enters all transform functions into the generic pointer
  */
-static void arm_register_transformers(void) {
+static void arm_register_transformers(void)
+{
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
-#define GEN(a)     set_transformer(op_##a, gen_##a)
-#define BAD(a)     set_transformer(op_##a, bad_transform)
+	set_transformer(op_Abs,          gen_Abs);
+	set_transformer(op_Add,          gen_Add);
+	set_transformer(op_And,          gen_And);
+	set_transformer(op_be_AddSP,     gen_be_AddSP);
+	set_transformer(op_be_Call,      gen_be_Call);
+	set_transformer(op_be_Copy,      gen_be_Copy);
+	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
+	set_transformer(op_be_SubSP,     gen_be_SubSP);
+	set_transformer(op_Cmp,          gen_Cmp);
+	set_transformer(op_Cond,         gen_Cond);
+	set_transformer(op_Const,        gen_Const);
+	set_transformer(op_Conv,         gen_Conv);
+	set_transformer(op_CopyB,        gen_CopyB);
+	set_transformer(op_Eor,          gen_Eor);
+	set_transformer(op_Jmp,          gen_Jmp);
+	set_transformer(op_Load,         gen_Load);
+	set_transformer(op_Minus,        gen_Minus);
+	set_transformer(op_Mul,          gen_Mul);
+	set_transformer(op_Not,          gen_Not);
+	set_transformer(op_Or,           gen_Or);
+	set_transformer(op_Phi,          gen_Phi);
+	set_transformer(op_Proj,         gen_Proj);
+	set_transformer(op_Quot,         gen_Quot);
+	set_transformer(op_Rotl,         gen_Rotl);
+	set_transformer(op_Shl,          gen_Shl);
+	set_transformer(op_Shr,          gen_Shr);
+	set_transformer(op_Shrs,         gen_Shrs);
+	set_transformer(op_Store,        gen_Store);
+	set_transformer(op_Sub,          gen_Sub);
+	set_transformer(op_SymConst,     gen_SymConst);
+	set_transformer(op_Unknown,      gen_Unknown);
 
-	GEN(Add);
-	GEN(Sub);
-	GEN(Mul);
-	BAD(Mulh);	/* unsupported yet */
-	GEN(And);
-	GEN(Or);
-	GEN(Eor);
-
-	GEN(Shl);
-	GEN(Shr);
-	GEN(Shrs);
-	GEN(Rotl);
-
-	GEN(Quot);
-
-	/* should be lowered */
-	BAD(Div);
-	BAD(Mod);
-	BAD(DivMod);
-
-	GEN(Minus);
-	GEN(Conv);
-	GEN(Abs);
-	GEN(Not);
-
-	GEN(Load);
-	GEN(Store);
-	GEN(Cond);
-	GEN(Jmp);
-
-	BAD(ASM);	/* unsupported yet */
-	GEN(CopyB);
-	BAD(Mux);	/* unsupported yet */
-	GEN(Proj);
-	GEN(Phi);
-
-	GEN(Const);
-	GEN(SymConst);
-
-	/* we should never see these nodes */
-	BAD(Raise);
-	BAD(Sel);
-	BAD(InstOf);
-	BAD(Cast);
-	BAD(Free);
-	BAD(Tuple);
-	BAD(Id);
-	//BAD(Bad);
-	BAD(Confirm);
-	BAD(Filter);
-	BAD(CallBegin);
-	BAD(EndReg);
-	BAD(EndExcept);
-
-	/* handle builtins */
-	BAD(Builtin);
-
-	/* handle generic backend nodes */
-	GEN(be_FrameAddr);
-	//GEN(be_Call);
-	//GEN(be_Return);
-	GEN(be_AddSP);
-	GEN(be_SubSP);
-	GEN(be_Copy);
-
-	/* set the register for all Unknown nodes */
-	GEN(Unknown);
-
-#undef GEN
-#undef BAD
+	set_transformer(op_ASM,       bad_transform);
+	set_transformer(op_Builtin,   bad_transform);
+	set_transformer(op_CallBegin, bad_transform);
+	set_transformer(op_Cast,      bad_transform);
+	set_transformer(op_Confirm,   bad_transform);
+	set_transformer(op_DivMod,    bad_transform);
+	set_transformer(op_EndExcept, bad_transform);
+	set_transformer(op_EndReg,    bad_transform);
+	set_transformer(op_Filter,    bad_transform);
+	set_transformer(op_Free,      bad_transform);
+	set_transformer(op_Id,        bad_transform);
+	set_transformer(op_InstOf,    bad_transform);
+	set_transformer(op_Mulh,      bad_transform);
+	set_transformer(op_Mux,       bad_transform);
+	set_transformer(op_Raise,     bad_transform);
+	set_transformer(op_Sel,       bad_transform);
+	set_transformer(op_Tuple,     bad_transform);
 }
 
 /**
@@ -1716,7 +1584,8 @@ static void arm_pretransform_node(void)
 /**
  * Initialize fpa Immediate support.
  */
-static void arm_init_fpa_immediate(void) {
+static void arm_init_fpa_immediate(void)
+{
 	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
 	fpa_imm[0][fpa_null]  = get_tarval_null(mode_F);
 	fpa_imm[0][fpa_one]   = get_tarval_one(mode_F);
@@ -1749,7 +1618,8 @@ static void arm_init_fpa_immediate(void) {
 /**
  * Transform a Firm graph into an ARM graph.
  */
-void arm_transform_graph(arm_code_gen_t *cg) {
+void arm_transform_graph(arm_code_gen_t *cg)
+{
 	static int imm_initialized = 0;
 
 	if (! imm_initialized) {
@@ -1761,6 +1631,7 @@ void arm_transform_graph(arm_code_gen_t *cg) {
 	be_transform_graph(cg->birg, arm_pretransform_node);
 }
 
-void arm_init_transform(void) {
-	// FIRM_DBG_REGISTER(dbg, "firm.be.arm.transform");
+void arm_init_transform(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.arm.transform");
 }

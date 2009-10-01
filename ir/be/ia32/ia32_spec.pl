@@ -33,7 +33,6 @@ $arch = "ia32";
 #   emit      => "emit code with templates",
 #   attr      => "additional attribute arguments for constructor",
 #   init_attr => "emit attribute initialization template",
-#   rd_constructor => "c source code which constructs an ir_node",
 #   hash_func => "name of the hash function for this operation",
 #   latency   => "latency of this operation (can be float)"
 #   attr_type => "name of the attribute struct",
@@ -225,25 +224,18 @@ $arch = "ia32";
 	CMP3  => "${arch}_emit_cmp_suffix_node(node, 3);",
 );
 
-#--------------------------------------------------#
-#                        _                         #
-#                       (_)                        #
-#  _ __   _____      __  _ _ __    ___  _ __  ___  #
-# | '_ \ / _ \ \ /\ / / | | '__|  / _ \| '_ \/ __| #
-# | | | |  __/\ V  V /  | | |    | (_) | |_) \__ \ #
-# |_| |_|\___| \_/\_/   |_|_|     \___/| .__/|___/ #
-#                                      | |         #
-#                                      |_|         #
-#--------------------------------------------------#
+
+
 
 $default_op_attr_type = "ia32_op_attr_t";
 $default_attr_type    = "ia32_attr_t";
 $default_copy_attr    = "ia32_copy_attr";
 
 sub ia32_custom_init_attr {
-	my $node = shift;
-	my $name = shift;
-	my $res = "";
+	my $constr = shift;
+	my $node   = shift;
+	my $name   = shift;
+	my $res    = "";
 
 	if(defined($node->{modified_flags})) {
 		$res .= "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n";
@@ -356,19 +348,6 @@ ProduceVal => {
 	mode      => $mode_gp,
 	cmp_attr  => "return 1;",
 },
-
-#-----------------------------------------------------------------#
-#  _       _                                         _            #
-# (_)     | |                                       | |           #
-#  _ _ __ | |_ ___  __ _  ___ _ __   _ __   ___   __| | ___  ___  #
-# | | '_ \| __/ _ \/ _` |/ _ \ '__| | '_ \ / _ \ / _` |/ _ \/ __| #
-# | | | | | ||  __/ (_| |  __/ |    | | | | (_) | (_| |  __/\__ \ #
-# |_|_| |_|\__\___|\__, |\___|_|    |_| |_|\___/ \__,_|\___||___/ #
-#                   __/ |                                         #
-#                  |___/                                          #
-#-----------------------------------------------------------------#
-
-# commutative operations
 
 Add => {
 	irn_flags => "R",
@@ -506,7 +485,6 @@ And => {
 		           out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "res", "flags", "M" ],
-	op_modes  => "commutative | am | immediate | mode_neutral",
 	am        => "source,binary",
 	emit      => '. and%M %binop',
 	units     => [ "GP" ],
@@ -628,8 +606,6 @@ XorMem8Bit => {
 	mode      => "mode_M",
 	modified_flags => $status_flags
 },
-
-# not commutative operations
 
 Sub => {
 	irn_flags => "R",
@@ -914,8 +890,6 @@ RolMem => {
 	modified_flags => $status_flags
 },
 
-# unary operations
-
 Neg => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ],
@@ -1027,8 +1001,8 @@ NotMem => {
 },
 
 Cmc => {
-	reg_req => { in => [ "flags" ], out => [ "flags" ] },
-	emit    => '.cmc',
+	reg_req   => { in => [ "flags" ], out => [ "flags" ] },
+	emit      => '.cmc',
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
@@ -1036,15 +1010,13 @@ Cmc => {
 },
 
 Stc => {
-	reg_req => { out => [ "flags" ] },
-	emit    => '.stc',
+	reg_req   => { out => [ "flags" ] },
+	emit      => '.stc',
 	units     => [ "GP" ],
 	latency   => 1,
 	mode      => $mode_flags,
 	modified_flags => $status_flags
 },
-
-# other operations
 
 Cmp => {
 	irn_flags => "R",
@@ -1752,15 +1724,6 @@ PrefetchW => {
 	units     => [ "GP" ],
 },
 
-#-----------------------------------------------------------------------------#
-#   _____ _____ ______    __ _             _                     _            #
-#  / ____/ ____|  ____|  / _| |           | |                   | |           #
-# | (___| (___ | |__    | |_| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
-#  \___ \\___ \|  __|   |  _| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
-#  ____) |___) | |____  | | | | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
-# |_____/_____/|______| |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
-#-----------------------------------------------------------------------------#
-
 # produces a 0/+0.0
 xZero => {
 	irn_flags => "R",
@@ -1829,8 +1792,6 @@ xMovd  => {
 	units     => [ "SSE" ],
 	mode      => $mode_xmm
 },
-
-# commutative operations
 
 xAdd => {
 	irn_flags => "R",
@@ -1930,8 +1891,6 @@ xXor => {
 	mode      => $mode_xmm
 },
 
-# not commutative operations
-
 xAndNot => {
 	irn_flags => "R",
 	state     => "exc_pinned",
@@ -1973,8 +1932,6 @@ xDiv => {
 	units     => [ "SSE" ],
 },
 
-# other operations
-
 Ucomi => {
 	irn_flags => "R",
 	state     => "exc_pinned",
@@ -1991,8 +1948,6 @@ Ucomi => {
 	mode      => $mode_flags,
 	modified_flags => 1,
 },
-
-# Load / Store
 
 xLoad => {
 	op_flags  => "L|F",
@@ -2072,8 +2027,6 @@ l_FloattoLL => {
 	reg_req  => { in => [ "none" ], out => [ "none", "none" ] }
 },
 
-# CopyB
-
 CopyB => {
 	op_flags  => "F|H",
 	state     => "pinned",
@@ -2099,8 +2052,6 @@ CopyB_i => {
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
-
-# Conversions
 
 Cwtl => {
 	state     => "exc_pinned",
@@ -2170,20 +2121,6 @@ Conv_FP2FP => {
 	units     => [ "SSE" ],
 	mode      => $mode_xmm,
 },
-
-#----------------------------------------------------------#
-#        _      _               _    __ _             _    #
-#       (_)    | |             | |  / _| |           | |   #
-# __   ___ _ __| |_ _   _  __ _| | | |_| | ___   __ _| |_  #
-# \ \ / / | '__| __| | | |/ _` | | |  _| |/ _ \ / _` | __| #
-#  \ V /| | |  | |_| |_| | (_| | | | | | | (_) | (_| | |_  #
-#   \_/ |_|_|   \__|\__,_|\__,_|_| |_| |_|\___/ \__,_|\__| #
-#                 | |                                      #
-#  _ __   ___   __| | ___  ___                             #
-# | '_ \ / _ \ / _` |/ _ \/ __|                            #
-# | | | | (_) | (_| |  __/\__ \                            #
-# |_| |_|\___/ \__,_|\___||___/                            #
-#----------------------------------------------------------#
 
 # rematerialisation disabled for all float nodes for now, because the fpcw
 # handler runs before spilling and we might end up with wrong fpcw then
@@ -2264,8 +2201,6 @@ vfchs => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-# virtual Load and Store
-
 vfld => {
 	irn_flags => "R",
 	op_flags  => "L|F",
@@ -2296,8 +2231,6 @@ vfst => {
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },
-
-# Conversions
 
 vfild => {
 	state     => "exc_pinned",
@@ -2331,9 +2264,6 @@ vfisttp => {
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
 },
-
-
-# constants
 
 vfldz => {
 	irn_flags => "R",
@@ -2405,10 +2335,8 @@ vfldl2e => {
 	attr_type => "ia32_x87_attr_t",
 },
 
-# other
-
 vFucomFnstsw => {
-# we can't allow to rematerialize this node so we don't have
+# we can't allow to rematerialize this node so we don't
 #  accidently produce Phi(Fucom, Fucom(ins_permuted))
 #	irn_flags => "R",
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
@@ -2459,244 +2387,207 @@ Sahf => {
 	mode      => $mode_flags,
 },
 
-#------------------------------------------------------------------------#
-#       ___ _____    __ _             _                     _            #
-# __  _( _ )___  |  / _| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
-# \ \/ / _ \  / /  | |_| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
-#  >  < (_) |/ /   |  _| | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
-# /_/\_\___//_/    |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
-#------------------------------------------------------------------------#
-
-# Note: gas is strangely buggy: fdivrp and fdivp as well as fsubrp and fsubp
-#       are swapped, we work this around in the emitter...
-
 fadd => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fadd%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 faddp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. faddp%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fmul => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fmul%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fmulp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fmulp%XM %x87_binop',,
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fsub => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fsub%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
+
+# Note: gas is strangely buggy: fdivrp and fdivp as well as fsubrp and fsubp
+#       are swapped, we work this around in the emitter...
 
 fsubp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 # see note about gas bugs
 	emit      => '. fsubrp%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fsubr => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
 	irn_flags => "R",
-	reg_req   => { },
 	emit      => '. fsubr%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fsubrp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
 	irn_flags => "R",
-	reg_req   => { },
-# see note about gas bugs
+# see note about gas bugs before fsubp
 	emit      => '. fsubp%XM %x87_binop',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fprem => {
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fprem1',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 # this node is just here, to keep the simulator running
 # we can omit this when a fprem simulation function exists
 fpremp => {
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fprem1\n'.
 	             '. fstp %X0',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fdiv => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fdiv%XM %x87_binop',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fdivp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
-# see note about gas bugs
+# see note about gas bugs before fsubp
 	emit      => '. fdivrp%XM %x87_binop',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fdivr => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fdivr%XM %x87_binop',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fdivrp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
-# see note about gas bugs
+# see note about gas bugs before fsubp
 	emit      => '. fdivp%XM %x87_binop',
 	latency   => 20,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fabs => {
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fabs',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
 fchs => {
 	op_flags  => "R|K",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fchs',
 	latency   => 4,
 	attr_type => "ia32_x87_attr_t",
+	constructors => {},
 },
 
-# x87 Load and Store
-
 fld => {
-	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	reg_req   => { },
 	emit      => '. fld%XM %AM',
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
 
 fst => {
-	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	reg_req   => { },
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
 
 fstp => {
-	rd_constructor => "NONE",
 	op_flags  => "R|L|F",
 	state     => "exc_pinned",
-	reg_req   => { },
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
-
-# Conversions
 
 fild => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fild%XM %AM',
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
 
 fist => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fist%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
 
 fistp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fistp%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
 
 # SSE3 fisttp instruction
 fisttp => {
 	state     => "exc_pinned",
-	rd_constructor => "NONE",
-	reg_req   => { },
 	emit      => '. fisttp%XM %AM',
 	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 	latency   => 2,
+	constructors => {},
 },
-
-# constants
 
 fldz => {
 	op_flags  => "R|c|K",
@@ -2833,8 +2724,6 @@ femms => {
 	latency   => 3,
 },
 
-# compare
-
 FucomFnstsw => {
 	reg_req   => { },
 	emit      => ". fucom %X1\n".
@@ -2881,17 +2770,6 @@ FtstFnstsw => {
 	latency   => 2,
 },
 
-
-# -------------------------------------------------------------------------------- #
-#  ____ ____  _____                  _                               _             #
-# / ___/ ___|| ____| __   _____  ___| |_ ___  _ __   _ __   ___   __| | ___  ___   #
-# \___ \___ \|  _|   \ \ / / _ \/ __| __/ _ \| '__| | '_ \ / _ \ / _` |/ _ \/ __|  #
-#  ___) |__) | |___   \ V /  __/ (__| || (_) | |    | | | | (_) | (_| |  __/\__ \  #
-# |____/____/|_____|   \_/ \___|\___|\__\___/|_|    |_| |_|\___/ \__,_|\___||___/  #
-#                                                                                  #
-# -------------------------------------------------------------------------------- #
-
-
 # Spilling and reloading of SSE registers, hardcoded, not generated #
 
 xxLoad => {
@@ -2916,14 +2794,6 @@ xxStore => {
 },
 
 ); # end of %nodes
-
-# Include the generated SIMD node specification written by the SIMD optimization
-$my_script_name = dirname($myname) . "/../ia32/ia32_simd_spec.pl";
-unless ($return = do $my_script_name) {
-	warn "couldn't parse $my_script_name: $@" if $@;
-	warn "couldn't do $my_script_name: $!"    unless defined $return;
-	warn "couldn't run $my_script_name"       unless $return;
-}
 
 # Transform some attributes
 foreach my $op (keys(%nodes)) {

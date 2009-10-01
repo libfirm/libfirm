@@ -286,15 +286,6 @@ static ir_node *gen_Jmp(TEMPLATE_transform_env_t *env)
 	return new_bd_TEMPLATE_Jmp(env->dbg, env->block);
 }
 
-/*********************************************************
- *                  _             _      _
- *                 (_)           | |    (_)
- *  _ __ ___   __ _ _ _ __     __| |_ __ ___   _____ _ __
- * | '_ ` _ \ / _` | | '_ \   / _` | '__| \ \ / / _ \ '__|
- * | | | | | | (_| | | | | | | (_| | |  | |\ V /  __/ |
- * |_| |_| |_|\__,_|_|_| |_|  \__,_|_|  |_| \_/ \___|_|
- *
- *********************************************************/
 
 
 
@@ -404,8 +395,7 @@ bad:
 	if (asm_node) {
 		exchange(node, asm_node);
 		DB((dbg, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
-	}
-	else {
+	} else {
 		DB((dbg, LEVEL_1, "ignored\n"));
 	}
 }

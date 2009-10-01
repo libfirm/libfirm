@@ -1,6 +1,5 @@
 # Creation: 2006/02/13
 # $Id$
-# This is a template specification for the Firm-Backend
 
 # the cpu architecture (ia32, ia64, mips, sparc, ppc32, ...)
 

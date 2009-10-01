@@ -32,7 +32,7 @@
 typedef struct arm_vals {
 	int ops;
 	unsigned char values[4];
-	unsigned char shifts[4];
+	unsigned char rors[4];
 } arm_vals;
 
 /**

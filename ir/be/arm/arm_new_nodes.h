@@ -29,17 +29,6 @@
 #include "arm_nodes_attr.h"
 #include "bearch_arm_t.h"
 
-/***************************************************************************************************
- *        _   _                   _       __        _                    _   _               _
- *       | | | |                 | |     / /       | |                  | | | |             | |
- *   __ _| |_| |_ _ __   ___  ___| |_   / /_ _  ___| |_   _ __ ___   ___| |_| |__   ___   __| |___
- *  / _` | __| __| '__| / __|/ _ \ __| / / _` |/ _ \ __| | '_ ` _ \ / _ \ __| '_ \ / _ \ / _` / __|
- * | (_| | |_| |_| |    \__ \  __/ |_ / / (_| |  __/ |_  | | | | | |  __/ |_| | | | (_) | (_| \__ \
- *  \__,_|\__|\__|_|    |___/\___|\__/_/ \__, |\___|\__| |_| |_| |_|\___|\__|_| |_|\___/ \__,_|___/
- *                                        __/ |
- *                                       |___/
- ***************************************************************************************************/
-
 /**
  * Returns the attributes of a generic Arm node.
  */
@@ -64,6 +53,9 @@ const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node);
 arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node);
 const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node);
 
+arm_load_store_attr_t *get_arm_load_store_attr(ir_node *node);
+const arm_load_store_attr_t *get_arm_load_store_attr_const(const ir_node *node);
+
 /**
  * Returns the argument register requirements of an arm node.
  */
@@ -78,16 +70,6 @@ const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
  * Sets the IN register requirements at position pos.
  */
 void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
-/**
- * Returns the immediate value
- */
-long get_arm_imm_value(const ir_node *node);
-
-/**
- * Sets the immediate value
- */
-void set_arm_imm_value(ir_node *node, long imm_value);
 
 /**
 * Return the tarval of a fpaConst
@@ -108,9 +90,6 @@ int get_arm_CondJmp_proj_num(const ir_node *node);
  * Sets the proj num
  */
 void set_arm_CondJmp_proj_num(ir_node *node, int proj_num);
-
-ident *get_arm_symconst_id(const ir_node *node);
-void set_arm_symconst_id(ir_node *node, ident *symconst_id);
 
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
 							      int n_regs, ir_node **regs, ir_mode *mode);
@@ -139,9 +118,6 @@ void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
  * Gets the shift modifier attribute.
  */
 arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
-
-void init_arm_load_store_attributes(ir_node *res, ir_entity *entity,
-                                    int entity_sign, long offset);
 
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"

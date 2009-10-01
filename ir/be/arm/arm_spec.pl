@@ -1,18 +1,15 @@
 # Creation: 2006/02/13
 # $Id$
-# This is a template specification for the Firm-Backend
 
 # the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "arm";
 
-# the number of additional opcodes you want to register
-#$additional_opcodes = 0;
-
 #
 # Modes
 #
 $mode_gp      = "mode_Iu";
+$mode_flags   = "mode_Bu";
 $mode_fpa     = "mode_E";
 
 # register types:
@@ -38,11 +35,10 @@ $state       = 32; # register represents a state
 		{ name => "r9",  type => $callee_save },
 		{ name => "r10", type => $callee_save },
 		{ name => "r11", type => $callee_save },
-		{ name => "r12", type => $ignore | $callee_save }, # reserved for linker
-		{ name => "sp",  type => $ignore | $callee_save }, # this is our stack pointer
+		{ name => "r12", type => $ignore }, # reserved for linker/immediate fixups
+		{ name => "sp",  type => $ignore }, # this is our stack pointer
 		{ name => "lr",  type => $callee_save | $caller_save }, # this is our return address
-		{ name => "pc",  type => $ignore | $callee_save }, # this is our program counter
-		{ name => "gp_UKNWN", type => $ignore | $arbitrary | $virtual },  # we need a dummy register for Unknown nodes
+		{ name => "pc",  type => $ignore }, # this is our program counter
 		{ mode => $mode_gp }
 	],
 	fpa  => [
@@ -54,49 +50,51 @@ $state       = 32; # register represents a state
 		{ name => "f5", type => $caller_save },
 		{ name => "f6", type => $caller_save },
 		{ name => "f7", type => $caller_save },
-		{ name => "fpa_UKNWN", type => $ignore | $arbitrary | $virtual },  # we need a dummy register for Unknown nodes
 		{ mode => $mode_fpa }
-	]
+	],
+	flags => [
+		{ name => "fl", type => 0 },
+		{ mode => $mode_flags, flags => "manual_ra" }
+	],
 );
 
 %emit_templates = (
-	M  => "${arch}_emit_mode(node);",
-	X  => "${arch}_emit_shift(node);",
-	S0 => "${arch}_emit_source_register(node, 0);",
-	S1 => "${arch}_emit_source_register(node, 1);",
-	S2 => "${arch}_emit_source_register(node, 2);",
-	S3 => "${arch}_emit_source_register(node, 3);",
-	S4 => "${arch}_emit_source_register(node, 4);",
-	D0 => "${arch}_emit_dest_register(node, 0);",
-	D1 => "${arch}_emit_dest_register(node, 1);",
-	D2 => "${arch}_emit_dest_register(node, 2);",
-	C  => "${arch}_emit_immediate(node);",
-	O  => "${arch}_emit_offset(mode);",
+	M   => "${arch}_emit_mode(node);",
+	LM  => "${arch}_emit_load_mode(node);",
+	SM  => "${arch}_emit_store_mode(node);",
+	SO  => "${arch}_emit_shifter_operand(node);",
+	S0  => "${arch}_emit_source_register(node, 0);",
+	S1  => "${arch}_emit_source_register(node, 1);",
+	S2  => "${arch}_emit_source_register(node, 2);",
+	S3  => "${arch}_emit_source_register(node, 3);",
+	S4  => "${arch}_emit_source_register(node, 4);",
+	D0  => "${arch}_emit_dest_register(node, 0);",
+	D1  => "${arch}_emit_dest_register(node, 1);",
+	D2  => "${arch}_emit_dest_register(node, 2);",
+	O   => "${arch}_emit_offset(node);",
 );
-
-#--------------------------------------------------#
-#                        _                         #
-#                       (_)                        #
-#  _ __   _____      __  _ _ __    ___  _ __  ___  #
-# | '_ \ / _ \ \ /\ / / | | '__|  / _ \| '_ \/ __| #
-# | | | |  __/\ V  V /  | | |    | (_) | |_) \__ \ #
-# |_| |_|\___| \_/\_/   |_|_|     \___/| .__/|___/ #
-#                                      | |         #
-#                                      |_|         #
-#--------------------------------------------------#
 
 $default_attr_type = "arm_attr_t";
 $default_copy_attr = "arm_copy_attr";
 
 %init_attr = (
 	arm_attr_t           => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
-	arm_SymConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
+	arm_SymConst_attr_t  =>
+		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_arm_SymConst_attributes(res, entity);",
 	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_fpaConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_load_store_attr_t =>
 		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-		"\tinit_arm_load_store_attributes(res, entity, entity_sign, offset);",
+		"\tinit_arm_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
+	arm_shifter_operand_t =>
+		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n",
+	arm_cmp_attr_t =>
+		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n",
+	arm_CopyB_attr_t =>
+		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_arm_CopyB_attributes(res, size);",
 );
 
 %compare_attr = (
@@ -106,380 +104,272 @@ $default_copy_attr = "arm_copy_attr";
 	arm_SwitchJmp_attr_t  => "cmp_attr_arm_SwitchJmp",
 	arm_fpaConst_attr_t   => "cmp_attr_arm_fpaConst",
 	arm_load_store_attr_t => "cmp_attr_arm_load_store",
+	arm_shifter_operand_t => "cmp_attr_arm_shifter_operand",
+	arm_CopyB_attr_t      => "cmp_attr_arm_CopyB",
+	arm_cmp_attr_t        => "cmp_attr_arm_cmp",
 );
 
-#%operands = (
-#
-#Immediate => {
-#	comment   => "blup di dup",
-#	irn_flags => "R",
-#	emit      => ". [%S0]-10",
-#	reg_req   => { },
-#	attr      => "tarval *tv",
-#	init_attr => "(void) attri;",
-#	# op_flags => O
-#	# cmp => "return 1;"
-#},
-#
-#ShfOp_I => {
-#	irn_flags => "R",
-#	emit      => ". ...",
-#	reg_req   => { in => [ "gp" ] },
-#	attr      => "tarval *tv",
-#	init_attr => "(void) tv;",
-#},
-#
-#ShfOp => {
-#	irn_flags => "R",
-#	emit      => ". ...",
-#	reg_req   => { in => [ "gp", "gp" ] },
-#},
-#
-#);
+my %unop_shifter_operand_constructors = (
+	imm => {
+		attr       => "unsigned char immediate_value, unsigned char immediate_rot",
+		custominit => "init_arm_shifter_operand(res, immediate_value, ARM_SHF_IMM, immediate_rot);",
+		reg_req    => { in => [], out => [ "gp" ] },
+	},
+	reg => {
+		custominit => "init_arm_shifter_operand(res, 0, ARM_SHF_REG, 0);",
+		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+	},
+	reg_shift_reg => {
+		attr       => "arm_shift_modifier shift_modifier",
+		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, 0);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	},
+	reg_shift_imm => {
+		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate",
+		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);",
+		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+	},
+);
+
+my %binop_shifter_operand_constructors = (
+	imm => {
+		attr       => "unsigned char immediate_value, unsigned char immediate_rot",
+		custominit => "init_arm_shifter_operand(res, immediate_value, ARM_SHF_IMM, immediate_rot);",
+		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+		ins        => [ "left" ],
+	},
+	reg => {
+		custominit => "init_arm_shifter_operand(res, 0, ARM_SHF_REG, 0);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+		ins        => [ "left", "right" ],
+	},
+	reg_shift_reg => {
+		attr       => "arm_shift_modifier shift_modifier",
+		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, 0);",
+		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+		ins        => [ "left", "right", "shift" ],
+	},
+	reg_shift_imm => {
+		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate",
+		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+		ins        => [ "left", "right" ],
+	},
+);
+
+my %cmp_shifter_operand_constructors = (
+	imm => {
+		attr       => "unsigned char immediate_value, unsigned char immediate_rot, bool ins_permuted, bool is_unsigned",
+		custominit =>
+			"init_arm_shifter_operand(res, immediate_value, ARM_SHF_IMM, immediate_rot);\n".
+			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
+		ins        => [ "left" ],
+	},
+	reg => {
+		attr       => "bool ins_permuted, bool is_unsigned",
+		custominit =>
+			"init_arm_shifter_operand(res, 0, ARM_SHF_REG, 0);\n".
+			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+		ins        => [ "left", "right" ],
+	},
+	reg_shift_reg => {
+		attr       => "arm_shift_modifier shift_modifier, bool ins_permuted, bool is_unsigned",
+		custominit =>
+			"init_arm_shifter_operand(res, 0, shift_modifier, 0);\n".
+			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "flags" ] },
+		ins        => [ "left", "right", "shift" ],
+	},
+	reg_shift_imm => {
+		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate, bool ins_permuted, bool is_unsigned",
+		custominit =>
+			"init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);\n".
+			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+		ins        => [ "left", "right" ],
+	},
+);
+
 
 %nodes = (
 
-Unknown_GP => {
-	state     => "pinned",
-	op_flags  => "c",
-	reg_req   => { out => [ "gp_UKNWN:I" ] },
-	emit      => "",
-	mode      => $mode_gp,
-},
-
-Unknown_FPA => {
-	state     => "pinned",
-	op_flags  => "c",
-	reg_req   => { out => [ "fpa_UKNWN:I" ] },
-	emit      => "",
-	mode      => $mode_fpa,
-},
-
-#-----------------------------------------------------------------#
-#  _       _                                         _            #
-# (_)     | |                                       | |           #
-#  _ _ __ | |_ ___  __ _  ___ _ __   _ __   ___   __| | ___  ___  #
-# | | '_ \| __/ _ \/ _` |/ _ \ '__| | '_ \ / _ \ / _` |/ _ \/ __| #
-# | | | | | ||  __/ (_| |  __/ |    | | | | (_) | (_| |  __/\__ \ #
-# |_|_| |_|\__\___|\__, |\___|_|    |_| |_|\___/ \__,_|\___||___/ #
-#                   __/ |                                         #
-#                  |___/                                          #
-#-----------------------------------------------------------------#
-
-# commutative operations
-
 Add => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. add %D0, %S0, %S1%X'
-},
-
-Add_i => {
-	irn_flags => "R",
-	comment   => "construct Add: Add(a, const) = Add(const, a) = a + const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. add %D0, %S0, %C'
+	emit      => '. add %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
 
 Mul => {
-	#op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "!in_r1" ] },
-	emit      =>'. mul %D0, %S0, %S1'
+	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
+	emit      =>'. mul %D0, %S0, %S1',
+	mode      => $mode_gp,
 },
 
 Smull => {
-	#op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct signed 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	emit      =>'. smull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
 },
 
 Umull => {
-	#op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct unsigned 64bit Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp", "gp" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	emit      =>'. umull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
+	mode      => $mode_gp,
 },
 
 Mla => {
-	#op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Mla: Mla(a, b, c) = a * b + c",
-	reg_req   => { "in" => [ "gp", "gp", "gp" ], "out" => [ "!in_r1" ] },
-	emit      =>'. mla %D0, %S0, %S1, %S2'
+	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] },
+	emit      =>'. mla %D0, %S0, %S1, %S2',
+	mode      => $mode_gp,
 },
 
 And => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct And: And(a, b) = And(b, a) = a AND b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. and %D0, %S0, %S1%X'
-},
-
-And_i => {
-	irn_flags => "R",
-	comment   => "construct And: And(a, const) = And(const, a) = a AND const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. and %D0, %S0, %C',
+	emit      => '. and %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
 
 Or => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. orr %D0, %S0, %S1%X'
-},
-
-Or_i => {
-	irn_flags => "R",
-	comment   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. orr %D0, %S0, %C'
+	emit      => '. orr %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
 
 Eor => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. eor %D0, %S0, %S1%X'
+	emit      => '. eor %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
-
-Eor_i => {
-	irn_flags => "R",
-	comment   => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. eor %D0, %S0, %C'
-},
-
-# not commutative operations
 
 Bic => {
 	irn_flags => "R",
-	comment   => "construct Bic: Bic(a, b) = a AND ~b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. bic %D0, %S0, %S1%X'
-},
-
-Bic_i => {
-	irn_flags => "R",
-	comment   => "construct Bic: Bic(a, const) = a AND ~const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. bic %D0, %S0, %C',
+	emit      => '. bic %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
 
 Sub => {
 	irn_flags => "R",
-	comment   => "construct Sub: Sub(a, b) = a - b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. sub %D0, %S0, %S1%X'
-},
-
-Sub_i => {
-	irn_flags => "R",
-	comment   => "construct Sub: Sub(a, const) = a - const",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. sub %D0, %S0, %C',
+	emit      => '. sub %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
 
 Rsb => {
 	irn_flags => "R",
-	comment   => "construct Rsb: Rsb(a, b) = b - a",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. rsb %D0, %S0, %S1%X'
+	emit      => '. rsb %D0, %S0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%binop_shifter_operand_constructors,
 },
-
-Rsb_i => {
-	irn_flags => "R",
-	comment   => "construct Rsb: Rsb(a, const) = const - a",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. rsb %D0, %S0, %C',
-},
-
-Shl => {
-	irn_flags => "R",
-	comment   => "construct Shl: Shl(a, b) = a << b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. mov %D0, %S0, lsl %S1'
-},
-
-Shr => {
-	irn_flags => "R",
-	comment   => "construct Shr: Shr(a, b) = a >>u b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. mov %D0, %S0, lsr %S1'
-},
-
-Shrs => {
-	irn_flags => "R",
-	comment   => "construct Shrs: Shrs(a, b) = a >>s b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. mov %D0, %S0, asr %S1'
-},
-
-Ror => {
-	irn_flags => "R",
-	comment   => "construct Ror: Ror(a, b) = a <<r>> b",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-	emit      => '. mov %D0, %S0, ror %S1'
-},
-
-#RotL => {
-#  irn_flags => "R",
-#  comment   => "construct RotL: RotL(a, b) = a ROTL b",
-#  reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "gp" ] },
-#  emit      => '. rol %S0, %S1, %D0'
-#},
-
-#RotL_i => {
-#	irn_flags => "R",
-#	comment   => "construct RotL: RotL(a, const) = a ROTL const",
-#	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-#	emit      => '. rol %S0, %C, %D0'
-#},
 
 Mov => {
 	irn_flags => "R",
-	comment   => "construct Mov: a = b",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. mov %D0, %S0%X'
-},
-
-Mov_i => {
-	irn_flags => "R",
-	comment   => "represents an integer constant",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "out" => [ "gp" ] },
-	emit      => '. mov %D0, %C',
+	arity     => "variable",
+	emit      => '. mov %D0, %SO',
+	mode      => $mode_gp,
+	attr_type => "arm_shifter_operand_t",
+	constructors => \%unop_shifter_operand_constructors,
 },
 
 Mvn => {
 	irn_flags => "R",
-	comment   => "construct Not: Not(a) = !a",
-	attr      => "arm_shift_modifier mod, long shf",
-	init_attr => 'ARM_SET_SHF_MOD(attr, mod); attr->imm_value = shf;',
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
-	emit      => '. mvn %D0, %S0%X'
+	attr_type => "arm_shifter_operand_t",
+	arity     => "variable",
+	emit      => '. mvn %D0, %SO',
+	mode      => $mode_gp,
+	constructors => \%unop_shifter_operand_constructors,
 },
 
-Mvn_i => {
-	irn_flags => "R",
-	comment   => "represents a negated integer constant",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_SHF_MOD(attr, ARM_SHF_IMM); attr->imm_value = imm;',
-	reg_req   => { "out" => [ "gp" ] },
-	emit      => '. mvn %D0, %C',
-},
-
+# Deprecated - we should construct the movs and rsbmi directly...
 Abs => {
 	irn_flags => "R",
-	comment   => "construct Abs: Abs(a) = |a|",
-	reg_req   => { "in" => [ "gp" ], "out" => [ "gp" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      =>
 '. movs %S0, %S0, #0
-. rsbmi %D0, %S0, #0'
+. rsbmi %D0, %S0, #0',
+	mode      => $mode_gp,
 },
 
-# other operations
-
-#
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
-#
 EmptyReg => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "allocate an empty register for calculations",
-	reg_req   => { "out" => [ "gp" ] },
+	reg_req   => { out => [ "gp" ] },
 	emit      => '. /* %D0 now available for calculations */',
-	cmp_attr  => 'return 1;'
-},
-
-Copy => {
-	comment  => "implements a register copy",
-	reg_req  => { "in" => [ "gp" ], "out" => [ "gp" ] },
+	cmp_attr  => 'return 1;',
+	mode      => $mode_gp,
 },
 
 CopyB => {
 	op_flags  => "F|H",
 	state     => "pinned",
-	comment   => "implements a memcopy: CopyB(dst, src, size, mem) == memcpy(dst, src, size)",
-	attr      => "long imm",
-	init_attr => 'attr->imm_value = imm;',
-	reg_req   => { "in" => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], "out" => [ "none" ] },
+	attr      => "unsigned size",
+	attr_type => "arm_CopyB_attr_t",
+	reg_req   => { in => [ "!sp", "!sp", "gp", "gp", "gp", "none" ], out => [ "none" ] },
 	outs      => [ "M" ],
+},
+
+FrameAddr => {
+	op_flags  => "c",
+	irn_flags => "R",
+	attr      => "ir_entity *entity",
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	ins       => [ "base" ],
+	attr_type => "arm_SymConst_attr_t",
+	mode      => $mode_gp,
 },
 
 SymConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "represents a symbolic constant",
-	attr      => "ident *id",
-	init_attr => "\tset_arm_symconst_id(res, id);",
-	reg_req   => { "out" => [ "gp" ] },
-	attr_type   => "arm_SymConst_attr_t",
+	attr      => "ir_entity *entity",
+	reg_req   => { out => [ "gp" ] },
+	attr_type => "arm_SymConst_attr_t",
+	mode      => $mode_gp,
 },
 
-CmpBra => {
-	op_flags  => "L|X|Y",
-	state     => "pinned",
-	comment   => "construct conditional branch: CMP A, B && JMPxx LABEL",
-	mode      => "mode_T",
-	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "none", "none"] },
-	attr_type => "arm_CondJmp_attr_t",
+Cmp => {
+	irn_flags    => "R|F",
+	emit         => '. cmp %S0, %SO',
+	mode         => $mode_flags,
+	attr_type    => "arm_cmp_attr_t",
+	constructors => \%cmp_shifter_operand_constructors,
 },
 
-TstBra => {
+Tst => {
+	irn_flags    => "R|F",
+	emit         => '. tst %S0, %SO',
+	mode         => $mode_flags,
+	attr_type    => "arm_cmp_attr_t",
+	constructors => \%cmp_shifter_operand_constructors,
+},
+
+B => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct conditional branch: TST A, B && JMPxx LABEL",
 	mode      => "mode_T",
+	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
 	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "gp", "gp" ], "out" => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
+	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
 },
 
 Jmp => {
@@ -493,94 +383,23 @@ Jmp => {
 SwitchJmp => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct switch",
 	mode      => "mode_T",
 	attr      => "int n_projs, long def_proj_num",
 	init_attr => "\tset_arm_SwitchJmp_n_projs(res, n_projs);\n".
 	             "\tset_arm_SwitchJmp_default_proj_num(res, def_proj_num);",
-	reg_req   => { "in" => [ "gp" ], "out" => [ "none" ] },
+	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	attr_type => "arm_SwitchJmp_attr_t",
 },
-
-# Load / Store
 
 Ldr => {
 	op_flags  => "L|F",
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-	emit      => '. ldr %D0, [%S0, #0]',
+	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	emit      => '. ldr%LM %D0, [%S0, #%O]',
 	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Ldrb => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-	emit      => '. ldrb %D0, [%S0, #0]',
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Ldrbs => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-	emit      => '. ldrsb %D0, [%S0, #0]',
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Ldrh => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-	emit      => '. ldrh %D0, [%S0, #0]',
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Ldrhs => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "gp", "none" ] },
-	emit      => '. ldrsh %D0, [%S0, #0]',
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Strb => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "val", "mem" ],
-	outs      => [ "mem" ],
-	reg_req   => { "in" => [ "gp", "gp", "none" ], "out" => [ "none" ] },
-	emit      => '. strb %S1, [%S0, #0]',
-	mode      => "mode_M",
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
-},
-
-Strh => {
-	op_flags  => "L|F",
-	state     => "exc_pinned",
-	ins       => [ "ptr", "val", "mem" ],
-	outs      => [ "mem" ],
-	reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
-	emit      => '. strh %S1, [%S0, #0]',
-	mode      => "mode_M",
-	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
 
 Str => {
@@ -588,19 +407,18 @@ Str => {
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "mem" ],
-	reg_req   => { "in" => [ "gp", "gp", "none" ], out => [ "none" ] },
-	emit      => '. str %S1, [%S0, #0]',
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	emit      => '. str%SM %S1, [%S0, #%O]',
 	mode      => "mode_M",
 	attr_type => "arm_load_store_attr_t",
-	attr      => "ir_entity *entity, int entity_sign, long offset",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 },
 
 StoreStackM4Inc => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Push 4 Registers = ST ptr,val",
-	reg_req   => { "in" => [ "sp", "gp", "gp", "gp", "gp", "none" ], "out" => [ "sp:I|S", "none" ] },
+	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	emit      => '. stmfd %S0!, {%S1, %S2, %S3, %S4}',
 	outs      => [ "ptr", "M" ],
 },
@@ -609,299 +427,164 @@ LoadStackM3Epilogue => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-	reg_req   => { "in" => [ "sp", "none" ], "out" => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
+	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
 	emit      => '. ldmfd %S0, {%D0, %D1, %D2}',
 	outs      => [ "res0", "res1", "res2", "M" ],
 },
 
 
-#---------------------------------------------------#
-#    __                               _             #
-#   / _|                             | |            #
-#  | |_ _ __   __ _   _ __   ___   __| | ___  ___   #
-#  |  _| '_ \ / _` | | '_ \ / _ \ / _` |/ _ \/ __|  #
-#  | | | |_) | (_| | | | | | (_) | (_| |  __/\__ \  #
-#  |_| | .__/ \__,_| |_| |_|\___/ \__,_|\___||___/  #
-#      | |                                          #
-#      |_|                                          #
-#---------------------------------------------------#
-
-# commutative operations
 
 fpaAdf => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      => '. adf%M %D0, %S0, %S1',
 },
 
-fpaAdf_i => {
-	irn_flags => "R",
-	comment   => "construct FPA Add: Add(a, b) = Add(b, a) = a + b",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-	emit      => '. adf%M %D0, %S0, %C',
-},
-
 fpaMuf => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      =>'. muf%M %D0, %S0, %S1',
 },
 
-fpaMuf_i => {
-	irn_flags => "R",
-	comment   => "construct FPA Mul: Mul(a, b) = Mul(b, a) = a * b",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-	emit      => '. muf%M %D0, %S0, %C',
-},
-
 fpaFml => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FPA Fast Mul: Mul(a, b) = Mul(b, a) = a * b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      =>'. fml%M %D0, %S0, %S1',
 },
 
 fpaMax => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FPA Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      =>'. fmax %S0, %S1, %D0',
 },
 
 fpaMin => {
-	op_flags  => "C",
 	irn_flags => "R",
-	comment   => "construct FPA Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      =>'. fmin %S0, %S1, %D0',
 },
 
-# not commutative operations
-
 fpaSuf => {
 	irn_flags => "R",
-	comment   => "construct FPA Sub: Sub(a, b) = a - b",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      => '. suf%M %D0, %S0, %S1'
-},
-
-fpaSuf_i => {
-	irn_flags => "R",
-	comment   => "construct FPA Sub: Sub(a, b) = a - b",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-	emit      => '. suf%M %D0, %S0, %C'
 },
 
 fpaRsf => {
 	irn_flags => "R",
-	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      => '. rsf%M %D0, %S0, %S1'
 },
 
-fpaRsf_i => {
-	irn_flags => "R",
-	comment   => "construct FPA reverse Sub: Sub(a, b) = b - a",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
-	emit      => '. rsf%M %D0, %S0, %C'
-},
-
 fpaDvf => {
-	comment   => "construct FPA Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
 	emit      =>'. dvf%M %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 },
 
-fpaDvf_i => {
-	comment   => "construct FPA Div: Div(a, b) = a / b",
-	attr      => "ir_mode *op_mode, long imm",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
-	emit      =>'. dvf%M %D0, %S0, %C',
-	outs      => [ "res", "M" ],
-},
-
 fpaRdf => {
-	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
-	emit      =>'. rdf%M %D0, %S0, %S1',
-	outs      => [ "res", "M" ],
-},
-
-fpaRdf_i => {
-	comment   => "construct FPA reverse Div: Div(a, b) = b / a",
-	attr      => "ir_mode *op_mode, long imm",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
 	emit      =>'. rdf%M %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 },
 
 fpaFdv => {
-	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
 	emit      =>'. fdv%M %D0, %S0, %S1',
 	outs      => [ "res", "M" ],
 },
 
-fpaFdv_i => {
-	comment   => "construct FPA Fast Div: Div(a, b) = a / b",
-	attr      => "ir_mode *op_mode, long imm",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
-	emit      =>'. fdv%M %D0, %S0, %C',
-	outs      => [ "res", "M" ],
-},
-
 fpaFrd => {
-	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "fpa", "none" ] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa", "none" ] },
 	emit      =>'. frd%M %D0, %S0, %S1',
-	outs      => [ "res", "M" ],
-},
-
-fpaFrd_i => {
-	comment   => "construct FPA Fast reverse Div: Div(a, b) = b / a",
-	attr      => "ir_mode *op_mode, long imm",
-	init_attr => 'attr->op_mode = op_mode; ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa", "none" ] },
-	emit      =>'. frd%M %D0, %S0, %C',
 	outs      => [ "res", "M" ],
 },
 
 fpaMvf => {
 	irn_flags => "R",
-	comment   => "construct FPA Move: b = a",
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
 	emit      => '. mvf%M %S0, %D0',
-},
-
-fpaMvf_i => {
-	irn_flags => "R",
-	comment   => "represents a float constant",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "out" => [ "fpa" ] },
-	emit      => '. mvf%M %D0, %C',
 },
 
 fpaMnf => {
 	irn_flags => "R",
-	comment   => "construct FPA Move Negated: b = -a",
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
 	emit      => '. mnf%M %S0, %D0',
-},
-
-fpaMnf_i => {
-	irn_flags => "R",
-	comment   => "represents a float constant",
-	attr      => "long imm",
-	init_attr => 'ARM_SET_FPA_IMM(attr); attr->imm_value = imm;',
-	reg_req   => { "out" => [ "fpa" ] },
-	emit      => '. mnf%M %D0, %C',
 },
 
 fpaAbs => {
 	irn_flags => "R",
-	comment   => "construct FPA Absolute value: fAbsd(a) = |a|",
-	reg_req   => { "in" => [ "fpa" ], "out" => [ "fpa" ] },
+	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
 	emit      => '. abs%M %D0, %S0',
 },
 
-# other operations
-
 fpaFlt => {
 	irn_flags => "R",
-	comment   => "construct a FPA integer->float conversion",
-	reg_req   => { "in" => ["gp"], "out" => [ "fpa" ] },
+	reg_req   => { in => ["gp"], out => [ "fpa" ] },
 	emit      => '. flt%M %D0, %S0',
 },
 
 fpaFix => {
 	irn_flags => "R",
-	comment   => "construct a FPA float->integer conversion",
-	reg_req   => { "in" => ["fpa"], "out" => [ "gp" ] },
+	reg_req   => { in => ["fpa"], out => [ "gp" ] },
 	emit      => '. fix %D0, %S0',
 },
 
 fpaCmfBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct floating point Compare and Branch: CMF A, B && JMPxx LABEL",
 	mode      => "mode_T",
 	attr      => "int proj_num",
 	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
 
 fpaCnfBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct floating point Compare negative and Branch: CMF A, -B && JMPxx LABEL",
 	mode      => "mode_T",
 	attr      => "int proj_num",
 	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
 
 fpaCmfeBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct floating point Compare and Branch: CMF A, -B && JMPxx LABEL",
 	mode      => "mode_T",
 	attr      => "int proj_num",
 	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
 
 fpaCnfeBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
-	comment   => "construct floating point Compare and Branch: CMF A, -B && JMPxx LABEL",
 	mode      => "mode_T",
 	attr      => "int proj_num",
 	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
-	reg_req   => { "in" => [ "fpa", "fpa" ], "out" => [ "none", "none"] },
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
-
-# Load / Store
 
 fpaLdf => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct FPA Load: Load(ptr, mem) = LD ptr",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "gp", "none" ], "out" => [ "fpa", "none" ] },
+	reg_req   => { in => [ "gp", "none" ], out => [ "fpa", "none" ] },
 	emit      => '. ldf%M %D0, [%S0]',
 	outs      => [ "res", "M" ],
 },
@@ -910,10 +593,9 @@ fpaStf => {
 	op_flags  => "L|F",
 	irn_flags => "R",
 	state     => "exc_pinned",
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
 	attr      => "ir_mode *op_mode",
 	init_attr => "attr->op_mode = op_mode;",
-	reg_req   => { "in" => [ "gp", "fpa", "none" ], "out" => [ "none" ] },
+	reg_req   => { in => [ "gp", "fpa", "none" ], out => [ "none" ] },
 	emit      => '. stf%M %S1, [%S0]',
 	mode      => "mode_M",
 },
@@ -921,20 +603,17 @@ fpaStf => {
 fpaDbl2GP => {
 	op_flags  => "L|F",
 	irn_flags => "R",
-	comment   => "construct fp double to 2 gp register transfer",
-	reg_req   => { "in" => [ "fpa", "none" ], "out" => [ "gp", "gp", "none" ] },
+	reg_req   => { in => [ "fpa", "none" ], out => [ "gp", "gp", "none" ] },
 	outs      => [ "low", "high", "M" ],
 },
 
 AddSP => {
-	comment   => "construct Add to stack pointer",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	emit      => '. add %D0, %S0, %S1',
 	outs      => [ "stack", "M" ],
 },
 
 SubSPandCopy => {
-	comment   => "construct Sub from stack pointer and copy to Register",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	emit      => ". sub %D0, %S0, %S1\n".
@@ -944,7 +623,6 @@ SubSPandCopy => {
 
 LdTls => {
 	irn_flags => "R",
-	comment   => "load the TLS address",
 	reg_req   => { out => [ "gp" ] },
 },
 
@@ -955,23 +633,11 @@ LdTls => {
 fpaConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-	comment   => "construct a floating point constant",
 	attr      => "tarval *tv",
 	init_attr => "attr->tv = tv;",
 	mode      => "get_tarval_mode(tv)",
-	reg_req   => { "out" => [ "fpa" ] },
+	reg_req   => { out => [ "fpa" ] },
 	attr_type => "arm_fpaConst_attr_t",
 }
-
-#---------------------------------------------------#
-#          __                         _             #
-#         / _|                       | |            #
-#  __   _| |_ _ __    _ __   ___   __| | ___  ___   #
-#  \ \ / /  _| '_ \  | '_ \ / _ \ / _` |/ _ \/ __|  #
-#   \ V /| | | |_) | | | | | (_) | (_| |  __/\__ \  #
-#    \_/ |_| | .__/  |_| |_|\___/ \__,_|\___||___/  #
-#            | |                                    #
-#            |_|                                    #
-#---------------------------------------------------#
 
 ); # end of %nodes

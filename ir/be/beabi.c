@@ -329,7 +329,12 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 	ir_type  *base = frame->stack_dir < 0 ? frame->between_type : frame->frame_type;
 	ir_entity *ent = search_ent_with_offset(base, 0);
 
-	frame->initial_offset = ent ? get_stack_entity_offset(frame, ent, 0) : 0;
+	if (ent == NULL) {
+		frame->initial_offset
+			= frame->stack_dir < 0 ? get_type_size_bytes(frame->frame_type) : get_type_size_bytes(frame->between_type);
+	} else {
+		frame->initial_offset = get_stack_entity_offset(frame, ent, 0);
+	}
 
 	return frame->initial_offset;
 }

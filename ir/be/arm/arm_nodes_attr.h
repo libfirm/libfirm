@@ -31,26 +31,22 @@
 #include "../bearch.h"
 
 /**
- * Possible ARM register shift types.
+ * Possible ARM "shifter operand" addressing mode types.
  */
 typedef enum _arm_shift_modifier {
-	ARM_SHF_NONE = 0,   /**< no shift */
-	ARM_SHF_IMM  = 1,   /**< immediate operand with implicit ROR */
-	ARM_SHF_ASR  = 2,   /**< arithmetic shift right */
-	ARM_SHF_LSL  = 3,   /**< logical shift left */
-	ARM_SHF_LSR  = 4,   /**< logical shift right */
-	ARM_SHF_ROR  = 5,   /**< rotate right */
-	ARM_SHF_RRX  = 6,   /**< rotate right through carry bits */
+	ARM_SHF_INVALID,   /**< invalid shift */
+	ARM_SHF_REG,       /**< simple register operand */
+	ARM_SHF_IMM,       /**< immediate operand with implicit ROR */
+	ARM_SHF_ASR_IMM,   /**< arithmetic shift right */
+	ARM_SHF_ASR_REG,   /**< arithmetic shift right */
+	ARM_SHF_LSL_IMM,   /**< logical shift left */
+	ARM_SHF_LSL_REG,   /**< logical shift left */
+	ARM_SHF_LSR_IMM,   /**< logical shift right */
+	ARM_SHF_LSR_REG,   /**< logical shift right */
+	ARM_SHF_ROR_IMM,   /**< rotate right */
+	ARM_SHF_ROR_REG,   /**< rotate right */
+	ARM_SHF_RRX,       /**< rotate right through carry bits */
 } arm_shift_modifier;
-
-/** True, if the modifier implies a shift argument */
-#define ARM_HAS_SHIFT(mod)          ((mod) > ARM_SHF_IMM)
-
-/** get the shift modifier from flags */
-#define ARM_GET_SHF_MOD(attr)       ((attr)->instr_fl & 7)
-
-/** set the shift modifier to flags */
-#define ARM_SET_SHF_MOD(attr, mod)  ((attr)->instr_fl = (((attr)->instr_fl & ~7) | (mod)))
 
 /** fpa immediate bit */
 #define ARM_FPA_IMM  (1 << 3)   /**< fpa floating point immediate */
@@ -58,34 +54,6 @@ typedef enum _arm_shift_modifier {
 #define ARM_GET_FPA_IMM(attr)        ((attr)->instr_fl & ARM_FPA_IMM)
 #define ARM_SET_FPA_IMM(attr)        ((attr)->instr_fl |= ARM_FPA_IMM)
 #define ARM_CLR_FPA_IMM(attr)        ((attr)->instr_fl &= ~ARM_FPA_IMM)
-
-/**
- * Possible ARM condition codes.
- */
-typedef enum _arm_condition {
-	ARM_COND_EQ = 0,   /**< Equal, Z set. */
-	ARM_COND_NE = 1,   /**< Not Equal, Z clear */
-	ARM_COND_CS = 2,   /**< Carry set, unsigned >=, C set */
-	ARM_COND_CC = 3,   /**< Carry clear, unsigned <, C clear */
-	ARM_COND_MI = 4,   /**< Minus/Negative, N set */
-	ARM_COND_PL = 5,   /**< Plus/Positive or Zero, N clear */
-	ARM_COND_VS = 6,   /**< Overflow, V set */
-	ARM_COND_VC = 7,   /**< No overflow, V clear */
-	ARM_COND_HI = 8,   /**< unsigned >, C set and Z clear */
-	ARM_COND_LS = 9,   /**< unsigned <=, C clear or Z set */
-	ARM_COND_GE = 10,  /**< signed >=, N == V */
-	ARM_COND_LT = 11,  /**< signed <, N != V */
-	ARM_COND_GT = 12,  /**< signed >, Z clear and N == V */
-	ARM_COND_LE = 13,  /**< signed <=, Z set or N != V */
-	ARM_COND_AL = 14,  /**< Always (unconditional) */
-	ARM_COND_NV = 15   /**< forbidden */
-} arm_condition;
-
-/** Get the condition code from flags */
-#define ARM_GET_COND(attr)        (((attr)->instr_fl >> 4) & 15)
-
-/** Set the condition code to flags */
-#define ARM_SET_COND(attr, code)  ((attr)->instr_fl = (((attr)->instr_fl & ~(15 << 4)) | ((code) << 4)))
 
 /** Encoding for fpa immediates */
 enum fpa_immediates {
@@ -106,47 +74,72 @@ typedef struct _arm_attr_t {
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 
-	ir_mode  *op_mode;                   /**< operation mode if different from node's mode */
-	unsigned instr_fl;                   /**< condition code, shift modifier */
-	long     imm_value;                  /**< immediate */
+	ir_mode  *op_mode;                   /**< operation mode if different from node's mode (used for fpa nodes) */
+	unsigned  instr_fl;                  /**< deprecated (was sometimes used for shift modifiers) */
+	bool      is_load_store : 1;
 } arm_attr_t;
 
+/**
+ * This struct holds information needed to produce the arm
+ * "data processing operands" also called "shifter operand" addressing modes
+ */
+typedef struct arm_shifter_operand_t {
+	arm_attr_t          base;
+	arm_shift_modifier  shift_modifier;
+	unsigned char       immediate_value;
+	unsigned char       shift_immediate;
+} arm_shifter_operand_t;
+
+typedef struct arm_cmp_attr_t {
+	arm_shifter_operand_t  base;
+	bool                   ins_permuted : 1;
+	bool                   is_unsigned  : 1;
+} arm_cmp_attr_t;
+
+/**
+ * this struct holds information needed to produce the arm addressing modes
+ * for "Load and Store Word or Unsigned Byte", "Miscellaneous Loads and Stores"
+ * and "Load and Store Multiple" */
 typedef struct arm_load_store_attr_t {
-	arm_attr_t  attr;
+	arm_attr_t  base;
+	ir_mode    *load_store_mode;
 	ir_entity  *entity;
 	long        offset;
-	bool        entity_sign : 1;
+	bool        is_frame_entity : 1;
+	bool        entity_sign     : 1;
 } arm_load_store_attr_t;
 
 /** Attributes for a SymConst */
 typedef struct _arm_SymConst_attr_t {
-	arm_attr_t  attr;                   /**< base attributes */
-	ident       *symconst_id;           /**< for SymConsts: its ident */
+	arm_attr_t  base;
+	ir_entity  *entity;
+	int         fp_offset;
 } arm_SymConst_attr_t;
 
 /** Attributes for a CondJmp */
 typedef struct _arm_CondJmp_attr_t {
-	arm_attr_t  attr;                   /**< base attributes */
+	arm_attr_t  base;
 	int         proj_num;
 } arm_CondJmp_attr_t;
 
 /** Attributes for a SwitchJmp */
 typedef struct _arm_SwitchJmp_attr_t {
-	arm_attr_t  attr;                   /**< base attributes */
+	arm_attr_t  base;
 	int         n_projs;
 	long        default_proj_num;
 } arm_SwitchJmp_attr_t;
 
+/** CopyB attributes */
+typedef struct {
+	arm_attr_t  base;
+	unsigned    size;
+} arm_CopyB_attr_t;
+
 /** Attributes for a fpaConst */
 typedef struct _arm_fpaConst_attr_t {
-	arm_attr_t  attr;                   /**< base attributes */
-	tarval      *tv;                    /**< the tarval representing the FP const */
+	arm_attr_t  base;
+	tarval     *tv;              /**< the tarval representing the FP const */
 } arm_fpaConst_attr_t;
-
-/**
- * Returns the shift modifier string.
- */
-const char *arm_shf_mod_name(arm_shift_modifier mod);
 
 /**
  * Return the fpa immediate from the encoding.

@@ -27,6 +27,7 @@
 
 #include "irgmod.h"
 #include "ircons.h"
+#include "iredges.h"
 #include "error.h"
 
 #include "benode.h"
@@ -36,12 +37,14 @@
 #include "arm_optimize.h"
 #include "gen_arm_regalloc_if.h"
 #include "gen_arm_new_nodes.h"
+#include "arm_nodes_attr.h"
+#include "arm_new_nodes.h"
 
 static arm_code_gen_t  *cg;
 
-/** Execute ARM ROL. */
-static unsigned arm_rol(unsigned v, unsigned rol) {
-	return (v << rol) | (v >> (32 - rol));
+static unsigned arm_ror(unsigned v, unsigned ror)
+{
+	return (v << (32 - ror)) | (v >> ror);
 }
 
 /*
@@ -51,61 +54,38 @@ void arm_gen_vals_from_word(unsigned int value, arm_vals *result)
 {
 	int initial = 0;
 
-	memset(result, 0, sizeof(*result));
+	/* TODO: not optimal yet, as we only "shift" the value and don't take advantage of rotations */
 
 	/* special case: we prefer shift amount 0 */
-	if (value < 0x100) {
+	if (value <= 0xFF) {
 		result->values[0] = value;
+		result->rors[0]   = 0;
 		result->ops       = 1;
 		return;
 	}
 
-	while (value != 0) {
-		if (value & 0xFF) {
-			unsigned v = arm_rol(value, 8) & 0xFFFFFF;
-			int shf = 0;
-			for (;;) {
-				if ((v & 3) != 0)
-					break;
-				shf += 2;
-				v >>= 2;
-			}
-			v  &= 0xFF;
-			shf = (initial + shf - 8) & 0x1F;
-			result->values[result->ops] = v;
-			result->shifts[result->ops] = shf;
-			++result->ops;
-
-			value ^= arm_rol(v, shf) >> initial;
+	result->ops = 0;
+	do {
+		while ( (value & 0x3) == 0) {
+			value  >>= 2;
+			initial += 2;
 		}
-		else {
-			value >>= 8;
-			initial += 8;
-		}
-	}
+
+		result->values[result->ops] = value & 0xFF;
+		result->rors[result->ops]   = (32-initial) % 32;
+		++result->ops;
+
+		value  >>= 8;
+		initial += 8;
+	} while(value != 0);
 }
 
 /**
- * Encodes an immediate with shifter operand
+ * Returns non.zero if the given offset can be directly encoded into an ARM
+ * instruction.
  */
-unsigned int arm_encode_imm_w_shift(unsigned int shift, unsigned int immediate) {
-	return immediate | ((shift>>1)<<8);
-}
-
-/**
- * Decode an immediate with shifter operand
- */
-unsigned int arm_decode_imm_w_shift(long imm_value) {
-	unsigned l = (unsigned)imm_value;
-	unsigned rol = (l & ~0xFF) >> 7;
-
-	return arm_rol(l & 0xFF, rol);
-}
-
-/**
- * Returns non.zero if the given offset can be directly encoded into an ARM instruction.
- */
-static int allowed_arm_immediate(int offset, arm_vals *result) {
+static int allowed_arm_immediate(int offset, arm_vals *result)
+{
 	arm_gen_vals_from_word(offset, result);
 	return result->ops <= 1;
 }
@@ -113,10 +93,17 @@ static int allowed_arm_immediate(int offset, arm_vals *result) {
 /**
  * Fix an IncSP node if the offset gets too big
  */
-static void peephole_be_IncSP(ir_node *node) {
+static void peephole_be_IncSP(ir_node *node)
+{
+	ir_node  *first;
+	ir_node  *last;
 	ir_node  *block;
-	int      offset, cnt, align, sign = 1;
-	arm_vals v;
+	int       offset;
+	int       cnt;
+	int       sign = 1;
+	arm_vals  v;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 
 	/* first optimize incsp->incsp combinations */
 	node = be_peephole_IncSP_IncSP(node);
@@ -130,15 +117,27 @@ static void peephole_be_IncSP(ir_node *node) {
 	if (allowed_arm_immediate(offset, &v))
 		return;
 
-	be_set_IncSP_offset(node, (int)arm_rol(v.values[0], v.shifts[0]) * sign);
+	be_set_IncSP_offset(node, sign * arm_ror(v.values[0], v.rors[0]));
 
+	first = node;
 	block = get_nodes_block(node);
-	align = be_get_IncSP_align(node);
 	for (cnt = 1; cnt < v.ops; ++cnt) {
-		int value = (int)arm_rol(v.values[cnt], v.shifts[cnt]);
-		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], block, node, value * sign, align);
+		int value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
+		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], block, node,
+		                             value, 1);
 		sched_add_after(node, next);
 		node = next;
+	}
+
+	/* reattach IncSP users */
+	last = node;
+	node = sched_next(first);
+	foreach_out_edge_safe(first, edge, next) {
+		ir_node *user = get_edge_src_irn(edge);
+		int      pos  = get_edge_src_pos(edge);
+		if (user == node)
+			continue;
+		set_irn_n(user, pos, last);
 	}
 }
 
@@ -147,18 +146,18 @@ static void peephole_be_IncSP(ir_node *node) {
  */
 static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 {
-	dbg_info *dbg   = get_irn_dbg_info(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	int     cnt;
 	ir_node *ptr;
 
-	ptr = new_bd_arm_Add_i(dbg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
+	ptr = new_bd_arm_Add_imm(dbgi, block, frame, v->values[0], v->rors[0]);
 	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
-		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
-		ir_node *next = new_bd_arm_Add_i(dbg, block, ptr, mode_Iu, value);
+		ir_node *next = new_bd_arm_Add_imm(dbgi, block, ptr, v->values[cnt],
+		                                   v->rors[cnt]);
 		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
@@ -171,18 +170,18 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 */
 static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 {
-	dbg_info *dbg   = get_irn_dbg_info(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	int     cnt;
 	ir_node *ptr;
 
-	ptr = new_bd_arm_Sub_i(dbg, block, frame, mode_Iu, arm_encode_imm_w_shift(v->shifts[0], v->values[0]));
+	ptr = new_bd_arm_Sub_imm(dbgi, block, frame, v->values[0], v->rors[0]);
 	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
-		long value = arm_encode_imm_w_shift(v->shifts[cnt], v->values[cnt]);
-		ir_node *next = new_bd_arm_Sub_i(dbg, block, ptr, mode_Iu, value);
+		ir_node *next = new_bd_arm_Sub_imm(dbgi, block, ptr, v->values[cnt],
+		                                   v->rors[cnt]);
 		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
@@ -190,117 +189,79 @@ static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 	return ptr;
 }
 
-/**
- * Fix an be_Spill node if the offset gets too big
- */
-static void peephole_be_Spill(ir_node *node) {
-	ir_entity *ent   = be_get_frame_entity(node);
-	int       use_add = 1, offset = get_entity_offset(ent);
-	ir_node   *block, *ptr, *frame, *value, *store;
-	ir_mode   *mode;
-	dbg_info  *dbg;
-	ir_graph  *irg;
-	arm_vals  v;
+/** fix frame addresses which are too big */
+static void peephole_arm_FrameAddr(ir_node *node)
+{
+	arm_SymConst_attr_t *attr   = get_arm_SymConst_attr(node);
+	int                  offset = attr->fp_offset;
+	arm_vals             v;
+	ir_node             *base;
+	ir_node             *ptr;
 
 	if (allowed_arm_immediate(offset, &v))
 		return;
-	if (offset < 0) {
-		use_add = 0;
-		offset = -offset;
-	}
 
-	frame = be_get_Spill_frame(node);
-	if (use_add) {
-		ptr = gen_ptr_add(node, frame, &v);
-	} else {
-		ptr = gen_ptr_sub(node, frame, &v);
-	}
+	base = get_irn_n(node, n_arm_FrameAddr_base);
+	/* TODO: suboptimal */
+	ptr = gen_ptr_add(node, base, &v);
 
-	value = be_get_Spill_val(node);
-	mode  = get_irn_mode(value);
-	irg   = current_ir_graph;
-	dbg   = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa)) {
-			/* transform into fpaStf */
-			store = new_bd_arm_fpaStf(dbg, block, ptr, value, get_irg_no_mem(irg), mode);
-			sched_add_before(node, store);
-		} else {
-			panic("peephole_be_Spill: spill not supported for this mode");
-		}
-	} else if (mode_is_dataM(mode)) {
-		/* transform into Store */;
-		store = new_bd_arm_Str(dbg, block, ptr, value, get_irg_no_mem(irg),
-		                       NULL, 0, 0);
-		sched_add_before(node, store);
-	} else {
-		panic("peephole_be_Spill: spill not supported for this mode");
-	}
-
-	be_peephole_exchange(node, store);
+	attr->fp_offset = 0;
+	set_irn_n(node, n_arm_FrameAddr_base, ptr);
 }
 
 /**
- * Fix an be_Reload node if the offset gets too big
+ * Fix stackpointer relative stores if the offset gets too big
  */
-static void peephole_be_Reload(ir_node *node) {
-	ir_entity *ent   = be_get_frame_entity(node);
-	int       use_add = 1, offset = get_entity_offset(ent);
-	ir_node   *block, *ptr, *frame, *load, *mem, *proj;
-	ir_mode   *mode;
-	dbg_info  *dbg;
-	arm_vals  v;
-	const arch_register_t *reg;
+static void peephole_arm_Str_Ldr(ir_node *node)
+{
+	arm_load_store_attr_t *attr    = get_arm_load_store_attr(node);
+	int                    offset  = attr->offset;
+	int                    use_add = 1;
+	ir_node               *ptr;
+	arm_vals              v;
 
 	if (allowed_arm_immediate(offset, &v))
 		return;
+
+	/* we should only have too big offsets for frame entities */
+	if (!attr->is_frame_entity) {
+		fprintf(stderr,
+		        "POSSIBLE ARM BACKEND PROBLEM: offset in Store too big\n");
+	}
 	if (offset < 0) {
 		use_add = 0;
 		offset = -offset;
 	}
 
-	frame = be_get_Reload_frame(node);
+	if (is_arm_Str(node)) {
+		ptr = get_irn_n(node, n_arm_Str_ptr);
+	} else {
+		assert(is_arm_Ldr(node));
+		ptr = get_irn_n(node, n_arm_Ldr_ptr);
+	}
+
 	if (use_add) {
-		ptr = gen_ptr_add(node, frame, &v);
+		ptr = gen_ptr_add(node, ptr, &v);
 	} else {
-		ptr = gen_ptr_sub(node, frame, &v);
+		ptr = gen_ptr_sub(node, ptr, &v);
 	}
 
-	reg   = arch_get_irn_register(node);
-	mem   = be_get_Reload_mem(node);
-	mode  = get_irn_mode(node);
-	dbg   = get_irn_dbg_info(node);
-	block = get_nodes_block(node);
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa)) {
-			/* transform into fpaLdf */
-			load = new_bd_arm_fpaLdf(dbg, block, ptr, mem, mode);
-			sched_add_before(node, load);
-			proj = new_rd_Proj(dbg, block, load, mode, pn_arm_fpaLdf_res);
-			arch_set_irn_register(proj, reg);
-		} else {
-			panic("peephole_be_Spill: spill not supported for this mode");
-		}
-	} else if (mode_is_dataM(mode)) {
-		/* transform into Store */;
-		load = new_bd_arm_Ldr(dbg, block, ptr, mem, NULL, 0, 0);
-		sched_add_before(node, load);
-		proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_arm_Ldr_res);
-		arch_set_irn_register(proj, reg);
+	/* TODO: sub-optimal, the last offset could probably be left inside the
+	   store */
+	if (is_arm_Str(node)) {
+		set_irn_n(node, n_arm_Str_ptr, ptr);
 	} else {
-		panic("peephole_be_Spill: spill not supported for this mode");
+		assert(is_arm_Ldr(node));
+		set_irn_n(node, n_arm_Ldr_ptr, ptr);
 	}
-
-	be_peephole_exchange(node, proj);
+	attr->offset = 0;
 }
 
 /**
  * Register a peephole optimization function.
  */
-static void register_peephole_optimisation(ir_op *op, peephole_opt_func func) {
+static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
+{
 	assert(op->ops.generic == NULL);
 	op->ops.generic = (op_func)func;
 }
@@ -312,9 +273,10 @@ void arm_peephole_optimization(arm_code_gen_t *new_cg)
 
 	/* register peephole optimizations */
 	clear_irp_opcodes_generic_func();
-	register_peephole_optimisation(op_be_IncSP, peephole_be_IncSP);
-	register_peephole_optimisation(op_be_Spill, peephole_be_Spill);
-	register_peephole_optimisation(op_be_Reload, peephole_be_Reload);
+	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
+	register_peephole_optimisation(op_arm_Str,       peephole_arm_Str_Ldr);
+	register_peephole_optimisation(op_arm_Ldr,       peephole_arm_Str_Ldr);
+	register_peephole_optimisation(op_arm_FrameAddr, peephole_arm_FrameAddr);
 
 	be_peephole_opt(cg->birg);
 }

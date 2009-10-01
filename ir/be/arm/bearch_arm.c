@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   The main arm backend driver file.
- * @author  Oliver Richter, Tobias Gneist
+ * @author  Matthias Braun, Oliver Richter, Tobias Gneist
  * @version $Id$
  */
 #include "config.h"
@@ -44,7 +44,7 @@
 #include "array_t.h"
 #include "irtools.h"
 
-#include "../bearch.h"                /* the general register allocator interface */
+#include "../bearch.h"
 #include "../benode.h"
 #include "../belower.h"
 #include "../besched.h"
@@ -57,31 +57,16 @@
 #include "../bespillslots.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
+#include "../beflags.h"
 
 #include "bearch_arm_t.h"
 
-#include "arm_new_nodes.h"           /* arm nodes interface */
-#include "gen_arm_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "arm_new_nodes.h"
+#include "gen_arm_regalloc_if.h"
 #include "arm_transform.h"
 #include "arm_optimize.h"
 #include "arm_emitter.h"
 #include "arm_map_regs.h"
-
-#define DEBUG_MODULE "firm.be.arm.isa"
-
-/* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
-static set *cur_reg_set = NULL;
-
-/**************************************************
- *                         _ _              _  __
- *                        | | |            (_)/ _|
- *  _ __ ___  __ _    __ _| | | ___   ___   _| |_
- * | '__/ _ \/ _` |  / _` | | |/ _ \ / __| | |  _|
- * | | |  __/ (_| | | (_| | | | (_) | (__  | | |
- * |_|  \___|\__, |  \__,_|_|_|\___/ \___| |_|_|
- *            __/ |
- *           |___/
- **************************************************/
 
 static arch_irn_class_t arm_classify(const ir_node *irn)
 {
@@ -89,14 +74,26 @@ static arch_irn_class_t arm_classify(const ir_node *irn)
 	return 0;
 }
 
-static ir_entity *arm_get_frame_entity(const ir_node *irn) {
-	/* we do NOT transform be_Spill or be_Reload nodes, so we never
-	   have frame access using ARM nodes. */
-	(void) irn;
+static ir_entity *arm_get_frame_entity(const ir_node *irn)
+{
+	const arm_attr_t *attr = get_arm_attr_const(irn);
+
+	if (is_arm_FrameAddr(irn)) {
+		const arm_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+		return attr->entity;
+	}
+	if (attr->is_load_store) {
+		const arm_load_store_attr_t *load_store_attr
+			= get_arm_load_store_attr_const(irn);
+		if (load_store_attr->is_frame_entity) {
+			return load_store_attr->entity;
+		}
+	}
 	return NULL;
 }
 
-static void arm_set_frame_entity(ir_node *irn, ir_entity *ent) {
+static void arm_set_frame_entity(ir_node *irn, ir_entity *ent)
+{
 	(void) irn;
 	(void) ent;
 	panic("arm_set_frame_entity() called. This should not happen.");
@@ -108,13 +105,20 @@ static void arm_set_frame_entity(ir_node *irn, ir_entity *ent) {
  */
 static void arm_set_stack_bias(ir_node *irn, int bias)
 {
-	(void) irn;
-	(void) bias;
-	/* TODO: correct offset if irn accesses the stack */
+	if (is_arm_FrameAddr(irn)) {
+		arm_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		attr->fp_offset += bias;
+	} else {
+		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);
+		assert(attr->base.is_load_store);
+		attr->offset += bias;
+	}
 }
 
 static int arm_get_sp_bias(const ir_node *irn)
 {
+	/* We don't have any nodes changing the stack pointer.
+		TODO: we probably want to support post-/pre increment/decrement later */
 	(void) irn;
 	return 0;
 }
@@ -133,17 +137,6 @@ static const arch_irn_ops_t arm_irn_ops = {
 	NULL,    /* possible_memory_operand */
 	NULL,    /* perform_memory_operand  */
 };
-
-/**************************************************
- *                _                         _  __
- *               | |                       (_)/ _|
- *   ___ ___   __| | ___  __ _  ___ _ __    _| |_
- *  / __/ _ \ / _` |/ _ \/ _` |/ _ \ '_ \  | |  _|
- * | (_| (_) | (_| |  __/ (_| |  __/ | | | | | |
- *  \___\___/ \__,_|\___|\__, |\___|_| |_| |_|_|
- *                        __/ |
- *                       |___/
- **************************************************/
 
 /**
  * Transforms the standard Firm graph into
@@ -179,14 +172,30 @@ static void arm_finish_irg(void *self)
 	arm_peephole_optimization(cg);
 }
 
+static ir_node *arm_flags_remat(ir_node *node, ir_node *after)
+{
+	ir_node *block;
+	ir_node *copy;
+
+	if (is_Block(after)) {
+		block = after;
+	} else {
+		block = get_nodes_block(after);
+	}
+	copy = exact_copy(node);
+	set_nodes_block(copy, block);
+	sched_add_after(after, copy);
+	return copy;
+}
 
 static void arm_before_ra(void *self)
 {
-	(void) self;
-	/* Some stuff you need to do immediately after register allocation */
+	arm_code_gen_t *cg = self;
+
+	be_sched_fix_flags(cg->birg, &arm_reg_classes[CLASS_arm_flags],
+	                   &arm_flags_remat);
 }
 
-#if 0
 static void transform_Reload(ir_node *node)
 {
 	ir_graph  *irg    = get_irn_irg(node);
@@ -194,15 +203,50 @@ static void transform_Reload(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *ptr    = get_irg_frame(irg);
 	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
+	ir_mode   *mode   = get_irn_mode(node);
 	ir_entity *entity = be_get_frame_entity(node);
+	const arch_register_t *reg;
+	ir_node   *proj;
 	ir_node   *load;
 
 	ir_node  *sched_point = sched_prev(node);
 
-	load = new_bd_arm_Ldr(dbgi, block, ptr, mem, entity, false, 0);
+	load = new_bd_arm_Ldr(dbgi, block, ptr, mem, mode, entity, false, 0, true);
+	sched_add_after(sched_point, load);
+	sched_remove(node);
+
+	proj = new_rd_Proj(dbgi, block, load, mode, pn_arm_Ldr_res);
+
+	reg = arch_get_irn_register(node);
+	arch_set_irn_register(proj, reg);
+
+	exchange(node, proj);
 }
 
-static void after_ra_walker(ir_node *block, void *data)
+static void transform_Spill(ir_node *node)
+{
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = new_NoMem();
+	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
+	ir_mode   *mode   = get_irn_mode(val);
+	ir_entity *entity = be_get_frame_entity(node);
+	ir_node   *sched_point;
+	ir_node   *store;
+
+	sched_point = sched_prev(node);
+	store = new_bd_arm_Str(dbgi, block, ptr, val, mem, mode, entity, false, 0,
+	                       true);
+
+	sched_remove(node);
+	sched_add_after(sched_point, store);
+
+	exchange(node, store);
+}
+
+static void arm_after_ra_walker(ir_node *block, void *data)
 {
 	ir_node *node, *prev;
 	(void) data;
@@ -214,17 +258,16 @@ static void after_ra_walker(ir_node *block, void *data)
 			transform_Reload(node);
 		} else if (be_is_Spill(node)) {
 			transform_Spill(node);
-		} else if (be_is_MemPerm(node)) {
-			panic("memperm not implemented yet");
 		}
 	}
 }
-#endif
 
 static void arm_after_ra(void *self)
 {
 	arm_code_gen_t *cg = self;
 	be_coalesce_spillslots(cg->birg);
+
+	irg_block_walk_graph(cg->irg, NULL, arm_after_ra_walker, NULL);
 }
 
 /**
@@ -236,8 +279,6 @@ static void arm_emit_and_done(void *self) {
 	ir_graph       *irg = cg->irg;
 
 	arm_gen_routine(cg, irg);
-
-	cur_reg_set = NULL;
 
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
@@ -253,7 +294,8 @@ static void arm_emit_and_done(void *self) {
  * 2.) A load: simply split into two
  */
 static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
-                                   ir_node **resH, ir_node **resL) {
+                                   ir_node **resH, ir_node **resL)
+{
 	if (is_Const(arg)) {
 		tarval *tv = get_Const_tarval(arg);
 		unsigned v;
@@ -479,8 +521,6 @@ static void *arm_cg_init(be_irg_t *birg) {
 	cg->dump         = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
-
-	cur_reg_set = cg->reg_set;
 
 	/* enter the current code generator */
 	isa->cg = cg;
@@ -731,23 +771,14 @@ const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode) {
  * it will contain the return address and space to store the old base pointer.
  * @return The Firm type modeling the ABI between type.
  */
-static ir_type *arm_get_between_type(void *self) {
+static ir_type *arm_get_between_type(void *self)
+{
 	static ir_type *between_type = NULL;
-	static ir_entity *old_bp_ent = NULL;
 	(void) self;
 
 	if (between_type == NULL) {
-		ir_entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
-		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
-
-		between_type           = new_type_class(new_id_from_str("arm_between_type"));
-		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);
-		ret_addr_ent           = new_entity(between_type, new_id_from_str("old_bp"), ret_addr_type);
-
-		set_entity_offset(old_bp_ent, 0);
-		set_entity_offset(ret_addr_ent, get_type_size_bytes(old_bp_type));
-		set_type_size_bytes(between_type, get_type_size_bytes(old_bp_type) + get_type_size_bytes(ret_addr_type));
+		between_type = new_type_class(new_id_from_str("arm_between_type"));
+		set_type_size_bytes(between_type, 0);
 	}
 
 	return between_type;
@@ -823,7 +854,7 @@ static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *
 	*mem = new_r_Proj(block, store, mode_M, pn_arm_StoreStackM4Inc_M);
 
 	/* frame pointer is ip-4 (because ip is our old sp value) */
-	fp = new_bd_arm_Sub_i(NULL, block, ip, get_irn_mode(fp), 4);
+	fp = new_bd_arm_Sub_imm(NULL, block, ip, 4, 0);
 	arch_set_irn_register(fp, env->arch_env->bp);
 
 	/* beware: we change the fp but the StoreStackM4Inc above wants the old
@@ -895,7 +926,8 @@ static const be_abi_callbacks_t arm_abi_callbacks = {
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
+{
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i;
@@ -956,7 +988,8 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 	}
 }
 
-int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+int arm_to_appear_in_schedule(void *block_env, const ir_node *irn)
+{
 	(void) block_env;
 	if(!is_arm_irn(irn))
 		return -1;
@@ -967,7 +1000,8 @@ int arm_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 /**
  * Initializes the code generator interface.
  */
-static const arch_code_generator_if_t *arm_get_code_generator_if(void *self) {
+static const arch_code_generator_if_t *arm_get_code_generator_if(void *self)
+{
 	(void) self;
 	return &arm_code_gen_if;
 }
@@ -977,7 +1011,8 @@ list_sched_selector_t arm_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() over\loaded
  */
-static const list_sched_selector_t *arm_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+static const list_sched_selector_t *arm_get_list_sched_selector(const void *self, list_sched_selector_t *selector)
+{
 	(void) self;
 	memcpy(&arm_sched_selector, selector, sizeof(arm_sched_selector));
 	/* arm_sched_selector.exectime              = arm_sched_exectime; */

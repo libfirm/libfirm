@@ -38,8 +38,8 @@
  *
  * @param block  the block to test
  */
-static int
-is_Block_unreachable(ir_node *block) {
+static int is_Block_unreachable(ir_node *block)
+{
 	return is_Block_dead(block) || get_Block_dom_depth(block) < 0;
 }
 
@@ -62,8 +62,8 @@ is_Block_unreachable(ir_node *block) {
  * @param n         the node to be placed
  * @param worklist  a worklist, predecessors of non-floating nodes are placed here
  */
-static void
-place_floats_early(ir_node *n, waitq *worklist) {
+static void place_floats_early(ir_node *n, waitq *worklist)
+{
 	int i, irn_arity;
 
 	/* we must not run into an infinite loop */
@@ -96,9 +96,10 @@ place_floats_early(ir_node *n, waitq *worklist) {
 
 				/*
 				 * If the current node is NOT in a dead block, but one of its
-				 * predecessors is, we must move the predecessor to a live block.
-				 * Such thing can happen, if global CSE chose a node from a dead block.
-				 * We move it simply to our block.
+				 * predecessors is, we must move the predecessor to a live
+				 * block.
+				 * Such thing can happen, if global CSE chose a node from a
+				 * dead block. We move it simply to our block.
 				 * Note that neither Phi nor End nodes are floating, so we don't
 				 * need to handle them here.
 				 */
@@ -117,17 +118,18 @@ place_floats_early(ir_node *n, waitq *worklist) {
 			if (in_dead_block)
 				continue;
 
-			/* Because all loops contain at least one op_pin_state_pinned node, now all
-			   our inputs are either op_pin_state_pinned or place_early() has already
-			   been finished on them.  We do not have any unfinished inputs!  */
+			/* Because all loops contain at least one op_pin_state_pinned node,
+			   now all our inputs are either op_pin_state_pinned or
+			   place_early() has already been finished on them.
+			   We do not have any unfinished inputs! */
 			pred_block = get_nodes_block(pred);
 			if ((!is_Block_dead(pred_block)) &&
 				(get_Block_dom_depth(pred_block) > depth)) {
 				b = pred_block;
 				depth = get_Block_dom_depth(pred_block);
 			}
-			/* Avoid that the node is placed in the Start block if we are not in the
-			   backend phase. */
+			/* Avoid that the node is placed in the Start block if we are not
+			   in the backend phase. */
 			if (depth == 1 &&
 					get_Block_dom_depth(get_nodes_block(n)) > 1 &&
 					get_irg_phase_state(current_ir_graph) != phase_backend) {
@@ -142,7 +144,8 @@ place_floats_early(ir_node *n, waitq *worklist) {
 
 	/*
 	 * Add predecessors of non floating nodes and non-floating predecessors
-	 * of floating nodes to worklist and fix their blocks if the are in dead block.
+	 * of floating nodes to worklist and fix their blocks if the are in dead
+	 * block.
 	 */
 	irn_arity = get_irn_arity(n);
 
@@ -220,13 +223,15 @@ place_floats_early(ir_node *n, waitq *worklist) {
 
 /**
  * Floating nodes form subgraphs that begin at nodes as Const, Load,
- * Start, Call and that end at op_pin_state_pinned nodes as Store, Call.  Place_early
- * places all floating nodes reachable from its argument through floating
- * nodes and adds all beginnings at op_pin_state_pinned nodes to the worklist.
+ * Start, Call and that end at op_pin_state_pinned nodes as Store, Call.
+ * Place_early places all floating nodes reachable from its argument through
+ * floating nodes and adds all beginnings at op_pin_state_pinned nodes to the
+ * worklist.
  *
  * @param worklist   a worklist, used for the algorithm, empty on in/output
  */
-static void place_early(waitq *worklist) {
+static void place_early(waitq *worklist)
+{
 	assert(worklist);
 	inc_irg_visited(current_ir_graph);
 
@@ -251,8 +256,9 @@ static void place_early(waitq *worklist) {
  *
  * @return  the deepest common dominator tree ancestor of block and dca
  */
-static ir_node *calc_dom_dca(ir_node *dca, ir_node *block) {
-	assert(block);
+static ir_node *calc_dom_dca(ir_node *dca, ir_node *block)
+{
+	assert(block != NULL);
 
 	/* we do not want to place nodes in dead blocks */
 	if (is_Block_dead(block))
@@ -305,7 +311,8 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 	return dca;
 }
 
-static inline int get_block_loop_depth(ir_node *block) {
+static inline int get_block_loop_depth(ir_node *block)
+{
 	return get_loop_depth(get_irn_loop(block));
 }
 
@@ -316,7 +323,8 @@ static inline int get_block_loop_depth(ir_node *block) {
  * @param n      the node that should be moved
  * @param early  the earliest block we can n move to
  */
-static void move_out_of_loops(ir_node *n, ir_node *early) {
+static void move_out_of_loops(ir_node *n, ir_node *early)
+{
 	ir_node *best, *dca;
 	assert(n && early);
 
@@ -348,7 +356,8 @@ static void move_out_of_loops(ir_node *n, ir_node *early) {
  *
  * @return the deepest common dominator ancestor of all blocks of node's users
  */
-static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca) {
+static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
+{
 	int i;
 
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
@@ -383,7 +392,8 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca) {
  * @param node   the mode_T node
  * @param block  the block to put the Proj nodes to
  */
-static void set_projs_block(ir_node *node, ir_node *block) {
+static void set_projs_block(ir_node *node, ir_node *block)
+{
 	int i;
 
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
@@ -410,7 +420,8 @@ static void set_projs_block(ir_node *node, ir_node *block) {
  * @param worklist  a worklist, all successors of non-floating nodes are
  *                  placed here
  */
-static void place_floats_late(ir_node *n, pdeq *worklist) {
+static void place_floats_late(ir_node *n, pdeq *worklist)
+{
 	int i, n_outs;
 	ir_node *early_blk;
 
@@ -489,7 +500,8 @@ static void place_floats_late(ir_node *n, pdeq *worklist) {
  *
  * @param worklist   the worklist containing the nodes to place
  */
-static void place_late(waitq *worklist) {
+static void place_late(waitq *worklist)
+{
 	assert(worklist);
 	inc_irg_visited(current_ir_graph);
 
@@ -505,7 +517,8 @@ static void place_late(waitq *worklist) {
 }
 
 /* Code Placement. */
-void place_code(ir_graph *irg) {
+void place_code(ir_graph *irg)
+{
 	waitq *worklist;
 	ir_graph *rem = current_ir_graph;
 
@@ -542,13 +555,15 @@ void place_code(ir_graph *irg) {
 /**
  * Wrapper for place_code() inside the place_code pass.
  */
-static void place_code_wrapper(ir_graph *irg) {
+static void place_code_wrapper(ir_graph *irg)
+{
 	set_opt_global_cse(1);
 	optimize_graph_df(irg);
 	place_code(irg);
 	set_opt_global_cse(0);
 }
 
-ir_graph_pass_t *place_code_pass(const char *name) {
+ir_graph_pass_t *place_code_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "place", place_code_wrapper);
 }

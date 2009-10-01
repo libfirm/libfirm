@@ -68,7 +68,8 @@ static set                  *sym_or_tv;
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
+{
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
@@ -133,17 +134,6 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
     return reg;
 }
 
-/*************************************************************
- *             _       _    __   _          _
- *            (_)     | |  / _| | |        | |
- *  _ __  _ __ _ _ __ | |_| |_  | |__   ___| |_ __   ___ _ __
- * | '_ \| '__| | '_ \| __|  _| | '_ \ / _ \ | '_ \ / _ \ '__|
- * | |_) | |  | | | | | |_| |   | | | |  __/ | |_) |  __/ |
- * | .__/|_|  |_|_| |_|\__|_|   |_| |_|\___|_| .__/ \___|_|
- * | |                                       | |
- * |_|                                       |_|
- *************************************************************/
-
 /**
  * Emit the name of the source register at given input position.
  */
@@ -163,18 +153,12 @@ void arm_emit_dest_register(const ir_node *node, int pos) {
 /**
  * Emit a node's offset.
  */
-void arm_emit_offset(const ir_node *node) {
-	int offset = 0;
-	ir_opcode opc = get_irn_opcode(node);
+void arm_emit_offset(const ir_node *node)
+{
+	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
+	assert(attr->base.is_load_store);
 
-	if (opc == beo_Reload || opc == beo_Spill) {
-		ir_entity *ent = be_get_frame_entity(node);
-		offset = get_entity_offset(ent);
-	} else {
-		assert(!"unimplemented arm_emit_offset for this node type");
-		panic("unimplemented arm_emit_offset for this node type");
-	}
-	be_emit_irprintf("%d", offset);
+	be_emit_irprintf("0x%X", attr->offset);
 }
 
 /**
@@ -209,32 +193,119 @@ void arm_emit_mode(const ir_node *node) {
 /**
  * Emit a const or SymConst value.
  */
-void arm_emit_immediate(const ir_node *node) {
+void arm_emit_immediate(const ir_node *node)
+{
 	const arm_attr_t *attr = get_arm_attr_const(node);
 
-	if (ARM_GET_SHF_MOD(attr) == ARM_SHF_IMM) {
-		be_emit_irprintf("#0x%X", arm_decode_imm_w_shift(get_arm_imm_value(node)));
-	} else if (ARM_GET_FPA_IMM(attr)) {
-		be_emit_irprintf("#%s", arm_get_fpa_imm_name(get_arm_imm_value(node)));
-	} else if (is_arm_SymConst(node))
-		be_emit_ident(get_arm_symconst_id(node));
-	else {
+	if (ARM_GET_FPA_IMM(attr)) {
+		/* TODO */
+		//be_emit_irprintf("#%s", arm_get_fpa_imm_name(get_arm_imm_value(node)));
+	} else {
 		assert(!"not a Constant");
 	}
 }
 
-/**
- * Returns the tarval or offset of an arm node as a string.
- */
-void arm_emit_shift(const ir_node *node) {
-	arm_shift_modifier mod;
-
-	mod = get_arm_shift_modifier(node);
-	if (ARM_HAS_SHIFT(mod)) {
-		int v = get_arm_imm_value(node);
-
-		be_emit_irprintf(", %s #%d", arm_shf_mod_name(mod), v);
+void arm_emit_load_mode(const ir_node *node)
+{
+	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
+	bool     is_signed = mode_is_signed(mode);
+	if (bits == 16) {
+		be_emit_string(is_signed ? "sh" : "h");
+	} else if (bits == 8) {
+		be_emit_string(is_signed ? "sb" : "b");
+	} else {
+		assert(bits == 32);
 	}
+}
+
+void arm_emit_store_mode(const ir_node *node)
+{
+	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
+	if (bits == 16) {
+		be_emit_cstring("h");
+	} else if (bits == 8) {
+		be_emit_cstring("b");
+	} else {
+		assert(bits == 32);
+	}
+}
+
+
+static void emit_shf_mod_name(arm_shift_modifier mod)
+{
+	switch (mod) {
+	case ARM_SHF_ASR_REG:
+	case ARM_SHF_ASR_IMM:
+		be_emit_cstring("asr");
+		return;
+	case ARM_SHF_LSL_REG:
+	case ARM_SHF_LSL_IMM:
+		be_emit_cstring("lsl");
+		return;
+	case ARM_SHF_LSR_REG:
+	case ARM_SHF_LSR_IMM:
+		be_emit_cstring("lsr");
+		return;
+	case ARM_SHF_ROR_REG:
+	case ARM_SHF_ROR_IMM:
+		be_emit_cstring("ror");
+		return;
+	default:
+		break;
+	}
+	panic("can't emit this shf_mod_name %d", (int) mod);
+}
+
+void arm_emit_shifter_operand(const ir_node *node)
+{
+	const arm_shifter_operand_t *attr = get_irn_generic_attr_const(node);
+
+	switch (attr->shift_modifier) {
+	case ARM_SHF_REG:
+		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		return;
+	case ARM_SHF_IMM: {
+		unsigned val = attr->immediate_value;
+		val = (val >> attr->shift_immediate)
+			| (val << (32-attr->shift_immediate));
+		val &= 0xFFFFFFFF;
+		be_emit_irprintf("#0x%X", val);
+		return;
+	}
+	case ARM_SHF_ASR_IMM:
+	case ARM_SHF_LSL_IMM:
+	case ARM_SHF_LSR_IMM:
+	case ARM_SHF_ROR_IMM:
+		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		be_emit_cstring(", ");
+		emit_shf_mod_name(attr->shift_modifier);
+		be_emit_irprintf(" #0x%X", attr->shift_immediate);
+		return;
+
+	case ARM_SHF_ASR_REG:
+	case ARM_SHF_LSL_REG:
+	case ARM_SHF_LSR_REG:
+	case ARM_SHF_ROR_REG:
+		arm_emit_source_register(node, get_irn_arity(node) - 2);
+		be_emit_cstring(", ");
+		emit_shf_mod_name(attr->shift_modifier);
+		be_emit_cstring(" ");
+		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		return;
+
+	case ARM_SHF_RRX:
+		arm_emit_source_register(node, get_irn_arity(node) - 1);
+		panic("RRX shifter emitter TODO");
+		return;
+
+	case ARM_SHF_INVALID:
+		break;
+	}
+	panic("Invalid shift_modifier while emitting %+F", node);
 }
 
 /** An entry in the sym_or_tv set. */
@@ -259,11 +330,15 @@ static unsigned get_unique_label(void) {
 /**
  * Emit a SymConst.
  */
-static void emit_arm_SymConst(const ir_node *irn) {
+static void emit_arm_SymConst(const ir_node *irn)
+{
+	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
 	sym_or_tv_t key, *entry;
 	unsigned label;
 
-	key.u.id     = get_arm_symconst_id(irn);
+	set_entity_backend_marked(attr->entity, 1);
+
+	key.u.id     = get_entity_ld_ident(attr->entity);
 	key.is_ident = 1;
 	key.label    = 0;
 	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
@@ -277,6 +352,19 @@ static void emit_arm_SymConst(const ir_node *irn) {
 	be_emit_cstring("\tldr ");
 	arm_emit_dest_register(irn, 0);
 	be_emit_irprintf(", .L%u", label);
+	be_emit_finish_line_gas(irn);
+}
+
+static void emit_arm_FrameAddr(const ir_node *irn)
+{
+	const arm_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+
+	be_emit_cstring("\tadd ");
+	arm_emit_dest_register(irn, 0);
+	be_emit_cstring(", ");
+	arm_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	be_emit_irprintf("#0x%X", attr->fp_offset);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -348,114 +436,20 @@ static void arm_emit_cfop_target(const ir_node *irn) {
 /**
  * Emit a Compare with conditional branch.
  */
-static void emit_arm_CmpBra(const ir_node *irn) {
-	const ir_edge_t *edge;
-	const ir_node *proj_true  = NULL;
-	const ir_node *proj_false = NULL;
-	const ir_node *block;
-	const ir_node *next_block;
-	ir_node *op1 = get_irn_n(irn, 0);
-	ir_mode *opmode = get_irn_mode(op1);
-	const char *suffix;
-	int proj_num = get_arm_CondJmp_proj_num(irn);
-
-	foreach_out_edge(irn, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long nr = get_Proj_proj(proj);
-		if (nr == pn_Cond_true) {
-			proj_true = proj;
-		} else {
-			proj_false = proj;
-		}
-	}
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(irn);
-
-	/* we have a block schedule */
-	next_block = sched_next_block(block);
-
-	if (proj_num == pn_Cmp_False) {
-		/* always false: should not happen */
-		be_emit_cstring("\tb ");
-		arm_emit_cfop_target(proj_false);
-		be_emit_finish_line_gas(proj_false);
-	} else if (proj_num == pn_Cmp_True) {
-		/* always true: should not happen */
-		be_emit_cstring("\tb ");
-		arm_emit_cfop_target(proj_true);
-		be_emit_finish_line_gas(proj_true);
-	} else {
-		if (mode_is_float(opmode)) {
-			suffix = "ICHWILLIMPLEMENTIERTWERDEN";
-
-			be_emit_cstring("\tfcmp ");
-			arm_emit_source_register(irn, 0);
-			be_emit_cstring(", ");
-			arm_emit_source_register(irn, 1);
-			be_emit_finish_line_gas(irn);
-
-			be_emit_cstring("\tfmstat");
-			be_emit_pad_comment();
-			be_emit_cstring("/* FCSPR -> CPSR */");
-			be_emit_finish_line_gas(NULL);
-		} else {
-			if (get_cfop_target_block(proj_true) == next_block) {
-				/* exchange both proj's so the second one can be omitted */
-				const ir_node *t = proj_true;
-
-				proj_true  = proj_false;
-				proj_false = t;
-				proj_num   = get_negated_pnc(proj_num, mode_Iu);
-			}
-			switch (proj_num) {
-				case pn_Cmp_Eq:  suffix = "eq"; break;
-				case pn_Cmp_Lt:  suffix = "lt"; break;
-				case pn_Cmp_Le:  suffix = "le"; break;
-				case pn_Cmp_Gt:  suffix = "gt"; break;
-				case pn_Cmp_Ge:  suffix = "ge"; break;
-				case pn_Cmp_Lg:  suffix = "ne"; break;
-				case pn_Cmp_Leg: suffix = "al"; break;
-				default: assert(!"Cmp unsupported"); suffix = "al";
-			}
-			be_emit_cstring("\tcmp ");
-			arm_emit_source_register(irn, 0);
-			be_emit_cstring(", ");
-			arm_emit_source_register(irn, 1);
-			be_emit_finish_line_gas(irn);
-		}
-
-		/* emit the true proj */
-		be_emit_irprintf("\tb%s ", suffix);
-		arm_emit_cfop_target(proj_true);
-		be_emit_finish_line_gas(proj_true);
-
-		if (get_cfop_target_block(proj_false) == next_block) {
-			be_emit_cstring("\t/* fallthrough to ");
-			arm_emit_cfop_target(proj_false);
-			be_emit_cstring(" */");
-			be_emit_finish_line_gas(proj_false);
-		} else {
-			be_emit_cstring("\tb ");
-			arm_emit_cfop_target(proj_false);
-			be_emit_finish_line_gas(proj_false);
-		}
-	}
-}
-
-
-/**
- * Emit a Tst with conditional branch.
- */
-static void emit_arm_TstBra(const ir_node *irn)
+static void emit_arm_B(const ir_node *irn)
 {
 	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
 	const ir_node *proj_false = NULL;
 	const ir_node *block;
 	const ir_node *next_block;
+	ir_node *op1 = get_irn_n(irn, 0);
 	const char *suffix;
 	int proj_num = get_arm_CondJmp_proj_num(irn);
+	const arm_cmp_attr_t *cmp_attr = get_irn_generic_attr_const(op1);
+	bool is_signed = !cmp_attr->is_unsigned;
+
+	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
 
 	foreach_out_edge(irn, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -465,6 +459,10 @@ static void emit_arm_TstBra(const ir_node *irn)
 		} else {
 			proj_false = proj;
 		}
+	}
+
+	if (cmp_attr->ins_permuted) {
+		proj_num = get_mirrored_pnc(proj_num);
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -484,21 +482,17 @@ static void emit_arm_TstBra(const ir_node *irn)
 		proj_false = t;
 		proj_num   = get_negated_pnc(proj_num, mode_Iu);
 	}
+
 	switch (proj_num) {
 		case pn_Cmp_Eq:  suffix = "eq"; break;
-		case pn_Cmp_Lt:  suffix = "lt"; break;
-		case pn_Cmp_Le:  suffix = "le"; break;
-		case pn_Cmp_Gt:  suffix = "gt"; break;
-		case pn_Cmp_Ge:  suffix = "ge"; break;
+		case pn_Cmp_Lt:  suffix = is_signed ? "lt" : "lo"; break;
+		case pn_Cmp_Le:  suffix = is_signed ? "le" : "ls"; break;
+		case pn_Cmp_Gt:  suffix = is_signed ? "gt" : "hi"; break;
+		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "hs"; break;
 		case pn_Cmp_Lg:  suffix = "ne"; break;
 		case pn_Cmp_Leg: suffix = "al"; break;
-		default: assert(!"Cmp unsupported"); suffix = "al";
+		default: panic("Cmp has unsupported pnc");
 	}
-	be_emit_cstring("\ttst ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	arm_emit_source_register(irn, 1);
-	be_emit_finish_line_gas(irn);
 
 	/* emit the true proj */
 	be_emit_irprintf("\tb%s ", suffix);
@@ -511,24 +505,10 @@ static void emit_arm_TstBra(const ir_node *irn)
 		be_emit_cstring(" */");
 		be_emit_finish_line_gas(proj_false);
 	} else {
-		be_emit_cstring("b ");
+		be_emit_cstring("\tb ");
 		arm_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
 	}
-}
-
-/**
- * Emit a Compare with conditional branch.
- */
-static void emit_arm_fpaCmfBra(const ir_node *irn) {
-	(void) irn;
-}
-
-/**
- * Emit a Compare with conditional branch.
- */
-static void emit_arm_fpaCmfeBra(const ir_node *irn) {
-	(void) irn;
 }
 
 /** Sort register in ascending order. */
@@ -542,8 +522,10 @@ static int reg_cmp(const void *a, const void *b) {
 /**
  * Create the CopyB instruction sequence.
  */
-static void emit_arm_CopyB(const ir_node *irn) {
-	unsigned size = (unsigned)get_arm_imm_value(irn);
+static void emit_arm_CopyB(const ir_node *irn)
+{
+	const arm_CopyB_attr_t *attr = get_irn_generic_attr_const(irn);
+	unsigned size = attr->size;
 
 	const char *tgt = arch_register_get_name(get_in_reg(irn, 0));
 	const char *src = arch_register_get_name(get_in_reg(irn, 1));
@@ -840,66 +822,6 @@ static void emit_be_Copy(const ir_node *irn) {
 	}
 }
 
-/**
- * Emit code for a Spill.
- */
-static void emit_be_Spill(const ir_node *irn) {
-	ir_mode *mode = get_irn_mode(be_get_Spill_val(irn));
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa)) {
-			be_emit_cstring("\tstf");
-			arm_emit_fpa_postfix(mode);
-			be_emit_char(' ');
-		} else {
-			assert(0 && "spill not supported for this mode");
-			panic("emit_be_Spill: spill not supported for this mode");
-		}
-	} else if (mode_is_dataM(mode)) {
-		be_emit_cstring("\tstr ");
-	} else {
-		assert(0 && "spill not supported for this mode");
-		panic("emit_be_Spill: spill not supported for this mode");
-	}
-	arm_emit_source_register(irn, 1);
-	be_emit_cstring(", [");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", #");
-	arm_emit_offset(irn);
-	be_emit_char(']');
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * Emit code for a Reload.
- */
-static void emit_be_Reload(const ir_node *irn) {
-	ir_mode *mode = get_irn_mode(irn);
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa)) {
-			be_emit_cstring("\tldf");
-			arm_emit_fpa_postfix(mode);
-			be_emit_char(' ');
-		} else {
-			assert(0 && "reload not supported for this mode");
-			panic("emit_be_Reload: reload not supported for this mode");
-		}
-	} else if (mode_is_dataM(mode)) {
-		be_emit_cstring("\tldr ");
-	} else {
-		assert(0 && "reload not supported for this mode");
-		panic("emit_be_Reload: reload not supported for this mode");
-	}
-	arm_emit_dest_register(irn, 0);
-	be_emit_cstring(", [");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", #");
-	arm_emit_offset(irn);
-	be_emit_char(']');
-	be_emit_finish_line_gas(irn);
-}
-
 static void emit_be_Perm(const ir_node *irn)
 {
 	be_emit_cstring("\teor ");
@@ -1024,16 +946,6 @@ static void emit_arm_LdTls(const ir_node *irn) {
 	/* Er... our gcc does not support it... Install a newer toolchain. */
 }
 
-/***********************************************************************************
- *                  _          __                                             _
- *                 (_)        / _|                                           | |
- *  _ __ ___   __ _ _ _ __   | |_ _ __ __ _ _ __ ___   _____      _____  _ __| | __
- * | '_ ` _ \ / _` | | '_ \  |  _| '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
- * | | | | | | (_| | | | | | | | | | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
- * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
- *
- ***********************************************************************************/
-
 static void emit_nothing(const ir_node *irn)
 {
 	(void) irn;
@@ -1065,25 +977,22 @@ static void arm_register_emitters(void)
 	arm_register_spec_emitters();
 
 	/* custom emitter */
-	set_emitter(op_arm_CmpBra,     emit_arm_CmpBra);
+	set_emitter(op_arm_B,          emit_arm_B);
 	set_emitter(op_arm_CopyB,      emit_arm_CopyB);
-	set_emitter(op_arm_fpaCmfBra,  emit_arm_fpaCmfBra);
-	set_emitter(op_arm_fpaCmfeBra, emit_arm_fpaCmfeBra);
 	set_emitter(op_arm_fpaConst,   emit_arm_fpaConst);
 	set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
+	set_emitter(op_arm_FrameAddr,  emit_arm_FrameAddr);
 	set_emitter(op_arm_Jmp,        emit_arm_Jmp);
 	set_emitter(op_arm_LdTls,      emit_arm_LdTls);
 	set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
 	set_emitter(op_arm_SymConst,   emit_arm_SymConst);
-	set_emitter(op_arm_TstBra,     emit_arm_TstBra);
 	set_emitter(op_be_Call,        emit_be_Call);
 	set_emitter(op_be_Copy,        emit_be_Copy);
+	set_emitter(op_be_CopyKeep,    emit_be_Copy);
 	set_emitter(op_be_IncSP,       emit_be_IncSP);
 	set_emitter(op_be_MemPerm,     emit_be_MemPerm);
 	set_emitter(op_be_Perm,        emit_be_Perm);
-	set_emitter(op_be_Reload,      emit_be_Reload);
 	set_emitter(op_be_Return,      emit_be_Return);
-	set_emitter(op_be_Spill,       emit_be_Spill);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_Phi,            emit_nothing);

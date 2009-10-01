@@ -39,8 +39,10 @@ void arm_emit_mode(const ir_node *node);
 void arm_emit_source_register(const ir_node *node, int pos);
 void arm_emit_dest_register(const ir_node *node, int pos);
 void arm_emit_offset(const ir_node *node);
-void arm_emit_immediate(const ir_node *node);
 void arm_emit_shift(const ir_node *node);
+void arm_emit_shifter_operand(const ir_node *node);
+void arm_emit_load_mode(const ir_node *node);
+void arm_emit_store_mode(const ir_node *node);
 
 void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg);
 
