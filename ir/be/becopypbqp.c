@@ -28,6 +28,7 @@
 #include "bearch.h"
 #include "irdom.h"
 #include "iredges.h"
+#include "timing.h"
 
 #include "error.h"
 #include "bitset.h"
@@ -116,15 +117,22 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 }
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co) {
-	void *nodes_it  = be_ifg_nodes_iter_alloca(co->cenv->ifg);
-	void *neigh_it  = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
+	void *nodes_it                       = be_ifg_nodes_iter_alloca(co->cenv->ifg);
+	void *neigh_it                       = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
+	unsigned number_registers            = co->cls->n_regs;
+	unsigned number_nodes                = get_irg_last_idx(co->irg);
+	ir_timer_t *t_ra_copymin_pbqp_create = ir_timer_register("be_co_pbqp_create", "copy minimization pbqp create");
+	ir_timer_t *t_ra_copymin_pbqp_solve  = ir_timer_register("be_co_pbqp_solve", "copy minimization pbqp solve");
 	ir_node *ifg_node;
 	ir_node *if_neighb_node;
-
 	pbqp_co_t pbqp_co;
 
-	unsigned number_registers = co->cls->n_regs;
-	unsigned number_nodes = get_irg_last_idx(co->irg);
+	#if KAPS_STATISTIC
+	printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(co->irg)));
+	#endif
+
+	/* start timer */
+	ir_timer_start(t_ra_copymin_pbqp_create);
 
 	/* create and initialize data structure for pbqp copy minimization optimization */
 	pbqp_co.cls = co->cls;
@@ -161,10 +169,11 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 					cntFreeChoosableRegs++;
 				}
 			}
-#if KAPS_ENABLE_VECTOR_NAMES
+
+			#if KAPS_ENABLE_VECTOR_NAMES
 			/* add description */
 			vector_set_description(costs_vector, cnt, arch_register_for_index(co->cls, cnt)->name);
-#endif
+			#endif
 		}
 
 		/* add costs vector to node */
@@ -251,26 +260,42 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	assure_doms(co->irg);
 	dom_tree_walk_irg(co->irg, insert_into_reverse_peo, NULL, &pbqp_co);
 
-#if KAPS_DUMP
+	/* stop timer */
+	ir_timer_stop(t_ra_copymin_pbqp_create);
+
+	#if KAPS_DUMP
 	// dump graph before solving pbqp
 	FILE *file_before = my_open(co->cenv, "", "-before.html");
 	set_dumpfile(pbqp_co.pbqp, file_before);
 	pbqp_dump_input(pbqp_co.pbqp);
-#endif
+	#endif
 
+	/* start timer */
+	ir_timer_start(t_ra_copymin_pbqp_solve);
 
 	/* solve pbqp problem using a reverse perfect elimination order */
 	solve_pbqp_heuristical_co(pbqp_co.pbqp, pbqp_co.rpeo);
     num solution = get_solution(pbqp_co.pbqp);
 
+    /* stop time */
+    ir_timer_stop(t_ra_copymin_pbqp_solve);
+
+	#if KAPS_STATISTIC
+    printf("Number of independent edges   : %d\n", pbqp_co.pbqp->num_edges);
+    printf("Number of trivial solved nodes: %d\n", pbqp_co.pbqp->num_r0);
+    printf("Number of R1 reductions       : %d\n", pbqp_co.pbqp->num_r1);
+    printf("Number of R2 reductions       : %d\n", pbqp_co.pbqp->num_r2);
+    printf("Number of RN reductions       : %d\n", pbqp_co.pbqp->num_rn);
+	#endif
+
     assert(solution != INF_COSTS && "No PBQP solution found");
 
-#if KAPS_DUMP
+	#if KAPS_DUMP
 	/* dump graph after solving pbqp */
 	FILE *file_after = my_open(co->cenv, "", "-after.html");
 	set_dumpfile(pbqp_co.pbqp, file_after);
 	pbqp_dump_input(pbqp_co.pbqp);
-#endif
+	#endif
 
 	/* coloring ifg */
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
@@ -280,11 +305,12 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	}
 
 	/* free pbqp resources */
-#if KAPS_DUMP
+	#if KAPS_DUMP
 	fclose(file_before);
 	fclose(file_after);
-#endif
+	#endif
 	bitset_free(pbqp_co.ignore_reg);
+	bitset_free(pbqp_co.restricted_nodes);
 	pmap_destroy(pbqp_co.map);
 	plist_free(pbqp_co.rpeo);
 	free_pbqp(pbqp_co.pbqp);
