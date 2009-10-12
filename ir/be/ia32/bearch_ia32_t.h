@@ -86,7 +86,7 @@ struct ia32_isa_t {
 	arch_env_t            arch_env;       /**< must be derived from arch_env_t */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
-	pmap                  *regs_8bit_high; /**< contains the hight part of the 8 bit names of the gp registers */
+	pmap                  *regs_8bit_high; /**< contains the high part of the 8 bit names of the gp registers */
 	pmap                  *types;         /**< A map of modes to primitive types */
 	pmap                  *tv_ent;        /**< A map of entities that store const tarvals */
 	ia32_code_gen_t       *cg;            /**< the current code generator */
@@ -138,7 +138,7 @@ ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg);
 ir_node *ia32_new_NoReg_vfp(ia32_code_gen_t *cg);
 
 /**
- * Returns the uniqure per irg GP Unknown node.
+ * Returns the unique per irg GP Unknown node.
  * (warning: cse has to be activated)
  */
 ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg);
