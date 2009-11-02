@@ -10,8 +10,16 @@
 #define KAPS_DUMP 0
 #define KAPS_ENABLE_VECTOR_NAMES 0
 #define KAPS_STATISTIC 0
+#define KAPS_TIMING 0
+#define KAPS_USE_UNSIGNED 0
 
-typedef intmax_t num;
+#if KAPS_USE_UNSIGNED
+	typedef unsigned num;
+	static const num INF_COSTS = UINT_MAX;
+#else
+	typedef intmax_t num;
+	static const num INF_COSTS = INTMAX_MAX;
+#endif
 
 #include "matrix_t.h"
 #include "vector_t.h"
@@ -19,8 +27,6 @@ typedef intmax_t num;
 typedef struct pbqp_edge pbqp_edge;
 typedef struct pbqp_node pbqp_node;
 typedef struct pbqp      pbqp;
-
-static const num INF_COSTS = INTMAX_MAX;
 
 struct pbqp {
 	struct obstack obstack;            /* Obstack. */
