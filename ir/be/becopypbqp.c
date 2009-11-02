@@ -126,22 +126,23 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	ir_node *ifg_node;
 	ir_node *if_neighb_node;
 	pbqp_co_t pbqp_co;
+	unsigned row, col;
 
-	#if KAPS_STATISTIC
-	printf("==>> IRG %s <<==\n", get_entity_name(get_irg_entity(co->irg)));
+	#if KAPS_TIMING
+	printf("==>> START PBQP TIMING on IRG %s (%s) <<==\n", get_entity_name(get_irg_entity(co->irg)), arch_register_class_name(co->cls));
 	#endif
 
 	/* start timer */
-	ir_timer_start(t_ra_copymin_pbqp_create);
+	ir_timer_reset_and_start(t_ra_copymin_pbqp_create);
 
 	/* create and initialize data structure for pbqp copy minimization optimization */
-	pbqp_co.cls = co->cls;
-	pbqp_co.rpeo = plist_new();;
-	pbqp_co.map = pmap_create_ex(number_nodes);
-	pbqp_co.pbqp = alloc_pbqp(number_nodes);
-	pbqp_co.ignore_reg = bitset_malloc(number_registers);
+	pbqp_co.cls              = co->cls;
+	pbqp_co.rpeo             = plist_new();
+	pbqp_co.map              = pmap_create_ex(number_nodes);
+	pbqp_co.pbqp             = alloc_pbqp(number_nodes);
+	pbqp_co.ignore_reg       = bitset_malloc(number_registers);
 	pbqp_co.restricted_nodes = bitset_malloc(number_nodes);
-	pbqp_co.ifg = co->cenv->ifg;
+	pbqp_co.ifg              = co->cenv->ifg;
 
 	/* get ignored registers */
 	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
@@ -194,26 +195,41 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	}
 
+	/* create costs matrix for interference edges */
+	struct pbqp_matrix *ife_matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
+	/* set costs */
+	for(row = 0; row < number_registers; row++) {
+		for(col = 0; col < number_registers; col++) {
+			if(row == col) {
+				pbqp_matrix_set(ife_matrix, row, col, INF_COSTS);
+			}
+			else {
+				pbqp_matrix_set(ife_matrix, row, col, 0);
+			}
+		}
+	}
+
+	/* create costs matrix for affinity edges */
+	struct pbqp_matrix *afe_matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
+	/* set costs */
+	for(row = 0; row < number_registers; row++) {
+		for(col = 0; col < number_registers; col++) {
+			if(row == col) {
+				pbqp_matrix_set(afe_matrix, row, col, 0);
+			}
+			else {
+				pbqp_matrix_set(afe_matrix, row, col, 2);
+			}
+		}
+	}
+
 	/* add pbqp edges and cost matrix */
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
 		/* add costs matrix between nodes (interference edge) */
 		be_ifg_foreach_neighbour(co->cenv->ifg, neigh_it, ifg_node, if_neighb_node) {
 			if(get_edge(pbqp_co.pbqp,get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
-				/* create costs matrix */
-				struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
-
-				/* set costs */
-				unsigned row, col;
-				for(row = 0; row < number_registers; row++) {
-					for(col = 0; col < number_registers; col++) {
-						if(row == col) {
-							pbqp_matrix_set(matrix, row, col, INF_COSTS);
-						}
-						else {
-							pbqp_matrix_set(matrix, row, col, 0);
-						}
-					}
-				}
+				/* copy matrix */
+				struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_co.pbqp, ife_matrix);
 
 				/* add costs matrix to interference edge */
 				add_edge_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node) , matrix);
@@ -225,29 +241,14 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		neighb_t *aff_neighb_node;
 		if(aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
-				pmap_entry *ptr_pbqp_node = pmap_find(pbqp_co.map,aff_neighb_node->irn);
-
 				/* ignore Unknowns */
-				if(ptr_pbqp_node == NULL) {
+				if(pmap_find(pbqp_co.map,aff_neighb_node->irn) == NULL) {
 					continue;
 				}
 
 				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
-					/* create costs matrix */
-					struct pbqp_matrix *matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
-
-					/* set costs */
-					unsigned row, col;
-					for(row = 0; row < number_registers; row++) {
-						for(col = 0; col < number_registers; col++) {
-							if(row == col) {
-								pbqp_matrix_set(matrix, row, col, 0);
-							}
-							else {
-								pbqp_matrix_set(matrix, row, col, 2);
-							}
-						}
-					}
+					/* copy matrix */
+					struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_co.pbqp, afe_matrix);
 
 					/* add costs matrix to affinity edge */
 					add_edge_costs(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn) , matrix);
@@ -271,7 +272,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	#endif
 
 	/* start timer */
-	ir_timer_start(t_ra_copymin_pbqp_solve);
+	ir_timer_reset_and_start(t_ra_copymin_pbqp_solve);
 
 	/* solve pbqp problem using a reverse perfect elimination order */
 	solve_pbqp_heuristical_co(pbqp_co.pbqp, pbqp_co.rpeo);
@@ -281,14 +282,22 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
     ir_timer_stop(t_ra_copymin_pbqp_solve);
 
 	#if KAPS_STATISTIC
-    printf("Number of independent edges   : %d\n", pbqp_co.pbqp->num_edges);
-    printf("Number of trivial solved nodes: %d\n", pbqp_co.pbqp->num_r0);
-    printf("Number of R1 reductions       : %d\n", pbqp_co.pbqp->num_r1);
-    printf("Number of R2 reductions       : %d\n", pbqp_co.pbqp->num_r2);
-    printf("Number of RN reductions       : %d\n", pbqp_co.pbqp->num_rn);
+    printf("==>> PBQP STATISTIC on IRG %s (%s) <<==\n", get_entity_name(get_irg_entity(co->irg)), arch_register_class_name(co->cls));
+	printf("Number of Nodes: %d\n", number_nodes);
+	printf("Number of independent edges   : %d\n", pbqp_co.pbqp->num_edges);
+	printf("Number of trivial solved nodes: %d\n", pbqp_co.pbqp->num_r0);
+	printf("Number of R1 reductions       : %d\n", pbqp_co.pbqp->num_r1);
+	printf("Number of R2 reductions       : %d\n", pbqp_co.pbqp->num_r2);
+	printf("Number of RN reductions       : %d\n", pbqp_co.pbqp->num_rn);
+    #endif
+
+	#if KAPS_TIMING
+	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_copymin_pbqp_create), (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_create) / 1000.0);
+	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_copymin_pbqp_solve), (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_solve) / 1000.0);
+	printf("==>> END PBQP TIMING on IRG %s (%s) <<==\n", get_entity_name(get_irg_entity(co->irg)), arch_register_class_name(co->cls));
 	#endif
 
-    assert(solution != INF_COSTS && "No PBQP solution found");
+	assert(solution != INF_COSTS && "No PBQP solution found");
 
 	#if KAPS_DUMP
 	/* dump graph after solving pbqp */
@@ -304,7 +313,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		arch_set_irn_register(ifg_node, reg);
 	}
 
-	/* free pbqp resources */
+	/* free allocated memory */
 	#if KAPS_DUMP
 	fclose(file_before);
 	fclose(file_after);
