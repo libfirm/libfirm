@@ -308,7 +308,7 @@ static tarval *computed_value_Eor(const ir_node *n) {
 	tb = value_of(b);
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_eor (ta, tb);
+		return tarval_eor(ta, tb);
 	}
 	return tarval_bad;
 }  /* computed_value_Eor */
@@ -337,7 +337,7 @@ static tarval *computed_value_Shl(const ir_node *n) {
 	tarval *tb = value_of(b);
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_shl (ta, tb);
+		return tarval_shl(ta, tb);
 	}
 	return tarval_bad;
 }  /* computed_value_Shl */
@@ -353,7 +353,7 @@ static tarval *computed_value_Shr(const ir_node *n) {
 	tarval *tb = value_of(b);
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_shr (ta, tb);
+		return tarval_shr(ta, tb);
 	}
 	return tarval_bad;
 }  /* computed_value_Shr */
@@ -369,7 +369,7 @@ static tarval *computed_value_Shrs(const ir_node *n) {
 	tarval *tb = value_of(b);
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
-		return tarval_shrs (ta, tb);
+		return tarval_shrs(ta, tb);
 	}
 	return tarval_bad;
 }  /* computed_value_Shrs */
@@ -5996,7 +5996,10 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b) {
 
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b) {
-	return get_irn_call_attr(a) != get_irn_call_attr(b);
+	const call_attr *pa = get_irn_call_attr(a);
+	const call_attr *pb = get_irn_call_attr(b);
+	return (pa->type != pb->type)
+		|| (pa->tail_call != pb->tail_call);
 }  /* node_cmp_attr_Call */
 
 /** Compares the attributes of two Sel nodes. */

@@ -627,6 +627,10 @@ void     set_Call_param(ir_node *node, int pos, ir_node *param);
 ir_type *get_Call_type(ir_node *node);
 /** Sets the type of a call. */
 void     set_Call_type(ir_node *node, ir_type *tp);
+/** Returns non-zero if this call can be a tail-call. */
+unsigned get_Call_tail_call(const ir_node *node);
+/** Sets the tail call attribute. */
+void     set_Call_tail_call(ir_node *node, unsigned tail_call);
 
 /**
  * Returns non-zero if a Call is surely a self-recursive Call.

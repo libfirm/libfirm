@@ -104,9 +104,9 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
 	fprintf(F, "  index: %u\n", get_irn_idx(n));
 	if (opt_dump_pointer_values_to_info)
-		fprintf (F, "  addr:    %p \n", (void *)n);
+		fprintf (F, "  addr:    %p\n", (void *)n);
 	fprintf (F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
-	fprintf (F, "  visited: %ld \n", get_irn_visited(n));
+	fprintf (F, "  visited: %ld\n", get_irn_visited(n));
 	irg = get_irn_irg(n);
 	if (irg != get_const_code_irg())
 		fprintf (F, "  irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
@@ -121,7 +121,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 #ifdef INTERPROCEDURAL_VIEW
 	fprintf(F, "  arity:   %d\n", get_irn_intra_arity(n));
 	/* show all predecessor nodes */
-	fprintf(F, "  pred nodes: \n");
+	fprintf(F, "  pred nodes:\n");
 	if (!is_Block(n)) {
 		fprintf(F, "    -1:    ");
 		dump_node_opcode(F, get_irn_n(n, -1));
@@ -135,7 +135,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 #else
 	fprintf(F, "  arity:   %d\n", get_irn_arity(n));
 	/* show all predecessor nodes */
-	fprintf(F, "  pred nodes: \n");
+	fprintf(F, "  pred nodes:\n");
 	if (!is_Block(n)) {
 		fprintf(F, "    -1:    ");
 		dump_node_opcode(F, get_irn_n(n, -1));
@@ -156,7 +156,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 #ifdef INTERPROCEDURAL_VIEW
 	if ((get_irp_ip_view_state() != ip_view_no) && (is_Filter(n) || is_Block(n))) {
 		fprintf(F, "  inter arity: %d\n", get_irn_inter_arity(n));
-		fprintf(F, "  inter pred nodes: \n");
+		fprintf(F, "  inter pred nodes:\n");
 		for (i = 0; i < get_irn_inter_arity(n); ++i) {
 			fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
 			dump_node_opcode(F, get_irn_inter_n(n, i));
@@ -224,9 +224,9 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	}  break;
 	case iro_Start: {
 		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-		fprintf(F, "  start of method of type %s \n", get_type_name_ex(tp, &bad));
+		fprintf(F, "  start of method of type %s\n", get_type_name_ex(tp, &bad));
 		for (i = 0; i < get_method_n_params(tp); ++i)
-			fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+			fprintf(F, "    param %d type: %s\n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
 #ifdef INTERPROCEDURAL_VIEW
 		if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
 			ir_node *sbl = get_nodes_block(n);
@@ -247,11 +247,11 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, "  jump prediction: %s\n", get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
 	} break;
 	case iro_Alloc: {
-		fprintf(F, "  allocating entity of type: %s \n", get_type_name_ex(get_Alloc_type(n), &bad));
+		fprintf(F, "  allocating entity of type: %s\n", get_type_name_ex(get_Alloc_type(n), &bad));
 		fprintf(F, "  allocating on: the %s\n", (get_Alloc_where(n) == stack_alloc) ? "stack" : "heap");
 	} break;
 	case iro_Free: {
-		fprintf(F, "  freeing entity of type %s \n", get_type_name_ex(get_Free_type(n), &bad));
+		fprintf(F, "  freeing entity of type %s\n", get_type_name_ex(get_Free_type(n), &bad));
 		fprintf(F, "  allocated on: the %s\n", (get_Free_where(n) == stack_alloc) ? "stack" : "heap");
 	} break;
 	case iro_Sel: {
@@ -268,15 +268,17 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	} break;
 	case iro_Call: {
 		ir_type *tp = get_Call_type(n);
-		fprintf(F, "  calling method of type %s \n", get_type_name_ex(tp, &bad));
+		if (get_Call_tail_call(n))
+			fprintf(F, "  tail call\n");
+		fprintf(F, "  calling method of type %s\n", get_type_name_ex(tp, &bad));
 		if(get_unknown_type() != tp) {
 			for (i = 0; i < get_method_n_params(tp); ++i)
-				fprintf(F, "    param %d type: %s \n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+				fprintf(F, "    param %d type: %s\n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
 			for (i = 0; i < get_method_n_ress(tp); ++i)
-				fprintf(F, "    resul %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+				fprintf(F, "    resul %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
 		}
 		if (Call_has_callees(n)) {
-			fprintf(F, "  possible callees: \n");
+			fprintf(F, "  possible callees:\n");
 			for (i = 0; i < get_Call_n_callees(n); i++) {
 				fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
 			}
@@ -286,7 +288,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		ir_node *call = get_CallBegin_call(n);
 		fprintf(F, "  Call: %ld\n", get_irn_node_nr(call));
 		if (Call_has_callees(call)) {
-			fprintf(F, "  possible callees: \n");
+			fprintf(F, "  possible callees:\n");
 			for (i = 0; i < get_Call_n_callees(call); i++) {
 				fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
 			}
@@ -298,14 +300,14 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	case iro_Return: {
 		if (!get_interprocedural_view()) {
 			ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-			fprintf(F, "  return in method of type %s \n", get_type_name_ex(tp, &bad));
+			fprintf(F, "  return in method of type %s\n", get_type_name_ex(tp, &bad));
 			for (i = 0; i < get_method_n_ress(tp); ++i)
-				fprintf(F, "    res %d type: %s \n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+				fprintf(F, "    res %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
 		}
 	} break;
 	case iro_Const: {
 		assert(get_Const_type(n) != firm_none_type);
-		fprintf(F, "  Const of type %s \n", get_type_name_ex(get_Const_type(n), &bad));
+		fprintf(F, "  Const of type %s\n", get_type_name_ex(get_Const_type(n), &bad));
 	} break;
 	case iro_SymConst: {
 		switch(get_SymConst_kind(n)) {
@@ -343,7 +345,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, "  name: %s\n", get_enumeration_name(get_SymConst_enum(n)));
 			break;
 		}
-		fprintf(F, "  type of value: %s \n", get_type_name_ex(get_SymConst_value_type(n), &bad));
+		fprintf(F, "  type of value: %s\n", get_type_name_ex(get_SymConst_value_type(n), &bad));
 	} break;
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), &bad));
@@ -636,7 +638,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 						get_type_name(get_entity_owner(ov)));
 				}
 			} else {
-				fprintf(F, "%s  Does not overwrite other entities. \n", prefix);
+				fprintf(F, "%s  Does not overwrite other entities.\n", prefix);
 			}
 			if (get_entity_n_overwrittenby(ent) > 0) {
 				fprintf(F, "%s  overwritten by:\n", prefix);
@@ -646,7 +648,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 						get_type_name(get_entity_owner(ov)));
 				}
 			} else {
-				fprintf(F, "%s  Is not overwritten by other entities. \n", prefix);
+				fprintf(F, "%s  Is not overwritten by other entities.\n", prefix);
 			}
 
 			if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
@@ -1140,7 +1142,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 
 	case tpo_class:
 		if ((verbosity & dump_verbosity_methods) || (verbosity & dump_verbosity_fields)) {
-			fprintf(F, "\n  members: \n");
+			fprintf(F, "\n  members:\n");
 		}
 		for (i = 0; i < get_class_n_members(tp); ++i) {
 			ir_entity *mem = get_class_member(tp, i);

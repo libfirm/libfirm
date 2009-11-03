@@ -235,6 +235,12 @@ class Call(Op):
 		dict(
 			type = "ir_type*",
 			name = "type"
+		),
+		dict(
+			type = "unsigned",
+			name = "tail_call",
+			# the tail call attribute can only be set by analysis
+			init = "0"
 		)
 	]
 	attr_struct = "call_attr"

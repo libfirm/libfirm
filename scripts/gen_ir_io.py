@@ -79,6 +79,9 @@ def get_io_type(type, attrname, node):
 	elif type == "int":
 		importcmd = "int %s = (int) read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%d ", %(val)s);"""
+	elif type == "unsigned":
+		importcmd = "unsigned %s = (unsigned) read_long(env);" % attrname
+		exportcmd = """fprintf(env->file, "%%u ", %(val)s);"""
 	elif type == "long":
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
