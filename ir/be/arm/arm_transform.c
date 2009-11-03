@@ -255,7 +255,7 @@ typedef struct {
 
 static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 {
-	unsigned val;
+	unsigned val, low_pos, high_pos;
 
 	if (!is_Const(node))
 		return false;
@@ -279,8 +279,8 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	   If the difference between these 2 is <= 8, then we can encode the value
 	   as immediate.
 	 */
-	unsigned low_pos  = ntz(val) & ~1u;
-	unsigned high_pos = (32-nlz(val)+1) & ~1u;
+	low_pos  = ntz(val) & ~1u;
+	high_pos = (32-nlz(val)+1) & ~1u;
 
 	if (high_pos - low_pos <= 8) {
 		res->imm_8 = val >> low_pos;

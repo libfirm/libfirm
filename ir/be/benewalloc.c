@@ -138,7 +138,7 @@ typedef struct reg_pref_t reg_pref_t;
 
 /** per basic-block information */
 struct block_info_t {
-	bool     processed;       /**< indicate wether block is processed */
+	bool     processed;       /**< indicate whether block is processed */
 	ir_node *assignments[0];  /**< register assignments at end of block */
 };
 typedef struct block_info_t block_info_t;
@@ -521,11 +521,11 @@ static void create_congruence_class(ir_node *block, void *data)
 			int                   old_node_idx;
 			ir_node              *live;
 			ir_node              *phi;
+			allocation_info_t    *head_info;
+			allocation_info_t    *other_info;
 			ir_node              *op     = get_Phi_pred(node, i);
 			int                   op_idx = get_irn_idx(op);
 			op_idx = uf_find(congruence_classes, op_idx);
-			allocation_info_t    *head_info;
-			allocation_info_t    *other_info;
 
 			/* do we interfere with the value */
 			foreach_ir_nodeset(&live_nodes, live, iter) {

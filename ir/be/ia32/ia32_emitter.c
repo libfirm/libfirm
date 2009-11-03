@@ -2715,10 +2715,11 @@ BINOP(test, 0x85, 0xA9, 0xF7, 0)
 #define BINOPMEM(op, ext) \
 static void bemit_##op(const ir_node *node) \
 { \
+	ir_node *val; \
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
 	if (size == 16) \
 		bemit8(0x66); \
-	ir_node *val = get_irn_n(node, n_ia32_unary_op); \
+	val = get_irn_n(node, n_ia32_unary_op); \
 	if (is_ia32_Immediate(val)) { \
 		const ia32_immediate_attr_t *attr   = get_ia32_immediate_attr_const(val); \
 		int                          offset = attr->offset; \
@@ -2802,10 +2803,11 @@ static void bemit_##op(const ir_node *node) \
  \
 static void bemit_##op##mem(const ir_node *node) \
 { \
+	ir_node *count; \
 	unsigned size = get_mode_size_bits(get_ia32_ls_mode(node)); \
 	if (size == 16) \
 		bemit8(0x66); \
-	ir_node *count = get_irn_n(node, 1); \
+	count = get_irn_n(node, 1); \
 	if (is_ia32_Immediate(count)) { \
 		int offset = get_ia32_immediate_attr_const(count)->offset; \
 		if (offset == 1) { \
@@ -2988,8 +2990,8 @@ static void bemit_cmp8bit(const ir_node *node)
 		}
 		bemit8(get_ia32_immediate_attr_const(right)->offset);
 	} else {
-		bemit8(0x3A);
 		const arch_register_t *out = get_in_reg(node, n_ia32_Cmp_left);
+		bemit8(0x3A);
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *in = get_in_reg(node, n_ia32_Cmp_right);
 			bemit_modrr(out, in);
@@ -3017,8 +3019,8 @@ static void bemit_test8bit(const ir_node *node)
 		}
 		bemit8(get_ia32_immediate_attr_const(right)->offset);
 	} else {
-		bemit8(0x84);
 		const arch_register_t *out = get_in_reg(node, n_ia32_Test8Bit_left);
+		bemit8(0x84);
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *in = get_in_reg(node, n_ia32_Test8Bit_right);
 			bemit_modrr(out, in);
