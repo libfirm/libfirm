@@ -121,7 +121,8 @@ static unsigned align(unsigned offset, unsigned alignment)
 	return offset;
 }
 
-static bool determine_jumpsize_pass(const binary_emiter_interface_t *interface)
+static bool determine_jumpsize_iteration(
+		const binary_emiter_interface_t *interface)
 {
 	unsigned         offset     = 0;
 	unsigned         max_offset = 0;
@@ -137,7 +138,7 @@ static bool determine_jumpsize_pass(const binary_emiter_interface_t *interface)
 	    max_offset = align(max_offset, alignment);
 
 		if (offset != fragment->offset) {
-			changed = true;
+			changed          = true;
 			fragment->offset = offset;
 		}
 	    fragment->max_offset = max_offset;
@@ -161,9 +162,14 @@ static void determine_offsets(const binary_emiter_interface_t *interface)
 	first_fragment->offset     = 0;
 	first_fragment->max_offset = 0;
 
-	/* pass1: encode minimum/maximum offsets into fragments */
+	/* The algorithm calculates a lower and upper bound for the offset of each
+	 * fragment. With this information we can calculate a lower and upper bound
+	 * for the size of each jump instruction.
+	 * A single iteration updates the offset bounds for all fragments and jump
+	 * sizes for each fragment. We iterate until we had an iteration where
+	 * none of the minimum offsets changed. */
 	do {
-		changed = determine_jumpsize_pass(interface);
+		changed = determine_jumpsize_iteration(interface);
 		/* TODO: we should have an abort mode for the case when the offsets
 		   don't converge fast enough. We could simply use a pessimistic
 		   solution after a few iterations... */
