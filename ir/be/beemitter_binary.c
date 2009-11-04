@@ -1,0 +1,212 @@
+/*
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief       Interface for machine code output
+ * @author      Matthias Braun
+ * @date        12.03.2007
+ * @version     $Id$
+ */
+#include "config.h"
+
+#include <assert.h>
+#include <limits.h>
+
+#include "beemitter_binary.h"
+#include "obst.h"
+#include "pdeq.h"
+
+static code_fragment_t *first_fragment;
+static code_fragment_t *last_fragment;
+static const unsigned CODE_FRAGMENT_MAGIC = 0x4643414d;  /* "CFMA" */
+
+struct obstack code_fragment_obst;
+
+/** returns current fragment (the address stays only valid until the next
+    be_emit(8/16/32/entity) call!) */
+code_fragment_t *be_get_current_fragment(void)
+{
+	assert(obstack_object_size(&code_fragment_obst) >= sizeof(code_fragment_t));
+	code_fragment_t *fragment = obstack_base(&code_fragment_obst);
+	assert(fragment->magic == CODE_FRAGMENT_MAGIC);
+
+	return fragment;
+}
+
+/** allocates a new fragment on the obstack (warning: address is only valid
+    till next be_emit */
+static void alloc_fragment(void)
+{
+	code_fragment_t *fragment;
+
+	/* shouldn't have any growing fragments */
+	assert(obstack_object_size(&code_fragment_obst) == 0);
+
+	obstack_blank(&code_fragment_obst, sizeof(*fragment));
+	fragment = obstack_base(&code_fragment_obst);
+	memset(fragment, 0, sizeof(*fragment));
+#ifndef NDEBUG
+	fragment->magic = CODE_FRAGMENT_MAGIC;
+#endif
+	fragment->len        = 0;
+	fragment->alignment  = 1;
+	fragment->offset     = 0;
+	fragment->max_offset = UINT_MAX;
+}
+
+static code_fragment_t *finish_fragment(void)
+{
+	code_fragment_t *fragment = be_get_current_fragment();
+	fragment->len
+		= obstack_object_size(&code_fragment_obst) - sizeof(*fragment);
+
+	fragment      = (code_fragment_t*) obstack_finish(&code_fragment_obst);
+	last_fragment = fragment;
+
+	if (first_fragment == NULL)
+		first_fragment = fragment;
+
+	return fragment;
+}
+
+void be_start_code_emitter(void)
+{
+	obstack_init(&code_fragment_obst);
+	first_fragment = NULL;
+	alloc_fragment();
+}
+
+void be_start_new_fragment(void)
+{
+	finish_fragment();
+	alloc_fragment();
+}
+
+static void emit(FILE *file, const unsigned char *buffer, size_t len)
+{
+	size_t i;
+	for (i = 0; i < len; ++i) {
+		size_t i2;
+		fputs("\t.byte ", file);
+		for (i2 = i; i2 < i + 30 && i2 < len; ++i2) {
+			fprintf(file, "0x%02X", buffer[i2]);
+		}
+		i = i2;
+		fputs("\n", file);
+	}
+}
+
+static unsigned align(unsigned offset, unsigned alignment)
+{
+	if (offset % alignment != 0) {
+		offset += alignment - (offset % alignment);
+	}
+	return offset;
+}
+
+static bool determine_jumpsize_pass(const binary_emiter_interface_t *interface)
+{
+	unsigned         offset     = 0;
+	unsigned         max_offset = 0;
+	bool             changed    = false;
+	code_fragment_t *fragment;
+
+	for (fragment = first_fragment; fragment != NULL;
+	     fragment = fragment->next) {
+	    unsigned alignment = fragment->alignment;
+
+	    /* assure alignment */
+	    offset     = align(offset, alignment);
+	    max_offset = align(max_offset, alignment);
+
+		if (offset != fragment->offset) {
+			changed = true;
+			fragment->offset = offset;
+		}
+	    fragment->max_offset = max_offset;
+
+		/* advance offset */
+		offset     += fragment->len;
+		max_offset += fragment->len;
+		interface->determine_jumpsize(fragment);
+		offset     += fragment->jumpsize_min;
+		max_offset += fragment->jumpsize_max;
+	}
+
+	return changed;
+}
+
+static void determine_offsets(const binary_emiter_interface_t *interface)
+{
+	bool changed;
+
+	assert(first_fragment->alignment == 1);
+	first_fragment->offset     = 0;
+	first_fragment->max_offset = 0;
+
+	/* pass1: encode minimum/maximum offsets into fragments */
+	do {
+		changed = determine_jumpsize_pass(interface);
+		/* TODO: we should have an abort mode for the case when the offsets
+		   don't converge fast enough. We could simply use a pessimistic
+		   solution after a few iterations... */
+	} while (changed);
+}
+
+void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
+{
+	unsigned offset;
+
+	code_fragment_t *fragment;
+
+	finish_fragment();
+
+	/* determine near/far jumps */
+	determine_offsets(interface);
+
+	/* emit code */
+	offset = 0;
+	for (fragment = first_fragment; fragment != NULL;
+	     fragment = fragment->next) {
+	    unsigned char *jmpbuffer;
+
+	    /* assure alignment by emitting nops */
+	    assert(fragment->offset >= offset);
+	    unsigned nops = fragment->offset - offset;
+	    if (nops > 0) {
+	    	unsigned char *nopbuffer = obstack_alloc(&code_fragment_obst, nops);
+	    	interface->create_nops(nopbuffer, nops);
+	    	emit(output, nopbuffer, nops);
+			offset = fragment->offset;
+			obstack_free(&code_fragment_obst, nopbuffer);
+		}
+
+		/* emit the fragment */
+		emit(output, fragment->data, fragment->len);
+		offset += fragment->len;
+
+		/* emit the jump */
+		jmpbuffer = obstack_alloc(&code_fragment_obst, fragment->jumpsize_min);
+		interface->emit_jump(fragment, jmpbuffer);
+		emit(output, jmpbuffer, fragment->jumpsize_min);
+		offset += fragment->jumpsize_min;
+		obstack_free(&code_fragment_obst, jmpbuffer);
+	}
+}
