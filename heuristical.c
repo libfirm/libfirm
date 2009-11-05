@@ -16,6 +16,7 @@
 #include "vector.h"
 
 #include "plist.h"
+#include "timing.h"
 
 static pbqp_edge **edge_bucket;
 static pbqp_node **node_buckets[4];
@@ -73,6 +74,11 @@ static void fill_node_buckets(pbqp *pbqp)
 	assert(pbqp);
 	node_len = pbqp->num_nodes;
 
+	#if KAPS_TIMING
+		ir_timer_t *t_fill_buckets = ir_timer_register("be_pbqp_fill_buckets", "PBQP Fill Nodes into buckets");
+		ir_timer_reset_and_start(t_fill_buckets);
+	#endif
+
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		unsigned   degree;
 		pbqp_node *node = get_node(pbqp, node_index);
@@ -90,6 +96,11 @@ static void fill_node_buckets(pbqp *pbqp)
 	}
 
 	buckets_filled = 1;
+
+	#if KAPS_TIMING
+		ir_timer_stop(t_fill_buckets);
+		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_fill_buckets), (double)ir_timer_elapsed_usec(t_fill_buckets) / 1000.0);
+	#endif
 }
 
 static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
@@ -421,6 +432,11 @@ static void initial_simplify_edges(pbqp *pbqp)
 
 	assert(pbqp);
 
+	#if KAPS_TIMING
+		ir_timer_t *t_int_simpl = ir_timer_register("be_pbqp_init_simp", "PBQP Initial simplify edges");
+		ir_timer_reset_and_start(t_int_simpl);
+	#endif
+
 #if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		pbqp_dump_input(pbqp);
@@ -453,6 +469,11 @@ static void initial_simplify_edges(pbqp *pbqp)
 			simplify_edge(pbqp, edge);
 		}
 	}
+
+	#if KAPS_TIMING
+		ir_timer_stop(t_int_simpl);
+		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_int_simpl), (double)ir_timer_elapsed_usec(t_int_simpl) / 1000.0);
+	#endif
 }
 
 static num determine_solution(pbqp *pbqp)
@@ -460,6 +481,12 @@ static num determine_solution(pbqp *pbqp)
 	unsigned node_index;
 	unsigned node_len;
 	num      solution   = 0;
+
+	#if KAPS_TIMING
+		ir_timer_t *t_det_solution = ir_timer_register("be_det_solution", "PBQP Determine Solution");
+		ir_timer_reset_and_start(t_det_solution);
+	#endif
+
 #if	KAPS_DUMP
 	FILE     *file;
 #endif
@@ -503,9 +530,18 @@ static num determine_solution(pbqp *pbqp)
 #if	KAPS_DUMP
 	if (file) {
 		dump_section(file, 2, "Minimum");
+#if KAPS_USE_UNSIGNED
+		fprintf(file, "Minimum is equal to %u.", solution);
+#else
 		fprintf(file, "Minimum is equal to %lld.", solution);
+#endif
 	}
 #endif
+
+	#if KAPS_TIMING
+		ir_timer_stop(t_det_solution);
+		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_det_solution), (double)ir_timer_elapsed_usec(t_det_solution) / 1000.0);
+	#endif
 
 	return solution;
 }
@@ -559,18 +595,72 @@ static void apply_heuristic_reductions(pbqp *pbqp)
 
 static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 {
+	#if KAPS_TIMING
+		/* create timers */
+		ir_timer_t *t_edge = ir_timer_register("be_pbqp_edges", "pbqp reduce independent edges");
+		ir_timer_t *t_r0 = ir_timer_register("be_pbqp_r0", "pbqp R0 reductions");
+		ir_timer_t *t_r1 = ir_timer_register("be_pbqp_r1", "pbqp R1 reductions");
+		ir_timer_t *t_r2 = ir_timer_register("be_pbqp_r2", "pbqp R2 reductions");
+		ir_timer_t *t_rn = ir_timer_register("be_pbqp_rN", "pbqp RN reductions");
+
+		/* reset timers */
+		ir_timer_reset(t_edge);
+		ir_timer_reset(t_r0);
+		ir_timer_reset(t_r1);
+		ir_timer_reset(t_r2);
+		ir_timer_reset(t_rn);
+	#endif
+
 	for (;;) {
 		if (edge_bucket_get_length(edge_bucket) > 0) {
+			#if KAPS_TIMING
+				ir_timer_start(t_r0);
+			#endif
+
 			apply_edge(pbqp);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_r0);
+			#endif
 		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
+			#if KAPS_TIMING
+				ir_timer_start(t_r1);
+			#endif
+
 			apply_RI(pbqp);
-//			apply_RN_co(pbqp, rpeo);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_r1);
+			#endif
 		} else if (node_bucket_get_length(node_buckets[2]) > 0) {
+			#if KAPS_TIMING
+				ir_timer_start(t_r2);
+			#endif
+
 			apply_RII(pbqp);
-//			apply_RN_co(pbqp, rpeo);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_r2);
+			#endif
 		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
+			#if KAPS_TIMING
+				ir_timer_start(t_rn);
+			#endif
+
 			apply_RN_co(pbqp, rpeo);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_rn);
+			#endif
 		} else {
+			#if KAPS_TIMING
+				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_edge), (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
+				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r0), (double)ir_timer_elapsed_usec(t_r0) / 1000.0);
+				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r1), (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
+				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r2), (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
+				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_rn), (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
+			#endif
+
 			return;
 		}
 	}
@@ -608,12 +698,13 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	free_buckets();
 }
 
-void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo) {
+void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo)
+{
 	/* Reduce nodes degree ... */
-		initial_simplify_edges(pbqp);
+	initial_simplify_edges(pbqp);
 
-		/* ... and put node into bucket representing their degree. */
-		fill_node_buckets(pbqp);
+	/* ... and put node into bucket representing their degree. */
+	fill_node_buckets(pbqp);
 
 	#if KAPS_STATISTIC
 		FILE *fh = fopen("solutions.pb", "a");
@@ -621,9 +712,9 @@ void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo) {
 		fclose(fh);
 	#endif
 
-		apply_heuristic_reductions_co(pbqp, rpeo);
+	apply_heuristic_reductions_co(pbqp, rpeo);
 
-		pbqp->solution = determine_solution(pbqp);
+	pbqp->solution = determine_solution(pbqp);
 
 	#if KAPS_STATISTIC
 		fh = fopen("solutions.pb", "a");
@@ -633,10 +724,10 @@ void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo) {
 		fclose(fh);
 	#endif
 
-		/* Solve reduced nodes. */
-		back_propagate(pbqp);
+	/* Solve reduced nodes. */
+	back_propagate(pbqp);
 
-		free_buckets();
+	free_buckets();
 }
 
 void apply_edge(pbqp *pbqp)
@@ -825,6 +916,7 @@ void apply_RII(pbqp *pbqp)
 	if (edge == NULL) {
 		edge = alloc_edge(pbqp, src_node->index, tgt_node->index, mat);
 	} else {
+		// matrix
 		pbqp_matrix_add(edge->costs, mat);
 
 		/* Free local matrix. */
