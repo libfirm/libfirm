@@ -63,14 +63,12 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 #endif
 
 static void insert_into_reverse_peo(ir_node *block, void *data) {
-	pqueue_t  *queue = new_pqueue();
-	pqueue_t  *constatQueue = new_pqueue();
-	pbqp_co_t *pbqp_co = data;
+	pqueue_t  *queue                = new_pqueue();
+	pqueue_t  *restrictedNodesQueue = new_pqueue();
+	pbqp_co_t *pbqp_co              = data;
 	ir_node   *irn;
 
 	sched_foreach(block, irn) {
-		pbqp_node *node;
-
 		if (get_irn_mode(irn) == mode_T) {
 			const ir_edge_t *edge;
 
@@ -79,12 +77,9 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 				if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, proj))
 					continue;
 
-				// get related pbqp_node and insert into reverse peo
-				assert(node && "No corresponding PBQP-Node found!");
-
 				// insert proj node into priority queue (descending by their degree in ifg)
 				if(bitset_is_set(pbqp_co->restricted_nodes, get_irn_idx(proj))) {
-					pqueue_put(constatQueue,proj, be_ifg_degree(pbqp_co->ifg,proj));
+					pqueue_put(restrictedNodesQueue,proj, be_ifg_degree(pbqp_co->ifg,proj));
 				}
 				else {
 					pqueue_put(queue,proj, be_ifg_degree(pbqp_co->ifg,proj));
@@ -92,8 +87,8 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 			}
 
 			/* first insert all restricted nodes */
-			while(!pqueue_empty(constatQueue)) {
-				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(constatQueue))));
+			while(!pqueue_empty(restrictedNodesQueue)) {
+				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(restrictedNodesQueue))));
 			}
 
 			/* insert proj nodes into reverse perfect elimination order (descending by their degree in ifg) */
@@ -105,15 +100,14 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 			if (!arch_irn_consider_in_reg_alloc(pbqp_co->cls, irn))
 				continue;
 
-			/* get related pbqp_node and insert into reverse peo */
-			assert(node && "No corresponding PBQP-Node found!");
+			/* insert pbqp node into reverse peo */
 			plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(irn)));
 		}
 	}
 
 	/* free priority queues */
 	del_pqueue(queue);
-	del_pqueue(constatQueue);
+	del_pqueue(restrictedNodesQueue);
 }
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co) {
@@ -138,11 +132,13 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	/* create and initialize data structure for pbqp copy minimization optimization */
 	pbqp_co.cls              = co->cls;
 	pbqp_co.rpeo             = plist_new();
-	pbqp_co.map              = pmap_create_ex(number_nodes);
 	pbqp_co.pbqp             = alloc_pbqp(number_nodes);
 	pbqp_co.ignore_reg       = bitset_malloc(number_registers);
 	pbqp_co.restricted_nodes = bitset_malloc(number_nodes);
 	pbqp_co.ifg              = co->cenv->ifg;
+
+	/* no node is restricted at the beginning */
+	bitset_clear_all(pbqp_co.restricted_nodes);
 
 	/* get ignored registers */
 	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
@@ -180,19 +176,10 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		/* add costs vector to node */
 		add_node_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), costs_vector);
 
-		/* insert ir_node and pbqp_node into map */
-		pmap_insert(pbqp_co.map, ifg_node, get_node(pbqp_co.pbqp, get_irn_idx(ifg_node)));
-
 		if(cntFreeChoosableRegs <= 4) {
 			/* node is restricted */
 			bitset_set(pbqp_co.restricted_nodes, get_irn_idx(ifg_node));
 		}
-		else
-		{
-			/* node is not restricted */
-			bitset_clear(pbqp_co.restricted_nodes, get_irn_idx(ifg_node));
-		}
-
 	}
 
 	/* create costs matrix for interference edges */
@@ -233,6 +220,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 				/* add costs matrix to interference edge */
 				add_edge_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), get_irn_idx(if_neighb_node) , matrix);
+
 			}
 		}
 
@@ -242,9 +230,8 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		if(aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
 				/* ignore Unknowns */
-				if(pmap_find(pbqp_co.map,aff_neighb_node->irn) == NULL) {
+				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_node->irn))->costs != NULL)
 					continue;
-				}
 
 				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
 					/* copy matrix */
@@ -320,7 +307,6 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	#endif
 	bitset_free(pbqp_co.ignore_reg);
 	bitset_free(pbqp_co.restricted_nodes);
-	pmap_destroy(pbqp_co.map);
 	plist_free(pbqp_co.rpeo);
 	free_pbqp(pbqp_co.pbqp);
 
