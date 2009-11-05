@@ -23,7 +23,6 @@ typedef struct _pbqp_co_t pbqp_co_t;
 struct _pbqp_co_t {
 	const arch_register_class_t *cls;	// current register class
 	plist_t *rpeo;						// reverse perfect elimination order
-	pmap *map;							// contains relation between irn and pbqp node
 	pbqp *pbqp;
 	bitset_t *ignore_reg;
 	bitset_t *restricted_nodes;
