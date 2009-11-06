@@ -660,7 +660,7 @@ static int is_head(ir_graph *n, ir_graph *root) {
 		}
 	}
 
-	return some_outof_loop & some_in_loop;
+	return some_outof_loop && some_in_loop;
 }
 
 /**
@@ -689,7 +689,7 @@ static int is_endless_head(ir_graph *n, ir_graph *root)
 			some_in_loop = 1;
 		}
 	}
-	return !some_outof_loop & some_in_loop;
+	return !some_outof_loop && some_in_loop;
 }
 
 #ifdef INTERPROCEDURAL_VIEW
