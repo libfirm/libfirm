@@ -713,13 +713,13 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 	return irn;
 }
 
-ir_node *be_new_Start(ir_node *bl, int n_outs)
+ir_node *be_new_Start(dbg_info *dbgi, ir_node *bl, int n_outs)
 {
 	ir_node *res;
 	int i;
 	ir_graph *irg = get_Block_irg(bl);
 
-	res = new_ir_node(NULL, irg, bl, op_be_Start, mode_T, 0, NULL);
+	res = new_ir_node(dbgi, irg, bl, op_be_Start, mode_T, 0, NULL);
 	init_node_attr(res, 0, -1);
 	for (i = 0; i < n_outs; ++i) {
 		add_register_req_out(res);

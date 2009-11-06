@@ -1971,7 +1971,7 @@ static void modify_irg(be_abi_irg_t *env)
 	pmap_insert(env->regs, (void *) sp, NULL);
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	start_bl   = get_irg_start_block(irg);
-	env->start = be_new_Start(start_bl, pmap_count(env->regs) + 1);
+	env->start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
 
 	/*
 	 * make proj nodes for the callee save registers.

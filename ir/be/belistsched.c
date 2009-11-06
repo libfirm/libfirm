@@ -282,7 +282,8 @@ static void make_users_ready(block_sched_env_t *env, ir_node *irn)
 /**
  * Returns the number of not yet schedules users.
  */
-static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n) {
+static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n)
+{
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -292,7 +293,8 @@ static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n) {
 /**
  * Sets the number of not yet schedules users.
  */
-static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
+static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num)
+{
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -302,7 +304,8 @@ static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, in
 /**
  * Add @p num to the number of not yet schedules users and returns the result.
  */
-static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num) {
+static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num)
+{
 	int idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
@@ -313,7 +316,8 @@ static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int
 /**
  * Returns the number of users of a node having mode datab.
  */
-static int get_num_successors(ir_node *irn) {
+static int get_num_successors(ir_node *irn)
+{
 	int             sum = 0;
 	const ir_edge_t *edge;
 
@@ -345,7 +349,8 @@ static int get_num_successors(ir_node *irn) {
  * Adds irn to @p live, updates all inputs that this user is scheduled
  * and counts all of its non scheduled users.
  */
-static void update_sched_liveness(block_sched_env_t *env, ir_node *irn) {
+static void update_sched_liveness(block_sched_env_t *env, ir_node *irn)
+{
 	int i;
 
 	/* ignore Projs */
@@ -423,7 +428,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 {
 	sched_env_t *env                      = env_ptr;
 	const list_sched_selector_t *selector = env->selector;
-	ir_node *start_node                   = get_irg_start(get_irn_irg(block));
 
 	block_sched_env_t be;
 	const ir_edge_t *edge;
@@ -478,12 +482,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 				transfer data flow from the predecessors to this block.
 			*/
 			add_to_sched(&be, irn);
-		}
-		else if (irn == start_node) {
+		} else if (be_is_Start(irn)) {
 			/* The start block will be scheduled as the first node */
 			add_to_sched(&be, irn);
-		}
-		else {
+		} else {
 			/* Other nodes must have all operands in other blocks to be made
 			 * ready */
 			int ready = 1;
@@ -663,8 +665,9 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 /**
  * Register list scheduler options.
  */
-void be_init_listsched(void) {
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+void be_init_listsched(void)
+{
+	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "listsched");
 
 	lc_opt_add_table(sched_grp, list_sched_option_table);

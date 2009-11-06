@@ -344,7 +344,7 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
 
-ir_node *be_new_Start(ir_node *block, int n_out);
+ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
 ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[]);
 
