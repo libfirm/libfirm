@@ -54,6 +54,9 @@
 #include "besched.h"
 #include "beirg.h"
 #include "bessaconstr.h"
+#include "bemodule.h"
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct _be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
@@ -109,8 +112,6 @@ struct _be_abi_irg_t {
 	arch_register_req_t  *sp_req;
 
 	be_stack_layout_t    frame;         /**< The stack frame model. */
-
-	DEBUG_ONLY(firm_dbg_module_t    *dbg;)  /**< The debugging module. */
 };
 
 static heights_t *ir_heights;
@@ -376,25 +377,6 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	}
 	return frame;
 }
-
-#if 0
-/** Dumps the stack layout to file. */
-static void stack_layout_dump(FILE *file, be_stack_layout_t *frame)
-{
-	int i, j, n;
-
-	ir_fprintf(file, "initial offset: %d\n", frame->initial_offset);
-	for (j = 0; j < N_FRAME_TYPES; ++j) {
-		ir_type *t = frame->order[j];
-
-		ir_fprintf(file, "type %d: %F size: %d\n", j, t, get_type_size_bytes(t));
-		for (i = 0, n = get_compound_n_members(t); i < n; ++i) {
-			ir_entity *ent = get_compound_member(t, i);
-			ir_fprintf(file, "\t%F int ofs: %d glob ofs: %d\n", ent, get_entity_offset_bytes(ent), get_stack_entity_offset(frame, ent, 0));
-		}
-	}
-}
-#endif
 
 /**
  * Returns non-zero if the call argument at given position
@@ -752,7 +734,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	*/
 	be_node_set_reg_class_in(low_call, be_pos_Call_ptr, call->cls_addr);
 
-	DBG((env->dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
+	DBG((dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
 	/* Set the register classes and constraints of the Call parameters. */
 	for (i = 0; i < n_reg_params; ++i) {
@@ -1183,7 +1165,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 		for (i = n - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
 
-			DBG((env->dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
+			DBG((dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
 			switch (get_irn_opcode(irn)) {
 			case iro_Call:
 				if (! be_omit_fp) {
@@ -1629,7 +1611,6 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 	ent_pos_pair  *entry, *new_list;
 	ir_type       *frame_tp;
 	int           i, n = ARR_LEN(value_param_list);
-	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	new_list = NULL;
 	for (i = 0; i < n; ++i) {
@@ -1854,8 +1835,6 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_type *arg_type, *bet_type, *tp;
 	lower_frame_sels_env_t ctx;
 	ir_entity **param_map;
-
-	DEBUG_ONLY(firm_dbg_module_t *dbg = env->dbg;)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
@@ -2343,8 +2322,6 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->init_sp = dummy  = new_r_Unknown(irg, env->arch_env->sp->reg_class->mode);
 	restore_optimization_state(&state);
 
-	FIRM_DBG_REGISTER(env->dbg, "firm.be.abi");
-
 	env->calls = NEW_ARR_F(ir_node*, 0);
 
 	if (birg->main_env->options->pic) {
@@ -2553,7 +2530,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 			int bias   = omit_fp ? real_bias : 0;
 			int offset = get_stack_entity_offset(&env->frame, ent, bias);
 			arch_set_frame_offset(irn, offset);
-			DBG((env->dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
+			DBG((dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
 			     ent, offset, bias));
 		}
 
@@ -2716,3 +2693,10 @@ int be_abi_omit_fp(const be_abi_irg_t *abi)
 {
 	return abi->call->flags.bits.try_omit_fp;
 }
+
+void be_init_abi(void)
+{
+	FIRM_DBG_REGISTER(dbg, "firm.be.abi");
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);

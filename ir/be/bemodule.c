@@ -27,10 +27,12 @@
 #include "config.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "bemodule_t.h"
 #include "xmalloc.h"
 
+void be_init_abi(void);
 void be_init_sched(void);
 void be_init_blocksched(void);
 void be_init_spill(void);
@@ -82,12 +84,13 @@ void be_quit_pbqp(void);
  */
 void be_init_modules(void)
 {
-	static int run_once = 0;
+	static bool run_once = false;
 
 	if (run_once)
 		return;
-	run_once = 1;
+	run_once = true;
 
+	be_init_abi();
 	be_init_irgmod();
 	be_init_loopana();
 	be_init_live();
