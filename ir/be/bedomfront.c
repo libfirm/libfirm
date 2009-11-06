@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Algorithms for computing normal and iterated dominance frontiers.
+ * @brief       Algorithms for computing dominance frontiers.
  * @author      Sebastian Hack, Daniel Grund
  * @date        04.05.2005
  * @version     $Id$
@@ -53,8 +53,7 @@ struct _be_dom_front_info_t {
  * @param bl The block.
  * @return The immediate dominator of the block.
  */
-static inline
-ir_node *get_idom(ir_node *bl)
+static inline ir_node *get_idom(ir_node *bl)
 {
 	ir_node *idom = get_Block_idom(bl);
 	return idom == NULL ? bl : idom;
@@ -67,8 +66,7 @@ ir_node *get_idom(ir_node *bl)
  *
  * @return the list of all blocks in the dominance frontier of blk
  */
-static
-ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
+static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 {
 	ir_node *c;
 	const ir_edge_t *edge;
@@ -137,36 +135,3 @@ ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info,
 {
 	return pmap_get(info->df_map, block);
 }
-
-#if 0
-/**
- * Calculates the iterated dominance frontier of a set of blocks.
- * Also clears the link field of the returned blocks as a side effect
- */
-void be_get_iterated_dominance_frontiers(const be_dom_front_info_t *domfronts,
-                                         ir_nodeset_t *blocks)
-{
-	ir_node *block;
-	ir_nodeset_iterator_t iter;
-	waitq *worklist = new_waitq();
-
-	foreach_ir_nodeset(blocks, block, iter) {
-		waitq_put(worklist, block);
-	}
-
-	while(! waitq_empty(worklist)) {
-		int     i;
-		ir_node *block       = waitq_get(worklist);
-		ir_node **domfront   = be_get_dominance_frontier(domfronts, block);
-		int     domfront_len = ARR_LEN(domfront);
-
-		for (i = 0; i < domfront_len; ++i) {
-			ir_node *y = domfront[i];
-			if (ir_nodeset_insert(blocks, y))
-				waitq_put(worklist, y);
-		}
-	}
-
-	del_waitq(worklist);
-}
-#endif

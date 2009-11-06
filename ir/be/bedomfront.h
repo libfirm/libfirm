@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Algorithms for computing normal and iterated dominance frontiers
+ * @brief       Algorithms for computing dominance frontiers
  * @author      Sebastian Hack, Daniel Grund
  * @date:       04.05.2005
  * @version     $Id$
@@ -51,4 +51,4 @@ void be_free_dominance_frontiers(be_dom_front_info_t *info);
  */
 ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info, ir_node *block);
 
-#endif /* FIRM_BE_BEDOMFRONT_H */
+#endif
