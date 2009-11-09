@@ -265,8 +265,14 @@ static void skip_barrier(ir_node *ret_blk, ir_graph *irg) {
 
 		foreach_out_edge_safe(irn, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
-			int      pn   = (int)get_Proj_proj(proj);
-			ir_node *pred = get_irn_n(irn, pn);
+			int      pn;
+			ir_node *pred;
+
+			if (is_Anchor(proj))
+				continue;
+
+			pn   = (int) get_Proj_proj(proj);
+			pred = get_irn_n(irn, pn);
 
 			edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
 			edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
