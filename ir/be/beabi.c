@@ -85,8 +85,8 @@ struct _be_abi_call_t {
  * The ABI information for the current birg.
  */
 struct _be_abi_irg_t {
-	struct obstack       obst;
 	be_irg_t             *birg;         /**< The back end IRG. */
+	ir_graph             *irg;
 	const arch_env_t     *arch_env;
 	survive_dce_t        *dce_survivor;
 
@@ -421,7 +421,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
-	struct obstack *obst       = &env->obst;
+	struct obstack *obst       = be_get_birg_obst(irg);
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 	int n_res                  = get_method_n_ress(call_tp);
 	int do_seq                 = call->flags.bits.store_args_sequential && !no_alloc;
@@ -452,6 +452,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Insert code to put the stack arguments on the stack. */
 	assert(get_Call_n_params(irn) == n_params);
+	assert(obstack_object_size(obst) == 0);
+	stack_param_idx = ALLOCAN(int, n_params);
 	for (i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		assert(arg);
@@ -461,21 +463,19 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			stack_size += round_up2(arg->space_before, arg->alignment);
 			stack_size += round_up2(arg_size, arg->alignment);
 			stack_size += round_up2(arg->space_after, arg->alignment);
-			obstack_int_grow(obst, i);
-			++n_stack_params;
+
+			stack_param_idx[n_stack_params++] = i;
 		}
 	}
-	stack_param_idx = obstack_finish(obst);
 
 	/* Collect all arguments which are passed in registers. */
+	reg_param_idxs = ALLOCAN(int, n_params);
 	for (i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
 		if (arg && arg->in_reg) {
-			obstack_int_grow(obst, i);
-			++n_reg_params;
+			reg_param_idxs[n_reg_params++] = i;
 		}
 	}
-	reg_param_idxs = obstack_finish(obst);
 
 	/*
 	 * If the stack is decreasing and we do not want to store sequentially,
@@ -493,7 +493,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	dbgi = get_irn_dbg_info(irn);
 	/* If there are some parameters which shall be passed on the stack. */
 	if (n_stack_params > 0) {
-		int curr_ofs      = 0;
+		int       curr_ofs = 0;
+		ir_node **in       = ALLOCAN(ir_node*, n_stack_params+1);
+		unsigned  n_in     = 0;
 
 		/*
 		 * Reverse list of stack parameters if call arguments are from left to right.
@@ -511,7 +513,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		curr_mem = get_Call_mem(irn);
 		if (! do_seq) {
-			obstack_ptr_grow(obst, curr_mem);
+			in[n_in++] = curr_mem;
 		}
 
 		for (i = 0; i < n_stack_params; ++i) {
@@ -530,10 +532,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			 */
 			if (do_seq) {
 				curr_ofs = 0;
-				addr = curr_sp = be_new_IncSP(sp, bl, curr_sp, param_size + arg->space_before, 0);
+				addr = curr_sp = be_new_IncSP(sp, bl, curr_sp,
+				                              param_size + arg->space_before, 0);
 				add_irn_dep(curr_sp, curr_mem);
-			}
-			else {
+			} else {
 				curr_ofs += arg->space_before;
 				curr_ofs =  round_up2(curr_ofs, arg->alignment);
 
@@ -553,11 +555,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
 				store = new_rd_Store(dbgi, bl, mem_input, addr, param, 0);
-				mem = new_r_Proj(bl, store, mode_M, pn_Store_M);
-			}
-
-			/* Make a mem copy for compound arguments. */
-			else {
+				mem   = new_r_Proj(bl, store, mode_M, pn_Store_M);
+			} else {
+				/* Make a mem copy for compound arguments. */
 				ir_node *copy;
 
 				assert(mode_is_reference(get_irn_mode(param)));
@@ -570,20 +570,17 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (do_seq)
 				curr_mem = mem;
 			else
-				obstack_ptr_grow(obst, mem);
+				in[n_in++] = mem;
 		}
-
-		in = (ir_node **) obstack_finish(obst);
 
 		/* We need the sync only, if we didn't build the stores sequentially. */
 		if (! do_seq) {
 			if (n_stack_params >= 1) {
-				curr_mem = new_r_Sync(bl, n_stack_params + 1, in);
+				curr_mem = new_r_Sync(bl, n_in, in);
 			} else {
 				curr_mem = get_Call_mem(irn);
 			}
 		}
-		obstack_free(obst, in);
 	}
 
 	/* check for the return_twice property */
@@ -654,9 +651,13 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	 */
 	n_reg_results = n_res;
 
+	assert(obstack_object_size(obst) == 0);
+	n_ins = 0;
+	in    = ALLOCAN(ir_node*, n_reg_params + pset_new_size(&states));
+
 	/* make the back end call node and set its register requirements. */
 	for (i = 0; i < n_reg_params; ++i) {
-		obstack_ptr_grow(obst, get_Call_param(irn, reg_param_idxs[i]));
+		in[n_ins++] = get_Call_param(irn, reg_param_idxs[i]);
 	}
 
 	/* add state registers ins */
@@ -667,11 +668,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_fprintf(stderr, "Adding %+F\n", regnode);
 #endif
 		ir_node *regnode = new_r_Unknown(irg, arch_register_class_mode(cls));
-		obstack_ptr_grow(obst, regnode);
+		in[n_ins++]      = regnode;
 	}
-	n_ins = n_reg_params + pset_new_size(&states);
-
-	in = obstack_finish(obst);
+	assert(n_ins == (int) (n_reg_params + pset_new_size(&states)));
 
 	/* ins collected, build the call */
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
@@ -756,7 +755,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_set_constr_single_reg_out(low_call, pn, arg->reg, 0);
 		arch_set_irn_register(proj, arg->reg);
 	}
-	obstack_free(obst, in);
 	exchange(irn, low_call);
 
 	/* kill the ProjT node */
@@ -774,10 +772,11 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int                   curr_res_proj = pn_be_Call_first_res + n_reg_results;
 		pset_new_iterator_t   iter;
 
+		in = ALLOCAN(ir_node *, pset_new_size(&destroyed_regs) + n_reg_results);
+
 		/* also keep the stack pointer */
-		++n;
 		set_irn_link(curr_sp, (void*) sp);
-		obstack_ptr_grow(obst, curr_sp);
+		in[n++] = curr_sp;
 
 		foreach_pset_new(&destroyed_regs, reg, iter) {
 			ir_node *proj = new_r_Proj(bl, low_call, reg->reg_class->mode, curr_res_proj);
@@ -787,27 +786,23 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			arch_set_irn_register(proj, reg);
 
 			set_irn_link(proj, (void*) reg);
-			obstack_ptr_grow(obst, proj);
+			in[n++] = proj;
 			++curr_res_proj;
-			++n;
 		}
 
 		for (i = 0; i < n_reg_results; ++i) {
 			ir_node *proj = res_projs[i];
 			const arch_register_t *reg = arch_get_irn_register(proj);
 			set_irn_link(proj, (void*) reg);
-			obstack_ptr_grow(obst, proj);
+			in[n++] = proj;
 		}
-		n += n_reg_results;
 
 		/* create the Keep for the caller save registers */
-		in   = (ir_node **) obstack_finish(obst);
 		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = get_irn_link(in[i]);
 			be_node_set_reg_class_in(keep, i, reg->reg_class);
 		}
-		obstack_free(obst, in);
 	}
 
 	/* Clean up the stack. */
@@ -836,7 +831,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	be_abi_call_free(call);
-	obstack_free(obst, stack_param_idx);
 
 	pset_new_destroy(&states);
 	pset_new_destroy(&destroyed_regs);
@@ -972,7 +966,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	                     pn_be_AddSP_sp);
 
 	return curr_sp;
-}  /* adjust_alloc */
+}
 
 /**
  * Adjust a Free.
@@ -1033,37 +1027,7 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	curr_sp = res;
 
 	return curr_sp;
-}  /* adjust_free */
-
-/* the following function is replaced by the usage of the heights module */
-#if 0
-/**
- * Walker for dependent_on().
- * This function searches a node tgt recursively from a given node
- * but is restricted to the given block.
- * @return 1 if tgt was reachable from curr, 0 if not.
- */
-static int check_dependence(ir_node *curr, ir_node *tgt, ir_node *bl)
-{
-	int n, i;
-
-	if (get_nodes_block(curr) != bl)
-		return 0;
-
-	if (curr == tgt)
-		return 1;
-
-	/* Phi functions stop the recursion inside a basic block */
-	if (! is_Phi(curr)) {
-		for (i = 0, n = get_irn_arity(curr); i < n; ++i) {
-			if (check_dependence(get_irn_n(curr, i), tgt, bl))
-				return 1;
-		}
-	}
-
-	return 0;
 }
-#endif /* if 0 */
 
 /**
  * Check if a node is somehow data dependent on another one.
@@ -1143,26 +1107,32 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
  */
 static void process_ops_in_block(ir_node *bl, void *data)
 {
-	be_abi_irg_t *env = data;
-	ir_node *curr_sp  = env->init_sp;
-	ir_node *irn;
-	int n;
+	be_abi_irg_t   *env     = data;
+	ir_node        *curr_sp = env->init_sp;
+	ir_node        *irn;
+	ir_node       **nodes;
+	int             n;
+	int             n_nodes;
 
-	for (irn = get_irn_link(bl), n = 0; irn; irn = get_irn_link(irn), ++n)
-		obstack_ptr_grow(&env->obst, irn);
+	n_nodes = 0;
+	for (irn = get_irn_link(bl); irn != NULL; irn = get_irn_link(irn)) {
+		++n_nodes;
+	}
+
+	nodes = ALLOCAN(ir_node*, n_nodes);
+	for (irn = get_irn_link(bl), n = 0; irn; irn = get_irn_link(irn), ++n) {
+		nodes[n] = irn;
+	}
 
 	/* If there were call nodes in the block. */
 	if (n > 0) {
 		ir_node *keep;
-		ir_node **nodes;
 		int i;
 
-		nodes = obstack_finish(&env->obst);
-
 		/* order the call nodes according to data dependency */
-		qsort(nodes, n, sizeof(nodes[0]), cmp_call_dependency);
+		qsort(nodes, n_nodes, sizeof(nodes[0]), cmp_call_dependency);
 
-		for (i = n - 1; i >= 0; --i) {
+		for (i = n_nodes - 1; i >= 0; --i) {
 			ir_node *irn = nodes[i];
 
 			DBG((dbg, LEVEL_3, "\tprocessing call %+F\n", irn));
@@ -1188,8 +1158,6 @@ static void process_ops_in_block(ir_node *bl, void *data)
 			}
 		}
 
-		obstack_free(&env->obst, nodes);
-
 		/* Keep the last stack state in the block by tying it to Keep node,
 		 * the proj from calls is already kept */
 		if (curr_sp != env->init_sp &&
@@ -1201,7 +1169,7 @@ static void process_ops_in_block(ir_node *bl, void *data)
 	}
 
 	set_irn_link(bl, curr_sp);
-}  /* process_ops_in_block */
+}
 
 /**
  * Adjust all call nodes in the graph to the ABI conventions.
@@ -1239,6 +1207,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 	int inc  = env->birg->main_env->arch_env->stack_dir * dir;
 	int n    = get_method_n_params(method_type);
 	int curr = inc > 0 ? 0 : n - 1;
+	struct obstack *obst = be_get_birg_obst(env->irg);
 	int ofs  = 0;
 
 	char buf[128];
@@ -1247,7 +1216,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
 	ir_entity **map;
 
-	*param_map = map = OALLOCN(&env->obst, ir_entity*, n);
+	*param_map = map = OALLOCN(obst, ir_entity*, n);
 	res = new_type_struct(id_mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
@@ -1297,12 +1266,11 @@ static int cmp_regs(const void *a, const void *b)
 		return p->reg->reg_class - q->reg->reg_class;
 }
 
-static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
+static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
 {
 	pmap_entry *ent;
 	int n = pmap_count(reg_map);
 	int i = 0;
-	reg_node_map_t *res = OALLOCN(obst, reg_node_map_t, n);
 
 	foreach_pmap(reg_map, ent) {
 		res[i].reg = ent->key;
@@ -1311,33 +1279,32 @@ static reg_node_map_t *reg_map_to_arr(struct obstack *obst, pmap *reg_map)
 	}
 
 	qsort(res, n, sizeof(res[0]), cmp_regs);
-	return res;
 }
 
 /**
  * Creates a barrier.
  */
-static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pmap *regs, int in_req)
+static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
+                               int in_req)
 {
-	int n_regs    = pmap_count(regs);
-	int n;
-	ir_node *irn;
-	ir_node **in;
+	int             n_regs = pmap_count(regs);
+	int             n;
+	ir_node        *irn;
+	ir_node       **in;
 	reg_node_map_t *rm;
 
-	rm = reg_map_to_arr(&env->obst, regs);
-
-	for (n = 0; n < n_regs; ++n)
-		obstack_ptr_grow(&env->obst, rm[n].irn);
-
-	if (mem) {
-		obstack_ptr_grow(&env->obst, *mem);
-		n++;
+	in = ALLOCAN(ir_node*, n_regs+1);
+	rm = ALLOCAN(reg_node_map_t, n_regs);
+	reg_map_to_arr(rm, regs);
+	for (n = 0; n < n_regs; ++n) {
+		in[n] = rm[n].irn;
 	}
 
-	in = (ir_node **) obstack_finish(&env->obst);
+	if (mem) {
+		in[n++] = *mem;
+	}
+
 	irn = be_new_Barrier(bl, n, in);
-	obstack_free(&env->obst, in);
 
 	for (n = 0; n < n_regs; ++n) {
 		ir_node               *pred     = rm[n].irn;
@@ -1371,7 +1338,6 @@ static ir_node *create_barrier(be_abi_irg_t *env, ir_node *bl, ir_node **mem, pm
 		*mem = new_r_Proj(bl, irn, mode_M, n);
 	}
 
-	obstack_free(&env->obst, rm);
 	return irn;
 }
 
@@ -1433,7 +1399,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	be_abi_reg_map_set(reg_map, arch_env->sp, stack);
 
 	/* Make the Epilogue node and call the arch's epilogue maker. */
-	create_barrier(env, bl, &mem, reg_map, 1);
+	create_barrier(bl, &mem, reg_map, 1);
 	call->cb->epilogue(env->cb, bl, &mem, reg_map);
 
 	/*
@@ -1442,8 +1408,8 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	*/
 	in_max = pmap_count(reg_map) + n_res + 2;
 
-	in   = OALLOCN(&env->obst, ir_node*,               in_max);
-	regs = OALLOCN(&env->obst, arch_register_t const*, in_max);
+	in   = ALLOCAN(ir_node*,               in_max);
+	regs = ALLOCAN(arch_register_t const*, in_max);
 
 	in[0]   = mem;
 	in[1]   = be_abi_reg_map_get(reg_map, arch_env->sp);
@@ -1490,7 +1456,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	}
 
 	/* Free the space of the Epilog's in array and the register <-> proj map. */
-	obstack_free(&env->obst, in);
 	pmap_destroy(reg_map);
 
 	return ret;
@@ -1819,6 +1784,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *new_mem_proj;
 	ir_node *mem;
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
+	struct obstack *obst      = be_get_birg_obst(irg);
 
 	int n_params;
 	int i, n;
@@ -1883,7 +1849,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->regs  = pmap_create();
 
 	n_params = get_method_n_params(method_type);
-	args     = OALLOCNZ(&env->obst, ir_node*, n_params);
+	args     = OALLOCNZ(obst, ir_node*, n_params);
 
 	/*
 	 * for inner function we must now fix access to outer frame entities.
@@ -1960,7 +1926,8 @@ static void modify_irg(be_abi_irg_t *env)
 	 * the old Proj from start for that argument.
 	 */
 
-	rm = reg_map_to_arr(&env->obst, env->regs);
+	rm = ALLOCAN(reg_node_map_t, pmap_count(env->regs));
+	reg_map_to_arr(rm, env->regs);
 	for (i = 0, n = pmap_count(env->regs); i < n; ++i) {
 		arch_register_t          *reg      = (void *) rm[i].reg;
 		ir_mode                  *mode     = reg->reg_class->mode;
@@ -1979,7 +1946,6 @@ static void modify_irg(be_abi_irg_t *env)
 
 		DBG((dbg, LEVEL_2, "\tregister save proj #%d -> reg %s\n", nr, reg->name));
 	}
-	obstack_free(&env->obst, rm);
 
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
@@ -1997,7 +1963,7 @@ static void modify_irg(be_abi_irg_t *env)
 	env->init_sp = be_new_IncSP(sp, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
-	create_barrier(env, start_bl, &mem, env->regs, 0);
+	create_barrier(start_bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	arch_set_irn_register(env->init_sp, sp);
@@ -2079,10 +2045,9 @@ static void modify_irg(be_abi_irg_t *env)
 			exchange(irn, ret);
 		}
 	}
+
 	/* if we have endless loops here, n might be <= 0. Do NOT create a be_Return then,
 	   the code is dead and will never be executed. */
-
-	obstack_free(&env->obst, args);
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
@@ -2279,6 +2244,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	be_abi_irg_t *env  = XMALLOC(be_abi_irg_t);
 	ir_node *old_frame = get_irg_frame(birg->irg);
 	ir_graph *irg      = birg->irg;
+	struct obstack *obst = be_get_birg_obst(irg);
 
 	pmap_entry *ent;
 	ir_node *dummy;
@@ -2289,7 +2255,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	be_omit_fp      = birg->main_env->options->omit_fp;
 	be_omit_leaf_fp = birg->main_env->options->omit_leaf_fp;
 
-	obstack_init(&env->obst);
+	obstack_init(obst);
 
 	env->arch_env    = birg->main_env->arch_env;
 	env->method_type = get_entity_type(get_irg_entity(irg));
@@ -2300,15 +2266,16 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 	env->keep_map     = pmap_create();
 	env->dce_survivor = new_survive_dce();
 	env->birg         = birg;
+	env->irg          = irg;
 
-	sp_req = OALLOCZ(&env->obst, arch_register_req_t);
+	sp_req = OALLOCZ(obst, arch_register_req_t);
 	env->sp_req = sp_req;
 
 	sp_req->type = arch_register_req_type_limited
 	             | arch_register_req_type_produces_sp;
 	sp_req->cls  = arch_register_get_class(env->arch_env->sp);
 
-	limited_bitset = rbitset_obstack_alloc(&env->obst, sp_req->cls->n_regs);
+	limited_bitset = rbitset_obstack_alloc(obst, sp_req->cls->n_regs);
 	rbitset_set(limited_bitset, arch_register_get_index(env->arch_env->sp));
 	sp_req->limited = limited_bitset;
 	if (env->arch_env->sp->type & arch_register_type_ignore) {
@@ -2372,7 +2339,6 @@ void be_abi_free(be_abi_irg_t *env)
 	free_survive_dce(env->dce_survivor);
 	del_pset(env->ignore_regs);
 	pmap_destroy(env->regs);
-	obstack_free(&env->obst, NULL);
 	free(env);
 }
 
