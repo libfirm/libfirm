@@ -288,6 +288,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in) {
 	assert(n < get_irn_arity(node));
 	assert(in && in->kind == k_ir_node);
 
+#ifdef INTERPROCEDURAL_VIEW
 	if ((n == -1) && (get_irn_opcode(node) == iro_Filter)) {
 		/* Change block pred in both views! */
 		node->in[n + 1] = in;
@@ -295,7 +296,6 @@ void set_irn_n(ir_node *node, int n, ir_node *in) {
 		node->attr.filter.in_cg[n + 1] = in;
 		return;
 	}
-#ifdef INTERPROCEDURAL_VIEW
 	if (get_interprocedural_view()) { /* handle Filter and Block specially */
 		if (get_irn_opcode(node) == iro_Filter) {
 			assert(node->attr.filter.in_cg);
