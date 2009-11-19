@@ -34,6 +34,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* xmalloc() & friends. */
 
