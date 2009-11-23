@@ -69,44 +69,48 @@
 #include "array_t.h"
 #include "irdump.h"
 
-
-/* convenience macro iterating over every phi node of the block */
+/* convenience macro for iterating over every phi node of the given block */
 #define for_each_phi(block, phi) \
 	for ( (phi) = get_Block_phis( (block) ); (phi) ; (phi) = get_Phi_next( (phi) ) )
 
+/* current loop */
 ir_loop *cur_loop;
 
 /* The loop walker should be possible to abort if nothing can be done anymore */
 typedef unsigned irg_walk_func_abortable(ir_node *, void *);
 
-/* stores pair of node and number for nodes predecessor */
+/* stores pair of node and number for the nodes predecessor */
 typedef struct loop_entry_t {
 	ir_node *node;			/* node outside of the loop */
 	int pred_irn_n;			/* with pred_irn_n pointing inside loop */
+	//loop_entry_t *next;
 } loop_entry_t;
 
+//loop_entry_t loop_entry_list;
+
 /* Store complex values in the nodes link */
-//TODO optimize. Every node has these values and seldom many otm are used.
 typedef struct link_node_state_t {
 	unsigned cloned:1;
-	unsigned temp:1;
+	unsigned temp:1;		/* < Node is temporarily copied, to resolve cycles */
 	unsigned invariant:1;
-	ir_node *link;
-	ir_node *ssalink;	/* we will have to keep the link to the copies, as well as have temporary links for ssa creation */
-	ir_node **ins;		/* ins for phi nodes, during rewiring of blocks */
-	// TODO omit ins. can be replaced by new ins and newunknown ins for each
+	ir_node *copy;
+	ir_node *link;			/*< temporary links for ssa creation */
+	ir_node **ins;			/* ins for phi nodes, during rewiring of blocks */
 } link_node_state_t;
 
 
 loop_entry_t *loop_entries;		/* loop entries (from below) in the node graph */
-loop_entry_t *backedges;		/* backedges exclusively from the current loop */
-loop_entry_t *alien_backedges;	/* The head can be head of several loops. */
-loop_entry_t *head_edges;	/* The head can be head of several loops. */
+//int loop_entries_n;
+loop_entry_t *head_entries;		/* loop entries (from below) in the node graph */
+int backedges_n;
+//loop_entry_t *backedges;		/* backedges exclusively from the current loop */
+//loop_entry_t *alien_backedges;	/* The head can be head of several loops. */
+//loop_entry_t *head_edges;	/* The head can be head of several loops. */
 
 ir_node *loop_cf_head = NULL;		/* loop exit in the node graph */
 unsigned loop_cf_head_valid = 1;	/* a loop may/must have one head, otherwise invalid */
 
-unsigned has_sto = 0;				/* If we store inside the loop we might
+unsigned has_sto;				/* If we store inside the loop we might
 									 * have disambiguation problems */
 //DBG
 //void arrdump(ir_node **arr)
@@ -130,9 +134,17 @@ link_node_state_t *get_lstate(ir_node *n)
  * Returns the link inside of the nodes state which is pointing to its copy
  * most of the time during loop peeling.
  */
-ir_node *get_copy_of(ir_node *n)
+ir_node *get_copy(ir_node *n)
 {
-	return ((link_node_state_t *)n->link)->link;
+	return ((link_node_state_t *)n->link)->copy;
+}
+
+/**
+ * Sets the nodes copy information
+ */
+void set_copy(ir_node *n, ir_node *copy)
+{
+	((link_node_state_t *)n->link)->copy = copy;
 }
 
 /**
@@ -158,6 +170,15 @@ unsigned is_in_loop(ir_node *node)
 	}
 }
 
+unsigned is_in_head(ir_node *node)
+{
+	if (is_Block(node)) {
+		return (node == loop_cf_head);
+	} else {
+		return ( get_nodes_block(node) == loop_cf_head );
+	}
+}
+
 /**
  * Returns if the given be is an alien edge
  */
@@ -178,7 +199,7 @@ static void add_pred(ir_node* node, ir_node* x)
 	//printf("addpred %ld   pred %ld \n", node->node_nr, x->node_nr);
 
 	// WHY limit it to blocks and phi?
-	//assert(is_Block(node) || is_Phi(node));
+	assert(is_Block(node) || is_Phi(node));
 
 	n = get_irn_arity(node);
 	NEW_ARR_A(ir_node*, ins, n + 1);
@@ -236,7 +257,7 @@ void collect_backedges(ir_node *block, void *env)
 {
 	(void) env;
 
-	printf("LOOP BLOCK %ld\n", block->node_nr);
+	//printf("LOOP BLOCK %ld\n", block->node_nr);
 
 	/* collect backedges */
 	if (has_backedges(block))
@@ -251,17 +272,19 @@ void collect_backedges(ir_node *block, void *env)
 			be.node = block;
 			be.pred_irn_n = i;
 
-			ARR_APP1(loop_entry_t, head_edges, be);
+			//ARR_APP1(loop_entry_t, head_edges, be);
 
 			if (is_backedge(block, i) )
 			{
 				if ( is_in_loop(pred) ) {
 					//printf("be: %ld --> %ld \n", block->node_nr, pred->node_nr);
-					ARR_APP1(loop_entry_t, backedges, be);
-				} else {
-					//printf("alien be: %ld --> %ld \n", block->node_nr, pred->node_nr);
-					ARR_APP1(loop_entry_t, alien_backedges, be);
+					//ARR_APP1(loop_entry_t, backedges, be);
+					++backedges_n;
 				}
+//				else {
+//					//printf("alien be: %ld --> %ld \n", block->node_nr, pred->node_nr);
+//					ARR_APP1(loop_entry_t, alien_backedges, be);
+//				}
 			}
 //			else {
 //				if ( !is_in_loop(pred) ) {
@@ -353,9 +376,6 @@ void find_loop_entries_walk(ir_node *node, void *env)
 	unsigned node_in_loop, pred_in_loop;
 	(void) env;
 
-	link_node_state_t *state = XMALLOCZ(link_node_state_t);
-	node->link = (void *)state;
-
 	int i, arity;
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
@@ -372,7 +392,8 @@ void find_loop_entries_walk(ir_node *node, void *env)
 
 			if ( !is_in_loop(cfgpred) )
 			{
-				//another head? We do not touch this.
+				// another head? We do not touch this.
+				// is this possible?
 				if (loop_cf_head && loop_cf_head != node)
 				{
 					loop_cf_head_valid = 0;
@@ -400,7 +421,6 @@ void find_loop_entries_walk(ir_node *node, void *env)
 	}
 }
 
-// TODO needed?
 ///**
 // * Finds invariant nodes and marks them as invariant.
 // * (Post walk)
@@ -479,30 +499,33 @@ void find_loop_entries_walk(ir_node *node, void *env)
 //}
 
 ////TODO DBG Remove
-void phifix(ir_node *node, ir_node *newpred)
-{
-	ir_node *phi=get_Block_phis(node);
-	while(phi)
-	{
-		int pa = get_irn_arity(phi);
-		int ba = get_irn_arity(node);
-
-
-
-		while(ba>pa)
-		{
-			printf("!!!!!!!!!! block has %d, phi had %d\n", ba, pa );
-			add_pred(phi, newpred);
-			pa++;
-			printf("!!!!!!!!!! block has %d, phi has now %d\n", ba, pa );
-		}
-		phi=get_Phi_next(phi);
-	}
-}
+//void phifix(ir_node *node, ir_node *newpred)
+//{
+//	ir_node *phi=get_Block_phis(node);
+//	while(phi)
+//	{
+//		int pa = get_irn_arity(phi);
+//		int ba = get_irn_arity(node);
+//
+//
+//
+//		while(ba>pa)
+//		{
+//			printf("!!!!!!!!!! block has %d, phi had %d\n", ba, pa );
+//			add_pred(phi, newpred);
+//			pa++;
+//			printf("!!!!!!!!!! block has %d, phi has now %d\n", ba, pa );
+//		}
+//		phi=get_Phi_next(phi);
+//	}
+//}
 
 static ir_node *ssa_second_def;
 static ir_node *ssa_second_def_block;
 
+/**
+ *
+ */
 static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
                                            int first)
 {
@@ -527,7 +550,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 
 	/* already processed this block? */
 	if (irn_visited(block)) {
-		ir_node *value = get_lstate(block)->ssalink;
+		ir_node *value = get_lstate(block)->link;
 		return value;
 	}
 
@@ -540,7 +563,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		ir_node *value      = search_def_and_create_phis(pred_block, mode, 0);
 
-		get_lstate(block)->ssalink = value;
+		get_lstate(block)->link = value;
 		//set_irn_link(block, value);
 		mark_irn_visited(block);
 		return value;
@@ -553,7 +576,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	//set_irn_link(block, phi);
-	get_lstate(block)->ssalink = phi;
+	get_lstate(block)->link = phi;
 	mark_irn_visited(block);
 
 	/* set Phi predecessors */
@@ -587,7 +610,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	inc_irg_visited(irg);
 
 	mode = get_irn_mode(orig_val);
-	get_lstate(orig_block)->ssalink = orig_val;
+	get_lstate(orig_block)->link = orig_val;
 	//set_irn_link(orig_block, orig_val);
 	mark_irn_visited(orig_block);
 
@@ -625,7 +648,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 
 
 /**
- * Rewires the heads after peeling
+ * Rewires the heads after peeling. This results in a tail-controlled loop.
  */
 void fix_head(ir_node *loophead)
 {
@@ -634,7 +657,7 @@ void fix_head(ir_node *loophead)
 	ir_node **loopheadnins;
 	ir_node **peelheadnins;
 	ir_node *phi;
-	ir_node *peelhead = get_copy_of(loophead);
+	ir_node *peelhead = get_copy(loophead);
 	int lheadin_c = 0;
 	int pheadin_c = 0;
 
@@ -642,8 +665,13 @@ void fix_head(ir_node *loophead)
 	 * the loopheads new preds are:
 	 * its own backedge(s) and the former backedge(s) of the peeled code
 	 */
-	int lhead_arity = 2 * ARR_LEN(backedges);
-	int phead_arity = headarity - ARR_LEN(backedges);
+	int lhead_arity = 2 * backedges_n; //ARR_LEN(backedges);
+	int phead_arity = headarity - backedges_n;  //ARR_LEN(backedges);
+
+	/** We assume the worst case, in which every head entry
+	 * origins from the same node. +1 for a null terminated list.
+	 */
+	//int tchead_arity = ARR_LEN(head_entries) + ( headarity - backedges_n) + 1  ;
 
 	NEW_ARR_A(ir_node *, loopheadnins, lhead_arity );
 	NEW_ARR_A(ir_node *, peelheadnins, phead_arity );
@@ -665,7 +693,7 @@ void fix_head(ir_node *loophead)
 	{
 		ir_node *phi;
 		ir_node *orgjmp = get_irn_n(loophead, i);
-		ir_node *copyjmp = get_copy_of(orgjmp);
+		ir_node *copyjmp = get_copy(orgjmp);
 
 		/**
 		 * Rewire the head blocks ins and their phi ins.
@@ -712,7 +740,7 @@ void fix_head(ir_node *loophead)
 				 */
 				for_each_phi(loophead, phi) {
 					//printf("normalbe phi %ld @ %d -> %ld\n", phi->node_nr, i,  get_irn_n( get_copy_of(phi), i)->node_nr);
-					get_lstate( phi )->ins[lheadin_c] =	get_irn_n( get_copy_of(phi), i) ;
+					get_lstate( phi )->ins[lheadin_c] =	get_irn_n( get_copy(phi), i) ;
 				}
 				//printf("normalbe %ld @ %d -> add to loophead copyjump %ld\n", loophead->node_nr, i, copyjmp->node_nr);
 				++lheadin_c;
@@ -752,19 +780,33 @@ void fix_head(ir_node *loophead)
 	}
 }
 
+ir_node *rawcopy_node(ir_node *node)
+{
+	ir_node *cp;
+	link_node_state_t *cpstate;
+
+	cp = exact_copy(node);
+	set_copy(node, cp);
+	cpstate = XMALLOCZ(link_node_state_t);
+	cp->link = cpstate;
+	if (is_Block(cp))
+		cp->loop = NULL;		/* the copy does not belong to the loop */
+	set_irn_visited(cp, current_ir_graph->visited);
+	return cp;
+}
 
 /**
  * Peels the loop by copying the contents. Graph needs some rewiring after that.
  */
-void peel_walk(ir_node *node, void *env)
+void peel_walk(ir_node *node)
 {
 	int i;
 	int arity;
 	ir_node *cp;
 	ir_node **cpin;
 	ir_graph *irg = current_ir_graph;
-	link_node_state_t *cpstate;
-	(void) env;
+
+	//(void) env;
 
 	link_node_state_t *nodestate = get_lstate(node);
 
@@ -778,16 +820,8 @@ void peel_walk(ir_node *node, void *env)
 			/** temporary clone this node
 			 * because we were here before and would walk into a cycle
 			 */
-			cp = exact_copy(node);
-			//DBG
-			//printf("COPY TEMP : %ld -T> %ld \n", node->node_nr, cp->node_nr);
-			nodestate->link = cp;
-			if (is_Block(cp))
-				cp->loop = NULL;
-			cpstate = XMALLOCZ(link_node_state_t);
-			cp->link = cpstate;
+			rawcopy_node(node);
 			nodestate->temp=1;
-			set_irn_visited(cp, irg->visited);
 		}
 		return;
 	}
@@ -801,24 +835,33 @@ void peel_walk(ir_node *node, void *env)
 	if ( !is_Block(node) ) {
 		ir_node *pred = get_irn_n(node, -1);
 		if (is_in_loop(pred))
-			peel_walk(pred, NULL);
+			peel_walk(pred);
 	}
 
 	arity = get_irn_arity(node);
 
 	NEW_ARR_A(ir_node *, cpin, arity);
 
+
 	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
 		ir_node *pred = get_irn_n(node, i);
 
+		/* collect head entries */
+		if ( is_in_head(pred) && !is_in_head(node) )
+		{
+			loop_entry_t entry;
+			entry.node = node;
+			entry.pred_irn_n = i;
+			ARR_APP1(loop_entry_t, head_entries, entry);
+		}
+
 		if (is_in_loop(pred))
 		{
-			peel_walk(pred, NULL);
-			cpin[i] = get_lstate(pred)->link;
+			peel_walk(pred);
+			cpin[i] = get_copy(pred);  //get_lstate(pred)->link;
 			//printf("copy of %ld gets in %ld", node->node_nr, cpin[i]->node_nr);
 		} else {
 			cpin[i] = pred;
-
 		}
 		//printf("copy of %ld gets in %ld \n", node->node_nr, cpin[i]->node_nr);
 	}
@@ -826,18 +869,9 @@ void peel_walk(ir_node *node, void *env)
 	/**
 	 *  copy node / finalize temp node
 	 */
-	if (!nodestate->temp)
-	{
+	if (!nodestate->temp) {
 //		if (!is_Const(node) && !is_SymConst(node)) {
-			cp = exact_copy(node);
-			//DBG
-			//printf("COPY FINAL: %ld -F> %ld \n", node->node_nr, cp->node_nr);
-			nodestate->link = cp;
-			cpstate = XMALLOCZ(link_node_state_t);
-			cp->link = cpstate;
-			if (is_Block(cp))
-				cp->loop = NULL;
-			set_irn_visited(cp, irg->visited);
+			cp = rawcopy_node(node);
 //		} else {
 //			cp = node;
 //			//DBG
@@ -846,16 +880,20 @@ void peel_walk(ir_node *node, void *env)
 //		}
 	} else {
 		/* temporary copy is existent but without correct ins */
-		cp = nodestate->link;
+		cp = get_copy(node);  // nodestate->link;
 		//printf("FINALIZE: %ld \n", cp->node_nr);
 	}
 
-	//TODO REM
-	//add_End_keepalive(get_irg_end(current_ir_graph), cp );
+	// special treatment for the head/condition: we need 3 heads for a tail-controlled and peeled loop
+	if (is_in_head(node)) {
+		// head/condition for the tail-controlled loop
+		// These copies are linked to the copies
+		rawcopy_node(cp);
+	}
 
 	if (!is_Block(node))
 	{
-		ir_node *cpblock = get_copy_of(get_nodes_block(node));
+		ir_node *cpblock = get_copy(get_nodes_block(node));
 
 		/* set the block of the copy to the copied block */
 		//printf("    PRE  NODE %ld   BLOCK %ld \n", cp->node_nr, get_nodes_block(cp)->node_nr);
@@ -935,13 +973,13 @@ void peel(void)
 			/* node is block and the given pred points inside the loop  */
 			ir_node *cppred;
 
-			peel_walk( pred, 0);
+			peel_walk( pred );
 
 			// leave keepalives out
 			if (is_End(node) && (is_Block(pred) || is_Phi(pred)) ) {
 				//add_End_keepalive(get_irg_end(current_ir_graph), get_copy_of(pred) );
 			} else {
-				cppred = get_copy_of(pred);
+				cppred = get_copy(pred);
 				//printf("fix block entry %ld to cp %ld\n", node->node_nr, cppred->node_nr);
 				add_pred( node, cppred );
 				//printf("fix block entry %ld to cp %ld\n", node->node_nr, cppred->node_nr);
@@ -956,7 +994,7 @@ void peel(void)
 			//ir_node *cppred;
 			//ir_node *block;
 			//ir_node *cpblock;
-			peel_walk( pred, 0);
+			peel_walk( pred );
 
 			// no ssa for keepalives
 			if (is_End(node) && (is_Block(pred) || is_Phi(pred)) ) {
@@ -1010,7 +1048,7 @@ void peel(void)
 			pred = entry_buffer[entry_i++];
 
 			//printf("pred %ld\n", pred->node_nr);
-			cppred = get_copy_of(pred);
+			cppred = get_copy(pred);
 			//printf("cppred %ld\n", cppred->node_nr);
 			block = get_nodes_block(pred);
 			//printf("block %ld\n", block->node_nr);
@@ -1026,9 +1064,21 @@ void peel(void)
 			//add_pred(get_irg_end(current_ir_graph), cppred);
 			//dump_ir_block_graph(current_ir_graph, "nachher");
 
-
 		}
 	}
+}
+
+void alloc_linkstructs(ir_node *node, void *env)
+{
+	(void) env;
+	link_node_state_t *state = XMALLOCZ(link_node_state_t);
+	node->link = (void *)state;
+}
+
+void free_linkstructs(ir_node *node, void *env)
+{
+	(void) env;
+	xfree( (link_node_state_t*) node->link);
 }
 
 void decision_maker(void)
@@ -1036,9 +1086,15 @@ void decision_maker(void)
 	//inc_irg_visited(current_ir_graph);
 	//loop_walker( loop_entries, NULL, get_invariants, NULL );
 
+
+	inc_irg_visited(current_ir_graph);
+	irg_walk_graph(current_ir_graph, alloc_linkstructs, NULL, NULL);
+
 	inc_irg_visited(current_ir_graph);
 	peel();
 
+	inc_irg_visited(current_ir_graph);
+	irg_walk_graph(current_ir_graph, free_linkstructs, NULL, NULL);
 }
 
 
@@ -1050,15 +1106,19 @@ void analyze_loop(ir_loop *loop)
 	/* Init new for every loop */
 	loop_cf_head = NULL;
 	loop_cf_head_valid = 1;
+	//loop_entries_n = 0;
+	backedges_n = 0;
 	has_sto = 0;
 
 	cur_loop = loop;
 
 	/* arrays */
-	backedges = NEW_ARR_F(loop_entry_t, 0);
-	alien_backedges = NEW_ARR_F(loop_entry_t, 0);
+	//backedges = NEW_ARR_F(loop_entry_t, 0);
+	//alien_backedges = NEW_ARR_F(loop_entry_t, 0);
+	//head_edges = NEW_ARR_F(loop_entry_t, 0);
+
 	loop_entries = NEW_ARR_F(loop_entry_t, 0);
-	head_edges = NEW_ARR_F(loop_entry_t, 0);
+	head_entries = NEW_ARR_F(loop_entry_t, 0);
 
 	inc_irg_visited( current_ir_graph );
 	irg_walk_graph( current_ir_graph, block_phi_walker, NULL, NULL );
@@ -1083,9 +1143,10 @@ void analyze_loop(ir_loop *loop)
 
 	/* FREE */
 	DEL_ARR_F(loop_entries);
-	DEL_ARR_F(backedges);
-	DEL_ARR_F(alien_backedges);
-	DEL_ARR_F(head_edges);
+	DEL_ARR_F(head_entries);
+	//DEL_ARR_F(backedges);
+	//DEL_ARR_F(alien_backedges);
+	//DEL_ARR_F(head_edges);
 
 	//dump_ir_block_graph(current_ir_graph, "-lu1");
 }
@@ -1116,27 +1177,7 @@ void analyze_inner_loop(ir_loop *loop)
 	}
 }
 
-
-
-//
-//void phicheck(ir_node *node, void * env)
-//{
-//	if (!is_Block(node)) return;
-//
-//	ir_node *phi=get_Block_phis(node);
-//	while(phi)
-//	{
-//		if (!is_Phi(phi))
-//		{
-//			printf("NOT PHI %ld\n", phi->node_nr);
-//			phi = NULL;
-//		} else {
-//			phi=get_Phi_next(phi);
-//		}
-//	}
-//}
-
-void loop_unroll(ir_graph *irg)
+void loop_optimization(ir_graph *irg)
 {
 	//printf(" --- loop unroll start --- \n");
 
@@ -1159,30 +1200,30 @@ void loop_unroll(ir_graph *irg)
 	//printf(" --- loop unroll done --- \n");
 }
 
-struct loop_unroll_pass_t {
-	ir_graph_pass_t pass;
-};
+//struct loop_unroll_pass_t {
+//	ir_graph_pass_t pass;
+//};
 
 /**
- * Wrapper to run ...() as a ir_prog pass.
+ * Wrapper to run loop_unroll() as a ir_prog pass.
  */
-static int loop_unroll_wrapper(ir_graph *irg, void *context) {
+//static int loop_unroll_wrapper(ir_graph *irg, void *context) {
+//
+//	(void)context;
+//	loop_unroll(irg);
+//	return 0;
+//}
 
-	(void)context;
-	loop_unroll(irg);
-	return 0;
-}
 
-//TODO ??
-ir_graph_pass_t *loop_unroll_pass(const char *name)
-{
-	struct loop_unroll_pass_t *pass =
-		XMALLOCZ(struct loop_unroll_pass_t);
-
-	return def_graph_pass_constructor(
-		&pass->pass, name ? name : "loop_unroll",
-		loop_unroll_wrapper);
-}
+//ir_graph_pass_t *loop_unroll_pass(const char *name)
+//{
+//	struct loop_unroll_pass_t *pass =
+//		XMALLOCZ(struct loop_unroll_pass_t);
+//
+//	return def_graph_pass_constructor(
+//		&pass->pass, name ? name : "loop_unroll",
+//		loop_unroll_wrapper);
+//}
 
 /*
 void firm_init_loopunroll(void) {
