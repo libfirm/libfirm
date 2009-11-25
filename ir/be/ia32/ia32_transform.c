@@ -829,6 +829,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		}
 		am->op_type = ia32_AddrModeS;
 	} else {
+		ir_mode *mode;
 		am->op_type = ia32_Normal;
 
 		if (flags & match_try_am) {
@@ -837,11 +838,18 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 			return;
 		}
 
-		new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
-		if (new_op2 == NULL)
-			new_op2 = be_transform_node(op2);
-		am->ls_mode =
-			(flags & match_mode_neutral ? mode_Iu : get_irn_mode(op2));
+		mode = get_irn_mode(op2);
+		if (flags & match_upconv_32 && get_mode_size_bits(mode) != 32) {
+			new_op1 = (op1 == NULL ? NULL : create_upconv(op1, NULL));
+			if (new_op2 == NULL)
+				new_op2 = create_upconv(op2, NULL);
+			am->ls_mode = mode_Iu;
+		} else {
+			new_op1 = (op1 == NULL ? NULL : be_transform_node(op1));
+			if (new_op2 == NULL)
+				new_op2 = be_transform_node(op2);
+			am->ls_mode = (flags & match_mode_neutral) ? mode_Iu : mode;
+		}
 	}
 	if (addr->base == NULL)
 		addr->base = noreg_GP;
@@ -1295,6 +1303,10 @@ static ir_node *gen_Mulh(ir_node *node)
 	ir_node              *new_node;
 	ir_node              *proj_res_high;
 
+	if (get_mode_size_bits(mode) != 32) {
+		panic("Mulh without 32bit size not supported in ia32 backend (%+F)", node);
+	}
+
 	if (mode_is_signed(mode)) {
 		new_node = gen_binop(node, op1, op2, new_bd_ia32_IMul1OP, match_commutative | match_am);
 		proj_res_high = new_rd_Proj(dbgi, new_block, new_node, mode_Iu, pn_ia32_IMul1OP_res_high);
@@ -1519,7 +1531,7 @@ static ir_node *create_Div(ir_node *node)
 		panic("invalid divmod node %+F", node);
 	}
 
-	match_arguments(&am, block, op1, op2, NULL, match_am);
+	match_arguments(&am, block, op1, op2, NULL, match_am | match_upconv_32);
 
 	/* Beware: We don't need a Sync, if the memory predecessor of the Div node
 	   is the memory of the consumed address. We can have only the second op as address

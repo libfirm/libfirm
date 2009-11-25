@@ -61,7 +61,9 @@ typedef enum {
 	                                       by 32 bit operations */
 	match_try_am            = 1 << 7, /**< only try to produce AM node, don't
 	                                       do anything if AM isn't possible */
-	match_two_users         = 1 << 8  /**< the instruction uses a load two times ... */
+	match_two_users         = 1 << 8, /**< the instruction uses a load two times ... */
+	match_upconv_32         = 1 << 9  /**< 8/16 bit insn are processed by doing
+	                                       an upconv to 32bit */
 } match_flags_t;
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;
