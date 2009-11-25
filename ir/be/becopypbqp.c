@@ -230,7 +230,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		if(aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
 				/* ignore Unknowns */
-				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_node->irn))->costs != NULL)
+				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_node->irn)) == NULL)
 					continue;
 
 				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
@@ -253,9 +253,8 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	#if KAPS_DUMP
 	// dump graph before solving pbqp
-	FILE *file_before = my_open(co->cenv, "", "-before.html");
-	set_dumpfile(pbqp_co.pbqp, file_before);
-	pbqp_dump_input(pbqp_co.pbqp);
+	FILE *file = my_open(co->cenv, "", "-pbqp_copymin.html");
+	set_dumpfile(pbqp_co.pbqp, file);
 	#endif
 
 	/* start timer */
@@ -286,13 +285,6 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	assert(solution != INF_COSTS && "No PBQP solution found");
 
-	#if KAPS_DUMP
-	/* dump graph after solving pbqp */
-	FILE *file_after = my_open(co->cenv, "", "-after.html");
-	set_dumpfile(pbqp_co.pbqp, file_after);
-	pbqp_dump_input(pbqp_co.pbqp);
-	#endif
-
 	/* coloring ifg */
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
 		num index = get_node_solution(pbqp_co.pbqp, get_irn_idx(ifg_node));
@@ -302,8 +294,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 
 	/* free allocated memory */
 	#if KAPS_DUMP
-	fclose(file_before);
-	fclose(file_after);
+	fclose(file);
 	#endif
 	bitset_free(pbqp_co.ignore_reg);
 	bitset_free(pbqp_co.restricted_nodes);
