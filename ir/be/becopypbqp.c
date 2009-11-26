@@ -186,14 +186,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 	struct pbqp_matrix *ife_matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 	/* set costs */
 	for(row = 0; row < number_registers; row++) {
-		for(col = 0; col < number_registers; col++) {
-			if(row == col) {
-				pbqp_matrix_set(ife_matrix, row, col, INF_COSTS);
-			}
-			else {
-				pbqp_matrix_set(ife_matrix, row, col, 0);
-			}
-		}
+		pbqp_matrix_set(ife_matrix, row, row, INF_COSTS);
 	}
 
 	/* create costs matrix for affinity edges */
@@ -230,7 +223,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
 		if(aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
 				/* ignore Unknowns */
-				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_node->irn)) == NULL)
+				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_neighb_node->irn)) == NULL)
 					continue;
 
 				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
