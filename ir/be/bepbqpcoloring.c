@@ -1,8 +1,28 @@
 /*
- * bepbqpalloc.c
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
- *  Created on: Nov 11, 2009
- *      Author: bersch
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief       PBQP based register allocation.
+ * @author      Thomas Bersch
+ * @date        27.11.2009
+ * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
 
 /* 	miscellaneous includes */
@@ -217,7 +237,7 @@ static void create_pbqp_coloring_inst(ir_node *block, void *data) {
 
 	/* first, determine the pressure */
 	/* (this is only for compatibility with copymin optimization, it's not needed for pbqp coloring) */
-	pressure(block, pbqp_alloc_env->env);
+	create_borders(block, pbqp_alloc_env->env);
 
 	/* calculate living nodes for the first step */
 	ir_nodeset_init(&live_nodes);
