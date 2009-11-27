@@ -131,7 +131,8 @@ void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 /**
  * Returns the target label for a control flow node.
  */
-static void TEMPLATE_emit_cfop_target(const ir_node *node) {
+static void TEMPLATE_emit_cfop_target(const ir_node *node)
+{
 	ir_node *block = get_irn_link(node);
 
 	be_emit_irprintf("BLOCK_%ld", get_irn_node_nr(block));
@@ -150,7 +151,8 @@ static void TEMPLATE_emit_cfop_target(const ir_node *node) {
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(const ir_node *node) {
+static void emit_Jmp(const ir_node *node)
+{
 	ir_node *block;
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -165,7 +167,8 @@ static void emit_Jmp(const ir_node *node) {
  * Enters the emitter functions for handled nodes into the generic
  * pointer of an opcode.
  */
-static void TEMPLATE_register_emitters(void) {
+static void TEMPLATE_register_emitters(void)
+{
 
 /* some convienience macros to register additional emitter functions
    (other than the generated ones) */
@@ -192,7 +195,8 @@ typedef void (*emit_func_ptr) (const ir_node *);
 /**
  * Emits code for a node.
  */
-void TEMPLATE_emit_node(const ir_node *node) {
+void TEMPLATE_emit_node(const ir_node *node)
+{
 	ir_op               *op       = get_irn_op(node);
 
 	if (op->ops.generic) {
@@ -207,7 +211,8 @@ void TEMPLATE_emit_node(const ir_node *node) {
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void TEMPLATE_gen_block(ir_node *block, void *data) {
+void TEMPLATE_gen_block(ir_node *block, void *data)
+{
 	ir_node *node;
 	(void) data;
 
@@ -227,7 +232,8 @@ void TEMPLATE_gen_block(ir_node *block, void *data) {
 /**
  * Emits code for function start.
  */
-void TEMPLATE_emit_func_prolog(ir_graph *irg) {
+void TEMPLATE_emit_func_prolog(ir_graph *irg)
+{
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function header */
@@ -240,7 +246,8 @@ void TEMPLATE_emit_func_prolog(ir_graph *irg) {
 /**
  * Emits code for function end
  */
-void TEMPLATE_emit_func_epilog(ir_graph *irg) {
+void TEMPLATE_emit_func_epilog(ir_graph *irg)
+{
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
 	/* TODO: emit function end */
@@ -254,7 +261,8 @@ void TEMPLATE_emit_func_epilog(ir_graph *irg) {
  * Sets labels for control flow nodes (jump target)
  * TODO: Jump optimization
  */
-void TEMPLATE_gen_labels(ir_node *block, void *env) {
+void TEMPLATE_gen_labels(ir_node *block, void *env)
+{
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
 	(void) env;
