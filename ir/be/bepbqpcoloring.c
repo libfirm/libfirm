@@ -21,7 +21,7 @@
 #include "beirg.h"
 #include "besched.h"
 #include "bemodule.h"
-#include "bechordal_constraints.h"
+#include "bechordal_common.h"
 #include "bechordal.h"
 #include "bechordal_t.h"
 #include "beinsn_t.h"
