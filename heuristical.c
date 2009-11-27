@@ -1094,6 +1094,7 @@ void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
 		node = plist_first(rpeo)->data;
 		/* remove element from reverse perfect elimination order */
 		plist_erase(rpeo, plist_first(rpeo));
+		plist_insert_back(rpeo, node);
 	} while(node_is_reduced(node));
 
 //	node = plist_first(rpeo)->data;
