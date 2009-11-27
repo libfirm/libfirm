@@ -7,6 +7,9 @@
 
 /* 	miscellaneous includes */
 #include "config.h"
+
+#ifdef FIRM_KAPS
+
 #include "debug.h"
 #include "error.h"
 
@@ -497,3 +500,5 @@ void be_init_pbqp_coloring(void) {
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_pbqp_alloc);
+
+#endif
