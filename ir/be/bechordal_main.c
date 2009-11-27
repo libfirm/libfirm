@@ -81,6 +81,8 @@
 #include "beverify.h"
 #include "benode.h"
 
+#include "bepbqpcoloring.h"
+
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
 	BE_CH_LOWER_PERM_SWAP,
@@ -147,6 +149,26 @@ static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("verify",        "verify options", &be_ch_vrfy_var),
 	LC_OPT_LAST
 };
+
+static be_module_list_entry_t *colorings = NULL;
+static const be_ra_chordal_coloring_t *selected_coloring = NULL;
+
+void be_register_chordal_coloring(const char *name, be_ra_chordal_coloring_t *coloring)
+{
+	if (selected_coloring == NULL)
+		selected_coloring = coloring;
+
+	be_add_module_to_list(&colorings, name, coloring);
+}
+
+void be_ra_chordal_coloring(be_chordal_env_t *env)
+{
+	assert(selected_coloring != NULL);
+	if(selected_coloring != NULL) {
+		selected_coloring->allocate(env);
+	}
+}
+
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
@@ -285,7 +307,7 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 
 		/* Color the graph. */
 		BE_TIMER_PUSH(t_ra_color);
-		be_ra_chordal_color(chordal_env);
+		be_ra_chordal_coloring(chordal_env);
 		BE_TIMER_POP(t_ra_color);
 
 		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
@@ -313,13 +335,11 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 					node_stats[BE_STAT_COPIES]);
 		}
 
-		/* copy minimization */
 		BE_TIMER_PUSH(t_ra_copymin);
 		co_driver(chordal_env);
 		BE_TIMER_POP(t_ra_copymin);
 
 		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
-
 
 		/* ssa destruction */
 		BE_TIMER_PUSH(t_ra_ssa);
@@ -473,13 +493,14 @@ void be_init_chordal_main(void)
 		be_ra_chordal_main,
 	};
 
+	be_register_allocator("chordal", &be_ra_chordal_allocator);
+
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
-
-	be_register_allocator("chordal", &be_ra_chordal_allocator);
+	be_add_module_list_opt(chordal_grp, "coloring", "select coloring methode", &colorings, (void**) &selected_coloring);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main);
