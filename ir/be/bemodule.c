@@ -107,7 +107,6 @@ void be_init_modules(void)
 	be_init_chordal_main();
 	be_init_chordal_common();
 	be_init_chordal();
-	be_init_pbqp_coloring();
 	be_init_copyopt();
 	be_init_copyheur4();
 	be_init_copyheur();
@@ -116,6 +115,7 @@ void be_init_modules(void)
 	be_init_copyilp2();
 #endif
 #ifdef FIRM_KAPS
+	be_init_pbqp_coloring();
 	be_init_copypbqp();
 #endif
 	be_init_copynone();
