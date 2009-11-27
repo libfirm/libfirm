@@ -1,8 +1,28 @@
 /*
- * bechordal_common.c
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
- *  Created on: Nov 11, 2009
- *      Author: bersch
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief       Common functions for chordal register allocation.
+ * @author      Sebastian Hack
+ * @date        08.12.2004
+ * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
 
 #include "config.h"
@@ -29,29 +49,11 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define BORDER_FOURCC				FOURCC('B', 'O', 'R', 'D')
 
 
-/**
- * Check, if an irn is of the register class currently under processing.
- * @param env The chordal environment.
- * @param irn The node.
- * @return 1, if the node is of that register class, 0 if not.
- */
-inline int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
+int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {
 	return arch_irn_consider_in_reg_alloc(env->cls, irn);
 }
 
-/**
- * Add an interval border to the list of a block's list
- * of interval border.
- * @note You always have to create the use before the def.
- * @param env The environment.
- * @param head The list head to enqueue the borders.
- * @param irn The node (value) the border belongs to.
- * @param pressure The pressure at this point in time.
- * @param step A time step for the border.
- * @param is_def Is the border a use or a def.
- * @return The created border.
- */
 static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head,
 			ir_node *irn, unsigned step, unsigned pressure,
 			unsigned is_def, unsigned is_real)
@@ -100,13 +102,7 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 	return b;
 }
 
-/**
- * Annotate the register pressure to the nodes and compute
- * the liveness intervals.
- * @param block The block to do it for.
- * @param env_ptr The environment.
- */
-void pressure(ir_node *block, void *env_ptr)
+void create_borders(ir_node *block, void *env_ptr)
 {
 /* Convenience macro for a def */
 #define border_def(irn, step, real) \
