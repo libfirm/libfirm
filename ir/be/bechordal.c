@@ -103,77 +103,6 @@ static void check_heads(be_chordal_env_t *env)
 }
 #endif
 
-///**
-// * Add an interval border to the list of a block's list
-// * of interval border.
-// * @note You always have to create the use before the def.
-// * @param env The environment.
-// * @param head The list head to enqueue the borders.
-// * @param irn The node (value) the border belongs to.
-// * @param pressure The pressure at this point in time.
-// * @param step A time step for the border.
-// * @param is_def Is the border a use or a def.
-// * @return The created border.
-// */
-//static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head,
-//			ir_node *irn, unsigned step, unsigned pressure,
-//			unsigned is_def, unsigned is_real)
-//{
-//	border_t *b;
-//
-//	if (!is_def) {
-//		border_t *def;
-//
-//		b = OALLOC(env->obst, border_t);
-//
-//		/* also allocate the def and tie it to the use. */
-//		def = OALLOCZ(env->obst, border_t);
-//		b->other_end = def;
-//		def->other_end = b;
-//
-//		/*
-//		 * Set the link field of the irn to the def.
-//		 * This strongly relies on the fact, that the use is always
-//		 * made before the def.
-//		 */
-//		set_irn_link(irn, def);
-//
-//		DEBUG_ONLY(b->magic = BORDER_FOURCC);
-//		DEBUG_ONLY(def->magic = BORDER_FOURCC);
-//	} else {
-//		/*
-//		 * If the def is encountered, the use was made and so was the
-//		 * the def node (see the code above). It was placed into the
-//		 * link field of the irn, so we can get it there.
-//		 */
-//		b = get_irn_link(irn);
-//
-//		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered"));
-//	}
-//
-//	b->pressure = pressure;
-//	b->is_def = is_def;
-//	b->is_real = is_real;
-//	b->irn = irn;
-//	b->step = step;
-//	list_add_tail(&b->list, head);
-//	DBG((dbg, LEVEL_5, "\t\t%s adding %+F, step: %d\n", is_def ? "def" : "use", irn, step));
-//
-//
-//	return b;
-//}
-
-///**
-// * Check, if an irn is of the register class currently under processing.
-// * @param env The chordal environment.
-// * @param irn The node.
-// * @return 1, if the node is of that register class, 0 if not.
-// */
-//static inline int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
-//{
-//	return arch_irn_consider_in_reg_alloc(env->cls, irn);
-//}
-
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
 {
 	bitset_t *tmp = alloc_env->tmp_colors;
@@ -661,7 +590,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	env.live = bitset_malloc(get_irg_last_idx(chordal_env->irg));
 
 	/* First, determine the pressure */
-	dom_tree_walk_irg(irg, pressure, NULL, env.chordal_env);
+	dom_tree_walk_irg(irg, create_borders, NULL, env.chordal_env);
 
 	/* Assign the colors */
 	dom_tree_walk_irg(irg, assign, NULL, &env);
