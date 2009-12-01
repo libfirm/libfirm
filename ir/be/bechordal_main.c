@@ -493,11 +493,11 @@ void be_init_chordal_main(void)
 		be_ra_chordal_main,
 	};
 
-	be_register_allocator("chordal", &be_ra_chordal_allocator);
-
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+
+	be_register_allocator("chordal", &be_ra_chordal_allocator);
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
 	be_add_module_list_opt(chordal_grp, "coloring", "select coloring methode", &colorings, (void**) &selected_coloring);

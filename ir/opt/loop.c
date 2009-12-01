@@ -374,9 +374,9 @@ unsigned loop_walker(loop_entry_t *entries,
 void find_loop_entries_walk(ir_node *node, void *env)
 {
 	unsigned node_in_loop, pred_in_loop;
+	int i, arity;
 	(void) env;
 
-	int i, arity;
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
@@ -1070,8 +1070,8 @@ void peel(void)
 
 void alloc_linkstructs(ir_node *node, void *env)
 {
-	(void) env;
 	link_node_state_t *state = XMALLOCZ(link_node_state_t);
+	(void) env;
 	node->link = (void *)state;
 }
 
@@ -1184,13 +1184,14 @@ void loop_optimization(ir_graph *irg)
 	//irg_walk_graph(irg, phicheck, NULL, NULL);
 
 	ir_loop *loop;
+	int     sons, nr;
 
 	assure_cf_loop(irg);
 
 	loop = get_irg_loop(irg);
-	int sons = get_loop_n_sons(loop);
+	sons = get_loop_n_sons(loop);
 	//printf("FOUND %d LOOPS \n", sons);
-	int nr;
+
 	for (nr=0; nr<sons; nr++)
 	{
 		analyze_inner_loop( get_loop_son(loop, nr) );

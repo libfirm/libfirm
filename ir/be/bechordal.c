@@ -609,11 +609,10 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 
 void be_init_chordal(void)
 {
-	FIRM_DBG_REGISTER(dbg, "firm.be.chordal");
-
 	static be_ra_chordal_coloring_t coloring = {
 		be_ra_chordal_color
 	};
+	FIRM_DBG_REGISTER(dbg, "firm.be.chordal");
 
 	be_register_chordal_coloring("default", &coloring);
 }
