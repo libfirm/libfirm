@@ -1200,6 +1200,7 @@ int dump_node_label(FILE *F, ir_node *n) {
 	int bad = 0;
 
 	bad |= dump_node_opcode(F, n);
+	fputs(" ", F);
 	bad |= dump_node_mode(F, n);
 	fprintf(F, " ");
 	bad |= dump_node_typeinfo(F, n);

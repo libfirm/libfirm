@@ -27,9 +27,6 @@
 #include "config.h"
 
 #include <string.h>
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,8 +46,6 @@
 #include "iterator.h"
 #include "bitset.h"
 #include "dbginfo_t.h"
-
-#define STRNIL "(nil)"
 
 /**
  * Init the string.

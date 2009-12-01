@@ -61,7 +61,8 @@
 #include "be_t.h"
 
 /* returns the firm root */
-lc_opt_entry_t *firm_opt_get_root(void) {
+lc_opt_entry_t *firm_opt_get_root(void)
+{
 	static lc_opt_entry_t *grp = NULL;
 	if (!grp)
 		grp = lc_opt_get_grp(lc_opt_root_grp(), "firm");

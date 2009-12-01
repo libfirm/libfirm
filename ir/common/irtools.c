@@ -35,13 +35,15 @@
 #include "irpass_t.h"
 
 /* the famous clear_link implementation. */
-void firm_clear_link(ir_node *n, void *env) {
+void firm_clear_link(ir_node *n, void *env)
+{
 	(void) env;
 	set_irn_link(n, NULL);
 }
 
 /* the famous clear_node_and_phi_links() implementation. */
-void firm_clear_node_and_phi_links(ir_node *n, void *env) {
+void firm_clear_node_and_phi_links(ir_node *n, void *env)
+{
 	(void) env;
 	set_irn_link(n, NULL);
 	if (is_Block(n))
@@ -58,8 +60,8 @@ void firm_clear_node_and_phi_links(ir_node *n, void *env) {
  * in an irg. Instead, the corresponding nodes of the new irg are returned.
  * Note further, that the new nodes have no block.
  */
-void
-copy_irn_to_irg(ir_node *n, ir_graph *irg) {
+void copy_irn_to_irg(ir_node *n, ir_graph *irg)
+{
 	ir_op *op = get_irn_op(n);
 	ir_graph *old_irg;
 	ir_node *nn = NULL;
@@ -128,7 +130,8 @@ copy_irn_to_irg(ir_node *n, ir_graph *irg) {
  * Creates an exact copy of a node.
  * The copy resides in the same graph in the same block.
  */
-ir_node *exact_copy(const ir_node *n) {
+ir_node *exact_copy(const ir_node *n)
+{
 	ir_graph *irg = get_irn_irg(n);
 	ir_node *res, *block = NULL;
 
@@ -159,7 +162,8 @@ ir_node *exact_copy(const ir_node *n) {
 /*
  * Dump a pset containing Firm objects.
  */
-void firm_pset_dump(pset *set) {
+void firm_pset_dump(pset *set)
+{
 	void *obj;
 
 	foreach_pset(set, obj) {

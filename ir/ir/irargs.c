@@ -155,8 +155,8 @@ static int firm_emit(lc_appendable_t *app,
 		switch (occ->conversion) {
 		case 'B':
 			block = is_no_Block(X) ? get_nodes_block(X) : X;
-			snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(block),
-				get_mode_name(get_irn_mode(block)));
+			snprintf(buf, sizeof(buf), "%s%s %s", A("irn"),
+			         get_irn_opname(block), get_mode_name(get_irn_mode(block)));
 			snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
 			break;
 		case 'N':
@@ -169,16 +169,16 @@ static int firm_emit(lc_appendable_t *app,
 					tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
 				else
 					strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
-				snprintf(buf, sizeof(buf), "%s%s%s<%s>", A("irn"), get_irn_opname(X),
+				snprintf(buf, sizeof(buf), "%s%s %s<%s>", A("irn"), get_irn_opname(X),
 					get_mode_name(get_irn_mode(X)), tv_buf);
 			} else if (is_SymConst_addr_ent(X)) {
-				snprintf(buf, sizeof(buf), "%s%s%s[%s]", A("irn"), get_irn_opname(X),
+				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(X),
 				get_mode_name(get_irn_mode(X)), get_entity_name(get_SymConst_entity(X)));
 			} else if (is_Sel(X)) {
-				snprintf(buf, sizeof(buf), "%s%s%s[%s]", A("irn"), get_irn_opname(X),
+				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(X),
 				get_mode_name(get_irn_mode(X)), get_entity_name(get_Sel_entity(X)));
 			} else {
-				snprintf(buf, sizeof(buf), "%s%s%s", A("irn"), get_irn_opname(X),
+				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(X),
 				get_mode_name(get_irn_mode(X)));
 			}
 			snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
