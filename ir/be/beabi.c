@@ -771,8 +771,10 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int                   n = 0;
 		int                   curr_res_proj = pn_be_Call_first_res + n_reg_results;
 		pset_new_iterator_t   iter;
+		int                   n_ins;
 
-		in = ALLOCAN(ir_node *, pset_new_size(&destroyed_regs) + n_reg_results);
+		n_ins = (int)pset_new_size(&destroyed_regs) + n_reg_results + 1;
+		in    = ALLOCAN(ir_node *, n_ins);
 
 		/* also keep the stack pointer */
 		set_irn_link(curr_sp, (void*) sp);
@@ -796,6 +798,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			set_irn_link(proj, (void*) reg);
 			in[n++] = proj;
 		}
+		assert(n <= n_ins);
 
 		/* create the Keep for the caller save registers */
 		keep = be_new_Keep(bl, n, in);
