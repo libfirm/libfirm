@@ -783,6 +783,7 @@ ir_node *get_Block_MacroBlock(const ir_node *block) {
 /* Sets the macro block header of a block. */
 void set_Block_MacroBlock(ir_node *block, ir_node *mbh) {
 	assert(is_Block(block));
+	mbh = skip_Id(mbh);
 	assert(is_Block(mbh));
 	set_irn_n(block, -1, mbh);
 }
