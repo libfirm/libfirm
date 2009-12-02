@@ -271,11 +271,9 @@ class CallBegin(Op):
 class Carry(Binop):
 	flags = [ "commutative" ]
 
-class Cast(Op):
-	ins      = [ "op" ]
+class Cast(Unop):
 	mode     = "get_irn_mode(irn_op)"
 	flags    = [ "highlevel" ]
-	pinned   = "no"
 	attrs    = [
 		dict(
 			type = "ir_type*",
