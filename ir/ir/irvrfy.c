@@ -359,11 +359,10 @@ static int verify_node_Proj_InstOf(ir_node *n, ir_node *p) {
 
 	ASSERT_AND_RET_DBG(
 		(
-			(proj == pn_InstOf_M_regular && mode == mode_M) ||
+			(proj == pn_InstOf_M         && mode == mode_M) ||
 			(proj == pn_InstOf_X_regular && mode == mode_X) ||
 			(proj == pn_InstOf_X_except  && mode == mode_X) ||
-			(proj == pn_InstOf_res       && mode_is_reference(mode)) ||
-			(proj == pn_InstOf_M_except  && mode == mode_M)
+			(proj == pn_InstOf_res       && mode_is_reference(mode))
 		),
 		"wrong Proj from InstOf", 0,
 		show_proj_failure(p);
@@ -380,11 +379,10 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
 
 	ASSERT_AND_RET_DBG(
 		(
-			(proj == pn_Call_M_regular        && mode == mode_M) ||
+			(proj == pn_Call_M                && mode == mode_M) ||
 			(proj == pn_Call_X_regular        && mode == mode_X) ||
 			(proj == pn_Call_X_except         && mode == mode_X) ||
 			(proj == pn_Call_T_result         && mode == mode_T) ||
-			(proj == pn_Call_M_except         && mode == mode_M) ||
 			(proj == pn_Call_P_value_res_base && mode_is_reference(mode))
 		),
 		"wrong Proj from Call", 0,
@@ -399,7 +397,7 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
 		ASSERT_AND_RET(
 			!is_NoMem(get_Call_mem(n)),
 			"Exception Proj from FunctionCall", 0);
-	else if (proj == pn_Call_M_regular || proj == pn_Call_M_except)
+	else if (proj == pn_Call_M)
 		ASSERT_AND_RET(
 			(!is_NoMem(get_Call_mem(n)) || 1),
 			"Memory Proj from FunctionCall", 0);
@@ -781,10 +779,9 @@ static int verify_node_Proj_CopyB(ir_node *n, ir_node *p) {
 
 	ASSERT_AND_RET_DBG(
 		(
-			(proj == pn_CopyB_M_regular && mode == mode_M) ||
+			(proj == pn_CopyB_M         && mode == mode_M) ||
 			(proj == pn_CopyB_X_regular && mode == mode_X) ||
-			(proj == pn_CopyB_X_except  && mode == mode_X) ||
-			(proj == pn_CopyB_M_except  && mode == mode_M)
+			(proj == pn_CopyB_X_except  && mode == mode_X)
 		),
 		"wrong Proj from CopyB", 0,
 		show_proj_failure(p);

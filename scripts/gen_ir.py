@@ -303,6 +303,19 @@ ir_node *new_{{node.constrname}}({{node|argdecls(True, True)}})
 }
 ''')
 
+# not used - as we have the pn_ declarations in libfirm/irnode.h where they
+# contain informative comments
+# {% for node in nodes %}
+# {% if node.outs %}
+# typedef enum {
+# 	{%- for out in node.outs %}
+# 	pn_{{node.name}}_{{out}},
+# 	{%- endfor %}
+# 	pn_{{node.name}}_max
+# } pn_{{node.name}};
+# {% endif %}
+# {% endfor %}
+
 irnode_h_template = env.from_string('''
 /* Warning: automatically generated code */
 

@@ -130,7 +130,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 				/* should not happen here */
 				edges_reroute(proj, bad, irg);
 				break;
-			case pn_Call_M_except:
+			case pn_Call_M:
 				/* should not happen here */
 				edges_reroute(proj, nomem, irg);
 				break;
@@ -154,7 +154,6 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 		}
 
 		turn_into_tuple(call, pn_Call_max);
-		set_Tuple_pred(call, pn_Call_M_regular,        nomem);
 		/*
 		 * Beware:
 		 * We do not check here if this call really has exception and regular Proj's.
@@ -167,10 +166,10 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 		jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
 
+		set_Tuple_pred(call, pn_Call_M,                nomem);
 		set_Tuple_pred(call, pn_Call_X_regular,        jmp);
 		set_Tuple_pred(call, pn_Call_X_except,         bad);
 		set_Tuple_pred(call, pn_Call_T_result,         res);
-		set_Tuple_pred(call, pn_Call_M_except,         nomem);
 		set_Tuple_pred(call, pn_Call_P_value_res_base, bad);
 	}
 }

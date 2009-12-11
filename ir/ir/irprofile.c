@@ -242,7 +242,7 @@ gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bb
 	ins[3] = new_r_Const_long(irg, mode_Iu, n_blocks);
 
 	call = new_r_Call(bb, get_irg_initial_mem(irg), symconst, 4, ins, init_type);
-	ret = new_r_Return(bb, new_r_Proj(bb, call, mode_M, pn_Call_M_regular), 0, NULL);
+	ret = new_r_Return(bb, new_r_Proj(bb, call, mode_M, pn_Call_M), 0, NULL);
 	mature_immBlock(bb);
 
 	add_immBlock_pred(get_irg_end_block(irg), ret);

@@ -225,11 +225,10 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 	irn = new_r_Tuple(block, 1, &irn);
 
 	turn_into_tuple(call, pn_Call_max);
-	set_Tuple_pred(call, pn_Call_M_regular, mem);
+	set_Tuple_pred(call, pn_Call_M, mem);
 	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
 	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
 	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_M_except, mem);
 	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
 }  /* replace_call */
 
@@ -1101,7 +1100,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 		for (i = 0; i < n_proj; ++i)
 			set_Tuple_pred(node, i, new_r_Bad(irg));
 		if (rt->mem_proj_nr >= 0)
-			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M_regular));
+			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M));
 		if (!is_NoMem(mem)) {
 			/* Exceptions can only be handled with real memory */
 			if (rt->regular_proj_nr >= 0)
@@ -1109,7 +1108,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
 			if (rt->exc_proj_nr >= 0)
 				set_Tuple_pred(node, rt->exc_proj_nr, new_r_Proj(bl, call, mode_X, pn_Call_X_except));
 			if (rt->exc_mem_proj_nr >= 0)
-				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M_except));
+				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(bl, call, mode_M, pn_Call_M));
 		}
 
 		if (rt->res_proj_nr >= 0)

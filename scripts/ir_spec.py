@@ -207,7 +207,7 @@ class Break(Op):
 class Builtin(Op):
 	ins      = [ "mem" ]
 	arity    = "variable"
-	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ]
+	outs     = [ "M", "X_regular", "X_except", "T_result", "P_value_res_base" ]
 	flags    = [ "uses_memory" ]
 	attrs    = [
 		dict(
@@ -229,7 +229,7 @@ class Builtin(Op):
 class Call(Op):
 	ins      = [ "mem", "ptr" ]
 	arity    = "variable"
-	outs     = [ "M_regular", "X_regular", "X_except", "T_result", "M_except", "P_value_res_base" ]
+	outs     = [ "M", "X_regular", "X_except", "T_result", "P_value_res_base" ]
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
 		dict(
@@ -492,7 +492,7 @@ class IJmp(Op):
 
 class InstOf(Op):
 	ins   = [ "store", "obj" ]
-	outs  = [ "M", "X_regular", "X_except", "res", "M_except" ]
+	outs  = [ "M", "X_regular", "X_except", "res" ]
 	flags = [ "highlevel" ]
 	attrs = [
 		dict(

@@ -154,10 +154,9 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
 
 		/* collect the Proj's in the Proj list */
 		switch (get_Proj_proj(node)) {
-		case pn_Call_M_regular:
+		case pn_Call_M:
 		case pn_Call_X_except:
 		case pn_Call_X_regular:
-		case pn_Call_M_except:
 			set_irn_link(node, ctx->proj_list);
 			ctx->proj_list = node;
 			break;
@@ -222,14 +221,13 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx) {
 		assert(get_irn_mode(mem) == mode_M);
 
 		switch (get_Proj_proj(proj)) {
-		case pn_Call_M_regular: {
+		case pn_Call_M: {
 			/* in dead code there might be cycles where proj == mem */
 			if (proj != mem)
 				exchange(proj, mem);
 			 break;
 		}
 		case pn_Call_X_except:
-		case pn_Call_M_except:
 			exc_changed = 1;
 			exchange(proj, get_irg_bad(irg));
 			break;
@@ -320,10 +318,9 @@ static void collect_nothrow_calls(ir_node *node, void *env) {
 
 		/* collect the Proj's in the Proj list */
 		switch (get_Proj_proj(node)) {
-		case pn_Call_M_regular:
+		case pn_Call_M:
 		case pn_Call_X_except:
 		case pn_Call_X_regular:
-		case pn_Call_M_except:
 			set_irn_link(node, ctx->proj_list);
 			ctx->proj_list = node;
 			break;
@@ -368,7 +365,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		/* kill any exception flow */
 		switch (get_Proj_proj(proj)) {
 		case pn_Call_X_except:
-		case pn_Call_M_except:
 			exc_changed = 1;
 			exchange(proj, get_irg_bad(irg));
 			break;

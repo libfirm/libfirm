@@ -575,7 +575,7 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		case pn_Div_M:         /* Memory result. */
 			/* reroute to the call */
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M_except);
+			set_Proj_proj(proj, pn_Call_M);
 			break;
 		case pn_Div_X_except:  /* Execution result if exception occurred. */
 			/* reroute to the call */
@@ -652,7 +652,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		case pn_Mod_M:         /* Memory result. */
 			/* reroute to the call */
 			set_Proj_pred(proj, call);
-			set_Proj_proj(proj, pn_Call_M_except);
+			set_Proj_proj(proj, pn_Call_M);
 			break;
 		case pn_Mod_X_except:  /* Execution result if exception occurred. */
 			/* reroute to the call */
@@ -755,7 +755,7 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
 		case pn_DivMod_M:         /* Memory result. */
 			/* reroute to the first call */
 			set_Proj_pred(proj, callDiv ? callDiv : (callMod ? callMod : mem));
-			set_Proj_proj(proj, pn_Call_M_except);
+			set_Proj_proj(proj, pn_Call_M);
 			break;
 		case pn_DivMod_X_except:  /* Execution result if exception occurred. */
 			/* reroute to the first call */

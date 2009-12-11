@@ -90,7 +90,7 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
 	callee       = new_rd_SymConst_addr_ent(env->dbg, env->irg, mode_P_code, method_ent, method_type);
 	call         = new_rd_Call(env->dbg, env->block, memory, callee, 1, in, method_type);
 	call_results = new_rd_Proj(env->dbg, env->block, call, mode_T, pn_Call_T_result);
-	memory       = new_rd_Proj(env->dbg, env->block, call, mode_M, pn_Call_M_regular);
+	memory       = new_rd_Proj(env->dbg, env->block, call, mode_M, pn_Call_M);
 
 	return new_rd_Proj(env->dbg, env->block, call_results, to_mode, 0);
 }

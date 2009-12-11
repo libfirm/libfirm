@@ -786,9 +786,9 @@ static inline ir_node **new_frag_arr(ir_node *n) {
 	opt = get_opt_optimize(); set_optimize(0);
 	/* Here we rely on the fact that all frag ops have Memory as first result! */
 	if (is_Call(n)) {
-		arr[0] = new_Proj(n, mode_M, pn_Call_M_except);
+		arr[0] = new_Proj(n, mode_M, pn_Call_M);
 	} else if (is_CopyB(n)) {
-		arr[0] = new_Proj(n, mode_M, pn_CopyB_M_except);
+		arr[0] = new_Proj(n, mode_M, pn_CopyB_M);
 	} else {
 		assert((pn_Quot_M == pn_DivMod_M) &&
 		       (pn_Quot_M == pn_Div_M)    &&

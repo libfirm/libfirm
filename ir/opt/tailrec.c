@@ -347,7 +347,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
 			set_Tuple_pred(call, pn_Call_X_regular,        jmp);
 			set_Tuple_pred(call, pn_Call_X_except,         bad);
 			set_Tuple_pred(call, pn_Call_T_result,         tuple);
-			set_Tuple_pred(call, pn_Call_M_except,         mem);
 			set_Tuple_pred(call, pn_Call_P_value_res_base, bad);
 
 			for (i = 0; i < env->n_ress; ++i) {

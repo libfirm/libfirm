@@ -1167,7 +1167,7 @@ static void update_Call_memop(memop_t *m) {
 		case pn_Call_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
-		case pn_Call_M_regular:
+		case pn_Call_M:
 			m->mem = proj;
 			break;
 		}
@@ -1194,7 +1194,7 @@ static void update_DivOp_memop(memop_t *m) {
 		case pn_Generic_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
-		case pn_Generic_M_regular:
+		case pn_Generic_M:
 			m->mem = proj;
 			break;
 		}

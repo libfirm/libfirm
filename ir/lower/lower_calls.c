@@ -566,8 +566,7 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 
 		/* get rid of the CopyB */
 		turn_into_tuple(p, pn_CopyB_max);
-		set_Tuple_pred(p, pn_CopyB_M_regular, mem);
-		set_Tuple_pred(p, pn_CopyB_M_except,  get_irg_bad(irg));
+		set_Tuple_pred(p, pn_CopyB_M,         mem);
 		set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(p, pn_CopyB_X_except,  get_irg_bad(irg));
 		++n_args;
@@ -795,7 +794,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 							pred,
 							tp
 							);
-						mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M_regular);
+						mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M);
 					}
 				}
 				if (lp->flags & LF_RETURN_HIDDEN) {

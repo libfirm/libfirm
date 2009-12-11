@@ -485,11 +485,10 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
     mem = get_Call_mem(call);
 	blk = get_nodes_block(call);
     turn_into_tuple(call, pn_Call_max);
-    set_Tuple_pred(call, pn_Call_M_regular, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(blk));
-    set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
-    set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg));
-    set_Tuple_pred(call, pn_Call_M_except, mem);
+    set_Tuple_pred(call, pn_Call_M,                mem);
+	set_Tuple_pred(call, pn_Call_X_regular,        new_r_Jmp(blk));
+    set_Tuple_pred(call, pn_Call_X_except,         new_r_Bad(irg));
+    set_Tuple_pred(call, pn_Call_T_result,         new_r_Bad(irg));
     set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
 
     ++env->nr_deads;

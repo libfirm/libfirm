@@ -946,11 +946,10 @@ static const pns_lookup_t cond_lut[] = {
 /** the lookup table for Proj(Call) names */
 static const pns_lookup_t call_lut[] = {
 #define X(a)    { pn_Call_##a, #a }
-	X(M_regular),
+	X(M),
 	X(X_regular),
 	X(X_except),
 	X(T_result),
-	X(M_except),
 	X(P_value_res_base)
 #undef X
 };
@@ -1031,7 +1030,6 @@ static const pns_lookup_t copyb_lut[] = {
 	X(M),
 	X(X_regular),
 	X(X_except),
-	X(M_except)
 #undef X
 };
 
@@ -1042,7 +1040,6 @@ static const pns_lookup_t instof_lut[] = {
 	X(X_regular),
 	X(X_except),
 	X(res),
-	X(M_except),
 #undef X
 };
 

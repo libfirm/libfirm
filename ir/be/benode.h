@@ -273,9 +273,9 @@ enum {
  * Projection numbers for result of be_Call node: use for Proj nodes!
  */
 typedef enum {
-	pn_be_Call_M_regular = pn_Call_M_regular,  /**< The memory result of a be_Call. */
+	pn_be_Call_M_regular = pn_Call_M,    /**< The memory result of a be_Call. */
 	pn_be_Call_sp        = pn_Call_max,
-	pn_be_Call_first_res                      /**< The first result proj number of a be_Call. */
+	pn_be_Call_first_res                 /**< The first result proj number of a be_Call. */
 } pn_be_Call;
 
 /**

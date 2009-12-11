@@ -1596,7 +1596,6 @@ static ir_node *equivalent_node_Proj_CopyB(ir_node *proj) {
 			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
 			break;
 
-		case pn_CopyB_M_except:
 		case pn_CopyB_X_except:
 			DBG_OPT_EXC_REM(proj);
 			proj = get_irg_bad(current_ir_graph);
@@ -4654,7 +4653,6 @@ static ir_node *transform_node_Proj_CopyB(ir_node *proj) {
 			DBG_OPT_EXC_REM(proj);
 			proj = new_r_Jmp(get_nodes_block(copyb));
 			break;
-		case pn_CopyB_M_except:
 		case pn_CopyB_X_except:
 			DBG_OPT_EXC_REM(proj);
 			proj = get_irg_bad(get_irn_irg(proj));
