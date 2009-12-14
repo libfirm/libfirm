@@ -54,6 +54,7 @@
 #include "beutil.h"
 #include "plist.h"
 #include "pqueue.h"
+#include "becopyopt.h"
 
 /* pbqp includes */
 #include "kaps.h"
@@ -66,31 +67,41 @@
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
 
+#define TIMER 0
+
+
+static bool use_exec_freq = true;
 
 typedef struct _be_pbqp_alloc_env_t {
-	pbqp 						*pbqp_inst;		/**< PBQP instance for register allocation */
-	be_irg_t             		*birg;         	/**< Back-end IRG session. */
-	ir_graph             		*irg;          	/**< The graph under examination. */
-	const arch_register_class_t *cls;			/**< Current processed register class */
+	pbqp 						*pbqp_inst;			/**< PBQP instance for register allocation */
+	be_irg_t             		*birg;         		/**< Back-end IRG session. */
+	ir_graph             		*irg;          		/**< The graph under examination. */
+	const arch_register_class_t *cls;				/**< Current processed register class */
 	be_lv_t                     *lv;
 	bitset_t                    *ignored_regs;
-	pbqp_matrix					*ife_matrix_dummy;
-	pbqp_matrix					*aff_matrix_dummy;
+	pbqp_matrix					*ife_matrix_template;
+	pbqp_matrix					*aff_matrix_template;
 	plist_t						*rpeo;
 	unsigned					*restr_nodes;
 	be_chordal_env_t			*env;
 } be_pbqp_alloc_env_t;
 
 
-#define is_Reg_Phi(irn)		(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
-#define get_Perm_src(irn) 	(get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
-#define is_Perm_Proj(irn) 	(is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
+#define is_Reg_Phi(irn)											(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
+#define get_Perm_src(irn) 										(get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
+#define is_Perm_Proj(irn) 										(is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
+#define insert_edge(pbqp, src_node, trg_node, template_matrix) 	(add_edge_costs(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node), pbqp_matrix_copy(pbqp, template_matrix)))
+#define get_free_regs(restr_nodes, cls, irn) 					(arch_register_class_n_regs(cls) - restr_nodes[get_irn_idx(irn)])
 
 static inline int is_2addr_code(const arch_register_req_t *req)
 {
 	return (req->type & arch_register_req_type_should_be_same) != 0;
 }
 
+static const lc_opt_table_entry_t options[] = {
+	LC_OPT_ENT_BOOL      ("exec_freq", "use exec_freq",  &use_exec_freq),
+	LC_OPT_LAST
+};
 
 #if KAPS_DUMP
 static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char *suffix)
@@ -119,7 +130,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 #endif
 
 
-static unsigned create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn) {
+static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn) {
 	const arch_register_class_t *cls = pbqp_alloc_env->cls;
 	pbqp     *pbqp_inst              = pbqp_alloc_env->pbqp_inst;
 	bitset_t *ignored_regs           = pbqp_alloc_env->ignored_regs;
@@ -140,25 +151,98 @@ static unsigned create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *i
 
 	/* add vector to pbqp node */
 	add_node_costs(pbqp_inst, get_irn_idx(irn), costs_vector);
-
-	/* return number of free selectable registers */
-	return (colors_n - cntConstrains);
+	pbqp_alloc_env->restr_nodes[get_irn_idx(irn)] = cntConstrains;
 }
 
-static void build_graph_walker(ir_node *irn, void *env) {
-	be_pbqp_alloc_env_t         *pbqp_alloc_env = env;
-	pbqp						*pbqp_inst		= pbqp_alloc_env->pbqp_inst;
-	const arch_register_class_t *cls            = pbqp_alloc_env->cls;
-	const arch_register_req_t   *req            = arch_get_register_req_out(irn);
-	unsigned pos, max;
+static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node) {
+	pbqp 						*pbqp                = pbqp_alloc_env->pbqp_inst;
+	const arch_register_class_t *cls                 = pbqp_alloc_env->cls;
+	pbqp_matrix 				*ife_matrix_template = pbqp_alloc_env->ife_matrix_template;
+	unsigned 					*restr_nodes         = pbqp_alloc_env->restr_nodes;
 
-	if (arch_irn_consider_in_reg_alloc(cls, irn))
-		return;
+	if(get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
+
+		/* do useful optimization to speed up pbqp solving (we can do this because we know our matrix) */
+		if(get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
+			unsigned src_idx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
+			unsigned trg_idx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
+			assert(src_idx != trg_idx && "Interfering nodes could not have the same register!");
+			return;
+		}
+		if(get_free_regs(restr_nodes, cls, src_node) == 1 || get_free_regs(restr_nodes, cls, trg_node) == 1) {
+			if(get_free_regs(restr_nodes, cls, src_node) == 1) {
+				unsigned idx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
+				vector_set(get_node(pbqp, get_irn_idx(trg_node))->costs, idx, INF_COSTS);
+			}
+			else {
+				unsigned idx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
+				vector_set(get_node(pbqp, get_irn_idx(src_node))->costs, idx, INF_COSTS);
+			}
+			return;
+		}
+
+		/* insert interference edge */
+		insert_edge(pbqp, src_node, trg_node, ife_matrix_template);
+	}
+}
+
+static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node, int pos) {
+	pbqp 						*pbqp             = pbqp_alloc_env->pbqp_inst;
+	const arch_register_class_t *cls              = pbqp_alloc_env->cls;
+	unsigned 					*restr_nodes      = pbqp_alloc_env->restr_nodes;
+	pbqp_matrix					*afe_matrix       = pbqp_matrix_alloc(pbqp, arch_register_class_n_regs(cls), arch_register_class_n_regs(cls));
+	unsigned 					 colors_n		  = arch_register_class_n_regs(cls);
+
+	if(get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
+		if(use_exec_freq) {
+			/* get exec_freq for copy_block */
+			ir_node *root_bl = get_nodes_block(src_node);
+			ir_node *copy_bl = is_Phi(src_node) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+			unsigned long res = get_block_execfreq_ulong(pbqp_alloc_env->birg->exec_freq, copy_bl);
+
+			/* create afe-matrix */
+			unsigned row, col;
+			for(row = 0; row < colors_n; row++) {
+				for(col = 0; col < colors_n; col++) {
+					if(row != col)
+						pbqp_matrix_set(afe_matrix, row, col, (num)res);
+				}
+			}
+		}
+		else {
+			afe_matrix = pbqp_alloc_env->aff_matrix_template;
+		}
+
+		/* do useful optimization to speed up pbqp solving */
+		if(get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
+			return;
+		}
+		if(get_free_regs(restr_nodes, cls, src_node) == 1 || get_free_regs(restr_nodes, cls, trg_node) == 1) {
+			if(get_free_regs(restr_nodes, cls, src_node) == 1) {
+				unsigned regIdx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
+				vector_add_matrix_col(get_node(pbqp, get_irn_idx(trg_node))->costs, afe_matrix, regIdx);
+			}
+			else {
+				unsigned regIdx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
+				vector_add_matrix_col(get_node(pbqp, get_irn_idx(src_node))->costs, afe_matrix, regIdx);
+			}
+			return;
+		}
+
+		/* insert interference edge */
+		insert_edge(pbqp, src_node, trg_node, afe_matrix);
+	}
+}
+
+static void create_affinity_edges(ir_node *irn, void *env) {
+	be_pbqp_alloc_env_t         *pbqp_alloc_env   = env;
+	const arch_register_class_t *cls              = pbqp_alloc_env->cls;
+	const arch_register_req_t   *req              = arch_get_register_req_out(irn);
+	unsigned pos, max;
 
 	if (is_Reg_Phi(irn)) { /* Phis */
 		for (pos=0, max=get_irn_arity(irn); pos<max; ++pos) {
 			ir_node *arg = get_irn_n(irn, pos);
-			//add_edges(co, irn, arg, co->get_costs(co, irn, arg, pos));
 
 			if (!arch_irn_consider_in_reg_alloc(cls, arg))
 				continue;
@@ -168,27 +252,15 @@ static void build_graph_walker(ir_node *irn, void *env) {
 				continue;
 			}
 
-			if(get_edge(pbqp_inst, get_irn_idx(irn), get_irn_idx(arg)) == NULL) {
-				/* copy matrix */
-				struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_inst, pbqp_alloc_env->aff_matrix_dummy);
-				/* add costs matrix to affinity edge */
-				add_edge_costs(pbqp_inst, get_irn_idx(irn), get_irn_idx(arg) , matrix);
-			}
+			inser_afe_edge(pbqp_alloc_env, irn, arg, pos);
 		}
 	}
 	else if (is_Perm_Proj(irn)) { /* Perms */
 		ir_node *arg = get_Perm_src(irn);
-		//add_edges(co, irn, arg, co->get_costs(co, irn, arg, 0));
-
 		if (!arch_irn_consider_in_reg_alloc(cls, arg))
 			return;
 
-		if(get_edge(pbqp_inst, get_irn_idx(irn), get_irn_idx(arg)) == NULL) {
-			/* copy matrix */
-			struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_inst, pbqp_alloc_env->aff_matrix_dummy);
-			/* add costs matrix to affinity edge */
-			add_edge_costs(pbqp_inst, get_irn_idx(irn), get_irn_idx(arg) , matrix);
-		}
+		inser_afe_edge(pbqp_alloc_env, irn, arg, -1);
 	}
 	else { /* 2-address code */
 		if (is_2addr_code(req)) {
@@ -198,37 +270,28 @@ static void build_graph_walker(ir_node *irn, void *env) {
 			for (i = 0; 1U << i <= other; ++i) {
 				if (other & (1U << i)) {
 					ir_node *other = get_irn_n(skip_Proj(irn), i);
-//					if (!arch_irn_is_ignore(other)) {
-						//add_edges(co, irn, other, co->get_costs(co, irn, other, 0));
-						if (!arch_irn_consider_in_reg_alloc(cls, other))
-							continue;
+					if (!arch_irn_consider_in_reg_alloc(cls, other))
+						continue;
 
-						/* no edges to itself */
-						if(irn == other) {
-							continue;
-						}
+					/* no edges to itself */
+					if(irn == other) {
+						continue;
+					}
 
-						if(get_edge(pbqp_inst, get_irn_idx(irn), get_irn_idx(other)) == NULL) {
-							/* copy matrix */
-							struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_inst, pbqp_alloc_env->aff_matrix_dummy);
-							/* add costs matrix to affinity edge */
-							add_edge_costs(pbqp_inst, get_irn_idx(irn), get_irn_idx(other) , matrix);
-						}
-//					}
+					inser_afe_edge(pbqp_alloc_env, irn, other, i);
 				}
 			}
 		}
 	}
 }
 
-static void create_pbqp_coloring_inst(ir_node *block, void *data) {
+static void create_pbqp_coloring_instance(ir_node *block, void *data) {
 	be_pbqp_alloc_env_t         *pbqp_alloc_env    	= data;
 	be_lv_t                     *lv                	= pbqp_alloc_env->lv;
 	const arch_register_class_t *cls               	= pbqp_alloc_env->cls;
 	plist_t						*rpeo			   	= pbqp_alloc_env->rpeo;
 	pbqp						*pbqp_inst		   	= pbqp_alloc_env->pbqp_inst;
 	unsigned					*restr_nodes		= pbqp_alloc_env->restr_nodes;
-	pbqp_matrix 				*ife_matrix_dummy	= pbqp_alloc_env->ife_matrix_dummy;
 	pqueue_t  					*queue             	= new_pqueue();
 	pqueue_t  					*restr_nodes_queue 	= new_pqueue();
 	plist_t						*temp_list         	= plist_new();
@@ -245,55 +308,65 @@ static void create_pbqp_coloring_inst(ir_node *block, void *data) {
 
 	/* create pbqp nodes, interference edges and reverse perfect elimination order */
 	sched_foreach_reverse(block, irn) {
-		ir_node *live, *if_live;
-		ir_nodeset_iterator_t  iter, iter2;
+		ir_node *live;
+		ir_nodeset_iterator_t iter;
 
-		/* create nodes and interference edges */
-		foreach_ir_nodeset(&live_nodes, live, iter) {
-			/* create pbqp source node if it dosn't exist */
-			if(get_node(pbqp_inst, get_irn_idx(live)) == NULL) {
-				restr_nodes[get_irn_idx(live)] = create_pbqp_node(pbqp_alloc_env, live);
-			}
+		if (get_irn_mode(irn) == mode_T) {
+			const ir_edge_t *edge;
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				if (!arch_irn_consider_in_reg_alloc(cls, proj))
+					continue;
 
-			iter2 = iter;
-			for(if_live = ir_nodeset_iterator_next(&iter2); if_live != NULL; if_live = ir_nodeset_iterator_next(&iter2)) {
-				/* create pbqp target node if it dosn't exist */
-				if(get_node(pbqp_inst, get_irn_idx(if_live)) == NULL) {
-					restr_nodes[get_irn_idx(if_live)] = create_pbqp_node(pbqp_alloc_env, if_live);
+				/* create pbqp source node if it dosn't exist */
+				if(get_node(pbqp_inst, get_irn_idx(proj)) == NULL) {
+					create_pbqp_node(pbqp_alloc_env, proj);
 				}
-				else {
+
+				/* create nodes and interference edges */
+				foreach_ir_nodeset(&live_nodes, live, iter) {
+					/* create pbqp source node if it dosn't exist */
+					if(get_node(pbqp_inst, get_irn_idx(live)) == NULL) {
+						create_pbqp_node(pbqp_alloc_env, live);
+					}
+
 					/* no edges to itself */
-					if(live == if_live)
+					if(proj == live) {
 						continue;
-					/* only one interference edge between two nodes */
-					if(get_edge(pbqp_inst, get_irn_idx(live), get_irn_idx(if_live)))
-						continue;
-				}
-
-				/* do useful optimization to improve pbqp solving (we can do this because we know our matrix) */
-				if(restr_nodes[get_irn_idx(live)] == 1 && restr_nodes[get_irn_idx(if_live)] == 1) {
-					unsigned src_idx = vector_get_min_index(get_node(pbqp_inst, get_irn_idx(live))->costs);
-					unsigned trg_idx = vector_get_min_index(get_node(pbqp_inst, get_irn_idx(if_live))->costs);
-					assert(src_idx != trg_idx && "Interfering nodes could not have the same register!");
-					continue;
-				}
-				if(restr_nodes[get_irn_idx(live)] == 1 || restr_nodes[get_irn_idx(if_live)] == 1) {
-					if(restr_nodes[get_irn_idx(live)] == 1) {
-						unsigned idx = vector_get_min_index(get_node(pbqp_inst, get_irn_idx(live))->costs);
-						vector_set(get_node(pbqp_inst, get_irn_idx(if_live))->costs, idx, INF_COSTS);
 					}
-					else {
-						unsigned idx = vector_get_min_index(get_node(pbqp_inst, get_irn_idx(if_live))->costs);
-						vector_set(get_node(pbqp_inst, get_irn_idx(live))->costs, idx, INF_COSTS);
-					}
-					continue;
-				}
 
-				/* copy matrix */
-				struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_inst, ife_matrix_dummy);
-				/* add costs matrix to interference edge */
-				add_edge_costs(pbqp_inst, get_irn_idx(live), get_irn_idx(if_live) , matrix);
+					insert_ife_edge(pbqp_alloc_env, proj, live);
+				}
 			}
+		}
+		else {
+			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+				/* create pbqp source node if it dosn't exist */
+				if(get_node(pbqp_inst, get_irn_idx(irn)) == NULL) {
+					create_pbqp_node(pbqp_alloc_env, irn);
+				}
+
+				/* create nodes and interference edges */
+				foreach_ir_nodeset(&live_nodes, live, iter) {
+					/* create pbqp source node if it dosn't exist */
+					if(get_node(pbqp_inst, get_irn_idx(live)) == NULL) {
+						create_pbqp_node(pbqp_alloc_env, live);
+					}
+
+					/* no edges to itself */
+					if(irn == live) {
+						continue;
+					}
+
+					/* insert interference edge */
+					insert_ife_edge(pbqp_alloc_env, irn, live);
+				}
+			}
+		}
+
+		/* get living nodes for next step */
+		if (!is_Phi(irn)) {
+			be_liveness_transfer(cls, irn, &live_nodes);
 		}
 
 		/* order nodes for perfect elimination order */
@@ -307,13 +380,12 @@ static void create_pbqp_coloring_inst(ir_node *block, void *data) {
 					continue;
 
 				// insert proj node into priority queue (descending by the number of interference edges)
-				if(restr_nodes[get_irn_idx(proj)] <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
+				if(get_free_regs(restr_nodes, cls, proj) <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
 					pqueue_put(restr_nodes_queue, proj, pbqp_node_get_degree(get_node(pbqp_inst, get_irn_idx(proj))));
 				}
 				else {
 					pqueue_put(queue,proj, pbqp_node_get_degree(get_node(pbqp_inst, get_irn_idx(proj))));
 				}
-
 			}
 
 			/* first insert all restricted nodes */
@@ -340,11 +412,6 @@ static void create_pbqp_coloring_inst(ir_node *block, void *data) {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
 			}
-		}
-
-		/* get living nodes for next step */
-		if (!is_Phi(irn)) {
-			be_liveness_transfer(cls, irn, &live_nodes);
 		}
 	}
 
@@ -393,7 +460,6 @@ static void insert_perms(ir_node *block, void *data) {
 	}
 }
 
-
 void be_pbqp_coloring(be_chordal_env_t *env) {
 	ir_graph                      *irg  = env->irg;
 	be_irg_t                      *birg = env->birg;
@@ -403,15 +469,17 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	unsigned idx, row, col;
 	be_lv_t *lv;
 
-//	ir_timer_t *t_ra_pbqp_alloc_create    = ir_timer_register("be_pbqp_alloc_create", "pbqp alloc create");
-//	ir_timer_t *t_ra_pbqp_alloc_solve     = ir_timer_register("be_pbqp_alloc_solve", "pbqp alloc solve");
-//	ir_timer_t *t_ra_pbqp_alloc_create_aff  = ir_timer_register("be_pbqp_alloc_create_aff", "pbqp alloc create aff");
+#if TIMER
+	ir_timer_t *t_ra_pbqp_alloc_create    = ir_timer_register("be_pbqp_alloc_create", "pbqp alloc create");
+	ir_timer_t *t_ra_pbqp_alloc_solve     = ir_timer_register("be_pbqp_alloc_solve", "pbqp alloc solve");
+	ir_timer_t *t_ra_pbqp_alloc_create_aff  = ir_timer_register("be_pbqp_alloc_create_aff", "pbqp alloc create aff");
+
+	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
+#endif
 
 	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
-
-//	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 
 	/* insert perms */
 	assure_doms(irg);
@@ -423,6 +491,7 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 		snprintf(buf, sizeof(buf), "-%s-constr", cls->name);
 		be_dump(irg, buf, dump_ir_block_graph_sched);
 	}
+
 
 	/* initialize pbqp allocation data structure */
 	pbqp_alloc_env.pbqp_inst    = alloc_pbqp(get_irg_last_idx(irg));		/* initialize pbqp instance */
@@ -436,36 +505,56 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	pbqp_alloc_env.env			= env;
 	be_put_ignore_regs(birg, cls, pbqp_alloc_env.ignored_regs);				/* get ignored registers */
 
-	/* create costs matrix for interference edges */
+
+	/* create costs matrix template for interference edges */
 	struct pbqp_matrix *ife_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
 	/* set costs */
 	for(row = 0, col=0; row < colors_n; row++, col++)
 		pbqp_matrix_set(ife_matrix, row, col, INF_COSTS);
 
-	pbqp_alloc_env.ife_matrix_dummy = ife_matrix;
+	pbqp_alloc_env.ife_matrix_template = ife_matrix;
 
-	/* create costs matrix for affinity edges */
-	struct pbqp_matrix *afe_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
-	/* set costs */
-	for(row = 0; row < colors_n; row++) {
-		for(col = 0; col < colors_n; col++) {
-			if(row != col)
-				pbqp_matrix_set(afe_matrix, row, col, 2);
+
+	if(!use_exec_freq) {
+		/* create costs matrix template for affinity edges */
+		struct pbqp_matrix *afe_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
+		/* set costs */
+		for(row = 0; row < colors_n; row++) {
+			for(col = 0; col < colors_n; col++) {
+				if(row != col)
+					pbqp_matrix_set(afe_matrix, row, col, 2);
+			}
 		}
+		pbqp_alloc_env.aff_matrix_template = afe_matrix;
 	}
-	pbqp_alloc_env.aff_matrix_dummy = afe_matrix;
 
 
 	/* create pbqp instance */
-//	ir_timer_reset_and_start(t_ra_pbqp_alloc_create);
+#if TIMER
+	ir_timer_reset_and_start(t_ra_pbqp_alloc_create);
+#endif
 	assure_doms(irg);
-	dom_tree_walk_irg(irg, create_pbqp_coloring_inst , NULL, &pbqp_alloc_env);
-//	ir_timer_stop(t_ra_pbqp_alloc_create);
+	dom_tree_walk_irg(irg, create_pbqp_coloring_instance , NULL, &pbqp_alloc_env);
+#if TIMER
+	ir_timer_stop(t_ra_pbqp_alloc_create);
+#endif
+
 
 	/* set up affinity edges */
-//	ir_timer_reset_and_start(t_ra_pbqp_alloc_create_aff);
-	irg_walk_graph(irg, build_graph_walker, NULL, &pbqp_alloc_env);
-//	ir_timer_stop(t_ra_pbqp_alloc_create_aff);
+#if TIMER
+	ir_timer_reset_and_start(t_ra_pbqp_alloc_create_aff);
+#endif
+	plist_element_t *el;
+	foreach_plist(pbqp_alloc_env.rpeo, el) {
+		pbqp_node *node			   = el->data;
+		idx			               = node->index;
+		ir_node *irn               = get_idx_irn(irg, idx);
+		create_affinity_edges(irn, &pbqp_alloc_env);
+	}
+#if TIMER
+	ir_timer_stop(t_ra_pbqp_alloc_create_aff);
+#endif
+
 
 #if KAPS_DUMP
 	// dump graph before solving pbqp
@@ -473,13 +562,20 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	set_dumpfile(pbqp_alloc_env.pbqp_inst, file_before);
 #endif
 
+
 	/* solve pbqp instance */
-//	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
+#if TIMER
+	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
+#endif
 	solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
-//	ir_timer_stop(t_ra_pbqp_alloc_solve);
+#if TIMER
+	ir_timer_stop(t_ra_pbqp_alloc_solve);
+#endif
 	num solution = get_solution(pbqp_alloc_env.pbqp_inst);
 	assert(solution != INF_COSTS && "No PBQP solution found");
 
+
+	/* assign colors */
 	plist_element_t *element;
 	foreach_plist(pbqp_alloc_env.rpeo, element) {
 		pbqp_node *node			   = element->data;
@@ -491,9 +587,12 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 		arch_set_irn_register(irn, reg);
 	}
 
-//	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create) / 1000.0);
-//	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_solve), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_solve) / 1000.0);
-//	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create_aff), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create_aff) / 1000.0);
+
+#if TIMER
+	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create) / 1000.0);
+	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_solve), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_solve) / 1000.0);
+	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create_aff), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create_aff) / 1000.0);
+#endif
 
 
 	/* free reserved memory */
@@ -511,11 +610,17 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
  * Initializes this module.
  */
 void be_init_pbqp_coloring(void) {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
+	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
+	lc_opt_entry_t *coloring_grp = lc_opt_get_grp(chordal_grp, "coloring");
+	lc_opt_entry_t *pbqp_grp = lc_opt_get_grp(coloring_grp, "pbqp");
 
 	static be_ra_chordal_coloring_t coloring = {
 		be_pbqp_coloring
 	};
 
+	lc_opt_add_table(pbqp_grp, options);
 	be_register_chordal_coloring("pbqp", &coloring);
 }
 
