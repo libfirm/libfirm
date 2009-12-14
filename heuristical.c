@@ -1036,8 +1036,6 @@ static unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 
 void apply_RN(pbqp *pbqp)
 {
-//	printf("### ---- RN\n");
-
 	pbqp_node   *node         = NULL;
 	unsigned     min_index    = 0;
 
@@ -1081,8 +1079,6 @@ void apply_RN(pbqp *pbqp)
 
 void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
 {
-//	printf("### ---- RN\n");
-
 	pbqp_node   *node         = NULL;
 	unsigned     min_index    = 0;
 
@@ -1094,11 +1090,9 @@ void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
 		node = plist_first(rpeo)->data;
 		/* remove element from reverse perfect elimination order */
 		plist_erase(rpeo, plist_first(rpeo));
+		/* insert node at the end of rpeo so the rpeo already exits after pbqp solving */
 		plist_insert_back(rpeo, node);
 	} while(node_is_reduced(node));
-
-//	node = plist_first(rpeo)->data;
-//	plist_erase(rpeo, plist_first(rpeo));
 
 	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
