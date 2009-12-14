@@ -1133,6 +1133,10 @@ void co_driver(be_chordal_env_t *cenv)
 
 	assert(selected_copyopt);
 
+	/* skip copymin if algo is 'none' */
+	if(selected_copyopt->copyopt == void_algo)
+		return;
+
 	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));
 
 	co = new_copy_opt(cenv, cost_func);
