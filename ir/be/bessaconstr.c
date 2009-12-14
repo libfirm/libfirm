@@ -372,11 +372,11 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 			if(env->ignore_uses != NULL	&&
 			   ir_nodeset_contains(env->ignore_uses, use))
 				continue;
-			if(is_Anchor(use))
+			if(is_Anchor(use) || is_End(use))
 				continue;
 
 			if(is_Phi(use)) {
-				ir_node *block = get_nodes_block(use);
+				ir_node *block     = get_nodes_block(use);
 				ir_node *predblock = get_Block_cfgpred_block(block, pos);
 				at = sched_last(predblock);
 			}
