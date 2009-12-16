@@ -1407,7 +1407,6 @@ typedef struct {
 	unsigned  n_callers;         /**< Number of known graphs that call this graphs. */
 	unsigned  n_callers_orig;    /**< for statistics */
 	unsigned  got_inline:1;      /**< Set, if at least one call inside this graph was inlined. */
-	unsigned  local_vars:1;      /**< Set, if an inlined function got the address of a local variable. */
 	unsigned  recursive:1;       /**< Set, if this function is self recursive. */
 } inline_irg_env;
 
@@ -1426,7 +1425,6 @@ static inline_irg_env *alloc_inline_irg_env(void) {
 	env->n_callers         = 0;
 	env->n_callers_orig    = 0;
 	env->got_inline        = 0;
-	env->local_vars        = 0;
 	env->recursive         = 0;
 	return env;
 }
@@ -2284,8 +2282,6 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 
 		/* callee was inline. Append it's call list. */
 		env->got_inline = 1;
-		if (curr_call->local_adr)
-			env->local_vars = 1;
 		--env->n_call_nodes;
 
 		/* we just generate a bunch of new calls */
@@ -2322,7 +2318,9 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
  */
-void inline_functions(unsigned maxsize, int inline_threshold) {
+void inline_functions(unsigned maxsize, int inline_threshold,
+                      opt_ptr after_inline_opt)
+{
 	inline_irg_env   *env;
 	int              i, n_irgs;
 	ir_graph         *rem;
@@ -2368,21 +2366,9 @@ void inline_functions(unsigned maxsize, int inline_threshold) {
 		ir_graph *irg = irgs[i];
 
 		env = get_irg_link(irg);
-		if (env->got_inline) {
+		if (env->got_inline && after_inline_opt != NULL) {
 			/* this irg got calls inlined: optimize it */
-			if (get_opt_combo()) {
-				if (env->local_vars) {
-					scalar_replacement_opt(irg);
-				}
-				combo(irg);
-			} else {
-				if (env->local_vars) {
-					if (scalar_replacement_opt(irg)) {
-						optimize_graph_df(irg);
-					}
-				}
-				optimize_cf(irg);
-			}
+			after_inline_opt(irg);
 		}
 		if (env->got_inline || (env->n_callers_orig != env->n_callers)) {
 			DB((dbg, LEVEL_1, "Nodes:%3d ->%3d, calls:%3d ->%3d, callers:%3d ->%3d, -- %s\n",
@@ -2412,6 +2398,7 @@ struct inline_functions_pass_t {
 	ir_prog_pass_t pass;
 	unsigned       maxsize;
 	int            inline_threshold;
+	opt_ptr        after_inline_opt;
 };
 
 /**
@@ -2421,18 +2408,21 @@ static int inline_functions_wrapper(ir_prog *irp, void *context) {
 	struct inline_functions_pass_t *pass = context;
 
 	(void)irp;
-	inline_functions(pass->maxsize, pass->inline_threshold);
+	inline_functions(pass->maxsize, pass->inline_threshold,
+	                 pass->after_inline_opt);
 	return 0;
 }
 
 /* create a ir_prog pass for inline_functions */
 ir_prog_pass_t *inline_functions_pass(
-	  const char *name, unsigned maxsize, int inline_threshold) {
+	  const char *name, unsigned maxsize, int inline_threshold,
+	  opt_ptr after_inline_opt) {
 	struct inline_functions_pass_t *pass =
 		XMALLOCZ(struct inline_functions_pass_t);
 
 	pass->maxsize          = maxsize;
 	pass->inline_threshold = inline_threshold;
+	pass->after_inline_opt = after_inline_opt;
 
 	return def_prog_pass_constructor(
 		&pass->pass, name ? name : "inline_functions",

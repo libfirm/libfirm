@@ -61,9 +61,6 @@ I_FLAG(control_flow_strong_simplification , 7, ON)
 /** Algebraic simplifications. */
 I_FLAG(algebraic_simplification           , 8, ON)
 
-/** Use combo instead of df/cf optimizations. */
-I_FLAG(combo                              , 9, ON)
-
 /** Use Global Null Pointer Test elimination. */
 I_FLAG(global_null_ptr_elimination        , 10, ON)
 
@@ -78,13 +75,10 @@ I_FLAG(normalize                          , 12, ON)
 I_FLAG(allow_conv_b                       , 13, ON)
 
 /** precise exception context */
-I_FLAG(precise_exc_context                , 15, ON)
-
-/** Do Strength reduction */
-I_FLAG(strength_red                       , 17, ON)
+I_FLAG(precise_exc_context                , 15, OFF)
 
 /** Optimize Fragile OPs */
-I_FLAG(fragile_ops                        , 19, OFF)
+I_FLAG(fragile_ops                        , 16, OFF)
 
 /** Optimize cast nodes. */
 E_FLAG(optimize_class_casts               , 21, ON)
@@ -92,9 +86,6 @@ E_FLAG(suppress_downcast_optimization     , 22, OFF)
 
 /** Not really an optimization, removes Confirm nodes. */
 I_FLAG(remove_confirm                     , 23, OFF)
-
-/** Scalar replacement. */
-I_FLAG(scalar_replacement                 , 24, ON)
 
 /** Load and Store have only Null exceptions. */
 I_FLAG(ldst_only_null_ptr_exceptions      , 25, ON)

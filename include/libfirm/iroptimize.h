@@ -741,10 +741,11 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
 void optimize_class_casts(void);
 
 /**
- * CLiff Click's combo algorithm from "Combining Analyses, combining Optimizations".
+ * CLiff Click's combo algorithm from
+ *   "Combining Analyses, combining Optimizations".
  *
- * Does conditional constant propagation, unreachable code elimination and optimistic
- * global value numbering at once.
+ * Does conditional constant propagation, unreachable code elimination and
+ * optimistic global value numbering at once.
  *
  * @param irg  the graph to run on
  */
@@ -835,6 +836,8 @@ ir_prog_pass_t *inline_leave_functions_pass(
 	const char *name, unsigned maxsize, unsigned leavesize,
 	unsigned size, int ignore_runtime);
 
+typedef void (*opt_ptr)(ir_graph *irg);
+
 /**
  * Heuristic inliner. Calculates a benefice value for every call and inlines
  * those calls with a value higher than the threshold.
@@ -843,8 +846,11 @@ ir_prog_pass_t *inline_leave_functions_pass(
  *                            maxsize firm nodes.  It may reach this limit by
  *                            inlining.
  * @param inline_threshold    inlining threshold
+ * @param after_inline_opt    optimizations performed immediately after inlining
+ *                            some calls
  */
-void inline_functions(unsigned maxsize, int inline_threshold);
+void inline_functions(unsigned maxsize, int inline_threshold,
+                      opt_ptr after_inline_opt);
 
 /**
  * Creates an ir_prog pass for inline_functions().
@@ -858,7 +864,8 @@ void inline_functions(unsigned maxsize, int inline_threshold);
  * @return  the newly created ir_prog pass
  */
 ir_prog_pass_t *inline_functions_pass(
-	const char *name, unsigned maxsize, int inline_threshold);
+	const char *name, unsigned maxsize, int inline_threshold,
+	opt_ptr after_inline_opt);
 
 /**
  * Combines congruent blocks into one.
@@ -889,5 +896,9 @@ void do_loop_inversion(ir_graph *irg);
  * Perform loop peeling on a given graph.
  */
 void do_loop_peeling(ir_graph *irg);
+
+typedef ir_type *(*get_Alloc_func)(ir_node *n);
+/** Set a new get_Alloc_func and returns the old one. */
+get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
 
 #endif

@@ -96,24 +96,6 @@ int get_opt_cse(void);
  */
 void set_opt_global_cse(int value);
 
-/** Enables/Disables usage of combo algorithm.
- *
- *  If opt_combo == 1 perform combo optimization
- *  instead of combinations of optimiza_graph_df()/
- *  optimize_graph_cf()
- * Default: opt_combo == 1.
- */
-void set_opt_combo(int value);
-
-/** Enables/Disables strength reduction.
- *
- * If opt_strength_red == 1 perform strength reduction.
- * See strenth_red.h.
- *
- * Default: opt_strength_red = 1;
- */
-void set_opt_strength_red(int value);
-
 /** Enables/Disables unreachable code elimination.
  *
  * If set, evaluate conditions of conditional branch and replace the
@@ -179,11 +161,6 @@ void set_opt_fragile_ops(int value);
  * Enable/Disable Confirm node removal during local optimization.
  */
 void set_opt_remove_confirm(int value);
-
-/**
- * Enable/Disable scalar replacement optimization.
- */
-void set_opt_scalar_replacement(int value);
 
 /**
  * Enable/Disable Null exception in Load and Store nodes only.

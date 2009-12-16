@@ -53,8 +53,6 @@ ir_type *default_firm_get_Alloc(ir_node *n) {
 	return NULL;
 }
 
-typedef ir_type *(*get_Alloc_func)(ir_node *n);
-
 /** The get_Alloc function */
 static get_Alloc_func firm_get_Alloc = default_firm_get_Alloc;
 

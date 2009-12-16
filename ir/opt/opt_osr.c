@@ -1384,12 +1384,6 @@ void opt_osr(ir_graph *irg, unsigned flags) {
 	int      edges;
 	int      projs_moved;
 
-	if (! get_opt_strength_red()) {
-		/* only kill Phi cycles  */
-		remove_phi_cycles(irg);
-		return;
-	}
-
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 

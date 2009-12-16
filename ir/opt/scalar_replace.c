@@ -680,9 +680,6 @@ int scalar_replacement_opt(ir_graph *irg) {
 	ir_graph  *rem;
 	int       res = 0;
 
-	if (! get_opt_scalar_replacement())
-		return 0;
-
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 
