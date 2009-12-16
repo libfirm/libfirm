@@ -83,6 +83,7 @@ typedef struct _be_pbqp_alloc_env_t {
 	pbqp_matrix					*aff_matrix_template;
 	plist_t						*rpeo;
 	unsigned					*restr_nodes;
+	unsigned					*ife_edge_num;
 	be_chordal_env_t			*env;
 } be_pbqp_alloc_env_t;
 
@@ -161,6 +162,10 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 	unsigned 					*restr_nodes         = pbqp_alloc_env->restr_nodes;
 
 	if(get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
+
+		/* increase ife edge counter */
+		pbqp_alloc_env->ife_edge_num[get_irn_idx(src_node)]++;
+		pbqp_alloc_env->ife_edge_num[get_irn_idx(trg_node)]++;
 
 		/* do useful optimization to speed up pbqp solving (we can do this because we know our matrix) */
 		if(get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
@@ -381,10 +386,10 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data) {
 
 				// insert proj node into priority queue (descending by the number of interference edges)
 				if(get_free_regs(restr_nodes, cls, proj) <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
-					pqueue_put(restr_nodes_queue, proj, pbqp_node_get_degree(get_node(pbqp_inst, get_irn_idx(proj))));
+					pqueue_put(restr_nodes_queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
 				}
 				else {
-					pqueue_put(queue,proj, pbqp_node_get_degree(get_node(pbqp_inst, get_irn_idx(proj))));
+					pqueue_put(queue,proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
 				}
 			}
 
@@ -476,7 +481,6 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 
 	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 #endif
-
 	lv = be_assure_liveness(birg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
@@ -502,6 +506,7 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	pbqp_alloc_env.ignored_regs = bitset_malloc(colors_n);
 	pbqp_alloc_env.rpeo			= plist_new();
 	pbqp_alloc_env.restr_nodes  = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
+	pbqp_alloc_env.ife_edge_num = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.env			= env;
 	be_put_ignore_regs(birg, cls, pbqp_alloc_env.ignored_regs);				/* get ignored registers */
 
@@ -603,6 +608,7 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	free_pbqp(pbqp_alloc_env.pbqp_inst);
 	plist_free(pbqp_alloc_env.rpeo);
 	xfree(pbqp_alloc_env.restr_nodes);
+	xfree(pbqp_alloc_env.ife_edge_num);
 }
 
 
