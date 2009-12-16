@@ -878,4 +878,16 @@ int shape_blocks(ir_graph *irg);
  */
 ir_graph_pass_t *shape_blocks_pass(const char *name);
 
+/**
+ * Perform loop inversion on a given graph.
+ * Loop inversion transform a head controlled loop (like while(...) {} and
+ * for(...) {}) into a foot controlled loop (do {} while(...)).
+ */
+void do_loop_inversion(ir_graph *irg);
+
+/**
+ * Perform loop peeling on a given graph.
+ */
+void do_loop_peeling(ir_graph *irg);
+
 #endif

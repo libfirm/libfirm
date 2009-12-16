@@ -27,7 +27,7 @@
 
 #include <adt/raw_bitset.h>
 
-#include "funccall_t.h"
+#include "opt_init.h"
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -40,6 +40,7 @@
 #include "ircons.h"
 #include "iredges_t.h"
 #include "irpass_t.h"
+#include "iroptimize.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
 #include "debug.h"

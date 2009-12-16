@@ -1147,7 +1147,7 @@ static void decision_maker(void)
 	unsigned do_peel = 0;
 	unsigned do_inversion = 1;
 
-	unsigned max_loop_opnodes = 2000000;
+	/* unsigned max_loop_opnodes = 2000000; */
 
 	head_inversion_node_limit = 99910;
 
@@ -1184,10 +1184,11 @@ static void decision_maker(void)
 	if (loop_info.stores == 0 && loop_info.invariant_loads > 0)
 		do_peel = 1;
 
+#else
+	(void) get_invariants;
 #endif
 
-
-	do_peel = 1;
+	do_peel = 0;
 	do_inversion = 1;
 
 	/* Loop peeling */
@@ -1300,7 +1301,6 @@ void loop_optimization(ir_graph *irg)
 	int     sons, nr;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop");
-	firm_dbg_set_mask(dbg, -1);
 
 	DB((dbg, LEVEL_1, " >>> loop optimization (Startnode %ld) <<<\n", get_irn_node_nr(get_irg_start(irg))));
 
@@ -1308,6 +1308,7 @@ void loop_optimization(ir_graph *irg)
 	link_node_state_list = NULL;
 
 	/* preconditions */
+	edges_assure(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 	collect_phiprojs(irg);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -1333,6 +1334,19 @@ void loop_optimization(ir_graph *irg)
 	DB((dbg, LEVEL_1, " >>> loop optimization done (Startnode %ld) <<<\n", get_irn_node_nr(get_irg_start(irg))));
 }
 
-void firm_init_loop(void) {
+void do_loop_inversion(ir_graph *irg)
+{
+	/* TODO: add the code here that performs loop inversion only */
+	loop_optimization(irg);
+}
+
+void do_loop_peeling(ir_graph *irg)
+{
+	/* TODO: add the code here that performs loop peeling only */
+	loop_optimization(irg);
+}
+
+void firm_init_loop_opt(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.opt.loop");
 }

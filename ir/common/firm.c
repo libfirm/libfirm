@@ -47,16 +47,12 @@
 #include "irgraph_t.h"
 #include "type_t.h"
 #include "entity_t.h"
-#include "opt_inline_t.h"
-#include "scalar_replace.h"
 #include "firmstat.h"
 #include "irarch.h"
-#include "reassoc_t.h"
-#include "funccall_t.h"
 #include "irhooks.h"
 #include "iredges_t.h"
 #include "irmemory_t.h"
-#include "tropt.h"
+#include "opt_init.h"
 #include "debugger.h"
 #include "be_t.h"
 
@@ -137,6 +133,7 @@ void ir_init(const firm_parameter_t *param)
 	firm_init_class_casts_opt();
 	/* memory disambiguation */
 	firm_init_memory_disambiguator();
+	firm_init_loop_opt();
 
 	/* Init architecture dependent optimizations. */
 	arch_dep_init(arch_dep_default_factory);

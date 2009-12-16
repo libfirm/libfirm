@@ -50,7 +50,7 @@
 #include "irouts.h"
 #include "irloop_t.h"
 #include "irbackedge_t.h"
-#include "opt_inline_t.h"
+#include "opt_init.h"
 #include "cgana.h"
 #include "trouts.h"
 #include "error.h"

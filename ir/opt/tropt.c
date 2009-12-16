@@ -39,7 +39,7 @@
 #include "irflag_t.h"
 #include "xmalloc.h"
 #include "debug.h"
-#include "tropt.h"
+#include "opt_init.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

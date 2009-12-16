@@ -19,12 +19,23 @@
 
 /**
  * @file
- * @brief   Perform optimizations of the type representation.
- * @version $Id: $
+ * @author  Matthias Braun
+ * @brief   Init functions for various optimisations
+ * @version $Id$
  */
-#ifndef FIRM_OPT_TROPT_H
-#define FIRM_OPT_TROPT_H
+#ifndef FIRM_OPT_INIT_H
+#define FIRM_OPT_INIT_H
+
+void firm_init_inline(void);
+
+void firm_init_funccalls(void);
+
+void firm_init_reassociation(void);
+
+void firm_init_scalar_replace(void);
 
 void firm_init_class_casts_opt(void);
+
+void firm_init_loop_opt(void);
 
 #endif

@@ -29,6 +29,7 @@
 
 #include "iroptimize.h"
 #include "scalar_replace.h"
+#include "opt_init.h"
 #include "irflag_t.h"
 #include "irouts.h"
 #include "set.h"

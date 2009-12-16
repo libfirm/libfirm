@@ -36,6 +36,4 @@
  */
 int is_address_taken(ir_node *sel);
 
-void firm_init_scalar_replace(void);
-
 #endif /* FIRM_OPT_SCALAR_REPLACE_H */

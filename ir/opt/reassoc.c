@@ -36,6 +36,7 @@
 #include "irgwalk.h"
 #include "irouts.h"
 #include "reassoc_t.h"
+#include "opt_init.h"
 #include "irhooks.h"
 #include "irloop.h"
 #include "pdeq.h"
