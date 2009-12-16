@@ -1978,6 +1978,9 @@ static void modify_irg(be_abi_irg_t *env)
 	/* rewire old mem users to new mem */
 	exchange(old_mem, mem);
 
+	/* keep the mem (for functions with an endless loop = no return) */
+	keep_alive(mem);
+
 	set_irg_initial_mem(irg, mem);
 
 	/* Now, introduce stack param nodes for all parameters passed on the stack */
