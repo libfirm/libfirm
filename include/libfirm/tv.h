@@ -74,7 +74,7 @@
  *  - 0[0-7]*            (octal representation)
  *  - (+|-)?[1-9][0-9]*  (decimal representation)
  *
- * if mode if float_number:
+ * if mode is float_number:
  *  - (+|-)?(decimal int) (. (decimal int))? ((e|E)(+|-)?(decimal int))?
  *
  * if mode is boolean: true, True, TRUE ... False... 0, 1,
