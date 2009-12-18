@@ -69,7 +69,7 @@ void be_init_spillbelady2(void);
 void be_init_spillbelady3(void);
 void be_init_ssaconstr(void);
 void be_init_stabs(void);
-void be_init_straight_alloc(void);
+void be_init_pref_alloc(void);
 void be_init_ifg(void);
 void be_init_irgmod(void);
 void be_init_loopana(void);
@@ -128,7 +128,7 @@ void be_init_modules(void)
 	be_init_spillbelady3();
 	be_init_daemelspill();
 	be_init_ssaconstr();
-	be_init_straight_alloc();
+	be_init_pref_alloc();
 	be_init_state();
 	be_init_ifg();
 	be_init_stabs();

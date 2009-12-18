@@ -19,14 +19,10 @@
 
 /**
  * @file
- * @brief       New approach to allocation and copy coalescing
+ * @brief       Preference Guided Register Assignment
  * @author      Matthias Braun
  * @date        14.2.2009
  * @version     $Id$
- *
- * ... WE NEED A NAME FOR THIS ...
- *
- * Only a proof of concept at this moment...
  *
  * The idea is to allocate registers in 2 passes:
  * 1. A first pass to determine "preferred" registers for live-ranges. This
@@ -40,10 +36,6 @@
  *
  * TODO:
  *  - make use of free registers in the permute_values code
- *  - think about a smarter sequence of visiting the blocks. Sorted by
- *    execfreq might be good, or looptree from inner to outermost loops going
- *    over blocks in a reverse postorder
- *  - propagate preferences through Phis
  */
 #include "config.h"
 
@@ -412,8 +404,8 @@ static void analyze_block(ir_node *block, void *data)
 					continue;
 
 				limited = req->limited;
-				give_penalties_for_limits(&live_nodes, weight * USE_FACTOR, limited,
-										  op);
+				give_penalties_for_limits(&live_nodes, weight * USE_FACTOR,
+				                          limited, op);
 			}
 		}
 	}
@@ -1903,7 +1895,7 @@ static void determine_block_order(void)
 /**
  * Run the register allocator for the current register class.
  */
-static void be_straight_alloc_cls(void)
+static void be_pref_alloc_cls(void)
 {
 	int i;
 
@@ -1960,9 +1952,9 @@ static void spill(void)
 }
 
 /**
- * The straight register allocator for a whole procedure.
+ * The pref register allocator for a whole procedure.
  */
-static void be_straight_alloc(be_irg_t *new_birg)
+static void be_pref_alloc(be_irg_t *new_birg)
 {
 	const arch_env_t *arch_env = new_birg->main_env->arch_env;
 	int   n_cls                = arch_env_get_n_reg_class(arch_env);
@@ -2004,7 +1996,7 @@ static void be_straight_alloc(be_irg_t *new_birg)
 		BE_TIMER_POP(t_verify);
 
 		BE_TIMER_PUSH(t_ra_color);
-		be_straight_alloc_cls();
+		be_pref_alloc_cls();
 		BE_TIMER_POP(t_ra_color);
 
 		/* we most probably constructed new Phis so liveness info is invalid
@@ -2035,17 +2027,17 @@ static void be_straight_alloc(be_irg_t *new_birg)
 /**
  * Initializes this module.
  */
-void be_init_straight_alloc(void)
+void be_init_pref_alloc(void)
 {
-	static be_ra_t be_ra_straight = {
-		be_straight_alloc,
+	static be_ra_t be_ra_pref = {
+		be_pref_alloc,
 	};
 	lc_opt_entry_t *be_grp              = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *straightalloc_group = lc_opt_get_grp(be_grp, "straightalloc");
-	lc_opt_add_table(straightalloc_group, options);
+	lc_opt_entry_t *prefalloc_group = lc_opt_get_grp(be_grp, "prefalloc");
+	lc_opt_add_table(prefalloc_group, options);
 
-	be_register_allocator("straight", &be_ra_straight);
-	FIRM_DBG_REGISTER(dbg, "firm.be.straightalloc");
+	be_register_allocator("pref", &be_ra_pref);
+	FIRM_DBG_REGISTER(dbg, "firm.be.prefalloc");
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_straight_alloc);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc);
