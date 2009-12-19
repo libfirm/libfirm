@@ -231,10 +231,6 @@ static ir_node *gen_Sub(ir_node *node)
  */
 static ir_node *gen_Load(ir_node *node)
 {
-
-	if (mode_is_float(get_irn_mode(node)))
-		panic("SPARC: no fp implementation yet");
-
 	ir_mode  *mode     = get_Load_mode(node);
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Load_ptr(node);
@@ -243,6 +239,9 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_mem  = be_transform_node(mem);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_load = NULL;
+
+	if (mode_is_float(mode))
+		panic("SPARC: no fp implementation yet");
 
 	new_load = new_bd_sparc_Load(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
 	return new_load;
@@ -258,9 +257,6 @@ static ir_node *gen_Load(ir_node *node)
  */
 static ir_node *gen_Store(ir_node *node)
 {
-	if (mode_is_float(get_irn_mode(node)))
-		panic("SPARC: no fp implmentation yet");
-
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Store_ptr(node);
 	ir_node  *new_ptr  = be_transform_node(ptr);
@@ -271,6 +267,9 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node *new_store = NULL;
+
+	if (mode_is_float(mode))
+		panic("SPARC: no fp implementation yet");
 
 	new_store = new_bd_sparc_Store(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
 

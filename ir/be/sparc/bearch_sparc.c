@@ -169,7 +169,6 @@ static ir_node *sparc_flags_remat(ir_node *node, ir_node *after)
 
 static void sparc_before_ra(void *self)
 {
-	(void) self;
 	sparc_code_gen_t *cg = self;
 	/* fixup flags register */
 	be_sched_fix_flags(cg->birg, &sparc_reg_classes[CLASS_sparc_flags], &sparc_flags_remat);
