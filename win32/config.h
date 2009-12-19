@@ -101,5 +101,6 @@
 #define strncasecmp _strnicmp
 #define __attribute__(x)
 
+typedef unsigned __int16 uint16_t;
 typedef unsigned __int32 uint32_t;
 typedef __int64 int64_t;
