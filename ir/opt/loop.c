@@ -322,9 +322,7 @@ static unsigned get_invariants(ir_node *node, void *env)
 	if (arity == 0) return 0;
 
 	if (is_Load(node)) {
-		assert(arity>=2 && "expected load node to have in[1] (address)");
-
-		ir_node *pred = get_irn_n(node, 1);
+		ir_node *pred = get_Load_ptr(node);
 		if ( (get_Load_volatility(node) == volatility_non_volatile) &
 				(!is_in_loop(pred)
 				|| is_Const(pred)
@@ -916,10 +914,10 @@ static unsigned condition_chains(ir_node *block) {
 		if (src->loop)
 			printf(" src %ld in loop %ld  curlooop %ld \n", src->node_nr, src->loop->loop_nr, cur_loop->loop_nr);
 		if (!is_in_loop(src)) {
+			out_edges entry;
 			printf(" src %ld @ %d into block %ld \n", src->node_nr, pos, block->node_nr);
 
 			mark = 1;
-			out_edges entry;
 			entry.node = src;
 			entry.pred_irn_n = pos;
 			ARR_APP1(out_edges, cond_chain_entries, entry);

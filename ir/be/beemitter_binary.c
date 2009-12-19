@@ -43,8 +43,8 @@ struct obstack code_fragment_obst;
     be_emit(8/16/32/entity) call!) */
 code_fragment_t *be_get_current_fragment(void)
 {
-	assert(obstack_object_size(&code_fragment_obst) >= sizeof(code_fragment_t));
 	code_fragment_t *fragment = obstack_base(&code_fragment_obst);
+	assert(obstack_object_size(&code_fragment_obst) >= sizeof(code_fragment_t));
 	assert(fragment->magic == CODE_FRAGMENT_MAGIC);
 
 	return fragment;
@@ -192,10 +192,11 @@ void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
 	for (fragment = first_fragment; fragment != NULL;
 	     fragment = fragment->next) {
 	    unsigned char *jmpbuffer;
+		unsigned nops;
 
 	    /* assure alignment by emitting nops */
 	    assert(fragment->offset >= offset);
-	    unsigned nops = fragment->offset - offset;
+	    nops = fragment->offset - offset;
 	    if (nops > 0) {
 	    	unsigned char *nopbuffer = obstack_alloc(&code_fragment_obst, nops);
 	    	interface->create_nops(nopbuffer, nops);
