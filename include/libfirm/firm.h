@@ -95,7 +95,6 @@ extern "C" {
 #include "irgwalk.h"
 #include "irhooks.h"
 #include "irio.h"
-#include "irlivechk.h"
 #include "irloop.h"
 #include "irmemory.h"
 #include "irmode.h"
