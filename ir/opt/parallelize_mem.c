@@ -43,16 +43,16 @@
 #include "irprintf.h"
 #include "irpass.h"
 
-typedef struct parallelise_info
+typedef struct parallelize_info
 {
 	ir_node      *origin_block;
 	ir_node      *origin_ptr;
 	ir_mode      *origin_mode;
 	ir_nodeset_t  this_mem;
 	ir_nodeset_t  user_mem;
-} parallelise_info;
+} parallelize_info;
 
-static void parallelise_load(parallelise_info *pi, ir_node *irn)
+static void parallelize_load(parallelize_info *pi, ir_node *irn)
 {
 	/* There is no point in investigating the same subgraph twice */
 	if (ir_nodeset_contains(&pi->user_mem, irn))
@@ -66,7 +66,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 				ir_node *mem = get_Load_mem(pred);
 				//ir_nodeset_insert(&pi->this_mem, mem);
 				ir_nodeset_insert(&pi->user_mem, irn);
-				parallelise_load(pi, mem);
+				parallelize_load(pi, mem);
 				return;
 			} else if (is_Store(pred) &&
 					get_Store_volatility(pred) == volatility_non_volatile) {
@@ -77,7 +77,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, store_ptr, store_mode) == ir_no_alias) {
 					ir_node *mem = get_Store_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
-					parallelise_load(pi, mem);
+					parallelize_load(pi, mem);
 					return;
 				}
 			}
@@ -87,7 +87,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 
 			for (i = 0; i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
-				parallelise_load(pi, sync_pred);
+				parallelize_load(pi, sync_pred);
 			}
 			return;
 		}
@@ -95,7 +95,7 @@ static void parallelise_load(parallelise_info *pi, ir_node *irn)
 	ir_nodeset_insert(&pi->this_mem, irn);
 }
 
-static void parallelise_store(parallelise_info *pi, ir_node *irn)
+static void parallelize_store(parallelize_info *pi, ir_node *irn)
 {
 	/* There is no point in investigating the same subgraph twice */
 	if (ir_nodeset_contains(&pi->user_mem, irn))
@@ -114,7 +114,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 				if (get_alias_relation(current_ir_graph, org_ptr, org_mode, load_ptr, load_mode) == ir_no_alias) {
 					ir_node *mem = get_Load_mem(pred);
 					ir_nodeset_insert(&pi->user_mem, irn);
-					parallelise_store(pi, mem);
+					parallelize_store(pi, mem);
 					return;
 				}
 			} else if (is_Store(pred) &&
@@ -128,7 +128,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 
 					ir_nodeset_insert(&pi->user_mem, irn);
 					mem = get_Store_mem(pred);
-					parallelise_store(pi, mem);
+					parallelize_store(pi, mem);
 					return;
 				}
 			}
@@ -138,7 +138,7 @@ static void parallelise_store(parallelise_info *pi, ir_node *irn)
 
 			for (i = 0; i < n; ++i) {
 				ir_node *sync_pred = get_Sync_pred(irn, i);
-				parallelise_store(pi, sync_pred);
+				parallelize_store(pi, sync_pred);
 			}
 			return;
 		}
@@ -152,7 +152,7 @@ static void walker(ir_node *proj, void *env)
 	ir_node          *pred;
 	ir_node          *block;
 	int               n;
-	parallelise_info  pi;
+	parallelize_info  pi;
 
 	(void)env;
 
@@ -172,7 +172,7 @@ static void walker(ir_node *proj, void *env)
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
 
-		parallelise_load(&pi, pred);
+		parallelize_load(&pi, pred);
 	} else if (is_Store(mem_op)) {
 		if (get_Store_volatility(mem_op) != volatility_non_volatile) return;
 
@@ -185,7 +185,7 @@ static void walker(ir_node *proj, void *env)
 		ir_nodeset_init(&pi.this_mem);
 		ir_nodeset_init(&pi.user_mem);
 
-		parallelise_store(&pi, pred);
+		parallelize_store(&pi, pred);
 	} else {
 		return;
 	}
@@ -238,7 +238,7 @@ static void walker(ir_node *proj, void *env)
 	ir_nodeset_destroy(&pi.user_mem);
 }
 
-void opt_sync(ir_graph *irg)
+void opt_parallelize_mem(ir_graph *irg)
 {
 	//assure_irg_entity_usage_computed(irg);
 	//assure_irp_globals_entity_usage_computed();
@@ -248,7 +248,7 @@ void opt_sync(ir_graph *irg)
 	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
 }
 
-ir_graph_pass_t *opt_sync_pass(const char *name)
+ir_graph_pass_t *opt_parallelize_mem_pass(const char *name)
 {
-	return def_graph_pass(name ? name : "opt_sync", opt_sync);
+	return def_graph_pass(name ? name : "parallelize-mem", opt_parallelize_mem);
 }
