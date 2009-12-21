@@ -51,9 +51,4 @@ void copystat_add_ilp_iter(int iters);
 
 #endif /* WITH_ILP */
 
-/**
- * Compares different solutions of the same problem
- */
-void co_compare_solvers(be_chordal_env_t *chordal_env);
-
-#endif /* FIRM_BE_BECOPYSTAT_H */
+#endif
