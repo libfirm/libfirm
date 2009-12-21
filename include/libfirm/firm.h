@@ -100,7 +100,6 @@ extern "C" {
 #include "irmode.h"
 #include "irnode.h"
 #include "irop.h"
-#include "iropt_dbg.h"
 #include "iropt.h"
 #include "iroptimize.h"
 #include "irouts.h"

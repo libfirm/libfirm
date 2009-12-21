@@ -33,9 +33,6 @@
 /* This file contains makros that generate the calls to
    update the debug information after a transformation. */
 
-#define SIZ(x)    sizeof(x)/sizeof((x)[0])
-
-
 /**
  * Merge the debug info due to dead block elimination.
  *
