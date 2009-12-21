@@ -24,21 +24,18 @@
  * @author   Mathias Heil
  * @version  $Id$
  */
-
 #include "config.h"
 
 #include "fltcalc.h"
 #include "strcalc.h"
 
-#include <math.h>    /* need isnan() and isinf() (will be changed)*/
+#include <math.h>
 /* undef some reused constants defined by math.h */
 #ifdef NAN
 #  undef NAN
 #endif
 
-#ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
-#endif
+#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
