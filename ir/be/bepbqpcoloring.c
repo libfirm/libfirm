@@ -155,7 +155,8 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn) 
 	pbqp_alloc_env->restr_nodes[get_irn_idx(irn)] = cntConstrains;
 }
 
-static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node) {
+static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node)
+{
 	pbqp 						*pbqp                = pbqp_alloc_env->pbqp_inst;
 	const arch_register_class_t *cls                 = pbqp_alloc_env->cls;
 	pbqp_matrix 				*ife_matrix_template = pbqp_alloc_env->ife_matrix_template;
@@ -191,7 +192,8 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 	}
 }
 
-static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node, int pos) {
+static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_node, ir_node *trg_node, int pos)
+{
 	pbqp 						*pbqp             = pbqp_alloc_env->pbqp_inst;
 	const arch_register_class_t *cls              = pbqp_alloc_env->cls;
 	unsigned 					*restr_nodes      = pbqp_alloc_env->restr_nodes;
@@ -239,7 +241,8 @@ static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_nod
 	}
 }
 
-static void create_affinity_edges(ir_node *irn, void *env) {
+static void create_affinity_edges(ir_node *irn, void *env)
+{
 	be_pbqp_alloc_env_t         *pbqp_alloc_env   = env;
 	const arch_register_class_t *cls              = pbqp_alloc_env->cls;
 	const arch_register_req_t   *req              = arch_get_register_req_out(irn);
@@ -290,7 +293,8 @@ static void create_affinity_edges(ir_node *irn, void *env) {
 	}
 }
 
-static void create_pbqp_coloring_instance(ir_node *block, void *data) {
+static void create_pbqp_coloring_instance(ir_node *block, void *data)
+{
 	be_pbqp_alloc_env_t         *pbqp_alloc_env    	= data;
 	be_lv_t                     *lv                	= pbqp_alloc_env->lv;
 	const arch_register_class_t *cls               	= pbqp_alloc_env->cls;
@@ -433,7 +437,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data) {
 	del_pqueue(restr_nodes_queue);
 }
 
-static void insert_perms(ir_node *block, void *data) {
+static void insert_perms(ir_node *block, void *data)
+{
 	/*
 	 * Start silent in the start block.
 	 * The silence remains until the first barrier is seen.
@@ -465,7 +470,8 @@ static void insert_perms(ir_node *block, void *data) {
 	}
 }
 
-void be_pbqp_coloring(be_chordal_env_t *env) {
+void be_pbqp_coloring(be_chordal_env_t *env)
+{
 	ir_graph                      *irg  = env->irg;
 	be_irg_t                      *birg = env->birg;
 	const arch_register_class_t   *cls  = env->cls;
@@ -475,9 +481,9 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 	be_lv_t *lv;
 
 #if TIMER
-	ir_timer_t *t_ra_pbqp_alloc_create    = ir_timer_register("be_pbqp_alloc_create", "pbqp alloc create");
-	ir_timer_t *t_ra_pbqp_alloc_solve     = ir_timer_register("be_pbqp_alloc_solve", "pbqp alloc solve");
-	ir_timer_t *t_ra_pbqp_alloc_create_aff  = ir_timer_register("be_pbqp_alloc_create_aff", "pbqp alloc create aff");
+	ir_timer_t *t_ra_pbqp_alloc_create     = ir_timer_new();
+	ir_timer_t *t_ra_pbqp_alloc_solve      = ir_timer_new();
+	ir_timer_t *t_ra_pbqp_alloc_create_aff = ir_timer_new();
 
 	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 #endif
@@ -594,9 +600,12 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 
 
 #if TIMER
-	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create) / 1000.0);
-	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_solve), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_solve) / 1000.0);
-	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_pbqp_alloc_create_aff), (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create_aff) / 1000.0);
+	printf("%-20s: %8.3lf msec\n", "pbqp alloc create",
+	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create) / 1000.0);
+	printf("%-20s: %8.3lf msec\n", "pbqp alloc solve",
+	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_solve) / 1000.0);
+	printf("%-20s: %8.3lf msec\n", "pbqp alloc create aff",
+	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create_aff) / 1000.0);
 #endif
 
 
@@ -615,7 +624,8 @@ void be_pbqp_coloring(be_chordal_env_t *env) {
 /**
  * Initializes this module.
  */
-void be_init_pbqp_coloring(void) {
+void be_init_pbqp_coloring(void)
+{
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");
