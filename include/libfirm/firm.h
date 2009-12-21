@@ -63,7 +63,6 @@
 extern "C" {
 #endif
 
-#include "absgraph.h"
 #include "analyze_irg_args.h"
 #include "be.h"
 #include "callgraph.h"
