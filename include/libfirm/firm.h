@@ -112,7 +112,6 @@ extern "C" {
 #include "irvrfy.h"
 #include "lowering.h"
 #include "old_fctnames.h"
-#include "phiclass.h"
 #include "pseudo_irg.h"
 #include "rta.h"
 #include "seqnumbers.h"
