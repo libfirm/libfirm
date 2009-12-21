@@ -271,7 +271,12 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
 ir_graph_pass_t *opt_if_conv_pass(
 	const char *name, const ir_settings_if_conv_t *params);
 
-void opt_sync(ir_graph *irg);
+/**
+ * Tries to reduce dependencies for memory nodes where possible by parllelizing
+ * them and synchronising with Sync nodes
+ * @param irg   the graph where memory operations should be parallelised
+ */
+void opt_parallelize_mem(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_sync().
@@ -280,7 +285,7 @@ void opt_sync(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *opt_sync_pass(const char *name);
+ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
 
 /*
  * Check if we can replace the load by a given const from

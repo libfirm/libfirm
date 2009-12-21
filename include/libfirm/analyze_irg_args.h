@@ -28,6 +28,7 @@
 
 #include "irgraph.h"
 #include "firm_types.h"
+#include "typerep.h"
 
 /**
  * Returns for a method with pointer parameter

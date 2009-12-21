@@ -111,7 +111,6 @@ extern "C" {
 #include "irtypeinfo.h"
 #include "irvrfy.h"
 #include "lowering.h"
-#include "old_fctnames.h"
 #include "pseudo_irg.h"
 #include "rta.h"
 #include "seqnumbers.h"
