@@ -1126,7 +1126,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 
 void co_driver(be_chordal_env_t *cenv)
 {
-	ir_timer_t          *timer = ir_timer_register("firm.be.copyopt", "runtime");
+	ir_timer_t          *timer = ir_timer_new();
 	co_complete_stats_t before, after;
 	copy_opt_t          *co;
 	int                 was_optimal = 0;
@@ -1179,6 +1179,7 @@ void co_driver(be_chordal_env_t *cenv)
 
 	be_stat_ev("co_time", ir_timer_elapsed_msec(timer));
 	be_stat_ev_ull("co_optimal", was_optimal);
+	ir_timer_free(timer);
 
 	if (dump_flags & DUMP_AFTER) {
 		FILE *f = my_open(cenv, "", "-after.dot");

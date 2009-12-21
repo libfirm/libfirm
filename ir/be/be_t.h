@@ -36,14 +36,16 @@
 #include "be.h"
 #include "be_types.h"
 
-#define DUMP_NONE       0
-#define DUMP_INITIAL    (1 << 0)
-#define DUMP_ABI        (1 << 1)
-#define DUMP_SCHED      (1 << 2)
-#define DUMP_PREPARED   (1 << 3)
-#define DUMP_RA         (1 << 4)
-#define DUMP_FINAL      (1 << 5)
-#define DUMP_BE         (1 << 6)
+enum {
+	DUMP_NONE     = 0,
+	DUMP_INITIAL  = 1 << 0,
+	DUMP_ABI      = 1 << 1,
+	DUMP_SCHED    = 1 << 2,
+	DUMP_PREPARED = 1 << 3,
+	DUMP_RA       = 1 << 4,
+	DUMP_FINAL    = 1 << 5,
+	DUMP_BE       = 1 << 6
+};
 
 enum {
 	BE_TIME_OFF,
@@ -113,42 +115,55 @@ void firm_be_finish(void);
 
 extern int be_timing;
 
-#define BE_TIMER_PUSH(timer)                                              \
-    if (be_timing) {                                                      \
-        int res = ir_timer_push(timer);                                   \
-        (void) res;                                                       \
-		assert(res && "Timer already on stack, cannot be pushed twice."); \
-    }
+typedef enum {
+	T_ABI,
+	T_CODEGEN,
+	T_RA_PREPARATION,
+	T_SCHED,
+	T_CONSTR,
+	T_FINISH,
+	T_EMIT,
+	T_VERIFY,
+	T_OTHER,
+	T_HEIGHTS,
+	T_LIVE,
+	T_EXECFREQ,
+	T_SSA_CONSTR,
+	T_RA_PROLOG,
+	T_RA_EPILOG,
+	T_RA_CONSTR,
+	T_RA_SPILL,
+	T_RA_SPILL_APPLY,
+	T_RA_COLOR,
+	T_RA_IFG,
+	T_RA_COPYMIN,
+	T_RA_SSA,
+	T_RA_OTHER,
+	T_LAST = T_RA_OTHER
+} be_timer_id_t;
+extern ir_timer_t *be_timers[T_LAST+1];
 
-#define BE_TIMER_POP(timer)                                               \
-    if (be_timing) {                                                      \
-        ir_timer_t *tmp = ir_timer_pop();                                 \
-        (void) tmp;                                                       \
-        assert(tmp == timer && "Attempt to pop wrong timer.");            \
-    }
+static inline void be_timer_push(be_timer_id_t id)
+{
+	int res;
+	if (!be_timing)
+		return;
 
-extern ir_timer_t *t_abi;
-extern ir_timer_t *t_codegen;
-extern ir_timer_t *t_sched;
-extern ir_timer_t *t_constr;
-extern ir_timer_t *t_finish;
-extern ir_timer_t *t_emit;
-extern ir_timer_t *t_other;
-extern ir_timer_t *t_execfreq;
-extern ir_timer_t *t_verify;
-extern ir_timer_t *t_heights;
-extern ir_timer_t *t_live;         /**< timer for liveness calculation */
-extern ir_timer_t *t_ssa_constr;   /**< timer for ssa reconstruction */
-extern ir_timer_t *t_ra_prolog;    /**< timer for prolog */
-extern ir_timer_t *t_ra_epilog;    /**< timer for epilog */
-extern ir_timer_t *t_ra_constr;    /**< timer for spill constraints */
-extern ir_timer_t *t_ra_spill;     /**< timer for spilling */
-extern ir_timer_t *t_ra_spill_apply;
-extern ir_timer_t *t_ra_color;     /**< timer for graph coloring */
-extern ir_timer_t *t_ra_ifg;       /**< timer for building interference graph */
-extern ir_timer_t *t_ra_copymin;   /**< timer for copy minimization */
-extern ir_timer_t *t_ra_ssa;       /**< timer for ssa destruction */
-extern ir_timer_t *t_ra_other;     /**< timer for remaining stuff */
+	assert(id <= T_LAST);
+	res = ir_timer_push(be_timers[id]);
+	(void) res;
+	assert(res && "Timer already on stack, cannot be pushed twice.");
+}
 
+static inline void be_timer_pop(be_timer_id_t id)
+{
+	ir_timer_t *tmp;
+	if (!be_timing)
+		return;
 
-#endif /* FIRM_BE_BE_T_H */
+	tmp = ir_timer_pop();
+	(void) tmp;
+	assert(tmp == be_timers[id] && "Attempt to pop wrong timer.");
+}
+
+#endif

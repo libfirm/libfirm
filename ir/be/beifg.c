@@ -391,7 +391,7 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	copy_opt_t *co;
 	be_ifg_t *old_if = chordal_env->ifg;
 
-	ir_timer_t *timer = ir_timer_register("getTime","get Time of copy minimization using the ifg");
+	ir_timer_t *timer = ir_timer_new();
 	unsigned long elapsed_usec = 0;
 
 	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
@@ -585,6 +585,8 @@ void be_ifg_check_performance(be_chordal_env_t *chordal_env)
 	}
 
 	chordal_env->ifg = old_if;
+
+	ir_timer_free(timer);
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)

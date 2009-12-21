@@ -27,13 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 #include "timing.h"
-#include "set.h"
-#include "hashptr.h"
+#include "xmalloc.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -48,6 +43,7 @@ typedef union {
 
 #else
 
+#include <unistd.h>
 #define HAVE_GETTIMEOFDAY
 
 /*
@@ -81,51 +77,27 @@ struct _ir_timer_t {
 	ir_timer_val_t elapsed;     /**< the elapsed time so far */
 	ir_timer_val_t start;       /**< the start value of the timer */
 	ir_timer_t     *link;       /**< link to the next entry in the timer stack */
-	const char     *name;       /**< the name of the timer used for identification */
-	const char     *desc;       /**< a description if the timer */
 	unsigned       running : 1; /**< set if this timer is running */
 };
-
-/**
- * Compare two timers.
- */
-static int ir_timer_cmp(const void *a, const void *b, size_t size)
-{
-	const ir_timer_t *t1 = a;
-	const ir_timer_t *t2 = b;
-	(void) size;
-	return strcmp(t1->name, t2->name);
-}
-
-/** The set containing all currently registered timers. */
-static set *timers = NULL;
 
 /** The top of the timer stack */
 static ir_timer_t *timer_stack;
 
-/** Initialize the timer module. */
-static void timing_init(void)
+ir_timer_t *ir_timer_new(void)
 {
-	timers      = new_set(ir_timer_cmp, 16);
-	timer_stack = NULL;
+	ir_timer_t *timer = XMALLOCZ(ir_timer_t);
+
+	_time_reset(&timer->elapsed);
+	_time_reset(&timer->start);
+	timer->link    = NULL;
+	timer->running = 0;
+
+	return timer;
 }
 
-ir_timer_t *ir_timer_register(const char *name, const char *desc)
+void ir_timer_free(ir_timer_t *timer)
 {
-	unsigned hash = HASH_STR(name, strlen(name));
-	ir_timer_t timer;
-
-	_time_reset(&timer.elapsed);
-	_time_reset(&timer.start);
-	timer.link = NULL;
-	timer.name = name;
-    timer.desc = desc;
-	timer.running = 0;
-
-	if (!timers)
-		timing_init();
-
-	return set_insert(timers, &timer, sizeof(timer), hash);
+	xfree(timer);
 }
 
 #ifdef HAVE_GETTIMEOFDAY
@@ -431,12 +403,4 @@ unsigned long ir_timer_elapsed_usec(const ir_timer_t *timer)
 		_time_add(&v, &timer->elapsed, _time_sub(&v, &v, &timer->start));
 	}
 	return _time_to_usec(elapsed);
-}
-
-const char *ir_timer_get_name(const ir_timer_t *timer) {
-	return timer->name;
-}
-
-const char *ir_timer_get_description(const ir_timer_t *timer) {
-	return timer->desc;
 }

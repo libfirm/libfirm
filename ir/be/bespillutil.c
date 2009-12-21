@@ -879,7 +879,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 	ir_nodeset_iterator_t  iter;
 	ir_node               *node;
 
-	BE_TIMER_PUSH(t_ra_spill_apply);
+	be_timer_push(T_RA_SPILL_APPLY);
 
 	/* create all phi-ms first, this is needed so, that phis, hanging on
 	   spilled phis work correctly */
@@ -1050,7 +1050,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	be_remove_dead_nodes_from_schedule(env->birg);
 
-	BE_TIMER_POP(t_ra_spill_apply);
+	be_timer_pop(T_RA_SPILL_APPLY);
 }
 
 void be_init_spill(void)

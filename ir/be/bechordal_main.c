@@ -259,9 +259,9 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	/* put all ignore registers into the ignore register set. */
 	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
 
-	BE_TIMER_PUSH(t_ra_constr);
+	be_timer_push(T_RA_CONSTR);
 	be_pre_spill_prepare_constr(chordal_env->birg, chordal_env->cls);
-	BE_TIMER_POP(t_ra_constr);
+	be_timer_pop(T_RA_CONSTR);
 
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
 }
@@ -285,16 +285,16 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			called in a loop after spilling for each register class.
 			But we only need to fix stack nodes once in this case.
 		*/
-		BE_TIMER_PUSH(t_ra_spill_apply);
+		be_timer_push(T_RA_SPILL_APPLY);
 		check_for_memory_operands(irg);
 		if (iteration == 0) {
 			be_abi_fix_stack_nodes(birg->abi);
 		}
-		BE_TIMER_POP(t_ra_spill_apply);
+		be_timer_pop(T_RA_SPILL_APPLY);
 
 
 		/* verify schedule and register pressure */
-		BE_TIMER_PUSH(t_verify);
+		be_timer_push(T_VERIFY);
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(birg);
 			be_verify_register_pressure(birg, pse->cls, irg);
@@ -303,19 +303,19 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 			assert(be_verify_register_pressure(birg, pse->cls, irg)
 				&& "Register pressure verification failed");
 		}
-		BE_TIMER_POP(t_verify);
+		be_timer_pop(T_VERIFY);
 
 		/* Color the graph. */
-		BE_TIMER_PUSH(t_ra_color);
+		be_timer_push(T_RA_COLOR);
 		be_ra_chordal_coloring(chordal_env);
-		BE_TIMER_POP(t_ra_color);
+		be_timer_pop(T_RA_COLOR);
 
 		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
 
 		/* Create the ifg with the selected flavor */
-		BE_TIMER_PUSH(t_ra_ifg);
+		be_timer_push(T_RA_IFG);
 		chordal_env->ifg = be_create_ifg(chordal_env);
-		BE_TIMER_POP(t_ra_ifg);
+		be_timer_pop(T_RA_IFG);
 
 		stat_ev_if {
 			be_ifg_stat_t   stat;
@@ -335,23 +335,23 @@ static void post_spill(post_spill_env_t *pse, int iteration) {
 					node_stats[BE_STAT_COPIES]);
 		}
 
-		BE_TIMER_PUSH(t_ra_copymin);
+		be_timer_push(T_RA_COPYMIN);
 		co_driver(chordal_env);
-		BE_TIMER_POP(t_ra_copymin);
+		be_timer_pop(T_RA_COPYMIN);
 
 		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
 
 		/* ssa destruction */
-		BE_TIMER_PUSH(t_ra_ssa);
+		be_timer_push(T_RA_SSA);
 		be_ssa_destruction(chordal_env);
-		BE_TIMER_POP(t_ra_ssa);
+		be_timer_pop(T_RA_SSA);
 
 		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
 
 		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
-			BE_TIMER_PUSH(t_verify);
+			be_timer_push(T_VERIFY);
 			be_ssa_destruction_check(chordal_env);
-			BE_TIMER_POP(t_verify);
+			be_timer_pop(T_VERIFY);
 		}
 
 		/* the ifg exists only if there are allocatable regs */
@@ -378,9 +378,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_chordal_env_t  chordal_env;
 	struct obstack    obst;
 
-	BE_TIMER_PUSH(t_ra_other);
+	be_timer_push(T_RA_OTHER);
 
-	BE_TIMER_PUSH(t_ra_prolog);
+	be_timer_push(T_RA_PROLOG);
 
 	be_assure_liveness(birg);
 
@@ -394,7 +394,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	obstack_init(&obst);
 
-	BE_TIMER_POP(t_ra_prolog);
+	be_timer_pop(T_RA_PROLOG);
 
 	stat_ev_if {
 		be_collect_node_stats(&last_node_stats, birg);
@@ -423,9 +423,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pse.birg = birg;
 			pre_spill(&pse, cls);
 
-			BE_TIMER_PUSH(t_ra_spill);
+			be_timer_push(T_RA_SPILL);
 			be_do_spill(birg, cls);
-			BE_TIMER_POP(t_ra_spill);
+			be_timer_pop(T_RA_SPILL);
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill",
 			     dump_ir_block_graph_sched);
@@ -457,9 +457,9 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pre_spill(&pse[j], pse[j].cls);
 		}
 
-		BE_TIMER_PUSH(t_ra_spill);
+		be_timer_push(T_RA_SPILL);
 		arch_code_generator_spill(birg->cg, birg);
-		BE_TIMER_POP(t_ra_spill);
+		be_timer_pop(T_RA_SPILL);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
 
 		for (j = 0; j < m; ++j) {
@@ -467,24 +467,24 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		}
 	}
 
-	BE_TIMER_PUSH(t_verify);
+	be_timer_push(T_VERIFY);
 	if (chordal_env.opts->vrfy_option == BE_CH_VRFY_WARN) {
 		be_verify_register_allocation(birg);
 	} else if(chordal_env.opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 		assert(be_verify_register_allocation(birg)
 				&& "Register allocation invalid");
 	}
-	BE_TIMER_POP(t_verify);
+	be_timer_pop(T_VERIFY);
 
-	BE_TIMER_PUSH(t_ra_epilog);
+	be_timer_push(T_RA_EPILOG);
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
 
 	obstack_free(&obst, NULL);
 	be_liveness_invalidate(be_get_birg_liveness(birg));
-	BE_TIMER_POP(t_ra_epilog);
+	be_timer_pop(T_RA_EPILOG);
 
-	BE_TIMER_POP(t_ra_other);
+	be_timer_pop(T_RA_OTHER);
 }
 
 void be_init_chordal_main(void)

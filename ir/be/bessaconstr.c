@@ -349,7 +349,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 	size_t i;
 	stat_ev_cnt_decl(uses);
 
-	BE_TIMER_PUSH(t_ssa_constr);
+	be_timer_push(T_SSA_CONSTR);
 
 	if(!env->iterated_domfront_calculated) {
 		mark_iterated_dominance_frontiers(env);
@@ -392,7 +392,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 			stat_ev_cnt_inc(uses);
 		}
 	}
-	BE_TIMER_POP(t_ssa_constr);
+	be_timer_pop(T_SSA_CONSTR);
 
 	stat_ev_tim_pop("bessaconstr_fix_time");
 	stat_ev_cnt_done(uses, "bessaconstr_uses");
@@ -409,7 +409,7 @@ void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
 {
 	int i, n;
 
-	BE_TIMER_PUSH(t_ssa_constr);
+	be_timer_push(T_SSA_CONSTR);
 
 	n = ARR_LEN(env->new_phis);
 	for(i = 0; i < n; ++i) {
@@ -417,7 +417,7 @@ void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
 		be_liveness_introduce(lv, phi);
 	}
 
-	BE_TIMER_POP(t_ssa_constr);
+	be_timer_pop(T_SSA_CONSTR);
 }
 
 void be_init_ssaconstr(void)

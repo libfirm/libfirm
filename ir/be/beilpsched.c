@@ -191,10 +191,6 @@ typedef struct {
 /* check if a double value is within an epsilon environment of 0 */
 #define LPP_VALUE_IS_0(dbl) (fabs((dbl)) <= 1e-10)
 
-#define ilp_timer_push(t)         ir_timer_push((t))
-#define ilp_timer_pop()           ir_timer_pop()
-#define ilp_timer_elapsed_usec(t) ir_timer_elapsed_usec((t))
-
 /* option variable */
 static ilpsched_options_t ilp_opts = {
 	1,     /* default is with register pressure constraints */
@@ -975,9 +971,9 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 	ilp_livein_node_t     *livein;
 	ilpsched_block_attr_t *ba      = get_ilpsched_block_attr(block_node);
 	unsigned              weigth_y = ba->n_interesting_nodes * ba->n_interesting_nodes;
-	ir_timer_t            *t_var   = ir_timer_register("beilpsched_var", "create ilp variables");
 
-	ilp_timer_push(t_var);
+	stat_ev_tim_push();
+
 	num_block_var = num_nodes = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
 		be_ilpsched_irn_t    *node;
@@ -1102,9 +1098,7 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
 		}
 	}
 
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "... %u variables for %u nodes created (%g sec)\n",
-		num_block_var, num_nodes, ilp_timer_elapsed_usec(t_var) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_var");
 }
 
 /*******************************************************
@@ -1157,8 +1151,6 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 	ir_node               *irn;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
 	bitset_t              *bs_block_irns = bitset_alloca(ba->block_last_idx);
-	ir_timer_t            *t_cst_assign  = ir_timer_register("beilpsched_cst_assign", "create assignment constraints");
-	ir_timer_t            *t_cst_prec    = ir_timer_register("beilpsched_cst_prec",   "create precedence constraints");
 
 	num_cst_assign = num_cst_prec = num_cst_dead = 0;
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
@@ -1177,14 +1169,14 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 		cur_var = 0;
 
 		/* the assignment constraint */
-		ilp_timer_push(t_cst_assign);
+		stat_ev_tim_push();
 		snprintf(buf, sizeof(buf), "assignment_cst_n%u", get_irn_idx(irn));
 		cst = lpp_add_cst_uniq(lpp, buf, lpp_equal, 1.0);
 		DBG((env->dbg, LEVEL_2, "added constraint %s\n", buf));
 		num_cst_assign++;
 
 		lpp_set_factor_fast_bulk(lpp, cst, na->ilp_vars.x, ARR_LEN(na->ilp_vars.x), 1.0);
-		ilp_timer_pop();
+		stat_ev_tim_pop("beilpsched_cst_assign");
 
 		/* We have separate constraints for Projs and Keeps */
 		// ILP becomes infeasible ?!?
@@ -1192,7 +1184,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 //			continue;
 
 		/* the precedence constraints */
-		ilp_timer_push(t_cst_prec);
+		stat_ev_tim_push();
 		bs_block_irns = bitset_clear_all(bs_block_irns);
 
 		sta_collect_in_deps(irn, &deps);
@@ -1270,12 +1262,8 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 			}
 		}
 		ir_nodeset_destroy(&deps);
-		ilp_timer_pop();
+		stat_ev_tim_pop("beilpsched_cst_prec");
 	}
-	DBG((env->dbg, LEVEL_1, "\t%u assignement constraints (%g sec)\n",
-		num_cst_assign, ilp_timer_elapsed_usec(t_cst_assign) / 1000000.0));
-	DBG((env->dbg, LEVEL_1, "\t%u precedence constraints (%g sec)\n",
-		num_cst_prec, ilp_timer_elapsed_usec(t_cst_prec) / 1000000.0));
 }
 
 /**
@@ -1288,9 +1276,8 @@ static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	char                  buf[1024];
 	unsigned              num_cst_resrc = 0;
 	ilpsched_block_attr_t *ba           = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst_rsrc   = ir_timer_register("beilpsched_cst_rsrc",   "create resource constraints");
 
-	ilp_timer_push(t_cst_rsrc);
+	stat_ev_tim_push();
 	for (glob_type_idx = env->cpu->n_unit_types - 1; glob_type_idx >= 0; --glob_type_idx) {
 		unsigned                 t;
 		be_execution_unit_type_t *cur_tp = &env->cpu->unit_types[glob_type_idx];
@@ -1328,9 +1315,7 @@ static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 			DEL_ARR_F(tmp_var_idx);
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u resource constraints (%g sec)\n",
-		num_cst_resrc, ilp_timer_elapsed_usec(t_cst_rsrc) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_rsrc");
 }
 
 /**
@@ -1344,9 +1329,8 @@ static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilp
 	unsigned              num_cst_bundle = 0;
 	unsigned              n_instr_max    = env->cpu->bundle_size * env->cpu->bundels_per_cycle;
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst_bundle  = ir_timer_register("beilpsched_cst_bundle", "create bundle constraints");
 
-	ilp_timer_push(t_cst_bundle);
+	stat_ev_tim_push();
 	for (t = 0; t < ba->max_steps; ++t) {
 		ir_node *irn;
 		int     cst;
@@ -1386,9 +1370,7 @@ static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilp
 
 		DEL_ARR_F(tmp_var_idx);
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u bundle constraints (%g sec)\n",
-		num_cst_bundle, ilp_timer_elapsed_usec(t_cst_bundle) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_bundle");
 }
 
 /**
@@ -1400,9 +1382,8 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_alive_nodes", "create alive nodes constraints");
 
-	ilp_timer_push(t_cst);
+	stat_ev_tim_push();
 	/* for each node */
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
 		be_ilpsched_irn_t    *node = get_ilpsched_irn(env, irn);
@@ -1468,9 +1449,7 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
 			}
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u alive nodes constraints (%g sec)\n",
-		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_alive_nodes");
 }
 
 /**
@@ -1482,9 +1461,8 @@ static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *
 	ilp_livein_node_t     *livein;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_alive_livein_nodes", "create alive livein nodes constraints");
 
-	ilp_timer_push(t_cst);
+	stat_ev_tim_push();
 	/* for each node */
 	foreach_pset(ba->livein_nodes, livein) {
 		ir_node              *irn  = livein->irn;
@@ -1546,9 +1524,7 @@ static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *
 			}
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u alive livein nodes constraints (%g sec)\n",
-		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_alive_livein_nodes");
 }
 
 /**
@@ -1561,9 +1537,8 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 	ir_node               *cur_irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_pressure", "create pressure constraints");
 
-	ilp_timer_push(t_cst);
+	stat_ev_tim_push();
 	/* y_{nt}^k is set for each node and timestep and unit type */
 	foreach_linked_irns(ba->head_ilp_nodes, cur_irn) {
 		unsigned             cur_idx   = get_irn_idx(cur_irn);
@@ -1649,9 +1624,7 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
 			}
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u pressure constraints (%g sec)\n",
-		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_pressure");
 }
 
 /**
@@ -1664,9 +1637,8 @@ static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilps
 	unsigned              num_cst          = 0;
 	unsigned              num_non_branches = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_branch", "create branch constraints");
 
-	ilp_timer_push(t_cst);
+	stat_ev_tim_push();
 	cfop = NULL;
 	/* determine number of non-branch nodes and the one and only branch node */
 	foreach_linked_irns(ba->head_ilp_nodes, cur_irn) {
@@ -1745,9 +1717,7 @@ static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilps
 			DEL_ARR_F(non_branch_vars);
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u branch constraints (%g sec)\n",
-		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_branch");
 }
 
 #if 0
@@ -1756,9 +1726,8 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 	ir_node               *irn;
 	unsigned              num_cst = 0;
 	ilpsched_block_attr_t *ba     = get_ilpsched_block_attr(block_node);
-	ir_timer_t            *t_cst  = ir_timer_register("beilpsched_cst_projkeep", "create proj and keep constraints");
 
-	ilp_timer_push(t_cst);
+	stat_ev_tim_push();
 	/* check all nodes */
 	foreach_linked_irns(ba->head_ilp_nodes, irn) {
 		be_ilpsched_irn_t    *node;
@@ -1818,9 +1787,7 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 			}
 		}
 	}
-	ilp_timer_pop();
-	DBG((env->dbg, LEVEL_1, "\t%u Proj and Keep constraints (%g sec)\n",
-		num_cst, ilp_timer_elapsed_usec(t_cst) / 1000000.0));
+	stat_ev_tim_pop("beilpsched_cst_projkeep");
 }
 #endif /* if 0 */
 

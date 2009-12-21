@@ -52,13 +52,16 @@ int ir_timer_leave_high_priority(void);
 size_t ir_get_heap_used_bytes(void);
 
 /**
- * Register a new timer.
- * If the timer was registered before, the registered timer is returned.
- * @param name  The name of the timer.
- * @param desc  The description of the timer.
+ * Create a new timer
  * @return The timer.
  */
-ir_timer_t *ir_timer_register(const char *name, const char *desc);
+ir_timer_t *ir_timer_new(void);
+
+/**
+ * free memory occupied by a timer
+ * @param timer The timer
+ */
+void ir_timer_free(ir_timer_t *timer);
 
 /**
  * Start a timer.

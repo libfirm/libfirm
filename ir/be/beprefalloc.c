@@ -1933,20 +1933,20 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
 static void spill(void)
 {
 	/* make sure all nodes show their real register pressure */
-	BE_TIMER_PUSH(t_ra_constr);
+	be_timer_push(T_RA_CONSTR);
 	be_pre_spill_prepare_constr(birg, cls);
-	BE_TIMER_POP(t_ra_constr);
+	be_timer_pop(T_RA_CONSTR);
 
 	dump(DUMP_RA, irg, "-spillprepare", dump_ir_block_graph_sched);
 
 	/* spill */
-	BE_TIMER_PUSH(t_ra_spill);
+	be_timer_push(T_RA_SPILL);
 	be_do_spill(birg, cls);
-	BE_TIMER_POP(t_ra_spill);
+	be_timer_pop(T_RA_SPILL);
 
-	BE_TIMER_PUSH(t_ra_spill_apply);
+	be_timer_push(T_RA_SPILL_APPLY);
 	check_for_memory_operands(irg);
-	BE_TIMER_POP(t_ra_spill_apply);
+	be_timer_pop(T_RA_SPILL_APPLY);
 
 	dump(DUMP_RA, irg, "-spill", dump_ir_block_graph_sched);
 }
@@ -1984,7 +1984,7 @@ static void be_pref_alloc(be_irg_t *new_birg)
 		spill();
 
 		/* verify schedule and register pressure */
-		BE_TIMER_PUSH(t_verify);
+		be_timer_push(T_VERIFY);
 		if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
 			be_verify_schedule(birg);
 			be_verify_register_pressure(birg, cls, irg);
@@ -1993,11 +1993,11 @@ static void be_pref_alloc(be_irg_t *new_birg)
 			assert(be_verify_register_pressure(birg, cls, irg)
 				&& "Register pressure verification failed");
 		}
-		BE_TIMER_POP(t_verify);
+		be_timer_pop(T_VERIFY);
 
-		BE_TIMER_PUSH(t_ra_color);
+		be_timer_push(T_RA_COLOR);
 		be_pref_alloc_cls();
-		BE_TIMER_POP(t_ra_color);
+		be_timer_pop(T_RA_COLOR);
 
 		/* we most probably constructed new Phis so liveness info is invalid
 		 * now */
@@ -2008,18 +2008,18 @@ static void be_pref_alloc(be_irg_t *new_birg)
 		stat_ev_ctx_pop("regcls");
 	}
 
-	BE_TIMER_PUSH(t_ra_spill_apply);
+	be_timer_push(T_RA_SPILL_APPLY);
 	be_abi_fix_stack_nodes(birg->abi);
-	BE_TIMER_POP(t_ra_spill_apply);
+	be_timer_pop(T_RA_SPILL_APPLY);
 
-	BE_TIMER_PUSH(t_verify);
+	be_timer_push(T_VERIFY);
 	if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
 		be_verify_register_allocation(birg);
 	} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
 		assert(be_verify_register_allocation(birg)
 				&& "Register allocation invalid");
 	}
-	BE_TIMER_POP(t_verify);
+	be_timer_pop(T_VERIFY);
 
 	obstack_free(&obst, NULL);
 }

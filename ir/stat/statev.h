@@ -31,6 +31,7 @@
 #if !defined(FIRM_STATISTICS) || defined(DISABLE_STATEV)
 
 #define stat_ev_do(expr)
+#define stat_ev_enabled             0
 #define stat_ev_if                  if (0)
 #define stat_ev_dbl(name, val)
 #define stat_ev_int(name, val)

@@ -5751,9 +5751,9 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 	initial_fpcw  = NULL;
 	no_pic_adjust = 0;
 
-	BE_TIMER_PUSH(t_heights);
+	be_timer_push(T_HEIGHTS);
 	heights      = heights_new(cg->irg);
-	BE_TIMER_POP(t_heights);
+	be_timer_pop(T_HEIGHTS);
 	ia32_calculate_non_address_mode_nodes(cg->birg);
 
 	/* the transform phase is not safe for CSE (yet) because several nodes get
