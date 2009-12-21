@@ -62,7 +62,8 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 }
 #endif
 
-static void insert_into_reverse_peo(ir_node *block, void *data) {
+static void insert_into_reverse_peo(ir_node *block, void *data)
+{
 	pqueue_t  *queue                = new_pqueue();
 	pqueue_t  *restrictedNodesQueue = new_pqueue();
 	pbqp_co_t *pbqp_co              = data;
@@ -110,13 +111,14 @@ static void insert_into_reverse_peo(ir_node *block, void *data) {
 	del_pqueue(restrictedNodesQueue);
 }
 
-static int co_solve_heuristic_pbqp(copy_opt_t *co) {
+static int co_solve_heuristic_pbqp(copy_opt_t *co)
+{
 	void *nodes_it                       = be_ifg_nodes_iter_alloca(co->cenv->ifg);
 	void *neigh_it                       = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
 	unsigned number_registers            = co->cls->n_regs;
 	unsigned number_nodes                = get_irg_last_idx(co->irg);
-	ir_timer_t *t_ra_copymin_pbqp_create = ir_timer_register("be_co_pbqp_create", "copy minimization pbqp create");
-	ir_timer_t *t_ra_copymin_pbqp_solve  = ir_timer_register("be_co_pbqp_solve", "copy minimization pbqp solve");
+	ir_timer_t *t_ra_copymin_pbqp_create = ir_timer_new();
+	ir_timer_t *t_ra_copymin_pbqp_solve  = ir_timer_new();
 	ir_node *ifg_node;
 	ir_node *if_neighb_node;
 	pbqp_co_t pbqp_co;
@@ -271,8 +273,10 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co) {
     #endif
 
 	#if KAPS_TIMING
-	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_copymin_pbqp_create), (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_create) / 1000.0);
-	printf("%-20s: %8.3lf msec\n" , ir_timer_get_description(t_ra_copymin_pbqp_solve), (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_solve) / 1000.0);
+	printf("%-20s: %8.3lf msec\n", "copy minimization pbqp create",
+	       (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_create) / 1000.0);
+	printf("%-20s: %8.3lf msec\n" , "copy minimization pbqp solve",
+	       (double)ir_timer_elapsed_usec(t_ra_copymin_pbqp_solve) / 1000.0);
 	printf("==>> END PBQP TIMING on IRG %s (%s) <<==\n", get_entity_name(get_irg_entity(co->irg)), arch_register_class_name(co->cls));
 	#endif
 
