@@ -26,7 +26,7 @@
    longer properly call the functions in this obstack.c.  */
 #define OBSTACK_INTERFACE_VERSION 1
 
-#include <stdio.h>		/* Random thing to get __GNU_LIBRARY__.  */
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 

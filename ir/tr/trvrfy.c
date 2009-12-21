@@ -26,8 +26,7 @@
  */
 #include "config.h"
 
-#include "irgraph_t.h"  /* for checking whether constant code is allocated
-                           on proper obstack */
+#include "irgraph_t.h"
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"

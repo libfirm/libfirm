@@ -37,7 +37,7 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../bearch.h"                /* the general register allocator interface */
+#include "../bearch.h"
 #include "../benode.h"
 #include "../belower.h"
 #include "../besched.h"
@@ -55,8 +55,8 @@
 
 #include "bearch_ppc32_t.h"
 
-#include "ppc32_new_nodes.h"           /* ppc nodes interface */
-#include "gen_ppc32_regalloc_if.h"     /* the generated interface (register type and class defenitions) */
+#include "ppc32_new_nodes.h"
+#include "gen_ppc32_regalloc_if.h"
 #include "ppc32_transform.h"
 #include "ppc32_transform_conv.h"
 #include "ppc32_emitter.h"

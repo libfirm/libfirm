@@ -41,7 +41,6 @@
 #include "bearch_ppc32_t.h"
 
 #include "ppc32_nodes_attr.h"
-//#include "../arch/archop.h"     /* we need this for Min and Max nodes */
 #include "ppc32_transform_conv.h"
 #include "ppc32_transform.h"
 #include "ppc32_new_nodes.h"

@@ -33,19 +33,19 @@
  */
 #include "config.h"
 
-#include <assert.h>         /* assertions */
-#include <stdlib.h>         /* atoi() */
+#include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_STRINGS_H
-#include <strings.h>        /* strings.h also includes bsd only function strcasecmp */
+#include <strings.h>
 #endif
 #include <stdlib.h>
 
 #include "tv_t.h"
-#include "set.h"            /* to store tarvals in */
-#include "entity_t.h"       /* needed to store pointers to entities */
+#include "set.h"
+#include "entity_t.h"
 #include "irmode_t.h"
-#include "irnode.h"         /* defines boolean return values (pnc_number)*/
+#include "irnode.h"
 #include "strcalc.h"
 #include "fltcalc.h"
 #include "irtools.h"

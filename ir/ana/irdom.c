@@ -33,7 +33,7 @@
 #include "xmalloc.h"
 #include "irgwalk.h"
 #include "irdom_t.h"
-#include "irgraph_t.h"   /* To access state field. */
+#include "irgraph_t.h"
 #include "irnode_t.h"
 #include "ircons_t.h"
 #include "array_t.h"

@@ -39,7 +39,8 @@
    program understand `configure --with-gnu-libc' and omit the object
    files, it is simpler to just do this in the source for each such file.  */
 
-#include <stdio.h>		/* Random thing to get __GNU_LIBRARY__.  */
+/* Random thing to get __GNU_LIBRARY__.  */
+#include <stdio.h>
 #if !defined (_LIBC) && defined (__GNU_LIBRARY__) && __GNU_LIBRARY__ > 1
 #include <gnu-versions.h>
 #if _GNU_OBSTACK_INTERFACE_VERSION == OBSTACK_INTERFACE_VERSION

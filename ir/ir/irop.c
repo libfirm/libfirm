@@ -32,7 +32,7 @@
 #include "irhooks.h"
 #include "irbackedge_t.h"
 
-#include "iropt_t.h"             /* for firm_set_default_operations */
+#include "iropt_t.h"
 #include "irvrfy_t.h"
 #include "reassoc_t.h"
 

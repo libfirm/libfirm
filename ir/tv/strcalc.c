@@ -24,14 +24,13 @@
  * @author   Mathias Heil
  * @version  $Id$
  */
-
 #include "config.h"
 
 #include <stdlib.h>
-#include <string.h>   /* memset/memcmp */
-#include <assert.h>   /* assertions */
-#include <stdio.h>    /* output for error messages */
-#include <limits.h>   /* definition of LONG_MIN, used in sc_get_val_from_long */
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <limits.h>
 
 #include "strcalc.h"
 #include "xmalloc.h"

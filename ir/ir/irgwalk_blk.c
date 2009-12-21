@@ -26,7 +26,7 @@
 #include "config.h"
 
 #include "irnode_t.h"
-#include "irgraph_t.h" /* visited flag */
+#include "irgraph_t.h"
 #include "irgwalk.h"
 #include "pset.h"
 #include "irhooks.h"
