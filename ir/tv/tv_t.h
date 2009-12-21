@@ -140,7 +140,6 @@ _is_tarval(const void *thing) {
 #define get_tarval_b_true()      _get_tarval_b_true()
 #define get_tarval_unreachable() _get_tarval_unreachable()
 #define get_tarval_reachable()   _get_tarval_reachable()
-#define get_tarval_P_void()      _get_tarval_P_void()
 #define is_tarval(thing)         _is_tarval(thing)
 
 #endif /* FIRM_TV_TV_T_H */
