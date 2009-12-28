@@ -61,7 +61,7 @@
 #include "matrix.h"
 #include "vector.h"
 #include "vector_t.h"
-#include "heuristical.h"
+#include "heuristical_co.h"
 #include "pbqp_t.h"
 #include "html_dumper.h"
 #include "pbqp_node_t.h"
