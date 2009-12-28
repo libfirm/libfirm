@@ -15,7 +15,7 @@
 #include "vector.h"
 #include "matrix.h"
 #include "html_dumper.h"
-#include "heuristical.h"
+#include "heuristical_co.h"
 #include "pbqp_node_t.h"
 
 #include "becopyopt_t.h"
