@@ -19,20 +19,20 @@
 
 /**
  * @file
- * @brief   Heuristic PBQP solver.
- * @date    02.10.2008
- * @author  Sebastian Buchwald
+ * @brief   Heuristic PBQP solver for SSA-based register allocation.
+ * @date    18.09.2009
+ * @author  Thomas Bersch
  * @version $Id$
  */
-#ifndef KAPS_HEURISTICAL_CO_H
-#define KAPS_HEURISTICAL_CO_H
+#ifndef KAPS_HEURISTICAL_H
+#define KAPS_HEURISTICAL_H
 
 #include "pbqp_t.h"
 
 #include "plist.h"
 
-void solve_pbqp_heuristical(pbqp *pbqp);
+void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo);
 
-void apply_RN(pbqp *pbqp);
+void apply_RN_co(pbqp *pbqp, plist_t *rpeo);
 
-#endif /* KAPS_HEURISTICAL_CO_H */
+#endif /* KAPS_HEURISTICAL_H */

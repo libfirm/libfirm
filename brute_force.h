@@ -19,20 +19,16 @@
 
 /**
  * @file
- * @brief   Heuristic PBQP solver.
- * @date    02.10.2008
+ * @brief   Brute force PBQP solver.
+ * @date    02.12.2008
  * @author  Sebastian Buchwald
  * @version $Id$
  */
-#ifndef KAPS_HEURISTICAL_CO_H
-#define KAPS_HEURISTICAL_CO_H
+#ifndef KAPS_BRUTE_FORCE_H
+#define KAPS_BRUTE_FORCE_H
 
 #include "pbqp_t.h"
 
-#include "plist.h"
+void solve_pbqp_brute_force(pbqp *pbqp);
 
-void solve_pbqp_heuristical(pbqp *pbqp);
-
-void apply_RN(pbqp *pbqp);
-
-#endif /* KAPS_HEURISTICAL_CO_H */
+#endif /* KAPS_BRUTE_FORCE_H */

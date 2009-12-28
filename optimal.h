@@ -20,19 +20,36 @@
 /**
  * @file
  * @brief   Heuristic PBQP solver.
- * @date    02.10.2008
+ * @date    28.12.2009
  * @author  Sebastian Buchwald
  * @version $Id$
  */
-#ifndef KAPS_HEURISTICAL_CO_H
-#define KAPS_HEURISTICAL_CO_H
+#ifndef KAPS_OPTIMAL_H
+#define KAPS_OPTIMAL_H
 
 #include "pbqp_t.h"
 
-#include "plist.h"
+extern pbqp_edge **edge_bucket;
+extern pbqp_node **node_buckets[4];
+extern pbqp_node **reduced_bucket;
 
-void solve_pbqp_heuristical(pbqp *pbqp);
+void apply_edge(pbqp *pbqp);
 
-void apply_RN(pbqp *pbqp);
+void apply_RI(pbqp *pbqp);
+void apply_RII(pbqp *pbqp);
 
-#endif /* KAPS_HEURISTICAL_CO_H */
+void back_propagate(pbqp *pbqp);
+
+void back_propagate(pbqp *pbqp);
+num determine_solution(pbqp *pbqp);
+void fill_node_buckets(pbqp *pbqp);
+void free_buckets(void);
+unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node);
+pbqp_node *get_node_with_max_degree(void);
+void initial_simplify_edges(pbqp *pbqp);
+void select_alternative(pbqp_node *node, unsigned selected_index);
+void simplify_edge(pbqp *pbqp, pbqp_edge *edge);
+
+int node_is_reduced(pbqp_node *node);
+
+#endif /* KAPS_OPTIMAL_H */
