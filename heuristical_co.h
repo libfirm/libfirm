@@ -33,6 +33,4 @@
 
 void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo);
 
-void apply_RN_co(pbqp *pbqp, plist_t *rpeo);
-
 #endif /* KAPS_HEURISTICAL_H */

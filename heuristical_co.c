@@ -47,6 +47,57 @@
 #include "plist.h"
 #include "timing.h"
 
+static void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
+{
+	pbqp_node   *node         = NULL;
+	unsigned     min_index    = 0;
+
+	assert(pbqp);
+
+	/* We want to reduce the first node in reverse perfect elimination order. */
+	do {
+		/* get first element from reverse perfect elimination order */
+		node = plist_first(rpeo)->data;
+		/* remove element from reverse perfect elimination order */
+		plist_erase(rpeo, plist_first(rpeo));
+		/* insert node at the end of rpeo so the rpeo already exits after pbqp solving */
+		plist_insert_back(rpeo, node);
+	} while(node_is_reduced(node));
+
+	assert(node);
+	assert(pbqp_node_get_degree(node) > 2);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+#endif
+
+	min_index = get_local_minimal_alternative(pbqp, node);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
+					node->index, min_index);
+	}
+#endif
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "[%u]", min_index);
+		fclose(fh);
+		pbqp->num_rn++;
+	}
+#endif
+
+	/* Now that we found the local minimum set all other costs to infinity. */
+	select_alternative(node, min_index);
+}
+
 static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 {
 	#if KAPS_TIMING
@@ -150,55 +201,4 @@ void solve_pbqp_heuristical_co(pbqp *pbqp, plist_t *rpeo)
 	back_propagate(pbqp);
 
 	free_buckets();
-}
-
-void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
-{
-	pbqp_node   *node         = NULL;
-	unsigned     min_index    = 0;
-
-	assert(pbqp);
-
-	/* We want to reduce the first node in reverse perfect elimination order. */
-	do {
-		/* get first element from reverse perfect elimination order */
-		node = plist_first(rpeo)->data;
-		/* remove element from reverse perfect elimination order */
-		plist_erase(rpeo, plist_first(rpeo));
-		/* insert node at the end of rpeo so the rpeo already exits after pbqp solving */
-		plist_insert_back(rpeo, node);
-	} while(node_is_reduced(node));
-
-	assert(node);
-	assert(pbqp_node_get_degree(node) > 2);
-
-#if	KAPS_DUMP
-	if (pbqp->dump_file) {
-		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
-		pbqp_dump_graph(pbqp);
-	}
-#endif
-
-	min_index = get_local_minimal_alternative(pbqp, node);
-
-#if	KAPS_DUMP
-	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
-					node->index, min_index);
-	}
-#endif
-
-#if KAPS_STATISTIC
-	if (dump == 0) {
-		FILE *fh = fopen("solutions.pb", "a");
-		fprintf(fh, "[%u]", min_index);
-		fclose(fh);
-		pbqp->num_rn++;
-	}
-#endif
-
-	/* Now that we found the local minimum set all other costs to infinity. */
-	select_alternative(node, min_index);
 }

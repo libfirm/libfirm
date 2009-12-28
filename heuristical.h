@@ -29,10 +29,6 @@
 
 #include "pbqp_t.h"
 
-#include "plist.h"
-
 void solve_pbqp_heuristical(pbqp *pbqp);
-
-void apply_RN(pbqp *pbqp);
 
 #endif /* KAPS_HEURISTICAL_CO_H */

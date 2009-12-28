@@ -591,16 +591,10 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 		other = edge->tgt;
 		assert(other);
 
-		/* Update pointer for brute force solver. */
-		other = pbqp->nodes[other->index];
-
 		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
 	} else {
 		other = edge->src;
 		assert(other);
-
-		/* Update pointer for brute force solver. */
-		other = pbqp->nodes[other->index];
 
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
@@ -657,10 +651,6 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 		src_is_src = src_edge->src == node;
 		tgt_is_src = tgt_edge->src == node;
 	}
-
-	/* Update pointer for brute force solver. */
-	src_node = pbqp->nodes[src_node->index];
-	tgt_node = pbqp->nodes[tgt_node->index];
 
 	src_mat = src_edge->costs;
 	tgt_mat = tgt_edge->costs;

@@ -44,8 +44,50 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
-#include "plist.h"
 #include "timing.h"
+
+static void apply_RN(pbqp *pbqp)
+{
+	pbqp_node   *node         = NULL;
+	unsigned     min_index    = 0;
+
+	assert(pbqp);
+
+	/* We want to reduce a node with maximum degree. */
+	node = get_node_with_max_degree();
+	assert(node);
+	assert(pbqp_node_get_degree(node) > 2);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+#endif
+
+	min_index = get_local_minimal_alternative(pbqp, node);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
+					node->index, min_index);
+	}
+#endif
+
+#if KAPS_STATISTIC
+	if (dump == 0) {
+		FILE *fh = fopen("solutions.pb", "a");
+		fprintf(fh, "[%u]", min_index);
+		fclose(fh);
+		pbqp->num_rn++;
+	}
+#endif
+
+	/* Now that we found the local minimum set all other costs to infinity. */
+	select_alternative(node, min_index);
+}
 
 static void apply_heuristic_reductions(pbqp *pbqp)
 {
@@ -94,47 +136,4 @@ void solve_pbqp_heuristical(pbqp *pbqp)
 	back_propagate(pbqp);
 
 	free_buckets();
-}
-
-void apply_RN(pbqp *pbqp)
-{
-	pbqp_node   *node         = NULL;
-	unsigned     min_index    = 0;
-
-	assert(pbqp);
-
-	/* We want to reduce a node with maximum degree. */
-	node = get_node_with_max_degree();
-	assert(node);
-	assert(pbqp_node_get_degree(node) > 2);
-
-#if	KAPS_DUMP
-	if (pbqp->dump_file) {
-		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
-		pbqp_dump_graph(pbqp);
-	}
-#endif
-
-	min_index = get_local_minimal_alternative(pbqp, node);
-
-#if	KAPS_DUMP
-	if (pbqp->dump_file) {
-		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
-					node->index, min_index);
-	}
-#endif
-
-#if KAPS_STATISTIC
-	if (dump == 0) {
-		FILE *fh = fopen("solutions.pb", "a");
-		fprintf(fh, "[%u]", min_index);
-		fclose(fh);
-		pbqp->num_rn++;
-	}
-#endif
-
-	/* Now that we found the local minimum set all other costs to infinity. */
-	select_alternative(node, min_index);
 }

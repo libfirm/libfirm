@@ -138,7 +138,7 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	return min_index;
 }
 
-void apply_Brute_Force(pbqp *pbqp)
+static void apply_Brute_Force(pbqp *pbqp)
 {
 	pbqp_node   *node         = NULL;
 	unsigned     min_index    = 0;
@@ -187,6 +187,162 @@ void apply_Brute_Force(pbqp *pbqp)
 	select_alternative(node, min_index);
 }
 
+
+
+static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
+{
+	pbqp_edge   *edge;
+	pbqp_node   *other;
+	pbqp_matrix *mat;
+	vector      *vec;
+	int          is_src;
+
+	assert(pbqp);
+	assert(node);
+
+	edge = node->edges[0];
+	mat = edge->costs;
+	is_src = edge->src == node;
+	vec = node->costs;
+
+	if (is_src) {
+		other = edge->tgt;
+		assert(other);
+
+		/* Update pointer for brute force solver. */
+		other = pbqp->nodes[other->index];
+
+		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
+	} else {
+		other = edge->src;
+		assert(other);
+
+		/* Update pointer for brute force solver. */
+		other = pbqp->nodes[other->index];
+
+		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
+	}
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+	}
+#endif
+}
+
+static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
+{
+	pbqp_edge   *src_edge   = node->edges[0];
+	pbqp_edge   *tgt_edge   = node->edges[1];
+	int          src_is_src = src_edge->src == node;
+	int          tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix *src_mat;
+	pbqp_matrix *tgt_mat;
+	pbqp_node   *src_node;
+	pbqp_node   *tgt_node;
+	vector      *vec;
+	vector      *node_vec;
+	unsigned     col_index;
+	unsigned     row_index;
+
+	assert(pbqp);
+
+	if (src_is_src) {
+		src_node = src_edge->tgt;
+	} else {
+		src_node = src_edge->src;
+	}
+
+	if (tgt_is_src) {
+		tgt_node = tgt_edge->tgt;
+	} else {
+		tgt_node = tgt_edge->src;
+	}
+
+	/* Swap nodes if necessary. */
+	if (tgt_node->index < src_node->index) {
+		pbqp_node *tmp_node;
+		pbqp_edge *tmp_edge;
+
+		tmp_node = src_node;
+		src_node = tgt_node;
+		tgt_node = tmp_node;
+
+		tmp_edge = src_edge;
+		src_edge = tgt_edge;
+		tgt_edge = tmp_edge;
+
+		src_is_src = src_edge->src == node;
+		tgt_is_src = tgt_edge->src == node;
+	}
+
+	/* Update pointer for brute force solver. */
+	src_node = pbqp->nodes[src_node->index];
+	tgt_node = pbqp->nodes[tgt_node->index];
+
+	src_mat = src_edge->costs;
+	tgt_mat = tgt_edge->costs;
+
+	node_vec = node->costs;
+
+	row_index = src_node->solution;
+	col_index = tgt_node->solution;
+
+	vec = vector_copy(pbqp, node_vec);
+
+	if (src_is_src) {
+		vector_add_matrix_col(vec, src_mat, row_index);
+	} else {
+		vector_add_matrix_row(vec, src_mat, row_index);
+	}
+
+	if (tgt_is_src) {
+		vector_add_matrix_col(vec, tgt_mat, col_index);
+	} else {
+		vector_add_matrix_row(vec, tgt_mat, col_index);
+	}
+
+	node->solution = vector_get_min_index(vec);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
+	}
+#endif
+
+	obstack_free(&pbqp->obstack, vec);
+}
+
+static void back_propagate_brute_force(pbqp *pbqp)
+{
+	unsigned node_index;
+	unsigned node_len   = node_bucket_get_length(reduced_bucket);
+
+	assert(pbqp);
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		dump_section(pbqp->dump_file, 2, "Back Propagation");
+	}
+#endif
+
+	for (node_index = node_len; node_index > 0; --node_index) {
+		pbqp_node *node = reduced_bucket[node_index - 1];
+
+		switch (pbqp_node_get_degree(node)) {
+			case 1:
+				back_propagate_RI(pbqp, node);
+				break;
+			case 2:
+				back_propagate_RII(pbqp, node);
+				break;
+			default:
+				panic("Only nodes with degree one or two should be in this bucket");
+				break;
+		}
+	}
+}
+
 void solve_pbqp_brute_force(pbqp *pbqp)
 {
 	/* Reduce nodes degree ... */
@@ -214,7 +370,7 @@ void solve_pbqp_brute_force(pbqp *pbqp)
 #endif
 
 	/* Solve reduced nodes. */
-	back_propagate(pbqp);
+	back_propagate_brute_force(pbqp);
 
 	free_buckets();
 }
