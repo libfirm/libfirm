@@ -51,8 +51,6 @@
  *
  *  The common fields are:
  *
- *  - firm_kind - A firm_kind tag containing k_type.  This is useful
- *                for dynamically checking whether a node is a ir_node.
  *  - arity     - The number of predecessors in the Firm graph.
  *  - in        - A list with the predecessors in the Firm graph.  There are
  *                routines to access individual elements and to obtain the

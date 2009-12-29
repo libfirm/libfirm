@@ -19,7 +19,7 @@
 
 /**
  * @file
- * Declarations for functions and datastructures to represent types
+ * @brief Declarations for functions and datastructures to represent types
  */
 #ifndef FIRM_TYPEREP_H
 #define FIRM_TYPEREP_H
@@ -497,73 +497,6 @@ void set_initializer_compound_value(ir_initializer_t *initializer,
 ir_initializer_t *get_initializer_compound_value(
 		const ir_initializer_t *initializer, unsigned index);
 
-/** Creates a new compound graph path of given length. */
-compound_graph_path *new_compound_graph_path(ir_type *tp, int length);
-
-/** Returns non-zero if an object is a compound graph path */
-int is_compound_graph_path(const void *thing);
-
-/** Frees a graph path object */
-void free_compound_graph_path(compound_graph_path *gr);
-
-/** Returns the length of a graph path */
-int get_compound_graph_path_length(const compound_graph_path *gr);
-
-/** Get the entity node of an compound graph path at position pos. */
-ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, int pos);
-/** Set the entity node of an compound graph path at position pos. */
-void      set_compound_graph_path_node(compound_graph_path *gr, int pos, ir_entity *node);
-/** Get the index of an compound graph path at position pos. */
-int       get_compound_graph_path_array_index(const compound_graph_path *gr, int pos);
-/** Set the index of an compound graph path at position pos. */
-void      set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
-/** Get the type of an compound graph path. */
-ir_type   *get_compound_graph_path_type(const compound_graph_path *gr);
-
-/** Checks whether the path up to pos is correct. If the path contains a NULL,
- *  assumes the path is not complete and returns non-zero. */
-int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
-
-/* A value of a compound entity is a pair of a value and the description of the
-   corresponding access path to the member of the compound.  */
-void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path);
-void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path, int pos);
-
-/** Returns the number of constant values needed to initialize the entity.
- *
- *  Asserts if the entity has variability_uninitialized.
- * */
-int get_compound_ent_n_values(ir_entity *ent);
-/** Returns a constant value given the position. */
-ir_node *get_compound_ent_value(ir_entity *ent, int pos);
-/** Returns the access path for value at position pos. */
-compound_graph_path *get_compound_ent_value_path(ir_entity *ent, int pos);
-/** Returns a constant value given the access path.
- *  The path must contain array indices for all array element entities. */
-ir_node *get_compound_ent_value_by_path(ir_entity *ent, compound_graph_path *path);
-
-/** Removes all constant entries where the path ends at value_ent. Does not
-   free the memory of the paths.  (The same path might be used for several
-   constant entities. */
-void remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent);
-
-/* Some languages support only trivial access paths, i.e., the member is a
-   direct, atomic member of the constant entities type. In this case the
-   corresponding entity can be accessed directly.  The following functions
-   allow direct access. */
-
-/** Generates a Path with length 1.
-    Beware: Has a bad runtime for array elements (O(|array|) and should be
-    avoided there. Use add_compound_ent_value_w_path() instead and create
-    the path manually. */
-void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member);
-
-/** Returns the last member in the path */
-ir_entity *get_compound_ent_value_member(ir_entity *ent, int pos);
-
-/** Sets the path at pos 0 */
-void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member, int pos);
-
 /** Sets the new style initializers of an entity. */
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
 
@@ -572,34 +505,6 @@ int has_entity_initializer(const ir_entity *entity);
 
 /** Return the new style initializers of an entity. */
 ir_initializer_t *get_entity_initializer(const ir_entity *entity);
-
-/** Initializes the entity ent which must be of a one dimensional
-   array type with the values given in the values array.
-   The array must have a lower and an upper bound.  Keeps the
-   order of values. Does not test whether the number of values
-   fits into the given array size.  Does not test whether the
-   values have the proper mode for the array. */
-void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
-
-/**
- * Return the offset in bits from the last byte address.
- *
- * This requires that the layout of all concerned types is fixed.
- *
- * @param ent Any entity of compound type with at least pos initialization values.
- * @param pos The position of the value for which the offset is requested.
- */
-unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
-
-/** Return the overall offset of value at position pos in bytes.
- *
- * This requires that the layout of all concerned types is fixed.
- * Asserts if bit offset is not byte aligned.
- *
- * @param ent Any entity of compound type with at least pos initialization values.
- * @param pos The position of the value for which the offset is requested.
- */
-unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
 
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
@@ -646,13 +551,6 @@ int is_atomic_entity(ir_entity *ent);
 int is_compound_entity(ir_entity *ent);
 /** Returns true if the type of the entity is a Method type. */
 int is_method_entity(ir_entity *ent);
-
-/** Returns non-zero if ent1 and ent2 have are equal except for their owner.
-   Two entities are equal if
-    - they have the same type (the same C-struct)
-    - ...?
-*/
-int equal_entity(ir_entity *ent1, ir_entity *ent2);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
@@ -730,7 +628,8 @@ ir_type *get_entity_repr_class(const ir_entity *ent);
  * - irg           = NULL
  * - link          = NULL
  */
-/* A variable that contains the only unknown entity. */
+
+/** A variable that contains the only unknown entity. */
 extern ir_entity *unknown_entity;
 
 /** Returns the @link unknown_entity unknown entity @endlink. */
@@ -758,8 +657,6 @@ typedef enum acc_bits {
  *  arrays, enumerations, pointers and primitive types.
  *  Special types with own opcodes are the id type, a type representing an unknown
  *  type and a type used to specify that something has no type.
- *
- *  @see type.h
  */
 
 /**
@@ -1126,8 +1023,6 @@ ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
  *   relation. Example: (A)(new C()).
  * any:  Cast operations do not conform with the transitive inheritance
  *   relation.  Example: (B2)(new B1())
- *
- *  @see: tropt.h
  */
 /* ----------------------------------------------------------------------- */
 
@@ -1260,8 +1155,6 @@ ir_type *skip_tid(ir_type *tp);
  *  Types are different from the modes defined in irmode:  Types are
  *  on the level of the programming language, modes at the level of
  *  the target processor.
- *
- *  @see  tpop.h
  */
 
 #include "typerep.h"

@@ -18,7 +18,7 @@
  */
 
 /*
- * @file     entity_t.h
+ * @file
  * @brief   Representation of all program known entities -- private header.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Michael Beck
  * @version $Id$
@@ -32,6 +32,7 @@
 #include "type_t.h"
 #include "ident.h"
 #include "pseudo_irg.h"
+#include "compound_path.h"
 
 typedef struct ir_initializer_base_t {
 	ir_initializer_kind_t kind;
@@ -68,18 +69,6 @@ union ir_initializer_t {
 	ir_initializer_compound_t  compound;
 	ir_initializer_const_t     consti;
 	ir_initializer_tarval_t    tarval;
-};
-
-/** A path in a compound graph. */
-struct compound_graph_path {
-	firm_kind kind;       /**< The dynamic type tag for compound graph path. */
-	ir_type *tp;          /**< The type this path belongs to. */
-	int len;              /**< The length of the path. */
-	struct tuple {
-		int       index;    /**< Array index.  To compute position of array elements */
-		ir_entity *node;    /**< The accessed entity. */
-	} list[1];            /**< List of entity/index tuple of length len to express the
-	                           access path. */
 };
 
 /** The attributes for atomic entities. */
