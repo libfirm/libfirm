@@ -41,6 +41,7 @@
 #include "iroptimize.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include "debug.h"
 #include "ircons.h"
 #include "irgmod.h"
@@ -55,8 +56,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
-static
-int is_optimizable_node(const ir_node *node)
+static bool is_optimizable_node(const ir_node *node)
 {
 	switch (get_irn_opcode(node)) {
 		case iro_Add:
@@ -80,8 +80,7 @@ static tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
 	return tarval_convert_to(get_Const_tarval(cnst), dest_mode);
 }
 
-static
-int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
+static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 {
 	return
 		mode_is_int(src_mode) &&
@@ -89,8 +88,7 @@ int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
-static
-int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
+static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode *mode = get_irn_mode(node);
 	size_t arity;
@@ -165,8 +163,7 @@ static ir_node *place_conv(ir_node *node, ir_mode *dest_mode)
 	return conv;
 }
 
-static
-ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
+static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode *mode = get_irn_mode(node);
 	size_t   arity;
@@ -226,8 +223,7 @@ ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 /* TODO, backends (at least ia32) can't handle it at the moment,
    and it's probably not more efficient on most archs */
 #if 0
-static
-void try_optimize_cmp(ir_node *node)
+static void try_optimize_cmp(ir_node *node)
 {
 	ir_node *left  = get_Cmp_left(node);
 	ir_node *right = get_Cmp_right(node);
@@ -237,10 +233,9 @@ void try_optimize_cmp(ir_node *node)
 }
 #endif
 
-static char changed;
+static bool changed;
 
-static
-void conv_opt_walker(ir_node *node, void *data)
+static void conv_opt_walker(ir_node *node, void *data)
 {
 	ir_node *transformed;
 	ir_node *pred;
@@ -272,25 +267,26 @@ void conv_opt_walker(ir_node *node, void *data)
 	/* - 1 for the initial conv */
 	costs = get_conv_costs(pred, mode) - 1;
 	DB((dbg, LEVEL_2, "Costs for %+F -> %+F: %d\n", node, pred, costs));
-	if (costs > 0) return;
+	if (costs > 0)
+		return;
 
 	transformed = conv_transform(pred, mode);
 	if (node != transformed) {
 		exchange(node, transformed);
-		changed = 1;
+		changed = true;
 	}
 }
 
 int conv_opt(ir_graph *irg)
 {
-	char invalidate = 0;
+	bool invalidate = 0;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
 
 	edges_assure(irg);
 	do {
-		changed = 0;
+		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, NULL);
 		local_optimize_graph(irg);
 		invalidate |= changed;
@@ -306,4 +302,4 @@ int conv_opt(ir_graph *irg)
 ir_graph_pass_t *conv_opt_pass(const char *name)
 {
 	return def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
-}  /* conv_opt_pass */
+}
