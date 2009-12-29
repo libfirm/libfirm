@@ -28,6 +28,7 @@
 #include "irloop_t.h"
 #include "irextbb_t.h"
 #include "irprog_t.h"
+#include "compound_path_t.h"
 #include "tpop_t.h"
 #include "strcalc.h"
 #include "fltcalc.h"
