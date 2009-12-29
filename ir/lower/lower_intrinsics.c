@@ -726,10 +726,12 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) 
  * @return non-zero if ent represents the empty string
  */
 static int is_empty_string(ir_entity *ent) {
-	ir_type *tp = get_entity_type(ent);
-	ir_mode *mode;
-	int     n;
-	ir_node *irn;
+	ir_type          *tp = get_entity_type(ent);
+	ir_mode          *mode;
+	ir_node          *irn;
+	ir_initializer_t *initializer;
+	ir_initializer_t *init0;
+	tarval           *tv;
 
 	if (! is_Array_type(tp))
 		return 0;
@@ -742,12 +744,36 @@ static int is_empty_string(ir_entity *ent) {
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return 0;
 
-	n = get_compound_ent_n_values(ent);
-	if (n < 1)
-		return 0;
-	irn = get_compound_ent_value(ent, 0);
+	if (!has_entity_initializer(ent)) {
+		/* code for deprecated compound_graph_path stuff */
+		int n = get_compound_ent_n_values(ent);
+		if (n < 1)
+			return 0;
+		irn = get_compound_ent_value(ent, 0);
 
-	return is_Const(irn) && is_Const_null(irn);
+		return is_Const(irn) && is_Const_null(irn);
+	}
+
+	initializer = get_entity_initializer(ent);
+	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
+		return 0;
+
+	if (get_initializer_compound_n_entries(initializer) < 1)
+		return 0;
+
+	init0 = get_initializer_compound_value(initializer, 0);
+	tv    = NULL;
+	if (get_initializer_kind(init0) == IR_INITIALIZER_NULL) {
+		return 1;
+	} else if (get_initializer_kind(init0) == IR_INITIALIZER_CONST) {
+		ir_node *irn = get_initializer_const_value(init0);
+		if (is_Const(irn))
+			tv = get_Const_tarval(irn);
+	} else if (get_initializer_kind(init0) == IR_INITIALIZER_TARVAL) {
+		tv = get_initializer_tarval_value(init0);
+	}
+
+	return tv != NULL && tarval_is_null(tv);
 }  /* is_empty_string */
 
 /* A mapper for strcmp */
