@@ -23,8 +23,9 @@
  * @author  Michael Beck
  * @version $Id$
  */
-
 #include "config.h"
+
+#include <stdbool.h>
 
 #include "lowering.h"
 #include "irop_t.h"
@@ -565,6 +566,27 @@ static ir_entity *get_const_entity(ir_node *ptr) {
 	return NULL;
 }  /* get_const_entity */
 
+static bool initializer_val_is_null(ir_initializer_t *init)
+{
+	tarval *tv;
+
+	if (get_initializer_kind(init) == IR_INITIALIZER_NULL)
+		return true;
+
+	if (get_initializer_kind(init) == IR_INITIALIZER_TARVAL) {
+		tv = get_initializer_tarval_value(init);
+	} else if (get_initializer_kind(init) == IR_INITIALIZER_CONST) {
+		ir_node *irn = get_initializer_const_value(init);
+		if (!is_Const(irn))
+			return false;
+		tv = get_Const_tarval(irn);
+	} else {
+		return false;
+	}
+
+	return tarval_is_null(tv);
+}
+
 /**
  * Calculate the value of strlen if possible.
  *
@@ -577,7 +599,9 @@ static ir_entity *get_const_entity(ir_node *ptr) {
 static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 	ir_type *tp = get_entity_type(ent);
 	ir_mode *mode;
-	int     i, n, len = -1;
+	ir_initializer_t *initializer;
+	unsigned          size;
+	unsigned          i;
 
 	if (! is_Array_type(tp))
 		return NULL;
@@ -590,23 +614,47 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	n = get_compound_ent_n_values(ent);
-	for (i = 0; i < n; ++i) {
-		ir_node *irn = get_compound_ent_value(ent, i);
+	if (!has_entity_initializer(ent)) {
+		int len;
+		int n;
+		int i = -1;
 
-		if (! is_Const(irn))
-			return NULL;
+		n = get_compound_ent_n_values(ent);
+		for (i = 0; i < n; ++i) {
+			ir_node *irn = get_compound_ent_value(ent, i);
 
-		if (is_Const_null(irn)) {
-			/* found the length */
-			len = i;
-			break;
+			if (! is_Const(irn))
+				return NULL;
+
+			if (is_Const_null(irn)) {
+				/* found the length */
+				len = i;
+				break;
+			}
+		}
+		if (len >= 0) {
+			tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
+			return new_Const_type(tv, res_tp);
+		}
+		return NULL;
+	}
+
+	if (!has_entity_initializer(ent))
+		return NULL;
+
+	initializer = get_entity_initializer(ent);
+	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
+		return NULL;
+
+	size = get_initializer_compound_n_entries(initializer);
+	for (i = 0; i < size; ++i) {
+		ir_initializer_t *val = get_initializer_compound_value(initializer, i);
+		if (initializer_val_is_null(val)) {
+			tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
+			return new_Const_type(tv, res_tp);
 		}
 	}
-	if (len >= 0) {
-		tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
-		return new_Const_type(tv, res_tp);
-	}
+
 	return NULL;
 }  /* eval_strlen */
 
@@ -731,7 +779,6 @@ static int is_empty_string(ir_entity *ent) {
 	ir_node          *irn;
 	ir_initializer_t *initializer;
 	ir_initializer_t *init0;
-	tarval           *tv;
 
 	if (! is_Array_type(tp))
 		return 0;
@@ -762,18 +809,7 @@ static int is_empty_string(ir_entity *ent) {
 		return 0;
 
 	init0 = get_initializer_compound_value(initializer, 0);
-	tv    = NULL;
-	if (get_initializer_kind(init0) == IR_INITIALIZER_NULL) {
-		return 1;
-	} else if (get_initializer_kind(init0) == IR_INITIALIZER_CONST) {
-		ir_node *irn = get_initializer_const_value(init0);
-		if (is_Const(irn))
-			tv = get_Const_tarval(irn);
-	} else if (get_initializer_kind(init0) == IR_INITIALIZER_TARVAL) {
-		tv = get_initializer_tarval_value(init0);
-	}
-
-	return tv != NULL && tarval_is_null(tv);
+	return initializer_val_is_null(init0);
 }  /* is_empty_string */
 
 /* A mapper for strcmp */
