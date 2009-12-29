@@ -639,9 +639,6 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 		return NULL;
 	}
 
-	if (!has_entity_initializer(ent))
-		return NULL;
-
 	initializer = get_entity_initializer(ent);
 	if (get_initializer_kind(initializer) != IR_INITIALIZER_COMPOUND)
 		return NULL;
@@ -723,46 +720,54 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) 
 	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 		return NULL;
 
-	n   = get_compound_ent_n_values(left);
-	n_r = get_compound_ent_n_values(right);
-	if (n_r < n)
-		n = n_r;
-	for (i = 0; i < n; ++i) {
-		ir_node *irn;
-		long v_l, v_r;
-		tarval *tv;
+	if (!has_entity_initializer(left) && !has_entity_initializer(right)) {
+		/* code that uses deprecated compound_graph_path stuff */
 
-		irn = get_compound_ent_value(left, i);
-		if (! is_Const(irn))
-			return NULL;
-		tv = get_Const_tarval(irn);
-		v_l = get_tarval_long(tv);
+		n   = get_compound_ent_n_values(left);
+		n_r = get_compound_ent_n_values(right);
+		if (n_r < n)
+			n = n_r;
+		for (i = 0; i < n; ++i) {
+			ir_node *irn;
+			long v_l, v_r;
+			tarval *tv;
 
-		irn = get_compound_ent_value(right, i);
-		if (! is_Const(irn))
-			return NULL;
-		tv = get_Const_tarval(irn);
-		v_r = get_tarval_long(tv);
+			irn = get_compound_ent_value(left, i);
+			if (! is_Const(irn))
+				return NULL;
+			tv = get_Const_tarval(irn);
+			v_l = get_tarval_long(tv);
 
-		if (v_l < v_r) {
-			res = -1;
-			break;
+			irn = get_compound_ent_value(right, i);
+			if (! is_Const(irn))
+				return NULL;
+			tv = get_Const_tarval(irn);
+			v_r = get_tarval_long(tv);
+
+			if (v_l < v_r) {
+				res = -1;
+				break;
+			}
+			if (v_l > v_r) {
+				res = +1;
+				break;
+			}
+
+			if (v_l == 0) {
+				res = 0;
+				break;
+			}
 		}
-		if (v_l > v_r) {
-			res = +1;
-			break;
+		if (i < n) {
+			/* we found an end */
+			tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
+			return new_Const_type(tv, res_tp);
 		}
-
-		if (v_l == 0) {
-			res = 0;
-			break;
-		}
+		return NULL;
 	}
-	if (i < n) {
-		/* we found an end */
-		tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
-		return new_Const_type(tv, res_tp);
-	}
+
+	/* TODO */
+
 	return NULL;
 }  /* eval_strcmp */
 
