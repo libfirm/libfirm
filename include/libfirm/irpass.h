@@ -169,6 +169,16 @@ ir_graph_pass_t *def_graph_pass_constructor(
 	const char *name, int (*function)(ir_graph *irg, void *context));
 
 /**
+ * Set the run_parallel property of a graph pass.
+ * If the flag is set to non-zero, the pass can be executed
+ * parallel on all graphs of a ir_prog.
+ *
+ * @param pass  the pass
+ * @param flag  new flag setting
+ */
+void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag);
+
+/**
  * Creates an ir_prog pass for running void function().
  * Uses the default verifier and dumper.
  * The pass returns always 0.

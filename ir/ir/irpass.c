@@ -410,6 +410,10 @@ ir_graph_pass_t *def_graph_pass_constructor(
 	return pass;
 }  /* def_graph_pass_constructor */
 
+/* set the run parallel property */
+void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag) {
+	pass->run_parallel = flag != 0;
+}  /* ir_graph_pass_set_parallel */
 
 /**
  * Wrapper for running void function(void) as an ir_prog pass.

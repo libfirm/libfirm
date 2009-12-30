@@ -302,8 +302,8 @@ ir_graph_pass_t *conv_opt_pass(const char *name)
 {
 	ir_graph_pass_t *path = def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
 
-	// safe to run parallel on all irgs
-	path->run_parallel = 1;
+	/* safe to run parallel on all irgs */
+	ir_graph_pass_set_parallel(path, 1);
 
 	return path;
 }
