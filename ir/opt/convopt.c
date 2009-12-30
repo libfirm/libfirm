@@ -50,7 +50,7 @@
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
-#include "irpass.h"
+#include "irpass_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
@@ -59,19 +59,19 @@ static inline int imin(int a, int b) { return a < b ? a : b; }
 static bool is_optimizable_node(const ir_node *node)
 {
 	switch (get_irn_opcode(node)) {
-		case iro_Add:
-		case iro_And:
-		case iro_Eor:
-		case iro_Minus:
-		case iro_Mul:
-		case iro_Not:
-		case iro_Or:
-		case iro_Phi:
-		case iro_Shl:
-		case iro_Sub:
-			return 1;
-
-		default: return 0;
+	case iro_Add:
+	case iro_And:
+	case iro_Eor:
+	case iro_Minus:
+	case iro_Mul:
+	case iro_Not:
+	case iro_Or:
+	case iro_Phi:
+	case iro_Shl:
+	case iro_Sub:
+		return true;
+	default:
+		return false;
 	}
 }
 
@@ -233,8 +233,6 @@ static void try_optimize_cmp(ir_node *node)
 }
 #endif
 
-static bool changed;
-
 static void conv_opt_walker(ir_node *node, void *data)
 {
 	ir_node *transformed;
@@ -242,7 +240,7 @@ static void conv_opt_walker(ir_node *node, void *data)
 	ir_mode *pred_mode;
 	ir_mode *mode;
 	int costs;
-	(void) data;
+	bool *changed = data;
 
 #if 0
 	if(is_Cmp(node)) {
@@ -273,13 +271,14 @@ static void conv_opt_walker(ir_node *node, void *data)
 	transformed = conv_transform(pred, mode);
 	if (node != transformed) {
 		exchange(node, transformed);
-		changed = true;
+		*changed = true;
 	}
 }
 
 int conv_opt(ir_graph *irg)
 {
-	bool invalidate = 0;
+	bool changed;
+	bool invalidate = false;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
@@ -287,7 +286,7 @@ int conv_opt(ir_graph *irg)
 	edges_assure(irg);
 	do {
 		changed = false;
-		irg_walk_graph(irg, NULL, conv_opt_walker, NULL);
+		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
 		local_optimize_graph(irg);
 		invalidate |= changed;
 	} while (changed);
@@ -301,5 +300,10 @@ int conv_opt(ir_graph *irg)
 /* Creates an ir_graph pass for conv_opt. */
 ir_graph_pass_t *conv_opt_pass(const char *name)
 {
-	return def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
+	ir_graph_pass_t *path = def_graph_pass_ret(name ? name : "conv_opt", conv_opt);
+
+	// safe to run parallel on all irgs
+	path->run_parallel = 1;
+
+	return path;
 }
