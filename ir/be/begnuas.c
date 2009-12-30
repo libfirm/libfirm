@@ -729,14 +729,13 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
                                    ir_type *type)
 {
 	switch (get_initializer_kind(initializer)) {
-	case IR_INITIALIZER_TARVAL: {
+	case IR_INITIALIZER_TARVAL:
 		assert(get_tarval_mode(get_initializer_tarval_value(initializer)) == get_type_mode(type));
 		return get_type_size_bytes(type);
-	}
 	case IR_INITIALIZER_CONST:
 	case IR_INITIALIZER_NULL:
 		return get_type_size_bytes(type);
-	case IR_INITIALIZER_COMPOUND: {
+	case IR_INITIALIZER_COMPOUND:
 		if (!is_type_variable_size(type)) {
 			return get_type_size_bytes(type);
 		} else {
@@ -760,7 +759,6 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 			}
 			return initializer_size;
 		}
-	}
 	}
 
 	panic("found invalid initializer");
