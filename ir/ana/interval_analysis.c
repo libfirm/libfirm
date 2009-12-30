@@ -412,9 +412,9 @@ void construct_intervals(ir_graph *irg) {
 	if (region_attr_set == NULL)
 		region_attr_set = new_set(region_attr_cmp, 256);
 
-	construct_cf_backedges(current_ir_graph);
+	construct_cf_backedges(irg);
 
-	l = get_irg_loop(current_ir_graph);
+	l = get_irg_loop(irg);
 
 	construct_interval_edges(l);
 
