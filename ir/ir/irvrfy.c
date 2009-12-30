@@ -1997,7 +1997,7 @@ int irn_vrfy(ir_node *n) {
  */
 static void vrfy_wrap(ir_node *node, void *env) {
 	int *res = env;
-	*res = irn_vrfy(node);
+	*res = irn_vrfy_irg(node, current_ir_graph);
 }
 
 /**
@@ -2007,7 +2007,7 @@ static void vrfy_wrap(ir_node *node, void *env) {
 static void vrfy_wrap_ssa(ir_node *node, void *env) {
 	int *res = env;
 
-	*res = irn_vrfy(node);
+	*res = irn_vrfy_irg(node, current_ir_graph);
 	if (*res) {
 		*res = check_dominance_for_node(node);
 	}
@@ -2044,16 +2044,16 @@ int irg_verify(ir_graph *irg, unsigned flags) {
 		NULL, &res
 	);
 
-	current_ir_graph = rem;
-
 	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
-		ir_entity *ent = get_irg_entity(current_ir_graph);
+		ir_entity *ent = get_irg_entity(irg);
 
 		if (ent)
 			fprintf(stderr, "irg_verify: Verifying graph %s failed\n", get_entity_name(ent));
 		else
-			fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)current_ir_graph);
+			fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)irg);
 	}
+
+	current_ir_graph = rem;
 #else
 	(void)irg;
 	(void)flags;
