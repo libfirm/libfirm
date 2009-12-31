@@ -114,11 +114,6 @@ long get_arm_SwitchJmp_default_proj_num(const ir_node *node);
  */
 void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num);
 
-/**
- * Gets the shift modifier attribute.
- */
-arm_shift_modifier get_arm_shift_modifier(const ir_node *node);
-
 /* Include the generated headers */
 #include "gen_arm_new_nodes.h"
 
