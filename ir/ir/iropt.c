@@ -1956,10 +1956,17 @@ typedef tarval *(*tarval_sub_type)(tarval *a, tarval *b, ir_mode *mode);
 typedef tarval *(*tarval_binop_type)(tarval *a, tarval *b);
 
 /**
+ * in reality eval_func should be tarval (*eval_func)() but incomplete
+ * declarations are bad style and generate noisy warnings
+ */
+typedef void (*eval_func)(void);
+
+/**
  * Wrapper for the tarval binop evaluation, tarval_sub has one more parameter.
  */
-static tarval *do_eval(tarval *(*eval)(), tarval *a, tarval *b, ir_mode *mode) {
-	if (eval == tarval_sub) {
+static tarval *do_eval(eval_func eval, tarval *a, tarval *b, ir_mode *mode)
+{
+	if (eval == (eval_func) tarval_sub) {
 		tarval_sub_type func = (tarval_sub_type)eval;
 
 		return func(a, b, mode);
@@ -1981,7 +1988,7 @@ static tarval *do_eval(tarval *(*eval)(), tarval *a, tarval *b, ir_mode *mode) {
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(), ir_mode *mode, int left) {
+static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, eval_func eval, ir_mode *mode, int left) {
 	tarval   *tv;
 	void     **res;
 	ir_node  *pred;
@@ -2032,7 +2039,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, tarval *(*eval)(
  *
  * @return a new Phi node if the conversion was successful, NULL else
  */
-static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, tarval *(*eval)(), ir_mode *mode) {
+static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir_mode *mode) {
 	tarval   *tv_l, *tv_r, *tv;
 	void     **res;
 	ir_node  *pred;
@@ -2273,7 +2280,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 		}
 	}
 
-	HANDLE_BINOP_PHI(tarval_add, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2405,7 +2412,7 @@ static ir_node *transform_node_Sub(ir_node *n) {
 	}
 
 restart:
-	HANDLE_BINOP_PHI(tarval_sub, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_sub, a, b, c, mode);
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2722,7 +2729,7 @@ static ir_node *transform_node_Mul(ir_node *n) {
 	if (mode != get_irn_mode(a))
 		return transform_node_Mul2n(n, mode);
 
-	HANDLE_BINOP_PHI(tarval_mul, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_mul, a, b, c, mode);
 
 	if (mode_is_signed(mode)) {
 		ir_node *r = NULL;
@@ -2834,7 +2841,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
-		value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_div, mode, 0);
+		value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2842,7 +2849,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 	}
 	else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
-		value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
+		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2850,7 +2857,7 @@ static ir_node *transform_node_Div(ir_node *n) {
 	}
 	else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
-		value = apply_binop_on_2_phis(a, b, tarval_div, mode);
+		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2910,7 +2917,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
-		value = apply_binop_on_phi(a, get_Const_tarval(b), tarval_mod, mode, 0);
+		value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_mod, mode, 0);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2918,7 +2925,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 	}
 	else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
-		value = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
+		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_mod, mode, 1);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2926,7 +2933,7 @@ static ir_node *transform_node_Mod(ir_node *n) {
 	}
 	else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
-		value = apply_binop_on_2_phis(a, b, tarval_mod, mode);
+		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_mod, mode);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
@@ -2999,8 +3006,8 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 
 	if (is_Const(b) && is_const_Phi(a)) {
 		/* check for Div(Phi, Const) */
-		va = apply_binop_on_phi(a, get_Const_tarval(b), tarval_div, mode, 0);
-		vb = apply_binop_on_phi(a, get_Const_tarval(b), tarval_mod, mode, 0);
+		va = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
+		vb = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_mod, mode, 0);
 		if (va && vb) {
 			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
 			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
@@ -3009,8 +3016,8 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 	}
 	else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
-		va = apply_binop_on_phi(b, get_Const_tarval(a), tarval_div, mode, 1);
-		vb = apply_binop_on_phi(b, get_Const_tarval(a), tarval_mod, mode, 1);
+		va = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
+		vb = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_mod, mode, 1);
 		if (va && vb) {
 			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
 			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
@@ -3019,8 +3026,8 @@ static ir_node *transform_node_DivMod(ir_node *n) {
 	}
 	else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
-		va = apply_binop_on_2_phis(a, b, tarval_div, mode);
-		vb = apply_binop_on_2_phis(a, b, tarval_mod, mode);
+		va = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
+		vb = apply_binop_on_2_phis(a, b, (eval_func) tarval_mod, mode);
 		if (va && vb) {
 			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
 			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
@@ -3376,7 +3383,7 @@ static ir_node *transform_node_And(ir_node *n) {
 	ir_mode *mode;
 
 	mode = get_irn_mode(n);
-	HANDLE_BINOP_PHI(tarval_and, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_and, a, b, c, mode);
 
 	/* we can evaluate 2 Projs of the same Cmp */
 	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
@@ -3508,7 +3515,7 @@ static ir_node *transform_node_Eor(ir_node *n) {
 	ir_node *b = get_Eor_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_eor, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_eor, a, b, c, mode);
 
 	/* we can evaluate 2 Projs of the same Cmp */
 	if (mode == mode_b && is_Proj(a) && is_Proj(b)) {
@@ -5020,7 +5027,7 @@ static ir_node *transform_node_Or(ir_node *n) {
 	}
 
 	mode = get_irn_mode(n);
-	HANDLE_BINOP_PHI(tarval_or, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
 
 	n = transform_node_Or_bf_store(n);
 	n = transform_node_Or_Rotl(n);
@@ -5297,7 +5304,7 @@ static ir_node *transform_node_Shr(ir_node *n) {
 	ir_node *right = get_Shr_right(n);
 	ir_mode *mode  = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shr, left, right, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_shr, left, right, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shr(n))
@@ -5317,7 +5324,7 @@ static ir_node *transform_node_Shrs(ir_node *n) {
 	ir_node *b    = get_Shrs_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shrs, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_shrs, a, b, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shrs(n))
@@ -5335,7 +5342,7 @@ static ir_node *transform_node_Shl(ir_node *n) {
 	ir_node *b    = get_Shl_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_shl, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_shl, a, b, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Shl(n))
@@ -5355,7 +5362,7 @@ static ir_node *transform_node_Rotl(ir_node *n) {
 	ir_node *b    = get_Rotl_right(n);
 	ir_mode *mode = get_irn_mode(n);
 
-	HANDLE_BINOP_PHI(tarval_rotl, a, b, c, mode);
+	HANDLE_BINOP_PHI((eval_func) tarval_rotl, a, b, c, mode);
 	n = transform_node_shift(n);
 
 	if (is_Rotl(n))
