@@ -275,11 +275,11 @@ static void get_loop_outs_and_info(ir_node *node, void *env)
 
 		/* collect some loop information */
 		if (node_in_loop) {
-			if ( !is_Store(node) )
+			if ( is_Store(node) )
 				++loop_info.stores;
-			if ( !is_Load(node) )
+			if ( is_Load(node) )
 				++loop_info.loads;
-			if ( !is_Call(node) )
+			if ( is_Call(node) )
 				++loop_info.calls;
 			if ( !is_Block(node) && !is_Proj(node) && !is_Phi(node) )
 				++loop_info.opnodes_n;
