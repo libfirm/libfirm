@@ -38,10 +38,6 @@
 #include "firm_types.h"
 #include "ident.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * @defgroup debug    The Firm interface to debugging support.
  *
@@ -212,9 +208,5 @@ void ir_set_debug_retrieve(retrieve_dbg_func func);
  * Retrieve the debug info.
  */
 const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

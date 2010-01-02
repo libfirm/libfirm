@@ -26,10 +26,6 @@
 #ifndef FIRM_BE_MAIN_H
 #define FIRM_BE_MAIN_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include "irarch.h"
 #include "lowering.h"
@@ -137,9 +133,5 @@ int be_is_valid_clobber(const char *clobber);
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
