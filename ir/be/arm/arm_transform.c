@@ -120,7 +120,12 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 }
 
 /**
- * Create an And that will mask all upper bits
+ * Create an And that will zero out upper bits.
+ *
+ * @param dbgi     debug info
+ * @param block    the basic block
+ * @param op       the original node
+ * param src_bits  number of lower bits that will remain
  */
 static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                                    int src_bits)
