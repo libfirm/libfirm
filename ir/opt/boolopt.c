@@ -38,6 +38,7 @@
 #include "irnode_t.h"
 #include "tv.h"
 #include "irpass.h"
+#include "debug.h"
 
 /** Describes a pair of relative conditions lo < hi, lo pnc_lo x, hi pnc_hi x */
 typedef struct cond_pair {
@@ -55,6 +56,8 @@ typedef struct cond_pair {
 typedef struct {
 	int changed;  /**< Set if the graph was changed. */
 } bool_opt_env_t;
+
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
  * Check if tho given nodes, l and r, represent two compares with
@@ -78,7 +81,7 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
 				get_Proj_proj(r) == pn_Cmp_Lg) {
 				/* lo == (lol != NULL) && ro == (rol != NULL) */
 
-				/* TODO: found <null null> */
+				DB((dbg, LEVEL_1, "found <null null>\n"));
 			}
 
 			/* TODO float */
@@ -140,41 +143,41 @@ static ir_node *bool_and(cond_pair* const cpair)
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 	    (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
-		/* x <|<=|== lo | x ==|>=|> hi -> false */
+		/* x <|<=|== lo | x ==|>=|> hi ==> false */
 		ir_node *const t = new_Const(tarval_b_false);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 	           (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
-		/* x <|<=|== lo && x <|<=|!= hi -> x <|<=|== lo */
+		/* x <|<=|== lo && x <|<=|!= hi ==> x <|<=|== lo */
 		return proj_lo;
 	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
 	           (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
-		/* x >=|>|!= lo || x ==|>=|> hi -> x ==|>=|> hi */
+		/* x >=|>|!= lo || x ==|>=|> hi ==> x ==|>=|> hi */
 		return proj_hi;
 	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Ge && pnc_hi == pn_Cmp_Lt) {
-			/* x >= c || x < c + 1 -> x == c */
+			/* x >= c || x < c + 1 ==> x == c */
 			ir_node  *const block = get_nodes_block(cmp_lo);
 			ir_node  *const p = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Eq);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Gt) {
 			if (pnc_hi == pn_Cmp_Lg) {
-				/* x > c || x != c + 1 -> x > c + 1 */
+				/* x > c || x != c + 1 ==> x > c + 1 */
 				ir_node  *const block = get_nodes_block(cmp_hi);
 				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Gt);
 				return p;
 			} else if (pnc_hi == pn_Cmp_Lt) {
-				/* x > c || x < c + 1 -> false */
+				/* x > c || x < c + 1 ==> false */
 				ir_node *const t = new_Const(tarval_b_false);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Le) {
-				/* x > c || x <= c + 1 -> x != c + 1 */
+				/* x > c || x <= c + 1 ==> x != c + 1 */
 				ir_node  *const block = get_nodes_block(cmp_hi);
 				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Eq);
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lt) {
-			/* x != c || c < c + 1 -> x < c */
+			/* x != c || c < c + 1 ==> x < c */
 			ir_node  *const block = get_nodes_block(cmp_lo);
 			ir_node  *const p     = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Lt);
 			return p;
@@ -190,53 +193,92 @@ static ir_node *bool_or(cond_pair *const cpair)
 {
 	ir_node *const cmp_lo  = cpair->cmp_lo;
 	ir_node *const cmp_hi  = cpair->cmp_hi;
-	pn_Cmp   const pnc_lo  = cpair->pnc_lo;
+	pn_Cmp         pnc_lo  = cpair->pnc_lo;
 	pn_Cmp   const pnc_hi  = cpair->pnc_hi;
 	ir_node *const proj_lo = cpair->proj_lo;
 	ir_node *const proj_hi = cpair->proj_hi;
-	tarval  *const tv_lo   = cpair->tv_lo;
-	tarval  *const tv_hi   = cpair->tv_hi;
+	tarval  *      tv_lo   = cpair->tv_lo;
+	tarval  *      tv_hi   = cpair->tv_hi;
 
 	/* Beware of NaN's, we can only check for (ordered) != here (which is Lg, not Ne) */
 	if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
-			(pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
-		/* x >=|>|!= lo | x <|<=|!= hi -> true */
+	    (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
+		/* x >=|>|!= lo | x <|<=|!= hi ==> true */
 		ir_node *const t = new_Const(tarval_b_true);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
-						 (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
-		/* x <|<=|== lo || x <|<=|!= hi -> x <|<=|!= hi */
+	           (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
+		/* x <|<=|== lo || x <|<=|!= hi ==> x <|<=|!= hi */
 		return proj_hi;
 	} else if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
-						 (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
-		/* x >=|>|!= lo || x ==|>=|> hi -> x >=|>|!= lo */
+	           (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
+		/* x >=|>|!= lo || x ==|>=|> hi ==> x >=|>|!= lo */
 		return proj_lo;
 	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Lt && pnc_hi == pn_Cmp_Ge) {
-			/* x < c || x >= c + 1 -> x != c */
+			/* x < c || x >= c + 1 ==> x != c */
 			ir_node  *const block = get_nodes_block(cmp_lo);
 			ir_node  *const p = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Lg);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Le) {
 			if (pnc_hi == pn_Cmp_Eq) {
-				/* x <= c || x == c + 1 -> x <= c + 1 */
+				/* x <= c || x == c + 1 ==> x <= c + 1 */
 				ir_node  *const block = get_nodes_block(cmp_hi);
 				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Le);
 				return p;
 			} else if (pnc_hi == pn_Cmp_Ge) {
-				/* x <= c || x >= c + 1 -> true */
+				/* x <= c || x >= c + 1 ==> true */
 				ir_node *const t = new_Const(tarval_b_true);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Gt) {
-				/* x <= c || x > c + 1 -> x != c + 1 */
+				/* x <= c || x > c + 1 ==> x != c + 1 */
 				ir_node  *const block = get_nodes_block(cmp_hi);
 				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Lg);
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Ge) {
-			/* x == c || x >= c + 1 -> x >= c */
+			/* x == c || x >= c + 1 ==> x >= c */
 			ir_node  *const block = get_nodes_block(cmp_lo);
 			ir_node  *const p     = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Ge);
+			return p;
+		}
+	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le) &&
+		(pnc_hi == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ge)) {
+		/* works for two-complements only */
+		/* x <|\= lo  || x >|>= hi ==> (x - lo) >u|>=u (hi-lo) */
+		if (pnc_lo == pn_Cmp_Lt) {
+			/* must convert to <= */
+			ir_mode *mode = get_tarval_mode(tv_lo);
+			tarval *n = tarval_sub(tv_lo, get_mode_one(mode), NULL);
+			if (n != tarval_bad && tarval_cmp(n, tv_lo) == pn_Cmp_Lt) {
+				/* no overflow */
+				tv_lo = n;
+				pnc_lo = pn_Cmp_Le;
+			}
+		}
+		if (pnc_lo == pn_Cmp_Le) {
+			/* all fine */
+			ir_node *const block = get_nodes_block(cmp_hi);
+			ir_node *      x     = get_Cmp_left(cmp_hi);
+			ir_mode *      mode  = get_irn_mode(x);
+			ir_node *sub, *cmp, *c, *subc, *p;
+
+			if (mode_is_signed(mode)) {
+				/* convert to unsigned */
+				mode = find_unsigned_mode(mode);
+				if (mode == NULL)
+					return NULL;
+				x     = new_r_Conv(block, x, mode);
+				tv_lo = tarval_convert_to(tv_lo, mode);
+				tv_hi = tarval_convert_to(tv_hi, mode);
+				if (tv_lo == tarval_bad || tv_hi == tarval_bad)
+					return NULL;
+			}
+			c    = new_Const(tv_lo);
+			sub  = new_r_Sub(block, x, c, mode);
+			subc = new_r_Sub(block, new_Const(tv_hi), c, mode);
+			cmp  = new_r_Cmp(block, sub, subc);
+			p    = new_r_Proj(block, cmp, mode_b, pnc_hi);
 			return p;
 		}
 	}
@@ -393,13 +435,17 @@ static void remove_block_input(ir_node *block, int idx)
  * Under the preposition that we have a chain of blocks from
  * from_block to to_block, collapse them all into to_block.
  */
-static void move_nodes_to_block(ir_node *from_block, ir_node *to_block) {
+static void move_nodes_to_block(ir_node *jmp, ir_node *to_block) {
+	ir_node *new_jmp = NULL;
 	ir_node *block, *next_block;
 
-	for (block = from_block; block != to_block; block = next_block) {
-		next_block = get_Block_cfgpred(block, 0);
+	for (block = get_nodes_block(jmp); block != to_block; block = next_block) {
+		new_jmp = get_Block_cfgpred(block, 0);
+		next_block = get_nodes_block(new_jmp);
 		exchange(block, to_block);
 	}
+	if (new_jmp)
+		exchange(jmp, new_jmp);
 }
 
 /**
@@ -425,10 +471,10 @@ static void find_cf_and_or_walker(ir_node *block, void *ctx)
 	int n_cfgpreds = get_Block_n_cfgpreds(block);
 	bool_opt_env_t *env = ctx;
 
+restart:
 	if (n_cfgpreds < 2)
 		return;
 
-restart:
 	for (low_idx = 0; low_idx < n_cfgpreds; ++low_idx) {
 		ir_node      *lower_block;
 		ir_node      *lower_cf;
@@ -538,6 +584,7 @@ restart:
 			exchange(lower_block, upper_block);
 
 			remove_block_input(block, up_idx);
+			--n_cfgpreds;
 
 			/* the optimisations expected the true case to jump */
 			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
@@ -546,7 +593,7 @@ restart:
 			}
 			set_Cond_selector(cond, replacement);
 
-			ir_fprintf(stderr, "replaced (ub %+F)\n", upper_block);
+			DB((dbg, LEVEL_1, "%+F: replaced (ub %+F)\n", current_ir_graph, upper_block));
 			goto restart;
 		}
 	}
@@ -555,6 +602,9 @@ restart:
 void opt_bool(ir_graph *const irg)
 {
 	bool_opt_env_t env;
+
+	/* register a debug mask */
+	FIRM_DBG_REGISTER(dbg, "firm.opt.bool");
 
 	/* works better with one return block only */
 	normalize_one_return(irg);
