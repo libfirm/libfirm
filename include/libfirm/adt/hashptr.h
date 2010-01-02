@@ -64,6 +64,11 @@ static inline unsigned firm_fnv_hash_str(const char *data)
  */
 #define HASH_PTR(ptr)    ((unsigned)(((char *) (ptr) - (char *)0) >> 3))
 
+static inline unsigned hash_ptr(const void *ptr)
+{
+	return HASH_PTR(ptr);
+}
+
 /**
  * Hash a string.
  * @param str The string (can be const).

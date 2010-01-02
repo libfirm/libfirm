@@ -673,11 +673,10 @@ typedef enum {
 	tpo_enumeration,         /**< An enumeration type. */
 	tpo_pointer,             /**< A pointer type. */
 	tpo_primitive,           /**< A primitive type. */
-	tpo_id,                  /**< Special Id tag used for type replacement. */
 	tpo_code,                /**< a piece of code (a basic block) */
 	tpo_none,                /**< Special type for the None type. */
 	tpo_unknown,             /**< Special code for the Unknown type. */
-	tpo_max                  /* not a type opcode */
+	tpo_last = tpo_unknown   /* not a type opcode */
 } tp_opcode;
 
 /**
@@ -686,7 +685,7 @@ typedef enum {
  * this is only the kind name, an enum for case-switching and some
  * internal values.
  *
- * @see  get_tpop_name(), get_tpop_code(), get_tpop_ident()
+ * @see  get_tpop_name(), get_tpop_code()
  */
 typedef struct tp_op tp_op;
 
@@ -706,14 +705,6 @@ const char *get_tpop_name(const tp_op *op);
  * @return the enum.
  */
 tp_opcode get_tpop_code(const tp_op *op);
-
-/**
- * Returns the ident for the type opcode.
- *
- * @param op   The type opcode to get the ident from.
- * @return The ident.
- */
-ident *get_tpop_ident(const tp_op *op);
 
 /**
  * This type opcode marks that the corresponding type is a class type.
@@ -2562,5 +2553,14 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env);
  * anymore have the final property set.
  */
 void types_calc_finalization(void);
+
+/**
+ * Checks if a type already exists in the program and returns the existing
+ * type.
+ * @param type             The type to check
+ * @param free_from_obst   free type from type obst (only legal if nothing
+ *                         else was allocated since the type allocation)
+ */
+ir_type *identify_type(ir_type *type, int free_from_obst);
 
 #endif

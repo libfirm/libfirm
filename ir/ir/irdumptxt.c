@@ -1286,7 +1286,6 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 		}
 		break;
 
-	case tpo_id:
 	case tpo_none:
 	case tpo_unknown:
 		fprintf(F, "\n");

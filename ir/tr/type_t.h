@@ -119,12 +119,6 @@ typedef struct {
 	ir_type *base_type;  /**< For bitfield types: The base primitive type, NULL else. */
 } pri_attr;
 
-
-/*
-typedef struct {        * No private attr, must be smaller than others! *
-} id_attr;
-*/
-
 /** General type attributes. */
 typedef union {
 	cls_attr ca;      /**< Attributes of a class type */

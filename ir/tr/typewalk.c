@@ -209,13 +209,11 @@ static void do_type_walk(type_or_ent tore,
 
 		case tpo_code:
 		case tpo_primitive:
-		case tpo_id:
 		case tpo_none:
 		case tpo_unknown:
 			/* a leave. */
 			break;
 		case tpo_uninitialized:
-		case tpo_max:
 			assert(0 && "Faulty type");
 			break;
 		}
@@ -400,7 +398,6 @@ static void type_walk_s2s_2(type_or_ent tore,
 			case tpo_enumeration:
 			case tpo_pointer:
 			case tpo_primitive:
-			case tpo_id:
 				/* dont care */
 				break;
 			default:
@@ -494,7 +491,6 @@ type_walk_super_2(type_or_ent tore,
 			case tpo_enumeration:
 			case tpo_pointer:
 			case tpo_primitive:
-			case tpo_id:
 				/* don't care */
 				break;
 			default:
@@ -615,7 +611,6 @@ void walk_types_entities(ir_type *tp,
 	case tpo_enumeration:
 	case tpo_pointer:
 	case tpo_primitive:
-	case tpo_id:
 	default:
 		break;
 	}
