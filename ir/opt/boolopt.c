@@ -153,28 +153,32 @@ static ir_node *bool_and(cond_pair* const cpair)
 	tarval  *      tv_hi   = cpair->tv_hi;
 	ir_mode *      mode    = cpair->lo_mode;
 
-	if (mode_is_reference(mode) && pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Eq &&
+	if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Eq &&
 	    tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
 	    mode == get_tarval_mode(tv_hi)) {
 		/* p == NULL && q == NULL ==> (p&q) == NULL) */
 		ir_node *block, *lol, *hil, *cmp, *c, *p;
 
-		mode = find_unsigned_mode(mode);
-		if (! mode)
-			return NULL;
-		tv_lo = tarval_convert_to(tv_lo, mode);
-		if (tv_lo == tarval_bad)
-			return NULL;
-		block = get_nodes_block(cmp_lo);
-		lol   = get_Cmp_left(cmp_lo);
-		lol   = new_r_Conv(block, lol, mode);
-		hil   = get_Cmp_left(cmp_hi);
-		hil   = new_r_Conv(block, hil, mode);
-		p     = new_r_And(block, lol, hil, mode);
-		c     = new_Const(tv_lo);
-		cmp   = new_r_Cmp(block, p, c);
-		p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Eq);
-		return p;
+		if (mode_is_reference(mode)) {
+			mode = find_unsigned_mode(mode);
+			if (! mode)
+				return NULL;
+			tv_lo = tarval_convert_to(tv_lo, mode);
+			if (tv_lo == tarval_bad)
+				return NULL;
+		}
+		if (mode_is_int(mode)) {
+			block = get_nodes_block(cmp_lo);
+			lol   = get_Cmp_left(cmp_lo);
+			lol   = new_r_Conv(block, lol, mode);
+			hil   = get_Cmp_left(cmp_hi);
+			hil   = new_r_Conv(block, hil, mode);
+			p     = new_r_And(block, lol, hil, mode);
+			c     = new_Const(tv_lo);
+			cmp   = new_r_Cmp(block, p, c);
+			p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Eq);
+			return p;
+		}
 	}
 
 	/* TODO: for now reject float modes */
@@ -282,28 +286,32 @@ static ir_node *bool_or(cond_pair *const cpair)
 	tarval  *      tv_hi   = cpair->tv_hi;
 	ir_mode *      mode    = cpair->lo_mode;
 
-	if (mode_is_reference(mode) && pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lg &&
+	if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lg &&
 		tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
 		mode == get_tarval_mode(tv_hi)) {
 		/* p != NULL || q != NULL ==> (p|q) != NULL) */
 		ir_node *block, *lol, *hil, *cmp, *c, *p;
 
-		mode = find_unsigned_mode(mode);
-		if (! mode)
-			return NULL;
-		tv_lo = tarval_convert_to(tv_lo, mode);
-		if (tv_lo == tarval_bad)
-			return NULL;
-		block = get_nodes_block(cmp_lo);
-		lol   = get_Cmp_left(cmp_lo);
-		lol   = new_r_Conv(block, lol, mode);
-		hil   = get_Cmp_left(cmp_hi);
-		hil   = new_r_Conv(block, hil, mode);
-		p     = new_r_Or(block, lol, hil, mode);
-		c     = new_Const(tv_lo);
-		cmp   = new_r_Cmp(block, p, c);
-		p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Lg);
-		return p;
+		if (mode_is_reference(mode)) {
+			mode = find_unsigned_mode(mode);
+			if (! mode)
+				return NULL;
+			tv_lo = tarval_convert_to(tv_lo, mode);
+			if (tv_lo == tarval_bad)
+				return NULL;
+		}
+		if (mode_is_int(mode)) {
+			block = get_nodes_block(cmp_lo);
+			lol   = get_Cmp_left(cmp_lo);
+			lol   = new_r_Conv(block, lol, mode);
+			hil   = get_Cmp_left(cmp_hi);
+			hil   = new_r_Conv(block, hil, mode);
+			p     = new_r_Or(block, lol, hil, mode);
+			c     = new_Const(tv_lo);
+			cmp   = new_r_Cmp(block, p, c);
+			p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Lg);
+			return p;
+		}
 	}
 
 	/* TODO: for now reject float modes */
