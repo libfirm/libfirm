@@ -104,6 +104,7 @@ static void do_type_walk(type_or_ent tore,
 			return;
 		break;
 	case k_type:
+		tp = tore.typ;
 		if (type_visited(tp))
 			return;
 		break;
