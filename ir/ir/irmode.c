@@ -278,7 +278,8 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
 	mode_tmpl.sort         = sort;
 	mode_tmpl.size         = bit_size;
 	mode_tmpl.sign         = sign ? 1 : 0;
-	mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
+	mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number ||
+	                          mode_tmpl.sort == irms_reference) ? modulo_shift : 0;
 	mode_tmpl.vector_elem  = 1;
 	mode_tmpl.arithmetic   = arithmetic;
 	mode_tmpl.link         = NULL;
@@ -807,7 +808,7 @@ void init_mode(void) {
 	newmode.name         = new_id_from_chars("P", 1);
 	newmode.sign         = 0;
 	newmode.size         = 32;
-	newmode.modulo_shift = 0;
+	newmode.modulo_shift = 32;
 	newmode.eq_signed    = mode_Is;
 	newmode.eq_unsigned  = mode_Iu;
 	mode_P               = register_mode(&newmode);
