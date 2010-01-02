@@ -32,22 +32,19 @@
 #include "entity_t.h"
 
 merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
-
 merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;
 
-snprint_dbg_func *__dbg_info_snprint   = (snprint_dbg_func *)0;
-
-void dbg_init( merge_pair_func *mpf, merge_sets_func *msf, snprint_dbg_func *snprint_dbg )
+void dbg_init(merge_pair_func *mpf, merge_sets_func *msf)
 {
 	__dbg_info_merge_pair = mpf ? mpf : default_dbg_info_merge_pair;
 	__dbg_info_merge_sets = msf ? msf : default_dbg_info_merge_sets;
-	__dbg_info_snprint    = snprint_dbg;
-}  /* dbg_init */
+}
 
 /*
  * Converts a debug_action into a string.
  */
-const char *dbg_action_2_str(dbg_action a) {
+const char *dbg_action_2_str(dbg_action a)
+{
 #define CASE(a) case a: return #a
 
 	switch (a) {
@@ -79,19 +76,20 @@ const char *dbg_action_2_str(dbg_action a) {
 		return NULL;
 	}
 #undef CASE
-}  /* dbg_action_2_str */
+}
 
-
-void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info) {
+void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info)
+{
 	dbg_info *new_db = get_irn_dbg_info(nw);
 	(void) info;
 	if (new_db == NULL)
 		set_irn_dbg_info(nw, get_irn_dbg_info(old));
-}  /* default_dbg_info_merge_pair */
+}
 
 void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
                                  ir_node **old_nodes, int n_old_nodes,
-                                 dbg_action info) {
+                                 dbg_action info)
+{
 	(void) info;
 	if (n_old_nodes == 1) {
 		dbg_info *old_db = get_irn_dbg_info(old_nodes[0]);
@@ -101,21 +99,36 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 			if (get_irn_dbg_info(new_nodes[i]) == NULL)
 				set_irn_dbg_info(new_nodes[i], old_db);
 	}
-}  /* default_dbg_info_merge_sets */
+}
 
 /** The debug info retriever function. */
 static retrieve_dbg_func retrieve_dbg = NULL;
 
 /* Sets a debug info retriever. */
-void ir_set_debug_retrieve(retrieve_dbg_func func) {
+void ir_set_debug_retrieve(retrieve_dbg_func func)
+{
 	retrieve_dbg = func;
 }
 
 /* Retrieve the debug info. */
-const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line) {
+const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line)
+{
 	if (retrieve_dbg)
 		return retrieve_dbg(dbg, line);
 
 	*line = 0;
 	return NULL;
+}
+
+void ir_dbg_info_snprint(char *buf, size_t bufsize, const dbg_info *dbg)
+{
+	unsigned    line;
+	const char *source = ir_retrieve_dbg_info(dbg, &line);
+
+	if (source == NULL) {
+		assert(bufsize > 0);
+		buf[0] = 0;
+		return;
+	}
+	snprintf(buf, bufsize, "%s:%u", source, line);
 }

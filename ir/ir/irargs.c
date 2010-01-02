@@ -90,11 +90,7 @@ static int firm_emit_dbg(lc_appendable_t *app,
 	ir_node *irn = arg->v_ptr;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
-	buf[0] = '\0';
-	if (dbg && __dbg_info_snprint) {
-		if (__dbg_info_snprint(buf, sizeof(buf), dbg) <= 0)
-			buf[0] = '\0';
-	}
+	ir_dbg_info_snprint(buf, sizeof(buf), dbg);
 	return lc_arg_append(app, occ, buf, strlen(buf));
 }
 

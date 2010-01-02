@@ -1430,10 +1430,9 @@ static void print_dbg_info(FILE *F, dbg_info *dbg)
 {
 	char buf[1024];
 
-	if (__dbg_info_snprint) {
-		buf[0] = '\0';
-		if (__dbg_info_snprint(buf, sizeof(buf), dbg) > 0)
-			fprintf(F, " info3: \"%s\"\n", buf);
+	ir_dbg_info_snprint(buf, sizeof(buf), dbg);
+	if (buf[0] != 0) {
+		fprintf(F, " info3: \"%s\"\n", buf);
 	}
 }
 

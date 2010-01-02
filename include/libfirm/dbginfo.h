@@ -120,24 +120,7 @@ typedef void merge_pair_func(ir_node *new_node, ir_node *old_node, dbg_action ac
 typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_node **old_node_array, int old_num_entries, dbg_action action);
 
 /**
- * The type of the debug info to human readable string function.
- *
- * @param buf    pointer to a buffer that will hold the info
- * @param len    length of the buffer
- * @param dbg    the debug info
- *
- * @return  Number of written characters to the buffer.
- *
- * @see dbg_init()
- */
-typedef unsigned snprint_dbg_func(char *buf, unsigned len, const dbg_info *dbg);
-
-/**
  *  Initializes the debug support.
- *
- *  @param dbg_info_merge_pair   see function description
- *  @param dbg_info_merge_sets   see function description
- *  @param snprint_dbg           see function description
  *
  *  This function takes pointers to two functions that merge the
  *  debug information when a
@@ -158,43 +141,18 @@ typedef unsigned snprint_dbg_func(char *buf, unsigned len, const dbg_info *dbg);
  *
  *   Further both functions pass an enumeration indicating the action
  *   performed by the transformation, e.g. the kind of optimization performed.
- *
- * The third argument snprint_dbg is called to convert a debug info into a human readable string.
- * This string is the dumped in the dumper functions.
- *
- * Note that if NULL is passed for dbg_info_merge_pair or dbg_info_merge_sets, the default
- * implementations default_dbg_info_merge_pair() and default_dbg_info_merge_sets() are used.
- * NULL passed for snprint_dbg means no output.
  */
-void dbg_init(merge_pair_func *dbg_info_merge_pair, merge_sets_func *dbg_info_merge_sets, snprint_dbg_func *snprint_dbg);
-
-/**
- * The default merge_pair_func implementation, simply copies the debug info
- * from the old Firm node to the new one if the new one does not have debug info yet.
- *
- * @param nw    The new Firm node.
- * @param old   The old Firm node.
- * @param info  The action that cause old node to be replaced by new one.
- */
-void default_dbg_info_merge_pair(ir_node *nw, ir_node *old, dbg_action info);
-
-/**
- * The default merge_sets_func implementation.  If n_old_nodes is equal 1, copies
- * the debug info from the old node to all new ones (if they do not have one), else does nothing.
- *
- * @param new_nodes     An array of new Firm nodes.
- * @param n_new_nodes   The length of the new_nodes array.
- * @param old_nodes     An array of old (replaced) Firm nodes.
- * @param n_old_nodes   The length of the old_nodes array.
- * @param info          The action that cause old node to be replaced by new one.
- */
-void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
-                            ir_node **old_nodes, int n_old_nodes,
-                            dbg_action info);
+void dbg_init(merge_pair_func *dbg_info_merge_pair,
+              merge_sets_func *dbg_info_merge_sets);
 
 /** @} */
 
-/** The type of the debug info retriever function. */
+/**
+ * The type of the debug info retriever function.
+ *  When given a dbg_info returns the name (usually the filename) of the
+ *  compilation unit defining it. @p line is set to the line number of the
+ *  definition.
+ */
 typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
 
 /**
