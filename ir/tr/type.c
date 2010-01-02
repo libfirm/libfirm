@@ -136,7 +136,6 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, ident *name,
 	ir_type *res;
 	int node_size;
 
-	assert(type_op != type_id);
 	assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
 	node_size = offsetof(ir_type, attr) +  type_op->attr_size;
@@ -876,7 +875,7 @@ ir_type *get_class_subtype(ir_type *clss, int pos)
 {
 	assert(clss && (clss->type_op == type_class));
 	assert(pos >= 0 && pos < get_class_n_subtypes(clss));
-	return clss->attr.ca.subtypes[pos] = skip_tid(clss->attr.ca.subtypes[pos]);
+	return clss->attr.ca.subtypes[pos];
 }
 
 int get_class_subtype_index(ir_type *clss, const ir_type *subclass)
@@ -942,7 +941,7 @@ ir_type *get_class_supertype(ir_type *clss, int pos)
 {
 	assert(clss && (clss->type_op == type_class));
 	assert(pos >= 0 && pos < get_class_n_supertypes(clss));
-	return clss->attr.ca.supertypes[pos] = skip_tid(clss->attr.ca.supertypes[pos]);
+	return clss->attr.ca.supertypes[pos];
 }
 
 void set_class_supertype(ir_type *clss, ir_type *supertype, int pos)
@@ -1303,7 +1302,7 @@ ir_type *get_method_param_type(ir_type *method, int pos)
 	assert(pos >= 0 && pos < get_method_n_params(method));
 	res = method->attr.ma.params[pos].tp;
 	assert(res != NULL && "empty method param type");
-	return method->attr.ma.params[pos].tp = skip_tid(res);
+	return res;
 }
 
 void set_method_param_type(ir_type *method, int pos, ir_type *tp)
@@ -1393,7 +1392,7 @@ ir_type *get_method_res_type(ir_type *method, int pos)
 	assert(pos >= 0 && pos < get_method_n_ress(method));
 	res = method->attr.ma.res_type[pos].tp;
 	assert(res != NULL && "empty method return type");
-	return method->attr.ma.res_type[pos].tp = skip_tid(res);
+	return res;
 }
 
 void  set_method_res_type(ir_type *method, int pos, ir_type *tp)
@@ -1815,7 +1814,7 @@ void set_array_element_type(ir_type *array, ir_type *tp)
 ir_type *get_array_element_type(ir_type *array)
 {
 	assert(array && (array->type_op == type_array));
-	return array->attr.aa.element_type = skip_tid(array->attr.aa.element_type);
+	return array->attr.aa.element_type;
 }
 
 void set_array_element_entity(ir_type *array, ir_entity *ent)
@@ -1982,7 +1981,7 @@ void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
 ir_type *get_pointer_points_to_type(ir_type *pointer)
 {
 	assert(pointer && (pointer->type_op == type_pointer));
-	return pointer->attr.pa.points_to = skip_tid(pointer->attr.pa.points_to);
+	return pointer->attr.pa.points_to;
 }
 
 int (is_Pointer_type)(const ir_type *pointer)

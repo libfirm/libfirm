@@ -41,7 +41,7 @@
 #include "array.h"
 
 /** Adds mode to the list of modes in irp. */
-void  add_irp_mode(ir_mode *mode);
+void add_irp_mode(ir_mode *mode);
 
 /* inline functions */
 static inline ir_type *
@@ -50,7 +50,7 @@ _get_segment_type(ir_segment_t segment)
 	ir_type *type;
 
 	assert(segment < IR_SEGMENT_COUNT);
-	type                        = skip_tid(irp->segment_types[segment]);
+	type                        = irp->segment_types[segment];
 	irp->segment_types[segment] = type;
 	return type;
 }
@@ -67,7 +67,7 @@ _get_tls_type(void) {
 
 static inline int
 _get_irp_n_irgs(void) {
-	assert (irp && irp->graphs);
+	assert(irp && irp->graphs);
 	if (get_visit_pseudo_irgs()) return get_irp_n_allirgs();
 	return ARR_LEN(irp->graphs);
 }
@@ -82,38 +82,38 @@ _get_irp_irg(int pos){
 
 static inline int
 _get_irp_n_types(void) {
-	assert (irp && irp->types);
+	assert(irp && irp->types);
 	return ARR_LEN(irp->types);
 }
 
 static inline ir_type *
 _get_irp_type(int pos) {
-	assert (irp && irp->types);
+	assert(irp->types);
 	/* Don't set the skip_tid result so that no double entries are generated. */
-	return skip_tid(irp->types[pos]);
+	return irp->types[pos];
 }
 
 static inline int
 _get_irp_n_modes(void) {
-	assert (irp && irp->modes);
+	assert(irp->modes);
 	return ARR_LEN(irp->modes);
 }
 
 static inline ir_mode *
 _get_irp_mode(int pos) {
-	assert (irp && irp->modes);
+	assert(irp && irp->modes);
 	return irp->modes[pos];
 }
 
 static inline int
 _get_irp_n_opcodes(void) {
-	assert (irp && irp->opcodes);
+	assert(irp && irp->opcodes);
 	return ARR_LEN(irp->opcodes);
 }
 
 static inline ir_op *
 _get_irp_opcode(int pos) {
-	assert (irp && irp->opcodes);
+	assert(irp && irp->opcodes);
 	return irp->opcodes[pos];
 }
 

@@ -209,7 +209,7 @@ _set_entity_ident(ir_entity *ent, ident *id) {
 static inline ir_type *
 _get_entity_owner(ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
-	return ent->owner = skip_tid(ent->owner);
+	return ent->owner;
 }
 
 static inline ident *
@@ -236,7 +236,7 @@ _get_entity_ld_name(ir_entity *ent) {
 static inline ir_type *
 _get_entity_type(ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
-	return ent->type = skip_tid(ent->type);
+	return ent->type;
 }
 
 static inline void

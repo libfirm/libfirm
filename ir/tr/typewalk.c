@@ -104,7 +104,6 @@ static void do_type_walk(type_or_ent tore,
 			return;
 		break;
 	case k_type:
-		tp = skip_tid(tore.typ);
 		if (type_visited(tp))
 			return;
 		break;
@@ -350,11 +349,6 @@ static void type_walk_s2s_2(type_or_ent tore,
 		if (entity_visited(tore.ent)) return;
 		break;
 	case k_type:
-		if (type_id == get_type_tpop(tore.typ)) {
-			cont.typ = skip_tid(tore.typ);
-			type_walk_s2s_2(cont, pre, post, env);
-			return;
-		}
 		if (type_visited(tore.typ)) return;
 		break;
 	default:
@@ -378,7 +372,6 @@ static void type_walk_s2s_2(type_or_ent tore,
 					/* execute pre method */
 					if (pre)
 						pre(tore, env);
-					tp = skip_tid(tp);
 
 					n = get_class_n_subtypes(tp);
 					for (i = 0; i < n; ++i) {
@@ -447,11 +440,6 @@ type_walk_super_2(type_or_ent tore,
 			return;
 		break;
 	case k_type:
-		if (type_id == get_type_tpop(tore.typ)) {
-			cont.typ = skip_tid(tore.typ);
-			type_walk_super_2(cont, pre, post, env);
-			return;
-		}
 		if (type_visited(tore.typ))
 			return;
 		break;
@@ -471,7 +459,6 @@ type_walk_super_2(type_or_ent tore,
 					/* execute pre method */
 					if (pre)
 						pre(tore, env);
-					tp = skip_tid(tp);
 
 					n = get_class_n_supertypes(tp);
 					for (i = 0; i < n; ++i) {
@@ -550,7 +537,6 @@ class_walk_s2s_2(ir_type *tp,
 	if (pre)
 		pre(tp, env);
 
-	tp = skip_tid(tp);
 	n = get_class_n_subtypes(tp);
 	for (i = 0; i < n; ++i) {
 		class_walk_s2s_2(get_class_subtype(tp, i), pre, post, env);

@@ -795,26 +795,6 @@ extern const tp_op *type_primitive;
 const tp_op *get_tpop_primitive(void);
 
 /**
- * This type opcode is an auxiliary opcode dedicated to support transformations
- * of the type structure.
- *
- * If a type is changed to another type with another
- * opcode the new type will be allocated with new memory.  All nodes refering
- * to the old type need to be changed to refer to the new one.  This is simplified
- * by turning the old type into an id type that merely forwards to the new type
- * that now replaces the old one.
- * type_ids should never be visible out of the type module.  All access routines
- * should automatically check for type_id and eventually follow the forward in
- * type_id.  Two types are exchanged by a call to exchange_types.
- * If a type_id is visible externally report this as bug.  If it is assured that
- * this never happens this extern variable can be moved to tpop_t.h.
- * This struct is dynamically allocated but constant for the lifetime
- * of the library.
- */
-extern const tp_op *type_id;
-const tp_op *get_tpop_id(void);
-
-/**
  * The code type is used to mark pieces of code (basic blocks)
  */
 extern const tp_op *tpop_code;
@@ -1101,32 +1081,6 @@ int tr_vrfy(void);
 #define TR_VRFY()	tr_vrfy()
 #endif
 
-/** Replaces one type by the other.
- *
- *  Old type is replaced by new_type.  All references to old_type
- *  now point to new_type.  The memory for the old type is destroyed,
- *  but still used.  Therefore it is not freed.
- *  All referenced to this memory will be lost after a certain while.
- *  An exception is the list of types in irp (irprog.h).
- *  In the future there might be a routine to recover the memory, but
- *  this will be at considerable runtime cost.
- *
- *  @param old_type  - The old type that shall be replaced by the new type.
- *  @param new_type  - The new type that will replace old_type.
- *
- */
-void exchange_types(ir_type *old_type, ir_type *new_type);
-
-/** Skip id types until a useful type is reached.
- *
- *  @param tp - A type of arbitrary kind.
- *
- *  @return
- *    tp if it is not an id type.
- *    If tp is an id type returns the real type it stands for.
- */
-ir_type *skip_tid(ir_type *tp);
-
 /**
  * @page type   representation of types
  *
@@ -1147,8 +1101,6 @@ ir_type *skip_tid(ir_type *tp);
  *  on the level of the programming language, modes at the level of
  *  the target processor.
  */
-
-#include "typerep.h"
 
 /** Frees all entities associated with a type.
  *  Does not free the array entity.
@@ -1372,7 +1324,7 @@ int is_type(const void *thing);
  *      - the same element type
  *    - they are enumeration types and have the same enumerator names
  *    - they are pointer types and have the identical points_to type
- *      (i.e., the same C-struct to represent the type, type_id is skipped.
+ *      (i.e., the same C-struct to represent the type.
  *       This is to avoid endless recursions; with pointer types cyclic
  *       type graphs are possible.)
  */
@@ -2435,26 +2387,6 @@ ir_type *mature_type_free(ir_type *tp);
  */
 ir_type *mature_type_free_entities(ir_type *tp);
 
-/**
- * The interface type for the type identify module;
- */
-struct type_identify_if_t {
-	compare_types_func_t *cmp;    /**< The function that should be used to compare two types.
-	                                   If NULL, compare_strict() will be used. */
-	hash_types_func_t *hash;      /**< The function that should be used to calculate a hash
-	                                   value of a type. If NULL, hash_name() will be used. */
-};
-
-/**
- * Initialise the type identifier module.
- *
- * @param ti_if    The interface functions for this module.
- *
- * If the parameter ti_if is NULL, the default functions compare_strict() and
- * firm_hash_name() will be used.
- */
-void init_type_identify(type_identify_if_t *ti_if);
-
 /** A data type to treat types and entities as the same. */
 typedef union {
 	ir_type   *typ;   /**< points to a type */
@@ -2553,14 +2485,5 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env);
  * anymore have the final property set.
  */
 void types_calc_finalization(void);
-
-/**
- * Checks if a type already exists in the program and returns the existing
- * type.
- * @param type             The type to check
- * @param free_from_obst   free type from type obst (only legal if nothing
- *                         else was allocated since the type allocation)
- */
-ir_type *identify_type(ir_type *type, int free_from_obst);
 
 #endif

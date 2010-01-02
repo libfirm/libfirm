@@ -127,8 +127,6 @@ void ir_init(const firm_parameter_t *param)
 	firm_init_type(def_params.builtin_dbg, def_params.cc_mask);
 	/* initialize the entity module */
 	firm_init_entity();
-	/* allocate a hash table. */
-	init_type_identify(def_params.ti_if);
 	/* class cast optimization */
 	firm_init_class_casts_opt();
 	/* memory disambiguation */

@@ -520,7 +520,6 @@ symconst_attr *get_irn_symconst_attr(ir_node *node) {
 
 call_attr *get_irn_call_attr(ir_node *node) {
 	assert(is_Call(node));
-	node->attr.call.type = skip_tid(node->attr.call.type);
 	return &node->attr.call;
 }
 
@@ -1146,7 +1145,6 @@ int (is_Const_all_one)(const ir_node *node) {
 ir_type *
 get_Const_type(ir_node *node) {
 	assert(is_Const(node));
-	node->attr.con.tp = skip_tid(node->attr.con.tp);
 	return node->attr.con.tp;
 }
 
@@ -1180,7 +1178,7 @@ get_SymConst_type(const ir_node *node) {
 	ir_node *irn = (ir_node *)node;
 	assert(is_SymConst(node) &&
 	       (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
-	return irn->attr.symc.sym.type_p = skip_tid(irn->attr.symc.sym.type_p);
+	return irn->attr.symc.sym.type_p;
 }
 
 void
@@ -1239,7 +1237,6 @@ set_SymConst_symbol(ir_node *node, union symconst_symbol sym) {
 ir_type *
 get_SymConst_value_type(ir_node *node) {
 	assert(is_SymConst(node));
-	if (node->attr.symc.tp) node->attr.symc.tp = skip_tid(node->attr.symc.tp);
 	return node->attr.symc.tp;
 }
 
@@ -1377,7 +1374,7 @@ set_Call_param(ir_node *node, int pos, ir_node *param) {
 ir_type *
 get_Call_type(ir_node *node) {
 	assert(is_Call(node));
-	return node->attr.call.type = skip_tid(node->attr.call.type);
+	return node->attr.call.type;
 }
 
 void
@@ -1450,7 +1447,7 @@ set_Builtin_param(ir_node *node, int pos, ir_node *param) {
 ir_type *
 get_Builtin_type(ir_node *node) {
 	assert(is_Builtin(node));
-	return node->attr.builtin.type = skip_tid(node->attr.builtin.type);
+	return node->attr.builtin.type;
 }
 
 void
@@ -1653,7 +1650,6 @@ void set_Conv_strict(ir_node *node, int strict_flag) {
 ir_type *
 get_Cast_type(ir_node *node) {
 	assert(is_Cast(node));
-	node->attr.cast.type = skip_tid(node->attr.cast.type);
 	return node->attr.cast.type;
 }
 
@@ -1979,7 +1975,7 @@ set_Alloc_size(ir_node *node, ir_node *size) {
 ir_type *
 get_Alloc_type(ir_node *node) {
 	assert(is_Alloc(node));
-	return node->attr.alloc.type = skip_tid(node->attr.alloc.type);
+	return node->attr.alloc.type;
 }
 
 void
@@ -2040,7 +2036,7 @@ set_Free_size(ir_node *node, ir_node *size) {
 ir_type *
 get_Free_type(ir_node *node) {
 	assert(is_Free(node));
-	return node->attr.free.type = skip_tid(node->attr.free.type);
+	return node->attr.free.type;
 }
 
 void
@@ -2373,7 +2369,7 @@ void set_CopyB_src(ir_node *node, ir_node *src) {
 
 ir_type *get_CopyB_type(ir_node *node) {
 	assert(is_CopyB(node));
-	return node->attr.copyb.type = skip_tid(node->attr.copyb.type);
+	return node->attr.copyb.type;
 }
 
 void set_CopyB_type(ir_node *node, ir_type *data_type) {
@@ -2385,7 +2381,7 @@ void set_CopyB_type(ir_node *node, ir_type *data_type) {
 ir_type *
 get_InstOf_type(ir_node *node) {
 	assert(node->op == op_InstOf);
-	return node->attr.instof.type = skip_tid(node->attr.instof.type);
+	return node->attr.instof.type;
 }
 
 void

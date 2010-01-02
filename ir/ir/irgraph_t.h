@@ -260,8 +260,8 @@ _set_irg_entity(ir_graph *irg, ir_entity *ent) {
 
 static inline ir_type *
 _get_irg_frame_type(ir_graph *irg) {
-	assert(irg && irg->frame_type);
-	return irg->frame_type = skip_tid(irg->frame_type);
+	assert(irg->frame_type);
+	return irg->frame_type;
 }
 
 static inline void
