@@ -158,7 +158,6 @@ static HRESULT format_tp_op(DEBUGHELPER *pHelper, const void *addr, char *pResul
   Y(enumeration, "enum");
   Y(pointer, "ptr");
   Y(primitive, "prim");
-  X(id);
   X(none);
   X(unknown);
   default:
