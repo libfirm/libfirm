@@ -83,8 +83,6 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
 			    pnc_l == pnc_r &&
 			    (pnc_l == pn_Cmp_Lg || pnc_l == pn_Cmp_Eq)) {
 				/* lo == (lol !=|== NULL) && ro == (rol !=|== NULL) */
-				DB((dbg, LEVEL_1, "found <null null>\n"));
-
 				res->cmp_lo  = lo;
 				res->cmp_hi  = ro;
 				res->pnc_lo  = pnc_l;
@@ -141,7 +139,7 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
 /**
  * Handle (lo pnc_lo x) AND (hi pnc_hi x)
  */
-static ir_node *bool_and(cond_pair* const cpair)
+static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 {
 	ir_node *const cmp_lo  = cpair->cmp_lo;
 	ir_node *const cmp_hi  = cpair->cmp_hi;
@@ -157,7 +155,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 	    tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
 	    mode == get_tarval_mode(tv_hi)) {
 		/* p == NULL && q == NULL ==> (p&q) == NULL) */
-		ir_node *block, *lol, *hil, *cmp, *c, *p;
+		ir_node *lol, *hil, *cmp, *c, *p;
 
 		if (mode_is_reference(mode)) {
 			mode = find_unsigned_mode(mode);
@@ -168,18 +166,21 @@ static ir_node *bool_and(cond_pair* const cpair)
 				return NULL;
 		}
 		if (mode_is_int(mode)) {
-			block = get_nodes_block(cmp_lo);
 			lol   = get_Cmp_left(cmp_lo);
-			lol   = new_r_Conv(block, lol, mode);
+			lol   = new_r_Conv(dst_block, lol, mode);
 			hil   = get_Cmp_left(cmp_hi);
-			hil   = new_r_Conv(block, hil, mode);
-			p     = new_r_And(block, lol, hil, mode);
+			hil   = new_r_Conv(dst_block, hil, mode);
+			p     = new_r_And(dst_block, lol, hil, mode);
 			c     = new_Const(tv_lo);
-			cmp   = new_r_Cmp(block, p, c);
-			p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Eq);
+			cmp   = new_r_Cmp(dst_block, p, c);
+			p     = new_r_Proj(dst_block, cmp, mode_b, pn_Cmp_Eq);
 			return p;
 		}
 	}
+
+	/* the following tests expect one common operand */
+	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
+		return 0;
 
 	/* TODO: for now reject float modes */
 	if (! mode_is_int(mode))
@@ -274,7 +275,7 @@ static ir_node *bool_and(cond_pair* const cpair)
 /**
  * Handle (lo pnc_lo x) OR (hi pnc_hi x)
  */
-static ir_node *bool_or(cond_pair *const cpair)
+static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 {
 	ir_node *const cmp_lo  = cpair->cmp_lo;
 	ir_node *const cmp_hi  = cpair->cmp_hi;
@@ -290,7 +291,7 @@ static ir_node *bool_or(cond_pair *const cpair)
 		tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
 		mode == get_tarval_mode(tv_hi)) {
 		/* p != NULL || q != NULL ==> (p|q) != NULL) */
-		ir_node *block, *lol, *hil, *cmp, *c, *p;
+		ir_node *lol, *hil, *cmp, *c, *p;
 
 		if (mode_is_reference(mode)) {
 			mode = find_unsigned_mode(mode);
@@ -301,18 +302,21 @@ static ir_node *bool_or(cond_pair *const cpair)
 				return NULL;
 		}
 		if (mode_is_int(mode)) {
-			block = get_nodes_block(cmp_lo);
 			lol   = get_Cmp_left(cmp_lo);
-			lol   = new_r_Conv(block, lol, mode);
+			lol   = new_r_Conv(dst_block, lol, mode);
 			hil   = get_Cmp_left(cmp_hi);
-			hil   = new_r_Conv(block, hil, mode);
-			p     = new_r_Or(block, lol, hil, mode);
+			hil   = new_r_Conv(dst_block, hil, mode);
+			p     = new_r_Or(dst_block, lol, hil, mode);
 			c     = new_Const(tv_lo);
-			cmp   = new_r_Cmp(block, p, c);
-			p     = new_r_Proj(block, cmp, mode_b, pn_Cmp_Lg);
+			cmp   = new_r_Cmp(dst_block, p, c);
+			p     = new_r_Proj(dst_block, cmp, mode_b, pn_Cmp_Lg);
 			return p;
 		}
 	}
+
+	/* the following tests expect one common operand */
+	if (get_Cmp_left(cmp_lo) !=  get_Cmp_left(cmp_hi))
+		return 0;
 
 	/* TODO: for now reject float modes */
 	if (! mode_is_int(mode))
@@ -421,7 +425,7 @@ static void bool_walk(ir_node *n, void *ctx)
 		cond_pair      cpair;
 		if (!find_cond_pair(l, r, &cpair))
 			return;
-		replacement = bool_and(&cpair);
+		replacement = bool_and(&cpair, get_nodes_block(n));
 		if (replacement) {
 			exchange(n, replacement);
 			env->changed = 1;
@@ -433,7 +437,7 @@ static void bool_walk(ir_node *n, void *ctx)
 		cond_pair      cpair;
 		if (!find_cond_pair(l, r, &cpair))
 			return;
-		replacement = bool_or(&cpair);
+		replacement = bool_or(&cpair, get_nodes_block(n));
 		if (replacement) {
 			exchange(n, replacement);
 			env->changed = 1;
@@ -693,7 +697,7 @@ restart:
 			}
 
 			/* can we optimize the case? */
-			replacement = bool_or(&cpair);
+			replacement = bool_or(&cpair, upper_block);
 			if (replacement == NULL)
 				continue;
 
