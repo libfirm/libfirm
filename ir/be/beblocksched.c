@@ -163,11 +163,11 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	} else if (arity == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		ir_loop *pred_loop  = get_irn_loop(pred_block);
-		float    freq       = get_block_execfreq(env->execfreqs, block);
+		float    freq       = (float)get_block_execfreq(env->execfreqs, block);
 
 		/* is it an edge leaving a loop */
 		if (get_loop_depth(pred_loop) > get_loop_depth(loop)) {
-			float pred_freq = get_block_execfreq(env->execfreqs, pred_block);
+			float pred_freq = (float)get_block_execfreq(env->execfreqs, pred_block);
 			edge.outedge_penalty_freq = -(pred_freq - freq);
 		}
 

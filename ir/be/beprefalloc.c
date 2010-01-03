@@ -345,7 +345,7 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
  */
 static void analyze_block(ir_node *block, void *data)
 {
-	float         weight = get_block_execfreq(execfreqs, block);
+	float         weight = (float)get_block_execfreq(execfreqs, block);
 	ir_nodeset_t  live_nodes;
 	ir_node      *node;
 	(void) data;
@@ -693,7 +693,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	from_reg        = arch_get_irn_register(to_split);
 	from_r          = arch_register_get_index(from_reg);
 	block           = get_nodes_block(before);
-	split_threshold = get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
+	split_threshold = (float)get_block_execfreq(execfreqs, block) * SPLIT_DELTA;
 
 	if (pref_delta < split_threshold*0.5)
 		return false;
@@ -804,7 +804,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 
 	in_node = skip_Proj(node);
 	if (req->type & arch_register_req_type_should_be_same) {
-		float weight = get_block_execfreq(execfreqs, block);
+		float weight = (float)get_block_execfreq(execfreqs, block);
 		int   arity  = get_irn_arity(in_node);
 		int   i;
 
@@ -1448,7 +1448,7 @@ static void adapt_phi_prefs(ir_node *phi)
 			continue;
 
 		/* give bonus for already assigned register */
-		weight = get_block_execfreq(execfreqs, pred_block);
+		weight = (float)get_block_execfreq(execfreqs, pred_block);
 		r      = arch_register_get_index(reg);
 		info->prefs[r] += weight * AFF_PHI;
 	}
@@ -1470,7 +1470,7 @@ static void propagate_phi_register(ir_node *phi, unsigned assigned_r)
 		ir_node           *pred_block = get_Block_cfgpred_block(block, i);
 		unsigned           r;
 		float              weight
-			= get_block_execfreq(execfreqs, pred_block) * AFF_PHI;
+			= (float)get_block_execfreq(execfreqs, pred_block) * AFF_PHI;
 
 		if (info->prefs[assigned_r] >= weight)
 			continue;
@@ -1536,7 +1536,7 @@ static void assign_phi_registers(ir_node *block)
 			costs = costs < 0 ? -logf(-costs+1) : logf(costs+1);
 			costs *= 100;
 			costs += 10000;
-			hungarian_add(bp, n, r, costs);
+			hungarian_add(bp, n, r, (int)costs);
 			DB((dbg, LEVEL_3, " %s(%f)", arch_register_for_index(cls, r)->name,
 						info->prefs[r]));
 		}
@@ -1814,7 +1814,7 @@ static void determine_block_order(void)
 		block_costs_t *cost_info;
 		ir_node *block = blocklist[i];
 
-		float execfreq   = get_block_execfreq(execfreqs, block);
+		float execfreq   = (float)get_block_execfreq(execfreqs, block);
 		float costs      = execfreq;
 		int   n_cfgpreds = get_Block_n_cfgpreds(block);
 		int   p;
