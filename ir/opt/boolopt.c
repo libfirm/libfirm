@@ -661,30 +661,34 @@ restart:
 			 * common block (ie. conjunctive normal form) */
 			if (get_Proj_proj(lower_cf) == pn_Cond_false) {
 				if (cpair.proj_lo == cond_selector) {
-					ir_mode *mode = get_tarval_mode(cpair.tv_lo);
-					cpair.pnc_lo  = get_negated_pnc(cpair.pnc_lo, mode);
-					cpair.proj_lo = new_r_Proj(lower_block,
-							get_Proj_pred(cpair.proj_lo), mode_b, cpair.pnc_lo);
+					ir_mode *mode  = get_tarval_mode(cpair.tv_lo);
+					ir_node *cmp   = get_Proj_pred(cpair.proj_lo);
+					ir_node *block = get_nodes_block(cmp);
+					cpair.pnc_lo   = get_negated_pnc(cpair.pnc_lo, mode);
+					cpair.proj_lo  = new_r_Proj(block, cmp, mode_b, cpair.pnc_lo);
 				} else {
-					ir_mode *mode = get_tarval_mode(cpair.tv_hi);
+					ir_mode *mode  = get_tarval_mode(cpair.tv_hi);
+					ir_node *cmp   = get_Proj_pred(cpair.proj_hi);
+					ir_node *block = get_nodes_block(cmp);
 					assert(cpair.proj_hi == cond_selector);
-					cpair.pnc_hi  = get_negated_pnc(cpair.pnc_hi, mode);
-					cpair.proj_hi = new_r_Proj(lower_block,
-							get_Proj_pred(cpair.proj_hi), mode_b, cpair.pnc_hi);
+					cpair.pnc_hi   = get_negated_pnc(cpair.pnc_hi, mode);
+					cpair.proj_hi  = new_r_Proj(block, cmp, mode_b, cpair.pnc_hi);
 				}
 			}
 			if (get_Proj_proj(upper_cf) == pn_Cond_false) {
 				if (cpair.proj_lo == upper_cond_selector) {
-					ir_mode *mode = get_tarval_mode(cpair.tv_lo);
-					cpair.pnc_lo  = get_negated_pnc(cpair.pnc_lo, mode);
-					cpair.proj_lo = new_r_Proj(upper_block,
-							get_Proj_pred(cpair.proj_lo), mode_b, cpair.pnc_lo);
+					ir_mode *mode  = get_tarval_mode(cpair.tv_lo);
+					ir_node *cmp   = get_Proj_pred(cpair.proj_lo);
+					ir_node *block = get_nodes_block(cmp);
+					cpair.pnc_lo   = get_negated_pnc(cpair.pnc_lo, mode);
+					cpair.proj_lo  = new_r_Proj(block, cmp, mode_b, cpair.pnc_lo);
 				} else {
-					ir_mode *mode = get_tarval_mode(cpair.tv_hi);
+					ir_mode *mode  = get_tarval_mode(cpair.tv_hi);
+					ir_node *cmp   = get_Proj_pred(cpair.proj_hi);
+					ir_node *block = get_nodes_block(cmp);
 					assert(cpair.proj_hi == upper_cond_selector);
-					cpair.pnc_hi  = get_negated_pnc(cpair.pnc_hi, mode);
-					cpair.proj_hi = new_r_Proj(upper_block,
-							get_Proj_pred(cpair.proj_hi), mode_b, cpair.pnc_hi);
+					cpair.pnc_hi   = get_negated_pnc(cpair.pnc_hi, mode);
+					cpair.proj_hi  = new_r_Proj(block, cmp, mode_b, cpair.pnc_hi);
 				}
 			}
 
