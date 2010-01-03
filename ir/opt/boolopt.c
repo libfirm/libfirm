@@ -643,6 +643,8 @@ restart:
 			upper_block = get_nodes_block(upper_cf);
 			if (upper_block != lower_pred)
 				continue;
+			if (!block_dominates(upper_block, block))
+				continue;
 
 			assert(is_Proj(upper_cf));
 			upper_cond = get_Proj_pred(upper_cf);
@@ -703,6 +705,9 @@ restart:
 
 			env->changed = 1;
 
+			DB((dbg, LEVEL_1, "boolopt: %+F: fusing (ub %+F lb %+F)\n",
+				current_ir_graph, upper_block, lower_block));
+
 			/* move all expressions on the path to lower/upper block */
 			move_nodes_to_block(get_Block_cfgpred(block, up_idx), upper_block);
 			move_nodes_to_block(get_Block_cfgpred(block, low_idx), lower_block);
@@ -720,7 +725,6 @@ restart:
 			}
 			set_Cond_selector(cond, replacement);
 
-			DB((dbg, LEVEL_1, "%+F: replaced (ub %+F)\n", current_ir_graph, upper_block));
 			goto restart;
 		}
 	}
