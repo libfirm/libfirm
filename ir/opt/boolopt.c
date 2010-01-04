@@ -368,18 +368,18 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	           (pnc_hi == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ge) &&
 	           get_mode_arithmetic(mode) == irma_twos_complement) {
 		/* works for two-complements only */
-		/* x <|\= lo  || x >|>= hi ==> (x - lo) >u|>=u (hi-lo) */
-		if (pnc_lo == pn_Cmp_Lt) {
-			/* must convert to <= */
+		/* x <|<= lo  || x >|>= hi ==> (x - lo) >u|>=u (hi-lo) */
+		if (pnc_lo == pn_Cmp_Le) {
+			/* must convert to < */
 			ir_mode *mode = get_tarval_mode(tv_lo);
-			tarval *n = tarval_sub(tv_lo, get_mode_one(mode), NULL);
-			if (n != tarval_bad && tarval_cmp(n, tv_lo) == pn_Cmp_Lt) {
+			tarval *n = tarval_add(tv_lo, get_mode_one(mode));
+			if (n != tarval_bad && tarval_cmp(n, tv_lo) == pn_Cmp_Gt) {
 				/* no overflow */
 				tv_lo = n;
-				pnc_lo = pn_Cmp_Le;
+				pnc_lo = pn_Cmp_Lt;
 			}
 		}
-		if (pnc_lo == pn_Cmp_Le) {
+		if (pnc_lo == pn_Cmp_Lt) {
 			/* all fine */
 			ir_node *const block = get_nodes_block(cmp_hi);
 			ir_node *      x     = get_Cmp_left(cmp_hi);
