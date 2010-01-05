@@ -99,7 +99,6 @@ const char *get_irg_dump_name(const ir_graph *irg);
 
 
 const char *get_ent_dump_name(const ir_entity *ent);
-const char *get_type_name_ex(const ir_type *tp, int *bad);
 const char *get_mode_name_ex(const ir_mode *mode, int *bad);
 /**
  * dump the name of a node n to the File F.

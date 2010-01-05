@@ -77,9 +77,12 @@ void firm_identify_thing(void *X) {
 	case k_entity:
 		printf("entity: %s: %ld (%p)\n", get_entity_name(X), get_entity_nr(X), X);
 		break;
-	case k_type:
-		printf("type: %s %s: %ld (%p)\n", get_type_tpop_name(X), get_type_name(X), get_type_nr(X), X);
+	case k_type: {
+		char buf[256];
+		ir_print_type(buf, sizeof(buf), X);
+		printf("type: %s '%s': %ld (%p)\n", get_type_tpop_name(X), buf, get_type_nr(X), X);
 		break;
+	}
 	case k_ir_graph:
 		printf("graph: %s: %ld (%p)\n", get_entity_name(get_irg_entity(X)), get_irg_graph_nr(X), X);
 		break;

@@ -255,6 +255,7 @@ static ir_mode *register_mode(const ir_mode *new_mode) {
 	ARR_APP1(ir_mode*, mode_list, mode);
 
 	mode->kind = k_ir_mode;
+	mode->type = new_type_primitive(mode);
 
 	/* add the new mode to the irp list of modes */
 	add_irp_mode(mode);

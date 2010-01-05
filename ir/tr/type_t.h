@@ -223,7 +223,7 @@ struct ir_type {
 	ir_mode *mode;           /**< The mode for atomic types */
 	ir_visited_t visit;      /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
-	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
 	ir_type *assoc_type;     /**< The associated lowered/unlowered type */
 
 	/* ------------- fields for analyses ---------------*/
@@ -241,15 +241,14 @@ struct ir_type {
  *
  *   @param type_op  the kind of this type.  May not be type_id.
  *   @param mode     the mode to be used for this type, may be NULL
- *   @param name     an ident for the name of this type.
  *   @param db       debug info
  *
  *   @return A new type of the given type.  The remaining private attributes are not
  *           initialized.  The type is in state layout_undefined.
  */
 ir_type *
-new_type(const tp_op *type_op, ir_mode *mode, ident *name, dbg_info *db);
-void free_type_attrs       (ir_type *tp);
+new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
+void free_type_attrs(ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
 void free_struct_entities     (ir_type *strct);
@@ -284,11 +283,19 @@ void set_default_size(ir_type *tp, unsigned bytes);
 /**
  * Initialize the type module.
  *
- * @param builtin_db       debug info for built-in objects
  * @param default_cc_mask  default calling conventions for methods
  */
-void firm_init_type(dbg_info *builtin_db, unsigned default_cc_mask);
+void firm_init_type(unsigned default_cc_mask);
 
+/** Clone an existing method type.
+ *
+ * @param tp      the method type to clone.
+ * @param prefix  if non-null, will be the prefix for the name of
+ *                the cloned type
+ *
+ * @return the cloned method type.
+ */
+ir_type *clone_type_method(ir_type *tp);
 
 /* ------------------- *
  *  inline functions   *
@@ -336,18 +343,6 @@ _get_type_mode(const ir_type *tp) {
 	return tp->mode;
 }
 
-static inline ident *
-_get_type_ident(const ir_type *tp) {
-	assert(tp && tp->kind == k_type);
-	return tp->name;
-}
-
-static inline void
-_set_type_ident(ir_type *tp, ident* id) {
-	assert(tp && tp->kind == k_type);
-	tp->name = id;
-}
-
 static inline unsigned
 _get_type_size_bytes(const ir_type *tp) {
 	assert(tp && tp->kind == k_type);
@@ -391,13 +386,13 @@ _type_not_visited(const ir_type *tp) {
 	return tp->visit  < firm_type_visited;
 }
 
-static inline dbg_info *
+static inline type_dbg_info *
 _get_type_dbg_info(const ir_type *tp) {
 	return tp->dbi;
 }
 
 static inline void
-_set_type_dbg_info(ir_type *tp, dbg_info *db) {
+_set_type_dbg_info(ir_type *tp, type_dbg_info *db) {
 	tp->dbi = db;
 }
 
@@ -590,8 +585,6 @@ _set_method_calling_convention(ir_type *method, unsigned cc_mask) {
 #define get_type_tpop_nameid(tp)          _get_type_tpop_nameid(tp)
 #define get_type_tpop_code(tp)            _get_type_tpop_code(tp)
 #define get_type_mode(tp)                 _get_type_mode(tp)
-#define get_type_ident(tp)                _get_type_ident(tp)
-#define set_type_ident(tp, id)            _set_type_ident(tp, id)
 #define get_type_size_bytes(tp)           _get_type_size_bytes(tp)
 #define get_type_state(tp)                _get_type_state(tp)
 #define get_type_visited(tp)              _get_type_visited(tp)

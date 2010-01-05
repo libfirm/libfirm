@@ -136,7 +136,7 @@ static ir_type *get_primitive_type(ir_mode *mode) {
 		return entry->value;
 
 	snprintf(buf, sizeof(buf), "_prim_%s", get_mode_name(mode));
-	tp = new_type_primitive(new_id_from_str(buf), mode);
+	tp = new_type_primitive(mode);
 
 	pmap_insert(prim_types, mode, tp);
 	return tp;
@@ -156,7 +156,6 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env) 
 	entry = set_insert(conv_types, &key, sizeof(key), HASH_PTR(imode) ^ HASH_PTR(omode));
 	if (! entry->mtd) {
 		int n_param = 1, n_res = 1;
-		char buf[64];
 
 		if (imode == env->params->high_signed || imode == env->params->high_unsigned)
 			n_param = 2;
@@ -164,8 +163,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env) 
 			n_res = 2;
 
 		/* create a new one */
-		snprintf(buf, sizeof(buf), "LConv%s%s", get_mode_name(imode), get_mode_name(omode));
-		mtd = new_type_method(new_id_from_str(buf), n_param, n_res);
+		mtd = new_type_method(n_param, n_res);
 
 		/* set param types and result types */
 		n_param = 0;
@@ -1678,7 +1676,7 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env) {
  */
 static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 	pmap_entry *entry;
-	ident      *id, *lid;
+	ident      *lid;
 	ir_type    *res, *value_type;
 
 	if (is_lowered_type(mtp))
@@ -1716,8 +1714,7 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 			}  /* if */
 		}  /* for */
 
-		id  = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
-		res = new_type_method(id, n_param, n_res);
+		res = new_type_method(n_param, n_res);
 
 		/* set param types and result types */
 		for (i = n_param = 0; i < n; ++i) {
@@ -2510,7 +2507,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 
 	/* create method types for the created binop calls */
 	if (! binop_tp_u) {
-		binop_tp_u = new_type_method(IDENT("binop_u_intrinsic"), 4, 2);
+		binop_tp_u = new_type_method(4, 2);
 		set_method_param_type(binop_tp_u, 0, tp_u);
 		set_method_param_type(binop_tp_u, 1, tp_u);
 		set_method_param_type(binop_tp_u, 2, tp_u);
@@ -2519,7 +2516,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_res_type(binop_tp_u, 1, tp_u);
 	}  /* if */
 	if (! binop_tp_s) {
-		binop_tp_s = new_type_method(IDENT("binop_s_intrinsic"), 4, 2);
+		binop_tp_s = new_type_method(4, 2);
 		set_method_param_type(binop_tp_s, 0, tp_u);
 		set_method_param_type(binop_tp_s, 1, tp_s);
 		set_method_param_type(binop_tp_s, 2, tp_u);
@@ -2528,7 +2525,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_res_type(binop_tp_s, 1, tp_s);
 	}  /* if */
 	if (! shiftop_tp_u) {
-		shiftop_tp_u = new_type_method(IDENT("shiftop_u_intrinsic"), 3, 2);
+		shiftop_tp_u = new_type_method(3, 2);
 		set_method_param_type(shiftop_tp_u, 0, tp_u);
 		set_method_param_type(shiftop_tp_u, 1, tp_u);
 		set_method_param_type(shiftop_tp_u, 2, tp_u);
@@ -2536,7 +2533,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_res_type(shiftop_tp_u, 1, tp_u);
 	}  /* if */
 	if (! shiftop_tp_s) {
-		shiftop_tp_s = new_type_method(IDENT("shiftop_s_intrinsic"), 3, 2);
+		shiftop_tp_s = new_type_method(3, 2);
 		set_method_param_type(shiftop_tp_s, 0, tp_u);
 		set_method_param_type(shiftop_tp_s, 1, tp_s);
 		set_method_param_type(shiftop_tp_s, 2, tp_u);
@@ -2544,14 +2541,14 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		set_method_res_type(shiftop_tp_s, 1, tp_s);
 	}  /* if */
 	if (! unop_tp_u) {
-		unop_tp_u = new_type_method(IDENT("unop_u_intrinsic"), 2, 2);
+		unop_tp_u = new_type_method(2, 2);
 		set_method_param_type(unop_tp_u, 0, tp_u);
 		set_method_param_type(unop_tp_u, 1, tp_u);
 		set_method_res_type(unop_tp_u, 0, tp_u);
 		set_method_res_type(unop_tp_u, 1, tp_u);
 	}  /* if */
 	if (! unop_tp_s) {
-		unop_tp_s = new_type_method(IDENT("unop_s_intrinsic"), 2, 2);
+		unop_tp_s = new_type_method(2, 2);
 		set_method_param_type(unop_tp_s, 0, tp_u);
 		set_method_param_type(unop_tp_s, 1, tp_s);
 		set_method_res_type(unop_tp_s, 0, tp_u);

@@ -368,19 +368,17 @@ static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q) {
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(quadruple_t *q, ir_entity *ent, unsigned *nr) {
+static void change_entity_type(quadruple_t *q, ir_entity *ent) {
 	ir_type *mtp, *new_mtp, *tp;
-	ident   *tp_name;
 	int     i, j, n_params, n_ress;
 
 	mtp      = get_entity_type(q->ent);
-	tp_name  = get_clone_ident(get_type_ident(mtp), q->pos, (*nr)++);
 	n_params = get_method_n_params(mtp);
 	n_ress   = get_method_n_ress(mtp);
 
 	/* Create the new type for our clone. It must have one parameter
 	   less then the original.*/
-	new_mtp  = new_type_method(tp_name, n_params - 1, n_ress);
+	new_mtp  = new_type_method(n_params - 1, n_ress);
 
 	/* We must set the type of the methods parameters.*/
 	for (i = j = 0; i < n_params; ++i) {
@@ -425,7 +423,7 @@ static ir_entity *clone_method(quadruple_t *q) {
 	set_entity_ld_ident(new_entity, get_entity_ident(new_entity));
 
 	/* set a new type here. */
-	change_entity_type(q, new_entity, &nr);
+	change_entity_type(q, new_entity);
 
 	/* We need now a new ir_graph for our clone method. */
 	create_clone_proc_irg(new_entity, q);

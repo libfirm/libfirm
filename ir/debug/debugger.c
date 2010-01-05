@@ -400,18 +400,6 @@ static void dbg_new_type(void *ctx, ir_type *tp)
 			firm_debug_break();
 		}
 	}
-	{
-		bp_ident_t key, *elem;
-
-		key.id        = get_type_ident(tp);
-		key.bp.reason = BP_ON_NEW_TYPE;
-
-		elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
-		if (elem && elem->bp.active) {
-			dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
-			firm_debug_break();
-		}
-	}
 }  /* dbg_new_type */
 
 /**
@@ -734,11 +722,14 @@ static ir_type *find_type_name(const char *name) {
 
 	for (i = 0; i < n; ++i) {
 		tp = get_irp_type(i);
-		if (strcmp(get_type_name(tp), name) == 0)
+		if (!is_compound_type(tp))
+			continue;
+
+		if (strcmp(get_compound_name(tp), name) == 0)
 			return tp;
 	}
 	tp = get_glob_type();
-	if (strcmp(get_type_name(tp), name) == 0)
+	if (strcmp(get_compound_name(tp), name) == 0)
 		return tp;
 	return NULL;
 }  /* find_type_name */
@@ -816,7 +807,7 @@ static void show_by_name(type_or_ent tore, void *env) {
 				ir_graph *irg = get_entity_irg(ent);
 
 				if (owner != get_glob_type()) {
-					printf("%s::%s", get_type_name(owner), get_id_str(id));
+					printf("%s::%s", get_compound_name(owner), get_id_str(id));
 				} else {
 					printf("%s", get_id_str(id));
 				}
@@ -844,7 +835,7 @@ static void show_by_ldname(type_or_ent tore, void *env) {
 				ir_graph *irg = get_entity_irg(ent);
 
 				if (owner != get_glob_type()) {
-					printf("%s::%s", get_type_name(owner), get_id_str(id));
+					printf("%s::%s", get_compound_name(owner), get_id_str(id));
 				} else {
 					printf("%s", get_id_str(id));
 				}

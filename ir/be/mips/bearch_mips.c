@@ -535,9 +535,9 @@ static ir_type *mips_abi_get_between_type(void *self) {
 	if(env->debug && debug_between_type == NULL) {
 		ir_entity *a0_ent, *a1_ent, *a2_ent, *a3_ent;
 		ir_entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
-		ir_type *old_fp_type   = new_type_primitive(new_id_from_str("fp"), mode_P);
-		ir_type *old_param_type = new_type_primitive(new_id_from_str("param"), mode_Iu);
+		ir_type *ret_addr_type = new_type_primitive(mode_P);
+		ir_type *old_fp_type   = new_type_primitive(mode_P);
+		ir_type *old_param_type = new_type_primitive(mode_Iu);
 
 		debug_between_type     = new_type_class(new_id_from_str("mips_between_type"));
 		a0_ent				   = new_entity(debug_between_type, new_id_from_str("a0_ent"), old_param_type);
@@ -556,7 +556,7 @@ static ir_type *mips_abi_get_between_type(void *self) {
 
 		set_type_size_bytes(debug_between_type, 24);
 	} else if(!env->debug && opt_between_type == NULL) {
-		ir_type *old_fp_type   = new_type_primitive(new_id_from_str("fp"), mode_P);
+		ir_type *old_fp_type   = new_type_primitive(mode_P);
 		ir_entity *old_fp_ent;
 
 		opt_between_type       = new_type_class(new_id_from_str("mips_between_type"));

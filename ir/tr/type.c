@@ -58,6 +58,8 @@
 #include "irhooks.h"
 #include "irtools.h"
 #include "entity_t.h"
+#include "error.h"
+#include "dbginfo.h"
 
 #include "array.h"
 
@@ -90,23 +92,23 @@ unsigned get_default_cc_mask(void)
 	return default_cc_mask;
 }
 
-void firm_init_type(dbg_info *builtin_db, unsigned def_cc_mask)
+void firm_init_type(unsigned def_cc_mask)
 {
 	default_cc_mask     = def_cc_mask;
 	value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
 	value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
 	/* construct none and unknown type. */
-	firm_none_type    = new_type(tpop_none,    mode_BAD, new_id_from_str("type_none"), builtin_db);
+	firm_none_type = new_type(tpop_none, mode_BAD, NULL);
 	set_type_size_bytes(firm_none_type, 0);
 	set_type_state (firm_none_type, layout_fixed);
 	remove_irp_type(firm_none_type);
 
-	firm_code_type    = new_type(tpop_code, mode_ANY, new_id_from_str("type_code"), builtin_db);
+	firm_code_type = new_type(tpop_code, mode_ANY, NULL);
 	set_type_state(firm_code_type, layout_fixed);
 	remove_irp_type(firm_code_type);
 
-	firm_unknown_type = new_type(tpop_unknown, mode_ANY, new_id_from_str("type_unknown"), builtin_db);
+	firm_unknown_type = new_type(tpop_unknown, mode_ANY, NULL);
 	set_type_size_bytes(firm_unknown_type, 0);
 	set_type_state (firm_unknown_type, layout_fixed);
 	remove_irp_type(firm_unknown_type);
@@ -130,13 +132,10 @@ void (inc_master_type_visited)(void)
 	_inc_master_type_visited();
 }
 
-ir_type *new_type(const tp_op *type_op, ir_mode *mode, ident *name,
-                  dbg_info *db)
+ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 {
 	ir_type *res;
 	int node_size;
-
-	assert(!id_contains_char(name, ' ') && "type name should not contain spaces");
 
 	node_size = offsetof(ir_type, attr) +  type_op->attr_size;
 	res = xmalloc(node_size);
@@ -145,7 +144,6 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, ident *name,
 	res->kind       = k_type;
 	res->type_op    = type_op;
 	res->mode       = mode;
-	res->name       = name;
 	res->visibility = visibility_external_allocated;
 	res->flags      = tf_none;
 	res->size       = 0;
@@ -244,16 +242,6 @@ void set_type_mode(ir_type *tp, ir_mode *mode)
 		assert(0 && "setting a mode is NOT allowed for this type");
 }
 
-ident *(get_type_ident)(const ir_type *tp)
-{
-	return _get_type_ident(tp);
-}
-
-void (set_type_ident)(ir_type *tp, ident* id)
-{
-	_set_type_ident(tp, id);
-}
-
 /* Outputs a unique number for this node */
 long get_type_nr(const ir_type *tp)
 {
@@ -263,12 +251,6 @@ long get_type_nr(const ir_type *tp)
 #else
 	return (long)PTR_TO_INT(tp);
 #endif
-}
-
-const char *get_type_name(const ir_type *tp)
-{
-	assert(tp && tp->kind == k_type);
-	return (get_id_str(tp->name));
 }
 
 unsigned (get_type_size_bytes)(const ir_type *tp)
@@ -438,12 +420,12 @@ int (type_not_visited)(const ir_type *tp)
 	return _type_not_visited(tp);
 }
 
-dbg_info *(get_type_dbg_info)(const ir_type *tp)
+type_dbg_info *(get_type_dbg_info)(const ir_type *tp)
 {
 	return _get_type_dbg_info(tp);
 }
 
-void (set_type_dbg_info)(ir_type *tp, dbg_info *db)
+void (set_type_dbg_info)(ir_type *tp, type_dbg_info *db)
 {
 	_set_type_dbg_info(tp, db);
 }
@@ -463,7 +445,7 @@ int equal_type(ir_type *typ1, ir_type *typ2)
 	if (typ1 == typ2) return 1;
 
 	if ((get_type_tpop_code(typ1) != get_type_tpop_code(typ2)) ||
-	    (get_type_ident(typ1) != get_type_ident(typ2)) ||
+	    typ1->name != typ2->name ||
 	    (get_type_mode(typ1) != get_type_mode(typ2)) ||
 	    (get_type_state(typ1) != get_type_state(typ2)))
 		return 0;
@@ -499,7 +481,7 @@ int equal_type(ir_type *typ1, ir_type *typ2)
 			ir_type *t1 = get_class_supertype(typ1, i);
 			for (j = 0; j < get_class_n_supertypes(typ2); j++) {
 				ir_type *t2 = get_class_supertype(typ2, j);
-				if (get_type_ident(t2) == get_type_ident(t1))
+				if (t2->name == t1->name)
 					t[i] = t2;
 			}
 		}
@@ -740,11 +722,12 @@ int smaller_type(ir_type *st, ir_type *lt)
 }
 
 
-ir_type *new_d_type_class(ident *name, dbg_info *db)
+ir_type *new_d_type_class(ident *name, type_dbg_info *db)
 {
 	ir_type *res;
 
-	res = new_type(type_class, NULL, name, db);
+	res = new_type(type_class, NULL, db);
+	res->name = name;
 
 	res->attr.ca.members     = NEW_ARR_F (ir_entity *, 0);
 	res->attr.ca.subtypes    = NEW_ARR_F (ir_type *, 0);
@@ -778,6 +761,17 @@ void free_class_attrs(ir_type *clss)
 	DEL_ARR_F(clss->attr.ca.members);
 	DEL_ARR_F(clss->attr.ca.subtypes);
 	DEL_ARR_F(clss->attr.ca.supertypes);
+}
+
+ident *get_class_ident(const ir_type *clss)
+{
+	assert(clss->type_op == type_class);
+	return clss->name;
+}
+
+const char *get_class_name(const ir_type *clss)
+{
+	return get_id_str(get_class_ident(clss));
 }
 
 void add_class_member(ir_type *clss, ir_entity *member)
@@ -1069,9 +1063,10 @@ void set_class_size(ir_type *tp, unsigned size) {
 }
 
 
-ir_type *new_d_type_struct(ident *name, dbg_info *db)
+ir_type *new_d_type_struct(ident *name, type_dbg_info *db)
 {
-	ir_type *res = new_type(type_struct, NULL, name, db);
+	ir_type *res = new_type(type_struct, NULL, db);
+	res->name = name;
 
 	res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
 	hook_new_type(res);
@@ -1095,6 +1090,17 @@ void free_struct_attrs(ir_type *strct)
 {
 	assert(strct && (strct->type_op == type_struct));
 	DEL_ARR_F(strct->attr.sa.members);
+}
+
+ident *get_struct_ident(const ir_type *strct)
+{
+	assert(strct->type_op == type_struct);
+	return strct->name;
+}
+
+const char *get_struct_name(const ir_type *strct)
+{
+	return get_id_str(get_struct_ident(strct));
 }
 
 int get_struct_n_members(const ir_type *strct)
@@ -1178,10 +1184,10 @@ void set_struct_size(ir_type *tp, unsigned size)
  * @param len     number of fields
  * @param tps     array of field types with length len
  */
-static ir_type *build_value_type(ident *name, int len, tp_ent_pair *tps)
+static ir_type *build_value_type(int len, tp_ent_pair *tps)
 {
 	int i;
-	ir_type *res = new_type_struct(name);
+	ir_type *res = new_type_struct(NULL);
 	res->flags |= tf_value_param_type;
 	/* Remove type from type list.  Must be treated differently than other types. */
 	remove_irp_type(res);
@@ -1192,20 +1198,21 @@ static ir_type *build_value_type(ident *name, int len, tp_ent_pair *tps)
 		ir_type *elt_type = tps[i].tp ? tps[i].tp : res;
 
 		/* use the parameter name if specified */
-		if (! id)
-			id = id_mangle_u(name, get_type_ident(elt_type));
+		if (id == NULL) {
+			id = new_id_from_str("elt");
+		}
 		tps[i].ent = new_entity(res, id, elt_type);
 		set_entity_allocation(tps[i].ent, allocation_parameter);
 	}
 	return res;
 }
 
-ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db)
+ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db)
 {
 	ir_type *res;
 
 	assert((get_mode_size_bits(mode_P_code) % 8 == 0) && "unorthodox modes not implemented");
-	res = new_type(type_method, mode_P_code, name, db);
+	res = new_type(type_method, mode_P_code, db);
 	res->flags                       |= tf_layout_fixed;
 	res->size                         = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params             = n_param;
@@ -1222,31 +1229,26 @@ ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db)
 	return res;
 }
 
-ir_type *new_type_method(ident *name, int n_param, int n_res)
+ir_type *new_type_method(int n_param, int n_res)
 {
-	return new_d_type_method(name, n_param, n_res, NULL);
+	return new_d_type_method(n_param, n_res, NULL);
 }
 
-ir_type *clone_type_method(ir_type *tp, ident *prefix)
+ir_type *clone_type_method(ir_type *tp)
 {
 	ir_type  *res;
-	ident    *name;
 	ir_mode  *mode;
 	int      n_params, n_res;
-	dbg_info *db;
+	type_dbg_info *db;
 
 	assert(is_Method_type(tp));
-
-	name = tp->name;
-	if (prefix != NULL)
-		name = id_mangle(prefix, name);
 
 	mode     = tp->mode;
 	n_params = tp->attr.ma.n_params;
 	n_res    = tp->attr.ma.n_res;
 	db       = tp->dbi;
 
-	res = new_type(type_method, mode, name, db);
+	res = new_type(type_method, mode, db);
 
 	res->flags                         = tp->flags;
 	res->assoc_type                    = tp->assoc_type;
@@ -1345,8 +1347,8 @@ ir_entity *get_method_value_param_ent(ir_type *method, int pos)
 	if (!method->attr.ma.value_params) {
 		/* parameter value type not created yet, build */
 		method->attr.ma.value_params
-			= build_value_type(id_mangle_u(get_type_ident(method), value_params_suffix),
-			get_method_n_params(method), method->attr.ma.params);
+			= build_value_type(get_method_n_params(method),
+			                   method->attr.ma.params);
 	}
 	/*
 	 * build_value_type() sets the method->attr.ma.value_params type as default if
@@ -1416,8 +1418,8 @@ ir_entity *get_method_value_res_ent(ir_type *method, int pos)
 	if (!method->attr.ma.value_ress) {
 		/* result value type not created yet, build */
 		method->attr.ma.value_ress
-			= build_value_type(id_mangle_u(get_type_ident(method), value_ress_suffix),
-			get_method_n_ress(method), method->attr.ma.res_type);
+			= build_value_type(get_method_n_ress(method),
+			                   method->attr.ma.res_type);
 	}
 	/*
 	 * build_value_type() sets the method->attr.ma.value_ress type as default if
@@ -1527,9 +1529,10 @@ int (is_Method_type)(const ir_type *method)
 }
 
 
-ir_type *new_d_type_union(ident *name, dbg_info *db)
+ir_type *new_d_type_union(ident *name, type_dbg_info *db)
 {
-	ir_type *res = new_type(type_union, NULL, name, db);
+	ir_type *res = new_type(type_union, NULL, db);
+	res->name = name;
 
 	res->attr.ua.members = NEW_ARR_F(ir_entity *, 0);
 	hook_new_type(res);
@@ -1553,6 +1556,17 @@ void free_union_attrs (ir_type *uni)
 {
 	assert(uni && (uni->type_op == type_union));
 	DEL_ARR_F(uni->attr.ua.members);
+}
+
+ident *get_union_ident(const ir_type *uni)
+{
+	assert(uni->type_op == type_union);
+	return uni->name;
+}
+
+const char *get_union_name(const ir_type *uni)
+{
+	return get_id_str(get_union_ident(uni));
 }
 
 int get_union_n_members(const ir_type *uni)
@@ -1620,8 +1634,8 @@ void set_union_size(ir_type *tp, unsigned size)
 
 
 
-ir_type *new_d_type_array(ident *name, int n_dimensions, ir_type *element_type,
-                          dbg_info *db)
+ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
+                          type_dbg_info *db)
 {
 	ir_type *res;
 	int i;
@@ -1630,7 +1644,7 @@ ir_type *new_d_type_array(ident *name, int n_dimensions, ir_type *element_type,
 
 	assert(!is_Method_type(element_type));
 
-	res = new_type(type_array, NULL, name, db);
+	res = new_type(type_array, NULL, db);
 	res->attr.aa.n_dimensions = n_dimensions;
 	res->attr.aa.lower_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
@@ -1646,14 +1660,14 @@ ir_type *new_d_type_array(ident *name, int n_dimensions, ir_type *element_type,
 	current_ir_graph = rem;
 
 	res->attr.aa.element_type = element_type;
-	new_entity(res, id_mangle_u(name, new_id_from_chars("elem_ent", 8)), element_type);
+	new_entity(res, new_id_from_chars("elem_ent", 8), element_type);
 	hook_new_type(res);
 	return res;
 }
 
-ir_type *new_type_array(ident *name, int n_dimensions, ir_type *element_type)
+ir_type *new_type_array(int n_dimensions, ir_type *element_type)
 {
-	return new_d_type_array(name, n_dimensions, element_type, NULL);
+	return new_d_type_array(n_dimensions, element_type, NULL);
 }
 
 void free_array_automatic_entities(ir_type *array)
@@ -1811,7 +1825,7 @@ void set_array_element_type(ir_type *array, ir_type *tp)
 	array->attr.aa.element_type = tp;
 }
 
-ir_type *get_array_element_type(ir_type *array)
+ir_type *get_array_element_type(const ir_type *array)
 {
 	assert(array && (array->type_op == type_array));
 	return array->attr.aa.element_type;
@@ -1843,12 +1857,13 @@ void set_array_size(ir_type *tp, unsigned size)
 }
 
 
-ir_type *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db)
+ir_type *new_d_type_enumeration(ident *name, int n_enums, type_dbg_info *db)
 {
 	ir_type *res;
 
 	assert(n_enums >= 0);
-	res = new_type(type_enumeration, NULL, name, db);
+	res = new_type(type_enumeration, NULL, db);
+	res->name = name;
 	res->attr.ea.enumer = NEW_ARR_F(ir_enum_const, n_enums);
 	hook_new_type(res);
 	return res;
@@ -1869,6 +1884,17 @@ void free_enumeration_attrs(ir_type *enumeration)
 {
 	assert(enumeration && (enumeration->type_op == type_enumeration));
 	DEL_ARR_F(enumeration->attr.ea.enumer);
+}
+
+ident *get_enumeration_ident(const ir_type *enumeration)
+{
+	assert(enumeration->type_op == type_enumeration);
+	return enumeration->name;
+}
+
+const char *get_enumeration_name(const ir_type *enumeration)
+{
+	return get_id_str(get_enumeration_ident(enumeration));
 }
 
 int get_enumeration_n_enums(const ir_type *enumeration)
@@ -1913,12 +1939,12 @@ void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id)
 	enum_cnst->nameid = id;
 }
 
-ident *get_enumeration_nameid(const ir_enum_const *enum_cnst)
+ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst)
 {
 	return enum_cnst->nameid;
 }
 
-const char *get_enumeration_name(const ir_enum_const *enum_cnst)
+const char *get_enumeration_const_name(const ir_enum_const *enum_cnst)
 {
 	return get_id_str(enum_cnst->nameid);
 }
@@ -1940,13 +1966,18 @@ void set_enumeration_mode(ir_type *tp, ir_mode *mode)
 
 
 
-ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode,
-                            dbg_info *db)
+ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info *db)
 {
 	ir_type *res;
+	ir_mode *mode;
 
-	assert(mode_is_reference(ptr_mode));
-	res = new_type(type_pointer, ptr_mode, name, db);
+	if (is_Method_type(points_to) || is_code_type(points_to)) {
+		mode = mode_P_code;
+	} else {
+		mode = mode_P_data;
+	}
+
+	res = new_type(type_pointer, mode, db);
 	res->attr.pa.points_to = points_to;
 	assert((get_mode_size_bits(res->mode) % 8 == 0) && "unorthodox modes not implemented");
 	res->size = get_mode_size_bytes(res->mode);
@@ -1955,9 +1986,9 @@ ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode,
 	return res;
 }
 
-ir_type *new_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode)
+ir_type *new_type_pointer(ir_type *points_to)
 {
-	return new_d_type_pointer(name, points_to, ptr_mode, NULL);
+	return new_d_type_pointer(points_to, NULL);
 }
 
 void free_pointer_entities(ir_type *pointer)
@@ -1978,7 +2009,7 @@ void set_pointer_points_to_type(ir_type *pointer, ir_type *tp)
 	pointer->attr.pa.points_to = tp;
 }
 
-ir_type *get_pointer_points_to_type(ir_type *pointer)
+ir_type *get_pointer_points_to_type(const ir_type *pointer)
 {
 	assert(pointer && (pointer->type_op == type_pointer));
 	return pointer->attr.pa.points_to;
@@ -2012,9 +2043,9 @@ ir_type *find_pointer_type_to_type(ir_type *tp)
 
 
 
-ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db)
+ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info *db)
 {
-	ir_type *res = new_type(type_primitive, mode, name, db);
+	ir_type *res = new_type(type_primitive, mode, db);
 	res->size  = get_mode_size_bytes(mode);
 	res->flags |= tf_layout_fixed;
 	res->attr.ba.base_type = NULL;
@@ -2022,9 +2053,9 @@ ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info *db)
 	return res;
 }
 
-ir_type *new_type_primitive(ident *name, ir_mode *mode)
+ir_type *new_type_primitive(ir_mode *mode)
 {
-	return new_d_type_primitive(name, mode, NULL);
+	return new_d_type_primitive(mode, NULL);
 }
 
 int (is_Primitive_type)(const ir_type *primitive)
@@ -2042,7 +2073,7 @@ void set_primitive_mode(ir_type *tp, ir_mode *mode)
 	tp->mode = mode;
 }
 
-ir_type *get_primitive_base_type(ir_type *tp)
+ir_type *get_primitive_base_type(const ir_type *tp)
 {
 	assert(is_Primitive_type(tp));
 	return tp->attr.ba.base_type;
@@ -2106,6 +2137,17 @@ int is_compound_type(const ir_type *tp)
 	return tp->type_op->flags & TP_OP_FLAG_COMPOUND;
 }
 
+ident *get_compound_ident(const ir_type *tp)
+{
+	assert(is_compound_type(tp));
+	return tp->name;
+}
+
+const char *get_compound_name(const ir_type *tp)
+{
+	return get_id_str(get_compound_ident(tp));
+}
+
 int is_code_type(const ir_type *tp)
 {
 	assert(tp && tp->kind == k_type);
@@ -2127,9 +2169,9 @@ int is_lowered_type(const ir_type *tp)
 	return tp->flags & tf_lowered_type;
 }
 
-ir_type *new_type_value(ident *name)
+ir_type *new_type_value(void)
 {
-	ir_type *res = new_type_struct(name);
+	ir_type *res = new_type_struct(new_id_from_str("<value_type>"));
 
 	res->flags |= tf_value_param_type;
 
@@ -2139,9 +2181,9 @@ ir_type *new_type_value(ident *name)
 	return res;
 }
 
-ir_type *new_type_frame(ident *name)
+ir_type *new_type_frame(void)
 {
-	ir_type *res = new_type_class(name);
+	ir_type *res = new_type_class(new_id_from_str("<frame_type>"));
 
 	res->flags |= tf_frame_type;
 
@@ -2163,7 +2205,7 @@ ir_type *clone_frame_type(ir_type *type)
 	/* the entity link resource should be allocated if this function is called */
 	assert(irp_resources_reserved(irp) & IR_RESOURCE_ENTITY_LINK);
 
-	res = new_type_frame(type->name);
+	res = new_type_frame();
 	for (i = 0, n = get_class_n_members(type); i < n; ++i) {
 		ir_entity *ent  = get_class_member(type, i);
 		ir_entity *nent = copy_entity_own(ent, res);
@@ -2209,7 +2251,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	set_type_state(frame_type, layout_undefined);
 
 	if (! a_byte)
-		a_byte = new_type_primitive(new_id_from_chars("byte", 4), mode_Bu);
+		a_byte = new_type_primitive(mode_Bu);
 
 	snprintf(buf, sizeof(buf), "area%u", area_cnt++);
 	name = new_id_from_str(buf);
@@ -2218,7 +2260,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	frame_align = get_type_alignment_bytes(frame_type);
 	size = (size + frame_align - 1) & ~(frame_align - 1);
 
-	tp = new_type_array(id_mangle_u(get_type_ident(frame_type), name), 1, a_byte);
+	tp = new_type_array(1, a_byte);
 	set_array_bounds_int(tp, 0, 0, size);
 	set_type_alignment_bytes(tp, alignment);
 
@@ -2255,4 +2297,76 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 
 	set_type_state(frame_type, layout_fixed);
 	return area;
+}
+
+void ir_print_type(char *buffer, size_t buffer_size, const ir_type *type)
+{
+	ident *id;
+	int p;
+	type_dbg_info *tdbgi = get_type_dbg_info(type);
+	if (tdbgi != NULL) {
+		ir_retrieve_type_dbg_info(buffer, buffer_size, tdbgi);
+		return;
+	}
+
+	/* we have to construct some name... */
+	switch (get_type_tpop_code(type)) {
+	case tpo_uninitialized:
+		break;
+	case tpo_code:
+		snprintf(buffer, buffer_size, "code");
+		return;
+
+	case tpo_class:
+		id = get_class_ident(type);
+		snprintf(buffer, buffer_size, "class '%s'", get_id_str(id));
+		return;
+
+	case tpo_struct:
+		id = get_struct_ident(type);
+		snprintf(buffer, buffer_size, "struct '%s'", get_id_str(id));
+		return;
+
+	case tpo_union:
+		id = get_union_ident(type);
+		snprintf(buffer, buffer_size, "union '%s'", get_id_str(id));
+		return;
+
+	case tpo_enumeration:
+		id = get_enumeration_ident(type);
+		snprintf(buffer, buffer_size, "enumeration '%s'", get_id_str(id));
+		return;
+
+	case tpo_unknown:
+		snprintf(buffer, buffer_size, "unknown type");
+		return;
+
+	case tpo_pointer:
+		p = snprintf(buffer, buffer_size, "pointer to ");
+		buffer      += p;
+		buffer_size -= p;
+		ir_print_type(buffer, buffer_size, get_pointer_points_to_type(type));
+		return;
+
+	case tpo_array:
+		p = snprintf(buffer, buffer_size, "array of ");
+		buffer      += p;
+		buffer_size -= p;
+		ir_print_type(buffer, buffer_size, get_array_element_type(type));
+		return;
+
+	case tpo_primitive:
+		id = get_mode_ident(get_type_mode(type));
+		snprintf(buffer, buffer_size, "%s", get_id_str(id));
+		return;
+
+	case tpo_none:
+		snprintf(buffer, buffer_size, "none");
+		return;
+	case tpo_method:
+		/* TODO: we should print argument and return types here... */
+		snprintf(buffer, buffer_size, "method type");
+		return;
+	}
+	snprintf(buffer, buffer_size, "invalid type");
 }

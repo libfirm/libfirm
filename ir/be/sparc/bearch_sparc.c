@@ -222,7 +222,7 @@ static void *sparc_cg_init(be_irg_t *birg)
 
 	if (! int_tp) {
 		/* create an integer type with machine size */
-		int_tp = new_type_primitive(new_id_from_chars("int", 3), mode_Is);
+		int_tp = new_type_primitive(mode_Is);
 	}
 
 	cg 				 = XMALLOC(sparc_code_gen_t);

@@ -443,8 +443,8 @@ static void ia32_build_between_type(void)
 {
 #define IDENT(s) new_id_from_chars(s, sizeof(s)-1)
 	if (! between_type) {
-		ir_type *old_bp_type   = new_type_primitive(IDENT("bp"), mode_Iu);
-		ir_type *ret_addr_type = new_type_primitive(IDENT("return_addr"), mode_Iu);
+		ir_type *old_bp_type   = new_type_primitive(mode_Iu);
+		ir_type *ret_addr_type = new_type_primitive(mode_Iu);
 
 		between_type           = new_type_struct(IDENT("ia32_between_type"));
 		old_bp_ent             = new_entity(between_type, IDENT("old_bp"), old_bp_type);
@@ -866,7 +866,7 @@ static void ia32_before_abi(void *self)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
 	if (cg->gprof) {
 		if (mcount == NULL) {
-			ir_type *tp = new_type_method(ID("FKT.mcount"), 0, 0);
+			ir_type *tp = new_type_method(0, 0);
 			mcount = new_entity(get_glob_type(), ID("mcount"), tp);
 			/* FIXME: enter the right ld_ident here */
 			set_entity_ld_ident(mcount, get_entity_ident(mcount));

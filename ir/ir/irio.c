@@ -386,11 +386,10 @@ static void write_volatility(io_env_t *env, ir_node *irn)
 
 static void export_type_common(io_env_t *env, ir_type *tp)
 {
-	fprintf(env->file, "\t%s %ld %s \"%s\" %u %u %s %s ",
+	fprintf(env->file, "\t%s %ld %s %u %u %s %s ",
 			is_frame_type(tp) ? "frametype" : is_value_param_type(tp) ? "valuetype" : "type",
 			get_type_nr(tp),
 			get_type_tpop_name(tp),
-			get_type_name(tp),
 			get_type_size_bytes(tp),
 			get_type_alignment_bytes(tp),
 			get_type_state_name(get_type_state(tp)),
@@ -416,7 +415,12 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 
 	switch (get_type_tpop_code(tp))
 	{
+		case tpo_uninitialized:
+			panic("invalid type found");
+
 		case tpo_class:
+			fputs(get_class_name(tp), f);
+			fputc(' ', f);
 			/* TODO: inheritance stuff not supported yet */
 			printf("Inheritance of classes not supported yet!\n");
 			break;
@@ -425,17 +429,19 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 			write_mode(env, get_type_mode(tp));
 			break;
 
-		case tpo_struct:
-			break;
-
 		case tpo_union:
+		case tpo_struct:
+		case tpo_enumeration:
+			fputs(get_compound_name(tp), f);
+			fputc(' ', f);
 			break;
 
+		case tpo_method:
+		case tpo_pointer:
+		case tpo_code:
+		case tpo_array:
+		case tpo_none:
 		case tpo_unknown:
-			break;
-
-		default:
-			printf("export_type_pre: Unknown type code \"%s\".\n", get_type_tpop_name(tp));
 			break;
 	}
 	fputc('\n', f);
@@ -1068,13 +1074,10 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 	ir_type       *type;
 	long           typenr = read_long(env);
 	const char    *tpop   = read_str(env);
-	const char    *name   = read_qstr(env);
 	unsigned       size   = (unsigned) read_long(env);
 	unsigned       align  = (unsigned) read_long(env);
 	ir_type_state  state  = read_type_state(env);
 	ir_visibility  vis    = read_visibility(env);
-
-	ident         *id     = new_id_from_str(name);
 
 	const char    *kindstr;
 
@@ -1085,7 +1088,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 			return;
 		}
 
-		type = new_type_frame(id);
+		type = new_type_frame();
 		set_type_size_bytes(type, size);
 
 		kindstr = "frametype";
@@ -1096,7 +1099,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 			return;
 		}
 
-		type = new_type_value(id);
+		type = new_type_value();
 		set_type_size_bytes(type, size);
 
 		kindstr = "valuetype";
@@ -1109,7 +1112,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 				long elemtypenr = read_long(env);
 				ir_type *elemtype = get_type(env, elemtypenr);
 
-				type = new_type_array(id, ndims, elemtype);
+				type = new_type_array(ndims, elemtype);
 				for (i = 0; i < ndims; i++) {
 					const char *str = read_str(env);
 					if (strcmp(str, "unknown") != 0) {
@@ -1126,13 +1129,17 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 				break;
 			}
 
-			case tpo_class:
+			case tpo_class: {
+				const char *name = read_qstr(env);
+				ident      *id   = new_id_from_str(name);
+
 				if(typenr == (long) IR_SEGMENT_GLOBAL)
 					type = get_glob_type();
 				else
 					type = new_type_class(id);
 				set_type_size_bytes(type, size);
 				break;
+			}
 
 			case tpo_method:
 			{
@@ -1142,7 +1149,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 				int nresults         = (int)      read_long(env);
 				int variaindex;
 
-				type = new_type_method(id, nparams, nresults);
+				type = new_type_method(nparams, nresults);
 
 				for (i = 0; i < nparams; i++) {
 					long     typenr = read_long(env);
@@ -1171,31 +1178,38 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 
 			case tpo_pointer:
 			{
-				ir_mode *mode = read_mode(env);
 				ir_type *pointsto = get_type(env, read_long(env));
-				type = new_type_pointer(id, pointsto, mode);
+				type = new_type_pointer(pointsto);
 				break;
 			}
 
 			case tpo_primitive:
 			{
 				ir_mode *mode = read_mode(env);
-				type = new_type_primitive(id, mode);
+				type = new_type_primitive(mode);
 				break;
 			}
 
-			case tpo_struct:
+			case tpo_struct: {
+				const char *name = read_qstr(env);
+				ident      *id   = new_id_from_str(name);
+
 				if(typenr < (long) IR_SEGMENT_COUNT)
 					type = get_segment_type((ir_segment_t) typenr);
 				else
 					type = new_type_struct(id);
 				set_type_size_bytes(type, size);
 				break;
+			}
 
-			case tpo_union:
+			case tpo_union: {
+				const char *name = read_qstr(env);
+				ident      *id   = new_id_from_str(name);
+
 				type = new_type_union(id);
 				set_type_size_bytes(type, size);
 				break;
+			}
 
 			case tpo_unknown:
 				return;   /* ignore unknown type */
@@ -1216,7 +1230,7 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
 	set_id(env, typenr, type);
-	printf("Insert %s %s %ld\n", kindstr, name, typenr);
+	printf("Insert %s %ld\n", kindstr, typenr);
 }
 
 /** Reads an entity description and remembers it by its id. */

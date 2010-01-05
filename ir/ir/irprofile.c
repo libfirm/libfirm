@@ -172,8 +172,7 @@ fix_ssa(ir_node * bb, void * data)
 static void add_constructor(ir_entity *method)
 {
     ir_type   *method_type  = get_entity_type(method);
-    ident     *id           = id_unique("constructor_ptrt.%u");
-    ir_type   *ptr_type     = new_type_pointer(id, method_type, mode_P_code);
+    ir_type   *ptr_type     = new_type_pointer(method_type);
 
     ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
     ident     *ide          = id_unique("constructor_ptr.%u");
@@ -198,12 +197,12 @@ gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bb
 {
 	ir_node   *ins[4];
 	ident     *name = new_id_from_str("__firmprof_initializer");
-	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(name, 0, 0));
+	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
 	ir_node   *ret, *call, *symconst;
 	symconst_symbol sym;
 
 	ident     *init_name = new_id_from_str("__init_firmprof");
-	ir_type   *init_type = new_type_method(init_name, 4, 0);
+	ir_type   *init_type = new_type_method(4, 0);
 	ir_type   *uint, *uintptr, *string;
 	ir_entity *init_ent;
 	ir_graph  *irg;
@@ -212,9 +211,9 @@ gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bb
 
 	set_entity_ld_ident(ent, name);
 
-	uint    = new_type_primitive(new_id_from_str("__uint"), mode_Iu);
-	uintptr = new_type_pointer(new_id_from_str("__uintptr"), uint, get_modeP_data());
-	string  = new_type_pointer(new_id_from_str("__charptr"), new_type_primitive(new_id_from_str("__char"), mode_Bs), get_modeP_data());
+	uint    = new_type_primitive(mode_Iu);
+	uintptr = new_type_pointer(uint);
+	string  = new_type_pointer(new_type_primitive(mode_Bs));
 
 	set_method_param_type(init_type, 0, string);
 	set_method_param_type(init_type, 1, uintptr);
@@ -276,7 +275,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			tarval  **tarval_string;
 
 			snprintf(buf, sizeof(buf), "firm_name_arr.%d", nr);
-			arr = new_type_array(new_id_from_str(buf), 1, wd->tp_char);
+			arr = new_type_array(1, wd->tp_char);
 			set_array_bounds_int(arr, 0, 0, len);
 
 			snprintf(buf, sizeof(buf), "__firm_name.%d", nr++);
@@ -365,17 +364,17 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	/* create all the necessary types and entities. Note that the
 	   types must have a fixed layout, because we already running in the
 	   backend */
-	uint_type      = new_type_primitive(IDENT("__uint"), mode_Iu);
+	uint_type      = new_type_primitive(mode_Iu);
 	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
 
-	array_type     = new_type_array(IDENT("__block_info_array"), 1, uint_type);
+	array_type     = new_type_array(1, uint_type);
 	set_array_bounds_int(array_type, 0, 0, n_blocks);
 	set_type_size_bytes(array_type, n_blocks * get_mode_size_bytes(mode_Iu));
 	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
 	set_type_state(array_type, layout_fixed);
 
-	character_type = new_type_primitive(IDENT("__char"), mode_Bs);
-	string_type    = new_type_array(IDENT("__filename"), 1, character_type);
+	character_type = new_type_primitive(mode_Bs);
+	string_type    = new_type_array(1, character_type);
 	set_array_bounds_int(string_type, 0, 0, filename_len);
 	set_type_size_bytes(string_type, filename_len);
 	set_type_alignment_bytes(string_type, 1);
@@ -404,7 +403,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 		size           = get_type_size_bytes(uint_type);
 		set_entity_offset(loc_lineno, 0);
 
-		charptr_type   = new_type_pointer(IDENT("__charptr"), character_type, mode_P_data);
+		charptr_type   = new_type_pointer(character_type);
 		align_n        = get_type_size_bytes(charptr_type);
 		set_type_alignment_bytes(charptr_type, align_n);
 		loc_name       = new_entity(loc_type, IDENT("name"), charptr_type);
@@ -418,11 +417,11 @@ ir_profile_instrument(const char *filename, unsigned flags)
 		set_type_size_bytes(loc_type, size);
 		set_type_state(loc_type, layout_fixed);
 
-		loc_type = new_type_array(IDENT("__locarray"), 1, loc_type);
+		loc_type = new_type_array(1, loc_type);
 		set_array_bounds_int(string_type, 0, 0, n_blocks);
 
-		cur_ident      = IDENT("__FIRMPROF__LOCATIONS");
-		ent_locations   = new_entity(gtp, cur_ident, loc_type);
+		cur_ident     = IDENT("__FIRMPROF__LOCATIONS");
+		ent_locations = new_entity(gtp, cur_ident, loc_type);
 		set_entity_ld_ident(ent_locations, cur_ident);
 	}
 

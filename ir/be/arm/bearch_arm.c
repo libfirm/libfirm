@@ -436,7 +436,7 @@ static void handle_calls(ir_node *call, void *env)
 	n       = i;
 	n_param = get_method_n_params(mtp) - n + idx;
 	n_res   = get_method_n_ress(mtp);
-	new_mtd = new_d_type_method(get_type_ident(mtp), n_param, n_res, get_type_dbg_info(mtp));
+	new_mtd = new_d_type_method(n_param, n_res, get_type_dbg_info(mtp));
 
 	for (i = 0; i < idx; ++i)
 		set_method_param_type(new_mtd, i, new_tp[i]);
@@ -505,7 +505,7 @@ static void *arm_cg_init(be_irg_t *birg) {
 
 	if (! int_tp) {
 		/* create an integer type with machine size */
-		int_tp = new_type_primitive(new_id_from_chars("int", 3), mode_Is);
+		int_tp = new_type_primitive(mode_Is);
 	}
 
 	cg = XMALLOC(arm_code_gen_t);
@@ -543,14 +543,14 @@ static void arm_handle_intrinsics(void) {
 
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
-	int_tp  = new_type_primitive(ID("int"), mode_Is);
-	uint_tp = new_type_primitive(ID("uint"), mode_Iu);
+	int_tp  = new_type_primitive(mode_Is);
+	uint_tp = new_type_primitive(mode_Iu);
 
 	/* ARM has neither a signed div instruction ... */
 	{
 		i_instr_record *map_Div = &records[n_records++].i_instr;
 
-		tp = new_type_method(ID("rt_iDiv"), 2, 1);
+		tp = new_type_method(2, 1);
 		set_method_param_type(tp, 0, int_tp);
 		set_method_param_type(tp, 1, int_tp);
 		set_method_res_type(tp, 0, int_tp);
@@ -576,7 +576,7 @@ static void arm_handle_intrinsics(void) {
 	{
 		i_instr_record *map_Div = &records[n_records++].i_instr;
 
-		tp = new_type_method(ID("rt_uDiv"), 2, 1);
+		tp = new_type_method(2, 1);
 		set_method_param_type(tp, 0, uint_tp);
 		set_method_param_type(tp, 1, uint_tp);
 		set_method_res_type(tp, 0, uint_tp);
@@ -602,7 +602,7 @@ static void arm_handle_intrinsics(void) {
 	{
 		i_instr_record *map_Mod = &records[n_records++].i_instr;
 
-		tp = new_type_method(ID("rt_iMod"), 2, 1);
+		tp = new_type_method(2, 1);
 		set_method_param_type(tp, 0, int_tp);
 		set_method_param_type(tp, 1, int_tp);
 		set_method_res_type(tp, 0, int_tp);
@@ -628,7 +628,7 @@ static void arm_handle_intrinsics(void) {
 	{
 		i_instr_record *map_Mod = &records[n_records++].i_instr;
 
-		tp = new_type_method(ID("rt_uMod"), 2, 1);
+		tp = new_type_method(2, 1);
 		set_method_param_type(tp, 0, uint_tp);
 		set_method_param_type(tp, 1, uint_tp);
 		set_method_res_type(tp, 0, uint_tp);

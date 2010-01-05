@@ -1263,18 +1263,15 @@ static pmap *mtp_map;
  *
  * @param tp  the type to clone
  */
-static ir_type *clone_type_and_cache(ir_type *tp) {
-	static ident *prefix = NULL;
+static ir_type *clone_type_and_cache(ir_type *tp)
+{
 	ir_type *res;
 	pmap_entry *e = pmap_find(mtp_map, tp);
 
 	if (e)
 		return e->value;
 
-	if (prefix == NULL)
-		prefix = new_id_from_chars("C", 1);
-
-	res = clone_type_method(tp, prefix);
+	res = clone_type_method(tp);
 	pmap_insert(mtp_map, tp, res);
 
 	return res;

@@ -124,7 +124,7 @@ void ir_init(const firm_parameter_t *param)
 	   later. */
 	init_irprog_2();
 	/* Initialize the type module and construct some idents needed. */
-	firm_init_type(def_params.builtin_dbg, def_params.cc_mask);
+	firm_init_type(def_params.cc_mask);
 	/* initialize the entity module */
 	firm_init_entity();
 	/* class cast optimization */

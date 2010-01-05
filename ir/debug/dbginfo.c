@@ -102,15 +102,14 @@ void default_dbg_info_merge_sets(ir_node **new_nodes, int n_new_nodes,
 }
 
 /** The debug info retriever function. */
-static retrieve_dbg_func retrieve_dbg = NULL;
+static retrieve_dbg_func      retrieve_dbg      = NULL;
+static retrieve_type_dbg_func retrieve_type_dbg = NULL;
 
-/* Sets a debug info retriever. */
 void ir_set_debug_retrieve(retrieve_dbg_func func)
 {
 	retrieve_dbg = func;
 }
 
-/* Retrieve the debug info. */
 const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line)
 {
 	if (retrieve_dbg)
@@ -118,6 +117,17 @@ const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line)
 
 	*line = 0;
 	return NULL;
+}
+
+void ir_set_type_debug_retrieve(retrieve_type_dbg_func func)
+{
+	retrieve_type_dbg = func;
+}
+
+void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
+                               const type_dbg_info *tdbgi)
+{
+	retrieve_type_dbg(buffer, buffer_size, tdbgi);
 }
 
 void ir_dbg_info_snprint(char *buf, size_t bufsize, const dbg_info *dbg)

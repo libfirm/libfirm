@@ -1395,7 +1395,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 	if(!const_set)
 		const_set = new_set(cmp_tv_ent, 10);
 	if(!tp)
-		tp = new_type_primitive(new_id_from_str("const_double_t"), env->mode);
+		tp = new_type_primitive(env->mode);
 
 	key.tv  = known_const;
 	key.ent = NULL;

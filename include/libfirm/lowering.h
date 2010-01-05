@@ -63,7 +63,7 @@ typedef struct {
 	 * A function returning a pointer type for a given type.
 	 * If this pointer is NULL, a new pointer type is always created.
 	 */
-	ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
+	ir_type *(*find_pointer_type)(ir_type *e_type, int alignment);
 
 	/**
 	 * If the LF_SMALL_CMP_IN_REGS flag is set, this function will be called

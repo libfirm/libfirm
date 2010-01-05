@@ -280,8 +280,7 @@ static ir_type *find_type_for_node(ir_node *n) {
 
 		if (tp1 == tp2) { tp = tp1; break; }
 
-		DB((dbg, SET_LEVEL_2, "Phi %ld with two different types: %s, %s: unknown type.\n", get_irn_node_nr(n),
-			get_type_name(tp1), get_type_name(tp2)));
+		DB((dbg, SET_LEVEL_2, "Phi %ld with two different types: %+F, %+F: unknown type.\n", get_irn_node_nr(n), tp1, tp2));
 		tp = firm_unknown_type;   /* Test for supertypes? */
 		break;
 	}
@@ -381,8 +380,7 @@ default_code:
 				tp = phi_cycle_type;
 				break;
 			}
-			DB((dbg, SET_LEVEL_2, "Binop %ld with two different types: %s, %s: unknown type \n", get_irn_node_nr(n),
-				get_type_name(tp1), get_type_name(tp2)));
+			DB((dbg, SET_LEVEL_2, "Binop %ld with two different types: %+F, %+F: unknown type\n", get_irn_node_nr(n), tp1, tp2));
 			tp = firm_unknown_type;
 			break;
 		}

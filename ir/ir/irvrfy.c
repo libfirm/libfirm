@@ -84,10 +84,8 @@ static void show_entity_failure(ir_node *node) {
 			ir_type *ent_type = get_entity_owner(ent);
 
 			if (ent_type) {
-				if (ent_type == get_glob_type())
-					fprintf(stderr, "\nFIRM: irn_vrfy_irg() %s failed\n", get_entity_name(ent));
-				else
-					fprintf(stderr, "\nFIRM: irn_vrfy_irg() %s::%s failed\n", get_type_name(ent_type), get_entity_name(ent));
+				ir_fprintf(stderr, "\nFIRM: irn_vrfy_irg() %+F::%s failed\n",
+				           ent_type, get_entity_name(ent));
 			} else {
 				fprintf(stderr, "\nFIRM: irn_vrfy_irg() <NULL>::%s failed\n", get_entity_name(ent));
 			}
@@ -176,13 +174,15 @@ static void show_proj_failure(ir_node *n) {
 static void show_proj_mode_failure(ir_node *n, ir_type *ty) {
 	long proj  = get_Proj_proj(n);
 	ir_mode *m = get_type_mode(ty);
+	char type_name[256];
+	ir_print_type(type_name, sizeof(type_name), ty);
 
 	show_entity_failure(n);
 	fprintf(stderr, "  Proj %ld mode %s proj %ld (type %s mode %s) failed\n" ,
 		get_irn_node_nr(n),
 		get_irn_modename(n),
 		proj,
-		get_type_name(ty),
+		type_name,
 		get_mode_name_ex(m));
 }
 
@@ -193,13 +193,15 @@ static void show_proj_failure_ent(ir_node *n, ir_entity *ent) {
 	ir_node *op  = get_Proj_pred(n);
 	int proj     = get_Proj_proj(n);
 	ir_mode *m   = get_type_mode(get_entity_type(ent));
+	char type_name[256];
+	ir_print_type(type_name, sizeof(type_name), get_entity_type(ent));
 
 	show_entity_failure(n);
 	fprintf(stderr, "  node %ld %s%s %d(%s%s) entity %s(type %s mode %s)failed\n" ,
 		get_irn_node_nr(n),
 		get_irn_opname(n), get_irn_modename(n), proj,
 		get_irn_opname(op), get_irn_modename(op),
-		get_entity_name(ent), get_type_name(get_entity_type(ent)),
+		get_entity_name(ent), type_name,
 		get_mode_name_ex(m));
 }
 
@@ -215,9 +217,11 @@ static void show_node_on_graph(ir_graph *irg, ir_node *n) {
  */
 static void show_call_param(ir_node *n, ir_type *mt) {
 	int i;
+	char type_name[256];
+	ir_print_type(type_name, sizeof(type_name), mt);
 
 	show_entity_failure(n);
-	fprintf(stderr, "  Call type-check failed: %s(", get_type_name(mt));
+	fprintf(stderr, "  Call type-check failed: %s(", type_name);
 	for (i = 0; i < get_method_n_params(mt); ++i) {
 		fprintf(stderr, "%s ", get_mode_name_ex(get_type_mode(get_method_param_type(mt, i))));
 	}
@@ -1181,16 +1185,16 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 			get_Call_n_params(n) >= get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in variadic type.",
 			0,
-			ir_fprintf(stderr, "Call %+F has %d params, method %s type %d\n",
-			n, get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
+			ir_fprintf(stderr, "Call %+F has %d params, type %d\n",
+			n, get_Call_n_params(n), get_method_n_params(mt));
 		);
 	} else {
 		ASSERT_AND_RET_DBG(
 			get_Call_n_params(n) == get_method_n_params(mt),
 			"Number of args for Call doesn't match number of args in non variadic type.",
 			0,
-			ir_fprintf(stderr, "Call %+F has %d params, method %s type %d\n",
-			n, get_Call_n_params(n), get_type_name(mt), get_method_n_params(mt));
+			ir_fprintf(stderr, "Call %+F has %d params, type %d\n",
+			n, get_Call_n_params(n), get_method_n_params(mt));
 		);
 	}
 

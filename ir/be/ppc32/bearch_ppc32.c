@@ -160,8 +160,8 @@ static ir_type *ppc32_abi_get_between_type(void *self)
 
 	if(!between_type) {
 		ir_entity *ret_addr_ent;
-		ir_type *ret_addr_type = new_type_primitive(new_id_from_str("return_addr"), mode_P);
-		ir_type *old_bp_type   = new_type_primitive(new_id_from_str("bp"), mode_P);
+		ir_type *ret_addr_type = new_type_primitive(mode_P);
+		ir_type *old_bp_type   = new_type_primitive(mode_P);
 
 		between_type           = new_type_class(new_id_from_str("ppc32_between_type"));
 		old_bp_ent             = new_entity(between_type, new_id_from_str("old_bp"), old_bp_type);

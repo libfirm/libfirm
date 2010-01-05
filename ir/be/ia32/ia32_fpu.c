@@ -56,7 +56,7 @@ static ir_entity *fpcw_truncate = NULL;
 static ir_entity *create_ent(int value, const char *name)
 {
 	ir_mode   *mode = mode_Hu;
-	ir_type   *type = new_type_primitive(new_id_from_str("_fpcw_type"), mode);
+	ir_type   *type = new_type_primitive(mode);
 	ir_type   *glob = get_glob_type();
 	ir_graph  *cnst_irg;
 	ir_entity *ent;

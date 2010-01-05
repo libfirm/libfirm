@@ -5796,7 +5796,7 @@ static ir_node *transform_node_Call(ir_node *call) {
 	ir_node  *callee = get_Call_ptr(call);
 	ir_node  *adr, *mem, *res, *bl, **in;
 	ir_type  *ctp, *mtp, *tp;
-	ident    *id;
+	type_dbg_info *tdb;
 	dbg_info *db;
 	int      i, n_res, n_param;
 	ir_variadicity var;
@@ -5818,13 +5818,11 @@ static ir_node *transform_node_Call(ir_node *call) {
 
 	/* build a new call type */
 	mtp = get_Call_type(call);
-	id  = get_type_ident(mtp);
-	id  = id_mangle(new_id_from_chars("T_", 2), id);
-	db  = get_type_dbg_info(mtp);
+	tdb = get_type_dbg_info(mtp);
 
 	n_res   = get_method_n_ress(mtp);
 	n_param = get_method_n_params(mtp);
-	ctp     = new_d_type_method(id, n_param + 1, n_res, db);
+	ctp     = new_d_type_method(n_param + 1, n_res, tdb);
 
 	for (i = 0; i < n_res; ++i)
 		set_method_res_type(ctp, i, get_method_res_type(mtp, i));
@@ -5833,8 +5831,7 @@ static ir_node *transform_node_Call(ir_node *call) {
 
 	/* FIXME: we don't need a new pointer type in every step */
 	tp = get_irg_frame_type(current_ir_graph);
-	id = id_mangle(get_type_ident(tp), new_id_from_chars("_ptr", 4));
-	tp = new_type_pointer(id, tp, mode_P_data);
+	tp = new_type_pointer(tp);
 	set_method_param_type(ctp, 0, tp);
 
 	in[0] = get_Builtin_param(callee, 2);

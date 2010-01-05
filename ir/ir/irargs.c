@@ -136,10 +136,14 @@ static int firm_emit(lc_appendable_t *app,
 			isupper(occ->conversion) ? get_entity_ld_name_ex(X): get_entity_name(X));
 		snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
 		break;
-	case k_type:
-		snprintf(buf, sizeof(buf), "%s%s:%s", A("type"), get_type_tpop_name(X), get_type_name(X));
+	case k_type: {
+		char type_name[256];
+		ir_print_type(type_name, sizeof(type_name), X);
+		snprintf(buf, sizeof(buf), "%s%s:%s", A("type"), get_type_tpop_name(X),
+		         type_name);
 		snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
 		break;
+	}
 	case k_ir_graph:
 		if (X == get_const_code_irg())
 			snprintf(buf, sizeof(buf), "%s<ConstCodeIrg>", A("irg"));

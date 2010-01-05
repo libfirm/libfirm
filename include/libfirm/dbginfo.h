@@ -35,6 +35,7 @@
 #ifndef FIRM_DEBUG_DBGINFO_H
 #define FIRM_DEBUG_DBGINFO_H
 
+#include <stdlib.h>
 #include "firm_types.h"
 #include "ident.h"
 
@@ -163,8 +164,27 @@ typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
 void ir_set_debug_retrieve(retrieve_dbg_func func);
 
 /**
+ * The type of the type debug info retrieve function.
+ * Prints a human readable source representation of a type to an obstack.
+ *  (Used for generating debug info like stabs or dwarf)
+ */
+typedef void (*retrieve_type_dbg_func)(char *buffer, size_t buffer_size,
+                                       const type_dbg_info *tdbgi);
+
+/**
+ * Set global print_type_dbg_info function in firm
+ */
+void ir_set_type_debug_retrieve(retrieve_type_dbg_func func);
+
+/**
  * Retrieve the debug info.
  */
 const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
+
+/**
+ * Retrieve type debug info
+ */
+void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
+                               const type_dbg_info *tdbgi);
 
 #endif

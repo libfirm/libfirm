@@ -93,8 +93,7 @@ static ir_node *create_convb(ir_node *node)
 static ir_type *create_lowered_type(void)
 {
 	if(lowered_type == NULL) {
-		lowered_type = new_type_primitive(new_id_from_str("__lowered_mode_b"),
-		                                  config.lowered_mode);
+		lowered_type = new_type_primitive(config.lowered_mode);
 	}
 	return lowered_type;
 }

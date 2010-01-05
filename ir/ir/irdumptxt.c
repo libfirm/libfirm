@@ -224,9 +224,9 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	}  break;
 	case iro_Start: {
 		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-		fprintf(F, "  start of method of type %s\n", get_type_name_ex(tp, &bad));
+		ir_fprintf(F, "  start of method of type %+F\n", tp);
 		for (i = 0; i < get_method_n_params(tp); ++i)
-			fprintf(F, "    param %d type: %s\n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+			ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 #ifdef INTERPROCEDURAL_VIEW
 		if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
 			ir_node *sbl = get_nodes_block(n);
@@ -234,32 +234,36 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			fprintf(F, "  graph has %d interprocedural predecessors:\n", n_cfgpreds);
 			for (i = 0; i < n_cfgpreds; ++i) {
 				ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
-				fprintf(F, "    %d: Call %ld in graph %s\n", i, get_irn_node_nr(cfgpred),
-					get_irg_dump_name(get_irn_irg(cfgpred)));
+				fprintf(F, "    %d: Call %ld in graph %s\n", i,
+				        get_irn_node_nr(cfgpred),
+				        get_irg_dump_name(get_irn_irg(cfgpred)));
 			}
 		}
 #endif
 	} break;
 	case iro_Cond: {
-		fprintf(F, "  condition kind: %s\n",  get_Cond_kind(n) == dense ? "dense" : "fragmentary");
+		fprintf(F, "  condition kind: %s\n",
+		        get_Cond_kind(n) == dense ? "dense" : "fragmentary");
 		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
-		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE)
-			fprintf(F, "  jump prediction: %s\n", get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
+		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE) {
+			fprintf(F, "  jump prediction: %s\n",
+			        get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
+		}
 	} break;
 	case iro_Alloc: {
-		fprintf(F, "  allocating entity of type: %s\n", get_type_name_ex(get_Alloc_type(n), &bad));
+		ir_fprintf(F, "  allocating entity of type: %+F\n", get_Alloc_type(n));
 		fprintf(F, "  allocating on: the %s\n", (get_Alloc_where(n) == stack_alloc) ? "stack" : "heap");
 	} break;
 	case iro_Free: {
-		fprintf(F, "  freeing entity of type %s\n", get_type_name_ex(get_Free_type(n), &bad));
+		ir_fprintf(F, "  freeing entity of type %+F\n", get_Free_type(n));
 		fprintf(F, "  allocated on: the %s\n", (get_Free_where(n) == stack_alloc) ? "stack" : "heap");
 	} break;
 	case iro_Sel: {
 		ir_entity *ent = get_Sel_entity(n);
 		if (ent) {
 			fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
-			fprintf(F, "    of type    %s\n",  get_type_name_ex(get_entity_type(ent),  &bad));
-			fprintf(F, "    with owner %s.\n", get_type_name_ex(get_entity_owner(ent), &bad));
+			ir_fprintf(F, "    of type    %+F\n",  get_entity_type(ent));
+			ir_fprintf(F, "    with owner %+F.\n", get_entity_owner(ent));
 		}
 		else {
 			fprintf(F, "  <NULL entity>\n");
@@ -270,12 +274,12 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		ir_type *tp = get_Call_type(n);
 		if (get_Call_tail_call(n))
 			fprintf(F, "  tail call\n");
-		fprintf(F, "  calling method of type %s\n", get_type_name_ex(tp, &bad));
+		ir_fprintf(F, "  calling method of type %+F\n", tp);
 		if(get_unknown_type() != tp) {
 			for (i = 0; i < get_method_n_params(tp); ++i)
-				fprintf(F, "    param %d type: %s\n", i, get_type_name_ex(get_method_param_type(tp, i), &bad));
+				ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 			for (i = 0; i < get_method_n_ress(tp); ++i)
-				fprintf(F, "    resul %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+				ir_fprintf(F, "    result %d type: %+F\n", i, get_method_res_type(tp, i));
 		}
 		if (Call_has_callees(n)) {
 			fprintf(F, "  possible callees:\n");
@@ -295,19 +299,21 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 		}
 	} break;
 	case iro_Cast: {
-		fprintf(F, "  cast to type: %s\n", get_type_name_ex(get_Cast_type(n), &bad));
+		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
 	} break;
 	case iro_Return: {
 		if (!get_interprocedural_view()) {
 			ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-			fprintf(F, "  return in method of type %s\n", get_type_name_ex(tp, &bad));
-			for (i = 0; i < get_method_n_ress(tp); ++i)
-				fprintf(F, "    res %d type: %s\n", i, get_type_name_ex(get_method_res_type(tp, i), &bad));
+			ir_fprintf(F, "  return in method of type %+F\n", tp);
+			for (i = 0; i < get_method_n_ress(tp); ++i) {
+				ir_fprintf(F, "    result %d type: %+F\n", i,
+				           get_method_res_type(tp, i));
+			}
 		}
 	} break;
 	case iro_Const: {
 		assert(get_Const_type(n) != firm_none_type);
-		fprintf(F, "  Const of type %s\n", get_type_name_ex(get_Const_type(n), &bad));
+		ir_fprintf(F, "  Const of type %+F\n", get_Const_type(n));
 	} break;
 	case iro_SymConst: {
 		switch(get_SymConst_kind(n)) {
@@ -342,10 +348,10 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 			break;
 		case symconst_enum_const:
 			fprintf(F, "  kind: enumeration\n");
-			fprintf(F, "  name: %s\n", get_enumeration_name(get_SymConst_enum(n)));
+			fprintf(F, "  name: %s\n", get_enumeration_const_name(get_SymConst_enum(n)));
 			break;
 		}
-		fprintf(F, "  type of value: %s\n", get_type_name_ex(get_SymConst_value_type(n), &bad));
+		ir_fprintf(F, "  type of value: %+F\n", get_SymConst_value_type(n));
 	} break;
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), &bad));
@@ -396,7 +402,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
 		if (get_irn_typeinfo_type(n) != firm_none_type)
-			fprintf (F, "  Analysed type: %s\n", get_type_name_ex(get_irn_typeinfo_type(n), &bad));
+			ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
 
 	return bad;
 }
@@ -533,8 +539,7 @@ static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
 			fprintf(F, ",\n%s   ", prefix);
 			comma = "";
 		}
-		fprintf(F, "%s %s(%ld)", comma, get_type_name(get_type(tp, i)), get_type_nr(tp));
-		//dump_type_to_file(F, get_type(tp, i), dump_verbosity_onlynames);
+		ir_fprintf(F, "%s %+F", comma, get_type(tp, i));
 		comma = ",";
 	}
 	fprintf(F, "\n");
@@ -619,23 +624,23 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 	owner = get_entity_owner(ent);
 	type  = get_entity_type(ent);
 	if (verbosity & dump_verbosity_onlynames) {
-		fprintf(F, "%sentity %s.%s (%ld)\n", prefix, get_type_name(get_entity_owner(ent)),
+		fprintf(F, "%sentity %s.%s (%ld)\n", prefix, get_compound_name(get_entity_owner(ent)),
 			get_entity_name(ent), get_entity_nr(ent));
 		return;
 	}
 
 	if (verbosity & dump_verbosity_entattrs) {
 		fprintf(F, "%sentity %s (%ld)\n", prefix, get_entity_name(ent), get_entity_nr(ent));
-		fprintf(F, "%s  type:  %s (%ld)\n", prefix, get_type_name(type),  get_type_nr(type));
-		fprintf(F, "%s  owner: %s (%ld)\n", prefix, get_type_name(owner), get_type_nr(owner));
+		ir_fprintf(F, "%s  type:  %+F\n", prefix, type);
+		ir_fprintf(F, "%s  owner: %+F\n", prefix, owner);
 
 		if (is_Class_type(get_entity_owner(ent))) {
 			if (get_entity_n_overwrites(ent) > 0) {
 				fprintf(F, "%s  overwrites:\n", prefix);
 				for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
 					ir_entity *ov = get_entity_overwrites(ent, i);
-					fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-						get_type_name(get_entity_owner(ov)));
+					ir_fprintf(F, "%s    %d: %s of class %+F\n", prefix, i,
+					        get_entity_name(ov), get_entity_owner(ov));
 				}
 			} else {
 				fprintf(F, "%s  Does not overwrite other entities.\n", prefix);
@@ -644,11 +649,12 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				fprintf(F, "%s  overwritten by:\n", prefix);
 				for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
 					ir_entity *ov = get_entity_overwrittenby(ent, i);
-					fprintf(F, "%s    %d: %s of class %s\n", prefix, i, get_entity_name(ov),
-						get_type_name(get_entity_owner(ov)));
+					ir_fprintf(F, "%s    %d: %s of class %+F\n", prefix, i,
+					           get_entity_name(ov), get_entity_owner(ov));
 				}
 			} else {
-				fprintf(F, "%s  Is not overwritten by other entities.\n", prefix);
+				fprintf(F, "%s  Is not overwritten by other entities.\n",
+				        prefix);
 			}
 
 			if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
@@ -657,15 +663,15 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				for (ov = get_entity_trans_overwrites_first(ent);
 				ov;
 				ov = get_entity_trans_overwrites_next(ent)) {
-					fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
-						get_type_name(get_entity_owner(ov)));
+					ir_fprintf(F, "%s    : %s of class %+F\n", prefix,
+					           get_entity_name(ov), get_entity_owner(ov));
 				}
 				fprintf(F, "%s  transitive overwritten by:\n", prefix);
 				for (ov = get_entity_trans_overwrittenby_first(ent);
 				ov;
 				ov = get_entity_trans_overwrittenby_next(ent)) {
-					fprintf(F, "%s    : %s of class %s\n", prefix, get_entity_name(ov),
-						get_type_name(get_entity_owner(ov)));
+					ir_fprintf(F, "%s    : %s of class %+F\n", prefix,
+					           get_entity_name(ov), get_entity_owner(ov));
 				}
 			}
 		}
@@ -719,9 +725,9 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 
 		fputc('\n', F);
 	} else {  /* no entattrs */
-		fprintf(F, "%s(%3d:%d) %-40s: %s", prefix,
+		ir_fprintf(F, "%s(%3d:%d) %+F: %s", prefix,
 			get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
-			get_type_name(get_entity_type(ent)), get_entity_name(ent));
+			get_entity_type(ent), get_entity_name(ent));
 		if (is_Method_type(get_entity_type(ent))) fputs("(...)", F);
 
 		if (verbosity & dump_verbosity_accessStats) {
@@ -990,7 +996,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 
 	if (get_entity_allocation(ent) != allocation_static) {
 
-		fprintf(F, "%s_%s", get_type_name(get_entity_owner(ent)), get_entity_name(ent));
+		ir_fprintf(F, "%+F_%s", get_entity_owner(ent), get_entity_name(ent));
 
 		if (max_L_freq >= 0) {
 			fprintf(F, "%s Load", comma);
@@ -999,7 +1005,10 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 			}
 		}
 		if (max_S_freq >= 0) {
-			if (max_L_freq >= 0)    fprintf(F, "\n%s_%s", get_type_name(get_entity_owner(ent)), get_entity_name(ent));
+			if (max_L_freq >= 0) {
+				ir_fprintf(F, "\n%+F_%s", get_entity_owner(ent),
+				           get_entity_name(ent));
+			}
 			fprintf(F, "%s Store", comma);
 			for (i = 0; i <= max_S_freq; ++i) {
 				fprintf(F, "%s %d", comma, S_freq[i]);
@@ -1036,7 +1045,7 @@ void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 /* A fast hack to dump a CSV-file. */
 void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
 	int i;
-	char buf[1024 + 10];
+	char buf[1024];
 	(void) comma;
 
 	if (!is_Class_type(tp)) return;   // we also want array types. Stupid, these are classes in java.
@@ -1070,7 +1079,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 			assert(is_Alloc(all));
 		}
 
-		fprintf(F, "%s ", get_type_name(tp));
+		ir_fprintf(F, "%+F ", tp);
 		fprintf(F, "%s Alloc ", comma);
 
 		if (max_freq >= 0) {
@@ -1091,7 +1100,7 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 		}
 
 		if (max_disp >= 0) {
-			fprintf(F, "%s__disp_tab%s Load", get_type_name(tp), comma);
+			ir_fprintf(F, "%+F__disp_tab%s Load", tp, comma);
 			for (i = 0; i <= max_disp; ++i) {
 				fprintf(F, "%s %d", comma, disp[i]);
 			}
@@ -1104,9 +1113,9 @@ void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const 
 
 #define DISP_TAB_SUFFIX "__disp_tab"
 		if (get_trouts_state() != outs_none) {
-			assert(strlen(get_type_name(tp)) < 1024);
-			fprintf(F, "%-44s %6.2lf  -1.00\n", get_type_name(tp), get_type_estimated_n_instances(tp));
-			sprintf(buf, "%s%s", get_type_name(tp), DISP_TAB_SUFFIX);
+			ir_fprintf(F, "%+F %6.2lf  -1.00\n", tp,
+			           get_type_estimated_n_instances(tp));
+			ir_snprintf(buf, sizeof(buf), "%+F%s", tp, DISP_TAB_SUFFIX);
 			fprintf(F, "%-44s %6.2lf   0.00\n", buf, get_class_estimated_n_dyncalls(tp));
 		}
 
@@ -1135,7 +1144,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 	if ((is_Primitive_type(tp))   && (verbosity & dump_verbosity_noPrimitiveTypes)) return;
 	if ((is_Enumeration_type(tp)) && (verbosity & dump_verbosity_noEnumerationTypes)) return;
 
-	fprintf(F, "%s type %s (%ld)", get_tpop_name(get_type_tpop(tp)), get_type_name(tp), get_type_nr(tp));
+	ir_fprintf(F, "%+F", tp);
 	if (verbosity & dump_verbosity_onlynames) { fprintf(F, "\n"); return; }
 
 	switch (get_type_tpop_code(tp)) {
@@ -1157,12 +1166,12 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 			fprintf(F, "  supertypes: ");
 			for (i = 0; i < get_class_n_supertypes(tp); ++i) {
 				ir_type *stp = get_class_supertype(tp, i);
-				fprintf(F, "\n    %d %s", i, get_type_name(stp));
+				ir_fprintf(F, "\n    %d %+F", i, stp);
 			}
 			fprintf(F, "\n  subtypes: ");
 			for (i = 0; i < get_class_n_subtypes(tp); ++i) {
 				ir_type *stp = get_class_subtype(tp, i);
-				fprintf(F, "\n    %d %s", i, get_type_name(stp));
+				ir_fprintf(F, "\n    %d %+F", i, stp);
 			}
 
 			if (get_irp_inh_transitive_closure_state() != inh_transitive_closure_none) {
@@ -1171,13 +1180,13 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 				for (stp = get_class_trans_supertype_first(tp);
 				stp;
 				stp = get_class_trans_supertype_next(tp)) {
-					fprintf(F, "\n    %s", get_type_name(stp));
+					ir_fprintf(F, "\n    %+F", stp);
 				}
 				fprintf(F, "\n  transitive subtypes: ");
 				for (stp = get_class_trans_subtype_first(tp);
 				stp;
 				stp = get_class_trans_subtype_next(tp)) {
-					fprintf(F, "\n    %s", get_type_name(stp));
+					ir_fprintf(F, "\n    %+F", stp);
 				}
 			}
 
@@ -1234,7 +1243,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 					fprintf(F, " %ld]", get_irn_node_nr(upper));
 				}
 			}
-			fprintf(F, " of <%s (%ld)>", get_type_name(elem_tp), get_type_nr(elem_tp));
+			ir_fprintf(F, " of <%+F>", elem_tp);
 
 			fprintf(F, "\n  order: ");
 			for (i = 0; i < n_dim; ++i)
@@ -1252,7 +1261,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 	case tpo_pointer:
 		if (verbosity & dump_verbosity_typeattrs) {
 			ir_type *tt = get_pointer_points_to_type(tp);
-			fprintf(F, "\n  points to %s (%ld)\n", get_type_name(tt), get_type_nr(tt));
+			ir_fprintf(F, "\n  points to %+F\n", tt);
 		}
 		break;
 
@@ -1262,13 +1271,13 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 			fprintf(F, "\n  return types: %d", get_method_n_ress(tp));
 			for (i = 0; i < get_method_n_ress(tp); ++i) {
 				ir_type *rtp = get_method_res_type(tp, i);
-				fprintf(F, "\n    %s", get_type_name(rtp));
+				ir_fprintf(F, "\n    %+F", rtp);
 			}
 
 			fprintf(F, "\n  parameter types: %d", get_method_n_params(tp));
 			for (i = 0; i < get_method_n_params(tp); ++i) {
 				ir_type *ptp = get_method_param_type(tp, i);
-				fprintf(F, "\n    %s", get_type_name(ptp));
+				ir_fprintf(F, "\n    %+F", ptp);
 			}
 			if (get_method_variadicity(tp)) {
 				fprintf(F, "\n    ...");
@@ -1281,7 +1290,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 		if (verbosity & dump_verbosity_typeattrs) {
 			ir_type *base_tp = get_primitive_base_type(tp);
 			if (base_tp != NULL)
-				fprintf(F, "\n  base type: %s (%ld)", get_type_name(tp), get_type_nr(tp));
+				ir_fprintf(F, "\n  base type: %+F", tp);
 			fprintf(F, "\n");
 		}
 		break;

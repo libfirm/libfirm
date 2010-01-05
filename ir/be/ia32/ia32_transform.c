@@ -370,8 +370,8 @@ static ir_node *gen_SymConst(ir_node *node)
  * @param mode   the mode for the float type (might be integer mode for SSE2 types)
  * @param align  alignment
  */
-static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
-	char    buf[32];
+static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align)
+{
 	ir_type *tp;
 
 	assert(align <= 16);
@@ -380,8 +380,7 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
 		static ir_type *int_Iu[16] = {NULL, };
 
 		if (int_Iu[align] == NULL) {
-			snprintf(buf, sizeof(buf), "int_Iu_%u", align);
-			int_Iu[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			int_Iu[align] = tp = new_type_primitive(mode);
 			/* set the specified alignment */
 			set_type_alignment_bytes(tp, align);
 		}
@@ -390,8 +389,7 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
 		static ir_type *int_Lu[16] = {NULL, };
 
 		if (int_Lu[align] == NULL) {
-			snprintf(buf, sizeof(buf), "int_Lu_%u", align);
-			int_Lu[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			int_Lu[align] = tp = new_type_primitive(mode);
 			/* set the specified alignment */
 			set_type_alignment_bytes(tp, align);
 		}
@@ -400,8 +398,7 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
 		static ir_type *float_F[16] = {NULL, };
 
 		if (float_F[align] == NULL) {
-			snprintf(buf, sizeof(buf), "float_F_%u", align);
-			float_F[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			float_F[align] = tp = new_type_primitive(mode);
 			/* set the specified alignment */
 			set_type_alignment_bytes(tp, align);
 		}
@@ -410,8 +407,7 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
 		static ir_type *float_D[16] = {NULL, };
 
 		if (float_D[align] == NULL) {
-			snprintf(buf, sizeof(buf), "float_D_%u", align);
-			float_D[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			float_D[align] = tp = new_type_primitive(mode);
 			/* set the specified alignment */
 			set_type_alignment_bytes(tp, align);
 		}
@@ -420,8 +416,7 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
 		static ir_type *float_E[16] = {NULL, };
 
 		if (float_E[align] == NULL) {
-			snprintf(buf, sizeof(buf), "float_E_%u", align);
-			float_E[align] = tp = new_type_primitive(new_id_from_str(buf), mode);
+			float_E[align] = tp = new_type_primitive(mode);
 			/* set the specified alignment */
 			set_type_alignment_bytes(tp, align);
 		}
@@ -434,8 +429,8 @@ static ir_type *ia32_create_float_type(ir_mode *mode, unsigned align) {
  *
  * @param tp  the atomic type
  */
-static ir_type *ia32_create_float_array(ir_type *tp) {
-	char     buf[32];
+static ir_type *ia32_create_float_array(ir_type *tp)
+{
 	ir_mode  *mode = get_type_mode(tp);
 	unsigned align = get_type_alignment_bytes(tp);
 	ir_type  *arr;
@@ -447,22 +442,19 @@ static ir_type *ia32_create_float_array(ir_type *tp) {
 
 		if (float_F[align] != NULL)
 			return float_F[align];
-		snprintf(buf, sizeof(buf), "arr_float_F_%u", align);
-		arr = float_F[align] = new_type_array(new_id_from_str(buf), 1, tp);
+		arr = float_F[align] = new_type_array(1, tp);
 	} else if (mode == mode_D) {
 		static ir_type *float_D[16] = {NULL, };
 
 		if (float_D[align] != NULL)
 			return float_D[align];
-		snprintf(buf, sizeof(buf), "arr_float_D_%u", align);
-		arr = float_D[align] = new_type_array(new_id_from_str(buf), 1, tp);
+		arr = float_D[align] = new_type_array(1, tp);
 	} else {
 		static ir_type *float_E[16] = {NULL, };
 
 		if (float_E[align] != NULL)
 			return float_E[align];
-		snprintf(buf, sizeof(buf), "arr_float_E_%u", align);
-		arr = float_E[align] = new_type_array(new_id_from_str(buf), 1, tp);
+		arr = float_E[align] = new_type_array(1, tp);
 	}
 	set_type_alignment_bytes(arr, align);
 	set_type_size_bytes(arr, 2 * get_type_size_bytes(tp));

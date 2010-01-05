@@ -48,7 +48,7 @@ static pmap *type_map;
  * Default implementation for finding a pointer type for a given element type.
  * Simple create a new one.
  */
-static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignment)
+static ir_type *def_find_pointer_type(ir_type *e_type, int alignment)
 {
 	ir_type *res;
 	pmap_entry *e;
@@ -59,7 +59,7 @@ static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignm
 	if (e)
 		res = e->value;
 	else {
-		res = new_type_pointer(id_mangle_u(get_type_ident(e_type), new_id_from_chars("Ptr", 3)), e_type, mode);
+		res = new_type_pointer(e_type);
 		set_type_alignment_bytes(res, alignment);
 		pmap_insert(type_map, e_type, res);
 	}
@@ -83,7 +83,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	int     *param_map;
 	ir_mode *modes[MAX_REGISTER_RET_VAL];
 	int n_ress, n_params, nn_ress, nn_params, i, first_variadic;
-	ident *id;
 	add_hidden hidden_params;
 	int        changed = 0;
 	ir_variadicity var;
@@ -130,7 +129,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 				else {
 					/* this compound will be allocated on callers stack and its
 					   address will be transmitted as a hidden parameter. */
-					ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
+					ptr_tp = lp->find_pointer_type(res_tp, lp->def_ptr_alignment);
 					params[nn_params]    = ptr_tp;
 					param_map[nn_params] = -1 - i;
 					++nn_params;
@@ -165,7 +164,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 			res_tp = get_method_res_type(mtp, i);
 
 			if (is_compound_type(res_tp)) {
-				params[nn_params] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
+				params[nn_params] = lp->find_pointer_type(res_tp, lp->def_ptr_alignment);
 				param_map[nn_params] = -1 - i;
 				++nn_params;
 			} else {
@@ -175,8 +174,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	}
 
 	/* create the new type */
-	id      = id_mangle_u(new_id_from_chars("L", 1), get_type_ident(mtp));
-	lowered = new_d_type_method(id, nn_params, nn_ress, get_type_dbg_info(mtp));
+	lowered = new_d_type_method(nn_params, nn_ress, get_type_dbg_info(mtp));
 
 	/* fill it */
 	for (i = 0; i < nn_params; ++i)

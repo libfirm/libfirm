@@ -25,6 +25,7 @@
 #define FIRM_TYPEREP_H
 
 #include "firm_types.h"
+#include <stdlib.h>
 
 /**
  * @page entity       Entity representation
@@ -1123,9 +1124,16 @@ ident *get_type_tpop_nameid(const ir_type *tp);
 const char *get_type_tpop_name(const ir_type *tp);
 tp_opcode get_type_tpop_code(const ir_type *tp);
 
-ident *get_type_ident(const ir_type *tp);
-void set_type_ident(ir_type *tp, ident* id);
-const char *get_type_name(const ir_type *tp);
+/**
+ * construct a string representing the type.
+ * This uses the info retrieved by the type_dbg_info if available.
+ * Otherwise it tries to create an approximate textual representation of the
+ * type.
+ * Keep in mind that this representation is not unique for each type,
+ * might abstract away some details. The main intention of this is creating
+ * human redable strings giving an idea of the type.
+ */
+void ir_print_type(char *buffer, size_t buffer_size, const ir_type *tp);
 
 /** The visibility of a type.
  *
@@ -1273,14 +1281,14 @@ void         inc_master_type_visited(void);
  * @param tp  The type.
  * @param db  The debug info.
  */
-void set_type_dbg_info(ir_type *tp, dbg_info *db);
+void set_type_dbg_info(ir_type *tp, type_dbg_info *db);
 
 /**
  * Returns the debug information of a type.
  *
  * @param tp  The type.
  */
-dbg_info *get_type_dbg_info(const ir_type *tp);
+type_dbg_info *get_type_dbg_info(const ir_type *tp);
 
 /**
  * Checks whether a pointer points to a type.
@@ -1426,9 +1434,15 @@ int smaller_type(ir_type *st, ir_type *lt);
 ir_type *new_type_class(ident *name);
 
 /** Creates a new class type with debug information. */
-ir_type *new_d_type_class(ident *name, dbg_info *db);
+ir_type *new_d_type_class(ident *name, type_dbg_info *db);
 
 /* --- manipulate private fields of class type  --- */
+
+/** return identifier of the class type */
+ident *get_class_ident(const ir_type *clss);
+
+/** return identifier of the class type */
+const char *get_class_name(const ir_type *clss);
 
 /** Adds the entity as member of the class.  */
 void add_class_member(ir_type *clss, ir_entity *member);
@@ -1599,9 +1613,15 @@ int is_Class_type(const ir_type *clss);
 /** Creates a new type struct */
 ir_type *new_type_struct(ident *name);
 /** Creates a new type struct with debug information. */
-ir_type *new_d_type_struct(ident *name, dbg_info* db);
+ir_type *new_d_type_struct(ident *name, type_dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
+
+/** return struct identifier */
+ident *get_struct_ident(const ir_type *strct);
+
+/** return struct identifier as c-string*/
+const char *get_struct_name(const ir_type *strct);
 
 /** Adds the entity as member of the struct.  */
 void add_struct_member(ir_type *strct, ir_entity *member);
@@ -1673,7 +1693,7 @@ int is_Struct_type(const ir_type *strct);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-ir_type *new_type_method(ident *name, int n_param, int n_res);
+ir_type *new_type_method(int n_param, int n_res);
 
 /** Create a new method type with debug information.
  *
@@ -1685,17 +1705,7 @@ ir_type *new_type_method(ident *name, int n_param, int n_res);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-ir_type *new_d_type_method(ident *name, int n_param, int n_res, dbg_info *db);
-
-/** Clone an existing method type.
- *
- * @param tp      the method type to clone.
- * @param prefix  if non-null, will be the prefix for the name of
- *                the cloned type
- *
- * @return the cloned method type.
- */
-ir_type *clone_type_method(ir_type *tp, ident *prefix);
+ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db);
 
 /* -- manipulate private fields of method. -- */
 
@@ -1887,9 +1897,15 @@ int is_Method_type(const ir_type *method);
 ir_type *new_type_union(ident *name);
 
 /** Creates a new type union with debug information. */
-ir_type *new_d_type_union(ident *name, dbg_info* db);
+ir_type *new_d_type_union(ident *name, type_dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
+
+/** return union identifier */
+ident *get_union_ident(const ir_type *uni);
+
+/** return union identifier as c-string */
+const char *get_union_name(const ir_type *uni);
 
 /** Returns the number of unioned types of this union */
 int get_union_n_members(const ir_type *uni);
@@ -1938,7 +1954,7 @@ int is_Union_type(const ir_type *uni);
  * The entity for array elements is built automatically.
  * Set dimension sizes after call to constructor with set_* routines.
  */
-ir_type *new_type_array(ident *name, int n_dims, ir_type *element_type);
+ir_type *new_type_array(int n_dims, ir_type *element_type);
 
 /** Create a new type array with debug information.
  *
@@ -1948,7 +1964,7 @@ ir_type *new_type_array(ident *name, int n_dims, ir_type *element_type);
  * Set dimension sizes after call to constructor with set_* routines.
  * A legal array type must have at least one dimension set.
  */
-ir_type *new_d_type_array(ident *name, int n_dims, ir_type *element_type, dbg_info* db);
+ir_type *new_d_type_array(int n_dims, ir_type *element_type, type_dbg_info* db);
 
 /* --- manipulate private fields of array type --- */
 
@@ -2007,7 +2023,7 @@ int find_array_dimension(const ir_type *array, int order);
 void set_array_element_type(ir_type *array, ir_type* tp);
 
 /** Gets the array element type. */
-ir_type *get_array_element_type(ir_type *array);
+ir_type *get_array_element_type(const ir_type *array);
 
 /** Sets the array element entity. */
 void set_array_element_entity(ir_type *array, ir_entity *ent);
@@ -2035,9 +2051,15 @@ int is_Array_type(const ir_type *array);
 ir_type *new_type_enumeration(ident *name, int n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-ir_type *new_d_type_enumeration(ident *name, int n_enums, dbg_info *db);
+ir_type *new_d_type_enumeration(ident *name, int n_enums, type_dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
+
+/** return enumeration identifier */
+ident *get_enumeration_ident(const ir_type *enumeration);
+
+/** return enumeration identifier as c-string */
+const char *get_enumeration_name(const ir_type *enumeration);
 
 /** Set an enumeration constant to a enumeration type at a given position. */
 void set_enumeration_const(ir_type *enumeration, int pos, ident *nameid, tarval *con);
@@ -2061,10 +2083,10 @@ tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
 void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);
 
 /** Returns the assigned ident of an enumeration constant. */
-ident *get_enumeration_nameid(const ir_enum_const *enum_cnst);
+ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst);
 
 /** Returns the assigned name of an enumeration constant. */
-const char *get_enumeration_name(const ir_enum_const *enum_cnst);
+const char *get_enumeration_const_name(const ir_enum_const *enum_cnst);
 
 /** Returns true if a type is a enumeration type. */
 int is_Enumeration_type(const ir_type *enumeration);
@@ -2072,25 +2094,23 @@ int is_Enumeration_type(const ir_type *enumeration);
 /**
  * @page pointer_type   Representation of a pointer type
  *
- * The mode of the pointer type must be a reference mode.
- *
  * Pointer types:
  * - points_to:      The type of the entity this pointer points to.
  */
 
 /** Creates a new type pointer. */
-ir_type *new_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode);
+ir_type *new_type_pointer(ir_type *points_to);
 
 /** Creates a new type pointer with debug information. */
-ir_type *new_d_type_pointer(ident *name, ir_type *points_to, ir_mode *ptr_mode, dbg_info* db);
+ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info* db);
 
 /* --- manipulate fields of type_pointer --- */
 
 /** Sets the type to which a pointer points to. */
-void  set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
+void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
 
 /** Returns the type to which a pointer points to. */
-ir_type *get_pointer_points_to_type(ir_type *pointer);
+ir_type *get_pointer_points_to_type(const ir_type *pointer);
 
 /** Returns true if a type is a pointer type. */
 int is_Pointer_type(const ir_type *pointer);
@@ -2108,16 +2128,16 @@ ir_type *find_pointer_type_to_type(ir_type *tp);
  * important information they carry is held in the common mode field.
  */
 /** Creates a new primitive type. */
-ir_type *new_type_primitive(ident *name, ir_mode *mode);
+ir_type *new_type_primitive(ir_mode *mode);
 
 /** Creates a new primitive type with debug information. */
-ir_type *new_d_type_primitive(ident *name, ir_mode *mode, dbg_info* db);
+ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
 int is_Primitive_type(const ir_type *primitive);
 
 /** Return the base type of a primitive (bitfield) type or NULL if none. */
-ir_type *get_primitive_base_type(ir_type *tp);
+ir_type *get_primitive_base_type(const ir_type *tp);
 
 /** Sets the base type of a primitive (bitfield) type. */
 void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
@@ -2184,6 +2204,14 @@ int is_atomic_type(const ir_type *tp);
 /* --- Support for compound types --- */
 
 /**
+ * Gets the identifier of a compound type
+ */
+ident *get_compound_ident(const ir_type *tp);
+
+/** return compound identifier as c-string */
+const char *get_compound_name(const ir_type *tp);
+
+/**
  * Gets the number of elements in a Firm compound type.
  *
  * This is just a comfortability function, because structs and
@@ -2245,14 +2273,14 @@ int is_lowered_type(const ir_type *tp);
  * so all struct access functions work.
  * Value types are not in the global list of types.
  */
-ir_type *new_type_value(ident *name);
+ir_type *new_type_value(void);
 
 /**
  * Makes a new frame type. Frame types are class types,
  * so all class access functions work.
  * Frame types are not in the global list of types.
  */
-ir_type *new_type_frame(ident *name);
+ir_type *new_type_frame(void);
 
 /**
  * Makes a clone of a frame type.
@@ -2321,12 +2349,6 @@ int compare_names(const void *tp1, const void *tp2);
 int compare_strict(const void *tp1, const void *tp2);
 
 /* ------------------------------------------------------------------------ */
-
-/**  Type for a function that computes a hash value for a type.
- *
- *   @param tp The type to compute a hash for.
- */
-typedef int (hash_types_func_t)(ir_type *tp);
 
 /** Computes a hash value by the type name.
  *

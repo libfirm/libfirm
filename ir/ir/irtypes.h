@@ -86,6 +86,7 @@ struct ir_op {
 struct ir_mode {
 	firm_kind         kind;       /**< distinguishes this node from others */
 	ident             *name;      /**< Name ident of this mode */
+	ir_type           *type;      /**< corresponding primitive type */
 
 	/* ----------------------------------------------------------------------- */
 	/* On changing this struct you have to evaluate the mode_are_equal function!*/

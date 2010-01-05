@@ -478,4 +478,9 @@ void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
  */
 int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
 
+/**
+ * Returns the primitive type matching the given mode
+ */
+ir_type *get_type_for_mode(const ir_mode *mode);
+
 #endif

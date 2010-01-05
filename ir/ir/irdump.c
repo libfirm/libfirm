@@ -259,17 +259,6 @@ const char *get_mode_name_ex(const ir_mode *mode, int *bad) {
 	return ERROR_TXT;
 }
 
-/**
- * returns the name of a type or <ERROR> if mode is NOT a mode object.
- * in the later case, sets bad
- */
-const char *get_type_name_ex(const ir_type *tp, int *bad) {
-	if (is_type(tp))
-		return get_type_name(tp);
-	*bad |= 1;
-	return ERROR_TXT;
-}
-
 #define CUSTOM_COLOR_BASE    100
 static const char *color_names[ird_color_count];
 static const char *color_rgb[ird_color_count];
@@ -760,16 +749,16 @@ int dump_node_opcode(FILE *F, ir_node *n)
 			fprintf(F, "SymC %s offset", get_entity_name(get_SymConst_entity(n)));
 			break;
 		case symconst_type_tag:
-			fprintf(F, "SymC %s tag", get_type_name_ex(get_SymConst_type(n), &bad));
+			ir_fprintf(F, "SymC %+F tag", get_SymConst_type(n));
 			break;
 		case symconst_type_size:
-			fprintf(F, "SymC %s size", get_type_name_ex(get_SymConst_type(n), &bad));
+			ir_fprintf(F, "SymC %+F size", get_SymConst_type(n));
 			break;
 		case symconst_type_align:
-			fprintf(F, "SymC %s align", get_type_name_ex(get_SymConst_type(n), &bad));
+			ir_fprintf(F, "SymC %+F align", get_SymConst_type(n));
 			break;
 		case symconst_enum_const:
-			fprintf(F, "SymC %s enum", get_enumeration_name(get_SymConst_enum(n)));
+			fprintf(F, "SymC %s enum", get_enumeration_const_name(get_SymConst_enum(n)));
 			break;
 		}
 		break;
@@ -903,10 +892,11 @@ static int dump_node_typeinfo(FILE *F, ir_node *n) {
 		if (get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_consistent  ||
 			get_irg_typeinfo_state(current_ir_graph) == ir_typeinfo_inconsistent) {
 			ir_type *tp = get_irn_typeinfo_type(n);
-			if (tp != firm_none_type)
-				fprintf(F, "[%s] ", get_type_name_ex(tp, &bad));
-			else
+			if (tp != firm_none_type) {
+				ir_fprintf(F, "[%+F]", tp);
+			} else {
 				fprintf(F, "[] ");
+			}
 		}
 	}
 	return bad;
@@ -1158,13 +1148,13 @@ handle_lut:
 		fprintf(F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
 		break;
 	case iro_Cast:
-		fprintf(F, "(%s) ", get_type_name_ex(get_Cast_type(n), &bad));
+		ir_fprintf(F, "(%+F)", get_Cast_type(n));
 		break;
 	case iro_Confirm:
 		fprintf(F, "%s ", get_pnc_string(get_Confirm_cmp(n)));
 		break;
 	case iro_CopyB:
-		fprintf(F, "(%s) ", get_type_name_ex(get_CopyB_type(n), &bad));
+		ir_fprintf(F, "(%+F)", get_CopyB_type(n));
 		break;
 
 	default:
@@ -1434,6 +1424,13 @@ static void print_dbg_info(FILE *F, dbg_info *dbg)
 	if (buf[0] != 0) {
 		fprintf(F, " info3: \"%s\"\n", buf);
 	}
+}
+
+static void print_type_dbg_info(FILE *F, type_dbg_info *dbg)
+{
+	(void) F;
+	(void) dbg;
+	/* TODO */
 }
 
 /**
@@ -1982,16 +1979,10 @@ int dump_type_node(FILE *F, ir_type *tp)
 
 	fprintf(F, "node: {title: ");
 	PRINT_TYPEID(tp);
-	fprintf(F, " label: \"%s %s\"", get_type_tpop_name(tp), get_type_name_ex(tp, &bad));
-	fprintf(F, " info1: \"");
-#if 0
-	bad |= print_type_info(F, tp);
-	print_typespecific_info(F, tp);
-#else
+	ir_fprintf(F, " label: \"%s %+F\" info1: \"", get_type_tpop_name(tp), tp);
 	dump_type_to_file(F, tp, dump_verbosity_max);
-#endif
 	fprintf(F, "\"\n");
-	print_dbg_info(F, get_type_dbg_info(tp));
+	print_type_dbg_info(F, get_type_dbg_info(tp));
 	print_typespecific_vcgattr(F, tp);
 	fprintf(F, "}\n");
 
@@ -2021,7 +2012,7 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 {
 	char buf[1024];
 	ir_enum_const *ec = get_enumeration_const(tp, pos);
-	ident         *id = get_enumeration_nameid(ec);
+	ident         *id = get_enumeration_const_nameid(ec);
 	tarval        *tv = get_enumeration_value(ec);
 
 	if (tv)

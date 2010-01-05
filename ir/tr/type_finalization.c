@@ -50,7 +50,7 @@ static void do_finalization(type_or_ent tore, void *env) {
 			   frame/global types this way. Should not made any problems. */
 			set_class_final(cls, 1);
 			DB((dbg, LEVEL_1, " made final Class %s\n",
-				get_type_name(cls)));
+				get_class_name(cls)));
 		}
 	} else {
 		ir_entity *ent = tore.ent;
@@ -68,11 +68,11 @@ static void do_finalization(type_or_ent tore, void *env) {
 			assert(get_entity_n_overwrittenby(ent) == 0);
 			set_entity_final(ent, 1);
 			DB((dbg, LEVEL_1, " made final %s::%s\n",
-				get_type_name(owner), get_entity_name(ent)));
+				get_compound_name(owner), get_entity_name(ent)));
 		} else if (get_entity_n_overwrittenby(ent) == 0) {
 			set_entity_final(ent, 1);
 			DB((dbg, LEVEL_1, " made final %s::%s\n",
-				get_type_name(owner), get_entity_name(ent)));
+				get_compound_name(owner), get_entity_name(ent)));
 		}
 	}
 }  /* do_finalization */

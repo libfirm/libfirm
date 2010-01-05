@@ -207,6 +207,13 @@ static void be_emit_tv_as_decimal(tarval *tv) {
 	set_tarval_mode_output_option(mode, old);
 }
 
+static void emit_type_name(const ir_type *type)
+{
+	char buf[256];
+	ir_print_type(buf, sizeof(buf), type);
+	be_emit_string(buf);
+}
+
 /**
  * Generates a primitive type.
  *
@@ -233,7 +240,9 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 	type_num = get_type_number(h, tp);
 
 	if (mode_is_int(mode)) {
-		be_emit_irprintf("\t.stabs\t\"%s:t%u=r%u;", get_type_name(tp), type_num, type_num);
+		be_emit_cstring("\t.stabs\t\"");
+		emit_type_name(tp);
+		be_emit_irprintf(":t%u=r%u;", type_num, type_num);
 		be_emit_tv_as_decimal(get_mode_min(mode));
 		be_emit_char(';');
 		be_emit_tv_as_decimal(get_mode_max(mode));
@@ -241,7 +250,9 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
 		be_emit_write_line();
 	} else if (mode_is_float(mode)) {
 		int size = get_type_size_bytes(tp);
-		be_emit_irprintf("\t.stabs\t\"%s:t%u=r1;%d;0;\",%d,0,0,0\n", get_type_name(tp), type_num, size, N_LSYM);
+		be_emit_cstring("\t.stabs\t\"");
+		emit_type_name(tp);
+		be_emit_irprintf(":t%u=r1;%d;0;\",%d,0,0,0\n", type_num, size, N_LSYM);
 		be_emit_write_line();
 	}
 }  /* gen_primitive_type */
@@ -257,13 +268,15 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 	int i, n;
 
 	SET_TYPE_READY(tp);
-	be_emit_irprintf("\t.stabs\t\"%s:T%u=e", get_type_name(tp), type_num);
+	be_emit_cstring("\t.stabs\t\"");
+	emit_type_name(tp);
+	be_emit_irprintf(":T%u=e", type_num);
 	for (i = 0, n = get_enumeration_n_enums(tp); i < n; ++i) {
 		ir_enum_const *ec = get_enumeration_const(tp, i);
 		char buf[64];
 
 		tarval_snprintf(buf, sizeof(buf), get_enumeration_value(ec));
-		be_emit_irprintf("%s:%s,", get_enumeration_name(ec), buf);
+		be_emit_irprintf("%s:%s,", get_enumeration_const_name(ec), buf);
 	}
 	be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
@@ -294,7 +307,9 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp) {
 	if (! IS_TYPE_READY(el_tp))
 		waitq_put(env->wq, el_tp);
 
-	be_emit_irprintf("\t.stabs\t\"%s:t", get_type_name(tp));
+	be_emit_cstring("\t.stabs\t\"");
+	emit_type_name(tp);
+	be_emit_cstring(":t");
 	print_pointer_type(h, tp, 0);
 	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
@@ -345,7 +360,9 @@ static void gen_array_type(wenv_t *env, ir_type *tp) {
 	if (! IS_TYPE_READY(etp))
 		waitq_put(env->wq, etp);
 
-	be_emit_irprintf("\t.stabs\t\"%s:t", get_type_name(tp));
+	be_emit_cstring("\t.stabs\t\"");
+	emit_type_name(tp);
+	be_emit_cstring(":t");
 
 	print_array_type(h, tp, 0);
 
@@ -376,8 +393,9 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
 	else if (is_Union_type(tp))
 		desc = 'u';
 
-	be_emit_irprintf("\t.stabs\t\"%s:Tt%u=%c%d",
-		get_type_name(tp), type_num, desc, get_type_size_bytes(tp));
+	be_emit_cstring("\t.stabs\t\"");
+	emit_type_name(tp);
+	be_emit_irprintf(":Tt%u=%c%d", type_num, desc, get_type_size_bytes(tp));
 
 	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *ent = get_compound_member(tp, i);
@@ -449,7 +467,9 @@ static void gen_method_type(wenv_t *env, ir_type *tp) {
 	}
 	res_type_num = get_type_number(h, rtp);
 
-	be_emit_irprintf("\t.stabs\t\"%s:t%u=f%u", get_type_name(tp), type_num, res_type_num);
+	be_emit_cstring("\t.stabs\t\"");
+	emit_type_name(tp);
+	be_emit_irprintf(":t%u=f%u", type_num, res_type_num);
 
 	/* handle more than one return type */
 	for (i = 1; i < n; ++i) {

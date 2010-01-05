@@ -2134,7 +2134,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 	ident     *old_id = get_entity_ld_ident(entity);
 	ident     *id     = id_mangle3("L", old_id, "$non_lazy_ptr");
 	ir_type   *e_type = get_entity_type(entity);
-	ir_type   *type   = new_type_pointer(id, e_type, mode_P_data);
+	ir_type   *type   = new_type_pointer(e_type);
 	ir_type   *parent = be->pic_symbols_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
