@@ -1226,8 +1226,8 @@ static void generate_jump_table(jmp_tbl_t *tbl, const ir_node *node)
 	tbl->defProj      = NULL;
 	tbl->num_branches = get_irn_n_edges(node) - 1;
 	tbl->branches     = XMALLOCNZ(branch_t, tbl->num_branches);
-	tbl->min_value    = INT_MAX;
-	tbl->max_value    = INT_MIN;
+	tbl->min_value    = LONG_MAX;
+	tbl->max_value    = LONG_MIN;
 
 	default_pn = get_ia32_condcode(node);
 	i = 0;
