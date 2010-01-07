@@ -1178,8 +1178,10 @@ static void import_type(io_env_t *env, keyword_t kwkind)
 
 			case tpo_pointer:
 			{
+				ir_mode *mode     = read_mode(env);
 				ir_type *pointsto = get_type(env, read_long(env));
 				type = new_type_pointer(pointsto);
+				set_type_mode(type, mode);
 				break;
 			}
 
