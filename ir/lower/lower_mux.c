@@ -1,0 +1,146 @@
+/*
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
+/**
+ * @file
+ * @brief   Replaces Mux nodes with control-flow
+ * @author  Olaf Liebe
+ * @version $Id$
+ */
+#include "config.h"
+
+#include <assert.h>
+
+#include "lowering.h"
+#include "array.h"
+#include "irnode_t.h"
+#include "irgraph_t.h"
+#include "irgwalk.h"
+#include "irgmod.h"
+#include "ircons.h"
+#include "irvrfy.h"
+
+typedef struct walk_env {
+	lower_mux_callback *cb_func;
+	ir_node            **muxes;
+} walk_env_t;
+
+static void find_mux_nodes(ir_node *mux, void *ctx)
+{
+	walk_env_t *env = ctx;
+
+	/* Skip non-mux nodes. */
+	if (!is_Mux(mux))
+		return;
+
+	/* Skip nodes, depending on the callback function. */
+	if (env->cb_func != NULL && !env->cb_func(mux)) {
+		return;
+	}
+
+	/* Store the node. */
+	ARR_APP1(ir_node*, env->muxes, mux);
+}
+
+static void lower_mux_node(ir_node* mux)
+{
+	ir_node *upper_block;
+	ir_node *lower_block;
+	ir_node *cond;
+	ir_node *trueProj;
+	ir_node *falseProj;
+	ir_node *falseBlock;
+	ir_node *mux_jmps[2];
+	ir_node *mux_values[2];
+	ir_node *phi;
+	ir_node *mbh;
+
+	/* Split the block in two halfs, with the mux in the upper block. */
+	lower_block = get_nodes_block(mux);
+	assert(lower_block != 0);
+	part_block(mux);
+	upper_block = get_cur_block();
+
+	/* Create a cond node with two projs and a phi as mux replacement. The
+	 * true proj jumps directly to the lower block, the false proj uses a
+	 * block in-between, so that the phi can be used to select the result
+	 * value from the old mux node in the lower block. */
+	cond        = new_Cond(get_Mux_sel(mux));
+	trueProj    = new_Proj(cond, mode_X, pn_Cond_true);
+	falseProj   = new_Proj(cond, mode_X, pn_Cond_false);
+	falseBlock  = new_Block(1, &falseProj);
+	mux_jmps[0] = trueProj;
+	mux_jmps[1] = new_r_Jmp(falseBlock);
+
+	/* Kill the jump from upper to lower block and replace the in array. */
+	assert(get_Block_n_cfgpreds(lower_block) == 1);
+	kill_node(get_Block_cfgpred(lower_block, 0));
+	set_irn_in(lower_block, 2, mux_jmps);
+
+	/* Combine the two control flows with a phi to select the correct value
+	 * and use it to replace the mux. */
+	set_cur_block(lower_block);
+
+	mux_values[0] = get_Mux_true(mux);
+	mux_values[1] = get_Mux_false(mux);
+	phi = new_Phi(2, mux_values, get_irn_mode(mux));
+	exchange(mux, phi);
+
+	/* Add links and update phi node lists, for the next part_block() call.
+	 * lower_block and upper_block have been updated by part_block(). Link
+	 * the projs with the cond, and the new block with the macroblock. */
+	set_irn_link(trueProj,   get_irn_link(cond));
+	set_irn_link(falseProj,  get_irn_link(cond));
+	set_irn_link(cond,       trueProj);
+	set_irn_link(cond,       falseProj);
+
+	mbh = get_Block_MacroBlock(falseBlock);
+	set_irn_link(falseBlock, get_irn_link(mbh));
+	set_irn_link(mbh,        falseBlock);
+
+	add_Block_phi(lower_block, phi);
+}
+
+void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
+{
+	int            i;
+	walk_env_t     env;
+	ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
+
+	/* Scan the graph for mux nodes to lower. */
+	env.cb_func = cb_func;
+	env.muxes   = NEW_ARR_F(ir_node*, 0);
+	irg_walk_graph(irg, find_mux_nodes, 0, &env);
+
+	/* This is required by part_block() later. */
+	ir_reserve_resources(irg, resources);
+	collect_phiprojs(irg);
+
+	for (i = 0; i < ARR_LEN(env.muxes); i++) {
+		lower_mux_node(env.muxes[i]);
+	}
+
+	/* Cleanup, verify the graph. */
+	ir_free_resources(irg, resources);
+
+	set_irg_outs_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
+}

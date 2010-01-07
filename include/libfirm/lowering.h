@@ -306,6 +306,26 @@ ir_graph_pass_t *ir_lower_mode_b_pass(
 	const char *name, const lower_mode_b_config_t *config);
 
 /**
+ * Used as callback, whenever a lowerable mux is found. The return value
+ * indicates, whether the mux should be lowered. This may be used, to lower
+ * floating point muxes, while keeping mux nodes for integers, for example.
+ *
+ * @param mux  The mux node that may be lowered.
+ * @return     A non-zero value indicates that the mux should be lowered.
+ */
+typedef int lower_mux_callback(ir_node* mux);
+
+/**
+ * Lowers all mux nodes in the given graph. A callback function may be
+ * given, to select the mux nodes to lower.
+ *
+ * @param irg      The graph to lower mux nodes in.
+ * @param cb_func  The callback function for mux selection. Can be NULL,
+ *                 to lower all mux nodes.
+ */
+void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
+
+/**
  * An intrinsic mapper function.
  *
  * @param node   the IR-node that will be mapped
