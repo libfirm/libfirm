@@ -198,6 +198,7 @@ void part_block(ir_node *node) {
 	ir_node *phi;
 	ir_node *mbh;
 	ir_node *next, *block;
+	ir_graph *irg = get_irn_irg(node);
 
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
@@ -216,11 +217,11 @@ void part_block(ir_node *node) {
 		/* we are splitting a header: this creates a new header */
 		set_Block_MacroBlock(new_block, new_block);
 	}
-	set_irg_current_block(current_ir_graph, new_block);
+	set_irg_current_block(irg, new_block);
 	{
 		ir_node *jmp = new_Jmp();
 		set_irn_in(old_block, 1, &jmp);
-		irn_vrfy_irg(old_block, current_ir_graph);
+		irn_vrfy_irg(old_block, irg);
 	}
 
 	/* move node and its predecessors to new_block */
