@@ -127,7 +127,10 @@ void ir_set_type_debug_retrieve(retrieve_type_dbg_func func)
 void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
                                const type_dbg_info *tdbgi)
 {
-	retrieve_type_dbg(buffer, buffer_size, tdbgi);
+	if (retrieve_type_dbg)
+		retrieve_type_dbg(buffer, buffer_size, tdbgi);
+	assert(buffer_size > 0);
+	buffer[0] = 0;
 }
 
 void ir_dbg_info_snprint(char *buf, size_t bufsize, const dbg_info *dbg)
