@@ -3530,16 +3530,6 @@ static ir_node *gen_Conv(ir_node *node)
 		new_op = be_transform_node(op);
 		/* we convert from float ... */
 		if (mode_is_float(tgt_mode)) {
-#if 0
-			/* Matze: I'm a bit unsure what the following is for? seems wrong
-			 * to me... */
-			if (src_mode == mode_E && tgt_mode == mode_D
-					&& !get_Conv_strict(node)) {
-				DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
-				return new_op;
-			}
-#endif
-
 			/* ... to float */
 			if (ia32_cg_config.use_sse2) {
 				DB((dbg, LEVEL_1, "create Conv(float, float) ..."));
