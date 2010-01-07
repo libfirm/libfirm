@@ -3507,10 +3507,9 @@ static ir_node *gen_Conv(ir_node *node)
 	assert(!mode_is_int(src_mode) || src_bits <= 32);
 	assert(!mode_is_int(tgt_mode) || tgt_bits <= 32);
 
+	/* modeB -> X should already be lowered by the lower_mode_b pass */
 	if (src_mode == mode_b) {
-		assert(mode_is_int(tgt_mode) || mode_is_reference(tgt_mode));
-		/* nothing to do, we already model bools as 0/1 ints */
-		return be_transform_node(op);
+		panic("ConvB not lowered %+F", node);
 	}
 
 	if (src_mode == tgt_mode) {

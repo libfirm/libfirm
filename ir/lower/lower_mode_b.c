@@ -25,10 +25,21 @@
  *              so modes match. A backend can safely skip all mode_b convs.
  * @author      Matthias Braun, Christoph Mallon
  * @version     $Id$
+ *
+ * After this pass the following should hold:
+ *   - The only inputs with mode_b are for the Cond node or the
+ *     Sel input of a Mux node.
+ *   - The only nodes producing mode_b are: Proj(Cmp) and ConvB(X) (where X
+ *     is some mode that can be converted to the lowered mode).
+ *     ConvB will usually be implemented by a comparison with 0 producing some
+ *     flags in the backends.
+ * All other former uses should be converted to manipulations with an integer
+ * mode that was specified in the pass configuration.
  */
 #include "config.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "irnode_t.h"
 #include "ircons_t.h"
@@ -56,7 +67,7 @@ static void maybe_kill_node(ir_node *node)
 	ir_graph *irg;
 	int       i, arity;
 
-	if(get_irn_n_edges(node) != 0)
+	if (get_irn_n_edges(node) != 0)
 		return;
 
 	irg = get_irn_irg(node);
@@ -92,7 +103,7 @@ static ir_node *create_convb(ir_node *node)
 
 static ir_type *create_lowered_type(void)
 {
-	if(lowered_type == NULL) {
+	if (lowered_type == NULL) {
 		lowered_type = new_type_primitive(config.lowered_mode);
 	}
 	return lowered_type;
@@ -127,17 +138,17 @@ static void adjust_method_type(ir_type *method_type)
 	int n_res;
 
 	n_params = get_method_n_params(method_type);
-	for(i = 0; i < n_params; ++i) {
+	for (i = 0; i < n_params; ++i) {
 		ir_type *param = get_method_param_type(method_type, i);
-		if(get_type_mode(param) == mode_b) {
+		if (get_type_mode(param) == mode_b) {
 			set_method_param_type(method_type, i, create_lowered_type());
 		}
 	}
 
 	n_res = get_method_n_ress(method_type);
-	for(i = 0; i < n_res; ++i) {
+	for (i = 0; i < n_res; ++i) {
 		ir_type *res_type = get_method_res_type(method_type, i);
-		if(get_type_mode(res_type) == mode_b) {
+		if (get_type_mode(res_type) == mode_b) {
 			set_method_res_type(method_type, i, create_lowered_type());
 		}
 	}
@@ -153,10 +164,9 @@ static ir_node *lower_node(ir_node *node)
 	assert(get_irn_mode(node) == mode_b);
 
 	res = get_irn_link(node);
-	if(res != NULL)
+	if (res != NULL)
 		return res;
 
-	/* TODO: be robust against phi-loops... */
 	switch (get_irn_opcode(node)) {
 	case iro_Phi: {
 		int       i, arity;
@@ -166,14 +176,14 @@ static ir_node *lower_node(ir_node *node)
 		arity   = get_irn_arity(node);
 		in      = ALLOCAN(ir_node*, arity);
 		unknown = new_Unknown(config.lowered_mode);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			in[i] = unknown;
 		}
 		new_phi = new_r_Phi(block, arity, in, config.lowered_mode);
 		set_irn_link(node, new_phi);
 		pdeq_putr(lowered_nodes, node);
 
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *in     = get_irn_n(node, i);
 			ir_node *low_in = lower_node(in);
 
@@ -190,7 +200,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *copy = exact_copy(node);
 
 		arity = get_irn_arity(node);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *in     = get_irn_n(node, i);
 			ir_node *low_in = lower_node(in);
 
@@ -246,7 +256,7 @@ static ir_node *lower_node(ir_node *node)
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(node);
 
-		if(is_Cmp(pred)) {
+		if (is_Cmp(pred)) {
 			ir_node *left  = get_Cmp_left(pred);
 			ir_node *right = get_Cmp_right(pred);
 			ir_mode *cmp_mode  = get_irn_mode(left);
@@ -261,38 +271,38 @@ static ir_node *lower_node(ir_node *node)
 				ir_node *a        = NULL;
 				ir_node *b        = NULL;
 
-				if(pnc == pn_Cmp_Lt) {
+				if (pnc == pn_Cmp_Lt) {
 					/* a < b  ->  (a - b) >> 31 */
 					a = left;
 					b = right;
-				} else if(pnc == pn_Cmp_Le) {
+				} else if (pnc == pn_Cmp_Le) {
 					/* a <= b  -> ~(a - b) >> 31 */
 					a        = right;
 					b        = left;
 					need_not = 1;
-				} else if(pnc == pn_Cmp_Gt) {
+				} else if (pnc == pn_Cmp_Gt) {
 					/* a > b   -> (b - a) >> 31 */
 					a = right;
 					b = left;
-				} else if(pnc == pn_Cmp_Ge) {
+				} else if (pnc == pn_Cmp_Ge) {
 					/* a >= b   -> ~(a - b) >> 31 */
 					a        = left;
 					b        = right;
 					need_not = 1;
 				}
 
-				if(a != NULL) {
+				if (a != NULL) {
 					int      bits      = get_mode_size_bits(mode);
 					tarval  *tv        = new_tarval_from_long(bits-1, mode_Iu);
 					ir_node *shift_cnt = new_d_Const(dbgi, tv);
 
-					if(cmp_mode != mode) {
+					if (cmp_mode != mode) {
 						a = new_rd_Conv(dbgi, block, a, mode);
 						b = new_rd_Conv(dbgi, block, b, mode);
 					}
 
 					res = new_rd_Sub(dbgi, block, a, b, mode);
-					if(need_not) {
+					if (need_not) {
 						res = new_rd_Not(dbgi, block, res, mode);
 					}
 					res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
@@ -308,12 +318,12 @@ static ir_node *lower_node(ir_node *node)
 			set_irn_link(node, set);
 			pdeq_putr(lowered_nodes, node);
 			return set;
-		} else if(is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
+		} else if (is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
 			ir_type   *type   = get_Call_type(get_Proj_pred(pred));
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
 			return node;
-		} else if(is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
+		} else if (is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
 			ir_entity *entity = get_irg_entity(current_ir_graph);
 			ir_type   *type   = get_entity_type(entity);
 			adjust_method_type(type);
@@ -325,10 +335,10 @@ static ir_node *lower_node(ir_node *node)
 	}
 	case iro_Const: {
 		tarval *tv = get_Const_tarval(node);
-		if(tv == get_tarval_b_true()) {
+		if (tv == get_tarval_b_true()) {
 			tarval  *tv_one  = get_tarval_one(mode);
 			res              = new_d_Const(dbgi, tv_one);
-		} else if(tv == get_tarval_b_false()) {
+		} else if (tv == get_tarval_b_false()) {
 			tarval  *tv_zero = get_tarval_null(mode);
 			res              = new_d_Const(dbgi, tv_zero);
 		} else {
@@ -348,22 +358,25 @@ static ir_node *lower_node(ir_node *node)
 static void lower_mode_b_walker(ir_node *node, void *env)
 {
 	int i, arity;
-	int changed = 0;
+	bool changed = 0;
 	(void) env;
 
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *lowered_in;
 		ir_node *in = get_irn_n(node, i);
-		if(get_irn_mode(in) != mode_b)
+		if (get_irn_mode(in) != mode_b)
 			continue;
 
-		if(! config.lower_direct_cmp) {
+		if (! config.lower_direct_cmp) {
+			/* Proj(Cmp) as input for Cond and Mux nodes needs no changes.
+			   (Mux with mode_b is an exception as it gets replaced by and/or
+			    anyway so we still lower the inputs then) */
 			if (is_Cond(node) ||
 			    (is_Mux(node) && get_irn_mode(node) != mode_b)) {
-				if(is_Proj(in)) {
+				if (is_Proj(in)) {
 					ir_node *pred = get_Proj_pred(in);
-					if(is_Cmp(pred))
+					if (is_Cmp(pred))
 						continue;
 				}
 			}
@@ -371,20 +384,16 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 
 		lowered_in = lower_node(in);
 
-		if(is_Return(node)) {
-			ir_entity *entity = get_irg_entity(current_ir_graph);
-			ir_type   *type   = get_entity_type(entity);
-			adjust_method_type(type);
-		} else if(is_Call(node)) {
+		if (is_Call(node)) {
 			ir_type *type = get_Call_type(node);
 			adjust_method_type(type);
-		} else {
+		} else if (is_Cond(node) || (is_Mux(node) && i == 0)) {
 			lowered_in = create_convb(lowered_in);
 		}
 		set_irn_n(node, i, lowered_in);
-		changed = 1;
+		changed = true;
 	}
-	if(changed) {
+	if (changed) {
 		add_identities(current_ir_graph->value_table, node);
 	}
 }
@@ -397,13 +406,19 @@ static void clear_links(ir_node *node, void *env)
 
 void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 {
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *type   = get_entity_type(entity);
+
 	config        = *nconfig;
 	lowered_nodes = new_pdeq();
+	lowered_type  = NULL;
 
 	/* ensure no optimisation touches muxes anymore */
 	set_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	adjust_method_type(type);
 
 	set_opt_allow_conv_b(0);
 	irg_walk_graph(irg, clear_links, NULL, NULL);
@@ -426,7 +441,8 @@ struct pass_t {
 /**
  * Wrapper to run ir_lower_mode_b() as an ir_graph pass
  */
-static int pass_wrapper(ir_graph *irg, void *context) {
+static int pass_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 
 	ir_lower_mode_b(irg, pass->config);
@@ -434,7 +450,8 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 }
 
 ir_graph_pass_t *ir_lower_mode_b_pass(
-	const char *name, const lower_mode_b_config_t *config) {
+	const char *name, const lower_mode_b_config_t *config)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->config = config;
