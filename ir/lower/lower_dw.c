@@ -866,6 +866,8 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 
 	/* The shift count is always mode_Iu in firm, so there is no need for lowering */
 	in[2] = get_binop_right(node);
+	assert(get_irn_mode(in[2]) != env->params->high_signed
+			&& get_irn_mode(in[2]) != env->params->high_unsigned);
 
 	dbg   = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
@@ -903,6 +905,12 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 			int idx = get_irn_idx(left);
 
 			left = env->entries[idx]->high_word;
+			if (left == NULL) {
+				/* not ready yet, wait */
+				pdeq_putr(env->waitq, node);
+				return;
+			}
+
 			idx = get_irn_idx(node);
 
 			if (shf_cnt > 0) {
