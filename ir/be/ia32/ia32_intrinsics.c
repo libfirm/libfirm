@@ -699,7 +699,6 @@ static int map_Div(ir_node *call, void *ctx) {
 	ptr = get_Call_ptr(call);
 	sym.entity_p = ent;
 	ptr = new_r_SymConst(irg, get_irn_mode(ptr), sym, symconst_addr_ent);
-	set_SymConst_symbol(ptr, sym);
 	set_Call_ptr(call, ptr);
 
 	return 1;
@@ -714,6 +713,7 @@ static int map_Mod(ir_node *call, void *ctx) {
 	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
 	ir_node   *ptr;
 	ir_entity *ent;
+	ir_graph  *irg = get_irn_irg(call);
 	symconst_symbol sym;
 
 	if (mode_is_signed(h_mode)) {
@@ -735,9 +735,12 @@ static int map_Mod(ir_node *call, void *ctx) {
 			set_entity_ld_ident(ent, ID("__umoddi3"));
 		}
 	}
-	sym.entity_p = ent;
+
 	ptr = get_Call_ptr(call);
-	set_SymConst_symbol(ptr, sym);
+	sym.entity_p = ent;
+	ptr = new_r_SymConst(irg, get_irn_mode(ptr), sym, symconst_addr_ent);
+	set_Call_ptr(call, ptr);
+
 	return 1;
 }
 
