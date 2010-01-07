@@ -3538,15 +3538,6 @@ static ir_node *transform_node_Eor(ir_node *n) {
 		n = new_rd_Const(get_irn_dbg_info(n), current_ir_graph,
 		                 get_mode_null(mode));
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_A_A);
-	} else if (mode == mode_b &&
-			is_Proj(a) &&
-			is_Const(b) && is_Const_one(b) &&
-			is_Cmp(get_Proj_pred(a))) {
-		/* The Eor negates a Cmp. The Cmp has the negated result anyways! */
-		n = new_r_Proj(get_nodes_block(n), get_Proj_pred(a),
-				mode_b, get_negated_pnc(get_Proj_proj(a), mode));
-
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT_BOOL);
 	} else if (is_Const(b)) {
 		if (is_Not(a)) { /* ~x ^ const -> x ^ ~const */
 			ir_node  *cnst   = new_Const(tarval_not(get_Const_tarval(b)));
