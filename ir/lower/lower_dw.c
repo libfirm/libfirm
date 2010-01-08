@@ -1472,7 +1472,8 @@ static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
 	assert(idx < env->n_entries);
 
 	if (mode_is_int(imode) || mode_is_reference(imode)) {
-		if (get_mode_size_bits(imode) == get_mode_size_bits(omode)) {
+		if (imode == env->params->high_signed
+				|| imode == env->params->high_unsigned) {
 			/* a Conv from Lu to Ls or Ls to Lu */
 			int           op_idx   = get_irn_idx(op);
 			node_entry_t *op_entry = env->entries[op_idx];
@@ -1495,6 +1496,8 @@ static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
 			if (mode_is_signed(imode)) {
 				int      c       = get_mode_size_bits(low_signed) - 1;
 				ir_node *cnst    = new_Const_long(low_unsigned, c);
+				if (get_irn_mode(op) != low_signed)
+					op = new_rd_Conv(dbg, block, op, low_signed);
 				entry->high_word = new_rd_Shrs(dbg, block, op, cnst,
 				                               low_signed);
 			} else {
