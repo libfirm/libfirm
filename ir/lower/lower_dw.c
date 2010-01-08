@@ -1455,48 +1455,57 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Conv to higher_signed
  */
-static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
-	ir_node  *op    = get_Conv_op(node);
-	ir_mode  *imode = get_irn_mode(op);
-	ir_mode  *dst_mode_l = env->params->low_unsigned;
-	ir_mode  *dst_mode_h = env->params->low_signed;
-	int      idx = get_irn_idx(node);
-	ir_graph *irg = current_ir_graph;
-	ir_node  *block = get_nodes_block(node);
-	dbg_info *dbg = get_irn_dbg_info(node);
+static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
+{
+	ir_mode  *omode        = get_irn_mode(node);
+	ir_node  *op           = get_Conv_op(node);
+	ir_mode  *imode        = get_irn_mode(op);
+	int      idx           = get_irn_idx(node);
+	ir_graph *irg          = current_ir_graph;
+	ir_node  *block        = get_nodes_block(node);
+	dbg_info *dbg          = get_irn_dbg_info(node);
+	node_entry_t *entry = env->entries[idx];
+	ir_mode  *low_unsigned = env->params->low_unsigned;
+	ir_mode  *low_signed
+		= mode_is_signed(omode) ? env->params->low_signed : low_unsigned;
 
 	assert(idx < env->n_entries);
 
 	if (mode_is_int(imode) || mode_is_reference(imode)) {
-		if (imode == env->params->high_unsigned) {
-			/* a Conv from Lu to Ls */
-			int op_idx = get_irn_idx(op);
+		if (get_mode_size_bits(imode) == get_mode_size_bits(omode)) {
+			/* a Conv from Lu to Ls or Ls to Lu */
+			int           op_idx   = get_irn_idx(op);
+			node_entry_t *op_entry = env->entries[op_idx];
 
-			if (! env->entries[op_idx]->low_word) {
+			if (! op_entry->low_word) {
 				/* not ready yet, wait */
 				pdeq_putr(env->waitq, node);
 				return;
-			}  /* if */
-			env->entries[idx]->low_word  = new_rd_Conv(dbg, block, env->entries[op_idx]->low_word,  dst_mode_l);
-			env->entries[idx]->high_word = new_rd_Conv(dbg, block, env->entries[op_idx]->high_word, dst_mode_h);
+			}
+			entry->low_word  = op_entry->low_word;
+			entry->high_word = new_rd_Conv(dbg, block, op_entry->high_word,
+			                               low_signed);
 		} else {
 			/* simple case: create a high word */
-			if (imode != dst_mode_l)
-				op = new_rd_Conv(dbg, block, op, dst_mode_l);
+			if (imode != low_unsigned)
+				op = new_rd_Conv(dbg, block, op, low_unsigned);
 
-			env->entries[idx]->low_word  = op;
+			entry->low_word = op;
 
 			if (mode_is_signed(imode)) {
-				ir_node *op_conv = new_rd_Conv(dbg, block, op, dst_mode_h);
-				env->entries[idx]->high_word = new_rd_Shrs(dbg, block, op_conv,
-					new_Const_long(dst_mode_l, get_mode_size_bits(dst_mode_h) - 1), dst_mode_h);
+				int      c       = get_mode_size_bits(low_signed) - 1;
+				ir_node *cnst    = new_Const_long(low_unsigned, c);
+				entry->high_word = new_rd_Shrs(dbg, block, op, cnst,
+				                               low_signed);
 			} else {
-				env->entries[idx]->high_word = new_Const(get_mode_null(dst_mode_h));
-			}  /* if */
-		}  /* if */
+				entry->high_word = new_Const(get_mode_null(low_signed));
+			}
+		}
+	} else if (imode == mode_b) {
+		entry->low_word = new_rd_Conv(dbg, block, op, low_unsigned);
+		entry->high_word = new_Const(get_mode_null(low_signed));
 	} else {
 		ir_node *irn, *call;
-		ir_mode *omode = env->params->high_signed;
 		ir_type *mtp = get_conv_type(imode, omode, env);
 
 		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
@@ -1504,175 +1513,82 @@ static void lower_Conv_to_Ls(ir_node *node, lower_env_t *env) {
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
 
-		env->entries[idx]->low_word  = new_r_Proj(block, irn, dst_mode_l, 0);
-		env->entries[idx]->high_word = new_r_Proj(block, irn, dst_mode_h, 1);
-	}  /* if */
-}  /* lower_Conv_to_Ls */
-
-/**
- * Translate a Conv to higher_unsigned
- */
-static void lower_Conv_to_Lu(ir_node *node, lower_env_t *env) {
-	ir_node  *op    = get_Conv_op(node);
-	ir_mode  *imode = get_irn_mode(op);
-	ir_mode  *dst_mode = env->params->low_unsigned;
-	int      idx = get_irn_idx(node);
-	ir_graph *irg = current_ir_graph;
-	ir_node  *block = get_nodes_block(node);
-	dbg_info *dbg = get_irn_dbg_info(node);
-
-	assert(idx < env->n_entries);
-
-	if (mode_is_int(imode) || mode_is_reference(imode)) {
-		if (imode == env->params->high_signed) {
-			/* a Conv from Ls to Lu */
-			int op_idx = get_irn_idx(op);
-
-			if (! env->entries[op_idx]->low_word) {
-				/* not ready yet, wait */
-				pdeq_putr(env->waitq, node);
-				return;
-			}  /* if */
-			env->entries[idx]->low_word  = new_rd_Conv(dbg, block, env->entries[op_idx]->low_word, dst_mode);
-			env->entries[idx]->high_word = new_rd_Conv(dbg, block, env->entries[op_idx]->high_word, dst_mode);
-		} else {
-			/* simple case: create a high word */
-			if (imode != dst_mode)
-				op = new_rd_Conv(dbg, block, op, dst_mode);
-
-			env->entries[idx]->low_word  = op;
-
-			if (mode_is_signed(imode)) {
-				env->entries[idx]->high_word = new_rd_Shrs(dbg, block, op,
-					new_Const_long(dst_mode, get_mode_size_bits(dst_mode) - 1), dst_mode);
-			} else {
-				env->entries[idx]->high_word = new_Const(get_mode_null(dst_mode));
-			}  /* if */
-		}  /* if */
-	} else {
-		ir_node *irn, *call;
-		ir_mode *omode = env->params->high_unsigned;
-		ir_type *mtp = get_conv_type(imode, omode, env);
-
-		/* do an intrinsic call */
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
-		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
-		set_irn_pinned(call, get_irn_pinned(node));
-		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
-
-		env->entries[idx]->low_word  = new_r_Proj(block, irn, dst_mode, 0);
-		env->entries[idx]->high_word = new_r_Proj(block, irn, dst_mode, 1);
-	}  /* if */
-}  /* lower_Conv_to_Lu */
-
-/**
- * Translate a Conv from higher_signed
- */
-static void lower_Conv_from_Ls(ir_node *node, lower_env_t *env) {
-	ir_node  *op    = get_Conv_op(node);
-	ir_mode  *omode = get_irn_mode(node);
-	ir_node  *block = get_nodes_block(node);
-	dbg_info *dbg = get_irn_dbg_info(node);
-	int      idx = get_irn_idx(op);
-	ir_graph *irg = current_ir_graph;
-
-	assert(idx < env->n_entries);
-
-	if (! env->entries[idx]->low_word) {
-		/* not ready yet, wait */
-		pdeq_putr(env->waitq, node);
-		return;
-	}  /* if */
-
-	if (mode_is_int(omode) || mode_is_reference(omode)) {
-		op = env->entries[idx]->low_word;
-
-		/* simple case: create a high word */
-		if (omode != env->params->low_signed)
-			op = new_rd_Conv(dbg, block, op, omode);
-
-		set_Conv_op(node, op);
-	} else {
-		ir_node *irn, *call, *in[2];
-		ir_mode *imode = env->params->high_signed;
-		ir_type *mtp = get_conv_type(imode, omode, env);
-
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
-		in[0] = env->entries[idx]->low_word;
-		in[1] = env->entries[idx]->high_word;
-
-		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
-		set_irn_pinned(call, get_irn_pinned(node));
-		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
-
-		exchange(node, new_r_Proj(block, irn, omode, 0));
-	}  /* if */
-}  /* lower_Conv_from_Ls */
+		entry->low_word  = new_r_Proj(block, irn, low_unsigned, 0);
+		entry->high_word = new_r_Proj(block, irn, low_signed, 1);
+	}
+}
 
 /**
  * Translate a Conv from higher_unsigned
  */
-static void lower_Conv_from_Lu(ir_node *node, lower_env_t *env) {
-	ir_node  *op    = get_Conv_op(node);
-	ir_mode  *omode = get_irn_mode(node);
-	ir_node  *block = get_nodes_block(node);
-	dbg_info *dbg = get_irn_dbg_info(node);
-	int      idx = get_irn_idx(op);
-	ir_graph *irg = current_ir_graph;
+static void lower_Conv_from_Ll(ir_node *node, lower_env_t *env)
+{
+	ir_node      *op    = get_Conv_op(node);
+	ir_mode      *omode = get_irn_mode(node);
+	ir_node      *block = get_nodes_block(node);
+	dbg_info     *dbg   = get_irn_dbg_info(node);
+	int          idx    = get_irn_idx(op);
+	ir_graph     *irg   = current_ir_graph;
+	node_entry_t *entry = env->entries[idx];
 
 	assert(idx < env->n_entries);
 
-	if (! env->entries[idx]->low_word) {
+	if (! entry->low_word) {
 		/* not ready yet, wait */
 		pdeq_putr(env->waitq, node);
 		return;
-	}  /* if */
+	}
 
 	if (mode_is_int(omode) || mode_is_reference(omode)) {
-		op = env->entries[idx]->low_word;
+		op = entry->low_word;
 
 		/* simple case: create a high word */
 		if (omode != env->params->low_unsigned)
 			op = new_rd_Conv(dbg, block, op, omode);
 
 		set_Conv_op(node, op);
+	} else if (omode == mode_b) {
+		/* llu ? true : false  <=> (low|high) ? true : false */
+		ir_mode *mode = env->params->low_unsigned;
+		ir_node *or   = new_rd_Or(dbg, block, entry->low_word, entry->high_word,
+		                          mode);
+		set_Conv_op(node, or);
 	} else {
 		ir_node *irn, *call, *in[2];
-		ir_mode *imode = env->params->high_unsigned;
-		ir_type *mtp = get_conv_type(imode, omode, env);
+		ir_mode *imode = get_irn_mode(op);
+		ir_type *mtp   = get_conv_type(imode, omode, env);
 
-		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
-		in[0] = env->entries[idx]->low_word;
-		in[1] = env->entries[idx]->high_word;
+		irn   = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
+		in[0] = entry->low_word;
+		in[1] = entry->high_word;
 
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
 
 		exchange(node, new_r_Proj(block, irn, omode, 0));
-	}  /* if */
-}  /* lower_Conv_from_Lu */
+	}
+}
 
 /**
  * Translate a Conv.
  */
-static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	mode = get_irn_mode(node);
 
-	if (mode == env->params->high_signed) {
-		lower_Conv_to_Ls(node, env);
-	} else if (mode == env->params->high_unsigned) {
-		lower_Conv_to_Lu(node, env);
+	if (mode == env->params->high_signed
+			|| mode == env->params->high_unsigned) {
+		lower_Conv_to_Ll(node, env);
 	} else {
 		ir_mode *mode = get_irn_mode(get_Conv_op(node));
 
-		if (mode == env->params->high_signed) {
-			lower_Conv_from_Ls(node, env);
-		} else if (mode == env->params->high_unsigned) {
-			lower_Conv_from_Lu(node, env);
-		}  /* if */
-	}  /* if */
-}  /* lower_Conv */
+		if (mode == env->params->high_signed
+				|| mode == env->params->high_unsigned) {
+			lower_Conv_from_Ll(node, env);
+		}
+	}
+}
 
 /**
  * Lower the method type.
