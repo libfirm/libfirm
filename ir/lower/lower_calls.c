@@ -129,7 +129,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 				else {
 					/* this compound will be allocated on callers stack and its
 					   address will be transmitted as a hidden parameter. */
-					ptr_tp = lp->find_pointer_type(res_tp, lp->def_ptr_alignment);
+					ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
 					params[nn_params]    = ptr_tp;
 					param_map[nn_params] = -1 - i;
 					++nn_params;
@@ -164,7 +164,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 			res_tp = get_method_res_type(mtp, i);
 
 			if (is_compound_type(res_tp)) {
-				params[nn_params] = lp->find_pointer_type(res_tp, lp->def_ptr_alignment);
+				params[nn_params] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
 				param_map[nn_params] = -1 - i;
 				++nn_params;
 			} else {

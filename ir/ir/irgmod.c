@@ -197,11 +197,11 @@ void part_block(ir_node *node) {
 	ir_node *phi, *jmp, *next, *block;
 	ir_graph *rem = current_ir_graph;
 
-	current_ir_graph = get_irn_irg(node);
-
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
 	set_optimize(0);
+
+	current_ir_graph = get_irn_irg(node);
 
 	/* Transform the control flow */
 	old_block = get_nodes_block(node);
