@@ -1205,9 +1205,14 @@ int inline_method(ir_node *call, ir_graph *called_graph) {
 			}
 		}
 		if (n_exc > 0) {
-			ir_node *block = new_Block(n_exc, cf_pred);
-			set_cur_block(block);
-			set_Tuple_pred(call, pn_Call_X_except, new_Jmp());
+			if (n_exc == 1) {
+				/* simple fix */
+				set_Tuple_pred(call, pn_Call_X_except, cf_pred[0]);
+			} else {
+				ir_node *block = new_Block(n_exc, cf_pred);
+				set_cur_block(block);
+				set_Tuple_pred(call, pn_Call_X_except, new_Jmp());
+			}
 		} else {
 			set_Tuple_pred(call, pn_Call_X_except, new_Bad());
 		}
