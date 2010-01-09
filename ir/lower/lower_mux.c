@@ -69,7 +69,6 @@ static void lower_mux_node(ir_node* mux)
 	ir_node *mux_jmps[2];
 	ir_node *mux_values[2];
 	ir_node *phi;
-	ir_node *mbh;
 
 	/* Split the block in two halfs, with the mux in the upper block. */
 	lower_block = get_nodes_block(mux);
@@ -104,43 +103,43 @@ static void lower_mux_node(ir_node* mux)
 
 	/* Add links and update phi node lists, for the next part_block() call.
 	 * lower_block and upper_block have been updated by part_block(). Link
-	 * the projs with the cond, and the new block with the macroblock. */
+	 * the projs with the cond. */
 	set_irn_link(trueProj,   get_irn_link(cond));
-	set_irn_link(falseProj,  get_irn_link(cond));
-	set_irn_link(cond,       trueProj);
+	set_irn_link(falseProj,  trueProj);
 	set_irn_link(cond,       falseProj);
-
-	mbh = get_Block_MacroBlock(falseBlock);
-	set_irn_link(falseBlock, get_irn_link(mbh));
-	set_irn_link(mbh,        falseBlock);
 
 	add_Block_phi(lower_block, phi);
 }
 
 void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 {
-	int            i;
-	walk_env_t     env;
-	ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
+	int        i, n_muxes;
+	walk_env_t env;
 
 	/* Scan the graph for mux nodes to lower. */
 	env.cb_func = cb_func;
 	env.muxes   = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, find_mux_nodes, 0, &env);
 
-	/* This is required by part_block() later. */
-	ir_reserve_resources(irg, resources);
-	collect_phiprojs(irg);
+	n_muxes = ARR_LEN(env.muxes);
+	if (n_muxes > 0) {
+		ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
 
-	for (i = 0; i < ARR_LEN(env.muxes); i++) {
-		lower_mux_node(env.muxes[i]);
+		/* This is required by part_block() later. */
+		ir_reserve_resources(irg, resources);
+		collect_phiprojs(irg);
+
+		for (i = 0; i < n_muxes; ++i) {
+			lower_mux_node(env.muxes[i]);
+		}
+
+		/* Cleanup, verify the graph. */
+		ir_free_resources(irg, resources);
+
+		set_irg_outs_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
 	}
-
-	/* Cleanup, verify the graph. */
-	ir_free_resources(irg, resources);
-
-	set_irg_outs_inconsistent(irg);
-	set_irg_doms_inconsistent(irg);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
+	DEL_ARR_F(env.muxes);
 }
