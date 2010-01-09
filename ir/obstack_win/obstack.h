@@ -495,6 +495,7 @@ __extension__								\
 
 extern int obstack_printf (struct obstack *obst, const char *fmt, ...)
      __attribute__ ((__format__ (__printf__, 2, 3)));
+extern int obstack_vprintf (struct obstack *obst, const char *fmt, va_list ap);
 
 
 #else /* not __GNUC__ or not __STDC__ */
@@ -598,6 +599,7 @@ extern int obstack_printf (struct obstack *obst, const char *fmt, ...)
 # endif
 
 extern int obstack_printf (struct obstack *obst, const char *fmt, ...);
+extern int obstack_vprintf (struct obstack *obst, const char *fmt, va_list ap);
 
 #endif /* not __GNUC__ or not __STDC__ */
 
