@@ -48,7 +48,7 @@ static pmap *type_map;
  * Default implementation for finding a pointer type for a given element type.
  * Simple create a new one.
  */
-static ir_type *def_find_pointer_type(ir_type *e_type, int alignment)
+static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignment)
 {
 	ir_type *res;
 	pmap_entry *e;
@@ -56,10 +56,11 @@ static ir_type *def_find_pointer_type(ir_type *e_type, int alignment)
 	/* Mode and alignment are always identical in all calls to def_find_pointer_type(), so
 	   we simply can use a map from the element type to the pointer type. */
 	e = pmap_find(type_map, e_type);
-	if (e)
+	if (e && get_type_mode(e->value) == mode)
 		res = e->value;
 	else {
 		res = new_type_pointer(e_type);
+		set_type_mode(res, mode);
 		set_type_alignment_bytes(res, alignment);
 		pmap_insert(type_map, e_type, res);
 	}
