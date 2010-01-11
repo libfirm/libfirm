@@ -556,6 +556,7 @@ static void ia32_emit_cmp_suffix(int pnc)
 		be_emit_char('p');
 		return;
 	}
+
 	if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
 		str = cmp2condition_u[pnc & 7];
 	} else {
@@ -772,7 +773,7 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 			case 'R': {
 				const arch_register_t *reg = va_arg(ap, const arch_register_t*);
-				emit_register(reg, NULL);
+				emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				break;
 			}
 
@@ -1083,37 +1084,37 @@ static void emit_ia32_Jcc(const ir_node *node)
 	if (pnc & ia32_pn_Cmp_float) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
-		switch (pnc & 15) {
-			case pn_Cmp_Uo: {
-				ia32_emitf(proj_true, "\tjp %L\n");
-				break;
+		switch (pnc & 0x0f) {
+		case pn_Cmp_Uo: {
+			ia32_emitf(proj_true, "\tjp %L\n");
+			break;
+		}
+
+		case pn_Cmp_Leg:
+			ia32_emitf(proj_true, "\tjnp %L\n");
+			break;
+
+		case pn_Cmp_Eq:
+		case pn_Cmp_Lt:
+		case pn_Cmp_Le:
+			/* we need a local label if the false proj is a fallthrough
+			 * as the falseblock might have no label emitted then */
+			if (can_be_fallthrough(proj_false)) {
+				need_parity_label = 1;
+				ia32_emitf(proj_false, "\tjp 1f\n");
+			} else {
+				ia32_emitf(proj_false, "\tjp %L\n");
 			}
+			goto emit_jcc;
 
-			case pn_Cmp_Leg:
-				ia32_emitf(proj_true, "\tjnp %L\n");
-				break;
+		case pn_Cmp_Ug:
+		case pn_Cmp_Uge:
+		case pn_Cmp_Ne:
+			ia32_emitf(proj_true, "\tjp %L\n");
+			goto emit_jcc;
 
-			case pn_Cmp_Eq:
-			case pn_Cmp_Lt:
-			case pn_Cmp_Le:
-				/* we need a local label if the false proj is a fallthrough
-				 * as the falseblock might have no label emitted then */
-				if (can_be_fallthrough(proj_false)) {
-					need_parity_label = 1;
-					ia32_emitf(proj_false, "\tjp 1f\n");
-				} else {
-					ia32_emitf(proj_false, "\tjp %L\n");
-				}
-				goto emit_jcc;
-
-			case pn_Cmp_Ug:
-			case pn_Cmp_Uge:
-			case pn_Cmp_Ne:
-				ia32_emitf(proj_true, "\tjp %L\n");
-				goto emit_jcc;
-
-			default:
-				goto emit_jcc;
+		default:
+			goto emit_jcc;
 		}
 	} else {
 emit_jcc:
@@ -1132,7 +1133,42 @@ emit_jcc:
 	}
 }
 
-static void emit_ia32_CMov(const ir_node *node)
+/**
+ * Emits an ia32 Setcc. This is mostly easy but some floating point compares
+ * are tricky.
+ */
+static void emit_ia32_Setcc(const ir_node *node)
+{
+	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
+
+	pn_Cmp pnc = get_ia32_condcode(node);
+	pnc        = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
+	if (pnc & ia32_pn_Cmp_float) {
+		switch (pnc & 0x0f) {
+		case pn_Cmp_Uo:
+			ia32_emitf(node, "\tsetp %#R\n", dreg);
+			break;
+
+		case pn_Cmp_Leg:
+			ia32_emitf(node, "\tsetnp %#R\n", dreg);
+			break;
+
+		case pn_Cmp_Eq:
+		case pn_Cmp_Lt:
+		case pn_Cmp_Le:
+		case pn_Cmp_Ug:
+		case pn_Cmp_Uge:
+		case pn_Cmp_Ne:
+			panic("No handling for set with parity bit yet in ia32_Setcc");
+
+		default:
+			break;
+		}
+	}
+	ia32_emitf(node, "\tset%P %#R\n", pnc, dreg);
+}
+
+static void emit_ia32_CMovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
@@ -1141,10 +1177,10 @@ static void emit_ia32_CMov(const ir_node *node)
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
-	pnc = determine_final_pnc(node, n_ia32_CMov_eflags, pnc);
+	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
 
-	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_true));
-	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_false));
+	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
+	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
 
 	/* should be same constraint fullfilled? */
 	if (out == in_false) {
@@ -1871,7 +1907,7 @@ static void ia32_register_emitters(void)
 	/* other ia32 emitter functions */
 	IA32_EMIT2(Conv_I2I8Bit, Conv_I2I);
 	IA32_EMIT(Asm);
-	IA32_EMIT(CMov);
+	IA32_EMIT(CMovcc);
 	IA32_EMIT(Call);
 	IA32_EMIT(Const);
 	IA32_EMIT(Conv_FP2FP);
@@ -1883,6 +1919,7 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(GetEIP);
 	IA32_EMIT(IMul);
 	IA32_EMIT(Jcc);
+	IA32_EMIT(Setcc);
 	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(SwitchJmp);
@@ -2862,7 +2899,7 @@ static void bemit_shrd(const ir_node *node)
 	}
 }
 
-static void bemit_cmov(const ir_node *node)
+static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
@@ -2871,10 +2908,10 @@ static void bemit_cmov(const ir_node *node)
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
-	pnc = determine_final_pnc(node, n_ia32_CMov_eflags, pnc);
+	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
 
-	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_true));
-	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMov_val_false));
+	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
+	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
 
 	/* should be same constraint fullfilled? */
 	if (out == in_false) {
@@ -3072,19 +3109,21 @@ UNOPMEM(negmem, 0xF6, 3)
 UNOPMEM(incmem, 0xFE, 0)
 UNOPMEM(decmem, 0xFE, 1)
 
-static void bemit_set(const ir_node *node)
+static void bemit_setcc(const ir_node *node)
 {
 	pn_Cmp pnc;
 
 	bemit8(0x0F);
 
 	pnc = get_ia32_condcode(node);
-	pnc = determine_final_pnc(node, n_ia32_Set_eflags, pnc);
-	if (get_ia32_attr_const(node)->data.ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
+	pnc = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
+
+	/* TODO: all the special casing for float compares is missing */
+	if (pnc & ia32_pn_Cmp_float)
+		panic("binary setcc from float compare not implemented yet");
 
 	bemit8(0x90 + pnc2cc(pnc));
-	bemit_modru(get_out_reg(node, pn_ia32_Set_res), 2);
+	bemit_modru(get_out_reg(node, pn_ia32_Setcc_res), 2);
 }
 
 static void bemit_ldtls(const ir_node *node)
@@ -4032,7 +4071,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_AndMem,        bemit_andmem);
 	register_emitter(op_ia32_AndMem8Bit,    bemit_andmem8bit);
 	register_emitter(op_ia32_Breakpoint,    bemit_int3);
-	register_emitter(op_ia32_CMov,          bemit_cmov);
+	register_emitter(op_ia32_CMovcc,        bemit_cmovcc);
 	register_emitter(op_ia32_Call,          bemit_call);
 	register_emitter(op_ia32_Cltd,          bemit_cltd);
 	register_emitter(op_ia32_Cmc,           bemit_cmc);
@@ -4088,7 +4127,7 @@ static void ia32_register_binary_emitters(void)
 	register_emitter(op_ia32_Sar,           bemit_sar);
 	register_emitter(op_ia32_SarMem,        bemit_sarmem);
 	register_emitter(op_ia32_Sbb,           bemit_sbb);
-	register_emitter(op_ia32_Set,           bemit_set);
+	register_emitter(op_ia32_Setcc,         bemit_setcc);
 	register_emitter(op_ia32_Shl,           bemit_shl);
 	register_emitter(op_ia32_ShlD,          bemit_shld);
 	register_emitter(op_ia32_ShlMem,        bemit_shlmem);

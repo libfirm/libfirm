@@ -1090,37 +1090,34 @@ Test8Bit => {
 	modified_flags => $status_flags
 },
 
-Set => {
+Setcc => {
 	#irn_flags => "R",
 	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc, int ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
-	              "\tset_ia32_ls_mode(res, mode_Bu);\n",
-	emit      => '. set%CMP0 %DB0',
+	attr      => "pn_Cmp pnc",
+	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 },
 
-SetMem => {
+SetccMem => {
 	#irn_flags => "R",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc, int ins_permuted",
-	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
-	              "\tset_ia32_ls_mode(res, mode_Bu);\n",
+	attr      => "pn_Cmp pnc",
+	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP3 %AM',
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => 'mode_M',
 },
 
-CMov => {
+CMovcc => {
 	#irn_flags => "R",
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)

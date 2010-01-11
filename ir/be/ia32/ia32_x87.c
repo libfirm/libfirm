@@ -1473,9 +1473,9 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	int reg_index_1 = arch_register_get_index(op1);
 	int reg_index_2 = arch_register_get_index(op2);
 	unsigned live = vfp_live_args_after(sim, n, 0);
-	int                    permuted = attr->attr.data.ins_permuted;
-	int xchg = 0;
-	int pops = 0;
+	bool                   permuted = attr->attr.data.ins_permuted;
+	bool                   xchg     = false;
+	int                    pops     = 0;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
@@ -1503,7 +1503,7 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 				} else if (op2_idx == 0) {
 					/* res = op X tos */
 					permuted = !permuted;
-					xchg    = 1;
+					xchg     = true;
 				} else {
 					/* bring the first one to tos */
 					x87_create_fxch(state, n, op1_idx);
@@ -1538,9 +1538,9 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 					op2_idx = 0;
 				}
 				/* res = op X tos, pop */
-				pops    = 1;
+				pops     = 1;
 				permuted = !permuted;
-				xchg    = 1;
+				xchg     = true;
 			} else {
 				/* both operands are dead here, check first for identity. */
 				if (op1_idx == op2_idx) {
@@ -1575,8 +1575,8 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 					}
 					/* res = op X tos, pop, pop */
 					permuted = !permuted;
-					xchg    = 1;
-					pops    = 2;
+					xchg     = true;
+					pops     = 2;
 				} else {
 					/* if one is already the TOS, we need two fxch */
 					if (op1_idx == 0) {
@@ -1587,9 +1587,9 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 						x87_create_fxch(state, n, op2_idx);
 						op2_idx = 0;
 						/* res = op X tos, pop, pop */
-						pops    = 2;
+						pops     = 2;
 						permuted = !permuted;
-						xchg    = 1;
+						xchg     = true;
 					} else if (op2_idx == 0) {
 						/* second one is TOS, move to st(1) */
 						x87_create_fxch(state, n, 1);

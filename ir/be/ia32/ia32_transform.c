@@ -1809,7 +1809,7 @@ static ir_node *gen_Minus(ir_node *node)
  */
 static ir_node *gen_Not(ir_node *node)
 {
-	ir_node *op   = get_Not_op(node);
+	ir_node *op = get_Not_op(node);
 
 	assert(get_irn_mode(node) != mode_b); /* should be lowered already */
 	assert (! mode_is_float(get_irn_mode(node)));
@@ -2176,41 +2176,47 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 {
-	ir_mode  *mode        = get_irn_mode(node);
-	ir_node  *mux_true    = get_Mux_true(node);
-	ir_node  *mux_false   = get_Mux_false(node);
-	ir_node  *cond;
-	ir_node  *new_mem;
-	dbg_info *dbgi;
-	ir_node  *block;
-	ir_node  *new_block;
-	ir_node  *flags;
-	ir_node  *new_node;
-	int       negated;
-	pn_Cmp    pnc;
-	ia32_address_t addr;
+	ir_mode        *mode      = get_irn_mode(node);
+	ir_node        *mux_true  = get_Mux_true(node);
+	ir_node        *mux_false = get_Mux_false(node);
+	ir_node        *cond;
+	ir_node        *new_mem;
+	dbg_info       *dbgi;
+	ir_node        *block;
+	ir_node        *new_block;
+	ir_node        *flags;
+	ir_node        *new_node;
+	bool            negated;
+	pn_Cmp          pnc;
+	ia32_address_t  addr;
 
 	if (get_mode_size_bits(mode) != 8)
 		return NULL;
 
 	if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
-		negated = 0;
+		negated = false;
 	} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
-		negated = 1;
+		negated = true;
 	} else {
 		return NULL;
 	}
+
+	cond  = get_Mux_sel(node);
+	flags = get_flags_node(cond, &pnc);
+	/* we can't handle the float special cases with SetM */
+	if (pnc & ia32_pn_Cmp_float)
+		return NULL;
+	if (negated)
+		pnc = get_negated_pnc(pnc, pnc & ia32_pn_Cmp_float ? mode_F : mode_Is);
 
 	build_address_ptr(&addr, ptr, mem);
 
 	dbgi      = get_irn_dbg_info(node);
 	block     = get_nodes_block(node);
 	new_block = be_transform_node(block);
-	cond      = get_Mux_sel(node);
-	flags     = get_flags_node(cond, &pnc);
 	new_mem   = be_transform_node(mem);
-	new_node  = new_bd_ia32_SetMem(dbgi, new_block, addr.base,
-	                               addr.index, addr.mem, flags, pnc, negated);
+	new_node  = new_bd_ia32_SetccMem(dbgi, new_block, addr.base,
+	                                 addr.index, addr.mem, flags, pnc);
 	set_address(new_node, &addr);
 	set_ia32_op_type(new_node, ia32_AddrModeD);
 	set_ia32_ls_mode(new_node, mode);
@@ -2336,6 +2342,7 @@ static ir_node *try_create_dest_am(ir_node *node)
 	case iro_Mux:
 		new_node = try_create_SetMem(val, ptr, mem);
 		break;
+
 	case iro_Minus:
 		op1      = get_Minus_op(val);
 		new_node = dest_am_unop(val, op1, mem, ptr, mode, new_bd_ia32_NegMem);
@@ -2960,9 +2967,9 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 	match_arguments(&am, block, val_false, val_true, flags,
 			match_commutative | match_am | match_16bit_am | match_mode_neutral);
 
-	new_node = new_bd_ia32_CMov(dbgi, new_block, addr->base, addr->index,
-	                            addr->mem, am.new_op1, am.new_op2, new_flags,
-	                            am.ins_permuted, pnc);
+	new_node = new_bd_ia32_CMovcc(dbgi, new_block, addr->base, addr->index,
+	                              addr->mem, am.new_op1, am.new_op2, new_flags,
+	                              am.ins_permuted, pnc);
 	set_am_attributes(new_node, &am);
 
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -2976,13 +2983,12 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
  * Creates a ia32 Setcc instruction.
  */
 static ir_node *create_set_32bit(dbg_info *dbgi, ir_node *new_block,
-                                 ir_node *flags, pn_Cmp pnc, ir_node *orig_node,
-                                 int ins_permuted)
+                                 ir_node *flags, pn_Cmp pnc, ir_node *orig_node)
 {
 	ir_mode *mode  = get_irn_mode(orig_node);
 	ir_node *new_node;
 
-	new_node = new_bd_ia32_Set(dbgi, new_block, flags, pnc, ins_permuted);
+	new_node = new_bd_ia32_Setcc(dbgi, new_block, flags, pnc);
 	SET_IA32_ORIG_NODE(new_node, orig_node);
 
 	/* we might need to conv the result up */
@@ -3144,7 +3150,7 @@ static ir_node *gen_Mux(ir_node *node)
 			unsigned            scale;
 
 			flags    = get_flags_node(cond, &pnc);
-			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_permuted=*/0);
+			new_node = create_set_32bit(dbgi, new_block, flags, pnc, node);
 
 			if (ia32_cg_config.use_sse2) {
 				/* cannot load from different mode on SSE */
@@ -3241,9 +3247,10 @@ static ir_node *gen_Mux(ir_node *node)
 		if (is_Const(mux_true) && is_Const(mux_false)) {
 			/* both are const, good */
 			if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
-				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/0);
+				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node);
 			} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
-				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node, /*is_premuted=*/1);
+				pnc = get_negated_pnc(pnc, pnc & ia32_pn_Cmp_float ? mode_F : mode_Is);
+				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node);
 			} else {
 				/* Not that simple. */
 				goto need_cmov;
@@ -4782,7 +4789,7 @@ static ir_node *gen_ffs(ir_node *node)
 	flag = new_r_Proj(block, real, mode_b, pn_ia32_flags);
 
 	/* sete */
-	set = new_bd_ia32_Set(dbgi, block, flag, pn_Cmp_Eq, 0);
+	set = new_bd_ia32_Setcc(dbgi, block, flag, pn_Cmp_Eq);
 	SET_IA32_ORIG_NODE(set, node);
 
 	/* conv to 32bit */
@@ -4852,7 +4859,7 @@ static ir_node *gen_parity(ir_node *node)
 	cmp = fix_mem_proj(cmp, &am);
 
 	/* setp */
-	new_node = new_bd_ia32_Set(dbgi, new_block, cmp, ia32_pn_Cmp_parity, 0);
+	new_node = new_bd_ia32_Setcc(dbgi, new_block, cmp, ia32_pn_Cmp_parity);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	/* conv to 32bit */
