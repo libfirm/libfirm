@@ -6368,6 +6368,9 @@ ir_node *identify_remember(pset *value_table, ir_node *n) {
 
 	if (o != n) {
 		update_known_irn(o, n);
+
+		/* n is reachable again */
+		edges_node_revival(n, get_irn_irg(n));
 	}
 
 	return o;

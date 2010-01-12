@@ -479,6 +479,34 @@ static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph 
 	}
 }
 
+/**
+ * A node might be revivaled by CSE. Assure its edges.
+ *
+ * @param irn   the node
+ * @param kind  the kind of edges to remove
+ * @param irg   the irg of the old node
+ */
+static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph *irg)
+{
+	irn_edge_info_t *info;
+	int             i, n;
+
+	if (!edges_activated_kind(irg, kind))
+		return;
+
+	info = _get_irn_edge_info(irn, kind);
+	if (info->edges_built)
+		return;
+
+	DBG((dbg, LEVEL_5, "node revivaled (kind: %s): %+F\n", get_kind_str(kind), irn));
+
+	foreach_tgt(irn, i, n, kind) {
+		ir_node *tgt = get_n(irn, i, kind);
+		edges_notify_edge_kind(irn, i, tgt, NULL, kind, irg);
+	}
+	info->edges_built = 1;
+}
+
 struct build_walker {
 	ir_graph       *irg;
 	ir_edge_kind_t kind;
@@ -501,6 +529,7 @@ static void build_edges_walker(ir_node *irn, void *data) {
 		ir_node *pred = get_n(irn, i, kind);
 		edges_notify_edge_kind(irn, i, pred, NULL, kind, irg);
 	}
+	_get_irn_edge_info(irn, kind)->edges_built = 1;
 }
 
 /**
@@ -512,7 +541,8 @@ static void init_lh_walker(ir_node *irn, void *data) {
 	ir_edge_kind_t      kind = w->kind;
 	list_head           *head = _get_irn_outs_head(irn, kind);
 	INIT_LIST_HEAD(head);
-	_get_irn_edge_info(irn, kind)->out_count = 0;
+	_get_irn_edge_info(irn, kind)->edges_built = 0;
+	_get_irn_edge_info(irn, kind)->out_count   = 0;
 }
 
 /**
@@ -533,7 +563,8 @@ static void init_lh_walker_dep(ir_node *irn, void *data) {
 	int                 i;
 
 	INIT_LIST_HEAD(head);
-	_get_irn_edge_info(irn, kind)->out_count = 0;
+	_get_irn_edge_info(irn, kind)->edges_built = 0;
+	_get_irn_edge_info(irn, kind)->out_count   = 0;
 
 	for (i = get_irn_deps(irn) - 1; i >= 0; --i) {
 		ir_node *dep = get_irn_dep(irn, i);
@@ -541,7 +572,8 @@ static void init_lh_walker_dep(ir_node *irn, void *data) {
 		head = _get_irn_outs_head(dep, kind);
 
 		INIT_LIST_HEAD(head);
-		_get_irn_edge_info(dep, kind)->out_count = 0;
+		_get_irn_edge_info(dep, kind)->edges_built = 0;
+		_get_irn_edge_info(dep, kind)->out_count   = 0;
 	}
 }
 
@@ -557,8 +589,7 @@ typedef struct visitor_info_t {
 static void visitor(ir_node *irn, void *data) {
 	visitor_info_t *info = data;
 
-	if (!irn_visited(irn)) {
-		mark_irn_visited(irn);
+	if (!irn_visited_else_mark(irn)) {
 		info->visit(irn, info->data);
 	}
 }
@@ -968,6 +999,10 @@ void edges_node_deleted(ir_node *irn, ir_graph *irg) {
 	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK, irg);
 }
 
+void edges_node_revival(ir_node *irn, ir_graph *irg) {
+	edges_node_revival_kind(irn, EDGE_KIND_NORMAL, irg);
+	edges_node_revival_kind(irn, EDGE_KIND_BLOCK, irg);
+}
 
 const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind) {
 	return _get_irn_out_edge_first_kind(irn, kind);

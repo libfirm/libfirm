@@ -143,6 +143,11 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tg
 */
 void edges_node_deleted(ir_node *old, ir_graph *irg);
 
+/**
+ * A node might be revivaled by CSE.
+ */
+void edges_node_revival(ir_node *node, ir_graph *irg);
+
 void edges_invalidate_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph *irg);
 
 /**

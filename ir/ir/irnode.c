@@ -168,8 +168,12 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 	res->out     = NULL;
 	res->node_nr = get_irp_new_node_nr();
 
-	for (i = 0; i < EDGE_KIND_LAST; ++i)
+	for (i = 0; i < EDGE_KIND_LAST; ++i) {
 		INIT_LIST_HEAD(&res->edge_info[i].outs_head);
+		/* edges will be build immediately */
+		res->edge_info[i].edges_built = 1;
+		res->edge_info[i].out_count = 0;
+	}
 
 	/* don't put this into the for loop, arity is -1 for some nodes! */
 	edges_notify_edge(res, -1, res->in[0], NULL, irg);

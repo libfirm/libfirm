@@ -340,7 +340,8 @@ typedef union {
  */
 typedef struct _irn_edge_kind_info_t {
 	struct list_head outs_head;  /**< The list of all outs. */
-	int out_count;               /**< Number of outs in the list. */
+	unsigned edges_built : 1;    /**< Set edges where built for this node. */
+	unsigned out_count : 31;     /**< Number of outs in the list. */
 } irn_edge_info_t;
 
 typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
