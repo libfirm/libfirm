@@ -60,30 +60,33 @@ static void find_mux_nodes(ir_node *mux, void *ctx)
 
 static void lower_mux_node(ir_node* mux)
 {
-	ir_node *upper_block;
-	ir_node *lower_block;
-	ir_node *cond;
-	ir_node *trueProj;
-	ir_node *falseProj;
-	ir_node *falseBlock;
-	ir_node *mux_jmps[2];
-	ir_node *mux_values[2];
-	ir_node *phi;
+	ir_node  *upper_block;
+	ir_node  *lower_block;
+	ir_node  *cond;
+	ir_node  *trueProj;
+	ir_node  *falseProj;
+	ir_node  *falseBlock;
+	ir_node  *mux_jmps[2];
+	ir_node  *mux_values[2];
+	ir_node  *phi;
+	ir_graph *irg;
+
+	irg = get_irn_irg(mux);
 
 	/* Split the block in two halfs, with the mux in the upper block. */
 	lower_block = get_nodes_block(mux);
 	assert(lower_block != 0);
 	part_block(mux);
-	upper_block = get_cur_block();
+	upper_block = get_nodes_block(mux);
 
 	/* Create a cond node with two projs and a phi as mux replacement. The
 	 * true proj jumps directly to the lower block, the false proj uses a
 	 * block in-between, so that the phi can be used to select the result
 	 * value from the old mux node in the lower block. */
-	cond        = new_Cond(get_Mux_sel(mux));
-	trueProj    = new_Proj(cond, mode_X, pn_Cond_true);
-	falseProj   = new_Proj(cond, mode_X, pn_Cond_false);
-	falseBlock  = new_Block(1, &falseProj);
+	cond        = new_r_Cond(upper_block, get_Mux_sel(mux));
+	trueProj    = new_r_Proj(upper_block, cond, mode_X, pn_Cond_true);
+	falseProj   = new_r_Proj(upper_block, cond, mode_X, pn_Cond_false);
+	falseBlock  = new_r_Block(irg, 1, &falseProj);
 	mux_jmps[0] = trueProj;
 	mux_jmps[1] = new_r_Jmp(falseBlock);
 
@@ -94,11 +97,9 @@ static void lower_mux_node(ir_node* mux)
 
 	/* Combine the two control flows with a phi to select the correct value
 	 * and use it to replace the mux. */
-	set_cur_block(lower_block);
-
 	mux_values[0] = get_Mux_true(mux);
 	mux_values[1] = get_Mux_false(mux);
-	phi = new_Phi(2, mux_values, get_irn_mode(mux));
+	phi = new_r_Phi(lower_block, 2, mux_values, get_irn_mode(mux));
 	exchange(mux, phi);
 
 	/* Add links and update phi node lists, for the next part_block() call.
