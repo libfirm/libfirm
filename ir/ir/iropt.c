@@ -6358,22 +6358,22 @@ static void update_known_irn(ir_node *known_irn, const ir_node *new_ir_node) {
  *         node could be found
  */
 ir_node *identify_remember(pset *value_table, ir_node *n) {
-	ir_node *o = NULL;
+	ir_node *nn = NULL;
 
 	if (!value_table) return n;
 
 	ir_normalize_node(n);
 	/* lookup or insert in hash table with given hash key. */
-	o = pset_insert(value_table, n, ir_node_hash(n));
+	nn = pset_insert(value_table, n, ir_node_hash(n));
 
-	if (o != n) {
-		update_known_irn(o, n);
+	if (nn != n) {
+		update_known_irn(nn, n);
 
 		/* n is reachable again */
-		edges_node_revival(n, get_irn_irg(n));
+		edges_node_revival(nn, get_irn_irg(nn));
 	}
 
-	return o;
+	return nn;
 }  /* identify_remember */
 
 /**
