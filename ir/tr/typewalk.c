@@ -102,11 +102,13 @@ static void do_type_walk(type_or_ent tore,
 		ent = tore.ent;
 		if (entity_visited(ent))
 			return;
+		mark_entity_visited(ent);
 		break;
 	case k_type:
 		tp = tore.typ;
 		if (type_visited(tp))
 			return;
+		mark_type_visited(tp);
 		break;
 	default:
 		break;
@@ -119,7 +121,6 @@ static void do_type_walk(type_or_ent tore,
 	/* iterate */
 	switch (get_kind(tore.ent)) {
 	case k_entity:
-		mark_entity_visited(ent);
 		cont.typ = get_entity_owner(ent);
 		do_type_walk(cont, pre, post, env);
 		cont.typ = get_entity_type(ent);
@@ -142,7 +143,6 @@ static void do_type_walk(type_or_ent tore,
 		}
 		break;
 	case k_type:
-		mark_type_visited(tp);
 		switch (get_type_tpop_code(tp)) {
 		case tpo_class:
 			n_types = get_class_n_supertypes(tp);
@@ -291,7 +291,7 @@ void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env) {
 			do_type_walk(cont, pre, post, env);
 	}
 
-	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
+	for (i = IR_SEGMENT_FIRST; i <= IR_SEGMENT_LAST; ++i) {
 		cont.typ = get_segment_type((ir_segment_t) i);
 		if(cont.typ)
 			do_type_walk(cont, pre, post, env);

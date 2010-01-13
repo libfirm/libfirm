@@ -83,11 +83,11 @@ static inline unsigned hash_ptr(const void *ptr)
 
 static inline unsigned _hash_combine(unsigned x, unsigned y)
 {
-  unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
-  hash ^= x;
-  hash  = _FIRM_FNV_TIMES_PRIME(hash);
-  hash ^= y;
-  return hash;
+	unsigned hash = _FIRM_FNV_TIMES_PRIME(_FIRM_FNV_OFFSET_BASIS);
+	hash ^= x;
+	hash  = _FIRM_FNV_TIMES_PRIME(hash);
+	hash ^= y;
+	return hash;
 }
 
 #ifdef _MSC_VER

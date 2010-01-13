@@ -548,7 +548,7 @@ struct ir_prog {
 	                                     to allocate nodes the represent values
 	                                     of constant entities. It is not meant as
 	                                     a procedure.  */
-	ir_type   *segment_types[IR_SEGMENT_COUNT];
+	ir_type   *segment_types[IR_SEGMENT_LAST+1];
 	ir_type  **types;               /**< A list of all types in the ir. */
 	ir_mode  **modes;               /**< A list of all modes in the ir. */
 	ir_op    **opcodes;             /**< A list of all opcodes in the ir. */

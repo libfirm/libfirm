@@ -61,7 +61,7 @@ typedef enum ir_segment_t {
 	/** like constructors, but functions are executed on module exit */
 	IR_SEGMENT_DESTRUCTORS,
 
-	IR_SEGMENT_COUNT
+	IR_SEGMENT_LAST = IR_SEGMENT_DESTRUCTORS
 } ir_segment_t;
 
 /**
@@ -160,6 +160,12 @@ ir_graph *get_irp_allirg(int pos);
 ir_type *get_segment_type(ir_segment_t segment);
 
 /**
+ * @brief Changes a segment segment type for the program.
+ * (use with care)
+ */
+void set_segment_type(ir_segment_t segment, ir_type *new_type);
+
+/**
  * Returns the "global" type of the irp.
  * Upon creation this is an empty class type.
  * This is a convenience function for get_segment_type(IR_SEGMENT_GLOBAL)
@@ -169,6 +175,7 @@ ir_type *get_glob_type(void);
 /**
  * Returns the "thread local storage" type of the irp.
  * Upon creation this is an empty struct type.
+ * This is a convenience function for get_segment_type(IR_SEGMENT_THREAD_LOCAL)
  */
 ir_type *get_tls_type(void);
 
@@ -179,13 +186,22 @@ void add_irp_type(ir_type *typ);
     shrinks the list by one. */
 void remove_irp_type(ir_type *typ);
 
-/** Returns the number of all types in the irp. */
+/**
+ * Returns the number of all types in the irp.
+ * @deprecated
+ */
 int get_irp_n_types(void);
 
-/** Returns the type at position pos in the irp. */
+/**
+ * Returns the type at position pos in the irp.
+ * @deprecated
+ */
 ir_type *get_irp_type(int pos);
 
-/** Overwrites the type at position pos with another type. */
+/**
+ * Overwrites the type at position pos with another type.
+ * @deprecated
+ */
 void set_irp_type(int pos, ir_type *typ);
 
 /** Returns the number of all modes in the irp. */

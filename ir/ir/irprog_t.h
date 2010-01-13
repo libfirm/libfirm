@@ -47,12 +47,8 @@ void add_irp_mode(ir_mode *mode);
 static inline ir_type *
 _get_segment_type(ir_segment_t segment)
 {
-	ir_type *type;
-
-	assert(segment < IR_SEGMENT_COUNT);
-	type                        = irp->segment_types[segment];
-	irp->segment_types[segment] = type;
-	return type;
+	assert(segment <= IR_SEGMENT_LAST);
+	return irp->segment_types[segment];
 }
 
 static inline ir_type *

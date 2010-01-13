@@ -26,6 +26,9 @@
 #include "config.h"
 
 #include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <stdarg.h>
 
 #include "irio.h"
 
@@ -39,24 +42,23 @@
 #include "tv.h"
 #include "array.h"
 #include "error.h"
+#include "typerep.h"
 #include "adt/set.h"
+#include "adt/obst.h"
 
 #define SYMERROR ((unsigned) ~0)
 
 typedef struct io_env_t
 {
+	int c;                /**< currently read char */
 	FILE *file;
-	set *idset;               /**< id_entry set, which maps from file ids to new Firm elements */
+	set *idset;           /**< id_entry set, which maps from file ids to new Firm elements */
 	int ignoreblocks;
-	int line, col;
+	const char *inputname;
+	int line;
 	ir_type **fixedtypes;
+	struct obstack obst;
 } io_env_t;
-
-typedef struct lex_state_t
-{
-	long offs;
-	int line, col;
-} lex_state_t;
 
 typedef enum typetag_t
 {
@@ -68,6 +70,7 @@ typedef enum typetag_t
 	tt_initializer,
 	tt_iro,
 	tt_keyword,
+	tt_mode_sort,
 	tt_mode_arithmetic,
 	tt_peculiarity,
 	tt_pin_state,
@@ -75,20 +78,21 @@ typedef enum typetag_t
 	tt_type_state,
 	tt_variability,
 	tt_visibility,
-	tt_volatility
+	tt_volatility,
+	tt_segment
 } typetag_t;
 
 typedef enum keyword_t
 {
 	kw_constirg,
 	kw_entity,
-	kw_frametype,
 	kw_irg,
 	kw_mode,
 	kw_modes,
-	kw_valuetype,
 	kw_type,
-	kw_typegraph
+	kw_typegraph,
+	kw_program,
+	kw_segment_type
 } keyword_t;
 
 typedef struct symbol_t
@@ -106,15 +110,6 @@ typedef struct id_entry
 
 /** The symbol table, a set of symbol_t elements. */
 static set *symtbl;
-
-
-/**
- * Calculate a hash value for a string.
- */
-static unsigned string_hash(const char *str, int len)
-{
-	return str[0] * 27893 ^ str[len-1] * 81 ^ str[len >> 1];
-}
 
 /**
  * Compare two symbol table entries.
@@ -138,6 +133,25 @@ static int id_cmp(const void *elt, const void *key, size_t size)
 	return entry->id - keyentry->id;
 }
 
+static void __attribute__((format(printf, 2, 3)))
+parse_error(io_env_t *env, const char *fmt, ...)
+{
+	va_list ap;
+	int     line = env->line;
+
+	/* workaround read_c "feature" that a '\n' triggers the line++
+	 * instead of the character after the '\n' */
+	if (env->c == '\n') {
+		line--;
+	}
+
+	fprintf(stderr, "%s:%d: error ", env->inputname, line);
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
 /** Initializes the symbol table. May be called more than once without problems. */
 static void symtbl_init(void)
 {
@@ -149,33 +163,46 @@ static void symtbl_init(void)
 
 	symtbl = new_set(symbol_cmp, 256);
 
-#define INSERT(s, tt, cod)                                       \
+#define INSERT(tt, s, cod)                                       \
 	key.str = (s);                                               \
 	key.typetag = (tt);                                          \
 	key.code = (cod);                                            \
-	set_insert(symtbl, &key, sizeof(key), string_hash(s, sizeof(s)-1) + tt * 17)
+	set_insert(symtbl, &key, sizeof(key), firm_fnv_hash_str(s) + tt * 17)
 
-#define INSERTENUM(tt, e) INSERT(#e, tt, e)
-#define INSERTKEYWORD(k) INSERT(#k, tt_keyword, kw_##k)
+#define INSERTENUM(tt, e) INSERT(tt, #e, e)
+#define INSERTKEYWORD(k) INSERT(tt_keyword, #k, kw_##k)
 
-	INSERT("array", tt_tpo, tpo_array);
-	INSERT("class", tt_tpo, tpo_class);
-	INSERT("method", tt_tpo, tpo_method);
-	INSERT("pointer", tt_tpo, tpo_pointer);
-	INSERT("primitive", tt_tpo, tpo_primitive);
-	INSERT("struct", tt_tpo, tpo_struct);
-	INSERT("union", tt_tpo, tpo_union);
-	INSERT("Unknown", tt_tpo, tpo_unknown);
+	INSERT(tt_tpo, "array", tpo_array);
+	INSERT(tt_tpo, "class", tpo_class);
+	INSERT(tt_tpo, "method", tpo_method);
+	INSERT(tt_tpo, "pointer", tpo_pointer);
+	INSERT(tt_tpo, "primitive", tpo_primitive);
+	INSERT(tt_tpo, "struct", tpo_struct);
+	INSERT(tt_tpo, "union", tpo_union);
+	INSERT(tt_tpo, "Unknown", tpo_unknown);
+
+	INSERT(tt_mode_sort, "auxiliary", irms_auxiliary);
+	INSERT(tt_mode_sort, "control_flow", irms_control_flow);
+	INSERT(tt_mode_sort, "memory", irms_memory);
+	INSERT(tt_mode_sort, "internal_boolean", irms_internal_boolean);
+	INSERT(tt_mode_sort, "reference", irms_reference);
+	INSERT(tt_mode_sort, "int_number", irms_int_number);
+	INSERT(tt_mode_sort, "float_number", irms_float_number);
+
+	INSERT(tt_segment, "global", IR_SEGMENT_GLOBAL);
+	INSERT(tt_segment, "thread_local", IR_SEGMENT_THREAD_LOCAL);
+	INSERT(tt_segment, "constructors", IR_SEGMENT_CONSTRUCTORS);
+	INSERT(tt_segment, "destructors", IR_SEGMENT_DESTRUCTORS);
 
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
-	INSERTKEYWORD(frametype);
 	INSERTKEYWORD(irg);
 	INSERTKEYWORD(mode);
 	INSERTKEYWORD(modes);
-	INSERTKEYWORD(valuetype);
 	INSERTKEYWORD(type);
 	INSERTKEYWORD(typegraph);
+	INSERTKEYWORD(program);
+	INSERTKEYWORD(segment_type);
 
 #include "gen_irio_lex.inl"
 
@@ -251,6 +278,17 @@ static void symtbl_init(void)
 #undef INSERT
 }
 
+static const char *get_segment_name(ir_segment_t segment)
+{
+	switch (segment) {
+	case IR_SEGMENT_GLOBAL:       return "global";
+	case IR_SEGMENT_THREAD_LOCAL: return "thread_local";
+	case IR_SEGMENT_CONSTRUCTORS: return "constructors";
+	case IR_SEGMENT_DESTRUCTORS:  return "destructors";
+	}
+	return "INVALID_SEGMENT";
+}
+
 /** Returns the according symbol value for the given string and tag, or SYMERROR if none was found. */
 static unsigned symbol(const char *str, typetag_t typetag)
 {
@@ -259,7 +297,7 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	key.str = str;
 	key.typetag = typetag;
 
-	entry = set_find(symtbl, &key, sizeof(key), string_hash(str, strlen(str)) + typetag * 17);
+	entry = set_find(symtbl, &key, sizeof(key), firm_fnv_hash_str(str) + typetag * 17);
 	return entry ? entry->code : SYMERROR;
 }
 
@@ -336,30 +374,28 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 	fputs(get_initializer_kind_name(ini_kind), f);
 	fputc(' ', f);
 
-	switch (ini_kind)
-	{
-		case IR_INITIALIZER_CONST:
-			fprintf(f, "%ld ", get_irn_node_nr(get_initializer_const_value(ini)));
-			break;
+	switch (ini_kind) {
+	case IR_INITIALIZER_CONST:
+		fprintf(f, "%ld ", get_irn_node_nr(get_initializer_const_value(ini)));
+		break;
 
-		case IR_INITIALIZER_TARVAL:
-			write_tarval(env, get_initializer_tarval_value(ini));
-			break;
+	case IR_INITIALIZER_TARVAL:
+		write_tarval(env, get_initializer_tarval_value(ini));
+		break;
 
-		case IR_INITIALIZER_NULL:
-			break;
+	case IR_INITIALIZER_NULL:
+		break;
 
-		case IR_INITIALIZER_COMPOUND:
-		{
-			unsigned i, n = get_initializer_compound_n_entries(ini);
-			fprintf(f, "%d ", n);
-			for (i = 0; i < n; i++)
-				write_initializer(env, get_initializer_compound_value(ini, i));
-			break;
-		}
+	case IR_INITIALIZER_COMPOUND: {
+		unsigned i, n = get_initializer_compound_n_entries(ini);
+		fprintf(f, "%d ", n);
+		for (i = 0; i < n; i++)
+			write_initializer(env, get_initializer_compound_value(ini, i));
+		break;
+	}
 
-		default:
-			panic("Unknown initializer kind");
+	default:
+		panic("Unknown initializer kind");
 	}
 }
 
@@ -386,14 +422,24 @@ static void write_volatility(io_env_t *env, ir_node *irn)
 
 static void export_type_common(io_env_t *env, ir_type *tp)
 {
-	fprintf(env->file, "\t%s %ld %s %u %u %s %s ",
-			is_frame_type(tp) ? "frametype" : is_value_param_type(tp) ? "valuetype" : "type",
-			get_type_nr(tp),
-			get_type_tpop_name(tp),
-			get_type_size_bytes(tp),
-			get_type_alignment_bytes(tp),
-			get_type_state_name(get_type_state(tp)),
-			get_visibility_name(get_type_visibility(tp)));
+	fprintf(env->file, "\ttype %ld %s %u %u %s %s %d ",
+	        get_type_nr(tp),
+	        get_type_tpop_name(tp),
+	        get_type_size_bytes(tp),
+	        get_type_alignment_bytes(tp),
+	        get_type_state_name(get_type_state(tp)),
+	        get_visibility_name(get_type_visibility(tp)),
+	        tp->flags);
+}
+
+static void export_compound_name(FILE *f, const ir_type *tp)
+{
+	ident *name = get_compound_ident(tp);
+	if (name == NULL) {
+		fputs("NULL ", f);
+	} else {
+		fprintf(f, "\"%s\" ", get_id_str(name));
+	}
 }
 
 static void export_type_pre(io_env_t *env, ir_type *tp)
@@ -401,48 +447,42 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 	FILE *f = env->file;
 
 	/* skip types to be handled by post walker */
-	switch (get_type_tpop_code(tp))
-	{
-		case tpo_array:
-		case tpo_method:
-		case tpo_pointer:
-			return;
-		default:
-			break;
+	switch (get_type_tpop_code(tp)) {
+	case tpo_array:
+	case tpo_method:
+	case tpo_pointer:
+		return;
+	default:
+		break;
 	}
 
 	export_type_common(env, tp);
 
-	switch (get_type_tpop_code(tp))
-	{
-		case tpo_uninitialized:
-			panic("invalid type found");
+	switch (get_type_tpop_code(tp)) {
+	case tpo_uninitialized:
+		panic("invalid type found");
 
-		case tpo_class:
-			fputs(get_class_name(tp), f);
-			fputc(' ', f);
-			/* TODO: inheritance stuff not supported yet */
-			printf("Inheritance of classes not supported yet!\n");
-			break;
+	case tpo_class:
+		export_compound_name(f, tp);
+		break;
 
-		case tpo_primitive:
-			write_mode(env, get_type_mode(tp));
-			break;
+	case tpo_primitive:
+		write_mode(env, get_type_mode(tp));
+		break;
 
-		case tpo_union:
-		case tpo_struct:
-		case tpo_enumeration:
-			fputs(get_compound_name(tp), f);
-			fputc(' ', f);
-			break;
+	case tpo_union:
+	case tpo_struct:
+	case tpo_enumeration:
+		export_compound_name(f, tp);
+		break;
 
-		case tpo_method:
-		case tpo_pointer:
-		case tpo_code:
-		case tpo_array:
-		case tpo_none:
-		case tpo_unknown:
-			break;
+	case tpo_array:
+	case tpo_method:
+	case tpo_pointer:
+	case tpo_code:
+	case tpo_none:
+	case tpo_unknown:
+		break;
 	}
 	fputc('\n', f);
 }
@@ -450,66 +490,77 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 static void export_type_post(io_env_t *env, ir_type *tp)
 {
 	FILE *f = env->file;
-	int i, n, nparams, nresults;
+	int i;
 
 	/* skip types already handled by pre walker */
-	switch (get_type_tpop_code(tp))
-	{
-		case tpo_class:
-		case tpo_primitive:
-		case tpo_struct:
-		case tpo_union:
-		case tpo_unknown:
-			return;
-		default:
-			break;
+	switch (get_type_tpop_code(tp)) {
+	case tpo_class:
+	case tpo_primitive:
+	case tpo_struct:
+	case tpo_union:
+	case tpo_unknown:
+	case tpo_uninitialized:
+	case tpo_code:
+	case tpo_none:
+		return;
+	case tpo_array:
+	case tpo_method:
+	case tpo_pointer:
+	case tpo_enumeration:
+		break;
 	}
 
 	export_type_common(env, tp);
 
-	switch (get_type_tpop_code(tp))
-	{
-		case tpo_array:
-			n = get_array_n_dimensions(tp);
-			fprintf(f, "%i %ld ", n, get_type_nr(get_array_element_type(tp)));
-			for (i = 0; i < n; i++) {
-				ir_node *lower = get_array_lower_bound(tp, i);
-				ir_node *upper = get_array_upper_bound(tp, i);
+	switch (get_type_tpop_code(tp)) {
+	case tpo_array: {
+		int n = get_array_n_dimensions(tp);
+		fprintf(f, "%d %ld ", n, get_type_nr(get_array_element_type(tp)));
+		for (i = 0; i < n; i++) {
+			ir_node *lower = get_array_lower_bound(tp, i);
+			ir_node *upper = get_array_upper_bound(tp, i);
 
-				if (is_Const(lower))
-					fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(lower)));
-				else
-					panic("Lower array bound is not constant");
+			if (is_Const(lower))
+				fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(lower)));
+			else
+				panic("Lower array bound is not constant");
 
-				if (is_Const(upper))
-					fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(upper)));
-				else if (is_Unknown(upper))
-					fputs("unknown ", f);
-				else
-					panic("Upper array bound is not constant");
-			}
-			break;
+			if (is_Const(upper))
+				fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(upper)));
+			else if (is_Unknown(upper))
+				fputs("unknown ", f);
+			else
+				panic("Upper array bound is not constant");
+		}
+		break;
+	}
 
-		case tpo_method:
-			nparams  = get_method_n_params(tp);
-			nresults = get_method_n_ress(tp);
-			fprintf(f, "0x%X 0x%X %i %i ", get_method_calling_convention(tp),
-				get_method_additional_properties(tp), nparams, nresults);
-			for (i = 0; i < nparams; i++)
-				fprintf(f, "%ld ", get_type_nr(get_method_param_type(tp, i)));
-			for (i = 0; i < nresults; i++)
-				fprintf(f, "%ld ", get_type_nr(get_method_res_type(tp, i)));
-			fprintf(f, "%d ", get_method_first_variadic_param_index(tp));
-			break;
+	case tpo_method: {
+		int nparams  = get_method_n_params(tp);
+		int nresults = get_method_n_ress(tp);
+		fprintf(f, "%u %u %d %d ", get_method_calling_convention(tp),
+			get_method_additional_properties(tp), nparams, nresults);
+		for (i = 0; i < nparams; i++)
+			fprintf(f, "%ld ", get_type_nr(get_method_param_type(tp, i)));
+		for (i = 0; i < nresults; i++)
+			fprintf(f, "%ld ", get_type_nr(get_method_res_type(tp, i)));
+		fprintf(f, "%d ", get_method_first_variadic_param_index(tp));
+		break;
+	}
 
-		case tpo_pointer:
-			write_mode(env, get_type_mode(tp));
-			fprintf(f, "%ld ", get_type_nr(get_pointer_points_to_type(tp)));
-			break;
+	case tpo_pointer:
+		write_mode(env, get_type_mode(tp));
+		fprintf(f, "%ld ", get_type_nr(get_pointer_points_to_type(tp)));
+		break;
 
-		default:
-			printf("export_type: Unknown type code \"%s\".\n", get_type_tpop_name(tp));
-			break;
+	case tpo_enumeration:
+		fprintf(stderr, "Enumeration type not handled yet by exporter\n");
+		break;
+
+	default:
+		printf("export_type: Unknown type code \"%s\".\n",
+		       get_type_tpop_name(tp));
+		break;
 	}
 	fputc('\n', f);
 }
@@ -517,10 +568,22 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 static void export_entity(io_env_t *env, ir_entity *ent)
 {
 	ir_type *owner = get_entity_owner(ent);
-	fprintf(env->file, "\tentity %ld \"%s\" \"%s\" %ld %ld %d %u %d %s %s %s %s %s ",
-			get_entity_nr(ent),
-			get_entity_name(ent),
-			ent->ld_name ? get_id_str(ent->ld_name) : "",
+
+	/* we don't dump array_element_ent entities. They're a strange concept
+	 * and lead to cycles in type_graph.
+	 */
+	if (is_Array_type(owner))
+		return;
+
+	fprintf(env->file, "\tentity %ld \"%s\" ",
+	        get_entity_nr(ent), get_entity_name(ent));
+	if (ent->ld_name != NULL) {
+		fprintf(env->file, "\"%s\" ", get_entity_ld_name(ent));
+	} else {
+		fprintf(env->file, "NULL ");
+	}
+
+	fprintf(env->file, "%ld %ld %d %u %d %s %s %s %s %s ",
 			get_type_nr(get_entity_type(ent)),
 			get_type_nr(owner),
 			get_entity_offset(ent),
@@ -534,7 +597,7 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 
 	/* TODO: inheritance stuff for class entities not supported yet */
 	if (is_Class_type(owner) && owner != get_glob_type())
-		printf("Inheritance of class entities not supported yet!\n");
+		fprintf(stderr, "Inheritance of class entities not supported yet!\n");
 
 	if (get_entity_variability(ent) != variability_uninitialized &&
 	    get_entity_visibility(ent) != visibility_external_allocated)
@@ -573,19 +636,18 @@ static void export_type_or_ent_post(type_or_ent tore, void *ctx)
 {
 	io_env_t *env = (io_env_t *) ctx;
 
-	switch (get_kind(tore.ent))
-	{
-		case k_entity:
-			export_entity(env, tore.ent);
-			break;
+	switch (get_kind(tore.ent)) {
+	case k_entity:
+		export_entity(env, tore.ent);
+		break;
 
-		case k_type:
-			export_type_post(env, tore.typ);
-			break;
+	case k_type:
+		export_type_post(env, tore.typ);
+		break;
 
-		default:
-			panic("export_type_or_ent_post: Unknown type or entity.");
-			break;
+	default:
+		panic("export_type_or_ent_post: Unknown type or entity.");
+		break;
 	}
 }
 
@@ -618,9 +680,23 @@ static void export_node(ir_node *irn, void *ctx)
 	fprintf(env->file, "] { ");
 
 	switch (opcode)	{
-		#include "gen_irio_export.inl"
+	#include "gen_irio_export.inl"
 	}
 	fputs("}\n", env->file);
+}
+
+static const char *get_mode_sort_name(ir_mode_sort sort)
+{
+	switch (sort) {
+	case irms_auxiliary:        return "auxiliary";
+	case irms_control_flow:     return "control_flow";
+	case irms_memory:           return "memory";
+	case irms_internal_boolean: return "internal_boolean";
+	case irms_reference:        return "reference";
+	case irms_int_number:       return "int_number";
+	case irms_float_number:     return "float_number";
+	}
+	panic("invalid mode sort found");
 }
 
 static void export_modes(io_env_t *env)
@@ -631,22 +707,23 @@ static void export_modes(io_env_t *env)
 
 	for (i = 0; i < n_modes; i++) {
 		ir_mode *mode = get_irp_mode(i);
-		switch (get_mode_sort(mode))
-		{
-			case irms_auxiliary:
-			case irms_control_flow:
-			case irms_memory:
-			case irms_internal_boolean:
-				/* skip "internal" modes, which may not be user defined */
-				continue;
-			default:
-				break;
+		switch (get_mode_sort(mode)) {
+		case irms_auxiliary:
+		case irms_control_flow:
+		case irms_memory:
+		case irms_internal_boolean:
+			/* skip "internal" modes, which may not be user defined */
+			continue;
+		default:
+			break;
 		}
 
-		fprintf(env->file, "\tmode \"%s\" 0x%X %d %d %s %d %d ", get_mode_name(mode),
-			get_mode_sort(mode), get_mode_size_bits(mode), get_mode_sign(mode),
-			get_mode_arithmetic_name(get_mode_arithmetic(mode)), get_mode_modulo_shift(mode),
-			get_mode_n_vector_elems(mode));
+		fprintf(env->file, "\tmode \"%s\" %s %d %d %s %d %d ",
+		        get_mode_name(mode), get_mode_sort_name(get_mode_sort(mode)),
+		        get_mode_size_bits(mode), get_mode_sign(mode),
+		        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
+		        get_mode_modulo_shift(mode),
+		        get_mode_n_vector_elems(mode));
 		if (mode_is_reference(mode)) {
 			write_mode(env, get_reference_mode_signed_eq(mode));
 			write_mode(env, get_reference_mode_unsigned_eq(mode));
@@ -654,60 +731,96 @@ static void export_modes(io_env_t *env)
 		fputc('\n', env->file);
 	}
 
-	fputs("}\n\n", env->file);
+	fputs("}\n", env->file);
 }
 
-/* Exports the whole irp to the given file in a textual form. */
+static void export_program(io_env_t *env)
+{
+	FILE         *f = env->file;
+	ir_segment_t  s;
+
+	fputs("\nprogram {\n", f);
+	if (irp_prog_name_is_set()) {
+		fprintf(f, "\tname \"%s\"\n", get_irp_name());
+	}
+	/* We need numbers for irgs... */
+#if 0
+	if (get_irp_main_irg() != NULL) {
+		fprintf(f, "\tmain_irg %d\n", get_irp_main_irg
+#endif
+
+	for (s = 0; s <= IR_SEGMENT_LAST; ++s) {
+		ir_type *segment_type = get_segment_type(s);
+		fprintf(f, "\tsegment_type %s", get_segment_name(s));
+		if (segment_type == NULL) {
+			fputs(" NULL\n", f);
+		} else {
+			fprintf(f, " %ld\n", get_type_nr(segment_type));
+		}
+	}
+	fputs("}\n", f);
+}
+
 void ir_export(const char *filename)
 {
-	io_env_t env;
-	int i, n_irgs = get_irp_n_irgs();
-
-	env.file = fopen(filename, "wt");
-	if (!env.file) {
+	FILE *file = fopen(filename, "wt");
+	if (file == NULL) {
 		perror(filename);
 		return;
 	}
 
+	ir_export_file(file, filename);
+	fclose(file);
+}
+
+/* Exports the whole irp to the given file in a textual form. */
+void ir_export_file(FILE *file, const char *outputname)
+{
+	io_env_t env;
+	int i, n_irgs = get_irp_n_irgs();
+
+	(void) outputname;
+	env.file = file;
+
 	export_modes(&env);
 
-	fputs("typegraph {\n", env.file);
-
+	fputs("\ntypegraph {\n", env.file);
 	type_walk_prog(export_type_or_ent_pre, export_type_or_ent_post, &env);
+	fputs("}\n", env.file);
 
 	for (i = 0; i < n_irgs; i++) {
-		ir_graph *irg = get_irp_irg(i);
-		ir_type *valuetype = get_irg_value_param_type(irg);
+		ir_graph *irg       = get_irp_irg(i);
+		ir_type  *valuetype = get_irg_value_param_type(irg);
 
-		fprintf(env.file, "}\n\nirg %ld %ld %ld {\n", get_entity_nr(get_irg_entity(irg)),
-			get_type_nr(get_irg_frame_type(irg)),
-			valuetype == NULL ? -1 : get_type_nr(valuetype));
+		fprintf(env.file, "\nirg %ld %ld %ld {\n",
+		        get_entity_nr(get_irg_entity(irg)),
+		        get_type_nr(get_irg_frame_type(irg)),
+		        valuetype == NULL ? -1 : get_type_nr(valuetype));
 
 		env.ignoreblocks = 0;
 		irg_block_walk_graph(irg, NULL, export_node, &env);
 
 		env.ignoreblocks = 1;
 		irg_walk_anchors(irg, NULL, export_node, &env);
+
+		fputs("}\n", env.file);
 	}
 
-	fprintf(env.file, "}\n\nconstirg %ld {\n", get_irn_node_nr(get_const_code_irg()->current_block));
+	fprintf(env.file, "\nconstirg %ld {\n", get_irn_node_nr(get_const_code_irg()->current_block));
 
 	walk_const_code(NULL, export_node, &env);
 	fputs("}\n", env.file);
 
-	fclose(env.file);
+	export_program(&env);
 }
 
 /* Exports the given irg to the given file. */
-void ir_export_irg(ir_graph *irg, const char *filename)
+void ir_export_irg(ir_graph *irg, FILE *file, const char *outputname)
 {
 	io_env_t env;
 
-	env.file = fopen(filename, "wt");
-	if (!env.file) {
-		perror(filename);
-		return;
-	}
+	(void) outputname;
+	env.file = file;
 
 	export_modes(&env);
 
@@ -727,163 +840,183 @@ void ir_export_irg(ir_graph *irg, const char *filename)
 	fprintf(env.file, "}\n\nconstirg %ld {\n", get_irn_node_nr(get_const_code_irg()->current_block));
 	walk_const_code(NULL, export_node, &env);
 	fputs("}\n", env.file);
-
-	fclose(env.file);
 }
 
-static void save_lex_state(io_env_t *env, lex_state_t *state)
+static void read_c(io_env_t *env)
 {
-	state->offs = ftell(env->file);
-	state->line = env->line;
-	state->col  = env->col;
-}
-
-static void restore_lex_state(io_env_t *env, lex_state_t *state)
-{
-	fseek(env->file, state->offs, SEEK_SET);
-	env->line = state->line;
-	env->col  = state->col;
-}
-
-static int read_c(io_env_t *env)
-{
-	int ch = fgetc(env->file);
-	switch (ch)
-	{
-		case '\t':
-			env->col += 4;
-			break;
-
-		case '\n':
-			env->col = 0;
-			env->line++;
-			break;
-
-		default:
-			env->col++;
-			break;
-	}
-	return ch;
+	int c = fgetc(env->file);
+	env->c = c;
+	if (c == '\n')
+		env->line++;
 }
 
 /** Returns the first non-whitespace character or EOF. **/
-static int skip_ws(io_env_t *env)
+static void skip_ws(io_env_t *env)
 {
-	while (1)
-	{
-		int ch = read_c(env);
-		switch (ch)
-		{
-			case ' ':
-			case '\t':
-			case '\n':
-			case '\r':
-				break;
+	while (true) {
+		switch (env->c) {
+		case ' ':
+		case '\t':
+		case '\n':
+		case '\r':
+			read_c(env);
+			continue;
 
-			default:
-				return ch;
+		default:
+			return;
 		}
 	}
 }
 
 static void skip_to(io_env_t *env, char to_ch)
 {
-	int ch;
-	do
-		ch = read_c(env);
-	while (ch != to_ch && ch != EOF);
+	while (env->c != to_ch && env->c != EOF) {
+		read_c(env);
+	}
 }
 
 static int expect_char(io_env_t *env, char ch)
 {
-	int curch = skip_ws(env);
-	if (curch != ch) {
-		printf("Unexpected char '%c', expected '%c' in line %i:%i\n", curch, ch, env->line, env->col);
+	skip_ws(env);
+	if (env->c != ch) {
+		parse_error(env, "Unexpected char '%c', expected '%c'\n",
+		            env->c, ch);
 		return 0;
 	}
+	read_c(env);
 	return 1;
 }
 
 #define EXPECT(c) if (expect_char(env, (c))) {} else return 0
-#define EXPECT_OR_EXIT(c) if (expect_char(env, (c))) {} else exit(1)
 
-inline static const char *read_str_to(io_env_t *env, char *buf, size_t bufsize)
+static char *read_word(io_env_t *env)
 {
-	size_t i;
-	for (i = 0; i < bufsize - 1; i++) {
-		int ch = read_c(env);
-		if (ch == EOF) break;
-		switch (ch)
-		{
-			case ' ':
-			case '\t':
-			case '\n':
-			case '\r':
-				if (i != 0)
-					goto endofword;
-				i--;	/* skip whitespace */
-				break;
+	skip_ws(env);
 
-			default:
-				buf[i] = ch;
-				break;
+	assert(obstack_object_size(&env->obst) == 0);
+	while (true) {
+		int c = env->c;
+		switch (c) {
+		case EOF:
+		case ' ':
+		case '\t':
+		case '\n':
+		case '\r':
+			goto endofword;
+
+		default:
+			obstack_1grow(&env->obst, c);
+			break;
 		}
+		read_c(env);
 	}
+
 endofword:
-	buf[i] = 0;
-	return buf;
+	obstack_1grow(&env->obst, '\0');
+	return obstack_finish(&env->obst);
 }
 
-static const char *read_str(io_env_t *env)
+static char *read_quoted_string(io_env_t *env)
 {
-	static char buf[1024];
-	return read_str_to(env, buf, sizeof(buf));
-}
-
-static const char *read_qstr_to(io_env_t *env, char *buf, size_t bufsize)
-{
-	size_t i;
-	EXPECT_OR_EXIT('\"');
-	for (i = 0; i < bufsize - 1; i++) {
-		int ch = read_c(env);
-		if (ch == EOF) {
-			printf("Unexpected end of quoted string!\n");
-			exit(1);
-		}
-		if (ch == '\"') break;
-
-		buf[i] = ch;
-	}
-	if (i == bufsize - 1) {
-		printf("Quoted string too long!\n");
+	skip_ws(env);
+	if (env->c != '\"') {
+		parse_error(env, "Expected '\"', found '%c'\n", env->c);
 		exit(1);
 	}
-	buf[i] = 0;
-	return buf;
+	read_c(env);
+
+	assert(obstack_object_size(&env->obst) == 0);
+	while (true) {
+		int ch = env->c;
+		if (ch == EOF) {
+			parse_error(env, "Unexpected end of quoted string!\n");
+			exit(1);
+		}
+		if (ch == '\"') {
+			read_c(env);
+			break;
+		}
+		obstack_1grow(&env->obst, ch);
+		read_c(env);
+	}
+	obstack_1grow(&env->obst, '\0');
+
+	return obstack_finish(&env->obst);
 }
 
-static const char *read_qstr(io_env_t *env)
+static ident *read_ident(io_env_t *env)
 {
-	static char buf[1024];
-	return read_qstr_to(env, buf, sizeof(buf));
+	char  *str = read_quoted_string(env);
+	ident *res = new_id_from_str(str);
+	obstack_free(&env->obst, str);
+
+	return res;
 }
 
-static long read_long2(io_env_t *env, char **endptr)
+/*
+ * reads a "quoted string" or alternatively the token NULL
+ */
+static char *read_quoted_string_null(io_env_t *env)
 {
-	static char buf[1024];
-	return strtol(read_str_to(env, buf, sizeof(buf)), endptr, 0);
+	skip_ws(env);
+	if (env->c == 'N') {
+		char *str = read_word(env);
+		if (strcmp(str, "NULL") == 0) {
+			obstack_free(&env->obst, str);
+			return NULL;
+		}
+	} else if (env->c == '"') {
+		return read_quoted_string(env);
+	}
+
+	parse_error(env, "Expected \"string\" or NULL\n");
+	exit(1);
+}
+
+static ident *read_ident_null(io_env_t *env)
+{
+	ident *res;
+	char  *str = read_quoted_string_null(env);
+	if (str == NULL)
+		return NULL;
+
+	res = new_id_from_str(str);
+	obstack_free(&env->obst, str);
+	return res;
 }
 
 static long read_long(io_env_t *env)
 {
-	return read_long2(env, NULL);
+	long  result;
+	char *str;
+
+	skip_ws(env);
+	if (!isdigit(env->c) && env->c != '-') {
+		parse_error(env, "Expected number, got '%c'\n", env->c);
+		exit(1);
+	}
+
+	assert(obstack_object_size(&env->obst) == 0);
+	do {
+		obstack_1grow(&env->obst, env->c);
+		read_c(env);
+	} while(isdigit(env->c));
+	obstack_1grow(&env->obst, 0);
+
+	str = obstack_finish(&env->obst);
+	result = atol(str);
+	obstack_free(&env->obst, str);
+
+	return result;
 }
 
 static ir_node *get_node_or_null(io_env_t *env, long nodenr)
 {
 	ir_node *node = (ir_node *) get_id(env, nodenr);
-	if (node && node->kind != k_ir_node)
-		panic("Irn ID %ld collides with something else in line %i:%i\n", nodenr, env->line, env->col);
+	if (node && node->kind != k_ir_node) {
+		panic("Irn ID %ld collides with something else in line %d\n",
+		      nodenr, env->line);
+	}
 	return node;
 }
 
@@ -891,7 +1024,7 @@ static ir_node *get_node(io_env_t *env, long nodenr)
 {
 	ir_node *node = get_node_or_null(env, nodenr);
 	if (!node)
-		panic("Unknown node: %ld in line %i:%i\n", nodenr, env->line, env->col);
+		panic("Unknown node: %ld in line %d\n", nodenr, env->line);
 
 	return node;
 }
@@ -910,9 +1043,10 @@ static ir_type *get_type(io_env_t *env, long typenr)
 {
 	ir_type *type = (ir_type *) get_id(env, typenr);
 	if (type == NULL)
-		panic("Unknown type: %ld in line %i:%i\n", typenr, env->line, env->col);
+		panic("unknown type: %ld in line %d\n", typenr, env->line);
 	else if (type->kind != k_type)
-		panic("Type ID %ld collides with something else in line %i:%i\n", typenr, env->line, env->col);
+		panic("type ID %ld collides with something else in line %d\n",
+		      typenr, env->line);
 	return type;
 }
 
@@ -925,10 +1059,13 @@ static ir_entity *get_entity(io_env_t *env, long entnr)
 {
 	ir_entity *entity = (ir_entity *) get_id(env, entnr);
 	if (entity == NULL) {
-		printf("Unknown entity: %ld in line %i:%i\n", entnr, env->line, env->col);
+		parse_error(env, "unknown entity: %ld\n", entnr);
 		exit(1);
-	} else if (entity->kind != k_entity)
-		panic("Entity ID %ld collides with something else in line %i:%i\n", entnr, env->line, env->col);
+	} else if (entity->kind != k_entity) {
+		panic("Entity ID %ld collides with something else in line %d\n",
+		      entnr, env->line);
+	}
+
 	return entity;
 }
 
@@ -939,40 +1076,45 @@ static ir_entity *read_entity(io_env_t *env)
 
 static ir_mode *read_mode(io_env_t *env)
 {
-	static char buf[128];
+	char *str = read_word(env);
 	int i, n;
-
-	read_str_to(env, buf, sizeof(buf));
 
 	n = get_irp_n_modes();
 	for (i = 0; i < n; i++) {
 		ir_mode *mode = get_irp_mode(i);
-		if (!strcmp(buf, get_mode_name(mode)))
+		if (strcmp(str, get_mode_name(mode)) == 0) {
+			obstack_free(&env->obst, str);
 			return mode;
+		}
 	}
 
-	printf("Unknown mode \"%s\" in line %i:%i\n", buf, env->line, env->col);
-	return mode_ANY;
+	parse_error(env, "unknown mode \"%s\"\n", str);
+	exit(1);
 }
 
 static const char *get_typetag_name(typetag_t typetag)
 {
-	switch (typetag)
-	{
-		case tt_align:       return "align";
-		case tt_allocation:  return "allocation";
-		case tt_builtin:     return "builtin kind";
-		case tt_initializer: return "initializer kind";
-		case tt_iro:         return "opcode";
-		case tt_peculiarity: return "peculiarity";
-		case tt_pin_state:   return "pin state";
-		case tt_tpo:         return "type";
-		case tt_type_state:  return "type state";
-		case tt_variability: return "variability";
-		case tt_visibility:  return "visibility";
-		case tt_volatility:  return "volatility";
-		default: return "<UNKNOWN>";
+	switch (typetag) {
+	case tt_align:              return "align";
+	case tt_allocation:         return "allocation";
+	case tt_builtin:            return "builtin kind";
+	case tt_initializer:        return "initializer kind";
+	case tt_iro:                return "opcode";
+	case tt_peculiarity:        return "peculiarity";
+	case tt_pin_state:          return "pin state";
+	case tt_tpo:                return "type";
+	case tt_type_state:         return "type state";
+	case tt_variability:        return "variability";
+	case tt_visibility:         return "visibility";
+	case tt_volatility:         return "volatility";
+	case tt_cond_kind:          return "cond_kind";
+	case tt_cond_jmp_predicate: return "cond_jmp_predicate";
+	case tt_keyword:            return "keyword";
+	case tt_mode_sort:          return "mode_sort";
+	case tt_mode_arithmetic:    return "mode_arithmetic";
+	case tt_segment:            return "segment";
 	}
+	return "<UNKNOWN>";
 }
 
 /**
@@ -980,12 +1122,15 @@ static const char *get_typetag_name(typetag_t typetag)
  */
 static unsigned read_enum(io_env_t *env, typetag_t typetag)
 {
-	static char buf[128];
-	unsigned code = symbol(read_str_to(env, buf, sizeof(buf)), typetag);
-	if (code != SYMERROR)
-		return code;
+	char     *str  = read_word(env);
+	unsigned  code = symbol(str, typetag);
 
-	printf("Invalid %s: \"%s\" in %i:%i\n", get_typetag_name(typetag), buf, env->line, env->col);
+	if (code != SYMERROR) {
+		obstack_free(&env->obst, str);
+		return code;
+	}
+
+	parse_error(env, "invalid %s: \"%s\"\n", get_typetag_name(typetag), str);
 	return 0;
 }
 
@@ -1008,12 +1153,12 @@ static ir_cons_flags get_cons_flags(io_env_t *env)
 	ir_cons_flags flags = cons_none;
 
 	op_pin_state pinstate = read_pin_state(env);
-	switch (pinstate)
-	{
-		case op_pin_state_floats: flags |= cons_floats; break;
-		case op_pin_state_pinned: break;
-		default:
-			panic("Error in %i:%i: Invalid pinstate: %s", env->line, env->col, get_op_pin_state_name(pinstate));
+	switch (pinstate) {
+	case op_pin_state_floats: flags |= cons_floats; break;
+	case op_pin_state_pinned: break;
+	default:
+		panic("Error in %d: Invalid pinstate: %s", env->line,
+		      get_op_pin_state_name(pinstate));
 	}
 
 	if (read_volatility(env) == volatility_is_volatile)
@@ -1026,231 +1171,196 @@ static ir_cons_flags get_cons_flags(io_env_t *env)
 
 static tarval *read_tv(io_env_t *env)
 {
-	static char buf[128];
 	ir_mode *tvmode = read_mode(env);
-	read_str_to(env, buf, sizeof(buf));
-	return new_tarval_from_str(buf, strlen(buf), tvmode);
+	char    *str    = read_word(env);
+	tarval  *tv     = new_tarval_from_str(str, strlen(str), tvmode);
+	obstack_free(&env->obst, str);
+
+	return tv;
 }
 
 static ir_initializer_t *read_initializer(io_env_t *env)
 {
 	ir_initializer_kind_t ini_kind = read_initializer_kind(env);
 
-	switch (ini_kind)
-	{
-		case IR_INITIALIZER_CONST:
-		{
-			ir_node *irn = get_node_or_dummy(env, read_long(env));
-			return create_initializer_const(irn);
+	switch (ini_kind) {
+	case IR_INITIALIZER_CONST: {
+		ir_node *irn = get_node_or_dummy(env, read_long(env));
+		return create_initializer_const(irn);
+	}
+
+	case IR_INITIALIZER_TARVAL:
+		return create_initializer_tarval(read_tv(env));
+
+	case IR_INITIALIZER_NULL:
+		return get_initializer_null();
+
+	case IR_INITIALIZER_COMPOUND: {
+		unsigned i, n = (unsigned) read_long(env);
+		ir_initializer_t *ini = create_initializer_compound(n);
+		for (i = 0; i < n; i++) {
+			ir_initializer_t *curini = read_initializer(env);
+			set_initializer_compound_value(ini, i, curini);
 		}
+		return ini;
+	}
 
-		case IR_INITIALIZER_TARVAL:
-			return create_initializer_tarval(read_tv(env));
-
-		case IR_INITIALIZER_NULL:
-			return get_initializer_null();
-
-		case IR_INITIALIZER_COMPOUND:
-		{
-			unsigned i, n = (unsigned) read_long(env);
-			ir_initializer_t *ini = create_initializer_compound(n);
-			for (i = 0; i < n; i++) {
-				ir_initializer_t *curini = read_initializer(env);
-				set_initializer_compound_value(ini, i, curini);
-			}
-			return ini;
-		}
-
-		default:
-			panic("Unknown initializer kind");
+	default:
+		panic("Unknown initializer kind");
 	}
 }
 
 
 /** Reads a type description and remembers it by its id. */
-static void import_type(io_env_t *env, keyword_t kwkind)
+static void import_type(io_env_t *env)
 {
 	int            i;
 	ir_type       *type;
 	long           typenr = read_long(env);
-	const char    *tpop   = read_str(env);
+	tp_opcode      tpop   = (tp_opcode) read_enum(env, tt_tpo);
 	unsigned       size   = (unsigned) read_long(env);
 	unsigned       align  = (unsigned) read_long(env);
 	ir_type_state  state  = read_type_state(env);
 	ir_visibility  vis    = read_visibility(env);
+	unsigned       flags  = (unsigned) read_long(env);
 
-	const char    *kindstr;
+	switch (tpop) {
+	case tpo_array: {
+		int ndims = (int) read_long(env);
+		long elemtypenr = read_long(env);
+		ir_type *elemtype = get_type(env, elemtypenr);
 
-	if (kwkind == kw_frametype) {
-		if (symbol(tpop, tt_tpo) != tpo_class) {
-			printf("Frame type must be a class type in line %i:%i\n", env->line, env->col);
-			skip_to(env, '\n');
-			return;
+		type = new_type_array(ndims, elemtype);
+		for (i = 0; i < ndims; i++) {
+			char *str = read_word(env);
+			if (strcmp(str, "unknown") != 0) {
+				long lowerbound = atol(str);
+				set_array_lower_bound_int(type, i, lowerbound);
+			}
+			obstack_free(&env->obst, str);
+
+			str = read_word(env);
+			if (strcmp(str, "unknown") != 0) {
+				long upperbound = atol(str);
+				set_array_upper_bound_int(type, i, upperbound);
+			}
+			obstack_free(&env->obst, str);
 		}
-
-		type = new_type_frame();
 		set_type_size_bytes(type, size);
+		break;
+	}
 
-		kindstr = "frametype";
-	} else if (kwkind == kw_valuetype) {
-		if (symbol(tpop, tt_tpo) != tpo_struct) {
-			printf("Value type must be a struct type in line %i:%i\n", env->line, env->col);
-			skip_to(env, '\n');
-			return;
-		}
+	case tpo_class: {
+		const char *name = read_quoted_string_null(env);
+		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
 
-		type = new_type_value();
+		if(typenr == (long) IR_SEGMENT_GLOBAL)
+			type = get_glob_type();
+		else
+			type = new_type_class(id);
 		set_type_size_bytes(type, size);
+		break;
+	}
 
-		kindstr = "valuetype";
-	} else {
-		switch (symbol(tpop, tt_tpo))
-		{
-			case tpo_array:
-			{
-				int ndims = (int) read_long(env);
-				long elemtypenr = read_long(env);
-				ir_type *elemtype = get_type(env, elemtypenr);
+	case tpo_method: {
+		unsigned callingconv = (unsigned) read_long(env);
+		unsigned addprops    = (unsigned) read_long(env);
+		int nparams          = (int)      read_long(env);
+		int nresults         = (int)      read_long(env);
+		int variaindex;
 
-				type = new_type_array(ndims, elemtype);
-				for (i = 0; i < ndims; i++) {
-					const char *str = read_str(env);
-					if (strcmp(str, "unknown") != 0) {
-						long lowerbound = strtol(str, NULL, 0);
-						set_array_lower_bound_int(type, i, lowerbound);
-					}
-					str = read_str(env);
-					if (strcmp(str, "unknown") != 0) {
-						long upperbound = strtol(str, NULL, 0);
-						set_array_upper_bound_int(type, i, upperbound);
-					}
-				}
-				set_type_size_bytes(type, size);
-				break;
-			}
+		type = new_type_method(nparams, nresults);
 
-			case tpo_class: {
-				const char *name = read_qstr(env);
-				ident      *id   = new_id_from_str(name);
+		for (i = 0; i < nparams; i++) {
+			long     typenr = read_long(env);
+			ir_type *paramtype = get_type(env, typenr);
 
-				if(typenr == (long) IR_SEGMENT_GLOBAL)
-					type = get_glob_type();
-				else
-					type = new_type_class(id);
-				set_type_size_bytes(type, size);
-				break;
-			}
-
-			case tpo_method:
-			{
-				unsigned callingconv = (unsigned) read_long(env);
-				unsigned addprops    = (unsigned) read_long(env);
-				int nparams          = (int)      read_long(env);
-				int nresults         = (int)      read_long(env);
-				int variaindex;
-
-				type = new_type_method(nparams, nresults);
-
-				for (i = 0; i < nparams; i++) {
-					long     typenr = read_long(env);
-					ir_type *paramtype = get_type(env, typenr);
-
-					set_method_param_type(type, i, paramtype);
-				}
-				for (i = 0; i < nresults; i++) {
-					long typenr = read_long(env);
-					ir_type *restype = get_type(env, typenr);
-
-					set_method_res_type(type, i, restype);
-				}
-
-				variaindex = (int) read_long(env);
-				if (variaindex != -1) {
-					set_method_variadicity(type, variadicity_variadic);
-					if (variaindex != nparams)
-						set_method_first_variadic_param_index(type, variaindex);
-				}
-
-				set_method_calling_convention(type, callingconv);
-				set_method_additional_properties(type, addprops);
-				break;
-			}
-
-			case tpo_pointer:
-			{
-				ir_mode *mode     = read_mode(env);
-				ir_type *pointsto = get_type(env, read_long(env));
-				type = new_type_pointer(pointsto);
-				set_type_mode(type, mode);
-				break;
-			}
-
-			case tpo_primitive:
-			{
-				ir_mode *mode = read_mode(env);
-				type = new_type_primitive(mode);
-				break;
-			}
-
-			case tpo_struct: {
-				const char *name = read_qstr(env);
-				ident      *id   = new_id_from_str(name);
-
-				if(typenr < (long) IR_SEGMENT_COUNT)
-					type = get_segment_type((ir_segment_t) typenr);
-				else
-					type = new_type_struct(id);
-				set_type_size_bytes(type, size);
-				break;
-			}
-
-			case tpo_union: {
-				const char *name = read_qstr(env);
-				ident      *id   = new_id_from_str(name);
-
-				type = new_type_union(id);
-				set_type_size_bytes(type, size);
-				break;
-			}
-
-			case tpo_unknown:
-				return;   /* ignore unknown type */
-
-			default:
-				if (typenr != 0)  /* ignore global type */
-					printf("Unknown type kind: \"%s\" in line %i:%i\n", tpop, env->line, env->col);
-				skip_to(env, '\n');
-				return;
+			set_method_param_type(type, i, paramtype);
 		}
-		kindstr = "type";
+		for (i = 0; i < nresults; i++) {
+			long typenr = read_long(env);
+			ir_type *restype = get_type(env, typenr);
+
+			set_method_res_type(type, i, restype);
+		}
+
+		variaindex = (int) read_long(env);
+		if (variaindex != -1) {
+			set_method_variadicity(type, variadicity_variadic);
+			if (variaindex != nparams)
+				set_method_first_variadic_param_index(type, variaindex);
+		}
+
+		set_method_calling_convention(type, callingconv);
+		set_method_additional_properties(type, addprops);
+		break;
+	}
+
+	case tpo_pointer: {
+		ir_mode *mode     = read_mode(env);
+		ir_type *pointsto = get_type(env, read_long(env));
+		type = new_type_pointer(pointsto);
+		set_type_mode(type, mode);
+		break;
+	}
+
+	case tpo_primitive: {
+		ir_mode *mode = read_mode(env);
+		type = new_type_primitive(mode);
+		break;
+	}
+
+	case tpo_struct: {
+		const char *name = read_quoted_string_null(env);
+		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
+		type = new_type_struct(id);
+		set_type_size_bytes(type, size);
+		break;
+	}
+
+	case tpo_union: {
+		const char *name = read_quoted_string_null(env);
+		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
+
+		type = new_type_union(id);
+		set_type_size_bytes(type, size);
+		break;
+	}
+
+	case tpo_unknown:
+		return;   /* ignore unknown type */
+
+	default:
+		parse_error(env, "unknown type kind: \"%d\"\n", tpop);
+		skip_to(env, '\n');
+		return;
 	}
 
 	set_type_alignment_bytes(type, align);
 	set_type_visibility(type, vis);
+	type->flags = flags;
 
 	if (state == layout_fixed)
 		ARR_APP1(ir_type *, env->fixedtypes, type);
 
 	set_id(env, typenr, type);
-	printf("Insert %s %ld\n", kindstr, typenr);
 }
 
 /** Reads an entity description and remembers it by its id. */
 static void import_entity(io_env_t *env)
 {
-	char          buf[1024], buf2[1024];
-	long          entnr       = read_long(env);
-	const char   *name        = read_qstr_to(env, buf, sizeof(buf));
-	const char   *ld_name     = read_qstr_to(env, buf2, sizeof(buf2));
-	long          typenr      = read_long(env);
-	long          ownertypenr = read_long(env);
+	long   entnr       = read_long(env);
+	ident *name        = read_ident(env);
+	ident *ld_name     = read_ident_null(env);
+	long   typenr      = read_long(env);
+	long   ownertypenr = read_long(env);
 
 	ir_type   *type      = get_type(env, typenr);
 	ir_type   *ownertype = !ownertypenr ? get_glob_type() : get_type(env, ownertypenr);
-	ir_entity *entity    = new_entity(ownertype, new_id_from_str(name), type);
+	ir_entity *entity    = new_entity(ownertype, name, type);
 
-	if (*ld_name)
-		set_entity_ld_ident(entity, new_id_from_str(ld_name));
+	if (ld_name != NULL)
+		set_entity_ld_ident(entity, ld_name);
 	set_entity_offset     (entity, (int) read_long(env));
 	set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
 	set_entity_compiler_generated(entity, (int) read_long(env));
@@ -1261,18 +1371,23 @@ static void import_entity(io_env_t *env)
 	set_entity_volatility (entity, read_volatility(env));
 
 	if (get_entity_variability(entity) != variability_uninitialized &&
-	    get_entity_visibility(entity) != visibility_external_allocated)
-	{
+	    get_entity_visibility(entity) != visibility_external_allocated)	{
+
 		if (is_compound_entity(entity)) {
-			if (!strcmp(read_str_to(env, buf2, sizeof(buf2)), "initializer")) {
+			char *str = read_word(env);
+			if (strcmp(str, "initializer") == 0) {
 				set_entity_initializer(entity, read_initializer(env));
-			} else {
-				int i, n = (int) read_long(env);
+			} else if (strcmp(str, "noninitializer") == 0) {
+				int n = (int) read_long(env);
+				int i;
 				for (i = 0; i < n; i++) {
 					ir_entity *member = get_entity(env, read_long(env));
 					ir_node   *irn    = get_node_or_dummy(env, read_long(env));
 					add_compound_ent_value(entity, irn, member);
 				}
+			} else {
+				parse_error(env, "expected 'initializer' or 'noninitializer', got '%s'\n", str);
+				exit(1);
 			}
 		} else {
 			ir_node *irn = get_node_or_dummy(env, read_long(env));
@@ -1281,88 +1396,67 @@ static void import_entity(io_env_t *env)
 	}
 
 	set_id(env, entnr, entity);
-	printf("Insert entity %s %ld\n", name, entnr);
 }
 
 /** Parses the whole type graph. */
 static int parse_typegraph(io_env_t *env)
 {
-	const char *kind;
 	keyword_t kwkind;
-	lex_state_t oldstate;
 
 	EXPECT('{');
-
-	save_lex_state(env, &oldstate);
 
 	current_ir_graph = get_const_code_irg();
 
 	/* parse all types first */
-	while (1) {
-		kind = read_str(env);
-		if (kind[0] == '}' && kind[1] == '\0')
+	while (true) {
+		skip_ws(env);
+		if (env->c == '}') {
+			read_c(env);
 			break;
-
-		kwkind = (keyword_t) symbol(kind, tt_keyword);
-		switch (kwkind)
-		{
-			case kw_type:
-			case kw_frametype:
-			case kw_valuetype:
-				import_type(env, kwkind);
-				break;
-
-			default:
-				skip_to(env, '\n');
-				break;
 		}
-	}
 
-	/* now parse rest */
-	restore_lex_state(env, &oldstate);
-
-	while (1) {
-		kind = read_str(env);
-		if (kind[0] == '}' && kind[1] == '\0')
+		kwkind = (keyword_t) read_enum(env, tt_keyword);
+		switch (kwkind) {
+		case kw_type:
+			import_type(env);
 			break;
 
-		switch (symbol(kind, tt_keyword))
-		{
-			case kw_type:
-			case kw_frametype:
-			case kw_valuetype:
-				skip_to(env, '\n');
-				break;
+		case kw_entity:
+			import_entity(env);
+			break;
 
-			case kw_entity:
-				import_entity(env);
-				break;
-
-			default:
-				printf("Type graph element not supported yet: \"%s\"\n", kind);
-				skip_to(env, '\n');
-				break;
+		default:
+			parse_error(env, "type graph element not supported yet: %d\n", kwkind);
+			skip_to(env, '\n');
+			break;
 		}
 	}
 	return 1;
 }
 
-static int read_node_header(io_env_t *env, long *nodenr, long **preds, const char **nodename)
+static int read_node_header(io_env_t *env, long *nodenr, long **preds,
+                            const char **nodename)
 {
 	int numpreds;
-	*nodename = read_str(env);
-	if ((*nodename)[0] == '}' && !(*nodename)[1]) return -1;  /* end-of-graph */
 
-	*nodenr = read_long(env);
+	*nodename = read_word(env);
+	*nodenr   = read_long(env);
 
 	ARR_RESIZE(ir_node *, *preds, 0);
 
 	EXPECT('[');
 	for (numpreds = 0; !feof(env->file); numpreds++) {
-		char *endptr;
-		ARR_APP1(long, *preds, read_long2(env, &endptr));
-		if (*endptr == ']') break;
+		long val;
+
+		skip_ws(env);
+		if (env->c == ']') {
+			read_c(env);
+			break;
+		}
+		val = read_long(env);
+		ARR_APP1(long, *preds, val);
 	}
+
 	return numpreds;
 }
 
@@ -1380,11 +1474,18 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 
 	EXPECT('{');
 
-	while (1) {
+	while (true) {
+		skip_ws(env);
+		if (env->c == '}') {
+			read_c(env);
+			break;
+		}
+
 		numpreds = read_node_header(env, &nodenr, &preds, &nodename);
 		if (numpreds == -1) break;  /* end-of-graph */
 		if (!numpreds) {
-			printf("Node %s %ld is missing predecessors!", nodename, nodenr);
+			parse_error(env, "node %s %ld is missing predecessors!",
+			            nodename, nodenr);
 			ret = 0;
 			break;
 		}
@@ -1398,73 +1499,72 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 
 		EXPECT('{');
 
-		switch (symbol(nodename, tt_iro))
+		switch (symbol(nodename, tt_iro)) {
+		case iro_End:
 		{
-			case iro_End:
-			{
-				ir_node *newendblock = get_node(env, preds[0]);
-				newnode = get_irg_end(current_ir_graph);
-				exchange(get_nodes_block(newnode), newendblock);
-				for (i = 0; i < numpreds - 1; i++)
-					add_irn_n(newnode, prednodes[i]);
-				break;
+			ir_node *newendblock = get_node(env, preds[0]);
+			newnode = get_irg_end(current_ir_graph);
+			exchange(get_nodes_block(newnode), newendblock);
+			for (i = 0; i < numpreds - 1; i++)
+				add_irn_n(newnode, prednodes[i]);
+			break;
+		}
+
+		case iro_Start:
+		{
+			ir_node *newstartblock = get_node(env, preds[0]);
+			newnode = get_irg_start(current_ir_graph);
+			exchange(get_nodes_block(newnode), newstartblock);
+			break;
+		}
+
+		case iro_Block:
+		{
+			if (preds[0] != nodenr) {
+				parse_error(env, "invalid block: preds[0] != nodenr (%ld != %ld)\n",
+				            preds[0], nodenr);
+				ret = 0;
+				goto endloop;
 			}
 
-			case iro_Start:
-			{
-				ir_node *newstartblock = get_node(env, preds[0]);
-				newnode = get_irg_start(current_ir_graph);
-				exchange(get_nodes_block(newnode), newstartblock);
-				break;
-			}
+			newnode = new_Block(numpreds - 1, prednodes);
+			break;
+		}
 
-			case iro_Block:
-			{
-				if (preds[0] != nodenr) {
-					printf("Invalid block: preds[0] != nodenr (%ld != %ld)\n",
-						preds[0], nodenr);
-					ret = 0;
-					goto endloop;
-				}
+		case iro_Anchor:
+			newnode = current_ir_graph->anchor;
+			for (i = 0; i < numpreds - 1; i++)
+				set_irn_n(newnode, i, prednodes[i]);
+			set_irn_n(newnode, -1, get_node(env, preds[0]));
+			break;
 
-				newnode = new_Block(numpreds - 1, prednodes);
-				break;
-			}
+		case iro_SymConst:
+		{
+			long entnr = read_long(env);
+			union symconst_symbol sym;
+			sym.entity_p = get_entity(env, entnr);
+			newnode = new_SymConst(mode_P, sym, symconst_addr_ent);
+			break;
+		}
 
-			case iro_Anchor:
-				newnode = current_ir_graph->anchor;
-				for (i = 0; i < numpreds - 1; i++)
-					set_irn_n(newnode, i, prednodes[i]);
-				set_irn_n(newnode, -1, get_node(env, preds[0]));
-				break;
+		#include "gen_irio_import.inl"
 
-			case iro_SymConst:
-			{
-				long entnr = read_long(env);
-				union symconst_symbol sym;
-				sym.entity_p = get_entity(env, entnr);
-				newnode = new_SymConst(mode_P, sym, symconst_addr_ent);
-				break;
-			}
-
-			#include "gen_irio_import.inl"
-
-			default:
-				goto notsupported;
+		default:
+			goto notsupported;
 		}
 
 		EXPECT('}');
 
 		if (!newnode) {
 notsupported:
-			panic("Node type not supported yet: %s in line %i:%i\n", nodename, env->line, env->col);
+			parse_error(env, "node type not supported yet: %s\n", nodename);
+			abort();
 		}
 
 		if (node)
 			exchange(node, newnode);
 		/* Always update hash entry to avoid more uses of id nodes */
 		set_id(env, nodenr, newnode);
-		/* printf("Insert %s %ld\n", nodename, nodenr); */
 	}
 
 endloop:
@@ -1476,52 +1576,92 @@ endloop:
 
 static int parse_modes(io_env_t *env)
 {
-	const char *kind;
-	keyword_t kwkind;
-
 	EXPECT('{');
 
-	while (1) {
-		kind = read_str(env);
-		if (kind[0] == '}' && kind[1] == '\0')
+	while (true) {
+		keyword_t kwkind;
+
+		skip_ws(env);
+		if (env->c == '}') {
+			read_c(env);
 			break;
+		}
 
-		kwkind = (keyword_t) symbol(kind, tt_keyword);
-		switch (kwkind)
-		{
-			case kw_mode:
-			{
-				const char *name = read_qstr(env);
-				ir_mode_sort sort = (ir_mode_sort) read_long(env);
-				int size = read_long(env);
-				int sign = read_long(env);
-				ir_mode_arithmetic arith = read_mode_arithmetic(env);
-				unsigned modulo_shift = read_long(env);
-				int vector_elems = read_long(env);
-				ir_mode *mode;
+		kwkind = (keyword_t) read_enum(env, tt_keyword);
+		switch (kwkind) {
+		case kw_mode: {
+			const char *name = read_quoted_string(env);
+			ir_mode_sort sort = read_enum(env, tt_mode_sort);
+			int size = read_long(env);
+			int sign = read_long(env);
+			ir_mode_arithmetic arith = read_mode_arithmetic(env);
+			unsigned modulo_shift = read_long(env);
+			int vector_elems = read_long(env);
+			ir_mode *mode;
 
-				if (vector_elems != 1) {
-					panic("no support for import of vector modes yes");
-				}
-
-				mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
-				if (mode_is_reference(mode)) {
-					set_reference_mode_signed_eq(mode, read_mode(env));
-					set_reference_mode_unsigned_eq(mode, read_mode(env));
-				}
-				break;
+			if (vector_elems != 1) {
+				panic("no support for import of vector modes yes");
 			}
 
-			default:
-				skip_to(env, '\n');
-				break;
+			mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
+			if (mode_is_reference(mode)) {
+				set_reference_mode_signed_eq(mode, read_mode(env));
+				set_reference_mode_unsigned_eq(mode, read_mode(env));
+			}
+			break;
+		}
+
+		default:
+			skip_to(env, '\n');
+			break;
 		}
 	}
 	return 1;
 }
 
-/** Imports an previously exported textual representation of an (maybe partial) irp */
+static int parse_program(io_env_t *env)
+{
+	EXPECT('{');
+
+	while (true) {
+		keyword_t kwkind;
+
+		skip_ws(env);
+		if (env->c == '}') {
+			read_c(env);
+			break;
+		}
+
+		kwkind = (keyword_t) read_enum(env, tt_keyword);
+		switch (kwkind) {
+		case kw_segment_type: {
+			ir_segment_t  segment = (ir_segment_t) read_enum(env, tt_segment);
+			ir_type      *type    = read_type(env);
+			set_segment_type(segment, type);
+			break;
+		}
+		default:
+			parse_error(env, "unexpected keyword %d\n", kwkind);
+			skip_to(env, '\n');
+		}
+	}
+	return 1;
+}
+
 void ir_import(const char *filename)
+{
+	FILE *file = fopen(filename, "rt");
+	if (file == NULL) {
+		perror(filename);
+		exit(1);
+	}
+
+	ir_import_file(file, filename);
+
+	fclose(file);
+}
+
+void ir_import_file(FILE *input, const char *inputname)
 {
 	int oldoptimize = get_optimize();
 	firm_verification_t oldver = get_node_verification_mode();
@@ -1532,54 +1672,67 @@ void ir_import(const char *filename)
 	symtbl_init();
 
 	memset(env, 0, sizeof(*env));
-	env->idset = new_set(id_cmp, 128);
+	obstack_init(&env->obst);
+	env->idset      = new_set(id_cmp, 128);
 	env->fixedtypes = NEW_ARR_F(ir_type *, 0);
+	env->inputname  = inputname;
+	env->file       = input;
+	env->line       = 1;
 
-	env->file = fopen(filename, "rt");
-	if (!env->file) {
-		perror(filename);
-		exit(1);
-	}
+	/* read first character */
+	read_c(env);
 
 	set_optimize(0);
 	do_node_verification(FIRM_VERIFICATION_OFF);
 
-	while (1) {
-		const char *str = read_str(env);
-		if (!*str) break;
-		switch (symbol(str, tt_keyword))
+	while (true) {
+		keyword_t kw;
+
+		skip_ws(env);
+		if (env->c == EOF)
+			break;
+
+		kw = read_enum(env, tt_keyword);
+		switch (kw) {
+		case kw_modes:
+			if (!parse_modes(env)) goto end;
+			break;
+
+		case kw_typegraph:
+			if (!parse_typegraph(env)) goto end;
+			break;
+
+		case kw_irg:
 		{
-			case kw_modes:
-				if (!parse_modes(env)) goto end;
-				break;
+			ir_entity *irgent = get_entity(env, read_long(env));
+			long valuetypeid;
+			ir_graph *irg = new_ir_graph(irgent, 0);
+			set_irg_frame_type(irg, get_type(env, read_long(env)));
+			valuetypeid = read_long(env);
+			if (valuetypeid != -1)
+				set_method_value_param_type(get_entity_type(irgent),
+						get_type(env, valuetypeid));
 
-			case kw_typegraph:
-				if (!parse_typegraph(env)) goto end;
-				break;
+			if (!parse_graph(env, irg)) goto end;
+			break;
+		}
 
-			case kw_irg:
-			{
-				ir_entity *irgent = get_entity(env, read_long(env));
-				long valuetypeid;
-				ir_graph *irg = new_ir_graph(irgent, 0);
-				set_irg_frame_type(irg, get_type(env, read_long(env)));
-				valuetypeid = read_long(env);
-				if (valuetypeid != -1)
-					set_method_value_param_type(get_entity_type(irgent),
-							get_type(env, valuetypeid));
+		case kw_constirg: {
+			ir_graph *constirg = get_const_code_irg();
+			long bodyblockid = read_long(env);
+			set_id(env, bodyblockid, constirg->current_block);
+			if (!parse_graph(env, constirg)) goto end;
+			break;
+		}
 
-				if (!parse_graph(env, irg)) goto end;
-				break;
-			}
+		case kw_program:
+			parse_program(env);
+			break;
 
-			case kw_constirg:
-			{
-				ir_graph *constirg = get_const_code_irg();
-				long bodyblockid = read_long(env);
-				set_id(env, bodyblockid, constirg->current_block);
-				if (!parse_graph(env, constirg)) goto end;
-				break;
-			}
+		default: {
+			parse_error(env, "Unexpected keyword %d at toplevel\n", kw);
+			exit(1);
+		}
 		}
 	}
 
@@ -1597,5 +1750,5 @@ end:
 	do_node_verification(oldver);
 	set_optimize(oldoptimize);
 
-	fclose(env->file);
+	obstack_free(&env->obst, NULL);
 }

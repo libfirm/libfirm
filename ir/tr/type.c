@@ -771,6 +771,8 @@ ident *get_class_ident(const ir_type *clss)
 
 const char *get_class_name(const ir_type *clss)
 {
+	if (get_class_ident(clss) == NULL)
+		return NULL;
 	return get_id_str(get_class_ident(clss));
 }
 
@@ -778,7 +780,6 @@ void add_class_member(ir_type *clss, ir_entity *member)
 {
 	assert(clss && (clss->type_op == type_class));
 	assert(clss != get_entity_type(member) && "recursive type");
-	assert(get_type_state(clss) != layout_fixed);
 	ARR_APP1 (ir_entity *, clss->attr.ca.members, member);
 }
 
@@ -1100,6 +1101,8 @@ ident *get_struct_ident(const ir_type *strct)
 
 const char *get_struct_name(const ir_type *strct)
 {
+	if (get_struct_ident(strct) == NULL)
+		return NULL;
 	return get_id_str(get_struct_ident(strct));
 }
 
@@ -1114,7 +1117,6 @@ void add_struct_member(ir_type *strct, ir_entity *member)
 	assert(strct && (strct->type_op == type_struct));
 	assert(get_type_tpop(get_entity_type(member)) != type_method);
 	assert(strct != get_entity_type(member) && "recursive type");
-	assert(get_type_state(strct) != layout_fixed);
 	ARR_APP1 (ir_entity *, strct->attr.sa.members, member);
 }
 
@@ -1566,6 +1568,8 @@ ident *get_union_ident(const ir_type *uni)
 
 const char *get_union_name(const ir_type *uni)
 {
+	if (get_union_ident(uni) == NULL)
+		return NULL;
 	return get_id_str(get_union_ident(uni));
 }
 
@@ -1579,7 +1583,6 @@ void add_union_member(ir_type *uni, ir_entity *member)
 {
 	assert(uni && (uni->type_op == type_union));
 	assert(uni != get_entity_type(member) && "recursive type");
-	assert(get_type_state(uni) != layout_fixed);
 	ARR_APP1(ir_entity *, uni->attr.ua.members, member);
 }
 
@@ -1894,6 +1897,8 @@ ident *get_enumeration_ident(const ir_type *enumeration)
 
 const char *get_enumeration_name(const ir_type *enumeration)
 {
+	if (get_enumeration_ident(enumeration) == NULL)
+		return NULL;
 	return get_id_str(get_enumeration_ident(enumeration));
 }
 
@@ -2145,6 +2150,8 @@ ident *get_compound_ident(const ir_type *tp)
 
 const char *get_compound_name(const ir_type *tp)
 {
+	if (get_compound_ident(tp) == NULL)
+		return NULL;
 	return get_id_str(get_compound_ident(tp));
 }
 

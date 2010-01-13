@@ -240,7 +240,7 @@ def main(argv):
 	for node in real_nodes:
 		if node.name in niynodes:
 			continue
-		file.write("\tINSERT(\"" + node.name + "\", tt_iro, iro_" + node.name + ");\n");
+		file.write("\tINSERT(tt_iro, \"%s\", iro_%s);\n" % (node.name, node.name));
 	file.close()
 
 main(sys.argv)

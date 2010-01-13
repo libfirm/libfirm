@@ -22,6 +22,9 @@
  * @brief   Import/export textual representation of firm.
  * @author  Moritz Kroll
  * @version $Id$
+ *
+ * Note: The file format is not considered stable yet. So expect
+ * incompatibilities between file formats of different libfirm versions.
  */
 #ifndef FIRM_IR_IRIO_H
 #define FIRM_IR_IRIO_H
@@ -40,6 +43,11 @@
 void ir_export(const char *filename);
 
 /**
+ * same as ir_export but writes to a FILE*
+ */
+void ir_export_file(FILE *output, const char *outputname);
+
+/**
  * Exports the given ir graph to the given file in a textual form.
  *
  * @param irg       the ir graph
@@ -47,7 +55,7 @@ void ir_export(const char *filename);
  *
  * Exports the type graph used by the given graph and the graph itself.
  */
-void ir_export_irg(ir_graph *irg, const char *filename);
+void ir_export_irg(ir_graph *irg, FILE *output, const char *outputname);
 
 /**
  * Imports the data stored in the given file.
@@ -57,5 +65,10 @@ void ir_export_irg(ir_graph *irg, const char *filename);
  * Imports any type graphs and ir graphs contained in the file.
  */
 void ir_import(const char *filename);
+
+/**
+ * same as ir_import but imports from a FILE*
+ */
+void ir_import_file(FILE *input, const char *inputname);
 
 #endif

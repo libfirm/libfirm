@@ -76,8 +76,9 @@ static ir_prog *new_incomplete_ir_prog(void)
  * @param irp          the (yet incomplete) irp
  * @param module_name  the (module) name for this irp
  */
-static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
-	int i;
+static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
+{
+	ir_segment_t s;
 
 #define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 
@@ -91,8 +92,8 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name) {
 		= new_type_struct(IDENT("Destructors"));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
-	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
-		remove_irp_type(irp->segment_types[i]);
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+		remove_irp_type(irp->segment_types[s]);
 	}
 
 	/* Set these flags for debugging. */
@@ -135,10 +136,11 @@ ir_prog *new_ir_prog(const char *name) {
 
 /* frees all memory used by irp.  Types in type list, irgs in irg
    list and entities in global type must be freed by hand before. */
-void free_ir_prog(void) {
-	int i;
-	for (i = 0; i < IR_SEGMENT_COUNT; ++i) {
-		free_type(irp->segment_types[i]);
+void free_ir_prog(void)
+{
+	ir_segment_t s;
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+		free_type(irp->segment_types[s]);
 	}
 
 	free_ir_graph(irp->const_code_irg);
@@ -170,8 +172,17 @@ void set_irp_main_irg(ir_graph *main_irg) {
 	irp->main_irg = main_irg;
 }
 
-ir_type *(get_segment_type)(ir_segment_t segment) {
+ir_type *(get_segment_type)(ir_segment_t segment)
+{
 	return _get_segment_type(segment);
+}
+
+void set_segment_type(ir_segment_t segment, ir_type *new_type)
+{
+	assert(segment <= IR_SEGMENT_LAST);
+	irp->segment_types[segment] = new_type;
+	/* segment types are not in the type list... */
+	remove_irp_type(new_type);
 }
 
 ir_type *(get_glob_type)(void) {

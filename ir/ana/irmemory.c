@@ -1201,12 +1201,12 @@ static void analyse_irp_globals_entity_usage(void) {
 	int i;
 	ir_segment_t s;
 
-	for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		init_entity_usage(type);
 	}
 
-	for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *type = get_segment_type(s);
 		check_initializers(type);
 	}
@@ -1221,7 +1221,7 @@ static void analyse_irp_globals_entity_usage(void) {
 #ifdef DEBUG_libfirm
 	if (firm_dbg_get_mask(dbg) & LEVEL_1) {
 		ir_segment_t s;
-		for (s = IR_SEGMENT_FIRST; s < IR_SEGMENT_COUNT; ++s) {
+		for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 			print_entity_usage_flags(get_segment_type(s));
 		}
 	}
