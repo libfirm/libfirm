@@ -316,6 +316,29 @@ static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
 	assert(err == 0);
 }
 
+#ifdef DEBUG_libfirm
+/**
+ * Helper function to dump the edge set of a graph,
+ * unused in normal code.
+ */
+void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
+{
+	irg_edge_info_t *info;
+	ir_edgeset_t    *edges;
+	ir_edgeset_iterator_t iter;
+	ir_edge_t      *e;
+
+	if (!edges_activated_kind(irg, kind))
+		return;
+
+	info  = _get_irg_edge_info(irg, kind);
+	edges = &info->edges;
+	foreach_ir_edgeset(edges, e, iter) {
+		ir_printf("%+F %d %d\n", e->src, e->pos, e->invalid);
+	}
+}
+#endif
+
 /* The edge from (src, pos) -> old_tgt is redirected to tgt */
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
                             ir_node *old_tgt, ir_edge_kind_t kind,
