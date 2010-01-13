@@ -461,39 +461,8 @@ ir_node *get_IJmp_target(const ir_node *ijmp);
 /** Sets the target address of an IJmp */
 void set_IJmp_target(ir_node *ijmp, ir_node *tgt);
 
-/* We distinguish three kinds of Cond nodes.  These can be distinguished
-   by the mode of the selector operand and an internal flag of type cond_kind.
-   First we distinguish binary Conds and switch Conds.
-   A binary Cond has as selector a boolean value.  Proj(0) projects the control
-   flow for case "False", Proj(1) the control flow for "True".  A binary Cond
-   is recognized by the boolean selector.
-   The switch Cond has as selector an unsigned integer.  It produces as result
-   an n+1 Tuple (cf0, ... , cfn) of control flows.
-   We differ two flavors of this Cond.  The first, the dense Cond, passes
-   control along output i if the selector value is i, 0 <= i <= n.  If the
-   selector value is >n it passes control along output n.
-   The second Cond flavor differences in the treatment of cases not specified in
-   the source program.  It magically knows about the existence of Proj nodes.
-   It only passes control along output i, 0 <= i <= n, if a node Proj(Cond, i)
-   exists.  Else it passes control along output n (even if this Proj does not
-   exist.)  This Cond we call "fragmentary".  There is a special constructor
-   new_defaultProj that automatically sets the flavor.
-   The two switch flavors are distinguished by a flag of type cond_kind.
-   Default flavor is "dense"
-*/
-typedef enum {
-	dense,        /**< Default. Missing Proj nodes are dead control flow. */
-	fragmentary   /**< Special. No control flow optimizations allowed.  Missing
-	                   Proj nodes mean default control flow, i.e., Proj(n). */
-} cond_kind;
-
-/** Gets the string representation of the Cond node kind. */
-const char *get_cond_kind_name(cond_kind kind);
-
 ir_node  *get_Cond_selector(const ir_node *node);
 void      set_Cond_selector(ir_node *node, ir_node *selector);
-cond_kind get_Cond_kind(const ir_node *node);
-void      set_Cond_kind(ir_node *node, cond_kind kind);
 long      get_Cond_default_proj(const ir_node *node);
 void      set_Cond_default_proj(ir_node *node, long defproj);
 

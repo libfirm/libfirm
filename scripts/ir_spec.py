@@ -294,11 +294,6 @@ class Cond(Op):
 	pinned   = "yes"
 	attrs    = [
 		dict(
-			name = "kind",
-			type = "cond_kind",
-			init = "dense"
-		),
-		dict(
 			name = "default_proj",
 			type = "long",
 			init = "0"

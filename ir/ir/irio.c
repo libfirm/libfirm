@@ -65,7 +65,6 @@ typedef enum typetag_t
 	tt_align,
 	tt_allocation,
 	tt_builtin,
-	tt_cond_kind,
 	tt_cond_jmp_predicate,
 	tt_initializer,
 	tt_iro,
@@ -229,9 +228,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_builtin, ir_bk_outport);
 	INSERTENUM(tt_builtin, ir_bk_inner_trampoline);
 
-	INSERTENUM(tt_cond_kind, dense);
-	INSERTENUM(tt_cond_kind, fragmentary);
-
 	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_NONE);
 	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_TRUE);
 	INSERTENUM(tt_cond_jmp_predicate, COND_JMP_PRED_FALSE);
@@ -351,12 +347,6 @@ static void write_align(io_env_t *env, ir_node *irn)
 static void write_builtin_kind(io_env_t *env, ir_node *irn)
 {
 	fputs(get_builtin_kind_name(get_Builtin_kind(irn)), env->file);
-	fputc(' ', env->file);
-}
-
-static void write_cond_kind(io_env_t *env, ir_node *irn)
-{
-	fputs(get_cond_kind_name(get_Cond_kind(irn)), env->file);
 	fputc(' ', env->file);
 }
 
@@ -1107,7 +1097,6 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_variability:        return "variability";
 	case tt_visibility:         return "visibility";
 	case tt_volatility:         return "volatility";
-	case tt_cond_kind:          return "cond_kind";
 	case tt_cond_jmp_predicate: return "cond_jmp_predicate";
 	case tt_keyword:            return "keyword";
 	case tt_mode_sort:          return "mode_sort";
@@ -1137,7 +1126,6 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_align(env)              ((ir_align)              read_enum(env, tt_align))
 #define read_allocation(env)         ((ir_allocation)         read_enum(env, tt_allocation))
 #define read_builtin_kind(env)       ((ir_builtin_kind)       read_enum(env, tt_builtin))
-#define read_cond_kind(env)          ((cond_kind)             read_enum(env, tt_cond_kind))
 #define read_cond_jmp_predicate(env) ((cond_jmp_predicate)    read_enum(env, tt_cond_jmp_predicate))
 #define read_initializer_kind(env)   ((ir_initializer_kind_t) read_enum(env, tt_initializer))
 #define read_mode_arithmetic(env)    ((ir_mode_arithmetic)    read_enum(env, tt_mode_arithmetic))

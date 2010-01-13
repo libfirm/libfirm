@@ -258,7 +258,6 @@ new_bd_defaultProj(dbg_info *db, ir_node *block, ir_node *arg,
 	ir_node  *res;
 
 	assert(arg->op == op_Cond);
-	arg->attr.cond.kind = fragmentary;
 	arg->attr.cond.default_proj = max_proj;
 	res = new_rd_Proj(db, block, arg, mode_X, max_proj);
 	return res;
@@ -1184,7 +1183,6 @@ ir_node *
 new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj) {
 	ir_node *res;
 	assert(arg->op == op_Cond);
-	arg->attr.cond.kind = fragmentary;
 	arg->attr.cond.default_proj = max_proj;
 	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;

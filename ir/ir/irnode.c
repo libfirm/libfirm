@@ -995,49 +995,6 @@ void set_IJmp_target(ir_node *ijmp, ir_node *tgt) {
 	set_irn_n(ijmp, 0, tgt);
 }
 
-/*
-> Implementing the case construct (which is where the constant Proj node is
-> important) involves far more than simply determining the constant values.
-> We could argue that this is more properly a function of the translator from
-> Firm to the target machine.  That could be done if there was some way of
-> projecting "default" out of the Cond node.
-I know it's complicated.
-Basically there are two problems:
- - determining the gaps between the Projs
- - determining the biggest case constant to know the proj number for
-   the default node.
-I see several solutions:
-1. Introduce a ProjDefault node.  Solves both problems.
-   This means to extend all optimizations executed during construction.
-2. Give the Cond node for switch two flavors:
-   a) there are no gaps in the Projs  (existing flavor)
-   b) gaps may exist, default proj is still the Proj with the largest
-      projection number.  This covers also the gaps.
-3. Fix the semantic of the Cond to that of 2b)
-
-Solution 2 seems to be the best:
-Computing the gaps in the Firm representation is not too hard, i.e.,
-libFIRM can implement a routine that transforms between the two
-flavours.  This is also possible for 1) but 2) does not require to
-change any existing optimization.
-Further it should be far simpler to determine the biggest constant than
-to compute all gaps.
-I don't want to choose 3) as 2a) seems to have advantages for
-dataflow analysis and 3) does not allow to convert the representation to
-2a).
-*/
-
-const char *get_cond_kind_name(cond_kind kind)
-{
-#define X(a)    case a: return #a;
-	switch (kind) {
-		X(dense);
-		X(fragmentary);
-	}
-	return "<unknown>";
-#undef X
-}
-
 ir_node *
 get_Cond_selector(const ir_node *node) {
 	assert(is_Cond(node));
@@ -1048,18 +1005,6 @@ void
 set_Cond_selector(ir_node *node, ir_node *selector) {
 	assert(is_Cond(node));
 	set_irn_n(node, 0, selector);
-}
-
-cond_kind
-get_Cond_kind(const ir_node *node) {
-	assert(is_Cond(node));
-	return node->attr.cond.kind;
-}
-
-void
-set_Cond_kind(ir_node *node, cond_kind kind) {
-	assert(is_Cond(node));
-	node->attr.cond.kind = kind;
 }
 
 long
