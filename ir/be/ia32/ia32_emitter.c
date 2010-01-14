@@ -650,10 +650,11 @@ void ia32_emit_am(const ir_node *node)
  * %d   signed int              signed int
  *
  * x starts at 0
- * # modifier for %ASx, %D and %S uses ls mode of node to alter register width
+ * # modifier for %ASx, %D, %R, and %S uses ls mode of node to alter register width
  * * modifier does not prefix immediates with $, but AM with *
  * l modifier for %lu and %ld
- * + modifier to output high 8bit register (ah, bh)
+ * > modifier to output high 8bit register (ah, bh)
+ * < modifier to output low 8bit register (al, bl)
  */
 static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 {
@@ -687,8 +688,8 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 			case '*': mod |= EMIT_ALTERNATE_AM; break;
 			case '#': mod |= EMIT_RESPECT_LS;   break;
 			case 'l': mod |= EMIT_LONG;         break;
-			case '+': mod |= EMIT_HIGH_REG;     break;
-			case '-': mod |= EMIT_LOW_REG;      break;
+			case '>': mod |= EMIT_HIGH_REG;     break;
+			case '<': mod |= EMIT_LOW_REG;      break;
 			default:
 				goto end_of_mods;
 			}
@@ -1164,17 +1165,17 @@ static void emit_ia32_Setcc(const ir_node *node)
 		case pn_Cmp_Eq:
 		case pn_Cmp_Lt:
 		case pn_Cmp_Le:
-			ia32_emitf(node, "\tset%P %-R\n", pnc, dreg);
-			ia32_emitf(node, "\tsetnp %+R\n", dreg);
-			ia32_emitf(node, "\tandb %+R, %-R\n", dreg, dreg);
+			ia32_emitf(node, "\tset%P %<R\n", pnc, dreg);
+			ia32_emitf(node, "\tsetnp %>R\n", dreg);
+			ia32_emitf(node, "\tandb %>R, %<R\n", dreg, dreg);
 			return;
 
 		case pn_Cmp_Ug:
 		case pn_Cmp_Uge:
 		case pn_Cmp_Ne:
-			ia32_emitf(node, "\tset%P %-R\n", pnc, dreg);
-			ia32_emitf(node, "\tsetp %+R\n", dreg);
-			ia32_emitf(node, "\torb %+R, %-R\n", dreg, dreg);
+			ia32_emitf(node, "\tset%P %<R\n", pnc, dreg);
+			ia32_emitf(node, "\tsetp %>R\n", dreg);
+			ia32_emitf(node, "\torb %>R, %<R\n", dreg, dreg);
 			return;
 
 		default:
