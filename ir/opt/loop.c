@@ -19,8 +19,13 @@
 
 /**
  * @file
- * @brief    Loop peeling and unrolling
  * @author   Christian Helmer
+ * @brief
+ * Loop peeling, loop inversion and loop unrolling
+ * NOTE: Inversion creates abnormal looking loops because there is probably
+ *       no head as single loop entry point. Therefore peeling
+ *       will do nothing as it relies on the head as single loop entry point.
+ *
  * @version  $Id$
  */
 #include "config.h"
@@ -37,11 +42,10 @@
 #include "irtools.h"
 #include "array_t.h"	/* automatic array */
 #include "beutil.h"		/* get_block */
-#include "irloop_t.h"	/* set_irn_loop */
+#include "irloop_t.h"	 /*set_irn_loop*/
 
-// TODO during DBG
-//#include "irnode_t.h"
-#include "irdump.h"
+/* TODO during DBG */
+/*#include "irdump.h"*/
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
@@ -65,7 +69,7 @@ typedef unsigned walker_condition(ir_node *);
 typedef struct out_edges {
 	ir_node *node;
 	int pred_irn_n;
-} out_edges;
+} out_edge;
 
 /* access complex values through the nodes links */
 typedef struct node_info {
@@ -73,16 +77,19 @@ typedef struct node_info {
 	ir_node *copy;
 	ir_node *link;					/* temporary links for ssa creation */
 	ir_node **ins;					/* ins for phi nodes, during rewiring of blocks */
+	unsigned done;
 	struct node_info *freelistnext; /* linked list to free all node_infos */
 } node_info;
 
 static node_info *link_node_state_list;		/* head of the linked list to free all node_infos */
 
-static out_edges *cur_loop_outs;				/* A walker may start visiting the current loop with these nodes. */
-static out_edges *cur_head_outs;				/* A walker may start visiting the cur head with these nodes. */
+static out_edge *cur_loop_outs;				/* A walker may start visiting the current loop with these nodes. */
+static out_edge *cur_head_outs;				/* A walker may start visiting the cur head with these nodes. */
 
 static ir_node *loop_cf_head = NULL;				/* Loop head node */
 static unsigned loop_cf_head_valid = 1;				/* A loop may have one head, otherwise we do not touch it. */
+
+ir_node **loops;
 
 /* Inverted head */
 static ir_node *loop_inv_head = NULL;
@@ -91,29 +98,34 @@ static ir_node *loop_peeled_head = NULL;
 
 /* Loop analysis informations */
 typedef struct loop_info_t {
-	unsigned calls;
-	unsigned loads;
-	unsigned invariant_loads;	/* number of load nodes */
+	unsigned calls;				/* number of calls */
+	unsigned loads;				/* number of load nodes */
+	unsigned invariant_loads;
 	unsigned stores;			/* number of store nodes */
 	unsigned blocks;			/* number of blocks in the loop */
-	unsigned opnodes_n;			/* nodes that should result in an instruction */
-	unsigned opnodes_head;
+	unsigned opnodes_n;			/* nodes that probably result in an instruction */
+	/* unsigned opnodes_head; */
+	unsigned outs;				/* outs without keepalives */
 } loop_info_t;
 
 /* Information about the current loop */
 static loop_info_t loop_info;
 
 /* A walker may start visiting a condition chain with these nodes. */
-static out_edges *cond_chain_entries;
+static out_edge *cond_chain_entries;
 
 static unsigned head_inversion_node_count;
 static unsigned head_inversion_node_limit;
 static unsigned head_inversion_block_count;
 
+static unsigned enable_peeling;
+static unsigned enable_inversion;
+
 /**
  *
  * ============= AUXILIARY FUNCTIONS =====================================
  */
+
 
 /**
  * Creates object on the heap, and adds it to a linked list to free it later.
@@ -135,20 +147,24 @@ static node_info *get_node_info(ir_node *n)
 /* Allocates a node_info struct for the given node. For use with a walker. */
 static void alloc_node_info(ir_node *node, void *env)
 {
-	node_info *state = new_node_info();
+	node_info *state;
 	(void) env;
+	state = new_node_info();
 	set_irn_link(node, (void *)state);
 }
 
 static void free_node_info(void)
 {
-	node_info *next;
-	next = link_node_state_list;
-	while(next->freelistnext) {
-		node_info *cur = next;
-		next = cur->freelistnext;
-		xfree( cur );
+	int a = 0;
+	node_info *n;
+	n = link_node_state_list;
+	while(n) {
+		++a;
+		node_info *next = n->freelistnext;
+		xfree(n);
+		n = next;
 	}
+	link_node_state_list = NULL;
 }
 
 /**
@@ -168,6 +184,8 @@ static void reset_node_infos(void)
 	}
 }
 
+
+
 /* Returns the  */
 static ir_node *get_copy(ir_node *n)
 {
@@ -180,9 +198,15 @@ static void set_copy(ir_node *n, ir_node *copy)
 	((node_info *)get_irn_link(n) )->copy = copy;
 }
 
-/* Returns 0 if the node or block is not in cur_loop */
+/* Returns 0 if the node or block is not in cur_loop
+ * NOTE: get_irn_loop returns the ir_node loop attribute.
+ * But it seems only to be set correctly to blocks!
+ * Thus, without get_block this function does not work.
+ */
 static unsigned is_in_loop(ir_node *node)
 {
+	/*DB((dbg, LEVEL_5, "node %ld inloop %d\n", node->node_nr, get_irn_loop(get_block(node)) == cur_loop));*/
+	/*DB((dbg, LEVEL_5, "node %ld loop of node %d loop %d\n", node->node_nr, get_irn_loop(get_block(node)), cur_loop)); */
 	return (get_irn_loop(get_block(node)) == cur_loop);
 }
 
@@ -192,13 +216,15 @@ static unsigned is_alien_edge(ir_node *n, int i)
 	return(!is_in_loop(get_irn_n(n, i)));
 }
 
-/* used for walker */
-static void unmark_block(ir_node *node, void * env)
+/* used for block walker */
+static void reset_block_mark(ir_node *node, void * env)
 {
 	(void) env;
-	DB((dbg, LEVEL_4, "UNMARK ..."));
-	DB((dbg, LEVEL_4, " UNMARK %ld\n", get_irn_node_nr(node)));
-	if(is_Block(node))
+	/*
+	DB((dbg, LEVEL_5, "UNMARK ..."));
+	DB((dbg, LEVEL_5, " UNMARK %ld\n", get_irn_node_nr(node)));
+	*/
+	if (is_Block(node))
 		set_Block_mark(node, 0);
 }
 
@@ -215,8 +241,10 @@ int get_loop_n_blocks(ir_loop *loop) {
 
 	for(e=0; e<elements; e++) {
 		loop_element elem = get_loop_element(loop, e);
-		if  (is_ir_node(elem.kind) && is_Block(elem.node) )
+		if  (is_ir_node(elem.kind) && is_Block(elem.node)) {
+			/*DB((dbg, LEVEL_5, "%ld is block \n", elem.node->node_nr));*/
 			++blocks;
+		}
 	}
 	return blocks;
 }
@@ -225,7 +253,7 @@ int get_loop_n_blocks(ir_loop *loop) {
  * Add newpred at position pos to node and also add the corresponding value to the phis.
  * Requires block phi list.
  */
-static void duplicate_preds(ir_node* node, unsigned pos, ir_node* newpred)
+static int duplicate_preds(ir_node* node, unsigned pos, ir_node* newpred)
 {
 	ir_node** ins;
 	ir_node *phi;
@@ -234,11 +262,12 @@ static void duplicate_preds(ir_node* node, unsigned pos, ir_node* newpred)
 
 	assert(is_Block(node) && "duplicate_preds is only allowed for blocks");
 
-	DB((dbg, LEVEL_4, "duplicate_preds(node %ld, pos %d, newpred %ld)\n", get_irn_node_nr(node), pos, get_irn_node_nr(newpred)));
+	DB((dbg, LEVEL_5, "duplicate_preds(node %ld, pos %d, newpred %ld)\n",
+	    get_irn_node_nr(node), pos, get_irn_node_nr(newpred)));
 
 	block_arity = get_irn_arity(node);
 
-	NEW_ARR_A(ir_node*, ins, block_arity + 1 );
+	NEW_ARR_A(ir_node*, ins, block_arity + 1);
 	for (i = 0; i < block_arity; ++i)
 		ins[i] = get_irn_n(node, i);
 	ins[block_arity] = newpred;
@@ -247,20 +276,70 @@ static void duplicate_preds(ir_node* node, unsigned pos, ir_node* newpred)
 
 	for_each_phi(node, phi) {
 		int phi_arity = get_irn_arity(phi);
-		DB((dbg, LEVEL_4, "duplicate_preds: fixing phi %ld\n", get_irn_node_nr(phi)));
+		DB((dbg, LEVEL_5, "duplicate_preds: fixing phi %ld\n", get_irn_node_nr(phi)));
 
 		NEW_ARR_A(ir_node *, ins, block_arity + 1);
-		for(i=0; i < phi_arity; ++i) {
-			DB((dbg, LEVEL_4, "in %ld\n", get_irn_node_nr(get_irn_n(phi, i))));
+		for (i=0; i < phi_arity; ++i) {
+			DB((dbg, LEVEL_5, "in %ld\n", get_irn_node_nr(get_irn_n(phi, i))));
 			ins[i] = get_irn_n(phi, i);
 		}
 		ins[block_arity] = get_irn_n(phi, pos);
 		set_irn_in(phi, block_arity + 1, ins);
 	}
+	/* return new position */
+	return block_arity;
+}
+
+/* Finds loop head and loop_info */
+static void get_loop_info(ir_node *node, void *env)
+{
+	unsigned node_in_loop, pred_in_loop;
+	int i, arity;
+	(void) env;
+
+	/*DB((dbg, LEVEL_5, "node %+F\n", node));*/
+
+	get_node_info(node)->done = 1;
+
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_irn_n(node, i);
+
+		pred_in_loop = is_in_loop(pred);
+		node_in_loop = is_in_loop(node);
+
+		/* collect some loop information */
+		if (node_in_loop) {
+			/*DB((dbg, LEVEL_1, "--------------------------------- inloop %+F\n", node));*/
+			if (is_Store(node))
+				++loop_info.stores;
+			if (is_Load(node))
+				++loop_info.loads;
+			if (is_Call(node))
+				++loop_info.calls;
+			if (!is_Block(node) && !is_Proj(node) && !is_Phi(node))
+				++loop_info.opnodes_n;
+		}
+
+		/* Find the loops head/the blocks with cfpred outside of the loop */
+		if (is_Block(node) && node_in_loop && !pred_in_loop && loop_cf_head_valid) {
+			ir_node *cfgpred = get_Block_cfgpred(node, i);
+
+			if (!is_in_loop(cfgpred)) {
+				DB((dbg, LEVEL_1, "potential head %+F because inloop and pred %+F not inloop\n", node, pred));
+				/* another head? We do not touch this. */
+				if (loop_cf_head && loop_cf_head != node) {
+					loop_cf_head_valid = 0;
+				} else {
+					loop_cf_head = node;
+				}
+			}
+		}
+	}
 }
 
 /* Adds all nodes pointing into the loop to loop_entries and also finds the loops head */
-static void get_loop_outs_and_info(ir_node *node, void *env)
+static void get_loop_outs(ir_node *node, void *env)
 {
 	unsigned node_in_loop, pred_in_loop;
 	int i, arity;
@@ -273,37 +352,13 @@ static void get_loop_outs_and_info(ir_node *node, void *env)
 		pred_in_loop = is_in_loop(pred);
 		node_in_loop = is_in_loop(node);
 
-		/* collect some loop information */
-		if (node_in_loop) {
-			if ( is_Store(node) )
-				++loop_info.stores;
-			if ( is_Load(node) )
-				++loop_info.loads;
-			if ( is_Call(node) )
-				++loop_info.calls;
-			if ( !is_Block(node) && !is_Proj(node) && !is_Phi(node) )
-				++loop_info.opnodes_n;
-		}
-
-		//Find the loops head/the blocks with cfpred outside of the loop
-		if (is_Block(node) && node_in_loop && !pred_in_loop && loop_cf_head_valid) {
-			ir_node *cfgpred = get_Block_cfgpred(node, i);
-			if ( !is_in_loop(cfgpred) ) {
-				//DB((dbg, LEVEL_1, "potential head %+F\n", node));
-				/* another head? We do not touch this. */
-				if (loop_cf_head && loop_cf_head != node) {
-					loop_cf_head_valid = 0;
-				} else {
-					loop_cf_head = node;
-				}
-			}
-		}
-
-		if ( pred_in_loop && !node_in_loop ) {
-			out_edges entry;
+		if (pred_in_loop && !node_in_loop) {
+			out_edge entry;
 			entry.node = node;
 			entry.pred_irn_n = i;
-			ARR_APP1(out_edges, cur_loop_outs, entry);
+			ARR_APP1(out_edge, cur_loop_outs, entry);
+			if (node != get_irg_end(current_ir_graph))
+				++loop_info.outs;
 		}
 	}
 }
@@ -358,7 +413,6 @@ static unsigned get_invariants(ir_node *node, void *env)
 	return 0;
 }
 
-
 static ir_node *ssa_second_def;
 static ir_node *ssa_second_def_block;
 
@@ -375,7 +429,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	ir_node *phi;
 	ir_node **in;
 
-	DB((dbg, LEVEL_4, "ssa sdacp: block %ld\n", get_irn_node_nr(block)));
+	DB((dbg, LEVEL_5, "ssa search_def_and_create_phis: block %ld\n", get_irn_node_nr(block)));
 
 	/* Prevents creation of phi that would be bad anyway.
 	 * Dead and bad blocks. */
@@ -383,14 +437,14 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 		return new_Bad();
 
 	if (block == ssa_second_def_block) {
-		DB((dbg, LEVEL_4, "ssa found second definition: use second def %ld\n", get_irn_node_nr(ssa_second_def)));
+		DB((dbg, LEVEL_5, "ssa found second definition: use second def %ld\n", get_irn_node_nr(ssa_second_def)));
 		return ssa_second_def;
 	}
 
 	/* already processed this block? */
 	if (irn_visited(block)) {
 		ir_node *value = get_node_info(block)->link;
-		DB((dbg, LEVEL_4, "ssa already visited: use linked %ld\n", get_irn_node_nr(value)));
+		DB((dbg, LEVEL_5, "ssa already visited: use linked %ld\n", get_irn_node_nr(value)));
 		return value;
 	}
 
@@ -403,7 +457,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		ir_node *value;
 
-		DB((dbg, LEVEL_4, "ssa 1 pred: walk pred %ld\n", get_irn_node_nr(pred_block)));
+		DB((dbg, LEVEL_5, "ssa 1 pred: walk pred %ld\n", get_irn_node_nr(pred_block)));
 
 		value = search_def_and_create_phis(pred_block, mode);
 		get_node_info(block)->link = value;
@@ -424,7 +478,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	/* EVERY node is assumed to have a node_info linked. */
 	alloc_node_info(phi, NULL);
 
-	DB((dbg, LEVEL_4, "ssa phi creation: link new phi %ld to block %ld\n", get_irn_node_nr(phi), get_irn_node_nr(block)));
+	DB((dbg, LEVEL_5, "ssa phi creation: link new phi %ld to block %ld\n", get_irn_node_nr(phi), get_irn_node_nr(block)));
 
 	get_node_info(block)->link = phi;
 	mark_irn_visited(block);
@@ -433,10 +487,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	for(i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		ir_node *pred_val   = search_def_and_create_phis(pred_block, mode);
-		DB((dbg, LEVEL_4, "ssa phi pred:phi %ld, pred %ld\n", get_irn_node_nr(phi), get_irn_node_nr(pred_val)));
+		DB((dbg, LEVEL_5, "ssa phi pred:phi %ld, pred %ld\n", get_irn_node_nr(phi), get_irn_node_nr(pred_val)));
 		set_irn_n(phi, i, pred_val);
 	}
-
 	return phi;
 }
 
@@ -483,7 +536,7 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 		if (is_End(user))
 			continue;
 
-		DB((dbg, LEVEL_4, "original user %ld\n", get_irn_node_nr(user)));
+		DB((dbg, LEVEL_5, "original user %ld\n", get_irn_node_nr(user)));
 
 		if (is_Phi(user)) {
 			ir_node *pred_block = get_Block_cfgpred_block(user_block, j);
@@ -520,13 +573,18 @@ static int get_backedge_n(ir_node *loophead, unsigned with_alien)
 static void fix_backedge_info(ir_node *node)
 {
 	int i;
-	for (i = 0; i < get_irn_arity(node); ++i)
-	{
+	for (i = 0; i < get_irn_arity(node); ++i) {
 		ir_node *pred = get_irn_n(node, i);
-		if (get_node_info(pred)->link != NULL)
+		if (get_node_info(pred)->link != NULL) {
 			set_backedge(node, i);
-		else
+			get_node_info(pred)->link = NULL;
+			DB((dbg, LEVEL_5, "fix backedge: node %ld  pred %ld  is backedge\n",
+					get_irn_node_nr(node), get_irn_node_nr(pred)));
+		} else {
 			set_not_backedge(node, i);
+			DB((dbg, LEVEL_5, "fix backedge: node %ld  pred %ld  is not backedge\n",
+					get_irn_node_nr(node), get_irn_node_nr(pred)));
+		}
 	}
 }
 
@@ -595,7 +653,6 @@ static void peel_fix_heads(void)
 			 * but phis pred i might not have a copy of itself.
 			 */
 			for_each_phi(loophead, phi) {
-				//printf("normalbe phi %ld @ %d -> %ld\n", phi->node_nr, i,  get_irn_n( get_copy_of(phi), i)->node_nr);
 				get_node_info( phi )->ins[lheadin_c] =	get_irn_n( get_copy(phi), i) ;
 			}
 			++lheadin_c;
@@ -610,7 +667,6 @@ static void peel_fix_heads(void)
 		}
 	}/* for */
 
-	//DBG
 	assert(pheadin_c == ARR_LEN(peelheadnins) &&
 			lheadin_c == ARR_LEN(loopheadnins) &&
 			"the constructed head arities do not match the predefined arities");
@@ -653,50 +709,12 @@ static ir_node *rawcopy_node(ir_node *node)
 	return cp;
 }
 
-//int temp = 0;
-//
-///* This walker copies all walked nodes. The walk_condition determines the nodes to walk. */
-//static void keepalives_walk(ir_node *node, walker_condition *walk_condition)
-//{
-//	int i;
-//	int arity;
-//	ir_graph *irg = current_ir_graph;
-//
-//	/**
-//	 * break condition and cycle resolver, creating temporary node copies
-//	 */
-//	if (get_irn_visited(node) >= get_irg_visited(irg)) {
-//		return;
-//	}
-//
-//	/* Walk */
-//	mark_irn_visited(node);
-//
-//	if (!is_Block(node)) {
-//		ir_node *pred = get_nodes_block(node);
-//		if (walk_condition(pred))
-//			keepalives_walk( pred, walk_condition );
-//	}
-//
-//	arity = get_irn_arity(node);
-//
-//	for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-//		ir_node *pred = get_irn_n(node, i);
-//
-//		if (walk_condition(pred))
-//			keepalives_walk( pred, walk_condition );
-//	}
-//
-//	add_End_keepalive(get_irg_end(current_ir_graph), node);
-//}
-
-
 /**
  * This walker copies all walked nodes.
  * If the walk_condition is true for a node, it is walked.
  * All nodes node_info->copy attributes has to be NULL prior to every to every walk.
  */
-static void copy_walk(ir_node *node, walker_condition *walk_condition)
+static void copy_walk(ir_node *node, walker_condition *walk_condition, ir_loop *set_loop)
 {
 	int i;
 	int arity;
@@ -710,20 +728,18 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition)
 	 */
 	if (get_irn_visited(node) >= get_irg_visited(irg)) {
 		/* Here we rely on nodestate's copy being initialized with NULL */
-		DB((dbg, LEVEL_4, "copy_walk: We have already visited %ld\n", get_irn_node_nr(node)));
+		DB((dbg, LEVEL_5, "copy_walk: We have already visited %ld\n", get_irn_node_nr(node)));
 		if (node_info->copy == NULL) {
-//			if (!is_Const(node) && !is_SymConst(node)) {
+/*			if (!is_Const(node) && !is_SymConst(node)) { */
 				cp = rawcopy_node(node);
-//			} else {
-//				cp = node;
-//				node_info->copy = cp;
-//			}
-			DB((dbg, LEVEL_4, "The TEMP copy of %ld is created %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
+/*			} else {
+				cp = node;
+				node_info->copy = cp;
+			}*/
+			DB((dbg, LEVEL_5, "The TEMP copy of %ld is created %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
 		}
 		return;
 	}
-
-//	add_End_keepalive(get_irg_end(current_ir_graph), node);
 
 	/* Walk */
 	mark_irn_visited(node);
@@ -731,8 +747,8 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition)
 	if (!is_Block(node)) {
 		ir_node *pred = get_nodes_block(node);
 		if (walk_condition(pred))
-			DB((dbg, LEVEL_4, "walk block %ld\n", get_irn_node_nr(pred)));
-			copy_walk( pred, walk_condition );
+			DB((dbg, LEVEL_5, "walk block %ld\n", get_irn_node_nr(pred)));
+			copy_walk(pred, walk_condition, set_loop);
 	}
 
 	arity = get_irn_arity(node);
@@ -743,11 +759,11 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition)
 		ir_node *pred = get_irn_n(node, i);
 
 		if (walk_condition(pred)) {
-			DB((dbg, LEVEL_4, "walk node %ld\n", get_irn_node_nr(pred)));
-			copy_walk( pred, walk_condition );
+			DB((dbg, LEVEL_5, "walk node %ld\n", get_irn_node_nr(pred)));
+			copy_walk(pred, walk_condition, set_loop);
 			cpin[i] = get_copy(pred);
-			DB((dbg, LEVEL_4, "copy of %ld gets new in %ld which is copy of %ld\n",
-					get_irn_node_nr(node), get_irn_node_nr(get_copy(pred)), get_irn_node_nr(pred)));
+			DB((dbg, LEVEL_5, "copy of %ld gets new in %ld which is copy of %ld\n",
+			        get_irn_node_nr(node), get_irn_node_nr(get_copy(pred)), get_irn_node_nr(pred)));
 		} else {
 			cpin[i] = pred;
 		}
@@ -758,17 +774,17 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition)
 		/* No temporary copy existent */
 
 		/* Do not copy constants TODO right? */
-//		if (!is_Const(node) && !is_SymConst(node)) {
+/*		if (!is_Const(node) && !is_SymConst(node)) { */
 			cp = rawcopy_node(node);
-//		} else {
-//			cp = node;
-//			node_info->copy = cp;
-//		}
-		DB((dbg, LEVEL_4, "The FINAL copy of %ld is CREATED %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
+/*		} else {
+			cp = node;
+			node_info->copy = cp;
+		}*/
+		DB((dbg, LEVEL_5, "The FINAL copy of %ld is CREATED %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
 	} else {
 		/* temporary copy is existent but without correct ins */
 		cp = get_copy(node);
-		DB((dbg, LEVEL_4, "The FINAL copy of %ld is EXISTENT %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
+		DB((dbg, LEVEL_5, "The FINAL copy of %ld is EXISTENT %ld\n", get_irn_node_nr(node), get_irn_node_nr(cp)));
 	}
 
 	if (!is_Block(node)) {
@@ -783,13 +799,12 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition)
 		set_Block_MacroBlock(cp, cp);
 	}
 
-	//TODO do?
-	//set_irn_loop(cp, cur_loop);
+	set_irn_loop(cp, set_loop);
 	set_irn_in(cp, ARR_LEN(cpin), cpin);
 }
 
 /* Loop peeling, and fix the cf for the loop entry nodes, which have now more preds */
-static void peel(out_edges *loop_outs)
+static void peel(out_edge *loop_outs)
 {
 	int i;
 	ir_node **entry_buffer;
@@ -800,19 +815,18 @@ static void peel(out_edges *loop_outs)
 	NEW_ARR_A(ir_node *, entry_buffer, ARR_LEN(loop_outs));
 
 	/* duplicate loop walk */
-//	cur_head = loop_cf_head;
 	inc_irg_visited(current_ir_graph);
 
 	for(i = 0; i < ARR_LEN(loop_outs); i++) {
-		out_edges entry = loop_outs[i];
+		out_edge entry = loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
 
 		if (is_Block(node)) {
-			copy_walk( pred, is_in_loop );
+			copy_walk(pred, is_in_loop, NULL);
 			duplicate_preds(node, entry.pred_irn_n, get_copy(pred) );
 		} else {
-			copy_walk( pred, is_in_loop );
+			copy_walk(pred, is_in_loop, NULL);
 			if (!is_End(node))		/* leave out keepalives */
 				/* Node is user of a value defined inside the loop.
 				 * We'll need a phi since we duplicated the loop. */
@@ -848,28 +862,32 @@ static void peel(out_edges *loop_outs)
  * whereas the node's pred at pred_pos is in the head but not the node itself.
  * Head and condition chain blocks must be marked.
  */
-static void get_head_entries(ir_node *node, void *env)
+static void get_head_outs(ir_node *node, void *env)
 {
 	int i;
 	int arity = get_irn_arity(node);
 	(void) env;
 
-	DB((dbg, LEVEL_5, "get head entries \n"));
+	DB((dbg, LEVEL_5, "get head entries %ld \n", get_irn_node_nr(node)));
 
 	for(i = 0; i < arity; ++i) {
 		/* node is not in the head, but the predecessor is.
 		 * (head or loop chain nodes are marked) */
+
+
 		DB((dbg, LEVEL_5, "... "));
 		DB((dbg, LEVEL_5, "node %ld  marked %d (0)  pred %d marked %d (1) \n",
-				node->node_nr, is_nodesblock_marked(node),i, is_nodesblock_marked(get_irn_n(node, i))));
+		    node->node_nr, is_nodesblock_marked(node),i, is_nodesblock_marked(get_irn_n(node, i))));
+
+
 		if (!is_nodesblock_marked(node) && is_nodesblock_marked(get_irn_n(node, i))) {
-			out_edges entry;
+			out_edge entry;
 			entry.node = node;
 			entry.pred_irn_n = i;
-			DB((dbg, LEVEL_4,
-					"Found head chain entry %ld @%d because !inloop %ld and inloop %ld\n",
-					node->node_nr, i, node->node_nr, get_irn_n(node, i)->node_nr));
-			ARR_APP1(out_edges, cur_head_outs, entry);
+			DB((dbg, LEVEL_5,
+			        "Found head chain entry %ld @%d because !inloop %ld and inloop %ld\n",
+			        get_irn_node_nr(node), i, get_irn_node_nr(node), get_irn_node_nr(get_irn_n(node, i))));
+			ARR_APP1(out_edge, cur_head_outs, entry);
 		}
 	}
 }
@@ -878,14 +896,14 @@ static void get_head_entries(ir_node *node, void *env)
  * Find condition chains, and add them to be inverted, until the node count exceeds the limit.
  * A block belongs to the chain if a condition branches out of the loop.
  * Returns if the given block belongs to the condition chain.
- * FIXME prevent collecting ALL loop blocks (may happen if all blocks jump out of the loop)
+ * TODO do not (or do?) invert, if all blocks have loop outs.
  */
-static unsigned condition_chains(ir_node *block) {
+static unsigned find_condition_chains(ir_node *block) {
 	const ir_edge_t *edge;
 	unsigned mark = 0;
 	int nodes_n = 0;
 
-	printf("cd %ld\n", block->node_nr);
+	DB((dbg, LEVEL_1, "condition_chains for block %ld\n", get_irn_node_nr(block)));
 
 	/* we need all outs, including keeps (TODO firm function for that??) */
 	foreach_out_edge_kind(block, edge, EDGE_KIND_NORMAL) {
@@ -895,32 +913,26 @@ static unsigned condition_chains(ir_node *block) {
 	/* We do not want to collect more nodes from condition chains, than the limit allows us to.
 	 * Also, leave at least one block as body. */
 	if (head_inversion_node_count + nodes_n > head_inversion_node_limit
-			|| loop_info.blocks == head_inversion_block_count + 1) {
+		    || head_inversion_block_count + 1 == loop_info.blocks) {
 		set_Block_mark(block, 0);
-		printf(" %ld over limit\n", block->node_nr);
+		DB((dbg, LEVEL_1, "block %ld over limit or no blocks to invert\n",
+		        get_irn_node_nr(block)));
 		return 0;
 	}
-
-	printf("blocks ++ %ld\n", block->node_nr);
-//	++loop_info.blocks;
 
 	/* First: check our successors, and add all succs that are outside of the loop to the list */
 	foreach_block_succ(block, edge) {
 		ir_node *src = get_edge_src_irn( edge );
 		int pos = get_edge_src_pos( edge );
 
-		printf("check %ld\n", src->node_nr);
-
-		if (src->loop)
-			printf(" src %ld in loop %ld  curlooop %ld \n", src->node_nr, src->loop->loop_nr, cur_loop->loop_nr);
 		if (!is_in_loop(src)) {
-			out_edges entry;
-			printf(" src %ld @ %d into block %ld \n", src->node_nr, pos, block->node_nr);
+			out_edge entry;
+			/*printf(" src %ld @ %d into block %ld \n", src->node_nr, pos, block->node_nr);*/
 
 			mark = 1;
 			entry.node = src;
 			entry.pred_irn_n = pos;
-			ARR_APP1(out_edges, cond_chain_entries, entry);
+			ARR_APP1(out_edge, cond_chain_entries, entry);
 			mark_irn_visited(src);
 		}
 	}
@@ -928,14 +940,12 @@ static unsigned condition_chains(ir_node *block) {
 	/* this block is not part of the chain,
 	 * because the chain would become too big or we have no succ outside of the loop */
 	if (mark == 0) {
-		printf("mark is 0 %ld\n", block->node_nr);
 		set_Block_mark(block, 0);
 		return 0;
 	} else {
-		printf("mark is 1 %ld\n", block->node_nr);
 		set_Block_mark(block, 1);
 		++head_inversion_block_count;
-		DB((dbg, LEVEL_4, "block %ld is part of condition chain\n", get_irn_node_nr(block)));
+		DB((dbg, LEVEL_1, "block %ld is part of condition chain\n", get_irn_node_nr(block)));
 		head_inversion_node_count += nodes_n;
 	}
 
@@ -947,27 +957,27 @@ static unsigned condition_chains(ir_node *block) {
 
 		/* already done cases */
 		if (!is_in_loop( src ) || (get_irn_visited(src) >= get_irg_visited(current_ir_graph))) {
-//			printf("!inloop || visited %ld\n", block->node_nr);
 			continue;
 		}
 
 		mark_irn_visited(src);
-		DB((dbg, LEVEL_4, "condition chain walk %ld\n", get_irn_node_nr(src)));
-		inchain = condition_chains( src );
+		DB((dbg, LEVEL_5, "condition chain walk %ld\n", get_irn_node_nr(src)));
+		inchain = find_condition_chains( src );
 
 		/* if successor is not part of chain we need to collect its outs */
 		if ( !inchain ) {
-			out_edges entry;
+			out_edge entry;
 			entry.node = src;
 			entry.pred_irn_n = pos;
-			ARR_APP1(out_edges, cond_chain_entries, entry);
+			ARR_APP1(out_edge, cond_chain_entries, entry);
 		}
 	}
 	return mark;
 }
 
 /**
- *
+ * Loop optimization.
+ * Loop inversion, peeling, unrolling.
  */
 static void inversion_fix_heads(void)
 {
@@ -983,8 +993,8 @@ static void inversion_fix_heads(void)
 	int iheadin_c = 0;
 
 	int backedges_n = get_backedge_n(loophead, 0);
-	int lhead_arity = headarity - backedges_n;
-	int ihead_arity = backedges_n;
+	int lhead_arity = backedges_n;
+	int ihead_arity = headarity - backedges_n;
 
 	/* new in arrays for all phis in the head blocks */
 	NEW_ARR_A(ir_node *, loopheadnins, lhead_arity);
@@ -1004,25 +1014,31 @@ static void inversion_fix_heads(void)
 		 * Rewire the head blocks ins and their phi ins.
 		 * Requires phi list per block.
 		 */
-		if ( is_backedge(loophead, i) && !is_alien_edge(loophead, i) ) {
-			invheadnins[iheadin_c] = pred;
-			for_each_phi(invhead, phi) {
-				get_node_info( phi )->ins[iheadin_c] =	get_irn_n( phi, i) ;
-			}
-			++iheadin_c;
-		} else {
+		if (is_backedge(loophead, i) && !is_alien_edge(loophead, i)) {
 			/* just copy these edges */
 			loopheadnins[lheadin_c] = pred;
+			get_node_info(pred)->link = NULL;  /*(void *)is_backedge(loophead, i);*/
 			for_each_phi(loophead, phi) {
-				get_node_info( phi )->ins[lheadin_c] = get_irn_n(phi, i);
+				get_node_info(phi)->ins[lheadin_c] = get_irn_n(phi, i);
 			}
 			++lheadin_c;
+		} else {
+			invheadnins[iheadin_c] = pred;
+			get_node_info(pred)->link = (void *)1;
+			for_each_phi(invhead, phi) {
+				get_node_info(phi)->ins[iheadin_c] = get_irn_n(phi, i) ;
+			}
+			++iheadin_c;
 		}
-	}/* for */
+	}
 
 	/* assign the ins to the head blocks */
 	set_irn_in(loophead, ARR_LEN(loopheadnins), loopheadnins);
 	set_irn_in(invhead, ARR_LEN(invheadnins), invheadnins);
+
+	/* FIX and set former be to normal edges */
+	fix_backedge_info(loophead);
+	fix_backedge_info(invhead);
 
 	/* assign the ins for the phis */
 	for_each_phi(loophead, phi) {
@@ -1036,8 +1052,7 @@ static void inversion_fix_heads(void)
 	}
 }
 
-
-static void loop_inversion_walk(out_edges *head_entries)
+static void inversion_walk(out_edge *head_entries)
 {
 	int i;
 	ir_node *phi;
@@ -1050,10 +1065,10 @@ static void loop_inversion_walk(out_edges *head_entries)
 	head_phi_assign = NEW_ARR_F(ir_node *, 0);
 
 	/* Find assignments in the condition chain, to construct_ssa for them after the loop inversion. */
-	for_each_phi( loop_cf_head , phi) {
+	for_each_phi(loop_cf_head , phi) {
 		for(i=0; i<get_irn_arity(phi); ++i) {
 			ir_node *def = get_irn_n(phi, i);
-			if ( is_nodesblock_marked(def) ) {
+			if (is_nodesblock_marked(def)) {
 				ARR_APP1(ir_node *, head_phi_assign, def);
 			}
 		}
@@ -1061,28 +1076,28 @@ static void loop_inversion_walk(out_edges *head_entries)
 
 	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 
-	/* duplicate condition chain */
+	/**
+	 * duplicate condition chain
+	 **/
 	inc_irg_visited(current_ir_graph);
 
 	for(i = 0; i < ARR_LEN(head_entries); ++i) {
-		out_edges entry = head_entries[i];
+		out_edge entry = head_entries[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
 
-//		add_End_keepalive(get_irg_end(current_ir_graph), pred);
-
 		if (is_Block(node)) {
-			DB((dbg, LEVEL_4, "\nINIT walk block %ld\n", get_irn_node_nr(pred)));
-			copy_walk(pred, is_nodesblock_marked);
+			DB((dbg, LEVEL_5, "\nINIT walk block %ld\n", get_irn_node_nr(pred)));
+			copy_walk(pred, is_nodesblock_marked, cur_loop);
 			duplicate_preds(node, entry.pred_irn_n, get_copy(pred) );
 		} else {
-			DB((dbg, LEVEL_4, "\nInit walk node  %ld\n", get_irn_node_nr(pred)));
-			copy_walk( pred, is_nodesblock_marked );
+			DB((dbg, LEVEL_5, "\nInit walk node  %ld\n", get_irn_node_nr(pred)));
+			copy_walk(pred, is_nodesblock_marked, cur_loop);
 
 			/* ignore keepalives */
 			if (!is_End(node))
 				/* Node is user of a value assigned inside the loop.
-				 * We'll need a phi since we duplicated the head. */
+				 * We will need a phi since we duplicated the head. */
 				entry_buffer[entry_c++] = pred;
 		}
 	}
@@ -1103,19 +1118,10 @@ static void loop_inversion_walk(out_edges *head_entries)
 		cppred = get_copy(pred);
 		block = get_nodes_block(pred);
 		cpblock = get_nodes_block(cppred);
-		DB((dbg, LEVEL_4,
-				"construct_ssa (loop out value) original %ld and clone %ld\n",
-				get_irn_node_nr(pred), get_irn_node_nr(cppred)));
+		DB((dbg, LEVEL_5,
+		        "construct_ssa (loop out value) original %ld and clone %ld\n",
+		        get_irn_node_nr(pred), get_irn_node_nr(cppred)));
 		construct_ssa(block, pred, cpblock, cppred);
-
-
-//		char *res;
-//		char *s = "-SSA_";
-//		char *n = strdup(" ");
-//		n[0] = 'a' + (char)i;
-//		res = strdup(s);
-//		strcat(res, n);
-//		dump_ir_block_graph(current_ir_graph, res );
 	}
 
 	/* Generate phis for values that are assigned in the condition chain
@@ -1123,126 +1129,125 @@ static void loop_inversion_walk(out_edges *head_entries)
 	 */
 	for(i = 0; i < ARR_LEN(head_phi_assign); ++i) {
 		ir_node *def_block, *inhead_phi_def, *inv_def_block, *inv_inhead_phi_def;
+
 		/* Note: construct_ssa only fixes the FIRST nodes usage. */
 		inhead_phi_def = head_phi_assign[i];
 		inv_inhead_phi_def = get_copy(inhead_phi_def);
 		def_block = get_nodes_block(inhead_phi_def);
 		inv_def_block = get_nodes_block(inv_inhead_phi_def);
-		DB((dbg, LEVEL_4,
-				"construct_ssa (condition chain out values) original %ld and clone %ld\n",
-				get_irn_node_nr(inv_inhead_phi_def), get_irn_node_nr(inhead_phi_def)));
-		construct_ssa(inv_def_block, inv_inhead_phi_def, def_block, inhead_phi_def);
+		DB((dbg, LEVEL_5,
+		        "construct_ssa (condition chain out values) original %ld and clone %ld\n",
+		        get_irn_node_nr(inv_inhead_phi_def), get_irn_node_nr(inhead_phi_def)));
+		/*construct_ssa(inv_def_block, inv_inhead_phi_def, def_block, inhead_phi_def);*/
+		construct_ssa(def_block, inhead_phi_def, inv_def_block, inv_inhead_phi_def);
+
 	}
 	loop_cf_head = get_copy(loop_cf_head);
 }
 
-/**
- * Decide if loop inversion, peeling or unrolling should be performed.
- * Inversion creates abnormal looking loops. Be careful with optimizations after that.
- */
-static void decision_maker(void)
+
+/* Loop peeling */
+void loop_peeling(void)
 {
-	unsigned do_peel = 0;
-	unsigned do_inversion = 1;
+	cur_loop_outs = NEW_ARR_F(out_edge, 0);
+	irg_walk_graph( current_ir_graph, get_loop_outs, NULL, NULL );
 
-	/* unsigned max_loop_opnodes = 2000000; */
+	DB((dbg, LEVEL_3, "is endless loop: %d (no outs but keepalives)\n", loop_info.outs == 0));
 
-	head_inversion_node_limit = 99910;
+	(void) get_invariants;
 
-	cur_loop_outs = NEW_ARR_F(out_edges, 0);
-
-	/* Find loop entries walk, find head */
-	inc_irg_visited( current_ir_graph );
-	irg_walk_graph( current_ir_graph, get_loop_outs_and_info, NULL, NULL );
-
-	/* RETURN if there is no valid head */
-	if (!loop_cf_head || !loop_cf_head_valid) {
-		DB((dbg, LEVEL_1, "No valid loop head. Nothing done.\n"));
-		return;
-	}
 #if 0
-	/* RETURN if there is a call in the loop */
-	if (loop_info.calls)
-		return;
-
-	/* Loop complexity too high */
-	if (loop_info.opnodes_n > max_loop_opnodes)
-		return;
-
-//	foreach_out_edge(loop_cf_head, edge) {
-//		ir_node *node = get_edge_src_irn(edge);
-//		if ( !is_Block(node) && !is_Proj(node) && !is_Phi(node) )
-//			++loop_info.opnodes_head;
-//	}
-
-	inc_irg_visited(current_ir_graph);
+	/*inc_irg_visited(current_ir_graph);*/
 	loop_walker( loop_outs, NULL, get_invariants, NULL );
 
 	/* This could be improved with knowledge about variable range. */
 	if (loop_info.stores == 0 && loop_info.invariant_loads > 0)
 		do_peel = 1;
-
-#else
-	(void) get_invariants;
 #endif
 
-	do_peel = 0;
-	do_inversion = 1;
+	peel(cur_loop_outs);
 
-	/* Loop peeling */
-	if (do_peel) {
-		peel(cur_loop_outs);
-		reset_node_infos();
-	}
+	/* DEBUG_ONLY(dump_ir_block_graph(current_ir_graph, "-peeled1"));*/
 
-	DEBUG_ONLY(dump_ir_block_graph(current_ir_graph, "-peeled1"));
+	/* clean up */
+	reset_node_infos();
+
+	set_irg_doms_inconsistent(current_ir_graph);
+	/* TODO needed? */
+	set_irg_loopinfo_inconsistent(current_ir_graph);
+	/* TODO Are they really inconsistent (ins set with firm functions)? */
+	set_irg_outs_inconsistent(current_ir_graph);
 
 	DEL_ARR_F(cur_loop_outs);
+}
 
-	/* Loop inversion */
-	/* Search for condition chains. We may not do this before peeling, as peeling changes things. */
+/* Loop inversion */
+void loop_inversion(void)
+{
+	unsigned do_inversion = 1;
+
+	head_inversion_node_limit = 13371337;
+
+#if 0
+	/* unsigned max_loop_opnodes = 2000000; */
+	/*unsigned max_opnodes = 1337;*/
+
+	/* Loop complexity too high */
+	if (loop_info.opnodes_n > max_opnodes)
+		return;
+#endif
+
+
+	/* Search for condition chains. */
 	ir_reserve_resources(current_ir_graph, IR_RESOURCE_BLOCK_MARK);
-	irg_walk_graph(current_ir_graph, unmark_block, NULL, NULL);
+
+	/* Did not work as expected */
+	/* irg_block_walk_graph(current_ir_graph, reset_block_mark, NULL, NULL); */
+
+	irg_walk_graph(current_ir_graph, reset_block_mark, NULL, NULL);
 
 	loop_info.blocks = get_loop_n_blocks(cur_loop);
-	cond_chain_entries = NEW_ARR_F(out_edges, 0);
+	cond_chain_entries = NEW_ARR_F(out_edge, 0);
+
 	head_inversion_node_count = 0;
 	head_inversion_block_count = 0;
-	inc_irg_visited(current_ir_graph);
+
 	set_Block_mark(loop_cf_head, 1);
 	mark_irn_visited(loop_cf_head);
-	/* find condition chains */
-	condition_chains(loop_cf_head);
+	inc_irg_visited(current_ir_graph);
 
-	DEBUG_ONLY(dump_ir_block_graph(current_ir_graph, "-pre_inversion"));
+	find_condition_chains(loop_cf_head);
 
-	// TODO assume number of phis to be created. prevent inversion in case ...
+	/* TODO assume number of phis to be created. prevent inversion in case ...*/
 
-	/* Loop inversion */
-	/* We catch endless loops here too,
-	 * because they do not have a condition chain and a maximum of 1 block. */
+	DB((dbg, LEVEL_1, "Loop contains %d blocks.\n", loop_info.blocks));
 	if (loop_info.blocks < 2) {
 		do_inversion = 0;
 		DB((dbg, LEVEL_1, "Loop contains %d (less than 2) blocks => No Inversion done.\n", loop_info.blocks));
 	}
 
+	/* We catch endless loops here too,
+	 * because they do not have a condition chain. */
 	if (head_inversion_block_count < 1) {
 		do_inversion = 0;
 		DB((dbg, LEVEL_1, "Loop contains %d (less than 1) invertible blocks => No Inversion done.\n", head_inversion_block_count));
 	}
 
-
 	if (do_inversion) {
-		cur_head_outs = NEW_ARR_F(out_edges, 0);
+		cur_head_outs = NEW_ARR_F(out_edge, 0);
 
 		/* get all edges pointing into the head or condition chain */
-		irg_walk_graph(current_ir_graph, get_head_entries, NULL, NULL);
-		loop_inversion_walk(cur_head_outs);
+		irg_walk_graph(current_ir_graph, get_head_outs, NULL, NULL);
+		inversion_walk(cur_head_outs);
 
 		DEL_ARR_F(cur_head_outs);
-	}
 
-	DEBUG_ONLY(dump_ir_block_graph(current_ir_graph, "-inversed2"));
+		set_irg_doms_inconsistent(current_ir_graph);
+		/* TODO needed? */
+		set_irg_loopinfo_inconsistent(current_ir_graph);
+		/* TODO Are they really inconsistent (ins set with firm functions)? */
+		set_irg_outs_inconsistent(current_ir_graph);
+	}
 
 	/* FREE */
 	DEL_ARR_F(cond_chain_entries);
@@ -1250,7 +1255,7 @@ static void decision_maker(void)
 }
 
 /*  */
-static void analyze_loop(ir_loop *loop)
+static void init_analyze(ir_loop *loop)
 {
 	/* Init new for every loop */
 	cur_loop = loop;
@@ -1266,29 +1271,71 @@ static void analyze_loop(ir_loop *loop)
 	loop_info.stores = 0;
 	loop_info.opnodes_n = 0;
 	loop_info.blocks = 0;
+	loop_info.outs = 0;
 
 	DB((dbg, LEVEL_1, "  >>>> current loop includes node %ld <<<\n", get_irn_node_nr(get_loop_node(loop, 0))));
 
-	decision_maker();
+	irg_walk_graph(current_ir_graph, get_loop_info, NULL, NULL);
 
-	DB((dbg, LEVEL_1, "    <<<< end of loop with node %ld >>>>\n", get_irn_node_nr(get_loop_node(loop, 0))));
+	/* RETURN if there is no valid head */
+	if (!loop_cf_head || !loop_cf_head_valid) {
+		DB((dbg, LEVEL_1, "\n**************************************************\n"));
+		DB((dbg, LEVEL_1,   "*         No valid loop head. Nothing done.      *\n"));
+		DB((dbg, LEVEL_1,   "**************************************************\n"));
+		return;
+	}
+
+	if (enable_peeling)
+		loop_peeling();
+	if (enable_inversion)
+		loop_inversion();
+
+	/* TODO uncomment lat0r */
+#if 0
+	/* RETURN if there is a call in the loop */
+	if (loop_info.calls)
+		return;
+#endif
+
+	DB((dbg, LEVEL_1, "      <<<< end of loop with node %ld >>>>\n", get_irn_node_nr(get_loop_node(loop, 0))));
 }
 
 /* Find most inner loops and send them to analyze_loop */
-static void analyze_inner_loop(ir_loop *loop)
+static void find_most_inner_loop(ir_loop *loop)
 {
 	/* descend into sons */
 	int sons = get_loop_n_sons(loop);
 
-	if (sons==0) {
-		analyze_loop(loop);
+	/*DBG((dbg, LEVEL_5, "current loop head %ld   is done %d\n",
+	 * get_loop_node(loop, 0)->node_nr, get_node_info(get_loop_node(loop, 0))->done );*/
+
+	if (sons == 0) {
+		loop_element elem;
+		int el_n, i;
+
+		el_n = get_loop_n_elements(loop);
+
+		for (i=0; i < el_n; ++i)
+		{
+			elem = get_loop_element(loop, i);
+			/* We can only rely on the blocks,
+			 * as the loop attribute of the nodes seems not to be set. */
+			if (is_ir_node(elem.kind) && is_Block(elem.node)) {
+				ARR_APP1(ir_node *, loops, elem.node);
+				DB((dbg, LEVEL_1, "Found most inner loop (contains block %+F)\n", elem.node));
+				break;
+			}
+		}
+		/*init_analyze(loop);
+		return loop;*/
 	} else {
 		int s;
 		for(s=0; s<sons; s++) {
-			analyze_inner_loop( get_loop_son(loop, s) );
+			find_most_inner_loop(get_loop_son(loop, s));
 		}
 	}
 }
+
 
 /**
  *
@@ -1296,52 +1343,114 @@ static void analyze_inner_loop(ir_loop *loop)
 void loop_optimization(ir_graph *irg)
 {
 	ir_loop *loop;
-	int     sons, nr;
-
-	FIRM_DBG_REGISTER(dbg, "firm.opt.loop");
-
-	DB((dbg, LEVEL_1, " >>> loop optimization (Startnode %ld) <<<\n", get_irn_node_nr(get_irg_start(irg))));
+	int      sons, nr;
 
 	/* Init */
 	link_node_state_list = NULL;
+	set_current_ir_graph(irg);
 
 	/* preconditions */
 	edges_assure(irg);
+	assure_irg_outs(irg);
+	/* NOTE: sets only the loop attribute of blocks, not nodes */
+	/* NOTE: Kills links */
+	assure_cf_loop(irg);
+
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST);
 	collect_phiprojs(irg);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	set_current_ir_graph(irg);
-	assure_cf_loop(irg);
-
 	/* allocate node_info for additional information on nodes */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_walk_graph(current_ir_graph, alloc_node_info, NULL, NULL);
+	/* irg_walk_graph(current_ir_graph, alloc_node_info, NULL, NULL); */
 
 	loop = get_irg_loop(irg);
 	sons = get_loop_n_sons(loop);
 
+	/**
+	 * assure_cf_loop() creates a completely new loop tree every time.
+	 * Thus we cannot optimize the loop, assure_cf_loop and continue with the next loop,
+	 * as the next loop must be searched with a new search and is not distinguishable from the
+	 * already done loop.
+	 * The links of the loops are also not available anymore (to store a "loop done" flag).
+	 * Therefore we save a block per loop.
+	 * We rely on the loop optimizations not to remove any block from the loop.
+	 * Later, we fetch the blocks loop attribute, as it is updated by assure_cf_loop.
+	 * TODO Try to not destroy these informations.
+	 */
+	loops = NEW_ARR_F(ir_node *, 0);
+
 	for (nr=0; nr<sons; nr++) {
-		analyze_inner_loop(get_loop_son(loop, nr));
+		find_most_inner_loop(get_loop_son(loop, nr));
 	}
+
+	int i;
+	for(i=0; i< ARR_LEN(loops); ++i) {
+		ir_loop *loop;
+
+		/* not that efficient */
+		free_node_info();
+		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+		/* TODO needed ? */
+		edges_assure(current_ir_graph);
+		assure_irg_outs(current_ir_graph);
+
+		/* NOTE: sets only the loop attribute of blocks */
+		/* NOTE: Kills links */
+		/* TODO Try not to destroy backedge info. */
+		assure_cf_loop(current_ir_graph);
+
+		/*construct_backedges(current_ir_graph);*/
+
+		/* not that efficient either... */
+		irg_walk_graph(current_ir_graph, alloc_node_info, NULL, NULL);
+		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+
+		loop = get_irn_loop(loops[i]);
+		init_analyze(loop);
+	}
+
+	DEL_ARR_F(loops);
 
 	/* Free */
 	free_node_info();
-	ir_free_resources(irg, IR_RESOURCE_PHI_LIST|IR_RESOURCE_IRN_LINK);
-
-	DB((dbg, LEVEL_1, " >>> loop optimization done (Startnode %ld) <<<\n", get_irn_node_nr(get_irg_start(irg))));
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+	ir_free_resources(irg, IR_RESOURCE_PHI_LIST);
 }
 
 void do_loop_inversion(ir_graph *irg)
 {
-	/* TODO: add the code here that performs loop inversion only */
+	enable_peeling = 0;
+	enable_inversion = 1;
+
+	DB((dbg, LEVEL_1, " >>> inversion (Startnode %ld) <<<\n",
+	        get_irn_node_nr(get_irg_start(irg))));
+
 	loop_optimization(irg);
+
+	DB((dbg, LEVEL_1, " >>> inversion done (Startnode %ld) <<<\n",
+	        get_irn_node_nr(get_irg_start(irg))));
 }
 
 void do_loop_peeling(ir_graph *irg)
 {
-	/* TODO: add the code here that performs loop peeling only */
+	enable_peeling = 1;
+	enable_inversion = 0;
+
+	(void)irg;
+
+	DB((dbg, LEVEL_1, " >>> peeling is disabled atm. <<<\n"));
+
+	/*
+	DB((dbg, LEVEL_1, " >>> peeling (Startnode %ld) <<<\n",
+	        get_irn_node_nr(get_irg_start(irg))));
+
 	loop_optimization(irg);
+
+	DB((dbg, LEVEL_1, " >>> peeling done (Startnode %ld) <<<\n",
+	        get_irn_node_nr(get_irg_start(irg))));
+	*/
 }
 
 void firm_init_loop_opt(void)
