@@ -159,8 +159,8 @@ static void free_node_info(void)
 	node_info *n;
 	n = link_node_state_list;
 	while(n) {
-		++a;
 		node_info *next = n->freelistnext;
+		++a;
 		xfree(n);
 		n = next;
 	}
@@ -1343,7 +1343,7 @@ static void find_most_inner_loop(ir_loop *loop)
 void loop_optimization(ir_graph *irg)
 {
 	ir_loop *loop;
-	int      sons, nr;
+	int     i, sons, nr;
 
 	/* Init */
 	link_node_state_list = NULL;
@@ -1380,12 +1380,11 @@ void loop_optimization(ir_graph *irg)
 	 */
 	loops = NEW_ARR_F(ir_node *, 0);
 
-	for (nr=0; nr<sons; nr++) {
+	for (nr = 0; nr < sons; ++nr) {
 		find_most_inner_loop(get_loop_son(loop, nr));
 	}
 
-	int i;
-	for(i=0; i< ARR_LEN(loops); ++i) {
+	for (i = 0; i < ARR_LEN(loops); ++i) {
 		ir_loop *loop;
 
 		/* not that efficient */
