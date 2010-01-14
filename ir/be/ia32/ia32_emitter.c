@@ -569,7 +569,9 @@ static void ia32_emit_cmp_suffix(int pnc)
 typedef enum ia32_emit_mod_t {
 	EMIT_RESPECT_LS   = 1U << 0,
 	EMIT_ALTERNATE_AM = 1U << 1,
-	EMIT_LONG         = 1U << 2
+	EMIT_LONG         = 1U << 2,
+	EMIT_HIGH_REG     = 1U << 3,
+	EMIT_LOW_REG      = 1U << 4
 } ia32_emit_mod_t;
 
 /**
@@ -651,6 +653,7 @@ void ia32_emit_am(const ir_node *node)
  * # modifier for %ASx, %D and %S uses ls mode of node to alter register width
  * * modifier does not prefix immediates with $, but AM with *
  * l modifier for %lu and %ld
+ * + modifier to output high 8bit register (ah, bh)
  */
 static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 {
@@ -679,20 +682,19 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 			break;
 
 		++fmt;
-		if (*fmt == '*') {
-			mod |= EMIT_ALTERNATE_AM;
+		while (1) {
+			switch(*fmt) {
+			case '*': mod |= EMIT_ALTERNATE_AM; break;
+			case '#': mod |= EMIT_RESPECT_LS;   break;
+			case 'l': mod |= EMIT_LONG;         break;
+			case '+': mod |= EMIT_HIGH_REG;     break;
+			case '-': mod |= EMIT_LOW_REG;      break;
+			default:
+				goto end_of_mods;
+			}
 			++fmt;
 		}
-
-		if (*fmt == '#') {
-			mod |= EMIT_RESPECT_LS;
-			++fmt;
-		}
-
-		if (*fmt == 'l') {
-			mod |= EMIT_LONG;
-			++fmt;
-		}
+end_of_mods:
 
 		switch (*fmt++) {
 			case '%':
@@ -773,7 +775,13 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 			case 'R': {
 				const arch_register_t *reg = va_arg(ap, const arch_register_t*);
-				emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
+				if (mod & EMIT_HIGH_REG) {
+					emit_8bit_register_high(reg);
+				} else if (mod & EMIT_LOW_REG) {
+					emit_8bit_register(reg);
+				} else {
+					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
+				}
 				break;
 			}
 
@@ -1147,19 +1155,27 @@ static void emit_ia32_Setcc(const ir_node *node)
 		switch (pnc & 0x0f) {
 		case pn_Cmp_Uo:
 			ia32_emitf(node, "\tsetp %#R\n", dreg);
-			break;
+			return;
 
 		case pn_Cmp_Leg:
 			ia32_emitf(node, "\tsetnp %#R\n", dreg);
-			break;
+			return;
 
 		case pn_Cmp_Eq:
 		case pn_Cmp_Lt:
 		case pn_Cmp_Le:
+			ia32_emitf(node, "\tset%P %-R\n", pnc, dreg);
+			ia32_emitf(node, "\tsetnp %+R\n", dreg);
+			ia32_emitf(node, "\tandb %+R, %-R\n", dreg, dreg);
+			return;
+
 		case pn_Cmp_Ug:
 		case pn_Cmp_Uge:
 		case pn_Cmp_Ne:
-			panic("No handling for set with parity bit yet in ia32_Setcc");
+			ia32_emitf(node, "\tset%P %-R\n", pnc, dreg);
+			ia32_emitf(node, "\tsetp %+R\n", dreg);
+			ia32_emitf(node, "\torb %+R, %-R\n", dreg, dreg);
+			return;
 
 		default:
 			break;
