@@ -60,15 +60,18 @@ static void find_mux_nodes(ir_node *mux, void *ctx)
 
 static void lower_mux_node(ir_node* mux)
 {
-	ir_node *upper_block;
-	ir_node *lower_block;
-	ir_node *cond;
-	ir_node *trueProj;
-	ir_node *falseProj;
-	ir_node *falseBlock;
-	ir_node *mux_jmps[2];
-	ir_node *mux_values[2];
-	ir_node *phi;
+	ir_node  *upper_block;
+	ir_node  *lower_block;
+	ir_node  *cond;
+	ir_node  *trueProj;
+	ir_node  *falseProj;
+	ir_node  *falseBlock;
+	ir_node  *mux_jmps[2];
+	ir_node  *mux_values[2];
+	ir_node  *phi;
+	ir_graph *irg;
+
+	irg = get_irn_irg(mux);
 
 	/* Split the block in two halfs, with the mux in the upper block. */
 	lower_block = get_nodes_block(mux);
@@ -83,7 +86,7 @@ static void lower_mux_node(ir_node* mux)
 	cond        = new_r_Cond(upper_block, get_Mux_sel(mux));
 	trueProj    = new_r_Proj(upper_block, cond, mode_X, pn_Cond_true);
 	falseProj   = new_r_Proj(upper_block, cond, mode_X, pn_Cond_false);
-	falseBlock  = new_r_Block(current_ir_graph, 1, &falseProj);
+	falseBlock  = new_r_Block(irg, 1, &falseProj);
 	mux_jmps[0] = trueProj;
 	mux_jmps[1] = new_r_Jmp(falseBlock);
 
