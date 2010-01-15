@@ -40,9 +40,10 @@
  * local definitions and macros
  */
 #define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, calc_buffer_size)
+#define SHIFT(count) (SC_1 << (count))
 #define _val(a) ((a)-SC_0)
 #define _digit(a) ((a)+SC_0)
-#define _bitisset(digit, pos) ((digit & shift_table[pos]) != SC_0)
+#define _bitisset(digit, pos) (((digit) & SHIFT(pos)) != SC_0)
 
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
@@ -83,8 +84,6 @@ static const char sex_digit[4] = { SC_E, SC_C, SC_8, SC_0 };
 static const char zex_digit[4] = { SC_1, SC_3, SC_7, SC_F };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
-
-static const char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
 
 static char const add_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0},
@@ -619,7 +618,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 		return;
 	}
 
-	shift = shift_table[_val(shift_cnt%4)];      /* this is 2 ** (offset % 4) */
+	shift     = SHIFT(shift_cnt % 4); /* this is 2 ** (offset % 4) */
 	shift_cnt = shift_cnt / 4;
 
 	/* shift the single digits some bytes (offset) and some bits (table)
@@ -1130,7 +1129,7 @@ int sc_get_bit_at(const void *value, unsigned pos) {
 	const char *val = value;
 	unsigned nibble = pos >> 2;
 
-	return (val[nibble] & shift_table[pos & 3]) != SC_0;
+	return (val[nibble] & SHIFT(pos & 3)) != SC_0;
 }
 
 void sc_set_bit_at(void *value, unsigned pos)
@@ -1138,7 +1137,7 @@ void sc_set_bit_at(void *value, unsigned pos)
 	char *val = value;
 	unsigned nibble = pos >> 2;
 
-	val[nibble] |= shift_table[pos & 3];
+	val[nibble] |= SHIFT(pos & 3);
 }
 
 int sc_is_zero(const void *value) {
