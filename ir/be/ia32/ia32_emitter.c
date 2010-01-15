@@ -2324,6 +2324,7 @@ static void build_reg_map(void)
 	pnc_map_unsigned[pn_Cmp_Lg]    = 0x05;
 }
 
+/** Returns the encoding for a pnc field. */
 static unsigned char pnc2cc(int pnc)
 {
 	unsigned char cc;
@@ -2436,6 +2437,11 @@ static void bemit_jmp_destination(const ir_node *dest_block)
 /* end emit routines, all emitters following here should only use the functions
    above. */
 
+typedef enum reg_modifier {
+	REG_LOW  = 0,
+	REG_HIGH = 1
+} reg_modifier_t;
+
 /** Create a ModR/M byte for src1,src2 registers */
 static void bemit_modrr(const arch_register_t *src1,
                         const arch_register_t *src2)
@@ -2446,6 +2452,16 @@ static void bemit_modrr(const arch_register_t *src1,
 	bemit8(modrm);
 }
 
+/** Create a ModR/M8 byte for src1,src2 registers */
+static void bemit_modrr8(reg_modifier_t high_part1, const arch_register_t *src1,
+						 reg_modifier_t high_part2, const arch_register_t *src2)
+{
+	unsigned char modrm = MOD_REG;
+	modrm |= ENC_RM(reg_gp_map[src1->index] +  (high_part1 == REG_HIGH ? 4 : 0));
+	modrm |= ENC_REG(reg_gp_map[src2->index] + (high_part2 == REG_HIGH ? 4 : 0));
+	bemit8(modrm);
+}
+
 /** Create a ModR/M byte for one register and extension */
 static void bemit_modru(const arch_register_t *reg, unsigned ext)
 {
@@ -2453,6 +2469,16 @@ static void bemit_modru(const arch_register_t *reg, unsigned ext)
 	assert(ext <= 7);
 	modrm |= ENC_RM(reg_gp_map[reg->index]);
 	modrm |= ENC_REG(ext);
+	bemit8(modrm);
+}
+
+/** Create a ModR/M8 byte for one register */
+static void bemit_modrm8(reg_modifier_t high_part, const arch_register_t *reg)
+{
+	unsigned char modrm = MOD_REG;
+	assert(reg_gp_map[reg->index] < 4);
+	modrm |= ENC_RM(reg_gp_map[reg->index] + (high_part == REG_HIGH ? 4 : 0));
+	modrm |= MOD_REG;
 	bemit8(modrm);
 }
 
@@ -2916,6 +2942,77 @@ static void bemit_shrd(const ir_node *node)
 	}
 }
 
+/**
+ * binary emitter for setcc.
+ */
+static void bemit_setcc(const ir_node *node)
+{
+	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
+
+	pn_Cmp pnc = get_ia32_condcode(node);
+	pnc        = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
+	if (pnc & ia32_pn_Cmp_float) {
+		switch (pnc & 0x0f) {
+		case pn_Cmp_Uo:
+			 /* setp <dreg */
+			bemit8(0x0F);
+			bemit8(0x9A);
+			bemit_modrm8(REG_LOW, dreg);
+			return;
+
+		case pn_Cmp_Leg:
+			 /* setnp <dreg*/
+			bemit8(0x0F);
+			bemit8(0x9B);
+			bemit_modrm8(REG_LOW, dreg);
+			return;
+
+		case pn_Cmp_Eq:
+		case pn_Cmp_Lt:
+		case pn_Cmp_Le:
+			 /* set%PNC <dreg */
+			bemit8(0x0F);
+			bemit8(0x90 | pnc2cc(pnc));
+			bemit_modrm8(REG_LOW, dreg);
+
+			/* setnp >dreg */
+			bemit8(0x0F);
+			bemit8(0x9B);
+			bemit_modrm8(REG_HIGH, dreg);
+
+			/* andb %>dreg, %<dreg */
+			bemit8(0x20);
+			bemit_modrr8(REG_HIGH, dreg, REG_LOW, dreg);
+			return;
+
+		case pn_Cmp_Ug:
+		case pn_Cmp_Uge:
+		case pn_Cmp_Ne:
+			/* set%PNC <dreg */
+			bemit8(0x0F);
+			bemit8(0x90 | pnc2cc(pnc));
+			bemit_modrm8(REG_LOW, dreg);
+
+			/* setp >dreg */
+			bemit8(0x0F);
+			bemit8(0x9A);
+			bemit_modrm8(REG_HIGH, dreg);
+
+			/* orb %>dreg, %<dreg */
+			bemit8(0x08);
+			bemit_modrr8(REG_HIGH, dreg, REG_LOW, dreg);
+			return;
+
+		default:
+			break;
+		}
+	}
+	/* set%PNC <dreg */
+	bemit8(0x0F);
+	bemit8(0x90 | pnc2cc(pnc));
+	bemit_modrm8(REG_LOW, dreg);
+}
+
 static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
@@ -2949,7 +3046,7 @@ static void bemit_cmovcc(const ir_node *node)
 	/* TODO: handling of Nans isn't correct yet */
 
 	bemit8(0x0F);
-	bemit8(0x40 + pnc2cc(pnc));
+	bemit8(0x40 | pnc2cc(pnc));
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		bemit_modrr(in_true, out);
 	} else {
@@ -3125,23 +3222,6 @@ UNOPMEM(notmem, 0xF6, 2)
 UNOPMEM(negmem, 0xF6, 3)
 UNOPMEM(incmem, 0xFE, 0)
 UNOPMEM(decmem, 0xFE, 1)
-
-static void bemit_setcc(const ir_node *node)
-{
-	pn_Cmp pnc;
-
-	bemit8(0x0F);
-
-	pnc = get_ia32_condcode(node);
-	pnc = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
-
-	/* TODO: all the special casing for float compares is missing */
-	if (pnc & ia32_pn_Cmp_float)
-		panic("binary setcc from float compare not implemented yet");
-
-	bemit8(0x90 + pnc2cc(pnc));
-	bemit_modru(get_out_reg(node, pn_ia32_Setcc_res), 2);
-}
 
 static void bemit_ldtls(const ir_node *node)
 {
