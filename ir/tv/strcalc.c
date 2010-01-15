@@ -184,56 +184,6 @@ static const char or_table[16][16] = {
                             { SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F,
                               SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F } };
 
-static char const xor_table[16][16] = {
-                             { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
-                               SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F },
-
-                             { SC_1, SC_0, SC_3, SC_2, SC_5, SC_4, SC_7, SC_6,
-                               SC_9, SC_8, SC_B, SC_A, SC_D, SC_C, SC_F, SC_E },
-
-                             { SC_2, SC_3, SC_0, SC_1, SC_6, SC_7, SC_4, SC_5,
-                               SC_A, SC_B, SC_8, SC_9, SC_E, SC_F, SC_C, SC_D },
-
-                             { SC_3, SC_2, SC_1, SC_0, SC_7, SC_6, SC_5, SC_4,
-                               SC_B, SC_A, SC_9, SC_8, SC_F, SC_E, SC_D, SC_C },
-
-                             { SC_4, SC_5, SC_6, SC_7, SC_0, SC_1, SC_2, SC_3,
-                               SC_C, SC_D, SC_E, SC_F, SC_8, SC_9, SC_A, SC_B },
-
-                             { SC_5, SC_4, SC_7, SC_6, SC_1, SC_0, SC_3, SC_2,
-                               SC_D, SC_C, SC_F, SC_E, SC_9, SC_8, SC_B, SC_A },
-
-                             { SC_6, SC_7, SC_4, SC_5, SC_2, SC_3, SC_0, SC_1,
-                               SC_E, SC_F, SC_C, SC_D, SC_A, SC_B, SC_8, SC_9 },
-
-                             { SC_7, SC_6, SC_5, SC_4, SC_3, SC_2, SC_1, SC_0,
-                               SC_F, SC_E, SC_D, SC_C, SC_B, SC_A, SC_9, SC_8 },
-
-                             { SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F,
-                               SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7 },
-
-                             { SC_9, SC_8, SC_B, SC_A, SC_D, SC_C, SC_F, SC_E,
-                               SC_1, SC_0, SC_3, SC_2, SC_5, SC_4, SC_7, SC_6 },
-
-                             { SC_A, SC_B, SC_8, SC_9, SC_E, SC_F, SC_C, SC_D,
-                               SC_2, SC_3, SC_0, SC_1, SC_6, SC_7, SC_4, SC_5 },
-
-                             { SC_B, SC_A, SC_9, SC_8, SC_F, SC_E, SC_D, SC_C,
-                               SC_3, SC_2, SC_1, SC_0, SC_7, SC_6, SC_5, SC_4 },
-
-                             { SC_C, SC_D, SC_E, SC_F, SC_8, SC_9, SC_A, SC_B,
-                               SC_4, SC_5, SC_6, SC_7, SC_0, SC_1, SC_2, SC_3 },
-
-                             { SC_D, SC_C, SC_F, SC_E, SC_9, SC_8, SC_B, SC_A,
-                               SC_5, SC_4, SC_7, SC_6, SC_1, SC_0, SC_3, SC_2 },
-
-                             { SC_E, SC_F, SC_C, SC_D, SC_A, SC_B, SC_8, SC_9,
-                               SC_6, SC_7, SC_4, SC_5, SC_2, SC_3, SC_0, SC_1 },
-
-                             { SC_F, SC_E, SC_D, SC_C, SC_B, SC_A, SC_9, SC_8,
-                               SC_7, SC_6, SC_5, SC_4, SC_3, SC_2, SC_1, SC_0 }
-                                };
-
 static char const add_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0},
                          {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0},
@@ -462,7 +412,7 @@ static void do_bitxor(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
-		buffer[counter] = xor_table[_val(val1[counter])][_val(val2[counter])];
+		buffer[counter] = val1[counter] ^ val2[counter];
 }
 
 /**
