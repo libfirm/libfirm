@@ -1067,6 +1067,7 @@ void set_class_size(ir_type *tp, unsigned size) {
 ir_type *new_d_type_struct(ident *name, type_dbg_info *db)
 {
 	ir_type *res = new_type(type_struct, NULL, db);
+	assert(name != NULL);
 	res->name = name;
 
 	res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
@@ -1186,10 +1187,10 @@ void set_struct_size(ir_type *tp, unsigned size)
  * @param len     number of fields
  * @param tps     array of field types with length len
  */
-static ir_type *build_value_type(int len, tp_ent_pair *tps)
+static ir_type *build_value_type(char const* name, int len, tp_ent_pair *tps)
 {
 	int i;
-	ir_type *res = new_type_struct(NULL);
+	ir_type *res = new_type_struct(new_id_from_str(name));
 	res->flags |= tf_value_param_type;
 	/* Remove type from type list.  Must be treated differently than other types. */
 	remove_irp_type(res);
@@ -1348,9 +1349,8 @@ ir_entity *get_method_value_param_ent(ir_type *method, int pos)
 
 	if (!method->attr.ma.value_params) {
 		/* parameter value type not created yet, build */
-		method->attr.ma.value_params
-			= build_value_type(get_method_n_params(method),
-			                   method->attr.ma.params);
+		method->attr.ma.value_params = build_value_type("<value param>",
+			get_method_n_params(method), method->attr.ma.params);
 	}
 	/*
 	 * build_value_type() sets the method->attr.ma.value_params type as default if
@@ -1419,9 +1419,8 @@ ir_entity *get_method_value_res_ent(ir_type *method, int pos)
 
 	if (!method->attr.ma.value_ress) {
 		/* result value type not created yet, build */
-		method->attr.ma.value_ress
-			= build_value_type(get_method_n_ress(method),
-			                   method->attr.ma.res_type);
+		method->attr.ma.value_ress = build_value_type("<value result>",
+			get_method_n_ress(method), method->attr.ma.res_type);
 	}
 	/*
 	 * build_value_type() sets the method->attr.ma.value_ress type as default if
