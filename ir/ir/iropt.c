@@ -4816,7 +4816,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 	ir_node *new_and, *new_const, *block;
 	ir_mode *mode = get_irn_mode(or);
 
-	tarval *tv1, *tv2, *tv3, *tv4, *tv, *n_tv4, *n_tv2;
+	tarval *tv1, *tv2, *tv3, *tv4, *tv;
 
 	while (1) {
 		get_comm_Binop_Ops(or, &and, &c1);
@@ -4865,14 +4865,12 @@ static ir_node *transform_node_Or_bf_store(ir_node *or) {
 			return or;
 		}
 
-		n_tv4 = tarval_not(tv4);
-		if (tv3 != tarval_and(tv3, n_tv4)) {
+		if (tv3 != tarval_andnot(tv3, tv4)) {
 			/* bit in the or_mask is outside the and_mask */
 			return or;
 		}
 
-		n_tv2 = tarval_not(tv2);
-		if (tv1 != tarval_and(tv1, n_tv2)) {
+		if (tv1 != tarval_andnot(tv1, tv2)) {
 			/* bit in the or_mask is outside the and_mask */
 			return or;
 		}

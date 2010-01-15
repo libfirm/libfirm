@@ -108,6 +108,11 @@ void sc_neg(const void *value, void *buffer);
 void sc_and(const void *value1, const void *value2, void *buffer);
 
 /**
+ * buffer = value1 & ~value2
+ */
+void sc_andnot(const void *value1, const void *value2, void *buffer);
+
+/**
  * buffer = value1 | value2
  */
 void sc_or(const void *value1, const void *value2, void *buffer);

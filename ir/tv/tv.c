@@ -1256,6 +1256,27 @@ tarval *tarval_and(tarval *a, tarval *b) {
 	}
 }
 
+tarval *tarval_andnot(tarval *a, tarval *b)
+{
+	assert(a->mode == b->mode);
+
+	/* works even for vector modes */
+	carry_flag = 0;
+
+	switch (get_mode_sort(a->mode)) {
+	case irms_internal_boolean:
+		return a == tarval_b_true && b == tarval_b_false ? tarval_b_true : tarval_b_false;
+
+	case irms_int_number:
+		sc_andnot(a->value, b->value, NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+
+	default:
+		assert(0 && "operation not defined on mode");
+		return tarval_bad;
+	}
+}
+
 /*
  * bitwise or
  */

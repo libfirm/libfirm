@@ -554,6 +554,16 @@ tarval *tarval_abs(tarval *a);
 tarval *tarval_and(tarval *a, tarval *b);
 
 /**
+ * Bitwise and not of two integer tarvals.
+ *
+ * @param a  the first tarval
+ * @param b  the second tarval
+ *
+ * @return a & ~b or tarval_bad
+ */
+tarval *tarval_andnot(tarval *a, tarval *b);
+
+/**
  * Bitwise or of two integer tarvals.
  *
  * @param a  the first tarval

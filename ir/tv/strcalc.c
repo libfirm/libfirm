@@ -328,6 +328,17 @@ static void do_bitand(const char *val1, const char *val2, char *buffer) {
 }
 
 /**
+ * implements the bitwise AND not operation
+ */
+static void do_bitandnot(const char *val1, const char *val2, char *buffer)
+{
+	int counter;
+
+	for (counter = 0; counter < calc_buffer_size; ++counter)
+		buffer[counter] = val1[counter] & (SC_F ^ val2[counter]);
+}
+
+/**
  * returns the sign bit.
  *
  * @todo This implementation is wrong, as it returns the highest bit of the buffer
@@ -1403,6 +1414,23 @@ void sc_and(const void *value1, const void *value2, void *buffer) {
 	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
 
 	if ((buffer != NULL) && (buffer != calc_buffer)) {
+		memcpy(buffer, calc_buffer, calc_buffer_size);
+	}
+}
+
+void sc_andnot(const void *value1, const void *value2, void *buffer)
+{
+	CLEAR_BUFFER(calc_buffer);
+	carry_flag = 0;
+
+	DEBUGPRINTF_COMPUTATION(("%s & ", sc_print_hex(value1)));
+	DEBUGPRINTF_COMPUTATION(("~%s -> ", sc_print_hex(value2)));
+
+	do_bitandnot(value1, value2, calc_buffer);
+
+	DEBUGPRINTF_COMPUTATION(("%s\n", sc_print_hex(calc_buffer)));
+
+	if (buffer != NULL && buffer != calc_buffer) {
 		memcpy(buffer, calc_buffer, calc_buffer_size);
 	}
 }
