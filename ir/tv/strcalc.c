@@ -42,7 +42,7 @@
 #define CLEAR_BUFFER(b) assert(b); memset(b, SC_0, calc_buffer_size)
 #define _val(a) ((a)-SC_0)
 #define _digit(a) ((a)+SC_0)
-#define _bitisset(digit, pos) (and_table[_val(digit)][_val(shift_table[pos])] != SC_0)
+#define _bitisset(digit, pos) ((digit & shift_table[pos]) != SC_0)
 
 #define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
 
@@ -85,55 +85,6 @@ static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
 static const char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
-
-static const char and_table[16][16] = {
-                            { SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0,
-                              SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0 },
-
-                            { SC_0, SC_1, SC_0, SC_1, SC_0, SC_1, SC_0, SC_1,
-                              SC_0, SC_1, SC_0, SC_1, SC_0, SC_1, SC_0, SC_1 },
-
-                            { SC_0, SC_0, SC_2, SC_2, SC_0, SC_0, SC_2, SC_2,
-                              SC_0, SC_0, SC_2, SC_2, SC_0, SC_0, SC_2, SC_2 },
-
-                            { SC_0, SC_1, SC_2, SC_3, SC_0, SC_1, SC_2, SC_3,
-                              SC_0, SC_1, SC_2, SC_3, SC_0, SC_1, SC_2, SC_3 },
-
-                            { SC_0, SC_0, SC_0, SC_0, SC_4, SC_4, SC_4, SC_4,
-                              SC_0, SC_0, SC_0, SC_0, SC_4, SC_4, SC_4, SC_4 },
-
-                            { SC_0, SC_1, SC_0, SC_1, SC_4, SC_5, SC_4, SC_5,
-                              SC_0, SC_1, SC_0, SC_1, SC_4, SC_5, SC_4, SC_5 },
-
-                            { SC_0, SC_0, SC_2, SC_2, SC_4, SC_4, SC_6, SC_6,
-                              SC_0, SC_0, SC_2, SC_2, SC_4, SC_4, SC_6, SC_6 },
-
-                            { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
-                              SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7 },
-
-                            { SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0, SC_0,
-                              SC_8, SC_8, SC_8, SC_8, SC_8, SC_8, SC_8, SC_8 },
-
-                            { SC_0, SC_1, SC_0, SC_1, SC_0, SC_1, SC_0, SC_1,
-                              SC_8, SC_9, SC_8, SC_9, SC_8, SC_9, SC_8, SC_9 },
-
-                            { SC_0, SC_0, SC_2, SC_2, SC_0, SC_0, SC_2, SC_2,
-                              SC_8, SC_8, SC_A, SC_A, SC_8, SC_8, SC_A, SC_A },
-
-                            { SC_0, SC_1, SC_2, SC_3, SC_0, SC_1, SC_2, SC_3,
-                              SC_8, SC_9, SC_A, SC_B, SC_8, SC_9, SC_A, SC_B },
-
-                            { SC_0, SC_0, SC_0, SC_0, SC_4, SC_4, SC_4, SC_4,
-                              SC_8, SC_8, SC_8, SC_8, SC_C, SC_C, SC_C, SC_C },
-
-                            { SC_0, SC_1, SC_0, SC_1, SC_4, SC_5, SC_4, SC_5,
-                              SC_8, SC_9, SC_8, SC_9, SC_C, SC_D, SC_C, SC_D },
-
-                            { SC_0, SC_0, SC_2, SC_2, SC_4, SC_4, SC_6, SC_6,
-                              SC_8, SC_8, SC_A, SC_A, SC_C, SC_C, SC_E, SC_E },
-
-                            { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
-                              SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F } };
 
 static const char or_table[16][16] = {
                             { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
@@ -422,7 +373,7 @@ static void do_bitand(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
-		buffer[counter] = and_table[_val(val1[counter])][_val(val2[counter])];
+		buffer[counter] = val1[counter] & val2[counter];
 }
 
 /**
@@ -739,7 +690,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 		}
 	} else if (is_signed && !_bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this clears the upper bits of the leftmost digit */
-		buffer[shift_cnt] = and_table[_val(buffer[shift_cnt])][_val(max_digit[bitoffset])];
+		buffer[shift_cnt] &= max_digit[bitoffset];
 		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_0;
 		}
@@ -806,7 +757,7 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 
 	/* remove sign bits if mode was signed and this is an unsigned shift */
 	if (!signed_shift && is_signed) {
-		msd = and_table[_val(msd)][_val(max_digit[bitoffset])];
+		msd &= max_digit[bitoffset];
 	}
 
 	shrs = shrs_table[_val(msd)][shift_mod];
@@ -882,13 +833,13 @@ void sign_extend(void *buffer, ir_mode *mode) {
 			/* set all bits to zero */
 			for (i = nibble + 1; i < calc_buffer_size; ++i)
 				calc_buffer[i] = SC_0;
-			calc_buffer[nibble] = and_table[(int)calc_buffer[nibble]][(int)zex_digit[bits & 3]];
+			calc_buffer[nibble] &= zex_digit[bits & 3];
 		}
 	} else {
 		/* do zero extension */
 		for (i = nibble + 1; i < calc_buffer_size; ++i)
 			calc_buffer[i] = SC_0;
-		calc_buffer[nibble] = and_table[(int)calc_buffer[nibble]][(int)zex_digit[bits & 3]];
+		calc_buffer[nibble] &= zex_digit[bits & 3];
 	}
 }
 
@@ -1129,9 +1080,9 @@ void sc_truncate(unsigned int num_bits, void *buffer) {
 
 	switch(num_bits % 4) {
 	case 0: /* nothing to do */ break;
-	case 1: *pos = and_table[_val(*pos)][SC_1]; pos++; break;
-	case 2: *pos = and_table[_val(*pos)][SC_3]; pos++; break;
-	case 3: *pos = and_table[_val(*pos)][SC_7]; pos++; break;
+	case 1: *pos++ &= SC_1; break;
+	case 2: *pos++ &= SC_3; break;
+	case 3: *pos++ &= SC_7; break;
 	}
 
 	for( ; pos < end; ++pos)
@@ -1217,9 +1168,7 @@ int sc_get_bit_at(const void *value, unsigned pos) {
 	const char *val = value;
 	unsigned nibble = pos >> 2;
 
-	if (and_table[(int) val[nibble]][(int) shift_table[pos & 3]] != SC_0)
-		return 1;
-	return 0;
+	return (val[nibble] & shift_table[pos & 3]) != SC_0;
 }
 
 void sc_set_bit_at(void *value, unsigned pos)
@@ -1319,7 +1268,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		/* last nibble must be masked */
 		if (bits & 3) {
 			mask = zex_digit[(bits & 3) - 1];
-			x = and_table[_val(val[counter++])][mask];
+			x    = val[counter++] & mask;
 			*(--pos) = digits[_val(x)];
 		}
 
@@ -1346,7 +1295,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		/* last nibble must be masked */
 		if (bits & 3) {
 			mask = zex_digit[(bits & 3) - 1];
-			x = and_table[_val(val[counter++])][mask];
+			x    = val[counter++] & mask;
 
 			pos -= 4;
 			p = binary_table[_val(x)];
@@ -1386,7 +1335,7 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 		/* last nibble must be masked */
 		if (bits & 3) {
 			mask = zex_digit[(bits & 3) - 1];
-			div1_res[counter] = and_table[_val(p[counter])][mask];
+			div1_res[counter] = p[counter] & mask;
 			++counter;
 		}
 
