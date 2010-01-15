@@ -84,9 +84,6 @@ static const char zex_digit[4] = { SC_1, SC_3, SC_7, SC_F };
 static const char max_digit[4] = { SC_0, SC_1, SC_3, SC_7 };
 static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
-static const char not_table[16] = { SC_F, SC_E, SC_D, SC_C, SC_B, SC_A, SC_9, SC_8,
-                              SC_7, SC_6, SC_5, SC_4, SC_3, SC_2, SC_1, SC_0 };
-
 static const char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
 
 static const char and_table[16][16] = {
@@ -445,7 +442,7 @@ static void do_bitnot(const char *val, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
-		buffer[counter] = not_table[_val(val[counter])];
+		buffer[counter] = val[counter] ^ SC_F;
 }
 
 /**
