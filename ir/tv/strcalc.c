@@ -86,55 +86,6 @@ static const char min_digit[4] = { SC_F, SC_E, SC_C, SC_8 };
 
 static const char shift_table[4] = { SC_1, SC_2, SC_4, SC_8 };
 
-static const char or_table[16][16] = {
-                            { SC_0, SC_1, SC_2, SC_3, SC_4, SC_5, SC_6, SC_7,
-                              SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F },
-
-                            { SC_1, SC_1, SC_3, SC_3, SC_5, SC_5, SC_7, SC_7,
-                              SC_9, SC_9, SC_B, SC_B, SC_D, SC_D, SC_F, SC_F },
-
-                            { SC_2, SC_3, SC_2, SC_3, SC_6, SC_7, SC_6, SC_7,
-                              SC_A, SC_B, SC_A, SC_B, SC_E, SC_F, SC_E, SC_F },
-
-                            { SC_3, SC_3, SC_3, SC_3, SC_7, SC_7, SC_7, SC_7,
-                              SC_B, SC_B, SC_B, SC_B, SC_F, SC_F, SC_F, SC_F },
-
-                            { SC_4, SC_5, SC_6, SC_7, SC_4, SC_5, SC_6, SC_7,
-                              SC_C, SC_D, SC_E, SC_F, SC_C, SC_D, SC_E, SC_F },
-
-                            { SC_5, SC_5, SC_7, SC_7, SC_5, SC_5, SC_7, SC_7,
-                              SC_D, SC_D, SC_F, SC_F, SC_D, SC_D, SC_F, SC_F },
-
-                            { SC_6, SC_7, SC_6, SC_7, SC_6, SC_7, SC_6, SC_7,
-                              SC_E, SC_F, SC_E, SC_F, SC_E, SC_F, SC_E, SC_F },
-
-                            { SC_7, SC_7, SC_7, SC_7, SC_7, SC_7, SC_7, SC_7,
-                              SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F },
-
-                            { SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F,
-                              SC_8, SC_9, SC_A, SC_B, SC_C, SC_D, SC_E, SC_F },
-
-                            { SC_9, SC_9, SC_B, SC_B, SC_D, SC_D, SC_F, SC_F,
-                              SC_9, SC_9, SC_B, SC_B, SC_D, SC_D, SC_F, SC_F },
-
-                            { SC_A, SC_B, SC_A, SC_B, SC_E, SC_F, SC_E, SC_F,
-                              SC_A, SC_B, SC_A, SC_B, SC_E, SC_F, SC_E, SC_F },
-
-                            { SC_B, SC_B, SC_B, SC_B, SC_F, SC_F, SC_F, SC_F,
-                              SC_B, SC_B, SC_B, SC_B, SC_F, SC_F, SC_F, SC_F },
-
-                            { SC_C, SC_D, SC_E, SC_F, SC_C, SC_D, SC_E, SC_F,
-                              SC_C, SC_D, SC_E, SC_F, SC_C, SC_D, SC_E, SC_F },
-
-                            { SC_D, SC_D, SC_F, SC_F, SC_D, SC_D, SC_F, SC_F,
-                              SC_D, SC_D, SC_F, SC_F, SC_D, SC_D, SC_F, SC_F },
-
-                            { SC_E, SC_F, SC_E, SC_F, SC_E, SC_F, SC_E, SC_F,
-                              SC_E, SC_F, SC_E, SC_F, SC_E, SC_F, SC_E, SC_F },
-
-                            { SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F,
-                              SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F, SC_F } };
-
 static char const add_table[16][16][2] = {
                        { {SC_0, SC_0}, {SC_1, SC_0}, {SC_2, SC_0}, {SC_3, SC_0},
                          {SC_4, SC_0}, {SC_5, SC_0}, {SC_6, SC_0}, {SC_7, SC_0},
@@ -353,7 +304,7 @@ static void do_bitor(const char *val1, const char *val2, char *buffer) {
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
-		buffer[counter] = or_table[_val(val1[counter])][_val(val2[counter])];
+		buffer[counter] = val1[counter] | val2[counter];
 }
 
 /**
@@ -664,12 +615,12 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	 * to the left */
 	for (counter = 0; counter < bitsize/4 - shift_cnt; counter++) {
 		shl = mul_table[_val(val1[counter])][_val(shift)];
-		buffer[counter + shift_cnt] = or_table[_val(shl[0])][_val(carry)];
+		buffer[counter + shift_cnt] = shl[0] | carry;
 		carry = shl[1];
 	}
 	if (bitsize%4 > 0) {
 		shl = mul_table[_val(val1[counter])][_val(shift)];
-		buffer[counter + shift_cnt] = or_table[_val(shl[0])][_val(carry)];
+		buffer[counter + shift_cnt] = shl[0] | carry;
 		bitoffset = counter;
 	} else {
 		bitoffset = counter - 1;
@@ -684,7 +635,7 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	bitoffset = (bitsize-1) % 4;
 	if (is_signed && _bitisset(buffer[shift_cnt], bitoffset)) {
 		/* this sets the upper bits of the leftmost digit */
-		buffer[shift_cnt] = or_table[_val(buffer[shift_cnt])][_val(min_digit[bitoffset])];
+		buffer[shift_cnt] |= min_digit[bitoffset];
 		for (counter = shift_cnt+1; counter < calc_buffer_size; counter++) {
 			buffer[counter] = SC_F;
 		}
@@ -747,8 +698,8 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 	buffer[0] = shrs_table[_val(val1[shift_nib])][shift_mod][0];
 	for (counter = 1; counter < ((bitsize + 3) >> 2) - shift_nib; counter++) {
 		shrs = shrs_table[_val(val1[counter + shift_nib])][shift_mod];
-		buffer[counter]     = shrs[0];
-		buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
+		buffer[counter]      = shrs[0];
+		buffer[counter - 1] |= shrs[1];
 	}
 
 	/* the last digit is special in regard of signed/unsigned shift */
@@ -764,13 +715,13 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
 
 	/* signed shift and signed mode and negative value means all bits to the left are set */
 	if (signed_shift && sign == SC_F) {
-		buffer[counter] = or_table[_val(shrs[0])][_val(min_digit[bitoffset])];
+		buffer[counter] = shrs[0] | min_digit[bitoffset];
 	} else {
 		buffer[counter] = shrs[0];
 	}
 
 	if (counter > 0)
-		buffer[counter - 1] = or_table[_val(buffer[counter-1])][_val(shrs[1])];
+		buffer[counter - 1] |= shrs[1];
 
 	/* fill with SC_F or SC_0 depending on sign */
 	for (counter++; counter < calc_buffer_size; counter++) {
@@ -828,7 +779,7 @@ void sign_extend(void *buffer, ir_mode *mode) {
 
 			for (i = nibble + 1; i < calc_buffer_size; ++i)
 				calc_buffer[i] = SC_F;
-			calc_buffer[nibble] = or_table[(int)calc_buffer[nibble]][(int)sex_digit[bits & 3]];
+			calc_buffer[nibble] |= sex_digit[bits & 3];
 		} else {
 			/* set all bits to zero */
 			for (i = nibble + 1; i < calc_buffer_size; ++i)
@@ -1176,7 +1127,7 @@ void sc_set_bit_at(void *value, unsigned pos)
 	char *val = value;
 	unsigned nibble = pos >> 2;
 
-	val[nibble] = or_table[(int)val[nibble]][(int)shift_table[pos & 3]];
+	val[nibble] |= shift_table[pos & 3];
 }
 
 int sc_is_zero(const void *value) {
