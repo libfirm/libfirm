@@ -2982,7 +2982,7 @@ static void bemit_setcc(const ir_node *node)
 
 			/* andb %>dreg, %<dreg */
 			bemit8(0x20);
-			bemit_modrr8(REG_HIGH, dreg, REG_LOW, dreg);
+			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
 			return;
 
 		case pn_Cmp_Ug:
@@ -3000,7 +3000,7 @@ static void bemit_setcc(const ir_node *node)
 
 			/* orb %>dreg, %<dreg */
 			bemit8(0x08);
-			bemit_modrr8(REG_HIGH, dreg, REG_LOW, dreg);
+			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
 			return;
 
 		default:
