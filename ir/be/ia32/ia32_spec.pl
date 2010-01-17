@@ -1096,8 +1096,9 @@ Setcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
-	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
+	attr      => "pn_Cmp pnc, int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
+	             "\tset_ia32_ls_mode(res, mode_Bu);\n",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1109,8 +1110,9 @@ SetccMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
-	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
+	attr      => "pn_Cmp pnc, int ins_permuted",
+	init_attr => "attr->attr.data.ins_permuted = ins_permuted;\n".
+	             "\tset_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP3 %AM',
 	latency   => 1,
 	units     => [ "GP" ],
