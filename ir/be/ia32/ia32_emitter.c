@@ -959,8 +959,7 @@ static ir_node *find_original_value(ir_node *node)
 	}
 }
 
-static int determine_final_pnc(const ir_node *node, int flags_pos,
-                               int pnc)
+static int determine_final_pnc(const ir_node *node, int flags_pos, int pnc)
 {
 	ir_node           *flags = get_irn_n(node, flags_pos);
 	const ia32_attr_t *flags_attr;
@@ -1188,13 +1187,16 @@ static void emit_ia32_Setcc(const ir_node *node)
 static void emit_ia32_CMovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
-	int                    ins_permuted = attr->data.ins_permuted;
 	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
 	pn_Cmp                 pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
 	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
+	/* although you can't set ins_permuted in the constructor it might still
+	   be set by memory operand folding */
+	if (attr->data.ins_permuted)
+		pnc = ia32_get_negated_pnc(pnc);
 
 	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
 	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
@@ -1207,7 +1209,7 @@ static void emit_ia32_CMovcc(const ir_node *node)
 
 		assert(get_ia32_op_type(node) == ia32_Normal);
 
-		ins_permuted = !ins_permuted;
+		pnc = ia32_get_negated_pnc(pnc);
 
 		tmp      = in_true;
 		in_true  = in_false;
@@ -1217,10 +1219,20 @@ static void emit_ia32_CMovcc(const ir_node *node)
 		ia32_emitf(node, "\tmovl %R, %R\n", in_false, out);
 	}
 
-	if (ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
-
 	/* TODO: handling of Nans isn't correct yet */
+	if (pnc & ia32_pn_Cmp_float) {
+		switch (pnc & 0x0f) {
+		case pn_Cmp_Uo:
+		case pn_Cmp_Leg:
+		case pn_Cmp_Eq:
+		case pn_Cmp_Lt:
+		case pn_Cmp_Le:
+		case pn_Cmp_Ug:
+		case pn_Cmp_Uge:
+		case pn_Cmp_Ne:
+			panic("CMov with floatingpoint compare/parity not supported yet");
+		}
+	}
 
 	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", pnc, in_true, out);
 }
