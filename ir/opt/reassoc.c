@@ -782,7 +782,8 @@ static int move_consts_up(ir_node **node) {
 			dbg = dbg == get_irn_dbg_info(l) ? dbg : NULL;
 			goto transform;
 		}
-	} else if (get_irn_op(r) == op) {
+	}
+	if (get_irn_op(r) == op) {
 		/* l .op. (a .op. b) */
 		a = get_binop_left(r);
 		b = get_binop_right(r);
