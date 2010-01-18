@@ -222,7 +222,7 @@ static ir_mode *get_mode_from_ops(ir_node *op1, ir_node *op2)
 static int reassoc_commutative(ir_node **node)
 {
 	ir_node *n     = *node;
-	ir_op *op      = get_irn_op(n);
+	ir_op   *op    = get_irn_op(n);
 	ir_node *block = get_nodes_block(n);
 	ir_node *t1, *c1;
 
@@ -299,6 +299,55 @@ static int reassoc_commutative(ir_node **node)
 			 * node back. This might be happen in dead loops, were the Phi
 			 * nodes are already gone away. So check this.
 			 */
+			if (n != irn) {
+				exchange(n, irn);
+				*node = irn;
+				return 1;
+			}
+		}
+	}
+	if (get_irn_op(c1) == op) {
+		ir_node *t = c1;
+		c1 = t1;
+		t1 = t;
+	}
+	if (get_irn_op(t1) == op) {
+		ir_node *l = get_binop_left(t1);
+		ir_node *r = get_binop_right(t1);
+		const_class_t c_r;
+
+		if (r == c1) {
+			ir_node *t = r;
+			r = l;
+			l = t;
+		}
+		c_r = get_const_class(r, block);
+		if (c_r != NO_CONSTANT) {
+			/*
+			 * Beware: don't do the following op if a constant was
+			 * placed below, else we will fall into a loop.
+			 */
+			return 0;
+		}
+
+		if (l == c1) {
+			/* convert x .OP. (x .OP. y) => y .OP. (x .OP. x) */
+			ir_mode *mode_res = get_irn_mode(n);
+			ir_mode *mode_c1  = get_irn_mode(c1);
+			ir_node *irn, *in[2];
+
+			in[0] = c1;
+			in[1] = c1;
+
+			in[1] = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode_c1, 2, in));
+			in[0] = r;
+
+			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode_res, 2, in));
+
+			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
+				c1, get_irn_opname(n), l, get_irn_opname(n), r,
+				r, get_irn_opname(n), c1, get_irn_opname(n), c1));
+
 			if (n != irn) {
 				exchange(n, irn);
 				*node = irn;
