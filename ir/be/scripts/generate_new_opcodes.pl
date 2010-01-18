@@ -1048,6 +1048,7 @@ void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
 #define O   irop_flag_machine_op
 #define NB  irop_flag_dump_noblock
 #define NI  irop_flag_dump_noinput
+#define n   irop_flag_cse_neutral
 #define R   (irop_flag_user << 0)
 
 	ir_op_ops  ops;

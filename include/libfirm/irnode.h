@@ -1368,6 +1368,11 @@ int is_irn_machine_operand(const ir_node *node);
 int is_irn_machine_user(const ir_node *node, unsigned n);
 
 /**
+ * Returns non-zero for nodes that are CSE neutral to its users.
+ */
+int is_irn_cse_neutral(const ir_node *node);
+
+/**
  * A type to express conditional jump predictions.
  */
 typedef enum {

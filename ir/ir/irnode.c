@@ -2782,6 +2782,10 @@ int (is_irn_machine_user)(const ir_node *node, unsigned n) {
 	return _is_irn_machine_user(node, n);
 }
 
+/* Returns non-zero for nodes that are CSE neutral to its users. */
+int (is_irn_cse_neutral)(const ir_node *node) {
+	return _is_irn_cse_neutral(node);
+}
 
 /* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred) {
@@ -2922,7 +2926,11 @@ unsigned firm_default_hash(const ir_node *node) {
 
 	/* consider all in nodes... except the block if not a control flow. */
 	for (i = is_cfop(node) ? -1 : 0;  i < irn_arity;  ++i) {
-		h = 9*h + HASH_PTR(get_irn_intra_n(node, i));
+		ir_node *pred = get_irn_intra_n(node, i);
+		if (is_irn_cse_neutral(pred))
+			h *= 9;
+		else
+			h = 9*h + HASH_PTR(pred);
 	}
 
 	/* ...mode,... */

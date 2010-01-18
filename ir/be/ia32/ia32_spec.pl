@@ -15,7 +15,7 @@ $arch = "ia32";
 # %nodes = (
 #
 # <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",
+#   op_flags  => "N|L|C|X|I|F|Y|H|c|K|n",
 #   irn_flags => "R|N"
 #   arity     => "0|1|2|3 ... |variable|dynamic|any",
 #   state     => "floats|pinned|mem_pinned|exc_pinned",
@@ -339,7 +339,7 @@ Asm => {
 
 # "allocates" a free register
 ProduceVal => {
-	op_flags  => "c",
+	op_flags  => "c|n",
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
 	emit      => "",

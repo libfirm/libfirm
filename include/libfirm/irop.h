@@ -55,27 +55,28 @@ typedef enum {
 
 /** The irop flags */
 typedef enum {
-	irop_flag_none        = 0x00000000, /**< Nothing. */
-	irop_flag_labeled     = 0x00000001, /**< If set, output edge labels on in-edges in vcg graph. */
-	irop_flag_commutative = 0x00000002, /**< This operation is commutative. */
-	irop_flag_cfopcode    = 0x00000004, /**< This operation is a control flow operation. */
-	irop_flag_ip_cfopcode = 0x00000008, /**< This operation manipulates the interprocedural control flow. */
-	irop_flag_fragile     = 0x00000010, /**< Set if the operation can change the control flow because
-	                                         of an exception. */
-	irop_flag_forking     = 0x00000020, /**< Forking control flow at this operation. */
-	irop_flag_highlevel   = 0x00000040, /**< This operation is a pure high-level one and can be
-	                                         skipped in low-level optimizations. */
-	irop_flag_constlike   = 0x00000080, /**< This operation has no arguments and is some
-	                                         kind of a constant. */
-	irop_flag_always_opt  = 0x00000100, /**< This operation must always be optimized .*/
-	irop_flag_keep        = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
-	irop_flag_start_block = 0x00000400, /**< This operation is always placed in the Start block. */
-	irop_flag_uses_memory = 0x00000800, /**< This operation has a memory input and may change the memory state. */
+	irop_flag_none         = 0x00000000, /**< Nothing. */
+	irop_flag_labeled      = 0x00000001, /**< If set, output edge labels on in-edges in vcg graph. */
+	irop_flag_commutative  = 0x00000002, /**< This operation is commutative. */
+	irop_flag_cfopcode     = 0x00000004, /**< This operation is a control flow operation. */
+	irop_flag_ip_cfopcode  = 0x00000008, /**< This operation manipulates the interprocedural control flow. */
+	irop_flag_fragile      = 0x00000010, /**< Set if the operation can change the control flow because
+	                                          of an exception. */
+	irop_flag_forking      = 0x00000020, /**< Forking control flow at this operation. */
+	irop_flag_highlevel    = 0x00000040, /**< This operation is a pure high-level one and can be
+	                                          skipped in low-level optimizations. */
+	irop_flag_constlike    = 0x00000080, /**< This operation has no arguments and is some
+	                                          kind of a constant. */
+	irop_flag_always_opt   = 0x00000100, /**< This operation must always be optimized .*/
+	irop_flag_keep         = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
+	irop_flag_start_block  = 0x00000400, /**< This operation is always placed in the Start block. */
+	irop_flag_uses_memory  = 0x00000800, /**< This operation has a memory input and may change the memory state. */
 	irop_flag_dump_noblock = 0x00001000, /**< node should be dumped outside any blocks */
 	irop_flag_dump_noinput = 0x00002000, /**< node is a placeholder for "no input" */
-	irop_flag_machine     = 0x00010000, /**< This operation is a machine operation. */
-	irop_flag_machine_op  = 0x00020000, /**< This operation is a machine operand. */
-	irop_flag_user        = 0x00040000  /**< This flag and all higher ones are free for machine user. */
+	irop_flag_machine      = 0x00010000, /**< This operation is a machine operation. */
+	irop_flag_machine_op   = 0x00020000, /**< This operation is a machine operand. */
+	irop_flag_cse_neutral  = 0x00040000, /**< This operation is CSE neutral to its users. */
+	irop_flag_user         = 0x00080000  /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */

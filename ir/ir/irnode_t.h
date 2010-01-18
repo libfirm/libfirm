@@ -600,6 +600,10 @@ static inline int _is_irn_machine_user(const ir_node *node, unsigned n) {
 	return is_op_machine_user(_get_irn_op(node), n);
 }
 
+static inline int _is_irn_cse_neutral(const ir_node *node) {
+	return is_op_cse_neutral(_get_irn_op(node));
+}
+
 static inline cond_jmp_predicate _get_Cond_jmp_pred(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Cond);
 	return node->attr.cond.jmp_pred;
@@ -757,6 +761,7 @@ _is_arg_Proj(const ir_node *node) {
 #define is_irn_machine_op(node)               _is_irn_machine_op(node)
 #define is_irn_machine_operand(node)          _is_irn_machine_operand(node)
 #define is_irn_machine_user(node, n)          _is_irn_machine_user(node, n)
+#define is_irn_cse_neutral(node)              _is_irn_cse_neutral(node)
 #define get_Cond_jmp_pred(node)               _get_Cond_jmp_pred(node)
 #define set_Cond_jmp_pred(node, pred)         _set_Cond_jmp_pred(node, pred)
 #define get_irn_generic_attr(node)            _get_irn_generic_attr(node)
