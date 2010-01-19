@@ -26,6 +26,7 @@
 #ifndef FIRM_IR_IROPT_T_H
 #define FIRM_IR_IROPT_T_H
 
+#include <stdbool.h>
 #include "irop_t.h"
 #include "iropt.h"
 #include "irnode_t.h"
@@ -130,5 +131,10 @@ value_of(const ir_node *n) {
  *    The operations.
  */
 ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops);
+
+/**
+ * Returns true if a == -b
+ */
+bool is_negated_value(ir_node *a, ir_node *b);
 
 #endif

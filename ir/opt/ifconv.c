@@ -27,6 +27,8 @@
 #include "config.h"
 
 #include <assert.h>
+#include <stdbool.h>
+
 #include "iroptimize.h"
 #include "obst.h"
 #include "irnode_t.h"
@@ -54,14 +56,14 @@ typedef struct walker_env {
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
- * Default callback for Mux creation: allows every Mux to be created.
+ * Default callback for Mux creation: don't allow any Mux nodes
  */
-static int default_allow_ifconv(ir_node *sel, ir_node* phi_list, int i, int j)
+static int default_allow_ifconv(ir_node *sel, ir_node *mux_false,
+                                ir_node *mux_true)
 {
 	(void) sel;
-	(void) phi_list;
-	(void) i;
-	(void) j;
+	(void) mux_false;
+	(void) mux_true;
 	return 1;
 }
 
@@ -78,7 +80,8 @@ static const ir_settings_if_conv_t default_info = {
  *
  * @param block  the block
  */
-static int can_empty_block(ir_node *block) {
+static bool can_empty_block(ir_node *block)
+{
 	return get_Block_mark(block) == 0;
 }
 
@@ -326,7 +329,9 @@ restart:
 				ir_node* sel;
 				ir_node* mux_block;
 				ir_node* phi;
+				ir_node* p;
 				ir_node* pred1;
+				bool     supported;
 				dbg_info* cond_dbg;
 
 				pred1 = get_Block_cfgpred_block(block, j);
@@ -337,8 +342,18 @@ restart:
 
 				if (projx1 == NULL) continue;
 
+				sel = get_Cond_selector(cond);
 				phi = get_Block_phis(block);
-				if (!env->params->allow_ifconv(get_Cond_selector(cond), phi, i, j))
+				supported = true;
+				for (p = phi; p != NULL; p = get_Phi_next(p)) {
+					ir_node *mux_false = get_Phi_pred(p, i);
+					ir_node *mux_true = get_Phi_pred(p, j);
+					if (!env->params->allow_ifconv(sel, mux_false, mux_true)) {
+						supported = false;
+						break;
+					}
+				}
+				if (!supported)
 					continue;
 
 				DB((dbg, LEVEL_1, "Found Cond %+F with proj %+F and %+F\n",
@@ -349,8 +364,6 @@ restart:
 				prepare_path(block, i, dependency);
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
-
-				sel = get_Cond_selector(cond);
 
 				mux_block = get_nodes_block(cond);
 				cond_dbg = get_irn_dbg_info(cond);
@@ -440,7 +453,8 @@ static void init_block_link(ir_node *block, void *env)
  * Daisy-chain all Phis in a block.
  * If a non-movable node is encountered set the has_pinned flag in its block.
  */
-static void collect_phis(ir_node *node, void *env) {
+static void collect_phis(ir_node *node, void *env)
+{
 	(void) env;
 
 	if (is_Phi(node)) {
@@ -508,14 +522,15 @@ struct pass_t {
 /**
  * Wrapper for running opt_if_conv() as an ir_graph pass.
  */
-static int pass_wrapper(ir_graph *irg, void *context) {
+static int pass_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 	opt_if_conv(irg, pass->params);
 	return 0;
-}  /* pass_wrapper */
+}
 
-ir_graph_pass_t *opt_if_conv_pass(
-	const char *name, const ir_settings_if_conv_t *params)
+ir_graph_pass_t *opt_if_conv_pass(const char *name,
+                                  const ir_settings_if_conv_t *params)
 {
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 	pass->params = params;

@@ -3155,6 +3155,7 @@ static ir_node *gen_Mux(ir_node *node)
 				}
 			}
 		}
+
 		if (is_Const(mux_true) && is_Const(mux_false)) {
 			ia32_address_mode_t am;
 			ir_node             *load;

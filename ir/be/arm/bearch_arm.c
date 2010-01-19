@@ -1061,41 +1061,14 @@ static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list) {
  * Allows or disallows the creation of Psi nodes for the given Phi nodes.
  * @return 1 if allowed, 0 otherwise
  */
-static int arm_is_psi_allowed(ir_node *sel, ir_node *phi_list, int i, int j) {
-	ir_node *cmp, *cmp_a, *phi;
-	ir_mode *mode;
+static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
+                              ir_node *mux_true)
+{
+	(void) sel;
+	(void) mux_false;
+	(void) mux_true;
 
-
-	/* currently Psi support is not implemented */
 	return 0;
-
-/* we don't want long long Psi */
-#define IS_BAD_PSI_MODE(mode) (!mode_is_float(mode) && get_mode_size_bits(mode) > 32)
-
-	if (get_irn_mode(sel) != mode_b)
-		return 0;
-
-	cmp   = get_Proj_pred(sel);
-	cmp_a = get_Cmp_left(cmp);
-	mode  = get_irn_mode(cmp_a);
-
-	if (IS_BAD_PSI_MODE(mode))
-		return 0;
-
-	/* check the Phi nodes */
-	for (phi = phi_list; phi; phi = get_irn_link(phi)) {
-		ir_node *pred_i = get_irn_n(phi, i);
-		ir_node *pred_j = get_irn_n(phi, j);
-		ir_mode *mode_i = get_irn_mode(pred_i);
-		ir_mode *mode_j = get_irn_mode(pred_j);
-
-		if (IS_BAD_PSI_MODE(mode_i) || IS_BAD_PSI_MODE(mode_j))
-			return 0;
-	}
-
-#undef IS_BAD_PSI_MODE
-
-	return 1;
 }
 
 static asm_constraint_flags_t arm_parse_asm_constraint(const char **c)
@@ -1117,7 +1090,7 @@ static int arm_is_valid_clobber(const char *clobber)
 static const backend_params *arm_get_libfirm_params(void) {
 	static const ir_settings_if_conv_t ifconv = {
 		4,                    /* maxdepth, doesn't matter for Psi-conversion */
-		arm_is_psi_allowed   /* allows or disallows Psi creation for given selector */
+		arm_is_mux_allowed   /* allows or disallows Mux creation for given selector */
 	};
 	static ir_settings_arch_dep_t ad = {
 		1,    /* allow subs */

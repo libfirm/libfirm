@@ -4282,10 +4282,13 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj) {
 
 			/*
 			 * UpConv(x) REL 0  ==> x REL 0
+			 * Don't do this for float values as it's unclear whether it is a
+ 			 * win. (on the other side it makes detection/creation of fabs hard)
 			 */
 			if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
 			    ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) ||
-				 mode_is_signed(mode) || !mode_is_signed(op_mode))) {
+				 mode_is_signed(mode) || !mode_is_signed(op_mode)) &&
+				!mode_is_float(mode)) {
 				tv   = get_mode_null(op_mode);
 				left = op;
 				mode = op_mode;
@@ -5442,12 +5445,12 @@ static ir_node *transform_node_End(ir_node *n) {
 	return n;
 }  /* transform_node_End */
 
-/** returns 1 if a == -b */
-static int is_negated_value(ir_node *a, ir_node *b) {
+bool is_negated_value(ir_node *a, ir_node *b)
+{
 	if (is_Minus(a) && get_Minus_op(a) == b)
-		return 1;
+		return true;
 	if (is_Minus(b) && get_Minus_op(b) == a)
-		return 1;
+		return true;
 	if (is_Sub(a) && is_Sub(b)) {
 		ir_node *a_left  = get_Sub_left(a);
 		ir_node *a_right = get_Sub_right(a);
@@ -5455,10 +5458,10 @@ static int is_negated_value(ir_node *a, ir_node *b) {
 		ir_node *b_right = get_Sub_right(b);
 
 		if (a_left == b_right && a_right == b_left)
-			return 1;
+			return true;
 	}
 
-	return 0;
+	return false;
 }
 
 /**

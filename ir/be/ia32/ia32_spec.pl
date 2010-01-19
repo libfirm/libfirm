@@ -661,7 +661,8 @@ Sbb => {
 },
 
 Sbb0 => {
-	irn_flags => "R",
+	# Spiller currently fails when rematerializing flag consumers
+	# irn_flags => "R",
 	reg_req   => { in => [ "flags" ], out => [ "gp", "flags" ] },
 	outs      => [ "res", "flags" ],
 	emit      => ". sbb%M %D0, %D0",
@@ -1119,9 +1120,9 @@ SetccMem => {
 
 CMovcc => {
 	#irn_flags => "R",
+	state     => "exc_pinned",
 	# (note: leave the false,true order intact to make it compatible with other
 	#  ia32_binary ops)
-	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "eflags" ],
 	               out => [ "in_r4 in_r5", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "val_false", "val_true", "eflags" ],

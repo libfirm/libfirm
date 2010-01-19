@@ -227,16 +227,18 @@ void do_gvn_pre(ir_graph *irg);
 ir_graph_pass_t *do_gvn_pre_pass(const char *name);
 
 /**
- * This function is called to evaluate, if a mux can build
- * of the current architecture.
+ * This function is called to evaluate, if a
+ * mux(@p sel, @p mux_false, @p mux_true) should be built for the current
+ * architecture.
  * If it returns non-zero, a mux is created, else the code
  * is not modified.
  * @param sel        A selector of a Cond.
- * @param phi_list   List of Phi nodes about to be converted (linked via get_Phi_next() field)
+ * @param phi_list   phi node to be converted
  * @param i          First data predecessor involved in if conversion
  * @param j          Second data predecessor involved in if conversion
  */
-typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node* phi_list, int i, int j);
+typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node *mux_false,
+                                      ir_node *mux_true);
 
 /**
  * The parameters structure.

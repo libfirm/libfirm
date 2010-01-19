@@ -50,6 +50,7 @@
 #include "irtools.h"
 #include "iroptimize.h"
 #include "instrument.h"
+#include "iropt_t.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
@@ -2130,264 +2131,238 @@ static void ia32_mark_remat(ir_node *node)
 }
 
 /**
- * Check for Abs or -Abs.
+ * Check if Mux(sel, t, f) would represent an Abs (or -Abs).
  */
-static int psi_is_Abs_or_Nabs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f)
+static bool mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
-	ir_node *l, *r;
-	pn_Cmp  pnc;
-
-	if (cmp == NULL)
-		return 0;
-
-	/* must be <, <=, >=, > */
-	pnc = get_Proj_proj(sel);
-	if (pnc != pn_Cmp_Ge && pnc != pn_Cmp_Gt &&
-		pnc != pn_Cmp_Le && pnc != pn_Cmp_Lt)
-		return 0;
-
-	l = get_Cmp_left(cmp);
-	r = get_Cmp_right(cmp);
-
-	/* must be x cmp 0 */
-	if ((l != t && l != f) || !is_Const(r) || !is_Const_null(r))
-		return 0;
-
-	if ((!is_Minus(t) || get_Minus_op(t) != f) &&
-		(!is_Minus(f) || get_Minus_op(f) != t))
-		return 0;
-	return 1;
-}
-
-/**
- * Check for Abs only
- */
-static int psi_is_Abs(ir_node *cmp, ir_node *sel, ir_node *t, ir_node *f)
-{
-	ir_node *l, *r;
-	pn_Cmp  pnc;
-
-	if (cmp == NULL)
-		return 0;
-
-	/* must be <, <=, >=, > */
-	pnc = get_Proj_proj(sel);
-	if (pnc != pn_Cmp_Ge && pnc != pn_Cmp_Gt &&
-		pnc != pn_Cmp_Le && pnc != pn_Cmp_Lt)
-		return 0;
-
-	l = get_Cmp_left(cmp);
-	r = get_Cmp_right(cmp);
-
-	/* must be x cmp 0 */
-	if ((l != t && l != f) || !is_Const(r) || !is_Const_null(r))
-		return 0;
-
-	if ((!is_Minus(t) || get_Minus_op(t) != f) &&
-		(!is_Minus(f) || get_Minus_op(f) != t))
-		return 0;
-
-	if (pnc & pn_Cmp_Gt) {
-		/* x >= 0 ? -x : x is NABS */
-		if (is_Minus(t))
-			return 0;
-	} else {
-		/* x < 0 ? x : -x is NABS */
-		if (is_Minus(f))
-			return 0;
-	}
-	return 1;
-}
-
-
-/**
- * Allows or disallows the creation of Mux nodes for the given Phi nodes.
- *
- * @param sel        A selector of a Cond.
- * @param phi_list   List of Phi nodes about to be converted (linked via get_Phi_next() field)
- * @param i          First data predecessor involved in if conversion
- * @param j          Second data predecessor involved in if conversion
- *
- * @return 1 if allowed, 0 otherwise
- */
-static int ia32_is_mux_allowed(ir_node *sel, ir_node *phi_list, int i, int j)
-{
-	ir_node *phi;
+	ir_node *cmp_left;
+	ir_node *cmp_right;
 	ir_node *cmp;
-	pn_Cmp  pn;
-	ir_node *cl, *cr;
+	pn_Cmp  pnc;
 
-	/* we can't handle Muxs with 64bit compares yet */
-	if (is_Proj(sel)) {
-		cmp = get_Proj_pred(sel);
-		if (is_Cmp(cmp)) {
-			ir_node *left     = get_Cmp_left(cmp);
-			ir_mode *cmp_mode = get_irn_mode(left);
-			if (!mode_is_float(cmp_mode) && get_mode_size_bits(cmp_mode) > 32) {
-				/* 64bit Abs IS supported */
-				for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
-					ir_node *t = get_Phi_pred(phi, i);
-					ir_node *f = get_Phi_pred(phi, j);
+	if (!is_Proj(sel))
+		return false;
+	cmp = get_Proj_pred(sel);
+	if (!is_Cmp(cmp))
+		return false;
 
-					if (! psi_is_Abs(cmp, sel, t, f))
-						return 0;
-				}
-				return 1;
-			}
-		} else {
-			/* we do not support nodes without Cmp yet */
-			return 0;
-		}
-	} else {
-		/* we do not support nodes without Cmp yet */
+	/* must be <, <=, >=, > */
+	pnc = get_Proj_proj(sel);
+	switch (pnc) {
+	case pn_Cmp_Ge:
+	case pn_Cmp_Gt:
+	case pn_Cmp_Le:
+	case pn_Cmp_Lt:
+	case pn_Cmp_Uge:
+	case pn_Cmp_Ug:
+	case pn_Cmp_Ul:
+	case pn_Cmp_Ule:
+		break;
+	default:
+		return false;
+	}
+
+	if (!is_negated_value(mux_true, mux_false))
+		return false;
+
+	/* must be x cmp 0 */
+	cmp_right = get_Cmp_right(cmp);
+	if (!is_Const(cmp_right) || !is_Const_null(cmp_right))
 		return 0;
+
+	cmp_left = get_Cmp_left(cmp);
+	if (cmp_left != mux_true && cmp_left != mux_false)
+		return false;
+
+	return true;
+}
+
+/**
+ * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
+ */
+static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	ir_node *cmp_l;
+	ir_node *cmp_r;
+	ir_node *cmp;
+	pn_Cmp  pnc;
+
+	if (!is_Proj(sel))
+		return false;
+	cmp = get_Proj_pred(sel);
+	if (!is_Cmp(cmp))
+		return false;
+
+	cmp_l = get_Cmp_left(cmp);
+	cmp_r = get_Cmp_right(cmp);
+	if (!mode_is_float(get_irn_mode(cmp_l)))
+		return false;
+
+	/* check for min/max. They're defined as (C-Semantik):
+	 *  min(a, b) = a < b ? a : b
+	 *  or min(a, b) = a <= b ? a : b
+	 *  max(a, b) = a > b ? a : b
+	 *  or max(a, b) = a >= b ? a : b
+	 * (Note we only handle float min/max here)
+	 */
+	pnc = get_Proj_proj(sel);
+	switch (pnc) {
+	case pn_Cmp_Ge:
+	case pn_Cmp_Gt:
+		/* this is a max */
+		if (cmp_l == mux_true && cmp_r == mux_false)
+			return true;
+		break;
+	case pn_Cmp_Le:
+	case pn_Cmp_Lt:
+		/* this is a min */
+		if (cmp_l == mux_true && cmp_r == mux_false)
+			return true;
+		break;
+	case pn_Cmp_Uge:
+	case pn_Cmp_Ug:
+		/* this is a min */
+		if (cmp_l == mux_false && cmp_r == mux_true)
+			return true;
+		break;
+	case pn_Cmp_Ule:
+	case pn_Cmp_Ul:
+		/* this is a max */
+		if (cmp_l == mux_false && cmp_r == mux_true)
+			return true;
+		break;
+
+	default:
+		break;
 	}
 
-	pn = get_Proj_proj(sel);
-	cl = get_Cmp_left(cmp);
-	cr = get_Cmp_right(cmp);
+	return false;
+}
 
-	if (ia32_cg_config.use_cmov) {
-		if (ia32_cg_config.use_sse2) {
-			/* check the Phi nodes: no 64bit and no floating point cmov */
-			for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
-				ir_mode *mode = get_irn_mode(phi);
+static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	(void) sel;
+	ir_mode *mode = get_irn_mode(mux_true);
 
-				if (mode_is_float(mode)) {
-					/* check for Min, Max */
-					ir_node *t = get_Phi_pred(phi, i);
-					ir_node *f = get_Phi_pred(phi, j);
+	if (!mode_is_int(mode) && !mode_is_reference(mode))
+		return false;
 
-					/* SSE2 supports Min & Max */
-					if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
-						if (cl == t && cr == f) {
-							/* Mux(a <=/>= b, a, b) => MIN, MAX */
-							continue;
-						} else if (cl == f && cr == t) {
-							/* Mux(a <=/>= b, b, a) => MAX, MIN */
-							continue;
-						}
-					}
-					return 0;
-				} else if (get_mode_size_bits(mode) > 32) {
-					/* no 64bit cmov */
-					return 0;
-				}
-			}
-		} else {
-			/* check the Phi nodes: no 64bit and no floating point cmov */
-			for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
-				ir_mode *mode = get_irn_mode(phi);
-
-				if (mode_is_float(mode)) {
-					ir_node *t = get_Phi_pred(phi, i);
-					ir_node *f = get_Phi_pred(phi, j);
-
-					/* always support Mux(!float, C1, C2) */
-					if (is_Const(t) && is_Const(f) && !mode_is_float(get_irn_mode(cl))) {
-						switch (be_transformer) {
-						case TRANSFORMER_DEFAULT:
-							/* always support Mux(!float, C1, C2) */
-							continue;
-#ifdef FIRM_GRGEN_BE
-						case TRANSFORMER_PBQP:
-						case TRANSFORMER_RAND:
-							/* no support for Mux(*, C1, C2) */
-							return 0;
-#endif
-						default:
-							panic("invalid transformer");
-						}
-					}
-					/* only abs or nabs supported */
-					if (! psi_is_Abs_or_Nabs(cmp, sel, t, f))
-						return 0;
-				} else if (get_mode_size_bits(mode) > 32)
-					return 0;
-			}
-		}
-
-		return 1;
-	} else { /* No Cmov, only some special cases */
-
-		/* Now some supported cases here */
-		for (phi = phi_list; phi; phi = get_Phi_next(phi)) {
-			ir_mode *mode = get_irn_mode(phi);
-			ir_node *t, *f;
-
-			t = get_Phi_pred(phi, i);
-			f = get_Phi_pred(phi, j);
-
-			if (mode_is_float(mode)) {
-				/* always support Mux(!float, C1, C2) */
-				if (is_Const(t) && is_Const(f) &&
-						!mode_is_float(get_irn_mode(cl))) {
-					switch (be_transformer) {
-						case TRANSFORMER_DEFAULT:
-							/* always support Mux(!float, C1, C2) */
-							continue;
-#ifdef FIRM_GRGEN_BE
-						case TRANSFORMER_PBQP:
-						case TRANSFORMER_RAND:
-							/* no support for Mux(*, C1, C2) */
-							return 0;
-#endif
-						default:
-							panic("invalid transformer");
-					}
-				}
-				/* only abs or nabs supported */
-				if (! psi_is_Abs_or_Nabs(cmp, sel, t, f))
-					return 0;
-			} else if (get_mode_size_bits(mode) > 32) {
-				/* no 64bit yet */
-				return 0;
-			}
-
-			if (is_Const(t) && is_Const(f)) {
-				if ((is_Const_null(t) && is_Const_one(f)) || (is_Const_one(t) && is_Const_null(f))) {
-					/* always support Mux(x, C1, C2) */
-					continue;
-				}
-			} else if (pn == pn_Cmp_Lt || pn == pn_Cmp_Le || pn == pn_Cmp_Ge || pn == pn_Cmp_Gt) {
-#if 0
-				if (cl == t && cr == f) {
-					/* Mux(a <=/>= b, a, b) => Min, Max */
-					continue;
-				}
-				if (cl == f && cr == t) {
-					/* Mux(a <=/>= b, b, a) => Max, Min */
-					continue;
-				}
-#endif
-				if ((pn & pn_Cmp_Gt) && !mode_is_signed(mode) &&
-				    is_Const(f) && is_Const_null(f) && is_Sub(t) &&
-				    get_Sub_left(t) == cl && get_Sub_right(t) == cr) {
-					/* Mux(a >=u b, a - b, 0) unsigned Doz */
-					continue;
-				}
-				if ((pn & pn_Cmp_Lt) && !mode_is_signed(mode) &&
-				    is_Const(t) && is_Const_null(t) && is_Sub(f) &&
-				    get_Sub_left(f) == cl && get_Sub_right(f) == cr) {
-					/* Mux(a <=u b, 0, a - b) unsigned Doz */
-					continue;
-				}
-				if (is_Const(cr) && is_Const_null(cr)) {
-					if (cl == t && is_Minus(f) && get_Minus_op(f) == cl) {
-						/* Mux(a <=/>= 0 ? a : -a) Nabs/Abs */
-						continue;
-					} else if (cl == f && is_Minus(t) && get_Minus_op(t) == cl) {
-						/* Mux(a <=/>= 0 ? -a : a) Abs/Nabs */
-						continue;
-					}
-				}
-			}
-			return 0;
-		}
-		/* all checks passed */
-		return 1;
+	if (is_Const(mux_true) && is_Const_one(mux_true)
+			&& is_Const(mux_false) && is_Const_null(mux_false)) {
+		return true;
 	}
-	return 0;
+	if (is_Const(mux_false) && is_Const_null(mux_false)
+			&& is_Const(mux_true) && is_Const_one(mux_true)) {
+		return true;
+	}
+
+	return false;
+}
+
+static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	(void) sel;
+
+	if (!mode_is_float(get_irn_mode(mux_true)))
+		return false;
+
+	return is_Const(mux_true) && is_Const(mux_false);
+}
+
+static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	ir_node *cmp;
+	ir_node *cmp_left;
+	ir_node *cmp_right;
+	ir_mode *mode;
+	long     pn;
+
+	if (!is_Proj(sel))
+		return false;
+
+	cmp = get_Proj_pred(sel);
+	if (!is_Cmp(cmp))
+		return false;
+
+	cmp_left  = get_Cmp_left(cmp);
+	cmp_right = get_Cmp_right(cmp);
+	mode      = get_irn_mode(mux_true);
+	pn        = get_Proj_proj(sel);
+	if ((pn & pn_Cmp_Gt) && !mode_is_signed(mode) &&
+		is_Const(mux_false) && is_Const_null(mux_false) && is_Sub(mux_true) &&
+		get_Sub_left(mux_true) == cmp_left &&
+		get_Sub_right(mux_true) == cmp_right) {
+		/* Mux(a >=u b, a - b, 0) unsigned Doz */
+		return true;
+	}
+	if ((pn & pn_Cmp_Lt) && !mode_is_signed(mode) &&
+		is_Const(mux_true) && is_Const_null(mux_true) && is_Sub(mux_false) &&
+		get_Sub_left(mux_false) == cmp_left &&
+		get_Sub_right(mux_false) == cmp_right) {
+		/* Mux(a <=u b, 0, a - b) unsigned Doz */
+		return true;
+	}
+
+	return false;
+}
+
+static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
+                               ir_node *mux_true)
+{
+	ir_mode *mode;
+
+	/* we can handle Abs for all modes and compares */
+	if (mux_is_abs(sel, mux_true, mux_false))
+		return true;
+	/* we can handle Set for all modes and compares */
+	if (mux_is_set(sel, mux_true, mux_false))
+		return true;
+	/* SSE has own min/max operations */
+	if (ia32_cg_config.use_sse2
+			&& mux_is_float_min_max(sel, mux_true, mux_false))
+		return true;
+	/* we can handle Mux(?, Const[f], Const[f]) */
+	if (mux_is_float_const_const(sel, mux_true, mux_false)) {
+#ifdef FIRM_GRGEN_BE
+		/* well, some code selectors can't handle it */
+		if (be_transformer != TRANSFORMER_PBQP
+				|| be_transformer != TRANSFORMER_RAND)
+			return true;
+#else
+		return true;
+#endif
+	}
+
+	/* no support for 64bit inputs to cmov */
+	mode = get_irn_mode(mux_true);
+	if (get_mode_size_bits(mode) > 32)
+		return false;
+
+	if (mux_is_doz(sel, mux_true, mux_false))
+		return true;
+
+	/* Check Cmp before the node */
+	if (is_Proj(sel)) {
+		ir_node *cmp = get_Proj_pred(sel);
+		if (is_Cmp(cmp)) {
+			ir_mode *cmp_mode = get_irn_mode(get_Cmp_left(cmp));
+
+			/* we can't handle 64bit compares */
+			if (get_mode_size_bits(cmp_mode) > 32)
+				return false;
+
+			/* we can't handle float compares */
+			if (mode_is_float(cmp_mode))
+				return false;
+		}
+	}
+
+	/* did we disable cmov generation? */
+	if (!ia32_cg_config.use_cmov)
+		return false;
+
+	/* we can use a cmov */
+	return true;
 }
 
 static asm_constraint_flags_t ia32_parse_asm_constraint(const char **c)
