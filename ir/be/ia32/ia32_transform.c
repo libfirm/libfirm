@@ -1948,10 +1948,10 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 					}
 				}
 			}
-			flags    = be_transform_node(pred);
-			*pnc_out = pnc;
+			flags = be_transform_node(pred);
 			if (mode_is_float(get_irn_mode(get_Cmp_left(pred))))
-				*pnc_out |= ia32_pn_Cmp_float;
+				pnc |= ia32_pn_Cmp_float;
+			*pnc_out = pnc;
 			return flags;
 		}
 	}
