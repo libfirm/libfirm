@@ -1835,6 +1835,11 @@ static void modify_irg(be_abi_irg_t *env)
 	ctx.link_class       = env->arch_env->link_class;
 	ctx.frame_tp         = get_irg_frame_type(irg);
 
+	/* layout the stackframe now */
+	if (get_type_state(ctx.frame_tp) == layout_undefined) {
+		default_layout_compound_type(ctx.frame_tp);
+	}
+
 	/* we will possible add new entities to the frame: set the layout to undefined */
 	assert(get_type_state(ctx.frame_tp) == layout_fixed);
 	set_type_state(ctx.frame_tp, layout_undefined);

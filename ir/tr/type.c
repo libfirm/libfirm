@@ -2239,6 +2239,43 @@ void set_default_size(ir_type *tp, unsigned size)
 	tp->size = size;
 }
 
+void default_layout_compound_type(ir_type *type)
+{
+	int i;
+	int n = get_compound_n_members(type);
+	int size = 0;
+	unsigned align_all = 1;
+
+	for (i = 0; i < n; ++i) {
+		ir_entity *entity      = get_compound_member(type, i);
+		ir_type   *entity_type = get_entity_type(entity);
+		unsigned   align;
+		unsigned   misalign;
+
+		if (is_Method_type(entity_type))
+			continue;
+
+		assert(get_type_state(entity_type) == layout_fixed);
+		align     = get_type_alignment_bytes(entity_type);
+		align_all = align > align_all ? align : align_all;
+		misalign  = (align ? size % align : 0);
+		size     += (misalign ? align - misalign : 0);
+
+		set_entity_offset(entity, size);
+		if (!is_Union_type(type)) {
+			size += get_type_size_bytes(entity_type);
+		}
+	}
+	if (align_all > 0 && size % align_all) {
+		size += align_all - (size % align_all);
+	}
+	if (align_all > get_type_alignment_bytes(type)) {
+		set_type_alignment_bytes(type, align_all);
+	}
+	set_type_size_bytes(type, size);
+	set_type_state(type, layout_fixed);
+}
+
 ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
                             int at_start)
 {
