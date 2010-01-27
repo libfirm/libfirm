@@ -33,7 +33,7 @@ dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
 
 dnl keep track of the environment set by the user
-libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS'}"
+libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS -lm'}"
 AC_SUBST(libfirm_conf_env)
 
 dnl Package options
