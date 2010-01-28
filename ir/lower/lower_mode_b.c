@@ -159,7 +159,7 @@ static ir_node *lower_node(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
-	ir_mode *mode   = config.lowered_mode;
+	ir_mode  *mode  = config.lowered_mode;
 	ir_node  *res;
 
 	assert(get_irn_mode(node) == mode_b);
@@ -176,11 +176,11 @@ static ir_node *lower_node(ir_node *node)
 
 		arity   = get_irn_arity(node);
 		in      = ALLOCAN(ir_node*, arity);
-		unknown = new_Unknown(config.lowered_mode);
+		unknown = new_Unknown(mode);
 		for (i = 0; i < arity; ++i) {
 			in[i] = unknown;
 		}
-		new_phi = new_r_Phi(block, arity, in, config.lowered_mode);
+		new_phi = new_r_Phi(block, arity, in, mode);
 		set_irn_link(node, new_phi);
 		pdeq_putr(lowered_nodes, node);
 
@@ -207,7 +207,7 @@ static ir_node *lower_node(ir_node *node)
 
 			set_irn_n(copy, i, low_in);
 		}
-		set_irn_mode(copy, config.lowered_mode);
+		set_irn_mode(copy, mode);
 
 		set_irn_link(node, copy);
 		pdeq_putr(lowered_nodes, node);
@@ -350,7 +350,7 @@ static ir_node *lower_node(ir_node *node)
 		return res;
 	}
 	case iro_Unknown:
-		return new_Unknown(config.lowered_mode);
+		return new_Unknown(mode);
 	default:
 		panic("didn't expect %+F to have mode_b", node);
 	}
