@@ -233,7 +233,7 @@ ir_node **get_irn_in(const ir_node *node) {
 void set_irn_in(ir_node *node, int arity, ir_node **in) {
 	int i;
 	ir_node *** pOld_in;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	assert(node);
 #ifdef INTERPROCEDURAL_VIEW
