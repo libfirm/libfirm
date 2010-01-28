@@ -2177,7 +2177,6 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 	ir_node      *pic_base;
 	ir_node      *add;
 	ir_node      *block;
-	ir_node      *unknown;
 	ir_mode      *mode;
 	ir_node      *load;
 	ir_node      *load_res;
@@ -2219,7 +2218,6 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 		/* everything else is accessed relative to EIP */
 		mode     = get_irn_mode(pred);
-		unknown  = new_r_Unknown(irg, mode);
 		pic_base = arch_code_generator_get_pic_base(env->birg->cg);
 
 		/* all ok now for locally constructed stuff */
