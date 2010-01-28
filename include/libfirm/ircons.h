@@ -299,7 +299,7 @@
  *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags flags);
  *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags flags);
- *    ir_node *new_Alloc  (ir_node *store, ir_node *size, ir_type *alloc_type,
+ *    ir_node *new_Alloc  (ir_node *store, ir_node *count, ir_type *alloc_type,
  *                         where_alloc where);
  *    ir_node *new_Free   (ir_node *store, ir_node *ptr, ir_node *size,
  *               ir_type *free_type, where_alloc where);
@@ -906,7 +906,7 @@
  *      A tuple of the changed memory and a control flow to be taken in
  *      case of an exception.
  *
- *    ir_node *new_Alloc (ir_node *store, ir_node *size, ir_type *alloc_type,
+ *    ir_node *new_Alloc (ir_node *store, ir_node *count, ir_type *alloc_type,
  *    -----------------------------------------------------------------------
  *                        where_alloc where)
  *                        ------------------
@@ -916,10 +916,8 @@
  *
  *    Parameters:
  *      *store       The memory which shall contain the new variable.
- *      **    *size        The number of bytes to allocate. Old. **
- *      *size        We decided that the size easily can be derived from the type.
- *                   This field is for allocating arrays, i.e., it gives the multiple
- *           of the size of alloc_type to allocate memory for.
+ *      *count       This field is for allocating arrays, i.e., it gives the multiple
+ *                   of the size of alloc_type to allocate memory for.
  *      *alloc_type  The type of the allocated variable.
  *      where        Where to allocate the variable, either heap_alloc or stack_alloc.
  *
@@ -1785,12 +1783,12 @@ ir_node *new_rd_Store(dbg_info *db, ir_node *block, ir_node *store,
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
  * @param *store      The memory which shall contain the new variable.
- * @param *size       The number of bytes to allocate.
+ * @param *count      The number of objects to allocate.
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_rd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
-                      ir_node *size, ir_type *alloc_type, ir_where_alloc where);
+                      ir_node *count, ir_type *alloc_type, ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -2533,12 +2531,12 @@ ir_node *new_r_Store(ir_node *block, ir_node *store,
  *
  * @param *block      The IR block the node belongs to.
  * @param *store      The memory which shall contain the new variable.
- * @param *size       The number of bytes to allocate.
+ * @param *count      The number of objects to allocate.
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
 ir_node *new_r_Alloc(ir_node *block, ir_node *store,
-                     ir_node *size, ir_type *alloc_type, ir_where_alloc where);
+                     ir_node *count, ir_type *alloc_type, ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -3353,11 +3351,11 @@ ir_node *new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val, 
  *
  * @param *db         A pointer for debug information.
  * @param *store      The memory which shall contain the new variable.
- * @param *size       The number of bytes to allocate.
+ * @param *count      The number of objects to allocate.
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_d_Alloc(dbg_info *db, ir_node *store, ir_node *size, ir_type *alloc_type,
+ir_node *new_d_Alloc(dbg_info *db, ir_node *store, ir_node *count, ir_type *alloc_type,
                      ir_where_alloc where);
 
  /** Constructor for a Free node.
@@ -4151,11 +4149,11 @@ ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags fl
  * Adds the node to the block in current_ir_block.
  *
  * @param *store      The memory which shall contain the new variable.
- * @param *size       The number of bytes to allocate.
+ * @param *count      The number of objects to allocate.
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_Alloc(ir_node *store, ir_node *size, ir_type *alloc_type,
+ir_node *new_Alloc(ir_node *store, ir_node *count, ir_type *alloc_type,
                    ir_where_alloc where);
 
 /** Constructor for a Free node.
