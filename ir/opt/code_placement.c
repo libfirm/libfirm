@@ -527,6 +527,7 @@ void place_code(ir_graph *irg)
 
 	/* Handle graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
+	assure_irg_outs(irg);
 	assure_doms(irg);
 
 	if (1 || get_irg_loopinfo_state(irg) != loopinfo_consistent) {

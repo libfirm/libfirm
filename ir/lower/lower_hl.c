@@ -512,7 +512,8 @@ static void lower_unaligned_Store(ir_node *store) {
 /**
  * lowers IR-nodes, called from walker
  */
-static void lower_irnode(ir_node *irn, void *env) {
+static void lower_irnode(ir_node *irn, void *env)
+{
 	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Sel:
@@ -535,12 +536,13 @@ static void lower_irnode(ir_node *irn, void *env) {
 	default:
 		break;
 	}
-}  /* lower_irnode */
+}
 
 /**
  * Walker: lowers IR-nodes for bitfield access
  */
-static void lower_bf_access(ir_node *irn, void *env) {
+static void lower_bf_access(ir_node *irn, void *env)
+{
 	(void) env;
 	switch (get_irn_opcode(irn)) {
 	case iro_Proj:
@@ -559,15 +561,15 @@ static void lower_bf_access(ir_node *irn, void *env) {
 	default:
 		break;
 	}
-}  /* lower_bf_access */
+}
 
 /*
  * Replaces SymConsts by a real constant if possible.
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
-
+void lower_highlevel_graph(ir_graph *irg, int lower_bitfields)
+{
 	if (lower_bitfields) {
 		/* First step: lower bitfield access: must be run as long as Sels still
 		 * exists. */
@@ -576,7 +578,9 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields) {
 
 	/* Finally: lower SymConst-Size and Sel nodes, Casts, unaligned Load/Stores. */
 	irg_walk_graph(irg, NULL, lower_irnode, NULL);
-}  /* lower_highlevel_graph */
+
+	set_irg_outs_inconsistent(irg);
+}
 
 struct pass_t {
 	ir_graph_pass_t pass;
