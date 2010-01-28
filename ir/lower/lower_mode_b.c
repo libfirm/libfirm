@@ -399,12 +399,6 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 	}
 }
 
-static void clear_links(ir_node *node, void *env)
-{
-	(void) env;
-	set_irn_link(node, NULL);
-}
-
 void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 {
 	ir_entity *entity = get_irg_entity(irg);
@@ -422,7 +416,7 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	adjust_method_type(type);
 
 	set_opt_allow_conv_b(0);
-	irg_walk_graph(irg, clear_links, NULL, NULL);
+	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
 
 	while(!pdeq_empty(lowered_nodes)) {
