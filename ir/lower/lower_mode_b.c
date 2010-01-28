@@ -181,6 +181,10 @@ static ir_node *lower_node(ir_node *node)
 			in[i] = unknown;
 		}
 		new_phi = new_r_Phi(block, arity, in, mode);
+		/* FIXME This does not correctly break cycles: The Phi might not be the
+		 * first in the recursion, so the caller(s) are some yet un-lowered nodes
+		 * and this Phi might have them (indirectly) as operands, so they would be
+		 * replaced twice. */
 		set_irn_link(node, new_phi);
 		pdeq_putr(lowered_nodes, node);
 
@@ -198,20 +202,17 @@ static ir_node *lower_node(ir_node *node)
 	case iro_Or:
 	case iro_Eor: {
 		int i, arity;
-		ir_node *copy = exact_copy(node);
 
+		res   = exact_copy(node);
 		arity = get_irn_arity(node);
 		for (i = 0; i < arity; ++i) {
 			ir_node *in     = get_irn_n(node, i);
 			ir_node *low_in = lower_node(in);
 
-			set_irn_n(copy, i, low_in);
+			set_irn_n(res, i, low_in);
 		}
-		set_irn_mode(copy, mode);
-
-		set_irn_link(node, copy);
-		pdeq_putr(lowered_nodes, node);
-		return copy;
+		set_irn_mode(res, mode);
+		break;
 	}
 
 	case iro_Not: {
@@ -219,9 +220,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *low_op = lower_node(op);
 
 		res = create_not(dbgi, low_op);
-		set_irn_link(node, res);
-		pdeq_putr(lowered_nodes, node);
-		return res;
+		break;
 	}
 
 	case iro_Mux: {
@@ -235,11 +234,8 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *and0     = new_rd_And(dbgi, block, low_cond, low_v_true, mode);
 		ir_node *not_cond = create_not(dbgi, low_cond);
 		ir_node *and1     = new_rd_And(dbgi, block, not_cond, low_v_false, mode);
-		ir_node *or       = new_rd_Or(dbgi, block, and0, and1, mode);
-
-		set_irn_link(node, or);
-		pdeq_putr(lowered_nodes, node);
-		return or;
+		res = new_rd_Or(dbgi, block, and0, and1, mode);
+		break;
 	}
 
 	case iro_Conv: {
@@ -247,15 +243,11 @@ static ir_node *lower_node(ir_node *node)
 		ir_mode *mode     = get_irn_mode(pred);
 		tarval  *tv_zeroc = get_tarval_null(mode);
 		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
-		ir_node *set;
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
 		ir_node *proj     = new_rd_Proj(dbgi, block, cmp, mode_b, pn_Cmp_Lg);
-		set = create_set(proj);
-
-		set_irn_link(node, set);
-		pdeq_putr(lowered_nodes, node);
-		return set;
+		res = create_set(proj);
+		break;
 	}
 
 	case iro_Proj: {
@@ -265,7 +257,6 @@ static ir_node *lower_node(ir_node *node)
 			ir_node *left  = get_Cmp_left(pred);
 			ir_node *right = get_Cmp_right(pred);
 			ir_mode *cmp_mode  = get_irn_mode(left);
-			ir_node *set;
 
 			if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) && (
 						get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
@@ -294,49 +285,46 @@ static ir_node *lower_node(ir_node *node)
 					a        = left;
 					b        = right;
 					need_not = 1;
+				} else {
+					goto synth_zero_one;
 				}
 
-				if (a != NULL) {
-					int      bits      = get_mode_size_bits(mode);
-					tarval  *tv        = new_tarval_from_long(bits-1, mode_Iu);
-					ir_node *shift_cnt = new_d_Const(dbgi, tv);
+				int      bits      = get_mode_size_bits(mode);
+				tarval  *tv        = new_tarval_from_long(bits-1, mode_Iu);
+				ir_node *shift_cnt = new_d_Const(dbgi, tv);
 
-					if (cmp_mode != mode) {
-						a = new_rd_Conv(dbgi, block, a, mode);
-						b = new_rd_Conv(dbgi, block, b, mode);
-					}
-
-					res = new_rd_Sub(dbgi, block, a, b, mode);
-					if (need_not) {
-						res = new_rd_Not(dbgi, block, res, mode);
-					}
-					res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
-
-					set_irn_link(node, res);
-					pdeq_putr(lowered_nodes, node);
-					return res;
+				if (cmp_mode != mode) {
+					a = new_rd_Conv(dbgi, block, a, mode);
+					b = new_rd_Conv(dbgi, block, b, mode);
 				}
+
+				res = new_rd_Sub(dbgi, block, a, b, mode);
+				if (need_not) {
+					res = new_rd_Not(dbgi, block, res, mode);
+				}
+				res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
+			} else {
+				/* synthesize the 0/1 value */
+synth_zero_one:
+				res = create_set(node);
 			}
-
-			/* synthesize the 0/1 value */
-			set = create_set(node);
-			set_irn_link(node, set);
-			pdeq_putr(lowered_nodes, node);
-			return set;
 		} else if (is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
 			ir_type   *type   = get_Call_type(get_Proj_pred(pred));
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
-			return node;
+			res = node;
+			goto own_replacement;
 		} else if (is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
 			ir_entity *entity = get_irg_entity(current_ir_graph);
 			ir_type   *type   = get_entity_type(entity);
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
-			return node;
+			res = node;
+			goto own_replacement;
+		} else {
+			panic("unexpected projb: %+F (pred: %+F)", node, pred);
 		}
-
-		panic("unexpected projb: %+F (pred: %+F)", node, pred);
+		break;
 	}
 
 	case iro_Const: {
@@ -350,17 +338,21 @@ static ir_node *lower_node(ir_node *node)
 		} else {
 			panic("invalid boolean const %+F", node);
 		}
-		set_irn_link(node, res);
-		pdeq_putr(lowered_nodes, node);
-		return res;
+		break;
 	}
 
 	case iro_Unknown:
-		return new_Unknown(mode);
+		res = new_Unknown(mode);
+		break;
 
 	default:
 		panic("didn't expect %+F to have mode_b", node);
 	}
+
+	pdeq_putr(lowered_nodes, node);
+own_replacement:
+	set_irn_link(node, res);
+	return res;
 }
 
 static void lower_mode_b_walker(ir_node *node, void *env)
