@@ -450,6 +450,10 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		do_dump_atomic_init(env, get_Mul_right(init));
 		return;
 
+	case iro_Unknown:
+		be_emit_cstring("0");
+		return;
+
 	default:
 		panic("dump_atomic_init(): unsupported IR-node %+F", init);
 	}
