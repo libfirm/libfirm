@@ -2257,7 +2257,6 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	pmap_entry *ent;
 	ir_node *dummy;
-	optimization_state_t state;
 	unsigned *limited_bitset;
 	arch_register_req_t *sp_req;
 
@@ -2291,12 +2290,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 		sp_req->type |= arch_register_req_type_ignore;
 	}
 
-	/* Beware: later we replace this node by the real one, ensure it is not CSE'd
-	   to another Unknown or the stack pointer gets used */
-	save_optimization_state(&state);
-	set_optimize(0);
-	env->init_sp = dummy  = new_r_Unknown(irg, env->arch_env->sp->reg_class->mode);
-	restore_optimization_state(&state);
+	env->init_sp = dummy = new_r_Dummy(irg, env->arch_env->sp->reg_class->mode);
 
 	env->calls = NEW_ARR_F(ir_node*, 0);
 
