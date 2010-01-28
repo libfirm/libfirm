@@ -213,6 +213,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return copy;
 	}
+
 	case iro_Not: {
 		ir_node *op     = get_Not_op(node);
 		ir_node *low_op = lower_node(op);
@@ -222,6 +223,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
+
 	case iro_Mux: {
 		ir_node *cond        = get_Mux_sel(node);
 		ir_node *low_cond    = lower_node(cond);
@@ -239,6 +241,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return or;
 	}
+
 	case iro_Conv: {
 		ir_node *pred     = get_Conv_op(node);
 		ir_mode *mode     = get_irn_mode(pred);
@@ -254,6 +257,7 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return set;
 	}
+
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(node);
 
@@ -334,6 +338,7 @@ static ir_node *lower_node(ir_node *node)
 
 		panic("unexpected projb: %+F (pred: %+F)", node, pred);
 	}
+
 	case iro_Const: {
 		tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
@@ -349,8 +354,10 @@ static ir_node *lower_node(ir_node *node)
 		pdeq_putr(lowered_nodes, node);
 		return res;
 	}
+
 	case iro_Unknown:
 		return new_Unknown(mode);
+
 	default:
 		panic("didn't expect %+F to have mode_b", node);
 	}
