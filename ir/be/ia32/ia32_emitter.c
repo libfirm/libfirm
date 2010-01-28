@@ -704,20 +704,20 @@ end_of_mods:
 
 			case 'A': {
 				switch (*fmt++) {
+emit_AM:
 					case 'M':
 						if (mod & EMIT_ALTERNATE_AM)
 							be_emit_char('*');
-
 						ia32_emit_am(node);
 						break;
 
 					case 'R': {
-						const arch_register_t *reg = va_arg(ap, const arch_register_t*);
-						if (mod & EMIT_ALTERNATE_AM)
-							be_emit_char('*');
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
-							ia32_emit_am(node);
+							goto emit_AM;
 						} else {
+							const arch_register_t *reg = va_arg(ap, const arch_register_t*);
+							if (mod & EMIT_ALTERNATE_AM)
+								be_emit_char('*');
 							emit_register(reg, NULL);
 						}
 						break;
@@ -725,10 +725,8 @@ end_of_mods:
 
 					case 'S':
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
-							if (mod & EMIT_ALTERNATE_AM)
-								be_emit_char('*');
-							ia32_emit_am(node);
 							++fmt;
+							goto emit_AM;
 						} else {
 							assert(get_ia32_op_type(node) == ia32_Normal);
 							goto emit_S;
