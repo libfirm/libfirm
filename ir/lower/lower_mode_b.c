@@ -162,11 +162,11 @@ static ir_node *lower_node(ir_node *node)
 	ir_mode  *mode  = config.lowered_mode;
 	ir_node  *res;
 
-	assert(get_irn_mode(node) == mode_b);
-
 	res = get_irn_link(node);
 	if (res != NULL)
 		return res;
+
+	assert(get_irn_mode(node) == mode_b);
 
 	switch (get_irn_opcode(node)) {
 	case iro_Phi: {
