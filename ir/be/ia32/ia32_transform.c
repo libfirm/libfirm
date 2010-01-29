@@ -288,13 +288,20 @@ static ir_node *gen_Const(ir_node *node)
 				set_ia32_ls_mode(load, mode);
 			} else {
 				ir_mode *ls_mode;
+				ir_node *base;
 
 				floatent = create_float_const_entity(node);
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ls_mode  = get_type_mode(get_entity_type(floatent));
 
-				load     = new_bd_ia32_vfld(dbgi, block, noreg_GP, noreg_GP, nomem,
+				if (env_cg->birg->main_env->options->pic) {
+					base = arch_code_generator_get_pic_base(env_cg);
+				} else {
+					base = noreg_GP;
+				}
+
+				load     = new_bd_ia32_vfld(dbgi, block, base, noreg_GP, nomem,
 				                            ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
