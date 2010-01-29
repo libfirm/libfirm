@@ -332,6 +332,7 @@ restart:
 				ir_node* p;
 				ir_node* pred1;
 				bool     supported;
+				bool     negated;
 				dbg_info* cond_dbg;
 
 				pred1 = get_Block_cfgpred_block(block, j);
@@ -345,9 +346,17 @@ restart:
 				sel = get_Cond_selector(cond);
 				phi = get_Block_phis(block);
 				supported = true;
+				negated   = get_Proj_proj(projx0) == pn_Cond_false;
 				for (p = phi; p != NULL; p = get_Phi_next(p)) {
-					ir_node *mux_false = get_Phi_pred(p, i);
-					ir_node *mux_true = get_Phi_pred(p, j);
+					ir_node *mux_false;
+					ir_node *mux_true;
+					if (negated) {
+						mux_true  = get_Phi_pred(p, j);
+						mux_false = get_Phi_pred(p, i);
+					} else {
+						mux_true  = get_Phi_pred(p, i);
+						mux_false = get_Phi_pred(p, j);
+					}
 					if (!env->params->allow_ifconv(sel, mux_false, mux_true)) {
 						supported = false;
 						break;
@@ -383,12 +392,12 @@ restart:
 						 * one block, but not at the same memory node
 						 */
 						assert(get_irn_mode(phi) != mode_M);
-						if (get_Proj_proj(projx0) == pn_Cond_true) {
-							t = val_i;
-							f = val_j;
-						} else {
+						if (negated) {
 							t = val_j;
 							f = val_i;
+						} else {
+							t = val_i;
+							f = val_j;
 						}
 
 						mux = new_rd_Mux(cond_dbg, mux_block, sel, f, t, get_irn_mode(phi));
