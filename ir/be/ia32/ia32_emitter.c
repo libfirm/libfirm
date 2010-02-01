@@ -712,10 +712,10 @@ emit_AM:
 						break;
 
 					case 'R': {
+						const arch_register_t *reg = va_arg(ap, const arch_register_t*);
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
 							goto emit_AM;
 						} else {
-							const arch_register_t *reg = va_arg(ap, const arch_register_t*);
 							if (mod & EMIT_ALTERNATE_AM)
 								be_emit_char('*');
 							emit_register(reg, NULL);
