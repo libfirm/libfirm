@@ -2251,8 +2251,8 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 			&& is_Const(mux_false) && is_Const_null(mux_false)) {
 		return true;
 	}
-	if (is_Const(mux_false) && is_Const_null(mux_false)
-			&& is_Const(mux_true) && is_Const_one(mux_true)) {
+	if (is_Const(mux_true) && is_Const_null(mux_true)
+			&& is_Const(mux_false) && is_Const_one(mux_false)) {
 		return true;
 	}
 
