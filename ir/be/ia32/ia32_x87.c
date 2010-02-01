@@ -1465,17 +1465,17 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 	int op2_idx = -1;
 	ia32_x87_attr_t *attr = get_ia32_x87_attr(n);
 	ir_op *dst;
-	x87_simulator         *sim = state->sim;
-	ir_node               *op1_node = get_irn_n(n, n_ia32_vFucomFnstsw_left);
-	ir_node               *op2_node = get_irn_n(n, n_ia32_vFucomFnstsw_right);
-	const arch_register_t *op1      = x87_get_irn_register(op1_node);
-	const arch_register_t *op2      = x87_get_irn_register(op2_node);
+	x87_simulator         *sim        = state->sim;
+	ir_node               *op1_node   = get_irn_n(n, n_ia32_vFucomFnstsw_left);
+	ir_node               *op2_node   = get_irn_n(n, n_ia32_vFucomFnstsw_right);
+	const arch_register_t *op1        = x87_get_irn_register(op1_node);
+	const arch_register_t *op2        = x87_get_irn_register(op2_node);
 	int reg_index_1 = arch_register_get_index(op1);
-	int reg_index_2 = arch_register_get_index(op2);
-	unsigned live = vfp_live_args_after(sim, n, 0);
-	bool                   permuted = attr->attr.data.ins_permuted;
-	bool                   xchg     = false;
-	int                    pops     = 0;
+	int                    reg_index_2 = arch_register_get_index(op2);
+	unsigned               live       = vfp_live_args_after(sim, n, 0);
+	bool                   permuted   = attr->attr.data.ins_permuted;
+	bool                   xchg       = false;
+	int                    pops       = 0;
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
@@ -1507,8 +1507,11 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 				} else {
 					/* bring the first one to tos */
 					x87_create_fxch(state, n, op1_idx);
-					if (op2_idx == 0)
+					if (op1_idx == op2_idx) {
+						op2_idx = 0;
+					} else if (op2_idx == 0) {
 						op2_idx = op1_idx;
+					}
 					op1_idx = 0;
 					/* res = tos X op */
 				}
