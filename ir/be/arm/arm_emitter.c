@@ -1086,30 +1086,6 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block) {
 }
 
 /**
- * Emits code for function start.
- */
-void arm_func_prolog(ir_graph *irg) {
-	ir_entity *ent = get_irg_entity(irg);
-	const char *irg_name = get_entity_ld_name(ent);
-
-	be_emit_write_line();
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	be_emit_cstring("\t.align  2\n");
-
-	if (get_entity_visibility(ent) == visibility_external_visible)
-		be_emit_irprintf("\t.global %s\n", irg_name);
-	be_emit_irprintf("%s:\n", irg_name);
-}
-
-/**
- * Emits code for function end
- */
-void arm_emit_end(FILE *F, ir_graph *irg) {
-	(void) irg;
-	fprintf(F, "\t.ident \"firmcc\"\n");
-}
-
-/**
  * Block-walker:
  * Sets labels for control flow nodes (jump target)
  */
@@ -1140,7 +1116,8 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
 /**
  * Main driver. Emits the code for one routine.
  */
-void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
+void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
+{
 	ir_node   **blk_sched;
 	int       i, n;
 	ir_node   *last_block = NULL;
@@ -1149,6 +1126,8 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	cg        = arm_cg;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
+	be_gas_elf_type_char = '%';
+
 	arm_register_emitters();
 
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
@@ -1156,7 +1135,8 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 	/* create the block schedule. For now, we don't need it earlier. */
 	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
 
-	arm_func_prolog(irg);
+	be_gas_emit_function_prolog(entity, 4);
+
 	irg_block_walk_graph(irg, arm_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(blk_sched);
@@ -1173,6 +1153,7 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg) {
 		last_block = block;
 	}
 
+	be_gas_emit_function_epilog(entity);
 	be_dbg_method_end();
 
 	/* emit SymConst values */

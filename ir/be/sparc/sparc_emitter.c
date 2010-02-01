@@ -638,6 +638,8 @@ void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
 	ir_entity *entity     = get_irg_entity(irg);
 	int i, n;
 
+	be_gas_elf_type_char = '#';
+
 	/* register all emitter functions */
 	sparc_register_emitters();
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));

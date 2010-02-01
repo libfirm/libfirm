@@ -46,8 +46,9 @@
 #include "be_dbgout.h"
 
 /** by default, we generate assembler code for the Linux gas */
-be_gas_flavour_t be_gas_flavour    = GAS_FLAVOUR_ELF;
-bool             be_gas_emit_types = true;
+be_gas_flavour_t be_gas_flavour       = GAS_FLAVOUR_ELF;
+char             be_gas_elf_type_char = '@';
+bool             be_gas_emit_types    = true;
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 
@@ -127,11 +128,11 @@ void be_gas_emit_switch_section(be_gas_section_t section) {
 	current_section = section;
 }
 
-void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
+void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
 {
 	const char *name = get_entity_ld_name(entity);
 	const char *fill_byte = "";
-	unsigned maximum_skip;
+	unsigned    maximum_skip;
 
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
@@ -147,10 +148,10 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 		fill_byte = "0x90";
 	}
 
-	if (alignment > 0) {
-		maximum_skip = (1 << alignment) - 1;
+	if (po2alignment > 0) {
+		maximum_skip = (1 << po2alignment) - 1;
 		be_emit_cstring("\t.p2align ");
-		be_emit_irprintf("%u,%s,%u\n", alignment, fill_byte, maximum_skip);
+		be_emit_irprintf("%u,%s,%u\n", po2alignment, fill_byte, maximum_skip);
 		be_emit_write_line();
 	}
 	if (get_entity_visibility(entity) == visibility_external_visible) {
@@ -164,7 +165,9 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment)
 	case GAS_FLAVOUR_ELF:
 		be_emit_cstring("\t.type\t");
 		be_emit_string(name);
-		be_emit_cstring(", @function\n");
+		be_emit_cstring(", ");
+		be_emit_char(be_gas_elf_type_char);
+		be_emit_cstring("function\n");
 		be_emit_write_line();
 		break;
 	case GAS_FLAVOUR_MINGW:
@@ -1197,7 +1200,9 @@ static void dump_global(be_gas_decl_env_t *env, ir_entity *ent)
 			&& be_gas_emit_types) {
 		be_emit_cstring("\t.type\t");
 		be_emit_ident(ld_ident);
-		be_emit_cstring(", @object\n\t.size\t");
+		be_emit_cstring(", ");
+		be_emit_char(be_gas_elf_type_char);
+		be_emit_cstring("object\n\t.size\t");
 		be_emit_ident(ld_ident);
 		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}

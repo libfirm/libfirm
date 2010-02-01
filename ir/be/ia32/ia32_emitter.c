@@ -2244,6 +2244,8 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	isa      = cg->isa;
 	do_pic   = cg->birg->main_env->options->pic;
 
+	be_gas_elf_type_char = '@';
+
 	ia32_register_emitters();
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), ".PIC_BASE");

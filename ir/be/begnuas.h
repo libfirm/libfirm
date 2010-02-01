@@ -62,6 +62,11 @@ typedef enum asm_flavour_t {
 /** The variable where the GAS dialect is stored. */
 extern be_gas_flavour_t be_gas_flavour;
 extern bool             be_gas_emit_types;
+/**
+ * the .type directive needs to specify @function, #function or %function
+ * depending on the target architecture (yay)
+ */
+extern char             be_gas_elf_type_char;
 
 /**
  * Generate all entities.
@@ -88,7 +93,7 @@ void be_gas_emit_switch_section(be_gas_section_t section);
 /**
  * emit assembler instructions necessary before starting function code
  */
-void be_gas_emit_function_prolog(ir_entity *entity, unsigned alignment);
+void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment);
 
 void be_gas_emit_function_epilog(ir_entity *entity);
 
