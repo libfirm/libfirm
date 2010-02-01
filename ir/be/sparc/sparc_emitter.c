@@ -55,8 +55,6 @@
 #define SNPRINTF_BUF_LEN 128
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static set *sym_or_tv;
-
 /**
  * Returns the register at in position pos.
  */
@@ -159,9 +157,15 @@ void sparc_emit_reg_or_imm(const ir_node *node, int pos)
 	}
 }
 
+/**
+ * emit SP offset
+ */
 void sparc_emit_offset(const ir_node *node)
 {
-	(void) node;
+	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
+	assert(attr->base.is_load_store);
+	if (attr->offset > 0)
+		be_emit_irprintf("+0x%X", attr->offset);
 }
 
 /**
@@ -233,21 +237,6 @@ static void sparc_emit_entity(ir_entity *entity)
  *
  ***********************************************************************************/
 
-/**
- * Emits code for a unconditional jump.
- */
-static void emit_Jmp(const ir_node *node)
-{
-	ir_node *block;
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
-	be_emit_cstring("\tjmp ");
-	sparc_emit_cfop_target(node);
-	be_emit_finish_line_gas(node);
-}
-
 
 /**
  * Emits code for stack space management
@@ -259,30 +248,33 @@ static void emit_be_IncSP(const ir_node *irn)
 	if (offs != 0) {
 		/* SPARC stack grows downwards */
 		if (offs < 0) {
-			be_emit_cstring("\tadd ");
+			be_emit_cstring("\tsub ");
 			offs = -offs;
 		} else {
-			be_emit_cstring("\tsub ");
+			be_emit_cstring("\tadd ");
 		}
 
 		sparc_emit_source_register(irn, 0);
 		be_emit_irprintf(", %d", offs);
 		be_emit_cstring(", ");
 		sparc_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
 	} else {
 		// ignore IncSP(0)
 		//be_emit_cstring("\t/* IncSP(0) skipped */");
-		be_emit_cstring("\t/* ");
-		be_emit_cstring("sub ");
-		offs = -offs;
-		sparc_emit_source_register(irn, 0);
-		be_emit_irprintf(", %d", offs);
-		be_emit_cstring(", ");
-		sparc_emit_dest_register(irn, 0);
-		be_emit_cstring(" ignored */ ");
+
+//		be_emit_cstring("\t/* ");
+//		be_emit_cstring("sub ");
+//		offs = -offs;
+//		sparc_emit_source_register(irn, 0);
+//		be_emit_irprintf(", %d", offs);
+//		be_emit_cstring(", ");
+//		sparc_emit_dest_register(irn, 0);
+//		be_emit_cstring(" ignored */ ");
+//		be_emit_finish_line_gas(irn);
 	}
 
-	be_emit_finish_line_gas(irn);
+
 }
 
 /**
@@ -305,36 +297,15 @@ static void emit_be_Call(const ir_node *irn)
 		be_emit_cstring("\tcall ");
 	    sparc_emit_entity(entity);
 		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tnop\t /* TODO: use delay slot */\n ");
+		be_emit_cstring("\tnop");
+		be_emit_pad_comment();
+		be_emit_cstring("/* TODO: use delay slot */\n");
 	} else {
-		be_emit_cstring("\tnop\t /* TODO: Entity == NULL */\n ");
-		/*
-		be_emit_cstring("\tmov lr, pc");
-		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tmov pc, ");
-		sparc_emit_source_register(irn, be_pos_Call_ptr);
-		*/
+		be_emit_cstring("\tnop\n");
+		be_emit_pad_comment();
+		be_emit_cstring("/* TODO: Entity == NULL */\n");
 		be_emit_finish_line_gas(irn);
 	}
-}
-
-/** An entry in the sym_or_tv set. */
-typedef struct sym_or_tv_t {
-	union {
-		ident  *id;          /**< An ident. */
-		tarval *tv;          /**< A tarval. */
-		const void *generic; /**< For generic compare. */
-	} u;
-	unsigned label;      /**< the associated label. */
-	char is_ident;       /**< Non-zero if an ident is stored. */
-} sym_or_tv_t;
-
-/**
- * Returns a unique label. This number will not be used a second time.
- */
-static unsigned get_unique_label(void) {
-	static unsigned id = 0;
-	return ++id;
 }
 
 /**
@@ -343,25 +314,19 @@ static unsigned get_unique_label(void) {
 static void emit_sparc_SymConst(const ir_node *irn)
 {
 	const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(irn);
-	sym_or_tv_t key, *entry;
-	unsigned label;
+	//const char *entity_name = get_entity_ld_name(attr->entity);
+	ident *id_symconst = get_entity_ident(attr->entity);
+	const char *label = get_id_str(id_symconst);
 
-	set_entity_backend_marked(attr->entity, 1);
+	//sethi %hi(const32),%reg
+	//or    %reg,%lo(const32),%reg
 
-	key.u.id     = get_entity_ld_ident(attr->entity);
-	key.is_ident = 1;
-	key.label    = 0;
-	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
-	if (entry->label == 0) {
-		/* allocate a label */
-		entry->label = get_unique_label();
-	}
-
-	label = entry->label;
-
-	/* load the symbol indirect */
-	be_emit_cstring("\tld ");
-	be_emit_irprintf(".L%u, ", label);
+	be_emit_irprintf("\tsethi %%hi(%s), ", label);
+	sparc_emit_dest_register(irn, 0);
+	be_emit_cstring("\n ");
+	be_emit_cstring("\tor ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_irprintf(", %%lo(%s), ", label);
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
@@ -376,9 +341,9 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
 	be_emit_cstring("\tadd ");
 	sparc_emit_source_register(irn, 0);
 	be_emit_cstring(", ");
-	sparc_emit_dest_register(irn, 0);
+	be_emit_irprintf("0x%X", attr->fp_offset);
 	be_emit_cstring(", ");
-	be_emit_irprintf("#0x%X", attr->fp_offset);
+	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -388,8 +353,130 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
  */
 static void emit_sparc_Branch(const ir_node *irn)
 {
-	(void) irn;
+	const ir_edge_t *edge;
+	const ir_node *proj_true  = NULL;
+	const ir_node *proj_false = NULL;
+	const ir_node *block;
+	const ir_node *next_block;
+	ir_node *op1 = get_irn_n(irn, 0);
+	const char *suffix;
+	int proj_num = get_sparc_jmp_cond_proj_num(irn);
+	const sparc_cmp_attr_t *cmp_attr = get_irn_generic_attr_const(op1);
+	// bool is_signed = !cmp_attr->is_unsigned;
+
+	assert(is_sparc_Cmp(op1) || is_sparc_Tst(op1));
+
+	foreach_out_edge(irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long nr = get_Proj_proj(proj);
+		if (nr == pn_Cond_true) {
+			proj_true = proj;
+		} else {
+			proj_false = proj;
+		}
+	}
+
+	if (cmp_attr->ins_permuted) {
+		proj_num = get_mirrored_pnc(proj_num);
+	}
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+
+	/* we have a block schedule */
+	next_block = get_irn_link(block);
+
+	assert(proj_num != pn_Cmp_False);
+	assert(proj_num != pn_Cmp_True);
+
+	if (get_irn_link(proj_true) == next_block) {
+		/* exchange both proj's so the second one can be omitted */
+		const ir_node *t = proj_true;
+
+		proj_true  = proj_false;
+		proj_false = t;
+		proj_num   = get_negated_pnc(proj_num, mode_Iu);
+	}
+
+	switch (proj_num) {
+		case pn_Cmp_Eq:  suffix = "e"; break;
+		case pn_Cmp_Lt:  suffix = "l"; break;
+		case pn_Cmp_Le:  suffix = "le"; break;
+		case pn_Cmp_Gt:  suffix = "g"; break;
+		case pn_Cmp_Ge:  suffix = "ge"; break;
+		case pn_Cmp_Lg:  suffix = "ne"; break;
+		case pn_Cmp_Leg: suffix = "a"; break;
+		default: panic("Cmp has unsupported pnc");
+	}
+
+	/* emit the true proj */
+	be_emit_irprintf("\tb%s ", suffix);
+	sparc_emit_cfop_target(proj_true);
+	be_emit_finish_line_gas(proj_true);
+
+	be_emit_cstring("\tnop");
+	be_emit_pad_comment();
+	be_emit_cstring("/* TODO: use delay slot */\n");
+
+	if (get_irn_link(proj_false) == next_block) {
+		be_emit_cstring("\t/* false-fallthrough to ");
+		sparc_emit_cfop_target(proj_false);
+		be_emit_cstring(" */");
+		be_emit_finish_line_gas(proj_false);
+	} else {
+		be_emit_cstring("\tba ");
+		sparc_emit_cfop_target(proj_false);
+		be_emit_finish_line_gas(proj_false);
+		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */");
+		be_emit_write_line();
+	}
 }
+
+/**
+ * emit Jmp (which actually is a branch always)
+ */
+static void emit_sparc_Jmp(const ir_node *node)
+{
+	ir_node *block, *next_block;
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(node);
+
+	/* we have a block schedule */
+	next_block = get_irn_link(block);
+	if (get_irn_link(node) != next_block) {
+		be_emit_cstring("\tba ");
+		sparc_emit_cfop_target(node);
+	} else {
+		be_emit_cstring("\t/* fallthrough to ");
+		sparc_emit_cfop_target(node);
+		be_emit_cstring(" */");
+	}
+	be_emit_finish_line_gas(node);
+}
+
+static void emit_be_Copy(const ir_node *irn) {
+	ir_mode *mode = get_irn_mode(irn);
+
+	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
+		/* omitted Copy */
+		return;
+	}
+
+	if (mode_is_float(mode)) {
+		panic("emit_be_Copy: move not supported for FP");
+	} else if (mode_is_data(mode)) {
+		be_emit_cstring("\tmov ");
+		sparc_emit_source_register(irn, 0);
+		be_emit_cstring(", ");
+		sparc_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
+	} else {
+		assert(0 && "move not supported for this mode");
+		panic("emit_be_Copy: move not supported for this mode");
+	}
+}
+
 
 /**
  * dummy emitter for ignored nodes
@@ -434,17 +521,18 @@ static void sparc_register_emitters(void)
     set_emitter(op_sparc_FrameAddr,  emit_sparc_FrameAddr);
     set_emitter(op_sparc_Branch,   emit_sparc_Branch);
     set_emitter(op_sparc_SymConst,   emit_sparc_SymConst);
+    set_emitter(op_sparc_Jmp,        emit_sparc_Jmp);
+
+    set_emitter(op_be_Copy,        emit_be_Copy);
+    set_emitter(op_be_CopyKeep,    emit_be_Copy);
 
 /*
     set_emitter(op_arm_B,          emit_arm_B);
     set_emitter(op_arm_CopyB,      emit_arm_CopyB);
     set_emitter(op_arm_fpaConst,   emit_arm_fpaConst);
     set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
-    set_emitter(op_arm_Jmp,        emit_arm_Jmp);
     set_emitter(op_arm_LdTls,      emit_arm_LdTls);
     set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
-    set_emitter(op_be_Copy,        emit_be_Copy);
-    set_emitter(op_be_CopyKeep,    emit_be_Copy);
     set_emitter(op_be_MemPerm,     emit_be_MemPerm);
     set_emitter(op_be_Perm,        emit_be_Perm);
 */
@@ -483,11 +571,10 @@ void sparc_gen_block(ir_node *block, void *data) {
 
 	if (! is_Block(block))
 		return;
-/*
 	be_emit_cstring("BLOCK_");
 	be_emit_irprintf("%ld:\n", get_irn_node_nr(block));
 	be_emit_write_line();
-*/
+
 	sched_foreach(block, node) {
 		sparc_emit_node(node);
 	}
@@ -499,28 +586,11 @@ void sparc_gen_block(ir_node *block, void *data) {
  */
 void sparc_emit_func_prolog(ir_graph *irg) {
 	ir_entity *ent = get_irg_entity(irg);
-	const char *irg_name = get_entity_ld_name(ent);
 
-	/* TODO: emit function header */
-	be_emit_cstring("# -- Begin ");
-	be_emit_string(irg_name);
-	be_emit_cstring("\n");
-
-
-	be_emit_write_line();
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	be_emit_cstring("\t.align  4\n");
-
-	if (get_entity_visibility(ent) == visibility_external_visible)
-		be_emit_irprintf("\t.global %s\n", irg_name);
-
-	be_emit_cstring("\t/* .proc  n - n specifies which registers will contain the return value upon return from the procedure */\n");
-	be_emit_irprintf("\t.type %s, #function\n", irg_name);
-
-	be_emit_irprintf("%s:\n", irg_name);
+	be_gas_emit_function_prolog(ent, 4);
 	// TODO: fetch reg names via API func
 	// TODO: move value to SPARC_MIN_STACKSIZE const
-	be_emit_cstring("\tsave %r14, -64, %r14");
+	be_emit_cstring("\tsave %sp, -64, %sp");
 	be_emit_cstring("\t/* incr CWP and alloc min. required stack space */\n");
 	be_emit_write_line();
 }
@@ -542,8 +612,9 @@ void sparc_emit_func_epilog(ir_graph *irg) {
 }
 
 /**
- * Sets labels for control flow nodes (jump target)
- * TODO: Jump optimization
+ * Block-walker:
+ * TODO: Sets labels for control flow nodes (jump target).
+ * Links control predecessors to there destination blocks.
  */
 void sparc_gen_labels(ir_node *block, void *env) {
 	ir_node *pred;
@@ -552,80 +623,54 @@ void sparc_gen_labels(ir_node *block, void *env) {
 
 	for (n--; n >= 0; n--) {
 		pred = get_Block_cfgpred(block, n);
-		set_irn_link(pred, block);
+		set_irn_link(pred, block); // link the pred of a block (which is a jmp)
 	}
 }
 
-/**
- * Compare two entries of the symbol or tarval set.
- */
-static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
-	const sym_or_tv_t *p1 = elt;
-	const sym_or_tv_t *p2 = key;
-	(void) size;
-
-	/* as an identifier NEVER can point to a tarval, it's enough
-		to compare it this way */
-	return p1->u.generic != p2->u.generic;
-}
-
-void gen_symconst_values()
-{
-	sym_or_tv = new_set(cmp_sym_or_tv, 8);
-
-	/* emit SymConst values */
-	if (set_count(sym_or_tv) > 0) {
-		sym_or_tv_t *entry;
-
-		be_emit_cstring("\t.align 2\n");
-
-		foreach_set(sym_or_tv, entry) {
-			be_emit_irprintf(".L%u:\n", entry->label);
-
-			if (entry->is_ident) {
-				be_emit_cstring("\t.word\t");
-				be_emit_ident(entry->u.id);
-				be_emit_char('\n');
-				be_emit_write_line();
-			} else {
-				tarval *tv = entry->u.tv;
-				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
-				unsigned v;
-
-				/* TODO: beware: ARM fpa uses big endian format */
-				for (i = ((size + 3) & ~3) - 4; i >= 0; i -= 4) {
-					/* get 32 bits */
-					v =            get_tarval_sub_bits(tv, i+3);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+2);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+1);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+0);
-					be_emit_irprintf("\t.word\t%u\n", v);
-					be_emit_write_line();
-				}
-			}
-		}
-		be_emit_char('\n');
-		be_emit_write_line();
-	}
-	del_set(sym_or_tv);
-}
 
 /**
  * Main driver
  */
 void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
 {
+	ir_node **blk_sched;
+	ir_node *last_block = NULL;
 	ir_entity *entity     = get_irg_entity(irg);
+	int i, n;
 
 	/* register all emitter functions */
 	sparc_register_emitters();
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
-	sparc_emit_func_prolog(irg);
-	irg_block_walk_graph(irg, sparc_gen_labels, NULL, NULL);
-	irg_walk_blkwise_graph(irg, NULL, sparc_gen_block, NULL);
-	sparc_emit_func_epilog(irg);
 
-	gen_symconst_values();
+	/* create the block schedule. For now, we don't need it earlier. */
+	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
+
+	// emit function prolog
+	sparc_emit_func_prolog(irg);
+
+	// generate BLOCK labels
+	irg_block_walk_graph(irg, sparc_gen_labels, NULL, NULL);
+
+	// inject block scheduling links & emit code of each block
+	n = ARR_LEN(blk_sched);
+	for (i = 0; i < n;) {
+		ir_node *block, *next_bl;
+
+		block = blk_sched[i];
+		++i;
+		next_bl = i < n ? blk_sched[i] : NULL;
+
+		/* set here the link. the emitter expects to find the next block here */
+		set_irn_link(block, next_bl);
+		sparc_gen_block(block, last_block);
+		last_block = block;
+	}
+
+
+	//irg_walk_blkwise_graph(irg, NULL, sparc_gen_block, NULL);
+
+	// emit function epilog
+	sparc_emit_func_epilog(irg);
 }
 
 void sparc_init_emitter(void)
