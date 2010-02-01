@@ -74,6 +74,38 @@ const arch_register_req_t *get_sparc_in_req(const ir_node *node, int pos);
  */
 void set_sparc_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
+
+/**
+ * Returns the proj num
+ */
+int get_sparc_jmp_cond_proj_num(const ir_node *node);
+
+/**
+ * Sets the proj num
+ */
+void set_sparc_jmp_cond_proj_num(ir_node *node, int proj_num);
+
+
+/**
+ * Returns the number of projs of a SwitchJmp.
+ */
+int get_sparc_jmp_switch_n_projs(const ir_node *node);
+
+/**
+ * Sets the number of projs of a SwitchJmp.
+ */
+void set_sparc_jmp_switch_n_projs(ir_node *node, int n_projs);
+
+/**
+ * Returns the default_proj_num.
+ */
+long get_sparc_jmp_switch_default_proj_num(const ir_node *node);
+
+/**
+ * Sets the default_proj_num.
+ */
+void set_sparc_jmp_switch_default_proj_num(ir_node *node, long default_proj_num);
+
 /* Include the generated headers */
 #include "gen_sparc_new_nodes.h"
 

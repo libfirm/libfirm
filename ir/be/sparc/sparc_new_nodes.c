@@ -93,22 +93,39 @@ static void sparc_set_attr_imm(ir_node *res, int immediate_value)
 	attr->immediate_value = immediate_value;
 }
 
-static void set_sparc_jmp_cond_proj_num(ir_node *node, int proj_num)
+void set_sparc_jmp_cond_proj_num(ir_node *node, int proj_num)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 	attr->proj_num = proj_num;
 }
 
-static void set_sparc_jmp_switch_n_projs(ir_node *node, int n_projs)
+void set_sparc_jmp_switch_n_projs(ir_node *node, int n_projs)
 {
 	sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr(node);
 	attr->n_projs = n_projs;
 }
 
-static void set_sparc_jmp_switch_default_proj_num(ir_node *node, long def_proj_num)
+void set_sparc_jmp_switch_default_proj_num(ir_node *node, long def_proj_num)
 {
 	sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr(node);
 	attr->default_proj_num = def_proj_num;
+}
+
+
+
+int get_sparc_jmp_cond_proj_num(const ir_node *node) {
+	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
+	return attr->proj_num;
+}
+
+int get_sparc_jmp_switch_n_projs(const ir_node *node) {
+	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
+	return attr->n_projs;
+}
+
+long get_sparc_jmp_switch_default_proj_num(const ir_node *node) {
+	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
+	return attr->default_proj_num;
 }
 
 
@@ -297,37 +314,73 @@ static int cmp_attr_sparc(ir_node *a, ir_node *b)
 {
 	const sparc_attr_t *attr_a = get_sparc_attr_const(a);
 	const sparc_attr_t *attr_b = get_sparc_attr_const(b);
-	(void) attr_a;
-	(void) attr_b;
 
-	return 0;
+	return attr_a->immediate_value != attr_b->immediate_value
+			|| attr_a->is_load_store != attr_b->is_load_store;
 }
 
 
 /* CUSTOM ATTRIBUTE CMP FUNCTIONS */
 static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
 {
-	return 0;
+	const sparc_load_store_attr_t *attr_a = get_sparc_load_store_attr_const(a);
+	const sparc_load_store_attr_t *attr_b = get_sparc_load_store_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->entity != attr_b->entity
+			|| attr_a->entity_sign != attr_b->entity_sign
+			|| attr_a->is_frame_entity != attr_b->is_frame_entity
+			|| attr_a->load_store_mode != attr_b->load_store_mode
+			|| attr_a->offset != attr_b->offset;
 }
 
 static int cmp_attr_sparc_symconst(ir_node *a, ir_node *b)
 {
-	return 0;
+	const sparc_symconst_attr_t *attr_a = get_sparc_symconst_attr_const(a);
+	const sparc_symconst_attr_t *attr_b = get_sparc_symconst_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->entity != attr_b->entity
+			|| attr_a->fp_offset != attr_b->fp_offset;
 }
 
 static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 {
-	return 0;
+	const sparc_jmp_cond_attr_t *attr_a = get_sparc_jmp_cond_attr_const(a);
+	const sparc_jmp_cond_attr_t *attr_b = get_sparc_jmp_cond_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->proj_num != attr_b->proj_num;
 }
 
 static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)
 {
-	return 0;
+	const sparc_jmp_switch_attr_t *attr_a = get_sparc_jmp_switch_attr_const(a);
+	const sparc_jmp_switch_attr_t *attr_b = get_sparc_jmp_switch_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->default_proj_num != attr_b->default_proj_num
+			|| attr_a->n_projs != attr_b->n_projs;
 }
 
 static int cmp_attr_sparc_cmp(ir_node *a, ir_node *b)
 {
-	return 0;
+	const sparc_cmp_attr_t *attr_a = get_sparc_cmp_attr_const(a);
+	const sparc_cmp_attr_t *attr_b = get_sparc_cmp_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->ins_permuted != attr_b->ins_permuted
+			|| attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
 /* Include the generated constructor functions */

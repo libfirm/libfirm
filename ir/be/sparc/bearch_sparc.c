@@ -65,6 +65,7 @@
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
+#include "sparc_map_regs.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -74,10 +75,22 @@ static arch_irn_class_t sparc_classify(const ir_node *irn)
 	return 0;
 }
 
-static ir_entity *sparc_get_frame_entity(const ir_node *node)
+static ir_entity *sparc_get_frame_entity(const ir_node *irn)
 {
-	(void) node;
-	/* TODO: return the ir_entity assigned to the frame */
+	const sparc_attr_t *attr = get_sparc_attr_const(irn);
+
+	if (is_sparc_FrameAddr(irn)) {
+		const sparc_symconst_attr_t *attr = get_irn_generic_attr_const(irn);
+		return attr->entity;
+	}
+
+	if (attr->is_load_store) {
+		const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(irn);
+		if (load_store_attr->is_frame_entity) {
+			return load_store_attr->entity;
+		}
+	}
+
 	return NULL;
 }
 
@@ -85,6 +98,7 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *ent)
 {
 	(void) node;
 	(void) ent;
+	panic("sparc_set_frame_entity() called. This should not happen.");
 	/* TODO: set the ir_entity assigned to the frame */
 }
 
@@ -94,9 +108,14 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *ent)
  */
 static void sparc_set_frame_offset(ir_node *irn, int offset)
 {
-	(void) irn;
-	(void) offset;
-	/* TODO: correct offset if irn accesses the stack */
+	if (is_sparc_FrameAddr(irn)) {
+		sparc_symconst_attr_t *attr = get_irn_generic_attr(irn);
+		attr->fp_offset += offset;
+	} else {
+		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(irn);
+		assert(attr->base.is_load_store);
+		attr->offset += offset;
+	}
 }
 
 static int sparc_get_sp_bias(const ir_node *irn)
@@ -174,10 +193,86 @@ static void sparc_before_ra(void *self)
 	be_sched_fix_flags(cg->birg, &sparc_reg_classes[CLASS_sparc_flags], &sparc_flags_remat);
 }
 
+/**
+ * transform reload node => load
+ */
+static void transform_Reload(ir_node *node)
+{
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
+	ir_mode   *mode   = get_irn_mode(node);
+	ir_entity *entity = be_get_frame_entity(node);
+	const arch_register_t *reg;
+	ir_node   *proj;
+	ir_node   *load;
+
+	ir_node  *sched_point = sched_prev(node);
+
+	load = new_bd_sparc_Load(dbgi, block, ptr, mem, mode, entity, false, 0, true);
+	sched_add_after(sched_point, load);
+	sched_remove(node);
+
+	proj = new_rd_Proj(dbgi, block, load, mode, pn_sparc_Load_res);
+
+	reg = arch_get_irn_register(node);
+	arch_set_irn_register(proj, reg);
+
+	exchange(node, proj);
+}
+
+/**
+ * transform spill node => store
+ */
+static void transform_Spill(ir_node *node)
+{
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = new_NoMem();
+	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
+	ir_mode   *mode   = get_irn_mode(val);
+	ir_entity *entity = be_get_frame_entity(node);
+	ir_node   *sched_point;
+	ir_node   *store;
+
+	sched_point = sched_prev(node);
+	store = new_bd_sparc_Store(dbgi, block, ptr, val, mem, mode, entity, false, 0, true);
+	sched_remove(node);
+	sched_add_after(sched_point, store);
+
+	exchange(node, store);
+}
+
+/**
+ * walker to transform be_Spill and be_Reload nodes
+ */
+static void sparc_after_ra_walker(ir_node *block, void *data)
+{
+	ir_node *node, *prev;
+	(void) data;
+
+	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
+		prev = sched_prev(node);
+
+		if (be_is_Reload(node)) {
+			transform_Reload(node);
+		} else if (be_is_Spill(node)) {
+			transform_Spill(node);
+		}
+	}
+}
+
+
 static void sparc_after_ra(void *self)
 {
-	(void) self;
-	/* Some stuff you need to do immediatly after register allocation */
+	sparc_code_gen_t *cg = self;
+	be_coalesce_spillslots(cg->birg);
+
+	irg_block_walk_graph(cg->irg, NULL, sparc_after_ra_walker, NULL);
 }
 
 
@@ -428,13 +523,17 @@ void sparc_get_call_abi(const void *self, ir_type *method_type,
 	be_abi_call_set_flags(abi, call_flags, &sparc_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
-		/* TODO: implement register parameter: */
 		/* reg = get reg for param i;          */
 		/* be_abi_call_param_reg(abi, i, reg); */
-		/* default: all parameters on stack */
-		tp   = get_method_param_type(method_type, i);
-		mode = get_type_mode(tp);
-		be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+
+		/* pass args 0-5 via registers, remaining via stack */
+		if (i < 6) {
+			be_abi_call_param_reg(abi, i, sparc_get_RegParam_reg(i));
+		} else {
+			tp   = get_method_param_type(method_type, i);
+			mode = get_type_mode(tp);
+			be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+		}
 	}
 
 	/* TODO: set correct return register */

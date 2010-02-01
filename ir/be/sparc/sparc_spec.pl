@@ -107,44 +107,44 @@ $mode_fp      = "mode_D";
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
-		{ name => "g0", realname => "r0", type => 4 }, # hardwired 0, behaves like /dev/null
-		{ name => "g1", realname => "r1", type => 1 }, # temp. value
-		{ name => "g2", realname => "r2", type => 1 },
-		{ name => "g3", realname => "r3", type => 1 },
-		{ name => "g4", realname => "r4", type => 1 },
-		{ name => "g5", realname => "r5", type => 1 }, # reserved by SPARC ABI
-		{ name => "g6", realname => "r6", type => 1 }, # reserved by SPARC ABI
-		{ name => "g7", realname => "r7", type => 2 }, # reserved by SPARC ABI
+		{ name => "g0", realname => "g0", type => 4 }, # hardwired 0, behaves like /dev/null
+		{ name => "g1", realname => "g1", type => 1 }, # temp. value
+		{ name => "g2", realname => "g2", type => 1 },
+		{ name => "g3", realname => "g3", type => 1 },
+		{ name => "g4", realname => "g4", type => 1 },
+		{ name => "g5", realname => "g5", type => 4 }, # reserved by SPARC ABI
+		{ name => "g6", realname => "g6", type => 4 }, # reserved by SPARC ABI
+		{ name => "g7", realname => "g7", type => 2 }, # reserved by SPARC ABI
 
 		# window's out registers
-		{ name => "o0", realname => "r8", type => 1 }, # param 1 / return value from callee
-		{ name => "o1", realname => "r9", type => 1 }, # param 2
-		{ name => "o2", realname => "r10", type => 1 }, # param 3
-		{ name => "o3", realname => "r11", type => 1 }, # param 4
-		{ name => "o4", realname => "r12", type => 1 }, # param 5
-		{ name => "o5", realname => "r13", type => 1 }, # param 6
-		{ name => "sp", realname => "r14", type => 4 }, # our stackpointer
-		{ name => "o7", realname => "r15", type => 1 }, # temp. value / address of CALL instr.
+		{ name => "o0", realname => "o0", type => 1 }, # param 1 / return value from callee
+		{ name => "o1", realname => "o1", type => 1 }, # param 2
+		{ name => "o2", realname => "o2", type => 1 }, # param 3
+		{ name => "o3", realname => "o3", type => 1 }, # param 4
+		{ name => "o4", realname => "o4", type => 1 }, # param 5
+		{ name => "o5", realname => "o5", type => 1 }, # param 6
+		{ name => "sp", realname => "sp", type => 4 }, # our stackpointer
+		{ name => "o7", realname => "o6", type => 1 }, # temp. value / address of CALL instr.
 
 		# window's local registers
-		{ name => "l0", realname => "r16", type => 2 },
-		{ name => "l1", realname => "r17", type => 2 },
-		{ name => "l2", realname => "r18", type => 2 },
-		{ name => "l3", realname => "r19", type => 2 },
-		{ name => "l4", realname => "r20", type => 2 },
-		{ name => "l5", realname => "r21", type => 2 },
-		{ name => "l6", realname => "r22", type => 2 },
-		{ name => "l7", realname => "r23", type => 2 },
+		{ name => "l0", realname => "l0", type => 2 },
+		{ name => "l1", realname => "l1", type => 2 },
+		{ name => "l2", realname => "l2", type => 2 },
+		{ name => "l3", realname => "l3", type => 2 },
+		{ name => "l4", realname => "l4", type => 2 },
+		{ name => "l5", realname => "l5", type => 2 },
+		{ name => "l6", realname => "l6", type => 2 },
+		{ name => "l7", realname => "l7", type => 2 },
 
 		# window's in registers
-		{ name => "i0", realname => "r24", type => 2 }, # incoming param1 / return value to caller
-		{ name => "i1", realname => "r25", type => 2 }, # param 2
-		{ name => "i2", realname => "r26", type => 2 }, # param 3
-		{ name => "i3", realname => "r27", type => 2 }, # param 4
-		{ name => "i4", realname => "r28", type => 2 }, # param 5
-		{ name => "i5", realname => "r29", type => 2 }, # param 6
-		{ name => "fp", realname => "r30", type => 4 }, # our framepointer
-		{ name => "i7", realname => "r31", type => 2 }, # return address - 8
+		{ name => "i0", realname => "i0", type => 2 }, # incoming param1 / return value to caller
+		{ name => "i1", realname => "i1", type => 2 }, # param 2
+		{ name => "i2", realname => "i2", type => 2 }, # param 3
+		{ name => "i3", realname => "i3", type => 2 }, # param 4
+		{ name => "i4", realname => "i4", type => 2 }, # param 5
+		{ name => "i5", realname => "i5", type => 2 }, # param 6
+		{ name => "fp", realname => "i6", type => 4 }, # our framepointer
+		{ name => "i7", realname => "i7", type => 2 }, # return address - 8
 		{ mode => $mode_gp }
 	],
 	flags => [
@@ -323,7 +323,6 @@ my %binop_operand_constructors = (
 # commutative operations
 
 Add => {
-  op_flags  => "C",
   irn_flags => "R",
   comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   mode		=> $mode_gp,
@@ -354,6 +353,30 @@ Load => {
   emit      => '. ld%LM [%S1%O], %D1'
 },
 
+LoadHi => {
+  op_flags  => "L|F",
+  comment   => "construct LoadHi: Load(ptr, mem) = sethi hi(ptr) -> reg",
+  state     => "exc_pinned",
+  ins       => [ "ptr", "mem" ],
+  outs      => [ "res", "M" ],
+  reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+  attr_type => "sparc_load_store_attr_t",
+  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+  emit      => '. sethi %%hi(%S1), %D1'
+},
+
+LoadLo => {
+  op_flags  => "L|F",
+  comment   => "construct LoadLo: Or(in, ptr, mem) = or in lo(ptr) -> reg",
+  state     => "exc_pinned",
+  ins       => [ "hireg", "ptr", "mem" ],
+  outs      => [ "res", "M" ],
+  reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
+  attr_type => "sparc_load_store_attr_t",
+  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+  emit      => '. or %S1, %%lo(%S2), %D1'
+},
+
 Store => {
   op_flags  => "L|F",
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
@@ -364,7 +387,7 @@ Store => {
   reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
   attr_type => "sparc_load_store_attr_t",
   attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. st%SM %S1, [%D1%O]'
+  emit      => '. st%SM %S2, [%S1%O]'
 },
 
 Mov => {
@@ -421,6 +444,14 @@ Branch => {
 	init_attr => "\tset_sparc_jmp_cond_proj_num(res, proj_num);",
 },
 
+Jmp => {
+	state     => "pinned",
+	op_flags  => "X",
+	irn_flags => "J",
+	reg_req   => { out => [ "none" ] },
+	mode      => "mode_X",
+},
+
 Cmp => {
 	irn_flags    => "R|F",
 	emit         => '. cmp %S1, %R2I',
@@ -450,6 +481,52 @@ SwitchJmp => {
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	attr_type => "sparc_jmp_switch_attr_t",
 },
+
+ShiftLL => {
+  irn_flags => "R",
+  comment   => "construct shift logical left",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. sll %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
+ShiftLR => {
+  irn_flags => "R",
+  comment   => "construct shift logical right",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. slr %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
+ShiftRA => {
+  irn_flags => "R",
+  comment   => "construct shift right arithmetical",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. sra %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
+And => {
+  irn_flags => "R",
+  comment   => "construct logical and",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. and %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
+Or => {
+  irn_flags => "R",
+  comment   => "construct logical or",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. or %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
 #Mul => {
 #  op_flags  => "C",
 #  irn_flags => "R",

@@ -153,7 +153,7 @@ static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
 */
 	if (is_imm_encodeable(op2)) {
 		ir_node *new_op1 = be_transform_node(op1);
-		return new_imm(dbgi, block, new_op1, get_tarval_long(get_Const_tarval(node)));
+		return new_imm(dbgi, block, new_op1, get_tarval_long(get_Const_tarval(op2)));
 	}
 
 	new_op2 = be_transform_node(op2);
@@ -244,6 +244,8 @@ static ir_node *gen_Load(ir_node *node)
 		panic("SPARC: no fp implementation yet");
 
 	new_load = new_bd_sparc_Load(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+	set_irn_pinned(new_load, get_irn_pinned(node));
+
 	return new_load;
 }
 
@@ -382,9 +384,51 @@ static ir_node *gen_be_Call(ir_node *node)
 	return res;
 }
 
+/**
+ * Transforms a Switch.
+ *
+ */
 static ir_node *gen_SwitchJmp(ir_node *node)
 {
-	panic("TODO: not implemented yet");
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *selector = get_Cond_selector(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node *new_op = be_transform_node(selector);
+	ir_node *const_graph;
+	ir_node *sub;
+
+	ir_node *proj;
+	const ir_edge_t *edge;
+	int min = INT_MAX;
+	int max = INT_MIN;
+	int translation;
+	int pn;
+	int n_projs;
+
+	foreach_out_edge(node, edge) {
+		proj = get_edge_src_irn(edge);
+		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
+
+		pn = get_Proj_proj(proj);
+
+		min = pn<min ? pn : min;
+		max = pn>max ? pn : max;
+	}
+
+	translation = min;
+	n_projs = max - translation + 1;
+
+	foreach_out_edge(node, edge) {
+		proj = get_edge_src_irn(edge);
+		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
+
+		pn = get_Proj_proj(proj) - translation;
+		set_Proj_proj(proj, pn);
+	}
+
+	const_graph = create_const_graph_value(dbgi, block, translation);
+	sub = new_bd_sparc_Sub_reg(dbgi, block, new_op, const_graph);
+	return new_bd_sparc_SwitchJmp(dbgi, block, sub, n_projs, get_Cond_default_proj(node) - translation);
 }
 
 /**
@@ -400,9 +444,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 	// switch/case jumps
 	if (mode != mode_b) {
-		//return gen_SwitchJmp(node);
-		panic("TODO: switchJmp not implemented yet");
-		return node;
+		return gen_SwitchJmp(node);
 	}
 
 	// regular if/else jumps
@@ -442,16 +484,12 @@ static ir_node *gen_Cmp(ir_node *node)
 	/* compare with 0 can be done with Tst */
 	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
 		new_op1 = be_transform_node(op1);
-		//new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-		//panic("TODO: implement Tst instruction");
 		return new_bd_sparc_Tst(dbgi, block, new_op1, false,
 		                          is_unsigned);
 	}
 
 	if (is_Const(op1) && tarval_is_null(get_Const_tarval(op1))) {
 		new_op2 = be_transform_node(op2);
-		//new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
-		//panic("TODO: implement Tst instruction");
 		return new_bd_sparc_Tst(dbgi, block, new_op2, true,
 		                          is_unsigned);
 	}
@@ -480,6 +518,102 @@ static ir_node *gen_SymConst(ir_node *node)
 }
 
 /**
+ * Create an And that will zero out upper bits.
+ *
+ * @param dbgi     debug info
+ * @param block    the basic block
+ * @param op       the original node
+ * @param src_bits  number of lower bits that will remain
+ */
+static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	if (src_bits == 8) {
+		return new_bd_sparc_And_imm(dbgi, block, op, 0xFF);
+	} else if (src_bits == 16) {
+		ir_node *lshift = new_bd_sparc_ShiftLL_imm(dbgi, block, op, 16);
+		ir_node *rshift = new_bd_sparc_ShiftLR_imm(dbgi, block, lshift, 16);
+		return rshift;
+	} else {
+		panic("zero extension only supported for 8 and 16 bits");
+	}
+}
+
+/**
+ * Generate code for a sign extension.
+ */
+static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	int shift_width = 32 - src_bits;
+	ir_node *lshift_node = new_bd_sparc_ShiftLL_imm(dbgi, block, op, shift_width);
+	ir_node *rshift_node = new_bd_sparc_ShiftRA_imm(dbgi, block, lshift_node, shift_width);
+	return rshift_node;
+}
+
+/**
+ * returns true if it is assured, that the upper bits of a node are "clean"
+ * which means for a 16 or 8 bit value, that the upper bits in the register
+ * are 0 for unsigned and a copy of the last significant bit for signed
+ * numbers.
+ */
+static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+{
+	(void) transformed_node;
+	(void) mode;
+	/* TODO */
+	return false;
+}
+
+/**
+ * Transforms a Conv node.
+ *
+ */
+static ir_node *gen_Conv(ir_node *node) {
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *op       = get_Conv_op(node);
+	ir_node  *new_op   = be_transform_node(op);
+	ir_mode  *src_mode = get_irn_mode(op);
+	ir_mode  *dst_mode = get_irn_mode(node);
+	dbg_info *dbg      = get_irn_dbg_info(node);
+
+	if (src_mode == dst_mode)
+		return new_op;
+
+	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
+		panic("FP not implemented");
+	} else { /* complete in gp registers */
+		int src_bits = get_mode_size_bits(src_mode);
+		int dst_bits = get_mode_size_bits(dst_mode);
+		int min_bits;
+		ir_mode *min_mode;
+
+		if (src_bits == dst_bits) {
+			/* kill unneccessary conv */
+			return new_op;
+		}
+
+		if (src_bits < dst_bits) {
+			min_bits = src_bits;
+			min_mode = src_mode;
+		} else {
+			min_bits = dst_bits;
+			min_mode = dst_mode;
+		}
+
+		if (upper_bits_clean(new_op, min_mode)) {
+			return new_op;
+		}
+
+		if (mode_is_signed(min_mode)) {
+			return gen_sign_extension(dbg, block, new_op, min_bits);
+		} else {
+			return gen_zero_extension(dbg, block, new_op, min_bits);
+		}
+	}
+}
+
+/**
  * Transform some Phi nodes
  */
 static ir_node *gen_Phi(ir_node *node)
@@ -503,13 +637,173 @@ static ir_node *gen_Phi(ir_node *node)
 
 	/* phi nodes allow loops, so we use the old arguments for now
 	 * and fix this later */
-	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node),
-	get_irn_in(node) + 1);
+	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(node, phi);
 	be_duplicate_deps(node, phi);
 	arch_set_out_register_req(phi, 0, req);
 	be_enqueue_preds(node);
 	return phi;
+}
+
+
+/**
+ * Transform a Proj from a Load.
+ */
+static ir_node *gen_Proj_Load(ir_node *node) {
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *load     = get_Proj_pred(node);
+	ir_node  *new_load = be_transform_node(load);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long     proj      = get_Proj_proj(node);
+
+	/* renumber the proj */
+	switch (get_sparc_irn_opcode(new_load)) {
+		case iro_sparc_Load:
+			/* handle all gp loads equal: they have the same proj numbers. */
+			if (proj == pn_Load_res) {
+				return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_sparc_Load_res);
+			} else if (proj == pn_Load_M) {
+				return new_rd_Proj(dbgi, block, new_load, mode_M, pn_sparc_Load_M);
+			}
+		break;
+	/*
+		case iro_sparc_fpaLoad:
+			panic("FP not implemented yet");
+		break;
+	*/
+		default:
+			panic("Unsupported Proj from Load");
+	}
+
+    return be_duplicate_node(node);
+}
+
+/**
+ * Transform the Projs of a be_AddSP.
+ */
+static ir_node *gen_Proj_be_AddSP(ir_node *node) {
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long     proj      = get_Proj_proj(node);
+
+	if (proj == pn_be_AddSP_sp) {
+		// TODO: check for correct pn_sparc_* flags
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
+		                           pn_sparc_SubSP_stack);
+		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
+		return res;
+	} else if(proj == pn_be_AddSP_res) {
+		// TODO: check for correct pn_sparc_* flags
+		return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_sparc_SubSP_stack);
+	} else if (proj == pn_be_AddSP_M) {
+		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_sparc_SubSP_M);
+	}
+
+	panic("Unsupported Proj from AddSP");
+}
+
+/**
+ * Transform the Projs of a be_SubSP.
+ */
+static ir_node *gen_Proj_be_SubSP(ir_node *node) {
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long     proj      = get_Proj_proj(node);
+
+	if (proj == pn_be_SubSP_sp) {
+		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
+		                           pn_sparc_AddSP_stack);
+		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
+		return res;
+	} else if (proj == pn_be_SubSP_M) {
+		return new_rd_Proj(dbgi,  block, new_pred, mode_M, pn_sparc_AddSP_M);
+	}
+
+	panic("Unsupported Proj from SubSP");
+}
+
+/**
+ * Transform the Projs from a Cmp.
+ */
+static ir_node *gen_Proj_Cmp(ir_node *node) {
+	(void) node;
+	panic("not implemented");
+}
+
+
+/**
+ * Transform a Proj node.
+ */
+static ir_node *gen_Proj(ir_node *node) {
+	ir_graph *irg  = current_ir_graph;
+	dbg_info *dbgi = get_irn_dbg_info(node);
+	ir_node  *pred = get_Proj_pred(node);
+	long     proj  = get_Proj_proj(node);
+
+	(void) irg;
+    (void) dbgi;
+
+	if (is_Store(pred)) {
+		if (proj == pn_Store_M) {
+			return be_transform_node(pred);
+		} else {
+			panic("Unsupported Proj from Store");
+		}
+	} else if (is_Load(pred)) {
+		return gen_Proj_Load(node);
+	} else if (be_is_SubSP(pred)) {
+		//panic("gen_Proj not implemented for SubSP");
+		return gen_Proj_be_SubSP(node);
+	} else if (be_is_AddSP(pred)) {
+		//panic("gen_Proj not implemented for AddSP");
+		return gen_Proj_be_AddSP(node);
+	} else if (is_Cmp(pred)) {
+		//panic("gen_Proj not implemented for Cmp");
+		return gen_Proj_Cmp(node);
+	} else if (is_Start(pred)) {
+	/*
+		if (proj == pn_Start_X_initial_exec) {
+			ir_node *block = get_nodes_block(pred);
+			ir_node *jump;
+
+			// we exchange the ProjX with a jump
+			block = be_transform_node(block);
+			jump  = new_rd_Jmp(dbgi, block);
+			return jump;
+		}
+
+		if (node == get_irg_anchor(irg, anchor_tls)) {
+			return gen_Proj_tls(node);
+		}
+	*/
+	} else {
+		ir_node *new_pred = be_transform_node(pred);
+		ir_mode *mode     = get_irn_mode(node);
+		if (mode_needs_gp_reg(mode)) {
+			ir_node *block    = be_transform_node(get_nodes_block(node));
+			ir_node *new_proj = new_r_Proj(block, new_pred, mode_Iu, get_Proj_proj(node));
+			new_proj->node_nr = node->node_nr;
+			return new_proj;
+		}
+	}
+
+    return be_duplicate_node(node);
+}
+
+/**
+ * transform a Jmp
+ */
+static ir_node *gen_Jmp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	return new_bd_sparc_Jmp(dbgi, new_block);
 }
 
 /**
@@ -552,6 +846,10 @@ void sparc_register_transformers(void)
 	set_transformer(op_SymConst,     gen_SymConst);
 
 	set_transformer(op_Phi,          gen_Phi);
+	set_transformer(op_Proj,         gen_Proj);
+
+	set_transformer(op_Conv,         gen_Conv);
+	set_transformer(op_Jmp,          gen_Jmp);
 
 	/* node list */
 	/*
@@ -568,7 +866,6 @@ void sparc_register_transformers(void)
 	set_transformer(op_Mul,          gen_Mul);
 	set_transformer(op_Not,          gen_Not);
 	set_transformer(op_Or,           gen_Or);
-	set_transformer(op_Proj,         gen_Proj);
 	set_transformer(op_Quot,         gen_Quot);
 	set_transformer(op_Rotl,         gen_Rotl);
 	set_transformer(op_Shl,          gen_Shl);
