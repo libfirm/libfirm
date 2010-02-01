@@ -1098,7 +1098,13 @@ Setcc => {
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
 	attr      => "pn_Cmp pnc",
-	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
+	# The way we handle Setcc with float nodes (potentially) destroys the flags
+	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
+	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
+		. "\tif ((pnc & ia32_pn_Cmp_float) && ((pnc & 0xf) != pn_Cmp_Uo) && ((pnc & 0xf) != pn_Cmp_Leg)) {\n"
+		. "\t\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n"
+		. "\t\t/* attr->latency = 3; */\n"
+		. "\t}\n",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
