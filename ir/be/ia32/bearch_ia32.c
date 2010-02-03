@@ -2243,8 +2243,8 @@ static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
 
 static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
-	(void) sel;
 	ir_mode *mode = get_irn_mode(mux_true);
+	(void) sel;
 
 	if (!mode_is_int(mode) && !mode_is_reference(mode)
 			&& mode != mode_b)
