@@ -440,7 +440,10 @@ static void verify_linkage(ir_entity *entity)
 	/* local and extern are mutually exclusive */
 	(void) linkage;
 	assert(! ((linkage & IR_LINKAGE_EXTERN) && (linkage & IR_LINKAGE_LOCAL)));
-	assert(! (linkage & IR_LINKAGE_EXTERN) || !entity_has_definition(entity));
+	if (!is_method_entity(entity) && (linkage & IR_LINKAGE_EXTERN)) {
+		assert(!entity_has_definition(entity));
+	}
+	assert(! ((linkage & IR_LINKAGE_CONSTANT) && (linkage & IR_LINKAGE_WEAK)));
 }
 
 void set_entity_linkage(ir_entity *entity, ir_linkage linkage)

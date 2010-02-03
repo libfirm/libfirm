@@ -365,7 +365,6 @@ void set_type_state(ir_type *tp, ir_type_state state)
 		case tpo_struct:
 			for (i = 0; i < get_struct_n_members(tp); i++) {
 				assert(get_entity_offset(get_struct_member(tp, i)) > -1);
-				assert((get_entity_allocation(get_struct_member(tp, i)) == allocation_automatic));
 			}
 			break;
 		case tpo_union:

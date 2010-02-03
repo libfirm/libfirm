@@ -715,7 +715,6 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 				if (mask & mtp_property_nothrow)       fputs("nothrow_function, ", F);
 				if (mask & mtp_property_naked)         fputs("naked_function, ", F);
 				if (mask & mtp_property_malloc)        fputs("malloc_function, ", F);
-				if (mask & mtp_property_weak)          fputs("weak_function, ", F);
 				if (mask & mtp_property_returns_twice) fputs("weak_function, ", F);
 				if (mask & mtp_property_intrinsic)     fputs("intrinsic_function, ", F);
 				if (mask & mtp_property_runtime)       fputs("runtime_function, ", F);

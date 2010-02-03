@@ -1285,12 +1285,17 @@ typedef struct _inline_env_t {
  *
  * @param call  the call node
  */
-static ir_graph *get_call_called_irg(ir_node *call) {
+static ir_graph *get_call_called_irg(ir_node *call)
+{
 	ir_node *addr;
 
 	addr = get_Call_ptr(call);
 	if (is_Global(addr)) {
 		ir_entity *ent = get_Global_entity(addr);
+		/* we don't know which function gets finally bound to a weak symbol */
+		if (get_entity_linkage(ent) & IR_LINKAGE_WEAK)
+			return NULL;
+
 		return get_entity_irg(ent);
 	}
 
@@ -1357,8 +1362,7 @@ void inline_small_irgs(ir_graph *irg, int size) {
 			ir_graph            *callee = entry->callee;
 			irg_inline_property prop    = get_irg_inline_property(callee);
 
-			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
-				/* do not inline forbidden / weak graphs */
+			if (prop == irg_inline_forbidden) {
 				continue;
 			}
 
@@ -1636,8 +1640,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 				callee = entry->callee;
 
 				prop = get_irg_inline_property(callee);
-				if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
-					/* do not inline forbidden / weak graphs */
+				if (prop == irg_inline_forbidden) {
 					continue;
 				}
 
@@ -1691,8 +1694,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 			callee = entry->callee;
 
 			prop = get_irg_inline_property(callee);
-			if (prop == irg_inline_forbidden || get_irg_additional_properties(callee) & mtp_property_weak) {
-				/* do not inline forbidden / weak graphs */
+			if (prop == irg_inline_forbidden) {
 				continue;
 			}
 
@@ -1995,7 +1997,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		return entry->benefice = INT_MIN;
 	}
 
-	if (get_irg_additional_properties(callee) & (mtp_property_noreturn | mtp_property_weak)) {
+	if (get_irg_additional_properties(callee) & mtp_property_noreturn) {
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: not inlining noreturn or weak\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;

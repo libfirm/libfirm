@@ -187,12 +187,12 @@ static void collect_irg_calls(ir_node *call, void *env) {
 
 		callee = get_Global_entity(call_ptr);
 
-		/* we can only clone calls to existing entities */
-		if (get_entity_irg(callee) == NULL)
+		/* we don't know which function gets finally bound to a weak symbol */
+		if (get_entity_linkage(callee) & IR_LINKAGE_WEAK)
 			return;
 
-		/* we cannot clone calls to weak functions */
-		if (get_entity_additional_properties(callee) & mtp_property_weak)
+		/* we can only clone calls to existing entities */
+		if (get_entity_irg(callee) == NULL)
 			return;
 
 		process_call(call, callee, hmap);
