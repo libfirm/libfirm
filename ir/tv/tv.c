@@ -41,6 +41,7 @@
 #endif
 #include <stdlib.h>
 
+#include "bitfiddle.h"
 #include "tv_t.h"
 #include "set.h"
 #include "entity_t.h"
@@ -1622,6 +1623,50 @@ int tarval_is_single_bit(tarval *tv) {
 		}
 	}
 	return bits;
+}
+
+/*
+ * Return the number of set bits in a given (integer) tarval.
+ */
+int get_tarval_popcnt(tarval *tv)
+{
+	int i, l;
+	int bits;
+
+	if (!tv || tv == tarval_bad) return -1;
+	if (! mode_is_int(tv->mode)) return -1;
+
+	l = get_mode_size_bytes(tv->mode);
+	for (bits = 0, i = l - 1; i >= 0; --i) {
+		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
+
+		bits += popcnt(v);
+	}
+	return bits;
+}
+
+/**
+ * Return the number of the lowest set bit in a given (integer) tarval.
+ *
+ * @param tv    the tarval
+ *
+ * @return number of lowest set bit or -1 on error
+ */
+int get_tarval_lowest_bit(tarval *tv)
+{
+	int i, l;
+
+	if (!tv || tv == tarval_bad) return -1;
+	if (! mode_is_int(tv->mode)) return -1;
+
+	l = get_mode_size_bytes(tv->mode);
+	for (i = 0; i < l; ++i) {
+		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
+
+		if (v)
+			return ntz(v) + i * 8;
+	}
+	return -1;
 }
 
 /*

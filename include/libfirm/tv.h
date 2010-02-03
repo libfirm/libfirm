@@ -716,10 +716,10 @@ char *get_tarval_bitpattern(tarval *tv);
  *
  * To query a 32bit value the following code can be used:
  *
- * val0 = tarval_sub_bits(tv, 0);
+ * val0 = tarval_sub_bits(tv, 0);  <- lowest bits
  * val1 = tarval_sub_bits(tv, 1);
  * val2 = tarval_sub_bits(tv, 2);
- * val3 = tarval_sub_bits(tv, 3);
+ * val3 = tarval_sub_bits(tv, 3);  <- highest bits
  *
  * Because this is the bit representation of the target machine, only the following
  * operations are legal on the result:
@@ -728,7 +728,7 @@ char *get_tarval_bitpattern(tarval *tv);
  * - bitwise logical operations to select/mask bits
  *
  * @param tv        the tarval
- * @param byte_ofs  the byte offset
+ * @param byte_ofs  the byte offset from lower to higher
  *
  * @note
  *   The result of this function is undefined if the mode is neither integer nor float.
@@ -742,6 +742,24 @@ unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
  * @param tv    the tarval
  */
 int tarval_is_single_bit(tarval *tv);
+
+/**
+ * Return the number of set bits in a given (integer) tarval.
+ *
+ * @param tv    the tarval
+ *
+ * @return number of set bits or -1 on error
+ */
+int get_tarval_popcnt(tarval *tv);
+
+/**
+ * Return the number of the lowest set bit in a given (integer) tarval.
+ *
+ * @param tv    the tarval
+ *
+ * @return number of lowest set bit or -1 on error
+ */
+int get_tarval_lowest_bit(tarval *tv);
 
 /**
  * Output a tarval to a string buffer.
