@@ -169,7 +169,6 @@ enum type_flags {
  *  - type_op:     A tp_op specifying the kind of the type.
  *  - name:        An identifier specifying the name of the type.  To be
  *                 set by the frontend.
- *  - visibility:  The visibility of this type.
  *  - size:        The size of the type, i.e. an entity of this type will
  *                 occupy size bits in memory.  In several cases this is
  *                 determined when fixing the layout of this type (class,

@@ -818,10 +818,10 @@ ir_entity *create_Block_entity(ir_node *block) {
 
 		glob = get_glob_type();
 		entity = new_entity(glob, id_unique("block_%u"), get_code_type());
+		set_entity_linkage(entity, IR_LINKAGE_LOCAL|IR_LINKAGE_CONSTANT);
 		nr = get_irp_next_label_nr();
 		set_entity_label(entity, nr);
 		set_entity_compiler_generated(entity, 1);
-		set_entity_allocation(entity, allocation_static);
 
 		block->attr.block.entity = entity;
 	}

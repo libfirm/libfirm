@@ -59,27 +59,9 @@ static void collect_call(ir_node *node, void *env) {
 	}
 }
 
-/**
- * Type walker, set the peculiarity of entities which graphs
- * gets removed to peculiarity_description.
- */
-static void make_entity_to_description(type_or_ent tore, void *env) {
-	if (is_entity(tore.ent)) {
-		ir_entity *ent = tore.ent;
-
-		if ((is_Method_type(get_entity_type(ent)))                        &&
-			(get_entity_peculiarity(ent) != peculiarity_description)      &&
-			(get_entity_visibility(ent)  != visibility_external_allocated)   ) {
-				ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
-				if (get_entity_link(impl) != env) {
-					set_entity_peculiarity(ent, peculiarity_description);
-				}
-		}
-	}
-}
-
 /* garbage collect methods: mark and remove */
-void gc_irgs(int n_keep, ir_entity ** keep_arr) {
+void gc_irgs(int n_keep, ir_entity ** keep_arr)
+{
 	void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
 	int i;
 
@@ -102,55 +84,52 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr) {
 		}
 
 		for (i = 0; i < ARR_LEN(marked); ++i) {
-			/* check for extern methods, these don't have an IRG */
-			if (get_entity_visibility(marked[i]) != visibility_external_allocated) {
-				ir_graph *irg = get_entity_irg(marked[i]);
-				ir_node *node = get_irg_end(irg);
+			ir_graph *irg = get_entity_irg(marked[i]);
+			ir_node *node;
 
-				/* collect calls */
-				ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-				irg_walk_graph(irg, firm_clear_link, collect_call, node);
+			if (irg == NULL)
+				continue;
 
-				/* iterate calls */
-				for (node = get_irn_link(node); node; node = get_irn_link(node)) {
-					int i;
-					assert(is_Call(node));
+			node = get_irg_end(irg);
 
-					for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
-						ir_entity *ent = get_Call_callee(node, i);
+			/* collect calls */
+			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
+			irg_walk_graph(irg, firm_clear_link, collect_call, node);
 
-						if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
-							set_entity_link(ent, MARK);
-							ARR_APP1(ir_entity *, marked, ent);
+			/* iterate calls */
+			for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+				int i;
+				assert(is_Call(node));
 
-							DB((dbg, LEVEL_1, "  method %+F can be called from Call %+F: kept alive.\n",
-							    ent, node));
-						}
+				for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
+					ir_entity *ent = get_Call_callee(node, i);
+
+					if (get_entity_irg(ent) && get_entity_link(ent) != MARK) {
+						set_entity_link(ent, MARK);
+						ARR_APP1(ir_entity *, marked, ent);
+
+						DB((dbg, LEVEL_1, "  method %+F can be called from Call %+F: kept alive.\n",
+							ent, node));
 					}
 				}
-				ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 			}
+			ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 		}
 		DEL_ARR_F(marked);
 	}
 
 	/* clean */
-	type_walk(make_entity_to_description, NULL, MARK);
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph  *irg = get_irp_irg(i);
 		ir_entity *ent = get_irg_entity(irg);
-		/* Removing any graph invalidates all interprocedural loop trees. */
-		if (get_irg_loopinfo_state(irg) == loopinfo_ip_consistent ||
-		    get_irg_loopinfo_state(irg) == loopinfo_ip_inconsistent) {
-			free_loop_information(irg);
-		}
-		if ((get_entity_visibility(ent) == visibility_local) && (get_entity_link(ent) != MARK)) {
 
-			DB((dbg, LEVEL_1, "  freeing method %+F\n",	ent));
-			remove_irp_irg(irg);
-			set_entity_peculiarity(ent, peculiarity_description);
-		}
-		set_entity_link(ent, NULL);
+		if (get_entity_link(ent) == MARK)
+			continue;
+
+		DB((dbg, LEVEL_1, "  freeing method %+F\n",	ent));
+		remove_irp_irg(irg);
+
+		remove_class_member(get_entity_owner(ent), ent);
 	}
 }
 

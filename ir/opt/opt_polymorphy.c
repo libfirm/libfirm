@@ -98,7 +98,8 @@ static ir_type *get_dynamic_type(ir_node *ptr) {
 /**
  * Check, if an entity is final, i.e. is not anymore overridden.
  */
-static int is_final_ent(ir_entity *ent) {
+static int is_final_ent(ir_entity *ent)
+{
 	if (is_entity_final(ent)) {
 		/* not possible to override this entity. */
 		return 1;
@@ -155,8 +156,6 @@ ir_node *transform_node_Sel(ir_node *node) {
 
 		/* We know which method will be called, no dispatch necessary. */
 		called_ent = resolve_ent_polymorphy(dyn_tp, ent);
-		/* called_ent may not be description: has no Address/Const to Call! */
-		assert(get_entity_peculiarity(called_ent) != peculiarity_description);
 
 		rem_block = get_cur_block();
 		set_cur_block(get_nodes_block(node));
@@ -192,8 +191,7 @@ ir_node *transform_polymorph_Load(ir_node *load) {
 	if (! is_Sel(field_ptr)) return load;
 
 	ent = get_Sel_entity(field_ptr);
-	if ((get_entity_allocation(ent) != allocation_static)    ||
-		(get_entity_variability(ent) != variability_constant)  )
+	if ( !(get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) )
 		return load;
 
 	/* If the entity is a leave in the inheritance tree,
@@ -210,8 +208,6 @@ ir_node *transform_polymorph_Load(ir_node *load) {
 
 			/* We know which method will be called, no dispatch necessary. */
 			loaded_ent = resolve_ent_polymorphy(dyn_tp, ent);
-			/* called_ent may not be description: has no Address/Const to Call! */
-			assert(get_entity_peculiarity(loaded_ent) != peculiarity_description);
 			new_node = get_atomic_ent_value(loaded_ent);
 		}
 	}

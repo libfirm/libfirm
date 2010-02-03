@@ -286,7 +286,7 @@ static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == visibility_external_allocated) {
+		if (get_entity_linkage(entity) & IR_LINKAGE_EXTERN) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");
@@ -2419,7 +2419,7 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
-		if (get_entity_visibility(entity) == visibility_external_allocated) {
+		if (get_entity_linkage(entity) & IR_LINKAGE_EXTERN) {
 			be_emit_cstring("@INDNTPOFF");
 		} else {
 			be_emit_cstring("@NTPOFF");

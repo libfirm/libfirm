@@ -50,8 +50,6 @@
 
 extern ir_op *get_op_Mulh(void);
 
-int is_direct_entity(ir_entity *ent);
-
 ir_mode* ppc32_mode_Cond = NULL;
 
 /**
@@ -953,12 +951,14 @@ static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32
 	}
 	else if(is_ppc32_SymConst(ptr))
 	{
+#if 0
 		ir_entity *ent = get_ppc32_frame_entity(ptr);
 		if(is_direct_entity(ent))
 		{
 			id_symconst = get_entity_ident(ent);
 			ptr = new_bd_ppc32_Addis_zero(env->dbg, env->block, mode_P, ppc32_ao_Ha16, NULL, id_symconst);
 		}
+#endif
 	}
 	*ptv = tv_const;
 	*pid = id_symconst;
@@ -1383,7 +1383,9 @@ static int cmp_tv_ent(const void *a, const void *b, size_t len) {
 }
 
 /** Generates a SymConst node for a known FP const */
-static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_const) {
+static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env,
+                                      tarval *known_const)
+{
 	static set    *const_set = NULL;
 	static ir_type *tp = NULL;
 	struct tv_ent  key;
@@ -1408,9 +1410,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 		ent = new_entity(get_glob_type(), new_id_from_str(buf), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
-		set_entity_visibility(ent, visibility_local);
-		set_entity_variability(ent, variability_constant);
-		set_entity_allocation(ent, allocation_static);
+		set_entity_linkage(ent, IR_LINKAGE_CONSTANT|IR_LINKAGE_LOCAL);
 
 		/* we create a new entity here: It's initialization must resist on the
 		    const code irg */
@@ -1532,6 +1532,7 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 			env->irn = gen_fp_known_symconst(env, tv_const);
 			env->mode = mode_P;
 			ent = get_ppc32_frame_entity(env->irn);
+#if 0
 			if(is_direct_entity(ent))
 			{
 				ident *id_symconst = get_entity_ident(ent);
@@ -1547,36 +1548,21 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
 			}
 			else
 			{
+#endif
 				addr = gen_ppc32_SymConst (env);
 				if(mode==mode_D)
 					load = new_bd_ppc32_Lfd(env->dbg, env->block, addr, new_NoMem());
 				else // mode_F
 					load = new_bd_ppc32_Lfs(env->dbg, env->block, addr, new_NoMem());
+#if 0
 			}
+#endif
 			return new_rd_Proj(env->dbg, env->block, load, mode, pn_Load_res);
 		}
 
 		default:
 			panic("Mode for fConst not supported: %F", env->mode);
 	}
-}
-
-
-/**
- * Returns true, if the entity can be accessed directly,
- * or false, if the address must be loaded first
- */
-int is_direct_entity(ir_entity *ent) {
-	return get_entity_visibility(ent) != visibility_external_allocated;
-/*	visibility vis = get_entity_visibility(ent);
-	if(is_Method_type(get_entity_type(ent)))
-	{
-		return (vis!=visibility_external_allocated);
-	}
-	else
-	{
-		return (vis==visibility_local);
-	}*/
 }
 
 /**
@@ -1595,12 +1581,15 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
 	switch(get_nice_modecode(env->mode)){
 		case irm_P:
 		{
+			/*
 			if (is_direct_entity(ent))
 			{
+			*/
 				ir_node *node_addis = new_bd_ppc32_Addis_zero(env->dbg, env->block, env->mode, ppc32_ao_Hi16, NULL, id_symconst);
 				node = new_bd_ppc32_Ori(env->dbg, env->block, node_addis, env->mode);
 				set_ppc32_symconst_ident(node, id_symconst);
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
+#if 0
 			}
 			else
 			{
@@ -1610,6 +1599,7 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
 				set_ppc32_offset_mode(node, ppc32_ao_Lo16);
 				node = new_rd_Proj(env->dbg, env->block, node, env->mode, pn_Load_res);
 			}
+#endif
 			break;
 		}
 

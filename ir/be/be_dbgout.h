@@ -42,7 +42,7 @@ void be_dbg_so(const char *filename);
 void be_dbg_main_program(void);
 
 /** debug for a method begin */
-void be_dbg_method_begin(ir_entity *ent, const be_stack_layout_t *layout);
+void be_dbg_method_begin(const ir_entity *ent, const be_stack_layout_t *layout);
 
 /** debug for a method end */
 void be_dbg_method_end(void);
@@ -51,7 +51,7 @@ void be_dbg_method_end(void);
 void be_dbg_types(void);
 
 /** dump a variable in the global type */
-void be_dbg_variable(ir_entity *ent);
+void be_dbg_variable(const ir_entity *ent);
 
 void be_dbg_set_dbg_info(dbg_info *dbgi);
 

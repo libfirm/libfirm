@@ -57,19 +57,6 @@ static eset *_live_classes = NULL;
 static eset *_live_graphs  = NULL;
 
 /**
- * Given a method, find the firm graph that implements that method.
- */
-static ir_graph *get_implementing_graph(ir_entity *method)
-{
-	ir_graph *graph = NULL;
-
-	if (get_entity_peculiarity(method) != peculiarity_description)
-		graph = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(method)));
-
-	return graph;
-}
-
-/**
  * Add a graph to the set of live graphs.
  *
  * @param graph  the graph to add
@@ -120,7 +107,7 @@ static int add_implementing_graphs(ir_entity *method)
 	int change = FALSE;
 
 	if (NULL == graph)
-		graph = get_implementing_graph(method);
+		graph = get_entity_irg(method);
 
 	DB((dbg, LEVEL_2, "RTA:        new call to %+F\n", method));
 
@@ -223,9 +210,10 @@ static int rta_fill_incremental(void)
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *graph = get_irp_irg(i);
 		ir_entity *ent = get_irg_entity(graph);
+		ir_linkage linkage = get_entity_linkage(ent);
 
-		if ((visibility_external_visible == get_entity_visibility(ent)) ||
-		    (stickyness_sticky == get_entity_stickyness(ent))) {
+		if (!(linkage & IR_LINKAGE_LOCAL)
+				|| (linkage & IR_LINKAGE_HIDDEN_USER)) {
 			eset_insert(_live_graphs, graph);
 		}
 	}
@@ -374,16 +362,16 @@ void rta_init(void)
  * Changes the peculiarity of entities that represents
  * dead graphs to peculiarity_description.
  */
-static void make_entity_to_description(type_or_ent tore, void *env) {
+static void make_entity_to_description(type_or_ent tore, void *env)
+{
 	(void) env;
 	if (is_entity(tore.ent)) {
 		ir_entity *ent = tore.ent;
 
-		if ((is_Method_type(get_entity_type(ent)))                        &&
-		    (get_entity_peculiarity(ent) != peculiarity_description)      &&
-		    (get_entity_visibility(ent)  != visibility_external_allocated)   ) {
-			ir_graph *irg = get_entity_irg(get_SymConst_entity(get_atomic_ent_value(ent)));
-			if (! eset_contains(_live_graphs, irg)) {
+		if ((is_Method_type(get_entity_type(ent))) &&
+			!entity_is_externally_visible(ent)) {
+			ir_graph *irg = get_entity_irg(ent);
+			if (irg != NULL && ! eset_contains(_live_graphs, irg)) {
 				set_entity_peculiarity(ent, peculiarity_description);
 				set_entity_irg(ent, NULL);
 			}
@@ -410,10 +398,6 @@ void rta_delete_dead_graphs(void)
 		irg = get_irp_irg(i);
 
 		if (! rta_is_alive_graph(irg)) {
-#ifndef NDEBUG
-			ir_entity *ent = get_irg_entity(irg);
-			assert(visibility_external_visible != get_entity_visibility(ent));
-#endif
 			set_irg_link(irg, dead_irgs);
 			dead_irgs = irg;
 			++n_dead_irgs;

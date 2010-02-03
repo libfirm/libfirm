@@ -661,7 +661,8 @@ static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 /**
  * dump the stabs for a method begin
  */
-static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout) {
+static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout)
+{
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_type      *mtp, *rtp;
 	unsigned     type_num;
@@ -681,7 +682,7 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 	type_num = get_type_number(h, rtp);
 	be_emit_irprintf("\t.stabs\t\"%s:%c%u\",%u,0,0,%s\n",
 		get_entity_name(ent),
-		get_entity_visibility(ent) == visibility_external_visible ? 'F' : 'f',
+		entity_is_externally_visible(ent) ? 'F' : 'f',
 		type_num,
 		N_FUN,
 		get_entity_ld_name(ent));
@@ -793,17 +794,16 @@ static void stabs_variable(dbg_handle *handle, ir_entity *ent) {
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
 	char buf[1024];
 
-	if (get_entity_visibility(ent) == visibility_external_visible) {
+	if (entity_is_externally_visible(ent)) {
 		/* a global variable */
 		snprintf(buf, sizeof(buf), "\t.stabs\t\"%s:G%u\",%d,0,0,0\n",
 			get_entity_name(ent), tp_num, N_GSYM);
-	} else { /* some kind of local */
-		ir_variability variability = get_entity_variability(ent);
+	} else {
+		/* some kind of local */
+		ir_linkage linkage = get_entity_linkage(ent);
 		int kind = N_STSYM;
 
-		if (variability == variability_uninitialized)
-			kind = N_LCSYM;
-		else if (variability == variability_constant)
+		if (linkage & IR_LINKAGE_CONSTANT)
 			kind = N_ROSYM;
 		snprintf(buf, sizeof(buf), "\t.stabs\t\"%s:S%u\",%d,0,0,%s\n",
 			get_entity_name(ent), tp_num, kind, get_entity_ld_name(ent));

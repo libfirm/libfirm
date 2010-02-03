@@ -30,7 +30,8 @@
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
-
+#include "error.h"
+#include "tv.h"
 
 #ifdef NDEBUG
 /*
@@ -135,15 +136,6 @@ static void show_ent_overwrite_cnt(ir_entity *ent) {
 			ir_fprintf(stderr, " %t:\n", super);
 		}
 	}
-}
-
-/**
- * Shows a wrong entity allocation
- */
-static void show_ent_alloc_error(ir_entity *ent) {
-	ir_fprintf(stderr, "%+e owner %t has allocation %s\n",
-		ent, get_entity_type(ent),
-		get_allocation_name(get_entity_allocation(ent)));
 }
 
 #endif /* #ifndef NDEBUG */
@@ -288,7 +280,8 @@ static void on_irg_storage(ir_node *n, void *env) {
  * checks whether a given constant IR node is NOT on the
  * constant IR graph.
  */
-static int constant_on_wrong_irg(ir_node *n) {
+static int constant_on_wrong_irg(ir_node *n)
+{
 	struct myenv env;
 
 	env.res = 1;  /* on right obstack */
@@ -298,35 +291,45 @@ static int constant_on_wrong_irg(ir_node *n) {
 	return ! env.res;
 }
 
+static int initializer_constant_on_wrong_irg(ir_initializer_t *initializer)
+{
+	switch (get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL:
+		return 0;
+	case IR_INITIALIZER_TARVAL:
+		return 0;
+	case IR_INITIALIZER_CONST:
+		return constant_on_wrong_irg(get_initializer_const_value(initializer));
+	case IR_INITIALIZER_COMPOUND: {
+		int n = get_initializer_compound_n_entries(initializer);
+		int i;
+		for (i = 0; i < n; ++i) {
+			ir_initializer_t *sub
+				= get_initializer_compound_value(initializer, i);
+			if (initializer_constant_on_wrong_irg(sub))
+				return 1;
+		}
+		return 0;
+	}
+	}
+	panic("invalid initializer in initializer_on_wrong_irg");
+}
+
 /**
  * Check if constants node are NOT on the constant IR graph.
  *
  * @return NON-zero if an entity initializer constant is NOT on
  * the current_ir_graph's obstack.
  */
-static int constants_on_wrong_irg(ir_entity *ent) {
-	if (get_entity_variability(ent) == variability_uninitialized) return 0;
-
-	if (is_compound_entity(ent)) {
-		if(!ent->has_initializer) {
-			int i;
-			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
-				if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
-					return 1;
-			}
-		}
-	} else {
-		/* Might not be set if entity belongs to a description or is external allocated. */
-		if (get_atomic_ent_value(ent))
-			return constant_on_wrong_irg(get_atomic_ent_value(ent));
-		else if (get_entity_visibility(ent) != visibility_external_allocated) {
-			ASSERT_AND_RET_DBG(
-				is_Class_type(get_entity_owner(ent)) &&
-				get_class_peculiarity(get_entity_owner(ent)) == peculiarity_description,
-				"Value in constant atomic entity not set.",
-				0,
-				ir_fprintf(stderr, "%+e, owner %+F\n", ent, get_entity_owner(ent))
-			);
+static int constants_on_wrong_irg(ir_entity *ent)
+{
+	if (ent->initializer != NULL) {
+		return initializer_constant_on_wrong_irg(ent->initializer);
+	} else if (entity_has_compound_ent_values(ent)) {
+		int i;
+		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+			if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
+				return 1;
 		}
 	}
 	return 0;
@@ -340,10 +343,9 @@ static int constants_on_wrong_irg(ir_entity *ent) {
  *  0   if no error encountered
  *  != 0    a trvrfy_error_codes code
  */
-int check_entity(ir_entity *ent) {
-	int rem_vpi;
+int check_entity(ir_entity *ent)
+{
 	ir_type *tp = get_entity_type(ent);
-	ir_type *owner = get_entity_owner(ent);
 
 	current_ir_graph =  get_const_code_irg();
 	ASSERT_AND_RET_DBG(
@@ -353,60 +355,42 @@ int check_entity(ir_entity *ent) {
 		ir_fprintf(stderr, "%+e not on %+F\n", ent, current_ir_graph)
 	);
 
-	rem_vpi = get_visit_pseudo_irgs();
-	set_visit_pseudo_irgs(1);
-	if ((get_entity_peculiarity(ent) == peculiarity_existent)         &&
-	    (get_entity_visibility(ent) != visibility_external_allocated) &&
-	    (is_Method_type(get_entity_type(ent)))                        &&
-	    (!get_entity_irg(ent) || !(is_ir_graph(get_entity_irg(ent))))) {
-		ASSERT_AND_RET_DBG(
-			0,
-			"Method ents with pec_exist must have an irg",
-			error_existent_entity_without_irg,
-			ir_fprintf(stderr, "%+e\n", ent)
-		);
-	}
-	set_visit_pseudo_irgs(rem_vpi);
-
 	/* Originally, this test assumed, that only method entities have
-	   pecularity_inherited.  As I changed this, I have to test for method type before
-	   doing the test. */
-	if (get_entity_peculiarity(ent) == peculiarity_inherited) {
-		if (is_Method_type(get_entity_type(ent))) {
-			ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
-			ASSERT_AND_RET_DBG(
-				get_entity_peculiarity(impl) == peculiarity_existent,
-				"inherited method entities must have constant pointing to existent entity.",
-				error_inherited_ent_without_const,
-				ir_fprintf(stderr, "%+e points to %+e\n", ent, impl)
-			);
-		}
-	}
+	   pecularity_inherited.  As I changed this, I have to test for method type
+	   before doing the test. */
+	if (get_entity_peculiarity(ent) == peculiarity_existent
+	    && is_method_entity(ent)) {
 
-	/* Entities in global type are not dynamic or automatic allocated. */
-	if (owner == get_glob_type()) {
+		ir_entity *impl = get_SymConst_entity(get_atomic_ent_value(ent));
 		ASSERT_AND_RET_DBG(
-			get_entity_allocation(ent) != allocation_dynamic &&
-			get_entity_allocation(ent) != allocation_automatic,
-			"Entities in global type are not allowed to by dynamic or automatic allocated",
-			error_glob_ent_allocation,
-			show_ent_alloc_error(ent)
+			impl != NULL,
+			"inherited method entities must have constant pointing to existent entity.",
+			error_inherited_ent_without_const,
+			ir_fprintf(stderr, "%+e points to %+e\n", ent, impl)
 		);
 	}
 
-	if (get_entity_variability(ent) != variability_uninitialized) {
-		if (is_atomic_type(tp)) {
-			ir_node *val = get_atomic_ent_value(ent);
-			if (val) {
-				ASSERT_AND_RET_DBG(
-					get_irn_mode(val) == get_type_mode(tp),
-					"Mode of constant in entity must match type.",
-					error_ent_const_mode,
-					ir_fprintf(stderr, "%+e const %+F, type %+F(%+F)\n",
-					ent, val, tp, get_type_mode(tp))
-				);
-			}
+	if (is_atomic_entity(ent) && ent->initializer != NULL) {
+		ir_mode *mode = NULL;
+		ir_initializer_t *initializer = ent->initializer;
+		switch (initializer->kind) {
+		case IR_INITIALIZER_CONST:
+			mode = get_irn_mode(get_initializer_const_value(initializer));
+			break;
+		case IR_INITIALIZER_TARVAL:
+			mode = get_tarval_mode(get_initializer_tarval_value(initializer));
+			break;
+		case IR_INITIALIZER_NULL:
+		case IR_INITIALIZER_COMPOUND:
+			break;
 		}
+		ASSERT_AND_RET_DBG(
+			mode == NULL || mode == get_type_mode(tp),
+			"Mode of constant in entity must match type.",
+			error_ent_const_mode,
+			ir_fprintf(stderr, "%+e, type %+F(%+F)\n",
+			ent, tp, get_type_mode(tp))
+		);
 	}
 	return no_error;
 }

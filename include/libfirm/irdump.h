@@ -489,7 +489,6 @@ typedef enum {
 	dump_verbosity_entconsts         = 0x00000020,   /**< Dump entity constants. */
 
 	dump_verbosity_accessStats       = 0x00000100,   /**< Dump entity access statistics. */
-	dump_verbosity_csv               = 0x00000200,   /**< Dump access statistics as comma separated list. */
 
 	dump_verbosity_noClassTypes      = 0x00001000,   /**< Dump no class       types. */
 	dump_verbosity_noStructTypes     = 0x00002000,   /**< Dump no struct      types. */

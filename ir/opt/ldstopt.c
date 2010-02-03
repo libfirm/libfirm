@@ -295,7 +295,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				}
 			}
 
-			if (variability_constant == get_entity_variability(ent))
+			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT)
 				return ent;
 
 			/* try next */
@@ -1146,9 +1146,7 @@ static unsigned optimize_load(ir_node *load)
 		value = NULL;
 		/* check if we can determine the entity that will be loaded */
 		ent = find_constant_entity(ptr);
-		if (ent != NULL                                     &&
-		    allocation_static == get_entity_allocation(ent) &&
-		    visibility_external_allocated != get_entity_visibility(ent)) {
+		if (ent != NULL && !(get_entity_linkage(ent) & IR_LINKAGE_EXTERN)) {
 			/* a static allocation that is not external: there should be NO exception
 			 * when loading even if we cannot replace the load itself. */
 
@@ -1164,17 +1162,11 @@ static unsigned optimize_load(ir_node *load)
 				res |= CF_CHANGED;
 			}
 
-			if (variability_constant == get_entity_variability(ent)) {
-				if (is_atomic_entity(ent)) {
-					/* Might not be atomic after lowering of Sels.  In this case we
-					 * could also load, but it's more complicated. */
-					/* more simpler case: we load the content of a constant value:
-					 * replace it by the constant itself */
-					value = get_atomic_ent_value(ent);
-				} else if (ent->has_initializer) {
+			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
+				if (ent->initializer != NULL) {
 					/* new style initializer */
 					value = find_compound_ent_value(ptr);
-				} else {
+				} else if (entity_has_compound_ent_values(ent)) {
 					/* old style initializer */
 					compound_graph_path *path = get_accessed_path(ptr);
 

@@ -68,9 +68,7 @@ static ir_entity *create_ent(int value, const char *name)
 	tv  = new_tarval_from_long(value, mode);
 	ent = new_entity(glob, new_id_from_str(name), type);
 	set_entity_ld_ident(ent, get_entity_ident(ent));
-	set_entity_visibility(ent, visibility_local);
-	set_entity_variability(ent, variability_constant);
-	set_entity_allocation(ent, allocation_static);
+	set_entity_linkage(ent, IR_LINKAGE_LOCAL | IR_LINKAGE_CONSTANT);
 
 	cnst_irg = get_const_code_irg();
 	cnst     = new_r_Const(cnst_irg, tv);

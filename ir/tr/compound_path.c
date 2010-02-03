@@ -132,8 +132,13 @@ ir_type *get_compound_graph_path_type(const compound_graph_path *gr)
 void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val,
                                    compound_graph_path *path)
 {
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 	assert(is_compound_graph_path(path));
+	if (ent->attr.cmpd_attr.values == NULL) {
+		ent->attr.cmpd_attr.values = NEW_ARR_F(ir_node*, 0);
+		assert(ent->attr.cmpd_attr.val_paths == NULL);
+		ent->attr.cmpd_attr.val_paths = NEW_ARR_F(compound_graph_path*, 0);
+	}
 	ARR_APP1(ir_node *, ent->attr.cmpd_attr.values, val);
 	ARR_APP1(compound_graph_path *, ent->attr.cmpd_attr.val_paths, path);
 }
@@ -141,17 +146,17 @@ void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val,
 void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val,
                                    compound_graph_path *path, int pos)
 {
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 	assert(is_compound_graph_path(path));
 	assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.values));
 	ent->attr.cmpd_attr.values[pos]    = val;
 	ent->attr.cmpd_attr.val_paths[pos] = path;
 }
 
-compound_graph_path *get_compound_ent_value_path(ir_entity *ent, int pos)
+compound_graph_path *get_compound_ent_value_path(const ir_entity *ent, int pos)
 {
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-	assert(!ent->has_initializer);
+	assert(is_compound_entity(ent));
+	assert(ent->initializer == NULL);
 	assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.val_paths));
 	return ent->attr.cmpd_attr.val_paths[pos];
 }
@@ -196,7 +201,7 @@ static int equal_paths(compound_graph_path *path1, compound_graph_path *path2)
  *        and should be replaced when the new tree oriented
  *        value representation is finally implemented.
  */
-static int get_compound_ent_pos_by_path(ir_entity *ent,
+static int get_compound_ent_pos_by_path(const ir_entity *ent,
                                         compound_graph_path *path)
 {
 	int i, n_paths = get_compound_ent_n_values(ent);
@@ -209,7 +214,7 @@ static int get_compound_ent_pos_by_path(ir_entity *ent,
 	return -1;
 }
 
-ir_node *get_compound_ent_value_by_path(ir_entity *ent,
+ir_node *get_compound_ent_value_by_path(const ir_entity *ent,
                                         compound_graph_path *path)
 {
 	int pos = get_compound_ent_pos_by_path(ent, path);
@@ -221,7 +226,7 @@ ir_node *get_compound_ent_value_by_path(ir_entity *ent,
 void remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent)
 {
 	int i, n;
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 
 	n = ARR_LEN(ent->attr.cmpd_attr.val_paths);
 	for (i = 0; i < n; ++i) {
@@ -242,7 +247,7 @@ void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member)
 {
 	compound_graph_path *path;
 	ir_type *owner_tp = get_entity_owner(member);
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 	path = new_compound_graph_path(get_entity_type(ent), 1);
 	path->list[0].node = member;
 	if (is_Array_type(owner_tp)) {
@@ -262,10 +267,10 @@ void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member)
 	add_compound_ent_value_w_path(ent, val, path);
 }
 
-ir_entity *get_compound_ent_value_member(ir_entity *ent, int pos)
+ir_entity *get_compound_ent_value_member(const ir_entity *ent, int pos)
 {
 	compound_graph_path *path;
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 	path = get_compound_ent_value_path(ent, pos);
 
 	return get_compound_graph_path_node(path, get_compound_graph_path_length(path)-1);
@@ -275,7 +280,7 @@ void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member,
                             int pos)
 {
 	compound_graph_path *path;
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(is_compound_entity(ent));
 	path = get_compound_ent_value_path(ent, pos);
 	set_compound_graph_path_node(path, 0, member);
 	set_compound_ent_value_w_path(ent, val, path, pos);
@@ -294,7 +299,6 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
 	/* One bound is sufficient, the number of constant fields makes the
 	   size. */
 	assert(get_array_lower_bound (arrtp, 0) || get_array_upper_bound (arrtp, 0));
-	assert(get_entity_variability(ent) != variability_uninitialized);
 	current_ir_graph = get_const_code_irg();
 
 	for (i = 0; i < num_vals; i++) {
@@ -305,7 +309,7 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
 	current_ir_graph = rem;
 }
 
-unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos)
+unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, int pos)
 {
 	compound_graph_path *path;
 	int path_len, i;
@@ -343,7 +347,8 @@ unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos)
 	return offset;
 }
 
-unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos)
+unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent,
+                                                     int pos)
 {
 	compound_graph_path *path;
 	int path_len;
@@ -361,17 +366,25 @@ unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos)
   	return get_entity_offset_bits_remainder(last_node);
 }
 
-int get_compound_ent_n_values(ir_entity *ent)
+int get_compound_ent_n_values(const ir_entity *ent)
 {
-	assert(!ent->has_initializer);
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
+	assert(ent->initializer == NULL);
+	assert(is_compound_entity(ent));
 	return ARR_LEN(ent->attr.cmpd_attr.values);
 }
 
-ir_node *get_compound_ent_value(ir_entity *ent, int pos)
+ir_node *get_compound_ent_value(const ir_entity *ent, int pos)
 {
-	assert(is_compound_entity(ent) && (ent->variability != variability_uninitialized));
-	assert(!ent->has_initializer);
+	assert(is_compound_entity(ent));
+	assert(ent->initializer == NULL);
 	assert(0 <= pos && pos < ARR_LEN(ent->attr.cmpd_attr.values));
 	return skip_Id(ent->attr.cmpd_attr.values[pos]);
+}
+
+int entity_has_compound_ent_values(const ir_entity *entity)
+{
+	if (!is_compound_entity(entity))
+		return 0;
+
+	return entity->attr.cmpd_attr.values != NULL;
 }

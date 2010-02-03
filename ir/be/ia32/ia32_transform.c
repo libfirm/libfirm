@@ -509,9 +509,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 		ent = new_entity(get_glob_type(), new_id_from_str(ent_name), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
-		set_entity_visibility(ent, visibility_local);
-		set_entity_variability(ent, variability_constant);
-		set_entity_allocation(ent, allocation_static);
+		set_entity_linkage(ent, IR_LINKAGE_LOCAL | IR_LINKAGE_CONSTANT);
 
 		if (kct == ia32_ULLBIAS) {
 			ir_initializer_t *initializer = create_initializer_compound(2);
@@ -3103,9 +3101,7 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **ne
 	ent = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
 
 	set_entity_ld_ident(ent, get_entity_ident(ent));
-	set_entity_visibility(ent, visibility_local);
-	set_entity_variability(ent, variability_constant);
-	set_entity_allocation(ent, allocation_static);
+	set_entity_linkage(ent, IR_LINKAGE_LOCAL | IR_LINKAGE_CONSTANT);
 
 	initializer = create_initializer_compound(2);
 

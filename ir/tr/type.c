@@ -971,18 +971,6 @@ void set_class_type_info(ir_type *clss, ir_entity *ent)
 		ent->repr_class = clss;
 }
 
-const char *get_peculiarity_name(ir_peculiarity p)
-{
-#define X(a)    case a: return #a
-	switch (p) {
-	X(peculiarity_description);
-	X(peculiarity_inherited);
-	X(peculiarity_existent);
-	}
-#undef X
-	return "invalid peculiarity";
-}
-
 ir_peculiarity get_class_peculiarity(const ir_type *clss)
 {
 	assert(clss && (clss->type_op == type_class));

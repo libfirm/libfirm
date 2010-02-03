@@ -553,12 +553,12 @@ int i_mapper_tanh(ir_node *call, void *ctx) {
  *
  * @param ptr  the pointer
  */
-static ir_entity *get_const_entity(ir_node *ptr) {
-	/* FIXME: this cannot handle constant strings inside struct initializers yet */
+static ir_entity *get_const_entity(ir_node *ptr)
+{
 	if (is_Global(ptr)) {
 		ir_entity *ent = get_Global_entity(ptr);
 
-		if (get_entity_variability(ent) == variability_constant) {
+		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
 			/* a constant entity */
 			return ent;
 		}

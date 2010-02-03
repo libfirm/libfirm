@@ -698,17 +698,13 @@ static void walk_entity(ir_entity *ent, void *env)
 {
 	walk_env *my_env = (walk_env *)env;
 
-	if (get_entity_variability(ent) != variability_uninitialized) {
-		if (ent->has_initializer) {
-			walk_initializer(ent->attr.initializer, my_env);
-		} else if (is_atomic_entity(ent)) {
-			irg_walk(get_atomic_ent_value(ent), my_env->pre, my_env->post, my_env->env);
-		} else {
-			int i, n_vals = get_compound_ent_n_values(ent);
+	if (ent->initializer != NULL) {
+		walk_initializer(ent->initializer, my_env);
+	} else if (entity_has_compound_ent_values(ent)) {
+		int i, n_vals = get_compound_ent_n_values(ent);
 
-			for (i = 0; i < n_vals; i++)
-				irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
-		}
+		for (i = 0; i < n_vals; i++)
+			irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);
 	}
 }
 

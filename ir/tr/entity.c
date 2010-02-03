@@ -43,6 +43,7 @@
 #include "irgraph_t.h"
 #include "callgraph.h"
 #include "error.h"
+#include "compound_path.h"
 
 /*-----------------------------------------------------------------*/
 /** general                                                       **/
@@ -108,14 +109,9 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->type    = type;
 	res->owner   = owner;
 
-	res->allocation           = allocation_automatic;
-	res->visibility           = visibility_local;
 	res->volatility           = volatility_non_volatile;
 	res->aligned              = align_is_aligned;
-	res->stickyness           = stickyness_unsticky;
-	res->peculiarity          = peculiarity_existent;
 	res->usage                = ir_usage_unknown;
-	res->final                = 0;
 	res->compiler_gen         = 0;
 	res->backend_marked       = 0;
 	res->offset               = -1;
@@ -130,25 +126,19 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 		sym.entity_p            = res;
 		rem                     = current_ir_graph;
 		current_ir_graph        = get_const_code_irg();
-		res->value              = new_SymConst(mode, sym, symconst_addr_ent);
+		set_atomic_ent_value(res, new_SymConst(mode, sym, symconst_addr_ent));
 		current_ir_graph        = rem;
-		res->allocation         = allocation_static;
-		res->variability        = variability_constant;
+		res->linkage            = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
 		res->attr.mtd_attr.vtable_number      = VTABLE_NUM_NOT_SET;
 		res->attr.mtd_attr.param_access       = NULL;
 		res->attr.mtd_attr.param_weight       = NULL;
 		res->attr.mtd_attr.irg                = NULL;
 	} else if (is_compound_type(type)) {
-		res->variability = variability_uninitialized;
-		res->value       = NULL;
 		res->attr.cmpd_attr.values    = NULL;
 		res->attr.cmpd_attr.val_paths = NULL;
 	} else if (is_code_type(type)) {
 		res->attr.code_attr.label = (ir_label_t) -1;
-	} else {
-		res->variability = variability_uninitialized;
-		res->value       = NULL;
 	}
 
 	if (is_Class_type(owner)) {
@@ -192,7 +182,8 @@ new_entity(ir_type *owner, ident *name, ir_type *type) {
  *
  * @param ent  the entity
  */
-static void free_entity_attrs(ir_entity *ent) {
+static void free_entity_attrs(ir_entity *ent)
+{
 	int i;
 	if (get_type_tpop(get_entity_owner(ent)) == type_class) {
 		DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
@@ -201,24 +192,24 @@ static void free_entity_attrs(ir_entity *ent) {
 		assert(ent->overwrites == NULL);
 		assert(ent->overwrittenby == NULL);
 	}
-	if (is_compound_entity(ent)) {
-		if (ent->has_initializer) {
-			/* TODO: free initializers */
-		} else {
-			if (ent->attr.cmpd_attr.val_paths) {
-				for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
-					if (ent->attr.cmpd_attr.val_paths[i]) {
-						/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
-						/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-						/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
-					}
-					ent->attr.cmpd_attr.val_paths = NULL;
-			}
-			if (ent->attr.cmpd_attr.values) {
-				/*DEL_ARR_F(ent->attr.cmpd_attr.values)*/;
-			}
-			ent->attr.cmpd_attr.values = NULL;
+	if (ent->initializer != NULL) {
+		/* TODO: free initializers */
+	} else if (entity_has_compound_ent_values(ent)) {
+		if (ent->attr.cmpd_attr.val_paths) {
+			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
+				if (ent->attr.cmpd_attr.val_paths[i]) {
+					/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
+					/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
+					/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
+				}
+				ent->attr.cmpd_attr.val_paths = NULL;
 		}
+	}
+	if (is_compound_entity(ent)) {
+		if (ent->attr.cmpd_attr.values) {
+			/*DEL_ARR_F(ent->attr.cmpd_attr.values)*/;
+		}
+		ent->attr.cmpd_attr.values = NULL;
 	} else if (is_method_entity(ent)) {
 		if (ent->attr.mtd_attr.param_access) {
 			DEL_ARR_F(ent->attr.mtd_attr.param_access);
@@ -239,19 +230,17 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 	ir_entity *newe = XMALLOC(ir_entity);
 
 	*newe = *old;
-	if (is_compound_entity(old)) {
-		if (old->has_initializer) {
-			/* FIXME: the initializers are NOT copied */
-		} else {
-			newe->attr.cmpd_attr.values    = NULL;
-			newe->attr.cmpd_attr.val_paths = NULL;
-			if (old->attr.cmpd_attr.values)
-				newe->attr.cmpd_attr.values = DUP_ARR_F(ir_node *, old->attr.cmpd_attr.values);
+	if (old->initializer != NULL) {
+		/* FIXME: the initializers are NOT copied */
+	} else if (entity_has_compound_ent_values(old)) {
+		newe->attr.cmpd_attr.values    = NULL;
+		newe->attr.cmpd_attr.val_paths = NULL;
+		if (old->attr.cmpd_attr.values)
+			newe->attr.cmpd_attr.values = DUP_ARR_F(ir_node *, old->attr.cmpd_attr.values);
 
-			/* FIXME: the compound graph paths are NOT copied */
-			if (old->attr.cmpd_attr.val_paths)
-				newe->attr.cmpd_attr.val_paths = DUP_ARR_F(compound_graph_path *, old->attr.cmpd_attr.val_paths);
-		}
+		/* FIXME: the compound graph paths are NOT copied */
+		if (old->attr.cmpd_attr.val_paths)
+			newe->attr.cmpd_attr.val_paths = DUP_ARR_F(compound_graph_path *, old->attr.cmpd_attr.val_paths);
 	} else if (is_method_entity(old)) {
 		/* do NOT copy them, reanalyze. This might be the best solution */
 		newe->attr.mtd_attr.param_access = NULL;
@@ -331,164 +320,64 @@ get_entity_nr(const ir_entity *ent) {
 const char *
 (get_entity_name)(const ir_entity *ent) {
 	return _get_entity_name(ent);
-}  /* get_entity_name */
+}
 
 ident *
 (get_entity_ident)(const ir_entity *ent) {
 	return _get_entity_ident(ent);
-}  /* get_entity_ident */
+}
 
 void
 (set_entity_ident)(ir_entity *ent, ident *id) {
 	_set_entity_ident(ent, id);
-}  /* set_entity_ident */
+}
 
 ir_type *
-(get_entity_owner)(ir_entity *ent) {
+(get_entity_owner)(const ir_entity *ent) {
 	return _get_entity_owner(ent);
-}  /* get_entity_owner */
+}
 
 void
 set_entity_owner(ir_entity *ent, ir_type *owner) {
 	assert(is_entity(ent));
 	assert(is_compound_type(owner));
 	ent->owner = owner;
-}  /* set_entity_owner */
+}
 
-ident *
-(get_entity_ld_ident)(ir_entity *ent) {
+ident *(get_entity_ld_ident)(const ir_entity *ent)
+{
 	return _get_entity_ld_ident(ent);
-}  /* get_entity_ld_ident */
+}
 
 void
 (set_entity_ld_ident)(ir_entity *ent, ident *ld_ident) {
 	_set_entity_ld_ident(ent, ld_ident);
-}  /* set_entity_ld_ident */
+}
 
-const char *
-(get_entity_ld_name)(ir_entity *ent) {
+const char *(get_entity_ld_name)(const ir_entity *ent)
+{
 	return _get_entity_ld_name(ent);
-}  /* get_entity_ld_name */
+}
 
 ir_type *
-(get_entity_type)(ir_entity *ent) {
+(get_entity_type)(const ir_entity *ent) {
 	return _get_entity_type(ent);
-}  /* get_entity_type */
+}
 
 void
 (set_entity_type)(ir_entity *ent, ir_type *type) {
 	_set_entity_type(ent, type);
-}  /* set_entity_type */
-
-ir_allocation
-(get_entity_allocation)(const ir_entity *ent) {
-	return _get_entity_allocation(ent);
-}  /* get_entity_allocation */
-
-void
-(set_entity_allocation)(ir_entity *ent, ir_allocation al) {
-	_set_entity_allocation(ent, al);
-}  /* set_entity_allocation */
-
-/* return the name of the visibility */
-const char *get_allocation_name(ir_allocation al)
-{
-#define X(a)    case a: return #a
-	switch (al) {
-	X(allocation_automatic);
-	X(allocation_parameter);
-	X(allocation_dynamic);
-	X(allocation_static);
-    default: return "BAD VALUE";
-	}
-#undef X
-}  /* get_allocation_name */
-
-ir_visibility
-(get_entity_visibility)(const ir_entity *ent) {
-	return _get_entity_visibility(ent);
-}  /* get_entity_visibility */
-
-void
-set_entity_visibility(ir_entity *ent, ir_visibility vis) {
-	assert(ent && ent->kind == k_entity);
-	if (vis != visibility_local)
-		assert((ent->allocation == allocation_static) ||
-		(ent->allocation == allocation_automatic));
-		/* @@@ Test that the owner type is not local, but how??
-	&& get_class_visibility(get_entity_owner(ent)) != local));*/
-	ent->visibility = vis;
-}  /* set_entity_visibility */
-
-/* return the name of the visibility */
-const char *get_visibility_name(ir_visibility vis)
-{
-#define X(a)    case a: return #a
-	switch (vis) {
-	X(visibility_local);
-	X(visibility_external_visible);
-	X(visibility_external_allocated);
-    default: return "BAD VALUE";
-	}
-#undef X
-}  /* get_visibility_name */
-
-ir_variability
-(get_entity_variability)(const ir_entity *ent) {
-	return _get_entity_variability(ent);
-}  /* get_entity_variability */
-
-void
-set_entity_variability(ir_entity *ent, ir_variability var)
-{
-	assert(ent && ent->kind == k_entity);
-	if (var == variability_part_constant)
-		assert(is_Class_type(ent->type) || is_Struct_type(ent->type));
-
-	if ((is_compound_type(ent->type)) &&
-		(ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
-		/* Allocate data structures for constant values */
-		ent->attr.cmpd_attr.values    = NEW_ARR_F(ir_node *, 0);
-		ent->attr.cmpd_attr.val_paths = NEW_ARR_F(compound_graph_path *, 0);
-	}
-	if ((is_atomic_type(ent->type)) &&
-		(ent->variability == variability_uninitialized) && (var != variability_uninitialized)) {
-		/* Set default constant value. */
-		ent->value = new_r_Unknown(get_const_code_irg(), get_type_mode(ent->type));
-	}
-
-	if ((is_compound_type(ent->type)) &&
-		(var == variability_uninitialized) && (ent->variability != variability_uninitialized)) {
-		/* Free data structures for constant values */
-		DEL_ARR_F(ent->attr.cmpd_attr.values);    ent->attr.cmpd_attr.values    = NULL;
-		DEL_ARR_F(ent->attr.cmpd_attr.val_paths); ent->attr.cmpd_attr.val_paths = NULL;
-	}
-	ent->variability = var;
-}  /* set_entity_variability */
-
-/* return the name of the variability */
-const char *get_variability_name(ir_variability var)
-{
-#define X(a)    case a: return #a
-	switch (var) {
-	X(variability_uninitialized);
-	X(variability_initialized);
-	X(variability_part_constant);
-	X(variability_constant);
-    default: return "BAD VALUE";
-	}
-#undef X
-}  /* get_variability_name */
+}
 
 ir_volatility
 (get_entity_volatility)(const ir_entity *ent) {
 	return _get_entity_volatility(ent);
-}  /* get_entity_volatility */
+}
 
 void
 (set_entity_volatility)(ir_entity *ent, ir_volatility vol) {
 	_set_entity_volatility(ent, vol);
-}  /* set_entity_volatility */
+}
 
 /* Return the name of the volatility. */
 const char *get_volatility_name(ir_volatility var)
@@ -545,25 +434,37 @@ ir_label_t get_entity_label(const ir_entity *ent)
 	return ent->attr.code_attr.label;
 }
 
-ir_peculiarity
-(get_entity_peculiarity)(const ir_entity *ent) {
-	return _get_entity_peculiarity(ent);
-}  /* get_entity_peculiarity */
+static void verify_linkage(ir_entity *entity)
+{
+	ir_linkage linkage = entity->linkage;
+	/* local and extern are mutually exclusive */
+	(void) linkage;
+	assert(! ((linkage & IR_LINKAGE_EXTERN) && (linkage & IR_LINKAGE_LOCAL)));
+	assert(! (linkage & IR_LINKAGE_EXTERN) || !entity_has_definition(entity));
+}
 
-void
-(set_entity_peculiarity)(ir_entity *ent, ir_peculiarity pec) {
-	_set_entity_peculiarity(ent, pec);
-}  /* set_entity_peculiarity */
+void set_entity_linkage(ir_entity *entity, ir_linkage linkage)
+{
+	entity->linkage = linkage;
+	verify_linkage(entity);
+}
 
-/* Checks if an entity cannot be overridden anymore. */
-int (is_entity_final)(const ir_entity *ent) {
-	return _is_entity_final(ent);
-}  /* is_entity_final */
+ir_linkage (get_entity_linkage)(const ir_entity *entity)
+{
+	return get_entity_linkage(entity);
+}
 
-/* Sets/resets the final flag of an entity. */
-void (set_entity_final)(ir_entity *ent, int final) {
-	_set_entity_final(ent, final);
-}  /* set_entity_final */
+void add_entity_linkage(ir_entity *entity, ir_linkage linkage)
+{
+	entity->linkage |= linkage;
+	verify_linkage(entity);
+}
+
+void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
+{
+	entity->linkage &= ~linkage;
+	verify_linkage(entity);
+}
 
 /* Checks if an entity is compiler generated */
 int (is_entity_compiler_generated)(const ir_entity *ent) {
@@ -593,35 +494,47 @@ void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags) {
 	_set_entity_usage(ent, flags);
 }
 
-/* Get the entity's stickyness */
-ir_stickyness
-(get_entity_stickyness)(const ir_entity *ent) {
-	return _get_entity_stickyness(ent);
-}  /* get_entity_stickyness */
-
-/* Set the entity's stickyness */
-void
-(set_entity_stickyness)(ir_entity *ent, ir_stickyness stickyness) {
-	_set_entity_stickyness(ent, stickyness);
-}  /* set_entity_stickyness */
-
 /* Set has no effect for existent entities of type method. */
-ir_node *
-get_atomic_ent_value(ir_entity *ent)
+ir_node *get_atomic_ent_value(ir_entity *entity)
 {
-	assert(ent && is_atomic_entity(ent));
-	assert(ent->variability != variability_uninitialized);
-	return skip_Id(ent->value);
-}  /* get_atomic_ent_value */
+	ir_initializer_t *initializer = get_entity_initializer(entity);
 
-void
-set_atomic_ent_value(ir_entity *ent, ir_node *val) {
-	assert(is_atomic_entity(ent) && (ent->variability != variability_uninitialized));
-	if (is_Method_type(ent->type) && (ent->peculiarity == peculiarity_existent))
-		return;
-	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(ent->type));
-	ent->value = val;
-}  /* set_atomic_ent_value */
+	assert(entity && is_atomic_entity(entity));
+	if (initializer == NULL) {
+		ir_type *type = get_entity_type(entity);
+		return new_r_Unknown(get_const_code_irg(), get_type_mode(type));
+	}
+
+	switch (get_initializer_kind(initializer)) {
+	case IR_INITIALIZER_NULL: {
+		ir_type *type = get_entity_type(entity);
+		ir_mode *mode = get_type_mode(type);
+		return new_r_Const(get_const_code_irg(), get_mode_null(mode));
+	}
+	case IR_INITIALIZER_TARVAL: {
+		tarval *tv = get_initializer_tarval_value(initializer);
+		return new_r_Const(get_const_code_irg(), tv);
+	}
+	case IR_INITIALIZER_CONST:
+		return get_initializer_const_value(initializer);
+	case IR_INITIALIZER_COMPOUND:
+		panic("compound initializer in atomic entity not allowed (%+F)", entity);
+	}
+
+	panic("invalid initializer kind in get_atomic_ent_value(%+F)", entity);
+}
+
+void set_atomic_ent_value(ir_entity *entity, ir_node *val)
+{
+	ir_initializer_t *initializer;
+
+	assert(is_atomic_entity(entity));
+	assert(get_entity_peculiarity(entity) != peculiarity_description);
+
+	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(entity->type));
+	initializer = create_initializer_const(val);
+	entity->initializer = initializer;
+}
 
 /* Returns true if the the node is representable as code on
  *  const_code_irg. */
@@ -808,26 +721,36 @@ ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer)
 
 static void check_entity_initializer(ir_entity *entity)
 {
-	/* TODO */
-	(void) entity;
+#ifndef NDEBUG
+	ir_initializer_t *initializer = entity->initializer;
+	switch (initializer->kind) {
+	case IR_INITIALIZER_COMPOUND:
+		assert(is_compound_entity(entity));
+		break;
+	case IR_INITIALIZER_CONST:
+	case IR_INITIALIZER_TARVAL:
+		assert(is_atomic_entity(entity));
+		break;
+	case IR_INITIALIZER_NULL:
+		break;
+	}
+#endif
 }
 
 void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer)
 {
-	entity->attr.initializer = initializer;
-	entity->has_initializer  = 1;
+	entity->initializer = initializer;
 	check_entity_initializer(entity);
 }
 
 int has_entity_initializer(const ir_entity *entity)
 {
-	return entity->has_initializer;
+	return entity->initializer != NULL;
 }
 
 ir_initializer_t *get_entity_initializer(const ir_entity *entity)
 {
-	assert(entity->has_initializer);
-	return entity->attr.initializer;
+	return entity->initializer;
 }
 
 int (get_entity_offset)(const ir_entity *ent)
@@ -863,13 +786,13 @@ void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 	ARR_APP1(ir_entity *, overwritten->overwrittenby, ent);
 }
 
-int get_entity_n_overwrites(ir_entity *ent)
+int get_entity_n_overwrites(const ir_entity *ent)
 {
 	assert(is_Class_type(get_entity_owner(ent)));
 	return (ARR_LEN(ent->overwrites));
 }
 
-int get_entity_overwrites_index(ir_entity *ent, ir_entity *overwritten)
+int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
 {
 	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
@@ -881,7 +804,7 @@ int get_entity_overwrites_index(ir_entity *ent, ir_entity *overwritten)
 	return -1;
 }
 
-ir_entity *get_entity_overwrites(ir_entity *ent, int pos)
+ir_entity *get_entity_overwrites(const ir_entity *ent, int pos)
 {
 	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrites(ent));
@@ -915,13 +838,13 @@ void add_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
 	add_entity_overwrites(overwrites, ent);
 }
 
-int get_entity_n_overwrittenby(ir_entity *ent)
+int get_entity_n_overwrittenby(const ir_entity *ent)
 {
 	assert(is_Class_type(get_entity_owner(ent)));
 	return ARR_LEN(ent->overwrittenby);
 }
 
-int get_entity_overwrittenby_index(ir_entity *ent, ir_entity *overwrites)
+int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites)
 {
 	int i, n;
 	assert(is_Class_type(get_entity_owner(ent)));
@@ -933,7 +856,7 @@ int get_entity_overwrittenby_index(ir_entity *ent, ir_entity *overwrites)
 	return -1;
 }
 
-ir_entity *get_entity_overwrittenby(ir_entity *ent, int pos)
+ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos)
 {
 	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrittenby(ent));
@@ -981,16 +904,7 @@ ir_graph *(get_entity_irg)(const ir_entity *ent)
 void set_entity_irg(ir_entity *ent, ir_graph *irg)
 {
 	assert(is_method_entity(ent));
-	/* Wie kann man die Referenz auf einen IRG löschen, z.B. wenn die
-	 * Methode selbst nicht mehr aufgerufen werden kann, die Entität
-	 * aber erhalten bleiben soll?  Wandle die Entitaet in description oder
-	 * inherited um! */
-	/* assert(irg); */
-	assert((irg  && ent->peculiarity == peculiarity_existent) ||
-		(!irg && (ent->peculiarity == peculiarity_existent)
-		&& (ent -> visibility == visibility_external_allocated)) ||
-		(!irg && ent->peculiarity == peculiarity_description) ||
-		(!irg && ent->peculiarity == peculiarity_inherited));
+	assert(get_entity_peculiarity(ent) == peculiarity_existent);
 	ent->attr.mtd_attr.irg = irg;
 }
 
@@ -1011,7 +925,7 @@ int (is_entity)(const void *thing)
 	return _is_entity(thing);
 }
 
-int is_atomic_entity(ir_entity *ent)
+int is_atomic_entity(const ir_entity *ent)
 {
 	ir_type *t      = get_entity_type(ent);
 	const tp_op *op = get_type_tpop(t);
@@ -1019,7 +933,7 @@ int is_atomic_entity(ir_entity *ent)
 		op == type_enumeration || op == type_method);
 }
 
-int is_compound_entity(ir_entity *ent)
+int is_compound_entity(const ir_entity *ent)
 {
 	ir_type     *t  = get_entity_type(ent);
 	const tp_op *op = get_type_tpop(t);
@@ -1027,13 +941,13 @@ int is_compound_entity(ir_entity *ent)
 		op == type_array || op == type_union);
 }
 
-int is_method_entity(ir_entity *ent)
+int is_method_entity(const ir_entity *ent)
 {
 	ir_type *t = get_entity_type(ent);
 	return is_Method_type(t);
 }
 
-ir_visited_t (get_entity_visited)(ir_entity *ent)
+ir_visited_t (get_entity_visited)(const ir_entity *ent)
 {
 	return _get_entity_visited(ent);
 }
@@ -1048,17 +962,17 @@ void (mark_entity_visited)(ir_entity *ent)
 	_mark_entity_visited(ent);
 }
 
-int (entity_visited)(ir_entity *ent)
+int (entity_visited)(const ir_entity *ent)
 {
 	return _entity_visited(ent);
 }
 
-int (entity_not_visited)(ir_entity *ent)
+int (entity_not_visited)(const ir_entity *ent)
 {
 	return _entity_not_visited(ent);
 }
 
-unsigned get_entity_additional_properties(ir_entity *ent)
+unsigned get_entity_additional_properties(const ir_entity *ent)
 {
 	ir_graph *irg;
 
@@ -1132,6 +1046,18 @@ void (set_entity_dbg_info)(ir_entity *ent, dbg_info *db)
 	_set_entity_dbg_info(ent, db);
 }
 
+int entity_is_externally_visible(const ir_entity *entity)
+{
+	return (get_entity_linkage(entity) & IR_LINKAGE_LOCAL) == 0;
+}
+
+int entity_has_definition(const ir_entity *entity)
+{
+	return entity->initializer != NULL
+		|| get_entity_irg(entity) != NULL
+		|| entity_has_compound_ent_values(entity);
+}
+
 void firm_init_entity(void)
 {
 	symconst_symbol sym;
@@ -1140,11 +1066,40 @@ void firm_init_entity(void)
 	assert(!unknown_entity && "Call firm_init_entity() only once!");
 
 	unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
-	set_entity_visibility(unknown_entity, visibility_external_allocated);
+	set_entity_linkage(unknown_entity, IR_LINKAGE_EXTERN);
+
 	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
 
-	current_ir_graph      = get_const_code_irg();
-	sym.entity_p          = unknown_entity;
-	/* TODO: we need two unknown_entities here, one for code and one for data */
-	unknown_entity->value = new_SymConst(mode_P_data, sym, symconst_addr_ent);
+	current_ir_graph = get_const_code_irg();
+	sym.entity_p     = unknown_entity;
+}
+
+ir_allocation get_entity_allocation(const ir_entity *entity)
+{
+	return entity->allocation;
+}
+
+void set_entity_allocation(ir_entity *entity, ir_allocation allocation)
+{
+	entity->allocation = allocation;
+}
+
+ir_peculiarity get_entity_peculiarity(const ir_entity *entity)
+{
+	return entity->peculiarity;
+}
+
+void set_entity_peculiarity(ir_entity *entity, ir_peculiarity peculiarity)
+{
+	entity->peculiarity = peculiarity;
+}
+
+void set_entity_final(ir_entity *entity, int final)
+{
+	entity->final = final;
+}
+
+int is_entity_final(const ir_entity *entity)
+{
+	return entity->final;
 }

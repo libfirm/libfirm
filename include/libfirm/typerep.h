@@ -52,15 +52,8 @@
  *
  *   - owner:      A compound type this entity is a part of.
  *   - type:       The type of this entity.
- *   - name:       The string that represents this entity in the source program.
- *   - allocation: A flag saying whether the entity is dynamically or statically
- *                 allocated (values: dynamic_allocated,  static_allocated,
- *                 automatic_allocated).
- *   - visibility: A flag indicating the visibility of this entity (values: local,
- *                 external_visible,  external_allocated)
- *   - variability: A flag indicating the variability of this entity (values:
- *                  uninitialized, initialized, part_constant, constant)
- *   - volatility: @@@
+ *   - name:       The string that represents this entity in the source program
+ *   - linkage:    A flag indicating how the linker treats a symbol
  *   - offset:     The offset of the entity within the compound object in bytes.  Only set
  *                 if the owner in the state "layout_fixed".
  *   - offset_bits_remainder:   The offset bit remainder of a bitfield entity (in a compound)
@@ -74,12 +67,6 @@
  *   - link:       A void* to associate some additional information with the entity.
  *   - irg:        If the entity is a method this is the ir graph that represents the
  *                 code of the method.
- *   - peculiarity: The peculiarity of the entity.  If the entity is a method this
- *                 indicates whether the entity represents
- *                 a real method or whether it only exists to describe an interface.
- *                 In that case there nowhere exists code for this entity and this entity
- *                 is never dynamically used in the code.
- *                 Values: description, existent.  Default: existent.
  *   - visited:    visited flag.  Master flag is type_visited.
  *
  * These fields can only be accessed via access functions.
@@ -87,46 +74,102 @@
  * @see  ir_type, ir_entity
  */
 
-/** This enumeration flags the visibility of entities and types.
- *
- * This is necessary for partial compilation.
- * We rely on the ordering of the flags.
+/**
+ * linkage specifies how the linker treats symbols
  */
 typedef enum {
-	visibility_local,              /**< The entity is only visible locally.  This is the default for
-	                                    entities.
-	                                    The type is only visible locally.  All instances are allocated
-	                                    locally, and no pointer to entities of this type are passed
-	                                    out of this compilation unit. */
-	visibility_external_visible,   /**< The entity is visible to other external program parts, but
-	                                    it is defined here.  It may not be optimized away.  The entity must
-	                                    be static_allocated.
-	                                    For types:  entities of this type can be accessed externally.  No
-	                                    instances of this type are allocated externally.  */
-	visibility_external_allocated  /**< The entity is defined and allocated externally.  This compilation
-	                                    must not allocate memory for this entity. The entity must
-	                                    be static_allocated.  This can also be an external defined
-	                                    method.
-	                                    For types:  entities of this type are allocated and accessed from
-	                                    external code.  Default for types.  */
-} ir_visibility;
+	IR_LINKAGE_DEFAULT  = 0,
+	/**
+	 * A symbol whose definition won't change in a program.
+	 * Optimisation might replace loads from this entity with constants.
+	 * Also most linkers put such data in a constant segment which is shared
+	 * between multiple running instances of the same application.
+	 */
+	IR_LINKAGE_CONSTANT  = 1 << 0,
+	/**
+	 * The entity is a weak symbol.
+	 * A weak symbol is overridden by a non-weak symbol if one exists.
+	 * Most linkers only support the IR_LINKAGE_WEAK in combination with
+	 * IR_LINKAGE_MERGE.
+	 */
+	IR_LINKAGE_WEAK      = 1 << 1,
+	/**
+	 * The entity is local to the compilation unit.
+	 * A local entity will not be exported by the linker and is not visible
+	 * in other compilation units. Note that the entity might still be accessed
+	 * indirectly from other units through pointers.
+	 */
+	IR_LINKAGE_LOCAL     = 1 << 2,
+	/**
+	 * The entity is defined in another compilation.
+	 */
+	IR_LINKAGE_EXTERN    = 1 << 3,
+	/**
+	 * The entity may be removed when it isn't referenced anywhere in the
+	 * compilation unit even if it is exported (non-local).
+	 * Typically used for C++ instantiated template code (,,COMDAT'' section).
+	 */
+	IR_LINKAGE_GARBAGE_COLLECT = 1 << 5,
+	/**
+	 * The linker will try to merge entities with same name from different
+	 * compilation units. This is the usual behaviour for global variables
+	 * without explicit initialisation in C (``COMMON'' symbols). It's also
+	 * typically used in C++ for instantiated template code (,,COMDAT'' section)
+	 */
+	IR_LINKAGE_MERGE       = 1 << 6,
+	/**
+	 * Some entity uses are potentially hidden from the compiler.
+	 * (For example because they happen in an asm("") statement. This flag
+	 *  should be set for __attribute__((used)) in C code).
+	 * Setting this flag prohibits that the compiler making assumptions about
+	 * read/write behaviour to global variables or changing calling conventions
+	 * from cdecl to fastcall.
+	 */
+	IR_LINKAGE_HIDDEN_USER = 1 << 7,
+} ir_linkage;
 
-/** This enumeration flags the peculiarity of entities and types. */
-typedef enum {
-	peculiarity_description,     /**< Represents only a description.  The entity/type is never
-	                          allocated, no code/data exists for this entity/type.
-	                      @@@ eventually rename to descriptive (adjective as the others!)*/
-	peculiarity_inherited,       /**< Describes explicitly that other entities are
-	                          inherited to the owner of this entity.
-	                          Overwrites must refer to at least one other
-	                          entity.  If this is a method entity there exists
-	                          no irg for this entity, only for one of the
-	                          overwritten ones.
-	                      Only for entity. */
-	peculiarity_existent         /**< The entity/type (can) exist.
-	                  @@@ eventually rename to 'real' i.e., 'echt'
-	                      This serves better as opposition to description _and_ inherited.*/
-} ir_peculiarity;
+/**
+ * The following are some common combinations of linkage types seen in the
+ * C/C++ languages
+ */
+enum ir_common_linkages {
+	/** C "common" symbol */
+	IR_LINKAGE_COMMON  = IR_LINKAGE_MERGE,
+	/** C "weak" symbol */
+	IR_LINKAGE_WEAKSYM = IR_LINKAGE_WEAK | IR_LINKAGE_MERGE,
+	/** C++ comdat code */
+	IR_LINKAGE_COMDAT = IR_LINKAGE_GARBAGE_COLLECT | IR_LINKAGE_GARBAGE_COLLECT
+};
+
+/**
+ * Return 1 if the entity is visible outside the current compilation unit.
+ * (The entity might still be accessible indirectly through pointers)
+ * This is a convenience function and does the same as
+ * (get_entity_linkage(entity) & IR_LINKAGE_LOCAL) == 0
+ */
+int entity_is_externally_visible(const ir_entity *entity);
+
+/**
+ * Return 1 if the entity has a definition (initializer) in the current
+ * compilation unit
+ */
+int entity_has_definition(const ir_entity *entity);
+
+/**
+ * Return 1 if the entity is/will be defined in the current compilation unit.
+ * This is a convenience function for
+ * (get_entity_linkage(entity) & IR_LINKAGE_EXTERN) == 0.
+ *
+ * In contrast to entity_has_definition(entity) you have no guarantee here that
+ * the entity actually has a firm initializer.
+ */
+int entity_is_defined_here(const ir_entity *entity);
+
+/**
+ * Return 1 if the entity is constant. Constant means the entities value
+ * won't change at all when the program is running.
+ */
+int entity_is_constant(const ir_entity *entity);
 
 /**
  * Creates a new entity.
@@ -157,10 +200,6 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp, dbg_info *db);
  * Automatically inserts the new entity as a member of owner.
  * Resets the overwrites/overwritten_by fields.
  * Keeps the old atomic value.
- *   @@@ Maybe we should change this.  If peculiarity of a method
- *       is existent, we should add a new SymConst that points to
- *       itself and not to the origin.  Right now we have to change
- *       the peculiarity and then set a new atomic value by hand.
  */
 ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner);
 
@@ -197,89 +236,57 @@ void set_entity_ident(ir_entity *ent, ident *id);
  * Else it generates a name with mangle_entity()
  * and remembers this new name internally.
  */
-ident *get_entity_ld_ident(ir_entity *ent);
+ident *get_entity_ld_ident(const ir_entity *ent);
 
 /** Sets the mangled name of the entity. */
 void set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
-const char *get_entity_ld_name(ir_entity *ent);
+const char *get_entity_ld_name(const ir_entity *ent);
 
 /** Returns the owner of the entity. */
-ir_type *get_entity_owner(ir_entity *ent);
+ir_type *get_entity_owner(const ir_entity *ent);
 
 /** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
 void set_entity_owner(ir_entity *ent, ir_type *owner);
 
 /** Returns the type of an entity. */
-ir_type *get_entity_type(ir_entity *ent);
+ir_type *get_entity_type(const ir_entity *ent);
 
 /** Sets the type of an entity. */
 void set_entity_type(ir_entity *ent, ir_type *tp);
 
-/** The allocation type. */
-typedef enum {
-	allocation_automatic, /**< The entity is allocated during runtime, implicitly
-	                           as component of a compound type.   This is the default. */
-	allocation_parameter, /**< The entity is a parameter.  It is also automatic allocated.
-	                           We distinguish the allocation of parameters from the allocation
-	                           of local variables as their placement depends on the calling
-	                           conventions. */
-	allocation_dynamic,   /**< The entity is allocated during runtime, explicitly
-	                           by an Alloc node. */
-	allocation_static     /**< The entity is allocated statically.  We can use a
-	                           Const as address of the entity.  This is the default for methods. */
-} ir_allocation;
+/** Returns the linkage of an entity. */
+ir_linkage get_entity_linkage(const ir_entity *entity);
 
-/** Returns the allocation type of an entity. */
-ir_allocation get_entity_allocation(const ir_entity *ent);
+/** Sets the linkage of an entity. */
+void set_entity_linkage(ir_entity *entity, ir_linkage linkage);
+void add_entity_linkage(ir_entity *entity, ir_linkage linkage);
+void remove_entity_linkage(ir_entity *entity, ir_linkage linkage);
 
-/** Sets the allocation type of an entity. */
-void set_entity_allocation(ir_entity *ent, ir_allocation al);
+/** Returns 1 if the value of a global symbol never changes in a program */
+int is_entity_constant(const ir_entity *ent);
 
-/** Return the name of the allocation type. */
-const char *get_allocation_name(ir_allocation al);
-
-/** Returns the visibility of an entity. */
-ir_visibility get_entity_visibility(const ir_entity *ent);
-
-/** Sets the visibility of an entity. */
-void set_entity_visibility(ir_entity *ent, ir_visibility vis);
-
-/** Return the name of the visibility */
-const char *get_visibility_name(ir_visibility vis);
-
-/** This enumeration flags the variability of entities. */
-typedef enum {
-	variability_uninitialized,    /**< The content of the entity is completely unknown. Default. */
-	variability_initialized,      /**< After allocation the entity is initialized with the
-	                                   value given somewhere in the entity. */
-	variability_part_constant,    /**< For entities of compound types.
-	                                   The members of the entity are mixed constant,
-	                                   initialized or uninitialized. */
-	variability_constant          /**< The entity is constant. */
-} ir_variability;
-
-/** Returns the variability of an entity. */
-ir_variability get_entity_variability(const ir_entity *ent);
-
-/** Sets the variability of an entity. */
-void set_entity_variability(ir_entity *ent, ir_variability var);
-
-/** Return the name of the variability. */
-const char *get_variability_name(ir_variability var);
-
-/** This enumeration flags the volatility of entities and Loads/Stores. */
+/**
+ * This enumeration flags the volatility of entities and Loads/Stores.
+ * @deprecated
+ */
 typedef enum {
 	volatility_non_volatile,    /**< The entity is not volatile. Default. */
 	volatility_is_volatile      /**< The entity is volatile. */
 } ir_volatility;
 
-/** Returns the volatility of an entity. */
+/**
+ * Returns the volatility of an entity.
+ * @deprecated
+ */
 ir_volatility get_entity_volatility(const ir_entity *ent);
 
-/** Sets the volatility of an entity. */
+/**
+ * Sets the volatility of an entity.
+ * @deprecated
+ */
 void set_entity_volatility(ir_entity *ent, ir_volatility vol);
 
 /** Return the name of the volatility. */
@@ -288,39 +295,35 @@ const char *get_volatility_name(ir_volatility var);
 /** Returns alignment of entity in bytes */
 unsigned get_entity_alignment(const ir_entity *entity);
 
-/** Sets alignment for entity in bytes */
+/** Allows you to override the type alignment for an entity.
+ * @param alignment   alignment in bytes
+ */
 void set_entity_alignment(ir_entity *entity, unsigned alignment);
 
-/** This enumeration flags the align of Loads/Stores. */
+
+/**
+ * This enumeration flags the align of Loads/Stores.
+ * @deprecated
+ */
 typedef enum {
 	align_non_aligned,    /**< The entity is not aligned. */
 	align_is_aligned      /**< The entity is aligned. Default */
 } ir_align;
 
-/** Returns indication wether entity is aligned in memory. */
+/**
+ * Returns indication wether entity is aligned in memory.
+ * @deprecated
+ */
 ir_align get_entity_aligned(const ir_entity *ent);
 
-/** Sets indication wether entity is aligned in memory */
+/**
+ * Sets indication wether entity is aligned in memory
+ * @deprecated
+ */
 void set_entity_aligned(ir_entity *ent, ir_align a);
 
 /** Return the name of the alignment. */
 const char *get_align_name(ir_align a);
-
-/** This enumeration flags the stickyness of an entity. */
-typedef enum {
-	stickyness_unsticky,  /**< The entity can be removed from
-	                           the program, unless contraindicated
-	                           by other attributes. Default. */
-	stickyness_sticky     /**< The entity must remain in the
-	                           program in any case. There might be external
-	                           callers. */
-} ir_stickyness;
-
-/** Get the entity's stickyness. */
-ir_stickyness get_entity_stickyness(const ir_entity *ent);
-
-/** Set the entity's stickyness. */
-void set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
 int get_entity_offset(const ir_entity *ent);
@@ -342,9 +345,7 @@ void set_entity_link(ir_entity *ent, void *l);
 
 /* -- Fields of method entities -- */
 /** The entity knows the corresponding irg if the entity is a method.
-   This allows to get from a Call to the called irg.
-   Only entities of peculiarity "existent" can have a corresponding irg,
-   else the field is fixed to NULL.  (Get returns NULL, set asserts.) */
+   This allows to get from a Call to the called irg. */
 ir_graph *get_entity_irg(const ir_entity *ent);
 void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
@@ -353,18 +354,6 @@ unsigned get_entity_vtable_number(const ir_entity *ent);
 
 /** Sets the entity vtable number. */
 void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number);
-
-/** Return the peculiarity of an entity. */
-ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
-
-/** Sets the peculiarity of an entity. */
-void set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
-
-/** Checks if an entity cannot be overridden anymore. */
-int is_entity_final(const ir_entity *ent);
-
-/** Sets/resets the final flag of an entity. */
-void set_entity_final(ir_entity *ent, int final);
 
 /** Set label number of an entity with code type */
 void set_entity_label(ir_entity *ent, ir_label_t label);
@@ -518,16 +507,16 @@ ir_initializer_t *get_entity_initializer(const ir_entity *entity);
    Overwrittenby is the inverse of overwrites.  Both add routines add
    both relations, they only differ in the order of arguments. */
 void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
-int get_entity_n_overwrites(ir_entity *ent);
-int get_entity_overwrites_index(ir_entity *ent, ir_entity *overwritten);
-ir_entity *get_entity_overwrites(ir_entity *ent, int pos);
+int get_entity_n_overwrites(const ir_entity *ent);
+int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
+ir_entity *get_entity_overwrites(const ir_entity *ent, int pos);
 void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten);
 void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 
 void add_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
-int get_entity_n_overwrittenby(ir_entity *ent);
-int get_entity_overwrittenby_index(ir_entity *ent, ir_entity *overwrites);
-ir_entity *get_entity_overwrittenby(ir_entity *ent, int pos);
+int get_entity_n_overwrittenby(const ir_entity *ent);
+int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
+ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos);
 void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites);
 void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 
@@ -546,12 +535,12 @@ int is_entity(const void *thing);
  *
  * @note This is a different classification than from is_primitive_type().
  */
-int is_atomic_entity(ir_entity *ent);
+int is_atomic_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
-int is_compound_entity(ir_entity *ent);
+int is_compound_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a Method type. */
-int is_method_entity(ir_entity *ent);
+int is_method_entity(const ir_entity *ent);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
@@ -560,7 +549,7 @@ int is_method_entity(ir_entity *ent);
 long get_entity_nr(const ir_entity *ent);
 
 /** Returns the entities visited count. */
-ir_visited_t get_entity_visited(ir_entity *ent);
+ir_visited_t get_entity_visited(const ir_entity *ent);
 
 /** Sets the entities visited count. */
 void set_entity_visited(ir_entity *ent, ir_visited_t num);
@@ -569,10 +558,10 @@ void set_entity_visited(ir_entity *ent, ir_visited_t num);
 void mark_entity_visited(ir_entity *ent);
 
 /** Returns true if this entity was visited. */
-int entity_visited(ir_entity *ent);
+int entity_visited(const ir_entity *ent);
 
 /** Returns true if this entity was not visited. */
-int entity_not_visited(ir_entity *ent);
+int entity_not_visited(const ir_entity *ent);
 
 /**
  * Returns the mask of the additional entity properties.
@@ -581,7 +570,7 @@ int entity_not_visited(ir_entity *ent);
  * set_entity_additional_properties() or
  * set_entity_additional_property().
  */
-unsigned get_entity_additional_properties(ir_entity *ent);
+unsigned get_entity_additional_properties(const ir_entity *ent);
 
 /** Sets the mask of the additional graph properties. */
 void set_entity_additional_properties(ir_entity *ent, unsigned property_mask);
@@ -613,14 +602,10 @@ ir_type *get_entity_repr_class(const ir_entity *ent);
  * - ld_name       = "unknown_entity"
  * - owner         = unknown_type
  * - type          = unknown_type
- * - allocation    = allocation_automatic
- * - visibility    = visibility_external_allocated
  * - offset        = -1
- * - variability   = variability_uninitialized
  * - value         = SymConst(unknown_entity)
  * - values        = NULL
  * - val_paths     = NULL
- * - peculiarity   = peculiarity_existent
  * - volatility    = volatility_non_volatile
  * - stickyness    = stickyness_unsticky
  * - ld_name       = NULL
@@ -1135,49 +1120,6 @@ tp_opcode get_type_tpop_code(const ir_type *tp);
  */
 void ir_print_type(char *buffer, size_t buffer_size, const ir_type *tp);
 
-/** The visibility of a type.
- *
- *  The visibility of a type indicates, whether entities of this type
- *  are accessed or allocated in external code.
- *
- *  An entity of a type is allocated in external code, if the external
- *  code declares a variable of this type, or dynamically allocates
- *  an entity of this type.  If the external code declares a (compound)
- *  type, that contains entities of this type, the visibility also
- *  must be external_allocated.
- *
- *  The visibility must be higher than that of all entities, if the
- *  type is a compound.  Here it is questionable, what happens with
- *  static entities.  If these are accessed external by direct reference,
- *  (a static call to a method, that is also in the dispatch table)
- *  it should not affect the visibility of the type.
- *
- *
- * @@@ Do we need a visibility for types?
- * I change the layout of types radically when doing type splitting.
- * I need to know, which fields of classes are accessed in the RTS,
- * e.g., [_length.  I may not move [_length to the split part.
- * The layout though, is a property of the type.
- *
- * One could also think of changing the mode of a type ...
- *
- * But, we could also output macros to access the fields, e.g.,
- *  ACCESS_[_length (X)   X->length              // conventional
- *  ACCESS_[_length (X)   X->_split_ref->length  // with type splitting
- *
- * For now I implement this function, that returns the visibility
- * based on the visibility of the entities of a compound ...
- *
- * This function returns visibility_external_visible if one or more
- * entities of a compound type have visibility_external_visible.
- * Entities of types are never visibility_external_allocated (right?).
- * Else returns visibility_local.
- */
-ir_visibility get_type_visibility(const ir_type *tp);
-void          set_type_visibility(ir_type *tp, ir_visibility v);
-
-
-
 /** The state of the type layout. */
 typedef enum {
 	layout_undefined,    /**< The layout of this type is not defined.
@@ -1319,7 +1261,6 @@ int is_type(const void *thing);
  *      - the same supertypes -- the C-pointers are compared --> no recursive call.
  *      - the same number of subtypes.  Subtypes are not compared,
  *        as this could cause a cyclic test.
- *      - the same peculiarity
  *    - they are structure types and have the same members
  *    - they are method types and have
  *      - the same parameter types
@@ -1394,15 +1335,6 @@ int smaller_type(ir_type *st, ir_type *lt);
  *  - subtypes:    A list of direct subclasses.
  *
  *  - supertypes:  A list of direct superclasses.
- *
- *  - peculiarity: The peculiarity of this class.  If the class is of peculiarity
- *                 "description" it only is a description of requirements to a class,
- *                 as, e.g., a Java interface.  The class will never be allocated.
- *                 Peculiarity inherited is only possible for entities.  An entity
- *                 is of peculiarity inherited if the compiler generated the entity
- *                 to explicitly resolve inheritance.  An inherited method entity has
- *                 no value for irg.
- *                 Values: description, existent, inherited.  Default: existent.
  *
  *  - type_info:   An entity representing the type information of this class.
  *                 This entity can be of arbitrari type, Firm did not use it yet.
@@ -1547,14 +1479,6 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype);
 #define get_class_base_type(clss, pos)             get_class_supertype(clss, pos)
 #define set_class_base_type(clss, basetype, pos)   set_class_supertype(clss, basetype, pos)
 #define remove_class_base_type(clss, basetype)     remove_class_supertype(clss, basetype)
-
-/** Returns a human readable string for a peculiarity. */
-const char *get_peculiarity_name(ir_peculiarity p);
-
-/** Returns the peculiarity of the class. */
-ir_peculiarity get_class_peculiarity(const ir_type *clss);
-/** Sets the peculiarity of the class. */
-void set_class_peculiarity(ir_type *clss, ir_peculiarity pec);
 
 /** Returns the type info entity of a class. */
 ir_entity *get_class_type_info(const ir_type *clss);
@@ -2231,13 +2155,16 @@ int get_compound_n_members(const ir_type *tp);
  * @param pos The number of the member.
  *
  * @return The member entity at position pos.
- *
- * @see get_compound_n_members() for justification of existence.
  */
 ir_entity *get_compound_member(const ir_type *tp, int pos);
 
 /** Returns index of member in tp, -1 if not contained. */
 int get_compound_member_index(const ir_type *tp, ir_entity *member);
+
+/**
+ * layout members of a struct/union or class type in a default way.
+ */
+void default_layout_compound_type(ir_type *tp);
 
 /**
  * Checks whether a type is a compound type.
@@ -2501,16 +2428,58 @@ typedef void entity_walk_func(ir_entity *ent, void *env);
 void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env);
 
 /**
- * layout members of a struct/union or class type in a default way.
- */
-void default_layout_compound_type(ir_type *tp);
-
-/**
  * If we have the closed world assumption, we can calculate the
  * finalization of classes and entities by inspecting the class hierarchy.
  * After this is done, all classes and entities that are not overridden
  * anymore have the final property set.
  */
 void types_calc_finalization(void);
+
+/**
+ * @deprecated
+ */
+typedef enum {
+	visibility_local,
+	visibility_external_visible,
+	visibility_external_allocated
+} ir_visibility;
+
+/** @deprecated */
+ir_visibility get_type_visibility(const ir_type *tp);
+/** @deprecated */
+void          set_type_visibility(ir_type *tp, ir_visibility v);
+
+/** @deprecated */
+typedef enum {
+	allocation_automatic,
+	allocation_parameter,
+	allocation_dynamic,
+	allocation_static
+} ir_allocation;
+/** @deprecated */
+ir_allocation get_entity_allocation(const ir_entity *ent);
+/** @deprecated */
+void set_entity_allocation(ir_entity *ent, ir_allocation al);
+
+/** @deprecated */
+typedef enum {
+	peculiarity_existent,
+	peculiarity_description,
+	peculiarity_inherited
+} ir_peculiarity;
+/** @deprecated */
+ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
+/** @deprecated */
+void set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
+
+/** @deprecated */
+int is_entity_final(const ir_entity *ent);
+/** @deprecated */
+void set_entity_final(ir_entity *ent, int final);
+
+/** @deprecated */
+ir_peculiarity get_class_peculiarity(const ir_type *clss);
+/** @deprecated */
+void set_class_peculiarity(ir_type *clss, ir_peculiarity pec);
 
 #endif

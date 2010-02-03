@@ -505,8 +505,7 @@ static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 	if (is_SymConst(node)) {
 		ir_entity *ent = get_SymConst_entity(node);
 		set_entity_backend_marked(ent, 1);
-		if (! is_direct_entity(ent))
-			pset_insert_ptr(symbol_set, ent);
+		pset_insert_ptr(symbol_set, ent);
 	}
 }
 
@@ -621,8 +620,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	be_abi_call_flags_t call_flags = { { 0, 0, 1, 0, 0, 0, 1 } };
 
 	(void) self;
-	if(get_type_visibility(method_type)!=visibility_external_allocated)
-		call_flags.bits.call_has_imm = 1;
+	call_flags.bits.call_has_imm = 1;
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &ppc32_abi_callbacks);

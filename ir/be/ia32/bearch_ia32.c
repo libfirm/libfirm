@@ -865,13 +865,14 @@ static void ia32_before_abi(void *self)
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if (cg->dump)
 		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+
 	if (cg->gprof) {
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
 			mcount = new_entity(get_glob_type(), ID("mcount"), tp);
 			/* FIXME: enter the right ld_ident here */
 			set_entity_ld_ident(mcount, get_entity_ident(mcount));
-			set_entity_visibility(mcount, visibility_external_allocated);
+			set_entity_linkage(mcount, IR_LINKAGE_EXTERN);
 		}
 		instrument_initcall(cg->irg, mcount);
 	}
@@ -2180,7 +2181,8 @@ static bool mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 /**
  * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
  */
-static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
+                                 ir_node *mux_false)
 {
 	ir_node *cmp_l;
 	ir_node *cmp_r;
@@ -2244,7 +2246,8 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	(void) sel;
 	ir_mode *mode = get_irn_mode(mux_true);
 
-	if (!mode_is_int(mode) && !mode_is_reference(mode))
+	if (!mode_is_int(mode) && !mode_is_reference(mode)
+			&& mode != mode_b)
 		return false;
 
 	if (is_Const(mux_true) && is_Const_one(mux_true)
@@ -2259,7 +2262,8 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	return false;
 }
 
-static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
+                                     ir_node *mux_false)
 {
 	(void) sel;
 
@@ -2284,18 +2288,21 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	if (!is_Cmp(cmp))
 		return false;
 
+	mode = get_irn_mode(mux_true);
+	if (mode_is_signed(mode) || mode_is_float(mode))
+		return false;
+
+	pn        = get_Proj_proj(sel);
 	cmp_left  = get_Cmp_left(cmp);
 	cmp_right = get_Cmp_right(cmp);
-	mode      = get_irn_mode(mux_true);
-	pn        = get_Proj_proj(sel);
-	if ((pn & pn_Cmp_Gt) && !mode_is_signed(mode) &&
+	if ((pn & pn_Cmp_Gt) &&
 		is_Const(mux_false) && is_Const_null(mux_false) && is_Sub(mux_true) &&
 		get_Sub_left(mux_true) == cmp_left &&
 		get_Sub_right(mux_true) == cmp_right) {
 		/* Mux(a >=u b, a - b, 0) unsigned Doz */
 		return true;
 	}
-	if ((pn & pn_Cmp_Lt) && !mode_is_signed(mode) &&
+	if ((pn & pn_Cmp_Lt) &&
 		is_Const(mux_true) && is_Const_null(mux_true) && is_Sub(mux_false) &&
 		get_Sub_left(mux_false) == cmp_left &&
 		get_Sub_right(mux_false) == cmp_right) {
@@ -2452,15 +2459,14 @@ static const backend_params *ia32_get_libfirm_params(void)
 }
 
 static const lc_opt_enum_int_items_t gas_items[] = {
-	{ "elf",     GAS_FLAVOUR_ELF },
-	{ "mingw",   GAS_FLAVOUR_MINGW  },
-	{ "yasm",    GAS_FLAVOUR_YASM   },
-	{ "macho",   GAS_FLAVOUR_MACH_O },
-	{ NULL,      0 }
+	{ "elf",   OBJECT_FILE_FORMAT_ELF    },
+	{ "mingw", OBJECT_FILE_FORMAT_COFF   },
+	{ "macho", OBJECT_FILE_FORMAT_MACH_O },
+	{ NULL,    0 }
 };
 
 static lc_opt_enum_int_var_t gas_var = {
-	(int*) &be_gas_flavour, gas_items
+	(int*) &be_gas_object_file_format, gas_items
 };
 
 #ifdef FIRM_GRGEN_BE

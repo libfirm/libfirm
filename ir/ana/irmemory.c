@@ -949,8 +949,9 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 
 		/* methods can only be analyzed globally */
 		if (! is_method_entity(ent)) {
-			ir_entity_usage  flags =
-				get_entity_stickyness(ent) == stickyness_sticky ? ir_usage_unknown : 0;
+			ir_entity_usage flags = 0;
+			if (get_entity_linkage(ent) & IR_LINKAGE_HIDDEN_USER)
+				flags = ir_usage_unknown;
 			set_entity_usage(ent, flags);
 		}
 	}
@@ -982,10 +983,11 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 
 		if (! is_method_entity(ent))
 			continue;
-		if (get_entity_peculiarity(ent) == peculiarity_description)
-			continue;
 
 		inner_irg = get_entity_irg(ent);
+		if (inner_irg == NULL)
+			continue;
+
 		assure_irg_outs(inner_irg);
 		args = get_irg_args(inner_irg);
 		for (j = get_irn_n_outs(args) - 1; j >= 0; --j) {
@@ -1025,7 +1027,8 @@ void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state st
 	irg->entity_usage_state = state;
 }
 
-void assure_irg_entity_usage_computed(ir_graph *irg) {
+void assure_irg_entity_usage_computed(ir_graph *irg)
+{
 	if (irg->entity_usage_state != ir_entity_usage_not_computed)
 		return;
 
@@ -1036,18 +1039,16 @@ void assure_irg_entity_usage_computed(ir_graph *irg) {
 /**
  * Initialize the entity_usage flag for a global type like type.
  */
-static void init_entity_usage(ir_type *tp) {
+static void init_entity_usage(ir_type *tp)
+{
 	int i;
 
 	/* We have to be conservative: All external visible entities are unknown */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
 		ir_entity       *ent  = get_compound_member(tp, i);
 		ir_entity_usage flags = ir_usage_none;
-		ir_visibility   vis   = get_entity_visibility(ent);
 
-		if (vis == visibility_external_visible   ||
-		    vis == visibility_external_allocated ||
-		    get_entity_stickyness(ent) == stickyness_sticky) {
+		if (! (get_entity_linkage(ent) & IR_LINKAGE_LOCAL)) {
 			flags |= ir_usage_unknown;
 		}
 		set_entity_usage(ent, flags);
@@ -1093,29 +1094,21 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
  *
  * @param ent  the entity
  */
-static void check_initializer(ir_entity *ent) {
+static void check_initializer(ir_entity *ent)
+{
 	ir_node *n;
 	int i;
 
-	/* do not check uninitialized values */
-	if (get_entity_variability(ent) == variability_uninitialized)
-		return;
-
 	/* Beware: Methods are always initialized with "themself". This does not
-	   count as a taken address. */
+	 * count as a taken address.
+	 * TODO: this initialisation with "themself" is wrong and should be removed
+	 */
 	if (is_Method_type(get_entity_type(ent)))
 		return;
 
-	if (ent->has_initializer) {
-		check_initializer_nodes(ent->attr.initializer);
-	} else if (is_atomic_entity(ent)) {
-		/* let's check if it's an address */
-		n = get_atomic_ent_value(ent);
-		if (is_Global(n)) {
-			ir_entity *ent = get_Global_entity(n);
-			set_entity_usage(ent, ir_usage_unknown);
-		}
-	} else {
+	if (ent->initializer != NULL) {
+		check_initializer_nodes(ent->initializer);
+	} else if (entity_has_compound_ent_values(ent)) {
 		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
 			n = get_compound_ent_value(ent, i);
 
@@ -1126,7 +1119,7 @@ static void check_initializer(ir_entity *ent) {
 			}
 		}
 	}
-}  /* check_initializer */
+}
 
 
 /**
@@ -1303,7 +1296,8 @@ static void update_calls_to_private(ir_node *call, void *env) {
 }  /* update_calls_to_private */
 
 /* Mark all private methods, i.e. those of which all call sites are known. */
-void mark_private_methods(void) {
+void mark_private_methods(void)
+{
 	int i;
 	int changed = 0;
 
@@ -1316,12 +1310,11 @@ void mark_private_methods(void) {
 		ir_graph        *irg   = get_irp_irg(i);
 		ir_entity       *ent   = get_irg_entity(irg);
 		ir_entity_usage  flags = get_entity_usage(ent);
+		ir_linkage       linkage = get_entity_linkage(ent);
 
-		/* If an entity is sticky, it might be called from external
-		   places (like inline assembler), so do NOT mark it as private. */
-		if (get_entity_visibility(ent) == visibility_local &&
-		    !(flags & ir_usage_address_taken) &&
-		    get_entity_stickyness(ent) != stickyness_sticky) {
+		if ((linkage & IR_LINKAGE_LOCAL) &&
+		    !(linkage & IR_LINKAGE_HIDDEN_USER) &&
+		    !(flags & ir_usage_address_taken)) {
 			ir_type *mtp = get_entity_type(ent);
 
 			set_entity_additional_property(ent, mtp_property_private);

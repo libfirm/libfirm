@@ -80,10 +80,10 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 				if (get_entity_peculiarity(inhent) == peculiarity_existent)
 					set_entity_peculiarity(thisent, peculiarity_inherited);
 				set_entity_ld_ident(thisent, mfunc(inhent, clss));
-				if (get_entity_variability(inhent) == variability_constant) {
+				if (get_entity_linkage(inhent) & IR_LINKAGE_CONSTANT) {
 					assert(is_atomic_entity(inhent) &&  /* @@@ */
 						"Inheritance of constant, compound entities not implemented");
-					set_entity_variability(thisent, variability_constant);
+					add_entity_linkage(thisent, IR_LINKAGE_CONSTANT);
 					set_atomic_ent_value(thisent, get_atomic_ent_value(inhent));
 				}
 			}

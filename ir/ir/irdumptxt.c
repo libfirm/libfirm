@@ -613,6 +613,25 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 	need_nl = 1;
 }
 
+static void dump_entity_linkage(FILE *F, const ir_entity *entity)
+{
+	ir_linkage linkage = get_entity_linkage(entity);
+
+	if (linkage & IR_LINKAGE_CONSTANT)
+		fprintf(F, " constant");
+	if (linkage & IR_LINKAGE_WEAK)
+		fprintf(F, " weak");
+	if (linkage & IR_LINKAGE_LOCAL)
+		fprintf(F, " local");
+	if (linkage & IR_LINKAGE_EXTERN)
+		fprintf(F, " extern");
+	if (linkage & IR_LINKAGE_GARBAGE_COLLECT)
+		fprintf(F, " garbage_collect");
+	if (linkage & IR_LINKAGE_MERGE)
+		fprintf(F, " merge");
+	if (linkage & IR_LINKAGE_HIDDEN_USER)
+		fprintf(F, " hidden_user");
+}
 
 void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity) {
 	int i, j;
@@ -674,9 +693,8 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 			}
 		}
 
-		fprintf(F, "%s  allocation:  %s", prefix, get_allocation_name(get_entity_allocation(ent)));
-		fprintf(F, "\n%s  visibility:  %s", prefix, get_visibility_name(get_entity_visibility(ent)));
-		fprintf(F, "\n%s  variability: %s", prefix, get_variability_name(get_entity_variability(ent)));
+		fprintf(F, "%s  linkage:", prefix);
+		dump_entity_linkage(F, ent);
 
 		if (is_Method_type(get_entity_type(ent))) {
 			unsigned mask = get_entity_additional_properties(ent);
@@ -729,54 +747,45 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 		if (is_Method_type(get_entity_type(ent))) fputs("(...)", F);
 
 		if (verbosity & dump_verbosity_accessStats) {
-			if (get_entity_allocation(ent) == allocation_static)        fputs(" (stat)", F);
-			if (get_entity_peculiarity(ent) == peculiarity_description) fputs(" (desc)", F);
-			if (get_entity_peculiarity(ent) == peculiarity_inherited)   fputs(" (inh)", F);
+			dump_entity_linkage(F, ent);
 		}
 		fputc('\n', F);
 	}
 
 	if (verbosity & dump_verbosity_entconsts) {
-		if (get_entity_variability(ent) != variability_uninitialized) {
-			if (ent->has_initializer) {
-				const ir_initializer_t *initializer = get_entity_initializer(ent);
-				fprintf(F, "\n%s  Initializers:", prefix);
-				need_nl = 1;
-				dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
-			} else {
-				/* old compound_graph_path based initializers */
-				if (is_atomic_entity(ent)) {
-					fprintf(F, "%s  atomic value: ", prefix);
-					dump_node_opcode(F, get_atomic_ent_value(ent));
-				} else {
-					fprintf(F, "%s  compound values:", prefix);
-					for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
-						compound_graph_path *path = get_compound_ent_value_path(ent, i);
-						ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-						fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
-						if (get_type_state(type) == layout_fixed)
-							fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
-						fprintf(F, "%s", get_entity_name(ent));
-						for (j = 0; j < get_compound_graph_path_length(path); ++j) {
-							ir_entity *node = get_compound_graph_path_node(path, j);
-							fprintf(F, ".%s", get_entity_name(node));
-							if (is_Array_type(get_entity_owner(node)))
-								fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
-						}
-						fprintf(F, "\t = ");
-						dump_node_opcode(F, get_compound_ent_value(ent, i));
-					}
+		if (ent->initializer != NULL) {
+			const ir_initializer_t *initializer = get_entity_initializer(ent);
+			fprintf(F, "\n%s  Initializers:", prefix);
+			need_nl = 1;
+			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
+		} else if (entity_has_compound_ent_values(ent)) {
+			fprintf(F, "%s  compound values:", prefix);
+			for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+				compound_graph_path *path = get_compound_ent_value_path(ent, i);
+				ir_entity *ent0 = get_compound_graph_path_node(path, 0);
+				fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
+				if (get_type_state(type) == layout_fixed)
+					fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
+				fprintf(F, "%s", get_entity_name(ent));
+				for (j = 0; j < get_compound_graph_path_length(path); ++j) {
+					ir_entity *node = get_compound_graph_path_node(path, j);
+					fprintf(F, ".%s", get_entity_name(node));
+					if (is_Array_type(get_entity_owner(node)))
+						fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
 				}
+				fprintf(F, "\t = ");
+				dump_node_opcode(F, get_compound_ent_value(ent, i));
 			}
 			fputc('\n', F);
 		}
 	}
 
 	if (verbosity & dump_verbosity_entattrs) {
+		fprintf(F, "%s  linkage:", prefix);
+		dump_entity_linkage(F, ent);
 		fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
 		fprintf(F, "\n%s  aligned:  %s", prefix, get_align_name(get_entity_aligned(ent)));
 		fprintf(F, "\n%s  alignment:  %u", prefix, get_entity_alignment(ent));
-		fprintf(F, "\n%s  peculiarity: %s", prefix, get_peculiarity_name(get_entity_peculiarity(ent)));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
 		fprintf(F, "\n%s  offset:  %d bytes, %d rem bits", prefix, get_entity_offset(ent), get_entity_offset_bits_remainder(ent));
 		if (is_Method_type(get_entity_type(ent))) {
@@ -929,207 +938,6 @@ void dump_entity(ir_entity *ent) {
   dump_entity_to_file(stdout, ent, dump_verbosity_max);
 }
 
-void dump_entitycsv_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
-                                   unsigned verbosity, int *max_disp,
-                                   int disp[], const char *comma)
-{
-	(void) verbosity;
-	(void) max_disp;
-	(void) disp;
-	(void) comma;
-#if 0   /* Outputs loop depth of all occurrences. */
-	int n_acc = get_entity_n_accesses(ent);
-	int max_L_freq = -1;
-	int max_S_freq = -1;
-	int max_LA_freq = -1;
-	int max_SA_freq = -1;
-	int *L_freq;
-	int *S_freq;
-	int *LA_freq;
-	int *SA_freq;
-	int i, max_depth = 0;
-
-	/* Find maximal depth */
-	for (i = 0; i < n_acc; ++i) {
-		ir_node *acc = get_entity_access(ent, i);
-		int depth = get_weighted_loop_depth(acc);
-		max_depth = (depth > max_depth) ? depth : max_depth ;
-	}
-
-	L_freq = XMALLOCNZ(int, 4 * (max_depth + 1));
-
-	S_freq  = L_freq + 1*max_depth;
-	LA_freq = L_freq + 2*max_depth;
-	SA_freq = L_freq + 3*max_depth;
-
-	for (i = 0; i < n_acc; ++i) {
-		ir_node *acc = get_entity_access(ent, i);
-		int depth = get_weighted_loop_depth(acc);
-		assert(depth <= max_depth);
-		if (is_Load(acc) || is_Call(acc)) {
-			L_freq[depth]++;
-			max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
-			if (addr_is_alloc(acc)) {
-				LA_freq[depth]++;
-				max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
-			}
-			if (get_entity_allocation(ent) == allocation_static) {
-				disp[depth]++;
-				*max_disp = (depth > *max_disp) ? depth : *max_disp;
-			}
-		} else if (is_Store(acc)) {
-			S_freq[depth]++;
-			max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
-			if (addr_is_alloc(acc)) {
-				SA_freq[depth]++;
-				max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
-			}
-			if (get_entity_allocation(ent) == allocation_static) {
-				assert(0);
-			}
-		} else {
-			assert(0);
-		}
-	}
-
-	if (get_entity_allocation(ent) != allocation_static) {
-
-		ir_fprintf(F, "%+F_%s", get_entity_owner(ent), get_entity_name(ent));
-
-		if (max_L_freq >= 0) {
-			fprintf(F, "%s Load", comma);
-			for (i = 0; i <= max_L_freq; ++i) {
-				fprintf(F, "%s %d", comma, L_freq[i]);
-			}
-		}
-		if (max_S_freq >= 0) {
-			if (max_L_freq >= 0) {
-				ir_fprintf(F, "\n%+F_%s", get_entity_owner(ent),
-				           get_entity_name(ent));
-			}
-			fprintf(F, "%s Store", comma);
-			for (i = 0; i <= max_S_freq; ++i) {
-				fprintf(F, "%s %d", comma, S_freq[i]);
-			}
-		}
-		fprintf(F, "\n");
-	}
-	free(L_freq);
-#endif
-
-	if (get_entity_allocation(ent) != allocation_static) {
-		if (is_Method_type(get_entity_type(ent))) return;
-
-		/* Output the entity name. */
-		fprintf(F, "%s%-40s ", prefix, get_entity_ld_name(ent));
-
-#ifdef INTERPROCEDURAL_VIEW
-		if (get_trouts_state() != outs_none) {
-			if (is_Method_type(get_entity_type(ent))) {
-				//fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
-				//fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
-			} else {
-				fprintf(F, "%6.2lf ", get_entity_estimated_n_loads(ent));
-				fprintf(F, "%6.2lf", get_entity_estimated_n_stores(ent));
-			}
-		}
-#endif
-
-		fprintf(F, "\n");
-	}
-}
-
-#ifdef INTERPROCEDURAL_VIEW
-/* A fast hack to dump a CSV-file. */
-void dump_typecsv_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity, const char *comma) {
-	int i;
-	char buf[1024];
-	(void) comma;
-
-	if (!is_Class_type(tp)) return;   // we also want array types. Stupid, these are classes in java.
-
-	if (verbosity & dump_verbosity_accessStats) {
-
-#if 0
-		/* Outputs loop depth of all occurrences. */
-		int max_freq = -1;
-		int max_disp = -1;
-		int *freq, *disp; /* Accumulated accesses to static members: dispatch table. */
-		int n_all = get_type_n_allocs(tp);
-		int max_depth = 0;
-		/* Find maximal depth */
-		for (i = 0; i < n_all; ++i) {
-			ir_node *all = get_type_alloc(tp, i);
-			int depth = get_weighted_loop_depth(all);
-			max_depth = (depth > max_depth) ? depth : max_depth ;
-		}
-
-		freq = XMALLOCNZ(int, 2 * (max_depth + 1));
-
-		disp = freq + max_depth;
-
-		for (i = 0; i < n_all; ++i) {
-			ir_node *all = get_type_alloc(tp, i);
-			int depth = get_weighted_loop_depth(all);
-			assert(depth <= max_depth);
-			freq[depth]++;
-			max_freq = (depth > max_freq) ? depth : max_freq;
-			assert(is_Alloc(all));
-		}
-
-		ir_fprintf(F, "%+F ", tp);
-		fprintf(F, "%s Alloc ", comma);
-
-		if (max_freq >= 0) {
-			for (i = 0; i <= max_freq; ++i) {
-				fprintf(F, "%s %d", comma, freq[i]);
-			}
-		}
-		fprintf(F, "\n");
-
-		for (i = 0; i < get_class_n_members(tp); ++i) {
-			ir_entity *mem = get_class_member(tp, i);
-			if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-				((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-				if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
-					dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, &max_disp, disp, comma);
-				}
-			}
-		}
-
-		if (max_disp >= 0) {
-			ir_fprintf(F, "%+F__disp_tab%s Load", tp, comma);
-			for (i = 0; i <= max_disp; ++i) {
-				fprintf(F, "%s %d", comma, disp[i]);
-			}
-			fprintf(F, "\n");
-		}
-
-		/* free allocated space */
-		free(freq);
-#endif
-
-#define DISP_TAB_SUFFIX "__disp_tab"
-		if (get_trouts_state() != outs_none) {
-			ir_fprintf(F, "%+F %6.2lf  -1.00\n", tp,
-			           get_type_estimated_n_instances(tp));
-			ir_snprintf(buf, sizeof(buf), "%+F%s", tp, DISP_TAB_SUFFIX);
-			fprintf(F, "%-44s %6.2lf   0.00\n", buf, get_class_estimated_n_dyncalls(tp));
-		}
-
-		for (i = 0; i < get_class_n_members(tp); ++i) {
-			ir_entity *mem = get_class_member(tp, i);
-			if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
-				((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-				if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
-					dump_entitycsv_to_file_prefix(F, mem, "    ", verbosity, NULL, 0, 0);
-				}
-			}
-		}
-	}
-}
-#endif
-
 void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 	int i;
 
@@ -1155,7 +963,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 			ir_entity *mem = get_class_member(tp, i);
 			if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
 				((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
-				if (!((verbosity & dump_verbosity_nostatic) && (get_entity_allocation(mem) == allocation_static))) {
+				if (!(verbosity & dump_verbosity_nostatic)) {
 					dump_entity_to_file_prefix(F, mem, "    ", verbosity);
 				}
 			}
@@ -1188,7 +996,6 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 				}
 			}
 
-			fprintf(F, "\n  peculiarity: %s\n", get_peculiarity_name(get_class_peculiarity(tp)));
 			fprintf(F, "\n  flags:       ");
 			if (is_class_final(tp))
 				fprintf(F, "final, ");
@@ -1304,7 +1111,6 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 		}
 	}
 
-	fprintf(F, "  visibility: %s,\n", get_visibility_name(get_type_visibility(tp)));
 	fprintf(F, "  state:      %s,\n", get_type_state_name(get_type_state(tp)));
 	fprintf(F, "  size:       %2u Bytes,\n", get_type_size_bytes(tp));
 	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment_bytes(tp));
@@ -1380,19 +1186,13 @@ void dump_type(ir_type *tp) {
 	dump_type_to_file (stdout, tp, dump_verbosity_max);
 }
 
-
 void dump_types_as_text(unsigned verbosity, const char *suffix) {
 	const char *basename;
-	FILE *F, *CSV = NULL;
+	FILE *F;
 	int i, n_types = get_irp_n_types();
 
 	basename = irp_prog_name_is_set() ? get_irp_name() : "TextTypes";
 	F = text_open(basename, suffix, "-types", ".txt");
-
-	if (verbosity & dump_verbosity_csv) {
-		CSV = text_open(basename, suffix, "-types", ".csv");
-		//fprintf(CSV, "Class, Field, Operation, L0, L1, L2, L3\n");
-	}
 
 	for (i = 0; i < n_types; ++i) {
 		ir_type *t = get_irp_type(i);
@@ -1400,41 +1200,25 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 		//if (is_jack_rts_class(t)) continue;
 
 		dump_type_to_file(F, t, verbosity);
-#ifdef INTERPROCEDURAL_VIEW
-		if (CSV) {
-			dump_typecsv_to_file(CSV, t, verbosity, "");
-		}
-#endif
 	}
 
 	fclose(F);
-	if (CSV) fclose(CSV);
 }
-
 
 void dump_globals_as_text(unsigned verbosity, const char *suffix) {
 	const char *basename;
-	FILE *F, *CSV = NULL;
+	FILE *F;
 	ir_type *g = get_glob_type();
 	int i, n_mems = get_class_n_members(g);
 
 	basename = irp_prog_name_is_set() ? get_irp_name() : "TextGlobals";
 	F = text_open (basename, suffix, "-globals", ".txt");
 
-	if (verbosity & dump_verbosity_csv) {
-		CSV = text_open (basename, suffix, "-types", ".csv");
-		//fprintf(CSV, "Class, Field, Operation, L0, L1, L2, L3\n");
-	}
-
 	for (i = 0; i < n_mems; ++i) {
 		ir_entity *e = get_class_member(g, i);
 
 		dump_entity_to_file(F, e, verbosity);
-		if (CSV) {
-			//dump_entitycsv_to_file_prefix(CSV, e, "", verbosity, ""???);
-		}
 	}
 
 	fclose (F);
-	if (CSV) fclose (CSV);
 }

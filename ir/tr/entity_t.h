@@ -71,19 +71,11 @@ union ir_initializer_t {
 	ir_initializer_tarval_t    tarval;
 };
 
-/** The attributes for atomic entities. */
-typedef struct atomic_ent_attr {
-	ir_node *value;            /**< value if entity is not of variability uninitialized.
-	                             Only for atomic entities. */
-} atomic_ent_attr;
-
 /** The attributes for compound entities. */
 typedef struct compound_ent_attr {
-	ir_node **values;     /**< constant values of compound entities. Only available if
-	                           variability not uninitialized.  Must be set for variability constant. */
+	ir_node **values;     /**< constant values of compound entities. */
 	compound_graph_path **val_paths;
-	                     /**< paths corresponding to constant values. Only available if
-	                          variability not uninitialized.  Must be set for variability constant. */
+	                     /**< paths corresponding to constant values. */
 } compound_ent_attr;
 
 /** A reserved value for "not yet set". */
@@ -127,39 +119,43 @@ struct ir_entity {
 	ir_type *type;        /**< The type of this entity, e.g., a method type, a
 	                           basic type of the language or a class itself. */
 	ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
-	unsigned allocation:3;         /**< Distinguishes static and dynamically allocated
-	                                    entities and some further cases. */
-	unsigned visibility:3;         /**< Specifies visibility to external program fragments. */
-	unsigned variability:3;        /**< Specifies variability of entities content. */
-	unsigned volatility:1;         /**< Specifies volatility of entities content. */
-	unsigned aligned:1;            /**< Specifies alignment of entities content. */
-	unsigned stickyness:2;         /**< Specifies whether this entity is sticky.  */
-	unsigned peculiarity:3;        /**< The peculiarity of this entity. */
-	unsigned usage:4;              /**< flag indicating usage types of this entity, see ir_entity_usage. */
-	unsigned final:1;              /**< If set, this entity cannot be overridden. */
-	unsigned compiler_gen:1;       /**< If set, this entity was compiler generated. */
-	unsigned backend_marked:1;     /**< If set, this entity was marked by the backend for emission. */
-	unsigned has_initializer:1;    /**< if set, this entity is initialized by new style initializers. */
-	int offset;                    /**< Offset in bytes for this entity.  Fixed when layout
-	                                    of owner is determined. */
-	unsigned alignment;            /**< entity alignment in bytes */
+	unsigned linkage:10;        /**< Specifies linkage type */
+	unsigned volatility:1;      /**< Specifies volatility of entities content.*/
+	unsigned aligned:1;         /**< Specifies alignment of entities content. */
+	unsigned usage:4;           /**< flag indicating usage types of this entity,
+	                                 see ir_entity_usage. */
+	unsigned compiler_gen:1;    /**< If set, this entity was compiler generated.
+	                             */
+	unsigned backend_marked:1;  /**< If set, this entity was marked by the
+	                                 backend for emission. */
+	unsigned visibility:3;      /**< @deprecated */
+	unsigned allocation:3;      /**< @deprecated */
+	unsigned peculiarity:3;     /**< @deprecated */
+	unsigned final:1;           /**< @deprecated */
+	int offset;                 /**< Offset in bytes for this entity. Fixed
+	                                 when layout of owner is determined. */
+	unsigned alignment;         /**< entity alignment in bytes */
 	unsigned char offset_bit_remainder;
-	                               /**< If the entity is a bit field, this is the offset of
-	                                    the start of the bit field within the byte specified
-	                                    by offset. */
-	ir_visited_t visit;            /**< visited counter for walks of the type information. */
-	struct dbg_info *dbi;          /**< A pointer to information for debug support. */
-	void *link;                    /**< To store some intermediate information. */
-	ir_type *repr_class;           /**< If this entity represents a class info, the associated class. */
+	                            /**< If the entity is a bit field, this is the
+	                                 offset of the start of the bit field
+	                                 within the byte specified by offset. */
+	ir_visited_t visit;         /**< visited counter for walks of the type
+	                                 information. */
+	struct dbg_info *dbi;       /**< A pointer to information for debug support.
+	                             */
+	void *link;                 /**< To store some intermediate information. */
+	ir_type *repr_class;        /**< If this entity represents a class info, the
+	                                 associated class. */
 
 	/* ------------- fields for entities owned by a class type ---------------*/
 
-	ir_entity **overwrites;     /**< A list of entities this entity overwrites. */
-	ir_entity **overwrittenby;  /**< A list of entities that overwrite this entity.  */
+	ir_entity **overwrites;     /**< A list of entities this entity overwrites.
+	                             */
+	ir_entity **overwrittenby;  /**< A list of entities that overwrite this
+	                                 entity. */
 
 	/* ------------- fields for atomic entities  --------------- */
-	ir_node *value;          /**< value if entity is not of variability uninitialized.
-	                              Only for atomic entities. */
+	ir_initializer_t *initializer; /**< entity initializer */
 	union {
 		/* ------------- fields for compound entities -------------- */
 		compound_ent_attr cmpd_attr;
@@ -167,20 +163,18 @@ struct ir_entity {
 		method_ent_attr   mtd_attr;
 		/* fields for code entities */
 		code_ent_attr     code_attr;
-		/* entity initializer */
-		ir_initializer_t *initializer;
 	} attr; /**< type specific attributes */
 
 	/* ------------- fields for analyses ---------------*/
 
 #ifdef DEBUG_libfirm
-	long nr;             /**< A unique node number for each node to make output readable. */
-# endif /* DEBUG_libfirm */
+	long nr;             /**< A unique node number for each node to make output
+	                          readable. */
+#endif
 };
 
 /** Initialize the entity module. */
 void firm_init_entity(void);
-
 
 /* ----------------------- inline functions ------------------------ */
 static inline int
@@ -207,17 +201,17 @@ _set_entity_ident(ir_entity *ent, ident *id) {
 }
 
 static inline ir_type *
-_get_entity_owner(ir_entity *ent) {
+_get_entity_owner(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
 	return ent->owner;
 }
 
 static inline ident *
-_get_entity_ld_ident(ir_entity *ent)
+_get_entity_ld_ident(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	if (ent->ld_name == NULL)
-		ent->ld_name = id_mangle_entity(ent);
+		return ent->name;
 	return ent->ld_name;
 }
 
@@ -228,13 +222,13 @@ _set_entity_ld_ident(ir_entity *ent, ident *ld_ident) {
 }
 
 static inline const char *
-_get_entity_ld_name(ir_entity *ent) {
+_get_entity_ld_name(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
 	return get_id_str(get_entity_ld_ident(ent));
 }
 
 static inline ir_type *
-_get_entity_type(ir_entity *ent) {
+_get_entity_type(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
 	return ent->type;
 }
@@ -245,28 +239,10 @@ _set_entity_type(ir_entity *ent, ir_type *type) {
 	ent->type = type;
 }
 
-static inline ir_allocation
-_get_entity_allocation(const ir_entity *ent) {
+static inline ir_linkage
+_get_entity_linkage(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
-	return ent->allocation;
-}
-
-static inline void
-_set_entity_allocation(ir_entity *ent, ir_allocation al) {
-	assert(ent && ent->kind == k_entity);
-	ent->allocation = al;
-}
-
-static inline ir_visibility
-_get_entity_visibility(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return ent->visibility;
-}
-
-static inline ir_variability
-_get_entity_variability(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return ent->variability;
+	return ent->linkage;
 }
 
 static inline ir_volatility
@@ -303,52 +279,6 @@ static inline void
 _set_entity_aligned(ir_entity *ent, ir_align a) {
 	assert(ent && ent->kind == k_entity);
 	ent->aligned = a;
-}
-
-static inline ir_peculiarity
-_get_entity_peculiarity(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return ent->peculiarity;
-}
-
-/**
- * @todo Why peculiarity only for methods?
- *       Good question.  Originally, there were only description and
- *       existent.  The thought was, what sense does it make to
- *       describe a field?  With inherited the situation changed.  So
- *       I removed the assertion.  GL, 28.2.05
- */
-static inline void
-_set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec) {
-	assert(ent && ent->kind == k_entity);
-	/* @@@ why peculiarity only for methods? */
-	//assert(is_Method_type(ent->type));
-
-	ent->peculiarity = pec;
-}
-
-static inline ir_stickyness
-_get_entity_stickyness(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return ent->stickyness;
-}
-
-static inline void
-_set_entity_stickyness(ir_entity *ent, ir_stickyness stickyness) {
-	assert(ent && ent->kind == k_entity);
-	ent->stickyness = stickyness;
-}
-
-static inline int
-_is_entity_final(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return (int)ent->final;
-}
-
-static inline void
-_set_entity_final(ir_entity *ent, int final) {
-	assert(ent && ent->kind == k_entity);
-	ent->final = final ? 1 : 0;
 }
 
 static inline int
@@ -437,50 +367,51 @@ _get_entity_irg(const ir_entity *ent) {
 	return irg;
 }
 
-static inline ir_visited_t
-_get_entity_visited(ir_entity *ent) {
+static inline ir_visited_t _get_entity_visited(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->visit;
 }
 
-static inline void
-_set_entity_visited(ir_entity *ent, ir_visited_t num) {
+static inline void _set_entity_visited(ir_entity *ent, ir_visited_t num)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->visit = num;
 }
 
-static inline void
-_mark_entity_visited(ir_entity *ent) {
+static inline void _mark_entity_visited(ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->visit = firm_type_visited;
 }
 
-static inline int
-_entity_visited(ir_entity *ent) {
+static inline int _entity_visited(const ir_entity *ent)
+{
 	return _get_entity_visited(ent) >= firm_type_visited;
 }
 
-static inline int
-_entity_not_visited(ir_entity *ent) {
+static inline int _entity_not_visited(const ir_entity *ent)
+{
 	return _get_entity_visited(ent) < firm_type_visited;
 }
 
-static inline ir_type *
-_get_entity_repr_class(const ir_entity *ent) {
+static inline ir_type *_get_entity_repr_class(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->repr_class;
 }
 
-static inline dbg_info *
-_get_entity_dbg_info(const ir_entity *ent) {
+static inline dbg_info *_get_entity_dbg_info(const ir_entity *ent)
+{
 	return ent->dbi;
 }
 
-static inline void
-_set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
+static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
+{
 	ent->dbi = db;
 }
 
+int is_entity_final(const ir_entity *entity);
 
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
@@ -492,22 +423,13 @@ _set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
 #define get_entity_ld_name(ent)                  _get_entity_ld_name(ent)
 #define get_entity_type(ent)                     _get_entity_type(ent)
 #define set_entity_type(ent, type)               _set_entity_type(ent, type)
-#define get_entity_allocation(ent)               _get_entity_allocation(ent)
-#define set_entity_allocation(ent, al)           _set_entity_allocation(ent, al)
-#define get_entity_visibility(ent)               _get_entity_visibility(ent)
-#define get_entity_variability(ent)              _get_entity_variability(ent)
+#define get_entity_linkage(ent)                  _get_entity_linkage(ent)
 #define get_entity_volatility(ent)               _get_entity_volatility(ent)
 #define set_entity_volatility(ent, vol)          _set_entity_volatility(ent, vol)
 #define set_entity_alignment(ent, alignment)     _set_entity_alignment(ent, alignment)
 #define get_entity_alignment(ent)                _get_entity_alignment(ent)
 #define get_entity_align(ent)                    _get_entity_align(ent)
 #define set_entity_align(ent, a)                 _set_entity_align(ent, a)
-#define get_entity_peculiarity(ent)              _get_entity_peculiarity(ent)
-#define set_entity_peculiarity(ent, pec)         _set_entity_peculiarity(ent, pec)
-#define get_entity_stickyness(ent)               _get_entity_stickyness(ent)
-#define set_entity_stickyness(ent, stickyness)   _set_entity_stickyness(ent, stickyness)
-#define is_entity_final(ent)                     _is_entity_final(ent)
-#define set_entity_final(ent, final)             _set_entity_final(ent, final)
 #define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
 #define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
 #define is_entity_backend_marked(ent)            _is_entity_backend_marked(ent)
@@ -530,5 +452,4 @@ _set_entity_dbg_info(ir_entity *ent, dbg_info *db) {
 #define get_entity_dbg_info(ent)                 _get_entity_dbg_info(ent)
 #define set_entity_dbg_info(ent, db)             _set_entity_dbg_info(ent, db)
 
-
-#endif /* FIRM_TR_ENTITY_T_H */
+#endif

@@ -1947,10 +1947,7 @@ static void print_typespecific_info(FILE *F, ir_type *tp) {
 static void print_typespecific_vcgattr(FILE *F, ir_type *tp) {
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
-		if (peculiarity_existent == get_class_peculiarity(tp))
-			fprintf(F, " " TYPE_CLASS_NODE_ATTR);
-		else
-			fprintf(F, " " TYPE_DESCRIPTION_NODE_ATTR);
+		fprintf(F, " " TYPE_CLASS_NODE_ATTR);
 		break;
 	case tpo_struct:
 		fprintf(F, " " TYPE_METH_NODE_ATTR);
@@ -1971,7 +1968,6 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp) {
 		break;
 	} /* switch type */
 }
-
 
 int dump_type_node(FILE *F, ir_type *tp)
 {
@@ -2059,33 +2055,23 @@ static void dump_type_info(type_or_ent tore, void *env) {
 				print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, -1, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		/* attached subgraphs */
-		if (const_entities && (get_entity_variability(ent) != variability_uninitialized)) {
-			if (is_atomic_entity(ent)) {
-				value = get_atomic_ent_value(ent);
-				if (value) {
-					print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
-					/* DDMN(value);  $$$ */
-					dump_const_expression(F, value);
-				}
-			}
-			if (is_compound_entity(ent)) {
-				if (has_entity_initializer(ent)) {
-					/* new style initializers */
-					dump_entity_initializer(F, ent);
-				} else {
-					/* old style compound entity values */
-					for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
-						value = get_compound_ent_value(ent, i);
-						if (value) {
-							print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
-							dump_const_expression(F, value);
-							print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
-							/*
-							fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
-							ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
-							get_compound_ent_value_member(ent, i), i);
-							*/
-						}
+		if (const_entities) {
+			if (ent->initializer != NULL) {
+				/* new style initializers */
+				dump_entity_initializer(F, ent);
+			} else if (entity_has_compound_ent_values(ent)) {
+				/* old style compound entity values */
+				for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+					value = get_compound_ent_value(ent, i);
+					if (value) {
+						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
+						dump_const_expression(F, value);
+						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
+						/*
+						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
+						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
+						get_compound_ent_value_member(ent, i), i);
+						*/
 					}
 				}
 			}

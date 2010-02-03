@@ -2048,7 +2048,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	callee_env = get_irg_link(callee);
 	if (callee_env->n_callers == 1 &&
 	    callee != current_ir_graph &&
-		get_entity_visibility(ent) == visibility_local) {
+	    (get_entity_linkage(ent) & IR_LINKAGE_LOCAL)) {
 		weight += 700;
 	}
 

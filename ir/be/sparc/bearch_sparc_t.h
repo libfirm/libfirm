@@ -41,7 +41,6 @@ typedef struct _sparc_code_gen_t {
     sparc_isa_t                      *isa;            /**< the isa instance */
     be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
     char                           dump;            /**< set to 1 if graphs should be dumped */
-    firm_dbg_module_t   			*mod;            /**< debugging module */
 } sparc_code_gen_t;
 
 

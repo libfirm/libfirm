@@ -534,7 +534,8 @@ static void *arm_cg_init(be_irg_t *birg) {
  * and map all instructions the backend did not support
  * to runtime calls.
  */
-static void arm_handle_intrinsics(void) {
+static void arm_handle_intrinsics(void)
+{
 	ir_type *tp, *int_tp, *uint_tp;
 	i_record records[8];
 	int n_records = 0;
@@ -565,7 +566,7 @@ static void arm_handle_intrinsics(void) {
 		rt_iDiv.exc_mem_proj_nr = pn_Div_M;
 		rt_iDiv.res_proj_nr     = pn_Div_res;
 
-		set_entity_visibility(rt_iDiv.ent, visibility_external_allocated);
+		set_entity_linkage(rt_iDiv.ent, IR_LINKAGE_EXTERN | IR_LINKAGE_CONSTANT);
 
 		map_Div->kind     = INTRINSIC_INSTR;
 		map_Div->op       = op_Div;
@@ -591,7 +592,7 @@ static void arm_handle_intrinsics(void) {
 		rt_uDiv.exc_mem_proj_nr = pn_Div_M;
 		rt_uDiv.res_proj_nr     = pn_Div_res;
 
-		set_entity_visibility(rt_uDiv.ent, visibility_external_allocated);
+		set_entity_linkage(rt_uDiv.ent, IR_LINKAGE_EXTERN);
 
 		map_Div->kind     = INTRINSIC_INSTR;
 		map_Div->op       = op_Div;
@@ -617,7 +618,7 @@ static void arm_handle_intrinsics(void) {
 		rt_iMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_iMod.res_proj_nr     = pn_Mod_res;
 
-		set_entity_visibility(rt_iMod.ent, visibility_external_allocated);
+		set_entity_linkage(rt_iMod.ent, IR_LINKAGE_EXTERN);
 
 		map_Mod->kind     = INTRINSIC_INSTR;
 		map_Mod->op       = op_Mod;
@@ -643,7 +644,7 @@ static void arm_handle_intrinsics(void) {
 		rt_uMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_uMod.res_proj_nr     = pn_Mod_res;
 
-		set_entity_visibility(rt_uMod.ent, visibility_external_allocated);
+		set_entity_linkage(rt_uMod.ent, IR_LINKAGE_EXTERN);
 
 		map_Mod->kind     = INTRINSIC_INSTR;
 		map_Mod->op       = op_Mod;

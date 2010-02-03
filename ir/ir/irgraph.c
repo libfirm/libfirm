@@ -527,7 +527,8 @@ ir_graph *create_irg_copy(ir_graph *irg) {
    inefficient search, call remove_irp_irg by hand).
    Does not free types, entities or modes that are used only by this
    graph, nor the entity standing for this graph. */
-void free_ir_graph(ir_graph *irg) {
+void free_ir_graph(ir_graph *irg)
+{
 	assert(is_ir_graph(irg));
 
 	edges_deactivate(irg);
@@ -540,10 +541,7 @@ void free_ir_graph(ir_graph *irg) {
 	if (irg->value_table)
 		del_identities(irg->value_table);
 	if (irg->ent) {
-		ir_peculiarity pec = get_entity_peculiarity (irg->ent);
-		set_entity_peculiarity (irg->ent, peculiarity_description);
 		set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
-		set_entity_peculiarity (irg->ent, pec);
 	}
 
 	free_End(get_irg_end(irg));

@@ -126,19 +126,14 @@ static void do_type_walk(type_or_ent tore,
 		cont.typ = get_entity_type(ent);
 		do_type_walk(cont, pre, post, env);
 
-		if (get_entity_variability(ent) != variability_uninitialized) {
-			/* walk over the value types */
-			if (ent->has_initializer) {
-				walk_initializer(ent->attr.initializer, pre, post, env);
-			} else if (is_atomic_entity(ent)) {
-				n = get_atomic_ent_value(ent);
+		/* walk over the value types */
+		if (ent->initializer != NULL) {
+			walk_initializer(ent->initializer, pre, post, env);
+		} else if (entity_has_compound_ent_values(ent)) {
+			n_mem = get_compound_ent_n_values(ent);
+			for (i = 0; i < n_mem; ++i) {
+				n = get_compound_ent_value(ent, i);
 				irn_type_walker(n, pre, post, env);
-			} else {
-				n_mem = get_compound_ent_n_values(ent);
-				for (i = 0; i < n_mem; ++i) {
-					n = get_compound_ent_value(ent, i);
-					irn_type_walker(n, pre, post, env);
-				}
 			}
 		}
 		break;

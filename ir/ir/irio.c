@@ -71,13 +71,11 @@ typedef enum typetag_t
 	tt_keyword,
 	tt_mode_sort,
 	tt_mode_arithmetic,
-	tt_peculiarity,
 	tt_pin_state,
 	tt_tpo,
 	tt_type_state,
-	tt_variability,
-	tt_visibility,
 	tt_volatility,
+	tt_linkage,
 	tt_segment
 } typetag_t;
 
@@ -193,6 +191,14 @@ static void symtbl_init(void)
 	INSERT(tt_segment, "constructors", IR_SEGMENT_CONSTRUCTORS);
 	INSERT(tt_segment, "destructors", IR_SEGMENT_DESTRUCTORS);
 
+	INSERT(tt_linkage, "constant", IR_LINKAGE_CONSTANT);
+	INSERT(tt_linkage, "weak", IR_LINKAGE_WEAK);
+	INSERT(tt_linkage, "local", IR_LINKAGE_LOCAL);
+	INSERT(tt_linkage, "extern", IR_LINKAGE_EXTERN);
+	INSERT(tt_linkage, "garbage_collect", IR_LINKAGE_GARBAGE_COLLECT);
+	INSERT(tt_linkage, "merge", IR_LINKAGE_MERGE);
+	INSERT(tt_linkage, "hidden_user", IR_LINKAGE_HIDDEN_USER);
+
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
 	INSERTKEYWORD(irg);
@@ -207,11 +213,6 @@ static void symtbl_init(void)
 
 	INSERTENUM(tt_align, align_non_aligned);
 	INSERTENUM(tt_align, align_is_aligned);
-
-	INSERTENUM(tt_allocation, allocation_automatic);
-	INSERTENUM(tt_allocation, allocation_parameter);
-	INSERTENUM(tt_allocation, allocation_dynamic);
-	INSERTENUM(tt_allocation, allocation_static);
 
 	INSERTENUM(tt_builtin, ir_bk_trap);
 	INSERTENUM(tt_builtin, ir_bk_debugbreak);
@@ -245,10 +246,6 @@ static void symtbl_init(void)
 	INSERTENUM(tt_mode_arithmetic, irma_ieee754);
 	INSERTENUM(tt_mode_arithmetic, irma_float_BCD);
 
-	INSERTENUM(tt_peculiarity, peculiarity_description);
-	INSERTENUM(tt_peculiarity, peculiarity_inherited);
-	INSERTENUM(tt_peculiarity, peculiarity_existent);
-
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
 	INSERTENUM(tt_pin_state, op_pin_state_exc_pinned);
@@ -256,15 +253,6 @@ static void symtbl_init(void)
 
 	INSERTENUM(tt_type_state, layout_undefined);
 	INSERTENUM(tt_type_state, layout_fixed);
-
-	INSERTENUM(tt_variability, variability_uninitialized);
-	INSERTENUM(tt_variability, variability_initialized);
-	INSERTENUM(tt_variability, variability_part_constant);
-	INSERTENUM(tt_variability, variability_constant);
-
-	INSERTENUM(tt_visibility, visibility_local);
-	INSERTENUM(tt_visibility, visibility_external_visible);
-	INSERTENUM(tt_visibility, visibility_external_allocated);
 
 	INSERTENUM(tt_volatility, volatility_non_volatile);
 	INSERTENUM(tt_volatility, volatility_is_volatile);
@@ -412,13 +400,12 @@ static void write_volatility(io_env_t *env, ir_node *irn)
 
 static void export_type_common(io_env_t *env, ir_type *tp)
 {
-	fprintf(env->file, "\ttype %ld %s %u %u %s %s %d ",
+	fprintf(env->file, "\ttype %ld %s %u %u %s %d ",
 	        get_type_nr(tp),
 	        get_type_tpop_name(tp),
 	        get_type_size_bytes(tp),
 	        get_type_alignment_bytes(tp),
 	        get_type_state_name(get_type_state(tp)),
-	        get_visibility_name(get_type_visibility(tp)),
 	        tp->flags);
 }
 
@@ -573,43 +560,32 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 		fprintf(env->file, "NULL ");
 	}
 
-	fprintf(env->file, "%ld %ld %d %u %d %s %s %s %s %s ",
+	fprintf(env->file, "%ld %ld %d %u %d %s ",
 			get_type_nr(get_entity_type(ent)),
 			get_type_nr(owner),
 			get_entity_offset(ent),
 			(unsigned) get_entity_offset_bits_remainder(ent),
 			is_entity_compiler_generated(ent),
-			get_allocation_name(get_entity_allocation(ent)),
-			get_visibility_name(get_entity_visibility(ent)),
-			get_variability_name(get_entity_variability(ent)),
-			get_peculiarity_name(get_entity_peculiarity(ent)),
 			get_volatility_name(get_entity_volatility(ent)));
 
 	/* TODO: inheritance stuff for class entities not supported yet */
 	if (is_Class_type(owner) && owner != get_glob_type())
 		fprintf(stderr, "Inheritance of class entities not supported yet!\n");
 
-	if (get_entity_variability(ent) != variability_uninitialized &&
-	    get_entity_visibility(ent) != visibility_external_allocated)
-	{
-		if (is_compound_entity(ent)) {
-			if (has_entity_initializer(ent)) {
-				fputs("initializer ", env->file);
-				write_initializer(env, get_entity_initializer(ent));
-			} else {
-				int i, n = get_compound_ent_n_values(ent);
-				fputs("noninitializer ", env->file);
-				fprintf(env->file, "%d ", n);
-				for (i = 0; i < n; i++) {
-					ir_entity *member = get_compound_ent_value_member(ent, i);
-					ir_node   *irn    = get_compound_ent_value(ent, i);
-					fprintf(env->file, "%ld %ld ", get_entity_nr(member), get_irn_node_nr(irn));
-				}
-			}
-		} else {
-			ir_node *irn = get_atomic_ent_value(ent);
-			fprintf(env->file, "%ld ", get_irn_node_nr(irn));
+	if (ent->initializer != NULL) {
+		fputs("initializer ", env->file);
+		write_initializer(env, get_entity_initializer(ent));
+	} else if (entity_has_compound_ent_values(ent)) {
+		int i, n = get_compound_ent_n_values(ent);
+		fputs("compoundgraph ", env->file);
+		fprintf(env->file, "%d ", n);
+		for (i = 0; i < n; i++) {
+			ir_entity *member = get_compound_ent_value_member(ent, i);
+			ir_node   *irn    = get_compound_ent_value(ent, i);
+			fprintf(env->file, "%ld %ld ", get_entity_nr(member), get_irn_node_nr(irn));
 		}
+	} else {
+		fputs("none", env->file);
 	}
 
 	fputc('\n', env->file);
@@ -1088,20 +1064,18 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_align:              return "align";
 	case tt_allocation:         return "allocation";
 	case tt_builtin:            return "builtin kind";
+	case tt_cond_jmp_predicate: return "cond_jmp_predicate";
 	case tt_initializer:        return "initializer kind";
 	case tt_iro:                return "opcode";
-	case tt_peculiarity:        return "peculiarity";
+	case tt_keyword:            return "keyword";
+	case tt_linkage:            return "linkage";
+	case tt_mode_arithmetic:    return "mode_arithmetic";
+	case tt_mode_sort:          return "mode_sort";
 	case tt_pin_state:          return "pin state";
+	case tt_segment:            return "segment";
 	case tt_tpo:                return "type";
 	case tt_type_state:         return "type state";
-	case tt_variability:        return "variability";
-	case tt_visibility:         return "visibility";
 	case tt_volatility:         return "volatility";
-	case tt_cond_jmp_predicate: return "cond_jmp_predicate";
-	case tt_keyword:            return "keyword";
-	case tt_mode_sort:          return "mode_sort";
-	case tt_mode_arithmetic:    return "mode_arithmetic";
-	case tt_segment:            return "segment";
 	}
 	return "<UNKNOWN>";
 }
@@ -1133,7 +1107,6 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_pin_state(env)          ((op_pin_state)          read_enum(env, tt_pin_state))
 #define read_type_state(env)         ((ir_type_state)         read_enum(env, tt_type_state))
 #define read_variability(env)        ((ir_variability)        read_enum(env, tt_variability))
-#define read_visibility(env)         ((ir_visibility)         read_enum(env, tt_visibility))
 #define read_volatility(env)         ((ir_volatility)         read_enum(env, tt_volatility))
 
 static ir_cons_flags get_cons_flags(io_env_t *env)
@@ -1209,7 +1182,6 @@ static void import_type(io_env_t *env)
 	unsigned       size   = (unsigned) read_long(env);
 	unsigned       align  = (unsigned) read_long(env);
 	ir_type_state  state  = read_type_state(env);
-	ir_visibility  vis    = read_visibility(env);
 	unsigned       flags  = (unsigned) read_long(env);
 
 	switch (tpop) {
@@ -1325,7 +1297,6 @@ static void import_type(io_env_t *env)
 	}
 
 	set_type_alignment_bytes(type, align);
-	set_type_visibility(type, vis);
 	type->flags = flags;
 
 	if (state == layout_fixed)
@@ -1342,6 +1313,7 @@ static void import_entity(io_env_t *env)
 	ident *ld_name     = read_ident_null(env);
 	long   typenr      = read_long(env);
 	long   ownertypenr = read_long(env);
+	const char *str;
 
 	ir_type   *type      = get_type(env, typenr);
 	ir_type   *ownertype = !ownertypenr ? get_glob_type() : get_type(env, ownertypenr);
@@ -1352,35 +1324,25 @@ static void import_entity(io_env_t *env)
 	set_entity_offset     (entity, (int) read_long(env));
 	set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
 	set_entity_compiler_generated(entity, (int) read_long(env));
-	set_entity_allocation (entity, read_allocation(env));
-	set_entity_visibility (entity, read_visibility(env));
-	set_entity_variability(entity, read_variability(env));
-	set_entity_peculiarity(entity, read_peculiarity(env));
 	set_entity_volatility (entity, read_volatility(env));
+	/* TODO: read/write linkage */
 
-	if (get_entity_variability(entity) != variability_uninitialized &&
-	    get_entity_visibility(entity) != visibility_external_allocated)	{
-
-		if (is_compound_entity(entity)) {
-			char *str = read_word(env);
-			if (strcmp(str, "initializer") == 0) {
-				set_entity_initializer(entity, read_initializer(env));
-			} else if (strcmp(str, "noninitializer") == 0) {
-				int n = (int) read_long(env);
-				int i;
-				for (i = 0; i < n; i++) {
-					ir_entity *member = get_entity(env, read_long(env));
-					ir_node   *irn    = get_node_or_dummy(env, read_long(env));
-					add_compound_ent_value(entity, irn, member);
-				}
-			} else {
-				parse_error(env, "expected 'initializer' or 'noninitializer', got '%s'\n", str);
-				exit(1);
-			}
-		} else {
-			ir_node *irn = get_node_or_dummy(env, read_long(env));
-			set_atomic_ent_value(entity, irn);
+	str = read_word(env);
+	if (strcmp(str, "initializer") == 0) {
+		set_entity_initializer(entity, read_initializer(env));
+	} else if (strcmp(str, "compoundgraph") == 0) {
+		int n = (int) read_long(env);
+		int i;
+		for (i = 0; i < n; i++) {
+			ir_entity *member = get_entity(env, read_long(env));
+			ir_node   *irn    = get_node_or_dummy(env, read_long(env));
+			add_compound_ent_value(entity, irn, member);
 		}
+	} else if (strcmp(str, "none") == 0) {
+		/* do nothing */
+	} else {
+		parse_error(env, "expected 'initializer', 'compoundgraph' or 'none' got '%s'\n", str);
+		exit(1);
 	}
 
 	set_id(env, entnr, entity);

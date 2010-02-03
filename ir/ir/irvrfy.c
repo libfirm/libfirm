@@ -1073,20 +1073,11 @@ static int verify_node_Const(ir_node *n, ir_graph *irg) {
 /**
  * verify a SymConst node
  */
-static int verify_node_SymConst(ir_node *n, ir_graph *irg) {
+static int verify_node_SymConst(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
-	if (get_SymConst_kind(n) == symconst_addr_ent) {
-		ir_entity *ent = get_SymConst_entity(n);
-		if (is_Method_type(get_entity_type(ent)) &&
-			get_irn_irg(n) != get_const_code_irg()) {
-#if 1
-			ASSERT_AND_RET((get_entity_peculiarity(ent) != peculiarity_description),
-				"A constant must address an existing method.", 0);
-#endif
-		}
-	}
 	ASSERT_AND_RET(
 		/* SymConst: BB --> int*/
 		(mode_is_int(mymode) ||

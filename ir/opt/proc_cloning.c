@@ -188,7 +188,7 @@ static void collect_irg_calls(ir_node *call, void *env) {
 		callee = get_Global_entity(call_ptr);
 
 		/* we can only clone calls to existing entities */
-		if (get_entity_visibility(callee) == visibility_external_allocated)
+		if (get_entity_irg(callee) == NULL)
 			return;
 
 		/* we cannot clone calls to weak functions */
@@ -403,10 +403,10 @@ static void change_entity_type(quadruple_t *q, ir_entity *ent) {
  *
  * @param q   Contains information for the method to clone.
  */
-static ir_entity *clone_method(quadruple_t *q) {
+static ir_entity *clone_method(quadruple_t *q)
+{
 	ir_entity *new_entity;
 	ident *clone_ident;
-	ir_graph *rem;
 	symconst_symbol sym;
 	/* A counter for the clones.*/
 	static unsigned nr = 0;
@@ -417,7 +417,7 @@ static ir_entity *clone_method(quadruple_t *q) {
 	new_entity  = copy_entity_name(q->ent, clone_ident);
 
 	/* a cloned entity is always local */
-	set_entity_visibility(new_entity, visibility_local);
+	add_entity_linkage(new_entity, IR_LINKAGE_LOCAL);
 
 	/* set a ld name here: Should we mangle this ? */
 	set_entity_ld_ident(new_entity, get_entity_ident(new_entity));
@@ -430,10 +430,6 @@ static ir_entity *clone_method(quadruple_t *q) {
 
 	/* We must set the atomic value of our "new_entity". */
 	sym.entity_p = new_entity;
-	rem = current_ir_graph;
-	current_ir_graph =  get_const_code_irg();
-	new_entity->value = new_SymConst(mode_P_code, sym, symconst_addr_ent);
-	current_ir_graph = rem;
 
 	/* The "new_entity" don't have this information. */
 	new_entity->attr.mtd_attr.param_access = NULL;

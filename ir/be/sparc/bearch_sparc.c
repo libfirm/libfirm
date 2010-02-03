@@ -332,8 +332,6 @@ static void *sparc_cg_init(be_irg_t *birg)
 	//cg->unknown_fpa		= NULL;
 	cg->dump				= (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.sparc.cg");
-
 	/* enter the current code generator */
 	isa->cg = cg;
 

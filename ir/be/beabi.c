@@ -1233,8 +1233,6 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 				arg->stack_ent = copy_entity_own(val_ent, res);
 				set_entity_link(val_ent, arg->stack_ent);
 				set_entity_link(arg->stack_ent, NULL);
-				/* must be automatic to set a fixed layout */
-				set_entity_allocation(arg->stack_ent, allocation_automatic);
 			} else {
 				/* create a new entity */
 				snprintf(buf, sizeof(buf), "param_%d", i);
@@ -1507,7 +1505,6 @@ static ir_entity *get_argument_entity(ir_entity *ent, lower_frame_sels_env_t *ct
 		argument_ent = copy_entity_own(ent, frame_tp);
 
 		/* must be automatic to set a fixed layout */
-		set_entity_allocation(argument_ent, allocation_automatic);
 		set_entity_offset(argument_ent, offset);
 		offset += get_type_size_bytes(tp);
 
@@ -1667,7 +1664,6 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 				set_entity_owner(ent, frame_tp);
 				add_class_member(frame_tp, ent);
 				/* must be automatic to set a fixed layout */
-				set_entity_allocation(ent, allocation_automatic);
 				set_entity_offset(ent, offset);
 				offset += get_type_size_bytes(tp);
 			}
@@ -1759,7 +1755,9 @@ static void fix_outer_variable_access(be_abi_irg_t *env,
 
 		if (! is_method_entity(ent))
 			continue;
-		if (get_entity_peculiarity(ent) == peculiarity_description)
+
+		irg = get_entity_irg(ent);
+		if (irg == NULL)
 			continue;
 
 		/*
@@ -1768,7 +1766,6 @@ static void fix_outer_variable_access(be_abi_irg_t *env,
 		 */
 		ctx->static_link_pos = 0;
 
-		irg = get_entity_irg(ent);
 		irg_walk_graph(irg, NULL, update_outer_frame_sels, ctx);
 	}
 }
@@ -2114,8 +2111,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 	ir_type   *parent = be->pic_trampolines_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
-	set_entity_visibility(ent, visibility_local);
-	set_entity_variability(ent, variability_uninitialized);
+	set_entity_linkage(ent, IR_LINKAGE_LOCAL);
 
 	return ent;
 }
@@ -2143,8 +2139,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 	ir_type   *parent = be->pic_symbols_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
-	set_entity_visibility(ent, visibility_local);
-	set_entity_variability(ent, variability_uninitialized);
+	set_entity_linkage(ent, IR_LINKAGE_LOCAL);
 
 	return ent;
 }
@@ -2167,7 +2162,7 @@ static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
  */
 static int can_address_relative(ir_entity *entity)
 {
-	return get_entity_visibility(entity) != visibility_external_allocated;
+	return !(get_entity_linkage(entity) & IR_LINKAGE_EXTERN);
 }
 
 /** patches SymConsts to work in position independent code */
@@ -2631,10 +2626,9 @@ void be_abi_fix_stack_bias(be_abi_irg_t *env)
 	frame_tp = get_irg_frame_type(irg);
 	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_class_member(frame_tp, i);
+		ir_graph  *irg = get_entity_irg(ent);
 
-		if (is_method_entity(ent) && get_entity_peculiarity(ent) != peculiarity_description) {
-			ir_graph *irg = get_entity_irg(ent);
-
+		if (irg != NULL) {
 			irg_walk_graph(irg, NULL, lower_outer_frame_sels, env);
 		}
 	}

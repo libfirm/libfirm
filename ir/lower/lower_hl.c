@@ -218,8 +218,6 @@ static void lower_sel(ir_node *sel) {
 			int offset;
 
 			/* replace Sel by add(obj, const(ent.offset)) */
-			assert(!(get_entity_allocation(ent) == allocation_static &&
-				(get_entity_n_overwrites(ent) == 0 && get_entity_n_overwrittenby(ent) == 0)));
 			newn   = get_Sel_ptr(sel);
 			offset = get_entity_offset(ent);
 			if (offset != 0) {

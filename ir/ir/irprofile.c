@@ -182,7 +182,7 @@ static void add_constructor(ir_entity *method)
 	                                                   method, NULL);
 
     set_entity_compiler_generated(ptr, 1);
-    set_entity_variability(ptr, variability_constant);
+    set_entity_linkage(ptr, IR_LINKAGE_CONSTANT);
     set_atomic_ent_value(ptr, val);
 }
 
@@ -290,7 +290,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			for (i = 0; i < len; ++i) {
 				tarval_string[i] = new_tarval_from_long(fname[i], mode_Bs);
 			}
-			set_entity_variability(ent, variability_constant);
+			set_entity_linkage(ent, IR_LINKAGE_CONSTANT);
 			set_array_entity_values(ent, tarval_string, len);
 		} else {
 			ent = entry->value;
@@ -385,12 +385,10 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	cur_ident      = IDENT("__FIRMPROF__BLOCK_IDS");
 	bblock_id      = new_entity(gtp, cur_ident, array_type);
 	set_entity_ld_ident(bblock_id, cur_ident);
-	set_entity_variability(bblock_id, variability_initialized);
 
 	cur_ident      = IDENT("__FIRMPROF__BLOCK_COUNTS");
 	bblock_counts  = new_entity(gtp, cur_ident, array_type);
 	set_entity_ld_ident(bblock_counts, cur_ident);
-	set_entity_variability(bblock_counts, variability_initialized);
 
 	cur_ident      = IDENT("__FIRMPROF__FILE_NAME");
 	ent_filename   = new_entity(gtp, cur_ident, string_type);
@@ -438,7 +436,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	for (i = 0; i < filename_len; ++i) {
 		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
 	}
-	set_entity_variability(ent_filename, variability_constant);
+	set_entity_linkage(ent_filename, IR_LINKAGE_CONSTANT);
 	set_array_entity_values(ent_filename, tarval_string, filename_len);
 
 	/* initialize block id array and instrument blocks */
@@ -500,7 +498,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 		rem = current_ir_graph;
 		current_ir_graph = get_const_code_irg();
 		ent = get_array_element_entity(loc_type);
-		set_entity_variability(ent_locations, variability_constant);
+		set_entity_linkage(ent_locations, IR_LINKAGE_CONSTANT);
 		for (i = 0; i < n_blocks; ++i) {
 			compound_graph_path *path;
 			tarval *tv;

@@ -667,7 +667,8 @@ static int map_Abs(ir_node *call, void *ctx) {
 /**
  * Maps a Div. Change into a library call.
  */
-static int map_Div(ir_node *call, void *ctx) {
+static int map_Div(ir_node *call, void *ctx)
+{
 	ia32_intrinsic_env_t *env = ctx;
 	ir_type   *method    = get_Call_type(call);
 	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
@@ -682,7 +683,7 @@ static int map_Div(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->divdi3 = new_entity(get_glob_type(), ID("__divdi3"), method);
-			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
 			set_entity_ld_ident(ent, ID("__divdi3"));
 		}
 	} else {
@@ -691,7 +692,7 @@ static int map_Div(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->udivdi3 = new_entity(get_glob_type(), ID("__udivdi3"), method);
-			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
 			set_entity_ld_ident(ent, ID("__udivdi3"));
 		}
 	}
@@ -722,7 +723,7 @@ static int map_Mod(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->moddi3 = new_entity(get_glob_type(), ID("__moddi3"), method);
-			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
 			set_entity_ld_ident(ent, ID("__moddi3"));
 		}
 	} else {
@@ -731,7 +732,7 @@ static int map_Mod(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->umoddi3 = new_entity(get_glob_type(), ID("__umoddi3"), method);
-			set_entity_visibility(ent, visibility_external_allocated);
+			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
 			set_entity_ld_ident(ent, ID("__umoddi3"));
 		}
 	}

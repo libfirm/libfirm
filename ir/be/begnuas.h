@@ -31,14 +31,11 @@
 #include "be.h"
 #include "beemitter.h"
 
-/**
- * Sections.
- */
 typedef enum section_t {
-	GAS_SECTION_TEXT,   /**< text section */
-	GAS_SECTION_DATA,   /**< data section */
-	GAS_SECTION_RODATA, /**< rodata section */
-	GAS_SECTION_COMMON, /**< common section */
+	GAS_SECTION_TEXT,   /**< text section - contains program code */
+	GAS_SECTION_DATA,   /**< data section - contains arbitrary data */
+	GAS_SECTION_RODATA, /**< rodata section - contains read-only data */
+	GAS_SECTION_BSS,    /**< bss section - contains uninitialized data */
 	GAS_SECTION_TLS,    /**< thread local storage section */
 	GAS_SECTION_CONSTRUCTORS,   /**< ctors section */
 	GAS_SECTION_DESTRUCTORS,    /**< dtors section */
@@ -48,20 +45,16 @@ typedef enum section_t {
 	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS
 } be_gas_section_t;
 
-/**
- * Support for some GAS "dialects".
- */
-typedef enum asm_flavour_t {
-	GAS_FLAVOUR_ELF,     /**< ELF variant */
-	GAS_FLAVOUR_MINGW,   /**< MinGW variant (no-ELF) */
-	GAS_FLAVOUR_YASM,    /**< YASM GNU parser */
-	GAS_FLAVOUR_MACH_O,  /**< Mach-O variant (as found on darwin, OS/X) */
-	GAS_FLAVOUR_LAST = GAS_FLAVOUR_MACH_O
-} be_gas_flavour_t;
+typedef enum object_file_format_t {
+	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */
+	OBJECT_FILE_FORMAT_COFF,   /**< Common Object File Format (Windows) */
+	OBJECT_FILE_FORMAT_MACH_O, /**< Mach Object File Format (OS/X) */
+	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_MACH_O
+} object_file_format_t;
 
 /** The variable where the GAS dialect is stored. */
-extern be_gas_flavour_t be_gas_flavour;
-extern bool             be_gas_emit_types;
+extern object_file_format_t be_gas_object_file_format;
+extern bool                 be_gas_emit_types;
 /**
  * the .type directive needs to specify @function, #function or %function
  * depending on the target architecture (yay)

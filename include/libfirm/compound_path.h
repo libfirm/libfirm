@@ -104,14 +104,14 @@ void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_
  * @deprecated
  * Returns the access path for value at position pos.
  */
-compound_graph_path *get_compound_ent_value_path(ir_entity *ent, int pos);
+compound_graph_path *get_compound_ent_value_path(const ir_entity *ent, int pos);
 
 /**
  * @deprecated
  * Returns a constant value given the access path.
  *  The path must contain array indices for all array element entities.
  */
-ir_node *get_compound_ent_value_by_path(ir_entity *ent,
+ir_node *get_compound_ent_value_by_path(const ir_entity *ent,
                                         compound_graph_path *path);
 
 /**
@@ -135,7 +135,7 @@ void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member);
  * @deprecated
  * Returns the last member in the path
  */
-ir_entity *get_compound_ent_value_member(ir_entity *ent, int pos);
+ir_entity *get_compound_ent_value_member(const ir_entity *ent, int pos);
 
 /**
  * @deprecated
@@ -164,7 +164,7 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
+unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent, int pos);
 
 /**
  * @deprecated
@@ -176,19 +176,25 @@ unsigned get_compound_ent_value_offset_bit_remainder(ir_entity *ent, int pos);
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-unsigned get_compound_ent_value_offset_bytes(ir_entity *ent, int pos);
+unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, int pos);
 
 /**
  * @deprecated
  * Returns the number of constant values needed to initialize the entity.
  * Asserts if the entity has variability_uninitialized.
  */
-int get_compound_ent_n_values(ir_entity *ent);
+int get_compound_ent_n_values(const ir_entity *ent);
 
 /**
  * @deprecated
  * Returns a constant value given the position.
  */
-ir_node *get_compound_ent_value(ir_entity *ent, int pos);
+ir_node *get_compound_ent_value(const ir_entity *ent, int pos);
+
+/**
+ * @deprecated
+ * return 1 if entity has a compound_graph-style initializer
+ */
+int entity_has_compound_ent_values(const ir_entity *entity);
 
 #endif
