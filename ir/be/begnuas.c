@@ -1219,6 +1219,9 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 
 	if (section == GAS_SECTION_BSS &&
 			(get_entity_linkage(ent) & IR_LINKAGE_MERGE)) {
+		if (get_entity_linkage(ent) & (IR_LINKAGE_LOCAL|IR_LINKAGE_EXTERN)) {
+			panic("merge link semantic not supported for local/extern entities");
+		}
 		emit_common(ent);
 		return;
 	}
