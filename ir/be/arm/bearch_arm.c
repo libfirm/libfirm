@@ -729,7 +729,7 @@ static arch_env_t *arm_init(FILE *file_handle) {
 static void arm_done(void *self) {
 	arm_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_env.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env);
 
 	be_emit_exit();
 	free(self);

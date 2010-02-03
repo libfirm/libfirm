@@ -257,7 +257,6 @@ static void emit_be_Call(const ir_node *irn) {
 	ir_entity *call_ent = be_Call_get_entity(irn);
 
 	if (call_ent) {
-		set_entity_backend_marked(call_ent, 1);
 		be_emit_irprintf("\tbl %s", get_entity_ld_name(call_ent));
 	} else {
 		be_emit_cstring("\tmtlr ");

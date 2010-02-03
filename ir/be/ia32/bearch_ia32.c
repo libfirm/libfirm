@@ -1732,7 +1732,7 @@ static void ia32_done(void *self)
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);

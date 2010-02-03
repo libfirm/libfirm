@@ -65,11 +65,8 @@ extern char             be_gas_elf_type_char;
  * Generate all entities.
  * @param main_env          the main backend environment
  * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
- * @param only_emit_marked  if non-zero, external allocated entities that do not have
- *                          its visited flag set are ignored
  */
-void be_gas_emit_decls(const be_main_env_t *main_env,
-                       int only_emit_marked_entities);
+void be_gas_emit_decls(const be_main_env_t *main_env);
 
 /**
  * Emit an entity (the entities name or a block label)

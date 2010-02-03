@@ -357,7 +357,7 @@ static void mips_done(void *self)
 {
 	mips_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_env.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env);
 
 	be_emit_exit();
 	free(isa);

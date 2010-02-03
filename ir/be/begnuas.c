@@ -37,7 +37,6 @@
 #include "tv.h"
 #include "irnode.h"
 #include "irprog.h"
-#include "pdeq.h"
 #include "entity_t.h"
 #include "error.h"
 
@@ -48,7 +47,7 @@
 /** by default, we generate assembler code for the Linux gas */
 object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
 bool                  be_gas_emit_types         = true;
-char                  be_gas_elf_type_char = '@';
+char                  be_gas_elf_type_char      = '@';
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 
@@ -223,8 +222,7 @@ void be_gas_emit_function_epilog(ir_entity *entity)
  */
 typedef struct _be_gas_decl_env {
 	be_gas_section_t     section;
-	waitq               *worklist;           /**< A worklist we use to place not yet handled entities on. */
-	const be_main_env_t       *main_env;
+	const be_main_env_t *main_env;
 } be_gas_decl_env_t;
 
 /************************************************************************/
@@ -406,10 +404,6 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(init);
-			if (!is_entity_backend_marked(ent)) {
-				waitq_put(env->worklist, ent);
-				set_entity_backend_marked(ent, 1);
-			}
 			be_gas_emit_entity(ent);
 			break;
 
@@ -1266,48 +1260,21 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
  *
  * @param gt                a global like type, either the global or the TLS one
  * @param env               an environment
- * @param only_emit_marked  if non-zero, external allocated entities that do not have
- *                          its visited flag set are ignored
  */
-static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env,
-                                int only_emit_marked)
+static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env)
 {
 	int i, n = get_compound_n_members(gt);
-	waitq *worklist = new_waitq();
 
-	if (only_emit_marked) {
-		for (i = 0; i < n; i++) {
-			ir_entity *ent = get_compound_member(gt, i);
-			if (is_entity_backend_marked(ent) || entity_has_definition(ent)) {
-				waitq_put(worklist, ent);
-				set_entity_backend_marked(ent, 1);
-			}
-		}
-	} else {
-		for (i = 0; i < n; i++) {
-			ir_entity *ent = get_compound_member(gt, i);
-			set_entity_backend_marked(ent, 1);
-			waitq_put(worklist, ent);
-		}
-	}
-
-	env->worklist = worklist;
-
-	while (!waitq_empty(worklist)) {
-		ir_entity *ent = waitq_get(worklist);
-
+	for (i = 0; i < n; i++) {
+		ir_entity *ent = get_compound_member(gt, i);
 		dump_global(env, ent);
 	}
-
-	del_waitq(worklist);
-	env->worklist = NULL;
 }
 
 /************************************************************************/
 
 /* Generate all entities. */
-void be_gas_emit_decls(const be_main_env_t *main_env,
-                       int only_emit_marked_entities)
+void be_gas_emit_decls(const be_main_env_t *main_env)
 {
 	be_gas_decl_env_t env;
 	memset(&env, 0, sizeof(env));
@@ -1316,16 +1283,12 @@ void be_gas_emit_decls(const be_main_env_t *main_env,
 	env.main_env = main_env;
 	env.section  = (be_gas_section_t) -1;
 
-	be_gas_dump_globals(get_glob_type(), &env, only_emit_marked_entities);
-	be_gas_dump_globals(get_tls_type(), &env, only_emit_marked_entities);
-	be_gas_dump_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env,
-	                    only_emit_marked_entities);
-	be_gas_dump_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env,
-	                    only_emit_marked_entities);
-	be_gas_dump_globals(main_env->pic_symbols_type, &env,
-	                    only_emit_marked_entities);
-	be_gas_dump_globals(main_env->pic_trampolines_type, &env,
-						only_emit_marked_entities);
+	be_gas_dump_globals(get_glob_type(), &env);
+	be_gas_dump_globals(get_tls_type(), &env);
+	be_gas_dump_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env);
+	be_gas_dump_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env);
+	be_gas_dump_globals(main_env->pic_symbols_type, &env);
+	be_gas_dump_globals(main_env->pic_trampolines_type, &env);
 
 	/**
 	 * ".subsections_via_symbols marks object files which are OK to divide

@@ -242,7 +242,7 @@ static void TEMPLATE_done(void *self)
 	TEMPLATE_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env, 0);
+	be_gas_emit_decls(isa->arch_env.main_env);
 
 	be_emit_exit();
 	free(self);

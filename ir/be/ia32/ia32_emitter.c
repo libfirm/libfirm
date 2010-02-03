@@ -282,7 +282,6 @@ void ia32_emit_source_register(const ir_node *node, int pos)
 
 static void ia32_emit_entity(ir_entity *entity, int no_pic_adjust)
 {
-	set_entity_backend_marked(entity, 1);
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {
@@ -2415,7 +2414,6 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 	be_emit_cstring("\t.long ");
 	if (entity_sign)
 		be_emit_char('-');
-	set_entity_backend_marked(entity, 1);
 	be_gas_emit_entity(entity);
 
 	if (get_entity_owner(entity) == get_tls_type()) {

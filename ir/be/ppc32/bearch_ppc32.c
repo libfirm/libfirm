@@ -504,7 +504,6 @@ static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 
 	if (is_SymConst(node)) {
 		ir_entity *ent = get_SymConst_entity(node);
-		set_entity_backend_marked(ent, 1);
 		pset_insert_ptr(symbol_set, ent);
 	}
 }
@@ -561,7 +560,7 @@ static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
 static void ppc32_done(void *self) {
 	ppc32_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_env.main_env, 1);
+	be_gas_emit_decls(isa->arch_env.main_env);
 	be_gas_emit_switch_section(GAS_SECTION_DATA);
 	ppc32_dump_indirect_symbols(isa);
 

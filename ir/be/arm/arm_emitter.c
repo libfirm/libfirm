@@ -336,8 +336,6 @@ static void emit_arm_SymConst(const ir_node *irn)
 	sym_or_tv_t key, *entry;
 	unsigned label;
 
-	set_entity_backend_marked(attr->entity, 1);
-
 	key.u.id     = get_entity_ld_ident(attr->entity);
 	key.is_ident = 1;
 	key.label    = 0;
@@ -746,7 +744,6 @@ static void emit_arm_SwitchJmp(const ir_node *irn) {
 
 static void arm_emit_entity(ir_entity *entity)
 {
-	set_entity_backend_marked(entity, 1);
 	be_emit_ident(get_entity_ld_ident(entity));
 }
 

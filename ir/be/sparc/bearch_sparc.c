@@ -389,7 +389,7 @@ static void sparc_done(void *self)
 	sparc_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env, 0);
+	be_gas_emit_decls(isa->arch_env.main_env);
 
 	be_emit_exit();
 	free(self);

@@ -126,8 +126,6 @@ struct ir_entity {
 	                                 see ir_entity_usage. */
 	unsigned compiler_gen:1;    /**< If set, this entity was compiler generated.
 	                             */
-	unsigned backend_marked:1;  /**< If set, this entity was marked by the
-	                                 backend for emission. */
 	unsigned visibility:3;      /**< @deprecated */
 	unsigned allocation:3;      /**< @deprecated */
 	unsigned peculiarity:3;     /**< @deprecated */
@@ -293,18 +291,6 @@ _set_entity_compiler_generated(ir_entity *ent, int flag) {
 	ent->compiler_gen = flag ? 1 : 0;
 }
 
-static inline int
-_is_entity_backend_marked(const ir_entity *ent) {
-	assert(ent && ent->kind == k_entity);
-	return ent->backend_marked;
-}
-
-static inline void
-_set_entity_backend_marked(ir_entity *ent, int flag) {
-	assert(ent && ent->kind == k_entity);
-	ent->backend_marked = flag ? 1 : 0;
-}
-
 static inline ir_entity_usage
 _get_entity_usage(const ir_entity *ent) {
 	assert(ent && ent->kind == k_entity);
@@ -432,8 +418,6 @@ int is_entity_final(const ir_entity *entity);
 #define set_entity_align(ent, a)                 _set_entity_align(ent, a)
 #define is_entity_compiler_generated(ent)        _is_entity_compiler_generated(ent)
 #define set_entity_compiler_generated(ent, flag) _set_entity_compiler_generated(ent, flag)
-#define is_entity_backend_marked(ent)            _is_entity_backend_marked(ent)
-#define set_entity_backend_marked(ent, flag)     _set_entity_backend_marked(ent, flag)
 #define get_entity_usage(ent)                    _get_entity_usage(ent)
 #define set_entity_usage(ent, flags)             _set_entity_usage(ent, flags)
 #define get_entity_offset(ent)                   _get_entity_offset(ent)

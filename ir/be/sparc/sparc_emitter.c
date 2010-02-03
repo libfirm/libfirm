@@ -223,7 +223,6 @@ static void sparc_emit_cfop_target(const ir_node *node)
  */
 static void sparc_emit_entity(ir_entity *entity)
 {
-	set_entity_backend_marked(entity, 1);
 	be_emit_ident(get_entity_ld_ident(entity));
 }
 

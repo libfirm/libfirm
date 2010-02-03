@@ -113,7 +113,6 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
 	res->compiler_gen         = 0;
-	res->backend_marked       = 0;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
 	res->alignment            = 0;
@@ -478,16 +477,6 @@ int (is_entity_compiler_generated)(const ir_entity *ent) {
 void (set_entity_compiler_generated)(ir_entity *ent, int flag) {
 	_set_entity_compiler_generated(ent, flag);
 }  /* set_entity_compiler_generated */
-
-/* Checks if an entity is marked by the backend */
-int (is_entity_backend_marked)(const ir_entity *ent) {
-	return _is_entity_backend_marked(ent);
-}  /* is_entity_backend_marked */
-
-/* Sets/resets the compiler generated flag */
-void (set_entity_backend_marked)(ir_entity *ent, int flag) {
-	_set_entity_backend_marked(ent, flag);
-}  /* set_entity_backend_marked */
 
 ir_entity_usage (get_entity_usage)(const ir_entity *ent) {
 	return _get_entity_usage(ent);
