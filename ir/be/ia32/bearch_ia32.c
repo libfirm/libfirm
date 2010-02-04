@@ -2344,6 +2344,9 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	mode = get_irn_mode(mux_true);
 	if (get_mode_size_bits(mode) > 32)
 		return false;
+	/* we can't handle MuxF yet */
+	if (mode_is_float(mode))
+		return false;
 
 	if (mux_is_doz(sel, mux_true, mux_false))
 		return true;
