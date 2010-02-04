@@ -521,7 +521,7 @@ enum ir_resources_enum_t {
 
 	/* global (irp) resources */
 	IR_RESOURCE_ENTITY_LINK   = 1 << 8,  /**< IR-entity link fields are used. */
-	IR_RESOURCE_TYPE_VISITED  = 1 << 8,  /**< type visited flags */
+	IR_RESOURCE_TYPE_VISITED  = 1 << 9,  /**< type visited flags */
 
 	/* masks */
 	IR_RESOURCE_LOCAL_MASK    = 0x00FF,  /**< Mask for all local resources. */
