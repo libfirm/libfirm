@@ -341,12 +341,6 @@ static arch_env_t *mips_init(FILE *file_handle) {
 	mips_create_opcodes(&mips_irn_ops);
 	// mips_init_opcode_transforms();
 
-	/* we mark referenced global entities, so we can only emit those which
-	 * are actually referenced. (Note: you mustn't use the type visited flag
-	 * elsewhere in the backend)
-	 */
-	inc_master_type_visited();
-
 	return &isa->arch_env;
 }
 
