@@ -129,16 +129,21 @@ ir_type *get_compound_graph_path_type(const compound_graph_path *gr)
 	return gr->tp;
 }
 
-void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val,
-                                   compound_graph_path *path)
+static void allocate_values(ir_entity *ent)
 {
-	assert(is_compound_entity(ent));
-	assert(is_compound_graph_path(path));
 	if (ent->attr.cmpd_attr.values == NULL) {
 		ent->attr.cmpd_attr.values = NEW_ARR_F(ir_node*, 0);
 		assert(ent->attr.cmpd_attr.val_paths == NULL);
 		ent->attr.cmpd_attr.val_paths = NEW_ARR_F(compound_graph_path*, 0);
 	}
+}
+
+void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val,
+                                   compound_graph_path *path)
+{
+	assert(is_compound_entity(ent));
+	assert(is_compound_graph_path(path));
+	allocate_values(ent);
 	ARR_APP1(ir_node *, ent->attr.cmpd_attr.values, val);
 	ARR_APP1(compound_graph_path *, ent->attr.cmpd_attr.val_paths, path);
 }
@@ -248,6 +253,7 @@ void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member)
 	compound_graph_path *path;
 	ir_type *owner_tp = get_entity_owner(member);
 	assert(is_compound_entity(ent));
+	allocate_values(ent);
 	path = new_compound_graph_path(get_entity_type(ent), 1);
 	path->list[0].node = member;
 	if (is_Array_type(owner_tp)) {
@@ -370,6 +376,7 @@ int get_compound_ent_n_values(const ir_entity *ent)
 {
 	assert(ent->initializer == NULL);
 	assert(is_compound_entity(ent));
+	allocate_values((ir_entity*) ent);
 	return ARR_LEN(ent->attr.cmpd_attr.values);
 }
 
