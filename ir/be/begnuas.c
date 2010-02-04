@@ -120,9 +120,10 @@ void be_gas_emit_switch_section(be_gas_section_t section)
 
 static void emit_entity_visibility(const ir_entity *entity)
 {
-	ir_linkage linkage = get_entity_linkage(entity);
+	ir_visibility visibility = get_entity_visibility(entity);
+	ir_linkage    linkage    = get_entity_linkage(entity);
 
-	if (! (linkage & IR_LINKAGE_LOCAL)) {
+	if (visibility != ir_visibility_local) {
 		be_emit_cstring(".globl ");
 		be_emit_ident(get_entity_ld_ident(entity));
 		be_emit_char('\n');
@@ -179,7 +180,7 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
 		be_emit_cstring("\t.def\t");
 		be_emit_string(name);
 		be_emit_cstring(";");
-		if (get_entity_linkage(entity) & IR_LINKAGE_LOCAL) {
+		if (get_entity_visibility(entity) == ir_visibility_local) {
 			be_emit_cstring("\t.scl\t3;");
 		} else {
 			be_emit_cstring("\t.scl\t2;");
@@ -1197,7 +1198,6 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	ident            *ld_ident       = get_entity_ld_ident(ent);
 	unsigned          alignment      = get_effective_entity_alignment(ent);
 	be_gas_section_t  section        = determine_section(env, ent);
-	ir_linkage        linkage        = get_entity_linkage(ent);
 
 	/* we already emitted all methods. Except for the trampolines which
 	 * the assembler/linker generates */
@@ -1211,7 +1211,7 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	be_dbg_variable(ent);
 
 	/* nothing to do for externally defined values */
-	if (linkage & IR_LINKAGE_EXTERN)
+	if (get_entity_visibility(ent) == ir_visibility_external)
 		return;
 
 	if (!is_po2(alignment))
@@ -1219,7 +1219,7 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 
 	if (section == GAS_SECTION_BSS &&
 			(get_entity_linkage(ent) & IR_LINKAGE_MERGE)) {
-		if (get_entity_linkage(ent) & (IR_LINKAGE_LOCAL|IR_LINKAGE_EXTERN)) {
+		if (get_entity_visibility(ent) != ir_visibility_default) {
 			panic("merge link semantic not supported for local/extern entities");
 		}
 		emit_common(ent);

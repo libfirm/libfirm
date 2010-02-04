@@ -113,6 +113,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	res->aligned              = align_is_aligned;
 	res->usage                = ir_usage_unknown;
 	res->compiler_gen         = 0;
+	res->visibility           = ir_visibility_default;
 	res->offset               = -1;
 	res->offset_bit_remainder = 0;
 	res->alignment            = 0;
@@ -433,15 +434,30 @@ ir_label_t get_entity_label(const ir_entity *ent)
 	return ent->attr.code_attr.label;
 }
 
-static void verify_linkage(ir_entity *entity)
+static void verify_visibility(const ir_entity *entity)
 {
-	ir_linkage linkage = entity->linkage;
-	/* local and extern are mutually exclusive */
-	(void) linkage;
-	assert(! ((linkage & IR_LINKAGE_EXTERN) && (linkage & IR_LINKAGE_LOCAL)));
-	if (!is_method_entity(entity) && (linkage & IR_LINKAGE_EXTERN)) {
+	if (get_entity_visibility(entity) == ir_visibility_external
+			&& !is_method_entity(entity)) {
 		assert(!entity_has_definition(entity));
 	}
+}
+
+void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
+{
+	entity->visibility = visibility;
+	verify_visibility(entity);
+}
+
+ir_visibility get_entity_visibility(const ir_entity *entity)
+{
+	return entity->visibility;
+}
+
+static void verify_linkage(const ir_entity *entity)
+{
+	ir_linkage linkage = entity->linkage;
+	/* weak symbols can't really be constant, since someone else can always
+	 * exchange them */
 	assert(! ((linkage & IR_LINKAGE_CONSTANT) && (linkage & IR_LINKAGE_WEAK)));
 }
 
@@ -1040,7 +1056,8 @@ void (set_entity_dbg_info)(ir_entity *ent, dbg_info *db)
 
 int entity_is_externally_visible(const ir_entity *entity)
 {
-	return (get_entity_linkage(entity) & IR_LINKAGE_LOCAL) == 0;
+	return get_entity_visibility(entity) != ir_visibility_local
+		|| (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER);
 }
 
 int entity_has_definition(const ir_entity *entity)
@@ -1058,7 +1075,7 @@ void firm_init_entity(void)
 	assert(!unknown_entity && "Call firm_init_entity() only once!");
 
 	unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
-	set_entity_linkage(unknown_entity, IR_LINKAGE_EXTERN);
+	set_entity_visibility(unknown_entity, ir_visibility_external);
 
 	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
 

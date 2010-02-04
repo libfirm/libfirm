@@ -567,7 +567,7 @@ static ir_entity **get_free_methods(int *length)
 		ent = get_irg_entity(irg);
 		linkage = get_entity_linkage(ent);
 
-		if (!(linkage & IR_LINKAGE_LOCAL)
+		if (entity_is_externally_visible(ent)
 				|| (linkage & IR_LINKAGE_HIDDEN_USER)) {
 			eset_insert(free_set, ent);
 		}

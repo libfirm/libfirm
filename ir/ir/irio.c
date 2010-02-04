@@ -76,7 +76,8 @@ typedef enum typetag_t
 	tt_type_state,
 	tt_volatility,
 	tt_linkage,
-	tt_segment
+	tt_segment,
+	tt_visibility
 } typetag_t;
 
 typedef enum keyword_t
@@ -193,11 +194,13 @@ static void symtbl_init(void)
 
 	INSERT(tt_linkage, "constant", IR_LINKAGE_CONSTANT);
 	INSERT(tt_linkage, "weak", IR_LINKAGE_WEAK);
-	INSERT(tt_linkage, "local", IR_LINKAGE_LOCAL);
-	INSERT(tt_linkage, "extern", IR_LINKAGE_EXTERN);
 	INSERT(tt_linkage, "garbage_collect", IR_LINKAGE_GARBAGE_COLLECT);
 	INSERT(tt_linkage, "merge", IR_LINKAGE_MERGE);
 	INSERT(tt_linkage, "hidden_user", IR_LINKAGE_HIDDEN_USER);
+
+	INSERT(tt_visibility, "local", ir_visibility_local);
+	INSERT(tt_visibility, "external", ir_visibility_external);
+	INSERT(tt_visibility, "default", ir_visibility_default);
 
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
@@ -1076,6 +1079,7 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_tpo:                return "type";
 	case tt_type_state:         return "type state";
 	case tt_volatility:         return "volatility";
+	case tt_visibility:         return "visibility";
 	}
 	return "<UNKNOWN>";
 }

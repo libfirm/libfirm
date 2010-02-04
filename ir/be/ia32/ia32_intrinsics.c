@@ -683,7 +683,7 @@ static int map_Div(ir_node *call, void *ctx)
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->divdi3 = new_entity(get_glob_type(), ID("__divdi3"), method);
-			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
+			set_entity_visibility(ent, ir_visibility_external);
 			set_entity_ld_ident(ent, ID("__divdi3"));
 		}
 	} else {
@@ -692,7 +692,7 @@ static int map_Div(ir_node *call, void *ctx)
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->udivdi3 = new_entity(get_glob_type(), ID("__udivdi3"), method);
-			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
+			set_entity_visibility(ent, ir_visibility_external);
 			set_entity_ld_ident(ent, ID("__udivdi3"));
 		}
 	}
@@ -723,7 +723,7 @@ static int map_Mod(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->moddi3 = new_entity(get_glob_type(), ID("__moddi3"), method);
-			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
+			set_entity_visibility(ent, ir_visibility_external);
 			set_entity_ld_ident(ent, ID("__moddi3"));
 		}
 	} else {
@@ -732,7 +732,7 @@ static int map_Mod(ir_node *call, void *ctx) {
 		if (ent == NULL) {
 			/* create library entity */
 			ent = env->umoddi3 = new_entity(get_glob_type(), ID("__umoddi3"), method);
-			set_entity_linkage(ent, IR_LINKAGE_EXTERN);
+			set_entity_visibility(ent, ir_visibility_external);
 			set_entity_ld_ident(ent, ID("__umoddi3"));
 		}
 	}

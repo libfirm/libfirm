@@ -75,48 +75,60 @@
  */
 
 /**
+ * Visibility classed for entities.
+ */
+typedef enum {
+	/**
+	 * The entity is visible outside the compilation unit, but it is defined
+	 * here.
+	 */
+	ir_visibility_default,
+	/**
+	 * The entity is local to the compilation unit.
+	 * A local entity is not visible in other compilation units.
+	 * Note that the entity might still be accessed indirectly from other units
+	 * through pointers.
+	 */
+	ir_visibility_local,
+	/**
+	 * The entity is defined outside the compilation unit but potentially used
+	 * here.
+	 */
+	ir_visibility_external
+} ir_visibility;
+
+/**
  * linkage specifies how the linker treats symbols
  */
 typedef enum {
-	IR_LINKAGE_DEFAULT  = 0,
+	IR_LINKAGE_DEFAULT         = 0,
 	/**
 	 * A symbol whose definition won't change in a program.
 	 * Optimisation might replace loads from this entity with constants.
 	 * Also most linkers put such data in a constant segment which is shared
 	 * between multiple running instances of the same application.
 	 */
-	IR_LINKAGE_CONSTANT  = 1 << 0,
+	IR_LINKAGE_CONSTANT        = 1 << 0,
 	/**
 	 * The entity is a weak symbol.
 	 * A weak symbol is overridden by a non-weak symbol if one exists.
 	 * Most linkers only support the IR_LINKAGE_WEAK in combination with
 	 * IR_LINKAGE_MERGE.
 	 */
-	IR_LINKAGE_WEAK      = 1 << 1,
-	/**
-	 * The entity is local to the compilation unit.
-	 * A local entity will not be exported by the linker and is not visible
-	 * in other compilation units. Note that the entity might still be accessed
-	 * indirectly from other units through pointers.
-	 */
-	IR_LINKAGE_LOCAL     = 1 << 2,
-	/**
-	 * The entity is defined in another compilation.
-	 */
-	IR_LINKAGE_EXTERN    = 1 << 3,
+	IR_LINKAGE_WEAK            = 1 << 1,
 	/**
 	 * The entity may be removed when it isn't referenced anywhere in the
 	 * compilation unit even if it is exported (non-local).
 	 * Typically used for C++ instantiated template code (,,COMDAT'' section).
 	 */
-	IR_LINKAGE_GARBAGE_COLLECT = 1 << 5,
+	IR_LINKAGE_GARBAGE_COLLECT = 1 << 2,
 	/**
 	 * The linker will try to merge entities with same name from different
 	 * compilation units. This is the usual behaviour for global variables
 	 * without explicit initialisation in C (``COMMON'' symbols). It's also
 	 * typically used in C++ for instantiated template code (,,COMDAT'' section)
 	 */
-	IR_LINKAGE_MERGE       = 1 << 6,
+	IR_LINKAGE_MERGE           = 1 << 3,
 	/**
 	 * Some entity uses are potentially hidden from the compiler.
 	 * (For example because they happen in an asm("") statement. This flag
@@ -125,7 +137,7 @@ typedef enum {
 	 * read/write behaviour to global variables or changing calling conventions
 	 * from cdecl to fastcall.
 	 */
-	IR_LINKAGE_HIDDEN_USER = 1 << 7,
+	IR_LINKAGE_HIDDEN_USER     = 1 << 4
 } ir_linkage;
 
 /**
@@ -142,10 +154,22 @@ enum ir_common_linkages {
 };
 
 /**
- * Return 1 if the entity is visible outside the current compilation unit.
+ * Return the visibility class of an entity
+ */
+ir_visibility get_entity_visibility(const ir_entity *entity);
+
+/**
+ * Set visibility class of an entity
+ */
+void set_entity_visibility(ir_entity *entity, ir_visibility visibility);
+
+/**
+ * Return 1 if the entity is visible outside the current compilation unit
+ * or to unknown callers (like asm statements).
  * (The entity might still be accessible indirectly through pointers)
  * This is a convenience function and does the same as
- * (get_entity_linkage(entity) & IR_LINKAGE_LOCAL) == 0
+ * get_entity_visibility(entity) != ir_visibility_local ||
+ * (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
  */
 int entity_is_externally_visible(const ir_entity *entity);
 
@@ -154,22 +178,6 @@ int entity_is_externally_visible(const ir_entity *entity);
  * compilation unit
  */
 int entity_has_definition(const ir_entity *entity);
-
-/**
- * Return 1 if the entity is/will be defined in the current compilation unit.
- * This is a convenience function for
- * (get_entity_linkage(entity) & IR_LINKAGE_EXTERN) == 0.
- *
- * In contrast to entity_has_definition(entity) you have no guarantee here that
- * the entity actually has a firm initializer.
- */
-int entity_is_defined_here(const ir_entity *entity);
-
-/**
- * Return 1 if the entity is constant. Constant means the entities value
- * won't change at all when the program is running.
- */
-int entity_is_constant(const ir_entity *entity);
 
 /**
  * Creates a new entity.
@@ -2428,15 +2436,6 @@ void walk_types_entities(ir_type *tp, entity_walk_func *doit, void *env);
  * anymore have the final property set.
  */
 void types_calc_finalization(void);
-
-/**
- * @deprecated
- */
-typedef enum {
-	visibility_local,
-	visibility_external_visible,
-	visibility_external_allocated
-} ir_visibility;
 
 /** @deprecated */
 ir_visibility get_type_visibility(const ir_type *tp);

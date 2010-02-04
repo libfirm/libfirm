@@ -621,10 +621,6 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 		fprintf(F, " constant");
 	if (linkage & IR_LINKAGE_WEAK)
 		fprintf(F, " weak");
-	if (linkage & IR_LINKAGE_LOCAL)
-		fprintf(F, " local");
-	if (linkage & IR_LINKAGE_EXTERN)
-		fprintf(F, " extern");
 	if (linkage & IR_LINKAGE_GARBAGE_COLLECT)
 		fprintf(F, " garbage_collect");
 	if (linkage & IR_LINKAGE_MERGE)

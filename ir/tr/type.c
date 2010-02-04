@@ -144,7 +144,7 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 	res->kind       = k_type;
 	res->type_op    = type_op;
 	res->mode       = mode;
-	res->visibility = visibility_external_allocated;
+	res->visibility = ir_visibility_external;
 	res->flags      = tf_none;
 	res->size       = 0;
 	res->align      = 0;

@@ -212,7 +212,7 @@ static int rta_fill_incremental(void)
 		ir_entity *ent = get_irg_entity(graph);
 		ir_linkage linkage = get_entity_linkage(ent);
 
-		if (!(linkage & IR_LINKAGE_LOCAL)
+		if (entity_is_externally_visible(ent)
 				|| (linkage & IR_LINKAGE_HIDDEN_USER)) {
 			eset_insert(_live_graphs, graph);
 		}

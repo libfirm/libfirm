@@ -1146,9 +1146,11 @@ static unsigned optimize_load(ir_node *load)
 		value = NULL;
 		/* check if we can determine the entity that will be loaded */
 		ent = find_constant_entity(ptr);
-		if (ent != NULL && !(get_entity_linkage(ent) & IR_LINKAGE_EXTERN)) {
-			/* a static allocation that is not external: there should be NO exception
-			 * when loading even if we cannot replace the load itself. */
+		if (ent != NULL
+				&& get_entity_visibility(ent) != ir_visibility_external) {
+			/* a static allocation that is not external: there should be NO
+			 * exception when loading even if we cannot replace the load itself.
+			 */
 
 			/* no exception, clear the info field as it might be checked later again */
 			if (info->projs[pn_Load_X_except]) {

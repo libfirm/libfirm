@@ -1410,7 +1410,8 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env,
 		ent = new_entity(get_glob_type(), new_id_from_str(buf), tp);
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
-		set_entity_linkage(ent, IR_LINKAGE_CONSTANT|IR_LINKAGE_LOCAL);
+		set_entity_visibility(ent, ir_visibility_local);
+		add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
 
 		/* we create a new entity here: It's initialization must resist on the
 		    const code irg */

@@ -1048,7 +1048,7 @@ static void init_entity_usage(ir_type *tp)
 		ir_entity       *ent  = get_compound_member(tp, i);
 		ir_entity_usage flags = ir_usage_none;
 
-		if (! (get_entity_linkage(ent) & IR_LINKAGE_LOCAL)) {
+		if (entity_is_externally_visible(ent)) {
 			flags |= ir_usage_unknown;
 		}
 		set_entity_usage(ent, flags);
@@ -1310,10 +1310,8 @@ void mark_private_methods(void)
 		ir_graph        *irg   = get_irp_irg(i);
 		ir_entity       *ent   = get_irg_entity(irg);
 		ir_entity_usage  flags = get_entity_usage(ent);
-		ir_linkage       linkage = get_entity_linkage(ent);
 
-		if ((linkage & IR_LINKAGE_LOCAL) &&
-		    !(linkage & IR_LINKAGE_HIDDEN_USER) &&
+		if (!entity_is_externally_visible(ent) &&
 		    !(flags & ir_usage_address_taken)) {
 			ir_type *mtp = get_entity_type(ent);
 

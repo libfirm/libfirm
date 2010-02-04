@@ -417,7 +417,7 @@ static ir_entity *clone_method(quadruple_t *q)
 	new_entity  = copy_entity_name(q->ent, clone_ident);
 
 	/* a cloned entity is always local */
-	add_entity_linkage(new_entity, IR_LINKAGE_LOCAL);
+	set_entity_visibility(new_entity, ir_visibility_local);
 
 	/* set a ld name here: Should we mangle this ? */
 	set_entity_ld_ident(new_entity, get_entity_ident(new_entity));

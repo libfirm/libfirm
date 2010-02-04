@@ -1026,7 +1026,7 @@ static void update_Load_memop(memop_t *m) {
 	/* check if we can determine the entity that will be loaded */
 	ent = find_constant_entity(ptr);
 
-	if (ent != NULL && !(get_entity_linkage(ent) & IR_LINKAGE_EXTERN)) {
+	if (ent != NULL && get_entity_visibility(ent) != ir_visibility_external) {
 		/* a static allocation that is not external: there should be NO exception
 		 * when loading even if we cannot replace the load itself. */
 		ir_node *value = NULL;

@@ -143,7 +143,8 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 		res = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
 
 		set_entity_ld_ident(res, get_entity_ident(res));
-		set_entity_linkage(res, IR_LINKAGE_LOCAL | IR_LINKAGE_CONSTANT);
+		set_entity_visibility(res, ir_visibility_local);
+		add_entity_linkage(res, IR_LINKAGE_CONSTANT);
 
 		 /* we create a new entity here: It's initialization must resist on the
 		    const code irg */

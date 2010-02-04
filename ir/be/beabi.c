@@ -2111,7 +2111,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
 	ir_type   *parent = be->pic_trampolines_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
-	set_entity_linkage(ent, IR_LINKAGE_LOCAL);
+	set_entity_visibility(ent, ir_visibility_local);
 
 	return ent;
 }
@@ -2139,7 +2139,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 	ir_type   *parent = be->pic_symbols_type;
 	ir_entity *ent    = new_entity(parent, old_id, type);
 	set_entity_ld_ident(ent, id);
-	set_entity_linkage(ent, IR_LINKAGE_LOCAL);
+	set_entity_visibility(ent, ir_visibility_local);
 
 	return ent;
 }
@@ -2162,7 +2162,7 @@ static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
  */
 static int can_address_relative(ir_entity *entity)
 {
-	return !(get_entity_linkage(entity) & IR_LINKAGE_EXTERN);
+	return get_entity_visibility(entity) != ir_visibility_external;
 }
 
 /** patches SymConsts to work in position independent code */

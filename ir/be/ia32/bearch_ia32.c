@@ -872,7 +872,7 @@ static void ia32_before_abi(void *self)
 			mcount = new_entity(get_glob_type(), ID("mcount"), tp);
 			/* FIXME: enter the right ld_ident here */
 			set_entity_ld_ident(mcount, get_entity_ident(mcount));
-			set_entity_linkage(mcount, IR_LINKAGE_EXTERN);
+			set_entity_visibility(mcount, ir_visibility_external);
 		}
 		instrument_initcall(cg->irg, mcount);
 	}
