@@ -245,4 +245,11 @@ void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_f
  */
 void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
 
+/**
+ * Walker function which does not increase the visited flag before walking.
+ * Do not use this unless you know what you are doing.
+ */
+unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                    void *env);
+
 #endif

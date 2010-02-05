@@ -231,8 +231,8 @@ irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * e
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                    void *env)
 {
 	if (node->visited < current_ir_graph->visited) {
 		if      (!post) return irg_walk_2_pre (node, pre, env);
