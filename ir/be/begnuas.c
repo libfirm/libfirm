@@ -273,16 +273,21 @@ static void dump_arith_tarval(tarval *tv, int bytes)
 		return;
 
 	case 16:
+		/* Beware: Mixed endian output!  One little endian number emitted as
+		 * three longs.  Each long initializer is written in big endian. */
 		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x0x%02x%02x%02x%02x0x%02x%02x%02x%02x0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 16),
-			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x",
+			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
 			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
 			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0)
+			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
+			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
 		);
 		return;
 	}
@@ -492,11 +497,8 @@ static void dump_size_type(size_t size) {
 
 	case 10:
 	case 12:
+	case 16: /* Note: .octa does not work on mac */
 		/* handled in arith */
-		break;
-
-	case 16:
-		be_emit_cstring("\t.octa\t");
 		break;
 
 	default:
