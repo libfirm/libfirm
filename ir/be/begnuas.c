@@ -1191,6 +1191,9 @@ static void dump_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	/* we can only do PIC code on macho so far */
 	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
 
+	be_emit_ident(get_entity_ld_ident(entity));
+	be_emit_cstring(":\n");
+	be_emit_write_line();
 	be_emit_cstring("\t.indirect_symbol ");
 	be_emit_ident(get_entity_ident(entity));
 	be_emit_char('\n');
