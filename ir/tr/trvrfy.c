@@ -412,9 +412,29 @@ static void check_tore(type_or_ent tore, void *env) {
 /*
  * Verify types and entities.
  */
-int tr_vrfy(void) {
-	int res;
+int tr_vrfy(void)
+{
+	int      res = no_error;
+	ir_type *constructors;
+	ir_type *destructors;
+	int      i;
 
 	type_walk(check_tore, NULL, &res);
+
+	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
+	for (i = get_compound_n_members(constructors)-1; i >= 0; --i) {
+		ir_entity *entity = get_compound_member(constructors, i);
+		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
+		               "entity without LINKAGE_HIDDEN_USER in constructors is pointless",
+		               1);
+	}
+	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
+	for (i = get_compound_n_members(destructors)-1; i >= 0; --i) {
+		ir_entity *entity = get_compound_member(destructors, i);
+		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
+		               "entity without LINKAGE_HIDDEN_USER in destructors is pointless",
+		               1);
+	}
+
 	return res;
 }

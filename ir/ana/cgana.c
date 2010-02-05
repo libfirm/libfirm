@@ -586,8 +586,8 @@ static ir_entity **get_free_methods(int *length)
 		add_method_address(ent, free_set);
 	}
 	tp = get_tls_type();
-	for (i = get_struct_n_members(tp) - 1; i >= 0; --i) {
-		ent = get_struct_member(tp, i);
+	for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
+		ent = get_class_member(tp, i);
 		add_method_address(ent, free_set);
 	}
 

@@ -908,4 +908,17 @@ typedef ir_type *(*get_Alloc_func)(ir_node *n);
 /** Set a new get_Alloc_func and returns the old one. */
 get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
 
+/**
+ * Removes all entities which are unused.
+ *
+ * Unused entities have ir_visibility_local and are not used directly or
+ * indirectly through entities/code visible outside the compilation unit.
+ * This is usually conservative than gc_irgs, but does not respect properties
+ * of object-oriented programs.
+ */
+void garbage_collect_entities(void);
+
+/** Pass for garbage_collect_entities */
+ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
+
 #endif

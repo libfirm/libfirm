@@ -85,11 +85,11 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 	irp->name = new_id_from_str(module_name);
 	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
-		= new_type_struct(IDENT("ThreadLocal"));
+		= new_type_class(IDENT("ThreadLocal"));
 	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]
-		= new_type_struct(IDENT("Constructors"));
+		= new_type_class(IDENT("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
-		= new_type_struct(IDENT("Destructors"));
+		= new_type_class(IDENT("Destructors"));
 	/* Remove these types from type list.  Must be treated differently than
 	   other types. */
 	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
