@@ -418,6 +418,10 @@ int tr_vrfy(void)
 	ir_type *constructors;
 	ir_type *destructors;
 	int      i;
+	static ident *empty = NULL;
+
+	if (empty == NULL)
+		empty = new_id_from_chars("", 0);
 
 	type_walk(check_tore, NULL, &res);
 
@@ -427,6 +431,9 @@ int tr_vrfy(void)
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in constructors is pointless",
 		               1);
+		/* Mach-O doesn't like labels in this section */
+		ASSERT_AND_RET(get_entity_ld_ident(entity),
+		               "entity in constructors should have ld_ident ''", 1);
 	}
 	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
 	for (i = get_compound_n_members(destructors)-1; i >= 0; --i) {
@@ -434,6 +441,9 @@ int tr_vrfy(void)
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in destructors is pointless",
 		               1);
+		/* Mach-O doesn't like labels in this section */
+		ASSERT_AND_RET(get_entity_ld_ident(entity),
+		               "entity in destructors should have ld_ident ''", 1);
 	}
 
 	return res;

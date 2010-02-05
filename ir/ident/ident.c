@@ -60,8 +60,6 @@ static ident *set_new_id_from_chars(void *handle, const char *str, int len)
 {
   set *id_set = handle;
 
-  /* GL: Who added this assert?  And why? */
-  //assert(len > 0);
   return (ident *)set_hinsert0(id_set, str, len, ID_HASH(unsigned char, str, len));
 }
 
@@ -160,13 +158,12 @@ void init_ident(ident_if_t *id_if, int initial_n_idents)
 
 ident *new_id_from_str(const char *str)
 {
-  assert(str);
+  assert(str != NULL);
   return impl.new_id_from_str(impl.handle, str);
 }
 
 ident *new_id_from_chars(const char *str, int len)
 {
-  assert(len > 0);
   return impl.new_id_from_chars(impl.handle, str, len);
 }
 
