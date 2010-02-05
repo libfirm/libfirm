@@ -53,4 +53,9 @@ void ia32_peephole_optimization(ia32_code_gen_t *cg);
 /** Initialize the ia32 address mode optimizer. */
 void ia32_init_optimize(void);
 
+/**
+ * Creates an immediate node.
+ */
+ir_node *ia32_immediate_from_long(long val);
+
 #endif /* FIRM_BE_IA32_IA32_OPTIMIZE_H */

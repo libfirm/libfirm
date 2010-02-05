@@ -973,7 +973,7 @@ static inline int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
 	return node == cg->noreg_gp;
 }
 
-static ir_node *create_immediate_from_int(int val)
+ir_node *ia32_immediate_from_long(long val)
 {
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
@@ -1104,7 +1104,7 @@ static void peephole_ia32_Lea(ir_node *node)
 				goto make_add_immediate;
 			} else if(!has_immediates && scale > 0) {
 				op1 = index;
-				op2 = create_immediate_from_int(scale);
+				op2 = ia32_immediate_from_long(scale);
 				goto make_shl;
 			} else if(!has_immediates) {
 #ifdef DEBUG_libfirm
