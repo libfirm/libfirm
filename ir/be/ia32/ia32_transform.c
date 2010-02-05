@@ -1954,10 +1954,17 @@ static ir_node *get_flags_node(ir_node *node, pn_Cmp *pnc_out)
 					}
 				}
 			}
-			flags = be_transform_node(pred);
-			if (mode_is_float(get_irn_mode(get_Cmp_left(pred))))
-				pnc |= ia32_pn_Cmp_float;
+			/* add ia32 compare flags */
+			{
+				ir_node *l    = get_Cmp_left(pred);
+				ir_mode *mode = get_irn_mode(l);
+				if (mode_is_float(mode))
+					pnc |= ia32_pn_Cmp_float;
+				else if (! mode_is_signed(mode))
+					pnc |= ia32_pn_Cmp_unsigned;
+			}
 			*pnc_out = pnc;
+			flags = be_transform_node(pred);
 			return flags;
 		}
 	}
@@ -3117,6 +3124,207 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **ne
 }
 
 /**
+ * Possible transformations for creating a Setcc.
+ */
+enum setcc_transform_insn {
+	SETCC_TR_ADD,
+	SETCC_TR_ADDxx,
+	SETCC_TR_LEA,
+	SETCC_TR_LEAxx,
+	SETCC_TR_SHL,
+	SETCC_TR_NEG,
+	SETCC_TR_NOT,
+	SETCC_TR_AND,
+	SETCC_TR_SET,
+	SETCC_TR_SBB,
+};
+
+typedef struct setcc_transform {
+	unsigned num_steps;
+	unsigned permutate_cmp_ins;
+	pn_Cmp   pnc;
+	struct {
+		enum setcc_transform_insn  transform;
+		long val;
+		int  scale;
+	} steps[4];
+} setcc_transform_t;
+
+/**
+ * Setcc can only handle 0 and 1 result.
+ * Find a transformation that creates 0 and 1 from
+ * tv_t and tv_f.
+ */
+static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f, setcc_transform_t *res, int can_permutate)
+{
+	unsigned step = 0;
+
+	res->num_steps = 0;
+	res->permutate_cmp_ins = 0;
+
+	if (tarval_is_null(t)) {
+		tarval *tmp = t;
+		t = f;
+		f = tmp;
+		pnc = ia32_get_negated_pnc(pnc);
+	} else if (tarval_cmp(t, f) == pn_Cmp_Lt) {
+		// now, t is the bigger one
+		tarval *tmp = t;
+		t = f;
+		f = tmp;
+		pnc = ia32_get_negated_pnc(pnc);
+	}
+	res->pnc = pnc;
+
+	if (tarval_is_one(t)) {
+		res->steps[step].transform = SETCC_TR_SET;
+		res->num_steps = ++step;
+		return;
+	}
+
+	if (! tarval_is_null(f)) {
+		tarval *t_sub = tarval_sub(t, f, NULL);
+
+		t = t_sub;
+		res->steps[step].transform = SETCC_TR_ADD;
+
+		if (t == tarval_bad)
+			panic("constant subtract failed");
+		if (! tarval_is_long(f))
+			panic("tarval is not long");
+
+		res->steps[step].val = get_tarval_long(f);
+		++step;
+		f = tarval_sub(f, f, NULL);
+		assert(tarval_is_null(f));
+	}
+
+	if (tarval_is_minus_one(t)) {
+		if (pnc == (pn_Cmp_Lt | ia32_pn_Cmp_unsigned)) {
+			res->steps[step].transform = SETCC_TR_SBB;
+			res->num_steps = ++step;
+		} else {
+			res->steps[step].transform = SETCC_TR_NEG;
+			++step;
+			res->steps[step].transform = SETCC_TR_SET;
+			res->num_steps = ++step;
+		}
+		return;
+	}
+	if (tarval_is_long(t)) {
+		ir_mode *mode = get_tarval_mode(t);
+		long    v = get_tarval_long(t);
+
+		if (pnc & ia32_pn_Cmp_unsigned) {
+			if (pnc == (pn_Cmp_Lt | ia32_pn_Cmp_unsigned)) {
+				res->steps[step].transform = SETCC_TR_AND;
+				res->steps[step].val       = v;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_SBB;
+				res->num_steps = ++step;
+				return;
+			} else if (pnc == (pn_Cmp_Ge | ia32_pn_Cmp_unsigned)) {
+				res->steps[step].transform = SETCC_TR_AND;
+				res->steps[step].val       = v;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_NOT;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_SBB;
+				res->num_steps = ++step;
+				return;
+			} else if (can_permutate && pnc == (pn_Cmp_Gt | ia32_pn_Cmp_unsigned)) {
+				res->permutate_cmp_ins ^= 1;
+
+				res->steps[step].transform = SETCC_TR_NOT;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_AND;
+				res->steps[step].val       = v;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_SBB;
+				res->num_steps = ++step;
+				return;
+			} else if (can_permutate && pnc == (pn_Cmp_Le | ia32_pn_Cmp_unsigned)) {
+				res->permutate_cmp_ins ^= 1;
+
+				res->steps[step].transform = SETCC_TR_AND;
+				res->steps[step].val       = v;
+				++step;
+
+				res->steps[step].transform = SETCC_TR_SBB;
+				res->num_steps = ++step;
+				return;
+			}
+		}
+
+		res->steps[step].val = 0;
+		switch (v) {
+		case 9:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = SETCC_TR_LEAxx;
+			res->steps[step].scale     = 3; /* (a << 3) + a */
+			break;
+		case 8:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
+			res->steps[step].scale     = 3; /* (a << 3) */
+			break;
+		case 5:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = SETCC_TR_LEAxx;
+			res->steps[step].scale     = 2; /* (a << 2) + a */
+			break;
+		case 4:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
+			res->steps[step].scale     = 2; /* (a << 2) */
+			break;
+		case 3:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = SETCC_TR_LEAxx;
+			res->steps[step].scale     = 1; /* (a << 1) + a */
+			break;
+		case 2:
+			if (step > 0 && res->steps[step - 1].transform == SETCC_TR_ADD)
+				--step;
+			res->steps[step].transform = res->steps[step].val == 0 ? SETCC_TR_SHL : SETCC_TR_LEA;
+			res->steps[step].scale     = 1; /* (a << 1) */
+			break;
+		case 1:
+			res->num_steps = step;
+			return;
+		default:
+			if (! tarval_is_single_bit(t)) {
+				res->steps[step].transform = SETCC_TR_AND;
+				res->steps[step].val       = v;
+				++step;
+				res->steps[step].transform = SETCC_TR_NEG;
+			} else {
+				int v = get_tarval_lowest_bit(t);
+				assert(v >= 0);
+
+				res->steps[step].transform = SETCC_TR_SHL;
+				res->steps[step].scale     = v;
+			}
+		}
+		++step;
+		res->steps[step].transform = SETCC_TR_SET;
+		res->num_steps = ++step;
+		return;
+	}
+	panic("tarval is not long");
+}
+
+/**
  * Transforms a Mux node into some code sequence.
  *
  * @return The transformed node.
@@ -3270,17 +3478,70 @@ static ir_node *gen_Mux(ir_node *node)
 
 		if (is_Const(mux_true) && is_Const(mux_false)) {
 			/* both are const, good */
-			if (is_Const_1(mux_true) && is_Const_0(mux_false)) {
-				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node);
-			} else if (is_Const_0(mux_true) && is_Const_1(mux_false)) {
-				pnc = ia32_get_negated_pnc(pnc);
-				new_node = create_set_32bit(dbgi, new_block, flags, pnc, node);
-			} else {
-				/* Not that simple. */
-				goto need_cmov;
+			tarval *tv_true = get_Const_tarval(mux_true);
+			tarval *tv_false = get_Const_tarval(mux_false);
+			setcc_transform_t res;
+			int step;
+
+			/* check if flags is a cmp node and we are the only user,
+			   i.e no other user yet */
+			int permutate_allowed = 0;
+			if (is_ia32_Cmp(flags) && get_irn_n_edges(flags) == 0) {
+				/* yes, we can permutate its inputs */
+				permutate_allowed = 1;
+			}
+			find_const_transform(pnc, tv_true, tv_false, &res, 0);
+			new_node = node;
+			if (res.permutate_cmp_ins) {
+				ia32_attr_t *attr = get_ia32_attr(flags);
+				attr->data.ins_permuted ^= 1;
+			}
+			for (step = (int)res.num_steps - 1; step >= 0; --step) {
+				ir_node *imm;
+
+				switch (res.steps[step].transform) {
+				case SETCC_TR_ADD:
+					imm = ia32_immediate_from_long(res.steps[step].val);
+					new_node = new_bd_ia32_Add(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
+					break;
+				case SETCC_TR_ADDxx:
+					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+					break;
+				case SETCC_TR_LEA:
+					new_node = new_bd_ia32_Lea(dbgi, new_block, noreg_GP, new_node);
+					set_ia32_am_scale(new_node, res.steps[step].scale);
+					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					break;
+				case SETCC_TR_LEAxx:
+					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
+					set_ia32_am_scale(new_node, res.steps[step].scale);
+					set_ia32_am_offs_int(new_node, res.steps[step].val);
+					break;
+				case SETCC_TR_SHL:
+					imm = ia32_immediate_from_long(res.steps[step].scale);
+					new_node = new_bd_ia32_Shl(dbgi, new_block, new_node, imm);
+					break;
+				case SETCC_TR_NEG:
+					new_node = new_bd_ia32_Neg(dbgi, new_block, new_node);
+					break;
+				case SETCC_TR_NOT:
+					new_node = new_bd_ia32_Not(dbgi, new_block, new_node);
+					break;
+				case SETCC_TR_AND:
+					imm = ia32_immediate_from_long(res.steps[step].val);
+					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
+					break;
+				case SETCC_TR_SET:
+					new_node = create_set_32bit(dbgi, new_block, flags, res.pnc, new_node);
+					break;
+				case SETCC_TR_SBB:
+					new_node = new_bd_ia32_Sbb0(dbgi, new_block, flags);
+					break;
+				default:
+					panic("unknown setcc transform");
+				}
 			}
 		} else {
-need_cmov:
 			new_node = create_CMov(node, cond, flags, pnc);
 		}
 		return new_node;
