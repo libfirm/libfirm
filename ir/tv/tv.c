@@ -305,8 +305,11 @@ static const ieee_descriptor_t *get_descriptor(const ir_mode *mode) {
 	case 32:  return &single_desc;
 	case 64:  return &double_desc;
 	case 80:
-	case 96:  return &extended_desc;
-	case 128: return &quad_desc;
+	case 96:
+	case 128: return &extended_desc; /* FIXME: HACK for x86 where we have
+										sizeof(long double)==16 with 10 byte
+										real payload */
+	/* case 128: return &quad_desc; */
 	default:
 		panic("Unsupported mode in get_descriptor()");
 		return NULL;
