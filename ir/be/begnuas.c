@@ -1186,6 +1186,25 @@ static void emit_common(const ir_entity *ent)
 	panic("invalid object file format");
 }
 
+static void dump_indirect_symbol(const ir_entity *entity, be_gas_section_t section)
+{
+	/* we can only do PIC code on macho so far */
+	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
+
+	be_emit_cstring("\t.indirect_symbol ");
+	be_emit_ident(get_entity_ident(entity));
+	be_emit_char('\n');
+	be_emit_write_line();
+	if (section == GAS_SECTION_PIC_TRAMPOLINES) {
+		be_emit_cstring("\thlt ; hlt ; hlt ; hlt ; hlt\n");
+		be_emit_write_line();
+	} else {
+		assert(section == GAS_SECTION_PIC_SYMBOLS);
+		be_emit_cstring("\t.long 0\n");
+		be_emit_write_line();
+	}
+}
+
 /**
  * Dump a global entity.
  *
@@ -1227,6 +1246,12 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	}
 
 	be_gas_emit_switch_section(section);
+
+	if (section == GAS_SECTION_PIC_TRAMPOLINES
+			|| section == GAS_SECTION_PIC_SYMBOLS) {
+		dump_indirect_symbol(ent, section);
+		return;
+	}
 
 	/* alignment */
 	if (alignment > 1) {
