@@ -3379,6 +3379,7 @@ static ir_node *gen_Mux(ir_node *node)
 			ia32_address_mode_t am;
 			ir_node             *load;
 			ir_mode             *new_mode;
+			ir_node             *base;
 			unsigned            scale;
 
 			flags    = get_flags_node(cond, &pnc);
@@ -3422,8 +3423,14 @@ static ir_node *gen_Mux(ir_node *node)
 				panic("Unsupported constant size");
 			}
 
+			if (env_cg->birg->main_env->options->pic) {
+				base = arch_code_generator_get_pic_base(env_cg);
+			} else {
+				base = noreg_GP;
+			}
+
 			am.ls_mode            = new_mode;
-			am.addr.base          = noreg_GP;
+			am.addr.base          = base;
 			am.addr.index         = new_node;
 			am.addr.mem           = nomem;
 			am.addr.offset        = 0;
