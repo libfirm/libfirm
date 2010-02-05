@@ -1273,9 +1273,12 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 		be_emit_ident(ld_ident);
 		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}
-	be_emit_ident(ld_ident);
-	be_emit_cstring(":\n");
-	be_emit_write_line();
+
+	if (get_id_str(ld_ident)[0] != '\0') {
+		be_emit_ident(ld_ident);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
+	}
 
 	if (ent->initializer != NULL) {
 		dump_initializer(env, ent);
