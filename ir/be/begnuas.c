@@ -93,7 +93,7 @@ static const char *get_section_name(be_gas_section_t section)
 			".data",
 			NULL,             /* TLS is not supported on Mach-O */
 			".mod_init_func",
-			NULL,             /* are there destructors on mach-o? */
+			".mod_term_func",
 			".cstring",
 			".section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5",
 			".section\t__IMPORT,__pointers,non_lazy_symbol_pointers"
