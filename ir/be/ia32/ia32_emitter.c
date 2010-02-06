@@ -1011,7 +1011,7 @@ void ia32_emit_cmp_suffix_node(const ir_node *node,
 
 	pnc = determine_final_pnc(node, flags_pos, pnc);
 	if (attr->data.ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
+		pnc = get_inversed_pnc(pnc);
 
 	ia32_emit_cmp_suffix(pnc);
 }
@@ -1193,7 +1193,7 @@ static void emit_ia32_CMovcc(const ir_node *node)
 	/* although you can't set ins_permuted in the constructor it might still
 	   be set by memory operand folding */
 	if (attr->data.ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
+		pnc = get_inversed_pnc(pnc);
 
 	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
 	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
@@ -3026,7 +3026,6 @@ static void bemit_setcc(const ir_node *node)
 static void bemit_cmovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
-	int                    ins_permuted = attr->data.ins_permuted;
 	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
 	pn_Cmp                 pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
@@ -3037,21 +3036,20 @@ static void bemit_cmovcc(const ir_node *node)
 	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
 	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
 
+	if (attr->data.ins_permuted)
+		pnc = get_inversed_pnc(pnc);
 	/* should be same constraint fullfilled? */
 	if (out == in_false) {
 		/* yes -> nothing to do */
 	} else if (out == in_true) {
 		assert(get_ia32_op_type(node) == ia32_Normal);
-		ins_permuted = !ins_permuted;
+		pnc = ia32_get_negated_pnc(pnc);
 		in_true      = in_false;
 	} else {
 		/* we need a mov */
 		bemit8(0x8B); // mov %in_false, %out
 		bemit_modrr(in_false, out);
 	}
-
-	if (ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
 
 	/* TODO: handling of Nans isn't correct yet */
 
