@@ -3187,12 +3187,6 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f, setcc_transfo
 	}
 	res->pnc = pnc;
 
-	if (tarval_is_one(t)) {
-		res->steps[step].transform = SETCC_TR_SET;
-		res->num_steps = ++step;
-		return;
-	}
-
 	if (! tarval_is_null(f)) {
 		tarval *t_sub = tarval_sub(t, f, NULL);
 
@@ -3210,66 +3204,21 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f, setcc_transfo
 		assert(tarval_is_null(f));
 	}
 
+	if (tarval_is_one(t)) {
+		res->steps[step].transform = SETCC_TR_SET;
+		res->num_steps = ++step;
+		return;
+	}
+
 	if (tarval_is_minus_one(t)) {
-		if (pnc == (pn_Cmp_Lt | ia32_pn_Cmp_unsigned)) {
-			res->steps[step].transform = SETCC_TR_SBB;
-			res->num_steps = ++step;
-		} else {
-			res->steps[step].transform = SETCC_TR_NEG;
-			++step;
-			res->steps[step].transform = SETCC_TR_SET;
-			res->num_steps = ++step;
-		}
+		res->steps[step].transform = SETCC_TR_NEG;
+		++step;
+		res->steps[step].transform = SETCC_TR_SET;
+		res->num_steps = ++step;
 		return;
 	}
 	if (tarval_is_long(t)) {
 		long v = get_tarval_long(t);
-
-		if (pnc & ia32_pn_Cmp_unsigned) {
-			if (pnc == (pn_Cmp_Lt | ia32_pn_Cmp_unsigned)) {
-				res->steps[step].transform = SETCC_TR_AND;
-				res->steps[step].val       = v;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_SBB;
-				res->num_steps = ++step;
-				return;
-			} else if (pnc == (pn_Cmp_Ge | ia32_pn_Cmp_unsigned)) {
-				res->steps[step].transform = SETCC_TR_AND;
-				res->steps[step].val       = v;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_NOT;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_SBB;
-				res->num_steps = ++step;
-				return;
-			} else if (can_permutate && pnc == (pn_Cmp_Gt | ia32_pn_Cmp_unsigned)) {
-				res->permutate_cmp_ins ^= 1;
-
-				res->steps[step].transform = SETCC_TR_NOT;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_AND;
-				res->steps[step].val       = v;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_SBB;
-				res->num_steps = ++step;
-				return;
-			} else if (can_permutate && pnc == (pn_Cmp_Le | ia32_pn_Cmp_unsigned)) {
-				res->permutate_cmp_ins ^= 1;
-
-				res->steps[step].transform = SETCC_TR_AND;
-				res->steps[step].val       = v;
-				++step;
-
-				res->steps[step].transform = SETCC_TR_SBB;
-				res->num_steps = ++step;
-				return;
-			}
-		}
 
 		res->steps[step].val = 0;
 		switch (v) {
