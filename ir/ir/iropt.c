@@ -5652,15 +5652,18 @@ static ir_node *transform_node_Mux(ir_node *n) {
 				if (!mode_honor_signed_zeros(mode) && is_negated_value(f, t)) {
 					/* f = -t */
 
-					if ( (cmp_l == t && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt))
-						|| (cmp_l == f && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt)))
+					/* NaN's work fine with abs, so it is ok to remove Uo */
+					long pnc = pn & ~pn_Cmp_Uo;
+
+					if ( (cmp_l == t && (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt))
+						|| (cmp_l == f && (pnc == pn_Cmp_Le || pnc == pn_Cmp_Lt)))
 					{
 						/* Mux(a >/>= 0, a, -a) = Mux(a </<= 0, -a, a) ==> Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), block, cmp_l, mode);
 						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
 						return n;
-					} else if ((cmp_l == t && (pn == pn_Cmp_Le || pn == pn_Cmp_Lt))
-						|| (cmp_l == f && (pn == pn_Cmp_Ge || pn == pn_Cmp_Gt)))
+					} else if ((cmp_l == t && (pnc == pn_Cmp_Le || pnc == pn_Cmp_Lt))
+						|| (cmp_l == f && (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt)))
 					{
 						/* Mux(a </<= 0, a, -a) = Mux(a >/>= 0, -a, a) ==> -Abs(a) */
 						n = new_rd_Abs(get_irn_dbg_info(n), block, cmp_l, mode);
