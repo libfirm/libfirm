@@ -76,8 +76,8 @@ class EmitMysql(EmitBase):
 			self.execute('drop table if exists `%s`' % self.evtab)
 			self.execute('drop table if exists `%s`' % self.ctxtab)
 
-			self.create_table(ctxcols, self.ctxtab, "text", "int auto_increment", extra = ", PRIMARY KEY (`id`)")
-			self.create_table(evcols, self.evtab, "data", "int not null", extra = ", INDEX(`id`)")
+		self.create_table(ctxcols, self.ctxtab, "text", "int auto_increment", extra = ", PRIMARY KEY (`id`)")
+		self.create_table(evcols, self.evtab, "data", "int not null", extra = ", INDEX(`id`)")
 
 		keys  = "id, " + ", ".join(evcols)
 		marks = ",".join(['%s'] * (len(evcols)+1))
@@ -125,13 +125,10 @@ class EmitSqlite3(EmitBase):
 		self.ctxtab = options.prefix + "ctx"
 		self.evtab  = options.prefix + "ev"
 
-		if not options.update:
-			self.create_table(ctxcols, self.ctxtab, "text", "integer primary key")
-			#self.execute("CREATE INDEX IF NOT EXISTS `%sindex` ON `%s`(id)"
-			#		% (self.ctxtab, self.ctxtab))
-			self.create_table(evcols, self.evtab, "data", "int")
-			self.execute("CREATE INDEX IF NOT EXISTS `%sindex` ON `%s`(id)"
-					% (self.evtab, self.evtab))
+		self.create_table(ctxcols, self.ctxtab, "text", "integer primary key")
+		self.create_table(evcols, self.evtab, "data", "int")
+		self.execute("CREATE INDEX IF NOT EXISTS `%sindex` ON `%s`(id)"
+				% (self.evtab, self.evtab))
 
 		keys  = "id, " + ", ".join(evcols)
 		marks = ",".join(["?"] * (len(evcols)+1))
