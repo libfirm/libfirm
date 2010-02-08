@@ -921,4 +921,7 @@ void garbage_collect_entities(void);
 /** Pass for garbage_collect_entities */
 ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
 
+/** TODO: add documentation! */
+void do_loop_unrolling(ir_graph *irg);
+
 #endif
