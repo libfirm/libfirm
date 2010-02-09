@@ -70,6 +70,16 @@ void opt_jumpthreading(ir_graph* irg);
 ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
+ * Creates an ir_graph pass for opt_loopunroll().
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *opt_loopunroll_pass(const char *name);
+
+
+/**
  * Try to simplify boolean expression in the given ir graph.
  * eg. x < 5 && x < 6 becomes x < 5
  *
@@ -357,18 +367,15 @@ int opt_ldst(ir_graph *irg);
 ir_graph_pass_t *opt_ldst_pass(const char *name);
 
 /**
- * Do Loop unrolling in the given graph.
- */
-void optimize_loop_unrolling(ir_graph *irg);
-
-/**
- * Creates an ir_graph pass for optimize_loop_unrolling().
+ * Optimize loops by peeling or unrolling them if beneficial.
  *
- * @param name     the name of this pass or NULL
+ * @param irg  The graph whose loops will be processed
  *
- * @return  the newly created ir_graph pass
+ * This function did not change the graph, only it's frame type.
+ * The layout state of the frame type will be set to layout_undefined
+ * if entities were removed.
  */
-ir_graph_pass_t *optimize_loop_unrolling_pass(const char *name);
+void loop_optimization(ir_graph *irg);
 
 /**
  * Optimize the frame type of an irg by removing
@@ -894,10 +901,17 @@ ir_graph_pass_t *shape_blocks_pass(const char *name);
 
 /**
  * Perform loop inversion on a given graph.
- * Loop inversion transform a head controlled loop (like while(...) {} and
+ * Loop inversion transforms a head controlled loop (like while(...) {} and
  * for(...) {}) into a foot controlled loop (do {} while(...)).
  */
 void do_loop_inversion(ir_graph *irg);
+
+/**
+ * Perform loop unrolling on a given graph.
+ * Loop unrolling multiplies the number loop completely by a number found
+ * through a heuristic.
+ */
+void do_loop_unrolling(ir_graph *irg);
 
 /**
  * Perform loop peeling on a given graph.
@@ -920,8 +934,5 @@ void garbage_collect_entities(void);
 
 /** Pass for garbage_collect_entities */
 ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
-
-/** TODO: add documentation! */
-void do_loop_unrolling(ir_graph *irg);
 
 #endif
