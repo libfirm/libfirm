@@ -100,7 +100,14 @@ static int casecmp(const void *a, const void *b)
 {
 	const case_data_t *cda = a;
 	const case_data_t *cdb = b;
-	return (cda->value > cdb->value) - (cda->value < cdb->value);
+
+	/*
+	 * Enforce unsigned sorting. Signed comparison will behave differently for
+	 * 32-bit values, depending on sizeof(long). This will make the resulting
+	 * array deterministic.
+	 */
+	return ((unsigned long)cda->value > (unsigned long)cdb->value) -
+	       ((unsigned long)cda->value < (unsigned long)cdb->value);
 }
 
 /**
@@ -109,6 +116,27 @@ static int casecmp(const void *a, const void *b)
 static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
                               case_data_t *curcases, int numcases)
 {
+    ir_mode *cmp_mode;
+    ir_node *cmp_sel;
+    ir_node *sel_block;
+
+    /* Get the mode and sel node for the comparison. */
+    cmp_mode  = get_irn_mode(env->sel);
+    cmp_sel   = env->sel;
+    sel_block = get_nodes_block(cmp_sel);
+
+    /*
+     * Make sure that an unsigned comparison is used, by converting the sel
+     * node to an unsigned mode and using that mode for the constants, too.
+     * This is important, because the qsort applied to the case labels uses
+     * an unsigned comparison and both comparison methods have to match.
+     */
+    if (mode_is_signed(cmp_mode))
+    {
+        cmp_mode = find_unsigned_mode(cmp_mode);
+        cmp_sel  = new_r_Conv(sel_block, cmp_sel, cmp_mode);
+    }
+
 	assert(numcases >= 0);
 
 	set_cur_block(curblock);
@@ -118,16 +146,16 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		env->defusers[env->defindex++] = new_Jmp();
 	} else if (numcases == 1) {
 		/* only one case: "if(sel == val) goto target else goto default;" */
-		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
-		ir_node *cmp  = new_Cmp(env->sel, val);
+		ir_node *val  = new_Const_long(cmp_mode, curcases[0].value);
+		ir_node *cmp  = new_Cmp(cmp_sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		ir_node *cond = new_Cond(proj);
 		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
 		env->defusers[env->defindex++] = new_Proj(cond, mode_X, pn_Cond_false);
 	} else if (numcases == 2) {
 		/* only two cases: "if(sel == val[0]) goto target[0];" */
-		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[0].value);
-		ir_node *cmp  = new_Cmp(env->sel, val);
+		ir_node *val  = new_Const_long(cmp_mode, curcases[0].value);
+		ir_node *cmp  = new_Cmp(cmp_sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		ir_node *cond = new_Cond(proj);
 		ir_node *in[1];
@@ -139,8 +167,8 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		set_cur_block(neblock);
 
 		/* second part: "else if(sel == val[1]) goto target[1] else goto default;" */
-		val  = new_Const_long(get_irn_mode(env->sel), curcases[1].value);
-		cmp  = new_Cmp(env->sel, val);
+		val  = new_Const_long(cmp_mode, curcases[1].value);
+		cmp  = new_Cmp(cmp_sel, val);
 		proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
 		cond = new_Cond(proj);
 		set_Block_cfgpred(curcases[1].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
@@ -148,8 +176,8 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 	} else {
 		/* recursive case: split cases in the middle */
 		int midcase = numcases / 2;
-		ir_node *val  = new_Const_long(get_irn_mode(env->sel), curcases[midcase].value);
-		ir_node *cmp  = new_Cmp(env->sel, val);
+		ir_node *val  = new_Const_long(cmp_mode, curcases[midcase].value);
+		ir_node *cmp  = new_Cmp(cmp_sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Lt);
 		ir_node *cond = new_Cond(proj);
 		ir_node *in[1];
