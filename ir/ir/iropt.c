@@ -688,7 +688,7 @@ static tarval *computed_value_Proj(const ir_node *proj) {
  * @param n  The node this should be evaluated
  */
 tarval *computed_value(const ir_node *n) {
-	if(mode_is_int(get_irn_mode(n)) && tarval_is_all_one(
+	if(mode_is_int(get_irn_mode(n)) && n->vrp.valid && tarval_is_all_one(
 				tarval_or(n->vrp.bits_set, n->vrp.bits_not_set))) {
 		return n->vrp.bits_set;
 	}
@@ -2369,7 +2369,7 @@ static ir_node *transform_node_Add(ir_node *n) {
 			}
 		}
 	}
-	if (mode_is_int(mode)) {
+	if (mode_is_int(mode) && a->vrp.valid && b->vrp.valid) {
 		tarval *c = tarval_and(
 					tarval_not(a->vrp.bits_not_set),
 					tarval_not(b->vrp.bits_not_set)
@@ -3530,14 +3530,14 @@ static ir_node *transform_node_And(ir_node *n) {
 		return n;
 	}
 
-	if (is_Const(a) && (tarval_is_all_one(tarval_or(get_Const_tarval(a),
+	if (is_Const(a) && b->vrp.valid && (tarval_is_all_one(tarval_or(get_Const_tarval(a),
 						b->vrp.bits_not_set)))) {
 		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
 							b, get_irn_mode(n));
 
 	}
 
-	if (is_Const(b) && (tarval_is_all_one(tarval_or(get_Const_tarval(b),
+	if (is_Const(b) && a->vrp.valid && (tarval_is_all_one(tarval_or(get_Const_tarval(b),
 						a->vrp.bits_not_set)))) {
 		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
 							a, get_irn_mode(n));
@@ -4022,7 +4022,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 				}
 			} else {
 				long num = get_Proj_proj(proj);
-				if (num != get_Cond_default_proj(n)) {
+				if (num != get_Cond_default_proj(n) && b->vrp.valid) {
 					/* Try handling with vrp data. We only remove dead parts. */
 					tarval *tp = new_tarval_from_long(num, get_irn_mode(b));
 

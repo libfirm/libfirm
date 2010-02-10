@@ -624,6 +624,10 @@ ir_graph_pass_t *set_vrp_pass(const char *name) {
 }
 
 pn_Cmp vrp_cmp(ir_node *left, ir_node *right) {
+	if (!left->vrp.valid || !right->vrp.valid) {
+		return pn_Cmp_False;
+	}
+
 	if (!(left->vrp.range_type == VRP_UNDEFINED ||
 			left->vrp.range_type == VRP_VARYING) && !(
 			right->vrp.range_type == VRP_UNDEFINED ||
