@@ -45,6 +45,7 @@
 #include "opt_confirms.h"
 #include "iropt_dbg.h"
 #include "irpass.h"
+#include "vrp.h"
 
 #undef AVOID_PHIB
 
@@ -372,6 +373,27 @@ static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right)
 }
 
 /**
+ * returns whether the cmp evaluates to true or false according to vrp
+ * information , or can't be evaluated!
+ * 1: true, 0: false, -1: can't evaluate
+ *
+ * @param pnc       the compare mode of the Compare
+ * @param left   the left node
+ * @param right  the right node
+ */
+static int eval_cmp_vrp(pn_Cmp pnc, ir_node *left, ir_node *right)
+{
+	pn_Cmp cmp_result = vrp_cmp(left, right);
+
+	/* does the compare evaluate to true? */
+	if (cmp_result == pn_Cmp_False)
+		return -1;
+	if ((cmp_result & pnc) != cmp_result)
+		return 0;
+
+	return 1;
+}
+/**
  * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
  *
@@ -641,8 +663,15 @@ static void thread_jumps(ir_node* block, void* data)
 				tarval *tv_right = get_Const_tarval(right);
 
 				selector_evaluated = eval_cmp_tv(pnc, tv_left, tv_right);
-				if (selector_evaluated < 0)
-					return;
+			}
+			if (selector_evaluated < 0) {
+				/* This is only the case if the predecessor nodes are not
+				 * constant or the comparison could not be evaluated.
+				 * Try with VRP information now.
+				 */
+				int pnc = get_Proj_proj(selector);
+
+				selector_evaluated = eval_cmp_vrp(pnc, left, right);
 			}
 		}
 	} else if (is_Const_or_Confirm(selector)) {
