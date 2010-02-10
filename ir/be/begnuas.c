@@ -67,6 +67,7 @@ static const char *get_section_name(be_gas_section_t section)
 			".section\t.data",
 			".section\t.rodata",
 			".section\t.bss",
+			".section\t.tdata,\"awT\",@progbits",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"aw\",@progbits",
 			".section\t.dtors,\"aw\",@progbits",
@@ -79,6 +80,7 @@ static const char *get_section_name(be_gas_section_t section)
 			".section\t.data",
 			".section .rdata,\"dr\"",
 			".section\t.bss",
+			".section\t.tdata,\"awT\",@progbits",
 			".section\t.tbss,\"awT\",@nobits",
 			".section\t.ctors,\"w\"",
 			".section\t.dtors,\"w\"",
@@ -91,6 +93,7 @@ static const char *get_section_name(be_gas_section_t section)
 			".data",
 			".const",
 			".data",
+			NULL,             /* TLS is not supported on Mach-O */
 			NULL,             /* TLS is not supported on Mach-O */
 			".mod_init_func",
 			".mod_term_func",
@@ -623,6 +626,47 @@ static int ent_is_string_const(const ir_entity *ent)
 	return 0;
 }
 
+static bool initializer_is_null(const ir_initializer_t *initializer)
+{
+	switch (initializer->kind) {
+	case IR_INITIALIZER_NULL:
+		return true;
+	case IR_INITIALIZER_TARVAL: {
+		tarval *tv = initializer->tarval.value;
+		return tarval_is_null(tv);
+	}
+	case IR_INITIALIZER_CONST: {
+		ir_node *value = initializer->consti.value;
+		if (!is_Const(value))
+			return false;
+		return is_Const_null(value);
+	}
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i;
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
+			ir_initializer_t *subinitializer
+				= initializer->compound.initializers[i];
+			if (!initializer_is_null(subinitializer))
+				return false;
+		}
+		return true;
+	}
+	}
+	panic("invalid initializer in initializer_is_null");
+}
+
+static bool entity_is_null(const ir_entity *entity)
+{
+	if (entity->initializer != NULL) {
+		return initializer_is_null(entity->initializer);
+	} else if (entity_has_compound_ent_values(entity)) {
+		/* I'm too lazy to implement this case as compound graph paths will be
+		 * remove anyway in the future */
+	}
+	/* uninitialized, NULL is fine */
+	return true;
+}
+
 /**
  * Dump a string constant.
  * No checks are made!!
@@ -675,7 +719,7 @@ static void dump_string_cst(const ir_entity *ent)
 	remaining_space = type_size - len;
 	assert(remaining_space >= 0);
 	if (remaining_space > 0) {
-		be_emit_irprintf("\t.space\t%d\n", remaining_space);
+		be_emit_irprintf("\t.zero\t%d\n", remaining_space);
 	}
 }
 
@@ -1135,6 +1179,9 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 	ir_type *owner = get_entity_owner(entity);
 
 	if (owner == get_segment_type(IR_SEGMENT_GLOBAL)) {
+		if (is_method_entity(entity))
+			return GAS_SECTION_TEXT;
+
 		ir_linkage linkage = get_entity_linkage(entity);
 		if (linkage & IR_LINKAGE_CONSTANT) {
 			/* mach-o is the only one with a cstring section */
@@ -1144,11 +1191,10 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 
 			return GAS_SECTION_RODATA;
 		}
-		if (!entity_has_definition(entity))
+		if (entity_is_null(entity))
 			return GAS_SECTION_BSS;
 
 		return GAS_SECTION_DATA;
-
 	} else if (owner == env->main_env->pic_symbols_type) {
 		return GAS_SECTION_PIC_SYMBOLS;
 	} else if (owner == env->main_env->pic_trampolines_type) {
@@ -1158,7 +1204,15 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 	} else if (owner == get_segment_type(IR_SEGMENT_DESTRUCTORS)) {
 		return GAS_SECTION_DESTRUCTORS;
 	} else if (owner == get_segment_type(IR_SEGMENT_THREAD_LOCAL)) {
-		return GAS_SECTION_TLS;
+		ir_linkage linkage = get_entity_linkage(entity);
+		if (linkage & IR_LINKAGE_MERGE) {
+			panic("IR_LINKAGE_MERGE not supported for THREAD_LOCAL entities");
+		}
+
+		if (entity_is_null(entity)) {
+			return GAS_SECTION_TLS_BSS;
+		}
+		return GAS_SECTION_TLS_DATA;
 	}
 
 	panic("Couldn't determine section for %+F?!?", entity);
@@ -1280,14 +1334,14 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 		be_emit_write_line();
 	}
 
-	if (ent->initializer != NULL) {
-		dump_initializer(env, ent);
+	if (section == GAS_SECTION_BSS || section == GAS_SECTION_TLS_BSS) {
+		be_emit_irprintf("\t.zero %u\n", get_type_size_bytes(type));
+		be_emit_write_line();
 	} else if(entity_has_compound_ent_values(ent)) {
 		dump_compound_graph_init(env, ent);
 	} else {
-		/* uninitialized */
-		be_emit_irprintf("\t.space %u\n", get_type_size_bytes(type));
-		be_emit_write_line();
+		assert(ent->initializer != NULL);
+		dump_initializer(env, ent);
 	}
 }
 
