@@ -523,7 +523,15 @@ static tarval *computed_value_Proj_Cmp(const ir_node *n) {
 
 		pn_Cmp cmp_result = vrp_cmp(aa, ab);
 		if (cmp_result != pn_Cmp_False) {
-			return new_tarval_from_long(cmp_result & proj_nr, mode_b);
+			if (cmp_result == pn_Cmp_Lg) {
+				if( proj_nr == pn_Cmp_Eq) {
+				return get_tarval_b_false();
+				} else if(proj_nr == pn_Cmp_Lg) {
+					return get_tarval_b_true();
+				}
+			} else {
+				return new_tarval_from_long(cmp_result & proj_nr, mode_b);
+			}
 		}
 	}
 	/*
