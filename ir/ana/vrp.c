@@ -624,25 +624,30 @@ ir_graph_pass_t *set_vrp_pass(const char *name) {
 }
 
 pn_Cmp vrp_cmp(ir_node *left, ir_node *right) {
-	if (left->vrp.range_type == VRP_UNDEFINED ||
-			left->vrp.range_type == VRP_VARYING ||
+	if (!(left->vrp.range_type == VRP_UNDEFINED ||
+			left->vrp.range_type == VRP_VARYING) && !(
 			right->vrp.range_type == VRP_UNDEFINED ||
-			right->vrp.range_type == VRP_VARYING)
-		return pn_Cmp_False;
+			right->vrp.range_type == VRP_VARYING)) {
 
-	tarval *lefttop = left->vrp.range_top;
-	tarval *leftbottom = left->vrp.range_bottom;
-	tarval *righttop = right->vrp.range_top;
-	tarval *rightbottom = right->vrp.range_bottom;
-	if (left->vrp.range_type == VRP_RANGE && right->vrp.range_type ==
-			VRP_RANGE) {
-		if (tarval_cmp(lefttop, rightbottom) == pn_Cmp_Lt) {
-			return pn_Cmp_Lt;
-		}
-		if (tarval_cmp(leftbottom, righttop) == pn_Cmp_Gt) {
-			return pn_Cmp_Gt;
-		}
+		tarval *lefttop = left->vrp.range_top;
+		tarval *leftbottom = left->vrp.range_bottom;
+		tarval *righttop = right->vrp.range_top;
+		tarval *rightbottom = right->vrp.range_bottom;
+		if (left->vrp.range_type == VRP_RANGE && right->vrp.range_type ==
+				VRP_RANGE) {
+			if (tarval_cmp(lefttop, rightbottom) == pn_Cmp_Lt) {
+				return pn_Cmp_Lt;
+			}
+			if (tarval_cmp(leftbottom, righttop) == pn_Cmp_Gt) {
+				return pn_Cmp_Gt;
+			}
 
+		}
+	}
+
+	if (!tarval_is_null(tarval_and(left->vrp.bits_set, right->vrp.bits_not_set)) ||
+			!tarval_is_null(tarval_and(left->vrp.bits_not_set, right->vrp.bits_set))) {
+		return pn_Cmp_Lg;
 	}
 	// TODO: We can get way more information here
 

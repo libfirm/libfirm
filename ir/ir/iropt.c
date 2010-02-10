@@ -472,86 +472,89 @@ static tarval *computed_value_Proj_Cmp(const ir_node *n) {
 		return new_tarval_from_long (proj_nr == pn_Cmp_Eq, mode_b) */
 		return new_tarval_from_long (proj_nr & pn_Cmp_Eq, mode_b);
 	}
-	else {
-		tarval *taa = value_of(aa);
-		tarval *tab = value_of(ab);
-		ir_mode *mode = get_irn_mode(aa);
+	tarval *taa = value_of(aa);
+	tarval *tab = value_of(ab);
+	ir_mode *mode = get_irn_mode(aa);
 
-		/*
-		 * The predecessors of Cmp are target values.  We can evaluate
-		 * the Cmp.
-		 */
-		if ((taa != tarval_bad) && (tab != tarval_bad)) {
-			/* strange checks... */
-			pn_Cmp flags = tarval_cmp(taa, tab);
-			if (flags != pn_Cmp_False) {
-				return new_tarval_from_long (proj_nr & flags, mode_b);
-			}
+	/*
+	 * The predecessors of Cmp are target values.  We can evaluate
+	 * the Cmp.
+	 */
+	if ((taa != tarval_bad) && (tab != tarval_bad)) {
+		/* strange checks... */
+		pn_Cmp flags = tarval_cmp(taa, tab);
+		if (flags != pn_Cmp_False) {
+			return new_tarval_from_long (proj_nr & flags, mode_b);
 		}
-		/* for integer values, we can check against MIN/MAX */
-		else if (mode_is_int(mode)) {
-			/* MIN <=/> x.  This results in true/false. */
-			if (taa == get_mode_min(mode)) {
+	}
+	/* for integer values, we can check against MIN/MAX */
+	else if (mode_is_int(mode)) {
+		/* MIN <=/> x.  This results in true/false. */
+		if (taa == get_mode_min(mode)) {
+			/* a compare with the MIN value */
+			if (proj_nr == pn_Cmp_Le)
+				return get_tarval_b_true();
+			else if (proj_nr == pn_Cmp_Gt)
+				return get_tarval_b_false();
+		}
+		/* x >=/< MIN.  This results in true/false. */
+		else
+			if (tab == get_mode_min(mode)) {
 				/* a compare with the MIN value */
+				if (proj_nr == pn_Cmp_Ge)
+					return get_tarval_b_true();
+				else if (proj_nr == pn_Cmp_Lt)
+					return get_tarval_b_false();
+			}
+		/* MAX >=/< x.  This results in true/false. */
+			else if (taa == get_mode_max(mode)) {
+				if (proj_nr == pn_Cmp_Ge)
+					return get_tarval_b_true();
+				else if (proj_nr == pn_Cmp_Lt)
+					return get_tarval_b_false();
+			}
+		/* x <=/> MAX.  This results in true/false. */
+			else if (tab == get_mode_max(mode)) {
 				if (proj_nr == pn_Cmp_Le)
 					return get_tarval_b_true();
 				else if (proj_nr == pn_Cmp_Gt)
 					return get_tarval_b_false();
 			}
-			/* x >=/< MIN.  This results in true/false. */
-			else
-				if (tab == get_mode_min(mode)) {
-					/* a compare with the MIN value */
-					if (proj_nr == pn_Cmp_Ge)
-						return get_tarval_b_true();
-					else if (proj_nr == pn_Cmp_Lt)
-						return get_tarval_b_false();
-				}
-				/* MAX >=/< x.  This results in true/false. */
-				else if (taa == get_mode_max(mode)) {
-					if (proj_nr == pn_Cmp_Ge)
-						return get_tarval_b_true();
-					else if (proj_nr == pn_Cmp_Lt)
-						return get_tarval_b_false();
-				}
-				/* x <=/> MAX.  This results in true/false. */
-				else if (tab == get_mode_max(mode)) {
-					if (proj_nr == pn_Cmp_Le)
-						return get_tarval_b_true();
-					else if (proj_nr == pn_Cmp_Gt)
-						return get_tarval_b_false();
-				}
-		}
-		/*
-		 * The predecessors are Allocs or (void*)(0) constants.  Allocs never
-		 * return NULL, they raise an exception.   Therefore we can predict
-		 * the Cmp result.
-		 */
-		else {
-			ir_node *aaa = skip_Proj(aa);
-			ir_node *aba = skip_Proj(ab);
 
-			if (   (   (/* aa is ProjP and aaa is Alloc */
-			               is_Proj(aa)
-			            && mode_is_reference(get_irn_mode(aa))
-			            && is_Alloc(aaa))
-			        && (   (/* ab is NULL */
-			                mode_is_reference(get_irn_mode(ab))
-			                && tarval_is_null(tab))
-			            || (/* ab is other Alloc */
-			                   is_Proj(ab)
-			                && mode_is_reference(get_irn_mode(ab))
-			                && is_Alloc(aba)
-			                && (aaa != aba))))
-			    || (/* aa is NULL and aba is Alloc */
-			        mode_is_reference(get_irn_mode(aa))
-			        && tarval_is_null(taa)
-			        && is_Proj(ab)
-			        && mode_is_reference(get_irn_mode(ab))
-			        && is_Alloc(aba)))
-				/* 3.: */
-			return new_tarval_from_long(proj_nr & pn_Cmp_Lg, mode_b);
+		pn_Cmp cmp_result = vrp_cmp(aa, ab);
+		if (cmp_result != pn_Cmp_False) {
+			return new_tarval_from_long(cmp_result & proj_nr, mode_b);
 		}
+	}
+	/*
+	 * The predecessors are Allocs or (void*)(0) constants.  Allocs never
+	 * return NULL, they raise an exception.   Therefore we can predict
+	 * the Cmp result.
+	 */
+	else {
+		ir_node *aaa = skip_Proj(aa);
+		ir_node *aba = skip_Proj(ab);
+
+		if (   (   (/* aa is ProjP and aaa is Alloc */
+						is_Proj(aa)
+						&& mode_is_reference(get_irn_mode(aa))
+						&& is_Alloc(aaa))
+					&& (   (/* ab is NULL */
+							mode_is_reference(get_irn_mode(ab))
+							&& tarval_is_null(tab))
+						|| (/* ab is other Alloc */
+							is_Proj(ab)
+							&& mode_is_reference(get_irn_mode(ab))
+							&& is_Alloc(aba)
+							&& (aaa != aba))))
+				|| (/* aa is NULL and aba is Alloc */
+					mode_is_reference(get_irn_mode(aa))
+					&& tarval_is_null(taa)
+					&& is_Proj(ab)
+					&& mode_is_reference(get_irn_mode(ab))
+					&& is_Alloc(aba)))
+			/* 3.: */
+			return new_tarval_from_long(proj_nr & pn_Cmp_Lg, mode_b);
 	}
 	return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
 }  /* computed_value_Proj_Cmp */
