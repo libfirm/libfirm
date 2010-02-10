@@ -397,6 +397,10 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 	default: ;
 	}
 
+	if (n->vrp.valid) {
+		dump_vrp_info(F, n);
+	}
+
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
 		if (get_irn_typeinfo_type(n) != firm_none_type)

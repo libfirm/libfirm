@@ -1201,6 +1201,29 @@ int dump_node_label(FILE *F, ir_node *n) {
 	return bad;
 }
 
+/* Dumps the vrp information of a node to a file */
+int dump_vrp_info(FILE *F, ir_node *n) {
+	if (!n->vrp.valid) {
+		return 1;
+	}
+
+	fprintf(F, "range_type: %d\n", n->vrp.range_type);
+	if (n->vrp.range_type == VRP_RANGE || n->vrp.range_type ==
+			VRP_ANTIRANGE) {
+		ir_fprintf(F, "range_bottom: %F\n",n->vrp.range_bottom);
+		ir_fprintf(F, "range_top: %F\n", n->vrp.range_top);
+	}
+	ir_fprintf(F, "bits_set: %T\n", n->vrp.bits_set);
+	ir_fprintf(F, "bits_not_set: %T\n", n->vrp.bits_not_set);
+	if (n->vrp.bits_node == NULL) {
+		fprintf(F, "bits_node: None");
+	} else {
+		fprintf(F, "bits_node: #%ld\n", get_irn_node_nr(n->vrp.bits_node));
+	}
+
+	return 0;
+}
+
 /**
  * Dumps the attributes of a node n into the file F.
  * Currently this is only the color of a node.
