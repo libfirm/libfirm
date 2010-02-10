@@ -303,8 +303,9 @@ class Conv:
 					self.evvals[keyidx] = value
 
 	def __init__(self):
-		parser = optparse.OptionParser('usage: %prog [options]  <event file...>')
-		parser.add_option("", "--update",   dest="update",   help="update database instead of dropping all existing values", action="store_true", default=False)
+		parser = optparse.OptionParser('usage: %prog [options]  <event file...>', add_help_option=False)
+		parser.add_option("", "--help",                        help="show this help message and exit", action="help")
+		parser.add_option("", "--update",     dest="update",   help="update database instead of dropping all existing values", action="store_true", default=False)
 		parser.add_option("-v", "--verbose",  dest="verbose",  help="verbose messages",         action="store_true", default=False)
 		parser.add_option("-f", "--filter",   dest="filter",   help="regexp to filter event keys", metavar="REGEXP")
 		parser.add_option("-u", "--user",     dest="user",     help="user",               metavar="USER")
