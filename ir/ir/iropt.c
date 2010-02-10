@@ -47,6 +47,8 @@
 #include "irtools.h"
 #include "irhooks.h"
 #include "array_t.h"
+#include "vrp.h"
+#include "firm_types.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"
@@ -675,6 +677,10 @@ static tarval *computed_value_Proj(const ir_node *proj) {
  * @param n  The node this should be evaluated
  */
 tarval *computed_value(const ir_node *n) {
+	if(mode_is_int(get_irn_mode(n)) && tarval_is_all_one(
+				tarval_or(n->vrp.bits_set, n->vrp.bits_not_set))) {
+		return n->vrp.bits_set;
+	}
 	if (n->op->ops.computed_value)
 		return n->op->ops.computed_value(n);
 	return tarval_bad;
@@ -2352,6 +2358,18 @@ static ir_node *transform_node_Add(ir_node *n) {
 			}
 		}
 	}
+	if (mode_is_int(mode)) {
+		tarval *c = tarval_and(
+					tarval_not(a->vrp.bits_not_set),
+					tarval_not(b->vrp.bits_not_set)
+					);
+
+		if(tarval_is_null(c)) {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				return new_rd_Or(dbgi, get_nodes_block(n),
+							a, b, mode);
+		}
+	}
 	return n;
 }  /* transform_node_Add */
 
@@ -3501,6 +3519,20 @@ static ir_node *transform_node_And(ir_node *n) {
 		return n;
 	}
 
+	if (is_Const(a) && (tarval_is_all_one(tarval_or(get_Const_tarval(a),
+						b->vrp.bits_not_set)))) {
+		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
+							b, get_irn_mode(n));
+
+	}
+
+	if (is_Const(b) && (tarval_is_all_one(tarval_or(get_Const_tarval(b),
+						a->vrp.bits_not_set)))) {
+		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
+							a, get_irn_mode(n));
+
+	}
+
 	n = transform_bitwise_distributive(n, transform_node_And);
 
 	return n;
@@ -3976,6 +4008,50 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj) {
 						/* this case will NEVER be taken, kill it */
 						return get_irg_bad(current_ir_graph);
 					}
+				}
+			} else {
+				long num = get_Proj_proj(proj);
+				if (num != get_Cond_default_proj(n)) {
+					/* Try handling with vrp data. We only remove dead parts. */
+					tarval *tp = new_tarval_from_long(num, get_irn_mode(b));
+
+					if (b->vrp.range_type == VRP_RANGE) {
+						pn_Cmp cmp_result = tarval_cmp(b->vrp.range_bottom, tp);
+						pn_Cmp cmp_result2 = tarval_cmp(b->vrp.range_top, tp);
+
+						if ((cmp_result & pn_Cmp_Lt) == cmp_result && (cmp_result2
+									& pn_Cmp_Gt) == cmp_result2) {
+							return get_irg_bad(current_ir_graph);
+						}
+					} else if (b->vrp.range_type == VRP_ANTIRANGE) {
+						pn_Cmp cmp_result = tarval_cmp(b->vrp.range_bottom, tp);
+						pn_Cmp cmp_result2 = tarval_cmp(b->vrp.range_top, tp);
+
+						if ((cmp_result & pn_Cmp_Ge) == cmp_result && (cmp_result2
+									& pn_Cmp_Le) == cmp_result2) {
+							return get_irg_bad(current_ir_graph);
+						}
+					}
+
+					if (!(tarval_cmp(
+									tarval_and( b->vrp.bits_set, tp),
+									b->vrp.bits_set
+									) == pn_Cmp_Eq)) {
+
+						return get_irg_bad(current_ir_graph);
+					}
+
+					if (!(tarval_cmp(
+									tarval_and(
+										tarval_not(tp),
+										b->vrp.bits_not_set),
+									b->vrp.bits_not_set)
+									 == pn_Cmp_Eq)) {
+
+						return get_irg_bad(current_ir_graph);
+					}
+
+
 				}
 			}
 		}
