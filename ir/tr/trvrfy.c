@@ -417,6 +417,7 @@ int tr_vrfy(void)
 	int      res = no_error;
 	ir_type *constructors;
 	ir_type *destructors;
+	ir_type *thread_locals;
 	int      i;
 	static ident *empty = NULL;
 
@@ -427,23 +428,32 @@ int tr_vrfy(void)
 
 	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
 	for (i = get_compound_n_members(constructors)-1; i >= 0; --i) {
-		ir_entity *entity = get_compound_member(constructors, i);
+		const ir_entity *entity = get_compound_member(constructors, i);
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in constructors is pointless",
 		               1);
 		/* Mach-O doesn't like labels in this section */
 		ASSERT_AND_RET(get_entity_ld_ident(entity),
-		               "entity in constructors should have ld_ident ''", 1);
+		               "entity in constructors should have ld_ident=''", 1);
 	}
 	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
 	for (i = get_compound_n_members(destructors)-1; i >= 0; --i) {
-		ir_entity *entity = get_compound_member(destructors, i);
+		const ir_entity *entity = get_compound_member(destructors, i);
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in destructors is pointless",
 		               1);
 		/* Mach-O doesn't like labels in this section */
 		ASSERT_AND_RET(get_entity_ld_ident(entity),
-		               "entity in destructors should have ld_ident ''", 1);
+		               "entity in destructors should have ld_ident=''", 1);
+	}
+	thread_locals = get_segment_type(IR_SEGMENT_THREAD_LOCAL);
+	for (i = get_compound_n_members(thread_locals)-1; i >= 0; --i) {
+		const ir_entity *entity = get_compound_member(thread_locals, i);
+		/* this is odd and should not be allowed I think */
+		ASSERT_AND_RET(!is_method_entity(entity),
+		               "method in THREAD_LOCAL segment", 1);
+		ASSERT_AND_RET(!(get_entity_linkage(entity) & IR_LINKAGE_MERGE),
+		               "IR_LINKAGE_MERGE currently not support for thread locals", 1);
 	}
 
 	return res;

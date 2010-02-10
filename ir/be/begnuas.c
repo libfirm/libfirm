@@ -480,7 +480,8 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
  *
  * @param size  the size in bytes
  */
-static void dump_size_type(size_t size) {
+static void dump_size_type(size_t size)
+{
 	switch (size) {
 	case 1:
 		be_emit_cstring("\t.byte\t");
@@ -1218,11 +1219,22 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 	panic("Couldn't determine section for %+F?!?", entity);
 }
 
-static void emit_common(const ir_entity *ent)
+static void emit_common(const ir_entity *entity)
 {
-	const char *name      = get_entity_ld_name(ent);
-	unsigned    size      = get_type_size_bytes(get_entity_type(ent));
-	unsigned    alignment = get_effective_entity_alignment(ent);
+	const char    *name       = get_entity_ld_name(entity);
+	unsigned       size       = get_type_size_bytes(get_entity_type(entity));
+	unsigned       alignment  = get_effective_entity_alignment(entity);
+	ir_visibility  visibility = get_entity_visibility(entity);
+
+	if (visibility == ir_visibility_local
+			|| visibility == ir_visibility_private) {
+		/* counter the visibility_global effect of .comm
+		 * ... and to be honest I have no idea what local common symbols
+		 *     are good for...
+		 */
+		be_emit_irprintf("\t.local %s\n", name);
+		be_emit_write_line();
+	}
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_MACH_O:
@@ -1272,10 +1284,11 @@ static void dump_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
  */
 static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 {
-	ir_type          *type           = get_entity_type(ent);
-	ident            *ld_ident       = get_entity_ld_ident(ent);
-	unsigned          alignment      = get_effective_entity_alignment(ent);
-	be_gas_section_t  section        = determine_section(env, ent);
+	ir_type          *type       = get_entity_type(ent);
+	ident            *ld_ident   = get_entity_ld_ident(ent);
+	unsigned          alignment  = get_effective_entity_alignment(ent);
+	be_gas_section_t  section    = determine_section(env, ent);
+	ir_visibility     visibility = get_entity_visibility(ent);
 
 	/* we already emitted all methods. Except for the trampolines which
 	 * the assembler/linker generates */
@@ -1288,17 +1301,29 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 
 	be_dbg_variable(ent);
 
-	/* nothing to do for externally defined values */
-	if (get_entity_visibility(ent) == ir_visibility_external)
+	switch (visibility) {
+	case ir_visibility_external:
+		/* nothing to do for externally defined values */
 		return;
+	case ir_visibility_private:
+		/* mangle name so the assembler doesn't export the symbol
+		 * TODO: this is probably a bit broken, since the backends probably don't
+		 * mangle themselfes when outputting these symbols... */
+		ld_ident = id_mangle3(".L", ld_ident, "");
+		break;
+	case ir_visibility_local:
+	case ir_visibility_default:
+		/* nothing todo (leave the cases here to avoid compiler warnings) */
+		break;
+	}
 
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
 
 	if (section == GAS_SECTION_BSS &&
 			(get_entity_linkage(ent) & IR_LINKAGE_MERGE)) {
-		if (get_entity_visibility(ent) != ir_visibility_default) {
-			panic("merge link semantic not supported for local/extern entities");
+		if (get_entity_visibility(ent) == ir_visibility_external) {
+			panic("merge link semantic not supported for extern entities");
 		}
 		emit_common(ent);
 		return;
@@ -1334,7 +1359,7 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 		be_emit_write_line();
 	}
 
-	if (section == GAS_SECTION_BSS || section == GAS_SECTION_TLS_BSS) {
+	if (entity_is_null(ent)) {
 		be_emit_irprintf("\t.zero %u\n", get_type_size_bytes(type));
 		be_emit_write_line();
 	} else if(entity_has_compound_ent_values(ent)) {

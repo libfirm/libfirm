@@ -94,7 +94,15 @@ typedef enum {
 	 * The entity is defined outside the compilation unit but potentially used
 	 * here.
 	 */
-	ir_visibility_external
+	ir_visibility_external,
+	/**
+	 * This has the same semantic as visibility_local. Additionally the symbol is
+	 * completely hidden from the linker (it only appears in the assembly).
+	 * While visibility_local is probably still visible to debuggers,
+	 * visibility_private symbols aren't and probably won't appear in the object
+	 * files
+	 */
+	ir_visibility_private
 } ir_visibility;
 
 /**
