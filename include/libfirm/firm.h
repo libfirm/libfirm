@@ -84,6 +84,7 @@ extern "C" {
 #include "irconsconfirm.h"
 #include "ircons.h"
 #include "irdom.h"
+#include "vrp.h"
 #include "irdump.h"
 #include "iredgekinds.h"
 #include "iredges.h"
