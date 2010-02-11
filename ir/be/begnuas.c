@@ -1328,16 +1328,16 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
 			&& be_gas_emit_types) {
 		be_emit_cstring("\t.type\t");
-		be_emit_ident(ld_ident);
+		be_gas_emit_entity(ent);
 		be_emit_cstring(", ");
 		be_emit_char(be_gas_elf_type_char);
-		be_emit_cstring("object\n\t.size\t");
-		be_emit_ident(ld_ident);
+		be_emit_cstring("object\n\t.size\t");\
+		be_gas_emit_entity(ent);
 		be_emit_irprintf(", %u\n", get_type_size_bytes(type));
 	}
 
 	if (get_id_str(ld_ident)[0] != '\0') {
-		be_emit_ident(ld_ident);
+	    be_gas_emit_entity(ent);
 		be_emit_cstring(":\n");
 		be_emit_write_line();
 	}
