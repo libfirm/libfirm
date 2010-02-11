@@ -138,6 +138,12 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (is_Conv(node)) {
+		ir_node *pred      = get_Conv_op(node);
+		ir_mode *pred_mode = get_irn_mode(pred);
+
+		if (!values_in_mode(dest_mode, pred_mode)) {
+			return 1;
+		}
 		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
 
@@ -197,6 +203,12 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	}
 
 	if (is_Conv(node)) {
+		ir_node *pred      = get_Conv_op(node);
+		ir_mode *pred_mode = get_irn_mode(pred);
+
+		if (!values_in_mode(dest_mode, pred_mode)) {
+			return place_conv(node, dest_mode);
+		}
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
