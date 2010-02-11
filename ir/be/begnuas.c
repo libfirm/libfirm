@@ -1159,10 +1159,11 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 	ir_type *owner = get_entity_owner(entity);
 
 	if (owner == get_segment_type(IR_SEGMENT_GLOBAL)) {
+		ir_linkage linkage;
 		if (is_method_entity(entity))
 			return GAS_SECTION_TEXT;
 
-		ir_linkage linkage = get_entity_linkage(entity);
+		linkage = get_entity_linkage(entity);
 		if (linkage & IR_LINKAGE_CONSTANT) {
 			/* mach-o is the only one with a cstring section */
 			if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
