@@ -326,6 +326,17 @@ typedef int lower_mux_callback(ir_node* mux);
 void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
 
 /**
+ * Creates an ir_graph pass for lower_mux().
+ *
+ * @param name     the name of this pass or NULL
+ * @param cb_func  The callback function for mux selection. Can be NULL,
+ *                 to lower all mux nodes.
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *lower_mux_pass(const char *name, lower_mux_callback *cb_func);
+
+/**
  * An intrinsic mapper function.
  *
  * @param node   the IR-node that will be mapped

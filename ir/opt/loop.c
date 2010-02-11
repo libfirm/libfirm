@@ -39,6 +39,7 @@
 #include "array_t.h"	/* automatic array */
 #include "beutil.h"		/* get_block */
 #include "irloop_t.h"	/* set_irn_loop*/
+#include "irpass.h"
 
 #if 0
 	#include "irdump_t.h"
@@ -1579,6 +1580,18 @@ void do_loop_peeling(ir_graph *irg)
 	DB((dbg, LEVEL_2, " >>> peeling done (Startnode %ld) <<<\n",
 	        get_irn_node_nr(get_irg_start(irg))));
 
+}
+
+ir_graph_pass_t *loop_inversion_pass(const char *name) {
+	return def_graph_pass(name ? name : "loop_inversion", do_loop_inversion);
+}
+
+ir_graph_pass_t *loop_unroll_pass(const char *name) {
+	return def_graph_pass(name ? name : "loop_unroll", do_loop_unrolling);
+}
+
+ir_graph_pass_t *loop_peeling_pass(const char *name) {
+	return def_graph_pass(name ? name : "loop_peeling", do_loop_peeling);
 }
 
 void firm_init_loop_opt(void)
