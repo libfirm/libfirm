@@ -541,13 +541,10 @@ void vrp_first_pass(ir_node *n, void *e) {
 	ir_node *succ;
 	worklist_t *tmp_entry;
 	int i;
-	struct vrp_env_t *env;
+	struct vrp_env_t *env = e;
 
 	if (is_Block(n))
 		return;
-
-	env = (struct vrp_env_t *) e;
-
 
 	set_irn_link(n, VISITED);
 
@@ -558,7 +555,7 @@ void vrp_first_pass(ir_node *n, void *e) {
 		if (get_irn_link(succ) == VISITED) {
 			// we found a loop
 
-			tmp_entry = (struct worklist_t *)malloc(sizeof(struct worklist_t));
+			tmp_entry = XMALLOC(worklist_t);
 			tmp_entry->node = n;
 			list_add(&(tmp_entry->nodes), &(env->worklist->nodes));
 
@@ -574,12 +571,7 @@ void set_vrp_data(ir_graph *irg) {
 	int i;
 	worklist_t worklist;
 	worklist_t *tmp_entry, *tmp_entry2;
-	struct vrp_env_t *env;
-
-	env = malloc(sizeof(struct vrp_env_t));
-	if (env == NULL) {
-		return;
-	}
+	struct vrp_env_t env;
 
 	if (!irg) {
 		/* no graph, skip */
@@ -592,32 +584,32 @@ void set_vrp_data(ir_graph *irg) {
 
 	INIT_LIST_HEAD(&worklist.nodes);
 
-	env->worklist = &worklist;
-	irg_walk_graph(irg, NULL, vrp_first_pass, env);
+	env.worklist = &worklist;
+	irg_walk_graph(irg, NULL, vrp_first_pass, &env);
 
 
 
 	// while there are entries in the worklist, continue
 	while( !list_empty(&worklist.nodes) ) {
 
-		struct list_head *pos, *next;
+		list_head *pos, *next;
 		list_for_each_safe(pos, next, &worklist.nodes) {
 
-			tmp_entry = list_entry(pos, struct worklist_t, nodes);
+			tmp_entry = list_entry(pos, worklist_t, nodes);
 
 			if (update_vrp_data(tmp_entry->node)) {
 				// if something changed, add successors to worklist
 				for (i = get_irn_n_outs(tmp_entry->node) - 1; i >=0; --i) {
 					succ =  get_irn_out(tmp_entry->node, i);
 
-					tmp_entry2 = (struct worklist_t *)malloc(sizeof(struct worklist_t));
+					tmp_entry2 = XMALLOC(worklist_t);
 					tmp_entry2->node = succ;
 					list_add(&(tmp_entry2->nodes), &worklist.nodes);
 				}
 			}
 
 			list_del(pos);
-			free(tmp_entry);
+			xfree(tmp_entry);
 		}
 	}
 }
