@@ -624,24 +624,12 @@ pn_Cmp vrp_cmp(ir_node *left, ir_node *right) {
 		return pn_Cmp_False;
 	}
 
-	if (!(left->vrp.range_type == VRP_UNDEFINED ||
-			left->vrp.range_type == VRP_VARYING) && !(
-			right->vrp.range_type == VRP_UNDEFINED ||
-			right->vrp.range_type == VRP_VARYING)) {
-
-		tarval *lefttop = left->vrp.range_top;
-		tarval *leftbottom = left->vrp.range_bottom;
-		tarval *righttop = right->vrp.range_top;
-		tarval *rightbottom = right->vrp.range_bottom;
-		if (left->vrp.range_type == VRP_RANGE && right->vrp.range_type ==
-				VRP_RANGE) {
-			if (tarval_cmp(lefttop, rightbottom) == pn_Cmp_Lt) {
-				return pn_Cmp_Lt;
-			}
-			if (tarval_cmp(leftbottom, righttop) == pn_Cmp_Gt) {
-				return pn_Cmp_Gt;
-			}
-
+	if (left->vrp.range_type == VRP_RANGE && right->vrp.range_type == VRP_RANGE) {
+		if (tarval_cmp(left->vrp.range_top, right->vrp.range_bottom) == pn_Cmp_Lt) {
+			return pn_Cmp_Lt;
+		}
+		if (tarval_cmp(left->vrp.range_bottom, right->vrp.range_top) == pn_Cmp_Gt) {
+			return pn_Cmp_Gt;
 		}
 	}
 
