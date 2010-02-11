@@ -454,117 +454,93 @@ static tarval *computed_value_Confirm(const ir_node *n) {
  * There are several case where we can evaluate a Cmp node, see later.
  */
 static tarval *computed_value_Proj_Cmp(const ir_node *n) {
-	ir_node *a   = get_Proj_pred(n);
-	ir_node *aa  = get_Cmp_left(a);
-	ir_node *ab  = get_Cmp_right(a);
-	long proj_nr = get_Proj_proj(n);
+	ir_node *cmp   = get_Proj_pred(n);
+	ir_node *left  = get_Cmp_left(cmp);
+	ir_node *right = get_Cmp_right(cmp);
+	long pn_cmp    = get_Proj_proj(n);
+	ir_mode *mode  = get_irn_mode(left);
+	tarval *tv_l, *tv_r;
 
 	/*
 	 * BEWARE: a == a is NOT always True for floating Point values, as
 	 * NaN != NaN is defined, so we must check this here.
 	 */
-	if (aa == ab && (
-		!mode_is_float(get_irn_mode(aa)) || proj_nr == pn_Cmp_Lt ||  proj_nr == pn_Cmp_Gt)
-		) { /* 1.: */
-
+	if (left == right && (!mode_is_float(mode) || pn_cmp == pn_Cmp_Lt ||  pn_cmp == pn_Cmp_Gt)) {
 		/* This is a trick with the bits used for encoding the Cmp
 		   Proj numbers, the following statement is not the same:
-		return new_tarval_from_long (proj_nr == pn_Cmp_Eq, mode_b) */
-		return new_tarval_from_long (proj_nr & pn_Cmp_Eq, mode_b);
+		return new_tarval_from_long(pn_cmp == pn_Cmp_Eq, mode_b) */
+		return new_tarval_from_long(pn_cmp & pn_Cmp_Eq, mode_b);
 	}
-	tarval *taa = value_of(aa);
-	tarval *tab = value_of(ab);
-	ir_mode *mode = get_irn_mode(aa);
+	tv_l = value_of(left);
+	tv_r = value_of(right);
 
-	/*
-	 * The predecessors of Cmp are target values.  We can evaluate
-	 * the Cmp.
-	 */
-	if ((taa != tarval_bad) && (tab != tarval_bad)) {
-		/* strange checks... */
-		pn_Cmp flags = tarval_cmp(taa, tab);
+	if ((tv_l != tarval_bad) && (tv_r != tarval_bad)) {
+		/*
+		 * The predecessors of Cmp are target values.  We can evaluate
+		 * the Cmp.
+		 */
+		pn_Cmp flags = tarval_cmp(tv_l, tv_r);
 		if (flags != pn_Cmp_False) {
-			return new_tarval_from_long (proj_nr & flags, mode_b);
+			return new_tarval_from_long (pn_cmp & flags, mode_b);
 		}
-	}
-	/* for integer values, we can check against MIN/MAX */
-	else if (mode_is_int(mode)) {
-		/* MIN <=/> x.  This results in true/false. */
-		if (taa == get_mode_min(mode)) {
-			/* a compare with the MIN value */
-			if (proj_nr == pn_Cmp_Le)
-				return get_tarval_b_true();
-			else if (proj_nr == pn_Cmp_Gt)
-				return get_tarval_b_false();
-		}
-		/* x >=/< MIN.  This results in true/false. */
-		else
-			if (tab == get_mode_min(mode)) {
-				/* a compare with the MIN value */
-				if (proj_nr == pn_Cmp_Ge)
-					return get_tarval_b_true();
-				else if (proj_nr == pn_Cmp_Lt)
-					return get_tarval_b_false();
-			}
-		/* MAX >=/< x.  This results in true/false. */
-			else if (taa == get_mode_max(mode)) {
-				if (proj_nr == pn_Cmp_Ge)
-					return get_tarval_b_true();
-				else if (proj_nr == pn_Cmp_Lt)
-					return get_tarval_b_false();
-			}
-		/* x <=/> MAX.  This results in true/false. */
-			else if (tab == get_mode_max(mode)) {
-				if (proj_nr == pn_Cmp_Le)
-					return get_tarval_b_true();
-				else if (proj_nr == pn_Cmp_Gt)
-					return get_tarval_b_false();
-			}
+	} else if (mode_is_int(mode)) {
+		/* for integer values, we can check against MIN/MAX */
+		pn_Cmp cmp_result;
 
-		pn_Cmp cmp_result = vrp_cmp(aa, ab);
+		if (tv_l == get_mode_min(mode)) {
+			/* MIN <=/> x.  This results in true/false. */
+			if (pn_cmp == pn_Cmp_Le)
+				return tarval_b_true;
+			else if (pn_cmp == pn_Cmp_Gt)
+				return tarval_b_false;
+		} else if (tv_r == get_mode_min(mode)) {
+			/* x >=/< MIN.  This results in true/false. */
+			if (pn_cmp == pn_Cmp_Ge)
+				return tarval_b_true;
+			else if (pn_cmp == pn_Cmp_Lt)
+				return tarval_b_false;
+		} else if (tv_l == get_mode_max(mode)) {
+			/* MAX >=/< x.  This results in true/false. */
+			if (pn_cmp == pn_Cmp_Ge)
+				return tarval_b_true;
+			else if (pn_cmp == pn_Cmp_Lt)
+				return tarval_b_false;
+		} else if (tv_r == get_mode_max(mode)) {
+			/* x <=/> MAX.  This results in true/false. */
+			if (pn_cmp == pn_Cmp_Le)
+				return tarval_b_true;
+			else if (pn_cmp == pn_Cmp_Gt)
+				return tarval_b_false;
+		}
+
+		cmp_result = vrp_cmp(left, right);
 		if (cmp_result != pn_Cmp_False) {
 			if (cmp_result == pn_Cmp_Lg) {
-				if( proj_nr == pn_Cmp_Eq) {
-				return get_tarval_b_false();
-				} else if(proj_nr == pn_Cmp_Lg) {
-					return get_tarval_b_true();
+				if (pn_cmp == pn_Cmp_Eq) {
+					return tarval_b_false;
+				} else if (pn_cmp == pn_Cmp_Lg) {
+					return tarval_b_true;
 				}
 			} else {
-				return new_tarval_from_long(cmp_result & proj_nr, mode_b);
+				return new_tarval_from_long(cmp_result & pn_cmp, mode_b);
 			}
 		}
-	}
-	/*
-	 * The predecessors are Allocs or (void*)(0) constants.  Allocs never
-	 * return NULL, they raise an exception.   Therefore we can predict
-	 * the Cmp result.
-	 */
-	else {
-		ir_node *aaa = skip_Proj(aa);
-		ir_node *aba = skip_Proj(ab);
+	} else if (mode_is_reference(mode)) {
+		/* pointer compare */
+		ir_node *s_l = skip_Proj(left);
+		ir_node *s_r = skip_Proj(right);
 
-		if (   (   (/* aa is ProjP and aaa is Alloc */
-						is_Proj(aa)
-						&& mode_is_reference(get_irn_mode(aa))
-						&& is_Alloc(aaa))
-					&& (   (/* ab is NULL */
-							mode_is_reference(get_irn_mode(ab))
-							&& tarval_is_null(tab))
-						|| (/* ab is other Alloc */
-							is_Proj(ab)
-							&& mode_is_reference(get_irn_mode(ab))
-							&& is_Alloc(aba)
-							&& (aaa != aba))))
-				|| (/* aa is NULL and aba is Alloc */
-					mode_is_reference(get_irn_mode(aa))
-					&& tarval_is_null(taa)
-					&& is_Proj(ab)
-					&& mode_is_reference(get_irn_mode(ab))
-					&& is_Alloc(aba)))
-			/* 3.: */
-			return new_tarval_from_long(proj_nr & pn_Cmp_Lg, mode_b);
+		if ((is_Alloc(s_l) && tarval_is_null(tv_r)) ||
+			(tarval_is_null(tv_l) && is_Alloc(s_r))) {
+			/*
+			 * The predecessors are Allocs and (void*)(0) constants. In Firm Allocs never
+			 * return NULL, they raise an exception. Therefore we can predict
+			 * the Cmp result.
+			 */
+			return new_tarval_from_long(pn_cmp & pn_Cmp_Lg, mode_b);
+		}
 	}
-	return computed_value_Cmp_Confirm(a, aa, ab, proj_nr);
+	return computed_value_Cmp_Confirm(cmp, left, right, pn_cmp);
 }  /* computed_value_Proj_Cmp */
 
 /**
