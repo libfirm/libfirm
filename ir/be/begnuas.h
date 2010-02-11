@@ -36,7 +36,8 @@ typedef enum section_t {
 	GAS_SECTION_DATA,   /**< data section - contains arbitrary data */
 	GAS_SECTION_RODATA, /**< rodata section - contains read-only data */
 	GAS_SECTION_BSS,    /**< bss section - contains uninitialized data */
-	GAS_SECTION_TLS,    /**< thread local storage section */
+	GAS_SECTION_TLS_DATA, /**< thread local storage section */
+	GAS_SECTION_TLS_BSS,  /**< thread local storage yero initialized */
 	GAS_SECTION_CONSTRUCTORS,   /**< ctors section */
 	GAS_SECTION_DESTRUCTORS,    /**< dtors section */
 	GAS_SECTION_CSTRING, /**< section for constant strings */
@@ -69,11 +70,6 @@ extern char             be_gas_elf_type_char;
 void be_gas_emit_decls(const be_main_env_t *main_env);
 
 /**
- * Emit an entity (the entities name or a block label)
- */
-void be_gas_emit_entity(ir_entity *entity);
-
-/**
  * Switch the current output section to the given out.
  *
  * @param section  the new output section
@@ -83,9 +79,17 @@ void be_gas_emit_switch_section(be_gas_section_t section);
 /**
  * emit assembler instructions necessary before starting function code
  */
-void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment);
+void be_gas_emit_function_prolog(const ir_entity *entity,
+                                 unsigned po2alignment);
 
-void be_gas_emit_function_epilog(ir_entity *entity);
+void be_gas_emit_function_epilog(const ir_entity *entity);
+
+/**
+ * emit ld_ident of an entity and performs additional mangling if necessary.
+ * (mangling is necessary for ir_visibility_private for example).
+ * Emits a block label for type_code entities.
+ */
+void be_gas_emit_entity(const ir_entity *entity);
 
 /**
  * Return the label prefix for labeled blocks.

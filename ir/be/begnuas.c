@@ -121,39 +121,31 @@ void be_gas_emit_switch_section(be_gas_section_t section)
 	current_section = section;
 }
 
-static void emit_entity_visibility(const ir_entity *entity)
+static void emit_visibility(const ir_entity *entity)
 {
-	ir_visibility visibility = get_entity_visibility(entity);
-	ir_linkage    linkage    = get_entity_linkage(entity);
-
-	if (visibility != ir_visibility_local) {
-		be_emit_cstring(".globl ");
-		be_emit_ident(get_entity_ld_ident(entity));
+	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
+		be_emit_cstring("\t.weak ");
+		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
-	}
-	if (linkage & IR_LINKAGE_WEAK) {
-		if (! (linkage & IR_LINKAGE_MERGE)) {
-			panic("Weak symbols only supported in combination with IR_LINKAGE_MERGE on this architecture");
-		}
-		be_emit_cstring(".weak ");
-		be_emit_ident(get_entity_ld_ident(entity));
+		/* Note: no need ot output .global after a .weak */
+	} else if (get_entity_visibility(entity) == ir_visibility_default) {
+		be_emit_cstring(".globl ");
+		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
 }
 
-void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
+void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 {
-	const char *name = get_entity_ld_name(entity);
-
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
 	/* write the begin line (makes the life easier for scripts parsing the
 	 * assembler) */
 	be_emit_write_line();
 	be_emit_cstring("# -- Begin  ");
-	be_emit_string(name);
+	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
 
@@ -168,12 +160,12 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
 		be_emit_irprintf("%u,%s,%u\n", po2alignment, fill_byte, maximum_skip);
 		be_emit_write_line();
 	}
-	emit_entity_visibility(entity);
+	emit_visibility(entity);
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_ELF:
 		be_emit_cstring("\t.type\t");
-		be_emit_string(name);
+		be_gas_emit_entity(entity);
 		be_emit_cstring(", ");
 		be_emit_char(be_gas_elf_type_char);
 		be_emit_cstring("function\n");
@@ -181,7 +173,7 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
 		break;
 	case OBJECT_FILE_FORMAT_COFF:
 		be_emit_cstring("\t.def\t");
-		be_emit_string(name);
+		be_gas_emit_entity(entity);
 		be_emit_cstring(";");
 		if (get_entity_visibility(entity) == ir_visibility_local) {
 			be_emit_cstring("\t.scl\t3;");
@@ -194,26 +186,24 @@ void be_gas_emit_function_prolog(ir_entity *entity, unsigned po2alignment)
 	case OBJECT_FILE_FORMAT_MACH_O:
 		break;
 	}
-	be_emit_string(name);
+	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 }
 
-void be_gas_emit_function_epilog(ir_entity *entity)
+void be_gas_emit_function_epilog(const ir_entity *entity)
 {
-	const char *name = get_entity_ld_name(entity);
-
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
-		be_emit_string(name);
+		be_gas_emit_entity(entity);
 		be_emit_cstring(", .-");
-		be_emit_string(name);
+		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
 
 	be_emit_cstring("# -- End  ");
-	be_emit_string(name);
+	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
 }
@@ -312,17 +302,6 @@ const char *be_gas_block_label_prefix(void)
 const char *be_gas_insn_label_prefix(void)
 {
 	return ".LE";
-}
-
-void be_gas_emit_entity(ir_entity *entity)
-{
-	if (entity->type == firm_code_type) {
-		ir_label_t label = get_entity_label(entity);
-		be_emit_string(be_gas_block_label_prefix());
-		be_emit_irprintf("%lu", label);
-	} else {
-		be_emit_ident(get_entity_ld_ident(entity));
-	}
 }
 
 /**
@@ -1276,6 +1255,21 @@ static void dump_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	}
 }
 
+void be_gas_emit_entity(const ir_entity *entity)
+{
+	if (entity->type == firm_code_type) {
+		ir_label_t label = get_entity_label(entity);
+		be_emit_string(be_gas_block_label_prefix());
+		be_emit_irprintf("%lu", label);
+		return;
+	}
+
+	if (get_entity_visibility(entity) == ir_visibility_private) {
+		be_emit_cstring(".L");
+	}
+	be_emit_ident(get_entity_ld_ident(entity));
+}
+
 /**
  * Dump a global entity.
  *
@@ -1289,6 +1283,7 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	unsigned          alignment  = get_effective_entity_alignment(ent);
 	be_gas_section_t  section    = determine_section(env, ent);
 	ir_visibility     visibility = get_entity_visibility(ent);
+	ir_linkage        linkage    = get_entity_linkage(ent);
 
 	/* we already emitted all methods. Except for the trampolines which
 	 * the assembler/linker generates */
@@ -1301,27 +1296,16 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 
 	be_dbg_variable(ent);
 
-	switch (visibility) {
-	case ir_visibility_external:
+	emit_visibility(ent);
+	if (visibility == ir_visibility_external) {
 		/* nothing to do for externally defined values */
 		return;
-	case ir_visibility_private:
-		/* mangle name so the assembler doesn't export the symbol
-		 * TODO: this is probably a bit broken, since the backends probably don't
-		 * mangle themselfes when outputting these symbols... */
-		ld_ident = id_mangle3(".L", ld_ident, "");
-		break;
-	case ir_visibility_local:
-	case ir_visibility_default:
-		/* nothing todo (leave the cases here to avoid compiler warnings) */
-		break;
 	}
 
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
 
-	if (section == GAS_SECTION_BSS &&
-			(get_entity_linkage(ent) & IR_LINKAGE_MERGE)) {
+	if (section == GAS_SECTION_BSS && (linkage & IR_LINKAGE_MERGE)) {
 		if (get_entity_visibility(ent) == ir_visibility_external) {
 			panic("merge link semantic not supported for extern entities");
 		}
@@ -1341,7 +1325,6 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	if (alignment > 1) {
 		emit_align(alignment);
 	}
-	emit_entity_visibility(ent);
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
 			&& be_gas_emit_types) {
 		be_emit_cstring("\t.type\t");

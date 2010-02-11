@@ -453,18 +453,9 @@ ir_visibility get_entity_visibility(const ir_entity *entity)
 	return entity->visibility;
 }
 
-static void verify_linkage(const ir_entity *entity)
-{
-	ir_linkage linkage = entity->linkage;
-	/* weak symbols can't really be constant, since someone else can always
-	 * exchange them */
-	assert(! ((linkage & IR_LINKAGE_CONSTANT) && (linkage & IR_LINKAGE_WEAK)));
-}
-
 void set_entity_linkage(ir_entity *entity, ir_linkage linkage)
 {
 	entity->linkage = linkage;
-	verify_linkage(entity);
 }
 
 ir_linkage (get_entity_linkage)(const ir_entity *entity)
@@ -475,13 +466,11 @@ ir_linkage (get_entity_linkage)(const ir_entity *entity)
 void add_entity_linkage(ir_entity *entity, ir_linkage linkage)
 {
 	entity->linkage |= linkage;
-	verify_linkage(entity);
 }
 
 void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 {
 	entity->linkage &= ~linkage;
-	verify_linkage(entity);
 }
 
 /* Checks if an entity is compiler generated */
