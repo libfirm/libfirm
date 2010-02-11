@@ -849,12 +849,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		be_free_birg(birg);
-
-        /* switched off due to statistics (statistic module needs all irgs) */
-#ifdef FIRM_STATISTICS
-		if (! stat_active)
-#endif /* FIRM_STATISTICS */
-			remove_irp_irg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
 	ir_profile_free();
