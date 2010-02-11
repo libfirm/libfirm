@@ -149,19 +149,6 @@ typedef enum {
 } ir_linkage;
 
 /**
- * The following are some common combinations of linkage types seen in the
- * C/C++ languages
- */
-enum ir_common_linkages {
-	/** C "common" symbol */
-	IR_LINKAGE_COMMON  = IR_LINKAGE_MERGE,
-	/** C "weak" symbol */
-	IR_LINKAGE_WEAKSYM = IR_LINKAGE_WEAK | IR_LINKAGE_MERGE,
-	/** C++ comdat code */
-	IR_LINKAGE_COMDAT = IR_LINKAGE_GARBAGE_COLLECT | IR_LINKAGE_GARBAGE_COLLECT
-};
-
-/**
  * Return the visibility class of an entity
  */
 ir_visibility get_entity_visibility(const ir_entity *entity);
