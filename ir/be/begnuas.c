@@ -78,7 +78,7 @@ static const char *get_section_name(be_gas_section_t section)
 		{ /* OBJECT_FILE_FORMAT_COFF */
 			".section\t.text",
 			".section\t.data",
-			".section .rdata,\"dr\"",
+			".section\t.rdata,\"dr\"",
 			".section\t.bss",
 			".section\t.tdata,\"awT\",@progbits",
 			".section\t.tbss,\"awT\",@nobits",
@@ -1285,14 +1285,20 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	ir_visibility     visibility = get_entity_visibility(ent);
 	ir_linkage        linkage    = get_entity_linkage(ent);
 
-	/* we already emitted all methods. Except for the trampolines which
-	 * the assembler/linker generates */
-	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
-		return;
-	}
 	/* block labels are already emittet in the code */
 	if (type == firm_code_type)
 		return;
+
+	/* we already emitted all methods. Except for the trampolines which
+	 * the assembler/linker generates */
+	if (is_Method_type(type) && section != GAS_SECTION_PIC_TRAMPOLINES) {
+		/* functions with graph are already emitted with
+		 * be_gas_emit_function_prolog */
+		if (get_entity_irg(ent) == NULL) {
+			emit_visibility(ent);
+		}
+		return;
+	}
 
 	be_dbg_variable(ent);
 
