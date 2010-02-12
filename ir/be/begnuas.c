@@ -52,85 +52,322 @@ char                  be_gas_elf_type_char      = '@';
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 
 /**
- * Return the pseudo-instruction to be issued for a section switch
- * depending on the current flavour.
- *
- * @param section  the section to switch to
- *
- * @return  the pseudo-instruction
+ * An environment containing all needed dumper data.
+ * Currently we create the file completely in memory first, then
+ * write it to the disk. This is an artifact from the old C-generating backend
+ * and even there NOT needed. So we might change it in the future.
  */
-static const char *get_section_name(be_gas_section_t section)
+typedef struct _be_gas_decl_env {
+	be_gas_section_t     section;
+	const be_main_env_t *main_env;
+} be_gas_decl_env_t;
+
+static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
-	static const char *text[OBJECT_FILE_FORMAT_LAST+1][GAS_SECTION_LAST+1] = {
-		{ /* OBJECT_FILE_FORMAT_ELF */
-			".section\t.text",
-			".section\t.data",
-			".section\t.rodata",
-			".section\t.bss",
-			".section\t.tdata,\"awT\",@progbits",
-			".section\t.tbss,\"awT\",@nobits",
-			".section\t.ctors,\"aw\",@progbits",
-			".section\t.dtors,\"aw\",@progbits",
-			NULL, /* no cstring section */
-			NULL,
-			NULL
-		},
-		{ /* OBJECT_FILE_FORMAT_COFF */
-			".section\t.text",
-			".section\t.data",
-			".section\t.rdata,\"dr\"",
-			".section\t.bss",
-			".section\t.tdata,\"awT\",@progbits",
-			".section\t.tbss,\"awT\",@nobits",
-			".section\t.ctors,\"w\"",
-			".section\t.dtors,\"w\"",
-			NULL,
-			NULL,
-			NULL
-		},
-		{ /* OBJECT_FILE_FORMAT_MACH_O */
-			".text",
-			".data",
-			".const",
-			".data",
-			NULL,             /* TLS is not supported on Mach-O */
-			NULL,             /* TLS is not supported on Mach-O */
-			".mod_init_func",
-			".mod_term_func",
-			".cstring",
-			".section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5",
-			".section\t__IMPORT,__pointers,non_lazy_symbol_pointers"
-		}
+	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
+	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
+	static const char *basename[] = {
+		"text", "data", "rodata", "bss", "ctors", "dtors"
+	};
+	static const char *type[] = {
+		"", "progbits", "progbits", "nobits", "init_array", "fini_array"
 	};
 
-	assert((int) be_gas_object_file_format >= 0
-			&& be_gas_object_file_format <= OBJECT_FILE_FORMAT_LAST);
-	assert((int) section >= 0 && section <= GAS_SECTION_LAST);
-	return text[be_gas_object_file_format][section];
+	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
+		return;
+	current_section = section;
+
+	/* shortforms */
+	if (flags == 0) {
+		switch (base) {
+		case GAS_SECTION_TEXT:
+			be_emit_cstring("\t.text\n");
+			be_emit_write_line();
+			return;
+		case GAS_SECTION_DATA:
+			be_emit_cstring("\t.data\n");
+			be_emit_write_line();
+			return;
+		case GAS_SECTION_RODATA:
+			be_emit_cstring("\t.section\t.rodata\n");
+			be_emit_write_line();
+			return;
+		case GAS_SECTION_BSS:
+			be_emit_cstring("\t.bss\n");
+			be_emit_write_line();
+			return;
+		default:
+			break;
+		}
+	}
+
+	assert(base < sizeof(basename)/sizeof(basename[0]));
+	be_emit_cstring("\t.section\t.");
+	/* section name */
+	if (flags & GAS_SECTION_FLAG_TLS)
+		be_emit_char('t');
+	be_emit_string(basename[base]);
+	if (flags & GAS_SECTION_FLAG_COMDAT) {
+		be_emit_char('.');
+		be_gas_emit_entity(entity);
+	}
+
+	/* section flags */
+	be_emit_cstring(",\"");
+	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
+		be_emit_char('a');
+	if (base != GAS_SECTION_RODATA)
+		be_emit_char('w');
+	if (flags & GAS_SECTION_FLAG_TLS)
+		be_emit_char('T');
+	if (flags & GAS_SECTION_FLAG_COMDAT)
+		be_emit_char('G');
+	be_emit_cstring("\",");
+	be_emit_char(be_gas_elf_type_char);
+	be_emit_string(type[base]);
+
+	if (flags & GAS_SECTION_FLAG_COMDAT) {
+		be_emit_char(',');
+		be_gas_emit_entity(entity);
+		be_emit_cstring(",comdat");
+	}
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 void be_gas_emit_switch_section(be_gas_section_t section)
 {
-	if (current_section == section)
-		return;
+	/* you have to produce a switch_section call with entity manually
+	 * for comdat sections */
+	assert( !(section & GAS_SECTION_FLAG_COMDAT));
 
-	be_emit_char('\t');
-	be_emit_string(get_section_name(section));
+	emit_section(section, NULL);
+}
+
+static int initializer_is_string_const(const ir_initializer_t *initializer)
+{
+	size_t i, len;
+	int found_printable = 0;
+
+	if (initializer->kind != IR_INITIALIZER_COMPOUND)
+		return 0;
+
+	len = initializer->compound.n_initializers;
+	if (len < 1)
+		return 0;
+	for (i = 0; i < len; ++i) {
+		int               c;
+		tarval           *tv;
+		ir_mode          *mode;
+		ir_initializer_t *sub_initializer
+			= initializer->compound.initializers[i];
+
+		if (sub_initializer->kind != IR_INITIALIZER_TARVAL)
+			return 0;
+
+		tv   = sub_initializer->tarval.value;
+		mode = get_tarval_mode(tv);
+
+		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
+			return 0;
+
+		c = get_tarval_long(tv);
+		if (isgraph(c) || isspace(c))
+			found_printable = 1;
+		else if (c != 0)
+			return 0;
+
+		if (i == len - 1 && c != '\0')
+			return 0;
+	}
+
+	return found_printable;
+}
+
+static bool initializer_is_null(const ir_initializer_t *initializer)
+{
+	switch (initializer->kind) {
+	case IR_INITIALIZER_NULL:
+		return true;
+	case IR_INITIALIZER_TARVAL: {
+		tarval *tv = initializer->tarval.value;
+		return tarval_is_null(tv);
+	}
+	case IR_INITIALIZER_CONST: {
+		ir_node *value = initializer->consti.value;
+		if (!is_Const(value))
+			return false;
+		return is_Const_null(value);
+	}
+	case IR_INITIALIZER_COMPOUND: {
+		size_t i;
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
+			ir_initializer_t *subinitializer
+				= initializer->compound.initializers[i];
+			if (!initializer_is_null(subinitializer))
+				return false;
+		}
+		return true;
+	}
+	}
+	panic("invalid initializer in initializer_is_null");
+}
+
+/**
+ * Determine if an entity is a string constant
+ * @param ent The entity
+ * @return 1 if it is a string constant, 0 otherwise
+ */
+static int entity_is_string_const(const ir_entity *ent)
+{
+	ir_type *type, *element_type;
+	ir_mode *mode;
+	int i, c, n;
+
+	type = get_entity_type(ent);
+
+	/* if it's an array */
+	if (!is_Array_type(type))
+		return 0;
+
+	element_type = get_array_element_type(type);
+
+	/* and the array's element type is primitive */
+	if (!is_Primitive_type(element_type))
+		return 0;
+
+	/* and the mode of the element type is an int of
+	 * the same size as the byte mode */
+	mode = get_type_mode(element_type);
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
+		return 0;
+
+	if (ent->initializer != NULL) {
+		return initializer_is_string_const(ent->initializer);
+	} else if (entity_has_compound_ent_values(ent)) {
+		int found_printable = 0;
+		/* if it contains only printable chars and a 0 at the end */
+		n = get_compound_ent_n_values(ent);
+		for (i = 0; i < n; ++i) {
+			ir_node *irn = get_compound_ent_value(ent, i);
+			if (! is_Const(irn))
+				return 0;
+
+			c = (int) get_tarval_long(get_Const_tarval(irn));
+
+			if (isgraph(c) || isspace(c))
+				found_printable = 1;
+			else if (c != 0)
+				return 0;
+
+			if (i == n - 1 && c != '\0')
+				return 0;
+		}
+		return found_printable;
+	}
+
+	return 0;
+}
+
+static bool entity_is_null(const ir_entity *entity)
+{
+	if (entity->initializer != NULL) {
+		return initializer_is_null(entity->initializer);
+	} else if (entity_has_compound_ent_values(entity)) {
+		/* I'm too lazy to implement this case as compound graph paths will be
+		 * remove anyway in the future */
+	}
+	/* uninitialized, NULL is fine */
+	return true;
+}
+
+static bool is_comdat(const ir_entity *entity)
+{
+	ir_linkage linkage = get_entity_linkage(entity);
+	return (linkage & IR_LINKAGE_MERGE)
+		&& (linkage & IR_LINKAGE_GARBAGE_COLLECT);
+}
+
+static be_gas_section_t determine_basic_section(const ir_entity *entity)
+{
+	ir_linkage linkage;
+
+	if (is_method_entity(entity))
+		return GAS_SECTION_TEXT;
+
+	linkage = get_entity_linkage(entity);
+	if (linkage & IR_LINKAGE_CONSTANT) {
+		/* mach-o is the only one with a cstring section */
+		if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
+				&& entity_is_string_const(entity))
+			return GAS_SECTION_CSTRING;
+
+		return GAS_SECTION_RODATA;
+	}
+	if (entity_is_null(entity))
+		return GAS_SECTION_BSS;
+
+	return GAS_SECTION_DATA;
+}
+
+static be_gas_section_t determine_section(be_gas_decl_env_t *env,
+                                          const ir_entity *entity)
+{
+	ir_type *owner = get_entity_owner(entity);
+
+	if (owner == get_segment_type(IR_SEGMENT_GLOBAL)) {
+		be_gas_section_t section = determine_basic_section(entity);
+		if (is_comdat(entity))
+			section |= GAS_SECTION_FLAG_COMDAT;
+		return section;
+	} else if (env != NULL && owner == env->main_env->pic_symbols_type) {
+		return GAS_SECTION_PIC_SYMBOLS;
+	} else if (env != NULL && owner == env->main_env->pic_trampolines_type) {
+		return GAS_SECTION_PIC_TRAMPOLINES;
+	} else if (owner == get_segment_type(IR_SEGMENT_CONSTRUCTORS)) {
+		return GAS_SECTION_CONSTRUCTORS;
+	} else if (owner == get_segment_type(IR_SEGMENT_DESTRUCTORS)) {
+		return GAS_SECTION_DESTRUCTORS;
+	} else if (owner == get_segment_type(IR_SEGMENT_THREAD_LOCAL)) {
+		be_gas_section_t section = determine_basic_section(entity);
+		if (is_comdat(entity))
+			section |= GAS_SECTION_FLAG_COMDAT;
+
+		return section | GAS_SECTION_FLAG_TLS;
+	}
+
+	panic("Couldn't determine section for %+F?!?", entity);
+}
+
+static void emit_weak(const ir_entity *entity)
+{
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		be_emit_cstring("\t.weak_reference ");
+	} else {
+		be_emit_cstring("\t.weak ");
+	}
+	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
-	current_section = section;
 }
 
 static void emit_visibility(const ir_entity *entity)
 {
+	ir_linkage linkage = get_entity_linkage(entity);
+
 	if (get_entity_linkage(entity) & IR_LINKAGE_WEAK) {
-		be_emit_cstring("\t.weak ");
+		emit_weak(entity);
+		/* Note: .weak seems to imply .globl so no need to output .globl */
+	} else if (get_entity_visibility(entity) == ir_visibility_default) {
+		be_emit_cstring(".globl ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
-		/* Note: no need ot output .global after a .weak */
-	} else if (get_entity_visibility(entity) == ir_visibility_default) {
-		be_emit_cstring(".globl ");
+	}
+
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
+			&& (linkage & IR_LINKAGE_HIDDEN_USER)) {
+		be_emit_cstring("\t.no_dead_strip ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
 		be_emit_write_line();
@@ -139,7 +376,8 @@ static void emit_visibility(const ir_entity *entity)
 
 void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 {
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	be_gas_section_t section = determine_section(NULL, entity);
+	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
 	 * assembler) */
@@ -208,17 +446,6 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 	be_emit_write_line();
 }
 
-/**
- * An environment containing all needed dumper data.
- * Currently we create the file completely in memory first, then
- * write it to the disk. This is an artifact from the old C-generating backend
- * and even there NOT needed. So we might change it in the future.
- */
-typedef struct _be_gas_decl_env {
-	be_gas_section_t     section;
-	const be_main_env_t *main_env;
-} be_gas_decl_env_t;
-
 /************************************************************************/
 
 /**
@@ -227,7 +454,7 @@ typedef struct _be_gas_decl_env {
  * @param tv     the tarval
  * @param bytes  the width of the tarvals value in bytes
  */
-static void dump_arith_tarval(tarval *tv, int bytes)
+static void emit_arith_tarval(tarval *tv, int bytes)
 {
 	switch (bytes) {
 	case 1:
@@ -359,7 +586,7 @@ static tarval *get_atomic_init_tv(ir_node *init)
  * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
+static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
@@ -370,18 +597,18 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 	switch (get_irn_opcode(init)) {
 	case iro_Cast:
-		do_dump_atomic_init(env, get_Cast_op(init));
+		do_emit_atomic_init(env, get_Cast_op(init));
 		return;
 
 	case iro_Conv:
-		do_dump_atomic_init(env, get_Conv_op(init));
+		do_emit_atomic_init(env, get_Conv_op(init));
 		return;
 
 	case iro_Const:
 		tv = get_Const_tarval(init);
 
 		/* it's a arithmetic value */
-		dump_arith_tarval(tv, bytes);
+		emit_arith_tarval(tv, bytes);
 		return;
 
 	case iro_SymConst:
@@ -410,11 +637,11 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 		case symconst_enum_const:
 			tv = get_enumeration_value(get_SymConst_enum(init));
-			dump_arith_tarval(tv, bytes);
+			emit_arith_tarval(tv, bytes);
 			break;
 
 		default:
-			assert(!"dump_atomic_init(): don't know how to init from this SymConst");
+			assert(!"emit_atomic_init(): don't know how to init from this SymConst");
 		}
 		return;
 
@@ -422,27 +649,27 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '+' to work");
 		}
-		do_dump_atomic_init(env, get_Add_left(init));
+		do_emit_atomic_init(env, get_Add_left(init));
 		be_emit_cstring(" + ");
-		do_dump_atomic_init(env, get_Add_right(init));
+		do_emit_atomic_init(env, get_Add_right(init));
 		return;
 
 	case iro_Sub:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '-' to work");
 		}
-		do_dump_atomic_init(env, get_Sub_left(init));
+		do_emit_atomic_init(env, get_Sub_left(init));
 		be_emit_cstring(" - ");
-		do_dump_atomic_init(env, get_Sub_right(init));
+		do_emit_atomic_init(env, get_Sub_right(init));
 		return;
 
 	case iro_Mul:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '*' to work");
 		}
-		do_dump_atomic_init(env, get_Mul_left(init));
+		do_emit_atomic_init(env, get_Mul_left(init));
 		be_emit_cstring(" * ");
-		do_dump_atomic_init(env, get_Mul_right(init));
+		do_emit_atomic_init(env, get_Mul_right(init));
 		return;
 
 	case iro_Unknown:
@@ -450,7 +677,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		return;
 
 	default:
-		panic("dump_atomic_init(): unsupported IR-node %+F", init);
+		panic("emit_atomic_init(): unsupported IR-node %+F", init);
 	}
 }
 
@@ -459,7 +686,7 @@ static void do_dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
  *
  * @param size  the size in bytes
  */
-static void dump_size_type(size_t size)
+static void emit_size_type(size_t size)
 {
 	switch (size) {
 	case 1:
@@ -495,13 +722,13 @@ static void dump_size_type(size_t size)
  * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
+static void emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
 
-	dump_size_type(bytes);
-	do_dump_atomic_init(env, init);
+	emit_size_type(bytes);
+	do_emit_atomic_init(env, init);
 	be_emit_char('\n');
 	be_emit_write_line();
 }
@@ -510,150 +737,13 @@ static void dump_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 /* Routines to dump global variables                                    */
 /************************************************************************/
 
-static int initializer_is_string_const(const ir_initializer_t *initializer)
-{
-	size_t i, len;
-	int found_printable = 0;
-
-	if (initializer->kind != IR_INITIALIZER_COMPOUND)
-		return 0;
-
-	len = initializer->compound.n_initializers;
-	if (len < 1)
-		return 0;
-	for (i = 0; i < len; ++i) {
-		int               c;
-		tarval           *tv;
-		ir_mode          *mode;
-		ir_initializer_t *sub_initializer
-			= initializer->compound.initializers[i];
-
-		if (sub_initializer->kind != IR_INITIALIZER_TARVAL)
-			return 0;
-
-		tv   = sub_initializer->tarval.value;
-		mode = get_tarval_mode(tv);
-
-		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
-			return 0;
-
-		c = get_tarval_long(tv);
-		if (isgraph(c) || isspace(c))
-			found_printable = 1;
-		else if (c != 0)
-			return 0;
-
-		if (i == len - 1 && c != '\0')
-			return 0;
-	}
-
-	return found_printable;
-}
-
-/**
- * Determine if an entity is a string constant
- * @param ent The entity
- * @return 1 if it is a string constant, 0 otherwise
- */
-static int ent_is_string_const(const ir_entity *ent)
-{
-	ir_type *type, *element_type;
-	ir_mode *mode;
-	int i, c, n;
-
-	type = get_entity_type(ent);
-
-	/* if it's an array */
-	if (!is_Array_type(type))
-		return 0;
-
-	element_type = get_array_element_type(type);
-
-	/* and the array's element type is primitive */
-	if (!is_Primitive_type(element_type))
-		return 0;
-
-	/* and the mode of the element type is an int of
-	 * the same size as the byte mode */
-	mode = get_type_mode(element_type);
-	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
-		return 0;
-
-	if (ent->initializer != NULL) {
-		return initializer_is_string_const(ent->initializer);
-	} else if (entity_has_compound_ent_values(ent)) {
-		int found_printable = 0;
-		/* if it contains only printable chars and a 0 at the end */
-		n = get_compound_ent_n_values(ent);
-		for (i = 0; i < n; ++i) {
-			ir_node *irn = get_compound_ent_value(ent, i);
-			if (! is_Const(irn))
-				return 0;
-
-			c = (int) get_tarval_long(get_Const_tarval(irn));
-
-			if (isgraph(c) || isspace(c))
-				found_printable = 1;
-			else if (c != 0)
-				return 0;
-
-			if (i == n - 1 && c != '\0')
-				return 0;
-		}
-		return found_printable;
-	}
-
-	return 0;
-}
-
-static bool initializer_is_null(const ir_initializer_t *initializer)
-{
-	switch (initializer->kind) {
-	case IR_INITIALIZER_NULL:
-		return true;
-	case IR_INITIALIZER_TARVAL: {
-		tarval *tv = initializer->tarval.value;
-		return tarval_is_null(tv);
-	}
-	case IR_INITIALIZER_CONST: {
-		ir_node *value = initializer->consti.value;
-		if (!is_Const(value))
-			return false;
-		return is_Const_null(value);
-	}
-	case IR_INITIALIZER_COMPOUND: {
-		size_t i;
-		for (i = 0; i < initializer->compound.n_initializers; ++i) {
-			ir_initializer_t *subinitializer
-				= initializer->compound.initializers[i];
-			if (!initializer_is_null(subinitializer))
-				return false;
-		}
-		return true;
-	}
-	}
-	panic("invalid initializer in initializer_is_null");
-}
-
-static bool entity_is_null(const ir_entity *entity)
-{
-	if (entity->initializer != NULL) {
-		return initializer_is_null(entity->initializer);
-	} else if (entity_has_compound_ent_values(entity)) {
-		/* I'm too lazy to implement this case as compound graph paths will be
-		 * remove anyway in the future */
-	}
-	/* uninitialized, NULL is fine */
-	return true;
-}
-
 /**
  * Dump a string constant.
  * No checks are made!!
  *
  * @param ent  The entity to dump.
  */
-static void dump_string_cst(const ir_entity *ent)
+static void emit_string_cst(const ir_entity *ent)
 {
 	int      i, len;
 	int      output_len;
@@ -703,7 +793,7 @@ static void dump_string_cst(const ir_entity *ent)
 	}
 }
 
-static void dump_string_initializer(const ir_initializer_t *initializer)
+static void emit_string_initializer(const ir_initializer_t *initializer)
 {
 	size_t i, len;
 
@@ -806,7 +896,7 @@ static normal_or_bitfield *glob_vals;
 static size_t              max_vals;
 #endif
 
-static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
+static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
                           const ir_initializer_t *initializer, ir_type *type)
 {
 	unsigned char  last_bits = 0;
@@ -857,7 +947,7 @@ static void dump_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	}
 }
 
-static void dump_ir_initializer(normal_or_bitfield *vals,
+static void emit_ir_initializer(normal_or_bitfield *vals,
                                 const ir_initializer_t *initializer,
                                 ir_type *type)
 {
@@ -908,7 +998,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 				ir_initializer_t *sub_initializer
 					= get_initializer_compound_value(initializer, i);
 
-				dump_ir_initializer(vals, sub_initializer, element_type);
+				emit_ir_initializer(vals, sub_initializer, element_type);
 
 				vals += skip;
 			}
@@ -935,13 +1025,13 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 					if (offset_bits != 0 ||
 						(value_len != 8 && value_len != 16 && value_len != 32
 						 && value_len != 64)) {
-						dump_bitfield(&vals[offset], offset_bits,
+						emit_bitfield(&vals[offset], offset_bits,
 						              sub_initializer, subtype);
 						continue;
 					}
 				}
 
-				dump_ir_initializer(&vals[offset], sub_initializer, subtype);
+				emit_ir_initializer(&vals[offset], sub_initializer, subtype);
 			}
 		}
 
@@ -951,7 +1041,7 @@ static void dump_ir_initializer(normal_or_bitfield *vals,
 	panic("invalid ir_initializer kind found");
 }
 
-static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
+static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->initializer;
 	ir_type                *type;
@@ -960,7 +1050,7 @@ static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	size_t                  k;
 
 	if (initializer_is_string_const(initializer)) {
-		dump_string_initializer(initializer);
+		emit_string_initializer(initializer);
 		return;
 	}
 
@@ -981,7 +1071,7 @@ static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	max_vals  = size;
 #endif
 
-	dump_ir_initializer(vals, initializer, type);
+	emit_ir_initializer(vals, initializer, type);
 
 	/* now write values sorted */
 	for (k = 0; k < size; ) {
@@ -989,7 +1079,7 @@ static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 		int elem_size = 1;
 		if (vals[k].kind == NORMAL) {
 			if (vals[k].v.value != NULL) {
-				dump_atomic_init(env, vals[k].v.value);
+				emit_atomic_init(env, vals[k].v.value);
 				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
 	 		} else {
 	 			elem_size = 0;
@@ -1001,8 +1091,8 @@ static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 			assert(tv != NULL);
 
 			elem_size = size;
-			dump_size_type(size);
-			dump_arith_tarval(tv, size);
+			emit_size_type(size);
+			emit_arith_tarval(tv, size);
 			be_emit_char('\n');
 			be_emit_write_line();
 		} else {
@@ -1026,15 +1116,15 @@ static void dump_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	xfree(vals);
 }
 
-static void dump_compound_graph_init(be_gas_decl_env_t *env,
+static void emit_compound_graph_init(be_gas_decl_env_t *env,
                                      const ir_entity *ent)
 {
 	normal_or_bitfield *vals;
 	int i, j, n;
 	unsigned k, last_ofs;
 
-	if (ent_is_string_const(ent)) {
-		dump_string_cst(ent);
+	if (entity_is_string_const(ent)) {
+		emit_string_cst(ent);
 		return;
 	}
 
@@ -1110,7 +1200,7 @@ static void dump_compound_graph_init(be_gas_decl_env_t *env,
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
 			if (vals[k].v.value != NULL) {
-				dump_atomic_init(env, vals[k].v.value);
+				emit_atomic_init(env, vals[k].v.value);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 			} else {
 				space = 1;
@@ -1153,58 +1243,13 @@ static unsigned get_effective_entity_alignment(const ir_entity *entity)
 	return alignment;
 }
 
-static be_gas_section_t determine_section(be_gas_decl_env_t *env,
-                                          const ir_entity *entity)
-{
-	ir_type *owner = get_entity_owner(entity);
-
-	if (owner == get_segment_type(IR_SEGMENT_GLOBAL)) {
-		ir_linkage linkage;
-		if (is_method_entity(entity))
-			return GAS_SECTION_TEXT;
-
-		linkage = get_entity_linkage(entity);
-		if (linkage & IR_LINKAGE_CONSTANT) {
-			/* mach-o is the only one with a cstring section */
-			if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-					&& ent_is_string_const(entity))
-				return GAS_SECTION_CSTRING;
-
-			return GAS_SECTION_RODATA;
-		}
-		if (entity_is_null(entity))
-			return GAS_SECTION_BSS;
-
-		return GAS_SECTION_DATA;
-	} else if (owner == env->main_env->pic_symbols_type) {
-		return GAS_SECTION_PIC_SYMBOLS;
-	} else if (owner == env->main_env->pic_trampolines_type) {
-		return GAS_SECTION_PIC_TRAMPOLINES;
-	} else if (owner == get_segment_type(IR_SEGMENT_CONSTRUCTORS)) {
-		return GAS_SECTION_CONSTRUCTORS;
-	} else if (owner == get_segment_type(IR_SEGMENT_DESTRUCTORS)) {
-		return GAS_SECTION_DESTRUCTORS;
-	} else if (owner == get_segment_type(IR_SEGMENT_THREAD_LOCAL)) {
-		ir_linkage linkage = get_entity_linkage(entity);
-		if (linkage & IR_LINKAGE_MERGE) {
-			panic("IR_LINKAGE_MERGE not supported for THREAD_LOCAL entities");
-		}
-
-		if (entity_is_null(entity)) {
-			return GAS_SECTION_TLS_BSS;
-		}
-		return GAS_SECTION_TLS_DATA;
-	}
-
-	panic("Couldn't determine section for %+F?!?", entity);
-}
-
 static void emit_common(const ir_entity *entity)
 {
 	const char    *name       = get_entity_ld_name(entity);
 	unsigned       size       = get_type_size_bytes(get_entity_type(entity));
 	unsigned       alignment  = get_effective_entity_alignment(entity);
 	ir_visibility  visibility = get_entity_visibility(entity);
+	ir_linkage     linkage    = get_entity_linkage(entity);
 
 	if (visibility == ir_visibility_local
 			|| visibility == ir_visibility_private) {
@@ -1214,6 +1259,9 @@ static void emit_common(const ir_entity *entity)
 		 */
 		be_emit_irprintf("\t.local %s\n", name);
 		be_emit_write_line();
+	}
+	if (linkage & IR_LINKAGE_WEAK) {
+		emit_weak(entity);
 	}
 
 	switch (be_gas_object_file_format) {
@@ -1234,7 +1282,7 @@ static void emit_common(const ir_entity *entity)
 	panic("invalid object file format");
 }
 
-static void dump_indirect_symbol(const ir_entity *entity, be_gas_section_t section)
+static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t section)
 {
 	/* we can only do PIC code on macho so far */
 	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
@@ -1277,7 +1325,7 @@ void be_gas_emit_entity(const ir_entity *entity)
  * @param env  the gas output environment
  * @param ent  the entity to be dumped
  */
-static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
+static void emit_global(be_gas_decl_env_t *env, const ir_entity *ent)
 {
 	ir_type          *type       = get_entity_type(ent);
 	ident            *ld_ident   = get_entity_ld_ident(ent);
@@ -1303,6 +1351,14 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 
 	be_dbg_variable(ent);
 
+	if (section == GAS_SECTION_BSS && (linkage & IR_LINKAGE_MERGE)) {
+		if (get_entity_visibility(ent) == ir_visibility_external) {
+			panic("merge link semantic not supported for extern entities");
+		}
+		emit_common(ent);
+		return;
+	}
+
 	emit_visibility(ent);
 	if (visibility == ir_visibility_external) {
 		/* nothing to do for externally defined values */
@@ -1312,19 +1368,11 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 	if (!is_po2(alignment))
 		panic("alignment not a power of 2");
 
-	if (section == GAS_SECTION_BSS && (linkage & IR_LINKAGE_MERGE)) {
-		if (get_entity_visibility(ent) == ir_visibility_external) {
-			panic("merge link semantic not supported for extern entities");
-		}
-		emit_common(ent);
-		return;
-	}
-
-	be_gas_emit_switch_section(section);
+	emit_section(section, ent);
 
 	if (section == GAS_SECTION_PIC_TRAMPOLINES
 			|| section == GAS_SECTION_PIC_SYMBOLS) {
-		dump_indirect_symbol(ent, section);
+		emit_indirect_symbol(ent, section);
 		return;
 	}
 
@@ -1353,10 +1401,10 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
 		be_emit_irprintf("\t.zero %u\n", get_type_size_bytes(type));
 		be_emit_write_line();
 	} else if(entity_has_compound_ent_values(ent)) {
-		dump_compound_graph_init(env, ent);
+		emit_compound_graph_init(env, ent);
 	} else {
 		assert(ent->initializer != NULL);
-		dump_initializer(env, ent);
+		emit_initializer(env, ent);
 	}
 }
 
@@ -1366,13 +1414,13 @@ static void dump_global(be_gas_decl_env_t *env, const ir_entity *ent)
  * @param gt                a global like type, either the global or the TLS one
  * @param env               an environment
  */
-static void be_gas_dump_globals(ir_type *gt, be_gas_decl_env_t *env)
+static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 {
 	int i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
-		dump_global(env, ent);
+		emit_global(env, ent);
 	}
 }
 
@@ -1388,12 +1436,12 @@ void be_gas_emit_decls(const be_main_env_t *main_env)
 	env.main_env = main_env;
 	env.section  = (be_gas_section_t) -1;
 
-	be_gas_dump_globals(get_glob_type(), &env);
-	be_gas_dump_globals(get_tls_type(), &env);
-	be_gas_dump_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env);
-	be_gas_dump_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env);
-	be_gas_dump_globals(main_env->pic_symbols_type, &env);
-	be_gas_dump_globals(main_env->pic_trampolines_type, &env);
+	be_gas_emit_globals(get_glob_type(), &env);
+	be_gas_emit_globals(get_tls_type(), &env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_CONSTRUCTORS), &env);
+	be_gas_emit_globals(get_segment_type(IR_SEGMENT_DESTRUCTORS), &env);
+	be_gas_emit_globals(main_env->pic_symbols_type, &env);
+	be_gas_emit_globals(main_env->pic_trampolines_type, &env);
 
 	/**
 	 * ".subsections_via_symbols marks object files which are OK to divide

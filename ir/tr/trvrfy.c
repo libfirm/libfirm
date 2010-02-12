@@ -452,8 +452,8 @@ int tr_vrfy(void)
 		/* this is odd and should not be allowed I think */
 		ASSERT_AND_RET(!is_method_entity(entity),
 		               "method in THREAD_LOCAL segment", 1);
-		ASSERT_AND_RET(!(get_entity_linkage(entity) & IR_LINKAGE_MERGE),
-		               "IR_LINKAGE_MERGE currently not support for thread locals", 1);
+		ASSERT_AND_RET(! (get_entity_linkage(entity) & IR_LINKAGE_CONSTANT),
+		               "thread locals must not be constant", 1);
 	}
 
 	return res;

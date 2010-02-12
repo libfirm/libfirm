@@ -31,19 +31,21 @@
 #include "be.h"
 #include "beemitter.h"
 
-typedef enum section_t {
-	GAS_SECTION_TEXT,   /**< text section - contains program code */
-	GAS_SECTION_DATA,   /**< data section - contains arbitrary data */
-	GAS_SECTION_RODATA, /**< rodata section - contains read-only data */
-	GAS_SECTION_BSS,    /**< bss section - contains uninitialized data */
-	GAS_SECTION_TLS_DATA, /**< thread local storage section */
-	GAS_SECTION_TLS_BSS,  /**< thread local storage yero initialized */
-	GAS_SECTION_CONSTRUCTORS,   /**< ctors section */
-	GAS_SECTION_DESTRUCTORS,    /**< dtors section */
-	GAS_SECTION_CSTRING, /**< section for constant strings */
+typedef enum {
+	GAS_SECTION_TEXT,            /**< text section - program code */
+	GAS_SECTION_DATA,            /**< data section - arbitrary data */
+	GAS_SECTION_RODATA,          /**< rodata section - read-only data */
+	GAS_SECTION_BSS,             /**< bss section - zero initialized data */
+	GAS_SECTION_CONSTRUCTORS,    /**< ctors section */
+	GAS_SECTION_DESTRUCTORS,     /**< dtors section */
+	GAS_SECTION_CSTRING,         /**< section for constant strings */
 	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
 	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */
-	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS
+	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS,
+	GAS_SECTION_TYPE_MASK    = 0xFF,
+
+	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
+	GAS_SECTION_FLAG_COMDAT  = 1 << 9   /**< thread local version of _BSS */
 } be_gas_section_t;
 
 typedef enum object_file_format_t {
