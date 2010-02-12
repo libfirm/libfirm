@@ -110,7 +110,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		"text", "data", "rodata", "bss", "ctors", "dtors"
 	};
 	static const char *const type[] = {
-		"", "progbits", "progbits", "nobits", "init_array", "fini_array"
+		"progbits", "progbits", "progbits", "nobits", "init_array", "fini_array"
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
