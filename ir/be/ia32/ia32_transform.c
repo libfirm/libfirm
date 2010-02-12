@@ -3166,7 +3166,8 @@ typedef struct setcc_transform {
  * Find a transformation that creates 0 and 1 from
  * tv_t and tv_f.
  */
-static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f, setcc_transform_t *res, int can_permutate)
+static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
+                                 setcc_transform_t *res)
 {
 	unsigned step = 0;
 
@@ -3449,7 +3450,7 @@ static ir_node *gen_Mux(ir_node *node)
 				/* yes, we can permutate its inputs */
 				permutate_allowed = 1;
 			}
-			find_const_transform(pnc, tv_true, tv_false, &res, 0);
+			find_const_transform(pnc, tv_true, tv_false, &res);
 			new_node = node;
 			if (res.permutate_cmp_ins) {
 				ia32_attr_t *attr = get_ia32_attr(flags);
