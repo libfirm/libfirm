@@ -62,16 +62,61 @@ typedef struct _be_gas_decl_env {
 	const be_main_env_t *main_env;
 } be_gas_decl_env_t;
 
+static void emit_section_macho(be_gas_section_t section)
+{
+	be_gas_section_t  base  = section & GAS_SECTION_TYPE_MASK;
+	be_gas_section_t  flags = section & ~GAS_SECTION_TYPE_MASK;
+	const char       *name;
+
+	if (current_section == section)
+		return;
+	current_section = section;
+
+	/* shortforms */
+	if (flags == 0) {
+		switch (base) {
+		case GAS_SECTION_TEXT:            name = "text";          break;
+		case GAS_SECTION_DATA:            name = "data";          break;
+		case GAS_SECTION_RODATA:          name = "const";         break;
+		case GAS_SECTION_BSS:             name = "data";          break;
+		case GAS_SECTION_CONSTRUCTORS:    name = "mod_init_func"; break;
+		case GAS_SECTION_DESTRUCTORS:     name = "mod_term_func"; break;
+		case GAS_SECTION_PIC_TRAMPOLINES: name = "section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5"; break;
+		case GAS_SECTION_PIC_SYMBOLS:     name = "section\t__IMPORT,__pointers,non_lazy_symbol_pointers"; break;
+		case GAS_SECTION_CSTRING:         name = "cstring";       break;
+		default: panic("unsupported scetion type 0x%X", section);
+		}
+		be_emit_irprintf("\t.%s\n", name);
+		be_emit_write_line();
+	} else if (flags & GAS_SECTION_FLAG_COMDAT) {
+		switch (base) {
+		case GAS_SECTION_TEXT:            name = "section __TEXT,__textcoal_nt,coalesced,pure_instructions"; break;
+		case GAS_SECTION_BSS:
+		case GAS_SECTION_DATA:            name = "section __DATA,__datacoal_nt,coalesced"; break;
+		case GAS_SECTION_RODATA:          name = "section __TEXT,__const_coal,coalesced"; break;
+		case GAS_SECTION_CSTRING:         name = "section __TEXT,__const_coal,coalesced"; break;
+		default: panic("unsupported scetion type 0x%X", section);
+		}
+	} else {
+		panic("unsupported section type 0x%X\n", section);
+	}
+}
+
 static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *basename[] = {
+	static const char *const basename[] = {
 		"text", "data", "rodata", "bss", "ctors", "dtors"
 	};
-	static const char *type[] = {
+	static const char *const type[] = {
 		"", "progbits", "progbits", "nobits", "init_array", "fini_array"
 	};
+
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		emit_section_macho(section);
+		return;
+	}
 
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
 		return;
@@ -144,6 +189,19 @@ void be_gas_emit_switch_section(be_gas_section_t section)
 	emit_section(section, NULL);
 }
 
+static tarval *get_initializer_tarval(const ir_initializer_t *initializer)
+{
+	if (initializer->kind == IR_INITIALIZER_TARVAL)
+		return initializer->tarval.value;
+	if (initializer->kind == IR_INITIALIZER_CONST) {
+		ir_node *node = initializer->consti.value;
+		if (is_Const(node)) {
+			return get_Const_tarval(node);
+		}
+	}
+	return get_tarval_undefined();
+}
+
 static int initializer_is_string_const(const ir_initializer_t *initializer)
 {
 	size_t i, len;
@@ -162,12 +220,11 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 		ir_initializer_t *sub_initializer
 			= initializer->compound.initializers[i];
 
-		if (sub_initializer->kind != IR_INITIALIZER_TARVAL)
+		tv = get_initializer_tarval(sub_initializer);
+		if (!tarval_is_constant(tv))
 			return 0;
 
-		tv   = sub_initializer->tarval.value;
 		mode = get_tarval_mode(tv);
-
 		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
 			return 0;
 
@@ -809,7 +866,7 @@ static void emit_string_initializer(const ir_initializer_t *initializer)
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
-		tarval *tv = get_initializer_tarval_value(sub_initializer);
+		tarval *tv = get_initializer_tarval(sub_initializer);
 		int     c  = get_tarval_long(tv);
 
 		switch (c) {
