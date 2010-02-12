@@ -201,6 +201,7 @@ static void symtbl_init(void)
 	INSERT(tt_visibility, "local", ir_visibility_local);
 	INSERT(tt_visibility, "external", ir_visibility_external);
 	INSERT(tt_visibility, "default", ir_visibility_default);
+	INSERT(tt_visibility, "private", ir_visibility_private);
 
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
@@ -274,6 +275,17 @@ static const char *get_segment_name(ir_segment_t segment)
 	case IR_SEGMENT_DESTRUCTORS:  return "destructors";
 	}
 	return "INVALID_SEGMENT";
+}
+
+static const char *get_visibility_name(ir_visibility visibility)
+{
+	switch (visibility) {
+	case ir_visibility_local:    return "local";
+	case ir_visibility_external: return "external";
+	case ir_visibility_default:  return "default";
+	case ir_visibility_private:  return "private";
+	}
+	return "INVALID_VISIBILITY";
 }
 
 /** Returns the according symbol value for the given string and tag, or SYMERROR if none was found. */
@@ -547,7 +559,10 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 
 static void export_entity(io_env_t *env, ir_entity *ent)
 {
-	ir_type *owner = get_entity_owner(ent);
+	FILE          *file       = env->file;
+	ir_type       *owner      = get_entity_owner(ent);
+	ir_visibility  visibility = get_entity_visibility(ent);
+	ir_linkage     linkage    = get_entity_linkage(ent);
 
 	/* we don't dump array_element_ent entities. They're a strange concept
 	 * and lead to cycles in type_graph.
@@ -563,7 +578,22 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 		fprintf(env->file, "NULL ");
 	}
 
-	fprintf(env->file, "%ld %ld %d %u %d %s ",
+	/* visibility + linkage */
+	if (visibility != ir_visibility_default) {
+		fprintf(file, "%s ", get_visibility_name(visibility));
+	}
+	if (linkage & IR_LINKAGE_CONSTANT)
+		fputs("constant ", file);
+	if (linkage & IR_LINKAGE_WEAK)
+		fputs("weak ", file);
+	if (linkage & IR_LINKAGE_GARBAGE_COLLECT)
+		fputs("garbage_collect ", file);
+	if (linkage & IR_LINKAGE_MERGE)
+		fputs("merge ", file);
+	if (linkage & IR_LINKAGE_HIDDEN_USER)
+		fputs("hidden_user ", file);
+
+	fprintf(file, "%ld %ld %d %u %d %s ",
 			get_type_nr(get_entity_type(ent)),
 			get_type_nr(owner),
 			get_entity_offset(ent),
@@ -1308,24 +1338,55 @@ static void import_type(io_env_t *env)
 /** Reads an entity description and remembers it by its id. */
 static void import_entity(io_env_t *env)
 {
-	long   entnr       = read_long(env);
-	ident *name        = read_ident(env);
-	ident *ld_name     = read_ident_null(env);
-	long   typenr      = read_long(env);
-	long   ownertypenr = read_long(env);
-	const char *str;
+	long           entnr      = read_long(env);
+	ident         *name       = read_ident(env);
+	ident         *ld_name    = read_ident_null(env);
+	ir_visibility  visibility = ir_visibility_default;
+	ir_linkage     linkage    = IR_LINKAGE_DEFAULT;
+	long           typenr;
+	long           ownertypenr;
+	const char    *str;
+	ir_type       *type;
+	ir_type       *ownertype;
+	ir_entity     *entity;
 
-	ir_type   *type      = get_type(env, typenr);
-	ir_type   *ownertype = !ownertypenr ? get_glob_type() : get_type(env, ownertypenr);
-	ir_entity *entity    = new_entity(ownertype, name, type);
+	skip_ws(env);
+	while (!isdigit(env->c)) {
+		char     *str = read_word(env);
+		unsigned  v;
+
+		skip_ws(env);
+
+		v = symbol(str, tt_visibility);
+		if (v != SYMERROR) {
+			visibility = v;
+			continue;
+		}
+		v = symbol(str, tt_linkage);
+		if (v != SYMERROR) {
+			linkage |= v;
+			continue;
+		}
+		printf("Parser error, expected visibility or linkage, got '%s'\n",
+		       str);
+		break;
+	}
+
+	typenr      = read_long(env);
+	ownertypenr = read_long(env);
+
+	type      = get_type(env, typenr);
+	ownertype = !ownertypenr ? get_glob_type() : get_type(env, ownertypenr);
+	entity    = new_entity(ownertype, name, type);
 
 	if (ld_name != NULL)
 		set_entity_ld_ident(entity, ld_name);
-	set_entity_offset     (entity, (int) read_long(env));
+	set_entity_offset(entity, (int) read_long(env));
 	set_entity_offset_bits_remainder(entity, (unsigned char) read_long(env));
 	set_entity_compiler_generated(entity, (int) read_long(env));
-	set_entity_volatility (entity, read_volatility(env));
-	/* TODO: read/write linkage */
+	set_entity_volatility(entity, read_volatility(env));
+	set_entity_visibility(entity, visibility);
+	set_entity_linkage(entity, linkage);
 
 	str = read_word(env);
 	if (strcmp(str, "initializer") == 0) {
