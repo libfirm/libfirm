@@ -1452,7 +1452,8 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 			}
 			break;
 		case ir_visibility_external:
-			panic("merge link semantic not supported for extern entities");
+			if (linkage & IR_LINKAGE_MERGE)
+				panic("merge link semantic not supported for extern entities");
 			break;
 		}
 	}
