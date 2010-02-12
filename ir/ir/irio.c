@@ -571,10 +571,6 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 			is_entity_compiler_generated(ent),
 			get_volatility_name(get_entity_volatility(ent)));
 
-	/* TODO: inheritance stuff for class entities not supported yet */
-	if (is_Class_type(owner) && owner != get_glob_type())
-		fprintf(stderr, "Inheritance of class entities not supported yet!\n");
-
 	if (ent->initializer != NULL) {
 		fputs("initializer ", env->file);
 		write_initializer(env, get_entity_initializer(ent));
