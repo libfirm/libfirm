@@ -220,7 +220,6 @@ $arch = "ia32";
 	unop4 => "${arch}_emit_unop(node, n_ia32_binary_right);",
 	binop => "${arch}_emit_binop(node);",
 	x87_binop => "${arch}_emit_x87_binop(node);",
-	CMP0  => "${arch}_emit_cmp_suffix_node(node, 0);",
 	CMP3  => "${arch}_emit_cmp_suffix_node(node, 3);",
 );
 

@@ -22,6 +22,22 @@
  * @brief       This file implements the ia32 node emitter.
  * @author      Christian Wuerdig, Matthias Braun
  * @version     $Id$
+ *
+ * Summary table for x86 floatingpoint compares:
+ *   pnc_Eq  => !P && E
+ *   pnc_Lt  => !P && B
+ *   pnc_Le  => !P && BE
+ *   pnc_Gt  => A
+ *   pnc_Ge  => AE
+ *   pnc_Lg  => P || NE
+ *   pnc_Leg => NP  (ordered)
+ *   pnc_Uo  => P
+ *   pnc_Ue  => E
+ *   pnc_Ul  => B
+ *   pnc_Ule => BE
+ *   pnc_Ug  => P || A
+ *   pnc_Uge => P || AE
+ *   pnc_Ne  => NE
  */
 #include "config.h"
 
@@ -1002,16 +1018,10 @@ static pn_Cmp ia32_get_negated_pnc(pn_Cmp pnc)
 	return get_negated_pnc(pnc, mode);
 }
 
-void ia32_emit_cmp_suffix_node(const ir_node *node,
-                               int flags_pos)
+void ia32_emit_cmp_suffix_node(const ir_node *node, int flags_pos)
 {
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-
 	pn_Cmp pnc = get_ia32_condcode(node);
-
 	pnc = determine_final_pnc(node, flags_pos, pnc);
-	if (attr->data.ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
 
 	ia32_emit_cmp_suffix(pnc);
 }
@@ -1191,7 +1201,9 @@ static void emit_ia32_CMovcc(const ir_node *node)
 
 	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
 	/* although you can't set ins_permuted in the constructor it might still
-	   be set by memory operand folding */
+	 * be set by memory operand folding
+	 * Permuting inputs of a cmov means the condition is negated!
+	 */
 	if (attr->data.ins_permuted)
 		pnc = ia32_get_negated_pnc(pnc);
 
