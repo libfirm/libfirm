@@ -45,12 +45,16 @@ static void visit_node(ir_node *node, void *env)
 	ir_entity *entity;
 	(void) env;
 
-	if (!is_SymConst(node))
+	if (is_SymConst(node)) {
+		if (!SYMCONST_HAS_ENT(get_SymConst_kind(node)))
+			return;
+		entity = get_SymConst_entity(node);
+	} else if (is_Sel(node)) {
+		entity = get_Sel_entity(node);
+	} else {
 		return;
-	if (!SYMCONST_HAS_ENT(get_SymConst_kind(node)))
-		return;
+	}
 
-	entity = get_SymConst_entity(node);
 	visit_entity(entity);
 }
 
