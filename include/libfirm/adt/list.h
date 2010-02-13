@@ -1,4 +1,3 @@
-
 /**
  * @file
  * @brief   Doubly linked lists.
