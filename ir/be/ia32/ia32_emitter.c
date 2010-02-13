@@ -434,10 +434,13 @@ void ia32_emit_x87_mode_suffix(const ir_node *node)
 
 	if (mode_is_float(mode)) {
 		switch (get_mode_size_bits(mode)) {
-			case 32: be_emit_char('s'); return;
-			case 64: be_emit_char('l'); return;
-			case 80:
-			case 96: be_emit_char('t'); return;
+			case  32: be_emit_char('s'); return;
+			case  64: be_emit_char('l'); return;
+			/* long doubles have different sizes due to alignment on different
+			 * platforms. */
+			case  80:
+			case  96:
+			case 128: be_emit_char('t'); return;
 		}
 	} else {
 		assert(mode_is_int(mode));
