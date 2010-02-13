@@ -80,8 +80,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define BLOCK_PREFIX ".L"
-
 #define SNPRINTF_BUF_LEN 128
 
 static const ia32_isa_t *isa;
@@ -510,26 +508,12 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 }
 
 /**
- * Emits a block label for the given block.
- */
-static void ia32_emit_block_name(const ir_node *block)
-{
-	if (has_Block_entity(block)) {
-		ir_entity *entity = get_Block_entity(block);
-		be_gas_emit_entity(entity);
-	} else {
-		be_emit_cstring(BLOCK_PREFIX);
-		be_emit_irprintf("%ld", get_irn_node_nr(block));
-	}
-}
-
-/**
  * Emits the target label for a control flow node.
  */
 static void ia32_emit_cfop_target(const ir_node *node)
 {
 	ir_node *block = get_cfop_target_block(node);
-	ia32_emit_block_name(block);
+	be_gas_emit_block_name(block);
 }
 
 /*
@@ -1890,10 +1874,14 @@ static void emit_ia32_ClimbFrame(const ir_node *node)
 
 	ia32_emitf(node, "\tmovl %S0, %D0\n");
 	ia32_emitf(node, "\tmovl $%u, %S1\n", attr->count);
-	ia32_emitf(NULL, BLOCK_PREFIX "%ld:\n", get_irn_node_nr(node));
+	be_gas_emit_block_name(node);
+	be_emit_cstring(":\n");
+	be_emit_write_line();
 	ia32_emitf(node, "\tmovl (%D0), %D0\n");
 	ia32_emitf(node, "\tdec %S1\n");
-	ia32_emitf(node, "\tjnz " BLOCK_PREFIX "%ld\n", get_irn_node_nr(node));
+	be_emit_cstring("\tjnz ");
+	be_gas_emit_block_name(node);
+	be_emit_finish_line_gas(node);
 }
 
 static void emit_be_Return(const ir_node *node)
@@ -2149,14 +2137,14 @@ static void ia32_emit_block_header(ir_node *block)
 	}
 
 	if (need_label) {
-		ia32_emit_block_name(block);
+		be_gas_emit_block_name(block);
 		be_emit_char(':');
 
 		be_emit_pad_comment();
 		be_emit_cstring("   /* ");
 	} else {
 		be_emit_cstring("\t/* ");
-		ia32_emit_block_name(block);
+		be_gas_emit_block_name(block);
 		be_emit_cstring(": ");
 	}
 
@@ -2301,7 +2289,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 			ia32_emit_exc_label(exc_list[i].exc_instr);
 			be_emit_char('\n');
 			be_emit_cstring("\t.long ");
-			ia32_emit_block_name(exc_list[i].block);
+			be_gas_emit_block_name(exc_list[i].block);
 			be_emit_char('\n');
 		}
 	}
@@ -2451,7 +2439,7 @@ static void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
 static void bemit_jmp_destination(const ir_node *dest_block)
 {
 	be_emit_cstring("\t.long ");
-	ia32_emit_block_name(dest_block);
+	be_gas_emit_block_name(dest_block);
 	be_emit_cstring(" - . - 4\n");
 	be_emit_write_line();
 }

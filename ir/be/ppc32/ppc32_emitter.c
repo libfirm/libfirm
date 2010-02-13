@@ -40,6 +40,7 @@
 
 #include "../besched.h"
 #include "../benode.h"
+#include "../begnuas.h"
 
 #include "ppc32_emitter.h"
 #include "gen_ppc32_emitter.h"
@@ -234,17 +235,6 @@ void ppc32_emit_offset(const ir_node *n)
 }
 
 /**
- * Returns the target label for a control flow node.
- */
-static char *get_cfop_target(const ir_node *irn, char *buf)
-{
-	ir_node *bl = get_irn_link(irn);
-
-	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
-	return buf;
-}
-
-/**
  * Emits code for a unconditional jump.
  */
 static void emit_Jmp(const ir_node *irn)
@@ -252,7 +242,9 @@ static void emit_Jmp(const ir_node *irn)
 	ir_node *block = get_nodes_block(irn);
 
 	if (get_irn_link(irn) != get_irn_link(block)) {
-		be_emit_irprintf("\tb %s", get_cfop_target(irn, printbuf));
+		ir_node *dest = get_irn_link(irn);
+		be_emit_cstring("\tb ");
+		be_gas_emit_block_name(dest);
 	} else {
 		be_emit_irprintf("/* fallthrough(%+F) */", get_irn_link(irn));
 	}
@@ -297,11 +289,10 @@ static void emit_ppc32_Branch(const ir_node *irn)
 	assert(opind>=0 && opind<8);
 
 	if (opind){
-		get_cfop_target(proj, printbuf);
 		be_emit_irprintf("\t%8s", branchops[opind]);
 		ppc32_emit_source_register(irn, 0);
 		be_emit_cstring(", ");
-		be_emit_string(printbuf);
+		be_gas_emit_block_name(get_irn_link(proj));
 		be_emit_finish_line_gas(irn);
 	}
 
@@ -309,7 +300,7 @@ static void emit_ppc32_Branch(const ir_node *irn)
 	if (edge) {
 		ir_node *blk = get_edge_src_irn(edge);
 		be_emit_cstring("\tb ");
-		be_emit_string(get_cfop_target(blk, printbuf));
+		be_gas_emit_block_name(get_irn_link(blk));
 		be_emit_finish_line_gas(irn);
 	}
 }
@@ -386,13 +377,15 @@ static void emit_ppc32_Switch(const ir_node *irn)
 
 			be_emit_cstring("\tbeq ");
 			ppc32_emit_source_register(irn, 2);
-			be_emit_irprintf(", %s", get_cfop_target(proj, printbuf));
+			be_emit_cstring(", ");
+			be_gas_emit_block_name(get_irn_link(proj));
 			be_emit_cstring("/* Branch if equal */\n");
 			be_emit_write_line();
 		}
 	}
 	assert(defproj != NULL && "didn't find defProj at Switch");
-	be_emit_irprintf("\tb %s", get_cfop_target(defproj, printbuf));
+	be_emit_cstring("\tb ");
+	be_gas_emit_block_name(get_irn_link(defproj));
 	be_emit_finish_line_gas(irn);
 }
 
@@ -604,7 +597,8 @@ static void ppc32_gen_block(const ir_node *block)
 	if (! is_Block(block))
 		return;
 
-	be_emit_irprintf("BLOCK_%ld:\n", get_irn_node_nr(block));
+	be_gas_emit_block_name(block);
+	be_emit_cstring(":\n");
 	be_emit_write_line();
 	sched_foreach(block, irn) {
 		ppc32_emit_node(irn);

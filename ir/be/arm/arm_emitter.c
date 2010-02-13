@@ -57,7 +57,6 @@
 
 #include "../benode.h"
 
-#define BLOCK_PREFIX ".L"
 #define SNPRINTF_BUF_LEN 128
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -418,27 +417,13 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 }
 
 /**
- * Emits a block label for the given block.
- */
-static void arm_emit_block_name(const ir_node *block)
-{
-	if (has_Block_entity(block)) {
-		ir_entity *entity = get_Block_entity(block);
-		be_gas_emit_entity(entity);
-	} else {
-		be_emit_cstring(BLOCK_PREFIX);
-		be_emit_irprintf("%d", get_irn_node_nr(block));
-	}
-}
-
-/**
  * Emit the target label for a control flow node.
  */
 static void arm_emit_cfop_target(const ir_node *irn)
 {
 	ir_node *block = get_cfop_target_block(irn);
 
-	arm_emit_block_name(block);
+	be_gas_emit_block_name(block);
 }
 
 /**
@@ -1060,7 +1045,7 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 	}
 
 	if (need_label) {
-		arm_emit_block_name(block);
+		be_gas_emit_block_name(block);
 		be_emit_char(':');
 
 		be_emit_pad_comment();
@@ -1074,7 +1059,7 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 		}
 	} else {
 		be_emit_cstring("\t/* ");
-		arm_emit_block_name(block);
+		be_gas_emit_block_name(block);
 		be_emit_cstring(": ");
 	}
 	if (exec_freq != NULL) {

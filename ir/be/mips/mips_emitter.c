@@ -52,8 +52,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define BLOCK_PREFIX ".L"
-
 #define SNPRINTF_BUF_LEN 128
 
 /**
@@ -410,36 +408,13 @@ static void mips_emit_Call(const ir_node *node)
  *                       |_|
  ************************************************************************/
 
-const char* mips_get_block_label(const ir_node* block)
-{
-	static char buf[64];
-	snprintf(buf, sizeof(buf), "BLOCK_%ld", get_irn_node_nr(block));
-
-	return buf;
-}
-
-/**
- * Emits a block label from the given block.
- */
-static void mips_emit_block_label(const ir_node *block)
-{
-	if (has_Block_entity(block)) {
-		ir_entity *entity = get_Block_entity(block);
-		be_gas_emit_entity(entity);
-	} else {
-		be_emit_cstring(BLOCK_PREFIX);
-		be_emit_irprintf("%ld", get_irn_node_nr(block));
-
-	}
-}
-
 static void mips_emit_Jump(const ir_node *node)
 {
 	const ir_node *block = get_irn_link(node);
 	assert(is_Block(block));
 
 	be_emit_cstring("\tb ");
-	mips_emit_block_label(block);
+	be_gas_emit_block_name(block);
 	be_emit_finish_line_gas(node);
 }
 
@@ -465,7 +440,7 @@ void mips_emit_jump_target_proj(const ir_node *node, long projn)
 	ir_node *jumpblock = mips_get_jump_block(node, projn);
 	assert(jumpblock != NULL);
 
-	mips_emit_block_label(jumpblock);
+	be_gas_emit_block_name(jumpblock);
 }
 
 void mips_emit_jump_target(const ir_node *node)
@@ -473,7 +448,7 @@ void mips_emit_jump_target(const ir_node *node)
 	ir_node *jumpblock = get_irn_link(node);
 	assert(jumpblock != NULL);
 
-	mips_emit_block_label(jumpblock);
+	be_gas_emit_block_name(jumpblock);
 }
 
 void mips_emit_jump_or_fallthrough(const ir_node *node, long pn)
@@ -483,7 +458,7 @@ void mips_emit_jump_or_fallthrough(const ir_node *node, long pn)
 
 	/* TODO: use fallthrough when possible */
 	be_emit_cstring("b ");
-	mips_emit_block_label(jumpblock);
+	be_gas_emit_block_name(jumpblock);
 }
 
 /************************************************************************
@@ -593,7 +568,7 @@ void emit_mips_jump_table(const ir_node *irn)
 		}
 
 		be_emit_cstring("\t.word ");
-		mips_emit_block_label(branch->target);
+		be_gas_emit_block_name(branch->target);
 		be_emit_char('\n');
 		be_emit_write_line();
 
@@ -715,7 +690,7 @@ void mips_gen_block(const ir_node *block)
 	if (! is_Block(block))
 		return;
 
-	mips_emit_block_label(block);
+	be_gas_emit_block_name(block);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 

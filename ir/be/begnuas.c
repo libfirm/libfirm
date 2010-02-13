@@ -573,14 +573,6 @@ static void emit_arith_tarval(tarval *tv, int bytes)
 }
 
 /**
- * Return the label prefix for labeled blocks.
- */
-const char *be_gas_block_label_prefix(void)
-{
-	return ".LG";
-}
-
-/**
  * Return the label prefix for labeled instructions.
  */
 const char *be_gas_insn_label_prefix(void)
@@ -1373,7 +1365,7 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	/* we can only do PIC code on macho so far */
 	assert(be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O);
 
-	be_emit_ident(get_entity_ld_ident(entity));
+	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 	be_emit_cstring("\t.indirect_symbol ");
@@ -1390,19 +1382,39 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	}
 }
 
+static void emit_private_prefix(void)
+{
+	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
+		be_emit_char('L');
+	} else {
+		be_emit_cstring(".L");
+	}
+}
+
 void be_gas_emit_entity(const ir_entity *entity)
 {
 	if (entity->type == firm_code_type) {
 		ir_label_t label = get_entity_label(entity);
-		be_emit_string(be_gas_block_label_prefix());
-		be_emit_irprintf("%lu", label);
+		emit_private_prefix();
+		be_emit_irprintf("_%lu", label);
 		return;
 	}
 
 	if (get_entity_visibility(entity) == ir_visibility_private) {
-		be_emit_cstring(".L");
+		emit_private_prefix();
 	}
 	be_emit_ident(get_entity_ld_ident(entity));
+}
+
+void be_gas_emit_block_name(const ir_node *block)
+{
+	if (has_Block_entity(block)) {
+		ir_entity *entity = get_Block_entity(block);
+		be_gas_emit_entity(entity);
+	} else {
+		emit_private_prefix();
+		be_emit_irprintf("%ld", get_irn_node_nr(block));
+	}
 }
 
 /**

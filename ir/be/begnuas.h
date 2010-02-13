@@ -94,9 +94,9 @@ void be_gas_emit_function_epilog(const ir_entity *entity);
 void be_gas_emit_entity(const ir_entity *entity);
 
 /**
- * Return the label prefix for labeled blocks.
+ * Emit (a private) symbol name for a firm block
  */
-const char *be_gas_block_label_prefix(void);
+void be_gas_emit_block_name(const ir_node *block);
 
 /**
  * Return the label prefix for labeled instructions.

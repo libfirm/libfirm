@@ -215,7 +215,7 @@ void sparc_emit_store_mode(const ir_node *node)
 static void sparc_emit_cfop_target(const ir_node *node)
 {
 	ir_node *block = get_irn_link(node);
-	be_emit_irprintf("BLOCK_%ld", get_irn_node_nr(block));
+	be_gas_emit_block_name(block);
 }
 
 /**
@@ -572,8 +572,9 @@ void sparc_gen_block(ir_node *block, void *data)
 
 	if (! is_Block(block))
 		return;
-	be_emit_cstring("BLOCK_");
-	be_emit_irprintf("%ld:\n", get_irn_node_nr(block));
+
+	be_gas_emit_block_name(block);
+	be_emit_cstring(":\n");
 	be_emit_write_line();
 
 	sched_foreach(block, node) {
