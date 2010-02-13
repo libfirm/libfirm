@@ -1311,7 +1311,7 @@ static void emit_common(const ir_entity *entity)
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_MACH_O:
-		be_emit_cstring("\t.lcomm ");
+		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, log2_floor(alignment));
 		be_emit_write_line();
