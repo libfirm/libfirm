@@ -37,6 +37,7 @@
 #include "irprog.h"
 
 #include "../besched.h"
+#include "../begnuas.h"
 
 #include "TEMPLATE_emitter.h"
 #include "gen_TEMPLATE_emitter.h"
