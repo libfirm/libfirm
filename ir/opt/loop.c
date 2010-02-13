@@ -135,7 +135,8 @@ static unsigned enable_unrolling;
 /**
  * Creates object on the heap, and adds it to a linked list to free it later.
  */
-static node_info *new_node_info(void) {
+static node_info *new_node_info(void)
+{
 	node_info *l = XMALLOCZ(node_info);
 	l->freelistnext = link_node_state_list;
 	link_node_state_list = l;
@@ -257,7 +258,8 @@ static unsigned is_nodesblock_marked(ir_node* node)
 }
 
 /* Returns the number of blocks in a loop. */
-int get_loop_n_blocks(ir_loop *loop) {
+int get_loop_n_blocks(ir_loop *loop)
+{
 	int elements, e;
 	int blocks = 0;
 	elements = get_loop_n_elements(loop);
@@ -888,7 +890,8 @@ static void get_head_outs(ir_node *node, void *env)
  * A block belongs to the chain if a condition branches out of the loop.
  * Returns 1 if the given block belongs to the condition chain.
  */
-static unsigned find_condition_chains(ir_node *block) {
+static unsigned find_condition_chains(ir_node *block)
+{
 	const ir_edge_t *edge;
 	unsigned mark = 0;
 	int nodes_n = 0;
@@ -1582,15 +1585,18 @@ void do_loop_peeling(ir_graph *irg)
 
 }
 
-ir_graph_pass_t *loop_inversion_pass(const char *name) {
+ir_graph_pass_t *loop_inversion_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "loop_inversion", do_loop_inversion);
 }
 
-ir_graph_pass_t *loop_unroll_pass(const char *name) {
+ir_graph_pass_t *loop_unroll_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "loop_unroll", do_loop_unrolling);
 }
 
-ir_graph_pass_t *loop_peeling_pass(const char *name) {
+ir_graph_pass_t *loop_peeling_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "loop_peeling", do_loop_peeling);
 }
 

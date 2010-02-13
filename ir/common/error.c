@@ -32,7 +32,8 @@
 #include "error.h"
 #include "irprintf.h"
 
-NORETURN panic(const char *fmt, ...) {
+NORETURN panic(const char *fmt, ...)
+{
 	va_list ap;
 
 	fputs("libFirm panic: ", stderr);

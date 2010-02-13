@@ -113,17 +113,20 @@ void set_sparc_jmp_switch_default_proj_num(ir_node *node, long def_proj_num)
 
 
 
-int get_sparc_jmp_cond_proj_num(const ir_node *node) {
+int get_sparc_jmp_cond_proj_num(const ir_node *node)
+{
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
 	return attr->proj_num;
 }
 
-int get_sparc_jmp_switch_n_projs(const ir_node *node) {
+int get_sparc_jmp_switch_n_projs(const ir_node *node)
+{
 	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
 	return attr->n_projs;
 }
 
-long get_sparc_jmp_switch_default_proj_num(const ir_node *node) {
+long get_sparc_jmp_switch_default_proj_num(const ir_node *node)
+{
 	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
 	return attr->default_proj_num;
 }
@@ -291,7 +294,8 @@ static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
 /**
  * copies sparc attributes of  node
  */
-static void sparc_copy_attr(const ir_node *old_node, ir_node *new_node) {
+static void sparc_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph          *irg     = get_irn_irg(new_node);
 	struct obstack    *obst    = get_irg_obstack(irg);
 	 const sparc_attr_t *attr_old = get_sparc_attr_const(old_node);

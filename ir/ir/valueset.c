@@ -154,7 +154,8 @@ void ir_valueset_iterator_init(ir_valueset_iterator_t *iterator,
 	iterator->valueset = valueset;
 }
 
-ir_node *ir_valueset_iterator_next(ir_valueset_iterator_t *iterator, ir_node **expr) {
+ir_node *ir_valueset_iterator_next(ir_valueset_iterator_t *iterator, ir_node **expr)
+{
 	ir_valueset_entry_t *entry;
 
 	if (iterator->iter == &iterator->valueset->elem_list) {
@@ -169,7 +170,8 @@ ir_node *ir_valueset_iterator_next(ir_valueset_iterator_t *iterator, ir_node **e
 	return entry->value;
 }
 
-void ir_valueset_remove_iterator(ir_valueset_t *valueset, ir_valueset_iterator_t *iterator) {
+void ir_valueset_remove_iterator(ir_valueset_t *valueset, ir_valueset_iterator_t *iterator)
+{
 	ir_valueset_entry_t *rem = list_entry(iterator->iter->prev, ir_valueset_entry_t, list);
 
 	ir_valueset_remove(valueset, rem->value);

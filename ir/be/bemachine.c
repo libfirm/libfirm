@@ -38,7 +38,8 @@ be_execution_unit_type_t be_machine_execution_unit_types[] = {
 /**
  * Initialize generic dummy unit.
  */
-void be_machine_init_dummy_unit(void) {
+void be_machine_init_dummy_unit(void)
+{
 	be_machine_execution_units_DUMMY[0].name = "GENERIC_DUMMY_UNIT";
 	be_machine_execution_units_DUMMY[0].tp   = &be_machine_execution_unit_types[0];
 }
@@ -46,20 +47,23 @@ void be_machine_init_dummy_unit(void) {
 /**
  * Returns the generic dummy unit.
  */
-be_execution_unit_t *be_machine_get_dummy_unit(void) {
+be_execution_unit_t *be_machine_get_dummy_unit(void)
+{
 	return &be_machine_execution_units_DUMMY[0];
 }
 
 /**
  * Check if given unit is the generic dummy unit.
  */
-int be_machine_is_dummy_unit(const be_execution_unit_t *unit) {
+int be_machine_is_dummy_unit(const be_execution_unit_t *unit)
+{
 	return unit == &be_machine_execution_units_DUMMY[0];
 }
 
 /**
  * Check if given unit is the generic dummy unit type.
  */
-int be_machine_is_dummy_unit_type(const be_execution_unit_type_t *tp) {
+int be_machine_is_dummy_unit_type(const be_execution_unit_type_t *tp)
+{
 	return tp == &be_machine_execution_unit_types[0];
 }

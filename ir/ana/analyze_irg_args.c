@@ -47,7 +47,8 @@ static void *VISITED = &v;
  * @param arg   The graph argument with mode reference,
  *             that must be checked.
  */
-static unsigned analyze_arg(ir_node *arg, unsigned bits) {
+static unsigned analyze_arg(ir_node *arg, unsigned bits)
+{
 	int i, p;
 	ir_node *succ;
 
@@ -176,7 +177,8 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits) {
  *
  * @param irg   The ir graph to analyze.
  */
-static void analyze_ent_args(ir_entity *ent) {
+static void analyze_ent_args(ir_entity *ent)
+{
 	ir_graph *irg;
 	ir_node *irg_args, *arg;
 	ir_mode *arg_mode;
@@ -260,7 +262,8 @@ static void analyze_ent_args(ir_entity *ent) {
  *
  * @param irg   The ir graph to analyze.
  */
-void analyze_irg_args(ir_graph *irg) {
+void analyze_irg_args(ir_graph *irg)
+{
 	ir_entity *ent;
 
 	if (irg == get_const_code_irg())
@@ -317,7 +320,8 @@ enum args_weight {
  *
  * @param arg  The parameter them weight muss be computed.
  */
-static unsigned calc_method_param_weight(ir_node *arg) {
+static unsigned calc_method_param_weight(ir_node *arg)
+{
 	int      i, j, k;
 	ir_node  *succ, *op;
 	unsigned weight = null_weight;
@@ -420,7 +424,8 @@ static unsigned calc_method_param_weight(ir_node *arg) {
  *
  * @param ent  The entity of the ir_graph.
  */
-static void analyze_method_params_weight(ir_entity *ent) {
+static void analyze_method_params_weight(ir_entity *ent)
+{
 	ir_type  *mtp;
 	ir_graph *irg;
 	int      nparams, i, proj_nr;
@@ -499,7 +504,8 @@ unsigned get_method_param_weight(ir_entity *ent, int pos)
  *
  * @param irg The ir graph to analyze.
  */
-void analyze_irg_args_weight(ir_graph *irg) {
+void analyze_irg_args_weight(ir_graph *irg)
+{
 	ir_entity *ent;
 
 	ent = get_irg_entity(irg);

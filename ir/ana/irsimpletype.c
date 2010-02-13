@@ -55,7 +55,8 @@ static ir_type *phi_cycle_type = NULL;
 /**
  * init type link field so that types point to their pointers.
  */
-static void precompute_pointer_types(void) {
+static void precompute_pointer_types(void)
+{
 #if 0
 	int i;
 	set_type_link(firm_unknown_type, firm_unknown_type);
@@ -78,7 +79,8 @@ static void precompute_pointer_types(void) {
  * Returns a pointer to type which was stored in the link field
  * to speed up search.
  */
-static ir_type *find_pointer_type_to (ir_type *tp) {
+static ir_type *find_pointer_type_to (ir_type *tp)
+{
 #if 0
 	return (ir_type *)get_type_link(tp);
 #else
@@ -95,7 +97,8 @@ static ir_type *compute_irn_type(ir_node *n);
  * Try to determine a type for a Proj node.
  * If a type cannot be determined, return @p firm_none_type.
  */
-static ir_type *find_type_for_Proj(ir_node *n) {
+static ir_type *find_type_for_Proj(ir_node *n)
+{
 	ir_type *tp;
 
 	/* Avoid nested Tuples. */
@@ -167,7 +170,8 @@ static ir_type *find_type_for_Proj(ir_node *n) {
  * Try to determine the type of a node.
  * If a type cannot be determined, return @p firm_none_type.
  */
-static ir_type *find_type_for_node(ir_node *n) {
+static ir_type *find_type_for_node(ir_node *n)
+{
 	ir_type *tp = firm_unknown_type;
 	ir_type *tp1 = NULL, *tp2 = NULL;
 	ir_node *a = NULL, *b = NULL;
@@ -393,7 +397,8 @@ default_code:
 }
 
 /** Compute the type of an IR node. */
-static ir_type *compute_irn_type(ir_node *n) {
+static ir_type *compute_irn_type(ir_node *n)
+{
 	ir_type *tp = get_irn_typeinfo_type(n);
 
 	if (tp == initial_type) {
@@ -409,7 +414,8 @@ static ir_type *compute_irn_type(ir_node *n) {
  * Post-walking ensures that the types for all predecessor
  * nodes are already computed.
  */
-static void compute_type(ir_node *n, void *env) {
+static void compute_type(ir_node *n, void *env)
+{
 	ir_type *tp = get_irn_typeinfo_type(n);
 	(void) env;
 	if (tp ==  phi_cycle_type) {
@@ -422,7 +428,8 @@ static void compute_type(ir_node *n, void *env) {
 /**
  * Compute the types for all nodes of a graph.
  */
-static void analyse_irg (ir_graph *irg) {
+static void analyse_irg (ir_graph *irg)
+{
 	set_irg_typeinfo_state(irg, ir_typeinfo_consistent);
 	irg_walk_graph(irg, NULL, compute_type, NULL);
 }
@@ -431,7 +438,8 @@ static void analyse_irg (ir_graph *irg) {
  * Initialize the analysis by creating a phi_cycle_type and
  * computing pointer types for all class and struct types.
  */
-static void init_irsimpletype(void) {
+static void init_irsimpletype(void)
+{
 	init_irtypeinfo();
 	if (!phi_cycle_type)
 		phi_cycle_type = new_type_class(new_id_from_str("phi_cycle_type"));
@@ -439,7 +447,8 @@ static void init_irsimpletype(void) {
 }
 
 /* Computes type information for each node in all ir graphs. */
-void simple_analyse_types(void) {
+void simple_analyse_types(void)
+{
 	int i;
 	FIRM_DBG_REGISTER(dbg, "firm.ana.simpletype");
 
@@ -451,7 +460,8 @@ void simple_analyse_types(void) {
 	set_irp_typeinfo_state(ir_typeinfo_consistent);
 }
 
-void free_simple_type_information(void) {
+void free_simple_type_information(void)
+{
 	free_irtypeinfo();
 
 	if (phi_cycle_type) {

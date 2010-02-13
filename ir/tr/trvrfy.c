@@ -82,7 +82,8 @@ static const char *firm_vrfy_failure_msg;
  * Show diagnostic if an entity overwrites another one not
  * in direct superclasses.
  */
-static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw) {
+static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw)
+{
 	ir_type *owner = get_entity_owner(ent);
 	ir_type *ov_own = get_entity_owner(ovw);
 	int i;
@@ -101,7 +102,8 @@ static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw) {
 /**
  * Show diagnostic if an entity overwrites a wrong number of things.
  */
-static void show_ent_overwrite_cnt(ir_entity *ent) {
+static void show_ent_overwrite_cnt(ir_entity *ent)
+{
 	ir_type *owner = get_entity_owner(ent);
 	int i, j, k, found, show_stp = 0;
 
@@ -143,7 +145,8 @@ static void show_ent_overwrite_cnt(ir_entity *ent) {
 /**
  * Check a class
  */
-static int check_class(ir_type *tp) {
+static int check_class(ir_type *tp)
+{
 	int i, j, k;
 	int found;
 
@@ -196,7 +199,8 @@ static int check_class(ir_type *tp) {
 /**
  * Check an array.
  */
-static int check_array(ir_type *tp) {
+static int check_array(ir_type *tp)
+{
 	int i, n_dim = get_array_n_dimensions(tp);
 
 	for (i = 0; i < n_dim; ++i) {
@@ -214,7 +218,8 @@ static int check_array(ir_type *tp) {
 /**
  * Check a primitive.
  */
-static int check_primitive(ir_type *tp) {
+static int check_primitive(ir_type *tp)
+{
 	ASSERT_AND_RET_DBG(
 		is_mode(get_type_mode(tp)),
 		"Primitive type without mode",
@@ -231,7 +236,8 @@ static int check_primitive(ir_type *tp) {
  * return
  *  0   if no error encountered
  */
-int check_type(ir_type *tp) {
+int check_type(ir_type *tp)
+{
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
 		return check_class(tp);
@@ -247,7 +253,8 @@ int check_type(ir_type *tp) {
 /**
  * checks the visited flag
  */
-static int check_visited_flag(ir_graph *irg, ir_node *n) {
+static int check_visited_flag(ir_graph *irg, ir_node *n)
+{
 	ASSERT_AND_RET_DBG(
 		get_irn_visited(n) <= get_irg_visited(irg),
 		"Visited flag of node is larger than that of corresponding irg.",
@@ -268,7 +275,8 @@ struct myenv {
 /**
  * called by the walker
  */
-static void on_irg_storage(ir_node *n, void *env) {
+static void on_irg_storage(ir_node *n, void *env)
+{
 	struct myenv *myenv = env;
 
 	/* We also test whether the setting of the visited flag is legal. */
@@ -398,7 +406,8 @@ int check_entity(ir_entity *ent)
 /*
  * check types and entities
  */
-static void check_tore(type_or_ent tore, void *env) {
+static void check_tore(type_or_ent tore, void *env)
+{
 	int *res = env;
 	assert(tore.ent);
 	if (is_type(tore.typ)) {

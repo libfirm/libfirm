@@ -95,7 +95,8 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  */
-int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm) {
+int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
+{
 #define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
 	tarval *tv;
@@ -173,7 +174,8 @@ int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm) {
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
-int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm) {
+int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
+{
 	tarval *tv;
 
 	*confirm = NULL;
@@ -218,7 +220,8 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm) {
  * If the mode of the value did not honor signed zeros, else
  * check for >= 0 or < 0.
  */
-value_classify_sign classify_value_sign(ir_node *n) {
+value_classify_sign classify_value_sign(ir_node *n)
+{
 	tarval *tv, *c;
 	ir_mode *mode;
 	pn_Cmp cmp, ncmp;
@@ -325,7 +328,8 @@ value_classify_sign classify_value_sign(ir_node *n) {
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
  */
-static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv) {
+static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
+{
 	ir_mode *mode = get_tarval_mode(tv);
 
 	if (tv == tarval_bad) {
@@ -372,7 +376,8 @@ static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv) {
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
  */
-static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc) {
+static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
+{
 	ir_mode *mode = get_irn_mode(bound);
 	tarval  *tv   = value_of(bound);
 
@@ -474,7 +479,8 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc) {
  *   tarval_b_true or tarval_b_false it it can be evaluated,
  *   tarval_bad else
  */
-static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc) {
+static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+{
 	pn_Cmp res;
 	unsigned flags;
 	tarval *tv_true = tarval_b_true, *tv_false = tarval_b_false;
@@ -598,7 +604,8 @@ static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_C
 /**
  * Returns non-zero, if a given relation is transitive.
  */
-static int is_transitive(pn_Cmp pnc) {
+static int is_transitive(pn_Cmp pnc)
+{
 	return (pn_Cmp_False < pnc && pnc < pn_Cmp_Lg);
 }  /* is_transitive */
 
@@ -611,7 +618,8 @@ static int is_transitive(pn_Cmp pnc) {
  * @param right  the right operand of the Cmp
  * @param pnc    the compare relation
  */
-tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc) {
+tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
+{
 	ir_node         *l_bound;
 	pn_Cmp          l_pnc, res_pnc, neg_pnc;
 	interval_t      l_iv, r_iv;
@@ -795,7 +803,8 @@ check_null_case:
  * @param len   length of the string buffer
  * @param iv    the interval
  */
-static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
+static int iv_snprintf(char *buf, size_t len, const interval_t *iv)
+{
 	char smin[64], smax[64];
 
 	if (iv) {
@@ -822,7 +831,8 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv) {
  * @param r_iv  the right interval
  * @param pnc   the compare relation
  */
-static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc) {
+static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+{
 	char sl[128], sr[128];
 
 	iv_snprintf(sl, sizeof(sl), l_iv);
@@ -838,7 +848,8 @@ static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp 
  * @param r_iv  the right interval
  * @param pnc   the compare relation
  */
-static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc) {
+static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+{
 	tarval *tv = (compare_iv)(l_iv, r_iv, pnc);
 
 	if (tv == tarval_bad)

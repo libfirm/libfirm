@@ -37,7 +37,8 @@ struct mips_irn_reg_assoc {
 	const arch_register_t *reg;
 };
 
-int mips_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
+int mips_cmp_irn_reg_assoc(const void *a, const void *b, size_t size)
+{
 	const struct mips_irn_reg_assoc *x = a;
 	const struct mips_irn_reg_assoc *y = b;
 	(void) size;
@@ -45,7 +46,8 @@ int mips_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
 	return x->irn != y->irn;
 }
 
-static struct mips_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
+static struct mips_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
+{
 	struct mips_irn_reg_assoc templ;
 	unsigned int hash;
 
@@ -56,12 +58,14 @@ static struct mips_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
-void mips_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set) {
+void mips_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set)
+{
 	struct mips_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	assoc->reg = reg;
 }
 
-const arch_register_t *mips_get_firm_reg(const ir_node *irn, set *reg_set) {
+const arch_register_t *mips_get_firm_reg(const ir_node *irn, set *reg_set)
+{
 	struct mips_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	return assoc->reg;
 }
@@ -70,6 +74,7 @@ const arch_register_t *mips_get_firm_reg(const ir_node *irn, set *reg_set) {
  * Translates the projnum into a "real" argument position for register
  * requirements dependend on the predecessor.
  */
-long mips_translate_proj_pos(const ir_node *proj) {
+long mips_translate_proj_pos(const ir_node *proj)
+{
 	return get_Proj_proj(proj);
 }

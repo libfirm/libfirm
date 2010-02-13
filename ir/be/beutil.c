@@ -74,7 +74,8 @@ static int sched_edge_hook(FILE *F, ir_node *irn)
 	return 1;
 }
 
-void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
+void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix)
+{
 	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
 	dump_consts_local(0);
@@ -84,7 +85,8 @@ void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix) {
 	set_dump_node_edge_hook(old);
 }
 
-void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix) {
+void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix)
+{
 	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
 	dump_consts_local(0);
@@ -100,7 +102,8 @@ void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix) {
  * @param suffix A suffix to its file name.
  * @param dumper The dump function
  */
-void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *)) {
+void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *))
+{
 	static ir_graph *last_irg = NULL;
 	static int       nr       = 0;
 	char             buf[128];
@@ -127,7 +130,8 @@ static void count_num_reachable_nodes(ir_node *irn, void *env)
 	(void) irn;
 }
 
-unsigned get_num_reachable_nodes(ir_graph *irg) {
+unsigned get_num_reachable_nodes(ir_graph *irg)
+{
 	int num = 0;
 	irg_walk_graph(irg, count_num_reachable_nodes, NULL, &num);
 	return num;
@@ -136,7 +140,8 @@ unsigned get_num_reachable_nodes(ir_graph *irg) {
 /**
  * Gets the Proj with number pn from irn.
  */
-ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {
+ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn)
+{
 	const ir_edge_t *edge;
 	ir_node         *proj;
 	assert(get_irn_mode(irn) == mode_T && "need mode_T");
@@ -151,7 +156,8 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn) {
 	return NULL;
 }
 
-FILE *be_ffopen(const char *base, const char *ext, const char *mode) {
+FILE *be_ffopen(const char *base, const char *ext, const char *mode)
+{
 	FILE *out;
 	char buf[1024];
 

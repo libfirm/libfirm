@@ -239,7 +239,8 @@ static node_t *identity(node_t *node);
 /**
  * Check a partition.
  */
-static void check_partition(const partition_t *T) {
+static void check_partition(const partition_t *T)
+{
 	node_t   *node;
 	unsigned n = 0;
 
@@ -261,7 +262,8 @@ static void check_partition(const partition_t *T) {
 /**
  * check that all leader nodes in the partition have the same opcode.
  */
-static void check_opcode(const partition_t *Z) {
+static void check_opcode(const partition_t *Z)
+{
 	node_t       *node;
 	opcode_key_t key;
 	int          first = 1;
@@ -336,7 +338,8 @@ static void check_opcode(const partition_t *Z) {
 	}
 }  /* check_opcode */
 
-static void check_all_partitions(environment_t *env) {
+static void check_all_partitions(environment_t *env)
+{
 #ifdef DEBUG_libfirm
 	partition_t *P;
 	node_t      *node;
@@ -359,7 +362,8 @@ static void check_all_partitions(environment_t *env) {
 /**
  * Check list.
  */
-static void do_check_list(const node_t *list, int ofs, const partition_t *Z) {
+static void do_check_list(const node_t *list, int ofs, const partition_t *Z)
+{
 
 #ifndef NDEBUG
 	const node_t *e;
@@ -378,7 +382,8 @@ static void do_check_list(const node_t *list, int ofs, const partition_t *Z) {
 /**
  * Check a local list.
  */
-static void check_list(const node_t *list, const partition_t *Z) {
+static void check_list(const node_t *list, const partition_t *Z)
+{
 	do_check_list(list, offsetof(node_t, next), Z);
 }  /* check_list */
 
@@ -394,7 +399,8 @@ static inline lattice_elem_t get_partition_type(const partition_t *X);
 /**
  * Dump partition to output.
  */
-static void dump_partition(const char *msg, const partition_t *part) {
+static void dump_partition(const char *msg, const partition_t *part)
+{
 	const node_t   *node;
 	int            first = 1;
 	lattice_elem_t type = get_partition_type(part);
@@ -420,7 +426,8 @@ static void dump_partition(const char *msg, const partition_t *part) {
 /**
  * Dumps a list.
  */
-static void do_dump_list(const char *msg, const node_t *node, int ofs) {
+static void do_dump_list(const char *msg, const node_t *node, int ofs)
+{
 	const node_t *p;
 	int          first = 1;
 
@@ -439,21 +446,24 @@ static void do_dump_list(const char *msg, const node_t *node, int ofs) {
 /**
  * Dumps a race list.
  */
-static void dump_race_list(const char *msg, const node_t *list) {
+static void dump_race_list(const char *msg, const node_t *list)
+{
 	do_dump_list(msg, list, offsetof(node_t, race_next));
 }  /* dump_race_list */
 
 /**
  * Dumps a local list.
  */
-static void dump_list(const char *msg, const node_t *list) {
+static void dump_list(const char *msg, const node_t *list)
+{
 	do_dump_list(msg, list, offsetof(node_t, next));
 }  /* dump_list */
 
 /**
  * Dump all partitions.
  */
-static void dump_all_partitions(const environment_t *env) {
+static void dump_all_partitions(const environment_t *env)
+{
 	const partition_t *P;
 
 	DB((dbg, LEVEL_2, "All partitions\n===============\n"));
@@ -464,7 +474,8 @@ static void dump_all_partitions(const environment_t *env) {
 /**
  * Sump a split list.
  */
-static void dump_split_list(const partition_t *list) {
+static void dump_split_list(const partition_t *list)
+{
 	const partition_t *p;
 
 	DB((dbg, LEVEL_2, "Split by %s produced = {\n", what_reason));
@@ -476,7 +487,8 @@ static void dump_split_list(const partition_t *list) {
 /**
  * Dump partition and type for a node.
  */
-static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
+static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local)
+{
 	ir_node *irn = local != NULL ? local : n;
 	node_t *node = get_irn_node(irn);
 
@@ -496,7 +508,8 @@ static int dump_partition_hook(FILE *F, ir_node *n, ir_node *local) {
 /**
  * Verify that a type transition is monotone
  */
-static void verify_type(const lattice_elem_t old_type, node_t *node) {
+static void verify_type(const lattice_elem_t old_type, node_t *node)
+{
 	if (old_type.tv == node->type.tv) {
 		/* no change */
 		return;
@@ -519,7 +532,8 @@ static void verify_type(const lattice_elem_t old_type, node_t *node) {
 /**
  * Compare two pointer values of a listmap.
  */
-static int listmap_cmp_ptr(const void *elt, const void *key, size_t size) {
+static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
+{
 	const listmap_entry_t *e1 = elt;
 	const listmap_entry_t *e2 = key;
 
@@ -532,7 +546,8 @@ static int listmap_cmp_ptr(const void *elt, const void *key, size_t size) {
  *
  * @param map  the listmap
  */
-static void listmap_init(listmap_t *map) {
+static void listmap_init(listmap_t *map)
+{
 	map->map    = new_set(listmap_cmp_ptr, 16);
 	map->values = NULL;
 }  /* listmap_init */
@@ -542,7 +557,8 @@ static void listmap_init(listmap_t *map) {
  *
  * @param map  the listmap
  */
-static void listmap_term(listmap_t *map) {
+static void listmap_term(listmap_t *map)
+{
 	del_set(map->map);
 }  /* listmap_term */
 
@@ -554,7 +570,8 @@ static void listmap_term(listmap_t *map) {
  *
  * @return the associated listmap entry for the given id
  */
-static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
+static listmap_entry_t *listmap_find(listmap_t *map, void *id)
+{
 	listmap_entry_t key, *entry;
 
 	key.id   = id;
@@ -577,14 +594,16 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id) {
  *
  * @return a hash value for the given opcode map entry
  */
-static unsigned opcode_hash(const opcode_key_t *entry) {
+static unsigned opcode_hash(const opcode_key_t *entry)
+{
 	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ptr) + entry->arity;
 }  /* opcode_hash */
 
 /**
  * Compare two entries in the opcode map.
  */
-static int cmp_opcode(const void *elt, const void *key, size_t size) {
+static int cmp_opcode(const void *elt, const void *key, size_t size)
+{
 	const opcode_key_t *o1 = elt;
 	const opcode_key_t *o2 = key;
 
@@ -599,7 +618,8 @@ static int cmp_opcode(const void *elt, const void *key, size_t size) {
 /**
  * Compare two Def-Use edges for input position.
  */
-static int cmp_def_use_edge(const void *a, const void *b) {
+static int cmp_def_use_edge(const void *a, const void *b)
+{
 	const ir_def_use_edge *ea = a;
 	const ir_def_use_edge *eb = b;
 
@@ -610,7 +630,8 @@ static int cmp_def_use_edge(const void *a, const void *b) {
 /**
  * We need the Def-Use edges sorted.
  */
-static void sort_irn_outs(node_t *node) {
+static void sort_irn_outs(node_t *node)
+{
 	ir_node *irn = node->node;
 	int n_outs = get_irn_n_outs(irn);
 
@@ -627,7 +648,8 @@ static void sort_irn_outs(node_t *node) {
  *
  * @return the associated type of this node
  */
-static inline lattice_elem_t get_node_type(const ir_node *irn) {
+static inline lattice_elem_t get_node_type(const ir_node *irn)
+{
 	return get_irn_node(irn)->type;
 }  /* get_node_type */
 
@@ -638,7 +660,8 @@ static inline lattice_elem_t get_node_type(const ir_node *irn) {
  *
  * @return the associated type of this node
  */
-static inline tarval *get_node_tarval(const ir_node *irn) {
+static inline tarval *get_node_tarval(const ir_node *irn)
+{
 	lattice_elem_t type = get_node_type(irn);
 
 	if (is_tarval(type.tv))
@@ -649,7 +672,8 @@ static inline tarval *get_node_tarval(const ir_node *irn) {
 /**
  * Add a partition to the worklist.
  */
-static inline void add_to_worklist(partition_t *X, environment_t *env) {
+static inline void add_to_worklist(partition_t *X, environment_t *env)
+{
 	assert(X->on_worklist == 0);
 	DB((dbg, LEVEL_2, "Adding part%d to worklist\n", X->nr));
 	X->wl_next     = env->worklist;
@@ -664,7 +688,8 @@ static inline void add_to_worklist(partition_t *X, environment_t *env) {
  *
  * @return a newly allocated partition
  */
-static inline partition_t *new_partition(environment_t *env) {
+static inline partition_t *new_partition(environment_t *env)
+{
 	partition_t *part = OALLOC(&env->obst, partition_t);
 
 	INIT_LIST_HEAD(&part->Leader);
@@ -695,7 +720,8 @@ static inline partition_t *new_partition(environment_t *env) {
 /**
  * Get the first node from a partition.
  */
-static inline node_t *get_first_node(const partition_t *X) {
+static inline node_t *get_first_node(const partition_t *X)
+{
 	return list_entry(X->Leader.next, node_t, node_list);
 }  /* get_first_node */
 
@@ -707,7 +733,8 @@ static inline node_t *get_first_node(const partition_t *X) {
  *
  * @return the type of the first element of the partition
  */
-static inline lattice_elem_t get_partition_type(const partition_t *X) {
+static inline lattice_elem_t get_partition_type(const partition_t *X)
+{
 	const node_t *first = get_first_node(X);
 	return first->type;
 }  /* get_partition_type */
@@ -722,7 +749,8 @@ static inline lattice_elem_t get_partition_type(const partition_t *X) {
  *
  * @return the created node
  */
-static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env) {
+static node_t *create_partition_node(ir_node *irn, partition_t *part, environment_t *env)
+{
 	/* create a partition node and place it in the partition */
 	node_t *node = OALLOC(&env->obst, node_t);
 
@@ -753,7 +781,8 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
  * Pre-Walker, initialize all Nodes' type to U or top and place
  * all nodes into the TOP partition.
  */
-static void create_initial_partitions(ir_node *irn, void *ctx) {
+static void create_initial_partitions(ir_node *irn, void *ctx)
+{
 	environment_t *env  = ctx;
 	partition_t   *part = env->initial;
 	node_t        *node;
@@ -771,7 +800,8 @@ static void create_initial_partitions(ir_node *irn, void *ctx) {
 /**
  * Post-Walker, collect  all Block-Phi lists, set Cond.
  */
-static void init_block_phis(ir_node *irn, void *ctx) {
+static void init_block_phis(ir_node *irn, void *ctx)
+{
 	(void) ctx;
 
 	if (is_Phi(irn)) {
@@ -786,7 +816,8 @@ static void init_block_phis(ir_node *irn, void *ctx) {
  * @param y    a node
  * @param env  the environment
  */
-static inline void add_to_touched(node_t *y, environment_t *env) {
+static inline void add_to_touched(node_t *y, environment_t *env)
+{
 	if (y->on_touched == 0) {
 		partition_t *part = y->part;
 
@@ -811,7 +842,8 @@ static inline void add_to_touched(node_t *y, environment_t *env) {
  * @param y    the node
  * @param env  the environment
  */
-static void add_to_cprop(node_t *y, environment_t *env) {
+static void add_to_cprop(node_t *y, environment_t *env)
+{
 	ir_node *irn;
 
 	/* Add y to y.partition.cprop. */
@@ -866,7 +898,8 @@ static void add_to_cprop(node_t *y, environment_t *env) {
  * @param Z_prime  the Z' partition, a previous part of Z
  * @param env      the environment
  */
-static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t *env) {
+static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t *env)
+{
 	if (Z->on_worklist || Z_prime->n_leader < Z->n_leader) {
 		add_to_worklist(Z_prime, env);
 	} else {
@@ -879,7 +912,8 @@ static void update_worklist(partition_t *Z, partition_t *Z_prime, environment_t 
  *
  * @param x  the node
  */
-static void move_edges_to_leader(node_t *x) {
+static void move_edges_to_leader(node_t *x)
+{
 	ir_node     *irn = x->node;
 	int         i, j, k;
 
@@ -924,7 +958,8 @@ static void move_edges_to_leader(node_t *x) {
  *
  * @return  a new partition containing the nodes of g
  */
-static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t *env) {
+static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t *env)
+{
 	partition_t *Z_prime;
 	node_t      *node;
 	unsigned    n = 0;
@@ -974,7 +1009,8 @@ static partition_t *split_no_followers(partition_t *Z, node_t *g, environment_t 
  *
  * @param n  the node
  */
-static void follower_to_leader(node_t *n) {
+static void follower_to_leader(node_t *n)
+{
 	assert(n->is_follower == 1);
 
 	DB((dbg, LEVEL_2, "%+F make the follower -> leader transition\n", n->node));
@@ -1002,7 +1038,8 @@ typedef struct step_env {
  * @param irn    the node to check
  * @param input  number of the input
  */
-static int is_real_follower(const ir_node *irn, int input) {
+static int is_real_follower(const ir_node *irn, int input)
+{
 	node_t *pred;
 
 	switch (get_irn_opcode(irn)) {
@@ -1064,7 +1101,8 @@ static int is_real_follower(const ir_node *irn, int input) {
 /**
  * Do one step in the race.
  */
-static int step(step_env *env) {
+static int step(step_env *env)
+{
 	node_t *n;
 
 	if (env->initial != NULL) {
@@ -1131,7 +1169,8 @@ static int step(step_env *env) {
  *
  * @param list  the list
  */
-static int clear_flags(node_t *list) {
+static int clear_flags(node_t *list)
+{
 	int    res = 0;
 	node_t *n;
 
@@ -1156,7 +1195,8 @@ static int clear_flags(node_t *list) {
  *
  * @return  a new partition containing the nodes of gg
  */
-static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
+static partition_t *split(partition_t **pX, node_t *gg, environment_t *env)
+{
 	partition_t *X = *pX;
 	partition_t *X_prime;
 	list_head   tmp;
@@ -1329,7 +1369,8 @@ static partition_t *split(partition_t **pX, node_t *gg, environment_t *env) {
  *
  * @return non-zero if the i'th input of the given Phi node is live
  */
-static int is_live_input(ir_node *phi, int i) {
+static int is_live_input(ir_node *phi, int i)
+{
 	if (i >= 0) {
 		ir_node        *block = get_nodes_block(phi);
 		ir_node        *pred  = get_Block_cfgpred(block, i);
@@ -1344,7 +1385,8 @@ static int is_live_input(ir_node *phi, int i) {
 /**
  * Return non-zero if a type is a constant.
  */
-static int is_constant_type(lattice_elem_t type) {
+static int is_constant_type(lattice_elem_t type)
+{
 	if (type.tv != tarval_bottom && type.tv != tarval_top)
 		return 1;
 	return 0;
@@ -1356,7 +1398,8 @@ static int is_constant_type(lattice_elem_t type) {
  *
  * @param type  the type to check
  */
-static int type_is_neither_top_nor_const(const lattice_elem_t type) {
+static int type_is_neither_top_nor_const(const lattice_elem_t type)
+{
 	if (is_tarval(type.tv)) {
 		if (type.tv == tarval_top)
 			return 0;
@@ -1376,7 +1419,8 @@ static int type_is_neither_top_nor_const(const lattice_elem_t type) {
  * @param idx   the index of the def_use edge to evaluate
  * @param env   the environment
  */
-static void collect_touched(list_head *list, int idx, environment_t *env) {
+static void collect_touched(list_head *list, int idx, environment_t *env)
+{
 	node_t  *x, *y;
 	int     end_idx = env->end_idx;
 
@@ -1441,7 +1485,8 @@ static void collect_touched(list_head *list, int idx, environment_t *env) {
  * @param list  the list which contains the nodes that must be evaluated
  * @param env   the environment
  */
-static void collect_commutative_touched(list_head *list, environment_t *env) {
+static void collect_commutative_touched(list_head *list, environment_t *env)
+{
 	node_t  *x, *y;
 
 	list_for_each_entry(node_t, x, list, node_list) {
@@ -1491,7 +1536,8 @@ static void collect_commutative_touched(list_head *list, environment_t *env) {
  *
  * @param env  the environment
  */
-static void cause_splits(environment_t *env) {
+static void cause_splits(environment_t *env)
+{
 	partition_t *X, *Z, *N;
 	int         idx;
 
@@ -1666,13 +1712,15 @@ static partition_t *split_by_what(partition_t *X, what_func What,
 }  /* split_by_what */
 
 /** lambda n.(n.type) */
-static void *lambda_type(const node_t *node, environment_t *env) {
+static void *lambda_type(const node_t *node, environment_t *env)
+{
 	(void)env;
 	return node->type.tv;
 }  /* lambda_type */
 
 /** lambda n.(n.opcode) */
-static void *lambda_opcode(const node_t *node, environment_t *env) {
+static void *lambda_opcode(const node_t *node, environment_t *env)
+{
 	opcode_key_t key, *entry;
 	ir_node      *irn = node->node;
 
@@ -1719,7 +1767,8 @@ static void *lambda_opcode(const node_t *node, environment_t *env) {
 }  /* lambda_opcode */
 
 /** lambda n.(n[i].partition) */
-static void *lambda_partition(const node_t *node, environment_t *env) {
+static void *lambda_partition(const node_t *node, environment_t *env)
+{
 	ir_node *skipped = skip_Proj(node->node);
 	ir_node *pred;
 	node_t  *p;
@@ -1747,7 +1796,8 @@ static void *lambda_partition(const node_t *node, environment_t *env) {
 }  /* lambda_partition */
 
 /** lambda n.(n[i].partition) for commutative nodes */
-static void *lambda_commutative_partition(const node_t *node, environment_t *env) {
+static void *lambda_commutative_partition(const node_t *node, environment_t *env)
+{
 	ir_node     *irn     = node->node;
 	ir_node     *skipped = skip_Proj(irn);
 	ir_node     *pred, *left, *right;
@@ -1802,7 +1852,8 @@ static void *lambda_commutative_partition(const node_t *node, environment_t *env
  * Returns true if a type is a constant (and NOT Top
  * or Bottom).
  */
-static int is_con(const lattice_elem_t type) {
+static int is_con(const lattice_elem_t type)
+{
 	/* be conservative */
 	if (is_tarval(type.tv))
 		return tarval_is_constant(type.tv);
@@ -1815,7 +1866,8 @@ static int is_con(const lattice_elem_t type) {
  * @param X    the partition to split
  * @param env  the environment
  */
-static void split_by(partition_t *X, environment_t *env) {
+static void split_by(partition_t *X, environment_t *env)
+{
 	partition_t *I, *P = NULL;
 	int         input;
 
@@ -1904,7 +1956,8 @@ static void split_by(partition_t *X, environment_t *env) {
  *
  * @param node  the node
  */
-static void default_compute(node_t *node) {
+static void default_compute(node_t *node)
+{
 	int     i;
 	ir_node *irn = node->node;
 
@@ -1930,7 +1983,8 @@ static void default_compute(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Block(node_t *node) {
+static void compute_Block(node_t *node)
+{
 	int     i;
 	ir_node *block = node->node;
 
@@ -1957,7 +2011,8 @@ static void compute_Block(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Bad(node_t *node) {
+static void compute_Bad(node_t *node)
+{
 	/* Bad nodes ALWAYS compute Top */
 	node->type.tv = tarval_top;
 }  /* compute_Bad */
@@ -1967,7 +2022,8 @@ static void compute_Bad(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Unknown(node_t *node) {
+static void compute_Unknown(node_t *node)
+{
 	/* While Unknown nodes should compute Top this is dangerous:
 	 * a Top input to a Cond would lead to BOTH control flows unreachable.
 	 * While this is correct in the given semantics, it would destroy the Firm
@@ -1986,7 +2042,8 @@ static void compute_Unknown(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Jmp(node_t *node) {
+static void compute_Jmp(node_t *node)
+{
 	node_t *block = get_irn_node(get_nodes_block(node->node));
 
 	node->type = block->type;
@@ -1997,7 +2054,8 @@ static void compute_Jmp(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Return(node_t *node) {
+static void compute_Return(node_t *node)
+{
 	/* The Return node is NOT dead if it is in a reachable block.
 	 * This is already checked in compute(). so we can return
 	 * Reachable here. */
@@ -2009,7 +2067,8 @@ static void compute_Return(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_End(node_t *node) {
+static void compute_End(node_t *node)
+{
 	/* the End node is NOT dead of course */
 	node->type.tv = tarval_reachable;
 }  /* compute_End */
@@ -2019,7 +2078,8 @@ static void compute_End(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Call(node_t *node) {
+static void compute_Call(node_t *node)
+{
 	/*
 	 * A Call computes always bottom, even if it has Unknown
 	 * predecessors.
@@ -2032,7 +2092,8 @@ static void compute_Call(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_SymConst(node_t *node) {
+static void compute_SymConst(node_t *node)
+{
 	ir_node *irn = node->node;
 	node_t  *block = get_irn_node(get_nodes_block(irn));
 
@@ -2055,7 +2116,8 @@ static void compute_SymConst(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Phi(node_t *node) {
+static void compute_Phi(node_t *node)
+{
 	int            i;
 	ir_node        *phi = node->node;
 	lattice_elem_t type;
@@ -2102,7 +2164,8 @@ static void compute_Phi(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Add(node_t *node) {
+static void compute_Add(node_t *node)
+{
 	ir_node        *sub = node->node;
 	node_t         *l   = get_irn_node(get_Add_left(sub));
 	node_t         *r   = get_irn_node(get_Add_right(sub));
@@ -2143,7 +2206,8 @@ static void compute_Add(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Sub(node_t *node) {
+static void compute_Sub(node_t *node)
+{
 	ir_node        *sub = node->node;
 	node_t         *l   = get_irn_node(get_Sub_left(sub));
 	node_t         *r   = get_irn_node(get_Sub_right(sub));
@@ -2189,7 +2253,8 @@ static void compute_Sub(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Eor(node_t *node) {
+static void compute_Eor(node_t *node)
+{
 	ir_node        *eor = node->node;
 	node_t         *l   = get_irn_node(get_Eor_left(eor));
 	node_t         *r   = get_irn_node(get_Eor_right(eor));
@@ -2230,7 +2295,8 @@ static void compute_Eor(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Cmp(node_t *node) {
+static void compute_Cmp(node_t *node)
+{
 	ir_node        *cmp  = node->node;
 	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
 	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
@@ -2256,7 +2322,8 @@ static void compute_Cmp(node_t *node) {
  * @param node  the node
  * @param cond  the predecessor Cmp node
  */
-static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
+static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
+{
 	ir_node        *proj = node->node;
 	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
 	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
@@ -2295,7 +2362,8 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp) {
  * @param node  the node
  * @param cond  the predecessor Cond node
  */
-static void compute_Proj_Cond(node_t *node, ir_node *cond) {
+static void compute_Proj_Cond(node_t *node, ir_node *cond)
+{
 	ir_node *proj     = node->node;
 	long    pnc       = get_Proj_proj(proj);
 	ir_node *sel      = get_Cond_selector(cond);
@@ -2434,7 +2502,8 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond) {
  *
  * @param node  the node
  */
-static void compute_Proj(node_t *node) {
+static void compute_Proj(node_t *node)
+{
 	ir_node *proj = node->node;
 	ir_mode *mode = get_irn_mode(proj);
 	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
@@ -2484,7 +2553,8 @@ static void compute_Proj(node_t *node) {
  *
  * @param node  the node
  */
-static void compute_Confirm(node_t *node) {
+static void compute_Confirm(node_t *node)
+{
 	ir_node *confirm = node->node;
 	node_t  *pred = get_irn_node(get_Confirm_value(confirm));
 
@@ -2506,7 +2576,8 @@ static void compute_Confirm(node_t *node) {
  *
  * @param node  the node
  */
-static void compute(node_t *node) {
+static void compute(node_t *node)
+{
 	ir_node *irn = node->node;
 	compute_func func;
 
@@ -2549,7 +2620,8 @@ static void compute(node_t *node) {
 /**
  * Calculates the Identity for Phi nodes
  */
-static node_t *identity_Phi(node_t *node) {
+static node_t *identity_Phi(node_t *node)
+{
 	ir_node *phi    = node->node;
 	ir_node *block  = get_nodes_block(phi);
 	node_t  *n_part = NULL;
@@ -2578,7 +2650,8 @@ static node_t *identity_Phi(node_t *node) {
 /**
  * Calculates the Identity for commutative 0 neutral nodes.
  */
-static node_t *identity_comm_zero_binop(node_t *node) {
+static node_t *identity_comm_zero_binop(node_t *node)
+{
 	ir_node *op   = node->node;
 	node_t  *a    = get_irn_node(get_binop_left(op));
 	node_t  *b    = get_irn_node(get_binop_right(op));
@@ -2602,7 +2675,8 @@ static node_t *identity_comm_zero_binop(node_t *node) {
 /**
  * Calculates the Identity for Shift nodes.
  */
-static node_t *identity_shift(node_t *node) {
+static node_t *identity_shift(node_t *node)
+{
 	ir_node *op   = node->node;
 	node_t  *b    = get_irn_node(get_binop_right(op));
 	ir_mode *mode = get_irn_mode(b->node);
@@ -2619,7 +2693,8 @@ static node_t *identity_shift(node_t *node) {
 /**
  * Calculates the Identity for Mul nodes.
  */
-static node_t *identity_Mul(node_t *node) {
+static node_t *identity_Mul(node_t *node)
+{
 	ir_node *op   = node->node;
 	node_t  *a    = get_irn_node(get_Mul_left(op));
 	node_t  *b    = get_irn_node(get_Mul_right(op));
@@ -2643,7 +2718,8 @@ static node_t *identity_Mul(node_t *node) {
 /**
  * Calculates the Identity for Sub nodes.
  */
-static node_t *identity_Sub(node_t *node) {
+static node_t *identity_Sub(node_t *node)
+{
 	ir_node *sub  = node->node;
 	node_t  *b    = get_irn_node(get_Sub_right(sub));
 	ir_mode *mode = get_irn_mode(sub);
@@ -2662,7 +2738,8 @@ static node_t *identity_Sub(node_t *node) {
 /**
  * Calculates the Identity for And nodes.
  */
-static node_t *identity_And(node_t *node) {
+static node_t *identity_And(node_t *node)
+{
 	ir_node *and = node->node;
 	node_t  *a   = get_irn_node(get_And_left(and));
 	node_t  *b   = get_irn_node(get_And_right(and));
@@ -2680,7 +2757,8 @@ static node_t *identity_And(node_t *node) {
 /**
  * Calculates the Identity for Confirm nodes.
  */
-static node_t *identity_Confirm(node_t *node) {
+static node_t *identity_Confirm(node_t *node)
+{
 	ir_node *confirm = node->node;
 
 	/* a Confirm is always a Copy */
@@ -2690,7 +2768,8 @@ static node_t *identity_Confirm(node_t *node) {
 /**
  * Calculates the Identity for Mux nodes.
  */
-static node_t *identity_Mux(node_t *node) {
+static node_t *identity_Mux(node_t *node)
+{
 	ir_node *mux = node->node;
 	node_t  *t   = get_irn_node(get_Mux_true(mux));
 	node_t  *f   = get_irn_node(get_Mux_false(mux));
@@ -2715,7 +2794,8 @@ static node_t *identity_Mux(node_t *node) {
 /**
  * Calculates the Identity for nodes.
  */
-static node_t *identity(node_t *node) {
+static node_t *identity(node_t *node)
+{
 	ir_node *irn = node->node;
 
 	switch (get_irn_opcode(irn)) {
@@ -2749,7 +2829,8 @@ static node_t *identity(node_t *node) {
  * Node follower is a (new) follower of leader, segregate Leader
  * out edges.
  */
-static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
+static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader)
+{
 	ir_node *l   = leader->node;
 	int     j, i, n = get_irn_n_outs(l);
 
@@ -2775,7 +2856,8 @@ static void segregate_def_use_chain_1(const ir_node *follower, node_t *leader) {
  *
  * @param follower  the follower IR node
  */
-static void segregate_def_use_chain(const ir_node *follower) {
+static void segregate_def_use_chain(const ir_node *follower)
+{
 	int i;
 
 	for (i = get_irn_arity(follower) - 1; i >= 0; --i) {
@@ -2790,7 +2872,8 @@ static void segregate_def_use_chain(const ir_node *follower) {
  *
  * @param env  the environment
  */
-static void propagate(environment_t *env) {
+static void propagate(environment_t *env)
+{
 	partition_t    *X, *Y;
 	node_t         *x;
 	lattice_elem_t old_type;
@@ -2928,7 +3011,8 @@ static void propagate(environment_t *env) {
  *
  * @param irn  the node
  */
-static ir_node *get_leader(node_t *node) {
+static ir_node *get_leader(node_t *node)
+{
 	partition_t *part = node->part;
 
 	if (part->n_leader > 1 || node->is_follower) {
@@ -2946,7 +3030,8 @@ static ir_node *get_leader(node_t *node) {
 /**
  * Returns non-zero if a mode_T node has only one reachable output.
  */
-static int only_one_reachable_proj(ir_node *n) {
+static int only_one_reachable_proj(ir_node *n)
+{
 	int i, k = 0;
 
 	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
@@ -2973,7 +3058,8 @@ static int only_one_reachable_proj(ir_node *n) {
  * @param pred   the control flow exit
  * @param block  the destination block
  */
-static int can_exchange(ir_node *pred, ir_node *block) {
+static int can_exchange(ir_node *pred, ir_node *block)
+{
 	if (is_Start(pred) || has_Block_entity(block))
 		return 0;
 	else if (is_Jmp(pred))
@@ -2990,7 +3076,8 @@ static int can_exchange(ir_node *pred, ir_node *block) {
  * Block Post-Walker, apply the analysis results on control flow by
  * shortening Phi's and Block inputs.
  */
-static void apply_cf(ir_node *block, void *ctx) {
+static void apply_cf(ir_node *block, void *ctx)
+{
 	environment_t *env = ctx;
 	node_t        *node = get_irn_node(block);
 	int           i, j, k, n;
@@ -3150,7 +3237,8 @@ static void apply_cf(ir_node *block, void *ctx) {
  * AddP(x, NULL) is a follower of x, but with different mode.
  * Fix it here.
  */
-static void exchange_leader(ir_node *irn, ir_node *leader) {
+static void exchange_leader(ir_node *irn, ir_node *leader)
+{
 	ir_mode *mode = get_irn_mode(irn);
 	if (mode != get_irn_mode(leader)) {
 		/* The conv is a no-op, so we are free to place it
@@ -3170,7 +3258,8 @@ static void exchange_leader(ir_node *irn, ir_node *leader) {
  * the Def-Use edges for this purpose, as they still
  * reflect the situation.
  */
-static int all_users_are_dead(const ir_node *irn) {
+static int all_users_are_dead(const ir_node *irn)
+{
 	int i, n = get_irn_n_outs(irn);
 
 	for (i = 1; i <= n; ++i) {
@@ -3196,7 +3285,8 @@ static int all_users_are_dead(const ir_node *irn) {
  * Walker: Find reachable mode_M nodes that have only
  * unreachable users. These nodes must be kept later.
  */
-static void find_kept_memory(ir_node *irn, void *ctx) {
+static void find_kept_memory(ir_node *irn, void *ctx)
+{
 	environment_t *env = ctx;
 	node_t        *node, *block;
 
@@ -3221,7 +3311,8 @@ static void find_kept_memory(ir_node *irn, void *ctx) {
 /**
  * Post-Walker, apply the analysis results;
  */
-static void apply_result(ir_node *irn, void *ctx) {
+static void apply_result(ir_node *irn, void *ctx)
+{
 	environment_t *env = ctx;
 	node_t        *node = get_irn_node(irn);
 
@@ -3376,7 +3467,8 @@ static void apply_result(ir_node *irn, void *ctx) {
 /**
  * Fix the keep-alives by deleting unreachable ones.
  */
-static void apply_end(ir_node *end, environment_t *env) {
+static void apply_end(ir_node *end, environment_t *env)
+{
 	int i, j,  n = get_End_n_keepalives(end);
 	ir_node **in;
 
@@ -3405,7 +3497,8 @@ static void apply_end(ir_node *end, environment_t *env) {
 /**
  * sets the generic functions to compute.
  */
-static void set_compute_functions(void) {
+static void set_compute_functions(void)
+{
 	int i;
 
 	/* set the default compute function */
@@ -3435,7 +3528,8 @@ static void set_compute_functions(void) {
 /**
  * Add memory keeps.
  */
-static void add_memory_keeps(ir_node **kept_memory, int len) {
+static void add_memory_keeps(ir_node **kept_memory, int len)
+{
 	ir_node      *end = get_irg_end(current_ir_graph);
 	int          i;
 	ir_nodeset_t set;
@@ -3456,7 +3550,8 @@ static void add_memory_keeps(ir_node **kept_memory, int len) {
 	ir_nodeset_destroy(&set);
 }  /* add_memory_keeps */
 
-void combo(ir_graph *irg) {
+void combo(ir_graph *irg)
+{
 	environment_t env;
 	ir_node       *initial_bl;
 	node_t        *start;

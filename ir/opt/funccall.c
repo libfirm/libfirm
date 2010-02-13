@@ -80,7 +80,8 @@ static unsigned *busy_set;
  * Walker: Collect all calls to const and pure functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
-static void collect_const_and_pure_calls(ir_node *node, void *env) {
+static void collect_const_and_pure_calls(ir_node *node, void *env)
+{
 	env_t     *ctx = env;
 	ir_node   *call, *ptr;
 	ir_entity *ent;
@@ -173,7 +174,8 @@ static void collect_const_and_pure_calls(ir_node *node, void *env) {
  * @param irg  the graph that contained calls to pure functions
  * @param ctx  context
  */
-static void fix_const_call_lists(ir_graph *irg, env_t *ctx) {
+static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
+{
 	ir_node *call, *next, *mem, *proj;
 	int exc_changed = 0;
 	ir_graph *rem = current_ir_graph;
@@ -258,7 +260,8 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx) {
  * Walker: Collect all calls to nothrow functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
  */
-static void collect_nothrow_calls(ir_node *node, void *env) {
+static void collect_nothrow_calls(ir_node *node, void *env)
+{
 	env_t *ctx = env;
 	ir_node *call, *ptr;
 	ir_entity *ent;
@@ -338,7 +341,8 @@ static void collect_nothrow_calls(ir_node *node, void *env) {
  * @param call_list  the list of all call sites of const functions
  * @param proj_list  the list of all memory/exception Proj's of this call sites
  */
-static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list) {
+static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *proj_list)
+{
 	ir_node *call, *next, *proj;
 	int exc_changed = 0;
 	ir_graph *rem = current_ir_graph;
@@ -405,7 +409,8 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top);
 /**
  * Calculate the bigger property of two. Handle the temporary flag right.
  */
-static unsigned max_property(unsigned a, unsigned b) {
+static unsigned max_property(unsigned a, unsigned b)
+{
 	unsigned r, t = (a | b) & mtp_temporary;
 	a &= ~mtp_temporary;
 	b &= ~mtp_temporary;
@@ -424,7 +429,8 @@ static unsigned max_property(unsigned a, unsigned b) {
  *         mtp_property_pure  if only Loads and const/pure calls detected
  *         mtp_no_property    else
  */
-static unsigned _follow_mem(ir_node *node) {
+static unsigned _follow_mem(ir_node *node)
+{
 	unsigned m, mode = mtp_property_const;
 	ir_node  *ptr;
 	int i;
@@ -500,7 +506,8 @@ static unsigned _follow_mem(ir_node *node) {
  *         mtp_property_pure  if only Loads and const/pure calls detected
  *         mtp_no_property else
  */
-static unsigned follow_mem(ir_node *node, unsigned mode) {
+static unsigned follow_mem(ir_node *node, unsigned mode)
+{
 	unsigned m;
 
 	m = _follow_mem(node);
@@ -513,7 +520,8 @@ static unsigned follow_mem(ir_node *node, unsigned mode) {
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
+static unsigned check_const_or_pure_function(ir_graph *irg, int top)
+{
 	ir_node *end, *endbl;
 	int j;
 	unsigned prop = get_irg_additional_properties(irg);
@@ -619,7 +627,8 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top) {
  *
  * @param ctx  context
  */
-static void handle_const_Calls(env_t *ctx) {
+static void handle_const_Calls(env_t *ctx)
+{
 	int i;
 
 	ctx->n_calls_SymConst = 0;
@@ -648,7 +657,8 @@ static void handle_const_Calls(env_t *ctx) {
  *
  * @param ctx  context
  */
-static void handle_nothrow_Calls(env_t *ctx) {
+static void handle_nothrow_Calls(env_t *ctx)
+{
 	int i;
 
 	ctx->n_calls_SymConst = 0;
@@ -676,7 +686,8 @@ static void handle_nothrow_Calls(env_t *ctx) {
  *
  * @param node  the node to check
  */
-static int is_malloc_call_result(const ir_node *node) {
+static int is_malloc_call_result(const ir_node *node)
+{
 	if (is_Alloc(node) && get_Alloc_where(node) == heap_alloc) {
 		/* Firm style high-level allocation */
 		return 1;
@@ -695,7 +706,8 @@ static int is_malloc_call_result(const ir_node *node) {
 /**
  * Update a property depending on a call property.
  */
-static unsigned update_property(unsigned orig_prop, unsigned call_prop) {
+static unsigned update_property(unsigned orig_prop, unsigned call_prop)
+{
 	unsigned t = (orig_prop | call_prop) & mtp_temporary;
 	unsigned r = orig_prop & call_prop;
 	return r | t;
@@ -704,7 +716,8 @@ static unsigned update_property(unsigned orig_prop, unsigned call_prop) {
 /**
  * Check if a node is stored.
  */
-static int is_stored(const ir_node *n) {
+static int is_stored(const ir_node *n)
+{
 	const ir_edge_t *edge;
 	const ir_node   *ptr;
 
@@ -762,7 +775,8 @@ static int is_stored(const ir_node *n) {
  *
  * return ~mtp_property_malloc if return values are stored, ~0 else
  */
-static unsigned check_stored_result(ir_graph *irg) {
+static unsigned check_stored_result(ir_graph *irg)
+{
 	ir_node  *end_blk = get_irg_end_block(irg);
 	int      i, j;
 	unsigned res = ~0;
@@ -795,7 +809,8 @@ finish:
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
+static unsigned check_nothrow_or_malloc(ir_graph *irg, int top)
+{
 	ir_node   *end_blk = get_irg_end_block(irg);
 	ir_entity *ent;
 	ir_type   *mtp;
@@ -979,7 +994,8 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top) {
  * When a function was detected as "const", it might be moved out of loops.
  * This might be dangerous if the graph can contain endless loops.
  */
-static void check_for_possible_endless_loops(ir_graph *irg) {
+static void check_for_possible_endless_loops(ir_graph *irg)
+{
 	ir_loop *root_loop;
 	assure_cf_loop(irg);
 
@@ -1068,7 +1084,8 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 }  /* optimize_funccalls */
 
 /* initialize the funccall optimization */
-void firm_init_funccalls(void) {
+void firm_init_funccalls(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
 }  /* firm_init_funccalls */
 

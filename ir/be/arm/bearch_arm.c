@@ -142,7 +142,8 @@ static const arch_irn_ops_t arm_irn_ops = {
  * Transforms the standard Firm graph into
  * a ARM firm graph.
  */
-static void arm_prepare_graph(void *self) {
+static void arm_prepare_graph(void *self)
+{
 	arm_code_gen_t *cg = self;
 
 	/* transform nodes into assembler instructions */
@@ -274,7 +275,8 @@ static void arm_after_ra(void *self)
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void arm_emit_and_done(void *self) {
+static void arm_emit_and_done(void *self)
+{
 	arm_code_gen_t *cg = self;
 	ir_graph       *irg = cg->irg;
 
@@ -474,7 +476,8 @@ static void handle_calls(ir_node *call, void *env)
 /**
  * Handle graph transformations before the abi converter does its work.
  */
-static void arm_before_abi(void *self) {
+static void arm_before_abi(void *self)
+{
 	arm_code_gen_t *cg = self;
 
 	irg_walk_graph(cg->irg, NULL, handle_calls, cg);
@@ -498,7 +501,8 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *arm_cg_init(be_irg_t *birg) {
+static void *arm_cg_init(be_irg_t *birg)
+{
 	static ir_type *int_tp = NULL;
 	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env;
 	arm_code_gen_t *cg;
@@ -687,7 +691,8 @@ static arm_isa_t arm_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *arm_init(FILE *file_handle) {
+static arch_env_t *arm_init(FILE *file_handle)
+{
 	static int inited = 0;
 	arm_isa_t *isa;
 
@@ -721,7 +726,8 @@ static arch_env_t *arm_init(FILE *file_handle) {
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void arm_done(void *self) {
+static void arm_done(void *self)
+{
 	arm_isa_t *isa = self;
 
 	be_gas_emit_decls(isa->arch_env.main_env);
@@ -737,14 +743,16 @@ static void arm_done(void *self) {
  * here to speed up register allocation (and makes dumps
  * smaller and more readable).
  */
-static unsigned arm_get_n_reg_class(void) {
+static unsigned arm_get_n_reg_class(void)
+{
 	return N_CLASSES;
 }
 
 /**
  * Return the register class with requested index.
  */
-static const arch_register_class_t *arm_get_reg_class(unsigned i) {
+static const arch_register_class_t *arm_get_reg_class(unsigned i)
+{
 	assert(i < N_CLASSES);
 	return &arm_reg_classes[i];
 }
@@ -755,7 +763,8 @@ static const arch_register_class_t *arm_get_reg_class(unsigned i) {
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode) {
+const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mode)
+{
 	if (mode_is_float(mode))
 		return &arm_reg_classes[CLASS_arm_fpa];
 	else
@@ -809,7 +818,8 @@ static void *arm_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env,
  *
  * All nodes which define registers in @p reg_map must keep @p reg_map current.
  */
-static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias) {
+static const arch_register_t *arm_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
+{
 	arm_abi_env_t         *env = self;
 	ir_node               *store;
 	ir_graph              *irg;
@@ -1017,7 +1027,8 @@ static const list_sched_selector_t *arm_get_list_sched_selector(const void *self
 
 }
 
-static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self) {
+static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self)
+{
 	(void) self;
 	return NULL;
 }
@@ -1032,13 +1043,15 @@ static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
 	return 4;
 }
 
-static const be_execution_unit_t ***arm_get_allowed_execution_units(const ir_node *irn) {
+static const be_execution_unit_t ***arm_get_allowed_execution_units(const ir_node *irn)
+{
 	(void) irn;
 	/* TODO */
 	panic("Unimplemented arm_get_allowed_execution_units()");
 }
 
-static const be_machine_t *arm_get_machine(const void *self) {
+static const be_machine_t *arm_get_machine(const void *self)
+{
 	(void) self;
 	/* TODO */
 	panic("Unimplemented arm_get_machine()");
@@ -1047,7 +1060,8 @@ static const be_machine_t *arm_get_machine(const void *self) {
 /**
  * Return irp irgs in the desired order.
  */
-static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list) {
+static ir_graph **arm_get_irg_list(const void *self, ir_graph ***irg_list)
+{
 	(void) self;
 	(void) irg_list;
 	return NULL;
@@ -1083,7 +1097,8 @@ static int arm_is_valid_clobber(const char *clobber)
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
-static const backend_params *arm_get_libfirm_params(void) {
+static const backend_params *arm_get_libfirm_params(void)
+{
 	static const ir_settings_if_conv_t ifconv = {
 		4,                    /* maxdepth, doesn't matter for Psi-conversion */
 		arm_is_mux_allowed   /* allows or disallows Mux creation for given selector */

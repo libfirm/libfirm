@@ -330,7 +330,8 @@ void be_opt_register(void)
 }
 
 /* Parse one argument. */
-int be_parse_arg(const char *arg) {
+int be_parse_arg(const char *arg)
+{
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	if (strcmp(arg, "help") == 0 || (arg[0] == '?' && arg[1] == '\0')) {
 		lc_opt_print_help_for_entry(be_grp, '-', stdout);
@@ -355,7 +356,8 @@ static const backend_params be_params = {
 };
 
 /* Perform schedule verification if requested. */
-static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt) {
+static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt)
+{
 	if (vrfy_opt == BE_VRFY_WARN) {
 		be_verify_schedule(birg);
 	} else if (vrfy_opt == BE_VRFY_ASSERT) {

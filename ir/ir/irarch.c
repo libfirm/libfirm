@@ -66,19 +66,22 @@ static const ir_settings_arch_dep_t *params = NULL;
 /** The bit mask, which optimizations to apply. */
 static arch_dep_opts_t opts;
 
-void arch_dep_init(arch_dep_params_factory_t factory) {
+void arch_dep_init(arch_dep_params_factory_t factory)
+{
 	opts = arch_dep_none;
 
 	if (factory != NULL)
 		params = factory();
 }
 
-void arch_dep_set_opts(arch_dep_opts_t the_opts) {
+void arch_dep_set_opts(arch_dep_opts_t the_opts)
+{
 	opts = the_opts;
 }
 
 /** check, whether a mode allows a Mulh instruction. */
-static int allow_Mulh(ir_mode *mode) {
+static int allow_Mulh(ir_mode *mode)
+{
 	if (get_mode_size_bits(mode) > params->max_bits_for_mulh)
 		return 0;
 	return (mode_is_signed(mode) && params->allow_mulhs) || (!mode_is_signed(mode) && params->allow_mulhu);
@@ -119,7 +122,8 @@ typedef struct _mul_env {
  * Some kind of default evaluator. Return the cost of
  * instructions.
  */
-static int default_evaluate(insn_kind kind, tarval *tv) {
+static int default_evaluate(insn_kind kind, tarval *tv)
+{
 	(void) tv;
 
 	if (kind == MUL)
@@ -130,7 +134,8 @@ static int default_evaluate(insn_kind kind, tarval *tv) {
 /**
  * emit a LEA (or an Add) instruction
  */
-static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsigned shift) {
+static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsigned shift)
+{
 	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = shift > 0 ? LEA : ADD;
 	res->in[0] = a;
@@ -144,7 +149,8 @@ static instruction *emit_LEA(mul_env *env, instruction *a, instruction *b, unsig
 /**
  * emit a SHIFT (or an Add or a Zero) instruction
  */
-static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift) {
+static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift)
+{
 	instruction *res = OALLOC(&env->obst, instruction);
 	if (shift == env->bits) {
 		/* a 2^bits with bits resolution is a zero */
@@ -171,7 +177,8 @@ static instruction *emit_SHIFT(mul_env *env, instruction *a, unsigned shift) {
 /**
  * emit a SUB instruction
  */
-static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b) {
+static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b)
+{
 	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = SUB;
 	res->in[0] = a;
@@ -185,7 +192,8 @@ static instruction *emit_SUB(mul_env *env, instruction *a, instruction *b) {
 /**
  * emit the ROOT instruction
  */
-static instruction *emit_ROOT(mul_env *env, ir_node *root_op) {
+static instruction *emit_ROOT(mul_env *env, ir_node *root_op)
+{
 	instruction *res = OALLOC(&env->obst, instruction);
 	res->kind = ROOT;
 	res->in[0] = NULL;
@@ -200,7 +208,8 @@ static instruction *emit_ROOT(mul_env *env, ir_node *root_op) {
 /**
  * Returns the condensed representation of the tarval tv
  */
-static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr) {
+static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr)
+{
 	ir_mode *mode = get_tarval_mode(tv);
 	int     bits = get_mode_size_bits(mode);
 	char    *bitstr = get_tarval_bitpattern(tv);
@@ -224,7 +233,8 @@ static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr) {
 /**
  * Calculate the gain when using the generalized complementary technique
  */
-static int calculate_gain(unsigned char *R, int r) {
+static int calculate_gain(unsigned char *R, int r)
+{
 	int max_gain = 0;
 	int idx = -1, i;
 	int gain;
@@ -246,7 +256,8 @@ static int calculate_gain(unsigned char *R, int r) {
 /**
  * Calculates the condensed complement of a given (R,r) tuple
  */
-static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r, int gain, int *prs) {
+static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r, int gain, int *prs)
+{
 	unsigned char *value = obstack_alloc(&env->obst, env->bits);
 	int i, l, j;
 	unsigned char c;
@@ -286,7 +297,8 @@ static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r
 /**
  * creates a tarval from a condensed representation.
  */
-static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r) {
+static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
+{
 	tarval *res, *tv;
 	int i, j;
 
@@ -310,7 +322,8 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, t
 /*
  * handle simple cases with up-to 2 bits set
  */
-static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, tarval *N) {
+static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, tarval *N)
+{
 	instruction *ins, *ins2;
 
 	(void) N;
@@ -339,7 +352,8 @@ static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r
 /**
  * Main decompose driver.
  */
-static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N) {
+static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N)
+{
 	unsigned i;
 	int gain;
 
@@ -407,7 +421,8 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 /**
  * basic decomposition routine
  */
-static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N) {
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N)
+{
 	instruction *Ns;
 	unsigned t;
 
@@ -435,7 +450,8 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, t
  * @param env   the environment
  * @param inst  the instruction
  */
-static ir_node *build_graph(mul_env *env, instruction *inst) {
+static ir_node *build_graph(mul_env *env, instruction *inst)
+{
 	ir_node *l, *r, *c;
 
 	if (inst->irn)
@@ -472,7 +488,8 @@ static ir_node *build_graph(mul_env *env, instruction *inst) {
  * Calculate the costs for the given instruction sequence.
  * Note that additional costs due to higher register pressure are NOT evaluated yet
  */
-static int evaluate_insn(mul_env *env, instruction *inst) {
+static int evaluate_insn(mul_env *env, instruction *inst)
+{
 	int costs;
 
 	if (inst->costs >= 0) {
@@ -521,7 +538,8 @@ static int evaluate_insn(mul_env *env, instruction *inst) {
  *
  * @return the new graph
  */
-static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
+static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv)
+{
 	mul_env       env;
 	instruction   *inst;
 	unsigned char *R;
@@ -558,7 +576,8 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv) {
 }
 
 /* Replace Muls with Shifts and Add/Subs. */
-ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
+ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
+{
 	ir_graph *irg;
 	ir_node *res  = irn;
 	ir_mode *mode = get_irn_mode(irn);
@@ -610,7 +629,8 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn) {
 /**
  * calculated the ld2 of a tarval if tarval is 2^n, else returns -1.
  */
-static int tv_ld2(tarval *tv, int bits) {
+static int tv_ld2(tarval *tv, int bits)
+{
 	int i, k = 0, num;
 
 	for (num = i = 0; i < bits; ++i) {
@@ -661,7 +681,8 @@ struct ms {
  *
  * see Hacker's Delight: 10-6 Integer Division by Constants: Incorporation into a Compiler
  */
-static struct ms magic(tarval *d) {
+static struct ms magic(tarval *d)
+{
 	ir_mode *mode   = get_tarval_mode(d);
 	ir_mode *u_mode = find_unsigned_mode(mode);
 	int bits        = get_mode_size_bits(u_mode);
@@ -746,7 +767,8 @@ struct mu {
  *
  * see Hacker's Delight: 10-10 Integer Division by Constants: Incorporation into a Compiler (Unsigned)
  */
-static struct mu magicu(tarval *d) {
+static struct mu magicu(tarval *d)
+{
 	ir_mode *mode   = get_tarval_mode(d);
 	int bits        = get_mode_size_bits(mode);
 	int p;
@@ -814,7 +836,8 @@ static struct mu magicu(tarval *d) {
  *
  * Note that 'div' might be a mod or DivMod operation as well
  */
-static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
+static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
+{
 	dbg_info *dbg  = get_irn_dbg_info(div);
 	ir_node *n     = get_binop_left(div);
 	ir_node *block = get_irn_n(div, -1);
@@ -883,7 +906,8 @@ static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv) {
 }
 
 /* Replace Divs with Shifts and Add/Subs and Mulh. */
-ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
+ir_node *arch_dep_replace_div_by_const(ir_node *irn)
+{
 	ir_node *res  = irn;
 
 	/* If the architecture dependent optimizations were not initialized
@@ -979,7 +1003,8 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn) {
 }
 
 /* Replace Mods with Shifts and Add/Subs and Mulh. */
-ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
+ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
+{
 	ir_node *res  = irn;
 
 	/* If the architecture dependent optimizations were not initialized
@@ -1072,7 +1097,8 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn) {
 }
 
 /* Replace DivMods with Shifts and Add/Subs and Mulh. */
-void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn) {
+void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn)
+{
 	*div = *mod = NULL;
 
 	/* If the architecture dependent optimizations were not initialized
@@ -1192,6 +1218,7 @@ static const ir_settings_arch_dep_t default_params = {
 };
 
 /* A default parameter factory for testing purposes. */
-const ir_settings_arch_dep_t *arch_dep_default_factory(void) {
+const ir_settings_arch_dep_t *arch_dep_default_factory(void)
+{
 	return &default_params;
 }

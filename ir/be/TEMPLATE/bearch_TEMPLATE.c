@@ -458,7 +458,8 @@ static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
-static const backend_params *TEMPLATE_get_backend_params(void) {
+static const backend_params *TEMPLATE_get_backend_params(void)
+{
 	static backend_params p = {
 		0,     /* no dword lowering */
 		0,     /* no inline assembly */

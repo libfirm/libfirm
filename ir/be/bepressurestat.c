@@ -69,7 +69,8 @@ static inline int has_reg_class(const regpressure_ana_t *ra, const ir_node *irn)
 	return arch_irn_consider_in_reg_alloc(ra->cls, irn);
 }
 
-static inline int regpressure(pset *live) {
+static inline int regpressure(pset *live)
+{
 	int pressure = pset_count(live);
 	return MIN(pressure, MAXPRESSURE);
 }

@@ -32,42 +32,50 @@
 
 static dbg_handle *handle = NULL;
 
-void be_dbg_close(void) {
+void be_dbg_close(void)
+{
 	if (handle->ops->close)
 		handle->ops->close(handle);
 }
 
-void be_dbg_so(const char *filename) {
+void be_dbg_so(const char *filename)
+{
 	if (handle->ops->so)
 		handle->ops->so(handle, filename);
 }
 
-void be_dbg_main_program(void) {
+void be_dbg_main_program(void)
+{
 	if (handle->ops->main_program)
 		handle->ops->main_program(handle);
 }
 
-void be_dbg_method_begin(ir_entity *ent, const be_stack_layout_t *layout) {
+void be_dbg_method_begin(ir_entity *ent, const be_stack_layout_t *layout)
+{
 	if (handle->ops->method_begin)
 		handle->ops->method_begin(handle, ent, layout);
 }
 
-void be_dbg_method_end(void) {
+void be_dbg_method_end(void)
+{
 	if (handle->ops->method_end)
 		handle->ops->method_end(handle);
 }
 
-void be_dbg_types(void) {
+void be_dbg_types(void)
+{
 	if (handle->ops->types)
 		handle->ops->types(handle);
 }
 
-void be_dbg_variable(ir_entity *ent) {
+void be_dbg_variable(ir_entity *ent)
+{
 	if (handle->ops->variable)
 		handle->ops->variable(handle, ent);
 }
 
-void be_dbg_set_dbg_info(dbg_info *dbgi) {
+void be_dbg_set_dbg_info(dbg_info *dbgi)
+{
 	if (handle->ops->set_dbg_info)
 		handle->ops->set_dbg_info(handle, dbgi);
 }
@@ -75,7 +83,8 @@ void be_dbg_set_dbg_info(dbg_info *dbgi) {
 static be_module_list_entry_t       *dbgout_modules         = NULL;
 static be_create_dbgout_module_func  selected_dbgout_module = NULL;
 
-void be_dbg_open(void) {
+void be_dbg_open(void)
+{
 	handle = selected_dbgout_module();
 }
 
@@ -94,7 +103,8 @@ static dbg_handle *create_null_dbgout_module(void)
 	return &null_handle;
 }
 
-void be_init_dbgout(void) {
+void be_init_dbgout(void)
+{
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 
 	be_add_module_list_opt(be_grp, "debuginfo", "debug info format",

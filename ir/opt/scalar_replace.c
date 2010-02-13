@@ -85,7 +85,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  *
  * @return 0 if they are identically
  */
-static int path_cmp(const void *elt, const void *key, size_t size) {
+static int path_cmp(const void *elt, const void *key, size_t size)
+{
 	const path_t *p1 = elt;
 	const path_t *p2 = key;
 	(void) size;
@@ -99,7 +100,8 @@ static int path_cmp(const void *elt, const void *key, size_t size) {
  *
  * @return 0 if they are identically
  */
-static int ent_cmp(const void *elt, const void *key, size_t size) {
+static int ent_cmp(const void *elt, const void *key, size_t size)
+{
 	const scalars_t *c1 = elt;
 	const scalars_t *c2 = key;
 	(void) size;
@@ -110,7 +112,8 @@ static int ent_cmp(const void *elt, const void *key, size_t size) {
 /**
  * Calculate a hash value for a path.
  */
-static unsigned path_hash(const path_t *path) {
+static unsigned path_hash(const path_t *path)
+{
 	unsigned hash = 0;
 	unsigned i;
 
@@ -125,7 +128,8 @@ static unsigned path_hash(const path_t *path) {
  *
  * @param sel  the Sel node that will be checked
  */
-static int is_const_sel(ir_node *sel) {
+static int is_const_sel(ir_node *sel)
+{
 	int i, n = get_Sel_n_indexs(sel);
 
 	for (i = 0; i < n; ++i) {
@@ -154,7 +158,8 @@ static int is_const_sel(ir_node *sel) {
  * @param mode     the mode of the Load/Store
  * @param ent_mode the mode of the accessed entity
  */
-static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode) {
+static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
+{
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
 		    get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
@@ -276,7 +281,8 @@ int is_address_taken(ir_node *sel)
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static int link_all_leave_sels(ir_entity *ent, ir_node *sel) {
+static int link_all_leave_sels(ir_entity *ent, ir_node *sel)
+{
 	int i, is_leave = 1;
 
 	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
@@ -323,7 +329,8 @@ static void *ADDRESS_TAKEN = &_x;
  * @return  non-zero if at least one entity could be replaced
  *          potentially
  */
-static int find_possible_replacements(ir_graph *irg) {
+static int find_possible_replacements(ir_graph *irg)
+{
 	ir_node *irg_frame;
 	ir_type *frame_tp;
 	int     i, j, k, static_link_arg;
@@ -430,7 +437,8 @@ static int find_possible_replacements(ir_graph *irg) {
  * @param sel  the Sel node
  * @param len  the length of the path so far
  */
-static path_t *find_path(ir_node *sel, unsigned len) {
+static path_t *find_path(ir_node *sel, unsigned len)
+{
 	int pos, i, n;
 	path_t *res;
 	ir_node *pred = get_Sel_ptr(sel);
@@ -547,7 +555,8 @@ typedef struct _env_t {
 /**
  * topological post-walker.
  */
-static void topologic_walker(ir_node *node, void *ctx) {
+static void topologic_walker(ir_node *node, void *ctx)
+{
 	env_t        *env = ctx;
 	ir_node      *adr, *block, *mem, *val;
 	ir_mode      *mode;
@@ -644,7 +653,8 @@ static void topologic_walker(ir_node *node, void *ctx) {
  * @param modes   A flexible array, containing all the modes of
  *                the value numbers.
  */
-static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes) {
+static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes)
+{
 	env_t env;
 
 	ssa_cons_start(current_ir_graph, nvals);
@@ -668,7 +678,8 @@ static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes) {
  *
  * @param irg  The current ir graph.
  */
-int scalar_replacement_opt(ir_graph *irg) {
+int scalar_replacement_opt(ir_graph *irg)
+{
 	unsigned  nvals;
 	int       i;
 	scalars_t key, *value;
@@ -770,11 +781,13 @@ int scalar_replacement_opt(ir_graph *irg) {
 	return res;
 }
 
-ir_graph_pass_t *scalar_replacement_opt_pass(const char *name) {
+ir_graph_pass_t *scalar_replacement_opt_pass(const char *name)
+{
 	return def_graph_pass_ret(name ? name : "scalar_rep",
 	                          scalar_replacement_opt);
 }
 
-void firm_init_scalar_replace(void) {
+void firm_init_scalar_replace(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.opt.scalar_replace");
 }

@@ -57,7 +57,8 @@ struct _hungarian_problem_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
-static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width) {
+static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width)
+{
 	int i, j;
 
 	fprintf(f , "\n");
@@ -71,14 +72,16 @@ static void hungarian_dump_f(FILE *f, int **C, int rows, int cols, int width) {
 	fprintf(f, "\n");
 }
 
-void hungarian_print_cost_matrix(hungarian_problem_t *p, int width) {
+void hungarian_print_cost_matrix(hungarian_problem_t *p, int width)
+{
 	hungarian_dump_f(stderr, p->cost, p->num_rows, p->num_cols, width);
 }
 
 /**
  * Create the object and allocate memory for the data structures.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int match_type) {
+hungarian_problem_t *hungarian_new(int rows, int cols, int match_type)
+{
 	int i;
 	hungarian_problem_t *p = XMALLOCZ(hungarian_problem_t);
 
@@ -120,7 +123,8 @@ hungarian_problem_t *hungarian_new(int rows, int cols, int match_type) {
 /**
  * Prepare the cost matrix.
  */
-void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode) {
+void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode)
+{
 	int i, j;
 
 	if (mode == HUNGARIAN_MODE_MAXIMIZE_UTIL) {
@@ -140,7 +144,8 @@ void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode) {
 /**
  * Set cost[left][right] to cost.
  */
-void hungarian_add(hungarian_problem_t *p, int left, int right, int cost) {
+void hungarian_add(hungarian_problem_t *p, int left, int right, int cost)
+{
 	assert(p->num_rows > left  && "Invalid row selected.");
 	assert(p->num_cols > right && "Invalid column selected.");
 	assert(cost >= 0);
@@ -157,7 +162,8 @@ void hungarian_add(hungarian_problem_t *p, int left, int right, int cost) {
 /**
  * Set cost[left][right] to 0.
  */
-void hungarian_remv(hungarian_problem_t *p, int left, int right) {
+void hungarian_remv(hungarian_problem_t *p, int left, int right)
+{
 	assert(p->num_rows > left  && "Invalid row selected.");
 	assert(p->num_cols > right && "Invalid column selected.");
 
@@ -172,7 +178,8 @@ void hungarian_remv(hungarian_problem_t *p, int left, int right) {
 /**
  * Frees all allocated memory.
  */
-void hungarian_free(hungarian_problem_t* p) {
+void hungarian_free(hungarian_problem_t* p)
+{
 	obstack_free(&p->obst, NULL);
 	xfree(p);
 }
@@ -180,7 +187,8 @@ void hungarian_free(hungarian_problem_t* p) {
 /**
  * Do the assignment.
  */
-int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost, int cost_threshold) {
+int hungarian_solve(hungarian_problem_t* p, int *assignment, int *final_cost, int cost_threshold)
+{
 	int i, j, m, n, k, l, s, t, q, unmatched, cost;
 	int *col_mate;
 	int *row_mate;

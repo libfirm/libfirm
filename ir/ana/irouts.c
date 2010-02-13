@@ -50,7 +50,8 @@
 
 #ifdef DEBUG_libfirm
 /** Clear the outs of a node */
-static void reset_outs(ir_node *node, void *unused) {
+static void reset_outs(ir_node *node, void *unused)
+{
 	(void) unused;
 	node->out       = NULL;
 	node->out_valid = 0;
@@ -63,7 +64,8 @@ int get_irn_outs_computed(const ir_node *node)
 }
 
 /* returns the number of successors of the node: */
-int get_irn_n_outs(const ir_node *node) {
+int get_irn_n_outs(const ir_node *node)
+{
 	assert(node && node->kind == k_ir_node);
 #ifdef DEBUG_libfirm
 	/* assert(node->out_valid); */
@@ -73,7 +75,8 @@ int get_irn_n_outs(const ir_node *node) {
 }
 
 /* Access successor n */
-ir_node *get_irn_out(const ir_node *def, int pos) {
+ir_node *get_irn_out(const ir_node *def, int pos)
+{
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
 	/* assert(def->out_valid); */
@@ -82,7 +85,8 @@ ir_node *get_irn_out(const ir_node *def, int pos) {
 }
 
 /* Access successor n */
-ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos) {
+ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos)
+{
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
 	/* assert(def->out_valid); */
@@ -91,7 +95,8 @@ ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos) {
 	return def->out[pos+1].use;
 }
 
-void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos) {
+void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
+{
 	assert(def && use);
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
@@ -102,7 +107,8 @@ void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos) {
 }
 
 /* Return the number of control flow successors, ignore keep-alives. */
-int get_Block_n_cfg_outs(const ir_node *bl) {
+int get_Block_n_cfg_outs(const ir_node *bl)
+{
 	int i, n_cfg_outs = 0;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -117,7 +123,8 @@ int get_Block_n_cfg_outs(const ir_node *bl) {
 }
 
 /* Return the number of control flow successors, honor keep-alives. */
-int get_Block_n_cfg_outs_ka(const ir_node *bl) {
+int get_Block_n_cfg_outs_ka(const ir_node *bl)
+{
 	int i, n_cfg_outs = 0;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -141,7 +148,8 @@ int get_Block_n_cfg_outs_ka(const ir_node *bl) {
 }
 
 /* Access predecessor n, ignore keep-alives. */
-ir_node *get_Block_cfg_out(const ir_node *bl, int pos) {
+ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
+{
 	int i;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -161,7 +169,8 @@ ir_node *get_Block_cfg_out(const ir_node *bl, int pos) {
 }
 
 /* Access predecessor n, honor keep-alives. */
-ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos) {
+ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
+{
 	int i, n_outs;
 	assert(bl && is_Block(bl));
 #ifdef DEBUG_libfirm
@@ -291,7 +300,8 @@ void irg_out_block_walk(ir_node *node,
 
 
 /** Returns the amount of out edges for not yet visited successors. */
-static int _count_outs(ir_node *n) {
+static int _count_outs(ir_node *n)
+{
 	int start, i, res, irn_arity;
 
 	mark_irn_visited(n);
@@ -324,7 +334,8 @@ static int _count_outs(ir_node *n) {
 /** Returns the amount of out edges for not yet visited successors.
  *  This version handles some special nodes like irg_frame, irg_args etc.
  */
-static int count_outs(ir_graph *irg) {
+static int count_outs(ir_graph *irg)
+{
 	ir_node *n;
 	int     i, res;
 
@@ -351,7 +362,8 @@ static int count_outs(ir_graph *irg) {
  *
  * @return The next free address
  */
-static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free) {
+static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free)
+{
 	int     n_outs, start, i, irn_arity, pos;
 
 	mark_irn_visited(use);
@@ -397,7 +409,8 @@ static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free) {
  *
  * @return The next free address
  */
-static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
+static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
+{
 	ir_node *n;
 	int     i, n_outs;
 
@@ -421,7 +434,8 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free) {
 }
 
 /* compute the outs for a given graph */
-void compute_irg_outs(ir_graph *irg) {
+void compute_irg_outs(ir_graph *irg)
+{
 	ir_graph        *rem = current_ir_graph;
 	int             n_out_edges = 0;
 	ir_def_use_edge *end = NULL;         /* Only for debugging */
@@ -455,18 +469,21 @@ void compute_irg_outs(ir_graph *irg) {
 	current_ir_graph = rem;
 }
 
-void assure_irg_outs(ir_graph *irg) {
+void assure_irg_outs(ir_graph *irg)
+{
 	if (get_irg_outs_state(irg) != outs_consistent)
 		compute_irg_outs(irg);
 }
 
-void compute_irp_outs(void) {
+void compute_irp_outs(void)
+{
 	int i;
 	for (i = get_irp_n_irgs() -1; i >= 0; --i)
 		compute_irg_outs(get_irp_irg(i));
 }
 
-void free_irp_outs(void) {
+void free_irp_outs(void)
+{
 	int i;
 	for (i = get_irp_n_irgs() -1; i >= 0; --i)
 		free_irg_outs(get_irp_irg(i));
@@ -487,7 +504,8 @@ void free_irp_outs(void) {
  * Inits the number of outedges for each node
  * before counting.
  */
-static void init_count(ir_node * node, void *env) {
+static void init_count(ir_node * node, void *env)
+{
 	(void) env;
 	node->out = (ir_node **) 1; /* 1 for the array size */
 }
@@ -498,7 +516,8 @@ static void init_count(ir_node * node, void *env) {
  * and adds the current arity to the overall count,
  * which is saved in "env"
  */
-static void node_arity_count(ir_node * node, void * env) {
+static void node_arity_count(ir_node * node, void * env)
+{
 	int *anz = (int *) env, arity, n_outs, i, start;
 	ir_node *succ;
 
@@ -518,7 +537,8 @@ static void node_arity_count(ir_node * node, void * env) {
  * Inits all nodes for setting the outedges
  * Returns the overall count of edges
  */
-int count_ip_outs(void) {
+int count_ip_outs(void)
+{
 	int res = 0;
 
 	cg_walk(init_count, node_arity_count, &res);
@@ -533,7 +553,8 @@ static int dummy_count = 0, global_count; /* Only for debugging */
  * in which the outedges are written later.
  * The current array start is transported in env
  */
-static void set_array_pointer(ir_node *node, void *env) {
+static void set_array_pointer(ir_node *node, void *env)
+{
 	int n_outs;
 	ir_node ***free = (ir_node ***) env;
 
@@ -554,7 +575,8 @@ static void set_array_pointer(ir_node *node, void *env) {
  * Adds an outedge from the predecessor to the
  * current node.
  */
-static void set_out_pointer(ir_node * node, void *env) {
+static void set_out_pointer(ir_node * node, void *env)
+{
 	int i, arity = get_irn_arity(node);
 	ir_node *succ;
 	int start = (!is_Block(node)) ? -1 : 0;
@@ -571,7 +593,8 @@ static void set_out_pointer(ir_node * node, void *env) {
 /*
  * Sets the outedges for all nodes.
  */
-void set_ip_outs(void) {
+void set_ip_outs(void)
+{
 	ir_node **outedge_array = get_irp_ip_outedges();
 	cg_walk(set_array_pointer, set_out_pointer, (void *) &outedge_array);
 }
@@ -583,7 +606,8 @@ void set_ip_outs(void) {
  * outedges and fills this outedge array in interprocedural
  * view!
  */
-void compute_ip_outs(void) {
+void compute_ip_outs(void)
+{
 	int n_out_edges;
 	ir_node **out_edges;
 
@@ -600,7 +624,8 @@ void compute_ip_outs(void) {
 	set_ip_outs();
 }
 
-void free_ip_outs(void) {
+void free_ip_outs(void)
+{
 	ir_node **out_edges = get_irp_ip_outedges();
 	if (out_edges != NULL) {
 		free(out_edges);
@@ -611,7 +636,8 @@ void free_ip_outs(void) {
 #endif
 
 
-void free_irg_outs(ir_graph *irg) {
+void free_irg_outs(ir_graph *irg)
+{
 	/*   current_ir_graph->outs_state = outs_none; */
 	irg->outs_state = outs_none;
 
@@ -633,7 +659,8 @@ void free_irg_outs(ir_graph *irg) {
 #endif /* defined DEBUG_libfirm */
 }
 
-static void check_out_edges(ir_node *irn, void *env) {
+static void check_out_edges(ir_node *irn, void *env)
+{
 	int i, j, pos;
 	int *pError = env;
 	int error = *pError;
@@ -669,7 +696,8 @@ static void check_out_edges(ir_node *irn, void *env) {
 }
 
 /* verify outs edges. */
-void verify_outs(ir_graph *irg) {
+void verify_outs(ir_graph *irg)
+{
 	int errors = 0;
 	irg_walk_graph(irg, NULL, check_out_edges, &errors);
 	if (errors > 0)

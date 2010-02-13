@@ -215,7 +215,8 @@ copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 	return co;
 }
 
-void free_copy_opt(copy_opt_t *co) {
+void free_copy_opt(copy_opt_t *co)
+{
 	xfree(co->name);
 	free(co);
 }
@@ -246,7 +247,8 @@ static int co_is_optimizable_root(ir_node *irn)
 	return 0;
 }
 
-int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+{
 	int cost = 0;
 	ir_loop *loop;
 	ir_node *root_block = get_nodes_block(root);
@@ -267,7 +269,8 @@ int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, i
 	return 1+cost;
 }
 
-int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos) {
+int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos)
+{
 	int res;
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
@@ -279,7 +282,8 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
 }
 
 
-int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos) {
+int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int pos)
+{
 	(void) co;
 	(void) root;
 	(void) arg;
@@ -302,7 +306,8 @@ int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node *arg, int 
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
  */
-static int ou_max_ind_set_costs(unit_t *ou) {
+static int ou_max_ind_set_costs(unit_t *ou)
+{
 	be_chordal_env_t *chordal_env = ou->co->cenv;
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
@@ -530,7 +535,8 @@ static void co_collect_units(ir_node *irn, void *env)
 
 #ifdef QUICK_AND_DIRTY_HACK
 
-static int compare_ous(const void *k1, const void *k2) {
+static int compare_ous(const void *k1, const void *k2)
+{
 	const unit_t *u1 = *((const unit_t **) k1);
 	const unit_t *u2 = *((const unit_t **) k2);
 	int i, o, u1_has_constr, u2_has_constr;
@@ -574,7 +580,8 @@ static int compare_ous(const void *k1, const void *k2) {
 /**
  * Sort the ou's according to constraints and their sort_key
  */
-static void co_sort_units(copy_opt_t *co) {
+static void co_sort_units(copy_opt_t *co)
+{
 	int i, count = 0, costs;
 	unit_t *ou, **ous;
 
@@ -610,7 +617,8 @@ static void co_sort_units(copy_opt_t *co) {
 }
 #endif
 
-void co_build_ou_structure(copy_opt_t *co) {
+void co_build_ou_structure(copy_opt_t *co)
+{
 	DBG((dbg, LEVEL_1, "\tCollecting optimization units\n"));
 	INIT_LIST_HEAD(&co->units);
 	irg_walk_graph(co->irg, co_collect_units, NULL, co);
@@ -619,7 +627,8 @@ void co_build_ou_structure(copy_opt_t *co) {
 #endif
 }
 
-void co_free_ou_structure(copy_opt_t *co) {
+void co_free_ou_structure(copy_opt_t *co)
+{
 	unit_t *curr, *tmp;
 	ASSERT_OU_AVAIL(co);
 	list_for_each_entry_safe(unit_t, curr, tmp, &co->units, units) {
@@ -632,7 +641,8 @@ void co_free_ou_structure(copy_opt_t *co) {
 
 /* co_solve_heuristic() is implemented in becopyheur.c */
 
-int co_get_max_copy_costs(const copy_opt_t *co) {
+int co_get_max_copy_costs(const copy_opt_t *co)
+{
 	int i, res = 0;
 	unit_t *curr;
 
@@ -646,7 +656,8 @@ int co_get_max_copy_costs(const copy_opt_t *co) {
 	return res;
 }
 
-int co_get_inevit_copy_costs(const copy_opt_t *co) {
+int co_get_inevit_copy_costs(const copy_opt_t *co)
+{
 	int res = 0;
 	unit_t *curr;
 
@@ -657,7 +668,8 @@ int co_get_inevit_copy_costs(const copy_opt_t *co) {
 	return res;
 }
 
-int co_get_copy_costs(const copy_opt_t *co) {
+int co_get_copy_costs(const copy_opt_t *co)
+{
 	int i, res = 0;
 	unit_t *curr;
 
@@ -678,7 +690,8 @@ int co_get_copy_costs(const copy_opt_t *co) {
 	return res;
 }
 
-int co_get_lower_bound(const copy_opt_t *co) {
+int co_get_lower_bound(const copy_opt_t *co)
+{
 	int res = 0;
 	unit_t *curr;
 
@@ -734,7 +747,8 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
                   |_|                                      |___/
  ******************************************************************************/
 
-static int compare_affinity_node_t(const void *k1, const void *k2, size_t size) {
+static int compare_affinity_node_t(const void *k1, const void *k2, size_t size)
+{
 	const affinity_node_t *n1 = k1;
 	const affinity_node_t *n2 = k2;
 	(void) size;
@@ -742,7 +756,8 @@ static int compare_affinity_node_t(const void *k1, const void *k2, size_t size) 
 	return (n1->irn != n2->irn);
 }
 
-static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
+static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
+{
 	affinity_node_t new_node, *node;
 	neighb_t        *nbr;
 	int             allocnew = 1;
@@ -773,14 +788,16 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
 	nbr->costs += costs;
 }
 
-static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs) {
+static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
+{
 	if (! be_ifg_connected(co->cenv->ifg, n1, n2)) {
 		add_edge(co, n1, n2, costs);
 		add_edge(co, n2, n1, costs);
 	}
 }
 
-static void build_graph_walker(ir_node *irn, void *env) {
+static void build_graph_walker(ir_node *irn, void *env)
+{
 	const arch_register_req_t *req = arch_get_register_req_out(irn);
 	copy_opt_t                *co  = env;
 	int pos, max;
@@ -817,14 +834,16 @@ static void build_graph_walker(ir_node *irn, void *env) {
 	}
 }
 
-void co_build_graph_structure(copy_opt_t *co) {
+void co_build_graph_structure(copy_opt_t *co)
+{
 	obstack_init(&co->obst);
 	co->nodes = new_set(compare_affinity_node_t, 32);
 
 	irg_walk_graph(co->irg, build_graph_walker, NULL, co);
 }
 
-void co_free_graph_structure(copy_opt_t *co) {
+void co_free_graph_structure(copy_opt_t *co)
+{
 	ASSERT_GS_AVAIL(co);
 
 	del_set(co->nodes);
@@ -834,7 +853,8 @@ void co_free_graph_structure(copy_opt_t *co) {
 
 /* co_solve_ilp1() co_solve_ilp2() are implemented in becopyilpX.c */
 
-int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn) {
+int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
+{
 	affinity_node_t new_node, *n;
 
 	ASSERT_GS_AVAIL(co);

@@ -85,7 +85,8 @@ static void nodes_walker(ir_node *bl, void *data)
 	}
 }
 
-static void find_nodes(const void *self, void *iter) {
+static void find_nodes(const void *self, void *iter)
+{
 	const ifg_std_t *ifg = self;
 	nodes_iter_t *it = iter;
 
@@ -198,7 +199,8 @@ static inline void neighbours_break(adj_iter_t *it, int force)
 	it->valid = 0;
 }
 
-static ir_node *get_next_neighbour(adj_iter_t *it) {
+static ir_node *get_next_neighbour(adj_iter_t *it)
+{
 	ir_node *res = ir_nodeset_iterator_next(&it->iter);
 
 	if (res == NULL) {
@@ -236,13 +238,15 @@ typedef struct _cliques_iter_t {
 	pset *living;
 } cliques_iter_t;
 
-static inline void free_clique_iter(cliques_iter_t *it) {
+static inline void free_clique_iter(cliques_iter_t *it)
+{
 	it->n_blocks = -1;
 	obstack_free(&it->ob, NULL);
 	del_pset(it->living);
 }
 
-static void get_blocks_dom_order(ir_node *blk, void *env) {
+static void get_blocks_dom_order(ir_node *blk, void *env)
+{
 	cliques_iter_t *it = env;
 	obstack_ptr_grow(&it->ob, blk);
 }
@@ -254,7 +258,8 @@ static void get_blocks_dom_order(ir_node *blk, void *env) {
  * NOTE: Be careful when changing this function!
  *       First understand the control flow of consecutive calls.
  */
-static inline int get_next_clique(cliques_iter_t *it) {
+static inline int get_next_clique(cliques_iter_t *it)
+{
 
 	/* continue in the block we left the last time */
 	for (; it->blk < it->n_blocks; it->blk++) {

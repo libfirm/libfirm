@@ -63,7 +63,8 @@ typedef struct _collect_t {
 /**
  * walker for collecting data, fills a collect_t environment
  */
-static void collect_data(ir_node *node, void *env) {
+static void collect_data(ir_node *node, void *env)
+{
 	collect_t *data = env;
 	ir_node *pred;
 	ir_op *op;
@@ -135,7 +136,8 @@ typedef struct tr_env {
  * @param rets          linked list of all rets
  * @param n_tail_calls  number of tail-recursion calls
  */
-static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
+static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
+{
 	ir_node *end_block = get_irg_end_block(irg);
 	ir_node *block, *jmp, *call, *calls;
 	ir_node **in;
@@ -416,7 +418,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env) {
  *
  * @return non-zero if it's ok to do tail recursion
  */
-static int check_lifetime_of_locals(ir_graph *irg) {
+static int check_lifetime_of_locals(ir_graph *irg)
+{
 	ir_node *irg_frame;
 	int i;
 	ir_type *frame_tp = get_irg_frame_type(irg);
@@ -441,7 +444,8 @@ static int check_lifetime_of_locals(ir_graph *irg) {
 /**
  * Examine irn and detect the recursion variant.
  */
-static tail_rec_variants find_variant(ir_node *irn, ir_node *call) {
+static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
+{
 	ir_node           *a, *b;
 	tail_rec_variants va, vb, res;
 
@@ -568,7 +572,8 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call) {
 /*
  * convert simple tail-calls into loops
  */
-int opt_tail_rec_irg(ir_graph *irg) {
+int opt_tail_rec_irg(ir_graph *irg)
+{
 	tr_env            env;
 	ir_node           *end_block;
 	int               i, n_ress, n_tail_calls = 0;
@@ -710,7 +715,8 @@ ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
 /*
  * optimize tail recursion away
  */
-void opt_tail_recursion(void) {
+void opt_tail_recursion(void)
+{
 	int i;
 	int n_opt_applications = 0;
 	ir_graph *irg;

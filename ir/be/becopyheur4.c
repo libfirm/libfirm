@@ -152,7 +152,8 @@ typedef int decide_func_t(const co_mst_irn_t *node, int col);
 /**
  * Write a chunk to stderr for debugging.
  */
-static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
+static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c)
+{
 	int i, l;
 	(void) env;
 	if (c->weight_consistent)
@@ -168,7 +169,8 @@ static void dbg_aff_chunk(const co_mst_env_t *env, const aff_chunk_t *c) {
 /**
  * Dump all admissible colors to stderr.
  */
-static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node) {
+static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *node)
+{
 	bitset_pos_t idx;
 	(void) env;
 
@@ -184,7 +186,8 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 /**
  * Dump color-cost pairs to stderr.
  */
-static void dbg_col_cost(const co_mst_env_t *env, const col_cost_t *cost) {
+static void dbg_col_cost(const co_mst_env_t *env, const col_cost_t *cost)
+{
 	int i;
 	for (i = 0; i < env->n_regs; ++i)
 		fprintf(stderr, " (%d, %.4f)", cost[i].col, cost[i].cost);
@@ -192,35 +195,40 @@ static void dbg_col_cost(const co_mst_env_t *env, const col_cost_t *cost) {
 
 #endif /* DEBUG_libfirm */
 
-static inline int get_mst_irn_col(const co_mst_irn_t *node) {
+static inline int get_mst_irn_col(const co_mst_irn_t *node)
+{
 	return node->tmp_col >= 0 ? node->tmp_col : node->col;
 }
 
 /**
  * @return 1 if node @p node has color @p col, 0 otherwise.
  */
-static int decider_has_color(const co_mst_irn_t *node, int col) {
+static int decider_has_color(const co_mst_irn_t *node, int col)
+{
 	return get_mst_irn_col(node) == col;
 }
 
 /**
  * @return 1 if node @p node has not color @p col, 0 otherwise.
  */
-static int decider_hasnot_color(const co_mst_irn_t *node, int col) {
+static int decider_hasnot_color(const co_mst_irn_t *node, int col)
+{
 	return get_mst_irn_col(node) != col;
 }
 
 /**
  * Always returns true.
  */
-static int decider_always_yes(const co_mst_irn_t *node, int col) {
+static int decider_always_yes(const co_mst_irn_t *node, int col)
+{
 	(void) node;
 	(void) col;
 	return 1;
 }
 
 /** compares two affinity edges by its weight */
-static int cmp_aff_edge(const void *a, const void *b) {
+static int cmp_aff_edge(const void *a, const void *b)
+{
 	const aff_edge_t *e1 = a;
 	const aff_edge_t *e2 = b;
 
@@ -235,14 +243,16 @@ static int cmp_aff_edge(const void *a, const void *b) {
 }
 
 /** compares to color-cost pairs */
-static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b) {
+static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b)
+{
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
 	real_t diff = c1->cost - c2->cost;
 	return (diff > 0) - (diff < 0);
 }
 
-static int cmp_col_cost_gt(const void *a, const void *b) {
+static int cmp_col_cost_gt(const void *a, const void *b)
+{
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
 	real_t diff = c2->cost - c1->cost;
@@ -252,7 +262,8 @@ static int cmp_col_cost_gt(const void *a, const void *b) {
 /**
  * Creates a new affinity chunk
  */
-static inline aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
+static inline aff_chunk_t *new_aff_chunk(co_mst_env_t *env)
+{
 	aff_chunk_t *c = XMALLOCF(aff_chunk_t, color_affinity, env->n_regs);
 	c->n                 = NEW_ARR_F(const ir_node *, 0);
 	c->interfere         = NEW_ARR_F(const ir_node *, 0);
@@ -268,7 +279,8 @@ static inline aff_chunk_t *new_aff_chunk(co_mst_env_t *env) {
 /**
  * Frees all memory allocated by an affinity chunk.
  */
-static inline void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
+static inline void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
+{
 	pset_remove(env->chunkset, c, c->id);
 	DEL_ARR_F(c->interfere);
 	DEL_ARR_F(c->n);
@@ -282,7 +294,8 @@ static inline void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
  * @return the position where n is found in the array arr or ~pos
  * if the nodes is not here.
  */
-static inline int nodes_bsearch(const ir_node **arr, const ir_node *n) {
+static inline int nodes_bsearch(const ir_node **arr, const ir_node *n)
+{
 	int hi = ARR_LEN(arr);
 	int lo = 0;
 
@@ -301,7 +314,8 @@ static inline int nodes_bsearch(const ir_node **arr, const ir_node *n) {
 }
 
 /** Check if a node n can be found inside arr. */
-static int node_contains(const ir_node **arr, const ir_node *n) {
+static int node_contains(const ir_node **arr, const ir_node *n)
+{
 	int i = nodes_bsearch(arr, n);
 	return i >= 0;
 }
@@ -311,7 +325,8 @@ static int node_contains(const ir_node **arr, const ir_node *n) {
  *
  * @return 1 if the node was inserted, 0 else
  */
-static int nodes_insert(const ir_node ***arr, const ir_node *irn) {
+static int nodes_insert(const ir_node ***arr, const ir_node *irn)
+{
 	int idx = nodes_bsearch(*arr, irn);
 
 	if (idx < 0) {
@@ -334,7 +349,8 @@ static int nodes_insert(const ir_node ***arr, const ir_node *irn) {
 /**
  * Adds a node to an affinity chunk
  */
-static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
+static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node)
+{
 	int i;
 
 	if (! nodes_insert(&c->n, node->irn))
@@ -352,7 +368,8 @@ static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node) {
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
+static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old)
+{
 	co_mst_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 	co_mst_env_t *env = ph->priv;
 
@@ -410,7 +427,8 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old) {
 /**
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
-static inline int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *irn) {
+static inline int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *irn)
+{
 	return node_contains(chunk->interfere, irn);
 }
 
@@ -420,7 +438,8 @@ static inline int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *
  * @param c2    Another chunk
  * @return 1 if there are interferences between nodes of c1 and c2, 0 otherwise.
  */
-static inline int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t *c2) {
+static inline int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t *c2)
+{
 	int i;
 
 	if (c1 == c2)
@@ -440,7 +459,8 @@ static inline int aff_chunks_interfere(const aff_chunk_t *c1, const aff_chunk_t 
  * Returns the affinity chunk of @p irn or creates a new
  * one with @p irn as element if there is none assigned.
  */
-static inline aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn) {
+static inline aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn)
+{
 	co_mst_irn_t *node = get_co_mst_irn(env, irn);
 	return node->chunk;
 }
@@ -450,7 +470,8 @@ static inline aff_chunk_t *get_aff_chunk(co_mst_env_t *env, const ir_node *irn) 
  * are no interference edges from chunk(src) to chunk(tgt)).
  * @return 1 if successful, 0 if not possible
  */
-static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node *tgt) {
+static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node *tgt)
+{
 	aff_chunk_t *c1 = get_aff_chunk(env, src);
 	aff_chunk_t *c2 = get_aff_chunk(env, tgt);
 
@@ -527,7 +548,8 @@ absorbed:
 /**
  * Assures that the weight of the given chunk is consistent.
  */
-static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
+static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
+{
 	if (! c->weight_consistent) {
 		int w = 0;
 		int idx, len, i;
@@ -574,7 +596,8 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Count the number of interfering affinity neighbours
  */
-static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an) {
+static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t *an)
+{
 	const neighb_t     *neigh;
 	const ir_node      *irn  = an->irn;
 	const co_mst_irn_t *node = get_co_mst_irn(env, irn);
@@ -606,7 +629,8 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t
  * merged if there are no interference edges from one
  * chunk to the other.
  */
-static void build_affinity_chunks(co_mst_env_t *env) {
+static void build_affinity_chunks(co_mst_env_t *env)
+{
 	void        *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
 	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
 	ir_node     *n;
@@ -836,7 +860,8 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 /**
  * Fragment the given chunk into chunks having given color and not having given color.
  */
-static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, waitq *tmp) {
+static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, waitq *tmp)
+{
 	bitset_t    *visited = bitset_irg_malloc(env->co->irg);
 	int         idx, len;
 	aff_chunk_t *best = NULL;
@@ -886,7 +911,8 @@ static aff_chunk_t *fragment_chunk(co_mst_env_t *env, int col, aff_chunk_t *c, w
  * Resets the temporary fixed color of all nodes within wait queue @p nodes.
  * ATTENTION: the queue is empty after calling this function!
  */
-static inline void reject_coloring(struct list_head *nodes) {
+static inline void reject_coloring(struct list_head *nodes)
+{
 	co_mst_irn_t *n, *temp;
 	DB((dbg, LEVEL_4, "\treject coloring for"));
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
@@ -898,7 +924,8 @@ static inline void reject_coloring(struct list_head *nodes) {
 	DB((dbg, LEVEL_4, "\n"));
 }
 
-static inline void materialize_coloring(struct list_head *nodes) {
+static inline void materialize_coloring(struct list_head *nodes)
+{
 	co_mst_irn_t *n, *temp;
 	list_for_each_entry_safe(co_mst_irn_t, n, temp, nodes, list) {
 		assert(n->tmp_col >= 0);
@@ -965,7 +992,8 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
  * Tries to change node to a color but @p explude_col.
  * @return 1 if succeeded, 0 otherwise.
  */
-static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int exclude_col, struct list_head *changed, int depth, int *max_depth, int *trip) {
+static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int exclude_col, struct list_head *changed, int depth, int *max_depth, int *trip)
+{
 	int col = get_mst_irn_col(node);
 	int res = 0;
 
@@ -1001,7 +1029,8 @@ static int change_node_color_excluded(co_mst_env_t *env, co_mst_irn_t *node, int
  * ATTENTION: Expect @p costs already sorted by increasing costs.
  * @return 1 if coloring could be applied, 0 otherwise.
  */
-static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed, int depth, int *max_depth, int *trip) {
+static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *costs, struct list_head *changed, int depth, int *max_depth, int *trip)
+{
 	int   i;
 	struct list_head local_changed;
 
@@ -1087,7 +1116,8 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
  * Tries to bring node @p node and all it's neighbours to color @p tgt_col.
  * @return 1 if color @p col could be applied, 0 otherwise
  */
-static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col, struct list_head *changed) {
+static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col, struct list_head *changed)
+{
 	int col = get_mst_irn_col(node);
 
 	/* if node already has the target color -> good, temporary fix it */
@@ -1138,7 +1168,8 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
  * Tries to color an affinity chunk (or at least a part of it).
  * Inserts uncolored parts of the chunk as a new chunk into the priority queue.
  */
-static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
+static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
+{
 	aff_chunk_t *best_chunk   = NULL;
 	int         n_nodes       = ARR_LEN(c->n);
 	int         best_color    = -1;
@@ -1381,7 +1412,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c) {
 /**
  * Main driver for mst safe coalescing algorithm.
  */
-static int co_solve_heuristic_mst(copy_opt_t *co) {
+static int co_solve_heuristic_mst(copy_opt_t *co)
+{
 	unsigned     n_regs       = co->cls->n_regs;
 	bitset_t     *ignore_regs = bitset_alloca(n_regs);
 	unsigned     i, j, k;
@@ -1474,7 +1506,8 @@ static const lc_opt_table_entry_t options[] = {
 };
 
 
-void be_init_copyheur4(void) {
+void be_init_copyheur4(void)
+{
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
 	lc_opt_entry_t *ra_grp = lc_opt_get_grp(be_grp, "ra");
 	lc_opt_entry_t *chordal_grp = lc_opt_get_grp(ra_grp, "chordal");

@@ -549,7 +549,8 @@ MANGLEP(entry) *
   return pset_hinsert (se, key, hash);
 }
 
-void pset_insert_pset_ptr(pset *target, pset *src) {
+void pset_insert_pset_ptr(pset *target, pset *src)
+{
   void *elt;
   for (elt = pset_first(src); elt; elt = pset_next(src)) {
     pset_insert_ptr(target, elt);

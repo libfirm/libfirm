@@ -77,21 +77,24 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 /**
  * Returns the link of a region.
  */
-void *get_region_link(const ir_region *reg) {
+void *get_region_link(const ir_region *reg)
+{
 	return reg->link;
 }
 
 /**
  * Sets the link of a region.
  */
-void set_region_link(ir_region *reg, void *data) {
+void set_region_link(ir_region *reg, void *data)
+{
 	reg->link = data;
 }
 
 /**
  * Get the immediate region of a block.
  */
-ir_region *get_block_region(const ir_node *block) {
+ir_region *get_block_region(const ir_node *block)
+{
 	assert(is_Block(block));
 	return block->attr.block.region;
 }
@@ -99,7 +102,8 @@ ir_region *get_block_region(const ir_node *block) {
 /**
  * Sets the immediate region of a block.
  */
-void set_block_region(ir_node *block, ir_region *reg) {
+void set_block_region(ir_node *block, ir_region *reg)
+{
 	assert(is_Block(block));
 	block->attr.block.region = reg;
 }
@@ -107,7 +111,8 @@ void set_block_region(ir_node *block, ir_region *reg) {
 /**
  * Get the immediate region of a node.
  */
-ir_region *get_irn_region(ir_node *n) {
+ir_region *get_irn_region(ir_node *n)
+{
 	if (is_no_Block(n))
 		n = get_nodes_block(n);
 	return get_block_region(n);
@@ -116,7 +121,8 @@ ir_region *get_irn_region(ir_node *n) {
 /**
  * Return non-zero if a given firm thing is a region.
  */
-int is_region(const void *thing) {
+int is_region(const void *thing)
+{
 	const firm_kind *kind = thing;
 	return *kind == k_ir_region;
 }
@@ -124,14 +130,16 @@ int is_region(const void *thing) {
 /**
  * Return the number of predecessors of a region.
  */
-int get_region_n_preds(const ir_region *reg) {
+int get_region_n_preds(const ir_region *reg)
+{
 	return ARR_LEN(reg->pred);
 }
 
 /**
  * Return the predecessor region at position pos.
  */
-ir_region *get_region_pred(const ir_region *reg, int pos) {
+ir_region *get_region_pred(const ir_region *reg, int pos)
+{
 	assert(0 <= pos && pos <= get_region_n_preds(reg));
 	return reg->pred[pos];
 }
@@ -139,7 +147,8 @@ ir_region *get_region_pred(const ir_region *reg, int pos) {
 /**
  * Set the predecessor region at position pos.
  */
-void set_region_pred(ir_region *reg, int pos, ir_region *n) {
+void set_region_pred(ir_region *reg, int pos, ir_region *n)
+{
 	assert(0 <= pos && pos <= get_region_n_preds(reg));
 	reg->pred[pos] = n;
 }
@@ -147,14 +156,16 @@ void set_region_pred(ir_region *reg, int pos, ir_region *n) {
 /**
  * Return the number of successors in a region.
  */
-int get_region_n_succs(const ir_region *reg) {
+int get_region_n_succs(const ir_region *reg)
+{
 	return ARR_LEN(reg->succ);
 }
 
 /**
  * Return the successor region at position pos.
  */
-ir_region *get_region_succ(const ir_region *reg, int pos) {
+ir_region *get_region_succ(const ir_region *reg, int pos)
+{
 	assert(0 <= pos && pos <= get_region_n_succs(reg));
 	return reg->succ[pos];
 }
@@ -162,7 +173,8 @@ ir_region *get_region_succ(const ir_region *reg, int pos) {
 /**
  * Set the successor region at position pos.
  */
-void set_region_succ(ir_region *reg, int pos, ir_region *n) {
+void set_region_succ(ir_region *reg, int pos, ir_region *n)
+{
 	assert(0 <= pos && pos <= get_region_n_succs(reg));
 	reg->succ[pos] = n;
 }
@@ -184,7 +196,8 @@ typedef struct walk_env {
  * Do a DFS search on the initial regions, assign a prenum and a postnum to every
  * node and store the region nodes into the post array.
  */
-static void dfs_walk2(ir_region *reg, walk_env *env) {
+static void dfs_walk2(ir_region *reg, walk_env *env)
+{
 	int i, n;
 
 	if (reg->visited == 0) {
@@ -206,7 +219,8 @@ static void dfs_walk2(ir_region *reg, walk_env *env) {
  * Do a DFS search on the initial regions, assign a prenum and a postnum to every
  * node and store the region nodes into the post array.
  */
-static void dfs_walk(ir_graph *irg, walk_env *env) {
+static void dfs_walk(ir_graph *irg, walk_env *env)
+{
 	ir_graph *rem = current_ir_graph;
 	ir_region *reg;
 
@@ -223,7 +237,8 @@ static void dfs_walk(ir_graph *irg, walk_env *env) {
  * Post-walker: wrap all blocks with a BasicBlock region
  * and count them
  */
-static void wrap_BasicBlocks(ir_node *block, void *ctx) {
+static void wrap_BasicBlocks(ir_node *block, void *ctx)
+{
 	walk_env *env = ctx;
 	ir_region *reg;
 
@@ -251,7 +266,8 @@ static void wrap_BasicBlocks(ir_node *block, void *ctx) {
  * Post-walker: Create the pred and succ edges for Block wrapper.
  * Kill edges to the Start and End blocks.
  */
-static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
+static void update_BasicBlock_regions(ir_node *blk, void *ctx)
+{
 	walk_env *env = ctx;
 	ir_region *reg = get_irn_link(blk);
 	int i, j, len;
@@ -296,7 +312,8 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx) {
 /**
  * Creates a new Sequence region.
  */
-static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_len) {
+static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_len)
+{
 	ir_region *reg, *next;
 	int i;
 
@@ -331,7 +348,8 @@ static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_l
 /**
  * Create a new IfThenElse region.
  */
-static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_region *then_b, ir_region *else_b) {
+static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_region *then_b, ir_region *else_b)
+{
 	ir_region *reg;
 
 	ALLOC_REG(obst, reg, ir_rk_IfThenElse);
@@ -354,7 +372,8 @@ static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_regio
 /**
  * Create a new IfThen region.
  */
-static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *then_b) {
+static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *then_b)
+{
 	ir_region *reg;
 
 	ALLOC_REG(obst, reg, ir_rk_IfThen);
@@ -423,7 +442,8 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 /**
  * Create a new SelfLoop region.
  */
-static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head) {
+static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head)
+{
 	ir_region *reg, *succ;
 	int i, j, len;
 
@@ -460,7 +480,8 @@ static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head) {
 /**
  * Create a new RepeatLoop region.
  */
-static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_region *body) {
+static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_region *body)
+{
 	ir_region *reg, *succ;
 
 	ALLOC_REG(obst, reg, ir_rk_RepeatLoop);
@@ -489,7 +510,8 @@ static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_regio
 /**
  * Create a new WhileLoop region.
  */
-static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head) {
+static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head)
+{
 	ir_region *reg, *succ;
 	ir_region *body = head->link;
 	int i, j, len;
@@ -530,7 +552,8 @@ static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head) {
 /**
  * Create a new new_NaturalLoop region.
  */
-static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head) {
+static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
+{
 	ir_region *reg, *c, *n;
 	int i, j, k, len, n_pred, n_succ;
 
@@ -599,14 +622,16 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head) {
 /**
  * Return true if region a is an ancestor of region b in DFS search.
  */
-static int is_ancestor(const ir_region *a, const ir_region *b) {
+static int is_ancestor(const ir_region *a, const ir_region *b)
+{
 	return (a->prenum <= b->prenum && a->postnum > b->postnum);
 }
 
 /**
  * Return true if region pred is a predecessor of region n.
  */
-static int pred_of(const ir_region *pred, const ir_region *n) {
+static int pred_of(const ir_region *pred, const ir_region *n)
+{
 	int i;
 	for (i = get_region_n_preds(n) - 1; i >= 0; --i) {
 		if (get_region_pred(n, i) == pred)
@@ -618,7 +643,8 @@ static int pred_of(const ir_region *pred, const ir_region *n) {
 /**
  * Return true if region succ is a successor of region n.
  */
-static int succ_of(const ir_region *succ, const ir_region *n) {
+static int succ_of(const ir_region *succ, const ir_region *n)
+{
 	int i;
 	for (i = get_region_n_succs(n) - 1; i >= 0; --i) {
 		if (get_region_succ(n, i) == succ)
@@ -630,7 +656,8 @@ static int succ_of(const ir_region *succ, const ir_region *n) {
 /**
  * Reverse a linked list of regions.
  */
-static struct ir_region *reverse_list(ir_region *n) {
+static struct ir_region *reverse_list(ir_region *n)
+{
 	ir_region *prev = NULL, *next;
 
 	for (; n; n = next) {
@@ -644,7 +671,8 @@ static struct ir_region *reverse_list(ir_region *n) {
 /**
  * Find the cyclic region in the subgraph entered by node.
  */
-static ir_region *find_cyclic_region(ir_region *node) {
+static ir_region *find_cyclic_region(ir_region *node)
+{
 	int i;
 	ir_region *last = node;
 	int improper = 0;
@@ -691,7 +719,8 @@ static ir_region *find_cyclic_region(ir_region *node) {
 /**
  * Detect a cyclic region.
  */
-static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node) {
+static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node)
+{
 	ir_region *list;
 
 	/* simple cases first */
@@ -721,7 +750,8 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node) {
 /**
  * Clear all links on a list. Needed, because we expect cleared links.
  */
-static void clear_list(ir_region *list) {
+static void clear_list(ir_region *list)
+{
 	ir_region *next;
 
 	for (next = list; next; list = next) {
@@ -735,7 +765,8 @@ static void clear_list(ir_region *list) {
 /**
  * Detect an acyclic region.
  */
-static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
+static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
+{
 	ir_region *n, *m;
 	int p, s, i, k;
 	ir_region *nset = NULL;
@@ -903,7 +934,8 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node) {
  * replace all pred edges from region pred that points to any of the set set
  * to ONE edge to reg.
  */
-static void replace_pred(ir_region *succ, ir_region *reg) {
+static void replace_pred(ir_region *succ, ir_region *reg)
+{
 	int i, len = get_region_n_preds(succ);
 	int have_one = 0;
 
@@ -934,7 +966,8 @@ static void replace_pred(ir_region *succ, ir_region *reg) {
  * replace all succ edges from region pred that points to any of the set set
  * to ONE edge to reg.
  */
-static void replace_succ(ir_region *pred, ir_region *reg) {
+static void replace_succ(ir_region *pred, ir_region *reg)
+{
 	int i, len = get_region_n_succs(pred);
 	int have_one = 0;
 
@@ -964,7 +997,8 @@ static void replace_succ(ir_region *pred, ir_region *reg) {
 /**
  * Reduce the graph by the node reg.
  */
-static void reduce(walk_env *env, ir_region *reg) {
+static void reduce(walk_env *env, ir_region *reg)
+{
 	int i;
 	ir_region *head = reg->parts[0].region;
 	unsigned maxorder = head->postnum;
@@ -997,7 +1031,8 @@ static void reduce(walk_env *env, ir_region *reg) {
  *
  * @param irg  the graph
  */
-ir_reg_tree *construct_region_tree(ir_graph *irg) {
+ir_reg_tree *construct_region_tree(ir_graph *irg)
+{
 	walk_env env;
 	ir_graph *rem = current_ir_graph;
 	ir_reg_tree *res = XMALLOC(ir_reg_tree);
@@ -1075,7 +1110,8 @@ ir_reg_tree *construct_region_tree(ir_graph *irg) {
  * @param post  walker function, executed after the children of a tree node are visited
  * @param env   environment, passed to pre and post
  */
-static void region_tree_walk2(ir_region *reg, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env) {
+static void region_tree_walk2(ir_region *reg, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env)
+{
 	int i, n;
 
 	if (pre)
@@ -1096,6 +1132,7 @@ static void region_tree_walk2(ir_region *reg, irg_reg_walk_func *pre, irg_reg_wa
  * @param post  walker function, executed after the children of a tree node are visited
  * @param env   environment, passed to pre and post
  */
-void region_tree_walk(ir_reg_tree *tree, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env) {
+void region_tree_walk(ir_reg_tree *tree, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env)
+{
 	region_tree_walk2(tree->top, pre, post, env);
 }

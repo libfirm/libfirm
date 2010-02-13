@@ -134,7 +134,8 @@ static int max_precision;
 static int fc_exact = 1;
 
 #if 0
-static void fail_char(const char *str, unsigned int len, int pos) {
+static void fail_char(const char *str, unsigned int len, int pos)
+{
 	if (*(str+pos))
 		printf("ERROR: Unexpected character '%c'\n", *(str + pos));
 	else
@@ -147,7 +148,8 @@ static void fail_char(const char *str, unsigned int len, int pos) {
 #endif
 
 /** pack machine-like */
-static void *pack(const fp_value *int_float, void *packed) {
+static void *pack(const fp_value *int_float, void *packed)
+{
 	char     *shift_val;
 	char     *temp;
 	fp_value *val_buffer;
@@ -210,7 +212,8 @@ static void *pack(const fp_value *int_float, void *packed) {
  *
  * @return non-zero if result is exact
  */
-static int normalize(const fp_value *in_val, fp_value *out_val, int sticky) {
+static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
+{
 	int exact = 1;
 	int hsb;
 	char lsb, guard, round, round_dir = 0;
@@ -411,7 +414,8 @@ do {                                                      \
 /**
  * calculate a + b, where a is the value with the bigger exponent
  */
-static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
+static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	char *temp;
 	char *exp_diff;
 
@@ -529,7 +533,8 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result) {
 /**
  * calculate a * b
  */
-static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
+static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	int sticky;
 	char *temp;
 	char res_sign;
@@ -615,7 +620,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result) {
 /**
  * calculate a / b
  */
-static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
+static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	int sticky;
 	char *temp, *dividend;
 	char res_sign;
@@ -714,7 +720,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result) {
 }
 
 #if 0
-static void _power_of_ten(int exp, ieee_descriptor_t *desc, char *result) {
+static void _power_of_ten(int exp, ieee_descriptor_t *desc, char *result)
+{
 	char *build;
 	char *temp;
 
@@ -756,7 +763,8 @@ static void _power_of_ten(int exp, ieee_descriptor_t *desc, char *result) {
  *
  * This does not clip to any integer range.
  */
-static void _trunc(const fp_value *a, fp_value *result) {
+static void _trunc(const fp_value *a, fp_value *result)
+{
 	/*
 	 * When exponent == 0 all bits left of the radix point
 	 * are the integral part of the value. For 15bit exp_size
@@ -817,15 +825,18 @@ static void _trunc(const fp_value *a, fp_value *result) {
 /********
  * functions defined in fltcalc.h
  ********/
-const void *fc_get_buffer(void) {
+const void *fc_get_buffer(void)
+{
 	return calc_buffer;
 }
 
-int fc_get_buffer_length(void) {
+int fc_get_buffer_length(void)
+{
 	return calc_buffer_size;
 }
 
-void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result) {
+void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result)
+{
 #if 0
 	enum {
 		START,
@@ -1033,7 +1044,8 @@ done:
 #endif
 }
 
-fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result)
+{
 	char    *temp;
 	int     bias_res, bias_val, mant_val;
 	value_t srcval;
@@ -1138,7 +1150,8 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 	return result;
 }
 
-LLDBL fc_val_to_ieee754(const fp_value *val) {
+LLDBL fc_val_to_ieee754(const fp_value *val)
+{
 	fp_value *value;
 	fp_value *temp = NULL;
 
@@ -1204,7 +1217,8 @@ LLDBL fc_val_to_ieee754(const fp_value *val) {
 	return buildval.d;
 }
 
-fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value *result)
+{
 	char *temp;
 	int exp_offset, val_bias, res_bias;
 
@@ -1265,7 +1279,8 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 	return result;
 }
 
-fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	result->desc.exponent_size = desc->exponent_size;
@@ -1284,7 +1299,8 @@ fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	fc_get_max(desc, result);
@@ -1293,7 +1309,8 @@ fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	result->desc.exponent_size = desc->exponent_size;
@@ -1311,7 +1328,8 @@ fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	result->desc.exponent_size = desc->exponent_size;
@@ -1356,7 +1374,8 @@ fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result) {
+fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	fc_get_plusinf(desc, result);
@@ -1365,7 +1384,8 @@ fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result) {
 	return result;
 }
 
-int fc_comp(const fp_value *val_a, const fp_value *val_b) {
+int fc_comp(const fp_value *val_a, const fp_value *val_b)
+{
 	int mul = 1;
 
 	/*
@@ -1412,27 +1432,33 @@ int fc_comp(const fp_value *val_a, const fp_value *val_b) {
 	}
 }
 
-int fc_is_zero(const fp_value *a) {
+int fc_is_zero(const fp_value *a)
+{
 	return a->desc.clss == ZERO;
 }
 
-int fc_is_negative(const fp_value *a) {
+int fc_is_negative(const fp_value *a)
+{
 	return a->sign;
 }
 
-int fc_is_inf(const fp_value *a) {
+int fc_is_inf(const fp_value *a)
+{
 	return a->desc.clss == INF;
 }
 
-int fc_is_nan(const fp_value *a) {
+int fc_is_nan(const fp_value *a)
+{
 	return a->desc.clss == NAN;
 }
 
-int fc_is_subnormal(const fp_value *a) {
+int fc_is_subnormal(const fp_value *a)
+{
 	return a->desc.clss == SUBNORMAL;
 }
 
-char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
+char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
+{
 	char *mul_1;
 	LLDBL flt_val;
 
@@ -1491,7 +1517,8 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base) {
 	return buf;
 }
 
-unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byte_ofs) {
+unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byte_ofs)
+{
 	/* this is used to cache the packed version of the value */
 	static char *packed_value = NULL;
 
@@ -1504,18 +1531,21 @@ unsigned char fc_sub_bits(const fp_value *value, unsigned num_bits, unsigned byt
 }
 
 /* Returns non-zero if the mantissa is zero, i.e. 1.0Exxx */
-int fc_zero_mantissa(const fp_value *value) {
+int fc_zero_mantissa(const fp_value *value)
+{
 	return sc_get_lowest_set_bit(_mant(value)) == ROUNDING_BITS + value->desc.mantissa_size;
 }
 
 /* Returns the exponent of a value. */
-int fc_get_exponent(const fp_value *value) {
+int fc_get_exponent(const fp_value *value)
+{
 	int exp_bias = (1 << (value->desc.exponent_size - 1)) - 1;
 	return sc_val_to_long(_exp(value)) - exp_bias;
 }
 
 /* Return non-zero if a given value can be converted lossless into another precision */
-int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc) {
+int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc)
+{
 	int v;
 	int exp_bias;
 
@@ -1541,18 +1571,21 @@ int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc
 }
 
 
-fc_rounding_mode_t fc_set_rounding_mode(fc_rounding_mode_t mode) {
+fc_rounding_mode_t fc_set_rounding_mode(fc_rounding_mode_t mode)
+{
 	if (mode == FC_TONEAREST || mode == FC_TOPOSITIVE || mode == FC_TONEGATIVE || mode == FC_TOZERO)
 		rounding_mode = mode;
 
 	return rounding_mode;
 }
 
-fc_rounding_mode_t fc_get_rounding_mode(void) {
+fc_rounding_mode_t fc_get_rounding_mode(void)
+{
 	return rounding_mode;
 }
 
-void init_fltcalc(int precision) {
+void init_fltcalc(int precision)
+{
 	if (calc_buffer == NULL) {
 		/* does nothing if already init */
 		if (precision == 0) precision = FC_DEFAULT_PRECISION;
@@ -1585,7 +1618,8 @@ void init_fltcalc(int precision) {
 	}
 }
 
-void finish_fltcalc (void) {
+void finish_fltcalc (void)
+{
 	free(calc_buffer); calc_buffer = NULL;
 }
 
@@ -1594,7 +1628,8 @@ static char buffer[100];
 #endif
 
 /* definition of interface functions */
-fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result) {
+fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
@@ -1610,7 +1645,8 @@ fp_value *fc_add(const fp_value *a, const fp_value *b, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result) {
+fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	fp_value *temp;
 
 	if (result == NULL) result = calc_buffer;
@@ -1630,7 +1666,8 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result) {
+fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
@@ -1642,7 +1679,8 @@ fp_value *fc_mul(const fp_value *a, const fp_value *b, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result) {
+fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
@@ -1654,7 +1692,8 @@ fp_value *fc_div(const fp_value *a, const fp_value *b, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_neg(const fp_value *a, fp_value *result) {
+fp_value *fc_neg(const fp_value *a, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	TRACEPRINTF(("- %s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
@@ -1667,7 +1706,8 @@ fp_value *fc_neg(const fp_value *a, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_int(const fp_value *a, fp_value *result) {
+fp_value *fc_int(const fp_value *a, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
@@ -1679,7 +1719,8 @@ fp_value *fc_int(const fp_value *a, fp_value *result) {
 	return result;
 }
 
-fp_value *fc_rnd(const fp_value *a, fp_value *result) {
+fp_value *fc_rnd(const fp_value *a, fp_value *result)
+{
 	if (result == NULL) result = calc_buffer;
 
 	(void) a;
@@ -1761,13 +1802,15 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 }
 
 
-unsigned fc_set_immediate_precision(unsigned bits) {
+unsigned fc_set_immediate_precision(unsigned bits)
+{
 	unsigned old = immediate_prec;
 
 	immediate_prec = bits;
 	return old;
 }
 
-int fc_is_exact(void) {
+int fc_is_exact(void)
+{
 	return fc_exact;
 }

@@ -116,12 +116,14 @@ static int ppc32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
  *                                       |___/
  ***************************************************************************************************/
 
-ppc32_attr_t *get_ppc32_attr(ir_node *node) {
+ppc32_attr_t *get_ppc32_attr(ir_node *node)
+{
 	assert(is_ppc32_irn(node) && "need ppc node to get attributes");
 	return (ppc32_attr_t *)get_irn_generic_attr(node);
 }
 
-const ppc32_attr_t *get_ppc32_attr_const(const ir_node *node) {
+const ppc32_attr_t *get_ppc32_attr_const(const ir_node *node)
+{
 	assert(is_ppc32_irn(node) && "need ppc node to get attributes");
 	return (const ppc32_attr_t *)get_irn_generic_attr_const(node);
 }
@@ -131,7 +133,8 @@ const ppc32_attr_t *get_ppc32_attr_const(const ir_node *node) {
 /**
  * Returns the argument register requirements of a ppc node.
  */
-const arch_register_req_t **get_ppc32_in_req_all(const ir_node *node) {
+const arch_register_req_t **get_ppc32_in_req_all(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->in_req;
 }
@@ -139,7 +142,8 @@ const arch_register_req_t **get_ppc32_in_req_all(const ir_node *node) {
 /**
  * Returns the argument register requirement at position pos of an ppc node.
  */
-const arch_register_req_t *get_ppc32_in_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_ppc32_in_req(const ir_node *node, int pos)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->in_req[pos];
 }
@@ -147,7 +151,8 @@ const arch_register_req_t *get_ppc32_in_req(const ir_node *node, int pos) {
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos)
+{
 	ppc32_attr_t *attr  = get_ppc32_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -164,7 +169,8 @@ void set_ppc32_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 /**
  * Returns the type of the content (if any)
  */
-ppc32_attr_content_type get_ppc32_type(const ir_node *node) {
+ppc32_attr_content_type get_ppc32_type(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->content_type;
 }
@@ -172,7 +178,8 @@ ppc32_attr_content_type get_ppc32_type(const ir_node *node) {
 /**
  * Sets a tarval type content (also updating the content_type)
  */
-void set_ppc32_constant_tarval(ir_node *node, tarval *const_tarval) {
+void set_ppc32_constant_tarval(ir_node *node, tarval *const_tarval)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_Const;
 	attr->data.constant_tarval = const_tarval;
@@ -181,7 +188,8 @@ void set_ppc32_constant_tarval(ir_node *node, tarval *const_tarval) {
 /**
  * Returns a tarval type constant
  */
-tarval *get_ppc32_constant_tarval(const ir_node *node) {
+tarval *get_ppc32_constant_tarval(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->data.constant_tarval;
 }
@@ -189,7 +197,8 @@ tarval *get_ppc32_constant_tarval(const ir_node *node) {
 /**
  * Sets an ident type constant (also updating the content_type)
  */
-void set_ppc32_symconst_ident(ir_node *node, ident *symconst_ident) {
+void set_ppc32_symconst_ident(ir_node *node, ident *symconst_ident)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_SymConst;
 	attr->data.symconst_ident = symconst_ident;
@@ -198,7 +207,8 @@ void set_ppc32_symconst_ident(ir_node *node, ident *symconst_ident) {
 /**
  * Returns an ident type constant
  */
-ident *get_ppc32_symconst_ident(const ir_node *node) {
+ident *get_ppc32_symconst_ident(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->data.symconst_ident;
 }
@@ -207,7 +217,8 @@ ident *get_ppc32_symconst_ident(const ir_node *node) {
 /**
  * Sets an entity (also updating the content_type)
  */
-void set_ppc32_frame_entity(ir_node *node, ir_entity *ent) {
+void set_ppc32_frame_entity(ir_node *node, ir_entity *ent)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_FrameEntity;
 	attr->data.frame_entity = ent;
@@ -216,7 +227,8 @@ void set_ppc32_frame_entity(ir_node *node, ir_entity *ent) {
 /**
  * Returns an entity
  */
-ir_entity *get_ppc32_frame_entity(const ir_node *node) {
+ir_entity *get_ppc32_frame_entity(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->data.frame_entity;
 }
@@ -224,7 +236,8 @@ ir_entity *get_ppc32_frame_entity(const ir_node *node) {
 /**
  * Sets a Rlwimi const (also updating the content_type)
  */
-void set_ppc32_rlwimi_const(ir_node *node, unsigned shift, unsigned maskA, unsigned maskB) {
+void set_ppc32_rlwimi_const(ir_node *node, unsigned shift, unsigned maskA, unsigned maskB)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_RlwimiConst;
 	attr->data.rlwimi_const.shift = shift;
@@ -235,7 +248,8 @@ void set_ppc32_rlwimi_const(ir_node *node, unsigned shift, unsigned maskA, unsig
 /**
  * Returns the rlwimi const structure
  */
-const rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node) {
+const rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return &attr->data.rlwimi_const;
 }
@@ -243,7 +257,8 @@ const rlwimi_const_t *get_ppc32_rlwimi_const(const ir_node *node) {
 /**
  * Sets a Proj number (also updating the content_type)
  */
-void set_ppc32_proj_nr(ir_node *node, int proj_nr) {
+void set_ppc32_proj_nr(ir_node *node, int proj_nr)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_BranchProj;
 	attr->data.proj_nr = proj_nr;
@@ -252,7 +267,8 @@ void set_ppc32_proj_nr(ir_node *node, int proj_nr) {
 /**
  * Returns the proj number
  */
-int get_ppc32_proj_nr(const ir_node *node) {
+int get_ppc32_proj_nr(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->data.proj_nr;
 }
@@ -260,7 +276,8 @@ int get_ppc32_proj_nr(const ir_node *node) {
 /**
  * Sets an offset for a memory access (also updating the content_type)
  */
-void set_ppc32_offset(ir_node *node, int offset) {
+void set_ppc32_offset(ir_node *node, int offset)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->content_type = ppc32_ac_Offset;
 	attr->data.offset  = offset;
@@ -269,7 +286,8 @@ void set_ppc32_offset(ir_node *node, int offset) {
 /**
  * Returns the offset
  */
-int get_ppc32_offset(const ir_node *node) {
+int get_ppc32_offset(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->data.offset;
 }
@@ -277,7 +295,8 @@ int get_ppc32_offset(const ir_node *node) {
 /**
  * Sets the offset mode (ppc32_ao_None, ppc32_ao_Lo16, ppc32_ao_Hi16 or ppc32_ao_Ha16)
  */
-void set_ppc32_offset_mode(ir_node *node, ppc32_attr_offset_mode mode) {
+void set_ppc32_offset_mode(ir_node *node, ppc32_attr_offset_mode mode)
+{
 	ppc32_attr_t *attr = get_ppc32_attr(node);
 	attr->offset_mode = mode;
 }
@@ -285,7 +304,8 @@ void set_ppc32_offset_mode(ir_node *node, ppc32_attr_offset_mode mode) {
 /**
  * Returns the offset mode
  */
-ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node) {
+ppc32_attr_offset_mode get_ppc32_offset_mode(const ir_node *node)
+{
 	const ppc32_attr_t *attr = get_ppc32_attr_const(node);
 	return attr->offset_mode;
 }

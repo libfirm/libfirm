@@ -76,14 +76,16 @@ typedef struct scc_info {
 } scc_info;
 
 /** Allocate a new scc_info on the given obstack */
-static inline scc_info *new_scc_info(struct obstack *obst) {
+static inline scc_info *new_scc_info(struct obstack *obst)
+{
 	return OALLOCZ(obst, scc_info);
 }
 
 /**
  * Marks the node n to be on the stack.
  */
-static inline void mark_irn_in_stack(ir_node *n) {
+static inline void mark_irn_in_stack(ir_node *n)
+{
 	scc_info *info = get_irn_link(n);
 	info->in_stack = 1;
 }
@@ -91,7 +93,8 @@ static inline void mark_irn_in_stack(ir_node *n) {
 /**
  * Marks the node n to be not on the stack.
  */
-static inline void mark_irn_not_in_stack(ir_node *n) {
+static inline void mark_irn_not_in_stack(ir_node *n)
+{
 	scc_info *info = get_irn_link(n);
 	info->in_stack = 0;
 }
@@ -99,7 +102,8 @@ static inline void mark_irn_not_in_stack(ir_node *n) {
 /**
  * Returns whether node n is on the stack.
  */
-static inline int irn_is_in_stack(ir_node *n) {
+static inline int irn_is_in_stack(ir_node *n)
+{
 	scc_info *info = get_irn_link(n);
 	return info->in_stack;
 }
@@ -107,7 +111,8 @@ static inline int irn_is_in_stack(ir_node *n) {
 /**
  * Sets node n uplink value.
  */
-static inline void set_irn_uplink(ir_node *n, int uplink) {
+static inline void set_irn_uplink(ir_node *n, int uplink)
+{
 	scc_info *info = get_irn_link(n);
 	info->uplink = uplink;
 }
@@ -115,7 +120,8 @@ static inline void set_irn_uplink(ir_node *n, int uplink) {
 /**
  * Return node n uplink value.
  */
-static inline int get_irn_uplink(ir_node *n) {
+static inline int get_irn_uplink(ir_node *n)
+{
 	scc_info *info = get_irn_link(n);
 	return info->uplink;
 }
@@ -123,7 +129,8 @@ static inline int get_irn_uplink(ir_node *n) {
 /**
  * Sets node n dfn value.
  */
-static inline void set_irn_dfn(ir_node *n, int dfn) {
+static inline void set_irn_dfn(ir_node *n, int dfn)
+{
 	scc_info *info = get_irn_link(n);
 	info->dfn = dfn;
 }
@@ -131,7 +138,8 @@ static inline void set_irn_dfn(ir_node *n, int dfn) {
 /**
  * Returns node n dfn value.
  */
-static inline int get_irn_dfn(ir_node *n) {
+static inline int get_irn_dfn(ir_node *n)
+{
 	scc_info *info = get_irn_link(n);
 	return info->dfn;
 }
@@ -148,7 +156,8 @@ static int tos = 0;
 /**
  * Initializes the IR-node stack
  */
-static inline void init_stack(void) {
+static inline void init_stack(void)
+{
 	if (stack) {
 		ARR_RESIZE(ir_node *, stack, 1000);
 	} else {
@@ -166,7 +175,8 @@ static void finish_stack(void)
 /**
  * Push a node n onto the IR-node stack.
  */
-static inline void push(ir_node *n) {
+static inline void push(ir_node *n)
+{
 	if (tos == ARR_LEN(stack)) {
 		int nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
@@ -178,7 +188,8 @@ static inline void push(ir_node *n) {
 /**
  * Pop a node from the IR-node stack and return it.
  */
-static inline ir_node *pop(void) {
+static inline ir_node *pop(void)
+{
 	ir_node *n = stack[--tos];
 	mark_irn_not_in_stack(n);
 	return n;
@@ -188,7 +199,8 @@ static inline ir_node *pop(void) {
  * The nodes from tos up to n belong to the current loop.
  * Removes them from the stack and adds them to the current loop.
  */
-static inline void pop_scc_to_loop(ir_node *n) {
+static inline void pop_scc_to_loop(ir_node *n)
+{
 	ir_node *m;
 
 	do {
@@ -203,7 +215,8 @@ static inline void pop_scc_to_loop(ir_node *n) {
 /* GL ??? my last son is my grandson???  Removes cfloops with no
    ir_nodes in them.  Such loops have only another loop as son. (Why
    can't they have two loops as sons? Does it never get that far? ) */
-static void close_loop(ir_loop *l) {
+static void close_loop(ir_loop *l)
+{
 	int last = get_loop_n_elements(l) - 1;
 	loop_element lelement = get_loop_element(l, last);
 	ir_loop *last_son = lelement.son;
@@ -233,7 +246,8 @@ static void close_loop(ir_loop *l) {
  * Removes and unmarks all nodes up to n from the stack.
  * The nodes must be visited once more to assign them to a scc.
  */
-static inline void pop_scc_unmark_visit(ir_node *n) {
+static inline void pop_scc_unmark_visit(ir_node *n)
+{
 	ir_node *m;
 
 	do {
@@ -251,7 +265,8 @@ static inline void pop_scc_unmark_visit(ir_node *n) {
  * to the new loop and returns its father.
  * The loop is allocated on the outermost_ir_graphs's obstack.
  */
-static ir_loop *new_loop(void) {
+static ir_loop *new_loop(void)
+{
 	ir_loop *father = current_loop;
 	ir_loop *son    = alloc_loop(father, outermost_ir_graph->obst);
 
@@ -271,7 +286,8 @@ static ir_loop *new_loop(void) {
  * Clear the backedges for all nodes.
  * Called from a walker.
  */
-static inline void init_node(ir_node *n, void *env) {
+static inline void init_node(ir_node *n, void *env)
+{
 	struct obstack *obst = env;
 	if (is_Block(n))
 		set_irn_link(n, new_scc_info(obst));
@@ -281,7 +297,8 @@ static inline void init_node(ir_node *n, void *env) {
 /**
  * Initializes the common global settings for the scc algorithm
  */
-static inline void init_scc_common(void) {
+static inline void init_scc_common(void)
+{
 	current_dfn   = 1;
 	loop_node_cnt = 0;
 	init_stack();
@@ -291,7 +308,8 @@ static inline void init_scc_common(void) {
  * Initializes the scc algorithm for the intraprocedural case.
  * Add scc info to every block node.
  */
-static inline void init_scc(ir_graph *irg, struct obstack *obst) {
+static inline void init_scc(ir_graph *irg, struct obstack *obst)
+{
 	init_scc_common();
 	irg_walk_graph(irg, init_node, NULL, obst);
 }
@@ -305,7 +323,8 @@ static inline void finish_scc(void)
 /**
  * Initializes the scc algorithm for the interprocedural case.
  */
-static inline void init_ip_scc(struct obstack *obst) {
+static inline void init_ip_scc(struct obstack *obst)
+{
 	init_scc_common();
 	cg_walk(init_node, NULL, obst);
 
@@ -319,7 +338,8 @@ static inline void init_ip_scc(struct obstack *obst) {
  * Condition for breaking the recursion: n is the block
  * that gets the initial control flow from the Start node.
  */
-static int is_outermost_StartBlock(ir_node *n) {
+static int is_outermost_StartBlock(ir_node *n)
+{
 	/* Test whether this is the outermost Start node.  If so
 	   recursion must end. */
 	assert(is_Block(n));
@@ -337,7 +357,8 @@ static int is_outermost_StartBlock(ir_node *n) {
  *  @param n     the block node to check
  *  @param root  only needed for assertion.
  */
-static int is_head(ir_node *n, ir_node *root) {
+static int is_head(ir_node *n, ir_node *root)
+{
 	int i, arity;
 	int some_outof_loop = 0, some_in_loop = 0;
 	(void) root;
@@ -373,7 +394,8 @@ static int is_head(ir_node *n, ir_node *root) {
  * @param n     the block node to check
  * @param root  only needed for assertion.
  */
-static int is_endless_head(ir_node *n, ir_node *root) {
+static int is_endless_head(ir_node *n, ir_node *root)
+{
 	int i, arity;
 	int none_outof_loop = 1, some_in_loop = 0;
 	(void) root;
@@ -404,7 +426,8 @@ static int is_endless_head(ir_node *n, ir_node *root) {
  * Returns index of the predecessor with the smallest dfn number
  * greater-equal than limit.
  */
-static int smallest_dfn_pred(ir_node *n, int limit) {
+static int smallest_dfn_pred(ir_node *n, int limit)
+{
 	int i, index = -2, min = -1;
 
 	if (!is_outermost_StartBlock(n)) {
@@ -428,7 +451,8 @@ static int smallest_dfn_pred(ir_node *n, int limit) {
 /**
  * Returns index of the predecessor with the largest dfn number.
  */
-static int largest_dfn_pred(ir_node *n) {
+static int largest_dfn_pred(ir_node *n)
+{
 	int i, index = -2, max = -1;
 
 	if (!is_outermost_StartBlock(n)) {
@@ -455,7 +479,8 @@ static int largest_dfn_pred(ir_node *n) {
  * returns the tail of the loop.
  * If it finds no backedge returns NULL.
  */
-static ir_node *find_tail(ir_node *n) {
+static ir_node *find_tail(ir_node *n)
+{
 	ir_node *m;
 	int i, res_index = -2;
 
@@ -515,7 +540,8 @@ static ir_node *find_tail(ir_node *n) {
 /**
  * returns non.zero if l is the outermost loop.
  */
-inline static int is_outermost_loop(ir_loop *l) {
+inline static int is_outermost_loop(ir_loop *l)
+{
 	return l == get_loop_outer_loop(l);
 }
 
@@ -526,7 +552,8 @@ inline static int is_outermost_loop(ir_loop *l) {
 /**
  * Walks over all blocks of a graph
  */
-static void cfscc(ir_node *n) {
+static void cfscc(ir_node *n)
+{
 	int i;
 
 	assert(is_Block(n));
@@ -631,7 +658,8 @@ static void cfscc(ir_node *n) {
 }
 
 /* Constructs control flow backedge information for irg. */
-int construct_cf_backedges(ir_graph *irg) {
+int construct_cf_backedges(ir_graph *irg)
+{
 	ir_graph *rem = current_ir_graph;
 	ir_loop *head_rem;
 	ir_node *end = get_irg_end(irg);
@@ -674,7 +702,8 @@ int construct_cf_backedges(ir_graph *irg) {
 	return max_loop_depth;
 }
 
-void assure_cf_loop(ir_graph *irg) {
+void assure_cf_loop(ir_graph *irg)
+{
 	irg_loopinfo_state state = get_irg_loopinfo_state(irg);
 
 	if (state != loopinfo_cf_consistent)
@@ -682,7 +711,8 @@ void assure_cf_loop(ir_graph *irg) {
 }
 
 #ifdef INTERPROCEDURAL_VIEW
-int construct_ip_cf_backedges (void) {
+int construct_ip_cf_backedges (void)
+{
 	ir_graph *rem = current_ir_graph;
 	int rem_ipv = get_interprocedural_view();
 	struct obstack temp;
@@ -762,7 +792,8 @@ int construct_ip_cf_backedges (void) {
  * Clear the intra- and the interprocedural
  * backedge information pf a block.
  */
-static void reset_backedges(ir_node *block) {
+static void reset_backedges(ir_node *block)
+{
 	int rem;
 
 	assert(is_Block(block));
@@ -784,7 +815,8 @@ static void reset_backedges(ir_node *block) {
  * a loop as well as all loop info for all nodes of this loop.
  * Recurse into all nested loops.
  */
-static void loop_reset_backedges(ir_loop *l) {
+static void loop_reset_backedges(ir_loop *l)
+{
 	int i;
 	reset_backedges(get_loop_node(l, 0));
 	for (i = 0; i < get_loop_n_nodes(l); ++i)
@@ -796,7 +828,8 @@ static void loop_reset_backedges(ir_loop *l) {
 
 /* Removes all cfloop information.
    Resets all backedges */
-void free_cfloop_information(ir_graph *irg) {
+void free_cfloop_information(ir_graph *irg)
+{
 	ir_loop *loop = get_irg_loop(irg);
 	if (loop != NULL) {
 		loop_reset_backedges(loop);
@@ -807,7 +840,8 @@ void free_cfloop_information(ir_graph *irg) {
 }
 
 
-void free_all_cfloop_information(void) {
+void free_all_cfloop_information(void)
+{
 	int i;
 #ifdef INTERPROCEDURAL_VIEW
 	int rem = get_interprocedural_view();

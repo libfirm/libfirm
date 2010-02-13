@@ -63,7 +63,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  *
  * This handles correctly Phi nodes.
  */
-static ir_node *get_effective_use_block(ir_node *node, int pos) {
+static ir_node *get_effective_use_block(ir_node *node, int pos)
+{
 	if (is_Phi(node)) {
 		/* the effective use of a Phi argument is in its predecessor block */
 		node = get_nodes_block(node);
@@ -83,7 +84,8 @@ static ir_node *get_effective_use_block(ir_node *node, int pos) {
  * Branch labels are a simple case. We can replace the value
  * by a Const with the branch label.
  */
-static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
+static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
+{
 	const ir_edge_t *edge, *next;
 	ir_node *c = NULL;
 
@@ -129,7 +131,8 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env) {
  * @param pnc       the true/false condition branch
  * @param env       statistical environment
  */
-static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env) {
+static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env)
+{
 	ir_node *cond, *old, *cond_block = NULL, *other_blk = NULL, *con = NULL;
 	ir_node *c_b = NULL, *c_o = NULL;
 	const ir_edge_t *edge, *next;
@@ -241,7 +244,8 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
  * @param pnc     the Compare relation for taking this branch
  * @param env     statistical environment
  */
-static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
+static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
+{
 	ir_node *left  = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
 	ir_node *cond_block;
@@ -394,7 +398,8 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env) {
 /**
  * Pre-block-walker: Called for every block to insert Confirm nodes
  */
-static void insert_Confirm_in_block(ir_node *block, void *env) {
+static void insert_Confirm_in_block(ir_node *block, void *env)
+{
 	ir_node *cond, *proj, *selector;
 	ir_mode *mode;
 
@@ -454,7 +459,8 @@ static void insert_Confirm_in_block(ir_node *block, void *env) {
 /**
  * Checks if a node is a non-null Confirm.
  */
-static int is_non_null_Confirm(const ir_node *ptr) {
+static int is_non_null_Confirm(const ir_node *ptr)
+{
 	for (;;) {
 		if (! is_Confirm(ptr))
 			break;
@@ -483,7 +489,8 @@ static int is_non_null_Confirm(const ir_node *ptr) {
  * @param block  the block of the dereferencing instruction
  * @param env    environment
  */
-static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
+static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
+{
 	const ir_edge_t *edge, *next;
 	ir_node         *c = NULL;
 
@@ -525,7 +532,8 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env) {
 /**
  * Pre-walker: Called for every node to insert Confirm nodes
  */
-static void insert_Confirm(ir_node *node, void *env) {
+static void insert_Confirm(ir_node *node, void *env)
+{
 	ir_node *ptr;
 
 	switch (get_irn_opcode(node)) {
@@ -550,7 +558,8 @@ static void insert_Confirm(ir_node *node, void *env) {
 /*
  * Construct Confirm nodes
  */
-void construct_confirms(ir_graph *irg) {
+void construct_confirms(ir_graph *irg)
+{
 	env_t env;
 	int edges_active = edges_activated(irg);
 
@@ -602,7 +611,8 @@ void construct_confirms(ir_graph *irg) {
 }  /* construct_confirms */
 
 /* Construct a pass. */
-ir_graph_pass_t *construct_confirms_pass(const char *name) {
+ir_graph_pass_t *construct_confirms_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "confirm", construct_confirms);
 }  /* construct_confirms_pass */
 
@@ -610,7 +620,8 @@ ir_graph_pass_t *construct_confirms_pass(const char *name) {
 /**
  * Post-walker: Remove Confirm nodes
  */
-static void rem_Confirm(ir_node *n, void *env) {
+static void rem_Confirm(ir_node *n, void *env)
+{
 	(void) env;
 	if (is_Confirm(n)) {
 		ir_node *value = get_Confirm_value(n);
@@ -630,7 +641,8 @@ static void rem_Confirm(ir_node *n, void *env) {
 /*
  * Remove all Confirm nodes from a graph.
  */
-void remove_confirms(ir_graph *irg) {
+void remove_confirms(ir_graph *irg)
+{
 	int rem = get_opt_remove_confirm();
 
 	set_opt_remove_confirm(1);
@@ -639,6 +651,7 @@ void remove_confirms(ir_graph *irg) {
 }  /* remove_confirms */
 
 /* Construct a pass. */
-ir_graph_pass_t *remove_confirms_pass(const char *name) {
+ir_graph_pass_t *remove_confirms_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "rem_confirm", remove_confirms);
 }  /* remove_confirms_pass */

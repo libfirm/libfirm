@@ -181,7 +181,8 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	}
 }
 
-static int is_modify_flags(ir_node *node) {
+static int is_modify_flags(ir_node *node)
+{
 	int i, arity;
 
 	if (arch_irn_is(node, modify_flags))

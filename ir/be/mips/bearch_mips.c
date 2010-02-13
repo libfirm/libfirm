@@ -186,7 +186,8 @@ static const arch_irn_ops_t mips_irn_ops = {
  * Transforms the standard firm graph into
  * a mips firm graph
  */
-static void mips_prepare_graph(void *self) {
+static void mips_prepare_graph(void *self)
+{
 	mips_code_gen_t *cg = self;
 
 	/* do local optimizations */
@@ -216,7 +217,8 @@ static void mips_prepare_graph(void *self) {
 /**
  * Called immediately before emit phase.
  */
-static void mips_finish_irg(void *self) {
+static void mips_finish_irg(void *self)
+{
 	mips_code_gen_t *cg = self;
 	ir_graph        *irg = cg->irg;
 
@@ -324,7 +326,8 @@ static mips_isa_t mips_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *mips_init(FILE *file_handle) {
+static arch_env_t *mips_init(FILE *file_handle)
+{
 	static int inited = 0;
 	mips_isa_t *isa;
 
@@ -519,7 +522,8 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
  * it will contain the return address and space to store the old frame pointer.
  * @return The Firm type modelling the ABI between type.
  */
-static ir_type *mips_abi_get_between_type(void *self) {
+static ir_type *mips_abi_get_between_type(void *self)
+{
 	mips_abi_env_t *env = self;
 
 	static ir_type *debug_between_type = NULL;
@@ -679,7 +683,8 @@ static ir_graph **mips_get_irg_list(const void *self, ir_graph ***irg_list)
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
-static const backend_params *mips_get_libfirm_params(void) {
+static const backend_params *mips_get_libfirm_params(void)
+{
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */

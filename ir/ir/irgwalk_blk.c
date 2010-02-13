@@ -62,7 +62,8 @@ typedef struct _block_entry_t {
 /**
  * compare two block_entries
  */
-static int addr_cmp(const void *elt, const void *key) {
+static int addr_cmp(const void *elt, const void *key)
+{
 	const block_entry_t *e1 = elt;
 	const block_entry_t *e2 = key;
 
@@ -96,7 +97,8 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 /**
  * Traverse a block in pre order.
  */
-static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_func *pre, void *env) {
+static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_func *pre, void *env)
+{
 	int j;
 
 	for (j = ARR_LEN(entry->cf_list) - 1; j >= 0; --j) {
@@ -120,7 +122,8 @@ static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_fu
 /**
  * Traverse a block in post order.
  */
-void traverse_block_post(ir_node *block, block_entry_t *entry, irg_walk_func *post, void *env)  {
+void traverse_block_post(ir_node *block, block_entry_t *entry, irg_walk_func *post, void *env)
+{
 	int j, n;
 
 	post(block, env);
@@ -144,7 +147,8 @@ void traverse_block_post(ir_node *block, block_entry_t *entry, irg_walk_func *po
 /**
  * traverse the pre order only, from End to Start
  */
-static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env) {
+static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env)
+{
 	int i;
 
 	for (i = ARR_LEN(blks->blk_list) - 1; i >= 0; --i) {
@@ -163,7 +167,8 @@ static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env
 /**
  * traverse the post order only, from Start to End
  */
-static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *env) {
+static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *env)
+{
 	int i, k;
 
 	for (i = 0, k = ARR_LEN(blks->blk_list); i < k; ++i) {
@@ -200,7 +205,8 @@ static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk
 /**
  * Do the traversal.
  */
-static void traverse_blocks(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env) {
+static void traverse_blocks(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	if      (!post) traverse_pre (blks, pre, env);
 	else if (!pre)  traverse_post(blks, post, env);
 	else            traverse_both(blks, pre, post, env);
@@ -216,7 +222,8 @@ typedef struct dom_traversal_t {
 /**
  * Dom block walker. Visit all nodes in pre oder.
  */
-static void dom_block_visit_pre(ir_node *block, void *env) {
+static void dom_block_visit_pre(ir_node *block, void *env)
+{
 	dom_traversal_t *ctx   = env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
@@ -226,7 +233,8 @@ static void dom_block_visit_pre(ir_node *block, void *env) {
 /**
  * Dom block walker. Visit all nodes in post oder.
  */
-static void dom_block_visit_post(ir_node *block, void *env) {
+static void dom_block_visit_post(ir_node *block, void *env)
+{
 	dom_traversal_t *ctx   = env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
@@ -236,7 +244,8 @@ static void dom_block_visit_post(ir_node *block, void *env) {
 /**
  * Dom block walker. Visit all nodes in pre oder, than in post order.
  */
-static void dom_block_visit_both(ir_node *block, void *env) {
+static void dom_block_visit_both(ir_node *block, void *env)
+{
 	dom_traversal_t *ctx   = env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
@@ -247,7 +256,8 @@ static void dom_block_visit_both(ir_node *block, void *env) {
 /**
  * Do the traversal in the dominator tree in top-down order.
  */
-static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env) {
+static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	dom_traversal_t ctx;
 
 	ctx.blks = blks;
@@ -448,7 +458,8 @@ do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *en
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
 
-void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
@@ -457,7 +468,8 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *po
 	current_ir_graph = rem;
 }
 
-void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);
@@ -466,7 +478,8 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
 	current_ir_graph = rem;
 }
 
-void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk_blkwise(irg, (generic_func *)pre, (generic_func *)post);

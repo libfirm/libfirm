@@ -47,7 +47,8 @@ static unsigned next_iro = iro_MaxOpcode;
  * Copies all attributes stored in the old node to the new node.
  * Assumes both have the same opcode and sufficient size.
  */
-void default_copy_attr(const ir_node *old_node, ir_node *new_node) {
+void default_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	unsigned size = firm_add_node_size;
 
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
@@ -63,7 +64,8 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * Copies all Call attributes stored in the old node to the new node.
  */
 static void
-call_copy_attr(const ir_node *old_node, ir_node *new_node) {
+call_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	default_copy_attr(old_node, new_node);
 	remove_Call_callee_arr(new_node);
 }  /* call_copy_attr */
@@ -72,7 +74,8 @@ call_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * Copies all Block attributes stored in the old node to the new node.
  */
 static void
-block_copy_attr(const ir_node *old_node, ir_node *new_node) {
+block_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph *irg = current_ir_graph;
 
 	default_copy_attr(old_node, new_node);
@@ -86,7 +89,8 @@ block_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * Copies all phi attributes stored in old node to the new node
  */
 static void
-phi_copy_attr(const ir_node *old_node, ir_node *new_node) {
+phi_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph *irg = current_ir_graph;
 
 	default_copy_attr(old_node, new_node);
@@ -98,7 +102,8 @@ phi_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * Copies all filter attributes stored in old node to the new node
  */
 static void
-filter_copy_attr(const ir_node *old_node, ir_node *new_node) {
+filter_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph *irg = current_ir_graph;
 
 	default_copy_attr(old_node, new_node);
@@ -109,7 +114,8 @@ filter_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * Copies all ASM attributes stored in old node to the new node
  */
 static void
-ASM_copy_attr(const ir_node *old_node, ir_node *new_node) {
+ASM_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph *irg = current_ir_graph;
 
 	default_copy_attr(old_node, new_node);
@@ -127,7 +133,8 @@ ASM_copy_attr(const ir_node *old_node, ir_node *new_node) {
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops) {
+static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops)
+{
 	switch(code) {
 	case iro_Call:
 		ops->copy_attr = call_copy_attr;
@@ -185,7 +192,8 @@ new_ir_op(unsigned code, const char *name, op_pin_state p,
 	return res;
 }  /* new_ir_op */
 
-void free_ir_op(ir_op *code) {
+void free_ir_op(ir_op *code)
+{
 	hook_free_ir_op(code);
 
 	remove_irp_opcode(code);
@@ -193,19 +201,23 @@ void free_ir_op(ir_op *code) {
 }  /* free_ir_op */
 
 /* Returns the string for the opcode. */
-const char *get_op_name (const ir_op *op) {
+const char *get_op_name (const ir_op *op)
+{
 	return get_id_str(op->name);
 }  /* get_op_name */
 
-unsigned (get_op_code)(const ir_op *op){
+unsigned (get_op_code)(const ir_op *op)
+{
   return _get_op_code(op);
 }  /* get_op_code */
 
-ident *(get_op_ident)(const ir_op *op){
+ident *(get_op_ident)(const ir_op *op)
+{
   return _get_op_ident(op);
 }  /* get_op_ident */
 
-const char *get_op_pin_state_name(op_pin_state s) {
+const char *get_op_pin_state_name(op_pin_state s)
+{
 	switch(s) {
 #define XXX(s) case s: return #s
 	XXX(op_pin_state_floats);
@@ -217,45 +229,53 @@ const char *get_op_pin_state_name(op_pin_state s) {
 	return "<none>";
 }  /* get_op_pin_state_name */
 
-op_pin_state (get_op_pinned)(const ir_op *op) {
+op_pin_state (get_op_pinned)(const ir_op *op)
+{
 	return _get_op_pinned(op);
 }  /* get_op_pinned */
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
    for Phi, Block and control flow nodes. */
-void set_op_pinned(ir_op *op, op_pin_state pinned) {
+void set_op_pinned(ir_op *op, op_pin_state pinned)
+{
 	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
 	op->pin_state = pinned;
 }  /* set_op_pinned */
 
 /* retrieve the next free opcode */
-unsigned get_next_ir_opcode(void) {
+unsigned get_next_ir_opcode(void)
+{
 	return next_iro++;
 }  /* get_next_ir_opcode */
 
 /* Returns the next free n IR opcode number, allows to register a bunch of user ops */
-unsigned get_next_ir_opcodes(unsigned num) {
+unsigned get_next_ir_opcodes(unsigned num)
+{
 	unsigned base = next_iro;
 	next_iro += num;
 	return base;
 }  /* get_next_ir_opcodes */
 
 /* Returns the generic function pointer from an ir operation. */
-op_func (get_generic_function_ptr)(const ir_op *op) {
+op_func (get_generic_function_ptr)(const ir_op *op)
+{
 	return _get_generic_function_ptr(op);
 }  /* get_generic_function_ptr */
 
 /* Store a generic function pointer into an ir operation. */
-void (set_generic_function_ptr)(ir_op *op, op_func func) {
+void (set_generic_function_ptr)(ir_op *op, op_func func)
+{
 	_set_generic_function_ptr(op, func);
 }  /* set_generic_function_ptr */
 
 /* Returns the ir_op_ops of an ir_op. */
-const ir_op_ops *(get_op_ops)(const ir_op *op) {
+const ir_op_ops *(get_op_ops)(const ir_op *op)
+{
 	return _get_op_ops(op);
 }  /* get_op_ops */
 
-irop_flags get_op_flags(const ir_op *op) {
+irop_flags get_op_flags(const ir_op *op)
+{
 	return op->flags;
 }
 

@@ -149,7 +149,8 @@ void ir_lnk_nodemap_iterator_init(ir_lnk_nodemap_iterator_t *iterator,
  * @param iterator  Pointer to the nodemap iterator.
  * @returns         Next element in the nodemap or NULL
  */
-ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator) {
+ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator)
+{
 	ir_node *res;
 	if (iterator->iter == &iterator->nodemap->elem_list)
 		return NULL;

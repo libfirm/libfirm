@@ -257,7 +257,8 @@ typedef struct _wlk_env_t {
  * @param call   A Call node.
  * @param env    The environment.
  */
-static cl_entry *get_Call_entry(ir_node *call, wlk_env *env) {
+static cl_entry *get_Call_entry(ir_node *call, wlk_env *env)
+{
 	cl_entry *res = get_irn_link(call);
 	if (res == NULL) {
 		cl_entry *res = OALLOC(&env->obst, cl_entry);
@@ -277,7 +278,8 @@ static cl_entry *get_Call_entry(ir_node *call, wlk_env *env) {
  * @param adr   the address
  * @param pEnt  points to the base entity if any
  */
-static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt) {
+static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt)
+{
 	ir_entity *ent = NULL;
 	assert(mode_is_reference(get_irn_mode(ptr)));
 
@@ -306,7 +308,8 @@ static ir_node *find_base_adr(ir_node *ptr, ir_entity **pEnt) {
 /**
  * Check if a given pointer represents non-local memory.
  */
-static void check_ptr(ir_node *ptr, wlk_env *env) {
+static void check_ptr(ir_node *ptr, wlk_env *env)
+{
 	ir_storage_class_class_t sc;
 	ir_entity                *ent;
 
@@ -325,7 +328,8 @@ static void check_ptr(ir_node *ptr, wlk_env *env) {
  * If a non-alias free memory access is found, reset the alias free
  * flag.
  */
-static void fix_args_and_collect_calls(ir_node *n, void *ctx) {
+static void fix_args_and_collect_calls(ir_node *n, void *ctx)
+{
 	wlk_env *env = ctx;
 	int      i;
 	ir_type *ctp;
@@ -466,7 +470,8 @@ typedef struct cr_pair {
  * return values) to be 1 (C, C++) in almost all cases, so ignore the
  * linear search complexity here.
  */
-static void do_copy_return_opt(ir_node *n, void *ctx) {
+static void do_copy_return_opt(ir_node *n, void *ctx)
+{
 	cr_pair *arr = ctx;
 	int i;
 
@@ -596,7 +601,8 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
  * @param irg  the graph
  * @param env  the environment
  */
-static void fix_call_list(ir_graph *irg, wlk_env *env) {
+static void fix_call_list(ir_graph *irg, wlk_env *env)
+{
 	const lower_params_t *lp = env->params;
 	cl_entry *p;
 	ir_node *call, **new_in;
@@ -836,7 +842,8 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
  * @param lp  lowering parameters
  * @param tp  The type.
  */
-static int must_be_lowered(const lower_params_t *lp, ir_type *tp) {
+static int must_be_lowered(const lower_params_t *lp, ir_type *tp)
+{
   int i, n_ress;
   ir_type *res_tp;
 

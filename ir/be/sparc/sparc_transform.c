@@ -288,7 +288,8 @@ static ir_node *gen_Store(ir_node *node)
  * @param node    the ir Store node
  * @return The transformed sparc node.
  */
-static ir_node *gen_Const(ir_node *node) {
+static ir_node *gen_Const(ir_node *node)
+{
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_mode *mode = get_irn_mode(node);
 	dbg_info *dbg = get_irn_dbg_info(node);
@@ -363,7 +364,8 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 /**
  * Transform a be_Copy.
  */
-static ir_node *gen_be_Copy(ir_node *node) {
+static ir_node *gen_be_Copy(ir_node *node)
+{
 	ir_node *result = be_duplicate_node(node);
 	ir_mode *mode   = get_irn_mode(result);
 
@@ -569,7 +571,8 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
  * Transforms a Conv node.
  *
  */
-static ir_node *gen_Conv(ir_node *node) {
+static ir_node *gen_Conv(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *op       = get_Conv_op(node);
 	ir_node  *new_op   = be_transform_node(op);
@@ -649,7 +652,8 @@ static ir_node *gen_Phi(ir_node *node)
 /**
  * Transform a Proj from a Load.
  */
-static ir_node *gen_Proj_Load(ir_node *node) {
+static ir_node *gen_Proj_Load(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
@@ -681,7 +685,8 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 /**
  * Transform the Projs of a be_AddSP.
  */
-static ir_node *gen_Proj_be_AddSP(ir_node *node) {
+static ir_node *gen_Proj_be_AddSP(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -707,7 +712,8 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 /**
  * Transform the Projs of a be_SubSP.
  */
-static ir_node *gen_Proj_be_SubSP(ir_node *node) {
+static ir_node *gen_Proj_be_SubSP(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -729,7 +735,8 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 /**
  * Transform the Projs from a Cmp.
  */
-static ir_node *gen_Proj_Cmp(ir_node *node) {
+static ir_node *gen_Proj_Cmp(ir_node *node)
+{
 	(void) node;
 	panic("not implemented");
 }
@@ -738,7 +745,8 @@ static ir_node *gen_Proj_Cmp(ir_node *node) {
 /**
  * Transform a Proj node.
  */
-static ir_node *gen_Proj(ir_node *node) {
+static ir_node *gen_Proj(ir_node *node)
+{
 	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);

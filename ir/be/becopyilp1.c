@@ -46,7 +46,8 @@ int co_solve_ilp1(copy_opt_t *co, double time_limit)
 
 #else /* WITH_ILP */
 
-static inline void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static inline void only_that_you_can_compile_without_WITH_ILP_defined(void)
+{
 }
 
 #endif /* WITH_ILP */

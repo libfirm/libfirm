@@ -483,7 +483,8 @@ ir_node *get_end_of_block_insertion_point(ir_node *block)
  * We must adapt the live-outs to the live-ins at each block-border.
  */
 static
-void fix_block_borders(ir_node *block, void *data) {
+void fix_block_borders(ir_node *block, void *data)
+{
 	minibelady_env_t *env = data;
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *startblock = get_irg_start_block(irg);

@@ -254,7 +254,8 @@ static void kill_node_and_preds(ir_node *node)
 /**
  * Walk through the block schedule and skip all barrier nodes.
  */
-static void skip_barrier(ir_node *ret_blk, ir_graph *irg) {
+static void skip_barrier(ir_node *ret_blk, ir_graph *irg)
+{
 	ir_node *irn;
 
 	sched_foreach_reverse(ret_blk, irn) {
@@ -286,7 +287,8 @@ static void skip_barrier(ir_node *ret_blk, ir_graph *irg) {
 /**
  * Kill the Barrier nodes for better peephole optimization.
  */
-static void	kill_barriers(ir_graph *irg) {
+static void	kill_barriers(ir_graph *irg)
+{
 	ir_node *end_blk = get_irg_end_block(irg);
 	ir_node *start_blk;
 	int i;

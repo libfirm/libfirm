@@ -34,7 +34,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-static void do_finalization(type_or_ent tore, void *env) {
+static void do_finalization(type_or_ent tore, void *env)
+{
 	ir_type *glob_tp = env;
 
 	if (is_type(tore.typ)) {
@@ -83,7 +84,8 @@ static void do_finalization(type_or_ent tore, void *env) {
  * After this is done, all classes and entities that are not overridden
  * anymore have the final property set.
  */
-void types_calc_finalization(void) {
+void types_calc_finalization(void)
+{
  	if (! get_opt_closed_world())
  		return;
 

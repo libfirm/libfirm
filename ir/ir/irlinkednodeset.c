@@ -109,7 +109,8 @@ void resize(HashSet *self, size_t new_size)
 
 
 /* Inserts a node into a linked nodeset. */
-int ir_lnk_nodeset_insert(ir_lnk_nodeset_t *nodeset, ir_node *node) {
+int ir_lnk_nodeset_insert(ir_lnk_nodeset_t *nodeset, ir_node *node)
+{
 	ir_lnk_nodeset_entry_t *entry = _ir_lnk_nodeset_insert(nodeset, node);
 
 	if (entry->list.next == NULL) {
@@ -147,7 +148,8 @@ void ir_lnk_nodeset_iterator_init(ir_lnk_nodeset_iterator_t *iterator,
  * @param iterator  Pointer to the nodeset iterator.
  * @returns         Next element in the nodeset or NULL
  */
-ir_node *ir_lnk_nodeset_iterator_next(ir_lnk_nodeset_iterator_t *iterator) {
+ir_node *ir_lnk_nodeset_iterator_next(ir_lnk_nodeset_iterator_t *iterator)
+{
 	ir_node *res;
 	if (iterator->iter == &iterator->nodeset->elem_list)
 		return NULL;

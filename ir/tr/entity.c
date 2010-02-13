@@ -63,7 +63,8 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 /**
  * Add an entity to it's already set owner type.
  */
-static inline void insert_entity_in_owner(ir_entity *ent) {
+static inline void insert_entity_in_owner(ir_entity *ent)
+{
 	ir_type *owner = ent->owner;
 	switch (get_type_tpop_code(owner)) {
 	case tpo_class:
@@ -160,7 +161,8 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 }  /* new_rd_entity */
 
 ir_entity *
-new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db) {
+new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db)
+{
 	ir_entity *res;
 
 	assert(is_compound_type(owner));
@@ -173,7 +175,8 @@ new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db) {
 }  /* new_d_entity */
 
 ir_entity *
-new_entity(ir_type *owner, ident *name, ir_type *type) {
+new_entity(ir_type *owner, ident *name, ir_type *type)
+{
 	return new_d_entity(owner, name, type, NULL);
 }  /* new_entity */
 
@@ -257,7 +260,8 @@ static ir_entity *deep_entity_copy(ir_entity *old)
  * owner of the old entity,  else returns the old entity.
  */
 ir_entity *
-copy_entity_own(ir_entity *old, ir_type *new_owner) {
+copy_entity_own(ir_entity *old, ir_type *new_owner)
+{
 	ir_entity *newe;
 	assert(is_entity(old));
 	assert(is_compound_type(new_owner));
@@ -280,7 +284,8 @@ copy_entity_own(ir_entity *old, ir_type *new_owner) {
 }  /* copy_entity_own */
 
 ir_entity *
-copy_entity_name(ir_entity *old, ident *new_name) {
+copy_entity_name(ir_entity *old, ident *new_name)
+{
 	ir_entity *newe;
 	assert(old && old->kind == k_entity);
 
@@ -299,7 +304,8 @@ copy_entity_name(ir_entity *old, ident *new_name) {
 }  /* copy_entity_name */
 
 void
-free_entity(ir_entity *ent) {
+free_entity(ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
 	ent->kind = k_BAD;
@@ -308,7 +314,8 @@ free_entity(ir_entity *ent) {
 
 /* Outputs a unique number for this node */
 long
-get_entity_nr(const ir_entity *ent) {
+get_entity_nr(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 #ifdef DEBUG_libfirm
 	return ent->nr;
@@ -338,7 +345,8 @@ ir_type *
 }
 
 void
-set_entity_owner(ir_entity *ent, ir_type *owner) {
+set_entity_owner(ir_entity *ent, ir_type *owner)
+{
 	assert(is_entity(ent));
 	assert(is_compound_type(owner));
 	ent->owner = owner;
@@ -474,20 +482,24 @@ void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 }
 
 /* Checks if an entity is compiler generated */
-int (is_entity_compiler_generated)(const ir_entity *ent) {
+int (is_entity_compiler_generated)(const ir_entity *ent)
+{
 	return _is_entity_compiler_generated(ent);
 }  /* is_entity_compiler_generated */
 
 /* Sets/resets the compiler generated flag */
-void (set_entity_compiler_generated)(ir_entity *ent, int flag) {
+void (set_entity_compiler_generated)(ir_entity *ent, int flag)
+{
 	_set_entity_compiler_generated(ent, flag);
 }  /* set_entity_compiler_generated */
 
-ir_entity_usage (get_entity_usage)(const ir_entity *ent) {
+ir_entity_usage (get_entity_usage)(const ir_entity *ent)
+{
 	return _get_entity_usage(ent);
 }
 
-void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags) {
+void (set_entity_usage)(ir_entity *ent, ir_entity_usage flags)
+{
 	_set_entity_usage(ent, flags);
 }
 
@@ -535,7 +547,8 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 
 /* Returns true if the the node is representable as code on
  *  const_code_irg. */
-int is_irn_const_expression(ir_node *n) {
+int is_irn_const_expression(ir_node *n)
+{
 	ir_mode *m;
 
 	/* we are in danger iff an exception will arise. TODO: be more precisely,
@@ -563,7 +576,8 @@ int is_irn_const_expression(ir_node *n) {
  * Copies a firm subgraph that complies to the restrictions for
  * constant expressions to current_block in current_ir_graph.
  */
-ir_node *copy_const_value(dbg_info *dbg, ir_node *n) {
+ir_node *copy_const_value(dbg_info *dbg, ir_node *n)
+{
 	ir_node *nn;
 	ir_mode *m;
 

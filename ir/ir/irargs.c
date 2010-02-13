@@ -40,19 +40,22 @@
 /**
  * identify a firm object type
  */
-static int firm_get_arg_type(const lc_arg_occ_t *occ) {
+static int firm_get_arg_type(const lc_arg_occ_t *occ)
+{
 	(void) occ;
 	/* Firm objects are always pointer */
 	return lc_arg_type_ptr;
 }
 
-static int firm_get_arg_type_int(const lc_arg_occ_t *occ) {
+static int firm_get_arg_type_int(const lc_arg_occ_t *occ)
+{
 	(void) occ;
 	return lc_arg_type_int;
 }
 
 
-static int bitset_get_arg_type(const lc_arg_occ_t *occ) {
+static int bitset_get_arg_type(const lc_arg_occ_t *occ)
+{
 	(void) occ;
 	return lc_arg_type_ptr;
 }
@@ -97,7 +100,8 @@ static int firm_emit_dbg(lc_appendable_t *app,
 /**
  * Beware: do not set the entity ld_name
  */
-static const char *get_entity_ld_name_ex(ir_entity *ent) {
+static const char *get_entity_ld_name_ex(ir_entity *ent)
+{
 	if (ent->ld_name)
 		return get_entity_ld_name(ent);
 	return get_entity_name(ent);

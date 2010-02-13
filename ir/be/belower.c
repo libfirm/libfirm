@@ -120,7 +120,8 @@ static int get_n_unchecked_pairs(reg_pair_t const *const pairs, int const n)
  * @param reg    The register to look for
  * @return The corresponding node or NULL if not found
  */
-static ir_node *get_node_for_in_register(reg_pair_t *pairs, int n, const arch_register_t *reg) {
+static ir_node *get_node_for_in_register(reg_pair_t *pairs, int n, const arch_register_t *reg)
+{
 	int i;
 
 	for (i = 0; i < n; i++) {
@@ -142,7 +143,8 @@ static ir_node *get_node_for_in_register(reg_pair_t *pairs, int n, const arch_re
  * @param reg    The register to look for
  * @return The corresponding node or NULL if not found
  */
-static ir_node *get_node_for_out_register(reg_pair_t *pairs, int n, const arch_register_t *reg) {
+static ir_node *get_node_for_out_register(reg_pair_t *pairs, int n, const arch_register_t *reg)
+{
 	int i;
 
 	for (i = 0; i < n; i++) {
@@ -164,7 +166,8 @@ static ir_node *get_node_for_out_register(reg_pair_t *pairs, int n, const arch_r
  *
  * @return The corresponding index in pairs or -1 if not found
  */
-static int get_pairidx_for_in_regidx(reg_pair_t *pairs, int n, unsigned reg_idx) {
+static int get_pairidx_for_in_regidx(reg_pair_t *pairs, int n, unsigned reg_idx)
+{
 	int i;
 
 	for (i = 0; i < n; i++) {
@@ -185,7 +188,8 @@ static int get_pairidx_for_in_regidx(reg_pair_t *pairs, int n, unsigned reg_idx)
  *
  * @return The corresponding index in pairs or -1 if not found
  */
-static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx) {
+static int get_pairidx_for_out_regidx(reg_pair_t *pairs, int n, unsigned reg_idx)
+{
 	int i;
 
 	for (i = 0; i < n; i++) {
@@ -478,7 +482,8 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 
 
 
-static int has_irn_users(const ir_node *irn) {
+static int has_irn_users(const ir_node *irn)
+{
 	return get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL) != 0;
 }
 
@@ -495,7 +500,8 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 	}
 }
 
-static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env) {
+static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
+{
 	ir_graph                    *irg;
 	ir_nodemap_t                *op_set;
 	ir_node                     *block;
@@ -576,7 +582,8 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  * @param skipped_irn  if irn is a Proj node, its predecessor, else irn
  * @param env          the constraint environment
  */
-static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env) {
+static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env)
+{
 	const arch_register_req_t *req = arch_get_register_req_out(irn);
 
 	if (arch_register_req_is(req, must_be_different)) {
@@ -614,7 +621,8 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
  * @param block    The block to be checked
  * @param walk_env The walker environment
  */
-static void assure_constraints_walker(ir_node *block, void *walk_env) {
+static void assure_constraints_walker(ir_node *block, void *walk_env)
+{
 	ir_node *irn;
 
 	sched_foreach_reverse(block, irn) {
@@ -640,7 +648,8 @@ static void assure_constraints_walker(ir_node *block, void *walk_env) {
  * Melt all copykeeps pointing to the same node
  * (or Projs of the same node), copying the same operand.
  */
-static void melt_copykeeps(constraint_env_t *cenv) {
+static void melt_copykeeps(constraint_env_t *cenv)
+{
 	ir_nodemap_iterator_t map_iter;
 	ir_nodemap_entry_t    map_entry;
 
@@ -761,7 +770,8 @@ static void melt_copykeeps(constraint_env_t *cenv) {
  *
  * @param birg  The birg structure containing the irg
  */
-void assure_constraints(be_irg_t *birg) {
+void assure_constraints(be_irg_t *birg)
+{
 	ir_graph              *irg = be_get_birg_irg(birg);
 	constraint_env_t      cenv;
 	ir_nodemap_iterator_t map_iter;
@@ -1010,7 +1020,8 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
  * @param birg      The birg object
  * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes_after_ra(be_irg_t *birg, int do_copy) {
+void lower_nodes_after_ra(be_irg_t *birg, int do_copy)
+{
 	lower_env_t env;
 	ir_graph    *irg;
 

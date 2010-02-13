@@ -186,7 +186,8 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
  *
  * @return The created ia32 Conv node
  */
-static ir_node *gen_Conv(ir_node *node) {
+static ir_node *gen_Conv(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *op       = get_Conv_op(node);
 	ir_node  *new_op   = be_transform_node(op);
@@ -437,7 +438,8 @@ static ir_node *gen_Add(ir_node *node)
  *
  * @return the created arm Mul node
  */
-static ir_node *gen_Mul(ir_node *node) {
+static ir_node *gen_Mul(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_Mul_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
@@ -477,7 +479,8 @@ static ir_node *gen_Mul(ir_node *node) {
  * @param env   The transformation environment
  * @return the created arm fDiv node
  */
-static ir_node *gen_Quot(ir_node *node) {
+static ir_node *gen_Quot(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_Quot_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
@@ -809,7 +812,8 @@ static ir_node *gen_Minus(ir_node *node)
  *
  * @return the created ARM Load node
  */
-static ir_node *gen_Load(ir_node *node) {
+static ir_node *gen_Load(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Load_ptr(node);
 	ir_node  *new_ptr  = be_transform_node(ptr);
@@ -1063,7 +1067,8 @@ static int is_fpa_immediate(tarval *tv)
  *
  * @return The transformed ARM node.
  */
-static ir_node *gen_Const(ir_node *node) {
+static ir_node *gen_Const(ir_node *node)
+{
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_mode *mode = get_irn_mode(node);
 	dbg_info *dbg = get_irn_dbg_info(node);
@@ -1121,7 +1126,8 @@ static ir_node *gen_SymConst(ir_node *node)
  *
  * @return The transformed ARM node.
  */
-static ir_node *gen_CopyB(ir_node *node) {
+static ir_node *gen_CopyB(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *src      = get_CopyB_src(node);
 	ir_node  *new_src  = be_transform_node(src);
@@ -1163,7 +1169,8 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 /**
  * Transform a be_AddSP into an arm_AddSP. Eat up const sizes.
  */
-static ir_node *gen_be_AddSP(ir_node *node) {
+static ir_node *gen_be_AddSP(ir_node *node)
+{
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *sz     = get_irn_n(node, be_pos_AddSP_size);
 	ir_node  *new_sz = be_transform_node(sz);
@@ -1182,7 +1189,8 @@ static ir_node *gen_be_AddSP(ir_node *node) {
 /**
  * Transform a be_SubSP into an arm_SubSP. Eat up const sizes.
  */
-static ir_node *gen_be_SubSP(ir_node *node) {
+static ir_node *gen_be_SubSP(ir_node *node)
+{
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *sz     = get_irn_n(node, be_pos_SubSP_size);
 	ir_node  *new_sz = be_transform_node(sz);
@@ -1201,7 +1209,8 @@ static ir_node *gen_be_SubSP(ir_node *node) {
 /**
  * Transform a be_Copy.
  */
-static ir_node *gen_be_Copy(ir_node *node) {
+static ir_node *gen_be_Copy(ir_node *node)
+{
 	ir_node *result = be_duplicate_node(node);
 	ir_mode *mode   = get_irn_mode(result);
 
@@ -1215,7 +1224,8 @@ static ir_node *gen_be_Copy(ir_node *node) {
 /**
  * Transform a Proj from a Load.
  */
-static ir_node *gen_Proj_Load(ir_node *node) {
+static ir_node *gen_Proj_Load(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
@@ -1249,7 +1259,8 @@ static ir_node *gen_Proj_Load(ir_node *node) {
 /**
  * Transform and renumber the Projs from a CopyB.
  */
-static ir_node *gen_Proj_CopyB(ir_node *node) {
+static ir_node *gen_Proj_CopyB(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -1271,7 +1282,8 @@ static ir_node *gen_Proj_CopyB(ir_node *node) {
 /**
  * Transform and renumber the Projs from a Quot.
  */
-static ir_node *gen_Proj_Quot(ir_node *node) {
+static ir_node *gen_Proj_Quot(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -1311,7 +1323,8 @@ static ir_node *gen_Proj_Quot(ir_node *node) {
 /**
  * Transform the Projs of a be_AddSP.
  */
-static ir_node *gen_Proj_be_AddSP(ir_node *node) {
+static ir_node *gen_Proj_be_AddSP(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -1334,7 +1347,8 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node) {
 /**
  * Transform the Projs of a be_SubSP.
  */
-static ir_node *gen_Proj_be_SubSP(ir_node *node) {
+static ir_node *gen_Proj_be_SubSP(ir_node *node)
+{
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -1355,7 +1369,8 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node) {
 /**
  * Transform the Projs from a Cmp.
  */
-static ir_node *gen_Proj_Cmp(ir_node *node) {
+static ir_node *gen_Proj_Cmp(ir_node *node)
+{
 	(void) node;
 	panic("Mux NYI");
 }
@@ -1364,7 +1379,8 @@ static ir_node *gen_Proj_Cmp(ir_node *node) {
 /**
  * Transform the Thread Local Storage Proj.
  */
-static ir_node *gen_Proj_tls(ir_node *node) {
+static ir_node *gen_Proj_tls(ir_node *node)
+{
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	dbg_info *dbgi  = NULL;
 
@@ -1374,7 +1390,8 @@ static ir_node *gen_Proj_tls(ir_node *node) {
 /**
  * Transform a Proj node.
  */
-static ir_node *gen_Proj(ir_node *node) {
+static ir_node *gen_Proj(ir_node *node)
+{
 	ir_graph *irg  = current_ir_graph;
 	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);

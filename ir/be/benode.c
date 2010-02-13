@@ -205,7 +205,8 @@ static int Return_cmp_attr(ir_node *a, ir_node *b)
  *
  * @return zero if both nodes have identically attributes
  */
-static int IncSP_cmp_attr(ir_node *a, ir_node *b) {
+static int IncSP_cmp_attr(ir_node *a, ir_node *b)
+{
 	const be_incsp_attr_t *a_attr = get_irn_attr_const(a);
 	const be_incsp_attr_t *b_attr = get_irn_attr_const(b);
 
@@ -488,11 +489,13 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *bl, ir_node *op)
 	return res;
 }
 
-ir_node *be_get_Copy_op(const ir_node *cpy) {
+ir_node *be_get_Copy_op(const ir_node *cpy)
+{
 	return get_irn_n(cpy, be_pos_Copy_op);
 }
 
-void be_set_Copy_op(ir_node *cpy, ir_node *op) {
+void be_set_Copy_op(ir_node *cpy, ir_node *op)
+{
 	set_irn_n(cpy, be_pos_Copy_op, op);
 }
 
@@ -549,39 +552,45 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem,
 }
 
 /* Gets the call entity or NULL if this is no static call. */
-ir_entity *be_Call_get_entity(const ir_node *call) {
+ir_entity *be_Call_get_entity(const ir_node *call)
+{
 	const be_call_attr_t *a = get_irn_attr_const(call);
 	assert(be_is_Call(call));
 	return a->ent;
 }
 
 /* Sets the call entity. */
-void be_Call_set_entity(ir_node *call, ir_entity *ent) {
+void be_Call_set_entity(ir_node *call, ir_entity *ent)
+{
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	a->ent = ent;
 }
 
 /* Gets the call type. */
-ir_type *be_Call_get_type(ir_node *call) {
+ir_type *be_Call_get_type(ir_node *call)
+{
 	const be_call_attr_t *a = get_irn_attr_const(call);
 	assert(be_is_Call(call));
 	return a->call_tp;
 }
 
 /* Sets the call type. */
-void be_Call_set_type(ir_node *call, ir_type *call_tp) {
+void be_Call_set_type(ir_node *call, ir_type *call_tp)
+{
 	be_call_attr_t *a = get_irn_attr(call);
 	assert(be_is_Call(call));
 	a->call_tp = call_tp;
 }
 
-void be_Call_set_pop(ir_node *call, unsigned pop) {
+void be_Call_set_pop(ir_node *call, unsigned pop)
+{
 	be_call_attr_t *a = get_irn_attr(call);
 	a->pop = pop;
 }
 
-unsigned be_Call_get_pop(const ir_node *call) {
+unsigned be_Call_get_pop(const ir_node *call)
+{
 	const be_call_attr_t *a = get_irn_attr_const(call);
 	return a->pop;
 }
@@ -611,30 +620,35 @@ ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
 }
 
 /* Returns the number of real returns values */
-int be_Return_get_n_rets(const ir_node *ret) {
+int be_Return_get_n_rets(const ir_node *ret)
+{
 	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
 	return a->num_ret_vals;
 }
 
 /* return the number of bytes that should be popped from stack when executing the Return. */
-unsigned be_Return_get_pop(const ir_node *ret) {
+unsigned be_Return_get_pop(const ir_node *ret)
+{
 	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
 	return a->pop;
 }
 
 /* return non-zero, if number of popped bytes must be always emitted */
-int be_Return_get_emit_pop(const ir_node *ret) {
+int be_Return_get_emit_pop(const ir_node *ret)
+{
 	const be_return_attr_t *a = get_irn_generic_attr_const(ret);
 	return a->emit_pop;
 }
 
 /* return non-zero, if number of popped bytes must be always emitted */
-void be_Return_set_emit_pop(ir_node *ret, int emit_pop) {
+void be_Return_set_emit_pop(ir_node *ret, int emit_pop)
+{
 	be_return_attr_t *a = get_irn_generic_attr(ret);
 	a->emit_pop = emit_pop;
 }
 
-int be_Return_append_node(ir_node *ret, ir_node *node) {
+int be_Return_append_node(ir_node *ret, ir_node *node)
+{
 	int pos;
 
 	pos = add_irn_n(ret, node);
@@ -746,7 +760,8 @@ ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, i
 	return optimize_node(irn);
 }
 
-ir_node *be_get_FrameAddr_frame(const ir_node *node) {
+ir_node *be_get_FrameAddr_frame(const ir_node *node)
+{
 	assert(be_is_FrameAddr(node));
 	return get_irn_n(node, be_pos_FrameAddr_ptr);
 }
@@ -778,11 +793,13 @@ ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_node *bl, i
 	return be_new_CopyKeep(cls, bl, src, 1, &keep, mode);
 }
 
-ir_node *be_get_CopyKeep_op(const ir_node *cpy) {
+ir_node *be_get_CopyKeep_op(const ir_node *cpy)
+{
 	return get_irn_n(cpy, be_pos_CopyKeep_op);
 }
 
-void be_set_CopyKeep_op(ir_node *cpy, ir_node *op) {
+void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
+{
 	set_irn_n(cpy, be_pos_CopyKeep_op, op);
 }
 
@@ -957,12 +974,14 @@ void be_node_set_reg_class_out(ir_node *irn, int pos,
 	be_set_constr_out(irn, pos, cls->class_req);
 }
 
-ir_node *be_get_IncSP_pred(ir_node *irn) {
+ir_node *be_get_IncSP_pred(ir_node *irn)
+{
 	assert(be_is_IncSP(irn));
 	return get_irn_n(irn, 0);
 }
 
-void be_set_IncSP_pred(ir_node *incsp, ir_node *pred) {
+void be_set_IncSP_pred(ir_node *incsp, ir_node *pred)
+{
 	assert(be_is_IncSP(incsp));
 	set_irn_n(incsp, 0, pred);
 }

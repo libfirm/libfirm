@@ -40,7 +40,8 @@ static const arch_register_t *gpreg_param_reg_std[] = {
 	&arm_gp_regs[REG_R3],
 };
 
-const arch_register_t *arm_get_RegParam_reg(int n) {
+const arch_register_t *arm_get_RegParam_reg(int n)
+{
 	assert(n < 4 && n >=0 && "register param > 3 angefordert");
 	return gpreg_param_reg_std[n];
 }
@@ -52,7 +53,8 @@ struct arm_irn_reg_assoc {
 	const arch_register_t *reg;
 };
 
-int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
+int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t size)
+{
 	const struct arm_irn_reg_assoc *x = a;
 	const struct arm_irn_reg_assoc *y = b;
 	(void) size;
@@ -60,7 +62,8 @@ int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t size) {
 	return x->irn != y->irn;
 }
 
-static struct arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
+static struct arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
+{
 	struct arm_irn_reg_assoc templ;
 	unsigned int hash;
 
@@ -71,12 +74,14 @@ static struct arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
-void arm_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set) {
+void arm_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set)
+{
 	struct arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	assoc->reg = reg;
 }
 
-const arch_register_t *arm_get_firm_reg(const ir_node *irn, set *reg_set) {
+const arch_register_t *arm_get_firm_reg(const ir_node *irn, set *reg_set)
+{
 	const struct arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	return assoc->reg;
 }

@@ -44,7 +44,8 @@ static int vrfy_entities = 0;
 const char *firm_vrfy_failure_msg;
 
 /* enable verification of Load/Store entities */
-void vrfy_enable_entity_tests(int enable) {
+void vrfy_enable_entity_tests(int enable)
+{
 	vrfy_entities = enable;
 }
 
@@ -53,7 +54,8 @@ void vrfy_enable_entity_tests(int enable) {
 /**
  * little helper for NULL modes
  */
-static const char *get_mode_name_ex(ir_mode *mode) {
+static const char *get_mode_name_ex(ir_mode *mode)
+{
 	if (! mode)
 		return "<no mode>";
 	return get_mode_name(mode);
@@ -67,7 +69,8 @@ static ir_graph *last_irg_error = NULL;
  *
  * @param node  the node caused the failure
  */
-static void show_entity_failure(ir_node *node) {
+static void show_entity_failure(ir_node *node)
+{
 	ir_graph *irg = get_irn_irg(node);
 
 	if (last_irg_error == irg)
@@ -98,7 +101,8 @@ static void show_entity_failure(ir_node *node) {
 /**
  * Prints a failure for a Node
  */
-static void show_node_failure(ir_node *n) {
+static void show_node_failure(ir_node *n)
+{
 	show_entity_failure(n);
 	fprintf(stderr, "  node %ld %s%s\n" ,
 		get_irn_node_nr(n),
@@ -109,7 +113,8 @@ static void show_node_failure(ir_node *n) {
 /**
  * Prints a failure message for a binop
  */
-static void show_binop_failure(ir_node *n, const char *text) {
+static void show_binop_failure(ir_node *n, const char *text)
+{
 	ir_node *left  = get_binop_left(n);
 	ir_node *right = get_binop_right(n);
 
@@ -125,7 +130,8 @@ static void show_binop_failure(ir_node *n, const char *text) {
 /**
  * Prints a failure message for an unop
  */
-static void show_unop_failure(ir_node *n, const char *text) {
+static void show_unop_failure(ir_node *n, const char *text)
+{
 	ir_node *op  = get_unop_op(n);
 
 	show_entity_failure(n);
@@ -139,7 +145,8 @@ static void show_unop_failure(ir_node *n, const char *text) {
 /**
  * Prints a failure message for an op with 3 operands
  */
-static void show_triop_failure(ir_node *n, const char *text) {
+static void show_triop_failure(ir_node *n, const char *text)
+{
 	ir_node *op0  = get_irn_n(n, 0);
 	ir_node *op1  = get_irn_n(n, 1);
 	ir_node *op2  = get_irn_n(n, 2);
@@ -157,7 +164,8 @@ static void show_triop_failure(ir_node *n, const char *text) {
 /**
  * Prints a failure message for a proj
  */
-static void show_proj_failure(ir_node *n) {
+static void show_proj_failure(ir_node *n)
+{
 	ir_node *op  = get_Proj_pred(n);
 	int proj     = get_Proj_proj(n);
 
@@ -171,7 +179,8 @@ static void show_proj_failure(ir_node *n) {
 /**
  * Prints a failure message for a proj from Start
  */
-static void show_proj_mode_failure(ir_node *n, ir_type *ty) {
+static void show_proj_mode_failure(ir_node *n, ir_type *ty)
+{
 	long proj  = get_Proj_proj(n);
 	ir_mode *m = get_type_mode(ty);
 	char type_name[256];
@@ -189,7 +198,8 @@ static void show_proj_mode_failure(ir_node *n, ir_type *ty) {
 /**
  * Prints a failure message for a proj
  */
-static void show_proj_failure_ent(ir_node *n, ir_entity *ent) {
+static void show_proj_failure_ent(ir_node *n, ir_entity *ent)
+{
 	ir_node *op  = get_Proj_pred(n);
 	int proj     = get_Proj_proj(n);
 	ir_mode *m   = get_type_mode(get_entity_type(ent));
@@ -208,14 +218,16 @@ static void show_proj_failure_ent(ir_node *n, ir_entity *ent) {
 /**
  * Show a node and a graph
  */
-static void show_node_on_graph(ir_graph *irg, ir_node *n) {
+static void show_node_on_graph(ir_graph *irg, ir_node *n)
+{
 	ir_fprintf(stderr, "\nFIRM: irn_vrfy_irg() of %+F, node %+F\n", irg, n);
 }
 
 /**
  * Show call parameters
  */
-static void show_call_param(ir_node *n, ir_type *mt) {
+static void show_call_param(ir_node *n, ir_type *mt)
+{
 	int i;
 	char type_name[256];
 	ir_print_type(type_name, sizeof(type_name), mt);
@@ -236,7 +248,8 @@ static void show_call_param(ir_node *n, ir_type *mt) {
 /**
  * Show return modes
  */
-static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i) {
+static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
+{
 	ir_entity *ent = get_irg_entity(irg);
 
 	show_entity_failure(n);
@@ -250,7 +263,8 @@ static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i) {
 /**
  * Show return number of results
  */
-static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt) {
+static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
+{
 	ir_entity *ent = get_irg_entity(irg);
 
 	show_entity_failure(n);
@@ -262,7 +276,8 @@ static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt) {
 /**
  * Show Phi input
  */
-static void show_phi_failure(ir_node *phi, ir_node *pred, int pos) {
+static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
+{
 	(void) pos;
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has mode %s different from predeccessor node %ld mode %s\n",
@@ -273,7 +288,8 @@ static void show_phi_failure(ir_node *phi, ir_node *pred, int pos) {
 /**
  * Show Phi inputs
  */
-static void show_phi_inputs(ir_node *phi, ir_node *block) {
+static void show_phi_inputs(ir_node *phi, ir_node *block)
+{
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has %d inputs, its Block %ld has %d\n",
 		get_irn_node_nr(phi),   get_irn_arity(phi),
@@ -287,7 +303,8 @@ static void show_phi_inputs(ir_node *phi, ir_node *block) {
  *
  * @param ptr  the node representing the address
  */
-static ir_entity *get_ptr_entity(ir_node *ptr) {
+static ir_entity *get_ptr_entity(ir_node *ptr)
+{
 	if (is_Sel(ptr)) {
 		return get_Sel_entity(ptr);
 	} else if (is_SymConst_addr_ent(ptr)) {
@@ -299,7 +316,8 @@ static ir_entity *get_ptr_entity(ir_node *ptr) {
 /**
  * verify a Proj(Start) node
  */
-static int verify_node_Proj_Start(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Start(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	(void) n;
@@ -321,7 +339,8 @@ static int verify_node_Proj_Start(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Cond) node
  */
-static int verify_node_Proj_Cond(ir_node *pred, ir_node *p) {
+static int verify_node_Proj_Cond(ir_node *pred, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -340,7 +359,8 @@ static int verify_node_Proj_Cond(ir_node *pred, ir_node *p) {
 /**
  * verify a Proj(Raise) node
  */
-static int verify_node_Proj_Raise(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Raise(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	(void) n;
@@ -356,7 +376,8 @@ static int verify_node_Proj_Raise(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(InstOf) node
  */
-static int verify_node_Proj_InstOf(ir_node *n, ir_node *p) {
+static int verify_node_Proj_InstOf(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	(void) n;
@@ -377,7 +398,8 @@ static int verify_node_Proj_InstOf(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Call) node
  */
-static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Call(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -411,7 +433,8 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Quot) node
  */
-static int verify_node_Proj_Quot(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Quot(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -443,7 +466,8 @@ static int verify_node_Proj_Quot(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(DivMod) node
  */
-static int verify_node_Proj_DivMod(ir_node *n, ir_node *p) {
+static int verify_node_Proj_DivMod(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -476,7 +500,8 @@ static int verify_node_Proj_DivMod(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Div) node
  */
-static int verify_node_Proj_Div(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Div(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -508,7 +533,8 @@ static int verify_node_Proj_Div(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Mod) node
  */
-static int verify_node_Proj_Mod(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Mod(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -540,7 +566,8 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Cmp) node
  */
-static int verify_node_Proj_Cmp(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Cmp(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	(void) n;
@@ -561,7 +588,8 @@ static int verify_node_Proj_Cmp(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Load) node
  */
-static int verify_node_Proj_Load(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Load(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -611,7 +639,8 @@ static int verify_node_Proj_Load(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Store) node
  */
-static int verify_node_Proj_Store(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Store(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -639,7 +668,8 @@ static int verify_node_Proj_Store(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Alloc) node
  */
-static int verify_node_Proj_Alloc(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Alloc(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	(void) n;
@@ -660,7 +690,8 @@ static int verify_node_Proj_Alloc(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Proj) node
  */
-static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
+static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 	long nr       = get_Proj_proj(pred);
@@ -730,7 +761,8 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p) {
 /**
  * verify a Proj(Tuple) node
  */
-static int verify_node_Proj_Tuple(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Tuple(ir_node *n, ir_node *p)
+{
 	(void) n;
 	(void) p;
 	/* We don't test */
@@ -740,7 +772,8 @@ static int verify_node_Proj_Tuple(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(CallBegin) node
  */
-static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p) {
+static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p)
+{
 	(void) n;
 	(void) p;
 	return 1;
@@ -749,7 +782,8 @@ static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(EndReg) node
  */
-static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
+static int verify_node_Proj_EndReg(ir_node *n, ir_node *p)
+{
 	(void) n;
 	(void) p;
 #ifdef INTERPROCEDURAL_VIEW
@@ -763,7 +797,8 @@ static int verify_node_Proj_EndReg(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(EndExcept) node
  */
-static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p) {
+static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p)
+{
 	(void) n;
 	(void) p;
 #ifdef INTERPROCEDURAL_VIEW
@@ -777,7 +812,8 @@ static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(CopyB) node
  */
-static int verify_node_Proj_CopyB(ir_node *n, ir_node *p) {
+static int verify_node_Proj_CopyB(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -804,7 +840,8 @@ static int verify_node_Proj_CopyB(ir_node *n, ir_node *p) {
 /**
  * verify a Proj(Bound) node
  */
-static int verify_node_Proj_Bound(ir_node *n, ir_node *p) {
+static int verify_node_Proj_Bound(ir_node *n, ir_node *p)
+{
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
@@ -828,7 +865,8 @@ static int verify_node_Proj_Bound(ir_node *n, ir_node *p) {
  * verify a Proj node
  */
 static int
-verify_node_Proj(ir_node *p, ir_graph *irg) {
+verify_node_Proj(ir_node *p, ir_graph *irg)
+{
 	ir_node *pred;
 	ir_op *op;
 
@@ -848,7 +886,8 @@ verify_node_Proj(ir_node *p, ir_graph *irg) {
 /**
  * verify a Block node
  */
-static int verify_node_Block(ir_node *n, ir_graph *irg) {
+static int verify_node_Block(ir_node *n, ir_graph *irg)
+{
 	int i;
 	ir_node *mb = get_Block_MacroBlock(n);
 
@@ -911,7 +950,8 @@ static int verify_node_Block(ir_node *n, ir_graph *irg) {
 /**
  * verify a Start node
  */
-static int verify_node_Start(ir_node *n, ir_graph *irg) {
+static int verify_node_Start(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
@@ -925,7 +965,8 @@ static int verify_node_Start(ir_node *n, ir_graph *irg) {
 /**
  * verify a Jmp node
  */
-static int verify_node_Jmp(ir_node *n, ir_graph *irg) {
+static int verify_node_Jmp(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
@@ -939,7 +980,8 @@ static int verify_node_Jmp(ir_node *n, ir_graph *irg) {
 /**
  * verify an IJmp node
  */
-static int verify_node_IJmp(ir_node *n, ir_graph *irg) {
+static int verify_node_IJmp(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_IJmp_target(n));
 	(void) irg;
@@ -954,7 +996,8 @@ static int verify_node_IJmp(ir_node *n, ir_graph *irg) {
 /**
  * verify a Break node
  */
-static int verify_node_Break(ir_node *n, ir_graph *irg) {
+static int verify_node_Break(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
@@ -972,7 +1015,8 @@ static int verify_node_Break(ir_node *n, ir_graph *irg) {
 /**
  * verify a Cond node
  */
-static int verify_node_Cond(ir_node *n, ir_graph *irg) {
+static int verify_node_Cond(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cond_selector(n));
 	(void) irg;
@@ -991,7 +1035,8 @@ static int verify_node_Cond(ir_node *n, ir_graph *irg) {
 /**
  * verify a Return node
  */
-static int verify_node_Return(ir_node *n, ir_graph *irg) {
+static int verify_node_Return(ir_node *n, ir_graph *irg)
+{
 	int i;
 	ir_mode *mymode   = get_irn_mode(n);
 	ir_mode *mem_mode = get_irn_mode(get_Return_mem(n));
@@ -1035,7 +1080,8 @@ static int verify_node_Return(ir_node *n, ir_graph *irg) {
 /**
  * verify a Raise node
  */
-static int verify_node_Raise(ir_node *n, ir_graph *irg) {
+static int verify_node_Raise(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Raise_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Raise_exo_ptr(n));
@@ -1052,7 +1098,8 @@ static int verify_node_Raise(ir_node *n, ir_graph *irg) {
 /**
  * verify a Const node
  */
-static int verify_node_Const(ir_node *n, ir_graph *irg) {
+static int verify_node_Const(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	(void) irg;
 
@@ -1090,7 +1137,8 @@ static int verify_node_SymConst(ir_node *n, ir_graph *irg)
 /**
  * verify a Sel node
  */
-static int verify_node_Sel(ir_node *n, ir_graph *irg) {
+static int verify_node_Sel(ir_node *n, ir_graph *irg)
+{
 	int i;
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sel_mem(n));
@@ -1115,7 +1163,8 @@ static int verify_node_Sel(ir_node *n, ir_graph *irg) {
 /**
  * verify an InstOf node
  */
-static int verify_node_InstOf(ir_node *n, ir_graph *irg) {
+static int verify_node_InstOf(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_InstOf_obj(n));
 	(void) irg;
@@ -1128,7 +1177,8 @@ static int verify_node_InstOf(ir_node *n, ir_graph *irg) {
 /**
  * Check if the pinned state is right.
  */
-static int verify_right_pinned(ir_node *n) {
+static int verify_right_pinned(ir_node *n)
+{
 	ir_node *mem;
 
 	if (get_irn_pinned(n) == op_pin_state_pinned)
@@ -1144,7 +1194,8 @@ static int verify_right_pinned(ir_node *n) {
 /**
  * verify a Call node
  */
-static int verify_node_Call(ir_node *n, ir_graph *irg) {
+static int verify_node_Call(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Call_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Call_ptr(n));
@@ -1223,7 +1274,8 @@ static int verify_node_Call(ir_node *n, ir_graph *irg) {
 /**
  * verify an Add node
  */
-static int verify_node_Add(ir_node *n, ir_graph *irg) {
+static int verify_node_Add(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Add_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Add_right(n));
@@ -1249,7 +1301,8 @@ static int verify_node_Add(ir_node *n, ir_graph *irg) {
 /**
  * verify a Sub node
  */
-static int verify_node_Sub(ir_node *n, ir_graph *irg) {
+static int verify_node_Sub(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sub_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Sub_right(n));
@@ -1275,7 +1328,8 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg) {
 /**
  * verify a Minus node
  */
-static int verify_node_Minus(ir_node *n, ir_graph *irg) {
+static int verify_node_Minus(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Minus_op(n));
 	(void) irg;
@@ -1291,7 +1345,8 @@ static int verify_node_Minus(ir_node *n, ir_graph *irg) {
 /**
  * verify a Mul node
  */
-static int verify_node_Mul(ir_node *n, ir_graph *irg) {
+static int verify_node_Mul(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mul_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Mul_right(n));
@@ -1315,7 +1370,8 @@ static int verify_node_Mul(ir_node *n, ir_graph *irg) {
 /**
  * verify a Mulh node
  */
-static int verify_node_Mulh(ir_node *n, ir_graph *irg) {
+static int verify_node_Mulh(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mulh_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Mulh_right(n));
@@ -1335,7 +1391,8 @@ static int verify_node_Mulh(ir_node *n, ir_graph *irg) {
 /**
  * verify a Quot node
  */
-static int verify_node_Quot(ir_node *n, ir_graph *irg) {
+static int verify_node_Quot(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Quot_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Quot_left(n));
@@ -1356,7 +1413,8 @@ static int verify_node_Quot(ir_node *n, ir_graph *irg) {
 /**
  * verify a DivMod node
  */
-static int verify_node_DivMod(ir_node *n, ir_graph *irg) {
+static int verify_node_DivMod(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_DivMod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_DivMod_left(n));
@@ -1377,7 +1435,8 @@ static int verify_node_DivMod(ir_node *n, ir_graph *irg) {
 /**
  * verify a Div node
  */
-static int verify_node_Div(ir_node *n, ir_graph *irg) {
+static int verify_node_Div(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Div_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Div_left(n));
@@ -1398,7 +1457,8 @@ static int verify_node_Div(ir_node *n, ir_graph *irg) {
 /**
  * verify a Mod node
  */
-static int verify_node_Mod(ir_node *n, ir_graph *irg) {
+static int verify_node_Mod(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Mod_left(n));
@@ -1419,7 +1479,8 @@ static int verify_node_Mod(ir_node *n, ir_graph *irg) {
 /**
  * verify an Abs node
  */
-static int verify_node_Abs(ir_node *n, ir_graph *irg) {
+static int verify_node_Abs(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Abs_op(n));
 	(void) irg;
@@ -1437,7 +1498,8 @@ static int verify_node_Abs(ir_node *n, ir_graph *irg) {
 /**
  * verify a logical And, Or, Eor node
  */
-static int verify_node_Logic(ir_node *n, ir_graph *irg) {
+static int verify_node_Logic(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
@@ -1461,7 +1523,8 @@ static int verify_node_Logic(ir_node *n, ir_graph *irg) {
 /**
  * verify a Not node
  */
-static int verify_node_Not(ir_node *n, ir_graph *irg) {
+static int verify_node_Not(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Not_op(n));
 	(void) irg;
@@ -1479,7 +1542,8 @@ static int verify_node_Not(ir_node *n, ir_graph *irg) {
 /**
  * verify a Cmp node
  */
-static int verify_node_Cmp(ir_node *n, ir_graph *irg) {
+static int verify_node_Cmp(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cmp_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Cmp_right(n));
@@ -1499,7 +1563,8 @@ static int verify_node_Cmp(ir_node *n, ir_graph *irg) {
 /**
  * verify a Shift node
  */
-static int verify_node_Shift(ir_node *n, ir_graph *irg) {
+static int verify_node_Shift(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
@@ -1524,7 +1589,8 @@ static int verify_node_Shift(ir_node *n, ir_graph *irg) {
 /**
  * verify a Rotl node
  */
-static int verify_node_Rotl(ir_node *n, ir_graph *irg) {
+static int verify_node_Rotl(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Rotl_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Rotl_right(n));
@@ -1544,7 +1610,8 @@ static int verify_node_Rotl(ir_node *n, ir_graph *irg) {
 /**
  * verify a Conv node
  */
-static int verify_node_Conv(ir_node *n, ir_graph *irg) {
+static int verify_node_Conv(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Conv_op(n));
 	(void) irg;
@@ -1561,7 +1628,8 @@ static int verify_node_Conv(ir_node *n, ir_graph *irg) {
 /**
  * verify a Cast node
  */
-static int verify_node_Cast(ir_node *n, ir_graph *irg) {
+static int verify_node_Cast(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cast_op(n));
 	(void) irg;
@@ -1578,7 +1646,8 @@ static int verify_node_Cast(ir_node *n, ir_graph *irg) {
 /**
  * verify a Phi node
  */
-static int verify_node_Phi(ir_node *n, ir_graph *irg) {
+static int verify_node_Phi(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode = get_irn_mode(n);
 	ir_node *block  = get_nodes_block(n);
 	int i;
@@ -1639,7 +1708,8 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg) {
 /**
  * verify a Filter node
  */
-static int verify_node_Filter(ir_node *n, ir_graph *irg) {
+static int verify_node_Filter(ir_node *n, ir_graph *irg)
+{
 	(void) n;
 	(void) irg;
 #ifdef INTERPROCEDURAL_VIEW
@@ -1653,7 +1723,8 @@ static int verify_node_Filter(ir_node *n, ir_graph *irg) {
 /**
  * verify a Load node
  */
-static int verify_node_Load(ir_node *n, ir_graph *irg) {
+static int verify_node_Load(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Load_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Load_ptr(n));
@@ -1685,7 +1756,8 @@ static int verify_node_Load(ir_node *n, ir_graph *irg) {
 /**
  * verify a Store node
  */
-static int verify_node_Store(ir_node *n, ir_graph *irg) {
+static int verify_node_Store(ir_node *n, ir_graph *irg)
+{
 	ir_entity *target;
 
 	ir_mode *mymode  = get_irn_mode(n);
@@ -1716,7 +1788,8 @@ static int verify_node_Store(ir_node *n, ir_graph *irg) {
 /**
  * verify an Alloc node
  */
-static int verify_node_Alloc(ir_node *n, ir_graph *irg) {
+static int verify_node_Alloc(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Alloc_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Alloc_size(n));
@@ -1737,7 +1810,8 @@ static int verify_node_Alloc(ir_node *n, ir_graph *irg) {
 /**
  * verify a Free node
  */
-static int verify_node_Free(ir_node *n, ir_graph *irg) {
+static int verify_node_Free(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Free_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Free_ptr(n));
@@ -1759,7 +1833,8 @@ static int verify_node_Free(ir_node *n, ir_graph *irg) {
 /**
  * verify a Sync node
  */
-static int verify_node_Sync(ir_node *n, ir_graph *irg) {
+static int verify_node_Sync(ir_node *n, ir_graph *irg)
+{
 	int i;
 	ir_mode *mymode  = get_irn_mode(n);
 	(void) irg;
@@ -1775,7 +1850,8 @@ static int verify_node_Sync(ir_node *n, ir_graph *irg) {
 /**
  * verify a Confirm node
  */
-static int verify_node_Confirm(ir_node *n, ir_graph *irg) {
+static int verify_node_Confirm(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Confirm_value(n));
 	ir_mode *op2mode = get_irn_mode(get_Confirm_bound(n));
@@ -1794,7 +1870,8 @@ static int verify_node_Confirm(ir_node *n, ir_graph *irg) {
 /**
  * verify a Mux node
  */
-static int verify_node_Mux(ir_node *n, ir_graph *irg) {
+static int verify_node_Mux(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mux_sel(n));
 	ir_mode *op2mode = get_irn_mode(get_Mux_true(n));
@@ -1815,7 +1892,8 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg) {
 /**
  * verify a CopyB node
  */
-static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
+static int verify_node_CopyB(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_CopyB_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_CopyB_dst(n));
@@ -1842,7 +1920,8 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg) {
 /**
  * verify a Bound node
  */
-static int verify_node_Bound(ir_node *n, ir_graph *irg) {
+static int verify_node_Bound(ir_node *n, ir_graph *irg)
+{
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Bound_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Bound_index(n));
@@ -1869,7 +1948,8 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg) {
  *
  * @return non-zero on success, 0 on dominance error
  */
-static int check_dominance_for_node(ir_node *use) {
+static int check_dominance_for_node(ir_node *use)
+{
 	if (is_Block(use)) {
 		ir_node *mbh = get_Block_MacroBlock(use);
 
@@ -1915,7 +1995,8 @@ static int check_dominance_for_node(ir_node *use) {
 }
 
 /* Tests the modes of n and its predecessors. */
-int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
+int irn_vrfy_irg(ir_node *n, ir_graph *irg)
+{
 	int i;
 	ir_op *op;
 
@@ -1973,7 +2054,8 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg) {
 	return 1;
 }
 
-int irn_vrfy(ir_node *n) {
+int irn_vrfy(ir_node *n)
+{
 #ifdef DEBUG_libfirm
 	return irn_vrfy_irg(n, current_ir_graph);
 #else
@@ -1990,7 +2072,8 @@ int irn_vrfy(ir_node *n) {
 /**
  * Walker to check every node
  */
-static void vrfy_wrap(ir_node *node, void *env) {
+static void vrfy_wrap(ir_node *node, void *env)
+{
 	int *res = env;
 	*res = irn_vrfy_irg(node, current_ir_graph);
 }
@@ -1999,7 +2082,8 @@ static void vrfy_wrap(ir_node *node, void *env) {
  * Walker to check every node including SSA property.
  * Only called if dominance info is available.
  */
-static void vrfy_wrap_ssa(ir_node *node, void *env) {
+static void vrfy_wrap_ssa(ir_node *node, void *env)
+{
 	int *res = env;
 
 	*res = irn_vrfy_irg(node, current_ir_graph);
@@ -2015,7 +2099,8 @@ static void vrfy_wrap_ssa(ir_node *node, void *env) {
  * Graph must be in state "op_pin_state_pinned".
  * If dominance info is available, check the SSA property.
  */
-int irg_verify(ir_graph *irg, unsigned flags) {
+int irg_verify(ir_graph *irg, unsigned flags)
+{
 	int res = 1;
 #ifdef DEBUG_libfirm
 	ir_graph *rem;
@@ -2065,7 +2150,8 @@ struct pass_t {
 /**
  * Wrapper to irg_verify to be run as an ir_graph pass.
  */
-static int irg_verify_wrapper(ir_graph *irg, void *context) {
+static int irg_verify_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 	irg_verify(irg, pass->flags);
 	/* do NOT rerun the pass if verify is ok :-) */
@@ -2073,7 +2159,8 @@ static int irg_verify_wrapper(ir_graph *irg, void *context) {
 }
 
 /* Creates an ir_graph pass for irg_verify(). */
-ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags) {
+ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	def_graph_pass_constructor(
@@ -2088,7 +2175,8 @@ ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags) {
 }
 
 /* create a verify pass */
-int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string) {
+int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
+{
 	int res;
 	firm_verification_t old = get_node_verification_mode();
 
@@ -2113,7 +2201,8 @@ typedef struct _vrfy_bad_env_t {
 /**
  * Pre-Walker: check Bad predecessors of node.
  */
-static void check_bads(ir_node *node, void *env) {
+static void check_bads(ir_node *node, void *env)
+{
 	vrfy_bad_env_t *venv = env;
 	int i, arity = get_irn_arity(node);
 
@@ -2209,7 +2298,8 @@ static void check_bads(ir_node *node, void *env) {
 /*
  * verify occurrence of bad nodes
  */
-int irg_vrfy_bads(ir_graph *irg, int flags) {
+int irg_vrfy_bads(ir_graph *irg, int flags)
+{
 	vrfy_bad_env_t env;
 
 	env.flags = flags;
@@ -2223,7 +2313,8 @@ int irg_vrfy_bads(ir_graph *irg, int flags) {
 /*
  * set the default verify operation
  */
-void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops) {
+void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
+{
 #define CASE(a)                           \
    case iro_##a:                          \
      ops->verify_node  = verify_node_##a; \

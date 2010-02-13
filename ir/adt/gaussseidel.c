@@ -41,13 +41,15 @@ struct _gs_matrix_t {
 	row_col_t *rows;
 };
 
-static inline void alloc_cols(row_col_t *row, int c_cols) {
+static inline void alloc_cols(row_col_t *row, int c_cols)
+{
 	assert(c_cols > row->c_cols);
 	row->c_cols = c_cols;
 	row->cols   = XREALLOC(row->cols, col_val_t, c_cols);
 }
 
-static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init) {
+static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_init)
+{
 	int i;
 	assert(c_rows > m->c_rows);
 
@@ -64,7 +66,8 @@ static inline void alloc_rows(gs_matrix_t *m, int c_rows, int c_cols, int begin_
 	}
 }
 
-gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols) {
+gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols)
+{
 	gs_matrix_t *res = XMALLOCZ(gs_matrix_t);
 	if (n_init_rows < 16)
 		n_init_rows = 16;
@@ -73,7 +76,8 @@ gs_matrix_t *gs_new_matrix(int n_init_rows, int n_init_cols) {
 	return res;
 }
 
-void gs_delete_matrix(gs_matrix_t *m) {
+void gs_delete_matrix(gs_matrix_t *m)
+{
 	int i;
 	for (i = 0; i < m->c_rows; ++i) {
 		if (m->rows[i].c_cols)
@@ -84,7 +88,8 @@ void gs_delete_matrix(gs_matrix_t *m) {
 	xfree(m);
 }
 
-unsigned gs_matrix_get_n_entries(const gs_matrix_t *m) {
+unsigned gs_matrix_get_n_entries(const gs_matrix_t *m)
+{
 	int i;
 	unsigned n_entries = 0;
 
@@ -96,7 +101,8 @@ unsigned gs_matrix_get_n_entries(const gs_matrix_t *m) {
 	return n_entries - m->n_zero_entries;
 }
 
-int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m) {
+int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m)
+{
 	int i, n_col_val_ts = 0;
 	for (i = 0; i < m->c_rows; ++i)
 		n_col_val_ts += m->rows[i].c_cols;
@@ -104,13 +110,15 @@ int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m) {
 	return n_col_val_ts * sizeof(col_val_t) + m->c_rows * sizeof(row_col_t) + sizeof(gs_matrix_t);
 }
 
-void gs_matrix_assure_row_capacity(gs_matrix_t *m, int row, int min_capacity) {
+void gs_matrix_assure_row_capacity(gs_matrix_t *m, int row, int min_capacity)
+{
 	row_col_t *the_row = &m->rows[row];
 	if (the_row->c_cols < min_capacity)
 		alloc_cols(the_row, min_capacity);
 }
 
-void gs_matrix_trim_row_capacities(gs_matrix_t *m) {
+void gs_matrix_trim_row_capacities(gs_matrix_t *m)
+{
 	int i;
 	for (i = 0; i < m->c_rows; ++i) {
 		row_col_t *the_row = &m->rows[i];
@@ -124,7 +132,8 @@ void gs_matrix_trim_row_capacities(gs_matrix_t *m) {
 	}
 }
 
-void gs_matrix_delete_zero_entries(gs_matrix_t *m) {
+void gs_matrix_delete_zero_entries(gs_matrix_t *m)
+{
 	int i, read_pos;
 	for (i = 0; i < m->c_rows; ++i) {
 		row_col_t *the_row = &m->rows[i];
@@ -139,7 +148,8 @@ void gs_matrix_delete_zero_entries(gs_matrix_t *m) {
 	m->n_zero_entries = 0;
 }
 
-void gs_matrix_set(gs_matrix_t *m, int row, int col, double val) {
+void gs_matrix_set(gs_matrix_t *m, int row, int col, double val)
+{
 	row_col_t *the_row;
 	col_val_t *cols;
 	int min, max, c, i;
@@ -202,7 +212,8 @@ void gs_matrix_set(gs_matrix_t *m, int row, int col, double val) {
 	assert(c>=the_row->n_cols-1 || the_row->cols[c].col_idx < the_row->cols[c+1].col_idx);
 }
 
-double gs_matrix_get(const gs_matrix_t *m, int row, int col) {
+double gs_matrix_get(const gs_matrix_t *m, int row, int col)
+{
 	row_col_t *the_row;
 	int c;
 
@@ -231,7 +242,8 @@ double gs_matrix_get(const gs_matrix_t *m, int row, int col) {
  *
  * Note that the diagonal element is stored separately in this matrix implementation.
  * */
-double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x, int n) {
+double gs_matrix_gauss_seidel(const gs_matrix_t *m, double *x, int n)
+{
 	double res = 0.0;
 	int r;
 
@@ -278,7 +290,8 @@ void gs_matrix_export(const gs_matrix_t *m, double *nw, int size)
 	}
 }
 
-void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out) {
+void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out)
+{
 	int effective_rows = MIN(a, m->c_rows);
 	int r, c, i;
 	double *elems = XMALLOCN(double, b);
@@ -313,7 +326,8 @@ void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out) {
 	xfree(elems);
 }
 
-void gs_matrix_self_test(int d) {
+void gs_matrix_self_test(int d)
+{
 	int i, o;
 	gs_matrix_t *m = gs_new_matrix(10, 10);
 

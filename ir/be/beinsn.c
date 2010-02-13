@@ -43,7 +43,8 @@
  * @param insn     the be_insn that is build
  * @param mach_op  the machine operand for which uses are added
  */
-static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_node *mach_op) {
+static void add_machine_operands(const be_insn_env_t *env, be_insn_t *insn, ir_node *mach_op)
+{
 	struct obstack *obst = env->obst;
 	int i, n;
 

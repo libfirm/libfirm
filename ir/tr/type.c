@@ -76,7 +76,8 @@ ir_type *get_code_type(void)
 }
 
 ir_type *firm_unknown_type;
-ir_type *get_unknown_type(void) {
+ir_type *get_unknown_type(void)
+{
 	return firm_unknown_type;
 }
 
@@ -1046,7 +1047,8 @@ void set_class_mode(ir_type *tp, ir_mode *mode)
 	tp->mode = mode;
 }
 
-void set_class_size(ir_type *tp, unsigned size) {
+void set_class_size(ir_type *tp, unsigned size)
+{
 	tp->size = size;
 }
 

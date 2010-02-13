@@ -68,7 +68,8 @@ extern int isleaf;
 /**
  * Returns the register at in position pos.
  */
-static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
+static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
+{
 	ir_node                *op;
 	const arch_register_t  *reg = NULL;
 
@@ -87,7 +88,8 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos) {
 /**
  * Returns the register at out position pos.
  */
-static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
+static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
+{
 	ir_node                *proj;
 	const arch_register_t  *reg = NULL;
 
@@ -122,7 +124,8 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos) {
 /**
  * Emit the name of the source register at given input position.
  */
-void ppc32_emit_source_register(const ir_node *node, int pos) {
+void ppc32_emit_source_register(const ir_node *node, int pos)
+{
 	const arch_register_t *reg = get_in_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
@@ -130,12 +133,14 @@ void ppc32_emit_source_register(const ir_node *node, int pos) {
 /**
  * Emit the name of the destination register at given output position.
  */
-void ppc32_emit_dest_register(const ir_node *node, int pos) {
+void ppc32_emit_dest_register(const ir_node *node, int pos)
+{
 	const arch_register_t *reg = get_out_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
 
-void ppc32_emit_rlwimi_helper(const ir_node *n) {
+void ppc32_emit_rlwimi_helper(const ir_node *n)
+{
 	const rlwimi_const_t *rlwimi_const = get_ppc32_rlwimi_const(n);
 
 	be_emit_irprintf("%i, %i, %i", rlwimi_const->shift,
@@ -145,7 +150,8 @@ void ppc32_emit_rlwimi_helper(const ir_node *n) {
 /**
  * Emit a const or symconst.
  */
-void ppc32_emit_immediate(const ir_node *n) {
+void ppc32_emit_immediate(const ir_node *n)
+{
 	const char *buf;
 
 	switch (get_ppc32_type(n)) {
@@ -185,7 +191,8 @@ void ppc32_emit_immediate(const ir_node *n) {
 /**
  * Emits a node's offset.
  */
-void ppc32_emit_offset(const ir_node *n) {
+void ppc32_emit_offset(const ir_node *n)
+{
 	const char *buf;
 	if (get_ppc32_type(n) == ppc32_ac_None) {
 		be_emit_char('0');
@@ -229,7 +236,8 @@ void ppc32_emit_offset(const ir_node *n) {
 /**
  * Returns the target label for a control flow node.
  */
-static char *get_cfop_target(const ir_node *irn, char *buf) {
+static char *get_cfop_target(const ir_node *irn, char *buf)
+{
 	ir_node *bl = get_irn_link(irn);
 
 	snprintf(buf, SNPRINTF_BUF_LEN, "BLOCK_%ld", get_irn_node_nr(bl));
@@ -239,7 +247,8 @@ static char *get_cfop_target(const ir_node *irn, char *buf) {
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(const ir_node *irn) {
+static void emit_Jmp(const ir_node *irn)
+{
 	ir_node *block = get_nodes_block(irn);
 
 	if (get_irn_link(irn) != get_irn_link(block)) {
@@ -253,7 +262,8 @@ static void emit_Jmp(const ir_node *irn) {
 /**
  * Emits code for a call
  */
-static void emit_be_Call(const ir_node *irn) {
+static void emit_be_Call(const ir_node *irn)
+{
 	ir_entity *call_ent = be_Call_get_entity(irn);
 
 	if (call_ent) {
@@ -269,7 +279,8 @@ static void emit_be_Call(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_ppc32_Branch(const ir_node *irn) {
+static void emit_ppc32_Branch(const ir_node *irn)
+{
 	static const char *branchops[8] = { 0, "beq", "blt", "ble", "bgt", "bge", "bne", "b" };
 	int projnum = get_ppc32_proj_nr(irn);
 
@@ -303,7 +314,8 @@ static void emit_ppc32_Branch(const ir_node *irn) {
 	}
 }
 
-static void emit_ppc32_LoopCopy(const ir_node *irn) {
+static void emit_ppc32_LoopCopy(const ir_node *irn)
+{
 	be_emit_irprintf("LOOP_%ld:\n", get_irn_node_nr(irn));
 	be_emit_write_line();
 
@@ -329,7 +341,8 @@ static void emit_ppc32_LoopCopy(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_ppc32_Switch(const ir_node *irn) {
+static void emit_ppc32_Switch(const ir_node *irn)
+{
 	ir_node *proj, *defproj = NULL;
 	int pn;
 
@@ -386,7 +399,8 @@ static void emit_ppc32_Switch(const ir_node *irn) {
 /**
  * Emits code for a backend Copy node
  */
-static void emit_be_Copy(const ir_node *irn) {
+static void emit_be_Copy(const ir_node *irn)
+{
 	const arch_register_class_t *regclass = arch_get_irn_reg_class(irn, 0);
 
 	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
@@ -408,7 +422,8 @@ static void emit_be_Copy(const ir_node *irn) {
 /**
  * Emits code for a backend Perm node
  */
-static void emit_be_Perm(const ir_node *irn) {
+static void emit_be_Perm(const ir_node *irn)
+{
 	const arch_register_class_t *regclass = arch_get_irn_reg_class(irn, 0);
 
 	if (regclass == &ppc32_reg_classes[CLASS_ppc32_gp]) {
@@ -485,7 +500,8 @@ static void emit_be_Perm(const ir_node *irn) {
 /**
  * Emits code for a proj -> node
  */
-static void emit_Proj(const ir_node *irn) {
+static void emit_Proj(const ir_node *irn)
+{
 	ir_node *pred = get_Proj_pred(irn);
 
 	if (is_Start(pred)) {
@@ -495,7 +511,8 @@ static void emit_Proj(const ir_node *irn) {
 	}
 }
 
-static void emit_be_IncSP(const ir_node *irn) {
+static void emit_be_IncSP(const ir_node *irn)
+{
 	int offs = be_get_IncSP_offset(irn);
 
 	be_emit_irprintf("\t/* ignored IncSP with %d */", -offs);
@@ -533,11 +550,13 @@ typedef void (emit_func)(const ir_node *irn);
 /**
  * Set a node emitter. Make it a bit more type safe.
  */
-static inline void set_emitter(ir_op *op, emit_func ppc32_emit_node) {
+static inline void set_emitter(ir_op *op, emit_func ppc32_emit_node)
+{
 	op->ops.generic = (op_func)ppc32_emit_node;
 }
 
-static void ppc32_register_emitters(void) {
+static void ppc32_register_emitters(void)
+{
 	/* first clear generic function pointers */
 	clear_irp_opcodes_generic_func();
 
@@ -560,7 +579,8 @@ static void ppc32_register_emitters(void) {
 /**
  * Emits code for a node.
  */
-static void ppc32_emit_node(const ir_node *irn) {
+static void ppc32_emit_node(const ir_node *irn)
+{
 	ir_op *op = get_irn_op(irn);
 
 	if (op->ops.generic) {
@@ -577,7 +597,8 @@ static void ppc32_emit_node(const ir_node *irn) {
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void ppc32_gen_block(const ir_node *block) {
+static void ppc32_gen_block(const ir_node *block)
+{
 	ir_node *irn;
 
 	if (! is_Block(block))
@@ -594,7 +615,8 @@ static void ppc32_gen_block(const ir_node *block) {
 /**
  * Emits code for function start.
  */
-static void ppc32_emit_start(ir_graph *irg) {
+static void ppc32_emit_start(ir_graph *irg)
+{
 	const char *irg_name  = get_entity_ld_name(get_irg_entity(irg));
 	int         framesize = get_type_size_bytes(get_irg_frame_type(irg));
 
@@ -625,7 +647,8 @@ static void ppc32_emit_start(ir_graph *irg) {
 /**
  * Emits code for function end
  */
-static void ppc32_emit_end(ir_graph *irg) {
+static void ppc32_emit_end(ir_graph *irg)
+{
 	int framesize = get_type_size_bytes(get_irg_frame_type(irg));
 	(void) irg;
 
@@ -651,7 +674,8 @@ static void ppc32_emit_end(ir_graph *irg) {
  * Sets labels for control flow nodes (jump target)
  * TODO: Jump optimization
  */
-void ppc32_gen_labels(ir_node *block, void *env) {
+void ppc32_gen_labels(ir_node *block, void *env)
+{
 	ir_node *pred;
 	int n;
 	(void) env;

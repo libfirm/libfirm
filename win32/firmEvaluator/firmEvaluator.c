@@ -14,7 +14,8 @@
  * Get the initial address. As the interface allows only 32 bit
  * transmitted, new I/F must be asked for 64bit support.
  */
-static void *GetInitialAddress(DWORD dwAddress, DEBUGHELPER *pHelper) {
+static void *GetInitialAddress(DWORD dwAddress, DEBUGHELPER *pHelper)
+{
   if (pHelper->dwVersion < 0x20000) {
     /* VC 6.0 access */
     return (void *)dwAddress;

@@ -34,7 +34,8 @@
  * Post-walker: prepare the graph nodes for new SSA construction cycle by allocation
  * new arrays.
  */
-static void prepare_nodes(ir_node *irn, void *env) {
+static void prepare_nodes(ir_node *irn, void *env)
+{
 	(void)env;
 
 	switch (get_irn_opcode(irn)) {
@@ -104,7 +105,8 @@ static void prepare_nodes(ir_node *irn, void *env) {
  * again and set_value()/get_value() and mature_block() can be used
  * to construct new values.
  */
-void ssa_cons_start(ir_graph *irg, int n_loc) {
+void ssa_cons_start(ir_graph *irg, int n_loc)
+{
 	/* for now we support only phase_high graphs */
 	assert(irg->phase_state == phase_high);
 
@@ -124,7 +126,8 @@ void ssa_cons_start(ir_graph *irg, int n_loc) {
 /**
  * mature all immature Blocks.
  */
-static void finish_block(ir_node *block, void *env) {
+static void finish_block(ir_node *block, void *env)
+{
 	(void)env;
 
 	if (!get_Block_matured(block))
@@ -135,7 +138,8 @@ static void finish_block(ir_node *block, void *env) {
  * Finalize the (restarted) SSA construction. Matures all blocks that are
  * not matured yet and reset the graph state to phase_high.
  */
-void ssa_cons_finish(ir_graph *irg) {
+void ssa_cons_finish(ir_graph *irg)
+{
 	irg_block_walk_graph(irg, NULL, finish_block, NULL);
 	irg_finalize_cons(irg);
 }

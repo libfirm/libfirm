@@ -60,7 +60,8 @@ new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp
 }
 
 void
-free_tpop(const tp_op *tpop) {
+free_tpop(const tp_op *tpop)
+{
 	xfree((void *)tpop);
 }
 
@@ -168,7 +169,8 @@ static const tp_op_ops
 #define C     TP_OP_FLAG_COMPOUND
 #define ID(s) new_id_from_chars(s, sizeof(s) - 1)
 
-void init_tpop(void) {
+void init_tpop(void)
+{
 	type_class       = new_tpop(tpo_class      , ID("class"),       C, sizeof (cls_attr), &class_ops);
 	type_struct      = new_tpop(tpo_struct     , ID("struct"),      C, sizeof (stc_attr), &struct_ops);
 	type_method      = new_tpop(tpo_method     , ID("method"),      0, sizeof (mtd_attr), &method_ops);
@@ -186,7 +188,8 @@ void init_tpop(void) {
 
 /* Finalize the tpop module.
  * Frees all type opcodes.  */
-void finish_tpop(void) {
+void finish_tpop(void)
+{
 	free_tpop(type_class      ); type_class       = NULL;
 	free_tpop(type_struct     ); type_struct      = NULL;
 	free_tpop(type_method     ); type_method      = NULL;
@@ -201,15 +204,18 @@ void finish_tpop(void) {
 }
 
 /* Returns the string for the tp_opcode. */
-const char  *get_tpop_name(const tp_op *op) {
+const char  *get_tpop_name(const tp_op *op)
+{
 	return get_id_str(op->name);
 }
 
-tp_opcode (get_tpop_code)(const tp_op *op) {
+tp_opcode (get_tpop_code)(const tp_op *op)
+{
 	return _get_tpop_code(op);
 }
 
 /* returns the attribute size of the operator. */
-int (get_tpop_attr_size)(const tp_op *op) {
+int (get_tpop_attr_size)(const tp_op *op)
+{
 	return _get_tpop_attr_size(op);
 }

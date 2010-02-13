@@ -44,7 +44,8 @@
  * Does not assert whether the backarray is correct -- use
  * very careful!
  */
-static unsigned *mere_get_backarray(ir_node *n) {
+static unsigned *mere_get_backarray(ir_node *n)
+{
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
 		if (!get_Block_matured(n)) return NULL;
@@ -75,7 +76,8 @@ static unsigned *mere_get_backarray(ir_node *n) {
  * Returns backarray if the node can have backedges, else returns
  * NULL.
  */
-static unsigned *get_backarray(ir_node *n) {
+static unsigned *get_backarray(ir_node *n)
+{
 	unsigned *ba = mere_get_backarray(n);
 
 #ifndef NDEBUG
@@ -94,7 +96,8 @@ static unsigned *get_backarray(ir_node *n) {
  * Returns non-zero if node has no backarray, or
  *                  if size of backarray == size of in array.
  */
-static int legal_backarray(ir_node *n) {
+static int legal_backarray(ir_node *n)
+{
 	unsigned *ba = mere_get_backarray(n);
 	if (ba && (rbitset_size(ba) != (unsigned) get_irn_arity(n)))
 		return 0;
@@ -102,7 +105,8 @@ static int legal_backarray(ir_node *n) {
 }
 #endif
 
-void fix_backedges(struct obstack *obst, ir_node *n) {
+void fix_backedges(struct obstack *obst, ir_node *n)
+{
 	unsigned *arr = mere_get_backarray(n);
 	ir_opcode opc;
 	int arity;
@@ -131,7 +135,8 @@ void fix_backedges(struct obstack *obst, ir_node *n) {
 }
 
 #ifdef INTERPROCEDURAL_VIEW
-int is_inter_backedge(ir_node *n, int pos) {
+int is_inter_backedge(ir_node *n, int pos)
+{
 	int res;
 	int rem = get_interprocedural_view();
 	set_interprocedural_view(0);
@@ -140,7 +145,8 @@ int is_inter_backedge(ir_node *n, int pos) {
 	return res;
 }
 
-int is_intra_backedge(ir_node *n, int pos) {
+int is_intra_backedge(ir_node *n, int pos)
+{
 	int res;
 	int rem = get_interprocedural_view();
 	set_interprocedural_view(1);
@@ -152,7 +158,8 @@ int is_intra_backedge(ir_node *n, int pos) {
 
 
 /* Returns non-zero if the predecessor pos is a backedge. */
-int is_backedge(ir_node *n, int pos) {
+int is_backedge(ir_node *n, int pos)
+{
 	unsigned *ba = get_backarray(n);
 	if (ba)
 		return rbitset_is_set(ba, pos);
@@ -160,21 +167,24 @@ int is_backedge(ir_node *n, int pos) {
 }
 
 /* Remarks that edge pos is a backedge. */
-void set_backedge(ir_node *n, int pos) {
+void set_backedge(ir_node *n, int pos)
+{
 	unsigned *ba = get_backarray(n);
 	assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
 	rbitset_set(ba, pos);
 }
 
 /* Remarks that edge pos is a backedge. */
-void set_not_backedge(ir_node *n, int pos) {
+void set_not_backedge(ir_node *n, int pos)
+{
 	unsigned *ba = get_backarray(n);
 	assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
 	rbitset_clear(ba, pos);
 }
 
 /* Returns non-zero if n has backedges. */
-int has_backedges(ir_node *n) {
+int has_backedges(ir_node *n)
+{
 	unsigned *ba = get_backarray(n);
 	if (ba) {
 		int arity = get_irn_arity(n);
@@ -184,7 +194,8 @@ int has_backedges(ir_node *n) {
 }
 
 /** Sets all backedge information to zero. */
-void clear_backedges(ir_node *n) {
+void clear_backedges(ir_node *n)
+{
 	int i, arity;
 	unsigned *ba;
 #ifdef INTERPROCEDURAL_VIEW
@@ -210,12 +221,14 @@ void clear_backedges(ir_node *n) {
 }
 
 /* Allocate a new backedge array on the obstack for given size. */
-unsigned *new_backedge_arr(struct obstack *obst, unsigned size) {
+unsigned *new_backedge_arr(struct obstack *obst, unsigned size)
+{
 	return rbitset_w_size_obstack_alloc(obst, size);
 }
 
 /* TODO: add an ir_op operation */
-void new_backedge_info(ir_node *n) {
+void new_backedge_info(ir_node *n)
+{
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
 		n->attr.block.cg_backedge = NULL;

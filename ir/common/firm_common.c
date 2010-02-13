@@ -35,11 +35,13 @@
 #define POINTER_READ(p, size) (p)
 
 /* returns the kind of the thing */
-firm_kind get_kind(const void *firm_thing) {
+firm_kind get_kind(const void *firm_thing)
+{
 	return POINTER_READ(firm_thing, sizeof(firm_kind)) ? *(firm_kind *)firm_thing : k_BAD;
 }  /* get_kind */
 
-const char *print_firm_kind(void *firm_thing) {
+const char *print_firm_kind(void *firm_thing)
+{
 	if (! firm_thing)
 		return "(NULL)";
 
@@ -64,7 +66,8 @@ const char *print_firm_kind(void *firm_thing) {
 /*
  * identify a firm thing
  */
-void firm_identify_thing(void *X) {
+void firm_identify_thing(void *X)
+{
 	if (! X) {
 		printf("(NULL)\n");
 		return;

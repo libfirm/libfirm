@@ -50,7 +50,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /**
  * Walker: adds Call operations to a head's link list.
  */
-static void collect_call(ir_node *node, void *env) {
+static void collect_call(ir_node *node, void *env)
+{
 	ir_node *head = env;
 
 	if (is_Call(node)) {

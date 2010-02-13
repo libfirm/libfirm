@@ -53,7 +53,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define get_reg(irn)         arch_get_irn_register(irn)
 #define set_reg(irn, reg)    arch_set_irn_register(irn, reg)
 
-static void clear_link(ir_node *irn, void *data) {
+static void clear_link(ir_node *irn, void *data)
+{
 	(void) data;
 	set_irn_link(irn, NULL);
 }
@@ -64,7 +65,8 @@ static void clear_link(ir_node *irn, void *data) {
  *  - have the current register class
  * The list is rooted at get_irn_link(BB).
  */
-static void collect_phis_walker(ir_node *irn, void *data) {
+static void collect_phis_walker(ir_node *irn, void *data)
+{
 	be_chordal_env_t *env = data;
 	if (is_Phi(irn) && chordal_has_class(env, irn)) {
 		ir_node *bl = get_nodes_block(irn);
@@ -86,7 +88,8 @@ typedef struct {
 	ir_node *proj; /**< The proj created for @p arg. */
 } perm_proj_t;
 
-static int cmp_perm_proj(const void *a, const void *b, size_t n) {
+static int cmp_perm_proj(const void *a, const void *b, size_t n)
+{
 	const perm_proj_t *p = a;
 	const perm_proj_t *q = b;
 	(void) n;
@@ -102,7 +105,8 @@ typedef struct insert_all_perms_env_t {
 /**
  * Insert Perms in all predecessors of a block containing a phi
  */
-static void insert_all_perms_walker(ir_node *bl, void *data) {
+static void insert_all_perms_walker(ir_node *bl, void *data)
+{
 	insert_all_perms_env_t *env = data;
 	be_chordal_env_t *chordal_env = env->chordal_env;
 	pmap *perm_map = env->perm_map;
@@ -226,7 +230,8 @@ static void insert_all_perms_walker(ir_node *bl, void *data) {
  * Adjusts the register allocation for the (new) phi-operands
  * and insert duplicates iff necessary.
  */
-static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
+static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
+{
 	be_chordal_env_t *chordal_env = data;
 	be_lv_t *lv = chordal_env->birg->lv;
 	ir_node *phi;
@@ -375,7 +380,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data) {
 	}
 }
 
-void be_ssa_destruction(be_chordal_env_t *chordal_env) {
+void be_ssa_destruction(be_chordal_env_t *chordal_env)
+{
 	insert_all_perms_env_t insert_perms_env;
 	pmap *perm_map = pmap_create();
 	ir_graph *irg  = chordal_env->irg;
@@ -414,7 +420,8 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env) {
 	pmap_destroy(perm_map);
 }
 
-static void ssa_destruction_check_walker(ir_node *bl, void *data) {
+static void ssa_destruction_check_walker(ir_node *bl, void *data)
+{
 	ir_node *phi;
 	int i, max;
 	(void)data;
@@ -446,6 +453,7 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data) {
 	}
 }
 
-void be_ssa_destruction_check(be_chordal_env_t *chordal_env) {
+void be_ssa_destruction_check(be_chordal_env_t *chordal_env)
+{
 	irg_block_walk_graph(chordal_env->irg, ssa_destruction_check_walker, NULL, NULL);
 }

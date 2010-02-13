@@ -232,7 +232,8 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
 /**
  * Return the name of an optimization.
  */
-static const char *get_opt_name(int index) {
+static const char *get_opt_name(int index)
+{
 	assert(index < (int) ARR_SIZE(opt_names) && "index out of range");
 	assert((int) opt_names[index].kind == index && "opt_names broken");
 	return opt_names[index].name;
@@ -290,7 +291,8 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 }  /* simple_dump_be_block_reg_pressure */
 
 /** prints a distribution entry */
-static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env) {
+static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
+{
 	dumper_t *dmp = env;
 	fprintf(dmp->f, "%12d", cnt_to_uint(&entry->cnt));
 }  /* simple_dump_distrib_entry */
@@ -324,7 +326,8 @@ static void simple_dump_be_block_sched_ready(dumper_t *dmp, graph_entry_t *entry
 /**
  * Adds the counter for given entry to another distribution table.
  */
-static void add_distrib_entry(const distrib_entry_t *entry, void *env) {
+static void add_distrib_entry(const distrib_entry_t *entry, void *env)
+{
 	distrib_tbl_t *sum_tbl = env;
 
 	stat_add_int_distrib_tbl(sum_tbl, PTR_TO_INT(entry->object), &entry->cnt);
@@ -645,7 +648,8 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 /**
  * Dumps a line of the parameter table
  */
-static void dump_tbl_line(const distrib_entry_t *entry, void *env) {
+static void dump_tbl_line(const distrib_entry_t *entry, void *env)
+{
 	dumper_t *dmp = env;
 
 	fprintf(dmp->f, "%d : %u\n", PTR_TO_INT(entry->object), cnt_to_uint(&entry->cnt));
@@ -654,7 +658,8 @@ static void dump_tbl_line(const distrib_entry_t *entry, void *env) {
 /**
  * dumps the parameter distribution table
  */
-static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global) {
+static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global)
+{
 	fprintf(dmp->f, "\nCall parameter Information:\n");
 	fprintf(dmp->f, "---------------------\n");
 
@@ -672,7 +677,8 @@ static void simple_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph
 /**
  * dumps the optimization counter table
  */
-static void simple_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len) {
+static void simple_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len)
+{
 	unsigned i;
 
 	fprintf(dmp->f, "\nOptimization counts:\n");
@@ -690,7 +696,8 @@ static void simple_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned le
 /**
  * initialize the simple dumper
  */
-static void simple_init(dumper_t *dmp, const char *name) {
+static void simple_init(dumper_t *dmp, const char *name)
+{
 	char fname[2048];
 
 	snprintf(fname, sizeof(fname), "%s.txt", name);
@@ -703,7 +710,8 @@ static void simple_init(dumper_t *dmp, const char *name) {
 /**
  * finishes the simple dumper
  */
-static void simple_finish(dumper_t *dmp) {
+static void simple_finish(dumper_t *dmp)
+{
 	if (dmp->f)
 		fclose(dmp->f);
 	dmp->f = NULL;
@@ -811,7 +819,8 @@ static void csv_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 /**
  * dumps the parameter distribution table
  */
-static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global) {
+static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_entry_t *global)
+{
 	(void) dmp;
 	(void) tbl;
 	(void) global;
@@ -821,7 +830,8 @@ static void csv_dump_param_tbl(dumper_t *dmp, const distrib_tbl_t *tbl, graph_en
 /**
  * dumps the optimization counter
  */
-static void csv_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len) {
+static void csv_dump_opt_cnt(dumper_t *dmp, const counter_t *tbl, unsigned len)
+{
 	(void) dmp;
 	(void) tbl;
 	(void) len;

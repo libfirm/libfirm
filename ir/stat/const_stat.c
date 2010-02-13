@@ -31,7 +31,8 @@
 /**
  * calculated the dual logarithm of |value|
  */
-static unsigned log2abs(long value) {
+static unsigned log2abs(long value)
+{
 	unsigned res = 0;
 
 	if (value < 0)
@@ -63,7 +64,8 @@ static unsigned log2abs(long value) {
 /**
  * classify the value of a float tarval
  */
-static float_classify_t classify_float_value(tarval *tv) {
+static float_classify_t classify_float_value(tarval *tv)
+{
 	ir_mode *mode = get_tarval_mode(tv);
 
 	if (tv == get_mode_null(mode))
@@ -85,7 +87,8 @@ static float_classify_t classify_float_value(tarval *tv) {
 }
 
 /* return a human readable name for an float classification */
-const char *stat_fc_name(float_classify_t classification) {
+const char *stat_fc_name(float_classify_t classification)
+{
 	switch (classification) {
 	case STAT_FC_0:            return "0.0";
 	case STAT_FC_1:            return "1.0";
@@ -129,7 +132,8 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 }
 
 /* clears the const statistics for a new snapshot */
-void stat_const_clear(stat_info_t *status) {
+void stat_const_clear(stat_info_t *status)
+{
 	size_t i;
 
 	for (i = 0; i < ARR_SIZE(status->const_info.int_bits_count); ++i)
@@ -142,7 +146,8 @@ void stat_const_clear(stat_info_t *status) {
 }
 
 /* initialize the Const statistic. */
-void stat_init_const_cnt(stat_info_t *status) {
+void stat_init_const_cnt(stat_info_t *status)
+{
 	(void) status;
 	/* currently nothing */
 }

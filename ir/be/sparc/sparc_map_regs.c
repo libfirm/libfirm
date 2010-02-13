@@ -43,7 +43,8 @@ static const arch_register_t *gp_param_regs[] = {
 };
 
 
-const arch_register_t *sparc_get_RegParam_reg(int n) {
+const arch_register_t *sparc_get_RegParam_reg(int n)
+{
 	assert(n < 6 && n >=0 && "trying to get register for param >= 6");
 	return gp_param_regs[n];
 }

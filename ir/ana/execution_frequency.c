@@ -56,7 +56,8 @@ typedef struct {
 /* We use this set for all nodes in all irgraphs. */
 static set *exec_freq_set = NULL;
 
-static int exec_freq_cmp(const void *e1, const void *e2, size_t size) {
+static int exec_freq_cmp(const void *e1, const void *e2, size_t size)
+{
   reg_exec_freq *ef1 = (reg_exec_freq *)e1;
   reg_exec_freq *ef2 = (reg_exec_freq *)e2;
   (void) size;
@@ -64,18 +65,21 @@ static int exec_freq_cmp(const void *e1, const void *e2, size_t size) {
   return (ef1->reg != ef2->reg);
 }
 
-static inline unsigned int exec_freq_hash(reg_exec_freq *e) {
+static inline unsigned int exec_freq_hash(reg_exec_freq *e)
+{
   return HASH_PTR(e->reg);
 }
 
-static inline void set_region_exec_freq(void *reg, double freq) {
+static inline void set_region_exec_freq(void *reg, double freq)
+{
   reg_exec_freq ef;
   ef.reg  = reg;
   ef.freq = freq;
   set_insert(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 }
 
-double get_region_exec_freq(void *reg) {
+double get_region_exec_freq(void *reg)
+{
   reg_exec_freq ef, *found;
   ef.reg  = reg;
   assert(exec_freq_set);
@@ -90,11 +94,13 @@ double get_region_exec_freq(void *reg) {
 }
 
 /* Returns the number of times the block is executed. */
-double     get_Block_exec_freq(ir_node *b) {
+double     get_Block_exec_freq(ir_node *b)
+{
   return get_region_exec_freq((void *)b);
 }
 
-double get_irn_exec_freq(ir_node *n) {
+double get_irn_exec_freq(ir_node *n)
+{
   if (!is_Block(n)) n = get_nodes_block(n);
   return get_Block_exec_freq(n);
 }
@@ -124,14 +130,16 @@ static int just_passed_a_Raise = 0;
 static ir_node *Cond_list = NULL;
 
 /* We do not use an extra set, as Projs are not yet in the existing one. */
-void set_ProjX_probability(ir_node *n, Cond_prob prob) {
+void set_ProjX_probability(ir_node *n, Cond_prob prob)
+{
   reg_exec_freq ef;
   ef.reg  = n;
   ef.prob = prob;
   set_insert(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 }
 
-Cond_prob get_ProjX_probability(ir_node *n) {
+Cond_prob get_ProjX_probability(ir_node *n)
+{
   reg_exec_freq ef, *found;
   ef.reg  = n;
 
@@ -146,7 +154,8 @@ Cond_prob get_ProjX_probability(ir_node *n) {
 /* A walker that only visits the nodes we want to see. */
 
 static void
-my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env) {
+my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+{
   int i;
   set_irn_visited(node, current_ir_graph->visited);
 
@@ -180,7 +189,8 @@ my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void 
 
   post(node, env);
 }
-static void my_irg_walk_current_graph(irg_walk_func *pre, irg_walk_func *post, void *env) {
+static void my_irg_walk_current_graph(irg_walk_func *pre, irg_walk_func *post, void *env)
+{
   inc_irg_visited(current_ir_graph);
   my_irg_walk_2_both(get_irg_end(current_ir_graph), pre, post, env);
 }
@@ -236,7 +246,8 @@ static void walk_post(ir_node *n, void *env)
 /** Precompute which Conds test for an exception.
  *
  *  Operates on current_ir_graph. */
-void precompute_cond_evaluation(void) {
+void precompute_cond_evaluation(void)
+{
   ir_node *c;
 
   compute_irg_outs(current_ir_graph);
@@ -279,7 +290,8 @@ void precompute_cond_evaluation(void) {
   }
 }
 
-int is_fragile_Proj(ir_node *n) {
+int is_fragile_Proj(ir_node *n)
+{
   return is_Proj(n) && (get_ProjX_probability(n) == Cond_prob_exception_taken);
 }
 
@@ -304,7 +316,8 @@ static inline int is_loop_head(ir_node *cond)
  *
  *  Given all outs of the predecessor region, we can compute the weight of
  *  this single edge. */
-static inline double get_weighted_region_exec_freq(void *reg, int pos) {
+static inline double get_weighted_region_exec_freq(void *reg, int pos)
+{
   void *pred_reg        = get_region_in(reg, pos);
   double res, full_freq = get_region_exec_freq (pred_reg);
   int n_outs            = get_region_n_outs    (pred_reg);
@@ -331,7 +344,8 @@ static inline double get_weighted_region_exec_freq(void *reg, int pos) {
   return res;
 }
 
-static inline void compute_region_freqency(void *reg, double head_weight) {
+static inline void compute_region_freqency(void *reg, double head_weight)
+{
   int i, n_ins = get_region_n_ins(reg);
   double my_freq = 0;
 
@@ -361,7 +375,8 @@ static void check_proper_head(ir_loop *l, void *reg)
 }
 
 /* Compute the ex freq for current_ir_graph */
-static void compute_frequency(int default_loop_weight) {
+static void compute_frequency(int default_loop_weight)
+{
   ir_loop *outermost_l = get_irg_loop(current_ir_graph);
   pdeq *block_worklist = new_pdeq1(outermost_l);
 
@@ -391,7 +406,8 @@ static void compute_frequency(int default_loop_weight) {
  * irg:                 The graph to be analyzed.
  * default_loop_weight: The number of executions of a loop.
  */
-void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double exception_probability) {
+void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double exception_probability)
+{
   ir_graph *rem = current_ir_graph;
   current_ir_graph = irg;
   exception_prob = exception_probability;
@@ -415,7 +431,8 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
 }
 
 
-void compute_execution_frequencies(int default_loop_weight, double exception_probability) {
+void compute_execution_frequencies(int default_loop_weight, double exception_probability)
+{
   int i, n_irgs = get_irp_n_irgs();
   free_intervals();
   for (i = 0; i < n_irgs; ++i) {
@@ -425,7 +442,8 @@ void compute_execution_frequencies(int default_loop_weight, double exception_pro
 }
 
 /** free occupied memory, reset */
-void free_execution_frequency(void) {
+void free_execution_frequency(void)
+{
   int i, n_irgs = get_irp_n_irgs();
   free_intervals();
   del_set(exec_freq_set);
@@ -435,10 +453,12 @@ void free_execution_frequency(void) {
   set_irp_exec_freq_state(exec_freq_none);
 }
 
-exec_freq_state get_irg_exec_freq_state(ir_graph *irg) {
+exec_freq_state get_irg_exec_freq_state(ir_graph *irg)
+{
   return irg->execfreq_state;
 }
-void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s) {
+void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s)
+{
   if ((get_irp_exec_freq_state() == exec_freq_consistent && s != exec_freq_consistent) ||
       (get_irp_exec_freq_state() == exec_freq_none       && s != exec_freq_none))
     irp->execfreq_state = exec_freq_inconsistent;
@@ -446,21 +466,25 @@ void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s) {
 }
 
 /* Sets irg and irp exec freq state to inconsistent if it is set to consistent. */
-void            set_irg_exec_freq_state_inconsistent(ir_graph *irg) {
+void            set_irg_exec_freq_state_inconsistent(ir_graph *irg)
+{
   if (get_irg_exec_freq_state(irg) == exec_freq_consistent)
     set_irg_exec_freq_state(irg, exec_freq_inconsistent);
 }
 
-void set_irp_exec_freq_state(exec_freq_state s) {
+void set_irp_exec_freq_state(exec_freq_state s)
+{
   irp->execfreq_state = s;
 }
 
-exec_freq_state get_irp_exec_freq_state(void) {
+exec_freq_state get_irp_exec_freq_state(void)
+{
   return irp->execfreq_state;
 }
 
 /* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
-void            set_irp_exec_freq_state_inconsistent(void) {
+void            set_irp_exec_freq_state_inconsistent(void)
+{
   if (get_irp_exec_freq_state() != exec_freq_none) {
     int i, n_irgs = get_irp_n_irgs();
     set_irp_exec_freq_state(exec_freq_inconsistent);

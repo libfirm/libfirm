@@ -317,7 +317,8 @@ struct pass_t {
 /**
  * Wrapper for running lower_switch() as a pass.
  */
-static int pass_wrapper(ir_graph *irg, void *context) {
+static int pass_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 
 	lower_switch(irg, pass->spare_size);
@@ -325,7 +326,8 @@ static int pass_wrapper(ir_graph *irg, void *context) {
 }
 
 /* creates a pass for lower_switch */
-ir_graph_pass_t *lower_switch_pass(const char *name, unsigned spare_size) {
+ir_graph_pass_t *lower_switch_pass(const char *name, unsigned spare_size)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->spare_size = spare_size;

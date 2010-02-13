@@ -438,7 +438,8 @@ static void set_arch_costs(void)
 }
 
 /* Evaluate the costs of an instruction. */
-int ia32_evaluate_insn(insn_kind kind, tarval *tv) {
+int ia32_evaluate_insn(insn_kind kind, tarval *tv)
+{
 	int cost;
 
 	switch (kind) {

@@ -93,39 +93,46 @@ void set_opt_##name##_verbose(int flag) { \
 #undef R_FLAG
 
 /* for compatibility reasons */
-void set_optimize(int value) {
+void set_optimize(int value)
+{
 	if (value) libFIRM_opt |= irf_optimize;
 	else       libFIRM_opt &= ~irf_optimize;
 }
 
-int (get_optimize)(void) {
+int (get_optimize)(void)
+{
 	return get_opt_optimize();
 }
 
-void set_opt_control_flow(int value) {
+void set_opt_control_flow(int value)
+{
 	set_opt_control_flow_straightening(value);
 	set_opt_control_flow_weak_simplification(value);
 	set_opt_control_flow_strong_simplification(value);
 }
 
 /* Save the current optimization state. */
-void save_optimization_state(optimization_state_t *state) {
+void save_optimization_state(optimization_state_t *state)
+{
 	*state = libFIRM_opt;
 }
 
 /* Restore the current optimization state. */
-void restore_optimization_state(const optimization_state_t *state) {
+void restore_optimization_state(const optimization_state_t *state)
+{
 	libFIRM_opt = *state;
 }
 
 /* Switches ALL optimizations off */
-void all_optimizations_off(void) {
+void all_optimizations_off(void)
+{
 	libFIRM_opt = 0;
 }
 
 #ifdef _DEBUG
 /* only for debugging */
-void firm_show_flags(FILE *f) {
+void firm_show_flags(FILE *f)
+{
 	if (! f)
 		f = stdout;
 	printf("Firm optimization state:\n");
@@ -151,13 +158,15 @@ static const lc_opt_table_entry_t firm_flags[] = {
 	LC_OPT_LAST
 };
 
-void firm_init_flags(void) {
+void firm_init_flags(void)
+{
 	lc_opt_entry_t *grp = lc_opt_get_grp(firm_opt_get_root(), "opt");
 	lc_opt_add_table(grp, firm_flags);
 }
 
 firm_verification_t opt_do_node_verification = FIRM_VERIFICATION_ON;
 
-void do_node_verification(firm_verification_t mode) {
+void do_node_verification(firm_verification_t mode)
+{
 	opt_do_node_verification = mode;
 }

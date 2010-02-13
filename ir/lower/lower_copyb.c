@@ -64,7 +64,8 @@ static ir_mode *get_ir_mode(unsigned bytes)
 /**
  * lower a CopyB node.
  */
-static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes) {
+static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes)
+{
 	ir_graph        *irg = current_ir_graph;
 	unsigned         size;
 	unsigned         offset;
@@ -126,7 +127,8 @@ static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes) {
 /**
  * Post-Walker: find small CopyB nodes.
  */
-static void find_copyb_nodes(ir_node *irn, void *ctx) {
+static void find_copyb_nodes(ir_node *irn, void *ctx)
+{
 	walk_env_t *env = ctx;
 	ir_type    *tp;
 	unsigned   size;

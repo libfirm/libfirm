@@ -41,7 +41,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /* Resolve implicit inheritance.                                           */
 /* ----------------------------------------------------------------------- */
 
-ident *default_mangle_inherited_name(const ir_entity *super, const ir_type *clss) {
+ident *default_mangle_inherited_name(const ir_entity *super, const ir_type *clss)
+{
 	return id_mangle_u(new_id_from_str("inh"), id_mangle_u(get_class_ident(clss), get_entity_ident(super)));
 }
 
@@ -95,7 +96,8 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
  *
  *  Resolves the implicit inheritance supplied by firm.
  */
-void resolve_inheritance(mangle_inherited_name_func *mfunc) {
+void resolve_inheritance(mangle_inherited_name_func *mfunc)
+{
 	if (!mfunc)
 		mfunc = default_mangle_inherited_name;
 	class_walk_super2sub(copy_entities_from_superclass, NULL, (void *)&mfunc);
@@ -115,18 +117,22 @@ void resolve_inheritance(mangle_inherited_name_func *mfunc) {
 /* adding the infix 'trans_'.                                              */
 /* ----------------------------------------------------------------------- */
 
-void                        set_irp_inh_transitive_closure_state(inh_transitive_closure_state s) {
+void                        set_irp_inh_transitive_closure_state(inh_transitive_closure_state s)
+{
 	irp->inh_trans_closure_state = s;
 }
-void                        invalidate_irp_inh_transitive_closure_state(void) {
+void                        invalidate_irp_inh_transitive_closure_state(void)
+{
 	if (irp->inh_trans_closure_state == inh_transitive_closure_valid)
 		irp->inh_trans_closure_state = inh_transitive_closure_invalid;
 }
-inh_transitive_closure_state get_irp_inh_transitive_closure_state(void) {
+inh_transitive_closure_state get_irp_inh_transitive_closure_state(void)
+{
 	return irp->inh_trans_closure_state;
 }
 
-static void assert_valid_state(void) {
+static void assert_valid_state(void)
+{
 	assert(irp->inh_trans_closure_state == inh_transitive_closure_valid ||
 	       irp->inh_trans_closure_state == inh_transitive_closure_invalid);
 }
@@ -155,7 +161,8 @@ static set *tr_inh_trans_set = NULL;
 /**
  * Compare two tr_inh_trans_tp entries.
  */
-static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
+static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size)
+{
 	const tr_inh_trans_tp *ef1 = e1;
 	const tr_inh_trans_tp *ef2 = e2;
 	(void) size;
@@ -166,12 +173,14 @@ static int tr_inh_trans_cmp(const void *e1, const void *e2, size_t size) {
 /**
  * calculate the hash value of an tr_inh_trans_tp
  */
-static inline unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v) {
+static inline unsigned int tr_inh_trans_hash(const tr_inh_trans_tp *v)
+{
 	return HASH_PTR(v->kind);
 }
 
 /* This always completes successfully. */
-static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k) {
+static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k)
+{
 	tr_inh_trans_tp a, *found;
 	a.kind = k;
 
@@ -186,7 +195,8 @@ static tr_inh_trans_tp *get_firm_kind_entry(const firm_kind *k) {
 	return found;
 }
 
-static pset *get_entity_map(const ir_entity *ent, dir d) {
+static pset *get_entity_map(const ir_entity *ent, dir d)
+{
 	tr_inh_trans_tp *found;
 
 	assert(is_entity(ent));
@@ -194,7 +204,8 @@ static pset *get_entity_map(const ir_entity *ent, dir d) {
 	return found->directions[d];
 }
 
-static pset *get_type_map(const ir_type *tp, dir d) {
+static pset *get_type_map(const ir_type *tp, dir d)
+{
 	tr_inh_trans_tp *found;
 
 	assert(is_type(tp));
@@ -219,7 +230,8 @@ static pset *get_type_map(const ir_type *tp, dir d) {
  * If it is marked with master_flag_visited it is fully processed.
  *
  * Well, we still miss some candidates ... */
-static void compute_down_closure(ir_type *tp) {
+static void compute_down_closure(ir_type *tp)
+{
 	pset *myset, *subset;
 	int i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
@@ -273,7 +285,8 @@ static void compute_down_closure(ir_type *tp) {
 	}
 }
 
-static void compute_up_closure(ir_type *tp) {
+static void compute_up_closure(ir_type *tp)
+{
 	pset *myset, *subset;
 	int i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
@@ -332,7 +345,8 @@ static void compute_up_closure(ir_type *tp) {
  *
  *  This function walks over the ir (O(#types+#entities)) to compute the
  *  transitive closure.    */
-void compute_inh_transitive_closure(void) {
+void compute_inh_transitive_closure(void)
+{
 	int i, n_types = get_irp_n_types();
 	free_inh_transitive_closure();
 
@@ -390,7 +404,8 @@ void compute_inh_transitive_closure(void) {
 }
 
 /** Free memory occupied by the transitive closure information. */
-void free_inh_transitive_closure(void) {
+void free_inh_transitive_closure(void)
+{
 	if (tr_inh_trans_set) {
 		tr_inh_trans_tp *elt;
 		for (elt = set_first(tr_inh_trans_set); elt; elt = set_next(tr_inh_trans_set)) {
@@ -405,41 +420,48 @@ void free_inh_transitive_closure(void) {
 
 /* - subtype ------------------------------------------------------------- */
 
-ir_type *get_class_trans_subtype_first(const ir_type *tp) {
+ir_type *get_class_trans_subtype_first(const ir_type *tp)
+{
 	assert_valid_state();
 	return pset_first(get_type_map(tp, d_down));
 }
 
-ir_type *get_class_trans_subtype_next(const ir_type *tp) {
+ir_type *get_class_trans_subtype_next(const ir_type *tp)
+{
 	assert_valid_state();
 	return pset_next(get_type_map(tp, d_down));
 }
 
-int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp) {
+int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp)
+{
 	assert_valid_state();
 	return (pset_find_ptr(get_type_map(tp, d_down), subtp) != NULL);
 }
 
 /* - supertype ----------------------------------------------------------- */
 
-ir_type *get_class_trans_supertype_first(const ir_type *tp) {
+ir_type *get_class_trans_supertype_first(const ir_type *tp)
+{
 	assert_valid_state();
 	return pset_first(get_type_map(tp, d_up));
 }
 
-ir_type *get_class_trans_supertype_next(const ir_type *tp) {
+ir_type *get_class_trans_supertype_next(const ir_type *tp)
+{
 	assert_valid_state();
 	return pset_next(get_type_map(tp, d_up));
 }
 
 /* - overwrittenby ------------------------------------------------------- */
 
-ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent)
+{
 	assert_valid_state();
 	return pset_first(get_entity_map(ent, d_down));
 }
 
-ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent) {
+ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent)
+{
 	assert_valid_state();
 	return pset_next(get_entity_map(ent, d_down));
 }
@@ -448,12 +470,14 @@ ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent) {
 
 
 /** Iterate over all transitive overwritten entities. */
-ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent) {
+ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent)
+{
 	assert_valid_state();
 	return pset_first(get_entity_map(ent, d_up));
 }
 
-ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent) {
+ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent)
+{
 	assert_valid_state();
 	return pset_next(get_entity_map(ent, d_up));
 }
@@ -464,7 +488,8 @@ ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent) {
 /* ----------------------------------------------------------------------- */
 
 /** Returns true if low is subclass of high. */
-static int check_is_SubClass_of(ir_type *low, ir_type *high) {
+static int check_is_SubClass_of(ir_type *low, ir_type *high)
+{
 	int i, n_subtypes;
 
 	/* depth first search from high downwards. */
@@ -479,7 +504,8 @@ static int check_is_SubClass_of(ir_type *low, ir_type *high) {
 }
 
 /* Returns true if low is subclass of high. */
-int is_SubClass_of(ir_type *low, ir_type *high) {
+int is_SubClass_of(ir_type *low, ir_type *high)
+{
 	assert(is_Class_type(low) && is_Class_type(high));
 
 	if (low == high) return 1;
@@ -498,7 +524,8 @@ int is_SubClass_of(ir_type *low, ir_type *high) {
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-int is_SubClass_ptr_of(ir_type *low, ir_type *high) {
+int is_SubClass_ptr_of(ir_type *low, ir_type *high)
+{
 	while (is_Pointer_type(low) && is_Pointer_type(high)) {
 		low  = get_pointer_points_to_type(low);
 		high = get_pointer_points_to_type(high);
@@ -509,7 +536,8 @@ int is_SubClass_ptr_of(ir_type *low, ir_type *high) {
 	return 0;
 }
 
-int is_overwritten_by(ir_entity *high, ir_entity *low) {
+int is_overwritten_by(ir_entity *high, ir_entity *low)
+{
 	int i, n_overwrittenby;
 	assert(is_entity(low) && is_entity(high));
 
@@ -537,7 +565,8 @@ int is_overwritten_by(ir_entity *high, ir_entity *low) {
  *
  * Need two routines because I want to assert the result.
  */
-static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent) {
+static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
+{
 	int i, n_overwrittenby;
 
 	if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
@@ -557,7 +586,8 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
  * dynamic type are given.
  * Search downwards in overwritten tree.
  */
-ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent) {
+ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
+{
 	ir_entity *res;
 	assert(static_ent && is_entity(static_ent));
 
@@ -575,17 +605,20 @@ ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 
 /* - State handling. ----------------------------------------- */
 
-void set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s) {
+void set_irg_class_cast_state(ir_graph *irg, ir_class_cast_state s)
+{
 	if (get_irp_class_cast_state() > s)
 		set_irp_class_cast_state(s);
 	irg->class_cast_state = s;
 }
 
-ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg) {
+ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg)
+{
 	return irg->class_cast_state;
 }
 
-void set_irp_class_cast_state(ir_class_cast_state s) {
+void set_irp_class_cast_state(ir_class_cast_state s)
+{
 #ifndef NDEBUG
 	int i;
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
@@ -594,11 +627,13 @@ void set_irp_class_cast_state(ir_class_cast_state s) {
 	irp->class_cast_state = s;
 }
 
-ir_class_cast_state get_irp_class_cast_state(void) {
+ir_class_cast_state get_irp_class_cast_state(void)
+{
 	return irp->class_cast_state;
 }
 
-const char *get_class_cast_state_string(ir_class_cast_state s) {
+const char *get_class_cast_state_string(ir_class_cast_state s)
+{
 #define X(a)    case a: return #a
 	switch(s) {
 	X(ir_class_casts_any);
@@ -620,7 +655,8 @@ typedef struct ccs_env {
 /**
  * Walker: check Casts.
  */
-static void verify_irn_class_cast_state(ir_node *n, void *env) {
+static void verify_irn_class_cast_state(ir_node *n, void *env)
+{
 	ccs_env             *ccs = (ccs_env *)env;
 	ir_class_cast_state this_state = ir_class_casts_any;
 	ir_type             *fromtype, *totype;
@@ -668,7 +704,8 @@ static void verify_irn_class_cast_state(ir_node *n, void *env) {
 }
 
 /** Verify that the graph meets requirements of state set. */
-void verify_irg_class_cast_state(ir_graph *irg) {
+void verify_irg_class_cast_state(ir_graph *irg)
+{
 	ccs_env env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.tr.inheritance");

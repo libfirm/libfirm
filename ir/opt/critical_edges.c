@@ -46,7 +46,8 @@ typedef struct cf_env {
  * @param n   IR node
  * @param env Environment of walker.
  */
-static void walk_critical_cf_edges(ir_node *n, void *env) {
+static void walk_critical_cf_edges(ir_node *n, void *env)
+{
 	int arity, i;
 	ir_node *pre, *block, *jmp;
 	cf_env *cenv = env;
@@ -94,7 +95,8 @@ insert:
 	} /* n is a multi-entry block */
 }
 
-void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges) {
+void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
+{
 	cf_env env;
 
 	env.ignore_exc_edges = (char)ignore_exception_edges;
@@ -110,6 +112,7 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges) {
 	}
 }
 
-void remove_critical_cf_edges(ir_graph *irg) {
+void remove_critical_cf_edges(ir_graph *irg)
+{
 	remove_critical_cf_edges_ex(irg, 1);
 }

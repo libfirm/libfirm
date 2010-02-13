@@ -39,7 +39,8 @@
 /* this is the order of the assigned registers used for parameter passing */
 
 
-void ia32_build_16bit_reg_map(pmap *reg_map) {
+void ia32_build_16bit_reg_map(pmap *reg_map)
+{
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "ax");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EBX], "bx");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_ECX], "cx");
@@ -50,21 +51,24 @@ void ia32_build_16bit_reg_map(pmap *reg_map) {
 	pmap_insert(reg_map, &ia32_gp_regs[REG_ESP], "sp");
 }
 
-void ia32_build_8bit_reg_map(pmap *reg_map) {
+void ia32_build_8bit_reg_map(pmap *reg_map)
+{
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "al");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EBX], "bl");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_ECX], "cl");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EDX], "dl");
 }
 
-void ia32_build_8bit_reg_map_high(pmap *reg_map) {
+void ia32_build_8bit_reg_map_high(pmap *reg_map)
+{
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EAX], "ah");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EBX], "bh");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_ECX], "ch");
 	pmap_insert(reg_map, &ia32_gp_regs[REG_EDX], "dh");
 }
 
-const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg) {
+const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg)
+{
 	pmap_entry *e = pmap_find(reg_map, (void *)reg);
 
 	//assert(e && "missing map init?");

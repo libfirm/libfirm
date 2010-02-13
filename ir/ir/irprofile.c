@@ -74,7 +74,8 @@ typedef struct _execcount_t {
 /**
  * Compare two execcount_t entries.
  */
-static int cmp_execcount(const void *a, const void *b, size_t size) {
+static int cmp_execcount(const void *a, const void *b, size_t size)
+{
 	const execcount_t *ea = a;
 	const execcount_t *eb = b;
 	(void) size;
@@ -84,7 +85,8 @@ static int cmp_execcount(const void *a, const void *b, size_t size) {
 /**
  * Block walker, count number of blocks.
  */
-static void block_counter(ir_node * bb, void * data) {
+static void block_counter(ir_node * bb, void * data)
+{
 	unsigned int *count = data;
 	(void) bb;
 	*count = *count + 1;
@@ -93,7 +95,8 @@ static void block_counter(ir_node * bb, void * data) {
 /**
  * Return the number of blocks the given graph.
  */
-static unsigned int count_blocks(ir_graph *irg) {
+static unsigned int count_blocks(ir_graph *irg)
+{
 	unsigned int count = 0;
 
 	irg_block_walk_graph(irg, block_counter, NULL, &count);
@@ -645,7 +648,8 @@ typedef struct _intialize_execfreq_env_t {
 // minimal execution frequency (an execfreq of 0 confuses algos)
 static const double MIN_EXECFREQ = 0.00001;
 
-static void initialize_execfreq(ir_node *block, void *data) {
+static void initialize_execfreq(ir_node *block, void *data)
+{
 	initialize_execfreq_env_t *env = data;
 	double freq;
 

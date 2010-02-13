@@ -216,7 +216,8 @@ static heights_t *glob_heights;
  * Check if irn is a Proj, which has no execution units assigned.
  * @return 1 if irn is a Proj having no execution units assigned, 0 otherwise
  */
-static inline int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
+static inline int is_normal_Proj(const arch_env_t *env, const ir_node *irn)
+{
 	return is_Proj(irn) && (arch_env_get_allowed_execution_units(env, irn) == NULL);
 }
 
@@ -224,20 +225,23 @@ static inline int is_normal_Proj(const arch_env_t *env, const ir_node *irn) {
  * Skips normal Projs.
  * @return predecessor if irn is a normal Proj, otherwise irn.
  */
-static inline ir_node *skip_normal_Proj(const arch_env_t *env, ir_node *irn) {
+static inline ir_node *skip_normal_Proj(const arch_env_t *env, ir_node *irn)
+{
 	if (is_normal_Proj(env, irn))
 		return get_Proj_pred(irn);
 	return irn;
 }
 
-static inline int fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, void *env) {
+static inline int fixed_latency(const ilp_sched_selector_t *sel, ir_node *irn, void *env)
+{
 	unsigned lat = be_ilp_sched_latency(sel, irn, env);
 	if (lat == 0 && ! is_Proj(irn) && ! be_is_Keep(irn))
 		lat = 1;
 	return lat;
 }
 
-static int cmp_live_in_nodes(const void *a, const void *b) {
+static int cmp_live_in_nodes(const void *a, const void *b)
+{
 	const ilp_livein_node_t *n1 = a;
 	const ilp_livein_node_t *n2 = b;
 
@@ -247,7 +251,8 @@ static int cmp_live_in_nodes(const void *a, const void *b) {
 /**
  * Compare scheduling time steps of two be_ilpsched_irn's.
  */
-static int cmp_ilpsched_irn(const void *a, const void *b) {
+static int cmp_ilpsched_irn(const void *a, const void *b)
+{
 	be_ilpsched_irn_t    *n1   = *(be_ilpsched_irn_t **)a;
 	be_ilpsched_irn_t    *n2   = *(be_ilpsched_irn_t **)b;
 	ilpsched_node_attr_t *n1_a = get_ilpsched_node_attr(n1);
@@ -275,7 +280,8 @@ static int cmp_ilpsched_irn(const void *a, const void *b) {
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old) {
+static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old)
+{
 	be_ilpsched_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
 
 	if (res == old) {
@@ -326,7 +332,8 @@ static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old) {
 /**
  * Assign a per block unique number to each node.
  */
-static void build_block_idx(ir_node *irn, void *walk_env) {
+static void build_block_idx(ir_node *irn, void *walk_env)
+{
 	be_ilpsched_env_t     *env = walk_env;
 	be_ilpsched_irn_t     *node, *block_node;
 	ilpsched_node_attr_t  *na;
@@ -358,7 +365,8 @@ static void build_block_idx(ir_node *irn, void *walk_env) {
 /**
  * Add all nodes having no user in current block to last_nodes list.
  */
-static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
+static void collect_alap_root_nodes(ir_node *irn, void *walk_env)
+{
 	ir_node               *block;
 	const ir_edge_t       *edge;
 	be_ilpsched_irn_t     *block_node, *node;
@@ -479,7 +487,8 @@ static void collect_alap_root_nodes(ir_node *irn, void *walk_env) {
 /**
  * Calculate the ASAP scheduling step for current irn.
  */
-static void calculate_irn_asap(ir_node *irn, void *walk_env) {
+static void calculate_irn_asap(ir_node *irn, void *walk_env)
+{
 	be_ilpsched_env_t     *env = walk_env;
 	int                   i;
 	ir_node               *block;
@@ -528,7 +537,8 @@ static void calculate_irn_asap(ir_node *irn, void *walk_env) {
  * Calculate the ALAP scheduling step of all irns in current block.
  * Depends on max_steps being calculated.
  */
-static void calculate_block_alap(ir_node *block, void *walk_env) {
+static void calculate_block_alap(ir_node *block, void *walk_env)
+{
 	be_ilpsched_env_t     *env        = walk_env;
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
@@ -621,7 +631,8 @@ static void calculate_block_alap(ir_node *block, void *walk_env) {
 /**
  * Free list of root nodes and the set of live-in nodes.
  */
-static void clear_unwanted_data(ir_node *block, void *walk_env) {
+static void clear_unwanted_data(ir_node *block, void *walk_env)
+{
 	be_ilpsched_env_t     *env        = walk_env;
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
@@ -636,7 +647,8 @@ static void clear_unwanted_data(ir_node *block, void *walk_env) {
  * Refine the {ASAP(n), ALAP(n)} interval for the nodes.
  * Set the ASAP/ALAP times of Projs and Keeps to their ancestor ones.
  */
-static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
+static void refine_asap_alap_times(ir_node *irn, void *walk_env)
+{
 	be_ilpsched_env_t    *env  = walk_env;
 	ir_node              *pred = irn;
 	be_ilpsched_irn_t    *node, *pred_node;
@@ -679,7 +691,8 @@ static void refine_asap_alap_times(ir_node *irn, void *walk_env) {
  *
  *******************************************/
 
-static inline void check_for_keeps(waitq *keeps, const ir_node *block, const ir_node *irn) {
+static inline void check_for_keeps(waitq *keeps, const ir_node *block, const ir_node *irn)
+{
 	const ir_edge_t *edge;
         (void) block;
 
@@ -707,7 +720,8 @@ static inline void notified_sched_add_before(be_ilpsched_env_t *env,
  * Adds a node, it's Projs (in case of mode_T nodes) and
  * it's Keeps to schedule.
  */
-static void add_to_sched(be_ilpsched_env_t *env, const ir_node *block, const ir_node *irn, unsigned cycle) {
+static void add_to_sched(be_ilpsched_env_t *env, const ir_node *block, const ir_node *irn, unsigned cycle)
+{
 	const ir_edge_t *edge;
 	waitq           *keeps = new_waitq();
 
@@ -749,7 +763,8 @@ static void add_to_sched(be_ilpsched_env_t *env, const ir_node *block, const ir_
 /**
  * Schedule all nodes in the given block, according to the ILP solution.
  */
-static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
+static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block)
+{
 	be_ilpsched_irn_t     *block_node = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
 	be_ilpsched_irn_t     **sched_nodes;
@@ -871,7 +886,8 @@ static void apply_solution(be_ilpsched_env_t *env, lpp_t *lpp, ir_node *block) {
 /**
  * Check if node can be executed on given unit type.
  */
-static inline int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node) {
+static inline int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp, be_ilpsched_irn_t *node)
+{
 	int                  i;
 	ilpsched_node_attr_t *na = get_ilpsched_node_attr(node);
 
@@ -893,7 +909,8 @@ static inline int is_valid_unit_type_for_node(const be_execution_unit_type_t *tp
  *
  ************************************************/
 
-static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struct obstack *obst) {
+static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struct obstack *obst)
+{
 	const be_execution_unit_t ***execunits = arch_env_get_allowed_execution_units(env->arch_env, irn);
 	unsigned                  n_unit_types = 0;
 	be_ilpsched_irn_t         *node;
@@ -931,7 +948,8 @@ static int be_ilpsched_set_type_info(be_ilpsched_env_t *env, ir_node *irn, struc
  * Returns the largest alap time of a user of @p irn.
  * The user must be in block @p block.
  */
-static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, const ir_node *irn, const ir_node *block) {
+static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, const ir_node *irn, const ir_node *block)
+{
 	const ir_edge_t *edge;
 	unsigned        max_alap = 0;
 
@@ -964,7 +982,8 @@ static unsigned be_ilpsched_get_max_alap_user(be_ilpsched_env_t *env, const ir_n
  * ==>> These variables represent the register pressure
  *
  */
-static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node, struct obstack *var_obst) {
+static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node, struct obstack *var_obst)
+{
 	char                  buf[1024];
 	ir_node               *irn;
 	unsigned              num_block_var, num_nodes;
@@ -1115,7 +1134,8 @@ static void create_variables(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn
  * Collect all operands and nodes @p irn depends on.
  * If there is a Proj within the dependencies, all other Projs of the parent node are added as well.
  */
-static void sta_collect_in_deps(ir_node *irn, ir_nodeset_t *deps) {
+static void sta_collect_in_deps(ir_node *irn, ir_nodeset_t *deps)
+{
 	int i;
 
 	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
@@ -1145,7 +1165,8 @@ static void sta_collect_in_deps(ir_node *irn, ir_nodeset_t *deps) {
  * - the precedence constraints:
  *     assure that no data dependencies are violated
  */
-static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	unsigned              num_cst_assign, num_cst_prec, num_cst_dead;
 	char                  buf[1024];
 	ir_node               *irn;
@@ -1271,7 +1292,8 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
  * - assure that for each time step not more instructions are scheduled
  *   to the same unit types as units of this type are available
  */
-static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	int                   glob_type_idx;
 	char                  buf[1024];
 	unsigned              num_cst_resrc = 0;
@@ -1323,7 +1345,8 @@ static void create_ressource_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
  * - assure, at most bundle_size * bundles_per_cycle instructions
  *   can be started at a certain point.
  */
-static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	unsigned              t;
 	unsigned              num_cst_bundle = 0;
@@ -1377,7 +1400,8 @@ static void create_bundle_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilp
  * Create ILP alive nodes constraints:
  * - set variable a_{nt}^k to 1 if nodes n is alive at step t on unit k
  */
-static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	ir_node               *irn;
 	unsigned              num_cst = 0;
@@ -1456,7 +1480,8 @@ static void create_alive_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be
  * Create ILP alive nodes constraints for live-in nodes:
  * - set variable a_{nt}^k to 1 if nodes n is alive at step t on unit k
  */
-static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	ilp_livein_node_t     *livein;
 	unsigned              num_cst = 0;
@@ -1532,7 +1557,8 @@ static void create_alive_livein_nodes_constraint(be_ilpsched_env_t *env, lpp_t *
  * - add additional costs to objective function if a node is scheduled
  *   on a unit although all units of this type are currently occupied
  */
-static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	ir_node               *cur_irn;
 	unsigned              num_cst = 0;
@@ -1631,7 +1657,8 @@ static void create_pressure_alive_constraint(be_ilpsched_env_t *env, lpp_t *lpp,
  * Create ILP branch constraints:
  * Assure, alle nodes are scheduled prior to cfg op.
  */
-static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	ir_node               *cur_irn, *cfop;
 	unsigned              num_cst          = 0;
@@ -1721,7 +1748,8 @@ static void create_branch_constraint(be_ilpsched_env_t *env, lpp_t *lpp, be_ilps
 }
 
 #if 0
-static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node) {
+static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_ilpsched_irn_t *block_node)
+{
 	char                  buf[1024];
 	ir_node               *irn;
 	unsigned              num_cst = 0;
@@ -1804,7 +1832,8 @@ static void create_proj_keep_constraints(be_ilpsched_env_t *env, lpp_t *lpp, be_
 /**
  * Create the ilp (add variables, build constraints, solve, build schedule from solution).
  */
-static void create_ilp(ir_node *block, void *walk_env) {
+static void create_ilp(ir_node *block, void *walk_env)
+{
 	be_ilpsched_env_t     *env           = walk_env;
 	be_ilpsched_irn_t     *block_node    = get_ilpsched_irn(env, block);
 	ilpsched_block_attr_t *ba            = get_ilpsched_block_attr(block_node);
@@ -1970,7 +1999,8 @@ static void create_ilp(ir_node *block, void *walk_env) {
 /**
  * Perform ILP scheduling on the given irg.
  */
-void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts) {
+void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
+{
 	be_ilpsched_env_t          env;
 	const char                 *name     = "be ilp scheduling";
 	ir_graph                   *irg      = be_get_birg_irg(birg);

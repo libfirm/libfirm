@@ -125,7 +125,8 @@ static pattern_info_t _status, *status = &_status;
 /**
  * Compare two pattern for its occurance counter.
  */
-static int pattern_count_cmp(const void *elt, const void *key) {
+static int pattern_count_cmp(const void *elt, const void *key)
+{
 	int cmp;
 
 	pattern_entry_t **e1 = (pattern_entry_t **)elt;
@@ -140,7 +141,8 @@ static int pattern_count_cmp(const void *elt, const void *key) {
 /**
  * Compare two pattern for its pattern hash.
  */
-static int pattern_cmp(const void *elt, const void *key) {
+static int pattern_cmp(const void *elt, const void *key)
+{
 	const pattern_entry_t *e1 = elt;
 	const pattern_entry_t *e2 = key;
 	int diff = e1->len - e2->len;
@@ -158,7 +160,8 @@ static int pattern_cmp(const void *elt, const void *key) {
  * @param data  a buffer address
  * @param len   the length of the data buffer
  */
-static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len) {
+static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
+{
 	buf->start   =
 	buf->next    = data;
 	buf->end     = data + len;
@@ -174,7 +177,8 @@ static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len) {
  *
  * The hash value for the buffer content is updated.
  */
-static inline void put_byte(CODE_BUFFER *buf, BYTE byte) {
+static inline void put_byte(CODE_BUFFER *buf, BYTE byte)
+{
 	if (buf->next < buf->end) {
 		*buf->next++ = byte;
 		buf->hash = (buf->hash * 9) ^ byte;
@@ -190,7 +194,8 @@ static inline void put_byte(CODE_BUFFER *buf, BYTE byte) {
  *
  * @return  the length of the buffer content
  */
-static unsigned buf_lenght(const CODE_BUFFER *buf) {
+static unsigned buf_lenght(const CODE_BUFFER *buf)
+{
 	return buf->next - buf->start;
 }  /* buf_lenght */
 
@@ -201,7 +206,8 @@ static unsigned buf_lenght(const CODE_BUFFER *buf) {
  *
  * @return  the start address of the buffer content
  */
-static const BYTE *buf_content(const CODE_BUFFER *buf) {
+static const BYTE *buf_content(const CODE_BUFFER *buf)
+{
 	return buf->start;
 }  /* buf_content */
 
@@ -212,7 +218,8 @@ static const BYTE *buf_content(const CODE_BUFFER *buf) {
  *
  * @return  the hash value of the buffer content
  */
-static unsigned buf_hash(const CODE_BUFFER *buf) {
+static unsigned buf_hash(const CODE_BUFFER *buf)
+{
 	return buf->hash;
 }  /* buf_hash */
 
@@ -221,7 +228,8 @@ static unsigned buf_hash(const CODE_BUFFER *buf) {
  *
  * @param buf   the code buffer
  */
-static unsigned buf_overrun(const CODE_BUFFER *buf) {
+static unsigned buf_overrun(const CODE_BUFFER *buf)
+{
 	return buf->overrun;
 }  /* buf_overrun */
 
@@ -232,7 +240,8 @@ static unsigned buf_overrun(const CODE_BUFFER *buf) {
  *
  * @return  the next byte from the code buffer
  */
-static inline BYTE look_byte(CODE_BUFFER *buf) {
+static inline BYTE look_byte(CODE_BUFFER *buf)
+{
 	if (buf->next < buf->end)
 		return *buf->next;
 	return VLC_TAG_END;
@@ -245,7 +254,8 @@ static inline BYTE look_byte(CODE_BUFFER *buf) {
  *
  * @return  the next byte from the code buffer
  */
-static inline BYTE get_byte(CODE_BUFFER *buf) {
+static inline BYTE get_byte(CODE_BUFFER *buf)
+{
 	if (buf->next < buf->end)
 		return *buf->next++;
 	return VLC_TAG_END;
@@ -259,7 +269,8 @@ static inline BYTE get_byte(CODE_BUFFER *buf) {
  * @param buf   the code buffer
  * @param code  the code to be written into the buffer
  */
-static void put_code(CODE_BUFFER *buf, unsigned code) {
+static void put_code(CODE_BUFFER *buf, unsigned code)
+{
 	if (code < BITS(7)) {
 		put_byte(buf, VLC_7BIT | code);
 	} else if (code < BITS(6 + 8)) {
@@ -292,7 +303,8 @@ static void put_code(CODE_BUFFER *buf, unsigned code) {
  *
  * @return  next 32bit value from the code buffer
  */
-static unsigned get_code(CODE_BUFFER *buf) {
+static unsigned get_code(CODE_BUFFER *buf)
+{
 	unsigned code = get_byte(buf);
 
 	if (code < VLC_14BIT)
@@ -329,7 +341,8 @@ static unsigned get_code(CODE_BUFFER *buf) {
  * @param buf   the code buffer
  * @param tag   the tag to write to the code buffer
  */
-static void put_tag(CODE_BUFFER *buf, BYTE tag) {
+static void put_tag(CODE_BUFFER *buf, BYTE tag)
+{
 	assert(tag >= VLC_TAG_FIRST && "invalid tag");
 
 	put_byte(buf, tag);
@@ -342,7 +355,8 @@ static void put_tag(CODE_BUFFER *buf, BYTE tag) {
  *
  * @return the next tag in the code buffer
  */
-static BYTE next_tag(CODE_BUFFER *buf) {
+static BYTE next_tag(CODE_BUFFER *buf)
+{
 	BYTE b = look_byte(buf);
 
 	if (b >= VLC_TAG_FIRST)
@@ -372,7 +386,8 @@ typedef struct _addr_entry_t {
 /**
  * Compare two addresses.
  */
-static int addr_cmp(const void *p1, const void *p2, size_t size) {
+static int addr_cmp(const void *p1, const void *p2, size_t size)
+{
 	const addr_entry_t *e1 = p1;
 	const addr_entry_t *e2 = p2;
 	(void) size;
@@ -385,7 +400,8 @@ static int addr_cmp(const void *p1, const void *p2, size_t size) {
  *
  * @return reached depth
  */
-static int _encode_node(ir_node *node, int max_depth, codec_env_t *env) {
+static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
+{
 	addr_entry_t entry, *r_entry;
 	set_entry *s_entry;
 	int i, preds;
@@ -490,7 +506,8 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env) {
  *
  * @return The depth of the encoded graph (without cycles)
  */
-static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth) {
+static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth)
+{
 	codec_env_t env;
 	int         res;
 
@@ -522,7 +539,8 @@ static int encode_node(ir_node *node, CODE_BUFFER *buf, int max_depth) {
 /**
  * Decode an IR-node, recursive walker.
  */
-static void _decode_node(unsigned parent, int position, codec_env_t *env) {
+static void _decode_node(unsigned parent, int position, codec_env_t *env)
+{
 	unsigned code;
 	unsigned op_code;
 	unsigned mode_code = 0;
@@ -604,7 +622,8 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env) {
 /**
  * Decode an IR-node.
  */
-static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump) {
+static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
+{
 	codec_env_t env;
 	CODE_BUFFER buf;
 	unsigned code, options = 0;
@@ -643,7 +662,8 @@ typedef struct _pattern_env {
  * If the code content was never seen before, a new pattern_entry is created
  * and returned.
  */
-static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set) {
+static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
+{
 	pattern_entry_t *key, *elem;
 	unsigned len = buf_lenght(buf);
 	unsigned hash;
@@ -672,7 +692,8 @@ static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set) {
  *
  * @note Single node patterns are ignored
  */
-static void count_pattern(CODE_BUFFER *buf, int depth) {
+static void count_pattern(CODE_BUFFER *buf, int depth)
+{
 	pattern_entry_t *entry;
 
 	/* ignore single node pattern (i.e. constants) */
@@ -687,7 +708,8 @@ static void count_pattern(CODE_BUFFER *buf, int depth) {
 /**
  * Pre-walker for nodes pattern calculation.
  */
-static void calc_nodes_pattern(ir_node *node, void *ctx) {
+static void calc_nodes_pattern(ir_node *node, void *ctx)
+{
 	pattern_env_t   *env = ctx;
 	BYTE            buffer[PATTERN_STORE_SIZE];
 	CODE_BUFFER     buf;
@@ -707,7 +729,8 @@ static void calc_nodes_pattern(ir_node *node, void *ctx) {
  *
  * @param fname  filename for storage
  */
-static void store_pattern(const char *fname) {
+static void store_pattern(const char *fname)
+{
 	FILE *f;
 	pattern_entry_t *entry;
 	int i, count = pset_count(status->pattern_hash);
@@ -737,7 +760,8 @@ static void store_pattern(const char *fname) {
  *
  * @param fname  filename
  */
-static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname) {
+static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
+{
 	FILE *f;
 	pattern_entry_t *entry, tmp;
 	int i, count;
@@ -784,7 +808,8 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname) {
  *
  * @param fname  name of the VCG file to create
  */
-static void pattern_output(const char *fname) {
+static void pattern_output(const char *fname)
+{
 	pattern_entry_t  *entry;
 	pattern_entry_t  **pattern_arr;
 	pattern_dumper_t *dump;
@@ -828,7 +853,8 @@ static void pattern_output(const char *fname) {
 /*
  * Calculates the pattern history.
  */
-void stat_calc_pattern_history(ir_graph *irg) {
+void stat_calc_pattern_history(ir_graph *irg)
+{
 	pattern_env_t env;
 	unsigned      i;
 
@@ -848,7 +874,8 @@ void stat_calc_pattern_history(ir_graph *irg) {
 /*
  * Initializes the pattern history.
  */
-void stat_init_pattern_history(int enable) {
+void stat_init_pattern_history(int enable)
+{
 	HASH_MAP(pattern_entry_t) *pattern_hash = NULL;
 
 	status->enable = enable;
@@ -873,7 +900,8 @@ void stat_init_pattern_history(int enable) {
 /*
  * Finish the pattern history.
  */
-void stat_finish_pattern_history(const char *fname) {
+void stat_finish_pattern_history(const char *fname)
+{
 	(void) fname;
 	if (! status->enable)
 		return;

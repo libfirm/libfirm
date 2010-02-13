@@ -137,7 +137,8 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 /**
  * Emit the name of the source register at given input position.
  */
-void arm_emit_source_register(const ir_node *node, int pos) {
+void arm_emit_source_register(const ir_node *node, int pos)
+{
 	const arch_register_t *reg = get_in_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
@@ -145,7 +146,8 @@ void arm_emit_source_register(const ir_node *node, int pos) {
 /**
  * Emit the name of the destination register at given output position.
  */
-void arm_emit_dest_register(const ir_node *node, int pos) {
+void arm_emit_dest_register(const ir_node *node, int pos)
+{
 	const arch_register_t *reg = get_out_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
@@ -164,7 +166,8 @@ void arm_emit_offset(const ir_node *node)
 /**
  * Emit the arm fpa instruction suffix depending on the mode.
  */
-static void arm_emit_fpa_postfix(const ir_mode *mode) {
+static void arm_emit_fpa_postfix(const ir_mode *mode)
+{
 	int bits = get_mode_size_bits(mode);
 	char c = 'e';
 
@@ -178,7 +181,8 @@ static void arm_emit_fpa_postfix(const ir_mode *mode) {
 /**
  * Emit the instruction suffix depending on the mode.
  */
-void arm_emit_mode(const ir_node *node) {
+void arm_emit_mode(const ir_node *node)
+{
 	ir_mode *mode;
 
 	if (is_arm_irn(node)) {
@@ -322,7 +326,8 @@ typedef struct sym_or_tv_t {
 /**
  * Returns a unique label. This number will not be used a second time.
  */
-static unsigned get_unique_label(void) {
+static unsigned get_unique_label(void)
+{
 	static unsigned id = 0;
 	return ++id;
 }
@@ -369,7 +374,8 @@ static void emit_arm_FrameAddr(const ir_node *irn)
 /**
  * Emit a floating point fpa constant.
  */
-static void emit_arm_fpaConst(const ir_node *irn) {
+static void emit_arm_fpaConst(const ir_node *irn)
+{
 	sym_or_tv_t key, *entry;
 	unsigned label;
 	ir_mode *mode;
@@ -398,21 +404,24 @@ static void emit_arm_fpaConst(const ir_node *irn) {
 /**
  * Returns the next block in a block schedule.
  */
-static ir_node *sched_next_block(const ir_node *block) {
+static ir_node *sched_next_block(const ir_node *block)
+{
     return get_irn_link(block);
 }
 
 /**
  * Returns the target block for a control flow node.
  */
-static ir_node *get_cfop_target_block(const ir_node *irn) {
+static ir_node *get_cfop_target_block(const ir_node *irn)
+{
 	return get_irn_link(irn);
 }
 
 /**
  * Emits a block label for the given block.
  */
-static void arm_emit_block_name(const ir_node *block) {
+static void arm_emit_block_name(const ir_node *block)
+{
 	if (has_Block_entity(block)) {
 		ir_entity *entity = get_Block_entity(block);
 		be_gas_emit_entity(entity);
@@ -425,7 +434,8 @@ static void arm_emit_block_name(const ir_node *block) {
 /**
  * Emit the target label for a control flow node.
  */
-static void arm_emit_cfop_target(const ir_node *irn) {
+static void arm_emit_cfop_target(const ir_node *irn)
+{
 	ir_node *block = get_cfop_target_block(irn);
 
 	arm_emit_block_name(block);
@@ -510,7 +520,8 @@ static void emit_arm_B(const ir_node *irn)
 }
 
 /** Sort register in ascending order. */
-static int reg_cmp(const void *a, const void *b) {
+static int reg_cmp(const void *a, const void *b)
+{
 	const arch_register_t * const *ra = a;
 	const arch_register_t * const *rb = b;
 
@@ -661,7 +672,8 @@ static void emit_arm_CopyB(const ir_node *irn)
 	}
 }
 
-static void emit_arm_SwitchJmp(const ir_node *irn) {
+static void emit_arm_SwitchJmp(const ir_node *irn)
+{
 	const ir_edge_t    *edge;
 	ir_node            *proj;
 	int i;
@@ -765,7 +777,8 @@ static void emit_be_Call(const ir_node *irn)
 }
 
 /** Emit an IncSP node */
-static void emit_be_IncSP(const ir_node *irn) {
+static void emit_be_IncSP(const ir_node *irn)
+{
 	int offs = -be_get_IncSP_offset(irn);
 
 	if (offs != 0) {
@@ -786,7 +799,8 @@ static void emit_be_IncSP(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_be_Copy(const ir_node *irn) {
+static void emit_be_Copy(const ir_node *irn)
+{
 	ir_mode *mode = get_irn_mode(irn);
 
 	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
@@ -919,7 +933,8 @@ static void emit_arm_Jmp(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-static void emit_arm_fpaDbl2GP(const ir_node *irn) {
+static void emit_arm_fpaDbl2GP(const ir_node *irn)
+{
 	be_emit_cstring("\tstfd ");
 	arm_emit_source_register(irn, 0);
 	be_emit_cstring(", [sp, #-8]!");
@@ -937,7 +952,8 @@ static void emit_arm_fpaDbl2GP(const ir_node *irn) {
 	be_emit_finish_line_gas(irn);
 }
 
-static void emit_arm_LdTls(const ir_node *irn) {
+static void emit_arm_LdTls(const ir_node *irn)
+{
 	(void) irn;
 	panic("TLS not supported for this target");
 	/* Er... our gcc does not support it... Install a newer toolchain. */
@@ -1001,7 +1017,8 @@ static void arm_register_emitters(void)
 /**
  * Emits code for a node.
  */
-static void arm_emit_node(const ir_node *irn) {
+static void arm_emit_node(const ir_node *irn)
+{
 	ir_op *op = get_irn_op(irn);
 
 	if (op->ops.generic) {
@@ -1072,7 +1089,8 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void arm_gen_block(ir_node *block, ir_node *prev_block) {
+static void arm_gen_block(ir_node *block, ir_node *prev_block)
+{
 	ir_node *irn;
 
 	arm_emit_block_header(block, prev_block);
@@ -1086,7 +1104,8 @@ static void arm_gen_block(ir_node *block, ir_node *prev_block) {
  * Block-walker:
  * Sets labels for control flow nodes (jump target)
  */
-static void arm_gen_labels(ir_node *block, void *env) {
+static void arm_gen_labels(ir_node *block, void *env)
+{
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
 	(void)env;
@@ -1100,7 +1119,8 @@ static void arm_gen_labels(ir_node *block, void *env) {
 /**
  * Compare two entries of the symbol or tarval set.
  */
-static int cmp_sym_or_tv(const void *elt, const void *key, size_t size) {
+static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
+{
 	const sym_or_tv_t *p1 = elt;
 	const sym_or_tv_t *p2 = key;
 	(void) size;

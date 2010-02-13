@@ -109,7 +109,8 @@ static unsigned master_visited = 0;
 /**
  * get the Load/Store info of a node
  */
-static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst) {
+static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
+{
 	ldst_info_t *info = get_irn_link(node);
 
 	if (! info) {
@@ -122,7 +123,8 @@ static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst) {
 /**
  * get the Block info of a node
  */
-static block_info_t *get_block_info(ir_node *node, struct obstack *obst) {
+static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
+{
 	block_info_t *info = get_irn_link(node);
 
 	if (! info) {
@@ -333,7 +335,8 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 /**
  * Return the Selection index of a Sel node from dimension n
  */
-static long get_Sel_array_index_long(ir_node *n, int dim) {
+static long get_Sel_array_index_long(ir_node *n, int dim)
+{
 	ir_node *index = get_Sel_index(n, dim);
 	assert(is_Const(index));
 	return get_tarval_long(get_Const_tarval(index));
@@ -347,7 +350,8 @@ static long get_Sel_array_index_long(ir_node *n, int dim) {
  * @param depth  current depth in steps upward from the root
  *               of the address
  */
-static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth) {
+static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
+{
 	compound_graph_path *res = NULL;
 	ir_entity           *root, *field, *ent;
 	int                 path_len, pos, idx;
@@ -494,7 +498,8 @@ ptr_arith:
  * Returns an access path or NULL.  The access path is only
  * valid, if the graph is in phase_high and _no_ address computation is used.
  */
-static compound_graph_path *get_accessed_path(ir_node *ptr) {
+static compound_graph_path *get_accessed_path(ir_node *ptr)
+{
 	compound_graph_path *gr = rec_get_accessed_path(ptr, 0);
 	return gr;
 }  /* get_accessed_path */
@@ -505,7 +510,8 @@ typedef struct path_entry {
 	long              index;
 } path_entry;
 
-static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next) {
+static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
+{
 	path_entry       entry, *p;
 	ir_entity        *ent, *field;
 	ir_initializer_t *initializer;
@@ -679,7 +685,8 @@ ptr_arith:
 	return NULL;
 }
 
-static ir_node *find_compound_ent_value(ir_node *ptr) {
+static ir_node *find_compound_ent_value(ir_node *ptr)
+{
 	return rec_find_compound_ent_value(ptr, NULL);
 }
 
@@ -689,7 +696,8 @@ static void reduce_adr_usage(ir_node *ptr);
 /**
  * Update a Load that may have lost its users.
  */
-static void handle_load_update(ir_node *load) {
+static void handle_load_update(ir_node *load)
+{
 	ldst_info_t *info = get_irn_link(load);
 
 	/* do NOT touch volatile loads for now */
@@ -713,7 +721,8 @@ static void handle_load_update(ir_node *load) {
  * A use of an address node has vanished. Check if this was a Proj
  * node and update the counters.
  */
-static void reduce_adr_usage(ir_node *ptr) {
+static void reduce_adr_usage(ir_node *ptr)
+{
 	if (is_Proj(ptr)) {
 		if (get_irn_n_edges(ptr) <= 0) {
 			/* this Proj is dead now */
@@ -734,7 +743,8 @@ static void reduce_adr_usage(ir_node *ptr) {
  * Check, if an already existing value of mode old_mode can be converted
  * into the needed one new_mode without loss.
  */
-static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode) {
+static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
+{
 	if (old_mode == new_mode)
 		return 1;
 
@@ -750,7 +760,8 @@ static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode) {
 /**
  * Check whether a Call is at least pure, ie. does only read memory.
  */
-static unsigned is_Call_pure(ir_node *call) {
+static unsigned is_Call_pure(ir_node *call)
+{
 	ir_type *call_tp = get_Call_type(call);
 	unsigned prop = get_method_additional_properties(call_tp);
 
@@ -915,7 +926,8 @@ static int try_load_after_store(ir_node *load,
  *
  * INC_MASTER() must be called before dive into
  */
-static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
+static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
+{
 	unsigned    res = 0;
 	ldst_info_t *info = get_irn_link(load);
 	ir_node     *pred;
@@ -1051,7 +1063,8 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr) {
  * Check if we can replace the load by a given const from
  * the const code irg.
  */
-ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c) {
+ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
+{
 	ir_mode *c_mode = get_irn_mode(c);
 	ir_mode *l_mode = get_Load_mode(load);
 	ir_node *res    = NULL;
@@ -1256,7 +1269,8 @@ static int is_partially_same(ir_node *small, ir_node *large)
  *
  * INC_MASTER() must be called before dive into
  */
-static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr) {
+static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
+{
 	unsigned res = 0;
 	ldst_info_t *info = get_irn_link(store);
 	ir_node *pred;
@@ -1419,7 +1433,8 @@ static ir_entity *find_entity(ir_node *ptr)
  *
  * @param store  the Store node
  */
-static unsigned optimize_store(ir_node *store) {
+static unsigned optimize_store(ir_node *store)
+{
 	ir_node   *ptr;
 	ir_node   *mem;
 	ir_entity *entity;
@@ -1658,7 +1673,8 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 /**
  * walker, do the optimizations
  */
-static void do_load_store_optimize(ir_node *n, void *env) {
+static void do_load_store_optimize(ir_node *n, void *env)
+{
 	walk_env_t *wenv = env;
 
 	switch (get_irn_opcode(n)) {
@@ -1709,7 +1725,8 @@ typedef struct loop_env {
 /**
 * Gets the node_entry of a node
 */
-static node_entry *get_irn_ne(ir_node *irn, loop_env *env) {
+static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
+{
 	ir_phase   *ph = &env->ph;
 	node_entry *e  = phase_get_irn_data(&env->ph, irn);
 
@@ -1727,7 +1744,8 @@ static node_entry *get_irn_ne(ir_node *irn, loop_env *env) {
  * @param env   the loop environment
  * @param n     the node to push
  */
-static void push(loop_env *env, ir_node *n) {
+static void push(loop_env *env, ir_node *n)
+{
 	node_entry *e;
 
 	if (env->tos == ARR_LEN(env->stack)) {
@@ -1746,7 +1764,8 @@ static void push(loop_env *env, ir_node *n) {
  *
  * @return  The topmost node
  */
-static ir_node *pop(loop_env *env) {
+static ir_node *pop(loop_env *env)
+{
 	ir_node *n = env->stack[--env->tos];
 	node_entry *e = get_irn_ne(n, env);
 
@@ -1761,7 +1780,8 @@ static ir_node *pop(loop_env *env) {
  * @param irn           the node to check
  * @param header_block  the header block of the induction variable
  */
-static int is_rc(ir_node *irn, ir_node *header_block) {
+static int is_rc(ir_node *irn, ir_node *header_block)
+{
 	ir_node *block = get_nodes_block(irn);
 
 	return (block != header_block) && block_dominates(block, header_block);
@@ -1787,7 +1807,8 @@ typedef struct avail_entry_t {
 /**
  * Compare two avail entries.
  */
-static int cmp_avail_entry(const void *elt, const void *key, size_t size) {
+static int cmp_avail_entry(const void *elt, const void *key, size_t size)
+{
 	const avail_entry_t *a = elt;
 	const avail_entry_t *b = key;
 	(void) size;
@@ -1798,7 +1819,8 @@ static int cmp_avail_entry(const void *elt, const void *key, size_t size) {
 /**
  * Calculate the hash value of an avail entry.
  */
-static unsigned hash_cache_entry(const avail_entry_t *entry) {
+static unsigned hash_cache_entry(const avail_entry_t *entry)
+{
 	return get_irn_idx(entry->ptr) * 9 + HASH_PTR(entry->mode);
 }  /* hash_cache_entry */
 
@@ -1808,7 +1830,8 @@ static unsigned hash_cache_entry(const avail_entry_t *entry) {
  * @param pscc   the loop described by an SCC
  * @param env    the loop environment
  */
-static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
+static void move_loads_out_of_loops(scc *pscc, loop_env *env)
+{
 	ir_node   *phi, *load, *next, *other, *next_other;
 	ir_entity *ent;
 	int       j;
@@ -1938,7 +1961,8 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env) {
  * @param pscc  the SCC
  * @param env   the loop environment
  */
-static void process_loop(scc *pscc, loop_env *env) {
+static void process_loop(scc *pscc, loop_env *env)
+{
 	ir_node *irn, *next, *header = NULL;
 	node_entry *b, *h = NULL;
 	int j, only_phi, num_outside, process = 0;
@@ -2063,7 +2087,8 @@ fail:
  * @param pscc  the SCC
  * @param env   the loop environment
  */
-static void process_scc(scc *pscc, loop_env *env) {
+static void process_scc(scc *pscc, loop_env *env)
+{
 	ir_node *head = pscc->head;
 	node_entry *e = get_irn_ne(head, env);
 
@@ -2170,7 +2195,8 @@ static void dfs(ir_node *irn, loop_env *env)
  * @param irg  the graph to process
  * @param env  the loop environment
  */
-static void do_dfs(ir_graph *irg, loop_env *env) {
+static void do_dfs(ir_graph *irg, loop_env *env)
+{
 	ir_graph *rem = current_ir_graph;
 	ir_node  *endblk, *end;
 	int      i;
@@ -2209,7 +2235,8 @@ static void do_dfs(ir_graph *irg, loop_env *env) {
 /**
  * Initialize new phase data. We do this always explicit, so return NULL here
  */
-static void *init_loop_data(ir_phase *ph, const ir_node *irn, void *data) {
+static void *init_loop_data(ir_phase *ph, const ir_node *irn, void *data)
+{
 	(void)ph;
 	(void)irn;
 	(void)data;
@@ -2221,7 +2248,8 @@ static void *init_loop_data(ir_phase *ph, const ir_node *irn, void *data) {
  *
  * @param irg  the graph
  */
-static int optimize_loops(ir_graph *irg) {
+static int optimize_loops(ir_graph *irg)
+{
 	loop_env env;
 
 	env.stack         = NEW_ARR_F(ir_node *, 128);
@@ -2243,7 +2271,8 @@ static int optimize_loops(ir_graph *irg) {
 /*
  * do the load store optimization
  */
-int optimize_load_store(ir_graph *irg) {
+int optimize_load_store(ir_graph *irg)
+{
 	walk_env_t env;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");

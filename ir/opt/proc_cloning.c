@@ -82,7 +82,8 @@ typedef struct q_set {
  *
  * @return zero if they are identically, non-zero else
  */
-static int entry_cmp(const void *elt, const void *key) {
+static int entry_cmp(const void *elt, const void *key)
+{
 	const entry_t *e1 = elt;
 	const entry_t *e2 = key;
 
@@ -94,14 +95,16 @@ static int entry_cmp(const void *elt, const void *key) {
  *
  * @param entry  The element to be hashed.
  */
-static int hash_entry(const entry_t *entry) {
+static int hash_entry(const entry_t *entry)
+{
 	return HASH_PTR(entry->q.ent) ^ HASH_PTR(entry->q.tv) ^ (entry->q.pos * 9);
 }
 
 /**
  * Free memory associated with a quadruplet.
  */
-static void kill_entry(entry_t *entry) {
+static void kill_entry(entry_t *entry)
+{
 	if (entry->q.calls) {
 		DEL_ARR_F(entry->q.calls);
 		entry->q.calls = NULL;
@@ -115,7 +118,8 @@ static void kill_entry(entry_t *entry) {
  * @param callee  The entity of the callee
  * @param hmap    The quadruple-set containing the calls with constant parameters
  */
-static void process_call(ir_node *call, ir_entity *callee, q_set *hmap) {
+static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
+{
 	ir_type *mtp;
 	entry_t *key, *entry;
 	ir_node *call_param;
@@ -173,7 +177,8 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap) {
  * @param call   A ir_node to be checked.
  * @param env   The quadruple-set containing the calls with constant parameters
  */
-static void collect_irg_calls(ir_node *call, void *env) {
+static void collect_irg_calls(ir_node *call, void *env)
+{
 	q_set *hmap = env;
 	ir_node *call_ptr;
 	ir_entity *callee;
@@ -208,7 +213,8 @@ static void collect_irg_calls(ir_node *call, void *env) {
  * @param pos The "pos" from our quadruplet.
  * @param nr  A counter for the clones.
  */
-static ident *get_clone_ident(ident *id, int pos, unsigned nr) {
+static ident *get_clone_ident(ident *id, int pos, unsigned nr)
+{
 	char clone_postfix[32];
 
 	snprintf(clone_postfix, sizeof(clone_postfix), "_cl_%d_%u", pos, nr);
@@ -224,7 +230,8 @@ static ident *get_clone_ident(ident *id, int pos, unsigned nr) {
  * @param irn  A node from the original method graph.
  * @param env  The clone graph.
  */
-static void copy_nodes(ir_node *irn, void *env) {
+static void copy_nodes(ir_node *irn, void *env)
+{
 	ir_node *arg, *irg_args, *irn_copy;
 	int proj_nr;
 	ir_graph *clone_irg = env;
@@ -251,7 +258,8 @@ static void copy_nodes(ir_node *irn, void *env) {
  * The copied nodes are set as link of their original nodes. The links of
  * "irn" predecessors are the predecessors of copied node.
  */
-static void set_preds(ir_node *irn, void *env) {
+static void set_preds(ir_node *irn, void *env)
+{
 	int i;
 	ir_node *irn_copy, *pred, *arg;
 	ir_graph *clone_irg = env;
@@ -296,7 +304,8 @@ static void set_preds(ir_node *irn, void *env) {
  * @param irg  irg that must be cloned.
  * @param pos  The position of the argument.
  */
-static ir_node *get_irg_arg(ir_graph *irg, int pos) {
+static ir_node *get_irg_arg(ir_graph *irg, int pos)
+{
 	ir_node *irg_args = get_irg_args(irg), *arg = NULL;
 	int i;
 
@@ -330,7 +339,8 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos) {
  * @param ent The entity of the method that must be cloned.
  * @param q   Our quadruplet.
  */
-static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q) {
+static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q)
+{
 	ir_graph *method_irg, *clone_irg;
 	ir_node *arg, *const_arg;
 
@@ -368,7 +378,8 @@ static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q) {
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(quadruple_t *q, ir_entity *ent) {
+static void change_entity_type(quadruple_t *q, ir_entity *ent)
+{
 	ir_type *mtp, *new_mtp, *tp;
 	int     i, j, n_params, n_ress;
 
@@ -445,7 +456,8 @@ static ir_entity *clone_method(quadruple_t *q)
  * @param new_entity  The entity of the cloned function.
  * @param pos         The position of the replaced parameter of this call.
  **/
-static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos) {
+static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
+{
 	ir_node **in;
 	ir_type *mtp;
 	int i, n_params, new_params = 0;
@@ -479,7 +491,8 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos) {
  * @param cloned_ent    The entity of the new function that must be called
  *                      from the new Call.
  */
-static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent) {
+static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent)
+{
 	int pos = q->pos;
 	ir_node *new_call, *call;
 	int i;
@@ -500,7 +513,8 @@ static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent) {
  * We save one instruction in every caller and param_weight instructions
  * in the callee.
  */
-static float calculate_weight(const entry_t *entry) {
+static float calculate_weight(const entry_t *entry)
+{
 	return ARR_LEN(entry->q.calls) *
 		(float)(get_method_param_weight(entry->q.ent, entry->q.pos) + 1);
 }
@@ -510,7 +524,8 @@ static float calculate_weight(const entry_t *entry) {
  * the next cloned entity may get invalid, so we have to check
  * them and may even update the list of heavy uses.
  */
-static void reorder_weights(q_set *hmap, float threshold) {
+static void reorder_weights(q_set *hmap, float threshold)
+{
 	entry_t **adr, *p, *entry;
 	int i, len;
 	ir_entity *callee;
@@ -582,7 +597,8 @@ restart:
  * call(..., Const, ...). If the weight is bigger than threshold,
  * clone the entity and fix the calls.
  */
-void proc_cloning(float threshold) {
+void proc_cloning(float threshold)
+{
 	entry_t *entry = NULL, *p;
 	ir_graph *irg;
 	int i;
@@ -680,7 +696,8 @@ struct pass_t {
 /**
  * Wrapper to run proc_cloning() as an ir_prog pass.
  */
-static int proc_cloning_wrapper(ir_prog *irp, void *context) {
+static int proc_cloning_wrapper(ir_prog *irp, void *context)
+{
 	struct pass_t *pass = context;
 
 	(void)irp;
@@ -689,7 +706,8 @@ static int proc_cloning_wrapper(ir_prog *irp, void *context) {
 }
 
 /* create a ir_prog pass */
-ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold) {
+ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->threshold = threshold;

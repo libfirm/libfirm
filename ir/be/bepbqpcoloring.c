@@ -131,7 +131,8 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 #endif
 
 
-static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn) {
+static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
+{
 	const arch_register_class_t *cls = pbqp_alloc_env->cls;
 	pbqp     *pbqp_inst              = pbqp_alloc_env->pbqp_inst;
 	bitset_t *ignored_regs           = pbqp_alloc_env->ignored_regs;

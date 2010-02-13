@@ -58,7 +58,8 @@ struct _pqueue_t {
  * Enforces the heap characteristics if the queue
  * starting from element at position @p pos.
  */
-static void pqueue_heapify(pqueue_t *q, unsigned pos) {
+static void pqueue_heapify(pqueue_t *q, unsigned pos)
+{
 	unsigned len = ARR_LEN(q->elems);
 
 	while (pos * 2 < len) {
@@ -88,7 +89,8 @@ static void pqueue_heapify(pqueue_t *q, unsigned pos) {
 /**
  * Sifts up a newly inserted element at position @p pos.
  */
-static void pqueue_sift_up(pqueue_t *q, unsigned pos) {
+static void pqueue_sift_up(pqueue_t *q, unsigned pos)
+{
 	while(q->elems[pos].priority > q->elems[pos / 2].priority) {
 		pqueue_el_t tmp;
 
@@ -100,18 +102,21 @@ static void pqueue_sift_up(pqueue_t *q, unsigned pos) {
 	}
 }
 
-pqueue_t *new_pqueue(void) {
+pqueue_t *new_pqueue(void)
+{
 	pqueue_t *res = XMALLOC(pqueue_t);
 	res->elems = NEW_ARR_F(pqueue_el_t, 0);
 	return res;
 }
 
-void del_pqueue(pqueue_t *q) {
+void del_pqueue(pqueue_t *q)
+{
 	DEL_ARR_F(q->elems);
 	free(q);
 }
 
-void pqueue_put(pqueue_t *q, void *data, int priority) {
+void pqueue_put(pqueue_t *q, void *data, int priority)
+{
 	pqueue_el_t el;
 
 	el.data     = data;
@@ -122,7 +127,8 @@ void pqueue_put(pqueue_t *q, void *data, int priority) {
 	pqueue_sift_up(q, ARR_LEN(q->elems) - 1);
 }
 
-void *pqueue_pop_front(pqueue_t *q) {
+void *pqueue_pop_front(pqueue_t *q)
+{
 	switch(ARR_LEN(q->elems)) {
 		case 0:
 			assert(0 && "Attempt to retrieve element from empty priority queue.");
@@ -145,10 +151,12 @@ void *pqueue_pop_front(pqueue_t *q) {
 	}
 }
 
-int pqueue_length(const pqueue_t *q) {
+int pqueue_length(const pqueue_t *q)
+{
 	return ARR_LEN(q->elems);
 }
 
-int pqueue_empty(const pqueue_t *q) {
+int pqueue_empty(const pqueue_t *q)
+{
 	return ARR_LEN(q->elems) == 0;
 }

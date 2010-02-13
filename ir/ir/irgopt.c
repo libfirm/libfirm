@@ -51,7 +51,8 @@
 /**
  * A wrapper around optimize_inplace_2() to be called from a walker.
  */
-static void optimize_in_place_wrapper(ir_node *n, void *env) {
+static void optimize_in_place_wrapper(ir_node *n, void *env)
+{
 	ir_node *optimized = optimize_in_place_2(n);
 	(void) env;
 
@@ -68,7 +69,8 @@ static void optimize_in_place_wrapper(ir_node *n, void *env) {
  *
  * @note current_ir_graph must be set
  */
-static inline void do_local_optimize(ir_node *n) {
+static inline void do_local_optimize(ir_node *n)
+{
 	/* Handle graph state */
 	assert(get_irg_phase_state(current_ir_graph) != phase_building);
 
@@ -87,7 +89,8 @@ static inline void do_local_optimize(ir_node *n) {
 }
 
 /* Applies local optimizations (see iropt.h) to all nodes reachable from node n */
-void local_optimize_node(ir_node *n) {
+void local_optimize_node(ir_node *n)
+{
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = get_irn_irg(n);
 
@@ -99,7 +102,8 @@ void local_optimize_node(ir_node *n) {
 /**
  * Block-Walker: uses dominance depth to mark dead blocks.
  */
-static void kill_dead_blocks(ir_node *block, void *env) {
+static void kill_dead_blocks(ir_node *block, void *env)
+{
 	(void) env;
 
 	if (get_Block_dom_depth(block) < 0) {
@@ -112,7 +116,8 @@ static void kill_dead_blocks(ir_node *block, void *env) {
 }
 
 /* Applies local optimizations (see iropt.h) to all nodes reachable from node n. */
-void local_optimize_graph(ir_graph *irg) {
+void local_optimize_graph(ir_graph *irg)
+{
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;
 
@@ -128,7 +133,8 @@ void local_optimize_graph(ir_graph *irg) {
  * Enqueue all users of a node to a wait queue.
  * Handles mode_T nodes.
  */
-static void enqueue_users(ir_node *n, pdeq *waitq) {
+static void enqueue_users(ir_node *n, pdeq *waitq)
+{
 	const ir_edge_t *edge;
 
 	foreach_out_edge(n, edge) {
@@ -151,7 +157,8 @@ static void enqueue_users(ir_node *n, pdeq *waitq) {
  * Optimizes all nodes and enqueue it's users
  * if done.
  */
-static void opt_walker(ir_node *n, void *env) {
+static void opt_walker(ir_node *n, void *env)
+{
 	pdeq *waitq = env;
 	ir_node *optimized;
 
@@ -165,7 +172,8 @@ static void opt_walker(ir_node *n, void *env) {
 }
 
 /* Applies local optimizations to all nodes in the graph until fixpoint. */
-int optimize_graph_df(ir_graph *irg) {
+int optimize_graph_df(ir_graph *irg)
+{
 	pdeq     *waitq = new_pdeq();
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;

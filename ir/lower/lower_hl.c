@@ -41,7 +41,8 @@
 /**
  * Lower a Sel node. Do not touch Sels accessing entities on the frame type.
  */
-static void lower_sel(ir_node *sel) {
+static void lower_sel(ir_node *sel)
+{
 	ir_graph *irg = current_ir_graph;
 	ir_entity   *ent;
 	ir_node  *newn, *cnst, *index, *ptr, *bl;
@@ -241,7 +242,8 @@ static void lower_sel(ir_node *sel) {
 /**
  * Lower a all possible SymConst nodes.
  */
-static void lower_symconst(ir_node *symc) {
+static void lower_symconst(ir_node *symc)
+{
 	ir_node       *newn;
 	ir_type       *tp;
 	ir_entity     *ent;
@@ -315,7 +317,8 @@ static void lower_symconst(ir_node *symc) {
  *
  * @param size  the size on bits
  */
-static int is_integral_size(int size) {
+static int is_integral_size(int size)
+{
 	/* must be a 2^n */
 	if (size & (size-1))
 		return 0;
@@ -329,7 +332,8 @@ static int is_integral_size(int size) {
  * @param proj  the Proj(result) node
  * @param load  the Load node
  */
-static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
+static void lower_bitfields_loads(ir_node *proj, ir_node *load)
+{
 	ir_node *sel = get_Load_ptr(load);
 	ir_node *block, *n_proj, *res, *ptr;
 	ir_entity *ent;
@@ -415,7 +419,8 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load) {
  *
  * @todo: It adds a load which may produce an exception!
  */
-static void lower_bitfields_stores(ir_node *store) {
+static void lower_bitfields_stores(ir_node *store)
+{
 	ir_node   *sel = get_Store_ptr(store);
 	ir_node   *ptr, *value;
 	ir_entity *ent;
@@ -494,7 +499,8 @@ static void lower_bitfields_stores(ir_node *store) {
 /**
  * Lowers unaligned Loads.
  */
-static void lower_unaligned_Load(ir_node *load) {
+static void lower_unaligned_Load(ir_node *load)
+{
   (void) load;
 	/* NYI */
 }
@@ -502,7 +508,8 @@ static void lower_unaligned_Load(ir_node *load) {
 /**
  * Lowers unaligned Stores
  */
-static void lower_unaligned_Store(ir_node *store) {
+static void lower_unaligned_Store(ir_node *store)
+{
 	(void) store;
 	/* NYI */
 }
@@ -588,14 +595,16 @@ struct pass_t {
 /**
  * Wrapper for running lower_highlevel_graph() as an ir_graph pass.
  */
-static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context) {
+static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 
 	lower_highlevel_graph(irg, pass->lower_bitfields);
 	return 0;
 }  /* lower_highlevel_graph_wrapper */
 
-ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields) {
+ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->lower_bitfields = lower_bitfields;
@@ -606,11 +615,13 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfield
 /*
  * does the same as lower_highlevel() for all nodes on the const code irg
  */
-void lower_const_code(void) {
+void lower_const_code(void)
+{
 	walk_const_code(NULL, lower_irnode, NULL);
 }  /* lower_const_code */
 
-ir_prog_pass_t *lower_const_code_pass(const char *name) {
+ir_prog_pass_t *lower_const_code_pass(const char *name)
+{
 	return def_prog_pass(name ? name : "lower_const_code", lower_const_code);
 }
 
@@ -619,7 +630,8 @@ ir_prog_pass_t *lower_const_code_pass(const char *name) {
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel(int lower_bitfields) {
+void lower_highlevel(int lower_bitfields)
+{
 	int i, n;
 
 	n = get_irp_n_irgs();

@@ -101,7 +101,8 @@ typedef struct {
 /**
  * Get the predecessor block.
  */
-static ir_node *get_block_n(const ir_node *block, int pos) {
+static ir_node *get_block_n(const ir_node *block, int pos)
+{
 	if (is_Block(block))
 		return get_Block_cfgpred_block(block, pos);
 	/* might be a Bad */
@@ -146,7 +147,8 @@ static long last_edge_num = -1;
 /**
  * Returns an ID for the given edge.
  */
-static inline long edge_get_id(const ir_edge_t *e) {
+static inline long edge_get_id(const ir_edge_t *e)
+{
 #ifdef DEBUG_libfirm
 	return e->edge_nr;
 #else /* DEBUG_libfirm */
@@ -165,7 +167,8 @@ static inline long edge_get_id(const ir_edge_t *e) {
  * Each user has to remember his given offset and the size of his private data.
  * To be called before FIRM is initialized.
  */
-int edges_register_private_data(size_t n) {
+int edges_register_private_data(size_t n)
+{
 	int res = edges_private_size;
 
 	assert(!edges_used && "you cannot register private edge data, if edges have been initialized");
@@ -179,7 +182,8 @@ int edges_register_private_data(size_t n) {
  * The user has to remember his offset and the size of his data!
  * Caution: Using wrong values here can destroy other users private data!
  */
-void edges_reset_private_data(ir_graph *irg, int offset, unsigned size) {
+void edges_reset_private_data(ir_graph *irg, int offset, unsigned size)
+{
 	irg_edge_info_t       *info = _get_irg_edge_info(irg, EDGE_KIND_NORMAL);
 	ir_edge_t             *edge;
 	ir_edgeset_iterator_t  iter;
@@ -199,7 +203,8 @@ void edges_reset_private_data(ir_graph *irg, int offset, unsigned size) {
  * Initialize the out information for a graph.
  * @note Dead node elimination can call this on an already initialized graph.
  */
-void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind) {
+void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
+{
 	if (edges_activated_kind(irg, kind)) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
 		size_t amount = irg->estimated_node_count * 2;
@@ -245,7 +250,8 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
  * Get the edge object of an outgoing edge at a node.
  * Looks for an edge for all kinds.
  */
-const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos) {
+const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
+{
 	const ir_edge_t *edge;
 	if((edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_NORMAL)) == NULL)
 		edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_BLOCK);
@@ -258,7 +264,8 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos) {
  * @param tgt  the edge target
  * @param kind the kind of the edge
  */
-static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
+static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
+{
 	irn_edge_info_t *info = _get_irn_edge_info(tgt, kind);
 	info->out_count += ofs;
 
@@ -287,7 +294,8 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs) {
  * Verify the edge list of a node, ie. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
-static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind) {
+static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind)
+{
 	int                    err       = 0;
 	int                    num       = 0;
 	pset                   *lh_set   = pset_new_ptr(16);
@@ -540,7 +548,8 @@ struct build_walker {
 /**
  * Post-Walker: notify all edges
  */
-static void build_edges_walker(ir_node *irn, void *data) {
+static void build_edges_walker(ir_node *irn, void *data)
+{
 	struct build_walker   *w = data;
 	int                   i, n;
 	ir_edge_kind_t        kind = w->kind;
@@ -559,7 +568,8 @@ static void build_edges_walker(ir_node *irn, void *data) {
  * Pre-Walker: initializes the list-heads and set the out-count
  * of all nodes to 0.
  */
-static void init_lh_walker(ir_node *irn, void *data) {
+static void init_lh_walker(ir_node *irn, void *data)
+{
 	struct build_walker *w   = data;
 	ir_edge_kind_t      kind = w->kind;
 	list_head           *head = _get_irn_outs_head(irn, kind);
@@ -579,7 +589,8 @@ static void init_lh_walker(ir_node *irn, void *data) {
  * b) it might be sufficient to add those stupid NO_REG nodes
  * to the anchor
  */
-static void init_lh_walker_dep(ir_node *irn, void *data) {
+static void init_lh_walker_dep(ir_node *irn, void *data)
+{
 	struct build_walker *w   = data;
 	ir_edge_kind_t      kind = w->kind;
 	list_head           *head = _get_irn_outs_head(irn, kind);
@@ -609,7 +620,8 @@ typedef struct visitor_info_t {
  * Visitor: initializes the list-heads and set the out-count
  * of all nodes to 0 of nodes that are not seen so far.
  */
-static void visitor(ir_node *irn, void *data) {
+static void visitor(ir_node *irn, void *data)
+{
 	visitor_info_t *info = data;
 
 	if (!irn_visited_else_mark(irn)) {
@@ -807,7 +819,8 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 /**
  * Clear link field of all nodes.
  */
-static void clear_links(ir_node *irn, void *env) {
+static void clear_links(ir_node *irn, void *env)
+{
 	struct build_walker *w  = env;
 	bitset_t            *bs;
 
@@ -823,7 +836,8 @@ static void clear_links(ir_node *irn, void *env) {
 /**
  * Increases count (stored in link field) for all operands of a node.
  */
-static void count_user(ir_node *irn, void *env) {
+static void count_user(ir_node *irn, void *env)
+{
 	int i;
 	int first;
 	(void) env;
@@ -841,7 +855,8 @@ static void count_user(ir_node *irn, void *env) {
 /**
  * Verifies if collected count, number of edges in list and stored edge count are in sync.
  */
-static void verify_edge_counter(ir_node *irn, void *env) {
+static void verify_edge_counter(ir_node *irn, void *env)
+{
 	struct build_walker    *w = env;
 	bitset_t               *bs;
 	int                    list_cnt;
@@ -918,7 +933,8 @@ static void verify_edge_counter(ir_node *irn, void *env) {
 /**
  * Verifies the out edges of an irg.
  */
-int edges_verify(ir_graph *irg) {
+int edges_verify(ir_graph *irg)
+{
 	struct build_walker w;
 	int    problem_found = 0;
 
@@ -944,7 +960,8 @@ struct pass_t {
 /**
  * Wrapper to edges_verify to be run as an ir_graph pass.
  */
-static int edges_verify_wrapper(ir_graph *irg, void *context) {
+static int edges_verify_wrapper(ir_graph *irg, void *context)
+{
 	struct pass_t *pass = context;
 	int problems_found = edges_verify(irg);
 	/* do NOT rerun the pass if verify is ok :-) */
@@ -953,7 +970,8 @@ static int edges_verify_wrapper(ir_graph *irg, void *context) {
 }
 
 /* Creates an ir_graph pass for edges_verify(). */
-ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem) {
+ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	def_graph_pass_constructor(
@@ -967,23 +985,27 @@ ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_prob
 	return &pass->pass;
 }
 
-void init_edges(void) {
+void init_edges(void)
+{
 	FIRM_DBG_REGISTER(dbg, DBG_EDGES);
 	/* firm_dbg_set_mask(dbg, -1); */
 }
 
-void edges_init_dbg(int do_dbg) {
+void edges_init_dbg(int do_dbg)
+{
 	edges_dbg = do_dbg;
 }
 
-void edges_activate(ir_graph *irg) {
+void edges_activate(ir_graph *irg)
+{
 	edges_activate_kind(irg, EDGE_KIND_NORMAL);
 	edges_activate_kind(irg, EDGE_KIND_BLOCK);
 	if (get_irg_phase_state(irg) == phase_backend)
 		edges_activate_kind(irg, EDGE_KIND_DEP);
 }
 
-void edges_deactivate(ir_graph *irg) {
+void edges_deactivate(ir_graph *irg)
+{
 	if (get_irg_phase_state(irg) == phase_backend)
 		edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_deactivate_kind(irg, EDGE_KIND_BLOCK);
@@ -1008,7 +1030,8 @@ int edges_assure(ir_graph *irg)
 	return activated;
 }
 
-int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind) {
+int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind)
+{
 	int activated = edges_activated_kind(irg, kind);
 
 	if (!activated)
@@ -1017,37 +1040,45 @@ int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind) {
 	return activated;
 }
 
-void edges_node_deleted(ir_node *irn, ir_graph *irg) {
+void edges_node_deleted(ir_node *irn, ir_graph *irg)
+{
 	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL, irg);
 	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK, irg);
 }
 
-void edges_node_revival(ir_node *irn, ir_graph *irg) {
+void edges_node_revival(ir_node *irn, ir_graph *irg)
+{
 	edges_node_revival_kind(irn, EDGE_KIND_NORMAL, irg);
 	edges_node_revival_kind(irn, EDGE_KIND_BLOCK, irg);
 }
 
-const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind) {
+const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind)
+{
 	return _get_irn_out_edge_first_kind(irn, kind);
 }
 
-const ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn, const ir_edge_t *last) {
+const ir_edge_t *(get_irn_out_edge_next)(const ir_node *irn, const ir_edge_t *last)
+{
 	return _get_irn_out_edge_next(irn, last);
 }
 
-ir_node *(get_edge_src_irn)(const ir_edge_t *edge) {
+ir_node *(get_edge_src_irn)(const ir_edge_t *edge)
+{
 	return _get_edge_src_irn(edge);
 }
 
-int (get_edge_src_pos)(const ir_edge_t *edge) {
+int (get_edge_src_pos)(const ir_edge_t *edge)
+{
 	return _get_edge_src_pos(edge);
 }
 
-int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind) {
+int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind)
+{
 	return _get_irn_n_edges_kind(irn, kind);
 }
 
-void dump_all_out_edges(ir_node *irn) {
+void dump_all_out_edges(ir_node *irn)
+{
 	int i;
 	for (i = 0; i < EDGE_KIND_LAST; ++i) {
 		const ir_edge_t *edge;

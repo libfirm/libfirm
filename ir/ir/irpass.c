@@ -346,7 +346,8 @@ void ir_prog_pass_mgr_set_run_idx(
 /**
  * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
  */
-static int void_graph_wrapper(ir_graph *irg, void *context) {
+static int void_graph_wrapper(ir_graph *irg, void *context)
+{
 	void (*function)(ir_graph *irg) = context;
 	function(irg);
 	return 0;
@@ -371,7 +372,8 @@ ir_graph_pass_t *def_graph_pass(
 /**
  * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
  */
-static int int_graph_wrapper(ir_graph *irg, void *context) {
+static int int_graph_wrapper(ir_graph *irg, void *context)
+{
 	int (*function)(ir_graph *irg) = context;
 	return function(irg);
 }  /* int_graph_wrapper */
@@ -411,14 +413,16 @@ ir_graph_pass_t *def_graph_pass_constructor(
 }  /* def_graph_pass_constructor */
 
 /* set the run parallel property */
-void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag) {
+void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag)
+{
 	pass->run_parallel = flag != 0;
 }  /* ir_graph_pass_set_parallel */
 
 /**
  * Wrapper for running void function(void) as an ir_prog pass.
  */
-static int void_prog_wrapper(ir_prog *irp, void *context) {
+static int void_prog_wrapper(ir_prog *irp, void *context)
+{
 	void (*function)(void) = context;
 
 	(void)irp;
@@ -473,7 +477,8 @@ struct pass_t {
 /**
  * Wrapper for the call_function pass.
  */
-static int call_function_wrapper(ir_prog *irp, void *context) {
+static int call_function_wrapper(ir_prog *irp, void *context)
+{
 	struct pass_t *pass = context;
 
 	(void)irp;

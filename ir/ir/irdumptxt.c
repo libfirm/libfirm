@@ -55,7 +55,8 @@
  * @param suffix2   The second suffix.
  * @param suffix3   The third suffix.
  */
-static FILE *text_open(const char *basename, const char * suffix1, const char *suffix2, const char *suffix3) {
+static FILE *text_open(const char *basename, const char * suffix1, const char *suffix2, const char *suffix3)
+{
 	FILE *F;
 	int len = strlen(basename), i, j;
 	char *fname;  /* filename to put the vcg information in */
@@ -94,7 +95,8 @@ static FILE *text_open(const char *basename, const char * suffix1, const char *s
 }
 
 /* Write the irnode and all its attributes to the file passed. */
-int dump_irnode_to_file(FILE *F, ir_node *n) {
+int dump_irnode_to_file(FILE *F, ir_node *n)
+{
 	int i, bad = 0;
 	char comma;
 	ir_graph *irg;
@@ -411,27 +413,32 @@ int dump_irnode_to_file(FILE *F, ir_node *n) {
 
 
 
-void dump_irnode(ir_node *n) {
+void dump_irnode(ir_node *n)
+{
 	dump_irnode_to_file(stdout, n);
 }
 
 
-void dump_graph_to_file(FILE *F, ir_graph *irg) {
+void dump_graph_to_file(FILE *F, ir_graph *irg)
+{
 	fprintf(F, "graph %s\n", get_irg_dump_name(irg));
 }
 
-void dump_graph(ir_graph *g) {
+void dump_graph(ir_graph *g)
+{
 	dump_graph_to_file(stdout, g);
 }
 
-static void dump_node_to_graph_file(ir_node *n, void *env) {
+static void dump_node_to_graph_file(ir_node *n, void *env)
+{
 	FILE *F = (FILE *)env;
 
 	dump_irnode_to_file(F, n);
 	fprintf(F, "\n");
 }
 
-void dump_graph_as_text(ir_graph *irg, const char *suffix) {
+void dump_graph_as_text(ir_graph *irg, const char *suffix)
+{
 	const char *basename = get_irg_dump_name(irg);
 	FILE *F;
 
@@ -445,7 +452,8 @@ void dump_graph_as_text(ir_graph *irg, const char *suffix) {
 }
 
 #ifdef EXTENDED_ACCESS_STATS
-static int addr_is_alloc(ir_node *acc) {
+static int addr_is_alloc(ir_node *acc)
+{
 	ir_node *addr = NULL;
 	ir_opcode addr_op;
 	if (is_memop(acc)) {
@@ -633,7 +641,8 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 		fprintf(F, " hidden_user");
 }
 
-void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity) {
+void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity)
+{
 	int i, j;
 	ir_type *owner, *type;
 
@@ -928,16 +937,19 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 	}
 }
 
-void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity) {
+void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity)
+{
 	dump_entity_to_file_prefix (F, ent, "", verbosity);
 	fprintf(F, "\n");
 }
 
-void dump_entity(ir_entity *ent) {
+void dump_entity(ir_entity *ent)
+{
   dump_entity_to_file(stdout, ent, dump_verbosity_max);
 }
 
-void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
+void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
+{
 	int i;
 
 	if ((is_Class_type(tp))       && (verbosity & dump_verbosity_noClassTypes)) return;
@@ -1181,11 +1193,13 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity) {
 	fprintf(F, "\n\n");
 }
 
-void dump_type(ir_type *tp) {
+void dump_type(ir_type *tp)
+{
 	dump_type_to_file (stdout, tp, dump_verbosity_max);
 }
 
-void dump_types_as_text(unsigned verbosity, const char *suffix) {
+void dump_types_as_text(unsigned verbosity, const char *suffix)
+{
 	const char *basename;
 	FILE *F;
 	int i, n_types = get_irp_n_types();
@@ -1204,7 +1218,8 @@ void dump_types_as_text(unsigned verbosity, const char *suffix) {
 	fclose(F);
 }
 
-void dump_globals_as_text(unsigned verbosity, const char *suffix) {
+void dump_globals_as_text(unsigned verbosity, const char *suffix)
+{
 	const char *basename;
 	FILE *F;
 	ir_type *g = get_glob_type();

@@ -509,7 +509,8 @@ static ir_node *skip_empty_blocks(ir_node *node)
  * This can be done, if block contains no Phi node that depends on
  * different inputs idx_i and idx_j.
  */
-static int can_fuse_block_inputs(const ir_node *block, int idx_i, int idx_j) {
+static int can_fuse_block_inputs(const ir_node *block, int idx_i, int idx_j)
+{
 	const ir_node *phi;
 
 	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
@@ -558,7 +559,8 @@ static void remove_block_input(ir_node *block, int idx)
  * Under the preposition that we have a chain of blocks from
  * from_block to to_block, collapse them all into to_block.
  */
-static void move_nodes_to_block(ir_node *jmp, ir_node *to_block) {
+static void move_nodes_to_block(ir_node *jmp, ir_node *to_block)
+{
 	ir_node *new_jmp = NULL;
 	ir_node *block, *next_block;
 

@@ -35,7 +35,8 @@
 /**
  * Adds a Call at the beginning of the given irg.
  */
-void instrument_initcall(ir_graph *irg, ir_entity *ent) {
+void instrument_initcall(ir_graph *irg, ir_entity *ent)
+{
 	const ir_edge_t *edge;
 	ir_node         *initial_exec;
 	ir_node         *initial_mem;

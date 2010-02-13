@@ -454,7 +454,8 @@ static void emit_sparc_Jmp(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-static void emit_be_Copy(const ir_node *irn) {
+static void emit_be_Copy(const ir_node *irn)
+{
 	ir_mode *mode = get_irn_mode(irn);
 
 	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
@@ -564,7 +565,8 @@ void sparc_emit_node(const ir_node *node)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void sparc_gen_block(ir_node *block, void *data) {
+void sparc_gen_block(ir_node *block, void *data)
+{
 	ir_node *node;
 	(void) data;
 
@@ -583,7 +585,8 @@ void sparc_gen_block(ir_node *block, void *data) {
 /**
  * Emits code for function start.
  */
-void sparc_emit_func_prolog(ir_graph *irg) {
+void sparc_emit_func_prolog(ir_graph *irg)
+{
 	ir_entity *ent = get_irg_entity(irg);
 
 	be_gas_emit_function_prolog(ent, 4);
@@ -597,7 +600,8 @@ void sparc_emit_func_prolog(ir_graph *irg) {
 /**
  * Emits code for function end
  */
-void sparc_emit_func_epilog(ir_graph *irg) {
+void sparc_emit_func_epilog(ir_graph *irg)
+{
 	ir_entity *ent = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(ent);
 
@@ -615,7 +619,8 @@ void sparc_emit_func_epilog(ir_graph *irg) {
  * TODO: Sets labels for control flow nodes (jump target).
  * Links control predecessors to there destination blocks.
  */
-void sparc_gen_labels(ir_node *block, void *env) {
+void sparc_gen_labels(ir_node *block, void *env)
+{
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
 	(void) env;

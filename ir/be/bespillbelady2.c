@@ -156,14 +156,16 @@ static inline void workset_print(const workset_t *w)
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
  */
-static inline workset_t *new_workset(belady_env_t *env, struct obstack *ob) {
+static inline workset_t *new_workset(belady_env_t *env, struct obstack *ob)
+{
 	return OALLOCFZ(ob, workset_t, vals, env->n_regs);
 }
 
 /**
  * Alloc a new instance on obstack and make it equal to @param ws
  */
-static inline workset_t *workset_clone(belady_env_t *env, struct obstack *ob, workset_t *ws) {
+static inline workset_t *workset_clone(belady_env_t *env, struct obstack *ob, workset_t *ws)
+{
 	workset_t *res = OALLOCF(ob, workset_t, vals, env->n_regs);
 	memcpy(res, ws, sizeof(*res) + (env->n_regs)*sizeof(res->vals[0]));
 	return res;
@@ -173,7 +175,8 @@ static inline workset_t *workset_clone(belady_env_t *env, struct obstack *ob, wo
  * Do NOT alloc anything. Make @param tgt equal to @param src.
  * returns @param tgt for convenience
  */
-static inline workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset_t *src) {
+static inline workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset_t *src)
+{
 	size_t size = sizeof(*src) + (env->n_regs)*sizeof(src->vals[0]);
 	memcpy(tgt, src, size);
 	return tgt;
@@ -184,7 +187,8 @@ static inline workset_t *workset_copy(belady_env_t *env, workset_t *tgt, workset
  * @param count locations given at memory @param locs.
  * Set the length of @param ws to count.
  */
-static inline void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs) {
+static inline void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs)
+{
 	workset->len = count;
 	memcpy(&(workset->vals[0]), locs, count * sizeof(locs[0]));
 }
@@ -193,7 +197,8 @@ static inline void workset_bulk_fill(workset_t *workset, int count, const loc_t 
  * Inserts the value @p val into the workset, iff it is not
  * already contained. The workset must not be full.
  */
-static inline void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val) {
+static inline void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val)
+{
 	int i;
 	/* check for current regclass */
 	if (!arch_irn_consider_in_reg_alloc(env->cls, val)) {
@@ -214,14 +219,16 @@ static inline void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val
 /**
  * Removes all entries from this workset
  */
-static inline void workset_clear(workset_t *ws) {
+static inline void workset_clear(workset_t *ws)
+{
 	ws->len = 0;
 }
 
 /**
  * Removes the value @p val from the workset if present.
  */
-static inline void workset_remove(workset_t *ws, ir_node *val) {
+static inline void workset_remove(workset_t *ws, ir_node *val)
+{
 	int i;
 	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val) {
@@ -231,7 +238,8 @@ static inline void workset_remove(workset_t *ws, ir_node *val) {
 	}
 }
 
-static inline int workset_get_index(const workset_t *ws, const ir_node *val) {
+static inline int workset_get_index(const workset_t *ws, const ir_node *val)
+{
 	int i;
 	for(i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val)
@@ -552,7 +560,8 @@ static inline int is_transport_in(const ir_node *bl, const ir_node *irn)
  * @p is_usage indicates that the values in new_vals are used (not defined)
  * In this case reloads must be performed
  */
-static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
+static void displace(block_info_t *bi, workset_t *new_vals, int is_usage)
+{
 	belady_env_t *env       = bi->bel;
 	workset_t    *ws        = env->ws;
 	ir_node     **to_insert = ALLOCAN(ir_node*, env->n_regs);
@@ -648,7 +657,8 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage) {
  * whether it is used from a register or is reloaded
  * before the use.
  */
-static void belady(belady_env_t *env, int id) {
+static void belady(belady_env_t *env, int id)
+{
 	block_info_t *block_info = new_block_info(env, id);
 	const ir_node *block     = block_info->bl;
 

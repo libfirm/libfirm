@@ -52,7 +52,8 @@
 /**
  * Return the fpa immediate from the encoding.
  */
-const char *arm_get_fpa_imm_name(long imm_value) {
+const char *arm_get_fpa_imm_name(long imm_value)
+{
 	static const char *fpa_imm[] = {
 		"0",
 		"1",
@@ -156,14 +157,16 @@ const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(const ir_node *node) {
+static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(const ir_node *node)
+{
 	const arm_attr_t          *attr     = get_arm_attr_const(node);
 	const arm_fpaConst_attr_t *fpa_attr = CONST_CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
 
 	return fpa_attr;
 }
 
-static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node) {
+static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node)
+{
 	arm_attr_t          *attr     = get_arm_attr(node);
 	arm_fpaConst_attr_t *fpa_attr = CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
 
@@ -184,12 +187,14 @@ const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node)
 }
 
 /* Returns the attributes of a SwitchJmp node. */
-arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node) {
+arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node)
+{
 	assert(is_arm_SwitchJmp(node));
 	return get_irn_generic_attr(node);
 }
 
-const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node) {
+const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
+{
 	assert(is_arm_SwitchJmp(node));
 	return get_irn_generic_attr_const(node);
 }
@@ -197,7 +202,8 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node) {
 /**
  * Returns the argument register requirements of a arm node.
  */
-const arch_register_req_t **get_arm_in_req_all(const ir_node *node) {
+const arch_register_req_t **get_arm_in_req_all(const ir_node *node)
+{
 	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->in_req;
 }
@@ -205,7 +211,8 @@ const arch_register_req_t **get_arm_in_req_all(const ir_node *node) {
 /**
  * Returns the argument register requirement at position pos of an arm node.
  */
-const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
+const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos)
+{
 	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->in_req[pos];
 }
@@ -213,7 +220,8 @@ const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos) {
 /**
  * Sets the IN register requirements at position pos.
  */
-void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
+void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos)
+{
 	arm_attr_t *attr  = get_arm_attr(node);
 	attr->in_req[pos] = req;
 }
@@ -221,7 +229,8 @@ void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos) {
 /**
  * Returns the fpaConst value
  */
-tarval *get_fpaConst_value(const ir_node *node) {
+tarval *get_fpaConst_value(const ir_node *node)
+{
 	const arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr_const(node);
 	return attr->tv;
 }
@@ -229,7 +238,8 @@ tarval *get_fpaConst_value(const ir_node *node) {
 /**
  * Sets the tarval value
  */
-void set_fpaConst_value(ir_node *node, tarval *tv) {
+void set_fpaConst_value(ir_node *node, tarval *tv)
+{
 	arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr(node);
 	attr->tv = tv;
 }
@@ -237,7 +247,8 @@ void set_fpaConst_value(ir_node *node, tarval *tv) {
 /**
  * Returns the proj num
  */
-int get_arm_CondJmp_proj_num(const ir_node *node) {
+int get_arm_CondJmp_proj_num(const ir_node *node)
+{
 	const arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr_const(node);
 	return attr->proj_num;
 }
@@ -245,7 +256,8 @@ int get_arm_CondJmp_proj_num(const ir_node *node) {
 /**
  * Sets the proj num
  */
-void set_arm_CondJmp_proj_num(ir_node *node, int proj_num) {
+void set_arm_CondJmp_proj_num(ir_node *node, int proj_num)
+{
 	arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr(node);
 	attr->proj_num   = proj_num;
 }
@@ -253,7 +265,8 @@ void set_arm_CondJmp_proj_num(ir_node *node, int proj_num) {
 /**
  * Returns the number of projs of a SwitchJmp.
  */
-int get_arm_SwitchJmp_n_projs(const ir_node *node) {
+int get_arm_SwitchJmp_n_projs(const ir_node *node)
+{
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->n_projs;
 }
@@ -261,7 +274,8 @@ int get_arm_SwitchJmp_n_projs(const ir_node *node) {
 /**
  * Sets the number of projs.
  */
-void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs) {
+void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs)
+{
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
 	attr->n_projs = n_projs;
 }
@@ -269,7 +283,8 @@ void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs) {
 /**
  * Returns the default_proj_num.
  */
-long get_arm_SwitchJmp_default_proj_num(const ir_node *node) {
+long get_arm_SwitchJmp_default_proj_num(const ir_node *node)
+{
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->default_proj_num;
 }
@@ -277,7 +292,8 @@ long get_arm_SwitchJmp_default_proj_num(const ir_node *node) {
 /**
  * Sets the default_proj_num.
  */
-void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num) {
+void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num)
+{
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
 	attr->default_proj_num = default_proj_num;
 }
@@ -480,7 +496,8 @@ static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
 }
 
 /** copies the ARM attributes of a node. */
-static void arm_copy_attr(const ir_node *old_node, ir_node *new_node) {
+static void arm_copy_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_graph          *irg     = get_irn_irg(new_node);
 	struct obstack    *obst    = get_irg_obstack(irg);
 	const arm_attr_t *attr_old = get_arm_attr_const(old_node);

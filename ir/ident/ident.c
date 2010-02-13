@@ -112,7 +112,8 @@ static int set_get_id_strlen(void *handle, ident *id)
 /**
  * Default implementation using libfirm sets.
  */
-void set_finish_ident(void *handle) {
+void set_finish_ident(void *handle)
+{
   set *id_set = handle;
 
   del_set(id_set);
@@ -177,7 +178,8 @@ int get_id_strlen(ident *id)
   return impl.get_id_strlen(impl.handle, id);
 }
 
-void finish_ident(void) {
+void finish_ident(void)
+{
   if (impl.finish_ident)
     impl.finish_ident(impl.handle);
 }

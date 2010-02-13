@@ -51,7 +51,8 @@ static ir_entity *i_ents[iro_Last + 1];
  * and map all instructions the backend did not support
  * to runtime calls.
  */
-void ia32_handle_intrinsics(void) {
+void ia32_handle_intrinsics(void)
+{
 	if (intrinsics && ARR_LEN(intrinsics) > 0) {
 		lower_intrinsics(intrinsics, ARR_LEN(intrinsics), /*part_block_used=*/1);
 	}
@@ -70,7 +71,8 @@ void ia32_handle_intrinsics(void) {
  * @param h_res  the upper 32 bit result or NULL
  * @param irg    the graph to replace on
  */
-static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_graph *irg) {
+static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_graph *irg)
+{
 	const ir_edge_t *edge, *next;
 
 	foreach_out_edge_safe(proj, edge, next) {
@@ -96,7 +98,8 @@ static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_gra
  * @param irg    the graph to replace on
  * @param block  the block to replace on (always the call block)
  */
-static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block) {
+static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block)
+{
 	ir_node *jmp, *res, *in[2];
 	ir_node *bad   = get_irg_bad(irg);
 	ir_node *nomem = get_irg_no_mem(irg);
@@ -177,7 +180,8 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 /**
  * Map an Add (a_l, a_h, b_l, b_h)
  */
-static int map_Add(ir_node *call, void *ctx) {
+static int map_Add(ir_node *call, void *ctx)
+{
 	dbg_info *dbg        = get_irn_dbg_info(call);
 	ir_node  *block      = get_nodes_block(call);
 	ir_node  **params    = get_Call_param_arr(call);
@@ -244,7 +248,8 @@ static int map_Sub(ir_node *call, void *ctx)
 /**
  * Map a Shl (a_l, a_h, count)
  */
-static int map_Shl(ir_node *call, void *ctx) {
+static int map_Shl(ir_node *call, void *ctx)
+{
 	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbg     = get_irn_dbg_info(call);
 	ir_node  *block   = get_nodes_block(call);
@@ -332,7 +337,8 @@ static int map_Shl(ir_node *call, void *ctx) {
 /**
  * Map a Shr (a_l, a_h, count)
  */
-static int map_Shr(ir_node *call, void *ctx) {
+static int map_Shr(ir_node *call, void *ctx)
+{
 	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbg     = get_irn_dbg_info(call);
 	ir_node  *block   = get_nodes_block(call);
@@ -418,7 +424,8 @@ static int map_Shr(ir_node *call, void *ctx) {
 /**
  * Map a Shrs (a_l, a_h, count)
  */
-static int map_Shrs(ir_node *call, void *ctx) {
+static int map_Shrs(ir_node *call, void *ctx)
+{
 	ir_graph *irg     = current_ir_graph;
 	dbg_info *dbg     = get_irn_dbg_info(call);
 	ir_node  *block   = get_nodes_block(call);
@@ -542,7 +549,8 @@ static int is_sign_extend(ir_node *low, ir_node *high)
 /**
  * Map a Mul (a_l, a_h, b_l, b_h)
  */
-static int map_Mul(ir_node *call, void *ctx) {
+static int map_Mul(ir_node *call, void *ctx)
+{
 	dbg_info *dbg     = get_irn_dbg_info(call);
 	ir_node  *block   = get_nodes_block(call);
 	ir_node  **params = get_Call_param_arr(call);
@@ -592,7 +600,8 @@ static int map_Mul(ir_node *call, void *ctx) {
 /**
  * Map a Minus (a_l, a_h)
  */
-static int map_Minus(ir_node *call, void *ctx) {
+static int map_Minus(ir_node *call, void *ctx)
+{
 	dbg_info *dbg     = get_irn_dbg_info(call);
 	ir_node  *block   = get_nodes_block(call);
 	ir_node  **params = get_Call_param_arr(call);
@@ -616,7 +625,8 @@ static int map_Minus(ir_node *call, void *ctx) {
 /**
  * Map a Abs (a_l, a_h)
  */
-static int map_Abs(ir_node *call, void *ctx) {
+static int map_Abs(ir_node *call, void *ctx)
+{
 	dbg_info *dbg        = get_irn_dbg_info(call);
 	ir_node  *block      = get_nodes_block(call);
 	ir_node  **params    = get_Call_param_arr(call);
@@ -708,7 +718,8 @@ static int map_Div(ir_node *call, void *ctx)
 /**
  * Maps a Mod. Change into a library call
  */
-static int map_Mod(ir_node *call, void *ctx) {
+static int map_Mod(ir_node *call, void *ctx)
+{
 	ia32_intrinsic_env_t *env = ctx;
 	ir_type   *method    = get_Call_type(call);
 	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
@@ -748,7 +759,8 @@ static int map_Mod(ir_node *call, void *ctx) {
 /**
  * Maps a Conv.
  */
-static int map_Conv(ir_node *call, void *ctx) {
+static int map_Conv(ir_node *call, void *ctx)
+{
 	ir_graph  *irg     = current_ir_graph;
 	dbg_info  *dbg     = get_irn_dbg_info(call);
 	ir_node   *block   = get_nodes_block(call);

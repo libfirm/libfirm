@@ -44,7 +44,8 @@
 #define ADD_ADR(p, off)  ((void *)((char *)(p) + (off)))
 
 /** debug output */
-static void debug(char *fmt, ...) {
+static void debug(char *fmt, ...)
+{
   va_list ap;
   char buf[1024];
 
@@ -58,7 +59,8 @@ static void debug(char *fmt, ...) {
 /**
  * return the size of a firm object
  */
-int get_firm_object_size(firm_kind kind) {
+int get_firm_object_size(firm_kind kind)
+{
   switch (kind) {
   case k_entity:     /* an entity */
     return sizeof(ir_entity);
@@ -111,7 +113,8 @@ static int strlen_debuggee(DEBUGHELPER *pHelper, const void *address, size_t max
 /**
  * Format an ident
  */
-HRESULT format_ident(DEBUGHELPER *pHelper, const void *address, char *pResult, size_t max) {
+HRESULT format_ident(DEBUGHELPER *pHelper, const void *address, char *pResult, size_t max)
+{
   set_entry *data = NULL;
   set_entry id;
   size_t len, slen;
@@ -172,7 +175,8 @@ static HRESULT format_tp_op(DEBUGHELPER *pHelper, const void *addr, char *pResul
  *
  * @param type  the address of the type in debuggee's space
  */
-static HRESULT is_global_type(DEBUGHELPER *pHelper, const void *type, int *flag) {
+static HRESULT is_global_type(DEBUGHELPER *pHelper, const void *type, int *flag)
+{
   ir_type tp;
 
   *flag = 0;
@@ -186,7 +190,8 @@ static HRESULT is_global_type(DEBUGHELPER *pHelper, const void *type, int *flag)
 /**
  * format an entity
  */
-static HRESULT format_entity(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top) {
+static HRESULT format_entity(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top)
+{
   ir_entity ent;
   ir_type owner;
   char name[256];
@@ -233,7 +238,8 @@ static HRESULT format_entity(DEBUGHELPER *pHelper, int nBase, const void *addr, 
 /**
  * format a type
  */
-static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top) {
+static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top)
+{
   ir_type tp;
   char name[256];
 
@@ -270,7 +276,8 @@ static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
 /**
  * format an irg
  */
-static HRESULT format_irg(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top) {
+static HRESULT format_irg(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top)
+{
   ir_graph irg;
   char name[256];
 
@@ -322,7 +329,8 @@ static HRESULT format_irg(DEBUGHELPER *pHelper, int nBase, const void *addr, cha
 /**
  * format an ir_op
  */
-HRESULT format_op(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max) {
+HRESULT format_op(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max)
+{
   ir_op op;
 
   if (copy_from_debuggee(addr, pHelper, &op, sizeof(op)) != S_OK)
@@ -335,7 +343,8 @@ HRESULT format_op(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t 
 /**
  * format an ir_mode
  */
-static HRESULT format_mode(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max) {
+static HRESULT format_mode(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max)
+{
   ir_mode mode;
 
   if (copy_from_debuggee(addr, pHelper, &mode, sizeof(mode)) != S_OK)
@@ -468,7 +477,8 @@ static HRESULT format_tarval(DEBUGHELPER *pHelper, int nBase, const void *addr, 
 /**
  * format an ir_node
  */
-static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top) {
+static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top)
+{
   ir_node n;
   char name[256];
   ir_op op;
@@ -619,7 +629,8 @@ static HRESULT get_array_desc(DEBUGHELPER *pHelper, const void *address, ir_arr_
 /**
  * format an extended block
  */
-static HRESULT format_extblk(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max){
+static HRESULT format_extblk(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max)
+{
   ir_extblk extbb;
   ir_arr_descr blocks;
   ir_node *blks = NULL;
@@ -1038,7 +1049,8 @@ HRESULT format_pdeq(DEBUGHELPER *pHelper, int nBase, const void *address, char *
 }  /* format_pdeq */
 
 /** show the first 2 units */
-static HRESULT fill_bits(DEBUGHELPER *pHelper, bitset_t *bs, char *pResult) {
+static HRESULT fill_bits(DEBUGHELPER *pHelper, bitset_t *bs, char *pResult)
+{
   bitset_pos_t i, units = bs->units;
   int l = 0, o = 0, breaked = 0;
   unsigned j;

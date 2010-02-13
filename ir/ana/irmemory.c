@@ -57,7 +57,8 @@ static DISAMBIGUATOR_FUNC language_disambuigator = NULL;
 static unsigned global_mem_disamgig_opt = aa_opt_no_opt;
 
 /* Returns a human readable name for an alias relation. */
-const char *get_ir_alias_relation_name(ir_alias_relation rel) {
+const char *get_ir_alias_relation_name(ir_alias_relation rel)
+{
 #define X(a) case a: return #a
 	switch (rel) {
 	X(ir_no_alias);
@@ -69,7 +70,8 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel) {
 }
 
 /* Get the memory disambiguator options for a graph. */
-unsigned get_irg_memory_disambiguator_options(const ir_graph *irg) {
+unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
+{
 	unsigned opt = irg->mem_disambig_opt;
 	if (opt & aa_opt_inherited)
 		return global_mem_disamgig_opt;
@@ -77,12 +79,14 @@ unsigned get_irg_memory_disambiguator_options(const ir_graph *irg) {
 }  /* get_irg_memory_disambiguator_options */
 
 /*  Set the memory disambiguator options for a graph. */
-void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options) {
+void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options)
+{
 	irg->mem_disambig_opt = options & ~aa_opt_inherited;
 }  /* set_irg_memory_disambiguator_options */
 
 /* Set the global disambiguator options for all graphs not having local options. */
-void set_irp_memory_disambiguator_options(unsigned options) {
+void set_irp_memory_disambiguator_options(unsigned options)
+{
 	global_mem_disamgig_opt = options;
 }  /* set_irp_memory_disambiguator_options */
 
@@ -94,7 +98,8 @@ void set_irp_memory_disambiguator_options(unsigned options) {
  *
  * @return the base address.
  */
-static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt) {
+static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt)
+{
 	ir_node *ptr = get_Sel_ptr(sel);
 
 	while (is_Sel(ptr)) {
@@ -113,7 +118,8 @@ static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt) {
  *
  * @return ir_no_alias if the Const is greater, ir_may_alias else
  */
-static ir_alias_relation check_const(const ir_node *cns, int size) {
+static ir_alias_relation check_const(const ir_node *cns, int size)
+{
 	tarval *tv = get_Const_tarval(cns);
 	tarval *tv_size;
 
@@ -134,7 +140,8 @@ static ir_alias_relation check_const(const ir_node *cns, int size) {
  *         ir_no_alias iff they ALWAYS differ more than size
  *         ir_may_alias else
  */
-static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx2, int size) {
+static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx2, int size)
+{
 	if (idx1 == idx2)
 		return ir_sure_alias;
 	if (is_Const(idx1) && is_Const(idx2)) {
@@ -293,7 +300,8 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
  * @param adr1  The first address.
  * @param adr2  The second address.
  */
-static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_node *sel2) {
+static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_node *sel2)
+{
 	/* seems to be broken */
 	(void) sel1;
 	(void) sel2;
@@ -396,7 +404,8 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
  *
  * @param node  the Proj node to test
  */
-static int is_malloc_Result(const ir_node *node) {
+static int is_malloc_Result(const ir_node *node)
+{
 	node = get_Proj_pred(node);
 	if (! is_Proj(node))
 		return 0;
@@ -451,7 +460,8 @@ ir_storage_class_class_t classify_pointer(const ir_graph *irg, const ir_node *ir
 /**
  * If adr represents a Bitfield Sel, skip it
  */
-static const ir_node *skip_Bitfield_Sels(const ir_node *adr) {
+static const ir_node *skip_Bitfield_Sels(const ir_node *adr)
+{
 	if (is_Sel(adr)) {
 		ir_entity *ent     = get_Sel_entity(adr);
 		ir_type   *bf_type = get_entity_type(ent);
@@ -692,7 +702,8 @@ ir_alias_relation get_alias_relation(
 }  /* get_alias_relation */
 
 /* Set a source language specific memory disambiguator function. */
-void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func) {
+void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func)
+{
 	language_disambuigator = func;
 }  /* set_language_memory_disambiguator */
 
@@ -713,7 +724,8 @@ typedef struct mem_disambig_entry {
 /**
  * Compare two relation cache entries.
  */
-static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size) {
+static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
+{
 	const mem_disambig_entry *p1 = elt;
 	const mem_disambig_entry *p2 = key;
 	(void) size;
@@ -725,7 +737,8 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 /**
  * Initialize the relation cache.
  */
-void mem_disambig_init(void) {
+void mem_disambig_init(void)
+{
 	result_cache = new_set(cmp_mem_disambig_entry, 8);
 }  /* mem_disambig_init */
 
@@ -765,7 +778,8 @@ ir_alias_relation get_alias_relation_ex(
 }  /* get_alias_relation_ex */
 
 /* Free the relation cache. */
-void mem_disambig_term(void) {
+void mem_disambig_term(void)
+{
 	if (result_cache != NULL) {
 		del_set(result_cache);
 		result_cache = NULL;
@@ -791,7 +805,8 @@ void mem_disambig_term(void) {
  *
  * @return non-zero if the Load/Store is a hidden cast, zero else
  */
-static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode) {
+static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode)
+{
 	if (ent_mode == NULL)
 		return false;
 
@@ -811,7 +826,8 @@ static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode) {
  *
  * @param irn  the node
  */
-static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *entity) {
+static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *entity)
+{
 	int       i;
 	ir_mode   *emode, *mode;
 	ir_node   *value;
@@ -938,7 +954,8 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 /**
  * Update the usage flags of all frame entities.
  */
-static void analyse_irg_entity_usage(ir_graph *irg) {
+static void analyse_irg_entity_usage(ir_graph *irg)
+{
 	ir_type *ft = get_irg_frame_type(irg);
 	ir_node *irg_frame;
 	int i, j, k, static_link_arg;
@@ -1019,11 +1036,13 @@ static void analyse_irg_entity_usage(ir_graph *irg) {
 	irg->entity_usage_state = ir_entity_usage_computed;
 }
 
-ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg) {
+ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg)
+{
 	return irg->entity_usage_state;
 }
 
-void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state state) {
+void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state state)
+{
 	irg->entity_usage_state = state;
 }
 
@@ -1127,7 +1146,8 @@ static void check_initializer(ir_entity *ent)
  *
  * @param tp  a compound type
  */
-static void check_initializers(ir_type *tp) {
+static void check_initializers(ir_type *tp)
+{
 	int i;
 
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
@@ -1143,7 +1163,8 @@ static void check_initializers(ir_type *tp) {
  *
  * @param tp  a compound type
  */
-static void print_entity_usage_flags(ir_type *tp) {
+static void print_entity_usage_flags(ir_type *tp)
+{
 	int i;
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
 		ir_entity *ent = get_compound_member(tp, i);
@@ -1168,7 +1189,8 @@ static void print_entity_usage_flags(ir_type *tp) {
 /**
  * Post-walker: check for global entity address
  */
-static void check_global_address(ir_node *irn, void *env) {
+static void check_global_address(ir_node *irn, void *env)
+{
 	ir_node *tls = env;
 	ir_entity *ent;
 	ir_entity_usage flags;
@@ -1190,7 +1212,8 @@ static void check_global_address(ir_node *irn, void *env) {
 /**
  * Update the entity usage flags of all global entities.
  */
-static void analyse_irp_globals_entity_usage(void) {
+static void analyse_irp_globals_entity_usage(void)
+{
 	int i;
 	ir_segment_t s;
 
@@ -1225,24 +1248,28 @@ static void analyse_irp_globals_entity_usage(void) {
 }
 
 /* Returns the current address taken state of the globals. */
-ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void) {
+ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void)
+{
 	return irp->globals_entity_usage_state;
 }
 
 /* Sets the current address taken state of the graph. */
-void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state) {
+void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state)
+{
 	irp->globals_entity_usage_state = state;
 }
 
 /* Assure that the address taken flag is computed for the globals. */
-void assure_irp_globals_entity_usage_computed(void) {
+void assure_irp_globals_entity_usage_computed(void)
+{
 	if (irp->globals_entity_usage_state != ir_entity_usage_not_computed)
 		return;
 
 	analyse_irp_globals_entity_usage();
 }
 
-void firm_init_memory_disambiguator(void) {
+void firm_init_memory_disambiguator(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.ana.irmemory");
 	FIRM_DBG_REGISTER(dbgcall, "firm.opt.cc");
 }
@@ -1274,7 +1301,8 @@ static ir_type *clone_type_and_cache(ir_type *tp)
  * Walker: clone all call types of Calls to methods having the
  * mtp_property_private property set.
  */
-static void update_calls_to_private(ir_node *call, void *env) {
+static void update_calls_to_private(ir_node *call, void *env)
+{
 	(void) env;
 	if (is_Call(call)) {
 		ir_node *ptr = get_Call_ptr(call);
@@ -1335,6 +1363,7 @@ void mark_private_methods(void)
 }  /* mark_private_methods */
 
 /* create a pass for mark_private_methods() */
-ir_prog_pass_t *mark_private_methods_pass(const char *name) {
+ir_prog_pass_t *mark_private_methods_pass(const char *name)
+{
 	return def_prog_pass(name ? name : "mark_private_methods", mark_private_methods);
 }  /* mark_private_methods_pass */

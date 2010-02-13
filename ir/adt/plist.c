@@ -39,7 +39,8 @@
  * @param list the list for which to allocate the element.
  * @return the newly allocated, uninitialized element.
  */
-static plist_element_t *allocate_element(plist_t* list) {
+static plist_element_t *allocate_element(plist_t* list)
+{
 	plist_element_t *new_element;
 
 	if (list->first_free_element != NULL) {
@@ -54,7 +55,8 @@ static plist_element_t *allocate_element(plist_t* list) {
 	return new_element;
 }
 
-plist_t *plist_new(void) {
+plist_t *plist_new(void)
+{
 	plist_t *list = xmalloc(sizeof(*list) + sizeof(*list->obst));
 
 	list->obst               = (struct obstack *)&list[1];
@@ -68,7 +70,8 @@ plist_t *plist_new(void) {
 	return list;
 }
 
-plist_t *plist_obstack_new(struct obstack *obst) {
+plist_t *plist_obstack_new(struct obstack *obst)
+{
 	plist_t *list = OALLOC(obst, plist_t);
 
 	list->obst               = obst;
@@ -81,7 +84,8 @@ plist_t *plist_obstack_new(struct obstack *obst) {
 	return list;
 }
 
-void plist_free(plist_t *list) {
+void plist_free(plist_t *list)
+{
 	list->first_element      = NULL;
 	list->last_element       = NULL;
 	list->first_free_element = NULL;
@@ -93,7 +97,8 @@ void plist_free(plist_t *list) {
 	}
 }
 
-void plist_insert_back(plist_t *list, void *value) {
+void plist_insert_back(plist_t *list, void *value)
+{
 	if (list->last_element != NULL) {
 		plist_insert_after(list, list->last_element, value);
 	}
@@ -108,7 +113,8 @@ void plist_insert_back(plist_t *list, void *value) {
 	}
 }
 
-void plist_insert_front(plist_t *list, void *value) {
+void plist_insert_front(plist_t *list, void *value)
+{
 	if (list->first_element != NULL) {
 		plist_insert_before(list, list->first_element, value);
 	}
@@ -123,7 +129,8 @@ void plist_insert_front(plist_t *list, void *value) {
 	}
 }
 
-void plist_insert_before(plist_t *list, plist_element_t *element, void *value) {
+void plist_insert_before(plist_t *list, plist_element_t *element, void *value)
+{
 	plist_element_t *prevElement;
 	plist_element_t *newElement = allocate_element(list);
 
@@ -143,7 +150,8 @@ void plist_insert_before(plist_t *list, plist_element_t *element, void *value) {
 	++list->element_count;
 }
 
-void plist_insert_after(plist_t* list, plist_element_t* element, void* value) {
+void plist_insert_after(plist_t* list, plist_element_t* element, void* value)
+{
 	plist_element_t *nextElement;
 	plist_element_t *newElement = allocate_element(list);
 
@@ -163,7 +171,8 @@ void plist_insert_after(plist_t* list, plist_element_t* element, void* value) {
 	++list->element_count;
 }
 
-int plist_has_value(plist_t *list, void *value) {
+int plist_has_value(plist_t *list, void *value)
+{
 	plist_element_t *iter;
 
 	for (iter = plist_first(list); iter; iter = plist_element_get_next(iter)) {
@@ -174,7 +183,8 @@ int plist_has_value(plist_t *list, void *value) {
 	return 0;
 }
 
-plist_element_t *plist_find_value(plist_t *list, void *value) {
+plist_element_t *plist_find_value(plist_t *list, void *value)
+{
 	plist_element_t *iter;
 
 	for (iter = plist_first(list); iter; iter = plist_element_get_next(iter)) {
@@ -185,7 +195,8 @@ plist_element_t *plist_find_value(plist_t *list, void *value) {
 	return NULL;
 }
 
-void plist_erase(plist_t *list, plist_element_t *element) {
+void plist_erase(plist_t *list, plist_element_t *element)
+{
 	plist_element_t *next_element = element->next;
 	plist_element_t *prev_element = element->prev;
 
@@ -211,7 +222,8 @@ void plist_erase(plist_t *list, plist_element_t *element) {
 	list->first_free_element = element;
 }
 
-void plist_clear(plist_t *list) {
+void plist_clear(plist_t *list)
+{
 	plist_element_t *curr_element = list->first_element;
 
 	while (curr_element != NULL) {

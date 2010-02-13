@@ -354,7 +354,8 @@ static void peephole_ia32_Test(ir_node *node)
  * conditional jump or directly preceded by other jump instruction.
  * Can be avoided by placing a Rep prefix before the return.
  */
-static void peephole_ia32_Return(ir_node *node) {
+static void peephole_ia32_Return(ir_node *node)
+{
 	ir_node *block, *irn;
 
 	if (!ia32_cg_config.use_pad_return)
@@ -615,7 +616,8 @@ static void peephole_store_incsp(ir_node *store)
 /**
  * Return true if a mode can be stored in the GP register set
  */
-static inline int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode)
+{
         if (mode == mode_fpcw)
                 return 0;
         if (get_mode_size_bits(mode) > 32)

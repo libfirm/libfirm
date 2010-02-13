@@ -127,7 +127,8 @@ typedef struct _lower_env_t {
 /**
  * Get a primitive mode for a mode.
  */
-static ir_type *get_primitive_type(ir_mode *mode) {
+static ir_type *get_primitive_type(ir_mode *mode)
+{
 	pmap_entry *entry = pmap_find(prim_types, mode);
 	ir_type *tp;
 	char buf[64];
@@ -145,7 +146,8 @@ static ir_type *get_primitive_type(ir_mode *mode) {
 /**
  * Create a method type for a Conv emulation from imode to omode.
  */
-static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env) {
+static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env)
+{
 	conv_tp_entry_t key, *entry;
 	ir_type *mtd;
 
@@ -331,7 +333,8 @@ static void prepare_links(ir_node *node, void *env)
 /**
  * Translate a Constant: create two.
  */
-static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	tarval   *tv, *tv_l, *tv_h;
 	ir_node  *low, *high;
 	dbg_info *dbg = get_irn_dbg_info(node);
@@ -356,7 +359,8 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Load: create two.
  */
-static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_mode    *low_mode = env->params->low_unsigned;
 	ir_graph   *irg = current_ir_graph;
 	ir_node    *adr = get_Load_ptr(node);
@@ -416,7 +420,8 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Store: create two.
  */
-static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_graph     *irg;
 	ir_node      *block, *adr, *mem;
 	ir_node      *low, *high, *irn, *proj;
@@ -523,7 +528,8 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
  *
  * Create an intrinsic Call.
  */
-static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *irn, *call, *proj;
 	ir_node  *in[4];
 	ir_mode  *opmode;
@@ -600,7 +606,8 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * Create an intrinsic Call.
  */
-static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *proj, *irn, *call;
 	ir_node  *in[4];
 	ir_mode  *opmode;
@@ -677,7 +684,8 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * Create two intrinsic Calls.
  */
-static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *proj, *irn, *mem, *callDiv, *callMod;
 	ir_node  *resDiv = NULL;
 	ir_node  *resMod = NULL;
@@ -785,7 +793,8 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * Create an intrinsic Call.
  */
-static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *irn;
 	ir_node  *in[4];
 	dbg_info *dbg;
@@ -842,7 +851,8 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * Create an intrinsic Call.
  */
-static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *irn;
 	ir_node  *in[3];
 	dbg_info *dbg;
@@ -889,7 +899,8 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Shr and handle special cases.
  */
-static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *right = get_Shr_right(node);
 	ir_graph *irg = current_ir_graph;
 
@@ -930,7 +941,8 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Shl and handle special cases.
  */
-static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *right = get_Shl_right(node);
 	ir_graph *irg = current_ir_graph;
 
@@ -967,7 +979,8 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Shrs and handle special cases.
  */
-static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *right = get_Shrs_right(node);
 	ir_graph *irg = current_ir_graph;
 
@@ -1009,7 +1022,8 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Rebuild Rotl nodes into Or(Shl, Shr) and prepare all nodes.
  */
-static void prepare_links_and_handle_rotl(ir_node *node, void *env) {
+static void prepare_links_and_handle_rotl(ir_node *node, void *env)
+{
 	lower_env_t *lenv = env;
 
 	if (is_Rotl(node)) {
@@ -1066,7 +1080,8 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env) {
 /**
  * Translate a special case Rotl(x, sizeof(w)).
  */
-static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node *right = get_Rotl_right(node);
 	ir_node *left = get_Rotl_left(node);
 	ir_node *h, *l;
@@ -1091,7 +1106,8 @@ static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * Create an intrinsic Call.
  */
-static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *irn;
 	ir_node  *in[2];
 	dbg_info *dbg;
@@ -1193,7 +1209,8 @@ lower_logical(Eor)
  *
  * Create two logical Nots.
  */
-static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *irn;
 	ir_node  *op_l, *op_h;
 	dbg_info *dbg;
@@ -1225,7 +1242,8 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Cond.
  */
-static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_node *cmp, *left, *right, *block;
 	ir_node *sel = get_Cond_selector(node);
 	ir_mode *m = get_irn_mode(sel);
@@ -1601,7 +1619,8 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env)
  *
  * @return the lowered type
  */
-static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
+static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env)
+{
 	pmap_entry *entry;
 	ident      *lid;
 	ir_type    *res, *value_type;
@@ -1731,7 +1750,8 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env) {
 /**
  * Translate a Return.
  */
-static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_graph  *irg = current_ir_graph;
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *mtp = get_entity_type(ent);
@@ -1789,7 +1809,8 @@ static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate the parameters.
  */
-static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_graph  *irg = get_irn_irg(node);
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *tp  = get_entity_type(ent);
@@ -1879,7 +1900,8 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Call.
  */
-static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	ir_type  *tp = get_Call_type(node);
 	ir_type  *call_tp;
 	ir_node  **in, *proj, *results;
@@ -2014,7 +2036,8 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate an Unknown into two.
  */
-static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env) {
+static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
 	int      idx = get_irn_idx(node);
 	ir_graph *irg = get_irn_irg(node);
 	ir_mode  *low_mode = env->params->low_unsigned;
@@ -2028,7 +2051,8 @@ static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env) {
  *
  * First step: just create two templates
  */
-static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
+static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env)
+{
 	ir_mode  *mode_l = env->params->low_unsigned;
 	ir_graph *irg = get_irn_irg(phi);
 	ir_node  *block, *unk_l, *unk_h, *phi_l, *phi_h;
@@ -2102,7 +2126,8 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Mux.
  */
-static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env) {
+static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env)
+{
 	ir_node  *block, *val;
 	ir_node  *true_l, *true_h, *false_l, *false_h, *sel;
 	dbg_info *dbg;
@@ -2147,7 +2172,8 @@ static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate an ASM node.
  */
-static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env) {
+static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
+{
 	ir_mode *his = env->params->high_signed;
 	ir_mode *hiu = env->params->high_unsigned;
 	int      i;
@@ -2179,7 +2205,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env) {
 /**
  * Translate a Sel node.
  */
-static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env) {
+static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env)
+{
 	(void) mode;
 
 	/* we must only lower value parameter Sels if we change the
@@ -2198,7 +2225,8 @@ static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env) {
 /**
  * check for opcodes that must always be lowered.
  */
-static int always_lower(ir_opcode code) {
+static int always_lower(ir_opcode code)
+{
 	switch (code) {
 	case iro_ASM:
 	case iro_Proj:
@@ -2217,7 +2245,8 @@ static int always_lower(ir_opcode code) {
 /**
  * lower boolean Proj(Cmp)
  */
-static ir_node *lower_boolean_Proj_Cmp(ir_node *proj, ir_node *cmp, lower_env_t *env) {
+static ir_node *lower_boolean_Proj_Cmp(ir_node *proj, ir_node *cmp, lower_env_t *env)
+{
 	int      lidx, ridx;
 	ir_node  *l, *r, *low, *high, *t, *res;
 	pn_Cmp   pnc;
@@ -2342,7 +2371,8 @@ static void lower_ops(ir_node *node, void *env)
 /**
  * Compare two op_mode_entry_t's.
  */
-static int cmp_op_mode(const void *elt, const void *key, size_t size) {
+static int cmp_op_mode(const void *elt, const void *key, size_t size)
+{
 	const op_mode_entry_t *e1 = elt;
 	const op_mode_entry_t *e2 = key;
 	(void) size;
@@ -2353,7 +2383,8 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size) {
 /**
  * Compare two conv_tp_entry_t's.
  */
-static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
+static int cmp_conv_tp(const void *elt, const void *key, size_t size)
+{
 	const conv_tp_entry_t *e1 = elt;
 	const conv_tp_entry_t *e2 = key;
 	(void) size;
@@ -2364,7 +2395,8 @@ static int cmp_conv_tp(const void *elt, const void *key, size_t size) {
 /**
  * Enter a lowering function into an ir_op.
  */
-static void enter_lower_func(ir_op *op, lower_func func) {
+static void enter_lower_func(ir_op *op, lower_func func)
+{
 	op->ops.generic = (op_func)func;
 }  /* enter_lower_func */
 
@@ -2373,7 +2405,8 @@ static void enter_lower_func(ir_op *op, lower_func func) {
  *
  * @param mtp  the method type
  */
-static int mtp_must_to_lowered(ir_type *mtp, lower_env_t *env) {
+static int mtp_must_to_lowered(ir_type *mtp, lower_env_t *env)
+{
 	int i, n_params;
 
 	n_params = get_method_n_params(mtp);
@@ -2625,7 +2658,8 @@ static int pass_wrapper(ir_prog *irp, void *context)
 	return 0;
 }
 
-ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param) {
+ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->param = param;

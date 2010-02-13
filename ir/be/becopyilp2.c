@@ -70,7 +70,8 @@ typedef struct _local_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } local_env_t;
 
-static void build_coloring_cstr(ilp_env_t *ienv) {
+static void build_coloring_cstr(ilp_env_t *ienv)
+{
 	be_ifg_t *ifg     = ienv->co->cenv->ifg;
 	void *iter        = be_ifg_nodes_iter_alloca(ifg);
 	bitset_t *colors;
@@ -174,7 +175,8 @@ static void build_interference_cstr(ilp_env_t *ienv)
  *       by walking over all affinity edges. Graph structure
  *       does not provide this walker, yet.
  */
-static void build_affinity_cstr(ilp_env_t *ienv) {
+static void build_affinity_cstr(ilp_env_t *ienv)
+{
 	local_env_t *lenv = ienv->env;
 	int n_colors      = lenv->n_colors;
 	unit_t *curr;
@@ -220,7 +222,8 @@ typedef struct _edge_t {
 	ir_node *n1, *n2;
 } edge_t;
 
-static int compare_edge_t(const void *k1, const void *k2, size_t size) {
+static int compare_edge_t(const void *k1, const void *k2, size_t size)
+{
 	const edge_t *e1 = k1;
 	const edge_t *e2 = k2;
 	(void) size;
@@ -230,7 +233,8 @@ static int compare_edge_t(const void *k1, const void *k2, size_t size) {
 
 #define HASH_EDGE(e) (hash_irn((e)->n1) ^ hash_irn((e)->n2))
 
-static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counter)
+{
 	edge_t new_edge;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -244,7 +248,8 @@ static inline edge_t *add_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
 	return set_insert(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
-static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
+static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2)
+{
 	edge_t new_edge;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -257,7 +262,8 @@ static inline edge_t *find_edge(set *edges, ir_node *n1, ir_node *n2) {
 	return set_find(edges, &new_edge, sizeof(new_edge), HASH_EDGE(&new_edge));
 }
 
-static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counter) {
+static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counter)
+{
 	edge_t new_edge, *e;
 
 	if (PTR_TO_INT(n1) < PTR_TO_INT(n2)) {
@@ -282,7 +288,8 @@ static inline void remove_edge(set *edges, ir_node *n1, ir_node *n2, int *counte
  * with affinity edges to all nodes of the clique.
  * At most 1 node of the clique can be colored equally with the external node.
  */
-static void build_clique_star_cstr(ilp_env_t *ienv) {
+static void build_clique_star_cstr(ilp_env_t *ienv)
+{
 	affinity_node_t *aff;
 
 	/* for each node with affinity edges */
@@ -396,7 +403,8 @@ static void build_clique_star_cstr(ilp_env_t *ienv) {
 }
 
 
-static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn) {
+static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
+{
 	be_ifg_t *ifg = ienv->co->cenv->ifg;
 	int i, len;
 	ir_node **curr_path;
@@ -467,7 +475,8 @@ end:
  *  edges in between.
  *  Then at least one of these affinity edges must break.
  */
-static void build_path_cstr(ilp_env_t *ienv) {
+static void build_path_cstr(ilp_env_t *ienv)
+{
 	affinity_node_t *aff_info;
 
 	/* for each node with affinity edges */
@@ -480,7 +489,8 @@ static void build_path_cstr(ilp_env_t *ienv) {
 	}
 }
 
-static void ilp2_build(ilp_env_t *ienv) {
+static void ilp2_build(ilp_env_t *ienv)
+{
 	local_env_t *lenv = ienv->env;
 	int lower_bound;
 
@@ -496,7 +506,8 @@ static void ilp2_build(ilp_env_t *ienv) {
 	lpp_set_time_limit(ienv->lp, lenv->time_limit);
 }
 
-static void ilp2_apply(ilp_env_t *ienv) {
+static void ilp2_apply(ilp_env_t *ienv)
+{
 	local_env_t *lenv = ienv->env;
 	int i;
 
@@ -551,7 +562,8 @@ void be_init_copyilp2(void)
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2);
 
-int co_solve_ilp2(copy_opt_t *co) {
+int co_solve_ilp2(copy_opt_t *co)
+{
 	lpp_sol_state_t sol_state;
 	ilp_env_t *ienv;
 	local_env_t my;
@@ -582,7 +594,8 @@ int co_solve_ilp2(copy_opt_t *co) {
 
 #else /* WITH_ILP */
 
-static inline void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static inline void only_that_you_can_compile_without_WITH_ILP_defined(void)
+{
 }
 
 #endif /* WITH_ILP */

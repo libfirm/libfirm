@@ -37,7 +37,8 @@ struct eset {
 
 #define INITIAL_SLOTS 64
 
-static int pcmp(const void *p1, const void *p2, size_t size) {
+static int pcmp(const void *p1, const void *p2, size_t size)
+{
   const void **q1 = (const void **)p1;
   const void **q2 = (const void **)p2;
   (void) size;
@@ -46,12 +47,14 @@ static int pcmp(const void *p1, const void *p2, size_t size) {
 }
 
 
-eset * eset_create(void) {
+eset * eset_create(void)
+{
   return (eset *) new_set(pcmp, INITIAL_SLOTS);
 }
 
 
-eset * eset_copy(eset *source) {
+eset * eset_copy(eset *source)
+{
   eset * ret = eset_create();
   void * p;
   for (p = eset_first(source); p; p = eset_next(source)) {
@@ -61,40 +64,47 @@ eset * eset_copy(eset *source) {
 }
 
 
-void eset_destroy(eset *s) {
+void eset_destroy(eset *s)
+{
   del_set((set *)s);
 }
 
 /* Returns the number of elements in the set. */
-int eset_count(eset *s) {
+int eset_count(eset *s)
+{
   return set_count((set *)s);
 }
 
-void eset_insert(eset *s, void *p) {
+void eset_insert(eset *s, void *p)
+{
   if (!eset_contains(s, p)) {
     set_insert((set *)s, &p, sizeof(p), HASH_PTR(p));
   }
 }
 
 
-int eset_contains(eset *s, void *p) {
+int eset_contains(eset *s, void *p)
+{
   return set_find((set *)s, &p, sizeof(p), HASH_PTR(p)) != NULL;
 }
 
 
-void * eset_first(eset *s) {
+void * eset_first(eset *s)
+{
   void * p = set_first((set *) s);
   return p == NULL ? NULL : *((void **)p);
 }
 
 
-void * eset_next(eset *s) {
+void * eset_next(eset *s)
+{
   void *p = set_next((set *) s);
   return p == NULL ? NULL : *((void **)p);
 }
 
 
-void eset_insert_all(eset *target, eset *source) {
+void eset_insert_all(eset *target, eset *source)
+{
   void *p;
   for (p = eset_first(source); p; p = eset_next(source)) {
     eset_insert(target, p);

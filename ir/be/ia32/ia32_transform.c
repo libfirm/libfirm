@@ -3084,7 +3084,8 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
  * @param new_mode  IN/OUT for the mode of the constants, if NULL
  *                  smallest possible mode will be used
  */
-static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **new_mode) {
+static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **new_mode)
+{
 	ir_entity        *ent;
 	ir_mode          *mode = *new_mode;
 	ir_type          *tp;
@@ -4795,7 +4796,8 @@ static ir_node *gen_be_Call(ir_node *node)
 /**
  * Transform Builtin trap
  */
-static ir_node *gen_trap(ir_node *node) {
+static ir_node *gen_trap(ir_node *node)
+{
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node *block  = be_transform_node(get_nodes_block(node));
 	ir_node *mem    = be_transform_node(get_Builtin_mem(node));
@@ -4806,7 +4808,8 @@ static ir_node *gen_trap(ir_node *node) {
 /**
  * Transform Builtin debugbreak
  */
-static ir_node *gen_debugbreak(ir_node *node) {
+static ir_node *gen_debugbreak(ir_node *node)
+{
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node *block  = be_transform_node(get_nodes_block(node));
 	ir_node *mem    = be_transform_node(get_Builtin_mem(node));
@@ -4817,7 +4820,8 @@ static ir_node *gen_debugbreak(ir_node *node) {
 /**
  * Transform Builtin return_address
  */
-static ir_node *gen_return_address(ir_node *node) {
+static ir_node *gen_return_address(ir_node *node)
+{
 	ir_node *param      = get_Builtin_param(node, 0);
 	ir_node *frame      = get_Builtin_param(node, 1);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -4859,7 +4863,8 @@ static ir_node *gen_return_address(ir_node *node) {
 /**
  * Transform Builtin frame_address
  */
-static ir_node *gen_frame_address(ir_node *node) {
+static ir_node *gen_frame_address(ir_node *node)
+{
 	ir_node *param      = get_Builtin_param(node, 0);
 	ir_node *frame      = get_Builtin_param(node, 1);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
@@ -4908,7 +4913,8 @@ static ir_node *gen_frame_address(ir_node *node) {
 /**
  * Transform Builtin frame_address
  */
-static ir_node *gen_prefetch(ir_node *node) {
+static ir_node *gen_prefetch(ir_node *node)
+{
 	dbg_info       *dbgi;
 	ir_node        *ptr, *block, *mem, *base, *index;
 	ir_node        *param,  *new_node;
@@ -5117,7 +5123,8 @@ static ir_node *gen_parity(ir_node *node)
 /**
  * Transform builtin popcount
  */
-static ir_node *gen_popcount(ir_node *node) {
+static ir_node *gen_popcount(ir_node *node)
+{
 	ir_node *param     = get_Builtin_param(node, 0);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
@@ -5218,7 +5225,8 @@ static ir_node *gen_popcount(ir_node *node) {
 /**
  * Transform builtin byte swap.
  */
-static ir_node *gen_bswap(ir_node *node) {
+static ir_node *gen_bswap(ir_node *node)
+{
 	ir_node *param     = be_transform_node(get_Builtin_param(node, 0));
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
@@ -5260,7 +5268,8 @@ static ir_node *gen_bswap(ir_node *node) {
 /**
  * Transform builtin outport.
  */
-static ir_node *gen_outport(ir_node *node) {
+static ir_node *gen_outport(ir_node *node)
+{
 	ir_node *port  = create_immediate_or_transform(get_Builtin_param(node, 0), 0);
 	ir_node *oldv  = get_Builtin_param(node, 1);
 	ir_mode *mode  = get_irn_mode(oldv);
@@ -5277,7 +5286,8 @@ static ir_node *gen_outport(ir_node *node) {
 /**
  * Transform builtin inport.
  */
-static ir_node *gen_inport(ir_node *node) {
+static ir_node *gen_inport(ir_node *node)
+{
 	ir_type *tp    = get_Builtin_type(node);
 	ir_type *rstp  = get_method_res_type(tp, 0);
 	ir_mode *mode  = get_type_mode(rstp);
@@ -5296,7 +5306,8 @@ static ir_node *gen_inport(ir_node *node) {
 /**
  * Transform a builtin inner trampoline
  */
-static ir_node *gen_inner_trampoline(ir_node *node) {
+static ir_node *gen_inner_trampoline(ir_node *node)
+{
 	ir_node  *ptr       = get_Builtin_param(node, 0);
 	ir_node  *callee    = get_Builtin_param(node, 1);
 	ir_node  *env       = be_transform_node(get_Builtin_param(node, 2));
@@ -5385,7 +5396,8 @@ static ir_node *gen_inner_trampoline(ir_node *node) {
 /**
  * Transform Builtin node.
  */
-static ir_node *gen_Builtin(ir_node *node) {
+static ir_node *gen_Builtin(ir_node *node)
+{
 	ir_builtin_kind kind = get_Builtin_kind(node);
 
 	switch (kind) {
@@ -5424,7 +5436,8 @@ static ir_node *gen_Builtin(ir_node *node) {
 /**
  * Transform Proj(Builtin) node.
  */
-static ir_node *gen_Proj_Builtin(ir_node *proj) {
+static ir_node *gen_Proj_Builtin(ir_node *proj)
+{
 	ir_node         *node     = get_Proj_pred(proj);
 	ir_node         *new_node = be_transform_node(node);
 	ir_builtin_kind kind      = get_Builtin_kind(node);
@@ -5886,7 +5899,8 @@ void ia32_add_missing_keeps(ia32_code_gen_t *cg)
  * The ABI requires that the results are in st0, copy them
  * to a xmm register.
  */
-static void postprocess_fp_call_results(void) {
+static void postprocess_fp_call_results(void)
+{
 	int i;
 
 	for (i = ARR_LEN(call_list) - 1; i >= 0; --i) {

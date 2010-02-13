@@ -39,12 +39,14 @@
 static struct obstack mangle_obst;
 
 /** returned a mangled type name, currently no mangling */
-static inline ident *mangle_type(ir_type *tp) {
+static inline ident *mangle_type(ir_type *tp)
+{
 	assert(tp->kind == k_type);
 	return tp->name;
 }
 
-ident *id_mangle_entity(ir_entity *ent) {
+ident *id_mangle_entity(ir_entity *ent)
+{
 	ident *type_id;
 	char *cp;
 	int len;
@@ -63,7 +65,8 @@ ident *id_mangle_entity(ir_entity *ent) {
 
 
 /* Returns a new ident that represents 'firstscnd'. */
-ident *id_mangle(ident *first, ident *scnd) {
+ident *id_mangle(ident *first, ident *scnd)
+{
 	char *cp;
 	int len;
 	ident *res;
@@ -78,7 +81,8 @@ ident *id_mangle(ident *first, ident *scnd) {
 }
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix) {
+ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
+{
 	char *cp;
 	int len;
 	ident *res;
@@ -94,7 +98,8 @@ ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix) {
 }
 
 /** Returns a new ident that represents first<c>scnd. */
-static ident *id_mangle_3(ident *first, char c, ident* scnd) {
+static ident *id_mangle_3(ident *first, char c, ident* scnd)
+{
 	char *cp;
 	int len;
 	ident *res;
@@ -110,17 +115,20 @@ static ident *id_mangle_3(ident *first, char c, ident* scnd) {
 }
 
 /* Returns a new ident that represents first_scnd. */
-ident *id_mangle_u(ident *first, ident* scnd) {
+ident *id_mangle_u(ident *first, ident* scnd)
+{
 	return id_mangle_3(first, '_', scnd);
 }
 
 /* Returns a new ident that represents first.scnd. */
-ident *id_mangle_dot(ident *first, ident* scnd) {
+ident *id_mangle_dot(ident *first, ident* scnd)
+{
 	return id_mangle_3(first, '.', scnd);
 }
 
 /* returns a mangled name for a Win32 function using it's calling convention */
-ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id) {
+ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id)
+{
 	ir_type *tp      = get_entity_type(ent);
 	unsigned cc_mask = get_method_calling_convention(tp);
 	char buf[16];
@@ -144,6 +152,7 @@ ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id) {
 	return id;
 }
 
-void firm_init_mangle(void) {
+void firm_init_mangle(void)
+{
 	obstack_init(&mangle_obst);
 }

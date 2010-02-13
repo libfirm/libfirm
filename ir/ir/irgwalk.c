@@ -123,7 +123,8 @@ static void irg_walk_cg(ir_node * node, ir_visited_t visited,
 /**
  * Insert all ir_graphs in irg_set, that are (transitive) reachable.
  */
-static void collect_irgs(ir_node * node, pset_new_t *irg_set) {
+static void collect_irgs(ir_node * node, pset_new_t *irg_set)
+{
 	if (is_Call(node)) {
 		int i;
 		for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
@@ -144,7 +145,8 @@ static void collect_irgs(ir_node * node, pset_new_t *irg_set) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
+irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -172,7 +174,8 @@ irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
+irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -201,7 +204,8 @@ irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env) {
+irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -286,7 +290,8 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 /*
  * walk over a graph
  */
-void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
@@ -299,7 +304,8 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
 /* Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
    Sets current_ir_graph properly for each walk.  Conserves current
    current_ir_graph. */
-void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
+void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	int i, n;
 	ir_graph *irg;
 
@@ -317,7 +323,8 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env) {
+irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -345,7 +352,8 @@ irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env) {
+irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -374,7 +382,8 @@ irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env) {
  * @return number of visited nodes
  */
 static unsigned
-irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env) {
+irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	int i;
 	unsigned cnt = 1;
 	ir_graph *irg = current_ir_graph;
@@ -435,7 +444,8 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 /*
  * Walk over a graph. Follow all edges (including dependencies)
  */
-void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 
 	hook_irg_walk(irg, (generic_func *)pre, (generic_func *)post);
@@ -452,7 +462,8 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
  * of node n.
  */
 static inline ir_graph *
-switch_irg(ir_node *n, int index) {
+switch_irg(ir_node *n, int index)
+{
 	ir_graph *old_current = current_ir_graph;
 
 	if (get_interprocedural_view()) {
@@ -497,7 +508,8 @@ cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 }
 
 /* Walks all irgs in interprocedural view.  Visits each node only once. */
-void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
+void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	int i;
 	ir_graph *rem = current_ir_graph;
 	int rem_view = get_interprocedural_view();
@@ -560,7 +572,8 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env) {
 /***************************************************************************/
 
 /* Walks back from n until it finds a real cf op. */
-static ir_node *get_cf_op(ir_node *n) {
+static ir_node *get_cf_op(ir_node *n)
+{
 	while (!is_cfop(n) && !is_fragile_op(n) && !is_Bad(n)) {
 		n = skip_Id(n);
 		n = skip_Tuple(n);
@@ -650,7 +663,8 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
 /*
  * Additionally walk over all anchors. Do NOT increase the visit flag.
  */
-void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env) {
+void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 	current_ir_graph = irg;
 
@@ -709,7 +723,8 @@ static void walk_entity(ir_entity *ent, void *env)
 }
 
 /* Walks over all code in const_code_irg. */
-void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env) {
+void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
+{
 	int i, j, n_types;
 	walk_env my_env;
 	ir_segment_t s;

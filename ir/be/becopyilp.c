@@ -92,7 +92,8 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp);
  *****************************************************************************/
 
 
-size_red_t *new_size_red(copy_opt_t *co) {
+size_red_t *new_size_red(copy_opt_t *co)
+{
 	size_red_t *res = XMALLOC(size_red_t);
 
 	res->co = co;
@@ -131,7 +132,8 @@ static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 	return 1;
 }
 
-void sr_remove(size_red_t *sr) {
+void sr_remove(size_red_t *sr)
+{
 	ir_node *irn;
 	int redo = 1;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
@@ -159,7 +161,8 @@ void sr_remove(size_red_t *sr) {
 	}
 }
 
-void sr_reinsert(size_red_t *sr) {
+void sr_reinsert(size_red_t *sr)
+{
 	coloring_suffix_t *cs;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
 	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(sr->co->cls));
@@ -187,7 +190,8 @@ void sr_reinsert(size_red_t *sr) {
 	}
 }
 
-void free_size_red(size_red_t *sr) {
+void free_size_red(size_red_t *sr)
+{
 	del_pset(sr->all_removed);
 	obstack_free(&sr->ob, NULL);
 	free(sr);
@@ -205,7 +209,8 @@ void free_size_red(size_red_t *sr) {
 
 #include <stdio.h>
 
-ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env) {
+ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, void *env)
+{
 	ilp_env_t *res = XMALLOC(ilp_env_t);
 
 	res->co         = co;
@@ -217,7 +222,8 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 	return res;
 }
 
-lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
+lpp_sol_state_t ilp_go(ilp_env_t *ienv)
+{
 	be_main_env_t *main_env = ienv->co->cenv->birg->main_env;
 
 	sr_remove(ienv->sr);
@@ -264,7 +270,8 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv) {
 	return lpp_get_sol_state(ienv->lp);
 }
 
-void free_ilp_env(ilp_env_t *ienv) {
+void free_ilp_env(ilp_env_t *ienv)
+{
 	free_size_red(ienv->sr);
 	free_lpp(ienv->lp);
 	free(ienv);
@@ -272,7 +279,8 @@ void free_ilp_env(ilp_env_t *ienv) {
 
 #else /* WITH_ILP */
 
-static inline void only_that_you_can_compile_without_WITH_ILP_defined(void) {
+static inline void only_that_you_can_compile_without_WITH_ILP_defined(void)
+{
 }
 
 #endif /* WITH_ILP */

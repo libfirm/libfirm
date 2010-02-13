@@ -63,7 +63,8 @@ static set *region_attr_set = NULL;
 /**
  * Compare two region attributes for identical regions.
  */
-static int region_attr_cmp(const void *e1, const void *e2, size_t size) {
+static int region_attr_cmp(const void *e1, const void *e2, size_t size)
+{
 	region_attr *ra1 = (region_attr *)e1;
 	region_attr *ra2 = (region_attr *)e2;
 	(void) size;
@@ -71,7 +72,8 @@ static int region_attr_cmp(const void *e1, const void *e2, size_t size) {
 }
 
 /** Hash a region attribute (the region only). */
-static inline int attr_set_hash(region_attr *a) {
+static inline int attr_set_hash(region_attr *a)
+{
 	return HASH_PTR(a->reg);
 }
 
@@ -81,7 +83,8 @@ static inline int attr_set_hash(region_attr *a) {
  *
  * @param region  the region
  */
-static inline region_attr *get_region_attr(void *region) {
+static inline region_attr *get_region_attr(void *region)
+{
 	region_attr r_attr, *res;
 	r_attr.reg = region;
 
@@ -101,39 +104,47 @@ static inline region_attr *get_region_attr(void *region) {
 	return res;
 }
 
-int get_region_n_ins(void *region) {
+int get_region_n_ins(void *region)
+{
 	return ARR_LEN(get_region_attr(region)->in_array);
 }
 
-void *get_region_in(void *region, int pos) {
+void *get_region_in(void *region, int pos)
+{
 	assert(0 <= pos && pos < get_region_n_ins(region));
 	return ((get_region_attr(region)->in_array)[pos]);
 }
 
-void add_region_in(void *region, void *in) {
+void add_region_in(void *region, void *in)
+{
 	ARR_APP1(void *, get_region_attr(region)->in_array, in);
 	get_region_attr(in)->n_outs++;
 }
 
-int get_region_n_outs(void *region) {
+int get_region_n_outs(void *region)
+{
 	return get_region_attr(region)->n_outs;
 }
 
-int get_region_n_exc_outs(void *region) {
+int get_region_n_exc_outs(void *region)
+{
 	return get_region_attr(region)->n_exc_outs;
 }
 
-void inc_region_n_exc_outs(void *region) {
+void inc_region_n_exc_outs(void *region)
+{
 	(get_region_attr(region)->n_exc_outs)++;
 }
 
-void *get_loop_cfop(void *region, int pos) {
+void *get_loop_cfop(void *region, int pos)
+{
 	assert(0 <= pos && pos < get_region_n_ins(region));
 	return ((get_region_attr(region)->op_array)[pos]);
 }
 
 /** Add a control flow op to a loop region. */
-static inline void add_loop_cfop(void *region, void *cfop) {
+static inline void add_loop_cfop(void *region, void *cfop)
+{
 	assert(cfop);
 	ARR_APP1(void *, get_region_attr(region)->op_array, cfop);
 }
@@ -145,7 +156,8 @@ static inline void add_loop_cfop(void *region, void *cfop) {
  * @param reg   a region
  * @param cfop  a control flow operation leaving this region
  */
-static inline void exc_outs(void *reg, ir_node *cfop) {
+static inline void exc_outs(void *reg, ir_node *cfop)
+{
 	if (is_fragile_op(cfop) || is_fragile_Proj(cfop))
 		inc_region_n_exc_outs(reg);
 }
@@ -166,7 +178,8 @@ static inline void exc_outs(void *reg, ir_node *cfop) {
  *
  * @return  non-zero if outer can be reached from inner via the outer loop relation
  */
-static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *blk, ir_node *cfop) {
+static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *blk, ir_node *cfop)
+{
 	if (get_loop_outer_loop(inner) == outer) {
 		add_region_in(inner, blk);
 		add_loop_cfop(inner, cfop);
@@ -183,7 +196,8 @@ static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *blk, ir_node
  * @param blk   a block
  * @param loop  a loop
  */
-static int test_loop_nest(ir_node *blk, ir_loop *loop) {
+static int test_loop_nest(ir_node *blk, ir_loop *loop)
+{
 	int i, n_elems = get_loop_n_elements(loop);
 
 	for (i = 0; i < n_elems; ++i) {
@@ -215,7 +229,8 @@ static int test_loop_nest(ir_node *blk, ir_loop *loop) {
  *
  * @return non-zero if pred is from an inner loop
  */
-static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfop) {
+static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfop)
+{
 	int i, n_elems = get_loop_n_elements(l);
 	int found = 0;
 
@@ -300,7 +315,8 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
  *   branches directly from loop k to loop l.  Add an edge l->k.  Watch it: k must
  *   not be a direct predecessor of l in the loop tree!
  */
-static void construct_interval_block(ir_node *blk, ir_loop *l) {
+static void construct_interval_block(ir_node *blk, ir_loop *l)
+{
 	int i, n_cfgpreds;
 
 	if (blk == get_irg_start_block(current_ir_graph))
@@ -384,7 +400,8 @@ static void construct_interval_block(ir_node *blk, ir_loop *l) {
  *
  * @param l  the cf loop
  */
-static void construct_interval_edges(ir_loop *l) {
+static void construct_interval_edges(ir_loop *l)
+{
 	int i, n_elems = get_loop_n_elements(l);
 	for (i = 0; i < n_elems; ++i) {
 		loop_element e = get_loop_element(l, i);
@@ -401,7 +418,8 @@ static void construct_interval_edges(ir_loop *l) {
 	}
 }
 
-void construct_intervals(ir_graph *irg) {
+void construct_intervals(ir_graph *irg)
+{
 	ir_loop  *l;
 	ir_graph *rem = current_ir_graph;
 
@@ -421,7 +439,8 @@ void construct_intervals(ir_graph *irg) {
 	current_ir_graph = rem;
 }
 
-void free_intervals(void) {
+void free_intervals(void)
+{
 	region_attr *res;
 
 	if (region_attr_set == NULL)
@@ -444,7 +463,8 @@ void free_intervals(void) {
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-void dump_region_edges(FILE *F, void *reg) {
+void dump_region_edges(FILE *F, void *reg)
+{
 	int i, n_ins = get_region_n_ins(reg);
 
 	if (is_ir_node(reg)) {
@@ -508,7 +528,8 @@ void dump_region_edges(FILE *F, void *reg) {
 
 #include "execution_frequency.h"
 
-static void dump_interval_block(FILE *F, ir_node *block) {
+static void dump_interval_block(FILE *F, ir_node *block)
+{
 	int i, fl;
 	/* This is a block. Dump a node for the block. */
 	fprintf(F, "node: {title: \""); PRINT_NODEID(block);
@@ -553,7 +574,8 @@ static void dump_interval_block(FILE *F, ir_node *block) {
 	fprintf(F, "}\n");
 }
 
-static void dump_interval_loop(FILE *F, ir_loop *l) {
+static void dump_interval_loop(FILE *F, ir_loop *l)
+{
 	int i, n_elems = get_loop_n_elements(l);
 
 	fprintf(F, "graph: { title: \"");
@@ -583,7 +605,8 @@ static void dump_interval_loop(FILE *F, ir_loop *l) {
 }
 
 
-void dump_interval_graph(ir_graph *irg, const char *suffix) {
+void dump_interval_graph(ir_graph *irg, const char *suffix)
+{
 	FILE     *f;
 	ir_graph *rem;
 

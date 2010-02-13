@@ -128,7 +128,8 @@ typedef struct stabs_handle {
 /**
  * Returns the stabs type number of a Firm type.
  */
-static unsigned get_type_number(stabs_handle *h, ir_type *tp) {
+static unsigned get_type_number(stabs_handle *h, ir_type *tp)
+{
 	pmap_entry *entry;
 	unsigned num;
 
@@ -149,14 +150,16 @@ static unsigned get_type_number(stabs_handle *h, ir_type *tp) {
 /**
  * Map a given Type to void by assigned the type number 0.
  */
-static void map_to_void(stabs_handle *h, ir_type *tp) {
+static void map_to_void(stabs_handle *h, ir_type *tp)
+{
 	pmap_insert(h->type_map, tp, INT_TO_PTR(0));
 }
 
 /**
  * generate the void type.
  */
-static void gen_void_type(stabs_handle *h) {
+static void gen_void_type(stabs_handle *h)
+{
 	(void) h;
 	be_emit_irprintf("\t.stabs\t\"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
 	be_emit_write_line();
@@ -198,7 +201,8 @@ static const tarval_mode_info dec_output = {
 /**
  * emit a tarval as decimal
  */
-static void be_emit_tv_as_decimal(tarval *tv) {
+static void be_emit_tv_as_decimal(tarval *tv)
+{
 	ir_mode *mode = get_tarval_mode(tv);
 	const tarval_mode_info *old = get_tarval_mode_output_option(mode);
 
@@ -220,7 +224,8 @@ static void emit_type_name(const ir_type *type)
  * @param h    the stabs handle
  * @param tp   the type
  */
-static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
+static void gen_primitive_type(stabs_handle *h, ir_type *tp)
+{
 	ir_mode *mode = get_type_mode(tp);
 	unsigned type_num;
 
@@ -263,7 +268,8 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp) {
  * @param h    the stabs handle
  * @param tp   the type
  */
-static void gen_enum_type(stabs_handle *h, ir_type *tp) {
+static void gen_enum_type(stabs_handle *h, ir_type *tp)
+{
 	unsigned type_num = get_type_number(h, tp);
 	int i, n;
 
@@ -285,7 +291,8 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp) {
 /**
  * print a pointer type
  */
-void print_pointer_type(stabs_handle *h, ir_type *tp, int local) {
+void print_pointer_type(stabs_handle *h, ir_type *tp, int local)
+{
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
 	unsigned     el_num   = get_type_number(h, el_tp);
@@ -299,7 +306,8 @@ void print_pointer_type(stabs_handle *h, ir_type *tp, int local) {
  * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_pointer_type(wenv_t *env, ir_type *tp) {
+static void gen_pointer_type(wenv_t *env, ir_type *tp)
+{
 	stabs_handle *h       = env->h;
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
 
@@ -318,7 +326,8 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp) {
 /**
  * print an array type
  */
-static void print_array_type(stabs_handle *h, ir_type *tp, int local) {
+static void print_array_type(stabs_handle *h, ir_type *tp, int local)
+{
 	ir_type      *etp     = get_array_element_type(tp);
 	int          i, n     = get_array_n_dimensions(tp);
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
@@ -352,7 +361,8 @@ static void print_array_type(stabs_handle *h, ir_type *tp, int local) {
  * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_array_type(wenv_t *env, ir_type *tp) {
+static void gen_array_type(wenv_t *env, ir_type *tp)
+{
 	stabs_handle *h   = env->h;
 	ir_type      *etp = get_array_element_type(tp);
 
@@ -376,7 +386,8 @@ static void gen_array_type(wenv_t *env, ir_type *tp) {
  * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
+static void gen_struct_union_type(wenv_t *env, ir_type *tp)
+{
 	stabs_handle *h       = env->h;
 	unsigned     type_num = get_type_number(h, tp);
 	int          i, n;
@@ -452,7 +463,8 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp) {
  * @param env  the walker environment
  * @param tp   the type
  */
-static void gen_method_type(wenv_t *env, ir_type *tp) {
+static void gen_method_type(wenv_t *env, ir_type *tp)
+{
 	stabs_handle *h       = env->h;
 	unsigned     type_num = get_type_number(h, tp);
 	ir_type *rtp = NULL;
@@ -590,7 +602,8 @@ static void finish_types(wenv_t *env)
 /**
  * generate all types.
  */
-static void gen_types(stabs_handle *h) {
+static void gen_types(stabs_handle *h)
+{
 	wenv_t env;
 
 	env.h  = h;
@@ -606,7 +619,8 @@ static void gen_types(stabs_handle *h) {
 /**
  * start a new source object (compilation unit)
  */
-static void stabs_so(dbg_handle *handle, const char *filename) {
+static void stabs_so(dbg_handle *handle, const char *filename)
+{
 	stabs_handle *h = (stabs_handle *)handle;
 	h->main_file = h->curr_file = filename;
 	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
@@ -616,7 +630,8 @@ static void stabs_so(dbg_handle *handle, const char *filename) {
 /**
  * Main Program
  */
-static void stabs_main_program(dbg_handle *handle) {
+static void stabs_main_program(dbg_handle *handle)
+{
 	ir_graph *irg = get_irp_main_irg();
 
 	(void) handle;
@@ -730,7 +745,8 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 /**
  * dump the stabs for a method end
  */
-static void stabs_method_end(dbg_handle *handle) {
+static void stabs_method_end(dbg_handle *handle)
+{
 	stabs_handle            *h = (stabs_handle *)handle;
 	ir_entity               *ent = h->cur_ent;
 	const be_stack_layout_t *layout = h->layout;
@@ -777,7 +793,8 @@ static void stabs_method_end(dbg_handle *handle) {
 /**
  * dump types
  */
-static void stabs_types(dbg_handle *handle) {
+static void stabs_types(dbg_handle *handle)
+{
 	stabs_handle *h = (stabs_handle *)handle;
 
 	/* allocate the zero for the void type */
@@ -789,7 +806,8 @@ static void stabs_types(dbg_handle *handle) {
 /**
  * dump a variable in the global type
  */
-static void stabs_variable(dbg_handle *handle, ir_entity *ent) {
+static void stabs_variable(dbg_handle *handle, ir_entity *ent)
+{
 	stabs_handle *h = (stabs_handle *)handle;
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
 	char buf[1024];
@@ -816,7 +834,8 @@ static void stabs_variable(dbg_handle *handle, ir_entity *ent) {
 /**
  * Close the stabs handler.
  */
-static void stabs_close(dbg_handle *handle) {
+static void stabs_close(dbg_handle *handle)
+{
 	stabs_handle *h = (stabs_handle *)handle;
 	pmap_destroy(h->type_map);
 	free(h);
@@ -835,7 +854,8 @@ static const debug_ops stabs_ops = {
 };
 
 /* Opens a stabs handler */
-dbg_handle *be_stabs_open(void) {
+dbg_handle *be_stabs_open(void)
+{
 	stabs_handle *h = XMALLOCZ(stabs_handle);
 
 	h->base.ops     = &stabs_ops;

@@ -52,7 +52,8 @@ static environment_t *env;
 /**
  * Get the block entry or allocate one if not yet assigned.
  */
-static block_entry_t *get_block_entry(ir_node *block) {
+static block_entry_t *get_block_entry(ir_node *block)
+{
 	block_entry_t *entry = get_irn_link(block);
 
 	if (entry == NULL) {
@@ -67,7 +68,8 @@ static block_entry_t *get_block_entry(ir_node *block) {
 	return entry;
 }
 
-static void add_entry(ir_node ***arr, ir_node *irn) {
+static void add_entry(ir_node ***arr, ir_node *irn)
+{
 	ir_node **list = *arr;
 	int i;
 
@@ -80,13 +82,15 @@ static void add_entry(ir_node ***arr, ir_node *irn) {
 	ARR_APP1(ir_node *, *arr, irn);
 }
 
-static void add_live_in(ir_node *block, ir_node *irn) {
+static void add_live_in(ir_node *block, ir_node *irn)
+{
 	block_entry_t *entry = get_block_entry(block);
 
 	add_entry(&entry->live_ins, irn);
 }
 
-static void add_live_out(ir_node *block, ir_node *irn) {
+static void add_live_out(ir_node *block, ir_node *irn)
+{
 	block_entry_t *entry = get_block_entry(block);
 
 	add_entry(&entry->live_outs, irn);
@@ -100,7 +104,8 @@ static void add_live_out(ir_node *block, ir_node *irn) {
  * @param def      The node (value).
  * @param block    The block to mark the value live out of.
  */
-static void live_end_at_block(ir_node *def, ir_node *block) {
+static void live_end_at_block(ir_node *def, ir_node *block)
+{
 	add_live_out(block, def);
 
 	if (is_irn_constlike(def)) {
@@ -188,7 +193,8 @@ static void find_live_outs(ir_node *irn, void *ctx)
  * Calculate the live-in and live out of blocks for datab nodes.
  * Use it to estimate register pressure.
  */
-void stat_liveness(ir_graph *irg) {
+void stat_liveness(ir_graph *irg)
+{
 	environment_t genv;
 	block_entry_t *p;
 

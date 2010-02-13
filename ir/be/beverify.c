@@ -59,7 +59,8 @@ typedef struct be_verify_register_pressure_env_t_ {
 /**
  * Print all nodes of a pset into a file.
  */
-static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes) {
+static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes)
+{
 	ir_nodeset_iterator_t iter;
 	ir_node *node;
 
@@ -73,7 +74,8 @@ static void print_living_values(FILE *F, const ir_nodeset_t *live_nodes) {
 /**
  * Check if number of live nodes never exceeds the number of available registers.
  */
-static void verify_liveness_walker(ir_node *block, void *data) {
+static void verify_liveness_walker(ir_node *block, void *data)
+{
 	be_verify_register_pressure_env_t *env = (be_verify_register_pressure_env_t *)data;
 	ir_nodeset_t live_nodes;
 	ir_node *irn;
@@ -150,7 +152,8 @@ typedef struct be_verify_schedule_env_t_ {
 /**
  * Simple schedule checker.
  */
-static void verify_schedule_walker(ir_node *block, void *data) {
+static void verify_schedule_walker(ir_node *block, void *data)
+{
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
 	ir_node *node;
 	ir_node *non_phi_found = NULL;
@@ -314,7 +317,8 @@ static int should_be_scheduled(ir_node *node)
 	return 1;
 }
 
-static void check_schedule(ir_node *node, void *data) {
+static void check_schedule(ir_node *node, void *data)
+{
 	be_verify_schedule_env_t *env = data;
 	int should_be;
 	int scheduled;
@@ -368,7 +372,8 @@ typedef struct {
 	int        problem_found;
 } be_verify_spillslots_env_t;
 
-static int cmp_spill(const void* d1, const void* d2, size_t size) {
+static int cmp_spill(const void* d1, const void* d2, size_t size)
+{
 	const spill_t* s1 = d1;
 	const spill_t* s2 = d2;
 	(void) size;
@@ -376,14 +381,16 @@ static int cmp_spill(const void* d1, const void* d2, size_t size) {
 	return s1->spill != s2->spill;
 }
 
-static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node) {
+static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
+{
 	spill_t spill;
 
 	spill.spill = node;
 	return set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
 }
 
-static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
+static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
+{
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
 
@@ -398,7 +405,8 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 	return res;
 }
 
-static ir_node *get_memory_edge(const ir_node *node) {
+static ir_node *get_memory_edge(const ir_node *node)
+{
 	int i, arity;
 	ir_node *result = NULL;
 
@@ -418,7 +426,8 @@ static
 void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
 
 static
-void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent) {
+void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
+{
 	if(ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
 		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
@@ -426,7 +435,8 @@ void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *
 }
 
 static
-void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
+void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
+{
 	ir_entity *spillent = arch_get_frame_entity(node);
 	be_check_entity(env, node, spillent);
 	get_spill(env, node, ent);
@@ -438,7 +448,8 @@ void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *relo
 	}
 }
 
-static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
+static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
+{
 	int i, arity;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
@@ -476,7 +487,8 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	}
 }
 
-static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity *ent) {
+static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity *ent)
+{
 	int i, arity;
 	spill_t spill, *res;
 	int hash = HASH_PTR(node);
@@ -499,7 +511,8 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	}
 }
 
-static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent) {
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
+{
 	if(be_is_Spill(node)) {
 		collect_spill(env, node, reload, ent);
 	} else if(is_Proj(node)) {
@@ -520,7 +533,8 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
  * This walker function searches for reloads and collects all the spills
  * and memphis attached to them.
  */
-static void collect_spills_walker(ir_node *node, void *data) {
+static void collect_spills_walker(ir_node *node, void *data)
+{
 	be_verify_spillslots_env_t *env = data;
 
 	/* @@@ ia32_classify returns classification of Proj_pred :-/ */
@@ -577,7 +591,8 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 	}
 }
 
-static void check_lonely_spills(ir_node *node, void *data) {
+static void check_lonely_spills(ir_node *node, void *data)
+{
 	be_verify_spillslots_env_t *env = data;
 
 	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
@@ -626,7 +641,8 @@ int be_verify_spillslots(ir_graph *irg)
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
  */
-static int my_values_interfere(const ir_node *a, const ir_node *b) {
+static int my_values_interfere(const ir_node *a, const ir_node *b)
+{
 	const ir_edge_t *edge;
 	ir_node *bb;
 	int a2b = value_dominates(a, b);
@@ -770,7 +786,8 @@ static void check_input_constraints(ir_node *node)
 	}
 }
 
-static void value_used(ir_node *block, ir_node *node) {
+static void value_used(ir_node *block, ir_node *node)
+{
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
@@ -814,7 +831,8 @@ static void value_def(ir_node *node)
 	registers[reg->index] = NULL;
 }
 
-static void verify_block_register_allocation(ir_node *block, void *data) {
+static void verify_block_register_allocation(ir_node *block, void *data)
+{
 	int i, nregclasses;
 	(void) data;
 
@@ -879,7 +897,8 @@ static void verify_block_register_allocation(ir_node *block, void *data) {
 	}
 }
 
-int be_verify_register_allocation(const be_irg_t *birg) {
+int be_verify_register_allocation(const be_irg_t *birg)
+{
 	arch_env      = be_get_birg_arch_env(birg);
 	irg           = be_get_birg_irg(birg);
 	lv            = be_liveness(irg);
@@ -905,7 +924,8 @@ typedef struct _verify_out_dead_nodes_env {
 	int problem_found;
 } verify_out_dead_nodes_env;
 
-static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env) {
+static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env)
+{
 	ir_graph *irg = env->irg;
 	const ir_edge_t* edge;
 
@@ -936,7 +956,8 @@ static void set_reachable(ir_node *node, void* data)
 	bitset_set(reachable, get_irn_idx(node));
 }
 
-int be_verify_out_edges(ir_graph *irg) {
+int be_verify_out_edges(ir_graph *irg)
+{
 	verify_out_dead_nodes_env env;
 
 return 1;

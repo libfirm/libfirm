@@ -94,7 +94,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * in a Block.
  */
 static inline int
-compute_new_arity(ir_node *b) {
+compute_new_arity(ir_node *b)
+{
 	int i, res, irn_arity;
 	int irg_v, block_v;
 
@@ -128,7 +129,8 @@ compute_new_arity(ir_node *b) {
  *
  * Note: Also used for loop unrolling.
  */
-static void copy_node(ir_node *n, void *env) {
+static void copy_node(ir_node *n, void *env)
+{
 	ir_node *nn, *block;
 	int new_arity;
 	ir_op *op = get_irn_op(n);
@@ -178,7 +180,8 @@ static void copy_node(ir_node *n, void *env) {
  * Copies new predecessors of old node to new node remembered in link.
  * Spare the Bad predecessors of Phi and Block nodes.
  */
-static void copy_preds(ir_node *n, void *env) {
+static void copy_preds(ir_node *n, void *env)
+{
 	ir_node *nn, *block;
 	int i, j, irn_arity;
 	(void) env;
@@ -269,7 +272,8 @@ static void copy_preds(ir_node *n, void *env) {
  * @param irg           the graph to be copied
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
-static void copy_graph(ir_graph *irg, int copy_node_nr) {
+static void copy_graph(ir_graph *irg, int copy_node_nr)
+{
 	ir_node *oe, *ne, *ob, *nb, *om, *nm; /* old end, new end, old bad, new bad, old NoMem, new NoMem */
 	ir_node *ka;      /* keep alive */
 	int i, irn_arity;
@@ -382,7 +386,8 @@ static void copy_graph(ir_graph *irg, int copy_node_nr) {
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
 static void
-copy_graph_env(int copy_node_nr) {
+copy_graph_env(int copy_node_nr)
+{
 	ir_graph *irg = current_ir_graph;
 	ir_node *old_end, *new_anchor;
 	int i;
@@ -430,7 +435,8 @@ copy_graph_env(int copy_node_nr) {
  * Adds all new nodes to a new hash table for CSE.  Does not
  * perform CSE, so the hash table might contain common subexpressions.
  */
-void dead_node_elimination(ir_graph *irg) {
+void dead_node_elimination(ir_graph *irg)
+{
 	ir_graph *rem;
 #ifdef INTERPROCEDURAL_VIEW
 	int rem_ipview = get_interprocedural_view();
@@ -492,7 +498,8 @@ void dead_node_elimination(ir_graph *irg) {
 #endif
 }
 
-ir_graph_pass_t *dead_node_elimination_pass(const char *name) {
+ir_graph_pass_t *dead_node_elimination_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "dce", dead_node_elimination);
 }
 
@@ -503,7 +510,8 @@ ir_graph_pass_t *dead_node_elimination_pass(const char *name) {
  * If block has bad predecessors, create a new in array without bad preds.
  * Otherwise let in array untouched.
  */
-static void relink_bad_block_predecessors(ir_node *n, void *env) {
+static void relink_bad_block_predecessors(ir_node *n, void *env)
+{
 	ir_node **new_in, *irn;
 	int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
 	(void) env;
@@ -551,7 +559,8 @@ static void relink_bad_block_predecessors(ir_node *n, void *env) {
  * function of Phi's Block. If this block has bad predecessors, relink preds
  * of the Phi-node.
  */
-static void relink_bad_predecessors(ir_node *n, void *env) {
+static void relink_bad_predecessors(ir_node *n, void *env)
+{
 	ir_node *block, **old_in;
 	int i, old_irn_arity, new_irn_arity;
 
@@ -596,7 +605,8 @@ static void relink_bad_predecessors(ir_node *n, void *env) {
  * to the link field and sets a new in array if arity of predecessors
  * changes).
  */
-void remove_bad_predecessors(ir_graph *irg) {
+void remove_bad_predecessors(ir_graph *irg)
+{
 	panic("Fix backedge handling first");
 	irg_walk_graph(irg, firm_clear_link, relink_bad_predecessors, NULL);
 }
@@ -624,7 +634,8 @@ typedef struct _survive_dce_list_t {
 	ir_node **place;
 } survive_dce_list_t;
 
-static void dead_node_hook(void *context, ir_graph *irg, int start) {
+static void dead_node_hook(void *context, ir_graph *irg, int start)
+{
 	survive_dce_t *sd = context;
 	(void) irg;
 
@@ -642,7 +653,8 @@ static void dead_node_hook(void *context, ir_graph *irg, int start) {
 /**
  * Hook called when dead node elimination replaces old by nw.
  */
-static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw) {
+static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw)
+{
 	survive_dce_t *sd = context;
 	survive_dce_list_t *list = pmap_get(sd->places, old);
 	(void) irg;
@@ -661,7 +673,8 @@ static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_
 /**
  * Make a new Survive DCE environment.
  */
-survive_dce_t *new_survive_dce(void) {
+survive_dce_t *new_survive_dce(void)
+{
 	survive_dce_t *res = XMALLOC(survive_dce_t);
 	obstack_init(&res->obst);
 	res->places     = pmap_create();
@@ -683,7 +696,8 @@ survive_dce_t *new_survive_dce(void) {
 /**
  * Free a Survive DCE environment.
  */
-void free_survive_dce(survive_dce_t *sd) {
+void free_survive_dce(survive_dce_t *sd)
+{
 	obstack_free(&sd->obst, NULL);
 	pmap_destroy(sd->places);
 	unregister_hook(hook_dead_node_elim, &sd->dead_node_elim);
@@ -699,7 +713,8 @@ void free_survive_dce(survive_dce_t *sd) {
  * @param sd    The Survive DCE environment.
  * @param place The address of the node pointer.
  */
-void survive_dce_register_irn(survive_dce_t *sd, ir_node **place) {
+void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
+{
 	if (*place != NULL) {
 		ir_node *irn      = *place;
 		survive_dce_list_t *curr = pmap_get(sd->places, irn);
@@ -725,7 +740,8 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place) {
  * inlined procedure. The new entities must be in the link field of
  * the entities.
  */
-static void copy_node_inline(ir_node *n, void *env) {
+static void copy_node_inline(ir_node *n, void *env)
+{
 	ir_node *nn;
 	ir_type *frame_tp = (ir_type *)env;
 
@@ -747,7 +763,8 @@ static void copy_node_inline(ir_node *n, void *env) {
  * Copies new predecessors of old node and move constants to
  * the Start Block.
  */
-static void copy_preds_inline(ir_node *n, void *env) {
+static void copy_preds_inline(ir_node *n, void *env)
+{
 	ir_node *nn;
 
 	copy_preds(n, env);
@@ -767,7 +784,8 @@ static void copy_preds_inline(ir_node *n, void *env) {
 /**
  * Walker: checks if P_value_arg_base is used.
  */
-static void find_addr(ir_node *node, void *env) {
+static void find_addr(ir_node *node, void *env)
+{
 	int *allow_inline = env;
 	if (is_Sel(node)) {
 		ir_graph *irg = current_ir_graph;
@@ -806,7 +824,8 @@ static void find_addr(ir_node *node, void *env) {
  *
  * check these conditions here
  */
-static int can_inline(ir_node *call, ir_graph *called_graph) {
+static int can_inline(ir_node *call, ir_graph *called_graph)
+{
 	ir_type *call_type = get_Call_type(call);
 	int params, ress, i, res;
 	assert(is_Method_type(call_type));
@@ -842,7 +861,8 @@ enum exc_mode {
 };
 
 /* Inlines a method at the given call site. */
-int inline_method(ir_node *call, ir_graph *called_graph) {
+int inline_method(ir_node *call, ir_graph *called_graph)
+{
 	ir_node             *pre_call;
 	ir_node             *post_call, *post_bl;
 	ir_node             *in[pn_Start_max];
@@ -1305,7 +1325,8 @@ static ir_graph *get_call_called_irg(ir_node *call)
 /**
  * Walker: Collect all calls to known graphs inside a graph.
  */
-static void collect_calls(ir_node *call, void *env) {
+static void collect_calls(ir_node *call, void *env)
+{
 	(void) env;
 	if (is_Call(call)) {
 		ir_graph *called_irg = get_call_called_irg(call);
@@ -1334,7 +1355,8 @@ static void collect_calls(ir_node *call, void *env) {
  * Methods where the obstack containing the firm graph is smaller than
  * size are inlined.
  */
-void inline_small_irgs(ir_graph *irg, int size) {
+void inline_small_irgs(ir_graph *irg, int size)
+{
 	ir_graph *rem = current_ir_graph;
 	inline_env_t env;
 	call_entry *entry;
@@ -1385,7 +1407,8 @@ struct inline_small_irgs_pass_t {
 /**
  * Wrapper to run inline_small_irgs() as a pass.
  */
-static int inline_small_irgs_wrapper(ir_graph *irg, void *context) {
+static int inline_small_irgs_wrapper(ir_graph *irg, void *context)
+{
 	struct inline_small_irgs_pass_t *pass = context;
 
 	inline_small_irgs(irg, pass->size);
@@ -1393,7 +1416,8 @@ static int inline_small_irgs_wrapper(ir_graph *irg, void *context) {
 }
 
 /* create a pass for inline_small_irgs() */
-ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size) {
+ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size)
+{
 	struct inline_small_irgs_pass_t *pass =
 		XMALLOCZ(struct inline_small_irgs_pass_t);
 
@@ -1422,7 +1446,8 @@ typedef struct {
 /**
  * Allocate a new environment for inlining.
  */
-static inline_irg_env *alloc_inline_irg_env(void) {
+static inline_irg_env *alloc_inline_irg_env(void)
+{
 	inline_irg_env *env    = OALLOC(&temp_obst, inline_irg_env);
 	INIT_LIST_HEAD(&env->calls);
 	env->local_weights     = NULL;
@@ -1448,7 +1473,8 @@ typedef struct walker_env {
  * post-walker: collect all calls in the inline-environment
  * of a graph and sum some statistics.
  */
-static void collect_calls2(ir_node *call, void *ctx) {
+static void collect_calls2(ir_node *call, void *ctx)
+{
 	wenv_t         *env = ctx;
 	inline_irg_env *x = env->x;
 	ir_opcode      code = get_irn_opcode(call);
@@ -1511,7 +1537,8 @@ static void collect_calls2(ir_node *call, void *ctx) {
  * Returns TRUE if the number of callers is 0 in the irg's environment,
  * hence this irg is a leave.
  */
-inline static int is_leave(ir_graph *irg) {
+inline static int is_leave(ir_graph *irg)
+{
 	inline_irg_env *env = get_irg_link(irg);
 	return env->n_call_nodes == 0;
 }
@@ -1520,7 +1547,8 @@ inline static int is_leave(ir_graph *irg) {
  * Returns TRUE if the number of nodes in the callee is
  * smaller then size in the irg's environment.
  */
-inline static int is_smaller(ir_graph *callee, unsigned size) {
+inline static int is_smaller(ir_graph *callee, unsigned size)
+{
 	inline_irg_env *env = get_irg_link(callee);
 	return env->n_nodes < size;
 }
@@ -1554,7 +1582,8 @@ static call_entry *duplicate_call_entry(const call_entry *entry,
  * @param src         source environment
  * @param loop_depth  the loop depth of the call that is replaced by the src list
  */
-static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_depth) {
+static void append_call_list(inline_irg_env *dst, inline_irg_env *src, int loop_depth)
+{
 	call_entry *entry, *nentry;
 
 	/* Note that the src list points to Call nodes in the inlined graph, but
@@ -1830,7 +1859,8 @@ struct inline_leave_functions_pass_t {
 /**
  * Wrapper to run inline_leave_functions() as a ir_prog pass.
  */
-static int inline_leave_functions_wrapper(ir_prog *irp, void *context) {
+static int inline_leave_functions_wrapper(ir_prog *irp, void *context)
+{
 	struct inline_leave_functions_pass_t *pass = context;
 
 	(void)irp;
@@ -1861,7 +1891,8 @@ ir_prog_pass_t *inline_leave_functions_pass(
 /**
  * Calculate the parameter weights for transmitting the address of a local variable.
  */
-static unsigned calc_method_local_weight(ir_node *arg) {
+static unsigned calc_method_local_weight(ir_node *arg)
+{
 	int      i, j, k;
 	unsigned v, weight = 0;
 
@@ -1925,7 +1956,8 @@ static unsigned calc_method_local_weight(ir_node *arg) {
 /**
  * Calculate the parameter weights for transmitting the address of a local variable.
  */
-static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg) {
+static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
+{
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type  *mtp;
 	int      nparams, i, proj_nr;
@@ -1955,7 +1987,8 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg) {
  * After inlining, the local variable might be transformed into a
  * SSA variable by scalar_replacement().
  */
-static unsigned get_method_local_adress_weight(ir_graph *callee, int pos) {
+static unsigned get_method_local_adress_weight(ir_graph *callee, int pos)
+{
 	inline_irg_env *env = get_irg_link(callee);
 
 	if (env->local_weights != NULL) {
@@ -2088,7 +2121,8 @@ static int      last_irg;
 /**
  * Callgraph walker, collect all visited graphs.
  */
-static void callgraph_walker(ir_graph *irg, void *data) {
+static void callgraph_walker(ir_graph *irg, void *data)
+{
 	(void) data;
 	irgs[last_irg++] = irg;
 }
@@ -2098,7 +2132,8 @@ static void callgraph_walker(ir_graph *irg, void *data) {
  *
  * @return the list of graphs.
  */
-static ir_graph **create_irg_list(void) {
+static ir_graph **create_irg_list(void)
+{
 	ir_entity **free_methods;
 	int       arr_len;
 	int       n_irgs = get_irp_n_irgs();
@@ -2411,7 +2446,8 @@ struct inline_functions_pass_t {
 /**
  * Wrapper to run inline_functions() as a ir_prog pass.
  */
-static int inline_functions_wrapper(ir_prog *irp, void *context) {
+static int inline_functions_wrapper(ir_prog *irp, void *context)
+{
 	struct inline_functions_pass_t *pass = context;
 
 	(void)irp;
@@ -2436,6 +2472,7 @@ ir_prog_pass_t *inline_functions_pass(
 		inline_functions_wrapper);
 }
 
-void firm_init_inline(void) {
+void firm_init_inline(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.opt.inline");
 }

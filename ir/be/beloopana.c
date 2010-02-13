@@ -55,7 +55,8 @@ struct _be_loopana_t {
 	be_irg_t *birg;
 };
 
-static int cmp_loop_info(const void *a, const void *b, size_t size) {
+static int cmp_loop_info(const void *a, const void *b, size_t size)
+{
 	const be_loop_info_t *i1 = a;
 	const be_loop_info_t *i2 = b;
 	(void) size;
@@ -109,7 +110,8 @@ static unsigned be_compute_block_pressure(const be_irg_t *birg,
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given loop.
  */
-static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, const arch_register_class_t *cls) {
+static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, const arch_register_class_t *cls)
+{
 	int            i, max;
 	unsigned       pressure;
 	be_loop_info_t *entry, key;
@@ -213,7 +215,8 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg,
  * Returns the computed register pressure for the given class and loop.
  * @return The pressure or INT_MAX if not found
  */
-unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_t *cls, ir_loop *loop) {
+unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_t *cls, ir_loop *loop)
+{
 	unsigned pressure = INT_MAX;
 	be_loop_info_t *entry, key;
 
@@ -234,7 +237,8 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 /**
  * Frees the loop analysis object.
  */
-void be_free_loop_pressure(be_loopana_t *loop_ana) {
+void be_free_loop_pressure(be_loopana_t *loop_ana)
+{
 	del_set(loop_ana->data);
 	xfree(loop_ana);
 }

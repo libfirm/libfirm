@@ -117,7 +117,8 @@ static int is_method_leaving_raise(ir_node *raise)
  * returns an Alloc node if the node adr Select
  * from one
  */
-static ir_node *is_depend_alloc(ir_node *adr) {
+static ir_node *is_depend_alloc(ir_node *adr)
+{
   ir_node *alloc;
 
   if (!is_Sel(adr))
@@ -141,7 +142,8 @@ static ir_node *is_depend_alloc(ir_node *adr) {
  * determine if a value calculated by n "escape", ie
  * is stored somewhere we could not track
  */
-static int can_escape(ir_node *n) {
+static int can_escape(ir_node *n)
+{
   int i, j, k;
 
   /* should always be pointer mode or we made some mistake */

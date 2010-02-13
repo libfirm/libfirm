@@ -93,13 +93,15 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	ir_nodeset_destroy(&live_nodes);
 }
 
-static void stat_reg_pressure_block(ir_node *block, void *data) {
+static void stat_reg_pressure_block(ir_node *block, void *data)
+{
 	pressure_walker_env_t *env = data;
 
 	check_reg_pressure_class(env, block, env->cls);
 }
 
-void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls) {
+void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls)
+{
 	pressure_walker_env_t  env;
 	ir_graph              *irg = be_get_birg_irg(birg);
 	double                 average_pressure;

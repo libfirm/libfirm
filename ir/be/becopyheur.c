@@ -97,7 +97,8 @@ static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a,
 		return be_values_interfere(env->birg->lv, a, b);
 }
 
-static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
+static int set_cmp_conflict_t(const void *x, const void *y, size_t size)
+{
 	const conflict_t *xx = x;
 	const conflict_t *yy = y;
 	(void) size;
@@ -109,7 +110,8 @@ static int set_cmp_conflict_t(const void *x, const void *y, size_t size) {
  * If a local pinned conflict occurs, a new edge in the conflict graph is added.
  * The next maximum independent set build, will regard it.
  */
-static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
+static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, const ir_node *n2)
+{
 	conflict_t c;
 	DBG((dbg, LEVEL_4, "\t      %+F -- %+F\n", n1, n2));
 
@@ -126,7 +128,8 @@ static inline void qnode_add_conflict(const qnode_t *qn, const ir_node *n1, cons
 /**
  * Checks if two nodes are in a conflict.
  */
-static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, const ir_node *n2) {
+static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, const ir_node *n2)
+{
 	conflict_t c;
 	/* search for live range interference */
 	if (n1!=n2 && nodes_interfere(qn->ou->co->cenv, n1, n2))
@@ -142,7 +145,8 @@ static inline int qnode_are_conflicting(const qnode_t *qn, const ir_node *n1, co
 	return set_find(qn->conflicts, &c, sizeof(c), HASH_CONFLICT(c)) != 0;
 }
 
-static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
+static int set_cmp_node_stat_t(const void *x, const void *y, size_t size)
+{
 	(void) size;
 	return ((const node_stat_t*)x)->irn != ((const node_stat_t*)y)->irn;
 }
@@ -150,7 +154,8 @@ static int set_cmp_node_stat_t(const void *x, const void *y, size_t size) {
 /**
  * Finds a node status entry of a node if existent. Otherwise return NULL
  */
-static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn) {
+static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn)
+{
 	node_stat_t find;
 	find.irn = irn;
 	return set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
@@ -160,7 +165,8 @@ static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn
  * Finds a node status entry of a node if existent. Otherwise it will return
  * an initialized new entry for this node.
  */
-static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node *irn) {
+static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node *irn)
+{
 	node_stat_t find;
 	find.irn = irn;
 	find.new_color = NO_COLOR;
@@ -171,7 +177,8 @@ static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
 /**
  * Returns the virtual color of a node if set before, else returns the real color.
  */
-static inline int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
+static inline int qnode_get_new_color(const qnode_t *qn, ir_node *irn)
+{
 	const node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->new_color;
@@ -182,7 +189,8 @@ static inline int qnode_get_new_color(const qnode_t *qn, ir_node *irn) {
 /**
  * Sets the virtual color of a node.
  */
-static inline void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int color) {
+static inline void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int color)
+{
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->new_color = color;
 	DBG((dbg, LEVEL_3, "\t      col(%+F) := %d\n", irn, color));
@@ -193,7 +201,8 @@ static inline void qnode_set_new_color(const qnode_t *qn, ir_node *irn, int colo
  * to the same optimization unit and has been optimized before the current
  * processed node.
  */
-static inline int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn) {
+static inline int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn)
+{
 	const node_stat_t *found = qnode_find_node(qn, irn);
 	if (found)
 		return found->pinned_local;
@@ -205,7 +214,8 @@ static inline int qnode_is_pinned_local(const qnode_t *qn, ir_node *irn) {
  * Local-pins a node, so optimizations of further nodes of the same opt unit
  * can handle situations in which a color change would undo prior optimizations.
  */
-static inline void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
+static inline void qnode_pin_local(const qnode_t *qn, ir_node *irn)
+{
 	node_stat_t *found = qnode_find_or_insert_node(qn, irn);
 	found->pinned_local = 1;
 	if (found->new_color == NO_COLOR)
@@ -237,7 +247,8 @@ static inline void qnode_pin_local(const qnode_t *qn, ir_node *irn) {
  *         Else the first conflicting ir_node encountered is returned.
  *
  */
-static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger) {
+static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const ir_node *trigger)
+{
 	copy_opt_t *co = qn->ou->co;
 	const be_chordal_env_t *chordal_env = co->cenv;
 	const arch_register_class_t *cls = co->cls;
@@ -335,7 +346,8 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
  * @returns 1 iff all members colors could be set
  *          0 else
  */
-static int qnode_try_color(const qnode_t *qn) {
+static int qnode_try_color(const qnode_t *qn)
+{
 	int i;
 	for (i=0; i<qn->mis_size; ++i) {
 		ir_node *test_node, *confl_node;
@@ -380,7 +392,8 @@ static int qnode_try_color(const qnode_t *qn) {
  * Determines a maximum weighted independent set with respect to
  * the interference and conflict edges of all nodes in a qnode.
  */
-static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou) {
+static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
+{
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
@@ -477,7 +490,8 @@ no_stable_set:
 /**
  * Creates a new qnode
  */
-static inline qnode_t *new_qnode(const unit_t *ou, int color) {
+static inline qnode_t *new_qnode(const unit_t *ou, int color)
+{
 	qnode_t *qn = XMALLOC(qnode_t);
 	qn->ou            = ou;
 	qn->color         = color;
@@ -490,7 +504,8 @@ static inline qnode_t *new_qnode(const unit_t *ou, int color) {
 /**
  * Frees space used by a queue node
  */
-static inline void free_qnode(qnode_t *qn) {
+static inline void free_qnode(qnode_t *qn)
+{
 	del_set(qn->conflicts);
 	del_set(qn->changed_nodes);
 	xfree(qn->mis);
@@ -501,7 +516,8 @@ static inline void free_qnode(qnode_t *qn) {
  * Inserts a qnode in the sorted queue of the optimization unit. Queue is
  * ordered by field 'size' (the size of the mis) in decreasing order.
  */
-static inline void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
+static inline void ou_insert_qnode(unit_t *ou, qnode_t *qn)
+{
 	struct list_head *lh;
 
 	if (qnode_are_conflicting(qn, ou->nodes[0], ou->nodes[0])) {
@@ -530,7 +546,8 @@ static inline void ou_insert_qnode(unit_t *ou, qnode_t *qn) {
  * case for approximately 80% of all phi classes and 100% of register constrained
  * nodes. (All other phi classes are reduced to this case.)
  */
-static void ou_optimize(unit_t *ou) {
+static void ou_optimize(unit_t *ou)
+{
 	qnode_t                     *curr = NULL;
 	qnode_t                     *tmp;
 	const arch_register_req_t   *req;
@@ -621,7 +638,8 @@ static void ou_optimize(unit_t *ou) {
  * Solves the problem using a heuristic approach
  * Uses the OU data structure
  */
-int co_solve_heuristic(copy_opt_t *co) {
+int co_solve_heuristic(copy_opt_t *co)
+{
 	unit_t *curr;
 
 	ASSERT_OU_AVAIL(co);

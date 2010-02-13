@@ -162,7 +162,8 @@ static int pass_wrapper(ir_graph *irg, void *context)
 	return 0;
 }
 
-ir_graph_pass_t *lower_mux_pass(const char *name, lower_mux_callback *cb_func) {
+ir_graph_pass_t *lower_mux_pass(const char *name, lower_mux_callback *cb_func)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	pass->cb_func = cb_func;

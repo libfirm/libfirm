@@ -44,7 +44,8 @@
  * This is useful if a node returning a tuple is removed, but the Projs
  * extracting values from the tuple are not available.
  */
-void turn_into_tuple(ir_node *node, int arity) {
+void turn_into_tuple(ir_node *node, int arity)
+{
 	assert(node);
 	set_irn_op(node, op_Tuple);
 	if (get_irn_arity(node) == arity) {
@@ -67,7 +68,8 @@ void turn_into_tuple(ir_node *node, int arity) {
  * Since `new' may be bigger than `old' replace `old'
  * by an op_Id which is smaller than everything.
  */
-void exchange(ir_node *old, ir_node *nw) {
+void exchange(ir_node *old, ir_node *nw)
+{
 	ir_graph *irg;
 
 	assert(old && nw);
@@ -125,7 +127,8 @@ void exchange(ir_node *old, ir_node *nw) {
  *         all Proj nodes to there predecessors and all
  *         partBlocks to there MacroBlock header.
  */
-static void collect_phiprojs_walker(ir_node *n, void *env) {
+static void collect_phiprojs_walker(ir_node *n, void *env)
+{
 	ir_node *pred;
 	(void) env;
 
@@ -150,7 +153,8 @@ static void collect_phiprojs_walker(ir_node *n, void *env) {
 	}
 }
 
-void collect_phiprojs(ir_graph *irg) {
+void collect_phiprojs(ir_graph *irg)
+{
 	assert((ir_resources_reserved(irg) & (IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST)) ==
 		(IR_RESOURCE_IRN_LINK|IR_RESOURCE_PHI_LIST));
 	irg_walk_graph(irg, firm_clear_node_and_phi_links, collect_phiprojs_walker, NULL);
@@ -164,7 +168,8 @@ void collect_phiprojs(ir_graph *irg) {
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
  */
-static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
+static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
+{
 	int i, arity;
 
 	/* move this node */
@@ -192,7 +197,8 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl) {
 	}
 }
 
-void part_block(ir_node *node) {
+void part_block(ir_node *node)
+{
 	ir_node *new_block, *old_block, *mbh;
 	ir_node *phi, *jmp, *next, *block;
 	ir_graph *rem = current_ir_graph;
@@ -297,7 +303,8 @@ void part_block(ir_node *node) {
 }
 
 /* kill a node by setting its predecessors to Bad and finally exchange the node by Bad itself. */
-void kill_node(ir_node *node) {
+void kill_node(ir_node *node)
+{
 	ir_graph *irg = get_irn_irg(node);
 	ir_node *bad = get_irg_bad(irg);
 	int i;

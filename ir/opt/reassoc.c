@@ -548,7 +548,8 @@ static int reassoc_Mul(ir_node **node)
 /**
  * Reassociate Shl. We transform Shl(x, const) into Mul's if possible.
  */
-static int reassoc_Shl(ir_node **node) {
+static int reassoc_Shl(ir_node **node)
+{
 	ir_node *n = *node;
 	ir_node *c = get_Shl_right(n);
 	ir_node *x, *blk, *irn;
@@ -666,7 +667,8 @@ static void do_reassociation(walker_t *wenv)
  *
  * If the earliest block is the start block, return curr_blk instead
  */
-static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk) {
+static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
+{
 	ir_node *blk_a = get_nodes_block(a);
 	ir_node *blk_b = get_nodes_block(b);
 	ir_node *res;
@@ -690,7 +692,8 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk) {
  * Handling SymConsts as const might be not a good idea for all
  * architectures ...
  */
-static int is_constant_expr(ir_node *irn) {
+static int is_constant_expr(ir_node *irn)
+{
 	ir_op *op;
 
 	switch (get_irn_opcode(irn)) {
@@ -713,7 +716,8 @@ static int is_constant_expr(ir_node *irn) {
 /**
  * Apply distributive Law for Mul and Add/Sub
  */
-static int reverse_rule_distributive(ir_node **node) {
+static int reverse_rule_distributive(ir_node **node)
+{
 	ir_node *n = *node;
 	ir_node *left  = get_binop_left(n);
 	ir_node *right = get_binop_right(n);
@@ -795,7 +799,8 @@ transform:
 /**
  * Move Constants towards the root.
  */
-static int move_consts_up(ir_node **node) {
+static int move_consts_up(ir_node **node)
+{
 	ir_node *n = *node;
 	ir_op *op;
 	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
@@ -896,7 +901,8 @@ transform:
 /**
  * Apply the rules in reverse order, removing code that was not collapsed
  */
-static void reverse_rules(ir_node *node, void *env) {
+static void reverse_rules(ir_node *node, void *env)
+{
 	walker_t *wenv = env;
 	ir_mode *mode = get_irn_mode(node);
 	int res;
@@ -985,7 +991,8 @@ int optimize_reassociation(ir_graph *irg)
 }  /* optimize_reassociation */
 
 /* create a pass for the reassociation */
-ir_graph_pass_t *optimize_reassociation_pass(const char *name) {
+ir_graph_pass_t *optimize_reassociation_pass(const char *name)
+{
 	return def_graph_pass_ret(name ? name : "reassoc", optimize_reassociation);
 }  /* optimize_reassociation_pass */
 

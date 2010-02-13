@@ -68,7 +68,8 @@ const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
  *
  * TODO: Add other fields
  **/
-static inline int modes_are_equal(const ir_mode *m, const ir_mode *n) {
+static inline int modes_are_equal(const ir_mode *m, const ir_mode *n)
+{
 	if (m == n) return 1;
 	if (m->sort         == n->sort &&
 		m->arithmetic   == n->arithmetic &&
@@ -86,7 +87,8 @@ static inline int modes_are_equal(const ir_mode *m, const ir_mode *n) {
  * a pointer on an equal mode already in the array, NULL if
  * none found
  */
-static ir_mode *find_mode(const ir_mode *m) {
+static ir_mode *find_mode(const ir_mode *m)
+{
 	int i;
 	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
 		ir_mode *n = mode_list[i];
@@ -98,7 +100,8 @@ static ir_mode *find_mode(const ir_mode *m) {
 
 #ifdef FIRM_STATISTICS
 /* return the mode index, only needed for statistics */
-int stat_find_mode_index(const ir_mode *m) {
+int stat_find_mode_index(const ir_mode *m)
+{
 	int i;
 	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
 		ir_mode *n = mode_list[i];
@@ -109,7 +112,8 @@ int stat_find_mode_index(const ir_mode *m) {
 }
 
 /* return the mode for a given index, only needed for statistics */
-ir_mode *stat_mode_for_index(int idx) {
+ir_mode *stat_mode_for_index(int idx)
+{
 	if (0 <= idx  && idx < ARR_LEN(mode_list))
 		return mode_list[idx];
 	return NULL;
@@ -119,7 +123,8 @@ ir_mode *stat_mode_for_index(int idx) {
 /**
  * sets special values of modes
  */
-static void set_mode_values(ir_mode* mode) {
+static void set_mode_values(ir_mode* mode)
+{
 	switch (get_mode_sort(mode))    {
 	case irms_reference:
 	case irms_int_number:
@@ -222,20 +227,24 @@ ir_mode *get_modeANY(void) { return mode_ANY; }
 ir_mode *get_modeBAD(void) { return mode_BAD; }
 
 
-ir_mode *(get_modeP_code)(void) {
+ir_mode *(get_modeP_code)(void)
+{
 	return _get_modeP_code();
 }
 
-ir_mode *(get_modeP_data)(void) {
+ir_mode *(get_modeP_data)(void)
+{
 	return _get_modeP_data();
 }
 
-void set_modeP_code(ir_mode *p) {
+void set_modeP_code(ir_mode *p)
+{
 	assert(mode_is_reference(p));
 	mode_P_code = p;
 }
 
-void set_modeP_data(ir_mode *p) {
+void set_modeP_data(ir_mode *p)
+{
 	assert(mode_is_reference(p));
 	mode_P_data = p;
 }
@@ -245,7 +254,8 @@ void set_modeP_data(ir_mode *p) {
  *
  * @param new_mode  The new mode template.
  */
-static ir_mode *register_mode(const ir_mode *new_mode) {
+static ir_mode *register_mode(const ir_mode *new_mode)
+{
 	ir_mode *mode = NULL;
 
 	assert(new_mode);
@@ -362,31 +372,38 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
 }
 
 /* Functions for the direct access to all attributes of an ir_mode */
-ident *(get_mode_ident)(const ir_mode *mode) {
+ident *(get_mode_ident)(const ir_mode *mode)
+{
 	return _get_mode_ident(mode);
 }
 
-const char *get_mode_name(const ir_mode *mode) {
+const char *get_mode_name(const ir_mode *mode)
+{
 	return get_id_str(mode->name);
 }
 
-ir_mode_sort (get_mode_sort)(const ir_mode* mode) {
+ir_mode_sort (get_mode_sort)(const ir_mode* mode)
+{
 	return _get_mode_sort(mode);
 }
 
-unsigned (get_mode_size_bits)(const ir_mode *mode) {
+unsigned (get_mode_size_bits)(const ir_mode *mode)
+{
 	return _get_mode_size_bits(mode);
 }
 
-unsigned (get_mode_size_bytes)(const ir_mode *mode) {
+unsigned (get_mode_size_bytes)(const ir_mode *mode)
+{
 	return _get_mode_size_bytes(mode);
 }
 
-int (get_mode_sign)(const ir_mode *mode) {
+int (get_mode_sign)(const ir_mode *mode)
+{
 	return _get_mode_sign(mode);
 }
 
-ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode) {
+ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
+{
 	return get_mode_arithmetic(mode);
 }
 
@@ -395,123 +412,147 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode) {
  *  whether shift applies modulo to value of bits to shift.  Asserts
  *  if mode is not irms_int_number.
  */
-unsigned int (get_mode_modulo_shift)(const ir_mode *mode) {
+unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
+{
 	return _get_mode_modulo_shift(mode);
 }
 
-unsigned int (get_mode_n_vector_elems)(const ir_mode *mode) {
+unsigned int (get_mode_n_vector_elems)(const ir_mode *mode)
+{
 	return _get_mode_vector_elems(mode);
 }
 
-void *(get_mode_link)(const ir_mode *mode) {
+void *(get_mode_link)(const ir_mode *mode)
+{
 	return _get_mode_link(mode);
 }
 
-void (set_mode_link)(ir_mode *mode, void *l) {
+void (set_mode_link)(ir_mode *mode, void *l)
+{
 	_set_mode_link(mode, l);
 }
 
-tarval *get_mode_min(ir_mode *mode) {
+tarval *get_mode_min(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->min;
 }
 
-tarval *get_mode_max(ir_mode *mode) {
+tarval *get_mode_max(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->max;
 }
 
-tarval *get_mode_null(ir_mode *mode) {
+tarval *get_mode_null(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_datab(mode));
 
 	return mode->null;
 }
 
-tarval *get_mode_one(ir_mode *mode) {
+tarval *get_mode_one(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_datab(mode));
 
 	return mode->one;
 }
 
-tarval *get_mode_minus_one(ir_mode *mode) {
+tarval *get_mode_minus_one(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_data(mode));
 
 	return mode->minus_one;
 }
 
-tarval *get_mode_all_one(ir_mode *mode) {
+tarval *get_mode_all_one(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_datab(mode));
 	return mode->all_one;
 }
 
-tarval *get_mode_infinite(ir_mode *mode) {
+tarval *get_mode_infinite(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_float(mode));
 
 	return get_tarval_plus_inf(mode);
 }
 
-tarval *get_mode_NAN(ir_mode *mode) {
+tarval *get_mode_NAN(ir_mode *mode)
+{
 	assert(mode);
 	assert(mode_is_float(mode));
 
 	return get_tarval_nan(mode);
 }
 
-int is_mode(const void *thing) {
+int is_mode(const void *thing)
+{
 	return get_kind(thing) == k_ir_mode;
 }
 
-int (mode_is_signed)(const ir_mode *mode) {
+int (mode_is_signed)(const ir_mode *mode)
+{
 	return _mode_is_signed(mode);
 }
 
-int (mode_is_float)(const ir_mode *mode) {
+int (mode_is_float)(const ir_mode *mode)
+{
 	return _mode_is_float(mode);
 }
 
-int (mode_is_int)(const ir_mode *mode) {
+int (mode_is_int)(const ir_mode *mode)
+{
 	return _mode_is_int(mode);
 }
 
-int (mode_is_reference)(const ir_mode *mode) {
+int (mode_is_reference)(const ir_mode *mode)
+{
 	return _mode_is_reference(mode);
 }
 
-int (mode_is_num)(const ir_mode *mode) {
+int (mode_is_num)(const ir_mode *mode)
+{
 	return _mode_is_num(mode);
 }
 
-int (mode_is_data)(const ir_mode *mode) {
+int (mode_is_data)(const ir_mode *mode)
+{
 	return _mode_is_data(mode);
 }
 
-int (mode_is_datab)(const ir_mode *mode) {
+int (mode_is_datab)(const ir_mode *mode)
+{
 	return _mode_is_datab(mode);
 }
 
-int (mode_is_dataM)(const ir_mode *mode) {
+int (mode_is_dataM)(const ir_mode *mode)
+{
 	return _mode_is_dataM(mode);
 }
 
-int (mode_is_float_vector)(const ir_mode *mode) {
+int (mode_is_float_vector)(const ir_mode *mode)
+{
 	return _mode_is_float_vector(mode);
 }
 
-int (mode_is_int_vector)(const ir_mode *mode) {
+int (mode_is_int_vector)(const ir_mode *mode)
+{
 	return _mode_is_int_vector(mode);
 }
 
 /* Returns true if sm can be converted to lm without loss. */
-int smaller_mode(const ir_mode *sm, const ir_mode *lm) {
+int smaller_mode(const ir_mode *sm, const ir_mode *lm)
+{
 	int sm_bits, lm_bits;
 
 	assert(sm);
@@ -584,7 +625,8 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm) {
 
 /* Returns true if a value of mode sm can be converted into mode lm
    and backwards without loss. */
-int values_in_mode(const ir_mode *sm, const ir_mode *lm) {
+int values_in_mode(const ir_mode *sm, const ir_mode *lm)
+{
 	int sm_bits, lm_bits;
 	ir_mode_arithmetic arith;
 
@@ -614,33 +656,38 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm) {
 }
 
 /* Return the signed integer equivalent mode for an reference mode. */
-ir_mode *get_reference_mode_signed_eq(ir_mode *mode) {
+ir_mode *get_reference_mode_signed_eq(ir_mode *mode)
+{
 	assert(mode_is_reference(mode));
 	return mode->eq_signed;
 }
 
 /* Sets the signed integer equivalent mode for an reference mode. */
-void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode) {
+void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode)
+{
 	assert(mode_is_reference(ref_mode));
 	assert(mode_is_int(int_mode));
 	ref_mode->eq_signed = int_mode;
 }
 
 /* Return the unsigned integer equivalent mode for an reference mode. */
-ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode) {
+ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode)
+{
 	assert(mode_is_reference(mode));
 	return mode->eq_unsigned;
 }
 
 /* Sets the unsigned integer equivalent mode for an reference mode. */
-void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode) {
+void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode)
+{
 	assert(mode_is_reference(ref_mode));
 	assert(mode_is_int(int_mode));
 	ref_mode->eq_unsigned = int_mode;
 }
 
 /* initialization, build the default modes */
-void init_mode(void) {
+void init_mode(void)
+{
 	ir_mode newmode;
 
 	obstack_init(&modes);
@@ -820,7 +867,8 @@ void init_mode(void) {
 }
 
 /* find a signed mode for an unsigned integer mode */
-ir_mode *find_unsigned_mode(const ir_mode *mode) {
+ir_mode *find_unsigned_mode(const ir_mode *mode)
+{
 	ir_mode n = *mode;
 
 	/* allowed for reference mode */
@@ -833,7 +881,8 @@ ir_mode *find_unsigned_mode(const ir_mode *mode) {
 }
 
 /* find an unsigned mode for a signed integer mode */
-ir_mode *find_signed_mode(const ir_mode *mode) {
+ir_mode *find_signed_mode(const ir_mode *mode)
+{
 	ir_mode n = *mode;
 
 	assert(mode->sort == irms_int_number);
@@ -842,7 +891,8 @@ ir_mode *find_signed_mode(const ir_mode *mode) {
 }
 
 /* finds a integer mode with 2*n bits for an integer mode with n bits. */
-ir_mode *find_double_bits_int_mode(const ir_mode *mode) {
+ir_mode *find_double_bits_int_mode(const ir_mode *mode)
+{
 	ir_mode n = *mode;
 
 	assert(mode->sort == irms_int_number && mode->arithmetic == irma_twos_complement);
@@ -855,7 +905,8 @@ ir_mode *find_double_bits_int_mode(const ir_mode *mode) {
  * Returns non-zero if the given mode honors signed zero's, i.e.,
  * a +0 and a -0 exists and handled differently.
  */
-int mode_honor_signed_zeros(const ir_mode *mode) {
+int mode_honor_signed_zeros(const ir_mode *mode)
+{
 	/* for floating point, we know that IEEE 754 has +0 and -0,
 	 * but always handles it identical.
 	 */
@@ -869,7 +920,8 @@ int mode_honor_signed_zeros(const ir_mode *mode) {
  *
  * This does NOT happen on IEEE 754.
  */
-int mode_overflow_on_unary_Minus(const ir_mode *mode) {
+int mode_overflow_on_unary_Minus(const ir_mode *mode)
+{
 	if (mode->sort == irms_float_number)
 		return mode->arithmetic == irma_ieee754 ? 0 : 1;
 	return 1;
@@ -882,7 +934,8 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode) {
  * This is normally true for integer modes, not for floating
  * point modes.
  */
-int mode_wrap_around(const ir_mode *mode) {
+int mode_wrap_around(const ir_mode *mode)
+{
 	/* FIXME: better would be an extra mode property */
 	return mode_is_int(mode);
 }
@@ -892,7 +945,8 @@ int mode_wrap_around(const ir_mode *mode) {
  * reinterpret cast (ie. only the bit pattern is reinterpreted,
  * no conversion is done)
  */
-int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst) {
+int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
+{
 	ir_mode_arithmetic ma;
 
 	if (src == dst)
@@ -906,7 +960,8 @@ int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst) {
 	return ma == irma_twos_complement || ma == irma_ones_complement;
 }
 
-void finish_mode(void) {
+void finish_mode(void)
+{
 	obstack_free(&modes, 0);
 	DEL_ARR_F(mode_list);
 

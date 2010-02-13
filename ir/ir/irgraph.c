@@ -64,22 +64,26 @@ static int forbid_new_data = 0;
 static size_t additional_graph_data_size = 0;
 
 ir_graph *current_ir_graph;
-ir_graph *get_current_ir_graph(void) {
+ir_graph *get_current_ir_graph(void)
+{
 	return current_ir_graph;
 }
 
-void set_current_ir_graph(ir_graph *graph) {
+void set_current_ir_graph(ir_graph *graph)
+{
 	current_ir_graph = graph;
 }
 
 #ifdef INTERPROCEDURAL_VIEW
 int firm_interprocedural_view = 0;
 
-int (get_interprocedural_view)(void) {
+int (get_interprocedural_view)(void)
+{
 	return _get_interprocedural_view();
 }
 
-void (set_interprocedural_view)(int state) {
+void (set_interprocedural_view)(int state)
+{
 	firm_interprocedural_view = state;
 
 	/* set function vectors for faster access */
@@ -98,7 +102,8 @@ void (set_interprocedural_view)(int state) {
 static ident *frame_type_suffix = NULL;
 
 /* initialize the IR graph module */
-void firm_init_irgraph(void) {
+void firm_init_irgraph(void)
+{
 	frame_type_suffix = new_id_from_str(FRAME_TP_SUFFIX);
 	forbid_new_data   = 1;
 }
@@ -110,7 +115,8 @@ void firm_init_irgraph(void) {
  * allocated (new_r_ir_graph, new_const_code_irg).
  * @return Memory for a new graph.
  */
-static ir_graph *alloc_graph(void) {
+static ir_graph *alloc_graph(void)
+{
 	ir_graph *res;
 	size_t   size = sizeof(ir_graph) + additional_graph_data_size;
 	char     *ptr = xmalloc(size);
@@ -129,7 +135,8 @@ static ir_graph *alloc_graph(void) {
 /**
  * Frees an allocated IR graph
  */
-static void free_graph(ir_graph *irg) {
+static void free_graph(ir_graph *irg)
+{
 	char *ptr = (char *)irg;
 	int  i;
 
@@ -145,7 +152,8 @@ static void free_graph(ir_graph *irg) {
  * @param irg    the graph
  * @param n_loc  number of locals
  */
-void irg_set_nloc(ir_graph *res, int n_loc) {
+void irg_set_nloc(ir_graph *res, int n_loc)
+{
 	assert(res->phase_state == phase_building);
 
 	if (get_opt_precise_exc_context()) {
@@ -175,7 +183,8 @@ void irg_set_nloc(ir_graph *res, int n_loc) {
    Further it allocates several datastructures needed for graph construction
    and optimization.
 */
-ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
+ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
+{
 	ir_graph *res;
 	ir_node  *first_block;
 	ir_node  *end, *start, *start_block, *initial_mem, *projX, *bad;
@@ -284,7 +293,8 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc) {
 	return res;
 }
 
-ir_graph *new_ir_graph(ir_entity *ent, int n_loc) {
+ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
+{
 	ir_graph *res = new_r_ir_graph(ent, n_loc);
 	add_irp_irg(res);          /* remember this graph global. */
 	return res;
@@ -382,7 +392,8 @@ ir_graph *new_const_code_irg(void)
  * @param n    A node from the original method graph.
  * @param env  The copied graph.
  */
-static void copy_all_nodes(ir_node *n, void *env) {
+static void copy_all_nodes(ir_node *n, void *env)
+{
 	ir_graph *irg = env;
 	ir_op    *op  = get_irn_op(n);
 	ir_node  *nn;
@@ -429,7 +440,8 @@ static void copy_all_nodes(ir_node *n, void *env) {
  * The copied nodes are set as link of their original nodes. The links of
  * "irn" predecessors are the predecessors of copied node.
  */
-static void set_all_preds(ir_node *irn, void *env) {
+static void set_all_preds(ir_node *irn, void *env)
+{
 	int      i;
 	ir_node  *nn, *pred;
 	(void) env;
@@ -458,7 +470,8 @@ static void set_all_preds(ir_node *irn, void *env) {
 /*
  * Create a new graph that is a copy of a given one.
  */
-ir_graph *create_irg_copy(ir_graph *irg) {
+ir_graph *create_irg_copy(ir_graph *irg)
+{
 	ir_graph *res;
 
 	res = alloc_graph();
@@ -565,20 +578,24 @@ int
 
 #ifdef DEBUG_libfirm
 /* Outputs a unique number for this node */
-long get_irg_graph_nr(const ir_graph *irg) {
+long get_irg_graph_nr(const ir_graph *irg)
+{
 	return irg->graph_nr;
 }
 #else
-long get_irg_graph_nr(const ir_graph *irg) {
+long get_irg_graph_nr(const ir_graph *irg)
+{
 	return PTR_TO_INT(irg);
 }
 #endif
 
-int get_irg_idx(const ir_graph *irg) {
+int get_irg_idx(const ir_graph *irg)
+{
 	return irg->index;
 }
 
-ir_node *(get_idx_irn)(ir_graph *irg, unsigned idx) {
+ir_node *(get_idx_irn)(ir_graph *irg, unsigned idx)
+{
 	return _get_idx_irn(irg, idx);
 }
 
@@ -744,14 +761,16 @@ void
 }
 
 /* Returns the value parameter type of an IR graph. */
-ir_type *get_irg_value_param_type(ir_graph *irg) {
+ir_type *get_irg_value_param_type(ir_graph *irg)
+{
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *mtp = get_entity_type(ent);
 	return get_method_value_param_type(mtp);
 }
 
 int
-get_irg_n_locs(ir_graph *irg) {
+get_irg_n_locs(ir_graph *irg)
+{
 	if (get_opt_precise_exc_context())
 		return irg->n_loc - 1 - 1;
 	else
@@ -759,7 +778,8 @@ get_irg_n_locs(ir_graph *irg) {
 }
 
 void
-set_irg_n_loc(ir_graph *irg, int n_loc) {
+set_irg_n_loc(ir_graph *irg, int n_loc)
+{
 	if (get_opt_precise_exc_context())
 		irg->n_loc = n_loc + 1 + 1;
 	else
@@ -779,7 +799,8 @@ struct obstack *
  *
  * Implementation is GLIBC specific as is uses the internal _obstack_chunk implementation.
  */
-int node_is_in_irgs_storage(ir_graph *irg, ir_node *n) {
+int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
+{
 	struct _obstack_chunk *p;
 
 	/*
@@ -859,7 +880,8 @@ void
 	_set_irg_loopinfo_inconsistent(irg);
 }
 
-void set_irp_loopinfo_inconsistent(void) {
+void set_irp_loopinfo_inconsistent(void)
+{
 	int i;
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		set_irg_loopinfo_inconsistent(get_irp_irg(i));
@@ -978,12 +1000,14 @@ void
 }
 
 /* Return the floating point model of this graph. */
-unsigned (get_irg_fp_model)(const ir_graph *irg) {
+unsigned (get_irg_fp_model)(const ir_graph *irg)
+{
 	return _get_irg_fp_model(irg);
 }
 
 /* Sets the floating point model for this graph. */
-void set_irg_fp_model(ir_graph *irg, unsigned model) {
+void set_irg_fp_model(ir_graph *irg, unsigned model)
+{
 	irg->fp_model = model;
 }
 
@@ -994,7 +1018,8 @@ void set_irg_fp_model(ir_graph *irg, unsigned model) {
  * @param n    the node
  * @param env  ignored
  */
-static void normalize_proj_walker(ir_node *n, void *env) {
+static void normalize_proj_walker(ir_node *n, void *env)
+{
 	(void) env;
 	if (is_Proj(n)) {
 		ir_node *pred  = get_Proj_pred(n);
@@ -1005,13 +1030,15 @@ static void normalize_proj_walker(ir_node *n, void *env) {
 }
 
 /* move Proj nodes into the same block as its predecessors */
-void normalize_proj_nodes(ir_graph *irg) {
+void normalize_proj_nodes(ir_graph *irg)
+{
 	irg_walk_graph(irg, NULL, normalize_proj_walker, NULL);
 	set_irg_outs_inconsistent(irg);
 }
 
 /* set a description for local value n */
-void set_irg_loc_description(ir_graph *irg, int n, void *description) {
+void set_irg_loc_description(ir_graph *irg, int n, void *description)
+{
 	assert(0 <= n && n < irg->n_loc);
 
 	if (! irg->loc_descriptions)
@@ -1021,40 +1048,47 @@ void set_irg_loc_description(ir_graph *irg, int n, void *description) {
 }
 
 /* get the description for local value n */
-void *get_irg_loc_description(ir_graph *irg, int n) {
+void *get_irg_loc_description(ir_graph *irg, int n)
+{
 	assert(0 <= n && n < irg->n_loc);
 	return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }
 
 #ifndef NDEBUG
-void ir_reserve_resources(ir_graph *irg, ir_resources_t resources) {
+void ir_reserve_resources(ir_graph *irg, ir_resources_t resources)
+{
 	assert((resources & ~IR_RESOURCE_LOCAL_MASK) == 0);
 	assert((irg->reserved_resources & resources) == 0);
 	irg->reserved_resources |= resources;
 }
 
-void ir_free_resources(ir_graph *irg, ir_resources_t resources) {
+void ir_free_resources(ir_graph *irg, ir_resources_t resources)
+{
 	assert((irg->reserved_resources & resources) == resources);
 	irg->reserved_resources &= ~resources;
 }
 
-ir_resources_t ir_resources_reserved(const ir_graph *irg) {
+ir_resources_t ir_resources_reserved(const ir_graph *irg)
+{
 	return irg->reserved_resources;
 }
 #endif /* NDEBUG */
 
 /* Returns a estimated node count of the irg. */
-unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg) {
+unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg)
+{
 	return _get_irg_estimated_node_cnt(irg);
 }
 
 /* Returns the last irn index for this graph. */
-unsigned get_irg_last_idx(const ir_graph *irg) {
+unsigned get_irg_last_idx(const ir_graph *irg)
+{
 	return irg->last_node_idx;
 }
 
 /* register additional space in an IR graph */
-size_t register_additional_graph_data(size_t size) {
+size_t register_additional_graph_data(size_t size)
+{
 	assert(!forbid_new_data && "Too late to register additional node data");
 
 	if (forbid_new_data)

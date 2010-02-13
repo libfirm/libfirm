@@ -39,7 +39,8 @@
  * Optimize the frame type of an irg by removing
  * never touched entities.
  */
-void opt_frame_irg(ir_graph *irg) {
+void opt_frame_irg(ir_graph *irg)
+{
 	ir_type   *frame_tp = get_irg_frame_type(irg);
 	ir_entity *ent, *list;
 	ir_node   *frame, *sel;

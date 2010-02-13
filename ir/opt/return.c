@@ -58,7 +58,8 @@
  *   res = c;
  * return res;
  */
-void normalize_one_return(ir_graph *irg) {
+void normalize_one_return(ir_graph *irg)
+{
 	ir_node *endbl = get_irg_end_block(irg);
 	int i, j, k, n, last_idx, n_rets, n_ret_vals = -1;
 	unsigned char *returns;
@@ -189,7 +190,8 @@ ir_graph_pass_t *normalize_one_return_pass(const char *name)
  * All predecessors of the Return block must be Jmp's of course, or we
  * cannot move it up, so we add blocks if needed.
  */
-static int can_move_ret(ir_node *ret) {
+static int can_move_ret(ir_node *ret)
+{
 	ir_node *retbl = get_nodes_block(ret);
 	int i, n = get_irn_arity(ret);
 
@@ -243,7 +245,8 @@ static int can_move_ret(ir_node *ret) {
  * else
  *   return c;
  */
-void normalize_n_returns(ir_graph *irg) {
+void normalize_n_returns(ir_graph *irg)
+{
 	int i, j, n, n_rets, n_finals, n_ret_vals;
 	ir_node *list  = NULL;
 	ir_node *final = NULL;

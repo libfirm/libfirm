@@ -119,18 +119,21 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 }
 
 /* initializes ir_prog. Constructs only the basic lists. */
-void init_irprog_1(void) {
+void init_irprog_1(void)
+{
 	irp = new_incomplete_ir_prog();
 }
 
 /* Completes ir_prog. */
-void init_irprog_2(void) {
+void init_irprog_2(void)
+{
 	(void)complete_ir_prog(irp, INITAL_PROG_NAME);
 }
 
 /* Create a new ir prog. Automatically called by init_firm through
    init_irprog. */
-ir_prog *new_ir_prog(const char *name) {
+ir_prog *new_ir_prog(const char *name)
+{
 	return complete_ir_prog(new_incomplete_ir_prog(), name);
 }
 
@@ -162,12 +165,14 @@ void free_ir_prog(void)
 
 
 /* Access the main routine of the compiled program. */
-ir_graph *get_irp_main_irg(void) {
+ir_graph *get_irp_main_irg(void)
+{
 	assert(irp);
 	return irp->main_irg;
 }
 
-void set_irp_main_irg(ir_graph *main_irg) {
+void set_irp_main_irg(ir_graph *main_irg)
+{
 	assert(irp);
 	irp->main_irg = main_irg;
 }
@@ -185,23 +190,27 @@ void set_segment_type(ir_segment_t segment, ir_type *new_type)
 	remove_irp_type(new_type);
 }
 
-ir_type *(get_glob_type)(void) {
+ir_type *(get_glob_type)(void)
+{
 	return _get_glob_type();
 }
 
-ir_type *(get_tls_type)(void) {
+ir_type *(get_tls_type)(void)
+{
 	return _get_tls_type();
 }
 
 /* Adds irg to the list of ir graphs in irp. */
-void add_irp_irg(ir_graph *irg) {
+void add_irp_irg(ir_graph *irg)
+{
 	assert(irg != NULL);
 	assert(irp && irp->graphs);
 	ARR_APP1(ir_graph *, irp->graphs, irg);
 }
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
-void remove_irp_irg_from_list(ir_graph *irg){
+void remove_irp_irg_from_list(ir_graph *irg)
+{
 	int i, l, found = 0;
 
 	assert(irg);
@@ -231,38 +240,45 @@ void remove_irp_irg_from_list(ir_graph *irg){
 }
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
-void remove_irp_irg(ir_graph *irg){
+void remove_irp_irg(ir_graph *irg)
+{
 	free_ir_graph(irg);
 	remove_irp_irg_from_list(irg);
 }
 
-int (get_irp_n_irgs)(void) {
+int (get_irp_n_irgs)(void)
+{
 	return _get_irp_n_irgs();
 }
 
-ir_graph *(get_irp_irg)(int pos){
+ir_graph *(get_irp_irg)(int pos)
+{
 	return _get_irp_irg(pos);
 }
 
-int get_irp_last_idx(void) {
+int get_irp_last_idx(void)
+{
 	return irp->max_irg_idx;
 }
 
-void set_irp_irg(int pos, ir_graph *irg) {
+void set_irp_irg(int pos, ir_graph *irg)
+{
 	assert(irp && irg);
 	assert(pos < (ARR_LEN(irp->graphs)));
 	irp->graphs[pos] = irg;
 }
 
 /* Gets the number of graphs _and_ pseudo graphs. */
-int get_irp_n_allirgs(void) {
+int get_irp_n_allirgs(void)
+{
 	/* We can not call get_irp_n_irgs, as we end up in a recursion ... */
 	return ARR_LEN(irp->graphs) + get_irp_n_pseudo_irgs();
 }
 
 /* Returns the ir graph at position pos of all graphs (including
  pseudo graphs).  Visits first graphs, then pseudo graphs. */
-ir_graph *get_irp_allirg(int pos) {
+ir_graph *get_irp_allirg(int pos)
+{
 	int n_irgs = ARR_LEN(irp->graphs);
 	assert(0 <= pos);
 	if (pos < n_irgs) {
@@ -273,14 +289,16 @@ ir_graph *get_irp_allirg(int pos) {
 }
 
 /* Adds type to the list of types in irp. */
-void add_irp_type(ir_type *typ) {
+void add_irp_type(ir_type *typ)
+{
 	assert(typ != NULL);
 	assert(irp);
 	ARR_APP1(ir_type *, irp->types, typ);
 }
 
 /* Remove type from the list of types in irp. */
-void remove_irp_type(ir_type *typ) {
+void remove_irp_type(ir_type *typ)
+{
 	int i;
 	assert(typ);
 
@@ -295,39 +313,46 @@ void remove_irp_type(ir_type *typ) {
 	}
 }
 
-int (get_irp_n_types) (void) {
+int (get_irp_n_types) (void)
+{
 	return _get_irp_n_types();
 }
 
-ir_type *(get_irp_type) (int pos) {
+ir_type *(get_irp_type) (int pos)
+{
 	return _get_irp_type(pos);
 }
 
-void set_irp_type(int pos, ir_type *typ) {
+void set_irp_type(int pos, ir_type *typ)
+{
 	assert(irp && typ);
 	assert(pos < (ARR_LEN((irp)->types)));
 	irp->types[pos] = typ;
 }
 
 /* Returns the number of all modes in the irp. */
-int (get_irp_n_modes)(void) {
+int (get_irp_n_modes)(void)
+{
 	return _get_irp_n_modes();
 }
 
 /* Returns the mode at position pos in the irp. */
-ir_mode *(get_irp_mode)(int pos) {
+ir_mode *(get_irp_mode)(int pos)
+{
 	return _get_irp_mode(pos);
 }
 
 /* Adds mode to the list of modes in irp. */
-void add_irp_mode(ir_mode *mode) {
+void add_irp_mode(ir_mode *mode)
+{
 	assert(mode != NULL);
 	assert(irp);
 	ARR_APP1(ir_mode *, irp->modes, mode);
 }
 
 /* Adds opcode to the list of opcodes in irp. */
-void add_irp_opcode(ir_op *opcode) {
+void add_irp_opcode(ir_op *opcode)
+{
 	int    len;
 	size_t code;
 	assert(opcode != NULL);
@@ -344,23 +369,27 @@ void add_irp_opcode(ir_op *opcode) {
 }
 
 /* Removes opcode from the list of opcodes and shrinks the list by one. */
-void remove_irp_opcode(ir_op *opcode) {
+void remove_irp_opcode(ir_op *opcode)
+{
 	assert((int) opcode->code < ARR_LEN(irp->opcodes));
 	irp->opcodes[opcode->code] = NULL;
 }
 
 /* Returns the number of all opcodes in the irp. */
-int (get_irp_n_opcodes)(void) {
+int (get_irp_n_opcodes)(void)
+{
 	return _get_irp_n_opcodes();
 }
 
 /* Returns the opcode at position pos in the irp. */
-ir_op *(get_irp_opcode)(int pos) {
+ir_op *(get_irp_opcode)(int pos)
+{
 	return _get_irp_opcode(pos);
 }
 
 /* Sets the generic function pointer of all opcodes to NULL */
-void  clear_irp_opcodes_generic_func(void) {
+void  clear_irp_opcodes_generic_func(void)
+{
 	int i;
 
 	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
@@ -370,29 +399,36 @@ void  clear_irp_opcodes_generic_func(void) {
 }
 
 /*- File name / executable name or the like -*/
-void   set_irp_prog_name(ident *name) {
+void   set_irp_prog_name(ident *name)
+{
 	irp->name = name;
 }
-int irp_prog_name_is_set(void) {
+int irp_prog_name_is_set(void)
+{
 	return irp->name != new_id_from_str(INITAL_PROG_NAME);
 }
-ident *get_irp_ident(void) {
+ident *get_irp_ident(void)
+{
 	return irp->name;
 }
-const char  *get_irp_name(void) {
+const char  *get_irp_name(void)
+{
 	return get_id_str(irp->name);
 }
 
 
-ir_graph *(get_const_code_irg)(void) {
+ir_graph *(get_const_code_irg)(void)
+{
 	return _get_const_code_irg();
 }
 
-irg_phase_state get_irp_phase_state(void) {
+irg_phase_state get_irp_phase_state(void)
+{
 	return irp->phase_state;
 }
 
-void set_irp_phase_state(irg_phase_state s) {
+void set_irp_phase_state(irg_phase_state s)
+{
 	irp->phase_state = s;
 }
 
@@ -404,7 +440,8 @@ struct pass_t {
 /**
  * Wrapper for setting the state of a whole ir_prog.
  */
-static int set_irp_phase_state_wrapper(ir_prog *irp, void *context) {
+static int set_irp_phase_state_wrapper(ir_prog *irp, void *context)
+{
 	struct pass_t  *pass  = context;
 	irg_phase_state state = pass->state;
 	int             i;
@@ -421,7 +458,8 @@ static int set_irp_phase_state_wrapper(ir_prog *irp, void *context) {
 	return 0;
 }
 
-ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state) {
+ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	def_prog_pass_constructor(
@@ -435,69 +473,83 @@ ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state
 	return &pass->pass;
 }
 
-irg_outs_state get_irp_ip_outs_state(void) {
+irg_outs_state get_irp_ip_outs_state(void)
+{
 	return irp->outs_state;
 }
 
-void set_irp_ip_outs_inconsistent(void) {
+void set_irp_ip_outs_inconsistent(void)
+{
 	irp->outs_state = outs_inconsistent;
 }
 
-void set_irp_ip_outedges(ir_node ** ip_outedges) {
+void set_irp_ip_outedges(ir_node ** ip_outedges)
+{
 	irp->ip_outedges = ip_outedges;
 }
 
-ir_node** get_irp_ip_outedges(void) {
+ir_node** get_irp_ip_outedges(void)
+{
 	return irp->ip_outedges;
 }
 
-irg_callee_info_state get_irp_callee_info_state(void) {
+irg_callee_info_state get_irp_callee_info_state(void)
+{
 	return irp->callee_info_state;
 }
 
-void set_irp_callee_info_state(irg_callee_info_state s) {
+void set_irp_callee_info_state(irg_callee_info_state s)
+{
 	irp->callee_info_state = s;
 }
 
 /* Returns a new, unique exception region number. */
-ir_exc_region_t (get_irp_next_region_nr)(void) {
+ir_exc_region_t (get_irp_next_region_nr)(void)
+{
 	return _get_irp_next_region_nr();
 }
 
 /* Returns a new, unique label number. */
-ir_label_t (get_irp_next_label_nr)(void) {
+ir_label_t (get_irp_next_label_nr)(void)
+{
 	return _get_irp_next_label_nr();
 }
 
 /* Add a new global asm include */
-void add_irp_asm(ident *asm_string) {
+void add_irp_asm(ident *asm_string)
+{
 	ARR_APP1(ident *, irp->global_asms, asm_string);
 }
 
 /* Return the number of global asm includes. */
-int get_irp_n_asms(void) {
+int get_irp_n_asms(void)
+{
 	return ARR_LEN(irp->global_asms);
 }
 
 /* Return the global asm include at position pos. */
-ident *get_irp_asm(int pos) {
+ident *get_irp_asm(int pos)
+{
 	assert(0 <= pos && pos < get_irp_n_asms());
 	return irp->global_asms[pos];
 }
 
 #ifndef NDEBUG
-void irp_reserve_resources(ir_prog *irp, ir_resources_t resources) {
+void irp_reserve_resources(ir_prog *irp, ir_resources_t resources)
+{
 	assert((resources & ~IR_RESOURCE_GLOBAL_MASK) == 0);
 	assert((irp->reserved_resources & resources) == 0);
 	irp->reserved_resources |= resources;
 }
 
-void irp_free_resources(ir_prog *irp, ir_resources_t resources) {
+void irp_free_resources(ir_prog *irp, ir_resources_t resources)
+{
 	assert((irp->reserved_resources & resources) == resources);
 	irp->reserved_resources &= ~resources;
 }
 
-ir_resources_t irp_resources_reserved(const ir_prog *irp) {
+ir_resources_t irp_resources_reserved(const ir_prog *irp)
+{
 	return irp->reserved_resources;
 }
 #endif

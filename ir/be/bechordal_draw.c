@@ -52,27 +52,32 @@ typedef struct {
 #define decl_self(type, from) \
   type *self = (type *) from
 
-static void set_color(plotter_t *_self, const color_t *color) {
+static void set_color(plotter_t *_self, const color_t *color)
+{
 	decl_self(base_plotter_t, _self);
 	self->color = color;
 }
 
-static const color_t *get_color(const plotter_t *_self) {
+static const color_t *get_color(const plotter_t *_self)
+{
 	decl_self(const base_plotter_t, _self);
 	return self->color;
 }
 
-static void set_width(plotter_t *_self, int width) {
+static void set_width(plotter_t *_self, int width)
+{
 	decl_self(base_plotter_t, _self);
 	self->width = width;
 }
 
-static int get_width(const plotter_t *_self) {
+static int get_width(const plotter_t *_self)
+{
 	decl_self(const base_plotter_t, _self);
 	return self->width;
 }
 
-static void plotter_default_free(plotter_t *self) {
+static void plotter_default_free(plotter_t *self)
+{
 	(void) self;
 }
 
@@ -458,7 +463,8 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 	p->vtab->finish(p);
 }
 
-void draw_interval_tree(const draw_chordal_opts_t *opts, const be_chordal_env_t *chordal_env, plotter_t *plotter) {
+void draw_interval_tree(const draw_chordal_opts_t *opts, const be_chordal_env_t *chordal_env, plotter_t *plotter)
+{
 	draw_chordal_env_t env;
 	struct block_dims  *start_dims;
 	ir_node            *start_block = get_irg_start_block(chordal_env->irg);

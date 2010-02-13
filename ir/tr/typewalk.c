@@ -243,7 +243,8 @@ static void irn_type_walker(
 
 /**  Check whether node contains types or entities as an attribute.
      If so start a walk over that information. */
-static void start_type_walk(ir_node *node, void *ctx) {
+static void start_type_walk(ir_node *node, void *ctx)
+{
 	type_walk_env *env = ctx;
 	type_walk_func *pre;
 	type_walk_func *post;
@@ -257,7 +258,8 @@ static void start_type_walk(ir_node *node, void *ctx) {
 }
 
 /* walker: walks over all types */
-void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
+void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
+{
 	int         i, n_types = get_irp_n_types();
 	type_or_ent cont;
 
@@ -272,7 +274,8 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env) {
 	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
 }
 
-void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env) {
+void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
+{
 	int i, n_irgs = get_irp_n_irgs();
 	type_or_ent cont;
 

@@ -82,7 +82,8 @@ static void addto_extblk(ir_extblk *extblk, ir_node *block)
  * Returns the number of block successors.
  * we are interested only in 1, 2 and >2.
  */
-static int get_block_n_succs(ir_node *block) {
+static int get_block_n_succs(ir_node *block)
+{
 	if (edges_activated(current_ir_graph)) {
 		const ir_edge_t *edge;
 
@@ -179,7 +180,8 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 /*
  * Compute the extended basic blocks for a graph
  */
-void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs) {
+void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
+{
   	env_t     env;
 	ir_extblk *extbb, *next;
 	ir_node   *endblock;

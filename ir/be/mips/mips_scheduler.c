@@ -99,7 +99,8 @@ static int mips_scheduler_to_appear_in_schedule(void *block_env, const ir_node *
 	return is_mips_irn(irn) && !is_mips_zero(irn) && !is_mips_reinterpret_conv(irn) && !is_mips_fallthrough(irn);
 }
 
-static void mips_collect_mflohis(pset* set, ir_node* node) {
+static void mips_collect_mflohis(pset* set, ir_node* node)
+{
 	// construct a list of nodes that need to be scheduled before
 	// we are allowed to schedule another div or mul instruction
 	const ir_edge_t *edge, *edge2;

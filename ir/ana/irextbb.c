@@ -44,14 +44,16 @@ typedef struct _env {
 	ir_node *start_block;   /**< the start block of the current graph */
 } env_t;
 
-int (is_ir_extbb)(const void *thing) {
+int (is_ir_extbb)(const void *thing)
+{
 	return _is_ir_extbb(thing);
 }
 
 /**
  * allocate a new extended block header.
  */
-static void allocate_extblk(ir_node *block, env_t *env) {
+static void allocate_extblk(ir_node *block, env_t *env)
+{
 	ir_extblk *extblk = OALLOC(env->obst, ir_extblk);
 
 	extblk->kind    = k_ir_extblk;
@@ -68,7 +70,8 @@ static void allocate_extblk(ir_node *block, env_t *env) {
  * Returns the number of block successors.
  * we are interested only in 1, 2 and >2.
  */
-static int get_block_n_succs(ir_node *block) {
+static int get_block_n_succs(ir_node *block)
+{
 	if (edges_activated(current_ir_graph)) {
 		const ir_edge_t *edge;
 
@@ -87,7 +90,8 @@ static int get_block_n_succs(ir_node *block) {
 /**
  * Pre block-walker. Calculates the extended block info.
  */
-static void pre_walk_calc_extbb(ir_node *block, void *ctx) {
+static void pre_walk_calc_extbb(ir_node *block, void *ctx)
+{
 	int n = get_Block_n_cfgpreds(block);
 	env_t *env = ctx;
 
@@ -197,7 +201,8 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
 /*
  * Compute the extended basic blocks for a graph
  */
-void compute_extbb(ir_graph *irg) {
+void compute_extbb(ir_graph *irg)
+{
 	env_t env;
 	ir_extblk *extbb, *next;
 
@@ -265,7 +270,8 @@ void compute_extbb(ir_graph *irg) {
 }
 
 /* free all extended block info. */
-void free_extbb(ir_graph *irg) {
+void free_extbb(ir_graph *irg)
+{
 	if (irg->extbb_obst) {
 		obstack_free(irg->extbb_obst, NULL);
 		xfree(irg->extbb_obst);
@@ -275,67 +281,80 @@ void free_extbb(ir_graph *irg) {
 }
 
 /* Return the extended block of a node. */
-ir_extblk *get_nodes_extbb(const ir_node *node) {
+ir_extblk *get_nodes_extbb(const ir_node *node)
+{
 	const ir_node *block = is_Block(node) ? node : get_nodes_block(node);
 	return get_Block_extbb(block);
 }
 
 /* Gets the visited counter of an extended block. */
-ir_visited_t (get_extbb_visited)(const ir_extblk *blk) {
+ir_visited_t (get_extbb_visited)(const ir_extblk *blk)
+{
 	return _get_extbb_visited(blk);
 }
 
 /* Sets the visited counter of an extended block. */
-void (set_extbb_visited)(ir_extblk *blk, ir_visited_t visited) {
+void (set_extbb_visited)(ir_extblk *blk, ir_visited_t visited)
+{
 	_set_extbb_visited(blk, visited);
 }
 
 /* Mark an extended block as visited in a graph. */
-void (mark_extbb_visited)(ir_extblk *blk) {
+void (mark_extbb_visited)(ir_extblk *blk)
+{
 	_mark_extbb_visited(blk);
 }
 
 /* Returns non-zero if an extended was visited. */
-int (extbb_visited)(const ir_extblk *blk) {
+int (extbb_visited)(const ir_extblk *blk)
+{
 	return _extbb_visited(blk);
 }
 
 /* Returns non-zero if an extended block was NOT visited. */
-int (extbb_not_visited)(const ir_extblk *blk) {
+int (extbb_not_visited)(const ir_extblk *blk)
+{
 	return _extbb_not_visited(blk);
 }
 
 /* Returns the link field of an extended block. */
-void *(get_extbb_link)(const ir_extblk *blk) {
+void *(get_extbb_link)(const ir_extblk *blk)
+{
 	return _get_extbb_link(blk);
 }
 
 /* Sets the link field of an extended block. */
-void (set_extbb_link)(ir_extblk *blk, void *link) {
+void (set_extbb_link)(ir_extblk *blk, void *link)
+{
 	_set_extbb_link(blk, link);
 }
 
 /* Return the number of basic blocks of an extended block */
-int (get_extbb_n_blocks)(const ir_extblk *blk) {
+int (get_extbb_n_blocks)(const ir_extblk *blk)
+{
 	return _get_extbb_n_blocks(blk);
 }
 
 /* Return the i'th basic block of an extended block */
-ir_node *(get_extbb_block)(const ir_extblk *blk, int pos) {
+ir_node *(get_extbb_block)(const ir_extblk *blk, int pos)
+{
 	return _get_extbb_block(blk, pos);
 }
 
 /* Return the leader basis block of an extended block. */
-ir_node *(get_extbb_leader)(const ir_extblk *blk) {
+ir_node *(get_extbb_leader)(const ir_extblk *blk)
+{
 	return _get_extbb_leader(blk);
 }
 
 /* Return the node number of an extended block. */
-long get_extbb_node_nr(const ir_extblk *blk) {
+long get_extbb_node_nr(const ir_extblk *blk)
+{
 	return get_irn_node_nr(get_extbb_leader(blk));
 }
 
-static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env) {
+static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
 	int i;
 	ir_node *node;
 
@@ -363,7 +382,8 @@ static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk
 
 /* walks only over extended Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.         */
-void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env) {
+void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
 	ir_node *pred, *start_bl = get_irg_start_block(current_ir_graph);
 	ir_extblk *start_blk = get_Block_extbb(start_bl);
 	int i;
@@ -401,7 +421,8 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
 }
 
 /* Walks only over reachable Extended Basic Block nodes in the graph. */
-void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre, extbb_walk_func *post, void *env) {
+void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre, extbb_walk_func *post, void *env)
+{
 	ir_node *endbl = get_irg_end_block(irg);
 	ir_extblk *blk = get_Block_extbb(endbl);
 	ir_graph *rem  = current_ir_graph;

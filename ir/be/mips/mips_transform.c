@@ -70,7 +70,8 @@
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
 		ir_node *left, ir_node *right);
 
-static inline int mode_needs_gp_reg(ir_mode *mode) {
+static inline int mode_needs_gp_reg(ir_mode *mode)
+{
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
@@ -800,7 +801,8 @@ static ir_node *gen_Mod(ir_node *node)
 }
 
 #if 0
-static ir_node *gen_node_for_Mul(mips_transform_env_t *env) {
+static ir_node *gen_node_for_Mul(mips_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 	ir_node *mul;
 	ir_node *mflo;
@@ -825,7 +827,8 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env) {
 }
 
 static
-ir_node *gen_node_for_IJmp(mips_transform_env_t *env) {
+ir_node *gen_node_for_IJmp(mips_transform_env_t *env)
+{
 	ir_node  *node   = env->irn;
 	dbg_info *dbg    = get_irn_dbg_info(node);
 	ir_node  *block  = get_nodes_block(node);
@@ -835,7 +838,8 @@ ir_node *gen_node_for_IJmp(mips_transform_env_t *env) {
 }
 
 static
-ir_node *gen_node_for_Rot(mips_transform_env_t *env) {
+ir_node *gen_node_for_Rot(mips_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 	ir_node *subu, *srlv, *sllv, *or;
 
@@ -859,7 +863,8 @@ static ir_node *gen_Unknown(ir_node *node)
 /*
  * lower a copyB into standard Firm assembler :-)
  */
-ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node) {
+ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
+{
 	ir_node *cnt, *sub;
 	ir_node *dst = get_CopyB_dst(node);
 	ir_node *src = get_CopyB_src(node);
@@ -996,7 +1001,8 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node) {
 	return result;
 }
 
-static void mips_fix_CopyB_Proj(mips_transform_env_t* env) {
+static void mips_fix_CopyB_Proj(mips_transform_env_t* env)
+{
 	ir_node *node = env->irn;
 	long n = get_Proj_proj(node);
 
@@ -1010,7 +1016,8 @@ static void mips_fix_CopyB_Proj(mips_transform_env_t* env) {
 }
 #endif
 
-static void mips_transform_Spill(mips_transform_env_t* env) {
+static void mips_transform_Spill(mips_transform_env_t* env)
+{
 	ir_node   *node = env->irn;
 	ir_node   *sched_point = NULL;
 	ir_node   *store;
@@ -1033,7 +1040,8 @@ static void mips_transform_Spill(mips_transform_env_t* env) {
 	exchange(node, store);
 }
 
-static void mips_transform_Reload(mips_transform_env_t* env) {
+static void mips_transform_Reload(mips_transform_env_t* env)
+{
 	ir_node   *node = env->irn;
 	ir_node   *sched_point = NULL;
 	ir_node   *load, *proj;
@@ -1140,7 +1148,8 @@ void mips_transform_graph(mips_code_gen_t *cg)
 /**
  * Calls the transform functions for Spill and Reload.
  */
-void mips_after_ra_walker(ir_node *node, void *env) {
+void mips_after_ra_walker(ir_node *node, void *env)
+{
 	mips_code_gen_t *cg = env;
 	mips_transform_env_t tenv;
 

@@ -61,7 +61,8 @@ static gen_pointer_type_to_func gen_pointer_type_to = default_gen_pointer_type_t
  * Find a pointer type to a given type.
  * Uses and updates trouts if available.
  */
-static ir_type *default_gen_pointer_type_to(ir_type *tp) {
+static ir_type *default_gen_pointer_type_to(ir_type *tp)
+{
 	ir_type *res = NULL;
 	if (get_trouts_state() == outs_consistent) {
 		if (get_type_n_pointertypes_to(tp) > 0) {
@@ -81,7 +82,8 @@ static ir_type *default_gen_pointer_type_to(ir_type *tp) {
 }
 
 /** Return a type that is a depth times pointer to type. */
-static ir_type *pointerize_type(ir_type *tp, int depth) {
+static ir_type *pointerize_type(ir_type *tp, int depth)
+{
 	for (; depth > 0; --depth) {
 		tp = gen_pointer_type_to(tp);
 	}
@@ -89,7 +91,8 @@ static ir_type *pointerize_type(ir_type *tp, int depth) {
 }
 
 
-static ir_node *normalize_values_type(ir_type *totype, ir_node *pred) {
+static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
+{
 	ir_type *fromtype = get_irn_typeinfo_type(pred);
 	ir_node *new_cast = pred;
 	int ref_depth = 0;
@@ -162,7 +165,8 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred) {
 /**
  * Post-Walker.
  */
-static void normalize_irn_class_cast(ir_node *n, void *env) {
+static void normalize_irn_class_cast(ir_node *n, void *env)
+{
 	ir_node *res;
 	(void) env;
 	if (is_Cast(n)) {
@@ -181,7 +185,8 @@ static void normalize_irn_class_cast(ir_node *n, void *env) {
 }
 
 
-static void pure_normalize_irg_class_casts(ir_graph *irg) {
+static void pure_normalize_irg_class_casts(ir_graph *irg)
+{
 	assert(get_irg_class_cast_state(irg) != ir_class_casts_any &&
 		"Cannot normalize irregular casts.");
 	if (get_irg_class_cast_state(irg) == ir_class_casts_normalized) {
@@ -194,7 +199,8 @@ static void pure_normalize_irg_class_casts(ir_graph *irg) {
 }
 
 
-void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct) {
+void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
+{
 	assert(get_irp_typeinfo_state() == ir_typeinfo_consistent);
 
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
@@ -207,7 +213,8 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
 	gen_pointer_type_to = default_gen_pointer_type_to;
 }
 
-void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
+void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct)
+{
 	int i;
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
 
@@ -241,7 +248,8 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct) {
  *
  * @return 1 if the cast was changed
  */
-static int cancel_out_casts(ir_node *cast) {
+static int cancel_out_casts(ir_node *cast)
+{
 	ir_node *orig, *pred = get_Cast_op(cast);
 	ir_type *tp_cast, *tp_pred, *tp_orig;
 	int ref_depth = 0;
@@ -298,7 +306,8 @@ static int cancel_out_casts(ir_node *cast) {
  *
  * @return 1 if Cast's where removed
  */
-static int concretize_selected_entity(ir_node *sel) {
+static int concretize_selected_entity(ir_node *sel)
+{
 	ir_node   *cast, *ptr = get_Sel_ptr(sel);
 	ir_type   *orig_tp, *cast_tp;
 	ir_entity *new_ent, *sel_ent;
@@ -406,7 +415,8 @@ static int concretize_Phi_type(ir_node *phi)
  *
  * @return 1 if Cast's where removed
  */
-static int remove_Cmp_Null_cast(ir_node *cmp) {
+static int remove_Cmp_Null_cast(ir_node *cmp)
+{
 	ir_node *cast, *null, *new_null;
 	int     cast_pos, null_pos;
 	ir_type *fromtype;
@@ -447,7 +457,8 @@ static int remove_Cmp_Null_cast(ir_node *cmp) {
 /**
  * Post-Walker: Optimize class casts (mostly by trying to remove them)
  */
-static void irn_optimize_class_cast(ir_node *n, void *env) {
+static void irn_optimize_class_cast(ir_node *n, void *env)
+{
 	int *changed = env;
 
 	if (is_Cast(n))
@@ -460,7 +471,8 @@ static void irn_optimize_class_cast(ir_node *n, void *env) {
 		*changed |= remove_Cmp_Null_cast(n);
 }
 
-void optimize_class_casts(void) {
+void optimize_class_casts(void)
+{
 	int changed;
 
 	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
@@ -481,6 +493,7 @@ void optimize_class_casts(void) {
 		n_casts_removed, n_sels_concretized));
 }
 
-void firm_init_class_casts_opt(void) {
+void firm_init_class_casts_opt(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tropt");
 }

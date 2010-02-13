@@ -1705,7 +1705,8 @@ static void fix_start_block(ir_graph *irg)
 /**
  * Update the entity of Sels to the outer value parameters.
  */
-static void update_outer_frame_sels(ir_node *irn, void *env) {
+static void update_outer_frame_sels(ir_node *irn, void *env)
+{
 	lower_frame_sels_env_t *ctx = env;
 	ir_node                *ptr;
 	ir_entity              *ent;
@@ -2573,7 +2574,8 @@ static void stack_bias_walker(ir_node *bl, void *data)
  * Walker: finally lower all Sels of outer frame or parameter
  * entities.
  */
-static void lower_outer_frame_sels(ir_node *sel, void *ctx) {
+static void lower_outer_frame_sels(ir_node *sel, void *ctx)
+{
 	be_abi_irg_t *env = ctx;
 	ir_node      *ptr;
 	ir_entity    *ent;

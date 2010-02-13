@@ -52,7 +52,8 @@ static pmap *type_arraytype_map = NULL;
  * Return a flexible array containing all IR-nodes
  * that access a given entity.
  */
-static ir_node **get_entity_access_array(const ir_entity *ent) {
+static ir_node **get_entity_access_array(const ir_entity *ent)
+{
 	ir_node **res;
 	if (!entity_access_map) entity_access_map = pmap_create();
 
@@ -66,7 +67,8 @@ static ir_node **get_entity_access_array(const ir_entity *ent) {
 	return res;
 }
 
-static void set_entity_access_array(const ir_entity *ent, ir_node **accs) {
+static void set_entity_access_array(const ir_entity *ent, ir_node **accs)
+{
 	ir_node **old = pmap_get(entity_access_map, ent);
 	if (old != accs)
 		pmap_insert(entity_access_map, ent, (void *)accs);
@@ -76,7 +78,8 @@ static void set_entity_access_array(const ir_entity *ent, ir_node **accs) {
  * Return a flexible array containing all IR-nodes
  * that reference a given entity.
  */
-static ir_node **get_entity_reference_array(const ir_entity *ent) {
+static ir_node **get_entity_reference_array(const ir_entity *ent)
+{
 	ir_node **res;
 	if (!entity_reference_map) entity_reference_map = pmap_create();
 
@@ -90,7 +93,8 @@ static ir_node **get_entity_reference_array(const ir_entity *ent) {
 	return res;
 }
 
-static void set_entity_reference_array(const ir_entity *ent, ir_node **refs) {
+static void set_entity_reference_array(const ir_entity *ent, ir_node **refs)
+{
 	ir_node **old = pmap_get(entity_reference_map, ent);
 	if (old != refs)
 		pmap_insert(entity_reference_map, ent, (void *)refs);
@@ -100,7 +104,8 @@ static void set_entity_reference_array(const ir_entity *ent, ir_node **refs) {
  * Return a flexible array containing all IR-nodes
  * that allocate a given type.
  */
-static ir_node **get_type_alloc_array(const ir_type *tp) {
+static ir_node **get_type_alloc_array(const ir_type *tp)
+{
 	ir_node **res;
 	if (!type_alloc_map) type_alloc_map = pmap_create();
 
@@ -114,7 +119,8 @@ static ir_node **get_type_alloc_array(const ir_type *tp) {
 	return res;
 }
 
-static void set_type_alloc_array(const ir_type *tp, ir_node **alls) {
+static void set_type_alloc_array(const ir_type *tp, ir_node **alls)
+{
 	ir_node **old = pmap_get(type_alloc_map, tp);
 	if (old != alls)
 		pmap_insert(type_alloc_map, tp, (void *)alls);
@@ -124,7 +130,8 @@ static void set_type_alloc_array(const ir_type *tp, ir_node **alls) {
  * Return a flexible array containing all Cast-nodes
  * that "create" a given type.
  */
-static ir_node **get_type_cast_array(const ir_type *tp) {
+static ir_node **get_type_cast_array(const ir_type *tp)
+{
 	ir_node **res;
 	if (!type_cast_map) type_cast_map = pmap_create();
 
@@ -137,7 +144,8 @@ static ir_node **get_type_cast_array(const ir_type *tp) {
 	return res;
 }
 
-static void set_type_cast_array(const ir_type *tp, ir_node **alls) {
+static void set_type_cast_array(const ir_type *tp, ir_node **alls)
+{
 	ir_node **old = pmap_get(type_cast_map, tp);
 	if (old != alls)
 		pmap_insert(type_cast_map, tp, (void *)alls);
@@ -147,7 +155,8 @@ static void set_type_cast_array(const ir_type *tp, ir_node **alls) {
  * Return a flexible array containing all pointer
  * types that points-to a given type.
  */
-static ir_type **get_type_pointertype_array(const ir_type *tp) {
+static ir_type **get_type_pointertype_array(const ir_type *tp)
+{
 	ir_type **res;
 	if (!type_pointertype_map) type_pointertype_map = pmap_create();
 
@@ -161,7 +170,8 @@ static ir_type **get_type_pointertype_array(const ir_type *tp) {
 	return res;
 }
 
-static void set_type_pointertype_array(const ir_type *tp, ir_type **pts) {
+static void set_type_pointertype_array(const ir_type *tp, ir_type **pts)
+{
 	ir_type **old = pmap_get(type_pointertype_map, tp);
 	if (old != pts)
 		pmap_insert(type_pointertype_map, tp, (void *)pts);
@@ -171,7 +181,8 @@ static void set_type_pointertype_array(const ir_type *tp, ir_type **pts) {
  * Return a flexible array containing all array
  * types that have a given type as element type.
  */
-static ir_type **get_type_arraytype_array(const ir_type *tp) {
+static ir_type **get_type_arraytype_array(const ir_type *tp)
+{
 	ir_type **res;
 	if (!type_arraytype_map) type_arraytype_map = pmap_create();
 
@@ -185,7 +196,8 @@ static ir_type **get_type_arraytype_array(const ir_type *tp) {
 	return res;
 }
 
-void set_type_arraytype_array(const ir_type *tp, ir_type **pts) {
+void set_type_arraytype_array(const ir_type *tp, ir_type **pts)
+{
 	ir_type **old = pmap_get(type_arraytype_map, tp);
 	if (old != pts)
 		pmap_insert(type_arraytype_map, tp, (void *)pts);
@@ -201,7 +213,8 @@ void set_type_arraytype_array(const ir_type *tp, ir_type **pts) {
 /*   Access routines for entities                                    */
 /**------------------------------------------------------------------*/
 
-int get_entity_n_accesses(const ir_entity *ent) {
+int get_entity_n_accesses(const ir_entity *ent)
+{
 	ir_node ** accs;
 
 	assert(ent && is_entity(ent));
@@ -210,7 +223,8 @@ int get_entity_n_accesses(const ir_entity *ent) {
 	return ARR_LEN(accs);
 }
 
-ir_node *get_entity_access(const ir_entity *ent, int pos) {
+ir_node *get_entity_access(const ir_entity *ent, int pos)
+{
 	ir_node ** accs;
 
 	assert(0 <= pos && pos < get_entity_n_accesses(ent));
@@ -219,7 +233,8 @@ ir_node *get_entity_access(const ir_entity *ent, int pos) {
 	return accs[pos];
 }
 
-static void add_entity_access(const ir_entity *ent, ir_node *n) {
+static void add_entity_access(const ir_entity *ent, ir_node *n)
+{
 	ir_node ** accs;
 
 	assert(ent && is_entity(ent));
@@ -230,7 +245,8 @@ static void add_entity_access(const ir_entity *ent, ir_node *n) {
 	set_entity_access_array(ent, accs);
 }
 
-void set_entity_access(const ir_entity *ent, int pos, ir_node *n) {
+void set_entity_access(const ir_entity *ent, int pos, ir_node *n)
+{
 	ir_node ** accs;
 
 	assert(0 <= pos && pos < get_entity_n_accesses(ent));
@@ -242,7 +258,8 @@ void set_entity_access(const ir_entity *ent, int pos, ir_node *n) {
 
 /*------------------------------------------------------------------*/
 
-int get_entity_n_references(const ir_entity *ent) {
+int get_entity_n_references(const ir_entity *ent)
+{
 	ir_node ** refs;
 
 	assert(ent && is_entity(ent));
@@ -251,7 +268,8 @@ int get_entity_n_references(const ir_entity *ent) {
 	return ARR_LEN(refs);
 }
 
-ir_node *get_entity_reference(const ir_entity *ent, int pos) {
+ir_node *get_entity_reference(const ir_entity *ent, int pos)
+{
 	ir_node ** refs;
 
 	assert(0 <= pos && pos < get_entity_n_references(ent));
@@ -260,7 +278,8 @@ ir_node *get_entity_reference(const ir_entity *ent, int pos) {
 	return refs[pos];
 }
 
-static void add_entity_reference(const ir_entity *ent, ir_node *n) {
+static void add_entity_reference(const ir_entity *ent, ir_node *n)
+{
 	ir_node ** refs;
 
 	assert(ent && is_entity(ent));
@@ -271,7 +290,8 @@ static void add_entity_reference(const ir_entity *ent, ir_node *n) {
 	set_entity_reference_array(ent, refs);
 }
 
-void set_entity_reference(const ir_entity *ent, int pos, ir_node *n) {
+void set_entity_reference(const ir_entity *ent, int pos, ir_node *n)
+{
 	ir_node ** refs;
 
 	assert(0 <= pos && pos < get_entity_n_references(ent));
@@ -287,7 +307,8 @@ void set_entity_reference(const ir_entity *ent, int pos, ir_node *n) {
 /**------------------------------------------------------------------*/
 
 /* Number of Alloc nodes that create an instance of this type */
-int get_type_n_allocs(const ir_type *tp) {
+int get_type_n_allocs(const ir_type *tp)
+{
 	ir_node **allocs;
 
 	assert(tp && is_type(tp));
@@ -297,7 +318,8 @@ int get_type_n_allocs(const ir_type *tp) {
 }
 
 /* Alloc node that creates an instance of this type */
-ir_node *get_type_alloc(const ir_type *tp, int pos) {
+ir_node *get_type_alloc(const ir_type *tp, int pos)
+{
 	ir_node **allocs;
 	assert(0 <= pos && pos < get_type_n_allocs(tp));
 
@@ -305,7 +327,8 @@ ir_node *get_type_alloc(const ir_type *tp, int pos) {
 	return allocs[pos];
 }
 
-static void add_type_alloc(const ir_type *tp, ir_node *n) {
+static void add_type_alloc(const ir_type *tp, ir_node *n)
+{
 	ir_node **allocs;
 
 	assert(tp && is_type(tp));
@@ -316,7 +339,8 @@ static void add_type_alloc(const ir_type *tp, ir_node *n) {
 	set_type_alloc_array(tp, allocs);
 }
 
-void set_type_alloc(const ir_type *tp, int pos, ir_node *n) {
+void set_type_alloc(const ir_type *tp, int pos, ir_node *n)
+{
 	ir_node **allocs;
 
 	assert(0 <= pos && pos < get_type_n_allocs(tp));
@@ -327,7 +351,8 @@ void set_type_alloc(const ir_type *tp, int pos, ir_node *n) {
 }
 
 /* Number of Cast nodes that create an instance of this type */
-int get_type_n_casts(const ir_type *tp) {
+int get_type_n_casts(const ir_type *tp)
+{
 	ir_node **casts;
 
 	assert(tp && is_type(tp));
@@ -337,7 +362,8 @@ int get_type_n_casts(const ir_type *tp) {
 }
 
 
-int get_class_n_upcasts(const ir_type *clss) {
+int get_class_n_upcasts(const ir_type *clss)
+{
 	int i, n_casts = get_type_n_casts(clss);
 	int n_instances = 0;
 	for (i = 0; i < n_casts; ++i) {
@@ -348,7 +374,8 @@ int get_class_n_upcasts(const ir_type *clss) {
 	return n_instances;
 }
 
-int get_class_n_downcasts(const ir_type *clss) {
+int get_class_n_downcasts(const ir_type *clss)
+{
 	int i, n_casts = get_type_n_casts(clss);
 	int n_instances = 0;
 	for (i = 0; i < n_casts; ++i) {
@@ -360,7 +387,8 @@ int get_class_n_downcasts(const ir_type *clss) {
 }
 
 /* Cast node that creates an instance of this type */
-ir_node *get_type_cast(const ir_type *tp, int pos) {
+ir_node *get_type_cast(const ir_type *tp, int pos)
+{
 	ir_node **casts;
 	assert(0 <= pos && pos < get_type_n_casts(tp));
 
@@ -368,7 +396,8 @@ ir_node *get_type_cast(const ir_type *tp, int pos) {
 	return casts[pos];
 }
 
-void add_type_cast(const ir_type *tp, ir_node *n) {
+void add_type_cast(const ir_type *tp, ir_node *n)
+{
 	ir_node **casts;
 
 	assert(tp && is_type(tp));
@@ -379,7 +408,8 @@ void add_type_cast(const ir_type *tp, ir_node *n) {
 	set_type_cast_array(tp, casts);
 }
 
-void set_type_cast(const ir_type *tp, int pos, ir_node *n) {
+void set_type_cast(const ir_type *tp, int pos, ir_node *n)
+{
 	ir_node **casts;
 
 	assert(0 <= pos && pos < get_type_n_casts(tp));
@@ -391,7 +421,8 @@ void set_type_cast(const ir_type *tp, int pos, ir_node *n) {
 
 /*------------------------------------------------------------------*/
 
-int get_type_n_pointertypes_to(const ir_type *tp) {
+int get_type_n_pointertypes_to(const ir_type *tp)
+{
 	ir_type ** pts;
 
 	assert(tp && is_type(tp));
@@ -400,7 +431,8 @@ int get_type_n_pointertypes_to(const ir_type *tp) {
 	return ARR_LEN(pts);
 }
 
-ir_type *get_type_pointertype_to(const ir_type *tp, int pos) {
+ir_type *get_type_pointertype_to(const ir_type *tp, int pos)
+{
 	ir_type ** pts;
 
 	assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
@@ -409,7 +441,8 @@ ir_type *get_type_pointertype_to(const ir_type *tp, int pos) {
 	return pts[pos];
 }
 
-void add_type_pointertype_to(const ir_type *tp, ir_type *ptp) {
+void add_type_pointertype_to(const ir_type *tp, ir_type *ptp)
+{
 	ir_type ** pts;
 
 	assert(tp && is_type(tp));
@@ -420,7 +453,8 @@ void add_type_pointertype_to(const ir_type *tp, ir_type *ptp) {
 	set_type_pointertype_array(tp, pts);
 }
 
-void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp) {
+void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp)
+{
 	ir_type ** pts;
 
 	assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
@@ -433,7 +467,8 @@ void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp) {
 
 /*------------------------------------------------------------------*/
 
-int get_type_n_arraytypes_of(const ir_type *tp) {
+int get_type_n_arraytypes_of(const ir_type *tp)
+{
 	ir_type ** pts;
 
 	assert(tp && is_type(tp));
@@ -442,7 +477,8 @@ int get_type_n_arraytypes_of(const ir_type *tp) {
 	return ARR_LEN(pts);
 }
 
-ir_type *get_type_arraytype_of(const ir_type *tp, int pos) {
+ir_type *get_type_arraytype_of(const ir_type *tp, int pos)
+{
 	ir_type ** pts;
 
 	assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
@@ -451,7 +487,8 @@ ir_type *get_type_arraytype_of(const ir_type *tp, int pos) {
 	return pts[pos];
 }
 
-void  add_type_arraytype_of(const ir_type *tp, ir_type *atp) {
+void  add_type_arraytype_of(const ir_type *tp, ir_type *atp)
+{
 	ir_type ** pts;
 
 	assert(tp && is_type(tp));
@@ -462,7 +499,8 @@ void  add_type_arraytype_of(const ir_type *tp, ir_type *atp) {
 	set_type_arraytype_array(tp, pts);
 }
 
-void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp) {
+void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp)
+{
 	ir_type ** pts;
 
 	assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
@@ -477,22 +515,26 @@ void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp) {
 /*------------------------------------------------------------------*/
 
 /** Initialize the trouts handling. */
-static void init_trouts(void) {
+static void init_trouts(void)
+{
 }
 
 /** The number of entities that can be accessed by this Sel node. */
-static int get_Sel_n_accessed_entities(const ir_node *sel) {
+static int get_Sel_n_accessed_entities(const ir_node *sel)
+{
 	(void) sel;
 	return 1;
 }
 
 /** The entity that cat be accessed by this Sel node. */
-static ir_entity *get_Sel_accessed_entity(const ir_node *sel) {
+static ir_entity *get_Sel_accessed_entity(const ir_node *sel)
+{
 	return get_Sel_entity(sel);
 }
 
 /** An addr node is a SymConst or a Sel. */
-static int get_addr_n_entities(const ir_node *addr) {
+static int get_addr_n_entities(const ir_node *addr)
+{
 	switch (get_irn_opcode(addr)) {
 	case iro_Sel:
 		/* Treat jack array sels? */
@@ -508,7 +550,8 @@ static int get_addr_n_entities(const ir_node *addr) {
 
 /** An addr node is a SymConst or a Sel.
     If Sel follow to outermost of compound. */
-static ir_entity *get_addr_entity(const ir_node *addr, int pos) {
+static ir_entity *get_addr_entity(const ir_node *addr, int pos)
+{
 	ir_node *ptr;
 	(void) pos;
 
@@ -533,7 +576,8 @@ static ir_entity *get_addr_entity(const ir_node *addr, int pos) {
 	}
 }
 
-static void chain_accesses(ir_node *n, void *env) {
+static void chain_accesses(ir_node *n, void *env)
+{
 	int i, n_ents;
 	ir_node *addr;
 
@@ -573,7 +617,8 @@ static void chain_accesses(ir_node *n, void *env) {
  * Handle chain types (pointer, array) by adding them to
  * its "inner" type.
  */
-static void chain_types(ir_type *tp) {
+static void chain_types(ir_type *tp)
+{
 	if (is_Pointer_type(tp)) {
 		add_type_pointertype_to(get_pointer_points_to_type(tp), tp);
 	} else if (is_Array_type(tp)) {
@@ -581,17 +626,20 @@ static void chain_types(ir_type *tp) {
 	}
 }
 
-irg_outs_state get_trouts_state(void) {
+irg_outs_state get_trouts_state(void)
+{
 	return irp->trouts_state;
 }
 
-void set_trouts_inconsistent(void) {
+void set_trouts_inconsistent(void)
+{
 	if (irp->trouts_state == outs_consistent)
 		irp->trouts_state = outs_inconsistent;
 }
 
 /* compute the trouts data structures. */
-void compute_trouts(void) {
+void compute_trouts(void)
+{
 	int i;
 
 	free_trouts();
@@ -611,7 +659,8 @@ void compute_trouts(void) {
 	irp->trouts_state = outs_consistent;
 }
 
-void free_trouts(void) {
+void free_trouts(void)
+{
 	if (entity_access_map) {
 		ir_node **accs;
 		for (accs = (ir_node **)pmap_first(entity_access_map);

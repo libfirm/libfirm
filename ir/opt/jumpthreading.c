@@ -190,7 +190,8 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	}
 }
 
-static void split_critical_edge(ir_node *block, int pos) {
+static void split_critical_edge(ir_node *block, int pos)
+{
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *in[1];
 	ir_node *new_block;

@@ -104,7 +104,8 @@ static ir_node *own_gen_convert_call(ppc32_transform_env_t *env, ir_node *op, co
  * @param mode    node mode
  * @return the created ppc Conv node
  */
-static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op) {
+static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op)
+{
 	ir_mode *from_mode = get_irn_mode(get_irn_n(env->irn,0));
 	ir_mode *to_mode = env->mode;
 	ppc32_modecode from_modecode=get_nice_modecode(from_mode);
@@ -257,7 +258,8 @@ struct tv_ent {
 };
 
 /* Compares two (entity, tarval) combinations */
-static int cmp_tv_ent(const void *a, const void *b, size_t len) {
+static int cmp_tv_ent(const void *a, const void *b, size_t len)
+{
 	const struct tv_ent *e1 = a;
 	const struct tv_ent *e2 = b;
 
@@ -265,7 +267,8 @@ static int cmp_tv_ent(const void *a, const void *b, size_t len) {
 }
 
 /* Generates a SymConst node for a known FP const */
-static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_const) {
+static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_const)
+{
 	static set    *const_set = NULL;
 	static ir_type *tp = NULL;
 	struct tv_ent  key;
@@ -318,7 +321,8 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
  * @param env transformation environment
  * @return the created ppc Const node
  */
-static ir_node *gen_Const(ppc32_transform_env_t *env) {
+static ir_node *gen_Const(ppc32_transform_env_t *env)
+{
 	tarval *tv_const = get_Const_tarval(env->irn);
 	ir_node *constant;
 
@@ -336,7 +340,8 @@ static ir_node *gen_Const(ppc32_transform_env_t *env) {
  * @param env transformation environment
  * @return the created ppc SymConst node
  */
-static ir_node *gen_SymConst(ppc32_transform_env_t *env) {
+static ir_node *gen_SymConst(ppc32_transform_env_t *env)
+{
 	ir_node *symconst;
 	symconst = new_bd_ppc32_SymConst(env->dbg, env->block, env->mode);
 	set_ppc32_frame_entity(symconst, get_SymConst_entity(env->irn));
@@ -361,7 +366,8 @@ static ir_node *gen_SymConst(ppc32_transform_env_t *env) {
  * @param node    the firm node
  * @param env     the debug module
  */
-void ppc32_conv_walk(ir_node *node, void *env) {
+void ppc32_conv_walk(ir_node *node, void *env)
+{
 	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
 	ir_opcode  code         = get_irn_opcode(node);
 	ppc32_transform_env_t tenv;
@@ -462,7 +468,8 @@ void ppc32_conv_walk(ir_node *node, void *env) {
  * @param node    the firm node
  * @param env     the debug module
  */
-void ppc32_pretransform_walk(ir_node *node, void *env) {
+void ppc32_pretransform_walk(ir_node *node, void *env)
+{
 	ppc32_code_gen_t *cgenv = (ppc32_code_gen_t *)env;
 	ir_opcode  code         = get_irn_opcode(node);
 	ppc32_transform_env_t tenv;

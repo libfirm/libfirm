@@ -269,7 +269,8 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 /**
  * Perform things which need to be done per register class after spilling.
  */
-static void post_spill(post_spill_env_t *pse, int iteration) {
+static void post_spill(post_spill_env_t *pse, int iteration)
+{
 	be_chordal_env_t    *chordal_env = &pse->cenv;
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;

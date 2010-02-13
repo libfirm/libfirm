@@ -289,7 +289,8 @@ static void _fail_char(const char *str, size_t len, const char fchar, int pos,
 /**
  * implements the bitwise NOT operation
  */
-static void do_bitnot(const char *val, char *buffer) {
+static void do_bitnot(const char *val, char *buffer)
+{
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -299,7 +300,8 @@ static void do_bitnot(const char *val, char *buffer) {
 /**
  * implements the bitwise OR operation
  */
-static void do_bitor(const char *val1, const char *val2, char *buffer) {
+static void do_bitor(const char *val1, const char *val2, char *buffer)
+{
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -309,7 +311,8 @@ static void do_bitor(const char *val1, const char *val2, char *buffer) {
 /**
  * implements the bitwise eXclusive OR operation
  */
-static void do_bitxor(const char *val1, const char *val2, char *buffer) {
+static void do_bitxor(const char *val1, const char *val2, char *buffer)
+{
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -319,7 +322,8 @@ static void do_bitxor(const char *val1, const char *val2, char *buffer) {
 /**
  * implements the bitwise AND operation
  */
-static void do_bitand(const char *val1, const char *val2, char *buffer) {
+static void do_bitand(const char *val1, const char *val2, char *buffer)
+{
 	int counter;
 
 	for (counter = 0; counter<calc_buffer_size; counter++)
@@ -343,14 +347,16 @@ static void do_bitandnot(const char *val1, const char *val2, char *buffer)
  * @todo This implementation is wrong, as it returns the highest bit of the buffer
  *       NOT the highest bit depending on the real mode
  */
-static int do_sign(const char *val) {
+static int do_sign(const char *val)
+{
 	return (val[calc_buffer_size-1] <= SC_7) ? (1) : (-1);
 }
 
 /**
  * returns non-zero if bit at position pos is set
  */
-static int do_bit(const char *val, int pos) {
+static int do_bit(const char *val, int pos)
+{
 	int bit    = pos & 3;
 	int nibble = pos >> 2;
 
@@ -360,7 +366,8 @@ static int do_bit(const char *val, int pos) {
 /**
  * Implements a fast ADD + 1
  */
-static void do_inc(const char *val, char *buffer) {
+static void do_inc(const char *val, char *buffer)
+{
 	int counter = 0;
 
 	while (counter++ < calc_buffer_size) {
@@ -380,7 +387,8 @@ static void do_inc(const char *val, char *buffer) {
 /**
  * Implements a unary MINUS
  */
-static void do_negate(const char *val, char *buffer) {
+static void do_negate(const char *val, char *buffer)
+{
 	do_bitnot(val, buffer);
 	do_inc(buffer, buffer);
 }
@@ -391,7 +399,8 @@ static void do_negate(const char *val, char *buffer) {
  * @todo The implementation of carry is wrong, as it is the
  *       calc_buffer_size carry, not the mode depending
  */
-static void do_add(const char *val1, const char *val2, char *buffer) {
+static void do_add(const char *val1, const char *val2, char *buffer)
+{
 	int counter;
 	const char *add1, *add2;
 	char carry = SC_0;
@@ -409,7 +418,8 @@ static void do_add(const char *val1, const char *val2, char *buffer) {
 /**
  * Implements a binary SUB
  */
-static void do_sub(const char *val1, const char *val2, char *buffer) {
+static void do_sub(const char *val1, const char *val2, char *buffer)
+{
 	char *temp_buffer = alloca(calc_buffer_size); /* intermediate buffer to hold -val2 */
 
 	do_negate(val2, temp_buffer);
@@ -419,7 +429,8 @@ static void do_sub(const char *val1, const char *val2, char *buffer) {
 /**
  * Implements a binary MUL
  */
-static void do_mul(const char *val1, const char *val2, char *buffer) {
+static void do_mul(const char *val1, const char *val2, char *buffer)
+{
 	char *temp_buffer; /* result buffer */
 	char *neg_val1;    /* abs of val1 */
 	char *neg_val2;    /* abs of val2 */
@@ -495,7 +506,8 @@ static void do_mul(const char *val1, const char *val2, char *buffer) {
 /**
  * Shift the buffer to left and add a 4 bit digit
  */
-static void do_push(const char digit, char *buffer) {
+static void do_push(const char digit, char *buffer)
+{
 	int counter;
 
 	for (counter = calc_buffer_size - 2; counter >= 0; counter--) {
@@ -509,7 +521,8 @@ static void do_push(const char digit, char *buffer) {
  *
  * Note: This is MOST slow
  */
-static void do_divmod(const char *rDividend, const char *divisor, char *quot, char *rem) {
+static void do_divmod(const char *rDividend, const char *divisor, char *quot, char *rem)
+{
 	const char *dividend = rDividend;
 	const char *minus_divisor;
 	char *neg_val1;
@@ -599,7 +612,8 @@ end:
  *
  * @todo Assertions seems to be wrong
  */
-static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed) {
+static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed)
+{
 	const char *shl;
 	char shift;
 	char carry = SC_0;
@@ -666,7 +680,8 @@ static void do_shl(const char *val1, char *buffer, long shift_cnt, int bitsize, 
  *
  * @todo Assertions seems to be wrong
  */
-static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift) {
+static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, unsigned is_signed, int signed_shift)
+{
 	const char *shrs;
 	char sign;
 	char msd;
@@ -743,7 +758,8 @@ static void do_shr(const char *val1, char *buffer, long shift_cnt, int bitsize, 
  * Implements a Rotate Left.
  * positive: low-order -> high order, negative other direction
  */
-static void do_rotl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed) {
+static void do_rotl(const char *val1, char *buffer, long offset, int radius, unsigned is_signed)
+{
 	char *temp1, *temp2;
 	temp1 = alloca(calc_buffer_size);
 	temp2 = alloca(calc_buffer_size);
@@ -765,18 +781,21 @@ static void do_rotl(const char *val1, char *buffer, long offset, int radius, uns
 /*****************************************************************************
  * public functions, declared in strcalc.h
  *****************************************************************************/
-const void *sc_get_buffer(void) {
+const void *sc_get_buffer(void)
+{
 	return (void*)calc_buffer;
 }
 
-int sc_get_buffer_length(void) {
+int sc_get_buffer_length(void)
+{
 	return calc_buffer_size;
 }
 
 /**
  * Do sign extension if the mode is signed, otherwise to zero extension.
  */
-void sign_extend(void *buffer, ir_mode *mode) {
+void sign_extend(void *buffer, ir_mode *mode)
+{
 	char *calc_buffer = buffer;
 	int bits          = get_mode_size_bits(mode) - 1;
 	int nibble        = bits >> 2;
@@ -805,7 +824,8 @@ void sign_extend(void *buffer, ir_mode *mode) {
 }
 
 /* FIXME doesn't check for overflows */
-void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode) {
+void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode)
+{
 	const char *orig_str = str;
 	unsigned int orig_len = len;
 
@@ -938,7 +958,8 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 	sign_extend(calc_buffer, mode);
 }
 
-void sc_val_from_long(long value, void *buffer) {
+void sc_val_from_long(long value, void *buffer)
+{
 	char *pos;
 	char sign, is_minlong;
 
@@ -971,7 +992,8 @@ void sc_val_from_long(long value, void *buffer) {
 	}
 }
 
-void sc_val_from_ulong(unsigned long value, void *buffer) {
+void sc_val_from_ulong(unsigned long value, void *buffer)
+{
 	unsigned char *pos;
 
 	if (buffer == NULL) buffer = calc_buffer;
@@ -983,7 +1005,8 @@ void sc_val_from_ulong(unsigned long value, void *buffer) {
 	}
 }
 
-long sc_val_to_long(const void *val) {
+long sc_val_to_long(const void *val)
+{
 	int i;
 	long l = 0;
 
@@ -993,7 +1016,8 @@ long sc_val_to_long(const void *val) {
 	return l;
 }
 
-void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
+void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
+{
 	char *pos;
 	int i, bits;
 
@@ -1014,7 +1038,8 @@ void sc_min_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 		*pos++ = SC_F;
 }
 
-void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
+void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer)
+{
 	char* pos;
 	int i, bits;
 
@@ -1032,7 +1057,8 @@ void sc_max_from_bits(unsigned int num_bits, unsigned int sign, void *buffer) {
 		*pos++ = SC_0;
 }
 
-void sc_truncate(unsigned int num_bits, void *buffer) {
+void sc_truncate(unsigned int num_bits, void *buffer)
+{
 	char *cbuffer = buffer;
 	char *pos = cbuffer + (num_bits / 4);
 	char *end = cbuffer + calc_buffer_size;
@@ -1050,7 +1076,8 @@ void sc_truncate(unsigned int num_bits, void *buffer) {
 		*pos = SC_0;
 }
 
-int sc_comp(const void* value1, const void* value2) {
+int sc_comp(const void* value1, const void* value2)
+{
 	int counter = calc_buffer_size - 1;
 	const char *val1 = (const char *)value1;
 	const char *val2 = (const char *)value2;
@@ -1073,7 +1100,8 @@ int sc_comp(const void* value1, const void* value2) {
 	return (val1[counter] > val2[counter]) ? (1) : (-1);
 }
 
-int sc_get_highest_set_bit(const void *value) {
+int sc_get_highest_set_bit(const void *value)
+{
 	const char *val = (const char*)value;
 	int high, counter;
 
@@ -1092,7 +1120,8 @@ int sc_get_highest_set_bit(const void *value) {
 	return high;
 }
 
-int sc_get_lowest_set_bit(const void *value) {
+int sc_get_lowest_set_bit(const void *value)
+{
 	const char *val = (const char*)value;
 	int low, counter;
 
@@ -1125,7 +1154,8 @@ int sc_get_lowest_set_bit(const void *value) {
 	return -1;
 }
 
-int sc_get_bit_at(const void *value, unsigned pos) {
+int sc_get_bit_at(const void *value, unsigned pos)
+{
 	const char *val = value;
 	unsigned nibble = pos >> 2;
 
@@ -1140,7 +1170,8 @@ void sc_set_bit_at(void *value, unsigned pos)
 	val[nibble] |= SHIFT(pos & 3);
 }
 
-int sc_is_zero(const void *value) {
+int sc_is_zero(const void *value)
+{
 	const char* val = (const char *)value;
 	int counter;
 
@@ -1151,15 +1182,18 @@ int sc_is_zero(const void *value) {
 	return 1;
 }
 
-int sc_is_negative(const void *value) {
+int sc_is_negative(const void *value)
+{
 	return do_sign(value) == -1;
 }
 
-int sc_had_carry(void) {
+int sc_had_carry(void)
+{
 	return carry_flag;
 }
 
-unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs) {
+unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs)
+{
 	const char *val = (const char *)value;
 	int nibble_ofs  = 2 * byte_ofs;
 	unsigned char res;
@@ -1183,7 +1217,8 @@ unsigned char sc_sub_bits(const void *value, int len, unsigned byte_ofs) {
  * convert to a string
  * FIXME: Doesn't check buffer bounds
  */
-const char *sc_print(const void *value, unsigned bits, enum base_t base, int signed_mode) {
+const char *sc_print(const void *value, unsigned bits, enum base_t base, int signed_mode)
+{
 	static const char big_digits[]   = "0123456789ABCDEF";
 	static const char small_digits[] = "0123456789abcdef";
 
@@ -1326,7 +1361,8 @@ const char *sc_print(const void *value, unsigned bits, enum base_t base, int sig
 	return pos;
 }
 
-void init_strcalc(int precision) {
+void init_strcalc(int precision)
+{
 	if (calc_buffer == NULL) {
 		if (precision <= 0) precision = SC_DEFAULT_PRECISION;
 
@@ -1345,17 +1381,20 @@ void init_strcalc(int precision) {
 }
 
 
-void finish_strcalc(void) {
+void finish_strcalc(void)
+{
 	free(calc_buffer);   calc_buffer   = NULL;
 	free(output_buffer); output_buffer = NULL;
 }
 
-int sc_get_precision(void) {
+int sc_get_precision(void)
+{
 	return bit_pattern_size;
 }
 
 
-void sc_add(const void *value1, const void *value2, void *buffer) {
+void sc_add(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1371,7 +1410,8 @@ void sc_add(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_sub(const void *value1, const void *value2, void *buffer) {
+void sc_sub(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1387,7 +1427,8 @@ void sc_sub(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_neg(const void *value1, void *buffer) {
+void sc_neg(const void *value1, void *buffer)
+{
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("- %s ->", sc_print_hex(value1)));
@@ -1401,7 +1442,8 @@ void sc_neg(const void *value1, void *buffer) {
 	}
 }
 
-void sc_and(const void *value1, const void *value2, void *buffer) {
+void sc_and(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1434,7 +1476,8 @@ void sc_andnot(const void *value1, const void *value2, void *buffer)
 	}
 }
 
-void sc_or(const void *value1, const void *value2, void *buffer) {
+void sc_or(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1450,7 +1493,8 @@ void sc_or(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_xor(const void *value1, const void *value2, void *buffer) {
+void sc_xor(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1466,7 +1510,8 @@ void sc_xor(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_not(const void *value1, void *buffer) {
+void sc_not(const void *value1, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1481,7 +1526,8 @@ void sc_not(const void *value1, void *buffer) {
 	}
 }
 
-void sc_mul(const void *value1, const void *value2, void *buffer) {
+void sc_mul(const void *value1, const void *value2, void *buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1497,7 +1543,8 @@ void sc_mul(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_div(const void *value1, const void *value2, void *buffer) {
+void sc_div(const void *value1, const void *value2, void *buffer)
+{
 	/* temp buffer holding unused result of divmod */
 	char *unused_res = alloca(calc_buffer_size);
 
@@ -1516,7 +1563,8 @@ void sc_div(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_mod(const void *value1, const void *value2, void *buffer) {
+void sc_mod(const void *value1, const void *value2, void *buffer)
+{
 	/* temp buffer holding unused result of divmod */
 	char *unused_res = alloca(calc_buffer_size);
 
@@ -1535,7 +1583,8 @@ void sc_mod(const void *value1, const void *value2, void *buffer) {
 	}
 }
 
-void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer) {
+void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *mod_buffer)
+{
 	CLEAR_BUFFER(calc_buffer);
 	carry_flag = 0;
 
@@ -1548,7 +1597,8 @@ void sc_divmod(const void *value1, const void *value2, void *div_buffer, void *m
 }
 
 
-void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer) {
+void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+{
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s << %ld ", sc_print_hex(value1), shift_cnt));
@@ -1561,13 +1611,15 @@ void sc_shlI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	}
 }
 
-void sc_shl(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+void sc_shl(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+{
 	long offset = sc_val_to_long(val2);
 
 	sc_shlI(val1, offset, bitsize, sign, buffer);
 }
 
-void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer) {
+void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buffer)
+{
 	carry_flag = 0;
 
 	DEBUGPRINTF_COMPUTATION(("%s >>u %ld ", sc_print_hex(value1), shift_cnt));
@@ -1580,13 +1632,15 @@ void sc_shrI(const void *val1, long shift_cnt, int bitsize, int sign, void *buff
 	}
 }
 
-void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+void sc_shr(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+{
 	long shift_cnt = sc_val_to_long(val2);
 
 	sc_shrI(val1, shift_cnt, bitsize, sign, buffer);
 }
 
-void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+{
 	long offset = sc_val_to_long(val2);
 
 	carry_flag = 0;
@@ -1601,7 +1655,8 @@ void sc_shrs(const void *val1, const void *val2, int bitsize, int sign, void *bu
 	}
 }
 
-void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *buffer) {
+void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *buffer)
+{
 	long offset = sc_val_to_long(val2);
 
 	carry_flag = 0;
@@ -1616,7 +1671,8 @@ void sc_rotl(const void *val1, const void *val2, int bitsize, int sign, void *bu
 	}
 }
 
-void sc_zero(void *buffer) {
+void sc_zero(void *buffer)
+{
 	if (buffer == NULL)
 		buffer = calc_buffer;
 	CLEAR_BUFFER(buffer);

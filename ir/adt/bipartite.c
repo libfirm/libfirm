@@ -164,7 +164,8 @@ void bipartite_dump_f(FILE *f, const bipartite_t *gr)
 	}
 }
 
-void bipartite_dump(const char *name, const bipartite_t *gr) {
+void bipartite_dump(const char *name, const bipartite_t *gr)
+{
 	FILE *f = fopen(name, "w");
 
 	if (f) {

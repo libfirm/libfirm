@@ -252,7 +252,8 @@ static const arch_irn_ops_t ppc32_irn_ops = {
  *                       |___/
  **************************************************/
 
-static void ppc32_before_abi(void *self) {
+static void ppc32_before_abi(void *self)
+{
 	ppc32_code_gen_t *cg = self;
 	ir_type *frame_type = get_irg_frame_type(cg->irg);
 
@@ -267,7 +268,8 @@ static void ppc32_before_abi(void *self) {
 	}
 }
 
-static void ppc32_search_start_successor(ir_node *block, void *env) {
+static void ppc32_search_start_successor(ir_node *block, void *env)
+{
 	ppc32_code_gen_t *cg = env;
 	int n = get_Block_n_cfgpreds(block);
 	ir_node *startblock = get_irg_start_block(cg->irg);
@@ -287,7 +289,8 @@ static void ppc32_search_start_successor(ir_node *block, void *env) {
  * Transforms the standard firm graph into
  * a ppc firm graph
  */
-static void ppc32_prepare_graph(void *self) {
+static void ppc32_prepare_graph(void *self)
+{
 	ppc32_code_gen_t *cg = self;
 
 	irg_block_walk_graph(cg->irg, NULL, ppc32_search_start_successor, cg);
@@ -305,7 +308,8 @@ static void ppc32_prepare_graph(void *self) {
 /**
  * Called immediatly before emit phase.
  */
-static void ppc32_finish_irg(void *self) {
+static void ppc32_finish_irg(void *self)
+{
 	(void) self;
 	/* TODO: - fix offsets for nodes accessing stack
 			 - ...
@@ -318,7 +322,8 @@ static void ppc32_finish_irg(void *self) {
  * Calculate a block schedule here. We need it for the x87
  * simulator and the emitter.
  */
-static void ppc32_before_ra(void *self) {
+static void ppc32_before_ra(void *self)
+{
 	ppc32_code_gen_t *cg = self;
 	cg->blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
 }
@@ -403,7 +408,8 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 /**
  * Some stuff to do immediately after register allocation
  */
-static void ppc32_after_ra(void *self) {
+static void ppc32_after_ra(void *self)
+{
 	ppc32_code_gen_t *cg = self;
 	be_coalesce_spillslots(cg->birg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_spill, NULL);
@@ -413,7 +419,8 @@ static void ppc32_after_ra(void *self) {
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void ppc32_emit_and_done(void *self) {
+static void ppc32_emit_and_done(void *self)
+{
 	ppc32_code_gen_t *cg = self;
 	ir_graph         *irg = cg->irg;
 
@@ -446,7 +453,8 @@ static const arch_code_generator_if_t ppc32_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *ppc32_cg_init(be_irg_t *birg) {
+static void *ppc32_cg_init(be_irg_t *birg)
+{
 	ppc32_isa_t      *isa = (ppc32_isa_t *)birg->main_env->arch_env;
 	ppc32_code_gen_t *cg  = XMALLOC(ppc32_code_gen_t);
 
@@ -499,7 +507,8 @@ static ppc32_isa_t ppc32_isa_template = {
  * @param node    the firm node
  * @param env     the symbol set
  */
-static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
+static void ppc32_collect_symconsts_walk(ir_node *node, void *env)
+{
 	pset *symbol_set = env;
 
 	if (is_SymConst(node)) {
@@ -511,7 +520,8 @@ static void ppc32_collect_symconsts_walk(ir_node *node, void *env) {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *ppc32_init(FILE *file_handle) {
+static arch_env_t *ppc32_init(FILE *file_handle)
+{
 	static int inited = 0;
 	ppc32_isa_t *isa;
 	int i;
@@ -544,7 +554,8 @@ static arch_env_t *ppc32_init(FILE *file_handle) {
 	return &isa->arch_env;
 }
 
-static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
+static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa)
+{
 	ir_entity *ent;
 
 	foreach_pset(isa->symbol_set, ent) {
@@ -557,7 +568,8 @@ static void ppc32_dump_indirect_symbols(ppc32_isa_t *isa) {
 /**
  * Closes the output file and frees the ISA structure.
  */
-static void ppc32_done(void *self) {
+static void ppc32_done(void *self)
+{
 	ppc32_isa_t *isa = self;
 
 	be_gas_emit_decls(isa->arch_env.main_env);
@@ -606,7 +618,8 @@ const arch_register_class_t *ppc32_get_reg_class_for_mode(const ir_mode *mode)
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi) {
+static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi)
+{
 	ir_type  *tp;
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
@@ -680,7 +693,8 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	}
 }
 
-int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
+int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn)
+{
 	(void) block_env;
 	if(!is_ppc32_irn(irn))
 		return -1;
@@ -691,7 +705,8 @@ int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn) {
 /**
  * Initializes the code generator interface.
  */
-static const arch_code_generator_if_t *ppc32_get_code_generator_if(void *self) {
+static const arch_code_generator_if_t *ppc32_get_code_generator_if(void *self)
+{
 	(void) self;
 	return &ppc32_code_gen_if;
 }
@@ -701,7 +716,8 @@ list_sched_selector_t ppc32_sched_selector;
 /**
  * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
  */
-static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *self, list_sched_selector_t *selector) {
+static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *self, list_sched_selector_t *selector)
+{
 	(void) self;
 	(void) selector;
 	ppc32_sched_selector = trivial_selector;
@@ -709,7 +725,8 @@ static const list_sched_selector_t *ppc32_get_list_sched_selector(const void *se
 	return &ppc32_sched_selector;
 }
 
-static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self) {
+static const ilp_sched_selector_t *ppc32_get_ilp_sched_selector(const void *self)
+{
 	(void) self;
 	return NULL;
 }
@@ -723,14 +740,16 @@ static int ppc32_get_reg_class_alignment(const arch_register_class_t *cls)
 	return get_mode_size_bytes(mode);
 }
 
-static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const ir_node *irn) {
+static const be_execution_unit_t ***ppc32_get_allowed_execution_units(const ir_node *irn)
+{
 	(void) irn;
 	/* TODO */
 	panic("Unimplemented ppc32_get_allowed_execution_units()");
 	return NULL;
 }
 
-static const be_machine_t *ppc32_get_machine(const void *self) {
+static const be_machine_t *ppc32_get_machine(const void *self)
+{
 	(void) self;
 	/* TODO */
 	panic("Unimplemented ppc32_get_machine()");
@@ -740,7 +759,8 @@ static const be_machine_t *ppc32_get_machine(const void *self) {
 /**
  * Return irp irgs in the desired order.
  */
-static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list) {
+static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list)
+{
 	(void) self;
 	(void) irg_list;
 	return NULL;
@@ -749,7 +769,8 @@ static ir_graph **ppc32_get_irg_list(const void *self, ir_graph ***irg_list) {
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
-static const backend_params *ppc32_get_libfirm_params(void) {
+static const backend_params *ppc32_get_libfirm_params(void)
+{
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */

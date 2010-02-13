@@ -57,17 +57,20 @@
 
 #ifdef _WIN32
 /* Break into the debugger. The Win32 way. */
-void firm_debug_break(void) {
+void firm_debug_break(void)
+{
 	DebugBreak();
 }
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64))
 /* Break into the debugger. The ia32/x86_64 way under GCC. */
-void firm_debug_break(void) {
+void firm_debug_break(void)
+{
 	__asm__ __volatile__("int3");
 }
 #else
 /* Break into the debugger. Poor Unix way. */
-void firm_debug_break(void) {
+void firm_debug_break(void)
+{
 	raise(SIGINT);
 }
 #endif /* _WIN32 */
@@ -188,21 +191,24 @@ static const char firm_debug_info_string[] =
 /**
  * Returns non-zero, if the debug extension is active
  */
-int firm_debug_active(void) {
+int firm_debug_active(void)
+{
 	return is_active;
 }  /* firm_debug_active */
 
 /**
  * Reset the debug text buffer.
  */
-static void reset_dbg_buf(void) {
+static void reset_dbg_buf(void)
+{
 	firm_dbg_msg_buf[0] = '\0';
 }  /* reset_dbg_buf */
 
 /**
  * Add text to the debug text buffer.
  */
-static void add_to_dbg_buf(const char *buf) {
+static void add_to_dbg_buf(const char *buf)
+{
 	strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
 }  /* add_to_dbg_buf */
 
@@ -211,7 +217,8 @@ static void add_to_dbg_buf(const char *buf) {
  *
  * To be called from the debugger.
  */
-const char *firm_debug_text(void) {
+const char *firm_debug_text(void)
+{
 	firm_dbg_msg_buf[sizeof(firm_dbg_msg_buf) - 1] = '\0';
 	return firm_dbg_msg_buf;
 }  /* firm_debug_text */
@@ -516,7 +523,8 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 /**
  * Break if ident name is reached.
  */
-static void break_on_ident(const char *name, bp_reasons_t reason) {
+static void break_on_ident(const char *name, bp_reasons_t reason)
+{
 	bp_ident_t key, *elem;
 
 	key.bp.kind   = BP_IDENT;
@@ -564,7 +572,8 @@ static void bp_activate(unsigned bp, int active)
 /**
  * Show a list of supported commands
  */
-static void show_commands(void) {
+static void show_commands(void)
+{
 	dbg_printf("Internal Firm debugger extension $Revision$ commands:\n"
 		"init                  break after initialization\n"
 		"create nr             break if node nr was created\n"
@@ -590,7 +599,8 @@ static void show_commands(void) {
 /**
  * Shows all Firm breakpoints.
  */
-static void show_bp(void) {
+static void show_bp(void)
+{
 	breakpoint *p;
 	bp_nr_t  *node_p;
 	bp_ident_t *ident_p;
@@ -622,7 +632,8 @@ static void show_bp(void) {
  * firm_dbg_register() expects that the name is stored persistent.
  * So we need this little helper function
  */
-static firm_dbg_module_t *dbg_register(const char *name) {
+static firm_dbg_module_t *dbg_register(const char *name)
+{
 	ident *id = new_id_from_str(name);
 
 	return firm_dbg_register(get_id_str(id));
@@ -662,7 +673,8 @@ static void set_dbg_outfile(const char *name, const char *fname)
 /**
  * Show info about a firm thing.
  */
-static void show_firm_object(void *firm_thing) {
+static void show_firm_object(void *firm_thing)
+{
 	FILE *f = stdout;
 
 	if (firm_thing == NULL) {
@@ -698,7 +710,8 @@ static void show_firm_object(void *firm_thing) {
 /**
  * Find a firm type by its number.
  */
-static ir_type *find_type_nr(long nr) {
+static ir_type *find_type_nr(long nr)
+{
 	int i, n = get_irp_n_types();
 	ir_type *tp;
 
@@ -716,7 +729,8 @@ static ir_type *find_type_nr(long nr) {
 /**
  * Find a firm type by its name.
  */
-static ir_type *find_type_name(const char *name) {
+static ir_type *find_type_name(const char *name)
+{
 	int i, n = get_irp_n_types();
 	ir_type *tp;
 
@@ -746,7 +760,8 @@ typedef struct find_env {
 /**
  * Type-walker: Find an entity with given number.
  */
-static void check_ent_nr(type_or_ent tore, void *ctx) {
+static void check_ent_nr(type_or_ent tore, void *ctx)
+{
 	find_env_t *env = ctx;
 
 	if (is_entity(tore.ent)) {
@@ -759,7 +774,8 @@ static void check_ent_nr(type_or_ent tore, void *ctx) {
 /**
  * Type-walker: Find an entity with given name.
  */
-static void check_ent_name(type_or_ent tore, void *ctx) {
+static void check_ent_name(type_or_ent tore, void *ctx)
+{
 	find_env_t *env = ctx;
 
 	if (is_entity(tore.ent))
@@ -771,7 +787,8 @@ static void check_ent_name(type_or_ent tore, void *ctx) {
 /**
  * Find a firm entity by its number.
  */
-static ir_entity *find_entity_nr(long nr) {
+static ir_entity *find_entity_nr(long nr)
+{
 	find_env_t env;
 
 	env.u.nr = nr;
@@ -783,7 +800,8 @@ static ir_entity *find_entity_nr(long nr) {
 /**
  * Find a firm entity by its name.
  */
-static ir_entity *find_entity_name(const char *name) {
+static ir_entity *find_entity_name(const char *name)
+{
 	find_env_t env;
 
 	env.u.name = name;
@@ -795,7 +813,8 @@ static ir_entity *find_entity_name(const char *name) {
 /**
  * Search methods for a name.
  */
-static void show_by_name(type_or_ent tore, void *env) {
+static void show_by_name(type_or_ent tore, void *env)
+{
 	ident *id = (ident *)env;
 
 	if (is_entity(tore.ent)) {
@@ -823,7 +842,8 @@ static void show_by_name(type_or_ent tore, void *env) {
 /**
  * Search methods for a ldname.
  */
-static void show_by_ldname(type_or_ent tore, void *env) {
+static void show_by_ldname(type_or_ent tore, void *env)
+{
 	ident *id = (ident *)env;
 
 	if (is_entity(tore.ent)) {
@@ -851,7 +871,8 @@ static void show_by_ldname(type_or_ent tore, void *env) {
 /**
  * prints the address and graph number of all irgs with given name
  */
-static void irg_name(const char *name) {
+static void irg_name(const char *name)
+{
 	ident *id = new_id_from_str(name);
 
 	type_walk(show_by_name, NULL, (void *)id);
@@ -860,7 +881,8 @@ static void irg_name(const char *name) {
 /**
  * prints the address and graph number of all irgs with given ld_name
  */
-static void irg_ld_name(const char *name) {
+static void irg_ld_name(const char *name)
+{
 	ident *id = new_id_from_str(name);
 
 	type_walk(show_by_ldname, NULL, (void *)id);
@@ -930,7 +952,8 @@ static struct lexer {
 /**
  * Initialize the lexer.
  */
-static void init_lexer(const char *input) {
+static void init_lexer(const char *input)
+{
 	lexer.has_token = 0;
 	lexer.curr_pos  = input;
 	lexer.end_pos   = input + strlen(input);
@@ -940,7 +963,8 @@ static void init_lexer(const char *input) {
 /**
  * Get the next char from the input.
  */
-static char next_char(void) {
+static char next_char(void)
+{
 	if (lexer.curr_pos >= lexer.end_pos)
 		return '\0';
 	return *lexer.curr_pos++;
@@ -954,7 +978,8 @@ static char next_char(void) {
 /**
  * The lexer.
  */
-static unsigned get_token(void) {
+static unsigned get_token(void)
+{
 	char c;
 	int i;
 
@@ -1038,7 +1063,8 @@ static unsigned get_token(void) {
  *
  * See show_commands() for supported commands.
  */
-void firm_debug(const char *cmd) {
+void firm_debug(const char *cmd)
+{
 	char name[1024], fname[1024];
 	int len;
 
@@ -1273,7 +1299,8 @@ void firm_init_debugger(void)
 /**
  * A gdb helper function to print firm objects.
  */
-const char *gdb_node_helper(void *firm_object) {
+const char *gdb_node_helper(void *firm_object)
+{
 	static char buf[1024];
 	ir_snprintf(buf, sizeof(buf), "%+F", firm_object);
 	return buf;
@@ -1282,13 +1309,15 @@ const char *gdb_node_helper(void *firm_object) {
 /**
  * A gdb helper function to print tarvals.
  */
-const char *gdb_tarval_helper(void *tv_object) {
+const char *gdb_tarval_helper(void *tv_object)
+{
 	static char buf[1024];
 	ir_snprintf(buf, sizeof(buf), "%+T", tv_object);
 	return buf;
 }
 
-const char *gdb_out_edge_helper(const ir_node *node) {
+const char *gdb_out_edge_helper(const ir_node *node)
+{
 	static char buf[4*1024];
 	char *b = buf;
 	size_t l;

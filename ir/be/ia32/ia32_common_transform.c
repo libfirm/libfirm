@@ -198,7 +198,8 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 	return reg;
 }
 
-int ia32_mode_needs_gp_reg(ir_mode *mode) {
+int ia32_mode_needs_gp_reg(ir_mode *mode)
+{
 	if (mode == mode_fpcw)
 		return 0;
 	if (get_mode_size_bits(mode) > 32)
@@ -789,7 +790,8 @@ ir_node *gen_ASM(ir_node *node)
 	return new_node;
 }
 
-ir_node *gen_CopyB(ir_node *node) {
+ir_node *gen_CopyB(ir_node *node)
+{
 	ir_node  *block    = NULL;
 	ir_node  *src      = NULL;
 	ir_node  *new_src  = NULL;
@@ -849,7 +851,8 @@ ir_node *gen_CopyB(ir_node *node) {
 	return res;
 }
 
-ir_node *gen_Proj_tls(ir_node *node) {
+ir_node *gen_Proj_tls(ir_node *node)
+{
 	ir_node  *block = NULL;
 	dbg_info *dbgi  = NULL;
 	ir_node  *res   = NULL;

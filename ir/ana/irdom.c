@@ -47,7 +47,8 @@
 /** Accessing the dominator and post dominator data structures       **/
 /*--------------------------------------------------------------------*/
 
-ir_node *get_Block_idom(const ir_node *bl) {
+ir_node *get_Block_idom(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	if (get_Block_dom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
@@ -56,7 +57,8 @@ ir_node *get_Block_idom(const ir_node *bl) {
 	return get_dom_info(bl)->idom;
 }
 
-void set_Block_idom(ir_node *bl, ir_node *n) {
+void set_Block_idom(ir_node *bl, ir_node *n)
+{
 	ir_dom_info *bli = get_dom_info(bl);
 
 	assert(is_Block(bl));
@@ -76,7 +78,8 @@ void set_Block_idom(ir_node *bl, ir_node *n) {
 	}
 }
 
-ir_node *get_Block_ipostdom(const ir_node *bl) {
+ir_node *get_Block_ipostdom(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	if (get_Block_postdom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
@@ -85,7 +88,8 @@ ir_node *get_Block_ipostdom(const ir_node *bl) {
 	return get_pdom_info(bl)->idom;
 }
 
-void set_Block_ipostdom(ir_node *bl, ir_node *n) {
+void set_Block_ipostdom(ir_node *bl, ir_node *n)
+{
 	ir_dom_info *bli = get_pdom_info(bl);
 
 	assert(is_Block(bl));
@@ -105,69 +109,82 @@ void set_Block_ipostdom(ir_node *bl, ir_node *n) {
 	}
 }
 
-int get_Block_dom_pre_num(const ir_node *bl) {
+int get_Block_dom_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->pre_num;
 }
 
-void set_Block_dom_pre_num(ir_node *bl, int num) {
+void set_Block_dom_pre_num(ir_node *bl, int num)
+{
 	assert(is_Block(bl));
 	get_dom_info(bl)->pre_num = num;
 }
 
-int get_Block_dom_depth(const ir_node *bl) {
+int get_Block_dom_depth(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->dom_depth;
 }
 
-void set_Block_dom_depth(ir_node *bl, int depth) {
+void set_Block_dom_depth(ir_node *bl, int depth)
+{
 	assert(is_Block(bl));
 	get_dom_info(bl)->dom_depth = depth;
 }
 
 
-int get_Block_postdom_pre_num(const ir_node *bl) {
+int get_Block_postdom_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->pre_num;
 }
 
-void set_Block_postdom_pre_num(ir_node *bl, int num) {
+void set_Block_postdom_pre_num(ir_node *bl, int num)
+{
 	assert(is_Block(bl));
 	get_pdom_info(bl)->pre_num = num;
 }
 
-int get_Block_postdom_depth(const ir_node *bl) {
+int get_Block_postdom_depth(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->dom_depth;
 }
 
-void set_Block_postdom_depth(ir_node *bl, int depth) {
+void set_Block_postdom_depth(ir_node *bl, int depth)
+{
 	assert(is_Block(bl));
 	get_pdom_info(bl)->dom_depth = depth;
 }
 
-unsigned get_Block_dom_tree_pre_num(const ir_node *bl) {
+unsigned get_Block_dom_tree_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->tree_pre_num;
 }
 
-unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl) {
+unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->max_subtree_pre_num;
 }
 
-unsigned get_Block_pdom_tree_pre_num(const ir_node *bl) {
+unsigned get_Block_pdom_tree_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->tree_pre_num;
 }
 
-unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl) {
+unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->max_subtree_pre_num;
 }
 
 /* Check, if a block dominates another block. */
-int block_dominates(const ir_node *a, const ir_node *b) {
+int block_dominates(const ir_node *a, const ir_node *b)
+{
 	const ir_dom_info *ai, *bi;
 
 	if (is_Block(a) && is_Block(b)) {
@@ -181,12 +198,14 @@ int block_dominates(const ir_node *a, const ir_node *b) {
 }
 
 /* Check, if a block strictly dominates another block. */
-int block_strictly_dominates(const ir_node *a, const ir_node *b) {
+int block_strictly_dominates(const ir_node *a, const ir_node *b)
+{
 	return (a != b) && block_dominates(a, b);
 }
 
 /* Returns the smallest common dominator block of two nodes. */
-ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
+ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b)
+{
 	ir_node *bl_a   = is_Block(a) ? a : get_nodes_block(a);
 	ir_node *bl_b   = is_Block(b) ? b : get_nodes_block(b);
 	ir_node *dom_bl = NULL;
@@ -213,7 +232,8 @@ ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b) {
 }
 
 /* Returns the smallest common dominator block of all users of a node. */
-ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
+ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi)
+{
 	int n, j, i = 0, success;
 	ir_node **user_blocks, *dom_bl;
 	const ir_edge_t *edge;
@@ -270,20 +290,23 @@ ir_node *node_users_smallest_common_dominator(ir_node *irn, int handle_phi) {
 
 
 /* Get the first node in the list of nodes dominated by a given block. */
-ir_node *get_Block_dominated_first(const ir_node *bl) {
+ir_node *get_Block_dominated_first(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->first;
 }
 
 /* Get the next node in a list of nodes which are dominated by some
  * other node. */
-ir_node *get_Block_dominated_next(const ir_node *bl) {
+ir_node *get_Block_dominated_next(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_dom_info(bl)->next;
 }
 
 /* Check, if a block post dominates another block. */
-int block_postdominates(const ir_node *a, const ir_node *b) {
+int block_postdominates(const ir_node *a, const ir_node *b)
+{
 	const ir_dom_info *ai, *bi;
 
 	if (is_Block(a) && is_Block(b)) {
@@ -297,20 +320,23 @@ int block_postdominates(const ir_node *a, const ir_node *b) {
 }
 
 /* Check, if a block strictly dominates another block. */
-int block_strictly_postdominates(const ir_node *a, const ir_node *b) {
+int block_strictly_postdominates(const ir_node *a, const ir_node *b)
+{
 	return (a != b) && block_postdominates(a, b);
 }
 
 
 /* Get the first node in the list of nodes post dominated by a given block. */
-ir_node *get_Block_postdominated_first(const ir_node *bl) {
+ir_node *get_Block_postdominated_first(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->first;
 }
 
 /* Get the next node in a list of nodes which are post dominated by some
  * other node. */
-ir_node *get_Block_postdominated_next(const ir_node *bl) {
+ir_node *get_Block_postdominated_next(const ir_node *bl)
+{
 	assert(is_Block(bl));
 	return get_pdom_info(bl)->next;
 }
@@ -439,7 +465,8 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 /**
  * count the number of blocks and clears the post dominance info
  */
-static void count_and_init_blocks_pdom(ir_node *bl, void *env) {
+static void count_and_init_blocks_pdom(ir_node *bl, void *env)
+{
 	int *n_blocks = (int *) env;
 	(*n_blocks) ++;
 
@@ -564,7 +591,8 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 	}
 }
 
-static void dom_compress(tmp_dom_info *v) {
+static void dom_compress(tmp_dom_info *v)
+{
 	assert (v->ancestor);
 	if (v->ancestor->ancestor) {
 		dom_compress (v->ancestor);
@@ -579,21 +607,24 @@ static void dom_compress(tmp_dom_info *v) {
  * if V is a root, return v, else return the vertex u, not being the
  * root, with minimum u->semi on the path from v to its root.
  */
-inline static tmp_dom_info *dom_eval(tmp_dom_info *v) {
+inline static tmp_dom_info *dom_eval(tmp_dom_info *v)
+{
 	if (!v->ancestor) return v;
 	dom_compress (v);
 	return v->label;
 }
 
 /** make V W's ancestor */
-inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w) {
+inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
+{
 	w->ancestor = v;
 }
 
 /**
  * Walker: count the number of blocks and clears the dominance info
  */
-static void count_and_init_blocks_dom(ir_node *bl, void *env) {
+static void count_and_init_blocks_dom(ir_node *bl, void *env)
+{
 	int *n_blocks = (int *) env;
 	(*n_blocks) ++;
 
@@ -614,7 +645,8 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env) {
  * @param irg  the graph
  * @param pre  a walker function that will be called for every block in the graph
  */
-static int init_construction(ir_graph *irg, irg_walk_func *pre) {
+static int init_construction(ir_graph *irg, irg_walk_func *pre)
+{
 	ir_graph *rem = current_ir_graph;
 	ir_node *end;
 	int arity;
@@ -662,7 +694,8 @@ static int init_construction(ir_graph *irg, irg_walk_func *pre) {
 /* Computes the dominator trees.  Sets a flag in irg to "dom_consistent".
    If the control flow of the graph is changed this flag must be set to
    "dom_inconsistent".  */
-void compute_doms(ir_graph *irg) {
+void compute_doms(ir_graph *irg)
+{
 	ir_graph *rem = current_ir_graph;
 	int n_blocks, used, i, j;
 	tmp_dom_info *tdi_list;   /* Ein Golf? */
@@ -784,12 +817,14 @@ void compute_doms(ir_graph *irg) {
 	current_ir_graph = rem;
 }
 
-void assure_doms(ir_graph *irg) {
+void assure_doms(ir_graph *irg)
+{
 	if (get_irg_dom_state(irg) != dom_consistent)
 		compute_doms(irg);
 }
 
-void free_dom(ir_graph *irg) {
+void free_dom(ir_graph *irg)
+{
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
 	irg->dom_state = dom_none;
@@ -801,7 +836,8 @@ void free_dom(ir_graph *irg) {
 /* Computes the post dominator trees.  Sets a flag in irg to "dom_consistent".
    If the control flow of the graph is changed this flag must be set to
    "dom_inconsistent".  */
-void compute_postdoms(ir_graph *irg) {
+void compute_postdoms(ir_graph *irg)
+{
 	ir_graph *rem = current_ir_graph;
 	int n_blocks, used, i, j;
 	tmp_dom_info *tdi_list;
@@ -895,12 +931,14 @@ void compute_postdoms(ir_graph *irg) {
 	current_ir_graph = rem;
 }
 
-void assure_postdoms(ir_graph *irg) {
+void assure_postdoms(ir_graph *irg)
+{
 	if (get_irg_postdom_state(irg) != dom_consistent)
 		compute_postdoms(irg);
 }
 
-void free_postdom(ir_graph *irg) {
+void free_postdom(ir_graph *irg)
+{
 	/* Update graph state */
 	assert(get_irg_phase_state(irg) != phase_building);
 	irg->pdom_state = dom_none;

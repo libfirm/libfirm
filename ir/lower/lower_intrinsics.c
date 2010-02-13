@@ -54,7 +54,8 @@ typedef struct _walker_env {
 /**
  * walker: call all mapper functions
  */
-static void call_mapper(ir_node *node, void *env) {
+static void call_mapper(ir_node *node, void *env)
+{
 	walker_env_t *wenv = env;
 	ir_op *op = get_irn_op(node);
 
@@ -91,7 +92,8 @@ static void call_mapper(ir_node *node, void *env) {
 }  /* call_mapper */
 
 /* Go through all graphs and map calls to intrinsic functions. */
-unsigned lower_intrinsics(i_record *list, int length, int part_block_used) {
+unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
+{
 	int            i, n_ops = get_irp_n_opcodes();
 	ir_graph       *irg;
 	pmap           *c_map = pmap_create_ex(length);
@@ -211,7 +213,8 @@ ir_prog_pass_t *lower_intrinsics_pass(
  * @param reg_jmp  new regular control flow, if NULL, a Jmp will be used
  * @param exc_jmp  new exception control flow, if reg_jmp == NULL, a Bad will be used
  */
-static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp) {
+static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp)
+{
 	ir_node *block = get_nodes_block(call);
 
 	if (reg_jmp == NULL) {
@@ -234,7 +237,8 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 }  /* replace_call */
 
 /* A mapper for the integer abs. */
-int i_mapper_abs(ir_node *call, void *ctx) {
+int i_mapper_abs(ir_node *call, void *ctx)
+{
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
@@ -249,7 +253,8 @@ int i_mapper_abs(ir_node *call, void *ctx) {
 }  /* i_mapper_abs */
 
 /* A mapper for the integer bswap. */
-int i_mapper_bswap(ir_node *call, void *ctx) {
+int i_mapper_bswap(ir_node *call, void *ctx)
+{
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
@@ -267,7 +272,8 @@ int i_mapper_bswap(ir_node *call, void *ctx) {
 }  /* i_mapper_bswap */
 
 /* A mapper for the alloca() function. */
-int i_mapper_alloca(ir_node *call, void *ctx) {
+int i_mapper_alloca(ir_node *call, void *ctx)
+{
 	ir_node *mem   = get_Call_mem(call);
 	ir_node *block = get_nodes_block(call);
 	ir_node *op    = get_Call_param(call, 0);
@@ -296,7 +302,8 @@ int i_mapper_alloca(ir_node *call, void *ctx) {
 }  /* i_mapper_alloca */
 
 /* A mapper for the floating point sqrt. */
-int i_mapper_sqrt(ir_node *call, void *ctx) {
+int i_mapper_sqrt(ir_node *call, void *ctx)
+{
 	ir_node *mem;
 	tarval *tv;
 	ir_node *op = get_Call_param(call, 0);
@@ -318,7 +325,8 @@ int i_mapper_sqrt(ir_node *call, void *ctx) {
 }  /* i_mapper_sqrt */
 
 /* A mapper for the floating point cbrt. */
-int i_mapper_cbrt(ir_node *call, void *ctx) {
+int i_mapper_cbrt(ir_node *call, void *ctx)
+{
 	ir_node *mem;
 	tarval *tv;
 	ir_node *op = get_Call_param(call, 0);
@@ -340,7 +348,8 @@ int i_mapper_cbrt(ir_node *call, void *ctx) {
 }  /* i_mapper_cbrt */
 
 /* A mapper for the floating point pow. */
-int i_mapper_pow(ir_node *call, void *ctx) {
+int i_mapper_pow(ir_node *call, void *ctx)
+{
 	dbg_info *dbg;
 	ir_node *mem;
 	ir_node *left  = get_Call_param(call, 0);
@@ -390,7 +399,8 @@ int i_mapper_pow(ir_node *call, void *ctx) {
 }  /* i_mapper_pow */
 
 /* A mapper for the floating point exp. */
-int i_mapper_exp(ir_node *call, void *ctx) {
+int i_mapper_exp(ir_node *call, void *ctx)
+{
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -409,7 +419,8 @@ int i_mapper_exp(ir_node *call, void *ctx) {
 /**
  * A mapper for mapping f(0.0) to 0.0.
  */
-static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason) {
+static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason)
+{
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -426,7 +437,8 @@ static int i_mapper_zero_to_zero(ir_node *call, void *ctx, int reason) {
 /**
  * A mapper for mapping f(1.0) to 0.0.
  */
-static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason) {
+static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason)
+{
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -447,7 +459,8 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason) {
  * f(-x)  = f(x).
  * f(0.0) = 1.0
  */
-static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) {
+static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
+{
 	ir_node *val  = get_Call_param(call, 0);
 	(void) ctx;
 
@@ -488,61 +501,71 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason) 
 }  /* i_mapper_symmetric_zero_to_one */
 
 /* A mapper for the floating point log. */
-int i_mapper_log(ir_node *call, void *ctx) {
+int i_mapper_log(ir_node *call, void *ctx)
+{
 	/* log(1.0) = 0.0 */
 	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_LOG);
 }  /* i_mapper_log */
 
 /* A mapper for the floating point sin. */
-int i_mapper_sin(ir_node *call, void *ctx) {
+int i_mapper_sin(ir_node *call, void *ctx)
+{
 	/* sin(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SIN);
 }  /* i_mapper_sin */
 
 /* A mapper for the floating point cos. */
-int i_mapper_cos(ir_node *call, void *ctx) {
+int i_mapper_cos(ir_node *call, void *ctx)
+{
 	/* cos(0.0) = 1.0, cos(-x) = x */
 	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COS);
 }  /* i_mapper_cos */
 
 /* A mapper for the floating point tan. */
-int i_mapper_tan(ir_node *call, void *ctx) {
+int i_mapper_tan(ir_node *call, void *ctx)
+{
 	/* tan(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TAN);
 }  /* i_mapper_tan */
 
 /* A mapper for the floating point asin. */
-int i_mapper_asin(ir_node *call, void *ctx) {
+int i_mapper_asin(ir_node *call, void *ctx)
+{
 	/* asin(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ASIN);
 }  /* i_mapper_asin */
 
 /* A mapper for the floating point acos. */
-int i_mapper_acos(ir_node *call, void *ctx) {
+int i_mapper_acos(ir_node *call, void *ctx)
+{
 	/* acos(1.0) = 0.0 */
 	return i_mapper_one_to_zero(call, ctx, FS_OPT_RTS_ACOS);
 }  /* i_mapper_acos */
 
 /* A mapper for the floating point atan. */
-int i_mapper_atan(ir_node *call, void *ctx) {
+int i_mapper_atan(ir_node *call, void *ctx)
+{
 	/* atan(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_ATAN);
 }  /* i_mapper_atan */
 
 /* A mapper for the floating point sinh. */
-int i_mapper_sinh(ir_node *call, void *ctx) {
+int i_mapper_sinh(ir_node *call, void *ctx)
+{
 	/* sinh(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_SINH);
 }  /* i_mapper_sinh */
 
 /* A mapper for the floating point cosh. */
-int i_mapper_cosh(ir_node *call, void *ctx) {
+int i_mapper_cosh(ir_node *call, void *ctx)
+{
 	/* cosh(0.0) = 1.0, cosh(-x) = x */
 	return i_mapper_symmetric_zero_to_one(call, ctx, FS_OPT_RTS_COSH);
 }  /* i_mapper_cosh */
 
 /* A mapper for the floating point tanh. */
-int i_mapper_tanh(ir_node *call, void *ctx) {
+int i_mapper_tanh(ir_node *call, void *ctx)
+{
 	/* tanh(0.0) = 0.0 */
 	return i_mapper_zero_to_zero(call, ctx, FS_OPT_RTS_TANH);
 }  /* i_mapper_tanh */
@@ -596,7 +619,8 @@ static bool initializer_val_is_null(ir_initializer_t *init)
  * @return a Const node containing the strlen() result or NULL
  *         if the evaluation fails
  */
-static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
+static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp)
+{
 	ir_type *tp = get_entity_type(ent);
 	ir_mode *mode;
 	ir_initializer_t *initializer;
@@ -656,7 +680,8 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp) {
 }  /* eval_strlen */
 
 /* A mapper for strlen */
-int i_mapper_strlen(ir_node *call, void *ctx) {
+int i_mapper_strlen(ir_node *call, void *ctx)
+{
 	ir_node *s     = get_Call_param(call, 0);
 	ir_entity *ent = get_const_entity(s);
 
@@ -691,7 +716,8 @@ int i_mapper_strlen(ir_node *call, void *ctx) {
  * @return a Const node containing the strcmp() result or NULL
  *         if the evaluation fails
  */
-static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) {
+static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp)
+{
 	ir_type *tp;
 	ir_mode *mode;
 	int     i, n, n_r, res;
@@ -778,7 +804,8 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp) 
  *
  * @return non-zero if ent represents the empty string
  */
-static int is_empty_string(ir_entity *ent) {
+static int is_empty_string(ir_entity *ent)
+{
 	ir_type          *tp = get_entity_type(ent);
 	ir_mode          *mode;
 	ir_node          *irn;
@@ -818,7 +845,8 @@ static int is_empty_string(ir_entity *ent) {
 }  /* is_empty_string */
 
 /* A mapper for strcmp */
-int i_mapper_strcmp(ir_node *call, void *ctx) {
+int i_mapper_strcmp(ir_node *call, void *ctx)
+{
 	ir_node   *left    = get_Call_param(call, 0);
 	ir_node   *right   = get_Call_param(call, 1);
 	ir_node   *irn     = NULL;
@@ -907,7 +935,8 @@ replace_by_call:
 }  /* i_mapper_strcmp */
 
 /* A mapper for strncmp */
-int i_mapper_strncmp(ir_node *call, void *ctx) {
+int i_mapper_strncmp(ir_node *call, void *ctx)
+{
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *len   = get_Call_param(call, 2);
@@ -933,7 +962,8 @@ int i_mapper_strncmp(ir_node *call, void *ctx) {
 }  /* i_mapper_strncmp */
 
 /* A mapper for strcpy */
-int i_mapper_strcpy(ir_node *call, void *ctx) {
+int i_mapper_strcpy(ir_node *call, void *ctx)
+{
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	(void) ctx;
@@ -951,7 +981,8 @@ int i_mapper_strcpy(ir_node *call, void *ctx) {
 }  /* i_mapper_strcpy */
 
 /* A mapper for memcpy */
-int i_mapper_memcpy(ir_node *call, void *ctx) {
+int i_mapper_memcpy(ir_node *call, void *ctx)
+{
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
@@ -970,7 +1001,8 @@ int i_mapper_memcpy(ir_node *call, void *ctx) {
 }  /* i_mapper_memcpy */
 
 /* A mapper for mempcpy */
-int i_mapper_mempcpy(ir_node *call, void *ctx) {
+int i_mapper_mempcpy(ir_node *call, void *ctx)
+{
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
@@ -993,7 +1025,8 @@ int i_mapper_mempcpy(ir_node *call, void *ctx) {
 }  /* i_mapper_mempcpy */
 
 /* A mapper for memmove */
-int i_mapper_memmove(ir_node *call, void *ctx) {
+int i_mapper_memmove(ir_node *call, void *ctx)
+{
 	ir_node *dst = get_Call_param(call, 0);
 	ir_node *src = get_Call_param(call, 1);
 	ir_node *len = get_Call_param(call, 2);
@@ -1012,7 +1045,8 @@ int i_mapper_memmove(ir_node *call, void *ctx) {
 }  /* i_mapper_memmove */
 
 /* A mapper for memset */
-int i_mapper_memset(ir_node *call, void *ctx) {
+int i_mapper_memset(ir_node *call, void *ctx)
+{
 	ir_node *len = get_Call_param(call, 2);
 	(void) ctx;
 
@@ -1029,7 +1063,8 @@ int i_mapper_memset(ir_node *call, void *ctx) {
 }  /* i_mapper_memset */
 
 /* A mapper for memcmp */
-int i_mapper_memcmp(ir_node *call, void *ctx) {
+int i_mapper_memcmp(ir_node *call, void *ctx)
+{
 	ir_node *left  = get_Call_param(call, 0);
 	ir_node *right = get_Call_param(call, 1);
 	ir_node *len   = get_Call_param(call, 2);
@@ -1057,7 +1092,8 @@ int i_mapper_memcmp(ir_node *call, void *ctx) {
 /**
  * Returns the result mode of a node.
  */
-static ir_mode *get_irn_res_mode(ir_node *node) {
+static ir_mode *get_irn_res_mode(ir_node *node)
+{
 	switch (get_irn_opcode(node)) {
 	case iro_Load:   return get_Load_mode(node);
 	case iro_Quot:   return get_Quot_resmode(node);
@@ -1071,7 +1107,8 @@ static ir_mode *get_irn_res_mode(ir_node *node) {
 #define LMAX(a, b) ((a) > (b) ? (a) : (b))
 
 /* A mapper for mapping unsupported instructions to runtime calls. */
-int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt) {
+int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
+{
 	int i, j, arity, first, n_param, n_res;
 	long n_proj;
 	ir_type *mtp;

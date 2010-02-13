@@ -61,7 +61,8 @@ ir_node *ia32_get_proj_for_mode(const ir_node *irn, ir_mode *mode)
  * @param irn  The irn
  * @param First proj with mode != mode_M or NULL if none found
  */
-ir_node *ia32_get_res_proj(const ir_node *irn) {
+ir_node *ia32_get_res_proj(const ir_node *irn)
+{
 	const ir_edge_t *edge;
 	ir_node         *src;
 

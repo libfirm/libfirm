@@ -390,7 +390,8 @@ static int mris_edge_hook(FILE *F, ir_node *irn)
 	return 1;
 }
 
-void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix) {
+void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix)
+{
 	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
 
 	dump_consts_local(0);

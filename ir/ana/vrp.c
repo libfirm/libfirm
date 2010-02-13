@@ -48,7 +48,8 @@ struct vrp_env_t {
 	worklist_t *worklist;
 };
 
-int update_vrp_data( ir_node *node) {
+int update_vrp_data( ir_node *node)
+{
 
 	tarval *new_bits_set = get_tarval_bad();
 	tarval *new_bits_not_set = get_tarval_bad();
@@ -537,7 +538,8 @@ int update_vrp_data( ir_node *node) {
 	return something_changed;
 }
 
-void vrp_first_pass(ir_node *n, void *e) {
+void vrp_first_pass(ir_node *n, void *e)
+{
 	ir_node *succ;
 	worklist_t *tmp_entry;
 	int i;
@@ -565,7 +567,8 @@ void vrp_first_pass(ir_node *n, void *e) {
 }
 
 
-void set_vrp_data(ir_graph *irg) {
+void set_vrp_data(ir_graph *irg)
+{
 
 	ir_node *succ;
 	int i;
@@ -615,11 +618,13 @@ void set_vrp_data(ir_graph *irg) {
 }
 
 
-ir_graph_pass_t *set_vrp_pass(const char *name) {
+ir_graph_pass_t *set_vrp_pass(const char *name)
+{
 	return def_graph_pass(name ? name : "set_vrp", set_vrp_data);
 }
 
-pn_Cmp vrp_cmp(ir_node *left, ir_node *right) {
+pn_Cmp vrp_cmp(ir_node *left, ir_node *right)
+{
 	if (!left->vrp.valid || !right->vrp.valid) {
 		return pn_Cmp_False;
 	}

@@ -69,7 +69,8 @@ static inline ir_node *get_succ_Proj(ir_node *node, long proj)
 /**
  * Returns a singleton condition mode
  */
-ir_mode *get_ppc32_mode_Cond(void) {
+ir_mode *get_ppc32_mode_Cond(void)
+{
 	if (ppc32_mode_Cond)
 		return ppc32_mode_Cond;
 	else {
@@ -236,7 +237,8 @@ int is_16bit_unsigned_const(ir_node *node)
  * @param env   The transformation environment
  * @return the created ppc Add node
  */
-static ir_node *gen_Add(ppc32_transform_env_t *env) {
+static ir_node *gen_Add(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Add_left(env->irn);
 	ir_node *op2 = get_Add_right(env->irn);
 
@@ -280,7 +282,8 @@ static ir_node *gen_Add(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Mul node
  */
-static ir_node *gen_Mul(ppc32_transform_env_t *env) {
+static ir_node *gen_Mul(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Mul_left(env->irn);
 	ir_node *op2 = get_Mul_right(env->irn);
 
@@ -309,7 +312,8 @@ static ir_node *gen_Mul(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Mulh node
  */
-static ir_node *gen_Mulh(ppc32_transform_env_t *env) {
+static ir_node *gen_Mulh(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_irn_n(env->irn, 0);
 	ir_node *op2 = get_irn_n(env->irn, 1);
 
@@ -338,7 +342,8 @@ static ir_node *gen_Mulh(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc And node
  */
-static ir_node *gen_And(ppc32_transform_env_t *env) {
+static ir_node *gen_And(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_And_left(env->irn);
 	ir_node *op2 = get_And_right(env->irn);
 
@@ -351,7 +356,8 @@ static ir_node *gen_And(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Or node
  */
-static ir_node *gen_Or(ppc32_transform_env_t *env) {
+static ir_node *gen_Or(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Or_left(env->irn);
 	ir_node *op2 = get_Or_right(env->irn);
 
@@ -364,7 +370,8 @@ static ir_node *gen_Or(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Xor node
  */
-static ir_node *gen_Eor(ppc32_transform_env_t *env) {
+static ir_node *gen_Eor(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Eor_left(env->irn);
 	ir_node *op2 = get_Eor_right(env->irn);
 
@@ -377,7 +384,8 @@ static ir_node *gen_Eor(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Sub node
  */
-static ir_node *gen_Sub(ppc32_transform_env_t *env) {
+static ir_node *gen_Sub(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Sub_left(env->irn);
 	ir_node *op2 = get_Sub_right(env->irn);
 
@@ -406,7 +414,8 @@ static ir_node *gen_Sub(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc fDiv node
  */
-static ir_node *gen_Quot(ppc32_transform_env_t *env) {
+static ir_node *gen_Quot(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Quot_left(env->irn);
 	ir_node *op2 = get_Quot_right(env->irn);
 
@@ -427,7 +436,8 @@ static ir_node *gen_Quot(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Div node
  */
-static ir_node *gen_Div(ppc32_transform_env_t *env) {
+static ir_node *gen_Div(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Div_left(env->irn);
 	ir_node *op2 = get_Div_right(env->irn);
 
@@ -453,7 +463,8 @@ static ir_node *gen_Div(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Div node
  */
-static ir_node *gen_DivMod(ppc32_transform_env_t *env) {
+static ir_node *gen_DivMod(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_DivMod_left(env->irn);
 	ir_node *op2 = get_DivMod_right(env->irn);
 	ir_node *proj_div = NULL, *proj_mod = NULL;
@@ -522,7 +533,8 @@ static ir_node *gen_DivMod(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Mod result node
  */
-static ir_node *gen_Mod(ppc32_transform_env_t *env) {
+static ir_node *gen_Mod(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Mod_left(env->irn);
 	ir_node *op2 = get_Mod_right(env->irn);
 	ir_node *proj_div = NULL, *proj_mod = NULL;
@@ -573,7 +585,8 @@ static ir_node *gen_Mod(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Shl node
  */
-static ir_node *gen_Shl(ppc32_transform_env_t *env) {
+static ir_node *gen_Shl(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Shl_left(env->irn);
 	ir_node *op2 = get_Shl_right(env->irn);
 
@@ -595,7 +608,8 @@ static ir_node *gen_Shl(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Shr node
  */
-static ir_node *gen_Shr(ppc32_transform_env_t *env) {
+static ir_node *gen_Shr(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Shr_left(env->irn);
 	ir_node *op2 = get_Shr_right(env->irn);
 
@@ -617,7 +631,8 @@ static ir_node *gen_Shr(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Sraw node
  */
-static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
+static ir_node *gen_Shrs(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Shrs_left(env->irn);
 	ir_node *op2 = get_Shrs_right(env->irn);
 
@@ -641,7 +656,8 @@ static ir_node *gen_Shrs(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Rotl node
  */
-static ir_node *gen_Rotl(ppc32_transform_env_t *env) {
+static ir_node *gen_Rotl(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Rotl_left(env->irn);
 	ir_node *op2 = get_Rotl_right(env->irn);
 
@@ -663,7 +679,8 @@ static ir_node *gen_Rotl(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Cmp node
  */
-static ir_node *gen_Cmp(ppc32_transform_env_t *env) {
+static ir_node *gen_Cmp(ppc32_transform_env_t *env)
+{
 	ir_node *op1 = get_Cmp_left(env->irn);
 	ir_node *op2 = get_Cmp_right(env->irn);
 
@@ -715,7 +732,8 @@ static ir_node *gen_Cmp(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Minus node
  */
-static ir_node *gen_Minus(ppc32_transform_env_t *env) {
+static ir_node *gen_Minus(ppc32_transform_env_t *env)
+{
 	ir_node *op = get_Minus_op(env->irn);
 
 	switch(get_nice_modecode(env->mode)){
@@ -742,7 +760,8 @@ static ir_node *gen_Minus(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Not node
  */
-static ir_node *gen_Not(ppc32_transform_env_t *env) {
+static ir_node *gen_Not(ppc32_transform_env_t *env)
+{
 	return new_bd_ppc32_Not(env->dbg, env->block, get_Not_op(env->irn), env->mode);
 }
 
@@ -764,7 +783,8 @@ static ir_node *own_gen_Andi_dot_lo16(ppc32_transform_env_t *env, ir_node *op, i
  * @param env   The transformation environment
  * @return the created ppc Conv node
  */
-static ir_node *gen_Conv(ppc32_transform_env_t *env) {
+static ir_node *gen_Conv(ppc32_transform_env_t *env)
+{
 	ir_node *op = get_Conv_op(env->irn);
 	ppc32_modecode from_mode=get_nice_modecode(get_irn_mode(op));
 	ppc32_modecode to_mode=get_nice_modecode(env->mode);
@@ -869,7 +889,8 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the ppc node generating the absolute value
  */
-static ir_node *gen_Abs(ppc32_transform_env_t *env) {
+static ir_node *gen_Abs(ppc32_transform_env_t *env)
+{
 	ir_node *op = get_Abs_op(env->irn);
 	int shift = 7;
 	ir_node *n1,*n2;
@@ -902,7 +923,8 @@ static ir_node *gen_Abs(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return a ppc branch node
  */
-static ir_node *gen_Cond(ppc32_transform_env_t *env) {
+static ir_node *gen_Cond(ppc32_transform_env_t *env)
+{
 	ir_node *selector = get_Cond_selector(env->irn);
 	ir_mode *projmode = get_irn_mode(selector);
 	if(is_Proj(selector) && projmode==get_ppc32_mode_Cond())
@@ -931,7 +953,8 @@ static ir_node *gen_Cond(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return a ppc Unknown node
  */
-static ir_node *gen_Unknown(ppc32_transform_env_t *env) {
+static ir_node *gen_Unknown(ppc32_transform_env_t *env)
+{
 	if(mode_is_float(env->mode))
 		return new_bd_ppc32_fUnknown(env->dbg, env->block, env->mode);
 	else if (mode_is_int(env->mode))
@@ -940,7 +963,8 @@ static ir_node *gen_Unknown(ppc32_transform_env_t *env) {
 		panic("Mode %F for unknown value not supported.", env->mode);
 }
 
-static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32_transform_env_t *env) {
+static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32_transform_env_t *env)
+{
 	tarval *tv_const = NULL;
 	ident *id_symconst = NULL;
 
@@ -971,7 +995,8 @@ static ir_node *ldst_insert_const(ir_node *ptr, tarval **ptv, ident **pid, ppc32
  * @param env   The transformation environment
  * @return the created ppc Load node
  */
-static ir_node *gen_Load(ppc32_transform_env_t *env) {
+static ir_node *gen_Load(ppc32_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 	ir_node *loadptr = get_Load_ptr(node);
 	ir_node *load;
@@ -1040,7 +1065,8 @@ static ir_node *gen_Load(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc Store node
  */
-static ir_node *gen_Store(ppc32_transform_env_t *env) {
+static ir_node *gen_Store(ppc32_transform_env_t *env)
+{
 	ir_node *node = env->irn;
 	ir_node *storeptr = get_Store_ptr(node);
 	ir_node *valuenode = get_Store_value(node);
@@ -1096,7 +1122,8 @@ static ir_node *gen_Store(ppc32_transform_env_t *env) {
  * @param env   The transformation environment
  * @return the created ppc CopyB node
  */
-static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
+static ir_node *gen_CopyB(ppc32_transform_env_t *env)
+{
 	ir_node *mem = get_CopyB_mem(env->irn);
 	ir_node *src = get_CopyB_src(env->irn);
 	ir_node *dest = get_CopyB_dst(env->irn);
@@ -1216,7 +1243,8 @@ static ir_node *gen_CopyB(ppc32_transform_env_t *env) {
  *
  * @param env   The transformation environment
  */
-static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env) {
+static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env)
+{
 	ir_node *op = get_irn_n(env->irn, 0);
 	ir_node *add = new_bd_ppc32_Addi(env->dbg, env->block, op, mode_P);
 	set_ppc32_frame_entity(add, be_get_frame_entity(env->irn));
@@ -1237,14 +1265,16 @@ static ir_node *gen_be_FrameAddr(ppc32_transform_env_t *env) {
 /**
  * the BAD transformer.
  */
-static ir_node *bad_transform(ppc32_transform_env_t *env) {
+static ir_node *bad_transform(ppc32_transform_env_t *env)
+{
 	panic("Transformation not implemented: %+F\n", env->irn);
 }
 
 /**
  * Enters all transform functions into the generic pointer
  */
-void ppc32_register_transformers(void) {
+void ppc32_register_transformers(void)
+{
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
@@ -1330,7 +1360,8 @@ typedef ir_node *(transform_func)(ppc32_transform_env_t *env);
  * @param node    the firm node
  * @param env     the debug module
  */
-void ppc32_transform_node(ir_node *node, void *env) {
+void ppc32_transform_node(ir_node *node, void *env)
+{
 	ppc32_code_gen_t *cg = (ppc32_code_gen_t *)env;
 	ir_op *op            = get_irn_op(node);
 	ir_node *asm_node    = NULL;
@@ -1374,7 +1405,8 @@ struct tv_ent {
 };
 
 /** Compares two (entity, tarval) combinations */
-static int cmp_tv_ent(const void *a, const void *b, size_t len) {
+static int cmp_tv_ent(const void *a, const void *b, size_t len)
+{
 	const struct tv_ent *e1 = a;
 	const struct tv_ent *e2 = b;
 	(void) len;
@@ -1442,7 +1474,8 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env);
  * @param mode    node mode
  * @return the created ppc Load immediate node
  */
-static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
+static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env)
+{
 	tarval *tv_const = get_ppc32_constant_tarval(env->irn);
 	ir_node *node;
 
@@ -1520,7 +1553,8 @@ static ir_node *gen_ppc32_Const(ppc32_transform_env_t *env) {
  * @param mode    node mode
  * @return the created ppc float Load node
  */
-static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
+static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env)
+{
 	tarval *tv_const = get_ppc32_constant_tarval(env->irn);
 
 	switch(get_nice_modecode(env->mode)){
@@ -1575,7 +1609,8 @@ static ir_node *gen_ppc32_fConst(ppc32_transform_env_t *env) {
  * @param mode    node mode
  * @return the created ppc Load immediate node
  */
-static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
+static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env)
+{
 	ir_entity *ent = get_ppc32_frame_entity(env->irn);
 	ident *id_symconst = get_entity_ident(ent);
 	ir_node *node;
@@ -1617,7 +1652,8 @@ static ir_node *gen_ppc32_SymConst(ppc32_transform_env_t *env) {
  * @param node    the firm node
  * @param env     the debug module
  */
-void ppc32_transform_const(ir_node *node, void *env) {
+void ppc32_transform_const(ir_node *node, void *env)
+{
 	ppc32_code_gen_t *cgenv    = (ppc32_code_gen_t *)env;
 	ir_node          *asm_node = NULL;
 	ppc32_transform_env_t tenv;

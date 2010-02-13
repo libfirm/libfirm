@@ -37,7 +37,8 @@ struct ppc32_irn_reg_assoc {
 	const arch_register_t *reg;
 };
 
-int ppc32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
+int ppc32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len)
+{
 	const struct ppc32_irn_reg_assoc *x = a;
 	const struct ppc32_irn_reg_assoc *y = b;
 	(void) len;
@@ -45,7 +46,8 @@ int ppc32_cmp_irn_reg_assoc(const void *a, const void *b, size_t len) {
 	return x->irn != y->irn;
 }
 
-static struct ppc32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set) {
+static struct ppc32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
+{
 	struct ppc32_irn_reg_assoc templ;
 	unsigned int hash;
 
@@ -56,12 +58,14 @@ static struct ppc32_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *re
 	return set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
-void ppc32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set) {
+void ppc32_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set)
+{
 	struct ppc32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	assoc->reg = reg;
 }
 
-const arch_register_t *ppc32_get_firm_reg(const ir_node *irn, set *reg_set) {
+const arch_register_t *ppc32_get_firm_reg(const ir_node *irn, set *reg_set)
+{
 	struct ppc32_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	return assoc->reg;
 }
@@ -97,7 +101,8 @@ int is_ppc32_Store(const ir_node *n)
  * Translates the projnum into a "real" argument position for register
  * requirements dependend on the predecessor.
  */
-long ppc32_translate_proj_pos(const ir_node *proj) {
+long ppc32_translate_proj_pos(const ir_node *proj)
+{
 	ir_node *pred = get_Proj_pred(proj);
 	long nr       = get_Proj_proj(proj);
 

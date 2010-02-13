@@ -86,7 +86,8 @@
  * Note that the simple case that Block has only these two
  * predecessors are already handled in equivalent_node_Block().
  */
-static int remove_senseless_conds(ir_node *bl) {
+static int remove_senseless_conds(ir_node *bl)
+{
 	int i, j;
 	int n = get_Block_n_cfgpreds(bl);
 	int changed = 0;
@@ -131,7 +132,8 @@ typedef struct _merge_env {
  * Therefore we also optimize at control flow operations, depending
  * how we first reach the Block.
  */
-static void merge_blocks(ir_node *node, void *ctx) {
+static void merge_blocks(ir_node *node, void *ctx)
+{
 	int i;
 	ir_node *new_block;
 	merge_env *env = ctx;
@@ -199,7 +201,8 @@ static void merge_blocks(ir_node *node, void *ctx) {
  *
  * Must be run in the post walker.
  */
-static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
+static void remove_unreachable_blocks_and_conds(ir_node *block, void *env)
+{
 	int i;
 	int *changed = env;
 
@@ -239,7 +242,8 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env) {
  * Links all Proj nodes to their predecessors.
  * Collects all switch-Conds in a list.
  */
-static void collect_nodes(ir_node *n, void *ctx) {
+static void collect_nodes(ir_node *n, void *ctx)
+{
 	ir_opcode code = get_irn_opcode(n);
 	merge_env *env = ctx;
 
@@ -274,7 +278,8 @@ static void collect_nodes(ir_node *n, void *ctx) {
 }
 
 /** Returns true if pred is predecessor of block. */
-static int is_pred_of(ir_node *pred, ir_node *b) {
+static int is_pred_of(ir_node *pred, ir_node *b)
+{
 	int i;
 
 	for (i = get_Block_n_cfgpreds(b) - 1; i >= 0; --i) {
@@ -312,7 +317,8 @@ static int is_pred_of(ir_node *pred, ir_node *b) {
  *  To perform the test for pos, we must regard predecessors before pos
  *  as already removed.
  **/
-static int test_whether_dispensable(ir_node *b, int pos) {
+static int test_whether_dispensable(ir_node *b, int pos)
+{
 	int i, j, n_preds = 1;
 	ir_node *pred = get_Block_cfgpred_block(b, pos);
 
@@ -411,7 +417,8 @@ non_dispensable:
  * @@@ It is negotiable whether we should do this ... there might end up a copy
  * from the Phi in the loop when removing the Phis.
  */
-static void optimize_blocks(ir_node *b, void *ctx) {
+static void optimize_blocks(ir_node *b, void *ctx)
+{
 	int i, j, k, n, max_preds, n_preds, p_preds = -1;
 	ir_node *pred, *phi, *next;
 	ir_node **in;
@@ -593,7 +600,8 @@ static void optimize_blocks(ir_node *b, void *ctx) {
  * Block walker: optimize all blocks using the default optimizations.
  * This removes Blocks that with only a Jmp predecessor.
  */
-static void remove_simple_blocks(ir_node *block, void *ctx) {
+static void remove_simple_blocks(ir_node *block, void *ctx)
+{
 	ir_node *new_blk = equivalent_node(block);
 	merge_env *env = ctx;
 
@@ -615,7 +623,8 @@ static void remove_simple_blocks(ir_node *block, void *ctx) {
  *
  * Expects all Proj's linked to the cond node
  */
-static int handle_switch_cond(ir_node *cond) {
+static int handle_switch_cond(ir_node *cond)
+{
 	ir_node *sel = get_Cond_selector(cond);
 
 	ir_node *proj1 = get_irn_link(cond);
@@ -692,7 +701,8 @@ static int handle_switch_cond(ir_node *cond) {
  * We use the mark flag to mark removable blocks in the first
  * phase.
  */
-void optimize_cf(ir_graph *irg) {
+void optimize_cf(ir_graph *irg)
+{
 	int i, j, n, changed;
 	ir_node **in = NULL;
 	ir_node *cond, *end = get_irg_end(irg);

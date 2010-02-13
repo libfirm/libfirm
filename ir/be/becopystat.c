@@ -113,7 +113,8 @@ int curr_vals[ASIZE];
 static ir_nodeset_t *all_phi_nodes;
 static ir_nodeset_t *all_copy_nodes;
 
-void be_init_copystat(void) {
+void be_init_copystat(void)
+{
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
 
 	all_phi_nodes  = ir_nodeset_new(64);
@@ -122,7 +123,8 @@ void be_init_copystat(void) {
 }
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 
-void be_quit_copystat(void) {
+void be_quit_copystat(void)
+{
 	ir_nodeset_del(all_phi_nodes);
 	ir_nodeset_del(all_copy_nodes);
 }
@@ -132,7 +134,8 @@ BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
  * @return 1 if the block at pos @p pos removed a critical edge
  * 		   0 else
  */
-static inline int was_edge_critical(const ir_node *bl, int pos) {
+static inline int was_edge_critical(const ir_node *bl, int pos)
+{
 	const ir_edge_t *edge;
 	const ir_node *bl_at_pos, *bl_before;
 	assert(is_Block(bl));
@@ -152,49 +155,62 @@ static inline int was_edge_critical(const ir_node *bl, int pos) {
 	return get_block_succ_next(bl_before, edge) ? 1 : 0;
 }
 
-void copystat_add_max_costs(int costs) {
+void copystat_add_max_costs(int costs)
+{
 	curr_vals[I_COPIES_MAX] += costs;
 }
-void copystat_add_inevit_costs(int costs) {
+void copystat_add_inevit_costs(int costs)
+{
 	curr_vals[I_COPIES_IF] += costs;
 }
-void copystat_add_init_costs(int costs) {
+void copystat_add_init_costs(int costs)
+{
 	curr_vals[I_COPIES_INIT] += costs;
 }
-void copystat_add_heur_costs(int costs) {
+void copystat_add_heur_costs(int costs)
+{
 	curr_vals[I_COPIES_HEUR] += costs;
 }
-void copystat_add_ilp_5_sec_costs(int costs) {
+void copystat_add_ilp_5_sec_costs(int costs)
+{
 	curr_vals[I_COPIES_5SEC] += costs;
 }
-void copystat_add_ilp_30_sec_costs(int costs) {
+void copystat_add_ilp_30_sec_costs(int costs)
+{
 	curr_vals[I_COPIES_30SEC] += costs;
 }
-void copystat_add_opt_costs(int costs) {
+void copystat_add_opt_costs(int costs)
+{
 	curr_vals[I_COPIES_OPT] += costs;
 }
-void copystat_add_heur_time(int time) {
+void copystat_add_heur_time(int time)
+{
 	curr_vals[I_HEUR_TIME] += time;
 }
 
 #ifdef WITH_ILP
 
-void copystat_add_ilp_time(int time) {
+void copystat_add_ilp_time(int time)
+{
 	curr_vals[I_ILP_TIME] += time;
 }
-void copystat_add_ilp_vars(int vars) {
+void copystat_add_ilp_vars(int vars)
+{
 	curr_vals[I_ILP_VARS] += vars;
 }
-void copystat_add_ilp_csts(int csts) {
+void copystat_add_ilp_csts(int csts)
+{
 	curr_vals[I_ILP_CSTR] += csts;
 }
-void copystat_add_ilp_iter(int iters) {
+void copystat_add_ilp_iter(int iters)
+{
 	curr_vals[I_ILP_ITER] += iters;
 }
 
 #endif /* WITH_ILP */
 
-void copystat_dump(ir_graph *irg) {
+void copystat_dump(ir_graph *irg)
+{
 	int i;
 	char buf[1024];
 	FILE *out;
@@ -218,7 +234,8 @@ void copystat_dump(ir_graph *irg) {
 	fclose(out);
 }
 
-void copystat_dump_pretty(ir_graph *irg) {
+void copystat_dump_pretty(ir_graph *irg)
+{
 	int i;
 	char buf[1024];
 	FILE *out;

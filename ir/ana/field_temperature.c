@@ -53,12 +53,14 @@
 /* *************************************************************************** */
 
 /* The entities that can be accessed by this Sel node. */
-int get_Sel_n_accessed_entities(ir_node *sel) {
+int get_Sel_n_accessed_entities(ir_node *sel)
+{
   (void) sel;
   return 1;
 }
 
-ir_entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
+ir_entity *get_Sel_accessed_entity(ir_node *sel, int pos)
+{
   (void) pos;
   return get_Sel_entity(sel);
 }
@@ -67,12 +69,14 @@ ir_entity *get_Sel_accessed_entity(ir_node *sel, int pos) {
 /* The heuristic                                                               */
 /* *************************************************************************** */
 
-int get_irn_loop_call_depth(ir_node *n) {
+int get_irn_loop_call_depth(ir_node *n)
+{
   ir_graph *irg = get_irn_irg(n);
   return get_irg_loop_depth(irg);
 }
 
-int get_irn_cfloop_depth(ir_node *n) {
+int get_irn_cfloop_depth(ir_node *n)
+{
   ir_loop *l = get_irn_loop(get_nodes_block(n));
   if (l)
     return get_loop_depth(l);
@@ -80,14 +84,16 @@ int get_irn_cfloop_depth(ir_node *n) {
     return 0;
 }
 
-int get_irn_recursion_depth(ir_node *n) {
+int get_irn_recursion_depth(ir_node *n)
+{
   ir_graph *irg = get_irn_irg(n);
   return get_irg_recursion_depth(irg);
 }
 
 
 /**   @@@ the second version of the heuristic. */
-int get_weighted_loop_depth(ir_node *n) {
+int get_weighted_loop_depth(ir_node *n)
+{
   int loop_call_depth = get_irn_loop_call_depth(n);
   int loop_depth      = get_irn_cfloop_depth(n);
   int recursion_depth = get_irn_recursion_depth(n);
@@ -108,7 +114,8 @@ static int default_recursion_weight = 5;
    @@@ the second version of the heuristic.
 
    Return 0 if the node is neither in a loop nor in a recursion.  */
-double get_irn_final_cost(ir_node *n) {
+double get_irn_final_cost(ir_node *n)
+{
   double cost_loop   = get_irn_exec_freq(n);
   double cost_method = get_irg_method_execution_frequency(get_irn_irg(n));
   int    rec_depth   = get_irn_recursion_depth(n);
@@ -127,7 +134,8 @@ double get_irn_final_cost(ir_node *n) {
   return cost_loop*(cost_method + cost_rec);
 }
 
-double get_type_estimated_n_instances(ir_type *tp) {
+double get_type_estimated_n_instances(ir_type *tp)
+{
   int i, n_allocs = get_type_n_allocs(tp);
   double n_instances = 0;
   for (i = 0; i < n_allocs; ++i) {
@@ -137,13 +145,15 @@ double get_type_estimated_n_instances(ir_type *tp) {
   return n_instances;
 }
 
-double get_type_estimated_mem_consumption_bytes(ir_type *tp) {
+double get_type_estimated_mem_consumption_bytes(ir_type *tp)
+{
   (void) tp;
   assert(0);
   return 0.0;
 }
 
-int get_type_estimated_n_fields(ir_type *tp) {
+int get_type_estimated_n_fields(ir_type *tp)
+{
   int s = 0;
   switch(get_type_tpop_code(tp)) {
 
@@ -183,7 +193,8 @@ int get_type_estimated_n_fields(ir_type *tp) {
   return s;
 }
 
-int get_type_estimated_size_bytes(ir_type *tp) {
+int get_type_estimated_size_bytes(ir_type *tp)
+{
   int s = 0;
 
   switch(get_type_tpop_code(tp)) {
@@ -226,7 +237,8 @@ int get_type_estimated_size_bytes(ir_type *tp) {
   return s;
 }
 
-double get_type_estimated_n_casts(ir_type *tp) {
+double get_type_estimated_n_casts(ir_type *tp)
+{
   int i, n_casts = get_type_n_casts(tp);
   double n_instances = 0;
   for (i = 0; i < n_casts; ++i) {
@@ -236,7 +248,8 @@ double get_type_estimated_n_casts(ir_type *tp) {
   return n_instances;
 }
 
-double get_class_estimated_n_upcasts(ir_type *clss) {
+double get_class_estimated_n_upcasts(ir_type *clss)
+{
   double n_instances = 0;
   int i, j, n_casts, n_pointertypes;
 
@@ -257,7 +270,8 @@ double get_class_estimated_n_upcasts(ir_type *clss) {
   return n_instances;
 }
 
-double get_class_estimated_n_downcasts(ir_type *clss) {
+double get_class_estimated_n_downcasts(ir_type *clss)
+{
   double n_instances = 0;
   int i, j, n_casts, n_pointertypes;
 
@@ -279,12 +293,14 @@ double get_class_estimated_n_downcasts(ir_type *clss) {
 }
 
 
-double get_class_estimated_dispatch_writes(ir_type *clss) {
+double get_class_estimated_dispatch_writes(ir_type *clss)
+{
   return get_type_estimated_n_instances(clss);
 }
 
 /** Returns the number of reads of the dispatch pointer. */
-double get_class_estimated_dispatch_reads (ir_type *clss) {
+double get_class_estimated_dispatch_reads (ir_type *clss)
+{
   int i, n_mems = get_class_n_members(clss);
   double n_calls = 0;
   for (i = 0; i < n_mems; ++i) {
@@ -294,12 +310,14 @@ double get_class_estimated_dispatch_reads (ir_type *clss) {
   return n_calls;
 }
 
-double get_class_estimated_n_dyncalls(ir_type *clss) {
+double get_class_estimated_n_dyncalls(ir_type *clss)
+{
   return get_class_estimated_dispatch_reads(clss) +
          get_class_estimated_dispatch_writes(clss);
 }
 
-double get_entity_estimated_n_loads(ir_entity *ent) {
+double get_entity_estimated_n_loads(ir_entity *ent)
+{
   int i, n_acc = get_entity_n_accesses(ent);
   double n_loads = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -311,7 +329,8 @@ double get_entity_estimated_n_loads(ir_entity *ent) {
   return n_loads;
 }
 
-double get_entity_estimated_n_stores(ir_entity *ent) {
+double get_entity_estimated_n_stores(ir_entity *ent)
+{
   int i, n_acc = get_entity_n_accesses(ent);
   double n_stores = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -323,7 +342,8 @@ double get_entity_estimated_n_stores(ir_entity *ent) {
 }
 
 /* @@@ Should we evaluate the callee array?  */
-double get_entity_estimated_n_calls(ir_entity *ent) {
+double get_entity_estimated_n_calls(ir_entity *ent)
+{
   int i, n_acc = get_entity_n_accesses(ent);
   double n_calls = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -334,7 +354,8 @@ double get_entity_estimated_n_calls(ir_entity *ent) {
   return n_calls;
 }
 
-double get_entity_estimated_n_dyncalls(ir_entity *ent) {
+double get_entity_estimated_n_dyncalls(ir_entity *ent)
+{
   int i, n_acc = get_entity_n_accesses(ent);
   double n_calls = 0;
   for (i = 0; i < n_acc; ++i) {
@@ -367,7 +388,8 @@ double get_entity_estimated_n_dyncalls(ir_entity *ent) {
 /* Auxiliary                                                                 */
 /* ------------------------------------------------------------------------- */
 
-int is_jack_rts_name(ident *name) {
+int is_jack_rts_name(ident *name)
+{
   if (id_is_suffix(new_id_from_str("Exception"), name)) return 1;
   if (id_is_suffix(new_id_from_str("Throwable"), name)) return 1;
   if (id_is_suffix(new_id_from_str("Error"),     name)) return 1;
@@ -384,14 +406,16 @@ int is_jack_rts_name(ident *name) {
 }
 
 
-int is_jack_rts_class(ir_type *t) {
+int is_jack_rts_class(ir_type *t)
+{
   ident *name = get_type_ident(t);
   return is_jack_rts_name(name);
 }
 
 #include "entity_t.h"  // for the assertion.
 
-int is_jack_rts_entity(ir_entity *e) {
+int is_jack_rts_entity(ir_entity *e)
+{
   ident *name;
 
   assert(e->ld_name);

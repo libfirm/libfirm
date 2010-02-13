@@ -44,17 +44,20 @@
 #include "irtools.h"
 
 /* Return the current state of the interprocedural view. */
-ip_view_state get_irp_ip_view_state(void) {
+ip_view_state get_irp_ip_view_state(void)
+{
   return irp->ip_view;
 }
 
 /* Set the current state of the interprocedural view. */
-static void set_irp_ip_view(ip_view_state state) {
+static void set_irp_ip_view(ip_view_state state)
+{
   irp->ip_view = state;
 }
 
 /* Set the state of the interprocedural view to invalid. */
-void set_irp_ip_view_invalid(void) {
+void set_irp_ip_view_invalid(void)
+{
   set_irp_ip_view(ip_view_invalid);
 }
 
@@ -79,7 +82,8 @@ static irg_data_t * irg_data_create(void)
  *   - are external visible
  *   - are dereferenced somewhere within the program (i.e., the address of the
  *     method is stored somewhere). */
-static void caller_init(int arr_length, ir_entity ** free_methods) {
+static void caller_init(int arr_length, ir_entity ** free_methods)
+{
   int i, j;
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
     set_entity_link(get_irg_entity(get_irp_irg(i)), irg_data_create());
@@ -111,7 +115,8 @@ static void caller_init(int arr_length, ir_entity ** free_methods) {
 }
 
 /*
-static inline ir_node * tail(ir_node * node) {
+static inline ir_node * tail(ir_node * node)
+{
   ir_node * link;
   for (; (link = get_irn_link(node)); node = link) ;
   return node;
@@ -122,7 +127,8 @@ static inline ir_node * tail(ir_node * node) {
  * "call_tail" aktualisieren), Proj-Operationen in die Liste ihrer Definition
  * (auch bei Proj->Call Operationen) und Phi-Operationen in die Liste ihres
  * Grundblocks einfügen. */
-static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail) {
+static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail)
+{
   if (is_Call(node)) {
     /* Die Liste von Call an call_tail anhängen. */
     ir_node * link;
@@ -146,7 +152,8 @@ static void collect_phicallproj_walker(ir_node * node, ir_node ** call_tail) {
 }
 
 
-static void link(ir_node * head, ir_node * node) {
+static void link(ir_node * head, ir_node * node)
+{
   if (node) {
     set_irn_link(node, get_irn_link(head));
     set_irn_link(head, node);
@@ -159,7 +166,8 @@ static void link(ir_node * head, ir_node * node) {
  * Phi-Operationen an ihren Grundblöcken. Die Liste der Calls sieht
  * dann so aus: End -> Call -> Proj -> ... -> Proj -> Call -> Proj ->
  * ... -> Proj -> NULL. */
-static void collect_phicallproj(void) {
+static void collect_phicallproj(void)
+{
   int i;
 
   for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
@@ -184,7 +192,8 @@ static void collect_phicallproj(void) {
 
 
 /* Proj-Operation durch Filter-Operation im aktuellen Block ersetzen. */
-static ir_node * exchange_proj(ir_node * proj) {
+static ir_node * exchange_proj(ir_node * proj)
+{
   ir_node * filter;
   assert(get_irn_op(proj) == op_Proj);
   filter = new_Filter(get_Proj_pred(proj), get_irn_mode(proj), get_Proj_proj(proj));
@@ -197,7 +206,8 @@ static ir_node * exchange_proj(ir_node * proj) {
 
 
 /* Echt neue Block-Operation erzeugen. CSE abschalten! */
-static ir_node * create_Block(int n, ir_node ** in) {
+static ir_node * create_Block(int n, ir_node ** in)
+{
   /* Turn off optimizations so that blocks are not merged again. */
   int rem_opt = get_opt_optimize();
   ir_node * block;
@@ -217,7 +227,8 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data);
  * cause cycles we don't want to see, as Unknwon is in the Start Block
  * of the procedure. Use unknown of outermost irg where the start
  * block has no predecessors. */
-static inline ir_node *get_cg_Unknown(ir_mode *m) {
+static inline ir_node *get_cg_Unknown(ir_mode *m)
+{
   assert((get_Block_n_cfgpreds(get_irg_start_block(get_irp_main_irg())) == 1) &&
 	 (get_nodes_block(get_Block_cfgpred(get_irg_start_block(get_irp_main_irg()), 0)) ==
 	  get_irg_start_block(get_irp_main_irg())));
@@ -229,7 +240,8 @@ static inline ir_node *get_cg_Unknown(ir_mode *m) {
  * umwandeln. Die künstlichen Steuerzusammenflüsse EndReg und EndExcept
  * einfügen. An der Start-Operation hängt nach dem Aufruf eine Liste der
  * entsprechenden Filter-Knoten. */
-static void prepare_irg(ir_graph * irg, irg_data_t * data) {
+static void prepare_irg(ir_graph * irg, irg_data_t * data)
+{
   ir_node * start_block = get_irg_start_block(irg);
   ir_node * link, * proj;
   int n_callers = data->count + (data->open ? 1 : 0);
@@ -292,7 +304,8 @@ static void prepare_irg(ir_graph * irg, irg_data_t * data) {
 
 
 /* Künstlicher Steuerzusammenfluss EndReg einfügen. */
-static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
+static void prepare_irg_end(ir_graph * irg, irg_data_t * data)
+{
   ir_node * end_block   = get_irg_end_block(irg);
   ir_node * end         = get_irg_end(irg);
   ir_node **ret_arr     = NULL;
@@ -360,7 +373,8 @@ static void prepare_irg_end(ir_graph * irg, irg_data_t * data) {
 
 
 /* Künstlicher Steuerzusammenfluss EndExcept einfügen. */
-static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
+static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data)
+{
   ir_node * end_block = get_irg_end_block(irg);
   ir_node * end = get_irg_end(irg);
   ir_node ** except_arr = NULL;
@@ -413,7 +427,8 @@ static void prepare_irg_end_except(ir_graph * irg, irg_data_t * data) {
 
 
 /* Zwischengespeicherte Daten wieder freigeben. */
-static void cleanup_irg(ir_graph * irg) {
+static void cleanup_irg(ir_graph * irg)
+{
   ir_entity * ent = get_irg_entity(irg);
   irg_data_t * data = get_entity_link(ent);
   assert(data);
@@ -426,7 +441,8 @@ static void cleanup_irg(ir_graph * irg) {
 /* Alle Phi-Operationen aus "from_block" nach "to_block"
  * verschieben. Die Phi-Operationen müssen am zugehörigen Grundblock
  * verlinkt sein. Danach sind sie am neuen Grundblock verlinkt. */
-static void move_phis(ir_node * from_block, ir_node * to_block) {
+static void move_phis(ir_node * from_block, ir_node * to_block)
+{
   ir_node * phi;
   for (phi = get_irn_link(from_block); phi != NULL; phi = get_irn_link(phi)) {
     set_nodes_block(phi, to_block);
@@ -440,7 +456,8 @@ static void move_phis(ir_node * from_block, ir_node * to_block) {
 /* Rekursiv die Operation "node" und alle ihre Vorgänger aus dem Block
  * "from_block" nach "to_block" verschieben.
  * Verschiebe ebenfalls die Projs aus diesen Operationen. */
-static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node) {
+static void move_nodes(ir_node * from_block, ir_node * to_block, ir_node * node)
+{
   int i,  arity = get_irn_arity(node);
   ir_node *proj;
 
@@ -513,7 +530,8 @@ static void construct_start(ir_entity * caller, ir_entity * callee,
 
 /* Abhängigkeiten für den Speicherzustand über alle aufgerufenen
  * Methoden bestimmen. */
-static void fill_mem(int length, irg_data_t * data[], ir_node * in[]) {
+static void fill_mem(int length, irg_data_t * data[], ir_node * in[])
+{
   int i;
   for (i = 0; i < length; ++i) {
     if (data[i]) { /* explicit */
@@ -531,7 +549,8 @@ static void fill_mem(int length, irg_data_t * data[], ir_node * in[]) {
 
 /* Abhängigkeiten für den Ausnahme-Speicherzustand über alle
  * aufgerufenen Methoden bestimmen. */
-static void fill_except_mem(int length, irg_data_t * data[], ir_node * in[]) {
+static void fill_except_mem(int length, irg_data_t * data[], ir_node * in[])
+{
   int i;
   for (i = 0; i < length; ++i) {
     if (data[i]) { /* explicit */
@@ -549,7 +568,8 @@ static void fill_except_mem(int length, irg_data_t * data[], ir_node * in[]) {
 
 /* Abhängigkeiten für ein Ergebnis über alle aufgerufenen Methoden
  * bestimmen. */
-static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[], ir_mode *m) {
+static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[], ir_mode *m)
+{
   int i;
   for (i = 0; i < length; ++i) {
     if (data[i]) { /* explicit */
@@ -566,7 +586,8 @@ static void fill_result(int pos, int length, irg_data_t * data[], ir_node * in[]
 
 
 /* Proj auf Except-X einer Call-Operation (aus der Link-Liste) bestimmen. */
-static ir_node * get_except(ir_node * call) {
+static ir_node * get_except(ir_node * call)
+{
   /* Mit CSE könnte man das effizienter machen! Die Methode wird aber für jede
    * Aufrufstelle nur ein einziges Mal aufgerufen. */
   ir_node * proj;
@@ -580,7 +601,8 @@ static ir_node * get_except(ir_node * call) {
 
 /* Returns true if control flow operation exc is predecessor of end
    block in irg.  Works also for Return nodes, not only exceptions. */
-static bool exc_branches_to_end(ir_graph *irg, ir_node *exc) {
+static bool exc_branches_to_end(ir_graph *irg, ir_node *exc)
+{
   int i;
   ir_node *end = get_irg_end_block(irg);
   for (i = get_Block_n_cfgpreds(end) -1; i >= 0; --i)
@@ -589,7 +611,8 @@ static bool exc_branches_to_end(ir_graph *irg, ir_node *exc) {
 }
 
 /* Returns true if only caller of irg is "Unknown". */
-static bool is_outermost_graph(ir_graph *irg) {
+static bool is_outermost_graph(ir_graph *irg)
+{
   irg_data_t * data = get_entity_link(get_irg_entity(irg));
   if (data->count) {
     return false;
@@ -610,7 +633,8 @@ static bool is_outermost_graph(ir_graph *irg) {
  * einfügen. Die Steuer- und Datenflussabhängigkeiten von den aufgerufenen
  * Methoden auf die CallBegin-Operation, und von der Aufrufstelle auf die
  * aufgerufenen Methoden eintragen. */
-static void construct_call(ir_node * call) {
+static void construct_call(ir_node * call)
+{
   int i, n_callees;
   ir_node *post_block, *pre_block, *except_block, * proj, *jmp, *call_begin;
   ir_node ** in;
@@ -819,7 +843,8 @@ static void construct_call(ir_node * call) {
 #endif
 
 
-void cg_construct(int arr_len, ir_entity ** free_methods_arr) {
+void cg_construct(int arr_len, ir_entity ** free_methods_arr)
+{
   int i;
 
   if (get_irp_ip_view_state() == ip_view_valid) return;
@@ -904,7 +929,8 @@ static void destruct_walker(ir_node * node, void * env)
 }
 
 
-void cg_destruct(void) {
+void cg_destruct(void)
+{
   int i;
   if (get_irp_ip_view_state() != ip_view_no) {
     for (i = get_irp_n_irgs() - 1; i >= 0; --i) {

@@ -149,7 +149,8 @@ static ir_node *lookup(ir_node *e)
  *
  * @param block  the block
  */
-static block_info *get_block_info(ir_node *block) {
+static block_info *get_block_info(ir_node *block)
+{
 	return get_irn_link(block);
 }  /* get_block_info */
 
@@ -159,7 +160,8 @@ static block_info *get_block_info(ir_node *block) {
  * @param block   the block
  * @param env     the environment
  */
-static void alloc_blk_info(ir_node *block, pre_env *env) {
+static void alloc_blk_info(ir_node *block, pre_env *env)
+{
 	block_info *info = OALLOC(env->obst, block_info);
 
 	set_irn_link(block, info);
@@ -179,7 +181,8 @@ static void alloc_blk_info(ir_node *block, pre_env *env) {
  *
  * @param n  the node
  */
-static int is_nice_value(ir_node *n) {
+static int is_nice_value(ir_node *n)
+{
 	ir_mode *mode;
 
 	while (is_Proj(n))
@@ -204,7 +207,8 @@ static int is_nice_value(ir_node *n) {
  * @param txt    a text to describe the set
  * @param block  the owner block of the set
  */
-static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block) {
+static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block)
+{
 	ir_valueset_iterator_t iter;
 	ir_node *value, *expr;
 	int i;
@@ -231,7 +235,8 @@ static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block) {
  * Topological walker. Allocates block info for every block and place nodes in topological
  * order into the nodes set.
  */
-static void topo_walker(ir_node *irn, void *ctx) {
+static void topo_walker(ir_node *irn, void *ctx)
+{
 	pre_env    *env = ctx;
 	ir_node    *block;
 	block_info *info;
@@ -311,7 +316,8 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
  * @param block  the block
  * @param set    a value set, containing the already processed predecessors
  */
-static int is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *set) {
+static int is_clean_in_block(ir_node *n, ir_node *block, ir_valueset_t *set)
+{
 	int i;
 
 	if (is_Phi(n))
@@ -423,7 +429,8 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
  * @param block  the block
  * @param ctx    the walker environment
  */
-static void compute_antic(ir_node *block, void *ctx) {
+static void compute_antic(ir_node *block, void *ctx)
+{
 	pre_env    *env = ctx;
 	block_info *succ_info;
 	block_info *info = get_block_info(block);
@@ -707,7 +714,8 @@ static void insert_nodes(ir_node *block, void *ctx)
  * @param irn  the node
  * @param ctx  the walker environment
  */
-static void eliminate(ir_node *irn, void *ctx) {
+static void eliminate(ir_node *irn, void *ctx)
+{
 	pre_env *env = ctx;
 
 	if (is_no_Block(irn)) {
@@ -737,7 +745,8 @@ static void eliminate(ir_node *irn, void *ctx) {
  *
  * @param pairs  list of elimination pairs
  */
-static void eliminate_nodes(elim_pair *pairs) {
+static void eliminate_nodes(elim_pair *pairs)
+{
 	elim_pair *p;
 
 	for (p = pairs; p != NULL; p = p->next) {

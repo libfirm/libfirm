@@ -45,7 +45,8 @@
  *
  * The default implementation hecks for Alloc nodes only.
  */
-ir_type *default_firm_get_Alloc(ir_node *n) {
+ir_type *default_firm_get_Alloc(ir_node *n)
+{
 	n = skip_Proj(n);
 	if (is_Alloc(n)) {
 		return get_Alloc_type(n);
@@ -57,7 +58,8 @@ ir_type *default_firm_get_Alloc(ir_node *n) {
 static get_Alloc_func firm_get_Alloc = default_firm_get_Alloc;
 
 /** Set a new get_Alloc_func and returns the old one. */
-get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf) {
+get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf)
+{
 	get_Alloc_func old = firm_get_Alloc;
 	firm_get_Alloc = newf;
 	return old;
@@ -72,7 +74,8 @@ get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf) {
  * If we find a dynamic type this means that the pointer always points
  * to an object of this type during runtime.   We resolved polymorphy.
  */
-static ir_type *get_dynamic_type(ir_node *ptr) {
+static ir_type *get_dynamic_type(ir_node *ptr)
+{
 	ir_type *tp;
 
 	/* skip Cast and Confirm nodes */
@@ -115,7 +118,8 @@ static int is_final_ent(ir_entity *ent)
 /*
  * Transform Sel[method] to SymC[method] if possible.
  */
-ir_node *transform_node_Sel(ir_node *node) {
+ir_node *transform_node_Sel(ir_node *node)
+{
 	ir_node   *new_node, *ptr;
 	ir_type   *dyn_tp;
 	ir_entity *ent = get_Sel_entity(node);
@@ -177,7 +181,8 @@ ir_node *transform_node_Sel(ir_node *node) {
  *  a tuple, or replace the Projs of the load.
  *  Therefore we call this optimization in ldstopt().
  */
-ir_node *transform_polymorph_Load(ir_node *load) {
+ir_node *transform_polymorph_Load(ir_node *load)
+{
 	ir_node *new_node = NULL;
 	ir_node *field_ptr, *ptr;
 	ir_entity *ent;
