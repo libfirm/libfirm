@@ -325,9 +325,9 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	unsafe       = ALLOCAN(ir_node*, ou->node_count - 1);
 	unsafe_costs = ALLOCAN(int,      ou->node_count - 1);
 	unsafe_count = 0;
-	for(i=1; i<ou->node_count; ++i) {
+	for (i=1; i<ou->node_count; ++i) {
 		int is_safe = 1;
-		for(o=1; o<ou->node_count; ++o) {
+		for (o=1; o<ou->node_count; ++o) {
 			if (i==o)
 				continue;
 			if (nodes_interfere(chordal_env, ou->nodes[i], ou->nodes[o])) {
@@ -516,7 +516,7 @@ static void co_collect_units(ir_node *irn, void *env)
 		struct list_head *tmp;
 
 		/* Determine the maximum costs this unit can cause: all_nodes_cost */
-		for(i=1; i<unit->node_count; ++i) {
+		for (i=1; i<unit->node_count; ++i) {
 			unit->sort_key = MAX(unit->sort_key, unit->costs[i]);
 			unit->all_nodes_costs += unit->costs[i];
 		}
@@ -715,7 +715,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 		stat->aff_nodes += 1;
 		bitset_add_irn(seen, an->irn);
 		co_gs_foreach_neighb(an, neigh) {
-			if(!bitset_contains_irn(seen, neigh->irn)) {
+			if (!bitset_contains_irn(seen, neigh->irn)) {
 				stat->aff_edges += 1;
 				stat->max_costs += neigh->costs;
 
@@ -724,7 +724,7 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 					stat->unsatisfied_edges += 1;
 				}
 
-				if(nodes_interfere(co->cenv, an->irn, neigh->irn)) {
+				if (nodes_interfere(co->cenv, an->irn, neigh->irn)) {
 					stat->aff_int += 1;
 					stat->inevit_costs += neigh->costs;
 				}
@@ -878,7 +878,7 @@ static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, 
 
 	for (j = 0; j < 2; ++j) {
 		const arch_register_req_t *req = arch_get_register_req_out(nodes[j]);
-		if(arch_register_req_is(req, limited))
+		if (arch_register_req_is(req, limited))
 			rbitset_copy_to_bitset(req->limited, constr[j]);
 		else
 			bitset_set_all(constr[j]);
@@ -900,7 +900,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	unsigned i;
 
 	n_regs = 0;
-	for(i = 0; i < co->cls->n_regs; ++i) {
+	for (i = 0; i < co->cls->n_regs; ++i) {
 		const arch_register_t *reg = &co->cls->regs[i];
 		color_map[i] = arch_register_type_is(reg, ignore) ? -1 : n_regs++;
 	}
@@ -929,9 +929,9 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 			const arch_register_req_t *req = arch_get_register_req_out(irn);
 			ir_node                   *adj;
 
-			if(arch_register_req_is(req, limited)) {
-				for(i = 0; i < co->cls->n_regs; ++i) {
-					if(!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
+			if (arch_register_req_is(req, limited)) {
+				for (i = 0; i < co->cls->n_regs; ++i) {
+					if (!rbitset_is_set(req->limited, i) && color_map[i] >= 0)
 						fprintf(f, "%d %d -1\n", color_map[i], idx);
 				}
 			}
@@ -940,18 +940,18 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 				if (!arch_irn_is_ignore(adj) &&
 						!co_dump_appel_disjoint_constraints(co, irn, adj)) {
 					int adj_idx = node_map[get_irn_idx(adj)];
-					if(idx < adj_idx)
+					if (idx < adj_idx)
 						fprintf(f, "%d %d -1\n", idx, adj_idx);
 				}
 			}
 
-			if(a) {
+			if (a) {
 				neighb_t *n;
 
 				co_gs_foreach_neighb(a, n) {
 					if (!arch_irn_is_ignore(n->irn)) {
 						int n_idx = node_map[get_irn_idx(n->irn)];
-						if(idx < n_idx)
+						if (idx < n_idx)
 							fprintf(f, "%d %d %d\n", idx, n_idx, (int) n->costs);
 					}
 				}
@@ -1034,10 +1034,10 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 	const arch_register_req_t *req     = arch_get_register_req_out(irn);
 	int                        limited = arch_register_req_is(req, limited);
 
-	if(env->flags & CO_IFG_DUMP_LABELS) {
+	if (env->flags & CO_IFG_DUMP_LABELS) {
 		ir_fprintf(f, "label=\"%+F", irn);
 
-		if((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
+		if ((env->flags & CO_IFG_DUMP_CONSTR) && limited) {
 			bitset_t *bs = bitset_alloca(env->co->cls->n_regs);
 			rbitset_copy_to_bitset(req->limited, bs);
 			ir_fprintf(f, "\\n%B", bs);
@@ -1047,10 +1047,10 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 		fprintf(f, "label=\"\" shape=point " );
 	}
 
-	if(env->flags & CO_IFG_DUMP_SHAPE)
+	if (env->flags & CO_IFG_DUMP_SHAPE)
 		fprintf(f, "shape=%s ", limited ? "diamond" : "ellipse");
 
-	if(env->flags & CO_IFG_DUMP_COLORS)
+	if (env->flags & CO_IFG_DUMP_COLORS)
 		fprintf(f, "style=filled color=%s ", get_dot_color_name(reg->index));
 }
 
@@ -1068,12 +1068,12 @@ static void ifg_dump_at_end(FILE *file, void *self)
 			const arch_register_t *nr = arch_get_irn_register(n->irn);
 			unsigned nidx = get_irn_idx(n->irn);
 
-			if(aidx < nidx) {
+			if (aidx < nidx) {
 				const char *color = nr == ar ? "blue" : "red";
 				fprintf(file, "\tn%d -- n%d [weight=0.01 ", aidx, nidx);
-				if(env->flags & CO_IFG_DUMP_LABELS)
+				if (env->flags & CO_IFG_DUMP_LABELS)
 					fprintf(file, "label=\"%d\" ", n->costs);
-				if(env->flags & CO_IFG_DUMP_COLORS)
+				if (env->flags & CO_IFG_DUMP_COLORS)
 					fprintf(file, "color=%s ", color);
 				else
 					fprintf(file, "style=dotted");
@@ -1137,7 +1137,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
 	xfree(tu_name);
 	result = fopen(buf, "wt");
-	if(result == NULL) {
+	if (result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);
 	}
 
@@ -1154,7 +1154,7 @@ void co_driver(be_chordal_env_t *cenv)
 	assert(selected_copyopt);
 
 	/* skip copymin if algo is 'none' */
-	if(selected_copyopt->copyopt == void_algo)
+	if (selected_copyopt->copyopt == void_algo)
 		return;
 
 	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));
@@ -1216,7 +1216,7 @@ void co_driver(be_chordal_env_t *cenv)
 		ir_printf("%30F ", cenv->irg);
 		printf("%10s %10" ULL_FMT "%10" ULL_FMT "%10" ULL_FMT, cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
 
-		if(optimizable_costs > 0)
+		if (optimizable_costs > 0)
 			printf("%10" ULL_FMT " %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
 		else
 			printf("%10" ULL_FMT " %5s\n", after.costs, "-");

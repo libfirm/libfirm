@@ -46,7 +46,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 
 	/* assure that branches and constants are executed last */
 	ir_nodeset_iterator_init(&iter, ready_set);
-	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 		if (!is_cfop(irn)) {
 			only_branches_left = 0;
 			break;
@@ -64,7 +64,7 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 			int i = 0;
 			ir_nodeset_iterator_init(&iter, ready_set);
 			while ((irn = ir_nodeset_iterator_next(&iter)) != NULL) {
-				if(i == n) {
+				if (i == n) {
 					break;
 				}
 				++i;

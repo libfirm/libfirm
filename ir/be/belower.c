@@ -961,11 +961,11 @@ found_front:
 	}
 
 	/* well, we could not push anything through the perm */
-	if(n_moved == 0)
+	if (n_moved == 0)
 		return 1;
 
 	new_size = arity - n_moved;
-	if(new_size == 0) {
+	if (new_size == 0) {
 		sched_remove(perm);
 		kill_node(perm);
 		return 0;

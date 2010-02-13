@@ -74,12 +74,12 @@ const arch_register_t *ppc32_get_firm_reg(const ir_node *irn, set *reg_set)
 int is_ppc32_Load(const ir_node *n)
 {
 	ir_op *op = get_irn_op(n);
-	if(op == op_ppc32_Lbz) return 1;
-	if(op == op_ppc32_Lhz) return 1;
-	if(op == op_ppc32_Lha) return 1;
-	if(op == op_ppc32_Lwz) return 1;
-	if(op == op_ppc32_Lfd) return 1;
-	if(op == op_ppc32_Lfs) return 1;
+	if (op == op_ppc32_Lbz) return 1;
+	if (op == op_ppc32_Lhz) return 1;
+	if (op == op_ppc32_Lha) return 1;
+	if (op == op_ppc32_Lwz) return 1;
+	if (op == op_ppc32_Lfd) return 1;
+	if (op == op_ppc32_Lfs) return 1;
 
 	return 0;
 }
@@ -87,11 +87,11 @@ int is_ppc32_Load(const ir_node *n)
 int is_ppc32_Store(const ir_node *n)
 {
 	ir_op *op = get_irn_op(n);
-	if(op == op_ppc32_Stb) return 1;
-	if(op == op_ppc32_Sth) return 1;
-	if(op == op_ppc32_Stw) return 1;
-	if(op == op_ppc32_Stfd) return 1;
-	if(op == op_ppc32_Stfs) return 1;
+	if (op == op_ppc32_Stb) return 1;
+	if (op == op_ppc32_Sth) return 1;
+	if (op == op_ppc32_Stw) return 1;
+	if (op == op_ppc32_Stfd) return 1;
+	if (op == op_ppc32_Stfs) return 1;
 
 	return 0;
 }
@@ -128,13 +128,13 @@ long ppc32_translate_proj_pos(const ir_node *proj)
 			assert(0 && "there should be no more Projs for a ppc32_Divw or ppc32_Divwu");
 	}
 
-	else if(is_ppc32_Cmp(pred))
+	else if (is_ppc32_Cmp(pred))
 		return 0;
-	else if(is_ppc32_Cmpi(pred))
+	else if (is_ppc32_Cmpi(pred))
 		return 0;
-	else if(is_ppc32_Cmpl(pred))
+	else if (is_ppc32_Cmpl(pred))
 		return 0;
-	else if(is_ppc32_Cmpli(pred))
+	else if (is_ppc32_Cmpli(pred))
 		return 0;
 
 

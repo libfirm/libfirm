@@ -1293,7 +1293,7 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 
 int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 {
-	switch(reason) {
+	switch (reason) {
 	case dump_node_opcode_txt:
 		fputs(get_op_name(get_irn_op(node)), F);
 		break;
@@ -1349,7 +1349,7 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 
 	assert(is_be_node(irn));
 
-	switch(reason) {
+	switch (reason) {
 		case dump_node_opcode_txt:
 			fputs(get_op_name(get_irn_op(irn)), f);
 			break;

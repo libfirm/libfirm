@@ -218,7 +218,7 @@ void remove_irp_irg_from_list(ir_graph *irg)
 	for (i = 0; i < l; i++) {
 		if (irp->graphs[i] == irg) {
 			found = 1;
-			for(; i < l - 1; i++) {
+			for (; i < l - 1; i++) {
 				irp->graphs[i] = irp->graphs[i+1];
 			}
 			ARR_SETLEN(ir_graph*, irp->graphs, l - 1);
@@ -229,7 +229,7 @@ void remove_irp_irg_from_list(ir_graph *irg)
 		l = ARR_LEN(irp->pseudo_graphs);
 		for (i = 0; i < l; i++) {
 			if (irp->pseudo_graphs[i] == irg) {
-				for(; i < l - 1; i++) {
+				for (; i < l - 1; i++) {
 					irp->pseudo_graphs[i] = irp->pseudo_graphs[i+1];
 				}
 				ARR_SETLEN(ir_graph*, irp->pseudo_graphs, l - 1);
@@ -304,7 +304,7 @@ void remove_irp_type(ir_type *typ)
 
 	for (i = ARR_LEN(irp->types) - 1; i >= 0; i--) {
 		if (irp->types[i] == typ) {
-			for(; i < (ARR_LEN(irp->types)) - 1; i++) {
+			for (; i < (ARR_LEN(irp->types)) - 1; i++) {
 				irp->types[i] = irp->types[i+1];
 			}
 			ARR_SETLEN(ir_type *, irp->types, (ARR_LEN(irp->types)) - 1);

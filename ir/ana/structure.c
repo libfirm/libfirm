@@ -760,7 +760,7 @@ static void clear_list(ir_region *list)
 	}
 }
 
-#define ADD_LIST(list, n) do { n->link = list; list = n; ++list##_len; } while(0)
+#define ADD_LIST(list, n) do { n->link = list; list = n; ++list##_len; } while (0)
 
 /**
  * Detect an acyclic region.

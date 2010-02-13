@@ -358,7 +358,7 @@ int update_vrp_data( ir_node *node)
 		bits_set = pred->vrp.bits_set;
 		bits_not_set = pred->vrp.bits_not_set;
 
-		for(i = 1; i < num; i++) {
+		for (i = 1; i < num; i++) {
 			pred = get_Phi_pred(node, i);
 			if (range_type == VRP_RANGE && pred->vrp.range_type ==
 					VRP_RANGE) {
@@ -593,7 +593,7 @@ void set_vrp_data(ir_graph *irg)
 
 
 	// while there are entries in the worklist, continue
-	while( !list_empty(&worklist.nodes) ) {
+	while ( !list_empty(&worklist.nodes) ) {
 
 		list_head *pos, *next;
 		list_for_each_safe(pos, next, &worklist.nodes) {

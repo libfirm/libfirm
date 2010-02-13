@@ -81,7 +81,7 @@ static void visit_initializer(ir_initializer_t *initializer)
 
 	case IR_INITIALIZER_COMPOUND: {
 		size_t i;
-		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *subinitializer
 				= initializer->compound.initializers[i];
 			visit_initializer(subinitializer);

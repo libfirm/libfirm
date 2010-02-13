@@ -102,7 +102,7 @@ static void find_nodes(const void *self, void *iter)
 
 static inline void node_break(nodes_iter_t *it, int force)
 {
-	if((it->curr >= it->n || force) && it->nodes) {
+	if ((it->curr >= it->n || force) && it->nodes) {
 		obstack_free(&it->obst, NULL);
 		it->nodes = NULL;
 	}
@@ -113,7 +113,7 @@ static ir_node *get_next_node(void *iter)
 	nodes_iter_t *it = iter;
 	ir_node *res     = NULL;
 
-	if(it->curr < it->n)
+	if (it->curr < it->n)
 		res = it->nodes[it->curr++];
 
 	node_break(it, 0);
@@ -155,23 +155,23 @@ static void find_neighbour_walker(ir_node *block, void *data)
 	border_t *b;
 	int has_started = 0;
 
-	if(!be_is_live_in(it->env->birg->lv, block, it->irn) && block != get_nodes_block(it->irn))
+	if (!be_is_live_in(it->env->birg->lv, block, it->irn) && block != get_nodes_block(it->irn))
 		return;
 
 	foreach_border_head(head, b) {
 		ir_node *irn = b->irn;
 
-		if(irn == it->irn) {
-			if(b->is_def)
+		if (irn == it->irn) {
+			if (b->is_def)
 				has_started = 1;
 			else
 				break; /* if we reached the end of the node's lifetime we can safely break */
 		}
-		else if(b->is_def) {
+		else if (b->is_def) {
 			/* if any other node than the one in question starts living, add it to the set */
 			ir_nodeset_insert(&it->neighbours, irn);
 		}
-		else if(!has_started) {
+		else if (!has_started) {
 			/* we only delete, if the live range in question has not yet started */
 			ir_nodeset_remove(&it->neighbours, irn);
 		}
@@ -251,7 +251,7 @@ static void get_blocks_dom_order(ir_node *blk, void *env)
 	obstack_ptr_grow(&it->ob, blk);
 }
 
-#define pset_foreach(pset, irn)  for(irn=pset_first(pset); irn; irn=pset_next(pset))
+#define pset_foreach(pset, irn)  for (irn=pset_first(pset); irn; irn=pset_next(pset))
 
 
 /**

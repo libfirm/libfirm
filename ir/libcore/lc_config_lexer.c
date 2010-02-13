@@ -654,7 +654,7 @@ static int input (void );
 		errno=0; \
 		while ( (result = fread(buf, 1, max_size, _lc_opt_in))==0 && ferror(_lc_opt_in)) \
 			{ \
-			if( errno != EINTR) \
+			if ( errno != EINTR) \
 				{ \
 				YY_FATAL_ERROR( "input in flex scanner failed" ); \
 				break; \
@@ -1904,7 +1904,7 @@ int _lc_opt_lex_destroy  (void)
 {
 
     /* Pop the buffer stack, destroying each element. */
-	while(YY_CURRENT_BUFFER){
+	while (YY_CURRENT_BUFFER){
 		_lc_opt__delete_buffer(YY_CURRENT_BUFFER  );
 		YY_CURRENT_BUFFER_LVALUE = NULL;
 		_lc_opt_pop_buffer_state();

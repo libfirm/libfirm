@@ -241,7 +241,7 @@ static void try_optimize_cmp(ir_node *node)
 	ir_node *right = get_Cmp_right(node);
 	ir_node *conv  = NULL;
 
-	if(is_downconv
+	if (is_downconv
 }
 #endif
 
@@ -255,7 +255,7 @@ static void conv_opt_walker(ir_node *node, void *data)
 	bool *changed = data;
 
 #if 0
-	if(is_Cmp(node)) {
+	if (is_Cmp(node)) {
 		try_optimize_cmp(node);
 		return;
 	}

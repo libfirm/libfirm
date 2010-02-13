@@ -244,7 +244,7 @@ static int get_first_same(const arch_register_req_t* req)
 
 static inline bool is_unknown_reg(const arch_register_t *reg)
 {
-	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
+	if (reg == &ia32_gp_regs[REG_GP_UKNWN]
 			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
 			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
 		return true;

@@ -275,7 +275,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		if (get_Call_tail_call(n))
 			fprintf(F, "  tail call\n");
 		ir_fprintf(F, "  calling method of type %+F\n", tp);
-		if(get_unknown_type() != tp) {
+		if (get_unknown_type() != tp) {
 			for (i = 0; i < get_method_n_params(tp); ++i)
 				ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 			for (i = 0; i < get_method_n_ress(tp); ++i)
@@ -316,7 +316,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		ir_fprintf(F, "  Const of type %+F\n", get_Const_type(n));
 	} break;
 	case iro_SymConst: {
-		switch(get_SymConst_kind(n)) {
+		switch (get_SymConst_kind(n)) {
 		case symconst_addr_name:
 			fprintf(F, "  kind: addr_name\n");
 			fprintf(F, "  name: %s\n", get_id_str(get_SymConst_name(n)));

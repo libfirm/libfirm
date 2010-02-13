@@ -168,7 +168,7 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 
-		if(env->lv)
+		if (env->lv)
 			be_liveness_remove(env->lv, node);
 		sched_remove(node);
 		kill_node(node);

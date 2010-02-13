@@ -1607,10 +1607,10 @@ char *get_tarval_bitpattern(tarval *tv)
 	char *res = XMALLOCN(char, n + 1);
 	unsigned char byte;
 
-	for(i = 0; i < bytes; i++) {
+	for (i = 0; i < bytes; i++) {
 		byte = get_tarval_sub_bits(tv, i);
-		for(j = 1; j < 256; j <<= 1)
-			if(pos < n)
+		for (j = 1; j < 256; j <<= 1)
+			if (pos < n)
 				res[pos++] = j & byte ? '1' : '0';
 	}
 

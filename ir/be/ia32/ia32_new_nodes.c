@@ -82,19 +82,19 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 		case dump_node_opcode_txt:
 			fprintf(F, "%s", get_irn_opname(n));
 
-			if(is_ia32_Immediate(n) || is_ia32_Const(n)) {
+			if (is_ia32_Immediate(n) || is_ia32_Const(n)) {
 				const ia32_immediate_attr_t *attr
 					= get_ia32_immediate_attr_const(n);
 
 				fputc(' ', F);
-				if(attr->symconst) {
-					if(attr->sc_sign) {
+				if (attr->symconst) {
+					if (attr->sc_sign) {
 						fputc('-', F);
 					}
 					fputs(get_entity_name(attr->symconst), F);
 				}
-				if(attr->offset != 0 || attr->symconst == NULL) {
-					if(attr->offset > 0 && attr->symconst != NULL) {
+				if (attr->offset != 0 || attr->symconst == NULL) {
+					if (attr->offset > 0 && attr->symconst != NULL) {
 						fputc('+', F);
 					}
 					fprintf(F, "%ld", attr->offset);
@@ -106,26 +106,26 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			else {
 				const ia32_attr_t *attr = get_ia32_attr_const(n);
 
-				if(attr->am_sc != NULL || attr->am_offs != 0)
+				if (attr->am_sc != NULL || attr->am_offs != 0)
 					fputs(" [", F);
 
-				if(attr->am_sc != NULL) {
-					if(attr->data.am_sc_sign) {
+				if (attr->am_sc != NULL) {
+					if (attr->data.am_sc_sign) {
 						fputc('-', F);
 					}
 					fputs(get_entity_name(attr->am_sc), F);
-					if(attr->data.am_sc_no_pic_adjust) {
+					if (attr->data.am_sc_no_pic_adjust) {
 						fputs("(no_pic_adjust)", F);
 					}
 				}
-				if(attr->am_offs != 0) {
-					if(attr->am_offs > 0 && attr->am_sc != NULL) {
+				if (attr->am_offs != 0) {
+					if (attr->am_offs > 0 && attr->am_sc != NULL) {
 						fputc('+', F);
 					}
 					fprintf(F, "%d", attr->am_offs);
 				}
 
-				if(attr->am_sc != NULL || attr->am_offs != 0)
+				if (attr->am_sc != NULL || attr->am_offs != 0)
 					fputc(']', F);
 			}
 			break;
@@ -181,12 +181,12 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			}
 
 			/* dump AM offset */
-			if(get_ia32_am_offs_int(n) != 0) {
+			if (get_ia32_am_offs_int(n) != 0) {
 				fprintf(F, "AM offset = %d\n", get_ia32_am_offs_int(n));
 			}
 
 			/* dump AM symconst */
-			if(get_ia32_am_sc(n) != NULL) {
+			if (get_ia32_am_sc(n) != NULL) {
 				ir_entity *ent = get_ia32_am_sc(n);
 				ident *id = get_entity_ld_ident(ent);
 				fprintf(F, "AM symconst = %s\n", get_id_str(id));
@@ -506,7 +506,7 @@ void ia32_copy_am_attrs(ir_node *to, const ir_node *from)
 	set_ia32_ls_mode(to, get_ia32_ls_mode(from));
 	set_ia32_am_scale(to, get_ia32_am_scale(from));
 	set_ia32_am_sc(to, get_ia32_am_sc(from));
-	if(is_ia32_am_sc_sign(from))
+	if (is_ia32_am_sc_sign(from))
 		set_ia32_am_sc_sign(to);
 	add_ia32_am_offs_int(to, get_ia32_am_offs_int(from));
 	set_ia32_frame_ent(to, get_ia32_frame_ent(from));
@@ -656,7 +656,7 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent)
 {
 	ia32_attr_t *attr = get_ia32_attr(node);
 	attr->frame_ent   = ent;
-	if(ent != NULL)
+	if (ent != NULL)
 		set_ia32_use_frame(node);
 	else
 		clear_ia32_use_frame(node);
@@ -697,7 +697,7 @@ void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs)
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	if(attr->in_req == NULL)
+	if (attr->in_req == NULL)
 		return arch_no_register_req;
 
 	return attr->in_req[pos];
@@ -996,9 +996,9 @@ int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 
 	/* nodes with not yet assigned entities shouldn't be CSEd (important for
 	 * unsigned int -> double conversions */
-	if(a->data.use_frame && a->frame_ent == NULL)
+	if (a->data.use_frame && a->frame_ent == NULL)
 		return 1;
-	if(b->data.use_frame && b->frame_ent == NULL)
+	if (b->data.use_frame && b->frame_ent == NULL)
 		return 1;
 
 	if (a->data.use_frame != b->data.use_frame
@@ -1098,7 +1098,7 @@ int ia32_compare_asm_attr(ir_node *a, ir_node *b)
 	attr_a = get_ia32_asm_attr_const(a);
 	attr_b = get_ia32_asm_attr_const(b);
 
-	if(attr_a->asm_text != attr_b->asm_text)
+	if (attr_a->asm_text != attr_b->asm_text)
 		return 1;
 
 	return 0;

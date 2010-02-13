@@ -341,7 +341,7 @@ static void dump_nodeset(ir_nodeset_t *ns, const char *prefix)
 	ir_node *irn;
 
 	ir_nodeset_iterator_init(&iter, ns);
-	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL ) {
+	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL ) {
 		ir_fprintf(stderr, "%s%+F\n", prefix, irn);
 	}
 }
@@ -1736,7 +1736,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 	if (rss->opts->dump_flags & RSS_DUMP_MAXAC)
 		debug_vcg_dump_pkg(rss, values, iteration);
 
-	if(temp != NULL) {
+	if (temp != NULL) {
 		ir_nodeset_destroy(temp);
 		free(temp);
 	}
@@ -2052,7 +2052,7 @@ static void perform_value_serialization_heuristic(rss_t *rss)
 		/* update the dvg */
 		update_dvg(rss, &dvg, ser->v, ser->u);
 		update_dvg(rss, &dvg, get_rss_irn(rss, ser->edge->src), get_rss_irn(rss, ser->edge->tgt));
-		if(sat_vals != NULL) {
+		if (sat_vals != NULL) {
 			ir_nodeset_destroy(sat_vals);
 			free(sat_vals);
 		}

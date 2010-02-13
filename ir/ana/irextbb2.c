@@ -142,10 +142,10 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 		ir_node *succ = get_edge_src_irn(edge);
 		double execfreq;
 
-		if(irn_visited(succ))
+		if (irn_visited(succ))
 			continue;
 
-		if(get_Block_n_cfgpreds(succ) > 1) {
+		if (get_Block_n_cfgpreds(succ) > 1) {
 			create_extblk(succ, env);
 			continue;
 		}
@@ -170,7 +170,7 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 	}
 
 	/* add best successor and recursively try to pick more */
-	if(best_succ != NULL) {
+	if (best_succ != NULL) {
 		addto_extblk(extblk, best_succ);
 		mark_irn_visited(best_succ);
 		pick_successor(best_succ, extblk, env);
@@ -233,8 +233,8 @@ void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
 		}
 
 #if 0
-		for(i = 0; i < len; ++i) {
-			if(i > 0)
+		for (i = 0; i < len; ++i) {
+			if (i > 0)
 				printf(", ");
 			ir_printf("%+F", extbb->blks[i]);
 		}

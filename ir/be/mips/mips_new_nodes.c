@@ -78,23 +78,23 @@ static int mips_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 
 		case dump_node_nodeattr_txt:
 
-			if(is_mips_Immediate(n)) {
+			if (is_mips_Immediate(n)) {
 				const mips_immediate_attr_t *attr
 					= get_mips_immediate_attr_const(n);
-				switch(attr->imm_type) {
+				switch (attr->imm_type) {
 				case MIPS_IMM_CONST:
 					fprintf(F, " %ld ", attr->val);
 					break;
 				case MIPS_IMM_SYMCONST_LO:
 					fprintf(F, " lo(%s", get_entity_ld_name(attr->entity));
-					if(attr->val != 0) {
+					if (attr->val != 0) {
 						fprintf(F, "%+ld", attr->val);
 					}
 					fprintf(F, ") ");
 					break;
 				case MIPS_IMM_SYMCONST_HI:
 					fprintf(F, " hi(%s", get_entity_ld_name(attr->entity));
-					if(attr->val != 0) {
+					if (attr->val != 0) {
 						fprintf(F, "%+ld", attr->val);
 					}
 					fprintf(F, ") ");
@@ -225,7 +225,7 @@ static int mips_compare_nodes_attr(ir_node *node_a, ir_node *node_b)
 	const mips_attr_t *a = get_mips_attr_const(node_a);
 	const mips_attr_t *b = get_mips_attr_const(node_b);
 
-	if(a->switch_default_pn != b->switch_default_pn)
+	if (a->switch_default_pn != b->switch_default_pn)
 		return 1;
 
 	return 0;
@@ -236,7 +236,7 @@ static int mips_compare_immediate_attr(ir_node *node_a, ir_node *node_b)
 	const mips_immediate_attr_t *a = get_mips_immediate_attr_const(node_a);
 	const mips_immediate_attr_t *b = get_mips_immediate_attr_const(node_b);
 
-	if(a->val != b->val)
+	if (a->val != b->val)
 		return 1;
 
 	return 0;
@@ -247,11 +247,11 @@ static int mips_compare_load_store_attr(ir_node *node_a, ir_node *node_b)
 	const mips_load_store_attr_t *a = get_mips_load_store_attr_const(node_a);
 	const mips_load_store_attr_t *b = get_mips_load_store_attr_const(node_b);
 
-	if(mips_compare_nodes_attr(node_a, node_b))
+	if (mips_compare_nodes_attr(node_a, node_b))
 		return 1;
-	if(a->stack_entity != b->stack_entity)
+	if (a->stack_entity != b->stack_entity)
 		return 1;
-	if(a->offset != b->offset)
+	if (a->offset != b->offset)
 		return 1;
 
 	return 0;

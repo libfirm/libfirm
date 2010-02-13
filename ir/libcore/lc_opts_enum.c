@@ -49,7 +49,7 @@ int lc_opt_enum_ ## N ## _cb(LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_
 	s[end]  = '\0'; \
 	\
 	end = 0; \
-	while(arg[end] != '\0') { \
+	while (arg[end] != '\0') { \
 		unsigned int i; \
 		\
 		begin  = end + strspn(arg + end, delim); \
@@ -57,8 +57,8 @@ int lc_opt_enum_ ## N ## _cb(LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_
 		s      = tmp + begin; \
 		s[end - begin] = '\0'; \
 		\
-		for(i = 0; items[i].name != NULL; ++i) { \
-			if(strcmp(s, items[i].name) == 0) { \
+		for (i = 0; items[i].name != NULL; ++i) { \
+			if (strcmp(s, items[i].name) == 0) { \
 				*var->value op items[i].value; \
 				res = 1; \
 			} \

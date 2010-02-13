@@ -115,7 +115,7 @@ static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST] = {
 	{ "dependency",  set_irn_dep,  0, get_irn_deps,   get_irn_dep }
 };
 
-#define foreach_tgt(irn, i, n, kind) for(i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
+#define foreach_tgt(irn, i, n, kind) for (i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)
 #define get_n(irn, pos, kind)        (edge_kind_info[kind].get_n(irn, pos))
 #define get_kind_str(kind)           (edge_kind_info[kind].name)
 
@@ -210,7 +210,7 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
 		size_t amount = irg->estimated_node_count * 2;
 
 		edges_used = 1;
-		if(info->allocated) {
+		if (info->allocated) {
 			amount = ir_edgeset_size(&info->edges);
 			ir_edgeset_destroy(&info->edges);
 			obstack_free(&info->edges_obst, NULL);
@@ -253,7 +253,7 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
 const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
 {
 	const ir_edge_t *edge;
-	if((edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_NORMAL)) == NULL)
+	if ((edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_NORMAL)) == NULL)
 		edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_BLOCK);
 	return(edge);
 }
@@ -708,7 +708,7 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind, ir_grap
 {
 	set_edge_func_t *set_edge = edge_kind_info[kind].set_edge;
 
-	if(set_edge && edges_activated_kind(irg, kind)) {
+	if (set_edge && edges_activated_kind(irg, kind)) {
 		struct list_head *head = _get_irn_outs_head(from, kind);
 
 		DBG((dbg, LEVEL_5, "reroute from %+F to %+F\n", from, to));
@@ -734,7 +734,7 @@ static void verify_set_presence(ir_node *irn, void *data)
 		templ.pos = i;
 
 		e = ir_edgeset_find(edges, &templ);
-		if(e != NULL) {
+		if (e != NULL) {
 			e->present = 1;
 		} else {
 			w->problem_found = 1;

@@ -78,7 +78,7 @@ firm_dbg_module_t *firm_dbg_register(const char *name)
   mod.name = name;
   mod.file = stderr;
 
-  if(!module_set)
+  if (!module_set)
     firm_dbg_init();
 
   return set_insert(module_set, &mod, sizeof(mod), HASH_STR(name, strlen(name)));
@@ -129,7 +129,7 @@ void *_firm_dbg_make_msg(const firm_dbg_module_t *mod, unsigned mask, const char
 {
   void *res = NULL;
 
-  if(mask == 0 || (mod->mask & mask)) {
+  if (mask == 0 || (mod->mask & mask)) {
     va_list args;
     va_start(args, fmt);
     res = make_msg_info(mod, fmt, args);
@@ -142,7 +142,7 @@ void *_firm_dbg_make_msg(const firm_dbg_module_t *mod, unsigned mask, const char
 void _firm_dbg_print_msg(const char *filename, int line, const char *func, void *mi_ptr)
 {
   msg_info_t *mi = mi_ptr;
-  if(mi) {
+  if (mi) {
     fprintf(mi->mod->file, mi->msg, filename, line, func);
     obstack_free(&dbg_obst, mi);
   }
@@ -150,7 +150,7 @@ void _firm_dbg_print_msg(const char *filename, int line, const char *func, void 
 
 void _firm_dbg_print(const firm_dbg_module_t *mod, unsigned mask, const char *fmt, ...)
 {
-  if(mask == 0 || (mod->mask & mask)) {
+  if (mask == 0 || (mod->mask & mask)) {
     va_list args;
     char *res;
     va_start(args, fmt);

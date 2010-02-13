@@ -63,7 +63,7 @@ static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
 	heights_t *heights = data;
 	irn_height_t *h    = phase_get_irn_data(&heights->ph, irn);
 
-	if(h)
+	if (h)
 		fprintf(f, "height: %u\n", h->height);
 }
 
@@ -81,32 +81,32 @@ static int search(heights_t *h, const ir_node *curr, const ir_node *tgt)
 	int i, n;
 
 	/* if the current node is the one we were looking for, we're done. */
-	if(curr == tgt)
+	if (curr == tgt)
 		return 1;
 
 	/* If we are in another block or at a phi we won't find our target. */
-	if(get_nodes_block(curr) != get_nodes_block(tgt))
+	if (get_nodes_block(curr) != get_nodes_block(tgt))
 		return 0;
-	if(is_Phi(curr))
+	if (is_Phi(curr))
 		return 0;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
 	h_curr = phase_get_irn_data(&h->ph, curr);
-	if(h_curr->visited >= h->visited)
+	if (h_curr->visited >= h->visited)
 		return 0;
 
 	/* If we are too deep into the DAG we won't find the target either. */
 	h_tgt = phase_get_irn_data(&h->ph, tgt);
-	if(h_curr->height > h_tgt->height)
+	if (h_curr->height > h_tgt->height)
 		return 0;
 
 	/* Mark this place as visited. */
 	h_curr->visited = h->visited;
 
 	/* Start a search from this node. */
-	for(i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
+	for (i = 0, n = get_irn_ins_or_deps(curr); i < n; ++i) {
 		ir_node *op = get_irn_in_or_dep(curr, i);
-		if(search(h, op, tgt))
+		if (search(h, op, tgt))
 			return 1;
 	}
 
@@ -125,7 +125,7 @@ int heights_reachable_in_block(heights_t *h, const ir_node *n, const ir_node *m)
 	assert(get_nodes_block(n) == get_nodes_block(m));
 	assert(hn != NULL && hm != NULL);
 
-	if(hn->height <= hm->height) {
+	if (hn->height <= hm->height) {
 		h->visited++;
 		res = search(h, n, m);
 	}
@@ -146,7 +146,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	const ir_edge_t *edge;
 
 	/* bail out if we already visited that node. */
-	if(ih->visited >= h->visited)
+	if (ih->visited >= h->visited)
 		return ih->height;
 
 	ih->visited = h->visited;
@@ -155,7 +155,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	foreach_out_edge(irn, edge) {
 		ir_node *dep = get_edge_src_irn(edge);
 
-		if(!is_Block(dep) && !is_Phi(dep) && get_nodes_block(dep) == bl) {
+		if (!is_Block(dep) && !is_Phi(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
 		}
@@ -167,7 +167,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 		ir_node *dep = get_edge_src_irn(edge);
 
 		assert(!is_Phi(dep));
-		if(!is_Block(dep) && get_nodes_block(dep) == bl) {
+		if (!is_Block(dep) && get_nodes_block(dep) == bl) {
 			unsigned dep_height = compute_height(h, dep, bl);
 			ih->height          = MAX(ih->height, dep_height);
 		}

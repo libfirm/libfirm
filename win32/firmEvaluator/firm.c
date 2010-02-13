@@ -369,7 +369,7 @@ do {                                                            \
     s[len] = '\0';                                              \
     str = s;                                                    \
   }                                                             \
-} while(0)
+} while (0)
 
 /**
  * format a tarval

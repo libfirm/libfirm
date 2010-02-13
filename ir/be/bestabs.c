@@ -176,7 +176,7 @@ typedef struct walker_env {
   do { \
     set_type_link(tp, (void *)1);  \
     waitq_put(wq, tp);             \
-  } while(0)
+  } while (0)
 
 /* a the is ready */
 #define SET_TYPE_READY(tp)     set_type_link(tp, NULL)

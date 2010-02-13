@@ -128,18 +128,18 @@ spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 	ir_node *after;
 
 	spill_info = get_spill_info(env, state);
-	if(spill_info == NULL) {
+	if (spill_info == NULL) {
 		spill_info = create_spill_info(env, state);
-	} else if(spill_info->spill != NULL) {
+	} else if (spill_info->spill != NULL) {
 		return spill_info;
 	}
 
-	if(sched_is_scheduled(state)) {
+	if (sched_is_scheduled(state)) {
 		next = state;
 		do {
 			after = next;
 			next = sched_next(after);
-		} while(is_Proj(next) || is_Phi(next) || be_is_Keep(next));
+		} while (is_Proj(next) || is_Phi(next) || be_is_Keep(next));
 	} else {
 		after = state;
 	}
@@ -174,14 +174,14 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 
 	/* does a spill exist for the phis value? */
 	spill_info = get_spill_info(env, phi);
-	if(spill_info != NULL) {
+	if (spill_info != NULL) {
 		spill_to_kill = spill_info->spill;
 	} else {
 		spill_info = create_spill_info(env, phi);
 	}
 
 	/* create a new phi-M with bad preds */
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		in[i] = new_r_Unknown(irg, mode_M);
 	}
 
@@ -190,13 +190,13 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 	/* create a Phi-M */
 	spill_info->spill = new_r_Phi(block, arity, in, mode_M);
 
-	if(spill_to_kill != NULL) {
+	if (spill_to_kill != NULL) {
 		exchange(spill_to_kill, spill_info->spill);
 		sched_remove(spill_to_kill);
 	}
 
 	/* create spills for the phi values */
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(phi, i);
 		spill_info_t *pred_spill = create_spill(env, in, 1);
 		set_irn_n(spill_info->spill, i, pred_spill->spill);
@@ -232,13 +232,13 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 	n_cfgpreds = get_Block_n_cfgpreds(block);
 
 	/* no cfgpred -> no value active */
-	if(n_cfgpreds == 0) {
+	if (n_cfgpreds == 0) {
 		block_info->start_state = NULL;
 		return block_info;
 	}
 
 	/* for 1 pred only: simply take the the end-state of the pred */
-	if(n_cfgpreds == 1) {
+	if (n_cfgpreds == 1) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, 0);
 		block_info_t *pred_info;
 
@@ -270,17 +270,17 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
 		next_use = be_get_next_use(env->uses, first, 0, node, 0);
 
-		if(USES_IS_INFINITE(next_use.time)) {
+		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
 			continue;
 		}
 
-		if(next_use.outermost_loop >= get_loop_depth(loop)) {
-			if(outer_loop_allowed || next_use.time < best_time) {
+		if (next_use.outermost_loop >= get_loop_depth(loop)) {
+			if (outer_loop_allowed || next_use.time < best_time) {
 				DBG((dbg, LEVEL_2, "\ttaken (%u, loop %d)\n", next_use.time,
 				     next_use.outermost_loop));
 
-				if(best_starter != NULL) {
+				if (best_starter != NULL) {
 					/* spill the phi as it is not used */
 					spill_phi(env, best_starter);
 				}
@@ -289,10 +289,10 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 				outer_loop_allowed = 0;
 			}
 		} else {
-			if(outer_loop_allowed && next_use.time < best_time) {
+			if (outer_loop_allowed && next_use.time < best_time) {
 				DBG((dbg, LEVEL_2, "\ttaken (%u, loop %d)\n", next_use.time,
 				     next_use.outermost_loop));
-				if(best_starter != NULL) {
+				if (best_starter != NULL) {
 					/* spill the phi as it is not used */
 					spill_phi(env, best_starter);
 				}
@@ -301,7 +301,7 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 			}
 		}
 
-		if(best_starter != node) {
+		if (best_starter != node) {
 			/* spill the phi as it is not used */
 			spill_phi(env, best_starter);
 		}
@@ -311,7 +311,7 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 	be_lv_foreach(env->lv, block, be_lv_state_in, i) {
 		node = be_lv_get_irn(env->lv, block, i);
 
-		if(!mode_is_data(get_irn_mode(node)))
+		if (!mode_is_data(get_irn_mode(node)))
 			continue;
 
 		if (arch_get_irn_register(node) != env->reg)
@@ -320,17 +320,17 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
 		next_use = be_get_next_use(env->uses, first, 0, node, 0);
 
-		if(USES_IS_INFINITE(next_use.time)) {
+		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
 			continue;
 		}
 
-		if(next_use.outermost_loop >= get_loop_depth(loop)) {
-			if(outer_loop_allowed || next_use.time < best_time) {
+		if (next_use.outermost_loop >= get_loop_depth(loop)) {
+			if (outer_loop_allowed || next_use.time < best_time) {
 				DBG((dbg, LEVEL_2, "\ttaken (%u, loop %d)\n", next_use.time,
 				     next_use.outermost_loop));
 
-				if(best_starter != NULL && is_Phi(best_starter)) {
+				if (best_starter != NULL && is_Phi(best_starter)) {
 					/* spill the phi as it is not used */
 					spill_phi(env, best_starter);
 				}
@@ -339,10 +339,10 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 				outer_loop_allowed = 0;
 			}
 		} else {
-			if(outer_loop_allowed && next_use.time < best_time) {
+			if (outer_loop_allowed && next_use.time < best_time) {
 				DBG((dbg, LEVEL_2, "\ttaken (%u, loop %d)\n", next_use.time,
 				     next_use.outermost_loop));
-				if(best_starter != NULL && is_Phi(best_starter)) {
+				if (best_starter != NULL && is_Phi(best_starter)) {
 					/* spill the phi as it is not used */
 					spill_phi(env, best_starter);
 				}
@@ -370,7 +370,7 @@ void belady(minibelady_env_t *env, ir_node *block)
 	block_info_t *block_info;
 
 	/* Don't do a block twice */
-	if(irn_visited(block))
+	if (irn_visited(block))
 		return;
 
 	/* compute value to start with */
@@ -398,22 +398,22 @@ void belady(minibelady_env_t *env, ir_node *block)
 
 		/* check which state is desired for the node */
 		arity = get_irn_arity(node);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			const arch_register_t *reg;
 			ir_node *in = get_irn_n(node, i);
 
-			if(!mode_is_data(get_irn_mode(in)))
+			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
 			reg = arch_get_irn_register(in);
-			if(reg == env->reg) {
+			if (reg == env->reg) {
 				assert(need_val == NULL);
 				need_val = in;
 				DBG((dbg, LEVEL_3, "\t... need state %+F\n", need_val));
 			}
 		}
 		/* create a reload to match state if necessary */
-		if(need_val != NULL && need_val != current_state) {
+		if (need_val != NULL && need_val != current_state) {
 			DBG((dbg, LEVEL_3, "\t... reloading %+F\n", need_val));
 			create_reload(env, need_val, node, current_state);
 			current_state = need_val;
@@ -429,19 +429,19 @@ void belady(minibelady_env_t *env, ir_node *block)
 				const arch_register_t *reg;
 				ir_node *proj = get_edge_src_irn(edge);
 
-				if(!mode_is_data(get_irn_mode(proj)))
+				if (!mode_is_data(get_irn_mode(proj)))
 					continue;
 
 				reg = arch_get_irn_register(proj);
-				if(reg == env->reg) {
+				if (reg == env->reg) {
 					current_state = proj;
 					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
 				}
 			}
 		} else {
-			if(mode_is_data(get_irn_mode(node))) {
+			if (mode_is_data(get_irn_mode(node))) {
 				const arch_register_t *reg = arch_get_irn_register(node);
-				if(reg == env->reg) {
+				if (reg == env->reg) {
 					current_state = node;
 					DBG((dbg, LEVEL_3, "\t... current_state <- %+F\n", current_state));
 				}
@@ -466,11 +466,11 @@ ir_node *get_end_of_block_insertion_point(ir_node *block)
 	ir_node *last = sched_last(block);
 
 	/* skip Projs and Keep-alikes behind the jump... */
-	while(is_Proj(last) || be_is_Keep(last)) {
+	while (is_Proj(last) || be_is_Keep(last)) {
 		last = sched_prev(last);
 	}
 
-	if(!is_cfop(last)) {
+	if (!is_cfop(last)) {
 		last = sched_next(last);
 		/* last node must be a cfop, only exception is the start block */
 		assert(last	== get_irg_start_block(get_irn_irg(block)));
@@ -492,7 +492,7 @@ void fix_block_borders(ir_node *block, void *data)
 	int arity;
 	block_info_t *block_info;
 
-	if(block == startblock)
+	if (block == startblock)
 		return;
 
 	DBG((dbg, LEVEL_3, "\n"));
@@ -509,17 +509,17 @@ void fix_block_borders(ir_node *block, void *data)
 		block_info_t *pred_info  = get_block_info(pred);
 		ir_node      *need_state = block_info->start_state;
 
-		if(need_state == NULL)
+		if (need_state == NULL)
 			continue;
 
-		if(is_Phi(need_state) && get_nodes_block(need_state) == block) {
+		if (is_Phi(need_state) && get_nodes_block(need_state) == block) {
 			need_state = get_irn_n(need_state, i);
 		}
 
 		DBG((dbg, LEVEL_3, "  Pred %+F (ends in %+F, we need %+F)\n", pred,
 		     pred_info->end_state, need_state));
 
-		if(pred_info->end_state != need_state) {
+		if (pred_info->end_state != need_state) {
 			ir_node *insert_point =	get_end_of_block_insertion_point(pred);
 
 
@@ -539,7 +539,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 
 	be_liveness_assure_sets(lv);
 	/* construct control flow loop tree */
-	if(! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
+	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
 		construct_cf_backedges(irg);
 	}
 
@@ -567,24 +567,24 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 
 	/* reconstruct ssa-form */
 	info = env.spills;
-	while(info != NULL) {
+	while (info != NULL) {
 		be_ssa_construction_env_t senv;
 		int i, len;
 		ir_node **phis;
 
 		be_ssa_construction_init(&senv, birg);
-		if(sched_is_scheduled(info->value))
+		if (sched_is_scheduled(info->value))
 			be_ssa_construction_add_copy(&senv, info->value);
 		be_ssa_construction_add_copies(&senv,
 		                               info->reloads, ARR_LEN(info->reloads));
 		be_ssa_construction_fix_users(&senv, info->value);
 
-		if(lv != NULL) {
+		if (lv != NULL) {
 			be_ssa_construction_update_liveness_phis(&senv, lv);
 
 			be_liveness_update(lv, info->value);
 			len = ARR_LEN(info->reloads);
-			for(i = 0; i < len; ++i) {
+			for (i = 0; i < len; ++i) {
 				ir_node *reload = info->reloads[i];
 				be_liveness_update(lv, reload);
 			}
@@ -594,7 +594,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 
 		/* set register requirements for phis */
 		len = ARR_LEN(phis);
-		for(i = 0; i < len; ++i) {
+		for (i = 0; i < len; ++i) {
 			ir_node *phi = phis[i];
 			arch_set_irn_register(phi, env.reg);
 		}

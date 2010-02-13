@@ -336,7 +336,7 @@ unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, int pos)
 			int      idx;
 
 			assert(size > 0);
-			if(size % align > 0) {
+			if (size % align > 0) {
 				size += align - (size % align);
 			}
 			idx = get_compound_graph_path_array_index(path, i);
@@ -366,7 +366,7 @@ unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent,
 	path_len  = get_compound_graph_path_length(path);
 	last_node = get_compound_graph_path_node(path, path_len - 1);
 
-	if(last_node == NULL)
+	if (last_node == NULL)
 		return 0;
 
   	return get_entity_offset_bits_remainder(last_node);

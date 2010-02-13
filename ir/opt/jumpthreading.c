@@ -117,7 +117,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
-	for(i = 0; i < n_cfgpreds; ++i)
+	for (i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
@@ -125,7 +125,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	mark_irn_visited(block);
 
 	/* set Phi predecessors */
-	for(i = 0; i < n_cfgpreds; ++i) {
+	for (i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		ir_node *pred_val   = search_def_and_create_phis(pred_block, mode, 0);
 
@@ -237,7 +237,7 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 		assert(get_irn_mode(copy) != mode_X);
 
 		arity = get_irn_arity(copy);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *pred     = get_irn_n(copy, i);
 			ir_node *new_pred;
 
@@ -478,7 +478,7 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		}
 
 		arity = get_irn_arity(value);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *copy_block;
 			ir_node *phi_pred = get_Phi_pred(value, i);
 			ir_node *cfgpred  = get_Block_cfgpred(block, i);
@@ -542,7 +542,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 			return NULL;
 
 		arity = get_irn_arity(value);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *copy_block;
 			ir_node *phi_pred = get_Phi_pred(value, i);
 			ir_node *cfgpred  = get_Block_cfgpred(block, i);

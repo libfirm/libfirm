@@ -699,7 +699,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 		                           pn_sparc_SubSP_stack);
 		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
 		return res;
-	} else if(proj == pn_be_AddSP_res) {
+	} else if (proj == pn_be_AddSP_res) {
 		// TODO: check for correct pn_sparc_* flags
 		return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_sparc_SubSP_stack);
 	} else if (proj == pn_be_AddSP_M) {

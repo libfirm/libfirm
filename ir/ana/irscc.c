@@ -268,7 +268,7 @@ static inline void pop_scc_to_loop(ir_node *n)
 	} while (m != n);
 
 	/* i might be bigger than 1 for dead (and that's why bad) loops */
-	/* if(i > 1)
+	/* if (i > 1)
 		printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n");
 	 */
 }
@@ -672,20 +672,20 @@ int search_endproj_in_stack(ir_node *start_block)
 {
 	int i, j;
 	assert(is_Block(start_block));
-	for(i = tos - 1; i >= 0; --i)
+	for (i = tos - 1; i >= 0; --i)
 	{
-		if(get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
+		if (get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
 			get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
 		{
 			printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 			ir_node *end_projx = stack[i];
 
 			int arity = get_irn_arity(start_block);
-			for(j = 0; j < arity; j++)
+			for (j = 0; j < arity; j++)
 			{
 				ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
 					get_Proj_proj(end_projx));
-				if(get_irn_n(start_block, j) == begin_projx)
+				if (get_irn_n(start_block, j) == begin_projx)
 				{
 					printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
 					return(j);
@@ -701,7 +701,7 @@ static pmap *projx_link = NULL;
 
 void link_to_reg_end (ir_node *n, void *env)
 {
-	if(get_irn_op(n) == op_Proj &&
+	if (get_irn_op(n) == op_Proj &&
 		get_irn_mode(n) == mode_X &&
 		get_irn_op(get_irn_n(n, 0)) == op_EndReg) {
 			/* Reg End Projx -> Find the CallBegin Projx and hash it */
@@ -714,7 +714,7 @@ void link_to_reg_end (ir_node *n, void *env)
 
 void set_projx_link(ir_node *cb_projx, ir_node *end_projx)
 {
-	if(projx_link == NULL)
+	if (projx_link == NULL)
 		projx_link = pmap_create();
 	pmap_insert(projx_link, (void *)cb_projx, (void *)end_projx);
 }

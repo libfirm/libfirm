@@ -1507,7 +1507,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	if (entity_is_null(entity)) {
 		be_emit_irprintf("\t.space %u\n", get_type_size_bytes(type));
 		be_emit_write_line();
-	} else if(entity_has_compound_ent_values(entity)) {
+	} else if (entity_has_compound_ent_values(entity)) {
 		emit_compound_graph_init(env, entity);
 	} else {
 		assert(entity->initializer != NULL);

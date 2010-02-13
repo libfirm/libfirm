@@ -143,7 +143,7 @@
 	size_t _i;                                 \
 	size_t _size = (size);                     \
 	HashSetEntry *entries = (ptr);             \
-	for(_i = 0; _i < _size; ++_i) {            \
+	for (_i = 0; _i < _size; ++_i) {            \
 		HashSetEntry *entry = & entries[_i];   \
 		EntrySetEmpty(*entry);                 \
 	}                                          \
@@ -231,14 +231,14 @@ InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
 
 	assert((num_buckets & (num_buckets - 1)) == 0);
 
-	while(1) {
+	for (;;) {
 		HashSetEntry *entry = & self->entries[bucknum];
 
-		if(EntryIsEmpty(*entry)) {
+		if (EntryIsEmpty(*entry)) {
 			size_t p;
 			HashSetEntry *nentry;
 
-			if(insert_pos != ILLEGAL_POS) {
+			if (insert_pos != ILLEGAL_POS) {
 				p = insert_pos;
 			} else {
 				p = bucknum;
@@ -250,11 +250,11 @@ InsertReturnValue insert_nogrow(HashSet *self, KeyType key)
 			self->num_elements++;
 			return GetInsertReturnValue(*nentry, 0);
 		}
-		if(EntryIsDeleted(*entry)) {
-			if(insert_pos == ILLEGAL_POS)
+		if (EntryIsDeleted(*entry)) {
+			if (insert_pos == ILLEGAL_POS)
 				insert_pos = bucknum;
-		} else if(EntryGetHash(self, *entry) == hash) {
-			if(KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
+		} else if (EntryGetHash(self, *entry) == hash) {
+			if (KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
 				// Value already in the set, return it
 				return GetInsertReturnValue(*entry, 1);
 			}
@@ -295,14 +295,14 @@ void insert_new(HashSet *self, unsigned hash, ValueType value)
 
 	//assert(value != NullValue);
 
-	while(1) {
+	for (;;) {
 		HashSetEntry *entry = & self->entries[bucknum];
 
-		if(EntryIsEmpty(*entry)) {
+		if (EntryIsEmpty(*entry)) {
 			size_t        p;
 			HashSetEntry *nentry;
 
-			if(insert_pos != ILLEGAL_POS) {
+			if (insert_pos != ILLEGAL_POS) {
 				p = insert_pos;
 			} else {
 				p = bucknum;
@@ -349,9 +349,9 @@ void resize(HashSet *self, size_t new_size)
 	reset_thresholds(self);
 
 	/* reinsert all elements */
-	for(i = 0; i < num_buckets; ++i) {
+	for (i = 0; i < num_buckets; ++i) {
 		HashSetEntry *entry = & old_entries[i];
-		if(EntryIsEmpty(*entry) || EntryIsDeleted(*entry))
+		if (EntryIsEmpty(*entry) || EntryIsDeleted(*entry))
 			continue;
 
 		insert_new(self, EntryGetHash(self, *entry), EntryGetValue(*entry));
@@ -376,7 +376,7 @@ void maybe_grow(HashSet *self)
 {
 	size_t resize_to;
 
-	if(LIKELY(self->num_elements + 1 <= self->enlarge_threshold))
+	if (LIKELY(self->num_elements + 1 <= self->enlarge_threshold))
 		return;
 
 	/* double table size */
@@ -394,20 +394,20 @@ void maybe_shrink(HashSet *self)
 	size_t size;
 	size_t resize_to;
 
-	if(!self->consider_shrink)
+	if (!self->consider_shrink)
 		return;
 
 	self->consider_shrink = 0;
 	size                  = hashset_size(self);
-	if(size <= HT_MIN_BUCKETS)
+	if (size <= HT_MIN_BUCKETS)
 		return;
 
-	if(LIKELY(size > self->shrink_threshold))
+	if (LIKELY(size > self->shrink_threshold))
 		return;
 
 	resize_to = ceil_po2(size);
 
-	if(resize_to < 4)
+	if (resize_to < 4)
 		resize_to = 4;
 
 	resize(self, resize_to);
@@ -449,16 +449,16 @@ InsertReturnValue hashset_find(const HashSet *self, ConstKeyType key)
 	unsigned hash        = Hash(self, key);
 	size_t   bucknum     = hash & hashmask;
 
-	while(1) {
+	for (;;) {
 		HashSetEntry *entry = & self->entries[bucknum];
 
-		if(EntryIsEmpty(*entry)) {
+		if (EntryIsEmpty(*entry)) {
 			return NullReturnValue;
 		}
-		if(EntryIsDeleted(*entry)) {
+		if (EntryIsDeleted(*entry)) {
 			// value is deleted
-		} else if(EntryGetHash(self, *entry) == hash) {
-			if(KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
+		} else if (EntryGetHash(self, *entry) == hash) {
+			if (KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
 				// found the value
 				return GetInsertReturnValue(*entry, 1);
 			}
@@ -489,16 +489,16 @@ void hashset_remove(HashSet *self, ConstKeyType key)
 	self->entries_version++;
 #endif
 
-	while(1) {
+	for (;;) {
 		HashSetEntry *entry = & self->entries[bucknum];
 
-		if(EntryIsEmpty(*entry)) {
+		if (EntryIsEmpty(*entry)) {
 			return;
 		}
-		if(EntryIsDeleted(*entry)) {
+		if (EntryIsDeleted(*entry)) {
 			// entry is deleted
-		} else if(EntryGetHash(self, *entry) == hash) {
-			if(KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
+		} else if (EntryGetHash(self, *entry) == hash) {
+			if (KeysEqual(self, GetKey(EntryGetValue(*entry)), key)) {
 				EntrySetDeleted(*entry);
 				self->num_deleted++;
 				self->consider_shrink = 1;
@@ -519,7 +519,7 @@ void hashset_remove(HashSet *self, ConstKeyType key)
 static inline
 void init_size(HashSet *self, size_t initial_size)
 {
-	if(initial_size < 4)
+	if (initial_size < 4)
 		initial_size = 4;
 
 	self->entries         = Alloc(initial_size);
@@ -570,7 +570,7 @@ void hashset_init_size(HashSet *self, size_t expected_elements)
 	size_t needed_size;
 	size_t po2size;
 
-	if(expected_elements >= UINT_MAX/2) {
+	if (expected_elements >= UINT_MAX/2) {
 		abort();
 	}
 
@@ -610,9 +610,9 @@ ValueType hashset_iterator_next(HashSetIterator *self)
 
 	do {
 		current_bucket++;
-		if(current_bucket >= end)
+		if (current_bucket >= end)
 			return NullValue;
-	} while(EntryIsEmpty(*current_bucket) || EntryIsDeleted(*current_bucket));
+	} while (EntryIsEmpty(*current_bucket) || EntryIsDeleted(*current_bucket));
 
 	self->current_bucket = current_bucket;
 	return EntryGetValue(*current_bucket);
@@ -631,7 +631,7 @@ void hashset_remove_iterator(HashSet *self, const HashSetIterator *iter)
 	/* needs to be on a valid element */
 	assert(entry < self->entries + self->num_buckets);
 
-	if(EntryIsDeleted(*entry))
+	if (EntryIsDeleted(*entry))
 		return;
 
 	EntrySetDeleted(*entry);

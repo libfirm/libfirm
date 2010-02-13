@@ -458,7 +458,7 @@ void ia32_emit_x87_mode_suffix(const ir_node *node)
 static char get_xmm_mode_suffix(ir_mode *mode)
 {
 	assert(mode_is_float(mode));
-	switch(get_mode_size_bits(mode)) {
+	switch (get_mode_size_bits(mode)) {
 	case 32: return 's';
 	case 64: return 'd';
 	default: panic("Invalid XMM mode");
@@ -685,8 +685,8 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 			break;
 
 		++fmt;
-		while (1) {
-			switch(*fmt) {
+		for (;;) {
+			switch (*fmt) {
 			case '*': mod |= EMIT_ALTERNATE_AM; break;
 			case '#': mod |= EMIT_RESPECT_LS;   break;
 			case 'l': mod |= EMIT_LONG;         break;
@@ -863,7 +863,7 @@ void ia32_emit_binop(const ir_node *node)
  */
 void ia32_emit_x87_binop(const ir_node *node)
 {
-	switch(get_ia32_op_type(node)) {
+	switch (get_ia32_op_type(node)) {
 		case ia32_Normal:
 			{
 				const ia32_x87_attr_t *x87_attr = get_ia32_x87_attr_const(node);
@@ -1411,7 +1411,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	c = *(++s);
 
 	/* parse modifiers */
-	switch(c) {
+	switch (c) {
 	case 0:
 		ir_fprintf(stderr, "Warning: asm text (%+F) ends with %%\n", node);
 		be_emit_char('%');
@@ -1490,7 +1490,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	/* emit it */
 	if (modifier != 0) {
 		be_emit_char('%');
-		switch(modifier) {
+		switch (modifier) {
 		case 'b':
 			reg_name = ia32_get_mapped_reg_name(isa->regs_8bit, reg);
 			break;
@@ -1531,7 +1531,7 @@ static void emit_ia32_Asm(const ir_node *node)
 	if (s[0] != '\t')
 		be_emit_char('\t');
 
-	while(*s != 0) {
+	while (*s != 0) {
 		if (*s == '%') {
 			s = emit_asm_operand(node, s);
 		} else {
@@ -1685,7 +1685,7 @@ static void emit_be_IncSP(const ir_node *node)
 
 static inline bool is_unknown_reg(const arch_register_t *reg)
 {
-	if(reg == &ia32_gp_regs[REG_GP_UKNWN]
+	if (reg == &ia32_gp_regs[REG_GP_UKNWN]
 			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
 			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
 		return true;
@@ -2078,7 +2078,7 @@ static int should_align_block(const ir_node *block)
 		return 0;
 
 	n_cfgpreds = get_Block_n_cfgpreds(block);
-	for(i = 0; i < n_cfgpreds; ++i) {
+	for (i = 0; i < n_cfgpreds; ++i) {
 		const ir_node *pred      = get_Block_cfgpred_block(block, i);
 		double         pred_freq = get_block_execfreq(exec_freq, pred);
 

@@ -995,7 +995,7 @@ static long read_long(io_env_t *env)
 	do {
 		obstack_1grow(&env->obst, env->c);
 		read_c(env);
-	} while(isdigit(env->c));
+	} while (isdigit(env->c));
 	obstack_1grow(&env->obst, 0);
 
 	str = obstack_finish(&env->obst);
@@ -1244,7 +1244,7 @@ static void import_type(io_env_t *env)
 		const char *name = read_quoted_string_null(env);
 		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
 
-		if(typenr == (long) IR_SEGMENT_GLOBAL)
+		if (typenr == (long) IR_SEGMENT_GLOBAL)
 			type = get_glob_type();
 		else
 			type = new_type_class(id);

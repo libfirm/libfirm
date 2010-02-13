@@ -420,7 +420,7 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
 
-	while(!pdeq_empty(lowered_nodes)) {
+	while (!pdeq_empty(lowered_nodes)) {
 		ir_node *node = (ir_node*) pdeq_getr(lowered_nodes);
 		maybe_kill_node(node);
 	}

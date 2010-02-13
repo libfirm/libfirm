@@ -192,7 +192,7 @@ new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mod
 	// Init the VRP structures
 	res->vrp.range_type = VRP_UNDEFINED;
 	res->vrp.valid = 0;
-	if(mode_is_int(mode)) {
+	if (mode_is_int(mode)) {
 		// We are assuming that 0 is always represented as 0x0000
 		res->vrp.bits_set = new_tarval_from_long(0, mode);
 		res->vrp.bits_not_set = new_tarval_from_long(0, mode);
@@ -409,11 +409,11 @@ int add_irn_dep(ir_node *node, ir_node *dep)
 		int i, n;
 		int first_zero = -1;
 
-		for(i = 0, n = ARR_LEN(node->deps); i < n; ++i) {
-			if(node->deps[i] == NULL)
+		for (i = 0, n = ARR_LEN(node->deps); i < n; ++i) {
+			if (node->deps[i] == NULL)
 				first_zero = i;
 
-			if(node->deps[i] == dep)
+			if (node->deps[i] == dep)
 				return i;
 		}
 

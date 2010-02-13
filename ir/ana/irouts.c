@@ -527,7 +527,7 @@ static void node_arity_count(ir_node * node, void * env)
 	n_outs = 1 + arity + (-start);  // ((is_Block(node)) ? 0 : 1);   // Why + 1??
 	*anz += n_outs;
 
-	for(i = start; i < arity; i++) {
+	for (i = start; i < arity; i++) {
 		succ = get_irn_n(node, i);
 		succ->out = (ir_node **)INT_TO_PTR(PTR_TO_INT(succ->out) + 1);
 	}

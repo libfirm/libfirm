@@ -1267,7 +1267,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-	switch(proj) {
+	switch (proj) {
 	case pn_CopyB_M_regular:
 		if (is_arm_CopyB(new_pred)) {
 			return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_CopyB_M);
@@ -1336,7 +1336,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 		                           pn_arm_SubSPandCopy_stack);
 		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
 		return res;
-	} else if(proj == pn_be_AddSP_res) {
+	} else if (proj == pn_be_AddSP_res) {
 		return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_arm_SubSPandCopy_addr);
 	} else if (proj == pn_be_AddSP_M) {
 		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_arm_SubSPandCopy_M);

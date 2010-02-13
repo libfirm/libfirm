@@ -91,7 +91,7 @@ ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned gro
 void phase_free(ir_phase *phase)
 {
 	obstack_free(&phase->obst, NULL);
-	if(phase->data_ptr)
+	if (phase->data_ptr)
 		xfree(phase->data_ptr);
 }
 
@@ -102,8 +102,8 @@ phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 
 	stat->node_map_bytes = phase->n_data_ptr * sizeof(phase->data_ptr[0]);
 	stat->node_slots     = phase->n_data_ptr;
-	for(i = 0, n = phase->n_data_ptr; i < n; ++i) {
-		if(phase->data_ptr[i] != NULL) {
+	for (i = 0, n = phase->n_data_ptr; i < n; ++i) {
+		if (phase->data_ptr[i] != NULL) {
 			stat->node_slots_used++;
 		}
 	}

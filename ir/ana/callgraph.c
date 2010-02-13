@@ -597,7 +597,7 @@ static inline void pop_scc_to_loop(ir_graph *irg)
 		add_loop_irg(current_loop, m);
 		m->l = current_loop;
 		//m->callgraph_loop_depth = current_loop->depth;
-	} while(m != irg);
+	} while (m != irg);
 }
 
 /* GL ??? my last son is my grandson???  Removes cfloops with no

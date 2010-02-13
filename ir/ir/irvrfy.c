@@ -1211,7 +1211,7 @@ static int verify_node_Call(ir_node *n, ir_graph *irg)
 	ASSERT_AND_RET(verify_right_pinned(n),"Call node with wrong memory input", 0 );
 
 	mt = get_Call_type(n);
-	if(get_unknown_type() == mt) {
+	if (get_unknown_type() == mt) {
 		return 1;
 	}
 

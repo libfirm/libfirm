@@ -70,7 +70,7 @@ void set_Block_idom(ir_node *bl, ir_node *n)
 	 * If we don't set the root of the dominator tree
 	 * Append bl to the dominates queue of n.
 	 */
-	if(n != NULL) {
+	if (n != NULL) {
 		ir_dom_info *ni = get_dom_info(n);
 
 		bli->next = ni->first;
@@ -101,7 +101,7 @@ void set_Block_ipostdom(ir_node *bl, ir_node *n)
 	 * If we don't set the root of the post dominator tree
 	 * Append bl to the post dominates queue of n.
 	 */
-	if(n != NULL) {
+	if (n != NULL) {
 		ir_dom_info *ni = get_pdom_info(n);
 
 		bli->next = ni->first;
@@ -347,14 +347,14 @@ void dom_tree_walk(ir_node *bl, irg_walk_func *pre,
 {
 	ir_node *p;
 
-	if(pre)
+	if (pre)
 		pre(bl, env);
 
 	dominates_for_each(bl, p) {
 		dom_tree_walk(p, pre, post, env);
 	}
 
-	if(post)
+	if (post)
 		post(bl, env);
 }
 
@@ -364,14 +364,14 @@ void postdom_tree_walk(ir_node *bl, irg_walk_func *pre,
 {
 	ir_node *p;
 
-	if(pre)
+	if (pre)
 		pre(bl, env);
 
 	postdominates_for_each(bl, p) {
 		postdom_tree_walk(p, pre, post, env);
 	}
 
-	if(post)
+	if (post)
 		post(bl, env);
 }
 
@@ -422,7 +422,7 @@ static void assign_tree_dom_pre_order_max(ir_node *bl, void *data)
 	unsigned children = 0;
 	(void) data;
 
-	for(p = bi->first; p; p = get_dom_info(p)->next) {
+	for (p = bi->first; p; p = get_dom_info(p)->next) {
 		unsigned max_p = get_dom_info(p)->max_subtree_pre_num;
 		max = max > max_p ? max : max_p;
 		children++;
@@ -448,7 +448,7 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 	unsigned children = 0;
 	(void) data;
 
-	for(p = bi->first; p; p = get_pdom_info(p)->next) {
+	for (p = bi->first; p; p = get_pdom_info(p)->next) {
 		unsigned max_p = get_pdom_info(p)->max_subtree_pre_num;
 		max = max > max_p ? max : max_p;
 		children++;

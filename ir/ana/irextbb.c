@@ -180,7 +180,7 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
 		/* replace all sentinels by the extbb info */
 		prev = block;
 		list = NULL;
-		while (1) {
+		for (;;) {
 			if (get_Block_extbb(prev) != sentinel)
 				break;
 			set_irn_link(prev, list);

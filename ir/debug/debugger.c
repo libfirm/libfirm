@@ -163,14 +163,14 @@ static int is_active = 0;
 do {                                      \
 	debugger_hooks[h].hook._##h = fkt;    \
 	register_hook(h, &debugger_hooks[h]); \
-} while(0)
+} while (0)
 
 /** unhook the hook h */
 #define UNHOOK(h) \
 do {                                        \
 	unregister_hook(h, &debugger_hooks[h]); \
 	debugger_hooks[h].hook._##h = NULL;     \
-} while(0)
+} while (0)
 
 /** returns non-zero if a entry hook h is used */
 #define IS_HOOKED(h) (debugger_hooks[h].hook._##h != NULL)

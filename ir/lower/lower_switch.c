@@ -36,7 +36,7 @@
 #include "irouts.h"
 #include "irpass_t.h"
 
-#define foreach_out_irn(irn, i, outirn) for(i = get_irn_n_outs(irn) - 1;\
+#define foreach_out_irn(irn, i, outirn) for (i = get_irn_n_outs(irn) - 1;\
 	i >= 0 && (outirn = get_irn_out(irn, i)); --i)
 
 typedef struct walk_env {
@@ -145,7 +145,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		/* zero cases: "goto default;" */
 		env->defusers[env->defindex++] = new_Jmp();
 	} else if (numcases == 1) {
-		/* only one case: "if(sel == val) goto target else goto default;" */
+		/* only one case: "if (sel == val) goto target else goto default;" */
 		ir_node *val  = new_Const_long(cmp_mode, curcases[0].value);
 		ir_node *cmp  = new_Cmp(cmp_sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
@@ -153,7 +153,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		set_Block_cfgpred(curcases[0].target, 0, new_Proj(cond, mode_X, pn_Cond_true));
 		env->defusers[env->defindex++] = new_Proj(cond, mode_X, pn_Cond_false);
 	} else if (numcases == 2) {
-		/* only two cases: "if(sel == val[0]) goto target[0];" */
+		/* only two cases: "if (sel == val[0]) goto target[0];" */
 		ir_node *val  = new_Const_long(cmp_mode, curcases[0].value);
 		ir_node *cmp  = new_Cmp(cmp_sel, val);
 		ir_node *proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);
@@ -166,7 +166,7 @@ static void create_if_cascade(ifcas_env_t *env, ir_node *curblock,
 		neblock = new_Block(1, in);
 		set_cur_block(neblock);
 
-		/* second part: "else if(sel == val[1]) goto target[1] else goto default;" */
+		/* second part: "else if (sel == val[1]) goto target[1] else goto default;" */
 		val  = new_Const_long(cmp_mode, curcases[1].value);
 		cmp  = new_Cmp(cmp_sel, val);
 		proj = new_Proj(cmp, mode_b, pn_Cmp_Eq);

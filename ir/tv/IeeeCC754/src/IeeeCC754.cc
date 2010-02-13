@@ -2963,7 +2963,7 @@ void ModifierU( unsigned long *number, unsigned long ulps)
       if ( ulps != 0 )
 	{
 	  bits_ulps = ( unsigned long )  floor( ::log10( ulps ) / ::log10( 2 ) ) +1;
-	  if  ( bits_ulps > mant )
+	  if ( bits_ulps > mant )
 	    {
 	      ulps=0;
 	      wrong_input=1;
@@ -2986,7 +2986,7 @@ void ModifierU( unsigned long *number, unsigned long ulps)
       if ( ulps != 0 )
 	{
 	  bits_ulps = ( unsigned long )  floor( ::log10( ulps ) / ::log10( 2 ) ) +1;
-	if  ( bits_ulps > mant )
+	if ( bits_ulps > mant )
 	  {
 	    ulps=0;
 	    wrong_input=1;

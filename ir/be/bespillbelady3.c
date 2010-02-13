@@ -371,7 +371,7 @@ static void make_room(worklist_t *worklist, size_t room_needed)
 		return;
 
 	entry = worklist->live_values.next;
-	for(i = spills_needed; i > 0; --i) {
+	for (i = spills_needed; i > 0; --i) {
 		struct list_head *next = entry->next;
 		worklist_entry_t *wl_entry
 			= list_entry(entry, worklist_entry_t, head);
@@ -496,7 +496,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 
 		/* put all values used by the instruction into the workset */
 		arity = get_irn_arity(node);
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *use = get_irn_n(node, i);
 
 			if (!arch_irn_consider_in_reg_alloc(cls, use))
@@ -589,7 +589,7 @@ static worklist_t *construct_start_worklist(ir_node *block)
 
 	++worklist_visited;
 
-	while(fill_start_worklist(worklist, block)) {
+	while (fill_start_worklist(worklist, block)) {
 		if (worklist->n_live_values >= n_regs)
 			break;
 	}

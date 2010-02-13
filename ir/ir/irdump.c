@@ -689,7 +689,7 @@ static ir_node **construct_block_lists(ir_graph *irg)
 
 	current_ir_graph = irg;
 
-	if(walk_flag) {
+	if (walk_flag) {
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	}
 
@@ -1240,7 +1240,7 @@ int dump_node_label(FILE *F, ir_node *n)
 	fprintf(F, " ");
 	bad |= dump_node_typeinfo(F, n);
 	bad |= dump_node_nodeattr(F, n);
-	if(dump_node_idx_labels) {
+	if (dump_node_idx_labels) {
 		fprintf(F, "%ld:%d", get_irn_node_nr(n), get_irn_idx(n));
 	} else {
 		fprintf(F, "%ld", get_irn_node_nr(n));
@@ -1299,11 +1299,11 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 	}
 
 	mode = get_irn_mode(n);
-	if(mode == mode_M) {
+	if (mode == mode_M) {
 		print_vcg_color(F, ird_color_memory);
 		return;
 	}
-	if(mode == mode_X) {
+	if (mode == mode_X) {
 		print_vcg_color(F, ird_color_controlflow);
 		return;
 	}
@@ -1340,11 +1340,11 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 	default: {
 		ir_op *op = get_irn_op(node);
 
-		if(is_op_constlike(op)) {
+		if (is_op_constlike(op)) {
 			print_vcg_color(F, ird_color_const);
-		} else if(is_op_uses_memory(op)) {
+		} else if (is_op_uses_memory(op)) {
 			print_vcg_color(F, ird_color_uses_memory);
-		} else if(is_op_cfopcode(op) || is_op_forking(op)) {
+		} else if (is_op_cfopcode(op) || is_op_forking(op)) {
 			print_vcg_color(F, ird_color_controlflow);
 		} else {
 			PRINT_DEFAULT_NODE_ATTR;
@@ -1541,7 +1541,7 @@ static void dump_node(FILE *F, ir_node *n)
 	fputs("}\n", F);
 	dump_const_node_local(F, n);
 
-	if(dump_node_edge_hook)
+	if (dump_node_edge_hook)
 		dump_node_edge_hook(F, n);
 }
 
@@ -3269,7 +3269,7 @@ void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes, eset *extno
 {
 	int i, j, start;
 
-	for(i = 0; i < get_loop_n_elements(loop); i++) {
+	for (i = 0; i < get_loop_n_elements(loop); i++) {
 		loop_element le = get_loop_element(loop, i);
 		if (*(le.kind) == k_ir_loop) {
 			/* Recur */

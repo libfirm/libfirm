@@ -144,7 +144,7 @@ static const char *get_symconst_str(ir_node *node)
 {
 	ident *id;
 
-	switch(get_SymConst_kind(node)) {
+	switch (get_SymConst_kind(node)) {
 	case symconst_addr_name:
 		id = get_SymConst_name(node);
 		return get_id_str(id);
@@ -167,17 +167,17 @@ static const char *node_const_to_str(ir_node *n)
 	const mips_attr_t *attr = get_mips_attr(n);
 	long val;
 
-	if(is_mips_load_r(n) || is_mips_store_r(n)) {
+	if (is_mips_load_r(n) || is_mips_store_r(n)) {
 		mips_attr_t *attr = get_mips_attr(n);
 		ir_node *symconst;
 
-		if(attr->tv != NULL) {
+		if (attr->tv != NULL) {
 			val = get_tarval_long(attr->tv);
 			snprintf(buf, sizeof(buf), "%ld", val);
 
 			return buf;
 		}
-		if(attr->stack_entity != NULL) {
+		if (attr->stack_entity != NULL) {
 			snprintf(buf, sizeof(buf), "%d", attr->stack_entity_offset);
 			return buf;
 		}
@@ -186,12 +186,12 @@ static const char *node_const_to_str(ir_node *n)
 		assert(get_irn_opcode(symconst) == iro_SymConst);
 
 		return get_symconst_str(symconst);
-	} else if(is_mips_la(n)) {
+	} else if (is_mips_la(n)) {
 		snprintf(buf, sizeof(buf), "%s", get_id_str(attr->symconst_id));
 		return buf;
-	} else if(is_mips_lli(n)) {
+	} else if (is_mips_lli(n)) {
 		assert(attr->tv != NULL);
-		if(get_mode_sign(get_tarval_mode(attr->tv))) {
+		if (get_mode_sign(get_tarval_mode(attr->tv))) {
 			long val = get_tarval_long(attr->tv);
 			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
 		} else {
@@ -200,9 +200,9 @@ static const char *node_const_to_str(ir_node *n)
 		}
 
 		return buf;
-	} else if(is_mips_lui(n)) {
+	} else if (is_mips_lui(n)) {
 		assert(attr->tv != NULL);
-		if(get_mode_sign(get_tarval_mode(attr->tv))) {
+		if (get_mode_sign(get_tarval_mode(attr->tv))) {
 			long val = get_tarval_long(attr->tv);
 			val = (val & 0xffff0000) >> 16;
 			snprintf(buf, sizeof(buf), "0x%04lX", val & 0xffff);
@@ -235,7 +235,7 @@ void mips_emit_load_store_address(const ir_node *node, int pos)
 void mips_emit_immediate_suffix(const ir_node *node, int pos)
 {
 	ir_node *op = get_irn_n(node, pos);
-	if(is_mips_Immediate(op))
+	if (is_mips_Immediate(op))
 		be_emit_char('i');
 }
 
@@ -243,14 +243,14 @@ void mips_emit_immediate(const ir_node *node)
 {
 	const mips_immediate_attr_t *attr = get_mips_immediate_attr_const(node);
 
-	switch(attr->imm_type) {
+	switch (attr->imm_type) {
 	case MIPS_IMM_CONST:
 		be_emit_irprintf("%d", attr->val);
 		break;
 	case MIPS_IMM_SYMCONST_LO:
 		be_emit_cstring("%lo($");
 		be_emit_ident(get_entity_ld_ident(attr->entity));
-		if(attr->val != 0) {
+		if (attr->val != 0) {
 			be_emit_irprintf("%+d", attr->val);
 		}
 		be_emit_char(')');
@@ -258,7 +258,7 @@ void mips_emit_immediate(const ir_node *node)
 	case MIPS_IMM_SYMCONST_HI:
 		be_emit_cstring("%hi($");
 		be_emit_ident(get_entity_ld_ident(attr->entity));
-		if(attr->val != 0) {
+		if (attr->val != 0) {
 			be_emit_irprintf("%+d", attr->val);
 		}
 		be_emit_char(')');
@@ -274,7 +274,7 @@ void mips_emit_immediate(const ir_node *node)
 void mips_emit_source_register_or_immediate(const ir_node *node, int pos)
 {
 	const ir_node *op = get_irn_n(node, pos);
-	if(is_mips_Immediate(op)) {
+	if (is_mips_Immediate(op)) {
 		mips_emit_immediate(op);
 	} else {
 		mips_emit_source_register(node, pos);
@@ -302,15 +302,15 @@ void mips_emit_IncSP(const ir_node *node)
 {
 	int   offset = be_get_IncSP_offset(node);
 
-	if(offset == 0) {
+	if (offset == 0) {
 		return;
 	}
 
-	if(offset > 0xffff || offset < -0xffff) {
+	if (offset > 0xffff || offset < -0xffff) {
 		panic("stackframe > 2^16 bytes not supported yet");
 	}
 
-	if(offset > 0) {
+	if (offset > 0) {
 		be_emit_irprintf("\tsubu $sp, $sp, %d", offset);
 	} else {
 		be_emit_irprintf("\taddu $sp, $sp, %d", -offset);
@@ -338,7 +338,7 @@ void mips_emit_nops(int n)
 {
 	int i;
 
-	for(i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		be_emit_cstring("\tnop\n");
 		be_emit_write_line();
 	}
@@ -391,7 +391,7 @@ static void mips_emit_Call(const ir_node *node)
 
 	/* call of immediate value (label) */
 	callee = be_Call_get_entity(node);
-	if(callee != NULL) {
+	if (callee != NULL) {
 		be_emit_ident(get_entity_ld_ident(callee));
 	} else {
 		mips_emit_source_register(node, be_pos_Call_ptr);
@@ -421,14 +421,14 @@ static void mips_emit_Jump(const ir_node *node)
 ir_node *mips_get_jump_block(const ir_node* node, long projn)
 {
 	const ir_edge_t *oute;
-	for(oute = get_irn_out_edge_first(node); oute != NULL;
+	for (oute = get_irn_out_edge_first(node); oute != NULL;
 	    oute = get_irn_out_edge_next(node, oute)) {
 		ir_node *proj = get_edge_src_irn(oute);
 		long n;
 		assert(is_Proj(proj));
 
 		n = get_Proj_proj(proj);
-		if(n == projn)
+		if (n == projn)
 			return get_irn_link(proj);
 	}
 
@@ -556,11 +556,11 @@ void emit_mips_jump_table(const ir_node *irn)
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 	lastval = tbl.min_value;
-	for(i = 0; i < tbl.num_branches; ++i) {
+	for (i = 0; i < tbl.num_branches; ++i) {
 		const branch_t *branch = &tbl.branches[i];
 		int value = branch->value;
 
-		for(i2 = lastval + 1; i2 < value; ++i2) {
+		for (i2 = lastval + 1; i2 < value; ++i2) {
 			be_emit_cstring("\t.word ");
 			be_emit_ident(get_entity_ld_ident(attr->symconst));
 			be_emit_char('\n');
@@ -586,7 +586,7 @@ static void dump_jump_tables(ir_node* node, void *data)
 	(void) data;
 
 	// emit jump tables
-	if(is_mips_SwitchJump(node)) {
+	if (is_mips_SwitchJump(node)) {
 		be_emit_cstring(".data\n");
 		be_emit_write_line();
 

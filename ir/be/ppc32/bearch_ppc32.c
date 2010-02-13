@@ -88,8 +88,8 @@ static arch_irn_class_t ppc32_classify(const ir_node *irn)
 
 static ir_entity *ppc32_get_frame_entity(const ir_node *irn)
 {
-	if(!is_ppc32_irn(irn)) return NULL;
-	if(get_ppc32_type(irn)!=ppc32_ac_FrameEntity) return NULL;
+	if (!is_ppc32_irn(irn)) return NULL;
+	if (get_ppc32_type(irn)!=ppc32_ac_FrameEntity) return NULL;
 	return get_ppc32_frame_entity(irn);
 }
 
@@ -158,7 +158,7 @@ static ir_type *ppc32_abi_get_between_type(void *self)
 	static ir_entity *old_bp_ent = NULL;
 	(void) self;
 
-	if(!between_type) {
+	if (!between_type) {
 		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(mode_P);
 		ir_type *old_bp_type   = new_type_primitive(mode_P);
@@ -263,7 +263,7 @@ static void ppc32_before_abi(void *self)
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_conv_walk, cg);
 
 	if (cg->area_size) {
-		if(cg->area_size < 32) cg->area_size = 32;
+		if (cg->area_size < 32) cg->area_size = 32;
 		cg->area = frame_alloc_area(get_irg_frame_type(cg->irg), cg->area_size+24, 16, 1);
 	}
 }
@@ -273,11 +273,11 @@ static void ppc32_search_start_successor(ir_node *block, void *env)
 	ppc32_code_gen_t *cg = env;
 	int n = get_Block_n_cfgpreds(block);
 	ir_node *startblock = get_irg_start_block(cg->irg);
-	if(block == startblock) return;
+	if (block == startblock) return;
 
 	for (n--; n >= 0; n--) {
 		ir_node *predblock = get_irn_n(get_Block_cfgpred(block, n), -1);
-		if(predblock == startblock)
+		if (predblock == startblock)
 		{
 			cg->start_succ_block = block;
 			return;
@@ -332,7 +332,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 {
 	(void)env;
 
-	if(be_is_Spill(node))
+	if (be_is_Spill(node))
 	{
 		ir_node  *store, *proj;
 		dbg_info *dbg   = get_irn_dbg_info(node);
@@ -366,7 +366,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 		exchange(node, proj);
 	}
 
-	if(be_is_Reload(node))
+	if (be_is_Reload(node))
 	{
 		ir_node *load, *proj;
 		const arch_register_t *reg;
@@ -640,33 +640,33 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	for (i = 0; i < n; i++) {
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
-		if(is_atomic_type(tp))
+		if (is_atomic_type(tp))
 		{
-			if(mode_is_float(mode))
+			if (mode_is_float(mode))
 			{
-				if(fpregi <= REG_F13)
+				if (fpregi <= REG_F13)
 				{
-					if(get_mode_size_bits(mode) == 32) gpregi++, stackparamsize=4;
+					if (get_mode_size_bits(mode) == 32) gpregi++, stackparamsize=4;
 					else gpregi += 2, stackparamsize=8;								// mode == irm_D
 					reg = &ppc32_fp_regs[fpregi++];
 				}
 				else
 				{
-					if(get_mode_size_bits(mode) == 32) stackparamsize=4;
+					if (get_mode_size_bits(mode) == 32) stackparamsize=4;
 					else stackparamsize=8;								// mode == irm_D
 					reg = NULL;
 				}
 			}
 			else
 			{
-				if(gpregi <= REG_R10)
+				if (gpregi <= REG_R10)
 					reg = &ppc32_gp_regs[gpregi++];
 				else
 					reg = NULL;
 				stackparamsize=4;
 			}
 
-			if(reg)
+			if (reg)
 				be_abi_call_param_reg(abi, i, reg);
 			else
 			{
@@ -696,7 +696,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
-	if(!is_ppc32_irn(irn))
+	if (!is_ppc32_irn(irn))
 		return -1;
 
 	return 1;

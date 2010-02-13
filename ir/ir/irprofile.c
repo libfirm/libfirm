@@ -120,7 +120,7 @@ instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 	/**
 	 * We can't instrument the end block as there are no real instructions there
 	 */
-	if(bb == get_irg_end_block(irg))
+	if (bb == get_irg_end_block(irg))
 		return;
 
 	unknown = new_r_Unknown(irg, mode_M);
@@ -537,7 +537,7 @@ static void
 profile_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
 	(void) ctx;
-	if(is_Block(irn)) {
+	if (is_Block(irn)) {
 		fprintf(f, "profiled execution count: %u\n", ir_profile_get_block_execcount(irn));
 	}
 }
@@ -568,28 +568,28 @@ ir_profile_read(const char *filename)
 	size_t  ret;
 
 	f = fopen(filename, "r");
-	if(f == NULL) {
+	if (f == NULL) {
 		return;
 	}
 	printf("found profile data '%s'.\n", filename);
 
 	/* check magic */
 	ret = fread(buf, 8, 1, f);
-	if(ret == 0 || strncmp(buf, "firmprof", 8) != 0) {
+	if (ret == 0 || strncmp(buf, "firmprof", 8) != 0) {
 		return;
 	}
 
-	if(profile) ir_profile_free();
+	if (profile) ir_profile_free();
 	profile = new_set(cmp_execcount, 16);
 
-	do {
+	for (;;) {
 		execcount_t  query;
 		ret = fread(&query, sizeof(unsigned int), 2, f);
 
-		if(ret != 2) break;
+		if (ret != 2) break;
 
 		set_insert(profile, &query, sizeof(query), query.block);
-	} while(1);
+	}
 
 	fclose(f);
 	register_vcg_hook();
@@ -601,7 +601,7 @@ ir_profile_read(const char *filename)
 void
 ir_profile_free(void)
 {
-	if(profile) {
+	if (profile) {
 		unregister_vcg_hook();
 		del_set(profile);
 	}
@@ -624,13 +624,13 @@ ir_profile_get_block_execcount(const ir_node *block)
 {
 	execcount_t *ec, query;
 
-	if(!profile)
+	if (!profile)
 		return 1;
 
 	query.block = get_irn_node_nr(block);
 	ec = set_find(profile, &query, sizeof(query), get_irn_node_nr(block));
 
-	if(ec != NULL) {
+	if (ec != NULL) {
 		return ec->count;
 	} else {
 		ir_fprintf(stderr, "Warning: Profile contains no data for %+F\n",
@@ -653,13 +653,13 @@ static void initialize_execfreq(ir_node *block, void *data)
 	initialize_execfreq_env_t *env = data;
 	double freq;
 
-	if(block == get_irg_start_block(env->irg)
+	if (block == get_irg_start_block(env->irg)
 	   || block == get_irg_end_block(env->irg)) {
 		freq = 1.0;
 	} else {
 		freq = ir_profile_get_block_execcount(block);
 		freq *= env->freq_factor;
-		if(freq < MIN_EXECFREQ)
+		if (freq < MIN_EXECFREQ)
 			freq = MIN_EXECFREQ;
 	}
 
@@ -677,7 +677,7 @@ ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg)
 	start_block = get_irg_start_block(irg);
 
 	count = ir_profile_get_block_execcount(start_block);
-	if(count == 0) {
+	if (count == 0) {
 		// the function was never executed, so fallback to estimated freqs
 		free_execfreq(env.execfreqs);
 

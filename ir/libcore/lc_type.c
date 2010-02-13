@@ -41,7 +41,7 @@ int lc_opt_type_scan(void *dest, lc_opt_type_t type, const char *str)
 
 	int res = 0;
 
-	switch(type) {
+	switch (type) {
 		case lc_opt_type_int:
 		case lc_opt_type_double:
 		case lc_opt_type_string:
@@ -54,11 +54,11 @@ int lc_opt_type_scan(void *dest, lc_opt_type_t type, const char *str)
 				char buf[10];
 
 				strncpy(buf, str, sizeof(buf));
-				for(i = 0, n = strlen(buf); i < n; ++i)
+				for (i = 0, n = strlen(buf); i < n; ++i)
 					buf[i] = tolower(buf[i]);
 
-				for(i = 0; i < LC_ARRSIZE(bool_vals); ++i) {
-					if(strcmp(buf, bool_vals[i].str) == 0) {
+				for (i = 0; i < LC_ARRSIZE(bool_vals); ++i) {
+					if (strcmp(buf, bool_vals[i].str) == 0) {
 						res = 1;
 						*data = bool_vals[i].val;
 						break;
@@ -77,7 +77,7 @@ int lc_opt_type_print(char *buf, size_t n, lc_opt_type_t type, void *data)
 {
 	int res = 0;
 
-	switch(type) {
+	switch (type) {
 		case lc_opt_type_int:
 			{
 				int i = *((int *) data);

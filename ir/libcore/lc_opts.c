@@ -76,7 +76,7 @@ static void set_name(lc_opt_entry_t *ent, const char *name)
 
 static lc_opt_err_info_t *set_error(lc_opt_err_info_t *err, int error, const char *arg)
 {
-	if(err) {
+	if (err) {
 		err->error = error;
 		err->msg = "";
 		err->arg = arg;
@@ -92,9 +92,9 @@ int lc_opt_raise_error(const lc_opt_err_info_t *err, lc_opt_error_handler_t *han
 	int res = 0;
 
 	va_start(args, fmt);
-	if(err && lc_opt_is_error(err)) {
+	if (err && lc_opt_is_error(err)) {
 		res = 1;
-		if(handler) {
+		if (handler) {
 			char buf[256];
 			vsnprintf(buf, sizeof(buf), fmt, args);
 			handler(buf, err);
@@ -130,8 +130,8 @@ static lc_opt_entry_t *init_grp(lc_opt_entry_t *ent, lc_opt_err_info_t *err)
 	INIT_LIST_HEAD(&ent->v.grp.opts);
 
 	set_error(err, lc_opt_err_none, "");
-	if(ent->parent) {
-		if(ent->parent->is_grp)
+	if (ent->parent) {
+		if (ent->parent->is_grp)
 			list_add_tail(&ent->list, &lc_get_grp_special(ent->parent)->grps);
 		else
 			set_error(err, lc_opt_err_grp_expected, ent->parent->name);
@@ -170,7 +170,7 @@ lc_opt_entry_t *lc_opt_root_grp(void)
 	static lc_opt_entry_t root_group;
 	static int inited = 0;
 
-	if(!inited) {
+	if (!inited) {
 		obstack_init(&obst);
 		inited = 1;
 
@@ -191,7 +191,7 @@ static const char *get_type_name(lc_opt_type_t type)
 	const char *res;
 
 #define XXX(t) case lc_opt_type_ ## t: res = #t; break
-	switch(type) {
+	switch (type) {
 		XXX(enum);
 		XXX(bit);
 		XXX(int);
@@ -221,7 +221,7 @@ lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name)
 {
 	lc_opt_entry_t *ent = lc_opt_find_grp(parent, name, NULL);
 
-	if(!ent) {
+	if (!ent) {
 		ent = OALLOC(&obst, lc_opt_entry_t);
 		init_entry(ent, parent, name, "");
 		init_grp(ent, NULL);
@@ -239,10 +239,10 @@ lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *parent,
 {
 	lc_opt_entry_t *res = NULL;
 
-	if(parent->is_grp) {
+	if (parent->is_grp) {
 		lc_opt_entry_t *ent = lc_opt_find_opt(parent, name, NULL);
 
-		if(!ent) {
+		if (!ent) {
 			res = OALLOC(&obst, lc_opt_entry_t);
 			init_entry(res, parent, name, desc);
 			init_opt(res, type, value, length, cb, dump, dump_vals, err);
@@ -262,9 +262,9 @@ static lc_opt_entry_t *lc_opt_find_ent(const struct list_head *head, const char 
 	int error = error_to_use;
 	unsigned hash = HASH_STR(name, strlen(name));
 
-	if(!list_empty(head)) {
+	if (!list_empty(head)) {
 		list_for_each_entry(lc_opt_entry_t, ent, head, list) {
-			if(entry_matches(ent, hash, name)) {
+			if (entry_matches(ent, hash, name)) {
 				error = lc_opt_err_none;
 				found = ent;
 				break;
@@ -293,7 +293,7 @@ static const lc_opt_entry_t *resolve_up_to_last(const lc_opt_entry_t *root,
 {
 	lc_opt_entry_t *ent;
 
-	if(pos == n)
+	if (pos == n)
 		return root;
 
 	ent = lc_opt_find_grp(root, names[pos], err);
@@ -310,7 +310,7 @@ static lc_opt_entry_t *resolve_up_to_last_str_rec(lc_opt_entry_t *from,
 	lc_opt_entry_t *res = from;
 	size_t end          = strcspn(path, path_delim);
 
-	if(path[end] != '\0') {
+	if (path[end] != '\0') {
 		/* skip all delimiters */
 		size_t next = strspn(path + end, path_delim);
 
@@ -326,7 +326,7 @@ static lc_opt_entry_t *resolve_up_to_last_str_rec(lc_opt_entry_t *from,
 		res = resolve_up_to_last_str_rec(from, path + end + next, last_name);
 	}
 
-	else if(last_name != NULL) {
+	else if (last_name != NULL) {
 		*last_name = path;
 	}
 
@@ -338,7 +338,7 @@ static lc_opt_entry_t *resolve_up_to_last_str(lc_opt_entry_t *root, const char *
 	size_t next = strspn(path, path_delim);
 
 	/* if l != 0 we saw deliminators, so we resolve from the root */
-	if(next > 0)
+	if (next > 0)
 		root = lc_opt_root_grp();
 
 	return resolve_up_to_last_str_rec(root, path + next, last_name);
@@ -361,7 +361,7 @@ lc_opt_entry_t *lc_opt_resolve_opt(const lc_opt_entry_t *root,
 static char *strtolower(char *buf, size_t n, const char *str)
 {
 	unsigned i;
-	for(i = 0; i < n; ++i)
+	for (i = 0; i < n; ++i)
 		buf[i] = tolower(str[i]);
 	return buf;
 }
@@ -374,12 +374,12 @@ int lc_opt_std_cb(UNUSED(const char *name), lc_opt_type_t type, void *data, size
 
 	va_start(args, length);
 
-	if(data) {
+	if (data) {
 		res = 1;
-		switch(type) {
+		switch (type) {
 		case lc_opt_type_bit:
 			integer = va_arg(args, int);
-			if(integer)
+			if (integer)
 				*((int *) data) |= length;
 			else
 				*((int *) data) &= ~length;
@@ -387,7 +387,7 @@ int lc_opt_std_cb(UNUSED(const char *name), lc_opt_type_t type, void *data, size
 
 		case lc_opt_type_negbit:
 			integer = va_arg(args, int);
-			if(integer)
+			if (integer)
 				*((int *) data) &= ~length;
 			else
 				*((int *) data) |= length;
@@ -425,8 +425,8 @@ int lc_opt_std_dump(char *buf, size_t n, UNUSED(const char *name), lc_opt_type_t
 {
 	int res;
 
-	if(data) {
-		switch(type) {
+	if (data) {
+		switch (type) {
 		case lc_opt_type_bit:
 		case lc_opt_type_negbit:
 			res = snprintf(buf, n, "%x", *((int *) data));
@@ -490,21 +490,21 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 		double dbl;
 	} val_storage, *val = &val_storage;
 
-	if(!opt) {
+	if (!opt) {
 		set_error(err, lc_opt_err_opt_not_found, "");
 		return 0;
 	}
 
-	if(!s->cb) {
+	if (!s->cb) {
 		set_error(err, lc_opt_err_no_callback, "");
 		return 0;
 	}
 
 	s->is_set = 1;
 
-	switch(s->type) {
+	switch (s->type) {
 		case lc_opt_type_int:
-			if(sscanf(value, "%i", (int *) val)) {
+			if (sscanf(value, "%i", (int *) val)) {
 				error = lc_opt_err_unknown_value;
 				if (s->cb(opt->name, s->type, s->value, s->length, val->integer))
 					error = lc_opt_err_none;
@@ -512,7 +512,7 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 			break;
 
 		case lc_opt_type_double:
-			if(sscanf(value, "%lf", (double *) val)) {
+			if (sscanf(value, "%lf", (double *) val)) {
 				error = lc_opt_err_unknown_value;
 				if (s->cb(opt->name, s->type, s->value, s->length, val->dbl))
 					error = lc_opt_err_none;
@@ -524,8 +524,8 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 		case lc_opt_type_bit:
 		case lc_opt_type_negbit:
 				strtolower(buf, sizeof(buf), value);
-				for(i = 0; i < LC_ARRSIZE(bool_strings); ++i) {
-					if(strcmp(buf, bool_strings[i].str) == 0) {
+				for (i = 0; i < LC_ARRSIZE(bool_strings); ++i) {
+					if (strcmp(buf, bool_strings[i].str) == 0) {
 						val->integer = bool_strings[i].val;
 						error = lc_opt_err_none;
 						break;
@@ -555,7 +555,7 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
-	if(s->dump)
+	if (s->dump)
 		s->dump(buf, len, ent->name, s->type, s->value, s->length);
 	else
 		strncpy(buf, "<n/a>", len);
@@ -566,7 +566,7 @@ char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 char *lc_opt_values_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
-	if(s->dump_vals)
+	if (s->dump_vals)
 		s->dump_vals(buf, len, ent->name, s->type, s->value, s->length);
 
 	return buf;
@@ -579,13 +579,13 @@ int lc_opt_add_table(lc_opt_entry_t *root, const lc_opt_table_entry_t *table)
 	int i, res = 0;
 	lc_opt_err_info_t err;
 
-	for(i = 0; table[i].name != NULL; ++i) {
+	for (i = 0; table[i].name != NULL; ++i) {
 		const char *name;
 		const lc_opt_table_entry_t *tab = &table[i];
 		lc_opt_entry_t *grp = resolve_up_to_last_str(root, tab->name, &name);
 
 		lc_opt_add_opt(grp, name, tab->desc, tab->type, tab->value, tab->len, tab->cb, tab->dump, tab->dump_vals, &err);
-		if(err.error != lc_opt_err_none)
+		if (err.error != lc_opt_err_none)
 			res = 1;
 	}
 
@@ -632,7 +632,7 @@ static void lc_opt_print_help_rec(lc_opt_entry_t *ent, char separator, lc_opt_en
 	char values[512];
 	lc_opt_entry_t *e;
 
-	if(!list_empty(&s->opts)) {
+	if (!list_empty(&s->opts)) {
 		lc_opt_print_grp_path(grp_name, sizeof(grp_name), ent, separator, stop_ent);
 		fputc('\n', f);
 		if (grp_name[0])
@@ -669,7 +669,7 @@ void lc_opt_print_help_for_entry(lc_opt_entry_t *ent, char separator, FILE *f)
 static void indent(FILE *f, int n)
 {
 	int i;
-	for(i = 0; i < n; ++i)
+	for (i = 0; i < n; ++i)
 		fputc(' ', f);
 }
 
@@ -687,7 +687,7 @@ static void lc_opt_print_tree_grp_indent(lc_opt_entry_t *ent, FILE *f, int level
 {
 	lc_grp_special_t *s;
 
-	if(ent->is_grp) {
+	if (ent->is_grp) {
 		lc_opt_entry_t *e;
 
 		s = lc_get_grp_special(ent);
@@ -737,7 +737,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 	lc_opt_err_info_t err;
 	char *end, *buf, *eqsign;
 
-	if(n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
+	if (n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
 		arg = arg + n_prefix;
 
 		/*
@@ -745,13 +745,13 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 		 * This means, that we want to read options
 		 * from a file.
 		 */
-		if(arg[0] == '@') {
+		if (arg[0] == '@') {
 			size_t n		= strcspn(&arg[1], " \t\n");
 			char *fname		= alloca(n + 1);
 			FILE *f;
 
 			strncpy(fname, &arg[1], n);
-			if((f = fopen(fname, "rt")) != NULL) {
+			if ((f = fopen(fname, "rt")) != NULL) {
 				lc_opt_from_file(fname, f, handler);
 				fclose(f);
 				set_error(&err, lc_opt_err_none, NULL);
@@ -769,7 +769,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 		eqsign = strchr(arg, '=');
 		if (eqsign && eqsign < end)
 			end = NULL;
-		while(end != NULL) {
+		while (end != NULL) {
 			/*
 			 * Copy the part of the option into the buffer and add the
 			 * finalizing zero.
@@ -779,7 +779,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 			/* Resolve the group inside the group */
 			grp = lc_opt_find_grp(grp, buf, &err);
 			error = lc_opt_raise_error(&err, handler, ERR_STRING, arg);
-			if(error)
+			if (error)
 				break;
 
 			/* Find the next option part delimiter. */
@@ -791,7 +791,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 			obstack_free(&obst, buf);
 		}
 
-		if(!error) {
+		if (!error) {
 			lc_opt_entry_t *opt;
 
 			/*
@@ -806,7 +806,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 			opt = lc_opt_find_opt(grp, buf, &err);
 			error = lc_opt_raise_error(&err, handler, ERR_STRING, arg);
 
-			if(!error) {
+			if (!error) {
 				/*
 				 * Now evaluate the parameter of the option (the part after
 				 * the =) if it was given.
@@ -834,7 +834,7 @@ int lc_opt_from_argv(const lc_opt_entry_t *root,
 	if (handler == NULL)
 		handler = lc_opts_default_error_handler;
 
-	for(i = 0; i < argc; ++i) {
+	for (i = 0; i < argc; ++i) {
 		options_set |= lc_opt_from_single_arg(root, opt_prefix, argv[i], handler);
 	}
 
@@ -854,7 +854,7 @@ static int opt_arg_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_
 	const char *s		= buf;
 	size_t res			= 0;
 
-	switch(occ->conversion) {
+	switch (occ->conversion) {
 	case 'V':
 		lc_opt_value_to_string(buf, sizeof(buf), opt);
 		break;
@@ -871,7 +871,7 @@ static int opt_arg_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_
 		s = NULL;
 	}
 
-	if(s)
+	if (s)
 		res = lc_appendable_snadd(app, s, strlen(s));
 
 	return res;
@@ -889,7 +889,7 @@ const lc_arg_env_t *lc_opt_get_arg_env(void)
 {
 	static lc_arg_env_t *env = NULL;
 
-	if(!env) {
+	if (!env) {
 		env = lc_arg_new_env();
 
 		lc_arg_register(env, "opt:value", 'V', &lc_opt_arg_handler);

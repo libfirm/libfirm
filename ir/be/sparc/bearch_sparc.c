@@ -364,7 +364,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 	static int run_once = 0;
 	sparc_isa_t *isa;
 
-	if(run_once)
+	if (run_once)
 		return NULL;
 	run_once = 1;
 
@@ -470,7 +470,7 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
 	(void) mem;
 	(void) stack_bias;
 
-	if(env->flags.try_omit_fp)
+	if (env->flags.try_omit_fp)
 		return env->arch_env->sp;
 
 	//panic("framepointer not implemented yet");
@@ -549,7 +549,7 @@ int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 
-	if(!is_sparc_irn(irn))
+	if (!is_sparc_irn(irn))
 		return -1;
 
 	return 1;

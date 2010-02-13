@@ -561,7 +561,7 @@ int equal_type(ir_type *typ1, ir_type *typ2)
 			return 0;
 		if (!equal_type(get_array_element_type(typ1), get_array_element_type(typ2)))
 			return 0;
-		for(i = 0; i < get_array_n_dimensions(typ1); i++) {
+		for (i = 0; i < get_array_n_dimensions(typ1); i++) {
 			if (get_array_lower_bound(typ1, i) != get_array_lower_bound(typ2, i) ||
 				get_array_upper_bound(typ1, i) != get_array_upper_bound(typ2, i))
 				return 0;
@@ -597,7 +597,7 @@ int smaller_type(ir_type *st, ir_type *lt)
 	if (get_type_tpop_code(st) != get_type_tpop_code(lt))
 		return 0;
 
-	switch(get_type_tpop_code(st)) {
+	switch (get_type_tpop_code(st)) {
 	case tpo_class:
 		return is_SubClass_of(st, lt);
 
@@ -692,12 +692,12 @@ int smaller_type(ir_type *st, ir_type *lt)
 			    get_type_size_bytes(set) != get_type_size_bytes(let))
 				return 0;
 		}
-		for(i = 0; i < get_array_n_dimensions(st); i++) {
+		for (i = 0; i < get_array_n_dimensions(st); i++) {
 			if (get_array_lower_bound(lt, i))
-				if(get_array_lower_bound(st, i) != get_array_lower_bound(lt, i))
+				if (get_array_lower_bound(st, i) != get_array_lower_bound(lt, i))
 					return 0;
 				if (get_array_upper_bound(lt, i))
-					if(get_array_upper_bound(st, i) != get_array_upper_bound(lt, i))
+					if (get_array_upper_bound(st, i) != get_array_upper_bound(lt, i))
 						return 0;
 		}
 	} break;
@@ -952,7 +952,7 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 	assert(clss && (clss->type_op == type_class));
 	for (i = 0; i < (ARR_LEN(clss->attr.ca.supertypes)); i++)
 		if (clss->attr.ca.supertypes[i] == supertype) {
-			for(; i < (ARR_LEN(clss->attr.ca.supertypes))-1; i++)
+			for (; i < (ARR_LEN(clss->attr.ca.supertypes))-1; i++)
 				clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
 			ARR_SETLEN(ir_entity*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
 			break;
@@ -1141,7 +1141,7 @@ void remove_struct_member(ir_type *strct, ir_entity *member)
 	assert(strct && (strct->type_op == type_struct));
 	for (i = 0; i < (ARR_LEN (strct->attr.sa.members)); i++)
 		if (strct->attr.sa.members[i] == member) {
-			for(; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
+			for (; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
 				strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
 			ARR_SETLEN(ir_entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
 			break;
@@ -1605,7 +1605,7 @@ void remove_union_member(ir_type *uni, ir_entity *member)
 	assert(uni && (uni->type_op == type_union));
 	for (i = 0; i < (ARR_LEN(uni->attr.ua.members)); i++) {
 		if (uni->attr.ua.members[i] == member) {
-			for(; i < (ARR_LEN(uni->attr.ua.members))-1; i++)
+			for (; i < (ARR_LEN(uni->attr.ua.members))-1; i++)
 				uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
 			ARR_SETLEN(ir_entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
 			break;

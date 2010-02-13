@@ -274,7 +274,7 @@ static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int se
 	}
 
 	/* Else search for set bits in the next units. */
-	while (1) {
+	for (;;) {
 		elem_pos++;
 		elem = bitset[elem_pos] ^ mask;
 

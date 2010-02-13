@@ -641,7 +641,7 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 		 * will be left. */
 		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%d, %d]\n", Tq, min_dom, max_dom));
 		i = bitset_next_set(Tq, min_dom);
-		while(i <= max_dom) {
+		while (i <= max_dom) {
 			bl_info_t *ti = lv->map[i];
 			int use_in_current_block = bitset_is_set(uses, ti->id);
 

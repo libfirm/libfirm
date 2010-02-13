@@ -54,7 +54,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	ir_snprintf(buf, sizeof(buf), "%s%s_%F_%s%s", prefix, tu_name, env->irg, env->cls->name, suffix);
 	xfree(tu_name);
 	result = fopen(buf, "wt");
-	if(result == NULL) {
+	if (result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);
 	}
 
@@ -79,7 +79,7 @@ static void insert_into_reverse_peo(ir_node *block, void *data)
 					continue;
 
 				// insert proj node into priority queue (descending by their degree in ifg)
-				if(bitset_is_set(pbqp_co->restricted_nodes, get_irn_idx(proj))) {
+				if (bitset_is_set(pbqp_co->restricted_nodes, get_irn_idx(proj))) {
 					pqueue_put(restrictedNodesQueue,proj, be_ifg_degree(pbqp_co->ifg,proj));
 				}
 				else {
@@ -88,12 +88,12 @@ static void insert_into_reverse_peo(ir_node *block, void *data)
 			}
 
 			/* first insert all restricted nodes */
-			while(!pqueue_empty(restrictedNodesQueue)) {
+			while (!pqueue_empty(restrictedNodesQueue)) {
 				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(restrictedNodesQueue))));
 			}
 
 			/* insert proj nodes into reverse perfect elimination order (descending by their degree in ifg) */
-			while(!pqueue_empty(queue)) {
+			while (!pqueue_empty(queue)) {
 				plist_insert_back(pbqp_co->rpeo, get_node(pbqp_co->pbqp, get_irn_idx(pqueue_pop_front(queue))));
 			}
 
@@ -154,7 +154,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 
 		/* set costs */
 		unsigned int cnt;
-		for(cnt = 0; cnt < costs_vector->len; cnt++) {
+		for (cnt = 0; cnt < costs_vector->len; cnt++) {
 			if (bitset_is_set(pbqp_co.ignore_reg,cnt)) {
 				vector_set(costs_vector, cnt, INF_COSTS);
 			}
@@ -178,7 +178,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 		/* add costs vector to node */
 		add_node_costs(pbqp_co.pbqp, get_irn_idx(ifg_node), costs_vector);
 
-		if(cntFreeChoosableRegs <= 4) {
+		if (cntFreeChoosableRegs <= 4) {
 			/* node is restricted */
 			bitset_set(pbqp_co.restricted_nodes, get_irn_idx(ifg_node));
 		}
@@ -187,16 +187,16 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	/* create costs matrix for interference edges */
 	struct pbqp_matrix *ife_matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 	/* set costs */
-	for(row = 0; row < number_registers; row++) {
+	for (row = 0; row < number_registers; row++) {
 		pbqp_matrix_set(ife_matrix, row, row, INF_COSTS);
 	}
 
 	/* create costs matrix for affinity edges */
 	struct pbqp_matrix *afe_matrix = pbqp_matrix_alloc(pbqp_co.pbqp, number_registers, number_registers);
 	/* set costs */
-	for(row = 0; row < number_registers; row++) {
-		for(col = 0; col < number_registers; col++) {
-			if(row == col) {
+	for (row = 0; row < number_registers; row++) {
+		for (col = 0; col < number_registers; col++) {
+			if (row == col) {
 				pbqp_matrix_set(afe_matrix, row, col, 0);
 			}
 			else {
@@ -209,7 +209,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
 		/* add costs matrix between nodes (interference edge) */
 		be_ifg_foreach_neighbour(co->cenv->ifg, neigh_it, ifg_node, if_neighb_node) {
-			if(get_edge(pbqp_co.pbqp,get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
+			if (get_edge(pbqp_co.pbqp,get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
 				/* copy matrix */
 				struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_co.pbqp, ife_matrix);
 
@@ -222,13 +222,13 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 		/* add costs matrix between nodes (affinity edge) */
 		affinity_node_t *aff_node = get_affinity_info(co, ifg_node);
 		neighb_t *aff_neighb_node;
-		if(aff_node != NULL) {
+		if (aff_node != NULL) {
 			co_gs_foreach_neighb(aff_node, aff_neighb_node) {
 				/* ignore Unknowns */
-				if(get_node(pbqp_co.pbqp, get_irn_idx(aff_neighb_node->irn)) == NULL)
+				if (get_node(pbqp_co.pbqp, get_irn_idx(aff_neighb_node->irn)) == NULL)
 					continue;
 
-				if(get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
+				if (get_edge(pbqp_co.pbqp, get_irn_idx(aff_node->irn), get_irn_idx(aff_neighb_node->irn)) == NULL) {
 					/* copy matrix */
 					struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_co.pbqp, afe_matrix);
 

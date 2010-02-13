@@ -48,7 +48,7 @@ static be_ra_t *selected_allocator = NULL;
 
 void be_register_allocator(const char *name, be_ra_t *allocator)
 {
-	if(selected_allocator == NULL)
+	if (selected_allocator == NULL)
 		selected_allocator = allocator;
 	be_add_module_to_list(&register_allocators, name, allocator);
 }
@@ -56,7 +56,7 @@ void be_register_allocator(const char *name, be_ra_t *allocator)
 void be_allocate_registers(be_irg_t *birg)
 {
 	assert(selected_allocator != NULL);
-	if(selected_allocator != NULL) {
+	if (selected_allocator != NULL) {
 		selected_allocator->allocate(birg);
 	}
 }

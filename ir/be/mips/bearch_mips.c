@@ -103,9 +103,9 @@ static ir_entity *mips_get_frame_entity(const ir_node *node)
 {
 	const mips_load_store_attr_t *attr;
 
-	if(!is_mips_irn(node))
+	if (!is_mips_irn(node))
 		return NULL;
-	if(!mips_is_Load(node) && !mips_is_Store(node))
+	if (!mips_is_Load(node) && !mips_is_Store(node))
 		return NULL;
 
 	attr = get_mips_load_store_attr_const(node);
@@ -116,10 +116,10 @@ static void mips_set_frame_entity(ir_node *node, ir_entity *entity)
 {
 	mips_load_store_attr_t *attr;
 
-	if(!is_mips_irn(node)) {
+	if (!is_mips_irn(node)) {
 		panic("trying to set frame entity on non load/store node %+F", node);
 	}
-	if(!mips_is_Load(node) && !mips_is_Store(node)) {
+	if (!mips_is_Load(node) && !mips_is_Store(node)) {
 		panic("trying to set frame entity on non load/store node %+F", node);
 	}
 
@@ -135,17 +135,17 @@ static void mips_set_frame_offset(ir_node *node, int offset)
 {
 	mips_load_store_attr_t *attr;
 
-	if(!is_mips_irn(node)) {
+	if (!is_mips_irn(node)) {
 		panic("trying to set frame offset on non load/store node %+F", node);
 	}
-	if(!mips_is_Load(node) && !mips_is_Store(node)) {
+	if (!mips_is_Load(node) && !mips_is_Store(node)) {
 		panic("trying to set frame offset on non load/store node %+F", node);
 	}
 
 	attr = get_irn_generic_attr(node);
 	attr->offset += offset;
 
-	if(attr->offset < -32768 || attr->offset > 32767) {
+	if (attr->offset < -32768 || attr->offset > 32767) {
 		panic("Out of stack space! (mips supports only 16bit offsets)");
 	}
 }
@@ -331,7 +331,7 @@ static arch_env_t *mips_init(FILE *file_handle)
 	static int inited = 0;
 	mips_isa_t *isa;
 
-	if(inited)
+	if (inited)
 		return NULL;
 	inited = 1;
 
@@ -435,7 +435,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 
 		/* TODO: where to get an edge with a0-a3
 		int i;
-		for(i = 0; i < 4; ++i) {
+		for (i = 0; i < 4; ++i) {
 			ir_node *reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_A0 + i]);
 			ir_node *store = new_bd_mips_store_r(dbg, block, *mem, sp, reg, mode_T);
 			attr = get_mips_attr(store);
@@ -530,7 +530,7 @@ static ir_type *mips_abi_get_between_type(void *self)
 	static ir_type *opt_between_type = NULL;
 	static ir_entity *old_fp_ent    = NULL;
 
-	if(env->debug && debug_between_type == NULL) {
+	if (env->debug && debug_between_type == NULL) {
 		ir_entity *a0_ent, *a1_ent, *a2_ent, *a3_ent;
 		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(mode_P);
@@ -553,7 +553,7 @@ static ir_type *mips_abi_get_between_type(void *self)
 		set_entity_offset(ret_addr_ent, 20);
 
 		set_type_size_bytes(debug_between_type, 24);
-	} else if(!env->debug && opt_between_type == NULL) {
+	} else if (!env->debug && opt_between_type == NULL) {
 		ir_type *old_fp_type   = new_type_primitive(mode_P);
 		ir_entity *old_fp_ent;
 
@@ -613,7 +613,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 	// assigns parameters to registers or stack
 	for (i = 0; i < n; i++) {
 		// first 4 params in $a0-$a3, the others on the stack
-		if(i < 4) {
+		if (i < 4) {
 			reg = &mips_gp_regs[REG_A0 + i];
 			be_abi_call_param_reg(abi, i, reg);
 		} else {
@@ -626,7 +626,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 	/* default: return value is in R0 (and maybe R1) */
 	result_count = get_method_n_ress(method_type);
 	assert(result_count <= 2 && "More than 2 result values not supported");
-	for(i = 0; i < result_count; ++i) {
+	for (i = 0; i < result_count; ++i) {
 		const arch_register_t* reg;
 		tp   = get_method_res_type(method_type, i);
 		mode = get_type_mode(tp);

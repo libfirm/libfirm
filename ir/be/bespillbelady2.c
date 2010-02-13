@@ -148,7 +148,7 @@ static inline void workset_print(const workset_t *w)
 {
 	int i;
 
-	for(i = 0; i < w->len; ++i) {
+	for (i = 0; i < w->len; ++i) {
 		ir_fprintf(stderr, "%+F %d\n", w->vals[i].irn, w->vals[i].time);
 	}
 }
@@ -207,7 +207,7 @@ static inline void workset_insert(belady_env_t *env, workset_t *ws, ir_node *val
 	}
 
 	/* check if val is already contained */
-	for(i=0; i<ws->len; ++i)
+	for (i=0; i<ws->len; ++i)
 		if (ws->vals[i].irn == val)
 			return;
 
@@ -230,7 +230,7 @@ static inline void workset_clear(workset_t *ws)
 static inline void workset_remove(workset_t *ws, ir_node *val)
 {
 	int i;
-	for(i=0; i<ws->len; ++i) {
+	for (i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val) {
 			ws->vals[i] = ws->vals[--ws->len];
 			return;
@@ -241,7 +241,7 @@ static inline void workset_remove(workset_t *ws, ir_node *val)
 static inline int workset_get_index(const workset_t *ws, const ir_node *val)
 {
 	int i;
-	for(i=0; i<ws->len; ++i) {
+	for (i=0; i<ws->len; ++i) {
 		if (ws->vals[i].irn == val)
 			return i;
 	}
@@ -255,7 +255,7 @@ static inline int workset_get_index(const workset_t *ws, const ir_node *val)
  * @p v  A variable to put the current value in
  * @p i  An integer for internal use
  */
-#define workset_foreach(ws, v, i)	for(i=0; \
+#define workset_foreach(ws, v, i)	for (i=0; \
 										v=(i < ws->len) ? ws->vals[i].irn : NULL, i < ws->len; \
 										++i)
 
@@ -506,7 +506,7 @@ static inline unsigned get_curr_distance(block_info_t *bi, const ir_node *irn, i
 	assert(!arch_irn_is_ignore(irn));
 
 	/* We have to keep non-spillable nodes in the working set */
-	if(flags & arch_irn_flags_dont_spill)
+	if (flags & arch_irn_flags_dont_spill)
 		return 0;
 
 	if (!is_usage && use && use->step == curr_step)
@@ -696,7 +696,7 @@ static void belady(belady_env_t *env, int id)
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
-		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
+		for (i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
 			workset_insert(env, new_vals, get_irn_n(irn, i));
 		}
 		DBG((dbg, DBG_DECIDE, "\t* uses\n"));
@@ -708,7 +708,7 @@ static void belady(belady_env_t *env, int id)
 		 * augmenting the pressure. Note, that a variable is dead
 		 * if it has no further use in this block and is *not* live end
 		 */
-		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
+		for (i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
 			ir_node *op = get_irn_n(irn, i);
 			next_use_t *use = get_current_use(block_info, op);
 
@@ -1479,7 +1479,7 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 
 	/* some special classes contain only ignore regs, nothing to do then */
 	n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
-	if(n_regs == 0)
+	if (n_regs == 0)
 		return;
 
 	be_clear_links(irg);

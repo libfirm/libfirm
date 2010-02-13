@@ -86,7 +86,7 @@ static cli_head_t *get_new_cli_head(ifg_clique_t *ifg)
 	else
 	{
 		cli_head = ifg->cli_root;
-		while(!(cli_head->next_cli_head == NULL))
+		while (!(cli_head->next_cli_head == NULL))
 		{
 			cli_head = cli_head->next_cli_head;
 		}
@@ -150,7 +150,7 @@ static void write_clique(ir_nodeset_t *live_set, ifg_clique_t *ifg)
 		}
 
 		list_for_each_entry(cli_element_t, element, &cli_head->list, list){
-			if(element->irn == live_irn){
+			if (element->irn == live_irn){
 				is_element = 1;
 				break;
 			}
@@ -338,7 +338,7 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 		if (b->is_def) /* b is a new node */
 		{
 			ir_nodeset_insert(&live, irn);
-			if(b->is_real)
+			if (b->is_real)
 			{
 				was_def = 1;
 			}
@@ -389,7 +389,7 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 			}
 		}
 	}
-	if(!is_in_clique)
+	if (!is_in_clique)
 	{
 		cli_head = get_next_cli_head(irn, it);
 		element = get_next_element(irn, it);

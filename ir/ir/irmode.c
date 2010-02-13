@@ -134,7 +134,7 @@ static void set_mode_values(ir_mode* mode)
 		mode->null = get_tarval_null(mode);
 		mode->one  = get_tarval_one(mode);
 		mode->minus_one = get_tarval_minus_one(mode);
-		if(get_mode_sort(mode) != irms_float_number) {
+		if (get_mode_sort(mode) != irms_float_number) {
 			mode->all_one = get_tarval_all_one(mode);
 		} else {
 			mode->all_one = tarval_bad;

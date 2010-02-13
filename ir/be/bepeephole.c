@@ -55,14 +55,14 @@ static void clear_reg_value(ir_node *node)
 	unsigned                     reg_idx;
 	unsigned                     cls_idx;
 
-	if(!mode_is_data(get_irn_mode(node)))
+	if (!mode_is_data(get_irn_mode(node)))
 		return;
 
 	reg     = arch_get_irn_register(node);
-	if(reg == NULL) {
+	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
-	if(arch_register_type_is(reg, virtual))
+	if (arch_register_type_is(reg, virtual))
 		return;
 	cls     = arch_register_get_class(reg);
 	reg_idx = arch_register_get_index(reg);
@@ -80,14 +80,14 @@ static void set_reg_value(ir_node *node)
 	unsigned                     reg_idx;
 	unsigned                     cls_idx;
 
-	if(!mode_is_data(get_irn_mode(node)))
+	if (!mode_is_data(get_irn_mode(node)))
 		return;
 
 	reg = arch_get_irn_register(node);
-	if(reg == NULL) {
+	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
-	if(arch_register_type_is(reg, virtual))
+	if (arch_register_type_is(reg, virtual))
 		return;
 	cls     = arch_register_get_class(reg);
 	reg_idx = arch_register_get_index(reg);
@@ -100,7 +100,7 @@ static void set_reg_value(ir_node *node)
 static void clear_defs(ir_node *node)
 {
 	/* clear values defined */
-	if(get_irn_mode(node) == mode_T) {
+	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 		foreach_out_edge(node, edge) {
 			ir_node *proj = get_edge_src_irn(edge);
@@ -117,7 +117,7 @@ static void set_uses(ir_node *node)
 
 	/* set values used */
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(node, i);
 		set_reg_value(in);
 	}
@@ -193,7 +193,7 @@ static void process_block(ir_node *block, void *data)
 
 	/* construct initial register assignment */
 	n_classes = arch_env_get_n_reg_class(arch_env);
-	for(i = 0; i < n_classes; ++i) {
+	for (i = 0; i < n_classes; ++i) {
 		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		memset(register_values[i], 0, sizeof(ir_node*) * n_regs);
@@ -209,7 +209,7 @@ static void process_block(ir_node *block, void *data)
 
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
-	for( ; !sched_is_begin(current_node);
+	for ( ; !sched_is_begin(current_node);
 			current_node = sched_prev(current_node)) {
 		ir_op             *op;
 		peephole_opt_func  peephole_node;
@@ -393,7 +393,7 @@ void be_peephole_opt(be_irg_t *birg)
 
 	n_classes = arch_env_get_n_reg_class(arch_env);
 	register_values = ALLOCAN(ir_node**, n_classes);
-	for(i = 0; i < n_classes; ++i) {
+	for (i = 0; i < n_classes; ++i) {
 		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		register_values[i] = ALLOCAN(ir_node*, n_regs);

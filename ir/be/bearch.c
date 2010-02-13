@@ -113,7 +113,7 @@ arch_inverse_t *arch_get_inverse(const ir_node *irn, int i, arch_inverse_t *inve
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 
-	if(ops->get_inverse) {
+	if (ops->get_inverse) {
 		return ops->get_inverse(irn, i, inverse, obstack);
 	} else {
 		return NULL;
@@ -124,7 +124,7 @@ int arch_possible_memory_operand(const ir_node *irn, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 
-	if(ops->possible_memory_operand) {
+	if (ops->possible_memory_operand) {
 		return ops->possible_memory_operand(irn, i);
 	} else {
 		return 0;
@@ -135,7 +135,7 @@ void arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsigned int i)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 
-	if(ops->perform_memory_operand) {
+	if (ops->perform_memory_operand) {
 		ops->perform_memory_operand(irn, spill, i);
 	} else {
 		return;
@@ -146,7 +146,7 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);
 
-	if(ops->get_op_estimated_cost) {
+	if (ops->get_op_estimated_cost) {
 		return ops->get_op_estimated_cost(irn);
 	} else {
 		return 1;
@@ -157,8 +157,8 @@ void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
 {
 	unsigned i;
 
-	for(i = 0; i < cls->n_regs; ++i) {
-		if(!arch_register_type_is(&cls->regs[i], ignore))
+	for (i = 0; i < cls->n_regs; ++i) {
+		if (!arch_register_type_is(&cls->regs[i], ignore))
 			bitset_set(bs, i);
 	}
 }
@@ -168,10 +168,10 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos,
 {
 	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
-	if(req->type == arch_register_req_type_none)
+	if (req->type == arch_register_req_type_none)
 		return 0;
 
-	if(arch_register_req_is(req, limited)) {
+	if (arch_register_req_is(req, limited)) {
 		if (arch_register_get_class(reg) != req->cls)
 			return 0;
 		return rbitset_is_set(req->limited, arch_register_get_index(reg));
@@ -273,20 +273,20 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 
 	fprintf(F, "%s", req->cls->name);
 
-	if(arch_register_req_is(req, limited)) {
+	if (arch_register_req_is(req, limited)) {
 		unsigned n_regs = req->cls->n_regs;
 		unsigned i;
 
 		fprintf(F, " limited to");
-		for(i = 0; i < n_regs; ++i) {
-			if(rbitset_is_set(req->limited, i)) {
+		for (i = 0; i < n_regs; ++i) {
+			if (rbitset_is_set(req->limited, i)) {
 				const arch_register_t *reg = &req->cls->regs[i];
 				fprintf(F, " %s", reg->name);
 			}
 		}
 	}
 
-	if(arch_register_req_is(req, should_be_same)) {
+	if (arch_register_req_is(req, should_be_same)) {
 		const unsigned other = req->other_same;
 		int i;
 

@@ -207,16 +207,16 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	/* spills that are dominated by others are not needed */
 	last = NULL;
 	s    = spill_info->spills;
-	for( ; s != NULL; s = s->next) {
+	for ( ; s != NULL; s = s->next) {
 		/* no need to add this spill if it is dominated by another */
-		if(value_dominates(s->after, after)) {
+		if (value_dominates(s->after, after)) {
 			DB((dbg, LEVEL_1, "...dominated by %+F, not added\n", s->after));
 			return;
 		}
 		/* remove spills that we dominate */
-		if(value_dominates(after, s->after)) {
+		if (value_dominates(after, s->after)) {
 			DB((dbg, LEVEL_1, "...remove old spill at %+F\n", s->after));
-			if(last != NULL) {
+			if (last != NULL) {
 				last->next         = s->next;
 			} else {
 				spill_info->spills = s->next;
@@ -322,9 +322,9 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 
 static ir_node *skip_keeps_phis(ir_node *node)
 {
-	while(true) {
+	while (true) {
 		ir_node *next = sched_next(node);
-		if(!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
+		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
 			break;
 		node = next;
 	}
@@ -342,7 +342,7 @@ static ir_node *get_block_insertion_point(ir_node *block, int pos)
 	/* simply add the reload to the beginning of the block if we only have 1
 	 * predecessor. We don't need to check for phis as there can't be any in a
 	 * block with only 1 pred. */
-	if(get_Block_n_cfgpreds(block) == 1) {
+	if (get_Block_n_cfgpreds(block) == 1) {
 		assert(!is_Phi(sched_first(block)));
 		return sched_first(block);
 	}
@@ -382,14 +382,14 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 	/* create spills for the phi arguments */
 	block = get_nodes_block(node);
 	spill = get_spillinfo(env, node);
-	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *arg = get_irn_n(node, i);
 		ir_node *insert;
 		//get_spillinfo(env, arg);
 
 		/* some backends have virtual noreg/unknown nodes that are not scheduled
 		 * and simply always available. */
-		if(!sched_is_scheduled(arg)) {
+		if (!sched_is_scheduled(arg)) {
 			ir_node *pred_block = get_Block_cfgpred_block(block, i);
 			insert = be_get_end_of_block_insertion_point(pred_block);
 			insert = sched_prev(insert);
@@ -432,7 +432,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* some backends have virtual noreg/unknown nodes that are not scheduled
 	 * and simply always available. */
-	if(!sched_is_scheduled(insn)) {
+	if (!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
 		spillinfo->spills->spill = new_NoMem();
 		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
@@ -441,7 +441,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 
 	DBG((dbg, LEVEL_1, "spilling %+F ... \n", to_spill));
 	spill = spillinfo->spills;
-	for( ; spill != NULL; spill = spill->next) {
+	for ( ; spill != NULL; spill = spill->next) {
 		ir_node *after = spill->after;
 		ir_node *block = get_block(after);
 
@@ -488,7 +488,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	arity   = get_irn_arity(phi);
 	ins     = ALLOCAN(ir_node*, arity);
 	unknown = new_r_Unknown(irg, mode_M);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ins[i] = unknown;
 	}
 
@@ -503,7 +503,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	env->spilled_phi_count++;
 #endif
 
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node      *arg      = get_irn_n(phi, i);
 		spill_info_t *arg_info = get_spillinfo(env, arg);
 
@@ -527,7 +527,7 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo)
 	ir_node *to_spill;
 
 	/* node is already spilled */
-	if(spillinfo->spills != NULL && spillinfo->spills->spill != NULL)
+	if (spillinfo->spills != NULL && spillinfo->spills->spill != NULL)
 		return;
 
 	to_spill = spillinfo->to_spill;
@@ -556,13 +556,13 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo)
 static int is_value_available(spill_env_t *env, const ir_node *arg,
                               const ir_node *reloader)
 {
-	if(is_Unknown(arg) || arg == new_NoMem())
+	if (is_Unknown(arg) || arg == new_NoMem())
 		return 1;
 
-	if(be_is_Spill(skip_Proj_const(arg)))
+	if (be_is_Spill(skip_Proj_const(arg)))
 		return 1;
 
-	if(arg == get_irg_frame(env->irg))
+	if (arg == get_irg_frame(env->irg))
 		return 1;
 
 	(void)reloader;
@@ -598,12 +598,12 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	if (!arch_irn_is(insn, rematerializable))
 		return REMAT_COST_INFINITE;
 
-	if(be_is_Reload(insn)) {
+	if (be_is_Reload(insn)) {
 		costs += 2;
 	} else {
 		costs += arch_get_op_estimated_cost(insn);
 	}
-	if(parentcosts + costs >= env->reload_cost + env->spill_cost) {
+	if (parentcosts + costs >= env->reload_cost + env->spill_cost) {
 		return REMAT_COST_INFINITE;
 	}
 	/* never rematerialize a node which modifies the flags.
@@ -615,15 +615,15 @@ static int check_remat_conditions_costs(spill_env_t *env,
 	}
 
 	argremats = 0;
-	for(i = 0, arity = get_irn_arity(insn); i < arity; ++i) {
+	for (i = 0, arity = get_irn_arity(insn); i < arity; ++i) {
 		ir_node *arg = get_irn_n(insn, i);
 
-		if(is_value_available(env, arg, reloader))
+		if (is_value_available(env, arg, reloader))
 			continue;
 
 		/* we have to rematerialize the argument as well */
 		++argremats;
-		if(argremats > 1) {
+		if (argremats > 1) {
 			/* we only support rematerializing 1 argument at the moment,
 			 * as multiple arguments could increase register pressure */
 			return REMAT_COST_INFINITE;
@@ -631,7 +631,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 
 		costs += check_remat_conditions_costs(env, arg, reloader,
 		                                      parentcosts + costs);
-		if(parentcosts + costs >= env->reload_cost + env->spill_cost)
+		if (parentcosts + costs >= env->reload_cost + env->spill_cost)
 			return REMAT_COST_INFINITE;
 	}
 
@@ -652,17 +652,17 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 	ir_node *bl;
 	ir_node **ins;
 
-	if(is_Block(reloader)) {
+	if (is_Block(reloader)) {
 		bl = reloader;
 	} else {
 		bl = get_nodes_block(reloader);
 	}
 
 	ins = ALLOCAN(ir_node*, get_irn_arity(spilled));
-	for(i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
+	for (i = 0, arity = get_irn_arity(spilled); i < arity; ++i) {
 		ir_node *arg = get_irn_n(spilled, i);
 
-		if(is_value_available(env, arg, reloader)) {
+		if (is_value_available(env, arg, reloader)) {
 			ins[i] = arg;
 		} else {
 			ins[i] = do_remat(env, arg, reloader);
@@ -707,10 +707,10 @@ double be_get_spill_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 unsigned be_get_reload_costs_no_weight(spill_env_t *env, const ir_node *to_spill,
                                        const ir_node *before)
 {
-	if(be_do_remats) {
+	if (be_do_remats) {
 		/* is the node rematerializable? */
 		unsigned costs = check_remat_conditions_costs(env, to_spill, before, 0);
-		if(costs < (unsigned) env->reload_cost)
+		if (costs < (unsigned) env->reload_cost)
 			return costs;
 	}
 
@@ -722,10 +722,10 @@ double be_get_reload_costs(spill_env_t *env, ir_node *to_spill, ir_node *before)
 	ir_node      *block = get_nodes_block(before);
 	double        freq  = get_block_execfreq(env->exec_freq, block);
 
-	if(be_do_remats) {
+	if (be_do_remats) {
 		/* is the node rematerializable? */
 		int costs = check_remat_conditions_costs(env, to_spill, before, 0);
-		if(costs < env->reload_cost)
+		if (costs < env->reload_cost)
 			return costs * freq;
 	}
 
@@ -766,7 +766,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	double         spill_execfreq;
 
 	/* already calculated? */
-	if(spillinfo->spill_costs >= 0)
+	if (spillinfo->spill_costs >= 0)
 		return;
 
 	assert(!arch_irn_is(insn, dont_spill));
@@ -777,7 +777,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	 * TODO: this is kinda hairy, the NoMem is correct for an Unknown as Phi
 	 * predecessor (of a PhiM) but this test might match other things too...
 	 */
-	if(!sched_is_scheduled(insn)) {
+	if (!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
 		spill_t *spill = OALLOC(&env->obst, spill_t);
 		spill->after = NULL;
@@ -801,14 +801,14 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		return;
 	}
 
-	if(spillinfo->spills != NULL) {
+	if (spillinfo->spills != NULL) {
 		spill_t *s;
 		double   spills_execfreq;
 
 		/* calculate sum of execution frequencies of individual spills */
 		spills_execfreq = 0;
 		s               = spillinfo->spills;
-		for( ; s != NULL; s = s->next) {
+		for ( ; s != NULL; s = s->next) {
 			ir_node *spill_block = get_block(s->after);
 			double   freq = get_block_execfreq(env->exec_freq, spill_block);
 
@@ -820,7 +820,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		    spill_execfreq * env->spill_cost));
 
 		/* multi-/latespill is advantageous -> return*/
-		if(spills_execfreq < spill_execfreq) {
+		if (spills_execfreq < spill_execfreq) {
 			DB((dbg, LEVEL_1, "use latespills for %+F\n", to_spill));
 			spillinfo->spill_costs = spills_execfreq * env->spill_cost;
 			return;
@@ -902,7 +902,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 		determine_spill_costs(env, si);
 
 		/* determine possibility of rematerialisations */
-		if(be_do_remats) {
+		if (be_do_remats) {
 			/* calculate cost savings for each indivial value when it would
 			   be rematted instead of reloaded */
 			for (rld = si->reloaders; rld != NULL; rld = rld->next) {
@@ -912,12 +912,12 @@ void be_insert_spills_reloads(spill_env_t *env)
 				ir_node *block;
 				ir_node *reloader = rld->reloader;
 
-				if(rld->rematted_node != NULL) {
+				if (rld->rematted_node != NULL) {
 					DBG((dbg, LEVEL_2, "\tforced remat %+F before %+F\n",
 					     rld->rematted_node, reloader));
 					continue;
 				}
-				if(rld->remat_cost_delta >= REMAT_COST_INFINITE) {
+				if (rld->remat_cost_delta >= REMAT_COST_INFINITE) {
 					DBG((dbg, LEVEL_2, "\treload before %+F is forbidden\n",
 					     reloader));
 					all_remat_costs = REMAT_COST_INFINITE;
@@ -926,7 +926,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 				remat_cost  = check_remat_conditions_costs(env, to_spill,
 				                                           reloader, 0);
-				if(remat_cost >= REMAT_COST_INFINITE) {
+				if (remat_cost >= REMAT_COST_INFINITE) {
 					DBG((dbg, LEVEL_2, "\tremat before %+F not possible\n",
 					     reloader));
 					rld->remat_cost_delta = REMAT_COST_INFINITE;
@@ -943,7 +943,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				     "%d (rel %f)\n", reloader, remat_cost_delta,
 				     remat_cost_delta * freq));
 			}
-			if(all_remat_costs < REMAT_COST_INFINITE) {
+			if (all_remat_costs < REMAT_COST_INFINITE) {
 				/* we don't need the costs for the spill if we can remat
 				   all reloaders */
 				all_remat_costs -= si->spill_costs;
@@ -952,7 +952,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				     env->spill_cost, si->spill_costs));
 			}
 
-			if(all_remat_costs < 0) {
+			if (all_remat_costs < 0) {
 				DBG((dbg, LEVEL_1, "\nforcing remats of all reloaders (%f)\n",
 				     all_remat_costs));
 				force_remat = 1;
@@ -1005,7 +1005,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 			be_ssa_construction_update_liveness_phis(&senv);
 			be_liveness_update(to_spill);
 			len = ARR_LEN(copies);
-			for(i = 0; i < len; ++i) {
+			for (i = 0; i < len; ++i) {
 				be_liveness_update(lv, copies[i]);
 			}
 #endif
@@ -1020,14 +1020,14 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 			be_ssa_construction_init(&senv, env->birg);
 			spill = si->spills;
-			for( ; spill != NULL; spill = spill->next) {
+			for ( ; spill != NULL; spill = spill->next) {
 				/* maybe we rematerialized the value and need no spill */
-				if(spill->spill == NULL)
+				if (spill->spill == NULL)
 					continue;
 				be_ssa_construction_add_copy(&senv, spill->spill);
 				spill_count++;
 			}
-			if(spill_count > 1) {
+			if (spill_count > 1) {
 				/* all reloads are attached to the first spill, fix them now */
 				be_ssa_construction_fix_users(&senv, si->spills->spill);
 			}

@@ -118,7 +118,7 @@ irg_grgen_dumper_env_t *init_irg_grgen_dumper(char *file, int append)
 	irg_grgen_dumper_env_t *const grgen_dumper_env = XMALLOC(irg_grgen_dumper_env_t);
 	FILE *fp;
 
-	if(append)
+	if (append)
 		fp = fopen(file, "at");
 	else
 	{
@@ -241,7 +241,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 		ir_node *n = (ir_node *) entry->key;
 
 		// Dump node
-		if(get_irn_opcode(n) == iro_Proj && get_irn_mode(n) == mode_M)
+		if (get_irn_opcode(n) == iro_Proj && get_irn_mode(n) == mode_M)
 			uses_memory = 1;
 		dump_grg_node(n, dump_info, fp);
 		dump_grgen_mode(n, dump_info, fp, NULL);
@@ -254,7 +254,7 @@ static int dump_pattern(grgen_dumpinfo_t *dump_info, FILE *fp)
 		int i;
 
 		// Dump edges
-		for(i = is_Block(n) ? 0 : -1; i < get_irn_arity(n); i++)
+		for (i = is_Block(n) ? 0 : -1; i < get_irn_arity(n); i++)
 			dump_grg_egde(n, i, dump_info, fp);
 	}
 
@@ -285,7 +285,7 @@ static void dump_grg_node(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 	char *node_name;
 
 	// Already dumped the node? Then do nothing
-	if(pmap_contains(dump_info -> node_name_map, n))
+	if (pmap_contains(dump_info -> node_name_map, n))
 		return;
 
 	// Else generate new node name and dump the node
@@ -316,10 +316,10 @@ static void dump_grg_egde(ir_node *n, int n_edge, grgen_dumpinfo_t *dump_info, F
 	// We have to dump to_node here, because to_node has to be known by grgen before
 	// connecting an edge to it.
 	to_node =  get_irn_n(n, n_edge);
-	if(!pmap_contains(dump_info -> nodes_to_dump, to_node))
+	if (!pmap_contains(dump_info -> nodes_to_dump, to_node))
 		return;
 
-	if((nodes_edge_names = pmap_get(dump_info -> edge_name_map, n)) == NULL)
+	if ((nodes_edge_names = pmap_get(dump_info -> edge_name_map, n)) == NULL)
 	{
 		size_t const count = get_irn_arity(n) + 1;
 		nodes_edge_names = OALLOCNZ(&dump_info->node_names, char*, count);
@@ -372,7 +372,7 @@ static void dump_grgen_mode(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp, i
 	//mode_node_name = pmap_get(dump_info -> mode_name_map, (void *) mode_code);
 	sprintf(edge_name, "m%d", edge_counter++);
 
-	if(pmap_get(dump_info->mode_edge_map, n) == NULL)
+	if (pmap_get(dump_info->mode_edge_map, n) == NULL)
 	{
 		char *edge_name_obst = OALLOCN(&dump_info->node_names, char, strlen(edge_name) + 1);
 		strcpy(edge_name_obst, edge_name);
@@ -394,7 +394,7 @@ static char *dump_grgen_mode_node(ir_mode *irn_mode, grgen_dumpinfo_t *dump_info
 	const char *mode_name =  get_mode_name(irn_mode);
 	char *mode_node_name;
 
-	if(!pmap_contains(dump_info -> mode_name_map, irn_mode))
+	if (!pmap_contains(dump_info -> mode_name_map, irn_mode))
 	{
 		// No, create a new mode-node
 		mode_node_name = OALLOCN(&dump_info->mode_names, char, MAX_NODENAME_LEN);
@@ -422,26 +422,26 @@ static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 	char *node_name;
 	ir_opcode code = get_irn_opcode(n);
 
-	if(code == iro_Const)
+	if (code == iro_Const)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
 		fprintf(fp, "%s%s.value = \"%ld\";\n", indent, node_name, get_tarval_long(get_Const_tarval(n)));
 	}
 
 
-	if(code == iro_Proj)
+	if (code == iro_Proj)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
 		fprintf(fp, "%s%s.proj = %ld;\n", indent, node_name, get_Proj_proj(n));
 	}
 
-	/*if(code == iro_Block)
+	/*if (code == iro_Block)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
 		fprintf(fp, "%s%s.pos = %d;\n", indent, node_name, ??);
 	}
 
-	if(code == iro_Phi)
+	if (code == iro_Phi)
 	{
 		node_name = pmap_get(dump_info->node_name_map, n);
 		fprintf(fp, "%s%s.pos = %d;\n", indent, node_name, ??);
@@ -450,7 +450,7 @@ static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 	// TODO: Dump Block evals: edge numbers
 
 
-	if(code == iro_Phi || code == iro_Block)
+	if (code == iro_Phi || code == iro_Block)
 	{
 		char **edge_names;
 		int i;
@@ -463,7 +463,7 @@ static void dump_grgen_eval(ir_node *n, grgen_dumpinfo_t *dump_info, FILE *fp)
 
 		// Correlate the matched phi edges with the matched block edges
 		// Caution: Position 0 in the edge_names array is the block edge, so start at 1
-		for(i = code == iro_Block; i < get_irn_arity(n) + 1; i++)
+		for (i = code == iro_Block; i < get_irn_arity(n) + 1; i++)
 		{
 			assert(edge_names[i] != NULL && "Some edges have not been dumped!");
 
@@ -486,9 +486,9 @@ static void set_indent(int i)
 	int j;
 
 	// Generate a string containing i blank characters
-	if(i < MAX_INDENT - 1)
+	if (i < MAX_INDENT - 1)
 	{
-		for(j = 0; j < i; j++)
+		for (j = 0; j < i; j++)
 			indent[j] = ' ';
 		indent[j] = 0x0;
 	}

@@ -583,7 +583,7 @@ static void relink_bad_predecessors(ir_node *n, void *env)
 			/* set new predecessors in array
 			   n->in[0] remains the same block */
 			new_irn_arity = 1;
-			for(i = 1; i < old_irn_arity; i++)
+			for (i = 1; i < old_irn_arity; i++)
 				if (!is_Bad(old_in[i])) {
 					n->in[new_irn_arity] = n->in[i];
 					is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);

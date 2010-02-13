@@ -111,7 +111,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op)
 	ppc32_modecode from_modecode=get_nice_modecode(from_mode);
 	ppc32_modecode to_modecode=get_nice_modecode(to_mode);
 
-	switch(from_modecode){
+	switch (from_modecode){
 		case irm_F:
 			op = new_rd_Conv(env->dbg, env->block, op, mode_D);
 			// fall through
@@ -139,7 +139,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op)
 				res = own_gen_convert_call(env, op, "conv_double_to_unsigned_int", mode_D, mode_Iu);
 			}
 
-			switch(to_modecode)
+			switch (to_modecode)
 			{
 				case irm_Bs:
 				case irm_Hs:
@@ -179,13 +179,13 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op)
 int search_from_node_in_block(ir_node *from, ir_node *to)
 {
 	int n = get_irn_arity(from), i;
-	for(i=0;i<n;i++)
+	for (i=0;i<n;i++)
 	{
 		ir_node *pred = get_irn_n(from, i);
-		if(pred==to) return 1;
-		if(get_irn_n(pred, -1)==current_block)
+		if (pred==to) return 1;
+		if (get_irn_n(pred, -1)==current_block)
 		{
-			if(search_from_node_in_block(pred, to)) return 1;
+			if (search_from_node_in_block(pred, to)) return 1;
 		}
 	}
 	return 0;
@@ -193,8 +193,8 @@ int search_from_node_in_block(ir_node *from, ir_node *to)
 
 int nodes_dependency_order(ir_node **a, ir_node **b)
 {
-	if(search_from_node_in_block(*a,*b)) return 1;
-	if(search_from_node_in_block(*b,*a)) return -1;
+	if (search_from_node_in_block(*a,*b)) return 1;
+	if (search_from_node_in_block(*b,*a)) return -1;
 	return 0;
 }
 
@@ -205,9 +205,9 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 	cw_block_attr *attr = current_block->link;
 	ppc32_transform_env_t tenv;
 
-	if(!attr->conv_count) return;
+	if (!attr->conv_count) return;
 
-	if(!memslot)
+	if (!memslot)
 	{
 		ir_type *frame_type = get_irg_frame_type(cgenv->irg);
 		memslot = frame_alloc_area(frame_type, get_mode_size_bytes(mode_D), 4, 0);
@@ -228,7 +228,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 	DEBUG_ONLY(tenv.mod      = cgenv->mod;)
 
 	memory = get_irg_no_mem(current_ir_graph);
-	for(i = 0; i < attr->conv_count; i++)
+	for (i = 0; i < attr->conv_count; i++)
 	{
 		tenv.dbg      = get_irn_dbg_info(attr->convs[i]);
 		tenv.irn      = attr->convs[i];
@@ -277,9 +277,9 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 	ir_graph      *rem;
 	ir_entity     *ent;
 
-	if(!const_set)
+	if (!const_set)
 		const_set = new_set(cmp_tv_ent, 10);
-	if(!tp)
+	if (!tp)
 		tp = new_type_primitive(new_id_from_str("const_double_t"), env->mode);
 
 
@@ -288,7 +288,7 @@ static ir_node *gen_fp_known_symconst(ppc32_transform_env_t *env, tarval *known_
 
 	entry = set_insert(const_set, &key, sizeof(key), HASH_PTR(key.tv));
 
-	if(!entry->ent) {
+	if (!entry->ent) {
 		char buf[80];
 		sprintf(buf, "const_%ld", get_irn_node_nr(env->irn));
 		ent = new_entity(get_glob_type(), new_id_from_str(buf), tp);
@@ -374,7 +374,7 @@ void ppc32_conv_walk(ir_node *node, void *env)
 
 	if (is_Block(node))
 	{
-		if(current_block != NULL)
+		if (current_block != NULL)
 			finalize_block(cgenv);
 
 		current_block = node;
@@ -392,10 +392,10 @@ void ppc32_conv_walk(ir_node *node, void *env)
 		ppc32_modecode to_mode=get_nice_modecode(get_irn_mode(node));
 		cw_block_attr *attr;
 
-		if(from_mode == to_mode) return;
-		if(from_mode == irm_F || from_mode == irm_D)
+		if (from_mode == to_mode) return;
+		if (from_mode == irm_F || from_mode == irm_D)
 		{
-			switch(to_mode)
+			switch (to_mode)
 			{
 				case irm_Bs:
 				case irm_Bu:
@@ -409,9 +409,9 @@ void ppc32_conv_walk(ir_node *node, void *env)
 
 			}
 		}
-		else if(to_mode == irm_F || to_mode == irm_D)
+		else if (to_mode == irm_F || to_mode == irm_D)
 		{
-			switch(from_mode)
+			switch (from_mode)
 			{
 				case irm_Bs:
 				case irm_Bu:
@@ -483,7 +483,7 @@ void ppc32_pretransform_walk(ir_node *node, void *env)
 	tenv.irg = current_ir_graph;
 	DEBUG_ONLY(tenv.mod = cgenv->mod;)
 
-	if(code == iro_Const || code == iro_SymConst)
+	if (code == iro_Const || code == iro_SymConst)
 	{
 		ir_node *newconst;
 
@@ -492,7 +492,7 @@ void ppc32_pretransform_walk(ir_node *node, void *env)
 		tenv.mode     = get_irn_mode(node);
 		tenv.dbg      = get_irn_dbg_info(node);
 
-		if(code == iro_Const)
+		if (code == iro_Const)
 			newconst = gen_Const(&tenv);
 		else
 			newconst = gen_SymConst(&tenv);

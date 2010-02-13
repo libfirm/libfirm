@@ -275,11 +275,11 @@ row_done: ;
 		goto done;
 
 	unmatched = t;
-	while (1) {
+	for (;;) {
 		DBG((p->dbg, LEVEL_1, "Matched %d rows.\n", m - t));
 		q = 0;
 
-		while (1) {
+		for (;;) {
 			while (q < t) {
 				/* Begin explore node q of the forest 19 */
 				k = unchosen_row[q];
@@ -351,7 +351,7 @@ row_done: ;
 breakthru:
 		/* Begin update the matching 20 */
 		DBG((p->dbg, LEVEL_1, "Breakthrough at node %d of %d.\n", q, t));
-		while (1) {
+		for (;;) {
 			j           = col_mate[k];
 			col_mate[k] = l;
 			row_mate[l] = k;

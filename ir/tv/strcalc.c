@@ -939,7 +939,7 @@ void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *m
 
 		default:
 			fail_char(orig_str, orig_len, *str, str-orig_str+1);
-		} /* switch(*str) */
+		} /* switch (*str) */
 
 		/* Radix conversion from base b to base B:
 		 *  (UnUn-1...U1U0)b == ((((Un*b + Un-1)*b + ...)*b + U1)*b + U0)B */
@@ -1065,14 +1065,14 @@ void sc_truncate(unsigned int num_bits, void *buffer)
 
 	assert(pos < end);
 
-	switch(num_bits % 4) {
+	switch (num_bits % 4) {
 	case 0: /* nothing to do */ break;
 	case 1: *pos++ &= SC_1; break;
 	case 2: *pos++ &= SC_3; break;
 	case 3: *pos++ &= SC_7; break;
 	}
 
-	for( ; pos < end; ++pos)
+	for ( ; pos < end; ++pos)
 		*pos = SC_0;
 }
 

@@ -103,7 +103,7 @@ void be_emit_finish_line_gas(const ir_node *node)
 	const char *sourcefile;
 	unsigned    lineno;
 
-	if(node == NULL) {
+	if (node == NULL) {
 		be_emit_char('\n');
 		be_emit_write_line();
 		return;
@@ -115,7 +115,7 @@ void be_emit_finish_line_gas(const ir_node *node)
 
 	dbg        = get_irn_dbg_info(node);
 	sourcefile = ir_retrieve_dbg_info(dbg, &lineno);
-	if(sourcefile != NULL) {
+	if (sourcefile != NULL) {
 		be_emit_string(sourcefile);
 		be_emit_irprintf(":%u", lineno);
 	}

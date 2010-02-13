@@ -135,7 +135,7 @@ ASM_copy_attr(const ir_node *old_node, ir_node *new_node)
  */
 static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops)
 {
-	switch(code) {
+	switch (code) {
 	case iro_Call:
 		ops->copy_attr = call_copy_attr;
 		break;
@@ -218,7 +218,7 @@ ident *(get_op_ident)(const ir_op *op)
 
 const char *get_op_pin_state_name(op_pin_state s)
 {
-	switch(s) {
+	switch (s) {
 #define XXX(s) case s: return #s
 	XXX(op_pin_state_floats);
 	XXX(op_pin_state_pinned);

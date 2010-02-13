@@ -89,7 +89,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 
 	// print_living_values(stderr, &live_nodes);
 	pressure = ir_nodeset_size(&live_nodes);
-	if(pressure > env->registers_available) {
+	if (pressure > env->registers_available) {
 		ir_fprintf(stderr, "Verify Warning: Register pressure too high at end of block %+F(%s) (%d/%d):\n",
 			block, get_irg_dump_name(env->irg), pressure, env->registers_available);
 		print_living_values(stderr, &live_nodes);
@@ -105,7 +105,7 @@ static void verify_liveness_walker(ir_node *block, void *data)
 
 		pressure = ir_nodeset_size(&live_nodes);
 
-		if(pressure > env->registers_available) {
+		if (pressure > env->registers_available) {
 			ir_fprintf(stderr, "Verify Warning: Register pressure too high before node %+F in %+F(%s) (%d/%d):\n",
 				irn, block, get_irg_dump_name(env->irg), pressure, env->registers_available);
 			print_living_values(stderr, &live_nodes);
@@ -175,21 +175,21 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		int timestep;
 
 		/* this node is scheduled */
-		if(bitset_is_set(env->scheduled, get_irn_idx(node))) {
+		if (bitset_is_set(env->scheduled, get_irn_idx(node))) {
 			ir_fprintf(stderr, "Verify warning: %+F appears to be schedule twice\n");
 			env->problem_found = 1;
 		}
 		bitset_set(env->scheduled, get_irn_idx(node));
 
 		/* Check that scheduled nodes are in the correct block */
-		if(get_nodes_block(node) != block) {
+		if (get_nodes_block(node) != block) {
 			ir_fprintf(stderr, "Verify warning: %+F is in block %+F but scheduled in %+F\n", node, get_nodes_block(node), block);
 			env->problem_found = 1;
 		}
 
 		/* Check that timesteps are increasing */
 		timestep = sched_get_time_step(node);
-		if(timestep <= last_timestep) {
+		if (timestep <= last_timestep) {
 			ir_fprintf(stderr, "Verify warning: Schedule timestep did not increase at node %+F\n",
 			           node);
 			env->problem_found = 1;
@@ -218,7 +218,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 			cfchange_found = 1;
 		} else if (cfchange_found) {
 			/* proj and keepany aren't real instructions... */
-			if(!is_Proj(node) && !be_is_Keep(node)) {
+			if (!is_Proj(node) && !be_is_Keep(node)) {
 				/* check for delay branches */
 				if (delay_branches == 0) {
 					ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
@@ -231,15 +231,15 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		/* Check that all uses come before their definitions */
-		if(!is_Phi(node)) {
+		if (!is_Phi(node)) {
 			int nodetime = sched_get_time_step(node);
-			for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
-				if(get_nodes_block(arg) != block
+				if (get_nodes_block(arg) != block
 				   || !sched_is_scheduled(arg))
 					continue;
 
-				if(sched_get_time_step(arg) >= nodetime) {
+				if (sched_get_time_step(arg) >= nodetime) {
 					ir_fprintf(stderr, "Verify Warning: Value %+F used by %+F before it was defined in block %+F (%s)\n",
 					           arg, node, block, get_irg_dump_name(env->irg));
 					env->problem_found = 1;
@@ -248,28 +248,28 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		/* Check that no dead nodes are scheduled */
-		if(get_irn_n_edges(node) == 0) {
+		if (get_irn_n_edges(node) == 0) {
 			ir_fprintf(stderr, "Verify warning: Node %+F is dead but scheduled in block %+F (%s)\n",
 			           node, block, get_irg_dump_name(env->irg));
 			env->problem_found = 1;
 		}
 
-		if(be_is_Keep(node) || be_is_CopyKeep(node)) {
+		if (be_is_Keep(node) || be_is_CopyKeep(node)) {
 			/* at least 1 of the keep arguments has to be it schedule
 			 * predecessor */
 			int      arity   = get_irn_arity(node);
 			int      problem = 1;
 			ir_node *prev    = sched_prev(node);
-			while(be_is_Keep(prev) || be_is_CopyKeep(prev))
+			while (be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
-			for(i = 0; i < arity; ++i) {
+			for (i = 0; i < arity; ++i) {
 				ir_node *in = get_irn_n(node, i);
 				in = skip_Proj(in);
-				if(in == prev)
+				if (in == prev)
 					problem = 0;
 			}
-			if(problem) {
+			if (problem) {
 				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
 				           node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
@@ -287,7 +287,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 static int should_be_scheduled(ir_node *node)
 {
-	switch(get_irn_opcode(node)) {
+	switch (get_irn_opcode(node)) {
 	case iro_Bad:
 	case iro_Block:
 	case iro_End:
@@ -324,12 +324,12 @@ static void check_schedule(ir_node *node, void *data)
 	int scheduled;
 
 	should_be = should_be_scheduled(node);
-	if(should_be == -1)
+	if (should_be == -1)
 		return;
 
 	scheduled = bitset_is_set(env->scheduled, get_irn_idx(node)) ? 1 : 0;
 	should_be = should_be ? 1 : 0;
-	if(should_be != scheduled) {
+	if (should_be != scheduled) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should%s be scheduled\n",
 			node, get_nodes_block(node), get_irg_dump_name(env->irg), should_be ? "" : " not");
 		env->problem_found = 1;
@@ -397,7 +397,7 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
 
-	if(res == NULL) {
+	if (res == NULL) {
 		spill.ent = ent;
 		res = set_insert(env->spills, &spill, sizeof(spill), hash);
 	}
@@ -411,9 +411,9 @@ static ir_node *get_memory_edge(const ir_node *node)
 	ir_node *result = NULL;
 
 	arity = get_irn_arity(node);
-	for(i = arity - 1; i >= 0; --i) {
+	for (i = arity - 1; i >= 0; --i) {
 		ir_node *arg = get_irn_n(node, i);
-		if(get_irn_mode(arg) == mode_M) {
+		if (get_irn_mode(arg) == mode_M) {
 			assert(result == NULL);
 			result = arg;
 		}
@@ -428,7 +428,7 @@ void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir
 static
 void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
 {
-	if(ent == NULL) {
+	if (ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
 		           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 	}
@@ -441,7 +441,7 @@ void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *relo
 	be_check_entity(env, node, spillent);
 	get_spill(env, node, ent);
 
-	if(spillent != ent) {
+	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: Spill %+F has different entity than reload %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
 		env->problem_found = 1;
@@ -464,7 +464,7 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 
 	spillent = be_get_MemPerm_out_entity(memperm, out);
 	be_check_entity(env, memperm, spillent);
-	if(spillent != ent) {
+	if (spillent != ent) {
 		ir_fprintf(stderr, "Verify warning: MemPerm %+F has different entity than reload %+F in block %+F(%s)\n",
 			node, reload, get_nodes_block(node), get_irg_dump_name(env->irg));
 		env->problem_found = 1;
@@ -472,14 +472,14 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
-	if(res != NULL) {
+	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = spillent;
 	res = set_insert(env->spills, &spill, sizeof(spill), hash);
 
-	for(i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
+	for (i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
 		ir_entity* argent = be_get_MemPerm_in_entity(memperm, i);
 
@@ -497,7 +497,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 
 	spill.spill = node;
 	res = set_find(env->spills, &spill, sizeof(spill), hash);
-	if(res != NULL) {
+	if (res != NULL) {
 		return;
 	}
 
@@ -505,7 +505,7 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	res = set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
-	for(i = 0, arity = get_irn_arity(node); i < arity; ++i) {
+	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node* arg = get_irn_n(node, i);
 		collect(env, arg, reload, ent);
 	}
@@ -513,11 +513,11 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 
 static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
-	if(be_is_Spill(node)) {
+	if (be_is_Spill(node)) {
 		collect_spill(env, node, reload, ent);
-	} else if(is_Proj(node)) {
+	} else if (is_Proj(node)) {
 		collect_memperm(env, node, reload, ent);
-	} else if(is_Phi(node) && get_irn_mode(node) == mode_M) {
+	} else if (is_Phi(node) && get_irn_mode(node) == mode_M) {
 		collect_memphi(env, node, reload, ent);
 	} else {
 		/* Disabled for now, spills might get transformed by the backend */
@@ -538,14 +538,14 @@ static void collect_spills_walker(ir_node *node, void *data)
 	be_verify_spillslots_env_t *env = data;
 
 	/* @@@ ia32_classify returns classification of Proj_pred :-/ */
-	if(is_Proj(node))
+	if (is_Proj(node))
 		return;
 
 	if (arch_irn_class_is(node, reload)) {
 		ir_node *spill = get_memory_edge(node);
 		ir_entity *ent;
 
-		if(spill == NULL) {
+		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: No spill attached to reload %+F in block %+F(%s)\n",
 			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 			env->problem_found = 1;
@@ -566,21 +566,21 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 	spill_t  *spill;
 	int       i;
 
-	for(spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
+	for (spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
 		spills[i] = spill;
 	}
 
-	for(i = 0; i < spillcount; ++i) {
+	for (i = 0; i < spillcount; ++i) {
 		spill_t *sp1 = spills[i];
 		int i2;
 
-		for(i2 = i+1; i2 < spillcount; ++i2) {
+		for (i2 = i+1; i2 < spillcount; ++i2) {
 			spill_t *sp2 = spills[i2];
 
-			if(sp1->ent != sp2->ent)
+			if (sp1->ent != sp2->ent)
 				continue;
 
-			if(my_values_interfere(sp1->spill, sp2->spill)) {
+			if (my_values_interfere(sp1->spill, sp2->spill)) {
 				ir_fprintf(stderr, "Verify warning: Spillslots for %+F in block %+F(%s) and %+F in block %+F(%s) interfere\n",
 					sp1->spill, get_nodes_block(sp1->spill), get_irg_dump_name(env->irg),
 					sp2->spill, get_nodes_block(sp2->spill), get_irg_dump_name(env->irg));
@@ -595,14 +595,14 @@ static void check_lonely_spills(ir_node *node, void *data)
 {
 	be_verify_spillslots_env_t *env = data;
 
-	if(be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
+	if (be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);
-		if(be_is_Spill(node)) {
+		if (be_is_Spill(node)) {
 			ir_entity *ent = arch_get_frame_entity(node);
 			be_check_entity(env, node, ent);
 		}
 
-		if(spill == NULL) {
+		if (spill == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) not connected to a reaload\n",
 			           node, get_nodes_block(node), get_irg_dump_name(env->irg));
 		}
@@ -649,14 +649,14 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 	int b2a = value_dominates(b, a);
 
 	/* If there is no dominance relation, they do not interfere. */
-	if(!a2b && !b2a)
+	if (!a2b && !b2a)
 		return 0;
 
 	/*
 	 * Adjust a and b so, that a dominates b if
 	 * a dominates b or vice versa.
 	 */
-	if(b2a) {
+	if (b2a) {
 		const ir_node *t = a;
 		a = b;
 		b = t;
@@ -677,21 +677,21 @@ static int my_values_interfere(const ir_node *a, const ir_node *b)
 	 */
 	foreach_out_edge(a, edge) {
 		const ir_node *user = get_edge_src_irn(edge);
-		if(b == user)
+		if (b == user)
 			continue;
 
-		if(get_irn_opcode(user) == iro_End)
+		if (get_irn_opcode(user) == iro_End)
 			continue;
 
 		/* in case of phi arguments we compare with the block the value comes from */
-		if(is_Phi(user)) {
+		if (is_Phi(user)) {
 			ir_node *phiblock = get_nodes_block(user);
-			if(phiblock == bb)
+			if (phiblock == bb)
 				continue;
 			user = get_irn_n(phiblock, get_edge_src_pos(edge));
 		}
 
-		if(value_dominates(b, user))
+		if (value_dominates(b, user))
 			return 1;
 	}
 
@@ -933,13 +933,13 @@ static void check_out_edges(ir_node *node, verify_out_dead_nodes_env *env)
 		return;
 
 	/* we find too many (uncritical) dead nodes in block out edges */
-	if(is_Block(node))
+	if (is_Block(node))
 		return;
 
 	foreach_out_edge(node, edge) {
 		ir_node* src = get_edge_src_irn(edge);
 
-		if(!bitset_is_set(env->reachable, get_irn_idx(src)) && !is_Block(src)) {
+		if (!bitset_is_set(env->reachable, get_irn_idx(src)) && !is_Block(src)) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) only reachable through out edges from %+F\n",
 			           src, get_nodes_block(src), get_irg_dump_name(irg), node);
 			env->problem_found = 1;

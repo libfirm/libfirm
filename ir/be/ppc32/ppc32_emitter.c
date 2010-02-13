@@ -614,7 +614,7 @@ static void ppc32_emit_start(ir_graph *irg)
 	const char *irg_name  = get_entity_ld_name(get_irg_entity(irg));
 	int         framesize = get_type_size_bytes(get_irg_frame_type(irg));
 
-	if(! strcmp(irg_name, "main")) {					   // XXX: underscore hack
+	if (! strcmp(irg_name, "main")) {					   // XXX: underscore hack
 		irg_name = "_main";
 	}
 
@@ -629,7 +629,7 @@ static void ppc32_emit_start(ir_graph *irg)
 	}
 	be_emit_write_line();
 
-/*	if(!isleaf) {
+/*	if (!isleaf) {
 		// store link register in linkage area (TODO: if needed)
 
 		be_emit_cstring("\tmflr    r0\n");
@@ -646,7 +646,7 @@ static void ppc32_emit_end(ir_graph *irg)
 	int framesize = get_type_size_bytes(get_irg_frame_type(irg));
 	(void) irg;
 
-/*	if(!isleaf) {
+/*	if (!isleaf) {
 		// restore link register
 
 		be_emit_cstring("\tlwz     r0, 0(r1)\n");
@@ -654,7 +654,7 @@ static void ppc32_emit_end(ir_graph *irg)
 		be_emit_cstring("\tmtlr    r0\n");
 		be_emit_write_line();
 	}*/
-	if(framesize > 24) {
+	if (framesize > 24) {
 		be_emit_cstring("\tlwz    r1, 0(r1)\n");
 		be_emit_cstring("\tlwz    r0, 8(r1)\n");
 		be_emit_cstring("\tmtlr   r0\n");

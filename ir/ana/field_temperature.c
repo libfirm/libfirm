@@ -155,7 +155,7 @@ double get_type_estimated_mem_consumption_bytes(ir_type *tp)
 int get_type_estimated_n_fields(ir_type *tp)
 {
   int s = 0;
-  switch(get_type_tpop_code(tp)) {
+  switch (get_type_tpop_code(tp)) {
 
   case tpo_primitive:
   case tpo_pointer:
@@ -197,7 +197,7 @@ int get_type_estimated_size_bytes(ir_type *tp)
 {
   int s = 0;
 
-  switch(get_type_tpop_code(tp)) {
+  switch (get_type_tpop_code(tp)) {
 
   case tpo_primitive:
   case tpo_pointer:

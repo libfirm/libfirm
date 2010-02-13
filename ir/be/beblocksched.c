@@ -199,7 +199,7 @@ static void collect_egde_frequency(ir_node *block, void *data)
 			}
 		}
 
-		if(highest_edge_num >= 0)
+		if (highest_edge_num >= 0)
 			env->edges[highest_edge_num].highest_execfreq = 1;
 	}
 }
@@ -627,7 +627,7 @@ static void coalesce_blocks_ilp(blocksched_ilp_env_t *env)
 	int  edge_count = ARR_LEN(env->ilpedges);
 
 	/* complete out constraints */
-	for(i = 0; i < edge_count; ++i) {
+	for (i = 0; i < edge_count; ++i) {
 		const ilp_edge_t *edge  = &env->ilpedges[i];
 		ir_node          *block = edge->block;
 		ir_node          *pred;
@@ -748,7 +748,7 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 {
-	switch(algo) {
+	switch (algo) {
 	case BLOCKSCHED_GREEDY:
 	case BLOCKSCHED_NAIV:
 		return create_block_schedule_greedy(irg, execfreqs);

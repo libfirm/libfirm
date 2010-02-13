@@ -181,9 +181,9 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 	/* TODO: construct a hashmap instead of doing linear search for clobber
 	 * register */
-	for(c = 0; c < N_CLASSES; ++c) {
+	for (c = 0; c < N_CLASSES; ++c) {
 		cls = & ia32_reg_classes[c];
-		for(r = 0; r < cls->n_regs; ++r) {
+		for (r = 0; r < cls->n_regs; ++r) {
 			const arch_register_t *temp_reg = arch_register_for_index(cls, r);
 			if (strcmp(temp_reg->name, clobber) == 0
 					|| (c == CLASS_ia32_gp && strcmp(temp_reg->name+1, clobber) == 0)) {
@@ -230,8 +230,8 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 
 	/* TODO: improve error messages with node and source info. (As users can
 	 * easily hit these) */
-	while(*c != 0) {
-		switch(*c) {
+	while (*c != 0) {
+		switch (*c) {
 		case ' ':
 		case '\t':
 		case '\n':
@@ -247,7 +247,7 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 			++c;
 			break;
 		case '#':
-			while(*c != 0 && *c != ',')
+			while (*c != 0 && *c != ',')
 				++c;
 			break;
 

@@ -91,7 +91,7 @@ static void pqueue_heapify(pqueue_t *q, unsigned pos)
  */
 static void pqueue_sift_up(pqueue_t *q, unsigned pos)
 {
-	while(q->elems[pos].priority > q->elems[pos / 2].priority) {
+	while (q->elems[pos].priority > q->elems[pos / 2].priority) {
 		pqueue_el_t tmp;
 
 		tmp               = q->elems[pos];
@@ -129,7 +129,7 @@ void pqueue_put(pqueue_t *q, void *data, int priority)
 
 void *pqueue_pop_front(pqueue_t *q)
 {
-	switch(ARR_LEN(q->elems)) {
+	switch (ARR_LEN(q->elems)) {
 		case 0:
 			assert(0 && "Attempt to retrieve element from empty priority queue.");
 			return NULL;

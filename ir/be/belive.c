@@ -120,9 +120,9 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 		int md          = lo + ((hi - lo) >> 1);
 		unsigned md_idx = payload[md].u.node.idx;
 
-		if(idx > md_idx)
+		if (idx > md_idx)
 			lo = md + 1;
-		else if(idx < md_idx)
+		else if (idx < md_idx)
 			hi = md;
 		else {
 			res = md;
@@ -139,7 +139,7 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 		for (i = res; i < n; ++i)
 			assert(payload[i].u.node.idx >= idx);
 
-		for(i = 0; i < res; ++i)
+		for (i = 0; i < res; ++i)
 			assert(payload[i].u.node.idx < idx);
 	}
 #endif
@@ -157,8 +157,8 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 	unsigned n  = arr[0].u.head.n_members;
 	unsigned i;
 
-	for(i = 0; i < n; ++i) {
-		if(arr[i + 1].u.node.idx == idx)
+	for (i = 0; i < n; ++i) {
+		if (arr[i + 1].u.node.idx == idx)
 			return i;
 	}
 
@@ -173,7 +173,7 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 
 	stat_ev_tim_push();
 	irn_live = phase_get_irn_data(&li->ph, bl);
-	if(irn_live) {
+	if (irn_live) {
 		unsigned idx = get_irn_idx(irn);
 
 		/* Get the position of the index in the array. */
@@ -183,7 +183,7 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 		struct _be_lv_info_node_t *rec = &irn_live[pos + 1].u.node;
 
 		/* Check, if the irn is in deed in the array. */
-		if(rec->idx == idx)
+		if (rec->idx == idx)
 			res = rec;
 	}
 	stat_ev_tim_pop("be_lv_get");
@@ -204,13 +204,13 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 	struct _be_lv_info_node_t *res = &irn_live[pos + 1].u.node;
 
 	/* Check, if the irn is in deed in the array. */
-	if(res->idx != idx) {
+	if (res->idx != idx) {
 		struct _be_lv_info_t *payload;
 		unsigned n_members = irn_live[0].u.head.n_members;
 		unsigned n_size    = irn_live[0].u.head.n_size;
 		unsigned i;
 
-		if(n_members + 1 >= n_size) {
+		if (n_members + 1 >= n_size) {
 			/* double the array size. Remember that the first entry is
 			 * metadata about the array and not a real array element */
 			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
@@ -226,7 +226,7 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 		}
 
 		payload = &irn_live[1];
-		for(i = n_members; i > pos; --i) {
+		for (i = n_members; i > pos; --i) {
 			payload[i] = payload[i - 1];
 		}
 
@@ -244,7 +244,7 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 		unsigned last = 0;
 		struct _be_lv_info_t *payload = &irn_live[1];
 
-		for(i = 0; i < n; ++i) {
+		for (i = 0; i < n; ++i) {
 			assert(payload[i].u.node.idx >= last);
 			last = payload[i].u.node.idx;
 		}
@@ -263,7 +263,7 @@ static int be_lv_remove(struct _be_lv_t *li, const ir_node *bl,
 {
 	struct _be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
 
-	if(irn_live) {
+	if (irn_live) {
 		unsigned n   = irn_live[0].u.head.n_members;
 		unsigned idx = get_irn_idx(irn);
 		unsigned pos = _be_liveness_bsearch(irn_live, idx);
@@ -271,10 +271,10 @@ static int be_lv_remove(struct _be_lv_t *li, const ir_node *bl,
 		struct _be_lv_info_node_t *res = &payload[pos].u.node;
 
 		/* The node is in deed in the block's array. Let's remove it. */
-		if(res->idx == idx) {
+		if (res->idx == idx) {
 			unsigned i;
 
-			for(i = pos + 1; i < n; ++i)
+			for (i = pos + 1; i < n; ++i)
 				payload[i - 1] = payload[i];
 
 			payload[n - 1].u.node.idx   = 0;
@@ -292,7 +292,7 @@ static int be_lv_remove(struct _be_lv_t *li, const ir_node *bl,
 static void register_node(be_lv_t *lv, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
-	if(idx >= bitset_size(lv->nodes)) {
+	if (idx >= bitset_size(lv->nodes)) {
 		bitset_t *nw = bitset_malloc(2 * idx);
 		bitset_copy(nw, lv->nodes);
 		bitset_free(lv->nodes);
@@ -475,16 +475,16 @@ static const char *lv_flags_to_str(unsigned flags)
 
 static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 {
-	if(is_Block(bl)) {
+	if (is_Block(bl)) {
 		be_lv_t *lv = context;
 		struct _be_lv_info_t *info = phase_get_irn_data(&lv->ph, bl);
 
 		fprintf(f, "liveness:\n");
-		if(info) {
+		if (info) {
 			unsigned n = info[0].u.head.n_members;
 			unsigned i;
 
-			for(i = 0; i < n; ++i) {
+			for (i = 0; i < n; ++i) {
 				struct _be_lv_info_node_t *n = &info[i+1].u.node;
 				ir_fprintf(f, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
 			}
@@ -602,7 +602,7 @@ void be_liveness_recompute(be_lv_t *lv)
 
 	be_timer_push(T_LIVE);
 	last_idx = get_irg_last_idx(lv->irg);
-	if(last_idx >= bitset_size(lv->nodes)) {
+	if (last_idx >= bitset_size(lv->nodes)) {
 		bitset_free(lv->nodes);
 		lv->nodes = bitset_malloc(last_idx * 2);
 	} else
@@ -640,7 +640,7 @@ void be_liveness_remove(be_lv_t *lv, const ir_node *irn)
 		w.lv  = lv;
 		w.irn = irn;
 		dom_tree_walk(get_nodes_block(irn), lv_remove_irn_walker, NULL, &w);
-		if(idx < bitset_size(lv->nodes))
+		if (idx < bitset_size(lv->nodes))
 			bitset_clear(lv->nodes, idx);
 	}
 }
@@ -671,32 +671,32 @@ static void lv_check_walker(ir_node *bl, void *data)
 	struct _be_lv_info_t *curr = phase_get_irn_data(&lv->ph, bl);
 	struct _be_lv_info_t *fr   = phase_get_irn_data(&fresh->ph, bl);
 
-	if(!fr && curr && curr[0].u.head.n_members > 0) {
+	if (!fr && curr && curr[0].u.head.n_members > 0) {
 		unsigned i;
 
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
-		for(i = 0; i < curr[0].u.head.n_members; ++i) {
+		for (i = 0; i < curr[0].u.head.n_members; ++i) {
 			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].u.node.idx));
 		}
 	}
 
-	else if(curr) {
+	else if (curr) {
 		unsigned n_curr  = curr[0].u.head.n_members;
 		unsigned n_fresh = fr[0].u.head.n_members;
 
 		unsigned i;
 
-		if(n_curr != n_fresh) {
+		if (n_curr != n_fresh) {
 			ir_fprintf(stderr, "%+F: liveness set sizes differ. curr %d, correct %d\n", bl, n_curr, n_fresh);
 
 			ir_fprintf(stderr, "current:\n");
-			for(i = 0; i < n_curr; ++i) {
+			for (i = 0; i < n_curr; ++i) {
 				struct _be_lv_info_node_t *n = &curr[1 + i].u.node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
-			for(i = 0; i < n_fresh; ++i) {
+			for (i = 0; i < n_fresh; ++i) {
 				struct _be_lv_info_node_t *n = &fr[1 + i].u.node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
@@ -719,7 +719,7 @@ void be_liveness_check(be_lv_t *lv)
 static void lv_dump_block_walker(ir_node *irn, void *data)
 {
 	lv_walker_t *w = data;
-	if(is_Block(irn))
+	if (is_Block(irn))
 		lv_dump_block(w->lv, w->data, irn);
 }
 
@@ -740,7 +740,7 @@ void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name)
 	FILE *f;
 	char buf[128];
 	ir_snprintf(buf, sizeof(buf), "%F_%s-live.txt", lv->irg, cls_name);
-	if((f = fopen(buf, "wt")) != NULL) {
+	if ((f = fopen(buf, "wt")) != NULL) {
 		be_liveness_dump(lv, f);
 		fclose(f);
 	}
@@ -754,19 +754,19 @@ static void dom_check(ir_node *irn, void *data)
 {
 	int *problem_found = data;
 
-	if(!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
+	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
 		int i, n;
 		ir_node *bl = get_nodes_block(irn);
 
-		for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 			ir_node *op     = get_irn_n(irn, i);
 			ir_node *def_bl = get_nodes_block(op);
 			ir_node *use_bl = bl;
 
-			if(is_Phi(irn))
+			if (is_Phi(irn))
 				use_bl = get_Block_cfgpred_block(bl, i);
 
-			if(get_irn_opcode(use_bl) != iro_Bad
+			if (get_irn_opcode(use_bl) != iro_Bad
 			     && get_irn_opcode(def_bl) != iro_Bad
 			     && !block_dominates(def_bl, use_bl)) {
 				ir_fprintf(stderr, "Verify warning: %+F in %+F must dominate %+F for user %+F (%s)\n", op, def_bl, use_bl, irn, get_irg_dump_name(get_irn_irg(op)));
@@ -852,7 +852,7 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
 		 * If we encounter the node we want to insert the Perm after,
 		 * exit immediately, so that this node is still live
 		 */
-		if(irn == pos)
+		if (irn == pos)
 			return;
 
 		be_liveness_transfer(cls, irn, live);

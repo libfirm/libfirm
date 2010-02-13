@@ -87,11 +87,11 @@ static double get_spill_costs(ir_node *node)
 		ir_node *use = get_edge_src_irn(edge);
 
 		/* keeps should be directly below the node */
-		if(be_is_Keep(use)) {
+		if (be_is_Keep(use)) {
 			continue;
 		}
 
-		if(is_Phi(use)) {
+		if (is_Phi(use)) {
 			int      in    = get_edge_src_pos(edge);
 			ir_node *block = get_nodes_block(use);
 
@@ -117,12 +117,12 @@ static void spill_node(ir_node *node)
 
 	foreach_out_edge(node, edge) {
 		ir_node *use = get_edge_src_irn(edge);
-		if(is_Anchor(use))
+		if (is_Anchor(use))
 			continue;
-		if(be_is_Keep(use))
+		if (be_is_Keep(use))
 			continue;
 
-		if(is_Phi(use)) {
+		if (is_Phi(use)) {
 			int      in         = get_edge_src_pos(edge);
 			ir_node *block      = get_nodes_block(use);
 
@@ -152,7 +152,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	ir_node               *n;
 
 	/* mode_T nodes define several values at once. Count them */
-	if(get_irn_mode(node) == mode_T) {
+	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge;
 
 		foreach_out_edge(node, edge) {
@@ -168,7 +168,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* we need registers for the non-live argument values */
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 		if (arch_irn_consider_in_reg_alloc(cls, pred)
 				&& !ir_nodeset_contains(live_nodes, pred)) {
@@ -178,11 +178,11 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* we can reuse all reloaded values for the defined values, but we might
 	   need even more registers */
-	if(values_defined > free_regs_needed)
+	if (values_defined > free_regs_needed)
 		free_regs_needed = values_defined;
 
 	spills_needed = (n_live_nodes + free_regs_needed) - n_regs;
-	if(spills_needed <= 0)
+	if (spills_needed <= 0)
 		return;
 	DBG((dbg, LEVEL_2, "\tspills needed after %+F: %d\n", node, spills_needed));
 
@@ -207,7 +207,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 
 	/* spill cheapest ones */
 	cand_idx = 0;
-	while(spills_needed > 0) {
+	while (spills_needed > 0) {
 		spill_candidate_t *candidate;
 		ir_node           *cand_node;
 		int               is_use;
@@ -228,12 +228,12 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		is_use = 0;
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
-			if(in == cand_node) {
+			if (in == cand_node) {
 				is_use = 1;
 				break;
 			}
 		}
-		if(is_use) {
+		if (is_use) {
 			continue;
 		}
 
@@ -274,7 +274,7 @@ static void add_uses(ir_node *node, ir_nodeset_t *nodeset)
 	int i, arity;
 
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *op = get_irn_n(node, i);
 
 		if (arch_irn_consider_in_reg_alloc(cls, op) &&
@@ -319,7 +319,7 @@ static void spill_block(ir_node *block, void *data)
 	/* remove already spilled nodes from liveset */
 	foreach_ir_nodeset(&live_nodes, node, iter) {
 		DBG((dbg, LEVEL_2, "\t%+F is live-end... ", node));
-		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
 			DBG((dbg, LEVEL_2, "but spilled; removing.\n"));
 			ir_nodeset_remove_iterator(&live_nodes, &iter);
 		} else {
@@ -330,7 +330,7 @@ static void spill_block(ir_node *block, void *data)
 	/* walk schedule backwards and spill until register pressure is fine at
 	 * each node */
 	sched_foreach_reverse(block, node) {
-		if(is_Phi(node))
+		if (is_Phi(node))
 			break;
 
 		remove_defs(node, &live_nodes);
@@ -344,10 +344,10 @@ static void spill_block(ir_node *block, void *data)
 	 */
 	n_phi_values_spilled = 0;
 	sched_foreach(block, node) {
-		if(!is_Phi(node))
+		if (!is_Phi(node))
 			break;
 
-		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
 			++n_phi_values_spilled;
 		}
 	}
@@ -362,12 +362,12 @@ static void spill_block(ir_node *block, void *data)
 	/* TODO: we should really estimate costs of the phi spill as well...
 	 * and preferably spill phis with lower costs... */
 	sched_foreach(block, node) {
-		if(!is_Phi(node))
+		if (!is_Phi(node))
 			break;
-		if(phi_spills_needed <= 0)
+		if (phi_spills_needed <= 0)
 			break;
 
-		if(bitset_is_set(spilled_nodes, get_irn_idx(node))) {
+		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
 			be_spill_phi(spill_env, node);
 			--phi_spills_needed;
 		}
@@ -382,7 +382,7 @@ void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 	ir_graph     *irg    = be_get_birg_irg(birg);
 	n_regs = new_cls->n_regs - be_put_ignore_regs(birg, new_cls, NULL);
 
-	if(n_regs == 0)
+	if (n_regs == 0)
 		return;
 
 	be_liveness_assure_sets(be_assure_liveness(birg));

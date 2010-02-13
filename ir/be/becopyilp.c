@@ -231,10 +231,10 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	ienv->build(ienv);
 	lpp_set_time_limit(ienv->lp, time_limit);
 
-	if(solve_log)
+	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
-	if(solve_net)
+	if (solve_net)
 		lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);
 	else {
 #ifdef LPP_SOLVE_NET
@@ -249,14 +249,14 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	be_stat_ev    ("co_ilp_iter",       ienv->lp->iterations);
 	be_stat_ev_dbl("co_ilp_sol_time",   ienv->lp->sol_time);
 
-	if(dump_flags & DUMP_ILP) {
+	if (dump_flags & DUMP_ILP) {
 		char buf[128];
 		FILE *f;
 
 		ir_snprintf(buf, sizeof(buf), "%F_%s-co.ilp", ienv->co->cenv->irg,
 		            ienv->co->cenv->cls->name);
 		f = fopen(buf, "wt");
-		if(f == NULL) {
+		if (f == NULL) {
 			panic("Couldn't open '%s' for writing", buf);
 		}
 		lpp_dump_plain(ienv->lp, f);

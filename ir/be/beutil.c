@@ -49,7 +49,7 @@ pset *be_empty_set(void)
 {
 	static pset *empty_set = NULL;
 
-	if(!empty_set)
+	if (!empty_set)
 		empty_set = pset_new_ptr(1);
 
 	assert(pset_count(empty_set) == 0);

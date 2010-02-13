@@ -100,7 +100,7 @@ static void restore_irn_color(ir_node *irn, void *c)
 {
 	coloring_t *coloring = c;
 	const arch_register_t *reg = phase_get_irn_data(&coloring->ph, irn);
-	if(reg)
+	if (reg)
 		arch_set_irn_register(irn, reg);
 }
 
@@ -189,9 +189,9 @@ int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
 	be_ifg_foreach_neighbour(ifg, iter, irn, curr)
 		neighbours[i++] = curr;
 
-	for(i = 0; i < degree; ++i) {
-		for(j = 0; j < i; ++j)
-			if(!be_ifg_connected(ifg, neighbours[i], neighbours[j])) {
+	for (i = 0; i < degree; ++i) {
+		for (j = 0; j < i; ++j)
+			if (!be_ifg_connected(ifg, neighbours[i], neighbours[j])) {
 				free(neighbours);
 				return 0;
 			}
@@ -231,7 +231,7 @@ void be_ifg_check(const be_ifg_t *ifg)
 		{
 			ir_printf("%+F; ", m);
 			neighbours_count++;
-			if(!be_ifg_connected(ifg, n, m))
+			if (!be_ifg_connected(ifg, n, m))
 				ir_fprintf(stderr, "%+F is a neighbour of %+F but they are not connected!\n", n, m);
 		}
 	}
@@ -276,7 +276,7 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 
 	be_ifg_foreach_node(ifg, iter1, n)
 	{
-		if(!node_is_in_irgs_storage(ifg->env->irg, n))
+		if (!node_is_in_irgs_storage(ifg->env->irg, n))
 		{
 			ir_printf("+%F is in ifg but not in the current irg!", n);
 			assert (node_is_in_irgs_storage(ifg->env->irg, n));
@@ -307,7 +307,7 @@ void be_ifg_check_sorted(const be_ifg_t *ifg)
 
 		ir_printf("%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
 
-		for(k = 0; k < j; k++)
+		for (k = 0; k < j; k++)
 		{
 			ir_printf("%+F, ", neighbours[k]);
 		}
@@ -334,7 +334,7 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 	be_ifg_foreach_node(ifg, iter1, n)
 	{
-		if(!node_is_in_irgs_storage(ifg->env->irg, n))
+		if (!node_is_in_irgs_storage(ifg->env->irg, n))
 		{
 			ir_fprintf (f,"+%F is in ifg but not in the current irg!",n);
 			assert (node_is_in_irgs_storage(ifg->env->irg, n));
@@ -365,7 +365,7 @@ void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
 
 		ir_fprintf (f,"%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
 
-		for(k = 0; k < j; k++)
+		for (k = 0; k < j; k++)
 		{
 			ir_fprintf (f,"%+F, ", neighbours[k]);
 		}
@@ -598,19 +598,19 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	ir_node *n, *m;
 
 	fprintf(file, "graph G {\n\tgraph [");
-	if(cb->graph_attr)
+	if (cb->graph_attr)
 		cb->graph_attr(file, self);
 	fprintf(file, "];\n");
 
-	if(cb->at_begin)
+	if (cb->at_begin)
 		cb->at_begin(file, self);
 
 	be_ifg_foreach_node(ifg, nodes_it, n) {
-		if(cb->is_dump_node && cb->is_dump_node(self, n)) {
+		if (cb->is_dump_node && cb->is_dump_node(self, n)) {
 			int idx = get_irn_idx(n);
 			bitset_set(nodes, idx);
 			fprintf(file, "\tnode [");
-			if(cb->node_attr)
+			if (cb->node_attr)
 				cb->node_attr(file, self, n);
 			fprintf(file, "]; n%d;\n", idx);
 		}
@@ -622,16 +622,16 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 			int n_idx = get_irn_idx(n);
 			int m_idx = get_irn_idx(m);
 
-			if(n_idx < m_idx && bitset_is_set(nodes, n_idx) && bitset_is_set(nodes, m_idx)) {
+			if (n_idx < m_idx && bitset_is_set(nodes, n_idx) && bitset_is_set(nodes, m_idx)) {
 				fprintf(file, "\tn%d -- n%d [", n_idx, m_idx);
-				if(cb->edge_attr)
+				if (cb->edge_attr)
 					cb->edge_attr(file, self, n, m);
 				fprintf(file, "];\n");
 			}
 		}
 	}
 
-	if(cb->at_end)
+	if (cb->at_end)
 		cb->at_end(file, self);
 
 	fprintf(file, "}\n");
@@ -748,7 +748,7 @@ static FILE *be_ifg_open(const be_chordal_env_t *env, const char *prefix)
 
 	ir_snprintf(buf, sizeof(buf), "%s%F_%s.log", prefix, env->irg, env->cls->name);
 	result = fopen(buf, "wt");
-	if(result == NULL) {
+	if (result == NULL) {
 		panic("Couldn't open '%s' for writing.", buf);
 	}
 

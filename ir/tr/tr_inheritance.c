@@ -56,18 +56,18 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 	ir_entity *inhent, *thisent;
 	mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
 
-	for(i = 0; i < get_class_n_supertypes(clss); i++) {
+	for (i = 0; i < get_class_n_supertypes(clss); i++) {
 		super = get_class_supertype(clss, i);
 		assert(is_Class_type(super) && "not a class");
-		for(j = 0; j < get_class_n_members(super); j++) {
+		for (j = 0; j < get_class_n_members(super); j++) {
 			inhent = get_class_member(super, j);
 			inhenttype = get_entity_type(inhent);
 			/* check whether inhent is already overwritten */
 			overwritten = 0;
 			for (k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {
 				thisent = get_class_member(clss, k);
-				for(l = 0; l < get_entity_n_overwrites(thisent); l++) {
-					if(inhent == get_entity_overwrites(thisent, l)) {
+				for (l = 0; l < get_entity_n_overwrites(thisent); l++) {
+					if (inhent == get_entity_overwrites(thisent, l)) {
 						/* overwritten - do not copy */
 						overwritten = 1;
 						break;
@@ -635,7 +635,7 @@ ir_class_cast_state get_irp_class_cast_state(void)
 const char *get_class_cast_state_string(ir_class_cast_state s)
 {
 #define X(a)    case a: return #a
-	switch(s) {
+	switch (s) {
 	X(ir_class_casts_any);
 	X(ir_class_casts_transitive);
 	X(ir_class_casts_normalized);

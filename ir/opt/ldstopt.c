@@ -1311,7 +1311,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 				ir_node *predvalue = get_Store_value(pred);
 				ir_mode *predmode  = get_irn_mode(predvalue);
 
-				if(is_completely_overwritten(predmode, mode)
+				if (is_completely_overwritten(predmode, mode)
 				        || is_partially_same(predvalue, value)) {
 					DBG_OPT_WAW(pred, store);
 					exchange(pred_info->projs[pn_Store_M], get_Store_mem(pred));
@@ -1331,7 +1331,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 			        && !info->projs[pn_Store_X_except]) {
 				ir_node *predvalue = get_Store_value(pred);
 
-				if(is_partially_same(value, predvalue)) {
+				if (is_partially_same(value, predvalue)) {
 					DBG_OPT_WAW(pred, store);
 					exchange(info->projs[pn_Store_M], mem);
 					kill_node(store);
@@ -1402,7 +1402,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 /** find entity used as base for an address calculation */
 static ir_entity *find_entity(ir_node *ptr)
 {
-	switch(get_irn_opcode(ptr)) {
+	switch (get_irn_opcode(ptr)) {
 	case iro_SymConst:
 		return get_SymConst_entity(ptr);
 	case iro_Sel: {
@@ -1627,7 +1627,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	for (i = n - 1; i >= 0; --i) {
 		ir_node *proj  = projMs[i];
 
-		if(is_Proj(proj)) {
+		if (is_Proj(proj)) {
 			ir_node *store = get_Proj_pred(proj);
 			exchange(proj, inM[i]);
 			kill_node(store);

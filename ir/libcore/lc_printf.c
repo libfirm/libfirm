@@ -61,7 +61,7 @@ static lc_arg_env_t *default_env = NULL;
 
 static inline lc_arg_env_t *_lc_arg_get_default_env(void)
 {
-	if(!default_env)
+	if (!default_env)
 		default_env = lc_arg_add_std(lc_arg_new_env());
 
 	return default_env;
@@ -104,18 +104,18 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 	arg.letter = letter;
 	arg.handler = handler;
 
-	if(isupper(letter)) {
+	if (isupper(letter)) {
 		map = env->upper;
 		base = 'A';
 	}
-	else if(islower(letter)) {
+	else if (islower(letter)) {
 		map = env->lower;
 		base = 'a';
 	}
 
 	ent = set_insert(env->args, &arg, sizeof(arg), HASH_STR(name, strlen(name)));
 
-	if(ent && base != 0)
+	if (ent && base != 0)
 		map[letter - base] = ent;
 
 	return ent != NULL;
@@ -131,7 +131,7 @@ int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str
 
 	/* Set the padding to zero, if the zero is given and we are not left
 	 * justified. (A minus overrides the zero). See printf(3). */
-	if(!occ->flag_minus && occ->flag_zero)
+	if (!occ->flag_minus && occ->flag_zero)
 		pad = '0';
 
 	return lc_appendable_snwadd(app, str, len, LC_MAX(0, occ->width), occ->flag_minus, pad);
@@ -143,7 +143,7 @@ static int dispatch_snprintf(char *buf, size_t len, const char *fmt,
 {
 	int res = 0;
 
-	switch(lc_arg_type) {
+	switch (lc_arg_type) {
 #define LC_ARG_TYPE(type,name) \
 		case lc_arg_type_ ## name: res = snprintf(buf, len, fmt, val->v_ ## name); break;
 #include "lc_printf_arg_types.def"
@@ -162,10 +162,10 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 	prec[0] = '\0';
 	width[0] = '\0';
 
-	if(occ->precision > 0)
+	if (occ->precision > 0)
 		snprintf(prec, sizeof(prec), ".%d", occ->precision);
 
-	if(occ->width > 0)
+	if (occ->width > 0)
 		snprintf(width, sizeof(width), "%d", occ->width);
 
 	assert(occ->modifier && "modifier must not be NULL");
@@ -234,7 +234,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 
 	make_fmt(fmt, sizeof(fmt), occ);
 
-	switch(occ->conversion) {
+	switch (occ->conversion) {
 
 		/* Store the number of written characters in the given
 		 * int pointer location */
@@ -318,7 +318,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 	/* Emit the text before the first % was found */
 	lc_appendable_snadd(app, fmt, (s ? s : last) - fmt);
 
-	while(s != NULL) {
+	while (s != NULL) {
 		lc_arg_occ_t occ;
 		lc_arg_value_t val;
 		const lc_arg_t *arg = NULL;
@@ -332,8 +332,8 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		memset(&occ, 0, sizeof(occ));
 
 		/* Eat all flags and set the corresponding flags in the occ struct */
-		for(++s; strchr("#0-+", *s); ++s) {
-			switch(*s) {
+		for (++s; strchr("#0-+", *s); ++s) {
+			switch (*s) {
 				case '#':
 					occ.flag_hash = 1;
 					break;
@@ -358,7 +358,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		occ.precision = -1;
 
 		/* read the precision if given */
-		if(*s == '.') {
+		if (*s == '.') {
 			int val;
 			s = read_int(s + 1, &val);
 
@@ -374,7 +374,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		 * - or some other character, which ends this format invalidly
 		 */
 		ch = *s;
-		switch(ch) {
+		switch (ch) {
 			case '%':
 				s++;
 				res += lc_appendable_chadd(app, '%');
@@ -384,9 +384,9 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					const char *named = ++s;
 
 					/* Read until the closing brace or end of the string. */
-					for(ch = *s; ch != '}' && ch != '\0'; ch = *++s);
+					for (ch = *s; ch != '}' && ch != '\0'; ch = *++s);
 
-					if(s - named) {
+					if (s - named) {
 						int n = s - named;
 						char *name;
 						lc_arg_t tmp;
@@ -402,14 +402,14 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 						/* Set the conversion specifier of the occurrence to the
 						 * letter specified in the argument description. */
-						if(arg)
+						if (arg)
 							occ.conversion = arg->letter;
 
 						free(name);
 
 						/* If we ended with a closing brace, move the current
 						 * pointer after it, since it is not to be dumped. */
-						if(ch == '}')
+						if (ch == '}')
 							s++;
 					}
 				}
@@ -420,17 +420,17 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					const char *mod = s;
 
 					/* Read, as long there are letters */
-					while(isalpha(ch) && !arg) {
+					while (isalpha(ch) && !arg) {
 						int base = 'a';
 						lc_arg_t * const *map = env->lower;
 
 						/* If uppercase, select the uppercase map from the environment */
-						if(isupper(ch)) {
+						if (isupper(ch)) {
 							base = 'A';
 							map = env->upper;
 						}
 
-						if(map[ch - base] != NULL) {
+						if (map[ch - base] != NULL) {
 							occ.modifier = mod;
 							occ.modifier_length = s - mod;
 							occ.conversion = ch;
@@ -443,7 +443,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 		}
 
 		/* Call the handler if an argument was determined */
-		if(arg != NULL && arg->handler != NULL) {
+		if (arg != NULL && arg->handler != NULL) {
 			const lc_arg_handler_t *handler = arg->handler;
 
 			/* Let the handler determine the type of the argument based on the
@@ -451,7 +451,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 			occ.lc_arg_type = handler->get_lc_arg_type(&occ);
 
 			/* Store the value according to argument information */
-			switch(occ.lc_arg_type) {
+			switch (occ.lc_arg_type) {
 #define LC_ARG_TYPE(type,name) case lc_arg_type_ ## name: val.v_ ## name = va_arg(args, type); break;
 #include "lc_printf_arg_types.def"
 #undef LC_ARG_TYPE

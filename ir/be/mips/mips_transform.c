@@ -105,15 +105,15 @@ static ir_node *try_create_Immediate(ir_node *node)
 	long      val;
 	ir_mode  *mode;
 
-	if(!is_Const(node))
+	if (!is_Const(node))
 		return NULL;
 
 	mode = get_irn_mode(node);
-	if(!mode_needs_gp_reg(mode))
+	if (!mode_needs_gp_reg(mode))
 		return NULL;
 
 	tv = get_Const_tarval(node);
-	if(tarval_is_long(tv)) {
+	if (tarval_is_long(tv)) {
 		val = get_tarval_long(tv);
 	} else {
 		ir_fprintf(stderr, "Optimisation Warning: tarval %+F is not a long?\n",
@@ -121,7 +121,7 @@ static ir_node *try_create_Immediate(ir_node *node)
 		return NULL;
 	}
 
-	if(val < -32768 || val > 32767)
+	if (val < -32768 || val > 32767)
 		return NULL;
 
 	return mips_create_Immediate(val);
@@ -132,13 +132,13 @@ static void create_binop_operands(ir_node **new_left, ir_node **new_right,
                                   int is_commutative)
 {
 	*new_right = try_create_Immediate(right);
-	if(*new_right != NULL) {
+	if (*new_right != NULL) {
 		*new_left = be_transform_node(left);
 		return;
 	}
-	if(is_commutative) {
+	if (is_commutative) {
 		*new_right = try_create_Immediate(left);
-		if(*new_right != NULL) {
+		if (*new_right != NULL) {
 			*new_left = be_transform_node(right);
 			return;
 		}
@@ -158,7 +158,7 @@ static ir_node *gen_binop(ir_node *node, ir_node *left, ir_node *right,
 
 	assert(mode_needs_gp_reg(get_irn_mode(node)));
 
-	if(supports_immediate) {
+	if (supports_immediate) {
 		int is_commutative = is_op_commutative(get_irn_op(node));
 		create_binop_operands(&new_left, &new_right, left, right,
 		                      is_commutative);
@@ -231,7 +231,7 @@ static ir_node *gen_Not(ir_node *node)
 	ir_node  *one;
 
 	/* we can transform not->or to nor */
-	if(is_Or(op)) {
+	if (is_Or(op)) {
 		return gen_binop(op, get_Or_left(op), get_Or_right(op),
 		                 new_bd_mips_nor, 1);
 	}
@@ -288,7 +288,7 @@ static ir_node* gen_Const(ir_node *node)
 	ir_node  *or_const;
 	unsigned long val, lower, upper;
 
-	if(tarval_is_long(tv)) {
+	if (tarval_is_long(tv)) {
 		val = get_tarval_long(tv);
 	} else {
 		panic("Can't get value of tarval %+F", node);
@@ -298,13 +298,13 @@ static ir_node* gen_Const(ir_node *node)
 
 	lower = val & 0xffff;
 	upper = (val >> 16) & 0xffff;
-	if(upper == 0) {
+	if (upper == 0) {
 		upper_node = mips_create_zero();
 	} else {
 		upper_node = new_bd_mips_lui(dbgi, block, MIPS_IMM_CONST, NULL, upper);
 	}
 
-	if(lower == 0)
+	if (lower == 0)
 		return upper_node;
 
 	or_const   = mips_create_Immediate(lower);
@@ -320,7 +320,7 @@ static ir_node* gen_SymConst(ir_node *node)
 	ir_entity *entity;
 	ir_node *lui, *or_const, *or;
 
-	if(get_SymConst_kind(node) != symconst_addr_ent) {
+	if (get_SymConst_kind(node) != symconst_addr_ent) {
 		panic("Only address entity symconsts supported in mips backend");
 	}
 
@@ -359,7 +359,7 @@ static ir_node *gen_Load(ir_node *node)
 
 	/* TODO: make use of offset in ptrs */
 
-	switch(get_mode_size_bits(mode)) {
+	switch (get_mode_size_bits(mode)) {
 	case 32:
 		func = new_bd_mips_lw;
 		break;
@@ -401,7 +401,7 @@ static ir_node *gen_Store(ir_node *node)
 
 	assert(mode_needs_gp_reg(mode));
 
-	switch(get_mode_size_bits(mode)) {
+	switch (get_mode_size_bits(mode)) {
 	case 32:
 		func = new_bd_mips_sw;
 		break;
@@ -432,9 +432,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 
 	assert(is_mips_div(new_div) || is_mips_divu(new_div));
 
-	switch(get_irn_opcode(divmod)) {
+	switch (get_irn_opcode(divmod)) {
 	case iro_Div:
-		switch(pn) {
+		switch (pn) {
 		case pn_Div_M:
 			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_Div_res:
@@ -444,7 +444,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 			break;
 		}
 	case iro_Mod:
-		switch(pn) {
+		switch (pn) {
 		case pn_Mod_M:
 			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_Mod_res:
@@ -455,7 +455,7 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 		}
 
 	case iro_DivMod:
-		switch(pn) {
+		switch (pn) {
 		case pn_Div_M:
 			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
 		case pn_DivMod_res_div:
@@ -481,13 +481,13 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	long      pn    = get_Proj_proj(node);
 	ir_graph *irg;
 
-	if(pn == pn_Start_X_initial_exec) {
+	if (pn == pn_Start_X_initial_exec) {
 		/* we exchange the projx with a jump */
 		ir_node *jump = new_rd_Jmp(dbgi, block);
 		return jump;
 	}
 	irg = get_irn_irg(node);
-	if(node == get_irg_anchor(irg, anchor_tls)) {
+	if (node == get_irg_anchor(irg, anchor_tls)) {
 		/* TODO... */
 		return be_duplicate_node(node);
 	}
@@ -499,7 +499,7 @@ static ir_node *gen_Proj(ir_node *node)
 	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);
 
-	switch(get_irn_opcode(pred)) {
+	switch (get_irn_opcode(pred)) {
 	case iro_Load:
 		break;
 	case iro_Store:
@@ -514,7 +514,7 @@ static ir_node *gen_Proj(ir_node *node)
 
 	default:
 		assert(get_irn_mode(node) != mode_T);
-		if(mode_needs_gp_reg(get_irn_mode(node))) {
+		if (mode_needs_gp_reg(get_irn_mode(node))) {
 			ir_node *new_pred = be_transform_node(pred);
 			ir_node *block    = be_transform_node(get_nodes_block(node));
 			long     pn       = get_Proj_proj(node);
@@ -535,7 +535,7 @@ static ir_node *gen_Phi(ir_node *node)
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *phi;
 
-	if(mode_needs_gp_reg(mode)) {
+	if (mode_needs_gp_reg(mode)) {
 		assert(get_mode_size_bits(mode) <= 32);
 		mode = mode_Iu;
 	}
@@ -572,7 +572,7 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 	mips_attr_t *attr;
 
 	// mode_b conds are handled by gen_node_for_Proj
-	if(get_mode_sort(selector_mode) != irms_int_number)
+	if (get_mode_sort(selector_mode) != irms_int_number)
 		return env->irn;
 
 	assert(get_mode_size_bits(selector_mode) == 32);
@@ -588,21 +588,21 @@ ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
 
 		pn = get_Proj_proj(proj);
-		if(pn == defaultprojn) {
+		if (pn == defaultprojn) {
 			defaultproj = proj;
 			continue;
 		}
 
-		if(pn < minval)
+		if (pn < minval)
 			minval = pn;
-		if(pn > maxval)
+		if (pn > maxval)
 			maxval = pn;
 	}
 	assert(defaultproj != NULL);
 
 	// subtract minval from the switch value
 
-	if(minval != 0) {
+	if (minval != 0) {
 		minval_const = new_rd_Const(dbg, irg, selector_mode, new_tarval_from_long(minval, selector_mode));
 		minval_const = gen_node_for_Const(env, dbg, irg, block, minval_const);
 		sub = new_bd_mips_sub(dbg, block, selector, minval_const);
@@ -672,7 +672,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 	/* TODO: use blez & co. when possible */
 
-	switch(pnc) {
+	switch (pnc) {
 	case pn_Cmp_False:
 	case pn_Cmp_True:
 	case pn_Cmp_Leg:
@@ -733,15 +733,15 @@ static ir_node *gen_Conv(ir_node *node)
 	assert(mode_needs_gp_reg(dst_mode));
 
 	/* we only need to do something on upconvs */
-	if(src_size >= dst_size) {
+	if (src_size >= dst_size) {
 		/* unnecessary conv */
 		return new_op;
 	}
 
-	if(mode_is_signed(src_mode)) {
-		if(src_size == 8) {
+	if (mode_is_signed(src_mode)) {
+		if (src_size == 8) {
 			res = new_bd_mips_seb(dbgi, block, new_op);
-		} else if(src_size == 16) {
+		} else if (src_size == 16) {
 			res = new_bd_mips_seh(dbgi, block, new_op);
 		} else {
 			panic("invalid conv %+F", node);
@@ -749,9 +749,9 @@ static ir_node *gen_Conv(ir_node *node)
 	} else {
 		ir_node *and_const;
 
-		if(src_size == 8) {
+		if (src_size == 8) {
 			and_const = mips_create_Immediate(0xff);
-		} else if(src_size == 16) {
+		} else if (src_size == 16) {
 			and_const = mips_create_Immediate(0xffff);
 		} else {
 			panic("invalid conv %+F", node);
@@ -771,7 +771,7 @@ static ir_node *create_div(ir_node *node, ir_node *left, ir_node *right,
 	ir_node  *new_right = be_transform_node(right);
 	ir_node  *res;
 
-	if(mode_is_signed(mode)) {
+	if (mode_is_signed(mode)) {
 		res = new_bd_mips_div(dbgi, block, new_left, new_right);
 	} else {
 		res = new_bd_mips_divu(dbgi, block, new_left, new_right);
@@ -816,7 +816,7 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env)
 	assert(get_mode_size_bits(get_irn_mode(op1)) == get_mode_size_bits(env->mode));
 	assert(get_mode_size_bits(get_irn_mode(op2)) == get_mode_size_bits(env->mode));
 
-	if(mode_is_signed(mode)) {
+	if (mode_is_signed(mode)) {
 		mul = new_bd_mips_mult(env->dbg, env->block, get_Mul_left(node), get_Mul_right(node));
 	} else {
 		mul = new_bd_mips_multu(env->dbg, env->block, get_Mul_left(node), get_Mul_right(node));
@@ -961,14 +961,14 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
 
 	// output store/loads manually
 	n = 0;
-	for(i = size; i > 0; ) {
+	for (i = size; i > 0; ) {
 		ir_mode *mode;
 		ir_node *load, *store, *projv;
 		int offset = size - i;
-		if(i >= 4) {
+		if (i >= 4) {
 			mode = mode_Iu;
 			i -= 4;
-		} else if(i >= 2) {
+		} else if (i >= 2) {
 			mode = mode_Hu;
 			i -= 2;
 		} else {
@@ -992,9 +992,9 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
 		n++;
 	}
 
-	if(n > 0) {
+	if (n > 0) {
 		result = new_r_Sync(irg, block, n, mm);
-	} else if(n == 1) {
+	} else if (n == 1) {
 		result = mm[0];
 	}
 
@@ -1006,11 +1006,11 @@ static void mips_fix_CopyB_Proj(mips_transform_env_t* env)
 	ir_node *node = env->irn;
 	long n = get_Proj_proj(node);
 
-	if(n == pn_CopyB_M_except) {
+	if (n == pn_CopyB_M_except) {
 		panic("Unsupported Proj from CopyB");
-	} else if(n == pn_CopyB_M_regular) {
+	} else if (n == pn_CopyB_M_regular) {
 		set_Proj_proj(node, pn_Store_M);
-	} else if(n == pn_CopyB_M_except) {
+	} else if (n == pn_CopyB_M_except) {
 		set_Proj_proj(node, pn_Store_X_except);
 	}
 }
@@ -1026,7 +1026,7 @@ static void mips_transform_Spill(mips_transform_env_t* env)
 	ir_node   *val   = get_irn_n(node, 1);
 	ir_entity *ent   = be_get_frame_entity(node);
 
-	if(sched_is_scheduled(node)) {
+	if (sched_is_scheduled(node)) {
 		sched_point = sched_prev(node);
 	}
 
@@ -1050,7 +1050,7 @@ static void mips_transform_Reload(mips_transform_env_t* env)
 	ir_entity *ent   = be_get_frame_entity(node);
 	const arch_register_t* reg;
 
-	if(sched_is_scheduled(node)) {
+	if (sched_is_scheduled(node)) {
 		sched_point = sched_prev(node);
 	}
 

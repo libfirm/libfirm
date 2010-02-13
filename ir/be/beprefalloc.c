@@ -1869,7 +1869,7 @@ static void determine_block_order(void)
 				}
 			}
 			block = best_pred;
-		} while(block != NULL && !Block_block_visited(block));
+		} while (block != NULL && !Block_block_visited(block));
 
 		/* now put all nodes in the worklist in our final order */
 		while (!pdeq_empty(worklist)) {
@@ -1923,7 +1923,7 @@ static void be_pref_alloc_cls(void)
 static void dump(int mask, ir_graph *irg, const char *suffix,
                  void (*dumper)(ir_graph *, const char *))
 {
-	if(birg->main_env->options->dump_flags & mask)
+	if (birg->main_env->options->dump_flags & mask)
 		be_dump(irg, suffix, dumper);
 }
 

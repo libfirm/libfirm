@@ -993,7 +993,7 @@ void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t
 				fail_char(old_str, len, str - old_str);
 			}
 		}
-	} /*  switch(state) */
+	} /*  switch (state) */
 
 done:
 	sc_val_from_str(mant_str, strlen(mant_str), _mant(result));
@@ -1239,7 +1239,7 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 		else
 			return fc_get_snan(desc, result);
 	}
-	else if(value->desc.clss == INF) {
+	else if (value->desc.clss == INF) {
 		if (value->sign == 0)
 			return fc_get_plusinf(desc, result);
 		else

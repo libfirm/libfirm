@@ -247,7 +247,7 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 		switch (*c) {
 		case '#':
 			/* 'comment' stuff */
-			while(*c != 0 && *c != ',')
+			while (*c != 0 && *c != ',')
 				++c;
 			break;
 		case '*':
@@ -438,7 +438,7 @@ static void be_done_env(be_main_env_t *env)
 static void dump(int mask, ir_graph *irg, const char *suffix,
                  void (*dumper)(ir_graph *, const char *))
 {
-	if(be_options.dump_flags & mask)
+	if (be_options.dump_flags & mask)
 		be_dump(irg, suffix, dumper);
 }
 
@@ -481,7 +481,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
 }
 
-#define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while(0)
+#define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while (0)
 
 int be_timing;
 
@@ -563,7 +563,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_info_init();
 
 	/* First: initialize all birgs */
-	for(i = 0; i < num_birgs; ++i) {
+	for (i = 0; i < num_birgs; ++i) {
 		ir_graph *irg = backend_irg_list ? backend_irg_list[i] : get_irp_irg(i);
 		initialize_birg(&birgs[i], irg, &env);
 	}

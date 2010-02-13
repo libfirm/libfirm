@@ -36,14 +36,14 @@ int lc_appendable_snwadd(lc_appendable_t *app, const char *str, size_t len,
 	int to_pad = width - len;
 
 	/* If not left justified, pad left */
-	for(i = 0; !left_just && i < to_pad; ++i)
+	for (i = 0; !left_just && i < to_pad; ++i)
 		res += lc_appendable_chadd(app, pad);
 
 	/* Send the visible portion of the string to the output. */
 	res += lc_appendable_snadd(app, str, len);
 
 	/* If left justified, pad right. */
-	for(i = 0; left_just && i < to_pad; ++i)
+	for (i = 0; left_just && i < to_pad; ++i)
 		res += lc_appendable_chadd(app, pad);
 
 	return res;
@@ -117,7 +117,7 @@ static int str_snadd(lc_appendable_t *obj, const char *str, size_t n)
 
 static int str_chadd(lc_appendable_t *obj, int ch)
 {
-	if(obj->limit - obj->written > 1) {
+	if (obj->limit - obj->written > 1) {
 		char *tgt = obj->obj;
 		tgt[obj->written++] = (char) ch;
 		return 1;

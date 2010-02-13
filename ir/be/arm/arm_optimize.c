@@ -77,7 +77,7 @@ void arm_gen_vals_from_word(unsigned int value, arm_vals *result)
 
 		value  >>= 8;
 		initial += 8;
-	} while(value != 0);
+	} while (value != 0);
 }
 
 /**

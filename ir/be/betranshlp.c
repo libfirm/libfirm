@@ -214,7 +214,7 @@ static void fix_loops(ir_node *node)
 		fix_loops(in);
 	}
 	/* fix proj block */
-	if(is_Proj(node)) {
+	if (is_Proj(node)) {
 		set_nodes_block(node, get_nodes_block(get_Proj_pred(node)));
 		changed = 1;
 	}
@@ -233,7 +233,7 @@ static void fix_loops(ir_node *node)
 		fix_loops(in);
 	}
 
-	if(changed) {
+	if (changed) {
 		identify_remember(current_ir_graph->value_table, node);
 	}
 }
@@ -257,7 +257,7 @@ static void kill_unused_anchor(int anchor)
 {
 	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
 	ir_node *old_bad         = get_irn_n(env.old_anchor, anchor_bad);
-	if(old_anchor_node != NULL && get_irn_n_edges(old_anchor_node) <= 1) {
+	if (old_anchor_node != NULL && get_irn_n_edges(old_anchor_node) <= 1) {
 		set_irn_n(env.old_anchor, anchor, old_bad);
 	}
 }

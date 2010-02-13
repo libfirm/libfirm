@@ -132,7 +132,7 @@ static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 {
 	ir_node *block, *res;
 
-	if(*place != NULL)
+	if (*place != NULL)
 		return *place;
 
 	block = get_irg_start_block(cg->irg);
@@ -674,7 +674,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 
 static ir_mode *get_spill_mode_mode(const ir_mode *mode)
 {
-	if(mode_is_float(mode))
+	if (mode_is_float(mode))
 		return mode_D;
 
 	return mode_Iu;
@@ -1115,11 +1115,11 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node)
 	}
 
 	/* No need to spill unknown values... */
-	if(is_ia32_Unknown_GP(val) ||
+	if (is_ia32_Unknown_GP(val) ||
 		is_ia32_Unknown_VFP(val) ||
 		is_ia32_Unknown_XMM(val)) {
 		store = nomem;
-		if(sched_point)
+		if (sched_point)
 			sched_remove(node);
 
 		exchange(node, store);
@@ -1229,7 +1229,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 	const ir_edge_t *next;
 
 	/* create Pushs */
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(inent);
@@ -1239,13 +1239,13 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 		ir_node *push;
 
 		/* work around cases where entities have different sizes */
-		if(entsize2 < entsize)
+		if (entsize2 < entsize)
 			entsize = entsize2;
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		push = create_push(cg, node, node, sp, mem, inent);
 		sp = create_spproj(node, push, pn_ia32_Push_stack);
-		if(entsize == 8) {
+		if (entsize == 8) {
 			/* add another push after the first one */
 			push = create_push(cg, node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
@@ -1256,7 +1256,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 	}
 
 	/* create pops */
-	for(i = arity - 1; i >= 0; --i) {
+	for (i = arity - 1; i >= 0; --i) {
 		ir_entity *inent = be_get_MemPerm_in_entity(node, i);
 		ir_entity *outent = be_get_MemPerm_out_entity(node, i);
 		ir_type *enttype = get_entity_type(outent);
@@ -1265,13 +1265,13 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 		ir_node *pop;
 
 		/* work around cases where entities have different sizes */
-		if(entsize2 < entsize)
+		if (entsize2 < entsize)
 			entsize = entsize2;
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
 		pop = create_pop(cg, node, node, sp, outent);
 		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
-		if(entsize == 8) {
+		if (entsize == 8) {
 			add_ia32_am_offs_int(pop, 4);
 
 			/* add another pop after the first one */
@@ -1299,7 +1299,7 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 
 	/* remove memperm */
 	arity = get_irn_arity(node);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		set_irn_n(node, i, new_Bad());
 	}
 	sched_remove(node);
@@ -1671,7 +1671,7 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	isa = XMALLOC(ia32_isa_t);
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
-	if(mode_fpcw == NULL) {
+	if (mode_fpcw == NULL) {
 		mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
 	}
 
@@ -1980,11 +1980,11 @@ int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 
-	if(!is_ia32_irn(irn)) {
+	if (!is_ia32_irn(irn)) {
 		return -1;
 	}
 
-	if(is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
+	if (is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
 		|| is_ia32_Unknown_GP(irn) || is_ia32_Unknown_XMM(irn)
 		|| is_ia32_Unknown_VFP(irn) || is_ia32_ChangeCW(irn)
 		|| is_ia32_Immediate(irn))

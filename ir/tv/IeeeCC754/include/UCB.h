@@ -1007,7 +1007,7 @@ void UCB<T>::Compare ( T &reslt )
       }
     } else {
       if ( reslt.sizeExp > 0 )  {
-        if  ( result.Sign( )  != reslt.Sign( ) ) {
+        if ( result.Sign( )  != reslt.Sign( ) ) {
           if (!result.IsZero( )  ) {
             logfile<<((ieeeVector) && !(ieee) ? "Warning " : "Error ") <<"Line "<<line<< ": Different sign"<< endl;
             check =0;

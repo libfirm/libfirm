@@ -74,7 +74,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	sched_foreach_reverse(block, irn) {
 		int cnt;
 
-		if(is_Phi(irn))
+		if (is_Phi(irn))
 			break;
 
 		be_liveness_transfer(cls, irn, &live_nodes);
@@ -84,7 +84,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 		env->insn_count++;
 	}
 
-	if(max_live > env->max_pressure)
+	if (max_live > env->max_pressure)
 		env->max_pressure = max_live;
 
 #ifdef FIRM_STATISTICS
@@ -162,7 +162,7 @@ static void node_stat_walker(ir_node *irn, void *data)
 	be_node_stats_t *const stats = data;
 
 	/* if the node is a normal phi */
-	if(is_Phi(irn)) {
+	if (is_Phi(irn)) {
 		if (get_irn_mode(irn) == mode_M) {
 			(*stats)[BE_STAT_MEM_PHIS]++;
 		} else {
@@ -171,15 +171,15 @@ static void node_stat_walker(ir_node *irn, void *data)
 	} else if (!is_Proj(irn)) {
 		arch_irn_class_t classify = arch_irn_classify(irn);
 
-		if(classify & arch_irn_class_spill)
+		if (classify & arch_irn_class_spill)
 			(*stats)[BE_STAT_SPILLS]++;
-		if(classify & arch_irn_class_reload)
+		if (classify & arch_irn_class_reload)
 			(*stats)[BE_STAT_RELOADS]++;
-		if(classify & arch_irn_class_remat)
+		if (classify & arch_irn_class_remat)
 			(*stats)[BE_STAT_REMATS]++;
-		if(classify & arch_irn_class_copy)
+		if (classify & arch_irn_class_copy)
 			(*stats)[BE_STAT_COPIES]++;
-		if(classify & arch_irn_class_perm)
+		if (classify & arch_irn_class_perm)
 			(*stats)[BE_STAT_PERMS]++;
 	}
 }
@@ -205,7 +205,7 @@ void be_copy_node_stats(be_node_stats_t *dest, be_node_stats_t *src)
 
 static const char *get_stat_name(enum be_stat_tag_t tag)
 {
-	switch(tag) {
+	switch (tag) {
 	case BE_STAT_PHIS:     return "phis";
 	case BE_STAT_MEM_PHIS: return "mem_phis";
 	case BE_STAT_COPIES:   return "copies";
@@ -234,7 +234,7 @@ static void insn_count_walker(ir_node *irn, void *data)
 {
 	unsigned long *cnt = data;
 
-	switch(get_irn_opcode(irn)) {
+	switch (get_irn_opcode(irn)) {
 	case iro_Proj:
 	case iro_Phi:
 	case beo_Start:

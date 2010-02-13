@@ -164,7 +164,7 @@ static void free_node_info(void)
 	int a = 0;
 	node_info *n;
 	n = link_node_state_list;
-	while(n) {
+	while (n) {
 		node_info *next = n->freelistnext;
 		++a;
 		xfree(n);
@@ -181,7 +181,7 @@ static void reset_node_infos(void)
 {
 	node_info *next;
 	next = link_node_state_list;
-	while(next->freelistnext) {
+	while (next->freelistnext) {
 		node_info *cur = next;
 		next = cur->freelistnext;
 		cur->copy = NULL;
@@ -264,9 +264,9 @@ int get_loop_n_blocks(ir_loop *loop)
 	int blocks = 0;
 	elements = get_loop_n_elements(loop);
 
-	for(e=0; e<elements; e++) {
+	for (e=0; e<elements; e++) {
 		loop_element elem = get_loop_element(loop, e);
-		if  (is_ir_node(elem.kind) && is_Block(elem.node))
+		if (is_ir_node(elem.kind) && is_Block(elem.node))
 			++blocks;
 	}
 	return blocks;
@@ -430,7 +430,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
-	for(i = 0; i < n_cfgpreds; ++i)
+	for (i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
@@ -446,7 +446,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 	mark_irn_visited(block);
 
 	/* set Phi predecessors */
-	for(i = 0; i < n_cfgpreds; ++i) {
+	for (i = 0; i < n_cfgpreds; ++i) {
 		ir_node *pred_val;
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		assert(pred_block != NULL);
@@ -574,7 +574,7 @@ static void construct_ssa_n(ir_node *def, ir_node *user)
 void construct_ssa_foreach(ir_node **arr, int arr_n)
 {
 	int i;
-	for(i = 0; i < arr_n; ++i) {
+	for (i = 0; i < arr_n; ++i) {
 		ir_node *cppred, *block, *cpblock, *pred;
 
 		pred = arr[i];
@@ -790,7 +790,7 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition, ir_loop *
 
 		set_nodes_block(cp, cpblock );
 		/* fix the phi information in attr.phis */
-		if( is_Phi(cp) )
+		if ( is_Phi(cp) )
 			add_Block_phi(cpblock, cp);
 	}
 
@@ -814,7 +814,7 @@ static void peel(out_edge *loop_outs)
 	/* duplicate loop walk */
 	inc_irg_visited(current_ir_graph);
 
-	for(i = 0; i < ARR_LEN(loop_outs); i++) {
+	for (i = 0; i < ARR_LEN(loop_outs); i++) {
 		out_edge entry = loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
@@ -840,7 +840,7 @@ static void peel(out_edge *loop_outs)
 
 	/* Generate phis for values from peeled code and original loop */
 	construct_ssa_foreach(entry_buffer, entry_c);
-	/*for(i = 0; i < entry_c; i++)
+	/*for (i = 0; i < entry_c; i++)
 	{
 		ir_node *cppred, *block, *cpblock, *pred;
 
@@ -865,7 +865,7 @@ static void get_head_outs(ir_node *node, void *env)
 
 	DB((dbg, LEVEL_5, "get head entries %ld \n", get_irn_node_nr(node)));
 
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		/* node is not in the head, but the predecessor is.
 		 * (head or loop chain nodes are marked) */
 
@@ -1055,7 +1055,7 @@ static void inversion_walk(out_edge *head_entries)
 
 	/* Find assignments in the condition chain, to construct_ssa for them after the loop inversion. */
 	for_each_phi(loop_cf_head , phi) {
-		for(i=0; i<get_irn_arity(phi); ++i) {
+		for (i=0; i<get_irn_arity(phi); ++i) {
 			ir_node *def = get_irn_n(phi, i);
 			if (is_nodesblock_marked(def)) {
 				ARR_APP1(ir_node *, head_phi_assign, def);
@@ -1070,7 +1070,7 @@ static void inversion_walk(out_edge *head_entries)
 	 **/
 	inc_irg_visited(current_ir_graph);
 
-	for(i = 0; i < ARR_LEN(head_entries); ++i) {
+	for (i = 0; i < ARR_LEN(head_entries); ++i) {
 		out_edge entry = head_entries[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
@@ -1277,7 +1277,7 @@ static ir_node *add_phi(ir_node *node, int phi_pos)
 
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
-	for(i = 0; i < n_cfgpreds; ++i)
+	for (i = 0; i < n_cfgpreds; ++i)
 		in[i] = new_Unknown(mode);  /*pred;*/
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
@@ -1314,7 +1314,7 @@ void loop_unrolling(void)
 	/* duplicate whole loop content */
 	inc_irg_visited(current_ir_graph);
 
-	for(i = 0; i < ARR_LEN(cur_loop_outs); i++) {
+	for (i = 0; i < ARR_LEN(cur_loop_outs); i++) {
 		out_edge entry = cur_loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
@@ -1329,7 +1329,7 @@ void loop_unrolling(void)
 		}
 	}
 
-	for(i = 0; i < ARR_LEN(cur_loop_outs); i++) {
+	for (i = 0; i < ARR_LEN(cur_loop_outs); i++) {
 		out_edge entry = cur_loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
@@ -1351,7 +1351,7 @@ void loop_unrolling(void)
 	unrolling_fix_cf();
 
 	/* Generate phis for all loop outs */
-	for(i = 0; i < ARR_LEN(cur_loop_outs); i++) {
+	for (i = 0; i < ARR_LEN(cur_loop_outs); i++) {
 		out_edge entry = cur_loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
@@ -1437,7 +1437,7 @@ static void find_most_inner_loop(ir_loop *loop)
 		}
 	} else {
 		int s;
-		for(s=0; s<sons; s++) {
+		for (s=0; s<sons; s++) {
 			find_most_inner_loop(get_loop_son(loop, s));
 		}
 	}

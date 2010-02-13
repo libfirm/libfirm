@@ -93,7 +93,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 	temp.node = def;
 	result = set_find(env->uses, &temp, sizeof(temp), hash);
 
-	if(result == NULL) {
+	if (result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
 		// call otherwise
 		temp.next_use = USES_INFINITY;
@@ -102,12 +102,12 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		result = set_insert(env->uses, &temp, sizeof(temp), hash);
 	}
 
-	if(result->outermost_loop < 0 && result->visited < env->visited_counter) {
+	if (result->outermost_loop < 0 && result->visited < env->visited_counter) {
 		be_next_use_t next_use;
 
 		result->visited = env->visited_counter;
 		next_use = get_next_use(env, sched_first(block), 0, def, 0);
-		if(next_use.outermost_loop >= 0) {
+		if (next_use.outermost_loop >= 0) {
 			result->next_use = next_use.time;
 			result->outermost_loop = next_use.outermost_loop;
 			DBG((env->dbg, LEVEL_5, "Setting nextuse of %+F in block %+F to %u (outermostloop %d)\n", def, block, result->next_use, result->outermost_loop));
@@ -137,11 +137,11 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	}
 
 	arity = get_Block_n_cfgpreds(succ_block);
-	if(arity <= 1)
+	if (arity <= 1)
 		return 0;
 
-	for(i = 0; i < arity; ++i) {
-		if(get_Block_cfgpred_block(succ_block, i) == block)
+	for (i = 0; i < arity; ++i) {
+		if (get_Block_cfgpred_block(succ_block, i) == block)
 			break;
 	}
 	assert(i < arity);
@@ -149,11 +149,11 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	sched_foreach(succ_block, node) {
 		ir_node *arg;
 
-		if(!is_Phi(node))
+		if (!is_Phi(node))
 			break;
 
 		arg = get_irn_n(node, i);
-		if(arg == def)
+		if (arg == def)
 			return 1;
 	}
 
@@ -180,7 +180,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 
 #if 1
 	assert(skip_from_uses == 0 || skip_from_uses == 1);
-	if(skip_from_uses) {
+	if (skip_from_uses) {
 		from = sched_next(from);
 	}
 
@@ -191,23 +191,23 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		ir_node  *node = get_edge_src_irn(edge);
 		unsigned  node_step;
 
-		if(is_Anchor(node))
+		if (is_Anchor(node))
 			continue;
-		if(get_nodes_block(node) != block)
+		if (get_nodes_block(node) != block)
 			continue;
-		if(is_Phi(node))
+		if (is_Phi(node))
 			continue;
 
 		node_step = get_step(node);
-		if(node_step < timestep)
+		if (node_step < timestep)
 			continue;
-		if(node_step < next_use_step) {
+		if (node_step < next_use_step) {
 			next_use      = node;
 			next_use_step = node_step;
 		}
 	}
 
-	if(next_use != NULL) {
+	if (next_use != NULL) {
 		be_next_use_t result;
 		result.time           = next_use_step - timestep + skip_from_uses;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
@@ -219,7 +219,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	step = get_step(node) + 1 + timestep + skip_from_uses;
 
 #else
-	if(skip_from_uses) {
+	if (skip_from_uses) {
 		from = sched_next(from);
 		++step;
 	}
@@ -227,7 +227,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	sched_foreach_from(from, node) {
 		int i, arity;
 
-		if(is_Phi(node)) {
+		if (is_Phi(node)) {
 			step++;
 			continue;
 		}
@@ -260,7 +260,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	}
 #endif
 
-	if(be_is_phi_argument(block, def)) {
+	if (be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
 		// as a phi isn't a real use that implies a reload (because we could
 		// easily spill the whole phi)
@@ -292,11 +292,11 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		ir_loop *succ_loop;
 		unsigned use_dist;
 
-		if(succ_block == startblock)
+		if (succ_block == startblock)
 			continue;
 
 		DBG((env->dbg, LEVEL_5, "Checking succ of block %+F: %+F (for use of %+F)\n", block, succ_block, def));
-		if(!be_is_live_in(env->lv, succ_block, def)) {
+		if (!be_is_live_in(env->lv, succ_block, def)) {
 			//next_use = USES_INFINITY;
 			DBG((env->dbg, LEVEL_5, "   not live in\n"));
 			continue;
@@ -305,8 +305,8 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		use = get_or_set_use_block(env, succ_block, def);
 		DBG((env->dbg, LEVEL_5, "Found %u (loopdepth %d) (we're in block %+F)\n", use->next_use,
 					use->outermost_loop, block));
-		if(USES_IS_INFINITE(use->next_use)) {
-			if(use->outermost_loop < 0) {
+		if (USES_IS_INFINITE(use->next_use)) {
+			if (use->outermost_loop < 0) {
 				found_visited = 1;
 			}
 			continue;
@@ -316,27 +316,27 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		use_dist = use->next_use;
 
 		succ_loop = get_irn_loop(succ_block);
-		if(get_loop_depth(succ_loop) < loopdepth) {
+		if (get_loop_depth(succ_loop) < loopdepth) {
 			unsigned factor = (loopdepth - get_loop_depth(succ_loop)) * 5000;
 			DBG((env->dbg, LEVEL_5, "Increase usestep because of loop out edge %d -> %d (%u)\n", factor));
 			// TODO we should use the number of nodes in the loop or so...
 			use_dist += factor;
 		}
 
-		if(use_dist < next_use) {
+		if (use_dist < next_use) {
 			next_use       = use_dist;
 			outermost_loop = use->outermost_loop;
 			result.before  = use->node;
 		}
 	}
 
-	if(loopdepth < outermost_loop)
+	if (loopdepth < outermost_loop)
 		outermost_loop = loopdepth;
 
 	result.time           = next_use + step;
 	result.outermost_loop = outermost_loop;
 
-	if(!found_use && found_visited) {
+	if (!found_use && found_visited) {
 		// the current result is correct for the current search, but isn't
 		// generally correct, so mark it
 		result.outermost_loop = -1;
@@ -366,7 +366,7 @@ void set_sched_step_walker(ir_node *block, void *data)
 
 	sched_foreach(block, node) {
 		set_irn_link(node, INT_TO_PTR(step));
-		if(is_Phi(node))
+		if (is_Phi(node))
 			continue;
 		++step;
 	}

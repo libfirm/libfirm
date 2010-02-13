@@ -254,7 +254,7 @@ static void peephole_ia32_Test(ir_node *node)
 			ir_node *user = get_edge_src_irn(edge);
 			int      pnc  = get_ia32_condcode(user);
 
-			if(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
+			if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
 				return;
 			}
 		}
@@ -797,12 +797,12 @@ static const arch_register_t *get_free_gp_reg(void)
 {
 	int i;
 
-	for(i = 0; i < N_ia32_gp_REGS; ++i) {
+	for (i = 0; i < N_ia32_gp_REGS; ++i) {
 		const arch_register_t *reg = &ia32_gp_regs[i];
-		if(arch_register_type_is(reg, ignore))
+		if (arch_register_type_is(reg, ignore))
 			continue;
 
-		if(be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
+		if (be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
 			return &ia32_gp_regs[i];
 	}
 
@@ -1041,26 +1041,26 @@ static void peephole_ia32_Lea(ir_node *node)
 	assert(is_ia32_Lea(node));
 
 	/* we can only do this if it is allowed to clobber the flags */
-	if(be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+	if (be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
 		return;
 
 	base  = get_irn_n(node, n_ia32_Lea_base);
 	index = get_irn_n(node, n_ia32_Lea_index);
 
-	if(is_noreg(cg, base)) {
+	if (is_noreg(cg, base)) {
 		base     = NULL;
 		base_reg = NULL;
 	} else {
 		base_reg = arch_get_irn_register(base);
 	}
-	if(is_noreg(cg, index)) {
+	if (is_noreg(cg, index)) {
 		index     = NULL;
 		index_reg = NULL;
 	} else {
 		index_reg = arch_get_irn_register(index);
 	}
 
-	if(base == NULL && index == NULL) {
+	if (base == NULL && index == NULL) {
 		/* we shouldn't construct these in the first place... */
 #ifdef DEBUG_libfirm
 		ir_fprintf(stderr, "Optimisation warning: found immediate only lea\n");
@@ -1073,7 +1073,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	assert(!is_ia32_need_stackent(node) || get_ia32_frame_ent(node) != NULL);
 	/* check if we have immediates values (frame entities should already be
 	 * expressed in the offsets) */
-	if(get_ia32_am_offs_int(node) != 0 || get_ia32_am_sc(node) != NULL) {
+	if (get_ia32_am_offs_int(node) != 0 || get_ia32_am_sc(node) != NULL) {
 		has_immediates = 1;
 	} else {
 		has_immediates = 0;
@@ -1081,10 +1081,10 @@ static void peephole_ia32_Lea(ir_node *node)
 
 	/* we can transform leas where the out register is the same as either the
 	 * base or index register back to an Add or Shl */
-	if(out_reg == base_reg) {
-		if(index == NULL) {
+	if (out_reg == base_reg) {
+		if (index == NULL) {
 #ifdef DEBUG_libfirm
-			if(!has_immediates) {
+			if (!has_immediates) {
 				ir_fprintf(stderr, "Optimisation warning: found lea which is "
 				           "just a copy\n");
 			}
@@ -1092,29 +1092,29 @@ static void peephole_ia32_Lea(ir_node *node)
 			op1 = base;
 			goto make_add_immediate;
 		}
-		if(scale == 0 && !has_immediates) {
+		if (scale == 0 && !has_immediates) {
 			op1 = base;
 			op2 = index;
 			goto make_add;
 		}
 		/* can't create an add */
 		return;
-	} else if(out_reg == index_reg) {
-		if(base == NULL) {
-			if(has_immediates && scale == 0) {
+	} else if (out_reg == index_reg) {
+		if (base == NULL) {
+			if (has_immediates && scale == 0) {
 				op1 = index;
 				goto make_add_immediate;
-			} else if(!has_immediates && scale > 0) {
+			} else if (!has_immediates && scale > 0) {
 				op1 = index;
 				op2 = ia32_immediate_from_long(scale);
 				goto make_shl;
-			} else if(!has_immediates) {
+			} else if (!has_immediates) {
 #ifdef DEBUG_libfirm
 				ir_fprintf(stderr, "Optimisation warning: found lea which is "
 				           "just a copy\n");
 #endif
 			}
-		} else if(scale == 0 && !has_immediates) {
+		} else if (scale == 0 && !has_immediates) {
 			op1 = index;
 			op2 = base;
 			goto make_add;
@@ -1127,15 +1127,15 @@ static void peephole_ia32_Lea(ir_node *node)
 	}
 
 make_add_immediate:
-	if(ia32_cg_config.use_incdec) {
-		if(is_am_one(node)) {
+	if (ia32_cg_config.use_incdec) {
+		if (is_am_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
 			res   = new_bd_ia32_Inc(dbgi, block, op1);
 			arch_set_irn_register(res, out_reg);
 			goto exchange;
 		}
-		if(is_am_minus_one(node)) {
+		if (is_am_minus_one(node)) {
 			dbgi  = get_irn_dbg_info(node);
 			block = get_nodes_block(node);
 			res   = new_bd_ia32_Dec(dbgi, block, op1);
@@ -1274,7 +1274,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
  */
 static inline void try_kill(ir_node *node)
 {
-	if(get_irn_mode(node) == mode_T) {
+	if (get_irn_mode(node) == mode_T) {
 		const ir_edge_t *edge, *next;
 		foreach_out_edge_safe(node, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
@@ -1282,7 +1282,7 @@ static inline void try_kill(ir_node *node)
 		}
 	}
 
-	if(get_irn_n_edges(node) != 0)
+	if (get_irn_n_edges(node) != 0)
 		return;
 
 	if (sched_is_scheduled(node)) {
@@ -1299,32 +1299,32 @@ static void optimize_conv_store(ir_node *node)
 	ir_mode *conv_mode;
 	ir_mode *store_mode;
 
-	if(!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
+	if (!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
 		return;
 
 	assert(n_ia32_Store_val == n_ia32_Store8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Store_val);
-	if(is_Proj(pred_proj)) {
+	if (is_Proj(pred_proj)) {
 		pred = get_Proj_pred(pred_proj);
 	} else {
 		pred = pred_proj;
 	}
-	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+	if (!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
-	if(get_ia32_op_type(pred) != ia32_Normal)
+	if (get_ia32_op_type(pred) != ia32_Normal)
 		return;
 
 	/* the store only stores the lower bits, so we only need the conv
 	 * it it shrinks the mode */
 	conv_mode  = get_ia32_ls_mode(pred);
 	store_mode = get_ia32_ls_mode(node);
-	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
+	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(store_mode))
 		return;
 
 	set_irn_n(node, n_ia32_Store_val, get_irn_n(pred, n_ia32_Conv_I2I_val));
-	if(get_irn_n_edges(pred_proj) == 0) {
+	if (get_irn_n_edges(pred_proj) == 0) {
 		kill_node(pred_proj);
-		if(pred != pred_proj)
+		if (pred != pred_proj)
 			kill_node(pred);
 	}
 }
@@ -1340,25 +1340,25 @@ static void optimize_load_conv(ir_node *node)
 
 	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
 	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
-	if(!is_Proj(pred))
+	if (!is_Proj(pred))
 		return;
 
 	predpred = get_Proj_pred(pred);
-	if(!is_ia32_Load(predpred))
+	if (!is_ia32_Load(predpred))
 		return;
 
 	/* the load is sign extending the upper bits, so we only need the conv
 	 * if it shrinks the mode */
 	load_mode = get_ia32_ls_mode(predpred);
 	conv_mode = get_ia32_ls_mode(node);
-	if(get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
+	if (get_mode_size_bits(conv_mode) < get_mode_size_bits(load_mode))
 		return;
 
-	if(get_mode_sign(conv_mode) != get_mode_sign(load_mode)) {
+	if (get_mode_sign(conv_mode) != get_mode_sign(load_mode)) {
 		/* change the load if it has only 1 user */
-		if(get_irn_n_edges(pred) == 1) {
+		if (get_irn_n_edges(pred) == 1) {
 			ir_mode *newmode;
-			if(get_mode_sign(conv_mode)) {
+			if (get_mode_sign(conv_mode)) {
 				newmode = find_signed_mode(load_mode);
 			} else {
 				newmode = find_unsigned_mode(load_mode);
@@ -1387,12 +1387,12 @@ static void optimize_conv_conv(ir_node *node)
 
 	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
-	if(is_Proj(pred_proj))
+	if (is_Proj(pred_proj))
 		pred = get_Proj_pred(pred_proj);
 	else
 		pred = pred_proj;
 
-	if(!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
+	if (!is_ia32_Conv_I2I(pred) && !is_ia32_Conv_I2I8Bit(pred))
 		return;
 
 	/* we know that after a conv, the upper bits are sign extended
@@ -1402,13 +1402,13 @@ static void optimize_conv_conv(ir_node *node)
 	pred_mode      = get_ia32_ls_mode(pred);
 	pred_mode_bits = get_mode_size_bits(pred_mode);
 
-	if(conv_mode_bits == pred_mode_bits
+	if (conv_mode_bits == pred_mode_bits
 			&& get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
 		result_conv = pred_proj;
-	} else if(conv_mode_bits <= pred_mode_bits) {
+	} else if (conv_mode_bits <= pred_mode_bits) {
 		/* if 2nd conv is smaller then first conv, then we can always take the
 		 * 2nd conv */
-		if(get_irn_n_edges(pred_proj) == 1) {
+		if (get_irn_n_edges(pred_proj) == 1) {
 			result_conv = pred_proj;
 			set_ia32_ls_mode(pred, conv_mode);
 
@@ -1419,7 +1419,7 @@ static void optimize_conv_conv(ir_node *node)
 			}
 		} else {
 			/* we don't want to end up with 2 loads, so we better do nothing */
-			if(get_irn_mode(pred) == mode_T) {
+			if (get_irn_mode(pred) == mode_T) {
 				return;
 			}
 
@@ -1434,11 +1434,11 @@ static void optimize_conv_conv(ir_node *node)
 		}
 	} else {
 		/* if both convs have the same sign, then we can take the smaller one */
-		if(get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
+		if (get_mode_sign(conv_mode) == get_mode_sign(pred_mode)) {
 			result_conv = pred_proj;
 		} else {
 			/* no optimisation possible if smaller conv is sign-extend */
-			if(mode_is_signed(pred_mode)) {
+			if (mode_is_signed(pred_mode)) {
 				return;
 			}
 			/* we can take the smaller conv if it is unsigned */
@@ -1452,9 +1452,9 @@ static void optimize_conv_conv(ir_node *node)
 	/* kill the conv */
 	exchange(node, result_conv);
 
-	if(get_irn_n_edges(pred_proj) == 0) {
+	if (get_irn_n_edges(pred_proj) == 0) {
 		kill_node(pred_proj);
-		if(pred != pred_proj)
+		if (pred != pred_proj)
 			kill_node(pred);
 	}
 	optimize_conv_conv(result_conv);

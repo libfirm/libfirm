@@ -997,7 +997,7 @@ void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call_t *abi
 int arm_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
-	if(!is_arm_irn(irn))
+	if (!is_arm_irn(irn))
 		return -1;
 
 	return 1;

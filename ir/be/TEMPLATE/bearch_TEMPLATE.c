@@ -217,7 +217,7 @@ static arch_env_t *TEMPLATE_init(FILE *outfile)
 	static int run_once = 0;
 	TEMPLATE_isa_t *isa;
 
-	if(run_once)
+	if (run_once)
 		return NULL;
 	run_once = 1;
 
@@ -305,7 +305,7 @@ static ir_type *TEMPLATE_get_between_type(void *self)
 	static ir_entity *old_bp_ent = NULL;
 	(void) self;
 
-	if(!between_type) {
+	if (!between_type) {
 		ir_entity *ret_addr_ent;
 		ir_type *ret_addr_type = new_type_primitive(mode_P);
 		ir_type *old_bp_type   = new_type_primitive(mode_P);
@@ -333,7 +333,7 @@ static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
 	(void) mem;
 	(void) stack_bias;
 
-	if(env->flags.try_omit_fp)
+	if (env->flags.try_omit_fp)
 		return env->arch_env->sp;
 	return env->arch_env->bp;
 }
@@ -407,7 +407,7 @@ int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 
-	if(!is_TEMPLATE_irn(irn))
+	if (!is_TEMPLATE_irn(irn))
 		return -1;
 
 	return 1;

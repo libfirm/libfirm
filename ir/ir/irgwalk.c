@@ -591,7 +591,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
 
 		if (pre) pre(node, env);
 
-		for(i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
+		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
 			/* find the corresponding predecessor block. */
 			ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
 			pred = get_nodes_block(pred);
@@ -684,7 +684,7 @@ typedef struct walk_env {
 
 static void walk_initializer(ir_initializer_t *initializer, walk_env *env)
 {
-	switch(initializer->kind) {
+	switch (initializer->kind) {
     case IR_INITIALIZER_CONST:
     	irg_walk(initializer->consti.value, env->pre, env->post, env->env);
         return;
@@ -694,7 +694,7 @@ static void walk_initializer(ir_initializer_t *initializer, walk_env *env)
 
     case IR_INITIALIZER_COMPOUND: {
         size_t i;
-        for(i = 0; i < initializer->compound.n_initializers; ++i) {
+        for (i = 0; i < initializer->compound.n_initializers; ++i) {
             ir_initializer_t *subinitializer
                 = initializer->compound.initializers[i];
             walk_initializer(subinitializer, env);

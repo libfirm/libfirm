@@ -142,7 +142,7 @@ static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 
 static inline void _time_get(ir_timer_val_t *val)
 {
-	if(!QueryPerformanceCounter(&val->hi_prec))
+	if (!QueryPerformanceCounter(&val->hi_prec))
 		val->lo_prec = timeGetTime();
 }
 
@@ -155,7 +155,7 @@ static inline unsigned long _time_to_msec(const ir_timer_val_t *elapsed)
 {
 	LARGE_INTEGER freq;
 
-	if(!QueryPerformanceFrequency(&freq))
+	if (!QueryPerformanceFrequency(&freq))
 		return (unsigned long) elapsed->lo_prec;
 
 	return (unsigned long) ((elapsed->hi_prec.QuadPart * 1000) / freq.QuadPart);
@@ -165,7 +165,7 @@ static inline unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
 {
 	LARGE_INTEGER freq;
 
-	if(!QueryPerformanceFrequency(&freq))
+	if (!QueryPerformanceFrequency(&freq))
 		return (unsigned long) elapsed->lo_prec;
 
 	return (unsigned long) ((elapsed->hi_prec.QuadPart * 1000000) / freq.QuadPart);
@@ -174,7 +174,7 @@ static inline unsigned long _time_to_usec(const ir_timer_val_t *elapsed)
 static inline ir_timer_val_t *_time_add(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	LARGE_INTEGER dummy;
-	if(QueryPerformanceFrequency(&dummy))
+	if (QueryPerformanceFrequency(&dummy))
 		res->hi_prec.QuadPart = lhs->hi_prec.QuadPart + rhs->hi_prec.QuadPart;
 	else
 		res->lo_prec = lhs->lo_prec + rhs->lo_prec;
@@ -185,7 +185,7 @@ static inline ir_timer_val_t *_time_add(ir_timer_val_t *res, const ir_timer_val_
 static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res, const ir_timer_val_t *lhs, const ir_timer_val_t *rhs)
 {
 	LARGE_INTEGER dummy;
-	if(QueryPerformanceFrequency(&dummy))
+	if (QueryPerformanceFrequency(&dummy))
 		res->hi_prec.QuadPart = lhs->hi_prec.QuadPart - rhs->hi_prec.QuadPart;
 	else
 		res->lo_prec = lhs->lo_prec - rhs->lo_prec;
@@ -210,7 +210,7 @@ int ir_timer_enter_high_priority(void)
 	struct sched_param p;
 	int res, max, algo;
 
-	if(!std_sched_param_init) {
+	if (!std_sched_param_init) {
 		res = sched_getparam(pid, &std_sched_param);
 		std_sched_param_init = 1;
 	}
@@ -230,7 +230,7 @@ int ir_timer_leave_high_priority(void)
 	int res   = 0;
 	pid_t pid = getpid();
 
-	if(std_sched_param_init)
+	if (std_sched_param_init)
 		res = sched_setparam(pid, &std_sched_param);
 
 	return res;
@@ -243,7 +243,7 @@ static int initial_priority = THREAD_PRIORITY_NORMAL;
 int ir_timer_leave_high_priority(void)
 {
 	int res = 0;
-	if(!SetThreadPriority(GetCurrentThread(), initial_priority)) {
+	if (!SetThreadPriority(GetCurrentThread(), initial_priority)) {
 		fprintf(stderr, "Failed to leave high priority (%d)\n", GetLastError());
 		res = GetLastError();
 	}
@@ -255,7 +255,7 @@ int ir_timer_enter_high_priority(void)
 {
 	int res = 0;
 	initial_priority = GetThreadPriority(GetCurrentThread());
-	if(!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST)) {
+	if (!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST)) {
 		fprintf(stderr, "Failed to enter high priority (%d)\n", GetLastError());
 		res = GetLastError();
 	}
@@ -299,7 +299,7 @@ size_t ir_get_heap_used_bytes(void)
 	int heapstatus;
 	size_t res = 0;
 	hinfo._pentry = NULL;
-	while((heapstatus = _heapwalk(&hinfo)) == _HEAPOK)
+	while ((heapstatus = _heapwalk(&hinfo)) == _HEAPOK)
 		res += hinfo._useflag == _USEDENTRY ? hinfo._size : 0;
 	return res;
 }
@@ -341,7 +341,7 @@ void ir_timer_stop(ir_timer_t *timer)
 {
 	/* If the timer is running stop, measure the time and add it to the
 	 * elapsed time. */
-	if(timer->running) {
+	if (timer->running) {
 		ir_timer_val_t val;
 		ir_timer_val_t tgt;
 
@@ -384,7 +384,7 @@ unsigned long ir_timer_elapsed_msec(const ir_timer_t *timer)
 	ir_timer_val_t v;
 	const ir_timer_val_t *elapsed = &timer->elapsed;
 
-	if(timer->running) {
+	if (timer->running) {
 		elapsed = &v;
 		_time_get(&v);
 		_time_add(&v, &timer->elapsed, _time_sub(&v, &v, &timer->start));
@@ -397,7 +397,7 @@ unsigned long ir_timer_elapsed_usec(const ir_timer_t *timer)
 	ir_timer_val_t v;
 	const ir_timer_val_t *elapsed = &timer->elapsed;
 
-	if(timer->running) {
+	if (timer->running) {
 		elapsed = &v;
 		_time_get(&v);
 		_time_add(&v, &timer->elapsed, _time_sub(&v, &v, &timer->start));

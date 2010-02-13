@@ -78,7 +78,7 @@ static int cmp_usage(const void *a, const void *b)
 	* One of them is live at the end of the block.
 	* Then, that one shall be scheduled at after the other
 	*/
-	if(res != 0)
+	if (res != 0)
 		return res;
 
 
@@ -90,7 +90,7 @@ static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t 
 {
 	usage_stats_t *us = get_irn_link(irn);
 
-	if(!us) {
+	if (!us) {
 		us                   = OALLOC(&env->obst, usage_stats_t);
 		us->irn              = irn;
 		us->already_consumed = 0;
@@ -117,20 +117,20 @@ static int max_hops_walker(reg_pressure_selector_env_t *env, ir_node *irn, ir_no
 	* If the reached node is not in the block desired,
 	* return the value passed for this situation.
 	*/
-	if(get_nodes_block(irn) != bl)
+	if (get_nodes_block(irn) != bl)
 		return block_dominates(bl, curr_bl) ? 0 : INT_MAX;
 
 	/*
 	* If the node is in the current block but not
 	* yet scheduled, we keep on searching from that node.
 	*/
-	if(!ir_nodeset_contains(&env->already_scheduled, irn)) {
+	if (!ir_nodeset_contains(&env->already_scheduled, irn)) {
 		int i, n;
 		int res = 0;
-		for(i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
+		for (i = 0, n = get_irn_ins_or_deps(irn); i < n; ++i) {
 			ir_node *operand = get_irn_in_or_dep(irn, i);
 
-			if(get_irn_visited(operand) < visited_nr) {
+			if (get_irn_visited(operand) < visited_nr) {
 				int tmp;
 
 				set_irn_visited(operand, visited_nr);
@@ -185,7 +185,7 @@ static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void
 {
 	int res = -1;
 
-	if(sel->to_appear_in_schedule)
+	if (sel->to_appear_in_schedule)
 		res = sel->to_appear_in_schedule(block_env, irn);
 
 	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_Start(irn));
@@ -205,15 +205,15 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	* Collect usage statistics.
 	*/
 	sched_foreach(bl, irn) {
-		if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
+		if (must_appear_in_schedule(env->main_env->vtab, env, irn)) {
 			int i, n;
 
-			for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				//ir_node *op = get_irn_n(irn, i);
-				if(must_appear_in_schedule(env->main_env->vtab, env, irn)) {
+				if (must_appear_in_schedule(env->main_env->vtab, env, irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
 #if 0 /* Liveness is not computed here! */
-					if(is_live_end(bl, op))
+					if (is_live_end(bl, op))
 						us->uses_in_block = 99999;
 					else
 #endif
@@ -231,7 +231,7 @@ static void reg_pressure_block_free(void *block_env)
 	reg_pressure_selector_env_t *env = block_env;
 	usage_stats_t *us;
 
-	for(us = env->root; us; us = us->next)
+	for (us = env->root; us; us = us->next)
 		set_irn_link(us->irn, NULL);
 
 	obstack_free(&env->obst, NULL);
@@ -242,14 +242,14 @@ static void reg_pressure_block_free(void *block_env)
 static int get_result_hops_sum(reg_pressure_selector_env_t *env, ir_node *irn)
 {
 	int res = 0;
-	if(get_irn_mode(irn) == mode_T) {
+	if (get_irn_mode(irn) == mode_T) {
 		const ir_edge_t *edge;
 
 		foreach_out_edge(irn, edge)
 			res += get_result_hops_sum(env, get_edge_src_irn(edge));
 	}
 
-	else if(mode_is_data(get_irn_mode(irn)))
+	else if (mode_is_data(get_irn_mode(irn)))
 		res = compute_max_hops(env, irn);
 
 
@@ -261,10 +261,10 @@ static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	int i, n;
 	int sum = 0;
 
-	for(i = 0, n = get_irn_arity(irn); i < n; ++i) {
+	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if(must_appear_in_schedule(env->main_env->vtab, env, op))
+		if (must_appear_in_schedule(env->main_env->vtab, env, op))
 			sum += compute_max_hops(env, op);
 	}
 
@@ -285,7 +285,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 	assert(ir_nodeset_size(ready_set) > 0);
 
 	ir_nodeset_iterator_init(&iter, ready_set);
-	while( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
+	while ( (irn = ir_nodeset_iterator_next(&iter)) != NULL) {
 		/*
 		Ignore branch instructions for the time being.
 		They should only be scheduled if there is nothing else.
@@ -304,7 +304,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 	Take it and finish.
 	*/
 
-	if(!res) {
+	if (!res) {
 		ir_nodeset_iterator_init(&iter, ready_set);
 		res = ir_nodeset_iterator_next(&iter);
 

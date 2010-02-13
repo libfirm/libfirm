@@ -410,9 +410,9 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 	unsafe       = ALLOCAN(ir_node*, ou->node_count - 1);
 	unsafe_costs = ALLOCAN(int,      ou->node_count - 1);
 	unsafe_count = 0;
-	for(i=1; i<ou->node_count; ++i) {
+	for (i=1; i<ou->node_count; ++i) {
 		int is_safe = 1;
-		for(o=1; o<ou->node_count; ++o) {
+		for (o=1; o<ou->node_count; ++o) {
 			if (qnode_are_conflicting(qn, ou->nodes[i], ou->nodes[o])) {
 				if (i!=o) {
 					unsafe_costs[unsafe_count] = ou->costs[i];

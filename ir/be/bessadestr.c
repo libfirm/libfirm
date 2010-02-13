@@ -116,11 +116,11 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 	assert(is_Block(bl));
 
 	/* If the link flag is NULL, this block has no phis. */
-	if(!get_irn_link(bl))
+	if (!get_irn_link(bl))
 		return;
 
 	/* Look at all predecessors of the phi block */
-	for(i = 0, n = get_irn_arity(bl); i < n; ++i) {
+	for (i = 0, n = get_irn_arity(bl); i < n; ++i) {
 		ir_node *phi, *perm, *insert_after, **in;
 		perm_proj_t *pp;
 		set *arg_set     = new_set(cmp_perm_proj, chordal_env->cls->n_regs);
@@ -133,7 +133,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 		 * Note that all phis in the list are in the same
 		 * register class by construction.
 		 */
-		for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+		for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 			ir_node                   *arg = get_irn_n(phi, i);
 			const arch_register_req_t *req = arch_get_register_req_out(arg);
 			unsigned                   hash;
@@ -153,7 +153,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * interferes with the phi and must thus not be member of a
 			 * Perm. A copy will be inserted for this argument later on.
 			 */
-			if(!pp && !be_is_live_in(lv, bl, arg)) {
+			if (!pp && !be_is_live_in(lv, bl, arg)) {
 				templ.pos = n_projs++;
 				set_insert(arg_set, &templ, sizeof(templ), hash);
 			}
@@ -166,7 +166,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * above in the arg_set and insert it into the schedule.
 			 */
 			in = XMALLOCN(ir_node*, n_projs);
-			for(pp = set_first(arg_set); pp; pp = set_next(arg_set))
+			for (pp = set_first(arg_set); pp; pp = set_next(arg_set))
 				in[pp->pos] = pp->arg;
 
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
@@ -181,7 +181,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * arguments to the projs (new phi arguments).
 			 */
 			insert_after = perm;
-			for(pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
+			for (pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
 				ir_node *proj = new_r_Proj(pred_bl, perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(get_reg(pp->arg));
@@ -193,7 +193,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			/*
 			 * Set the phi nodes to their new arguments: The Projs of the Perm
 			 */
-			for(phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+			for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 				perm_proj_t templ;
 
 				templ.arg = get_irn_n(phi, i);
@@ -318,7 +318,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 
 				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
 
-				for(other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
+				for (other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
 
 					assert(is_Phi(other_phi)                               &&
 						get_nodes_block(phi) == get_nodes_block(other_phi) &&
@@ -361,7 +361,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
 				/* skip the Perm's Projs and insert the copies behind. */
-				for(ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins));
+				for (ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins));
 				sched_add_before(ins, dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);

@@ -91,9 +91,9 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 	ir_node *spill = NULL;
 
 	/* we don't spill the fpcw in unsafe mode */
-	if(ia32_cg_config.use_unsafe_floatconv) {
+	if (ia32_cg_config.use_unsafe_floatconv) {
 		ir_node *block = get_nodes_block(state);
-		if(force == 1 || !is_ia32_ChangeCW(state)) {
+		if (force == 1 || !is_ia32_ChangeCW(state)) {
 			ir_node *spill = new_bd_ia32_FnstCWNOP(NULL, block, state);
 			sched_add_after(after, spill);
 			return spill;
@@ -101,7 +101,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		return NULL;
 	}
 
-	if(force == 1 || !is_ia32_ChangeCW(state)) {
+	if (force == 1 || !is_ia32_ChangeCW(state)) {
 		ir_graph *irg = get_irn_irg(state);
 		ir_node *block = get_nodes_block(state);
 		ir_node *noreg = ia32_new_NoReg_gp(cg);
@@ -148,11 +148,11 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 	ir_node         *noreg = ia32_new_NoReg_gp(cg);
 	ir_node         *reload = NULL;
 
-	if(ia32_cg_config.use_unsafe_floatconv) {
-		if(fpcw_round == NULL) {
+	if (ia32_cg_config.use_unsafe_floatconv) {
+		if (fpcw_round == NULL) {
 			create_fpcw_entities();
 		}
-		if(spill != NULL) {
+		if (spill != NULL) {
 			reload = create_fldcw_ent(cg, block, fpcw_round);
 		} else {
 			reload = create_fldcw_ent(cg, block, fpcw_truncate);
@@ -161,7 +161,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		return reload;
 	}
 
-	if(spill != NULL) {
+	if (spill != NULL) {
 		reload = new_bd_ia32_FldCW(NULL, block, frame, noreg, spill);
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
@@ -228,11 +228,11 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 	collect_fpu_mode_nodes_env_t *env = data;
 	const arch_register_t *reg;
 
-	if(!mode_is_data(get_irn_mode(node)))
+	if (!mode_is_data(get_irn_mode(node)))
 		return;
 
 	reg = arch_get_irn_register(node);
-	if(reg == &ia32_fp_cw_regs[REG_FPCW] && !is_ia32_ChangeCW(node)) {
+	if (reg == &ia32_fp_cw_regs[REG_FPCW] && !is_ia32_ChangeCW(node)) {
 		ARR_APP1(ir_node*, env->state_nodes, node);
 	}
 }
@@ -259,7 +259,7 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	 * loops noone is using the initial_value and it will point to a bad node
 	 * now
 	 */
-	if(ARR_LEN(env.state_nodes) == 0) {
+	if (ARR_LEN(env.state_nodes) == 0) {
 		DEL_ARR_F(env.state_nodes);
 		return;
 	}
@@ -269,11 +269,11 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	                               ARR_LEN(env.state_nodes));
 	be_ssa_construction_fix_users(&senv, initial_value);
 
-	if(lv != NULL) {
+	if (lv != NULL) {
 		be_ssa_construction_update_liveness_phis(&senv, lv);
 		be_liveness_update(lv, initial_value);
 		len = ARR_LEN(env.state_nodes);
-		for(i = 0; i < len; ++i) {
+		for (i = 0; i < len; ++i) {
 			be_liveness_update(lv, env.state_nodes[i]);
 		}
 	} else {
@@ -283,7 +283,7 @@ void rewire_fpu_mode_nodes(be_irg_t *birg)
 	/* set registers for the phis */
 	phis = be_ssa_construction_get_new_phis(&senv);
 	len = ARR_LEN(phis);
-	for(i = 0; i < len; ++i) {
+	for (i = 0; i < len; ++i) {
 		ir_node *phi = phis[i];
 		arch_set_irn_register(phi, reg);
 	}

@@ -978,7 +978,7 @@ ir_visited_t inc_max_irg_visited(void)
 {
 #ifndef NDEBUG
 	int i;
-	for(i = 0; i < get_irp_n_irgs(); i++)
+	for (i = 0; i < get_irp_n_irgs(); i++)
 		assert(max_irg_visited >= get_irg_visited(get_irp_irg(i)));
 #endif
 	return ++max_irg_visited;

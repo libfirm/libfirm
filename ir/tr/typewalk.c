@@ -60,7 +60,7 @@ static void walk_initializer(ir_initializer_t *initializer,
                              type_walk_func *pre, type_walk_func *post,
                              void *env)
 {
-	switch(initializer->kind) {
+	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST:
 		irn_type_walker(initializer->consti.value, pre, post, env);
 		return;
@@ -70,7 +70,7 @@ static void walk_initializer(ir_initializer_t *initializer,
 
 	case IR_INITIALIZER_COMPOUND: {
 		size_t i;
-		for(i = 0; i < initializer->compound.n_initializers; ++i) {
+		for (i = 0; i < initializer->compound.n_initializers; ++i) {
 			ir_initializer_t *subinitializer
 				= initializer->compound.initializers[i];
 			walk_initializer(subinitializer, pre, post, env);
@@ -287,13 +287,13 @@ void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
 		do_type_walk(cont, pre, post, env);
 
 		cont.typ = get_method_value_param_type(get_entity_type(get_irg_entity(irg)));
-		if(cont.typ)
+		if (cont.typ)
 			do_type_walk(cont, pre, post, env);
 	}
 
 	for (i = IR_SEGMENT_FIRST; i <= IR_SEGMENT_LAST; ++i) {
 		cont.typ = get_segment_type((ir_segment_t) i);
-		if(cont.typ)
+		if (cont.typ)
 			do_type_walk(cont, pre, post, env);
 	}
 }

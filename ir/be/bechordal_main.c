@@ -164,7 +164,7 @@ void be_register_chordal_coloring(const char *name, be_ra_chordal_coloring_t *co
 void be_ra_chordal_coloring(be_chordal_env_t *env)
 {
 	assert(selected_coloring != NULL);
-	if(selected_coloring != NULL) {
+	if (selected_coloring != NULL) {
 		selected_coloring->allocate(env);
 	}
 }
@@ -175,7 +175,7 @@ static void dump(unsigned mask, ir_graph *irg,
 				 const char *suffix,
 				 void (*dump_func)(ir_graph *, const char *))
 {
-	if((options.dump_flags & mask) == mask) {
+	if ((options.dump_flags & mask) == mask) {
 		if (cls) {
 			char buf[256];
 			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
@@ -201,7 +201,7 @@ static void memory_operand_walker(ir_node *irn, void *env)
 		return;
 
 	/* only use memory operands, if the reload is only used by 1 node */
-	if(get_irn_n_edges(irn) > 1)
+	if (get_irn_n_edges(irn) > 1)
 		return;
 
 	spill = be_get_Reload_mem(irn);
@@ -410,7 +410,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			const arch_register_class_t *cls
 				= arch_env_get_reg_class(arch_env, j);
 
-			if(arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
+			if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 				continue;
 
 
@@ -471,7 +471,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_timer_push(T_VERIFY);
 	if (chordal_env.opts->vrfy_option == BE_CH_VRFY_WARN) {
 		be_verify_register_allocation(birg);
-	} else if(chordal_env.opts->vrfy_option == BE_CH_VRFY_ASSERT) {
+	} else if (chordal_env.opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 		assert(be_verify_register_allocation(birg)
 				&& "Register allocation invalid");
 	}

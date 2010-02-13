@@ -195,7 +195,7 @@ static void *co2_irn_init(ir_phase *ph, const ir_node *irn, void *data)
 	ci->irn          = irn;
 	ci->aff          = a;
 
-	if(a) {
+	if (a) {
 		co2_cloud_irn_t *cci = (co2_cloud_irn_t *) ci;
 		INIT_LIST_HEAD(&cci->cloud_list);
 		cci->mst_parent   = cci;
@@ -249,17 +249,17 @@ static inline int color_is_fix(co2_t *env, const ir_node *irn)
 
 static inline bitset_t *get_adm(co2_t *env, co2_irn_t *ci)
 {
-	if(ci->adm_cache == NULL) {
+	if (ci->adm_cache == NULL) {
 		const arch_register_req_t *req;
 		ci->adm_cache = bitset_obstack_alloc(phase_obst(&env->ph), env->n_regs);
 		req = arch_get_register_req_out(ci->irn);
 
-		if(arch_register_req_is(req, limited)) {
+		if (arch_register_req_is(req, limited)) {
 			int i, n;
 
 			n = env->n_regs;
-			for(i = 0; i < n; ++i) {
-				if(rbitset_is_set(req->limited, i))
+			for (i = 0; i < n; ++i) {
+				if (rbitset_is_set(req->limited, i))
 					bitset_set(ci->adm_cache, i);
 			}
 			ci->is_constrained = 1;
@@ -286,7 +286,7 @@ static inline int is_color_admissible(co2_t *env, co2_irn_t *ci, col_t col)
 
 static inline int is_constrained(co2_t *env, co2_irn_t *ci)
 {
-	if(!ci->adm_cache)
+	if (!ci->adm_cache)
 		get_adm(env, ci);
 	return ci->is_constrained;
 }
@@ -336,16 +336,16 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	admissible_colors(env, ci, forb);
 	bitset_flip_all(forb);
 
-	for(i = 0; i < n_regs; ++i) {
+	for (i = 0; i < n_regs; ++i) {
 		col_costs[i].col   = i;
 		col_costs[i].costs = 0;
 	}
 
-	if(a) {
+	if (a) {
 		neighb_t *n;
 
 		co_gs_foreach_neighb(a, n) {
-			if(color_is_fix(env, n->irn)) {
+			if (color_is_fix(env, n->irn)) {
 				col_t col = get_col(env, n->irn);
 				col_costs[col].costs = add_saturated(col_costs[col].costs, -n->costs * 128);
 			}
@@ -357,7 +357,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	it = be_ifg_neighbours_iter_alloca(ifg);
 	be_ifg_foreach_neighbour(ifg, it, irn, pos) {
 		col_t col = get_col(env, pos);
-		if(color_is_fix(env, pos)) {
+		if (color_is_fix(env, pos)) {
 			col_costs[col].costs  = INT_MAX;
 		}
 		else {
@@ -379,7 +379,7 @@ static void single_color_cost(co2_t *env, co2_irn_t *ci, col_t col, col_cost_pai
 	int n_regs = env->co->cls->n_regs;
 	int i;
 
-	for(i = 0; i < n_regs; ++i) {
+	for (i = 0; i < n_regs; ++i) {
 		seq[i].col   = i;
 		seq[i].costs = INT_MAX;
 	}
@@ -420,10 +420,10 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 
 	int i;
 
-	if(depth >= max_depth)
+	if (depth >= max_depth)
 	  return 0;
 
-	for(i = 0; i < n_regs; ++i) {
+	for (i = 0; i < n_regs; ++i) {
 		col_t tgt_col  = col_list[i].col;
 		unsigned costs = col_list[i].costs;
 		int neigh_ok   = 1;
@@ -435,7 +435,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 		DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
 
 		/* If the costs for that color (and all successive) are infinite, bail out we won't make it anyway. */
-		if(INFEASIBLE(costs)) {
+		if (INFEASIBLE(costs)) {
 			DB((env->dbg, LEVEL_4, "\t\t%2{firm:indent}color %d infeasible\n", depth, tgt_col));
 			ci->tmp_fixed = 0;
 			return 0;
@@ -456,7 +456,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 		be_ifg_foreach_neighbour(ifg, it, irn, n) {
 
 			/* try to re-color the neighbor if it has the target color. */
-			if(get_col(env, n) == tgt_col) {
+			if (get_col(env, n) == tgt_col) {
 				struct list_head tmp;
 
 				/*
@@ -468,7 +468,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 				INIT_LIST_HEAD(&tmp);
 				neigh_ok = change_color_not(env, n, tgt_col, &tmp, depth + 1);
 				list_splice(&tmp, &changed);
-				if(!neigh_ok)
+				if (!neigh_ok)
 					break;
 			}
 		}
@@ -478,7 +478,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 		We managed to assign the target color to all neighbors, so from the perspective
 		of the current node, every thing was ok and we can return safely.
 		*/
-		if(neigh_ok) {
+		if (neigh_ok) {
 			DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}color %d(%d) was ok\n", depth, tgt_col, costs));
 			list_splice(&changed, parent_changed);
 			res = 1;
@@ -505,8 +505,8 @@ static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struc
 	DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}clearing %+F(%d) of color %d\n", depth, irn, col, not_col));
 
 	/* the node does not have to forbidden color. That's fine, mark it as visited and return. */
-	if(col != not_col) {
-		if(!ci->tmp_fixed) {
+	if (col != not_col) {
+		if (!ci->tmp_fixed) {
 			ci->tmp_col     = col;
 			ci->tmp_fixed   = 1;
 		}
@@ -516,7 +516,7 @@ static int change_color_not(co2_t *env, const ir_node *irn, col_t not_col, struc
 	}
 
 	/* The node has the color it should not have _and_ has not been visited yet. */
-	if(!color_is_fix(env, irn)) {
+	if (!color_is_fix(env, irn)) {
 		int n_regs            = env->co->cls->n_regs;
 		col_cost_pair_t *csts = ALLOCAN(col_cost_pair_t, n_regs);
 
@@ -546,8 +546,8 @@ static int change_color_single(co2_t *env, const ir_node *irn, col_t tgt_col, st
 	DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying to set %+F(%d) to color %d\n", depth, irn, col, tgt_col));
 
 	/* the node has the wanted color. That's fine, mark it as visited and return. */
-	if(col == tgt_col) {
-		if(!ci->tmp_fixed) {
+	if (col == tgt_col) {
+		if (!ci->tmp_fixed) {
 			ci->tmp_col     = col;
 			ci->tmp_fixed   = 1;
 			list_add(&ci->changed_list, parent_changed);
@@ -557,7 +557,7 @@ static int change_color_single(co2_t *env, const ir_node *irn, col_t tgt_col, st
 		goto end;
 	}
 
-	if(!color_is_fix(env, irn) && is_color_admissible(env, ci, tgt_col)) {
+	if (!color_is_fix(env, irn) && is_color_admissible(env, ci, tgt_col)) {
 		int n_regs           = env->co->cls->n_regs;
 		col_cost_pair_t *seq = ALLOCAN(col_cost_pair_t, n_regs);
 
@@ -586,7 +586,7 @@ static int examine_subtree_coloring(co2_cloud_irn_t *ci, col_t col)
 	int cost   = 0;
 	int i;
 
-	for(i = 0; i < ci->mst_n_childs; ++i) {
+	for (i = 0; i < ci->mst_n_childs; ++i) {
 		co2_cloud_irn_t *chld = ci->mst_childs[i];
 		col_t chld_col        = front[i];
 
@@ -629,12 +629,12 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 		co2_irn_t *ni = get_co2_irn(env, irn);
 
 		admissible_colors(env, ni, bs);
-		if(bitset_popcnt(bs) == 1) {
+		if (bitset_popcnt(bs) == 1) {
 			bitset_pos_t c = bitset_next_set(bs, 0);
 			badness[c] += ci->costs;
 		}
 
-		else if(ni->fixed) {
+		else if (ni->fixed) {
 			col_t c = get_col(env, ni->irn);
 			badness[c] += ci->costs;
 		}
@@ -657,15 +657,15 @@ static void determine_color_badness(co2_cloud_irn_t *ci, int depth)
 	node_color_badness(ci, ci->color_badness);
 
 	/* Collect the color badness for the whole subtree */
-	for(i = 0; i < ci->mst_n_childs; ++i) {
+	for (i = 0; i < ci->mst_n_childs; ++i) {
 		co2_cloud_irn_t *child = ci->mst_childs[i];
 		determine_color_badness(child, depth + 1);
 
-		for(j = 0; j < env->n_regs; ++j)
+		for (j = 0; j < env->n_regs; ++j)
 			ci->color_badness[j] += child->color_badness[j];
 	}
 
-	for(j = 0; j < env->n_regs; ++j)
+	for (j = 0; j < env->n_regs; ++j)
 		DBG((env->dbg, LEVEL_2, "%2{firm:indent}%+F col %d badness %d\n", depth, ci->inh.irn, j, ci->color_badness[j]));
 }
 
@@ -677,7 +677,7 @@ static void unfix_subtree(co2_cloud_irn_t *ci)
 	int i;
 
 	ci->inh.fixed = 0;
-	for(i = 0; i < ci->mst_n_childs; ++i)
+	for (i = 0; i < ci->mst_n_childs; ++i)
 		unfix_subtree(ci->mst_childs[i]);
 }
 
@@ -696,7 +696,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 	struct list_head changed;
 	int ok, i, j;
 
-	for(i = 0; i < n_regs; ++i) {
+	for (i = 0; i < n_regs; ++i) {
 		int badness = ci->color_badness[i];
 
 		seq[i].col   = i;
@@ -706,7 +706,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 	}
 
 	/* If we are not the root and the parent's color is allowed for this node give it top prio. */
-	if(!is_root && is_color_admissible(env, &ci->inh, parent_col))
+	if (!is_root && is_color_admissible(env, &ci->inh, parent_col))
 		seq[parent_col].costs = min_badness - 1;
 
 	/* Sort the colors. The will be processed in that ordering. */
@@ -714,7 +714,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 
 	DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}starting top-down coalesce for %+F\n", depth, ci->inh.irn));
 	INIT_LIST_HEAD(&changed);
-	for(i = 0; i < (best_col < 0 ? n_regs : n_iter); ++i) {
+	for (i = 0; i < (best_col < 0 ? n_regs : n_iter); ++i) {
 		col_t col    = seq[i].col;
 		int add_cost = !is_root && col != parent_col ? ci->mst_costs : 0;
 
@@ -725,7 +725,7 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		unfix_subtree(ci);
 		INIT_LIST_HEAD(&changed);
 		ok = change_color_single(env, ci->inh.irn, col, &changed, depth);
-		if(ok) {
+		if (ok) {
 			materialize_coloring(&changed);
 			ci->inh.fixed = 1;
 		}
@@ -733,34 +733,34 @@ static int coalesce_top_down(co2_cloud_irn_t *ci, int child_nr, int depth)
 		else
 			continue;
 
-		for(j = 0; j < ci->mst_n_childs; ++j) {
+		for (j = 0; j < ci->mst_n_childs; ++j) {
 			co2_cloud_irn_t *child = ci->mst_childs[j];
 			ok = coalesce_top_down(child, j, depth + 1) >= 0;
-			if(ok)
+			if (ok)
 				child->inh.fixed = 1;
 			else
 				break;
 		}
 
 		/* If the subtree could not be colored, we have to try another color. */
-		if(!ok)
+		if (!ok)
 			continue;
 
 		subtree_costs      = examine_subtree_coloring(ci, col);
 		sum_costs          = subtree_costs + add_cost;
 		DBG((env->dbg, LEVEL_2, "\t%2{firm:indent}-> %+F costing %d + %d is ok.\n", depth, ci->inh.irn, subtree_costs, add_cost));
 
-		if(sum_costs < best_col_costs) {
+		if (sum_costs < best_col_costs) {
 			best_col           = col;
 			best_col_costs     = sum_costs;
 			ci->col_costs[col] = subtree_costs;
 		}
 
-		if(sum_costs == 0)
+		if (sum_costs == 0)
 			break;
 	}
 
-	if(!is_root) {
+	if (!is_root) {
 		int *front = FRONT_BASE(ci->mst_parent, parent_col);
 		front[child_nr] = best_col;
 	}
@@ -775,7 +775,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	int costs           = 0;
 	neighb_t *n;
 
-	if(ci->cloud)
+	if (ci->cloud)
 		return;
 
 	/* mark the node as visited and add it to the cloud. */
@@ -788,7 +788,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	co_gs_foreach_neighb(a, n) {
 		costs += n->costs;
 		DB((env->dbg, LEVEL_3, "\t\tneigh %+F cost %d\n", n->irn, n->costs));
-		if(be_ifg_connected(ifg, a->irn, n->irn))
+		if (be_ifg_connected(ifg, a->irn, n->irn))
 			cloud->inevit += n->costs;
 	}
 
@@ -801,7 +801,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	cloud->n_memb++;
 
 	/* If this is the heaviest node in the cloud, set it as the cloud's master. */
-	if(costs >= curr_costs) {
+	if (costs >= curr_costs) {
 		curr_costs    = costs;
 		cloud->master = ci;
 	}
@@ -858,14 +858,14 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 	// assert(ok && "Color changing may not fail while committing the coloring");
 	materialize_coloring(&changed);
 
- 	for(i = 0; i < ci->mst_n_childs; ++i) {
+ 	for (i = 0; i < ci->mst_n_childs; ++i) {
 		apply_coloring(ci->mst_childs[i], front[i], depth + 1);
 	}
 }
 
 static co2_cloud_irn_t *find_mst_root(co2_cloud_irn_t *ci)
 {
-	while(ci != ci->mst_parent)
+	while (ci != ci->mst_parent)
 		ci = ci->mst_parent;
 	return ci;
 }
@@ -885,13 +885,13 @@ static void process_cloud(co2_cloud_t *cloud)
 
 	/* Collect all edges in the cloud on an obstack and sort the increasingly */
 	obstack_init(&cloud->obst);
-	for(i = 0; i < cloud->n_memb; ++i) {
+	for (i = 0; i < cloud->n_memb; ++i) {
 		co2_cloud_irn_t *ci = cloud->seq[i];
 		neighb_t *n;
 
 		co_gs_foreach_neighb(ci->inh.aff, n) {
 			co2_cloud_irn_t *ni = get_co2_cloud_irn(cloud->env, n->irn);
-			if(ci->index < ni->index) {
+			if (ci->index < ni->index) {
 				edge_t e;
 				e.src   = ci;
 				e.tgt   = ni;
@@ -906,13 +906,13 @@ static void process_cloud(co2_cloud_t *cloud)
 
 	/* Compute the maximum spanning tree using Kruskal/Union-Find */
 	DBG((env->dbg, LEVEL_2, "computing spanning tree of cloud with master %+F\n", cloud->master->inh.irn));
-	for(i = 0; i < n_edges; ++i) {
+	for (i = 0; i < n_edges; ++i) {
 		edge_t *e        = &edges[i];
 		co2_cloud_irn_t *rs = find_mst_root(e->src);
 		co2_cloud_irn_t *rt = find_mst_root(e->tgt);
 
 		/* if the union/find roots are different */
-		if(rs != rt) {
+		if (rs != rt) {
 			int si = e->src->index;
 			int ti = e->tgt->index;
 
@@ -930,15 +930,15 @@ static void process_cloud(co2_cloud_t *cloud)
 	cloud->master->mst_parent = cloud->master;
 	cloud->mst_root = cloud->master;
 	q = new_pdeq1(cloud->master);
-	while(!pdeq_empty(q)) {
+	while (!pdeq_empty(q)) {
 		co2_cloud_irn_t *ci = pdeq_getl(q);
 		int ofs    = ci->index * cloud->n_memb;
 		int end    = ofs + cloud->n_memb;
 		int i;
 
 		ci->mst_n_childs = 0;
-		for(i = ofs; i < end; ++i) {
-			if(mst_edges[i] != 0) {
+		for (i = ofs; i < end; ++i) {
+			if (mst_edges[i] != 0) {
 				int other = i - ofs;
 				co2_cloud_irn_t *child = cloud->seq[i - ofs];
 
@@ -964,12 +964,12 @@ static void process_cloud(co2_cloud_t *cloud)
 
 
 	DBG((env->dbg, LEVEL_3, "mst:\n"));
-	for(i = 0; i < cloud->n_memb; ++i) {
+	for (i = 0; i < cloud->n_memb; ++i) {
 		DEBUG_ONLY(co2_cloud_irn_t *ci = cloud->seq[i]);
 		DBG((env->dbg, LEVEL_3, "\t%+F -> %+F\n", ci->inh.irn, ci->mst_parent->inh.irn));
 	}
 
-	for(i = 0; i < cloud->n_memb; ++i) {
+	for (i = 0; i < cloud->n_memb; ++i) {
 		co2_cloud_irn_t *ci = cloud->seq[i];
 		int n_childs = ci->mst_n_childs;
 		int j;
@@ -979,7 +979,7 @@ static void process_cloud(co2_cloud_t *cloud)
 		ci->fronts          = OALLOCNZ(&cloud->obst, int,             n_regs * n_childs);
 		ci->color_badness   = OALLOCNZ(&cloud->obst, int,             n_regs);
 
-		for(j = 0; j < env->n_regs; j++)
+		for (j = 0; j < env->n_regs; j++)
 			ci->col_costs[j] = INT_MAX;
 	}
 
@@ -994,7 +994,7 @@ static void process_cloud(co2_cloud_t *cloud)
 		cloud->mst_root->inh.irn, best_col, examine_subtree_coloring(cloud->mst_root, best_col)));
 
 	/* Fix all nodes in the cloud. */
-	for(i = 0; i < cloud->n_memb; ++i)
+	for (i = 0; i < cloud->n_memb; ++i)
 		cloud->seq[i]->inh.fixed = 1;
 
 	/* Free all space used while optimizing this cloud. */
@@ -1006,7 +1006,7 @@ static int cloud_costs(co2_cloud_t *cloud)
 	int i, costs = 0;
 	neighb_t *n;
 
-	for(i = 0; i < cloud->n_memb; ++i) {
+	for (i = 0; i < cloud->n_memb; ++i) {
 		co2_irn_t *ci = (co2_irn_t *) cloud->seq[i];
 		col_t col = get_col(cloud->env, ci->irn);
 		co_gs_foreach_neighb(ci->aff, n) {
@@ -1033,7 +1033,7 @@ static void process(co2_t *env)
 	co_gs_foreach_aff_node(env->co, a) {
 		co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
 
-		if(!ci->cloud) {
+		if (!ci->cloud) {
 			new_cloud(env, a);
 			n_clouds++;
 		}
@@ -1045,7 +1045,7 @@ static void process(co2_t *env)
 		clouds[i++] = pos;
 	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);
 
-	for(i = 0; i < n_clouds; ++i) {
+	for (i = 0; i < n_clouds; ++i) {
 		init_costs  += cloud_costs(clouds[i]);
 
 		/* Process the cloud. */
@@ -1061,7 +1061,7 @@ static void process(co2_t *env)
 
 			ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, i);
 			f = fopen(buf, "wt");
-			if(f != NULL) {
+			if (f != NULL) {
 				be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
 				fclose(f);
 			}
@@ -1077,7 +1077,7 @@ static void writeback_colors(co2_t *env)
 {
 	co2_irn_t *irn;
 
-	for(irn = env->touched; irn; irn = irn->touched_next) {
+	for (irn = env->touched; irn; irn = irn->touched_next) {
 		const arch_register_t *reg = arch_register_for_index(env->co->cls, irn->orig_col);
 		arch_set_irn_register((ir_node*)irn->irn, reg);
 	}
@@ -1136,13 +1136,13 @@ static const char *get_dot_shape_name(co2_irn_t *ci)
 {
 	const arch_register_req_t *req = arch_get_register_req_out(ci->irn);
 
-	if(arch_register_req_is(req, limited))
+	if (arch_register_req_is(req, limited))
 		return "diamond";
 
-	if(ci->fixed)
+	if (ci->fixed)
 		return "rectangle";
 
-	if(ci->tmp_fixed)
+	if (ci->tmp_fixed)
 		return "hexagon";
 
 	return "ellipse";
@@ -1169,12 +1169,12 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 
 	char buf[128] = "";
 
-	if(ci->aff) {
+	if (ci->aff) {
 		co2_cloud_irn_t *cci = (void *) ci;
 		if (cci->cloud && cci->cloud->mst_root == cci)
 			peri = 2;
 
-		if(cci->cloud && cci->cloud->mst_root)
+		if (cci->cloud && cci->cloud->mst_root)
 			ir_snprintf(buf, sizeof(buf), "%+F", cci->cloud->mst_root->inh.irn);
 	}
 
@@ -1192,20 +1192,20 @@ static void ifg_dump_at_end(FILE *file, void *self)
 		int idx = get_irn_idx(a->irn);
 		neighb_t *n;
 
-		if(ai->mst_parent != ai)
+		if (ai->mst_parent != ai)
 			fprintf(file, "\tn%d -- n%d [style=dotted color=blue arrowhead=normal];\n", idx, get_irn_idx(ai->mst_parent->inh.irn));
 
 		co_gs_foreach_neighb(a, n) {
 			int nidx = get_irn_idx(n->irn);
 			co2_cloud_irn_t *ci = get_co2_cloud_irn(env, n->irn);
 
-			if(idx < nidx) {
+			if (idx < nidx) {
 				const char *color = get_col(env, a->irn) == get_col(env, n->irn) ? "black" : "red";
 				const char *arr = "arrowhead=dot arrowtail=dot";
 
-				if(ci->mst_parent == ai)
+				if (ci->mst_parent == ai)
 					arr = "arrowtail=normal";
-				else if(ai->mst_parent == ci)
+				else if (ai->mst_parent == ci)
 					arr = "arrowhead=normal";
 
 				fprintf(file, "\tn%d -- n%d [label=\"%d\" %s style=dashed color=%s weight=0.01];\n", idx, nidx, n->costs, arr, color);
@@ -1240,7 +1240,7 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.co2");
 	INIT_LIST_HEAD(&env.cloud_head);
 
-	if(dump_flags & DUMP_BEFORE) {
+	if (dump_flags & DUMP_BEFORE) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_before.dot", co->irg, co->cls->name);
 		f = fopen(buf, "wt");
 		if (f != NULL) {
@@ -1251,7 +1251,7 @@ int co_solve_heuristic_new(copy_opt_t *co)
 
 	process(&env);
 
-	if(dump_flags & DUMP_AFTER) {
+	if (dump_flags & DUMP_AFTER) {
 		ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_after.dot", co->irg, co->cls->name);
 		f = fopen(buf, "wt");
 		if (f != NULL) {

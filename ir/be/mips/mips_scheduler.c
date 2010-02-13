@@ -86,7 +86,7 @@ static void mips_scheduler_finish_block(void* graph_env)
 {
 	mips_sched_env_t *sched_env = (mips_sched_env_t*) graph_env;
 	// attach last nop to end node (so that firm doesn't discard it)
-	if(sched_env->last_nop != NULL) {
+	if (sched_env->last_nop != NULL) {
 		ir_node* end = get_irg_end(get_irn_irg(sched_env->block));
 		(void) end;
 		// TODO
@@ -105,22 +105,22 @@ static void mips_collect_mflohis(pset* set, ir_node* node)
 	// we are allowed to schedule another div or mul instruction
 	const ir_edge_t *edge, *edge2;
 
-	if(is_mips_div(node)) {
+	if (is_mips_div(node)) {
 		foreach_out_edge(node, edge) {
 			const ir_node* node2 = get_edge_src_irn(edge);
 
 			assert(is_Proj(node2));
 			foreach_out_edge(node2, edge2) {
 				const ir_node* node3 = get_edge_src_irn(edge2);
-				if(is_mips_mfhi(node3) || is_mips_mflo(node3))
+				if (is_mips_mfhi(node3) || is_mips_mflo(node3))
 					pset_insert_ptr(set, node3);
 			}
 		}
-	} else if(is_mips_mult(node)) {
+	} else if (is_mips_mult(node)) {
 		foreach_out_edge(node, edge) {
 			const ir_node* node2 = get_edge_src_irn(edge);
 
-			if(is_mips_mfhi(node2) || is_mips_mflo(node2))
+			if (is_mips_mfhi(node2) || is_mips_mflo(node2))
 				pset_insert_ptr(set, node2);
 		}
 	}
@@ -128,7 +128,7 @@ static void mips_collect_mflohis(pset* set, ir_node* node)
 
 static int mips_scheduler_node_allowed(mips_sched_env_t *sched_env, ir_node* node)
 {
-	if(pset_count(sched_env->div_set) != 0 && (is_mips_div(node) || is_mips_mult(node))) {
+	if (pset_count(sched_env->div_set) != 0 && (is_mips_div(node) || is_mips_mult(node))) {
 		return 0;
 	}
 
@@ -163,7 +163,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 
 			if (is_mips_div(node) || is_mips_mult(node)) {
 				mips_collect_mflohis(sched_env->div_set, node);
-			} else if(is_mips_mflo(node) || is_mips_mfhi(node)) {
+			} else if (is_mips_mflo(node) || is_mips_mfhi(node)) {
 				pset_remove_ptr(sched_env->div_set, node);
 			}
 
@@ -174,9 +174,9 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 	// if we arrive here no non-branch node was found that we can emit
 
 	// return a branch if there are just branches left
-	if(!have_non_branch_nodes) {
+	if (!have_non_branch_nodes) {
 		// schedule conditional branches before non-conditional ones
-		if(condjmp != NULL) {
+		if (condjmp != NULL) {
 			return condjmp;
 		}
 		node = nodeset_first(ready_set);
@@ -198,9 +198,9 @@ int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
 {
 	(void) block_env;
 
-	if(!is_mips_irn(node))
+	if (!is_mips_irn(node))
 		return -1;
-	if(is_mips_zero(node) || is_mips_Immediate(node))
+	if (is_mips_zero(node) || is_mips_Immediate(node))
 		return 0;
 
 	return 1;

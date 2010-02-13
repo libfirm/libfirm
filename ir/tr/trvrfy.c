@@ -56,7 +56,7 @@ do { \
     firm_vrfy_failure_msg = #expr " && " string; \
     return (ret); \
   } \
-} while(0)
+} while (0)
 
 #define ASSERT_AND_RET_DBG(expr, string, ret, blk) \
 do { \
@@ -70,7 +70,7 @@ do { \
     } \
     return (ret); \
   } \
-} while(0)
+} while (0)
 
 #endif /* NDEBUG */
 

@@ -682,7 +682,7 @@ ir_initializer_t *create_initializer_compound(unsigned n_entries)
 	initializer->kind                    = IR_INITIALIZER_COMPOUND;
 	initializer->compound.n_initializers = n_entries;
 
-	for(i = 0; i < n_entries; ++i) {
+	for (i = 0; i < n_entries; ++i) {
 		initializer->compound.initializers[i] = get_initializer_null();
 	}
 
@@ -889,7 +889,7 @@ void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
 	n = ARR_LEN(ent->overwrittenby);
 	for (i = 0; i < n; ++i) {
 		if (ent->overwrittenby[i] == overwrites) {
-			for(; i < n - 1; ++i)
+			for (; i < n - 1; ++i)
 				ent->overwrittenby[i] = ent->overwrittenby[i+1];
 			ARR_SETLEN(ir_entity*, ent->overwrittenby, n - 1);
 			break;

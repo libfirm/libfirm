@@ -40,12 +40,12 @@ static ir_valueset_entry_t null_valueset_entry;
 #define KeyType                   ir_node*
 #define ConstKeyType              const ir_node*
 #define GetKey(entry)             (entry).value
-#define InitData(self,entry,key)  do { (entry).value = (key); (entry).list.next = NULL; (entry).list.prev = NULL; } while(0)
+#define InitData(self,entry,key)  do { (entry).value = (key); (entry).list.next = NULL; (entry).list.prev = NULL; } while (0)
 #define Hash(self,key)            ir_node_hash(key)
 #define KeysEqual(self,key1,key2) (key1) == (key2)
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 #define EntrySetEmpty(entry)      (entry).value = NULL
-#define EntrySetDeleted(entry)    do { (entry).data.value = (ir_node*) -1; list_del(&(entry).data.list); } while(0)
+#define EntrySetDeleted(entry)    do { (entry).data.value = (ir_node*) -1; list_del(&(entry).data.list); } while (0)
 #define EntryIsEmpty(entry)       ((entry).data.value == NULL)
 #define EntryIsDeleted(entry)     ((entry).data.value == (ir_node*)-1)
 

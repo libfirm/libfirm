@@ -122,7 +122,7 @@ void workset_print(const workset_t *w)
 {
 	int i;
 
-	for(i = 0; i < w->len; ++i) {
+	for (i = 0; i < w->len; ++i) {
 		ir_fprintf(stderr, "%+F %d\n", w->vals[i].node, w->vals[i].time);
 	}
 }
@@ -210,7 +210,7 @@ static void workset_clear(workset_t *workset)
 static inline void workset_remove(workset_t *workset, ir_node *val)
 {
 	int i;
-	for(i = 0; i < workset->len; ++i) {
+	for (i = 0; i < workset->len; ++i) {
 		if (workset->vals[i].node == val) {
 			workset->vals[i] = workset->vals[--workset->len];
 			return;
@@ -237,7 +237,7 @@ static inline const loc_t *workset_contains(const workset_t *ws,
  * @p v  A variable to put the current value in
  * @p i  An integer for internal use
  */
-#define workset_foreach(ws, v, i)	for(i=0; \
+#define workset_foreach(ws, v, i)	for (i=0; \
 										v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; \
 										++i)
 
@@ -497,7 +497,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 			DB((dbg, DBG_START, "    %+F taken (%u, live in all preds)\n",
 			    node, loc.time));
 			return loc;
-		} else if(available == AVAILABLE_NOWHERE) {
+		} else if (available == AVAILABLE_NOWHERE) {
 			DB((dbg, DBG_START, "    %+F not taken (%u, live in no pred)\n",
 			    node, loc.time));
 			loc.time = USES_INFINITY;
@@ -542,7 +542,7 @@ static void decide_start_workset(const ir_node *block)
 	arity           = get_irn_arity(block);
 	pred_worksets   = ALLOCAN(workset_t*, arity);
 	all_preds_known = true;
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
@@ -693,7 +693,7 @@ static void decide_start_workset(const ir_node *block)
 	/* determine spill status of the values: If there's 1 pred block (which
 	 * is no backedge) where the value is spilled then we must set it to
 	 * spilled here. */
-	for(i = 0; i < ws_count; ++i) {
+	for (i = 0; i < ws_count; ++i) {
 		loc_t   *loc     = &ws->vals[i];
 		ir_node *value   = loc->node;
 		bool     spilled;
@@ -708,7 +708,7 @@ static void decide_start_workset(const ir_node *block)
 
 		/* determine if value was spilled on any predecessor */
 		spilled = false;
-		for(n = 0; n < arity; ++n) {
+		for (n = 0; n < arity; ++n) {
 			workset_t *pred_workset = pred_worksets[n];
 			int        p_len;
 			int        p;
@@ -717,7 +717,7 @@ static void decide_start_workset(const ir_node *block)
 				continue;
 
 			p_len = workset_get_length(pred_workset);
-			for(p = 0; p < p_len; ++p) {
+			for (p = 0; p < p_len; ++p) {
 				loc_t *l = &pred_workset->vals[p];
 
 				if (l->node != value)
@@ -802,7 +802,7 @@ static void process_block(ir_node *block)
 
 		/* allocate all values _used_ by this instruction */
 		workset_clear(new_vals);
-		for(i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
+		for (i = 0, arity = get_irn_arity(irn); i < arity; ++i) {
 			ir_node *in = get_irn_n(irn, i);
 			if (!arch_irn_consider_in_reg_alloc(cls, in))
 				continue;

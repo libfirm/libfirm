@@ -97,7 +97,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 	be_liveness_nodes_live_at(lv, cls, pos, &live);
 
 	n = ir_nodeset_size(&live);
-	if(n == 0) {
+	if (n == 0) {
 		ir_nodeset_destroy(&live);
 		return NULL;
 	}
@@ -243,7 +243,7 @@ static void remove_empty_block(ir_node *block)
 
 check_preds:
 	arity = get_Block_n_cfgpreds(block);
-	for(i = 0; i < arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_Block_cfgpred_block(block, i);
 		remove_empty_block(pred);
 	}

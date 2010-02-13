@@ -67,7 +67,7 @@
 
 #define MAX_INT_FREQ 1000000
 
-#define set_foreach(s,i) for((i)=set_first((s)); (i); (i)=set_next((s)))
+#define set_foreach(s,i) for ((i)=set_first((s)); (i); (i)=set_next((s)))
 
 typedef struct _freq_t {
 	const ir_node    *irn;
@@ -117,7 +117,7 @@ set_insert_freq(set * set, const ir_node * irn)
 double
 get_block_execfreq(const ir_exec_freq *ef, const ir_node * irn)
 {
-	if(!ef->infeasible) {
+	if (!ef->infeasible) {
 		set *freqs = ef->set;
 		freq_t *freq;
 		assert(is_Block(irn));
@@ -155,7 +155,7 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 	do {
 		++iter;
 		dev = gs_matrix_gauss_seidel(mat, x, size);
-	} while(fabs(dev) > SEIDEL_TOLERANCE);
+	} while (fabs(dev) > SEIDEL_TOLERANCE);
 	stat_ev_tim_pop("execfreq_seidel_time");
 	stat_ev_dbl("execfreq_seidel_iter", iter);
 
@@ -224,7 +224,7 @@ get_cf_probability(ir_node *bb, int pos, double loop_weight)
 
 static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
-	if(is_Block(irn)) {
+	if (is_Block(irn)) {
 		ir_exec_freq *ef = ctx;
 		fprintf(f, "execution frequency: %g/%lu\n", get_block_execfreq(ef, irn), get_block_execfreq_ulong(ef, irn));
 	}
@@ -309,7 +309,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		freq->idx = idx;
 
 		/* Sum of (execution frequency of predecessor * probability of cf edge) ... */
-		for(i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
+		for (i = get_Block_n_cfgpreds(bb) - 1; i >= 0; --i) {
 			ir_node *pred = get_Block_cfgpred_block(bb, i);
 			int pred_idx  = size - dfs_get_post_num(dfs, pred) - 1;
 
@@ -370,7 +370,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		ef->max = MAX(ef->max, freq->freq);
 
 		/* Get the minimum non-zero execution frequency. */
-		if(freq->freq > 0.0)
+		if (freq->freq > 0.0)
 			ef->min_non_zero = MIN(ef->min_non_zero, freq->freq);
 	}
 
@@ -393,14 +393,14 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		 * find the smallest difference of the execution frequencies
 		 * we try to ressolve it with 1 integer.
 		 */
-		for(i = 0; i < n; ++i) {
-			if(fs[i] <= 0.0)
+		for (i = 0; i < n; ++i) {
+			if (fs[i] <= 0.0)
 				continue;
 
-			for(j = i + 1; j < n; ++j) {
+			for (j = i + 1; j < n; ++j) {
 				double diff = fabs(fs[i] - fs[j]);
 
-				if(!UNDEF(diff))
+				if (!UNDEF(diff))
 					smallest_diff = MIN(diff, smallest_diff);
 			}
 		}
@@ -415,7 +415,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 		 * if the slope is so high that the largest integer would be larger than MAX_INT_FREQ
 		 * set the largest int freq to that upper limit and recompute the translation function
 		 */
-		if(ef->m * h2 + ef->b > MAX_INT_FREQ) {
+		if (ef->m * h2 + ef->b > MAX_INT_FREQ) {
 			ef->m = (h1 - l1) / (h2 - l2);
 			ef->b = l1 - ef->m * l2;
 		}
