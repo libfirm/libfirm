@@ -846,7 +846,7 @@ static void emit_string_cst(const ir_entity *ent)
 	remaining_space = type_size - len;
 	assert(remaining_space >= 0);
 	if (remaining_space > 0) {
-		be_emit_irprintf("\t.zero\t%d\n", remaining_space);
+		be_emit_irprintf("\t.space\t%d\n", remaining_space);
 	}
 }
 
@@ -1497,7 +1497,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	}
 
 	if (entity_is_null(entity)) {
-		be_emit_irprintf("\t.zero %u\n", get_type_size_bytes(type));
+		be_emit_irprintf("\t.space %u\n", get_type_size_bytes(type));
 		be_emit_write_line();
 	} else if(entity_has_compound_ent_values(entity)) {
 		emit_compound_graph_init(env, entity);
