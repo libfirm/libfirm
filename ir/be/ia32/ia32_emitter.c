@@ -215,7 +215,7 @@ static const arch_register_t *get_out_reg(const ir_node *irn, int pos)
 static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 {
 	static unsigned long id = 0;
-	snprintf(buf, buflen, "%s%lu", prefix, ++id);
+	snprintf(buf, buflen, "%s%s%lu", be_gas_get_private_prefix(), prefix, ++id);
 	return buf;
 }
 
@@ -1283,7 +1283,7 @@ static void generate_jump_table(jmp_tbl_t *tbl, const ir_node *node)
 	const ir_edge_t    *edge;
 
 	/* fill the table structure */
-	get_unique_label(tbl->label, SNPRINTF_BUF_LEN, ".TBL_");
+	get_unique_label(tbl->label, SNPRINTF_BUF_LEN, "TBL_");
 	tbl->defProj      = NULL;
 	tbl->num_branches = get_irn_n_edges(node) - 1;
 	tbl->branches     = XMALLOCNZ(branch_t, tbl->num_branches);
@@ -2250,7 +2250,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	ia32_register_emitters();
 
-	get_unique_label(pic_base_label, sizeof(pic_base_label), ".PIC_BASE");
+	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);

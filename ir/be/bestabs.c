@@ -45,6 +45,7 @@
 #include "bemodule.h"
 #include "beemitter.h"
 #include "dbginfo.h"
+#include "begnuas.h"
 
 /* Non-Stab Symbol and Stab Symbol Types */
 enum stabs_types {
@@ -623,7 +624,7 @@ static void stabs_so(dbg_handle *handle, const char *filename)
 {
 	stabs_handle *h = (stabs_handle *)handle;
 	h->main_file = h->curr_file = filename;
-	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,.Ltext0\n", filename, N_SO);
+	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,%stext0\n", filename, N_SO, be_gas_get_private_prefix());
 	be_emit_write_line();
 }  /* stabs_so */
 

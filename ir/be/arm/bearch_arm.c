@@ -714,7 +714,7 @@ static arch_env_t *arm_init(FILE *file_handle)
 
 	/* needed for the debug support */
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	be_emit_cstring(".Ltext0:\n");
+	be_emit_irprintf("%stext0:\n", be_gas_get_private_prefix());
 	be_emit_write_line();
 
 	inited = 1;

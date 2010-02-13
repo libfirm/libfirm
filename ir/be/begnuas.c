@@ -1382,26 +1382,23 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 	}
 }
 
-static void emit_private_prefix(void)
+char const *be_gas_get_private_prefix(void)
 {
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
-		be_emit_char('L');
-	} else {
-		be_emit_cstring(".L");
-	}
+	return
+		be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" :
+		".L";
 }
 
 void be_gas_emit_entity(const ir_entity *entity)
 {
 	if (entity->type == firm_code_type) {
 		ir_label_t label = get_entity_label(entity);
-		emit_private_prefix();
-		be_emit_irprintf("_%lu", label);
+		be_emit_irprintf("%s_%lu", be_gas_get_private_prefix(), label);
 		return;
 	}
 
 	if (get_entity_visibility(entity) == ir_visibility_private) {
-		emit_private_prefix();
+		be_emit_string(be_gas_get_private_prefix());
 	}
 	be_emit_ident(get_entity_ld_ident(entity));
 }
@@ -1412,8 +1409,7 @@ void be_gas_emit_block_name(const ir_node *block)
 		ir_entity *entity = get_Block_entity(block);
 		be_gas_emit_entity(entity);
 	} else {
-		emit_private_prefix();
-		be_emit_irprintf("%ld", get_irn_node_nr(block));
+		be_emit_irprintf("%s%ld", be_gas_get_private_prefix(), get_irn_node_nr(block));
 	}
 }
 

@@ -86,6 +86,8 @@ void be_gas_emit_function_prolog(const ir_entity *entity,
 
 void be_gas_emit_function_epilog(const ir_entity *entity);
 
+char const *be_gas_get_private_prefix(void);
+
 /**
  * emit ld_ident of an entity and performs additional mangling if necessary.
  * (mangling is necessary for ir_visibility_private for example).
