@@ -934,6 +934,7 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 
 		ident *id = id_mangle(IDENT("L"), get_op_ident(op));
 		*ent = new_entity(get_glob_type(), id, method);
+		set_entity_visibility(*ent, ir_visibility_private);
 	}
 
 	elt.i_call.kind     = INTRINSIC_CALL;
