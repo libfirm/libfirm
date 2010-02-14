@@ -44,103 +44,102 @@
 void add_irp_mode(ir_mode *mode);
 
 /* inline functions */
-static inline ir_type *
-_get_segment_type(ir_segment_t segment)
+static inline ir_type *_get_segment_type(ir_segment_t segment)
 {
 	assert(segment <= IR_SEGMENT_LAST);
 	return irp->segment_types[segment];
 }
 
-static inline ir_type *
-_get_glob_type(void) {
+static inline ir_type *_get_glob_type(void)
+{
 	return _get_segment_type(IR_SEGMENT_GLOBAL);
 }
 
-static inline ir_type *
-_get_tls_type(void) {
+static inline ir_type *_get_tls_type(void)
+{
 	return _get_segment_type(IR_SEGMENT_THREAD_LOCAL);
 }
 
-static inline int
-_get_irp_n_irgs(void) {
+static inline int _get_irp_n_irgs(void)
+{
 	assert(irp && irp->graphs);
 	if (get_visit_pseudo_irgs()) return get_irp_n_allirgs();
 	return ARR_LEN(irp->graphs);
 }
 
-static inline ir_graph *
-_get_irp_irg(int pos){
+static inline ir_graph *_get_irp_irg(int pos)
+{
 	if (get_visit_pseudo_irgs()) return get_irp_allirg(pos);
 	assert(0 <= pos && pos <= ARR_LEN(irp->graphs));
 	return irp->graphs[pos];
 }
 
 
-static inline int
-_get_irp_n_types(void) {
+static inline int _get_irp_n_types(void)
+{
 	assert(irp && irp->types);
 	return ARR_LEN(irp->types);
 }
 
-static inline ir_type *
-_get_irp_type(int pos) {
+static inline ir_type *_get_irp_type(int pos)
+{
 	assert(irp->types);
 	/* Don't set the skip_tid result so that no double entries are generated. */
 	return irp->types[pos];
 }
 
-static inline int
-_get_irp_n_modes(void) {
+static inline int _get_irp_n_modes(void)
+{
 	assert(irp->modes);
 	return ARR_LEN(irp->modes);
 }
 
-static inline ir_mode *
-_get_irp_mode(int pos) {
+static inline ir_mode *_get_irp_mode(int pos)
+{
 	assert(irp && irp->modes);
 	return irp->modes[pos];
 }
 
-static inline int
-_get_irp_n_opcodes(void) {
+static inline int _get_irp_n_opcodes(void)
+{
 	assert(irp && irp->opcodes);
 	return ARR_LEN(irp->opcodes);
 }
 
-static inline ir_op *
-_get_irp_opcode(int pos) {
+static inline ir_op *_get_irp_opcode(int pos)
+{
 	assert(irp && irp->opcodes);
 	return irp->opcodes[pos];
 }
 
 /** Returns a new, unique number to number nodes or the like. */
-static inline long
-get_irp_new_node_nr(void) {
+static inline long get_irp_new_node_nr(void)
+{
 	assert(irp);
 	return irp->max_node_nr++;
 }
 
-static inline int
-get_irp_new_irg_idx(void) {
+static inline int get_irp_new_irg_idx(void)
+{
 	assert(irp);
 	return irp->max_irg_idx++;
 }
 
-static inline ir_graph *
-_get_const_code_irg(void) {
+static inline ir_graph *_get_const_code_irg(void)
+{
 	return irp->const_code_irg;
 }
 
 /** Returns a new, unique exception region number. */
-static inline ir_exc_region_t
-_get_irp_next_region_nr(void) {
+static inline ir_exc_region_t _get_irp_next_region_nr(void)
+{
 	assert(irp);
 	return ++irp->last_region_nr;
 }
 
 /** Returns a new, unique label number. */
-static inline ir_label_t
-_get_irp_next_label_nr(void) {
+static inline ir_label_t _get_irp_next_label_nr(void)
+{
 	assert(irp);
 	return ++irp->last_label_nr;
 }

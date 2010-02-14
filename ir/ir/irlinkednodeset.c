@@ -68,8 +68,7 @@ static ir_lnk_nodeset_entry_t null_nodeset_entry;
  * Resize the hashset
  * @internal
  */
-static
-void resize(HashSet *self, size_t new_size)
+static void resize(HashSet *self, size_t new_size)
 {
 	HashSetEntry *old_entries = self->entries;
 	HashSetEntry *new_entries;

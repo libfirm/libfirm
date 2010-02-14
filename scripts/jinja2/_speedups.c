@@ -28,8 +28,7 @@ static PyObject* markup;
 static Py_ssize_t escaped_chars_delta_len[ESCAPED_CHARS_TABLE_SIZE];
 static Py_UNICODE *escaped_chars_repl[ESCAPED_CHARS_TABLE_SIZE];
 
-static int
-init_constants(void)
+static int init_constants(void)
 {
 	PyObject *module;
 	/* happing of characters to replace */
@@ -55,8 +54,7 @@ init_constants(void)
 	return 1;
 }
 
-static PyObject*
-escape_unicode(PyUnicodeObject *in)
+static PyObject *escape_unicode(PyUnicodeObject *in)
 {
 	PyUnicodeObject *out;
 	Py_UNICODE *inp = in->str;
@@ -117,8 +115,7 @@ escape_unicode(PyUnicodeObject *in)
 }
 
 
-static PyObject*
-escape(PyObject *self, PyObject *text)
+static PyObject *escape(PyObject *self, PyObject *text)
 {
 	PyObject *s = NULL, *rv = NULL, *html;
 
@@ -155,8 +152,7 @@ escape(PyObject *self, PyObject *text)
 }
 
 
-static PyObject*
-soft_unicode(PyObject *self, PyObject *s)
+static PyObject *soft_unicode(PyObject *self, PyObject *s)
 {
 	if (!PyUnicode_Check(s))
 		return PyObject_Unicode(s);
@@ -165,8 +161,7 @@ soft_unicode(PyObject *self, PyObject *s)
 }
 
 
-static PyObject*
-tb_set_next(PyObject *self, PyObject *args)
+static PyObject *tb_set_next(PyObject *self, PyObject *args)
 {
 	PyTracebackObject *tb, *old;
 	PyObject *next;

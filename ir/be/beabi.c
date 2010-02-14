@@ -2060,8 +2060,7 @@ static void modify_irg(be_abi_irg_t *env)
 }
 
 /** Fix the state inputs of calls that still hang on unknowns */
-static
-void fix_call_state_inputs(be_abi_irg_t *env)
+static void fix_call_state_inputs(be_abi_irg_t *env)
 {
 	const arch_env_t *arch_env = env->arch_env;
 	int i, n, n_states;

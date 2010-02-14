@@ -175,37 +175,36 @@ struct ir_entity {
 void firm_init_entity(void);
 
 /* ----------------------- inline functions ------------------------ */
-static inline int
-_is_entity(const void *thing) {
+static inline int _is_entity(const void *thing)
+{
 	return get_kind(thing) == k_entity;
 }
 
-static inline const char *
-_get_entity_name(const ir_entity *ent) {
+static inline const char *_get_entity_name(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return get_id_str(get_entity_ident(ent));
 }
 
-static inline ident *
-_get_entity_ident(const ir_entity *ent) {
+static inline ident *_get_entity_ident(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->name;
 }
 
-static inline void
-_set_entity_ident(ir_entity *ent, ident *id) {
+static inline void _set_entity_ident(ir_entity *ent, ident *id)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->name = id;
 }
 
-static inline ir_type *
-_get_entity_owner(const ir_entity *ent) {
+static inline ir_type *_get_entity_owner(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->owner;
 }
 
-static inline ident *
-_get_entity_ld_ident(const ir_entity *ent)
+static inline ident *_get_entity_ld_ident(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	if (ent->ld_name == NULL)
@@ -213,134 +212,134 @@ _get_entity_ld_ident(const ir_entity *ent)
 	return ent->ld_name;
 }
 
-static inline void
-_set_entity_ld_ident(ir_entity *ent, ident *ld_ident) {
+static inline void _set_entity_ld_ident(ir_entity *ent, ident *ld_ident)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->ld_name = ld_ident;
 }
 
-static inline const char *
-_get_entity_ld_name(const ir_entity *ent) {
+static inline const char *_get_entity_ld_name(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return get_id_str(get_entity_ld_ident(ent));
 }
 
-static inline ir_type *
-_get_entity_type(const ir_entity *ent) {
+static inline ir_type *_get_entity_type(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->type;
 }
 
-static inline void
-_set_entity_type(ir_entity *ent, ir_type *type) {
+static inline void _set_entity_type(ir_entity *ent, ir_type *type)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->type = type;
 }
 
-static inline ir_linkage
-_get_entity_linkage(const ir_entity *ent) {
+static inline ir_linkage _get_entity_linkage(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->linkage;
 }
 
-static inline ir_volatility
-_get_entity_volatility(const ir_entity *ent) {
+static inline ir_volatility _get_entity_volatility(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->volatility;
 }
 
-static inline void
-_set_entity_volatility(ir_entity *ent, ir_volatility vol) {
+static inline void _set_entity_volatility(ir_entity *ent, ir_volatility vol)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->volatility = vol;
 }
 
-static inline unsigned
-_get_entity_alignment(const ir_entity *ent) {
+static inline unsigned _get_entity_alignment(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->alignment;
 }
 
-static inline void
-_set_entity_alignment(ir_entity *ent, unsigned alignment) {
+static inline void _set_entity_alignment(ir_entity *ent, unsigned alignment)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->alignment = alignment;
 }
 
-static inline ir_align
-_get_entity_aligned(const ir_entity *ent) {
+static inline ir_align _get_entity_aligned(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->aligned;
 }
 
-static inline void
-_set_entity_aligned(ir_entity *ent, ir_align a) {
+static inline void _set_entity_aligned(ir_entity *ent, ir_align a)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->aligned = a;
 }
 
-static inline int
-_is_entity_compiler_generated(const ir_entity *ent) {
+static inline int _is_entity_compiler_generated(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->compiler_gen;
 }
 
-static inline void
-_set_entity_compiler_generated(ir_entity *ent, int flag) {
+static inline void _set_entity_compiler_generated(ir_entity *ent, int flag)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->compiler_gen = flag ? 1 : 0;
 }
 
-static inline ir_entity_usage
-_get_entity_usage(const ir_entity *ent) {
+static inline ir_entity_usage _get_entity_usage(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->usage;
 }
 
-static inline void
-_set_entity_usage(ir_entity *ent, ir_entity_usage state) {
+static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->usage = state;
 }
 
-static inline int
-_get_entity_offset(const ir_entity *ent) {
+static inline int _get_entity_offset(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->offset;
 }
 
-static inline void
-_set_entity_offset(ir_entity *ent, int offset) {
+static inline void _set_entity_offset(ir_entity *ent, int offset)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->offset = offset;
 }
 
-static inline unsigned char
-_get_entity_offset_bits_remainder(const ir_entity *ent) {
+static inline unsigned char _get_entity_offset_bits_remainder(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->offset_bit_remainder;
 }
 
-static inline void
-_set_entity_offset_bits_remainder(ir_entity *ent, unsigned char offset) {
+static inline void _set_entity_offset_bits_remainder(ir_entity *ent, unsigned char offset)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->offset_bit_remainder = offset;
 }
 
-static inline void *
-_get_entity_link(const ir_entity *ent) {
+static inline void *_get_entity_link(const ir_entity *ent)
+{
 	assert(ent && ent->kind == k_entity);
 	return ent->link;
 }
 
-static inline void
-_set_entity_link(ir_entity *ent, void *l) {
+static inline void _set_entity_link(ir_entity *ent, void *l)
+{
 	assert(ent && ent->kind == k_entity);
 	ent->link = l;
 }
 
-static inline ir_graph *
-_get_entity_irg(const ir_entity *ent) {
+static inline ir_graph *_get_entity_irg(const ir_entity *ent)
+{
 	ir_graph *irg;
 	assert(ent && ent->kind == k_entity);
 	if (!is_Method_type(ent->type) || ent == unknown_entity) {

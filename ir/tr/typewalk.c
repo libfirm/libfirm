@@ -430,11 +430,9 @@ void type_walk_super2sub(type_walk_func *pre,
 
 /*****************************************************************************/
 
-static void
-type_walk_super_2(type_or_ent tore,
-                  type_walk_func *pre,
-                  type_walk_func *post,
-                  void *env) {
+static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
+                              type_walk_func *post, void *env)
+{
 	type_or_ent cont;
 	int         i, n;
 
@@ -519,11 +517,8 @@ void type_walk_super(type_walk_func *pre,
 /*****************************************************************************/
 
 
-static void
-class_walk_s2s_2(ir_type *tp,
-                 class_walk_func *pre,
-                 class_walk_func *post,
-                 void *env)
+static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
+                             class_walk_func *post, void *env)
 {
 	int i, n;
 

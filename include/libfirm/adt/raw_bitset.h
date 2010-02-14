@@ -129,10 +129,8 @@ static inline unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst, unsig
  *
  * @return the new bitset
  */
-static inline
-unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
-                                          const unsigned *old_bitset,
-                                          unsigned size)
+static inline unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
+	const unsigned *old_bitset, unsigned size)
 {
 	unsigned size_bytes = BITSET_SIZE_BYTES(size);
 	unsigned *res = obstack_alloc(obst, size_bytes);

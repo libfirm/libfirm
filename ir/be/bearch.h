@@ -223,20 +223,17 @@ struct arch_register_t {
 	const arch_register_req_t   *single_req;
 };
 
-static inline const arch_register_class_t *
-_arch_register_get_class(const arch_register_t *reg)
+static inline const arch_register_class_t *_arch_register_get_class(const arch_register_t *reg)
 {
 	return reg->reg_class;
 }
 
-static inline
-unsigned _arch_register_get_index(const arch_register_t *reg)
+static inline unsigned _arch_register_get_index(const arch_register_t *reg)
 {
 	return reg->index;
 }
 
-static inline
-const char *_arch_register_get_name(const arch_register_t *reg)
+static inline const char *_arch_register_get_name(const arch_register_t *reg)
 {
 	return reg->name;
 }
@@ -284,8 +281,7 @@ struct arch_register_class_t {
 /** return the register class flags */
 #define arch_register_class_flags(cls) ((cls)->flags)
 
-static inline const arch_register_t *
-_arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
+static inline const arch_register_t *_arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
 {
 	assert(idx < cls->n_regs);
 	return &cls->regs[idx];

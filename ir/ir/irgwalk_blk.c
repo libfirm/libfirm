@@ -411,9 +411,9 @@ static void collect_lists(blk_collect_data_t *env)
 /**
  * Intraprozedural graph walker over blocks.
  */
-static void
-do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env, unsigned follow_deps,
-                void (*traverse)(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env))
+static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
+	irg_walk_func *post, void *env, unsigned follow_deps,
+	void (*traverse)(blk_collect_data_t* blks, irg_walk_func *pre, irg_walk_func *post, void *env))
 {
 	ir_node            *end_node = get_irg_end(irg);
 	ir_node            *end_blk = get_irg_end_block(irg);

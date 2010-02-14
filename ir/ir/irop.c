@@ -63,8 +63,7 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all Call attributes stored in the old node to the new node.
  */
-static void
-call_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void call_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	default_copy_attr(old_node, new_node);
 	remove_Call_callee_arr(new_node);
@@ -73,8 +72,7 @@ call_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all Block attributes stored in the old node to the new node.
  */
-static void
-block_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void block_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	ir_graph *irg = current_ir_graph;
 
@@ -88,8 +86,7 @@ block_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all phi attributes stored in old node to the new node
  */
-static void
-phi_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void phi_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	ir_graph *irg = current_ir_graph;
 
@@ -101,8 +98,7 @@ phi_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all filter attributes stored in old node to the new node
  */
-static void
-filter_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void filter_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	ir_graph *irg = current_ir_graph;
 
@@ -113,8 +109,7 @@ filter_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all ASM attributes stored in old node to the new node
  */
-static void
-ASM_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void ASM_copy_attr(const ir_node *old_node, ir_node *new_node)
 {
 	ir_graph *irg = current_ir_graph;
 
@@ -160,10 +155,9 @@ static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops)
 }  /* firm_set_default_copy_attr */
 
 /* Creates a new ir operation. */
-ir_op *
-new_ir_op(unsigned code, const char *name, op_pin_state p,
-          unsigned flags, op_arity opar, int op_index, size_t attr_size,
-          const ir_op_ops *ops)
+ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
+                 unsigned flags, op_arity opar, int op_index, size_t attr_size,
+                 const ir_op_ops *ops)
 {
 	ir_op *res = XMALLOCZ(ir_op);
 

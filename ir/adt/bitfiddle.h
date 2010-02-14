@@ -45,8 +45,7 @@ COMPILETIME_ASSERT(UINT_MAX == 4294967295U, uintmax)
  *
  * @note See hacker's delight, page 27.
  */
-static inline
-int add_saturated(int x, int y)
+static inline int add_saturated(int x, int y)
 {
 	int sum      = x + y;
 	/*
@@ -74,8 +73,8 @@ int add_saturated(int x, int y)
  * @param x A 32-bit word.
  * @return The number of bits set in x.
  */
-static inline
-unsigned popcnt(unsigned x) {
+static inline unsigned popcnt(unsigned x)
+{
 	x -= ((x >> 1) & 0x55555555);
 	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
 	x = (x + (x >> 4)) & 0x0f0f0f0f;
@@ -89,8 +88,8 @@ unsigned popcnt(unsigned x) {
  * @param x The word.
  * @return The number of leading (from the most significant bit) zeros.
  */
-static inline
-unsigned nlz(unsigned x) {
+static inline unsigned nlz(unsigned x)
+{
 #ifdef USE_X86_ASSEMBLY
 	unsigned res;
 	if(x == 0)
@@ -118,8 +117,8 @@ unsigned nlz(unsigned x) {
  * @param x The word.
  * @return The number of trailing zeros.
  */
-static inline
-unsigned ntz(unsigned x) {
+static inline unsigned ntz(unsigned x)
+{
 #ifdef USE_X86_ASSEMBLY
 	unsigned res;
 	if(x == 0)
@@ -162,8 +161,7 @@ unsigned ntz(unsigned x) {
  * Returns the biggest power of 2 that is equal or smaller than @p x
  * (see hackers delight power-of-2 boundaries, page 48)
  */
-static inline
-unsigned floor_po2(unsigned x)
+static inline unsigned floor_po2(unsigned x)
 {
 #ifdef USE_X86_ASSEMBLY // in this case nlz is fast
 	if(x == 0)
@@ -185,8 +183,7 @@ unsigned floor_po2(unsigned x)
  * @remark x has to be <= 0x8000000 of course
  * @note see hackers delight power-of-2 boundaries, page 48
  */
-static inline
-unsigned ceil_po2(unsigned x)
+static inline unsigned ceil_po2(unsigned x)
 {
 	if(x == 0)
 		return 0;
@@ -209,8 +206,7 @@ unsigned ceil_po2(unsigned x)
 /**
  * Tests whether @p x is a power of 2
  */
-static inline
-int is_po2(unsigned x)
+static inline int is_po2(unsigned x)
 {
 	return (x & (x-1)) == 0;
 }

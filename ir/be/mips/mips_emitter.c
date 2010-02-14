@@ -297,8 +297,7 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 /* ABI Handling                                                         */
 /************************************************************************/
 
-static
-void mips_emit_IncSP(const ir_node *node)
+static void mips_emit_IncSP(const ir_node *node)
 {
 	int   offset = be_get_IncSP_offset(node);
 

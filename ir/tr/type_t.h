@@ -245,8 +245,7 @@ struct ir_type {
  *   @return A new type of the given type.  The remaining private attributes are not
  *           initialized.  The type is in state layout_undefined.
  */
-ir_type *
-new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
+ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db);
 void free_type_attrs(ir_type *tp);
 
 void free_class_entities      (ir_type *clss);
@@ -306,139 +305,139 @@ static inline void _set_master_type_visited(ir_visited_t val) { firm_type_visite
 static inline ir_visited_t _get_master_type_visited(void)     { return firm_type_visited; }
 static inline void _inc_master_type_visited(void)             { ++firm_type_visited; }
 
-static inline void *
-_get_type_link(const ir_type *tp) {
+static inline void *_get_type_link(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return(tp -> link);
 }
 
-static inline void
-_set_type_link(ir_type *tp, void *l) {
+static inline void _set_type_link(ir_type *tp, void *l)
+{
 	assert(tp && tp->kind == k_type);
 	tp -> link = l;
 }
 
-static inline const tp_op*
-_get_type_tpop(const ir_type *tp) {
+static inline const tp_op *_get_type_tpop(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->type_op;
 }
 
-static inline ident*
-_get_type_tpop_nameid(const ir_type *tp) {
+static inline ident *_get_type_tpop_nameid(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return get_tpop_ident(tp->type_op);
 }
 
-static inline tp_opcode
-_get_type_tpop_code(const ir_type *tp) {
+static inline tp_opcode _get_type_tpop_code(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return get_tpop_code(tp->type_op);
 }
 
-static inline ir_mode *
-_get_type_mode(const ir_type *tp) {
+static inline ir_mode *_get_type_mode(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->mode;
 }
 
-static inline unsigned
-_get_type_size_bytes(const ir_type *tp) {
+static inline unsigned _get_type_size_bytes(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->size;
 }
 
-static inline ir_type_state
-_get_type_state(const ir_type *tp) {
+static inline ir_type_state _get_type_state(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->flags & tf_layout_fixed ? layout_fixed : layout_undefined;
 }
 
-static inline ir_visited_t
-_get_type_visited(const ir_type *tp) {
+static inline ir_visited_t _get_type_visited(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->visit;
 }
 
-static inline void
-_set_type_visited(ir_type *tp, ir_visited_t num) {
+static inline void _set_type_visited(ir_type *tp, ir_visited_t num)
+{
 	assert(tp && tp->kind == k_type);
 	tp->visit = num;
 }
 
-static inline void
-_mark_type_visited(ir_type *tp) {
+static inline void _mark_type_visited(ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	assert(tp->visit < firm_type_visited);
 	tp->visit = firm_type_visited;
 }
 
-static inline int
-_type_visited(const ir_type *tp) {
+static inline int _type_visited(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->visit >= firm_type_visited;
 }
 
-static inline int
-_type_not_visited(const ir_type *tp) {
+static inline int _type_not_visited(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return tp->visit  < firm_type_visited;
 }
 
-static inline type_dbg_info *
-_get_type_dbg_info(const ir_type *tp) {
+static inline type_dbg_info *_get_type_dbg_info(const ir_type *tp)
+{
 	return tp->dbi;
 }
 
-static inline void
-_set_type_dbg_info(ir_type *tp, type_dbg_info *db) {
+static inline void _set_type_dbg_info(ir_type *tp, type_dbg_info *db)
+{
 	tp->dbi = db;
 }
 
-static inline int
-_is_type(const void *thing) {
+static inline int _is_type(const void *thing)
+{
 	return (get_kind(thing) == k_type);
 }
 
-static inline int
-_is_class_type(const ir_type *clss) {
+static inline int _is_class_type(const ir_type *clss)
+{
 	assert(clss);
 	return (clss->type_op == type_class);
 }
 
-static inline int
-_get_class_n_members (const ir_type *clss) {
+static inline int _get_class_n_members (const ir_type *clss)
+{
 	assert(clss && (clss->type_op == type_class));
 	return (ARR_LEN (clss->attr.ca.members));
 }
 
-static inline ir_entity *
-_get_class_member   (const ir_type *clss, int pos) {
+static inline ir_entity *_get_class_member(const ir_type *clss, int pos)
+{
 	assert(clss && (clss->type_op == type_class));
 	assert(pos >= 0 && pos < _get_class_n_members(clss));
 	return clss->attr.ca.members[pos];
 }
 
-static inline unsigned
-_get_class_vtable_size(const ir_type *clss) {
+static inline unsigned _get_class_vtable_size(const ir_type *clss)
+{
 	assert(clss && (clss->type_op == type_class));
 	return clss->attr.ca.vtable_size;
 }
 
-static inline void
-_set_class_vtable_size(ir_type *clss, unsigned vtable_size) {
+static inline void _set_class_vtable_size(ir_type *clss, unsigned vtable_size)
+{
 	assert(clss && (clss->type_op == type_class));
 	clss->attr.ca.vtable_size = vtable_size;
 }
 
-static inline int
-_is_class_final(const ir_type *clss) {
+static inline int _is_class_final(const ir_type *clss)
+{
 	assert(clss && (clss->type_op == type_class));
 	return clss->attr.ca.clss_flags & cf_final_class;
 }
 
-static inline void
-_set_class_final(ir_type *clss, int final) {
+static inline void _set_class_final(ir_type *clss, int final)
+{
 	assert(clss && (clss->type_op == type_class));
 	if (final)
 		clss->attr.ca.clss_flags |= cf_final_class;
@@ -446,14 +445,14 @@ _set_class_final(ir_type *clss, int final) {
 		clss->attr.ca.clss_flags &= ~cf_final_class;
 }
 
-static inline int
-_is_class_interface(const ir_type *clss) {
+static inline int _is_class_interface(const ir_type *clss)
+{
 	assert(clss && (clss->type_op == type_class));
 	return clss->attr.ca.clss_flags & cf_interface_class;
 }
 
-static inline void
-_set_class_interface(ir_type *clss, int final) {
+static inline void _set_class_interface(ir_type *clss, int final)
+{
 	assert(clss && (clss->type_op == type_class));
 	if (final)
 		clss->attr.ca.clss_flags |= cf_interface_class;
@@ -461,14 +460,14 @@ _set_class_interface(ir_type *clss, int final) {
 		clss->attr.ca.clss_flags &= ~cf_interface_class;
 }
 
-static inline int
-_is_class_abstract(const ir_type *clss) {
+static inline int _is_class_abstract(const ir_type *clss)
+{
 	assert(clss && (clss->type_op == type_class));
 	return clss->attr.ca.clss_flags & cf_absctract_class;
-	}
+}
 
-static inline void
-_set_class_abstract(ir_type *clss, int final) {
+static inline void _set_class_abstract(ir_type *clss, int final)
+{
 	assert(clss && (clss->type_op == type_class));
 	if (final)
 		clss->attr.ca.clss_flags |= cf_absctract_class;
@@ -476,76 +475,76 @@ _set_class_abstract(ir_type *clss, int final) {
 		clss->attr.ca.clss_flags &= ~cf_absctract_class;
 }
 
-static inline int
-_is_struct_type(const ir_type *strct) {
+static inline int _is_struct_type(const ir_type *strct)
+{
 	assert(strct);
 	return (strct->type_op == type_struct);
 }
 
-static inline int
-_is_method_type(const ir_type *method) {
+static inline int _is_method_type(const ir_type *method)
+{
 	assert(method);
 	return (method->type_op == type_method);
 }
 
-static inline int
-_is_union_type(const ir_type *uni) {
+static inline int _is_union_type(const ir_type *uni)
+{
 	assert(uni);
 	return (uni->type_op == type_union);
 }
 
-static inline int
-_is_array_type(const ir_type *array) {
+static inline int _is_array_type(const ir_type *array)
+{
 	assert(array);
 	return (array->type_op == type_array);
 }
 
-static inline int
-_is_enumeration_type(const ir_type *enumeration) {
+static inline int _is_enumeration_type(const ir_type *enumeration)
+{
 	assert(enumeration);
 	return (enumeration->type_op == type_enumeration);
 }
 
-static inline int
-_is_pointer_type(const ir_type *pointer) {
+static inline int _is_pointer_type(const ir_type *pointer)
+{
 	assert(pointer);
 	return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
-static inline int
-_is_primitive_type(const ir_type *primitive) {
+static inline int _is_primitive_type(const ir_type *primitive)
+{
 	assert(primitive && primitive->kind == k_type);
 	return (primitive->type_op == type_primitive);
 }
 
-static inline int
-_is_atomic_type(const ir_type *tp) {
+static inline int _is_atomic_type(const ir_type *tp)
+{
 	assert(tp && tp->kind == k_type);
 	return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
 	        _is_enumeration_type(tp));
 }
 
-static inline int
-_get_method_n_params(const ir_type *method) {
+static inline int _get_method_n_params(const ir_type *method)
+{
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.n_params;
 }
 
-static inline int
-_get_method_n_ress(const ir_type *method) {
+static inline int _get_method_n_ress(const ir_type *method)
+{
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.n_res;
 }
 
-static inline unsigned
-_get_method_additional_properties(const ir_type *method) {
+static inline unsigned _get_method_additional_properties(const ir_type *method)
+{
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.additional_properties;
 }
 
-static inline void
-_set_method_additional_properties(ir_type *method, unsigned mask) {
+static inline void _set_method_additional_properties(ir_type *method, unsigned mask)
+{
 	assert(method && (method->type_op == type_method));
 
 	/* do not allow to set the mtp_property_inherited flag or
@@ -553,8 +552,8 @@ _set_method_additional_properties(ir_type *method, unsigned mask) {
 	method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
 }
 
-static inline void
-_set_method_additional_property(ir_type *method, mtp_additional_property flag) {
+static inline void _set_method_additional_property(ir_type *method, mtp_additional_property flag)
+{
 	assert(method && (method->type_op == type_method));
 
 	/* do not allow to set the mtp_property_inherited flag or
@@ -562,14 +561,14 @@ _set_method_additional_property(ir_type *method, mtp_additional_property flag) {
 	method->attr.ma.additional_properties |= flag & ~mtp_property_inherited;
 }
 
-static inline unsigned
-_get_method_calling_convention(const ir_type *method) {
+static inline unsigned _get_method_calling_convention(const ir_type *method)
+{
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.irg_calling_conv;
 }
 
-static inline void
-_set_method_calling_convention(ir_type *method, unsigned cc_mask) {
+static inline void _set_method_calling_convention(ir_type *method, unsigned cc_mask)
+{
 	assert(method && (method->type_op == type_method));
 	method->attr.ma.irg_calling_conv = cc_mask;
 }

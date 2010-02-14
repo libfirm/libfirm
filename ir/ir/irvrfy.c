@@ -864,8 +864,7 @@ static int verify_node_Proj_Bound(ir_node *n, ir_node *p)
 /**
  * verify a Proj node
  */
-static int
-verify_node_Proj(ir_node *p, ir_graph *irg)
+static int verify_node_Proj(ir_node *p, ir_graph *irg)
 {
 	ir_node *pred;
 	ir_op *op;

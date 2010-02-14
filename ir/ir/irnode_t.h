@@ -114,8 +114,8 @@ ir_node **get_Block_cfgpred_arr(ir_node *node);
  * Checks whether a pointer points to a ir node.
  * Intern version for libFirm.
  */
-static inline int
-_is_ir_node(const void *thing) {
+static inline int _is_ir_node(const void *thing)
+{
 	return (get_kind(thing) == k_ir_node);
 }
 
@@ -123,22 +123,22 @@ _is_ir_node(const void *thing) {
  * Gets the op of a node.
  * Intern version for libFirm.
  */
-static inline ir_op *
-_get_irn_op(const ir_node *node) {
+static inline ir_op *_get_irn_op(const ir_node *node)
+{
 	assert(node);
 	return node->op;
 }
 
-static inline void
-_set_irn_op(ir_node *node, ir_op *op) {
+static inline void _set_irn_op(ir_node *node, ir_op *op)
+{
 	assert(node);
 	node->op = op;
 }
 
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
-static inline void
-_copy_node_attr(const ir_node *old_node, ir_node *new_node) {
+static inline void _copy_node_attr(const ir_node *old_node, ir_node *new_node)
+{
 	ir_op *op = _get_irn_op(old_node);
 
 	/* must always exist */
@@ -149,8 +149,8 @@ _copy_node_attr(const ir_node *old_node, ir_node *new_node) {
  * Gets the opcode of a node.
  * Intern version for libFirm.
  */
-static inline unsigned
-_get_irn_opcode(const ir_node *node) {
+static inline unsigned _get_irn_opcode(const ir_node *node)
+{
 	assert(k_ir_node == get_kind(node));
 	assert(node->op);
 	return node->op->code;
@@ -160,8 +160,8 @@ _get_irn_opcode(const ir_node *node) {
  * Returns the number of predecessors without the block predecessor.
  * Intern version for libFirm.
  */
-static inline int
-_get_irn_intra_arity(const ir_node *node) {
+static inline int _get_irn_intra_arity(const ir_node *node)
+{
 	assert(node);
 	return ARR_LEN(node->in) - 1;
 }
@@ -170,8 +170,8 @@ _get_irn_intra_arity(const ir_node *node) {
  * Returns the number of predecessors without the block predecessor.
  * Intern version for libFirm.
  */
-static inline int
-_get_irn_inter_arity(const ir_node *node) {
+static inline int _get_irn_inter_arity(const ir_node *node)
+{
 	assert(node);
 	if (_get_irn_op(node) == op_Filter) {
 		assert(node->attr.filter.in_cg);
@@ -197,8 +197,8 @@ extern int (*_get_irn_arity)(const ir_node *node);
 /**
  * Intern version for libFirm.
  */
-static inline ir_node *
-_get_irn_intra_n(const ir_node *node, int n) {
+static inline ir_node *_get_irn_intra_n(const ir_node *node, int n)
+{
 	ir_node *nn;
 
 	assert(node);
@@ -218,8 +218,8 @@ _get_irn_intra_n(const ir_node *node, int n) {
 /**
  * Intern version for libFirm.
  */
-static inline ir_node*
-_get_irn_inter_n(const ir_node *node, int n) {
+static inline ir_node *_get_irn_inter_n(const ir_node *node, int n)
+{
 	assert(node); assert(-1 <= n && n < _get_irn_inter_arity(node));
 
 	/* handle Filter and Block specially */
@@ -265,8 +265,8 @@ static inline ir_node *_get_irn_dep(const ir_node *node, int pos) {
 	return node->deps[pos];
 }
 
-static inline void
-_set_irn_dep(ir_node *node, int pos, ir_node *dep) {
+static inline void _set_irn_dep(ir_node *node, int pos, ir_node *dep)
+{
 	ir_node *old;
 
 	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
@@ -277,13 +277,13 @@ _set_irn_dep(ir_node *node, int pos, ir_node *dep) {
 }
 
 
-static inline int
-_get_irn_ins_or_deps(const ir_node *irn) {
+static inline int _get_irn_ins_or_deps(const ir_node *irn)
+{
 	return _get_irn_deps(irn) + _get_irn_arity(irn);
 }
 
-static inline ir_node *
-_get_irn_in_or_dep(const ir_node *irn, int pos) {
+static inline ir_node *_get_irn_in_or_dep(const ir_node *irn, int pos)
+{
 	int n_in = get_irn_arity(irn);
 	return pos < n_in ? get_irn_n(irn, pos) : get_irn_dep(irn, pos - n_in);
 }
@@ -292,8 +292,8 @@ _get_irn_in_or_dep(const ir_node *irn, int pos) {
  * Gets the mode of a node.
  * Intern version for libFirm.
  */
-static inline ir_mode *
-_get_irn_mode(const ir_node *node) {
+static inline ir_mode *_get_irn_mode(const ir_node *node)
+{
 	assert(node);
 	return node->mode;
 }
@@ -302,8 +302,8 @@ _get_irn_mode(const ir_node *node) {
  * Sets the mode of a node.
  * Intern version of libFirm.
  */
-static inline void
-_set_irn_mode(ir_node *node, ir_mode *mode) {
+static inline void _set_irn_mode(ir_node *node, ir_mode *mode)
+{
 	assert(node);
 	node->mode = mode;
 }
@@ -312,8 +312,8 @@ _set_irn_mode(ir_node *node, ir_mode *mode) {
  * Gets the visited counter of a node.
  * Intern version for libFirm.
  */
-static inline ir_visited_t
-_get_irn_visited(const ir_node *node) {
+static inline ir_visited_t _get_irn_visited(const ir_node *node)
+{
 	assert(node);
 	return node->visited;
 }
@@ -322,8 +322,8 @@ _get_irn_visited(const ir_node *node) {
  * Sets the visited counter of a node.
  * Intern version for libFirm.
  */
-static inline void
-_set_irn_visited(ir_node *node, ir_visited_t visited) {
+static inline void _set_irn_visited(ir_node *node, ir_visited_t visited)
+{
 	assert(node);
 	node->visited = visited;
 }
@@ -332,8 +332,8 @@ _set_irn_visited(ir_node *node, ir_visited_t visited) {
  * Mark a node as visited in a graph.
  * Intern version for libFirm.
  */
-static inline void
-_mark_irn_visited(ir_node *node) {
+static inline void _mark_irn_visited(ir_node *node)
+{
 	assert(node);
 	node->visited = current_ir_graph->visited;
 }
@@ -342,14 +342,14 @@ _mark_irn_visited(ir_node *node) {
  * Returns non-zero if a node of was visited.
  * Intern version for libFirm.
  */
-static inline int
-_irn_visited(const ir_node *node) {
+static inline int _irn_visited(const ir_node *node)
+{
 	assert(node);
 	return (node->visited >= current_ir_graph->visited);
 }
 
-static inline int
-_irn_visited_else_mark(ir_node *node) {
+static inline int _irn_visited_else_mark(ir_node *node)
+{
 	if (_irn_visited(node))
 		return 1;
 	_mark_irn_visited(node);
@@ -360,8 +360,8 @@ _irn_visited_else_mark(ir_node *node) {
  * Sets the link of a node.
  * Intern version of libFirm.
  */
-static inline void
-_set_irn_link(ir_node *node, void *link) {
+static inline void _set_irn_link(ir_node *node, void *link)
+{
 	assert(node);
 	node->link = link;
 }
@@ -370,8 +370,8 @@ _set_irn_link(ir_node *node, void *link) {
  * Returns the link of a node.
  * Intern version of libFirm.
  */
-static inline void *
-_get_irn_link(const ir_node *node) {
+static inline void *_get_irn_link(const ir_node *node)
+{
 	assert(node && _is_ir_node(node));
 	return node->link;
 }
@@ -382,8 +382,8 @@ _get_irn_link(const ir_node *node) {
  *
  * Intern version of libFirm.
  */
-static inline op_pin_state
-_get_irn_pinned(const ir_node *node) {
+static inline op_pin_state _get_irn_pinned(const ir_node *node)
+{
 	op_pin_state state;
 	assert(node && _is_ir_node(node));
 	/* Check opcode */
@@ -394,8 +394,8 @@ _get_irn_pinned(const ir_node *node) {
 	return state;
 }
 
-static inline op_pin_state
-_is_irn_pinned_in_irg(const ir_node *node) {
+static inline op_pin_state _is_irn_pinned_in_irg(const ir_node *node)
+{
 	if (get_irg_pinned(get_irn_irg(node)) == op_pin_state_floats)
 		return get_irn_pinned(node);
 	return op_pin_state_pinned;
@@ -404,20 +404,20 @@ _is_irn_pinned_in_irg(const ir_node *node) {
 /* include generated code */
 #include "gen_irnode.h"
 
-static inline int
-_is_unop(const ir_node *node) {
+static inline int _is_unop(const ir_node *node)
+{
 	assert(node && _is_ir_node(node));
 	return (node->op->opar == oparity_unary);
 }
 
-static inline int
-_is_binop(const ir_node *node) {
+static inline int _is_binop(const ir_node *node)
+{
 	assert(node && _is_ir_node(node));
 	return (node->op->opar == oparity_binary);
 }
 
-static inline int
-_is_Phi(const ir_node *node) {
+static inline int _is_Phi(const ir_node *node)
+{
 	ir_op *op;
 	assert(node);
 
@@ -428,8 +428,8 @@ _is_Phi(const ir_node *node) {
 	return (op == op_Phi);
 }
 
-static inline int
-_is_Proj(const ir_node *node) {
+static inline int _is_Proj(const ir_node *node)
+{
 	ir_op *op;
 	assert(node);
 
@@ -440,30 +440,30 @@ _is_Proj(const ir_node *node) {
 	return (op == op_Proj);
 }
 
-static inline int
-_is_strictConv(const ir_node *node) {
+static inline int _is_strictConv(const ir_node *node)
+{
 	return _is_Conv(node) && get_Conv_strict(node);
 }
 
-static inline int
-_is_SymConst_addr_ent(const ir_node *node) {
+static inline int _is_SymConst_addr_ent(const ir_node *node)
+{
 	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
 }
 
-static inline int
-_is_no_Block(const ir_node *node) {
+static inline int _is_no_Block(const ir_node *node)
+{
 	assert(node && _is_ir_node(node));
 	return (_get_irn_op(node) != op_Block);
 }
 
-static inline int
-_get_Block_n_cfgpreds(const ir_node *node) {
+static inline int _get_Block_n_cfgpreds(const ir_node *node)
+{
 	assert(_is_Block(node));
 	return _get_irn_arity(node);
 }
 
-static inline ir_node *
-_get_Block_cfgpred(const ir_node *node, int pos) {
+static inline ir_node *_get_Block_cfgpred(const ir_node *node, int pos)
+{
 	assert(0 <= pos && pos < get_irn_arity(node));
 	assert(_is_Block(node));
 	return _get_irn_n(node, pos);
@@ -480,49 +480,49 @@ _get_Block_cfgpred(const ir_node *node, int pos) {
  *  - If we encounter the Bad node, this function does not return
  *    the Start block, but the Bad node.
  */
-static inline ir_node  *
-_get_Block_cfgpred_block(const ir_node *node, int pos) {
+static inline ir_node  *_get_Block_cfgpred_block(const ir_node *node, int pos)
+{
 	ir_node *res = skip_Proj(get_Block_cfgpred(node, pos));
 	if (!is_Bad(res))
 		res = get_nodes_block(res);
 	return res;
 }
 
-static inline ir_visited_t
-_get_Block_block_visited(const ir_node *node) {
+static inline ir_visited_t _get_Block_block_visited(const ir_node *node)
+{
 	assert(node->op == op_Block);
 	return node->attr.block.block_visited;
 }
 
-static inline void
-_set_Block_block_visited(ir_node *node, ir_visited_t visit) {
+static inline void _set_Block_block_visited(ir_node *node, ir_visited_t visit)
+{
 	assert(node->op == op_Block);
 	node->attr.block.block_visited = visit;
 }
 
 /* For this current_ir_graph must be set. */
-static inline void
-_mark_Block_block_visited(ir_node *node) {
+static inline void _mark_Block_block_visited(ir_node *node)
+{
 	assert(node->op == op_Block);
 	node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
 }
 
-static inline int
-_Block_block_visited(const ir_node *node) {
+static inline int _Block_block_visited(const ir_node *node)
+{
 	assert(node->op == op_Block);
 	return (node->attr.block.block_visited >= get_irg_block_visited(current_ir_graph));
 }
 
-static inline ir_node *
-_set_Block_dead(ir_node *block) {
+static inline ir_node *_set_Block_dead(ir_node *block)
+{
 	assert(_get_irn_op(block) == op_Block);
 	block->attr.block.dom.dom_depth = -1;
 	block->attr.block.is_dead = 1;
 	return block;
 }
 
-static inline int
-_is_Block_dead(const ir_node *block) {
+static inline int _is_Block_dead(const ir_node *block)
+{
 	ir_op *op = _get_irn_op(block);
 
 	if (op == op_Bad)
@@ -533,8 +533,8 @@ _is_Block_dead(const ir_node *block) {
 	}
 }
 
-static inline ir_graph *
-_get_Block_irg(const ir_node *block) {
+static inline ir_graph *_get_Block_irg(const ir_node *block)
+{
 	assert(is_Block(block) || is_Bad(block));
 	return block->attr.irg.irg;
 }
@@ -637,8 +637,8 @@ static inline void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 /**
  * Sets the Phi list of a block.
  */
-static inline void
-_set_Block_phis(ir_node *block, ir_node *phi) {
+static inline void _set_Block_phis(ir_node *block, ir_node *phi)
+{
 	assert(_is_Block(block));
 	assert(phi == NULL || _is_Phi(phi));
 	block->attr.block.phis = phi;
@@ -648,8 +648,8 @@ _set_Block_phis(ir_node *block, ir_node *phi) {
  * Returns the link of a node.
  * Intern version of libFirm.
  */
-static inline ir_node *
-_get_Block_phis(const ir_node *block) {
+static inline ir_node *_get_Block_phis(const ir_node *block)
+{
 	assert(_is_Block(block));
 	return block->attr.block.phis;
 }
@@ -657,8 +657,8 @@ _get_Block_phis(const ir_node *block) {
 /**
  * Sets the next link of a Phi.
  */
-static inline void
-_set_Phi_next(ir_node *phi, ir_node *next) {
+static inline void _set_Phi_next(ir_node *phi, ir_node *next)
+{
 	assert(_is_Phi(phi));
 	phi->attr.phi.next = next;
 }
@@ -667,36 +667,36 @@ _set_Phi_next(ir_node *phi, ir_node *next) {
  * Returns the link of a node.
  * Intern version of libFirm.
  */
-static inline ir_node *
-_get_Phi_next(const ir_node *phi) {
+static inline ir_node *_get_Phi_next(const ir_node *phi)
+{
 	assert(_is_Phi(phi));
 	return phi->attr.phi.next;
 }
 
 /** Add a Phi node to the list of Block Phi's. */
-static inline void
-_add_Block_phi(ir_node *block, ir_node *phi) {
+static inline void _add_Block_phi(ir_node *block, ir_node *phi)
+{
 	_set_Phi_next(phi, _get_Block_phis(block));
 	_set_Block_phis(block, phi);
 }
 
 /** Get the Block mark (single bit). */
-static inline unsigned
-_get_Block_mark(const ir_node *block) {
+static inline unsigned _get_Block_mark(const ir_node *block)
+{
 	assert(_is_Block(block));
 	return block->attr.block.marked;
 }
 
 /** Set the Block mark (single bit). */
-static inline void
-_set_Block_mark(ir_node *block, unsigned mark) {
+static inline void _set_Block_mark(ir_node *block, unsigned mark)
+{
 	assert(_is_Block(block));
 	block->attr.block.marked = mark;
 }
 
 /** Returns non-zero if a node is a routine parameter. */
-static inline int
-_is_arg_Proj(const ir_node *node) {
+static inline int _is_arg_Proj(const ir_node *node)
+{
 	if (! is_Proj(node))
 		return 0;
 	node = get_Proj_pred(node);

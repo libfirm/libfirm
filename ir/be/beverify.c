@@ -422,11 +422,9 @@ static ir_node *get_memory_edge(const ir_node *node)
 	return result;
 }
 
-static
-void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
+static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent);
 
-static
-void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
+static void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
 {
 	if (ent == NULL) {
 		ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have an entity assigned\n",
@@ -434,8 +432,7 @@ void be_check_entity(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *
 	}
 }
 
-static
-void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
+static void collect_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_node *reload, ir_entity* ent)
 {
 	ir_entity *spillent = arch_get_frame_entity(node);
 	be_check_entity(env, node, spillent);

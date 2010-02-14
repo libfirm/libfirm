@@ -59,8 +59,7 @@ new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp
 	return res;
 }
 
-void
-free_tpop(const tp_op *tpop)
+void free_tpop(const tp_op *tpop)
 {
 	xfree((void *)tpop);
 }

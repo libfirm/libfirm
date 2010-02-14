@@ -239,11 +239,9 @@ typedef short int yytype_int16;
 #else
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static int
-YYID (int i)
+static int YYID(int i)
 #else
-static int
-YYID (i)
+static int YYID(i)
     int i;
 #endif
 {
@@ -666,11 +664,9 @@ do {									  \
 /*ARGSUSED*/
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
+static void yy_symbol_value_print(FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
 #else
-static void
-yy_symbol_value_print (yyoutput, yytype, yyvaluep)
+static void yy_symbol_value_print(yyoutput, yytype, yyvaluep)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
@@ -698,11 +694,9 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep)
 
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
+static void yy_symbol_print(FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
 #else
-static void
-yy_symbol_print (yyoutput, yytype, yyvaluep)
+static void yy_symbol_print(yyoutput, yytype, yyvaluep)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
@@ -724,11 +718,9 @@ yy_symbol_print (yyoutput, yytype, yyvaluep)
 
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static void
-yy_stack_print (yytype_int16 *bottom, yytype_int16 *top)
+static void yy_stack_print(yytype_int16 *bottom, yytype_int16 *top)
 #else
-static void
-yy_stack_print (bottom, top)
+static void yy_stack_print(bottom, top)
     yytype_int16 *bottom;
     yytype_int16 *top;
 #endif
@@ -752,11 +744,9 @@ do {								\
 
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule)
+static void yy_reduce_print(YYSTYPE *yyvsp, int yyrule)
 #else
-static void
-yy_reduce_print (yyvsp, yyrule)
+static void yy_reduce_print(yyvsp, yyrule)
     YYSTYPE *yyvsp;
     int yyrule;
 #endif
@@ -821,11 +811,9 @@ int yydebug;
 /* Return the length of YYSTR.  */
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static YYSIZE_T
-yystrlen (const char *yystr)
+static YYSIZE_T yystrlen(const char *yystr)
 #else
-static YYSIZE_T
-yystrlen (yystr)
+static YYSIZE_T yystrlen(yystr)
     const char *yystr;
 #endif
 {
@@ -845,11 +833,9 @@ yystrlen (yystr)
    YYDEST.  */
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static char *
-yystpcpy (char *yydest, const char *yysrc)
+static char *yystpcpy(char *yydest, const char *yysrc)
 #else
-static char *
-yystpcpy (yydest, yysrc)
+static char *yystpcpy(yydest, yysrc)
     char *yydest;
     const char *yysrc;
 #endif
@@ -873,8 +859,7 @@ yystpcpy (yydest, yysrc)
    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
    null, do not copy; instead, return the length of what the result
    would have been.  */
-static YYSIZE_T
-yytnamerr (char *yyres, const char *yystr)
+static YYSIZE_T yytnamerr(char *yyres, const char *yystr)
 {
   if (*yystr == '"')
     {
@@ -920,8 +905,7 @@ yytnamerr (char *yyres, const char *yystr)
    copied.  As a special case, return 0 if an ordinary "syntax error"
    message will do.  Return YYSIZE_MAXIMUM if overflow occurs during
    size calculation.  */
-static YYSIZE_T
-yysyntax_error (char *yyresult, int yystate, int yychar)
+static YYSIZE_T yysyntax_error(char *yyresult, int yystate, int yychar)
 {
   int yyn = yypact[yystate];
 
@@ -1030,11 +1014,9 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 /*ARGSUSED*/
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
+static void yydestruct(const char *yymsg, int yytype, YYSTYPE *yyvaluep)
 #else
-static void
-yydestruct (yymsg, yytype, yyvaluep)
+static void yydestruct(yymsg, yytype, yyvaluep)
     const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
@@ -1091,21 +1073,17 @@ int yynerrs;
 #ifdef YYPARSE_PARAM
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-int
-yyparse (void *YYPARSE_PARAM)
+int yyparse (void *YYPARSE_PARAM)
 #else
-int
-yyparse (YYPARSE_PARAM)
+int yyparse (YYPARSE_PARAM)
     void *YYPARSE_PARAM;
 #endif
 #else /* ! YYPARSE_PARAM */
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
-int
-yyparse (void)
+int yyparse (void)
 #else
-int
-yyparse ()
+int yyparse ()
 
 #endif
 #endif

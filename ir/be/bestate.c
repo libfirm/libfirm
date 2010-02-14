@@ -76,8 +76,7 @@ typedef struct block_info_t {
 	ir_node *end_state;
 } block_info_t;
 
-static inline
-block_info_t *new_block_info(struct obstack *obst, ir_node *block)
+static inline block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 {
 	block_info_t *res = OALLOCZ(obst, block_info_t);
 
@@ -88,15 +87,13 @@ block_info_t *new_block_info(struct obstack *obst, ir_node *block)
 	return res;
 }
 
-static inline
-block_info_t *get_block_info(ir_node *block)
+static inline block_info_t *get_block_info(ir_node *block)
 {
 	assert(irn_visited(block));
 	return (block_info_t*) get_irn_link(block);
 }
 
-static inline
-spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
+static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 {
 	spill_info_t *spill_info = OALLOCZ(&env->obst, spill_info_t);
 	spill_info->value = state;
@@ -111,8 +108,7 @@ spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *state)
 	return spill_info;
 }
 
-static inline
-spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
+static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 {
 	spill_info_t *spill_info
 		= (spill_info_t*) ir_nodemap_get(&env->spill_infos, node);
@@ -120,8 +116,7 @@ spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
 	return spill_info;
 }
 
-static
-spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
+static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 {
 	spill_info_t *spill_info;
 	ir_node *next;
@@ -148,9 +143,8 @@ spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int force)
 	return spill_info;
 }
 
-static
-void create_reload(minibelady_env_t *env, ir_node *state, ir_node *before,
-                   ir_node *last_state)
+static void create_reload(minibelady_env_t *env, ir_node *state,
+                          ir_node *before, ir_node *last_state)
 {
 	spill_info_t *spill_info = create_spill(env, state, 0);
 	ir_node *spill = spill_info->spill;
@@ -161,8 +155,7 @@ void create_reload(minibelady_env_t *env, ir_node *state, ir_node *before,
 	ARR_APP1(ir_node*, spill_info->reloads, reload);
 }
 
-static
-void spill_phi(minibelady_env_t *env, ir_node *phi)
+static void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
 	ir_graph     *irg           = get_irn_irg(phi);
 	ir_node      *block         = get_nodes_block(phi);
@@ -203,8 +196,7 @@ void spill_phi(minibelady_env_t *env, ir_node *phi)
 	}
 }
 
-static
-void belady(minibelady_env_t *env, ir_node *block);
+static void belady(minibelady_env_t *env, ir_node *block);
 
 /**
  * Collects all values live-in at block @p block and all phi results in this
@@ -214,8 +206,7 @@ void belady(minibelady_env_t *env, ir_node *block);
  * their args to break interference and make it possible to spill them to the
  * same spill slot.
  */
-static
-block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
+static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
 {
 	block_info_t  *block_info;
 	be_next_use_t  next_use;
@@ -362,8 +353,7 @@ block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *block)
  * whether it is used from a register or is reloaded
  * before the use.
  */
-static
-void belady(minibelady_env_t *env, ir_node *block)
+static void belady(minibelady_env_t *env, ir_node *block)
 {
 	ir_node *current_state;
 	ir_node *node;
@@ -454,14 +444,12 @@ void belady(minibelady_env_t *env, ir_node *block)
 	DBG((dbg, LEVEL_3, "End value for %+F: %+F\n", block, current_state));
 }
 
-static
-void belady_walker(ir_node *block, void *data)
+static void belady_walker(ir_node *block, void *data)
 {
 	belady((minibelady_env_t*) data, block);
 }
 
-static
-ir_node *get_end_of_block_insertion_point(ir_node *block)
+static ir_node *get_end_of_block_insertion_point(ir_node *block)
 {
 	ir_node *last = sched_last(block);
 
@@ -482,8 +470,7 @@ ir_node *get_end_of_block_insertion_point(ir_node *block)
 /**
  * We must adapt the live-outs to the live-ins at each block-border.
  */
-static
-void fix_block_borders(ir_node *block, void *data)
+static void fix_block_borders(ir_node *block, void *data)
 {
 	minibelady_env_t *env = data;
 	ir_graph *irg = get_irn_irg(block);

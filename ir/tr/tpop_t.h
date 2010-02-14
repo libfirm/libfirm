@@ -142,18 +142,18 @@ int get_tpop_attr_size (const tp_op *op);
  * inline functions *
  * -----------------*/
 
-static inline tp_opcode
-_get_tpop_code(const tp_op *op) {
+static inline tp_opcode _get_tpop_code(const tp_op *op)
+{
 	return op->code;
 }
 
-static inline ident *
-_get_tpop_ident(const tp_op *op){
+static inline ident *_get_tpop_ident(const tp_op *op)
+{
 	return op->name;
 }
 
-static inline size_t
-_get_tpop_attr_size(const tp_op *op) {
+static inline size_t _get_tpop_attr_size(const tp_op *op)
+{
 	return op->attr_size;
 }
 

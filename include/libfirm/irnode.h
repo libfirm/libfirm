@@ -262,14 +262,8 @@ op_pin_state is_irn_pinned_in_irg(const ir_node *node);
  * @param arity The arity of the new node, <0 if can be changed dynamically.
  * @param in    An array of arity predecessor nodes.
  */
-ir_node *
-new_ir_node(dbg_info *db,
-         ir_graph *irg,
-         ir_node *block,
-         ir_op *op,
-         ir_mode *mode,
-         int arity,
-         ir_node *in[]);
+ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
+                     ir_mode *mode, int arity, ir_node *in[]);
 
 /**
  * Return the block the node belongs to.  This is only

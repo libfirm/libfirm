@@ -84,8 +84,7 @@ struct ir_exec_freq {
 	unsigned infeasible : 1;
 };
 
-static int
-cmp_freq(const void *a, const void *b, size_t size)
+static int cmp_freq(const void *a, const void *b, size_t size)
 {
 	const freq_t *p = a;
 	const freq_t *q = b;
@@ -94,8 +93,7 @@ cmp_freq(const void *a, const void *b, size_t size)
 	return !(p->irn == q->irn);
 }
 
-static freq_t *
-set_find_freq(set * set, const ir_node * irn)
+static freq_t *set_find_freq(set *set, const ir_node *irn)
 {
 	freq_t     query;
 
@@ -103,8 +101,7 @@ set_find_freq(set * set, const ir_node * irn)
 	return set_find(set, &query, sizeof(query), HASH_PTR(irn));
 }
 
-static freq_t *
-set_insert_freq(set * set, const ir_node * irn)
+static freq_t *set_insert_freq(set *set, const ir_node *irn)
 {
 	freq_t query;
 
@@ -114,8 +111,7 @@ set_insert_freq(set * set, const ir_node * irn)
 	return set_insert(set, &query, sizeof(query), HASH_PTR(irn));
 }
 
-double
-get_block_execfreq(const ir_exec_freq *ef, const ir_node * irn)
+double get_block_execfreq(const ir_exec_freq *ef, const ir_node *irn)
 {
 	if (!ef->infeasible) {
 		set *freqs = ef->set;
@@ -139,8 +135,7 @@ get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *bb)
 	return res;
 }
 
-static double *
-solve_lgs(gs_matrix_t *mat, double *x, int size)
+static double *solve_lgs(gs_matrix_t *mat, double *x, int size)
 {
 	double init = 1.0 / size;
 	double dev;
@@ -181,8 +176,7 @@ solve_lgs(gs_matrix_t *mat, double *x, int size)
 /*
  * Determine probability that predecessor pos takes this cf edge.
  */
-static double
-get_cf_probability(ir_node *bb, int pos, double loop_weight)
+static double get_cf_probability(ir_node *bb, int pos, double loop_weight)
 {
 	double           sum = 0.0;
 	double           cur = 1.0;
@@ -260,8 +254,7 @@ static void collect_blocks(ir_node *bl, void *data)
 	set_insert_freq(freqs, bl);
 }
 
-ir_exec_freq *
-compute_execfreq(ir_graph * irg, double loop_weight)
+ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 {
 	gs_matrix_t  *mat;
 	int           size;
@@ -433,8 +426,7 @@ compute_execfreq(ir_graph * irg, double loop_weight)
 	return ef;
 }
 
-void
-free_execfreq(ir_exec_freq *ef)
+void free_execfreq(ir_exec_freq *ef)
 {
 	del_set(ef->set);
 	unregister_hook(hook_node_info, &ef->hook);

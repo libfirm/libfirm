@@ -36,45 +36,34 @@
  * ------------------------------- */
 extern ir_mode *mode_P_code, *mode_P_data;
 
-static inline ir_mode *
-_get_modeP_code(void) { return mode_P_code; }
+static inline ir_mode *_get_modeP_code(void) { return mode_P_code; }
 
-static inline ir_mode *
-_get_modeP_data(void) { return mode_P_data; }
+static inline ir_mode *_get_modeP_data(void) { return mode_P_data; }
 
-static inline ident *
-_get_mode_ident(const ir_mode *mode) { return mode->name; }
+static inline ident *_get_mode_ident(const ir_mode *mode) { return mode->name; }
 
-static inline ir_mode_sort
-_get_mode_sort(const ir_mode *mode) { return mode->sort; }
+static inline ir_mode_sort _get_mode_sort(const ir_mode *mode) { return mode->sort; }
 
-static inline unsigned
-_get_mode_size_bits(const ir_mode *mode) { return mode->size; }
+static inline unsigned _get_mode_size_bits(const ir_mode *mode) { return mode->size; }
 
-static inline unsigned
-_get_mode_size_bytes(const ir_mode *mode) {
+static inline unsigned _get_mode_size_bytes(const ir_mode *mode)
+{
 	unsigned size = _get_mode_size_bits(mode);
 	if ((size & 7) != 0) return (unsigned) -1;
 	return size >> 3;
 }
 
-static inline int
-_get_mode_sign(const ir_mode *mode) { return mode->sign; }
+static inline int _get_mode_sign(const ir_mode *mode) { return mode->sign; }
 
-static inline ir_mode_arithmetic
-_get_mode_arithmetic(const ir_mode *mode) { return mode->arithmetic; }
+static inline ir_mode_arithmetic _get_mode_arithmetic(const ir_mode *mode) { return mode->arithmetic; }
 
-static inline unsigned int
-_get_mode_modulo_shift(const ir_mode *mode) { return mode->modulo_shift; }
+static inline unsigned int _get_mode_modulo_shift(const ir_mode *mode) { return mode->modulo_shift; }
 
-static inline unsigned int
-_get_mode_vector_elems(const ir_mode *mode) { return mode->vector_elem; }
+static inline unsigned int _get_mode_vector_elems(const ir_mode *mode) { return mode->vector_elem; }
 
-static inline void *
-_get_mode_link(const ir_mode *mode) { return mode->link; }
+static inline void * _get_mode_link(const ir_mode *mode) { return mode->link; }
 
-static inline void
-_set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
+static inline void _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
 
 /* Functions to check, whether a mode is signed, float, int, num, data,
    datab or dataM. For more exact definitions read the corresponding pages
@@ -113,53 +102,53 @@ _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
             = {data || irm_M}
 */
 
-static inline int
-_mode_is_signed(const ir_mode *mode) {
+static inline int _mode_is_signed(const ir_mode *mode)
+{
 	return mode->sign;
 }
 
-static inline int
-_mode_is_float(const ir_mode *mode) {
+static inline int _mode_is_float(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) == irms_float_number);
 }
 
-static inline int
-_mode_is_int(const ir_mode *mode) {
+static inline int _mode_is_int(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) == irms_int_number);
 }
 
-static inline int
-_mode_is_reference(const ir_mode *mode) {
+static inline int _mode_is_reference(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) == irms_reference);
 }
 
-static inline int
-_mode_is_num(const ir_mode *mode) {
+static inline int _mode_is_num(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) & irmsh_is_num);
 }
 
-static inline int
-_mode_is_data(const ir_mode *mode) {
+static inline int _mode_is_data(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) & irmsh_is_data);
 }
 
-static inline int
-_mode_is_datab(const ir_mode *mode) {
+static inline int _mode_is_datab(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) & irmsh_is_datab);
 }
 
-static inline int
-_mode_is_dataM(const ir_mode *mode) {
+static inline int _mode_is_dataM(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) & irmsh_is_dataM);
 }
 
-static inline int
-_mode_is_float_vector(const ir_mode *mode) {
+static inline int _mode_is_float_vector(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) == irms_float_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
-static inline int
-_mode_is_int_vector(const ir_mode *mode) {
+static inline int _mode_is_int_vector(const ir_mode *mode)
+{
 	return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
 }
 

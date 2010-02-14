@@ -110,8 +110,7 @@ static hook_entry_t hook;
 /**
  * Instrument a block with code needed for profiling
  */
-static void
-instrument_block(ir_node *bb, ir_node *address, unsigned int id)
+static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 {
 	ir_graph *irg = get_irn_irg(bb);
 	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown;
@@ -144,8 +143,7 @@ typedef struct fix_env {
 /**
  * SSA Construction for instrumentation code memory
  */
-static void
-fix_ssa(ir_node * bb, void * data)
+static void fix_ssa(ir_node *bb, void *data)
 {
 	fix_env *env = data;
 	ir_node *mem;
@@ -195,8 +193,7 @@ static void add_constructor(ir_entity *method)
  * Pseudocode:
  *	 void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
  */
-static ir_graph *
-gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bblock_counts, int n_blocks)
+static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bblock_counts, int n_blocks)
 {
 	ir_node   *ins[4];
 	ident     *name = new_id_from_str("__firmprof_initializer");
@@ -310,8 +307,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
  * Walker: assigns an ID to every block.
  * Builds the string table
  */
-static void
-block_id_walker(ir_node * bb, void * data)
+static void block_id_walker(ir_node *bb, void *data)
 {
 	block_id_walker_data_t *wd = data;
 
@@ -327,8 +323,7 @@ block_id_walker(ir_node * bb, void * data)
 
 #define IDENT(x)	new_id_from_chars(x, sizeof(x) - 1)
 
-ir_graph *
-ir_profile_instrument(const char *filename, unsigned flags)
+ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 {
 	int n, i;
 	int n_blocks = 0;
@@ -533,8 +528,7 @@ ir_profile_instrument(const char *filename, unsigned flags)
 	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
 }
 
-static void
-profile_node_info(void *ctx, FILE *f, const ir_node *irn)
+static void profile_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
 	(void) ctx;
 	if (is_Block(irn)) {
@@ -542,16 +536,14 @@ profile_node_info(void *ctx, FILE *f, const ir_node *irn)
 	}
 }
 
-static void
-register_vcg_hook(void)
+static void register_vcg_hook(void)
 {
 	memset(&hook, 0, sizeof(hook));
 	hook.hook._hook_node_info = profile_node_info;
 	register_hook(hook_node_info, &hook);
 }
 
-static void
-unregister_vcg_hook(void)
+static void unregister_vcg_hook(void)
 {
 	unregister_hook(hook_node_info, &hook);
 }
@@ -560,8 +552,7 @@ unregister_vcg_hook(void)
  * Reads the corresponding profile info file if it exists and returns a
  * profile info struct
  */
-void
-ir_profile_read(const char *filename)
+void ir_profile_read(const char *filename)
 {
 	FILE   *f;
 	char    buf[8];
@@ -598,8 +589,7 @@ ir_profile_read(const char *filename)
 /**
  * Frees the profile info
  */
-void
-ir_profile_free(void)
+void ir_profile_free(void)
 {
 	if (profile) {
 		unregister_vcg_hook();
@@ -610,8 +600,7 @@ ir_profile_free(void)
 /**
  * Tells whether profile module has acquired data
  */
-int
-ir_profile_has_data(void)
+int ir_profile_has_data(void)
 {
 	return (profile != NULL);
 }

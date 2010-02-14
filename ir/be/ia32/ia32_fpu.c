@@ -237,8 +237,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 	}
 }
 
-static
-void rewire_fpu_mode_nodes(be_irg_t *birg)
+static void rewire_fpu_mode_nodes(be_irg_t *birg)
 {
 	collect_fpu_mode_nodes_env_t env;
 	be_ssa_construction_env_t senv;

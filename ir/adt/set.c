@@ -114,8 +114,7 @@ struct SET {
 
 #ifdef STATS
 
-void
-MANGLEP(stats) (SET *table)
+void MANGLEP(stats) (SET *table)
 {
   int nfree = 0;
 #ifdef PSET
@@ -126,8 +125,7 @@ MANGLEP(stats) (SET *table)
 	  table->naccess, table->ncollision, table->nkey, table->ndups, table->max_chain_len, nfree);
 }
 
-static inline void
-stat_chain_len (SET *table, int chain_len)
+static inline void stat_chain_len(SET *table, int chain_len)
 {
   table->ncollision += chain_len;
   if (table->max_chain_len < chain_len) table->max_chain_len = chain_len;
@@ -149,8 +147,7 @@ stat_chain_len (SET *table, int chain_len)
 const char *MANGLEP(tag);
 
 
-void
-MANGLEP(describe) (SET *table)
+void MANGLEP(describe) (SET *table)
 {
   unsigned i, j, collide;
   Element *ptr;
@@ -180,8 +177,7 @@ MANGLEP(describe) (SET *table)
 #endif /* !DEBUG */
 
 
-SET *
-(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, int nslots)
+SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, int nslots)
 {
   int i;
   SET *table = XMALLOC(SET);
@@ -221,8 +217,7 @@ SET *
 }
 
 
-void
-PMANGLE(del) (SET *table)
+void PMANGLE(del) (SET *table)
 {
 #ifdef DEBUG
   MANGLEP(tag) = table->tag;
@@ -231,8 +226,7 @@ PMANGLE(del) (SET *table)
   xfree (table);
 }
 
-int
-MANGLEP(count) (SET *table)
+int MANGLEP(count) (SET *table)
 {
   return table->nkey;
 }
@@ -241,8 +235,7 @@ MANGLEP(count) (SET *table)
  * do one iteration step, return 1
  * if still data in the set, 0 else
  */
-static inline int
-iter_step (SET *table)
+static inline int iter_step(SET *table)
 {
   if (++table->iter_j >= SEGMENT_SIZE) {
     table->iter_j = 0;
@@ -257,8 +250,7 @@ iter_step (SET *table)
 /*
  * finds the first entry in the table
  */
-void *
-MANGLEP(first) (SET *table)
+void * MANGLEP(first) (SET *table)
 {
   assert (!table->iter_tail);
   table->iter_i = 0;
@@ -274,8 +266,7 @@ MANGLEP(first) (SET *table)
 /*
  * returns next entry in the table
  */
-void *
-MANGLEP(next) (SET *table)
+void *MANGLEP(next) (SET *table)
 {
   if (!table->iter_tail)
     return NULL;
@@ -293,8 +284,7 @@ MANGLEP(next) (SET *table)
   return table->iter_tail->entry.dptr;
 }
 
-void
-MANGLEP(break) (SET *table)
+void MANGLEP(break) (SET *table)
 {
   table->iter_tail = NULL;
 }
@@ -302,8 +292,7 @@ MANGLEP(break) (SET *table)
 /*
  * limit the hash value
  */
-static inline unsigned
-Hash (SET *table, unsigned h)
+static inline unsigned Hash(SET *table, unsigned h)
 {
   unsigned address;
   address = h & (table->maxp - 1);          /* h % table->maxp */
@@ -316,8 +305,7 @@ Hash (SET *table, unsigned h)
  * returns non-zero if the number of elements in
  * the set is greater then number of segments * MAX_LOAD_FACTOR
  */
-static inline int
-loaded (SET *table)
+static inline int loaded(SET *table)
 {
   return (  ++table->nkey
 	  > (table->nseg << SEGMENT_SIZE_SHIFT) * MAX_LOAD_FACTOR);
@@ -331,8 +319,7 @@ loaded (SET *table)
  * after all segments were split, table->p is set to zero and
  * table->maxp is duplicated.
  */
-static void
-expand_table (SET *table)
+static void expand_table(SET *table)
 {
   unsigned NewAddress;
   int OldSegmentIndex, NewSegmentIndex;
@@ -389,8 +376,7 @@ expand_table (SET *table)
 }
 
 
-void *
-MANGLE(_,_search) (SET *table,
+void * MANGLE(_,_search) (SET *table,
 		   const void *key,
 #ifndef PSET
 		   size_t size,
@@ -475,8 +461,7 @@ int pset_default_ptr_cmp(const void *x, const void *y)
 	return x != y;
 }
 
-void *
-pset_remove (SET *table, const void *key, unsigned hash)
+void *pset_remove(SET *table, const void *key, unsigned hash)
 {
   unsigned h;
   Segment *CurrentSegment;
@@ -529,15 +514,13 @@ pset_remove (SET *table, const void *key, unsigned hash)
 }
 
 
-void *
-(pset_find) (SET *se, const void *key, unsigned hash)
+void *(pset_find) (SET *se, const void *key, unsigned hash)
 {
   return pset_find (se, key, hash);
 }
 
 
-void *
-(pset_insert) (SET *se, const void *key, unsigned hash)
+void *(pset_insert) (SET *se, const void *key, unsigned hash)
 {
   return pset_insert (se, key, hash);
 }
@@ -559,22 +542,19 @@ void pset_insert_pset_ptr(pset *target, pset *src)
 
 #else /* !PSET */
 
-void *
-(set_find) (set *se, const void *key, size_t size, unsigned hash)
+void *(set_find) (set *se, const void *key, size_t size, unsigned hash)
 {
   return set_find (se, key, size, hash);
 }
 
 
-void *
-(set_insert) (set *se, const void *key, size_t size, unsigned hash)
+void *(set_insert) (set *se, const void *key, size_t size, unsigned hash)
 {
   return set_insert (se, key, size, hash);
 }
 
 
-set_entry *
-(set_hinsert) (set *se, const void *key, size_t size, unsigned hash)
+set_entry *(set_hinsert) (set *se, const void *key, size_t size, unsigned hash)
 {
   return set_hinsert (se, key, size, hash);
 }

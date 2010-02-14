@@ -133,9 +133,8 @@ void init_irnode(void)
  * some incoming irnodes.
  * If arity is negative, a node with a dynamic array is created.
  */
-ir_node *
-new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op, ir_mode *mode,
-            int arity, ir_node **in)
+ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
+                     ir_mode *mode, int arity, ir_node **in)
 {
 	ir_node *res;
 	size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
@@ -1124,22 +1123,19 @@ void set_IJmp_target(ir_node *ijmp, ir_node *tgt)
 	set_irn_n(ijmp, 0, tgt);
 }
 
-ir_node *
-get_Cond_selector(const ir_node *node)
+ir_node *get_Cond_selector(const ir_node *node)
 {
 	assert(is_Cond(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Cond_selector(ir_node *node, ir_node *selector)
+void set_Cond_selector(ir_node *node, ir_node *selector)
 {
 	assert(is_Cond(node));
 	set_irn_n(node, 0, selector);
 }
 
-long
-get_Cond_default_proj(const ir_node *node)
+long get_Cond_default_proj(const ir_node *node)
 {
 	assert(is_Cond(node));
 	return node->attr.cond.default_proj;
@@ -1151,29 +1147,25 @@ void set_Cond_default_proj(ir_node *node, long defproj)
 	node->attr.cond.default_proj = defproj;
 }
 
-ir_node *
-get_Return_mem(const ir_node *node)
+ir_node *get_Return_mem(const ir_node *node)
 {
 	assert(is_Return(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Return_mem(ir_node *node, ir_node *mem)
+void set_Return_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Return(node));
 	set_irn_n(node, 0, mem);
 }
 
-int
-get_Return_n_ress(const ir_node *node)
+int get_Return_n_ress(const ir_node *node)
 {
 	assert(is_Return(node));
 	return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
 }
 
-ir_node **
-get_Return_res_arr(ir_node *node)
+ir_node **get_Return_res_arr(ir_node *node)
 {
 	assert(is_Return(node));
 	if (get_Return_n_ress(node) > 0)
@@ -1183,23 +1175,20 @@ get_Return_res_arr(ir_node *node)
 }
 
 /*
-void
-set_Return_n_res(ir_node *node, int results)
+void set_Return_n_res(ir_node *node, int results)
 {
 	assert(is_Return(node));
 }
 */
 
-ir_node *
-get_Return_res(const ir_node *node, int pos)
+ir_node *get_Return_res(const ir_node *node, int pos)
 {
 	assert(is_Return(node));
 	assert(get_Return_n_ress(node) > pos);
 	return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
 }
 
-void
-set_Return_res(ir_node *node, int pos, ir_node *res)
+void set_Return_res(ir_node *node, int pos, ir_node *res)
 {
 	assert(is_Return(node));
 	set_irn_n(node, pos + RETURN_RESULT_OFFSET, res);
@@ -1210,8 +1199,7 @@ tarval *(get_Const_tarval)(const ir_node *node)
 	return _get_Const_tarval(node);
 }
 
-void
-set_Const_tarval(ir_node *node, tarval *con)
+void set_Const_tarval(ir_node *node, tarval *con)
 {
 	assert(is_Const(node));
 	node->attr.con.tv = con;
@@ -1236,15 +1224,13 @@ int (is_Const_all_one)(const ir_node *node)
 /* The source language type.  Must be an atomic type.  Mode of type must
    be mode of node. For tarvals from entities type must be pointer to
    entity type. */
-ir_type *
-get_Const_type(ir_node *node)
+ir_type *get_Const_type(ir_node *node)
 {
 	assert(is_Const(node));
 	return node->attr.con.tp;
 }
 
-void
-set_Const_type(ir_node *node, ir_type *tp)
+void set_Const_type(ir_node *node, ir_type *tp)
 {
 	assert(is_Const(node));
 	if (tp != firm_unknown_type) {
@@ -1255,22 +1241,19 @@ set_Const_type(ir_node *node, ir_type *tp)
 }
 
 
-symconst_kind
-get_SymConst_kind(const ir_node *node)
+symconst_kind get_SymConst_kind(const ir_node *node)
 {
 	assert(is_SymConst(node));
 	return node->attr.symc.kind;
 }
 
-void
-set_SymConst_kind(ir_node *node, symconst_kind kind)
+void set_SymConst_kind(ir_node *node, symconst_kind kind)
 {
 	assert(is_SymConst(node));
 	node->attr.symc.kind = kind;
 }
 
-ir_type *
-get_SymConst_type(const ir_node *node)
+ir_type *get_SymConst_type(const ir_node *node)
 {
 	/* the cast here is annoying, but we have to compensate for
 	   the skip_tip() */
@@ -1280,23 +1263,20 @@ get_SymConst_type(const ir_node *node)
 	return irn->attr.symc.sym.type_p;
 }
 
-void
-set_SymConst_type(ir_node *node, ir_type *tp)
+void set_SymConst_type(ir_node *node, ir_type *tp)
 {
 	assert(is_SymConst(node) &&
 	       (SYMCONST_HAS_TYPE(get_SymConst_kind(node))));
 	node->attr.symc.sym.type_p = tp;
 }
 
-ident *
-get_SymConst_name(const ir_node *node)
+ident *get_SymConst_name(const ir_node *node)
 {
 	assert(is_SymConst(node) && SYMCONST_HAS_ID(get_SymConst_kind(node)));
 	return node->attr.symc.sym.ident_p;
 }
 
-void
-set_SymConst_name(ir_node *node, ident *name)
+void set_SymConst_name(ir_node *node, ident *name)
 {
 	assert(is_SymConst(node) && SYMCONST_HAS_ID(get_SymConst_kind(node)));
 	node->attr.symc.sym.ident_p = name;
@@ -1335,64 +1315,55 @@ get_SymConst_symbol(const ir_node *node)
 	return node->attr.symc.sym;
 }
 
-void
-set_SymConst_symbol(ir_node *node, union symconst_symbol sym)
+void set_SymConst_symbol(ir_node *node, union symconst_symbol sym)
 {
 	assert(is_SymConst(node));
 	node->attr.symc.sym = sym;
 }
 
-ir_type *
-get_SymConst_value_type(ir_node *node)
+ir_type *get_SymConst_value_type(ir_node *node)
 {
 	assert(is_SymConst(node));
 	return node->attr.symc.tp;
 }
 
-void
-set_SymConst_value_type(ir_node *node, ir_type *tp)
+void set_SymConst_value_type(ir_node *node, ir_type *tp)
 {
 	assert(is_SymConst(node));
 	node->attr.symc.tp = tp;
 }
 
-ir_node *
-get_Sel_mem(const ir_node *node)
+ir_node *get_Sel_mem(const ir_node *node)
 {
 	assert(is_Sel(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Sel_mem(ir_node *node, ir_node *mem)
+void set_Sel_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Sel(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Sel_ptr(const ir_node *node)
+ir_node *get_Sel_ptr(const ir_node *node)
 {
 	assert(is_Sel(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Sel_ptr(ir_node *node, ir_node *ptr)
+void set_Sel_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_Sel(node));
 	set_irn_n(node, 1, ptr);
 }
 
-int
-get_Sel_n_indexs(const ir_node *node)
+int get_Sel_n_indexs(const ir_node *node)
 {
 	assert(is_Sel(node));
 	return (get_irn_arity(node) - SEL_INDEX_OFFSET);
 }
 
-ir_node **
-get_Sel_index_arr(ir_node *node)
+ir_node **get_Sel_index_arr(ir_node *node)
 {
 	assert(is_Sel(node));
 	if (get_Sel_n_indexs(node) > 0)
@@ -1401,22 +1372,19 @@ get_Sel_index_arr(ir_node *node)
 		return NULL;
 }
 
-ir_node *
-get_Sel_index(const ir_node *node, int pos)
+ir_node *get_Sel_index(const ir_node *node, int pos)
 {
 	assert(is_Sel(node));
 	return get_irn_n(node, pos + SEL_INDEX_OFFSET);
 }
 
-void
-set_Sel_index(ir_node *node, int pos, ir_node *index)
+void set_Sel_index(ir_node *node, int pos, ir_node *index)
 {
 	assert(is_Sel(node));
 	set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
 }
 
-ir_entity *
-get_Sel_entity(const ir_node *node)
+ir_entity *get_Sel_entity(const ir_node *node)
 {
 	assert(is_Sel(node));
 	return node->attr.sel.entity;
@@ -1428,8 +1396,7 @@ static ir_entity *_get_Sel_entity(ir_node *node)
 	return get_Sel_entity(node);
 }
 
-void
-set_Sel_entity(ir_node *node, ir_entity *ent)
+void set_Sel_entity(ir_node *node, ir_entity *ent)
 {
 	assert(is_Sel(node));
 	node->attr.sel.entity = ent;
@@ -1444,156 +1411,134 @@ set_Sel_entity(ir_node *node, ir_entity *ent)
    Shr, Shrs, Rotate, Cmp */
 
 
-ir_node *
-get_Call_mem(const ir_node *node)
+ir_node *get_Call_mem(const ir_node *node)
 {
 	assert(is_Call(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Call_mem(ir_node *node, ir_node *mem)
+void set_Call_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Call(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Call_ptr(const ir_node *node)
+ir_node *get_Call_ptr(const ir_node *node)
 {
 	assert(is_Call(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Call_ptr(ir_node *node, ir_node *ptr)
+void set_Call_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_Call(node));
 	set_irn_n(node, 1, ptr);
 }
 
-ir_node **
-get_Call_param_arr(ir_node *node)
+ir_node **get_Call_param_arr(ir_node *node)
 {
 	assert(is_Call(node));
 	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
-int
-get_Call_n_params(const ir_node *node)
+int get_Call_n_params(const ir_node *node)
 {
 	assert(is_Call(node));
 	return (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
-ir_node *
-get_Call_param(const ir_node *node, int pos)
+ir_node *get_Call_param(const ir_node *node, int pos)
 {
 	assert(is_Call(node));
 	return get_irn_n(node, pos + CALL_PARAM_OFFSET);
 }
 
-void
-set_Call_param(ir_node *node, int pos, ir_node *param)
+void set_Call_param(ir_node *node, int pos, ir_node *param)
 {
 	assert(is_Call(node));
 	set_irn_n(node, pos + CALL_PARAM_OFFSET, param);
 }
 
-ir_type *
-get_Call_type(ir_node *node)
+ir_type *get_Call_type(ir_node *node)
 {
 	assert(is_Call(node));
 	return node->attr.call.type;
 }
 
-void
-set_Call_type(ir_node *node, ir_type *tp)
+void set_Call_type(ir_node *node, ir_type *tp)
 {
 	assert(is_Call(node));
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
 	node->attr.call.type = tp;
 }
 
-unsigned
-get_Call_tail_call(const ir_node *node)
+unsigned get_Call_tail_call(const ir_node *node)
 {
 	assert(is_Call(node));
 	return node->attr.call.tail_call;
 }
 
-void
-set_Call_tail_call(ir_node *node, unsigned tail_call)
+void set_Call_tail_call(ir_node *node, unsigned tail_call)
 {
 	assert(is_Call(node));
 	node->attr.call.tail_call = tail_call != 0;
 }
 
-ir_node *
-get_Builtin_mem(const ir_node *node)
+ir_node *get_Builtin_mem(const ir_node *node)
 {
 	assert(is_Builtin(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Builin_mem(ir_node *node, ir_node *mem)
+void set_Builin_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Builtin(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_builtin_kind
-get_Builtin_kind(const ir_node *node)
+ir_builtin_kind get_Builtin_kind(const ir_node *node)
 {
 	assert(is_Builtin(node));
 	return node->attr.builtin.kind;
 }
 
-void
-set_Builtin_kind(ir_node *node, ir_builtin_kind kind)
+void set_Builtin_kind(ir_node *node, ir_builtin_kind kind)
 {
 	assert(is_Builtin(node));
 	node->attr.builtin.kind = kind;
 }
 
-ir_node **
-get_Builtin_param_arr(ir_node *node)
+ir_node **get_Builtin_param_arr(ir_node *node)
 {
 	assert(is_Builtin(node));
 	return &get_irn_in(node)[BUILDIN_PARAM_OFFSET + 1];
 }
 
-int
-get_Builtin_n_params(const ir_node *node)
+int get_Builtin_n_params(const ir_node *node)
 {
 	assert(is_Builtin(node));
 	return (get_irn_arity(node) - BUILDIN_PARAM_OFFSET);
 }
 
-ir_node *
-get_Builtin_param(const ir_node *node, int pos)
+ir_node *get_Builtin_param(const ir_node *node, int pos)
 {
 	assert(is_Builtin(node));
 	return get_irn_n(node, pos + BUILDIN_PARAM_OFFSET);
 }
 
-void
-set_Builtin_param(ir_node *node, int pos, ir_node *param)
+void set_Builtin_param(ir_node *node, int pos, ir_node *param)
 {
 	assert(is_Builtin(node));
 	set_irn_n(node, pos + BUILDIN_PARAM_OFFSET, param);
 }
 
-ir_type *
-get_Builtin_type(ir_node *node)
+ir_type *get_Builtin_type(ir_node *node)
 {
 	assert(is_Builtin(node));
 	return node->attr.builtin.type;
 }
 
-void
-set_Builtin_type(ir_node *node, ir_type *tp)
+void set_Builtin_type(ir_node *node, ir_type *tp)
 {
 	assert(is_Builtin(node));
 	assert((get_unknown_type() == tp) || is_Method_type(tp));
@@ -1805,15 +1750,13 @@ void set_Conv_strict(ir_node *node, int strict_flag)
 	node->attr.conv.strict = (char)strict_flag;
 }
 
-ir_type *
-get_Cast_type(ir_node *node)
+ir_type *get_Cast_type(ir_node *node)
 {
 	assert(is_Cast(node));
 	return node->attr.cast.type;
 }
 
-void
-set_Cast_type(ir_node *node, ir_type *to_tp)
+void set_Cast_type(ir_node *node, ir_type *to_tp)
 {
 	assert(is_Cast(node));
 	node->attr.cast.type = to_tp;
@@ -1866,13 +1809,12 @@ int is_Cast_downcast(ir_node *node)
 	return is_SubClass_of(totype, fromtype);
 }
 
-int
-(is_unop)(const ir_node *node) {
+int (is_unop)(const ir_node *node)
+{
 	return _is_unop(node);
 }
 
-ir_node *
-get_unop_op(const ir_node *node)
+ir_node *get_unop_op(const ir_node *node)
 {
 	if (node->op->opar == oparity_unary)
 		return get_irn_n(node, node->op->op_index);
@@ -1881,8 +1823,7 @@ get_unop_op(const ir_node *node)
 	return NULL;
 }
 
-void
-set_unop_op(ir_node *node, ir_node *op)
+void set_unop_op(ir_node *node, ir_node *op)
 {
 	if (node->op->opar == oparity_unary)
 		set_irn_n(node, node->op->op_index, op);
@@ -1890,34 +1831,30 @@ set_unop_op(ir_node *node, ir_node *op)
 	assert(node->op->opar == oparity_unary);
 }
 
-int
-(is_binop)(const ir_node *node) {
+int (is_binop)(const ir_node *node)
+{
 	return _is_binop(node);
 }
 
-ir_node *
-get_binop_left(const ir_node *node)
+ir_node *get_binop_left(const ir_node *node)
 {
 	assert(node->op->opar == oparity_binary);
 	return get_irn_n(node, node->op->op_index);
 }
 
-void
-set_binop_left(ir_node *node, ir_node *left)
+void set_binop_left(ir_node *node, ir_node *left)
 {
 	assert(node->op->opar == oparity_binary);
 	set_irn_n(node, node->op->op_index, left);
 }
 
-ir_node *
-get_binop_right(const ir_node *node)
+ir_node *get_binop_right(const ir_node *node)
 {
 	assert(node->op->opar == oparity_binary);
 	return get_irn_n(node, node->op->op_index + 1);
 }
 
-void
-set_binop_right(ir_node *node, ir_node *right)
+void set_binop_right(ir_node *node, ir_node *right)
 {
 	assert(node->op->opar == oparity_binary);
 	set_irn_n(node, node->op->op_index + 1, right);
@@ -1932,15 +1869,13 @@ int is_Phi0(const ir_node *n)
 	        (get_irg_phase_state(get_irn_irg(n)) ==  phase_building));
 }
 
-ir_node **
-get_Phi_preds_arr(ir_node *node)
+ir_node **get_Phi_preds_arr(ir_node *node)
 {
   assert(node->op == op_Phi);
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-int
-get_Phi_n_preds(const ir_node *node)
+int get_Phi_n_preds(const ir_node *node)
 {
 	assert(is_Phi(node) || is_Phi0(node));
 	return (get_irn_arity(node));
@@ -1953,15 +1888,13 @@ void set_Phi_n_preds(ir_node *node, int n_preds)
 }
 */
 
-ir_node *
-get_Phi_pred(const ir_node *node, int pos)
+ir_node *get_Phi_pred(const ir_node *node, int pos)
 {
 	assert(is_Phi(node) || is_Phi0(node));
 	return get_irn_n(node, pos);
 }
 
-void
-set_Phi_pred(ir_node *node, int pos, ir_node *pred)
+void set_Phi_pred(ir_node *node, int pos, ir_node *pred)
 {
 	assert(is_Phi(node) || is_Phi0(node));
 	set_irn_n(node, pos, pred);
@@ -2007,270 +1940,232 @@ void set_memop_ptr(ir_node *node, ir_node *ptr)
 	set_irn_n(node, 1, ptr);
 }
 
-ir_node *
-get_Load_mem(const ir_node *node)
+ir_node *get_Load_mem(const ir_node *node)
 {
 	assert(is_Load(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Load_mem(ir_node *node, ir_node *mem)
+void set_Load_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Load(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Load_ptr(const ir_node *node)
+ir_node *get_Load_ptr(const ir_node *node)
 {
 	assert(is_Load(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Load_ptr(ir_node *node, ir_node *ptr)
+void set_Load_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_Load(node));
 	set_irn_n(node, 1, ptr);
 }
 
-ir_mode *
-get_Load_mode(const ir_node *node)
+ir_mode *get_Load_mode(const ir_node *node)
 {
 	assert(is_Load(node));
 	return node->attr.load.mode;
 }
 
-void
-set_Load_mode(ir_node *node, ir_mode *mode)
+void set_Load_mode(ir_node *node, ir_mode *mode)
 {
 	assert(is_Load(node));
 	node->attr.load.mode = mode;
 }
 
-ir_volatility
-get_Load_volatility(const ir_node *node)
+ir_volatility get_Load_volatility(const ir_node *node)
 {
 	assert(is_Load(node));
 	return node->attr.load.volatility;
 }
 
-void
-set_Load_volatility(ir_node *node, ir_volatility volatility)
+void set_Load_volatility(ir_node *node, ir_volatility volatility)
 {
 	assert(is_Load(node));
 	node->attr.load.volatility = volatility;
 }
 
-ir_align
-get_Load_align(const ir_node *node)
+ir_align get_Load_align(const ir_node *node)
 {
 	assert(is_Load(node));
 	return node->attr.load.aligned;
 }
 
-void
-set_Load_align(ir_node *node, ir_align align)
+void set_Load_align(ir_node *node, ir_align align)
 {
 	assert(is_Load(node));
 	node->attr.load.aligned = align;
 }
 
 
-ir_node *
-get_Store_mem(const ir_node *node)
+ir_node *get_Store_mem(const ir_node *node)
 {
 	assert(is_Store(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Store_mem(ir_node *node, ir_node *mem)
+void set_Store_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Store(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Store_ptr(const ir_node *node)
+ir_node *get_Store_ptr(const ir_node *node)
 {
 	assert(is_Store(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Store_ptr(ir_node *node, ir_node *ptr)
+void set_Store_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_Store(node));
 	set_irn_n(node, 1, ptr);
 }
 
-ir_node *
-get_Store_value(const ir_node *node)
+ir_node *get_Store_value(const ir_node *node)
 {
 	assert(is_Store(node));
 	return get_irn_n(node, 2);
 }
 
-void
-set_Store_value(ir_node *node, ir_node *value)
+void set_Store_value(ir_node *node, ir_node *value)
 {
 	assert(is_Store(node));
 	set_irn_n(node, 2, value);
 }
 
-ir_volatility
-get_Store_volatility(const ir_node *node)
+ir_volatility get_Store_volatility(const ir_node *node)
 {
 	assert(is_Store(node));
 	return node->attr.store.volatility;
 }
 
-void
-set_Store_volatility(ir_node *node, ir_volatility volatility)
+void set_Store_volatility(ir_node *node, ir_volatility volatility)
 {
 	assert(is_Store(node));
 	node->attr.store.volatility = volatility;
 }
 
-ir_align
-get_Store_align(const ir_node *node)
+ir_align get_Store_align(const ir_node *node)
 {
 	assert(is_Store(node));
 	return node->attr.store.aligned;
 }
 
-void
-set_Store_align(ir_node *node, ir_align align)
+void set_Store_align(ir_node *node, ir_align align)
 {
 	assert(is_Store(node));
 	node->attr.store.aligned = align;
 }
 
 
-ir_node *
-get_Alloc_mem(const ir_node *node)
+ir_node *get_Alloc_mem(const ir_node *node)
 {
 	assert(is_Alloc(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Alloc_mem(ir_node *node, ir_node *mem)
+void set_Alloc_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Alloc(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Alloc_size(const ir_node *node)
+ir_node *get_Alloc_size(const ir_node *node)
 {
 	assert(is_Alloc(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Alloc_size(ir_node *node, ir_node *size)
+void set_Alloc_size(ir_node *node, ir_node *size)
 {
 	assert(is_Alloc(node));
 	set_irn_n(node, 1, size);
 }
 
-ir_type *
-get_Alloc_type(ir_node *node)
+ir_type *get_Alloc_type(ir_node *node)
 {
 	assert(is_Alloc(node));
 	return node->attr.alloc.type;
 }
 
-void
-set_Alloc_type(ir_node *node, ir_type *tp)
+void set_Alloc_type(ir_node *node, ir_type *tp)
 {
 	assert(is_Alloc(node));
 	node->attr.alloc.type = tp;
 }
 
-ir_where_alloc
-get_Alloc_where(const ir_node *node)
+ir_where_alloc get_Alloc_where(const ir_node *node)
 {
 	assert(is_Alloc(node));
 	return node->attr.alloc.where;
 }
 
-void
-set_Alloc_where(ir_node *node, ir_where_alloc where)
+void set_Alloc_where(ir_node *node, ir_where_alloc where)
 {
 	assert(is_Alloc(node));
 	node->attr.alloc.where = where;
 }
 
 
-ir_node *
-get_Free_mem(const ir_node *node)
+ir_node *get_Free_mem(const ir_node *node)
 {
 	assert(is_Free(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Free_mem(ir_node *node, ir_node *mem)
+void set_Free_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Free(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Free_ptr(const ir_node *node)
+ir_node *get_Free_ptr(const ir_node *node)
 {
 	assert(is_Free(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Free_ptr(ir_node *node, ir_node *ptr)
+void set_Free_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_Free(node));
 	set_irn_n(node, 1, ptr);
 }
 
-ir_node *
-get_Free_size(const ir_node *node)
+ir_node *get_Free_size(const ir_node *node)
 {
 	assert(is_Free(node));
 	return get_irn_n(node, 2);
 }
 
-void
-set_Free_size(ir_node *node, ir_node *size)
+void set_Free_size(ir_node *node, ir_node *size)
 {
 	assert(is_Free(node));
 	set_irn_n(node, 2, size);
 }
 
-ir_type *
-get_Free_type(ir_node *node)
+ir_type *get_Free_type(ir_node *node)
 {
 	assert(is_Free(node));
 	return node->attr.free.type;
 }
 
-void
-set_Free_type(ir_node *node, ir_type *tp)
+void set_Free_type(ir_node *node, ir_type *tp)
 {
 	assert(is_Free(node));
 	node->attr.free.type = tp;
 }
 
-ir_where_alloc
-get_Free_where(const ir_node *node)
+ir_where_alloc get_Free_where(const ir_node *node)
 {
 	assert(is_Free(node));
 	return node->attr.free.where;
 }
 
-void
-set_Free_where(ir_node *node, ir_where_alloc where)
+void set_Free_where(ir_node *node, ir_where_alloc where)
 {
 	assert(is_Free(node));
 	node->attr.free.where = where;
@@ -2348,22 +2243,19 @@ ir_type *get_Proj_type(ir_node *n)
 	return tp;
 }
 
-ir_node *
-get_Proj_pred(const ir_node *node)
+ir_node *get_Proj_pred(const ir_node *node)
 {
 	assert(is_Proj(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Proj_pred(ir_node *node, ir_node *pred)
+void set_Proj_pred(ir_node *node, ir_node *pred)
 {
 	assert(is_Proj(node));
 	set_irn_n(node, 0, pred);
 }
 
-long
-get_Proj_proj(const ir_node *node)
+long get_Proj_proj(const ir_node *node)
 {
 #ifdef INTERPROCEDURAL_VIEW
 	ir_opcode code = get_irn_opcode(node);
@@ -2381,8 +2273,7 @@ get_Proj_proj(const ir_node *node)
 #endif /* INTERPROCEDURAL_VIEW */
 }
 
-void
-set_Proj_proj(ir_node *node, long proj)
+void set_Proj_proj(ir_node *node, long proj)
 {
 #ifdef INTERPROCEDURAL_VIEW
 	ir_opcode code = get_irn_opcode(node);
@@ -2406,51 +2297,44 @@ int (is_arg_Proj)(const ir_node *node)
 	return _is_arg_Proj(node);
 }
 
-ir_node **
-get_Tuple_preds_arr(ir_node *node)
+ir_node **get_Tuple_preds_arr(ir_node *node)
 {
 	assert(is_Tuple(node));
 	return (ir_node **)&(get_irn_in(node)[1]);
 }
 
-int
-get_Tuple_n_preds(const ir_node *node)
+int get_Tuple_n_preds(const ir_node *node)
 {
 	assert(is_Tuple(node));
 	return get_irn_arity(node);
 }
 
 /*
-void
-set_Tuple_n_preds(ir_node *node, int n_preds)
+void set_Tuple_n_preds(ir_node *node, int n_preds)
 {
 	assert(is_Tuple(node));
 }
 */
 
-ir_node *
-get_Tuple_pred(const ir_node *node, int pos)
+ir_node *get_Tuple_pred(const ir_node *node, int pos)
 {
   assert(is_Tuple(node));
   return get_irn_n(node, pos);
 }
 
-void
-set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
+void set_Tuple_pred(ir_node *node, int pos, ir_node *pred)
 {
 	assert(is_Tuple(node));
 	set_irn_n(node, pos, pred);
 }
 
-ir_node *
-get_Id_pred(const ir_node *node)
+ir_node *get_Id_pred(const ir_node *node)
 {
 	assert(is_Id(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Id_pred(ir_node *node, ir_node *pred)
+void set_Id_pred(ir_node *node, ir_node *pred)
 {
 	assert(is_Id(node));
 	set_irn_n(node, 0, pred);
@@ -2492,29 +2376,25 @@ void set_Confirm_cmp(ir_node *node, pn_Cmp cmp)
 	node->attr.confirm.cmp = cmp;
 }
 
-ir_node *
-get_Filter_pred(ir_node *node)
+ir_node *get_Filter_pred(ir_node *node)
 {
 	assert(is_Filter(node));
 	return node->in[1];
 }
 
-void
-set_Filter_pred(ir_node *node, ir_node *pred)
+void set_Filter_pred(ir_node *node, ir_node *pred)
 {
 	assert(is_Filter(node));
 	node->in[1] = pred;
 }
 
-long
-get_Filter_proj(ir_node *node)
+long get_Filter_proj(ir_node *node)
 {
 	assert(is_Filter(node));
 	return node->attr.filter.proj;
 }
 
-void
-set_Filter_proj(ir_node *node, long proj)
+void set_Filter_proj(ir_node *node, long proj)
 {
 	assert(is_Filter(node));
 	node->attr.filter.proj = proj;
@@ -2644,72 +2524,62 @@ void set_CopyB_type(ir_node *node, ir_type *data_type)
 }
 
 
-ir_type *
-get_InstOf_type(ir_node *node)
+ir_type *get_InstOf_type(ir_node *node)
 {
 	assert(node->op == op_InstOf);
 	return node->attr.instof.type;
 }
 
-void
-set_InstOf_type(ir_node *node, ir_type *type)
+void set_InstOf_type(ir_node *node, ir_type *type)
 {
 	assert(node->op == op_InstOf);
 	node->attr.instof.type = type;
 }
 
-ir_node *
-get_InstOf_store(const ir_node *node)
+ir_node *get_InstOf_store(const ir_node *node)
 {
 	assert(node->op == op_InstOf);
 	return get_irn_n(node, 0);
 }
 
-void
-set_InstOf_store(ir_node *node, ir_node *obj)
+void set_InstOf_store(ir_node *node, ir_node *obj)
 {
 	assert(node->op == op_InstOf);
 	set_irn_n(node, 0, obj);
 }
 
-ir_node *
-get_InstOf_obj(const ir_node *node)
+ir_node *get_InstOf_obj(const ir_node *node)
 {
 	assert(node->op == op_InstOf);
 	return get_irn_n(node, 1);
 }
 
-void
-set_InstOf_obj(ir_node *node, ir_node *obj)
+void set_InstOf_obj(ir_node *node, ir_node *obj)
 {
 	assert(node->op == op_InstOf);
 	set_irn_n(node, 1, obj);
 }
 
 /* Returns the memory input of a Raise operation. */
-ir_node *
-get_Raise_mem(const ir_node *node)
+ir_node *get_Raise_mem(const ir_node *node)
 {
 	assert(is_Raise(node));
 	return get_irn_n(node, 0);
 }
 
-void
-set_Raise_mem(ir_node *node, ir_node *mem)
+void set_Raise_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Raise(node));
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *
-get_Raise_exo_ptr(const ir_node *node)
+ir_node *get_Raise_exo_ptr(const ir_node *node)
 {
 	assert(is_Raise(node));
 	return get_irn_n(node, 1);
 }
 
-void
-set_Raise_exo_ptr(ir_node *node, ir_node *exo_ptr)
+void set_Raise_exo_ptr(ir_node *node, ir_node *exo_ptr)
 {
 	assert(is_Raise(node));
 	set_irn_n(node, 1, exo_ptr);
@@ -2832,8 +2702,7 @@ ident **get_ASM_clobbers(const ir_node *node)
 }
 
 /* returns the graph of a node */
-ir_graph *
-get_irn_irg(const ir_node *node)
+ir_graph *get_irn_irg(const ir_node *node)
 {
 	/*
 	 * Do not use get_nodes_Block() here, because this
@@ -2852,8 +2721,7 @@ get_irn_irg(const ir_node *node)
 /*  Auxiliary routines                                            */
 /*----------------------------------------------------------------*/
 
-ir_node *
-skip_Proj(ir_node *node)
+ir_node *skip_Proj(ir_node *node)
 {
 	/* don't assert node !!! */
 	if (node == NULL)
@@ -2878,8 +2746,7 @@ skip_Proj_const(const ir_node *node)
 	return node;
 }
 
-ir_node *
-skip_Tuple(ir_node *node)
+ir_node *skip_Tuple(ir_node *node)
 {
   ir_node *pred;
   ir_op   *op;
@@ -2959,8 +2826,7 @@ ir_node *skip_HighLevel_ops(ir_node *node)
  *
  * Moreover, it CANNOT be switched off using get_opt_normalize() ...
  */
-ir_node *
-skip_Id(ir_node *node)
+ir_node *skip_Id(ir_node *node)
 {
 	ir_node *pred;
 	/* don't assert node !!! */
@@ -3003,19 +2869,19 @@ void skip_Id_and_store(ir_node **node)
 	*node = skip_Id(n);
 }
 
-int
-(is_strictConv)(const ir_node *node) {
+int (is_strictConv)(const ir_node *node)
+{
 	return _is_strictConv(node);
 }
 
-int
-(is_no_Block)(const ir_node *node) {
+int (is_no_Block)(const ir_node *node)
+{
 	return _is_no_Block(node);
 }
 
 /* Returns true if node is a SymConst node with kind symconst_addr_ent. */
-int
-(is_SymConst_addr_ent)(const ir_node *node) {
+int (is_SymConst_addr_ent)(const ir_node *node)
+{
 	return _is_SymConst_addr_ent(node);
 }
 
@@ -3034,8 +2900,7 @@ int is_ip_cfop(const ir_node *node)
 
 /* Returns true if the operation can change the control flow because
    of an exception. */
-int
-is_fragile_op(const ir_node *node)
+int is_fragile_op(const ir_node *node)
 {
 	return is_op_fragile(get_irn_op(node));
 }

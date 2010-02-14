@@ -144,8 +144,7 @@ static void collect_irgs(ir_node * node, pset_new_t *irg_set)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
+static unsigned irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -173,8 +172,7 @@ irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
+static unsigned irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -203,8 +201,7 @@ irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -322,8 +319,7 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env)
+static unsigned irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -351,8 +347,7 @@ irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void *env)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env)
+static unsigned irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -381,8 +376,7 @@ irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, void *env)
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+static unsigned irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	int i;
 	unsigned cnt = 1;
@@ -413,8 +407,7 @@ irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post
  *
  * @return number of visited nodes
  */
-static unsigned
-irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+static unsigned irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
 	if (node->visited < current_ir_graph->visited) {
 		if      (! post) return irg_walk_in_or_dep_2_pre (node, pre, env);
@@ -461,8 +454,7 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
  * Returns current_ir_graph and sets it to the irg of predecessor index
  * of node n.
  */
-static inline ir_graph *
-switch_irg(ir_node *n, int index)
+static inline ir_graph * switch_irg(ir_node *n, int index)
 {
 	ir_graph *old_current = current_ir_graph;
 
@@ -482,8 +474,7 @@ switch_irg(ir_node *n, int index)
 }
 
 #ifdef INTERPROCEDURAL_VIEW
-static void
-cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static void cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
 	int i;
 	ir_graph *rem = NULL;

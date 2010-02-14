@@ -153,8 +153,7 @@ Cond_prob get_ProjX_probability(ir_node *n)
 
 /* A walker that only visits the nodes we want to see. */
 
-static void
-my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static void my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
   int i;
   set_irn_visited(node, current_ir_graph->visited);

@@ -94,8 +94,8 @@ static inline void insert_entity_in_owner(ir_entity *ent)
  *
  * @return the new created entity
  */
-static inline ir_entity *
-new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
+static inline ir_entity *new_rd_entity(dbg_info *db, ir_type *owner,
+                                       ident *name, ir_type *type)
 {
 	ir_entity *res;
 	ir_graph *rem;
@@ -160,8 +160,7 @@ new_rd_entity(dbg_info *db, ir_type *owner, ident *name, ir_type *type)
 	return res;
 }  /* new_rd_entity */
 
-ir_entity *
-new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db)
+ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db)
 {
 	ir_entity *res;
 
@@ -174,8 +173,7 @@ new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db)
 	return res;
 }  /* new_d_entity */
 
-ir_entity *
-new_entity(ir_type *owner, ident *name, ir_type *type)
+ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 {
 	return new_d_entity(owner, name, type, NULL);
 }  /* new_entity */
@@ -259,8 +257,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
  * Copies the entity if the new_owner is different from the
  * owner of the old entity,  else returns the old entity.
  */
-ir_entity *
-copy_entity_own(ir_entity *old, ir_type *new_owner)
+ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 {
 	ir_entity *newe;
 	assert(is_entity(old));
@@ -283,8 +280,7 @@ copy_entity_own(ir_entity *old, ir_type *new_owner)
 	return newe;
 }  /* copy_entity_own */
 
-ir_entity *
-copy_entity_name(ir_entity *old, ident *new_name)
+ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 {
 	ir_entity *newe;
 	assert(old && old->kind == k_entity);
@@ -303,8 +299,7 @@ copy_entity_name(ir_entity *old, ident *new_name)
 	return newe;
 }  /* copy_entity_name */
 
-void
-free_entity(ir_entity *ent)
+void free_entity(ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
@@ -313,8 +308,7 @@ free_entity(ir_entity *ent)
 }  /* free_entity */
 
 /* Outputs a unique number for this node */
-long
-get_entity_nr(const ir_entity *ent)
+long get_entity_nr(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
 #ifdef DEBUG_libfirm
@@ -324,28 +318,27 @@ get_entity_nr(const ir_entity *ent)
 #endif
 }  /* get_entity_nr */
 
-const char *
-(get_entity_name)(const ir_entity *ent) {
+const char *(get_entity_name)(const ir_entity *ent)
+{
 	return _get_entity_name(ent);
 }
 
-ident *
-(get_entity_ident)(const ir_entity *ent) {
+ident *(get_entity_ident)(const ir_entity *ent)
+{
 	return _get_entity_ident(ent);
 }
 
-void
-(set_entity_ident)(ir_entity *ent, ident *id) {
+void (set_entity_ident)(ir_entity *ent, ident *id)
+{
 	_set_entity_ident(ent, id);
 }
 
-ir_type *
-(get_entity_owner)(const ir_entity *ent) {
+ir_type *(get_entity_owner)(const ir_entity *ent)
+{
 	return _get_entity_owner(ent);
 }
 
-void
-set_entity_owner(ir_entity *ent, ir_type *owner)
+void set_entity_owner(ir_entity *ent, ir_type *owner)
 {
 	assert(is_entity(ent));
 	assert(is_compound_type(owner));
@@ -357,8 +350,8 @@ ident *(get_entity_ld_ident)(const ir_entity *ent)
 	return _get_entity_ld_ident(ent);
 }
 
-void
-(set_entity_ld_ident)(ir_entity *ent, ident *ld_ident) {
+void (set_entity_ld_ident)(ir_entity *ent, ident *ld_ident)
+{
 	_set_entity_ld_ident(ent, ld_ident);
 }
 
@@ -367,23 +360,23 @@ const char *(get_entity_ld_name)(const ir_entity *ent)
 	return _get_entity_ld_name(ent);
 }
 
-ir_type *
-(get_entity_type)(const ir_entity *ent) {
+ir_type *(get_entity_type)(const ir_entity *ent)
+{
 	return _get_entity_type(ent);
 }
 
-void
-(set_entity_type)(ir_entity *ent, ir_type *type) {
+void (set_entity_type)(ir_entity *ent, ir_type *type)
+{
 	_set_entity_type(ent, type);
 }
 
-ir_volatility
-(get_entity_volatility)(const ir_entity *ent) {
+ir_volatility (get_entity_volatility)(const ir_entity *ent)
+{
 	return _get_entity_volatility(ent);
 }
 
-void
-(set_entity_volatility)(ir_entity *ent, ir_volatility vol) {
+void (set_entity_volatility)(ir_entity *ent, ir_volatility vol)
+{
 	_set_entity_volatility(ent, vol);
 }
 
@@ -399,23 +392,23 @@ const char *get_volatility_name(ir_volatility var)
 #undef X
 }  /* get_volatility_name */
 
-ir_align
-(get_entity_aligned)(const ir_entity *ent) {
+ir_align (get_entity_aligned)(const ir_entity *ent)
+{
 	return _get_entity_aligned(ent);
 }
 
-void
-(set_entity_aligned)(ir_entity *ent, ir_align a) {
+void (set_entity_aligned)(ir_entity *ent, ir_align a)
+{
 	_set_entity_aligned(ent, a);
 }
 
-unsigned
-(get_entity_alignment)(const ir_entity *ent) {
+unsigned (get_entity_alignment)(const ir_entity *ent)
+{
 	return _get_entity_alignment(ent);
 }
 
-void
-(set_entity_alignment)(ir_entity *ent, unsigned alignment) {
+void (set_entity_alignment)(ir_entity *ent, unsigned alignment)
+{
 	_set_entity_alignment(ent, alignment);
 }
 
@@ -431,8 +424,7 @@ const char *get_align_name(ir_align a)
 #undef X
 }  /* get_align_name */
 
-void
-set_entity_label(ir_entity *ent, ir_label_t label)
+void set_entity_label(ir_entity *ent, ir_label_t label)
 {
 	ent->attr.code_attr.label = label;
 }

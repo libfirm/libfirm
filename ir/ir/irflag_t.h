@@ -92,12 +92,13 @@ static inline void set_##name##_running(int flag) {\
 #undef E_FLAG
 #undef R_FLAG
 
-static inline int _get_optimize(void) {
+static inline int _get_optimize(void)
+{
 	return get_opt_optimize();
 }
 
-static inline firm_verification_t
-get_node_verification_mode(void) {
+static inline firm_verification_t get_node_verification_mode(void)
+{
 	return opt_do_node_verification;
 }
 

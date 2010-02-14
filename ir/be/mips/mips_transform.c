@@ -553,8 +553,7 @@ static ir_node *gen_Phi(ir_node *node)
 }
 
 #if 0
-static
-ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
+static ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 {
 	ir_node *selector = get_Cond_selector(env->irn);
 	ir_mode *selector_mode = get_irn_mode(selector);
@@ -826,8 +825,7 @@ static ir_node *gen_node_for_Mul(mips_transform_env_t *env)
 	return mflo;
 }
 
-static
-ir_node *gen_node_for_IJmp(mips_transform_env_t *env)
+static ir_node *gen_node_for_IJmp(mips_transform_env_t *env)
 {
 	ir_node  *node   = env->irn;
 	dbg_info *dbg    = get_irn_dbg_info(node);
@@ -837,8 +835,7 @@ ir_node *gen_node_for_IJmp(mips_transform_env_t *env)
 	return new_bd_mips_jr(dbg, block, target);
 }
 
-static
-ir_node *gen_node_for_Rot(mips_transform_env_t *env)
+static ir_node *gen_node_for_Rot(mips_transform_env_t *env)
 {
 	ir_node *node = env->irn;
 	ir_node *subu, *srlv, *sllv, *or;

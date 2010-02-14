@@ -93,8 +93,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * accesses.  This function is called for all Phi and Block nodes
  * in a Block.
  */
-static inline int
-compute_new_arity(ir_node *b)
+static inline int compute_new_arity(ir_node *b)
 {
 	int i, res, irn_arity;
 	int irg_v, block_v;
@@ -385,8 +384,7 @@ static void copy_graph(ir_graph *irg, int copy_node_nr)
  *
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
-static void
-copy_graph_env(int copy_node_nr)
+static void copy_graph_env(int copy_node_nr)
 {
 	ir_graph *irg = current_ir_graph;
 	ir_node *old_end, *new_anchor;

@@ -147,8 +147,7 @@ struct obstack *_obstack;
    To recover from an out of memory error,
    free up some memory, then call this again.  */
 
-int
-_obstack_begin (h, size, alignment, chunkfun, freefun)
+int _obstack_begin(h, size, alignment, chunkfun, freefun)
      struct obstack *h;
      int size;
      int alignment;
@@ -205,8 +204,7 @@ _obstack_begin (h, size, alignment, chunkfun, freefun)
   return 1;
 }
 
-int
-_obstack_begin_1 (h, size, alignment, chunkfun, freefun, arg)
+int _obstack_begin_1 (h, size, alignment, chunkfun, freefun, arg)
      struct obstack *h;
      int size;
      int alignment;
@@ -271,8 +269,7 @@ _obstack_begin_1 (h, size, alignment, chunkfun, freefun, arg)
    Copies any partial object from the end of the old chunk
    to the beginning of the new one.  */
 
-void
-_obstack_newchunk (h, length)
+void _obstack_newchunk (h, length)
      struct obstack *h;
      int length;
 {
@@ -341,8 +338,7 @@ _obstack_newchunk (h, length)
 int _obstack_allocated_p (struct obstack *h, POINTER obj);
 #endif
 
-int
-_obstack_allocated_p (h, obj)
+int _obstack_allocated_p (h, obj)
      struct obstack *h;
      POINTER obj;
 {
@@ -369,8 +365,7 @@ _obstack_allocated_p (h, obj)
 /* This function has two names with identical definitions.
    This is the first one, called from non-ANSI code.  */
 
-void
-_obstack_free (h, obj)
+void _obstack_free (h, obj)
      struct obstack *h;
      POINTER obj;
 {
@@ -403,8 +398,7 @@ _obstack_free (h, obj)
 
 /* This function is used from ANSI code.  */
 
-void
-obstack_free (h, obj)
+void obstack_free (h, obj)
      struct obstack *h;
      POINTER obj;
 {
@@ -435,8 +429,7 @@ obstack_free (h, obj)
     abort ();
 }
 
-int
-_obstack_memory_used (h)
+int _obstack_memory_used (h)
      struct obstack *h;
 {
   register struct _obstack_chunk* lp;
@@ -461,8 +454,7 @@ _obstack_memory_used (h)
 # endif
 #endif
 
-static void
-print_and_abort ()
+static void print_and_abort(void)
 {
   fputs (_("memory exhausted\n"), stderr);
   exit (obstack_exit_failure);

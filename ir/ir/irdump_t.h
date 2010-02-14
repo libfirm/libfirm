@@ -103,8 +103,7 @@ const char *get_mode_name_ex(const ir_mode *mode, int *bad);
 /**
  * dump the name of a node n to the File F.
  */
-int
-dump_node_opcode(FILE *F, ir_node *n);
+int dump_node_opcode(FILE *F, ir_node *n);
 
 int dump_node_label(FILE *F, ir_node *n);
 

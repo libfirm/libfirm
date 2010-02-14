@@ -160,8 +160,7 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	return 0;
 }
 
-static inline
-unsigned get_step(const ir_node *node)
+static inline unsigned get_step(const ir_node *node)
 {
 	return PTR_TO_INT(get_irn_link(node));
 }
@@ -357,8 +356,7 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
 	return get_next_use(env, from, from_step, def, skip_from_uses);
 }
 
-static
-void set_sched_step_walker(ir_node *block, void *data)
+static void set_sched_step_walker(ir_node *block, void *data)
 {
 	ir_node  *node;
 	unsigned step = 0;

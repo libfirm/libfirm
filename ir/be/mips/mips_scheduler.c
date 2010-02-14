@@ -193,8 +193,7 @@ static ir_node *mips_scheduler_select(void *block_env, nodeset *ready_set, nodes
 
 #endif
 
-static
-int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
+static int mips_to_appear_in_schedule(void *block_env, const ir_node *node)
 {
 	(void) block_env;
 

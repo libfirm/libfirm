@@ -1120,8 +1120,7 @@ static const proj_lookup_t proj_lut[] = {
 /**
  * Dump additional node attributes of some nodes to a file F.
  */
-static int
-dump_node_nodeattr(FILE *F, ir_node *n)
+static int dump_node_nodeattr(FILE *F, ir_node *n)
 {
 	int bad = 0;
 	ir_node *pred;
@@ -1546,8 +1545,7 @@ static void dump_node(FILE *F, ir_node *n)
 }
 
 /** dump the edge to the block this node belongs to */
-static void
-dump_ir_block_edge(FILE *F, ir_node *n)
+static void dump_ir_block_edge(FILE *F, ir_node *n)
 {
 	if (get_opt_dump_const_local() && is_constlike_node(n)) return;
 	if (is_no_Block(n)) {
@@ -1577,8 +1575,7 @@ dump_ir_block_edge(FILE *F, ir_node *n)
 	}
 }
 
-static void
-print_data_edge_vcgattr(FILE *F, ir_node *from, int to)
+static void print_data_edge_vcgattr(FILE *F, ir_node *from, int to)
 {
 	/*
 	 * do not use get_nodes_block() here, will fail
@@ -1590,8 +1587,7 @@ print_data_edge_vcgattr(FILE *F, ir_node *from, int to)
 		fprintf(F, INTER_DATA_EDGE_ATTR);
 }
 
-static void
-print_mem_edge_vcgattr(FILE *F, ir_node *from, int to)
+static void print_mem_edge_vcgattr(FILE *F, ir_node *from, int to)
 {
 	/*
 	 * do not use get_nodes_block() here, will fail
@@ -1719,8 +1715,7 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)
 /**
  * Dump the ir_edges
  */
-static void
-dump_ir_edges(FILE *F, ir_node *n)
+static void dump_ir_edges(FILE *F, ir_node *n)
 {
 	const ir_edge_t *edge;
 	int i = 0;
@@ -1841,8 +1836,7 @@ static void dump_whole_block(FILE *F, ir_node *block)
 
 /** dumps a graph block-wise. Expects all blockless nodes in arr in irgs link.
  *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
-static void
-dump_block_graph(FILE *F, ir_graph *irg)
+static void dump_block_graph(FILE *F, ir_graph *irg)
 {
 	int i;
 	ir_graph *rem = current_ir_graph;
@@ -1907,8 +1901,7 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg)
 
 /** dumps a graph extended block-wise. Expects all blockless nodes in arr in irgs link.
  *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
-static void
-dump_extblock_graph(FILE *F, ir_graph *irg)
+static void dump_extblock_graph(FILE *F, ir_graph *irg)
 {
 	int i;
 	ir_graph *rem = current_ir_graph;
@@ -2239,8 +2232,7 @@ typedef struct _h_env {
  * Dumps a class type node and a superclass edge.
  * If env->dump_ent dumps entities of classes and overwrites edges.
  */
-static void
-dump_class_hierarchy_node(type_or_ent tore, void *ctx)
+static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 {
 	h_env_t *env = ctx;
 	FILE *F = env->f;
@@ -2289,8 +2281,7 @@ dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 /*******************************************************************/
 
 /* dump out edges */
-static void
-dump_out_edge(ir_node *n, void *env)
+static void dump_out_edge(ir_node *n, void *env)
 {
 	FILE *F = env;
 	int i;
@@ -2307,8 +2298,7 @@ dump_out_edge(ir_node *n, void *env)
 	}
 }
 
-static inline void
-dump_loop_label(FILE *F, ir_loop *loop)
+static inline void dump_loop_label(FILE *F, ir_loop *loop)
 {
 	fprintf(F, "loop %d, %d sons, %d nodes",
 	        get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
@@ -2324,8 +2314,7 @@ static inline void dump_loop_info(FILE *F, ir_loop *loop)
 	fprintf(F, "\"");
 }
 
-static inline void
-dump_loop_node(FILE *F, ir_loop *loop)
+static inline void dump_loop_node(FILE *F, ir_loop *loop)
 {
 	fprintf(F, "node: {title: \"");
 	PRINT_LOOPID(loop);
@@ -2336,8 +2325,7 @@ dump_loop_node(FILE *F, ir_loop *loop)
 	fprintf(F, "}\n");
 }
 
-static inline void
-dump_loop_node_edge(FILE *F, ir_loop *loop, int i)
+static inline void dump_loop_node_edge(FILE *F, ir_loop *loop, int i)
 {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
@@ -2348,8 +2336,7 @@ dump_loop_node_edge(FILE *F, ir_loop *loop, int i)
 	fprintf(F, "}\n");
 }
 
-static inline void
-dump_loop_son_edge(FILE *F, ir_loop *loop, int i)
+static inline void dump_loop_son_edge(FILE *F, ir_loop *loop, int i)
 {
 	assert(loop);
 	fprintf(F, "edge: {sourcename: \"");
@@ -2360,8 +2347,7 @@ dump_loop_son_edge(FILE *F, ir_loop *loop, int i)
 	        get_loop_element_pos(loop, get_loop_son(loop, i)));
 }
 
-static
-void dump_loops(FILE *F, ir_loop *loop)
+static void dump_loops(FILE *F, ir_loop *loop)
 {
 	int i;
 	/* dump this loop node */
@@ -2379,8 +2365,7 @@ void dump_loops(FILE *F, ir_loop *loop)
 	}
 }
 
-static inline
-void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg)
+static inline void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg)
 {
 	ir_loop *loop = get_irg_loop(irg);
 
@@ -2789,8 +2774,7 @@ void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix)
 /* The following routines dump a control flow graph.                   */
 /*---------------------------------------------------------------------*/
 
-static void
-dump_block_to_cfg(ir_node *block, void *env)
+static void dump_block_to_cfg(ir_node *block, void *env)
 {
 	FILE *F = env;
 	int i, fl = 0;
@@ -3008,8 +2992,7 @@ void dump_all_cg_block_graph(const char *suffix)
 /* the following routines dumps type information without any ir nodes. */
 /*---------------------------------------------------------------------*/
 
-void
-dump_type_graph(ir_graph *irg, const char *suffix)
+void dump_type_graph(ir_graph *irg, const char *suffix)
 {
 	FILE *f;
 
@@ -3037,8 +3020,7 @@ dump_type_graph(ir_graph *irg, const char *suffix)
 	}
 }
 
-void
-dump_all_types(const char *suffix)
+void dump_all_types(const char *suffix)
 {
 	FILE *f = vcg_open_name("All_types", suffix);
 	if (f != NULL) {
@@ -3051,8 +3033,7 @@ dump_all_types(const char *suffix)
 	}
 }
 
-void
-dump_class_hierarchy(int entities, const char *suffix)
+void dump_class_hierarchy(int entities, const char *suffix)
 {
 	FILE *f = vcg_open_name("class_hierarchy", suffix);
 

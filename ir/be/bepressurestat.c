@@ -75,8 +75,7 @@ static inline int regpressure(pset *live)
 	return MIN(pressure, MAXPRESSURE);
 }
 
-static void
-regpressureanawalker(ir_node *bb, void *data)
+static void regpressureanawalker(ir_node *bb, void *data)
 {
 	regpressure_ana_t  *ra   = data;
 	pset               *live = pset_new_ptr_default();

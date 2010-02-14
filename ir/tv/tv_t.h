@@ -92,44 +92,44 @@ struct tarval {
 /*
  * Access routines for tarval fields ========================================
  */
-static inline ir_mode *
-_get_tarval_mode(const tarval *tv) {
+static inline ir_mode *_get_tarval_mode(const tarval *tv)
+{
 	assert(tv);
 	return tv->mode;
 }
 
-static inline tarval *
-_get_tarval_bad(void) {
+static inline tarval *_get_tarval_bad(void)
+{
 	return tarval_bad;
 }
 
-static inline tarval *
-_get_tarval_undefined(void) {
+static inline tarval *_get_tarval_undefined(void)
+{
 	return tarval_undefined;
 }
 
-static inline tarval *
-_get_tarval_b_false(void) {
+static inline tarval *_get_tarval_b_false(void)
+{
 	return tarval_b_false;
 }
 
-static inline tarval *
-_get_tarval_b_true(void) {
+static inline tarval *_get_tarval_b_true(void)
+{
 	return tarval_b_true;
 }
 
-static inline tarval *
-_get_tarval_reachable(void) {
+static inline tarval *_get_tarval_reachable(void)
+{
 	return tarval_reachable;
 }
 
-static inline tarval *
-_get_tarval_unreachable(void) {
+static inline tarval *_get_tarval_unreachable(void)
+{
 	return tarval_unreachable;
 }
 
-static inline int
-_is_tarval(const void *thing) {
+static inline int _is_tarval(const void *thing)
+{
 	return get_kind(thing) == k_tarval;
 }
 
