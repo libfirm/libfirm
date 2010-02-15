@@ -161,7 +161,9 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	be_emit_cstring(",\"");
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
 		be_emit_char('a');
-	if (base != GAS_SECTION_RODATA)
+	if (base == GAS_SECTION_TEXT)
+		be_emit_char('x');
+	if (base != GAS_SECTION_RODATA && base != GAS_SECTION_TEXT)
 		be_emit_char('w');
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('T');
