@@ -41,11 +41,6 @@
 #include "irloop_t.h"	/* set_irn_loop*/
 #include "irpass.h"
 
-#if 0
-	#include "irdump_t.h"
-#endif
-
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
@@ -286,7 +281,7 @@ static int duplicate_preds(ir_node* block, unsigned pos, ir_node* newpred)
 
 	assert(is_Block(block) && "duplicate_preds may be called for blocks only");
 
-	DB((dbg, LEVEL_1, "duplicate_preds(node %N, pos %d, newpred %N)\n", block, pos, newpred));
+	DB((dbg, LEVEL_5, "duplicate_preds(node %N, pos %d, newpred %N)\n", block, pos, newpred));
 
 	block_arity = get_irn_arity(block);
 
@@ -299,26 +294,15 @@ static int duplicate_preds(ir_node* block, unsigned pos, ir_node* newpred)
 
 	set_irn_in(block, block_arity + 1, ins);
 
-#if 0
-	block_arity = get_irn_arity(block);
-
-	NEW_ARR_A(ir_node*, ins, block_arity - 1);
-
-	for (i = 0; i < block_arity - 1; ++i) {
-		ins[i] = get_irn_n(block, i);
-	}
-
-	set_irn_in(block, block_arity - 1, ins);
-#endif
-
-#if 0
+	/* LDBG 1 */
+#if 1
 	for_each_phi(block, phi) {
 		int phi_arity = get_irn_arity(phi);
-		DB((dbg, LEVEL_5, "duplicate_preds: fixing phi %N\n", phi)));
+		DB((dbg, LEVEL_5, "duplicate_preds: fixing phi %N\n", phi));
 
 		NEW_ARR_A(ir_node *, ins, block_arity + 1);
 		for (i = 0; i < phi_arity; ++i) {
-			DB((dbg, LEVEL_5, "in %N\n", get_irn_n(phi, i))));
+			DB((dbg, LEVEL_5, "pos %N\n", get_irn_n(phi, i)));
 			ins[i] = get_irn_n(phi, i);
 		}
 		ins[block_arity] = get_copy(get_irn_n(phi, pos));
@@ -713,9 +697,6 @@ static ir_node *rawcopy_node(ir_node *node)
 	cp = exact_copy(node);
 
 	arity = get_irn_arity(node);
-
-	/* FIX remove */
-	set_irn_in(cp, arity, get_irn_in(node));
 
 	for (i = 0; i < arity; ++i) {
 		if (is_backedge(node, i))
@@ -1343,18 +1324,35 @@ void loop_unrolling(void)
 		out_edge entry = cur_loop_outs[i];
 		ir_node *node = entry.node;
 		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
-
-		for (j = 0; j < unroll_times - 1; ++j) {
-			copy_walk(pred, is_in_loop, cur_loop);
-			if (is_Block(node)) {
-				duplicate_preds(node, entry.pred_irn_n, get_copy(pred));
+		if (!is_Block(node)) {
+			for (j = 0; j < unroll_times - 1; ++j) {
+				copy_walk(pred, is_in_loop, cur_loop);
+				pred = get_copy(pred);
 			}
-			pred = get_copy(pred);
+		}
+	}
+
+	for (i = 0; i < ARR_LEN(cur_loop_outs); ++i) {
+		out_edge entry = cur_loop_outs[i];
+		ir_node *node = entry.node;
+		ir_node *pred = get_irn_n(entry.node, entry.pred_irn_n);
+
+		if (is_Block(node)) {
+			for (j = 0; j < unroll_times - 1; ++j) {
+				copy_walk(pred, is_in_loop, cur_loop);
+				duplicate_preds(node, entry.pred_irn_n, get_copy(pred));
+
+				pred = get_copy(pred);
+			}
 		}
 	}
 
 	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 
+	/*dump_ir_graph(current_ir_graph, "-raw");*/
+
+	/* LDBG 2 */
+#if 1
 	/* Line up the floating copies. */
 	unrolling_fix_cf();
 
@@ -1370,6 +1368,7 @@ void loop_unrolling(void)
 			construct_ssa_n(pred, node);
 		}
 	}
+#endif
 
 	DEL_ARR_F(cur_loop_outs);
 
