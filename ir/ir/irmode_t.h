@@ -34,8 +34,6 @@
 /* ------------------------------- *
  * inline functions                *
  * ------------------------------- */
-extern ir_mode *mode_P_code, *mode_P_data;
-
 static inline ir_mode *_get_modeP_code(void) { return mode_P_code; }
 
 static inline ir_mode *_get_modeP_data(void) { return mode_P_data; }
