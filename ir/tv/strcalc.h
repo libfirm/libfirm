@@ -191,8 +191,12 @@ int sc_get_buffer_length(void);
 
 void sign_extend(void *buffer, ir_mode *mode);
 
-/** create an value form a string representation */
-void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode);
+/**
+ * create an value form a string representation
+ * @return 1 if ok, 0 in case of parse error
+ */
+int sc_val_from_str(char sign, unsigned base, const char *str,
+                    unsigned int len, void *buffer);
 
 /** create a value from a long */
 void sc_val_from_long(long l, void *buffer);

@@ -325,6 +325,58 @@ static const ieee_descriptor_t *get_descriptor(const ir_mode *mode)
  *   public functions declared in tv.h
  */
 
+static tarval *new_tarval_from_str_int(const char *str, size_t len,
+                                       ir_mode *mode)
+{
+	void    *buffer;
+	unsigned base = 10;
+	char     sign = 1;
+	int      ok;
+
+	/* skip leading spaces */
+	while (len > 0 && str[0] == ' ') {
+		++str;
+		--len;
+	}
+	if (len == 0)
+		return tarval_bad;
+
+	/* 1 sign character allowed */
+	if (str[0] == '-') {
+		sign = -1;
+		++str;
+		--len;
+	} else if (str[0] == '+') {
+		++str;
+		--len;
+	}
+
+	/* a number starting with '0x' is hexadeciaml,
+	 * a number starting with '0' (and at least 1 more char) is octal */
+	if (len >= 2 && str[0] == '0') {
+		if (str[1] == 'x' || str[1] == 'X') {
+			str += 2;
+			len -= 2;
+			base = 16;
+		} else {
+			++str;
+			--len;
+			base = 8;
+		}
+	}
+	if (len == 0)
+		return tarval_bad;
+
+	buffer = alloca(sc_get_buffer_length());
+
+	ok = sc_val_from_str(sign, base, str, len, buffer);
+	if (!ok)
+		return tarval_bad;
+	sign_extend(buffer, mode);
+
+	return get_tarval_overflow(buffer, sc_get_buffer_length(), mode);
+}
+
 /*
  * Constructors =============================================================
  */
@@ -362,8 +414,7 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode)
 			return get_tarval_null(mode);
 		/* FALLTHROUGH */
 	case irms_int_number:
-		sc_val_from_str(str, len, NULL, mode);
-		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), mode);
+		return new_tarval_from_str_int(str, len, mode);
 	}
 	panic("Unsupported tarval creation with mode %F", mode);
 }

@@ -45,8 +45,6 @@
 #define _digit(a) ((a)+SC_0)
 #define _bitisset(digit, pos) (((digit) & SHIFT(pos)) != SC_0)
 
-#define fail_char(a, b, c, d) _fail_char((a), (b), (c), (d), __FILE__,  __LINE__)
-
 /* shortcut output for debugging */
 #  define sc_print_hex(a) sc_print((a), 0, SC_HEX, 0)
 #  define sc_print_dec(a) sc_print((a), 0, SC_DEC, 1)
@@ -277,14 +275,6 @@ static const char *binary_table[16] = {
 /*****************************************************************************
  * private functions
  *****************************************************************************/
-static void _fail_char(const char *str, size_t len, const char fchar, int pos,
-                       const char *file, int line) {
-	printf("ERROR:\n");
-	printf("Unexpected character '%c' in %s:%d\n", fchar, file, line);
-	while (len-- && *str) printf("%c", *str++); printf("\n");
-	while (--pos) printf(" "); printf("^\n");
-	exit(-1);
-}
 
 /**
  * implements the bitwise NOT operation
@@ -823,139 +813,85 @@ void sign_extend(void *buffer, ir_mode *mode)
 	}
 }
 
-/* FIXME doesn't check for overflows */
-void sc_val_from_str(const char *str, unsigned int len, void *buffer, ir_mode *mode)
+/* we assume that '0'-'9', 'a'-'z' and 'A'-'Z' are a range.
+ * The C-standard does theoretically allow otherwise. */
+static inline void check_ascii(void)
 {
-	const char *orig_str = str;
-	unsigned int orig_len = len;
+	assert('1'-'0' == 1
+		&& '2'-'0' == 2
+		&& '3'-'0' == 3
+		&& '4'-'0' == 4
+		&& '5'-'0' == 5
+		&& '6'-'0' == 6
+		&& '7'-'0' == 7
+		&& '8'-'0' == 8
+		&& '9'-'0' == 9);
+	assert('b'-'a' == 1
+		&& 'c'-'a' == 2
+		&& 'd'-'a' == 3
+		&& 'e'-'a' == 4
+		&& 'f'-'a' == 5);
+	assert('B'-'A' == 1
+		&& 'C'-'A' == 2
+		&& 'D'-'A' == 3
+		&& 'E'-'A' == 4
+		&& 'F'-'A' == 5);
+}
 
-	char sign = 0;
-	char *base, *val;
+int sc_val_from_str(char sign, unsigned base, const char *str,
+                    unsigned int len, void *buffer)
+{
+	char *sc_base, *val;
 
-	base = alloca(calc_buffer_size);
+	assert(sign == -1 || sign == 1);
+	assert(str != NULL);
+	assert(len > 0);
+	check_ascii();
+
+	assert(base > 1 && base <= 16);
+	sc_base = alloca(calc_buffer_size);
+	sc_val_from_ulong(base, sc_base);
+
 	val = alloca(calc_buffer_size);
-
-	/* verify valid pointers (not null) */
-	assert(str);
-	/* a string no characters long is an error */
-	assert(len);
-
-	if (buffer == NULL) buffer = calc_buffer;
+	if (buffer == NULL)
+		buffer = calc_buffer;
 
 	CLEAR_BUFFER(buffer);
-	CLEAR_BUFFER(base);
 	CLEAR_BUFFER(val);
-
-	/* strip leading spaces */
-	while ((len > 0) && (*str == ' ')) { len--; str++; }
-
-	/* if the first two characters are 0x or 0X -> hex
-	 * if the first is a 0 -> oct
-	 * else dec, strip leading -/+ and remember sign
-	 *
-	 * only a + or - sign is no number resulting in an error */
-	if (len >= 2) {
-		switch (str[0]) {
-		case '0':
-			if (str[1] == 'x' || str[1] == 'X') { /* hex */
-				str += 2;
-				len -= 2;
-				base[1] = SC_1; base[0] = SC_0;
-			} else { /* oct */
-				str += 1;
-				len -= 1;
-				base[1] = SC_0; base[0] = SC_8;
-			}
-			break;
-
-		case '+':
-			str += 1;
-			len -= 1;
-			base[1] = SC_0; base[0] = SC_A;
-			break;
-
-		case '-':
-			str += 1;
-			len -= 1;
-			sign = 1;
-			base[1] = SC_0; base[0] = SC_A;
-			break;
-
-		default: /* dec, else would have begun with 0x or 0 */
-			base[1] = SC_0; base[0] = SC_A;
-		}
-	} else { /* dec, else would have begun with 0x or 0 */
-		base[1] = SC_0; base[0] = SC_A;
-	}
 
 	/* BEGIN string evaluation, from left to right */
 	while (len > 0) {
-		switch (*str) {
-		case 'f':
-		case 'e':
-		case 'd':
-		case 'c':
-		case 'b':
-		case 'a':
-			if (base[0] > SC_A || base[1] > SC_0) { /* (base > 10) */
-				val[0] = _digit((*str)-'a'+10);
-			}
-			else
-				fail_char(orig_str, orig_len, *str, str-orig_str+1);
-			break;
+		char c = *str;
+		unsigned v;
+		if (c >= '0' && c <= '9')
+			v = c - '0';
+		else if (c >= 'A' && c <= 'Z')
+			v = c - 'A';
+		else if (c >= 'a' && c <= 'z')
+			v = c - 'z';
+		else
+			return 0;
 
-		case 'F':
-		case 'E':
-		case 'D':
-		case 'C':
-		case 'B':
-		case 'A':
-			if (base[0] > SC_A || base[1] > SC_0) { /* (base > 10) */
-				val[0] = _digit((*str)-'A'+10);
-			}
-			else
-				fail_char(orig_str, orig_len, *str, str-orig_str+1);
-			break;
-
-		case '9':
-		case '8':
-			if (base[0] > SC_8 || base[1] > SC_0) { /* (base > 8) */
-				val[0] = _digit((*str)-'0');
-			}
-			else
-				fail_char(orig_str, orig_len, *str, str-orig_str+1);
-			break;
-
-		case '7':
-		case '6':
-		case '5':
-		case '4':
-		case '3':
-		case '2':
-		case '1':
-		case '0':
-			val[0] = _digit((*str)-'0');
-			break;
-
-		default:
-			fail_char(orig_str, orig_len, *str, str-orig_str+1);
-		} /* switch (*str) */
+		if (v >= base)
+			return 0;
+		val[0] = v;
 
 		/* Radix conversion from base b to base B:
 		 *  (UnUn-1...U1U0)b == ((((Un*b + Un-1)*b + ...)*b + U1)*b + U0)B */
-		do_mul(base, calc_buffer, calc_buffer); /* multiply current value with base */
-		do_add(val, calc_buffer, calc_buffer);  /* add next digit to current value  */
+		/* multiply current value with base */
+		do_mul(sc_base, buffer, buffer);
+		/* add next digit to current value  */
+		do_add(val, buffer, buffer);
 
 		/* get ready for the next letter */
 		str++;
 		len--;
 	} /* while (len > 0 ) */
 
-	if (sign)
-		do_negate(calc_buffer, calc_buffer);
+	if (sign < 0)
+		do_negate(buffer, buffer);
 
-	/* beware: even if hex numbers have no sign, we need sign extension here */
-	sign_extend(calc_buffer, mode);
+	return 1;
 }
 
 void sc_val_from_long(long value, void *buffer)
