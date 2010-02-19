@@ -317,10 +317,6 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 	} break;
 	case iro_SymConst: {
 		switch (get_SymConst_kind(n)) {
-		case symconst_addr_name:
-			fprintf(F, "  kind: addr_name\n");
-			fprintf(F, "  name: %s\n", get_id_str(get_SymConst_name(n)));
-			break;
 		case symconst_addr_ent:
 			fprintf(F, "  kind:   addr_ent\n");
 			fprintf(F, "  entity: ");

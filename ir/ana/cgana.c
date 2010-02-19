@@ -163,8 +163,8 @@ static ir_entity ** get_impl_methods(ir_entity * method)
  */
 static void sel_methods_walker(ir_node *node, void *env)
 {
-	pmap *ldname_map = env;
 	ir_entity **arr;
+	(void)env;
 
 	/* Call standard optimizations */
 	if (is_Sel(node)) {
@@ -175,16 +175,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 		}
 	}
 
-	/* replace SymConst(name)-operations by SymConst(ent) */
-	if (is_SymConst(node)) {
-		if (get_SymConst_kind(node) == symconst_addr_name) {
-			pmap_entry *entry = pmap_find(ldname_map, get_SymConst_name(node));
-			if (entry != NULL) { /* Method is declared in the compiled code */
-				assert(!"There should not be a SymConst[addr_name] addressing a method with an implementation"
-					"in this compilation unit.  Use a SymConst[addr_ent].");
-			}
-		}
-	} else if (is_Sel(node) && is_Method_type(get_entity_type(get_Sel_entity(node)))) {
+	if (is_Sel(node) && is_Method_type(get_entity_type(get_Sel_entity(node)))) {
 		ir_entity *ent = get_SymConst_entity(get_atomic_ent_value(get_Sel_entity(node)));
 
 		if (!eset_contains(entities, ent)) {
@@ -250,7 +241,7 @@ static void sel_methods_init(void)
 		}
 	}
 
-	all_irg_walk(sel_methods_walker, NULL, ldname_map);
+	all_irg_walk(sel_methods_walker, NULL, NULL);
 	pmap_destroy(ldname_map);
 }
 
@@ -672,17 +663,14 @@ static void callee_ana_node(ir_node *node, eset *methods)
 		   call and ignore it completely. */
 		eset_insert(methods, unknown_entity); /* free method -> unknown */
 		break;
-	case iro_SymConst:
-		if (get_SymConst_kind(node) == symconst_addr_ent) {
-			ir_entity *ent = get_SymConst_entity(node);
-			assert(ent && is_method_entity(ent));
-			eset_insert(methods, ent);
-		} else {
-			assert(get_SymConst_kind(node) == symconst_addr_name);
-			/* external method (because fix_symconst()!) */
-			eset_insert(methods, unknown_entity); /* free method -> unknown */
-		}
+
+	case iro_SymConst: {
+		ir_entity *ent = get_SymConst_entity(node);
+		assert(ent && is_method_entity(ent));
+		eset_insert(methods, ent);
 		break;
+	}
+
 	case iro_Sel:
 		/* polymorphic method */
 		for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {

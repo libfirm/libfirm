@@ -2103,7 +2103,6 @@ static void compute_SymConst(node_t *node)
 	}
 	switch (get_SymConst_kind(irn)) {
 	case symconst_addr_ent:
-	/* case symconst_addr_name: cannot handle this yet */
 		node->type.sym = get_SymConst_symbol(irn);
 		break;
 	default:

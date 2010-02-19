@@ -145,9 +145,6 @@ static const char *get_symconst_str(ir_node *node)
 	ident *id;
 
 	switch (get_SymConst_kind(node)) {
-	case symconst_addr_name:
-		id = get_SymConst_name(node);
-		return get_id_str(id);
 	case symconst_addr_ent:
 		id = get_entity_ident(get_SymConst_entity(node));
 		return get_id_str(id);

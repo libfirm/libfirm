@@ -277,9 +277,6 @@ static void lower_symconst(ir_node *symc)
 		hook_lower(symc);
 		exchange(symc, newn);
 		break;
-	case symconst_addr_name:
-		/* do not rewrite - pass info to back end */
-		break;
 	case symconst_addr_ent:
 		/* leave */
 		break;

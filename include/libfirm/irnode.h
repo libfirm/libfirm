@@ -499,9 +499,6 @@ void     set_Const_type(ir_node *node, ir_type *tp);
 /** Returns non-zero if s symconst kind has a type attribute */
 #define SYMCONST_HAS_TYPE(kind) ((kind) <= symconst_type_align)
 
-/** Returns non-zero if s symconst kind has an ident attribute */
-#define SYMCONST_HAS_ID(kind) ((kind) == symconst_addr_name)
-
 /** Returns non-zero if s symconst kind has an entity attribute */
 #define SYMCONST_HAS_ENT(kind) ((kind) == symconst_addr_ent || (kind) == symconst_ofs_ent)
 
@@ -516,10 +513,6 @@ void          set_SymConst_kind(ir_node *node, symconst_kind num);
 /** Only to access SymConst of kind type_tag or size.  Else assertion: */
 ir_type  *get_SymConst_type(const ir_node *node);
 void     set_SymConst_type(ir_node *node, ir_type *tp);
-
-/** Only to access SymConst of kind addr_name.  Else assertion: */
-ident   *get_SymConst_name(const ir_node *node);
-void     set_SymConst_name(ir_node *node, ident *name);
 
 /** Only to access SymConst of kind addr_ent.  Else assertion: */
 ir_entity *get_SymConst_entity(const ir_node *node);

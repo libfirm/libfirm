@@ -1270,18 +1270,6 @@ void set_SymConst_type(ir_node *node, ir_type *tp)
 	node->attr.symc.sym.type_p = tp;
 }
 
-ident *get_SymConst_name(const ir_node *node)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ID(get_SymConst_kind(node)));
-	return node->attr.symc.sym.ident_p;
-}
-
-void set_SymConst_name(ir_node *node, ident *name)
-{
-	assert(is_SymConst(node) && SYMCONST_HAS_ID(get_SymConst_kind(node)));
-	node->attr.symc.sym.ident_p = name;
-}
-
 
 /* Only to access SymConst of kind symconst_addr_ent.  Else assertion: */
 ir_entity *get_SymConst_entity(const ir_node *node)

@@ -157,11 +157,6 @@ static void rta_act(ir_node *node, void *env)
 				} else {
 					/* it's an external allocated thing. */
 				}
-			} else if (get_SymConst_kind(ptr) == symconst_addr_name) {
-				/* Entities of kind addr_name may not be allocated in this compilation unit.
-				If so, the frontend built faulty Firm.  So just ignore. */
-				/* if (get_SymConst_name(ptr) != new_id_from_str("iro_Catch"))
-				assert(ent && "couldn't determine entity of call to SymConst of kind addr_name."); */
 			} else {
 				/* other symconst. */
 				panic("This SymConst can not be an address for a method call.");

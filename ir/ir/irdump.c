@@ -783,10 +783,6 @@ int dump_node_opcode(FILE *F, ir_node *n)
 	switch (get_irn_opcode(n)) {
 	case iro_SymConst:
 		switch (get_SymConst_kind(n)) {
-		case symconst_addr_name:
-			/* don't use get_SymConst_ptr_info as it mangles the name. */
-			fprintf(F, "SymC %s", get_id_str(get_SymConst_name(n)));
-			break;
 		case symconst_addr_ent:
 			fprintf(F, "SymC &%s", get_entity_name(get_SymConst_entity(n)));
 			break;

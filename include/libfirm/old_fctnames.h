@@ -47,13 +47,10 @@
 /* irnode.h */
 #define get_Return_n_res      get_Return_n_ress
 #define get_Sel_n_index       get_Sel_n_indexs
-#define get_SymConst_ptrinfo  get_SymConst_name
-#define set_SymConst_ptrinfo  set_SymConst_name
 #define type_tag              symconst_type_tag
 /* don't do this -- too many use this name elswhere */
 /* #define size                  symconst_type_size */
 #define symconst_size         symconst_type_size
-#define linkage_ptr_info      symconst_addr_name
 
 #define get_nodes_Block(X)    get_nodes_block(X)
 #define set_nodes_Block(X, Y) set_nodes_block(X, Y)

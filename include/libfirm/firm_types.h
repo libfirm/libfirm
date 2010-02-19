@@ -146,8 +146,8 @@ typedef enum {
 } mtp_additional_property;
 
 /**  This enum names the different kinds of symbolic Constants represented by
- * SymConst.  The content of the attribute type_or_id depends on this tag.  Use
- * the proper access routine after testing this flag. */
+ * SymConst.  The content of the attribute symconst_symbol depends on this tag.
+ * Use the proper access routine after testing this flag. */
 typedef enum symconst_kind {
 	symconst_type_tag,    /**< The SymConst is a type tag for the given type.
 	                           symconst_symbol is type *. */
@@ -155,9 +155,6 @@ typedef enum symconst_kind {
 	                           symconst_symbol is type *. */
 	symconst_type_align,  /**< The SymConst is the alignment of the given type.
 	                           symconst_symbol is type *. */
-	symconst_addr_name,   /**< The SymConst is a symbolic pointer to be filled in
-	                           by the linker.  The pointer is represented by a string.
-	                           symconst_symbol is ident *. */
 	symconst_addr_ent,    /**< The SymConst is a symbolic pointer to be filled in
 	                           by the linker.  The pointer is represented by an entity.
 	                           symconst_symbol is entity *. */
@@ -173,7 +170,6 @@ typedef enum symconst_kind {
  */
 typedef union symconst_symbol {
 	ir_type       *type_p;    /**< The type of a SymConst. */
-	ident         *ident_p;   /**< The ident of a SymConst. */
 	ir_entity     *entity_p;  /**< The entity of a SymConst. */
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;

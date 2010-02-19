@@ -543,23 +543,11 @@
  *     symconst_type_tag   The symbolic constant represents a type tag.
  *     symconst_type_size  The symbolic constant represents the size of a type.
  *     symconst_type_align The symbolic constant represents the alignment of a type.
- *     symconst_addr_name  Information for the linker, e.g. the name of a global
- *                         variable.
  *     symconst_addr_ent   The symbolic constant represents the address of an entity.
  *     symconst_ofs_ent    The symbolic constant represents the offset of an
  *                         entity in its owner type.
  *     symconst_enum_const The symbolic constant is a enumeration constant of an
  *                         enumeration type.
- *
- *    To represent a pointer to an entity that is represented by an entity
- *    datastructure don't use
- *      sym.ident_p = get_entity_ld_ident(ent);
- *      new_SymConst(mode_P, sym, symconst_addr_name);.
- *    Use a real const instead:
- *      sym.entity_p = ent;
- *      new_SymConst(mode_P, sym, symconst_addr_ent);
- *    This makes the constant independent of name changes of the entity due to
- *    mangling.
  *
  *    Parameters
  *      mode        P for SymConsts representing addresses, Iu otherwise.
@@ -577,7 +565,6 @@
  *                        -symconst_type_tag
  *                        -symconst_type_size
  *                        -symconst_type_align
- *                        -symconst_addr_name
  *                        -symconst_addr_ent
  *
  *    If the attr.i.num is symconst_type_tag, symconst_type_size or symconst_type_align,
@@ -1316,9 +1303,6 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  *    - symconst_type_align The symbolic constant represents the alignment of a
  *                          type.  The type of which the constant represents the
  *                          size is given explicitly.
- *    - symconst_addr_name  The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is
- *                          indicated by a name that is valid for linking.
  *    - symconst_addr_ent   The symbolic constant represents the address of an
  *                          entity (variable or method).  The variable is given
  *                          explicitly by a firm entity.
@@ -1370,15 +1354,6 @@ ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
  */
 ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
                                  ir_entity *symbol, ir_type *tp);
-
-/** Constructor for a SymConst addr_name node.
- *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
- * symconst_addr_name.
- * Adds the SymConst to the start block of irg.
- */
-ir_node *new_rd_SymConst_addr_name(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                                   ident *symbol, ir_type *tp);
 
 /** Constructor for a SymConst type_tag node.
  *
@@ -2184,9 +2159,6 @@ ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
  *    - symconst_type_align The symbolic constant represents the alignment of a
  *                          type.  The type of which the constant represents the
  *                          size is given explicitly.
- *    - symconst_addr_name  The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is
- *                          indicated by a name that is valid for linking.
  *    - symconst_addr_ent   The symbolic constant represents the address of an
  *                          entity (variable or method).  The variable is given
  *                          explicitly by a firm entity.
@@ -2959,9 +2931,6 @@ ir_node *new_d_Const(dbg_info *db, tarval *con);
  *    - symconst_type_align The symbolic constant represents the alignment of a
  *                          type.  The type of which the constant represents the
  *                          size is given explicitly.
- *    - symconst_addr_name  The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is
- *                          indicated by a name that is valid for linking.
  *    - symconst_addr_ent   The symbolic constant represents the address of an
  *                          entity (variable or method).  The variable is given
  *                          explicitly by a firm entity.
@@ -3772,9 +3741,6 @@ ir_node *new_Const_type(tarval *con, ir_type *tp);
  *    - symconst_type_align The symbolic constant represents the alignment of a
  *                          type.  The type of which the constant represents the
  *                          size is given explicitly.
- *    - symconst_addr_name  The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is
- *                          indicated by a name that is valid for linking.
  *    - symconst_addr_ent   The symbolic constant represents the address of an
  *                          entity (variable or method).  The variable is given
  *                          explicitly by a firm entity.
@@ -3811,9 +3777,6 @@ ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value, symconst_
  *    - symconst_type_align The symbolic constant represents the alignment of a
  *                          type.  The type of which the constant represents the
  *                          size is given explicitly.
- *    - symconst_addr_name  The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is
- *                          indicated by a name that is valid for linking.
  *    - symconst_addr_ent   The symbolic constant represents the address of an
  *                          entity (variable or method).  The variable is given
  *                          explicitly by a firm entity.

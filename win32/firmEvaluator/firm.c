@@ -531,12 +531,6 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
         return E_FAIL;
       _tcsncat(pResult, name, max);
       break;
-    case symconst_addr_name:
-      _tcsncat(pResult, "NAME:", max);
-      if (format_ident(pHelper, n.attr.symc.sym.ident_p, name, sizeof(name)) != S_OK)
-        return E_FAIL;
-      _tcsncat(pResult, name, max);
-      break;
     case symconst_addr_ent:
       _tcsncat(pResult, "ENT:", max);
       if (format_entity(pHelper, nBase, n.attr.symc.sym.entity_p, name, sizeof(name), 0) != S_OK)

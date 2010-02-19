@@ -664,10 +664,6 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 	case iro_SymConst:
 		switch (get_SymConst_kind(init)) {
-		case symconst_addr_name:
-			be_emit_ident(get_SymConst_name(init));
-			break;
-
 		case symconst_addr_ent:
 			ent = get_SymConst_entity(init);
 			be_gas_emit_entity(ent);
