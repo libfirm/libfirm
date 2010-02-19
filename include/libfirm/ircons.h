@@ -536,30 +536,36 @@
  *      attr.con   A tarval* pointer to the proper entry in the constant
  *                 table.
  *
- *    ir_node *new_SymConst (ir_mode *mode,union symconst_symbol value, symconst_addr_ent kind)
+ *    ir_node *new_SymConst (ir_mode *mode, union symconst_symbol value, symconst_addr_ent kind)
  *    -----------------------------------------------------------------------------------------
  *
- *    There are three five of symbolic constants:
+ *    There are several symbolic constants:
  *     symconst_type_tag   The symbolic constant represents a type tag.
  *     symconst_type_size  The symbolic constant represents the size of a type.
  *     symconst_type_align The symbolic constant represents the alignment of a type.
  *     symconst_addr_name  Information for the linker, e.g. the name of a global
  *                         variable.
  *     symconst_addr_ent   The symbolic constant represents the address of an entity.
+ *     symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                         entity in its owner type.
+ *     symconst_enum_const The symbolic constant is a enumeration constant of an
+ *                         enumeration type.
  *
  *    To represent a pointer to an entity that is represented by an entity
  *    datastructure don't use
- *      new_SymConst((type_or_id*)get_entity_ld_ident(ent), symconst_addr_name);.
+ *      sym.ident_p = get_entity_ld_ident(ent);
+ *      new_SymConst(mode_P, sym, symconst_addr_name);.
  *    Use a real const instead:
- *      new_SymConst(ent, symconst_addr_ent);
- *    This makes the Constant independent of name changes of the entity due to
+ *      sym.entity_p = ent;
+ *      new_SymConst(mode_P, sym, symconst_addr_ent);
+ *    This makes the constant independent of name changes of the entity due to
  *    mangling.
  *
  *    Parameters
- *      kind        The kind of the symbolic constant: type_tag, size or link_info.
- *      *type_or_id Points to the type the tag stands for or to the type
- *                  whose size is represented by the constant or to an ident
- *                  representing the linkage info.
+ *      mode        P for SymConsts representing addresses, Iu otherwise.
+ *      value       The type, ident, entity or enum constant, depending on the
+ *                  kind
+ *      kind        The kind of the symbolic constant, see the list above.
  *
  *    Inputs:
  *      No inputs except the block it belongs to.
@@ -1301,21 +1307,25 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
 /** Constructor for a SymConst_type node.
  *
  *  This is the constructor for a symbolic constant.
- *    There are four kinds of symbolic constants:
- *    - type_tag   The symbolic constant represents a type tag.  The type the
- *                 tag stands for is given explicitly.
- *    - type_size  The symbolic constant represents the size of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    - type_align The symbolic constant represents the alignment of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    - addr_name  The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is indicated by a name
- *                 that is valid for linking.
- *    - addr_ent   The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is given explicitly by
- *                 a firm entity.
+ *    There are several kinds of symbolic constants:
+ *    - symconst_type_tag   The symbolic constant represents a type tag.  The
+ *                          type the tag stands for is given explicitly.
+ *    - symconst_type_size  The symbolic constant represents the size of a type.
+ *                          The type of which the constant represents the size
+ *                          is given explicitly.
+ *    - symconst_type_align The symbolic constant represents the alignment of a
+ *                          type.  The type of which the constant represents the
+ *                          size is given explicitly.
+ *    - symconst_addr_name  The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is
+ *                          indicated by a name that is valid for linking.
+ *    - symconst_addr_ent   The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is given
+ *                          explicitly by a firm entity.
+ *    - symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                          entity in its owner type.
+ *    - symconst_enum_const The symbolic constant is a enumeration constant of
+ *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
@@ -1328,20 +1338,21 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  * @param *db     A pointer for debug information.
  * @param *irg    The IR graph the node  belongs to.
  * @param mode    The mode for the SymConst.
- * @param symkind The kind of the symbolic constant: type_tag, size, addr_name or addr_ent.
- * @param value   A type, entity or a ident depending on the SymConst kind.
+ * @param value   A type, ident, entity or enum constant depending on the
+ *                SymConst kind.
+ * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
 ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                              union symconst_symbol value,
-                              symconst_kind symkind, ir_type *tp);
+                              union symconst_symbol value, symconst_kind kind,
+                              ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown.
  */
 ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                         union symconst_symbol value, symconst_kind symkind);
+                         union symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a SymConst addr_ent node.
  *
@@ -1363,7 +1374,7 @@ ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
 /** Constructor for a SymConst addr_name node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
- * symconst_addr_ent.
+ * symconst_addr_name.
  * Adds the SymConst to the start block of irg.
  */
 ir_node *new_rd_SymConst_addr_name(dbg_info *db, ir_graph *irg, ir_mode *mode,
@@ -1372,7 +1383,7 @@ ir_node *new_rd_SymConst_addr_name(dbg_info *db, ir_graph *irg, ir_mode *mode,
 /** Constructor for a SymConst type_tag node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
- * symconst_addr_ent.
+ * symconst_type_tag.
  * Adds the SymConst to the start block of irg.
  */
 ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode,
@@ -2164,31 +2175,42 @@ ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
 /** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
- *    There are four kinds of symbolic constants:
- *    - type_tag  The symbolic constant represents a type tag.  The type the
- *                tag stands for is given explicitly.
- *    - size      The symbolic constant represents the size of a type.  The
- *                type of which the constant represents the size is given
- *                explicitly.
- *    - addr_name The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is indicated by a name
- *                that is valid for linking.
- *    - addr_ent   The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is given explicitly by
- *                a firm entity.
+ *    There are several kinds of symbolic constants:
+ *    - symconst_type_tag   The symbolic constant represents a type tag.  The
+ *                          type the tag stands for is given explicitly.
+ *    - symconst_type_size  The symbolic constant represents the size of a type.
+ *                          The type of which the constant represents the size
+ *                          is given explicitly.
+ *    - symconst_type_align The symbolic constant represents the alignment of a
+ *                          type.  The type of which the constant represents the
+ *                          size is given explicitly.
+ *    - symconst_addr_name  The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is
+ *                          indicated by a name that is valid for linking.
+ *    - symconst_addr_ent   The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is given
+ *                          explicitly by a firm entity.
+ *    - symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                          entity in its owner type.
+ *    - symconst_enum_const The symbolic constant is a enumeration constant of
+ *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
  *    Outputs of the node.
  *      An unsigned integer (I_u) or a pointer (P).
  *
+ *    Mention union in declaration so that the firmjni generator recognizes that
+ *    it can not cast the argument to an int.
+ *
  * @param *irg    The IR graph the node  belongs to.
  * @param mode    The mode for the SymConst.
- * @param value   A type, entity or a ident depending on the SymConst kind.
- * @param symkind The kind of the symbolic constant: type_tag, size or link_info.
+ * @param value   A type, ident, entity or enum constant depending on the
+ *                SymConst kind.
+ * @param kind    The kind of the symbolic constant, see the list above
  */
 ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
-                        union symconst_symbol value, symconst_kind symkind);
+                        union symconst_symbol value, symconst_kind kind);
 
 /** Constructor for a simpleSel node.
  *
@@ -2927,31 +2949,40 @@ ir_node *new_d_Const(dbg_info *db, tarval *con);
 
 /** Constructor for a SymConst_type node.
  *
- *  Adds the node to the block in current_ir_block.
  *  This is the constructor for a symbolic constant.
- *    There are four kinds of symbolic constants:
- *    - type_tag  The symbolic constant represents a type tag.  The type the
- *                tag stands for is given explicitly.
- *    - size      The symbolic constant represents the size of a type.  The
- *                type of which the constant represents the size is given
- *                explicitly.
- *    - addr_name The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is indicated by a name
- *                that is valid for linking.
- *    - addr_ent   The symbolic constant represents the address of an entity
- *                (variable or method).  The variable is given explicitly by
- *                a firm entity.
+ *    There are several kinds of symbolic constants:
+ *    - symconst_type_tag   The symbolic constant represents a type tag.  The
+ *                          type the tag stands for is given explicitly.
+ *    - symconst_type_size  The symbolic constant represents the size of a type.
+ *                          The type of which the constant represents the size
+ *                          is given explicitly.
+ *    - symconst_type_align The symbolic constant represents the alignment of a
+ *                          type.  The type of which the constant represents the
+ *                          size is given explicitly.
+ *    - symconst_addr_name  The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is
+ *                          indicated by a name that is valid for linking.
+ *    - symconst_addr_ent   The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is given
+ *                          explicitly by a firm entity.
+ *    - symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                          entity in its owner type.
+ *    - symconst_enum_const The symbolic constant is a enumeration constant of
+ *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
  *    Outputs of the node.
  *      An unsigned integer (I_u) or a pointer (P).
  *
+ *    Mention union in declaration so that the firmjni generator recognizes that
+ *    it can not cast the argument to an int.
+ *
  * @param *db     A pointer for debug information.
  * @param mode    The mode for the SymConst.
- * @param value   A type, entity or ident depending on the SymConst kind.
- * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size,
- *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
+ * @param value   A type, ident, entity or enum constant depending on the
+ *                SymConst kind.
+ * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
 ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode,
@@ -3729,68 +3760,80 @@ ir_node *new_Const_long(ir_mode *mode, long value);
  * Derives mode from passed tarval. */
 ir_node *new_Const_type(tarval *con, ir_type *tp);
 
-/** Constructor for a SymConst node.
+/** Constructor for a SymConst_type node.
  *
- * Adds the node to the block in current_ir_block.
- * This is the constructor for a symbolic constant.
- * There are four kinds of symbolic constants:
- *    -# type_tag  The symbolic constant represents a type tag.  The type the
- *                 tag stands for is given explicitly.
- *    -# size      The symbolic constant represents the size of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    -# align     The symbolic constant represents the alignment of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    -# addr_name The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is indicated by a name
- *                 that is valid for linking.
- *    -# addr_ent  The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is given explicitly by
- *                 a firm entity.
+ *  This is the constructor for a symbolic constant.
+ *    There are several kinds of symbolic constants:
+ *    - symconst_type_tag   The symbolic constant represents a type tag.  The
+ *                          type the tag stands for is given explicitly.
+ *    - symconst_type_size  The symbolic constant represents the size of a type.
+ *                          The type of which the constant represents the size
+ *                          is given explicitly.
+ *    - symconst_type_align The symbolic constant represents the alignment of a
+ *                          type.  The type of which the constant represents the
+ *                          size is given explicitly.
+ *    - symconst_addr_name  The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is
+ *                          indicated by a name that is valid for linking.
+ *    - symconst_addr_ent   The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is given
+ *                          explicitly by a firm entity.
+ *    - symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                          entity in its owner type.
+ *    - symconst_enum_const The symbolic constant is a enumeration constant of
+ *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
  *    Outputs of the node.
  *      An unsigned integer (I_u) or a pointer (P).
  *
+ *    Mention union in declaration so that the firmjni generator recognizes that
+ *    it can not cast the argument to an int.
+ *
  * @param mode    The mode for the SymConst.
- * @param value   A type or a ident depending on the SymConst kind.
- * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size
- *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
+ * @param value   A type, ident, entity or enum constant depending on the
+ *                SymConst kind.
+ * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
 ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value, symconst_kind kind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
- * Adds the node to the block in current_ir_block.
- * This is the constructor for a symbolic constant.
- * There are four kinds of symbolic constants:
- *    -# type_tag  The symbolic constant represents a type tag.  The type the
- *                 tag stands for is given explicitly.
- *    -# size      The symbolic constant represents the size of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    -# align     The symbolic constant represents the alignment of a type.  The
- *                 type of which the constant represents the size is given
- *                 explicitly.
- *    -# addr_name The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is indicated by a name
- *                 that is valid for linking.
- *    -# addr_ent  The symbolic constant represents the address of an entity
- *                 (variable or method).  The variable is given explicitly by
- *                 a firm entity.
+ *  This is the constructor for a symbolic constant.
+ *    There are several kinds of symbolic constants:
+ *    - symconst_type_tag   The symbolic constant represents a type tag.  The
+ *                          type the tag stands for is given explicitly.
+ *    - symconst_type_size  The symbolic constant represents the size of a type.
+ *                          The type of which the constant represents the size
+ *                          is given explicitly.
+ *    - symconst_type_align The symbolic constant represents the alignment of a
+ *                          type.  The type of which the constant represents the
+ *                          size is given explicitly.
+ *    - symconst_addr_name  The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is
+ *                          indicated by a name that is valid for linking.
+ *    - symconst_addr_ent   The symbolic constant represents the address of an
+ *                          entity (variable or method).  The variable is given
+ *                          explicitly by a firm entity.
+ *    - symconst_ofs_ent    The symbolic constant represents the offset of an
+ *                          entity in its owner type.
+ *    - symconst_enum_const The symbolic constant is a enumeration constant of
+ *                          an enumeration type.
  *
  *    Inputs to the node:
  *      No inputs except the block it belongs to.
  *    Outputs of the node.
  *      An unsigned integer (I_u) or a pointer (P).
  *
+ *    Mention union in declaration so that the firmjni generator recognizes that
+ *    it can not cast the argument to an int.
+ *
  * @param mode    The mode for the SymConst.
- * @param value   A type or a ident depending on the SymConst kind.
- * @param kind    The kind of the symbolic constant: symconst_type_tag, symconst_type_size
- *                symconst_type_align, symconst_addr_name or symconst_addr_ent.
+ * @param value   A type, ident, entity or enum constant depending on the
+ *                SymConst kind.
+ * @param kind    The kind of the symbolic constant, see the list above
  */
 ir_node *new_SymConst(ir_mode *mode, union symconst_symbol value, symconst_kind kind);
 

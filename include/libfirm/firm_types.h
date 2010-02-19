@@ -145,11 +145,10 @@ typedef enum {
 	                                              inherited from type. */
 } mtp_additional_property;
 
-/**  This enum names the three different kinds of symbolic Constants
-     represented by SymConst.  The content of the attribute type_or_id
-     depends on this tag.  Use the proper access routine after testing
-     this flag. */
-typedef enum {
+/**  This enum names the different kinds of symbolic Constants represented by
+ * SymConst.  The content of the attribute type_or_id depends on this tag.  Use
+ * the proper access routine after testing this flag. */
+typedef enum symconst_kind {
 	symconst_type_tag,    /**< The SymConst is a type tag for the given type.
 	                           symconst_symbol is type *. */
 	symconst_type_size,   /**< The SymConst is the size of the given type.
