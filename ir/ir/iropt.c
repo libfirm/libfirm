@@ -2666,7 +2666,7 @@ restart:
 						get_irn_dbg_info(n),
 						blk,
 						mb,
-						new_Const_long(mode, 1),
+						new_Const(get_mode_one(mode)),
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
@@ -2681,7 +2681,7 @@ restart:
 						get_irn_dbg_info(n),
 						blk,
 						ma,
-						new_Const_long(mode, 1),
+						new_Const(get_mode_one(mode)),
 						mode),
 					mode);
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_MUL_A_X_A);
