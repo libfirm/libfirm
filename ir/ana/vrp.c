@@ -298,11 +298,11 @@ int update_vrp_data( ir_node *node)
 		new_bits_set = tarval_and(
 				tarval_not(bits_not_set), tarval_convert_to(pred->vrp.bits_set, new_mode));
 
-		if (tarval_cmp(pred->vrp.range_top, get_tarval_max(new_mode)) == pn_Cmp_Le) {
+		if (tarval_cmp(pred->vrp.range_top, get_mode_max(new_mode)) == pn_Cmp_Le) {
 			node->vrp.range_top = pred->vrp.range_top;
 		}
 
-		if (tarval_cmp(pred->vrp.range_bottom, get_tarval_min(new_mode)) == pn_Cmp_Ge) {
+		if (tarval_cmp(pred->vrp.range_bottom, get_mode_min(new_mode)) == pn_Cmp_Ge) {
 			node->vrp.range_bottom = pred->vrp.range_bottom;
 		}
 
