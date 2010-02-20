@@ -1049,7 +1049,7 @@ static int is_fpa_immediate(tarval *tv)
 		i = 2;
 	}
 
-	if (tarval_cmp(tv, get_mode_null(mode)) & pn_Cmp_Lt) {
+	if (tarval_is_negative(tv)) {
 		tv = tarval_neg(tv);
 		res = -1;
 	}

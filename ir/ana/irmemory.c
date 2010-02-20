@@ -188,7 +188,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 				}
 
 				/* m1 is now the signed one */
-				if (tarval_cmp(tv1, get_mode_null(m1)) & (pn_Cmp_Eq|pn_Cmp_Gt)) {
+				if (!tarval_is_negative(tv1)) {
 					/* tv1 is signed, but >= 0, simply cast into unsigned */
 					tv1 = tarval_convert_to(tv1, m2);
 				} else {
