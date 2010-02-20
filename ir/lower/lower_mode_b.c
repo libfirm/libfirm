@@ -88,7 +88,7 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
 	ir_node  *block  = get_nodes_block(node);
 	ir_mode  *mode   = config.lowered_mode;
-	tarval   *tv_one = get_tarval_one(mode);
+	tarval   *tv_one = get_mode_one(mode);
 	ir_node  *one    = new_d_Const(dbgi, tv_one);
 
 	return new_rd_Eor(dbgi,	block, node, one, mode);
@@ -117,7 +117,7 @@ static ir_node *create_set(ir_node *node)
 {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = config.lowered_set_mode;
-	tarval   *tv_one  = get_tarval_one(mode);
+	tarval   *tv_one  = get_mode_one(mode);
 	ir_node  *one     = new_d_Const(dbgi, tv_one);
 	ir_node  *block   = get_nodes_block(node);
 	tarval   *tv_zero = get_tarval_null(mode);
@@ -332,7 +332,7 @@ synth_zero_one:
 	case iro_Const: {
 		tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
-			tarval  *tv_one  = get_tarval_one(mode);
+			tarval  *tv_one  = get_mode_one(mode);
 			res              = new_d_Const(dbgi, tv_one);
 		} else if (tv == get_tarval_b_false()) {
 			tarval  *tv_zero = get_tarval_null(mode);

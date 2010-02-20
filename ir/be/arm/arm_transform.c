@@ -1610,7 +1610,7 @@ static void arm_init_fpa_immediate(void)
 {
 	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
 	fpa_imm[0][fpa_null]  = get_tarval_null(mode_F);
-	fpa_imm[0][fpa_one]   = get_tarval_one(mode_F);
+	fpa_imm[0][fpa_one]   = get_mode_one(mode_F);
 	fpa_imm[0][fpa_two]   = new_tarval_from_str("2", 1, mode_F);
 	fpa_imm[0][fpa_three] = new_tarval_from_str("3", 1, mode_F);
 	fpa_imm[0][fpa_four]  = new_tarval_from_str("4", 1, mode_F);
@@ -1619,7 +1619,7 @@ static void arm_init_fpa_immediate(void)
 	fpa_imm[0][fpa_half]  = new_tarval_from_str("0.5", 3, mode_F);
 
 	fpa_imm[1][fpa_null]  = get_tarval_null(mode_D);
-	fpa_imm[1][fpa_one]   = get_tarval_one(mode_D);
+	fpa_imm[1][fpa_one]   = get_mode_one(mode_D);
 	fpa_imm[1][fpa_two]   = new_tarval_from_str("2", 1, mode_D);
 	fpa_imm[1][fpa_three] = new_tarval_from_str("3", 1, mode_D);
 	fpa_imm[1][fpa_four]  = new_tarval_from_str("4", 1, mode_D);
@@ -1628,7 +1628,7 @@ static void arm_init_fpa_immediate(void)
 	fpa_imm[1][fpa_half]  = new_tarval_from_str("0.5", 3, mode_D);
 
 	fpa_imm[2][fpa_null]  = get_tarval_null(mode_E);
-	fpa_imm[2][fpa_one]   = get_tarval_one(mode_E);
+	fpa_imm[2][fpa_one]   = get_mode_one(mode_E);
 	fpa_imm[2][fpa_two]   = new_tarval_from_str("2", 1, mode_E);
 	fpa_imm[2][fpa_three] = new_tarval_from_str("3", 1, mode_E);
 	fpa_imm[2][fpa_four]  = new_tarval_from_str("4", 1, mode_E);
