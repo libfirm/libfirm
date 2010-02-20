@@ -423,7 +423,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 
 	/* initialize count array */
 	NEW_ARR_A(tarval *, tarval_array, n_blocks);
-	tv = get_tarval_null(mode_Iu);
+	tv = get_mode_null(mode_Iu);
 	for (i = 0; i < n_blocks; ++i) {
 		tarval_array[i] = tv;
 	}

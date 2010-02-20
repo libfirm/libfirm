@@ -142,8 +142,8 @@ typedef ir_type type;
 #define tarval_get_mode_output_option(X) get_tarval_mode_output_option(X)
 #define tarval_bitpattern(X) get_tarval_bitpattern(X)
 #define tarval_sub_bits(X, Y) get_tarval_sub_bits(X, Y)
-#define get_tarval_P_void() get_tarval_null(mode_P)
-#define tarval_P_void       get_tarval_null(mode_P)
+#define get_tarval_P_void() get_mode_null(mode_P)
+#define tarval_P_void       get_mode_null(mode_P)
 
 #define tarval_is_entity(X) 0
 #define get_tarval_entity(X) ((ir_entity *)NULL)

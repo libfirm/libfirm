@@ -120,7 +120,7 @@ static ir_node *create_set(ir_node *node)
 	tarval   *tv_one  = get_mode_one(mode);
 	ir_node  *one     = new_d_Const(dbgi, tv_one);
 	ir_node  *block   = get_nodes_block(node);
-	tarval   *tv_zero = get_tarval_null(mode);
+	tarval   *tv_zero = get_mode_null(mode);
 	ir_node  *zero    = new_d_Const(dbgi, tv_zero);
 
 	ir_node *set      = new_rd_Mux(dbgi, block, node, zero, one, mode);
@@ -241,7 +241,7 @@ static ir_node *lower_node(ir_node *node)
 	case iro_Conv: {
 		ir_node *pred     = get_Conv_op(node);
 		ir_mode *mode     = get_irn_mode(pred);
-		tarval  *tv_zeroc = get_tarval_null(mode);
+		tarval  *tv_zeroc = get_mode_null(mode);
 		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
@@ -335,7 +335,7 @@ synth_zero_one:
 			tarval  *tv_one  = get_mode_one(mode);
 			res              = new_d_Const(dbgi, tv_one);
 		} else if (tv == get_tarval_b_false()) {
-			tarval  *tv_zero = get_tarval_null(mode);
+			tarval  *tv_zero = get_mode_null(mode);
 			res              = new_d_Const(dbgi, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);

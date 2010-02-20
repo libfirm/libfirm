@@ -526,7 +526,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 			ir_initializer_t *initializer = create_initializer_compound(2);
 
 			set_initializer_compound_value(initializer, 0,
-				create_initializer_tarval(get_tarval_null(mode)));
+				create_initializer_tarval(get_mode_null(mode)));
 			set_initializer_compound_value(initializer, 1,
 				create_initializer_tarval(tv));
 
