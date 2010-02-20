@@ -51,10 +51,10 @@ $arch = "mips";
 ); # %reg_classes
 
 %emit_templates = (
-    S0  => "${arch}_emit_source_register(node, 0);",
-    S1  => "${arch}_emit_source_register(node, 1);",
+	S0  => "${arch}_emit_source_register(node, 0);",
+	S1  => "${arch}_emit_source_register(node, 1);",
 	SI1 => "${arch}_emit_source_register_or_immediate(node, 1);",
-    D0  => "${arch}_emit_dest_register(node, 0);",
+	D0  => "${arch}_emit_dest_register(node, 0);",
 	A0  => "${arch}_emit_load_store_address(node, 0);",
 	I   => "${arch}_emit_immediate_suffix(node, 1);",
 	C   => "${arch}_emit_immediate(node);",
