@@ -201,7 +201,7 @@ int update_vrp_data( ir_node *node)
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shl(
-										get_tarval_all_one(m),
+										get_mode_all_one(m),
 										get_Const_tarval(b)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 
@@ -222,7 +222,7 @@ int update_vrp_data( ir_node *node)
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shr(
-										get_tarval_all_one(m),
+										get_mode_all_one(m),
 										get_Const_tarval(b)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 		}
@@ -242,7 +242,7 @@ int update_vrp_data( ir_node *node)
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shrs(
-										get_tarval_all_one(m),
+										get_mode_all_one(m),
 										get_Const_tarval(b)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 		}
@@ -290,7 +290,7 @@ int update_vrp_data( ir_node *node)
 
 		// The second and is needed if target type is smaller
 		bits_not_set = tarval_not(
-							tarval_convert_to(get_tarval_all_one(old_mode),
+							tarval_convert_to(get_mode_all_one(old_mode),
 								new_mode
 								));
 		bits_not_set = tarval_or(bits_not_set, tarval_convert_to(pred->vrp.bits_not_set, new_mode));
