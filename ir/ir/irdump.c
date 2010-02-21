@@ -3079,8 +3079,10 @@ static int dump_all_ir_graphs_wrapper(ir_prog *irp, void *context)
 	return 0;
 }
 
-ir_prog_pass_t *dump_all_ir_graph_pass(
-	const char *name, dump_graph_func *dump_graph, const char *suffix) {
+ir_prog_pass_t *dump_all_ir_graph_pass(const char *name,
+                                       dump_graph_func *dump_graph,
+                                       const char *suffix)
+{
 	size_t         len   = strlen(suffix);
 	struct pass_t  *pass = xmalloc(sizeof(*pass) + len);
 	ir_prog_pass_t *res  = def_prog_pass_constructor(

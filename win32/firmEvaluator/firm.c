@@ -836,7 +836,8 @@ struct set {
  * Find the longest chain of a pset
  */
 static HRESULT find_longest_pset_chain(DEBUGHELPER *pHelper, pset *set,
-                                       int *chains, int *lenght, size_t *size) {
+                                       int *chains, int *lenght, size_t *size)
+{
   unsigned i, j;
   pset_Segment *seg, *curr;
   pset_Element elem;
@@ -876,7 +877,8 @@ static HRESULT find_longest_pset_chain(DEBUGHELPER *pHelper, pset *set,
  * Find the longest chain of a set
  */
 static HRESULT find_longest_set_chain(DEBUGHELPER *pHelper, set *set,
-                                      int *chains, int *lenght, size_t *size) {
+                                      int *chains, int *lenght, size_t *size)
+{
   unsigned i, j;
   set_Segment *seg, *curr;
   set_Element elem;

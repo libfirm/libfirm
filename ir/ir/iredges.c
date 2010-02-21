@@ -1090,9 +1090,9 @@ void dump_all_out_edges(ir_node *irn)
 	}
 }
 
-static void irg_block_edges_walk2(ir_node *bl,
-                                irg_walk_func *pre, irg_walk_func *post,
-                                void *env) {
+static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,
+                                  irg_walk_func *post, void *env)
+{
 	const ir_edge_t *edge, *next;
 
 	if (!Block_block_visited(bl)) {
@@ -1112,10 +1112,9 @@ static void irg_block_edges_walk2(ir_node *bl,
 	}
 }
 
-void irg_block_edges_walk(ir_node *node,
-                          irg_walk_func *pre, irg_walk_func *post,
-                          void *env) {
-
+void irg_block_edges_walk(ir_node *node, irg_walk_func *pre,
+                          irg_walk_func *post, void *env)
+{
 	assert(edges_activated(current_ir_graph));
 	assert(is_Block(node));
 

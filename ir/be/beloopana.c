@@ -153,7 +153,8 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
  * @return The loop analysis object.
  */
 be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg,
-                                       const arch_register_class_t *cls) {
+                                       const arch_register_class_t *cls)
+{
 	ir_graph     *irg      = be_get_birg_irg(birg);
 	be_loopana_t *loop_ana = XMALLOC(be_loopana_t);
 

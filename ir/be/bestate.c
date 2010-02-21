@@ -518,7 +518,8 @@ static void fix_block_borders(ir_node *block, void *data)
 
 void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
                      create_spill_func create_spill,
-                     create_reload_func create_reload) {
+                     create_reload_func create_reload)
+{
 	minibelady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
 	spill_info_t *info;

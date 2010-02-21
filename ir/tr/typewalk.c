@@ -497,9 +497,8 @@ static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
 	}
 }
 
-void type_walk_super(type_walk_func *pre,
-                     type_walk_func *post,
-                     void *env) {
+void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
+{
 	int         i, n_types = get_irp_n_types();
 	type_or_ent cont;
 

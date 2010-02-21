@@ -498,7 +498,8 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
                                       ir_mode *imode, ir_mode *omode,
-                                      lower_env_t *env) {
+                                      lower_env_t *env)
+{
 	symconst_symbol sym;
 	ir_entity *ent;
 	op_mode_entry_t key, *entry;

@@ -148,7 +148,8 @@ void *ir_valueset_lookup(const ir_valueset_t *valueset, const ir_node *value)
 }
 
 void ir_valueset_iterator_init(ir_valueset_iterator_t *iterator,
-                               const ir_valueset_t *valueset) {
+                               const ir_valueset_t *valueset)
+{
 	iterator->iter     = valueset->elem_list.next;
 	iterator->valueset = valueset;
 }

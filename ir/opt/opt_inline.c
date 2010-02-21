@@ -1560,7 +1560,8 @@ inline static int is_smaller(ir_graph *callee, unsigned size)
  *                  delta value for the loop depth
  */
 static call_entry *duplicate_call_entry(const call_entry *entry,
-                                        ir_node *new_call, int loop_depth_delta) {
+                                        ir_node *new_call, int loop_depth_delta)
+{
 	call_entry *nentry = OALLOC(&temp_obst, call_entry);
 	nentry->call       = new_call;
 	nentry->callee     = entry->callee;
@@ -1871,7 +1872,8 @@ static int inline_leave_functions_wrapper(ir_prog *irp, void *context)
 /* create a pass for inline_leave_functions() */
 ir_prog_pass_t *inline_leave_functions_pass(
 	const char *name, unsigned maxsize, unsigned leavesize,
-	unsigned size, int ignore_runtime) {
+	unsigned size, int ignore_runtime)
+{
 	struct inline_leave_functions_pass_t *pass =
 		XMALLOCZ(struct inline_leave_functions_pass_t);
 
@@ -2457,7 +2459,8 @@ static int inline_functions_wrapper(ir_prog *irp, void *context)
 /* create a ir_prog pass for inline_functions */
 ir_prog_pass_t *inline_functions_pass(
 	  const char *name, unsigned maxsize, int inline_threshold,
-	  opt_ptr after_inline_opt) {
+	  opt_ptr after_inline_opt)
+{
 	struct inline_functions_pass_t *pass =
 		XMALLOCZ(struct inline_functions_pass_t);
 

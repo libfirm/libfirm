@@ -134,7 +134,8 @@ void *ir_lnk_nodemap_get(const ir_lnk_nodemap_t *nodemap, const ir_node *node)
  * @param nodemap       Pointer to the nodemap
  */
 void ir_lnk_nodemap_iterator_init(ir_lnk_nodemap_iterator_t *iterator,
-                                  const ir_lnk_nodemap_t *nodemap) {
+                                  const ir_lnk_nodemap_t *nodemap)
+{
 	iterator->iter    = nodemap->elem_list.next;
 	iterator->nodemap = nodemap;
 }
@@ -167,7 +168,8 @@ ir_node *ir_lnk_nodemap_iterator_next(ir_lnk_nodemap_iterator_t *iterator)
  * @param iterator  Pointer to the nodemap iterator.
  */
 void ir_lnk_nodemap_remove_iterator(ir_lnk_nodemap_t *nodemap,
-                                    ir_lnk_nodemap_iterator_t *iterator) {
+                                    ir_lnk_nodemap_iterator_t *iterator)
+{
 	ir_lnk_nodemap_entry_t *rem = list_entry(iterator->iter->prev, ir_lnk_nodemap_entry_t, list);
 
 	ir_lnk_nodemap_remove(nodemap, rem->node);

@@ -559,7 +559,8 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block)
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
                     int arity, ir_node *in[], ir_asm_constraint *inputs,
                     int n_outs, ir_asm_constraint *outputs,
-                    int n_clobber, ident *clobber[], ident *asm_text) {
+                    int n_clobber, ident *clobber[], ident *asm_text)
+{
 	ir_node  *res;
 	ir_graph *rem = current_ir_graph;
 
@@ -590,12 +591,14 @@ ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp)
 {
 	return new_rd_Const_type(NULL, irg, con, tp);
 }
-ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
-                        symconst_symbol value, symconst_kind symkind) {
+ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode, symconst_symbol value,
+                        symconst_kind symkind)
+{
 	return new_rd_SymConst(NULL, irg, mode, value, symkind);
 }
-ir_node *new_r_simpleSel(ir_node *block, ir_node *store,
-                         ir_node *objptr, ir_entity *ent) {
+ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
+                         ir_entity *ent)
+{
 	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
 }
 ir_node *new_r_Phi(ir_node *block, int arity, ir_node **in, ir_mode *mode)
@@ -629,7 +632,8 @@ ir_node *new_r_NoMem(ir_graph *irg)
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
                    int n_outs, ir_asm_constraint *outputs,
-                   int n_clobber, ident *clobber[], ident *asm_text) {
+                   int n_clobber, ident *clobber[], ident *asm_text)
+{
 	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, asm_text);
 }
 
@@ -1557,7 +1561,8 @@ ir_node *new_NoMem(void)
 }
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,
-                 int n_clobber, ident *clobber[], ident *asm_text) {
+                 int n_clobber, ident *clobber[], ident *asm_text)
+{
 	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, asm_text);
 }
 

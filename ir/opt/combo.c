@@ -1666,7 +1666,8 @@ static void cause_splits(environment_t *env)
  * @return *P
  */
 static partition_t *split_by_what(partition_t *X, what_func What,
-                                  partition_t **P, environment_t *env) {
+                                  partition_t **P, environment_t *env)
+{
 	node_t          *x, *S;
 	listmap_t       map;
 	listmap_entry_t *iter;

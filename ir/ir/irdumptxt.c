@@ -505,7 +505,8 @@ static int addr_is_alloc(ir_node *acc)
 static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
                            int (*get_entity_n_nodes)(firm_kind *ent),
                            ir_node *(*get_entity_node)(firm_kind *ent, int pos),
-                           char *name) {
+                           char *name)
+{
 	int i, n_nodes = get_entity_n_nodes(k);
 	char *comma = "";
 
@@ -535,7 +536,8 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
 static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
                            int (*get_n_types)(const ir_type *tp),
                            ir_type *(*get_type)(const ir_type *tp, int pos),
-                           const char *name) {
+                           const char *name)
+{
 	int i, n_nodes = get_n_types(tp);
 	char *comma = "";
 
@@ -557,7 +559,8 @@ static int need_nl = 1;
  * Dump initializers.
  */
 static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
-										 const ir_initializer_t *initializer, ir_type *type) {
+										 const ir_initializer_t *initializer, ir_type *type)
+{
 	tarval  *tv;
 	ir_node *value;
 

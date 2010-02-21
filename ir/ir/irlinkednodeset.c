@@ -133,7 +133,8 @@ int ir_lnk_nodeset_contains(const ir_lnk_nodeset_t *nodeset, const ir_node *node
  * @param nodeset       Pointer to the nodeset
  */
 void ir_lnk_nodeset_iterator_init(ir_lnk_nodeset_iterator_t *iterator,
-                                  const ir_lnk_nodeset_t *nodeset) {
+                                  const ir_lnk_nodeset_t *nodeset)
+{
 	iterator->iter    = nodeset->elem_list.next;
 	iterator->nodeset = nodeset;
 }
@@ -166,7 +167,8 @@ ir_node *ir_lnk_nodeset_iterator_next(ir_lnk_nodeset_iterator_t *iterator)
  * @param iterator  Pointer to the nodeset iterator.
  */
 void ir_lnk_nodeset_remove_iterator(ir_lnk_nodeset_t *nodeset,
-                                    ir_lnk_nodeset_iterator_t *iterator) {
+                                    ir_lnk_nodeset_iterator_t *iterator)
+{
 	ir_lnk_nodeset_entry_t *rem = list_entry(iterator->iter->prev, ir_lnk_nodeset_entry_t, list);
 
 	ir_lnk_nodeset_remove(nodeset, rem->node);

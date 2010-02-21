@@ -203,7 +203,8 @@ ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
 }
 
 static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
-            irg_walk_func *post, void *env) {
+                           irg_walk_func *post, void *env)
+{
 	int     i, n;
 	ir_node *succ;
 
@@ -223,9 +224,9 @@ static void irg_out_walk_2(ir_node *node, irg_walk_func *pre,
 	if (post) post(node, env);
 }
 
-void irg_out_walk(ir_node *node,
-                  irg_walk_func *pre, irg_walk_func *post,
-                  void *env) {
+void irg_out_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                  void *env)
+{
 	assert(node);
 	if (get_irg_outs_state(current_ir_graph) != outs_none) {
 		inc_irg_visited (current_ir_graph);
@@ -233,9 +234,9 @@ void irg_out_walk(ir_node *node,
 	}
 }
 
-static void irg_out_block_walk2(ir_node *bl,
-                                irg_walk_func *pre, irg_walk_func *post,
-                                void *env) {
+static void irg_out_block_walk2(ir_node *bl, irg_walk_func *pre,
+                                irg_walk_func *post, void *env)
+{
 	int i, n;
 
 	if (!Block_block_visited(bl)) {
@@ -258,9 +259,9 @@ static void irg_out_block_walk2(ir_node *bl,
 
 /* Walks only over Block nodes in the graph.  Has it's own visited
    flag, so that it can be interleaved with the other walker.         */
-void irg_out_block_walk(ir_node *node,
-                        irg_walk_func *pre, irg_walk_func *post,
-                        void *env) {
+void irg_out_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                        void *env)
+{
 
 	assert(is_Block(node) || (get_irn_mode(node) == mode_X));
 

@@ -396,7 +396,8 @@ static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *t
  * Create a new Switch/case region.
  */
 static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_region *head, ir_region *exit,
-                                 ir_region *cases, int cases_len) {
+                                 ir_region *cases, int cases_len)
+{
 	ir_region *reg, *c, *n;
 	int i;
 	int add = 1;

@@ -2293,7 +2293,8 @@ static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
 
 /* create an ir_pog pass */
 ir_prog_pass_t *stat_dump_snapshot_pass(
-	const char *name, const char *fname, const char *phase) {
+	const char *name, const char *fname, const char *phase)
+{
 	struct pass_t *pass = XMALLOCZ(struct pass_t);
 
 	def_prog_pass_constructor(

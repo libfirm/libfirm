@@ -644,7 +644,8 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
  * walk over a graph block wise
  */
 void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
-              irg_walk_func *post, void *env) {
+                          irg_walk_func *post, void *env)
+{
 	ir_graph * rem = current_ir_graph;
 	current_ir_graph = irg;
 	irg_block_walk(get_irg_end(irg), pre, post, env);

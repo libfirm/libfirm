@@ -506,7 +506,8 @@ typedef struct {
  * Start block misses control dead blocks.
  */
 static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
-                              tmp_dom_info *tdi_list, int *used, int n_blocks) {
+                              tmp_dom_info *tdi_list, int *used, int n_blocks)
+{
 	tmp_dom_info *tdi;
 	int i;
 
@@ -544,7 +545,8 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
  * End block misses blocks in endless loops.
  */
 static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
-                               tmp_dom_info *tdi_list, int* used, int n_blocks) {
+                               tmp_dom_info *tdi_list, int* used, int n_blocks)
+{
 	tmp_dom_info *tdi;
 	int i;
 
