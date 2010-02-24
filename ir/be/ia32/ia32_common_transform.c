@@ -1022,7 +1022,6 @@ int prevents_AM(ir_node *const block, ir_node *const am_candidate,
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
 	int          minus         = 0;
-	tarval      *offset        = NULL;
 	int          offset_sign   = 0;
 	long         val = 0;
 	ir_entity   *symconst_ent  = NULL;
@@ -1083,7 +1082,9 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	}
 
 	if (cnst != NULL) {
-		offset = get_Const_tarval(cnst);
+		tarval *offset = get_Const_tarval(cnst);
+		if (offset_sign)
+			offset = tarval_neg(offset);
 		if (tarval_is_long(offset)) {
 			val = get_tarval_long(offset);
 		} else {
@@ -1105,16 +1106,10 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 		if (symconst_sign)
 			return NULL;
 
-		if (get_SymConst_kind(symconst) != symconst_addr_ent)
-			return NULL;
-		symconst_ent = get_SymConst_entity(symconst);
+		symconst_ent = get_Global_entity(symconst);
 	}
 	if (cnst == NULL && symconst == NULL)
 		return NULL;
-
-	if (offset_sign && offset != NULL) {
-		offset = tarval_neg(offset);
-	}
 
 	new_node = ia32_create_Immediate(symconst_ent, symconst_sign, val);
 
