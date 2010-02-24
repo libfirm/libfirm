@@ -1021,11 +1021,8 @@ int prevents_AM(ir_node *const block, ir_node *const am_candidate,
 
 ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
-	int          minus         = 0;
-	int          offset_sign   = 0;
 	long         val = 0;
 	ir_entity   *symconst_ent  = NULL;
-	int          symconst_sign = 0;
 	ir_mode     *mode;
 	ir_node     *cnst          = NULL;
 	ir_node     *symconst      = NULL;
@@ -1036,46 +1033,21 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 		return NULL;
 	}
 
-	if (is_Minus(node)) {
-		minus = 1;
-		node  = get_Minus_op(node);
-	}
-
 	if (is_Const(node)) {
-		cnst        = node;
-		symconst    = NULL;
-		offset_sign = minus;
-	} else if (is_SymConst(node)) {
-		cnst          = NULL;
-		symconst      = node;
-		symconst_sign = minus;
+		cnst     = node;
+		symconst = NULL;
+	} else if (is_Global(node)) {
+		cnst     = NULL;
+		symconst = node;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		if (is_Const(left) && is_SymConst(right)) {
-			cnst          = left;
-			symconst      = right;
-			symconst_sign = minus;
-			offset_sign   = minus;
-		} else if (is_SymConst(left) && is_Const(right)) {
-			cnst          = right;
-			symconst      = left;
-			symconst_sign = minus;
-			offset_sign   = minus;
-		}
-	} else if (is_Sub(node)) {
-		ir_node *left  = get_Sub_left(node);
-		ir_node *right = get_Sub_right(node);
-		if (is_Const(left) && is_SymConst(right)) {
-			cnst          = left;
-			symconst      = right;
-			symconst_sign = !minus;
-			offset_sign   = minus;
-		} else if (is_SymConst(left) && is_Const(right)) {
-			cnst          = right;
-			symconst      = left;
-			symconst_sign = minus;
-			offset_sign   = !minus;
+		if (is_Const(left) && is_Global(right)) {
+			cnst     = left;
+			symconst = right;
+		} else if (is_Global(left) && is_Const(right)) {
+			cnst     = right;
+			symconst = left;
 		}
 	} else {
 		return NULL;
@@ -1083,16 +1055,12 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 
 	if (cnst != NULL) {
 		tarval *offset = get_Const_tarval(cnst);
-		if (offset_sign)
-			offset = tarval_neg(offset);
-		if (tarval_is_long(offset)) {
-			val = get_tarval_long(offset);
-		} else {
-			ir_fprintf(stderr, "Optimisation Warning: tarval from %+F is not a "
-			           "long?\n", cnst);
+		if (!tarval_is_long(offset)) {
+			ir_fprintf(stderr, "Optimisation Warning: tarval of %+F is not a long?\n", cnst);
 			return NULL;
 		}
 
+		val = get_tarval_long(offset);
 		if (!check_immediate_constraint(val, immediate_constraint_type))
 			return NULL;
 	}
@@ -1102,16 +1070,11 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 			return NULL;
 		}
 
-		/* unfortunately the assembler/linker doesn't support -symconst */
-		if (symconst_sign)
-			return NULL;
-
 		symconst_ent = get_Global_entity(symconst);
 	}
 	if (cnst == NULL && symconst == NULL)
 		return NULL;
 
-	new_node = ia32_create_Immediate(symconst_ent, symconst_sign, val);
-
+	new_node = ia32_create_Immediate(symconst_ent, 0, val);
 	return new_node;
 }
